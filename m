@@ -1,260 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753361AbaGUFn7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 01:43:59 -0400
+	id S1752909AbaGUFm0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 01:42:26 -0400
 Received: from mga09.intel.com ([134.134.136.24]:61456 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753019AbaGUFmc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 01:42:32 -0400
+	id S1752844AbaGUFmU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jul 2014 01:42:20 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,698,1400050800"; 
-   d="scan'208";a="576270803"
+   d="scan'208";a="576270720"
 From: Qiaowei Ren <qiaowei.ren@intel.com>
 To: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
         Ingo Molnar <mingo@redhat.com>, Dave Hansen <dave.hansen@intel.com>
 Cc: x86@kernel.org, linux-kernel@vger.kernel.org, linux-mm@kvack.org,
         Qiaowei Ren <qiaowei.ren@intel.com>
-Subject: [PATCH v7 04/10] x86, mpx: hook #BR exception handler to allocate bound tables
-Date: Mon, 21 Jul 2014 13:38:38 +0800
-Message-Id: <1405921124-4230-5-git-send-email-qiaowei.ren@intel.com>
+Subject: [PATCH v7 00/10] Intel MPX support
+Date: Mon, 21 Jul 2014 13:38:34 +0800
+Message-Id: <1405921124-4230-1-git-send-email-qiaowei.ren@intel.com>
 X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1405921124-4230-1-git-send-email-qiaowei.ren@intel.com>
-References: <1405921124-4230-1-git-send-email-qiaowei.ren@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch handles a #BR exception for non-existent tables by
-carving the space out of the normal processes address space
-(essentially calling mmap() from inside the kernel) and then
-pointing the bounds-directory over to it.
+This patchset adds support for the Memory Protection Extensions
+(MPX) feature found in future Intel processors.
 
-The tables need to be accessed and controlled by userspace
-because the compiler generates instructions for MPX-enabled
-code which frequently store and retrieve entries from the bounds
-tables. Any direct kernel involvement (like a syscall) to access
-the tables would destroy performance since these are so frequent.
+MPX can be used in conjunction with compiler changes to check memory
+references, for those references whose compile-time normal intentions
+are usurped at runtime due to buffer overflow or underflow.
 
-The tables are carved out of userspace because we have no better
-spot to put them. For each pointer which is being tracked by MPX,
-the bounds tables contain 4 longs worth of data, and the tables
-are indexed virtually. If we were to preallocate the tables, we
-would theoretically need to allocate 4x the virtual space that
-we have available for userspace somewhere else. We don't have
-that room in the kernel address space.
+MPX provides this capability at very low performance overhead for
+newly compiled code, and provides compatibility mechanisms with legacy
+software components. MPX architecture is designed allow a machine to
+run both MPX enabled software and legacy software that is MPX unaware.
+In such a case, the legacy software does not benefit from MPX, but it
+also does not experience any change in functionality or reduction in
+performance.
 
-Signed-off-by: Qiaowei Ren <qiaowei.ren@intel.com>
----
- arch/x86/include/asm/mpx.h |   20 ++++++++++++++
- arch/x86/kernel/Makefile   |    1 +
- arch/x86/kernel/mpx.c      |   60 ++++++++++++++++++++++++++++++++++++++++++++
- arch/x86/kernel/traps.c    |   55 +++++++++++++++++++++++++++++++++++++++-
- 4 files changed, 135 insertions(+), 1 deletions(-)
+More information about Intel MPX can be found in "Intel(R) Architecture
+Instruction Set Extensions Programming Reference".
+
+To get the advantage of MPX, changes are required in the OS kernel,
+binutils, compiler, system libraries support.
+
+New GCC option -fmpx is introduced to utilize MPX instructions.
+Currently GCC compiler sources with MPX support is available in a
+separate branch in common GCC SVN repository. See GCC SVN page
+(http://gcc.gnu.org/svn.html) for details.
+
+To have the full protection, we had to add MPX instrumentation to all
+the necessary Glibc routines (e.g. memcpy) written on assembler, and
+compile Glibc with the MPX enabled GCC compiler. Currently MPX enabled
+Glibc source can be found in Glibc git repository.
+
+Enabling an application to use MPX will generally not require source
+code updates but there is some runtime code, which is responsible for
+configuring and enabling MPX, needed in order to make use of MPX.
+For most applications this runtime support will be available by linking
+to a library supplied by the compiler or possibly it will come directly
+from the OS once OS versions that support MPX are available.
+
+MPX kernel code, namely this patchset, has mainly the 2 responsibilities:
+provide handlers for bounds faults (#BR), and manage bounds memory.
+
+The high-level areas modified in the patchset are as follow:
+1) struct siginfo is extended to include bound violation information.
+2) two prctl() commands are added to do performance optimization.
+
+Currently no hardware with MPX ISA is available but it is always
+possible to use SDE (Intel(R) software Development Emulator) instead,
+which can be downloaded from
+http://software.intel.com/en-us/articles/intel-software-development-emulator
+
+In addition, this patchset has been tested on Intel internal hardware
+platform for MPX testing.
+
+Future TODO items:
+1) support 32-bit binaries on 64-bit kernels.
+
+Changes since v1:
+  * check to see if #BR occurred in userspace or kernel space.
+  * use generic structure and macro as much as possible when
+    decode mpx instructions.
+
+Changes since v2:
+  * fix some compile warnings.
+  * update documentation.
+
+Changes since v3:
+  * correct some syntax errors at documentation, and document
+    extended struct siginfo.
+  * for kill the process when the error code of BNDSTATUS is 3.
+  * add some comments.
+  * remove new prctl() commands.
+  * fix some compile warnings for 32-bit.
+
+Changes since v4:
+  * raise SIGBUS if the allocations of the bound tables fail.
+
+Changes since v5:
+  * hook unmap() path to cleanup unused bounds tables, and use
+    new prctl() command to register bounds directory address to
+    struct mm_struct to check whether one process is MPX enabled
+    during unmap().
+  * in order track precisely MPX memory usage, add MPX specific
+    mmap interface and one VM_MPX flag to check whether a VMA
+    is MPX bounds table.
+  * add macro cpu_has_mpx to do performance optimization.
+  * sync struct figinfo for mips with general version to avoid
+    build issue.
+
+Changes since v6:
+  * because arch_vma_name is removed, this patchset have toset MPX
+    specific ->vm_ops to do the same thing.
+  * fix warnings for 32 bit arch.
+  * add more description into these patches.
+
+Qiaowei Ren (10):
+  x86, mpx: introduce VM_MPX to indicate that a VMA is MPX specific
+  x86, mpx: add MPX specific mmap interface
+  x86, mpx: add macro cpu_has_mpx
+  x86, mpx: hook #BR exception handler to allocate bound tables
+  x86, mpx: extend siginfo structure to include bound violation
+    information
+  mips: sync struct siginfo with general version
+  x86, mpx: decode MPX instruction to get bound violation information
+  x86, mpx: add prctl commands PR_MPX_REGISTER, PR_MPX_UNREGISTER
+  x86, mpx: cleanup unused bound tables
+  x86, mpx: add documentation on Intel MPX
+
+ Documentation/x86/intel_mpx.txt      |  127 +++++++++++
+ arch/mips/include/uapi/asm/siginfo.h |    4 +
+ arch/x86/Kconfig                     |    4 +
+ arch/x86/include/asm/cpufeature.h    |    6 +
+ arch/x86/include/asm/mmu_context.h   |   16 ++
+ arch/x86/include/asm/mpx.h           |   91 ++++++++
+ arch/x86/include/asm/processor.h     |   18 ++
+ arch/x86/kernel/Makefile             |    1 +
+ arch/x86/kernel/mpx.c                |  415 ++++++++++++++++++++++++++++++++++
+ arch/x86/kernel/traps.c              |   61 +++++-
+ arch/x86/mm/Makefile                 |    2 +
+ arch/x86/mm/mpx.c                    |  260 +++++++++++++++++++++
+ fs/proc/task_mmu.c                   |    1 +
+ include/asm-generic/mmu_context.h    |    6 +
+ include/linux/mm.h                   |    2 +
+ include/linux/mm_types.h             |    3 +
+ include/uapi/asm-generic/siginfo.h   |    9 +-
+ include/uapi/linux/prctl.h           |    6 +
+ kernel/signal.c                      |    4 +
+ kernel/sys.c                         |   12 +
+ mm/mmap.c                            |    2 +
+ 21 files changed, 1048 insertions(+), 2 deletions(-)
+ create mode 100644 Documentation/x86/intel_mpx.txt
+ create mode 100644 arch/x86/include/asm/mpx.h
  create mode 100644 arch/x86/kernel/mpx.c
-
-diff --git a/arch/x86/include/asm/mpx.h b/arch/x86/include/asm/mpx.h
-index 5725ac4..b7598ac 100644
---- a/arch/x86/include/asm/mpx.h
-+++ b/arch/x86/include/asm/mpx.h
-@@ -18,6 +18,8 @@
- #define MPX_BT_ENTRY_SHIFT	5
- #define MPX_IGN_BITS		3
- 
-+#define MPX_BD_ENTRY_TAIL	3
-+
- #else
- 
- #define MPX_BD_ENTRY_OFFSET	20
-@@ -26,13 +28,31 @@
- #define MPX_BT_ENTRY_SHIFT	4
- #define MPX_IGN_BITS		2
- 
-+#define MPX_BD_ENTRY_TAIL	2
-+
- #endif
- 
-+#define MPX_BNDSTA_TAIL		2
-+#define MPX_BNDCFG_TAIL		12
-+#define MPX_BNDSTA_ADDR_MASK	(~((1UL<<MPX_BNDSTA_TAIL)-1))
-+#define MPX_BNDCFG_ADDR_MASK	(~((1UL<<MPX_BNDCFG_TAIL)-1))
-+#define MPX_BT_ADDR_MASK	(~((1UL<<MPX_BD_ENTRY_TAIL)-1))
-+
- #define MPX_BD_SIZE_BYTES (1UL<<(MPX_BD_ENTRY_OFFSET+MPX_BD_ENTRY_SHIFT))
- #define MPX_BT_SIZE_BYTES (1UL<<(MPX_BT_ENTRY_OFFSET+MPX_BT_ENTRY_SHIFT))
- 
- #define MPX_BNDSTA_ERROR_CODE	0x3
-+#define MPX_BD_ENTRY_VALID_FLAG	0x1
- 
- unsigned long mpx_mmap(unsigned long len);
- 
-+#ifdef CONFIG_X86_INTEL_MPX
-+int do_mpx_bt_fault(struct xsave_struct *xsave_buf);
-+#else
-+static inline int do_mpx_bt_fault(struct xsave_struct *xsave_buf)
-+{
-+	return -EINVAL;
-+}
-+#endif /* CONFIG_X86_INTEL_MPX */
-+
- #endif /* _ASM_X86_MPX_H */
-diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
-index 047f9ff..5e81e16 100644
---- a/arch/x86/kernel/Makefile
-+++ b/arch/x86/kernel/Makefile
-@@ -43,6 +43,7 @@ obj-$(CONFIG_PREEMPT)	+= preempt.o
- 
- obj-y				+= process.o
- obj-y				+= i387.o xsave.o
-+obj-$(CONFIG_X86_INTEL_MPX)	+= mpx.o
- obj-y				+= ptrace.o
- obj-$(CONFIG_X86_32)		+= tls.o
- obj-$(CONFIG_IA32_EMULATION)	+= tls.o
-diff --git a/arch/x86/kernel/mpx.c b/arch/x86/kernel/mpx.c
-new file mode 100644
-index 0000000..f02dcea
---- /dev/null
-+++ b/arch/x86/kernel/mpx.c
-@@ -0,0 +1,60 @@
-+#include <linux/kernel.h>
-+#include <linux/syscalls.h>
-+#include <asm/mpx.h>
-+
-+static int allocate_bt(long __user *bd_entry)
-+{
-+	unsigned long bt_addr, old_val = 0;
-+	int ret = 0;
-+
-+	bt_addr = mpx_mmap(MPX_BT_SIZE_BYTES);
-+	if (IS_ERR((void *)bt_addr))
-+		return bt_addr;
-+	bt_addr = (bt_addr & MPX_BT_ADDR_MASK) | MPX_BD_ENTRY_VALID_FLAG;
-+
-+	ret = user_atomic_cmpxchg_inatomic(&old_val, bd_entry, 0, bt_addr);
-+	if (ret)
-+		goto out;
-+
-+	/*
-+	 * there is a existing bounds table pointed at this bounds
-+	 * directory entry, and so we need to free the bounds table
-+	 * allocated just now.
-+	 */
-+	if (old_val)
-+		goto out;
-+
-+	pr_debug("Allocate bounds table %lx at entry %p\n",
-+			bt_addr, bd_entry);
-+	return 0;
-+
-+out:
-+	vm_munmap(bt_addr & MPX_BT_ADDR_MASK, MPX_BT_SIZE_BYTES);
-+	return ret;
-+}
-+
-+/*
-+ * When a BNDSTX instruction attempts to save bounds to a BD entry
-+ * with the lack of the valid bit being set, a #BR is generated.
-+ * This is an indication that no BT exists for this entry. In this
-+ * case the fault handler will allocate a new BT.
-+ *
-+ * With 32-bit mode, the size of BD is 4MB, and the size of each
-+ * bound table is 16KB. With 64-bit mode, the size of BD is 2GB,
-+ * and the size of each bound table is 4MB.
-+ */
-+int do_mpx_bt_fault(struct xsave_struct *xsave_buf)
-+{
-+	unsigned long status;
-+	unsigned long bd_entry, bd_base;
-+
-+	bd_base = xsave_buf->bndcsr.cfg_reg_u & MPX_BNDCFG_ADDR_MASK;
-+	status = xsave_buf->bndcsr.status_reg;
-+
-+	bd_entry = status & MPX_BNDSTA_ADDR_MASK;
-+	if ((bd_entry < bd_base) ||
-+		(bd_entry >= bd_base + MPX_BD_SIZE_BYTES))
-+		return -EINVAL;
-+
-+	return allocate_bt((long __user *)bd_entry);
-+}
-diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
-index 0d0e922..396a88b 100644
---- a/arch/x86/kernel/traps.c
-+++ b/arch/x86/kernel/traps.c
-@@ -60,6 +60,7 @@
- #include <asm/fixmap.h>
- #include <asm/mach_traps.h>
- #include <asm/alternative.h>
-+#include <asm/mpx.h>
- 
- #ifdef CONFIG_X86_64
- #include <asm/x86_init.h>
-@@ -228,7 +229,6 @@ dotraplinkage void do_##name(struct pt_regs *regs, long error_code)	\
- 
- DO_ERROR(X86_TRAP_DE,     SIGFPE,  "divide error",		divide_error)
- DO_ERROR(X86_TRAP_OF,     SIGSEGV, "overflow",			overflow)
--DO_ERROR(X86_TRAP_BR,     SIGSEGV, "bounds",			bounds)
- DO_ERROR(X86_TRAP_UD,     SIGILL,  "invalid opcode",		invalid_op)
- DO_ERROR(X86_TRAP_OLD_MF, SIGFPE,  "coprocessor segment overrun",coprocessor_segment_overrun)
- DO_ERROR(X86_TRAP_TS,     SIGSEGV, "invalid TSS",		invalid_TSS)
-@@ -278,6 +278,59 @@ dotraplinkage void do_double_fault(struct pt_regs *regs, long error_code)
- }
- #endif
- 
-+dotraplinkage void do_bounds(struct pt_regs *regs, long error_code)
-+{
-+	enum ctx_state prev_state;
-+	unsigned long status;
-+	struct xsave_struct *xsave_buf;
-+	struct task_struct *tsk = current;
-+
-+	prev_state = exception_enter();
-+	if (notify_die(DIE_TRAP, "bounds", regs, error_code,
-+			X86_TRAP_BR, SIGSEGV) == NOTIFY_STOP)
-+		goto exit;
-+	conditional_sti(regs);
-+
-+	if (!user_mode(regs))
-+		die("bounds", regs, error_code);
-+
-+	if (!cpu_has_mpx) {
-+		/* The exception is not from Intel MPX */
-+		do_trap(X86_TRAP_BR, SIGSEGV, "bounds", regs, error_code, NULL);
-+		goto exit;
-+	}
-+
-+	fpu_xsave(&tsk->thread.fpu);
-+	xsave_buf = &(tsk->thread.fpu.state->xsave);
-+	status = xsave_buf->bndcsr.status_reg;
-+
-+	/*
-+	 * The error code field of the BNDSTATUS register communicates status
-+	 * information of a bound range exception #BR or operation involving
-+	 * bound directory.
-+	 */
-+	switch (status & MPX_BNDSTA_ERROR_CODE) {
-+	case 2:
-+		/*
-+		 * Bound directory has invalid entry.
-+		 */
-+		if (do_mpx_bt_fault(xsave_buf))
-+			force_sig(SIGSEGV, tsk);
-+		break;
-+
-+	case 1: /* Bound violation. */
-+	case 0: /* No exception caused by Intel MPX operations. */
-+		do_trap(X86_TRAP_BR, SIGSEGV, "bounds", regs, error_code, NULL);
-+		break;
-+
-+	default:
-+		die("bounds", regs, error_code);
-+	}
-+
-+exit:
-+	exception_exit(prev_state);
-+}
-+
- dotraplinkage void
- do_general_protection(struct pt_regs *regs, long error_code)
- {
--- 
-1.7.1
+ create mode 100644 arch/x86/mm/mpx.c
 
