@@ -1,74 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933016AbaGUQqs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 12:46:48 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:46697 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932543AbaGUQqr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 12:46:47 -0400
-Date: Mon, 21 Jul 2014 17:46:34 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Daniel Thompson <daniel.thompson@linaro.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Jason Cooper <jason@lakedaemon.net>,
-        Marek Vasut <marex@denx.de>, Harro Haan <hrhaan@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        patches@linaro.org, linaro-kernel@lists.linaro.org,
-        John Stultz <john.stultz@linaro.org>
-Subject: Re: [PATCH RFC 5/9] ARM: Add L1 PTE non-secure mapping
-Message-ID: <20140721164634.GF21766@n2100.arm.linux.org.uk>
-References: <1405954040-30399-1-git-send-email-daniel.thompson@linaro.org> <1405954040-30399-6-git-send-email-daniel.thompson@linaro.org>
+	id S933109AbaGUQq6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 12:46:58 -0400
+Received: from mga11.intel.com ([192.55.52.93]:23782 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932543AbaGUQq4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jul 2014 12:46:56 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,702,1400050800"; 
+   d="scan'208";a="573162484"
+From: Andi Kleen <andi@firstfloor.org>
+To: Waiman Long <Waiman.Long@hp.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Darren Hart <dvhart@linux.intel.com>,
+        Davidlohr Bueso <davidlohr@hp.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
+        linux-doc@vger.kernel.org, Jason Low <jason.low2@hp.com>,
+        Scott J Norton <scott.norton@hp.com>
+Subject: Re: [RFC PATCH 0/5] futex: introduce an optimistic spinning futex
+References: <1405956271-34339-1-git-send-email-Waiman.Long@hp.com>
+	<8761iq3bp3.fsf@tassilo.jf.intel.com>
+Date: Mon, 21 Jul 2014 09:45:55 -0700
+In-Reply-To: <8761iq3bp3.fsf@tassilo.jf.intel.com> (Andi Kleen's message of
+	"Mon, 21 Jul 2014 09:42:48 -0700")
+Message-ID: <871tte3bjw.fsf@tassilo.jf.intel.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1405954040-30399-6-git-send-email-daniel.thompson@linaro.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 21, 2014 at 03:47:16PM +0100, Daniel Thompson wrote:
-> From: Marek Vasut <marex@denx.de>
-> 
-> Add new device type, MT_DEVICE_NS. This type sets the NS bit in L1 PTE [1].
-> Accesses to a memory region which is mapped this way generate non-secure
-> access to that memory area. One must be careful here, since the NS bit is
-> only available in L1 PTE, therefore when creating the mapping, the mapping
-> must be at least 1 MiB big and must be aligned to 1 MiB. If that condition
-> was false, the kernel would use regular L2 page mapping for this area instead
-> and the NS bit setting would be ineffective.
+Andi Kleen <andi@firstfloor.org> writes:
 
-Right, so this says that PTE mappings are not permissible.
+> Waiman Long <Waiman.Long@hp.com> writes:
+>
+>> This patch series introduces two new futex command codes to support
+>> a new optimistic spinning futex for implementing an exclusive lock
+>> primitive that should perform better than the same primitive using
+>> the wait-wake futex in cases where the lock owner is actively working
+>> instead of waiting for I/O completion.
+>
+> How would you distinguish those two cases automatically?
 
-> +	[MT_DEVICE_NS] = {	  /* Non-secure accesses from secure mode */
-> +		.prot_pte	= PROT_PTE_DEVICE | L_PTE_MT_DEV_SHARED |
-> +				  L_PTE_SHARED,
-> +		.prot_l1	= PMD_TYPE_TABLE,
+Also BTW traditionally the spinning was just done in user space.
 
-However, by filling in prot_pte and prot_l1, you're telling the code that
-it /can/ setup such a mapping.  This is screwed.
+This would be always even more efficient, because it would 
+even avoid the syscall entry path.
 
-If you want to deny anything but section mappings (because they don't work)
-then you omit prot_pte and prot_l1.  With those omitted, if someone tries
-to abuse this mapping type, then this check in create_mapping() will
-trigger:
+Given the glibc adaptive mutexes are not very good, but I'm sure those
+could be improved.
 
-        if (type->prot_l1 == 0 && ((addr | phys | length) & ~SECTION_MASK)) {
-                printk(KERN_WARNING "BUG: map for 0x%08llx at 0x%08lx can not "
-                       "be mapped using pages, ignoring.\n",
-                       (long long)__pfn_to_phys(md->pfn), addr);
-                return;
-        }
-
-ioremap doesn't have that check; it assumes that it will always be setting
-up PTE mappings via ioremap_page_range().  In fact, on many platforms
-that's the only option.
-
-So making this interface available via ioremap() seems pointless - but
-more importantly it's extremely error-prone.  So, MT_DEVICE_NS shouldn't
-be using 4 at all, shouldn't be in asm/io.h, but should be with the
-private MT_* definitions in map.h.
+-Andi
 
 -- 
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
+ak@linux.intel.com -- Speaking for myself only
