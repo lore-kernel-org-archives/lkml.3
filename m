@@ -1,78 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933243AbaGURUA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 13:20:00 -0400
-Received: from mail-lb0-f173.google.com ([209.85.217.173]:49508 "EHLO
-	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932382AbaGURT6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 13:19:58 -0400
-Message-ID: <53CD4BBA.1050706@cogentembedded.com>
-Date: Mon, 21 Jul 2014 21:19:54 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Organization: Cogent Embedded
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Wang Nan <wangnan0@huawei.com>, Ingo Molnar <mingo@redhat.com>,
-        Yinghai Lu <yinghai@kernel.org>, Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dave Hansen <dave.hansen@intel.com>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-CC: peifeiyue@huawei.com, linux-mm@kvack.org, x86@kernel.org,
-        linux-ia64@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 1/7] memory-hotplug: add zone_for_memory() for selecting
- zone for new memory
-References: <1405914402-66212-1-git-send-email-wangnan0@huawei.com> <1405914402-66212-2-git-send-email-wangnan0@huawei.com>
-In-Reply-To: <1405914402-66212-2-git-send-email-wangnan0@huawei.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S933275AbaGURUn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 13:20:43 -0400
+Received: from mga02.intel.com ([134.134.136.20]:64958 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932452AbaGURUl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jul 2014 13:20:41 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,702,1400050800"; 
+   d="scan'208";a="546741490"
+User-Agent: Microsoft-MacOutlook/14.4.3.140616
+Date: Mon, 21 Jul 2014 10:20:17 -0700
+Subject: Re: [RFC PATCH 0/5] futex: introduce an optimistic spinning futex
+From: Darren Hart <dvhart@linux.intel.com>
+To: Andi Kleen <andi@firstfloor.org>, Waiman Long <Waiman.Long@hp.com>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Davidlohr Bueso <davidlohr@hp.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        <linux-kernel@vger.kernel.org>, <linux-api@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, Jason Low <jason.low2@hp.com>,
+        Scott J Norton <scott.norton@hp.com>
+Message-ID: <CFF29805.9D436%dvhart@linux.intel.com>
+Thread-Topic: [RFC PATCH 0/5] futex: introduce an optimistic spinning futex
+References: <1405956271-34339-1-git-send-email-Waiman.Long@hp.com>
+ <8761iq3bp3.fsf@tassilo.jf.intel.com>
+ <871tte3bjw.fsf@tassilo.jf.intel.com>
+In-Reply-To: <871tte3bjw.fsf@tassilo.jf.intel.com>
+Mime-version: 1.0
+Content-type: text/plain;
+	charset="US-ASCII"
+Content-transfer-encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On 7/21/14, 9:45, "Andi Kleen" <andi@firstfloor.org> wrote:
 
-On 07/21/2014 07:46 AM, Wang Nan wrote:
-
-    Some grammar nitpicking.
-
-> This patch introduces a zone_for_memory function in arch independent
-> code for arch_add_memory() using.
-
-    s/ using/'s use/.
-
-> Many arch_add_memory() function simply selects ZONE_HIGHMEM or
-
-    Plural needed with "many".
-
-> ZONE_NORMAL and add new memory into it. However, with the existance of
-> ZONE_MOVABLE, the selection method should be carefully considered: if
-> new, higher memory is added after ZONE_MOVABLE is setup, the default
-> zone and ZONE_MOVABLE may overlap each other.
-
-> should_add_memory_movable() checks the status of ZONE_MOVABLE. If it has
-> already contain memory, compare the address of new memory and movable
-> memory. If new memory is higher than movable, it should be added into
-> ZONE_MOVABLE instead of default zone.
-
-> Signed-off-by: Wang Nan <wangnan0@huawei.com>
-> Cc: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-> Cc: Dave Hansen <dave.hansen@intel.com>
-[...]
-
-> diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
-> index 469bbf5..348fda7 100644
-> --- a/mm/memory_hotplug.c
-> +++ b/mm/memory_hotplug.c
-> @@ -1156,6 +1156,34 @@ static int check_hotplug_memory_range(u64 start, u64 size)
->   	return 0;
->   }
+>Andi Kleen <andi@firstfloor.org> writes:
 >
-> +/*
-> + * If movable zone has already been setup, newly added memory should be check.
+>> Waiman Long <Waiman.Long@hp.com> writes:
+>>
+>>> This patch series introduces two new futex command codes to support
+>>> a new optimistic spinning futex for implementing an exclusive lock
+>>> primitive that should perform better than the same primitive using
+>>> the wait-wake futex in cases where the lock owner is actively working
+>>> instead of waiting for I/O completion.
+>>
+>> How would you distinguish those two cases automatically?
+>
+>Also BTW traditionally the spinning was just done in user space.
+>
+>This would be always even more efficient, because it would
+>even avoid the syscall entry path.
+>
+>Given the glibc adaptive mutexes are not very good, but I'm sure those
+>could be improved.
 
-    Checked.
+I presented on something along these lines a few years back, and various
+people have asked for the sample code over the years. Andi is right, doing
+this from user-space has the potential to be more efficient, the challenge
+is getting access to privileged information, such as the state of the
+mutex owner. You don't want to spin if the owner is sleeping. I did this
+by adding a tidrunning call to the vdso. My somewhat hacked solution is
+still available here:
 
-WBR, Sergei
+http://git.infradead.org/users/dvhart/linux.git/shortlog/refs/heads/futex/t
+idrunning/dev
+
+
+I abandoned the spinning in the kernel thing due to the overhead of the
+system call if I remember correctly. Also available here:
+
+http://git.infradead.org/users/dvhart/linux.git/shortlog/refs/heads/futex/f
+utex-lock-adaptive
+
+
+
+-- 
+Darren Hart					Open Source Technology Center
+darren.hart@intel.com				            Intel Corporation
+
+
 
