@@ -1,114 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754675AbaGUKjk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 06:39:40 -0400
-Received: from regular1.263xmail.com ([211.150.99.140]:58344 "EHLO
-	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754324AbaGUKji (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 06:39:38 -0400
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 0
-X-MAIL-DELIVERY: 1
-X-ABS-CHECKED: 4
-X-KSVirus-check: 0
-X-RL-SENDER: caesar.wang@rock-chips.com
-X-FST-TO: thierry.reding@gmail.com
-X-SENDER-IP: 58.22.7.114
-X-LOGIN-NAME: caesar.wang@rock-chips.com
-X-UNIQUE-TAG: <b916368a92ab671b58584aa66c2bb86a>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 0
-Message-ID: <53CCEDCB.5010500@rock-chips.com>
-Date: Mon, 21 Jul 2014 18:39:07 +0800
-From: caesar <caesar.wang@rock-chips.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1754724AbaGUKlV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 06:41:21 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:23103 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754350AbaGUKlT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jul 2014 06:41:19 -0400
+X-IronPort-AV: E=Sophos;i="5.01,699,1400025600"; 
+   d="scan'208";a="154165753"
+From: Zoltan Kiss <zoltan.kiss@citrix.com>
+To: Wei Liu <wei.liu2@citrix.com>, Ian Campbell <Ian.Campbell@citrix.com>
+CC: Zoltan Kiss <zoltan.kiss@citrix.com>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <xen-devel@lists.xenproject.org>
+Subject: [PATCH for stable 3.15 2/4 v2] xen-netback: Fix releasing frag_list skbs in error path
+Date: Mon, 21 Jul 2014 11:41:00 +0100
+Message-ID: <1405939262-7944-2-git-send-email-zoltan.kiss@citrix.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1405939262-7944-1-git-send-email-zoltan.kiss@citrix.com>
+References: <1405939262-7944-1-git-send-email-zoltan.kiss@citrix.com>
 MIME-Version: 1.0
-To: Thierry Reding <thierry.reding@gmail.com>
-CC: heiko@sntech.de, b.galvani@gmail.com, cf@rock-chips.com,
-        huangtao@rock-chips.com, addy.ke@rock-chips.com, xjq@rock-chips.com,
-        linux-pwm@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 1/2] pwm: add this patch to introduce for rk-pwm and
- vop-pwm
-References: <1405774529-26027-1-git-send-email-caesar.wang@rock-chips.com> <1405774529-26027-2-git-send-email-caesar.wang@rock-chips.com> <20140721085716.GH8843@ulmo>
-In-Reply-To: <20140721085716.GH8843@ulmo>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain
+X-Originating-IP: [10.80.2.133]
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Thierry,
+When the grant operations failed, the skb is freed up eventually, and it tries
+to release the frags, if there is any. For the main skb nr_frags is set to 0 to
+avoid this, but on the frag_list it iterates through the frags array, and tries
+to call put_page on the page pointer which contains garbage at that time.
 
-于 2014年07月21日 16:57, Thierry Reding 写道:
-> On Sat, Jul 19, 2014 at 08:55:28PM +0800, Caesar Wang wrote:
->> Signed-off-by: Caesar Wang <caesar.wang@rock-chips.com>
->> ---
->>   Documentation/devicetree/bindings/pwm/pwm-rockchip.txt | 13 ++++++++-----
->>   1 file changed, 8 insertions(+), 5 deletions(-)
->>
->> diff --git a/Documentation/devicetree/bindings/pwm/pwm-rockchip.txt b/Documentation/devicetree/bindings/pwm/pwm-rockchip.txt
->> index 3182126..bb6e7f1 100644
->> --- a/Documentation/devicetree/bindings/pwm/pwm-rockchip.txt
->> +++ b/Documentation/devicetree/bindings/pwm/pwm-rockchip.txt
->> @@ -1,11 +1,14 @@
->>   Rockchip PWM controller
->>   
->>   Required properties:
->> - - compatible: should be "rockchip,rk2928-pwm"
->> - - reg: physical base address and length of the controller's registers
->> - - clocks: phandle and clock specifier of the PWM reference clock
->> - - #pwm-cells: should be 2. See pwm.txt in this directory for a
->> -   description of the cell format.
-> Can you please stick to the original format rather than removing the
-> space in the first column? It makes it difficult to see what's being
-> changed by this patch.
-ok，
->> +- compatible: should be "rockchip,<name>-pwm"should be one of following:
-> I think it should be either 'should be "rockchip,<name>-pwm"' or 'should
-> be one of the following', not both.
-Seems reasonable.
->
->> +    "rockchip,rk2928-pwm" - support the old version PWM for RK29xx,RK3066,RK3188 SoCs.
->> +    "rockchip,rk3288-pwm" - support the new version PWM for RK3036,RK3288 SoCs.
->> +    "rockchip,vop-pwm" - support rockchip integrated VOP-PWM for RK32 SoCs.
-> "old version PWM" and "new version PWM" can be dropped. Maybe:
->
-> 	"rockchip,rk2928-pwm": found on RK29xx, RK3066 and RK3188 SoCs
-> 	"rockchip,rk3288-pwm": found on RK3036 and RK3288 SoCs
-> 	"rockchip,vop-pwm": found integrated in VOP on RK32xx SoCs
->
-> ? Could you explain a little what this VOP is? Also since the above says
-> that "rockchip,rk3288-pwm" is supported on RK3036, the compatible value
-> should really be "rockchip,rk3036-pwm" since we usually list the chip
-> that an IP block was first used in (I'm assuming here that RK3036 is
-> older than RK3288).
-the SoC rk3036 is newer than rk3288. Maybe I will remove the rk3036.
-It's the genenation Soc.
-
-VOP is the display interface from memory frame buffer to display device 
-(LCD panel, LVDS,MIPI, eDP, HDMI and TV set).
-VOP is connected to an AHB bus through an AHB slave and AXI bus through 
-an AXI master.
-The register setting is configured through the AHB slave interface and 
-the display frame data
-is read through the AXI master interface.
-Furthermore, there is adata path between IEP and VOP, which can provide 
-frame data from IEP to VOP.
-
-If you are interested in it,I will sent the vop doc for you and explain it.
->> +- reg: physical base address and length of the controller's registers.
->> +- clocks: phandle and clock specifier of the PWM reference clock.
->> +- #pwm-cells: should be 2. See pwm.txt in this directory for a
->> +  description of the cell format.
-> These are all unchanged (except for the first column's space being
-> removed and the full-stops for reg and clocks properties). Please keep
-> with the original formatting so that it becomes obvious what the patch
-> changes.
->
-> Thierry
-I will fix this and the other issuses in v3,thanks.
-
-Caesar
-
+Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
+Reported-by: Armin Zentai <armin.zentai@ezit.hu>
+Cc: netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Cc: xen-devel@lists.xenproject.org
+---
+v2: adding comment
+diff --git a/drivers/net/xen-netback/netback.c b/drivers/net/xen-netback/netback.c
+index 9b0f482..75b7d1a 100644
+--- a/drivers/net/xen-netback/netback.c
++++ b/drivers/net/xen-netback/netback.c
+@@ -1498,7 +1498,16 @@ static int xenvif_tx_submit(struct xenvif *vif)
+ 
+ 		/* Check the remap error code. */
+ 		if (unlikely(xenvif_tx_check_gop(vif, skb, &gop_map, &gop_copy))) {
++			/* If there was an error, xenvif_tx_check_gop is
++			 * expected to release all the frags which were mapped,
++			 * so kfree_skb shouldn't do it again
++			 */
+ 			skb_shinfo(skb)->nr_frags = 0;
++			if (skb_has_frag_list(skb)) {
++				struct sk_buff *nskb =
++						skb_shinfo(skb)->frag_list;
++				skb_shinfo(nskb)->nr_frags = 0;
++			}
+ 			kfree_skb(skb);
+ 			continue;
+ 		}
