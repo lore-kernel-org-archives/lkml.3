@@ -1,154 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753737AbaGUIZp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 04:25:45 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:49220 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753061AbaGUIZn (ORCPT
+	id S1753719AbaGUI3F (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 04:29:05 -0400
+Received: from mail-yh0-f53.google.com ([209.85.213.53]:52697 "EHLO
+	mail-yh0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753477AbaGUI3D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 04:25:43 -0400
-Date: Mon, 21 Jul 2014 13:55:35 +0530
-From: Himangi Saraogi <himangi774@gmail.com>
-To: Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-Cc: Julia Lawall <julia.lawall@lip6.fr>
-Subject: [PATCH] misc: bh1770glc: Use managed functions
-Message-ID: <20140721082534.GA3127@himangi-Dell>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 21 Jul 2014 04:29:03 -0400
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        tj@kernel.org, devicetree@vger.kernel.org
+Cc: lee.jones@linaro.org, kernel@stlinux.com,
+        Srinivas Kandagatla <srinivas.kandagatla@st.com>
+Subject: [PATCH 1/1] ahci: st: Provide DT bindings for ST's SATA implementation
+Date: Mon, 21 Jul 2014 09:28:36 +0100
+Message-Id: <1405931316-12276-1-git-send-email-lee.jones@linaro.org>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch introduces the use of managed interfaces like devm_kzalloc,
-devm_regulator_bulk_get and does away with the functions to free the
-allocated memory in the probe and remove functions. Also, some labels
-are removed and renamed to preserve the ordering.
-
-Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
-Acked-by: Julia Lawall <julia.lawall@lip6.fr>
+Cc: devicetree@vger.kernel.org
+Cc: Srinivas Kandagatla <srinivas.kandagatla@st.com>
+Acked-by: Alexandre Torgue <alexandre.torgue@st.com>
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- drivers/misc/bh1770glc.c | 35 ++++++++++++++---------------------
- 1 file changed, 14 insertions(+), 21 deletions(-)
 
-diff --git a/drivers/misc/bh1770glc.c b/drivers/misc/bh1770glc.c
-index 99a0468..7b55f8a 100644
---- a/drivers/misc/bh1770glc.c
-+++ b/drivers/misc/bh1770glc.c
-@@ -1185,7 +1185,7 @@ static int bh1770_probe(struct i2c_client *client,
- 	struct bh1770_chip *chip;
- 	int err;
- 
--	chip = kzalloc(sizeof *chip, GFP_KERNEL);
-+	chip = devm_kzalloc(&client->dev, sizeof *chip, GFP_KERNEL);
- 	if (!chip)
- 		return -ENOMEM;
- 
-@@ -1198,8 +1198,7 @@ static int bh1770_probe(struct i2c_client *client,
- 
- 	if (client->dev.platform_data == NULL) {
- 		dev_err(&client->dev, "platform data is mandatory\n");
--		err = -EINVAL;
--		goto fail1;
-+		return -EINVAL;
- 	}
- 
- 	chip->pdata		= client->dev.platform_data;
-@@ -1224,24 +1223,24 @@ static int bh1770_probe(struct i2c_client *client,
- 	chip->regs[0].supply = reg_vcc;
- 	chip->regs[1].supply = reg_vleds;
- 
--	err = regulator_bulk_get(&client->dev,
--				 ARRAY_SIZE(chip->regs), chip->regs);
-+	err = devm_regulator_bulk_get(&client->dev,
-+				      ARRAY_SIZE(chip->regs), chip->regs);
- 	if (err < 0) {
- 		dev_err(&client->dev, "Cannot get regulators\n");
--		goto fail1;
-+		return err;
- 	}
- 
- 	err = regulator_bulk_enable(ARRAY_SIZE(chip->regs),
- 				chip->regs);
- 	if (err < 0) {
- 		dev_err(&client->dev, "Cannot enable regulators\n");
--		goto fail2;
-+		return err;
- 	}
- 
- 	usleep_range(BH1770_STARTUP_DELAY, BH1770_STARTUP_DELAY * 2);
- 	err = bh1770_detect(chip);
- 	if (err < 0)
--		goto fail3;
-+		goto fail0;
- 
- 	/* Start chip */
- 	bh1770_chip_on(chip);
-@@ -1252,14 +1251,14 @@ static int bh1770_probe(struct i2c_client *client,
- 	if (chip->lux_corr == 0) {
- 		dev_err(&client->dev, "Improper correction values\n");
- 		err = -EINVAL;
--		goto fail3;
-+		goto fail0;
- 	}
- 
- 	if (chip->pdata->setup_resources) {
- 		err = chip->pdata->setup_resources();
- 		if (err) {
- 			err = -EINVAL;
--			goto fail3;
-+			goto fail0;
- 		}
- 	}
- 
-@@ -1267,7 +1266,7 @@ static int bh1770_probe(struct i2c_client *client,
- 				&bh1770_attribute_group);
- 	if (err < 0) {
- 		dev_err(&chip->client->dev, "Sysfs registration failed\n");
--		goto fail4;
-+		goto fail1;
- 	}
- 
- 	/*
-@@ -1283,22 +1282,18 @@ static int bh1770_probe(struct i2c_client *client,
- 	if (err) {
- 		dev_err(&client->dev, "could not get IRQ %d\n",
- 			client->irq);
--		goto fail5;
-+		goto fail2;
- 	}
- 	regulator_bulk_disable(ARRAY_SIZE(chip->regs), chip->regs);
- 	return err;
--fail5:
-+fail2:
- 	sysfs_remove_group(&chip->client->dev.kobj,
- 			&bh1770_attribute_group);
--fail4:
-+fail1:
- 	if (chip->pdata->release_resources)
- 		chip->pdata->release_resources();
--fail3:
-+fail0:
- 	regulator_bulk_disable(ARRAY_SIZE(chip->regs), chip->regs);
--fail2:
--	regulator_bulk_free(ARRAY_SIZE(chip->regs), chip->regs);
--fail1:
--	kfree(chip);
- 	return err;
- }
- 
-@@ -1322,8 +1317,6 @@ static int bh1770_remove(struct i2c_client *client)
- 	pm_runtime_disable(&client->dev);
- 	pm_runtime_set_suspended(&client->dev);
- 
--	regulator_bulk_free(ARRAY_SIZE(chip->regs), chip->regs);
--	kfree(chip);
- 	return 0;
- }
- 
+Hi Tejun,
+
+This patch has been on the MLs for a few months now.  It documents
+ST's AHCI driver which was accepted by you and now resides in
+Mainline.
+
+Kind regards,
+Lee
+
+ Documentation/devicetree/bindings/ata/ahci-st.txt | 31 +++++++++++++++++++++++
+ 1 file changed, 31 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/ata/ahci-st.txt
+
+diff --git a/Documentation/devicetree/bindings/ata/ahci-st.txt b/Documentation/devicetree/bindings/ata/ahci-st.txt
+new file mode 100644
+index 0000000..0574a77
+--- /dev/null
++++ b/Documentation/devicetree/bindings/ata/ahci-st.txt
+@@ -0,0 +1,31 @@
++STMicroelectronics STi SATA controller
++
++This binding describes a SATA device.
++
++Required properties:
++ - compatible	   : Must be "st,sti-ahci"
++ - reg		   : Physical base addresses and length of register sets
++ - interrupts	   : Interrupt associated with the SATA device
++ - interrupt-names :   Associated name must be; "hostc"
++ - resets	   : The power-down and soft-reset lines of SATA IP
++ - reset-names	   :   Associated names must be; "pwr-dwn" and "sw-rst"
++ - clocks	   : The phandle for the clock
++ - clock-names	   :   Associated name must be; "ahci_clk"
++ - phys		   : The phandle for the PHY device
++ - phy-names	   :   Associated name must be; "ahci_phy"
++
++Example:
++
++	sata0: sata@fe380000 {
++		compatible      = "st,sti-ahci";
++		reg             = <0xfe380000 0x1000>;
++		interrupts      = <GIC_SPI 157 IRQ_TYPE_NONE>;
++		interrupt-names = "hostc";
++		phys	        = <&miphy365x_phy MIPHY_PORT_0 MIPHY_TYPE_SATA>;
++		phy-names       = "ahci_phy";
++		resets	        = <&powerdown STIH416_SATA0_POWERDOWN>,
++				  <&softreset STIH416_SATA0_SOFTRESET>;
++		reset-names     = "pwr-dwn", "sw-rst";
++		clocks	        = <&clk_s_a0_ls CLK_ICN_REG>;
++		clock-names     = "ahci_clk";
++	};
 -- 
-1.9.1
+1.8.3.2
 
