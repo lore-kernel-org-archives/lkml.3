@@ -1,64 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753856AbaGUURX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 16:17:23 -0400
-Received: from g4t3427.houston.hp.com ([15.201.208.55]:8287 "EHLO
-	g4t3427.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753787AbaGUURV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 16:17:21 -0400
-Message-ID: <1405973838.4677.11.camel@j-VirtualBox>
-Subject: Re: [RFC PATCH 2/5] futex: add optimistic spinning to
- FUTEX_SPIN_LOCK
-From: Jason Low <jason.low2@hp.com>
-To: Waiman Long <Waiman.Long@hp.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Darren Hart <dvhart@linux.intel.com>,
-        Davidlohr Bueso <davidlohr@hp.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
-        linux-doc@vger.kernel.org, Scott J Norton <scott.norton@hp.com>
-Date: Mon, 21 Jul 2014 13:17:18 -0700
-In-Reply-To: <1405956271-34339-3-git-send-email-Waiman.Long@hp.com>
-References: <1405956271-34339-1-git-send-email-Waiman.Long@hp.com>
-	 <1405956271-34339-3-git-send-email-Waiman.Long@hp.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1753951AbaGUUVF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 16:21:05 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:45970 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750821AbaGUUVD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jul 2014 16:21:03 -0400
+X-Greylist: delayed 531 seconds by postgrey-1.27 at vger.kernel.org; Mon, 21 Jul 2014 16:21:03 EDT
+Date: Mon, 21 Jul 2014 15:12:09 -0500
+From: Dimitri Sivanich <sivanich@sgi.com>
+To: Andrey Utkin <andrey.krieger.utkin@gmail.com>
+Cc: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH 3/4] drivers/misc/sgi-gru/grukdump.c: drop negativity
+ check for unsgined req.gid
+Message-ID: <20140721201209.GA19927@sgi.com>
+References: <1405605307-13657-1-git-send-email-andrey.krieger.utkin@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1405605307-13657-1-git-send-email-andrey.krieger.utkin@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-07-21 at 11:24 -0400, Waiman Long wrote:
-> This patch adds code to do optimistic spinning for the FUTEX_SPIN_LOCK
-> primitive on the futex value when the lock owner is running. It is
-> the same optimistic spinning technique that is done in the mutex and
-> rw semaphore code to improve their performance especially on large
-> systems with large number of CPUs. When the lock owner is not running,
-> the spinning tasks will go to sleep.
+Acked-by: Dimitri Sivanich <sivanich@sgi.com>
 
-Perhaps we could introduce a "CONFIG_FUTEX_SPIN_ON_OWNER" that depends
-on SMP and ARCH_SUPPORTS_ATOMIC_RMW?
-
-> There is 2 major advantages of doing optimistic spinning here:
->  1) It eliminates the context switching latency and overhead (at
->     least a few us) associated with sleeping and wakeup.
->  2) It eliminates most of the need to call futex(2) with
->     FUTEX_SPIN_UNLOCK as spinning is done without the need to set
->     the FUTEX_WAITERS bit.
-
->  struct futex_q_head {
->  	struct list_head	      hnode;
->  	struct list_head	      waitq;
->  	union futex_key		      key;
-> +	struct optimistic_spin_queue *osq;
-
-And this would have to be updated to
-
-+	struct optimistic_spin_queue osq;
-
-given the recent changes to the osq lock.
-
-
+On Thu, Jul 17, 2014 at 04:55:07PM +0300, Andrey Utkin wrote:
+> [linux-3.16-rc5/drivers/misc/sgi-gru/grukdump.c:199]: (style) Checking if
+> unsigned variable 'gid' is less than zero.
+> 
+>     if (req.gid >= gru_max_gids || req.gid < 0)
+>         return -EINVAL;
+> 
+> Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=80461
+> Reported-by: David Binderman <dcb314@hotmail.com>
+> Signed-off-by: Andrey Utkin <andrey.krieger.utkin@gmail.com>
+> ---
+>  drivers/misc/sgi-gru/grukdump.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/misc/sgi-gru/grukdump.c b/drivers/misc/sgi-gru/grukdump.c
+> index a3700a5..e0e0e7e 100644
+> --- a/drivers/misc/sgi-gru/grukdump.c
+> +++ b/drivers/misc/sgi-gru/grukdump.c
+> @@ -196,7 +196,7 @@ int gru_dump_chiplet_request(unsigned long arg)
+>  		return -EFAULT;
+>  
+>  	/* Currently, only dump by gid is implemented */
+> -	if (req.gid >= gru_max_gids || req.gid < 0)
+> +	if (req.gid >= gru_max_gids)
+>  		return -EINVAL;
+>  
+>  	gru = GID_TO_GRU(req.gid);
+> -- 
+> 1.8.5.5
