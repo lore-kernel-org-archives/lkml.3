@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754761AbaGUKlZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 06:41:25 -0400
+	id S1754795AbaGUKl2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 06:41:28 -0400
 Received: from smtp02.citrix.com ([66.165.176.63]:1254 "EHLO SMTP02.CITRIX.COM"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754350AbaGUKlX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 06:41:23 -0400
+	id S1754350AbaGUKl0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jul 2014 06:41:26 -0400
 X-IronPort-AV: E=Sophos;i="5.01,699,1400025600"; 
-   d="scan'208";a="154619661"
+   d="scan'208";a="154619667"
 From: Zoltan Kiss <zoltan.kiss@citrix.com>
 To: Wei Liu <wei.liu2@citrix.com>, Ian Campbell <Ian.Campbell@citrix.com>
 CC: Zoltan Kiss <zoltan.kiss@citrix.com>, <netdev@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>, <xen-devel@lists.xenproject.org>
-Subject: [PATCH for stable 3.15 3/4 v2] xen-netback: Fix releasing header slot on error path
-Date: Mon, 21 Jul 2014 11:41:01 +0100
-Message-ID: <1405939262-7944-3-git-send-email-zoltan.kiss@citrix.com>
+Subject: [PATCH for stable 3.15 4/4 v2] xen-netback: Fix pointer incrementation to avoid incorrect logging
+Date: Mon, 21 Jul 2014 11:41:02 +0100
+Message-ID: <1405939262-7944-4-git-send-email-zoltan.kiss@citrix.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1405939262-7944-1-git-send-email-zoltan.kiss@citrix.com>
 References: <1405939262-7944-1-git-send-email-zoltan.kiss@citrix.com>
@@ -26,103 +26,30 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch makes this function aware that the first frag and the header might
-share the same ring slot. That could happen if the first slot is bigger than
-PKT_PROT_LEN. Due to this the error path might release that slot twice or never,
-depending on the error scenario.
-xenvif_idx_release is also removed from xenvif_idx_unmap, and called separately.
+Due to this pointer is increased prematurely, the error log contains rubbish.
 
 Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
 Reported-by: Armin Zentai <armin.zentai@ezit.hu>
 Cc: netdev@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org
 Cc: xen-devel@lists.xenproject.org
----
-v2: remove stray blank line
-
 diff --git a/drivers/net/xen-netback/netback.c b/drivers/net/xen-netback/netback.c
-index 75b7d1a..18b7b71 100644
+index 7a36ecf..36fb4ff 100644
 --- a/drivers/net/xen-netback/netback.c
 +++ b/drivers/net/xen-netback/netback.c
-@@ -1016,6 +1016,8 @@ static int xenvif_tx_check_gop(struct xenvif *vif,
- 	 */
- 	struct skb_shared_info *first_shinfo = NULL;
- 	int nr_frags = shinfo->nr_frags;
-+	const bool sharedslot = nr_frags &&
-+				frag_get_pending_idx(&shinfo->frags[0]) == pending_idx;
- 	int i, err;
+@@ -1020,7 +1020,6 @@ static int xenvif_tx_check_gop(struct xenvif *vif,
  
  	/* Check status of header. */
-@@ -1028,7 +1030,10 @@ static int xenvif_tx_check_gop(struct xenvif *vif,
- 				   (*gopp_copy)->status,
- 				   pending_idx,
+ 	err = (*gopp_copy)->status;
+-	(*gopp_copy)++;
+ 	if (unlikely(err)) {
+ 		if (net_ratelimit())
+ 			netdev_dbg(vif->dev,
+@@ -1030,6 +1029,7 @@ static int xenvif_tx_check_gop(struct xenvif *vif,
  				   (*gopp_copy)->source.u.ref);
--		xenvif_idx_release(vif, pending_idx, XEN_NETIF_RSP_ERROR);
-+		/* The first frag might still have this slot mapped */
-+		if (!sharedslot)
-+			xenvif_idx_release(vif, pending_idx,
-+					   XEN_NETIF_RSP_ERROR);
+ 		xenvif_idx_release(vif, first_pending_idx, XEN_NETIF_RSP_ERROR);
  	}
++	(*gopp_copy)++;
  
  check_frags:
-@@ -1045,8 +1050,19 @@ check_frags:
- 						pending_idx,
- 						gop_map->handle);
- 			/* Had a previous error? Invalidate this fragment. */
--			if (unlikely(err))
-+			if (unlikely(err)) {
- 				xenvif_idx_unmap(vif, pending_idx);
-+				/* If the mapping of the first frag was OK, but
-+				 * the header's copy failed, and they are
-+				 * sharing a slot, send an error
-+				 */
-+				if (i == 0 && sharedslot)
-+					xenvif_idx_release(vif, pending_idx,
-+							   XEN_NETIF_RSP_ERROR);
-+				else
-+					xenvif_idx_release(vif, pending_idx,
-+							   XEN_NETIF_RSP_OKAY);
-+			}
- 			continue;
- 		}
- 
-@@ -1063,10 +1079,20 @@ check_frags:
- 		/* Not the first error? Preceding frags already invalidated. */
- 		if (err)
- 			continue;
--		/* First error: invalidate preceding fragments. */
-+
-+		/* First error: if the header haven't shared a slot with the
-+		 * first frag, release it as well.
-+		 */
-+		if (!sharedslot)
-+			xenvif_idx_release(vif, XENVIF_TX_CB(skb)->pending_idx,
-+					   XEN_NETIF_RSP_OKAY);
-+
-+		/* Invalidate preceding fragments of this skb. */
- 		for (j = 0; j < i; j++) {
- 			pending_idx = frag_get_pending_idx(&shinfo->frags[j]);
- 			xenvif_idx_unmap(vif, pending_idx);
-+			xenvif_idx_release(vif, pending_idx,
-+					   XEN_NETIF_RSP_OKAY);
- 		}
- 
- 		/* And if we found the error while checking the frag_list, unmap
-@@ -1076,6 +1102,8 @@ check_frags:
- 			for (j = 0; j < first_shinfo->nr_frags; j++) {
- 				pending_idx = frag_get_pending_idx(&first_shinfo->frags[j]);
- 				xenvif_idx_unmap(vif, pending_idx);
-+				xenvif_idx_release(vif, pending_idx,
-+						   XEN_NETIF_RSP_OKAY);
- 			}
- 		}
- 
-@@ -1811,8 +1839,6 @@ void xenvif_idx_unmap(struct xenvif *vif, u16 pending_idx)
- 			   tx_unmap_op.status);
- 		BUG();
- 	}
--
--	xenvif_idx_release(vif, pending_idx, XEN_NETIF_RSP_OKAY);
- }
- 
- static inline int rx_work_todo(struct xenvif *vif)
+ 	for (i = 0; i < nr_frags; i++, gop_map++) {
