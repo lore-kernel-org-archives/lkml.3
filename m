@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753302AbaGUFnR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 01:43:17 -0400
+	id S1753361AbaGUFn7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 01:43:59 -0400
 Received: from mga09.intel.com ([134.134.136.24]:61456 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753209AbaGUFmq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 01:42:46 -0400
+	id S1753019AbaGUFmc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jul 2014 01:42:32 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,698,1400050800"; 
-   d="scan'208";a="576270897"
+   d="scan'208";a="576270803"
 From: Qiaowei Ren <qiaowei.ren@intel.com>
 To: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
         Ingo Molnar <mingo@redhat.com>, Dave Hansen <dave.hansen@intel.com>
 Cc: x86@kernel.org, linux-kernel@vger.kernel.org, linux-mm@kvack.org,
         Qiaowei Ren <qiaowei.ren@intel.com>
-Subject: [PATCH v7 09/10] x86, mpx: cleanup unused bound tables
-Date: Mon, 21 Jul 2014 13:38:43 +0800
-Message-Id: <1405921124-4230-10-git-send-email-qiaowei.ren@intel.com>
+Subject: [PATCH v7 04/10] x86, mpx: hook #BR exception handler to allocate bound tables
+Date: Mon, 21 Jul 2014 13:38:38 +0800
+Message-Id: <1405921124-4230-5-git-send-email-qiaowei.ren@intel.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1405921124-4230-1-git-send-email-qiaowei.ren@intel.com>
 References: <1405921124-4230-1-git-send-email-qiaowei.ren@intel.com>
@@ -24,306 +24,237 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since the kernel allocated those tables on-demand without userspace
-knowledge, it is also responsible for freeing them when the associated
-mappings go away.
+This patch handles a #BR exception for non-existent tables by
+carving the space out of the normal processes address space
+(essentially calling mmap() from inside the kernel) and then
+pointing the bounds-directory over to it.
 
-Here, the solution for this issue is to hook do_munmap() to check
-whether one process is MPX enabled. If yes, those bounds tables covered
-in the virtual address region which is being unmapped will be freed also.
+The tables need to be accessed and controlled by userspace
+because the compiler generates instructions for MPX-enabled
+code which frequently store and retrieve entries from the bounds
+tables. Any direct kernel involvement (like a syscall) to access
+the tables would destroy performance since these are so frequent.
+
+The tables are carved out of userspace because we have no better
+spot to put them. For each pointer which is being tracked by MPX,
+the bounds tables contain 4 longs worth of data, and the tables
+are indexed virtually. If we were to preallocate the tables, we
+would theoretically need to allocate 4x the virtual space that
+we have available for userspace somewhere else. We don't have
+that room in the kernel address space.
 
 Signed-off-by: Qiaowei Ren <qiaowei.ren@intel.com>
 ---
- arch/x86/include/asm/mmu_context.h |   16 +++
- arch/x86/include/asm/mpx.h         |    9 ++
- arch/x86/mm/mpx.c                  |  181 ++++++++++++++++++++++++++++++++++++
- include/asm-generic/mmu_context.h  |    6 +
- mm/mmap.c                          |    2 +
- 5 files changed, 214 insertions(+), 0 deletions(-)
+ arch/x86/include/asm/mpx.h |   20 ++++++++++++++
+ arch/x86/kernel/Makefile   |    1 +
+ arch/x86/kernel/mpx.c      |   60 ++++++++++++++++++++++++++++++++++++++++++++
+ arch/x86/kernel/traps.c    |   55 +++++++++++++++++++++++++++++++++++++++-
+ 4 files changed, 135 insertions(+), 1 deletions(-)
+ create mode 100644 arch/x86/kernel/mpx.c
 
-diff --git a/arch/x86/include/asm/mmu_context.h b/arch/x86/include/asm/mmu_context.h
-index be12c53..af70d4f 100644
---- a/arch/x86/include/asm/mmu_context.h
-+++ b/arch/x86/include/asm/mmu_context.h
-@@ -6,6 +6,7 @@
- #include <asm/pgalloc.h>
- #include <asm/tlbflush.h>
- #include <asm/paravirt.h>
-+#include <asm/mpx.h>
- #ifndef CONFIG_PARAVIRT
- #include <asm-generic/mm_hooks.h>
- 
-@@ -96,4 +97,19 @@ do {						\
- } while (0)
- #endif
- 
-+static inline void arch_unmap(struct mm_struct *mm,
-+		struct vm_area_struct *vma,
-+		unsigned long start, unsigned long end)
-+{
-+#ifdef CONFIG_X86_INTEL_MPX
-+	/*
-+	 * Check whether this vma comes from MPX-enabled application.
-+	 * If so, release this vma related bound tables.
-+	 */
-+	if (mm->bd_addr && !(vma->vm_flags & VM_MPX))
-+		mpx_unmap(mm, start, end);
-+
-+#endif
-+}
-+
- #endif /* _ASM_X86_MMU_CONTEXT_H */
 diff --git a/arch/x86/include/asm/mpx.h b/arch/x86/include/asm/mpx.h
-index 6cb0853..e848a74 100644
+index 5725ac4..b7598ac 100644
 --- a/arch/x86/include/asm/mpx.h
 +++ b/arch/x86/include/asm/mpx.h
-@@ -42,6 +42,13 @@
+@@ -18,6 +18,8 @@
+ #define MPX_BT_ENTRY_SHIFT	5
+ #define MPX_IGN_BITS		3
+ 
++#define MPX_BD_ENTRY_TAIL	3
++
+ #else
+ 
+ #define MPX_BD_ENTRY_OFFSET	20
+@@ -26,13 +28,31 @@
+ #define MPX_BT_ENTRY_SHIFT	4
+ #define MPX_IGN_BITS		2
+ 
++#define MPX_BD_ENTRY_TAIL	2
++
+ #endif
+ 
++#define MPX_BNDSTA_TAIL		2
++#define MPX_BNDCFG_TAIL		12
++#define MPX_BNDSTA_ADDR_MASK	(~((1UL<<MPX_BNDSTA_TAIL)-1))
++#define MPX_BNDCFG_ADDR_MASK	(~((1UL<<MPX_BNDCFG_TAIL)-1))
++#define MPX_BT_ADDR_MASK	(~((1UL<<MPX_BD_ENTRY_TAIL)-1))
++
  #define MPX_BD_SIZE_BYTES (1UL<<(MPX_BD_ENTRY_OFFSET+MPX_BD_ENTRY_SHIFT))
  #define MPX_BT_SIZE_BYTES (1UL<<(MPX_BT_ENTRY_OFFSET+MPX_BT_ENTRY_SHIFT))
  
-+#define MPX_BD_ENTRY_MASK	((1<<MPX_BD_ENTRY_OFFSET)-1)
-+#define MPX_BT_ENTRY_MASK	((1<<MPX_BT_ENTRY_OFFSET)-1)
-+#define MPX_GET_BD_ENTRY_OFFSET(addr)	((((addr)>>(MPX_BT_ENTRY_OFFSET+ \
-+		MPX_IGN_BITS)) & MPX_BD_ENTRY_MASK) << MPX_BD_ENTRY_SHIFT)
-+#define MPX_GET_BT_ENTRY_OFFSET(addr)	((((addr)>>MPX_IGN_BITS) & \
-+		MPX_BT_ENTRY_MASK) << MPX_BT_ENTRY_SHIFT)
-+
  #define MPX_BNDSTA_ERROR_CODE	0x3
- #define MPX_BNDCFG_ENABLE_FLAG	0x1
- #define MPX_BD_ENTRY_VALID_FLAG	0x1
-@@ -63,6 +70,8 @@ struct mpx_insn {
- #define MAX_MPX_INSN_SIZE	15
++#define MPX_BD_ENTRY_VALID_FLAG	0x1
  
  unsigned long mpx_mmap(unsigned long len);
-+void mpx_unmap(struct mm_struct *mm,
-+		unsigned long start, unsigned long end);
  
- #ifdef CONFIG_X86_INTEL_MPX
- int do_mpx_bt_fault(struct xsave_struct *xsave_buf);
-diff --git a/arch/x86/mm/mpx.c b/arch/x86/mm/mpx.c
-index e1b28e6..d29ec9c 100644
---- a/arch/x86/mm/mpx.c
-+++ b/arch/x86/mm/mpx.c
-@@ -2,6 +2,7 @@
- #include <linux/syscalls.h>
- #include <asm/mpx.h>
- #include <asm/mman.h>
-+#include <asm/mmu_context.h>
- #include <linux/sched/sysctl.h>
- 
- static const char *mpx_mapping_name(struct vm_area_struct *vma)
-@@ -77,3 +78,183 @@ out:
- 	up_write(&mm->mmap_sem);
- 	return ret;
- }
-+
-+/*
-+ * Get the base of bounds tables pointed by specific bounds
-+ * directory entry.
-+ */
-+static int get_bt_addr(long __user *bd_entry, unsigned long *bt_addr,
-+		unsigned int *valid)
++#ifdef CONFIG_X86_INTEL_MPX
++int do_mpx_bt_fault(struct xsave_struct *xsave_buf);
++#else
++static inline int do_mpx_bt_fault(struct xsave_struct *xsave_buf)
 +{
-+	if (get_user(*bt_addr, bd_entry))
-+		return -EFAULT;
++	return -EINVAL;
++}
++#endif /* CONFIG_X86_INTEL_MPX */
 +
-+	*valid = *bt_addr & MPX_BD_ENTRY_VALID_FLAG;
-+	*bt_addr &= MPX_BT_ADDR_MASK;
+ #endif /* _ASM_X86_MPX_H */
+diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
+index 047f9ff..5e81e16 100644
+--- a/arch/x86/kernel/Makefile
++++ b/arch/x86/kernel/Makefile
+@@ -43,6 +43,7 @@ obj-$(CONFIG_PREEMPT)	+= preempt.o
+ 
+ obj-y				+= process.o
+ obj-y				+= i387.o xsave.o
++obj-$(CONFIG_X86_INTEL_MPX)	+= mpx.o
+ obj-y				+= ptrace.o
+ obj-$(CONFIG_X86_32)		+= tls.o
+ obj-$(CONFIG_IA32_EMULATION)	+= tls.o
+diff --git a/arch/x86/kernel/mpx.c b/arch/x86/kernel/mpx.c
+new file mode 100644
+index 0000000..f02dcea
+--- /dev/null
++++ b/arch/x86/kernel/mpx.c
+@@ -0,0 +1,60 @@
++#include <linux/kernel.h>
++#include <linux/syscalls.h>
++#include <asm/mpx.h>
++
++static int allocate_bt(long __user *bd_entry)
++{
++	unsigned long bt_addr, old_val = 0;
++	int ret = 0;
++
++	bt_addr = mpx_mmap(MPX_BT_SIZE_BYTES);
++	if (IS_ERR((void *)bt_addr))
++		return bt_addr;
++	bt_addr = (bt_addr & MPX_BT_ADDR_MASK) | MPX_BD_ENTRY_VALID_FLAG;
++
++	ret = user_atomic_cmpxchg_inatomic(&old_val, bd_entry, 0, bt_addr);
++	if (ret)
++		goto out;
 +
 +	/*
-+	 * If this bounds directory entry is nonzero, and meanwhile
-+	 * the valid bit is zero, one SIGSEGV will be produced due to
-+	 * this unexpected situation.
++	 * there is a existing bounds table pointed at this bounds
++	 * directory entry, and so we need to free the bounds table
++	 * allocated just now.
 +	 */
-+	if (!(*valid) && *bt_addr)
-+		force_sig(SIGSEGV, current);
++	if (old_val)
++		goto out;
 +
++	pr_debug("Allocate bounds table %lx at entry %p\n",
++			bt_addr, bd_entry);
 +	return 0;
++
++out:
++	vm_munmap(bt_addr & MPX_BT_ADDR_MASK, MPX_BT_SIZE_BYTES);
++	return ret;
 +}
 +
 +/*
-+ * Free the backing physical pages of bounds table 'bt_addr'.
-+ * Assume start...end is within that bounds table.
-+ */
-+static void zap_bt_entries(struct mm_struct *mm, unsigned long bt_addr,
-+		unsigned long start, unsigned long end)
-+{
-+	struct vm_area_struct *vma;
-+
-+	/* Find the vma which overlaps this bounds table */
-+	vma = find_vma(mm, bt_addr);
-+	if (!vma || vma->vm_start > bt_addr ||
-+			vma->vm_end < bt_addr+MPX_BT_SIZE_BYTES)
-+		return;
-+
-+	zap_page_range(vma, start, end, NULL);
-+}
-+
-+static void unmap_single_bt(struct mm_struct *mm, long __user *bd_entry,
-+		unsigned long bt_addr)
-+{
-+	if (user_atomic_cmpxchg_inatomic(&bt_addr, bd_entry,
-+			bt_addr | MPX_BD_ENTRY_VALID_FLAG, 0))
-+		return;
-+
-+	/*
-+	 * to avoid recursion, do_munmap() will check whether it comes
-+	 * from one bounds table through VM_MPX flag.
-+	 */
-+	do_munmap(mm, bt_addr & MPX_BT_ADDR_MASK, MPX_BT_SIZE_BYTES);
-+}
-+
-+/*
-+ * If the bounds table pointed by bounds directory 'bd_entry' is
-+ * not shared, unmap this whole bounds table. Otherwise, only free
-+ * those backing physical pages of bounds table entries covered
-+ * in this virtual address region start...end.
-+ */
-+static void unmap_shared_bt(struct mm_struct *mm, long __user *bd_entry,
-+		unsigned long start, unsigned long end,
-+		bool prev_shared, bool next_shared)
-+{
-+	unsigned long bt_addr;
-+	unsigned int bde_valid = 0;
-+
-+	if (get_bt_addr(bd_entry, &bt_addr, &bde_valid) || !bde_valid)
-+		return;
-+
-+	if (prev_shared && next_shared)
-+		zap_bt_entries(mm, bt_addr,
-+			bt_addr+MPX_GET_BT_ENTRY_OFFSET(start),
-+			bt_addr+MPX_GET_BT_ENTRY_OFFSET(end-1));
-+	else if (prev_shared)
-+		zap_bt_entries(mm, bt_addr,
-+			bt_addr+MPX_GET_BT_ENTRY_OFFSET(start),
-+			bt_addr+MPX_BT_SIZE_BYTES);
-+	else if (next_shared)
-+		zap_bt_entries(mm, bt_addr, bt_addr,
-+			bt_addr+MPX_GET_BT_ENTRY_OFFSET(end-1));
-+	else
-+		unmap_single_bt(mm, bd_entry, bt_addr);
-+}
-+
-+/*
-+ * A virtual address region being munmap()ed might share bounds table
-+ * with adjacent VMAs. We only need to free the backing physical
-+ * memory of these shared bounds tables entries covered in this virtual
-+ * address region.
++ * When a BNDSTX instruction attempts to save bounds to a BD entry
++ * with the lack of the valid bit being set, a #BR is generated.
++ * This is an indication that no BT exists for this entry. In this
++ * case the fault handler will allocate a new BT.
 + *
-+ * the VMAs covering the virtual address region start...end have already
-+ * been split if necessary and removed from the VMA list.
++ * With 32-bit mode, the size of BD is 4MB, and the size of each
++ * bound table is 16KB. With 64-bit mode, the size of BD is 2GB,
++ * and the size of each bound table is 4MB.
 + */
-+static void unmap_side_bts(struct mm_struct *mm, unsigned long start,
-+		unsigned long end)
++int do_mpx_bt_fault(struct xsave_struct *xsave_buf)
 +{
-+	long __user *bde_start, *bde_end;
-+	struct vm_area_struct *prev, *next;
-+	bool prev_shared = false, next_shared = false;
++	unsigned long status;
++	unsigned long bd_entry, bd_base;
 +
-+	bde_start = mm->bd_addr + MPX_GET_BD_ENTRY_OFFSET(start);
-+	bde_end = mm->bd_addr + MPX_GET_BD_ENTRY_OFFSET(end-1);
++	bd_base = xsave_buf->bndcsr.cfg_reg_u & MPX_BNDCFG_ADDR_MASK;
++	status = xsave_buf->bndcsr.status_reg;
 +
-+	/*
-+	 * Check whether bde_start and bde_end are shared with adjacent
-+	 * VMAs. Because the VMAs covering the virtual address region
-+	 * start...end have already been removed from the VMA list, if
-+	 * next is not NULL it will satisfy start < end <= next->vm_start.
-+	 * And if prev is not NULL, prev->vm_end <= start < end.
-+	 */
-+	next = find_vma_prev(mm, start, &prev);
-+	if (prev && MPX_GET_BD_ENTRY_OFFSET(prev->vm_end-1) == (long)bde_start)
-+		prev_shared = true;
-+	if (next && MPX_GET_BD_ENTRY_OFFSET(next->vm_start) == (long)bde_end)
-+		next_shared = true;
++	bd_entry = status & MPX_BNDSTA_ADDR_MASK;
++	if ((bd_entry < bd_base) ||
++		(bd_entry >= bd_base + MPX_BD_SIZE_BYTES))
++		return -EINVAL;
 +
-+	/*
-+	 * This virtual address region being munmap()ed is only
-+	 * covered by one bounds table.
-+	 *
-+	 * In this case, if this table is also shared with adjacent
-+	 * VMAs, only part of the backing physical memory of the bounds
-+	 * table need be freeed. Otherwise the whole bounds table need
-+	 * be unmapped.
-+	 */
-+	if (bde_start == bde_end) {
-+		unmap_shared_bt(mm, bde_start, start, end,
-+				prev_shared, next_shared);
-+		return;
++	return allocate_bt((long __user *)bd_entry);
++}
+diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
+index 0d0e922..396a88b 100644
+--- a/arch/x86/kernel/traps.c
++++ b/arch/x86/kernel/traps.c
+@@ -60,6 +60,7 @@
+ #include <asm/fixmap.h>
+ #include <asm/mach_traps.h>
+ #include <asm/alternative.h>
++#include <asm/mpx.h>
+ 
+ #ifdef CONFIG_X86_64
+ #include <asm/x86_init.h>
+@@ -228,7 +229,6 @@ dotraplinkage void do_##name(struct pt_regs *regs, long error_code)	\
+ 
+ DO_ERROR(X86_TRAP_DE,     SIGFPE,  "divide error",		divide_error)
+ DO_ERROR(X86_TRAP_OF,     SIGSEGV, "overflow",			overflow)
+-DO_ERROR(X86_TRAP_BR,     SIGSEGV, "bounds",			bounds)
+ DO_ERROR(X86_TRAP_UD,     SIGILL,  "invalid opcode",		invalid_op)
+ DO_ERROR(X86_TRAP_OLD_MF, SIGFPE,  "coprocessor segment overrun",coprocessor_segment_overrun)
+ DO_ERROR(X86_TRAP_TS,     SIGSEGV, "invalid TSS",		invalid_TSS)
+@@ -278,6 +278,59 @@ dotraplinkage void do_double_fault(struct pt_regs *regs, long error_code)
+ }
+ #endif
+ 
++dotraplinkage void do_bounds(struct pt_regs *regs, long error_code)
++{
++	enum ctx_state prev_state;
++	unsigned long status;
++	struct xsave_struct *xsave_buf;
++	struct task_struct *tsk = current;
++
++	prev_state = exception_enter();
++	if (notify_die(DIE_TRAP, "bounds", regs, error_code,
++			X86_TRAP_BR, SIGSEGV) == NOTIFY_STOP)
++		goto exit;
++	conditional_sti(regs);
++
++	if (!user_mode(regs))
++		die("bounds", regs, error_code);
++
++	if (!cpu_has_mpx) {
++		/* The exception is not from Intel MPX */
++		do_trap(X86_TRAP_BR, SIGSEGV, "bounds", regs, error_code, NULL);
++		goto exit;
 +	}
 +
-+	/*
-+	 * If more than one bounds tables are covered in this virtual
-+	 * address region being munmap()ed, we need to separately check
-+	 * whether bde_start and bde_end are shared with adjacent VMAs.
-+	 */
-+	unmap_shared_bt(mm, bde_start, start, end, prev_shared, false);
-+	unmap_shared_bt(mm, bde_end, start, end, false, next_shared);
-+}
-+
-+/*
-+ * Free unused bounds tables covered in a virtual address region being
-+ * munmap()ed. Assume end > start.
-+ *
-+ * This function will be called by do_munmap(), and the VMAs covering
-+ * the virtual address region start...end have already been split if
-+ * necessary and remvoed from the VMA list.
-+ */
-+void mpx_unmap(struct mm_struct *mm,
-+		unsigned long start, unsigned long end)
-+{
-+	long __user *bd_entry, *bde_start, *bde_end;
-+	unsigned long bt_addr;
-+	unsigned int bde_valid;
++	fpu_xsave(&tsk->thread.fpu);
++	xsave_buf = &(tsk->thread.fpu.state->xsave);
++	status = xsave_buf->bndcsr.status_reg;
 +
 +	/*
-+	 * unmap bounds tables pointed out by start/end bounds directory
-+	 * entries, or only free part of their backing physical memroy
-+	 * if they are shared with adjacent VMAs.
++	 * The error code field of the BNDSTATUS register communicates status
++	 * information of a bound range exception #BR or operation involving
++	 * bound directory.
 +	 */
-+	unmap_side_bts(mm, start, end);
++	switch (status & MPX_BNDSTA_ERROR_CODE) {
++	case 2:
++		/*
++		 * Bound directory has invalid entry.
++		 */
++		if (do_mpx_bt_fault(xsave_buf))
++			force_sig(SIGSEGV, tsk);
++		break;
 +
-+	/*
-+	 * unmap those bounds table which are entirely covered in this
-+	 * virtual address region.
-+	 */
-+	bde_start = mm->bd_addr + MPX_GET_BD_ENTRY_OFFSET(start);
-+	bde_end = mm->bd_addr + MPX_GET_BD_ENTRY_OFFSET(end-1);
-+	for (bd_entry = bde_start + 1; bd_entry < bde_end; bd_entry++) {
-+		if (get_bt_addr(bd_entry, &bt_addr, &bde_valid))
-+			return;
-+		if (!bde_valid)
-+			continue;
-+		unmap_single_bt(mm, bd_entry, bt_addr);
++	case 1: /* Bound violation. */
++	case 0: /* No exception caused by Intel MPX operations. */
++		do_trap(X86_TRAP_BR, SIGSEGV, "bounds", regs, error_code, NULL);
++		break;
++
++	default:
++		die("bounds", regs, error_code);
 +	}
++
++exit:
++	exception_exit(prev_state);
 +}
-diff --git a/include/asm-generic/mmu_context.h b/include/asm-generic/mmu_context.h
-index a7eec91..ac558ca 100644
---- a/include/asm-generic/mmu_context.h
-+++ b/include/asm-generic/mmu_context.h
-@@ -42,4 +42,10 @@ static inline void activate_mm(struct mm_struct *prev_mm,
++
+ dotraplinkage void
+ do_general_protection(struct pt_regs *regs, long error_code)
  {
- }
- 
-+static inline void arch_unmap(struct mm_struct *mm,
-+			struct vm_area_struct *vma,
-+			unsigned long start, unsigned long end)
-+{
-+}
-+
- #endif /* __ASM_GENERIC_MMU_CONTEXT_H */
-diff --git a/mm/mmap.c b/mm/mmap.c
-index 129b847..8550d84 100644
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -2560,6 +2560,8 @@ int do_munmap(struct mm_struct *mm, unsigned long start, size_t len)
- 	/* Fix up all other VM information */
- 	remove_vma_list(mm, vma);
- 
-+	arch_unmap(mm, vma, start, end);
-+
- 	return 0;
- }
- 
 -- 
 1.7.1
 
