@@ -1,65 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932364AbaGUNNb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 09:13:31 -0400
-Received: from smtprelay0243.hostedemail.com ([216.40.44.243]:35712 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932104AbaGUNNa (ORCPT
+	id S932368AbaGUNOV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 09:14:21 -0400
+Received: from mail-we0-f172.google.com ([74.125.82.172]:38447 "EHLO
+	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754820AbaGUNOT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 09:13:30 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:800:960:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2198:2199:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3653:3865:3872:4321:5007:7652:7903:10004:10400:10848:11658:11914:12043:12296:12517:12519:12555:13069:13161:13221:13229:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: smoke10_3b6e46d25d62b
-X-Filterd-Recvd-Size: 2135
-Message-ID: <1405948406.21586.10.camel@joe-AO725>
-Subject: [PATCH] checkpatch: Allow case labels with ranges
-From: Joe Perches <joe@perches.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Andy Whitcroft <apw@canonical.com>, Lee Jones <lee.jones@linaro.org>,
-        linux-kernel@vger.kernel.org
-Date: Mon, 21 Jul 2014 06:13:26 -0700
-In-Reply-To: <20140721113948.GX30888@lee--X1>
-References: <20140721113948.GX30888@lee--X1>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 21 Jul 2014 09:14:19 -0400
+Message-ID: <53CD1228.4050401@linaro.org>
+Date: Mon, 21 Jul 2014 15:14:16 +0200
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Matthias Brugger <matthias.bgg@gmail.com>
+CC: =?UTF-8?B?SGVpa28gU3TDvGJuZXI=?= <heiko.stuebner@bq.com>,
+        linux-kernel@vger.kernel.org, robh+dt@kernel.org, pawel.moll@arm.com,
+        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
+        galak@codeaurora.org, rdunlap@infradead.org, linux@arm.linux.org.uk,
+        tglx@linutronix.de, grant.likely@linaro.org, thierry.reding@gmail.com,
+        florian.vaussard@epfl.ch, jic23@kernel.org, jason@lakedaemon.net,
+        andrew@lunn.ch, silvio.fricke@gmail.com, olof@lixom.net,
+        sebastian.hesselbarth@gmail.com, sboyd@codeaurora.org,
+        gregory.clement@free-electrons.com, arnd@arndb.de,
+        robherring2@gmail.com, marc.zyngier@arm.com,
+        maxime.ripard@free-electrons.com, soren.brinkmann@xilinx.com,
+        shawn.guo@freescale.com, anders.berg@lsi.com, linus.walleij@linaro.org,
+        ak@linux.intel.com, hpa@linux.intel.com, akpm@linux-foundation.org,
+        u.kleine-koenig@pengutronix.de, gregkh@linuxfoundation.org,
+        fabf@skynet.be, rostedt@goodmis.org, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v10 5/7] arm: add basic support for Mediatek MT6589 boards
+References: <1404745988-32558-1-git-send-email-matthias.bgg@gmail.com> <1404745988-32558-6-git-send-email-matthias.bgg@gmail.com> <53C8ED0B.5080802@linaro.org> <127793649.dTvqVjg5LM@diego> <53C96DC7.10203@linaro.org>
+In-Reply-To: <53C96DC7.10203@linaro.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The MISSING_BREAK / fallthrough test does not support
-gcc's extension for case labels with ranges.
+On 07/18/2014 08:56 PM, Daniel Lezcano wrote:
+> On 07/18/2014 12:47 PM, Heiko Stübner wrote:
+>> Hi Daniel,
+>>
+>> Am Freitag, 18. Juli 2014, 11:46:51 schrieb Daniel Lezcano:
+>>> On 07/07/2014 05:13 PM, Matthias Brugger wrote:
+>>>> This adds a generic devicetree board file and a dtsi for boards
+>>>> based on MT6589 SoCs from Mediatek.
+>>>>
+>>>> Apart from the generic parts (gic, clocks) the only component
+>>>> currently supported are the timers.
+>>>>
+>>>> Signed-off-by: Matthias Brugger <matthias.bgg@gmail.com>
+>>>> --
+>>>
+>>> I will take this patchset through my tree but this patch touches an area
+>>> I am not handling.
+>>>
+>>> Olof, Arnd, do you mind to ack this patch ?
+>>
+>> wouldn't it be easier to just take patches 1,2,3,4 through your tree
+>> and let
+>> patches 5,6,7 go through arm-soc?
+>>
+>> There is no compile-time dependency between the two parts, so they
+>> will come
+>> together nicely in linux-next and during the merge-window.
+>>
+>>
+>> Also in [0] Olof wrote:
+>>
+>> ----------
+>> Traditionally we usually take the DT changes through arm-soc, but as
+>> long as we share the branch we might be ok. We tend to stick them in
+>> different branches in our tree though, so rockchip will be a little
+>> mis-sorted this release. Not a big deal, and we can deal with it.
+>> -----------
+>>
+>> So I'd assume splitting the patchset this way might be a nice solution?
+>>
+>>
+>> Heiko
+>>
+>>
+>> [0] http://www.spinics.net/lists/arm-kernel/msg347053.html
+>
+> Indeed.
+>
+> Olof, Arnd ? Will you take the patches 5-6-7 ?
 
-Add it.
 
-Signed-off-by: Joe Perches <joe@perches.com>
-Reported-by: Lee Jones <lee.jones@linaro.org>
----
- scripts/checkpatch.pl | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+patches 1-4 applied to my tree.
 
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index dc72a9b..2258497 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -4767,7 +4767,7 @@ sub process {
- 		}
- 
- # check for case / default statements not preceeded by break/fallthrough/switch
--		if ($line =~ /^.\s*(?:case\s+(?:$Ident|$Constant)\s*|default):/) {
-+		if ($line =~ /^.\s*(?:case\s+(?:$Ident|$Constant)\s*(?:\.\.\.\s*(?:$Ident|$Constant)\s*)?|default):/) {
- 			my $has_break = 0;
- 			my $has_statement = 0;
- 			my $count = 0;
-@@ -4778,7 +4778,7 @@ sub process {
- 				my $fline = $lines[$prevline - 1];
- 				last if ($fline =~ /^\@\@/);
- 				next if ($fline =~ /^\-/);
--				next if ($fline =~ /^.(?:\s*(?:case\s+(?:$Ident|$Constant)[\s$;]*|default):[\s$;]*)*$/);
-+				next if ($fline =~ /^.(?:\s*(?:case\s+(?:$Ident|$Constant(?:\s*\.\.\.\s*(?:$Ident|$Constant))?)[\s$;]*|default):[\s$;]*)*$/);
- 				$has_break = 1 if ($rline =~ /fall[\s_-]*(through|thru)/i);
- 				next if ($fline =~ /^.[\s$;]*$/);
- 				$has_statement = 1;
+Thanks
 
+   -- Daniel
+
+-- 
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
 
