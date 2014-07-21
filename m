@@ -1,66 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755187AbaGUNST (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 09:18:19 -0400
-Received: from tango.0pointer.de ([85.214.72.216]:46896 "EHLO
-	tango.0pointer.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754690AbaGUNSS (ORCPT
+	id S1755214AbaGUNTN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 09:19:13 -0400
+Received: from mail-bn1blp0189.outbound.protection.outlook.com ([207.46.163.189]:58308
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754607AbaGUNTM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 09:18:18 -0400
-X-Greylist: delayed 380 seconds by postgrey-1.27 at vger.kernel.org; Mon, 21 Jul 2014 09:18:17 EDT
-Date: Mon, 21 Jul 2014 15:11:54 +0200
-From: Lennart Poettering <mzxreary@0pointer.de>
-To: "Yue Zhang (OSTC DEV)" <yuezha@microsoft.com>
-Cc: Tom Gundersen <teg@jklm.no>, netdev <netdev@vger.kernel.org>,
-        "driverdev-devel@linuxdriverproject.org" 
-	<driverdev-devel@linuxdriverproject.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        "olaf@aepfle.de" <olaf@aepfle.de>,
+	Mon, 21 Jul 2014 09:19:12 -0400
+From: KY Srinivasan <kys@microsoft.com>
+To: Christoph Hellwig <hch@infradead.org>
+CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "ohering@suse.com" <ohering@suse.com>,
+        "apw@canonical.com" <apw@canonical.com>,
         "jasowang@redhat.com" <jasowang@redhat.com>,
-        David Miller <davem@davemloft.net>,
-        Haiyang Zhang <haiyangz@microsoft.com>,
-        KY Srinivasan <kys@microsoft.com>, Thomas Shao <huishao@microsoft.com>,
-        Dexuan Cui <decui@microsoft.com>
-Subject: Re: [PATCH] Hyperv: Trigger DHCP renew after host hibernation
-Message-ID: <20140721131154.GA23385@tango.0pointer.de>
-References: <1405680903-28176-1-git-send-email-yuezha@microsoft.com>
- <CAG-2HqXFBUmpTAE8h13-DmP6Fq42viHzmuH9OfNoLgjW8XcQ3Q@mail.gmail.com>
- <DC7803B42427924284F2D5252E076A3B4476A6D1@SINEX14MBXC416.southpacific.corp.microsoft.com>
+        "jbottomley@parallels.com" <jbottomley@parallels.com>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
+Subject: RE: [PATCH 1/1] Drivers: scsi: storvsc: Add blist flags
+Thread-Topic: [PATCH 1/1] Drivers: scsi: storvsc: Add blist flags
+Thread-Index: AQHPpIwNoeZ0nX8rfkqMxEgYWPOEzZuqZEwAgAAeRHA=
+Date: Mon, 21 Jul 2014 13:19:08 +0000
+Message-ID: <a496b63900874bd396e85a24505e383b@BY2PR0301MB0711.namprd03.prod.outlook.com>
+References: <1405913622-14266-1-git-send-email-kys@microsoft.com>
+ <20140721112704.GA15455@infradead.org>
+In-Reply-To: <20140721112704.GA15455@infradead.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [50.135.110.52]
+x-microsoft-antispam: BCL:0;PCL:0;RULEID:
+x-forefront-prvs: 0279B3DD0D
+x-forefront-antispam-report: SFV:NSPM;SFS:(6009001)(377454003)(13464003)(189002)(199002)(51704005)(99286002)(74662001)(80022001)(105586002)(81342001)(66066001)(95666004)(77982001)(74502001)(79102001)(107046002)(101416001)(4396001)(33646002)(99396002)(110136001)(76482001)(106116001)(20776003)(64706001)(21056001)(81542001)(92566001)(83072002)(85852003)(76576001)(46102001)(77096002)(2656002)(87936001)(76176999)(74316001)(54356999)(50986999)(106356001)(19580395003)(83322001)(85306003)(19580405001)(86362001)(31966008)(86612001)(108616002)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR0301MB0711;H:BY2PR0301MB0711.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <DC7803B42427924284F2D5252E076A3B4476A6D1@SINEX14MBXC416.southpacific.corp.microsoft.com>
-Organization: Red Hat, Inc.
-X-Campaign-1: ()  ASCII Ribbon Campaign
-X-Campaign-2: /  Against HTML Email & vCards - Against Microsoft Attachments
-User-Agent: Leviathan/19.8.0 [zh] (Cray 3; I; Solaris 4.711; Console)
+X-OriginatorOrg: microsoft.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 21.07.14 10:21, Yue Zhang (OSTC DEV) (yuezha@microsoft.com) wrote:
 
-> Some network monitoring daemon, like ifplugd has a deferring mechanism.
-> When it detects carriers is offline, it doesn't trigger DHCP renew immediately. 
-> Instead it will wait for another 5 seconds to check whether carrier is back to 
-> online status. In that case, it will avoid renew DHCP lease.
 
-ifplugd doesn't renew DHCP leases anyway, one of the scripts it invokes
-does.
+> -----Original Message-----
+> From: Christoph Hellwig [mailto:hch@infradead.org]
+> Sent: Monday, July 21, 2014 4:27 AM
+> To: KY Srinivasan
+> Cc: gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
+> devel@linuxdriverproject.org; ohering@suse.com; apw@canonical.com;
+> jasowang@redhat.com; jbottomley@parallels.com; hch@infradead.org;
+> linux-scsi@vger.kernel.org
+> Subject: Re: [PATCH 1/1] Drivers: scsi: storvsc: Add blist flags
+> 
+> On Sun, Jul 20, 2014 at 08:33:42PM -0700, K. Y. Srinivasan wrote:
+> > Add blist flags to permit the reading of the VPD pages even when the
+> > target may claim SPC-2 compliance. MSFT targets currently claim SPC-2
+> > compliance while they implement post SPC-2 features.
+> > With this patch we can correctly handle WRITE_SAME_16 issues.
+> >
+> > Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+> 
+> This looks way to complicated - should be a single line added to your
+> slave_configure function, maybe plus a comment stating what you do in your
+> commit message:
+> 
+> 
+> 	sdev->sdev_bflags |= BLIST_TRY_VPD_PAGES;
 
-ifplugd is obsolete software. I wrote it more than 10 years ago, and
-haven't really updated it since. it's sounds seriously wrong to add
-multi-second waits to the kernel just to make this crappy, obsolete
-software work.
+Thanks Christoph. We can go with this. I will re-send the patch.
 
-Please fix this properly, and work with the PM guys, so that we get a
-sane userspace how the kernel can notify userspace about
-suspends/hibernations triggered from the outside, so that userspace
-daemons can subscribe to that and then refresh the DHCP leases on their
-own.
 
-Lennart
-
--- 
-Lennart Poettering, Red Hat
+K. Y
