@@ -1,81 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932959AbaGUQgt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 12:36:49 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38050 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932412AbaGUQgr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 12:36:47 -0400
-Date: Mon, 21 Jul 2014 09:36:46 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Kees Cook <kees@outflux.net>
-Cc: Kees Cook <keescook@chromium.org>, Ming Lei <ming.lei@canonical.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Luis R. Rodriguez" <mcgrof@suse.com>,
-        James Morris <james.l.morris@oracle.com>,
-        David Howells <dhowells@redhat.com>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        linux-security-module <linux-security-module@vger.kernel.org>,
-        linux-firmware@kernel.org,
-        linux-wireless <linux-wireless@vger.kernel.org>
-Subject: Re: [PATCH 6/7] firmware_class: add "fd" input file
-Message-ID: <20140721163646.GA14431@kroah.com>
-References: <1405373897-31671-1-git-send-email-keescook@chromium.org>
- <1405373897-31671-7-git-send-email-keescook@chromium.org>
- <CACVXFVOnxjXjnKRWg7sv425POLSS96kAxxEohtLqj4dvcxnRyg@mail.gmail.com>
- <CAGXu5j+xx2exZdD64mXWzmvVUzBrFUOg-kZ5E4+tvKAuGTKW4w@mail.gmail.com>
- <CACVXFVMk5hTAvMgL0V2ycy-P=LCtOktimw5Hst+aFYLS6jewXw@mail.gmail.com>
- <CAGXu5jLD=9cqzV90JKEBJjwzTXVzGhz9_1nnwFCG_0zcA1TE8A@mail.gmail.com>
- <20140721152635.GB6363@kroah.com>
- <20140721154307.GG5412@outflux.net>
+	id S933042AbaGUQhe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 12:37:34 -0400
+Received: from wolff.to ([98.103.208.27]:56940 "HELO wolff.to"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S932412AbaGUQhd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jul 2014 12:37:33 -0400
+Date: Mon, 21 Jul 2014 11:35:28 -0500
+From: Bruno Wolff III <bruno@wolff.to>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Dietmar Eggemann <dietmar.eggemann@arm.com>,
+        Josh Boyer <jwboyer@redhat.com>, "mingo@redhat.com" <mingo@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: Scheduler regression from
+ caffcdd8d27ba78730d5540396ce72ad022aff2c
+Message-ID: <20140721163528.GA10433@wolff.to>
+References: <53C79013.1020808@arm.com>
+ <20140717090452.GH19379@twins.programming.kicks-ass.net>
+ <53C7B247.2070309@arm.com>
+ <20140717123502.GL19379@twins.programming.kicks-ass.net>
+ <20140718053449.GA2039@wolff.to>
+ <20140718101633.GP9918@twins.programming.kicks-ass.net>
+ <20140718130126.GA2401@wolff.to>
+ <20140718141648.GE20603@laptop.programming.kicks-ass.net>
+ <20140718145040.GG12054@laptop.lan>
+ <20140718161602.GH12054@laptop.lan>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=us-ascii; format=flowed
 Content-Disposition: inline
-In-Reply-To: <20140721154307.GG5412@outflux.net>
+In-Reply-To: <20140718161602.GH12054@laptop.lan>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 21, 2014 at 08:43:07AM -0700, Kees Cook wrote:
-> On Mon, Jul 21, 2014 at 08:26:35AM -0700, Greg Kroah-Hartman wrote:
-> > On Mon, Jul 21, 2014 at 08:08:16AM -0700, Kees Cook wrote:
-> > > Perhaps it would be easier if I also sent the patch to udev's helper,
-> > > so you could see how I propose handling the userspace change to using
-> > > the new interface?
-> > 
-> > As there is no more "udev firmware helper", I don't know what you would
-> > be patching here.  Firmware should always be loaded by the kernel
-> > directly, udev isn't involved anyore at all.
-> > 
-> > confused,
-> > 
-> > greg k-h
-> 
-> The kernel _can_ load directly (when the paths are configured correctly),
-> but I'm not sure why you say udev isn't involved any more. It's been like
-> this for years, and even the latest systemd shows the udev rule is still in
-> place:
-> http://cgit.freedesktop.org/systemd/systemd/tree/rules/50-firmware.rules
-> and that the firmware loader is still in the source tree:
-> http://cgit.freedesktop.org/systemd/systemd/tree/src/udev/udev-builtin-firmware.c
-
-Ah, I thought that I had seen patches to delete this code on the systemd
-mailing list in the past, I didn't realize they hadn't been accepted
-yet.
-
-But, with my current tree, in linux-next, it's really hard to select the
-"external firmware loader" on purpose, as we want people to use the
-in-kernel one if at all possible, and only fall back to the "legacy"
-udev userspace loader if they are running on old userspace systems.
-
-> Here's the patch for the new interface...
-
-I'd really not like to add a new interface for this model when we are
-trying to delete it entirely.  Why not just rely on the in-kernel loader
-instead for this new feature?
-
-thanks,
-
-greg k-h
+Is there more I can do to help with this now? Or should I just wait for 
+patches to test?
