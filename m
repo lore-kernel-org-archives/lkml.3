@@ -1,154 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932854AbaGUPZB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 11:25:01 -0400
-Received: from g4t3427.houston.hp.com ([15.201.208.55]:9358 "EHLO
-	g4t3427.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932468AbaGUPY5 (ORCPT
+	id S932889AbaGUPZK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 11:25:10 -0400
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:52954 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932468AbaGUPZF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 11:24:57 -0400
-From: Waiman Long <Waiman.Long@hp.com>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Darren Hart <dvhart@linux.intel.com>,
-        Davidlohr Bueso <davidlohr@hp.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>
-Cc: linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
-        linux-doc@vger.kernel.org, Jason Low <jason.low2@hp.com>,
-        Scott J Norton <scott.norton@hp.com>, Waiman Long <Waiman.Long@hp.com>
-Subject: [RFC PATCH 5/5] futex, doc: add a document on how to use the spinning futexes
-Date: Mon, 21 Jul 2014 11:24:31 -0400
-Message-Id: <1405956271-34339-6-git-send-email-Waiman.Long@hp.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1405956271-34339-1-git-send-email-Waiman.Long@hp.com>
-References: <1405956271-34339-1-git-send-email-Waiman.Long@hp.com>
+	Mon, 21 Jul 2014 11:25:05 -0400
+Date: Mon, 21 Jul 2014 17:25:11 +0200
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Christian =?iso-8859-1?Q?K=F6nig?= <deathsimple@vodafone.de>
+Cc: Oded Gabbay <oded.gabbay@amd.com>, Jerome Glisse <j.glisse@gmail.com>,
+        David Airlie <airlied@linux.ie>, Alex Deucher <alexdeucher@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        John Bridgman <John.Bridgman@amd.com>, Joerg Roedel <joro@8bytes.org>,
+        Andrew Lewycky <Andrew.Lewycky@amd.com>,
+        Michel =?iso-8859-1?Q?D=E4nzer?= <michel.daenzer@amd.com>,
+        Ben Goz <Ben.Goz@amd.com>, Alexey Skidanov <Alexey.Skidanov@amd.com>,
+        Evgeny Pinchuk <Evgeny.Pinchuk@amd.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        linux-mm <linux-mm@kvack.org>
+Subject: Re: [PATCH v2 00/25] AMDKFD kernel driver
+Message-ID: <20140721152511.GW15237@phenom.ffwll.local>
+Mail-Followup-To: Christian =?iso-8859-1?Q?K=F6nig?= <deathsimple@vodafone.de>,
+	Oded Gabbay <oded.gabbay@amd.com>,
+	Jerome Glisse <j.glisse@gmail.com>, David Airlie <airlied@linux.ie>,
+	Alex Deucher <alexdeucher@gmail.com>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	John Bridgman <John.Bridgman@amd.com>,
+	Joerg Roedel <joro@8bytes.org>,
+	Andrew Lewycky <Andrew.Lewycky@amd.com>,
+	Michel =?iso-8859-1?Q?D=E4nzer?= <michel.daenzer@amd.com>,
+	Ben Goz <Ben.Goz@amd.com>,
+	Alexey Skidanov <Alexey.Skidanov@amd.com>,
+	Evgeny Pinchuk <Evgeny.Pinchuk@amd.com>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	"dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+	linux-mm <linux-mm@kvack.org>
+References: <53C7D645.3070607@amd.com>
+ <20140720174652.GE3068@gmail.com>
+ <53CD0961.4070505@amd.com>
+ <53CD17FD.3000908@vodafone.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <53CD17FD.3000908@vodafone.de>
+X-Operating-System: Linux phenom 3.15.0-rc3+ 
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a new document file on how to use the spinning futexes.
+On Mon, Jul 21, 2014 at 03:39:09PM +0200, Christian König wrote:
+> Am 21.07.2014 14:36, schrieb Oded Gabbay:
+> >On 20/07/14 20:46, Jerome Glisse wrote:
+> >>On Thu, Jul 17, 2014 at 04:57:25PM +0300, Oded Gabbay wrote:
+> >>>Forgot to cc mailing list on cover letter. Sorry.
+> >>>
+> >>>As a continuation to the existing discussion, here is a v2 patch series
+> >>>restructured with a cleaner history and no
+> >>>totally-different-early-versions
+> >>>of the code.
+> >>>
+> >>>Instead of 83 patches, there are now a total of 25 patches, where 5 of
+> >>>them
+> >>>are modifications to radeon driver and 18 of them include only amdkfd
+> >>>code.
+> >>>There is no code going away or even modified between patches, only
+> >>>added.
+> >>>
+> >>>The driver was renamed from radeon_kfd to amdkfd and moved to reside
+> >>>under
+> >>>drm/radeon/amdkfd. This move was done to emphasize the fact that this
+> >>>driver
+> >>>is an AMD-only driver at this point. Having said that, we do foresee a
+> >>>generic hsa framework being implemented in the future and in that
+> >>>case, we
+> >>>will adjust amdkfd to work within that framework.
+> >>>
+> >>>As the amdkfd driver should support multiple AMD gfx drivers, we want
+> >>>to
+> >>>keep it as a seperate driver from radeon. Therefore, the amdkfd code is
+> >>>contained in its own folder. The amdkfd folder was put under the radeon
+> >>>folder because the only AMD gfx driver in the Linux kernel at this
+> >>>point
+> >>>is the radeon driver. Having said that, we will probably need to move
+> >>>it
+> >>>(maybe to be directly under drm) after we integrate with additional
+> >>>AMD gfx
+> >>>drivers.
+> >>>
+> >>>For people who like to review using git, the v2 patch set is located
+> >>>at:
+> >>>http://cgit.freedesktop.org/~gabbayo/linux/log/?h=kfd-next-3.17-v2
+> >>>
+> >>>Written by Oded Gabbayh <oded.gabbay@amd.com>
+> >>
+> >>So quick comments before i finish going over all patches. There is many
+> >>things that need more documentation espacialy as of right now there is
+> >>no userspace i can go look at.
+> >So quick comments on some of your questions but first of all, thanks for
+> >the time you dedicated to review the code.
+> >>
+> >>There few show stopper, biggest one is gpu memory pinning this is a big
+> >>no, that would need serious arguments for any hope of convincing me on
+> >>that side.
+> >We only do gpu memory pinning for kernel objects. There are no userspace
+> >objects that are pinned on the gpu memory in our driver. If that is the
+> >case, is it still a show stopper ?
+> >
+> >The kernel objects are:
+> >- pipelines (4 per device)
+> >- mqd per hiq (only 1 per device)
+> >- mqd per userspace queue. On KV, we support up to 1K queues per process,
+> >for a total of 512K queues. Each mqd is 151 bytes, but the allocation is
+> >done in 256 alignment. So total *possible* memory is 128MB
+> >- kernel queue (only 1 per device)
+> >- fence address for kernel queue
+> >- runlists for the CP (1 or 2 per device)
+> 
+> The main questions here are if it's avoid able to pin down the memory and if
+> the memory is pinned down at driver load, by request from userspace or by
+> anything else.
+> 
+> As far as I can see only the "mqd per userspace queue" might be a bit
+> questionable, everything else sounds reasonable.
 
-Signed-off-by: Waiman Long <Waiman.Long@hp.com>
----
- Documentation/spinning-futex.txt |  109 ++++++++++++++++++++++++++++++++++++++
- 1 files changed, 109 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/spinning-futex.txt
+Aside, i915 perspective again (i.e. how we solved this): When scheduling
+away from contexts we unpin them and put them into the lru. And in the
+shrinker we have a last-ditch callback to switch to a default context
+(since you can't ever have no context once you've started) which means we
+can evict any context object if it's getting in the way.
 
-diff --git a/Documentation/spinning-futex.txt b/Documentation/spinning-futex.txt
-new file mode 100644
-index 0000000..e3cb5a2
---- /dev/null
-+++ b/Documentation/spinning-futex.txt
-@@ -0,0 +1,109 @@
-+Started by: Waiman Long <waiman.long@hp.com>
-+
-+Spinning Futex
-+--------------
-+
-+There are two main problems for a wait-wake futex (FUTEX_WAIT and
-+FUTEX_WAKE) when used for creating user-space lock primitives:
-+
-+ 1) With a wait-wake futex, tasks waiting for a lock are put to sleep
-+    in the futex queue to be woken up by the lock owner when it is done
-+    with the lock. Waking up a sleeping task, however, introduces some
-+    additional latency which can be large especially if the critical
-+    section protected by the lock is relatively short. This may cause
-+    a performance bottleneck on large systems with many CPUs running
-+    applications that need a lot of inter-thread synchronization.
-+
-+ 2) The performance of the wait-wake futex is currently
-+    spinlock-constrained.  When many threads are contending for a
-+    futex in a large system with many CPUs, it is not unusual to have
-+    spinlock contention accounting for more than 90% of the total
-+    CPU cycles consumed at various points in time.
-+
-+Spinning futex is a solution to both the wakeup latency and spinlock
-+contention problems by optimistically spinning on a locked futex
-+when the lock owner is running within the kernel until the lock is
-+free. This is the same optimistic spinning mechanism used by the kernel
-+mutex and rw semaphore implementations to improve performance. The
-+optimistic spinning was done without taking any lock.
-+
-+Implementation
-+--------------
-+
-+Like the PI and robust futexes, a lock acquirer has to atomically
-+put its thread ID (TID) into the lower 30 bits of the 32-bit futex
-+which should has an original value of 0. If it succeeds, it will be
-+the owner of the futex. Otherwise, it has to call into the kernel
-+using the new FUTEX_SPIN_LOCK futex(2) syscall.
-+
-+The kernel will use the setting of the most significant bit
-+(FUTEX_WAITERS) in the futex value to indicate one or more waiters
-+are sleeping and need to be woken up later on.
-+
-+When it is time to unlock, the lock owner has to atomically clear
-+the TID portion of the futex value. If the FUTEX_WAITERS bit is set,
-+it has to issue a FUTEX_SPIN_UNLOCK futex system call to wake up the
-+sleeping task.
-+
-+A return value of 1 from the FUTEX_SPIN_UNLOCK futex(2) syscall
-+indicates a task has been woken up. The syscall returns 0 if no
-+sleeping task is found or spinners are present to take the lock.
-+
-+The error number returned by a FUTEX_SPIN_UNLOCK call on an empty
-+futex can be used to decide if the spinning futex functionality is
-+implemented in the kernel. If it is present, the returned error number
-+should be ESRCH. Otherwise it will be ENOSYS.
-+
-+Currently, only the first and the second arguments (the futex address
-+and the opcode) of the futex(2) syscall is used. All the other
-+arguments must be set to 0 or NULL to avoid forward compatibility
-+problem.
-+
-+The spinning futex requires the kernel to have support for the cmpxchg
-+functionality. For architectures that don't support cmpxchg, spinning
-+futex will not be supported as well.
-+
-+Usage Scenario
-+--------------
-+
-+A spinning futex can be used as an exclusive lock to guard a critical
-+section which are unlikely to go to sleep in the kernel. The spinners
-+in a spinning futex, however, will fall back to sleep in a wait queue
-+if the lock owner isn't running. Therefore, it can also be used when
-+the critical section is long and prone to sleeping. However, it may
-+not have the performance benefit when compared with a wait-wake futex
-+in this case.
-+
-+Sample Code
-+-----------
-+
-+The following are sample code to implement a simple lock and unlock
-+function.
-+
-+__thread int tid;	/* Thread ID */
-+
-+void mutex_lock(int *faddr)
-+{
-+	if (cmpxchg(faddr, 0, tid) == 0)
-+		return;
-+	for (;;)
-+		if (futex(faddr, FUTEX_SPIN_LOCK, ...) == 0)
-+			break;
-+}
-+
-+void mutex_unlock(int *faddr)
-+{
-+	int old, fval;
-+
-+	if ((fval = cmpxchg(faddr, tid, 0)) == tid)
-+		return;
-+	/* Clear only the TID portion of the futex */
-+	for (;;) {
-+		old  = fval;
-+		fval = cmpxchg(faddr, old, old & ~FUTEX_TID_MASK);
-+		if (fval == old)
-+			break;
-+	}
-+	if (fval & FUTEX_WAITERS)
-+		futex(faddr, FUTEX_SPIN_UNLOCK, ...);
-+}
+We must do that since the contexts have to be in global gtt, which is
+shared for scanouts. So fragmenting that badly with lots of context
+objects and other stuff is a no-go, since that means we'll start to fail
+pageflips.
+
+I don't know whether ttm has a ready-made concept for such
+opportunistically pinned stuff. I guess you could wire up the "switch to
+dflt context" action to the evict/move function if ttm wants to get rid of
+the currently used hw context.
+
+Oh and: This is another reason for letting the kernel schedule contexts,
+since you can't do this defrag trick if the gpu does all the scheduling
+itself.
+-Daniel
 -- 
-1.7.1
-
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
