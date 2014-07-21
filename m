@@ -1,58 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933328AbaGURmF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 13:42:05 -0400
-Received: from mail-vc0-f179.google.com ([209.85.220.179]:33620 "EHLO
-	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933046AbaGURmD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 13:42:03 -0400
+	id S933398AbaGURme (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 13:42:34 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:45610 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933142AbaGURm3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jul 2014 13:42:29 -0400
+Date: Mon, 21 Jul 2014 10:42:18 -0700
+From: Nishanth Aravamudan <nacc@linux.vnet.ibm.com>
+To: Jiang Liu <jiang.liu@linux.intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        David Rientjes <rientjes@google.com>,
+        Mike Galbraith <umgwanakikbuti@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        Bruce Allan <bruce.w.allan@intel.com>,
+        Carolyn Wyborny <carolyn.wyborny@intel.com>,
+        Don Skidmore <donald.c.skidmore@intel.com>,
+        Greg Rose <gregory.v.rose@intel.com>,
+        Alex Duyck <alexander.h.duyck@intel.com>,
+        John Ronciak <john.ronciak@intel.com>,
+        Mitch Williams <mitch.a.williams@intel.com>,
+        Linux NICS <linux.nics@intel.com>, Tony Luck <tony.luck@intel.com>,
+        linux-mm@kvack.org, linux-hotplug@vger.kernel.org,
+        linux-kernel@vger.kernel.org, e1000-devel@lists.sourceforge.net,
+        netdev@vger.kernel.org
+Subject: Re: [RFC Patch V1 15/30] mm, igb: Use cpu_to_mem()/numa_mem_id() to
+ support memoryless node
+Message-ID: <20140721174218.GD4156@linux.vnet.ibm.com>
+References: <1405064267-11678-1-git-send-email-jiang.liu@linux.intel.com>
+ <1405064267-11678-16-git-send-email-jiang.liu@linux.intel.com>
 MIME-Version: 1.0
-In-Reply-To: <20140721091445.1ee700bb@thirdoffive.cmf.nrl.navy.mil>
-References: <CAPDOMVjnK=OF8mQrXbbgGUtCRJO8oG4+PQOETEcskNk=95GLrg@mail.gmail.com>
-	<20140721091445.1ee700bb@thirdoffive.cmf.nrl.navy.mil>
-Date: Mon, 21 Jul 2014 13:42:01 -0400
-Message-ID: <CAPDOMVh7cx57GtxHk-_tmorSWSj6xci-YkDrecdCLJfTANbHAQ@mail.gmail.com>
-Subject: Re: solos-pci.c: Fix me
-From: Nick Krause <xerofoify@gmail.com>
-To: chas williams - CONTRACTOR <chas@cmf.nrl.navy.mil>
-Cc: linux-atm-general@lists.sourceforge.net, netdev@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1405064267-11678-16-git-send-email-jiang.liu@linux.intel.com>
+X-Operating-System: Linux 3.13.0-32-generic (x86_64)
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14072117-0320-0000-0000-0000000A8884
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 21, 2014 at 9:14 AM, chas williams - CONTRACTOR
-<chas@cmf.nrl.navy.mil> wrote:
-> On Sun, 20 Jul 2014 00:59:42 -0400
-> Nick Krause <xerofoify@gmail.com> wrote:
->
->> Hey Chas,
->> There seems to be a fix me in this file in the function, solos_bh.
->> Is the default statement correct and I remove the fix me or
->> does it need to be rewritten.
->> Cheers Nick
->>
->
-> I am afraid that I don't know enough about the solos hardware to know
-> if it needs to be rewritten.  I gather the solos returns at least three
-> kinds of packets, data, status and command.  If you wish to eliminate
-> the FIXME comment, you could just write:
->
-> @@ -850,8 +850,7 @@ static void solos_bh(unsigned long card_arg)
->                                 dev_kfree_skb_any(skb);
->                                 break;
->
-> -                       case PKT_COMMAND:
-> -                       default: /* FIXME: Not really, surely? */
-> +                       default: /* PKT_COMMAND */
->                                 if (process_command(card, port, skb))
->                                         break;power
->                                 spin_lock(&card->cli_queue_lock);
->
-> and be done with it since that will preserve existing behavior.
+On 11.07.2014 [15:37:32 +0800], Jiang Liu wrote:
+> When CONFIG_HAVE_MEMORYLESS_NODES is enabled, cpu_to_node()/numa_node_id()
+> may return a node without memory, and later cause system failure/panic
+> when calling kmalloc_node() and friends with returned node id.
+> So use cpu_to_mem()/numa_mem_id() instead to get the nearest node with
+> memory for the/current cpu.
+> 
+> If CONFIG_HAVE_MEMORYLESS_NODES is disabled, cpu_to_mem()/numa_mem_id()
+> is the same as cpu_to_node()/numa_node_id().
+> 
+> Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+> ---
+>  drivers/net/ethernet/intel/igb/igb_main.c |    4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/net/ethernet/intel/igb/igb_main.c b/drivers/net/ethernet/intel/igb/igb_main.c
+> index f145adbb55ac..2b74bffa5648 100644
+> --- a/drivers/net/ethernet/intel/igb/igb_main.c
+> +++ b/drivers/net/ethernet/intel/igb/igb_main.c
+> @@ -6518,7 +6518,7 @@ static bool igb_can_reuse_rx_page(struct igb_rx_buffer *rx_buffer,
+>  				  unsigned int truesize)
+>  {
+>  	/* avoid re-using remote pages */
+> -	if (unlikely(page_to_nid(page) != numa_node_id()))
+> +	if (unlikely(page_to_nid(page) != numa_mem_id()))
+>  		return false;
+> 
+>  #if (PAGE_SIZE < 8192)
+> @@ -6588,7 +6588,7 @@ static bool igb_add_rx_frag(struct igb_ring *rx_ring,
+>  		memcpy(__skb_put(skb, size), va, ALIGN(size, sizeof(long)));
+> 
+>  		/* we can reuse buffer as-is, just make sure it is local */
+> -		if (likely(page_to_nid(page) == numa_node_id()))
+> +		if (likely(page_to_nid(page) == numa_mem_id()))
+>  			return true;
+> 
+>  		/* this page cannot be reused so discard it */
 
+This doesn't seem to have anything to do with crashes or errors?
 
-My only question then is this function causing bugs as is?
-Cheers Nick
+The original code is checking if the NUMA node of a page is remote to
+the NUMA node current is running on. Your change makes it check if the
+NUMA node of a page is not equal to the nearest NUMA node with memory.
+That's not necessarily local, though, which seems like that is the whole
+point. In this case, perhaps the driver author doesn't want to reuse the
+memory at all for performance reasons? In any case, I don't think this
+patch has appropriate justification.
+
+Thanks,
+Nish
+
