@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754222AbaGUJt4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 05:49:56 -0400
-Received: from mx07-00178001.pphosted.com ([62.209.51.94]:51589 "EHLO
+	id S1754259AbaGUJul (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 05:50:41 -0400
+Received: from mx07-00178001.pphosted.com ([62.209.51.94]:49949 "EHLO
 	mx07-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751277AbaGUJty (ORCPT
+	by vger.kernel.org with ESMTP id S1752846AbaGUJuj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 05:49:54 -0400
-Message-ID: <53CCE223.7080100@st.com>
-Date: Mon, 21 Jul 2014 11:49:23 +0200
+	Mon, 21 Jul 2014 05:50:39 -0400
+Message-ID: <53CCE24B.6000505@st.com>
+Date: Mon, 21 Jul 2014 11:50:03 +0200
 From: Maxime Coquelin <maxime.coquelin@st.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: Peter Griffin <peter.griffin@linaro.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <ulf.hansson@linaro.org>, <chris@printf.net>, <patrice.chotard@st.com>,
-        <srinivas.kandagatla@gmail.com>
-Cc: <lee.jones@linaro.org>, <linux-mmc@vger.kernel.org>,
-        <devicetree@vger.kernel.org>, <peppe.cavallaro@st.com>
-Subject: Re: [PATCH v4 09/10] ARM: update multi_v7_defconfig for STI
-References: <1404918461-25390-1-git-send-email-peter.griffin@linaro.org> <1404918461-25390-10-git-send-email-peter.griffin@linaro.org>
-In-Reply-To: <1404918461-25390-10-git-send-email-peter.griffin@linaro.org>
+To: Lee Jones <lee.jones@linaro.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>
+Cc: <kernel@stlinux.com>, <ajitpal.singh@st.com>, <edubezval@gmail.com>,
+        <rui.zhang@intel.com>, <linux-pm@vger.kernel.org>,
+        <devicetree@vger.kernel.org>, <patrice.chotard@st.com>
+Subject: Re: [PATCH 6/6] ARM: multi_v7_defconfig: Configure in ST's Thermal
+ Controller
+References: <1401980819-19962-1-git-send-email-lee.jones@linaro.org> <1401980819-19962-7-git-send-email-lee.jones@linaro.org>
+In-Reply-To: <1401980819-19962-7-git-send-email-lee.jones@linaro.org>
 Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
 X-Originating-IP: [10.201.23.80]
@@ -32,14 +32,14 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 
 
-On 07/09/2014 05:07 PM, Peter Griffin wrote:
-> This patch enables SDHCI STI platform driver.
->
-> Signed-off-by: Peter Griffin <peter.griffin@linaro.org>
+On 06/05/2014 05:06 PM, Lee Jones wrote:
+> Signed-off-by: Ajit Pal Singh <ajitpal.singh@st.com>
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
 > ---
->   arch/arm/configs/multi_v7_defconfig | 1 +
->   1 file changed, 1 insertion(+)
+>   arch/arm/configs/multi_v7_defconfig | 2 ++
+>   1 file changed, 2 insertions(+)
 >
+
 Added to my queue for v3.17.
 
 Thanks,
