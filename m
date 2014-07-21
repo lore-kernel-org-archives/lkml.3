@@ -1,104 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932368AbaGUNOV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 09:14:21 -0400
-Received: from mail-we0-f172.google.com ([74.125.82.172]:38447 "EHLO
-	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754820AbaGUNOT (ORCPT
+	id S932387AbaGUNPH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 09:15:07 -0400
+Received: from mail-la0-f45.google.com ([209.85.215.45]:57224 "EHLO
+	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932176AbaGUNPF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 09:14:19 -0400
-Message-ID: <53CD1228.4050401@linaro.org>
-Date: Mon, 21 Jul 2014 15:14:16 +0200
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Mon, 21 Jul 2014 09:15:05 -0400
 MIME-Version: 1.0
-To: Matthias Brugger <matthias.bgg@gmail.com>
-CC: =?UTF-8?B?SGVpa28gU3TDvGJuZXI=?= <heiko.stuebner@bq.com>,
-        linux-kernel@vger.kernel.org, robh+dt@kernel.org, pawel.moll@arm.com,
-        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
-        galak@codeaurora.org, rdunlap@infradead.org, linux@arm.linux.org.uk,
-        tglx@linutronix.de, grant.likely@linaro.org, thierry.reding@gmail.com,
-        florian.vaussard@epfl.ch, jic23@kernel.org, jason@lakedaemon.net,
-        andrew@lunn.ch, silvio.fricke@gmail.com, olof@lixom.net,
-        sebastian.hesselbarth@gmail.com, sboyd@codeaurora.org,
-        gregory.clement@free-electrons.com, arnd@arndb.de,
-        robherring2@gmail.com, marc.zyngier@arm.com,
-        maxime.ripard@free-electrons.com, soren.brinkmann@xilinx.com,
-        shawn.guo@freescale.com, anders.berg@lsi.com, linus.walleij@linaro.org,
-        ak@linux.intel.com, hpa@linux.intel.com, akpm@linux-foundation.org,
-        u.kleine-koenig@pengutronix.de, gregkh@linuxfoundation.org,
-        fabf@skynet.be, rostedt@goodmis.org, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v10 5/7] arm: add basic support for Mediatek MT6589 boards
-References: <1404745988-32558-1-git-send-email-matthias.bgg@gmail.com> <1404745988-32558-6-git-send-email-matthias.bgg@gmail.com> <53C8ED0B.5080802@linaro.org> <127793649.dTvqVjg5LM@diego> <53C96DC7.10203@linaro.org>
-In-Reply-To: <53C96DC7.10203@linaro.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <10657588.befqTi5XsZ@amdc1032>
+References: <1863399.9O2S91ZvEO@amdc1032>
+	<CAD8Lp46eB3cDqD+1YMnWOG-V8CG7fCG1s2KH7znL0OrHSazRcQ@mail.gmail.com>
+	<10657588.befqTi5XsZ@amdc1032>
+Date: Mon, 21 Jul 2014 18:45:03 +0530
+Message-ID: <CAJuA9aiaVg-FJty6a_+RwwO6W1jYQYhUABNqDB7vWnpCJL=wcw@mail.gmail.com>
+Subject: Re: [PATCH] ARM: dts: add CPU nodes for Exynos4 SoCs
+From: Thomas Abraham <ta.omasab@gmail.com>
+To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Cc: Daniel Drake <drake@endlessm.com>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-kernel@vger.kernel.org, Kukjin Kim <kgene.kim@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
+        Tomasz Figa <t.figa@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/18/2014 08:56 PM, Daniel Lezcano wrote:
-> On 07/18/2014 12:47 PM, Heiko Stübner wrote:
->> Hi Daniel,
->>
->> Am Freitag, 18. Juli 2014, 11:46:51 schrieb Daniel Lezcano:
->>> On 07/07/2014 05:13 PM, Matthias Brugger wrote:
->>>> This adds a generic devicetree board file and a dtsi for boards
->>>> based on MT6589 SoCs from Mediatek.
->>>>
->>>> Apart from the generic parts (gic, clocks) the only component
->>>> currently supported are the timers.
->>>>
->>>> Signed-off-by: Matthias Brugger <matthias.bgg@gmail.com>
->>>> --
->>>
->>> I will take this patchset through my tree but this patch touches an area
->>> I am not handling.
->>>
->>> Olof, Arnd, do you mind to ack this patch ?
->>
->> wouldn't it be easier to just take patches 1,2,3,4 through your tree
->> and let
->> patches 5,6,7 go through arm-soc?
->>
->> There is no compile-time dependency between the two parts, so they
->> will come
->> together nicely in linux-next and during the merge-window.
->>
->>
->> Also in [0] Olof wrote:
->>
->> ----------
->> Traditionally we usually take the DT changes through arm-soc, but as
->> long as we share the branch we might be ok. We tend to stick them in
->> different branches in our tree though, so rockchip will be a little
->> mis-sorted this release. Not a big deal, and we can deal with it.
->> -----------
->>
->> So I'd assume splitting the patchset this way might be a nice solution?
->>
->>
->> Heiko
->>
->>
->> [0] http://www.spinics.net/lists/arm-kernel/msg347053.html
+On Mon, Jul 21, 2014 at 6:40 PM, Bartlomiej Zolnierkiewicz
+<b.zolnierkie@samsung.com> wrote:
 >
-> Indeed.
+> Hi,
 >
-> Olof, Arnd ? Will you take the patches 5-6-7 ?
+> On Monday, July 21, 2014 01:43:53 PM Daniel Drake wrote:
+>> On Fri, Jul 18, 2014 at 5:00 PM, Bartlomiej Zolnierkiewicz
+>> <b.zolnierkie@samsung.com> wrote:
+>> > Recent patch by Tomasz Figa ("irqchip: gic: Fix core ID calculation
+>> > when topology is read from DT") fixed GIC driver to filter cluster ID
+>> > from values returned by cpu_logical_map() for SoCs having registers
+>> > mapped without per-CPU banking making it is possible to add CPU nodes
+>> > for Exynos4 SoCs.  In case of Exynos SoCs these CPU nodes are also
+>> > required by future changes adding initialization of cpuidle states in
+>> > Exynos cpuidle driver through DT.
+>>
+>> This conflicts with work in the thread "cpufreq: use generic cpufreq
+>> drivers for exynos platforms" which is already in its 7th iteration.
+>> Perhaps best to work directly with Thomas to help him finish that series?
+>
+> Patch "[PATCH v7 4/6] ARM: dts: Exynos: add cpu nodes, opp and cpu clock
+> configuration data" from Thomas needs another revision anyway since it lacks
+> cluster ID in Exynos4210 CPU node.  It also mixes addition of CPU nodes
+> with cpufreq specific changes and IMHO addition of CPU nodes should be in
+> separate patch to ease bisection if any later problems turn up.  Therefore
+> I think that it would be the best if Thomas would rebase his work on top of
+> "irqchip: gic: Fix core ID calculation when topology is read from DT" patch
+> and this one.  Thomas, are you okay with this?
 
+Hi Bartlomiej,
 
-patches 1-4 applied to my tree.
+Yes, I am okay with this.
 
-Thanks
+Regards,
+Thomas.
 
-   -- Daniel
-
--- 
-  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
-
+>
+> Best regards,
+> --
+> Bartlomiej Zolnierkiewicz
+> Samsung R&D Institute Poland
+> Samsung Electronics
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-samsung-soc" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
