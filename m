@@ -1,48 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751526AbaGUXay (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 19:30:54 -0400
-Received: from e28smtp08.in.ibm.com ([122.248.162.8]:35726 "EHLO
-	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751036AbaGUXax (ORCPT
+	id S1751341AbaGUXgR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 19:36:17 -0400
+Received: from mail-qc0-f170.google.com ([209.85.216.170]:37048 "EHLO
+	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751048AbaGUXgP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 19:30:53 -0400
-From: Madhavan Srinivasan <maddy@linux.vnet.ibm.com>
-To: arnd@arndb.de, akpm@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org,
-        Madhavan Srinivasan <maddy@linux.vnet.ibm.com>
-Subject: [PATCH] cleanup include/asm-generic/atomic.h
-Date: Tue, 22 Jul 2014 05:00:37 +0530
-Message-Id: <1405985437-16631-1-git-send-email-maddy@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.10.4
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14072123-2000-0000-0000-0000012DF776
+	Mon, 21 Jul 2014 19:36:15 -0400
+Date: Mon, 21 Jul 2014 19:36:14 -0400
+From: Jerome Glisse <j.glisse@gmail.com>
+To: "Bridgman, John" <John.Bridgman@amd.com>
+Cc: "Gabbay, Oded" <Oded.Gabbay@amd.com>,
+        "Lewycky, Andrew" <Andrew.Lewycky@amd.com>,
+        "Pinchuk, Evgeny" <Evgeny.Pinchuk@amd.com>,
+        "Daenzer, Michel" <Michel.Daenzer@amd.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        linux-mm <linux-mm@kvack.org>,
+        "Skidanov, Alexey" <Alexey.Skidanov@amd.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH v2 00/25] AMDKFD kernel driver
+Message-ID: <20140721233613.GB6422@gmail.com>
+References: <20140721155437.GA4519@gmail.com>
+ <53CD5122.5040804@amd.com>
+ <20140721181433.GA5196@gmail.com>
+ <53CD5DBC.7010301@amd.com>
+ <20140721185940.GA5278@gmail.com>
+ <53CD68BF.4020308@amd.com>
+ <20140721192837.GC5278@gmail.com>
+ <53CD8C7D.9010106@amd.com>
+ <20140721230535.GA6422@gmail.com>
+ <D89D60253BB73A4E8C62F9FD18A939CA01062C69@storexdag02.amd.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <D89D60253BB73A4E8C62F9FD18A939CA01062C69@storexdag02.amd.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 4b358e2206 "cleanup include/asm-generic/atomic.h" added
-comments for #else/#endif, but ended up adding same comment
-"BITS_PER_LONG == 64" on both sides. This patch fixes it.
+On Mon, Jul 21, 2014 at 11:29:23PM +0000, Bridgman, John wrote:
+> >> >> So even if I really wanted to, and I may agree with you
+> >> >> theoretically on that, I can't fulfill your desire to make the
+> >> >> "kernel being able to preempt at any time and be able to decrease
+> >> >> or increase user queue priority so overall kernel is in charge of
+> >> >> resources management and it can handle rogue client in proper
+> >> >> fashion". Not in KV, and I guess not in CZ as well.
 
-Signed-off-by: Madhavan Srinivasan <maddy@linux.vnet.ibm.com>
----
- include/asm-generic/atomic-long.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-diff --git a/include/asm-generic/atomic-long.h b/include/asm-generic/atomic-long.h
-index b7babf0..a8434c6 100644
---- a/include/asm-generic/atomic-long.h
-+++ b/include/asm-generic/atomic-long.h
-@@ -253,6 +253,6 @@ static inline long atomic_long_add_unless(atomic_long_t *l, long a, long u)
- #define atomic_long_xchg(v, new) \
- 	(atomic_xchg((atomic_t *)(v), (new)))
- 
--#endif  /*  BITS_PER_LONG == 64  */
-+#endif  /*  BITS_PER_LONG != 64  */
- 
- #endif  /*  _ASM_GENERIC_ATOMIC_LONG_H  */
--- 
-1.7.11.4
+> >
+> >Also it is a worrisome prospect of seeing resource management completely
+> >ignore for future AMD hardware. Kernel exist for a reason ! Kernel main
+> >purpose is to provide resource management if AMD fails to understand that,
+> >this is not looking good on long term and i expect none of the HSA
+> >technology will get momentum and i would certainly advocate against any
+> >use of it inside product i work on.
+> 
+> Hi Jerome;
+> 
+> I was following along until the above comment. It seems to be the exact opposite of what Oded has been saying, which is that future AMD hardware *does* have more capabilities for resource management and that we do have some capabilities today. Can you help me understand what the comment it was based on ?
 
+
+Highlighted above.
+
+Cheers,
+Jérôme
