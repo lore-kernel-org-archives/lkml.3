@@ -1,185 +1,861 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933241AbaGUPn1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 11:43:27 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:57122 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932719AbaGUPnZ (ORCPT
+	id S933257AbaGUPoD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 11:44:03 -0400
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:19667 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932647AbaGUPj4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 11:43:25 -0400
-Date: Mon, 21 Jul 2014 08:43:17 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Petr =?iso-8859-1?Q?Ml=E1dek?= <pmladek@suse.cz>
-Cc: Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@elte.hu>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3] ring-buffer: Race when writing and swapping cpu
- buffer in parallel
-Message-ID: <20140721154317.GS8690@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1405501084-16135-1-git-send-email-pmladek@suse.cz>
- <20140716124356.398e21f4@gandalf.local.home>
- <20140718153443.GC6774@pathway.suse.cz>
- <20140721144324.GG20751@pathway.suse.cz>
+	Mon, 21 Jul 2014 11:39:56 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Mon, 21 Jul 2014 08:32:10 -0700
+From: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
+To: <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-pm@vger.kernel.org>
+CC: Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Paul Walmsley <pwalmsley@nvidia.com>, <devicetree@vger.kernel.org>,
+        Tuomas Tynkkynen <ttynkkynen@nvidia.com>, <broonie@kernel.org>
+Subject: [PATCH v2 05/16] clk: tegra: Add closed loop support for the DFLL
+Date: Mon, 21 Jul 2014 18:38:51 +0300
+Message-ID: <1405957142-19416-6-git-send-email-ttynkkynen@nvidia.com>
+X-Mailer: git-send-email 1.8.1.5
+In-Reply-To: <1405957142-19416-1-git-send-email-ttynkkynen@nvidia.com>
+References: <1405957142-19416-1-git-send-email-ttynkkynen@nvidia.com>
+X-NVConfidentiality: public
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140721144324.GG20751@pathway.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14072115-9332-0000-0000-000001735D74
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 21, 2014 at 04:43:24PM +0200, Petr Mládek wrote:
-> On Fri 2014-07-18 17:34:43, Petr Mládek wrote:
-> > On Wed 2014-07-16 12:43:56, Steven Rostedt wrote:
-> > > On Wed, 16 Jul 2014 10:58:04 +0200
-> > > Petr Mladek <pmladek@suse.cz> wrote:
-> > > 
-> > > 
-> > > > +/**
-> > > > + * ring_buffer_swap_cpu - swap a CPU buffer between two ring buffers
-> > > > + * @buffer_a: One buffer to swap with
-> > > > + * @buffer_b: The other buffer to swap with
-> > > > + *
-> > > > + * This function is useful for tracers that want to take a "snapshot"
-> > > > + * of a CPU buffer and has another back up buffer lying around.
-> > > > + * It is expected that the tracer handles the cpu buffer not being
-> > > > + * used at the moment.
-> > > > + */
-> > > > +int ring_buffer_swap_cpu(struct ring_buffer *buffer_a,
-> > > > +			 struct ring_buffer *buffer_b, int cpu)
-> > > > +{
-> > > > +	struct ring_buffer_swap_info rb_swap_info = {
-> > > > +		.buffer_a = buffer_a,
-> > > > +		.buffer_b = buffer_b,
-> > > > +	};
-> > > > +	int ret;
-> > > > +
-> > > > +	/*
-> > > > +	 * Swap the CPU buffer on the same CPU. Recording has to be fast
-> > > > +	 * and and this helps to avoid memory barriers.
-> > > > +	 */
-> > > > +	ret = smp_call_function_single(cpu, ring_buffer_swap_this_cpu,
-> > > > +				       (void *)&rb_swap_info, 1);
-> > > > +	if (ret)
-> > > > +		return ret;
-> > > > +
-> > > > +	return rb_swap_info.ret;
-> > > 
-> > > We need to check if the cpu is on the current CPU and if so, just call
-> > > the function directly. Otherwise this can't be done from interrupt
-> > > disabled context.
-> > 
-> > I see, my testing was not good enough :-(
-> > 
-> > So, I tried to use:
-> > 
-> > 	if (cpu == smp_processor_id())
-> > 		ring_buffer_swap_this_cpu(&rb_swap_info);
-> > 	else
-> > 		ret = smp_call_function_single(cpu, ring_buffer_swap_this_cpu,
-> > 					       (void *)&rb_swap_info, 1);
-> > 
-> > It solved the problem with enabled IRQSOFF_TRACER and
-> > FTRACE_STARTUP_TEST because there the swap was called from the same CPU.
-> > 
-> > But there is still the problem when the function is called from another
-> > CPU. I manage to trigger it by:
-> > 
-> >      echo 1 >/sys/kernel/debug/tracing/per_cpu/cpu0/snapshot
-> > 
-> > It produces:
-> > 
-> > [ 1594.060650] ------------[ cut here ]------------
-> > [ 1594.060664] WARNING: CPU: 3 PID: 1558 at kernel/smp.c:242 smp_call_function_single+0xa4/0xb0()
-> > [ 1594.060666] Modules linked in:
-> > [ 1594.060673] CPU: 3 PID: 1558 Comm: bash Not tainted 3.16.0-rc1-2-default+ #2404
-> > [ 1594.060676] Hardware name: Intel Corporation S2600CP/S2600CP, BIOS RMLSDP.86I.R3.27.D685.1305151734 05/15/2013
-> > [ 1594.060679]  00000000000000f2 ffff880815b93db8 ffffffff818d34e6 ffff880815b93df8
-> > [ 1594.060685]  ffffffff810cf28c ffff880813658150 0000000000000001 ffff880815b93e48
-> > [ 1594.060691]  ffffffff8118b7e0 0000000000000000 0000000000000002 ffff880815b93e08
-> > [ 1594.060696] Call Trace:
-> > [ 1594.060705]  [<ffffffff818d34e6>] dump_stack+0x6a/0x7c
-> > [ 1594.060713]  [<ffffffff810cf28c>] warn_slowpath_common+0x8c/0xc0
-> > [ 1594.060720]  [<ffffffff8118b7e0>] ? ring_buffer_size+0x40/0x40
-> > [ 1594.060725]  [<ffffffff810cf2da>] warn_slowpath_null+0x1a/0x20
-> > [ 1594.060730]  [<ffffffff81149cc4>] smp_call_function_single+0xa4/0xb0
-> > [ 1594.060735]  [<ffffffff8118c72f>] ring_buffer_swap_cpu+0x5f/0x70
-> > [ 1594.060742]  [<ffffffff811981ea>] update_max_tr_single+0x8a/0x180
-> > [ 1594.060747]  [<ffffffff8119843a>] tracing_snapshot_write+0x15a/0x1a0
-> > [ 1594.060754]  [<ffffffff8123cf95>] vfs_write+0xd5/0x180
-> > [ 1594.060759]  [<ffffffff8123d969>] SyS_write+0x59/0xc0
-> > [ 1594.060766]  [<ffffffff818d8569>] system_call_fastpath+0x16/0x1b
-> > [ 1594.060769] ---[ end trace 662a3aa81711f30e ]---
-> > 
-> > 
-> > No clever idea comes to my mind now. Maybe Monday will bring some
-> > fresh thinking.
-> > 
-> > I think about using IPI but this is what smp_call_function_single()
-> > does and it warns about possible deadlocks. I am not sure if it is
-> > because it is a generic function or if it is dangerous even in this
-> > particular situation.
-> 
-> I have two more ideas but both are ugly :-(
-> 
-> 
-> 1. I wonder if we really need to call ring_buffer_swap_cpu() with IRQs
->    disabled. It is used "only" in update_max_tr_single().
-> 
->    The disabled IRQs might be needed only inside __update_max_tr()
->    when we do something with "current" task.
-> 
->    Otherwise, update_max_tr_single() is already called with IRQs
->    disabled from:
-> 
->        + tracing_snapshot_write() - here the IRQs are disabled only to
-> 		call the function update_max_tr_single()/
-> 
->        + check_critical_timing() - it looks to me the IRQs could get
-> 		enabled before calling update_max_tr_single()
-> 
-> 
-> 
-> 2. Go back, do the swap on any CPU, and do memory barriers via IPI.
-> 
->    I wonder if the needed memory barrier in rb_reserve_next_event()
->    could be avoided by calling IPI from ring_buffer_swap_cpu().
-> 
->    I mean that rb_reserve_next_event() will include the current check
->    for swapped ring buffer without barriers. But
->    ring_buffer_swap_cpu() will interrupt the affected CPU and
->    basically do the barrier there only when needed.
-> 
->    But I am not sure how this is different from calling
->    smp_call_function_single() from ring_buffer_swap_cpu().
->    And I am back on the question why it is dangerous with disabled
->    interrupts. I can't find any clue in git history. And I miss this
->    part of the picture :-(
+With closed loop support, the clock rate of the DFLL can be adjusted.
 
-IIRC, deadlock in the case where two CPUs attempt to invoke
-smp_call_function_single() at each other, but both have
-interrupts disabled.  It might be possible to avoid this by telling
-smp_call_function_single() not to wait for a response, but this often
-just re-introduces the deadlock at a higher level.
+The oscillator itself in the DFLL is a free-running oscillator whose
+rate is directly determined the supply voltage. However, the DFLL
+module contains logic to compare the DFLL output rate to a fixed
+reference clock (51 MHz) and make a decision to either lower or raise
+the DFLL supply voltage. The DFLL module can then autonomously change
+the supply voltage by communicating with an off-chip PMIC via either I2C
+or PWM signals. This driver currently supports only I2C.
 
-> Any pointers or ideas are welcome.
+Signed-off-by: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
+---
+v2 changes:
+    - query the various properties required for I2C mode from the
+      regulator framework
 
-Not immediately.  Mark Batty (mark.batty@cl.cam.ac.uk) has come up with
-cute ring-buffer tricks in the past, but would need a clear statement of
-the problem.  I would be happy to bring him into the discussion if it
-would help.
+ drivers/clk/tegra/clk-dfll.c | 656 ++++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 653 insertions(+), 3 deletions(-)
 
-And yes, my knee-jerk reaction of suggesting RCU runs into the problem
-that it is not so good to invoke synchronize_rcu() with interrupts
-disabled.  Might be able to use call_rcu(), but if that worked, then
-just telling smp_call_function_single() not to wait would probably
-be a lot simpler.
-
-							Thanx, Paul
+diff --git a/drivers/clk/tegra/clk-dfll.c b/drivers/clk/tegra/clk-dfll.c
+index d83e859..0d4b2dd 100644
+--- a/drivers/clk/tegra/clk-dfll.c
++++ b/drivers/clk/tegra/clk-dfll.c
+@@ -205,12 +205,16 @@
+  */
+ #define REF_CLOCK_RATE			51000000UL
+ 
++#define DVCO_RATE_TO_MULT(rate, ref_rate)	((rate) / ((ref_rate) / 2))
++#define MULT_TO_DVCO_RATE(mult, ref_rate)	((mult) * ((ref_rate) / 2))
+ 
+ /**
+  * enum dfll_ctrl_mode - DFLL hardware operating mode
+  * @DFLL_UNINITIALIZED: (uninitialized state - not in hardware bitfield)
+  * @DFLL_DISABLED: DFLL not generating an output clock
+  * @DFLL_OPEN_LOOP: DVCO running, but DFLL not adjusting voltage
++ * @DFLL_CLOSED_LOOP: DVCO running, and DFLL adjusting voltage to match
++ *		      the requested rate
+  *
+  * The integer corresponding to the last two states, minus one, is
+  * written to the DFLL hardware to change operating modes.
+@@ -219,6 +223,7 @@ enum dfll_ctrl_mode {
+ 	DFLL_UNINITIALIZED = 0,
+ 	DFLL_DISABLED = 1,
+ 	DFLL_OPEN_LOOP = 2,
++	DFLL_CLOSED_LOOP = 3,
+ };
+ 
+ /**
+@@ -236,6 +241,22 @@ enum dfll_tune_range {
+ 	DFLL_TUNE_LOW = 1,
+ };
+ 
++/**
++ * struct dfll_rate_req - target DFLL rate request data
++ * @rate: target frequency, after the postscaling
++ * @dvco_target_rate: target frequency, after the postscaling
++ * @lut_index: LUT index at which voltage the dvco_target_rate will be reached
++ * @mult_bits: value to program to the MULT bits of the DFLL_FREQ_REQ register
++ * @scale_bits: value to program to the SCALE bits of the DFLL_FREQ_REQ register
++ */
++struct dfll_rate_req {
++	unsigned long rate;
++	unsigned long dvco_target_rate;
++	int lut_index;
++	u8 mult_bits;
++	u8 scale_bits;
++};
++
+ struct tegra_dfll {
+ 	struct device			*dev;
+ 	struct tegra_dfll_soc_data	*soc;
+@@ -259,9 +280,26 @@ struct tegra_dfll {
+ 	struct dentry			*debugfs_dir;
+ 	struct clk_hw			dfll_clk_hw;
+ 	const char			*output_clock_name;
++	struct dfll_rate_req		last_req;
+ 
+ 	/* Parameters from DT */
+ 	u32				droop_ctrl;
++	u32				sample_rate;
++	u32				force_mode;
++	u32				cf;
++	u32				ci;
++	u32				cg;
++	bool				cg_scale;
++
++	/* I2C interface parameters */
++	u32				i2c_fs_rate;
++	u32				i2c_reg;
++	u32				i2c_slave_addr;
++
++	/* i2c_lut array entries are regulator framework selectors */
++	unsigned			i2c_lut[MAX_DFLL_VOLTAGES];
++	int				i2c_lut_size;
++	u8				lut_min, lut_max, lut_safe;
+ };
+ 
+ #define clk_hw_to_dfll(_hw) container_of(_hw, struct tegra_dfll, dfll_clk_hw)
+@@ -271,6 +309,7 @@ static const char * const mode_name[] = {
+ 	[DFLL_UNINITIALIZED] = "uninitialized",
+ 	[DFLL_DISABLED] = "disabled",
+ 	[DFLL_OPEN_LOOP] = "open_loop",
++	[DFLL_CLOSED_LOOP] = "closed_loop",
+ };
+ 
+ /*
+@@ -494,6 +533,282 @@ static void dfll_set_mode(struct tegra_dfll *td,
+ }
+ 
+ /*
++ * DFLL-to-I2C controller interface
++ */
++
++/**
++ * dfll_i2c_set_output_enabled - enable/disable I2C PMIC voltage requests
++ * @td: DFLL instance
++ * @enable: whether to enable or disable the I2C voltage requests
++ *
++ * Set the master enable control for I2C control value updates. If disabled,
++ * then I2C control messages are inhibited, regardless of the DFLL mode.
++ */
++static int dfll_i2c_set_output_enabled(struct tegra_dfll *td, bool enable)
++{
++	u32 val;
++
++	val = dfll_i2c_readl(td, DFLL_OUTPUT_CFG);
++
++	if (enable)
++		val |= DFLL_OUTPUT_CFG_I2C_ENABLE;
++	else
++		val &= ~DFLL_OUTPUT_CFG_I2C_ENABLE;
++
++	dfll_i2c_writel(td, val, DFLL_OUTPUT_CFG);
++	dfll_i2c_wmb(td);
++
++	return 0;
++}
++
++/**
++ * dfll_load_lut - load the voltage lookup table
++ * @td: struct tegra_dfll *
++ *
++ * Load the voltage-to-PMIC register value lookup table into the DFLL
++ * IP block memory. Look-up tables can be loaded at any time.
++ */
++static void dfll_load_i2c_lut(struct tegra_dfll *td)
++{
++	int i, lut_index;
++	u32 val;
++
++	for (i = 0; i < MAX_DFLL_VOLTAGES; i++) {
++		if (i < td->lut_min)
++			lut_index = td->lut_min;
++		else if (i > td->lut_max)
++			lut_index = td->lut_max;
++		else
++			lut_index = i;
++
++		  val = regulator_list_hardware_vsel(td->vdd_reg,
++						     td->i2c_lut[lut_index]);
++		__raw_writel(val, td->lut_base + i * 4);
++	}
++
++	dfll_i2c_wmb(td);
++}
++
++/**
++ * dfll_init_i2c_if - set up the DFLL's DFLL-I2C interface
++ * @td: DFLL instance
++ *
++ * During DFLL driver initialization, program the DFLL-I2C interface
++ * with the PMU slave address, vdd register offset, and transfer mode.
++ * This data is used by the DFLL to automatically construct I2C
++ * voltage-set commands, which are then passed to the DFLL's internal
++ * I2C controller.
++ */
++static void dfll_init_i2c_if(struct tegra_dfll *td)
++{
++	u32 val;
++
++	if (td->i2c_slave_addr > 0x7f) {
++		val = td->i2c_slave_addr << DFLL_I2C_CFG_SLAVE_ADDR_SHIFT_10BIT;
++		val |= DFLL_I2C_CFG_SLAVE_ADDR_10;
++	} else {
++		val = td->i2c_slave_addr << DFLL_I2C_CFG_SLAVE_ADDR_SHIFT_7BIT;
++	}
++	val |= DFLL_I2C_CFG_SIZE_MASK;
++	val |= DFLL_I2C_CFG_ARB_ENABLE;
++	dfll_i2c_writel(td, val, DFLL_I2C_CFG);
++
++	dfll_i2c_writel(td, td->i2c_reg, DFLL_I2C_VDD_REG_ADDR);
++
++	val = DIV_ROUND_UP(td->i2c_clk_rate, td->i2c_fs_rate * 8);
++	BUG_ON(!val || (val > DFLL_I2C_CLK_DIVISOR_MASK));
++	val = (val - 1) << DFLL_I2C_CLK_DIVISOR_FS_SHIFT;
++
++	/* default hs divisor just in case */
++	val |= 1 << DFLL_I2C_CLK_DIVISOR_HS_SHIFT;
++	__raw_writel(val, td->i2c_controller_base + DFLL_I2C_CLK_DIVISOR);
++	dfll_i2c_wmb(td);
++}
++
++/**
++ * dfll_init_out_if - prepare DFLL-to-PMIC interface
++ * @td: DFLL instance
++ *
++ * During DFLL driver initialization or resume from context loss,
++ * disable the I2C command output to the PMIC, set safe voltage and
++ * output limits, and disable and clear limit interrupts.
++ */
++static void dfll_init_out_if(struct tegra_dfll *td)
++{
++	u32 val;
++
++	td->lut_min = 0;
++	td->lut_max = td->i2c_lut_size - 1;
++	td->lut_safe = td->lut_min + 1;
++
++	dfll_i2c_writel(td, 0, DFLL_OUTPUT_CFG);
++	val = (td->lut_safe << DFLL_OUTPUT_CFG_SAFE_SHIFT) |
++		(td->lut_max << DFLL_OUTPUT_CFG_MAX_SHIFT) |
++		(td->lut_min << DFLL_OUTPUT_CFG_MIN_SHIFT);
++	dfll_writel(td, val, DFLL_OUTPUT_CFG);
++	dfll_wmb(td);
++
++	dfll_writel(td, 0, DFLL_OUTPUT_FORCE);
++	dfll_i2c_writel(td, 0, DFLL_INTR_EN);
++	dfll_i2c_writel(td, DFLL_INTR_MAX_MASK | DFLL_INTR_MIN_MASK,
++			DFLL_INTR_STS);
++
++	dfll_load_i2c_lut(td);
++	dfll_init_i2c_if(td);
++}
++
++/*
++ * Set/get the DFLL's targeted output clock rate
++ */
++
++/**
++ * find_lut_index_for_rate - determine I2C LUT index for given DFLL rate
++ * @td: DFLL instance
++ * @rate: clock rate
++ *
++ * Determines the index of a I2C LUT entry for a voltage that approximately
++ * produces the given DFLL clock rate. This is used when forcing a value
++ * to the integrator during rate changes. Returns -ENOENT if a suitable
++ * LUT index is not found.
++ */
++static int find_lut_index_for_rate(struct tegra_dfll *td, unsigned long rate)
++{
++	struct dev_pm_opp *opp;
++	int i, uv;
++
++	opp = dev_pm_opp_find_freq_ceil(td->soc->opp_dev, &rate);
++	if (IS_ERR(opp))
++		return PTR_ERR(opp);
++	uv = dev_pm_opp_get_voltage(opp);
++
++	for (i = 0; i < td->i2c_lut_size; i++) {
++		if (regulator_list_voltage(td->vdd_reg, td->i2c_lut[i]) == uv)
++			return i;
++	}
++
++	return -ENOENT;
++}
++
++/**
++ * dfll_calculate_rate_request - calculate DFLL parameters for a given rate
++ * @td: DFLL instance
++ * @req: DFLL-rate-request structure
++ * @rate: the desired DFLL rate
++ *
++ * Populate the DFLL-rate-request record @req fields with the scale_bits
++ * and mult_bits fields, based on the target input rate. Returns 0 upon
++ * success, or -EINVAL if the requested rate in req->rate is too high
++ * or low for the DFLL to generate.
++ */
++static int dfll_calculate_rate_request(struct tegra_dfll *td,
++				       struct dfll_rate_req *req,
++				       unsigned long rate)
++{
++	u32 val;
++
++	/*
++	 * If requested rate is below the minimum DVCO rate, active the scaler.
++	 * In the future the DVCO minimum voltage should be selected based on
++	 * chip temperature and the actual minimum rate should be calibrated
++	 * at runtime.
++	 */
++	req->scale_bits = DFLL_FREQ_REQ_SCALE_MAX - 1;
++	if (rate < td->dvco_rate_min) {
++		int scale;
++
++		scale = DIV_ROUND_CLOSEST(rate / 1000 * DFLL_FREQ_REQ_SCALE_MAX,
++					  td->dvco_rate_min / 1000);
++		if (!scale) {
++			dev_err(td->dev, "%s: Rate %lu is too low\n",
++				__func__, rate);
++			return -EINVAL;
++		}
++		req->scale_bits = scale - 1;
++		rate = td->dvco_rate_min;
++	}
++
++	/* Convert requested rate into frequency request and scale settings */
++	val = DVCO_RATE_TO_MULT(rate, td->ref_rate);
++	if (val > FREQ_MAX) {
++		dev_err(td->dev, "%s: Rate %lu is above dfll range\n",
++			__func__, rate);
++		return -EINVAL;
++	}
++	req->mult_bits = val;
++	req->dvco_target_rate = MULT_TO_DVCO_RATE(req->mult_bits, td->ref_rate);
++	req->rate = dfll_scale_dvco_rate(req->dvco_target_rate,
++					 req->scale_bits);
++	req->lut_index = find_lut_index_for_rate(td, req->dvco_target_rate);
++	if (req->lut_index < 0)
++		return req->lut_index;
++
++	return 0;
++}
++
++/**
++ * dfll_set_frequency_request - start the frequency change operation
++ * @td: DFLL instance
++ * @req: rate request structure
++ *
++ * Tell the DFLL to try to change its output frequency to the
++ * frequency represented by @req. DFLL must be in closed-loop mode.
++ */
++static void dfll_set_frequency_request(struct tegra_dfll *td,
++				       struct dfll_rate_req *req)
++{
++	u32 val = 0;
++	int force_val;
++	int coef = 128; /* FIXME: td->cg_scale? */;
++
++	force_val = (req->lut_index - td->lut_safe) * coef / td->cg;
++	force_val = clamp(force_val, FORCE_MIN, FORCE_MAX);
++
++	val |= req->mult_bits << DFLL_FREQ_REQ_MULT_SHIFT;
++	val |= req->scale_bits << DFLL_FREQ_REQ_SCALE_SHIFT;
++	val |= ((u32)force_val << DFLL_FREQ_REQ_FORCE_SHIFT) &
++		DFLL_FREQ_REQ_FORCE_MASK;
++	val |= DFLL_FREQ_REQ_FREQ_VALID | DFLL_FREQ_REQ_FORCE_ENABLE;
++
++	dfll_writel(td, val, DFLL_FREQ_REQ);
++	dfll_wmb(td);
++}
++
++/**
++ * tegra_dfll_request_rate - set the next rate for the DFLL to tune to
++ * @td: DFLL instance
++ * @rate: clock rate to target
++ *
++ * Convert the requested clock rate @rate into the DFLL control logic
++ * settings. In closed-loop mode, update new settings immediately to
++ * adjust DFLL output rate accordingly. Otherwise, just save them
++ * until the next switch to closed loop. Returns 0 upon success,
++ * -EPERM if the DFLL driver has not yet been initialized, or -EINVAL
++ * if @rate is outside the DFLL's tunable range.
++ */
++static int dfll_request_rate(struct tegra_dfll *td, unsigned long rate)
++{
++	int ret;
++	struct dfll_rate_req req;
++
++	if (td->mode == DFLL_UNINITIALIZED) {
++		dev_err(td->dev, "%s: Cannot set DFLL rate in %s mode\n",
++			__func__, mode_name[td->mode]);
++		return -EPERM;
++	}
++
++	ret = dfll_calculate_rate_request(td, &req, rate);
++	if (ret)
++		return ret;
++
++	td->last_req = req;
++
++	if (td->mode == DFLL_CLOSED_LOOP)
++		dfll_set_frequency_request(td, &td->last_req);
++
++	return 0;
++}
++
++/*
+  * DFLL enable/disable & open-loop <-> closed-loop transitions
+  */
+ 
+@@ -565,8 +880,76 @@ static void dfll_set_open_loop_config(struct tegra_dfll *td)
+ 	dfll_wmb(td);
+ }
+ 
++/**
++ * tegra_dfll_lock - switch from open-loop to closed-loop mode
++ * @td: DFLL instance
++ *
++ * Switch from OPEN_LOOP state to CLOSED_LOOP state. Returns 0 upon success,
++ * -EINVAL if the DFLL's target rate hasn't been set yet, or -EPERM if the
++ * DFLL is not currently in open-loop mode.
++ */
++static int dfll_lock(struct tegra_dfll *td)
++{
++	struct dfll_rate_req *req = &td->last_req;
++
++	switch (td->mode) {
++	case DFLL_CLOSED_LOOP:
++		return 0;
++
++	case DFLL_OPEN_LOOP:
++		if (req->rate == 0) {
++			dev_err(td->dev, "%s: Cannot lock DFLL at rate 0\n",
++				__func__);
++			return -EINVAL;
++		}
++
++		dfll_i2c_set_output_enabled(td, true);
++		dfll_set_mode(td, DFLL_CLOSED_LOOP);
++		dfll_set_frequency_request(td, req);
++		return 0;
++
++	default:
++		BUG_ON(td->mode > DFLL_CLOSED_LOOP);
++		dev_err(td->dev, "%s: Cannot lock DFLL in %s mode\n",
++			__func__, mode_name[td->mode]);
++		return -EPERM;
++	}
++}
++
++/**
++ * tegra_dfll_unlock - switch from closed-loop to open-loop mode
++ * @td: DFLL instance
++ *
++ * Switch from CLOSED_LOOP state to OPEN_LOOP state. Returns 0 upon success,
++ * or -EPERM if the DFLL is not currently in open-loop mode.
++ */
++static int dfll_unlock(struct tegra_dfll *td)
++{
++	switch (td->mode) {
++	case DFLL_CLOSED_LOOP:
++		dfll_set_open_loop_config(td);
++		dfll_set_mode(td, DFLL_OPEN_LOOP);
++		dfll_i2c_set_output_enabled(td, false);
++		return 0;
++
++	case DFLL_OPEN_LOOP:
++		return 0;
++
++	default:
++		BUG_ON(td->mode > DFLL_CLOSED_LOOP);
++		dev_err(td->dev, "%s: Cannot unlock DFLL in %s mode\n",
++			__func__, mode_name[td->mode]);
++		return -EPERM;
++	}
++}
++
+ /*
+  * Clock framework integration
++ *
++ * When the DFLL is being controlled by the CCF, always enter closed loop
++ * mode when the clk is enabled. This requires that a DFLL rate request
++ * has been set beforehand, which implies that a clk_set_rate() call is
++ * always required before a clk_enable().
+  */
+ 
+ static int dfll_clk_is_enabled(struct clk_hw *hw)
+@@ -579,21 +962,67 @@ static int dfll_clk_is_enabled(struct clk_hw *hw)
+ static int dfll_clk_enable(struct clk_hw *hw)
+ {
+ 	struct tegra_dfll *td = clk_hw_to_dfll(hw);
++	int ret;
++
++	ret = dfll_enable(td);
++	if (ret)
++		return ret;
++
++	ret = dfll_lock(td);
++	if (ret)
++		dfll_disable(td);
+ 
+-	return dfll_enable(td);
++	return ret;
+ }
+ 
+ static void dfll_clk_disable(struct clk_hw *hw)
+ {
+ 	struct tegra_dfll *td = clk_hw_to_dfll(hw);
++	int ret;
++
++	ret = dfll_unlock(td);
++	if (!ret)
++		dfll_disable(td);
++}
++
++static unsigned long dfll_clk_recalc_rate(struct clk_hw *hw,
++					  unsigned long parent_rate)
++{
++	struct tegra_dfll *td = clk_hw_to_dfll(hw);
+ 
+-	dfll_disable(td);
++	return td->last_req.rate;
++}
++
++static long dfll_clk_round_rate(struct clk_hw *hw,
++				unsigned long rate,
++				unsigned long *parent_rate)
++{
++	struct tegra_dfll *td = clk_hw_to_dfll(hw);
++	struct dfll_rate_req req;
++	int ret;
++
++	ret = dfll_calculate_rate_request(td, &req, rate);
++	if (ret)
++		return ret;
++
++	return req.rate;
++}
++
++static int dfll_clk_set_rate(struct clk_hw *hw, unsigned long rate,
++			     unsigned long parent_rate)
++{
++	struct tegra_dfll *td = clk_hw_to_dfll(hw);
++
++	return dfll_request_rate(td, rate);
+ }
+ 
+ static const struct clk_ops dfll_clk_ops = {
+ 	.is_enabled	= dfll_clk_is_enabled,
+ 	.enable		= dfll_clk_enable,
+ 	.disable	= dfll_clk_disable,
++	.recalc_rate	= dfll_clk_recalc_rate,
++	.round_rate	= dfll_clk_round_rate,
++	.set_rate	= dfll_clk_set_rate,
+ };
+ 
+ static struct clk_init_data dfll_clk_init_data = {
+@@ -675,6 +1104,23 @@ static int attr_enable_set(void *data, u64 val)
+ DEFINE_SIMPLE_ATTRIBUTE(enable_fops, attr_enable_get, attr_enable_set,
+ 			"%llu\n");
+ 
++static int attr_lock_get(void *data, u64 *val)
++{
++	struct tegra_dfll *td = data;
++
++	*val = (td->mode == DFLL_CLOSED_LOOP);
++
++	return 0;
++}
++static int attr_lock_set(void *data, u64 val)
++{
++	struct tegra_dfll *td = data;
++
++	return val ? dfll_lock(td) :  dfll_unlock(td);
++}
++DEFINE_SIMPLE_ATTRIBUTE(lock_fops, attr_lock_get, attr_lock_set,
++			"%llu\n");
++
+ static int attr_rate_get(void *data, u64 *val)
+ {
+ 	struct tegra_dfll *td = data;
+@@ -683,7 +1129,14 @@ static int attr_rate_get(void *data, u64 *val)
+ 
+ 	return 0;
+ }
+-DEFINE_SIMPLE_ATTRIBUTE(rate_fops, attr_rate_get, NULL, "%llu\n");
++
++static int attr_rate_set(void *data, u64 val)
++{
++	struct tegra_dfll *td = data;
++
++	return dfll_request_rate(td, val);
++}
++DEFINE_SIMPLE_ATTRIBUTE(rate_fops, attr_rate_get, attr_rate_set, "%llu\n");
+ 
+ static int attr_registers_show(struct seq_file *s, void *data)
+ {
+@@ -745,6 +1198,10 @@ static int dfll_debug_init(struct tegra_dfll *td)
+ 				 td->debugfs_dir, td, &enable_fops))
+ 		goto err_out;
+ 
++	if (!debugfs_create_file("lock", S_IRUGO,
++				 td->debugfs_dir, td, &lock_fops))
++		goto err_out;
++
+ 	if (!debugfs_create_file("rate", S_IRUGO,
+ 				 td->debugfs_dir, td, &rate_fops))
+ 		goto err_out;
+@@ -776,6 +1233,19 @@ err_out:
+  */
+ static void dfll_set_default_params(struct tegra_dfll *td)
+ {
++	u32 val;
++
++	val = DIV_ROUND_UP(td->ref_rate, td->sample_rate * 32);
++	BUG_ON(val > DFLL_CONFIG_DIV_MASK);
++	dfll_writel(td, val, DFLL_CONFIG);
++
++	val = (td->force_mode << DFLL_PARAMS_FORCE_MODE_SHIFT) |
++		(td->cf << DFLL_PARAMS_CF_PARAM_SHIFT) |
++		(td->ci << DFLL_PARAMS_CI_PARAM_SHIFT) |
++		(td->cg << DFLL_PARAMS_CG_PARAM_SHIFT) |
++		(td->cg_scale ? DFLL_PARAMS_CG_SCALE : 0);
++	dfll_writel(td, val, DFLL_PARAMS);
++
+ 	dfll_tune_low(td);
+ 	dfll_writel(td, td->droop_ctrl, DFLL_DROOP_CTRL);
+ 	dfll_writel(td, DFLL_MONITOR_CTRL_FREQ, DFLL_MONITOR_CTRL);
+@@ -865,6 +1335,8 @@ static int dfll_init(struct tegra_dfll *td)
+ 
+ 	dfll_set_open_loop_config(td);
+ 
++	dfll_init_out_if(td);
++
+ 	pm_runtime_put_sync(td->dev);
+ 
+ 	return 0;
+@@ -884,6 +1356,130 @@ di_err1:
+  * DT data fetch
+  */
+ 
++/*
++ * Find a PMIC voltage register-to-voltage mapping for the given voltage.
++ * An exact voltage match is required.
++ */
++static int find_vdd_map_entry_exact(struct tegra_dfll *td, int uV)
++{
++	int i, n_voltages, reg_uV;
++
++	n_voltages = regulator_count_voltages(td->vdd_reg);
++	for (i = 0; i < n_voltages; i++) {
++		reg_uV = regulator_list_voltage(td->vdd_reg, i);
++		if (reg_uV < 0)
++			break;
++
++		if (uV == reg_uV)
++			return i;
++	}
++
++	dev_err(td->dev, "no voltage map entry for %d uV\n", uV);
++	return -EINVAL;
++}
++
++/*
++ * Find a PMIC voltage register-to-voltage mapping for the given voltage,
++ * rounding up to the closest supported voltage.
++ * */
++static int find_vdd_map_entry_min(struct tegra_dfll *td, int uV)
++{
++	int i, n_voltages, reg_uV;
++
++	n_voltages = regulator_count_voltages(td->vdd_reg);
++	for (i = 0; i < n_voltages; i++) {
++		reg_uV = regulator_list_voltage(td->vdd_reg, i);
++		if (reg_uV < 0)
++			break;
++
++		if (uV <= reg_uV)
++			return i;
++	}
++
++	dev_err(td->dev, "no voltage map entry rounding to %d uV\n", uV);
++	return -EINVAL;
++}
++
++/**
++ * dfll_build_i2c_lut - build the I2C voltage register lookup table
++ * @td: DFLL instance
++ *
++ * The DFLL hardware has 33 bytes of look-up table RAM that must be filled with
++ * PMIC voltage register values that span the entire DFLL operating range.
++ * This function builds the look-up table based on the OPP table provided by
++ * the soc-specific platform driver (td->soc->opp_dev) and the PMIC
++ * register-to-voltage mapping queried from the regulator framework.
++ *
++ * On success, fills in td->i2c_lut and returns 0, or -err on failure.
++ */
++static int dfll_build_i2c_lut(struct tegra_dfll *td)
++{
++	int ret = -EINVAL;
++	int j, v, v_max, v_opp;
++	int selector;
++	unsigned long rate;
++	struct dev_pm_opp *opp;
++
++	rcu_read_lock();
++
++	rate = ULONG_MAX;
++	opp = dev_pm_opp_find_freq_floor(td->soc->opp_dev, &rate);
++	if (IS_ERR(opp)) {
++		dev_err(td->dev, "couldn't get vmax opp, empty opp table?\n");
++		goto out;
++	}
++	v_max = dev_pm_opp_get_voltage(opp);
++
++	v = td->soc->min_millivolts * 1000;
++	td->i2c_lut[0] = find_vdd_map_entry_exact(td, v);
++	if (td->i2c_lut[0] < 0)
++		goto out;
++
++	for (j = 1, rate = 0; ; rate++) {
++		opp = dev_pm_opp_find_freq_ceil(td->soc->opp_dev, &rate);
++		if (IS_ERR(opp))
++			break;
++		v_opp = dev_pm_opp_get_voltage(opp);
++
++		if (v_opp <= td->soc->min_millivolts * 1000)
++			td->dvco_rate_min = dev_pm_opp_get_freq(opp);
++
++		for (;;) {
++			v += max(1, (v_max - v) / (MAX_DFLL_VOLTAGES - j));
++			if (v >= v_opp)
++				break;
++
++			selector = find_vdd_map_entry_min(td, v);
++			if (selector < 0)
++				goto out;
++			if (selector != td->i2c_lut[j - 1])
++				td->i2c_lut[j++] = selector;
++		}
++
++		v = (j == MAX_DFLL_VOLTAGES - 1) ? v_max : v_opp;
++		selector = find_vdd_map_entry_exact(td, v);
++		if (selector < 0)
++			goto out;
++		if (selector != td->i2c_lut[j - 1])
++			td->i2c_lut[j++] = selector;
++
++		if (v >= v_max)
++			break;
++	}
++	td->i2c_lut_size = j;
++
++	if (!td->dvco_rate_min)
++		dev_err(td->dev, "no opp above DFLL minimum voltage %d mV\n",
++			td->soc->min_millivolts);
++	else
++		ret = 0;
++
++out:
++	rcu_read_unlock();
++
++	return ret;
++}
++
+ /**
+  * read_dt_param - helper function for reading required parameters from the DT
+  * @td: DFLL instance
+@@ -908,6 +1504,49 @@ static bool read_dt_param(struct tegra_dfll *td, const char *param, u32 *dest)
+ }
+ 
+ /**
++ * dfll_fetch_i2c_params - query PMIC I2C params from DT & regulator subsystem
++ * @td: DFLL instance
++ *
++ * Read all the parameters required for operation in I2C mode. The parameters
++ * can originate from the device tree or the regulator subsystem.
++ * Returns 0 on success or -err on failure.
++ */
++static int dfll_fetch_i2c_params(struct tegra_dfll *td)
++{
++	struct regmap *regmap;
++	struct device *i2c_dev;
++	struct i2c_client *i2c_client;
++	int vsel_reg, vsel_mask;
++	int ret;
++
++	if (!read_dt_param(td, "nvidia,i2c-fs-rate", &td->i2c_fs_rate))
++		return -EINVAL;
++
++	regmap = regulator_get_regmap(td->vdd_reg);
++	i2c_dev = regmap_get_device(regmap);
++	i2c_client = to_i2c_client(i2c_dev);
++
++	td->i2c_slave_addr = i2c_client->addr;
++
++	ret = regulator_get_hardware_vsel_register(td->vdd_reg,
++						   &vsel_reg,
++						   &vsel_mask);
++	if (ret < 0) {
++		dev_err(td->dev,
++			"regulator unsuitable for DFLL I2C operation\n");
++		return -EINVAL;
++	}
++
++	ret = dfll_build_i2c_lut(td);
++	if (ret) {
++		dev_err(td->dev, "couldn't build I2C LUT\n");
++		return ret;
++	}
++
++	return 0;
++}
++
++/**
+  * dfll_fetch_common_params - read DFLL parameters from the device tree
+  * @td: DFLL instance
+  *
+@@ -919,6 +1558,13 @@ static int dfll_fetch_common_params(struct tegra_dfll *td)
+ 	bool ok = true;
+ 
+ 	ok &= read_dt_param(td, "nvidia,droop-ctrl", &td->droop_ctrl);
++	ok &= read_dt_param(td, "nvidia,sample-rate", &td->sample_rate);
++	ok &= read_dt_param(td, "nvidia,force-mode", &td->force_mode);
++	ok &= read_dt_param(td, "nvidia,cf", &td->cf);
++	ok &= read_dt_param(td, "nvidia,ci", &td->ci);
++	ok &= read_dt_param(td, "nvidia,cg", &td->cg);
++	td->cg_scale = of_property_read_bool(td->dev->of_node,
++					     "nvidia,cg-scale");
+ 
+ 	if (of_property_read_string(td->dev->of_node, "clock-output-names",
+ 				    &td->output_clock_name)) {
+@@ -973,6 +1619,10 @@ int tegra_dfll_register(struct platform_device *pdev,
+ 		return ret;
+ 	}
+ 
++	ret = dfll_fetch_i2c_params(td);
++	if (ret)
++		return ret;
++
+ 	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 	if (!mem) {
+ 		dev_err(td->dev, "no control register resource\n");
+-- 
+1.8.1.5
 
