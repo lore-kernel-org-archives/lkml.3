@@ -1,76 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932323AbaGUNLR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 09:11:17 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:35662 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932104AbaGUNLP (ORCPT
+	id S932337AbaGUNM5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 09:12:57 -0400
+Received: from mailsec108.isp.belgacom.be ([195.238.20.104]:51080 "EHLO
+	mailsec108.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932104AbaGUNM4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 09:11:15 -0400
-X-AuditID: cbfee61a-f79e46d00000134f-94-53cd1171961e
-From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-To: Daniel Drake <drake@endlessm.com>
-Cc: linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
-        Tomasz Figa <t.figa@samsung.com>, thomas.ab@samsung.com
-Subject: Re: [PATCH] ARM: dts: add CPU nodes for Exynos4 SoCs
-Date: Mon, 21 Jul 2014 15:10:54 +0200
-Message-id: <10657588.befqTi5XsZ@amdc1032>
-User-Agent: KMail/4.8.4 (Linux/3.2.0-54-generic-pae; KDE/4.8.5; i686; ; )
-In-reply-to: <CAD8Lp46eB3cDqD+1YMnWOG-V8CG7fCG1s2KH7znL0OrHSazRcQ@mail.gmail.com>
-References: <1863399.9O2S91ZvEO@amdc1032>
- <CAD8Lp46eB3cDqD+1YMnWOG-V8CG7fCG1s2KH7znL0OrHSazRcQ@mail.gmail.com>
-MIME-version: 1.0
-Content-transfer-encoding: 7Bit
-Content-type: text/plain; charset=UTF-8
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrMLMWRmVeSWpSXmKPExsVy+t9jQd1CwbPBBufvGlo8mv+Y2aJ3wVU2
-	i02Pr7FaXN41h81ixvl9TBZvfr9gt1h75C67xfoZr1ksOpYxOnB6rJm3htFj0fcsj81L6j36
-	tqxi9Pi8SS6ANYrLJiU1J7MstUjfLoEr49X8d6wFE3gqjh37wdzAeJ+zi5GTQ0LARGLDlZks
-	ELaYxIV769m6GLk4hASmM0pM2fCAHSQhJNDCJHHsUCGIzSZgJTGxfRUjiC0ioCrxa3kzK0gD
-	s8ABJonLCyeCJYQFbCWaL7azgtgsQEVLmieADeIV0JL4sngmM4gtKuApsWP7SjYQm1MgWGLO
-	uR0sEMsKJD5MXMYGUS8o8WPyPbA4s4C8xL79U1khbHWJSfMWMU9gFJiFpGwWkrJZSMoWMDKv
-	YhRNLUguKE5KzzXUK07MLS7NS9dLzs/dxAgO+mdSOxhXNlgcYhTgYFTi4fVgPBMsxJpYVlyZ
-	e4hRgoNZSYS3lvFssBBvSmJlVWpRfnxRaU5q8SFGaQ4WJXHeA63WgUIC6YklqdmpqQWpRTBZ
-	Jg5OqQbGvAPmji7b5BdJ8Sv1mvmlXX+WKpTNwefdIhiS+Gq+P69DpkHKbv3PT7m3OcbrLbRy
-	ibpyuuiriVrKq90nrB9W/Jjl/nya3vQNTremqz4Xdmfb066Ue+jTB7uOilN7J6y4zfP2o9LG
-	bRO0dyRNK75inO+84tp66X3mp3bY++taJz5acOxp7ApvJZbijERDLeai4kQAzt7QD3YCAAA=
+	Mon, 21 Jul 2014 09:12:56 -0400
+X-Cloudmark-SP-Filtered: true
+X-Cloudmark-SP-Result: v=1.1 cv=UGN7JNw3bPEHpwjh5ACRRBK85/3fvewMg9DN/Z6sboU= c=1 sm=2
+ a=DKQk9pvXMeEA:10 a=IkcTkHD0fZMA:10 a=pGLkceISAAAA:8 a=IJv9LcIfAAAA:8
+ a=hdRPAOJJrbiZFAsJ_4IA:9 a=QEXdDO2ut3YA:10 a=MSl-tDqOz04A:10
+ a=K6kUPx8HyhEA:10
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: At0GADERzVPD7hTT/2dsb2JhbABZgw5Sg0+rUQEBBpZqh00BgRUWdoQDAQEEASNWBQsFBhgCAhgOAgIhNgYBEhGIHQMJDKd1hn+ITw2HIxeBLIRPhAODIIItB4J4gU4FmSKDUIxGhhyDRjsv
+Date: Mon, 21 Jul 2014 15:12:54 +0200 (CEST)
+From: Fabian Frederick <fabf@skynet.be>
+Reply-To: Fabian Frederick <fabf@skynet.be>
+To: Richard Weinberger <richard.weinberger@gmail.com>,
+        Joe Perches <joe@perches.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Message-ID: <94507081.822839.1405948374414.open-xchange@webmail.nmp.skynet.be>
+In-Reply-To: <CAFLxGvwGLjxPRV7XcJvREOkAcRT3ad2tG7kjzeo4yJKk5mJQHA@mail.gmail.com>
+References: <1619290298.804838.1405876434000.open-xchange@webmail.nmp.skynet.be> <1405877791.5135.36.camel@joe-AO725> <CAFLxGvwGLjxPRV7XcJvREOkAcRT3ad2tG7kjzeo4yJKk5mJQHA@mail.gmail.com>
+Subject: Re: Patch priority in subjects ?
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Priority: 3
+Importance: Medium
+X-Mailer: Open-Xchange Mailer v7.2.2-Rev27
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-Hi,
 
-On Monday, July 21, 2014 01:43:53 PM Daniel Drake wrote:
-> On Fri, Jul 18, 2014 at 5:00 PM, Bartlomiej Zolnierkiewicz
-> <b.zolnierkie@samsung.com> wrote:
-> > Recent patch by Tomasz Figa ("irqchip: gic: Fix core ID calculation
-> > when topology is read from DT") fixed GIC driver to filter cluster ID
-> > from values returned by cpu_logical_map() for SoCs having registers
-> > mapped without per-CPU banking making it is possible to add CPU nodes
-> > for Exynos4 SoCs.  In case of Exynos SoCs these CPU nodes are also
-> > required by future changes adding initialization of cpuidle states in
-> > Exynos cpuidle driver through DT.
-> 
-> This conflicts with work in the thread "cpufreq: use generic cpufreq
-> drivers for exynos platforms" which is already in its 7th iteration.
-> Perhaps best to work directly with Thomas to help him finish that series?
+> On 21 July 2014 at 13:33 Richard Weinberger <richard.weinberger@gmail.com>
+> wrote:
+>
+>
+> On Sun, Jul 20, 2014 at 7:36 PM, Joe Perches <joe@perches.com> wrote:
+> > On Sun, 2014-07-20 at 19:13 +0200, Fabian Frederick wrote:
+> >> I was reading all those "friendly" messages around checkpatch -f lately
+> >> and the fact that code clean-up is too noisy (?)
+> >>
+> >> I guess I'm not the first to think about it but why don't we use something
+> >> like a priority field in patch subject ?
+>
+> Code clean up is not bad per se.
+> Actually cleaning up things is very much welcome.
+>
+> The thing is that pure white space or search&replace patches
+> produced by checkpatch.pl are often not helpful at all.
+> They pollute the git history, introduce merge conflicts, add
+> maintenance overhead, etc..
+>
+> As somebody who regularly stares at code to find outhow the heck
+> some line of code got introduced these patches become a major PITA.
+> Running commands like are needed far too often:
+> git blame ~1 foo/bar.c
+>
 
-Patch "[PATCH v7 4/6] ARM: dts: Exynos: add cpu nodes, opp and cpu clock
-configuration data" from Thomas needs another revision anyway since it lacks
-cluster ID in Exynos4210 CPU node.  It also mixes addition of CPU nodes
-with cpufreq specific changes and IMHO addition of CPU nodes should be in
-separate patch to ease bisection if any later problems turn up.  Therefore
-I think that it would be the best if Thomas would rebase his work on top of
-"irqchip: gic: Fix core ID calculation when topology is read from DT" patch
-and this one.  Thomas, are you okay with this?
+I understand your point of view now.
+Maybe Joe has an idea about this (get_maintainer ...) ?
 
-Best regards,
---
-Bartlomiej Zolnierkiewicz
-Samsung R&D Institute Poland
-Samsung Electronics
+> Btw: Don't even try to tell me about the -w switch...
+>
+> >> Of course it would be arbitrary but maybe better than nothing ?
+> >>
+> >> eg
+> >>
+> >> [PATCH 1/1 0] Urgent bug fix
+> >> [PATCH 1/1 1] Bug fix
+> >> [PATCH 1/1 2] ...
+> >> [PATCH 1/1 7] kernel-doc fix
+> >> [PATCH 1/1 8] Code clean-up
+> >> [PATCH 1/1 9] Trivial fix
+> >>
+> >> Maybe this could help some people to sort/filter/delete
+>
+> No need to add more bureaucracy, such filtering can perfectly done
+> by looking at the sender name. (Sadly...)
+> We also have the trivial tree.
 
+I've made a small RFC script so we'll be able to talk around something concrete.
+I know it would add some rules to follow but having such a script related in
+SubmittingPatches
+could help in the following:
+
+-Patch prefix could help making statistics.
+-Having automatically -s flag (+others?) avoid thousand of replies "Please add
+Signed-off-by".
+-Avoid different formats like [PATCH 1 V3] , [PATCH 1/1 v3], [PATCH V3]
+-Batch patch generation, checking, sending.
+-...
+
+Regards,
+Fabian
+>
+> --
+> Thanks,
+> //richard
