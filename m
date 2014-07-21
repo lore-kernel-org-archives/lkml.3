@@ -1,102 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933383AbaGURqd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 13:46:33 -0400
-Received: from mga02.intel.com ([134.134.136.20]:4810 "EHLO mga02.intel.com"
+	id S933322AbaGURsF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 13:48:05 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:48439 "EHLO e7.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932320AbaGURqc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 13:46:32 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,702,1400050800"; 
-   d="scan'208";a="576562463"
-User-Agent: Microsoft-MacOutlook/14.4.3.140616
-Date: Mon, 21 Jul 2014 10:41:09 -0700
-Subject: Re: [RFC PATCH 0/5] futex: introduce an optimistic spinning futex
-From: Darren Hart <dvhart@linux.intel.com>
-To: Andi Kleen <andi@firstfloor.org>, Waiman Long <Waiman.Long@hp.com>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+	id S932647AbaGURsD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jul 2014 13:48:03 -0400
+Date: Mon, 21 Jul 2014 10:47:54 -0700
+From: Nishanth Aravamudan <nacc@linux.vnet.ibm.com>
+To: Jiang Liu <jiang.liu@linux.intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        David Rientjes <rientjes@google.com>,
+        Mike Galbraith <umgwanakikbuti@gmail.com>,
         Peter Zijlstra <peterz@infradead.org>,
-        Davidlohr Bueso <davidlohr@hp.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        <linux-kernel@vger.kernel.org>, <linux-api@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, Jason Low <jason.low2@hp.com>,
-        Scott J Norton <scott.norton@hp.com>
-Message-ID: <CFF29E4A.9D44E%dvhart@linux.intel.com>
-Thread-Topic: [RFC PATCH 0/5] futex: introduce an optimistic spinning futex
-References: <1405956271-34339-1-git-send-email-Waiman.Long@hp.com>
- <8761iq3bp3.fsf@tassilo.jf.intel.com>
- <871tte3bjw.fsf@tassilo.jf.intel.com>
- <CFF29A00.9D44A%dvhart@linux.intel.com>
-In-Reply-To: <CFF29A00.9D44A%dvhart@linux.intel.com>
-Mime-version: 1.0
-Content-type: text/plain;
-	charset="US-ASCII"
-Content-transfer-encoding: 7bit
+        "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Dave Hansen <dave.hansen@linux.intel.com>,
+        Tony Luck <tony.luck@intel.com>, linux-mm@kvack.org,
+        linux-hotplug@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC Patch V1 28/30] mm: Update _mem_id_[] for every possible
+ CPU when memory configuration changes
+Message-ID: <20140721174754.GE4156@linux.vnet.ibm.com>
+References: <1405064267-11678-1-git-send-email-jiang.liu@linux.intel.com>
+ <1405064267-11678-29-git-send-email-jiang.liu@linux.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1405064267-11678-29-git-send-email-jiang.liu@linux.intel.com>
+X-Operating-System: Linux 3.13.0-32-generic (x86_64)
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14072117-5806-0000-0000-0000000866A9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7/21/14, 10:20, "Darren Hart" <dvhart@linux.intel.com> wrote:
+On 11.07.2014 [15:37:45 +0800], Jiang Liu wrote:
+> Current kernel only updates _mem_id_[cpu] for onlined CPUs when memory
+> configuration changes. So kernel may allocate memory from remote node
+> for a CPU if the CPU is still in absent or offline state even if the
+> node associated with the CPU has already been onlined.
 
->On 7/21/14, 9:45, "Andi Kleen" <andi@firstfloor.org> wrote:
->
->>Andi Kleen <andi@firstfloor.org> writes:
->>
->>> Waiman Long <Waiman.Long@hp.com> writes:
->>>
->>>> This patch series introduces two new futex command codes to support
->>>> a new optimistic spinning futex for implementing an exclusive lock
->>>> primitive that should perform better than the same primitive using
->>>> the wait-wake futex in cases where the lock owner is actively working
->>>> instead of waiting for I/O completion.
->>>
->>> How would you distinguish those two cases automatically?
->>
->>Also BTW traditionally the spinning was just done in user space.
->>
->>This would be always even more efficient, because it would
->>even avoid the syscall entry path.
->>
->>Given the glibc adaptive mutexes are not very good, but I'm sure those
->>could be improved.
->
->I presented on something along these lines a few years back, and various
->people have asked for the sample code over the years. Andi is right,
->doing 
->this from user-space has the potential to be more efficient, the
->challenge 
->is getting access to privileged information, such as the state of the
->mutex owner. You don't want to spin if the owner is sleeping. I did this
->by adding a tidrunning call to the vdso. My somewhat hacked solution is
->still available here:
->
->http://git.infradead.org/users/dvhart/linux.git/shortlog/refs/heads/futex/
->t
->idrunning/dev
->
->
->I abandoned the spinning in the kernel thing due to the overhead of the
->system call if I remember correctly. Also available here:
->
->http://git.infradead.org/users/dvhart/linux.git/shortlog/refs/heads/futex/
->f
->utex-lock-adaptive
->
+This just sounds like the topology information is being updated at the
+wrong place/time? That is, the memory is online, the CPU is being
+brought online, but isn't associated with any node?
 
-And the associated Linux Plumbers 2010 presentation which I can't seem to
-find archived anywhere else:
+> This patch tries to improve performance by updating _mem_id_[cpu] for
+> each possible CPU when memory configuration changes, thus kernel could
+> always allocate from local node once the node is onlined.
 
-http://dvhart.com/darren/files/kernel-assisted-userspace-adaptive-mutexes.p
-df
+Ok, what is the impact? Do you actually see better performance?
 
-
-We observed some significant improvements under some very specific use
-cases, but a more thorough dive into performance impact in the other cases
-as well as security implications with the vdso is still wanting.
-
--- 
-Darren Hart					Open Source Technology Center
-darren.hart@intel.com				            Intel Corporation
-
+> We check node_online(cpu_to_node(cpu)) because:
+> 1) local_memory_node(nid) needs to access NODE_DATA(nid)
+> 2) try_offline_node(nid) just zeroes out NODE_DATA(nid) instead of free it
+> 
+> Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+> ---
+>  mm/page_alloc.c |   10 +++++-----
+>  1 file changed, 5 insertions(+), 5 deletions(-)
+> 
+> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> index 0ea758b898fd..de86e941ed57 100644
+> --- a/mm/page_alloc.c
+> +++ b/mm/page_alloc.c
+> @@ -3844,13 +3844,13 @@ static int __build_all_zonelists(void *data)
+>  		/*
+>  		 * We now know the "local memory node" for each node--
+>  		 * i.e., the node of the first zone in the generic zonelist.
+> -		 * Set up numa_mem percpu variable for on-line cpus.  During
+> -		 * boot, only the boot cpu should be on-line;  we'll init the
+> -		 * secondary cpus' numa_mem as they come on-line.  During
+> -		 * node/memory hotplug, we'll fixup all on-line cpus.
+> +		 * Set up numa_mem percpu variable for all possible cpus
+> +		 * if associated node has been onlined.
+>  		 */
+> -		if (cpu_online(cpu))
+> +		if (node_online(cpu_to_node(cpu)))
+>  			set_cpu_numa_mem(cpu, local_memory_node(cpu_to_node(cpu)));
+> +		else
+> +			set_cpu_numa_mem(cpu, NUMA_NO_NODE);
+>  #endif
 
 
