@@ -1,66 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751130AbaGUXBY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 19:01:24 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:40929 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750777AbaGUXBX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 19:01:23 -0400
-Date: Tue, 22 Jul 2014 01:01:17 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, x86-ml <x86@kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH] x86, TSC: Add a software TSC offset
-Message-ID: <20140721230117.GG11555@pd.tnic>
-References: <20140719130602.GA5101@pd.tnic>
- <53CD6B50.5010404@mit.edu>
- <20140721213534.GB11555@pd.tnic>
- <CALCETrW91Q=ivYRVFb0WKXgHQO7O+x_HHDy67e90TU6Bte_ecg@mail.gmail.com>
- <20140721215225.GD11555@pd.tnic>
- <CALCETrX1LbZAiPH4x2Uby_cUUj2wgN92wc+5wvf-B3_9XdObWQ@mail.gmail.com>
- <20140721220825.GE11555@pd.tnic>
- <CALCETrXOpcegDp+eUTWqDkO0jWqgJNYhKJW=HbzvT1ga4Ekxog@mail.gmail.com>
- <20140721223009.GF11555@pd.tnic>
- <CALCETrU1BWJ5h=GDRFKg_CXh4pQvB6MyCoRP=H3z8XGirhQDsQ@mail.gmail.com>
+	id S1750974AbaGUXFF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 19:05:05 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:53903 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750776AbaGUXFC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jul 2014 19:05:02 -0400
+Date: Tue, 22 Jul 2014 01:05:00 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Joerg Roedel <joro@8bytes.org>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Len Brown <len.brown@intel.com>,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/6 v2] PM / Hibernate: Memory bitmap scalability
+ improvements
+Message-ID: <20140721230500.GA7019@amd.pavel.ucw.cz>
+References: <1405938422-21900-1-git-send-email-joro@8bytes.org>
+ <20140721120053.GA14069@amd.pavel.ucw.cz>
+ <20140721123613.GL30979@8bytes.org>
+ <20140721130629.GA15122@amd.pavel.ucw.cz>
+ <20140721133800.GM30979@8bytes.org>
+ <20140721141027.GA16042@amd.pavel.ucw.cz>
+ <20140721160346.GP30979@8bytes.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CALCETrU1BWJ5h=GDRFKg_CXh4pQvB6MyCoRP=H3z8XGirhQDsQ@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140721160346.GP30979@8bytes.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 21, 2014 at 03:43:36PM -0700, Andy Lutomirski wrote:
-> I have some reason to believe that this is almost an intentional bug
-> on the part of the BIOS vendor.
+Hi!
 
-Hiding SMIs or some other dumb, I-know-how-to-do-stuff-better-than-you
-BIOS gunk.
-
-> IIRC it was actually quite expensive, at least on Sandy Bridge.
-
-Hmm, strange. So after the first fence and when you get to retire the
-second fence, you will have only the RDTSC eligible for retirement
-and everything that's coming behind it in program order can still go
-out-of-order. Unless the second fence flushes more stuff. I most likely
-am missing something.
-
-> Maybe AMD is different.
+On Mon 2014-07-21 18:03:46, Joerg Roedel wrote:
+> On Mon, Jul 21, 2014 at 04:10:27PM +0200, Pavel Machek wrote:
+> > > And Linux is only made for sane people? Thats pretty new to me ;-)
+> > 
+> > Yeah, but please don't optimize for insane people :-).
 > 
-> Anyway, if some future uarch breaks this, I could resurrect my old
-> hack: do a TSC-dependent load prior to returning.  Loads are ordered,
-> and the hackish load can't be reordered wrt RDTSC due to
-> data-dependency, so we're in business :)
+> Thats rather discriminating, even more when you realize that 'insane' is
+> a very subjective attribute.
 
-:-)
+You admitted you don't even have access to machine you are trying to
+optimize for.
 
+> > #6 is bugfix. We should take it. Rest is performance improvement for
+> > insane config. I don't think we should take it.
+> 
+> Have you any other reason against these changes besides your
+> proven-to-be-wrong disbelief that it is necessary?
+
+Where you proven me wrong?
+
+If kernel is preparing bitmaps before checking resume signature, that
+is bug that costs you 60 seconds boot time on your 12TB machine. Fix
+that bug. It will benefit everyone.
+
+Software watchdog during hibernation on 12TB machine is a bug that
+hits insane people. Ok, lets fix it.
+
+Optimizing hibernation for memory-is-empty case is wrong. Linux tries
+to use as much memory as it can.
+
+Hibernating 12TB machine will take 5 hours or more. Redoing data
+structures to save 60 seconds of 5 hour process is not worth
+it. Nobody sane would hibernate 12TB machine.
+
+									Pavel
 -- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
