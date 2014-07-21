@@ -1,80 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754033AbaGUJSE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 05:18:04 -0400
-Received: from mail-yk0-f180.google.com ([209.85.160.180]:42188 "EHLO
-	mail-yk0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753608AbaGUJSB (ORCPT
+	id S1754074AbaGUJS7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 05:18:59 -0400
+Received: from mo4-p00-ob.smtp.rzone.de ([81.169.146.218]:13412 "EHLO
+	mo4-p00-ob.smtp.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752245AbaGUJS5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 05:18:01 -0400
-Date: Mon, 21 Jul 2014 10:17:53 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Zhang Rui <rui.zhang@intel.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        kernel@stlinux.com, ajitpal.singh@st.com, edubezval@gmail.com,
-        linux-pm@vger.kernel.org, devicetree@vger.kernel.org,
-        maxime.coquelin@st.com, patrice.chotard@st.com
-Subject: Re: [RESEND PATCH 0/6] thermal: sti: Add new Thermal driver
-Message-ID: <20140721091753.GV30888@lee--X1>
-References: <1401980819-19962-1-git-send-email-lee.jones@linaro.org>
- <20140624092309.GD13803@lee--X1>
- <20140709120823.GA32573@lee--X1>
- <1404911964.28592.4.camel@rzhang1-toshiba>
- <20140709134646.GB479@lee--X1>
- <20140714130824.GA3993@lee--X1>
- <1405347277.28592.25.camel@rzhang1-toshiba>
- <20140714142703.GC3993@lee--X1>
+	Mon, 21 Jul 2014 05:18:57 -0400
+X-RZG-AUTH: :P2EQZWCpfu+qG7CngxMFH1J+yackYocTD1iAi8x+OWi/zfN1cLnBYfssVYdSE5SlMz/RfRVMZK6LAqe9EdvJ+MD87cNB
+X-RZG-CLASS-ID: mo00
+Date: Mon, 21 Jul 2014 11:18:51 +0200
+From: Olaf Hering <olaf@aepfle.de>
+To: Richard Weinberger <richard@nod.at>
+Cc: "Yue Zhang (OSTC DEV)" <yuezha@microsoft.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "driverdev-devel@linuxdriverproject.org" 
+	<driverdev-devel@linuxdriverproject.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        "jasowang@redhat.com" <jasowang@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Haiyang Zhang <haiyangz@microsoft.com>,
+        KY Srinivasan <kys@microsoft.com>, Thomas Shao <huishao@microsoft.com>,
+        Dexuan Cui <decui@microsoft.com>
+Subject: Re: [PATCH] Hyperv: Trigger DHCP renew after host hibernation
+Message-ID: <20140721091851.GA28171@aepfle.de>
+References: <1405680903-28176-1-git-send-email-yuezha@microsoft.com>
+ <CAFLxGvxQU_z+mChHsNSu9VZEdXrU+RU75k6H18uKbdAj2TKD5g@mail.gmail.com>
+ <DC7803B42427924284F2D5252E076A3B44769DCA@SINEX14MBXC416.southpacific.corp.microsoft.com>
+ <53CCB944.8090709@nod.at>
+ <DC7803B42427924284F2D5252E076A3B4476A363@SINEX14MBXC416.southpacific.corp.microsoft.com>
+ <53CCCCAD.7080906@nod.at>
+ <DC7803B42427924284F2D5252E076A3B4476A479@SINEX14MBXC416.southpacific.corp.microsoft.com>
+ <53CCD6F2.6020909@nod.at>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140714142703.GC3993@lee--X1>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <53CCD6F2.6020909@nod.at>
+User-Agent: Mutt/1.5.22.rev6346 (2013-10-29)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 14 Jul 2014, Lee Jones wrote:
+On Mon, Jul 21, Richard Weinberger wrote:
 
-> On Mon, 14 Jul 2014, Zhang Rui wrote:
-> 
-> > On Mon, 2014-07-14 at 14:08 +0100, Lee Jones wrote:
-> > > On Wed, 09 Jul 2014, Lee Jones wrote:
-> > > > On Wed, 09 Jul 2014, Zhang Rui wrote:
-> > > > > On Wed, 2014-07-09 at 13:08 +0100, Lee Jones wrote:
-> > > > > > On Tue, 24 Jun 2014, Lee Jones wrote:
-> > > > > > 
-> > > > > > > > I'm re-sending this set, as one of the maintainers' email addresses
-> > > > > > > > is incorrect in the MAINTAINERS file.
-> > > > > > > > 
-> > > > > > > > This patchset adds full support for 2 types of Thermal Controllers
-> > > > > > > > produced by STMicroelectronics.  One is a more traditional memory
-> > > > > > > > mapped variant, the other is controlled solely by system configuration
-> > > > > > > > registers.
-> > > > > > > 
-> > > > > > > Any thing from the Thermal guys? Has this set fallen through the gaps?
-> > > > > > 
-> > > > > > Anything at all?  It's been well over a month now.
-> > > > > > 
-> > > > > Well, for the soc thermal drivers, I'd prefer to take them via Eduardo,
-> > > > > but as we didn't get any feedback from Eduardo, I will take them.
-> > > > 
-> > > > Thanks Rui.
-> > > > 
-> > > > So have you taken all 4 "thermal: sti: *" patches?
-> > > 
-> > > Have you taken these yet?
-> > 
-> > Not yet. will do tomorrow.
+> My concern is that 10 seconds is maybe not a the right choice.
+> (As we cannot know all implementations)
 
-I waited 7 days and still don't see them?
+Until someone reports an issue with it, 10 is fine. Just like 20 or 666.
 
-> Perfect, thanks for the update.
-> 
-> > >   I notice that these aren't in -next yet.
-
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Olaf
