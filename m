@@ -1,99 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753434AbaGUVlJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 17:41:09 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:45312 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753023AbaGUVlH (ORCPT
+	id S1753918AbaGUVl1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 17:41:27 -0400
+Received: from www.linutronix.de ([62.245.132.108]:33946 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753479AbaGUVlY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 17:41:07 -0400
-Date: Mon, 21 Jul 2014 14:38:25 -0700
-From: "Darrick J. Wong" <darrick.wong@oracle.com>
-To: Jean Delvare <jdelvare@suse.de>
-Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [patch V2 40/64] hwmon: ibmaem: Use ktime_get_ns()
-Message-ID: <20140721213825.GA2862@birch.djwong.org>
-References: <20140716205018.175419210@linutronix.de>
- <20140716205055.584960520@linutronix.de>
- <1405931858.4939.30.camel@chaos.site>
+	Mon, 21 Jul 2014 17:41:24 -0400
+Date: Mon, 21 Jul 2014 23:41:05 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Ingo Molnar <mingo@kernel.org>
+cc: Waiman Long <Waiman.Long@hp.com>, Peter Zijlstra <peterz@infradead.org>,
+        Darren Hart <dvhart@linux.intel.com>,
+        Davidlohr Bueso <davidlohr@hp.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
+        linux-doc@vger.kernel.org, Jason Low <jason.low2@hp.com>,
+        Scott J Norton <scott.norton@hp.com>
+Subject: Re: [RFC PATCH 0/5] futex: introduce an optimistic spinning futex
+In-Reply-To: <20140721211801.GA12149@gmail.com>
+Message-ID: <alpine.DEB.2.10.1407212330090.20847@nanos>
+References: <1405956271-34339-1-git-send-email-Waiman.Long@hp.com> <20140721211801.GA12149@gmail.com>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1405931858.4939.30.camel@chaos.site>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 21, 2014 at 10:37:38AM +0200, Jean Delvare wrote:
-> Hi Thomas,
+On Mon, 21 Jul 2014, Ingo Molnar wrote:
+> * Waiman Long <Waiman.Long@hp.com> wrote:
 > 
-> Le Wednesday 16 July 2014 à 21:04 +0000, Thomas Gleixner a écrit :
-> > Using the wall clock time for delta time calculations is wrong to
-> > begin with because wall clock time can be set from userspace and NTP.
-> > Such data wants to be based on clock monotonic.
+> > Testing done on a 4-socket Westmere-EX boxes with 40 cores (HT off) 
+> > showed the following performance data (average kops/s) with various 
+> > load factor (number of pause instructions) used in the critical 
+> > section using an userspace mutex microbenchmark.
 > > 
-> > The calcuations also are done on a nanosecond basis. Use the
+> >   Threads  Load	Waiting Futex	Spinning Futex 	  %Change
+> >   -------  ----	-------------	--------------	  -------
+> >     256	     1	     6894	    8883	    +29%
+> >     256	    10	     3656	    4912	    +34%
+> >     256	    50	     1332	    4358	   +227%
+> >     256	   100	      792	    2753	   +248%
+> >      10	     1	     6382	    4838	    -24%
+> >      10	    10	     3614	    4748	    +31%
+> >      10	    50	     1319	    3900	   +196%
+> >      10	   100	      782	    2459	   +214%
+> >       2	     1	     7905	    7194	   -9.0%
+> >       2	    10	     4556	    4717	   +3.5%
+> >       2	    50	     2191	    4167	    +90%
+> >       2	   100	     1767	    2407	    +36%
 > 
-> Typo: calculations
-> 
-> > nanoseconds based interface right away.
-> > 
-> > Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-> > Cc: Jean Delvare <jdelvare@suse.de>
-> > ---
-> >  drivers/hwmon/ibmaem.c |    6 ++----
-> >  1 file changed, 2 insertions(+), 4 deletions(-)
-> > 
-> > Index: tip/drivers/hwmon/ibmaem.c
-> > ===================================================================
-> > --- tip.orig/drivers/hwmon/ibmaem.c
-> > +++ tip/drivers/hwmon/ibmaem.c
-> > @@ -842,11 +842,10 @@ static ssize_t aem_show_power(struct dev
-> >  	struct aem_data *data = dev_get_drvdata(dev);
-> >  	u64 before, after, delta, time;
-> >  	signed long leftover;
-> > -	struct timespec b, a;
-> >  
-> >  	mutex_lock(&data->lock);
-> >  	update_aem_energy_one(data, attr->index);
-> > -	getnstimeofday(&b);
-> > +	time = ktime_get_ns();
-> >  	before = data->energy[attr->index];
-> >  
-> >  	leftover = schedule_timeout_interruptible(
-> > @@ -858,11 +857,10 @@ static ssize_t aem_show_power(struct dev
-> >  	}
-> >  
-> >  	update_aem_energy_one(data, attr->index);
-> > -	getnstimeofday(&a);
-> > +	time = ktime_get_ns() - time;
-> >  	after = data->energy[attr->index];
-> >  	mutex_unlock(&data->lock);
-> >  
-> > -	time = timespec_to_ns(&a) - timespec_to_ns(&b);
-> >  	delta = (after - before) * UJ_PER_MJ;
-> >  
-> >  	return sprintf(buf, "%llu\n",
-> 
-> I'm not familiar with the driver and I can't test it, and I'm not
-> familiar with kernel timekeeping either. All I can say is that the
-> changes look reasonable and good.
-> 
-> Acked-by: Jean Delvare <jdelvare@suse.de>
-> 
-> Darrick, maybe you want to comment or test?
+> So the numbers look interesting - but it would be _really_ important 
+> to provide noise/sttdev figures in a sixth column as well (denoted in 
+> percentage units, not in benchmark units), so that we know how 
+> significant a particular speedup (or slowdown) is.
 
-Looks ok to me from a theoretical point of view, but since I no longer work at
-IBM, I don't have hardware for a real test. :(
+We care about that, once we have something which
 
---D
-> 
-> -- 
-> Jean Delvare
-> SUSE L3 Support
-> 
+ - Has a proper design
+
+ - Covers all the corner cases of futexes
+
+ - Does not introduce a gazillions of new lines of codes in futex.c
+
+ - Does not create another set of subtle security issues. I'm so not
+   interested to do the same exercise again - my brain still suffers.
+
+The numbers provided are completely irrelevant as the implementation
+is just the most idiotic approach to avoid all corner cases of
+futexes, error handling and the proper treatment of detached kernel
+state for the price of adding a completely unreviewable clusterfuck to
+futex.c.
+
+So, no. Don't encourage that number wankery any further. It's going
+nowhere, period.
+
+Thanks,
+
+	tglx
+
+
