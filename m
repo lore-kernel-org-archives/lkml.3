@@ -1,68 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933238AbaGURR5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 13:17:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42189 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932977AbaGURRz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 13:17:55 -0400
-Message-ID: <1405963056.20886.9.camel@dcbw.local>
-Subject: Re: [PATCH] Hyperv: Trigger DHCP renew after host hibernation
-From: Dan Williams <dcbw@redhat.com>
-To: Lennart Poettering <mzxreary@0pointer.de>
-Cc: "Yue Zhang (OSTC DEV)" <yuezha@microsoft.com>, Tom Gundersen <teg@jklm.no>,
-        netdev <netdev@vger.kernel.org>,
-        "driverdev-devel@linuxdriverproject.org" 
-	<driverdev-devel@linuxdriverproject.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        "olaf@aepfle.de" <olaf@aepfle.de>,
-        "jasowang@redhat.com" <jasowang@redhat.com>,
-        David Miller <davem@davemloft.net>,
-        Haiyang Zhang <haiyangz@microsoft.com>,
-        KY Srinivasan <kys@microsoft.com>, Thomas Shao <huishao@microsoft.com>,
-        Dexuan Cui <decui@microsoft.com>
-Date: Mon, 21 Jul 2014 12:17:36 -0500
-In-Reply-To: <20140721131154.GA23385@tango.0pointer.de>
-References: <1405680903-28176-1-git-send-email-yuezha@microsoft.com>
-	 <CAG-2HqXFBUmpTAE8h13-DmP6Fq42viHzmuH9OfNoLgjW8XcQ3Q@mail.gmail.com>
-	 <DC7803B42427924284F2D5252E076A3B4476A6D1@SINEX14MBXC416.southpacific.corp.microsoft.com>
-	 <20140721131154.GA23385@tango.0pointer.de>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
+	id S933243AbaGURUA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 13:20:00 -0400
+Received: from mail-lb0-f173.google.com ([209.85.217.173]:49508 "EHLO
+	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932382AbaGURT6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jul 2014 13:19:58 -0400
+Message-ID: <53CD4BBA.1050706@cogentembedded.com>
+Date: Mon, 21 Jul 2014 21:19:54 +0400
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Organization: Cogent Embedded
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Wang Nan <wangnan0@huawei.com>, Ingo Molnar <mingo@redhat.com>,
+        Yinghai Lu <yinghai@kernel.org>, Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dave Hansen <dave.hansen@intel.com>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+CC: peifeiyue@huawei.com, linux-mm@kvack.org, x86@kernel.org,
+        linux-ia64@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 1/7] memory-hotplug: add zone_for_memory() for selecting
+ zone for new memory
+References: <1405914402-66212-1-git-send-email-wangnan0@huawei.com> <1405914402-66212-2-git-send-email-wangnan0@huawei.com>
+In-Reply-To: <1405914402-66212-2-git-send-email-wangnan0@huawei.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-07-21 at 15:11 +0200, Lennart Poettering wrote:
-> On Mon, 21.07.14 10:21, Yue Zhang (OSTC DEV) (yuezha@microsoft.com) wrote:
-> 
-> > Some network monitoring daemon, like ifplugd has a deferring mechanism.
-> > When it detects carriers is offline, it doesn't trigger DHCP renew immediately. 
-> > Instead it will wait for another 5 seconds to check whether carrier is back to 
-> > online status. In that case, it will avoid renew DHCP lease.
-> 
-> ifplugd doesn't renew DHCP leases anyway, one of the scripts it invokes
-> does.
-> 
-> ifplugd is obsolete software. I wrote it more than 10 years ago, and
-> haven't really updated it since. it's sounds seriously wrong to add
-> multi-second waits to the kernel just to make this crappy, obsolete
-> software work.
-> 
-> Please fix this properly, and work with the PM guys, so that we get a
-> sane userspace how the kernel can notify userspace about
-> suspends/hibernations triggered from the outside, so that userspace
-> daemons can subscribe to that and then refresh the DHCP leases on their
-> own.
+Hello.
 
-Yeah, like I've said before, there have been other cases where a "hey,
-my L3 address might be wrong now, so please confirm it" message would be
-useful.  Carrier on/off doesn't necessarily mean that, but even if it
-did, the off interval is a really bad mechanism for that too.  So I'd
-really like some kind of event for this that's distinct from carrier
-that userspace could use.
+On 07/21/2014 07:46 AM, Wang Nan wrote:
 
-Dan
+    Some grammar nitpicking.
+
+> This patch introduces a zone_for_memory function in arch independent
+> code for arch_add_memory() using.
+
+    s/ using/'s use/.
+
+> Many arch_add_memory() function simply selects ZONE_HIGHMEM or
+
+    Plural needed with "many".
+
+> ZONE_NORMAL and add new memory into it. However, with the existance of
+> ZONE_MOVABLE, the selection method should be carefully considered: if
+> new, higher memory is added after ZONE_MOVABLE is setup, the default
+> zone and ZONE_MOVABLE may overlap each other.
+
+> should_add_memory_movable() checks the status of ZONE_MOVABLE. If it has
+> already contain memory, compare the address of new memory and movable
+> memory. If new memory is higher than movable, it should be added into
+> ZONE_MOVABLE instead of default zone.
+
+> Signed-off-by: Wang Nan <wangnan0@huawei.com>
+> Cc: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+> Cc: Dave Hansen <dave.hansen@intel.com>
+[...]
+
+> diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
+> index 469bbf5..348fda7 100644
+> --- a/mm/memory_hotplug.c
+> +++ b/mm/memory_hotplug.c
+> @@ -1156,6 +1156,34 @@ static int check_hotplug_memory_range(u64 start, u64 size)
+>   	return 0;
+>   }
+>
+> +/*
+> + * If movable zone has already been setup, newly added memory should be check.
+
+    Checked.
+
+WBR, Sergei
 
