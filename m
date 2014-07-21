@@ -1,58 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751819AbaGTXqP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jul 2014 19:46:15 -0400
-Received: from tundra.namei.org ([65.99.196.166]:34019 "EHLO namei.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751237AbaGTXqO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jul 2014 19:46:14 -0400
-Date: Mon, 21 Jul 2014 09:43:57 +1000 (EST)
-From: James Morris <jmorris@namei.org>
-To: Kees Cook <keescook@chromium.org>
-cc: LKML <linux-kernel@vger.kernel.org>, Ming Lei <ming.lei@canonical.com>,
-        "Luis R. Rodriguez" <mcgrof@suse.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        James Morris <james.l.morris@oracle.com>,
-        David Howells <dhowells@redhat.com>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        linux-security-module <linux-security-module@vger.kernel.org>,
-        linux-firmware@kernel.org,
-        linux-wireless <linux-wireless@vger.kernel.org>
-Subject: Re: [PATCH 4/7] firmware_class: perform new LSM checks
-In-Reply-To: <CAGXu5jLqzgJMCqkfLT2azk3J5jX_hBiguA3wkimv9wu60_+xHA@mail.gmail.com>
-Message-ID: <alpine.LRH.2.11.1407210938310.30619@namei.org>
-References: <1405373897-31671-1-git-send-email-keescook@chromium.org> <1405373897-31671-5-git-send-email-keescook@chromium.org> <alpine.LRH.2.11.1407181339510.15709@namei.org> <CAGXu5jK5np62pR4f7_qa_LU97hBN8e1hu998=C4ah+Xyv3eYtg@mail.gmail.com>
- <alpine.LRH.2.11.1407191720160.26264@namei.org> <CAGXu5jLqzgJMCqkfLT2azk3J5jX_hBiguA3wkimv9wu60_+xHA@mail.gmail.com>
-User-Agent: Alpine 2.11 (LRH 23 2013-08-11)
+	id S1751675AbaGUALg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jul 2014 20:11:36 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:49698 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751353AbaGUALe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Jul 2014 20:11:34 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Linux PCI <linux-pci@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [PATCH] PCI / PM: Allow PCI devices to be put into D3cold during system suspend
+Date: Mon, 21 Jul 2014 02:29:54 +0200
+Message-ID: <3331155.XU3LgTaBr4@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 19 Jul 2014, Kees Cook wrote:
+From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-[...]
+Commit 448bd857d48e (PCI/PM: add PCIe runtime D3cold support) added
+a check to prevent PCI devices from being put into D3cold during
+system suspend without giving any particular reason (which was
+overlooked during review).
 
-> With the patch series, the LSM hook sees the userspace-touching loads:
-> - from kernel built-in: no LSM hook (nonsense to check the static list)
-> - direct from filesystem: called with file struct
-> - via uevent /sys "loading"/"data" interface: called with NULL file struct
-> - via uevent /sys "fd" interface: called with file struct
+Also that check causes the "freeze" sleep state to draw more power
+than it can potentially, so drop the check.
 
-Thanks for the overview.  Can we get this documented in the LSM code?
+Fixes: 448bd857d48e (PCI/PM: add PCIe runtime D3cold support)
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+---
+ drivers/pci/pci.c |    4 ----
+ 1 file changed, 4 deletions(-)
 
-> The reason the "fd" interface was added was because otherwise there's
-> no way for systems that use the uevent handler to communicate to the
-> kernel where the bytes being shoved into the "data" interface are
-> coming from.
-
-Ok.
-
-I gather folks have also thought about signing firmware?
-
-
--- 
-James Morris
-<jmorris@namei.org>
+Index: linux-pm/drivers/pci/pci.c
+===================================================================
+--- linux-pm.orig/drivers/pci/pci.c
++++ linux-pm/drivers/pci/pci.c
+@@ -1907,10 +1907,6 @@ int pci_prepare_to_sleep(struct pci_dev
+ 	if (target_state == PCI_POWER_ERROR)
+ 		return -EIO;
+ 
+-	/* D3cold during system suspend/hibernate is not supported */
+-	if (target_state > PCI_D3hot)
+-		target_state = PCI_D3hot;
+-
+ 	pci_enable_wake(dev, target_state, device_may_wakeup(&dev->dev));
+ 
+ 	error = pci_set_power_state(dev, target_state);
 
