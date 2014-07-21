@@ -1,70 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750862AbaGUWqT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 18:46:19 -0400
-Received: from mail-ig0-f172.google.com ([209.85.213.172]:42844 "EHLO
-	mail-ig0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750713AbaGUWqR (ORCPT
+	id S1750949AbaGUWwH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 18:52:07 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:48497 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750717AbaGUWwF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 18:46:17 -0400
-Date: Mon, 21 Jul 2014 15:46:14 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: "Huangpeng (Peter)" <peter.huangpeng@huawei.com>
-cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "mhocko@suse.cz" <mhocko@suse.cz>,
-        "liwanp@linux.vnet.ibm.com" <liwanp@linux.vnet.ibm.com>,
-        "n-horiguchi@ah.jp.nec.com" <n-horiguchi@ah.jp.nec.com>,
-        "iamjoonsoo.kim@lge.com" <iamjoonsoo.kim@lge.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "Wulizhen (Pss)" <pss.wulizhen@huawei.com>
-Subject: =?UTF-8?Q?Re=3A_=5BPATCH=5D_mm=EF=BC=9Abugfix=2C_pfn=5Fvalid_sometimes_return_incorrect_when_memmap_parameter_specified?=
-In-Reply-To: <615092B2FD0E7648B6E4B43E029BCFB852D66798@SZXEMA503-MBS.china.huawei.com>
-Message-ID: <alpine.DEB.2.02.1407211544280.29389@chino.kir.corp.google.com>
-References: <615092B2FD0E7648B6E4B43E029BCFB852D66798@SZXEMA503-MBS.china.huawei.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Mon, 21 Jul 2014 18:52:05 -0400
+Date: Mon, 21 Jul 2014 23:51:53 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Thierry Reding <thierry.reding@gmail.com>
+Cc: Stephen Warren <swarren@wwwdotorg.org>,
+        Alexandre Courbot <acourbot@nvidia.com>,
+        Terje Bergstrom <tbergstrom@nvidia.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Message-ID: <20140721225153.GJ17528@sirena.org.uk>
+References: <1404303560-32209-1-git-send-email-acourbot@nvidia.com>
+ <1404303560-32209-5-git-send-email-acourbot@nvidia.com>
+ <53B42B60.1000600@wwwdotorg.org>
+ <53B4C9C0.4000605@nvidia.com>
+ <53CD333F.2070805@wwwdotorg.org>
+ <20140721211630.GA12076@mithrandir>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="w47z9evyjOavafUr"
+Content-Disposition: inline
+In-Reply-To: <20140721211630.GA12076@mithrandir>
+X-Cookie: 98% lean.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 4/4] ARM: tegra: roth: add display DT node
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 21 Jul 2014, Huangpeng (Peter) wrote:
 
-> diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-> index 835aa3d..c54284b 100644
-> --- a/include/linux/mmzone.h
-> +++ b/include/linux/mmzone.h
-> @@ -1199,7 +1199,7 @@ static inline struct mem_section *__pfn_to_section(unsigned long pfn)
->  #ifndef CONFIG_HAVE_ARCH_PFN_VALID
->  static inline int pfn_valid(unsigned long pfn)
->  {
-> - if (pfn_to_section_nr(pfn) >= NR_MEM_SECTIONS)
-> + if (pfn >= max_pfn || pfn_to_section_nr(pfn) >= NR_MEM_SECTIONS)
->   return 0;
->   return valid_section(__nr_to_section(pfn_to_section_nr(pfn)));
->  }
+--w47z9evyjOavafUr
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Why should valid_section() return non-zero for sparsemem if it is above 
-max_pfn?  (I think you're modifying the wrong function.)
+On Mon, Jul 21, 2014 at 11:16:32PM +0200, Thierry Reding wrote:
+> On Mon, Jul 21, 2014 at 09:35:27AM -0600, Stephen Warren wrote:
 
-Your patch is also whitespace damaged and cannot be applied, please see 
-Documentation/SubmittingPatches which also references 
-Documentation/email-clients.txt.
+> > > vdd-2v8-display needs to remain always-on however. Here we may hit a
+> > > limitation of the simple-panel driver, where only one power supply can
+> > > be provided.
 
-> diff --git a/mm/nobootmem.c b/mm/nobootmem.c
-> index 04a9d94..7eb273e 100644
-> --- a/mm/nobootmem.c
-> +++ b/mm/nobootmem.c
-> @@ -31,7 +31,7 @@ EXPORT_SYMBOL(contig_page_data);
->  unsigned long max_low_pfn;
->  unsigned long min_low_pfn;
->  unsigned long max_pfn;
-> -
-> +EXPORT_SYMBOL(max_pfn);
->  static void * __init __alloc_memory_core_early(int nid, u64 size, u64 align,
->   u64 goal, u64 limit)
->  {
+> > Can't we fix the simple-panel driver to allow a list of regulators in
+> > the property?
 
-This is an unrelated change.
+> I have no objection to allowing that. But I don't think there's a way to
+> do that with the current regulator API. You can use the bulk API, but
+> that requires separate properties, not multiple regulators in one
+> property.
+
+> Perhaps one idea to solve this would be to make the regulator API return
+> a regulator handle that in fact controls an array of regulators? Adding
+> Mark.
+
+I'm really not comfortable with that idea, it seems like most of the
+users would be abusing it - one of the biggest issues is always getting
+people to understand that their driver may be used in other systems with
+the supplies mapped differently.  If you were going to do something
+along those lines you'd need to do something that enumerated all the
+supply properties on the device.
+
+--w47z9evyjOavafUr
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJTzZmAAAoJELSic+t+oim9nwUP/jK/eXoKVl99dSmhUmDtv+9E
+CeL0oOyWN7ovsIbFi800l43DW19imQqvN6JA2lwWqGan0uZ7EyChCqe3ttv9y8Ul
+a5HtfqM8Yhoigosz6FMmVLhY2//XAaYpnUBTrjo3SZmN4ZDdI6cNWrTRx1IhJHIM
+YNR9mvCLQJM3B8/Fxh+FM8Ayly3rdkvzIVbfurw6bhqQ1z06zWTO8bGdXFaKU+xh
+YgBMDrtH1ctgNlCwsD35MdNjh6GD4SYrWOyR3s7Ki0v5VI0RdMxGBbW7j/m+h6Zf
+PvJrjqUsqpM/FX1GsIHttsm6+Cmhj8cQuvStBgOKIP4TQuML5Q/k58R914bUAjv7
+Oy0Zhrs0Xed+S95sL9Va0B45El4reSe+GGRDwD4etFojQ36zCUZOlamzRwtZ3AKB
+eDmMwdh53DHWL6iYkwsQVT15L7yLc519SRHh6/M0jjYfjpCc3OjXCx7VmFBJToOD
+4zSc8ObXFEcBY+6JEES/I66PY/7lQ50cEfeOAu+MWpKcTxtJscYCDsKibMo3lT+8
+etEAkPGqCPO/DOB0CedkAF0/vfqu+1sd3dN5nS4M1ovv4tsIztLaI+QWMqcquLAc
+vQo8SfPKXlsdoJ2kEZaYIVhuuj+pBuztkPQPqXQjDbzdKQROqssH7GocuT3iHbpa
+P18re0tQtirmXt9c4mS+
+=3it+
+-----END PGP SIGNATURE-----
+
+--w47z9evyjOavafUr--
