@@ -1,96 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752068AbaGUCph (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jul 2014 22:45:37 -0400
-Received: from mail-qc0-f179.google.com ([209.85.216.179]:60103 "EHLO
-	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751646AbaGUCpg (ORCPT
+	id S1752472AbaGUCpv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jul 2014 22:45:51 -0400
+Received: from mail-bn1blp0184.outbound.protection.outlook.com ([207.46.163.184]:42947
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751670AbaGUCph convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jul 2014 22:45:36 -0400
-Date: Sun, 20 Jul 2014 22:45:35 -0400
-From: Jerome Glisse <j.glisse@gmail.com>
-To: Oded Gabbay <oded.gabbay@amd.com>
-Cc: David Airlie <airlied@linux.ie>, Alex Deucher <alexdeucher@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrew Lewycky <Andrew.Lewycky@amd.com>,
-        Michel =?iso-8859-1?Q?D=E4nzer?= <michel.daenzer@amd.com>,
-        linux-kernel@vger.kernel.org, Evgeny Pinchuk <Evgeny.Pinchuk@amd.com>,
-        Alexey Skidanov <Alexey.Skidanov@amd.com>,
-        dri-devel@lists.freedesktop.org,
-        Alex Deucher <alexander.deucher@amd.com>,
-        Christian =?iso-8859-1?Q?K=F6nig?= <christian.koenig@amd.com>
-Subject: Re: [PATCH v2 16/25] amdkfd: Add module parameter of scheduling
- policy
-Message-ID: <20140721024534.GM3068@gmail.com>
-References: <1405603773-32688-1-git-send-email-oded.gabbay@amd.com>
- <1405603773-32688-17-git-send-email-oded.gabbay@amd.com>
+	Sun, 20 Jul 2014 22:45:37 -0400
+From: "Yue Zhang (OSTC DEV)" <yuezha@microsoft.com>
+To: Varka Bhadram <varkabhadram@gmail.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "driverdev-devel@linuxdriverproject.org" 
+	<driverdev-devel@linuxdriverproject.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "olaf@aepfle.de" <olaf@aepfle.de>,
+        "jasowang@redhat.com" <jasowang@redhat.com>,
+        "davem@davemloft.net" <davem@davemloft.net>
+CC: Haiyang Zhang <haiyangz@microsoft.com>, KY Srinivasan <kys@microsoft.com>,
+        Thomas Shao <huishao@microsoft.com>, Dexuan Cui <decui@microsoft.com>
+Subject: RE: [PATCH] Hyperv: Trigger DHCP renew after host hibernation
+Thread-Topic: [PATCH] Hyperv: Trigger DHCP renew after host hibernation
+Thread-Index: AQHPom6EfguQ5YHfv0qQpfdXjiDiFZulnN4AgAQ5u9A=
+Date: Mon, 21 Jul 2014 02:45:19 +0000
+Message-ID: <DC7803B42427924284F2D5252E076A3B44769DDC@SINEX14MBXC416.southpacific.corp.microsoft.com>
+References: <1405680903-28176-1-git-send-email-yuezha@microsoft.com>
+ <53C8F332.8010604@gmail.com>
+In-Reply-To: <53C8F332.8010604@gmail.com>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.168.3.97]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1405603773-32688-17-git-send-email-oded.gabbay@amd.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:131.107.125.37;CTRY:US;IPV:CAL;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(438002)(51704005)(377454003)(24454002)(189002)(199002)(479174003)(46406003)(33656002)(6806004)(76176999)(21056001)(31966008)(16796002)(74662001)(81342001)(84676001)(107046002)(74502001)(79102001)(81542001)(92726001)(23726002)(55846006)(2201001)(76482001)(77982001)(54356999)(99396002)(95666004)(44976005)(26826002)(83072002)(92566001)(85852003)(106466001)(81156004)(106116001)(85306003)(77096002)(50466002)(20776003)(47776003)(19580405001)(4396001)(19580395003)(86362001)(69596002)(97736001)(68736004)(64706001)(50986999)(83322001)(87936001)(97756001)(2656002)(80022001)(86612001)(46102001);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR03MB621;H:mail.microsoft.com;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;LANG:en;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
+X-O365ENT-EOP-Header: Message processed by -  O365_ENT: Allow from ranges
+ (Engineering ONLY)
+X-Forefront-PRVS: 0279B3DD0D
+Authentication-Results: spf=pass (sender IP is 131.107.125.37)
+ smtp.mailfrom=yuezha@microsoft.com; 
+X-OriginatorOrg: microsoft.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 17, 2014 at 04:29:23PM +0300, Oded Gabbay wrote:
-> From: Ben Goz <ben.goz@amd.com>
+> From: Varka Bhadram [mailto:varkabhadram@gmail.com]
+> Sent: Friday, July 18, 2014 6:13 PM
 > 
-> This patch adds a new parameter to the amdkfd driver. This parameter enables the user to select the scheduling policy of the CP. The choices are:
+> On 07/18/2014 04:25 PM, Yue Zhang wrote:
+> > @@ -816,8 +816,21 @@ static void netvsc_link_change(struct work_struct
+> *w)
+> >
+> >   	rtnl_unlock();
+> >
+> > -	if (refresh)
+> > -		call_usermodehelper(argv[0], argv, envp, UMH_WAIT_EXEC);
+> > +	if (refresh) {
+> > +		/*
+> > +		 * Keep the carrier offline for 10 seconds
+> > +		 * to notify ifplugd daemon network change
+> > +		 */
 > 
-> * CP Scheduling with support for over-subscription
-> * CP Scheduling without support for over-subscription
-> * Without CP Scheduling
+> This should be networking comment style..
+> 
+> 	/* bla bla..
+> 	 * bla
+> 	 */
+> 
+> --
+> Regards,
+> Varka Bhadram.
 
-Is this property per process ? And again 80 chars line please.
+I will fix this.
 
-> 
-> Signed-off-by: Ben Goz <ben.goz@amd.com>
-> Signed-off-by: Oded Gabbay <oded.gabbay@amd.com>
-> ---
->  drivers/gpu/drm/radeon/amdkfd/kfd_module.c | 4 ++++
->  drivers/gpu/drm/radeon/amdkfd/kfd_priv.h   | 9 +++++++++
->  2 files changed, 13 insertions(+)
-> 
-> diff --git a/drivers/gpu/drm/radeon/amdkfd/kfd_module.c b/drivers/gpu/drm/radeon/amdkfd/kfd_module.c
-> index dc08f51..fe5e39d 100644
-> --- a/drivers/gpu/drm/radeon/amdkfd/kfd_module.c
-> +++ b/drivers/gpu/drm/radeon/amdkfd/kfd_module.c
-> @@ -46,6 +46,10 @@ static const struct kgd2kfd_calls kgd2kfd = {
->  	.resume		= kgd2kfd_resume,
->  };
->  
-> +int sched_policy = KFD_SCHED_POLICY_HWS_NO_OVERSUBSCRIPTION;
-> +module_param(sched_policy, int, S_IRUSR | S_IWUSR);
-> +MODULE_PARM_DESC(sched_policy, "Kernel cmdline parameter define the kfd scheduling policy");
-> +
->  bool kgd2kfd_init(unsigned interface_version,
->  		  const struct kfd2kgd_calls *f2g,
->  		  const struct kgd2kfd_calls **g2f)
-> diff --git a/drivers/gpu/drm/radeon/amdkfd/kfd_priv.h b/drivers/gpu/drm/radeon/amdkfd/kfd_priv.h
-> index 25f23c5..8be07a1 100644
-> --- a/drivers/gpu/drm/radeon/amdkfd/kfd_priv.h
-> +++ b/drivers/gpu/drm/radeon/amdkfd/kfd_priv.h
-> @@ -64,6 +64,15 @@
->  /* Macro for allocating structures */
->  #define kfd_alloc_struct(ptr_to_struct)	((typeof(ptr_to_struct)) kzalloc(sizeof(*ptr_to_struct), GFP_KERNEL))
->  
-> +/* Kernel module parameter to specify the scheduling policy */
-> +extern int sched_policy;
-> +
-> +enum kfd_sched_policy {
-> +	KFD_SCHED_POLICY_HWS = 0,
-> +	KFD_SCHED_POLICY_HWS_NO_OVERSUBSCRIPTION,
-> +	KFD_SCHED_POLICY_NO_HWS
-> +};
-> +
->  /*
->   * Large enough to hold the maximum usable pasid + 1.
->   * It must also be able to store the number of doorbells
-> -- 
-> 1.9.1
-> 
-> _______________________________________________
-> dri-devel mailing list
-> dri-devel@lists.freedesktop.org
-> http://lists.freedesktop.org/mailman/listinfo/dri-devel
+Thanks
+Yue
