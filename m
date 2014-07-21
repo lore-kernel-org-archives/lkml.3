@@ -1,50 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932968AbaGUP1C (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 11:27:02 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37691 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932367AbaGUP07 (ORCPT
+	id S932985AbaGUP1Q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 11:27:16 -0400
+Received: from out2-smtp.messagingengine.com ([66.111.4.26]:43806 "EHLO
+	out2-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932595AbaGUP1M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 11:26:59 -0400
-Date: Mon, 21 Jul 2014 08:26:35 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Kees Cook <keescook@chromium.org>
-Cc: Ming Lei <ming.lei@canonical.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Luis R. Rodriguez" <mcgrof@suse.com>,
-        James Morris <james.l.morris@oracle.com>,
-        David Howells <dhowells@redhat.com>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        linux-security-module <linux-security-module@vger.kernel.org>,
-        linux-firmware@kernel.org,
-        linux-wireless <linux-wireless@vger.kernel.org>
-Subject: Re: [PATCH 6/7] firmware_class: add "fd" input file
-Message-ID: <20140721152635.GB6363@kroah.com>
-References: <1405373897-31671-1-git-send-email-keescook@chromium.org>
- <1405373897-31671-7-git-send-email-keescook@chromium.org>
- <CACVXFVOnxjXjnKRWg7sv425POLSS96kAxxEohtLqj4dvcxnRyg@mail.gmail.com>
- <CAGXu5j+xx2exZdD64mXWzmvVUzBrFUOg-kZ5E4+tvKAuGTKW4w@mail.gmail.com>
- <CACVXFVMk5hTAvMgL0V2ycy-P=LCtOktimw5Hst+aFYLS6jewXw@mail.gmail.com>
- <CAGXu5jLD=9cqzV90JKEBJjwzTXVzGhz9_1nnwFCG_0zcA1TE8A@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAGXu5jLD=9cqzV90JKEBJjwzTXVzGhz9_1nnwFCG_0zcA1TE8A@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Mon, 21 Jul 2014 11:27:12 -0400
+X-Sasl-enc: jC3ZUd2lfEGBvgC4Bim8XGVFRAtONHjna9Fxg+dtjMwG 1405956428
+Message-ID: <1405956426.2319.37.camel@localhost>
+Subject: Re: [PATCH, RFC] random: introduce getrandom(2) system call
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+To: George Spelvin <linux@horizon.com>
+Cc: linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org, tytso@mit.edu
+Date: Mon, 21 Jul 2014 17:27:06 +0200
+In-Reply-To: <20140721112102.19300.qmail@ns.horizon.com>
+References: <20140721112102.19300.qmail@ns.horizon.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 21, 2014 at 08:08:16AM -0700, Kees Cook wrote:
-> Perhaps it would be easier if I also sent the patch to udev's helper,
-> so you could see how I propose handling the userspace change to using
-> the new interface?
+On Mo, 2014-07-21 at 07:21 -0400, George Spelvin wrote:
+> > I don't like partial reads/writes and think that a lot of people get
+> > them wrong, because they often only check for negative return values.
+> 
+> The v1 patch, which did it right IMHO, didn't do partial reads in the
+> case we're talking about:
+> 
+> +	if (count > 256)
+> +		return -EINVAL;
 
-As there is no more "udev firmware helper", I don't know what you would
-be patching here.  Firmware should always be loaded by the kernel
-directly, udev isn't involved anyore at all.
+I checked and unfortunately it does not; 256 bytes is way too large to
+guarantee non-existence of partial reads. On a typical older system
+without rdrand/rdseed you would have to limit the amount of bytes to
+extract to about 32. That's way too low. That said, the 512 bytes check
+only in case of extracting bytes from blocking pool would serve no
+purpose.
 
-confused,
+> > In case of urandom extraction, I wouldn't actually limit the number of
+> > bytes. A lot of applications I have seen already extract more than 128
+> > out of urandom (not for seeding a prng but just to mess around with some
+> > memory). I don't see a reason why getrandom shouldn't be used for that.
+> > It just adds one more thing to look out for if using getrandom() in
+> > urandom mode, especially during porting an application over to this new
+> > interface.
+> 
+> Again, I disagree.  If it's "just messing around" code, use /dev/urandom.
+> It's more portable and you don't care about the fd exhaustion attacks.
+> 
+> If it's actual code to be used in anger, fix it to not abuse /dev/urandom.
+> 
+> You're right that a quick hack might be "broken on purpose", but without
+> exception, *all* code that I have seen which reads 64 or more bytes from
+> /dev/*random is broken, and highlighting the brokenness is a highly
+> desirable thing.
+> 
+> The sole and exclusive reason for this syscall to exist at all is to
+> solve a security problem.  Supporting broken security code does no favors
+> to anyone.
 
-greg k-h
+Then let's agree to disagree. :)
+
+I think it is dangerous if application will get ported to this new
+interface without checking size limitations and will only notice it
+after the applications will be rolled out (if at all).
+
+Bye,
+Hannes
+
+
