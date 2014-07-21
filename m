@@ -1,43 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933484AbaGUSoV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 14:44:21 -0400
-Received: from mail-vc0-f170.google.com ([209.85.220.170]:48208 "EHLO
-	mail-vc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933237AbaGUSoS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 14:44:18 -0400
+	id S933524AbaGUSoa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 14:44:30 -0400
+Received: from mga11.intel.com ([192.55.52.93]:65473 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933237AbaGUSo2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jul 2014 14:44:28 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,703,1400050800"; 
+   d="scan'208";a="565079475"
+Message-ID: <53CD5F84.30700@intel.com>
+Date: Mon, 21 Jul 2014 21:44:20 +0300
+From: Adrian Hunter <adrian.hunter@intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-In-Reply-To: <20140721183322.GA29601@mtj.dyndns.org>
-References: <20140721121740.GB12921@htj.dyndns.org>
-	<CA+55aFwzZoef-fXj1D57N9ywxWBF0bj2cWgOQMQDLM=NAH7hrA@mail.gmail.com>
-	<20140721183322.GA29601@mtj.dyndns.org>
-Date: Mon, 21 Jul 2014 11:44:15 -0700
-X-Google-Sender-Auth: 1I3nulKsqDZxIvYlwdDaiZ9-I-4
-Message-ID: <CA+55aFwjt8BhmKVnMbFfcVG7NJpkeCV+N5y3KOeiDg8sTGSbww@mail.gmail.com>
-Subject: Re: [GIT PULL] libata fixes for v3.16-rc6
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        IDE-ML <linux-ide@vger.kernel.org>,
-        Hans de Goede <hdegoede@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+To: David Ahern <dsahern@gmail.com>, Andi Kleen <andi@firstfloor.org>
+CC: Jiri Olsa <jolsa@kernel.org>, linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCHv3 00/19] perf tools: Factor ordered samples queue
+References: <1405893363-21967-1-git-send-email-jolsa@kernel.org>	<53CCB6AE.6020505@intel.com> <20140721080219.GA4183@krava.redhat.com>	<53CCD3A7.5070002@intel.com> <20140721095415.GB8865@krava.redhat.com> <87d2cy3c7m.fsf@tassilo.jf.intel.com> <53CD5AB5.3000307@intel.com> <53CD5DC6.3030605@gmail.com>
+In-Reply-To: <53CD5DC6.3030605@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 21, 2014 at 11:33 AM, Tejun Heo <tj@kernel.org> wrote:
+On 21/07/2014 9:36 p.m., David Ahern wrote:
+> On 7/21/14, 12:23 PM, Adrian Hunter wrote:
+>> On 21/07/2014 7:31 p.m., Andi Kleen wrote:
+>>> Jiri Olsa <jolsa@redhat.com> writes:
+>>>>
+>>>> [jolsa@ibm-x3650m4-01 perf]$ sudo ./perf report --stdio
+>>>> Timestamp below last timeslice flush
+>>>> 0x2276f58 [0x68]: failed to process type: 9
+>>>
+>>> FWIW we're seeing this frequently too.
+>>
+>> Jiri's example didn't work for me.  Do you have one?
 >
-> Urgh... sorry about that.  This is the same git-request-pull problem
-> that occurred the last time.  I forgot adding cc:stable to the last
-> patch and force-pushed that out before generating the pull request (I
-> had it sitting in my local branch for some days) and git-request-pull
-> dropped the branch name because the commit IDs of local and remote
-> disagreed.  git --version says 1.9.3.  Maybe it's not fixed in this
-> version yet?
+> $ perf sched record  -m 8192 -- perf bench sched all
+> # Running sched/messaging benchmark...
+> # 20 sender and receiver processes per group
+> # 10 groups == 400 processes run
+>
+>       Total time: 0.087 [sec]
+>
+> # Running sched/pipe benchmark...
+> # Executed 1000000 pipe operations between two processes
+>
+>       Total time: 12.043 [sec]
+>
+>        12.043779 usecs/op
+>            83030 ops/sec
+>
+> [ perf record: Woken up 1 times to write data ]
+> [ perf record: Captured and wrote 289.549 MB perf.data (~12650569 samples) ]
+> 0x54b4828 [0]: failed to process type: 0
+>
+> No overload condition, no dropped chunks message - yet can't process events.
 
-So git 2.0 should have the fix where it complains loudly if it cannot
-find things instead of leaving things empty. It's probably not in
-1.9.3.
-
-           Linus
+Actually, it was the "Timestamp below last timeslice flush"
+that I was interested in.
