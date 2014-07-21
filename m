@@ -1,72 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751228AbaGUWzI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 18:55:08 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:61687 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750889AbaGUWzG (ORCPT
+	id S1751057AbaGUW4x (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 18:56:53 -0400
+Received: from mail-ig0-f175.google.com ([209.85.213.175]:59482 "EHLO
+	mail-ig0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750800AbaGUW4v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 18:55:06 -0400
-Date: Mon, 21 Jul 2014 18:54:59 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Nicolas Pitre <nicolas.pitre@linaro.org>
-Cc: Ingo Molnar <mingo@redhat.com>, Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linaro-kernel@lists.linaro.org
-Subject: Re: [PATCH 4/4] (RFC) X86: add IPI tracepoints
-Message-ID: <20140721185459.54c81bd5@gandalf.local.home>
-In-Reply-To: <alpine.LFD.2.11.1407181656160.3647@knanqh.ubzr>
-References: <1405660735-13408-1-git-send-email-nicolas.pitre@linaro.org>
-	<1405660735-13408-5-git-send-email-nicolas.pitre@linaro.org>
-	<20140718162750.62cbf965@gandalf.local.home>
-	<alpine.LFD.2.11.1407181656160.3647@knanqh.ubzr>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
+	Mon, 21 Jul 2014 18:56:51 -0400
+Date: Mon, 21 Jul 2014 15:56:48 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Himangi Saraogi <himangi774@gmail.com>
+cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, Julia Lawall <julia.lawall@lip6.fr>
+Subject: Re: [PATCH] x86, olpc: Eliminate BUG_ON and memset after
+ alloc_bootmem
+In-Reply-To: <20140719113637.GA23621@himangi-Dell>
+Message-ID: <alpine.DEB.2.02.1407211553190.29389@chino.kir.corp.google.com>
+References: <20140719113637.GA23621@himangi-Dell>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 18 Jul 2014 16:59:50 -0400 (EDT)
-Nicolas Pitre <nicolas.pitre@linaro.org> wrote:
+On Sat, 19 Jul 2014, Himangi Saraogi wrote:
 
-> On Fri, 18 Jul 2014, Steven Rostedt wrote:
+> alloc_bootmem and related functions never return NULL and always return
+> a zeroed region of memory.  Thus a BUG_ON the NULL test or memset after
+> calls to these functions is unnecessary.
 > 
-> > On Fri, 18 Jul 2014 01:18:55 -0400
-> > Nicolas Pitre <nicolas.pitre@linaro.org> wrote:
-> > 
-> >  
-> > > diff --git a/arch/x86/kernel/smp.c b/arch/x86/kernel/smp.c
-> > > index be8e1bde07..e154d176cf 100644
-> > > --- a/arch/x86/kernel/smp.c
-> > > +++ b/arch/x86/kernel/smp.c
-> > > @@ -31,6 +31,12 @@
-> > >  #include <asm/apic.h>
-> > >  #include <asm/nmi.h>
-> > >  #include <asm/trace/irq_vectors.h>
-> > > +
-> > > +#define CREATE_TRACE_POINTS
-> > > +#undef TRACE_INCLUDE_PATH
-> > > +#undef TRACE_INCLUDE_FILE
-> > 
-> > I'm curious to why you added the #undefs. I wouldn't think they were
-> > needed.
+> The following Coccinelle semantic patch was used for making the change:
 > 
-> They are needed because asm/trace/irq_vectors.h included prior that 
-> point defines them for itself and that makes the inclusion of 
-> trace/events/ipi.h fail.
+> @@
+> expression E;
+> statement S;
+> @@
 > 
+> E = \(alloc_bootmem\|alloc_bootmem_low\|alloc_bootmem_pages\|alloc_bootmem_low_pages\)(...)
+> ... when != E
+> - BUG_ON (E == NULL);
+> 
+> @@
+> expression E,E1;
+> @@
+> 
+> E = \(alloc_bootmem\|alloc_bootmem_low\|alloc_bootmem_pages\|alloc_bootmem_low_pages\)(...)
+> ... when != E
+> - memset(E,0,E1);
+> 
+> Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
+> Acked-by: Julia Lawall <julia.lawall@lip6.fr>
 
-Bah, I tried to get rid of the need for those, but it seems that the
-macro magic is getting a bit out of hand. I need a new macro magic
-hat :-p
+Acked-by: David Rientjes <rientjes@google.com>
 
-What you got here will have to do.
-
-
--- Steve
+Many callers of alloc_bootmem() do not check for the return value because 
+of this, there's no fallback available at this part in bootstrap so 
+there's nothing else that can be done.
