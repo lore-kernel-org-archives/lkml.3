@@ -1,113 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753032AbaGUIE3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 04:04:29 -0400
-Received: from mail-yh0-f48.google.com ([209.85.213.48]:52732 "EHLO
-	mail-yh0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751921AbaGUIE1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 04:04:27 -0400
-Date: Mon, 21 Jul 2014 09:04:20 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: "Opensource [Steve Twiss]" <stwiss.opensource@diasemi.com>
-Cc: Alessandro Zummo <a.zummo@towertech.it>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LINUX-KERNEL <linux-kernel@vger.kernel.org>,
-        RTC-LINUX <rtc-linux@googlegroups.com>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        David Dajun Chen <david.chen@diasemi.com>,
-        Mark Brown <broonie@linaro.org>,
-        Philipp Zabel <p.zabel@pengutronix.de>,
-        Support Opensource <support.opensource@diasemi.com>
-Subject: Re: [RFC V1] mfd: da9063: Add support for AD silicon variant
-Message-ID: <20140721080420.GU30888@lee--X1>
-References: <201407161655.s6GGtsHS030285@swsrvapps-01.diasemi.com>
+	id S1753150AbaGUIIa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 04:08:30 -0400
+Received: from [207.46.163.212] ([207.46.163.212]:34335 "EHLO
+	na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752210AbaGUII1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jul 2014 04:08:27 -0400
+From: "Yue Zhang (OSTC DEV)" <yuezha@microsoft.com>
+To: Richard Weinberger <richard@nod.at>
+CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "driverdev-devel@linuxdriverproject.org" 
+	<driverdev-devel@linuxdriverproject.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        "olaf@aepfle.de" <olaf@aepfle.de>,
+        "jasowang@redhat.com" <jasowang@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Haiyang Zhang <haiyangz@microsoft.com>,
+        KY Srinivasan <kys@microsoft.com>, Thomas Shao <huishao@microsoft.com>,
+        Dexuan Cui <decui@microsoft.com>
+Subject: RE: [PATCH] Hyperv: Trigger DHCP renew after host hibernation
+Thread-Topic: [PATCH] Hyperv: Trigger DHCP renew after host hibernation
+Thread-Index: AQHPom6EfguQ5YHfv0qQpfdXjiDiFZul1uyAgAP9BeCAAEiTAIAAENsg
+Date: Mon, 21 Jul 2014 08:05:29 +0000
+Message-ID: <DC7803B42427924284F2D5252E076A3B4476A363@SINEX14MBXC416.southpacific.corp.microsoft.com>
+References: <1405680903-28176-1-git-send-email-yuezha@microsoft.com>
+ <CAFLxGvxQU_z+mChHsNSu9VZEdXrU+RU75k6H18uKbdAj2TKD5g@mail.gmail.com>
+ <DC7803B42427924284F2D5252E076A3B44769DCA@SINEX14MBXC416.southpacific.corp.microsoft.com>
+ <53CCB944.8090709@nod.at>
+In-Reply-To: <53CCB944.8090709@nod.at>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.168.3.97]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <201407161655.s6GGtsHS030285@swsrvapps-01.diasemi.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:131.107.125.37;CTRY:US;IPV:CAL;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(438002)(199002)(189002)(51704005)(377454003)(164054003)(81342001)(95666004)(46102001)(76176999)(21056001)(50986999)(99396002)(76482001)(83072002)(85852003)(2656002)(87936001)(92726001)(92566001)(16796002)(106116001)(47776003)(31966008)(110136001)(85306003)(20776003)(106466001)(81156004)(64706001)(81542001)(77982001)(80022001)(77096002)(55846006)(74662001)(74502001)(54356999)(86362001)(23676002)(4396001)(69596002)(68736004)(79102001)(107046002)(6806004)(93886003)(19580395003)(19580405001)(83322001)(44976005)(33656002)(26826002)(84676001)(97736001)(86612001)(50466002);DIR:OUT;SFP:;SCL:1;SRVR:BN1PR03MB085;H:mail.microsoft.com;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;LANG:en;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
+X-O365ENT-EOP-Header: Message processed by -  O365_ENT: Allow from ranges
+ (Engineering ONLY)
+X-Forefront-PRVS: 0279B3DD0D
+Authentication-Results: spf=pass (sender IP is 131.107.125.37)
+ smtp.mailfrom=yuezha@microsoft.com; 
+X-OriginatorOrg: microsoft.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s6L88awB028434
 
-On Wed, 16 Jul 2014, Opensource [Steve Twiss] wrote:
-> From: Opensource [Steve Twiss] <stwiss.opensource@diasemi.com>
+> From: Richard Weinberger [mailto:richard@nod.at]
+> Sent: Monday, July 21, 2014 2:55 PM
 > 
-> Add register definitions for DA9063 AD (0x3) silicon variant ID
-> and Kconfig support to choose the silicon variant at compile time.
-> This patch also adds RTC support for the AD silicon changes.
+> Yue,
 > 
-> It adds AD support as a compile-time flag under a new menu item in
-> Kconfig called 'Support DA9063 AD silicon variant ID'. This allows
-> the user to choose AD support, or to leave blank and choose support
-> for the newer silicon variant ID, but not both at the same time.
+> Am 21.07.2014 04:44, schrieb Yue Zhang (OSTC DEV):
+> >> From: Richard Weinberger [mailto:richard.weinberger@gmail.com]
+> >> Why 10? Is this a random number which works by accident for ifplugd?
+> >> What about other networking implementations, is 10 also ok for them?
+> >> --
+> >> Thanks,
+> >> //richard
+> >
+> > Hi, Richard
+> >
+> > I checked ifplugd's code. The deferring time is 5 seconds. That's how
+> comes
+> > the "10s". I agree with you this is a magic number and should be avoid.
+> However,
+> > this is the only feasible solution right now. If there is a better solution, I will
+> be
+> > glad to switch to it.
+> >
+> > I tested the fix in Redhat, Ubuntu and SUSE and it works in all of them.
 > 
-> This extra option for supporting AD will only appear if the main 'Dialog
-> Semiconductor DA9063 PMIC Support' option is chosen. The AD support
-> boolean will be defaulted to false (unchecked) until the user
-> modifies it. This means that AD support is not turned on by default.
+> The problem I see is that there is no good way to trigger a DHCP renew from
+> a network device drivers. You're on the wrong layer.
+> 10 seconds may work but this is IMHO a hack which can easily break.
+> There are also more networking implementations than ifplugd.
+> Specially the systemd implementation looks promising.
 > 
-> The DA9063 probe function has been modified to use the compile time
-> directive CONFIG_MFD_DA9063_AD. This configuration option will allow
-> AD support only if this boolean is true, otherwise it will default to
-> support BB (or greater) silicon.
+> Can't you propagate the RNDIS_STATUS_NETWORK_CHANGE event to
+> userspace?
+> IIRC on HyperV guests already have a guest daemon. Let the daemon handle
+> the event such that distros can install their own hooks...
 > 
-> 
-> Signed-off-by: Opensource [Steve Twiss] <stwiss.opensource@diasemi.com>
-> ---
+> Thanks,
+> //richard
 
-[...]
+Hi, Richard
 
-> --- a/drivers/mfd/da9063-core.c
-> +++ b/drivers/mfd/da9063-core.c
+The problem of systemd implementation is that in different distros, the ways to 
+restart service are different. Propagating the event to userspace also doesn't help
+for this issue. 
 
-[...]
+The advantage of current solution is that it simulates a cable plugging in/out event.
+IMHO, in all the distros, this simulated event has already been well handled. It is a
+dup effect to implement new hooks.
 
-> -	if (variant_code != PMIC_DA9063_BB) {
-> -		dev_err(da9063->dev, "Unknown chip variant code: 0x%02X\n",
-> -				variant_code);
-> +#ifdef CONFIG_MFD_DA9063_AD
-> +	if (variant_code != PMIC_DA9063_AD) {
-> +		dev_err(da9063->dev,
-> +			"Only AD (0x3) silicon is supported in this configuration: 0x%02X\n",
-> +			variant_code);
->  		return -ENODEV;
->  	}
-> +#else
-> +	if (variant_code < PMIC_DA9063_BB) {
-> +		dev_err(da9063->dev,
-> +			"Cannot support variant code < BB (0x5): 0x%02X\n",
-> +			variant_code);
-> +		return -ENODEV;
-> +	}
-> +#endif
-
-[...]
-
-> diff --git a/drivers/rtc/rtc-da9063.c b/drivers/rtc/rtc-da9063.c
-> index 5953930..66c3073 100644
-> --- a/drivers/rtc/rtc-da9063.c
-> +++ b/drivers/rtc/rtc-da9063.c
-
-[...]
-
-> +#ifdef CONFIG_MFD_DA9063_AD
-> +	data[RTC_SEC] = 0;
-> +	ret = regmap_bulk_read(rtc->hw->regmap, DA9063_REG_ALARM_MI,
-> +			       &data[RTC_MIN], RTC_ALARM_DATA_LEN);
-> +#else
->  	ret = regmap_bulk_read(rtc->hw->regmap, DA9063_REG_ALARM_S,
->  			       &data[RTC_SEC], RTC_DATA_LEN);
-> +#endif
-
-This isn't how we normally do things.  You need to create local
-variables for the differences and populated them in a switch statement
-based on variant ID.
-
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org ‚îÇ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Thanks
+----
+Yue
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
