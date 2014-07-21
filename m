@@ -1,163 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755275AbaGUOn3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 10:43:29 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:52616 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755257AbaGUOn1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 10:43:27 -0400
-Date: Mon, 21 Jul 2014 16:43:24 +0200
-From: Petr =?iso-8859-1?Q?Ml=E1dek?= <pmladek@suse.cz>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Frederic Weisbecker <fweisbec@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3] ring-buffer: Race when writing and swapping cpu
- buffer in parallel
-Message-ID: <20140721144324.GG20751@pathway.suse.cz>
-References: <1405501084-16135-1-git-send-email-pmladek@suse.cz>
- <20140716124356.398e21f4@gandalf.local.home>
- <20140718153443.GC6774@pathway.suse.cz>
+	id S932490AbaGUOot (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 10:44:49 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:64759 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755279AbaGUOoq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jul 2014 10:44:46 -0400
+Date: Mon, 21 Jul 2014 07:44:42 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Jonathan Cameron <jic23@kernel.org>, linux-arm-kernel@lists.infradead.org,
+        Chanwoo Choi <cw00.choi@samsung.com>, ch.naveen@samsung.com,
+        mark.rutland@arm.com, devicetree@vger.kernel.org,
+        kgene.kim@samsung.com, pawel.moll@arm.com,
+        ijc+devicetree@hellion.org.uk, linux-iio@vger.kernel.org,
+        t.figa@samsung.com, rdunlap@infradead.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        kyungmin.park@samsung.com, robh+dt@kernel.org, galak@codeaurora.org,
+        heiko.stuebner@bq.com, Ben Dooks <ben-linux@fluff.org>,
+        linux-input <linux-input@vger.kernel.org>
+Subject: Re: [PATCH 2/2] iio: exynos-adc: add experimental touchscreen support
+Message-ID: <20140721144442.GB9112@core.coreip.homeip.net>
+References: <1405663186-26464-1-git-send-email-cw00.choi@samsung.com>
+ <53CBC969.4090704@kernel.org>
+ <20140720202842.GB18347@core.coreip.homeip.net>
+ <5158672.dMAnnUQc7Z@wuerfel>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140718153443.GC6774@pathway.suse.cz>
+In-Reply-To: <5158672.dMAnnUQc7Z@wuerfel>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 2014-07-18 17:34:43, Petr Mládek wrote:
-> On Wed 2014-07-16 12:43:56, Steven Rostedt wrote:
-> > On Wed, 16 Jul 2014 10:58:04 +0200
-> > Petr Mladek <pmladek@suse.cz> wrote:
+On Mon, Jul 21, 2014 at 12:23:58PM +0200, Arnd Bergmann wrote:
+> On Sunday 20 July 2014 13:28:42 Dmitry Torokhov wrote:
+> > On Sun, Jul 20, 2014 at 02:51:37PM +0100, Jonathan Cameron wrote:
+> > > >>+
+> > > >>+    do {
+> > > >>+        ret =exynos_read_s3c64xx_ts(dev, NULL, &x, &y, IIO_CHAN_INFO_RAW);
+> > > >= exynos
+> > > >>+        if (ret == -ETIMEDOUT)
+> > > >>+            break;
+> > > >>+
+> > > >>+        pressed = x & y & ADC_DATX_PRESSED;
+> > > >>+        if (!pressed)
+> > > >>+            break;
+> > > >>+
+> > > >>+        input_report_abs(info->input, ABS_X, x & ADC_DATX_MASK);
+> > > >>+        input_report_abs(info->input, ABS_Y, y & ADC_DATX_MASK);
+> > > >>+        input_report_key(info->input, BTN_TOUCH, 1);
+> > > >>+        input_sync(info->input);
+> > > >>+
+> > > >>+        msleep(1);
+> > > >>+    } while (1);
 > > 
+> > It would be nice to actually close the device even if someone is
+> > touching screen. Please implement open/close methods and have them set a
+> > flag that you would check here.
+> 
+> Ok. I think it's even better to move the request_irq() into the open function,
+> which will avoid the flag and defer the error handling into the actual opening,
+> as well as syncing the running irq with the close function.
+
+I do not quite like acquiring resources needed in open. I think drivers should
+do all resource acquisition in probe() and leave open()/close() to
+activate/quiesce devices.
+
+> 
+> > > >>+    /* data from s3c2410_ts driver */
+> > > >>+    info->input->name = "S3C24xx TouchScreen";
+> > > >>+    info->input->id.bustype = BUS_HOST;
+> > > >>+    info->input->id.vendor = 0xDEAD;
+> > > >>+    info->input->id.product = 0xBEEF;
 > > 
-> > > +/**
-> > > + * ring_buffer_swap_cpu - swap a CPU buffer between two ring buffers
-> > > + * @buffer_a: One buffer to swap with
-> > > + * @buffer_b: The other buffer to swap with
-> > > + *
-> > > + * This function is useful for tracers that want to take a "snapshot"
-> > > + * of a CPU buffer and has another back up buffer lying around.
-> > > + * It is expected that the tracer handles the cpu buffer not being
-> > > + * used at the moment.
-> > > + */
-> > > +int ring_buffer_swap_cpu(struct ring_buffer *buffer_a,
-> > > +			 struct ring_buffer *buffer_b, int cpu)
-> > > +{
-> > > +	struct ring_buffer_swap_info rb_swap_info = {
-> > > +		.buffer_a = buffer_a,
-> > > +		.buffer_b = buffer_b,
-> > > +	};
-> > > +	int ret;
-> > > +
-> > > +	/*
-> > > +	 * Swap the CPU buffer on the same CPU. Recording has to be fast
-> > > +	 * and and this helps to avoid memory barriers.
-> > > +	 */
-> > > +	ret = smp_call_function_single(cpu, ring_buffer_swap_this_cpu,
-> > > +				       (void *)&rb_swap_info, 1);
-> > > +	if (ret)
-> > > +		return ret;
-> > > +
-> > > +	return rb_swap_info.ret;
-> > 
-> > We need to check if the cpu is on the current CPU and if so, just call
-> > the function directly. Otherwise this can't be done from interrupt
-> > disabled context.
+> > You do not need to fill these entries with fake data.
 > 
-> I see, my testing was not good enough :-(
+> Ok, I wondered about this, but didn't want to change too much from
+> the old driver (I changed the version number).
 > 
-> So, I tried to use:
+> > > >>+    info->input->id.version = 0x0200;
 > 
-> 	if (cpu == smp_processor_id())
-> 		ring_buffer_swap_this_cpu(&rb_swap_info);
-> 	else
-> 		ret = smp_call_function_single(cpu, ring_buffer_swap_this_cpu,
-> 					       (void *)&rb_swap_info, 1);
-> 
-> It solved the problem with enabled IRQSOFF_TRACER and
-> FTRACE_STARTUP_TEST because there the swap was called from the same CPU.
-> 
-> But there is still the problem when the function is called from another
-> CPU. I manage to trigger it by:
-> 
->      echo 1 >/sys/kernel/debug/tracing/per_cpu/cpu0/snapshot
-> 
-> It produces:
-> 
-> [ 1594.060650] ------------[ cut here ]------------
-> [ 1594.060664] WARNING: CPU: 3 PID: 1558 at kernel/smp.c:242 smp_call_function_single+0xa4/0xb0()
-> [ 1594.060666] Modules linked in:
-> [ 1594.060673] CPU: 3 PID: 1558 Comm: bash Not tainted 3.16.0-rc1-2-default+ #2404
-> [ 1594.060676] Hardware name: Intel Corporation S2600CP/S2600CP, BIOS RMLSDP.86I.R3.27.D685.1305151734 05/15/2013
-> [ 1594.060679]  00000000000000f2 ffff880815b93db8 ffffffff818d34e6 ffff880815b93df8
-> [ 1594.060685]  ffffffff810cf28c ffff880813658150 0000000000000001 ffff880815b93e48
-> [ 1594.060691]  ffffffff8118b7e0 0000000000000000 0000000000000002 ffff880815b93e08
-> [ 1594.060696] Call Trace:
-> [ 1594.060705]  [<ffffffff818d34e6>] dump_stack+0x6a/0x7c
-> [ 1594.060713]  [<ffffffff810cf28c>] warn_slowpath_common+0x8c/0xc0
-> [ 1594.060720]  [<ffffffff8118b7e0>] ? ring_buffer_size+0x40/0x40
-> [ 1594.060725]  [<ffffffff810cf2da>] warn_slowpath_null+0x1a/0x20
-> [ 1594.060730]  [<ffffffff81149cc4>] smp_call_function_single+0xa4/0xb0
-> [ 1594.060735]  [<ffffffff8118c72f>] ring_buffer_swap_cpu+0x5f/0x70
-> [ 1594.060742]  [<ffffffff811981ea>] update_max_tr_single+0x8a/0x180
-> [ 1594.060747]  [<ffffffff8119843a>] tracing_snapshot_write+0x15a/0x1a0
-> [ 1594.060754]  [<ffffffff8123cf95>] vfs_write+0xd5/0x180
-> [ 1594.060759]  [<ffffffff8123d969>] SyS_write+0x59/0xc0
-> [ 1594.060766]  [<ffffffff818d8569>] system_call_fastpath+0x16/0x1b
-> [ 1594.060769] ---[ end trace 662a3aa81711f30e ]---
-> 
-> 
-> No clever idea comes to my mind now. Maybe Monday will bring some
-> fresh thinking.
-> 
-> I think about using IPI but this is what smp_call_function_single()
-> does and it warns about possible deadlocks. I am not sure if it is
-> because it is a generic function or if it is dangerous even in this
-> particular situation.
+> Do I need this?
 
-I have two more ideas but both are ugly :-(
+Not really.
 
+Thanks.
 
-1. I wonder if we really need to call ring_buffer_swap_cpu() with IRQs
-   disabled. It is used "only" in update_max_tr_single().
-
-   The disabled IRQs might be needed only inside __update_max_tr()
-   when we do something with "current" task.
-
-   Otherwise, update_max_tr_single() is already called with IRQs
-   disabled from:
-
-       + tracing_snapshot_write() - here the IRQs are disabled only to
-		call the function update_max_tr_single()/
-
-       + check_critical_timing() - it looks to me the IRQs could get
-		enabled before calling update_max_tr_single()
-
-
-
-2. Go back, do the swap on any CPU, and do memory barriers via IPI.
-
-   I wonder if the needed memory barrier in rb_reserve_next_event()
-   could be avoided by calling IPI from ring_buffer_swap_cpu().
-
-   I mean that rb_reserve_next_event() will include the current check
-   for swapped ring buffer without barriers. But
-   ring_buffer_swap_cpu() will interrupt the affected CPU and
-   basically do the barrier there only when needed.
-
-   But I am not sure how this is different from calling
-   smp_call_function_single() from ring_buffer_swap_cpu().
-   And I am back on the question why it is dangerous with disabled
-   interrupts. I can't find any clue in git history. And I miss this
-   part of the picture :-(
-
-
-Any pointers or ideas are welcome.
-
-
-Best Regards,
-Petr
+-- 
+Dmitry
