@@ -1,89 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754369AbaGUJkz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 05:40:55 -0400
-Received: from mga14.intel.com ([192.55.52.115]:26353 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754146AbaGUJkx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 05:40:53 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,699,1400050800"; 
-   d="scan'208";a="564840154"
-Message-ID: <1405935627.2455.6.camel@rzhang1-toshiba>
-Subject: Re: [PATCH v4 3/6] thermal: Added Bang-bang thermal governor
-From: Zhang Rui <rui.zhang@intel.com>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Peter Feuerer <peter@piie.net>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andreas Mohr <andi@lisas.de>, Borislav Petkov <bp@suse.de>,
-        Javi Merino <javi.merino@arm.com>
-Date: Mon, 21 Jul 2014 17:40:27 +0800
-In-Reply-To: <20140721092950.GB10016@pd.tnic>
-References: <1398561815-22033-1-git-send-email-peter@piie.net>
-	 <1405817480-25347-1-git-send-email-peter@piie.net>
-	 <1405817480-25347-4-git-send-email-peter@piie.net>
-	 <20140721092950.GB10016@pd.tnic>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
+	id S1754403AbaGUJlL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 05:41:11 -0400
+Received: from e23smtp01.au.ibm.com ([202.81.31.143]:40838 "EHLO
+	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751277AbaGUJlJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jul 2014 05:41:09 -0400
+Message-ID: <53CCE00A.6030903@linux.vnet.ibm.com>
+Date: Mon, 21 Jul 2014 15:10:26 +0530
+From: Hemant Kumar <hemant@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Namhyung Kim <namhyung@gmail.com>, Andi Kleen <andi@firstfloor.org>
+CC: linux-kernel@vger.kernel.org, srikar@linux.vnet.ibm.com,
+        peterz@infradead.org, oleg@redhat.com, hegdevasant@linux.vnet.ibm.com,
+        mingo@redhat.com, anton@redhat.com, systemtap@sourceware.org,
+        masami.hiramatsu.pt@hitachi.com, aravinda@linux.vnet.ibm.com,
+        penberg@iki.fi
+Subject: Re: [PATCH v2 1/3] perf/sdt : Listing of SDT markers by perf
+References: <20140717054826.19995.61782.stgit@hemant-fedora> <20140717055341.19995.97042.stgit@hemant-fedora> <87d2d24kui.fsf@tassilo.jf.intel.com> <87zjg3jv0v.fsf@sejong.aot.lge.com>
+In-Reply-To: <87zjg3jv0v.fsf@sejong.aot.lge.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14072109-1618-0000-0000-0000009D1CC5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-07-21 at 11:29 +0200, Borislav Petkov wrote:
-> On Sun, Jul 20, 2014 at 02:51:17AM +0200, Peter Feuerer wrote:
-> > The bang-bang thermal governor uses a hysteresis to switch abruptly on
-> > or off a cooling device.  It is intended to control fans, which can
-> > not be throttled but just switched on or off.
-> > Bang-bang cannot be set as default governor as it is intended for
-> > special devices only.  For those special devices the driver needs to
-> > explicitely request it.
-> > 
-> > Cc: Andrew Morton <akpm@linux-foundation.org>
-> > Cc: Zhang Rui <rui.zhang@intel.com>
-> > Cc: Andreas Mohr <andi@lisas.de>
-> > Cc: Borislav Petkov <bp@suse.de>
-> > Cc: Javi Merino <javi.merino@arm.com>
-> > Signed-off-by: Peter Feuerer <peter@piie.net>
-> > ---
-> >  drivers/thermal/Kconfig         |  10 +++
-> >  drivers/thermal/Makefile        |   1 +
-> >  drivers/thermal/gov_bang_bang.c | 131 ++++++++++++++++++++++++++++++++++++++++
-> >  drivers/thermal/thermal_core.c  |   5 ++
-> >  drivers/thermal/thermal_core.h  |   8 +++
-> >  5 files changed, 155 insertions(+)
-> >  create mode 100644 drivers/thermal/gov_bang_bang.c
-> > 
-> > diff --git a/drivers/thermal/Kconfig b/drivers/thermal/Kconfig
-> > index f9a1386..cdddf09 100644
-> > --- a/drivers/thermal/Kconfig
-> > +++ b/drivers/thermal/Kconfig
-> > @@ -84,6 +84,16 @@ config THERMAL_GOV_STEP_WISE
-> >  	  Enable this to manage platform thermals using a simple linear
-> >  	  governor.
-> >  
-> > +config THERMAL_GOV_BANG_BANG
-> > +	bool "Bang Bang thermal governor"
-> > +	default y
-> 
-> Right, this is problematic.
-> 
-> When people are faced with the new selection after doing oldconfig, they
-> can say yes or no.
-> 
-> However, as acerhdf depends on it now, prompting the user to
-> unconditionally says yes is kinda redundant. Especially as this governor
-> is not supposed to be default anyway.
-> 
-> Actually you don't need the Kconfig prompt at all as this is a sort-of
-> "internal" governor and devices select it. IOW, it should be "default n"
-> and ACERHDF will do "select THERMAL_GOV_BANG_BANG". Something like that
-> at least.
-> 
-I agree with this approach.
+Hi Andi and Namhyung,
 
-thanks,
-rui
+On 07/21/2014 08:08 AM, Namhyung Kim wrote:
+> Hi Andi,
+>
+> On Fri, 18 Jul 2014 10:50:45 -0700, Andi Kleen wrote:
+>> Hemant Kumar <hemant@linux.vnet.ibm.com> writes:
+>>> +/*
+>>> + * Finds out the libraries present in a system as shown by the command
+>>> + * "ldconfig --print-cache". Uses "=>" and '/' to find out the start of a
+>>> + * dso path.
+>>> + */
+>> This seems like a hack. How would that handle chroot, containers
+>> etc. ?
+> [SNIP]
+>>> +/*
+>>> + * Obtain the list of paths from the PATH env variable
+>>> + */
+>> Same as above. This probably needs to be more configurable to handle
+>> more ways to find binaries.
+> Agreed.  What about not to be smart?  IOW, just let users specify
+> directories and/or files to be scanned.  Maybe we can use it like:
+>
+>    perf list sdt --scan $PATH
+>
+> or
+>
+>    perf sdt-cache --scan /lib:/lib64
 
+Agreed, that we need to have options to add more binaries present in
+directories other than the default directories.
+
+>
+> We can add some wrapper or default directory later if needed.
+>
+>
+
+But wasn't the whole point of changing to this patchset was to make SDT 
+events more
+prominent, i.e., to display the SDTs present in the whole system?
+
+So, what I am trying to say is that, we already have the PATH bins and 
+libs' dsos, if
+we need to add more, we can use :
+     perf sdt-cache --scan [dir1][:dir2]...
+
+What would you suggest we do?
+
+-- 
+Thanks,
+Hemant Kumar
 
