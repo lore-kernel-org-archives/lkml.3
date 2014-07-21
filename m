@@ -1,69 +1,221 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754731AbaGUVJN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 17:09:13 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:59636 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753213AbaGUVJI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 17:09:08 -0400
-Date: Mon, 21 Jul 2014 14:09:00 -0700
-From: Nishanth Aravamudan <nacc@linux.vnet.ibm.com>
-To: Alexander Duyck <alexander.duyck@gmail.com>
-Cc: Jiang Liu <jiang.liu@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, David Rientjes <rientjes@google.com>,
-        Mike Galbraith <umgwanakikbuti@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Jesse Brandeburg <jesse.brandeburg@intel.com>,
-        Bruce Allan <bruce.w.allan@intel.com>,
-        Carolyn Wyborny <carolyn.wyborny@intel.com>,
-        Don Skidmore <donald.c.skidmore@intel.com>,
-        Greg Rose <gregory.v.rose@intel.com>,
-        Alex Duyck <alexander.h.duyck@intel.com>,
-        John Ronciak <john.ronciak@intel.com>,
-        Mitch Williams <mitch.a.williams@intel.com>,
-        Linux NICS <linux.nics@intel.com>, Tony Luck <tony.luck@intel.com>,
-        linux-mm@kvack.org, linux-hotplug@vger.kernel.org,
-        linux-kernel@vger.kernel.org, e1000-devel@lists.sourceforge.net,
-        Netdev <netdev@vger.kernel.org>
-Subject: Re: [RFC Patch V1 15/30] mm, igb: Use cpu_to_mem()/numa_mem_id() to
- support memoryless node
-Message-ID: <20140721210900.GI4156@linux.vnet.ibm.com>
-References: <1405064267-11678-1-git-send-email-jiang.liu@linux.intel.com>
- <1405064267-11678-16-git-send-email-jiang.liu@linux.intel.com>
- <20140721174218.GD4156@linux.vnet.ibm.com>
- <CAKgT0UdZdbduP-=R7uRCxJVxt1yCDoHpnercnDoyrCbWNtx=6Q@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAKgT0UdZdbduP-=R7uRCxJVxt1yCDoHpnercnDoyrCbWNtx=6Q@mail.gmail.com>
-X-Operating-System: Linux 3.13.0-32-generic (x86_64)
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14072121-0320-0000-0000-0000000B1365
+	id S1754783AbaGUVJZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 17:09:25 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:62535 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753213AbaGUVJW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jul 2014 17:09:22 -0400
+From: Brian Norris <computersforpeace@gmail.com>
+To: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>
+Cc: Matt Porter <mporter@linaro.org>, Christian Daudt <bcm@fixthebug.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        <linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        <devicetree@vger.kernel.org>, Gregory Fong <gregory.0xf0@gmail.com>,
+        Brian Norris <computersforpeace@gmail.com>,
+        Florian Fainelli <f.fainelli@gmail.com>,
+        Marc Carino <marc.ceeeee@gmail.com>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>
+Subject: [PATCH v8 02/11] power: reset: Add reboot driver for brcmstb
+Date: Mon, 21 Jul 2014 14:07:57 -0700
+Message-Id: <1405976886-27807-3-git-send-email-computersforpeace@gmail.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1405976886-27807-1-git-send-email-computersforpeace@gmail.com>
+References: <1405976886-27807-1-git-send-email-computersforpeace@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 21.07.2014 [12:53:33 -0700], Alexander Duyck wrote:
-> I do agree the description should probably be changed.  There shouldn't be
-> any panics involved, only a performance impact as it will be reallocating
-> always if it is on a node with no memory.
+From: Marc Carino <marc.ceeeee@gmail.com>
 
-Yep, thanks for the review.
+Add support for reboot functionality on boards with ARM-based
+Broadcom STB chipsets.
 
-> My intention on this was to make certain that the memory used is from the
-> closest node possible.  As such I believe this change likely honours that.
+Signed-off-by: Marc Carino <marc.ceeeee@gmail.com>
+Signed-off-by: Brian Norris <computersforpeace@gmail.com>
+Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+Cc: David Woodhouse <dwmw2@infradead.org>
+---
+ arch/arm/mach-bcm/Kconfig            |   1 +
+ drivers/power/reset/Kconfig          |  10 +++
+ drivers/power/reset/Makefile         |   1 +
+ drivers/power/reset/brcmstb-reboot.c | 120 +++++++++++++++++++++++++++++++++++
+ 4 files changed, 132 insertions(+)
+ create mode 100644 drivers/power/reset/brcmstb-reboot.c
 
-Absolutely, just wanted to make it explicit that it's not a functional
-fix, just a performance fix (presuming this shows up at all on systems
-that have memoryless NUMA nodes).
-
-I'd suggest an update to the comments, as well.
-
-Thanks,
-Nish
+diff --git a/arch/arm/mach-bcm/Kconfig b/arch/arm/mach-bcm/Kconfig
+index 0073633e7699..9782e8d80647 100644
+--- a/arch/arm/mach-bcm/Kconfig
++++ b/arch/arm/mach-bcm/Kconfig
+@@ -94,6 +94,7 @@ config ARCH_BRCMSTB
+ 	select MIGHT_HAVE_PCI
+ 	select HAVE_SMP
+ 	select HAVE_ARM_ARCH_TIMER
++	select POWER_RESET_BRCMSTB
+ 	help
+ 	  Say Y if you intend to run the kernel on a Broadcom ARM-based STB
+ 	  chipset.
+diff --git a/drivers/power/reset/Kconfig b/drivers/power/reset/Kconfig
+index bdcf5173e377..fcb9825debe5 100644
+--- a/drivers/power/reset/Kconfig
++++ b/drivers/power/reset/Kconfig
+@@ -20,6 +20,16 @@ config POWER_RESET_AXXIA
+ 
+ 	  Say Y if you have an Axxia family SoC.
+ 
++config POWER_RESET_BRCMSTB
++	bool "Broadcom STB reset driver"
++	depends on POWER_RESET && ARCH_BRCMSTB
++	help
++	  This driver provides restart support for ARM-based Broadcom STB
++	  boards.
++
++	  Say Y here if you have an ARM-based Broadcom STB board and you wish
++	  to have restart support.
++
+ config POWER_RESET_GPIO
+ 	bool "GPIO power-off driver"
+ 	depends on OF_GPIO && POWER_RESET
+diff --git a/drivers/power/reset/Makefile b/drivers/power/reset/Makefile
+index dde2e8bbac53..7379818ca69d 100644
+--- a/drivers/power/reset/Makefile
++++ b/drivers/power/reset/Makefile
+@@ -1,5 +1,6 @@
+ obj-$(CONFIG_POWER_RESET_AS3722) += as3722-poweroff.o
+ obj-$(CONFIG_POWER_RESET_AXXIA) += axxia-reset.o
++obj-$(CONFIG_POWER_RESET_BRCMSTB) += brcmstb-reboot.o
+ obj-$(CONFIG_POWER_RESET_GPIO) += gpio-poweroff.o
+ obj-$(CONFIG_POWER_RESET_MSM) += msm-poweroff.o
+ obj-$(CONFIG_POWER_RESET_QNAP) += qnap-poweroff.o
+diff --git a/drivers/power/reset/brcmstb-reboot.c b/drivers/power/reset/brcmstb-reboot.c
+new file mode 100644
+index 000000000000..3f236924742a
+--- /dev/null
++++ b/drivers/power/reset/brcmstb-reboot.c
+@@ -0,0 +1,120 @@
++/*
++ * Copyright (C) 2013 Broadcom Corporation
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License as
++ * published by the Free Software Foundation version 2.
++ *
++ * This program is distributed "as is" WITHOUT ANY WARRANTY of any
++ * kind, whether express or implied; without even the implied warranty
++ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++
++#include <linux/device.h>
++#include <linux/errno.h>
++#include <linux/init.h>
++#include <linux/io.h>
++#include <linux/jiffies.h>
++#include <linux/of_address.h>
++#include <linux/of_irq.h>
++#include <linux/of_platform.h>
++#include <linux/platform_device.h>
++#include <linux/printk.h>
++#include <linux/reboot.h>
++#include <linux/regmap.h>
++#include <linux/smp.h>
++#include <linux/mfd/syscon.h>
++
++#include <asm/system_misc.h>
++
++#define RESET_SOURCE_ENABLE_REG 1
++#define SW_MASTER_RESET_REG 2
++
++static struct regmap *regmap;
++static u32 rst_src_en;
++static u32 sw_mstr_rst;
++
++static void brcmstb_reboot(enum reboot_mode mode, const char *cmd)
++{
++	int rc;
++	u32 tmp;
++
++	rc = regmap_write(regmap, rst_src_en, 1);
++	if (rc) {
++		pr_err("failed to write rst_src_en (%d)\n", rc);
++		return;
++	}
++
++	rc = regmap_read(regmap, rst_src_en, &tmp);
++	if (rc) {
++		pr_err("failed to read rst_src_en (%d)\n", rc);
++		return;
++	}
++
++	rc = regmap_write(regmap, sw_mstr_rst, 1);
++	if (rc) {
++		pr_err("failed to write sw_mstr_rst (%d)\n", rc);
++		return;
++	}
++
++	rc = regmap_read(regmap, sw_mstr_rst, &tmp);
++	if (rc) {
++		pr_err("failed to read sw_mstr_rst (%d)\n", rc);
++		return;
++	}
++
++	while (1)
++		;
++}
++
++static int brcmstb_reboot_probe(struct platform_device *pdev)
++{
++	int rc;
++	struct device_node *np = pdev->dev.of_node;
++
++	regmap = syscon_regmap_lookup_by_phandle(np, "syscon");
++	if (IS_ERR(regmap)) {
++		pr_err("failed to get syscon phandle\n");
++		return -EINVAL;
++	}
++
++	rc = of_property_read_u32_index(np, "syscon", RESET_SOURCE_ENABLE_REG,
++					&rst_src_en);
++	if (rc) {
++		pr_err("can't get rst_src_en offset (%d)\n", rc);
++		return -EINVAL;
++	}
++
++	rc = of_property_read_u32_index(np, "syscon", SW_MASTER_RESET_REG,
++					&sw_mstr_rst);
++	if (rc) {
++		pr_err("can't get sw_mstr_rst offset (%d)\n", rc);
++		return -EINVAL;
++	}
++
++	arm_pm_restart = brcmstb_reboot;
++
++	return 0;
++}
++
++static const struct of_device_id of_match[] = {
++	{ .compatible = "brcm,brcmstb-reboot", },
++	{},
++};
++
++static struct platform_driver brcmstb_reboot_driver = {
++	.probe = brcmstb_reboot_probe,
++	.driver = {
++		.name = "brcmstb-reboot",
++		.owner = THIS_MODULE,
++		.of_match_table = of_match,
++	},
++};
++
++static int __init brcmstb_reboot_init(void)
++{
++	return platform_driver_probe(&brcmstb_reboot_driver,
++					brcmstb_reboot_probe);
++}
++subsys_initcall(brcmstb_reboot_init);
+-- 
+1.9.1
 
