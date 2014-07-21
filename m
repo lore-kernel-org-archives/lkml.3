@@ -1,56 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751926AbaGUAet (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jul 2014 20:34:49 -0400
-Received: from goedel.dlitz.net ([64.5.53.201]:46818 "EHLO goedel.dlitz.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751832AbaGUAer (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jul 2014 20:34:47 -0400
-X-Greylist: delayed 544 seconds by postgrey-1.27 at vger.kernel.org; Sun, 20 Jul 2014 20:34:46 EDT
-Date: Sun, 20 Jul 2014 17:25:40 -0700
-From: Dwayne Litzenberger <dlitz@dlitz.net>
-To: "Theodore Ts'o" <tytso@mit.edu>, Christoph Hellwig <hch@infradead.org>,
-        linux-kernel@vger.kernel.org, linux-abi@vger.kernel.org,
-        linux-crypto@vger.kernel.org, beck@openbsd.org
-Subject: Re: [PATCH, RFC] random: introduce getrandom(2) system call
-Message-ID: <20140721002540.GA20595@rivest.lan>
-References: <1405588695-12014-1-git-send-email-tytso@mit.edu>
- <20140717161215.GA14951@infradead.org>
- <20140717170115.GO1491@thunk.org>
+	id S1751808AbaGUBAG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jul 2014 21:00:06 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:56206 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750795AbaGUBAE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Jul 2014 21:00:04 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Linux PCI <linux-pci@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Huang Ying <huang.ying.caritas@gmail.com>
+Subject: [Update][PATCH] PCI / PM: Allow PCI devices to be put into D3cold during system suspend
+Date: Mon, 21 Jul 2014 03:18:24 +0200
+Message-ID: <2273188.7kGSSgiQeA@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <3331155.XU3LgTaBr4@vostro.rjw.lan>
+References: <3331155.XU3LgTaBr4@vostro.rjw.lan>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; format=flowed
-Content-Disposition: inline
-In-Reply-To: <20140717170115.GO1491@thunk.org>
-X-Homepage: https://www.dlitz.net/
-X-OpenPGP: url=https://www.dlitz.net/go/gpgkey/;
- id=19E11FE8B3CFF273ED174A24928CEC1339C25CF7; preference=signencrypt
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 17, 2014 at 01:01:16PM -0400, Theodore Ts'o wrote:
->The getrandom(2) system call is a superset of getentropy(2).  When we
->add the support for this into glibc, it won't be terribly difficult
->nor annoying to drop the following in alongside the standard support
->needed for any new system call:
->
->int getentropy(void *buf, size_t buflen)
->{
->	int	ret;
->
->	ret = getentropy(buf, buflen, 0);
->	return (ret > 0) ? 0 : ret;
->}
->
->The reason for the additional flags is that I'm trying to solve more
->problems than just getentropy()'s raison d'etre.  The discussion of
->this is in the commit description; let me know if there bits that I
->could make clearer.
+From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-This could still return predictable bytes during early boot, though, 
-right?
+Commit 448bd857d48e (PCI/PM: add PCIe runtime D3cold support) added
+a check to prevent PCI devices from being put into D3cold during
+system suspend without giving any particular reason.
 
--- 
-Dwayne C. Litzenberger <dlitz@dlitz.net>
- OpenPGP: 19E1 1FE8 B3CF F273 ED17  4A24 928C EC13 39C2 5CF7
+Also the check isn't really necessary, because acpi_pci_set_power_state()
+maps PCI_D3hot to ACPI_STATE_D3_COLD anyway.
+
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+---
+
+Ying notices that acpi_pci_set_power_state() maps PCI D3hot to ACPI
+D3cold, so the check actually isn't effective even, but that means
+that the second part of my original changelog was in fact incorrect.
+
+---
+ drivers/pci/pci.c |    4 ----
+ 1 file changed, 4 deletions(-)
+
+Index: linux-pm/drivers/pci/pci.c
+===================================================================
+--- linux-pm.orig/drivers/pci/pci.c
++++ linux-pm/drivers/pci/pci.c
+@@ -1907,10 +1907,6 @@ int pci_prepare_to_sleep(struct pci_dev
+ 	if (target_state == PCI_POWER_ERROR)
+ 		return -EIO;
+ 
+-	/* D3cold during system suspend/hibernate is not supported */
+-	if (target_state > PCI_D3hot)
+-		target_state = PCI_D3hot;
+-
+ 	pci_enable_wake(dev, target_state, device_may_wakeup(&dev->dev));
+ 
+ 	error = pci_set_power_state(dev, target_state);
+
