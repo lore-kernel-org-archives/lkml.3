@@ -1,67 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754630AbaGUMCZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 08:02:25 -0400
-Received: from mail-qa0-f47.google.com ([209.85.216.47]:62666 "EHLO
-	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753954AbaGUMCY (ORCPT
+	id S1754834AbaGUMDT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 08:03:19 -0400
+Received: from mail-ie0-f176.google.com ([209.85.223.176]:51078 "EHLO
+	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754613AbaGUMDS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 08:02:24 -0400
-Date: Mon, 21 Jul 2014 08:02:19 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Vladimir Davydov <vdavydov@parallels.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>, Hugh Dickins <hughd@google.com>,
-        Greg Thelen <gthelen@google.com>, Glauber Costa <glommer@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Subject: Re: [RFC PATCH] memcg: export knobs for the defaul cgroup hierarchy
-Message-ID: <20140721120219.GA12921@htj.dyndns.org>
-References: <1405521578-19988-1-git-send-email-mhocko@suse.cz>
- <20140716155814.GZ29639@cmpxchg.org>
- <20140718154443.GM27940@esperanza>
- <20140721090724.GA8393@dhcp22.suse.cz>
- <20140721114655.GB8393@dhcp22.suse.cz>
+	Mon, 21 Jul 2014 08:03:18 -0400
+Message-ID: <53CD018A.3080800@linaro.org>
+Date: Mon, 21 Jul 2014 07:03:22 -0500
+From: Alex Elder <elder@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140721114655.GB8393@dhcp22.suse.cz>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: =?ISO-8859-1?Q?Petr_Ml=E1dek?= <pmladek@suse.cz>
+CC: akpm@linux-foundation.org, kay@vrfy.org, bp@suse.de,
+        john.stultz@linaro.org, jack@suse.cz, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4 2/7] printk: initialize syslog_prev and console_prev
+References: <1405718885-11227-1-git-send-email-elder@linaro.org> <1405718885-11227-3-git-send-email-elder@linaro.org> <20140721100135.GB20751@pathway.suse.cz>
+In-Reply-To: <20140721100135.GB20751@pathway.suse.cz>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On 07/21/2014 05:01 AM, Petr Mládek wrote:
+> On Fri 2014-07-18 16:28:00, Alex Elder wrote:
+>> Two global variables, "syslog_prev" and "console_prev", maintain a
+>> copy of the flags value used in the log record most recently
+>> formatted for syslog or the console, respectively.
+>>
+>> Initially there is no previous formatted log record, and these
+>> variables simply have an initial value 0.  And occasionally log
+>> records can get consumed at a rate such that syslog or the console
+>> can't keep up, in which case those variables (along with their
+>> corresponding position variables) must be reset.  Here too, they're
+>> reset to 0.
+>>
+>> This patch changes it so the initial value used is LOG_NEWLINE.
+>> That is, if we know nothing about the prevously-formatted log
+>> record, we can assume it was complete, and ended with a newline.
+>>
+>> This is being done to support the next patch.  Initializing
+>> these variables this way makes LOG_NEWLINE and LOG_CONT be
+>> mutually exclusive, and the next patch uses that fact to simplify
+>> some logic.
+> 
+> I have decided to double check it and found more locations where the flags were
+> reset to 0:
+> 
+>       + "prev" variable in syslog_print_all()
+>       + "prev" variable in kmsg_dump_get_buffer()
 
-On Mon, Jul 21, 2014 at 01:46:55PM +0200, Michal Hocko wrote:
-> Even then, I do not see how would this fork-bomb prevention work without
-> causing OOMs and killing other processes within the group. The danger
-> would be still contained in the group and prevent from the system wide
-> disruption. Do we really want only such a narrow usecase?
+Yes, you're right.  I'm glad you checked.  Some of those
+don't matter much (because they're only measuring the size
+of the needed buffer) but I'll do it on all of them for
+consistency.
 
-Does that really matter?  I don't buy the usefulness of the various
-suggested partial failure modes.  For example, is fork-bomb actually
-something isolatable by not granting more forks?  Doing so is likely
-to cripple the cgroup anyway, which apparently needed forking to
-operate.  Such partial failure mode would only be useful iff the
-culprit is mostly isolated even in the cgroup, stops forking once it
-starts to fail, the already forked excess processes can be identified
-and killed somehow without requiring forking in the cgroup, and fork
-failures in other parts of the cgroup hopefully hasn't broken the
-service provided by the cgroup yet.
+> Also I think that we should not reset it to LOG_NEWLINE when the
+> message is gone. I would suggest to do
+> 
+> 	&= (LOG_CONT | LOG_NEWLINE);
 
-In the long term, we should have per-cgroup OOM killing and terminate
-the cgroups which fail to behave.  I think the value is in the ability
-to contain such failures, not in the partial failure modes that may or
-may not be salvageable without any way to systematically determine
-which way the situation is.  Short of being able to detect which
-specific process are fork bombing and take them out, which I don't
-think can or should, I believe that fork bomb protection should be
-dealt as an integral part of generic memcg operation.
+What you're saying is that in the case we're resetting
+because we couldn't keep up, we *do* in fact know something
+about the previously-formatted message, so we should preserve
+that.  That's an astute observation.  I like it, and will
+implement it.
 
-Thanks.
+Thanks.  v5 will be coming out this morning.
 
--- 
-tejun
+					-Alex
+
+> I mean to preserve the status of the last copied/printed piece. Then
+> we could put there "\n" when the last proceed piece was continuous and
+> the next one starts with prefix.
+> 
+> The only exception would be "console_prev" in  console_unlock()
+> because there we already add "\n" in the "** %u printk messages
+> dropped **" warning.
+> 
+> How does that sound?
+> 
+> 
+> Best Regards,
+> Petr
+> 
+> 
+>>
+>> Signed-off-by: Alex Elder <elder@linaro.org>
+>> Reviewed-by: Petr Mládek <pmladek@suse.cz>
+>> ---
+>>  kernel/printk/printk.c | 10 +++++-----
+>>  1 file changed, 5 insertions(+), 5 deletions(-)
+>>
+>> diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
+>> index ffc9928..4034a88 100644
+>> --- a/kernel/printk/printk.c
+>> +++ b/kernel/printk/printk.c
+>> @@ -236,7 +236,7 @@ DECLARE_WAIT_QUEUE_HEAD(log_wait);
+>>  /* the next printk record to read by syslog(READ) or /proc/kmsg */
+>>  static u64 syslog_seq;
+>>  static u32 syslog_idx;
+>> -static enum log_flags syslog_prev;
+>> +static enum log_flags syslog_prev = LOG_NEWLINE;
+>>  static size_t syslog_partial;
+>>  
+>>  /* index and sequence number of the first record stored in the buffer */
+>> @@ -250,7 +250,7 @@ static u32 log_next_idx;
+>>  /* the next printk record to write to the console */
+>>  static u64 console_seq;
+>>  static u32 console_idx;
+>> -static enum log_flags console_prev;
+>> +static enum log_flags console_prev = LOG_NEWLINE;
+>>  
+>>  /* the next printk record to read after the last 'clear' command */
+>>  static u64 clear_seq;
+>> @@ -1071,7 +1071,7 @@ static int syslog_print(char __user *buf, int size)
+>>  			/* messages are gone, move to first one */
+>>  			syslog_seq = log_first_seq;
+>>  			syslog_idx = log_first_idx;
+>> -			syslog_prev = 0;
+>> +			syslog_prev = LOG_NEWLINE;
+>>  			syslog_partial = 0;
+>>  		}
+>>  		if (syslog_seq == log_next_seq) {
+>> @@ -1301,7 +1301,7 @@ int do_syslog(int type, char __user *buf, int len, bool from_file)
+>>  			/* messages are gone, move to first one */
+>>  			syslog_seq = log_first_seq;
+>>  			syslog_idx = log_first_idx;
+>> -			syslog_prev = 0;
+>> +			syslog_prev = LOG_NEWLINE;
+>>  			syslog_partial = 0;
+>>  		}
+>>  		if (from_file) {
+>> @@ -2149,7 +2149,7 @@ again:
+>>  			/* messages are gone, move to first one */
+>>  			console_seq = log_first_seq;
+>>  			console_idx = log_first_idx;
+>> -			console_prev = 0;
+>> +			console_prev = LOG_NEWLINE;
+>>  		} else {
+>>  			len = 0;
+>>  		}
+>> -- 
+>> 1.9.1
+>>
+
