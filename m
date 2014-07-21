@@ -1,73 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932101AbaGULYT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 07:24:19 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:41693 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754561AbaGULYS (ORCPT
+	id S1754841AbaGUL1J (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 07:27:09 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:60136 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754157AbaGUL1H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 07:24:18 -0400
-From: Paolo Bonzini <pbonzini@redhat.com>
-To: torvalds@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, gleb@kernel.org, kvm@vger.kernel.org
-Subject: [GIT PULL] KVM changes for 3.16-rc7
-Date: Mon, 21 Jul 2014 13:24:05 +0200
-Message-Id: <1405941845-2052-1-git-send-email-pbonzini@redhat.com>
-X-Mailer: git-send-email 1.8.3.1
+	Mon, 21 Jul 2014 07:27:07 -0400
+Date: Mon, 21 Jul 2014 04:27:04 -0700
+From: Christoph Hellwig <hch@infradead.org>
+To: "K. Y. Srinivasan" <kys@microsoft.com>
+Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org, ohering@suse.com, apw@canonical.com,
+        jasowang@redhat.com, jbottomley@parallels.com, hch@infradead.org,
+        linux-scsi@vger.kernel.org
+Subject: Re: [PATCH 1/1] Drivers: scsi: storvsc: Add blist flags
+Message-ID: <20140721112704.GA15455@infradead.org>
+References: <1405913622-14266-1-git-send-email-kys@microsoft.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1405913622-14266-1-git-send-email-kys@microsoft.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+On Sun, Jul 20, 2014 at 08:33:42PM -0700, K. Y. Srinivasan wrote:
+> Add blist flags to permit the reading of the VPD pages even when
+> the target may claim SPC-2 compliance. MSFT targets currently
+> claim SPC-2 compliance while they implement post SPC-2 features.
+> With this patch we can correctly handle WRITE_SAME_16 issues.
+> 
+> Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 
-The following changes since commit cd3de83f147601356395b57a8673e9c5ff1e59d1:
+This looks way to complicated - should be a single line added to your
+slave_configure function, maybe plus a comment stating what you do
+in your commit message:
 
-  Linux 3.16-rc4 (2014-07-06 12:37:51 -0700)
 
-are available in the git repository at:
+	sdev->sdev_bflags |= BLIST_TRY_VPD_PAGES;
 
-  git://git.kernel.org/pub/scm/virt/kvm/kvm.git tags/for-linus
-
-for you to fetch changes up to bb18b526a9d8d4a3fe56f234d5013b9f6036978d:
-
-  Merge tag 'signed-for-3.16' of git://github.com/agraf/linux-2.6 into kvm-master (2014-07-08 12:08:58 +0200)
-
-----------------------------------------------------------------
-
-These are mostly PPC changes for 3.16-new things.  However, there is
-an x86 change too and it is a regression from 3.14.  As it only affects
-nested virtualization and there were other changes in this area in 3.16,
-I am not nominating it for 3.15-stable.
-
-----------------------------------------------------------------
-Alexander Graf (3):
-      PPC: Add _GLOBAL_TOC for 32bit
-      KVM: PPC: Book3S PR: Fix ABIv2 on LE
-      KVM: PPC: RTAS: Do byte swaps explicitly
-
-Aneesh Kumar K.V (1):
-      KVM: PPC: BOOK3S: HV: Use base page size when comparing against slb value
-
-Anton Blanchard (1):
-      KVM: PPC: Assembly functions exported to modules need _GLOBAL_TOC()
-
-Bandan Das (1):
-      KVM: x86: Check for nested events if there is an injectable interrupt
-
-Mihai Caraman (1):
-      KVM: PPC: Book3E: Unlock mmu_lock when setting caching atttribute
-
-Paolo Bonzini (1):
-      Merge tag 'signed-for-3.16' of git://github.com/agraf/linux-2.6 into kvm-master
-
- arch/powerpc/include/asm/kvm_book3s_64.h | 19 +++++++++-
- arch/powerpc/include/asm/ppc_asm.h       |  2 +
- arch/powerpc/kvm/book3s_64_mmu_hv.c      |  2 +-
- arch/powerpc/kvm/book3s_hv_rm_mmu.c      |  7 +---
- arch/powerpc/kvm/book3s_hv_rmhandlers.S  |  2 +-
- arch/powerpc/kvm/book3s_interrupts.S     |  4 ++
- arch/powerpc/kvm/book3s_rmhandlers.S     |  6 ++-
- arch/powerpc/kvm/book3s_rtas.c           | 65 +++++++++-----------------------
- arch/powerpc/kvm/e500_mmu_host.c         |  3 +-
- arch/x86/kvm/x86.c                       | 12 ++++++
- 10 files changed, 64 insertions(+), 58 deletions(-)
