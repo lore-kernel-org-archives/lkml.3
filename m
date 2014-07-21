@@ -1,160 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933014AbaGUOOo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 10:14:44 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:28727 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932601AbaGUOOk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 10:14:40 -0400
-X-IronPort-AV: E=Sophos;i="5.01,701,1400025600"; 
-   d="scan'208";a="154219790"
-Date: Mon, 21 Jul 2014 15:13:40 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Vitaly Kuznetsov <vkuznets@redhat.com>, <stefano.stabellini@eu.citrix.com>,
-        <xen-devel@lists.xenproject.org>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        Andrew Jones <drjones@redhat.com>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH RFC 4/4] xen/pvhvm: Make MSI IRQs work after kexec
-In-Reply-To: <20140716134050.GH19585@laptop.dumpdata.com>
-Message-ID: <alpine.DEB.2.02.1407211504390.2295@kaball.uk.xensource.com>
-References: <1405431640-649-1-git-send-email-vkuznets@redhat.com> <1405431640-649-5-git-send-email-vkuznets@redhat.com> <20140715152105.GP3403@laptop.dumpdata.com> <87fvi1u16k.fsf@vitty.brq.redhat.com> <20140716134050.GH19585@laptop.dumpdata.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-X-DLP: MIA1
+	id S933027AbaGUOO6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 10:14:58 -0400
+Received: from mail.sigma-star.at ([95.130.255.111]:14392 "EHLO
+	mail.sigma-star.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932487AbaGUOEE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jul 2014 10:04:04 -0400
+From: Richard Weinberger <richard@sigma-star.at>
+To: akpm@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        Richard Weinberger <richard@nod.at>, monstr@monstr.eu
+Subject: [PATCH 12/43] microblaze: Use get_signal() signal_setup_done()
+Date: Mon, 21 Jul 2014 16:02:58 +0200
+Message-Id: <1405951409-16953-13-git-send-email-richard@sigma-star.at>
+X-Mailer: git-send-email 1.8.4.5
+In-Reply-To: <1405951409-16953-1-git-send-email-richard@sigma-star.at>
+References: <1405951409-16953-1-git-send-email-richard@sigma-star.at>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 16 Jul 2014, Konrad Rzeszutek Wilk wrote:
-> On Wed, Jul 16, 2014 at 11:01:55AM +0200, Vitaly Kuznetsov wrote:
-> > Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> writes:
-> > 
-> > > On Tue, Jul 15, 2014 at 03:40:40PM +0200, Vitaly Kuznetsov wrote:
-> > >> When kexec was peformed MSI IRQs for passthrough-ed devices were already
-> > >> mapped and we see non-zero pirq extracted from MSI msg. xen_irq_from_pirq()
-> > >> fails as we have no IRQ mapping information for that. Requesting for new
-> > >> mapping with __write_msi_msg() does not result in MSI IRQ being remapped so
-> > >> we don't recieve these IRQs.
-> > >
-> > > receive
-> > >
-> > 
-> > Thanks for your comments!
-> 
-> Thank you for quick turnaround with the answers!
-> > 
-> > > How come '__write_msi_msg' does not result in new MSI IRQs?
-> > >
-> > 
-> > Actually that was the hidden question in my RFC :-)
-> > 
-> > Let me describe what I see. When normal boot is performed we have the
-> > following in xen_hvm_setup_msi_irqs():
-> > 
-> > __read_msi_msg()
-> >  pirq -> 0
-> > 
-> > then we allocate new pirq with
-> >  pirq = xen_allocate_pirq_msi()
-> >  pirq -> 54
-> > 
-> > and we have the following mapping:
-> > xen: msi --> pirq=54 --> irq=72
-> > 
-> > in 'xl debug-keys i':
-> > (XEN)    IRQ:  29 affinity:04 vec:b9 type=PCI-MSI status=00000030 in-flight=0 domain-list=7: 54(----),
-> > 
-> > After kexec we see the following:
-> > __read_msi_msg()
-> >  pirq -> 54
-> > 
-> > but as xen_irq_from_pirq() fails we follow the same path allocating new pirq:
-> >  pirq = xen_allocate_pirq_msi()
-> >  pirq -> 55
-> > 
-> > and we have the following mapping:
-> > xen: msi --> pirq=55 --> irq=75
-> > 
-> > However (afaict) mapping in xen wasn't updated:
-> > 
-> > in 'xl debug-keys i':
-> > (XEN)    IRQ:  29 affinity:02 vec:b9 type=PCI-MSI status=00000030 in-flight=0 domain-list=7: 54(--M-),
-> 
-> I am wondering if that is related to in QEMU traditional:
-> 
->     qemu-xen-trad: free all the pirqs for msi/msix when driver unloads
-> 
-> (which in the upstream QEMU is 1d4fd4f0e2fc5dcae0c60e00cc9af95f52988050)
-> 
-> If you have that patch in, is the PIRQ value correctly updated?
-> 
-> > 
-> > > Is it fair to state that your code ends up reading the MSI IRQ (PIRQ)
-> > > from the device and updating the internal PIRQ<->IRQ code to match
-> > > with the reality?
-> > >
-> > 
-> > Yea, 'always trust the device'.
-> > 
-> > >> 
-> > >> RFC: I wasn't able to understand why commit af42b8d1 which introduced
-> > >> xen_irq_from_pirq() check in xen_hvm_setup_msi_irqs() is checking that instead
-> > >> of checking pirq > 0 as if the mapping was already done (and we have pirq>0 here)
-> > >> we don't need to request for a new pirq. We're loosing existing PIRQ and I'm also
-> > >> not sure when __write_msi_msg() with new PIRQ will result in new mapping.
-> > >
-> > > We don't request a new pirq. We end up returning before we call xen_allocate_pirq_msi.
-> > > At least that is how the commit you mentioned worked.
-> > >
-> > 
-> > I meant to say that in case we have pirq > 0 from __read_msi_msg() but
-> > xen_irq_from_pirq(pirq) fails (kexec-only case?) we always do
-> > xen_allocate_pirq_msi() which brings us new pirq.
-> > 
-> > > In regards to why using 'xen_irq_from_pirq' instead of just checking the PIRQ - is
-> > > that we might be called twice by a buggy driver. As such we want to check
-> > > our PIRQ<->IRQ to figure this out.
-> > 
-> > But if we're called twice we'll see the same pirq, right? Or there are
-> 
-> Good point.
-> > some cases when we see 'crap' instead of pirq here?
-> 
-> For PCI passthrough devices they will be zero until they are enabled.
-> But I am not sure about the emulated devices, such as e1000 or such, which
-> would also go through this path (I think - do we have MSI devices that
-> we emulate in QEMU?)
-> 
-> > 
-> > I think it would be nice to use the same pirq after kexec instead of
-> > allocating a new one even in case we can make remapping work.
-> 
-> I concur.
-> 
-> Stefano, do you recall why you used xen_irq_from_pirq instead of just
-> trusting the 'pirq' value? Was it to workaround broken QEMU?
+From: Richard Weinberger <richard@nod.at>
 
-If I recall correctly the problem is that pirq == 0 is a valid pirq
-number.  So the check pirq <= 0 is wrong.
+Use the more generic functions get_signal() signal_setup_done()
+for signal delivery.
 
-Can we rely on the fact that msg.data is always 0 on first read?  If so,
-then we could simply:
+Signed-off-by: Richard Weinberger <richard@nod.at>
+---
+ arch/microblaze/kernel/signal.c | 48 +++++++++++++++--------------------------
+ 1 file changed, 17 insertions(+), 31 deletions(-)
 
-diff --git a/arch/x86/pci/xen.c b/arch/x86/pci/xen.c
-index 905956f..d824743 100644
---- a/arch/x86/pci/xen.c
-+++ b/arch/x86/pci/xen.c
-@@ -231,8 +231,7 @@ static int xen_hvm_setup_msi_irqs(struct pci_dev *dev, int nvec, int type)
- 		__read_msi_msg(msidesc, &msg);
- 		pirq = MSI_ADDR_EXT_DEST_ID(msg.address_hi) |
- 			((msg.address_lo >> MSI_ADDR_DEST_ID_SHIFT) & 0xff);
--		if (msg.data != XEN_PIRQ_MSI_DATA ||
--		    xen_irq_from_pirq(pirq) < 0) {
-+		if (msg.data != XEN_PIRQ_MSI_DATA) {
- 			pirq = xen_allocate_pirq_msi(dev, msidesc);
- 			if (pirq < 0) {
- 				irq = -ENODEV;
+diff --git a/arch/microblaze/kernel/signal.c b/arch/microblaze/kernel/signal.c
+index 49a07a4..83137e8 100644
+--- a/arch/microblaze/kernel/signal.c
++++ b/arch/microblaze/kernel/signal.c
+@@ -156,11 +156,11 @@ get_sigframe(struct k_sigaction *ka, struct pt_regs *regs, size_t frame_size)
+ 	return (void __user *)((sp - frame_size) & -8UL);
+ }
+ 
+-static int setup_rt_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
+-			sigset_t *set, struct pt_regs *regs)
++static int setup_rt_frame(struct ksignal *ksig, sigset_t *set,
++			  struct pt_regs *regs)
+ {
+ 	struct rt_sigframe __user *frame;
+-	int err = 0;
++	int err = 0, sig = ksig->sig;
+ 	int signal;
+ 	unsigned long address = 0;
+ #ifdef CONFIG_MMU
+@@ -168,10 +168,10 @@ static int setup_rt_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
+ 	pte_t *ptep;
+ #endif
+ 
+-	frame = get_sigframe(ka, regs, sizeof(*frame));
++	frame = get_sigframe(&ksig->ka, regs, sizeof(*frame));
+ 
+ 	if (!access_ok(VERIFY_WRITE, frame, sizeof(*frame)))
+-		goto give_sigsegv;
++		return -EFAULT;
+ 
+ 	signal = current_thread_info()->exec_domain
+ 		&& current_thread_info()->exec_domain->signal_invmap
+@@ -179,8 +179,8 @@ static int setup_rt_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
+ 		? current_thread_info()->exec_domain->signal_invmap[sig]
+ 		: sig;
+ 
+-	if (info)
+-		err |= copy_siginfo_to_user(&frame->info, info);
++	if (ksig->ka.sa.sa_flags & SA_SIGINFO)
++		err |= copy_siginfo_to_user(&frame->info, &ksig->info);
+ 
+ 	/* Create the ucontext. */
+ 	err |= __put_user(0, &frame->uc.uc_flags);
+@@ -227,7 +227,7 @@ static int setup_rt_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
+ 	flush_dcache_range(address, address + 8);
+ #endif
+ 	if (err)
+-		goto give_sigsegv;
++		return -EFAULT;
+ 
+ 	/* Set up registers for signal handler */
+ 	regs->r1 = (unsigned long) frame;
+@@ -237,7 +237,7 @@ static int setup_rt_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
+ 	regs->r6 = (unsigned long) &frame->info; /* arg 1: siginfo */
+ 	regs->r7 = (unsigned long) &frame->uc; /* arg2: ucontext */
+ 	/* Offset to handle microblaze rtid r14, 0 */
+-	regs->pc = (unsigned long)ka->sa.sa_handler;
++	regs->pc = (unsigned long)ksig->ka.sa.sa_handler;
+ 
+ 	set_fs(USER_DS);
+ 
+@@ -247,10 +247,6 @@ static int setup_rt_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
+ #endif
+ 
+ 	return 0;
+-
+-give_sigsegv:
+-	force_sigsegv(sig, current);
+-	return -EFAULT;
+ }
+ 
+ /* Handle restarting system calls */
+@@ -283,23 +279,15 @@ do_restart:
+  */
+ 
+ static void
+-handle_signal(unsigned long sig, struct k_sigaction *ka,
+-		siginfo_t *info, struct pt_regs *regs)
++handle_signal(struct ksignal *ksig, struct pt_regs *regs)
+ {
+ 	sigset_t *oldset = sigmask_to_save();
+ 	int ret;
+ 
+ 	/* Set up the stack frame */
+-	if (ka->sa.sa_flags & SA_SIGINFO)
+-		ret = setup_rt_frame(sig, ka, info, oldset, regs);
+-	else
+-		ret = setup_rt_frame(sig, ka, NULL, oldset, regs);
++	ret = setup_rt_frame(ksig, oldset, regs);
+ 
+-	if (ret)
+-		return;
+-
+-	signal_delivered(sig, info, ka, regs,
+-			test_thread_flag(TIF_SINGLESTEP));
++	signal_setup_done(ret, ksig, test_thread_flag(TIF_SINGLESTEP));
+ }
+ 
+ /*
+@@ -313,21 +301,19 @@ handle_signal(unsigned long sig, struct k_sigaction *ka,
+  */
+ static void do_signal(struct pt_regs *regs, int in_syscall)
+ {
+-	siginfo_t info;
+-	int signr;
+-	struct k_sigaction ka;
++	struct ksignal ksig;
++
+ #ifdef DEBUG_SIG
+ 	pr_info("do signal: %p %d\n", regs, in_syscall);
+ 	pr_info("do signal2: %lx %lx %ld [%lx]\n", regs->pc, regs->r1,
+ 			regs->r12, current_thread_info()->flags);
+ #endif
+ 
+-	signr = get_signal_to_deliver(&info, &ka, regs, NULL);
+-	if (signr > 0) {
++	if (get_signal(&ksig)) {
+ 		/* Whee! Actually deliver the signal. */
+ 		if (in_syscall)
+-			handle_restart(regs, &ka, 1);
+-		handle_signal(signr, &ka, &info, regs);
++			handle_restart(regs, &ksig.ka, 1);
++		handle_signal(&ksig, regs);
+ 		return;
+ 	}
+ 
+-- 
+1.8.4.5
+
