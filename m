@@ -1,135 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932333AbaGUNfD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 09:35:03 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:41103 "EHLO comal.ext.ti.com"
+	id S932438AbaGUNfY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 09:35:24 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:41135 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932153AbaGUNfA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 09:35:00 -0400
-Message-ID: <53CD219B.1060306@ti.com>
-Date: Mon, 21 Jul 2014 17:20:11 +0300
+	id S932153AbaGUNfR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jul 2014 09:35:17 -0400
+Message-ID: <53CD21C1.9010402@ti.com>
+Date: Mon, 21 Jul 2014 17:20:49 +0300
 From: Grygorii Strashko <grygorii.strashko@ti.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: Varka Bhadram <varkabhadram@gmail.com>, <santosh.shilimkar@ti.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>, <linux-gpio@vger.kernel.org>
-CC: <ivan.khoronzhuk@ti.com>, <m-karicheri2@ti.com>,
-        Rob Herring <robh+dt@kernel.org>, Kumar Gala <galak@codeaurora.org>,
-        <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v1] gpio: keystone: add dsp gpio controller driver
-References: <1405507426-18992-1-git-send-email-grygorii.strashko@ti.com> <53C64E78.4030506@gmail.com>
-In-Reply-To: <53C64E78.4030506@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Jason Cooper <jason@lakedaemon.net>
+CC: Thomas Gleixner <tglx@linutronix.de>, Rob Herring <robh+dt@kernel.org>,
+        Kumar Gala <galak@codeaurora.org>, <ivan.khoronzhuk@ti.com>,
+        <m-karicheri2@ti.com>, <devicetree@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] irqchip: add keystone irq controller ip driver
+References: <1405351677-12108-1-git-send-email-grygorii.strashko@ti.com> <20140718125953.GF24496@titan.lakedaemon.net> <53C92643.9050406@ti.com>
+In-Reply-To: <53C92643.9050406@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Varka Bhadram,
+Hi Jason,
 
-On 07/16/2014 01:05 PM, Varka Bhadram wrote:
-> On 07/16/2014 04:13 PM, Grygorii Strashko wrote:
->> From: Murali Karicheri <m-karicheri2@ti.com>
+On 07/18/2014 04:50 PM, Santosh Shilimkar wrote:
+> On Friday 18 July 2014 08:59 AM, Jason Cooper wrote:
+>> Grygorii,
 >>
->> On Keystone SOCs, ARM host can send interrupts to DSP cores using the
->> DSP GPIO controller IP. Each DSP GPIO controller provides 28 IRQ
->> signals for
->> each DSP core. This is one of the component used by the IPC mechanism
->> used
->> on Keystone SOCs.
+>> On Mon, Jul 14, 2014 at 06:27:57PM +0300, Grygorii Strashko wrote:
+>>> On Keystone SOCs, DSP cores can send interrupts to ARM
+>>> host using the IRQ controller IP. It provides 28 IRQ
+>>> signals to ARM. The IRQ handler running on HOST OS can
+>>> identify DSP signal source by analyzing SRCCx bits in
+>>> IPCARx registers. This is one of the component used by
+>>> the IPC mechanism used on Keystone SOCs.
+>>>
+>>> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
+>>> ---
+>>>   .../interrupt-controller/ti,keystone-irq.txt       |   36 +++
+>>>   drivers/irqchip/Kconfig                            |    7 +
+>>>   drivers/irqchip/Makefile                           |    1 +
+>>>   drivers/irqchip/irq-keystone.c                     |  235 ++++++++++++++++++++
+>>>   4 files changed, 279 insertions(+)
+>>>   create mode 100644 Documentation/devicetree/bindings/interrupt-controller/ti,keystone-irq.txt
+>>>   create mode 100644 drivers/irqchip/irq-keystone.c
+>>>
+> 
+> 
+> [..]
+> 
+>>> +
+>>> +static const struct of_device_id keystone_irq_dt_ids[] = {
+>>> +	{ .compatible = "ti,keystone-irq", },
+>>> +	{},
+>>> +};
+>>> +MODULE_DEVICE_TABLE(of, keystone_irq_dt_ids);
+>>> +
+>>> +static struct platform_driver keystone_irq_device_driver = {
+>>> +	.probe		= keystone_irq_probe,
+>>> +	.remove		= keystone_irq_remove,
+>>> +	.driver		= {
+>>> +		.name	= "keystone_irq",
+>>> +		.owner	= THIS_MODULE,
+>>> +		.of_match_table	= of_match_ptr(keystone_irq_dt_ids),
+>>> +	}
+>>> +};
+>>> +
+>>> +module_platform_driver(keystone_irq_device_driver);
 >>
->> Keystone 2 DSP GPIO controller has specific features:
->> - each GPIO can be configured only as output pin;
->> - setting GPIO value to 1 causes IRQ generation on target DSP core;
->> - reading pin value returns 0 - if IRQ was handled or 1 - IRQ is still
->>    pending.
->>
->> Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
->> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
->> ---
->>   .../devicetree/bindings/gpio/gpio-keystone.txt     |   43 ++++++
->>   drivers/gpio/Kconfig                               |    8 ++
->>   drivers/gpio/Makefile                              |    1 +
->>   drivers/gpio/gpio-keystone.c                       |  138
->> ++++++++++++++++++++
->>   4 files changed, 190 insertions(+)
->>   create mode 100644
->> Documentation/devicetree/bindings/gpio/gpio-keystone.txt
->>   create mode 100644 drivers/gpio/gpio-keystone.c
->>
->> diff --git a/Documentation/devicetree/bindings/gpio/gpio-keystone.txt
->> b/Documentation/devicetree/bindings/gpio/gpio-keystone.txt
->> new file mode 100644
->> index 0000000..4f92af4
->> --- /dev/null
->> +++ b/Documentation/devicetree/bindings/gpio/gpio-keystone.txt
->> @@ -0,0 +1,43 @@
->> +Keystone 2 DSP GPIO controller bindings
->> +
->> +HOST OS userland running on ARM can send interrupts to DSP cores using
->> +the DSP GPIO controller IP. It provides 28 IRQ signals per each DSP
->> core.
->> +This is one of the component used by the IPC mechanism used on
->> Keystone SOCs.
->> +
->> +For example TCI6638K2K SoC has 8 DSP GPIO controllers:
->> + - 8 for C66x CorePacx CPUs 0-7
->> +
->> +Keystone 2 DSP GPIO controller has specific features:
->> +- each GPIO can be configured only as output pin;
->> +- setting GPIO value to 1 causes IRQ generation on target DSP core;
->> +- reading pin value returns 0 - if IRQ was handled or 1 - IRQ is still
->> +  pending.
->> +
->> +Required Properties:
->> +- compatible: should be "ti,keystone-dsp-gpio"
->> +
->> +- ti,syscon-dev:    phandle/offset pair. The phandle to syscon used to
->> +            access device state control registers and the offset
->> +            in order to use block of device's specific registers.
->> +
->> +- gpio-controller : Marks the device node as a gpio controller.
->> +
->> +- #gpio-cells : Should be one.
->> +                See gpio.txt in this directory for a of the cells format
->
-> All the properties not properly aligned. It would be more readable if
->
-> Required Properties:
-> - compatible        : should be "ti,keystone-dsp-gpio"
-> - ti,syscon-dev        : phandle/offset pair. The phandle to syscon used to
->                access device state control registers and the offset
->                in order to use block of device's specific registers.
-> - gpio-controller    : Marks the device node as a gpio controller.
-> - #gpio-cells        : Should be one.
->                See gpio.txt in this directory for a of the cells format
+>> My understanding of DSP use-cases is a little sparse, are there
+>> legitimate scenarios where you might remove this driver during runtime?
+>> Perhaps IRQCHIP_DECLARE() might be better?
 
-Unfortunately, the format of DT bindings description is not 
-standardized, but i will try to beautify it :)
+IRQCHIP_DECLARE() isn't used here, because of two points:
+- all consumers of this driver are initialized at module/driver_initcall time
+  so, we don't need it to be initialized so early
+- Keystone 2 supports DT-only boot and IRQ resolution APIs support probe
+  deferring mechanism now, so we can solve properly any initialization dependencies
+  if needed.
 
->
->> +
->> +Please refer to gpio.txt in this directory for details of the common
->> GPIO
->> +bindings used by client devices.
->> +
->
-> (...)
->
->> +static struct platform_driver keystone_gpio_driver = {
->> +    .probe        = keystone_gpio_probe,
->> +    .remove        = keystone_gpio_remove,
->> +    .driver        = {
->> +        .name    = "keystone-dsp-gpio",
->> +        .owner    = THIS_MODULE,
->
-> We can drop owner field...  :-)  .It will update by module_platform_driver
->
->
+>>
+> There is no scenario where driver needs to hotpluged out. Usecase is
+> simple. Its really any other IRQCHIP. The difference is really the
+> source of interrupts. Instead of peripherals interrupting the host
+> OS9linux), here the DSP cores can send interrupts to Host OS.
+> 
+> Hope this clarifies.
 
-Thanks for your comments - I'll wait a bit and re-send.
+Thanks for your review - I'll update and re-send.
 
 Regards,
 - grygorii
-
