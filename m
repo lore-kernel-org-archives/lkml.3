@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754783AbaGUVJZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 17:09:25 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:62535 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753213AbaGUVJW (ORCPT
+	id S1754965AbaGUVJo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 17:09:44 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:36537 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754865AbaGUVJl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 17:09:22 -0400
+	Mon, 21 Jul 2014 17:09:41 -0400
 From: Brian Norris <computersforpeace@gmail.com>
 To: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>
 Cc: Matt Porter <mporter@linaro.org>, Christian Daudt <bcm@fixthebug.org>,
@@ -16,12 +16,10 @@ Cc: Matt Porter <mporter@linaro.org>, Christian Daudt <bcm@fixthebug.org>,
         <devicetree@vger.kernel.org>, Gregory Fong <gregory.0xf0@gmail.com>,
         Brian Norris <computersforpeace@gmail.com>,
         Florian Fainelli <f.fainelli@gmail.com>,
-        Marc Carino <marc.ceeeee@gmail.com>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>
-Subject: [PATCH v8 02/11] power: reset: Add reboot driver for brcmstb
-Date: Mon, 21 Jul 2014 14:07:57 -0700
-Message-Id: <1405976886-27807-3-git-send-email-computersforpeace@gmail.com>
+        Marc Carino <marc.ceeeee@gmail.com>
+Subject: [PATCH v8 08/11] ARM: brcmstb: gic: add compatible string for Broadcom Brahma15
+Date: Mon, 21 Jul 2014 14:08:03 -0700
+Message-Id: <1405976886-27807-9-git-send-email-computersforpeace@gmail.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1405976886-27807-1-git-send-email-computersforpeace@gmail.com>
 References: <1405976886-27807-1-git-send-email-computersforpeace@gmail.com>
@@ -31,191 +29,28 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Marc Carino <marc.ceeeee@gmail.com>
 
-Add support for reboot functionality on boards with ARM-based
-Broadcom STB chipsets.
+Document the Broadcom Brahma B15 GIC implementation as compatible
+with the ARM GIC standard.
 
 Signed-off-by: Marc Carino <marc.ceeeee@gmail.com>
+Acked-by: Florian Fainelli <f.fainelli@gmail.com>
 Signed-off-by: Brian Norris <computersforpeace@gmail.com>
-Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
-Cc: David Woodhouse <dwmw2@infradead.org>
 ---
- arch/arm/mach-bcm/Kconfig            |   1 +
- drivers/power/reset/Kconfig          |  10 +++
- drivers/power/reset/Makefile         |   1 +
- drivers/power/reset/brcmstb-reboot.c | 120 +++++++++++++++++++++++++++++++++++
- 4 files changed, 132 insertions(+)
- create mode 100644 drivers/power/reset/brcmstb-reboot.c
+ Documentation/devicetree/bindings/arm/gic.txt | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/arch/arm/mach-bcm/Kconfig b/arch/arm/mach-bcm/Kconfig
-index 0073633e7699..9782e8d80647 100644
---- a/arch/arm/mach-bcm/Kconfig
-+++ b/arch/arm/mach-bcm/Kconfig
-@@ -94,6 +94,7 @@ config ARCH_BRCMSTB
- 	select MIGHT_HAVE_PCI
- 	select HAVE_SMP
- 	select HAVE_ARM_ARCH_TIMER
-+	select POWER_RESET_BRCMSTB
- 	help
- 	  Say Y if you intend to run the kernel on a Broadcom ARM-based STB
- 	  chipset.
-diff --git a/drivers/power/reset/Kconfig b/drivers/power/reset/Kconfig
-index bdcf5173e377..fcb9825debe5 100644
---- a/drivers/power/reset/Kconfig
-+++ b/drivers/power/reset/Kconfig
-@@ -20,6 +20,16 @@ config POWER_RESET_AXXIA
- 
- 	  Say Y if you have an Axxia family SoC.
- 
-+config POWER_RESET_BRCMSTB
-+	bool "Broadcom STB reset driver"
-+	depends on POWER_RESET && ARCH_BRCMSTB
-+	help
-+	  This driver provides restart support for ARM-based Broadcom STB
-+	  boards.
-+
-+	  Say Y here if you have an ARM-based Broadcom STB board and you wish
-+	  to have restart support.
-+
- config POWER_RESET_GPIO
- 	bool "GPIO power-off driver"
- 	depends on OF_GPIO && POWER_RESET
-diff --git a/drivers/power/reset/Makefile b/drivers/power/reset/Makefile
-index dde2e8bbac53..7379818ca69d 100644
---- a/drivers/power/reset/Makefile
-+++ b/drivers/power/reset/Makefile
-@@ -1,5 +1,6 @@
- obj-$(CONFIG_POWER_RESET_AS3722) += as3722-poweroff.o
- obj-$(CONFIG_POWER_RESET_AXXIA) += axxia-reset.o
-+obj-$(CONFIG_POWER_RESET_BRCMSTB) += brcmstb-reboot.o
- obj-$(CONFIG_POWER_RESET_GPIO) += gpio-poweroff.o
- obj-$(CONFIG_POWER_RESET_MSM) += msm-poweroff.o
- obj-$(CONFIG_POWER_RESET_QNAP) += qnap-poweroff.o
-diff --git a/drivers/power/reset/brcmstb-reboot.c b/drivers/power/reset/brcmstb-reboot.c
-new file mode 100644
-index 000000000000..3f236924742a
---- /dev/null
-+++ b/drivers/power/reset/brcmstb-reboot.c
-@@ -0,0 +1,120 @@
-+/*
-+ * Copyright (C) 2013 Broadcom Corporation
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License as
-+ * published by the Free Software Foundation version 2.
-+ *
-+ * This program is distributed "as is" WITHOUT ANY WARRANTY of any
-+ * kind, whether express or implied; without even the implied warranty
-+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+
-+#include <linux/device.h>
-+#include <linux/errno.h>
-+#include <linux/init.h>
-+#include <linux/io.h>
-+#include <linux/jiffies.h>
-+#include <linux/of_address.h>
-+#include <linux/of_irq.h>
-+#include <linux/of_platform.h>
-+#include <linux/platform_device.h>
-+#include <linux/printk.h>
-+#include <linux/reboot.h>
-+#include <linux/regmap.h>
-+#include <linux/smp.h>
-+#include <linux/mfd/syscon.h>
-+
-+#include <asm/system_misc.h>
-+
-+#define RESET_SOURCE_ENABLE_REG 1
-+#define SW_MASTER_RESET_REG 2
-+
-+static struct regmap *regmap;
-+static u32 rst_src_en;
-+static u32 sw_mstr_rst;
-+
-+static void brcmstb_reboot(enum reboot_mode mode, const char *cmd)
-+{
-+	int rc;
-+	u32 tmp;
-+
-+	rc = regmap_write(regmap, rst_src_en, 1);
-+	if (rc) {
-+		pr_err("failed to write rst_src_en (%d)\n", rc);
-+		return;
-+	}
-+
-+	rc = regmap_read(regmap, rst_src_en, &tmp);
-+	if (rc) {
-+		pr_err("failed to read rst_src_en (%d)\n", rc);
-+		return;
-+	}
-+
-+	rc = regmap_write(regmap, sw_mstr_rst, 1);
-+	if (rc) {
-+		pr_err("failed to write sw_mstr_rst (%d)\n", rc);
-+		return;
-+	}
-+
-+	rc = regmap_read(regmap, sw_mstr_rst, &tmp);
-+	if (rc) {
-+		pr_err("failed to read sw_mstr_rst (%d)\n", rc);
-+		return;
-+	}
-+
-+	while (1)
-+		;
-+}
-+
-+static int brcmstb_reboot_probe(struct platform_device *pdev)
-+{
-+	int rc;
-+	struct device_node *np = pdev->dev.of_node;
-+
-+	regmap = syscon_regmap_lookup_by_phandle(np, "syscon");
-+	if (IS_ERR(regmap)) {
-+		pr_err("failed to get syscon phandle\n");
-+		return -EINVAL;
-+	}
-+
-+	rc = of_property_read_u32_index(np, "syscon", RESET_SOURCE_ENABLE_REG,
-+					&rst_src_en);
-+	if (rc) {
-+		pr_err("can't get rst_src_en offset (%d)\n", rc);
-+		return -EINVAL;
-+	}
-+
-+	rc = of_property_read_u32_index(np, "syscon", SW_MASTER_RESET_REG,
-+					&sw_mstr_rst);
-+	if (rc) {
-+		pr_err("can't get sw_mstr_rst offset (%d)\n", rc);
-+		return -EINVAL;
-+	}
-+
-+	arm_pm_restart = brcmstb_reboot;
-+
-+	return 0;
-+}
-+
-+static const struct of_device_id of_match[] = {
-+	{ .compatible = "brcm,brcmstb-reboot", },
-+	{},
-+};
-+
-+static struct platform_driver brcmstb_reboot_driver = {
-+	.probe = brcmstb_reboot_probe,
-+	.driver = {
-+		.name = "brcmstb-reboot",
-+		.owner = THIS_MODULE,
-+		.of_match_table = of_match,
-+	},
-+};
-+
-+static int __init brcmstb_reboot_init(void)
-+{
-+	return platform_driver_probe(&brcmstb_reboot_driver,
-+					brcmstb_reboot_probe);
-+}
-+subsys_initcall(brcmstb_reboot_init);
+diff --git a/Documentation/devicetree/bindings/arm/gic.txt b/Documentation/devicetree/bindings/arm/gic.txt
+index 5573c08d3180..c7d2fa156678 100644
+--- a/Documentation/devicetree/bindings/arm/gic.txt
++++ b/Documentation/devicetree/bindings/arm/gic.txt
+@@ -16,6 +16,7 @@ Main node required properties:
+ 	"arm,cortex-a9-gic"
+ 	"arm,cortex-a7-gic"
+ 	"arm,arm11mp-gic"
++	"brcm,brahma-b15-gic"
+ - interrupt-controller : Identifies the node as an interrupt controller
+ - #interrupt-cells : Specifies the number of cells needed to encode an
+   interrupt source.  The type shall be a <u32> and the value shall be 3.
 -- 
 1.9.1
 
