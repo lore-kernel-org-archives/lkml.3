@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932880AbaGUOI7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 10:08:59 -0400
-Received: from mail.sigma-star.at ([95.130.255.111]:14396 "EHLO
+	id S932864AbaGUOI5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 10:08:57 -0400
+Received: from mail.sigma-star.at ([95.130.255.111]:14386 "EHLO
 	mail.sigma-star.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932582AbaGUOEV (ORCPT
+	with ESMTP id S932590AbaGUOEV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 21 Jul 2014 10:04:21 -0400
 From: Richard Weinberger <richard@sigma-star.at>
 To: akpm@linux-foundation.org
 Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        Richard Weinberger <richard@nod.at>, starvik@axis.com,
-        jesper.nilsson@axis.com, linux-cris-kernel@axis.com
-Subject: [PATCH 33/43] cris: Use sigsp()
-Date: Mon, 21 Jul 2014 16:03:19 +0200
-Message-Id: <1405951409-16953-34-git-send-email-richard@sigma-star.at>
+        Richard Weinberger <richard@nod.at>, dhowells@redhat.com
+Subject: [PATCH 34/43] frv: Use sigsp()
+Date: Mon, 21 Jul 2014 16:03:20 +0200
+Message-Id: <1405951409-16953-35-git-send-email-richard@sigma-star.at>
 X-Mailer: git-send-email 1.8.4.5
 In-Reply-To: <1405951409-16953-1-git-send-email-richard@sigma-star.at>
 References: <1405951409-16953-1-git-send-email-richard@sigma-star.at>
@@ -28,88 +27,49 @@ Use sigsp() instead of the open coded variant.
 
 Signed-off-by: Richard Weinberger <richard@nod.at>
 ---
- arch/cris/arch-v10/kernel/signal.c | 14 ++++----------
- arch/cris/arch-v32/kernel/signal.c | 16 ++++------------
- 2 files changed, 8 insertions(+), 22 deletions(-)
+ arch/frv/kernel/signal.c | 17 ++++-------------
+ 1 file changed, 4 insertions(+), 13 deletions(-)
 
-diff --git a/arch/cris/arch-v10/kernel/signal.c b/arch/cris/arch-v10/kernel/signal.c
-index 12aac1f..9b32d33 100644
---- a/arch/cris/arch-v10/kernel/signal.c
-+++ b/arch/cris/arch-v10/kernel/signal.c
-@@ -203,15 +203,9 @@ static int setup_sigcontext(struct sigcontext __user *sc,
-  * - usually on the stack. */
- 
- static inline void __user *
--get_sigframe(struct k_sigaction *ka, struct pt_regs *regs, size_t frame_size)
-+get_sigframe(struct ksignal *ksig, size_t frame_size)
- {
--	unsigned long sp = rdusp();
--
--	/* This is the X/Open sanctioned signal stack switching.  */
--	if (ka->sa.sa_flags & SA_ONSTACK) {
--		if (! on_sig_stack(sp))
--			sp = current->sas_ss_sp + current->sas_ss_size;
--	}
-+	unsigned long sp = sigsp(rdusp(), ksig);
- 
- 	/* make sure the frame is dword-aligned */
- 
-@@ -235,7 +229,7 @@ static int setup_frame(struct ksignal *ksig, sigset_t *set,
- 	unsigned long return_ip;
- 	int err = 0;
- 
--	frame = get_sigframe(&ksig->ka, regs, sizeof(*frame));
-+	frame = get_sigframe(ksig, sizeof(*frame));
- 
- 	if (!access_ok(VERIFY_WRITE, frame, sizeof(*frame)))
- 		return -EFAULT;
-@@ -287,7 +281,7 @@ static int setup_rt_frame(struct ksignal *ksig, sigset_t *set,
- 	unsigned long return_ip;
- 	int err = 0;
- 
--	frame = get_sigframe(&ksig->ka, regs, sizeof(*frame));
-+	frame = get_sigframe(ksig, sizeof(*frame));
- 
- 	if (!access_ok(VERIFY_WRITE, frame, sizeof(*frame)))
- 		return -EFAULT;
-diff --git a/arch/cris/arch-v32/kernel/signal.c b/arch/cris/arch-v32/kernel/signal.c
-index cc7a39a..78ce3b1 100644
---- a/arch/cris/arch-v32/kernel/signal.c
-+++ b/arch/cris/arch-v32/kernel/signal.c
-@@ -189,17 +189,9 @@ setup_sigcontext(struct sigcontext __user *sc, struct pt_regs *regs,
- 
- /* Figure out where to put the new signal frame - usually on the stack. */
- static inline void __user *
--get_sigframe(struct k_sigaction *ka, struct pt_regs * regs, size_t frame_size)
-+get_sigframe(struct ksignal *ksig, size_t frame_size)
+diff --git a/arch/frv/kernel/signal.c b/arch/frv/kernel/signal.c
+index 8e37cf2..dc3d59d 100644
+--- a/arch/frv/kernel/signal.c
++++ b/arch/frv/kernel/signal.c
+@@ -158,19 +158,10 @@ static int setup_sigcontext(struct sigcontext __user *sc, unsigned long mask)
+ /*
+  * Determine which stack to use..
+  */
+-static inline void __user *get_sigframe(struct k_sigaction *ka,
++static inline void __user *get_sigframe(struct ksignal *ksig,
+ 					size_t frame_size)
  {
 -	unsigned long sp;
 -
--	sp = rdusp();
+-	/* Default to using normal stack */
+-	sp = __frame->sp;
 -
--	/* This is the X/Open sanctioned signal stack switching. */
+-	/* This is the X/Open sanctioned signal stack switching.  */
 -	if (ka->sa.sa_flags & SA_ONSTACK) {
--		if (!on_sig_stack(sp))
+-		if (! sas_ss_flags(sp))
 -			sp = current->sas_ss_sp + current->sas_ss_size;
 -	}
-+	unsigned long sp = sigsp(rdusp(), ksig);
++	unsigned long sp = sigsp(__frame->sp, ksig);
  
- 	/* Make sure the frame is dword-aligned. */
- 	sp &= ~3;
-@@ -222,7 +214,7 @@ setup_frame(struct ksignal *ksig, sigset_t *set, struct pt_regs *regs)
- 	struct signal_frame __user *frame;
+ 	return (void __user *) ((sp - frame_size) & ~7UL);
  
- 	err = 0;
--	frame = get_sigframe(&ksig->ka, regs, sizeof(*frame));
+@@ -187,7 +178,7 @@ static int setup_frame(struct ksignal *ksig, sigset_t *set)
+ 
+ 	set_fs(USER_DS);
+ 
+-	frame = get_sigframe(&ksig->ka, sizeof(*frame));
 +	frame = get_sigframe(ksig, sizeof(*frame));
  
  	if (!access_ok(VERIFY_WRITE, frame, sizeof(*frame)))
  		return -EFAULT;
-@@ -290,7 +282,7 @@ setup_rt_frame(struct ksignal *ksig, sigset_t *set, struct pt_regs *regs)
- 	struct rt_signal_frame __user *frame;
+@@ -268,7 +259,7 @@ static int setup_rt_frame(struct ksignal *ksig, sigset_t *set)
  
- 	err = 0;
--	frame = get_sigframe(&ksig->ka, regs, sizeof(*frame));
+ 	set_fs(USER_DS);
+ 
+-	frame = get_sigframe(&ksig->ka, sizeof(*frame));
 +	frame = get_sigframe(ksig, sizeof(*frame));
  
  	if (!access_ok(VERIFY_WRITE, frame, sizeof(*frame)))
