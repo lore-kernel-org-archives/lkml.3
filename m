@@ -1,114 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754795AbaGUVb6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 17:31:58 -0400
-Received: from mail-la0-f47.google.com ([209.85.215.47]:39016 "EHLO
-	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754705AbaGUVb4 (ORCPT
+	id S1754843AbaGUVcd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 17:32:33 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:36608 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753711AbaGUVcc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 17:31:56 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140721212740.GS3935@laptop>
-References: <1405956271-34339-1-git-send-email-Waiman.Long@hp.com>
- <8761iq3bp3.fsf@tassilo.jf.intel.com> <871tte3bjw.fsf@tassilo.jf.intel.com>
- <CFF29A00.9D44A%dvhart@linux.intel.com> <CFF29E4A.9D44E%dvhart@linux.intel.com>
- <alpine.DEB.2.10.1407212025130.20847@nanos> <20140721212740.GS3935@laptop>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Mon, 21 Jul 2014 14:31:32 -0700
-Message-ID: <CALCETrXSaWM6-nxr4ggtMh5qcfTQg4wRvkW8FTSbri5+_1ZbVg@mail.gmail.com>
-Subject: Re: [RFC PATCH 0/5] futex: introduce an optimistic spinning futex
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Darren Hart <dvhart@linux.intel.com>,
-        Andi Kleen <andi@firstfloor.org>, Waiman Long <Waiman.Long@hp.com>,
-        Ingo Molnar <mingo@kernel.org>, Davidlohr Bueso <davidlohr@hp.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Jason Low <jason.low2@hp.com>, Scott J Norton <scott.norton@hp.com>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 21 Jul 2014 17:32:32 -0400
+Date: Mon, 21 Jul 2014 14:32:25 -0700 (PDT)
+Message-Id: <20140721.143225.2040366896972949930.davem@davemloft.net>
+To: olaf@aepfle.de
+Cc: richard@nod.at, yuezha@microsoft.com, netdev@vger.kernel.org,
+        driverdev-devel@linuxdriverproject.org, linux-kernel@vger.kernel.org,
+        gregkh@linuxfoundation.org, jasowang@redhat.com,
+        haiyangz@microsoft.com, kys@microsoft.com, huishao@microsoft.com,
+        decui@microsoft.com
+Subject: Re: [PATCH] Hyperv: Trigger DHCP renew after host hibernation
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20140721091851.GA28171@aepfle.de>
+References: <DC7803B42427924284F2D5252E076A3B4476A479@SINEX14MBXC416.southpacific.corp.microsoft.com>
+	<53CCD6F2.6020909@nod.at>
+	<20140721091851.GA28171@aepfle.de>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 21 Jul 2014 14:32:30 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 21, 2014 at 2:27 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Mon, Jul 21, 2014 at 10:16:37PM +0200, Thomas Gleixner wrote:
->> On Mon, 21 Jul 2014, Darren Hart wrote:
->> > We observed some significant improvements under some very specific use
->> > cases, but a more thorough dive into performance impact in the other cases
->> > as well as security implications with the vdso is still wanting.
->>
->> The security implication is that the feature can only be available for
->> process private futexes. There is no way to expose information which
->> crosses the process spaces.
->>
->> But the way worse issue is storage.
->>
->> While you can cache the namespace specific TID of a thread in the
->> task_struct, you still need a O(1) zero overhead mechanism to update
->> the thread state (only on/off cpu is interesting) in a per process
->> shared data structure from the guts of schedule()
->>
->> For that you have basically two choices:
->>
->> 1) cpu_thread_id[NR_CPUS]
->>
->>    Simple to update from the scheduler, and a halfways moderate
->>    storage size (NR_CPUS * 4 bytes) in the worst case, i.e. 16k
->>    today. Set to 0 on scheduling out and to the namespace specific TID
->>    on scheduling in.
->>
->>    But that requires a linear search in the user space spin loop. And
->>    that's required for every iteration of the loop. Can you imagine
->>    how well that works performance wise?
->>
->> 2) Bitmap threads_on_cpu
->>
->>    Again, simple to update from the scheduler, cache line bouncing
->>    issues aside. Clear the bit on schedule out and set it on schedule
->>    in.
->>
->>    But the bitmap needs the size of PID_MAX_LIMIT, which is a whopping
->>    512k per process in the worst case.
->>
->> Anything else would involve search/lookup schemes which are just
->> overkill in both the scheduler and the user space loop.
->>
->> Now for enhanced fun you need immutable pages for that storage, as you
->> can't have pagefaults in the guts of schedule().
->>
->> So once you found a way to make that opt-in as you don't want inflict
->> any of this to all processes by default, it might be a worthwhile
->> optimization. So the probably tolerable impact on schedule() would be
->>
->> schedule_out()
->>       if (curr->threads_on_cpu)
->>               clear_bit(curr->ns_tid, curr->threads_on_cpu);
->> and
->>
->> schedule_in()
->>       if (curr->threads_on_cpu)
->>               clear_bit(curr->ns_tid, curr->threads_on_cpu);
->>
->> Anything more complex is just going to defeat the whole purpose.
->
-> All this is predicated on the fact that syscalls are 'expensive'.
-> Weren't syscalls only 100s of cycles? All this bitmap mucking is far
-> more expensive due to cacheline misses, which due to the size of the
-> things is almost guaranteed.
+From: Olaf Hering <olaf@aepfle.de>
+Date: Mon, 21 Jul 2014 11:18:51 +0200
 
-120 - 300 cycles for me, unless tracing happens, and I'm working on
-reducing the incidence of tracing.
+> On Mon, Jul 21, Richard Weinberger wrote:
+> 
+>> My concern is that 10 seconds is maybe not a the right choice.
+>> (As we cannot know all implementations)
+> 
+> Until someone reports an issue with it, 10 is fine. Just like 20 or 666.
 
---Andy
-
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-api" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
-
-
--- 
-Andy Lutomirski
-AMA Capital Management, LLC
+Wrong, this is policy and belongs in userspace.
