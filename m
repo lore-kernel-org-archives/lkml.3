@@ -1,48 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754044AbaGUJBg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 05:01:36 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:43397 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753857AbaGUJBf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 05:01:35 -0400
-Date: Mon, 21 Jul 2014 10:01:22 +0100
-From: Richard Fitzgerald <rf@opensource.wolfsonmicro.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: perex@perex.cz, tiwai@suse.de, lgirdwood@gmail.com,
-        patches@opensource.wolfsonmicro.com, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ASoC: arizona: Disable AIF TX/RX before configuring it
-Message-ID: <20140721090104.GA21400@opensource.wolfsonmicro.com>
-References: <20140716121029.GA22222@opensource.wolfsonmicro.com> <20140717194215.GH17528@sirena.org.uk>
+	id S1754072AbaGUJBo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 05:01:44 -0400
+Received: from a.ns.miles-group.at ([95.130.255.143]:65276 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753857AbaGUJBm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jul 2014 05:01:42 -0400
+Message-ID: <53CCD6F2.6020909@nod.at>
+Date: Mon, 21 Jul 2014 11:01:38 +0200
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140717194215.GH17528@sirena.org.uk>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+To: "Yue Zhang (OSTC DEV)" <yuezha@microsoft.com>
+CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "driverdev-devel@linuxdriverproject.org" 
+	<driverdev-devel@linuxdriverproject.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        "olaf@aepfle.de" <olaf@aepfle.de>,
+        "jasowang@redhat.com" <jasowang@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Haiyang Zhang <haiyangz@microsoft.com>,
+        KY Srinivasan <kys@microsoft.com>, Thomas Shao <huishao@microsoft.com>,
+        Dexuan Cui <decui@microsoft.com>
+Subject: Re: [PATCH] Hyperv: Trigger DHCP renew after host hibernation
+References: <1405680903-28176-1-git-send-email-yuezha@microsoft.com> <CAFLxGvxQU_z+mChHsNSu9VZEdXrU+RU75k6H18uKbdAj2TKD5g@mail.gmail.com> <DC7803B42427924284F2D5252E076A3B44769DCA@SINEX14MBXC416.southpacific.corp.microsoft.com> <53CCB944.8090709@nod.at> <DC7803B42427924284F2D5252E076A3B4476A363@SINEX14MBXC416.southpacific.corp.microsoft.com> <53CCCCAD.7080906@nod.at> <DC7803B42427924284F2D5252E076A3B4476A479@SINEX14MBXC416.southpacific.corp.microsoft.com>
+In-Reply-To: <DC7803B42427924284F2D5252E076A3B4476A479@SINEX14MBXC416.southpacific.corp.microsoft.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 17, 2014 at 08:42:15PM +0100, Mark Brown wrote:
-> On Wed, Jul 16, 2014 at 01:10:39PM +0100, Richard Fitzgerald wrote:
+Yue,
+
+Am 21.07.2014 10:44, schrieb Yue Zhang (OSTC DEV):
+> Hi, Richard
 > 
-> > If we don't disable the AIF TX/RX then we may fall into a
-> > situation where the new AIF settings are ignored by the device.
-> > For example, this problem manifests when switching between
-> > different sample rates.
-> 
-> So, what this does is momentarily disable the AIF when reconfiguring.
-> That will glitch any running audio, making me wonder if the driver
-> shouldn't be returning an error or at least complaining if it has to
-> reconfigure instead.  What's the use case where this might get
-> triggered?
+> IMHO, all networking implementations should handle the cable offline event. Consider
+> this situation. I unplugged the network cable and connect it to a new network switch
+> after 10 seconds. If the DHCP renew is not triggered, the network will break. I think in 
+> normal cases, it should already been handled properly. Unless there is a strong 
+> justification for not doing this. In that case, we shouldn't renew DHCP anyway.
 
-The case being fixed is like this:
+I agree that they should handle the cable offline event.
+My concern is that 10 seconds is maybe not a the right choice.
+(As we cannot know all implementations)
 
-aplay 48kHz.wav; aplay 96kHz.wav
-
-The second open happens before pmdown_time so the AIF is still enabled.
-Writes to the AIF config registers only take effect if the AIF is disabled.
-Without this patch, the 96kHz.wav will play at 48kHz
+Thanks,
+//richard
