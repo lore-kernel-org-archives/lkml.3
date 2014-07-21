@@ -1,70 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751341AbaGUXgR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 19:36:17 -0400
-Received: from mail-qc0-f170.google.com ([209.85.216.170]:37048 "EHLO
-	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751048AbaGUXgP (ORCPT
+	id S1751431AbaGUXlM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 19:41:12 -0400
+Received: from mail-vc0-f171.google.com ([209.85.220.171]:44292 "EHLO
+	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750832AbaGUXlJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 19:36:15 -0400
-Date: Mon, 21 Jul 2014 19:36:14 -0400
-From: Jerome Glisse <j.glisse@gmail.com>
-To: "Bridgman, John" <John.Bridgman@amd.com>
-Cc: "Gabbay, Oded" <Oded.Gabbay@amd.com>,
-        "Lewycky, Andrew" <Andrew.Lewycky@amd.com>,
-        "Pinchuk, Evgeny" <Evgeny.Pinchuk@amd.com>,
-        "Daenzer, Michel" <Michel.Daenzer@amd.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        linux-mm <linux-mm@kvack.org>,
-        "Skidanov, Alexey" <Alexey.Skidanov@amd.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH v2 00/25] AMDKFD kernel driver
-Message-ID: <20140721233613.GB6422@gmail.com>
-References: <20140721155437.GA4519@gmail.com>
- <53CD5122.5040804@amd.com>
- <20140721181433.GA5196@gmail.com>
- <53CD5DBC.7010301@amd.com>
- <20140721185940.GA5278@gmail.com>
- <53CD68BF.4020308@amd.com>
- <20140721192837.GC5278@gmail.com>
- <53CD8C7D.9010106@amd.com>
- <20140721230535.GA6422@gmail.com>
- <D89D60253BB73A4E8C62F9FD18A939CA01062C69@storexdag02.amd.com>
+	Mon, 21 Jul 2014 19:41:09 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <D89D60253BB73A4E8C62F9FD18A939CA01062C69@storexdag02.amd.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1404954350-26343-1-git-send-email-abrestic@chromium.org>
+References: <1404954350-26343-1-git-send-email-abrestic@chromium.org>
+Date: Mon, 21 Jul 2014 16:41:08 -0700
+X-Google-Sender-Auth: _EjeBdZLEOD0SinKiNSUEVC15K0
+Message-ID: <CAL1qeaEDSUmh8p___T5HVp7ERGRHDR3BSBoA2Bb+WCz+=RoM3w@mail.gmail.com>
+Subject: Re: [PATCH 0/4] Allow xHCI drivers to be built as separate modules
+From: Andrew Bresticker <abrestic@chromium.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mathias Nyman <mathias.nyman@intel.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Julius Werner <jwerner@chromium.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <treding@nvidia.com>,
+        gregory.clement@free-electrons.com
+Cc: "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        Andrew Bresticker <abrestic@chromium.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 21, 2014 at 11:29:23PM +0000, Bridgman, John wrote:
-> >> >> So even if I really wanted to, and I may agree with you
-> >> >> theoretically on that, I can't fulfill your desire to make the
-> >> >> "kernel being able to preempt at any time and be able to decrease
-> >> >> or increase user queue priority so overall kernel is in charge of
-> >> >> resources management and it can handle rogue client in proper
-> >> >> fashion". Not in KV, and I guess not in CZ as well.
+On Wed, Jul 9, 2014 at 6:05 PM, Andrew Bresticker <abrestic@chromium.org> wrote:
+> It was suggested in the review of the Tegra xHCI driver [1] that we
+> allow xHCI drivers to be built as individual modules (like EHCI) instead
+> of building them all into the single xhci-hcd module as they are today.
+>
+> Patches 1-3 prepare for making the xHCI PCI and platform drivers able
+> to be built as individual modules and patch 4 actually creates the 3
+> separate modules (core, platform, PCI).
+>
+> Based on 3.16-rc4.
+>
+> [1] http://patchwork.ozlabs.org/patch/361265/
+>
+> Andrew Bresticker (4):
+>   xhci: Introduce xhci_init_driver()
+>   xhci: Check for XHCI_COMP_MODE_QUIRK when disabling D3cold
+>   xhci: Export symbols used by host-controller drivers
+>   xhci: Allow xHCI drivers to be built as separate modules
 
-                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Ping.  I was hoping to get these in for 3.17 (though it may be too
+late now...) as they're a dependency for the upcoming Tegra XHCI
+driver.
 
-> >
-> >Also it is a worrisome prospect of seeing resource management completely
-> >ignore for future AMD hardware. Kernel exist for a reason ! Kernel main
-> >purpose is to provide resource management if AMD fails to understand that,
-> >this is not looking good on long term and i expect none of the HSA
-> >technology will get momentum and i would certainly advocate against any
-> >use of it inside product i work on.
-> 
-> Hi Jerome;
-> 
-> I was following along until the above comment. It seems to be the exact opposite of what Oded has been saying, which is that future AMD hardware *does* have more capabilities for resource management and that we do have some capabilities today. Can you help me understand what the comment it was based on ?
-
-
-Highlighted above.
-
-Cheers,
-Jérôme
+Thanks!
+Andrew
