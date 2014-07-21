@@ -1,79 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932387AbaGUNPH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 09:15:07 -0400
-Received: from mail-la0-f45.google.com ([209.85.215.45]:57224 "EHLO
-	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932176AbaGUNPF (ORCPT
+	id S1755001AbaGUNQu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 09:16:50 -0400
+Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:53395 "EHLO
+	mx0b-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753991AbaGUNQt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 09:15:05 -0400
+	Mon, 21 Jul 2014 09:16:49 -0400
+Date: Mon, 21 Jul 2014 15:16:42 +0200
+From: Jens Axboe <axboe@fb.com>
+To: <torvalds@linux-foundation.org>
+CC: <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] Final block fixes for 3.16
+Message-ID: <20140721131606.GA6399@kernel.dk>
 MIME-Version: 1.0
-In-Reply-To: <10657588.befqTi5XsZ@amdc1032>
-References: <1863399.9O2S91ZvEO@amdc1032>
-	<CAD8Lp46eB3cDqD+1YMnWOG-V8CG7fCG1s2KH7znL0OrHSazRcQ@mail.gmail.com>
-	<10657588.befqTi5XsZ@amdc1032>
-Date: Mon, 21 Jul 2014 18:45:03 +0530
-Message-ID: <CAJuA9aiaVg-FJty6a_+RwwO6W1jYQYhUABNqDB7vWnpCJL=wcw@mail.gmail.com>
-Subject: Re: [PATCH] ARM: dts: add CPU nodes for Exynos4 SoCs
-From: Thomas Abraham <ta.omasab@gmail.com>
-To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Cc: Daniel Drake <drake@endlessm.com>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-kernel@vger.kernel.org, Kukjin Kim <kgene.kim@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
-        Tomasz Figa <t.figa@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+X-Originating-IP: [192.168.57.29]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.14,0.0.0000
+ definitions=2014-07-20_03:2014-07-18,2014-07-20,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0
+ kscore.is_bulkscore=3.95017352161631e-13 kscore.compositescore=0
+ circleOfTrustscore=7.0302659978126 compositescore=0.998049563855454
+ urlsuspect_oldscore=0.998049563855454 suspectscore=3
+ recipient_domain_to_sender_totalscore=0 phishscore=0 bulkscore=0
+ kscore.is_spamscore=0 recipient_to_sender_totalscore=0
+ recipient_domain_to_sender_domain_totalscore=64355
+ rbsscore=0.998049563855454 spamscore=0
+ recipient_to_sender_domain_totalscore=0 urlsuspectscore=0.9 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
+ definitions=main-1407210160
+X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 21, 2014 at 6:40 PM, Bartlomiej Zolnierkiewicz
-<b.zolnierkie@samsung.com> wrote:
->
-> Hi,
->
-> On Monday, July 21, 2014 01:43:53 PM Daniel Drake wrote:
->> On Fri, Jul 18, 2014 at 5:00 PM, Bartlomiej Zolnierkiewicz
->> <b.zolnierkie@samsung.com> wrote:
->> > Recent patch by Tomasz Figa ("irqchip: gic: Fix core ID calculation
->> > when topology is read from DT") fixed GIC driver to filter cluster ID
->> > from values returned by cpu_logical_map() for SoCs having registers
->> > mapped without per-CPU banking making it is possible to add CPU nodes
->> > for Exynos4 SoCs.  In case of Exynos SoCs these CPU nodes are also
->> > required by future changes adding initialization of cpuidle states in
->> > Exynos cpuidle driver through DT.
->>
->> This conflicts with work in the thread "cpufreq: use generic cpufreq
->> drivers for exynos platforms" which is already in its 7th iteration.
->> Perhaps best to work directly with Thomas to help him finish that series?
->
-> Patch "[PATCH v7 4/6] ARM: dts: Exynos: add cpu nodes, opp and cpu clock
-> configuration data" from Thomas needs another revision anyway since it lacks
-> cluster ID in Exynos4210 CPU node.  It also mixes addition of CPU nodes
-> with cpufreq specific changes and IMHO addition of CPU nodes should be in
-> separate patch to ease bisection if any later problems turn up.  Therefore
-> I think that it would be the best if Thomas would rebase his work on top of
-> "irqchip: gic: Fix core ID calculation when topology is read from DT" patch
-> and this one.  Thomas, are you okay with this?
+Hi Linus,
 
-Hi Bartlomiej,
+Four small fixes that should go into 3.16, have been queued up for a bit
+and delayed due to vacation and other euro duties. But here they are.
+The pull request contains:
 
-Yes, I am okay with this.
+- Fix for a reported crash with shared tagging on SCSI from Christoph.
 
-Regards,
-Thomas.
+- A regression fix for drbd. From Lars Ellenberg.
 
->
-> Best regards,
-> --
-> Bartlomiej Zolnierkiewicz
-> Samsung R&D Institute Poland
-> Samsung Electronics
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-samsung-soc" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+- Hooking up the compat ioctl for BLKZEROOUT, which requires no
+  translation. From Mikulas.
+
+- A fix for a regression where we woud crash on queue exit if the
+  root_blkg is gone/not there. From Tejun.
+
+
+Please pull for 3.16!
+
+
+  git://git.kernel.dk/linux-block.git for-linus
+
+
+----------------------------------------------------------------
+Christoph Hellwig (1):
+      block: don't assume last put of shared tags is for the host
+
+Lars Ellenberg (1):
+      drbd: fix regression 'out of mem, failed to invoke fence-peer helper'
+
+Mikulas Patocka (1):
+      block: provide compat ioctl for BLKZEROOUT
+
+Tejun Heo (1):
+      blkcg: don't call into policy draining if root_blkg is already gone
+
+ block/blk-cgroup.c           |  7 +++++++
+ block/blk-tag.c              | 33 +++++++--------------------------
+ block/compat_ioctl.c         |  1 +
+ drivers/block/drbd/drbd_nl.c |  6 ++++++
+ 4 files changed, 21 insertions(+), 26 deletions(-)
+
+-- 
+Jens Axboe
+
