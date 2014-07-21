@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754115AbaGUVGg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 17:06:36 -0400
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:39094 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753754AbaGUVGL (ORCPT
+	id S1754426AbaGUVHM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 17:07:12 -0400
+Received: from mail-we0-f179.google.com ([74.125.82.179]:65521 "EHLO
+	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753759AbaGUVGG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 17:06:11 -0400
+	Mon, 21 Jul 2014 17:06:06 -0400
 From: Marek Belisko <marek@goldelico.com>
 To: bcousson@baylibre.com, tony@atomide.com
 Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
@@ -15,9 +15,9 @@ Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
         devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org, hns@goldelico.com,
         Marek Belisko <marek@goldelico.com>
-Subject: [PATCH 7/7] arm: dts: omap3-gta04: Add twl4030 regulators parameters
-Date: Mon, 21 Jul 2014 23:05:27 +0200
-Message-Id: <1405976727-15166-8-git-send-email-marek@goldelico.com>
+Subject: [PATCH 5/7] arm: dts: omap3-gta04: Add USB host support
+Date: Mon, 21 Jul 2014 23:05:25 +0200
+Message-Id: <1405976727-15166-6-git-send-email-marek@goldelico.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1405976727-15166-1-git-send-email-marek@goldelico.com>
 References: <1405976727-15166-1-git-send-email-marek@goldelico.com>
@@ -27,51 +27,82 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Marek Belisko <marek@goldelico.com>
 ---
- arch/arm/boot/dts/omap3-gta04.dts | 26 ++++++++++++++++++++++++++
- 1 file changed, 26 insertions(+)
+ arch/arm/boot/dts/omap3-gta04.dts | 45 +++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 45 insertions(+)
 
 diff --git a/arch/arm/boot/dts/omap3-gta04.dts b/arch/arm/boot/dts/omap3-gta04.dts
-index 05fd4d2..e39ede2 100644
+index 4ca1277..370c08b 100644
 --- a/arch/arm/boot/dts/omap3-gta04.dts
 +++ b/arch/arm/boot/dts/omap3-gta04.dts
-@@ -346,11 +346,37 @@
- 	bb_uamp = <150>;
+@@ -74,9 +74,30 @@
+ 			};
+ 		};
+ 	};
++
++	hsusb2_phy: hsusb2_phy {
++		compatible = "usb-nop-xceiv";
++		reset-gpios = <&gpio6 14 GPIO_ACTIVE_LOW>;
++	};
  };
  
-+/* spare */
-+&vaux1 {
-+	regulator-min-microvolt = <2500000>;
-+	regulator-max-microvolt = <3000000>;
-+};
+ &omap3_pmx_core {
++	pinctrl-names = "default";
++	pinctrl-0 = <
++			&hsusb2_pins
++	>;
 +
-+/* sensors */
-+&vaux2 {
-+	regulator-min-microvolt = <2800000>;
-+	regulator-max-microvolt = <2800000>;
-+	regulator-always-on;
-+};
++	hsusb2_pins: pinmux_hsusb2_pins {
++		pinctrl-single,pins = <
++			OMAP3_CORE1_IOPAD(0x21d4, PIN_INPUT_PULLDOWN | MUX_MODE3)	/* mcspi1_cs3.hsusb2_data2 */
++			OMAP3_CORE1_IOPAD(0x21d6, PIN_INPUT_PULLDOWN | MUX_MODE3)	/* mcspi2_clk.hsusb2_data7 */
++			OMAP3_CORE1_IOPAD(0x21d8, PIN_INPUT_PULLDOWN | MUX_MODE3)	/* mcspi2_simo.hsusb2_data4 */
++			OMAP3_CORE1_IOPAD(0x21da, PIN_INPUT_PULLDOWN | MUX_MODE3)	/* mcspi2_somi.hsusb2_data5 */
++			OMAP3_CORE1_IOPAD(0x21dc, PIN_INPUT_PULLDOWN | MUX_MODE3)	/* mcspi2_cs0.hsusb2_data6 */
++			OMAP3_CORE1_IOPAD(0x21de, PIN_INPUT_PULLDOWN | MUX_MODE3)	/* mcspi2_cs1.hsusb2_data3 */
++		>;
++	};
 +
-+/* camera */
-+&vaux3 {
-+	regulator-min-microvolt = <2500000>;
-+	regulator-max-microvolt = <2500000>;
-+};
-+
-+/* WLAN/BT */
- &vaux4 {
- 	regulator-min-microvolt = <2800000>;
- 	regulator-max-microvolt = <3150000>;
+ 	uart1_pins: pinmux_uart1_pins {
+ 		pinctrl-single,pins = <
+ 			0x152 (PIN_INPUT | MUX_MODE0)		/* uart1_rx.uart1_rx */
+@@ -144,6 +165,22 @@
  };
  
-+/* GPS LNA */
-+&vsim {
-+	regulator-min-microvolt = <2800000>;
-+	regulator-max-microvolt = <3150000>;
+ &omap3_pmx_core2 {
++	pinctrl-names = "default";
++	pinctrl-0 = <
++			&hsusb2_2_pins
++	>;
++
++	hsusb2_2_pins: pinmux_hsusb2_2_pins {
++		pinctrl-single,pins = <
++			OMAP3630_CORE2_IOPAD(0x25f0, PIN_OUTPUT | MUX_MODE3)		/* etk_d10.hsusb2_clk */
++			OMAP3630_CORE2_IOPAD(0x25f2, PIN_OUTPUT | MUX_MODE3)		/* etk_d11.hsusb2_stp */
++			OMAP3630_CORE2_IOPAD(0x25f4, PIN_INPUT_PULLDOWN | MUX_MODE3)	/* etk_d12.hsusb2_dir */
++			OMAP3630_CORE2_IOPAD(0x25f6, PIN_INPUT_PULLDOWN | MUX_MODE3)	/* etk_d13.hsusb2_nxt */
++			OMAP3630_CORE2_IOPAD(0x25f8, PIN_INPUT_PULLDOWN | MUX_MODE3)	/* etk_d14.hsusb2_data0 */
++			OMAP3630_CORE2_IOPAD(0x25fa, PIN_INPUT_PULLDOWN | MUX_MODE3)	/* etk_d15.hsusb2_data1 */
++		>;
++	};
++
+ 	spi_gpio_pins: spi_gpio_pinmux {
+ 		pinctrl-single,pins = <
+ 			OMAP3630_CORE2_IOPAD(0x25d8, PIN_OUTPUT | MUX_MODE4) /* clk */
+@@ -259,6 +296,14 @@
+ 	power = <50>;
+ };
+ 
++&usbhshost {
++	port2-mode = "ehci-phy";
 +};
 +
- /* Needed to power the DPI pins */
- &vpll2 {
- 	regulator-always-on;
++&usbhsehci {
++	phys = <0 &hsusb2_phy>;
++};
++
+ &mmc1 {
+ 	pinctrl-names = "default";
+ 	pinctrl-0 = <&mmc1_pins>;
 -- 
 1.9.1
 
