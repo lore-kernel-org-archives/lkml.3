@@ -1,75 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752852AbaGUHjU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 03:39:20 -0400
-Received: from mout.kundenserver.de ([212.227.17.13]:56902 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751476AbaGUHjR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 03:39:17 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Chanwoo Choi <cw00.choi@samsung.com>, jic23@kernel.org,
-        ch.naveen@samsung.com, mark.rutland@arm.com,
-        devicetree@vger.kernel.org, kgene.kim@samsung.com, pawel.moll@arm.com,
-        ijc+devicetree@hellion.org.uk, linux-iio@vger.kernel.org,
-        t.figa@samsung.com, rdunlap@infradead.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        kyungmin.park@samsung.com, robh+dt@kernel.org, galak@codeaurora.org
-Subject: Re: [PATCHv7 0/4] iio: adc: exynos_adc: Support Exynos3250 ADC and code clean
-Date: Mon, 21 Jul 2014 09:38:55 +0200
-Message-ID: <14522743.f6oFhEQVv4@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1405909068-22539-1-git-send-email-cw00.choi@samsung.com>
-References: <1405909068-22539-1-git-send-email-cw00.choi@samsung.com>
+	id S1752929AbaGUHj6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 03:39:58 -0400
+Received: from mga03.intel.com ([143.182.124.21]:7282 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751476AbaGUHj5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jul 2014 03:39:57 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,698,1400050800"; 
+   d="scan'208";a="459388818"
+Message-ID: <53CCC336.4040302@intel.com>
+Date: Mon, 21 Jul 2014 15:37:26 +0800
+From: Lan Tianyu <tianyu.lan@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:gqc2Au4yfmSwa+F0IK3dz+xDc3+fgUi+ByhVg/ut0pU
- HqebZmwRQy397Yiq2O0vGmPX8bdyzQFCOgElLb/aO+wsX6NjIf
- 9AQOZQsvle/SIB88Pz0kY4fnv7Sh+7hfLf5p01e5cVZ0B0TDrH
- 2H4DwCB2ExtHFRpJjXbKp44drNWKvyq1bk8CxpVJ5wpU4BSAZr
- f7WogSsdp1JQ6N5vMTZufaj8gqBbl26MK3ZYplfmXTcB8qs72A
- 5i6JgazZoILGjn9/+BJWan6WoBcYW4llVqBff7ZBw2hURKTx6R
- FdPuUvZnkwJZvKA1EN5lrEijdZ3OMUU80AlFlOLW1uwtEbD07F
- 4YWTsh3++peZE1/qgCTs=
+To: rjw@rjwysocki.net, lenb@kernel.org, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, gong.chen@linux.intel.com
+Subject: Re: [PATCH] ACPI/NVS: Not save NVS region for new machines to accelerate
+ S3
+References: <1405662922-23606-1-git-send-email-tianyu.lan@intel.com> <20140718080056.GA2037@gchen.bj.intel.com> <53CC7787.2070302@intel.com> <20140721050105.GA21503@gchen.bj.intel.com> <53CCAB30.405@intel.com> <20140721062556.GA23297@gchen.bj.intel.com>
+In-Reply-To: <20140721062556.GA23297@gchen.bj.intel.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 21 July 2014 11:17:44 Chanwoo Choi wrote:
+On 2014年07月21日 14:25, Chen, Gong wrote:
+> On Mon, Jul 21, 2014 at 01:54:56PM +0800, Lan Tianyu wrote:
+>> Date: Mon, 21 Jul 2014 13:54:56 +0800
+>> From: Lan Tianyu <tianyu.lan@intel.com>
+>> To: rjw@rjwysocki.net, lenb@kernel.org, linux-acpi@vger.kernel.org,
+>>  linux-kernel@vger.kernel.org, gong.chen@linux.intel.com
+>> Subject: Re: [PATCH] ACPI/NVS: Not save NVS region for new machines to
+>>  accelerate S3
+>> User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:14.0) Gecko/20120714
+>>  Thunderbird/14.0
+>>
+>> On 2014年07月21日 13:01, Chen, Gong wrote:
+>>> On Mon, Jul 21, 2014 at 10:14:31AM +0800, Lan Tianyu wrote:
+>>>> Date: Mon, 21 Jul 2014 10:14:31 +0800
+>>>> From: Lan Tianyu <tianyu.lan@intel.com>
+>>>> To: rjw@rjwysocki.net, lenb@kernel.org, linux-acpi@vger.kernel.org,
+>>>>  linux-kernel@vger.kernel.org, gong.chen@linux.intel.com
+>>>> Subject: Re: [PATCH] ACPI/NVS: Not save NVS region for new machines to
+>>>>  accelerate S3
+>>>> User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:14.0) Gecko/20120714
+>>>>  Thunderbird/14.0
+>>>>
+>>>> On 2014年07月18日 16:00, Chen, Gong wrote:
+>>>>> On Fri, Jul 18, 2014 at 01:55:22PM +0800, Lan Tianyu wrote:
+>>>>>> Date:	Fri, 18 Jul 2014 13:55:22 +0800
+>>>>>> From: Lan Tianyu <tianyu.lan@intel.com>
+>>>>>> To: rjw@rjwysocki.net, lenb@kernel.org
+>>>>>> Cc: Lan Tianyu <tianyu.lan@intel.com>, linux-acpi@vger.kernel.org,
+>>>>>>  linux-kernel@vger.kernel.org
+>>>>>> Subject: [PATCH] ACPI/NVS: Not save NVS region for new machines to
+>>>>>>  accelerate S3
+>>>>>> X-Mailer: git-send-email 1.7.9.5
+>>>>>>
+>>>>>> NVS region is saved and restored unconditionally for machines without
+>>>>>> nvs_nosave quirk during S3. Tested some new machines and the operation
+>>>>>> is not necessary. Saving NVS region also affects S2RAM speed. The time of
+>>>>>> NVS saving and restoring depends on the size of NVS region and it consumes
+>>>>>> 7~10ms normally.
+>>>>>>
+>>>>>> This patch is to make machines produced from 2012 to now not saving NVS region
+>>>>>> to accelerate S3.
+>>>>>>
+>>>>> The year 2012 is a mandatory value in the spec?
+>>>>>
+>>>>
+>>>> No, spec indicates that this is only required for S4 and commit 2a6b697
+>>>> added this behavior because this can fix S3 bug on some machines. But
+>>>> this isn't necessary for all machines and waster time for S3. So this
+>>>> patch is to add time base quirk to change default behavior for new machines.
+>>>>
+>>> If so, I don't think a hard-coded valud in the kernel is a good idea.
+>>> Why not providing a quirk via a command line parameter or module parameter.
+>>>
+>>
+>> There is already a kernel command "acpi_sleep=nonvs_s3" to do that. But
+>> this needs to be set by user. Otherwise, saving/restoring NVS region
+>> also breaks system suspend on some machines and we have added 14
+>> nonvs quirks in the acpisleep_dmi_table.
+>>
+> 14 quriks! What a terrible BIOS, isn't it? It's time to cleanup so
+> many hacks.
+
+If change the default behavior for old machines, that may cause some
+regressions and need to add new quirks to save/restore nvs region again.
+
+> I'm not ACPI expert, but such yet another hack is not
+> acceptable from my point of view.
 > 
-> This patchset support Exynos3250 ADC (Analog Digital Converter) because
-> Exynos3250 has additional special clock for ADC IP.
-> 
-> Changes from v6:
-> - Use "exynos3250-adc" compatible string instead of "exynos3250-adc-v2"
-> - Use "sclk" clock name instead of "sclk_adc"
-> - Remove un-necessary macro for exyno-adc-data-v2 structure.
-> - Remove '(void *)' cast and mark the exynos-adc-data structure as 'const'
-> - Change the number of ADC channels (Exynos3250 has only two channels for ADC)
-> 
 
-Looks good to me. Two small requests:
 
-a) if you don't mind, can you add my patch (1/2) to add support for s3c64xx to
-   your series, adding your Signed-off-by line in addition to mine? I think
-   that one was noncontroversial, while the second patch (2/2) need some more
-   work to address the comments and do testing.
-
-b) For the "compatible" string, I think it makes sense to set a fallback to
-   "samsung,exynos-adc-v2" in the case for exynos3250, making the DT
-   representation
-
-	compatible = "samsung,exynos3250-adc", "samsung,exynos-adc-v2";
-
-   It's not entirely compatible because of the addition of the clock, but
-   since the register layout is the same, I think it still make sense.
-
-Thanks.
-
-For the entire series,
-
-Acked-by: Arnd Bergmann <arnd@arndb.de>
-
-	Arnd
+-- 
+Best regards
+Tianyu Lan
