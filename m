@@ -1,186 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752417AbaGUCuD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jul 2014 22:50:03 -0400
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:39532 "EHLO
-	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751736AbaGUCuA (ORCPT
+	id S1752585AbaGUCuW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jul 2014 22:50:22 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:56876 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752574AbaGUCuS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jul 2014 22:50:00 -0400
-X-Original-SENDERIP: 10.177.222.156
-X-Original-MAILFROM: minchan@kernel.org
-Date: Mon, 21 Jul 2014 11:50:47 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Gioh Kim <gioh.kim@lge.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        =?utf-8?B?J+q5gOykgOyImCc=?= <iamjoonsoo.kim@lge.com>,
-        Laura Abbott <lauraa@codeaurora.org>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Johannes Weiner <hannes@cmpxchg.org>, Mel Gorman <mel@csn.ul.ie>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        =?utf-8?B?7J206rG07Zi4?= <gunho.lee@lge.com>,
-        "'Chanho Min'" <chanho.min@lge.com>, linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH] CMA/HOTPLUG: clear buffer-head lru before page migration
-Message-ID: <20140721025047.GA7707@bbox>
-References: <53C8C290.90503@lge.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <53C8C290.90503@lge.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sun, 20 Jul 2014 22:50:18 -0400
+Message-ID: <1405911010.6083.3.camel@dhcp-9-2-203-236.watson.ibm.com>
+Subject: Re: [PATCH 4/7] firmware_class: perform new LSM checks
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: James Morris <jmorris@namei.org>
+Cc: Kees Cook <keescook@chromium.org>, LKML <linux-kernel@vger.kernel.org>,
+        Ming Lei <ming.lei@canonical.com>,
+        "Luis R. Rodriguez" <mcgrof@suse.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        James Morris <james.l.morris@oracle.com>,
+        David Howells <dhowells@redhat.com>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        linux-security-module <linux-security-module@vger.kernel.org>,
+        linux-firmware@kernel.org,
+        linux-wireless <linux-wireless@vger.kernel.org>
+Date: Sun, 20 Jul 2014 22:50:10 -0400
+In-Reply-To: <alpine.LRH.2.11.1407210938310.30619@namei.org>
+References: <1405373897-31671-1-git-send-email-keescook@chromium.org>
+	 <1405373897-31671-5-git-send-email-keescook@chromium.org>
+	 <alpine.LRH.2.11.1407181339510.15709@namei.org>
+	 <CAGXu5jK5np62pR4f7_qa_LU97hBN8e1hu998=C4ah+Xyv3eYtg@mail.gmail.com>
+	 <alpine.LRH.2.11.1407191720160.26264@namei.org>
+	 <CAGXu5jLqzgJMCqkfLT2azk3J5jX_hBiguA3wkimv9wu60_+xHA@mail.gmail.com>
+	 <alpine.LRH.2.11.1407210938310.30619@namei.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14072102-8236-0000-0000-000003FDE53D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Gioh,
-
-On Fri, Jul 18, 2014 at 03:45:36PM +0900, Gioh Kim wrote:
+On Mon, 2014-07-21 at 09:43 +1000, James Morris wrote: 
+> On Sat, 19 Jul 2014, Kees Cook wrote:
 > 
-> Hi,
+> [...]
 > 
-> For page migration of CMA, buffer-heads of lru should be dropped.
-> Please refer to https://lkml.org/lkml/2014/7/4/101 for the history.
-
-Just nit:
-Please write *problem* in description instead of URL link.
-
+> > With the patch series, the LSM hook sees the userspace-touching loads:
+> > - from kernel built-in: no LSM hook (nonsense to check the static list)
+> > - direct from filesystem: called with file struct
+> > - via uevent /sys "loading"/"data" interface: called with NULL file struct
+> > - via uevent /sys "fd" interface: called with file struct
 > 
-> I have two solution to drop bhs.
-> One is invalidating entire lru.
-
-You mean? All of percpu bh_lrus so if the system has N cpu,
-it invalidates N * 8?
-
-> Another is searching the lru and dropping only one bh that Laura proposed
-> at https://lkml.org/lkml/2012/8/31/313.
+> Thanks for the overview.  Can we get this documented in the LSM code?
 > 
-> I'm not sure which has better performance.
-
-For whom? system or requestor of CMA?
-
-> So I did performance test on my cortex-a7 platform with Lmbench
-> that has "File & VM system latencies" test.
-> I am attaching the results.
-> The first line is of invalidating entire lru and the second is dropping selected bh.
-
-You mean you did Lmbench with background CMA allocation?
-Could you describe in detail?
-
+> > The reason the "fd" interface was added was because otherwise there's
+> > no way for systems that use the uevent handler to communicate to the
+> > kernel where the bytes being shoved into the "data" interface are
+> > coming from.
 > 
-> File & VM system latencies in microseconds - smaller is better
-> -------------------------------------------------------------------------------
-> Host                 OS   0K File      10K File     Mmap    Prot   Page   100fd
->                         Create Delete Create Delete Latency Fault  Fault  selct
-> --------- ------------- ------ ------ ------ ------ ------- ----- ------- -----
-> 10.178.33 Linux 3.10.19   25.1   19.6   32.6   19.7  5098.0 0.666 3.45880 6.506
-> 10.178.33 Linux 3.10.19   24.9   19.5   32.3   19.4  5059.0 0.563 3.46380 6.521
+> Ok.
 > 
-> 
-> I tried several times but the result tells that they are the same under 1% gap
-> except Protection Fault.
-> But the latency of Protection Fault is very small and I think it has little effect.
-> 
-> Therefore we can choose anything but I choose invalidating entire lru.
+> I gather folks have also thought about signing firmware?
 
-Not sure we can conclude like that.
+>From an IMA perspective, this would be the same as for any other file,
+just a new hook.
 
-A few weeks ago, I saw a patch which increases bh_lrus's size.
-https://lkml.org/lkml/2014/7/4/107
-IOW, some of workloads really affects by percpu bh_lrus so it would be
-better to be careful to drain, I think.
+Mimi 
 
-You want to argue CMA allocation is rare so the cost is marginable.
-It might but some of usecase might call it frequently with small request
-(ie, 8K, 16K).
-
-Anyway, why cannot CMA have the cost without affecting other subsystem?
-I mean it's okay for CMA to consume more time to shoot out the bh
-instead of simple all bh_lru invalidation because big order allocation is
-kinds of slow thing in the VM and everybody already know that and even
-sometime get failed so it's okay to add more code that extremly slow path.
-
-> The try_to_free_buffers() which is calling drop_buffers() is called by many filesystem code.
-> So I think inserting codes in drop_buffers() can affect the system.
-> And also we cannot distinguish migration type in drop_buffers().
-> 
-> In alloc_contig_range() we can distinguish migration type and invalidate lru if it needs.
-> I think alloc_contig_range() is proper to deal with bh like following patch.
-> 
-> Laura, can I have you name on Acked-by line?
-> Please let me represent my thanks.
-> 
-> Thanks for any feedback.
-> 
-> ------------------------------- 8< ----------------------------------
-> 
-> >From 33c894b1bab9bc26486716f0c62c452d3a04d35d Mon Sep 17 00:00:00 2001
-> From: Gioh Kim <gioh.kim@lge.com>
-> Date: Fri, 18 Jul 2014 13:40:01 +0900
-> Subject: [PATCH] CMA/HOTPLUG: clear buffer-head lru before page migration
-> 
-> The bh must be free to migrate a page at which bh is mapped.
-> The reference count of bh is increased when it is installed
-> into lru so that the bh of lru must be freed before migrating the page.
-> 
-> This frees every bh of lru. We could free only bh of migrating page.
-> But searching lru costs more than invalidating entire lru.
-> 
-> Signed-off-by: Gioh Kim <gioh.kim@lge.com>
-> Acked-by: Laura Abbott <lauraa@codeaurora.org>
-> ---
->  mm/page_alloc.c |    3 +++
->  1 file changed, 3 insertions(+)
-> 
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> index b99643d4..3b474e0 100644
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -6369,6 +6369,9 @@ int alloc_contig_range(unsigned long start, unsigned long end,
->         if (ret)
->                 return ret;
-> 
-> +       if (migratetype == MIGRATE_CMA || migratetype == MIGRATE_MOVABLE)
-> +               invalidate_bh_lrus();
-> +
-
-Q1. It's a only CMA problem? Memory-Hotplug is not a problem? Or other places?
- 
-I mean it would be better to handle in generic way.
-
-Q2. Why do you call it right before calling __alloc_contig_migrate_range?
-
-Some of pages will go bh_lrus by __alloc_contig_migrate_ranges.
-In that case, it is useless without caller's retry logic.
-Even you do it from caller's retrial logic, it's not a good idea because
-you makes new binding alloc_contig_range and uppder layer.
-
-So, IMHO, it would be better to handle it in migrate_pages.
-Maybe we could define new API try_to_drop_buffers which calls
-try_to_free_buffers and then only if the function fails due to
-percpu lru count, we could drain only the bh in percpu lru list instead of
-all bh draining. And places in migration path should use it rather than
-try_to_relese_page.
-
-But the problem from this approach invents new API which should be
-maintained so not sure Andrew think it's worth.
-Maybe we should see the code and diffstat.
-
-Overenginnering?
-
->         ret = __alloc_contig_migrate_range(&cc, start, end);
->         if (ret)
->                 goto done;
-> --
-> 1.7.9.5
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-
--- 
-Kind regards,
-Minchan Kim
