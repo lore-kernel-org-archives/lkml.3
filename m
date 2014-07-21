@@ -1,61 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751057AbaGUW4x (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 18:56:53 -0400
-Received: from mail-ig0-f175.google.com ([209.85.213.175]:59482 "EHLO
-	mail-ig0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750800AbaGUW4v (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 18:56:51 -0400
-Date: Mon, 21 Jul 2014 15:56:48 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Himangi Saraogi <himangi774@gmail.com>
-cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, Julia Lawall <julia.lawall@lip6.fr>
-Subject: Re: [PATCH] x86, olpc: Eliminate BUG_ON and memset after
- alloc_bootmem
-In-Reply-To: <20140719113637.GA23621@himangi-Dell>
-Message-ID: <alpine.DEB.2.02.1407211553190.29389@chino.kir.corp.google.com>
-References: <20140719113637.GA23621@himangi-Dell>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1751130AbaGUXBY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 19:01:24 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:40929 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750777AbaGUXBX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jul 2014 19:01:23 -0400
+Date: Tue, 22 Jul 2014 01:01:17 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, x86-ml <x86@kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH] x86, TSC: Add a software TSC offset
+Message-ID: <20140721230117.GG11555@pd.tnic>
+References: <20140719130602.GA5101@pd.tnic>
+ <53CD6B50.5010404@mit.edu>
+ <20140721213534.GB11555@pd.tnic>
+ <CALCETrW91Q=ivYRVFb0WKXgHQO7O+x_HHDy67e90TU6Bte_ecg@mail.gmail.com>
+ <20140721215225.GD11555@pd.tnic>
+ <CALCETrX1LbZAiPH4x2Uby_cUUj2wgN92wc+5wvf-B3_9XdObWQ@mail.gmail.com>
+ <20140721220825.GE11555@pd.tnic>
+ <CALCETrXOpcegDp+eUTWqDkO0jWqgJNYhKJW=HbzvT1ga4Ekxog@mail.gmail.com>
+ <20140721223009.GF11555@pd.tnic>
+ <CALCETrU1BWJ5h=GDRFKg_CXh4pQvB6MyCoRP=H3z8XGirhQDsQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <CALCETrU1BWJ5h=GDRFKg_CXh4pQvB6MyCoRP=H3z8XGirhQDsQ@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 19 Jul 2014, Himangi Saraogi wrote:
+On Mon, Jul 21, 2014 at 03:43:36PM -0700, Andy Lutomirski wrote:
+> I have some reason to believe that this is almost an intentional bug
+> on the part of the BIOS vendor.
 
-> alloc_bootmem and related functions never return NULL and always return
-> a zeroed region of memory.  Thus a BUG_ON the NULL test or memset after
-> calls to these functions is unnecessary.
-> 
-> The following Coccinelle semantic patch was used for making the change:
-> 
-> @@
-> expression E;
-> statement S;
-> @@
-> 
-> E = \(alloc_bootmem\|alloc_bootmem_low\|alloc_bootmem_pages\|alloc_bootmem_low_pages\)(...)
-> ... when != E
-> - BUG_ON (E == NULL);
-> 
-> @@
-> expression E,E1;
-> @@
-> 
-> E = \(alloc_bootmem\|alloc_bootmem_low\|alloc_bootmem_pages\|alloc_bootmem_low_pages\)(...)
-> ... when != E
-> - memset(E,0,E1);
-> 
-> Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
-> Acked-by: Julia Lawall <julia.lawall@lip6.fr>
+Hiding SMIs or some other dumb, I-know-how-to-do-stuff-better-than-you
+BIOS gunk.
 
-Acked-by: David Rientjes <rientjes@google.com>
+> IIRC it was actually quite expensive, at least on Sandy Bridge.
 
-Many callers of alloc_bootmem() do not check for the return value because 
-of this, there's no fallback available at this part in bootstrap so 
-there's nothing else that can be done.
+Hmm, strange. So after the first fence and when you get to retire the
+second fence, you will have only the RDTSC eligible for retirement
+and everything that's coming behind it in program order can still go
+out-of-order. Unless the second fence flushes more stuff. I most likely
+am missing something.
+
+> Maybe AMD is different.
+> 
+> Anyway, if some future uarch breaks this, I could resurrect my old
+> hack: do a TSC-dependent load prior to returning.  Loads are ordered,
+> and the hackish load can't be reordered wrt RDTSC due to
+> data-dependency, so we're in business :)
+
+:-)
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
