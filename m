@@ -1,79 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755225AbaGUNGa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 09:06:30 -0400
-Received: from smtprelay0161.hostedemail.com ([216.40.44.161]:38260 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754690AbaGUNG2 (ORCPT
+	id S932398AbaGUNGe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 09:06:34 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:39046 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754690AbaGUNGb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 09:06:28 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:173:355:379:541:599:968:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:2899:2911:3138:3139:3140:3141:3142:3353:3622:3865:3866:3867:3870:3871:3872:3873:3874:4250:4321:4425:4605:5007:7652:7903:10004:10400:10848:11232:11473:11658:11914:12517:12519:12555:12663:12679:12740:13069:13071:13095:13161:13180:13229:13311:13357:13972:21060:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: screw15_8f9a8861cec35
-X-Filterd-Recvd-Size: 2392
-Message-ID: <1405947985.21586.5.camel@joe-AO725>
-Subject: Re: Checkpatch query
-From: Joe Perches <joe@perches.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Andy Whitcroft <apw@canonical.com>, linux-kernel@vger.kernel.org
-Date: Mon, 21 Jul 2014 06:06:25 -0700
-In-Reply-To: <20140721113948.GX30888@lee--X1>
-References: <20140721113948.GX30888@lee--X1>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 21 Jul 2014 09:06:31 -0400
+Date: Mon, 21 Jul 2014 15:06:29 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Joerg Roedel <joro@8bytes.org>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Len Brown <len.brown@intel.com>,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/6 v2] PM / Hibernate: Memory bitmap scalability
+ improvements
+Message-ID: <20140721130629.GA15122@amd.pavel.ucw.cz>
+References: <1405938422-21900-1-git-send-email-joro@8bytes.org>
+ <20140721120053.GA14069@amd.pavel.ucw.cz>
+ <20140721123613.GL30979@8bytes.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140721123613.GL30979@8bytes.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-07-21 at 12:39 +0100, Lee Jones wrote:
-> Hi Andy, Joe,
+Hi!
 
-Hi Lee.
-
-> When running checkpatch on drivers/mfd/tps80031.c I recieve the
-> following warning:
-> 
-> > WARNING: Possible switch case/default not preceeded by break or
-> >          fallthrough comment
-> > #337: FILE: drivers/mfd/tps80031.c:337:
-> > +       case TPS80031_BACKUP_REG:
+> > > The last patch adds touching the soft lockup watchdog in
+> > > rtree_next_node. This is necessary because the worst case
+> > > performance (all bits set in the forbidden_pages_map and
+> > > free_pages_map) is the same as with the old implementation
+> > > and may still cause soft lockups. Patch 6 avoids this.
 > > 
-> > total: 0 errors, 1 warnings, 573 lines checked
+> > Ok, so what about simpler patch? Just touch the watchdog?
 > 
-> ... but we use switch statement fall through all the time when
-> identifying different types of registers used with Regmap.  Placing a
-> fall-through comment between them all sounds very messy to me.
+> That would just cover the problem that the bitmap data structure and the
+> algorithm in swsusp_free do not scale well on bigmem machines.
 
-Yes, it can be messy, but it's found some
-actual bugs/defects.
+And is it a problem? Hibernation of 12TB machine will take 6 hours if
+you back your swap with SSDs.
 
-> Also, the warning only fires on 'case's which do not use '...'
-> notation, which seems a little odd.
+Does not scale == burns additional 60 seconds of CPU time. I think we
+can live with that...
 
-That's a checkpatch defect.  Thanks for the report.
+...because noone sane will hibernate 12TB machine.
 
-> Anyway, I'm not sure placing a 'fall through' comment makes the code
-> any cleaner or reduces possible failure rate in any way.  Is there any
-> chance that this check can be removed?
+> > Additional 70 seconds will be lost in noise if you write 12TB of RAM
+> > to (even quite fast) disk.
+> 
+> Sure, but you would still get the soft lockup warnings when swsusp_free
+> runs in the end.
 
-You could use the --ignore= cmd-line option or add it to
-a .checkpatch.conf file.
+Yes, that's why I propose to apply just patch 6 -- to avoid soft
+lockup warnings.
 
-$ ./scripts/checkpatch.pl -f drivers/mfd/tps80031.c  --ignore=missing_break
-WARNING: Possible unnecessary 'out of memory' message
-#435: FILE: drivers/mfd/tps80031.c:435:
-+	if (!tps80031) {
-+		dev_err(&client->dev, "Malloc failed for tps80031\n");
-
-total: 0 errors, 1 warnings, 573 lines checked
-
-NOTE: Ignored message types: MISSING_BREAK
-
-drivers/mfd/tps80031.c has style problems, please review.
-
-If any of these errors are false positives, please report
-them to the maintainer, see CHECKPATCH in MAINTAINERS.
-
-
+Best regards,
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
