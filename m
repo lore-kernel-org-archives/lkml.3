@@ -1,117 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754281AbaGUJg5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 05:36:57 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:36073 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754071AbaGUJgy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 05:36:54 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 99.127.230.128
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/1O4B3aisPFHbv0RadE7wg
-Date: Mon, 21 Jul 2014 02:35:28 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Felipe Balbi <balbi@ti.com>, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH 5/5] tty: serial: Add 8250-core based omap driver
-Message-ID: <20140721093528.GS18374@atomide.com>
-References: <1405521903-5877-1-git-send-email-bigeasy@linutronix.de>
- <1405521903-5877-6-git-send-email-bigeasy@linutronix.de>
- <20140717070859.GD18374@atomide.com>
- <20140717074219.GA29193@linutronix.de>
- <20140717081232.GH18374@atomide.com>
- <53C7A01C.50107@linutronix.de>
- <20140718062456.GJ18374@atomide.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140718062456.GJ18374@atomide.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1754301AbaGUJhP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 05:37:15 -0400
+Received: from mga02.intel.com ([134.134.136.20]:58918 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754111AbaGUJhM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jul 2014 05:37:12 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,699,1400050800"; 
+   d="scan'208";a="546528195"
+Message-ID: <1405935426.2455.5.camel@rzhang1-toshiba>
+Subject: Re: [PATCH v4 3/6] thermal: Added Bang-bang thermal governor
+From: Zhang Rui <rui.zhang@intel.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Peter Feuerer <peter@piie.net>, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andreas Mohr <andi@lisas.de>, Borislav Petkov <bp@suse.de>,
+        Javi Merino <javi.merino@arm.com>
+Date: Mon, 21 Jul 2014 17:37:06 +0800
+In-Reply-To: <20140721092950.GB10016@pd.tnic>
+References: <1398561815-22033-1-git-send-email-peter@piie.net>
+	 <1405817480-25347-1-git-send-email-peter@piie.net>
+	 <1405817480-25347-4-git-send-email-peter@piie.net>
+	 <20140721092950.GB10016@pd.tnic>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Tony Lindgren <tony@atomide.com> [140717 23:28]:
-> * Sebastian Andrzej Siewior <bigeasy@linutronix.de> [140717 03:09]:
-> > On 07/17/2014 10:12 AM, Tony Lindgren wrote:
-> > > Hmm it could be that it works for a while because the clocks are on
-> > > from the bootloader and pm_runtime calls won't do anything. This
-> > > could happen if the interconnect data based on the ti,hwmods entry
-> > > is not getting matched to the new driver. This gets initialized when
-> > > the device entry gets created in omap_device_build_from_dt().
-> > > 
-> > > Or maybe something now affects the clock aliases? It seems that we
-> > > are still missing the clocks entries in the .dtsi files, see the
-> > > mappings with $ git grep uart drivers/clk/ti/
+On Mon, 2014-07-21 at 11:29 +0200, Borislav Petkov wrote:
+> On Sun, Jul 20, 2014 at 02:51:17AM +0200, Peter Feuerer wrote:
+> > The bang-bang thermal governor uses a hysteresis to switch abruptly on
+> > or off a cooling device.  It is intended to control fans, which can
+> > not be throttled but just switched on or off.
+> > Bang-bang cannot be set as default governor as it is intended for
+> > special devices only.  For those special devices the driver needs to
+> > explicitely request it.
 > > 
-> > I've been looking for something completely different while I noticed
-> > this:
+> > Cc: Andrew Morton <akpm@linux-foundation.org>
+> > Cc: Zhang Rui <rui.zhang@intel.com>
+> > Cc: Andreas Mohr <andi@lisas.de>
+> > Cc: Borislav Petkov <bp@suse.de>
+> > Cc: Javi Merino <javi.merino@arm.com>
+> > Signed-off-by: Peter Feuerer <peter@piie.net>
+
+For thermal related patches, please do cc linux-pm mailing list so that
+I can see them in patchwork.
+
+thanks,
+rui
+> > ---
+> >  drivers/thermal/Kconfig         |  10 +++
+> >  drivers/thermal/Makefile        |   1 +
+> >  drivers/thermal/gov_bang_bang.c | 131 ++++++++++++++++++++++++++++++++++++++++
+> >  drivers/thermal/thermal_core.c  |   5 ++
+> >  drivers/thermal/thermal_core.h  |   8 +++
+> >  5 files changed, 155 insertions(+)
+> >  create mode 100644 drivers/thermal/gov_bang_bang.c
 > > 
-> > in drivers/tty/serial/omap-serial.c
-> > | static struct platform_driver serial_omap_driver = {
-> > |         .driver         = {
-> > |                 .name   = DRIVER_NAME,
-> > |         },
-> > | };
-> > |
-> > 
-> > and DRIVER_NAME should come from include/linux/platform_data/serial-omap.h
-> > Looking further, I've found arch/arm/mach-omap2/serial.c:
-> > | void __init omap_serial_init_port(struct omap_board_data *bdata,
-> > |                         struct omap_uart_port_info *info)
-> > | {
-> > |         char *name
-> > …
-> > |	name = DRIVER_NAME;
-> > …
-> > |	pdev = omap_device_build(name, uart->num, oh, pdata, pdata_size);
-> > …
-> > |
-> > 
-> > Would this explain it?
+> > diff --git a/drivers/thermal/Kconfig b/drivers/thermal/Kconfig
+> > index f9a1386..cdddf09 100644
+> > --- a/drivers/thermal/Kconfig
+> > +++ b/drivers/thermal/Kconfig
+> > @@ -84,6 +84,16 @@ config THERMAL_GOV_STEP_WISE
+> >  	  Enable this to manage platform thermals using a simple linear
+> >  	  governor.
+> >  
+> > +config THERMAL_GOV_BANG_BANG
+> > +	bool "Bang Bang thermal governor"
+> > +	default y
 > 
-> That would explain it for legacy booting, but not for device tree
-> based booting. I can try to debug it further on Monday.
+> Right, this is problematic.
+> 
+> When people are faced with the new selection after doing oldconfig, they
+> can say yes or no.
+> 
+> However, as acerhdf depends on it now, prompting the user to
+> unconditionally says yes is kinda redundant. Especially as this governor
+> is not supposed to be default anyway.
+> 
+> Actually you don't need the Kconfig prompt at all as this is a sort-of
+> "internal" governor and devices select it. IOW, it should be "default n"
+> and ACERHDF will do "select THERMAL_GOV_BANG_BANG". Something like that
+> at least.
+> 
 
-Looks like the following is needed to avoid the error, no idea why..
-But this is what we also do in omap-serial.c. It may be needed in
-other places too?
 
-Also, no luck yet on runtime PM. If the console is enabled omap won't
-idle, and if no serial console is enabled, it just hangs. Will try
-to debug this part further, it may be also related to the above.
-
-Regards,
-
-Tony
-
---- a/drivers/tty/serial/8250/8250_core.c
-+++ b/drivers/tty/serial/8250/8250_core.c
-@@ -2066,8 +2066,8 @@ int serial8250_do_startup(struct uart_port *port)
- 	/*
- 	 * Clear the interrupt registers.
- 	 */
--	serial_port_in(port, UART_LSR);
--	serial_port_in(port, UART_RX);
-+	if (serial_port_in(port, UART_LSR) & UART_LSR_DR)
-+		serial_port_in(port, UART_RX);
- 	serial_port_in(port, UART_IIR);
- 	serial_port_in(port, UART_MSR);
- 
-@@ -2228,8 +2228,8 @@ dont_test_tx_en:
- 	 * saved flags to avoid getting false values from polling
- 	 * routines or the previous session.
- 	 */
--	serial_port_in(port, UART_LSR);
--	serial_port_in(port, UART_RX);
-+	if (serial_port_in(port, UART_LSR) & UART_LSR_DR)
-+		serial_port_in(port, UART_RX);
- 	serial_port_in(port, UART_IIR);
- 	serial_port_in(port, UART_MSR);
- 	up->lsr_saved_flags = 0;
