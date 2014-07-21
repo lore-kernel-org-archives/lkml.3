@@ -1,75 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751317AbaGUXVS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 19:21:18 -0400
-Received: from mout.gmx.net ([212.227.17.22]:60139 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750832AbaGUXVR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 19:21:17 -0400
-From: Peter Huewe <peterhuewe@gmx.de>
-To: tpmdd-devel@lists.sourceforge.net
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH] Use devm_ioremap_resource to reserve resource
-Date: Tue, 22 Jul 2014 01:26:05 +0200
-Message-Id: <1405985165-9631-1-git-send-email-peterhuewe@gmx.de>
-X-Mailer: git-send-email 1.8.5.5
-X-Provags-ID: V03:K0:qExm4ptIR7nm5t8lKTTB2EShVg4+H+irCyTNP9dPjfAltbT/l72
- VW6WCBJKy4jrvreVXWbrpX0jhBRBOQoARnku1TVO+wJ73/0lhR1Adx7Bbf+SSXMI5Rr2fsA
- XzgjAMopEOvxX06CPaAGHzSJOpzr2m32aukyWByqfvnQF40GLDixcM8E6azIZrJztkZBTFP
- EpSAMSenaYOWOA4DUEpXQ==
+	id S1751361AbaGUXXa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 19:23:30 -0400
+Received: from relay3-d.mail.gandi.net ([217.70.183.195]:46409 "EHLO
+	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750795AbaGUXX2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jul 2014 19:23:28 -0400
+X-Originating-IP: 10.58.1.144
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8;
+ format=flowed
+Content-Transfer-Encoding: 7bit
+Date: Tue, 22 Jul 2014 01:23:14 +0200
+From: hadess@hadess.net
+To: Dmitry Torokhov <dtor@google.com>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Patrik Fimml <patrikf@chromium.org>, linux-pm@vger.kernel.org,
+        Benson Leung <bleung@google.com>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: Power-managing devices that are not of interest at some point
+ in time
+In-Reply-To: <1451627.FURGiR949u@dtor-glaptop>
+References: <Pine.LNX.4.44L0.1407181557020.979-100000@iolanthe.rowland.org>
+ <2443949.K0iePsg3Aa@vostro.rjw.lan> <1693424.kPNUQHOHlX@vostro.rjw.lan>
+ <1451627.FURGiR949u@dtor-glaptop>
+Message-ID: <00d187033b8082c2400a38175f7a4dd8@hadess.net>
+User-Agent: Roundcube Webmail/0.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Unfortunately the tpm_tis driver did never call request_region for its
-adress space - now since we've got devm_ioremap_resource we can simply
-remove all the stuff and do everything in one call.
+On 2014-07-19 01:16, Dmitry Torokhov wrote:
+<snip>
+> I'd say no.
+> 
+> Anyway, even though it is very tempting to declare inhibit a "deeper" 
+> state of
+> runtime suspend maybe you are right and inhibit should really be 
+> separate from
+> PM and drivers would have to sort out all the possible state 
+> permutations.
+> 
+> Considering input devices:
+> 
+> input_open(): check if device is inhibited, if so do nothing. Otherwise 
+> try
+> waking up itself and parent (via pm_runtime_get_sync() on itself), this 
+> will
+> power up the device. Do additional configuration if needed.
+> 
+> input_close(): check if device is inhibited, if not do pm_runtime_put 
+> (_sync?
+> to make sure we power off properly and not leave device up and running? 
+> or
+> should we power down manually not waiting for runtime PM)?
+> 
+> inhibit(): check if device is opened, if opened do 
+> pm_runtime_put_sync().
+> 
+> uninhibit(): if device is opened do pm_runtime_get_sync(), let runtime 
+> PM
+> bring up the device. Do additional config if needed -> very similar to
+> input_open(), different condition.
+> 
+> runtime_suspend(): power down the device. If not inhibited enable as 
+> wakeup
+> source.
+> 
+> runtime_resume(): power up the device if device is opened and not 
+> inhibited.
+> 
+> system_suspend(): check if device is opened, not inhibited and not in
+> runtimesuspend  already; power down.
+> 
+> system_resume(): power up the device if it is opened and not inhibited. 
+> I
+> guess it's OK to wake up device that shoudl be runtime-PM-idle since it 
+> will
+> go to back sleep shortly.
+> 
+> Ugh.. This is complicated...
 
-Cc: <stable@vger.kernel.org>
-Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
----
- drivers/char/tpm/tpm_tis.c | 10 ++++------
- 1 file changed, 4 insertions(+), 6 deletions(-)
+Seriously complicated. The compositor and/or X.org can handle most of 
+that for
+input devices already. For the camera, you want the application to know 
+that
+the device is present, but not usable, instead of making it vanish or 
+rendering
+it unusable. And if you wanted to implement this in the kernel, even 
+with the aid
+of a user-space daemon, you're still missing the most important part, 
+the device
+tagging.
 
-diff --git a/drivers/char/tpm/tpm_tis.c b/drivers/char/tpm/tpm_tis.c
-index 2c46734..a79be26 100644
---- a/drivers/char/tpm/tpm_tis.c
-+++ b/drivers/char/tpm/tpm_tis.c
-@@ -534,13 +534,14 @@ static int tpm_tis_init(struct device *dev, resource_size_t start,
- 	u32 vendor, intfcaps, intmask;
- 	int rc, i, irq_s, irq_e, probe;
- 	struct tpm_chip *chip;
-+	struct resource res = DEFINE_RES_MEM_NAMED(start, len, "tpm_tis");
- 
- 	if (!(chip = tpm_register_hardware(dev, &tpm_tis)))
- 		return -ENODEV;
- 
--	chip->vendor.iobase = ioremap(start, len);
--	if (!chip->vendor.iobase) {
--		rc = -EIO;
-+	chip->vendor.iobase = devm_ioremap_resource(dev, &res);
-+	if (IS_ERR(chip->vendor.iobase)) {
-+		rc = PTR_ERR(chip->vendor.iobase);
- 		goto out_err;
- 	}
- 
-@@ -727,8 +728,6 @@ static int tpm_tis_init(struct device *dev, resource_size_t start,
- 
- 	return 0;
- out_err:
--	if (chip->vendor.iobase)
--		iounmap(chip->vendor.iobase);
- 	tpm_remove_hardware(chip->dev);
- 	return rc;
- }
-@@ -891,7 +890,6 @@ static void __exit cleanup_tis(void)
- 		release_locality(chip, chip->vendor.locality, 1);
- 		if (chip->vendor.irq)
- 			free_irq(chip->vendor.irq, chip);
--		iounmap(i->iobase);
- 		list_del(&i->list);
- 	}
- 	mutex_unlock(&tis_lock);
--- 
-1.8.5.5
+Once you've tagged the devices which would need to be left alone when 
+the lid is
+closed, or the laptop is in tablet mode, see if the problem can be 
+solved within
+user-space alone. I'm fairly certain it wouldn't take too long to fix 
+Xorg
+or a state-of-the-art compositor to behave properly.
 
+All I see right now is making it harder to write devices drivers with no 
+real benefits.
+
+Cheers
