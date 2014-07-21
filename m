@@ -1,157 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932564AbaGUOri (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 10:47:38 -0400
-Received: from mail-vc0-f177.google.com ([209.85.220.177]:59296 "EHLO
-	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932519AbaGUOrf (ORCPT
+	id S932613AbaGUOr6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 10:47:58 -0400
+Received: from mail-wg0-f45.google.com ([74.125.82.45]:53797 "EHLO
+	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932519AbaGUOr4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 10:47:35 -0400
-MIME-Version: 1.0
-In-Reply-To: <1405951409-16953-19-git-send-email-richard@sigma-star.at>
-References: <1405951409-16953-1-git-send-email-richard@sigma-star.at>
-	<1405951409-16953-19-git-send-email-richard@sigma-star.at>
-Date: Mon, 21 Jul 2014 22:47:34 +0800
-Message-ID: <CAF0htA4XuN035oYR5-13bzLnpHB1kUbe+igVstJ5QZXULbz58A@mail.gmail.com>
-Subject: Re: [PATCH 18/43] score: Use get_signal() signal_setup_done()
-From: Lennox Wu <lennox.wu@gmail.com>
-To: Richard Weinberger <richard@sigma-star.at>
-Cc: open list <linux-kernel@vger.kernel.org>,
-        linux-arch <linux-arch@vger.kernel.org>,
-        Liqin Chen <liqin.linux@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 21 Jul 2014 10:47:56 -0400
+From: Daniel Thompson <daniel.thompson@linaro.org>
+To: Russell King <linux@arm.linux.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Jason Cooper <jason@lakedaemon.net>
+Cc: Daniel Thompson <daniel.thompson@linaro.org>, Marex Vasut <marex@denx.de>,
+        Harro Haan <hrhaan@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, patches@linaro.org,
+        linaro-kernel@lists.linaro.org, John Stultz <john.stultz@linaro.org>
+Subject: [PATCH RFC 0/9] Fix INTACK for FIQ support on ARM Cortex A9
+Date: Mon, 21 Jul 2014 15:47:11 +0100
+Message-Id: <1405954040-30399-1-git-send-email-daniel.thompson@linaro.org>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I am picking up some missed patches and merging them into our git
-tree. If the patch is missed, we will merge it.
+Users of the recently proposed extensions to the FIQ infrastructure
+have reported a problem which causes the interrupt dispatcher in
+irq-gic.c (running as a normal IRQ handler) to try to acknowledge
+group 0 interrupts (group 0 should raise FIQ).
 
-Best,
-Lennox
+The problem occurs because the GICv1 found in Cortex A9 implementations
+explicitly uses the security state (normal or trusted world) to
+determine whether the interrupt controller should acknowledge group 0
+interrupts. For FIQ to be useful as an NMI on Cortex A9 the kernel must
+run in in trusted world hence by default the GIC allows the CPU to
+acknowledge group 0 interrupts.
 
-2014-07-21 22:03 GMT+08:00 Richard Weinberger <richard@sigma-star.at>:
-> From: Richard Weinberger <richard@nod.at>
->
-> Use the more generic functions get_signal() signal_setup_done()
-> for signal delivery.
->
-> Acked-by: Lennox Wu <lennox.wu@gmail.com>
-> Signed-off-by: Richard Weinberger <richard@nod.at>
-> ---
->  arch/score/kernel/signal.c | 43 ++++++++++++++++++-------------------------
->  1 file changed, 18 insertions(+), 25 deletions(-)
->
-> diff --git a/arch/score/kernel/signal.c b/arch/score/kernel/signal.c
-> index a00fba3..1651807 100644
-> --- a/arch/score/kernel/signal.c
-> +++ b/arch/score/kernel/signal.c
-> @@ -173,15 +173,15 @@ badframe:
->         return 0;
->  }
->
-> -static int setup_rt_frame(struct k_sigaction *ka, struct pt_regs *regs,
-> -               int signr, sigset_t *set, siginfo_t *info)
-> +static int setup_rt_frame(struct ksignal *ksig, struct pt_regs *regs,
-> +                         sigset_t *set)
->  {
->         struct rt_sigframe __user *frame;
->         int err = 0;
->
-> -       frame = get_sigframe(ka, regs, sizeof(*frame));
-> +       frame = get_sigframe(&ksig->ka, regs, sizeof(*frame));
->         if (!access_ok(VERIFY_WRITE, frame, sizeof(*frame)))
-> -               goto give_sigsegv;
-> +               return -EFAULT;
->
->         /*
->          * Set up the return code ...
-> @@ -194,7 +194,7 @@ static int setup_rt_frame(struct k_sigaction *ka, struct pt_regs *regs,
->         err |= __put_user(0x80008002, frame->rs_code + 1);
->         flush_cache_sigtramp((unsigned long) frame->rs_code);
->
-> -       err |= copy_siginfo_to_user(&frame->rs_info, info);
-> +       err |= copy_siginfo_to_user(&frame->rs_info, &ksig->info);
->         err |= __put_user(0, &frame->rs_uc.uc_flags);
->         err |= __put_user(NULL, &frame->rs_uc.uc_link);
->         err |= __save_altstack(&frame->rs_uc.uc_stack, regs->regs[0]);
-> @@ -202,26 +202,23 @@ static int setup_rt_frame(struct k_sigaction *ka, struct pt_regs *regs,
->         err |= __copy_to_user(&frame->rs_uc.uc_sigmask, set, sizeof(*set));
->
->         if (err)
-> -               goto give_sigsegv;
-> +               return -EFAULT;
->
->         regs->regs[0] = (unsigned long) frame;
->         regs->regs[3] = (unsigned long) frame->rs_code;
-> -       regs->regs[4] = signr;
-> +       regs->regs[4] = ksig->sig;
->         regs->regs[5] = (unsigned long) &frame->rs_info;
->         regs->regs[6] = (unsigned long) &frame->rs_uc;
-> -       regs->regs[29] = (unsigned long) ka->sa.sa_handler;
-> -       regs->cp0_epc = (unsigned long) ka->sa.sa_handler;
-> +       regs->regs[29] = (unsigned long) ksig->ka.sa.sa_handler;
-> +       regs->cp0_epc = (unsigned long) ksig->ka.sa.sa_handler;
->
->         return 0;
-> -
-> -give_sigsegv:
-> -       force_sigsegv(signr, current);
-> -       return -EFAULT;
->  }
->
-> -static void handle_signal(unsigned long sig, siginfo_t *info,
-> -       struct k_sigaction *ka, struct pt_regs *regs)
-> +static void handle_signal(struct ksignal *ksig, struct pt_regs *regs)
->  {
-> +       int ret;
-> +
->         if (regs->is_syscall) {
->                 switch (regs->regs[4]) {
->                 case ERESTART_RESTARTBLOCK:
-> @@ -229,7 +226,7 @@ static void handle_signal(unsigned long sig, siginfo_t *info,
->                         regs->regs[4] = EINTR;
->                         break;
->                 case ERESTARTSYS:
-> -                       if (!(ka->sa.sa_flags & SA_RESTART)) {
-> +                       if (!(ksig->ka.sa.sa_flags & SA_RESTART)) {
->                                 regs->regs[4] = EINTR;
->                                 break;
->                         }
-> @@ -245,17 +242,14 @@ static void handle_signal(unsigned long sig, siginfo_t *info,
->         /*
->          * Set up the stack frame
->          */
-> -       if (setup_rt_frame(ka, regs, sig, sigmask_to_save(), info) < 0)
-> -               return;
-> +       ret = setup_rt_frame(ksig, regs, sigmask_to_save());
->
-> -       signal_delivered(sig, info, ka, regs, 0);
-> +       signal_setup_done(ret, ksig, 0);
->  }
->
->  static void do_signal(struct pt_regs *regs)
->  {
-> -       struct k_sigaction ka;
-> -       siginfo_t info;
-> -       int signr;
-> +       struct ksignal ksig;
->
->         /*
->          * We want the common case to go fast, which is why we may in certain
-> @@ -265,10 +259,9 @@ static void do_signal(struct pt_regs *regs)
->         if (!user_mode(regs))
->                 return;
->
-> -       signr = get_signal_to_deliver(&info, &ka, regs, NULL);
-> -       if (signr > 0) {
-> +       if (get_signal(&ksig)) {
->                 /* Actually deliver the signal.  */
-> -               handle_signal(signr, &info, &ka, regs);
-> +               handle_signal(&ksig, regs);
->                 return;
->         }
->
-> --
-> 1.8.4.5
->
+Two workarounds have been proposed, one which retrospectively corrects
+the problem if it is observed and one which uses the ARM MMU section
+flags to ensure the GIC driver can read INTACK from the current security
+context. The later workaround, which is both more invasive and higher
+performance[1], is presented in this patchset.
+
+This patchset depends upon my own patchset for ARM providing additional
+FIQ infrastructure but does contain the changes to the GIC driver
+required to support FIQ. The effect of this is that workaround code
+is found primarily in patches 5, 6 and 7.
+
+[1]
+http://thread.gmane.org/gmane.linux.ports.arm.kernel/331027/focus=1748892
+
+Daniel Thompson (6):
+  irqchip: gic: Provide support for interrupt grouping
+  irqchip: gic: Add support for FIQ management
+  irqchip: gic: Remove spin locks from eoi_irq
+  arm: mm: Avoid ioremap_page_range() for non-secure mappings
+  irqchip: gic: Use non-secure aliased register set when FIQ is enabled
+  arm: imx: non-secure aliased mapping of GIC registers
+
+Marek Vasut (3):
+  ARM: dump the status of NS bit in L1 PTE
+  ARM: Add L1 PTE non-secure mapping
+  ARM: socfpga: Map the GIC CPU registers as MT_DEVICE_NS
+
+ arch/arm/include/asm/io.h                   |   5 +-
+ arch/arm/include/asm/mach/map.h             |   4 +-
+ arch/arm/include/asm/pgtable-2level-hwdef.h |   1 +
+ arch/arm/mach-imx/mach-imx6q.c              |  11 ++
+ arch/arm/mach-socfpga/socfpga.c             |   8 +
+ arch/arm/mm/dump.c                          |   5 +
+ arch/arm/mm/ioremap.c                       |   4 +
+ arch/arm/mm/mmu.c                           |  13 +-
+ drivers/irqchip/irq-gic.c                   | 240 ++++++++++++++++++++++++++--
+ include/linux/irqchip/arm-gic.h             |   4 +-
+ 10 files changed, 273 insertions(+), 22 deletions(-)
+
+--
+1.9.3
+
