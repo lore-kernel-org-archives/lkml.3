@@ -1,148 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932636AbaGUOEY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 10:04:24 -0400
-Received: from mail.sigma-star.at ([95.130.255.111]:14400 "EHLO
-	mail.sigma-star.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932526AbaGUOEK (ORCPT
+	id S932830AbaGUOHo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 10:07:44 -0400
+Received: from mail-yk0-f171.google.com ([209.85.160.171]:63388 "EHLO
+	mail-yk0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932406AbaGUOHJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 10:04:10 -0400
-From: Richard Weinberger <richard@sigma-star.at>
-To: akpm@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        Richard Weinberger <richard@nod.at>, liqin.linux@gmail.com,
-        lennox.wu@gmail.com
-Subject: [PATCH 18/43] score: Use get_signal() signal_setup_done()
-Date: Mon, 21 Jul 2014 16:03:04 +0200
-Message-Id: <1405951409-16953-19-git-send-email-richard@sigma-star.at>
-X-Mailer: git-send-email 1.8.4.5
-In-Reply-To: <1405951409-16953-1-git-send-email-richard@sigma-star.at>
-References: <1405951409-16953-1-git-send-email-richard@sigma-star.at>
+	Mon, 21 Jul 2014 10:07:09 -0400
+MIME-Version: 1.0
+X-Originating-IP: [188.151.160.142]
+In-Reply-To: <DC7803B42427924284F2D5252E076A3B4476A6D1@SINEX14MBXC416.southpacific.corp.microsoft.com>
+References: <1405680903-28176-1-git-send-email-yuezha@microsoft.com>
+ <CAG-2HqXFBUmpTAE8h13-DmP6Fq42viHzmuH9OfNoLgjW8XcQ3Q@mail.gmail.com> <DC7803B42427924284F2D5252E076A3B4476A6D1@SINEX14MBXC416.southpacific.corp.microsoft.com>
+From: Tom Gundersen <teg@jklm.no>
+Date: Mon, 21 Jul 2014 16:06:48 +0200
+Message-ID: <CAG-2HqXNi1_yNOTLcvDys3hHJ4wHU+aJLOCgdu4uiYLBTwyFdw@mail.gmail.com>
+Subject: Re: [PATCH] Hyperv: Trigger DHCP renew after host hibernation
+To: "Yue Zhang (OSTC DEV)" <yuezha@microsoft.com>
+Cc: netdev <netdev@vger.kernel.org>,
+        "driverdev-devel@linuxdriverproject.org" 
+	<driverdev-devel@linuxdriverproject.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        "olaf@aepfle.de" <olaf@aepfle.de>,
+        "jasowang@redhat.com" <jasowang@redhat.com>,
+        David Miller <davem@davemloft.net>,
+        Haiyang Zhang <haiyangz@microsoft.com>,
+        KY Srinivasan <kys@microsoft.com>, Thomas Shao <huishao@microsoft.com>,
+        Dexuan Cui <decui@microsoft.com>,
+        Lennart Poettering <lennart@poettering.net>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Richard Weinberger <richard@nod.at>
+On Mon, Jul 21, 2014 at 12:21 PM, Yue Zhang (OSTC DEV)
+<yuezha@microsoft.com> wrote:
+>> From: Tom Gundersen [mailto:teg@jklm.no]
+>> Sent: Monday, July 21, 2014 5:42 PM
+>>
+>> On Fri, Jul 18, 2014 at 12:55 PM, Yue Zhang <yuezha@microsoft.com> wrote:
+>> > From: Yue Zhang <yuezha@microsoft.com>
+>> >
+>> > This patch addresses the comment from Olaf Hering and Greg KH
+>> > for a previous commit 3a494e710367 ("hyperv: Add handler for
+>> > RNDIS_STATUS_NETWORK_CHANGE event")
+>> >
+>> > In previous solution, the driver calls "network restart" to
+>> > force a DHCP renew when the host is back from hibernation.
+>> >
+>> > In this fix, the driver will keep network carrier offline for
+>> > 10 seconds and then bring it back. So that ifplugd daemon will
+>> > notice this change and refresh DHCP lease.
+>> >
+>> > Cc: Haiyang Zhang <haiyangz@microsoft.com>
+>> > Cc: K. Y. Srinivasan <kys@microsoft.com>
+>> >
+>> > Signed-off-by: Yue Zhang <yuezha@microsoft.com>
+>> > ---
+>> >  drivers/net/hyperv/netvsc_drv.c | 21 +++++++++++++++++----
+>> >  1 file changed, 17 insertions(+), 4 deletions(-)
+>> >
+>> > diff --git a/drivers/net/hyperv/netvsc_drv.c
+>> b/drivers/net/hyperv/netvsc_drv.c
+>> > index a9c5eaa..559c97d 100644
+>> > --- a/drivers/net/hyperv/netvsc_drv.c
+>> > +++ b/drivers/net/hyperv/netvsc_drv.c
+>> > @@ -33,6 +33,7 @@
+>> >  #include <linux/if_vlan.h>
+>> >  #include <linux/in.h>
+>> >  #include <linux/slab.h>
+>> > +#include <linux/delay.h>
+>> >  #include <net/arp.h>
+>> >  #include <net/route.h>
+>> >  #include <net/sock.h>
+>> > @@ -792,8 +793,7 @@ static void netvsc_link_change(struct work_struct
+>> *w)
+>> >         struct netvsc_device *net_device;
+>> >         struct rndis_device *rdev;
+>> >         bool notify, refresh = false;
+>> > -       char *argv[] = { "/etc/init.d/network", "restart", NULL };
+>> > -       char *envp[] = { "HOME=/", "PATH=/sbin:/usr/sbin:/bin:/usr/bin",
+>> NULL };
+>> > +       int delay;
+>> >
+>> >         rtnl_lock();
+>> >
+>> > @@ -816,8 +816,21 @@ static void netvsc_link_change(struct work_struct
+>> *w)
+>> >
+>> >         rtnl_unlock();
+>> >
+>> > -       if (refresh)
+>> > -               call_usermodehelper(argv[0], argv, envp, UMH_WAIT_EXEC);
+>> > +       if (refresh) {
+>> > +               /*
+>> > +                * Keep the carrier offline for 10 seconds
+>> > +                * to notify ifplugd daemon network change
+>> > +                */
+>> > +               for (delay = 0; delay < 10; delay++) {
+>> > +                       rtnl_lock();
+>> > +                       netif_carrier_off(net);
+>> > +                       rtnl_unlock();
+>> > +                       ssleep(1);
+>> > +               }
+>> > +               rtnl_lock();
+>> > +               netif_carrier_on(net);
+>> > +               rtnl_unlock();
+>> > +       }
+>>
+>> Why is it necessary to wait for ten seconds? Why not just:
+>>
+>> if (refresh) {
+>>         rtnl_lock();
+>>         netif_carrier_off(net);
+>>         netif_carrier_on(net);
+>>         rtnl_unlock();
+>> }
+>>
+>> At least systemd-networkd will renew the dhcp lease as long as it gets
+>> NEWLINK messages indicating that the carrier was lost and regained,
+>> regardless of the time between events. Is there any reason not to do
+>> this?
+>>
+>> Cheers,
+>>
+>> Tom
+>>
+>
+> Hi, Tom
+>
+> Some network monitoring daemon, like ifplugd has a deferring mechanism.
+> When it detects carriers is offline, it doesn't trigger DHCP renew immediately.
+> Instead it will wait for another 5 seconds to check whether carrier is back to
+> online status. In that case, it will avoid renew DHCP lease.
+>
+> And also there is some optimization in Linux's network stack. If link state
+> flipped so quickly, like the code you proposed. It is very likely the event won't
+> be delivered to user space.
 
-Use the more generic functions get_signal() signal_setup_done()
-for signal delivery.
+Ah, ok, I don't know the kernel side of this too well, you may need
+some sort of flush or sync between the calls I suggested. At any rate,
+I would say that the solution should be to send a "lower down"
+followed immediately by "lower up" and never have any sort of timeout.
+All the drivers I have tried send out such events immediately when the
+machine is resumed, so I guess most network software should know how
+to deal with that.
 
-Acked-by: Lennox Wu <lennox.wu@gmail.com>
-Signed-off-by: Richard Weinberger <richard@nod.at>
----
- arch/score/kernel/signal.c | 43 ++++++++++++++++++-------------------------
- 1 file changed, 18 insertions(+), 25 deletions(-)
+I really think the policy of what to do in response to the various
+events should be left to userspace to figure out.
 
-diff --git a/arch/score/kernel/signal.c b/arch/score/kernel/signal.c
-index a00fba3..1651807 100644
---- a/arch/score/kernel/signal.c
-+++ b/arch/score/kernel/signal.c
-@@ -173,15 +173,15 @@ badframe:
- 	return 0;
- }
- 
--static int setup_rt_frame(struct k_sigaction *ka, struct pt_regs *regs,
--		int signr, sigset_t *set, siginfo_t *info)
-+static int setup_rt_frame(struct ksignal *ksig, struct pt_regs *regs,
-+			  sigset_t *set)
- {
- 	struct rt_sigframe __user *frame;
- 	int err = 0;
- 
--	frame = get_sigframe(ka, regs, sizeof(*frame));
-+	frame = get_sigframe(&ksig->ka, regs, sizeof(*frame));
- 	if (!access_ok(VERIFY_WRITE, frame, sizeof(*frame)))
--		goto give_sigsegv;
-+		return -EFAULT;
- 
- 	/*
- 	 * Set up the return code ...
-@@ -194,7 +194,7 @@ static int setup_rt_frame(struct k_sigaction *ka, struct pt_regs *regs,
- 	err |= __put_user(0x80008002, frame->rs_code + 1);
- 	flush_cache_sigtramp((unsigned long) frame->rs_code);
- 
--	err |= copy_siginfo_to_user(&frame->rs_info, info);
-+	err |= copy_siginfo_to_user(&frame->rs_info, &ksig->info);
- 	err |= __put_user(0, &frame->rs_uc.uc_flags);
- 	err |= __put_user(NULL, &frame->rs_uc.uc_link);
- 	err |= __save_altstack(&frame->rs_uc.uc_stack, regs->regs[0]);
-@@ -202,26 +202,23 @@ static int setup_rt_frame(struct k_sigaction *ka, struct pt_regs *regs,
- 	err |= __copy_to_user(&frame->rs_uc.uc_sigmask, set, sizeof(*set));
- 
- 	if (err)
--		goto give_sigsegv;
-+		return -EFAULT;
- 
- 	regs->regs[0] = (unsigned long) frame;
- 	regs->regs[3] = (unsigned long) frame->rs_code;
--	regs->regs[4] = signr;
-+	regs->regs[4] = ksig->sig;
- 	regs->regs[5] = (unsigned long) &frame->rs_info;
- 	regs->regs[6] = (unsigned long) &frame->rs_uc;
--	regs->regs[29] = (unsigned long) ka->sa.sa_handler;
--	regs->cp0_epc = (unsigned long) ka->sa.sa_handler;
-+	regs->regs[29] = (unsigned long) ksig->ka.sa.sa_handler;
-+	regs->cp0_epc = (unsigned long) ksig->ka.sa.sa_handler;
- 
- 	return 0;
--
--give_sigsegv:
--	force_sigsegv(signr, current);
--	return -EFAULT;
- }
- 
--static void handle_signal(unsigned long sig, siginfo_t *info,
--	struct k_sigaction *ka, struct pt_regs *regs)
-+static void handle_signal(struct ksignal *ksig, struct pt_regs *regs)
- {
-+	int ret;
-+
- 	if (regs->is_syscall) {
- 		switch (regs->regs[4]) {
- 		case ERESTART_RESTARTBLOCK:
-@@ -229,7 +226,7 @@ static void handle_signal(unsigned long sig, siginfo_t *info,
- 			regs->regs[4] = EINTR;
- 			break;
- 		case ERESTARTSYS:
--			if (!(ka->sa.sa_flags & SA_RESTART)) {
-+			if (!(ksig->ka.sa.sa_flags & SA_RESTART)) {
- 				regs->regs[4] = EINTR;
- 				break;
- 			}
-@@ -245,17 +242,14 @@ static void handle_signal(unsigned long sig, siginfo_t *info,
- 	/*
- 	 * Set up the stack frame
- 	 */
--	if (setup_rt_frame(ka, regs, sig, sigmask_to_save(), info) < 0)
--		return;
-+	ret = setup_rt_frame(ksig, regs, sigmask_to_save());
- 
--	signal_delivered(sig, info, ka, regs, 0);
-+	signal_setup_done(ret, ksig, 0);
- }
- 
- static void do_signal(struct pt_regs *regs)
- {
--	struct k_sigaction ka;
--	siginfo_t info;
--	int signr;
-+	struct ksignal ksig;
- 
- 	/*
- 	 * We want the common case to go fast, which is why we may in certain
-@@ -265,10 +259,9 @@ static void do_signal(struct pt_regs *regs)
- 	if (!user_mode(regs))
- 		return;
- 
--	signr = get_signal_to_deliver(&info, &ka, regs, NULL);
--	if (signr > 0) {
-+	if (get_signal(&ksig)) {
- 		/* Actually deliver the signal.  */
--		handle_signal(signr, &info, &ka, regs);
-+		handle_signal(&ksig, regs);
- 		return;
- 	}
- 
--- 
-1.8.4.5
+Cheers,
 
+Tom
