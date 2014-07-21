@@ -1,115 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932239AbaGUMdj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 08:33:39 -0400
-Received: from mail-wg0-f43.google.com ([74.125.82.43]:37184 "EHLO
-	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755156AbaGUMdh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1755171AbaGUMdh (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 21 Jul 2014 08:33:37 -0400
-From: Paolo Bonzini <pbonzini@redhat.com>
+Received: from mail-qc0-f193.google.com ([209.85.216.193]:44039 "EHLO
+	mail-qc0-f193.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754957AbaGUMde (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jul 2014 08:33:34 -0400
+MIME-Version: 1.0
+Date: Mon, 21 Jul 2014 05:33:33 -0700
+Message-ID: <CA+80gGbM7HEsrXKJ4iWFToKYwyb-KDbeSNFVNyxxNqaTYErHdw@mail.gmail.com>
+Subject: [PATCH RFC] sched: deferred set priority (dprio)
+From: Sergey Oboguev <oboguev.public@gmail.com>
 To: linux-kernel@vger.kernel.org
-Cc: bdas@redhat.com, wanpeng.li@linux.intel.com, kvm@vger.kernel.org,
-        jan.kiszka@siemens.com, mtosatti@redhat.com
-Subject: [PATCH 2/2] KVM: nVMX: clean up nested_release_vmcs12 and code around it
-Date: Mon, 21 Jul 2014 14:33:25 +0200
-Message-Id: <1405946005-4228-3-git-send-email-pbonzini@redhat.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1405946005-4228-1-git-send-email-pbonzini@redhat.com>
-References: <1405946005-4228-1-git-send-email-pbonzini@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make nested_release_vmcs12 idempotent.
+This patch is intended to improve the support for fine-grain parallel
+applications that may sometimes need to change the priority of their threads at
+a very high rate, hundreds or even thousands of times per scheduling timeslice.
 
-Tested-by: Wanpeng Li <wanpeng.li@linux.intel.com>
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
----
- arch/x86/kvm/vmx.c | 42 +++++++++++++++++++++---------------------
- 1 file changed, 21 insertions(+), 21 deletions(-)
+These are typically applications that have to execute short or very short
+lock-holding critical or otherwise time-urgent sections of code at a very high
+frequency and need to protect these sections with "set priority" system calls,
+one "set priority" call to elevate current thread priority before entering the
+critical or time-urgent section, followed by another call to downgrade thread
+priority at the completion of the section. Due to the high frequency of
+entering and leaving critical or time-urgent sections, the cost of these "set
+priority" system calls may raise to a noticeable part of an application's
+overall expended CPU time. Proposed "deferred set priority" facility allows to
+largely eliminate the cost of these system calls.
 
-diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
-index 462334eaa3c0..3300f4f2da48 100644
---- a/arch/x86/kvm/vmx.c
-+++ b/arch/x86/kvm/vmx.c
-@@ -6109,20 +6109,27 @@ static int nested_vmx_check_permission(struct kvm_vcpu *vcpu)
- static inline void nested_release_vmcs12(struct vcpu_vmx *vmx)
- {
- 	u32 exec_control;
-+	if (vmx->nested.current_vmptr == -1ull)
-+		return;
-+
-+	/* current_vmptr and current_vmcs12 are always set/reset together */
-+	if (WARN_ON(vmx->nested.current_vmcs12 == NULL))
-+		return;
-+
- 	if (enable_shadow_vmcs) {
--		if (vmx->nested.current_vmcs12 != NULL) {
--			/* copy to memory all shadowed fields in case
--			   they were modified */
--			copy_shadow_to_vmcs12(vmx);
--			vmx->nested.sync_shadow_vmcs = false;
--			exec_control = vmcs_read32(SECONDARY_VM_EXEC_CONTROL);
--			exec_control &= ~SECONDARY_EXEC_SHADOW_VMCS;
--			vmcs_write32(SECONDARY_VM_EXEC_CONTROL, exec_control);
--			vmcs_write64(VMCS_LINK_POINTER, -1ull);
--		}
-+		/* copy to memory all shadowed fields in case
-+		   they were modified */
-+		copy_shadow_to_vmcs12(vmx);
-+		vmx->nested.sync_shadow_vmcs = false;
-+		exec_control = vmcs_read32(SECONDARY_VM_EXEC_CONTROL);
-+		exec_control &= ~SECONDARY_EXEC_SHADOW_VMCS;
-+		vmcs_write32(SECONDARY_VM_EXEC_CONTROL, exec_control);
-+		vmcs_write64(VMCS_LINK_POINTER, -1ull);
- 	}
- 	kunmap(vmx->nested.current_vmcs12_page);
- 	nested_release_page(vmx->nested.current_vmcs12_page);
-+	vmx->nested.current_vmptr = -1ull;
-+	vmx->nested.current_vmcs12 = NULL;
- }
- 
- /*
-@@ -6133,12 +6140,9 @@ static void free_nested(struct vcpu_vmx *vmx)
- {
- 	if (!vmx->nested.vmxon)
- 		return;
-+
- 	vmx->nested.vmxon = false;
--	if (vmx->nested.current_vmptr != -1ull) {
--		nested_release_vmcs12(vmx);
--		vmx->nested.current_vmptr = -1ull;
--		vmx->nested.current_vmcs12 = NULL;
--	}
-+	nested_release_vmcs12(vmx);
- 	if (enable_shadow_vmcs)
- 		free_vmcs(vmx->nested.current_shadow_vmcs);
- 	/* Unpin physical memory we referred to in current vmcs02 */
-@@ -6175,11 +6179,8 @@ static int handle_vmclear(struct kvm_vcpu *vcpu)
- 	if (nested_vmx_check_vmptr(vcpu, EXIT_REASON_VMCLEAR, &vmptr))
- 		return 1;
- 
--	if (vmptr == vmx->nested.current_vmptr) {
-+	if (vmptr == vmx->nested.current_vmptr)
- 		nested_release_vmcs12(vmx);
--		vmx->nested.current_vmptr = -1ull;
--		vmx->nested.current_vmcs12 = NULL;
--	}
- 
- 	page = nested_get_page(vcpu, vmptr);
- 	if (page == NULL) {
-@@ -6521,9 +6522,8 @@ static int handle_vmptrld(struct kvm_vcpu *vcpu)
- 			skip_emulated_instruction(vcpu);
- 			return 1;
- 		}
--		if (vmx->nested.current_vmptr != -1ull)
--			nested_release_vmcs12(vmx);
- 
-+		nested_release_vmcs12(vmx);
- 		vmx->nested.current_vmptr = vmptr;
- 		vmx->nested.current_vmcs12 = new_vmcs12;
- 		vmx->nested.current_vmcs12_page = page;
--- 
-1.8.3.1
+Instead of executing a system call to elevate its thread priority, an
+application simply writes its desired priority level to a designated memory
+location in the userspace. When the kernel attempts to preempt the thread, it
+first checks the content of this location, and if the application's stated
+request to change its priority has been posted in the designated memory area,
+the kernel will execute this request and alter the priority of the thread being
+preempted before performing a rescheduling, and then make a scheduling decision
+based on the new thread priority level thus implementing the priority
+protection of the critical or time-urgent section desired by the application.
+In a predominant number of cases however, an application will complete the
+critical section before the end of the current timeslice and cancel or alter
+the request held in the userspace area. Thus a vast majority of an
+application's change priority requests will be handled and mutually cancelled
+or coalesced within the userspace, at a very low overhead and without incurring
+the cost of a system call, while maintaining safe preemption control. The cost
+of an actual kernel-level "set priority" operation is incurred only if an
+application is actually being preempted while inside the critical section, i.e.
+typically at most once per scheduling timeslice instead of hundreds or
+thousands "set priority" system calls in the same timeslice.
 
+One of the intended purposes of this facility (but its not sole purpose) is to
+render a lightweight mechanism for priority protection of lock-holding critical
+sections that would be an adequate match for lightweight locking primitives
+such as futex, with both featuring a fast path completing within the userspace.
+
+More detailed description can be found in:
+https://raw.githubusercontent.com/oboguev/dprio/master/dprio.txt
+
+The patch is currently based on 3.15.2.
+
+Patch file:
+https://github.com/oboguev/dprio/blob/master/patch/linux-3.15.2-dprio.patch
+https://raw.githubusercontent.com/oboguev/dprio/master/patch/linux-3.15.2-dprio.patch
+
+Modified source files:
+https://github.com/oboguev/dprio/tree/master/src/linux-3.15.2
+
+User-level library implementing userspace-side boilerplate code:
+https://github.com/oboguev/dprio/tree/master/src/userlib
+
+Test set:
+https://github.com/oboguev/dprio/tree/master/src/test
+
+The patch is enabled with CONFIG_DEFERRED_SETPRIO.
+
+There is also a config setting for the debug code and a setting that controls
+the initial value of authorization list restricting the use of the facility
+based on user or group ids. Please see dprio.txt for details.
+
+Comments would be appreciated.
+
+Thanks,
+Sergey
+
+Signed-off-by: Sergey Oboguev <oboguev@yahoo.com>
