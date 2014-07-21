@@ -1,176 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933284AbaGURBf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 13:01:35 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:34800 "EHLO bear.ext.ti.com"
+	id S933301AbaGURBn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 13:01:43 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:44482 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933125AbaGURAM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 13:00:12 -0400
-From: Murali Karicheri <m-karicheri2@ti.com>
-To: <linux-pci@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-CC: Murali Karicheri <m-karicheri2@ti.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
-        Richard Zhu <r65037@freescale.com>,
-        Kishon Vijay Abraham I <kishon@ti.com>, Marek Vasut <marex@denx.de>,
-        Arnd Bergmann <arnd@arndb.de>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Randy Dunlap <rdunlap@infradead.org>
-Subject: [PATCH v7 2/5] PCI: designware: refactor MSI code to work with v3.65 dw hardware
-Date: Mon, 21 Jul 2014 12:58:42 -0400
-Message-ID: <1405961925-27248-3-git-send-email-m-karicheri2@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1405961925-27248-1-git-send-email-m-karicheri2@ti.com>
-References: <1405961925-27248-1-git-send-email-m-karicheri2@ti.com>
+	id S932740AbaGURBm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jul 2014 13:01:42 -0400
+Message-ID: <53CD443A.6050804@zytor.com>
+Date: Mon, 21 Jul 2014 09:47:54 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Toshi Kani <toshi.kani@hp.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: tglx@linutronix.de, mingo@redhat.com, akpm@linux-foundation.org,
+        arnd@arndb.de, plagnioj@jcrosoft.com, tomi.valkeinen@ti.com,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        stefan.bader@canonical.com, luto@amacapital.net, airlied@gmail.com,
+        bp@alien8.de
+Subject: Re: [RFC PATCH 0/11] Support Write-Through mapping on x86
+References: <1405452884-25688-1-git-send-email-toshi.kani@hp.com>	 <53C58A69.3070207@zytor.com> <1405459404.28702.17.camel@misato.fc.hp.com>	 <03d059f5-b564-4530-9184-f91ca9d5c016@email.android.com>	 <1405546127.28702.85.camel@misato.fc.hp.com> <1405960298.30151.10.camel@misato.fc.hp.com>
+In-Reply-To: <1405960298.30151.10.camel@misato.fc.hp.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Keystone PCI controller is based on v3.65 version of the DW
-PCI h/w that implements MSI controller registers in application
-space compared to the newer version. This requires updates to
-the DW core API to support the PCI controller driver based on
-this old DW hardware. Add msi_irq_set()/clear() API functions to
-allow Set/Clear MSI IRQ enable bit in the application register.
-Also the old h/w uses MSI_IRQ register in application register
-space to raise MSI IRQ to the RC from EP. Current code uses the
-standard mechanism as per PCI spec. So add another API get_msi_data()
-to get the address of this register so that common code can be
-re-used on old h/w.
+On 07/21/2014 09:31 AM, Toshi Kani wrote:
+> Do you have any comments / suggestions for this approach?
 
-Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
-Reviewed-by: Pratyush Anand <pratyush.anand@st.com>
-Acked-by: Mohit Kumar <mohit.kumar@st.com>
-Acked-by: Jingoo Han <jg1.han@samsung.com>
-Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Approach to what, specifically?
 
-CC: Russell King <linux@arm.linux.org.uk>
-CC: Grant Likely <grant.likely@linaro.org>
-CC: Rob Herring <robh+dt@kernel.org>
-CC: Bjorn Helgaas <bhelgaas@google.com>
-CC: Richard Zhu <r65037@freescale.com>
-CC: Kishon Vijay Abraham I <kishon@ti.com>
-CC: Marek Vasut <marex@denx.de>
-CC: Arnd Bergmann <arnd@arndb.de>
-CC: Pawel Moll <pawel.moll@arm.com>
-CC: Mark Rutland <mark.rutland@arm.com>
-CC: Ian Campbell <ijc+devicetree@hellion.org.uk>
-CC: Kumar Gala <galak@codeaurora.org>
-CC: Randy Dunlap <rdunlap@infradead.org>
-CC: Grant Likely <grant.likely@linaro.org>
----
- drivers/pci/host/pcie-designware.c |   50 ++++++++++++++++++++++++++----------
- drivers/pci/host/pcie-designware.h |    3 +++
- 2 files changed, 39 insertions(+), 14 deletions(-)
+Keep in mind the PAT bit is different for large pages.  This needs to be
+dealt with.  I would also like a systematic way to deal with the fact
+that Xen (sigh) is stuck with a separate mapping system.
 
-diff --git a/drivers/pci/host/pcie-designware.c b/drivers/pci/host/pcie-designware.c
-index d8f3af7..905941c 100644
---- a/drivers/pci/host/pcie-designware.c
-+++ b/drivers/pci/host/pcie-designware.c
-@@ -217,27 +217,47 @@ static int find_valid_pos0(struct pcie_port *pp, int msgvec, int pos, int *pos0)
- 	return 0;
- }
- 
-+static void dw_pcie_msi_clear_irq(struct pcie_port *pp, int irq)
-+{
-+	unsigned int res, bit, val;
-+
-+	res = (irq / 32) * 12;
-+	bit = irq % 32;
-+	dw_pcie_rd_own_conf(pp, PCIE_MSI_INTR0_ENABLE + res, 4, &val);
-+	val &= ~(1 << bit);
-+	dw_pcie_wr_own_conf(pp, PCIE_MSI_INTR0_ENABLE + res, 4, val);
-+}
-+
- static void clear_irq_range(struct pcie_port *pp, unsigned int irq_base,
- 			    unsigned int nvec, unsigned int pos)
- {
--	unsigned int i, res, bit, val;
-+	unsigned int i;
- 
- 	for (i = 0; i < nvec; i++) {
- 		irq_set_msi_desc_off(irq_base, i, NULL);
- 		clear_bit(pos + i, pp->msi_irq_in_use);
- 		/* Disable corresponding interrupt on MSI controller */
--		res = ((pos + i) / 32) * 12;
--		bit = (pos + i) % 32;
--		dw_pcie_rd_own_conf(pp, PCIE_MSI_INTR0_ENABLE + res, 4, &val);
--		val &= ~(1 << bit);
--		dw_pcie_wr_own_conf(pp, PCIE_MSI_INTR0_ENABLE + res, 4, val);
-+		if (pp->ops->msi_clear_irq)
-+			pp->ops->msi_clear_irq(pp, pos + i);
-+		else
-+			dw_pcie_msi_clear_irq(pp, pos + i);
- 	}
- }
- 
-+static void dw_pcie_msi_set_irq(struct pcie_port *pp, int irq)
-+{
-+	unsigned int res, bit, val;
-+
-+	res = (irq / 32) * 12;
-+	bit = irq % 32;
-+	dw_pcie_rd_own_conf(pp, PCIE_MSI_INTR0_ENABLE + res, 4, &val);
-+	val |= 1 << bit;
-+	dw_pcie_wr_own_conf(pp, PCIE_MSI_INTR0_ENABLE + res, 4, val);
-+}
-+
- static int assign_irq(int no_irqs, struct msi_desc *desc, int *pos)
- {
--	int res, bit, irq, pos0, pos1, i;
--	u32 val;
-+	int irq, pos0, pos1, i;
- 	struct pcie_port *pp = sys_to_pcie(desc->dev->bus->sysdata);
- 
- 	if (!pp) {
-@@ -281,11 +301,10 @@ static int assign_irq(int no_irqs, struct msi_desc *desc, int *pos)
- 		}
- 		set_bit(pos0 + i, pp->msi_irq_in_use);
- 		/*Enable corresponding interrupt in MSI interrupt controller */
--		res = ((pos0 + i) / 32) * 12;
--		bit = (pos0 + i) % 32;
--		dw_pcie_rd_own_conf(pp, PCIE_MSI_INTR0_ENABLE + res, 4, &val);
--		val |= 1 << bit;
--		dw_pcie_wr_own_conf(pp, PCIE_MSI_INTR0_ENABLE + res, 4, val);
-+		if (pp->ops->msi_set_irq)
-+			pp->ops->msi_set_irq(pp, pos0 + i);
-+		else
-+			dw_pcie_msi_set_irq(pp, pos0 + i);
- 	}
- 
- 	*pos = pos0;
-@@ -353,7 +372,10 @@ static int dw_msi_setup_irq(struct msi_chip *chip, struct pci_dev *pdev,
- 	 */
- 	desc->msi_attrib.multiple = msgvec;
- 
--	msg.address_lo = virt_to_phys((void *)pp->msi_data);
-+	if (pp->ops->get_msi_data)
-+		msg.address_lo = pp->ops->get_msi_data(pp);
-+	else
-+		msg.address_lo = virt_to_phys((void *)pp->msi_data);
- 	msg.address_hi = 0x0;
- 	msg.data = pos;
- 	write_msi_msg(irq, &msg);
-diff --git a/drivers/pci/host/pcie-designware.h b/drivers/pci/host/pcie-designware.h
-index 8121901..387f69e 100644
---- a/drivers/pci/host/pcie-designware.h
-+++ b/drivers/pci/host/pcie-designware.h
-@@ -67,6 +67,9 @@ struct pcie_host_ops {
- 			unsigned int devfn, int where, int size, u32 val);
- 	int (*link_up)(struct pcie_port *pp);
- 	void (*host_init)(struct pcie_port *pp);
-+	void (*msi_set_irq)(struct pcie_port *pp, int irq);
-+	void (*msi_clear_irq)(struct pcie_port *pp, int irq);
-+	u32 (*get_msi_data)(struct pcie_port *pp);
- };
- 
- int dw_pcie_cfg_read(void __iomem *addr, int where, int size, u32 *val);
--- 
-1.7.9.5
+I guess Linux could adopt the Xen mappings if that makes it easier, as
+long as that doesn't have a negative impact on native hardware -- we can
+possibly deal with some older chips not being optimal.  However, my
+thinking has been to have a "reverse PAT" table in memory of memory
+types to encodings, both for regular and large pages.
+
+	-hpa
+
+
 
