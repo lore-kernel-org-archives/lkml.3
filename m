@@ -1,185 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932413AbaGUN5J (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 09:57:09 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:51323 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752522AbaGUN5I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 09:57:08 -0400
-Date: Mon, 21 Jul 2014 15:57:03 +0200
-From: Petr =?iso-8859-1?Q?Ml=E1dek?= <pmladek@suse.cz>
-To: Alex Elder <elder@linaro.org>
-Cc: akpm@linux-foundation.org, kay@vrfy.org, bp@suse.de,
-        john.stultz@linaro.org, jack@suse.cz, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4 6/7] printk: insert newline for truncated records
-Message-ID: <20140721135703.GE20751@pathway.suse.cz>
-References: <1405718885-11227-1-git-send-email-elder@linaro.org>
- <1405718885-11227-7-git-send-email-elder@linaro.org>
- <20140721115706.GC20751@pathway.suse.cz>
- <53CD0852.2030706@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <53CD0852.2030706@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932445AbaGUN53 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 09:57:29 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:63100 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754916AbaGUN51 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jul 2014 09:57:27 -0400
+X-AuditID: cbfee61a-f79e46d00000134f-8e-53cd1c44838c
+From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+To: linux-samsung-soc@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
+        Tomasz Figa <t.figa@samsung.com>, Mark Rutland <mark.rutland@arm.com>,
+        Thomas Abraham <ta.omasab@gmail.com>
+Subject: [PATCH v2] ARM: dts: add CPU nodes for Exynos4 SoCs
+Date: Mon, 21 Jul 2014 15:57:04 +0200
+Message-id: <1444042.RbiCcg7JnP@amdc1032>
+User-Agent: KMail/4.8.4 (Linux/3.2.0-54-generic-pae; KDE/4.8.5; i686; ; )
+MIME-version: 1.0
+Content-transfer-encoding: 7Bit
+Content-type: text/plain; charset=us-ascii
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrDLMWRmVeSWpSXmKPExsVy+t9jQV1XmbPBBts3s1n0LrjKZrHp8TVW
+	i8u75rBZzDi/j8nize8X7BZrj9xlt1h6/SKTxfoZr1ksNk/YyObA6bFm3hpGj52z7rJ7bF5S
+	79G3ZRWjx+dNcgGsUVw2Kak5mWWpRfp2CVwZR2Z9YipYKVVx9+ZL5gbGNtEuRk4OCQETiecn
+	d7FB2GISF+6tB7K5OIQEpjNKfD+5jxkkISTQwiSx/UsAiM0mYCUxsX0VI4gtIqAq8bltATtI
+	A7PAXiaJXV82gk0SFrCROHpmI1MXIwcHC1DR+4NVIGFeAU2JNauOgZWICnhK7Ni+kg0iLijx
+	Y/I9FhCbWUBeYt/+qawQtpbE+p3HmSYw8s1CUjYLSdksJGULGJlXMYqmFiQXFCel5xrqFSfm
+	Fpfmpesl5+duYgSH8TOpHYwrGywOMQpwMCrx8HowngkWYk0sK67MPcQowcGsJMJby3g2WIg3
+	JbGyKrUoP76oNCe1+BCjNAeLkjjvgVbrQCGB9MSS1OzU1ILUIpgsEwenVAMjk7HNOiM5xcUS
+	9Y1Bl5MM9DjdZq1RUZ/2y6VTfalSN4dVyvkiL9b3/7apJzcvuLUycgEnS02FahdjhkfzjWvl
+	f+awxITMt1iTy9cic1XH4LX96j87Djw7sf6oHMuMj7nXuxqfy1Revnr3tEf8JVape6/LlsZO
+	1uk8+Wkuz0GmeDnphhTV/DVKLMUZiYZazEXFiQCbIEfBXwIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 2014-07-21 07:32:18, Alex Elder wrote:
-> On 07/21/2014 06:57 AM, Petr Mládek wrote:
-> > On Fri 2014-07-18 16:28:04, Alex Elder wrote:
-> >> If a log record has LOG_PREFIX set, its predecessor record should be
-> >> terminated if it was marked LOG_CONT.
-> >>
-> >> In devkmsg_read(), this condition was being ignored, which would
-> >> lead to such records showing up combined when reading /dev/kmsg.
-> >> Fix this oversight.
-> >>
-> >> We should similarly insert a newline in msg_print_text() in this
-> >> case, to avoid formatted records getting merged.
-> >>
-> >> Suggested-by: Petr Mládek <pmladek@suse.cz>
-> >> Signed-off-by: Alex Elder <elder@linaro.org>
-> >> ---
-> >>  kernel/printk/printk.c | 18 +++++++++++++++---
-> >>  1 file changed, 15 insertions(+), 3 deletions(-)
-> >>
-> >> diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
-> >> index e9f0632..a5ad81c 100644
-> >> --- a/kernel/printk/printk.c
-> >> +++ b/kernel/printk/printk.c
-> >> @@ -575,6 +575,7 @@ static ssize_t devkmsg_read(struct file *file, char __user *buf,
-> >>  	char cont;
-> >>  	size_t len;
-> >>  	ssize_t ret;
-> >> +	bool insert_newline;
-> >>  
-> >>  	if (!user)
-> >>  		return -EBADF;
-> >> @@ -626,7 +627,10 @@ static ssize_t devkmsg_read(struct file *file, char __user *buf,
-> >>  	else
-> >>  		cont = '-';
-> >>  
-> >> -	len = sprintf(user->buf, "%u,%llu,%llu,%c;",
-> >> +	/* Insert a newline if the previous line was not terminated properly */
-> >> +	insert_newline = (user->prev & LOG_CONT) && (msg->flags & LOG_PREFIX);
-> >> +	len = sprintf(user->buf, "%s%u,%llu,%llu,%c;",
-> >> +		      insert_newline ? "\n" : "",
-> >>  		      (msg->facility << 3) | msg->level,
-> >>  		      user->seq, ts_usec, cont);
-> >>  	user->prev = msg->flags;
-> >> @@ -999,10 +1003,12 @@ static size_t msg_print_text(const struct printk_log *msg, enum log_flags prev,
-> >>  {
-> >>  	const char *text = log_text(msg);
-> >>  	size_t text_size = msg->text_len;
-> >> +	size_t len = 0;
-> >> +	bool insert_newline;
-> >>  	bool prefix = true;
-> >>  	bool newline = true;
-> >> -	size_t len = 0;
-> >>  
-> >> +	insert_newline = (prev & LOG_CONT) && (msg->flags & LOG_PREFIX);
-> >>  	if ((prev & LOG_CONT) && !(msg->flags & LOG_PREFIX))
-> >>  		prefix = false;
-> >>  
-> >> @@ -1023,9 +1029,13 @@ static size_t msg_print_text(const struct printk_log *msg, enum log_flags prev,
-> >>  
-> >>  		if (buf) {
-> >>  			if (print_prefix(msg, syslog, NULL) +
-> >> -			    text_len + 1 >= size - len)
-> >> +			    text_len + 2 >= size - len)
-> > 
-> > It counts the '\n' even when it is not used.
-> > I think that it is even wrong that it calculates prefix when it is not used.
-> 
-> That's true, and I have yet another un-posted patch that
-> addresses this problem (well the second one).  I am not
-> going to fix this problem in this patch, but the fix is
-> coming.
-> 
-> Now that you're looking at the code I'm touching, you're
-> seeing the same things I did...
-> 
-> I think I'll start posting that series later today or
-> tomorrow.   I just hate to get too far ahead of myself.
+Recent patch by Tomasz Figa ("irqchip: gic: Fix core ID calculation
+when topology is read from DT") fixed GIC driver to filter cluster ID
+from values returned by cpu_logical_map() for SoCs having registers
+mapped without per-CPU banking making it is possible to add CPU nodes
+for Exynos4 SoCs.  In case of Exynos SoCs these CPU nodes are also
+required by future changes adding initialization of cpuidle states in
+Exynos cpuidle driver through DT.
 
-I suggest to always wait at least 24 hours before sending another
-version. I think that it is very hard for others to follow if there
-are too many versions in the wild and the code is too changing.
-This is why you get comments basically only from me.
+Tested on Origen board (Exynos4210 SoC) and Trats2 (Exynos4412 SoC).
 
-Also a night usually helps to sort ideas and go the right direction.
-In fact, I was too fast myself as well. I am going to comment only one
-version per-day from now on :-)
+Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+---
+Based on next-20140717 branch of linux-next tree +
+- [PATCH 2/6] ARM: EXYNOS: Fix core ID used by platsmp and hotplug code
+  http://www.mail-archive.com/linux-samsung-soc@vger.kernel.org/msg32811.html
+- [PATCH] irqchip: gic: Fix core ID calculation when topology is read from DT
+  http://www.mail-archive.com/linux-samsung-soc@vger.kernel.org/msg34277.html
 
+v2:
+- match the unit-address with the reg
 
-> >>  				break;
-> >>  
-> >> +			if (insert_newline) {
-> >> +				insert_newline = false;
-> >> +				buf[len++] = '\n';
-> >> +			}
-> >>  			if (prefix)
-> >>  				len += print_prefix(msg, syslog, buf + len);
-> >>  			memcpy(buf + len, text, text_len);
-> >> @@ -1034,6 +1044,8 @@ static size_t msg_print_text(const struct printk_log *msg, enum log_flags prev,
-> >>  				buf[len++] = '\n';
-> >>  		} else {
-> >>  			/* SYSLOG_ACTION_* buffer size only calculation */
-> >> +			if (insert_newline)
-> >> +				len++;
-> > 
-> > You forgot "insert_newline = false" here.
-> 
-> Yes you're right.  It's good that you're reviewing this.
-> (The patches I have not yet posted affect this area of
-> code, and should eliminate this block...)
-> 
-> >>  			if (prefix)
-> >>  				len += print_prefix(msg, syslog, NULL);
-> >>  			len += text_len;
-> > 
-> > It is just matter of personal style but I would suggest to do this
-> > before the do-while cycle:
-> > 
-> > 	/* Force newline if the previous text was not properly finished */
-> > 	if ((prev & LOG_CONT) && (msg->flags & LOG_PREFIX) && (len < size)) {
-> > 		if (buf)
-> > 			buf[len++] = '\n';
-> > 		else
-> > 			len++;
-> > 	}
-> > 
-> > IMHO, it is more clear. The do-while cycle already is complex enough.
-> 
-> I agree with this.  It's a one-time thing and doesn't belong in
-> the loop.  When you suggested inserting the newline I think I
-> didn't think it through completely.  I will do this.
-> 
-> > BTW: This is relared to the first patch. I would either patch all
-> > three locations in one patch or better split it into three patches.
-> 
-> I am keeping the first patch separate from this one.  I think
-> the first is related (in that we improve readability by inserting
-> some newlines) but it's really addressing a different problem.
+ arch/arm/boot/dts/exynos4210.dtsi | 17 +++++++++++++++++
+ arch/arm/boot/dts/exynos4212.dtsi | 17 +++++++++++++++++
+ arch/arm/boot/dts/exynos4412.dtsi | 29 +++++++++++++++++++++++++++++
+ 3 files changed, 63 insertions(+)
 
-You are right that the problem is different but it is quite similar.
-In each case, I would keep the patches closer.
+diff --git a/arch/arm/boot/dts/exynos4210.dtsi b/arch/arm/boot/dts/exynos4210.dtsi
+index ee3001f..bc2b444 100644
+--- a/arch/arm/boot/dts/exynos4210.dtsi
++++ b/arch/arm/boot/dts/exynos4210.dtsi
+@@ -31,6 +31,23 @@
+ 		pinctrl2 = &pinctrl_2;
+ 	};
+ 
++	cpus {
++		#address-cells = <1>;
++		#size-cells = <0>;
++
++		cpu@900 {
++			device_type = "cpu";
++			compatible = "arm,cortex-a9";
++			reg = <0x900>;
++		};
++
++		cpu@901 {
++			device_type = "cpu";
++			compatible = "arm,cortex-a9";
++			reg = <0x901>;
++		};
++	};
++
+ 	sysram@02020000 {
+ 		compatible = "mmio-sram";
+ 		reg = <0x02020000 0x20000>;
+diff --git a/arch/arm/boot/dts/exynos4212.dtsi b/arch/arm/boot/dts/exynos4212.dtsi
+index 3c00e6e..dd0a43e 100644
+--- a/arch/arm/boot/dts/exynos4212.dtsi
++++ b/arch/arm/boot/dts/exynos4212.dtsi
+@@ -22,6 +22,23 @@
+ / {
+ 	compatible = "samsung,exynos4212", "samsung,exynos4";
+ 
++	cpus {
++		#address-cells = <1>;
++		#size-cells = <0>;
++
++		cpu@A00 {
++			device_type = "cpu";
++			compatible = "arm,cortex-a9";
++			reg = <0xA00>;
++		};
++
++		cpu@A01 {
++			device_type = "cpu";
++			compatible = "arm,cortex-a9";
++			reg = <0xA01>;
++		};
++	};
++
+ 	combiner: interrupt-controller@10440000 {
+ 		samsung,combiner-nr = <18>;
+ 	};
+diff --git a/arch/arm/boot/dts/exynos4412.dtsi b/arch/arm/boot/dts/exynos4412.dtsi
+index c42a3e1..435a722 100644
+--- a/arch/arm/boot/dts/exynos4412.dtsi
++++ b/arch/arm/boot/dts/exynos4412.dtsi
+@@ -22,6 +22,35 @@
+ / {
+ 	compatible = "samsung,exynos4412", "samsung,exynos4";
+ 
++	cpus {
++		#address-cells = <1>;
++		#size-cells = <0>;
++
++		cpu@A00 {
++			device_type = "cpu";
++			compatible = "arm,cortex-a9";
++			reg = <0xA00>;
++		};
++
++		cpu@A01 {
++			device_type = "cpu";
++			compatible = "arm,cortex-a9";
++			reg = <0xA01>;
++		};
++
++		cpu@A02 {
++			device_type = "cpu";
++			compatible = "arm,cortex-a9";
++			reg = <0xA02>;
++		};
++
++		cpu@A03 {
++			device_type = "cpu";
++			compatible = "arm,cortex-a9";
++			reg = <0xA03>;
++		};
++	};
++
+ 	combiner: interrupt-controller@10440000 {
+ 		samsung,combiner-nr = <20>;
+ 	};
+-- 
+1.8.2.3
 
 
-> Meanwhile, this patch is addressing essentially the same problem
-> in two spots, so I'd like to keep these together rather than
-> splitting it in two.
-
-I do not have strong opinion here.
-
-
-> I will move this patch earlier in the series, however, making
-> it follow patch 1.
-
-Sounds good.
-
-Best Regards,
-Petr
