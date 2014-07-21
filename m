@@ -1,53 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754123AbaGUJLG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 05:11:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55595 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753031AbaGUJLD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 05:11:03 -0400
-Date: Mon, 21 Jul 2014 11:11:45 +0200
-From: Alexander Gordeev <agordeev@redhat.com>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] blk-mq: bitmap tag: fix potential unwakeable sleep in
- bt_get()
-Message-ID: <20140721091144.GB2107@dhcp-26-207.brq.redhat.com>
-References: <1405930246-2051-1-git-send-email-agordeev@redhat.com>
- <53CCCC76.7060506@kernel.dk>
- <20140721083202.GA2107@dhcp-26-207.brq.redhat.com>
- <53CCD08C.80702@kernel.dk>
+	id S1753987AbaGUJOM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 05:14:12 -0400
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:65207 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753256AbaGUJOL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jul 2014 05:14:11 -0400
+Message-ID: <53CCD9E1.9000402@linaro.org>
+Date: Mon, 21 Jul 2014 11:14:09 +0200
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53CCD08C.80702@kernel.dk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Maxime Ripard <maxime.ripard@free-electrons.com>, linux@maxim.org.za,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
+CC: Boris Brezillon <boris@free-electrons.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Thomas Petazzoni <thomas@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 00/14] AT91: PIT: Cleanups and move to drivers/clocksource
+References: <1404207208-14513-1-git-send-email-maxime.ripard@free-electrons.com>
+In-Reply-To: <1404207208-14513-1-git-send-email-maxime.ripard@free-electrons.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 21, 2014 at 10:34:20AM +0200, Jens Axboe wrote:
-> On 2014-07-21 10:32, Alexander Gordeev wrote:
-> >On Mon, Jul 21, 2014 at 10:16:54AM +0200, Jens Axboe wrote:
-> >>What is this patch against?
-> >
-> >v3.16-rc5
-> 
-> My bad, was looking at the wrong sources. What is the race? If the
-> clear and wakeup come in after the prepare_to_wait() but before the
-> io_schedule(), the io_schedule() will be a no-op and it wont
-> actually sleep. Your commit message doesn't mention any particular
-> details.
+On 07/01/2014 11:33 AM, Maxime Ripard wrote:
+> Hi everyone,
+>
+> This series cleans up the PIT driver in order for it to not depend on
+> anything in mach-at91 anymore, and in the end move it out of
+> mach-at91.
+>
+> Along the way, these patches also do a bit of cleanup.
+>
+> This has been tested on a G45-EK without DT and an Xplained with DT.
 
-Let me examine the code.. It was few weeks ago and I can not
-remember what was that. And the changelog does not help :)
+For the entire serie:
 
-> 
-> -- 
-> Jens Axboe
-> 
+Acked-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+
+
 
 -- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
+
