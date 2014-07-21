@@ -1,126 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754841AbaGUWQo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 18:16:44 -0400
-Received: from mail-lb0-f182.google.com ([209.85.217.182]:44370 "EHLO
-	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752010AbaGUWQm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 18:16:42 -0400
+	id S1754281AbaGUWYx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 18:24:53 -0400
+Received: from imap.thunk.org ([74.207.234.97]:48470 "EHLO imap.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752645AbaGUWYv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jul 2014 18:24:51 -0400
+Date: Mon, 21 Jul 2014 18:23:22 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
+        linux-crypto@vger.kernel.org, beck@openbsd.org,
+        deraadt@cvs.openbsd.org
+Subject: Re: [PATCH -v4] random: introduce getrandom(2) system call
+Message-ID: <20140721222322.GC24960@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
+	linux-crypto@vger.kernel.org, beck@openbsd.org,
+	deraadt@cvs.openbsd.org
+References: <1405718127-30042-1-git-send-email-tytso@mit.edu>
+ <20140721202125.GF1158@osiris>
 MIME-Version: 1.0
-In-Reply-To: <CAGr1F2Fd_4=WUm4STPd4kdd5tNLO6aQ1OOQMKnRqyOKZSGvCpg@mail.gmail.com>
-References: <1405626731-12220-1-git-send-email-adityakali@google.com>
- <1405626731-12220-6-git-send-email-adityakali@google.com> <CALCETrWXMMGzptvEu6TfzTjBou4t==W39_nNB5FJwSk2Zy8uCQ@mail.gmail.com>
- <CAGr1F2Ht1q_nYGJwmQvEEyj8r3R1stgD=g3s8_5zYOTogjz-UQ@mail.gmail.com>
- <CALCETrW6YpyJBmr3sZC6KL03GP4dcGYavQF5DFZfys6Cok-vpw@mail.gmail.com>
- <CAGr1F2GwZvZLPGLWKPPOt3vREwwVNbVPrgE6YJ01bACKejbc4Q@mail.gmail.com>
- <CALCETrVeeL71sfVdbzRx0FpGrvQKbviEmUcMEosbUU+UJNQu9w@mail.gmail.com> <CAGr1F2Fd_4=WUm4STPd4kdd5tNLO6aQ1OOQMKnRqyOKZSGvCpg@mail.gmail.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Mon, 21 Jul 2014 15:16:20 -0700
-Message-ID: <CALCETrUhd41LFfF9epbVYJSOwqBq308Z8RZG9tzyPfx+Joe15Q@mail.gmail.com>
-Subject: Re: [PATCH 5/5] cgroup: introduce cgroup namespaces
-To: Aditya Kali <adityakali@google.com>
-Cc: Linux Containers <containers@lists.linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        cgroups@vger.kernel.org, Li Zefan <lizefan@huawei.com>,
-        Linux API <linux-api@vger.kernel.org>, Tejun Heo <tj@kernel.org>,
-        Ingo Molnar <mingo@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140721202125.GF1158@osiris>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 21, 2014 at 3:11 PM, Aditya Kali <adityakali@google.com> wrote:
-> On Fri, Jul 18, 2014 at 11:57 AM, Andy Lutomirski <luto@amacapital.net> wrote:
->> On Fri, Jul 18, 2014 at 11:51 AM, Aditya Kali <adityakali@google.com> wrote:
->>> On Fri, Jul 18, 2014 at 9:51 AM, Andy Lutomirski <luto@amacapital.net> wrote:
->>>> On Jul 17, 2014 1:56 PM, "Aditya Kali" <adityakali@google.com> wrote:
->>>>>
->>>>> On Thu, Jul 17, 2014 at 12:57 PM, Andy Lutomirski <luto@amacapital.net> wrote:
->>>>> > What happens if someone moves a task in a cgroup namespace outside of
->>>>> > the namespace root cgroup?
->>>>> >
->>>>>
->>>>> Attempt to move a task outside of cgroupns root will fail with EPERM.
->>>>> This is true irrespective of the privileges of the process attempting
->>>>> this. Once cgroupns is created, the task will be confined to the
->>>>> cgroup hierarchy under its cgroupns root until it dies.
->>>>
->>>> Can a task in a non-init userns create a cgroupns?  If not, that's
->>>> unusual.  If so, is it problematic if they can prevent themselves from
->>>> being moved?
->>>>
->>>
->>> Currently, only a task with CAP_SYS_ADMIN in the init-userns can
->>> create cgroupns. It is stricter than for other namespaces, yes.
->>
->> I'm slightly hesitant to have unshare(CLONE_NEWUSER |
->> CLONE_NEWCGROUPNS | ...) start having weird side effects that are
->> visible outside the namespace, especially when those side effects
->> don't happen (because the call fails entirely) if
->> unshare(CLONE_NEWUSER) happens first.  I don't see a real problem with
->> it, but it's weird.
->>
->
-> I expect this to be only in the initial version of the patch. We can
-> make this consistent with other namespaces once we figure out how
-> cgroupns can be safely enabled for non-init-userns.
->
->>>
->>>> I hate to say it, but it might be worth requiring explicit permission
->>>> from the cgroup manager for this.  For example, there could be a new
->>>> cgroup attribute may_unshare, and any attempt to unshare the cgroup ns
->>>> will fail with -EPERM unless the caller is in a may_share=1 cgroup.
->>>> may_unshare in a parent cgroup would not give child cgroups the
->>>> ability to unshare.
->>>>
->>>
->>> What you suggest can be done. The current patch-set punts the problem
->>> of permission checking by only allowing unshare from a
->>> capable(CAP_SYS_ADMIN) process. This can be implemented as a follow-up
->>> improvement to cgroupns feature if we want to open it to non-init
->>> userns.
->>>
->>> Being said that, I would argue that even if we don't have this
->>> explicit permission and relax the check to non-init userns, it should
->>> be 'OK' to let ns_capable(current_user_ns(), CAP_SYS_ADMIN) tasks to
->>> unshare cgroupns (basically, if you can "create" a cgroup hierarchy,
->>> you should probably be allowed to unshare() it).
->>
->> But non-init-userns tasks can't create cgroup hierarchies, unless I
->> misunderstand the current code.  And, if they can, I bet I can find
->> three or four serious security issues in an hour or two. :)
->>
->
-> Task running in non-init userns can create cgroup hierarchies if you
-> chown/chgrp their cgroup root to the task user:
+On Mon, Jul 21, 2014 at 10:21:26PM +0200, Till Smejkal wrote:
+> Hi,
+> 
+> On Fri, 18 Jul 2014, Theodore Ts'o wrote:
+> [...]
+> > 	If the GRND_RANDOM bit is not set, then the /dev/urandom pool
+> > 	will be used.  Unlike using read(2) to fetch data from
+> > 	/dev/urandom, if the urandom pool has not been sufficiently
+> > 	initialized, getrandom(2) will block or return -1 with the
+> > 	errno set to EGAIN if the GRND_NONBLOCK bit is set in flags.
+>                  ^^^^^
+> Small typo: this should be EAGAIN.
 
-Won't the systemd people hate you forever for this suggestion?  (I do
-exactly this myself...)
+Thanks for pointing this out!  Will fix.
 
-
-> This is a powerful feature as it allows non-root tasks to run
-> container-management tools and provision their resources properly. But
-> this makes implementing your suggestion of having 'cgroup.may_unshare'
-> file tricky as the cgroup owner (task) will be able to set it and
-> still unshare cgroupns. Instead, may be we could just check if the
-> task has appropriate (write?) permissions on the cgroup directory
-> before allowing nested cgroupns creation.
-
-I bet that systemd will want to set may_unshare but not give write
-access.  Who knows?
-
-> [shudder]
-> I am surprised that this even works correctly.
->
-> Either way, may be checking cgroup directory permissions will work for
-> you? i.e., if you "chown" a cgroup directory to the user, it should be
-> OK if the user's task unshares cgroupns under that cgroup and you
-> don't care about moving tasks from under that cgroup. Without
-> ownership of the cgroup directory, creation of cgroupns will be
-> disallowed. What do you think?
-
-I think this is *safe* but may not useful for eventual systemd stuff.
-Not really sure.
-
---Andy
+					- Ted
