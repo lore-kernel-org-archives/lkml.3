@@ -1,69 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933524AbaGUSoa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 14:44:30 -0400
-Received: from mga11.intel.com ([192.55.52.93]:65473 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933237AbaGUSo2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 14:44:28 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,703,1400050800"; 
-   d="scan'208";a="565079475"
-Message-ID: <53CD5F84.30700@intel.com>
-Date: Mon, 21 Jul 2014 21:44:20 +0300
-From: Adrian Hunter <adrian.hunter@intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S933455AbaGUSwI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 14:52:08 -0400
+Received: from perceval.ideasonboard.com ([95.142.166.194]:36648 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933369AbaGUSwG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jul 2014 14:52:06 -0400
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: balbi@ti.com
+Cc: Adam Wozniak <awozniak@irobot.com>, linux-kernel@vger.kernel.org,
+        linux-arm@lists.infradead.org, linux-usb@vger.kernel.org,
+        "Agius, Frank" <fagius@irobot.com>
+Subject: Re: high cpu load on omap3 using musb
+Date: Mon, 21 Jul 2014 20:52:03 +0200
+Message-ID: <3287325.pFCFikB7VA@avalon>
+User-Agent: KMail/4.11.5 (Linux/3.12.21-gentoo-r1; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140721154052.GJ6852@saruman.home>
+References: <52E93009.1090609@irobot.com> <3341916.JePQu0RYOt@avalon> <20140721154052.GJ6852@saruman.home>
 MIME-Version: 1.0
-To: David Ahern <dsahern@gmail.com>, Andi Kleen <andi@firstfloor.org>
-CC: Jiri Olsa <jolsa@kernel.org>, linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCHv3 00/19] perf tools: Factor ordered samples queue
-References: <1405893363-21967-1-git-send-email-jolsa@kernel.org>	<53CCB6AE.6020505@intel.com> <20140721080219.GA4183@krava.redhat.com>	<53CCD3A7.5070002@intel.com> <20140721095415.GB8865@krava.redhat.com> <87d2cy3c7m.fsf@tassilo.jf.intel.com> <53CD5AB5.3000307@intel.com> <53CD5DC6.3030605@gmail.com>
-In-Reply-To: <53CD5DC6.3030605@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; boundary="nextPart3635346.O3fFlhQW1J"; micalg="pgp-sha1"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 21/07/2014 9:36 p.m., David Ahern wrote:
-> On 7/21/14, 12:23 PM, Adrian Hunter wrote:
->> On 21/07/2014 7:31 p.m., Andi Kleen wrote:
->>> Jiri Olsa <jolsa@redhat.com> writes:
->>>>
->>>> [jolsa@ibm-x3650m4-01 perf]$ sudo ./perf report --stdio
->>>> Timestamp below last timeslice flush
->>>> 0x2276f58 [0x68]: failed to process type: 9
->>>
->>> FWIW we're seeing this frequently too.
->>
->> Jiri's example didn't work for me.  Do you have one?
->
-> $ perf sched record  -m 8192 -- perf bench sched all
-> # Running sched/messaging benchmark...
-> # 20 sender and receiver processes per group
-> # 10 groups == 400 processes run
->
->       Total time: 0.087 [sec]
->
-> # Running sched/pipe benchmark...
-> # Executed 1000000 pipe operations between two processes
->
->       Total time: 12.043 [sec]
->
->        12.043779 usecs/op
->            83030 ops/sec
->
-> [ perf record: Woken up 1 times to write data ]
-> [ perf record: Captured and wrote 289.549 MB perf.data (~12650569 samples) ]
-> 0x54b4828 [0]: failed to process type: 0
->
-> No overload condition, no dropped chunks message - yet can't process events.
 
-Actually, it was the "Timestamp below last timeslice flush"
-that I was interested in.
+--nextPart3635346.O3fFlhQW1J
+Content-Transfer-Encoding: quoted-printable
+Content-Type: text/plain; charset="us-ascii"
+
+Hi Felipe and Adam,
+
+On Monday 21 July 2014 10:40:52 Felipe Balbi wrote:
+> On Mon, Jul 21, 2014 at 05:28:58PM +0200, Laurent Pinchart wrote:
+> > On Wednesday 29 January 2014 08:44:57 Adam Wozniak wrote:
+> > > With a USB 2.0 webcam attached to the OTG port on an OMAP3 (appli=
+es to
+> > > overo gumstix, beagleboard, probably others) we see a high CPU lo=
+ad in a
+> > > kworker thread.
+> > >=20
+> > > Between 2.6.33 and 2.6.34 musb_core.c changed.
+> > >=20
+> > > IRQ handlers changed with the result that a worker in musb_core.c=
+ got
+> > > scheduled far more frequently than needed.
+> > >=20
+> > > I've included a patch below against 3.7, but i think it'll apply =
+against
+> > > mainline.
+> > > [I apologize for any whitespace mangling.  I've also attached the=
+
+> > > patch.]
+> > >=20
+> > > I'd like more eyeballs to tell me if this is right.  I'd also lik=
+e to
+> > > know who I need to talk to to get this pushed into mainline.
+> >=20
+> > Running the scripts/get_maintainer.pl script on your patch produces=
+
+> >=20
+> > Felipe Balbi <balbi@ti.com> (maintainer:MUSB MULTIPOINT H...)
+> > Greg Kroah-Hartman <gregkh@linuxfoundation.org> (supporter:USB SUBS=
+YSTEM)
+> > linux-usb@vger.kernel.org (open list:MUSB MULTIPOINT H...)
+> > linux-kernel@vger.kernel.org (open list)
+> >=20
+> > Felipe Balbi (CC'ed) is the person who you should talk to.
+> >=20
+> > While we're touching the subject of scripts, you should run the
+> > scripts/checkpatch.pl script and fix errors and warnings before sub=
+mitting
+> > patches. Please see Documentation/SubmittingPatches.
+> >=20
+> > Last (but not least) piece of advice, don't give up if you don't re=
+ceive
+> > replies to your patches. People are busy and mails fall to cracks f=
+rom
+> > time to time.
+> >=20
+> > Felipe, apart from the coding style violation and the possibly miss=
+ing
+> > locking, what's your opinion on this ? Does the patch make sense ?
+>=20
+> It's a duplication of the check which is already in musb_irq_work():
+>=20
+> 1742 static void musb_irq_work(struct work_struct *data)
+> 1743 {
+> 1744         struct musb *musb =3D container_of(data, struct musb, ir=
+q_work);
+> 1745
+> 1746         if (musb->xceiv->state !=3D musb->xceiv_old_state) {
+> 1747                 musb->xceiv_old_state =3D musb->xceiv->state;
+> 1748                 sysfs_notify(&musb->controller->kobj, NULL, "mod=
+e");
+> 1749         }
+> 1750 }
+>=20
+> That does look better, but I'd need the check inside musb_irq_work() =
+to
+> be removed and commit log would have to improve a bit.
+
+OK. Adam, could you please modify the patch accordingly and resubmit it=
+ ?
+
+> ps: there's no missing locking, musb_stage0_irq() is called within
+> musb_interrupt() which is called within a locked IRQ handler.
+
+I hadn't checked that, thank you for the confirmation.
+
+=2D-=20
+Regards,
+
+Laurent Pinchart
+
+--nextPart3635346.O3fFlhQW1J
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part.
+Content-Transfer-Encoding: 7Bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAABAgAGBQJTzWFgAAoJEIkPb2GL7hl1feAIAKbxp+SIZlUFDTEfzcuVCPQA
+NJomq/fWwL+te4+fLZEKrGrkxYgAzn/jkJpoj1OGpTNvHDSfXZuLjpW+GOe/ZVUQ
+Wb0+X27/R+rfvvrKOO3HkjHIzI9Nbmj18WWVqGgckqvTCGsyHW99+/Fii/cxC587
+O0Q95PCvtewQ6XNAiV4/lOn6XEwiOF0NJMM62MRCatsFDKgSgFMesiR7/COoRzZY
+XOcNQIPnMVLk1lgc25LXJit7YFH3NOcSleXDjKaX61Ic07QtFazTDDHfmco8E0Ju
+D+j+Ryme3BJPRmsla5oZtfkScHCdx3i2qq9QTfCXEEb/VATKKd7m/FMRFfZ/j98=
+=3Xwb
+-----END PGP SIGNATURE-----
+
+--nextPart3635346.O3fFlhQW1J--
+
