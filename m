@@ -1,202 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755201AbaGUOc7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 10:32:59 -0400
-Received: from mailrelay001.isp.belgacom.be ([195.238.6.51]:53998 "EHLO
-	mailrelay001.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754125AbaGUOc6 (ORCPT
+	id S932474AbaGUOhb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 10:37:31 -0400
+Received: from mail-we0-f171.google.com ([74.125.82.171]:63426 "EHLO
+	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755043AbaGUOh3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 10:32:58 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AhIMAC0kzVNXQ4zh/2dsb2JhbABZgw5SryQJAQEFAW4BlX+HSYEYF3aEYCOBGhgfiEYBrU2RFYV7iGxkhE0FmyWBTZJig0Y7L4ED
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel@vger.kernel.org
-Cc: joe@perches.com, richard@nod.at, akpm@linux-foundation.org,
-        Fabian Frederick <fabf@skynet.be>
-Subject: [RFC PATCH 1/1] add makepatch script
-Date: Mon, 21 Jul 2014 16:31:25 +0200
-Message-Id: <1405953085-10608-1-git-send-email-fabf@skynet.be>
-X-Mailer: git-send-email 1.9.1
+	Mon, 21 Jul 2014 10:37:29 -0400
+Message-ID: <53CD25A4.7030606@linaro.org>
+Date: Mon, 21 Jul 2014 16:37:24 +0200
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Robert Jarzmik <robert.jarzmik@free.fr>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>
+CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH v3 4/4] arm: pxa: add non device-tree timer link to clocksource
+References: <1405356724-32207-1-git-send-email-robert.jarzmik@free.fr> <1405356724-32207-4-git-send-email-robert.jarzmik@free.fr>
+In-Reply-To: <1405356724-32207-4-git-send-email-robert.jarzmik@free.fr>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This small script tries to standardize patch generation by adding patch level,
-versioning and default flags.
+On 07/14/2014 06:52 PM, Robert Jarzmik wrote:
+> As clocksource pxa_timer was moved to clocksource framework, the
+> pxa_timer initialization needs to be a bit amended, to pass the
+> necessary informations to clocksource, ie :
+>   - the timer interrupt (mach specific)
+>   - the timer registers base (ditto)
+>   - the timer clockrate
+>
+> Signed-off-by: Robert Jarzmik <robert.jarzmik@free.fr>
+>
+> ---
+> Since V2: Arnd's comment : moved extern declaration into .h file
+> ---
 
--Patch categories:
-	-RFC
-	-URGENT
-	-BUGFIX
-	-TRIVIAL
-	-CODE STYLE
-	-...
+Shall I take the patches 4-5 also ?
 
-Sample use: ./scripts/makepatch.pl --patchlevel "RFC" --version 3
+Arnd ?
 
-Of course it's only an RFC which would need more specifications...
+Thanks
 
-Inspired-By: Joe Perches <joe@perches.com>
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
----
- Documentation/SubmittingPatches |   2 +-
- scripts/makepatch.pl            | 133 ++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 134 insertions(+), 1 deletion(-)
- create mode 100755 scripts/makepatch.pl
+   -- Daniel
 
-diff --git a/Documentation/SubmittingPatches b/Documentation/SubmittingPatches
-index 7e9abb8..f14d809 100644
---- a/Documentation/SubmittingPatches
-+++ b/Documentation/SubmittingPatches
-@@ -167,7 +167,7 @@ in your patch description.
- If you cannot condense your patch set into a smaller set of patches,
- then only post say 15 or so at a time and wait for review and integration.
- 
--
-+One way to generate a standard patch and header is to use scripts/makepatch.pl.
- 
- 4) Style check your changes.
- 
-diff --git a/scripts/makepatch.pl b/scripts/makepatch.pl
-new file mode 100755
-index 0000000..ab4e092
---- /dev/null
-+++ b/scripts/makepatch.pl
-@@ -0,0 +1,133 @@
-+#!/usr/bin/perl -w
-+# (c) 2014, Fabian Frederick <fabf@skynet.be>
-+#
-+# Based on get_maintainer.pl and checkpatch.pl
-+#
-+# This script tries to standardize patch generation.
-+# It adds patch level, versioning and default flags.
-+#
-+# usage: perl scripts/makepatch.pl [OPTIONS]
-+#
-+# Licensed under the terms of the GNU GPL License version 2
-+
-+use strict;
-+use List::MoreUtils 'first_index';
-+
-+my $P = $0;
-+my $V = '0.1';
-+
-+use Getopt::Long qw(:config no_auto_abbrev);
-+
-+my @patchlevels = ("RFC", "URGENT", "BUGFIX", "TRIVIAL", "CODE STYLE");
-+my $patchlevel = '';
-+my $patchversion = '';
-+my $patchdefaultflags = '-s -n';
-+my $patchadditionnalflags = '';
-+my $branch = '';
-+my $help = 0;
-+my $subjectprefix = '';
-+my $commits = 0;
-+
-+if (!GetOptions(
-+		'patchlevel=s'		=> \$patchlevel,
-+		'version=i'		=> \$patchversion,
-+		'branch=s'		=> \$branch,
-+		'flags=s'		=> \$patchadditionnalflags,
-+                'h|help|usage'		=> \$help,
-+	)) {
-+    die "$P: invalid argument - use --help if necessary\n";
-+}
-+
-+if ($help != 0) {
-+    usage();
-+    exit 0;
-+}
-+
-+sub listpatchlevels () {
-+	my $index = 0;
-+	foreach(@patchlevels) {
-+		print $_;
-+		if ($index < $#patchlevels) {
-+			print ", ";
-+		}
-+		$index++;
-+	}
-+	print "\n";
-+}
-+
-+sub usage {
-+	    print <<EOT;
-+usage: $P [options]
-+version: $V
-+
-+PATCH LEVEL options:
-+	--patchlevel => specify patchlevel in the following:
-+EOT
-+listpatchlevels();
-+	print <<EOT;
-+
-+PATCH VERSION options
-+	--version => numeric patch version.
-+
-+BRANCH options
-+	--branch => this script will generate a patch from master to this one.
-+
-+FLAG options
-+	--flags => add flags to default ones.
-+
-+Note that if no branch is specified, this script will try master..current
-+
-+Normal use  : $P --patchlevel "CODE STYLE"
-+Extended use: $P --patchlevel "CODE STYLE" --version 3 --flags "--thread --cover-letter"
-+
-+EOT
-+}
-+
-+my $patchlevelindex = first_index{/^$patchlevel$/}  @patchlevels;
-+
-+if ($patchlevelindex > -1) {
-+	#No destination branch specified, current branch ok ?
-+	if ($branch eq "") {
-+		my $currentbranch = `git status | head -n 1`;
-+		$currentbranch = substr($currentbranch, rindex($currentbranch, " "));
-+		$currentbranch =~ s/^\s+|\s+$//g;
-+		if ($currentbranch eq 'master') {
-+			print "This script generates a patch between master and a working branch.\n";
-+			print "You're currently on master branch; please use --branch.\n";
-+			exit(0);
-+		}
-+		$branch = $currentbranch;
-+	} else {
-+		my $branchexist = `git branch | grep $branch | wc -l`;
-+		if ($branchexist == 0) {
-+			print "You specified a branch which doesn't currently exist.\n";
-+			print "Either git checkout desired branch or use correct --branch\n";
-+			exit(0);
-+		}
-+	}
-+	#Do we have some commits on that branch from master ?
-+	$commits = `git rev-list master..$branch | wc -l`;
-+	$commits =~ s/^\s+|\s+$//g;
-+	if ($commits eq 0) {
-+		print "No commits are available in current branch from master.\n";
-+		exit(0);
-+	}
-+	#"V1" is not necessary
-+	if ($patchversion && $patchversion > 1) {
-+		$patchversion = " V".$patchversion;
-+	} else {
-+		$patchversion="";
-+	}
-+	$subjectprefix="$patchlevel PATCH$patchversion";
-+	my $cmd = "git format-patch $patchdefaultflags $patchadditionnalflags --subject-prefix=\"".$subjectprefix."\" master..".$branch;
-+	my $result = `$cmd`;
-+	if ($result) {
-+		print "File(s) generated:\n";
-+		print $result;
-+	} else {
-+		print "No patch generated.";
-+	}
-+} else {
-+	usage();
-+	exit(0);
-+}
+>   arch/arm/mach-pxa/generic.c | 11 +++++++++++
+>   include/clocksource/pxa.h   | 18 ++++++++++++++++++
+>   2 files changed, 29 insertions(+)
+>   create mode 100644 include/clocksource/pxa.h
+>
+> diff --git a/arch/arm/mach-pxa/generic.c b/arch/arm/mach-pxa/generic.c
+> index 4225417..6f38e1a 100644
+> --- a/arch/arm/mach-pxa/generic.c
+> +++ b/arch/arm/mach-pxa/generic.c
+> @@ -25,11 +25,13 @@
+>   #include <asm/mach/map.h>
+>   #include <asm/mach-types.h>
+>
+> +#include <mach/irqs.h>
+>   #include <mach/reset.h>
+>   #include <mach/smemc.h>
+>   #include <mach/pxa3xx-regs.h>
+>
+>   #include "generic.h"
+> +#include <clocksource/pxa.h>
+>
+>   void clear_reset_status(unsigned int mask)
+>   {
+> @@ -57,6 +59,15 @@ unsigned long get_clock_tick_rate(void)
+>   EXPORT_SYMBOL(get_clock_tick_rate);
+>
+>   /*
+> + * For non device-tree builds, keep legacy timer init
+> + */
+> +void pxa_timer_init(void)
+> +{
+> +	pxa_timer_nodt_init(IRQ_OST0, io_p2v(0x40a00000),
+> +			    get_clock_tick_rate());
+> +}
+> +
+> +/*
+>    * Get the clock frequency as reflected by CCCR and the turbo flag.
+>    * We assume these values have been applied via a fcs.
+>    * If info is not 0 we also display the current settings.
+> diff --git a/include/clocksource/pxa.h b/include/clocksource/pxa.h
+> new file mode 100644
+> index 0000000..1efbe5a
+> --- /dev/null
+> +++ b/include/clocksource/pxa.h
+> @@ -0,0 +1,18 @@
+> +/*
+> + * PXA clocksource, clockevents, and OST interrupt handlers.
+> + *
+> + * Copyright (C) 2014 Robert Jarzmik
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License as published by
+> + * the Free Software Foundation; version 2 of the License.
+> + *
+> + */
+> +
+> +#ifndef _CLOCKSOURCE_PXA_H
+> +#define _CLOCKSOURCE_PXA_H
+> +
+> +extern void pxa_timer_nodt_init(int irq, void __iomem *base,
+> +			   unsigned long clock_tick_rate);
+> +
+> +#endif
+>
+
+
 -- 
-1.9.1
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
 
