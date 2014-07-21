@@ -1,96 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932409AbaGUN3n (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 09:29:43 -0400
-Received: from mail-qa0-f47.google.com ([209.85.216.47]:38808 "EHLO
-	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754125AbaGUN3l (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 09:29:41 -0400
-Date: Mon, 21 Jul 2014 09:29:37 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Steven Noonan <steven@uplinklabs.net>
-Cc: Linux Kernel mailing List <linux-kernel@vger.kernel.org>,
-        Michal Hocko <mhocko@suse.cz>
-Subject: Re: general protection fault on 3.15.6
-Message-ID: <20140721132937.GF12921@htj.dyndns.org>
-References: <CAKbGBLjYWrooGZjZS_MaDe9kxacoaL9dHJM1oDe7_a-vQuhsJw@mail.gmail.com>
+	id S932333AbaGUNfD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 09:35:03 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:41103 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932153AbaGUNfA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jul 2014 09:35:00 -0400
+Message-ID: <53CD219B.1060306@ti.com>
+Date: Mon, 21 Jul 2014 17:20:11 +0300
+From: Grygorii Strashko <grygorii.strashko@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAKbGBLjYWrooGZjZS_MaDe9kxacoaL9dHJM1oDe7_a-vQuhsJw@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Varka Bhadram <varkabhadram@gmail.com>, <santosh.shilimkar@ti.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>, <linux-gpio@vger.kernel.org>
+CC: <ivan.khoronzhuk@ti.com>, <m-karicheri2@ti.com>,
+        Rob Herring <robh+dt@kernel.org>, Kumar Gala <galak@codeaurora.org>,
+        <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v1] gpio: keystone: add dsp gpio controller driver
+References: <1405507426-18992-1-git-send-email-grygorii.strashko@ti.com> <53C64E78.4030506@gmail.com>
+In-Reply-To: <53C64E78.4030506@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Steven.
+Hi Varka Bhadram,
 
-On Sun, Jul 20, 2014 at 09:27:42PM -0700, Steven Noonan wrote:
-> My router/storage box suddenly stopped responding (originally noticed
-> because dnsmasq wasn't responding) and I had to reboot it. I checked
-> the systemd journal when it came back and these were the last thing in
-> there for the previous boot. Any ideas about pinning down the cause?
-> 
-> general protection fault: 0000 [#1] SMP
-...
-> CPU: 3 PID: 8881 Comm: systemd Tainted: P        WC O  3.15.6 #1
-> Hardware name: Shuttle Inc. SH67H/FH67H, BIOS 2.04 04/10/2013
-> task: ffff8802f473d880 ti: ffff8802f0abc000 task.ti: ffff8802f0abc000
-> RIP: 0010:[<ffffffff811ad226>]  [<ffffffff811ad226>]
-> __kmalloc_track_caller+0x86/0x260
+On 07/16/2014 01:05 PM, Varka Bhadram wrote:
+> On 07/16/2014 04:13 PM, Grygorii Strashko wrote:
+>> From: Murali Karicheri <m-karicheri2@ti.com>
+>>
+>> On Keystone SOCs, ARM host can send interrupts to DSP cores using the
+>> DSP GPIO controller IP. Each DSP GPIO controller provides 28 IRQ
+>> signals for
+>> each DSP core. This is one of the component used by the IPC mechanism
+>> used
+>> on Keystone SOCs.
+>>
+>> Keystone 2 DSP GPIO controller has specific features:
+>> - each GPIO can be configured only as output pin;
+>> - setting GPIO value to 1 causes IRQ generation on target DSP core;
+>> - reading pin value returns 0 - if IRQ was handled or 1 - IRQ is still
+>>    pending.
+>>
+>> Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
+>> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
+>> ---
+>>   .../devicetree/bindings/gpio/gpio-keystone.txt     |   43 ++++++
+>>   drivers/gpio/Kconfig                               |    8 ++
+>>   drivers/gpio/Makefile                              |    1 +
+>>   drivers/gpio/gpio-keystone.c                       |  138
+>> ++++++++++++++++++++
+>>   4 files changed, 190 insertions(+)
+>>   create mode 100644
+>> Documentation/devicetree/bindings/gpio/gpio-keystone.txt
+>>   create mode 100644 drivers/gpio/gpio-keystone.c
+>>
+>> diff --git a/Documentation/devicetree/bindings/gpio/gpio-keystone.txt
+>> b/Documentation/devicetree/bindings/gpio/gpio-keystone.txt
+>> new file mode 100644
+>> index 0000000..4f92af4
+>> --- /dev/null
+>> +++ b/Documentation/devicetree/bindings/gpio/gpio-keystone.txt
+>> @@ -0,0 +1,43 @@
+>> +Keystone 2 DSP GPIO controller bindings
+>> +
+>> +HOST OS userland running on ARM can send interrupts to DSP cores using
+>> +the DSP GPIO controller IP. It provides 28 IRQ signals per each DSP
+>> core.
+>> +This is one of the component used by the IPC mechanism used on
+>> Keystone SOCs.
+>> +
+>> +For example TCI6638K2K SoC has 8 DSP GPIO controllers:
+>> + - 8 for C66x CorePacx CPUs 0-7
+>> +
+>> +Keystone 2 DSP GPIO controller has specific features:
+>> +- each GPIO can be configured only as output pin;
+>> +- setting GPIO value to 1 causes IRQ generation on target DSP core;
+>> +- reading pin value returns 0 - if IRQ was handled or 1 - IRQ is still
+>> +  pending.
+>> +
+>> +Required Properties:
+>> +- compatible: should be "ti,keystone-dsp-gpio"
+>> +
+>> +- ti,syscon-dev:    phandle/offset pair. The phandle to syscon used to
+>> +            access device state control registers and the offset
+>> +            in order to use block of device's specific registers.
+>> +
+>> +- gpio-controller : Marks the device node as a gpio controller.
+>> +
+>> +- #gpio-cells : Should be one.
+>> +                See gpio.txt in this directory for a of the cells format
+>
+> All the properties not properly aligned. It would be more readable if
+>
+> Required Properties:
+> - compatible        : should be "ti,keystone-dsp-gpio"
+> - ti,syscon-dev        : phandle/offset pair. The phandle to syscon used to
+>                access device state control registers and the offset
+>                in order to use block of device's specific registers.
+> - gpio-controller    : Marks the device node as a gpio controller.
+> - #gpio-cells        : Should be one.
+>                See gpio.txt in this directory for a of the cells format
 
-So, GFP in kmalloc,
+Unfortunately, the format of DT bindings description is not 
+standardized, but i will try to beautify it :)
 
-> Call Trace:
->  [<ffffffff8116fb11>] kstrdup+0x31/0x60
+>
+>> +
+>> +Please refer to gpio.txt in this directory for details of the common
+>> GPIO
+>> +bindings used by client devices.
+>> +
+>
+> (...)
+>
+>> +static struct platform_driver keystone_gpio_driver = {
+>> +    .probe        = keystone_gpio_probe,
+>> +    .remove        = keystone_gpio_remove,
+>> +    .driver        = {
+>> +        .name    = "keystone-dsp-gpio",
+>> +        .owner    = THIS_MODULE,
+>
+> We can drop owner field...  :-)  .It will update by module_platform_driver
+>
+>
 
-called from kstrdup()
+Thanks for your comments - I'll wait a bit and re-send.
 
->  [<ffffffff8123a4f4>] __kernfs_new_node+0x34/0xf0
->  [<ffffffff8123b386>] kernfs_new_node+0x26/0x50
+Regards,
+- grygorii
 
-which was invoked to copy the node name while creating a new kernfs
-node.
-
->  [<ffffffff8123cc59>] __kernfs_create_file+0x39/0xa0
->  [<ffffffff810edb60>] cgroup_addrm_files+0x110/0x250
->  [<ffffffff810ee9ab>] cgroup_mkdir+0x21b/0x540
->  [<ffffffff8125ca36>] ? security_inode_notifysecctx+0x16/0x20
->  [<ffffffff8123b30a>] kernfs_iop_mkdir+0x5a/0x90
->  [<ffffffff811d3120>] vfs_mkdir+0xe0/0x180
->  [<ffffffff811d7bea>] SyS_mkdirat+0xaa/0xe0
->  [<ffffffff811d7c39>] SyS_mkdir+0x19/0x20
->  [<ffffffff8151496d>] system_call_fastpath+0x1a/0x1f
-> Code: 25 88 dd 00 00 49 8b 50 08 4d 8b 20 4d 85 e4 0f 84 50 01 00 00
-> 49 83 78 10 00 0f 84 45 01 00 00 49 63 47 20 48 8d 4a 01 4d 8b 07 <49>
-> 8b 1c 04 4c 89 e0 65 49 0f c7 08 0f 94 c0 84 c0 74 bb 49 63
-> RIP  [<ffffffff811ad226>] __kmalloc_track_caller+0x86/0x260
->  RSP <ffff8802f0abfc88>
-
-followed by another GPF
-
-> general protection fault: 0000 [#2] SMP
-...
-> RIP: 0010:[<ffffffff811aa26a>]  [<ffffffff811aa26a>] __kmalloc+0x8a/0x280
-
-in __kmalloc()
-
->  [<ffffffff8132d81f>] acpi_ns_internalize_name+0x68/0xad
-
-called from acpi to copy a different name.
-
-I don't think the problem is anything cgroup / kernfs specific.  The
-allocator is GPFing inside it from multiple callers and it's not even
-using a caller-provided cache.  It looks like something screwed up the
-memory allocator and it's now faulting on unrelated callers.  Most
-likely illegal free or use-after-free.
-
-Steven, can you please post the full kernel log from boot till reboot?
-It usually is a good idea to include full log when reporting bugs as
-it's very easy to exclude the actually relevant part.
-
-Thanks.
-
--- 
-tejun
