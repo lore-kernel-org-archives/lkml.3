@@ -1,82 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933270AbaGUPpH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 11:45:07 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:48021 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932420AbaGUPpB (ORCPT
+	id S933282AbaGUPpZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 11:45:25 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:49123 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932420AbaGUPpV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 11:45:01 -0400
-Date: Mon, 21 Jul 2014 16:44:42 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Lothar =?iso-8859-1?Q?Wa=DFmann?= <LW@KARO-electronics.de>
-Cc: linux-kernel@vger.kernel.org, linux-spi@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Benoit Cousson <bcousson@baylibre.com>, Charulatha V <charu@ti.com>
-Message-ID: <20140721154442.GB17528@sirena.org.uk>
-References: <1405683053-14104-1-git-send-email-LW@KARO-electronics.de>
- <20140718171035.GQ17528@sirena.org.uk>
- <20140721075144.251bb67d@ipc1.ka-ro>
- <20140721121820.GW17528@sirena.org.uk>
- <20140721144104.5e37f1a0@ipc1.ka-ro>
+	Mon, 21 Jul 2014 11:45:21 -0400
+Message-ID: <53CD3582.707@infradead.org>
+Date: Mon, 21 Jul 2014 08:45:06 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="YOxyDEsNCn0QNWql"
-Content-Disposition: inline
-In-Reply-To: <20140721144104.5e37f1a0@ipc1.ka-ro>
-X-Cookie: 98% lean.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] spi: omap2-mcspi: fix blatant abuse of the resource
- subsystem
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+To: Waiman Long <Waiman.Long@hp.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Darren Hart <dvhart@linux.intel.com>,
+        Davidlohr Bueso <davidlohr@hp.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>
+CC: linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
+        linux-doc@vger.kernel.org, Jason Low <jason.low2@hp.com>,
+        Scott J Norton <scott.norton@hp.com>
+Subject: Re: [RFC PATCH 5/5] futex, doc: add a document on how to use the
+ spinning futexes
+References: <1405956271-34339-1-git-send-email-Waiman.Long@hp.com> <1405956271-34339-6-git-send-email-Waiman.Long@hp.com>
+In-Reply-To: <1405956271-34339-6-git-send-email-Waiman.Long@hp.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 07/21/2014 08:24 AM, Waiman Long wrote:
+> This patch adds a new document file on how to use the spinning futexes.
+> 
+> Signed-off-by: Waiman Long <Waiman.Long@hp.com>
+> ---
+>  Documentation/spinning-futex.txt |  109 ++++++++++++++++++++++++++++++++++++++
+>  1 files changed, 109 insertions(+), 0 deletions(-)
+>  create mode 100644 Documentation/spinning-futex.txt
+> 
+> diff --git a/Documentation/spinning-futex.txt b/Documentation/spinning-futex.txt
+> new file mode 100644
+> index 0000000..e3cb5a2
+> --- /dev/null
+> +++ b/Documentation/spinning-futex.txt
+> @@ -0,0 +1,109 @@
+> +Started by: Waiman Long <waiman.long@hp.com>
+> +
+> +Spinning Futex
+> +--------------
+> +
+> +There are two main problems for a wait-wake futex (FUTEX_WAIT and
+> +FUTEX_WAKE) when used for creating user-space lock primitives:
+> +
+> + 1) With a wait-wake futex, tasks waiting for a lock are put to sleep
+> +    in the futex queue to be woken up by the lock owner when it is done
+> +    with the lock. Waking up a sleeping task, however, introduces some
+> +    additional latency which can be large especially if the critical
+> +    section protected by the lock is relatively short. This may cause
+> +    a performance bottleneck on large systems with many CPUs running
+> +    applications that need a lot of inter-thread synchronization.
+> +
+> + 2) The performance of the wait-wake futex is currently
+> +    spinlock-constrained.  When many threads are contending for a
+> +    futex in a large system with many CPUs, it is not unusual to have
+> +    spinlock contention accounting for more than 90% of the total
+> +    CPU cycles consumed at various points in time.
+> +
+> +Spinning futex is a solution to both the wakeup latency and spinlock
+> +contention problems by optimistically spinning on a locked futex
+> +when the lock owner is running within the kernel until the lock is
+> +free. This is the same optimistic spinning mechanism used by the kernel
+> +mutex and rw semaphore implementations to improve performance. The
+> +optimistic spinning was done without taking any lock.
 
---YOxyDEsNCn0QNWql
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+                       is done
 
-On Mon, Jul 21, 2014 at 02:41:04PM +0200, Lothar Wa=DFmann wrote:
-> Mark Brown wrote:
+> +
+> +Implementation
+> +--------------
+> +
+> +Like the PI and robust futexes, a lock acquirer has to atomically
+> +put its thread ID (TID) into the lower 30 bits of the 32-bit futex
+> +which should has an original value of 0. If it succeeds, it will be
 
-> > Just to be clear the issue is with the presentation of your change, it
-> > is not appropriate to provide a changelog which consists mainly of
-> > widely directed personal insults especially given that it omits basic
-> > technical content.
+                have
 
-> I understood that, but I feel incapable to come up with a reasonable
-> changelog for this.
+> +the owner of the futex. Otherwise, it has to call into the kernel
+> +using the new FUTEX_SPIN_LOCK futex(2) syscall.
+> +
+> +The kernel will use the setting of the most significant bit
+> +(FUTEX_WAITERS) in the futex value to indicate one or more waiters
+> +are sleeping and need to be woken up later on.
+> +
+> +When it is time to unlock, the lock owner has to atomically clear
+> +the TID portion of the futex value. If the FUTEX_WAITERS bit is set,
+> +it has to issue a FUTEX_SPIN_UNLOCK futex system call to wake up the
+> +sleeping task.
+> +
+> +A return value of 1 from the FUTEX_SPIN_UNLOCK futex(2) syscall
+> +indicates a task has been woken up. The syscall returns 0 if no
+> +sleeping task is found or spinners are present to take the lock.
+> +
+> +The error number returned by a FUTEX_SPIN_UNLOCK call on an empty
+> +futex can be used to decide if the spinning futex functionality is
+> +implemented in the kernel. If it is present, the returned error number
+> +should be ESRCH. Otherwise it will be ENOSYS.
+> +
+> +Currently, only the first and the second arguments (the futex address
+> +and the opcode) of the futex(2) syscall is used. All the other
 
-Just describe in a specific, technical fashion what the problem is and
-what the fix does without reference to personal qualities of the various
-parties involved in the code being the way it is.
+                                           are used.
 
---YOxyDEsNCn0QNWql
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+> +arguments must be set to 0 or NULL to avoid forward compatibility
+> +problem.
+> +
+> +The spinning futex requires the kernel to have support for the cmpxchg
+> +functionality. For architectures that don't support cmpxchg, spinning
+> +futex will not be supported as well.
+> +
+> +Usage Scenario
+> +--------------
+> +
+> +A spinning futex can be used as an exclusive lock to guard a critical
+> +section which are unlikely to go to sleep in the kernel. The spinners
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+                 is
 
-iQIcBAEBAgAGBQJTzTVnAAoJELSic+t+oim9JSgP/1YbQarKbfq0/M89Klmqnvf5
-CVXLUgVL+EPAAI9UEDn6+53S5OqshLAvtD5/4KU7FWxIwyT+DP0eKTespp3O+nMb
-J8gHuG4KevPqzoJi8xmuZGCff3QCA4LPY1S0UUk3sYQ6hTQZzdP1qJjxgHytTDUl
-n2u24e54PtqmsubcPuYFnhUIvK2t57j4U7dY1hYbot5zOMBBubwvEJZ+TJQRa/xN
-/kymMpiO+1jFgTTatqARQmp1abI9TeXZAm6071WBzm0T9lxshKjW49usT9TBVvqv
-+ZkadN/n+rBfv85xaBOJu1H0/mEh1wfceirndoqzDkCKoe0Y2dtnVZ0qun9MUJIB
-qQKyXwNOPRkp1Oe/9qjz4twDlzfeyCrNZvLnQ7Ez0hPmxmTuE84qjeVKQfcmFHJ5
-k6e0TMOvhaPp1y5HiXMgjPilHDlHC/0hMl8PE2trrOA83tFL+CIuBB1B1FuqWp3p
-pTa+3WizSC0WK+5LXbFHtlOkcOdocTdoTLLD5ESOYqP3CB9AGQUghWNWJN8s/Bd/
-BbyQA3APGRo5XjdZepNDgqIdIEYYhweNZqpV49jzuCdQzGDM/dZK1P28EkxUuHap
-1q57uDphql+FWObGg2whYBvzEm6Qm5u6dQf4c4eGQ2eU8n3b3EBKYNID7uPYxGWu
-2KJlnYG1hpfxBDItg0KC
-=xbpx
------END PGP SIGNATURE-----
+> +in a spinning futex, however, will fall back to sleep in a wait queue
+> +if the lock owner isn't running. Therefore, it can also be used when
+> +the critical section is long and prone to sleeping. However, it may
+> +not have the performance benefit when compared with a wait-wake futex
+> +in this case.
+> +
+> +Sample Code
+> +-----------
+> +
+> +The following are sample code to implement a simple lock and unlock
 
---YOxyDEsNCn0QNWql--
+                 is
+
+> +function.
+> +
+> +__thread int tid;	/* Thread ID */
+> +
+> +void mutex_lock(int *faddr)
+> +{
+> +	if (cmpxchg(faddr, 0, tid) == 0)
+> +		return;
+> +	for (;;)
+> +		if (futex(faddr, FUTEX_SPIN_LOCK, ...) == 0)
+> +			break;
+> +}
+> +
+> +void mutex_unlock(int *faddr)
+> +{
+> +	int old, fval;
+> +
+> +	if ((fval = cmpxchg(faddr, tid, 0)) == tid)
+> +		return;
+> +	/* Clear only the TID portion of the futex */
+> +	for (;;) {
+> +		old  = fval;
+> +		fval = cmpxchg(faddr, old, old & ~FUTEX_TID_MASK);
+> +		if (fval == old)
+> +			break;
+> +	}
+> +	if (fval & FUTEX_WAITERS)
+> +		futex(faddr, FUTEX_SPIN_UNLOCK, ...);
+> +}
+> 
+
+
+-- 
+~Randy
