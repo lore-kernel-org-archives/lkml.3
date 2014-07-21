@@ -1,58 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933584AbaGUTj1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 15:39:27 -0400
-Received: from one.firstfloor.org ([193.170.194.197]:46436 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933482AbaGUTj0 (ORCPT
+	id S1753070AbaGUTvI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 15:51:08 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:35432 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752852AbaGUTvG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 15:39:26 -0400
-Date: Mon, 21 Jul 2014 21:39:21 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Adrian Hunter <adrian.hunter@intel.com>
-Cc: Andi Kleen <andi@firstfloor.org>, Jiri Olsa <jolsa@kernel.org>,
-        linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCHv3 00/19] perf tools: Factor ordered samples queue
-Message-ID: <20140721193921.GO18735@two.firstfloor.org>
-References: <1405893363-21967-1-git-send-email-jolsa@kernel.org>
- <53CCB6AE.6020505@intel.com>
- <20140721080219.GA4183@krava.redhat.com>
- <53CCD3A7.5070002@intel.com>
- <20140721095415.GB8865@krava.redhat.com>
- <87d2cy3c7m.fsf@tassilo.jf.intel.com>
- <53CD5AB5.3000307@intel.com>
+	Mon, 21 Jul 2014 15:51:06 -0400
+Message-ID: <53CD6F28.3080203@codeaurora.org>
+Date: Mon, 21 Jul 2014 12:51:04 -0700
+From: Laura Abbott <lauraa@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53CD5AB5.3000307@intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Olof Johansson <olof@lixom.net>
+CC: Will Deacon <will.deacon@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        David Riley <davidriley@chromium.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Ritesh Harjain <ritesh.harjani@gmail.com>,
+        linux-mm <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCHv4 2/5] lib/genalloc.c: Add genpool range check function
+References: <1404324218-4743-1-git-send-email-lauraa@codeaurora.org>	<1404324218-4743-3-git-send-email-lauraa@codeaurora.org> <CAOesGMiKBNDmJhiY-yK0uZmG-MnK82=ffNGxqasLKozqgpQQpw@mail.gmail.com>
+In-Reply-To: <CAOesGMiKBNDmJhiY-yK0uZmG-MnK82=ffNGxqasLKozqgpQQpw@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 21, 2014 at 09:23:49PM +0300, Adrian Hunter wrote:
-> On 21/07/2014 7:31 p.m., Andi Kleen wrote:
-> >Jiri Olsa <jolsa@redhat.com> writes:
-> >>
-> >>[jolsa@ibm-x3650m4-01 perf]$ sudo ./perf report --stdio
-> >>Timestamp below last timeslice flush
-> >>0x2276f58 [0x68]: failed to process type: 9
-> >
-> >FWIW we're seeing this frequently too.
+On 7/9/2014 3:33 PM, Olof Johansson wrote:
+> On Wed, Jul 2, 2014 at 11:03 AM, Laura Abbott <lauraa@codeaurora.org> wrote:
+>>
+>> After allocating an address from a particular genpool,
+>> there is no good way to verify if that address actually
+>> belongs to a genpool. Introduce addr_in_gen_pool which
+>> will return if an address plus size falls completely
+>> within the genpool range.
+>>
+>> Signed-off-by: Laura Abbott <lauraa@codeaurora.org>
 > 
-> Jiri's example didn't work for me.  Do you have one?
+> Reviewed-by: Olof Johansson <olof@lixom.net>
+> 
+> What's the merge path for this code? Part of the arm64 code that needs
+> it, I presume?
+> 
 
-Did you try it on a idle system? Do it during some work load
-that generates a lot of context switches.
+My plan was to have the entire series go through the arm64 tree unless
+someone has a better idea.
 
--Andi
+Thanks,
+Laura
 
 -- 
-ak@linux.intel.com -- Speaking for myself only.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
