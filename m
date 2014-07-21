@@ -1,206 +1,263 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933086AbaGUQl1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 12:41:27 -0400
-Received: from g4t3427.houston.hp.com ([15.201.208.55]:57706 "EHLO
-	g4t3427.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932412AbaGUQlZ (ORCPT
+	id S933111AbaGUQmh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 12:42:37 -0400
+Received: from www.linutronix.de ([62.245.132.108]:60654 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932647AbaGUQme (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 12:41:25 -0400
-Message-ID: <1405960298.30151.10.camel@misato.fc.hp.com>
-Subject: Re: [RFC PATCH 0/11] Support Write-Through mapping on x86
-From: Toshi Kani <toshi.kani@hp.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Cc: tglx@linutronix.de, mingo@redhat.com, akpm@linux-foundation.org,
-        arnd@arndb.de, plagnioj@jcrosoft.com, tomi.valkeinen@ti.com,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        stefan.bader@canonical.com, luto@amacapital.net, airlied@gmail.com,
-        bp@alien8.de
-Date: Mon, 21 Jul 2014 10:31:38 -0600
-In-Reply-To: <1405546127.28702.85.camel@misato.fc.hp.com>
-References: <1405452884-25688-1-git-send-email-toshi.kani@hp.com>
-	 <53C58A69.3070207@zytor.com> <1405459404.28702.17.camel@misato.fc.hp.com>
-	 <03d059f5-b564-4530-9184-f91ca9d5c016@email.android.com>
-	 <1405546127.28702.85.camel@misato.fc.hp.com>
-Content-Type: multipart/mixed; boundary="=-YQymhwtvgXPJ5wMLH1xm"
-X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
-Mime-Version: 1.0
+	Mon, 21 Jul 2014 12:42:34 -0400
+Date: Mon, 21 Jul 2014 18:42:16 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Waiman Long <Waiman.Long@hp.com>
+cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Darren Hart <dvhart@linux.intel.com>,
+        Davidlohr Bueso <davidlohr@hp.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-api@vger.kernel.org,
+        linux-doc@vger.kernel.org, Jason Low <jason.low2@hp.com>,
+        Scott J Norton <scott.norton@hp.com>
+Subject: Re: [RFC PATCH 1/5] futex: add new exclusive lock & unlock command
+ codes
+In-Reply-To: <1405956271-34339-2-git-send-email-Waiman.Long@hp.com>
+Message-ID: <alpine.DEB.2.10.1407211811360.20847@nanos>
+References: <1405956271-34339-1-git-send-email-Waiman.Long@hp.com> <1405956271-34339-2-git-send-email-Waiman.Long@hp.com>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 21 Jul 2014, Waiman Long wrote:
 
---=-YQymhwtvgXPJ5wMLH1xm
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+> +#define FUTEX_TID(u)		(pid_t)((u) & FUTEX_TID_MASK)
+> +#define FUTEX_HAS_WAITERS(u)	((u) & FUTEX_WAITERS)
 
-On Wed, 2014-07-16 at 15:28 -0600, Toshi Kani wrote:
-> On Tue, 2014-07-15 at 20:40 -0400, Konrad Rzeszutek Wilk wrote:
-> > On July 15, 2014 5:23:24 PM EDT, Toshi Kani <toshi.kani@hp.com> wrote:
-> > >On Tue, 2014-07-15 at 13:09 -0700, H. Peter Anvin wrote:
-> > >> On 07/15/2014 12:34 PM, Toshi Kani wrote:
->  :
-> > >> 
-> > >> I have given this piece of feedback at least three times now,
-> > >possibly
-> > >> to different people, and I'm getting a bit grumpy about it:
-> > >> 
-> > >> We already have an issue with Xen, because Xen assigned mappings
-> > >> differently and it is incompatible with the use of PAT in Linux.  As
-> > >a
-> > >> result we get requests for hacks to work around this, which is
-> > >something
-> > >> I really don't want to see.  I would like to see a design involving a
-> > >> "reverse PAT" table where the kernel can hold the mapping between
-> > >memory
-> > >> types and page table encodings (including the two different ones for
-> > >> small and large pages.)
-> > >
-> > >Thanks for pointing this out! (And sorry for making you repeat it three
-> > >time...)  I was not aware of the issue with Xen.  I will look into the
-> > >email archive to see what the Xen issue is, and how it can be
-> > >addressed.
-> > 
-> > https://lkml.org/lkml/2011/11/8/406
-> 
-> Thanks Konrad for the pointer!
-> 
-> Since [__]change_page_attr_set_clr() and __change_page_attr() have no
-> knowledge about PAT and simply work with specified PTE flags, they do
-> not seem to fit well with additional PAT abstraction table...
-> 
-> I think the root of this issue is that the kernel ignores the PAT bit.
-> Since __change_page_attr() only supports 4K pages, set_memory_<type>()
-> can set the PAT bit into the clear mask.
-> 
-> Attached is a patch with this approach (apply on top of this series -
-> not tested).  The kernel still does not support the PAT bit, but it
-> behaves slightly better.
+You love ugly macros, right?
 
-Hi Peter, Konrad,
+> +/*
+> + * futex_spin_trylock - attempt to take the lock
+> + * Return: 1 if successful or an error happen
+> + *	   0 otherwise
+> + *
+> + * Side effect: The uval and ret will be updated.
+> + */
+> +static inline int futex_spin_trylock(u32 __user *uaddr, u32 *puval,
+> +				       int *pret, u32 vpid)
+> +{
+> +	u32	  old;
+> +
+> +	*pret = get_futex_value_locked(puval, uaddr);
+> +	if (*pret)
+> +		return 1;
+> +
+> +	if (FUTEX_TID(*puval))
+> +		return 0;	/* The mutex is not free */
+> +
+> +	old = *puval;
+> +
+> +	*pret = cmpxchg_futex_value_locked(puval, uaddr, old, vpid | old);
+> +	if (*pret)
+> +		return 1;
+> +	if (*puval == old) {
+> +		/* Adjust uval to reflect current value */
+> +		*puval = vpid | old;
+> +		return 1;
+> +	}
+> +	return 0;
 
-Do you have any comments / suggestions for this approach?
+What's the point if all of this?
 
-Thanks!
--Toshi
+A simple cmpxchg_futex_value_locked() does all of this, just less ugly
+and without all these extra indirections and totally uncomprehensible
+conditionals.
+
+> +}
+> +
+> +/*
+> + * futex_spin_lock
+> + */
+> +static noinline int futex_spin_lock(u32 __user *uaddr, unsigned int flags)
+> +{
+
+So this lacks a timeout. If we provide this, then we need to have the
+timeout supported as well.
+
+> +	struct futex_hash_bucket *hb;
+> +	struct futex_q_head	 *qh = NULL;
+> +	struct futex_q_node	  qnode;
+> +	union futex_key		  key;
+> +	bool			  gotlock;
+> +	int			  ret, cnt;
+> +	u32			  uval, vpid, old;
+> +
+> +	qnode.task  = current;
+> +	vpid = task_pid_vnr(qnode.task);
+> +
+> +	ret = get_futex_key(uaddr, flags & FLAGS_SHARED, &key, VERIFY_WRITE);
+> +	if (unlikely(ret))
+
+Stop sprinkling the code with unlikelys
+
+> +		return ret;
+> +
+> +	hb = hash_futex(&key);
+> +	spin_lock(&hb->lock);
+> +
+> +	/*
+> +	 * Locate the queue head for the given key
+> +	 */
+
+Brilliant comment. If you'd comment the stuff which really matters and
+leave out the obvious, then your code might be readable some day.
+
+> +	qh = find_qhead(hb, &key);
+> +
+> +	/*
+> +	 * Check the futex value under the hash bucket lock as it might
+> +	 * be changed.
+> +	 */
+
+What might have changed? You enter the function with uaddr, but no
+uval. So what changed? 
+
+> +	if (futex_spin_trylock(uaddr, &uval, &ret, vpid))
+> +		goto hbunlock_out;
+> +
+> +	if (!qh) {
+> +		/*
+> +		 * First waiter:
+> +		 * Allocate a queue head structure & initialize it
+> +		 */
+> +		qh = qhead_alloc_init(hb, &key);
+> +		if (unlikely(!qh)) {
+> +			ret = -ENOMEM;
+> +			goto hbunlock_out;
+> +		}
+> +	} else {
+> +		atomic_inc(&qh->lcnt);
+> +	}
+> +	spin_unlock(&hb->lock);
+> +
+> +	/*
+> +	 * Put the task into the wait queue and sleep
+> +	 */
+> +	preempt_disable();
+
+Why?
+
+> +	get_task_struct(qnode.task);
+
+So you get a task reference on current? What the heck is this for?
+
+> +	spin_lock(&qh->wlock);
+> +	list_add_tail(&qnode.wnode, &qh->waitq);
+> +	__set_current_state(TASK_INTERRUPTIBLE);
+> +	spin_unlock(&qh->wlock);
+> +	gotlock = false;
+> +	for (;;) {
+> +		ret = get_user(uval, uaddr);
+> +		if (ret)
+> +			break;
+
+So you let user space handle EFAULT? 
+
+> +dequeue:
+> +	__set_current_state(TASK_RUNNING);
+> +	/*
+> +	 * Remove itself from the wait queue and go back to optimistic
+> +	 * spinning if it hasn't got the lock yet.
+> +	 */
+> +	put_task_struct(qnode.task);
+> +	spin_lock(&qh->wlock);
+> +	list_del(&qnode.wnode);
+> +
+> +	/*
+> +	 * Try to clear the waiter bit if the wait queue is empty
+> +	 */
+> +	if (list_empty(&qh->waitq)) {
+> +		int retval = get_futex_value_locked(&uval, uaddr);
+> +
+> +		if (!retval && FUTEX_HAS_WAITERS(uval)) {
+> +			old   = uval;
+> +			uval &= ~FUTEX_WAITERS;
+> +			(void)cmpxchg_futex_value_locked(&uval, uaddr, old,
+> +							  uval);
+> +		}
+> +	}
+> +	spin_unlock(&qh->wlock);
+> +	preempt_enable();
+> +
+> +	cnt = atomic_dec_return(&qh->lcnt);
+> +	if (cnt == 0)
+> +		qhead_free(qh, hb);
+> +	/*
+> +	 * Need to set the waiters bit there are still waiters
+> +	 */
+> +	else if (!ret)
+> +		ret = put_user(vpid | FUTEX_WAITERS, uaddr);
+
+WTF? You fiddle with the uaddr completely unprotected. 
+
+> +out:
+> +	put_futex_key(&key);
+> +	return ret;
+> +
+> +hbunlock_out:
+> +	spin_unlock(&hb->lock);
+> +	goto out;
+> +}
+> +
+> +/*
+> + * futex_spin_unlock
+> + */
+> +static noinline int futex_spin_unlock(u32 __user *uaddr, unsigned int flags)
+> +{
+> +	struct futex_hash_bucket *hb;
+> +	struct futex_q_head	 *qh;
+> +	union futex_key		  key;
+> +	struct task_struct	 *wtask;	/* Task to be woken */
+> +	int			  ret, lcnt;
+> +	u32			  uval, old, vpid = task_pid_vnr(current);
+> +
+> +	ret = get_user(uval, uaddr);
+> +	if (ret)
+> +		return ret;
+> +
+> +	/*
+> +	 * The unlocker may have cleared the TID value and another task may
+> +	 * steal it. However, if its TID is still set, we need to clear
+> +	 * it as well as the FUTEX_WAITERS bit.
+
+No, that's complete and utter crap. The unlocker is current and it may
+not have cleared anything.
+
+Your design or the lack thereof is a complete disaster.
+
+Sit down first and define the exact semantics of the new opcode. That
+includes user and kernel space and the interaction with robust list,
+which you happily ignored.
+
+What are the semantics of uval? When can it be changed in kernel and
+in user space? How do we deal with corruption of the user space value?
+
+How does that new opcode provide robustness?
+
+How are faults handled?
+
+....
+
+Before you can't provide a coherent description of that, nothing of
+this is going to happen. And after that, it's definitely not going to
+look like the hackery you delivered now.
+
+Thanks,
+
+	tglx
 
 
-
-
---=-YQymhwtvgXPJ5wMLH1xm
-Content-Disposition: attachment; filename="page-ext-mask.patch"
-Content-Type: text/x-patch; name="page-ext-mask.patch"; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-
-From: Toshi Kani <toshi.kani@hp.com>
-
----
- arch/x86/include/asm/pgtable_types.h |    1 +
- arch/x86/mm/pageattr.c               |   20 ++++++++++----------
- 2 files changed, 11 insertions(+), 10 deletions(-)
-
-diff --git a/arch/x86/include/asm/pgtable_types.h b/arch/x86/include/asm/pgtable_types.h
-index 81a3859..a392b09 100644
---- a/arch/x86/include/asm/pgtable_types.h
-+++ b/arch/x86/include/asm/pgtable_types.h
-@@ -130,6 +130,7 @@
- #define _HPAGE_CHG_MASK (_PAGE_CHG_MASK | _PAGE_PSE | _PAGE_NUMA)
- 
- #define _PAGE_CACHE_MASK	(_PAGE_PCD | _PAGE_PWT)
-+#define _PAGE_CACHE_EXT_MASK	(_PAGE_CACHE_MASK | _PAGE_PAT)
- #define _PAGE_CACHE_WB		(0)
- #define _PAGE_CACHE_WC		(_PAGE_PWT)
- #define _PAGE_CACHE_WT		(_PAGE_PCD | _PAGE_PWT)
-diff --git a/arch/x86/mm/pageattr.c b/arch/x86/mm/pageattr.c
-index da597d0..348f206 100644
---- a/arch/x86/mm/pageattr.c
-+++ b/arch/x86/mm/pageattr.c
-@@ -1446,7 +1446,7 @@ int _set_memory_uc(unsigned long addr, int numpages)
- 	 */
- 	return change_page_attr_set_clr(&addr, numpages,
- 					__pgprot(_PAGE_CACHE_UC_MINUS),
--					__pgprot(_PAGE_CACHE_MASK),
-+					__pgprot(_PAGE_CACHE_EXT_MASK),
- 					0, 0, NULL);
- }
- 
-@@ -1493,13 +1493,13 @@ static int _set_memory_array(unsigned long *addr, int addrinarray,
- 
- 	ret = change_page_attr_set_clr(addr, addrinarray,
- 				       __pgprot(_PAGE_CACHE_UC_MINUS),
--				       __pgprot(_PAGE_CACHE_MASK),
-+				       __pgprot(_PAGE_CACHE_EXT_MASK),
- 				       0, CPA_ARRAY, NULL);
- 
- 	if (!ret && new_type == _PAGE_CACHE_WC)
- 		ret = change_page_attr_set_clr(addr, addrinarray,
- 					       __pgprot(_PAGE_CACHE_WC),
--					       __pgprot(_PAGE_CACHE_MASK),
-+					       __pgprot(_PAGE_CACHE_EXT_MASK),
- 					       0, CPA_ARRAY, NULL);
- 	if (ret)
- 		goto out_free;
-@@ -1532,12 +1532,12 @@ int _set_memory_wc(unsigned long addr, int numpages)
- 
- 	ret = change_page_attr_set_clr(&addr, numpages,
- 				       __pgprot(_PAGE_CACHE_UC_MINUS),
--				       __pgprot(_PAGE_CACHE_MASK),
-+				       __pgprot(_PAGE_CACHE_EXT_MASK),
- 				       0, 0, NULL);
- 	if (!ret) {
- 		ret = change_page_attr_set_clr(&addr_copy, numpages,
- 					       __pgprot(_PAGE_CACHE_WC),
--					       __pgprot(_PAGE_CACHE_MASK),
-+					       __pgprot(_PAGE_CACHE_EXT_MASK),
- 					       0, 0, NULL);
- 	}
- 	return ret;
-@@ -1578,7 +1578,7 @@ int _set_memory_wt(unsigned long addr, int numpages)
- {
- 	return change_page_attr_set_clr(&addr, numpages,
- 					__pgprot(_PAGE_CACHE_WT),
--					__pgprot(_PAGE_CACHE_MASK),
-+					__pgprot(_PAGE_CACHE_EXT_MASK),
- 					0, 0, NULL);
- }
- 
-@@ -1611,7 +1611,7 @@ int _set_memory_wb(unsigned long addr, int numpages)
- {
- 	return change_page_attr_set_clr(&addr, numpages,
- 					__pgprot(_PAGE_CACHE_WB),
--					__pgprot(_PAGE_CACHE_MASK),
-+					__pgprot(_PAGE_CACHE_EXT_MASK),
- 					0, 0, NULL);
- }
- 
-@@ -1635,7 +1635,7 @@ int set_memory_array_wb(unsigned long *addr, int addrinarray)
- 
- 	ret = change_page_attr_set_clr(addr, addrinarray,
- 				       __pgprot(_PAGE_CACHE_WB),
--				       __pgprot(_PAGE_CACHE_MASK),
-+				       __pgprot(_PAGE_CACHE_EXT_MASK),
- 				       0, CPA_ARRAY, NULL);
- 	if (ret)
- 		return ret;
-@@ -1719,7 +1719,7 @@ static int _set_pages_array(struct page **pages, int addrinarray,
- 	if (!ret && new_type == _PAGE_CACHE_WC)
- 		ret = change_page_attr_set_clr(NULL, addrinarray,
- 					       __pgprot(_PAGE_CACHE_WC),
--					       __pgprot(_PAGE_CACHE_MASK),
-+					       __pgprot(_PAGE_CACHE_EXT_MASK),
- 					       0, CPA_PAGES_ARRAY, pages);
- 	if (ret)
- 		goto err_out;
-@@ -1770,7 +1770,7 @@ int set_pages_array_wb(struct page **pages, int addrinarray)
- 	int i;
- 
- 	retval = cpa_clear_pages_array(pages, addrinarray,
--			__pgprot(_PAGE_CACHE_MASK));
-+			__pgprot(_PAGE_CACHE_EXT_MASK));
- 	if (retval)
- 		return retval;
- 
-
---=-YQymhwtvgXPJ5wMLH1xm--
 
