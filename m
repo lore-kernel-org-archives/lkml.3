@@ -1,68 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754900AbaGULKg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 07:10:36 -0400
-Received: from mail-qg0-f51.google.com ([209.85.192.51]:33461 "EHLO
-	mail-qg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754663AbaGULK1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 07:10:27 -0400
+	id S1754923AbaGULLX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 07:11:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:47950 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754701AbaGULLV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jul 2014 07:11:21 -0400
+Date: Mon, 21 Jul 2014 16:40:27 +0530
+From: Amit Shah <amit.shah@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Virtualization List <virtualization@lists.linux-foundation.org>,
+        Rusty Russell <rusty@rustcorp.com.au>, herbert@gondor.apana.org.au,
+        keescook@chromium.org, jason@lakedaemon.net,
+        Amos Kong <akong@redhat.com>
+Subject: Re: [PATCH 2/3] virtio: rng: delay hwrng_register() till driver is
+ ready
+Message-ID: <20140721111027.GA12925@grmbl.mre>
+References: <cover.1405934853.git.amit.shah@redhat.com>
+ <9a28f933ee53b9dce40791988d811011f0aaf8e7.1405934853.git.amit.shah@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <17740341.0lUJQdnn9z@wuerfel>
-References: <1405413956-2772-1-git-send-email-lftan@altera.com>
-	<5348663.eHVXUR5shS@wuerfel>
-	<CAFiDJ5-v7BEuLNEn0OyLpbLUJkeeZuKnDrFZZwQrjhFSU4PZSw@mail.gmail.com>
-	<17740341.0lUJQdnn9z@wuerfel>
-Date: Mon, 21 Jul 2014 19:10:25 +0800
-X-Google-Sender-Auth: GOoUM12RH4UerU2BEAzmhEnB2-g
-Message-ID: <CAFiDJ58t6pNgkAda2PRpoPS=UsBLKcm0GxP1kbNBms_2pkkmdA@mail.gmail.com>
-Subject: Re: [PATCH v2 19/29] nios2: Time keeping
-From: Ley Foon Tan <lftan@altera.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Linux-Arch <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Chung-Lin Tang <cltang@codesourcery.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <9a28f933ee53b9dce40791988d811011f0aaf8e7.1405934853.git.amit.shah@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 21, 2014 at 6:51 PM, Arnd Bergmann <arnd@arndb.de> wrote:
-> On Monday 21 July 2014 18:07:02 Ley Foon Tan wrote:
->> >
->> >> +#ifndef _ASM_NIOS2_TIMEX_H
->> >> +#define _ASM_NIOS2_TIMEX_H
->> >> +
->> >> +/* Supply dummy tick-rate. Real value will be read from devicetree */
->> >> +#define CLOCK_TICK_RATE              (HZ * 100000UL)
->> >> +
->> >> +#include <asm-generic/timex.h>
->> >> +
->> >> +#endif
->> >
->> > CLOCK_TICK_RATE is no longer used anywhere, no need for this file.
->>
->> I found jiffies.h still using this define. Can we still remove this?
->> In include/linux/jiffies.h:
->> #define LATCH ((CLOCK_TICK_RATE + HZ/2) / HZ)   /* For divider */
->>
->
-> Ah, I thought we had killed off LATCH, but at least it is only used
-> on architecture specific code, and only in two files:
->
-> arch/x86/kernel/apm_32.c:       outb_p(LATCH & 0xff, PIT_CH0);  /* LSB */
-> arch/unicore32/kernel/time.c:   writel(readl(OST_OSMR0) - LATCH, OST_OSCR);
->
-> We could decide to move the LATCH definition into those two files to
-> remove it from common code, but it doesn't really hurt otherwise,
-> and everything works fine if you don't define CLOCK_TICK_RATE on
-> architectures that don't need LATCH or CLOCK_TICK_RATE in their
-> architecture-specific code.
+On (Mon) 21 Jul 2014 [15:01:00], Amit Shah wrote:
+> Instead of calling hwrng_register() in the probe routing, call it in the
+> scan routine.  This ensures that when hwrng_register() is successful,
+> and it requests a few random bytes to seed the kernel's pool at init,
+> we're ready to service that request.
+> 
+> This will also enable us to remove the workaround added previously to
+> check whether probe was completed, and only then ask for data from the
+> host.  The revert follows in the next commit.
+> 
+> Signed-off-by: Amit Shah <amit.shah@redhat.com>
+> ---
+>  drivers/char/hw_random/virtio-rng.c | 25 +++++++++++++++----------
+>  1 file changed, 15 insertions(+), 10 deletions(-)
+> 
+> diff --git a/drivers/char/hw_random/virtio-rng.c b/drivers/char/hw_random/virtio-rng.c
+> index d8ffebd..32e6373 100644
+> --- a/drivers/char/hw_random/virtio-rng.c
+> +++ b/drivers/char/hw_random/virtio-rng.c
+> @@ -38,6 +38,7 @@ struct virtrng_info {
+>  };
+>  
+>  static bool probe_done;
+> +static bool hwrng_register_done;
 
-Okay, will remove CLOCK_TICK_RATE define.
+Ah; this needs to be per-device after the recent multi-device work,
+rather than a global.
 
-Thanks.
+New patches coming up.
 
-Regards
-Ley Foon
+
+		Amit
