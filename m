@@ -1,89 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755274AbaGUQZH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 12:25:07 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:48086 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755184AbaGUQZE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 12:25:04 -0400
-Date: Mon, 21 Jul 2014 17:24:48 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Richard Fitzgerald <rf@opensource.wolfsonmicro.com>
-Cc: Takashi Iwai <tiwai@suse.de>, perex@perex.cz, lgirdwood@gmail.com,
-        patches@opensource.wolfsonmicro.com, alsa-devel@alsa-project.org,
+	id S933026AbaGUQ3W (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 12:29:22 -0400
+Received: from mail.mev.co.uk ([62.49.15.74]:59334 "EHLO mail.mev.co.uk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932714AbaGUQ3T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jul 2014 12:29:19 -0400
+From: Ian Abbott <abbotti@mev.co.uk>
+To: driverdev-devel@linuxdriverproject.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Ian Abbott <abbotti@mev.co.uk>,
+        H Hartley Sweeten <hartleys@visionengravers.com>,
         linux-kernel@vger.kernel.org
-Message-ID: <20140721162448.GD17528@sirena.org.uk>
-References: <20140716121029.GA22222@opensource.wolfsonmicro.com>
- <20140717194215.GH17528@sirena.org.uk>
- <20140721090104.GA21400@opensource.wolfsonmicro.com>
- <s5hsilvnkuf.wl%tiwai@suse.de>
- <20140721103327.GA29141@opensource.wolfsonmicro.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="5JJEVRmBpje5aLKk"
-Content-Disposition: inline
-In-Reply-To: <20140721103327.GA29141@opensource.wolfsonmicro.com>
-X-Cookie: 98% lean.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] ASoC: arizona: Disable AIF TX/RX before configuring it
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+Subject: [PATCH 1/2] staging: comedi: ni_6527: support INSN_CONFIG_DIGITAL_TRIG
+Date: Mon, 21 Jul 2014 17:29:05 +0100
+Message-Id: <1405960146-8959-2-git-send-email-abbotti@mev.co.uk>
+X-Mailer: git-send-email 2.0.0
+In-Reply-To: <1405960146-8959-1-git-send-email-abbotti@mev.co.uk>
+References: <1405960146-8959-1-git-send-email-abbotti@mev.co.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The "edge detection interrupt" subdevice supports the
+`INSN_CONFIG_CHANGE_NOTIFY` comedi instruction which is only supported
+by one other driver.  The `INSN_CONFIG_DIGITAL_TRIG` comedi instruction
+is more flexible as it supports both edge and level detection, but is
+not currently supported by this driver.
 
---5JJEVRmBpje5aLKk
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Add partial support for `INSN_CONFIG_DIGITAL_TRIG`, but only for edge
+detection.  Make use of the `ni6527_set_edge_detection()` used for
+`INSN_CONFIG_CHANGE_NOTIFY`, but add a parameter holding a mask of the
+rising and falling edges to be updated and preserve the unmasked edges
+when updating.
 
-On Mon, Jul 21, 2014 at 11:33:27AM +0100, Richard Fitzgerald wrote:
-> On Mon, Jul 21, 2014 at 11:04:56AM +0200, Takashi Iwai wrote:
-> > Richard Fitzgerald wrote:
+Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
+---
+ drivers/staging/comedi/drivers/ni_6527.c | 72 +++++++++++++++++++++++++++-----
+ 1 file changed, 61 insertions(+), 11 deletions(-)
 
-> > > The case being fixed is like this:
+diff --git a/drivers/staging/comedi/drivers/ni_6527.c b/drivers/staging/comedi/drivers/ni_6527.c
+index c8b1fa7..57d8d4c 100644
+--- a/drivers/staging/comedi/drivers/ni_6527.c
++++ b/drivers/staging/comedi/drivers/ni_6527.c
+@@ -299,21 +299,38 @@ static int ni6527_intr_insn_bits(struct comedi_device *dev,
+ }
+ 
+ static void ni6527_set_edge_detection(struct comedi_device *dev,
++				      unsigned int mask,
+ 				      unsigned int rising,
+ 				      unsigned int falling)
+ {
+ 	struct ni6527_private *devpriv = dev->private;
+ 	void __iomem *mmio = devpriv->mmio_base;
+-
+-	/* enable rising-edge detection channels */
+-	writeb(rising & 0xff, mmio + NI6527_RISING_EDGE_REG(0));
+-	writeb((rising >> 8) & 0xff, mmio + NI6527_RISING_EDGE_REG(1));
+-	writeb((rising >> 16) & 0xff, mmio + NI6527_RISING_EDGE_REG(2));
+-
+-	/* enable falling-edge detection channels */
+-	writeb(falling & 0xff, mmio + NI6527_FALLING_EDGE_REG(0));
+-	writeb((falling >> 8) & 0xff, mmio + NI6527_FALLING_EDGE_REG(1));
+-	writeb((falling >> 16) & 0xff, mmio + NI6527_FALLING_EDGE_REG(2));
++	unsigned int i;
++
++	rising &= mask;
++	falling &= mask;
++	for (i = 0; i < 2; i++) {
++		if (mask & 0xff) {
++			if (~mask & 0xff) {
++				/* preserve rising-edge detection channels */
++				rising |= readb(mmio +
++						NI6527_RISING_EDGE_REG(i)) &
++					  (~mask & 0xff);
++				/* preserve falling-edge detection channels */
++				falling |= readb(mmio +
++						 NI6527_FALLING_EDGE_REG(i)) &
++					   (~mask & 0xff);
++			}
++			/* update rising-edge detection channels */
++			writeb(rising & 0xff, mmio + NI6527_RISING_EDGE_REG(i));
++			/* update falling-edge detection channels */
++			writeb(falling & 0xff,
++			       mmio + NI6527_FALLING_EDGE_REG(i));
++		}
++		rising >>= 8;
++		falling >>= 8;
++		mask >>= 8;
++	}
+ }
+ 
+ static int ni6527_intr_insn_config(struct comedi_device *dev,
+@@ -321,12 +338,45 @@ static int ni6527_intr_insn_config(struct comedi_device *dev,
+ 				   struct comedi_insn *insn,
+ 				   unsigned int *data)
+ {
++	unsigned int mask = 0xffffffff;
++	unsigned int rising, falling, shift;
++
+ 	switch (data[0]) {
+ 	case INSN_CONFIG_CHANGE_NOTIFY:
+ 		/* check_insn_config_length() does not check this instruction */
+ 		if (insn->n != 3)
+ 			return -EINVAL;
+-		ni6527_set_edge_detection(dev, data[1], data[2]);
++		rising = data[1];
++		falling = data[2];
++		ni6527_set_edge_detection(dev, mask, rising, falling);
++		break;
++	case INSN_CONFIG_DIGITAL_TRIG:
++		/* check trigger number */
++		if (data[1] != 0)
++			return -EINVAL;
++		/* check digital trigger operation */
++		switch (data[2]) {
++		case COMEDI_DIGITAL_TRIG_DISABLE:
++			rising = 0;
++			falling = 0;
++			break;
++		case COMEDI_DIGITAL_TRIG_ENABLE_EDGES:
++			/* check shift amount */
++			shift = data[3];
++			if (shift >= s->n_chan) {
++				mask = 0;
++				rising = 0;
++				falling = 0;
++			} else {
++				mask <<= shift;
++				rising = data[4] << shift;
++				falling = data[5] << shift;
++			}
++			break;
++		default:
++			return -EINVAL;
++		}
++		ni6527_set_edge_detection(dev, mask, rising, falling);
+ 		break;
+ 	default:
+ 		return -EINVAL;
+-- 
+2.0.0
 
-> > > aplay 48kHz.wav; aplay 96kHz.wav
-
-> > > The second open happens before pmdown_time so the AIF is still enabled.
-> > > Writes to the AIF config registers only take effect if the AIF is disabled.
-> > > Without this patch, the 96kHz.wav will play at 48kHz
-
-> > If the glitch really matters, the driver can minimize by checking the
-> > change of sample rate and doing temporary turn on/off only when
-> > required.
-
-> That's a fair point.
-
-The case I was particularly worrying about here was simultaneous
-playback and capture - we won't be changing rates here since these
-devices currently require symmetry which is enforced via constraints but
-we are likely to at least be starting multiple streams close to each
-other frequently.
-
---5JJEVRmBpje5aLKk
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJTzT7MAAoJELSic+t+oim9v/oP/RvaN2sXIp6/pczl+SuIWu4Z
-GBqN6tyBw4krZ7Go3CwrdS7e4pp+4KTtb2FVJGZL5r5u24O3zld67wfyYQohbyrb
-1xEsRy51FM2wOGHaVC+wqqQrUgpKPRIHvNbhO7TSTDrSWWnFldXRzJdIttFUKY2h
-KDyDD4f6+gOC4UamVLRG2T+wuX/N+i6ey/Nk4cVE/gF1ZvGbJiL2WLoQSQcpFS+K
-7PDECrQSWxklo9cVETTs0i2Uz1HxSytdhFvmzUuL90pFtjkxAVD5AbB9d8R2LyiG
-kkYU8+wja770a1D0qtTHDPDHMa4/7VMfNML8n2HLQaHF9aCNG2hwzzAGDbV85270
-qjOe2OUplf5/T5pBAaV3fSOeFaR+uVU4Ubp1dNgYncmTZL1L+G/0kW3agetUlzGx
-rx/0D16pRUwbH6HTHLPEMal+MwQJXme9jgxmivaYXRPnJrtLvjQvnmWg61lY/Kd0
-/CV9m6Dtauc1x1gGzT6c8An92vbggo/iGRQegkuNK6EFmGR3lqxLv/o/CueX6DDw
-KMYxM9HWuz+1YrNuOL/gTwowtpReiKoSaI5E91rqw5pm+jyFUNpQJ5CVcFQ92hpM
-Lc3HvILfip2vkInkoxbJPCBm0G8N4eZaD5+0IK55x5lvKqhVpoqMrXYNy7xF1SA9
-M2J40n8BpmF73bWqWPPD
-=tlur
------END PGP SIGNATURE-----
-
---5JJEVRmBpje5aLKk--
