@@ -1,128 +1,646 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754760AbaGULFA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 07:05:00 -0400
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:55606 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754350AbaGULE6 (ORCPT
+	id S1754793AbaGULFY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 07:05:24 -0400
+Received: from mail1.bemta14.messagelabs.com ([193.109.254.111]:47608 "EHLO
+	mail1.bemta14.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754350AbaGULFU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 07:04:58 -0400
-Date: Mon, 21 Jul 2014 19:03:23 +0800
-From: Wang YanQing <udknight@gmail.com>
-To: Andreas Mohr <andi@lisas.de>
-Cc: gregkh@linuxfoundation.org, linus.walleij@linaro.org, jhovold@gmail.com,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dforsi@gmail.com
-Subject: Re: [PATCH v3] usb:serial:pl2303: add GPIOs interface on PL2303
-Message-ID: <20140721110323.GA8864@udknight>
-Mail-Followup-To: Wang YanQing <udknight@gmail.com>,
-	Andreas Mohr <andi@lisas.de>, gregkh@linuxfoundation.org,
-	linus.walleij@linaro.org, jhovold@gmail.com,
-	linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-	dforsi@gmail.com
-References: <20140721024624.GA25469@udknight>
- <20140721054646.GB29620@rhlx01.hs-esslingen.de>
+	Mon, 21 Jul 2014 07:05:20 -0400
+X-Greylist: delayed 375 seconds by postgrey-1.27 at vger.kernel.org; Mon, 21 Jul 2014 07:05:19 EDT
+X-Env-Sender: stwiss.opensource@diasemi.com
+X-Msg-Ref: server-2.tower-193.messagelabs.com!1405940339!17626020!1
+X-Originating-IP: [82.210.246.133]
+X-StarScan-Received: 
+X-StarScan-Version: 6.11.3; banners=-,-,-
+X-VirusChecked: Checked
+Message-ID: <201407211058.s6LAwtk8003839@swsrvapps-01.diasemi.com>
+From: "Opensource [Steve Twiss]" <stwiss.opensource@diasemi.com>
+Date: Mon, 21 Jul 2014 11:39:33 +0100
+Subject: [RFC V2] mfd: da9063: Add support for AD silicon variant
+To: Alessandro Zummo <a.zummo@towertech.it>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LINUX-KERNEL <linux-kernel@vger.kernel.org>,
+        Lee Jones <lee.jones@linaro.org>,
+        RTC-LINUX <rtc-linux@googlegroups.com>,
+        Samuel Ortiz <sameo@linux.intel.com>
+CC: David Dajun Chen <david.chen@diasemi.com>, Mark Brown <broonie@linaro.org>,
+        Philipp Zabel <p.zabel@pengutronix.de>,
+        Support Opensource <support.opensource@diasemi.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140721054646.GB29620@rhlx01.hs-esslingen.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 21, 2014 at 07:46:46AM +0200, Andreas Mohr wrote:
-> Hi,
-> 
-> Did some more review, sorry ;)
-> 
-> On Mon, Jul 21, 2014 at 10:46:24AM +0800, Wang YanQing wrote:
-> > +static struct gpio_chip template_chip = {
-> > +	.label                  = "pl2303-gpio",
-> > +	.owner                  = THIS_MODULE,
-> > +	.direction_input        = pl2303_gpio_direction_in,
-> > +	.get                    = pl2303_gpio_get,
-> > +	.direction_output       = pl2303_gpio_direction_out,
-> > +	.set                    = pl2303_gpio_set,
-> > +	.can_sleep              = 1,
-> > +};
-> 
-> Could this be made static const? (since it's for one-time copy purposes only)
-> 
-> 
 
-OK, I will add const.
+From: Opensource [Steve Twiss] <stwiss.opensource@diasemi.com>
 
-> > +struct pl2303_gpio {
-> > +       /*
-> > +        * 0..3: unknown (zero)
-> > +        * 4: gp0 output enable (1: gp0 pin is output, 0: gp0 pin is input)
-> > +        * 5: gp1 output enable (1: gp1 pin is output, 0: gp1 pin is input)
-> > +        * 6: gp0 pin value
-> > +        * 7: gp1 pin value
-> > +        */
-> > +       u8 index;
-> 
-> Most frequently accessed member at first position - good.
-> 
-> 
-> > +static inline struct pl2303_gpio *to_pl2303_gpio(struct gpio_chip
-> > *chip)
-> > +{
-> > +       return container_of(chip, struct pl2303_gpio, gpio_chip);
-> > +}
-> 
-> Nicely cast-avoiding helper :)
-> 
-> 
-> > +		spriv->gpio->index = 0x00;
-> > +		spriv->gpio->serial = serial;
-> > +		spriv->gpio->gpio_chip = template_chip;
-> > +		spriv->gpio->gpio_chip.ngpio = GPIO_NUM;
-> > +		spriv->gpio->gpio_chip.base = -1;
-> > +		spriv->gpio->gpio_chip.dev = &serial->interface->dev;
-> > +		/* initialize GPIOs, input mode as default */
-> > +		pl2303_vendor_write(spriv->gpio->serial, 1, spriv->gpio->index);
-> 
-> Perhaps the index line should better be moved
-> right before the pl2303_vendor_write() line,
-> to more obviously hint at why it's "input mode"
-> (but OTOH currently you're cleanly initializing things in correct member order,
-> so it's probably better to keep it that way).
-> 
-> Also, it's perhaps a better idea to do this initial init call
-> via calls of actual GPIO API rather than implementation-specific call
-> (e.g. that way one could simple reuse the generic GPIO call for devices
-> which happen to implement GPIO via a different mechanism...).
-> (hmm, nope, from a layering POV it's not recommendable,
-> since we clearly are at hardware-specific init here,
-> where you want to firmly guarantee
-> that the hardware is directly and fully initialized).
-> 
-> 
+Add register definitions for DA9063 AD (0x3) silicon variant ID
+the ability to choose the silicon variant at run-time using regmap
+configuration. This patch also adds RTC support for the AD silicon
+changes.
 
-Thanks very much for review :)
-
-> Since there are several repeated
-> pl2303_vendor_write(...serial, 1, ...index) calls,
-> it's possibly a good idea to wrap these calls in a convenience
-> pl2303_gpio_state_update(gpio)
-> This would also increase GPIO hardware abstraction,
-> by then simply having to provide an alternative for this single function
-> if needed.
-> Also, it may (depending on the number of callers,
-> which is on the low side here unfortunately)
-> reduce instruction cache footprint.
-
-The reason I don't want to add more abstraction here are:
-1: Abstraction don't reduce code lines, then reuse
-   pl2303_vendor_write|read is a better choice, i think.
-
-2: pl2303_vendor_write|read is more generic than abstraction,
-   then someone maybe could use pl2303_vendor_write|read to support
-   another two Auxiliary GPIOs on PL2303HXD(I don't have one) directly
-   without play with abstraction.
+It adds both BB and AD support as regmap ranges and then makes the
+distinction between the two tables at run-time. This allows both AD
+and BB silicon variants to be supported at the same time.
 
 
-Thanks.
-   
+Signed-off-by: Opensource [Steve Twiss] <stwiss.opensource@diasemi.com>
+Suggested-by: Philipp Zabel <p.zabel@pengutronix.de>
+
+---
+Checks performed with linux-next/v3.16-rc5/scripts/checkpatch.pl
+ rtc-da9063.c              total: 0 errors, 0 warnings, 353 lines checked
+ da9063-core.c             total: 0 errors, 0 warnings, 188 lines checked
+ da9063-i2c.c              total: 0 errors, 0 warnings, 266 lines checked
+ core.h                    total: 0 errors, 0 warnings, 98 lines checked
+ registers.h               total: 0 errors, 0 warnings, 1073 lines checked
+
+Thank you for your quick responses to my RFC-V1.
+
+This is in reply to comments made by Lee Jones, Alessandro Zummo and
+Philipp Zabel. Please see the RFC-V1 thread for further details on
+these discussions: https://lkml.org/lkml/2014/7/16/478
+
+Adding AD support using a compile-time flag under a new menu item in
+Kconfig proved very unpopular for two main reasons.
+
+- Using ifdef else statements throughout the code
+- Not supporting AD and BB silicon variants at the same time
+
+This RFC-V2 patch uses the method proposed by Philipp Zabel in his
+reply e-mail: https://lkml.org/lkml/2014/7/18/219
+and makes use of the regmap configuration method in da9063-i2c.c
+
+This patch applies against linux-next and v3.16-rc5
+
+Regards,
+Steve Twiss, Dialog Semiconductor Ltd.
+
+
+
+ drivers/mfd/da9063-core.c            |    6 +-
+ drivers/mfd/da9063-i2c.c             |  134 +++++++++++++++++++++++++++-------
+ drivers/rtc/rtc-da9063.c             |   54 +++++++++-----
+ include/linux/mfd/da9063/core.h      |    3 +-
+ include/linux/mfd/da9063/registers.h |  129 +++++++++++++++++++++-----------
+ 5 files changed, 236 insertions(+), 90 deletions(-)
+
+diff --git a/drivers/mfd/da9063-core.c b/drivers/mfd/da9063-core.c
+index e70ae31..93db8bb 100644
+--- a/drivers/mfd/da9063-core.c
++++ b/drivers/mfd/da9063-core.c
+@@ -153,9 +153,9 @@ int da9063_device_init(struct da9063 *da9063, unsigned int irq)
+ 		 "Device detected (chip-ID: 0x%02X, var-ID: 0x%02X)\n",
+ 		 model, variant_id);
+ 
+-	if (variant_code != PMIC_DA9063_BB) {
+-		dev_err(da9063->dev, "Unknown chip variant code: 0x%02X\n",
+-				variant_code);
++	if (variant_code < PMIC_DA9063_BB && variant_code != PMIC_DA9063_AD) {
++		dev_err(da9063->dev,
++			"Cannot support variant code: 0x%02X\n", variant_code);
+ 		return -ENODEV;
+ 	}
+ 
+diff --git a/drivers/mfd/da9063-i2c.c b/drivers/mfd/da9063-i2c.c
+index 8db5c80..21fd8d9 100644
+--- a/drivers/mfd/da9063-i2c.c
++++ b/drivers/mfd/da9063-i2c.c
+@@ -25,10 +25,10 @@
+ #include <linux/mfd/da9063/pdata.h>
+ #include <linux/mfd/da9063/registers.h>
+ 
+-static const struct regmap_range da9063_readable_ranges[] = {
++static const struct regmap_range da9063_ad_readable_ranges[] = {
+ 	{
+ 		.range_min = DA9063_REG_PAGE_CON,
+-		.range_max = DA9063_REG_SECOND_D,
++		.range_max = DA9063_AD_REG_SECOND_D,
+ 	}, {
+ 		.range_min = DA9063_REG_SEQ,
+ 		.range_max = DA9063_REG_ID_32_31,
+@@ -37,14 +37,14 @@ static const struct regmap_range da9063_readable_ranges[] = {
+ 		.range_max = DA9063_REG_AUTO3_LOW,
+ 	}, {
+ 		.range_min = DA9063_REG_T_OFFSET,
+-		.range_max = DA9063_REG_GP_ID_19,
++		.range_max = DA9063_AD_REG_GP_ID_19,
+ 	}, {
+ 		.range_min = DA9063_REG_CHIP_ID,
+ 		.range_max = DA9063_REG_CHIP_VARIANT,
+ 	},
+ };
+ 
+-static const struct regmap_range da9063_writeable_ranges[] = {
++static const struct regmap_range da9063_ad_writeable_ranges[] = {
+ 	{
+ 		.range_min = DA9063_REG_PAGE_CON,
+ 		.range_max = DA9063_REG_PAGE_CON,
+@@ -53,7 +53,7 @@ static const struct regmap_range da9063_writeable_ranges[] = {
+ 		.range_max = DA9063_REG_VSYS_MON,
+ 	}, {
+ 		.range_min = DA9063_REG_COUNT_S,
+-		.range_max = DA9063_REG_ALARM_Y,
++		.range_max = DA9063_AD_REG_ALARM_Y,
+ 	}, {
+ 		.range_min = DA9063_REG_SEQ,
+ 		.range_max = DA9063_REG_ID_32_31,
+@@ -62,14 +62,14 @@ static const struct regmap_range da9063_writeable_ranges[] = {
+ 		.range_max = DA9063_REG_AUTO3_LOW,
+ 	}, {
+ 		.range_min = DA9063_REG_CONFIG_I,
+-		.range_max = DA9063_REG_MON_REG_4,
++		.range_max = DA9063_AD_REG_MON_REG_4,
+ 	}, {
+-		.range_min = DA9063_REG_GP_ID_0,
+-		.range_max = DA9063_REG_GP_ID_19,
++		.range_min = DA9063_AD_REG_GP_ID_0,
++		.range_max = DA9063_AD_REG_GP_ID_19,
+ 	},
+ };
+ 
+-static const struct regmap_range da9063_volatile_ranges[] = {
++static const struct regmap_range da9063_ad_volatile_ranges[] = {
+ 	{
+ 		.range_min = DA9063_REG_STATUS_A,
+ 		.range_max = DA9063_REG_EVENT_D,
+@@ -81,26 +81,104 @@ static const struct regmap_range da9063_volatile_ranges[] = {
+ 		.range_max = DA9063_REG_ADC_MAN,
+ 	}, {
+ 		.range_min = DA9063_REG_ADC_RES_L,
+-		.range_max = DA9063_REG_SECOND_D,
++		.range_max = DA9063_AD_REG_SECOND_D,
+ 	}, {
+-		.range_min = DA9063_REG_MON_REG_5,
+-		.range_max = DA9063_REG_MON_REG_6,
++		.range_min = DA9063_AD_REG_MON_REG_5,
++		.range_max = DA9063_AD_REG_MON_REG_6,
+ 	},
+ };
+ 
+-static const struct regmap_access_table da9063_readable_table = {
+-	.yes_ranges = da9063_readable_ranges,
+-	.n_yes_ranges = ARRAY_SIZE(da9063_readable_ranges),
++static const struct regmap_access_table da9063_ad_readable_table = {
++	.yes_ranges = da9063_ad_readable_ranges,
++	.n_yes_ranges = ARRAY_SIZE(da9063_ad_readable_ranges),
+ };
+ 
+-static const struct regmap_access_table da9063_writeable_table = {
+-	.yes_ranges = da9063_writeable_ranges,
+-	.n_yes_ranges = ARRAY_SIZE(da9063_writeable_ranges),
++static const struct regmap_access_table da9063_ad_writeable_table = {
++	.yes_ranges = da9063_ad_writeable_ranges,
++	.n_yes_ranges = ARRAY_SIZE(da9063_ad_writeable_ranges),
+ };
+ 
+-static const struct regmap_access_table da9063_volatile_table = {
+-	.yes_ranges = da9063_volatile_ranges,
+-	.n_yes_ranges = ARRAY_SIZE(da9063_volatile_ranges),
++static const struct regmap_access_table da9063_ad_volatile_table = {
++	.yes_ranges = da9063_ad_volatile_ranges,
++	.n_yes_ranges = ARRAY_SIZE(da9063_ad_volatile_ranges),
++};
++
++static const struct regmap_range da9063_bb_readable_ranges[] = {
++	{
++		.range_min = DA9063_REG_PAGE_CON,
++		.range_max = DA9063_BB_REG_SECOND_D,
++	}, {
++		.range_min = DA9063_REG_SEQ,
++		.range_max = DA9063_REG_ID_32_31,
++	}, {
++		.range_min = DA9063_REG_SEQ_A,
++		.range_max = DA9063_REG_AUTO3_LOW,
++	}, {
++		.range_min = DA9063_REG_T_OFFSET,
++		.range_max = DA9063_BB_REG_GP_ID_19,
++	}, {
++		.range_min = DA9063_REG_CHIP_ID,
++		.range_max = DA9063_REG_CHIP_VARIANT,
++	},
++};
++
++static const struct regmap_range da9063_bb_writeable_ranges[] = {
++	{
++		.range_min = DA9063_REG_PAGE_CON,
++		.range_max = DA9063_REG_PAGE_CON,
++	}, {
++		.range_min = DA9063_REG_FAULT_LOG,
++		.range_max = DA9063_REG_VSYS_MON,
++	}, {
++		.range_min = DA9063_REG_COUNT_S,
++		.range_max = DA9063_BB_REG_ALARM_Y,
++	}, {
++		.range_min = DA9063_REG_SEQ,
++		.range_max = DA9063_REG_ID_32_31,
++	}, {
++		.range_min = DA9063_REG_SEQ_A,
++		.range_max = DA9063_REG_AUTO3_LOW,
++	}, {
++		.range_min = DA9063_REG_CONFIG_I,
++		.range_max = DA9063_BB_REG_MON_REG_4,
++	}, {
++		.range_min = DA9063_BB_REG_GP_ID_0,
++		.range_max = DA9063_BB_REG_GP_ID_19,
++	},
++};
++
++static const struct regmap_range da9063_bb_volatile_ranges[] = {
++	{
++		.range_min = DA9063_REG_STATUS_A,
++		.range_max = DA9063_REG_EVENT_D,
++	}, {
++		.range_min = DA9063_REG_CONTROL_F,
++		.range_max = DA9063_REG_CONTROL_F,
++	}, {
++		.range_min = DA9063_REG_ADC_MAN,
++		.range_max = DA9063_REG_ADC_MAN,
++	}, {
++		.range_min = DA9063_REG_ADC_RES_L,
++		.range_max = DA9063_BB_REG_SECOND_D,
++	}, {
++		.range_min = DA9063_BB_REG_MON_REG_5,
++		.range_max = DA9063_BB_REG_MON_REG_6,
++	},
++};
++
++static const struct regmap_access_table da9063_bb_readable_table = {
++	.yes_ranges = da9063_bb_readable_ranges,
++	.n_yes_ranges = ARRAY_SIZE(da9063_bb_readable_ranges),
++};
++
++static const struct regmap_access_table da9063_bb_writeable_table = {
++	.yes_ranges = da9063_bb_writeable_ranges,
++	.n_yes_ranges = ARRAY_SIZE(da9063_bb_writeable_ranges),
++};
++
++static const struct regmap_access_table da9063_bb_volatile_table = {
++	.yes_ranges = da9063_bb_volatile_ranges,
++	.n_yes_ranges = ARRAY_SIZE(da9063_bb_volatile_ranges),
+ };
+ 
+ static const struct regmap_range_cfg da9063_range_cfg[] = {
+@@ -123,10 +201,6 @@ static struct regmap_config da9063_regmap_config = {
+ 	.max_register = DA9063_REG_CHIP_VARIANT,
+ 
+ 	.cache_type = REGCACHE_RBTREE,
+-
+-	.rd_table = &da9063_readable_table,
+-	.wr_table = &da9063_writeable_table,
+-	.volatile_table = &da9063_volatile_table,
+ };
+ 
+ static int da9063_i2c_probe(struct i2c_client *i2c,
+@@ -143,6 +217,16 @@ static int da9063_i2c_probe(struct i2c_client *i2c,
+ 	da9063->dev = &i2c->dev;
+ 	da9063->chip_irq = i2c->irq;
+ 
++	if (da9063->variant_code == PMIC_DA9063_AD) {
++		da9063_regmap_config.rd_table = &da9063_ad_readable_table;
++		da9063_regmap_config.wr_table = &da9063_ad_writeable_table;
++		da9063_regmap_config.volatile_table = &da9063_ad_volatile_table;
++	} else {
++		da9063_regmap_config.rd_table = &da9063_bb_readable_table;
++		da9063_regmap_config.wr_table = &da9063_bb_writeable_table;
++		da9063_regmap_config.volatile_table = &da9063_bb_volatile_table;
++	}
++
+ 	da9063->regmap = devm_regmap_init_i2c(i2c, &da9063_regmap_config);
+ 	if (IS_ERR(da9063->regmap)) {
+ 		ret = PTR_ERR(da9063->regmap);
+diff --git a/drivers/rtc/rtc-da9063.c b/drivers/rtc/rtc-da9063.c
+index 5953930..731ed1a 100644
+--- a/drivers/rtc/rtc-da9063.c
++++ b/drivers/rtc/rtc-da9063.c
+@@ -29,6 +29,8 @@
+ #define YEARS_FROM_DA9063(year)		((year) + 100)
+ #define MONTHS_FROM_DA9063(month)	((month) - 1)
+ 
++#define RTC_ALARM_DATA_LEN (DA9063_AD_REG_ALARM_Y - DA9063_AD_REG_ALARM_MI + 1)
++
+ #define RTC_DATA_LEN	(DA9063_REG_COUNT_Y - DA9063_REG_COUNT_S + 1)
+ #define RTC_SEC		0
+ #define RTC_MIN		1
+@@ -42,6 +44,10 @@ struct da9063_rtc {
+ 	struct da9063		*hw;
+ 	struct rtc_time		alarm_time;
+ 	bool			rtc_sync;
++	int			alarm_year;
++	int			alarm_start;
++	int			alarm_len;
++	int			data_start;
+ };
+ 
+ static void da9063_data_to_tm(u8 *data, struct rtc_time *tm)
+@@ -83,7 +89,7 @@ static int da9063_rtc_stop_alarm(struct device *dev)
+ {
+ 	struct da9063_rtc *rtc = dev_get_drvdata(dev);
+ 
+-	return regmap_update_bits(rtc->hw->regmap, DA9063_REG_ALARM_Y,
++	return regmap_update_bits(rtc->hw->regmap, rtc->alarm_year,
+ 				  DA9063_ALARM_ON, 0);
+ }
+ 
+@@ -91,7 +97,7 @@ static int da9063_rtc_start_alarm(struct device *dev)
+ {
+ 	struct da9063_rtc *rtc = dev_get_drvdata(dev);
+ 
+-	return regmap_update_bits(rtc->hw->regmap, DA9063_REG_ALARM_Y,
++	return regmap_update_bits(rtc->hw->regmap, rtc->alarm_year,
+ 				  DA9063_ALARM_ON, DA9063_ALARM_ON);
+ }
+ 
+@@ -151,8 +157,9 @@ static int da9063_rtc_read_alarm(struct device *dev, struct rtc_wkalrm *alrm)
+ 	int ret;
+ 	unsigned int val;
+ 
+-	ret = regmap_bulk_read(rtc->hw->regmap, DA9063_REG_ALARM_S,
+-			       &data[RTC_SEC], RTC_DATA_LEN);
++	data[RTC_SEC] = 0;
++	ret = regmap_bulk_read(rtc->hw->regmap, rtc->alarm_start,
++			       &data[rtc->data_start], rtc->alarm_len);
+ 	if (ret < 0)
+ 		return ret;
+ 
+@@ -186,14 +193,14 @@ static int da9063_rtc_set_alarm(struct device *dev, struct rtc_wkalrm *alrm)
+ 		return ret;
+ 	}
+ 
+-	ret = regmap_bulk_write(rtc->hw->regmap, DA9063_REG_ALARM_S,
+-				data, RTC_DATA_LEN);
++	ret = regmap_bulk_write(rtc->hw->regmap, rtc->alarm_start,
++			       &data[rtc->data_start], rtc->alarm_len);
+ 	if (ret < 0) {
+ 		dev_err(dev, "Failed to write alarm: %d\n", ret);
+ 		return ret;
+ 	}
+ 
+-	rtc->alarm_time = alrm->time;
++	da9063_data_to_tm(data, &rtc->alarm_time);
+ 
+ 	if (alrm->enabled) {
+ 		ret = da9063_rtc_start_alarm(dev);
+@@ -218,7 +225,7 @@ static irqreturn_t da9063_alarm_event(int irq, void *data)
+ {
+ 	struct da9063_rtc *rtc = data;
+ 
+-	regmap_update_bits(rtc->hw->regmap, DA9063_REG_ALARM_Y,
++	regmap_update_bits(rtc->hw->regmap, rtc->alarm_year,
+ 			   DA9063_ALARM_ON, 0);
+ 
+ 	rtc->rtc_sync = true;
+@@ -257,7 +264,23 @@ static int da9063_rtc_probe(struct platform_device *pdev)
+ 		goto err;
+ 	}
+ 
+-	ret = regmap_update_bits(da9063->regmap, DA9063_REG_ALARM_S,
++	rtc = devm_kzalloc(&pdev->dev, sizeof(*rtc), GFP_KERNEL);
++	if (!rtc)
++		return -ENOMEM;
++
++	if (da9063->variant_code == PMIC_DA9063_AD) {
++		rtc->alarm_year = DA9063_AD_REG_ALARM_Y;
++		rtc->alarm_start = DA9063_AD_REG_ALARM_MI;
++		rtc->alarm_len = RTC_ALARM_DATA_LEN;
++		rtc->data_start = RTC_MIN;
++	} else {
++		rtc->alarm_year = DA9063_BB_REG_ALARM_Y;
++		rtc->alarm_start = DA9063_BB_REG_ALARM_S;
++		rtc->alarm_len = RTC_DATA_LEN;
++		rtc->data_start = RTC_SEC;
++	}
++
++	ret = regmap_update_bits(da9063->regmap, rtc->alarm_start,
+ 			DA9063_ALARM_STATUS_TICK | DA9063_ALARM_STATUS_ALARM,
+ 			0);
+ 	if (ret < 0) {
+@@ -265,7 +288,7 @@ static int da9063_rtc_probe(struct platform_device *pdev)
+ 		goto err;
+ 	}
+ 
+-	ret = regmap_update_bits(da9063->regmap, DA9063_REG_ALARM_S,
++	ret = regmap_update_bits(da9063->regmap, rtc->alarm_start,
+ 				 DA9063_ALARM_STATUS_ALARM,
+ 				 DA9063_ALARM_STATUS_ALARM);
+ 	if (ret < 0) {
+@@ -273,25 +296,22 @@ static int da9063_rtc_probe(struct platform_device *pdev)
+ 		goto err;
+ 	}
+ 
+-	ret = regmap_update_bits(da9063->regmap, DA9063_REG_ALARM_Y,
++	ret = regmap_update_bits(da9063->regmap, rtc->alarm_year,
+ 				 DA9063_TICK_ON, 0);
+ 	if (ret < 0) {
+ 		dev_err(&pdev->dev, "Failed to disable TICKs\n");
+ 		goto err;
+ 	}
+ 
+-	ret = regmap_bulk_read(da9063->regmap, DA9063_REG_ALARM_S,
+-			       data, RTC_DATA_LEN);
++	data[RTC_SEC] = 0;
++	ret = regmap_bulk_read(da9063->regmap, rtc->alarm_start,
++			       &data[rtc->data_start], rtc->alarm_len);
+ 	if (ret < 0) {
+ 		dev_err(&pdev->dev, "Failed to read initial alarm data: %d\n",
+ 			ret);
+ 		goto err;
+ 	}
+ 
+-	rtc = devm_kzalloc(&pdev->dev, sizeof(*rtc), GFP_KERNEL);
+-	if (!rtc)
+-		return -ENOMEM;
+-
+ 	platform_set_drvdata(pdev, rtc);
+ 
+ 	irq_alarm = platform_get_irq_byname(pdev, "ALARM");
+diff --git a/include/linux/mfd/da9063/core.h b/include/linux/mfd/da9063/core.h
+index 00a9aac..b92a326 100644
+--- a/include/linux/mfd/da9063/core.h
++++ b/include/linux/mfd/da9063/core.h
+@@ -34,7 +34,8 @@ enum da9063_models {
+ };
+ 
+ enum da9063_variant_codes {
+-	PMIC_DA9063_BB = 0x5
++	PMIC_DA9063_AD = 0x3,
++	PMIC_DA9063_BB = 0x5,
+ };
+ 
+ /* Interrupts */
+diff --git a/include/linux/mfd/da9063/registers.h b/include/linux/mfd/da9063/registers.h
+index 09a85c6..2e0ba6d 100644
+--- a/include/linux/mfd/da9063/registers.h
++++ b/include/linux/mfd/da9063/registers.h
+@@ -104,16 +104,27 @@
+ #define	DA9063_REG_COUNT_D		0x43
+ #define	DA9063_REG_COUNT_MO		0x44
+ #define	DA9063_REG_COUNT_Y		0x45
+-#define	DA9063_REG_ALARM_S		0x46
+-#define	DA9063_REG_ALARM_MI		0x47
+-#define	DA9063_REG_ALARM_H		0x48
+-#define	DA9063_REG_ALARM_D		0x49
+-#define	DA9063_REG_ALARM_MO		0x4A
+-#define	DA9063_REG_ALARM_Y		0x4B
+-#define	DA9063_REG_SECOND_A		0x4C
+-#define	DA9063_REG_SECOND_B		0x4D
+-#define	DA9063_REG_SECOND_C		0x4E
+-#define	DA9063_REG_SECOND_D		0x4F
++
++#define	DA9063_AD_REG_ALARM_MI		0x46
++#define	DA9063_AD_REG_ALARM_H		0x47
++#define	DA9063_AD_REG_ALARM_D		0x48
++#define	DA9063_AD_REG_ALARM_MO		0x49
++#define	DA9063_AD_REG_ALARM_Y		0x4A
++#define	DA9063_AD_REG_SECOND_A		0x4B
++#define	DA9063_AD_REG_SECOND_B		0x4C
++#define	DA9063_AD_REG_SECOND_C		0x4D
++#define	DA9063_AD_REG_SECOND_D		0x4E
++
++#define	DA9063_BB_REG_ALARM_S		0x46
++#define	DA9063_BB_REG_ALARM_MI		0x47
++#define	DA9063_BB_REG_ALARM_H		0x48
++#define	DA9063_BB_REG_ALARM_D		0x49
++#define	DA9063_BB_REG_ALARM_MO		0x4A
++#define	DA9063_BB_REG_ALARM_Y		0x4B
++#define	DA9063_BB_REG_SECOND_A		0x4C
++#define	DA9063_BB_REG_SECOND_B		0x4D
++#define	DA9063_BB_REG_SECOND_C		0x4E
++#define	DA9063_BB_REG_SECOND_D		0x4F
+ 
+ /* Sequencer Control Registers */
+ #define	DA9063_REG_SEQ			0x81
+@@ -223,37 +234,67 @@
+ #define	DA9063_REG_CONFIG_J		0x10F
+ #define	DA9063_REG_CONFIG_K		0x110
+ #define	DA9063_REG_CONFIG_L		0x111
+-#define	DA9063_REG_CONFIG_M		0x112
+-#define	DA9063_REG_CONFIG_N		0x113
+-
+-#define	DA9063_REG_MON_REG_1		0x114
+-#define	DA9063_REG_MON_REG_2		0x115
+-#define	DA9063_REG_MON_REG_3		0x116
+-#define	DA9063_REG_MON_REG_4		0x117
+-#define	DA9063_REG_MON_REG_5		0x11E
+-#define	DA9063_REG_MON_REG_6		0x11F
+-#define	DA9063_REG_TRIM_CLDR		0x120
++
++#define	DA9063_AD_REG_MON_REG_1		0x112
++#define	DA9063_AD_REG_MON_REG_2		0x113
++#define	DA9063_AD_REG_MON_REG_3		0x114
++#define	DA9063_AD_REG_MON_REG_4		0x115
++#define	DA9063_AD_REG_MON_REG_5		0x116
++#define	DA9063_AD_REG_MON_REG_6		0x117
++#define	DA9063_AD_REG_TRIM_CLDR		0x118
++
++#define	DA9063_AD_REG_GP_ID_0		0x119
++#define	DA9063_AD_REG_GP_ID_1		0x11A
++#define	DA9063_AD_REG_GP_ID_2		0x11B
++#define	DA9063_AD_REG_GP_ID_3		0x11C
++#define	DA9063_AD_REG_GP_ID_4		0x11D
++#define	DA9063_AD_REG_GP_ID_5		0x11E
++#define	DA9063_AD_REG_GP_ID_6		0x11F
++#define	DA9063_AD_REG_GP_ID_7		0x120
++#define	DA9063_AD_REG_GP_ID_8		0x121
++#define	DA9063_AD_REG_GP_ID_9		0x122
++#define	DA9063_AD_REG_GP_ID_10		0x123
++#define	DA9063_AD_REG_GP_ID_11		0x124
++#define	DA9063_AD_REG_GP_ID_12		0x125
++#define	DA9063_AD_REG_GP_ID_13		0x126
++#define	DA9063_AD_REG_GP_ID_14		0x127
++#define	DA9063_AD_REG_GP_ID_15		0x128
++#define	DA9063_AD_REG_GP_ID_16		0x129
++#define	DA9063_AD_REG_GP_ID_17		0x12A
++#define	DA9063_AD_REG_GP_ID_18		0x12B
++#define	DA9063_AD_REG_GP_ID_19		0x12C
++
++#define	DA9063_BB_REG_CONFIG_M		0x112
++#define	DA9063_BB_REG_CONFIG_N		0x113
++
++#define	DA9063_BB_REG_MON_REG_1		0x114
++#define	DA9063_BB_REG_MON_REG_2		0x115
++#define	DA9063_BB_REG_MON_REG_3		0x116
++#define	DA9063_BB_REG_MON_REG_4		0x117
++#define	DA9063_BB_REG_MON_REG_5		0x11E
++#define	DA9063_BB_REG_MON_REG_6		0x11F
++#define	DA9063_BB_REG_TRIM_CLDR		0x120
+ /* General Purpose Registers */
+-#define	DA9063_REG_GP_ID_0		0x121
+-#define	DA9063_REG_GP_ID_1		0x122
+-#define	DA9063_REG_GP_ID_2		0x123
+-#define	DA9063_REG_GP_ID_3		0x124
+-#define	DA9063_REG_GP_ID_4		0x125
+-#define	DA9063_REG_GP_ID_5		0x126
+-#define	DA9063_REG_GP_ID_6		0x127
+-#define	DA9063_REG_GP_ID_7		0x128
+-#define	DA9063_REG_GP_ID_8		0x129
+-#define	DA9063_REG_GP_ID_9		0x12A
+-#define	DA9063_REG_GP_ID_10		0x12B
+-#define	DA9063_REG_GP_ID_11		0x12C
+-#define	DA9063_REG_GP_ID_12		0x12D
+-#define	DA9063_REG_GP_ID_13		0x12E
+-#define	DA9063_REG_GP_ID_14		0x12F
+-#define	DA9063_REG_GP_ID_15		0x130
+-#define	DA9063_REG_GP_ID_16		0x131
+-#define	DA9063_REG_GP_ID_17		0x132
+-#define	DA9063_REG_GP_ID_18		0x133
+-#define	DA9063_REG_GP_ID_19		0x134
++#define	DA9063_BB_REG_GP_ID_0		0x121
++#define	DA9063_BB_REG_GP_ID_1		0x122
++#define	DA9063_BB_REG_GP_ID_2		0x123
++#define	DA9063_BB_REG_GP_ID_3		0x124
++#define	DA9063_BB_REG_GP_ID_4		0x125
++#define	DA9063_BB_REG_GP_ID_5		0x126
++#define	DA9063_BB_REG_GP_ID_6		0x127
++#define	DA9063_BB_REG_GP_ID_7		0x128
++#define	DA9063_BB_REG_GP_ID_8		0x129
++#define	DA9063_BB_REG_GP_ID_9		0x12A
++#define	DA9063_BB_REG_GP_ID_10		0x12B
++#define	DA9063_BB_REG_GP_ID_11		0x12C
++#define	DA9063_BB_REG_GP_ID_12		0x12D
++#define	DA9063_BB_REG_GP_ID_13		0x12E
++#define	DA9063_BB_REG_GP_ID_14		0x12F
++#define	DA9063_BB_REG_GP_ID_15		0x130
++#define	DA9063_BB_REG_GP_ID_16		0x131
++#define	DA9063_BB_REG_GP_ID_17		0x132
++#define	DA9063_BB_REG_GP_ID_18		0x133
++#define	DA9063_BB_REG_GP_ID_19		0x134
+ 
+ /* Chip ID and variant */
+ #define	DA9063_REG_CHIP_ID		0x181
+@@ -404,10 +445,10 @@
+ /* DA9063_REG_CONTROL_B (addr=0x0F) */
+ #define	DA9063_CHG_SEL				0x01
+ #define	DA9063_WATCHDOG_PD			0x02
+-#define	DA9063_RESET_BLINKING			0x04
++#define	DA9063_BB_RESET_BLINKING		0x04
+ #define	DA9063_NRES_MODE			0x08
+ #define	DA9063_NONKEY_LOCK			0x10
+-#define	DA9063_BUCK_SLOWSTART			0x80
++#define	DA9063_BB_BUCK_SLOWSTART		0x80
+ 
+ /* DA9063_REG_CONTROL_C (addr=0x10) */
+ #define	DA9063_DEBOUNCING_MASK			0x07
+@@ -467,7 +508,7 @@
+ #define	DA9063_GPADC_PAUSE			0x02
+ #define	DA9063_PMIF_DIS				0x04
+ #define	DA9063_HS2WIRE_DIS			0x08
+-#define	DA9063_CLDR_PAUSE			0x10
++#define	DA9063_BB_CLDR_PAUSE			0x10
+ #define	DA9063_BBAT_DIS				0x20
+ #define	DA9063_OUT_32K_PAUSE			0x40
+ #define	DA9063_PMCONT_DIS			0x80
+@@ -844,7 +885,7 @@
+ #define DA9063_MONITOR				0x40
+ 
+ /* DA9063_REG_ALARM_S (addr=0x46) */
+-#define DA9063_ALARM_S_MASK			0x3F
++#define DA9063_BB_ALARM_S_MASK			0x3F
+ #define DA9063_ALARM_STATUS_ALARM		0x80
+ #define DA9063_ALARM_STATUS_TICK		0x40
+ /* DA9063_REG_ALARM_MI (addr=0x47) */
+-- 
+end-of-patch for RFC V2
+
