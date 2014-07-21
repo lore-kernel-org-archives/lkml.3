@@ -1,52 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754072AbaGUJBo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 05:01:44 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:65276 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753857AbaGUJBm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 05:01:42 -0400
-Message-ID: <53CCD6F2.6020909@nod.at>
-Date: Mon, 21 Jul 2014 11:01:38 +0200
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1754078AbaGUJCU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 05:02:20 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:51343 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753031AbaGUJCR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jul 2014 05:02:17 -0400
+Date: Mon, 21 Jul 2014 11:02:13 +0200
+From: Antoine =?iso-8859-1?Q?T=E9nart?= 
+	<antoine.tenart@free-electrons.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Antoine =?iso-8859-1?Q?T=E9nart?= 
+	<antoine.tenart@free-electrons.com>,
+        sebastian.hesselbarth@gmail.com, kishon@ti.com,
+        alexandre.belloni@free-electrons.com,
+        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
+        jszhang@marvell.com, linux-arm-kernel@lists.infradead.org,
+        linux-ide@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v10 3/8] ata: libahci_platform: move port_map parameters
+ into the AHCI structure
+Message-ID: <20140721090213.GC32208@kwain>
+References: <1405686607-8126-1-git-send-email-antoine.tenart@free-electrons.com>
+ <1405686607-8126-4-git-send-email-antoine.tenart@free-electrons.com>
+ <20140718134730.GA13012@htj.dyndns.org>
 MIME-Version: 1.0
-To: "Yue Zhang (OSTC DEV)" <yuezha@microsoft.com>
-CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "driverdev-devel@linuxdriverproject.org" 
-	<driverdev-devel@linuxdriverproject.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        "olaf@aepfle.de" <olaf@aepfle.de>,
-        "jasowang@redhat.com" <jasowang@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Haiyang Zhang <haiyangz@microsoft.com>,
-        KY Srinivasan <kys@microsoft.com>, Thomas Shao <huishao@microsoft.com>,
-        Dexuan Cui <decui@microsoft.com>
-Subject: Re: [PATCH] Hyperv: Trigger DHCP renew after host hibernation
-References: <1405680903-28176-1-git-send-email-yuezha@microsoft.com> <CAFLxGvxQU_z+mChHsNSu9VZEdXrU+RU75k6H18uKbdAj2TKD5g@mail.gmail.com> <DC7803B42427924284F2D5252E076A3B44769DCA@SINEX14MBXC416.southpacific.corp.microsoft.com> <53CCB944.8090709@nod.at> <DC7803B42427924284F2D5252E076A3B4476A363@SINEX14MBXC416.southpacific.corp.microsoft.com> <53CCCCAD.7080906@nod.at> <DC7803B42427924284F2D5252E076A3B4476A479@SINEX14MBXC416.southpacific.corp.microsoft.com>
-In-Reply-To: <DC7803B42427924284F2D5252E076A3B4476A479@SINEX14MBXC416.southpacific.corp.microsoft.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140718134730.GA13012@htj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Yue,
+Hi,
 
-Am 21.07.2014 10:44, schrieb Yue Zhang (OSTC DEV):
-> Hi, Richard
+On Fri, Jul 18, 2014 at 09:47:30AM -0400, Tejun Heo wrote:
+> On Fri, Jul 18, 2014 at 02:30:02PM +0200, Antoine Ténart wrote:
+> > @@ -321,6 +321,8 @@ struct ahci_host_priv {
+> >  	u32			cap;		/* cap to use */
+> >  	u32			cap2;		/* cap2 to use */
+> >  	u32			port_map;	/* port map to use */
+> > +	u32			force_port_map;	/* force port map */
+> > +	u32			mask_port_map;	/* mask out particular bits */
 > 
-> IMHO, all networking implementations should handle the cable offline event. Consider
-> this situation. I unplugged the network cable and connect it to a new network switch
-> after 10 seconds. If the DHCP renew is not triggered, the network will break. I think in 
-> normal cases, it should already been handled properly. Unless there is a strong 
-> justification for not doing this. In that case, we shouldn't renew DHCP anyway.
+> So, ->flags and ->force/mask_port_map are the only input ones, right?
+> Can we collect them to one spot and label them as such?
 
-I agree that they should handle the cable offline event.
-My concern is that 10 seconds is maybe not a the right choice.
-(As we cannot know all implementations)
+Yes. So you want a comment about this in the header?
 
-Thanks,
-//richard
+Antoine
+
+-- 
+Antoine Ténart, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
