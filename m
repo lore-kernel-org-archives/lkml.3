@@ -1,47 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932849AbaGUPiO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 11:38:14 -0400
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:43449 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932322AbaGUPiM (ORCPT
+	id S932878AbaGUPjH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 11:39:07 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37752 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932322AbaGUPjF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 11:38:12 -0400
-Message-ID: <53CD33DD.4090600@gmail.com>
-Date: Mon, 21 Jul 2014 17:38:05 +0200
-From: poma <pomidorabelisima@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Mon, 21 Jul 2014 11:39:05 -0400
+Date: Mon, 21 Jul 2014 08:38:40 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: pp <mnipxh@gmail.com>
+Cc: jslaby@suse.cz, linux-kernel@vger.kernel.org, yanmin_zhang@linux.intel.com,
+        xinhuix.pan@intel.com
+Subject: Re: [PATCH] tty/tty_io.c: make a check before reuse cdev
+Message-ID: <20140721153840.GA6802@kroah.com>
+References: <53CD0BD4.4050007@gmail.com>
 MIME-Version: 1.0
-To: Christoph Hellwig <hch@infradead.org>
-CC: Christoph Hellwig <hch@lst.de>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Vladimir Davydov <vdavydov@parallels.com>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        Christoph Lameter <cl@linux.com>,
-        Mailing-List fedora-kernel <kernel@lists.fedoraproject.org>,
-        Paolo Bonzini <pbonzini@redhat.com>, linux-scsi@vger.kernel.org
-Subject: Re: WARNING: CPU: 1 PID: 495 at mm/slab_common.c:69 kmem_cache_create+0x1a9/0x330()
-References: <53C8DF7F.5060707@gmail.com> <53C8FD95.5020302@gmail.com> <20140718132104.GK27940@esperanza> <20140718141747.GA23272@lst.de> <53C97D34.5040707@gmail.com> <1405714046.30262.10.camel@dabdike.int.hansenpartnership.com> <20140719164454.GA24530@lst.de> <53CCDFC3.5010802@gmail.com> <20140721145817.GA15433@infradead.org>
-In-Reply-To: <20140721145817.GA15433@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53CD0BD4.4050007@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 21.07.2014 16:58, Christoph Hellwig wrote:
-> On Mon, Jul 21, 2014 at 11:39:15AM +0200, poma wrote:
->> Thanks for the tip.
->> Is there a patch somewhere?
->
-> James sent the patch earlier and you replied to it.
->
+On Mon, Jul 21, 2014 at 08:47:16PM +0800, pp wrote:
+> As reuse the cdev may cause panic. After we unregister the tty device, we may use tty_hangup() o
+> other similar function to send a signal(SIGHUP) to process which has opend our device. But that
+> not succeed if the process couldn't get the signal. for example, a process forked
+> but his parent quited never get SIGHUP.
+> 
+> Here is our scence.
+> tty driver register its device and init the cdevs, then process "A" open one cdev.
+> tty driver unregister its device and cdev_del the cdevs, call tty_hangup to (S)send signal SIGHUP to process A.
+> But that step(S) fails.
 
-Yea I could be more precise. :)
-What I thought, is the patch pushed in some official repo and officially approved?
-I guess that's the only way to achieve validity.
+How can that fail?  What driver does this fail for?
 
+> tty driver register its device and (D)init the cdevs again.
 
-poma
+What driver does this with an "old" device, it should have created a new
+one, otherwise, as you have pointed out, it's a bug.
 
+thanks,
 
+greg k-h
