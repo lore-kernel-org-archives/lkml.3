@@ -1,124 +1,300 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753796AbaGUVzb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 17:55:31 -0400
-Received: from mail-wi0-f181.google.com ([209.85.212.181]:39588 "EHLO
-	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751794AbaGUVz3 (ORCPT
+	id S1753987AbaGUV4a (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 17:56:30 -0400
+Received: from mail-bn1blp0189.outbound.protection.outlook.com ([207.46.163.189]:23580
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751052AbaGUV43 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 17:55:29 -0400
-Date: Mon, 21 Jul 2014 23:55:25 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Peter De Schrijver <pdeschrijver@nvidia.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>,
-        Mike Turquette <mturquette@linaro.org>, Joseph Lo <josephl@nvidia.com>,
-        Alex Courbot <acourbot@nvidia.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Tuomas Tynkkynen <ttynkkynen@nvidia.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 2/6] clk: tegra: make tegra_clocks_apply_init_table
- arch_initcall
-Message-ID: <20140721215523.GE12076@mithrandir>
-References: <1405437890-6468-1-git-send-email-pdeschrijver@nvidia.com>
- <1405437890-6468-3-git-send-email-pdeschrijver@nvidia.com>
- <20140716071932.GB7978@ulmo>
- <20140716082740.GK23218@tbergstrom-lnx.Nvidia.com>
- <53CD896C.3030605@wwwdotorg.org>
+	Mon, 21 Jul 2014 17:56:29 -0400
+X-WSS-ID: 0N930XU-08-IWT-02
+X-M-MSG: 
+Message-ID: <53CD8C7D.9010106@amd.com>
+Date: Tue, 22 Jul 2014 00:56:13 +0300
+From: Oded Gabbay <oded.gabbay@amd.com>
+Organization: AMD
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="5oH/S/bF6lOfqCQb"
-Content-Disposition: inline
-In-Reply-To: <53CD896C.3030605@wwwdotorg.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Jerome Glisse <j.glisse@gmail.com>
+CC: Andrew Lewycky <Andrew.Lewycky@amd.com>,
+        =?UTF-8?B?TWljaGVsIETDpG56ZXI=?= <michel.daenzer@amd.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        linux-mm <linux-mm@kvack.org>,
+        "Evgeny Pinchuk" <Evgeny.Pinchuk@amd.com>,
+        Alexey Skidanov <Alexey.Skidanov@amd.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH v2 00/25] AMDKFD kernel driver
+References: <20140720174652.GE3068@gmail.com> <53CD0961.4070505@amd.com>
+ <53CD17FD.3000908@vodafone.de> <53CD1FB6.1000602@amd.com>
+ <20140721155437.GA4519@gmail.com> <53CD5122.5040804@amd.com>
+ <20140721181433.GA5196@gmail.com> <53CD5DBC.7010301@amd.com>
+ <20140721185940.GA5278@gmail.com> <53CD68BF.4020308@amd.com>
+ <20140721192837.GC5278@gmail.com>
+In-Reply-To: <20140721192837.GC5278@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Originating-IP: [10.224.155.167]
+Content-Transfer-Encoding: 8BIT
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:165.204.84.222;CTRY:US;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(428002)(51704005)(52254002)(479174003)(51914003)(24454002)(189002)(199002)(110136001)(81342001)(95666004)(36756003)(64126003)(107046002)(76482001)(21056001)(64706001)(79102001)(31966008)(81542001)(50466002)(65956001)(77982001)(105586002)(74662001)(80022001)(20776003)(106466001)(84676001)(74502001)(47776003)(86362001)(65806001)(15202345003)(54356999)(50986999)(87266999)(65816999)(83506001)(44976005)(93886003)(15975445006)(99396002)(76176999)(87936001)(4396001)(85852003)(92726001)(92566001)(83072002)(83322001)(33656002)(102836001)(101416001)(19580405001)(85306003)(97736001)(46102001)(68736004)(19580395003)(23676002);DIR:OUT;SFP:;SCL:1;SRVR:BLUPR02MB036;H:atltwp02.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;LANG:en;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
+X-Forefront-PRVS: 0279B3DD0D
+Authentication-Results: spf=none (sender IP is 165.204.84.222)
+ smtp.mailfrom=Oded.Gabbay@amd.com; 
+X-OriginatorOrg: amd4.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 21/07/14 22:28, Jerome Glisse wrote:
+> On Mon, Jul 21, 2014 at 10:23:43PM +0300, Oded Gabbay wrote:
+>> On 21/07/14 21:59, Jerome Glisse wrote:
+>>> On Mon, Jul 21, 2014 at 09:36:44PM +0300, Oded Gabbay wrote:
+>>>> On 21/07/14 21:14, Jerome Glisse wrote:
+>>>>> On Mon, Jul 21, 2014 at 08:42:58PM +0300, Oded Gabbay wrote:
+>>>>>> On 21/07/14 18:54, Jerome Glisse wrote:
+>>>>>>> On Mon, Jul 21, 2014 at 05:12:06PM +0300, Oded Gabbay wrote:
+>>>>>>>> On 21/07/14 16:39, Christian König wrote:
+>>>>>>>>> Am 21.07.2014 14:36, schrieb Oded Gabbay:
+>>>>>>>>>> On 20/07/14 20:46, Jerome Glisse wrote:
+>>>>>>>>>>> On Thu, Jul 17, 2014 at 04:57:25PM +0300, Oded Gabbay wrote:
+>>>>>>>>>>>> Forgot to cc mailing list on cover letter. Sorry.
+>>>>>>>>>>>>
+>>>>>>>>>>>> As a continuation to the existing discussion, here is a v2 patch series
+>>>>>>>>>>>> restructured with a cleaner history and no totally-different-early-versions
+>>>>>>>>>>>> of the code.
+>>>>>>>>>>>>
+>>>>>>>>>>>> Instead of 83 patches, there are now a total of 25 patches, where 5 of them
+>>>>>>>>>>>> are modifications to radeon driver and 18 of them include only amdkfd code.
+>>>>>>>>>>>> There is no code going away or even modified between patches, only added.
+>>>>>>>>>>>>
+>>>>>>>>>>>> The driver was renamed from radeon_kfd to amdkfd and moved to reside under
+>>>>>>>>>>>> drm/radeon/amdkfd. This move was done to emphasize the fact that this driver
+>>>>>>>>>>>> is an AMD-only driver at this point. Having said that, we do foresee a
+>>>>>>>>>>>> generic hsa framework being implemented in the future and in that case, we
+>>>>>>>>>>>> will adjust amdkfd to work within that framework.
+>>>>>>>>>>>>
+>>>>>>>>>>>> As the amdkfd driver should support multiple AMD gfx drivers, we want to
+>>>>>>>>>>>> keep it as a seperate driver from radeon. Therefore, the amdkfd code is
+>>>>>>>>>>>> contained in its own folder. The amdkfd folder was put under the radeon
+>>>>>>>>>>>> folder because the only AMD gfx driver in the Linux kernel at this point
+>>>>>>>>>>>> is the radeon driver. Having said that, we will probably need to move it
+>>>>>>>>>>>> (maybe to be directly under drm) after we integrate with additional AMD gfx
+>>>>>>>>>>>> drivers.
+>>>>>>>>>>>>
+>>>>>>>>>>>> For people who like to review using git, the v2 patch set is located at:
+>>>>>>>>>>>> http://cgit.freedesktop.org/~gabbayo/linux/log/?h=kfd-next-3.17-v2
+>>>>>>>>>>>>
+>>>>>>>>>>>> Written by Oded Gabbayh <oded.gabbay@amd.com>
+>>>>>>>>>>>
+>>>>>>>>>>> So quick comments before i finish going over all patches. There is many
+>>>>>>>>>>> things that need more documentation espacialy as of right now there is
+>>>>>>>>>>> no userspace i can go look at.
+>>>>>>>>>> So quick comments on some of your questions but first of all, thanks for the
+>>>>>>>>>> time you dedicated to review the code.
+>>>>>>>>>>>
+>>>>>>>>>>> There few show stopper, biggest one is gpu memory pinning this is a big
+>>>>>>>>>>> no, that would need serious arguments for any hope of convincing me on
+>>>>>>>>>>> that side.
+>>>>>>>>>> We only do gpu memory pinning for kernel objects. There are no userspace
+>>>>>>>>>> objects that are pinned on the gpu memory in our driver. If that is the case,
+>>>>>>>>>> is it still a show stopper ?
+>>>>>>>>>>
+>>>>>>>>>> The kernel objects are:
+>>>>>>>>>> - pipelines (4 per device)
+>>>>>>>>>> - mqd per hiq (only 1 per device)
+>>>>>>>>>> - mqd per userspace queue. On KV, we support up to 1K queues per process, for
+>>>>>>>>>> a total of 512K queues. Each mqd is 151 bytes, but the allocation is done in
+>>>>>>>>>> 256 alignment. So total *possible* memory is 128MB
+>>>>>>>>>> - kernel queue (only 1 per device)
+>>>>>>>>>> - fence address for kernel queue
+>>>>>>>>>> - runlists for the CP (1 or 2 per device)
+>>>>>>>>>
+>>>>>>>>> The main questions here are if it's avoid able to pin down the memory and if the
+>>>>>>>>> memory is pinned down at driver load, by request from userspace or by anything
+>>>>>>>>> else.
+>>>>>>>>>
+>>>>>>>>> As far as I can see only the "mqd per userspace queue" might be a bit
+>>>>>>>>> questionable, everything else sounds reasonable.
+>>>>>>>>>
+>>>>>>>>> Christian.
+>>>>>>>>
+>>>>>>>> Most of the pin downs are done on device initialization.
+>>>>>>>> The "mqd per userspace" is done per userspace queue creation. However, as I
+>>>>>>>> said, it has an upper limit of 128MB on KV, and considering the 2G local
+>>>>>>>> memory, I think it is OK.
+>>>>>>>> The runlists are also done on userspace queue creation/deletion, but we only
+>>>>>>>> have 1 or 2 runlists per device, so it is not that bad.
+>>>>>>>
+>>>>>>> 2G local memory ? You can not assume anything on userside configuration some
+>>>>>>> one might build an hsa computer with 512M and still expect a functioning
+>>>>>>> desktop.
+>>>>>> First of all, I'm only considering Kaveri computer, not "hsa" computer.
+>>>>>> Second, I would imagine we can build some protection around it, like
+>>>>>> checking total local memory and limit number of queues based on some
+>>>>>> percentage of that total local memory. So, if someone will have only
+>>>>>> 512M, he will be able to open less queues.
+>>>>>>
+>>>>>>
+>>>>>>>
+>>>>>>> I need to go look into what all this mqd is for, what it does and what it is
+>>>>>>> about. But pinning is really bad and this is an issue with userspace command
+>>>>>>> scheduling an issue that obviously AMD fails to take into account in design
+>>>>>>> phase.
+>>>>>> Maybe, but that is the H/W design non-the-less. We can't very well
+>>>>>> change the H/W.
+>>>>>
+>>>>> You can not change the hardware but it is not an excuse to allow bad design to
+>>>>> sneak in software to work around that. So i would rather penalize bad hardware
+>>>>> design and have command submission in the kernel, until AMD fix its hardware to
+>>>>> allow proper scheduling by the kernel and proper control by the kernel. 
+>>>> I'm sorry but I do *not* think this is a bad design. S/W scheduling in
+>>>> the kernel can not, IMO, scale well to 100K queues and 10K processes.
+>>>
+>>> I am not advocating for having kernel decide down to the very last details. I am
+>>> advocating for kernel being able to preempt at any time and be able to decrease
+>>> or increase user queue priority so overall kernel is in charge of resources
+>>> management and it can handle rogue client in proper fashion.
+>>>
+>>>>
+>>>>> Because really where we want to go is having GPU closer to a CPU in term of scheduling
+>>>>> capacity and once we get there we want the kernel to always be able to take over
+>>>>> and do whatever it wants behind process back.
+>>>> Who do you refer to when you say "we" ? AFAIK, the hw scheduling
+>>>> direction is where AMD is now and where it is heading in the future.
+>>>> That doesn't preclude the option to allow the kernel to take over and do
+>>>> what he wants. I agree that in KV we have a problem where we can't do a
+>>>> mid-wave preemption, so theoretically, a long running compute kernel can
+>>>> make things messy, but in Carrizo, we will have this ability. Having
+>>>> said that, it will only be through the CP H/W scheduling. So AMD is
+>>>> _not_ going to abandon H/W scheduling. You can dislike it, but this is
+>>>> the situation.
+>>>
+>>> We was for the overall Linux community but maybe i should not pretend to talk
+>>> for anyone interested in having a common standard.
+>>>
+>>> My point is that current hardware do not have approriate hardware support for
+>>> preemption hence, current hardware should use ioctl to schedule job and AMD
+>>> should think a bit more on commiting to a design and handwaving any hardware
+>>> short coming as something that can be work around in the software. The pinning
+>>> thing is broken by design, only way to work around it is through kernel cmd
+>>> queue scheduling that's a fact.
+>>
+>>>
+>>> Once hardware support proper preemption and allows to move around/evict buffer
+>>> use on behalf of userspace command queue then we can allow userspace scheduling
+>>> but until then my personnal opinion is that it should not be allowed and that
+>>> people will have to pay the ioctl price which i proved to be small, because
+>>> really if you 100K queue each with one job, i would not expect that all those
+>>> 100K job will complete in less time than it takes to execute an ioctl ie by
+>>> even if you do not have the ioctl delay what ever you schedule will have to
+>>> wait on previously submited jobs.
+>>
+>> But Jerome, the core problem still remains in effect, even with your
+>> suggestion. If an application, either via userspace queue or via ioctl,
+>> submits a long-running kernel, than the CPU in general can't stop the
+>> GPU from running it. And if that kernel does while(1); than that's it,
+>> game's over, and no matter how you submitted the work. So I don't really
+>> see the big advantage in your proposal. Only in CZ we can stop this wave
+>> (by CP H/W scheduling only). What are you saying is basically I won't
+>> allow people to use compute on Linux KV system because it _may_ get the
+>> system stuck.
+>>
+>> So even if I really wanted to, and I may agree with you theoretically on
+>> that, I can't fulfill your desire to make the "kernel being able to
+>> preempt at any time and be able to decrease or increase user queue
+>> priority so overall kernel is in charge of resources management and it
+>> can handle rogue client in proper fashion". Not in KV, and I guess not
+>> in CZ as well.
+>>
+>> 	Oded
+> 
+> I do understand that but using kernel ioctl provide the same kind of control
+> as we have now ie we can bind/unbind buffer on per command buffer submission
+> basis, just like with current graphic or compute stuff.
+> 
+> Yes current graphic and compute stuff can launch a while and never return back
+> and yes currently we have nothing against that but we should and solution would
+> be simple just kill the gpu thread.
+> 
+OK, so in that case, the kernel can simple unmap all the queues by
+simply writing an UNMAP_QUEUES packet to the HIQ. Even if the queues are
+userspace, they will not be mapped to the internal CP scheduler.
+Does that satisfy the kernel control level you want ?
 
---5oH/S/bF6lOfqCQb
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+	Oded
+>>
+>>>
+>>>>>
+>>>>>>>>>
+>>>>>>>>>>>
+>>>>>>>>>>> It might be better to add a drivers/gpu/drm/amd directory and add common
+>>>>>>>>>>> stuff there.
+>>>>>>>>>>>
+>>>>>>>>>>> Given that this is not intended to be final HSA api AFAICT then i would
+>>>>>>>>>>> say this far better to avoid the whole kfd module and add ioctl to radeon.
+>>>>>>>>>>> This would avoid crazy communication btw radeon and kfd.
+>>>>>>>>>>>
+>>>>>>>>>>> The whole aperture business needs some serious explanation. Especialy as
+>>>>>>>>>>> you want to use userspace address there is nothing to prevent userspace
+>>>>>>>>>>> program from allocating things at address you reserve for lds, scratch,
+>>>>>>>>>>> ... only sane way would be to move those lds, scratch inside the virtual
+>>>>>>>>>>> address reserved for kernel (see kernel memory map).
+>>>>>>>>>>>
+>>>>>>>>>>> The whole business of locking performance counter for exclusive per process
+>>>>>>>>>>> access is a big NO. Which leads me to the questionable usefullness of user
+>>>>>>>>>>> space command ring.
+>>>>>>>>>> That's like saying: "Which leads me to the questionable usefulness of HSA". I
+>>>>>>>>>> find it analogous to a situation where a network maintainer nacking a driver
+>>>>>>>>>> for a network card, which is slower than a different network card. Doesn't
+>>>>>>>>>> seem reasonable this situation is would happen. He would still put both the
+>>>>>>>>>> drivers in the kernel because people want to use the H/W and its features. So,
+>>>>>>>>>> I don't think this is a valid reason to NACK the driver.
+>>>>>>>
+>>>>>>> Let me rephrase, drop the the performance counter ioctl and modulo memory pinning
+>>>>>>> i see no objection. In other word, i am not NACKING whole patchset i am NACKING
+>>>>>>> the performance ioctl.
+>>>>>>>
+>>>>>>> Again this is another argument for round trip to the kernel. As inside kernel you
+>>>>>>> could properly do exclusive gpu counter access accross single user cmd buffer
+>>>>>>> execution.
+>>>>>>>
+>>>>>>>>>>
+>>>>>>>>>>> I only see issues with that. First and foremost i would
+>>>>>>>>>>> need to see solid figures that kernel ioctl or syscall has a higher an
+>>>>>>>>>>> overhead that is measurable in any meaning full way against a simple
+>>>>>>>>>>> function call. I know the userspace command ring is a big marketing features
+>>>>>>>>>>> that please ignorant userspace programmer. But really this only brings issues
+>>>>>>>>>>> and for absolutely not upside afaict.
+>>>>>>>>>> Really ? You think that doing a context switch to kernel space, with all its
+>>>>>>>>>> overhead, is _not_ more expansive than just calling a function in userspace
+>>>>>>>>>> which only puts a buffer on a ring and writes a doorbell ?
+>>>>>>>
+>>>>>>> I am saying the overhead is not that big and it probably will not matter in most
+>>>>>>> usecase. For instance i did wrote the most useless kernel module that add two
+>>>>>>> number through an ioctl (http://people.freedesktop.org/~glisse/adder.tar) and
+>>>>>>> it takes ~0.35microseconds with ioctl while function is ~0.025microseconds so
+>>>>>>> ioctl is 13 times slower.
+>>>>>>>
+>>>>>>> Now if there is enough data that shows that a significant percentage of jobs
+>>>>>>> submited to the GPU will take less that 0.35microsecond then yes userspace
+>>>>>>> scheduling does make sense. But so far all we have is handwaving with no data
+>>>>>>> to support any facts.
+>>>>>>>
+>>>>>>>
+>>>>>>> Now if we want to schedule from userspace than you will need to do something
+>>>>>>> about the pinning, something that gives control to kernel so that kernel can
+>>>>>>> unpin when it wants and move object when it wants no matter what userspace is
+>>>>>>> doing.
+>>>>>>>
+>>>>>>>>>>>
+>>>
+>>> --
+>>> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+>>> the body to majordomo@kvack.org.  For more info on Linux MM,
+>>> see: http://www.linux-mm.org/ .
+>>> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+>>>
+>>
 
-On Mon, Jul 21, 2014 at 03:43:08PM -0600, Stephen Warren wrote:
-> On 07/16/2014 02:27 AM, Peter De Schrijver wrote:
-> > On Wed, Jul 16, 2014 at 09:19:33AM +0200, Thierry Reding wrote:
-> >> * PGP Signed by an unknown key
-> >>
-> >> On Tue, Jul 15, 2014 at 06:24:32PM +0300, Peter De Schrijver wrote:
-> >> [...]
-> >>> diff --git a/drivers/clk/tegra/clk.c b/drivers/clk/tegra/clk.c
-> >>> index d081732..65cde4e 100644
-> >>> --- a/drivers/clk/tegra/clk.c
-> >>> +++ b/drivers/clk/tegra/clk.c
-> >>> @@ -290,10 +290,13 @@ struct clk ** __init tegra_lookup_dt_id(int clk=
-_id,
-> >>> =20
-> >>>  tegra_clk_apply_init_table_func tegra_clk_apply_init_table;
-> >>> =20
-> >>> -void __init tegra_clocks_apply_init_table(void)
-> >>> +static int __init tegra_clocks_apply_init_table(void)
-> >>>  {
-> >>>  	if (!tegra_clk_apply_init_table)
-> >>> -		return;
-> >>> +		return 0;
-> >>
-> >> Shouldn't this be an error? Or perhaps WARN()? To make sure this gets
-> >=20
-> > An arch_initcall will be called for every ARM platform I think? In case
-> > this gets called on a non-Tegra platform, tegra_clk_apply_init_table wi=
-ll not
-> > be set and therefore a silent return 0; seems the most appropriate thin=
-g to do
-> > to me?
->=20
-> This is one reason that doing all the initialization from separate
-> initcalls sucks. Much better to have a single top-level initialization
-> function that calls exactly what is needed, only what is needed, and
-> only runs on the correct SoCs.
->=20
-> But failing that, I guess you need to say something like
-> of_is_compatible(root node, "nvidia Tegra"), but of course the
-> definition of "nvidia Tegra" is an ever-growing list of possible values
-> that needs to be used from each separate initcall...
-
-FWIW, we have soc_is_tegra() now in include/soc/tegra/common.h which is
-meant to be used for exactly this purpose. I agree that it isn't optimal
-but it's pretty good. It should be easy to refactor this to make it
-callable from a top-level initialization function when a decision
-regarding that has been made.
-
-Thierry
-
---5oH/S/bF6lOfqCQb
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTzYxLAAoJEN0jrNd/PrOhERgQAJsRZRUQ+9TQKgFfuvk3nMCR
-CASncN/V2m5XRMICNWB/0CauxcV+WsPkD5Vjvgra07bWbarO1hePbKkLidfc7l9B
-0io8Nvw+P9yFXmV52JVuCa7pJJnLs3KWN+msf9rYT9tk7XSFMW5Pnl+e192+ILtH
-oQi0HvQ3zEmB/tGnoE+5SiGvTu9rQl08dV68qVQnTCrHE598Q+zRSXoyEPTHxd8a
-rXIS3TgmICuZccLmTosu3Kv/jdoGpyAWdskvyiUVfVoXiqhGDMYrl4D+kTK2Yq8i
-530pdVfZVZ6yA38HLRr5Mch8rNDSh626xIgQlmWoKXeHOexYTh5f1DQKyjbzROkm
-O0oYIzk/L1gIUuXtzttCr5Fl7hckN5KI/r6g3Jt2v1WovK8Fbq7eEitVXyxEk4+7
-rG0MrA33zc+nM+1VdhDlTFec6GQiXfiKVU+3NV5Gk8+rQHq7NTjTS15E9QzTUF1e
-TyyOJGPbD9nRVtvrW7HGq+u8IFx1C1GuD31pul0+srIa5fsV1aYptq6P0r5BrlkL
-CLL7uXuA5wdil4T1D34Z/0sHA8AYyOWcMFCvkhekSkW5L2+I72LwDPYlcZ5DYNH7
-XHrh821WxGsLqoTRy3VQEAlcgUQ3TZx8veWMl5Zd0g6GQmLL0X4At97anydfFxqN
-58cTrS0O1lw1obOeFv7O
-=bqXL
------END PGP SIGNATURE-----
-
---5oH/S/bF6lOfqCQb--
