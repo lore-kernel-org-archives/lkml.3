@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933117AbaGUPkW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 11:40:22 -0400
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:5173 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752423AbaGUPkS (ORCPT
+	id S933138AbaGUPkb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 11:40:31 -0400
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:11268 "EHLO
+	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933119AbaGUPkZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 11:40:18 -0400
+	Mon, 21 Jul 2014 11:40:25 -0400
 X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Mon, 21 Jul 2014 08:28:37 -0700
+	by hqnvupgp08.nvidia.com on Mon, 21 Jul 2014 08:32:39 -0700
 From: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
 To: <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <linux-arm-kernel@lists.infradead.org>, <linux-pm@vger.kernel.org>
@@ -21,9 +21,9 @@ CC: Stephen Warren <swarren@wwwdotorg.org>,
         Viresh Kumar <viresh.kumar@linaro.org>,
         Paul Walmsley <pwalmsley@nvidia.com>, <devicetree@vger.kernel.org>,
         Tuomas Tynkkynen <ttynkkynen@nvidia.com>
-Subject: [PATCH v2 11/16] ARM: tegra: Add the DFLL to Tegra124 device tree
-Date: Mon, 21 Jul 2014 18:38:57 +0300
-Message-ID: <1405957142-19416-12-git-send-email-ttynkkynen@nvidia.com>
+Subject: [PATCH v2 13/16] cpufreq: tegra124: Add device tree bindings
+Date: Mon, 21 Jul 2014 18:38:59 +0300
+Message-ID: <1405957142-19416-14-git-send-email-ttynkkynen@nvidia.com>
 X-Mailer: git-send-email 1.8.1.5
 In-Reply-To: <1405957142-19416-1-git-send-email-ttynkkynen@nvidia.com>
 References: <1405957142-19416-1-git-send-email-ttynkkynen@nvidia.com>
@@ -34,50 +34,67 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The DFLL clocksource is a separate IP block from the usual
-clock-and-reset controller, so it gets its own device tree node.
+The cpufreq driver for Tegra124 will be a different one than the old
+Tegra20 cpufreq driver (tegra-cpufreq), which does not use the device
+tree.
 
 Signed-off-by: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
 ---
 v2 changes:
-     - none (only board dts file needed changes)
+    - The clock-latency property was added, as cpufreq-cpu0 wants that
 
- arch/arm/boot/dts/tegra124.dtsi | 22 ++++++++++++++++++++++
- 1 file changed, 22 insertions(+)
+ .../bindings/cpufreq/tegra124-cpufreq.txt          | 42 ++++++++++++++++++++++
+ 1 file changed, 42 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/cpufreq/tegra124-cpufreq.txt
 
-diff --git a/arch/arm/boot/dts/tegra124.dtsi b/arch/arm/boot/dts/tegra124.dtsi
-index 03916ef..8ff4332 100644
---- a/arch/arm/boot/dts/tegra124.dtsi
-+++ b/arch/arm/boot/dts/tegra124.dtsi
-@@ -544,6 +544,28 @@
- 		status = "disabled";
- 	};
- 
-+	dfll: dfll@0,70110000 {
-+		compatible = "nvidia,tegra124-dfll";
-+		reg = <0 0x70110000 0 0x100>, /* DFLL control */
-+		      <0 0x70110000 0 0x100>, /* I2C output control */
-+		      <0 0x70110100 0 0x100>, /* Integrated I2C controller */
-+		      <0 0x70110200 0 0x100>; /* Look-up table RAM */
-+		interrupts = <GIC_SPI 62 IRQ_TYPE_LEVEL_HIGH>;
-+		clocks = <&tegra_car TEGRA124_CLK_DFLL_SOC>,
-+			 <&tegra_car TEGRA124_CLK_DFLL_REF>,
-+			 <&tegra_car TEGRA124_CLK_I2C5>;
-+		clock-names = "soc", "ref", "i2c";
-+		#clock-cells = <0>;
-+		clock-output-names = "dfllCPU_out";
-+		nvidia,sample-rate = <12500>;
-+		nvidia,droop-ctrl = <0x00000f00>;
-+		nvidia,force-mode = <1>;
-+		nvidia,cf = <10>;
-+		nvidia,ci = <0>;
-+		nvidia,cg = <2>;
-+		status = "disabled";
+diff --git a/Documentation/devicetree/bindings/cpufreq/tegra124-cpufreq.txt b/Documentation/devicetree/bindings/cpufreq/tegra124-cpufreq.txt
+new file mode 100644
+index 0000000..031545a
+--- /dev/null
++++ b/Documentation/devicetree/bindings/cpufreq/tegra124-cpufreq.txt
+@@ -0,0 +1,42 @@
++Tegra124 CPU frequency scaling driver bindings
++----------------------------------------------
++
++Both required and optional properties listed below must be defined
++under node /cpus/cpu@0.
++
++Required properties:
++- clocks: Must contain an entry for each entry in clock-names.
++  See ../clocks/clock-bindings.txt for details.
++- clock-names: Must include the following entries:
++  - cpu_g: Clock mux for the fast CPU cluster.
++  - cpu_lp: Clock mux for the low-power CPU cluster.
++  - pll_x: Fast PLL clocksource.
++  - pll_p: Auxiliary PLL used during fast PLL rate changes.
++  - dfll: Fast DFLL clocksource that also automatically scales CPU voltage.
++
++Optional properties:
++- clock-latency: Specify the possible maximum transition latency for clock,
++  in unit of nanoseconds.
++
++Example:
++--------
++cpus {
++	#address-cells = <1>;
++	#size-cells = <0>;
++
++	cpu@0 {
++		device_type = "cpu";
++		compatible = "arm,cortex-a15";
++		reg = <0>;
++
++		clocks = <&tegra_car TEGRA124_CLK_CCLK_G>,
++			 <&tegra_car TEGRA124_CLK_CCLK_LP>,
++			 <&tegra_car TEGRA124_CLK_PLL_X>,
++			 <&tegra_car TEGRA124_CLK_PLL_P>,
++			 <&dfll>;
++		clock-names = "cpu_g", "cpu_lp", "pll_x", "pll_p", "dfll";
++		clock-latency = <300000>;
 +	};
 +
- 	ahub@0,70300000 {
- 		compatible = "nvidia,tegra124-ahub";
- 		reg = <0x0 0x70300000 0x0 0x200>,
++	<...>
++};
 -- 
 1.8.1.5
 
