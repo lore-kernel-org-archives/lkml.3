@@ -1,123 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933371AbaGURpg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 13:45:36 -0400
-Received: from mail-oa0-f43.google.com ([209.85.219.43]:53042 "EHLO
-	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932629AbaGURpe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 13:45:34 -0400
-MIME-Version: 1.0
-In-Reply-To: <53C92D70.6050604@atmel.com>
-References: <1405022394-8311-1-git-send-email-boris.brezillon@free-electrons.com>
- <1405022394-8311-2-git-send-email-boris.brezillon@free-electrons.com> <53C92D70.6050604@atmel.com>
-From: Florian Fainelli <f.fainelli@gmail.com>
-Date: Mon, 21 Jul 2014 10:44:51 -0700
-Message-ID: <CAGVrzcb3WHyMOW91EjDEsWfMWKb4M_cpauQtY7E+1W7zacR8VQ@mail.gmail.com>
-Subject: Re: [PATCH v3 1/2] ARM: at91/dt: describe rgmii ethernet phy
- connected to sama5d3xek boards
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Andrew Victor <linux@maxim.org.za>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        netdev <netdev@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	id S933383AbaGURqd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 13:46:33 -0400
+Received: from mga02.intel.com ([134.134.136.20]:4810 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932320AbaGURqc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jul 2014 13:46:32 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,702,1400050800"; 
+   d="scan'208";a="576562463"
+User-Agent: Microsoft-MacOutlook/14.4.3.140616
+Date: Mon, 21 Jul 2014 10:41:09 -0700
+Subject: Re: [RFC PATCH 0/5] futex: introduce an optimistic spinning futex
+From: Darren Hart <dvhart@linux.intel.com>
+To: Andi Kleen <andi@firstfloor.org>, Waiman Long <Waiman.Long@hp.com>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Davidlohr Bueso <davidlohr@hp.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        <linux-kernel@vger.kernel.org>, <linux-api@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, Jason Low <jason.low2@hp.com>,
+        Scott J Norton <scott.norton@hp.com>
+Message-ID: <CFF29E4A.9D44E%dvhart@linux.intel.com>
+Thread-Topic: [RFC PATCH 0/5] futex: introduce an optimistic spinning futex
+References: <1405956271-34339-1-git-send-email-Waiman.Long@hp.com>
+ <8761iq3bp3.fsf@tassilo.jf.intel.com>
+ <871tte3bjw.fsf@tassilo.jf.intel.com>
+ <CFF29A00.9D44A%dvhart@linux.intel.com>
+In-Reply-To: <CFF29A00.9D44A%dvhart@linux.intel.com>
+Mime-version: 1.0
+Content-type: text/plain;
+	charset="US-ASCII"
+Content-transfer-encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-07-18 7:21 GMT-07:00 Nicolas Ferre <nicolas.ferre@atmel.com>:
-> On 10/07/2014 21:59, Boris BREZILLON :
->> Add ethernet-phy nodes and specify phy interrupt (connected to pin PB25)
->> and board specific timing configs.
->>
->> Atmel has two different HW designs for its CPU modules: the first one
->> (produced by Embest) is connecting PHYAD[0-2] pins to pull up resistors
->> and the other one (produced by Ronetix) is connecting PHYAD0 to a pull up
->> resistor and PHYAD[1-2] to pull down resistors.
->> As a result, Ronetix design will have its PHY available at address 0x1 and
->> Embest design at 0x7.
->> By defining both phys we're letting the phy core detect the one actually
->> available on the MDIO bus.
->>
->> Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
->> ---
->>
->> Florian, I dropped your Reviewed-by tag because this patch has slightly
->> changed.
->
-> Hi Florian,
->
-> I would like to have your Ack on this one as we discussed this solution
-> with you.
+On 7/21/14, 10:20, "Darren Hart" <dvhart@linux.intel.com> wrote:
 
-Acked-by: Florian Fainelli <f.fainelli@gmail.com>
+>On 7/21/14, 9:45, "Andi Kleen" <andi@firstfloor.org> wrote:
+>
+>>Andi Kleen <andi@firstfloor.org> writes:
+>>
+>>> Waiman Long <Waiman.Long@hp.com> writes:
+>>>
+>>>> This patch series introduces two new futex command codes to support
+>>>> a new optimistic spinning futex for implementing an exclusive lock
+>>>> primitive that should perform better than the same primitive using
+>>>> the wait-wake futex in cases where the lock owner is actively working
+>>>> instead of waiting for I/O completion.
+>>>
+>>> How would you distinguish those two cases automatically?
+>>
+>>Also BTW traditionally the spinning was just done in user space.
+>>
+>>This would be always even more efficient, because it would
+>>even avoid the syscall entry path.
+>>
+>>Given the glibc adaptive mutexes are not very good, but I'm sure those
+>>could be improved.
+>
+>I presented on something along these lines a few years back, and various
+>people have asked for the sample code over the years. Andi is right,
+>doing 
+>this from user-space has the potential to be more efficient, the
+>challenge 
+>is getting access to privileged information, such as the state of the
+>mutex owner. You don't want to spin if the owner is sleeping. I did this
+>by adding a tidrunning call to the vdso. My somewhat hacked solution is
+>still available here:
+>
+>http://git.infradead.org/users/dvhart/linux.git/shortlog/refs/heads/futex/
+>t
+>idrunning/dev
+>
+>
+>I abandoned the spinning in the kernel thing due to the overhead of the
+>system call if I remember correctly. Also available here:
+>
+>http://git.infradead.org/users/dvhart/linux.git/shortlog/refs/heads/futex/
+>f
+>utex-lock-adaptive
+>
 
->
-> Thanks, bye,
->
->
->>  arch/arm/boot/dts/sama5d3xcm.dtsi | 30 ++++++++++++++++++++++++++++++
->>  1 file changed, 30 insertions(+)
->>
->> diff --git a/arch/arm/boot/dts/sama5d3xcm.dtsi b/arch/arm/boot/dts/sama5d3xcm.dtsi
->> index b0b1331..755369e 100644
->> --- a/arch/arm/boot/dts/sama5d3xcm.dtsi
->> +++ b/arch/arm/boot/dts/sama5d3xcm.dtsi
->> @@ -34,6 +34,36 @@
->>
->>                       macb0: ethernet@f0028000 {
->>                               phy-mode = "rgmii";
->> +                             #address-cells = <1>;
->> +                             #size-cells = <0>;
->> +
->> +                             ethernet-phy@1 {
->> +                                     reg = <0x1>;
->> +                                     interrupt-parent = <&pioB>;
->> +                                     interrupts = <25 IRQ_TYPE_EDGE_FALLING>;
->> +                                     txen-skew-ps = <800>;
->> +                                     txc-skew-ps = <3000>;
->> +                                     rxdv-skew-ps = <400>;
->> +                                     rxc-skew-ps = <3000>;
->> +                                     rxd0-skew-ps = <400>;
->> +                                     rxd1-skew-ps = <400>;
->> +                                     rxd2-skew-ps = <400>;
->> +                                     rxd3-skew-ps = <400>;
->> +                             };
->> +
->> +                             ethernet-phy@7 {
->> +                                     reg = <0x7>;
->> +                                     interrupt-parent = <&pioB>;
->> +                                     interrupts = <25 IRQ_TYPE_EDGE_FALLING>;
->> +                                     txen-skew-ps = <800>;
->> +                                     txc-skew-ps = <3000>;
->> +                                     rxdv-skew-ps = <400>;
->> +                                     rxc-skew-ps = <3000>;
->> +                                     rxd0-skew-ps = <400>;
->> +                                     rxd1-skew-ps = <400>;
->> +                                     rxd2-skew-ps = <400>;
->> +                                     rxd3-skew-ps = <400>;
->> +                             };
->>                       };
->>
->>                       pmc: pmc@fffffc00 {
->>
->
->
-> --
-> Nicolas Ferre
+And the associated Linux Plumbers 2010 presentation which I can't seem to
+find archived anywhere else:
+
+http://dvhart.com/darren/files/kernel-assisted-userspace-adaptive-mutexes.p
+df
 
 
+We observed some significant improvements under some very specific use
+cases, but a more thorough dive into performance impact in the other cases
+as well as security implications with the vdso is still wanting.
 
 -- 
-Florian
+Darren Hart					Open Source Technology Center
+darren.hart@intel.com				            Intel Corporation
+
+
+
