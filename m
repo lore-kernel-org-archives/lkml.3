@@ -1,241 +1,290 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752352AbaGUHgF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 03:36:05 -0400
-Received: from e06smtp16.uk.ibm.com ([195.75.94.112]:59779 "EHLO
-	e06smtp16.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751917AbaGUHgC (ORCPT
+	id S1752716AbaGUHgX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 03:36:23 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:60120 "EHLO
+	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751921AbaGUHgE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 03:36:02 -0400
-Date: Mon, 21 Jul 2014 09:35:48 +0200
-From: Martin Schwidefsky <schwidefsky@de.ibm.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-s390 <linux-s390@vger.kernel.org>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>
-Subject: [GIT PULL] s390 patches for the 3.16-rc7
-Message-ID: <20140721093548.71d39d0f@mschwide>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.13; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14072107-3548-0000-0000-000000A21183
+	Mon, 21 Jul 2014 03:36:04 -0400
+X-Original-SENDERIP: 10.177.222.156
+X-Original-MAILFROM: minchan@kernel.org
+Date: Mon, 21 Jul 2014 16:36:51 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Gioh Kim <gioh.kim@lge.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        =?utf-8?B?J+q5gOykgOyImCc=?= <iamjoonsoo.kim@lge.com>,
+        Laura Abbott <lauraa@codeaurora.org>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Johannes Weiner <hannes@cmpxchg.org>, Mel Gorman <mel@csn.ul.ie>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        =?utf-8?B?7J206rG07Zi4?= <gunho.lee@lge.com>,
+        "'Chanho Min'" <chanho.min@lge.com>, linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH] CMA/HOTPLUG: clear buffer-head lru before page migration
+Message-ID: <20140721073651.GA15912@bbox>
+References: <53C8C290.90503@lge.com>
+ <20140721025047.GA7707@bbox>
+ <53CCB02A.7070301@lge.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <53CCB02A.7070301@lge.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Mon, Jul 21, 2014 at 03:16:10PM +0900, Gioh Kim wrote:
+> 
+> 
+> 2014-07-21 오전 11:50, Minchan Kim 쓴 글:
+> >Hi Gioh,
+> >
+> >On Fri, Jul 18, 2014 at 03:45:36PM +0900, Gioh Kim wrote:
+> >>
+> >>Hi,
+> >>
+> >>For page migration of CMA, buffer-heads of lru should be dropped.
+> >>Please refer to https://lkml.org/lkml/2014/7/4/101 for the history.
+> >
+> >Just nit:
+> >Please write *problem* in description instead of URL link.
+> >
+> >>
+> >>I have two solution to drop bhs.
+> >>One is invalidating entire lru.
+> >
+> >You mean? All of percpu bh_lrus so if the system has N cpu,
+> >it invalidates N * 8?
+> 
+> Yes, every bh_lru of all cpus.
+> 
+> >
+> >>Another is searching the lru and dropping only one bh that Laura proposed
+> >>at https://lkml.org/lkml/2012/8/31/313.
+> >>
+> >>I'm not sure which has better performance.
+> >
+> >For whom? system or requestor of CMA?
+> 
+> For system performance.
+> 
+> >
+> >>So I did performance test on my cortex-a7 platform with Lmbench
+> >>that has "File & VM system latencies" test.
+> >>I am attaching the results.
+> >>The first line is of invalidating entire lru and the second is dropping selected bh.
+> >
+> >You mean you did Lmbench with background CMA allocation?
+> >Could you describe in detail?
+> 
+> I'm sorry not to mention the background.
+> I did the test without CMA allocation because I wanted to check how it affects system performance.
+> 
+> The first test, invalidating entire lru, is adding invalidate_bh_lrus() at alloc_contig_range().
+> This is not affecting system performance because alloc_contig_range() is not called
+> for usual file-system management.
+> The resulf of the first test is the *default system performance.*
+> 
+> The second test, dropping all bh in lru, is adding drop_buffers().
+> Every call of drop_buffers drops all bhs in lru of every cpu.
+> It can affect system performance. *But* it does not affect system performance,
+> because it drops only bh of migrated pages.
+> 
+> 
+> >
+> >>
+> >>File & VM system latencies in microseconds - smaller is better
+> >>-------------------------------------------------------------------------------
+> >>Host                 OS   0K File      10K File     Mmap    Prot   Page   100fd
+> >>                         Create Delete Create Delete Latency Fault  Fault  selct
+> >>--------- ------------- ------ ------ ------ ------ ------- ----- ------- -----
+> >>10.178.33 Linux 3.10.19   25.1   19.6   32.6   19.7  5098.0 0.666 3.45880 6.506
+> >>10.178.33 Linux 3.10.19   24.9   19.5   32.3   19.4  5059.0 0.563 3.46380 6.521
+> >>
+> >>
+> >>I tried several times but the result tells that they are the same under 1% gap
+> >>except Protection Fault.
+> >>But the latency of Protection Fault is very small and I think it has little effect.
+> >>
+> >>Therefore we can choose anything but I choose invalidating entire lru.
+> >
+> >Not sure we can conclude like that.
+> >
+> >A few weeks ago, I saw a patch which increases bh_lrus's size.
+> >https://lkml.org/lkml/2014/7/4/107
+> >IOW, some of workloads really affects by percpu bh_lrus so it would be
+> >better to be careful to drain, I think.
+> >
+> >You want to argue CMA allocation is rare so the cost is marginable.
+> >It might but some of usecase might call it frequently with small request
+> >(ie, 8K, 16K).
+> >
+> >Anyway, why cannot CMA have the cost without affecting other subsystem?
+> >I mean it's okay for CMA to consume more time to shoot out the bh
+> >instead of simple all bh_lru invalidation because big order allocation is
+> >kinds of slow thing in the VM and everybody already know that and even
+> >sometime get failed so it's okay to add more code that extremly slow path.
+> 
+> There are 2 reasons to invalidate entire bh_lru.
+> 
+> 1. I think CMA allocation is very rare so that invalidaing bh_lru affects the system little.
+> How do you think about it? My platform does not call CMA allocation often.
+> Is the CMA allocation or Memory-Hotplug called often?
 
-please pull from the 'for-linus' branch of
+It depends on usecase and you couldn't assume anyting because we couldn't
+ask every people in the world. "Please ask to us whenever you try to use CMA".
 
-	git://git.kernel.org/pub/scm/linux/kernel/git/s390/linux.git for-linus
+The key point is how the patch is maintainable.
+If it's too complicate to maintain, maybe we could go with simple solution
+but if it's not too complicate, we can go with more smart thing to consider
+other cases in future. Why not?
 
-to receive the following updates:
+Another point is that how user can detect where the regression is from.
+If we cannot notice the regression, it's not a good idea to go with simple
+version.
 
-A couple of last minute bug fixes for 3.16, including a fix for ptrace
-to close a hole which allowed a user space program to write to the
-kernel address space.
+> 
+> 2. Adding code in drop_buffers() can affect the system more that adding code in alloc_contig_range()
+> because the drop_buffers does not have a way to distinguish migrate type.
+> Even-though the lmbech results that it has almost the same performance.
+> But I am afraid that it can be changed.
+> As you said if bh_lru size can be changed it affects more than now.
+> SO I do not want to touch non-CMA related code.
 
-David Hildenbrand (1):
-      s390: require mvcos facility, not tod clock steering facility
+I'm not saying to add hook in drop_buffers.
+What I suggest is to handle failure by bh_lrus in migrate_pages
+because it's not a problem only in CMA.
+There is already retry logic in migrate_pages so I can think you could
+handle it.
 
-Ingo Tuchscherer (1):
-      s390/zcrypt: improve device probing for zcrypt adapter cards
+> 
+> 
+> >
+> >>The try_to_free_buffers() which is calling drop_buffers() is called by many filesystem code.
+> >>So I think inserting codes in drop_buffers() can affect the system.
+> >>And also we cannot distinguish migration type in drop_buffers().
+> >>
+> >>In alloc_contig_range() we can distinguish migration type and invalidate lru if it needs.
+> >>I think alloc_contig_range() is proper to deal with bh like following patch.
+> >>
+> >>Laura, can I have you name on Acked-by line?
+> >>Please let me represent my thanks.
+> >>
+> >>Thanks for any feedback.
+> >>
+> >>------------------------------- 8< ----------------------------------
+> >>
+> >>>From 33c894b1bab9bc26486716f0c62c452d3a04d35d Mon Sep 17 00:00:00 2001
+> >>From: Gioh Kim <gioh.kim@lge.com>
+> >>Date: Fri, 18 Jul 2014 13:40:01 +0900
+> >>Subject: [PATCH] CMA/HOTPLUG: clear buffer-head lru before page migration
+> >>
+> >>The bh must be free to migrate a page at which bh is mapped.
+> >>The reference count of bh is increased when it is installed
+> >>into lru so that the bh of lru must be freed before migrating the page.
+> >>
+> >>This frees every bh of lru. We could free only bh of migrating page.
+> >>But searching lru costs more than invalidating entire lru.
+> >>
+> >>Signed-off-by: Gioh Kim <gioh.kim@lge.com>
+> >>Acked-by: Laura Abbott <lauraa@codeaurora.org>
+> >>---
+> >>  mm/page_alloc.c |    3 +++
+> >>  1 file changed, 3 insertions(+)
+> >>
+> >>diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> >>index b99643d4..3b474e0 100644
+> >>--- a/mm/page_alloc.c
+> >>+++ b/mm/page_alloc.c
+> >>@@ -6369,6 +6369,9 @@ int alloc_contig_range(unsigned long start, unsigned long end,
+> >>         if (ret)
+> >>                 return ret;
+> >>
+> >>+       if (migratetype == MIGRATE_CMA || migratetype == MIGRATE_MOVABLE)
+> >>+               invalidate_bh_lrus();
+> >>+
+> >
+> >Q1. It's a only CMA problem? Memory-Hotplug is not a problem? Or other places?
+> >
+> >I mean it would be better to handle in generic way.
+> 
+> Only CMA and Memory-Hotplug needs it.
 
-Martin Schwidefsky (3):
-      s390/3270: correct size detection with the read-partition command
-      s390/ptrace: fix PSW mask check
-      s390: fix restore of invalid floating-point-control
+Memory-hotplug uses alloc_contig_range?
+You are adding the logic in alloc_contig_range and it is used for
+hugetlb and cma.
 
-Yijing Wang (1):
-      s390/MSI: Use standard mask and unmask funtions
+> And I think invalidate_bh_lrus() is general.
 
- arch/s390/include/asm/switch_to.h |    4 +--
- arch/s390/kernel/head.S           |    6 ++---
- arch/s390/kernel/ptrace.c         |   12 +++++++--
- arch/s390/pci/pci.c               |   49 +++++--------------------------------
- drivers/s390/char/raw3270.c       |    1 -
- drivers/s390/crypto/ap_bus.c      |    9 +++++--
- 6 files changed, 28 insertions(+), 53 deletions(-)
+It couldn't handle memory-hotplug.
 
-diff --git a/arch/s390/include/asm/switch_to.h b/arch/s390/include/asm/switch_to.h
-index df38c70..18ea9e3 100644
---- a/arch/s390/include/asm/switch_to.h
-+++ b/arch/s390/include/asm/switch_to.h
-@@ -51,8 +51,8 @@ static inline int restore_fp_ctl(u32 *fpc)
- 		return 0;
- 
- 	asm volatile(
--		"0:	lfpc    %1\n"
--		"	la	%0,0\n"
-+		"	lfpc    %1\n"
-+		"0:	la	%0,0\n"
- 		"1:\n"
- 		EX_TABLE(0b,1b)
- 		: "=d" (rc) : "Q" (*fpc), "0" (-EINVAL));
-diff --git a/arch/s390/kernel/head.S b/arch/s390/kernel/head.S
-index 7ba7d67..e88d35d 100644
---- a/arch/s390/kernel/head.S
-+++ b/arch/s390/kernel/head.S
-@@ -437,11 +437,11 @@ ENTRY(startup_kdump)
- 
- #if defined(CONFIG_64BIT)
- #if defined(CONFIG_MARCH_ZEC12)
--	.long 3, 0xc100efea, 0xf46ce800, 0x00400000
-+	.long 3, 0xc100eff2, 0xf46ce800, 0x00400000
- #elif defined(CONFIG_MARCH_Z196)
--	.long 2, 0xc100efea, 0xf46c0000
-+	.long 2, 0xc100eff2, 0xf46c0000
- #elif defined(CONFIG_MARCH_Z10)
--	.long 2, 0xc100efea, 0xf0680000
-+	.long 2, 0xc100eff2, 0xf0680000
- #elif defined(CONFIG_MARCH_Z9_109)
- 	.long 1, 0xc100efc2
- #elif defined(CONFIG_MARCH_Z990)
-diff --git a/arch/s390/kernel/ptrace.c b/arch/s390/kernel/ptrace.c
-index 2d716734..5dc7ad9 100644
---- a/arch/s390/kernel/ptrace.c
-+++ b/arch/s390/kernel/ptrace.c
-@@ -334,9 +334,14 @@ static int __poke_user(struct task_struct *child, addr_t addr, addr_t data)
- 			unsigned long mask = PSW_MASK_USER;
- 
- 			mask |= is_ri_task(child) ? PSW_MASK_RI : 0;
--			if ((data & ~mask) != PSW_USER_BITS)
-+			if ((data ^ PSW_USER_BITS) & ~mask)
-+				/* Invalid psw mask. */
-+				return -EINVAL;
-+			if ((data & PSW_MASK_ASC) == PSW_ASC_HOME)
-+				/* Invalid address-space-control bits */
- 				return -EINVAL;
- 			if ((data & PSW_MASK_EA) && !(data & PSW_MASK_BA))
-+				/* Invalid addressing mode bits */
- 				return -EINVAL;
- 		}
- 		*(addr_t *)((addr_t) &task_pt_regs(child)->psw + addr) = data;
-@@ -672,9 +677,12 @@ static int __poke_user_compat(struct task_struct *child,
- 
- 			mask |= is_ri_task(child) ? PSW32_MASK_RI : 0;
- 			/* Build a 64 bit psw mask from 31 bit mask. */
--			if ((tmp & ~mask) != PSW32_USER_BITS)
-+			if ((tmp ^ PSW32_USER_BITS) & ~mask)
- 				/* Invalid psw mask. */
- 				return -EINVAL;
-+			if ((data & PSW32_MASK_ASC) == PSW32_ASC_HOME)
-+				/* Invalid address-space-control bits */
-+				return -EINVAL;
- 			regs->psw.mask = (regs->psw.mask & ~PSW_MASK_USER) |
- 				(regs->psw.mask & PSW_MASK_BA) |
- 				(__u64)(tmp & mask) << 32;
-diff --git a/arch/s390/pci/pci.c b/arch/s390/pci/pci.c
-index 9ddc51e..30de427 100644
---- a/arch/s390/pci/pci.c
-+++ b/arch/s390/pci/pci.c
-@@ -48,13 +48,10 @@
- static LIST_HEAD(zpci_list);
- static DEFINE_SPINLOCK(zpci_list_lock);
- 
--static void zpci_enable_irq(struct irq_data *data);
--static void zpci_disable_irq(struct irq_data *data);
--
- static struct irq_chip zpci_irq_chip = {
- 	.name = "zPCI",
--	.irq_unmask = zpci_enable_irq,
--	.irq_mask = zpci_disable_irq,
-+	.irq_unmask = unmask_msi_irq,
-+	.irq_mask = mask_msi_irq,
- };
- 
- static DECLARE_BITMAP(zpci_domain, ZPCI_NR_DEVICES);
-@@ -244,43 +241,6 @@ static int zpci_cfg_store(struct zpci_dev *zdev, int offset, u32 val, u8 len)
- 	return rc;
- }
- 
--static int zpci_msi_set_mask_bits(struct msi_desc *msi, u32 mask, u32 flag)
--{
--	int offset, pos;
--	u32 mask_bits;
--
--	if (msi->msi_attrib.is_msix) {
--		offset = msi->msi_attrib.entry_nr * PCI_MSIX_ENTRY_SIZE +
--			PCI_MSIX_ENTRY_VECTOR_CTRL;
--		msi->masked = readl(msi->mask_base + offset);
--		writel(flag, msi->mask_base + offset);
--	} else if (msi->msi_attrib.maskbit) {
--		pos = (long) msi->mask_base;
--		pci_read_config_dword(msi->dev, pos, &mask_bits);
--		mask_bits &= ~(mask);
--		mask_bits |= flag & mask;
--		pci_write_config_dword(msi->dev, pos, mask_bits);
--	} else
--		return 0;
--
--	msi->msi_attrib.maskbit = !!flag;
--	return 1;
--}
--
--static void zpci_enable_irq(struct irq_data *data)
--{
--	struct msi_desc *msi = irq_get_msi_desc(data->irq);
--
--	zpci_msi_set_mask_bits(msi, 1, 0);
--}
--
--static void zpci_disable_irq(struct irq_data *data)
--{
--	struct msi_desc *msi = irq_get_msi_desc(data->irq);
--
--	zpci_msi_set_mask_bits(msi, 1, 1);
--}
--
- void pcibios_fixup_bus(struct pci_bus *bus)
- {
- }
-@@ -487,7 +447,10 @@ void arch_teardown_msi_irqs(struct pci_dev *pdev)
- 
- 	/* Release MSI interrupts */
- 	list_for_each_entry(msi, &pdev->msi_list, list) {
--		zpci_msi_set_mask_bits(msi, 1, 1);
-+		if (msi->msi_attrib.is_msix)
-+			default_msix_mask_irq(msi, 1);
-+		else
-+			default_msi_mask_irq(msi, 1, 1);
- 		irq_set_msi_desc(msi->irq, NULL);
- 		irq_free_desc(msi->irq);
- 		msi->msg.address_lo = 0;
-diff --git a/drivers/s390/char/raw3270.c b/drivers/s390/char/raw3270.c
-index 15b3459..220acb4 100644
---- a/drivers/s390/char/raw3270.c
-+++ b/drivers/s390/char/raw3270.c
-@@ -633,7 +633,6 @@ raw3270_reset_device_cb(struct raw3270_request *rq, void *data)
- 	} else
- 		raw3270_writesf_readpart(rp);
- 	memset(&rp->init_reset, 0, sizeof(rp->init_reset));
--	memset(&rp->init_data, 0, sizeof(rp->init_data));
- }
- 
- static int
-diff --git a/drivers/s390/crypto/ap_bus.c b/drivers/s390/crypto/ap_bus.c
-index 69ef4f8..4038437 100644
---- a/drivers/s390/crypto/ap_bus.c
-+++ b/drivers/s390/crypto/ap_bus.c
-@@ -901,10 +901,15 @@ static int ap_device_probe(struct device *dev)
- 	int rc;
- 
- 	ap_dev->drv = ap_drv;
-+
-+	spin_lock_bh(&ap_device_list_lock);
-+	list_add(&ap_dev->list, &ap_device_list);
-+	spin_unlock_bh(&ap_device_list_lock);
-+
- 	rc = ap_drv->probe ? ap_drv->probe(ap_dev) : -ENODEV;
--	if (!rc) {
-+	if (rc) {
- 		spin_lock_bh(&ap_device_list_lock);
--		list_add(&ap_dev->list, &ap_device_list);
-+		list_del_init(&ap_dev->list);
- 		spin_unlock_bh(&ap_device_list_lock);
- 	}
- 	return rc;
+> 
+> >
+> >Q2. Why do you call it right before calling __alloc_contig_migrate_range?
+> >
+> >Some of pages will go bh_lrus by __alloc_contig_migrate_ranges.
+> >In that case, it is useless without caller's retry logic.
+> >Even you do it from caller's retrial logic, it's not a good idea because
+> >you makes new binding alloc_contig_range and uppder layer.
+> >
+> >So, IMHO, it would be better to handle it in migrate_pages.
+> >Maybe we could define new API try_to_drop_buffers which calls
+> >try_to_free_buffers and then only if the function fails due to
+> >percpu lru count, we could drain only the bh in percpu lru list instead of
+> >all bh draining. And places in migration path should use it rather than
+> >try_to_relese_page.
+> >
+> >But the problem from this approach invents new API which should be
+> >maintained so not sure Andrew think it's worth.
+> >Maybe we should see the code and diffstat.
+> 
+> I also consider to making new function, drop_bh_of_migrate_page in migrate_page(), just before unmap_and_move().
+> The migrate_page() has an argument reason that distinguish migrate-type, MR_CMA or MR_MEMORY_HOTPLUG or others.
 
+Yes, that's what I suggested. If you see -EAGIN, maybe you could do it.
+Even, we could enhance it with extending target bh invalidation instead of
+all bhs invalidation so you could make two patches.
+
+1. use invalidate_bh_lrus in migrate pages
+2. invalidate only failed bh intead of all CPU percpu bh_blrus flushing.
+
+So, if guys hate 2 which is rather overdesigned, we could drop 2 but 1 is
+mergable still.
+
+> 
+> But I DO NOT WATN TO touch non-CMA related code.
+> Current CMA and Memory-Hotplug code is not mature so that I am not sure it is ok to touch non-CMA related code for CMA/MemoryHotplug.
+> 
+> My point is:
+> 1. CMA/Memory-hotplug is rare and invalidating bh-lru is also rare.
+> 2. Only change CMA/Memory-hotplig related code.
+> 
+> >
+> >Overenginnering?
+> >
+> >>         ret = __alloc_contig_migrate_range(&cc, start, end);
+> >>         if (ret)
+> >>                 goto done;
+> >>--
+> >>1.7.9.5
+> >>
+> >>--
+> >>To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> >>the body to majordomo@kvack.org.  For more info on Linux MM,
+> >>see: http://www.linux-mm.org/ .
+> >>Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> >
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+
+-- 
+Kind regards,
+Minchan Kim
