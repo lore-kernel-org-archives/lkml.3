@@ -1,46 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755099AbaGUMbY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 08:31:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7391 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754579AbaGUMbW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 08:31:22 -0400
-Message-ID: <53CD080A.1000400@redhat.com>
-Date: Mon, 21 Jul 2014 14:31:06 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S932180AbaGUMbd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 08:31:33 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:20732 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932096AbaGUMbb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jul 2014 08:31:31 -0400
+Date: Mon, 21 Jul 2014 13:30:56 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: "linux-watchdog@vger.kernel.org" <linux-watchdog@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Wim Van Sebroeck <wim@iguana.be>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Will Deacon <Will.Deacon@arm.com>, Arnd Bergmann <arnd@arndb.de>,
+        Heiko Stuebner <heiko@sntech.de>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jonas Jensen <jonas.jensen@gmail.com>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Tomasz Figa <t.figa@samsung.com>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v5 0/7] kernel: Add support for restart handler call chain
+Message-ID: <20140721123056.GF12817@arm.com>
+References: <1405668856-13738-1-git-send-email-linux@roeck-us.net>
 MIME-Version: 1.0
-To: Nadav Amit <nadav.amit@gmail.com>, Nadav Amit <namit@cs.technion.ac.il>
-CC: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
-        gleb@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/7] KVM: x86: Additional rflags.rf fixes
-References: <1405942650-22589-1-git-send-email-namit@cs.technion.ac.il> <53CD056E.4050203@redhat.com> <53CD077A.1020409@gmail.com>
-In-Reply-To: <53CD077A.1020409@gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1405668856-13738-1-git-send-email-linux@roeck-us.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 21/07/2014 14:28, Nadav Amit ha scritto:
->>
+On Fri, Jul 18, 2014 at 08:34:09AM +0100, Guenter Roeck wrote:
+> Patch 1 of this series implements the restart handler function. Patches 2 and 3
+> implement calling the restart handler chain from arm and arm64 restart code.
 > 
-> Thanks for the quick response. I will address the issues you raised.
+> Patch 4 modifies the restart-poweroff driver to no longer call arm_pm_restart
+> directly but machine_restart. This is done to avoid calling arm_pm_restart
+> from more than one place. The change makes the driver architecture independent,
+> so it would be possible to drop the arm dependency from its Kconfig entry.
 > 
-> Please review and apply as well "[PATCH] KVM: x86: emulator injects #DB
-> when RFLAGS.RF is set" which was submitted before. (
-> http://www.spinics.net/lists/kvm/msg105858.html ).
-> as well.
+> Patch 5 and 6 convert existing restart handlers in the watchdog subsystem
+> to use the restart handler. Patch 7 unexports arm_pm_restart to ensure
+> that no one gets the idea to implement a restart handler as module.
 
-That's the penultimate patch I applied:
+For the current patches:
 
->>        KVM: x86: Clearing rflags.rf upon skipped emulated instruction
->>        KVM: x86: popf emulation should not change RF
->>        KVM: x86: Clear rflags.rf on emulated instructions
->>        KVM: x86: Cleanup of rflags.rf cleaning
->>        KVM: x86: emulator injects #DB when RFLAGS.RF is set
->>        KVM: x86: Defining missing x86 vectors 
+Acked-by: Catalin Marinas <catalin.marinas@arm.com>
 
-Paolo
+Do you plan to convert more of the power/drivers/reset/ code?
+
+BTW, is it worth doing something similar for pm_power_off (there is
+generic code calling it directly, so slightly more complicated than
+pm_restart)?
