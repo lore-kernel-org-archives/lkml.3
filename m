@@ -1,49 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755042AbaGUMZa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 08:25:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10092 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754853AbaGUMZ1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 08:25:27 -0400
-Message-ID: <53CD06AC.1000408@redhat.com>
-Date: Mon, 21 Jul 2014 14:25:16 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1754991AbaGUM2t (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 08:28:49 -0400
+Received: from mail-we0-f178.google.com ([74.125.82.178]:42308 "EHLO
+	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753793AbaGUM2s (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jul 2014 08:28:48 -0400
+Message-ID: <53CD077A.1020409@gmail.com>
+Date: Mon, 21 Jul 2014 15:28:42 +0300
+From: Nadav Amit <nadav.amit@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: Nadav Amit <namit@cs.technion.ac.il>
+To: Paolo Bonzini <pbonzini@redhat.com>, Nadav Amit <namit@cs.technion.ac.il>
 CC: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
         gleb@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH kvm-unit-tests 0/3] x86: Test rflags.rf clearing/setting
-References: <1405942650-22589-1-git-send-email-namit@cs.technion.ac.il> <1405942794-22681-1-git-send-email-namit@cs.technion.ac.il>
-In-Reply-To: <1405942794-22681-1-git-send-email-namit@cs.technion.ac.il>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-15
+Subject: Re: [PATCH 0/7] KVM: x86: Additional rflags.rf fixes
+References: <1405942650-22589-1-git-send-email-namit@cs.technion.ac.il> <53CD056E.4050203@redhat.com>
+In-Reply-To: <53CD056E.4050203@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 21/07/2014 13:39, Nadav Amit ha scritto:
-> This series of patches introduces checks for rflags.rf and whether it is
-> cleared after emulation, and set correctly.  The last (third) patch fails even
-> with recent fixes, since there is no easy way for the hypervisor to determine
-> whether any iteration of rep-string was executed before. RFLAGS.RF should be
-> cleared before the first iteration, and set otherwise.
-> 
-> Nadav Amit (3):
->   x86: Check rflags.rf is cleared after emulation
->   x86: Test rflags.rf is set upon faults
->   x86: Check RFLAGS.RF on interrupt during REP-str
-> 
->  lib/x86/desc.c | 14 +++++++++++---
->  lib/x86/desc.h |  1 +
->  x86/eventinj.c | 16 ++++++++++++++++
->  x86/idt_test.c | 13 +++++++++----
->  x86/realmode.c |  3 ++-
->  5 files changed, 39 insertions(+), 8 deletions(-)
-> 
+On 7/21/14, 3:19 PM, Paolo Bonzini wrote:
+> Il 21/07/2014 13:37, Nadav Amit ha scritto:
+>> RFLAGS.RF is not handled well by kvm, in both the x86 emulator and vmx code.
+>> This flag should be cleared after every instruction emulation (other than
+>> IRETD/IRETQ).  It should be set in various conditions as described in Intel SDM
+>> 17.3.1.1.  This series of patches addresses the clearing of RF on emulated
+>> instructions, the setting the RF upon fault injection.  It does not handle the
+>> case of traps and interrupts injection during REP-string, since there is
+>> no easy indication whether the first iteration of a rep-string occurred.
+>> The value of RF depends on whether the first iteration took place.
+>>
+>> Thanks for reviewing the patches.
+>>
+>> Nadav Amit (7):
+>>    KVM: x86: Defining missing x86 vectors
+>>    KVM: x86: Function for determining exception type
+>>    KVM: x86: Clearing rflags.rf upon skipped emulated instruction
+>>    KVM: vmx: set rflags.rf during fault injection
+>>    KVM: x86: popf emulation should not change RF
+>>    KVM: x86: Clear rflags.rf on emulated instructions
+>>    KVM: x86: Cleanup of rflags.rf cleaning
+>>
+>>   arch/x86/include/uapi/asm/kvm.h |  3 +++
+>>   arch/x86/kvm/emulate.c          | 13 ++++++++-----
+>>   arch/x86/kvm/vmx.c              | 11 ++++++++++-
+>>   arch/x86/kvm/x86.c              | 37 +++++++++++++++++++++++++++++++++++++
+>>   arch/x86/kvm/x86.h              |  9 +++++++++
+>>   5 files changed, 67 insertions(+), 6 deletions(-)
+>>
+>
+> I'm not applying patches 2 and 4 yet.  I have applied the others:
+>
+>        KVM: x86: Clearing rflags.rf upon skipped emulated instruction
+>        KVM: x86: popf emulation should not change RF
+>        KVM: x86: Clear rflags.rf on emulated instructions
+>        KVM: x86: Cleanup of rflags.rf cleaning
+>        KVM: x86: emulator injects #DB when RFLAGS.RF is set
+>        KVM: x86: Defining missing x86 vectors
+>
+> since the remaining two are independent.
+>
 
-I applied patch 1.
+Thanks for the quick response. I will address the issues you raised.
 
-Paolo
+Please review and apply as well "[PATCH] KVM: x86: emulator injects #DB 
+when RFLAGS.RF is set" which was submitted before. ( 
+http://www.spinics.net/lists/kvm/msg105858.html ).
+as well.
+
+Thanks again,
+Nadav
+
