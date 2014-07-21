@@ -1,111 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933260AbaGURur (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 13:50:47 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:39385 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932647AbaGURuq (ORCPT
+	id S933351AbaGURvP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 13:51:15 -0400
+Received: from mailout3.w2.samsung.com ([211.189.100.13]:55221 "EHLO
+	usmailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932647AbaGURvN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 13:50:46 -0400
-Date: Mon, 21 Jul 2014 10:50:39 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Subject: Re: [PATCH 09/10] nohz: Switch nohz full timekeeper to dynticks idle
- on top of sysidle detection
-Message-ID: <20140721175039.GD8690@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1405730661-9355-1-git-send-email-fweisbec@gmail.com>
- <1405730661-9355-10-git-send-email-fweisbec@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1405730661-9355-10-git-send-email-fweisbec@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14072117-9332-0000-0000-00000173EEB3
+	Mon, 21 Jul 2014 13:51:13 -0400
+X-AuditID: cbfec373-b7fd56d0000060dc-0b-53cd530ecf03
+Date: Mon, 21 Jul 2014 14:51:05 -0300
+From: Mauro Carvalho Chehab <m.chehab@samsung.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linux Media Mailing List <linux-media@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL for 3.16-rc7] media fixes for master
+Message-id: <20140721145105.416d098b.m.chehab@samsung.com>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.22; x86_64-redhat-linux-gnu)
+MIME-version: 1.0
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupkluLIzCtJLcpLzFFi42I5/e9wsC5f8Nlgg+d3RCzmrF/DZnF51xw2
+	i54NW1ktHvW9ZXdg8Tgx4zeLx+dNcgFMUVw2Kak5mWWpRfp2CVwZ93ceZCmYKF6x5vtGtgbG
+	BUJdjJwcEgImEu/OX2SDsMUkLtxbD2RzcQgJLGGU2PvvBCuE08gkMfHaOUaQKhYBVYltdxqZ
+	QWw2ASOJV40trCC2CJD9+cUVsAZmgcWMEh+fr2cHSQgLmEucvfgObAWvgJXEouZnjBDrnCV+
+	zpzECBEXlPgx+R4LiM0soCWxeVsTK4QtL7F5zVvmCYx8s5CUzUJSNgtJ2QJG5lWMoqXFyQXF
+	Sem5RnrFibnFpXnpesn5uZsYIcFXvIPxxQarQ4wCHIxKPLwruM4EC7EmlhVX5h5ilOBgVhLh
+	bfQ7GyzEm5JYWZValB9fVJqTWnyIkYmDU6qBccXcbc2924Pfl91ceGNylJcLa3/ipoi/FTFJ
+	amoMVXaKxyeXbe+vXWmfM9vsAcPn+/Wv8i0vLrlxT+bI9pI1v69/qzQ5dKPD+N6kacHn+qy3
+	WafP9J4R7ej55fNTt6nT18xlXtQvsoG14fHLZLs4lhksx0SYns490Tw9LIp9s5Pg/8nfg/48
+	Wa3EUpyRaKjFXFScCADqusQYHAIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 19, 2014 at 02:44:20AM +0200, Frederic Weisbecker wrote:
-> In full dynticks, the CPU 0 carries the timekeeping duty on behalf
-> of all other CPUs in the system. This way full dynticks are left
-> undisturbed on this regard.
-> 
-> Of course this prevents CPU 0 from entering in dynticks idle mode
-> because any CPU may need uptodate timekeeping at any time.
-> 
-> Theoretically though, we could put CPU 0 in dynticks idle mode once we
-> are sure that all other CPUs are dynticks idle as well. Then when a
-> CPU wakes up and finds the timekeeper idle, it would send an IPI to
-> wake it up on its duty.
-> 
-> Such a machine state needs to take care of all the races in the way, make
-> sure that CPU 0 is neither stuck accidentally to sleep for ever, nor
-> stuck in periodic mode when it could sleep. Also given the amount of
-> shared data this involves and their access frequency, this must be built
-> on top of lockless low-overhead state machine.
-> 
-> This is what sysidle provides. The feature is ready for a while, we
-> were just waiting for the nohz susbsystem to support it. And we just
-> reached that state.
-> 
-> So lets defer the last call for CPU 0 to enter in dynticks idle to when
-> we find a full system idle state. And lets wake it up when its duty is
-> needed.
-> 
-> Cc: Ingo Molnar <mingo@kernel.org>
-> Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> Cc: Peter Zijlstra <peterz@infradead.org>
-> Cc: Steven Rostedt <rostedt@goodmis.org>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Viresh Kumar <viresh.kumar@linaro.org>
-> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Linus,
 
-OK, it looks like this calls rcu_sys_is_idle() only if there actually
-are some nohz_full= CPUs, which is good.  I therefore only need
-tick_nohz_full_enabled() checks on the internal sysidle machinery, and
-even then these checks only have effect on performance, not on semantics.
-Which is also good.  ;-)
+Please pull from:
+  git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-media v4l_for_linus
 
-Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+For a series of driver fixes:
+	- Fix DVB-S tuning with tda1071;
+	- Fix tuner probe on af9035 when the device has a bad eeprom;
+	- Some fixes for the new si2168/2157 drivers;
+	- one Kconfig build fix (for omap4iss);
+	- Fixes at vpif error path;
+	- Don't lock saa7134 ioctl at driver's base core level, as it now
+	  uses V4L2 and VB2 locking schema;
+	- Fix audio at hdpvr driver;
+	- Fix the aspect ratio at the digital timings table;
+	- One new USB ID (at gspca_pac7302): Genius i-Look 317 webcam
 
-> ---
->  kernel/time/tick-sched.c | 6 ++++--
->  1 file changed, 4 insertions(+), 2 deletions(-)
-> 
-> diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-> index bcba79d..845aaff 100644
-> --- a/kernel/time/tick-sched.c
-> +++ b/kernel/time/tick-sched.c
-> @@ -547,8 +547,10 @@ static u64 timekeeping_deferment(struct tick_sched *ts, int cpu)
-> 
->  	if (tick_do_timer_cpu == cpu) {
->  		time_delta = timekeeping_max_deferment();
-> -		tick_do_timer_cpu = TICK_DO_TIMER_NONE;
->  		ts->do_timer_last = 1;
-> +		/* In full dynticks mode, CPU 0 always keeps the duty */
-> +		if (!tick_nohz_full_enabled())
-> +			tick_do_timer_cpu = TICK_DO_TIMER_NONE;
->  	} else if (ts->do_timer_last) {
->  		if (tick_do_timer_cpu == TICK_DO_TIMER_NONE)
->  			time_delta = timekeeping_max_deferment();
-> @@ -745,7 +747,7 @@ static bool can_stop_idle_tick(int cpu, struct tick_sched *ts)
->  		 * if there are full dynticks CPUs around
->  		 */
->  		if (tick_do_timer_cpu == cpu)
-> -			return false;
-> +			return rcu_sys_is_idle();
->  	}
-> 
->  	return true;
-> -- 
-> 1.8.3.1
-> 
+Regards,
+Mauro
+
+The following changes since commit a2668e10d7246e782f7708dc47c00f035da23a81:
+
+  [media] au0828-dvb: restore its permission to 644 (2014-06-04 15:19:36 -0300)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-media v4l_for_linus
+
+for you to fetch changes up to 242841d3d71191348f98310e2d2001e1001d8630:
+
+  [media] gspca_pac7302: Add new usb-id for Genius i-Look 317 (2014-07-14 21:06:35 -0300)
+
+----------------------------------------------------------------
+Antti Palosaari (8):
+      [media] si2168: add one missing parenthesis
+      [media] si2157: add one missing parenthesis
+      [media] si2168: firmware download fix
+      [media] af9035: override tuner id when bad value set into eeprom
+      [media] tda10071: force modulation to QPSK on DVB-S
+      [media] tda10071: add missing DVB-S2/PSK-8 FEC AUTO
+      [media] tda10071: fix spec inversion reporting
+      [media] tda10071: fix returned symbol rate calculation
+
+Arnd Bergmann (1):
+      [media] staging: tighten omap4iss dependencies
+
+Dan Carpenter (1):
+      [media] davinci: vpif: missing unlocks on error
+
+Hans Verkuil (2):
+      [media] saa7134: use unlocked_ioctl instead of ioctl
+      [media] hdpvr: fix two audio bugs
+
+Hans de Goede (1):
+      [media] gspca_pac7302: Add new usb-id for Genius i-Look 317
+
+Rickard Strandqvist (1):
+      [media] media: v4l2-core: v4l2-dv-timings.c: Cleaning up code wrong value used in aspect ratio
+
+ drivers/media/dvb-frontends/si2168.c          | 16 +----------
+ drivers/media/dvb-frontends/si2168_priv.h     |  2 +-
+ drivers/media/dvb-frontends/tda10071.c        | 12 +++++---
+ drivers/media/dvb-frontends/tda10071_priv.h   |  1 +
+ drivers/media/pci/saa7134/saa7134-empress.c   |  2 +-
+ drivers/media/platform/davinci/vpif_capture.c |  1 +
+ drivers/media/platform/davinci/vpif_display.c |  1 +
+ drivers/media/tuners/si2157.c                 |  2 +-
+ drivers/media/usb/dvb-usb-v2/af9035.c         | 40 ++++++++++++++++++++++-----
+ drivers/media/usb/gspca/pac7302.c             |  1 +
+ drivers/media/usb/hdpvr/hdpvr-video.c         |  6 ++--
+ drivers/media/v4l2-core/v4l2-dv-timings.c     |  4 +--
+ drivers/staging/media/omap4iss/Kconfig        |  2 +-
+ 13 files changed, 55 insertions(+), 35 deletions(-)
 
