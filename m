@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753737AbaGUVGC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 17:06:02 -0400
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:48140 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753425AbaGUVF6 (ORCPT
+	id S1754000AbaGUVGN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 17:06:13 -0400
+Received: from mail-we0-f181.google.com ([74.125.82.181]:45799 "EHLO
+	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753903AbaGUVGI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 17:05:58 -0400
+	Mon, 21 Jul 2014 17:06:08 -0400
 From: Marek Belisko <marek@goldelico.com>
 To: bcousson@baylibre.com, tony@atomide.com
 Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
@@ -15,9 +15,9 @@ Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
         devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org, hns@goldelico.com,
         Marek Belisko <marek@goldelico.com>
-Subject: [PATCH 2/7] arm: dts: omap3-gta04: Fix magnetometer model
-Date: Mon, 21 Jul 2014 23:05:22 +0200
-Message-Id: <1405976727-15166-3-git-send-email-marek@goldelico.com>
+Subject: [PATCH 6/7] arm: dts: omap3-gta04: Add display alias
+Date: Mon, 21 Jul 2014 23:05:26 +0200
+Message-Id: <1405976727-15166-7-git-send-email-marek@goldelico.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1405976727-15166-1-git-send-email-marek@goldelico.com>
 References: <1405976727-15166-1-git-send-email-marek@goldelico.com>
@@ -27,21 +27,23 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Marek Belisko <marek@goldelico.com>
 ---
- arch/arm/boot/dts/omap3-gta04.dts | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/arm/boot/dts/omap3-gta04.dts | 4 ++++
+ 1 file changed, 4 insertions(+)
 
 diff --git a/arch/arm/boot/dts/omap3-gta04.dts b/arch/arm/boot/dts/omap3-gta04.dts
-index 7d7ddd7..6d1a8d8 100644
+index 370c08b..05fd4d2 100644
 --- a/arch/arm/boot/dts/omap3-gta04.dts
 +++ b/arch/arm/boot/dts/omap3-gta04.dts
-@@ -220,7 +220,7 @@
- 
- 	/* compass aka magnetometer */
- 	hmc5843@1e {
--		compatible = "honeywell,hmc5843";
-+		compatible = "honeywell,hmc5843l";
- 		reg = <0x1e>;
+@@ -26,6 +26,10 @@
+ 		reg = <0x80000000 0x20000000>; /* 512 MB */
  	};
+ 
++	aliases {
++		display0 = &lcd;
++	};
++
+ 	gpio-keys {
+ 		compatible = "gpio-keys";
  
 -- 
 1.9.1
