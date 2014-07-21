@@ -1,51 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753194AbaGUD6e (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jul 2014 23:58:34 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:53000 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753158AbaGUD6c (ORCPT
+	id S1752840AbaGUD5H (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jul 2014 23:57:07 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:25254 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752089AbaGUD46 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jul 2014 23:58:32 -0400
-Date: Sun, 20 Jul 2014 20:58:30 -0700 (PDT)
-Message-Id: <20140720.205830.595868255699983537.davem@davemloft.net>
-To: ethan.zhao@oracle.com
-Cc: manish.chopra@qlogic.com, sony.chacko@qlogic.com,
-        rajesh.borundia@qlogic.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, ethan.kernel@gmail.com
-Subject: Re: [PATCH V3] netxen: fix ethtool rx_dropped information in
- ethtool get_ethtool_stats()
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1405655009-18975-1-git-send-email-ethan.zhao@oracle.com>
-References: <1405655009-18975-1-git-send-email-ethan.zhao@oracle.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Sun, 20 Jul 2014 20:58:31 -0700 (PDT)
+	Sun, 20 Jul 2014 23:56:58 -0400
+From: Wang Nan <wangnan0@huawei.com>
+To: Ingo Molnar <mingo@redhat.com>, Yinghai Lu <yinghai@kernel.org>,
+        "Mel Gorman" <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Dave Hansen" <dave.hansen@intel.com>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+CC: <peifeiyue@huawei.com>, <linux-mm@kvack.org>, <x86@kernel.org>,
+        <linux-ia64@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
+        <linux-sh@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <wangnan0@huawei.com>
+Subject: [PATCH v2 6/7] memory-hotplug: sh: suitable memory should go to ZONE_MOVABLE
+Date: Mon, 21 Jul 2014 11:46:41 +0800
+Message-ID: <1405914402-66212-7-git-send-email-wangnan0@huawei.com>
+X-Mailer: git-send-email 1.8.4
+In-Reply-To: <1405914402-66212-1-git-send-email-wangnan0@huawei.com>
+References: <1405914402-66212-1-git-send-email-wangnan0@huawei.com>
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [10.107.197.247]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ethan Zhao <ethan.zhao@oracle.com>
-Date: Fri, 18 Jul 2014 11:43:29 +0800
+This patch introduces zone_for_memory() to arch_add_memory() on sh to
+ensure new, higher memory added into ZONE_MOVABLE if movable zone has
+already setup.
 
-> netxen driver has implemented netxen_nic_get_ethtool_stats() interface,
-> but it doesn't collect stats.rxdropped in driver, so we will get
-> different rx_dropped statistic information while using ifconfig and ethtool.
-> this patch fills stats.rxdropped field with data from net core
-> with dev_get_stats() just as ixgbe driver did for some of its stats.
-> 
-> Tested with last netxen 4.0.82
-> Compiled with stable 3.15.6
-> 
-> Signed-off-by: Ethan Zhao <ethan.zhao@oracle.com>
-> Tested-by: Sriharsha Yadagudde <sriharsha.devdas@oracle.com>
+Signed-off-by: Wang Nan <wangnan0@huawei.com>
+Cc: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+Cc: Dave Hansen <dave.hansen@intel.com>
+---
+ arch/sh/mm/init.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-ethtool stats are _NOT_ the place to duplicate normal netdev stats,
-PERIOD.
+diff --git a/arch/sh/mm/init.c b/arch/sh/mm/init.c
+index 2d089fe..2790b6a 100644
+--- a/arch/sh/mm/init.c
++++ b/arch/sh/mm/init.c
+@@ -495,8 +495,9 @@ int arch_add_memory(int nid, u64 start, u64 size)
+ 	pgdat = NODE_DATA(nid);
+ 
+ 	/* We only have ZONE_NORMAL, so this is easy.. */
+-	ret = __add_pages(nid, pgdat->node_zones + ZONE_NORMAL,
+-				start_pfn, nr_pages);
++	ret = __add_pages(nid, pgdat->node_zones +
++			zone_for_memory(nid, start, size, ZONE_NORMAL),
++			start_pfn, nr_pages);
+ 	if (unlikely(ret))
+ 		printk("%s: Failed, __add_pages() == %d\n", __func__, ret);
+ 
+-- 
+1.8.4
 
-The only exception is when you maintainer per-queue instaces of these
-stats, and want to export that information to the user.
-
-I'm not applying this, sorry.
