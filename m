@@ -1,69 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755188AbaGUMUd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 08:20:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32339 "EHLO mx1.redhat.com"
+	id S1755009AbaGUMWC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 08:22:02 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26726 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754938AbaGUMUc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 08:20:32 -0400
-Message-ID: <53CD056E.4050203@redhat.com>
-Date: Mon, 21 Jul 2014 14:19:58 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1753793AbaGUMWA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jul 2014 08:22:00 -0400
+Date: Mon, 21 Jul 2014 17:51:02 +0530
+From: Amit Shah <amit.shah@redhat.com>
+To: Jason Cooper <jason@lakedaemon.net>
+Cc: linux-kernel@vger.kernel.org,
+        Virtualization List <virtualization@lists.linux-foundation.org>,
+        Rusty Russell <rusty@rustcorp.com.au>, herbert@gondor.apana.org.au,
+        keescook@chromium.org, Amos Kong <akong@redhat.com>
+Subject: Re: [PATCH v2 3/4] virtio: rng: delay hwrng_register() till driver
+ is ready
+Message-ID: <20140721122102.GC12925@grmbl.mre>
+References: <cover.1405942162.git.amit.shah@redhat.com>
+ <91cb7c5b87cf2ba5ef1bacd55a7ee7bc827293a2.1405942162.git.amit.shah@redhat.com>
+ <20140721121116.GA18750@titan.lakedaemon.net>
 MIME-Version: 1.0
-To: Nadav Amit <namit@cs.technion.ac.il>
-CC: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
-        gleb@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/7] KVM: x86: Additional rflags.rf fixes
-References: <1405942650-22589-1-git-send-email-namit@cs.technion.ac.il>
-In-Reply-To: <1405942650-22589-1-git-send-email-namit@cs.technion.ac.il>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140721121116.GA18750@titan.lakedaemon.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 21/07/2014 13:37, Nadav Amit ha scritto:
-> RFLAGS.RF is not handled well by kvm, in both the x86 emulator and vmx code.
-> This flag should be cleared after every instruction emulation (other than
-> IRETD/IRETQ).  It should be set in various conditions as described in Intel SDM
-> 17.3.1.1.  This series of patches addresses the clearing of RF on emulated
-> instructions, the setting the RF upon fault injection.  It does not handle the
-> case of traps and interrupts injection during REP-string, since there is
-> no easy indication whether the first iteration of a rep-string occurred.
-> The value of RF depends on whether the first iteration took place.
+On (Mon) 21 Jul 2014 [08:11:16], Jason Cooper wrote:
+> On Mon, Jul 21, 2014 at 05:15:51PM +0530, Amit Shah wrote:
+> > Instead of calling hwrng_register() in the probe routing, call it in the
+> > scan routine.  This ensures that when hwrng_register() is successful,
+> > and it requests a few random bytes to seed the kernel's pool at init,
+> > we're ready to service that request.
+> > 
+> > This will also enable us to remove the workaround added previously to
+> > check whether probe was completed, and only then ask for data from the
+> > host.  The revert follows in the next commit.
+> > 
+> > There's a slight behaviour change here on unsuccessful hwrng_register().
+> > Previously, when hwrng_unregister() failed, the probe() routine would
+> > fail, and the vqs would be torn down, and driver would be marked not
+> > initialized.  Now, the vqs will remain initialized, driver would be
+> > marked initialized as well, but won't be available in the list of RNGs
+> > available to hwrng core.  To fix the failures, the procedure remains the
+> > same, i.e. unload and re-load the module, and hope things succeed the
+> > next time around.
 > 
-> Thanks for reviewing the patches.
+> I'm not too comfortable with this.  I'll try to take a closer look
+> tonight, but in the meantime...
 > 
-> Nadav Amit (7):
->   KVM: x86: Defining missing x86 vectors
->   KVM: x86: Function for determining exception type
->   KVM: x86: Clearing rflags.rf upon skipped emulated instruction
->   KVM: vmx: set rflags.rf during fault injection
->   KVM: x86: popf emulation should not change RF
->   KVM: x86: Clear rflags.rf on emulated instructions
->   KVM: x86: Cleanup of rflags.rf cleaning
+> > Signed-off-by: Amit Shah <amit.shah@redhat.com>
+> > ---
+> >  drivers/char/hw_random/virtio-rng.c | 25 +++++++++++++++----------
+> >  1 file changed, 15 insertions(+), 10 deletions(-)
+> > 
+> > diff --git a/drivers/char/hw_random/virtio-rng.c b/drivers/char/hw_random/virtio-rng.c
+> > index a156284..d9927eb 100644
+> > --- a/drivers/char/hw_random/virtio-rng.c
+> > +++ b/drivers/char/hw_random/virtio-rng.c
+> > @@ -35,6 +35,7 @@ struct virtrng_info {
+> >  	unsigned int data_avail;
+> >  	int index;
+> >  	bool busy;
+> > +	bool hwrng_register_done;
+> >  };
+> >  
+> >  static bool probe_done;
+> > @@ -136,15 +137,6 @@ static int probe_common(struct virtio_device *vdev)
+> >  		return err;
+> >  	}
+> >  
+> > -	err = hwrng_register(&vi->hwrng);
+> > -	if (err) {
+> > -		vdev->config->del_vqs(vdev);
+> > -		vi->vq = NULL;
+> > -		kfree(vi);
+> > -		ida_simple_remove(&rng_index_ida, index);
+> > -		return err;
+> > -	}
+> > -
 > 
->  arch/x86/include/uapi/asm/kvm.h |  3 +++
->  arch/x86/kvm/emulate.c          | 13 ++++++++-----
->  arch/x86/kvm/vmx.c              | 11 ++++++++++-
->  arch/x86/kvm/x86.c              | 37 +++++++++++++++++++++++++++++++++++++
->  arch/x86/kvm/x86.h              |  9 +++++++++
->  5 files changed, 67 insertions(+), 6 deletions(-)
+> This needs to stay.  register, and failure to do so, should occur in the
+> probe routine.
+
+Can you elaborate why?
+
+> >  	probe_done = true;
+> >  	return 0;
+> >  }
+> > @@ -152,9 +144,11 @@ static int probe_common(struct virtio_device *vdev)
+> >  static void remove_common(struct virtio_device *vdev)
+> >  {
+> >  	struct virtrng_info *vi = vdev->priv;
+> > +
+> >  	vdev->config->reset(vdev);
+> >  	vi->busy = false;
+> > -	hwrng_unregister(&vi->hwrng);
+> > +	if (vi->hwrng_register_done)
+> > +		hwrng_unregister(&vi->hwrng);
+> >  	vdev->config->del_vqs(vdev);
+> >  	ida_simple_remove(&rng_index_ida, vi->index);
+> >  	kfree(vi);
+> > @@ -170,6 +164,16 @@ static void virtrng_remove(struct virtio_device *vdev)
+> >  	remove_common(vdev);
+> >  }
+> >  
+> > +static void virtrng_scan(struct virtio_device *vdev)
+> > +{
+> > +	struct virtrng_info *vi = vdev->priv;
+> > +	int err;
+> > +
+> > +	err = hwrng_register(&vi->hwrng);
+> > +	if (!err)
+> > +		vi->hwrng_register_done = true;
 > 
+> Instead, perhaps we should just feed the entropy pool from here?  We
+> would still need to prevent the core from doing so.  Perhaps back to the
+> flag idea?
 
-I'm not applying patches 2 and 4 yet.  I have applied the others:
+No way hwrng knows the difference between probe and scan for
+virtio-rng, so it's back to the delayed workqueue idea, if this isn't
+usable..
 
-      KVM: x86: Clearing rflags.rf upon skipped emulated instruction
-      KVM: x86: popf emulation should not change RF
-      KVM: x86: Clear rflags.rf on emulated instructions
-      KVM: x86: Cleanup of rflags.rf cleaning
-      KVM: x86: emulator injects #DB when RFLAGS.RF is set
-      KVM: x86: Defining missing x86 vectors
+But I need to understand why this isn't workable.
 
-since the remaining two are independent.
+Thanks,
 
-Thanks!
-
-Paolo
+		Amit
