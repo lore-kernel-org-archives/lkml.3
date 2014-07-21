@@ -1,53 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753747AbaGUISF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 04:18:05 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:65276 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753715AbaGUISA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 04:18:00 -0400
-Message-ID: <53CCCCAD.7080906@nod.at>
-Date: Mon, 21 Jul 2014 10:17:49 +0200
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1753824AbaGUISj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 04:18:39 -0400
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:50165 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753420AbaGUISe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jul 2014 04:18:34 -0400
+Date: Mon, 21 Jul 2014 13:48:28 +0530
+From: Himangi Saraogi <himangi774@gmail.com>
+To: Jonathan Cameron <jic23@kernel.org>,
+        Sachin Kamat <sachin.kamat@linaro.org>, linux-kernel@vger.kernel.org
+Cc: julia.lawall@lip6.fr
+Subject: [PATCH] staging: iio: ad5930: Use devm_iio_device_register
+Message-ID: <20140721081827.GA3080@himangi-Dell>
 MIME-Version: 1.0
-To: "Yue Zhang (OSTC DEV)" <yuezha@microsoft.com>
-CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "driverdev-devel@linuxdriverproject.org" 
-	<driverdev-devel@linuxdriverproject.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        "olaf@aepfle.de" <olaf@aepfle.de>,
-        "jasowang@redhat.com" <jasowang@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Haiyang Zhang <haiyangz@microsoft.com>,
-        KY Srinivasan <kys@microsoft.com>, Thomas Shao <huishao@microsoft.com>,
-        Dexuan Cui <decui@microsoft.com>
-Subject: Re: [PATCH] Hyperv: Trigger DHCP renew after host hibernation
-References: <1405680903-28176-1-git-send-email-yuezha@microsoft.com> <CAFLxGvxQU_z+mChHsNSu9VZEdXrU+RU75k6H18uKbdAj2TKD5g@mail.gmail.com> <DC7803B42427924284F2D5252E076A3B44769DCA@SINEX14MBXC416.southpacific.corp.microsoft.com> <53CCB944.8090709@nod.at> <DC7803B42427924284F2D5252E076A3B4476A363@SINEX14MBXC416.southpacific.corp.microsoft.com>
-In-Reply-To: <DC7803B42427924284F2D5252E076A3B4476A363@SINEX14MBXC416.southpacific.corp.microsoft.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Yue,
+This patch introduces the use of iio_device_register and does away with
+the call to the coressponding unregister function in the remove function
+of the driver. The remove function is no longer required and is
+completely removed.
 
-Am 21.07.2014 10:05, schrieb Yue Zhang (OSTC DEV):
-> The problem of systemd implementation is that in different distros, the ways to 
-> restart service are different. Propagating the event to userspace also doesn't help
-> for this issue. 
+Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
+Acked-by: Julia Lawall <julia.lawall@lip6.fr>
+---
+ drivers/staging/iio/frequency/ad5930.c | 10 +---------
+ 1 file changed, 1 insertion(+), 9 deletions(-)
 
-This way each distro can provide their own restart script.
-Same as every distro has custom start scripts, etc...
+diff --git a/drivers/staging/iio/frequency/ad5930.c b/drivers/staging/iio/frequency/ad5930.c
+index a4aeee6..662cfb9 100644
+--- a/drivers/staging/iio/frequency/ad5930.c
++++ b/drivers/staging/iio/frequency/ad5930.c
+@@ -106,7 +106,7 @@ static int ad5930_probe(struct spi_device *spi)
+ 	idev->info = &ad5930_info;
+ 	idev->modes = INDIO_DIRECT_MODE;
+ 
+-	ret = iio_device_register(idev);
++	ret = devm_iio_device_register(&spi->dev, idev);
+ 	if (ret)
+ 		return ret;
+ 	spi->max_speed_hz = 2000000;
+@@ -117,20 +117,12 @@ static int ad5930_probe(struct spi_device *spi)
+ 	return 0;
+ }
+ 
+-static int ad5930_remove(struct spi_device *spi)
+-{
+-	iio_device_unregister(spi_get_drvdata(spi));
+-
+-	return 0;
+-}
+-
+ static struct spi_driver ad5930_driver = {
+ 	.driver = {
+ 		.name = DRV_NAME,
+ 		.owner = THIS_MODULE,
+ 	},
+ 	.probe = ad5930_probe,
+-	.remove = ad5930_remove,
+ };
+ module_spi_driver(ad5930_driver);
+ 
+-- 
+1.9.1
 
-> The advantage of current solution is that it simulates a cable plugging in/out event.
-> IMHO, in all the distros, this simulated event has already been well handled. It is a
-> dup effect to implement new hooks.
-
-Iff the current solution works for _all_ networking implementations.
-
-Thanks,
-//richard
