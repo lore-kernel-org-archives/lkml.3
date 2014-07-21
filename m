@@ -1,89 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754873AbaGUMEJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 08:04:09 -0400
-Received: from mx2.parallels.com ([199.115.105.18]:49730 "EHLO
-	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754114AbaGUMEI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 08:04:08 -0400
-Date: Mon, 21 Jul 2014 16:03:32 +0400
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: Michal Hocko <mhocko@suse.cz>
-CC: Johannes Weiner <hannes@cmpxchg.org>, <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>, Tejun Heo <tj@kernel.org>,
-        Hugh Dickins <hughd@google.com>, Greg Thelen <gthelen@google.com>,
-        Glauber Costa <glommer@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Subject: Re: [RFC PATCH] memcg: export knobs for the defaul cgroup hierarchy
-Message-ID: <20140721120332.GB11848@esperanza>
-References: <1405521578-19988-1-git-send-email-mhocko@suse.cz>
- <20140716155814.GZ29639@cmpxchg.org>
- <20140718154443.GM27940@esperanza>
- <20140721090724.GA8393@dhcp22.suse.cz>
- <20140721114655.GB8393@dhcp22.suse.cz>
+	id S1754798AbaGUMFW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 08:05:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5717 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753965AbaGUMFV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jul 2014 08:05:21 -0400
+Message-ID: <53CD01EE.40804@redhat.com>
+Date: Mon, 21 Jul 2014 14:05:02 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20140721114655.GB8393@dhcp22.suse.cz>
+To: Nadav Amit <namit@cs.technion.ac.il>
+CC: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
+        gleb@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/7] KVM: vmx: set rflags.rf during fault injection
+References: <1405942650-22589-1-git-send-email-namit@cs.technion.ac.il> <1405942650-22589-5-git-send-email-namit@cs.technion.ac.il>
+In-Reply-To: <1405942650-22589-5-git-send-email-namit@cs.technion.ac.il>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 21, 2014 at 01:46:55PM +0200, Michal Hocko wrote:
-> On Mon 21-07-14 11:07:24, Michal Hocko wrote:
-> > On Fri 18-07-14 19:44:43, Vladimir Davydov wrote:
-> > > On Wed, Jul 16, 2014 at 11:58:14AM -0400, Johannes Weiner wrote:
-> > > > On Wed, Jul 16, 2014 at 04:39:38PM +0200, Michal Hocko wrote:
-> > > > > +#ifdef CONFIG_MEMCG_KMEM
-> > > > > +	{
-> > > > > +		.name = "kmem.limit_in_bytes",
-> > > > > +		.private = MEMFILE_PRIVATE(_KMEM, RES_LIMIT),
-> > > > > +		.write = mem_cgroup_write,
-> > > > > +		.read_u64 = mem_cgroup_read_u64,
-> > > > > +	},
-> > > > 
-> > > > Does it really make sense to have a separate limit for kmem only?
-> > > > IIRC, the reason we introduced this was that this memory is not
-> > > > reclaimable and so we need to limit it.
-> > > > 
-> > > > But the opposite effect happened: because it's not reclaimable, the
-> > > > separate kmem limit is actually unusable for any values smaller than
-> > > > the overall memory limit: because there is no reclaim mechanism for
-> > > > that limit, once you hit it, it's over, there is nothing you can do
-> > > > anymore.  The problem isn't so much unreclaimable memory, the problem
-> > > > is unreclaimable limits.
-> > > > 
-> > > > If the global case produces memory pressure through kernel memory
-> > > > allocations, we reclaim page cache, anonymous pages, inodes, dentries
-> > > > etc.  I think the same should happen for kmem: kmem should just be
-> > > > accounted and limited in the overall memory limit of a group, and when
-> > > > pressure arises, we go after anything that's reclaimable.
-> > > 
-> > > Personally, I don't think there's much sense in having a separate knob
-> > > for kmem limit either. Until we have a user with a sane use case for it,
-> > > let's not propagate it to the new interface.
-> > 
-> > What about fork-bomb forks protection? I thought that was the primary usecase
-> > for K < U? Or how can we handle that use case with a single limit? A
-> > special gfp flag to not trigger OOM path when called from some kmem
-> > charge paths?
+Il 21/07/2014 13:37, Nadav Amit ha scritto:
+> VMX does not automatically set rflags.rf during event injection. This patch
+> does partial job, setting rflags.rf upon fault injection.  It also marks that
+> injection of trap/interrupt during rep-string instruction is not properly
+> emulated. It is unclear how to do it efficiently without decoding the guest
+> instruction before interrupt injection.
 > 
-> Even then, I do not see how would this fork-bomb prevention work without
-> causing OOMs and killing other processes within the group. The danger
-> would be still contained in the group and prevent from the system wide
-> disruption. Do we really want only such a narrow usecase?
+> Signed-off-by: Nadav Amit <namit@cs.technion.ac.il>
 
-I think it's all about how we're going to use memory cgroups. If we're
-going to use them for application containers, there's simply no such
-problem, because we only want to isolate a potentially dangerous process
-group from the rest of the system. If we want to start a fully
-virtualized OS inside a container, then we certainly need a kind of
-numproc and/or kmem limiter to prevent processes inside a cgroup from
-being OOM killed by a fork-bomb. IMHO, the latter will always be better
-done by VMs, so it isn't a must-have for cgroups. I may be mistaken
-though.
+Nothing in this patch is VMX-specific, right?
 
-Thanks.
+So it should be done in x86.c.
+
+> ---
+>  arch/x86/kvm/vmx.c | 11 ++++++++++-
+>  1 file changed, 10 insertions(+), 1 deletion(-)
+> 
+> diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+> index 0c9569b..8edb785 100644
+> --- a/arch/x86/kvm/vmx.c
+> +++ b/arch/x86/kvm/vmx.c
+> @@ -2006,6 +2006,7 @@ static void vmx_queue_exception(struct kvm_vcpu *vcpu, unsigned nr,
+>  				bool reinject)
+>  {
+>  	struct vcpu_vmx *vmx = to_vmx(vcpu);
+> +	unsigned long rflags;
+>  	u32 intr_info = nr | INTR_INFO_VALID_MASK;
+>  
+>  	if (!reinject && is_guest_mode(vcpu) &&
+> @@ -2017,6 +2018,12 @@ static void vmx_queue_exception(struct kvm_vcpu *vcpu, unsigned nr,
+>  		intr_info |= INTR_INFO_DELIVER_CODE_MASK;
+>  	}
+>  
+> +	rflags = vmx_get_rflags(vcpu);
+> +	if (kvm_exception_type(nr) == EXCPT_FAULT)
+> +		vmx_set_rflags(vcpu, rflags | X86_EFLAGS_RF);
+> +
+> +	/* TODO: Set rflags.rf on trap during rep-string */
+
+For vmexits happening during a rep string operation that isn't emulated,
+the processor should set RF correctly ("If the VM exit is caused
+directly by an event that would normally be delivered through the IDT,
+the value saved is that which would appear in the saved RFLAGS image had
+the event been delivered through the IDT").
+
+Perhaps the emulator could set RF to 1 after executing the first
+iteration, and clear it after executing the last?
+
+Paolo
+
+> +
+>  	if (vmx->rmode.vm86_active) {
+>  		int inc_eip = 0;
+>  		if (kvm_exception_is_soft(nr))
+> @@ -4631,8 +4638,10 @@ static void vmx_inject_irq(struct kvm_vcpu *vcpu)
+>  		intr |= INTR_TYPE_SOFT_INTR;
+>  		vmcs_write32(VM_ENTRY_INSTRUCTION_LEN,
+>  			     vmx->vcpu.arch.event_exit_inst_len);
+> -	} else
+> +	} else {
+> +		/* TODO: Set rflags.rf during rep-string */
+>  		intr |= INTR_TYPE_EXT_INTR;
+> +	}
+>  	vmcs_write32(VM_ENTRY_INTR_INFO_FIELD, intr);
+>  }
+>  
+> 
+
