@@ -1,99 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932267AbaGULj4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 07:39:56 -0400
-Received: from mail-ig0-f175.google.com ([209.85.213.175]:35932 "EHLO
-	mail-ig0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754916AbaGULjy (ORCPT
+	id S932216AbaGULjT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 07:39:19 -0400
+Received: from mailgw12.technion.ac.il ([132.68.225.12]:54462 "EHLO
+	mailgw12.technion.ac.il" rhost-flags-OK-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932196AbaGULjR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 07:39:54 -0400
-Date: Mon, 21 Jul 2014 12:39:49 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Andy Whitcroft <apw@canonical.com>, Joe Perches <joe@perches.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Checkpatch query
-Message-ID: <20140721113948.GX30888@lee--X1>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 21 Jul 2014 07:39:17 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AjcBAIb6zFOERCABjGdsb2JhbABZ0SUBgRoWDwEBASc9hAQBBSdSEFFXGYhCuCiGTBePSwcWhDAFil+oPGk
+X-IPAS-Result: AjcBAIb6zFOERCABjGdsb2JhbABZ0SUBgRoWDwEBASc9hAQBBSdSEFFXGYhCuCiGTBePSwcWhDAFil+oPGk
+X-IronPort-AV: E=Sophos;i="5.01,700,1400014800"; 
+   d="scan'208";a="116353345"
+From: Nadav Amit <namit@cs.technion.ac.il>
+To: pbonzini@redhat.com
+Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
+        gleb@kernel.org, linux-kernel@vger.kernel.org,
+        Nadav Amit <namit@cs.technion.ac.il>
+Subject: [PATCH 7/7] KVM: x86: Cleanup of rflags.rf cleaning
+Date: Mon, 21 Jul 2014 14:37:30 +0300
+Message-Id: <1405942650-22589-8-git-send-email-namit@cs.technion.ac.il>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1405942650-22589-1-git-send-email-namit@cs.technion.ac.il>
+References: <1405942650-22589-1-git-send-email-namit@cs.technion.ac.il>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andy, Joe,
+RFLAGS.RF was cleaned in several functions (e.g., syscall) in the x86 emulator.
+Now that we clear it before the execution of an instruction in the emulator, we
+can remove the specific cleanup of RFLAGS.RF.
 
-When running checkpatch on drivers/mfd/tps80031.c I recieve the
-following warning:
+Signed-off-by: Nadav Amit <namit@cs.technion.ac.il>
+---
+ arch/x86/kvm/emulate.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-> WARNING: Possible switch case/default not preceeded by break or
->          fallthrough comment
-> #337: FILE: drivers/mfd/tps80031.c:337:
-> +       case TPS80031_BACKUP_REG:
-> 
-> total: 0 errors, 1 warnings, 573 lines checked
-
-... but we use switch statement fall through all the time when
-identifying different types of registers used with Regmap.  Placing a
-fall-through comment between them all sounds very messy to me.
-
-Also, the warning only fires on 'case's which do not use '...'
-notation, which seems a little odd.
-
-Anyway, I'm not sure placing a 'fall through' comment makes the code
-any cleaner or reduces possible failure rate in any way.  Is there any
-chance that this check can be removed?
-
-> static bool rd_wr_reg_id0(struct device *dev, unsigned int reg)
-> {
-> 	switch (reg) {
-> 	case TPS80031_SMPS1_CFG_FORCE ... TPS80031_SMPS2_CFG_VOLTAGE:
-> 		return true;
-> 	default:
-> 		return false;
-> 	}
-> }
-> 
-> static bool rd_wr_reg_id1(struct device *dev, unsigned int reg)
-> {
-> 	switch (reg) {
-> 	case TPS80031_SECONDS_REG ... TPS80031_RTC_RESET_STATUS_REG:
-> 	case TPS80031_VALIDITY0 ... TPS80031_VALIDITY7:
-> 	case TPS80031_PHOENIX_START_CONDITION ... TPS80031_KEY_PRESS_DUR_CFG:
-> 	case TPS80031_SMPS4_CFG_TRANS ... TPS80031_SMPS3_CFG_VOLTAGE:
-> 	case TPS80031_BROADCAST_ADDR_ALL ... TPS80031_BROADCAST_ADDR_CLK_RST:
-> 	case TPS80031_VANA_CFG_TRANS ... TPS80031_LDO7_CFG_VOLTAGE:
-> 	case TPS80031_REGEN1_CFG_TRANS ... TPS80031_TMP_CFG_STATE:
-> 	case TPS80031_PREQ1_RES_ASS_A ... TPS80031_PREQ3_RES_ASS_C:
-> 	case TPS80031_SMPS_OFFSET ... TPS80031_BATDEBOUNCING:
-> 	case TPS80031_CFG_INPUT_PUPD1 ... TPS80031_CFG_SMPS_PD:
-> 	case TPS80031_BACKUP_REG:
-> 		return true;
-> 	default:
-> 		return false;
-> 	}
-> }
-> 
-> static bool is_volatile_reg_id1(struct device *dev, unsigned int reg)
-> {
-> 	switch (reg) {
-> 	case TPS80031_SMPS4_CFG_TRANS ... TPS80031_SMPS3_CFG_VOLTAGE:
-> 	case TPS80031_VANA_CFG_TRANS ... TPS80031_LDO7_CFG_VOLTAGE:
-> 	case TPS80031_REGEN1_CFG_TRANS ... TPS80031_TMP_CFG_STATE:
-> 	case TPS80031_PREQ1_RES_ASS_A ... TPS80031_PREQ3_RES_ASS_C:
-> 	case TPS80031_SMPS_OFFSET ... TPS80031_BATDEBOUNCING:
-> 	case TPS80031_CFG_INPUT_PUPD1 ... TPS80031_CFG_SMPS_PD:
-> 		return true;
-> 	default:
-> 		return false;
-> 	}
-> }
-
-
-
+diff --git a/arch/x86/kvm/emulate.c b/arch/x86/kvm/emulate.c
+index 189b8bd8..8d41556 100644
+--- a/arch/x86/kvm/emulate.c
++++ b/arch/x86/kvm/emulate.c
+@@ -2211,7 +2211,7 @@ static int em_syscall(struct x86_emulate_ctxt *ctxt)
+ 	*reg_write(ctxt, VCPU_REGS_RCX) = ctxt->_eip;
+ 	if (efer & EFER_LMA) {
+ #ifdef CONFIG_X86_64
+-		*reg_write(ctxt, VCPU_REGS_R11) = ctxt->eflags & ~EFLG_RF;
++		*reg_write(ctxt, VCPU_REGS_R11) = ctxt->eflags;
+ 
+ 		ops->get_msr(ctxt,
+ 			     ctxt->mode == X86EMUL_MODE_PROT64 ?
+@@ -2219,14 +2219,14 @@ static int em_syscall(struct x86_emulate_ctxt *ctxt)
+ 		ctxt->_eip = msr_data;
+ 
+ 		ops->get_msr(ctxt, MSR_SYSCALL_MASK, &msr_data);
+-		ctxt->eflags &= ~(msr_data | EFLG_RF);
++		ctxt->eflags &= ~msr_data;
+ #endif
+ 	} else {
+ 		/* legacy mode */
+ 		ops->get_msr(ctxt, MSR_STAR, &msr_data);
+ 		ctxt->_eip = (u32)msr_data;
+ 
+-		ctxt->eflags &= ~(EFLG_VM | EFLG_IF | EFLG_RF);
++		ctxt->eflags &= ~(EFLG_VM | EFLG_IF);
+ 	}
+ 
+ 	return X86EMUL_CONTINUE;
+@@ -2275,7 +2275,7 @@ static int em_sysenter(struct x86_emulate_ctxt *ctxt)
+ 		break;
+ 	}
+ 
+-	ctxt->eflags &= ~(EFLG_VM | EFLG_IF | EFLG_RF);
++	ctxt->eflags &= ~(EFLG_VM | EFLG_IF);
+ 	cs_sel = (u16)msr_data;
+ 	cs_sel &= ~SELECTOR_RPL_MASK;
+ 	ss_sel = cs_sel + 8;
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+1.9.1
+
