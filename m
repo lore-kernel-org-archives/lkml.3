@@ -1,95 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750949AbaGUWwH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 18:52:07 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:48497 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750717AbaGUWwF (ORCPT
+	id S1751066AbaGUWwY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 18:52:24 -0400
+Received: from mail-vc0-f172.google.com ([209.85.220.172]:45529 "EHLO
+	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750998AbaGUWwU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 18:52:05 -0400
-Date: Mon, 21 Jul 2014 23:51:53 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        Alexandre Courbot <acourbot@nvidia.com>,
-        Terje Bergstrom <tbergstrom@nvidia.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Message-ID: <20140721225153.GJ17528@sirena.org.uk>
-References: <1404303560-32209-1-git-send-email-acourbot@nvidia.com>
- <1404303560-32209-5-git-send-email-acourbot@nvidia.com>
- <53B42B60.1000600@wwwdotorg.org>
- <53B4C9C0.4000605@nvidia.com>
- <53CD333F.2070805@wwwdotorg.org>
- <20140721211630.GA12076@mithrandir>
+	Mon, 21 Jul 2014 18:52:20 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="w47z9evyjOavafUr"
-Content-Disposition: inline
-In-Reply-To: <20140721211630.GA12076@mithrandir>
-X-Cookie: 98% lean.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 4/4] ARM: tegra: roth: add display DT node
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+In-Reply-To: <53CD860B.7030800@wwwdotorg.org>
+References: <1405088313-20048-1-git-send-email-mperttunen@nvidia.com>
+	<1405088313-20048-6-git-send-email-mperttunen@nvidia.com>
+	<CAL1qeaGHfjQhLHvgzt85hmbuY4FOG5-k=f80=CNvzPDEgi9_6w@mail.gmail.com>
+	<53CD860B.7030800@wwwdotorg.org>
+Date: Mon, 21 Jul 2014 15:52:19 -0700
+X-Google-Sender-Auth: Dhcjv1r66osP6Y5TCV42cvDoH48
+Message-ID: <CAL1qeaHtGQxCO3cGdeCRUYuk6mxei6z1B63-iZdBECEbFqGhHw@mail.gmail.com>
+Subject: Re: [PATCH 5/8] of: Add Tegra124 EMC bindings
+From: Andrew Bresticker <abrestic@chromium.org>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Mikko Perttunen <mperttunen@nvidia.com>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Jul 21, 2014 at 2:28 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+> On 07/11/2014 10:43 AM, Andrew Bresticker wrote:
+>> On Fri, Jul 11, 2014 at 7:18 AM, Mikko Perttunen <mperttunen@nvidia.com> wrote:
+>>> Add binding documentation for the nvidia,tegra124-emc device tree
+>>> node.
+>>
+>>> diff --git a/Documentation/devicetree/bindings/memory-controllers/tegra-emc.txt b/Documentation/devicetree/bindings/memory-controllers/tegra-emc.txt
+>>
+>>> +Required properties :
+>>> +- compatible : "nvidia,tegra124-emc".
+>>> +- reg : Should contain 1 or 2 entries:
+>>> +  - EMC register set
+>>> +  - MC register set : Required only if no node with
+>>> +    'compatible = "nvidia,tegra124-mc"' exists. The MC register set
+>>> +    is first read from the MC node. If it doesn't exist, it is read
+>>> +    from this property.
+>>> +- timings : Should contain 1 entry for each supported clock rate.
+>>> +  Entries should be named "timing@n" where n is a 0-based increasing
+>>> +  number. The timings must be listed in rate-ascending order.
+>>
+>> There are upcoming boards which support multiple DRAM configurations
+>> and require a separate set of timings for each configuration.  Could
+>> we instead have multiple sets of timings with the proper one selected
+>> at runtime by RAM code, as reported by PMC_STRAPPING_OPT_A_0?
+>> Something like:
+>>
+>> emc {
+>>         emc-table@0 {
+>>                 nvidia,ram-code = <0>;
+>>                 timing@0 {
+>>                         ...
+>>                 };
+>>                 ...
+>>         };
+>
+> Until recently, there was a binding for Tegra20 EMC in mainline. We
+> should make sure the Tegra124 driver (or rather binding...) is at least
+> as feature-ful as that was.
+>
+> Furthermore, I thought that with some boards, there were more RAM
+> options that there were available RAM code strap bits. I assume that in
+> mainline, we'll simply have different base DT files for the different
+> sets of configurations? Or, will we want to add another level to the DT
+> to represent different sets of RAM code values? I'm not sure what data
+> source the bootloader uses to determine which set of RAM configuration
+> to use when there aren't enough entries in the BCT for the boot ROM to
+> do this automatically, and whether we have any way to get that value
+> into the kernel, so it could use it for the extra DT level lookup?
 
---w47z9evyjOavafUr
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-
-On Mon, Jul 21, 2014 at 11:16:32PM +0200, Thierry Reding wrote:
-> On Mon, Jul 21, 2014 at 09:35:27AM -0600, Stephen Warren wrote:
-
-> > > vdd-2v8-display needs to remain always-on however. Here we may hit a
-> > > limitation of the simple-panel driver, where only one power supply can
-> > > be provided.
-
-> > Can't we fix the simple-panel driver to allow a list of regulators in
-> > the property?
-
-> I have no objection to allowing that. But I don't think there's a way to
-> do that with the current regulator API. You can use the bulk API, but
-> that requires separate properties, not multiple regulators in one
-> property.
-
-> Perhaps one idea to solve this would be to make the regulator API return
-> a regulator handle that in fact controls an array of regulators? Adding
-> Mark.
-
-I'm really not comfortable with that idea, it seems like most of the
-users would be abusing it - one of the biggest issues is always getting
-people to understand that their driver may be used in other systems with
-the supplies mapped differently.  If you were going to do something
-along those lines you'd need to do something that enumerated all the
-supply properties on the device.
-
---w47z9evyjOavafUr
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJTzZmAAAoJELSic+t+oim9nwUP/jK/eXoKVl99dSmhUmDtv+9E
-CeL0oOyWN7ovsIbFi800l43DW19imQqvN6JA2lwWqGan0uZ7EyChCqe3ttv9y8Ul
-a5HtfqM8Yhoigosz6FMmVLhY2//XAaYpnUBTrjo3SZmN4ZDdI6cNWrTRx1IhJHIM
-YNR9mvCLQJM3B8/Fxh+FM8Ayly3rdkvzIVbfurw6bhqQ1z06zWTO8bGdXFaKU+xh
-YgBMDrtH1ctgNlCwsD35MdNjh6GD4SYrWOyR3s7Ki0v5VI0RdMxGBbW7j/m+h6Zf
-PvJrjqUsqpM/FX1GsIHttsm6+Cmhj8cQuvStBgOKIP4TQuML5Q/k58R914bUAjv7
-Oy0Zhrs0Xed+S95sL9Va0B45El4reSe+GGRDwD4etFojQ36zCUZOlamzRwtZ3AKB
-eDmMwdh53DHWL6iYkwsQVT15L7yLc519SRHh6/M0jjYfjpCc3OjXCx7VmFBJToOD
-4zSc8ObXFEcBY+6JEES/I66PY/7lQ50cEfeOAu+MWpKcTxtJscYCDsKibMo3lT+8
-etEAkPGqCPO/DOB0CedkAF0/vfqu+1sd3dN5nS4M1ovv4tsIztLaI+QWMqcquLAc
-vQo8SfPKXlsdoJ2kEZaYIVhuuj+pBuztkPQPqXQjDbzdKQROqssH7GocuT3iHbpa
-P18re0tQtirmXt9c4mS+
-=3it+
------END PGP SIGNATURE-----
-
---w47z9evyjOavafUr--
+For the ChromeOS boards at least we are neither limited by the number
+of strapping bits (4) nor the number of BCT entries supported by the
+boot ROM (since coreboot does not rely on the boot ROM for SDRAM
+initialization), so having a single set of SDRAM configurations for
+each board, indexed by APBDEV_PMC_STRAPPING_OPT_A_0[7:4] works just
+fine.  Not sure how boards which do use the boot ROM for SDRAM
+initialization handle the BCT limitation.  I believe we considered
+using more board ID strapping bits in order to map the RAM codes to
+sets of configurations before switching to having coreboot do SDRAM
+initialization.
