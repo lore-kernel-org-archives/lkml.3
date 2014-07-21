@@ -1,159 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932379AbaGUNmL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 09:42:11 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:62163 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932205AbaGUNmI (ORCPT
+	id S932457AbaGUNrJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 09:47:09 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.230]:24585 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932153AbaGUNrI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 09:42:08 -0400
-X-AuditID: cbfee61b-f79f86d00000144c-57-53cd18aef646
-From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-To: Kukjin Kim <kgene.kim@samsung.com>
-Cc: Tomasz Figa <t.figa@samsung.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Sachin Kamat <sachin.kamat@samsung.com>,
-        Olof Johansson <olof@lixom.net>
-Subject: Re: [PATCH v2] ARM: EXYNOS: Fix build with PM_SLEEP=n
-Date: Mon, 21 Jul 2014 15:41:44 +0200
-Message-id: <19533549.DVV8hdLa08@amdc1032>
-User-Agent: KMail/4.8.4 (Linux/3.2.0-54-generic-pae; KDE/4.8.5; i686; ; )
-In-reply-to: <93736288.A8L2I1nMme@amdc1032>
-References: <1405323953-25954-1-git-send-email-k.kozlowski@samsung.com>
- <1539661.ni665pgzAx@amdc1032> <93736288.A8L2I1nMme@amdc1032>
-MIME-version: 1.0
-Content-transfer-encoding: 7Bit
-Content-type: text/plain; charset=ISO-8859-1
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrHLMWRmVeSWpSXmKPExsVy+t9jAd11EmeDDZ6sNrZ4/cLQonfBVTaL
-	s01v2C02Pb7GanF51xw2ixnn9zFZ3L7Ma7H2yF12i1PXP7NZXLl0is1i/YzXLA7cHi3NPWwe
-	m5fUe1w50cTq0bdlFaPH501yAaxRXDYpqTmZZalF+nYJXBnXdnWzFWxUrThw+zx7A+Mx2S5G
-	Tg4JAROJyfd+MkHYYhIX7q1n62Lk4hASWMQocaV5KzuE08Iksf7vC1aQKjYBK4mJ7asYQWwR
-	ATWJnsVbGUGKmAX6mSVOfuplA0kIC9hJzG5oZAexWQRUJdZcmAK2gldAS+Lv83awuKiAp8SO
-	7SvB6jkFtCUuvf7BAmILCbQxSlxtFYCoF5T4MfkeWJxZQF5i3/6prBC2jsT+1mlsExgFZiEp
-	m4WkbBaSsgWMzKsYRVMLkguKk9JzjfSKE3OLS/PS9ZLzczcxgmPhmfQOxlUNFocYBTgYlXh4
-	PRjPBAuxJpYVV+YeYpTgYFYS4a1lPBssxJuSWFmVWpQfX1Sak1p8iFGag0VJnPdgq3WgkEB6
-	YklqdmpqQWoRTJaJg1OqgTGh0KNI5MGsPOdABfvuw+tZ3v+RtmlhVkiMj2U54xrvo5045bpl
-	646ePxFFUywE5nEuSHRiWvb1upxQ1nylizN26iebzpr6cYqhGJO+wFFHzROdd/cbfIg8E7s/
-	wfjL1Lw9ccdeHbBa1njx/srH0meVth7+t6aqYVdLgGpj24z7xcwCPLOUFiuxFGckGmoxFxUn
-	AgAL74eEgQIAAA==
+	Mon, 21 Jul 2014 09:47:08 -0400
+Date: Mon, 21 Jul 2014 09:47:06 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ftrace: kill global_start_up
+Message-ID: <20140721094706.60eb3877@gandalf.local.home>
+In-Reply-To: <20140720151814.GA32439@redhat.com>
+References: <20140720151814.GA32439@redhat.com>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, July 21, 2014 02:55:52 PM Bartlomiej Zolnierkiewicz wrote:
-> On Monday, July 21, 2014 01:11:14 PM Bartlomiej Zolnierkiewicz wrote:
-> > On Monday, July 21, 2014 12:38:28 PM Bartlomiej Zolnierkiewicz wrote:
-> > > 
-> > > Hi,
-> > > 
-> > > On Saturday, July 19, 2014 04:42:34 AM Kukjin Kim wrote:
-> > > > On 07/16/14 20:59, Tomasz Figa wrote:
-> > > > > Hi Krzysztof,
-> > > > >
-> > > > > On 14.07.2014 09:45, Krzysztof Kozlowski wrote:
-> > > > >> Fix building of exynos defconfig with disabled PM_SLEEP:
-> > > > >> CONFIG_PM_SLEEP=n
-> > > > >> CONFIG_PM_SLEEP_SMP=n
-> > > > >> CONFIG_SUSPEND=n
-> > > > >> by moving functions for power up/down of CPU and cluster to platsmp.c
-> > > > >>
-> > > > >> The build error messages:
-> > > > >> arch/arm/mach-exynos/built-in.o: In function `exynos_boot_secondary':
-> > > > >> arch/arm/mach-exynos/platsmp.c:111: undefined reference to `exynos_cpu_power_state'
-> > > > >> arch/arm/mach-exynos/platsmp.c:112: undefined reference to `exynos_cpu_power_up'
-> > > > >> arch/arm/mach-exynos/platsmp.c:116: undefined reference to `exynos_cpu_power_state'
-> > > > >> make: *** [vmlinux] Error 1
-> > > > >>
-> > > > >> Signed-off-by: Krzysztof Kozlowski<k.kozlowski@samsung.com>
-> > > > >>
-> > > > >> ---
-> > > > >> Changes since v1:
-> > > > >> 1. Use different solution - just move the power up/down functions to a
-> > > > >>     common place instead of adding stubs in common.h. Suggested by Tomasz
-> > > > >>     Figa.
-> > > > >> ---
-> > > > >>   arch/arm/mach-exynos/platsmp.c | 66 ++++++++++++++++++++++++++++++++++++++++++
-> > > > >>   arch/arm/mach-exynos/pm.c      | 66 ------------------------------------------
-> > > > >>   2 files changed, 66 insertions(+), 66 deletions(-)
-> > > > >>
-> > > > >
-> > > > + Bart,
-> > > > 
-> > > > > Reviewed-by: Tomasz Figa<t.figa@samsung.com>
-> > > > >
-> > > > Applied, thanks.
-> > > > 
-> > > > Bart, I think this is better at this moment to fix the build breakage 
-> > > > with disabling PM...if you have any comments, please let me know.
-> > > 
-> > > To fix PM_SLEEP=n build itself (with ARM_EXYNOS_CPUIDLE=n) Krzysztof's
-> > > patch is not enough and patch [1] is also needed (this patch is very
-> > > simple so I think that it is okay for v3.16).
-> > 
-> > Hmmm, I now see that you've applied Krzysztof's patch for v3.17 not v3.16.
-> > 
-> > In that case how do you want to deal with PM_SLEEP=n build breakages for
-> > v3.16 and what do you mean with "fix the build breakage with disabling PM"?
-> 
-> Just a bit of explanation:
-> 
-> The PM_SLEEP=n build breakages show up on automated build tests done by
-> various people.  Minimal fixes for them (Krzysztof's patch + patch [1] +
-> making ARM_EXYNOS_CPUIDLE depend on PM_SLEEP temporally) are really obvious
-> and should be pretty safe so it would be great to have them in v3.16.
-> 
-> If that is not possible lets fix the issue completely early in v3.17 cycle.
+On Sun, 20 Jul 2014 17:18:14 +0200
+Oleg Nesterov <oleg@redhat.com> wrote:
 
-Okay, so Krzysztof's patch was posted in pull request to Olof on Saturday
-and merged already for v3.17.  In that case I will just refresh my patches
-and resubmit later.  Sorry for all the noise.
-
-Best regards,
---
-Bartlomiej Zolnierkiewicz
-Samsung R&D Institute Poland
-Samsung Electronics
-
-> Best regards,
-> --
-> Bartlomiej Zolnierkiewicz
-> Samsung R&D Institute Poland
-> Samsung Electronics
+> global_start_up is read-only and always zero. It seems that 4104d326
+> "ftrace: Remove global function list and call function directly" simply
+> forgot to remove this no longer used variable.
 > 
-> > Best regards,
-> > --
-> > Bartlomiej Zolnierkiewicz
-> > Samsung R&D Institute Poland
-> > Samsung Electronics
-> > 
-> > > For PM_SLEEP=n and ARM_EXYNOS_CPUIDLE=y config more changes are needed
-> > > and they are contained in patch [2] (please note that this patch depends
-> > > on patch [3] from Tomasz Figa which was redone recently into [4] so my
-> > > patch also needs to be refreshed).  However if you think that this would
-> > > result in too much changes for v3.16 kernel we can make ARM_EXYNOS_CPUIDLE
-> > > select (or depend on) PM_SLEEP for now and fix the issue completely later
-> > > in v3.17 kernel.
-> > > 
-> > > [1] "[PATCH 1/2] ARM: EXYNOS: Fix build with PM_SLEEP=n part #2"
-> > > http://www.mail-archive.com/linux-samsung-soc@vger.kernel.org/msg34080.html
-> > > 
-> > > [2] "[PATCH 2/2] ARM: EXYNOS: Fix build with PM_SLEEP=n and ARM_EXYNOS_CPUIDLE=y"
-> > > http://www.mail-archive.com/linux-samsung-soc@vger.kernel.org/msg34081.html
-> > > 
-> > > [3] "[PATCH 5/6] ARM: EXYNOS: Fix suspend/resume sequencies"
-> > > http://www.mail-archive.com/linux-samsung-soc@vger.kernel.org/msg32809.html
-> > > 
-> > > [4] "[PATCH v3] ARM: EXYNOS: Fix suspend/resume sequences"
-> > > http://www.mail-archive.com/linux-samsung-soc@vger.kernel.org/msg34150.html
-> > > 
-> > > Best regards,
-> > > --
-> > > Bartlomiej Zolnierkiewicz
-> > > Samsung R&D Institute Poland
-> > > Samsung Electronics
+
+Sure, just after I got done testing my entire 3.17 queue and posted it
+for linux-next, you decide to send me yet another fix! ;-)
+
+Thanks, applied.
+
+I'll wait and see what other fixes you send me before I run my 10 hour
+tests.
+
+-- Steve
+
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+> ---
+>  kernel/trace/ftrace.c |    4 +---
+>  1 files changed, 1 insertions(+), 3 deletions(-)
+> 
+> diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+> index 5b372e3..4586f8d 100644
+> --- a/kernel/trace/ftrace.c
+> +++ b/kernel/trace/ftrace.c
+> @@ -2053,7 +2053,6 @@ static void ftrace_run_update_code(int command)
+>  
+>  static ftrace_func_t saved_ftrace_func;
+>  static int ftrace_start_up;
+> -static int global_start_up;
+>  
+>  static void control_ops_free(struct ftrace_ops *ops)
+>  {
+> @@ -2117,8 +2116,7 @@ static int ftrace_shutdown(struct ftrace_ops *ops, int command)
+>  
+>  	ftrace_hash_rec_disable(ops, 1);
+>  
+> -	if (!global_start_up)
+> -		ops->flags &= ~FTRACE_OPS_FL_ENABLED;
+> +	ops->flags &= ~FTRACE_OPS_FL_ENABLED;
+>  
+>  	command |= FTRACE_UPDATE_CALLS;
+>  
 
