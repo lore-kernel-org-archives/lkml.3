@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751143AbaGUXM6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 19:12:58 -0400
-Received: from plane.gmane.org ([80.91.229.3]:48630 "EHLO plane.gmane.org"
+	id S1751160AbaGUXUH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 19:20:07 -0400
+Received: from plane.gmane.org ([80.91.229.3]:41177 "EHLO plane.gmane.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750790AbaGUXM5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 19:12:57 -0400
+	id S1750795AbaGUXUF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jul 2014 19:20:05 -0400
 X-Injected-Via-Gmane: http://gmane.org/
 To: linux-kernel@vger.kernel.org
 From: Matthew Longnecker <mlongnecker@nvidia.com>
 Subject: Re: [PATCH 4/6] ARM: tegra: Add soctherm and thermal zones to Tegra124
  device tree
-Date: Mon, 21 Jul 2014 16:12:41 -0700
-Message-ID: <53CD9E69.4000309@nvidia.com>
+Date: Mon, 21 Jul 2014 16:13:13 -0700
+Message-ID: <53CD9E89.3030109@nvidia.com>
 References: <1403856699-2140-1-git-send-email-mperttunen@nvidia.com> <1403856699-2140-5-git-send-email-mperttunen@nvidia.com>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
