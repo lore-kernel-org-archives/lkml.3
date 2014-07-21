@@ -1,108 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754472AbaGUV0i (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 17:26:38 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:43310 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753691AbaGUV0h (ORCPT
+	id S1754529AbaGUV2J (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 17:28:09 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:37455 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753184AbaGUV2G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 17:26:37 -0400
-Date: Mon, 21 Jul 2014 14:26:35 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: Mike Turquette <mturquette@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [GIT PULL] qcom clock changes for 3.17
-Message-ID: <20140721212635.GA19933@codeaurora.org>
+	Mon, 21 Jul 2014 17:28:06 -0400
+Date: Mon, 21 Jul 2014 23:27:40 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Darren Hart <dvhart@linux.intel.com>, Andi Kleen <andi@firstfloor.org>,
+        Waiman Long <Waiman.Long@hp.com>, Ingo Molnar <mingo@kernel.org>,
+        Davidlohr Bueso <davidlohr@hp.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
+        linux-doc@vger.kernel.org, Jason Low <jason.low2@hp.com>,
+        Scott J Norton <scott.norton@hp.com>
+Subject: Re: [RFC PATCH 0/5] futex: introduce an optimistic spinning futex
+Message-ID: <20140721212740.GS3935@laptop>
+References: <1405956271-34339-1-git-send-email-Waiman.Long@hp.com>
+ <8761iq3bp3.fsf@tassilo.jf.intel.com>
+ <871tte3bjw.fsf@tassilo.jf.intel.com>
+ <CFF29A00.9D44A%dvhart@linux.intel.com>
+ <CFF29E4A.9D44E%dvhart@linux.intel.com>
+ <alpine.DEB.2.10.1407212025130.20847@nanos>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <alpine.DEB.2.10.1407212025130.20847@nanos>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mike,
+On Mon, Jul 21, 2014 at 10:16:37PM +0200, Thomas Gleixner wrote:
+> On Mon, 21 Jul 2014, Darren Hart wrote:
+> > We observed some significant improvements under some very specific use
+> > cases, but a more thorough dive into performance impact in the other cases
+> > as well as security implications with the vdso is still wanting.
+> 
+> The security implication is that the feature can only be available for
+> process private futexes. There is no way to expose information which
+> crosses the process spaces.
+> 
+> But the way worse issue is storage.
+> 
+> While you can cache the namespace specific TID of a thread in the
+> task_struct, you still need a O(1) zero overhead mechanism to update
+> the thread state (only on/off cpu is interesting) in a per process
+> shared data structure from the guts of schedule()
+> 
+> For that you have basically two choices:
+> 
+> 1) cpu_thread_id[NR_CPUS]
+> 
+>    Simple to update from the scheduler, and a halfways moderate
+>    storage size (NR_CPUS * 4 bytes) in the worst case, i.e. 16k
+>    today. Set to 0 on scheduling out and to the namespace specific TID
+>    on scheduling in.
+> 
+>    But that requires a linear search in the user space spin loop. And
+>    that's required for every iteration of the loop. Can you imagine
+>    how well that works performance wise?
+> 
+> 2) Bitmap threads_on_cpu
+>    
+>    Again, simple to update from the scheduler, cache line bouncing
+>    issues aside. Clear the bit on schedule out and set it on schedule
+>    in.
+> 
+>    But the bitmap needs the size of PID_MAX_LIMIT, which is a whopping
+>    512k per process in the worst case.
+> 
+> Anything else would involve search/lookup schemes which are just
+> overkill in both the scheduler and the user space loop.
+>    
+> Now for enhanced fun you need immutable pages for that storage, as you
+> can't have pagefaults in the guts of schedule().
+> 
+> So once you found a way to make that opt-in as you don't want inflict
+> any of this to all processes by default, it might be a worthwhile
+> optimization. So the probably tolerable impact on schedule() would be
+> 
+> schedule_out()
+> 	if (curr->threads_on_cpu)
+> 		clear_bit(curr->ns_tid, curr->threads_on_cpu);
+> and
+> 
+> schedule_in()
+> 	if (curr->threads_on_cpu)
+> 		clear_bit(curr->ns_tid, curr->threads_on_cpu);
+> 
+> Anything more complex is just going to defeat the whole purpose.
 
-The following changes since commit a497c3ba1d97fc69c1e78e7b96435ba8c2cb42ee:
-
-  Linux 3.16-rc2 (2014-06-21 19:02:54 -1000)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/galak/linux-qcom.git tags/qcom-clocks-for-3.17
-
-for you to fetch changes up to e216ce60a9e05ab399d098f05cd86fd95c9da8d5:
-
-  clk: qcom: Add support for APQ8064 multimedia clocks (2014-07-15 16:39:03 -0700)
-
-----------------------------------------------------------------
-qcom clock changes for 3.17
-
-These patches add support for a handful of Qualcomm's SoC clock
-controllers: APQ8084 gcc and mmcc, IPQ8064 gcc, and APQ8064.
-There's also a small collection of bug fixes that aren't critical
--rc worthy regressions because the consumer drivers aren't present
-or using the buggy clocks and one optimization for HDMI.
-
-----------------------------------------------------------------
-Georgi Djakov (4):
-      clk: qcom: Add APQ8084 Global Clock Controller documentation
-      clk: qcom: Add APQ8084 Global Clock Controller support
-      clk: qcom: Add APQ8084 clocks for SATA, PCIe and UFS
-      clk: qcom: Add APQ8084 Multimedia Clock Controller (MMCC) support
-
-Kumar Gala (1):
-      clk: qcom: Add support for IPQ8064's global clock controller (GCC)
-
-Srinivas Kandagatla (1):
-      clk: qcom: add clocks necessary for apq8064 sdcc
-
-Stephen Boyd (7):
-      clk: qcom: Fully support apq8064 global clock control
-      clk: qcom: Support bypass RCG configuration
-      clk: qcom: Fix MN frequency tables, parent map, and jpegd
-      clk: qcom: Fix PLL rate configurations
-      clk: qcom: mdp_lut_clk is a child of mdp_src
-      clk: qcom: pll: Add support for configuring SR PLLs
-      clk: qcom: Add support for APQ8064 multimedia clocks
-
- .../devicetree/bindings/clock/qcom,gcc.txt         |    2 +
- .../devicetree/bindings/clock/qcom,mmcc.txt        |    2 +
- drivers/clk/qcom/Kconfig                           |   25 +
- drivers/clk/qcom/Makefile                          |    3 +
- drivers/clk/qcom/clk-pll.c                         |   15 +-
- drivers/clk/qcom/clk-pll.h                         |    2 +
- drivers/clk/qcom/clk-rcg.c                         |   51 +-
- drivers/clk/qcom/clk-rcg.h                         |    1 +
- drivers/clk/qcom/common.c                          |   39 +-
- drivers/clk/qcom/common.h                          |    6 +
- drivers/clk/qcom/gcc-apq8084.c                     | 3611 ++++++++++++++++++++
- drivers/clk/qcom/gcc-ipq806x.c                     | 2424 +++++++++++++
- drivers/clk/qcom/gcc-msm8960.c                     |  583 +++-
- drivers/clk/qcom/mmcc-apq8084.c                    | 3352 ++++++++++++++++++
- drivers/clk/qcom/mmcc-msm8960.c                    |  526 ++-
- drivers/clk/qcom/mmcc-msm8974.c                    |   10 +-
- include/dt-bindings/clock/qcom,gcc-apq8084.h       |  351 ++
- include/dt-bindings/clock/qcom,gcc-ipq806x.h       |  293 ++
- include/dt-bindings/clock/qcom,gcc-msm8960.h       |   11 +
- include/dt-bindings/clock/qcom,mmcc-apq8084.h      |  183 +
- include/dt-bindings/clock/qcom,mmcc-msm8960.h      |    8 +
- include/dt-bindings/reset/qcom,gcc-apq8084.h       |  109 +
- include/dt-bindings/reset/qcom,gcc-ipq806x.h       |  132 +
- include/dt-bindings/reset/qcom,gcc-msm8960.h       |   16 +
- include/dt-bindings/reset/qcom,mmcc-apq8084.h      |   64 +
- include/dt-bindings/reset/qcom,mmcc-msm8960.h      |    8 +
- 26 files changed, 11747 insertions(+), 80 deletions(-)
- create mode 100644 drivers/clk/qcom/gcc-apq8084.c
- create mode 100644 drivers/clk/qcom/gcc-ipq806x.c
- create mode 100644 drivers/clk/qcom/mmcc-apq8084.c
- create mode 100644 include/dt-bindings/clock/qcom,gcc-apq8084.h
- create mode 100644 include/dt-bindings/clock/qcom,gcc-ipq806x.h
- create mode 100644 include/dt-bindings/clock/qcom,mmcc-apq8084.h
- create mode 100644 include/dt-bindings/reset/qcom,gcc-apq8084.h
- create mode 100644 include/dt-bindings/reset/qcom,gcc-ipq806x.h
- create mode 100644 include/dt-bindings/reset/qcom,mmcc-apq8084.h
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+All this is predicated on the fact that syscalls are 'expensive'.
+Weren't syscalls only 100s of cycles? All this bitmap mucking is far
+more expensive due to cacheline misses, which due to the size of the
+things is almost guaranteed.
