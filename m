@@ -1,57 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932632AbaGUO2z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 10:28:55 -0400
-Received: from smtprelay0215.hostedemail.com ([216.40.44.215]:45762 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932270AbaGUO2y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 10:28:54 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:599:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1538:1593:1594:1711:1714:1730:1747:1777:1792:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3350:3622:3865:3872:3873:3874:4321:5007:7652:8531:10004:10400:10848:11232:11658:11914:12296:12517:12519:12663:12679:12740:13069:13161:13229:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: rose38_876f4bdc65559
-X-Filterd-Recvd-Size: 1370
-Message-ID: <1405952929.27900.7.camel@joe-AO725>
-Subject: Re: [PATCH] checkpatch: Allow case labels with ranges
-From: Joe Perches <joe@perches.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Andy Whitcroft <apw@canonical.com>, linux-kernel@vger.kernel.org
-Date: Mon, 21 Jul 2014 07:28:49 -0700
-In-Reply-To: <20140721132116.GZ30888@lee--X1>
-References: <20140721113948.GX30888@lee--X1>
-	 <1405948406.21586.10.camel@joe-AO725> <20140721132116.GZ30888@lee--X1>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S932565AbaGUO34 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 10:29:56 -0400
+Received: from 8bytes.org ([81.169.241.247]:51406 "EHLO theia.8bytes.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754125AbaGUO3z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jul 2014 10:29:55 -0400
+Date: Mon, 21 Jul 2014 16:29:51 +0200
+From: Joerg Roedel <joro@8bytes.org>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Len Brown <len.brown@intel.com>,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/6] PM / Hibernate: Memory bitmap scalability
+ improvements
+Message-ID: <20140721142951.GN30979@8bytes.org>
+References: <1405684643-30234-1-git-send-email-joro@8bytes.org>
+ <20140719134904.GA2852@amd.pavel.ucw.cz>
+ <20140721083211.GK30979@8bytes.org>
+ <20140721114507.GA13921@amd.pavel.ucw.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140721114507.GA13921@amd.pavel.ucw.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-07-21 at 14:21 +0100, Lee Jones wrote:
-> On Mon, 21 Jul 2014, Joe Perches wrote:
-> > The MISSING_BREAK / fallthrough test does not support
-> > gcc's extension for case labels with ranges.
-[]
-> Yep, that's much worse [1] - I wish I never mentioned it. ;)
+Hi,
 
-I'm glad you did actually.
+On Mon, Jul 21, 2014 at 01:45:07PM +0200, Pavel Machek wrote:
+> Ok, so you have sped it up from O(n) to O(log(n)) speed, and increased
+> memory requirements from O(n) to O(n * log(n)), right?
 
-The code itself:
+No, new memory requirements are still ~O(n), because the additional pages
+needed for the index in the radix tree are outweighted by the memory
+saved by the smaller size of struct rtree_node compared to struct
+bm_block.
 
-bool foo(int bar)
-{
-	case (bar) {
-	case 1:
-	case 2:
-	case 4:
-		return true;
-	default:
-		return false;
-}
+If you want to see real numbers, here is a small tool which tells you
+exactly when you need more memory and how much you save with the new
+memory bitmap implementation:
 
-should not emit any error.
+	http://www.zlug.org/~joro/data/mem_req.c
 
-I'll fix it soon.
+It will tell you that the new implementation uses at most 2 more pages
+for smaller RAM sizes (2 pages because 2 memory bitmaps are allocated)
+and will actually save pages for bigger RAM sizes (already 30 pages on a
+1TB machine, 384 pages on a 12TB machine)
+
+You can also modify the above tool to give you some data to plot, then
+you will also SEE that there is still a linear relationship between RAM
+size and memory required by the old and new memory bitmap
+implementation.
+
+
+	Joerg
 
