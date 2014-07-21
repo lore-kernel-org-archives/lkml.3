@@ -1,50 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754837AbaGULFi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 07:05:38 -0400
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:32956 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754350AbaGULFe (ORCPT
+	id S1754843AbaGULHW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 07:07:22 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:14944 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754350AbaGULHV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 07:05:34 -0400
-Date: Mon, 21 Jul 2014 12:05:29 +0100
-From: Matt Fleming <matt@console-pimps.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Paul Mundt <lethal@linux-sh.org>
-Subject: Re: [for-next][PATCH 20/32] sh: ftrace: Remove check of obsolete
- variable function_trace_stop
-Message-ID: <20140721110529.GA32428@console-pimps.org>
-References: <20140719131524.009152325@goodmis.org>
- <20140719131612.883904957@goodmis.org>
+	Mon, 21 Jul 2014 07:07:21 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 99.127.230.128
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18ag1zpoHXN1CGJVeYXS5tb
+Date: Mon, 21 Jul 2014 04:05:56 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Joel Fernandes <joelf@ti.com>
+Cc: Rob Herring <rob.herring@calxeda.com>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/8] ARM: OMAP2+: timer: Simplify clock event/source name
+ setting
+Message-ID: <20140721110556.GW18374@atomide.com>
+References: <1398216429-4681-1-git-send-email-joelf@ti.com>
+ <1398216429-4681-3-git-send-email-joelf@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140719131612.883904957@goodmis.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1398216429-4681-3-git-send-email-joelf@ti.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 19 Jul, at 09:15:44AM, Steven Rostedt wrote:
-> From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+* Joel Fernandes <joelf@ti.com> [140422 18:27]:
+> For the OMAPs, we're setting up only one clockevent and clocksource. Further,
+> for DT boot there's no easy way to get the timer name and currently this is
+> done in an ugly way by reading a hwmod entry. So let's just set it to a simpler
+> name like timer_clkev and timer_clksrc.
 > 
-> Nothing sets function_trace_stop to disable function tracing anymore.
-> Remove the check for it in the arch code.
-> 
-> [ Please test this on your arch ]
-> 
-> Cc: Matt Fleming <matt@console-pimps.org>
-> Cc: Paul Mundt <lethal@linux-sh.org>
-> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> Signed-off-by: Joel Fernandes <joelf@ti.com>
 > ---
->  arch/sh/Kconfig      |  1 -
->  arch/sh/lib/mcount.S | 24 ++----------------------
->  2 files changed, 2 insertions(+), 23 deletions(-)
+>  arch/arm/mach-omap2/timer.c |   10 +++++-----
+>  1 file changed, 5 insertions(+), 5 deletions(-)
+> 
+> diff --git a/arch/arm/mach-omap2/timer.c b/arch/arm/mach-omap2/timer.c
+> index ec427e6..f192a41 100644
+> --- a/arch/arm/mach-omap2/timer.c
+> +++ b/arch/arm/mach-omap2/timer.c
+> @@ -251,7 +251,6 @@ static u32 __init omap_dm_timer_get_errata(void)
+>  static int __init omap_dm_timer_init_one(struct omap_dm_timer *timer,
+>  					 const char *fck_source,
+>  					 const char *property,
+> -					 const char **timer_name,
+>  					 int posted)
+>  {
+>  	char name[10]; /* 10 = sizeof("gptXX_Xck0") */
+> @@ -290,8 +289,6 @@ static int __init omap_dm_timer_init_one(struct omap_dm_timer *timer,
+>  	if (!oh)
+>  		return -ENODEV;
+>  
+> -	*timer_name = oh->name;
+> -
+>  	if (!of_have_populated_dt()) {
+>  		r = omap_hwmod_get_resource_byname(oh, IORESOURCE_IRQ, NULL,
+>  						   &irq);
+> @@ -365,8 +362,10 @@ static void __init omap2_gp_clockevent_init(int gptimer_id,
+>  	 */
+>  	__omap_dm_timer_override_errata(&clkev, OMAP_TIMER_ERRATA_I103_I767);
+>  
+> +	clockevent_gpt.name = "timer_clkev";
+> +
+>  	res = omap_dm_timer_init_one(&clkev, fck_source, property,
+> -				     &clockevent_gpt.name, OMAP_TIMER_POSTED);
+> +				     OMAP_TIMER_POSTED);
+>  	BUG_ON(res);
+>  
+>  	omap2_gp_timer_irq.dev_id = &clkev;
+> @@ -489,10 +488,11 @@ static void __init omap2_gptimer_clocksource_init(int gptimer_id,
+>  	clksrc.errata = omap_dm_timer_get_errata();
+>  
+>  	res = omap_dm_timer_init_one(&clksrc, fck_source, property,
+> -				     &clocksource_gpt.name,
+>  				     OMAP_TIMER_NONPOSTED);
+>  	BUG_ON(res);
+>  
+> +	clocksource_gpt.name = "timer_clksrc";
+> +
+>  	__omap_dm_timer_load_start(&clksrc,
+>  				   OMAP_TIMER_CTRL_AR, 0,
+>  				   OMAP_TIMER_NONPOSTED);
 
-I no longer have hardware to test this on, but it looks pretty straight
-forward.
+Hmm aren't we losing information now about which timer we are using?
 
--- 
-Matt Fleming, Intel Open Source Technology Center
+Might be worth checking if these new names are getting copied somewhere
+or what happens after init?
+
+Regards,
+
+Tony
