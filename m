@@ -1,78 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932836AbaGUPtd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 11:49:33 -0400
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:41149 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932481AbaGUPtb (ORCPT
+	id S932808AbaGUPwG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 11:52:06 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:43908 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932322AbaGUPwD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 11:49:31 -0400
+	Mon, 21 Jul 2014 11:52:03 -0400
+Message-ID: <53CD371E.6070600@wwwdotorg.org>
+Date: Mon, 21 Jul 2014 09:51:58 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-In-Reply-To: <20140721091623.GA16122@arm.com>
-References: <1405708100-13604-1-git-send-email-zlim.lnx@gmail.com>
-	<20140721091623.GA16122@arm.com>
-Date: Mon, 21 Jul 2014 08:49:29 -0700
-Message-ID: <CAMEtUuyC+MykPDO0ghTc=oex7KPLEy=BLRgWBdW+qJY7JXQmDQ@mail.gmail.com>
-Subject: Re: [PATCH 00/14] arm64: eBPF JIT compiler
-From: Alexei Starovoitov <ast@plumgrid.com>
-To: Will Deacon <will.deacon@arm.com>
-Cc: Zi Shen Lim <zlim.lnx@gmail.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Jiang Liu <liuj97@gmail.com>,
-        AKASHI Takahiro <takahiro.akashi@linaro.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Chema Gonzalez <chema@google.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
+To: Peter De Schrijver <pdeschrijver@nvidia.com>,
+        Stephen Boyd <sboyd@codeaurora.org>
+CC: "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
+        Stephen Warren <swarren@nvidia.com>, Arnd Bergmann <arnd@arndb.de>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: a case for a common efuse API?
+References: <53BC4DD7.20906@codeaurora.org> <20140709114907.GI23218@tbergstrom-lnx.Nvidia.com>
+In-Reply-To: <20140709114907.GI23218@tbergstrom-lnx.Nvidia.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 21, 2014 at 2:16 AM, Will Deacon <will.deacon@arm.com> wrote:
-> Hello,
->
-> On Fri, Jul 18, 2014 at 07:28:06PM +0100, Zi Shen Lim wrote:
->> This series implements eBPF JIT compiler for arm64.
->> Please see [14/14] for change log.
+On 07/09/2014 05:49 AM, Peter De Schrijver wrote:
+> On Tue, Jul 08, 2014 at 10:00:23PM +0200, Stephen Boyd wrote:
 >>
->> Patches [1-13/14] implement code generation functions.
->> Patch [14/14] implements the actual eBPF JIT compiler.
+>> I added Tegra folks because I see that on Tegra this hardware is exposed
+>> via an SoC specific API, tegra_fuse_readl(), and an associated driver in
+>> drivers/misc/fuse/tegra/. Unfortunately I don't see any users of the API
+>> outside of the speedo code in the same directory and the sysfs bin
+>> attribute that may or may not be in use by some userspace code.
 >>
->> Many thanks to everyone who's reviewed the code from
->> RFCv1->RFCv3, especially Alexei for BPF bits, and Will
->> for ARM64 codegen bits :)
->>
->> BTW, I'm happy to maintain arch/arm64/net (i.e. arm64 BPF bits).
->> Should I add a patch updating MAINTAINERS as Patch 15?
->
-> I don't think that's necessary at the moment, but if we start seeing an
-> influx of patches to arch/arm64/net, then that could make sense in the
-> future.
->
->> This series requires a patch that exports a function
->> from net/core (resulting from RFCv1 discussion). This patch
->> has been merged into net-next @ 9f12fbe603f7
->> ("net: filter: move load_pointer() into filter.h").
->>
->> This series applies against net-next and is tested working
->> with lib/test_bpf on ARMv8 Foundation Model.
->
-> Looks like it works on my Juno board too, so:
->
->   Acked-by: Will Deacon <will.deacon@arm.com>
->
-> for the series.
->
-> It's a bit late for 3.17 now, so I guess we'll queue this for 3.18 (which
-> also means the dependency on -next isn't an issue). Perhaps you could repost
-> around -rc3?
+> 
+> The SATA driver by Mikko Perttunen uses it. The driver hasn't been merged
+> though. There's some more upcoming work which makes use of it.
+> I don't think we can standardize much of an API for this. The data is
+> SoC specific, so the user will always need to have some SoC specific
+> knowledge on how to use it.
 
-Thanks for testing! Nice to see it working on real hw.
-I'm not sure why you're proposing a 4+ week delay. The patches
-will rot instead of getting used and tested. Imo it makes sense to
-get them into net-next now for 3.17.
-JIT is disabled by sysctl by default anyway.
+I think we could have a generic "read fuse X" API. The only thing that'd
+be chip-specific is the value of "X". That could be hard-coded into the
+client drivers, or perhaps represented in a DT propery e.g.
+#fuse-cells/xxx-fuses. That said, I wonder what benefit we'd get from
+such a common API. I suppose if any IP block was to be re-used in
+completely different SoC families, it'd isolate the driver from having
+to call different functions to read fuses on different SoC families, but
+that doesn't seem to happen in practice yet, and the issue could be
+solved later if needed.
+
+It'd certainly be hard to create any higher-layer semantic API here,
+since different SoCs store completely different sets of data in fuses,
+so there would be little point in a common "read the MAC address from
+the fuses" API, since that data wouldn't exist in fuses on many SoCs.
+
+> In some cases we need it very early (eg. to
+> determine the correct Tegra20 revision). On Tegra20 we can't use the CPU
+> to read the fuses due to a hw bug, we have to use DMA, which means the
+> transaction becomes blocking and could fail due to lack of resources.
+
+Yes, any such API would become "least common-denominator" or similar;
+i.e. any restriction imposed by any SoC would then affect how the API
+works on any other SoC.
+
+
