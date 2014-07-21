@@ -1,101 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752119AbaGUBmx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jul 2014 21:42:53 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:45032 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752046AbaGUBmv (ORCPT
+	id S1752158AbaGUBoe (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jul 2014 21:44:34 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:32996 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751738AbaGUBob (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jul 2014 21:42:51 -0400
-X-AuditID: cbfee68d-b7fd46d000005f36-1c-53cc70124b49
-Date: Mon, 21 Jul 2014 01:42:42 +0000 (GMT)
-From: =?euc-kr?B?x9S47cHW?= <myungjoo.ham@samsung.com>
-Subject: Re: [PATCH v4] PM / devfreq: Add possible_frequencies device attribute
-To: Saravana Kannan <skannan@codeaurora.org>,
-        =?euc-kr?Q?=B9=DA=B0=E6=B9=CE?= <kyungmin.park@samsung.com>
-Cc: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Reply-to: myungjoo.ham@samsung.com
+	Sun, 20 Jul 2014 21:44:31 -0400
+X-AuditID: cbfee68e-b7fb96d000004bfc-03-53cc707cde96
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Murali Karicheri'" <m-karicheri2@ti.com>,
+        "'Rob Herring'" <robherring2@gmail.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        "'Russell King'" <linux@arm.linux.org.uk>,
+        "'Grant Likely'" <grant.likely@linaro.org>,
+        "'Rob Herring'" <robh+dt@kernel.org>,
+        "'Mohit Kumar'" <mohit.kumar@st.com>,
+        "'Bjorn Helgaas'" <bhelgaas@google.com>,
+        "'Pratyush Anand'" <pratyush.anand@st.com>,
+        "'Richard Zhu'" <r65037@freescale.com>,
+        "'Kishon Vijay Abraham I'" <kishon@ti.com>,
+        "'Marek Vasut'" <marex@denx.de>, "'Arnd Bergmann'" <arnd@arndb.de>,
+        "'Pawel Moll'" <pawel.moll@arm.com>,
+        "'Mark Rutland'" <mark.rutland@arm.com>,
+        "'Ian Campbell'" <ijc+devicetree@hellion.org.uk>,
+        "'Kumar Gala'" <galak@codeaurora.org>,
+        "'Randy Dunlap'" <rdunlap@infradead.org>,
+        "'Jingoo Han'" <jg1.han@samsung.com>
+References: <1405696469-7172-1-git-send-email-m-karicheri2@ti.com>
+ <1405696469-7172-5-git-send-email-m-karicheri2@ti.com>
+ <CAL_JsqKheoWrSGtxPO=AE8g9iOAqfwRa=81Ku=Cfx8_gpDysOg@mail.gmail.com>
+ <53C9839C.5090604@ti.com>
+In-reply-to: <53C9839C.5090604@ti.com>
+Subject: Re: [PATCH v6 4/5] PCI: add PCI controller for keystone PCIe h/w
+Date: Mon, 21 Jul 2014 10:44:28 +0900
+Message-id: <006001cfa485$4f4fcff0$edef6fd0$%han@samsung.com>
 MIME-version: 1.0
-X-MTR: 20140721014009184@myungjoo.ham
-Msgkey: 20140721014009184@myungjoo.ham
-X-EPLocale: ko_KR.euc-kr
-X-Priority: 3
-X-EPWebmail-Msg-Type: personal
-X-EPWebmail-Reply-Demand: 0
-X-EPApproval-Locale: 
-X-EPHeader: ML
-X-EPTrCode: 
-X-EPTrName: 
-X-MLAttribute: 
-X-RootMTR: 20140721014009184@myungjoo.ham
-X-ParentMTR: 
-X-ArchiveUser: 
-X-CPGSPASS: N
-Content-type: text/plain; charset=euc-kr
-MIME-version: 1.0
-Message-id: <2979470.179111405906960960.JavaMail.weblogic@epml01>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupnleLIzCtJLcpLzFFi42JZI2JSpCtUcCbYYMp/PovLu+awOTB6fN4k
-	F8AYxWWTkpqTWZZapG+XwJVxeeYj1oI/XBX3pp5nbWC8wtXFyMkhJKAusWjJSTYQW0LARGJa
-	71pWCFtM4sK99UBxLqCapYwS167MY4cpen7iFAtEYg6jxOZ9s8C6WQRUJb5MOwBUxMHBJmAu
-	cX9GEEhYWMBf4s3KvywgtohAvkTvzptMIL3MAn1MEivnP2KDuEJJYs2+V2BFvAKCEidnPmGB
-	WKYqceXCdSaIuJrEv5lroK6TkJg1/QKUzSsxo/0pVL2cxLSva5ghbGmJ87M2MMJ8s/j7Y6g4
-	v8Sx2zuYQO4E6X1yPxhmzO7NX6ABISAx9cxBqFYtiektB6BW8UmsWfiWBWbMrlPLmWF672+Z
-	C3Yms4CixJTuh+wQtpbElx/72NC9xSvgKPH/9WmmCYzKs5CkZiFpn4WkHVnNAkaWVYyiqQXJ
-	BcVJ6UWGesWJucWleel6yfm5mxiBieH0v2e9OxhvH7A+xJgMjJKJzFKiyfnAxJJXEm9obGZk
-	YWpiamxkbmlGmrCSOG/Sw6QgIYH0xJLU7NTUgtSi+KLSnNTiQ4xMHJxSDYwlHStLQ9cxnbAX
-	uu7sbzVlccPLyxtnq/Vu3VyZ/Iw5be6M6fs8FBWtfkffMwvrlV23P3AVE/PxdeePmMdsPTQt
-	qO6aUOjUwij1HwYzHWumH/6zg+fwATPW/t396py26Quj8rgneb79JrN6o/ntcJWUGOmPb9k/
-	v/tts/BUzM6I9K9RfxyiZC4rsRRnJBpqMRcVJwIAwFZ0byIDAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpgk+LIzCtJLcpLzFFi42I5/e92n65QwZlgg1U/2C0u75rD5sDo8XmT
-	XABjVJpNRmpiSmqRQmpecn5KZl66rZJ3cLxzvKmZgaGuoaWFuZJCXmJuqq2Si0+ArltmDtBQ
-	JYWyxJxSoFBAYnGxkr6dTVF+aUmqQkZ+cYmtUrShuZGekYGeqZGeoXGslaGBgZEpUE1CWsbl
-	mY9YC/5wVdybep61gfEKVxcjJ4eQgLrEoiUn2UBsCQETiecnTrFA2GISF+6tB4pzAdXMYZTY
-	vG8WWBGLgKrEl2kH2LsYOTjYBMwl7s8IAgkLC/hLvFn5F6xXRCBfonfnTSaQXmaBPiaJlfMf
-	sUEsU5JYs+8VWBGvgKDEyZlPoJapSly5cJ0JIq4m8W/mGlaIuITErOkXoGxeiRntT6Hq5SSm
-	fV3DDGFLS5yftYER5ujF3x9Dxfkljt3ewQRyJ0jvk/vBMGN2b/4C9a+AxNQzB6FatSSmtxyA
-	WsUnsWbhWxaYMbtOLWeG6b2/ZS7YmcwCihJTuh+yQ9haEl9+7GND9xavgKPE/9enmSYwys1C
-	kpqFpH0WknZkNQsYWVYxiqYWJBcUJ6VXGOkVJ+YWl+al6yXn525iBKenZ4t2MP47b32IUYCD
-	UYmHdwHzmWAh1sSy4srcQ4wSHMxKIrwnMoBCvCmJlVWpRfnxRaU5qcWHGJOBETiRWUo0OR+Y
-	OvNK4g2NjU3MTEwtTSwMTM1JE1YS55W/lRQkJJCeWJKanZpakFoEs4WJg1OqgfHGqQtspzqN
-	al72eE4yOarj4LshvXy/3Y89927OiXu53boo6sq/usQD75YfO5r5517LtHebTtycsfZK3YWF
-	ttXSoYLL/8q/UxCYeeV+/IPMYC+V3rC7u/vOVvTvSnU5M+3AZOVzRkZb69vUpkyp1X1Zx8/W
-	G3kmcsPVmELXDb7py98su7UuZPM7JZbijERDLeai4kQATnGmLZMDAAA=
+Content-type: text/plain; charset=UTF-8
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac+ixyFs0Br5ziMPQJmpASfft7CzZgBviTgg
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrLKsWRmVeSWpSXmKPExsVy+t8zQ92agjPBBj07rSz+TjrGbrGkKcPi
+	5SFNi/43C1ktDvzZwWhx7tVKRovLCy+xWlx42sNmsenxNVaLy7vmsFmcnXeczeL2ZV6Lvt4D
+	bBZv2hoZLZZev8hksXHqL0aLCdPXsli0X1K2eDxL2OLtneksFq17j7BbfP/2jc1BzGPNvDWM
+	Hi3NPWwev39NYvS43NfL5DFv1gkWj3+H+5k8ds66y+6xYFOpx8rlX9g8Nq/Q8ti0qpPN4861
+	PUDeknqPvi2rGD2e/tjL7HH8xnamAMEoLpuU1JzMstQifbsEroxr1zMLfvBXLL78ja2BcSVP
+	FyMnh4SAicSS7w9YIGwxiQv31rN1MXJxCAksY5TYcWs/O0xR45Pr7BCJRYwSP08fgnJ+M0p8
+	WvKCGaSKTUBN4suXw2AdIgKhEi+OLQcbxSxwj1Xi+JM/UHPvMUq8mvmeDaSKE6jj24WrYN3C
+	Ap4SXxZsBTuERUBVYsOV40A2BwevgK3EsgUWIGFeAUGJH5PvgZUwC6hLTJq3iBnClpfYvOYt
+	M0i5BFD80V9diBuMJK427GCFKBGR2PfiHSPICRICszklZl5uYYZYJSDxbfIhFoheWYlNB5gh
+	PpaUOLjiBssERolZSDbPQrJ5FpLNs5CsWMDIsopRNLUguaA4Kb3ISK84Mbe4NC9dLzk/dxMj
+	JGn17WC8ecD6EGMy0PqJzFKiyfnApJdXEm9obGZkYWpiamxkbmlGmrCSOO+ih0lBQgLpiSWp
+	2ampBalF8UWlOanFhxiZODilGhgN9rK5HxBcndypUCJkzaQov++wlUpVFo9LfePzl49C9ZvW
+	pzFNjlzoXbxM9uBtWxlGYS125tlileockkEZGRs4mQ10HrqE2Mp/bJifuV57keVy3gabpsUL
+	xCbGbdrIdlnIJtzrI6vpho9vXrbMPVezvOz4pGPlaht+z9Sc/r6z3iw76ILZSSWW4oxEQy3m
+	ouJEAGrROgVwAwAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA2WSe0hTURzHObvb3VVcXafWwX8at7e1cmvqibKCHp6oyHxED2jd5mUbuUe7
+	Kr2g2ZPMTC0TR4mVWdp6aZG9RJepYIW5UqEclD0srKCWmVp0t1VInb++vy/fz5dzDj+KkOeS
+	kZTRnMHZzGw6QwaLW3/20Mqd1gfJ0V0vZqEfhU1SVL7bgN65pqIjfackqH64FqBH7ysBcp9q
+	l6C217kkqu7pkCD3rRMkeljaTKJnbhnKO1xPor792QCd7XwsQleLBgHKL74oRgfax6MeRxj6
+	8LxYjPbdbZSib/395IIx2FnqBHjvnlwSDw0WAuzOOyzCpY4WMf5574gI33R0S3FZdSauPOcl
+	cc35KFxddZDEzzvuCFP5Lpx3rQrg1wN3CdzcdUOUGLrODuYaODaNsyk4s86SZjTr45llydqF
+	2pjYaJVSNRvFMQoza+LimUXLE5VLjOnCFzCKLDY9U7ASWZ5nZs77vyE1ZYkS/QHXKFekJP1l
+	1NH/nI2XgKGj02gdGL31jLuftIPKkBwQREFaA7NfdUoDegxs81wmc0AwJadPA/i91SUNDEMA
+	fi7vJXwpkp4Evd57fiKcToW9Tef8BEF7JLD51fBv3APg+5JPpC8VJBD9bU/9dBi9FHrLrot9
+	WkxPhFeeNAuaomR0PKwoQz5bRofCgaMef4SgJ8PC0tNEQI+DNc4PhC8OBf/lD2XgDmr41F4r
+	CUTCYV3vR5AP5I4RTY4RTY4RTY4RSBkQV4EIzqqz8pv0JtUMnjXxmWb9DJ3FVA38m/gmshZU
+	2pEL0BRgQmQYPEiWS9gsfpvJBSBFMOGyFoNgydLYbds5m0Vry0zneBeIEd5ZQERG6CzCXpsz
+	tKpZmlj1bHUsUmvi4pixsvp9c1bJaT2bwW3mOCtn+8OJqKBIOyg+rteYh0q8m+5svz+25uTn
+	JMuGC5M2xjCHtmqXH7TD/K5jpDe1a96EAmNDI3E7a7A1ryhBVzf/SgIIq2AXh2LdSvrr+t3D
+	TWsb6zviWrqdc9pDEt62Fs+MmpbkUVAlnKYA7njzZUqPIntUH1uxfmj6/S2rrzO7Rqes6SYn
+	5jQ4GTFvYFVRhI1nfwEWQf1KnwMAAA==
 DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s6L1gw4S026664
 
-Sender : Saravana Kannan<skannan@codeaurora.org>
-Title : [PATCH v4] PM / devfreq: Add possible_frequencies device attribute
->
-> Some devices use freq_table instead of OPP. For those devices, the
-> available_frequencies sysfs file shows up empty. So, add a
-> possible_frequencies attribute/syfs file that list all the possible
-> frequencies.
->
-> For devices that use OPP, the output of this file will match
-> available_frequencies. It may change in the future to show all OPP
-> frequencies -- even the disabled ones.
->
-> Signed-off-by: Saravana Kannan 
+On Saturday, July 19, 2014 5:29 AM, Murali Karicheri wrote:
+> On 07/18/2014 03:31 PM, Rob Herring wrote:
+> > On Fri, Jul 18, 2014 at 10:14 AM, Murali Karicheri<m-karicheri2@ti.com>  wrote:
+> --- Cut ---
+> >> +
+> >> +Optional properties:-
+> >> +       phys: phandle to Generic Keystone SerDes phy for PCI
+> >> +       phy-names: name of the Generic Keystine SerDes phy for PCI
+> >> +         - If boot loader already does PCI link establishment, then phys and
+> >> +           phy-names shouldn't be present.
+> >> +       ti,enable-linktrain - Enable Link training.
+> >> +         - If boot loader already does PCI link establishment, then this
+> >> +           shouldn't be present.
+> >
+> > Can't you read from the h/w if the link is trained?
 
-Looks Good.
-Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
+I agree with Rob Herring's suggestion.
 
-I'll rebase and merge into devfreq-next when I get back (I can only access the Internet via mobile phones until Wed this week.)
-I'll move this sysfs entry to .../stat along with stat sysfs and make it conditional (appears only when stat is available)
+> 
+> Yes.
+> 
+> There are customers who use this driver with PCI Link setup done in the
+> boot loader. This property tells the driver to bypass Link setup
+> procedure in that case. Is this undesirable and if so. how other
+> platforms handle it? Check first if link is trained or start the link
+> setup procedure? Let me know. If this is fine, please provide your Ack.
 
-Cheers,
-MyungJoo.
---
-MyungJoo Ham (ÇÔ¸íÁÖ), PHD
-Frontier CS Lab, Software Center
-Samsung Electronics
-Cell: +82-10-6714-2858ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Please, check the following code of Exynos PCIe diver.
+
+./drivers/pci/host/pci-exynos.c
+
+static int exynos_pcie_establish_link(struct pcie_port *pp)
+{
+	struct exynos_pcie *exynos_pcie = to_exynos_pcie(pp);
+	void __iomem *elbi_base = exynos_pcie->elbi_base;
+	void __iomem *pmu_base = exynos_pcie->pmu_base;
+
+	if (dw_pcie_link_up(pp)) {
+		dev_err(pp->dev, "Link already up\n");
+		return 0;
+	}
+	.....
+
+In the case of Exynos PCIe, the Exynos PCIe driver checks the
+h/w bit such as PCIE_ELBI_LTSSM_ENABLE bit of PCIE_ELBI_RDLH_LINKUP
+offset register.
+
+If the link is already set up by the boot loader or other reasons,
+the driver will skip some initialization codes.
+
+The first step is that you find such h/w bit for checking link up.
+If so, please add the code for skipping, when the link is already
+set up.
+
+Best regards,
+Jingoo Han
+
