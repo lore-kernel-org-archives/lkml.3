@@ -1,94 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756091AbaGVPh5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 11:37:57 -0400
-Received: from mail-vc0-f178.google.com ([209.85.220.178]:57708 "EHLO
-	mail-vc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755637AbaGVPhz (ORCPT
+	id S1756114AbaGVPib (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 11:38:31 -0400
+Received: from smtprelay04.ispgateway.de ([80.67.31.38]:47840 "EHLO
+	smtprelay04.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756017AbaGVPhV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 11:37:55 -0400
-MIME-Version: 1.0
-In-Reply-To: <5467203.eMVRoNeSx1@wuerfel>
-References: <1405696469-7172-1-git-send-email-m-karicheri2@ti.com>
- <1405696469-7172-5-git-send-email-m-karicheri2@ti.com> <CAL_JsqKheoWrSGtxPO=AE8g9iOAqfwRa=81Ku=Cfx8_gpDysOg@mail.gmail.com>
- <5467203.eMVRoNeSx1@wuerfel>
-From: Rob Herring <robherring2@gmail.com>
-Date: Tue, 22 Jul 2014 10:37:34 -0500
-Message-ID: <CAL_JsqLrh_M0gTRezST9jX1X_5Eo98taNcHok6QX6vDMxeqkcw@mail.gmail.com>
-Subject: Re: [PATCH v6 4/5] PCI: add PCI controller for keystone PCIe h/w
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Murali Karicheri <m-karicheri2@ti.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Mohit Kumar <mohit.kumar@st.com>,
-        Jingoo Han <jg1.han@samsung.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        Pratyush Anand <pratyush.anand@st.com>,
-        Richard Zhu <r65037@freescale.com>,
-        Kishon Vijay Abraham I <kishon@ti.com>, Marek Vasut <marex@denx.de>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Randy Dunlap <rdunlap@infradead.org>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 22 Jul 2014 11:37:21 -0400
+From: Peter Feuerer <peter@piie.net>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Peter Feuerer <peter@piie.net>, Andrew Morton <akpm@linux-foundation.org>,
+        Andreas Mohr <andi@lisas.de>
+Subject: [PATCH v5 2/6] acerhdf: Adding support for new models
+Date: Tue, 22 Jul 2014 17:37:12 +0200
+Message-Id: <1406043436-17068-3-git-send-email-peter@piie.net>
+X-Mailer: git-send-email 2.0.2
+In-Reply-To: <1406043436-17068-1-git-send-email-peter@piie.net>
+References: <1398561815-22033-1-git-send-email-peter@piie.net>
+ <1406043436-17068-1-git-send-email-peter@piie.net>
+X-Df-Sender: cGV0ZXJAcGlpZS5uZXQ=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 18, 2014 at 2:50 PM, Arnd Bergmann <arnd@arndb.de> wrote:
-> On Friday 18 July 2014 14:31:39 Rob Herring wrote:
->> > +
->> > + Example:
->> > +       pcie_msi_intc: msi-interrupt-controller {
->> > +                       interrupt-controller;
->> > +                       #interrupt-cells = <1>;
->> > +                       interrupt-parent = <&gic>;
->> > +                       interrupts = <GIC_SPI 30 IRQ_TYPE_EDGE_RISING>,
->> > +                                       <GIC_SPI 31 IRQ_TYPE_EDGE_RISING>,
->> > +                                       <GIC_SPI 32 IRQ_TYPE_EDGE_RISING>,
->> > +                                       <GIC_SPI 33 IRQ_TYPE_EDGE_RISING>,
->> > +                                       <GIC_SPI 34 IRQ_TYPE_EDGE_RISING>,
->> > +                                       <GIC_SPI 35 IRQ_TYPE_EDGE_RISING>,
->> > +                                       <GIC_SPI 36 IRQ_TYPE_EDGE_RISING>,
->> > +                                       <GIC_SPI 37 IRQ_TYPE_EDGE_RISING>;
->> > +       };
->> > +
->> > +pcie_intc: Interrupt controller device node for Legacy irq chip
->> > +       interrupt-cells: should be set to 1
->> > +       interrupt-parent: Parent interrupt controller phandle
->> > +       interrupts: GIC interrupt lines connected to PCI Legacy interrupt lines
->> > +
->> > + Example:
->> > +       pcie_intc: legacy-interrupt-controller {
->> > +               interrupt-controller;
->> > +               #interrupt-cells = <1>;
->> > +               interrupt-parent = <&gic>;
->> > +               interrupts = <GIC_SPI 26 IRQ_TYPE_EDGE_RISING>,
->> > +                       <GIC_SPI 27 IRQ_TYPE_EDGE_RISING>,
->> > +                       <GIC_SPI 28 IRQ_TYPE_EDGE_RISING>,
->> > +                       <GIC_SPI 29 IRQ_TYPE_EDGE_RISING>;
->> > +       };
->>
->> This seems wrong. Legacy interrupts should be described with
->> interrupt-map and then PCI child devices have a standard interrupt
->> specifier.
->>
->> I'm not sure about MSIs, but I would think they would have a standard
->> format too.
->>
->
-> IIRC, it's actually the correct way to do this here: the problem is that
-> the PCI IRQs are not directly connected to the GIC, but instead there is
-> a nested irqchip that has each PCI IRQ routed to it and that requires
-> an extra EOI for each interrupt.
->
-> The interrupt-map in the PCI host points to this special irqchip rather
-> than to the GIC.
+added following new models:
+   * Aspire 5755G
+   * AO521
+   * AO751h
+   * Aspire One 753
+   * Extensa 5420
+   * Aspire 5315
+   * Aspire 5739G
+   * TravelMate TM8573T
 
-Okay, if there is still an interrupt-map property, then I agree. This
-wasn't clear in the example.
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Andreas Mohr <andi@lisas.de>
+Acked-by: Borislav Petkov <bp@suse.de>
+Signed-off-by: Peter Feuerer <peter@piie.net>
+---
+ drivers/platform/x86/acerhdf.c | 25 ++++++++++++++++++++++++-
+ 1 file changed, 24 insertions(+), 1 deletion(-)
 
-Rob
+diff --git a/drivers/platform/x86/acerhdf.c b/drivers/platform/x86/acerhdf.c
+index 2c58f10..f30767f 100644
+--- a/drivers/platform/x86/acerhdf.c
++++ b/drivers/platform/x86/acerhdf.c
+@@ -50,7 +50,7 @@
+  */
+ #undef START_IN_KERNEL_MODE
+ 
+-#define DRV_VER "0.5.29"
++#define DRV_VER "0.5.30"
+ 
+ /*
+  * According to the Atom N270 datasheet,
+@@ -199,17 +199,33 @@ static const struct bios_settings_t bios_tbl[] = {
+ 	{"Acer", "Aspire 1810T",  "v1.3310", 0x55, 0x58, {0x9e, 0x00}, 0},
+ 	{"Acer", "Aspire 1810TZ", "v1.3314", 0x55, 0x58, {0x9e, 0x00}, 0},
+ 	{"Acer", "Aspire 1810T",  "v1.3314", 0x55, 0x58, {0x9e, 0x00}, 0},
++	/* Acer 5755G */
++	{"Acer", "Aspire 5755G",  "V1.20",   0xab, 0xb4, {0x00, 0x08}, 0},
++	{"Acer", "Aspire 5755G",  "V1.21",   0xab, 0xb3, {0x00, 0x08}, 0},
++	/* Acer 521 */
++	{"Acer", "AO521", "V1.11", 0x55, 0x58, {0x1f, 0x00}, 0},
+ 	/* Acer 531 */
+ 	{"Acer", "AO531h", "v0.3104", 0x55, 0x58, {0x20, 0x00}, 0},
+ 	{"Acer", "AO531h", "v0.3201", 0x55, 0x58, {0x20, 0x00}, 0},
+ 	{"Acer", "AO531h", "v0.3304", 0x55, 0x58, {0x20, 0x00}, 0},
+ 	/* Acer 751 */
++	{"Acer", "AO751h", "V0.3206", 0x55, 0x58, {0x21, 0x00}, 0},
+ 	{"Acer", "AO751h", "V0.3212", 0x55, 0x58, {0x21, 0x00}, 0},
++	/* Acer 753 */
++	{"Acer", "Aspire One 753", "V1.24", 0x93, 0xac, {0x14, 0x04}, 1},
+ 	/* Acer 1825 */
+ 	{"Acer", "Aspire 1825PTZ", "V1.3118", 0x55, 0x58, {0x9e, 0x00}, 0},
+ 	{"Acer", "Aspire 1825PTZ", "V1.3127", 0x55, 0x58, {0x9e, 0x00}, 0},
++	/* Acer Extensa 5420 */
++	{"Acer", "Extensa 5420", "V1.17", 0x93, 0xac, {0x14, 0x04}, 1},
++	/* Acer Aspire 5315 */
++	{"Acer", "Aspire 5315", "V1.19", 0x93, 0xac, {0x14, 0x04}, 1},
++	/* Acer Aspire 5739 */
++	{"Acer", "Aspire 5739G", "V1.3311", 0x55, 0x58, {0x20, 0x00}, 0},
+ 	/* Acer TravelMate 7730 */
+ 	{"Acer", "TravelMate 7730G", "v0.3509", 0x55, 0x58, {0xaf, 0x00}, 0},
++	/* Acer TravelMate TM8573T */
++	{"Acer", "TM8573T", "V1.13", 0x93, 0xa8, {0x14, 0x04}, 1},
+ 	/* Gateway */
+ 	{"Gateway", "AOA110", "v0.3103",  0x55, 0x58, {0x21, 0x00}, 0},
+ 	{"Gateway", "AOA150", "v0.3103",  0x55, 0x58, {0x20, 0x00}, 0},
+@@ -741,9 +757,15 @@ MODULE_ALIAS("dmi:*:*Acer*:pnAOA*:");
+ MODULE_ALIAS("dmi:*:*Acer*:pnAO751h*:");
+ MODULE_ALIAS("dmi:*:*Acer*:pnAspire*1410*:");
+ MODULE_ALIAS("dmi:*:*Acer*:pnAspire*1810*:");
++MODULE_ALIAS("dmi:*:*Acer*:pnAspire*5755G:");
+ MODULE_ALIAS("dmi:*:*Acer*:pnAspire*1825PTZ:");
++MODULE_ALIAS("dmi:*:*Acer*:pnAO521*:");
+ MODULE_ALIAS("dmi:*:*Acer*:pnAO531*:");
++MODULE_ALIAS("dmi:*:*Acer*:pnAspire*5739G:");
++MODULE_ALIAS("dmi:*:*Acer*:pnAspire*One*753:");
++MODULE_ALIAS("dmi:*:*Acer*:pnAspire*5315:");
+ MODULE_ALIAS("dmi:*:*Acer*:TravelMate*7730G:");
++MODULE_ALIAS("dmi:*:*Acer*:TM8573T:");
+ MODULE_ALIAS("dmi:*:*Gateway*:pnAOA*:");
+ MODULE_ALIAS("dmi:*:*Gateway*:pnLT31*:");
+ MODULE_ALIAS("dmi:*:*Packard*Bell*:pnAOA*:");
+@@ -752,6 +774,7 @@ MODULE_ALIAS("dmi:*:*Packard*Bell*:pnDOTMU*:");
+ MODULE_ALIAS("dmi:*:*Packard*Bell*:pnENBFT*:");
+ MODULE_ALIAS("dmi:*:*Packard*Bell*:pnDOTMA*:");
+ MODULE_ALIAS("dmi:*:*Packard*Bell*:pnDOTVR46*:");
++MODULE_ALIAS("dmi:*:*Acer*:pnExtensa 5420*:");
+ 
+ module_init(acerhdf_init);
+ module_exit(acerhdf_exit);
+-- 
+2.0.2
+
