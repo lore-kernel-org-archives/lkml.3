@@ -1,42 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753395AbaGVHWP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 03:22:15 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43251 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750743AbaGVHWM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 03:22:12 -0400
-Date: Tue, 22 Jul 2014 00:21:48 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Kiran Padwal <kiran.padwal21@gmail.com>
-Cc: devel@driverdev.osuosl.org, gulsah.1004@gmail.com, wkang77@gmail.com,
-        rusty@rustcorp.com.au, valentina.manea.m@gmail.com,
-        linux-kernel@vger.kernel.org, deanahn@gctsemi.com,
-        rashika.kheria@gmail.com, joe@perches.com, jonathankim@gctsemi.com
-Subject: Re: [PATCH] Staging: gdm724x: gdm_lte.c: Fix warning of prefer
- ether_addr_copy()
-Message-ID: <20140722072148.GA11054@kroah.com>
-References: <1406012202-31208-1-git-send-email-kiran.padwal21@gmail.com>
+	id S1753051AbaGVHX0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 03:23:26 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:38735 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751514AbaGVHXZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 03:23:25 -0400
+Message-ID: <53CE1154.4010002@ti.com>
+Date: Tue, 22 Jul 2014 12:53:00 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1406012202-31208-1-git-send-email-kiran.padwal21@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Lee Jones <lee.jones@linaro.org>,
+        Kishon Vijay Abraham I <kishon@uda0393678>
+CC: <linux-arm-kernel@lists.infrared.org>, <linux-kernel@vger.kernel.org>,
+        <kernel@stlinux.com>
+Subject: Re: [PATCH v3 0/5] phy: miphy365x: Introduce support for MiPHY365x
+References: <1404906074-31992-1-git-send-email-lee.jones@linaro.org> <20140721062805.GA8781@uda0393678> <20140721073959.GR30888@lee--X1>
+In-Reply-To: <20140721073959.GR30888@lee--X1>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 22, 2014 at 12:26:42PM +0530, Kiran Padwal wrote:
-> This patch fixes the following checkpatch.pl warnings:
-> WARNING: "Prefer ether_addr_copy() over memcpy() if the Ethernet addresses are __aligned(2)".
+Hi,
 
-Is that true here?
+On Monday 21 July 2014 01:09 PM, Lee Jones wrote:
+> Hi Kishon,
+> 
+>>> This patchset is based on the two core patches you sent to the
+>>> list which facilitate creating PHYs residing on multi-channel
+>>> controllers.  The changes since the last submission centre
+>>> around dynamic PHY creation based solely on what is provided via
+>>> Device Tree, as requested.  The other review comments have also
+>>> been addressed in this set.
+>>
+>> Merged the first four patches of this series. (merged v3+1 for 1st patch).
+>> I'm not sure who would be merging the dt patch (5/5). But for now I've merged
+>> 2/5 in linux-phy tree since the phy patch seems to be dependent on it.
+>> So the dt patch can be merged only after -rc1. However if whoever merges
+>> dt wants to get it merged during the merge window, I can prepare a common
+>> branch which both of us can merge to. Either ways, dt Maintainer should
+>> let me know.
+> 
+> Thanks for applying.  It would be really helpful if you could put just
+> patch 2/5 onto an immutable branch and provide a tag e that Maxime
+> could pull from.
 
-Have you tested this on the hardware to ensure it works properly?
+Sure. Created tag
+git://git.kernel.org/pub/scm/linux/kernel/git/kishon/linux-phy.git
+miphy365x_dt_common_header (branch:miphy365x_dt_header). It is based on 3.16-rc5.
 
-I hate that checkpatch message...
-
-thanks,
-
-greg k-h
+Thanks
+Kishon
+> 
+> Kind regards,
+> Lee
+> 
+>>>  .../devicetree/bindings/phy/phy-miphy365x.txt      |  76 +++
+>>>  arch/arm/boot/dts/stih416-b2020-revE.dts           |  10 +
+>>>  arch/arm/boot/dts/stih416-b2020.dts                |  12 +
+>>>  arch/arm/boot/dts/stih416.dtsi                     |  22 +
+>>>  drivers/phy/Kconfig                                |  10 +
+>>>  drivers/phy/Makefile                               |   1 +
+>>>  drivers/phy/phy-miphy365x.c                        | 636 +++++++++++++++++++++
+>>>  include/dt-bindings/phy/phy-miphy365x.h            |  14 +
+>>>  8 files changed, 781 insertions(+)
+> 
