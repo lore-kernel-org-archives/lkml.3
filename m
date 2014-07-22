@@ -1,29 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751755AbaGVEQ2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 00:16:28 -0400
-Received: from mail-vc0-f182.google.com ([209.85.220.182]:36401 "EHLO
-	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750836AbaGVEQ1 (ORCPT
+	id S1752448AbaGVES5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 00:18:57 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:33477 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752122AbaGVESz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 00:16:27 -0400
+	Tue, 22 Jul 2014 00:18:55 -0400
+To: Christoph Hellwig <hch@lst.de>
+Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
+        linux-scsi@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
+        Bart Van Assche <bvanassche@fusionio.com>,
+        Mike Christie <michaelc@cs.wisc.edu>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Robert Elliott <Elliott@hp.com>, Webb Scales <webbnh@hp.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 07/14] scsi: convert host_busy to atomic_t
+From: "Martin K. Petersen" <martin.petersen@oracle.com>
+Organization: Oracle Corporation
+References: <1405678393-11497-1-git-send-email-hch@lst.de>
+	<1405678393-11497-8-git-send-email-hch@lst.de>
+Date: Tue, 22 Jul 2014 00:18:19 -0400
+In-Reply-To: <1405678393-11497-8-git-send-email-hch@lst.de> (Christoph
+	Hellwig's message of "Fri, 18 Jul 2014 12:13:06 +0200")
+Message-ID: <yq1lhrmkovo.fsf@sermon.lab.mkp.net>
+User-Agent: Gnus/5.130012 (Ma Gnus v0.12) Emacs/24.2 (gnu/linux)
 MIME-Version: 1.0
-Date: Tue, 22 Jul 2014 00:16:26 -0400
-Message-ID: <CAPDOMVhdK67Fc5KsamL8XKdRNy0VjKB3ub24krgwmRsnZGtQNQ@mail.gmail.com>
-Subject: Fix me in netx-regs.h
-From: Nick Krause <xerofoify@gmail.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: linux-arm-kernel@lists.infradead.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Russell,
-I did give thought to our previous conversations and I will still do
-fix mes but am going to be more careful
-with I submit them. Furthermore it seems  #define
-NETX_GPIO_COUNTER_CTRL_GPIO_RE is not defined
-correctly. As the maintainer what should I define it to?
-Cheers Nick
+>>>>> "Christoph" == Christoph Hellwig <hch@lst.de> writes:
+
+Christoph> Avoid taking the host-wide host_lock to check the per-host
+Christoph> queue limit.  Instead we do an atomic_inc_return early on to
+Christoph> grab our slot in the queue, and if nessecary decrement it
+Christoph> after finishing all checks.
+
+More nitpicking. In the two previous atomic conversion patches you kept
+%hu for the atomic_t. Here it's %d.
+
++static ssize_t
++sdev_show_device_busy(struct device *dev, struct device_attribute *attr,
++		char *buf)
++{
++	struct scsi_device *sdev = to_scsi_device(dev);
++	return snprintf(buf, 20, "%d\n", atomic_read(&sdev->device_busy));
++}
++static DEVICE_ATTR(device_busy, S_IRUGO, sdev_show_device_busy, NULL);
+
+Reviewed-by: Martin K. Petersen <martin.petersen@oracle.com>
+
+-- 
+Martin K. Petersen	Oracle Linux Engineering
