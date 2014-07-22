@@ -1,53 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753485AbaGVI0j (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 04:26:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12341 "EHLO mx1.redhat.com"
+	id S1753550AbaGVI0z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 04:26:55 -0400
+Received: from hofr.at ([212.69.189.236]:35407 "EHLO mail.hofr.at"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753318AbaGVI0h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 04:26:37 -0400
-Date: Tue, 22 Jul 2014 10:27:16 +0200
-From: Alexander Gordeev <agordeev@redhat.com>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] blk-mq: bitmap tag: fix potential unwakeable sleep in
- bt_get()
-Message-ID: <20140722082716.GA12370@dhcp-26-207.brq.redhat.com>
-References: <1405930246-2051-1-git-send-email-agordeev@redhat.com>
- <53CCCC76.7060506@kernel.dk>
- <20140721083202.GA2107@dhcp-26-207.brq.redhat.com>
- <53CCD08C.80702@kernel.dk>
- <20140721091144.GB2107@dhcp-26-207.brq.redhat.com>
+	id S1753182AbaGVI0w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 04:26:52 -0400
+X-Greylist: delayed 459 seconds by postgrey-1.27 at vger.kernel.org; Tue, 22 Jul 2014 04:26:52 EDT
+Date: Tue, 22 Jul 2014 10:19:09 +0200
+From: Nicholas Mc Guire <der.herr@hofr.at>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: cocci@systeme.lip6.fr
+Subject: [PATCH] kfree followed by a TRACE_RET before ref should be ok
+Message-ID: <20140722081909.GA7723@opentech.at>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140721091144.GB2107@dhcp-26-207.brq.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 21, 2014 at 11:11:44AM +0200, Alexander Gordeev wrote:
-> > My bad, was looking at the wrong sources. What is the race? If the
-> > clear and wakeup come in after the prepare_to_wait() but before the
-> > io_schedule(), the io_schedule() will be a no-op and it wont
-> > actually sleep. Your commit message doesn't mention any particular
-> > details.
-> 
-> Let me examine the code.. It was few weeks ago and I can not
-> remember what was that. And the changelog does not help :)
 
-Jens,
+kfree.cocci currently triggers on constructs like
 
-I can not recall what was my concern. Sorry for the noise.
+drivers/staging/rts5208/spi.c:
+596    if (retval < 0) {
+597            kfree(buf);
+598            rtsx_clear_spi_error(chip);
+599            spi_set_err_code(chip, SPI_HW_ERR);
+600            TRACE_RET(chip, STATUS_FAIL);
+601    }
+602
+603    rtsx_stor_access_xfer_buf(buf, pagelen, srb, &index, &offset,
+                            TO_XFER_BUF);
 
-Thanks!
+with:
 
-> > -- 
-> > Jens Axboe
-> > 
+./drivers/staging/rts5208/spi.c:603:28-31: ERROR: reference preceded 
+by free on line 597
 
+but this should be fine - so TRACE_RET is added to the list of calls 
+"protecting" access to freed objects see drivers/staging/rts5208/trace.h
+
+
+Acked-by: Julia Lawall <julia.lawall@lip6.fr>
+Signed-off-by: Nicholas Mc Guire <der.herr@hofr.at>
+---
+ scripts/coccinelle/free/kfree.cocci |    2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/scripts/coccinelle/free/kfree.cocci b/scripts/coccinelle/free/kfree.cocci
+index 577b780..04d3f4f 100644
+--- a/scripts/coccinelle/free/kfree.cocci
++++ b/scripts/coccinelle/free/kfree.cocci
+@@ -101,6 +101,8 @@ kfree@p1(E,...)
+ |
+  return_ACPI_STATUS(...)
+ |
++ TRACE_RET(...)
++|
+  E@p2 // bad use
+ )
+ 
 -- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
+1.7.10.4
+
