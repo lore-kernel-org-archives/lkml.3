@@ -1,54 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932395AbaGVXYU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 19:24:20 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49828 "EHLO
+	id S1756999AbaGVX1u (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 19:27:50 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49835 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932171AbaGVXYT (ORCPT
+	with ESMTP id S1752313AbaGVX1s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 19:24:19 -0400
-Date: Tue, 22 Jul 2014 16:24:18 -0700
+	Tue, 22 Jul 2014 19:27:48 -0400
+Date: Tue, 22 Jul 2014 16:27:48 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
-To: Enric Balletbo i Serra <eballetbo@iseebcn.com>
-Cc: pavan_savoy@ti.com, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org
-Subject: Re: [PATCH] drivers/misc/ti-st: Load firmware from ti-connectivity
- directory.
-Message-ID: <20140722232418.GA18997@kroah.com>
-References: <1406027318-26186-1-git-send-email-eballetbo@iseebcn.com>
+To: Jean-Michel Hautbois <jean-michel.hautbois@vodalys.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>, arnd@arndb.de,
+        Stefan Roese <sr@denx.de>
+Subject: Re: [PATCH v3] Lattice ECP3 FPGA: Correct endianness
+Message-ID: <20140722232748.GA19112@kroah.com>
+References: <CAL8zT=jfAPG3P7FW1Akp1Q2pbji=Vt_6jUJJzCFvp8F2uBs+fg@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1406027318-26186-1-git-send-email-eballetbo@iseebcn.com>
+In-Reply-To: <CAL8zT=jfAPG3P7FW1Akp1Q2pbji=Vt_6jUJJzCFvp8F2uBs+fg@mail.gmail.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 22, 2014 at 01:08:38PM +0200, Enric Balletbo i Serra wrote:
-> Looks like the default location for TI firmware is inside the ti-connectivity
-> directory, to be coherent with other firmware request used by TI drivers, load
-> the TIInit firmware from this directory instead of /lib/firmware directly.
+On Mon, Jul 21, 2014 at 07:00:37PM +0200, Jean-Michel Hautbois wrote:
+> This code corrects endianness and avoids a sparse error.
+> Tested with Lattice ECP3-35 with Freescale i.MX6.
+> It also sends uevent in order to load it.
 > 
-> Signed-off-by: Enric Balletbo i Serra <eballetbo@iseebcn.com>
+> Signed-off-by: Jean-Michel Hautbois <jean-michel.hautbois@vodalys.com>
 > ---
->  drivers/misc/ti-st/st_kim.c | 5 +++--
->  1 file changed, 3 insertions(+), 2 deletions(-)
+>  drivers/misc/lattice-ecp3-config.c | 16 +++++++++-------
+>  1 file changed, 9 insertions(+), 7 deletions(-)
 > 
-> diff --git a/drivers/misc/ti-st/st_kim.c b/drivers/misc/ti-st/st_kim.c
-> index 9d3dbb2..fa6a900 100644
-> --- a/drivers/misc/ti-st/st_kim.c
-> +++ b/drivers/misc/ti-st/st_kim.c
-> @@ -244,7 +244,8 @@ static long read_local_version(struct kim_data_s *kim_gdata, char *bts_scr_name)
->  	if (version & 0x8000)
->  		maj_ver |= 0x0008;
->  
-> -	sprintf(bts_scr_name, "TIInit_%d.%d.%d.bts", chip, maj_ver, min_ver);
-> +	sprintf(bts_scr_name, "ti-connectivity/TIInit_%d.%d.%d.bts",
-> +		chip, maj_ver, min_ver);
+> diff --git a/drivers/misc/lattice-ecp3-config.c
+> b/drivers/misc/lattice-ecp3-config.c
+> index bb26f08..f77ff4b 100644
+> --- a/drivers/misc/lattice-ecp3-config.c
+> +++ b/drivers/misc/lattice-ecp3-config.c
+> @@ -16,6 +16,7 @@
+>  #include <linux/spi/spi.h>
+>  #include <linux/platform_device.h>
+>  #include <linux/delay.h>
+> +#include <asm/unaligned.h>
+> 
+>  #define FIRMWARE_NAME  "lattice-ecp3.bit"
+> 
+> @@ -92,8 +93,8 @@ static void firmware_load(const struct firmware *fw,
+> void *context)
+>         /* Trying to speak with the FPGA via SPI... */
+>         txbuf[0] = FPGA_CMD_READ_ID;
+>         ret = spi_write_then_read(spi, txbuf, 8, rxbuf, rx_len);
+> -       dev_dbg(&spi->dev, "FPGA JTAG ID=%08x\n", *(u32 *)&rxbuf[4]);
+> -       jedec_id = *(u32 *)&rxbuf[4];
+> +       jedec_id = get_unaligned_be32(&rxbuf[4]);
+> +       dev_dbg(&spi->dev, "FPGA JTAG ID=%08x\n", jedec_id);
 
-Can I get an ack from a ti.com address to verify that this is where the
-driver really is?
+All tabs are converted to spaces, making this patch impossible to apply
+:(
+
+
+Can you fix that up and resend?
 
 thanks,
 
