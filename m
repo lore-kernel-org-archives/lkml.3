@@ -1,181 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754709AbaGVNpK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 09:45:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33085 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754488AbaGVNpF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 09:45:05 -0400
-From: "Jerome Marchand" <jmarchan@redhat.com>
-To: linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org, linux-s390@vger.kernel.org,
-        linux-doc@vger.kernel.org, Hugh Dickins <hughd@google.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, linux390@de.ibm.com,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Randy Dunlap <rdunlap@infradead.org>
-Subject: [PATCH 4/5] mm, shmem: Add shmem swap memory accounting
-Date: Tue, 22 Jul 2014 15:43:51 +0200
-Message-Id: <1406036632-26552-5-git-send-email-jmarchan@redhat.com>
-In-Reply-To: <1406036632-26552-1-git-send-email-jmarchan@redhat.com>
-References: <1406036632-26552-1-git-send-email-jmarchan@redhat.com>
+	id S1754336AbaGVNsc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 09:48:32 -0400
+Received: from mail-ig0-f179.google.com ([209.85.213.179]:52276 "EHLO
+	mail-ig0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750870AbaGVNsb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 09:48:31 -0400
+Date: Tue, 22 Jul 2014 14:48:24 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Joe Perches <joe@perches.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        sameo@linux.intel.com
+Subject: Re: [PATCH 09/19] mfd: ezx-pcap: Repair coding style errors picked
+ up with checkpatch
+Message-ID: <20140722134824.GE16065@lee--X1>
+References: <1406027485-15657-1-git-send-email-lee.jones@linaro.org>
+ <1406027485-15657-10-git-send-email-lee.jones@linaro.org>
+ <1406036038.30871.19.camel@joe-AO725>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1406036038.30871.19.camel@joe-AO725>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adds get_mm_shswap() which compute the size of swaped out shmem. It
-does so by pagewalking the mm and using the new shmem_locate() function
-to get the physical location of shmem pages.
-The result is displayed in the new VmShSw line of /proc/<pid>/status.
-Use mm_walk an shmem_locate() to account paged out shmem pages.
+On Tue, 22 Jul 2014, Joe Perches wrote:
 
-It significantly slows down /proc/<pid>/status acccess speed when
-there is a big shmem mapping. If that is an issue, we can drop this
-patch and only display this counter in the inherently slower
-/proc/<pid>/smaps file (cf. next patch).
+> On Tue, 2014-07-22 at 12:11 +0100, Lee Jones wrote:
+> > This is part of an effort to clean-up the MFD subsystem.
+> > 
+> > WARNING: Missing a blank line after declarations
+> > +       u32 flags;
+> > +       void (*callback)(void *, u16[]);
+> 
+> False positive from an old version of checkpatch.
+> 
+> The one in -next doesn't emit this as it's
+> simply a function pointer declaration.
 
-Signed-off-by: Jerome Marchand <jmarchan@redhat.com>
----
- Documentation/filesystems/proc.txt |  2 +
- fs/proc/task_mmu.c                 | 80 ++++++++++++++++++++++++++++++++++++--
- 2 files changed, 79 insertions(+), 3 deletions(-)
+Thanks Joe, will fix up.
 
-diff --git a/Documentation/filesystems/proc.txt b/Documentation/filesystems/proc.txt
-index 1c49957..1a15c56 100644
---- a/Documentation/filesystems/proc.txt
-+++ b/Documentation/filesystems/proc.txt
-@@ -172,6 +172,7 @@ read the file /proc/PID/status:
-   VmPTE:        20 kb
-   VmSwap:        0 kB
-   VmShm:         0 kB
-+  VmShSw:        0 kB
-   Threads:        1
-   SigQ:   0/28578
-   SigPnd: 0000000000000000
-@@ -230,6 +231,7 @@ Table 1-2: Contents of the status files (as of 2.6.30-rc7)
-  VmPTE                       size of page table entries
-  VmSwap                      size of swap usage (the number of referred swapents)
-  VmShm	                      size of resident shmem memory
-+ VmShSw                      size of paged out shmem memory
-  Threads                     number of threads
-  SigQ                        number of signals queued/max. number for queue
-  SigPnd                      bitmap of pending signals for the thread
-diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
-index 4e60751..73f0ce4 100644
---- a/fs/proc/task_mmu.c
-+++ b/fs/proc/task_mmu.c
-@@ -19,9 +19,80 @@
- #include <asm/tlbflush.h>
- #include "internal.h"
- 
-+struct shswap_stats {
-+	struct vm_area_struct *vma;
-+	unsigned long shswap;
-+};
-+
-+#ifdef CONFIG_SHMEM
-+static int shswap_pte(pte_t *pte, unsigned long addr, unsigned long end,
-+		       struct mm_walk *walk)
-+{
-+	struct shswap_stats *shss = walk->private;
-+	struct vm_area_struct *vma = shss->vma;
-+	pgoff_t pgoff = linear_page_index(vma, addr);
-+	pte_t ptent = *pte;
-+
-+	if (pte_none(ptent) &&
-+	    shmem_locate(vma, pgoff, NULL) == SHMEM_SWAP)
-+		shss->shswap += end - addr;
-+
-+	return 0;
-+}
-+
-+static int shswap_pte_hole(unsigned long addr, unsigned long end,
-+			   struct mm_walk *walk)
-+{
-+	struct shswap_stats *shss = walk->private;
-+	struct vm_area_struct *vma = shss->vma;
-+	pgoff_t pgoff;
-+
-+	for (; addr != end; addr += PAGE_SIZE) {
-+		pgoff = linear_page_index(vma, addr);
-+
-+		if (shmem_locate(vma, pgoff, NULL) == SHMEM_SWAP)
-+			shss->shswap += PAGE_SIZE;
-+	}
-+
-+	return 0;
-+}
-+
-+static unsigned long get_mm_shswap(struct mm_struct *mm)
-+{
-+	struct vm_area_struct *vma;
-+	struct shswap_stats shss;
-+	struct mm_walk shswap_walk = {
-+		.pte_entry = shswap_pte,
-+		.pte_hole = shswap_pte_hole,
-+		.mm = mm,
-+		.private = &shss,
-+	};
-+
-+	memset(&shss, 0, sizeof(shss));
-+
-+	down_read(&mm->mmap_sem);
-+	for (vma = mm->mmap; vma; vma = vma->vm_next)
-+		if (shmem_vma(vma)) {
-+			shss.vma = vma;
-+			walk_page_range(vma->vm_start, vma->vm_end,
-+					&shswap_walk);
-+		}
-+	up_read(&mm->mmap_sem);
-+
-+	return shss.shswap;
-+}
-+
-+#else
-+
-+static unsigned long get_mm_shswap(struct mm_struct *mm)
-+{
-+	return 0;
-+}
-+#endif
-+
- void task_mem(struct seq_file *m, struct mm_struct *mm)
- {
--	unsigned long data, text, lib, swap, shmem;
-+	unsigned long data, text, lib, swap, shmem, shswap;
- 	unsigned long hiwater_vm, total_vm, hiwater_rss, total_rss;
- 
- 	/*
-@@ -43,6 +114,7 @@ void task_mem(struct seq_file *m, struct mm_struct *mm)
- 	lib = (mm->exec_vm << (PAGE_SHIFT-10)) - text;
- 	swap = get_mm_counter(mm, MM_SWAPENTS);
- 	shmem = get_mm_counter(mm, MM_SHMEMPAGES);
-+	shswap = get_mm_shswap(mm);
- 	seq_printf(m,
- 		"VmPeak:\t%8lu kB\n"
- 		"VmSize:\t%8lu kB\n"
-@@ -56,7 +128,8 @@ void task_mem(struct seq_file *m, struct mm_struct *mm)
- 		"VmLib:\t%8lu kB\n"
- 		"VmPTE:\t%8lu kB\n"
- 		"VmSwap:\t%8lu kB\n"
--		"VmShm:\t%8lu kB\n",
-+		"VmShm:\t%8lu kB\n"
-+		"VmShSw:\t%8lu kB\n",
- 		hiwater_vm << (PAGE_SHIFT-10),
- 		total_vm << (PAGE_SHIFT-10),
- 		mm->locked_vm << (PAGE_SHIFT-10),
-@@ -68,7 +141,8 @@ void task_mem(struct seq_file *m, struct mm_struct *mm)
- 		(PTRS_PER_PTE * sizeof(pte_t) *
- 		 atomic_long_read(&mm->nr_ptes)) >> 10,
- 		swap << (PAGE_SHIFT-10),
--		shmem << (PAGE_SHIFT-10));
-+		shmem << (PAGE_SHIFT-10),
-+		shswap >> 10);
- }
- 
- unsigned long task_vsize(struct mm_struct *mm)
+> > diff --git a/drivers/mfd/ezx-pcap.c b/drivers/mfd/ezx-pcap.c
+> []
+> > @@ -25,8 +25,9 @@ struct pcap_adc_request {
+> >  	u8 bank;
+> >  	u8 ch[2];
+> >  	u32 flags;
+> > -	void (*callback)(void *, u16[]);
+> >  	void *data;
+> > +
+> > +	void (*callback)(void *, u16[]);
+> >  };
+> 
+> 
+
 -- 
-1.9.3
-
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
