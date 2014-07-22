@@ -1,56 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752100AbaGVGWc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 02:22:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63317 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751595AbaGVGWb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 02:22:31 -0400
-Date: Tue, 22 Jul 2014 02:21:21 -0400
-From: Rik van Riel <riel@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: peterz@infradead.org, Kirill Tkhai <ktkhai@parallels.com>,
-        Tim Chen <tim.c.chen@linux.intel.com>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>, mingo@kernel.org,
-        pjt@google.com
-Subject: [PATCH] sched: update last_balance only when actually balanced
-Message-ID: <20140722022121.4589c63b@annuminas.surriel.com>
-Organization: Red Hat, Inc.
+	id S1752147AbaGVG0X (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 02:26:23 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:23533 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750960AbaGVG0V (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 02:26:21 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 99.127.230.128
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+YrCN/bn5405+mjg6kazFo
+Date: Mon, 21 Jul 2014 23:24:43 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Marek Belisko <marek@goldelico.com>
+Cc: bcousson@baylibre.com, robh+dt@kernel.org, pawel.moll@arm.com,
+        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
+        galak@codeaurora.org, linux@arm.linux.org.uk,
+        linux-omap@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        hns@goldelico.com
+Subject: Re: [PATCH 1/7] arm: dts: omap3-gta04: Add nand support
+Message-ID: <20140722062442.GF18374@atomide.com>
+References: <1405976727-15166-1-git-send-email-marek@goldelico.com>
+ <1405976727-15166-2-git-send-email-marek@goldelico.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1405976727-15166-2-git-send-email-marek@goldelico.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently rebalance_domains will happily update sd->last_balance
-even if should_we_balance() decides that this CPU should not do
-any load balancing for the sd.
+* Marek Belisko <marek@goldelico.com> [140721 14:08]:
 
-This can prevent the CPU that should load balance for the sd from
-doing load balancing, which can delay active balancing essentially
-forever.
+Can you please add the descriptions to all the patches?
+Other than that looks OK to me.
 
-The solution is to only update sd->last_balance when load_balance()
-actually did something.
+Regards,
 
-Signed-off-by: Rik van Riel <riel@redhat.com>
----
- kernel/sched/fair.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
-
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 45943b2..4f7fee2 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -7187,7 +7187,9 @@ static void rebalance_domains(struct rq *rq, enum cpu_idle_type idle)
- 				 */
- 				idle = idle_cpu(cpu) ? CPU_IDLE : CPU_NOT_IDLE;
- 			}
--			sd->last_balance = jiffies;
-+			/* Only update if we actually balanced. */
-+			if (continue_balancing)
-+				sd->last_balance = jiffies;
- 			interval = get_sd_balance_interval(sd, idle != CPU_IDLE);
- 		}
- 		if (need_serialize)
+Tony
