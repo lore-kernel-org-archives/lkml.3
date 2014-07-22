@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933004AbaGVWZN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 18:25:13 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44623 "EHLO
+	id S933487AbaGVWoZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 18:44:25 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:44631 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932945AbaGVWZI (ORCPT
+	with ESMTP id S932980AbaGVWZM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 18:25:08 -0400
+	Tue, 22 Jul 2014 18:25:12 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Scott Wood <scottwood@freescale.com>, Michael Neuling <mikey@neuling.org>,
-        Emil Medve <Emilian.Medve@freescale.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+Cc: Stanislaw Gruszka <sgruszka@redhat.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 110/116] powerpc: Don't skip ePAPR spin-table CPUs
-Date: Tue, 22 Jul 2014 15:22:01 -0700
-Message-Id: <1406067727-19683-111-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 103/116] rt2x00: disable TKIP on USB
+Date: Tue, 22 Jul 2014 15:21:54 -0700
+Message-Id: <1406067727-19683-104-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1406067727-19683-1-git-send-email-kamal@canonical.com>
 References: <1406067727-19683-1-git-send-email-kamal@canonical.com>
@@ -29,50 +28,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Scott Wood <scottwood@freescale.com>
+From: Stanislaw Gruszka <sgruszka@redhat.com>
 
-commit 6663a4fa6711050036562ddfd2086edf735fae21 upstream.
+commit 8edcb0ba0d56f5914eef11eda6db8bfe74eb9ca8 upstream.
 
-Commit 59a53afe70fd530040bdc69581f03d880157f15a "powerpc: Don't setup
-CPUs with bad status" broke ePAPR SMP booting.  ePAPR says that CPUs
-that aren't presently running shall have status of disabled, with
-enable-method being used to determine whether the CPU can be enabled.
+On USB we can not get atomically TKIP key. We have to disable support
+for TKIP acceleration on USB hardware to avoid bug as showed bellow.
 
-Fix by checking for spin-table, which is currently the only supported
-enable-method.
+[  860.827243] BUG: scheduling while atomic: hostapd/3397/0x00000002
+<snip>
+[  860.827280] Call Trace:
+[  860.827282]  [<ffffffff81682ea6>] dump_stack+0x4d/0x66
+[  860.827284]  [<ffffffff8167eb9b>] __schedule_bug+0x47/0x55
+[  860.827285]  [<ffffffff81685bb3>] __schedule+0x733/0x7b0
+[  860.827287]  [<ffffffff81685c59>] schedule+0x29/0x70
+[  860.827289]  [<ffffffff81684f8a>] schedule_timeout+0x15a/0x2b0
+[  860.827291]  [<ffffffff8105ac50>] ? ftrace_raw_event_tick_stop+0xc0/0xc0
+[  860.827294]  [<ffffffff810c13c2>] ? __module_text_address+0x12/0x70
+[  860.827296]  [<ffffffff81686823>] wait_for_completion_timeout+0xb3/0x140
+[  860.827298]  [<ffffffff81080fc0>] ? wake_up_state+0x20/0x20
+[  860.827301]  [<ffffffff814d5b3d>] usb_start_wait_urb+0x7d/0x150
+[  860.827303]  [<ffffffff814d5cd5>] usb_control_msg+0xc5/0x110
+[  860.827305]  [<ffffffffa02fb0c6>] rt2x00usb_vendor_request+0xc6/0x160  [rt2x00usb]
+[  860.827307]  [<ffffffffa02fb215>] rt2x00usb_vendor_req_buff_lock+0x75/0x150 [rt2x00usb]
+[  860.827309]  [<ffffffffa02fb393>] rt2x00usb_vendor_request_buff+0xa3/0xe0 [rt2x00usb]
+[  860.827311]  [<ffffffffa023d1a3>] rt2x00usb_register_multiread+0x33/0x40 [rt2800usb]
+[  860.827314]  [<ffffffffa05805f9>] rt2800_get_tkip_seq+0x39/0x50  [rt2800lib]
+[  860.827321]  [<ffffffffa0480f88>] ieee80211_get_key+0x218/0x2a0  [mac80211]
+[  860.827322]  [<ffffffff815cc68c>] ? __nlmsg_put+0x6c/0x80
+[  860.827329]  [<ffffffffa051b02e>] nl80211_get_key+0x22e/0x360 [cfg80211]
 
-Signed-off-by: Scott Wood <scottwood@freescale.com>
-Cc: Michael Neuling <mikey@neuling.org>
-Cc: Emil Medve <Emilian.Medve@Freescale.com>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Reported-and-tested-by: Peter Wu <lekensteyn@gmail.com>
+Reported-and-tested-by: Pontus Fuchs <pontus.fuchs@gmail.com>
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/powerpc/kernel/setup-common.c | 10 +++++++++-
- 1 file changed, 9 insertions(+), 1 deletion(-)
+ drivers/net/wireless/rt2x00/rt2x00mac.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/arch/powerpc/kernel/setup-common.c b/arch/powerpc/kernel/setup-common.c
-index b050263..069f857 100644
---- a/arch/powerpc/kernel/setup-common.c
-+++ b/arch/powerpc/kernel/setup-common.c
-@@ -455,9 +455,17 @@ void __init smp_setup_cpu_maps(void)
- 		}
+diff --git a/drivers/net/wireless/rt2x00/rt2x00mac.c b/drivers/net/wireless/rt2x00/rt2x00mac.c
+index 65225fa..7195a30 100644
+--- a/drivers/net/wireless/rt2x00/rt2x00mac.c
++++ b/drivers/net/wireless/rt2x00/rt2x00mac.c
+@@ -489,6 +489,8 @@ int rt2x00mac_set_key(struct ieee80211_hw *hw, enum set_key_cmd cmd,
+ 	crypto.cipher = rt2x00crypto_key_to_cipher(key);
+ 	if (crypto.cipher == CIPHER_NONE)
+ 		return -EOPNOTSUPP;
++	if (crypto.cipher == CIPHER_TKIP && rt2x00_is_usb(rt2x00dev))
++		return -EOPNOTSUPP;
  
- 		for (j = 0; j < nthreads && cpu < nr_cpu_ids; j++) {
-+			bool avail;
-+
- 			DBG("    thread %d -> cpu %d (hard id %d)\n",
- 			    j, cpu, intserv[j]);
--			set_cpu_present(cpu, of_device_is_available(dn));
-+
-+			avail = of_device_is_available(dn);
-+			if (!avail)
-+				avail = !of_property_match_string(dn,
-+						"enable-method", "spin-table");
-+
-+			set_cpu_present(cpu, avail);
- 			set_hard_smp_processor_id(cpu, intserv[j]);
- 			set_cpu_possible(cpu, true);
- 			cpu++;
+ 	crypto.cmd = cmd;
+ 
 -- 
 1.9.1
 
