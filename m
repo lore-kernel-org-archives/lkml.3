@@ -1,365 +1,258 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751905AbaGVAu0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 20:50:26 -0400
-Received: from mga09.intel.com ([134.134.136.24]:13051 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751846AbaGVAuX convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1751863AbaGVAuX (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 21 Jul 2014 20:50:23 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,705,1400050800"; 
-   d="scan'208";a="576722496"
-From: "Zhang, Tianfei" <tianfei.zhang@intel.com>
-To: "Ren, Qiaowei" <qiaowei.ren@intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "Hansen, Dave" <dave.hansen@intel.com>
-CC: "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "Ren, Qiaowei" <qiaowei.ren@intel.com>
-Subject: RE: [PATCH v7 09/10] x86, mpx: cleanup unused bound tables
-Thread-Topic: [PATCH v7 09/10] x86, mpx: cleanup unused bound tables
-Thread-Index: AQHPpKaoatKpZ089+EOWPEVD4gof+purRB3w
-Date: Tue, 22 Jul 2014 00:50:18 +0000
-Message-ID: <BA6F50564D52C24884F9840E07E32DEC17D5E280@CDSMSX102.ccr.corp.intel.com>
-References: <1405921124-4230-1-git-send-email-qiaowei.ren@intel.com>
- <1405921124-4230-10-git-send-email-qiaowei.ren@intel.com>
-In-Reply-To: <1405921124-4230-10-git-send-email-qiaowei.ren@intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.17.6.105]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+Received: from e36.co.us.ibm.com ([32.97.110.154]:57720 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751611AbaGVAuS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jul 2014 20:50:18 -0400
+Message-ID: <1405990214.5310.1.camel@dhcp-9-2-203-236.watson.ibm.com>
+Subject: [PATCH] ima: add support for measuring and appraising firmware
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: Kees Cook <keescook@chromium.org>
+Date: Mon, 21 Jul 2014 20:50:14 -0400
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14072200-3532-0000-0000-0000034FFBB2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The "security: introduce kernel_fw_from_file hook" patch defined a
+new security hook to evaluate any loaded firmware that wasn't built
+into the kernel.
+
+This patch defines ima_fw_from_file(), which is called from the new
+security hook, to measure and/or appraise the loaded firmware's
+integrity.
+
+Signed-off-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
+---
+ Documentation/ABI/testing/ima_policy  |  4 +++-
+ include/linux/ima.h                   |  6 ++++++
+ security/integrity/ima/ima.h          |  3 ++-
+ security/integrity/ima/ima_appraise.c |  8 ++++++++
+ security/integrity/ima/ima_main.c     | 10 ++++++++++
+ security/integrity/ima/ima_policy.c   |  7 +++++++
+ security/integrity/integrity.h        |  9 +++++++--
+ security/security.c                   |  7 ++++++-
+ 8 files changed, 49 insertions(+), 5 deletions(-)
+
+diff --git a/Documentation/ABI/testing/ima_policy b/Documentation/ABI/testing/ima_policy
+index 4c3efe4..d0d0c57 100644
+--- a/Documentation/ABI/testing/ima_policy
++++ b/Documentation/ABI/testing/ima_policy
+@@ -26,6 +26,7 @@ Description:
+ 			option:	[[appraise_type=]] [permit_directio]
+ 
+ 		base: 	func:= [BPRM_CHECK][MMAP_CHECK][FILE_CHECK][MODULE_CHECK]
++				[FIRMWARE_CHECK]
+ 			mask:= [MAY_READ] [MAY_WRITE] [MAY_APPEND] [MAY_EXEC]
+ 			fsmagic:= hex value
+ 			fsuuid:= file system UUID (e.g 8bcbe394-4f13-4144-be8e-5aa9ea2ce2f6)
+@@ -57,7 +58,8 @@ Description:
+ 			measure func=BPRM_CHECK
+ 			measure func=FILE_MMAP mask=MAY_EXEC
+ 			measure func=FILE_CHECK mask=MAY_READ uid=0
+-			measure func=MODULE_CHECK uid=0
++			measure func=MODULE_CHECK
++			measure func=FIRMWARE_CHECK
+ 			appraise fowner=0
+ 
+ 		The default policy measures all executables in bprm_check,
+diff --git a/include/linux/ima.h b/include/linux/ima.h
+index 1b7f268..7cf5e9b 100644
+--- a/include/linux/ima.h
++++ b/include/linux/ima.h
+@@ -19,6 +19,7 @@ extern int ima_file_check(struct file *file, int mask);
+ extern void ima_file_free(struct file *file);
+ extern int ima_file_mmap(struct file *file, unsigned long prot);
+ extern int ima_module_check(struct file *file);
++extern int ima_fw_from_file(struct file *file, char *buf, size_t size);
+ 
+ #else
+ static inline int ima_bprm_check(struct linux_binprm *bprm)
+@@ -46,6 +47,11 @@ static inline int ima_module_check(struct file *file)
+ 	return 0;
+ }
+ 
++static inline int ima_fw_from_file(struct file *file, char *buf, size_t size)
++{
++	return 0;
++}
++
+ #endif /* CONFIG_IMA */
+ 
+ #ifdef CONFIG_IMA_APPRAISE
+diff --git a/security/integrity/ima/ima.h b/security/integrity/ima/ima.h
+index c42056e..57da4bd 100644
+--- a/security/integrity/ima/ima.h
++++ b/security/integrity/ima/ima.h
+@@ -158,7 +158,7 @@ struct integrity_iint_cache *integrity_iint_insert(struct inode *inode);
+ struct integrity_iint_cache *integrity_iint_find(struct inode *inode);
+ 
+ /* IMA policy related functions */
+-enum ima_hooks { FILE_CHECK = 1, MMAP_CHECK, BPRM_CHECK, MODULE_CHECK, POST_SETATTR };
++enum ima_hooks { FILE_CHECK = 1, MMAP_CHECK, BPRM_CHECK, MODULE_CHECK, FIRMWARE_CHECK, POST_SETATTR };
+ 
+ int ima_match_policy(struct inode *inode, enum ima_hooks func, int mask,
+ 		     int flags);
+@@ -171,6 +171,7 @@ void ima_delete_rules(void);
+ #define IMA_APPRAISE_ENFORCE	0x01
+ #define IMA_APPRAISE_FIX	0x02
+ #define IMA_APPRAISE_MODULES	0x04
++#define IMA_APPRAISE_FIRMWARE	0x08
+ 
+ #ifdef CONFIG_IMA_APPRAISE
+ int ima_appraise_measurement(int func, struct integrity_iint_cache *iint,
+diff --git a/security/integrity/ima/ima_appraise.c b/security/integrity/ima/ima_appraise.c
+index 59ac902..86bfd5c 100644
+--- a/security/integrity/ima/ima_appraise.c
++++ b/security/integrity/ima/ima_appraise.c
+@@ -75,6 +75,8 @@ enum integrity_status ima_get_cache_status(struct integrity_iint_cache *iint,
+ 		return iint->ima_bprm_status;
+ 	case MODULE_CHECK:
+ 		return iint->ima_module_status;
++	case FIRMWARE_CHECK:
++		return iint->ima_firmware_status;
+ 	case FILE_CHECK:
+ 	default:
+ 		return iint->ima_file_status;
+@@ -94,6 +96,9 @@ static void ima_set_cache_status(struct integrity_iint_cache *iint,
+ 	case MODULE_CHECK:
+ 		iint->ima_module_status = status;
+ 		break;
++	case FIRMWARE_CHECK:
++		iint->ima_firmware_status = status;
++		break;
+ 	case FILE_CHECK:
+ 	default:
+ 		iint->ima_file_status = status;
+@@ -113,6 +118,9 @@ static void ima_cache_flags(struct integrity_iint_cache *iint, int func)
+ 	case MODULE_CHECK:
+ 		iint->flags |= (IMA_MODULE_APPRAISED | IMA_APPRAISED);
+ 		break;
++	case FIRMWARE_CHECK:
++		iint->flags |= (IMA_FIRMWARE_APPRAISED | IMA_APPRAISED);
++		break;
+ 	case FILE_CHECK:
+ 	default:
+ 		iint->flags |= (IMA_FILE_APPRAISED | IMA_APPRAISED);
+diff --git a/security/integrity/ima/ima_main.c b/security/integrity/ima/ima_main.c
+index 0d69643..60886d8 100644
+--- a/security/integrity/ima/ima_main.c
++++ b/security/integrity/ima/ima_main.c
+@@ -319,6 +319,16 @@ int ima_module_check(struct file *file)
+ 	return process_measurement(file, NULL, MAY_EXEC, MODULE_CHECK);
+ }
+ 
++int ima_fw_from_file(struct file *file, char *buf, size_t size)
++{
++	if (!file) {
++		if ((ima_appraise & IMA_APPRAISE_FIRMWARE) &&
++		    (ima_appraise & IMA_APPRAISE_ENFORCE))
++			return -EACCES;	/* INTEGRITY_UNKNOWN */
++	}
++	return process_measurement(file, NULL, MAY_EXEC, FIRMWARE_CHECK);
++}
++
+ static int __init init_ima(void)
+ {
+ 	int error;
+diff --git a/security/integrity/ima/ima_policy.c b/security/integrity/ima/ima_policy.c
+index cea84d8..07099a8 100644
+--- a/security/integrity/ima/ima_policy.c
++++ b/security/integrity/ima/ima_policy.c
+@@ -84,6 +84,7 @@ static struct ima_rule_entry default_rules[] = {
+ 	{.action = MEASURE, .func = FILE_CHECK, .mask = MAY_READ, .uid = GLOBAL_ROOT_UID,
+ 	 .flags = IMA_FUNC | IMA_MASK | IMA_UID},
+ 	{.action = MEASURE, .func = MODULE_CHECK, .flags = IMA_FUNC},
++	{.action = MEASURE, .func = FIRMWARE_CHECK, .flags = IMA_FUNC},
+ };
+ 
+ static struct ima_rule_entry default_appraise_rules[] = {
+@@ -241,6 +242,8 @@ static int get_subaction(struct ima_rule_entry *rule, int func)
+ 		return IMA_BPRM_APPRAISE;
+ 	case MODULE_CHECK:
+ 		return IMA_MODULE_APPRAISE;
++	case FIRMWARE_CHECK:
++		return IMA_FIRMWARE_APPRAISE;
+ 	case FILE_CHECK:
+ 	default:
+ 		return IMA_FILE_APPRAISE;
+@@ -486,6 +489,8 @@ static int ima_parse_rule(char *rule, struct ima_rule_entry *entry)
+ 				entry->func = FILE_CHECK;
+ 			else if (strcmp(args[0].from, "MODULE_CHECK") == 0)
+ 				entry->func = MODULE_CHECK;
++			else if (strcmp(args[0].from, "FIRMWARE_CHECK") == 0)
++				entry->func = FIRMWARE_CHECK;
+ 			else if ((strcmp(args[0].from, "FILE_MMAP") == 0)
+ 				|| (strcmp(args[0].from, "MMAP_CHECK") == 0))
+ 				entry->func = MMAP_CHECK;
+@@ -636,6 +641,8 @@ static int ima_parse_rule(char *rule, struct ima_rule_entry *entry)
+ 		result = -EINVAL;
+ 	else if (entry->func == MODULE_CHECK)
+ 		ima_appraise |= IMA_APPRAISE_MODULES;
++	else if (entry->func == FIRMWARE_CHECK)
++		ima_appraise |= IMA_APPRAISE_FIRMWARE;
+ 	audit_log_format(ab, "res=%d", !result);
+ 	audit_log_end(ab);
+ 	return result;
+diff --git a/security/integrity/integrity.h b/security/integrity/integrity.h
+index 09c440d..19b8e31 100644
+--- a/security/integrity/integrity.h
++++ b/security/integrity/integrity.h
+@@ -46,10 +46,14 @@
+ #define IMA_BPRM_APPRAISED	0x00002000
+ #define IMA_MODULE_APPRAISE	0x00004000
+ #define IMA_MODULE_APPRAISED	0x00008000
++#define IMA_FIRMWARE_APPRAISE	0x00010000
++#define IMA_FIRMWARE_APPRAISED	0x00020000
+ #define IMA_APPRAISE_SUBMASK	(IMA_FILE_APPRAISE | IMA_MMAP_APPRAISE | \
+-				 IMA_BPRM_APPRAISE | IMA_MODULE_APPRAISE)
++				 IMA_BPRM_APPRAISE | IMA_MODULE_APPRAISE | \
++				 IMA_FIRMWARE_APPRAISE)
+ #define IMA_APPRAISED_SUBMASK	(IMA_FILE_APPRAISED | IMA_MMAP_APPRAISED | \
+-				 IMA_BPRM_APPRAISED | IMA_MODULE_APPRAISED)
++				 IMA_BPRM_APPRAISED | IMA_MODULE_APPRAISED | \
++				 IMA_FIRMWARE_APPRAISED)
+ 
+ enum evm_ima_xattr_type {
+ 	IMA_XATTR_DIGEST = 0x01,
+@@ -104,6 +108,7 @@ struct integrity_iint_cache {
+ 	enum integrity_status ima_mmap_status:4;
+ 	enum integrity_status ima_bprm_status:4;
+ 	enum integrity_status ima_module_status:4;
++	enum integrity_status ima_firmware_status:4;
+ 	enum integrity_status evm_status:4;
+ 	struct ima_digest_data *ima_hash;
+ };
+diff --git a/security/security.c b/security/security.c
+index 35d37d0..e41b1a8 100644
+--- a/security/security.c
++++ b/security/security.c
+@@ -847,7 +847,12 @@ int security_kernel_create_files_as(struct cred *new, struct inode *inode)
+ 
+ int security_kernel_fw_from_file(struct file *file, char *buf, size_t size)
+ {
+-	return security_ops->kernel_fw_from_file(file, buf, size);
++	int ret;
++
++	ret = security_ops->kernel_fw_from_file(file, buf, size);
++	if (ret)
++		return ret;
++	return ima_fw_from_file(file, buf, size);
+ }
+ EXPORT_SYMBOL_GPL(security_kernel_fw_from_file);
+ 
+-- 
+1.8.1.4
 
 
-> -----Original Message-----
-> From: owner-linux-mm@kvack.org [mailto:owner-linux-mm@kvack.org] On
-> Behalf Of Qiaowei Ren
-> Sent: Monday, July 21, 2014 1:39 PM
-> To: H. Peter Anvin; Thomas Gleixner; Ingo Molnar; Hansen, Dave
-> Cc: x86@kernel.org; linux-kernel@vger.kernel.org; linux-mm@kvack.org; Ren,
-> Qiaowei
-> Subject: [PATCH v7 09/10] x86, mpx: cleanup unused bound tables
-> 
-> Since the kernel allocated those tables on-demand without userspace
-> knowledge, it is also responsible for freeing them when the associated
-> mappings go away.
-> 
-> Here, the solution for this issue is to hook do_munmap() to check whether one
-> process is MPX enabled. If yes, those bounds tables covered in the virtual
-> address region which is being unmapped will be freed also.
-> 
-> Signed-off-by: Qiaowei Ren <qiaowei.ren@intel.com>
-> ---
->  arch/x86/include/asm/mmu_context.h |   16 +++
->  arch/x86/include/asm/mpx.h         |    9 ++
->  arch/x86/mm/mpx.c                  |  181
-> ++++++++++++++++++++++++++++++++++++
->  include/asm-generic/mmu_context.h  |    6 +
->  mm/mmap.c                          |    2 +
->  5 files changed, 214 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/x86/include/asm/mmu_context.h
-> b/arch/x86/include/asm/mmu_context.h
-> index be12c53..af70d4f 100644
-> --- a/arch/x86/include/asm/mmu_context.h
-> +++ b/arch/x86/include/asm/mmu_context.h
-> @@ -6,6 +6,7 @@
->  #include <asm/pgalloc.h>
->  #include <asm/tlbflush.h>
->  #include <asm/paravirt.h>
-> +#include <asm/mpx.h>
->  #ifndef CONFIG_PARAVIRT
->  #include <asm-generic/mm_hooks.h>
-> 
-> @@ -96,4 +97,19 @@ do {						\
->  } while (0)
->  #endif
-> 
-> +static inline void arch_unmap(struct mm_struct *mm,
-> +		struct vm_area_struct *vma,
-> +		unsigned long start, unsigned long end) { #ifdef
-> CONFIG_X86_INTEL_MPX
 
-"#indef" new line
-
-> +	/*
-> +	 * Check whether this vma comes from MPX-enabled application.
-> +	 * If so, release this vma related bound tables.
-> +	 */
-> +	if (mm->bd_addr && !(vma->vm_flags & VM_MPX))
-> +		mpx_unmap(mm, start, end);
-> +
-> +#endif
-> +}
-> +
->  #endif /* _ASM_X86_MMU_CONTEXT_H */
-> diff --git a/arch/x86/include/asm/mpx.h b/arch/x86/include/asm/mpx.h index
-> 6cb0853..e848a74 100644
-> --- a/arch/x86/include/asm/mpx.h
-> +++ b/arch/x86/include/asm/mpx.h
-> @@ -42,6 +42,13 @@
->  #define MPX_BD_SIZE_BYTES
-> (1UL<<(MPX_BD_ENTRY_OFFSET+MPX_BD_ENTRY_SHIFT))
->  #define MPX_BT_SIZE_BYTES
-> (1UL<<(MPX_BT_ENTRY_OFFSET+MPX_BT_ENTRY_SHIFT))
-> 
-> +#define MPX_BD_ENTRY_MASK	((1<<MPX_BD_ENTRY_OFFSET)-1)
-> +#define MPX_BT_ENTRY_MASK	((1<<MPX_BT_ENTRY_OFFSET)-1)
-> +#define MPX_GET_BD_ENTRY_OFFSET(addr)
-> 	((((addr)>>(MPX_BT_ENTRY_OFFSET+ \
-> +		MPX_IGN_BITS)) & MPX_BD_ENTRY_MASK) <<
-> MPX_BD_ENTRY_SHIFT)
-> +#define MPX_GET_BT_ENTRY_OFFSET(addr)	((((addr)>>MPX_IGN_BITS) & \
-> +		MPX_BT_ENTRY_MASK) << MPX_BT_ENTRY_SHIFT)
-> +
->  #define MPX_BNDSTA_ERROR_CODE	0x3
->  #define MPX_BNDCFG_ENABLE_FLAG	0x1
->  #define MPX_BD_ENTRY_VALID_FLAG	0x1
-> @@ -63,6 +70,8 @@ struct mpx_insn {
->  #define MAX_MPX_INSN_SIZE	15
-> 
->  unsigned long mpx_mmap(unsigned long len);
-> +void mpx_unmap(struct mm_struct *mm,
-> +		unsigned long start, unsigned long end);
-> 
->  #ifdef CONFIG_X86_INTEL_MPX
->  int do_mpx_bt_fault(struct xsave_struct *xsave_buf); diff --git
-> a/arch/x86/mm/mpx.c b/arch/x86/mm/mpx.c index e1b28e6..d29ec9c 100644
-> --- a/arch/x86/mm/mpx.c
-> +++ b/arch/x86/mm/mpx.c
-> @@ -2,6 +2,7 @@
->  #include <linux/syscalls.h>
->  #include <asm/mpx.h>
->  #include <asm/mman.h>
-> +#include <asm/mmu_context.h>
->  #include <linux/sched/sysctl.h>
-> 
->  static const char *mpx_mapping_name(struct vm_area_struct *vma) @@
-> -77,3 +78,183 @@ out:
->  	up_write(&mm->mmap_sem);
->  	return ret;
->  }
-> +
-> +/*
-> + * Get the base of bounds tables pointed by specific bounds
-> + * directory entry.
-> + */
-> +static int get_bt_addr(long __user *bd_entry, unsigned long *bt_addr,
-> +		unsigned int *valid)
-> +{
-> +	if (get_user(*bt_addr, bd_entry))
-> +		return -EFAULT;
-> +
-> +	*valid = *bt_addr & MPX_BD_ENTRY_VALID_FLAG;
-> +	*bt_addr &= MPX_BT_ADDR_MASK;
-> +
-> +	/*
-> +	 * If this bounds directory entry is nonzero, and meanwhile
-> +	 * the valid bit is zero, one SIGSEGV will be produced due to
-> +	 * this unexpected situation.
-> +	 */
-> +	if (!(*valid) && *bt_addr)
-> +		force_sig(SIGSEGV, current);
-> +
-> +	return 0;
-> +}
-> +
-> +/*
-> + * Free the backing physical pages of bounds table 'bt_addr'.
-> + * Assume start...end is within that bounds table.
-> + */
-> +static void zap_bt_entries(struct mm_struct *mm, unsigned long bt_addr,
-> +		unsigned long start, unsigned long end) {
-> +	struct vm_area_struct *vma;
-> +
-> +	/* Find the vma which overlaps this bounds table */
-> +	vma = find_vma(mm, bt_addr);
-> +	if (!vma || vma->vm_start > bt_addr ||
-> +			vma->vm_end < bt_addr+MPX_BT_SIZE_BYTES)
-> +		return;
-> +
-> +	zap_page_range(vma, start, end, NULL); }
-> +
-> +static void unmap_single_bt(struct mm_struct *mm, long __user *bd_entry,
-> +		unsigned long bt_addr)
-> +{
-> +	if (user_atomic_cmpxchg_inatomic(&bt_addr, bd_entry,
-> +			bt_addr | MPX_BD_ENTRY_VALID_FLAG, 0))
-> +		return;
-> +
-> +	/*
-> +	 * to avoid recursion, do_munmap() will check whether it comes
-> +	 * from one bounds table through VM_MPX flag.
-> +	 */
-> +	do_munmap(mm, bt_addr & MPX_BT_ADDR_MASK,
-> MPX_BT_SIZE_BYTES); }
-> +
-> +/*
-> + * If the bounds table pointed by bounds directory 'bd_entry' is
-> + * not shared, unmap this whole bounds table. Otherwise, only free
-> + * those backing physical pages of bounds table entries covered
-> + * in this virtual address region start...end.
-> + */
-> +static void unmap_shared_bt(struct mm_struct *mm, long __user *bd_entry,
-> +		unsigned long start, unsigned long end,
-> +		bool prev_shared, bool next_shared)
-> +{
-> +	unsigned long bt_addr;
-> +	unsigned int bde_valid = 0;
-> +
-> +	if (get_bt_addr(bd_entry, &bt_addr, &bde_valid) || !bde_valid)
-> +		return;
-> +
-> +	if (prev_shared && next_shared)
-> +		zap_bt_entries(mm, bt_addr,
-> +			bt_addr+MPX_GET_BT_ENTRY_OFFSET(start),
-> +			bt_addr+MPX_GET_BT_ENTRY_OFFSET(end-1));
-> +	else if (prev_shared)
-> +		zap_bt_entries(mm, bt_addr,
-> +			bt_addr+MPX_GET_BT_ENTRY_OFFSET(start),
-> +			bt_addr+MPX_BT_SIZE_BYTES);
-> +	else if (next_shared)
-> +		zap_bt_entries(mm, bt_addr, bt_addr,
-> +			bt_addr+MPX_GET_BT_ENTRY_OFFSET(end-1));
-> +	else
-> +		unmap_single_bt(mm, bd_entry, bt_addr); }
-
-"}" new line
-
-> +
-> +/*
-> + * A virtual address region being munmap()ed might share bounds table
-> + * with adjacent VMAs. We only need to free the backing physical
-> + * memory of these shared bounds tables entries covered in this virtual
-> + * address region.
-> + *
-> + * the VMAs covering the virtual address region start...end have
-> +already
-> + * been split if necessary and removed from the VMA list.
-> + */
-> +static void unmap_side_bts(struct mm_struct *mm, unsigned long start,
-> +		unsigned long end)
-> +{
-> +	long __user *bde_start, *bde_end;
-> +	struct vm_area_struct *prev, *next;
-> +	bool prev_shared = false, next_shared = false;
-> +
-> +	bde_start = mm->bd_addr + MPX_GET_BD_ENTRY_OFFSET(start);
-> +	bde_end = mm->bd_addr + MPX_GET_BD_ENTRY_OFFSET(end-1);
-> +
-> +	/*
-> +	 * Check whether bde_start and bde_end are shared with adjacent
-> +	 * VMAs. Because the VMAs covering the virtual address region
-> +	 * start...end have already been removed from the VMA list, if
-> +	 * next is not NULL it will satisfy start < end <= next->vm_start.
-> +	 * And if prev is not NULL, prev->vm_end <= start < end.
-> +	 */
-> +	next = find_vma_prev(mm, start, &prev);
-> +	if (prev && MPX_GET_BD_ENTRY_OFFSET(prev->vm_end-1) ==
-> (long)bde_start)
-> +		prev_shared = true;
-> +	if (next && MPX_GET_BD_ENTRY_OFFSET(next->vm_start) ==
-> (long)bde_end)
-> +		next_shared = true;
-> +
-> +	/*
-> +	 * This virtual address region being munmap()ed is only
-> +	 * covered by one bounds table.
-> +	 *
-> +	 * In this case, if this table is also shared with adjacent
-> +	 * VMAs, only part of the backing physical memory of the bounds
-> +	 * table need be freeed. Otherwise the whole bounds table need
-> +	 * be unmapped.
-> +	 */
-> +	if (bde_start == bde_end) {
-> +		unmap_shared_bt(mm, bde_start, start, end,
-> +				prev_shared, next_shared);
-> +		return;
-> +	}
-> +
-> +	/*
-> +	 * If more than one bounds tables are covered in this virtual
-> +	 * address region being munmap()ed, we need to separately check
-> +	 * whether bde_start and bde_end are shared with adjacent VMAs.
-> +	 */
-> +	unmap_shared_bt(mm, bde_start, start, end, prev_shared, false);
-> +	unmap_shared_bt(mm, bde_end, start, end, false, next_shared); }
-> +
-> +/*
-> + * Free unused bounds tables covered in a virtual address region being
-> + * munmap()ed. Assume end > start.
-> + *
-> + * This function will be called by do_munmap(), and the VMAs covering
-> + * the virtual address region start...end have already been split if
-> + * necessary and remvoed from the VMA list.
-> + */
-> +void mpx_unmap(struct mm_struct *mm,
-> +		unsigned long start, unsigned long end) {
-> +	long __user *bd_entry, *bde_start, *bde_end;
-> +	unsigned long bt_addr;
-> +	unsigned int bde_valid;
-> +
-> +	/*
-> +	 * unmap bounds tables pointed out by start/end bounds directory
-> +	 * entries, or only free part of their backing physical memroy
-> +	 * if they are shared with adjacent VMAs.
-> +	 */
-> +	unmap_side_bts(mm, start, end);
-> +
-> +	/*
-> +	 * unmap those bounds table which are entirely covered in this
-> +	 * virtual address region.
-> +	 */
-> +	bde_start = mm->bd_addr + MPX_GET_BD_ENTRY_OFFSET(start);
-> +	bde_end = mm->bd_addr + MPX_GET_BD_ENTRY_OFFSET(end-1);
-> +	for (bd_entry = bde_start + 1; bd_entry < bde_end; bd_entry++) {
-> +		if (get_bt_addr(bd_entry, &bt_addr, &bde_valid))
-> +			return;
-> +		if (!bde_valid)
-> +			continue;
-> +		unmap_single_bt(mm, bd_entry, bt_addr);
-> +	}
-> +}
-> diff --git a/include/asm-generic/mmu_context.h
-> b/include/asm-generic/mmu_context.h
-> index a7eec91..ac558ca 100644
-> --- a/include/asm-generic/mmu_context.h
-> +++ b/include/asm-generic/mmu_context.h
-> @@ -42,4 +42,10 @@ static inline void activate_mm(struct mm_struct
-> *prev_mm,  {  }
-> 
-> +static inline void arch_unmap(struct mm_struct *mm,
-> +			struct vm_area_struct *vma,
-> +			unsigned long start, unsigned long end) { }
-> +
->  #endif /* __ASM_GENERIC_MMU_CONTEXT_H */ diff --git a/mm/mmap.c
-> b/mm/mmap.c index 129b847..8550d84 100644
-> --- a/mm/mmap.c
-> +++ b/mm/mmap.c
-> @@ -2560,6 +2560,8 @@ int do_munmap(struct mm_struct *mm, unsigned
-> long start, size_t len)
->  	/* Fix up all other VM information */
->  	remove_vma_list(mm, vma);
-> 
-> +	arch_unmap(mm, vma, start, end);
-> +
->  	return 0;
->  }
-> 
-> --
-> 1.7.1
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in the body to
-> majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
