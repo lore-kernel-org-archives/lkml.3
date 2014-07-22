@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933308AbaGVW0M (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 18:26:12 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44757 "EHLO
+	id S933865AbaGVWhu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 18:37:50 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:44770 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932182AbaGVW0J (ORCPT
+	with ESMTP id S933300AbaGVW0M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 18:26:09 -0400
+	Tue, 22 Jul 2014 18:26:12 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Takashi Iwai <tiwai@suse.de>, Hans Verkuil <hans.verkuil@cisco.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+Cc: Alex Deucher <alexander.deucher@amd.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 027/116] [media] ivtv: Fix Oops when no firmware is loaded
-Date: Tue, 22 Jul 2014 15:20:38 -0700
-Message-Id: <1406067727-19683-28-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 048/116] drm/radeon: fix typo in radeon_connector_is_dp12_capable()
+Date: Tue, 22 Jul 2014 15:20:59 -0700
+Message-Id: <1406067727-19683-49-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1406067727-19683-1-git-send-email-kamal@canonical.com>
 References: <1406067727-19683-1-git-send-email-kamal@canonical.com>
@@ -28,63 +27,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit deb29e90221a6d4417aa67be971613c353180331 upstream.
+commit af5d36539dfe043f1cf0f8b7334d6bb12cd14e75 upstream.
 
-When ivtv PCM device is accessed at the state where no firmware is
-loaded, it oopses like:
+We were checking the ext clock rather than the display clock.
 
-  BUG: unable to handle kernel NULL pointer dereference at 0000000000000050
-  IP: [<ffffffffa049a881>] try_mailbox.isra.0+0x11/0x50 [ivtv]
-  Call Trace:
-    [<ffffffffa049aa20>] ivtv_api_call+0x160/0x6b0 [ivtv]
-    [<ffffffffa049af86>] ivtv_api+0x16/0x40 [ivtv]
-    [<ffffffffa049b10c>] ivtv_vapi+0xac/0xc0 [ivtv]
-    [<ffffffffa049d40d>] ivtv_start_v4l2_encode_stream+0x19d/0x630 [ivtv]
-    [<ffffffffa0530653>] snd_ivtv_pcm_capture_open+0x173/0x1c0 [ivtv_alsa]
-    [<ffffffffa04526f1>] snd_pcm_open_substream+0x51/0x100 [snd_pcm]
-    [<ffffffffa0452853>] snd_pcm_open+0xb3/0x260 [snd_pcm]
-    [<ffffffffa0452a37>] snd_pcm_capture_open+0x37/0x50 [snd_pcm]
-    [<ffffffffa033f557>] snd_open+0xa7/0x1e0 [snd]
-    [<ffffffff8118a628>] chrdev_open+0x88/0x1d0
-    [<ffffffff811840be>] do_dentry_open+0x1de/0x270
-    [<ffffffff81193a73>] do_last+0x1c3/0xec0
-    [<ffffffff81194826>] path_openat+0xb6/0x670
-    [<ffffffff81195b65>] do_filp_open+0x35/0x80
-    [<ffffffff81185449>] do_sys_open+0x129/0x210
-    [<ffffffff815b782d>] system_call_fastpath+0x1a/0x1f
+Noticed by ArtForz on IRC.
 
-This patch adds the check of firmware at PCM open callback like other
-open callbacks of this driver.
-
-Bugzilla: https://apibugzilla.novell.com/show_bug.cgi?id=875440
-
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Hans Verkuil <hans.verkuil@cisco.com>
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/media/pci/ivtv/ivtv-alsa-pcm.c | 6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/gpu/drm/radeon/radeon_connectors.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/media/pci/ivtv/ivtv-alsa-pcm.c b/drivers/media/pci/ivtv/ivtv-alsa-pcm.c
-index e1863db..7a9b98b 100644
---- a/drivers/media/pci/ivtv/ivtv-alsa-pcm.c
-+++ b/drivers/media/pci/ivtv/ivtv-alsa-pcm.c
-@@ -159,6 +159,12 @@ static int snd_ivtv_pcm_capture_open(struct snd_pcm_substream *substream)
+diff --git a/drivers/gpu/drm/radeon/radeon_connectors.c b/drivers/gpu/drm/radeon/radeon_connectors.c
+index 5a87c9f..fc604fc 100644
+--- a/drivers/gpu/drm/radeon/radeon_connectors.c
++++ b/drivers/gpu/drm/radeon/radeon_connectors.c
+@@ -1345,7 +1345,7 @@ bool radeon_connector_is_dp12_capable(struct drm_connector *connector)
+ 	struct radeon_device *rdev = dev->dev_private;
  
- 	/* Instruct the CX2341[56] to start sending packets */
- 	snd_ivtv_lock(itvsc);
-+
-+	if (ivtv_init_on_first_open(itv)) {
-+		snd_ivtv_unlock(itvsc);
-+		return -ENXIO;
-+	}
-+
- 	s = &itv->streams[IVTV_ENC_STREAM_TYPE_PCM];
- 
- 	v4l2_fh_init(&item.fh, s->vdev);
+ 	if (ASIC_IS_DCE5(rdev) &&
+-	    (rdev->clock.dp_extclk >= 53900) &&
++	    (rdev->clock.default_dispclk >= 53900) &&
+ 	    radeon_connector_encoder_is_hbr2(connector)) {
+ 		return true;
+ 	}
 -- 
 1.9.1
 
