@@ -1,72 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754872AbaGVLq3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 07:46:29 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:46841 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754795AbaGVLq2 (ORCPT
+	id S1754911AbaGVLsR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 07:48:17 -0400
+Received: from mail-ig0-f171.google.com ([209.85.213.171]:40472 "EHLO
+	mail-ig0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751290AbaGVLsP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 07:46:28 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 96.249.243.124
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX199InAtyevoVawTUbeSUHAjoPkNZXeymO0=
-X-DKIM: OpenDKIM Filter v2.0.1 titan DDFC85B279A
-Date: Tue, 22 Jul 2014 07:46:23 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: Amit Shah <amit.shah@redhat.com>
-Cc: linux-kernel@vger.kernel.org,
-        Virtualization List <virtualization@lists.linux-foundation.org>,
-        Rusty Russell <rusty@rustcorp.com.au>, herbert@gondor.apana.org.au,
-        keescook@chromium.org, Amos Kong <akong@redhat.com>
-Subject: Re: [PATCH v2 0/4] virtio-rng: contribute to early randomness
- requests
-Message-ID: <20140722114623.GC18750@titan.lakedaemon.net>
-References: <cover.1405942162.git.amit.shah@redhat.com>
+	Tue, 22 Jul 2014 07:48:15 -0400
+Message-ID: <53CE4F86.2000307@linaro.org>
+Date: Tue, 22 Jul 2014 06:48:22 -0500
+From: Alex Elder <elder@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <cover.1405942162.git.amit.shah@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: akpm@linux-foundation.org
+CC: kay@vrfy.org, pmladek@suse.cz, bp@suse.de, john.stultz@linaro.org,
+        jack@suse.cz, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v5 3/7] printk: initialize syslog_prev and console_prev
+References: <1405947761-26004-1-git-send-email-elder@linaro.org> <1405947761-26004-4-git-send-email-elder@linaro.org>
+In-Reply-To: <1405947761-26004-4-git-send-email-elder@linaro.org>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 21, 2014 at 05:15:48PM +0530, Amit Shah wrote:
-> v2:
->  - update patch 3 to store the hwrng_register_done bool per-device
->    rather than global
->  - add patch 2 that re-arranges struct elems for better packing.
+On 07/21/2014 08:02 AM, Alex Elder wrote:
+> Two global variables, "syslog_prev" and "console_prev", maintain a
+> copy of the flags value used in the log record most recently
+> formatted for syslog or the console, respectively.
 > 
-> Hi,
+> Initially there is no previous formatted log record, and these
+> variables simply have an initial value 0.  And occasionally log
+> records can get consumed at a rate such that syslog or the console
+> can't keep up, in which case those variables (along with their
+> corresponding position variables) must be reset.  Here too, they're
+> reset to 0.
 > 
-> This series enables virtio-rng to service the early randomness
-> requests made by the hwrng core (patch 3), with Herbert's idea of
-> using the scan routine.
+> This patch changes it so the initial value used is LOG_NEWLINE.
+> That is, if we know nothing about the prevously-formatted log
+> record, we can assume it was complete, and ended with a newline.
+> One exception is that occasionally we reset our syslog or console
+> (etc.) position variables.  In that case the previously-formatted
+> record flags value is still valid, so we preserve that information.
 > 
-> Patch 4 reverts the previous restriction, which no longer applies, to
-> not send read requests to the host before successful probe.
+> This is being done to support the next patch.  Initializing
+> these variables this way makes LOG_NEWLINE and LOG_CONT be
+> mutually exclusive, and the next patch uses that fact to simplify
+> some logic.
 > 
-> Patches 1 and 2 are minor cleanups.
-> 
-> Please review and apply,
-> 
-> Amit Shah (4):
->   virtio: rng: remove unused struct element
->   virtio: rng: re-arrange struct elements for better packing
->   virtio: rng: delay hwrng_register() till driver is ready
->   Revert "hwrng: virtio - ensure reads happen after successful probe"
-> 
->  drivers/char/hw_random/core.c       |  6 ------
->  drivers/char/hw_random/virtio-rng.c | 39 ++++++++++++++++---------------------
->  2 files changed, 17 insertions(+), 28 deletions(-)
+> Signed-off-by: Alex Elder <elder@linaro.org>
+> Reviewed-by: Petr Mládek <pmladek@suse.cz>
 
-fwiw,
+I have one change I'd like to suggest on this one.
 
-Reviewed-by: Jason Cooper <jason@lakedaemon.net>
+Petr, could you offer your opinion?
 
-Thanks for putting this together Amit!
 
-thx,
+> ---
+>  kernel/printk/printk.c | 44 ++++++++++++++++++++++++++++++--------------
+>  1 file changed, 30 insertions(+), 14 deletions(-)
+> 
+> diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
+> index 9f11eab..2f43116 100644
+> --- a/kernel/printk/printk.c
+> +++ b/kernel/printk/printk.c
 
-Jason.
+
+. . .
+
+> @@ -2156,10 +2168,14 @@ again:
+>  				      "%s** %u printk messages dropped **\n",
+>  				      (console_prev & LOG_CONT) ? "\n" : "",
+>  				      (unsigned)(log_first_seq - console_seq));
+> -			/* messages are gone, move to first one */
+> +			/*
+> +			 * Messages are gone, move to first one.
+> +			 * Don't discard what we know about the
+> +			 * previously-formatted record.
+> +			 */
+>  			console_seq = log_first_seq;
+>  			console_idx = log_first_idx;
+> -			console_prev = 0;
+> +			console_prev &= LOG_NEWLINE|LOG_CONT;
+
+In this one spot, I think console_prev should simply be
+initialized with LOG_NEWLINE.
+
+The reason is that the "printk messages dropped" message will
+be inserted into the formatted output, and is hence the last
+formatted line.  And that message is (now) terminated with
+a newline.
+
+					-Alex
+
+>  		} else {
+>  			len = 0;
+>  		}
+
+. . .
+
