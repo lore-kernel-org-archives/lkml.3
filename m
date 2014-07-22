@@ -1,71 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755973AbaGVPgf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 11:36:35 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:21676 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752846AbaGVPge (ORCPT
+	id S1755996AbaGVPgl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 11:36:41 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:42476 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752846AbaGVPgi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 11:36:34 -0400
-X-AuditID: cbfec7f5-b7f626d000004b39-63-53ce84fee43c
-Subject: [PATCH 1/2] ARM: LPAE: load upper bits of early TTBR0/TTBR1
+	Tue, 22 Jul 2014 11:36:38 -0400
+X-AuditID: cbfec7f4-b7fac6d000006cfe-0f-53ce85047ccf
+Subject: [PATCH 2/2] ARM: LPAE: reduce damage caused by idmap to virtual memory
+ layout
 From: Konstantin Khlebnikov <k.khlebnikov@samsung.com>
 To: Russell King <linux@arm.linux.org.uk>,
         linux-arm-kernel@lists.infradead.org
 Cc: Will Deacon <will.deacon@arm.com>, linux-kernel@vger.kernel.org,
         Vitaly Andrianov <vitalya@ti.com>, Cyril Chemparathy <cyril@ti.com>
-Date: Tue, 22 Jul 2014 19:36:23 +0400
-Message-id: <20140722153623.25088.37742.stgit@buzz>
+Date: Tue, 22 Jul 2014 19:36:35 +0400
+Message-id: <20140722153635.25088.14197.stgit@buzz>
+In-reply-to: <20140722153623.25088.37742.stgit@buzz>
+References: <20140722153623.25088.37742.stgit@buzz>
 User-Agent: StGit/0.17.1-dirty
 MIME-version: 1.0
 Content-type: text/plain; charset=utf-8
 Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrOLMWRmVeSWpSXmKPExsVy+t/xa7r/Ws4FG7zfqmQxf+dxVosfO3tZ
-	LTY9vsZqcXnXHDaL25d5Lfo+3WexePnxBIsDu8eaeWsYPVqae9g8Ni+p9+jbsorR4/iN7Uwe
-	nzfJBbBFcdmkpOZklqUW6dslcGWsnHSQvWAPV8WunxuYGhi3cnQxcnJICJhILFi3jw3CFpO4
-	cG89kM3FISSwlFHib2c/M4TTyCRxt/U2I0iVsICLRMfXvWA2m4CZxLZ9EHERAX+J9VvOgzUw
-	C3QxSlz8cpMdJMEioCrx/thHpi5GDg5eAWOJSb/BwqICchIrL7ewgti8AoISPybfYwEpYRZQ
-	l5gyJRckzCwgL7F5zVvmCYx8s5BUzUKomoWkagEj8ypG0dTS5ILipPRcI73ixNzi0rx0veT8
-	3E2MkMD9uoNx6TGrQ4wCHIxKPLwcL04FC7EmlhVX5h5ilOBgVhLhTak/FyzEm5JYWZValB9f
-	VJqTWnyIkYmDU6qBcdNs005dC8H7aV+dOnVDHto7tFy+mqsW8JxLReHiz7+CgsHHyzauv3W5
-	R1zGcLn5ofc7976vPnzo4//YGi01gfqOldcZAs4dUOq6cLb4jKJ+bsqOLWyCdaeOaNT4zS/a
-	ZNCb7dxbLys4O+J25LYSK4GD3A8sTaYIpHCIGGyS++VqPWPJ5mgVJZbijERDLeai4kQAP0Kp
-	3DoCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrHLMWRmVeSWpSXmKPExsVy+t/xK7osreeCDV5+FLSYv/M4q8WPnb2s
+	FpseX2O1uLxrDpvF7cu8Fn2f7rNYvPx4gsWB3WPNvDWMHi3NPWwem5fUe/RtWcXocfzGdiaP
+	z5vkAtiiuGxSUnMyy1KL9O0SuDJ6Z55iLjjIXbHseCNzA+NGzi5GTg4JAROJP8c2s0HYYhIX
+	7q0Hs4UEljJKXPqk28XIBWQ3Mkl8nPyNvYuRg0NYIELiygJzkBo2ATOJbftuM4LYIgL+Euu3
+	nGcGqWcW6GKUuPjlJjtIgkVAVeLXjg1gRbwCxhIPjy5mArE5gRZ3/LjPBLHMWOLQpi9gi0UF
+	5CRWXm5hhagXlPgx+R4LyF5mAXWJKVNyQcLMAvISm9e8ZZ7AKDALSdUshKpZSKoWMDKvYhRN
+	LU0uKE5KzzXUK07MLS7NS9dLzs/dxAgJ8y87GBcfszrEKMDBqMTDy/DwVLAQa2JZcWXuIUYJ
+	DmYlEd6U+nPBQrwpiZVVqUX58UWlOanFhxiZODilGhjnfTRozNcLmr3u42rDV4vcTn1RP17y
+	IyCquzTL5Fd827crPm0CXGm+crsrmo7MtD7zfL67Pdfuh+KuWce2zDJyYV/hXS65dG/Kbotj
+	9mFdy6e6XjCKNmya0bStQf3IyfRUp9muv6Snb7VymvZB1eLx2p7oGQZrXl3SNlrT8svzG1ud
+	w/zItD1KLMUZiYZazEXFiQCrxai2UQIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes booting when idmap pgd lays above 4gb. Commit
-4756dcbfd37 mostly had fixed this, but it'd failed to load upper bits.
+idmap layout combines both phisical and virtual addresses.
+Everything works fine if ram physically lays below PAGE_OFFSET.
+Otherwise idmap starts punching huge holes in virtual memory layout.
+It maps ram by 2MiB sections, but when it allocates new pmd page it
+cuts 1GiB at once.
 
-Also this fixes adding TTBR1_OFFSET to TTRR1: if lower part overflows
-carry flag must be added to the upper part.
+This patch makes a copy of all affected pmds from init_mm.
+Only few (usually one) 2MiB sections will be lost.
+This is not eliminates problem but makes it 512 times less likely.
+
+Usually idmap is used only for a short period. For examle for booting
+secondary cpu __turn_mmu_on (executed in physical addresses) jumps to
+virtual address of __secondary_switched which calls secondary_start_kernel
+which in turn calls cpu_switch_mm and switches to normal pgd from init_mm.
+So everything will be fine if these functions aren't intersect with idmap.
 
 Signed-off-by: Konstantin Khlebnikov <k.khlebnikov@samsung.com>
-Cc: Cyril Chemparathy <cyril@ti.com>
-Cc: Vitaly Andrianov <vitalya@ti.com>
 ---
- arch/arm/mm/proc-v7-3level.S |    7 +++----
- 1 file changed, 3 insertions(+), 4 deletions(-)
+ arch/arm/mm/idmap.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/arch/arm/mm/proc-v7-3level.S b/arch/arm/mm/proc-v7-3level.S
-index 22e3ad6..f0481dd 100644
---- a/arch/arm/mm/proc-v7-3level.S
-+++ b/arch/arm/mm/proc-v7-3level.S
-@@ -140,12 +140,11 @@ ENDPROC(cpu_v7_set_pte_ext)
- 	mov	\tmp, \ttbr1, lsr #(32 - ARCH_PGD_SHIFT)	@ upper bits
- 	mov	\ttbr1, \ttbr1, lsl #ARCH_PGD_SHIFT		@ lower bits
- 	addls	\ttbr1, \ttbr1, #TTBR1_OFFSET
--	mcrr	p15, 1, \ttbr1, \zero, c2			@ load TTBR1
-+	adcls	\tmp, \tmp, #0
-+	mcrr	p15, 1, \ttbr1, \tmp, c2			@ load TTBR1
- 	mov	\tmp, \ttbr0, lsr #(32 - ARCH_PGD_SHIFT)	@ upper bits
- 	mov	\ttbr0, \ttbr0, lsl #ARCH_PGD_SHIFT		@ lower bits
--	mcrr	p15, 0, \ttbr0, \zero, c2			@ load TTBR0
--	mcrr	p15, 1, \ttbr1, \zero, c2			@ load TTBR1
--	mcrr	p15, 0, \ttbr0, \zero, c2			@ load TTBR0
-+	mcrr	p15, 0, \ttbr0, \tmp, c2			@ load TTBR0
- 	.endm
- 
- 	/*
+diff --git a/arch/arm/mm/idmap.c b/arch/arm/mm/idmap.c
+index 8e0e52e..dcd023c 100644
+--- a/arch/arm/mm/idmap.c
++++ b/arch/arm/mm/idmap.c
+@@ -25,6 +25,9 @@ static void idmap_add_pmd(pud_t *pud, unsigned long addr, unsigned long end,
+ 			pr_warning("Failed to allocate identity pmd.\n");
+ 			return;
+ 		}
++		if (!pud_none(*pud))
++			memcpy(pmd, pmd_offset(pud, 0),
++			       PTRS_PER_PMD * sizeof(pmd_t));
+ 		pud_populate(&init_mm, pud, pmd);
+ 		pmd += pmd_index(addr);
+ 	} else
 
