@@ -1,81 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756053AbaGVPmT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 11:42:19 -0400
-Received: from mail-qa0-f50.google.com ([209.85.216.50]:53549 "EHLO
-	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751391AbaGVPmS convert rfc822-to-8bit (ORCPT
+	id S1756087AbaGVPmu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 11:42:50 -0400
+Received: from mail-qa0-f43.google.com ([209.85.216.43]:37213 "EHLO
+	mail-qa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756049AbaGVPms (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 11:42:18 -0400
+	Tue, 22 Jul 2014 11:42:48 -0400
+Date: Tue, 22 Jul 2014 11:42:44 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Mike Qiu <qiudayu@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
+        haokexin@gmail.com, Dan Williams <dan.j.williams@intel.com>
+Subject: Re: [PATCH 1/2] libata: Fix scsi_host can_queue issue in ata_qc_new()
+Message-ID: <20140722154244.GJ13851@htj.dyndns.org>
+References: <1406040619-1722-1-git-send-email-qiudayu@linux.vnet.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <CAKMK7uESXrDtCov8whOTsffg6eZdibF4qaTFaCubM=mnhN=gNQ@mail.gmail.com>
-References: <20140709093124.11354.3774.stgit@patser>
-	<20140709122953.11354.46381.stgit@patser>
-	<CAPM=9tyD2ZbrcGDC3hfNb7qNdzsfnyD-ZwM7G-nOgxeu5YKuSg@mail.gmail.com>
-	<53CE2421.5040906@amd.com>
-	<20140722114607.GL15237@phenom.ffwll.local>
-	<20140722115737.GN15237@phenom.ffwll.local>
-	<53CE56ED.4040109@vodafone.de>
-	<53CE6FB0.90500@canonical.com>
-	<53CE7410.3090603@amd.com>
-	<53CE74B5.3000201@canonical.com>
-	<53CE77B4.6020801@amd.com>
-	<CAKMK7uESXrDtCov8whOTsffg6eZdibF4qaTFaCubM=mnhN=gNQ@mail.gmail.com>
-Date: Tue, 22 Jul 2014 11:42:17 -0400
-Message-ID: <CADnq5_Moy78A5JfDM0LME6_-48PW72DJpYYvEthQ5b=_amU8KQ@mail.gmail.com>
-Subject: Re: [PATCH 09/17] drm/radeon: use common fence implementation for fences
-From: Alex Deucher <alexdeucher@gmail.com>
-To: Daniel Vetter <daniel@ffwll.ch>
-Cc: =?UTF-8?Q?Christian_K=C3=B6nig?= <christian.koenig@amd.com>,
-        Thomas Hellstrom <thellstrom@vmware.com>,
-        nouveau <nouveau@lists.freedesktop.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        dri-devel <dri-devel@lists.freedesktop.org>,
-        "Deucher, Alexander" <alexander.deucher@amd.com>,
-        Ben Skeggs <bskeggs@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1406040619-1722-1-git-send-email-qiudayu@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 22, 2014 at 11:19 AM, Daniel Vetter <daniel@ffwll.ch> wrote:
-> On Tue, Jul 22, 2014 at 4:39 PM, Christian König
-> <christian.koenig@amd.com> wrote:
->> Am 22.07.2014 16:27, schrieb Maarten Lankhorst:
->>
->>> op 22-07-14 16:24, Christian König schreef:
->>>>>
->>>>> No, you really shouldn't be doing much in the check anyway, it's meant
->>>>> to be a lightweight check. If you're not ready yet because of a lockup
->>>>> simply return not signaled yet.
->>>>
->>>> It's not only the lockup case from radeon I have in mind here. For
->>>> userspace queues it might be necessary to call copy_from_user to figure out
->>>> if a fence is signaled or not.
->>>>
->>>> Returning false all the time is probably not a good idea either.
->>>
->>> Having userspace implement a fence sounds like an awful idea, why would
->>> you want to do that?
->>
->>
->> Marketing moves in mysterious ways. Don't ask me, but that the direction it
->> currently moves with userspace queues and IOMMU etc...
->
-> Fence-based syncing between userspace queues submitted stuff through
-> doorbells and anything submitted by the general simply wont work.
-> Which is why I think the doorbell is a stupid interface since I just
-> don't see cameras and v4l devices implementing all that complexity to
-> get a pure userspace side sync solution.
->
+Hello,
 
-Like it or not this is what a lot of application writers want (look at
-mantle and metal and similar new APIs or android synpts).  Having
-queues and fences in userspace allows the application to structure
-things to best fit their own task graphs.  The app can decide how to
-deal with dependencies and synchronization explicitly instead of
-blocking the queues in the kernel for everyone.  Anyway, this is
-getting off topic.
+(cc'ing Dan)
 
-Alex
+On Tue, Jul 22, 2014 at 10:50:19AM -0400, Mike Qiu wrote:
+> The can_queue in scsi_host can be more than ATA_MAX_QUEUE (32),
+> for example, in ipr, it can be 100 or more.
+> 
+> Also, some drivers, like ipr driver, haven't filled the field
+> scsi_host in ata_port, and will lead a call trace, so add
+> check for that.
+> 
+> Signed-off-by: Mike Qiu <qiudayu@linux.vnet.ibm.com>
+> ---
+>  drivers/ata/libata-core.c | 15 ++++-----------
+>  1 file changed, 4 insertions(+), 11 deletions(-)
+> 
+> diff --git a/drivers/ata/libata-core.c b/drivers/ata/libata-core.c
+> index 259d879..a5b9c70 100644
+> --- a/drivers/ata/libata-core.c
+> +++ b/drivers/ata/libata-core.c
+> @@ -4734,7 +4734,10 @@ static struct ata_queued_cmd *ata_qc_new(struct ata_port *ap)
+>  	struct ata_queued_cmd *qc = NULL;
+>  	unsigned int i, tag, max_queue;
+>  
+> -	max_queue = ap->scsi_host->can_queue;
+> +	if (ap->scsi_host && ap->scsi_host->can_queue <= ATA_MAX_QUEUE)
+> +		max_queue = ap->scsi_host->can_queue;
+> +	else
+> +		max_queue = ATA_MAX_QUEUE;
+>  
+>  	/* no command while frozen */
+>  	if (unlikely(ap->pflags & ATA_PFLAG_FROZEN))
+> @@ -6109,16 +6112,6 @@ int ata_host_register(struct ata_host *host, struct scsi_host_template *sht)
+>  {
+>  	int i, rc;
+>  
+> -	/*
+> -	 * The max queue supported by hardware must not be greater than
+> -	 * ATA_MAX_QUEUE.
+> -	 */
+> -	if (sht->can_queue > ATA_MAX_QUEUE) {
+> -		dev_err(host->dev, "BUG: the hardware max queue is too large\n");
+> -		WARN_ON(1);
+> -		return -EINVAL;
+> -	}
+> -
+
+So, ummm, I really don't like that we're adding the conditionals to
+the hot path (yeah, its implementation is slow but still).  Maybe we
+need to store the chosen queue depth after all?  Dan?
+
+Thanks.
+
+-- 
+tejun
