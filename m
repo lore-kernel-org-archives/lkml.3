@@ -1,160 +1,390 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751896AbaGVBEn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 21:04:43 -0400
-Received: from lgeamrelo04.lge.com ([156.147.1.127]:59568 "EHLO
-	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750960AbaGVBEl (ORCPT
+	id S1752149AbaGVBH6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 21:07:58 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:53386 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751233AbaGVBHv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 21:04:41 -0400
-X-Original-SENDERIP: 10.178.33.69
-X-Original-MAILFROM: gioh.kim@lge.com
-Message-ID: <53CDB8A6.80801@lge.com>
-Date: Tue, 22 Jul 2014 10:04:38 +0900
-From: Gioh Kim <gioh.kim@lge.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Mon, 21 Jul 2014 21:07:51 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Linux PCI <linux-pci@vger.kernel.org>, Zhang Rui <rui.zhang@intel.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: [PATCH 2/3] ACPI / PM: Revork the handling of ACPI device wakeup notifications
+Date: Tue, 22 Jul 2014 03:25:12 +0200
+Message-ID: <15452047.8SNvN9NOiv@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <9631666.En3K0jlGsY@vostro.rjw.lan>
+References: <1907495.agrCMfRsQN@vostro.rjw.lan> <9631666.En3K0jlGsY@vostro.rjw.lan>
 MIME-Version: 1.0
-To: Minchan Kim <minchan@kernel.org>, Mel Gorman <mel@csn.ul.ie>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        "'?????????'" <iamjoonsoo.kim@lge.com>,
-        Laura Abbott <lauraa@codeaurora.org>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, ????????? <gunho.lee@lge.com>,
-        "'Chanho Min'" <chanho.min@lge.com>, linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH] CMA/HOTPLUG: clear buffer-head lru before page migration
-References: <53C8C290.90503@lge.com> <20140721025047.GA7707@bbox> <53CCB02A.7070301@lge.com> <20140721073651.GA15912@bbox> <20140721130146.GO10544@csn.ul.ie> <20140722001545.GC15912@bbox>
-In-Reply-To: <20140722001545.GC15912@bbox>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
+Since ACPI wakeup GPEs are going to be enabled during system suspend
+as well as for runtime wakeup by a subsequent patch and the same
+notify handlers will be used in both cases, rework the ACPI device
+wakeup notification framework so that the part specific to physical
+devices is always run asynchronously from the PM workqueue.  This
+prevents runtime resume callbacks for those devices from being
+run during system suspend and resume which may not be appropriate,
+among other things.
 
-2014-07-22 오전 9:15, Minchan Kim 쓴 글:
-> Hello Mel,
->
-> On Mon, Jul 21, 2014 at 02:01:46PM +0100, Mel Gorman wrote:
->> On Mon, Jul 21, 2014 at 04:36:51PM +0900, Minchan Kim wrote:
->>
->> I'm not reviewing this in detail at all, didn't even look at the patch
->> but two things popped out at me during the discussion.
->>
->>>>> Anyway, why cannot CMA have the cost without affecting other subsystem?
->>>>> I mean it's okay for CMA to consume more time to shoot out the bh
->>>>> instead of simple all bh_lru invalidation because big order allocation is
->>>>> kinds of slow thing in the VM and everybody already know that and even
->>>>> sometime get failed so it's okay to add more code that extremly slow path.
->>>>
->>>> There are 2 reasons to invalidate entire bh_lru.
->>>>
->>>> 1. I think CMA allocation is very rare so that invalidaing bh_lru affects the system little.
->>>> How do you think about it? My platform does not call CMA allocation often.
->>>> Is the CMA allocation or Memory-Hotplug called often?
->>>
->>> It depends on usecase and you couldn't assume anyting because we couldn't
->>> ask every people in the world. "Please ask to us whenever you try to use CMA".
->>>
->>> The key point is how the patch is maintainable.
->>> If it's too complicate to maintain, maybe we could go with simple solution
->>> but if it's not too complicate, we can go with more smart thing to consider
->>> other cases in future. Why not?
->>>
->>> Another point is that how user can detect where the regression is from.
->>> If we cannot notice the regression, it's not a good idea to go with simple
->>> version.
->>>
->>
->> The buffer LRU avoids a lookup of a radix tree. If the LRU hit rate is
->> low then the performance penalty of repeated radix tree lookups is
->> severe but the cost of missing one hot lookup because CMA invalidate it
->> is not.
->>
->> The real cost to be concerned with is the cost of performing the
->> invalidation not the fact a lookup in the LRU was missed. It's because
->> the cost of invalidation is high that this is being pushed to CMA because
->> for CMA an allocation failure can be a functional failure and not just a
->> performance problem.
->>
->>>>
->>>> 2. Adding code in drop_buffers() can affect the system more that adding code in alloc_contig_range()
->>>> because the drop_buffers does not have a way to distinguish migrate type.
->>>> Even-though the lmbech results that it has almost the same performance.
->>>> But I am afraid that it can be changed.
->>>> As you said if bh_lru size can be changed it affects more than now.
->>>> SO I do not want to touch non-CMA related code.
->>>
->>> I'm not saying to add hook in drop_buffers.
->>> What I suggest is to handle failure by bh_lrus in migrate_pages
->>> because it's not a problem only in CMA.
->>
->> No, please do not insert a global IPI to invalidate buffer heads in the
->> general migration case. It's too expensive for either THP allocations or
->> automatic NUMA migrates. The global IPI cost is justified for rare events
->> where it causes functional problems if it fails to migreate -- CMA, memory
->> hot-remove, memory poisoning etc.
->
-> I didn't want to add that flushing in migrate_pages *unconditionlly*.
-> Please, look at this patch. It fixes only CMA although it's an issue
-> for others. Even, it depends on retry logic of upper layer of
-> alloc_contig_range but even cma_alloc(ie, upper layer of alloc_contig_range)
-> doesn't have retry logic. :(
-> That's why I suggested it in migrate_pages.
->
-> Actually, I'd like to go with making migrate_pages's user blind on pcp
-> draining stuff by squeezing that inside migrate_pages.
-> IOW, current users of migrate pages don't need to be aware of per-cpu
-> draining. What they should know is just they should use MIGRATE_SYNC
-> for best effort but costly opeartion.
->
-> For implemenation, we could use retry logic in migrate_pages.
->
-> int migrate_pages(xxx)
-> {
->          for (pass = 0; pass < 10 && retry; pass++)
->                  if (retry && pass > 2 && mode == MIGRATE_SYNC)
->                          flush_all_of_percpu_stuff();
-> }
->
-> migrate_page has migrate_mode and retry logic with 'pass', even
-> reason if we want ot filter out MR_CMA|MEMORY_HOTPLUG|MR_MEMORY_FAILURE.
-> so that we could handle all of things inside migrate_pages.
->
-> Normally, MIGRATE_SYNC would be expensive operation and mostly
-> it is used for CMA, memory-hotplug, memory-poisoning so THP and
-> automatic NUMA cannot affect so I believe adding IPI to that is not
-> a big problem in such trouble condition(ie, retry && pass > 2).
+Also make ACPI device wakeup notification handling a bit more robust
+agaist subsequent removal of ACPI device objects, whould that ever
+happen, and create a wakeup source object for each ACPI device
+configured for wakeup so that wakeup notifications for those
+devices can wake up the system from the "freeze" sleep state.
 
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+---
+ drivers/acpi/device_pm.c |   74 +++++++++++++++++++++++++++++++++--------------
+ drivers/acpi/pci_root.c  |    2 -
+ drivers/pci/pci-acpi.c   |   60 ++++++++++++--------------------------
+ include/acpi/acpi_bus.h  |   21 ++++++++-----
+ include/linux/pci-acpi.h |   13 +++++---
+ 5 files changed, 95 insertions(+), 75 deletions(-)
 
-I agree Minchan's point.
-I am not sure it is ok to touch the common code such as migrate_pages().
+Index: linux-pm/include/acpi/acpi_bus.h
+===================================================================
+--- linux-pm.orig/include/acpi/acpi_bus.h
++++ linux-pm/include/acpi/acpi_bus.h
+@@ -315,12 +315,19 @@ struct acpi_device_wakeup_flags {
+ 	u8 notifier_present:1;  /* Wake-up notify handler has been installed */
+ };
+ 
++struct acpi_device_wakeup_context {
++	struct work_struct work;
++	struct device *dev;
++};
++
+ struct acpi_device_wakeup {
+ 	acpi_handle gpe_device;
+ 	u64 gpe_number;
+ 	u64 sleep_state;
+ 	struct list_head resources;
+ 	struct acpi_device_wakeup_flags flags;
++	struct acpi_device_wakeup_context context;
++	struct wakeup_source *ws;
+ 	int prepare_count;
+ };
+ 
+@@ -504,20 +511,18 @@ int acpi_enable_wakeup_device_power(stru
+ int acpi_disable_wakeup_device_power(struct acpi_device *dev);
+ 
+ #ifdef CONFIG_PM
+-acpi_status acpi_add_pm_notifier(struct acpi_device *adev,
+-				 acpi_notify_handler handler, void *context);
+-acpi_status acpi_remove_pm_notifier(struct acpi_device *adev,
+-				    acpi_notify_handler handler);
++acpi_status acpi_add_pm_notifier(struct acpi_device *adev, struct device *dev,
++				 void (*work_func)(struct work_struct *work));
++acpi_status acpi_remove_pm_notifier(struct acpi_device *adev);
+ int acpi_pm_device_sleep_state(struct device *, int *, int);
+ #else
+ static inline acpi_status acpi_add_pm_notifier(struct acpi_device *adev,
+-					       acpi_notify_handler handler,
+-					       void *context)
++					       struct device *dev,
++				               void (*work_func)(struct work_struct *work))
+ {
+ 	return AE_SUPPORT;
+ }
+-static inline acpi_status acpi_remove_pm_notifier(struct acpi_device *adev,
+-						  acpi_notify_handler handler)
++static inline acpi_status acpi_remove_pm_notifier(struct acpi_device *adev)
+ {
+ 	return AE_SUPPORT;
+ }
+Index: linux-pm/drivers/acpi/device_pm.c
+===================================================================
+--- linux-pm.orig/drivers/acpi/device_pm.c
++++ linux-pm/drivers/acpi/device_pm.c
+@@ -367,29 +367,55 @@ EXPORT_SYMBOL(acpi_bus_power_manageable)
+ #ifdef CONFIG_PM
+ static DEFINE_MUTEX(acpi_pm_notifier_lock);
+ 
++static void acpi_pm_notify_handler(acpi_handle handle, u32 val, void *not_used)
++{
++	struct acpi_device *adev;
++
++	if (val != ACPI_NOTIFY_DEVICE_WAKE)
++		return;
++
++	adev = acpi_bus_get_acpi_device(handle);
++	if (!adev)
++		return;
++
++	__pm_wakeup_event(adev->wakeup.ws, 0);
++	if (adev->wakeup.context.work.func)
++		queue_pm_work(&adev->wakeup.context.work);
++
++	acpi_bus_put_acpi_device(adev);
++}
++
+ /**
+- * acpi_add_pm_notifier - Register PM notifier for given ACPI device.
+- * @adev: ACPI device to add the notifier for.
+- * @context: Context information to pass to the notifier routine.
++ * acpi_add_pm_notifier - Register PM notify handler for given ACPI device.
++ * @adev: ACPI device to add the notify handler for.
++ * @dev: Device to generate a wakeup event for while handling the notification.
++ * @work_func: Work function to execute when handling the notification.
+  *
+  * NOTE: @adev need not be a run-wake or wakeup device to be a valid source of
+  * PM wakeup events.  For example, wakeup events may be generated for bridges
+  * if one of the devices below the bridge is signaling wakeup, even if the
+  * bridge itself doesn't have a wakeup GPE associated with it.
+  */
+-acpi_status acpi_add_pm_notifier(struct acpi_device *adev,
+-				 acpi_notify_handler handler, void *context)
++acpi_status acpi_add_pm_notifier(struct acpi_device *adev, struct device *dev,
++				 void (*work_func)(struct work_struct *work))
+ {
+ 	acpi_status status = AE_ALREADY_EXISTS;
+ 
++	if (!dev && !work_func)
++		return AE_BAD_PARAMETER;
++
+ 	mutex_lock(&acpi_pm_notifier_lock);
+ 
+ 	if (adev->wakeup.flags.notifier_present)
+ 		goto out;
+ 
+-	status = acpi_install_notify_handler(adev->handle,
+-					     ACPI_SYSTEM_NOTIFY,
+-					     handler, context);
++	adev->wakeup.ws = wakeup_source_register(dev_name(&adev->dev));
++	adev->wakeup.context.dev = dev;
++	if (work_func)
++		INIT_WORK(&adev->wakeup.context.work, work_func);
++
++	status = acpi_install_notify_handler(adev->handle, ACPI_SYSTEM_NOTIFY,
++					     acpi_pm_notify_handler, NULL);
+ 	if (ACPI_FAILURE(status))
+ 		goto out;
+ 
+@@ -404,8 +430,7 @@ acpi_status acpi_add_pm_notifier(struct
+  * acpi_remove_pm_notifier - Unregister PM notifier from given ACPI device.
+  * @adev: ACPI device to remove the notifier from.
+  */
+-acpi_status acpi_remove_pm_notifier(struct acpi_device *adev,
+-				    acpi_notify_handler handler)
++acpi_status acpi_remove_pm_notifier(struct acpi_device *adev)
+ {
+ 	acpi_status status = AE_BAD_PARAMETER;
+ 
+@@ -416,10 +441,17 @@ acpi_status acpi_remove_pm_notifier(stru
+ 
+ 	status = acpi_remove_notify_handler(adev->handle,
+ 					    ACPI_SYSTEM_NOTIFY,
+-					    handler);
++					    acpi_pm_notify_handler);
+ 	if (ACPI_FAILURE(status))
+ 		goto out;
+ 
++	if (adev->wakeup.context.work.func) {
++		cancel_work_sync(&adev->wakeup.context.work);
++		adev->wakeup.context.work.func = NULL;
++	}
++	adev->wakeup.context.dev = NULL;
++	wakeup_source_unregister(adev->wakeup.ws);
++
+ 	adev->wakeup.flags.notifier_present = false;
+ 
+  out:
+@@ -602,16 +634,15 @@ EXPORT_SYMBOL(acpi_pm_device_sleep_state
+ 
+ #ifdef CONFIG_PM_RUNTIME
+ /**
+- * acpi_wakeup_device - Wakeup notification handler for ACPI devices.
+- * @handle: ACPI handle of the device the notification is for.
+- * @event: Type of the signaled event.
+- * @context: Device corresponding to @handle.
++ * acpi_pm_notify_work_func - ACPI devices wakeup notification work function.
++ * @work: Work item to handle.
+  */
+-static void acpi_wakeup_device(acpi_handle handle, u32 event, void *context)
++static void acpi_pm_notify_work_func(struct work_struct *work)
+ {
+-	struct device *dev = context;
++	struct device *dev;
+ 
+-	if (event == ACPI_NOTIFY_DEVICE_WAKE && dev) {
++	dev = container_of(work, struct acpi_device_wakeup_context, work)->dev;
++	if (dev) {
+ 		pm_wakeup_event(dev, 0);
+ 		pm_runtime_resume(dev);
+ 	}
+@@ -677,8 +708,7 @@ int acpi_pm_device_run_wake(struct devic
+ }
+ EXPORT_SYMBOL(acpi_pm_device_run_wake);
+ #else
+-static inline void acpi_wakeup_device(acpi_handle handle, u32 event,
+-				      void *context) {}
++static inline void acpi_pm_notify_work_func(struct work_struct *work) {}
+ #endif /* CONFIG_PM_RUNTIME */
+ 
+ #ifdef CONFIG_PM_SLEEP
+@@ -1048,7 +1078,7 @@ int acpi_dev_pm_attach(struct device *de
+ 	if (dev->pm_domain)
+ 		return -EEXIST;
+ 
+-	acpi_add_pm_notifier(adev, acpi_wakeup_device, dev);
++	acpi_add_pm_notifier(adev, dev, acpi_pm_notify_work_func);
+ 	dev->pm_domain = &acpi_general_pm_domain;
+ 	if (power_on) {
+ 		acpi_dev_pm_full_power(adev);
+@@ -1076,7 +1106,7 @@ void acpi_dev_pm_detach(struct device *d
+ 
+ 	if (adev && dev->pm_domain == &acpi_general_pm_domain) {
+ 		dev->pm_domain = NULL;
+-		acpi_remove_pm_notifier(adev, acpi_wakeup_device);
++		acpi_remove_pm_notifier(adev);
+ 		if (power_off) {
+ 			/*
+ 			 * If the device's PM QoS resume latency limit or flags
+Index: linux-pm/drivers/pci/pci-acpi.c
+===================================================================
+--- linux-pm.orig/drivers/pci/pci-acpi.c
++++ linux-pm/drivers/pci/pci-acpi.c
+@@ -18,31 +18,31 @@
+ #include "pci.h"
+ 
+ /**
+- * pci_acpi_wake_bus - Wake-up notification handler for root buses.
+- * @handle: ACPI handle of a device the notification is for.
+- * @event: Type of the signaled event.
+- * @context: PCI root bus to wake up devices on.
++ * pci_acpi_wake_bus - Root bus wakeup notification fork function.
++ * @work: Work item to handle.
+  */
+-static void pci_acpi_wake_bus(acpi_handle handle, u32 event, void *context)
++static void pci_acpi_wake_bus(struct work_struct *work)
+ {
+-	struct pci_bus *pci_bus = context;
++	struct acpi_device *adev;
++	struct acpi_pci_root *root;
+ 
+-	if (event == ACPI_NOTIFY_DEVICE_WAKE && pci_bus)
+-		pci_pme_wakeup_bus(pci_bus);
++	adev = container_of(work, struct acpi_device, wakeup.context.work);
++	root = acpi_driver_data(adev);
++	pci_pme_wakeup_bus(root->bus);
+ }
+ 
+ /**
+- * pci_acpi_wake_dev - Wake-up notification handler for PCI devices.
++ * pci_acpi_wake_dev - PCI device wakeup notification work function.
+  * @handle: ACPI handle of a device the notification is for.
+- * @event: Type of the signaled event.
+- * @context: PCI device object to wake up.
++ * @work: Work item to handle.
+  */
+-static void pci_acpi_wake_dev(acpi_handle handle, u32 event, void *context)
++static void pci_acpi_wake_dev(struct work_struct *work)
+ {
+-	struct pci_dev *pci_dev = context;
++	struct acpi_device_wakeup_context *context;
++	struct pci_dev *pci_dev;
+ 
+-	if (event != ACPI_NOTIFY_DEVICE_WAKE || !pci_dev)
+-		return;
++	context = container_of(work, struct acpi_device_wakeup_context, work);
++	pci_dev = to_pci_dev(context->dev);
+ 
+ 	if (pci_dev->pme_poll)
+ 		pci_dev->pme_poll = false;
+@@ -65,23 +65,12 @@ static void pci_acpi_wake_dev(acpi_handl
+ }
+ 
+ /**
+- * pci_acpi_add_bus_pm_notifier - Register PM notifier for given PCI bus.
+- * @dev: ACPI device to add the notifier for.
+- * @pci_bus: PCI bus to walk checking for PME status if an event is signaled.
++ * pci_acpi_add_bus_pm_notifier - Register PM notifier for root PCI bus.
++ * @dev: PCI root bridge ACPI device.
+  */
+-acpi_status pci_acpi_add_bus_pm_notifier(struct acpi_device *dev,
+-					 struct pci_bus *pci_bus)
++acpi_status pci_acpi_add_bus_pm_notifier(struct acpi_device *dev)
+ {
+-	return acpi_add_pm_notifier(dev, pci_acpi_wake_bus, pci_bus);
+-}
+-
+-/**
+- * pci_acpi_remove_bus_pm_notifier - Unregister PCI bus PM notifier.
+- * @dev: ACPI device to remove the notifier from.
+- */
+-acpi_status pci_acpi_remove_bus_pm_notifier(struct acpi_device *dev)
+-{
+-	return acpi_remove_pm_notifier(dev, pci_acpi_wake_bus);
++	return acpi_add_pm_notifier(dev, NULL, pci_acpi_wake_bus);
+ }
+ 
+ /**
+@@ -92,16 +81,7 @@ acpi_status pci_acpi_remove_bus_pm_notif
+ acpi_status pci_acpi_add_pm_notifier(struct acpi_device *dev,
+ 				     struct pci_dev *pci_dev)
+ {
+-	return acpi_add_pm_notifier(dev, pci_acpi_wake_dev, pci_dev);
+-}
+-
+-/**
+- * pci_acpi_remove_pm_notifier - Unregister PCI device PM notifier.
+- * @dev: ACPI device to remove the notifier from.
+- */
+-acpi_status pci_acpi_remove_pm_notifier(struct acpi_device *dev)
+-{
+-	return acpi_remove_pm_notifier(dev, pci_acpi_wake_dev);
++	return acpi_add_pm_notifier(dev, &pci_dev->dev, pci_acpi_wake_dev);
+ }
+ 
+ phys_addr_t acpi_pci_root_get_mcfg_addr(acpi_handle handle)
+Index: linux-pm/include/linux/pci-acpi.h
+===================================================================
+--- linux-pm.orig/include/linux/pci-acpi.h
++++ linux-pm/include/linux/pci-acpi.h
+@@ -11,12 +11,17 @@
+ #include <linux/acpi.h>
+ 
+ #ifdef CONFIG_ACPI
+-extern acpi_status pci_acpi_add_bus_pm_notifier(struct acpi_device *dev,
+-						 struct pci_bus *pci_bus);
+-extern acpi_status pci_acpi_remove_bus_pm_notifier(struct acpi_device *dev);
++extern acpi_status pci_acpi_add_bus_pm_notifier(struct acpi_device *dev);
++static inline acpi_status pci_acpi_remove_bus_pm_notifier(struct acpi_device *dev)
++{
++	return acpi_remove_pm_notifier(dev);
++}
+ extern acpi_status pci_acpi_add_pm_notifier(struct acpi_device *dev,
+ 					     struct pci_dev *pci_dev);
+-extern acpi_status pci_acpi_remove_pm_notifier(struct acpi_device *dev);
++static inline acpi_status pci_acpi_remove_pm_notifier(struct acpi_device *dev)
++{
++	return acpi_remove_pm_notifier(dev);
++}
+ extern phys_addr_t acpi_pci_root_get_mcfg_addr(acpi_handle handle);
+ 
+ static inline acpi_handle acpi_find_root_bridge_handle(struct pci_dev *pdev)
+Index: linux-pm/drivers/acpi/pci_root.c
+===================================================================
+--- linux-pm.orig/drivers/acpi/pci_root.c
++++ linux-pm/drivers/acpi/pci_root.c
+@@ -593,7 +593,7 @@ static int acpi_pci_root_add(struct acpi
+ 	if (no_aspm)
+ 		pcie_no_aspm();
+ 
+-	pci_acpi_add_bus_pm_notifier(device, root->bus);
++	pci_acpi_add_bus_pm_notifier(device);
+ 	if (device->wakeup.flags.run_wake)
+ 		device_set_run_wake(root->bus->bridge, true);
+ 
 
-If Mel agrees, I am going to report another patch of flush_all_of_percpu_stuff() like following:
-
-flush_all_of_percpu_stuff()
-{
-	drop_only_bh_of_migrating_page();
-	lru_add_drain_all();
-	drain_all_pages();
-}
-
-And remove lru_add_drain_all() and drain_all_pages() in CMA/HOTPLUG codes.
-
-
-
->
->>
->> --
->> Mel Gorman
->> SUSE Labs
->>
->> --
->> To unsubscribe, send a message with 'unsubscribe linux-mm' in
->> the body to majordomo@kvack.org.  For more info on Linux MM,
->> see: http://www.linux-mm.org/ .
->> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
->
