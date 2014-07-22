@@ -1,66 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756099AbaGVQqI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 12:46:08 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:59502 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754581AbaGVQqF (ORCPT
+	id S1756205AbaGVQrF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 12:47:05 -0400
+Received: from mail-vc0-f172.google.com ([209.85.220.172]:37098 "EHLO
+	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754581AbaGVQrC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 12:46:05 -0400
-Message-ID: <53CE952D.6040705@ti.com>
-Date: Tue, 22 Jul 2014 11:45:33 -0500
-From: Nishanth Menon <nm@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Tue, 22 Jul 2014 12:47:02 -0400
 MIME-Version: 1.0
-To: Lokesh Vutla <lokeshvutla@ti.com>, <linux-omap@vger.kernel.org>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <tony@atomide.com>, <paul@pwsan.com>, <linux@arm.linux.org.uk>,
-        <nsekhar@ti.com>, <j-keerthy@ti.com>, <rogerq@ti.com>
-Subject: Re: [PATCH 0/2] ARM: DRA7: hwmod: Add dra74x and dra72x specific
- ocp interface lists
-References: <1405499774-19770-1-git-send-email-lokeshvutla@ti.com>
-In-Reply-To: <1405499774-19770-1-git-send-email-lokeshvutla@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20140722162455.GA15053@infradead.org>
+References: <20140716114136.GA25237@infradead.org>
+	<20140722162455.GA15053@infradead.org>
+Date: Tue, 22 Jul 2014 18:47:00 +0200
+Message-ID: <CAFLxGvwCysy9DGcUTzzcka87FX3j06fAhHH+vtJZiQcM4qNs7A@mail.gmail.com>
+Subject: Re: VFS tree for 3.17?
+From: Richard Weinberger <richard.weinberger@gmail.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Al Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Miklos Szeredi <miklos@szeredi.hu>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/16/2014 03:36 AM, Lokesh Vutla wrote:
-> This series add seperate ocp interface lists that are specific to dra74x
-> and dra72x, and moving USB OTG SS4 to dra74x only since its not present
-> in dra72x. Without this USB OTG SS4 hwmod gives an abort on dra72x.
-> 
-> Adding support for soc_is_dra74x() and soc_is_dra72x() in order to differentiate
-> between dra74x and dra72x and pass the respective ocp interface lists.
-> 
-> Verified on dra74x evm and dra72x evm using 3.16-rc5 based mainline kernel.
-> 
-> Before:
-> dra74x : http://paste.ubuntu.com/7802364/ 
-> dra72x : http://paste.ubuntu.com/7802334/ (Kernel panic)
-> 
-> After-
-> dra74x : http://paste.ubuntu.com/7802340/
-> dra72x : http://paste.ubuntu.com/7802338/ (booted)
-> 
-> Rajendra Nayak (2):
->   ARM: DRA7: Add support for soc_is_dra74x() and soc_is_dra72x()
->     varients
->   ARM: DRA7: hwmod: Add dra74x and dra72x specific ocp interface lists
-> 
->  arch/arm/mach-omap2/omap_hwmod.c          |    3 +++
->  arch/arm/mach-omap2/omap_hwmod_7xx_data.c |   22 ++++++++++++++++++++--
->  arch/arm/mach-omap2/soc.h                 |    7 +++++++
->  3 files changed, 30 insertions(+), 2 deletions(-)
-> 
-Tested-by: Nishanth Menon <nm@ti.com>
+On Tue, Jul 22, 2014 at 6:24 PM, Christoph Hellwig <hch@infradead.org> wrote:
+> On Wed, Jul 16, 2014 at 04:41:36AM -0700, Christoph Hellwig wrote:
+>> Hi Al,
+>>
+>> Do you plan to put a VFS tree together for 3.17?  To me the various
+>> renameat2 bits from Miklos are something I'd really prefer to not miss,
+>> but there might be other bits waiting for attention as well.
+>
+> Another weeks has passed and I'd really like to make sure we don't
+> let the VFS leap.
+>
+> I'll try to put together a tree over the next days so we can at least
+> get a minium amount of linux-next exposure.  Candidates are:
+>
+>  - the direct-io.c warning fix from Boaz (really should 3.16 actually)
+>  - the unmount on symlink reference count fix
 
-BUT, I suggest a follow up series to do exactly the same (moving stuff
-that are not common from dra7.dtsi to dra72x.dtsi and 74x.dtsi) as
-well to ensure that dts indicates exactly the same information (only
-the applicable IPs are present in dts).
+This fix is also stable material.
+The issue as introduced in 3.12 by 8033426e6b
+(vfs: allow umount to handle mountpoints without revalidating them)
+
+>  - the rename/rename2 patches from Mikilos.  These are a bit older
+>    and could use a respin.
+>
+> Anything else I've missed?
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+
 
 -- 
-Regards,
-Nishanth Menon
+Thanks,
+//richard
