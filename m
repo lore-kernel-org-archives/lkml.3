@@ -1,83 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752572AbaGVCT6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 22:19:58 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:38557 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751267AbaGVCT5 (ORCPT
+	id S1752626AbaGVCUz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 22:20:55 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:47689 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751130AbaGVCUy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 22:19:57 -0400
-MIME-Version: 1.0
-In-Reply-To: <1405969601-4234-3-git-send-email-keescook@chromium.org>
-References: <1405969601-4234-1-git-send-email-keescook@chromium.org>
-	<1405969601-4234-3-git-send-email-keescook@chromium.org>
-Date: Tue, 22 Jul 2014 10:19:52 +0800
-Message-ID: <CACVXFVO8=naiMG-S41_KRmbyOKLBna2=t5nafmYWGar5fSt3sQ@mail.gmail.com>
-Subject: Re: [PATCH v2 2/2] firmware_class: perform new LSM checks
-From: Ming Lei <ming.lei@canonical.com>
-To: Kees Cook <keescook@chromium.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        James Morris <james.l.morris@oracle.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-security-module <linux-security-module@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 21 Jul 2014 22:20:54 -0400
+From: Charles Manning <cdhmanning@gmail.com>
+To: linux-kernel@vger.kernel.org, s.trumtrar@pengutronix.de,
+        dinguyen@altera.com, cslee@altera.com
+Cc: Charles Manning <cdhmanning@gmail.com>
+Subject: [PATCH 0/3] clk : Fix SOCFPGA clk crash and some clean up
+Date: Tue, 22 Jul 2014 14:20:31 +1200
+Message-Id: <1405995634-3297-1-git-send-email-cdhmanning@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 22, 2014 at 3:06 AM, Kees Cook <keescook@chromium.org> wrote:
-> This attaches LSM hooks to the existing firmware loading interfaces:
-> filesystem-found firmware and demand-loaded blobs.
->
-> Signed-off-by: Kees Cook <keescook@chromium.org>
-> Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> ---
->  drivers/base/firmware_class.c |   16 ++++++++++++++--
->  1 file changed, 14 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
-> index d276e33880be..7399bab71ced 100644
-> --- a/drivers/base/firmware_class.c
-> +++ b/drivers/base/firmware_class.c
-> @@ -28,6 +28,7 @@
->  #include <linux/suspend.h>
->  #include <linux/syscore_ops.h>
->  #include <linux/reboot.h>
-> +#include <linux/security.h>
->
->  #include <generated/utsrelease.h>
->
-> @@ -308,12 +309,17 @@ static int fw_read_file_contents(struct file *file, struct firmware_buf *fw_buf)
->         if (rc != size) {
->                 if (rc > 0)
->                         rc = -EIO;
-> -               vfree(buf);
-> -               return rc;
-> +               goto fail;
->         }
-> +       rc = security_kernel_fw_from_file(file, buf, size);
-> +       if (rc)
-> +               goto fail;
->         fw_buf->data = buf;
->         fw_buf->size = size;
->         return 0;
-> +fail:
-> +       vfree(buf);
-> +       return rc;
->  }
->
->  static int fw_get_filesystem_firmware(struct device *device,
-> @@ -640,6 +646,12 @@ static ssize_t firmware_loading_store(struct device *dev,
->                 break;
->         case 0:
->                 if (test_bit(FW_STATUS_LOADING, &fw_buf->status)) {
-> +                       if (security_kernel_fw_from_file(NULL, fw_buf->data,
-> +                                                        fw_buf->size)) {
-> +                               fw_load_abort(fw_priv);
-> +                               break;
+After some digging into a crash on the SOCFPGA initialisation it was
+determined that this was due to the SOCFPGA's name look-up dereferencing
+the clock init pointer. This is a bad thing to do because the init data is
+constructed on the stack and thus a pointer to the init data is no longer
+valid after clk_register() has been called.
 
-It may be more friendly to return -EPERM or sort of failure
-to user, otherwise it might cause userspace loader a bit confused.
+Most, if not all, drivers create the init data on the stack. Thus init 
+pointer should not be left hanging after it has been used in clk_register.
+Thus one of these patches NULLs the pointer so it can't be abused.
+
+In the long term, it would be way, way better to pass the init pointer as
+an argument rather than as a pointer in hw.
 
 
-Thanks,
+Charles Manning (3):
+  clk : Clean up checkpatch warnings
+  clk: Prevent a hanging pointer being abused
+  clk: socfpga Change name look-up to not use the init pointer
+
+ drivers/clk/clk.c                | 37 +++++++++++++++++++--------------
+ drivers/clk/socfpga/clk-gate.c   | 44 ++++++++++++++++++++++++++--------------
+ drivers/clk/socfpga/clk-periph.c | 16 ++++++++++-----
+ drivers/clk/socfpga/clk-pll.c    | 13 ++++++++----
+ drivers/clk/socfpga/clk.h        |  7 ++++---
+ 5 files changed, 75 insertions(+), 42 deletions(-)
+
+-- 
+1.9.1
+
