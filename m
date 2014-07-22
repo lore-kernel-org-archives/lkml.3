@@ -1,62 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752257AbaGVEoe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 00:44:34 -0400
-Received: from imap.thunk.org ([74.207.234.97]:48907 "EHLO imap.thunk.org"
+	id S1751302AbaGVEsI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 00:48:08 -0400
+Received: from ozlabs.org ([103.22.144.67]:44943 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750785AbaGVEoc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 00:44:32 -0400
-Date: Tue, 22 Jul 2014 00:44:09 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Cc: George Spelvin <linux@horizon.com>, linux-crypto@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH, RFC] random: introduce getrandom(2) system call
-Message-ID: <20140722044409.GE24960@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Hannes Frederic Sowa <hannes@stressinduktion.org>,
-	George Spelvin <linux@horizon.com>, linux-crypto@vger.kernel.org,
-	linux-kernel@vger.kernel.org
-References: <20140721112102.19300.qmail@ns.horizon.com>
- <1405956426.2319.37.camel@localhost>
- <1405990940.28229.4.camel@localhost>
+	id S1750843AbaGVEsH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 00:48:07 -0400
+Date: Tue, 22 Jul 2014 14:47:27 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Richard Weinberger <richard@sigma-star.at>
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org
+Subject: Re: Global signal cleanup, take 4
+Message-ID: <20140722144727.441bcc2a@canb.auug.org.au>
+In-Reply-To: <1405951409-16953-1-git-send-email-richard@sigma-star.at>
+References: <1405951409-16953-1-git-send-email-richard@sigma-star.at>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1405990940.28229.4.camel@localhost>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/d+81fpIa4D7A+9a2.i4FEvk"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 22, 2014 at 03:02:20AM +0200, Hannes Frederic Sowa wrote:
-> 
-> Ted, would it make sense to specifiy a 512 byte upper bound limit for
-> random entropy extraction (I am not yet convinced to do that for
-> urandom) and in case the syscall should block we make sure that we
-> extract the amount of bytes the user requested?
+--Sig_/d+81fpIa4D7A+9a2.i4FEvk
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-On some systems, it's still possible that with a large /dev/random
-extraction, you could end up blocking for hours.  So either the
-getrandom(2) syscall needs to be uninterruptible, which has one set of
-problems (and not just the user typing ^C, but also things like being
-able to process alarms, which is highly problematic indeed), or you
-need to allow it to be interruptible by a signal, in which case
-userspace needs to check the error return for things like EINTR
-anyway.  And if you have to check the error return, you might as well
-check the number of bytes returned.
+Hi Richard,
 
-Yes, one could in theory set up a new variant of "uninterruptible"
-signals that only exited if the signal caused the process to exit, and
-otherwise, forced a system call restart even if SA_INTERRUPTIBLE was
-not set in sigalarim, but that's add *way* more complexity than this
-deserves.
+On Mon, 21 Jul 2014 16:02:46 +0200 Richard Weinberger <richard@sigma-star.a=
+t> wrote:
+>
+> The whole series can also be found at:
+> git://git.kernel.org/pub/scm/linux/kernel/git/rw/misc.git signal_v4
+>=20
+> Andrew, can you please pickup this series?
 
-Basically, I view /dev/random as an advanced call, and someone who
-uses it should know what they are doing.  It's not the default for a
-reason.
+Why don't we just add that git tree to linux-next? Then you can send
+Linus a pull request in the next merge window.
 
-						- Ted
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Sig_/d+81fpIa4D7A+9a2.i4FEvk
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJTze0CAAoJEMDTa8Ir7ZwV0Z0P/jmWTVR9D+rTW/vtxJTGg898
+y7dgRN6O8BQH9+5J33HxVaWSWY/qapwPB4ZWiGm7CJw4YdSGf3R7s6iy8y0h1Y+B
+eenoPitCUzzZCgGxCyFMILlaFZ6qwHI/E3kxp3U2j/5YORXCElLx1kWj9tuSY/9K
+adcb13jaKJsXOMN31LB98I3dT5wlBT0DipHr4OoeKzm1gn06vptQbEo+/jyeXGJS
+JXf8zdv0LGKRTjwtapMH8aLRwM/Jll1lIc+G742gY1C+vZzPSubHutJO+c6iRS3Q
+WtKvebgk8Mj02G22Tb2NT1dcRzXOo9DRCSpFUEynhCSXIMrVO0FmqoB99XdRZBSr
+SOdcka3hTHuVT1iSDRfNc0h9WVIMz0MuJhjCqUDB7QjBCqzNjTZ7nCRIbpG83Zxq
+Zqd0xp8npwoDyi7dMHDkmGXn0X1KdQuqCjPY5RWFTdyAQ0RKOxLV8wqWGTCBStfr
+Y9xZWn8Dkc/k0CPmcH5jBZoLT581GOqpa/Umz71eKHwq10h7j5b34223Gi3uhkm1
+gh1PvaoaQEi96KOMkLJiI42JdG8/+PkpPWCq7IjaE33f5yZzjF2ndhV3GqSqXcx8
+czpZxLpprkWCquzjP2lrhg6zsejtRtM7uMZXDrLfSd7+ioH/DorNiRJ4O4Hc2Wa8
+0XdbwLNdfpjBkOw2eS2a
+=iBo6
+-----END PGP SIGNATURE-----
+
+--Sig_/d+81fpIa4D7A+9a2.i4FEvk--
