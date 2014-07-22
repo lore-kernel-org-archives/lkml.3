@@ -1,126 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751554AbaGVAm7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 20:42:59 -0400
-Received: from mga14.intel.com ([192.55.52.115]:25563 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750837AbaGVAm6 convert rfc822-to-8bit (ORCPT
+	id S1751646AbaGVAoM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 20:44:12 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:53295 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751024AbaGVAoJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 20:42:58 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,705,1400050800"; 
-   d="scan'208";a="565200337"
-From: "Zhang, Tianfei" <tianfei.zhang@intel.com>
-To: "Ren, Qiaowei" <qiaowei.ren@intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "Hansen, Dave" <dave.hansen@intel.com>
-CC: "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "Ren, Qiaowei" <qiaowei.ren@intel.com>
-Subject: RE: [PATCH v7 05/10] x86, mpx: extend siginfo structure to include
- bound violation information
-Thread-Topic: [PATCH v7 05/10] x86, mpx: extend siginfo structure to include
- bound violation information
-Thread-Index: AQHPpKamt4H7mx4sM0e/jI/UmwAjL5urQiZQ
-Date: Tue, 22 Jul 2014 00:42:53 +0000
-Message-ID: <BA6F50564D52C24884F9840E07E32DEC17D5E258@CDSMSX102.ccr.corp.intel.com>
-References: <1405921124-4230-1-git-send-email-qiaowei.ren@intel.com>
- <1405921124-4230-6-git-send-email-qiaowei.ren@intel.com>
-In-Reply-To: <1405921124-4230-6-git-send-email-qiaowei.ren@intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.17.6.105]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 21 Jul 2014 20:44:09 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Linux PCI <linux-pci@vger.kernel.org>, Zhang Rui <rui.zhang@intel.com>
+Subject: Re: [Update 2x][PATCH 1/2] ACPI / PM: Always enable wakeup GPEs when enabling device wakeup
+Date: Tue, 22 Jul 2014 03:02:29 +0200
+Message-ID: <30566603.pYsRuTlO6S@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140721081734.GL3935@laptop>
+References: <1907495.agrCMfRsQN@vostro.rjw.lan> <5962983.s3jy9r09Hm@vostro.rjw.lan> <20140721081734.GL3935@laptop>
 MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Monday, July 21, 2014 10:17:34 AM Peter Zijlstra wrote:
+> On Mon, Jul 21, 2014 at 01:51:46AM +0200, Rafael J. Wysocki wrote:
+> > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > Subject: ACPI / PM: Always enable wakeup GPEs when enabling device wakeup
+> > 
+> > Wakeup GPEs are currently only enabled when setting up devices for
+> > remote wakeup at run time.  During system-wide transitions they are
+> > enabled by ACPICA at the very last stage of suspend (before asking
+> > the BIOS to take over).  Of course, that only works for system
+> > sleep states supported by ACPI, so in particular it doesn't work
+> > for the "freeze" sleep state.
+> > 
+> > For this reason, modify the ACPI core device PM code to enable wakeup
+> > GPEs for devices when setting them up for wakeup regardless of whether
+> > that is remote wakeup at runtime or system wakeup.  That allows the
+> > same device wakeup setup routine to be used for both runtime PM and
+> > system-wide PM and makes it possible to reduce code size quite a bit.
+> > 
+> > That should make things like ACPI-based PCI Wake-on-LAN work with
+> > the "freeze" sleep state among other things.
+> > 
+> > Tested-on: Toshiba Portege R500
+> > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > ---
+> > 
+> > The PCI ACPI device PM notify handler has to be updated to avoid running
+> > runtime resume callbacks during system suspend too.
+> 
+> So I tested the first version, with that my WSM-EP didn't resume on WoL
+> and pressing the power button after the WoL had it crash and burn in the
+> igb driver.
+> 
+> Today I tested this latest version and WoL still didn't trigger a
+> resume, but the power button did make it go again, no crashes and I
+> suppose I can confirm the earlier patch that stopped making it go halt
+> works.
 
+OK, thanks!
 
-> -----Original Message-----
-> From: owner-linux-mm@kvack.org [mailto:owner-linux-mm@kvack.org] On
-> Behalf Of Qiaowei Ren
-> Sent: Monday, July 21, 2014 1:39 PM
-> To: H. Peter Anvin; Thomas Gleixner; Ingo Molnar; Hansen, Dave
-> Cc: x86@kernel.org; linux-kernel@vger.kernel.org; linux-mm@kvack.org; Ren,
-> Qiaowei
-> Subject: [PATCH v7 05/10] x86, mpx: extend siginfo structure to include bound
-> violation information
-> 
-> This patch adds new fields about bound violation into siginfo structure.
-> si_lower and si_upper are respectively lower bound and upper bound when
-> bound violation is caused.
-> 
-> Signed-off-by: Qiaowei Ren <qiaowei.ren@intel.com>
-> ---
->  include/uapi/asm-generic/siginfo.h |    9 ++++++++-
->  kernel/signal.c                    |    4 ++++
->  2 files changed, 12 insertions(+), 1 deletions(-)
-> 
-> diff --git a/include/uapi/asm-generic/siginfo.h
-> b/include/uapi/asm-generic/siginfo.h
-> index ba5be7f..1e35520 100644
-> --- a/include/uapi/asm-generic/siginfo.h
-> +++ b/include/uapi/asm-generic/siginfo.h
-> @@ -91,6 +91,10 @@ typedef struct siginfo {
->  			int _trapno;	/* TRAP # which caused the signal */
->  #endif
->  			short _addr_lsb; /* LSB of the reported address */
-> +			struct {
-> +				void __user *_lower;
-> +				void __user *_upper;
-> +			} _addr_bnd;
->  		} _sigfault;
-> 
->  		/* SIGPOLL */
-> @@ -131,6 +135,8 @@ typedef struct siginfo {
->  #define si_trapno	_sifields._sigfault._trapno
->  #endif
->  #define si_addr_lsb	_sifields._sigfault._addr_lsb
-> +#define si_lower	_sifields._sigfault._addr_bnd._lower
-> +#define si_upper	_sifields._sigfault._addr_bnd._upper
->  #define si_band		_sifields._sigpoll._band
->  #define si_fd		_sifields._sigpoll._fd
->  #ifdef __ARCH_SIGSYS
-> @@ -199,7 +205,8 @@ typedef struct siginfo {
->   */
->  #define SEGV_MAPERR	(__SI_FAULT|1)	/* address not mapped to object
-> */
->  #define SEGV_ACCERR	(__SI_FAULT|2)	/* invalid permissions for mapped
-> object */
-> -#define NSIGSEGV	2
-> +#define SEGV_BNDERR	(__SI_FAULT|3)  /* failed address bound checks */
-> +#define NSIGSEGV	3
-> 
->  /*
->   * SIGBUS si_codes
-> diff --git a/kernel/signal.c b/kernel/signal.c index a4077e9..2131636 100644
-> --- a/kernel/signal.c
-> +++ b/kernel/signal.c
-> @@ -2748,6 +2748,10 @@ int copy_siginfo_to_user(siginfo_t __user *to,
-> const siginfo_t *from)
->  		if (from->si_code == BUS_MCEERR_AR || from->si_code ==
-> BUS_MCEERR_AO)
->  			err |= __put_user(from->si_addr_lsb, &to->si_addr_lsb);  #endif
-> +#ifdef SEGV_BNDERR
-> +		err |= __put_user(from->si_lower, &to->si_lower);
-> +		err |= __put_user(from->si_upper, &to->si_upper); #endif
+> When I 'halt' I can wake the machine back up using a WoL so that all
+> _should_ work afaik.
 
-"#endif" should be in a new line.
+Yes, it should.
 
->  		break;
->  	case __SI_CHLD:
->  		err |= __put_user(from->si_pid, &to->si_pid);
-> --
-> 1.7.1
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in the body to
-> majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+I'll send an updated patchset shortly, so please test that one.  If it
+doesn't help, we'll need to dig deeper still.
+
+Rafael
+
