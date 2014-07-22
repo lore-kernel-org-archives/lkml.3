@@ -1,131 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756151AbaGVQuz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 12:50:55 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:50231 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754293AbaGVQux (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 12:50:53 -0400
-Message-ID: <53CE9652.4080304@ti.com>
-Date: Tue, 22 Jul 2014 11:50:26 -0500
-From: Nishanth Menon <nm@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1756153AbaGVQwq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 12:52:46 -0400
+Received: from mail-ie0-f181.google.com ([209.85.223.181]:39385 "EHLO
+	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753263AbaGVQwp convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 12:52:45 -0400
 MIME-Version: 1.0
-To: Lokesh Vutla <lokeshvutla@ti.com>, <linux-omap@vger.kernel.org>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <tony@atomide.com>, <paul@pwsan.com>, <linux@arm.linux.org.uk>,
-        <nsekhar@ti.com>, <j-keerthy@ti.com>, <rogerq@ti.com>
-Subject: Re: [PATCH 2/2] ARM: DRA7: hwmod: Add dra74x and dra72x specific
- ocp interface lists
-References: <1405499774-19770-1-git-send-email-lokeshvutla@ti.com> <1405499774-19770-3-git-send-email-lokeshvutla@ti.com>
-In-Reply-To: <1405499774-19770-3-git-send-email-lokeshvutla@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+X-Originating-IP: [84.73.67.144]
+In-Reply-To: <53CE93D4.3010204@amd.com>
+References: <20140709093124.11354.3774.stgit@patser>
+	<20140709122953.11354.46381.stgit@patser>
+	<CAPM=9tyD2ZbrcGDC3hfNb7qNdzsfnyD-ZwM7G-nOgxeu5YKuSg@mail.gmail.com>
+	<53CE2421.5040906@amd.com>
+	<20140722114607.GL15237@phenom.ffwll.local>
+	<20140722115737.GN15237@phenom.ffwll.local>
+	<53CE56ED.4040109@vodafone.de>
+	<20140722132652.GO15237@phenom.ffwll.local>
+	<53CE6AFA.1060807@vodafone.de>
+	<CAKMK7uG1d31zU_i__wc+Yq46A0x0tPeKnMBs+NHSmHS82uMsXQ@mail.gmail.com>
+	<53CE84AA.9030703@amd.com>
+	<CAKMK7uFa8vMBV9_JenbFGnFXtV_r9dk=WjbMkkCDWcauhrDdJg@mail.gmail.com>
+	<53CE8A57.2000803@vodafone.de>
+	<CAKMK7uFugmw_pP1nyA1ws5tMB6iCe1CqBHeWHoYzQ0wXE301EA@mail.gmail.com>
+	<53CE93D4.3010204@amd.com>
+Date: Tue, 22 Jul 2014 18:52:44 +0200
+Message-ID: <CAKMK7uH7WfFP6cDhwBPaS+YeL17fxycFQjpNdRfJVgSjhac-kQ@mail.gmail.com>
+Subject: Re: [Nouveau] [PATCH 09/17] drm/radeon: use common fence
+ implementation for fences
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
+To: =?UTF-8?Q?Christian_K=C3=B6nig?= <christian.koenig@amd.com>
+Cc: =?UTF-8?Q?Christian_K=C3=B6nig?= <deathsimple@vodafone.de>,
+        Thomas Hellstrom <thellstrom@vmware.com>,
+        nouveau <nouveau@lists.freedesktop.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        dri-devel <dri-devel@lists.freedesktop.org>,
+        "Deucher, Alexander" <alexander.deucher@amd.com>,
+        Ben Skeggs <bskeggs@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/16/2014 03:36 AM, Lokesh Vutla wrote:
-> From: Rajendra Nayak <rnayak@ti.com>
-> 
-> To deal with IPs which are specific to dra74x and dra72x, maintain seperate
-> ocp interface lists, while keeping the common list for all common IPs.
-> 
-> Move USB OTG SS4 to dra74x only list since its unavailable in
-> dra72x and is giving an abort during boot. The dra72x only list
-> is empty for now and a placeholder for future hwmod additions which
-> are specific to dra72x.
-> 
-> Fixes: d904b38 ARM: DRA7: hwmod: Add SYSCONFIG for usb_otg_ss
+On Tue, Jul 22, 2014 at 6:39 PM, Christian König
+<christian.koenig@amd.com> wrote:
+>> Maybe I've mixed things up a bit in my description. There is
+>> fence_signal which the implementor/exporter of a fence must call when
+>> the fence is completed. If the exporter has an ->enable_signaling
+>> callback it can delay that call to fence_signal for as long as it
+>> wishes as long as enable_signaling isn't called yet. But that's just
+>> the optimization to not required irqs to be turned on all the time.
+>>
+>> The other function is fence_is_signaled, which is used by code that is
+>> interested in the fence state, together with fence_wait if it wants to
+>> block and not just wants to know the momentary fence state. All the
+>> other functions (the stuff that adds callbacks and the various _locked
+>> and other versions) are just for fancy special cases.
+>
+> Well that's rather bad, cause IRQs aren't reliable enough on Radeon HW for
+> such a thing. Especially on Prime systems and Macs.
+>
+> That's why we have this fancy HZ/2 timeout on all fence wait operations to
+> manually check if the fence is signaled or not.
+>
+> To guarantee that a fence is signaled after enable_signaling is called we
+> would need to fire up a kernel thread which periodically calls
+> fence->signaled.
 
-please use a format as following:
-Fixes: d904b38df0db13 ("ARM: DRA7: hwmod: Add SYSCONFIG for usb_otg_ss")
-
-> Reported-by: Keerthy <j-keerthy@ti.com>
-> Signed-off-by: Rajendra Nayak <rnayak@ti.com>
-> Signed-off-by: Lokesh Vutla <lokeshvutla@ti.com>
-> ---
->  arch/arm/mach-omap2/omap_hwmod.c          |    3 +++
->  arch/arm/mach-omap2/omap_hwmod_7xx_data.c |   22 ++++++++++++++++++++--
->  2 files changed, 23 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/arm/mach-omap2/omap_hwmod.c b/arch/arm/mach-omap2/omap_hwmod.c
-> index 6c074f3..14f8370 100644
-> --- a/arch/arm/mach-omap2/omap_hwmod.c
-> +++ b/arch/arm/mach-omap2/omap_hwmod.c
-> @@ -3345,6 +3345,9 @@ int __init omap_hwmod_register_links(struct omap_hwmod_ocp_if **ois)
->  	if (!ois)
->  		return 0;
->  
-> +	if (ois[0] == NULL) /*empty list*/
-/* Empty list */ ?
-> +		return 0;
-> +
-
-This change looks like a different patch?
-
->  	if (!linkspace) {
->  		if (_alloc_linkspace(ois)) {
->  			pr_err("omap_hwmod: could not allocate link space\n");
-> diff --git a/arch/arm/mach-omap2/omap_hwmod_7xx_data.c b/arch/arm/mach-omap2/omap_hwmod_7xx_data.c
-> index 284324f..c95033c 100644
-> --- a/arch/arm/mach-omap2/omap_hwmod_7xx_data.c
-> +++ b/arch/arm/mach-omap2/omap_hwmod_7xx_data.c
-> @@ -35,6 +35,7 @@
->  #include "i2c.h"
->  #include "mmc.h"
->  #include "wd_timer.h"
-> +#include "soc.h"
->  
->  /* Base offset for all DRA7XX interrupts external to MPUSS */
->  #define DRA7XX_IRQ_GIC_START	32
-> @@ -2705,7 +2706,6 @@ static struct omap_hwmod_ocp_if *dra7xx_hwmod_ocp_ifs[] __initdata = {
->  	&dra7xx_l4_per3__usb_otg_ss1,
->  	&dra7xx_l4_per3__usb_otg_ss2,
->  	&dra7xx_l4_per3__usb_otg_ss3,
-> -	&dra7xx_l4_per3__usb_otg_ss4,
->  	&dra7xx_l3_main_1__vcp1,
->  	&dra7xx_l4_per2__vcp1,
->  	&dra7xx_l3_main_1__vcp2,
-> @@ -2714,8 +2714,26 @@ static struct omap_hwmod_ocp_if *dra7xx_hwmod_ocp_ifs[] __initdata = {
->  	NULL,
->  };
->  
-> +static struct omap_hwmod_ocp_if *dra74x_hwmod_ocp_ifs[] __initdata = {
-> +	&dra7xx_l4_per3__usb_otg_ss4,
-> +	NULL,
-> +};
-> +
-> +static struct omap_hwmod_ocp_if *dra72x_hwmod_ocp_ifs[] __initdata = {
-> +	NULL,
-> +};
-> +
->  int __init dra7xx_hwmod_init(void)
->  {
-> +	int ret;
-> +
->  	omap_hwmod_init();
-> -	return omap_hwmod_register_links(dra7xx_hwmod_ocp_ifs);
-> +	ret = omap_hwmod_register_links(dra7xx_hwmod_ocp_ifs);
-if (ret)
-	goto out;
-> +
-> +	if (!ret && soc_is_dra74x())
-no need of !ret
-> +		return omap_hwmod_register_links(dra74x_hwmod_ocp_ifs);
-ret = omap_hwmod_register_links(dra74x_hwmod_ocp_ifs);
-> +	else if (!ret && soc_is_dra72x())
-no need of else and !ret
-> +		return omap_hwmod_register_links(dra72x_hwmod_ocp_ifs);
-ret = omap_hwmod_register_links(dra72x_hwmod_ocp_ifs);
-> +
-
-out:
-> +	return ret;
->  }
-> 
-
-
+We actually have seen similar fun on some i915 platforms. I wonder
+whether we shouldn't have something in the fence core for this given
+how common it is. Currently we have the same trick with regular wakups
+on platforms with unreliable interrupts, but I haven't yet looked at
+how we'll do this with callbacks once we add the scheduler and fences.
+It might be though that we've finally fixed these coherency issues
+between the interrupt and the fence write for real.
+-Daniel
 -- 
-Regards,
-Nishanth Menon
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
