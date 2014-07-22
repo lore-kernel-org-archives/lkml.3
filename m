@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756487AbaGVSj0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 14:39:26 -0400
-Received: from g6t1524.atlanta.hp.com ([15.193.200.67]:31937 "EHLO
-	g6t1524.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751047AbaGVSjZ (ORCPT
+	id S1756367AbaGVSno (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 14:43:44 -0400
+Received: from g4t3426.houston.hp.com ([15.201.208.54]:43198 "EHLO
+	g4t3426.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751720AbaGVSnn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 14:39:25 -0400
-Message-ID: <1406053776.15077.13.camel@misato.fc.hp.com>
+	Tue, 22 Jul 2014 14:43:43 -0400
+Message-ID: <1406054032.24809.2.camel@misato.fc.hp.com>
 Subject: Re: [PATCH v3] x86,cpu-hotplug: assign same CPU number to readded
  CPU
 From: Toshi Kani <toshi.kani@hp.com>
@@ -18,7 +18,7 @@ Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, bp@alien8.de,
         paul.gortmaker@windriver.com, linux-kernel@vger.kernel.org,
         srivatsa.bhat@linux.vnet.ibm.com, umgwanakikbuti@gmail.com,
         peterz@infradead.org
-Date: Tue, 22 Jul 2014 12:29:36 -0600
+Date: Tue, 22 Jul 2014 12:33:52 -0600
 In-Reply-To: <53C77C2B.1030000@jp.fujitsu.com>
 References: <53C77C2B.1030000@jp.fujitsu.com>
 Content-Type: text/plain; charset="UTF-8"
@@ -28,6 +28,7 @@ Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+
 
 On Thu, 2014-07-17 at 16:32 +0900, Yasuaki Ishimatsu wrote:
 > llc_shared_map is not cleared even if CPU is offline or hot removed.
@@ -115,11 +116,12 @@ On Thu, 2014-07-17 at 16:32 +0900, Yasuaki Ishimatsu wrote:
 > +static DECLARE_BITMAP(cpu_used_bits, CONFIG_NR_CPUS);
 > +static struct cpumask *const cpu_used_mask = to_cpumask(cpu_used_bits);
 
-I think the name of cpu_used_mask is confusing since the term "used"
-sounds some state of CPU, which is not the case here.  How about
-cpu_number_mask?  This is more specific and avoids such confusion.
+I think the name of cpu_used_mask is confusing since the term "used" 
+sounds representing some state of CPU, which is not the case here.  
+How about cpu_number_mask?  This would be more specific, and avoid such
+confusion.
 
-Otherwise, the change looks good.
+Otherwise, the change looks good to me.
 
 Reviewed-by: Toshi Kani <toshi.kani@hp.com>
 
@@ -134,5 +136,6 @@ Thanks,
 ps. I had a problem in applying this patch since there was an extra
 blank character at the begging of unchanged lines.  But this might be an
 issue in my mailer. 
+
 
 
