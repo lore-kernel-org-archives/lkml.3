@@ -1,54 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752769AbaGVCIJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 22:08:09 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41724 "EHLO
+	id S1751611AbaGVCKl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 22:10:41 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41740 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751925AbaGVCIH (ORCPT
+	with ESMTP id S1750742AbaGVCKk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 22:08:07 -0400
-Date: Mon, 21 Jul 2014 19:08:05 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Guillaume Morin <guillaume@morinfr.org>
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        oleg.drokin@intel.com, jinshan.xiong@intel.com, lai.siyao@intel.com,
-        joe@perches.com, bergwolf@gmail.com, john.hammond@intel.com,
-        sachin.kamat@linaro.org
-Subject: Re: [PATCH] staging: llite: rw.c: use gfp_t to store GFP flags
-Message-ID: <20140722020805.GA19215@kroah.com>
-References: <22be101821a4af2c92ca597832cbb720c655418e.1405990074.git.guillaume@morinfr.org>
+	Mon, 21 Jul 2014 22:10:40 -0400
+Date: Mon, 21 Jul 2014 19:10:39 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Andrew Bresticker <abrestic@chromium.org>
+Cc: Mathias Nyman <mathias.nyman@intel.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Julius Werner <jwerner@chromium.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <treding@nvidia.com>,
+        gregory.clement@free-electrons.com,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Subject: Re: [PATCH 0/4] Allow xHCI drivers to be built as separate modules
+Message-ID: <20140722021039.GC19215@kroah.com>
+References: <1404954350-26343-1-git-send-email-abrestic@chromium.org>
+ <CAL1qeaEDSUmh8p___T5HVp7ERGRHDR3BSBoA2Bb+WCz+=RoM3w@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <22be101821a4af2c92ca597832cbb720c655418e.1405990074.git.guillaume@morinfr.org>
+In-Reply-To: <CAL1qeaEDSUmh8p___T5HVp7ERGRHDR3BSBoA2Bb+WCz+=RoM3w@mail.gmail.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 22, 2014 at 02:57:57AM +0200, Guillaume Morin wrote:
-> Use gfp_t to store GPF_* flags instead of unsigned int. 
-> This was reported by sparse.
+On Mon, Jul 21, 2014 at 04:41:08PM -0700, Andrew Bresticker wrote:
+> On Wed, Jul 9, 2014 at 6:05 PM, Andrew Bresticker <abrestic@chromium.org> wrote:
+> > It was suggested in the review of the Tegra xHCI driver [1] that we
+> > allow xHCI drivers to be built as individual modules (like EHCI) instead
+> > of building them all into the single xhci-hcd module as they are today.
+> >
+> > Patches 1-3 prepare for making the xHCI PCI and platform drivers able
+> > to be built as individual modules and patch 4 actually creates the 3
+> > separate modules (core, platform, PCI).
+> >
+> > Based on 3.16-rc4.
+> >
+> > [1] http://patchwork.ozlabs.org/patch/361265/
+> >
+> > Andrew Bresticker (4):
+> >   xhci: Introduce xhci_init_driver()
+> >   xhci: Check for XHCI_COMP_MODE_QUIRK when disabling D3cold
+> >   xhci: Export symbols used by host-controller drivers
+> >   xhci: Allow xHCI drivers to be built as separate modules
 > 
-> Signed-off-by: Guillaume Morin <guillaume@morinfr.org>
-> ---
->  drivers/staging/lustre/lustre/llite/rw.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/staging/lustre/lustre/llite/rw.c b/drivers/staging/lustre/lustre/llite/rw.c
-> index 5616210..3554272 100644
-> --- a/drivers/staging/lustre/lustre/llite/rw.c
-> +++ b/drivers/staging/lustre/lustre/llite/rw.c
-> @@ -496,7 +496,7 @@ static int ll_read_ahead_page(const struct lu_env *env, struct cl_io *io,
->  	struct cl_object *clob  = ll_i2info(mapping->host)->lli_clob;
->  	struct cl_page   *page;
->  	enum ra_stat      which = _NR_RA_STAT; /* keep gcc happy */
-> -	unsigned int      gfp_mask;
-> +	gfp_t             gfp_mask;
+> Ping.  I was hoping to get these in for 3.17 (though it may be too
+> late now...) as they're a dependency for the upcoming Tegra XHCI
+> driver.
 
-Odd thing is, that function doesn't seem to even use that variable
-anywhere...  Can you just remove it entirely?
-
-thanks,
-
-greg k-h
+That's up to Mathias, when he sends them on to me, or not...
