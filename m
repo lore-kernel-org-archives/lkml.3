@@ -1,100 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756832AbaGVURY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 16:17:24 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48848 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751462AbaGVURX (ORCPT
+	id S1756868AbaGVURr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 16:17:47 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:42912 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751314AbaGVURq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 16:17:23 -0400
-Date: Tue, 22 Jul 2014 13:17:22 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Jeff Oczek <jeffoczek@gmail.com>
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: cxt1e1: Fix static symbol sparse warnings for
- global vars in linux.c
-Message-ID: <20140722201722.GA20515@kroah.com>
-References: <1406059671-6536-1-git-send-email-jeffoczek@gmail.com>
+	Tue, 22 Jul 2014 16:17:46 -0400
+Date: Tue, 22 Jul 2014 13:17:40 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Alexandre Courbot <acourbot@nvidia.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>, linux-gpio@vger.kernel.org,
+        linux-kernel@vger.kernel.org, gnurou@gmail.com
+Subject: Re: [PATCH 3/5] gpio: make gpiochip_get_desc() gpiolib-private
+Message-ID: <20140722201740.GA11459@roeck-us.net>
+References: <1406013463-19218-1-git-send-email-acourbot@nvidia.com>
+ <1406013463-19218-4-git-send-email-acourbot@nvidia.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1406059671-6536-1-git-send-email-jeffoczek@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1406013463-19218-4-git-send-email-acourbot@nvidia.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 22, 2014 at 04:07:51PM -0400, Jeff Oczek wrote:
-> Put extern declarations in cxt1e1_common.h to reduce sparse warnings for linux.c:
-> drivers/staging/cxt1e1/linux.c:86:13: warning:
->   symbol 'error_flag' was not declared. Should it be static?
-> drivers/staging/cxt1e1/linux.c:91:13: warning:
->   symbol 'cxt1e1_max_mru' was not declared. Should it be static?
-> drivers/staging/cxt1e1/linux.c:95:13: warning:
->   symbol 'cxt1e1_max_mtu' was not declared. Should it be static?
-> drivers/staging/cxt1e1/linux.c:96:13: warning:
->   symbol 'max_mtu_default' was not declared. Should it be static?
-> drivers/staging/cxt1e1/linux.c:99:13: warning:
->   symbol 'max_txdesc_used' was not declared. Should it be static?
-> drivers/staging/cxt1e1/linux.c:100:13: warning:
->   symbol 'max_txd:esc_default' was not declared. Should it be static?
-> drivers/staging/cxt1e1/linux.c:103:13: warning:
->   symbol 'max_rxdesc_used' was not declared. Should it be static?
-> drivers/staging/cxt1e1/linux.c:104:13: warning:
->   symbol 'max_rxdesc_default' was not declared. Should it be static?
-> drivers/staging/cxt1e1/linux.c:153:1: warning:
->   symbol 'c4_wk_chan_restart' was not declared. Should it be static?
-> drivers/staging/cxt1e1/linux.c:171:1: warning:
->   symbol 'c4_wk_chan_init' was not declared. Should it be static?
-> drivers/staging/cxt1e1/linux.c:186:1: warning:
->   symbol 'c4_wq_port_init' was not declared. Should it be static?
-> drivers/staging/cxt1e1/linux.c:208:1: warning:
->   symbol 'c4_wq_port_cleanup' was not declared. Should it be static?
+On Tue, Jul 22, 2014 at 04:17:41PM +0900, Alexandre Courbot wrote:
+> As GPIO descriptors are not going to remain unique anymore, having this
+> function public is not safe. Restrain its use to gpiolib since we have
+> no user outside of it.
 > 
-> Signed-off-by: Jeff Oczek <jeffoczek@gmail.com>
-> ---
->  drivers/staging/cxt1e1/cxt1e1_common.h | 15 +++++++++++++++
->  drivers/staging/cxt1e1/hwprobe.c       |  2 +-
->  drivers/staging/cxt1e1/linux.c         |  2 +-
->  drivers/staging/cxt1e1/musycc.c        |  7 +------
->  drivers/staging/cxt1e1/pmcc4_drv.c     |  5 +----
->  5 files changed, 19 insertions(+), 12 deletions(-)
->  create mode 100644 drivers/staging/cxt1e1/cxt1e1_common.h
-> 
-> diff --git a/drivers/staging/cxt1e1/cxt1e1_common.h b/drivers/staging/cxt1e1/cxt1e1_common.h
-> new file mode 100644
-> index 0000000..ac6b974
-> --- /dev/null
-> +++ b/drivers/staging/cxt1e1/cxt1e1_common.h
-> @@ -0,0 +1,15 @@
-> +#ifndef __CXT1E1_COMMON_H
-> +#define __CXT1E1_COMMON_H
-> +
-> +#include "pmcc4.h"
-> +
-> +extern int error_flag;
+If I implement a gpio chip driver built as module, and I want to use
+gpiochip_request_own_desc(), how am I supposed to get desc ?
 
-I know you didn't name this variable, but wow, that's a horrid name for
-a global variable :)
+I understand that there is still gpio_to_desc(), but I would have thought
+that
+	desc = gpiochip_get_desc(chip, pin);
+would be better than
+	desc = gpio_to_desc(chip->base + pin);
 
-Any way you could change this to first fix up the name of the variable
-to something a bit more "device-specific" first, before this patch?
+Not that it makes much of a difference for me, just asking.
 
-Perhaps "cxt1e1_error_flag"?
-
-> +extern int cxt1e1_max_mru;
-> +extern int cxt1e1_max_mtu;
-
-These are fine.
-
-> +extern int max_mtu_default;
-> +extern int max_txdesc_used;
-> +extern int max_txdesc_default;
-> +extern int max_rxdesc_used;
-> +extern int max_rxdesc_default;
-
-Again, these are bad names, can you do the same thing here?
-
-thanks,
-
-greg k-h
+Thanks,
+Guenter
