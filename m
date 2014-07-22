@@ -1,82 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757192AbaGVWNJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 18:13:09 -0400
-Received: from mail-ie0-f181.google.com ([209.85.223.181]:57018 "EHLO
-	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755978AbaGVWNG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 18:13:06 -0400
-Date: Tue, 22 Jul 2014 15:13:03 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Nick Krause <xerofoify@gmail.com>
-cc: Thomas Gleixner <tglx@linutronix.de>, mingo@redhat.com, hpa@zytor.com,
-        x86@kernel.org, gleb@kernel.org, pbonzini@redhat.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        kvm@vger.kernel.org
-Subject: Re: [PATCH] x86: Remove Fix me in main.c and add include statement
- for kvm_para.h
-In-Reply-To: <CAPDOMVj4Rg7YyfErabfAuGdbJG7Owbh3k8AGgTVODcb1jfTGuQ@mail.gmail.com>
-Message-ID: <alpine.DEB.2.02.1407221512140.5814@chino.kir.corp.google.com>
-References: <1406065658-3866-1-git-send-email-xerofoify@gmail.com> <alpine.DEB.2.02.1407221506240.5814@chino.kir.corp.google.com> <CAPDOMVj4Rg7YyfErabfAuGdbJG7Owbh3k8AGgTVODcb1jfTGuQ@mail.gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1757222AbaGVWOo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 18:14:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5611 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757207AbaGVWOm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 18:14:42 -0400
+Date: Tue, 22 Jul 2014 18:14:21 -0400
+From: Mike Snitzer <snitzer@redhat.com>
+To: Pekka Enberg <penberg@iki.fi>
+Cc: Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
+        linux-mm@kvack.org, dm-devel@redhat.com, linux-kernel@vger.kernel.org,
+        "Alasdair G. Kergon" <agk@redhat.com>,
+        Mikulas Patocka <mpatocka@redhat.com>,
+        Zdenek Kabelac <zkabelac@redhat.com>
+Subject: Re: slab_common: fix the check for duplicate slab names
+Message-ID: <20140722221421.GA11318@redhat.com>
+References: <alpine.LRH.2.02.1403041711300.29476@file01.intranet.prod.int.rdu2.redhat.com>
+ <20140325170324.GC580@redhat.com>
+ <alpine.DEB.2.10.1403251306260.26471@nuc>
+ <20140523201632.GA16013@redhat.com>
+ <537FBD6F.1070009@iki.fi>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <537FBD6F.1070009@iki.fi>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 22 Jul 2014, Nick Krause wrote:
+On Fri, May 23 2014 at  5:28pm -0400,
+Pekka Enberg <penberg@iki.fi> wrote:
 
-> >> This patch removes a fix me by including linux/types.h in kvm_para.h
-> >> as stated by the  fix me in main.c and also removes the comment from
-> >> main.c too.
-> >>
-> >> Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
-> >> ---
-> >>  arch/x86/kernel/cpu/mtrr/main.c | 2 +-
-> >>  include/linux/kvm_para.h        | 3 +--
-> >>  2 files changed, 2 insertions(+), 3 deletions(-)
-> >>
-> >> diff --git a/arch/x86/kernel/cpu/mtrr/main.c b/arch/x86/kernel/cpu/mtrr/main.c
-> >> index f961de9..7ba314b 100644
-> >> --- a/arch/x86/kernel/cpu/mtrr/main.c
-> >> +++ b/arch/x86/kernel/cpu/mtrr/main.c
-> >> @@ -33,7 +33,7 @@
-> >>
-> >>  #define DEBUG
-> >>
-> >> -#include <linux/types.h> /* FIXME: kvm_para.h needs this */
-> >> +#include <linux/types.h>
-> >>
-> >>  #include <linux/stop_machine.h>
-> >>  #include <linux/kvm_para.h>
-> >> diff --git a/include/linux/kvm_para.h b/include/linux/kvm_para.h
-> >> index 00a97bb..21d1be2 100644
-> >> --- a/include/linux/kvm_para.h
-> >> +++ b/include/linux/kvm_para.h
-> >> @@ -2,8 +2,7 @@
-> >>  #define __LINUX_KVM_PARA_H
-> >>
-> >>  #include <uapi/linux/kvm_para.h>
-> >> -
-> >> -
-> >> +#include <linux/types.h>
-> >>  static inline int kvm_para_has_feature(unsigned int feature)
-> >>  {
-> >>       if (kvm_arch_para_features() & (1UL << feature))
+> On 05/23/2014 11:16 PM, Mike Snitzer wrote:
+> >On Tue, Mar 25 2014 at  2:07pm -0400,
+> >Christoph Lameter <cl@linux.com> wrote:
 > >
-> > There's no build error reported that would indicate that this is needed,
-> > so this patch isn't justifiable.
+> >>On Tue, 25 Mar 2014, Mike Snitzer wrote:
+> >>
+> >>>This patch still isn't upstream.  Who should be shepherding it to Linus?
+> >>Pekka usually does that.
+> >>
+> >>Acked-by: Christoph Lameter <cl@linux.com>
+> >This still hasn't gotten upstream.
+> >
+> >Pekka, any chance you can pick it up?  Here it is in dm-devel's
+> >kernel.org patchwork: https://patchwork.kernel.org/patch/3768901/
+> >
+> >(Though it looks like it needs to be rebased due to the recent commit
+> >794b1248, should Mikulas rebase and re-send?)
 > 
+> I applied it and fixed the conflict by hand.
 > 
-> David,
+> Please double-check commit 694617474e33b8603fc76e090ed7d09376514b1a
+> in my tree:
 > 
-> Good to hear a nicer reply after my stupid patch with page shifts.
-> Would you like me to send in a patch that removes this fix me
-> then?
+> https://git.kernel.org/cgit/linux/kernel/git/penberg/linux.git/
 
-The comment is not the only thing that can be removed in the above patch.  
-If you test the change and can prove why it's not needed in the changelog, 
-then such a patch would be worthwhile.
+Pekka, this clearly still hasn't landed for 3.16.  Can you please get
+it upstream ASAP?  It is a lingering issue that keeps rearing its ugly
+head, latest report on Fedora rawhide:
+
+3,2059,887335968,-;kmem_cache_sanity_check (raid5-ffff880074a56010): Cache name already exists.
+4,2060,887339337,-;CPU: 1 PID: 12874 Comm: lvm Not tainted 3.16.0-0.rc4.git1.1.fc21.x86_64 #1
+4,2061,887342267,-;Hardware name: Red Hat KVM, BIOS 0.5.1 01/01/2007
+4,2062,887344959,-; 0000000000000000 00000000808b098a ffff880074d23a00 ffffffff81807d5c
+4,2063,887347591,-; ffff88007557ab48 ffff880074d23a78 ffffffff811e9451 ffff88007557a800
+4,2064,887350230,-; ffff880074d23a78 0000000000000000 0000000000000000 0000000000000690
+4,2065,887352882,-;Call Trace:
+4,2066,887355210,-; [<ffffffff81807d5c>] dump_stack+0x4d/0x66
+4,2067,887357157,-; [<ffffffff811e9451>] kmem_cache_create+0x2c1/0x330
+4,2068,887360103,-; [<ffffffffa0272527>] setup_conf+0x677/0x8c0 [raid456]
+4,2069,887362901,-; [<ffffffff810e1d78>] ? sched_clock_cpu+0x98/0xc0
+4,2070,887364749,-; [<ffffffffa0273350>] run+0x8c0/0xab0 [raid456]
+4,2071,887366545,-; [<ffffffff8162f562>] md_run+0x562/0x980
+4,2072,887368240,-; [<ffffffffa028756c>] ? raid_ctr+0xf3c/0x13f8 [dm_raid]
+4,2073,887370163,-; [<ffffffff810fbc44>] ? static_obj+0x34/0x50
+4,2074,887371973,-; [<ffffffff810fc4ac>] ? lockdep_init_map+0x6c/0x570
+4,2075,887373889,-; [<ffffffffa0287578>] raid_ctr+0xf48/0x13f8 [dm_raid]
+4,2076,887375849,-; [<ffffffff8163c5b0>] dm_table_add_target+0x160/0x3b0
+4,2077,887377816,-; [<ffffffff8163fb14>] table_load+0x144/0x360
+4,2078,887379645,-; [<ffffffff8163f9d0>] ? retrieve_status+0x1c0/0x1c0
+4,2079,887381536,-; [<ffffffff816407db>] ctl_ioctl+0x25b/0x550
+4,2080,887383318,-; [<ffffffff81640ae3>] dm_ctl_ioctl+0x13/0x20
+4,2081,887385130,-; [<ffffffff812628e0>] do_vfs_ioctl+0x2f0/0x520
+4,2082,887387025,-; [<ffffffff8126f2bd>] ? __fget_light+0x13d/0x160
+4,2083,887388895,-; [<ffffffff81262b91>] SyS_ioctl+0x81/0xa0
+4,2084,887390694,-; [<ffffffff8115fbac>] ? __audit_syscall_entry+0x9c/0xf0
+4,2085,887392656,-; [<ffffffff81811969>] system_call_fastpath+0x16/0x1b
+4,2086,887394585,-;kmem_cache_create(raid5-ffff880074a56010) failed with error -22
+4,2087,887395592,-;CPU: 1 PID: 12874 Comm: lvm Not tainted 3.16.0-0.rc4.git1.1.fc21.x86_64 #1
