@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756910AbaGVTss (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 15:48:48 -0400
-Received: from mga02.intel.com ([134.134.136.20]:48828 "EHLO mga02.intel.com"
+	id S1756952AbaGVTtV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 15:49:21 -0400
+Received: from mga09.intel.com ([134.134.136.24]:15130 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756883AbaGVTsp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 15:48:45 -0400
+	id S1756934AbaGVTtO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 15:49:14 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,711,1400050800"; 
-   d="scan'208";a="547369381"
+   d="scan'208";a="577174601"
 From: Matthew Wilcox <matthew.r.wilcox@intel.com>
 To: linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org
-Cc: Matthew Wilcox <matthew.r.wilcox@intel.com>, willy@linux.intel.com
-Subject: [PATCH v8 14/22] ext2: Remove ext2_xip_verify_sb()
-Date: Tue, 22 Jul 2014 15:48:02 -0400
-Message-Id: <9d8d4cff164d1da10fd3e212725b5b8bd5a8e64b.1406058387.git.matthew.r.wilcox@intel.com>
+Cc: Matthew Wilcox <willy@linux.intel.com>,
+        Matthew Wilcox <matthew.r.wilcox@intel.com>
+Subject: [PATCH v8 22/22] brd: Rename XIP to DAX
+Date: Tue, 22 Jul 2014 15:48:10 -0400
+Message-Id: <f1a3237e1a5a8440675251bb07946076337bd7bf.1406058387.git.matthew.r.wilcox@intel.com>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <cover.1406058387.git.matthew.r.wilcox@intel.com>
 References: <cover.1406058387.git.matthew.r.wilcox@intel.com>
@@ -25,128 +26,116 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jan Kara pointed out that calling ext2_xip_verify_sb() in ext2_remount()
-doesn't make sense, since changing the XIP option on remount isn't
-allowed.  It also doesn't make sense to re-check whether blocksize is
-supported since it can't change between mounts.
+From: Matthew Wilcox <willy@linux.intel.com>
 
-Replace the call to ext2_xip_verify_sb() in ext2_fill_super() with the
-equivalent check and delete the definition.
+Since this is relating to FS_XIP, not KERNEL_XIP, it should be called
+DAX instead of XIP.
 
 Signed-off-by: Matthew Wilcox <matthew.r.wilcox@intel.com>
 ---
- fs/ext2/super.c | 33 ++++++++++++---------------------
- fs/ext2/xip.c   | 12 ------------
- fs/ext2/xip.h   |  2 --
- 3 files changed, 12 insertions(+), 35 deletions(-)
+ drivers/block/Kconfig | 13 +++++++------
+ drivers/block/brd.c   | 14 +++++++-------
+ fs/Kconfig            |  4 ++--
+ 3 files changed, 16 insertions(+), 15 deletions(-)
 
-diff --git a/fs/ext2/super.c b/fs/ext2/super.c
-index 3750031..3ac6555 100644
---- a/fs/ext2/super.c
-+++ b/fs/ext2/super.c
-@@ -868,9 +868,6 @@ static int ext2_fill_super(struct super_block *sb, void *data, int silent)
- 		((EXT2_SB(sb)->s_mount_opt & EXT2_MOUNT_POSIX_ACL) ?
- 		 MS_POSIXACL : 0);
+diff --git a/drivers/block/Kconfig b/drivers/block/Kconfig
+index 014a1cf..1b8094d 100644
+--- a/drivers/block/Kconfig
++++ b/drivers/block/Kconfig
+@@ -393,14 +393,15 @@ config BLK_DEV_RAM_SIZE
+ 	  The default value is 4096 kilobytes. Only change this if you know
+ 	  what you are doing.
  
--	ext2_xip_verify_sb(sb); /* see if bdev supports xip, unset
--				    EXT2_MOUNT_XIP if not */
--
- 	if (le32_to_cpu(es->s_rev_level) == EXT2_GOOD_OLD_REV &&
- 	    (EXT2_HAS_COMPAT_FEATURE(sb, ~0U) ||
- 	     EXT2_HAS_RO_COMPAT_FEATURE(sb, ~0U) ||
-@@ -900,11 +897,17 @@ static int ext2_fill_super(struct super_block *sb, void *data, int silent)
+-config BLK_DEV_XIP
+-	bool "Support XIP filesystems on RAM block device"
+-	depends on BLK_DEV_RAM
++config BLK_DEV_RAM_DAX
++	bool "Support Direct Access (DAX) to RAM block devices"
++	depends on BLK_DEV_RAM && FS_DAX
+ 	default n
+ 	help
+-	  Support XIP filesystems (such as ext2 with XIP support on) on
+-	  top of block ram device. This will slightly enlarge the kernel, and
+-	  will prevent RAM block device backing store memory from being
++	  Support filesystems using DAX to access RAM block devices.  This
++	  avoids double-buffering data in the page cache before copying it
++	  to the block device.  Answering Y will slightly enlarge the kernel,
++	  and will prevent RAM block device backing store memory from being
+ 	  allocated from highmem (only a problem for highmem systems).
  
- 	blocksize = BLOCK_SIZE << le32_to_cpu(sbi->s_es->s_log_block_size);
- 
--	if (ext2_use_xip(sb) && blocksize != PAGE_SIZE) {
--		if (!silent)
-+	if (sbi->s_mount_opt & EXT2_MOUNT_XIP) {
-+		if (blocksize != PAGE_SIZE) {
- 			ext2_msg(sb, KERN_ERR,
--				"error: unsupported blocksize for xip");
--		goto failed_mount;
-+					"error: unsupported blocksize for xip");
-+			goto failed_mount;
-+		}
-+		if (!sb->s_bdev->bd_disk->fops->direct_access) {
-+			ext2_msg(sb, KERN_ERR,
-+					"error: device does not support xip");
-+			goto failed_mount;
-+		}
- 	}
- 
- 	/* If the blocksize doesn't match, re-read the thing.. */
-@@ -1249,7 +1252,6 @@ static int ext2_remount (struct super_block * sb, int * flags, char * data)
- {
- 	struct ext2_sb_info * sbi = EXT2_SB(sb);
- 	struct ext2_super_block * es;
--	unsigned long old_mount_opt = sbi->s_mount_opt;
- 	struct ext2_mount_options old_opts;
- 	unsigned long old_sb_flags;
- 	int err;
-@@ -1274,22 +1276,11 @@ static int ext2_remount (struct super_block * sb, int * flags, char * data)
- 	sb->s_flags = (sb->s_flags & ~MS_POSIXACL) |
- 		((sbi->s_mount_opt & EXT2_MOUNT_POSIX_ACL) ? MS_POSIXACL : 0);
- 
--	ext2_xip_verify_sb(sb); /* see if bdev supports xip, unset
--				    EXT2_MOUNT_XIP if not */
--
--	if ((ext2_use_xip(sb)) && (sb->s_blocksize != PAGE_SIZE)) {
--		ext2_msg(sb, KERN_WARNING,
--			"warning: unsupported blocksize for xip");
--		err = -EINVAL;
--		goto restore_opts;
--	}
--
- 	es = sbi->s_es;
--	if ((sbi->s_mount_opt ^ old_mount_opt) & EXT2_MOUNT_XIP) {
-+	if ((sbi->s_mount_opt ^ old_opts.s_mount_opt) & EXT2_MOUNT_XIP) {
- 		ext2_msg(sb, KERN_WARNING, "warning: refusing change of "
- 			 "xip flag with busy inodes while remounting");
--		sbi->s_mount_opt &= ~EXT2_MOUNT_XIP;
--		sbi->s_mount_opt |= old_mount_opt & EXT2_MOUNT_XIP;
-+		sbi->s_mount_opt ^= EXT2_MOUNT_XIP;
- 	}
- 	if ((*flags & MS_RDONLY) == (sb->s_flags & MS_RDONLY)) {
- 		spin_unlock(&sbi->s_lock);
-diff --git a/fs/ext2/xip.c b/fs/ext2/xip.c
-index 132d4da..66ca113 100644
---- a/fs/ext2/xip.c
-+++ b/fs/ext2/xip.c
-@@ -13,15 +13,3 @@
- #include "ext2.h"
- #include "xip.h"
- 
--void ext2_xip_verify_sb(struct super_block *sb)
--{
--	struct ext2_sb_info *sbi = EXT2_SB(sb);
--
--	if ((sbi->s_mount_opt & EXT2_MOUNT_XIP) &&
--	    !sb->s_bdev->bd_disk->fops->direct_access) {
--		sbi->s_mount_opt &= (~EXT2_MOUNT_XIP);
--		ext2_msg(sb, KERN_WARNING,
--			     "warning: ignoring xip option - "
--			     "not supported by bdev");
--	}
--}
-diff --git a/fs/ext2/xip.h b/fs/ext2/xip.h
-index e7b9f0a..87eeb04 100644
---- a/fs/ext2/xip.h
-+++ b/fs/ext2/xip.h
-@@ -6,13 +6,11 @@
-  */
- 
- #ifdef CONFIG_EXT2_FS_XIP
--extern void ext2_xip_verify_sb (struct super_block *);
- static inline int ext2_use_xip (struct super_block *sb)
- {
- 	struct ext2_sb_info *sbi = EXT2_SB(sb);
- 	return (sbi->s_mount_opt & EXT2_MOUNT_XIP);
- }
- #else
--#define ext2_xip_verify_sb(sb)			do { } while (0)
- #define ext2_use_xip(sb)			0
+ config CDROM_PKTCDVD
+diff --git a/drivers/block/brd.c b/drivers/block/brd.c
+index 96e4c96..33a39e7 100644
+--- a/drivers/block/brd.c
++++ b/drivers/block/brd.c
+@@ -97,13 +97,13 @@ static struct page *brd_insert_page(struct brd_device *brd, sector_t sector)
+ 	 * Must use NOIO because we don't want to recurse back into the
+ 	 * block or filesystem layers from page reclaim.
+ 	 *
+-	 * Cannot support XIP and highmem, because our ->direct_access
+-	 * routine for XIP must return memory that is always addressable.
+-	 * If XIP was reworked to use pfns and kmap throughout, this
++	 * Cannot support DAX and highmem, because our ->direct_access
++	 * routine for DAX must return memory that is always addressable.
++	 * If DAX was reworked to use pfns and kmap throughout, this
+ 	 * restriction might be able to be lifted.
+ 	 */
+ 	gfp_flags = GFP_NOIO | __GFP_ZERO;
+-#ifndef CONFIG_BLK_DEV_XIP
++#ifndef CONFIG_BLK_DEV_RAM_DAX
+ 	gfp_flags |= __GFP_HIGHMEM;
  #endif
+ 	page = alloc_page(gfp_flags);
+@@ -369,7 +369,7 @@ static int brd_rw_page(struct block_device *bdev, sector_t sector,
+ 	return err;
+ }
+ 
+-#ifdef CONFIG_BLK_DEV_XIP
++#ifdef CONFIG_BLK_DEV_RAM_DAX
+ static long brd_direct_access(struct block_device *bdev, sector_t sector,
+ 			void **kaddr, unsigned long *pfn, long size)
+ {
+@@ -392,6 +392,8 @@ static long brd_direct_access(struct block_device *bdev, sector_t sector,
+ 	 * file is mapped to the next page of physical RAM */
+ 	return min_t(long, PAGE_SIZE, size);
+ }
++#else
++#define brd_direct_access NULL
+ #endif
+ 
+ static int brd_ioctl(struct block_device *bdev, fmode_t mode,
+@@ -432,9 +434,7 @@ static const struct block_device_operations brd_fops = {
+ 	.owner =		THIS_MODULE,
+ 	.rw_page =		brd_rw_page,
+ 	.ioctl =		brd_ioctl,
+-#ifdef CONFIG_BLK_DEV_XIP
+ 	.direct_access =	brd_direct_access,
+-#endif
+ };
+ 
+ /*
+diff --git a/fs/Kconfig b/fs/Kconfig
+index a9eb53d..117900f 100644
+--- a/fs/Kconfig
++++ b/fs/Kconfig
+@@ -34,7 +34,7 @@ source "fs/btrfs/Kconfig"
+ source "fs/nilfs2/Kconfig"
+ 
+ config FS_DAX
+-	bool "Direct Access support"
++	bool "Direct Access (DAX) support"
+ 	depends on MMU
+ 	help
+ 	  Direct Access (DAX) can be used on memory-backed block devices.
+@@ -45,7 +45,7 @@ config FS_DAX
+ 
+ 	  If you do not have a block device that is capable of using this,
+ 	  or if unsure, say N.  Saying Y will increase the size of the kernel
+-	  by about 2kB.
++	  by about 5kB.
+ 
+ endif # BLOCK
+ 
 -- 
 2.0.0
 
