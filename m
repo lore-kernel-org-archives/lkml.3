@@ -1,59 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756311AbaGVQth (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 12:49:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:59330 "EHLO mx1.redhat.com"
+	id S1756151AbaGVQuz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 12:50:55 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:50231 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755998AbaGVQtf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 12:49:35 -0400
-Date: Tue, 22 Jul 2014 12:49:27 -0400
-From: Dave Jones <davej@redhat.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Cc: jakob@vmware.com
-Subject: vmwgfx: remove identical branches
-Message-ID: <20140722164927.GA21479@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>, jakob@vmware.com
+	id S1754293AbaGVQux (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 12:50:53 -0400
+Message-ID: <53CE9652.4080304@ti.com>
+Date: Tue, 22 Jul 2014 11:50:26 -0500
+From: Nishanth Menon <nm@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Lokesh Vutla <lokeshvutla@ti.com>, <linux-omap@vger.kernel.org>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <tony@atomide.com>, <paul@pwsan.com>, <linux@arm.linux.org.uk>,
+        <nsekhar@ti.com>, <j-keerthy@ti.com>, <rogerq@ti.com>
+Subject: Re: [PATCH 2/2] ARM: DRA7: hwmod: Add dra74x and dra72x specific
+ ocp interface lists
+References: <1405499774-19770-1-git-send-email-lokeshvutla@ti.com> <1405499774-19770-3-git-send-email-lokeshvutla@ti.com>
+In-Reply-To: <1405499774-19770-3-git-send-email-lokeshvutla@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 8b7de6aa8468: "vmwgfx: Rework fence event action" removed the
-tv_sec & tv_usec arguments to vmw_event_fence_action_create, which meant
-that both sides of the if/else are now exactly the same.
+On 07/16/2014 03:36 AM, Lokesh Vutla wrote:
+> From: Rajendra Nayak <rnayak@ti.com>
+> 
+> To deal with IPs which are specific to dra74x and dra72x, maintain seperate
+> ocp interface lists, while keeping the common list for all common IPs.
+> 
+> Move USB OTG SS4 to dra74x only list since its unavailable in
+> dra72x and is giving an abort during boot. The dra72x only list
+> is empty for now and a placeholder for future hwmod additions which
+> are specific to dra72x.
+> 
+> Fixes: d904b38 ARM: DRA7: hwmod: Add SYSCONFIG for usb_otg_ss
 
-Remove the flag check, and just do it unconditionally.
+please use a format as following:
+Fixes: d904b38df0db13 ("ARM: DRA7: hwmod: Add SYSCONFIG for usb_otg_ss")
 
-Spotted with Coverity.
+> Reported-by: Keerthy <j-keerthy@ti.com>
+> Signed-off-by: Rajendra Nayak <rnayak@ti.com>
+> Signed-off-by: Lokesh Vutla <lokeshvutla@ti.com>
+> ---
+>  arch/arm/mach-omap2/omap_hwmod.c          |    3 +++
+>  arch/arm/mach-omap2/omap_hwmod_7xx_data.c |   22 ++++++++++++++++++++--
+>  2 files changed, 23 insertions(+), 2 deletions(-)
+> 
+> diff --git a/arch/arm/mach-omap2/omap_hwmod.c b/arch/arm/mach-omap2/omap_hwmod.c
+> index 6c074f3..14f8370 100644
+> --- a/arch/arm/mach-omap2/omap_hwmod.c
+> +++ b/arch/arm/mach-omap2/omap_hwmod.c
+> @@ -3345,6 +3345,9 @@ int __init omap_hwmod_register_links(struct omap_hwmod_ocp_if **ois)
+>  	if (!ois)
+>  		return 0;
+>  
+> +	if (ois[0] == NULL) /*empty list*/
+/* Empty list */ ?
+> +		return 0;
+> +
 
-Signed-off-by: Dave Jones <davej@redhat.com>
+This change looks like a different patch?
 
-diff --git a/drivers/gpu/drm/vmwgfx/vmwgfx_fence.c b/drivers/gpu/drm/vmwgfx/vmwgfx_fence.c
-index 436b013b4231..a078e6bbaf0a 100644
---- a/drivers/gpu/drm/vmwgfx/vmwgfx_fence.c
-+++ b/drivers/gpu/drm/vmwgfx/vmwgfx_fence.c
-@@ -1124,16 +1124,10 @@ int vmw_fence_event_ioctl(struct drm_device *dev, void *data,
- 
- 	BUG_ON(fence == NULL);
- 
--	if (arg->flags & DRM_VMW_FE_FLAG_REQ_TIME)
--		ret = vmw_event_fence_action_create(file_priv, fence,
--						    arg->flags,
--						    arg->user_data,
--						    true);
--	else
--		ret = vmw_event_fence_action_create(file_priv, fence,
--						    arg->flags,
--						    arg->user_data,
--						    true);
-+	ret = vmw_event_fence_action_create(file_priv, fence,
-+					    arg->flags,
-+					    arg->user_data,
-+					    true);
- 
- 	if (unlikely(ret != 0)) {
- 		if (ret != -ERESTARTSYS)
+>  	if (!linkspace) {
+>  		if (_alloc_linkspace(ois)) {
+>  			pr_err("omap_hwmod: could not allocate link space\n");
+> diff --git a/arch/arm/mach-omap2/omap_hwmod_7xx_data.c b/arch/arm/mach-omap2/omap_hwmod_7xx_data.c
+> index 284324f..c95033c 100644
+> --- a/arch/arm/mach-omap2/omap_hwmod_7xx_data.c
+> +++ b/arch/arm/mach-omap2/omap_hwmod_7xx_data.c
+> @@ -35,6 +35,7 @@
+>  #include "i2c.h"
+>  #include "mmc.h"
+>  #include "wd_timer.h"
+> +#include "soc.h"
+>  
+>  /* Base offset for all DRA7XX interrupts external to MPUSS */
+>  #define DRA7XX_IRQ_GIC_START	32
+> @@ -2705,7 +2706,6 @@ static struct omap_hwmod_ocp_if *dra7xx_hwmod_ocp_ifs[] __initdata = {
+>  	&dra7xx_l4_per3__usb_otg_ss1,
+>  	&dra7xx_l4_per3__usb_otg_ss2,
+>  	&dra7xx_l4_per3__usb_otg_ss3,
+> -	&dra7xx_l4_per3__usb_otg_ss4,
+>  	&dra7xx_l3_main_1__vcp1,
+>  	&dra7xx_l4_per2__vcp1,
+>  	&dra7xx_l3_main_1__vcp2,
+> @@ -2714,8 +2714,26 @@ static struct omap_hwmod_ocp_if *dra7xx_hwmod_ocp_ifs[] __initdata = {
+>  	NULL,
+>  };
+>  
+> +static struct omap_hwmod_ocp_if *dra74x_hwmod_ocp_ifs[] __initdata = {
+> +	&dra7xx_l4_per3__usb_otg_ss4,
+> +	NULL,
+> +};
+> +
+> +static struct omap_hwmod_ocp_if *dra72x_hwmod_ocp_ifs[] __initdata = {
+> +	NULL,
+> +};
+> +
+>  int __init dra7xx_hwmod_init(void)
+>  {
+> +	int ret;
+> +
+>  	omap_hwmod_init();
+> -	return omap_hwmod_register_links(dra7xx_hwmod_ocp_ifs);
+> +	ret = omap_hwmod_register_links(dra7xx_hwmod_ocp_ifs);
+if (ret)
+	goto out;
+> +
+> +	if (!ret && soc_is_dra74x())
+no need of !ret
+> +		return omap_hwmod_register_links(dra74x_hwmod_ocp_ifs);
+ret = omap_hwmod_register_links(dra74x_hwmod_ocp_ifs);
+> +	else if (!ret && soc_is_dra72x())
+no need of else and !ret
+> +		return omap_hwmod_register_links(dra72x_hwmod_ocp_ifs);
+ret = omap_hwmod_register_links(dra72x_hwmod_ocp_ifs);
+> +
+
+out:
+> +	return ret;
+>  }
+> 
+
+
+-- 
+Regards,
+Nishanth Menon
