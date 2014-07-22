@@ -1,156 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756759AbaGVUIL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 16:08:11 -0400
-Received: from mail-ie0-f169.google.com ([209.85.223.169]:61747 "EHLO
-	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756669AbaGVUIJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1756717AbaGVUIJ (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 22 Jul 2014 16:08:09 -0400
-From: Jeff Oczek <jeffoczek@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Jeff Oczek <jeffoczek@gmail.com>
-Subject: [PATCH] staging: cxt1e1: Fix static symbol sparse warnings for global vars in linux.c
-Date: Tue, 22 Jul 2014 16:07:51 -0400
-Message-Id: <1406059671-6536-1-git-send-email-jeffoczek@gmail.com>
-X-Mailer: git-send-email 1.9.1
+Received: from mail-we0-f179.google.com ([74.125.82.179]:60970 "EHLO
+	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756647AbaGVUIE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 16:08:04 -0400
+From: Matt Kurz <matt@ninezulu.com>
+To: andreas.dilger@intel.com, oleg.drokin@intel.com,
+        gregkh@linuxfoundation.org
+Cc: linux-kernel@vger.kernel.org, Matt Kurz <matt@ninezulu.com>
+Subject: [PATCH] staging: lustre: Fix sparse warnings
+Date: Wed, 23 Jul 2014 06:10:33 +1000
+Message-Id: <1406059833-17161-1-git-send-email-matt@ninezulu.com>
+X-Mailer: git-send-email 2.0.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Put extern declarations in cxt1e1_common.h to reduce sparse warnings for linux.c:
-drivers/staging/cxt1e1/linux.c:86:13: warning:
-  symbol 'error_flag' was not declared. Should it be static?
-drivers/staging/cxt1e1/linux.c:91:13: warning:
-  symbol 'cxt1e1_max_mru' was not declared. Should it be static?
-drivers/staging/cxt1e1/linux.c:95:13: warning:
-  symbol 'cxt1e1_max_mtu' was not declared. Should it be static?
-drivers/staging/cxt1e1/linux.c:96:13: warning:
-  symbol 'max_mtu_default' was not declared. Should it be static?
-drivers/staging/cxt1e1/linux.c:99:13: warning:
-  symbol 'max_txdesc_used' was not declared. Should it be static?
-drivers/staging/cxt1e1/linux.c:100:13: warning:
-  symbol 'max_txd:esc_default' was not declared. Should it be static?
-drivers/staging/cxt1e1/linux.c:103:13: warning:
-  symbol 'max_rxdesc_used' was not declared. Should it be static?
-drivers/staging/cxt1e1/linux.c:104:13: warning:
-  symbol 'max_rxdesc_default' was not declared. Should it be static?
-drivers/staging/cxt1e1/linux.c:153:1: warning:
-  symbol 'c4_wk_chan_restart' was not declared. Should it be static?
-drivers/staging/cxt1e1/linux.c:171:1: warning:
-  symbol 'c4_wk_chan_init' was not declared. Should it be static?
-drivers/staging/cxt1e1/linux.c:186:1: warning:
-  symbol 'c4_wq_port_init' was not declared. Should it be static?
-drivers/staging/cxt1e1/linux.c:208:1: warning:
-  symbol 'c4_wq_port_cleanup' was not declared. Should it be static?
+Declare several functions and variables as static in order
+to address the following sparse warnings
 
-Signed-off-by: Jeff Oczek <jeffoczek@gmail.com>
+drivers/staging/lustre/lnet/lnet/acceptor.c:49:3: warning: symbol 'lnet_acceptor_state' was not declared. Should it be static?
+drivers/staging/lustre/lnet/lnet/acceptor.c:79:1: warning: symbol 'lnet_acceptor_get_tunables' was not declared. Should it be static?
+drivers/staging/lustre/lnet/lnet/acceptor.c:211:1: warning: symbol 'lnet_accept' was not declared. Should it be static?
+drivers/staging/lustre/lnet/lnet/acceptor.c:333:1: warning: symbol 'lnet_acceptor' was not declared. Should it be static?
+
+Tested by compilation only.
+
+Signed-off-by: Matt Kurz <matt@ninezulu.com>
 ---
- drivers/staging/cxt1e1/cxt1e1_common.h | 15 +++++++++++++++
- drivers/staging/cxt1e1/hwprobe.c       |  2 +-
- drivers/staging/cxt1e1/linux.c         |  2 +-
- drivers/staging/cxt1e1/musycc.c        |  7 +------
- drivers/staging/cxt1e1/pmcc4_drv.c     |  5 +----
- 5 files changed, 19 insertions(+), 12 deletions(-)
- create mode 100644 drivers/staging/cxt1e1/cxt1e1_common.h
+ drivers/staging/lustre/lnet/lnet/acceptor.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/staging/cxt1e1/cxt1e1_common.h b/drivers/staging/cxt1e1/cxt1e1_common.h
-new file mode 100644
-index 0000000..ac6b974
---- /dev/null
-+++ b/drivers/staging/cxt1e1/cxt1e1_common.h
-@@ -0,0 +1,15 @@
-+#ifndef __CXT1E1_COMMON_H
-+#define __CXT1E1_COMMON_H
-+
-+#include "pmcc4.h"
-+
-+extern int error_flag;
-+extern int cxt1e1_max_mru;
-+extern int cxt1e1_max_mtu;
-+extern int max_mtu_default;
-+extern int max_txdesc_used;
-+extern int max_txdesc_default;
-+extern int max_rxdesc_used;
-+extern int max_rxdesc_default;
-+
-+#endif
-diff --git a/drivers/staging/cxt1e1/hwprobe.c b/drivers/staging/cxt1e1/hwprobe.c
-index 4fa27c8..45bc161 100644
---- a/drivers/staging/cxt1e1/hwprobe.c
-+++ b/drivers/staging/cxt1e1/hwprobe.c
-@@ -30,8 +30,8 @@
- #ifdef CONFIG_PROC_FS
- #include "sbeproc.h"
- #endif
-+#include "cxt1e1_common.h"
+diff --git a/drivers/staging/lustre/lnet/lnet/acceptor.c b/drivers/staging/lustre/lnet/lnet/acceptor.c
+index 001c4b7..5dfb887 100644
+--- a/drivers/staging/lustre/lnet/lnet/acceptor.c
++++ b/drivers/staging/lustre/lnet/lnet/acceptor.c
+@@ -42,7 +42,7 @@ static int   accept_port    = 988;
+ static int   accept_backlog = 127;
+ static int   accept_timeout = 5;
  
--extern int  error_flag;
- extern int  drvr_state;
+-struct {
++static struct {
+ 	int			pta_shutdown;
+ 	struct socket		*pta_sock;
+ 	struct completion	pta_signal;
+@@ -75,7 +75,7 @@ MODULE_PARM_DESC(accept_timeout, "Acceptor's timeout (seconds)");
  
- /* forward references */
-diff --git a/drivers/staging/cxt1e1/linux.c b/drivers/staging/cxt1e1/linux.c
-index 09f3d5c..3ba0245 100644
---- a/drivers/staging/cxt1e1/linux.c
-+++ b/drivers/staging/cxt1e1/linux.c
-@@ -30,7 +30,7 @@
- #include "pmcc4_ioctls.h"
- #include "pmcc4_private.h"
- #include "sbeproc.h"
--
-+#include "cxt1e1_common.h"
- /*******************************************************************************
-  * Error out early if we have compiler trouble.
-  *
-diff --git a/drivers/staging/cxt1e1/musycc.c b/drivers/staging/cxt1e1/musycc.c
-index 0bcbd8a..4f8b137 100644
---- a/drivers/staging/cxt1e1/musycc.c
-+++ b/drivers/staging/cxt1e1/musycc.c
-@@ -34,7 +34,7 @@ static unsigned int max_bh;
- #include "pmcc4_private.h"
- #include "pmcc4.h"
- #include "musycc.h"
--
-+#include "cxt1e1_common.h"
- #define sd_find_chan(ci,ch)   c4_find_chan(ch)
+ static char *accept_type;
  
+-int
++static int
+ lnet_acceptor_get_tunables(void)
+ {
+ 	/* Userland acceptor uses 'accept_type' instead of 'accept', due to
+@@ -207,7 +207,7 @@ EXPORT_SYMBOL(lnet_connect);
  
-@@ -42,11 +42,6 @@ static unsigned int max_bh;
- /* global driver variables */
- extern ci_t *c4_list;
- extern int  drvr_state;
--
--extern int  cxt1e1_max_mru;
--extern int  cxt1e1_max_mtu;
--extern int  max_rxdesc_used;
--extern int  max_txdesc_used;
- extern ci_t *CI;                /* dummy pointr to board ZEROE's data - DEBUG
- 				 * USAGE */
+ /* Below is the code common for both kernel and MT user-space */
  
-diff --git a/drivers/staging/cxt1e1/pmcc4_drv.c b/drivers/staging/cxt1e1/pmcc4_drv.c
-index 76bebdd..e053b60 100644
---- a/drivers/staging/cxt1e1/pmcc4_drv.c
-+++ b/drivers/staging/cxt1e1/pmcc4_drv.c
-@@ -38,6 +38,7 @@
- #include "musycc.h"
- #include "comet.h"
- #include "sbe_bid.h"
-+#include "cxt1e1_common.h"
+-int
++static int
+ lnet_accept(struct socket *sock, __u32 magic)
+ {
+ 	lnet_acceptor_connreq_t cr;
+@@ -329,7 +329,7 @@ lnet_accept(struct socket *sock, __u32 magic)
+ 	return rc;
+ }
  
- #define KERN_WARN KERN_WARNING
- 
-@@ -59,10 +60,6 @@ void        musycc_update_timeslots (mpi_t *);
- 
- extern void musycc_update_tx_thp (mch_t *);
- extern int  cxt1e1_log_level;
--extern int  cxt1e1_max_mru;
--extern int  cxt1e1_max_mtu;
--extern int  max_rxdesc_used, max_rxdesc_default;
--extern int  max_txdesc_used, max_txdesc_default;
- 
- #if defined (__powerpc__)
- extern void *memset (void *s, int c, size_t n);
+-int
++static int
+ lnet_acceptor(void *arg)
+ {
+ 	struct socket *newsock;
 -- 
-1.9.1
+2.0.2
 
