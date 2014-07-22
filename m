@@ -1,71 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757212AbaGVWU6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 18:20:58 -0400
-Received: from mail-oi0-f54.google.com ([209.85.218.54]:47677 "EHLO
-	mail-oi0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756895AbaGVWUy (ORCPT
+	id S1757268AbaGVWVO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 18:21:14 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:45425 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757219AbaGVWVM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 18:20:54 -0400
+	Tue, 22 Jul 2014 18:21:12 -0400
+Message-ID: <53CEE3D6.6070207@codeaurora.org>
+Date: Tue, 22 Jul 2014 15:21:10 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-In-Reply-To: <CAB=NE6VMca9gkvino-_SbThX3DgNSMJ+x-AkmyPR-G-x4Pq_jA@mail.gmail.com>
-References: <1405373897-31671-1-git-send-email-keescook@chromium.org>
-	<1405373897-31671-4-git-send-email-keescook@chromium.org>
-	<20140714222419.GC10393@wotan.suse.de>
-	<CAGXu5j+V807cyDdyEzoRzSjYEyhkDntaEkKOx6n=OzUoF31-sA@mail.gmail.com>
-	<CAB=NE6WnP-7YCr8DzCq-HOLZVuQxmCa+nwN7kQBxTnUHK+xMRg@mail.gmail.com>
-	<CAGXu5jJxEJQ5+05O-Q=W652O-fZ1WBVsUjb3d2JEwAAMF=fx-Q@mail.gmail.com>
-	<CAB=NE6VMca9gkvino-_SbThX3DgNSMJ+x-AkmyPR-G-x4Pq_jA@mail.gmail.com>
-Date: Tue, 22 Jul 2014 15:20:53 -0700
-X-Google-Sender-Auth: IQW5yE3565JKsoVSHA3MUUYbhyA
-Message-ID: <CAGXu5jLFQja7NGorKFrnMWHNW++YuyuX0MziOtZip91rbz0ovA@mail.gmail.com>
-Subject: Re: [PATCH 3/7] security: introduce kernel_fw_from_file hook
-From: Kees Cook <keescook@chromium.org>
-To: "Luis R. Rodriguez" <mcgrof@suse.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ming Lei <ming.lei@canonical.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        James Morris <james.l.morris@oracle.com>,
-        David Howells <dhowells@redhat.com>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        linux-security-module <linux-security-module@vger.kernel.org>,
-        linux-firmware@kernel.org,
-        linux-wireless <linux-wireless@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: John Stultz <john.stultz@linaro.org>
+CC: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] sched_clock: Avoid corrupting hrtimer tree during suspend
+References: <1405721392-30795-1-git-send-email-sboyd@codeaurora.org> <53C99EC5.2060602@linaro.org> <53C9A1EC.8060905@codeaurora.org> <53C9A2E7.8020307@linaro.org> <53C9ACCA.3070306@codeaurora.org> <53C9B862.5050106@linaro.org>
+In-Reply-To: <53C9B862.5050106@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 22, 2014 at 3:11 PM, Luis R. Rodriguez <mcgrof@suse.com> wrote:
-> On Tue, Jul 22, 2014 at 1:55 PM, Kees Cook <keescook@chromium.org> wrote:
->> On Tue, Jul 22, 2014 at 12:39 PM, Luis R. Rodriguez <mcgrof@suse.com> wrote:
->>> On Mon, Jul 14, 2014 at 3:31 PM, Kees Cook <keescook@chromium.org> wrote:
->>>> Yup, with this and the module hook, adding a similar hook for kexec
->>>> makes sense as well. A paranoid kernel doesn't want to trust anything
->>>> it's loading from userspace. :)
+On 07/18/14 17:14, John Stultz wrote:
+> On 07/18/2014 04:24 PM, Stephen Boyd wrote:
+>> On 07/18/14 15:42, John Stultz wrote:
+>>> If its a regression (and needs -stable backports) it needs to go in via
+>>> tip/timers/urgent, and not via the regular merge window.
 >>>
->>> Well I'm actually wondering if we could generalize requiring hooks or
->>> not for LSM as part of the general kobject definition. Then we
->>> wouldn't need to keep growing hooks for modules, firmware, kexec
->>> images, etc, but instead using the interfaces for kobjects and who
->>> depend on them. How that would actually look -- I'm not sure, but just
->>> a thought.
->>
->> Yeah, there does seem to be a repeated "get a thing from userspace"
->> method here, but the interfaces have been rather scattered so far. I
->> haven't seen an obvious way to consolidate them yet.
+>>> Whats the additional risk -stable wise for canceling the timer during
+>>> suspend and starting it back up during resume?
+>>>
+>> I'd say close to zero given that we'd only be making the timer run a
+>> little bit later and we have slack in there already. Here's that version.
+> Ok, thanks. I'll try to do a closer review it and get it queued. Is
+> there anyone who might be able to validate this and provide a Tested-by: ?
 >
-> If we are going to be adding a new system call for each type of
-> userspace object to help LSMs with requirements I wonder if its a
-> worthy endeavor to review. This series didn't add one but you had
-> mentioned finit_module() for example, are we going to want one for
-> finit_firmware() finit_kexec_image(), etc?
 
-The kernel pulls in firmware directly from the filesystem, so no
-syscall there. :) kexec just had kexec_load_file added as a syscall
-(it takes 2 fds: kernel and initrd).
+Maybe someone from Linaro can give a Tested-by? I basically did this:
 
--Kees
+# grep -A1 'sched_clock' /proc/timer_list && echo mem > /sys/power/state && grep -A1 'sched_clock' /proc/timer_list
+
+
+and made sure that the expires time was reset.
 
 -- 
-Kees Cook
-Chrome OS Security
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
+
