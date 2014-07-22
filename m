@@ -1,114 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756827AbaGVUoi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 16:44:38 -0400
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:53198 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751482AbaGVUog (ORCPT
+	id S1756879AbaGVUpA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 16:45:00 -0400
+Received: from mail-la0-f47.google.com ([209.85.215.47]:40894 "EHLO
+	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751353AbaGVUo6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 16:44:36 -0400
-Date: Tue, 22 Jul 2014 13:44:31 -0700
-From: Brian Norris <computersforpeace@gmail.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Olof Johansson <olof@lixom.net>, Matt Porter <mporter@linaro.org>,
-        Christian Daudt <bcm@fixthebug.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        devicetree@vger.kernel.org, Gregory Fong <gregory.0xf0@gmail.com>,
-        Florian Fainelli <f.fainelli@gmail.com>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Sebastian Reichel <sre@kernel.org>
-Subject: Re: [PATCH v8 00/11] ARM: brcmstb: Add Broadcom STB SoC support
-Message-ID: <20140722204431.GG28323@ld-irv-0074>
-References: <1405976886-27807-1-git-send-email-computersforpeace@gmail.com>
- <5675728.WLk3P96IBM@wuerfel>
+	Tue, 22 Jul 2014 16:44:58 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5675728.WLk3P96IBM@wuerfel>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140722135915.GB25291@thunk.org>
+References: <cover.1405620944.git.luto@amacapital.net> <9c2a0549519b4eb5eee2d5d480f8e83a574273df.1405620944.git.luto@amacapital.net>
+ <20140722135915.GB25291@thunk.org>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Tue, 22 Jul 2014 13:44:36 -0700
+Message-ID: <CALCETrVY9KNLsbxhtLRatdb34ZP3XvMyys358dpB3oCKezdBwA@mail.gmail.com>
+Subject: Re: [PATCH v4 2/5] random: Add and use arch_get_rng_seed
+To: "Theodore Ts'o" <tytso@mit.edu>, Andy Lutomirski <luto@amacapital.net>,
+        kvm list <kvm@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Kees Cook <keescook@chromium.org>, X86 ML <x86@kernel.org>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        Gleb Natapov <gleb@kernel.org>, Paolo Bonzini <pbonzini@redhat.com>,
+        Bandan Das <bsd@redhat.com>, Andrew Honig <ahonig@google.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-+ Sebastian
+On Tue, Jul 22, 2014 at 6:59 AM, Theodore Ts'o <tytso@mit.edu> wrote:
+> On Thu, Jul 17, 2014 at 11:22:17AM -0700, Andy Lutomirski wrote:
+>> Currently, init_std_data contains its own logic for using arch
+>> random sources.  This logic is a bit strange: it reads one long of
+>> arch random data per byte of internal state.
+>
+> This isn't true.  Check out the init_std_data() a bit more closely.
+>
+>         unsigned long rv;
+>
+>         ...
+>
+>         for (i = r->poolinfo->poolbytes; i > 0; i -= sizeof(rv)) {
+>             ...
+>
+> In particular, note the "i -= sizeof(rv)".  We are reading one bit per
+> bit of internal state beeing seeded.
 
-On Tue, Jul 22, 2014 at 09:35:45AM +0200, Arnd Bergmann wrote:
-> On Monday 21 July 2014 14:07:55 Brian Norris wrote:
-> > I'm taking over the latest resubmission of this patch series.
-> > There are a few moderate changes for v8 (noted below), but we
-> > are waiting mostly for an Ack for the reboot driver.
-> > 
-> > This patchset contains the board support package for the
-> > Broadcom BCM7445 ARM-based SoC [1]. These changes contain a
-> > minimal set of code needed for a BCM7445-based board to boot
-> > the Linux kernel.
-> > 
-> > These changes heavily leverage the OF/devicetree framework. The
-> > machine is also built into the multi-platform ARMv7 image.
-> > 
-> > Changes are also available here:
-> > 
-> >   https://github.com/brcm/linux/tree/brcmstb-v8
-> >   git://github.com/brcm/linux.git +brcmstb-v8
-> 
-> Whole series
-> 
-> Acked-by: Arnd Bergmann <arnd@arndb.de>
+Whoops, my bad.
 
-Thanks!
+>
+>> Assuming the arch sources are perfect, this is the right thing to
+>> do.  They're not, though, so the followup patch attempts to
+>> implement the correct logic on x86.
+>
+> ... and that's not a problem because we aren't giving any entropy
+> credit --- and this is deliberate, because we don't want to trust
+> un-auditable hardware.  We are deliberately trying to be conservative
+> here.
 
-> I think we should try to get this merged into 3.17, it's already
-> taken too long and the patches look good.
+True.
 
-Yes, it's about time.
+But, if you Intel's hardware does, in fact, work as documented, then
+the current code will collect very little entropy on RDSEED-less
+hardware.  I see no great reason that we should do something weaker
+than following Intel's explicit recommendation for how to seed a PRNG
+from RDRAND.
 
-> Please add the core architecture patches for arch/arm into Russell's
-> patch tracker http://www.arm.linux.org.uk/developer/patches/.
+>
+> So I don't think either this patch or the next one is needed.  It adds
+> far more complexity than is warranted.
 
-OK, that's unfamiliar to me, but I'll try that out.
+The real reason I did this is because I didn't want to pollute the
+kernel with yet more arch_get_random_xyz functions.  In the previous
+iteration of this patchset, init_std_data had to deal with no less
+than three arch random sources.  If Xen adds something (which, IMO,
+they should), then either it'll be up to four, or one of them will
+have to multiplex.
 
-> For the platform changes in the first patch, I would prefer to have
-> Matt pick up the first patch, but we can also apply it directly into
-> arm-soc if he prefers that.
+Another benefit of this split is that it will potentially allow
+arch_get_rng_seed to be made to work before alternatives are run.
+There's no fundamental reason that it couldn't work *extremely* early
+in boot.  (The KASLR code is an example of how this might work.)  On
+the other hand, making arch_get_random_long work very early in boot
+would either slow down all the other callers or add a considerable
+amount of extra complexity.
 
-That brings up a question related to PATCH 11 in the series (MAINTAINERS
-update); who will be maintaining arch/arm/mach-bcm/*brcmstb*, and how
-will code go upstream? It seems like Matt and Christian are officially
-mach-bcm maintainers, although I don't know if Christian is still
-involved.
+So I think that this patch is a slight improvement in RNG
+initialization and will actually result in simpler code.  (And yes, if
+I submit a new version of it, I'll fix the changelog.)
 
-Also, BCM7xxx shares little in common with the rest of mach-bcm, except
-a company name, so we'd really like at least the 'Maintainer' entries
-for the CC. I was planning on a separate git tree too, although it could
-have conflicts if we touch arch/arm/mach-bcm/{Makefile,Kconfig}.
-
-So would we send a separate arm-soc pull request for the arm-soc
-targeted changes (and all future development)?
-
-> The reset driver can ideally go through the drivers/power/ maintainers,
-> but if they are not interested in merging it, we can also take that
-> through arm-soc.
-
-I don't see much activity from the drivers/power/ maintainers on the
-mailing lists, and I know David Woodhouse at least has been severely
-distracted (I took over for him on driver/mtd/ recently), so I don't
-expect much. (EDIT: I see [1]. Nice!)
-
-> See also my one comment on that driver.
-
-I proposed an additional diff on that patch in response.
-
-I can strip the drivers/power/reboot/ driver out and send it separately
-to our new drivers/power/ maintainer (thanks Sebastian!), and hope that
-it gets through for 3.17.
-
-For the reset of mach-bcm stuff, I'll just send an arm-soc pull request
-soon enough, unless Matt/Arnd/Olof object.
-
-Thanks,
-Brian
-
-[1] https://lkml.org/lkml/2014/7/16/539
+--Andy
