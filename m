@@ -1,146 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751475AbaGVAO5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 20:14:57 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:36043 "EHLO
-	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750831AbaGVAOz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 20:14:55 -0400
-X-Original-SENDERIP: 10.177.222.156
-X-Original-MAILFROM: minchan@kernel.org
-Date: Tue, 22 Jul 2014 09:15:45 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: Gioh Kim <gioh.kim@lge.com>, Andrew Morton <akpm@linux-foundation.org>,
-        "'?????????'" <iamjoonsoo.kim@lge.com>,
-        Laura Abbott <lauraa@codeaurora.org>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, ????????? <gunho.lee@lge.com>,
-        "'Chanho Min'" <chanho.min@lge.com>, linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH] CMA/HOTPLUG: clear buffer-head lru before page migration
-Message-ID: <20140722001545.GC15912@bbox>
-References: <53C8C290.90503@lge.com>
- <20140721025047.GA7707@bbox>
- <53CCB02A.7070301@lge.com>
- <20140721073651.GA15912@bbox>
- <20140721130146.GO10544@csn.ul.ie>
+	id S1751370AbaGVAUf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 20:20:35 -0400
+Received: from mail-bn1lp0144.outbound.protection.outlook.com ([207.46.163.144]:14573
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750790AbaGVAUe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jul 2014 20:20:34 -0400
+Date: Tue, 22 Jul 2014 08:13:24 +0800
+From: Peter Chen <peter.chen@freescale.com>
+To: Stefan Agner <stefan@agner.ch>
+CC: <s.hauer@pengutronix.de>, <shawn.guo@freescale.com>,
+        <b35083@freescale.com>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/6] vf610: Add USB support
+Message-ID: <20140722001322.GA6636@shlinux1.ap.freescale.net>
+References: <cover.1405702442.git.stefan@agner.ch>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <20140721130146.GO10544@csn.ul.ie>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <cover.1405702442.git.stefan@agner.ch>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(24454002)(51704005)(189002)(199002)(104016003)(15202345003)(86362001)(47776003)(92726001)(97736001)(107046002)(74662001)(4396001)(83072002)(69596002)(68736004)(74502001)(92566001)(105606002)(64706001)(102836001)(80022001)(81342001)(33656002)(81156004)(20776003)(46406003)(77982001)(87936001)(79102001)(110136001)(106466001)(84676001)(6806004)(19580405001)(54356999)(19580395003)(83322001)(31966008)(46102001)(85852003)(50466002)(97756001)(95666004)(76482001)(81542001)(21056001)(15975445006)(44976005)(99396002)(76176999)(83506001)(85306003)(50986999)(26826002)(23726002)(55214005);DIR:OUT;SFP:;SCL:1;SRVR:DM2PR03MB351;H:az84smr01.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;LANG:en;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
+X-Forefront-PRVS: 02801ACE41
+Authentication-Results: spf=fail (sender IP is 192.88.158.2)
+ smtp.mailfrom=Peter.Chen@freescale.com; 
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Mel,
-
-On Mon, Jul 21, 2014 at 02:01:46PM +0100, Mel Gorman wrote:
-> On Mon, Jul 21, 2014 at 04:36:51PM +0900, Minchan Kim wrote:
+On Fri, Jul 18, 2014 at 07:01:36PM +0200, Stefan Agner wrote:
+> This patchset adds USB support for Vybrid VF610 SoC. It extends the
+> clock framework to support the USB PHY cocks, extends the device
+> tree files and adds support for the non-core registers in the
+> usbmisc_imx driver.
 > 
-> I'm not reviewing this in detail at all, didn't even look at the patch
-> but two things popped out at me during the discussion.
+> This patchset needs the eSDHC length fix available in Shawn's
+> for-next branch.
 > 
-> > > >Anyway, why cannot CMA have the cost without affecting other subsystem?
-> > > >I mean it's okay for CMA to consume more time to shoot out the bh
-> > > >instead of simple all bh_lru invalidation because big order allocation is
-> > > >kinds of slow thing in the VM and everybody already know that and even
-> > > >sometime get failed so it's okay to add more code that extremly slow path.
-> > > 
-> > > There are 2 reasons to invalidate entire bh_lru.
-> > > 
-> > > 1. I think CMA allocation is very rare so that invalidaing bh_lru affects the system little.
-> > > How do you think about it? My platform does not call CMA allocation often.
-> > > Is the CMA allocation or Memory-Hotplug called often?
-> > 
-> > It depends on usecase and you couldn't assume anyting because we couldn't
-> > ask every people in the world. "Please ask to us whenever you try to use CMA".
-> > 
-> > The key point is how the patch is maintainable.
-> > If it's too complicate to maintain, maybe we could go with simple solution
-> > but if it's not too complicate, we can go with more smart thing to consider
-> > other cases in future. Why not?
-> > 
-> > Another point is that how user can detect where the regression is from.
-> > If we cannot notice the regression, it's not a good idea to go with simple
-> > version.
-> > 
+
+Why it is related to USB patchset?
+
+> The whole patchset proved to be working on a Colibri VF61. The
+> first USB controller runs in peripheral mode. I could successfully
+> use RNDIS, however with some stability issues: Suddenly the other
+> side was not reachable anymore and the interface needed to brought
+> down and back up again. I'm still investigating this.
+
+Do you use ubuntu as host distribution? I find ubuntu will lost the
+first connection for usb-ethernet-gadget(usb0) as network interface,
+but once you re-config usb0 again (ifconfig usb0 ip up), it should work
+and will not lose connection any more.
+
 > 
-> The buffer LRU avoids a lookup of a radix tree. If the LRU hit rate is
-> low then the performance penalty of repeated radix tree lookups is
-> severe but the cost of missing one hot lookup because CMA invalidate it
-> is not.
+> The second USB controller, running in USB host mode, showed no
+> issues so far.
 > 
-> The real cost to be concerned with is the cost of performing the
-> invalidation not the fact a lookup in the LRU was missed. It's because
-> the cost of invalidation is high that this is being pushed to CMA because
-> for CMA an allocation failure can be a functional failure and not just a
-> performance problem.
+> Stefan Agner (6):
+>   ARM: dts: vf610: add USB PHY and controller
+>   ARM: imx: clk-vf610: add USBPHY clocks
+>   ARM: dts: vf610: Add usbmisc for non-core registers
+>   chipidea: usbmisc_imx: Add USB support for VF610 SoCs
+>   usb: phy: mxs: Add VF610 USB PHY support
+>   ARM: dts: vf610-colibri: add USB support
 > 
-> > > 
-> > > 2. Adding code in drop_buffers() can affect the system more that adding code in alloc_contig_range()
-> > > because the drop_buffers does not have a way to distinguish migrate type.
-> > > Even-though the lmbech results that it has almost the same performance.
-> > > But I am afraid that it can be changed.
-> > > As you said if bh_lru size can be changed it affects more than now.
-> > > SO I do not want to touch non-CMA related code.
-> > 
-> > I'm not saying to add hook in drop_buffers.
-> > What I suggest is to handle failure by bh_lrus in migrate_pages
-> > because it's not a problem only in CMA.
-> 
-> No, please do not insert a global IPI to invalidate buffer heads in the
-> general migration case. It's too expensive for either THP allocations or
-> automatic NUMA migrates. The global IPI cost is justified for rare events
-> where it causes functional problems if it fails to migreate -- CMA, memory
-> hot-remove, memory poisoning etc.
-
-I didn't want to add that flushing in migrate_pages *unconditionlly*.
-Please, look at this patch. It fixes only CMA although it's an issue
-for others. Even, it depends on retry logic of upper layer of
-alloc_contig_range but even cma_alloc(ie, upper layer of alloc_contig_range)
-doesn't have retry logic. :(
-That's why I suggested it in migrate_pages.
-
-Actually, I'd like to go with making migrate_pages's user blind on pcp
-draining stuff by squeezing that inside migrate_pages.
-IOW, current users of migrate pages don't need to be aware of per-cpu
-draining. What they should know is just they should use MIGRATE_SYNC
-for best effort but costly opeartion.
-
-For implemenation, we could use retry logic in migrate_pages.
-
-int migrate_pages(xxx)
-{
-        for (pass = 0; pass < 10 && retry; pass++)
-                if (retry && pass > 2 && mode == MIGRATE_SYNC)
-                        flush_all_of_percpu_stuff();
-}
-
-migrate_page has migrate_mode and retry logic with 'pass', even
-reason if we want ot filter out MR_CMA|MEMORY_HOTPLUG|MR_MEMORY_FAILURE.
-so that we could handle all of things inside migrate_pages.
-
-Normally, MIGRATE_SYNC would be expensive operation and mostly
-it is used for CMA, memory-hotplug, memory-poisoning so THP and
-automatic NUMA cannot affect so I believe adding IPI to that is not
-a big problem in such trouble condition(ie, retry && pass > 2).
-
+>  arch/arm/boot/dts/vf610-colibri.dts     | 10 +++++
+>  arch/arm/boot/dts/vf610.dtsi            | 55 ++++++++++++++++++++++--
+>  arch/arm/mach-imx/clk-vf610.c           | 12 +++++-
+>  drivers/usb/chipidea/usbmisc_imx.c      | 76 +++++++++++++++++++++++----------
+>  drivers/usb/phy/phy-mxs-usb.c           |  5 +++
+>  include/dt-bindings/clock/vf610-clock.h |  5 ++-
+>  6 files changed, 135 insertions(+), 28 deletions(-)
 > 
 > -- 
-> Mel Gorman
-> SUSE Labs
+> 2.0.1
 > 
 > --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> To unsubscribe from this list: send the line "unsubscribe linux-usb" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
 -- 
-Kind regards,
-Minchan Kim
+
+Best Regards,
+Peter Chen
