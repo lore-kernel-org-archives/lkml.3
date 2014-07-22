@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933606AbaGVWx6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 18:53:58 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44405 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932312AbaGVWWj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S932335AbaGVWWj (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 22 Jul 2014 18:22:39 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:44332 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756898AbaGVWWe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 18:22:34 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Mike Frysinger <vapier@gentoo.org>, "H.J. Lu" <hjl.tools@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 014/116] x86, x32: Use compat shims for io_{setup,submit}
-Date: Tue, 22 Jul 2014 15:20:25 -0700
-Message-Id: <1406067727-19683-15-git-send-email-kamal@canonical.com>
+Cc: Edward Lin <yidi.lin@canonical.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 003/116] ACPI / video: Add Dell Inspiron 5737 to the blacklist
+Date: Tue, 22 Jul 2014 15:20:14 -0700
+Message-Id: <1406067727-19683-4-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1406067727-19683-1-git-send-email-kamal@canonical.com>
 References: <1406067727-19683-1-git-send-email-kamal@canonical.com>
@@ -27,59 +28,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mike Frysinger <vapier@gentoo.org>
+From: Edward Lin <yidi.lin@canonical.com>
 
-commit 7fd44dacdd803c0bbf38bf478d51d280902bb0f1 upstream.
+commit 08a56226d84706d402372d891550e130ef5df9f0 upstream.
 
-The io_setup takes a pointer to a context id of type aio_context_t.
-This in turn is typed to a __kernel_ulong_t.  We could tweak the
-exported headers to define this as a 64bit quantity for specific
-ABIs, but since we already have a 32bit compat shim for the x86 ABI,
-let's just re-use that logic.  The libaio package is also written to
-expect this as a pointer type, so a compat shim would simplify that.
+With win8 capabiltiy, the ACPI backlight control is broken.
+The system also loses backlight setting when resuming from S3.
 
-The io_submit func operates on an array of pointers to iocb structs.
-Padding out the array to be 64bit aligned is a huge pain, so convert
-it over to the existing compat shim too.
+Add this model to the the ACPI video detect blacklist to make backlight
+functionality work.
 
-We don't convert io_getevents to the compat func as its only purpose
-is to handle the timespec struct, and the x32 ABI uses 64bit times.
+Although backlight functionality works via video.use_native_backlight=1,
+this approach may be safer.
 
-With this change, the libaio package can now pass its testsuite when
-built for the x32 ABI.
-
-Signed-off-by: Mike Frysinger <vapier@gentoo.org>
-Link: http://lkml.kernel.org/r/1399250595-5005-1-git-send-email-vapier@gentoo.org
-Cc: H.J. Lu <hjl.tools@gmail.com>
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+Signed-off-by: Edward Lin <yidi.lin@canonical.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/x86/syscalls/syscall_64.tbl | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ drivers/acpi/video_detect.c | 8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-diff --git a/arch/x86/syscalls/syscall_64.tbl b/arch/x86/syscalls/syscall_64.tbl
-index dc97328..0a42b1e 100644
---- a/arch/x86/syscalls/syscall_64.tbl
-+++ b/arch/x86/syscalls/syscall_64.tbl
-@@ -212,10 +212,10 @@
- 203	common	sched_setaffinity	sys_sched_setaffinity
- 204	common	sched_getaffinity	sys_sched_getaffinity
- 205	64	set_thread_area
--206	common	io_setup		sys_io_setup
-+206	64	io_setup		sys_io_setup
- 207	common	io_destroy		sys_io_destroy
- 208	common	io_getevents		sys_io_getevents
--209	common	io_submit		sys_io_submit
-+209	64	io_submit		sys_io_submit
- 210	common	io_cancel		sys_io_cancel
- 211	64	get_thread_area
- 212	common	lookup_dcookie		sys_lookup_dcookie
-@@ -356,3 +356,5 @@
- 540	x32	process_vm_writev	compat_sys_process_vm_writev
- 541	x32	setsockopt		compat_sys_setsockopt
- 542	x32	getsockopt		compat_sys_getsockopt
-+543	x32	io_setup		compat_sys_io_setup
-+544	x32	io_submit		compat_sys_io_submit
+diff --git a/drivers/acpi/video_detect.c b/drivers/acpi/video_detect.c
+index abcae69..c81409a 100644
+--- a/drivers/acpi/video_detect.c
++++ b/drivers/acpi/video_detect.c
+@@ -172,6 +172,14 @@ static struct dmi_system_id video_detect_dmi_table[] = {
+ 		DMI_MATCH(DMI_PRODUCT_NAME, "UL30A"),
+ 		},
+ 	},
++	{
++	.callback = video_detect_force_vendor,
++	.ident = "Dell Inspiron 5737",
++	.matches = {
++		DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
++		DMI_MATCH(DMI_PRODUCT_NAME, "Inspiron 5737"),
++		},
++	},
+ 	{ },
+ };
+ 
 -- 
 1.9.1
 
