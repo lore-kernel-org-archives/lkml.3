@@ -1,78 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932186AbaGVVX4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 17:23:56 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49187 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932101AbaGVVXz (ORCPT
+	id S1756921AbaGVVdN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 17:33:13 -0400
+Received: from mail-ie0-f178.google.com ([209.85.223.178]:40483 "EHLO
+	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756618AbaGVVdK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 17:23:55 -0400
-Date: Tue, 22 Jul 2014 14:23:54 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Jeff Oczek <jeffoczek@gmail.com>
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: cxt1e1: Fix static symbol sparse warnings for
- global vars in linux.c
-Message-ID: <20140722212354.GA23566@kroah.com>
-References: <1406059671-6536-1-git-send-email-jeffoczek@gmail.com>
- <20140722201722.GA20515@kroah.com>
- <20140722205658.GA7117@fofx>
+	Tue, 22 Jul 2014 17:33:10 -0400
+Date: Tue, 22 Jul 2014 15:33:06 -0600
+From: Bjorn Helgaas <bhelgaas@google.com>
+To: Kishon Vijay Abraham I <kishon@ti.com>
+Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-pci@vger.kernel.org, jg1.han@samsung.com, mohit.kumar@st.com,
+        linux-kernel@vger.kernel.org, grant.likely@linaro.org
+Subject: Re: [PATCH v3 0/4] dra7: Add PCIe support
+Message-ID: <20140722213306.GB25432@google.com>
+References: <1405587643-13808-1-git-send-email-kishon@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140722205658.GA7117@fofx>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1405587643-13808-1-git-send-email-kishon@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 22, 2014 at 04:56:59PM -0400, Jeff Oczek wrote:
-> On Tue, Jul 22, 2014 at 01:17:22PM -0700, Greg KH wrote:
-> > On Tue, Jul 22, 2014 at 04:07:51PM -0400, Jeff Oczek wrote:
-> > > Put extern declarations in cxt1e1_common.h to reduce sparse warnings for linux.c:
-> > 
-> > I know you didn't name this variable, but wow, that's a horrid name for
-> > a global variable :)
-> > 
-> > Any way you could change this to first fix up the name of the variable
-> > to something a bit more "device-specific" first, before this patch?
-> > 
-> > Perhaps "cxt1e1_error_flag"?
-> > 
-> > > +extern int cxt1e1_max_mru;
-> > > +extern int cxt1e1_max_mtu;
-> > 
-> > These are fine.
-> > 
-> > > +extern int max_mtu_default;
-> > > +extern int max_txdesc_used;
-> > > +extern int max_txdesc_default;
-> > > +extern int max_rxdesc_used;
-> > > +extern int max_rxdesc_default;
-> > 
-> > Again, these are bad names, can you do the same thing here?
-> > 
-> > thanks,
-> > 
-> > greg k-h
+On Thu, Jul 17, 2014 at 02:30:39PM +0530, Kishon Vijay Abraham I wrote:
+> Changes from v2:
+> * Added myself as MAINTAINER of pcie dra7xx driver
 > 
-> Hi Greg,
+> Changes from v1:
+> * fixed dw_pcie_prog_viewport_io_outbound() to use untranslated address
+> * split dra7xx patch into driver part and documentation part
 > 
-> max_txdesc_used and max_rxdesc_used are module parameters, 
+> [1] is split into separate series in order for individual subsystem
+> Maintainers to pick up the patches. This series handles the PCIe
+> support for DRA7.
+> 
+> Rebased to pci -next.
+> 
+> [1] -> https://lkml.org/lkml/2014/5/29/258
+> 
+> Kishon Vijay Abraham I (4):
+>   PCI: designware: Configuration space should be specified in 'reg'
+>   PCI: designware: use untranslated address while programming ATU
+>   Documentation: pci: ti: Add dt binding documentation for PCIe in
+>     DRA7xx
+>   PCI: host: pcie-dra7xx: add support for pcie-dra7xx controller
+> 
+>  .../devicetree/bindings/pci/designware-pcie.txt    |    4 +
+>  Documentation/devicetree/bindings/pci/ti-pci.txt   |   59 +++
+>  MAINTAINERS                                        |    8 +
+>  drivers/pci/host/Kconfig                           |   10 +
+>  drivers/pci/host/Makefile                          |    1 +
+>  drivers/pci/host/pci-dra7xx.c                      |  458 ++++++++++++++++++++
+>  drivers/pci/host/pcie-designware.c                 |   72 ++-
+>  drivers/pci/host/pcie-designware.h                 |    4 +
+>  8 files changed, 600 insertions(+), 16 deletions(-)
+>  create mode 100644 Documentation/devicetree/bindings/pci/ti-pci.txt
+>  create mode 100644 drivers/pci/host/pci-dra7xx.c
 
-Ugh :(
+I applied these to pci/host-designware for v3.17.  This will not be in my
+first pull request because I'm going on vacation and won't have time to get
+everything through -next and tagged.  But I'm planning a second pull
+request that will include this.
 
-> is it ok to change them?  I'm quite new to this -- I don't know if that
-> would count as breaking userspace or not.
+Mohit, I applied your ack of "use untranslated address" from the v1 posting
+(your mail of Jul 09) to the corresponding patch here, since Kishon didn't
+carry it forward.  Let me know if that's not OK.
 
-Yeah, we can't change them, good catch.
+I also squashed the last two patches into one so the DT binding
+documentation goes along with the dra7xx driver addition.
 
-> If not allowed, I could go the route of changing these less descriptive ones
-> to static in the main file and then make an assignment to the global vars
-> during the module init.
-
-That would be the best thing to do.
-
-thanks,
-
-greg k-h
+Bjorn
