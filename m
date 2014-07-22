@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753775AbaGVIKV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 04:10:21 -0400
-Received: from mga01.intel.com ([192.55.52.88]:46711 "EHLO mga01.intel.com"
+	id S1754083AbaGVINd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 04:13:33 -0400
+Received: from mga01.intel.com ([192.55.52.88]:46708 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753696AbaGVIKR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 04:10:17 -0400
+	id S1753667AbaGVIKP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 04:10:15 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,708,1400050800"; 
-   d="scan'208";a="573497491"
+   d="scan'208";a="573497479"
 From: "Yan, Zheng" <zheng.z.yan@intel.com>
 To: linux-kernel@vger.kernel.org
 Cc: a.p.zijlstra@chello.nl, mingo@kernel.org, acme@infradead.org,
         eranian@google.com, andi@firstfloor.org,
         "Yan, Zheng" <zheng.z.yan@intel.com>
-Subject: [PATCH v3 5/9] perf, x86: large PEBS interrupt threshold
-Date: Tue, 22 Jul 2014 16:09:58 +0800
-Message-Id: <1406016602-31845-6-git-send-email-zheng.z.yan@intel.com>
+Subject: [PATCH v3 4/9] perf, x86: introduce setup_pebs_sample_data()
+Date: Tue, 22 Jul 2014 16:09:57 +0800
+Message-Id: <1406016602-31845-5-git-send-email-zheng.z.yan@intel.com>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1406016602-31845-1-git-send-email-zheng.z.yan@intel.com>
 References: <1406016602-31845-1-git-send-email-zheng.z.yan@intel.com>
@@ -24,143 +24,140 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-PEBS always had the capability to log samples to its buffers without
-an interrupt. Traditionally perf has not used this but always set the
-PEBS threshold to one.
-
-For frequently occuring events (like cycles or branches or load/stores)
-this in term requires using a relatively high sampling period to avoid
-overloading the system, by only processing PMIs. This in term increases
-sampling error.
-
-For the common cases we still need to use the PMI because the PEBS
-hardware has various limitations. The biggest one is that it can not
-supply a callgraph. It also requires setting a fixed period, as the
-hardware does not support adaptive period. Another issue is that it
-cannot supply a time stamp and some other options. To supply a TID it
-requires flushing on context switch. It can however supply the IP, the
-load/store address, TSX information, registers, and some other things.
-
-So we can make PEBS work for some specific cases, basically as long as
-you can do without a callgraph and can set the period you can use this
-new PEBS mode.
-
-The main benefit is the ability to support much lower sampling period
-(down to -c 1000) without extensive overhead.
-
-One use cases is for example to increase the resolution of the c2c tool.
-Another is double checking when you suspect the standard sampling has
-too much sampling error.
-
-Some numbers on the overhead, using cycle soak, comparing
-"perf record --no-time -e cycles:p -c" to "perf record -e cycles:p -c"
-
-period    plain  multi  delta
-10003     15     5      10
-20003     15.7   4      11.7
-40003     8.7    2.5    6.2
-80003     4.1    1.4    2.7
-100003    3.6    1.2    2.4
-800003    4.4    1.4    3
-1000003   0.6    0.4    0.2
-2000003   0.4    0.3    0.1
-4000003   0.3    0.2    0.1
-10000003  0.3    0.2    0.1
-
-The interesting part is the delta between multi-pebs and normal pebs. Above
--c 1000003 it does not really matter because the basic overhead is so low.
-With periods below 80003 it becomes interesting.
-
-Note in some other workloads (e.g. kernbench) the smaller sampling periods
-cause much more overhead without multi-pebs,  upto 80% (and throttling) have
-been observed with -c 10003. multi pebs generally does not throttle.
+move codes that setup PEBS sample data to separate function
 
 Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
 ---
- arch/x86/kernel/cpu/perf_event_intel_ds.c | 40 +++++++++++++++++++++++++++----
- 1 file changed, 36 insertions(+), 4 deletions(-)
+ arch/x86/kernel/cpu/perf_event_intel_ds.c | 63 ++++++++++++++++++-------------
+ 1 file changed, 36 insertions(+), 27 deletions(-)
 
 diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-index 858c4ee..86ef5b0 100644
+index ab91b11..858c4ee 100644
 --- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
 +++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-@@ -251,7 +251,7 @@ static int alloc_pebs_buffer(int cpu)
+@@ -868,8 +868,10 @@ static inline u64 intel_hsw_transaction(struct pebs_record_hsw *pebs)
+ 	return txn;
+ }
+ 
+-static void __intel_pmu_pebs_event(struct perf_event *event,
+-				   struct pt_regs *iregs, void *__pebs)
++static void setup_pebs_sample_data(struct perf_event *event,
++				   struct pt_regs *iregs, void *__pebs,
++				   struct perf_sample_data *data,
++				   struct pt_regs *regs)
  {
- 	struct debug_store *ds = per_cpu(cpu_hw_events, cpu).ds;
- 	int node = cpu_to_node(cpu);
--	int max, thresh = 1; /* always use a single PEBS record */
-+	int max;
- 	void *buffer, *ibuffer;
+ 	/*
+ 	 * We cast to the biggest pebs_record but are careful not to
+@@ -877,21 +879,16 @@ static void __intel_pmu_pebs_event(struct perf_event *event,
+ 	 */
+ 	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
+ 	struct pebs_record_hsw *pebs = __pebs;
+-	struct perf_sample_data data;
+-	struct pt_regs regs;
+ 	u64 sample_type;
+ 	int fll, fst;
  
- 	if (!x86_pmu.pebs)
-@@ -281,9 +281,6 @@ static int alloc_pebs_buffer(int cpu)
- 	ds->pebs_absolute_maximum = ds->pebs_buffer_base +
- 		max * x86_pmu.pebs_record_size;
- 
--	ds->pebs_interrupt_threshold = ds->pebs_buffer_base +
--		thresh * x86_pmu.pebs_record_size;
+-	if (!intel_pmu_save_and_restart(event))
+-		return;
 -
- 	return 0;
- }
+ 	fll = event->hw.flags & PERF_X86_EVENT_PEBS_LDLAT;
+ 	fst = event->hw.flags & (PERF_X86_EVENT_PEBS_ST |
+ 				 PERF_X86_EVENT_PEBS_ST_HSW);
  
-@@ -708,15 +705,35 @@ struct event_constraint *intel_pebs_constraints(struct perf_event *event)
- 	return &emptyconstraint;
- }
+-	perf_sample_data_init(&data, 0, event->hw.last_period);
++	perf_sample_data_init(data, 0, event->hw.last_period);
  
-+/*
-+ * Flags PEBS can handle without an PMI.
-+ *
-+ * TID can only be handled by flushing at context switch.
-+ */
-+#define PEBS_FREERUNNING_FLAGS \
-+	(PERF_SAMPLE_IP | PERF_SAMPLE_TID | PERF_SAMPLE_ADDR | \
-+	 PERF_SAMPLE_ID | PERF_SAMPLE_CPU | PERF_SAMPLE_STREAM_ID | \
-+	 PERF_SAMPLE_DATA_SRC | PERF_SAMPLE_IDENTIFIER | \
-+	 PERF_SAMPLE_TRANSACTION)
-+
-+static inline bool pebs_is_enabled(struct cpu_hw_events *cpuc)
-+{
-+	return (cpuc->pebs_enabled & ((1ULL << MAX_PEBS_EVENTS) - 1));
+-	data.period = event->hw.last_period;
++	data->period = event->hw.last_period;
+ 	sample_type = event->attr.sample_type;
+ 
+ 	/*
+@@ -902,19 +899,19 @@ static void __intel_pmu_pebs_event(struct perf_event *event,
+ 		 * Use latency for weight (only avail with PEBS-LL)
+ 		 */
+ 		if (fll && (sample_type & PERF_SAMPLE_WEIGHT))
+-			data.weight = pebs->lat;
++			data->weight = pebs->lat;
+ 
+ 		/*
+ 		 * data.data_src encodes the data source
+ 		 */
+ 		if (sample_type & PERF_SAMPLE_DATA_SRC) {
+ 			if (fll)
+-				data.data_src.val = load_latency_data(pebs->dse);
++				data->data_src.val = load_latency_data(pebs->dse);
+ 			else if (event->hw.flags & PERF_X86_EVENT_PEBS_ST_HSW)
+-				data.data_src.val =
++				data->data_src.val =
+ 					precise_store_data_hsw(event, pebs->dse);
+ 			else
+-				data.data_src.val = precise_store_data(pebs->dse);
++				data->data_src.val = precise_store_data(pebs->dse);
+ 		}
+ 	}
+ 
+@@ -928,35 +925,47 @@ static void __intel_pmu_pebs_event(struct perf_event *event,
+ 	 * PERF_SAMPLE_IP and PERF_SAMPLE_CALLCHAIN to function properly.
+ 	 * A possible PERF_SAMPLE_REGS will have to transfer all regs.
+ 	 */
+-	regs = *iregs;
+-	regs.flags = pebs->flags;
+-	set_linear_ip(&regs, pebs->ip);
+-	regs.bp = pebs->bp;
+-	regs.sp = pebs->sp;
++	*regs = *iregs;
++	regs->flags = pebs->flags;
++	set_linear_ip(regs, pebs->ip);
++	regs->bp = pebs->bp;
++	regs->sp = pebs->sp;
+ 
+ 	if (event->attr.precise_ip > 1 && x86_pmu.intel_cap.pebs_format >= 2) {
+-		regs.ip = pebs->real_ip;
+-		regs.flags |= PERF_EFLAGS_EXACT;
+-	} else if (event->attr.precise_ip > 1 && intel_pmu_pebs_fixup_ip(&regs))
+-		regs.flags |= PERF_EFLAGS_EXACT;
++		regs->ip = pebs->real_ip;
++		regs->flags |= PERF_EFLAGS_EXACT;
++	} else if (event->attr.precise_ip > 1 && intel_pmu_pebs_fixup_ip(regs))
++		regs->flags |= PERF_EFLAGS_EXACT;
+ 	else
+-		regs.flags &= ~PERF_EFLAGS_EXACT;
++		regs->flags &= ~PERF_EFLAGS_EXACT;
+ 
+ 	if ((event->attr.sample_type & PERF_SAMPLE_ADDR) &&
+ 	    x86_pmu.intel_cap.pebs_format >= 1)
+-		data.addr = pebs->dla;
++		data->addr = pebs->dla;
+ 
+ 	if (x86_pmu.intel_cap.pebs_format >= 2) {
+ 		/* Only set the TSX weight when no memory weight. */
+ 		if ((event->attr.sample_type & PERF_SAMPLE_WEIGHT) && !fll)
+-			data.weight = intel_hsw_weight(pebs);
++			data->weight = intel_hsw_weight(pebs);
+ 
+ 		if (event->attr.sample_type & PERF_SAMPLE_TRANSACTION)
+-			data.txn = intel_hsw_transaction(pebs);
++			data->txn = intel_hsw_transaction(pebs);
+ 	}
+ 
+ 	if (has_branch_stack(event))
+-		data.br_stack = &cpuc->lbr_stack;
++		data->br_stack = &cpuc->lbr_stack;
 +}
 +
- void intel_pmu_pebs_enable(struct perf_event *event)
- {
- 	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
- 	struct hw_perf_event *hwc = &event->hw;
-+	struct debug_store *ds = cpuc->ds;
-+	bool first_pebs;
-+	u64 threshold;
- 
- 	hwc->config &= ~ARCH_PERFMON_EVENTSEL_INT;
- 	if (!event->attr.freq)
- 		hwc->flags |= PERF_X86_EVENT_AUTO_RELOAD;
- 
-+	first_pebs = !pebs_is_enabled(cpuc);
- 	cpuc->pebs_enabled |= 1ULL << hwc->idx;
- 
- 	if (event->hw.flags & PERF_X86_EVENT_PEBS_LDLAT)
-@@ -724,6 +741,21 @@ void intel_pmu_pebs_enable(struct perf_event *event)
- 	else if (event->hw.flags & PERF_X86_EVENT_PEBS_ST)
- 		cpuc->pebs_enabled |= 1ULL << 63;
- 
-+	/*
-+	 * When the event is constrained enough we can use a larger
-+	 * threshold and run the event with less frequent PMI.
-+	 */
-+	if (0 && /* disable this temporarily */
-+	    (hwc->flags & PERF_X86_EVENT_AUTO_RELOAD) &&
-+	    !(event->attr.sample_type & ~PEBS_FREERUNNING_FLAGS)) {
-+		threshold = ds->pebs_absolute_maximum -
-+			x86_pmu.max_pebs_events * x86_pmu.pebs_record_size;
-+	} else {
-+		threshold = ds->pebs_buffer_base + x86_pmu.pebs_record_size;
-+	}
-+	if (first_pebs || ds->pebs_interrupt_threshold > threshold)
-+		ds->pebs_interrupt_threshold = threshold;
++static void __intel_pmu_pebs_event(struct perf_event *event,
++				   struct pt_regs *iregs, void *__pebs)
++{
++	struct perf_sample_data data;
++	struct pt_regs regs;
 +
- 	/* Use auto-reload if possible to save a MSR write in the PMI */
- 	if (hwc->flags &PERF_X86_EVENT_AUTO_RELOAD) {
- 		ds->pebs_event_reset[hwc->idx] =
++	if (!intel_pmu_save_and_restart(event))
++		return;
++
++	setup_pebs_sample_data(event, iregs, __pebs, &data, &regs);
+ 
+ 	if (perf_event_overflow(event, &data, &regs))
+ 		x86_pmu_stop(event, 0);
 -- 
 1.9.3
 
