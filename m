@@ -1,88 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752818AbaGVHfq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 03:35:46 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:39235 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750737AbaGVHfn (ORCPT
+	id S1753128AbaGVHg4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 03:36:56 -0400
+Received: from mout.kundenserver.de ([212.227.17.13]:58184 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752094AbaGVHgy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 03:35:43 -0400
-Date: Tue, 22 Jul 2014 09:35:25 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Davidlohr Bueso <davidlohr@hp.com>
-Cc: Andy Lutomirski <luto@amacapital.net>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Darren Hart <dvhart@linux.intel.com>, Andi Kleen <andi@firstfloor.org>,
-        Waiman Long <Waiman.Long@hp.com>, Ingo Molnar <mingo@kernel.org>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Jason Low <jason.low2@hp.com>, Scott J Norton <scott.norton@hp.com>
-Subject: Re: [RFC PATCH 0/5] futex: introduce an optimistic spinning futex
-Message-ID: <20140722073525.GU3935@laptop>
-References: <1405956271-34339-1-git-send-email-Waiman.Long@hp.com>
- <8761iq3bp3.fsf@tassilo.jf.intel.com>
- <871tte3bjw.fsf@tassilo.jf.intel.com>
- <CFF29A00.9D44A%dvhart@linux.intel.com>
- <CFF29E4A.9D44E%dvhart@linux.intel.com>
- <alpine.DEB.2.10.1407212025130.20847@nanos>
- <20140721212740.GS3935@laptop>
- <CALCETrXSaWM6-nxr4ggtMh5qcfTQg4wRvkW8FTSbri5+_1ZbVg@mail.gmail.com>
- <1405989175.25048.5.camel@buesod1.americas.hpqcorp.net>
+	Tue, 22 Jul 2014 03:36:54 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Brian Norris <computersforpeace@gmail.com>
+Cc: Olof Johansson <olof@lixom.net>, Matt Porter <mporter@linaro.org>,
+        Christian Daudt <bcm@fixthebug.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        devicetree@vger.kernel.org, Gregory Fong <gregory.0xf0@gmail.com>,
+        Florian Fainelli <f.fainelli@gmail.com>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>
+Subject: Re: [PATCH v8 00/11] ARM: brcmstb: Add Broadcom STB SoC support
+Date: Tue, 22 Jul 2014 09:35:45 +0200
+Message-ID: <5675728.WLk3P96IBM@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1405976886-27807-1-git-send-email-computersforpeace@gmail.com>
+References: <1405976886-27807-1-git-send-email-computersforpeace@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1405989175.25048.5.camel@buesod1.americas.hpqcorp.net>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:iCFYnM3/6Cn9BJ+lH5L22U2Md2MMTSy8NmpJ/sBWjKK
+ 5NARssT8ZL02ZJcN4/Gc0R0GrdgUOuZjfYr9cXm8yhINIUsl+e
+ rzTIq7pkEP59/rPOHEweN+FL4dWrYmy/DLh1DDrml/+FTYKdPu
+ big6DPGYad0L6oar/966O15+dKRK5c1uL7iYdhSFPvjxYipwhr
+ PdA6piPSpeXc+HtRkflIbGmowNETqZvpohx+GaTstkWUCLSdlu
+ DWyZ/sr+znQ9fn6TM1Q0UjTcpXw6Bo27EWHv5dViMvYL4+lW/3
+ mndoSaf466D+kM4QVE9YZ/5E+3klSXMM62Bhsj0bLnoazbGqIJ
+ f3R6KITtBAvXlorD99Qc=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 21, 2014 at 05:32:55PM -0700, Davidlohr Bueso wrote:
-> On Mon, 2014-07-21 at 14:31 -0700, Andy Lutomirski wrote:
-> > On Mon, Jul 21, 2014 at 2:27 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> > > All this is predicated on the fact that syscalls are 'expensive'.
-> > > Weren't syscalls only 100s of cycles? All this bitmap mucking is far
-> > > more expensive due to cacheline misses, which due to the size of the
-> > > things is almost guaranteed.
-> > 
-> > 120 - 300 cycles for me, unless tracing happens, and I'm working on
-> > reducing the incidence of tracing.
+On Monday 21 July 2014 14:07:55 Brian Norris wrote:
+> I'm taking over the latest resubmission of this patch series.
+> There are a few moderate changes for v8 (noted below), but we
+> are waiting mostly for an Ack for the reboot driver.
 > 
-> fwiw here's what lmbench's lat_ctx says on my system . For 'accuracy', I
-> kept the runs short.
+> This patchset contains the board support package for the
+> Broadcom BCM7445 ARM-based SoC [1]. These changes contain a
+> minimal set of code needed for a BCM7445-based board to boot
+> the Linux kernel.
 > 
-> http://www.stgolabs.net/lat_ctx.png
+> These changes heavily leverage the OF/devicetree framework. The
+> machine is also built into the multi-platform ARMv7 image.
+> 
+> Changes are also available here:
+> 
+>   https://github.com/brcm/linux/tree/brcmstb-v8
+>   git://github.com/brcm/linux.git +brcmstb-v8
 
-Create a syscall without 'work body', so say something like the below.
-Context switches do quite a lot of work (unfortunately).
+Whole series
 
-diff --git a/arch/x86/syscalls/syscall_64.tbl b/arch/x86/syscalls/syscall_64.tbl
-index ec255a1646d2..daf27ec10e29 100644
---- a/arch/x86/syscalls/syscall_64.tbl
-+++ b/arch/x86/syscalls/syscall_64.tbl
-@@ -323,6 +323,7 @@
- 314	common	sched_setattr		sys_sched_setattr
- 315	common	sched_getattr		sys_sched_getattr
- 316	common	renameat2		sys_renameat2
-+317	common	nop			sys_nop
- 
- #
- # x32-specific system call numbers start at 512 to avoid cache impact
-diff --git a/kernel/sys.c b/kernel/sys.c
-index 66a751ebf9d9..1b86614bb551 100644
---- a/kernel/sys.c
-+++ b/kernel/sys.c
-@@ -2108,6 +2108,11 @@ SYSCALL_DEFINE1(sysinfo, struct sysinfo __user *, info)
- 	return 0;
- }
- 
-+SYSCALL_DEFINE0(nop)
-+{
-+	return 0;
-+}
-+
- #ifdef CONFIG_COMPAT
- struct compat_sysinfo {
- 	s32 uptime;
+Acked-by: Arnd Bergmann <arnd@arndb.de>
+
+I think we should try to get this merged into 3.17, it's already
+taken too long and the patches look good.
+
+Please add the core architecture patches for arch/arm into Russell's
+patch tracker http://www.arm.linux.org.uk/developer/patches/.
+
+For the platform changes in the first patch, I would prefer to have
+Matt pick up the first patch, but we can also apply it directly into
+arm-soc if he prefers that.
+
+The reset driver can ideally go through the drivers/power/ maintainers,
+but if they are not interested in merging it, we can also take that
+through arm-soc. See also my one comment on that driver.
+
+	Arnd
