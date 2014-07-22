@@ -1,37 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752412AbaGVClx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 22:41:53 -0400
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:63094 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752045AbaGVClw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 22:41:52 -0400
-Date: Mon, 21 Jul 2014 19:41:48 -0700
-From: Brian Norris <computersforpeace@gmail.com>
-To: Boris BREZILLON <boris.brezillon@free-electrons.com>
-Cc: David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
-        Lee Jones <lee.jones@linaro.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/2] mtd: nand: add basic SDR NAND timings infrastructure
-Message-ID: <20140722024148.GA7537@ld-irv-0074>
-References: <1405064982-11456-1-git-send-email-boris.brezillon@free-electrons.com>
+	id S1752063AbaGVCrq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 22:47:46 -0400
+Received: from smtp4-g21.free.fr ([212.27.42.4]:14834 "EHLO smtp4-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751139AbaGVCrp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jul 2014 22:47:45 -0400
+Date: Tue, 22 Jul 2014 04:47:40 +0200
+From: Guillaume Morin <guillaume@morinfr.org>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Guillaume Morin <guillaume@morinfr.org>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, oleg.drokin@intel.com,
+        jinshan.xiong@intel.com, lai.siyao@intel.com, joe@perches.com,
+        bergwolf@gmail.com, john.hammond@intel.com, sachin.kamat@linaro.org
+Subject: Re: [PATCH] staging: llite: rw.c: use gfp_t to store GFP flags
+Message-ID: <20140722024740.GA25961@bender.morinfr.org>
+Mail-Followup-To: Greg KH <gregkh@linuxfoundation.org>,
+	Guillaume Morin <guillaume@morinfr.org>, devel@driverdev.osuosl.org,
+	linux-kernel@vger.kernel.org, oleg.drokin@intel.com,
+	jinshan.xiong@intel.com, lai.siyao@intel.com, joe@perches.com,
+	bergwolf@gmail.com, john.hammond@intel.com, sachin.kamat@linaro.org
+References: <22be101821a4af2c92ca597832cbb720c655418e.1405990074.git.guillaume@morinfr.org>
+ <20140722020805.GA19215@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1405064982-11456-1-git-send-email-boris.brezillon@free-electrons.com>
+In-Reply-To: <20140722020805.GA19215@kroah.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 11, 2014 at 09:49:40AM +0200, Boris BREZILLON wrote:
-> These two patches add SDR NAND timings definition and ONFI timing mode to
-> NAND timings converter.
-> 
-> This infrastructure will be used by NAND controller drivers to configure
-> their signal timings according to NAND chip capabilities.
+On 21 Jul 19:08, Greg KH wrote:
+> Odd thing is, that function doesn't seem to even use that variable
+> anywhere...  Can you just remove it entirely?
 
-Pushed both to l2-mtd.git, with the modification I noted in patch 2.
-Thanks!
+Oh that's right.  Resubmitted.
 
-Brian
+Thanks
+
+Guillaume.
+
+-- 
+Guillaume Morin <guillaume@morinfr.org>
