@@ -1,194 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933797AbaGVW3J (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 18:29:09 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44988 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933720AbaGVW1x (ORCPT
+	id S933811AbaGVW3Z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 18:29:25 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:46191 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932893AbaGVW3W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 18:27:53 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Bart Van Assche <bvanassche@acm.org>,
-        Roland Dreier <roland@purestorage.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 063/116] IB/umad: Fix use-after-free on close
-Date: Tue, 22 Jul 2014 15:21:14 -0700
-Message-Id: <1406067727-19683-64-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1406067727-19683-1-git-send-email-kamal@canonical.com>
-References: <1406067727-19683-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.8
+	Tue, 22 Jul 2014 18:29:22 -0400
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, Rob Herring <robh@kernel.org>
+Subject: [PATCH] tty: serial: msm: Add DT based earlycon support
+Date: Tue, 22 Jul 2014 15:29:18 -0700
+Message-Id: <1406068158-16491-1-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 1.9.0.1.gd5ccf8c
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8.13.27 -stable review patch.  If anyone has any objections, please let me know.
+Add support for DT based early console on platforms with the msm
+serial hardware.
 
-------------------
-
-From: Bart Van Assche <bvanassche@acm.org>
-
-commit 60e1751cb52cc6d1ae04b6bd3c2b96e770b5823f upstream.
-
-Avoid that closing /dev/infiniband/umad<n> or /dev/infiniband/issm<n>
-triggers a use-after-free.  __fput() invokes f_op->release() before it
-invokes cdev_put().  Make sure that the ib_umad_device structure is
-freed by the cdev_put() call instead of f_op->release().  This avoids
-that changing the port mode from IB into Ethernet and back to IB
-followed by restarting opensmd triggers the following kernel oops:
-
-    general protection fault: 0000 [#1] PREEMPT SMP
-    RIP: 0010:[<ffffffff810cc65c>]  [<ffffffff810cc65c>] module_put+0x2c/0x170
-    Call Trace:
-     [<ffffffff81190f20>] cdev_put+0x20/0x30
-     [<ffffffff8118e2ce>] __fput+0x1ae/0x1f0
-     [<ffffffff8118e35e>] ____fput+0xe/0x10
-     [<ffffffff810723bc>] task_work_run+0xac/0xe0
-     [<ffffffff81002a9f>] do_notify_resume+0x9f/0xc0
-     [<ffffffff814b8398>] int_signal+0x12/0x17
-
-Reference: https://bugzilla.kernel.org/show_bug.cgi?id=75051
-Signed-off-by: Bart Van Assche <bvanassche@acm.org>
-Reviewed-by: Yann Droneaud <ydroneaud@opteya.com>
-Signed-off-by: Roland Dreier <roland@purestorage.com>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+Cc: Rob Herring <robh@kernel.org>
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 ---
- drivers/infiniband/core/user_mad.c | 30 +++++++++++++++++++-----------
- 1 file changed, 19 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/infiniband/core/user_mad.c b/drivers/infiniband/core/user_mad.c
-index 9bdf576..1acb991 100644
---- a/drivers/infiniband/core/user_mad.c
-+++ b/drivers/infiniband/core/user_mad.c
-@@ -98,7 +98,7 @@ struct ib_umad_port {
+I've tested this on top of Rob's arm-fixmap[1] branch and a cherry-pick
+of commit 68252424a7c7 (tty: serial: msm: Support big-endian CPUs, 2014-06-30)
+and the merge of commit 45e0f0f56843 (tty/serial: pl011: add DT based earlycon
+support, 2014-03-27)
+
+[1] git://git.kernel.org/pub/scm/linux/kernel/git/robh/linux.git arm-fixmap
+
+ drivers/tty/serial/Kconfig      |  1 +
+ drivers/tty/serial/msm_serial.c | 72 ++++++++++++++++++++++++++++++++++-------
+ 2 files changed, 61 insertions(+), 12 deletions(-)
+
+diff --git a/drivers/tty/serial/Kconfig b/drivers/tty/serial/Kconfig
+index 26cec64dadd7..903a3277fa60 100644
+--- a/drivers/tty/serial/Kconfig
++++ b/drivers/tty/serial/Kconfig
+@@ -1051,6 +1051,7 @@ config SERIAL_MSM_CONSOLE
+ 	bool "MSM serial console support"
+ 	depends on SERIAL_MSM=y
+ 	select SERIAL_CORE_CONSOLE
++	select SERIAL_EARLYCON
  
- struct ib_umad_device {
- 	int                  start_port, end_port;
--	struct kref          ref;
-+	struct kobject       kobj;
- 	struct ib_umad_port  port[0];
- };
- 
-@@ -134,14 +134,18 @@ static DECLARE_BITMAP(dev_map, IB_UMAD_MAX_PORTS);
- static void ib_umad_add_one(struct ib_device *device);
- static void ib_umad_remove_one(struct ib_device *device);
- 
--static void ib_umad_release_dev(struct kref *ref)
-+static void ib_umad_release_dev(struct kobject *kobj)
- {
- 	struct ib_umad_device *dev =
--		container_of(ref, struct ib_umad_device, ref);
-+		container_of(kobj, struct ib_umad_device, kobj);
- 
- 	kfree(dev);
+ config SERIAL_MSM_HS
+ 	tristate "MSM UART High Speed: Serial Driver"
+diff --git a/drivers/tty/serial/msm_serial.c b/drivers/tty/serial/msm_serial.c
+index c549110509bb..d68faa2e7a6c 100644
+--- a/drivers/tty/serial/msm_serial.c
++++ b/drivers/tty/serial/msm_serial.c
+@@ -856,22 +856,15 @@ static inline struct uart_port *get_port_from_line(unsigned int line)
  }
  
-+static struct kobj_type ib_umad_dev_ktype = {
-+	.release = ib_umad_release_dev,
-+};
+ #ifdef CONFIG_SERIAL_MSM_CONSOLE
+-static void msm_console_write(struct console *co, const char *s,
+-			      unsigned int count)
++static void __msm_console_write(struct uart_port *port, const char *s,
++				unsigned int count, bool is_uartdm)
+ {
+ 	int i;
+-	struct uart_port *port;
+-	struct msm_port *msm_port;
+ 	int num_newlines = 0;
+ 	bool replaced = false;
+ 	void __iomem *tf;
+ 
+-	BUG_ON(co->index < 0 || co->index >= UART_NR);
+-
+-	port = get_port_from_line(co->index);
+-	msm_port = UART_TO_MSM(port);
+-
+-	if (msm_port->is_uartdm)
++	if (is_uartdm)
+ 		tf = port->membase + UARTDM_TF;
+ 	else
+ 		tf = port->membase + UART_TF;
+@@ -883,7 +876,7 @@ static void msm_console_write(struct console *co, const char *s,
+ 	count += num_newlines;
+ 
+ 	spin_lock(&port->lock);
+-	if (msm_port->is_uartdm)
++	if (is_uartdm)
+ 		reset_dm_count(port, count);
+ 
+ 	i = 0;
+@@ -892,7 +885,7 @@ static void msm_console_write(struct console *co, const char *s,
+ 		unsigned int num_chars;
+ 		char buf[4] = { 0 };
+ 
+-		if (msm_port->is_uartdm)
++		if (is_uartdm)
+ 			num_chars = min(count - i, (unsigned int)sizeof(buf));
+ 		else
+ 			num_chars = 1;
+@@ -921,6 +914,20 @@ static void msm_console_write(struct console *co, const char *s,
+ 	spin_unlock(&port->lock);
+ }
+ 
++static void msm_console_write(struct console *co, const char *s,
++			      unsigned int count)
++{
++	struct uart_port *port;
++	struct msm_port *msm_port;
 +
- static int hdr_size(struct ib_umad_file *file)
++	BUG_ON(co->index < 0 || co->index >= UART_NR);
++
++	port = get_port_from_line(co->index);
++	msm_port = UART_TO_MSM(port);
++
++	__msm_console_write(port, s, count, msm_port->is_uartdm);
++}
++
+ static int __init msm_console_setup(struct console *co, char *options)
  {
- 	return file->use_pkey_index ? sizeof (struct ib_user_mad_hdr) :
-@@ -812,7 +816,7 @@ static int ib_umad_open(struct inode *inode, struct file *filp)
- 		goto out;
- 	}
- 
--	kref_get(&port->umad_dev->ref);
-+	kobject_get(&port->umad_dev->kobj);
- 
- out:
- 	mutex_unlock(&port->file_mutex);
-@@ -851,7 +855,7 @@ static int ib_umad_close(struct inode *inode, struct file *filp)
- 	mutex_unlock(&file->port->file_mutex);
- 
- 	kfree(file);
--	kref_put(&dev->ref, ib_umad_release_dev);
-+	kobject_put(&dev->kobj);
- 
- 	return 0;
- }
-@@ -902,7 +906,7 @@ static int ib_umad_sm_open(struct inode *inode, struct file *filp)
- 	if (ret)
- 		goto err_clr_sm_cap;
- 
--	kref_get(&port->umad_dev->ref);
-+	kobject_get(&port->umad_dev->kobj);
- 
- 	return 0;
- 
-@@ -932,7 +936,7 @@ static int ib_umad_sm_close(struct inode *inode, struct file *filp)
- 
- 	up(&port->sm_sem);
- 
--	kref_put(&port->umad_dev->ref, ib_umad_release_dev);
-+	kobject_put(&port->umad_dev->kobj);
- 
- 	return ret;
- }
-@@ -1000,6 +1004,7 @@ static int find_overflow_devnum(void)
+ 	struct uart_port *port;
+@@ -963,6 +970,47 @@ static int __init msm_console_setup(struct console *co, char *options)
+ 	return uart_set_options(port, co, baud, parity, bits, flow);
  }
  
- static int ib_umad_init_port(struct ib_device *device, int port_num,
-+			     struct ib_umad_device *umad_dev,
- 			     struct ib_umad_port *port)
- {
- 	int devnum;
-@@ -1032,6 +1037,7 @@ static int ib_umad_init_port(struct ib_device *device, int port_num,
++static void
++msm_serial_early_write(struct console *con, const char *s, unsigned n)
++{
++	struct earlycon_device *dev = con->data;
++
++	__msm_console_write(&dev->port, s, n, false);
++}
++
++static int __init
++msm_serial_early_console_setup(struct earlycon_device *device, const char *opt)
++{
++	if (!device->port.membase)
++		return -ENODEV;
++
++	device->con->write = msm_serial_early_write;
++	return 0;
++}
++OF_EARLYCON_DECLARE(msm_serial, "qcom,msm-uart",
++		    msm_serial_early_console_setup);
++
++static void
++msm_serial_early_write_dm(struct console *con, const char *s, unsigned n)
++{
++	struct earlycon_device *dev = con->data;
++
++	__msm_console_write(&dev->port, s, n, true);
++}
++
++static int __init
++msm_serial_early_console_setup_dm(struct earlycon_device *device,
++				  const char *opt)
++{
++	if (!device->port.membase)
++		return -ENODEV;
++
++	device->con->write = msm_serial_early_write_dm;
++	return 0;
++}
++OF_EARLYCON_DECLARE(msm_serial_dm, "qcom,msm-uartdm",
++		    msm_serial_early_console_setup_dm);
++
+ static struct uart_driver msm_uart_driver;
  
- 	cdev_init(&port->cdev, &umad_fops);
- 	port->cdev.owner = THIS_MODULE;
-+	port->cdev.kobj.parent = &umad_dev->kobj;
- 	kobject_set_name(&port->cdev.kobj, "umad%d", port->dev_num);
- 	if (cdev_add(&port->cdev, base, 1))
- 		goto err_cdev;
-@@ -1050,6 +1056,7 @@ static int ib_umad_init_port(struct ib_device *device, int port_num,
- 	base += IB_UMAD_MAX_PORTS;
- 	cdev_init(&port->sm_cdev, &umad_sm_fops);
- 	port->sm_cdev.owner = THIS_MODULE;
-+	port->sm_cdev.kobj.parent = &umad_dev->kobj;
- 	kobject_set_name(&port->sm_cdev.kobj, "issm%d", port->dev_num);
- 	if (cdev_add(&port->sm_cdev, base, 1))
- 		goto err_sm_cdev;
-@@ -1143,7 +1150,7 @@ static void ib_umad_add_one(struct ib_device *device)
- 	if (!umad_dev)
- 		return;
- 
--	kref_init(&umad_dev->ref);
-+	kobject_init(&umad_dev->kobj, &ib_umad_dev_ktype);
- 
- 	umad_dev->start_port = s;
- 	umad_dev->end_port   = e;
-@@ -1151,7 +1158,8 @@ static void ib_umad_add_one(struct ib_device *device)
- 	for (i = s; i <= e; ++i) {
- 		umad_dev->port[i - s].umad_dev = umad_dev;
- 
--		if (ib_umad_init_port(device, i, &umad_dev->port[i - s]))
-+		if (ib_umad_init_port(device, i, umad_dev,
-+				      &umad_dev->port[i - s]))
- 			goto err;
- 	}
- 
-@@ -1163,7 +1171,7 @@ err:
- 	while (--i >= s)
- 		ib_umad_kill_port(&umad_dev->port[i - s]);
- 
--	kref_put(&umad_dev->ref, ib_umad_release_dev);
-+	kobject_put(&umad_dev->kobj);
- }
- 
- static void ib_umad_remove_one(struct ib_device *device)
-@@ -1177,7 +1185,7 @@ static void ib_umad_remove_one(struct ib_device *device)
- 	for (i = 0; i <= umad_dev->end_port - umad_dev->start_port; ++i)
- 		ib_umad_kill_port(&umad_dev->port[i]);
- 
--	kref_put(&umad_dev->ref, ib_umad_release_dev);
-+	kobject_put(&umad_dev->kobj);
- }
- 
- static char *umad_devnode(struct device *dev, umode_t *mode)
+ static struct console msm_console = {
 -- 
-1.9.1
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
 
