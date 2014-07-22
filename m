@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753468AbaGVHle (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 03:41:34 -0400
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:15093 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753420AbaGVHlb (ORCPT
+	id S1753542AbaGVHmQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 03:42:16 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:50788 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753061AbaGVHl1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 03:41:31 -0400
-X-AuditID: cbfec7f4-b7fac6d000006cfe-fb-53ce15a785ec
+	Tue, 22 Jul 2014 03:41:27 -0400
+X-AuditID: cbfec7f4-b7fac6d000006cfe-f0-53ce15a55113
 From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 To: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
         David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org,
@@ -21,60 +21,56 @@ Cc: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
         Kyungmin Park <kyungmin.park@samsung.com>,
         Marek Szyprowski <m.szyprowski@samsung.com>,
         Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [RESEND PATCH v3 6/6] Documentation: charger: max14577: Document
- exported sysfs entry
-Date: Tue, 22 Jul 2014 09:41:06 +0200
-Message-id: <1406014866-17744-7-git-send-email-k.kozlowski@samsung.com>
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Anton Vorontsov <anton@enomsg.org>
+Subject: [RESEND PATCH v3 4/6] power: max17040: Add ID for MAX77836 Fuel Gauge
+ block
+Date: Tue, 22 Jul 2014 09:41:04 +0200
+Message-id: <1406014866-17744-5-git-send-email-k.kozlowski@samsung.com>
 X-Mailer: git-send-email 1.9.1
 In-reply-to: <1406014866-17744-1-git-send-email-k.kozlowski@samsung.com>
 References: <1406014866-17744-1-git-send-email-k.kozlowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrHLMWRmVeSWpSXmKPExsVy+t/xK7rLRc8FG/Q+lbDYOGM9q8XUh0/Y
-	LCY9ec9sMXHlZGaL/jcLWS3OvVrJaPH6haHF2aY37Bb3vx5ltPh2pYPJYvP3DjaLy7vmsFms
-	PXKX3WLp9YtMFhOmr2WxaN17hN3idDerg6DHmnlrGD0u9/UyeeycdZfdY+XyL2wem1doeWxa
-	1cnmcefaHjaPeScDPfq2rGL0+LxJLoArissmJTUnsyy1SN8ugStjzavvzAXbOCumbV7E1MD4
-	ib2LkZNDQsBE4u2Xk0wQtpjEhXvr2boYuTiEBJYySpz6fY0dwuljkjj/9jIrSBWbgLHE5uVL
-	wKpEBKYxSizeMJERxGEWmMYi8e9uB9gsYYEEiU13Z4F1sAioSpxd8JoFxOYVcJf4OHM6M8Q+
-	OYmTxyaD1XAKeEh0LmgA6uUAWucusWRp+ARG3gWMDKsYRVNLkwuKk9JzDfWKE3OLS/PS9ZLz
-	czcxQsL8yw7GxcesDjEKcDAq8fAyPDwVLMSaWFZcmXuIUYKDWUmEt33P2WAh3pTEyqrUovz4
-	otKc1OJDjEwcnFINjHM+ixfObON7sfayF9v3XUpNNj8z9efenTk7fNOP/VzX/Rk6p07vmHb3
-	m/XhF7YemXW9nMvOyIe1MSzhd5zQUHPS+gNPGP+X/K8TEprTK84tYf33Umf7smyTi/PSFnkd
-	c3jJKbIpVOZR/McXIoqzGSdf2vBXd9uxgwd9fgetPWHwagmjllr0Uz8lluKMREMt5qLiRACg
-	6wuNUQIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrOLMWRmVeSWpSXmKPExsVy+t/xK7pLRc8FG3xcLGxxcKumxcYZ61kt
+	pj58wmYx6cl7ZouJKyczW/S/Wchqce7VSkaL1y8MLc42vWG3uP/1KKPFtysdTBabv3ewWVze
+	NYfNYu2Ru+wWS69fZLKYMH0ti0Xr3iPsFqe7WR2EPNbMW8Pocbmvl8ljQv8nRo+ds+6ye6xc
+	/oXNY/MKLY9NqzrZPO5c28PmMe9koEffllWMHp83yQVwR3HZpKTmZJalFunbJXBlvDi3n71g
+	L3vF/NOv2BsYN7F1MXJySAiYSMzb+oMVwhaTuHBvPVCci0NIYCmjxIznHUwQTh+TxMbff8Gq
+	2ASMJTYvXwJWJSIwjVFi8YaJjCAOs8AeFonTm3+AzRUWCJNYPmU+E4jNIqAq8WfnTzCbV8Bd
+	4nbzL2aIfXISJ49NBpvKKeAh0bmgAaiGA2idu8SSpeETGHkXMDKsYhRNLU0uKE5KzzXUK07M
+	LS7NS9dLzs/dxAgJ/C87GBcfszrEKMDBqMTDy/DwVLAQa2JZcWXuIUYJDmYlEd72PWeDhXhT
+	EiurUovy44tKc1KLDzEycXBKNTButTph3XE1UkKU8e/bsxtmZf1R+iDi0tDM4vroudoJB9NI
+	Ne5ucZ+X+RFm814JMcjdFt25eWPzFcGnZ+Re2Gk5GxQwVvhIHvs+/UiPXj7j7bWvEr9qfH4k
+	GG+s+j+g3Z5nZ/VzC8aCuOlTFCT3ZOVfnHGrSapvsn3ZE0ux+VUJ38SiXuWHRiqxFGckGmox
+	FxUnAgBSnrlsWgIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Document the 'fast charge timer' setting exported by max14577 driver
-through sysfs entry.
+MAX77836 has the same Fuel Gauge as MAX17040/17048. The max17040 driver
+can be safely re-used. The patch adds MAX77836 ID to array of
+i2c_device_id.
 
 Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: Kyungmin Park <kyungmin.park@samsung.com>
+Cc: Anton Vorontsov <anton@enomsg.org>
+Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+Cc: David Woodhouse <dwmw2@infradead.org>
 ---
- Documentation/ABI/testing/sysfs-class-power | 14 ++++++++++++++
- 1 file changed, 14 insertions(+)
+ drivers/power/max17040_battery.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/Documentation/ABI/testing/sysfs-class-power b/Documentation/ABI/testing/sysfs-class-power
-index 78c7baca3587..83ee67ebf0e9 100644
---- a/Documentation/ABI/testing/sysfs-class-power
-+++ b/Documentation/ABI/testing/sysfs-class-power
-@@ -18,3 +18,17 @@ Description:
- 		This file is writeable and can be used to set the assumed
- 		battery 'full level'. As batteries age, this value has to be
- 		amended over time.
-+
-+What:		/sys/class/power_supply/max14577-charger/device/fast_charge_timer
-+Date:		July 2014
-+KernelVersion:	3.17.0
-+Contact:	Krzysztof Kozlowski <k.kozlowski@samsung.com>
-+Description:
-+		This entry shows and sets the maximum time the max14577
-+		charger operates in fast-charge mode. When the timer expires
-+		the device will terminate fast-charge mode (charging current
-+		will drop to 0 A) and will trigger interrupt.
-+
-+		Valid values:
-+		- 5, 6 or 7 (hours),
-+		- 0: disabled.
+diff --git a/drivers/power/max17040_battery.c b/drivers/power/max17040_battery.c
+index 0fbac861080d..165ffe381803 100644
+--- a/drivers/power/max17040_battery.c
++++ b/drivers/power/max17040_battery.c
+@@ -278,6 +278,7 @@ static SIMPLE_DEV_PM_OPS(max17040_pm_ops, max17040_suspend, max17040_resume);
+ 
+ static const struct i2c_device_id max17040_id[] = {
+ 	{ "max17040", 0 },
++	{ "max77836-battery", 0 },
+ 	{ }
+ };
+ MODULE_DEVICE_TABLE(i2c, max17040_id);
 -- 
 1.9.1
 
