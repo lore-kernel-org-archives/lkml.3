@@ -1,112 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757105AbaGVTvG (ORCPT <rfc822;w@1wt.eu>);
+	id S1757128AbaGVTvS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 15:51:18 -0400
+Received: from mail-qg0-f49.google.com ([209.85.192.49]:39370 "EHLO
+	mail-qg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757086AbaGVTvG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 22 Jul 2014 15:51:06 -0400
-Received: from mga02.intel.com ([134.134.136.20]:48828 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756874AbaGVTso (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 15:48:44 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,711,1400050800"; 
-   d="scan'208";a="547369368"
-From: Matthew Wilcox <matthew.r.wilcox@intel.com>
-To: linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Cc: Matthew Wilcox <matthew.r.wilcox@intel.com>, willy@linux.intel.com
-Subject: [PATCH v8 02/22] Allow page fault handlers to perform the COW
-Date: Tue, 22 Jul 2014 15:47:50 -0400
-Message-Id: <b765e16e66c9422c896294a11fe624ecb7e44384.1406058387.git.matthew.r.wilcox@intel.com>
-X-Mailer: git-send-email 2.0.0
-In-Reply-To: <cover.1406058387.git.matthew.r.wilcox@intel.com>
-References: <cover.1406058387.git.matthew.r.wilcox@intel.com>
-In-Reply-To: <cover.1406058387.git.matthew.r.wilcox@intel.com>
-References: <cover.1406058387.git.matthew.r.wilcox@intel.com>
+MIME-Version: 1.0
+In-Reply-To: <alpine.DEB.2.01.1407222145360.27558@pmeerw.net>
+References: <1406057420-22269-1-git-send-email-marek@goldelico.com>
+	<1406057420-22269-3-git-send-email-marek@goldelico.com>
+	<alpine.DEB.2.01.1407222145360.27558@pmeerw.net>
+Date: Tue, 22 Jul 2014 21:51:04 +0200
+Message-ID: <CAAfyv35OU5S9KKmOug99ByxghSa==emVzM85e33y84QvaRgBDw@mail.gmail.com>
+Subject: Re: [PATCH v2 2/7] arm: dts: omap3-gta04: Fix magnetometer model
+From: Belisko Marek <marek.belisko@gmail.com>
+To: Peter Meerwald <pmeerw@pmeerw.net>
+Cc: Benoit Cousson <bcousson@baylibre.com>, Tony Lindgren <tony@atomide.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Pawel Moll <pawel.moll@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        "Dr. H. Nikolaus Schaller" <hns@goldelico.com>,
+        LKML <linux-kernel@vger.kernel.org>, Rob Herring <robh+dt@kernel.org>,
+        Kumar Gala <galak@codeaurora.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently COW of an XIP file is done by first bringing in a read-only
-mapping, then retrying the fault and copying the page.  It is much more
-efficient to tell the fault handler that a COW is being attempted (by
-passing in the pre-allocated page in the vm_fault structure), and allow
-the handler to perform the COW operation itself.
+On Tue, Jul 22, 2014 at 9:46 PM, Peter Meerwald <pmeerw@pmeerw.net> wrote:
+>
+>> gta04 is using hmc5843l not hmc5843 so fix wrong compatible
+>> entry.
+>
+> I guess you mean hmc5883l
+Ah right. Thanks. I'll post update version.
+>
+>> Signed-off-by: Marek Belisko <marek@goldelico.com>
+>> ---
+>>  arch/arm/boot/dts/omap3-gta04.dts | 2 +-
+>>  1 file changed, 1 insertion(+), 1 deletion(-)
+>>
+>> diff --git a/arch/arm/boot/dts/omap3-gta04.dts b/arch/arm/boot/dts/omap3-gta04.dts
+>> index 7d7ddd7..6d1a8d8 100644
+>> --- a/arch/arm/boot/dts/omap3-gta04.dts
+>> +++ b/arch/arm/boot/dts/omap3-gta04.dts
+>> @@ -220,7 +220,7 @@
+>>
+>>       /* compass aka magnetometer */
+>>       hmc5843@1e {
+>> -             compatible = "honeywell,hmc5843";
+>> +             compatible = "honeywell,hmc5843l";
+>>               reg = <0x1e>;
+>>       };
+>>
+>>
+>
+> --
+>
+> Peter Meerwald
+> +43-664-2444418 (mobile)
 
-Signed-off-by: Matthew Wilcox <matthew.r.wilcox@intel.com>
-Reviewed-by: Jan Kara <jack@suse.cz>
----
- include/linux/mm.h |  1 +
- mm/memory.c        | 11 +++++++----
- 2 files changed, 8 insertions(+), 4 deletions(-)
+BR,
 
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index e03dd29..e04f531 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -208,6 +208,7 @@ struct vm_fault {
- 	pgoff_t pgoff;			/* Logical page offset based on vma */
- 	void __user *virtual_address;	/* Faulting virtual address */
- 
-+	struct page *cow_page;		/* Handler may choose to COW */
- 	struct page *page;		/* ->fault handlers should return a
- 					 * page here, unless VM_FAULT_NOPAGE
- 					 * is set (which is also implied by
-diff --git a/mm/memory.c b/mm/memory.c
-index d67fd9f..42bf429 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -2003,6 +2003,7 @@ static int do_page_mkwrite(struct vm_area_struct *vma, struct page *page,
- 	vmf.pgoff = page->index;
- 	vmf.flags = FAULT_FLAG_WRITE|FAULT_FLAG_MKWRITE;
- 	vmf.page = page;
-+	vmf.cow_page = NULL;
- 
- 	ret = vma->vm_ops->page_mkwrite(vma, &vmf);
- 	if (unlikely(ret & (VM_FAULT_ERROR | VM_FAULT_NOPAGE)))
-@@ -2689,7 +2690,8 @@ oom:
- }
- 
- static int __do_fault(struct vm_area_struct *vma, unsigned long address,
--		pgoff_t pgoff, unsigned int flags, struct page **page)
-+			pgoff_t pgoff, unsigned int flags,
-+			struct page *cow_page, struct page **page)
- {
- 	struct vm_fault vmf;
- 	int ret;
-@@ -2698,6 +2700,7 @@ static int __do_fault(struct vm_area_struct *vma, unsigned long address,
- 	vmf.pgoff = pgoff;
- 	vmf.flags = flags;
- 	vmf.page = NULL;
-+	vmf.cow_page = cow_page;
- 
- 	ret = vma->vm_ops->fault(vma, &vmf);
- 	if (unlikely(ret & (VM_FAULT_ERROR | VM_FAULT_NOPAGE | VM_FAULT_RETRY)))
-@@ -2890,7 +2893,7 @@ static int do_read_fault(struct mm_struct *mm, struct vm_area_struct *vma,
- 		pte_unmap_unlock(pte, ptl);
- 	}
- 
--	ret = __do_fault(vma, address, pgoff, flags, &fault_page);
-+	ret = __do_fault(vma, address, pgoff, flags, NULL, &fault_page);
- 	if (unlikely(ret & (VM_FAULT_ERROR | VM_FAULT_NOPAGE | VM_FAULT_RETRY)))
- 		return ret;
- 
-@@ -2929,7 +2932,7 @@ static int do_cow_fault(struct mm_struct *mm, struct vm_area_struct *vma,
- 		return VM_FAULT_OOM;
- 	}
- 
--	ret = __do_fault(vma, address, pgoff, flags, &fault_page);
-+	ret = __do_fault(vma, address, pgoff, flags, new_page, &fault_page);
- 	if (unlikely(ret & (VM_FAULT_ERROR | VM_FAULT_NOPAGE | VM_FAULT_RETRY)))
- 		goto uncharge_out;
- 
-@@ -2965,7 +2968,7 @@ static int do_shared_fault(struct mm_struct *mm, struct vm_area_struct *vma,
- 	int dirtied = 0;
- 	int ret, tmp;
- 
--	ret = __do_fault(vma, address, pgoff, flags, &fault_page);
-+	ret = __do_fault(vma, address, pgoff, flags, NULL, &fault_page);
- 	if (unlikely(ret & (VM_FAULT_ERROR | VM_FAULT_NOPAGE | VM_FAULT_RETRY)))
- 		return ret;
- 
+marek
+
 -- 
-2.0.0
+as simple and primitive as possible
+-------------------------------------------------
+Marek Belisko - OPEN-NANDRA
+Freelance Developer
 
+Ruska Nova Ves 219 | Presov, 08005 Slovak Republic
+Tel: +421 915 052 184
+skype: marekwhite
+twitter: #opennandra
+web: http://open-nandra.com
