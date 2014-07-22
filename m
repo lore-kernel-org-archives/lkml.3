@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933563AbaGVWcs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 18:32:48 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44865 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932194AbaGVW0q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S933527AbaGVW0q (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 22 Jul 2014 18:26:46 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:44860 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932194AbaGVW0n (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 18:26:43 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Gabor Juhos <juhosg@openwrt.org>, Wim Van Sebroeck <wim@iguana.be>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 074/116] watchdog: ath79_wdt: avoid spurious restarts on AR934x
-Date: Tue, 22 Jul 2014 15:21:25 -0700
-Message-Id: <1406067727-19683-75-git-send-email-kamal@canonical.com>
+Cc: Chris Mason <clm@fb.com>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 071/116] Btrfs: fix double free in find_lock_delalloc_range
+Date: Tue, 22 Jul 2014 15:21:22 -0700
+Message-Id: <1406067727-19683-72-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1406067727-19683-1-git-send-email-kamal@canonical.com>
 References: <1406067727-19683-1-git-send-email-kamal@canonical.com>
@@ -27,57 +26,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Gabor Juhos <juhosg@openwrt.org>
+From: Chris Mason <clm@fb.com>
 
-commit 23afeb613ec0e10aecfae7838a14d485db62ac52 upstream.
+commit 7d78874273463a784759916fc3e0b4e2eb141c70 upstream.
 
-On some AR934x based systems, where the frequency of
-the AHB bus is relatively high, the built-in watchdog
-causes a spurious restart when it gets enabled.
+We need to NULL the cached_state after freeing it, otherwise
+we might free it again if find_delalloc_range doesn't find anything.
 
-The possible cause of these restarts is that the timeout
-value written into the TIMER register does not reaches
-the hardware in time.
-
-Add an explicit delay into the ath79_wdt_enable function
-to avoid the spurious restarts.
-
-Signed-off-by: Gabor Juhos <juhosg@openwrt.org>
-Reviewed-by: Guenter Roeck <linux@roeck-us.net>
-Signed-off-by: Wim Van Sebroeck <wim@iguana.be>
+Signed-off-by: Chris Mason <clm@fb.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/watchdog/ath79_wdt.c | 10 ++++++++++
- 1 file changed, 10 insertions(+)
+ fs/btrfs/extent_io.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/watchdog/ath79_wdt.c b/drivers/watchdog/ath79_wdt.c
-index 38a999e..bb242bd 100644
---- a/drivers/watchdog/ath79_wdt.c
-+++ b/drivers/watchdog/ath79_wdt.c
-@@ -20,6 +20,7 @@
- #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
- 
- #include <linux/bitops.h>
-+#include <linux/delay.h>
- #include <linux/errno.h>
- #include <linux/fs.h>
- #include <linux/init.h>
-@@ -77,6 +78,15 @@ static inline void ath79_wdt_keepalive(void)
- static inline void ath79_wdt_enable(void)
- {
- 	ath79_wdt_keepalive();
-+
-+	/*
-+	 * Updating the TIMER register requires a few microseconds
-+	 * on the AR934x SoCs at least. Use a small delay to ensure
-+	 * that the TIMER register is updated within the hardware
-+	 * before enabling the watchdog.
-+	 */
-+	udelay(2);
-+
- 	ath79_reset_wr(AR71XX_RESET_REG_WDOG_CTRL, WDOG_CTRL_ACTION_FCR);
- 	/* flush write */
- 	ath79_reset_rr(AR71XX_RESET_REG_WDOG_CTRL);
+diff --git a/fs/btrfs/extent_io.c b/fs/btrfs/extent_io.c
+index 125397e..0a800dc 100644
+--- a/fs/btrfs/extent_io.c
++++ b/fs/btrfs/extent_io.c
+@@ -1595,6 +1595,7 @@ again:
+ 		 * shortening the size of the delalloc range we're searching
+ 		 */
+ 		free_extent_state(cached_state);
++		cached_state = NULL;
+ 		if (!loops) {
+ 			unsigned long offset = (*start) & (PAGE_CACHE_SIZE - 1);
+ 			max_bytes = PAGE_CACHE_SIZE - offset;
 -- 
 1.9.1
 
