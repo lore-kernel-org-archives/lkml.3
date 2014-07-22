@@ -1,62 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755962AbaGVSeJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 14:34:09 -0400
-Received: from mout.kundenserver.de ([212.227.17.10]:52513 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751047AbaGVSeG (ORCPT
+	id S1756414AbaGVSfN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 14:35:13 -0400
+Received: from g4t3427.houston.hp.com ([15.201.208.55]:44636 "EHLO
+	g4t3427.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752213AbaGVSfL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 14:34:06 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-iio@vger.kernel.org,
-        kgene.kim@samsung.com, pawel.moll@arm.com, t.figa@samsung.com,
-        linux-kernel@vger.kernel.org, Chanwoo Choi <cw00.choi@samsung.com>,
-        kyungmin.park@samsung.com, linux-samsung-soc@vger.kernel.org,
-        Jonathan Cameron <jic23@kernel.org>, Ben Dooks <ben-linux@fluff.org>,
-        galak@codeaurora.org, ch.naveen@samsung.com,
-        linux-input <linux-input@vger.kernel.org>, heiko.stuebner@bq.com
-Subject: Re: [PATCH v2] iio: exynos-adc: add experimental touchscreen support
-Date: Tue, 22 Jul 2014 20:33:44 +0200
-Message-ID: <5072247.HRN2kuegE2@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20140722180904.GB5489@core.coreip.homeip.net>
-References: <5068889.1KfVx3ksNo@wuerfel> <20140722180904.GB5489@core.coreip.homeip.net>
+	Tue, 22 Jul 2014 14:35:11 -0400
+Message-ID: <53CEAEDA.9000704@hp.com>
+Date: Tue, 22 Jul 2014 14:35:06 -0400
+From: Waiman Long <waiman.long@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:/OsgU7h6uq7vh8Jbx3F6p6WHRn0heHPJMLvoWUVYsy7
- 7eNHtyDa/kVeBj6SPxDclTr3fK07IBXvve6sUdrMG7ZVctsOB3
- m1lrL9xwV9Qwq1lVc9TfrA7n+kd6Ggt7kALrxe39h6BMklBpJU
- 9cxjdxyQt//tV11Q7/+TCwp3z278n17bryK8P+KNu//sOQeCjJ
- E49qtuuKvbO6LB6CSWTbhDrG8djTxR+0SWIj6ibOkaAdnpQqh6
- NAao9l/MFtkHFmJb71FM8ps6QqSn/064Dj0q2d0AUSh/ZphWxi
- +4cuB+nHssiD2j9+RZKaoRDk8gpa23mNM1dUxkdaJ1Uk3ar+6e
- 6vqsmlCWfTHKwMawQEaA=
+To: Andi Kleen <andi@firstfloor.org>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Darren Hart <dvhart@linux.intel.com>,
+        Davidlohr Bueso <davidlohr@hp.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
+        linux-doc@vger.kernel.org, Jason Low <jason.low2@hp.com>,
+        Scott J Norton <scott.norton@hp.com>
+Subject: Re: [RFC PATCH 0/5] futex: introduce an optimistic spinning futex
+References: <1405956271-34339-1-git-send-email-Waiman.Long@hp.com> <8761iq3bp3.fsf@tassilo.jf.intel.com> <871tte3bjw.fsf@tassilo.jf.intel.com>
+In-Reply-To: <871tte3bjw.fsf@tassilo.jf.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 22 July 2014 11:09:04 Dmitry Torokhov wrote:
-> > @@ -565,6 +722,15 @@ static int exynos_adc_probe(struct platform_device *pdev)
-> >       if (info->data->init_hw)
-> >               info->data->init_hw(info);
-> >  
-> > +     /* leave out any TS related code if unreachable */
-> > +     if (IS_BUILTIN(CONFIG_INPUT) ||
-> > +         (IS_MODULE(CONFIG_INPUT) && config_enabled(MODULE)))
-> 
-> This is ugly... We need IS_SUBSYSTEM_AVAILABLE() wrapper for this...
-> 
-> Anyway,
-> 
-> Acked-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-> 
-> 
+On 07/21/2014 12:45 PM, Andi Kleen wrote:
+> Andi Kleen<andi@firstfloor.org>  writes:
+>
+>> Waiman Long<Waiman.Long@hp.com>  writes:
+>>
+>>> This patch series introduces two new futex command codes to support
+>>> a new optimistic spinning futex for implementing an exclusive lock
+>>> primitive that should perform better than the same primitive using
+>>> the wait-wake futex in cases where the lock owner is actively working
+>>> instead of waiting for I/O completion.
+>> How would you distinguish those two cases automatically?
+> Also BTW traditionally the spinning was just done in user space.
+>
+> This would be always even more efficient, because it would
+> even avoid the syscall entry path.
 
-I actually have a patch to introduce IS_REACHABLE() for this purpose,
-but I haven't sent it out for review yet. The main user of this would
-be drivers/media, which had the correct logic earlier until someone
-tried to "simplify" it by replacing it all with IS_ENABLED()...
+Spinning directly in userspace is useful if the critical section is 
+really short and the chance of heavy contention is small. However, if 
+the lock can be heavily contended and the critical section is not short, 
+these are the conditions where a spinning futex proposed by this patch 
+series can help.
 
-	Arnd
+-Longman
