@@ -1,103 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755891AbaGVPVC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 11:21:02 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49411 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752846AbaGVPVA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 11:21:00 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Gu Zheng <guz.fnst@cn.fujitsu.com>
-Cc: bcrl@kvack.org, axboe@kernel.dk, akpm@linux-foundation.org,
-        linux-aio@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/4] aio: use iovec array rather than the single one
-References: <1405996804-8262-1-git-send-email-guz.fnst@cn.fujitsu.com>
-	<1405996804-8262-4-git-send-email-guz.fnst@cn.fujitsu.com>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Tue, 22 Jul 2014 11:20:52 -0400
-In-Reply-To: <1405996804-8262-4-git-send-email-guz.fnst@cn.fujitsu.com> (Gu
-	Zheng's message of "Tue, 22 Jul 2014 10:40:04 +0800")
-Message-ID: <x494my94dyj.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1755894AbaGVPWR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 11:22:17 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:48273 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751823AbaGVPWQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 11:22:16 -0400
+From: Seunghun Lee <waydi1@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: driverdev-devel@linuxdriverproject.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, Seunghun Lee <waydi1@gmail.com>,
+        Lidza Louina <lidza.louina@gmail.com>
+Subject: [PATCH] staging: dgnc: Remove all C99 comments
+Date: Wed, 23 Jul 2014 00:21:57 +0900
+Message-Id: <1406042517-13198-1-git-send-email-waydi1@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Gu Zheng <guz.fnst@cn.fujitsu.com> writes:
+This patch fixes the following checkpatch error:
 
-> use an iovec array rather than the single one, so that we can avoid
-> to alloc more iovecs buffer in small(< 8) PREADV/PWRITEV cases.
+ERROR: do not use C99 // comments
 
-I did some basic functional testing of this change and the change in
-patch 1/4.  That testing included using aio-stress to drive queue depths
-of 7, 8 and 9, and verify that it didn't fall over.  I also ran xfstests
-'./check -g aio', and libaio's 'make partcheck'.
+CC: Lidza Louina <lidza.louina@gmail.com>
+Signed-off-by: Seunghun Lee <waydi1@gmail.com>
+---
+ drivers/staging/dgnc/dgnc_driver.h |   10 +++++-----
+ drivers/staging/dgnc/digi.h        |   36 ++++++++++++++++++------------------
+ 2 files changed, 23 insertions(+), 23 deletions(-)
 
-The change looks good to me, and passed testing, so:
+diff --git a/drivers/staging/dgnc/dgnc_driver.h b/drivers/staging/dgnc/dgnc_driver.h
+index 3519b80..fe5ea90 100644
+--- a/drivers/staging/dgnc/dgnc_driver.h
++++ b/drivers/staging/dgnc/dgnc_driver.h
+@@ -98,7 +98,7 @@
+ /* Choose one: */
+ #  define TRC_ON_OVERFLOW_WRAP_AROUND
+ #  undef  TRC_ON_OVERFLOW_SHIFT_BUFFER
+-# endif //TRC_TO_KMEM
++# endif /* TRC_TO_KMEM */
+ 
+ # define TRC_MAXMSG		1024
+ # define TRC_OVERFLOW		"(OVERFLOW)"
+@@ -106,13 +106,13 @@
+ 
+ #if defined TRC_TO_CONSOLE
+ #define PRINTF_TO_CONSOLE(args) { printk(DRVSTR": "); printk args; }
+-#else //!defined TRACE_TO_CONSOLE
++#else /* !defined TRACE_TO_CONSOLE */
+ #define PRINTF_TO_CONSOLE(args)
+ #endif
+ 
+ #if defined TRC_TO_KMEM
+ #define PRINTF_TO_KMEM(args) dgnc_tracef args
+-#else //!defined TRC_TO_KMEM
++#else /* !defined TRC_TO_KMEM */
+ #define PRINTF_TO_KMEM(args)
+ #endif
+ 
+@@ -140,7 +140,7 @@
+ # define P(X)			dgnc_tracef(#X "=%p\n", X)
+ # define X(X)			dgnc_tracef(#X "=%x\n", X)
+ 
+-#else//!defined DGNC_TRACER
++#else/* !defined DGNC_TRACER */
+ 
+ #define PRINTF_TO_KMEM(args)
+ # define TRC(ARGS)
+@@ -164,7 +164,7 @@
+ 
+ # define DPR(args)
+ 
+-#endif//DGNC_TRACER
++#endif/* DGNC_TRACER */
+ 
+ /* Number of boards we support at once. */
+ #define	MAXBOARDS	20
+diff --git a/drivers/staging/dgnc/digi.h b/drivers/staging/dgnc/digi.h
+index 6a9adf6..282908f 100644
+--- a/drivers/staging/dgnc/digi.h
++++ b/drivers/staging/dgnc/digi.h
+@@ -394,23 +394,23 @@ struct digi_getcounter {
+ #define DIGI_REALPORT_GETCOUNTERS ('e'<<8 ) | 110
+ #define DIGI_REALPORT_GETEVENTS ('e'<<8 ) | 111
+ 
+-#define EV_OPU		0x0001		//!<Output paused by client
+-#define EV_OPS		0x0002		//!<Output paused by reqular sw flowctrl
+-#define EV_OPX		0x0004		//!<Output paused by extra sw flowctrl
+-#define EV_OPH		0x0008		//!<Output paused by hw flowctrl
+-#define EV_OPT		0x0800		//!<Output paused for RTS Toggle predelay
+-
+-#define EV_IPU		0x0010		//!<Input paused unconditionally by user
+-#define EV_IPS		0x0020		//!<Input paused by high/low water marks
+-//#define EV_IPH	0x0040		//!<Input paused w/ hardware
+-#define EV_IPA		0x0400		//!<Input paused by pattern alarm module
+-
+-#define EV_TXB		0x0040		//!<Transmit break pending
+-#define EV_TXI		0x0080		//!<Transmit immediate pending
+-#define EV_TXF		0x0100		//!<Transmit flowctrl char pending
+-#define EV_RXB		0x0200		//!<Break received
+-
+-#define EV_OPALL	0x080f		//!<Output pause flags
+-#define EV_IPALL	0x0430		//!<Input pause flags
++#define EV_OPU		0x0001		/* !<Output paused by client */
++#define EV_OPS		0x0002		/* !<Output paused by reqular sw flowctrl */
++#define EV_OPX		0x0004		/* !<Output paused by extra sw flowctrl */
++#define EV_OPH		0x0008		/* !<Output paused by hw flowctrl */
++#define EV_OPT		0x0800		/* !<Output paused for RTS Toggle predelay */
++
++#define EV_IPU		0x0010		/* !<Input paused unconditionally by user */
++#define EV_IPS		0x0020		/* !<Input paused by high/low water marks */
++/* #define EV_IPH	0x0040		//!<Input paused w/ hardware */
++#define EV_IPA		0x0400		/* !<Input paused by pattern alarm module */
++
++#define EV_TXB		0x0040		/* !<Transmit break pending */
++#define EV_TXI		0x0080		/* !<Transmit immediate pending */
++#define EV_TXF		0x0100		/* !<Transmit flowctrl char pending */
++#define EV_RXB		0x0200		/* !<Break received */
++
++#define EV_OPALL	0x080f		/* !<Output pause flags */
++#define EV_IPALL	0x0430		/* !<Input pause flags */
+ 
+ #endif /* DIGI_H */
+-- 
+1.7.9.5
 
-Reviewed-by: Jeff Moyer <jmoyer@redhat.com>
-
-However, I still would like some comment on the reasoning behind it, and
-whether there is some measurable performance advantage for some
-workload.  Additionally, it would be nice if that comment made its way
-into the commit message.
-
-Cheers,
-Jeff
-
->
-> Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
-> ---
->  fs/aio.c |   10 +++++-----
->  1 files changed, 5 insertions(+), 5 deletions(-)
->
-> diff --git a/fs/aio.c b/fs/aio.c
-> index 0cd0479..ef21efe 100644
-> --- a/fs/aio.c
-> +++ b/fs/aio.c
-> @@ -1260,12 +1260,12 @@ static ssize_t aio_setup_vectored_rw(struct kiocb *kiocb,
->  	if (compat)
->  		ret = compat_rw_copy_check_uvector(rw,
->  				(struct compat_iovec __user *)buf,
-> -				*nr_segs, 1, *iovec, iovec);
-> +				*nr_segs, UIO_FASTIOV, *iovec, iovec);
->  	else
->  #endif
->  		ret = rw_copy_check_uvector(rw,
->  				(struct iovec __user *)buf,
-> -				*nr_segs, 1, *iovec, iovec);
-> +				*nr_segs, UIO_FASTIOV, *iovec, iovec);
->  	if (ret < 0)
->  		return ret;
->  
-> @@ -1302,7 +1302,7 @@ static ssize_t aio_run_iocb(struct kiocb *req, unsigned opcode,
->  	fmode_t mode;
->  	aio_rw_op *rw_op;
->  	rw_iter_op *iter_op;
-> -	struct iovec inline_vec, *iovec = &inline_vec;
-> +	struct iovec inline_vecs[UIO_FASTIOV], *iovec = inline_vecs;
->  	struct iov_iter iter;
->  
->  	switch (opcode) {
-> @@ -1337,7 +1337,7 @@ rw_common:
->  		if (!ret)
->  			ret = rw_verify_area(rw, file, &req->ki_pos, req->ki_nbytes);
->  		if (ret < 0) {
-> -			if (iovec != &inline_vec)
-> +			if (iovec != inline_vecs)
->  				kfree(iovec);
->  			return ret;
->  		}
-> @@ -1384,7 +1384,7 @@ rw_common:
->  		return -EINVAL;
->  	}
->  
-> -	if (iovec != &inline_vec)
-> +	if (iovec != inline_vecs)
->  		kfree(iovec);
->  
->  	if (ret != -EIOCBQUEUED) {
