@@ -1,48 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753908AbaGVJCH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 05:02:07 -0400
-Received: from mail-oa0-f42.google.com ([209.85.219.42]:53932 "EHLO
-	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752016AbaGVJCD (ORCPT
+	id S1753961AbaGVJC0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 05:02:26 -0400
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:47621 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753923AbaGVJCX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 05:02:03 -0400
+	Tue, 22 Jul 2014 05:02:23 -0400
+Message-ID: <53CE289B.5000908@suse.cz>
+Date: Tue, 22 Jul 2014 11:02:19 +0200
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-In-Reply-To: <CA+32F8rquwkOgLrTwiMKF1-jxZcgRd_qojdzwm=i8UzFPH6myA@mail.gmail.com>
-References: <CA+32F8pBBynVXTtwp28U0WDCEm9MN9aYywX8GLQJ7sr3hGM6GQ@mail.gmail.com>
-	<CA+32F8rquwkOgLrTwiMKF1-jxZcgRd_qojdzwm=i8UzFPH6myA@mail.gmail.com>
-Date: Tue, 22 Jul 2014 11:02:03 +0200
-Message-ID: <CA+32F8qDvy+vCNtc+Yd0TYWraCUXWRYbRj6PPsdYQnyT9X3CRA@mail.gmail.com>
-Subject: Re: Performance Impact of skb_segment Security Fix
-From: Azqa Nadeem <11bscsanadeem@seecs.edu.pk>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Satoru Takeuchi <satoru.takeuchi@gmail.com>,
+        Guenter Roeck <linux@roeck-us.net>
+CC: stable@vger.kernel.org, shuah.kh@samsung.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3.12 000/170] 3.12.25-stable review
+References: <cover.1405685481.git.jslaby@suse.cz>	<53C9101B.6020006@suse.cz>	<53C92574.3020101@roeck-us.net> <87k37aqdi0.wl%satoru.takeuchi@gmail.com>
+In-Reply-To: <87k37aqdi0.wl%satoru.takeuchi@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- Hi,
+On 07/19/2014 04:38 AM, Satoru Takeuchi wrote:
+> At Fri, 18 Jul 2014 06:47:32 -0700,
+> Guenter Roeck wrote:
+>>
+>> On 07/18/2014 05:16 AM, Jiri Slaby wrote:
+>>> On 07/18/2014 02:12 PM, Jiri Slaby wrote:
+>>>> This is the start of the stable review cycle for the 3.12.25 release.
+>>>> There are 170 patches in this series, all will be posted as a response
+>>>> to this one.  If anyone has any issues with these being applied, please
+>>>> let me know.
+>>>>
+>>>> Responses should be made by Sun Jul 20 12:11:21 2014
+>>>
+>>> Oh, this should have been two *workdays*, i.e. the deadline is Jul 22.
+>>>
+>>
+>> Build results:
+>> 	total: 137 pass: 137 fail: 0
+>>
+>> Qemu tests all passed.
+>>
+>> Details are available at http://server.roeck-us.net:8010/builders.
+>>
+>> Guenter
+>>
+> 
+> Plus, it passed my test too.
 
- I am a researcher at EPFL, Switzerland. I study software vulnerabilities
- with the aim of building better tools to protect developers against security
- bugs. Recently the skb_sgement() was patched
- (http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=1fd819ecb90cc9b822cd84d3056ddba315d3340f)
- fixing the CVE-2014-0131 vulnerability
- (http://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2014-0131) in the Linux
- Kernel. I am interested in the performance implications of this patch; could
- you help me answering the following questions:
+On 07/21/2014 05:31 PM, Shuah Khan wrote:
+> Compiled and booted on my test system. No dmesg regressions.
 
-Do you think the bug fix for skb_segment() function can have any performance
- implications?  If so, how much will the added checks add to the run time of
- the function?
- Is skb_segment() function part of the core functionality of the software?
- What fraction of time is expected to be spent in this function?
+Thank you all!
 
- Your answers will help us to better characterize the trade offs between
- performance and security in popular software.
-
- --
- Regards,
- Azqa Nadeem
- Internee - Dependable Systems Lab
- EPFL, Switzerland
+-- 
+js
+suse labs
