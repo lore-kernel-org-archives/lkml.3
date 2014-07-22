@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755320AbaGVLAx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 07:00:53 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:34885 "EHLO comal.ext.ti.com"
+	id S1755334AbaGVLB0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 07:01:26 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:56781 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754789AbaGVK5i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 06:57:38 -0400
+	id S1753037AbaGVK5d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 06:57:33 -0400
 From: Kishon Vijay Abraham I <kishon@ti.com>
 To: <gregkh@linuxfoundation.org>
 CC: <kishon@ti.com>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH 18/28] phy: Remove ARCH_KIRKWOOD dependency
-Date: Tue, 22 Jul 2014 16:26:41 +0530
-Message-ID: <1406026611-30493-19-git-send-email-kishon@ti.com>
+Subject: [PATCH 15/28] phy: Kconfig: Update config for Exynos USB DRD
+Date: Tue, 22 Jul 2014 16:26:38 +0530
+Message-ID: <1406026611-30493-16-git-send-email-kishon@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1406026611-30493-1-git-send-email-kishon@ti.com>
 References: <1406026611-30493-1-git-send-email-kishon@ti.com>
@@ -21,32 +21,36 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andrew Lunn <andrew@lunn.ch>
+From: Sachin Kamat <sachin.kamat@samsung.com>
 
-mach-kirkwood has been removed, now that kirkwood lives in mach-mvebu.
-Depend on MACH_KIRKWOOD, which will be set when these SoCs are built
-as part of mach-mvebv.
+USB DWC3 driver on Exynos platform does not work without its
+corresponding phy driver. Hence make the PHY driver depend on
+Exynos DWC3 driver and default it to yes to make things easier
+for the end user.
 
-Signed-off-by: Andrew Lunn <andrew@lunn.ch>
-Cc: Kishon Vijay Abraham I <kishon@ti.com>
+Signed-off-by: Sachin Kamat <sachin.kamat@samsung.com>
+Reviewed-by: Jingoo Han <jg1.han@samsung.com>
+Tested-by: Vivek Gautam <gautam.vivek@samsung.com>
 Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
 ---
- drivers/phy/Kconfig |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/phy/Kconfig |    2 ++
+ 1 file changed, 2 insertions(+)
 
 diff --git a/drivers/phy/Kconfig b/drivers/phy/Kconfig
-index 6911152..261ad18 100644
+index f28b87f..778e126 100644
 --- a/drivers/phy/Kconfig
 +++ b/drivers/phy/Kconfig
-@@ -27,7 +27,7 @@ config PHY_EXYNOS_MIPI_VIDEO
- 
- config PHY_MVEBU_SATA
- 	def_bool y
--	depends on ARCH_KIRKWOOD || ARCH_DOVE || MACH_DOVE || MACH_KIRKWOOD
-+	depends on ARCH_DOVE || MACH_DOVE || MACH_KIRKWOOD
- 	depends on OF
+@@ -161,8 +161,10 @@ config PHY_EXYNOS5_USBDRD
+ 	tristate "Exynos5 SoC series USB DRD PHY driver"
+ 	depends on ARCH_EXYNOS5 && OF
+ 	depends on HAS_IOMEM
++	depends on USB_DWC3_EXYNOS
  	select GENERIC_PHY
- 
+ 	select MFD_SYSCON
++	default y
+ 	help
+ 	  Enable USB DRD PHY support for Exynos 5 SoC series.
+ 	  This driver provides PHY interface for USB 3.0 DRD controller
 -- 
 1.7.9.5
 
