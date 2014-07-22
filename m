@@ -1,52 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756403AbaGVRko (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 13:40:44 -0400
-Received: from mail-vc0-f172.google.com ([209.85.220.172]:57095 "EHLO
-	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756073AbaGVRkn convert rfc822-to-8bit (ORCPT
+	id S1756392AbaGVRlw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 13:41:52 -0400
+Received: from mail-vc0-f173.google.com ([209.85.220.173]:37002 "EHLO
+	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756211AbaGVRlv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 13:40:43 -0400
+	Tue, 22 Jul 2014 13:41:51 -0400
 MIME-Version: 1.0
-In-Reply-To: <CA+8MBb+fnCNeQtyEqttxbkWx-4N+GUaKCUoCSdn5X9+bDDvTOg@mail.gmail.com>
-References: <1406004789-9918-1-git-send-email-xerofoify@gmail.com>
-	<874my98p6u.fsf@nemi.mork.no>
-	<CA+8MBb+fnCNeQtyEqttxbkWx-4N+GUaKCUoCSdn5X9+bDDvTOg@mail.gmail.com>
-Date: Tue, 22 Jul 2014 13:40:42 -0400
-Message-ID: <CAPDOMVjaf+vne4vbUPo8EPs0XnQBbNm2ZOXns8fw5pkg9tRSww@mail.gmail.com>
-Subject: Re: [PATCH] edac: Remove fixmes in e7xxx_edac.c
+In-Reply-To: <CAGVrzcb665srrVTojY+E1Raec5=E6oK+CAdPrP3Fx15Zt+piBQ@mail.gmail.com>
+References: <CAPDOMVhUkF49L1jJgfXdRdMW2qkGsbPfGVwrdaETqTUs3bEcsQ@mail.gmail.com>
+	<CAGVrzcb665srrVTojY+E1Raec5=E6oK+CAdPrP3Fx15Zt+piBQ@mail.gmail.com>
+Date: Tue, 22 Jul 2014 13:41:50 -0400
+Message-ID: <CAPDOMViiiqQAvOFeYoG+h4gX-mV71HsgMNgEEbmdOtqDomshSg@mail.gmail.com>
+Subject: Re: decompress.c : Add cache support
 From: Nick Krause <xerofoify@gmail.com>
-To: Tony Luck <tony.luck@gmail.com>
-Cc: =?UTF-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>,
-        Doug Thompson <dougthompson@xmission.com>,
-        Borislav Petkov <bp@alien8.de>,
-        "m.chehab@samsung.com" <m.chehab@samsung.com>,
-        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+To: Florian Fainelli <f.fainelli@gmail.com>
+Cc: Ralf Baechle <ralf@linux-mips.org>,
+        Antony Pavlov <antonynpavlov@gmail.com>,
+        John Crispin <blogic@openwrt.org>,
+        Linux-MIPS <linux-mips@linux-mips.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 22, 2014 at 1:25 PM, Tony Luck <tony.luck@gmail.com> wrote:
-> On Tue, Jul 22, 2014 at 7:04 AM, Bjørn Mork <bjorn@mork.no> wrote:
->>> -     /* FIXME - should use PAGE_SHIFT */
->>> -     page = error_1b >> 6;   /* convert the address to 4k page */
->>> +     page = error_1b >> PAGE_SHIFT;  /* convert the address to 4k page */
->>
->> I just have to bite...  Where did you get the idea that you can go
->> around and "fix" FIMXE's like they were spelling errors?
+On Tue, Jul 22, 2014 at 1:14 PM, Florian Fainelli <f.fainelli@gmail.com> wrote:
+> 2014-07-21 21:24 GMT-07:00 Nick Krause <xerofoify@gmail.com>:
+>> Hey Ralf and others
+>> We seem to be flushing this cache after decompressing the kernel on
+>> mips. Can't we cache this?
 >
-> Or apparently without thinking? Since "PAGE_SHIFT" does not have
-> the numerical value "6" your new code is obviously not equivalent to
-> the old.
+> I am not sure I fully understand what you mean here. What would we be
+> caching, instruction, data, both?
 >
-> -Tony
+>> If anyone has any advice on how to fix this it would be great:).
+>> Nick
+>
+> One patch that I carried locally and which works for a bunch of
+> MIPS32r1 compatible platforms out there is this one, I tried to
+> address some of Ralf's comment as well about the code duplication
+> (maybe I can get around to resubmit it):
+>
+> http://patchwork.linux-mips.org/patch/1565/
+> --
+> Florian
 
-Tony,
-
-What is the value of Page shift then ? If you can tell me it would be
-much easier for
-me to fix this.
+Florian,
+You should resubmit this patch as it seems to be correct and fix this issue.
 Cheers Nick
