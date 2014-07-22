@@ -1,102 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753532AbaGVMBj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 08:01:39 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:43565 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750843AbaGVMBi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 08:01:38 -0400
-Date: Tue, 22 Jul 2014 14:01:35 +0200
-From: Petr =?iso-8859-1?Q?Ml=E1dek?= <pmladek@suse.cz>
-To: Alex Elder <elder@linaro.org>
-Cc: akpm@linux-foundation.org, kay@vrfy.org, bp@suse.de,
-        john.stultz@linaro.org, jack@suse.cz, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v5 3/7] printk: initialize syslog_prev and console_prev
-Message-ID: <20140722120135.GP20751@pathway.suse.cz>
-References: <1405947761-26004-1-git-send-email-elder@linaro.org>
- <1405947761-26004-4-git-send-email-elder@linaro.org>
- <53CE4F86.2000307@linaro.org>
+	id S1754058AbaGVMEp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 08:04:45 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:56755 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751290AbaGVMEn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 08:04:43 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Linux PCI <linux-pci@vger.kernel.org>, Zhang Rui <rui.zhang@intel.com>
+Subject: Re: [PATCH 0/3] ACPI / PM: Make ACPI-based PCI wakeup work for the "freeze" sleep state
+Date: Tue, 22 Jul 2014 14:23:03 +0200
+Message-ID: <2866134.Da8PQoU0sW@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140722085538.GA3935@laptop>
+References: <1907495.agrCMfRsQN@vostro.rjw.lan> <9631666.En3K0jlGsY@vostro.rjw.lan> <20140722085538.GA3935@laptop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <53CE4F86.2000307@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 2014-07-22 06:48:22, Alex Elder wrote:
-> On 07/21/2014 08:02 AM, Alex Elder wrote:
-> > Two global variables, "syslog_prev" and "console_prev", maintain a
-> > copy of the flags value used in the log record most recently
-> > formatted for syslog or the console, respectively.
+On Tuesday, July 22, 2014 10:55:38 AM Peter Zijlstra wrote:
+> On Tue, Jul 22, 2014 at 03:23:29AM +0200, Rafael J. Wysocki wrote:
+> 
+> > That turned out to be more challenging than I had thought initially.
 > > 
-> > Initially there is no previous formatted log record, and these
-> > variables simply have an initial value 0.  And occasionally log
-> > records can get consumed at a rate such that syslog or the console
-> > can't keep up, in which case those variables (along with their
-> > corresponding position variables) must be reset.  Here too, they're
-> > reset to 0.
+> > The last version I sent was almost OK, but it had some issues (like it could
+> > walk the PCI hierarchy before resuming any PCI devices during system resume),
+> > so a new version follows.  I did my best to avoid introducing any new problems
+> > with it, but I obviously might overlook something.
 > > 
-> > This patch changes it so the initial value used is LOG_NEWLINE.
-> > That is, if we know nothing about the prevously-formatted log
-> > record, we can assume it was complete, and ended with a newline.
-> > One exception is that occasionally we reset our syslog or console
-> > (etc.) position variables.  In that case the previously-formatted
-> > record flags value is still valid, so we preserve that information.
+> > It works for me and doesn't seem to break anything as far as I can say.
 > > 
-> > This is being done to support the next patch.  Initializing
-> > these variables this way makes LOG_NEWLINE and LOG_CONT be
-> > mutually exclusive, and the next patch uses that fact to simplify
-> > some logic.
-> > 
-> > Signed-off-by: Alex Elder <elder@linaro.org>
-> > Reviewed-by: Petr Mládek <pmladek@suse.cz>
+> > [1/3] Make PM workqueue available for CONFIG_PM_RUNTIME unset.
+> > [2/3] Rework the handling of ACPI device wakeup notifications.
+> > [3/3] Enable wakeup GPEs while setting up devices for wakeup during system
+> >       suspend too.
 > 
-> I have one change I'd like to suggest on this one.
-> 
-> Petr, could you offer your opinion?
-> 
-> 
-> > ---
-> >  kernel/printk/printk.c | 44 ++++++++++++++++++++++++++++++--------------
-> >  1 file changed, 30 insertions(+), 14 deletions(-)
-> > 
-> > diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
-> > index 9f11eab..2f43116 100644
-> > --- a/kernel/printk/printk.c
-> > +++ b/kernel/printk/printk.c
-> 
-> 
-> . . .
-> 
-> > @@ -2156,10 +2168,14 @@ again:
-> >  				      "%s** %u printk messages dropped **\n",
-> >  				      (console_prev & LOG_CONT) ? "\n" : "",
-> >  				      (unsigned)(log_first_seq - console_seq));
-> > -			/* messages are gone, move to first one */
-> > +			/*
-> > +			 * Messages are gone, move to first one.
-> > +			 * Don't discard what we know about the
-> > +			 * previously-formatted record.
-> > +			 */
-> >  			console_seq = log_first_seq;
-> >  			console_idx = log_first_idx;
-> > -			console_prev = 0;
-> > +			console_prev &= LOG_NEWLINE|LOG_CONT;
-> 
-> In this one spot, I think console_prev should simply be
-> initialized with LOG_NEWLINE.
-> 
-> The reason is that the "printk messages dropped" message will
-> be inserted into the formatted output, and is hence the last
-> formatted line.  And that message is (now) terminated with
-> a newline.
+> Doesn't break, doesn't 'work' either.
 
-Sure. Great catch! I actually mentioned it when commenting v4, see
-https://lkml.org/lkml/2014/7/21/153 . But I forgot it today :-/
+This probably means that WoL on that machine is not ACPI-based.
 
+> Is there anything I can provide you with to make this easier? lspci output
+> or anything like that?
 
-Best Regards,
-Petr
+Yes, /proc/interrupts from the machine in question would help to start with.
+
+Also /sys/kernel/debug/wakeup_sources (if /sys/kernel/debug/ is where your debugfs
+lives) before and after a "freeze" with an attempt to use WoL to wake it up.
+
+Rafael
+
