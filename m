@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933558AbaGVWtJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 18:49:09 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44484 "EHLO
+	id S933653AbaGVWti (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 18:49:38 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:44474 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932592AbaGVWXX (ORCPT
+	with ESMTP id S932570AbaGVWXM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 18:23:23 -0400
+	Tue, 22 Jul 2014 18:23:12 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Michael Neuling <mikey@neuling.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+Cc: Will Deacon <will.deacon@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 078/116] powerpc: Don't setup CPUs with bad status
-Date: Tue, 22 Jul 2014 15:21:29 -0700
-Message-Id: <1406067727-19683-79-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 088/116] arm64: ptrace: change fs when passing kernel pointer to regset code
+Date: Tue, 22 Jul 2014 15:21:39 -0700
+Message-Id: <1406067727-19683-89-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1406067727-19683-1-git-send-email-kamal@canonical.com>
 References: <1406067727-19683-1-git-send-email-kamal@canonical.com>
@@ -28,40 +28,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michael Neuling <mikey@neuling.org>
+From: Will Deacon <will.deacon@arm.com>
 
-commit 59a53afe70fd530040bdc69581f03d880157f15a upstream.
+commit c168870704bcde6bb63d05f7882b620dd3985a46 upstream.
 
-OPAL will mark a CPU that is guarded as "bad" in the status property of the CPU
-node.
+Our compat PTRACE_POKEUSR implementation simply passes the user data to
+regset_copy_from_user after some simple range checking. Unfortunately,
+the data in question has already been copied to the kernel stack by this
+point, so the subsequent access_ok check fails and the ptrace request
+returns -EFAULT. This causes problems tracing fork() with older versions
+of strace.
 
-Unfortunatley Linux doesn't check this property and will put the bad CPU in the
-present map.  This has caused hangs on booting when we try to unsplit the core.
+This patch briefly changes the fs to KERNEL_DS, so that the access_ok
+check passes even with a kernel address.
 
-This patch checks the CPU is avaliable via this status property before putting
-it in the present map.
-
-Signed-off-by: Michael Neuling <mikey@neuling.org>
-Tested-by: Anton Blanchard <anton@samba.org>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/powerpc/kernel/setup-common.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/arm64/kernel/ptrace.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/arch/powerpc/kernel/setup-common.c b/arch/powerpc/kernel/setup-common.c
-index bdc499c..b050263 100644
---- a/arch/powerpc/kernel/setup-common.c
-+++ b/arch/powerpc/kernel/setup-common.c
-@@ -457,7 +457,7 @@ void __init smp_setup_cpu_maps(void)
- 		for (j = 0; j < nthreads && cpu < nr_cpu_ids; j++) {
- 			DBG("    thread %d -> cpu %d (hard id %d)\n",
- 			    j, cpu, intserv[j]);
--			set_cpu_present(cpu, true);
-+			set_cpu_present(cpu, of_device_is_available(dn));
- 			set_hard_smp_processor_id(cpu, intserv[j]);
- 			set_cpu_possible(cpu, true);
- 			cpu++;
+diff --git a/arch/arm64/kernel/ptrace.c b/arch/arm64/kernel/ptrace.c
+index 5341534..8553668 100644
+--- a/arch/arm64/kernel/ptrace.c
++++ b/arch/arm64/kernel/ptrace.c
+@@ -872,6 +872,7 @@ static int compat_ptrace_write_user(struct task_struct *tsk, compat_ulong_t off,
+ 				    compat_ulong_t val)
+ {
+ 	int ret;
++	mm_segment_t old_fs = get_fs();
+ 
+ 	if (off & 3 || off >= COMPAT_USER_SZ)
+ 		return -EIO;
+@@ -879,10 +880,13 @@ static int compat_ptrace_write_user(struct task_struct *tsk, compat_ulong_t off,
+ 	if (off >= sizeof(compat_elf_gregset_t))
+ 		return 0;
+ 
++	set_fs(KERNEL_DS);
+ 	ret = copy_regset_from_user(tsk, &user_aarch32_view,
+ 				    REGSET_COMPAT_GPR, off,
+ 				    sizeof(compat_ulong_t),
+ 				    &val);
++	set_fs(old_fs);
++
+ 	return ret;
+ }
+ 
 -- 
 1.9.1
 
