@@ -1,121 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755742AbaGVNfV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 09:35:21 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:59737 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752171AbaGVNfT (ORCPT
+	id S1753467AbaGVNmH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 09:42:07 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:15006 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751009AbaGVNmE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 09:35:19 -0400
-Date: Tue, 22 Jul 2014 15:35:14 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Bruno Wolff III <bruno@wolff.to>
-Cc: Dietmar Eggemann <dietmar.eggemann@arm.com>,
-        Josh Boyer <jwboyer@redhat.com>, "mingo@redhat.com" <mingo@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: Scheduler regression from
- caffcdd8d27ba78730d5540396ce72ad022aff2c
-Message-ID: <20140722133514.GM12054@laptop.lan>
-References: <20140718141648.GE20603@laptop.programming.kicks-ass.net>
- <20140718145040.GG12054@laptop.lan>
- <20140718161602.GH12054@laptop.lan>
- <20140721163528.GA10433@wolff.to>
- <20140721165212.GO3935@laptop>
- <20140722094740.GJ12054@laptop.lan>
- <20140722103857.GK12054@laptop.lan>
- <20140722121001.GA30631@wolff.to>
- <20140722130343.GD3935@laptop>
- <20140722132603.GL12054@laptop.lan>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140722132603.GL12054@laptop.lan>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Tue, 22 Jul 2014 09:42:04 -0400
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+X-AuditID: cbfee68f-b7fef6d000003970-d1-53ce6a2a3ff9
+Content-transfer-encoding: 8BIT
+Message-id: <53CE6A2A.7090602@samsung.com>
+Date: Tue, 22 Jul 2014 22:42:02 +0900
+From: Inki Dae <inki.dae@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130803
+ Thunderbird/17.0.8
+To: Andrzej Hajda <a.hajda@samsung.com>
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
+        Joonyoung Shim <jy0922.shim@samsung.com>,
+        Seung-Woo Kim <sw0312.kim@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        dri-devel@lists.freedesktop.org,
+        open list <linux-kernel@vger.kernel.org>,
+        "moderated list:ARM/S5P EXYNOS AR..." 
+	<linux-samsung-soc@vger.kernel.org>
+Subject: Re: [PATCH 00/12] drm/exynos/ipp: image post processing improvements,
+ part three
+References: <1404393037-17299-1-git-send-email-a.hajda@samsung.com>
+In-reply-to: <1404393037-17299-1-git-send-email-a.hajda@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrJIsWRmVeSWpSXmKPExsWyRsSkQFcr61ywwfENRha31p1jtbjy9T2b
+	xYt7F1kszja9Ybe4vGsOm8WM8/uYLNYeuctuMWPySzYHDo/73ceZPPq2rGL0+LxJLoA5issm
+	JTUnsyy1SN8ugStjya5jjAXTOSsO3N7M2sB4mL2LkZNDQsBEYuuUDcwQtpjEhXvr2boYuTiE
+	BJYySrw628QMU/R11R1WiMR0RonOF7MYQRK8AoISPybfY+li5OBgFpCXOHIpGyTMLKAuMWne
+	ImaI+leMEu9/PGGGqNeSaOn9zAZiswioSnQemQo2hw3InrjiPlhcVCBM4sWrXWD1IkCDZp+8
+	AzaIWeAMk8TJA2vAGoQFoiXmPHzNBGILCThLrF0yF6yZU8BF4tDMpYwgDRICp9glWr+8ZIHY
+	JiDxbfIhsEslBGQlNh2A+kxS4uCKGywTGMVmIflnFsI/s5D8s4CReRWjaGpBckFxUnqRsV5x
+	Ym5xaV66XnJ+7iZGYLSd/vesfwfj3QPWhxiTgTZOZJYSTc4HRmteSbyhsZmRhamJqbGRuaUZ
+	acJK4rz3HyYFCQmkJ5akZqemFqQWxReV5qQWH2Jk4uCUamBUnhD3IHnuTsVkRSm11zyTPwiE
+	VrWzBThZVXp1bMkwzFgRVvTYpjt9zdPwoF+hxwwTw3++i3fz5lBe9TZxv+wkiawv6vW3v4TY
+	L13b/qXQ3qklIJNh13KRMxMFRNhE71WscpQpnBBjXno6lrHl0PPStxH1LX/SPqy78CiTf+5H
+	+6/3la8dCFdiKc5INNRiLipOBADVerZKzAIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrBIsWRmVeSWpSXmKPExsVy+t9jQV2trHPBBnM/aFncWneO1eLK1/ds
+	Fi/uXWSxONv0ht3i8q45bBYzzu9jslh75C67xYzJL9kcODzudx9n8ujbsorR4/MmuQDmqAZG
+	m4zUxJTUIoXUvOT8lMy8dFsl7+B453hTMwNDXUNLC3MlhbzE3FRbJRefAF23zBygE5QUyhJz
+	SoFCAYnFxUr6dpgmhIa46VrANEbo+oYEwfUYGaCBhDWMGUt2HWMsmM5ZceD2ZtYGxsPsXYyc
+	HBICJhJfV91hhbDFJC7cW8/WxcjFISQwnVGi88UsRpAEr4CgxI/J91i6GDk4mAXkJY5cygYJ
+	MwuoS0yat4gZov4Vo8T7H0+YIeq1JFp6P7OB2CwCqhKdR6aCzWEDsieuuA8WFxUIk3jxahdY
+	vQjQoNkn74ANYhY4wyRx8sAasAZhgWiJOQ9fM4HYQgLOEmuXzAVr5hRwkTg0cynjBEaBWUju
+	m4Vw3ywk9y1gZF7FKJpakFxQnJSea6RXnJhbXJqXrpecn7uJERzLz6R3MK5qsDjEKMDBqMTD
+	O0HxbLAQa2JZcWXuIUYJDmYlEd7UxHPBQrwpiZVVqUX58UWlOanFhxhNgb6byCwlmpwPTDN5
+	JfGGxiZmRpZG5oYWRsbmSuK8B1utA4UE0hNLUrNTUwtSi2D6mDg4pRoYjUMqrBojCn0tcw+v
+	WaJ8RKrz+IOTb978bps5d+Oqc++frvDyn5vmtHzmvBdzWM6rf/768syClk3HDhowGfo1HTzQ
+	EFh64uHMudz5fpnrS/Q9mkp5JHRZ2tiVGWTilyhnr/4ZynzpdvZ94aWz3vp+ndTuwfp/Yvy/
+	TzoTrn/4MPtBiqrD4mku55RYijMSDbWYi4oTAZdu4yn7AgAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 22, 2014 at 03:26:03PM +0200, Peter Zijlstra wrote:
-> On Tue, Jul 22, 2014 at 03:03:43PM +0200, Peter Zijlstra wrote:
-> > Oh, of course we do SMP detection and setup after the cache setup...
-> > lovely.
-> > 
-> > /me goes bang head against wall
+On 2014년 07월 03일 22:10, Andrzej Hajda wrote:
+> This set of independent patches contains various improvement and fixes
+> for exynos_drm ipp framework.
+> The patchset is based on exynos-drm-next branch.
+
+Applied.
+
+Thanks,
+Inki Dae
+
 > 
-> hpa, could we move the legacy cpuid1/cpuid4 topology detection muck up,
-> preferably right after detect_extended_topology()?
+> Regards
+> Andrzej
 > 
-> I need c->phys_proc_id in init_intel_cacheinfo() for machines with
-> cpuid_level < 4.
+> 
+> Andrzej Hajda (12):
+>   drm/exynos/ipp: remove type casting
+>   drm/exynos/ipp: remove unused field from exynos_drm_ipp_private
+>   drm/exynos/ipp: remove struct exynos_drm_ipp_private
+>   drm/exynos/ipp: correct address type
+>   drm/exynos/ipp: remove temporary variable
+>   drm/exynos/ipp: remove incorrect checks of list_first_entry result
+>   drm/exynos/ipp: simplify memory check function
+>   drm/exynos/ipp: remove useless registration checks
+>   drm/exynos/ipp: simplify ipp_find_obj
+>   drm/exynos/ipp: remove redundant messages
+>   drm/exynos/ipp: simplify ipp_create_id
+>   drm/exynos/ipp: simplify ipp_find_driver
+> 
+>  drivers/gpu/drm/exynos/exynos_drm_drv.h |   7 +-
+>  drivers/gpu/drm/exynos/exynos_drm_ipp.c | 259 +++++++++-----------------------
+>  drivers/gpu/drm/exynos/exynos_drm_ipp.h |   4 +-
+>  3 files changed, 73 insertions(+), 197 deletions(-)
+> 
 
-Something like so.. anything obviously broken?
-
----
- arch/x86/kernel/cpu/intel.c           | 22 +++++++++++-----------
- arch/x86/kernel/cpu/intel_cacheinfo.c | 12 ++++++++++++
- 2 files changed, 23 insertions(+), 11 deletions(-)
-
-diff --git a/arch/x86/kernel/cpu/intel.c b/arch/x86/kernel/cpu/intel.c
-index 0fd955778f35..9483ee5b3991 100644
---- a/arch/x86/kernel/cpu/intel.c
-+++ b/arch/x86/kernel/cpu/intel.c
-@@ -370,6 +370,17 @@ static void init_intel(struct cpuinfo_x86 *c)
- 	 */
- 	detect_extended_topology(c);
- 
-+	if (!cpu_has(c, X86_FEATURE_XTOPOLOGY)) {
-+		/*
-+		 * let's use the legacy cpuid vector 0x1 and 0x4 for topology
-+		 * detection.
-+		 */
-+		c->x86_max_cores = intel_num_cpu_cores(c);
-+#ifdef CONFIG_X86_32
-+		detect_ht(c);
-+#endif
-+	}
-+
- 	l2 = init_intel_cacheinfo(c);
- 	if (c->cpuid_level > 9) {
- 		unsigned eax = cpuid_eax(10);
-@@ -438,17 +449,6 @@ static void init_intel(struct cpuinfo_x86 *c)
- 		set_cpu_cap(c, X86_FEATURE_P3);
- #endif
- 
--	if (!cpu_has(c, X86_FEATURE_XTOPOLOGY)) {
--		/*
--		 * let's use the legacy cpuid vector 0x1 and 0x4 for topology
--		 * detection.
--		 */
--		c->x86_max_cores = intel_num_cpu_cores(c);
--#ifdef CONFIG_X86_32
--		detect_ht(c);
--#endif
--	}
--
- 	/* Work around errata */
- 	srat_detect_node(c);
- 
-diff --git a/arch/x86/kernel/cpu/intel_cacheinfo.c b/arch/x86/kernel/cpu/intel_cacheinfo.c
-index a952e9c85b6f..9c8f7394c612 100644
---- a/arch/x86/kernel/cpu/intel_cacheinfo.c
-+++ b/arch/x86/kernel/cpu/intel_cacheinfo.c
-@@ -730,6 +730,18 @@ unsigned int init_intel_cacheinfo(struct cpuinfo_x86 *c)
- #endif
- 	}
- 
-+#ifdef CONFIG_X86_HT
-+	/*
-+	 * If cpu_llc_id is not yet set, this means cpuid_level < 4 which in
-+	 * turns means that the only possibility is SMT (as indicated in
-+	 * cpuid1). Since cpuid2 doesn't specify shared caches, and we know
-+	 * that SMT shares all caches, we can unconditionally set cpu_llc_id to
-+	 * c->phys_proc_id.
-+	 */
-+	if (per_cpu(cpu_llc_id, cpu) == BAD_APICID)
-+		per_cpu(cpu_llc_id, cpu) = c->phys_proc_id;
-+#endif
-+
- 	c->x86_cache_size = l3 ? l3 : (l2 ? l2 : (l1i+l1d));
- 
- 	return l2;
