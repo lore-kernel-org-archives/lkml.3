@@ -1,69 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756509AbaGVScN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 14:32:13 -0400
-Received: from mail-qg0-f49.google.com ([209.85.192.49]:42463 "EHLO
-	mail-qg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755962AbaGVScL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 14:32:11 -0400
+	id S1756531AbaGVScU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 14:32:20 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:54468 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755962AbaGVScS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 14:32:18 -0400
+Message-ID: <53CEAE0F.9080901@ti.com>
+Date: Tue, 22 Jul 2014 13:31:43 -0500
+From: Nishanth Menon <nm@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-In-Reply-To: <20140722181130.GA3278@himangi-Dell>
-References: <20140722181130.GA3278@himangi-Dell>
-Date: Tue, 22 Jul 2014 22:32:10 +0400
-Message-ID: <CALFYKtDo0ivvYWhjAKJs-LiBRQfrxeN8QAQ1QPX4aswb0+VkWw@mail.gmail.com>
-Subject: Re: [PATCH] rbd: Use kmem_cache_free
-From: Ilya Dryomov <ilya.dryomov@inktank.com>
-To: Himangi Saraogi <himangi774@gmail.com>
-Cc: Alex Elder <elder@kernel.org>,
-        Ceph Development <ceph-devel@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Julia Lawall <julia.lawall@lip6.fr>
-Content-Type: text/plain; charset=UTF-8
+To: <balbi@ti.com>, Tony Lindgren <tony@atomide.com>
+CC: Rob Herring <robh+dt@kernel.org>, Mark Rutland <mark.rutland@arm.com>,
+        Benoit Cousson <bcousson@baylibre.com>, <devicetree@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] pinctrl: dra: dt-bindings: Fix pull enable/disable
+References: <1406043594-14181-1-git-send-email-nm@ti.com> <20140722164752.GJ20588@saruman.home>
+In-Reply-To: <20140722164752.GJ20588@saruman.home>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 22, 2014 at 10:11 PM, Himangi Saraogi <himangi774@gmail.com> wrote:
-> Free memory allocated using kmem_cache_zalloc using kmem_cache_free
-> rather than kfree.
->
-> The Coccinelle semantic patch that makes this change is as follows:
->
-> // <smpl>
-> @@
-> expression x,E,c;
-> @@
->
->  x = \(kmem_cache_alloc\|kmem_cache_zalloc\|kmem_cache_alloc_node\)(c,...)
->  ... when != x = E
->      when != &x
-> ?-kfree(x)
-> +kmem_cache_free(c,x)
-> // </smpl>
->
-> Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
-> Acked-by: Julia Lawall <julia.lawall@lip6.fr>
-> ---
->  drivers/block/rbd.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/drivers/block/rbd.c b/drivers/block/rbd.c
-> index b2c98c1..8381c54 100644
-> --- a/drivers/block/rbd.c
-> +++ b/drivers/block/rbd.c
-> @@ -1158,7 +1158,7 @@ static const char *rbd_segment_name(struct rbd_device *rbd_dev, u64 offset)
->         if (ret < 0 || ret > CEPH_MAX_OID_NAME_LEN) {
->                 pr_err("error formatting segment name for #%llu (%d)\n",
->                         segment, ret);
-> -               kfree(name);
-> +               kmem_cache_free(rbd_segment_name_cache, name);
->                 name = NULL;
->         }
+On 07/22/2014 11:47 AM, Felipe Balbi wrote:
+> On Tue, Jul 22, 2014 at 10:39:54AM -0500, Nishanth Menon wrote:
+>> The DRA74/72 control module pins have a weak pull up and pull down.
+>> This is configured by bit offset 17. if BIT(17) is 1, a pull up is
+>> selected, else a pull down is selected.
+>>
+>> However, this pull resisstor is applied based on BIT(16) -
+>> PULLUDENABLE - if BIT(18) is *0*, then pull as defined in BIT(17) is
+>> applied, else no weak pulls are applied. We defined this in reverse.
+>>
+>> Reference: Table 18-5 (Description of the pad configuration register
+>> bits) in Technical Reference Manual Revision (DRA74x revision Q:
+>> SPRUHI2Q Revised June 2014 and DRA72x revision F: SPRUHP2F - Revised
+>> June 2014)
+>>
+>> Fixes: 6e58b8f1daaf1a ("ARM: dts: DRA7: Add the dts files for dra7 SoC and dra7-evm board")
+>> Signed-off-by: Nishanth Menon <nm@ti.com>
+>> ---
+> 
+> Tested on an upcoming board.
+> 
+> Tested-by: Felipe Balbi <balbi@ti.com>
+> Acked-by: Felipe Balbi <balbi@ti.com>
+> 
+> 
+Felipe,
+Thanks.
 
-We seem to have a helper for this, rbd_segment_name_free().  Care to
-resend?
+Tony,
 
-Thanks,
+If you could consider this for the rc cycle it might be great(as well
+as for stable). The pull direction error can cause all kinds of
+Pull-down Vs Pull-Up contention with severe risk for certain IP
+reliability.
 
-                Ilya
+-- 
+Regards,
+Nishanth Menon
