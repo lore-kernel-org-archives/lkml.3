@@ -1,63 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751423AbaGUX52 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 19:57:28 -0400
-Received: from mout.gmx.net ([212.227.17.21]:56715 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751062AbaGUX51 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 19:57:27 -0400
-From: Peter =?iso-8859-1?q?H=FCwe?= <PeterHuewe@gmx.de>
-To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-Subject: Re: [tpmdd-devel] [PATCH] Use devm_ioremap_resource to reserve resource
-Date: Tue, 22 Jul 2014 02:02:02 +0200
-User-Agent: KMail/1.13.7 (Linux/3.15.3; KDE/4.12.5; x86_64; ; )
-Cc: tpmdd-devel@lists.sourceforge.net, LKML <linux-kernel@vger.kernel.org>
-References: <1405985165-9631-1-git-send-email-peterhuewe@gmx.de> <20140721234330.GA6482@obsidianresearch.com>
-In-Reply-To: <20140721234330.GA6482@obsidianresearch.com>
+	id S1751522AbaGVAAg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 20:00:36 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:52561 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751048AbaGVAAe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jul 2014 20:00:34 -0400
+Message-ID: <53CDA99D.4090602@infradead.org>
+Date: Mon, 21 Jul 2014 17:00:29 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201407220202.02388.PeterHuewe@gmx.de>
-X-Provags-ID: V03:K0:JvZ7gBT1Jvu+k44scJNC5RqhSdqMwtglaPA0YOQoS+I52pI7hkY
- wk1pAY9xrBCQ8sirOZT6vjKHHTVI2FGJ71FLnxgS2ZmhI/ssuUciadGmU+cYHY0/LtUeWWh
- B0/e1FmcaytLvkOiAV5W9/oGNQV1zMQkINosuQj2TjpqfpiV8PQjuLaxwB7XaooYjLCtZvg
- Yk4TuEEa4O5o/pFT0MBmg==
+To: Gavin Shan <gwshan@linux.vnet.ibm.com>,
+        Tuomas Tynkkynen <ttynkkynen@nvidia.com>
+CC: Bjorn Helgaas <bhelgaas@google.com>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] PCI/AER: Forward declare struct pci_dev to avoid warning
+References: <1405960243-589-1-git-send-email-ttynkkynen@nvidia.com> <20140721232732.GA4736@shangw>
+In-Reply-To: <20140721232732.GA4736@shangw>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Dienstag, 22. Juli 2014, 01:43:30 schrieb Jason Gunthorpe:
-> On Tue, Jul 22, 2014 at 01:26:05AM +0200, Peter Huewe wrote:
-> > Unfortunately the tpm_tis driver did never call request_region for its
-> > adress space - now since we've got devm_ioremap_resource we can simply
-> > remove all the stuff and do everything in one call.
-> > 
+On 07/21/2014 04:27 PM, Gavin Shan wrote:
+> On Mon, Jul 21, 2014 at 07:30:43PM +0300, Tuomas Tynkkynen wrote:
 > 
-> Hurm, this makes the ordering truely horrible and opaque. Are you
-> completely certain that in every case the devm unwide will happen only
-> after cleanup_tis is called?
+> I guess it's same issue and fix as:
 > 
-> Intuitively, I would expect all devices to have been detached and
-> resources freed prior to the module exit function being called...
+> http://patchwork.ozlabs.org/patch/370629/
+
+Yes, and it still needs to be merged.... :(
+
+> Thanks,
+> Gavin
 > 
-> I'd be much happier with mixing devm into this driver if it had a
-> proper driver remove method and the unnecessary tis_chips list was
-> purged.
-> 
-> Jason
+>> Forward declaring struct pci_dev in aer.h avoids this warning:
+>>
+>> In file included from include/ras/ras_event.h:11:0,
+>>                 from drivers/ras/ras.c:13:
+>> include/linux/aer.h:38:44: warning: 'struct pci_dev’ declared inside parameter list [enabled by default]
+>> include/linux/aer.h:38:44: warning: its scope is only this definition or declaration, which is probably not what you want [enabled by default]
+>>
+>> Signed-off-by: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
+>> ---
+>> include/linux/aer.h | 2 ++
+>> 1 file changed, 2 insertions(+)
+>>
+>> diff --git a/include/linux/aer.h b/include/linux/aer.h
+>> index 4dbaa70..d9ec8dd 100644
+>> --- a/include/linux/aer.h
+>> +++ b/include/linux/aer.h
+>> @@ -7,6 +7,8 @@
+>> #ifndef _AER_H_
+>> #define _AER_H_
+>>
+>> +struct pci_dev;
+>> +
+>> #define AER_NONFATAL			0
+>> #define AER_FATAL			1
+>> #define AER_CORRECTABLE			2
+>> -- 
 
-Ok, thanks for the review - that's why I post this stuff to the mailing list 
-first ;)
 
-In my tests everything worked fine, but I agree that the TPM code is so 
-horible that there might be a lot of cases not handled correctly.
-
-
-
-I think I'll conjure up a "manual" patch, doing the request_region and 
-release_region manually ?
-
-Thanks,
-Peter
-
+-- 
+~Randy
