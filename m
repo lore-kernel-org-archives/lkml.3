@@ -1,75 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752203AbaGVCRN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 22:17:13 -0400
-Received: from mail-bl2lp0210.outbound.protection.outlook.com ([207.46.163.210]:8733
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751901AbaGVCRL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 22:17:11 -0400
-Date: Tue, 22 Jul 2014 10:16:35 +0800
-From: Shawn Guo <shawn.guo@freescale.com>
-To: Stefan Agner <stefan@agner.ch>
-CC: <peter.chen@freescale.com>, <s.hauer@pengutronix.de>,
-        <b35083@freescale.com>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 5/6] usb: phy: mxs: Add VF610 USB PHY support
-Message-ID: <20140722021634.GQ8537@dragon>
-References: <cover.1405702442.git.stefan@agner.ch>
- <af194168fadd80c26f94da740f1e61ce6603225a.1405702442.git.stefan@agner.ch>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <af194168fadd80c26f94da740f1e61ce6603225a.1405702442.git.stefan@agner.ch>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(51704005)(24454002)(189002)(199002)(104016003)(21056001)(64706001)(92566001)(19580395003)(87936001)(69596002)(76176999)(33656002)(47776003)(23726002)(31966008)(97756001)(79102001)(110136001)(83072002)(81542001)(85306003)(57986006)(81342001)(92726001)(20776003)(85852003)(86362001)(33716001)(50466002)(99396002)(106466001)(4396001)(76482001)(26826002)(83506001)(102836001)(77982001)(83322001)(50986999)(54356999)(84676001)(44976005)(19580405001)(46406003)(6806004)(95666004)(68736004)(105606002)(46102001)(107046002)(97736001)(74662001)(81156004)(74502001)(80022001)(217873001);DIR:OUT;SFP:;SCL:1;SRVR:BL2PR03MB467;H:az84smr01.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;LANG:en;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
-X-Forefront-PRVS: 02801ACE41
-Authentication-Results: spf=fail (sender IP is 192.88.158.2)
- smtp.mailfrom=Shawn.Guo@freescale.com; 
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
-X-OriginatorOrg: freescale.com
+	id S1752296AbaGVCR6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 22:17:58 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:17220 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751370AbaGVCR5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jul 2014 22:17:57 -0400
+X-AuditID: cbfee68f-b7fef6d000003970-56-53cdc9d1b1b0
+Date: Tue, 22 Jul 2014 02:17:53 +0000 (GMT)
+From: Eunbong Song <eunb.song@samsung.com>
+Subject: Re: Re: [PATCH] lib : lz4 using put_unaligned_le16 instead of
+ put_unaligned
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: "chanho.min@lge.com" <chanho.min@lge.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Reply-to: eunb.song@samsung.com
+MIME-version: 1.0
+X-MTR: 20140722021302896@eunb.song
+Msgkey: 20140722021302896@eunb.song
+X-EPLocale: ko_KR.euc-kr
+X-Priority: 3
+X-EPWebmail-Msg-Type: personal
+X-EPWebmail-Reply-Demand: 0
+X-EPApproval-Locale: 
+X-EPHeader: ML
+X-EPTrCode: 
+X-EPTrName: 
+X-MLAttribute: 
+X-RootMTR: 20140722021302896@eunb.song
+X-ParentMTR: 
+X-ArchiveUser: EV
+X-CPGSPASS: N
+Content-type: text/plain; charset=euc-kr
+MIME-version: 1.0
+Message-id: <12396088.204011405995472026.JavaMail.weblogic@epml18>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrEJsWRmVeSWpSXmKPExsVy+t8zHd2LJ88GG7zbLmhxedccNgdGj8+b
+	5AIYoxoYbRKLkjMyy1IVUvOS81My89JtlUJD3HQtlBQy8otLbJWijQyM9YxMTfSMTMz1LA1i
+	rYxMlRTyEnNTbZUqdKF6lRSKkguAanMri4EG5KTqQcX1ilPzUhyy8ktBLtErTswtLs1L10vO
+	z1VSKEvMKQUaoaSfMJUxY96khSwFTSwVv479ZW9g/MDcxcjJISSgItHy/zsjiC0hYCLx5MoR
+	ZghbTOLCvfVsXYxcQDXLGCVuX77GBlO09Px8JojEHEaJrkn7wDpYBFQl5ny/xQJiswloS/w4
+	cBUsLiwQIvF7RiOYLSKgJdHbfhxoGwcHs0CexISVUhBHyEtMPn2ZHcTmFRCUODnzCQvELiWJ
+	J/9OMUHElSUeLf8DFZeQmDX9AiuEzSsxo/0pVFxOYtrXNVAPSEucn7WBEeaZxd8fQ8X5JY7d
+	3sEEcgJI75P7wTBjdm/+AvWigMTUMwehWtUl+tb/YIew+STWLHwLtUpQ4vS1bmaY3vtb5oKd
+	ySygKDGl+yE7hK0l8eXHPjZUb3EA2U4Spy7xTWBUnoUkMwtJ9ywk3chqFjCyrGIUTS1ILihO
+	Si8yRo7rTYyQJNi/g/HuAetDjPsZgTEykVlKNDkfmEbzSuINjc2MLExNTI2NzC3NKBQ2MbWw
+	MDGiirCSOO/9h0lBQgLpiSWp2ampBalF8UWlOanFhxiZODilGhgdLvlzLXvdJrHnYfa9Ou0v
+	S96t3FGp6fZH57pee6Cc35Pk4Jo+dTvT5JJVodv12pVL+qK7ypViezQ4ErfcO/Hg24KT2wqk
+	8vmcP252+mIoPHePEu8nVrYJJ4+dMuj2yDrH5yepUfZH90Dg8jN/DaOvnK/mNrrHxjiVb26Q
+	eeSFRzqFfy8xFiuxFGckGmoxFxUnAgAl7nYl9QMAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpgk+LIzCtJLcpLzFFi42I5/e92r+7Fk2eDDR6d5bO4vGsOmwOjx+dN
+	cgGMURk2GamJKalFCql5yfkpmXnptkrewfHO8aZmBoa6hpYW5koKeYm5qbZKLj4Bum6ZOUBD
+	lRTKEnNKgUIBicXFSvp2NkX5pSWpChn5xSW2StFGBsZ6RqYmekbGBnomBrFWhgYGRqZAVQkZ
+	GfMmLWQpaGKp+HXsL3sD4wfmLkZODiEBFYmW/98ZQWwJAROJpefnM0HYYhIX7q1n62LkAqqZ
+	wyjRNWkfWAOLgKrEnO+3WEBsNgFtiR8HroLFhQVCJH7PaASzRQS0JHrbjwMN5eBgFsiTmLBS
+	CmKXvMTk05fZQWxeAUGJkzOfsEDsUpJ48u8UE0RcWeLR8j9QcQmJWdMvsELYvBIz2p9CxeUk
+	pn1dwwxhS0ucn7WBEebmxd8fQ8X5JY7d3sEEcgJI75P7wTBjdm/+wgZhC0hMPXMQqlVdom/9
+	D3YIm09izcK3UKsEJU5f62aG6b2/ZS7YmcwCihJTuh+yQ9haEl9+7GND9RYHkO0kceoS3wRG
+	uVlIMrOQdM9C0o2sZgEjyypG0dSC5ILipPQKQ73ixNzi0rx0veT83E2M4PT0bOEOxi/nrQ8x
+	CnAwKvHwWsifDRZiTSwrrsw9xCjBwawkwtu+ByjEm5JYWZValB9fVJqTWnyIMRkYfROZpUST
+	84GpM68k3tDYwNjQ0NLcwNTQyII0YSVx3rs3k4KEBNITS1KzU1MLUotgtjBxcEo1MJbsm3dq
+	oem0x92BAToF2YzVh8/vSlnmW7GiPONx/IfcK6EZt14/si1fmPDluFB6UQ7v67qDLCe3aSQc
+	8Cr/fuFevbCQlvDzDz9aeSzPyf34euy8f0/r7fCnBtf3hHRMmB6z9/RUyQA+w48F2x55Htu8
+	48yc97Kn+deEFFRK3xHzaP7qxqAetFCJpTgj0VCLuag4EQD0hlIokwMAAA==
+DLP-Filter: Pass
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s6M2I33K002549
 
-On Fri, Jul 18, 2014 at 07:01:41PM +0200, Stefan Agner wrote:
-> This adds support for the USB PHY in Vybrid VF610. We assume that
-> the disconnection without VBUS is also needed for Vybrid. For all
-> other flags, the presumption of innocence applies.
-> 
-> Signed-off-by: Stefan Agner <stefan@agner.ch>
-> ---
->  drivers/usb/phy/phy-mxs-usb.c | 5 +++++
->  1 file changed, 5 insertions(+)
-> 
-> diff --git a/drivers/usb/phy/phy-mxs-usb.c b/drivers/usb/phy/phy-mxs-usb.c
-> index c42bdf0..207946b 100644
-> --- a/drivers/usb/phy/phy-mxs-usb.c
-> +++ b/drivers/usb/phy/phy-mxs-usb.c
-> @@ -125,10 +125,15 @@ static const struct mxs_phy_data imx6sl_phy_data = {
->  		MXS_PHY_NEED_IP_FIX,
->  };
->  
-> +static const struct mxs_phy_data vf610_phy_data = {
-> +	.flags = MXS_PHY_DISCONNECT_LINE_WITHOUT_VBUS,
-> +};
-> +
->  static const struct of_device_id mxs_phy_dt_ids[] = {
->  	{ .compatible = "fsl,imx6sl-usbphy", .data = &imx6sl_phy_data, },
->  	{ .compatible = "fsl,imx6q-usbphy", .data = &imx6q_phy_data, },
->  	{ .compatible = "fsl,imx23-usbphy", .data = &imx23_phy_data, },
-> +	{ .compatible = "fsl,vf610-usbphy", .data = &vf610_phy_data, },
 
-This new compatible string should be documented in
-Documentation/devicetree/bindings/usb/mxs-phy.txt.
+> Odd line wrapping :(
 
-Shawn
+Sorry, for this. 
 
->  	{ /* sentinel */ }
->  };
->  MODULE_DEVICE_TABLE(of, mxs_phy_dt_ids);
-> -- 
-> 2.0.1
-> 
+> Anyway, is this a new problem?  Or something that has always been there
+> in this compression function?
+
+Actually, i have tested zram with lz4 functions in my board(mips64 big endian). 
+Everytime  i try to mount my ext4 zram image i have failed. 
+After applying this patch, that problem was disappeared.
+
+Thanks. ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
