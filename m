@@ -1,69 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933597AbaGVWkn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 18:40:43 -0400
-Received: from mail-la0-f45.google.com ([209.85.215.45]:38168 "EHLO
-	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933166AbaGVWZx (ORCPT
+	id S933616AbaGVWlV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 18:41:21 -0400
+Received: from mail-ig0-f178.google.com ([209.85.213.178]:49668 "EHLO
+	mail-ig0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932724AbaGVWlR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 18:25:53 -0400
+	Tue, 22 Jul 2014 18:41:17 -0400
+Date: Tue, 22 Jul 2014 15:41:14 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Mike Snitzer <snitzer@redhat.com>
+cc: Pekka Enberg <penberg@iki.fi>, Christoph Lameter <cl@linux.com>,
+        Pekka Enberg <penberg@kernel.org>, linux-mm@kvack.org,
+        dm-devel@redhat.com, linux-kernel@vger.kernel.org,
+        "Alasdair G. Kergon" <agk@redhat.com>,
+        Mikulas Patocka <mpatocka@redhat.com>,
+        Zdenek Kabelac <zkabelac@redhat.com>
+Subject: [patch] slab_common: fix the check for duplicate slab names
+In-Reply-To: <20140722221421.GA11318@redhat.com>
+Message-ID: <alpine.DEB.2.02.1407221539020.5814@chino.kir.corp.google.com>
+References: <alpine.LRH.2.02.1403041711300.29476@file01.intranet.prod.int.rdu2.redhat.com> <20140325170324.GC580@redhat.com> <alpine.DEB.2.10.1403251306260.26471@nuc> <20140523201632.GA16013@redhat.com> <537FBD6F.1070009@iki.fi>
+ <20140722221421.GA11318@redhat.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <CAGXu5jLFQja7NGorKFrnMWHNW++YuyuX0MziOtZip91rbz0ovA@mail.gmail.com>
-References: <1405373897-31671-1-git-send-email-keescook@chromium.org>
- <1405373897-31671-4-git-send-email-keescook@chromium.org> <20140714222419.GC10393@wotan.suse.de>
- <CAGXu5j+V807cyDdyEzoRzSjYEyhkDntaEkKOx6n=OzUoF31-sA@mail.gmail.com>
- <CAB=NE6WnP-7YCr8DzCq-HOLZVuQxmCa+nwN7kQBxTnUHK+xMRg@mail.gmail.com>
- <CAGXu5jJxEJQ5+05O-Q=W652O-fZ1WBVsUjb3d2JEwAAMF=fx-Q@mail.gmail.com>
- <CAB=NE6VMca9gkvino-_SbThX3DgNSMJ+x-AkmyPR-G-x4Pq_jA@mail.gmail.com> <CAGXu5jLFQja7NGorKFrnMWHNW++YuyuX0MziOtZip91rbz0ovA@mail.gmail.com>
-From: "Luis R. Rodriguez" <mcgrof@suse.com>
-Date: Tue, 22 Jul 2014 15:25:31 -0700
-X-Google-Sender-Auth: NtsNmUStGHl4lb_S0btGfAGH-OQ
-Message-ID: <CAB=NE6U98N6FxHLPQqZvnWpOcK7DBV-Opyd_PcORoMCBDZEYog@mail.gmail.com>
-Subject: Re: [PATCH 3/7] security: introduce kernel_fw_from_file hook
-To: Kees Cook <keescook@chromium.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ming Lei <ming.lei@canonical.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        James Morris <james.l.morris@oracle.com>,
-        David Howells <dhowells@redhat.com>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        linux-security-module <linux-security-module@vger.kernel.org>,
-        linux-firmware@kernel.org,
-        linux-wireless <linux-wireless@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 22, 2014 at 3:20 PM, Kees Cook <keescook@chromium.org> wrote:
-> On Tue, Jul 22, 2014 at 3:11 PM, Luis R. Rodriguez <mcgrof@suse.com> wrote:
->> On Tue, Jul 22, 2014 at 1:55 PM, Kees Cook <keescook@chromium.org> wrote:
->>> On Tue, Jul 22, 2014 at 12:39 PM, Luis R. Rodriguez <mcgrof@suse.com> wrote:
->>>> On Mon, Jul 14, 2014 at 3:31 PM, Kees Cook <keescook@chromium.org> wrote:
->>>>> Yup, with this and the module hook, adding a similar hook for kexec
->>>>> makes sense as well. A paranoid kernel doesn't want to trust anything
->>>>> it's loading from userspace. :)
->>>>
->>>> Well I'm actually wondering if we could generalize requiring hooks or
->>>> not for LSM as part of the general kobject definition. Then we
->>>> wouldn't need to keep growing hooks for modules, firmware, kexec
->>>> images, etc, but instead using the interfaces for kobjects and who
->>>> depend on them. How that would actually look -- I'm not sure, but just
->>>> a thought.
->>>
->>> Yeah, there does seem to be a repeated "get a thing from userspace"
->>> method here, but the interfaces have been rather scattered so far. I
->>> haven't seen an obvious way to consolidate them yet.
->>
->> If we are going to be adding a new system call for each type of
->> userspace object to help LSMs with requirements I wonder if its a
->> worthy endeavor to review. This series didn't add one but you had
->> mentioned finit_module() for example, are we going to want one for
->> finit_firmware() finit_kexec_image(), etc?
->
-> The kernel pulls in firmware directly from the filesystem, so no
-> syscall there. :) kexec just had kexec_load_file added as a syscall
-> (it takes 2 fds: kernel and initrd).
+From: Mikulas Patocka <mpatocka@redhat.com>
 
-OK, too late then now. Look forward to the rest of the stuff then.
+The patch 3e374919b314f20e2a04f641ebc1093d758f66a4 is supposed to fix the
+problem where kmem_cache_create incorrectly reports duplicate cache name
+and fails. The problem is described in the header of that patch.
 
- Luis
+However, the patch doesn't really fix the problem because of these
+reasons:
+
+* the logic to test for debugging is reversed. It was intended to perform
+  the check only if slub debugging is enabled (which implies that caches
+  with the same parameters are not merged). Therefore, there should be
+  #if !defined(CONFIG_SLUB) || defined(CONFIG_SLUB_DEBUG_ON)
+  The current code has the condition reversed and performs the test if
+  debugging is disabled.
+
+* slub debugging may be enabled or disabled based on kernel command line,
+  CONFIG_SLUB_DEBUG_ON is just the default settings. Therefore the test
+  based on definition of CONFIG_SLUB_DEBUG_ON is unreliable.
+
+This patch fixes the problem by removing the test
+"!defined(CONFIG_SLUB_DEBUG_ON)". Therefore, duplicate names are never
+checked if the SLUB allocator is used.
+
+Note to stable kernel maintainers: when backporint this patch, please
+backport also the patch 3e374919b314f20e2a04f641ebc1093d758f66a4.
+
+Cc: stable@vger.kernel.org	# 3.6+
+Acked-by: Christoph Lameter <cl@linux.com>
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+Signed-off-by: Pekka Enberg <penberg@kernel.org>
+Signed-off-by: David Rientjes <rientjes@google.com>
+---
+ Andrew, this is in Pekka's tree but has not managed to be pushed for 
+ 3.16, mind picking it up?
+
+ I'll check to see if there's anything else in Pekka's tree that you need.
+
+ mm/slab_common.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/mm/slab_common.c b/mm/slab_common.c
+--- a/mm/slab_common.c
++++ b/mm/slab_common.c
+@@ -55,7 +55,7 @@ static int kmem_cache_sanity_check(const char *name, size_t size)
+ 			continue;
+ 		}
+ 
+-#if !defined(CONFIG_SLUB) || !defined(CONFIG_SLUB_DEBUG_ON)
++#if !defined(CONFIG_SLUB)
+ 		if (!strcmp(s->name, name)) {
+ 			pr_err("%s (%s): Cache name already exists.\n",
+ 			       __func__, name);
