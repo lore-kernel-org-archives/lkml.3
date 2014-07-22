@@ -1,50 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756113AbaGVQRy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 12:17:54 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:47767 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756016AbaGVQRS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 12:17:18 -0400
-Message-ID: <1406045838.25343.70.camel@hornet>
-Subject: Re: [RFC] sched_clock: Track monotonic raw clock
-From: Pawel Moll <pawel.moll@arm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: John Stultz <john.stultz@linaro.org>, Steven Rostedt <rostedt@goodmis.org>,
-        Ingo Molnar <mingo@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, Andy Lutomirski <luto@amacapital.net>,
-        Stephen Boyd <sboyd@codeaurora.org>, Baruch Siach <baruch@tkos.co.il>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        lkml <linux-kernel@vger.kernel.org>
-Date: Tue, 22 Jul 2014 17:17:18 +0100
-In-Reply-To: <20140718193417.GG3935@laptop>
-References: <1405705419-4194-1-git-send-email-pawel.moll@arm.com>
-	 <20140718191338.GF3935@laptop>
-	 <CALAqxLX4ia_dBO-oNY1XMnSrJdDZc87EneHj9WcxtOZaupZaCg@mail.gmail.com>
-	 <20140718193417.GG3935@laptop>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1756144AbaGVQTF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 12:19:05 -0400
+Received: from mga02.intel.com ([134.134.136.20]:8294 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754293AbaGVQTC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 12:19:02 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,710,1400050800"; 
+   d="scan'208";a="547261845"
+Message-ID: <53CE8EEC.2090402@intel.com>
+Date: Tue, 22 Jul 2014 09:18:52 -0700
+From: Dave Hansen <dave.hansen@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Qiaowei Ren <qiaowei.ren@intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>
+CC: x86@kernel.org, linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH v7 03/10] x86, mpx: add macro cpu_has_mpx
+References: <1405921124-4230-1-git-send-email-qiaowei.ren@intel.com> <1405921124-4230-4-git-send-email-qiaowei.ren@intel.com>
+In-Reply-To: <1405921124-4230-4-git-send-email-qiaowei.ren@intel.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-07-18 at 20:34 +0100, Peter Zijlstra wrote:
-> On Fri, Jul 18, 2014 at 12:25:48PM -0700, John Stultz wrote:
-> > Also, assuming we someday will merge the x86 sched_clock logic into
-> > the generic sched_clock code, we'll have to handle cases where they
-> > aren't the same.
-> 
-> I prefer that to not happen. I spend quite a bit of time and effort to
-> make the x86 code go fast, and that generic code doesn't look like fast
-> at all.
+On 07/20/2014 10:38 PM, Qiaowei Ren wrote:
+> +#ifdef CONFIG_X86_INTEL_MPX
+> +#define cpu_has_mpx boot_cpu_has(X86_FEATURE_MPX)
+> +#else
+> +#define cpu_has_mpx 0
+> +#endif /* CONFIG_X86_INTEL_MPX */
 
-Actually one of my long-ish time goals to is to speed it up (withing the
-generic framework) for arm64 as well, so we may get back to the
-discussion then :-)
+Is this enough checking?  Looking at the extension reference, it says:
 
-Pawel
+> 9.3.3
+> Enabling of Intel MPX States
+> An OS can enable Intel MPX states to support software operation using bounds registers with the following steps:
+> • Verify the processor supports XSAVE/XRSTOR/XSETBV/XGETBV instructions and XCR0 by checking
+> CPUID.1.ECX.XSAVE[bit 26]=1.
+
+That, I assume the xsave code is already doing.
+
+> • Verify the processor supports both Intel MPX states by checking CPUID.(EAX=0x0D, ECX=0):EAX[4:3] is 11b.
+
+I see these bits _attempting_ to get set in pcntxt_mask via XCNTXT_MASK.
+ But, I don't see us ever actually checking that they _do_ get set.  For
+instance, we do this for:
+
+>         if ((pcntxt_mask & XSTATE_FPSSE) != XSTATE_FPSSE) {
+>                 pr_err("FP/SSE not shown under xsave features 0x%llx\n",
+>                        pcntxt_mask);
+>                 BUG();
+>         }
 
