@@ -1,65 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756531AbaGVScU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 14:32:20 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:54468 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755962AbaGVScS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 14:32:18 -0400
-Message-ID: <53CEAE0F.9080901@ti.com>
-Date: Tue, 22 Jul 2014 13:31:43 -0500
-From: Nishanth Menon <nm@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1755962AbaGVSeJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 14:34:09 -0400
+Received: from mout.kundenserver.de ([212.227.17.10]:52513 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751047AbaGVSeG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 14:34:06 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-iio@vger.kernel.org,
+        kgene.kim@samsung.com, pawel.moll@arm.com, t.figa@samsung.com,
+        linux-kernel@vger.kernel.org, Chanwoo Choi <cw00.choi@samsung.com>,
+        kyungmin.park@samsung.com, linux-samsung-soc@vger.kernel.org,
+        Jonathan Cameron <jic23@kernel.org>, Ben Dooks <ben-linux@fluff.org>,
+        galak@codeaurora.org, ch.naveen@samsung.com,
+        linux-input <linux-input@vger.kernel.org>, heiko.stuebner@bq.com
+Subject: Re: [PATCH v2] iio: exynos-adc: add experimental touchscreen support
+Date: Tue, 22 Jul 2014 20:33:44 +0200
+Message-ID: <5072247.HRN2kuegE2@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140722180904.GB5489@core.coreip.homeip.net>
+References: <5068889.1KfVx3ksNo@wuerfel> <20140722180904.GB5489@core.coreip.homeip.net>
 MIME-Version: 1.0
-To: <balbi@ti.com>, Tony Lindgren <tony@atomide.com>
-CC: Rob Herring <robh+dt@kernel.org>, Mark Rutland <mark.rutland@arm.com>,
-        Benoit Cousson <bcousson@baylibre.com>, <devicetree@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] pinctrl: dra: dt-bindings: Fix pull enable/disable
-References: <1406043594-14181-1-git-send-email-nm@ti.com> <20140722164752.GJ20588@saruman.home>
-In-Reply-To: <20140722164752.GJ20588@saruman.home>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:/OsgU7h6uq7vh8Jbx3F6p6WHRn0heHPJMLvoWUVYsy7
+ 7eNHtyDa/kVeBj6SPxDclTr3fK07IBXvve6sUdrMG7ZVctsOB3
+ m1lrL9xwV9Qwq1lVc9TfrA7n+kd6Ggt7kALrxe39h6BMklBpJU
+ 9cxjdxyQt//tV11Q7/+TCwp3z278n17bryK8P+KNu//sOQeCjJ
+ E49qtuuKvbO6LB6CSWTbhDrG8djTxR+0SWIj6ibOkaAdnpQqh6
+ NAao9l/MFtkHFmJb71FM8ps6QqSn/064Dj0q2d0AUSh/ZphWxi
+ +4cuB+nHssiD2j9+RZKaoRDk8gpa23mNM1dUxkdaJ1Uk3ar+6e
+ 6vqsmlCWfTHKwMawQEaA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/22/2014 11:47 AM, Felipe Balbi wrote:
-> On Tue, Jul 22, 2014 at 10:39:54AM -0500, Nishanth Menon wrote:
->> The DRA74/72 control module pins have a weak pull up and pull down.
->> This is configured by bit offset 17. if BIT(17) is 1, a pull up is
->> selected, else a pull down is selected.
->>
->> However, this pull resisstor is applied based on BIT(16) -
->> PULLUDENABLE - if BIT(18) is *0*, then pull as defined in BIT(17) is
->> applied, else no weak pulls are applied. We defined this in reverse.
->>
->> Reference: Table 18-5 (Description of the pad configuration register
->> bits) in Technical Reference Manual Revision (DRA74x revision Q:
->> SPRUHI2Q Revised June 2014 and DRA72x revision F: SPRUHP2F - Revised
->> June 2014)
->>
->> Fixes: 6e58b8f1daaf1a ("ARM: dts: DRA7: Add the dts files for dra7 SoC and dra7-evm board")
->> Signed-off-by: Nishanth Menon <nm@ti.com>
->> ---
+On Tuesday 22 July 2014 11:09:04 Dmitry Torokhov wrote:
+> > @@ -565,6 +722,15 @@ static int exynos_adc_probe(struct platform_device *pdev)
+> >       if (info->data->init_hw)
+> >               info->data->init_hw(info);
+> >  
+> > +     /* leave out any TS related code if unreachable */
+> > +     if (IS_BUILTIN(CONFIG_INPUT) ||
+> > +         (IS_MODULE(CONFIG_INPUT) && config_enabled(MODULE)))
 > 
-> Tested on an upcoming board.
+> This is ugly... We need IS_SUBSYSTEM_AVAILABLE() wrapper for this...
 > 
-> Tested-by: Felipe Balbi <balbi@ti.com>
-> Acked-by: Felipe Balbi <balbi@ti.com>
+> Anyway,
+> 
+> Acked-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 > 
 > 
-Felipe,
-Thanks.
 
-Tony,
+I actually have a patch to introduce IS_REACHABLE() for this purpose,
+but I haven't sent it out for review yet. The main user of this would
+be drivers/media, which had the correct logic earlier until someone
+tried to "simplify" it by replacing it all with IS_ENABLED()...
 
-If you could consider this for the rc cycle it might be great(as well
-as for stable). The pull direction error can cause all kinds of
-Pull-down Vs Pull-Up contention with severe risk for certain IP
-reliability.
-
--- 
-Regards,
-Nishanth Menon
+	Arnd
