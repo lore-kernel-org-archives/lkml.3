@@ -1,128 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757026AbaGVVEW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 17:04:22 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:44452 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756618AbaGVVEV (ORCPT
+	id S1757070AbaGVVEy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 17:04:54 -0400
+Received: from mail-la0-f53.google.com ([209.85.215.53]:53112 "EHLO
+	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756225AbaGVVEw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 17:04:21 -0400
-Date: Tue, 22 Jul 2014 22:03:52 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Laura Abbott <lauraa@codeaurora.org>,
-        Will Deacon <Will.Deacon@arm.com>,
-        David Riley <davidriley@chromium.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Ritesh Harjain <ritesh.harjani@gmail.com>
-Subject: Re: [PATCHv4 5/5] arm64: Add atomic pool for non-coherent and CMA
- allocations.
-Message-ID: <20140722210352.GA10604@arm.com>
-References: <1404324218-4743-1-git-send-email-lauraa@codeaurora.org>
- <1404324218-4743-6-git-send-email-lauraa@codeaurora.org>
- <201407222006.44666.arnd@arndb.de>
+	Tue, 22 Jul 2014 17:04:52 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201407222006.44666.arnd@arndb.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <53CED031.9090907@zytor.com>
+References: <cover.1405620944.git.luto@amacapital.net> <9c2a0549519b4eb5eee2d5d480f8e83a574273df.1405620944.git.luto@amacapital.net>
+ <20140722135915.GB25291@thunk.org> <CALCETrVY9KNLsbxhtLRatdb34ZP3XvMyys358dpB3oCKezdBwA@mail.gmail.com>
+ <53CED031.9090907@zytor.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Tue, 22 Jul 2014 14:04:30 -0700
+Message-ID: <CALCETrV3FHinFXSWJsQjnsXM2H5OyuAbR3_1A401raLes6fNAg@mail.gmail.com>
+Subject: Re: [PATCH v4 2/5] random: Add and use arch_get_rng_seed
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: "Theodore Ts'o" <tytso@mit.edu>, kvm list <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Kees Cook <keescook@chromium.org>, X86 ML <x86@kernel.org>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        Gleb Natapov <gleb@kernel.org>, Paolo Bonzini <pbonzini@redhat.com>,
+        Bandan Das <bsd@redhat.com>, Andrew Honig <ahonig@google.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 22, 2014 at 07:06:44PM +0100, Arnd Bergmann wrote:
-> On Wednesday 02 July 2014, Laura Abbott wrote:
-> > +       pgprot_t prot = __pgprot(PROT_NORMAL_NC);
-> > +       unsigned long nr_pages = atomic_pool_size >> PAGE_SHIFT;
-> > +       struct page *page;
-> > +       void *addr;
-> > +
-> > +
-> > +       if (dev_get_cma_area(NULL))
-> > +               page = dma_alloc_from_contiguous(NULL, nr_pages,
-> > +                                       get_order(atomic_pool_size));
-> > +       else
-> > +               page = alloc_pages(GFP_KERNEL, get_order(atomic_pool_size));
-> > +
-> > +
-> > +       if (page) {
-> > +               int ret;
-> > +
-> > +               atomic_pool = gen_pool_create(PAGE_SHIFT, -1);
-> > +               if (!atomic_pool)
-> > +                       goto free_page;
-> > +
-> > +               addr = dma_common_contiguous_remap(page, atomic_pool_size,
-> > +                                       VM_USERMAP, prot, atomic_pool_init);
-> > +
-> 
-> I just stumbled over this thread and noticed the code here: When you do
-> alloc_pages() above, you actually get pages that are already mapped into
-> the linear kernel mapping as cacheable pages. Your new
-> dma_common_contiguous_remap tries to map them as noncacheable. This
-> seems broken because it allows the CPU to treat both mappings as
-> cacheable, and that won't be coherent with device DMA.
+On Tue, Jul 22, 2014 at 1:57 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+> On 07/22/2014 01:44 PM, Andy Lutomirski wrote:
+>>
+>> But, if you Intel's hardware does, in fact, work as documented, then
+>> the current code will collect very little entropy on RDSEED-less
+>> hardware.  I see no great reason that we should do something weaker
+>> than following Intel's explicit recommendation for how to seed a PRNG
+>> from RDRAND.
+>>
+>
+> Very little entropy in the architectural worst case.  However, since we
+> are running single-threaded at this point, actual hardware performs
+> orders of magnitude better.  Since we run the mixing function (for no
+> particularly good reason -- it is a linear function and doesn't add
+> security) there will be enough delay that RDRAND will in practice catch
+> up and the output will be quite high quality.  Since the pool is quite
+> large, the likely outcome is that there will be enough randomness that
+> in practice we would probably be okay if *no* further entropy was ever
+> collected.
 
-It does *not* allow the CPU to treat both as cacheable. It treats the
-non-cacheable mapping as non-cacheable (and the cacheable one as
-cacheable). The only requirements the ARM ARM makes in this situation
-(B2.9 point 5 in the ARMv8 ARM):
+Just to check: do you mean the RDRAND is very likely to work (i.e.
+arch_get_random_long will return true) or that RDRAND will actually
+reseed several times during initialization?
 
-- Before writing to a location not using the Write-Back attribute,
-  software must invalidate, or clean, a location from the caches if any
-  agent might have written to the location with the Write-Back
-  attribute. This avoids the possibility of overwriting the location
-  with stale data.
-- After writing to a location with the Write-Back attribute, software
-  must clean the location from the caches, to make the write visible to
-  external memory.
-- Before reading the location with a cacheable attribute, software must
-  invalidate the location from the caches, to ensure that any value held
-  in the caches reflects the last value made visible in external memory.
+I have no RDRAND-capable hardware, so I can't benchmark it, but I
+imagine that we're talking about adding 1-2 ms per boot to ensure that
+the pool is filled to capacity with *NRBG* data according to the the
+architectural specification.
 
-So we as long as the CPU accesses such memory only via the non-cacheable
-mapping, the only requirement is to flush the cache so that there are no
-dirty lines that could be evicted.
+Anyway, the current code is IMO very much encoding some form of
+knowledge of how arch_get_random_* work into init_std_data, and I
+don't think that's the place for it.
 
-(if the mismatched attributes were for example Normal vs Device, the
-Device guarantees would be lost but in the cacheable vs non-cacheable
-it's not too bad; same for ARMv7).
+>
+>> Another benefit of this split is that it will potentially allow
+>> arch_get_rng_seed to be made to work before alternatives are run.
+>> There's no fundamental reason that it couldn't work *extremely* early
+>> in boot.  (The KASLR code is an example of how this might work.)  On
+>> the other hand, making arch_get_random_long work very early in boot
+>> would either slow down all the other callers or add a considerable
+>> amount of extra complexity.
+>>
+>> So I think that this patch is a slight improvement in RNG
+>> initialization and will actually result in simpler code.  (And yes, if
+>> I submit a new version of it, I'll fix the changelog.)
+>
+> There really isn't any significant reason why we could not permit
+> randomness initialization very early in the boot, indeed.  It has
+> largely been useless in the past because until the I/O system gets
+> initialized there is no randomness of any kind available on traditional
+> hardware.
 
-> > +               if (!addr)
-> > +                       goto destroy_genpool;
-> > +
-> > +               memset(addr, 0, atomic_pool_size);
-> > +               __dma_flush_range(addr, addr + atomic_pool_size);
-> 
-> It also seems weird to flush the cache on a virtual address of
-> an uncacheable mapping. Is that well-defined?
+To me, the question is whether this is a sufficient reason to add
+arch_get_rng_data.  If it is, then great.  If not, then I'd like to
+know what other way of doing this would be acceptable.  You disliked
+arch_get_slow_rng_u64 or whatever I called it, and I agree -- I think
+it sucked.
 
-Yes. According to D5.8.1 (Data and unified caches), "if cache
-maintenance is performed on a memory location, the effect of that cache
-maintenance is visible to all aliases of that physical memory location.
-These properties are consistent with implementing all caches that can
-handle data accesses as Physically-indexed, physically-tagged (PIPT)
-caches".
-
-> In the CMA case, the
-> original mapping should already be uncached here, so you don't need
-> to flush it.
-
-I don't think it is non-cacheable already, at least not for arm64 (CMA
-can be used on coherent architectures as well).
-
-> In the alloc_pages() case, I think you need to unmap
-> the pages from the linear mapping instead.
-
-Even if unmapped, it would not remove dirty cache lines (which are
-associated with physical addresses anyway). But we don't need to worry
-about unmapping anyway, see above (that's unless we find some
-architecture implementation where having such cacheable/non-cacheable
-aliases is not efficient enough, the efficiency is not guaranteed by the
-ARM ARM, just the correct behaviour).
-
--- 
-Catalin
+--Andy
