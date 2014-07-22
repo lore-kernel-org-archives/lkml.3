@@ -1,92 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755535AbaGVPEZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 11:04:25 -0400
-Received: from smtprelay03.ispgateway.de ([80.67.31.30]:43575 "EHLO
-	smtprelay03.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752751AbaGVPEY (ORCPT
+	id S1755918AbaGVPEr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 11:04:47 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:26073 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752626AbaGVPEq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 11:04:24 -0400
-References: <1398561815-22033-1-git-send-email-peter@piie.net> <1405817480-25347-1-git-send-email-peter@piie.net> <1405817480-25347-4-git-send-email-peter@piie.net> <20140721092950.GB10016@pd.tnic> <1405935627.2455.6.camel@rzhang1-toshiba>
-Message-ID: <cone.1406041142.559920.1179.1000@galar>
-X-Mailer: http://www.courier-mta.org/cone/
-From: Peter Feuerer <peter@piie.net>
-To: Zhang Rui <rui.zhang@intel.com>
-Cc: Borislav Petkov <bp@alien8.de>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andreas Mohr <andi@lisas.de>, Borislav Petkov <bp@suse.de>,
-        Javi Merino <javi.merino@arm.com>
-Subject: Re: [PATCH v4 3/6] thermal: Added Bang-bang thermal governor
-Date: Tue, 22 Jul 2014 16:59:02 +0200
-Mime-Version: 1.0
-Content-Type: text/plain; format=flowed; charset="US-ASCII"
-Content-Disposition: inline
+	Tue, 22 Jul 2014 11:04:46 -0400
+Date: Tue, 22 Jul 2014 11:04:44 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
+Cc: Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        yrl.pp-manager.tt@hitachi.com, linux-kernel@vger.kernel.org,
+        Aaron Fabbri <aaronx.j.fabbri@intel.com>
+Subject: Re: [PATCH V4 1/5] trace-cmd/listen: Apply the trace-msg protocol
+ for communication between a server and clients
+Message-ID: <20140722110444.2e78ad0b@gandalf.local.home>
+In-Reply-To: <20140711005826.25516.77711.stgit@yuno-kbuild.novalocal>
+References: <20140711005824.25516.24498.stgit@yuno-kbuild.novalocal>
+	<20140711005826.25516.77711.stgit@yuno-kbuild.novalocal>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Df-Sender: NDA0MDk0
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Sorry for taking so long to reply, I've been hacking on the kernel a
+bit and that takes precedence over user tools :-/
 
-Zhang Rui writes:
 
-> On Mon, 2014-07-21 at 11:29 +0200, Borislav Petkov wrote:
->> On Sun, Jul 20, 2014 at 02:51:17AM +0200, Peter Feuerer wrote:
->> > The bang-bang thermal governor uses a hysteresis to switch abruptly on
->> > or off a cooling device.  It is intended to control fans, which can
->> > not be throttled but just switched on or off.
->> > Bang-bang cannot be set as default governor as it is intended for
->> > special devices only.  For those special devices the driver needs to
->> > explicitely request it.
->> > 
->> > Cc: Andrew Morton <akpm@linux-foundation.org>
->> > Cc: Zhang Rui <rui.zhang@intel.com>
->> > Cc: Andreas Mohr <andi@lisas.de>
->> > Cc: Borislav Petkov <bp@suse.de>
->> > Cc: Javi Merino <javi.merino@arm.com>
->> > Signed-off-by: Peter Feuerer <peter@piie.net>
->> > ---
->> >  drivers/thermal/Kconfig         |  10 +++
->> >  drivers/thermal/Makefile        |   1 +
->> >  drivers/thermal/gov_bang_bang.c | 131 ++++++++++++++++++++++++++++++++++++++++
->> >  drivers/thermal/thermal_core.c  |   5 ++
->> >  drivers/thermal/thermal_core.h  |   8 +++
->> >  5 files changed, 155 insertions(+)
->> >  create mode 100644 drivers/thermal/gov_bang_bang.c
->> > 
->> > diff --git a/drivers/thermal/Kconfig b/drivers/thermal/Kconfig
->> > index f9a1386..cdddf09 100644
->> > --- a/drivers/thermal/Kconfig
->> > +++ b/drivers/thermal/Kconfig
->> > @@ -84,6 +84,16 @@ config THERMAL_GOV_STEP_WISE
->> >  	  Enable this to manage platform thermals using a simple linear
->> >  	  governor.
->> >  
->> > +config THERMAL_GOV_BANG_BANG
->> > +	bool "Bang Bang thermal governor"
->> > +	default y
->> 
->> Right, this is problematic.
->> 
->> When people are faced with the new selection after doing oldconfig, they
->> can say yes or no.
->> 
->> However, as acerhdf depends on it now, prompting the user to
->> unconditionally says yes is kinda redundant. Especially as this governor
->> is not supposed to be default anyway.
->> 
->> Actually you don't need the Kconfig prompt at all as this is a sort-of
->> "internal" governor and devices select it. IOW, it should be "default n"
->> and ACERHDF will do "select THERMAL_GOV_BANG_BANG". Something like that
->> at least.
->> 
-> I agree with this approach.
+On Fri, 11 Jul 2014 00:58:26 +0000
+Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com> wrote:
 
-Yes, you are right, this looks better.  Then the "depend on 
-THERMAL_GOV_BANG_BANG" could be removed from acerhdf Kbuild, as the "select" 
-will take care acerhdf is compiled with THERMAL_GOV_BANG_BANG enabled, 
-right?
+> Apply trace-msg protocol for communication between a server and clients.
+> 
+> Currently, trace-listen(server) and trace-record -N(client) operate as follows:
+> 
+>      <server>                 <client>
+>       listen to socket fd
+>                               connect to socket fd
+>       accept the client
+>       send "tracecmd"
+>                +------------> receive "tracecmd"
+>                               check "tracecmd"
+>                               send cpus
+>       receive cpus <------------+
+>       print "cpus=XXX"
+>                               send pagesize
+>                                 |
+>       receive pagesize <--------+
+>       print "pagesize=XXX"
+>                               send option
+>                                 |
+>       receive option <----------+
+>       understand option
+>       send port_array
+>                +------------> receive port_array
+>                               understand port_array
+>                               send meta data
+>       receive meta data <-------+
+>       record meta data
+>                         (snip)
+>       read block
+>      --- start sending trace data on child processes ---
+> 
+>      --- When client finishes sending trace data ---
+>                               close(socket fd)
+>       read size = 0
+>       close(socket fd)
+> 
+> All messages are unstructured character strings, so server(client) using the
+> protocol must parse the unstructured messages. Since it is hard to
+> add complex contents in the protocol, structured binary message trace-msg
+> is introduced as the communication protocol.
+> 
+> By applying this patch, server and client operate as follows:
+> 
+>      <server>                 <client>
+>       listen to socket fd
+>                               connect to socket fd
+>       accept the client
+>       send "tracecmd"
+>                +------------> receive "tracecmd"
+>                               check "tracecmd"
+>                               send "V2\0<MAGIC_NUMBER>\00" as the v2 protocol
 
--- 
---peter;
+Lets change this to "-1V2\0<MAGIC_NUMBER>\00"
+
+The -1 will cause an old server to exit as it will not accept a -1 for
+CPU count. Then you can check if the return of the next read is -1, as
+the client would have disconnected.
+
+The reason I ask this, is because once you send a valid CPU count (and
+unfortunately, 0 happens to be valid :-p, the server side creates a
+file. When you close it, that file stays around as zero length.
+
+By sending -1, the old server will error out and never create a file.
+
+-- Steve
+
+>       receive "V2" <------------+
+>       check "V2"
+>       read "<MAGIC_NUMBER>\00"
+>       send "V2"
+>             +---------------> receive "V2"
+>                               check "V2"
+>                               send cpus,pagesize,option(MSG_TINIT)
+>       receive MSG_TINIT <-------+
+>       print "cpus=XXX"
+>       print "pagesize=XXX"
+>       understand option
+>       send port_array
+>                +--MSG_RINIT-> receive MSG_RINIT
+>                               understand port_array
+>                               send meta data(MSG_SENDMETA)
+>       receive MSG_SENDMETA <----+
+>       record meta data
+>                          (snip)
+>                               send a message to finish sending meta data
+>                                 |                           (MSG_FINMETA)
+>       receive MSG_FINMETA <-----+
+>       read block
+>      --- start sending trace data on child processes ---
+> 
+>      --- When client finishes sending trace data ---
+>                               send MSG_CLOSE
+>       receive MSG_CLOSE <-------+
+>       close(socket fd)        close(socket fd)
+> 
