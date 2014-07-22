@@ -1,90 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756197AbaGVPkl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 11:40:41 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:58181 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755970AbaGVPki (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 11:40:38 -0400
-From: Nishanth Menon <nm@ti.com>
-To: Tony Lindgren <tony@atomide.com>
-CC: Rob Herring <robh+dt@kernel.org>, Mark Rutland <mark.rutland@arm.com>,
-        Benoit Cousson <bcousson@baylibre.com>, <devicetree@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <balbi@ti.com>,
-        Nishanth Menon <nm@ti.com>
-Subject: [PATCH] pinctrl: dra: dt-bindings: Fix pull enable/disable
-Date: Tue, 22 Jul 2014 10:39:54 -0500
-Message-ID: <1406043594-14181-1-git-send-email-nm@ti.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1756007AbaGVPlh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 11:41:37 -0400
+Received: from mail-vc0-f180.google.com ([209.85.220.180]:33823 "EHLO
+	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755351AbaGVPlf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 11:41:35 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <53CD424B.1090806@ti.com>
+References: <1405696469-7172-1-git-send-email-m-karicheri2@ti.com>
+ <1405696469-7172-5-git-send-email-m-karicheri2@ti.com> <CAL_JsqKheoWrSGtxPO=AE8g9iOAqfwRa=81Ku=Cfx8_gpDysOg@mail.gmail.com>
+ <53C9839C.5090604@ti.com> <006001cfa485$4f4fcff0$edef6fd0$%han@samsung.com> <53CD424B.1090806@ti.com>
+From: Rob Herring <robherring2@gmail.com>
+Date: Tue, 22 Jul 2014 10:41:12 -0500
+Message-ID: <CAL_JsqJXb28RHhZG9=-NACwAr1ooGhfMOPjtsTGO2s3Dx7ayxQ@mail.gmail.com>
+Subject: Re: [PATCH v6 4/5] PCI: add PCI controller for keystone PCIe h/w
+To: Murali Karicheri <m-karicheri2@ti.com>
+Cc: Jingoo Han <jg1.han@samsung.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Mohit Kumar <mohit.kumar@st.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Pratyush Anand <pratyush.anand@st.com>,
+        Richard Zhu <r65037@freescale.com>,
+        Kishon Vijay Abraham I <kishon@ti.com>, Marek Vasut <marex@denx.de>,
+        Arnd Bergmann <arnd@arndb.de>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Randy Dunlap <rdunlap@infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The DRA74/72 control module pins have a weak pull up and pull down.
-This is configured by bit offset 17. if BIT(17) is 1, a pull up is
-selected, else a pull down is selected.
+On Mon, Jul 21, 2014 at 11:39 AM, Murali Karicheri <m-karicheri2@ti.com> wrote:
+> On 07/20/2014 09:44 PM, Jingoo Han wrote:
+>>
+>> On Saturday, July 19, 2014 5:29 AM, Murali Karicheri wrote:
+>>>
+>>> On 07/18/2014 03:31 PM, Rob Herring wrote:
+>>>>
+>>>> On Fri, Jul 18, 2014 at 10:14 AM, Murali Karicheri<m-karicheri2@ti.com>
+>>>> wrote:
+>>>
+>>> --- Cut ---
+>>>>>
+>>>>> +
+>>>>> +Optional properties:-
+>>>>> +       phys: phandle to Generic Keystone SerDes phy for PCI
+>>>>> +       phy-names: name of the Generic Keystine SerDes phy for PCI
+>>>>> +         - If boot loader already does PCI link establishment, then
+>>>>> phys and
+>>>>> +           phy-names shouldn't be present.
+>>>>> +       ti,enable-linktrain - Enable Link training.
+>>>>> +         - If boot loader already does PCI link establishment, then
+>>>>> this
+>>>>> +           shouldn't be present.
+>>>>
+>>>>
+>>>> Can't you read from the h/w if the link is trained?
+>>
+>>
+>> I agree with Rob Herring's suggestion.
+>>
+>>>
+>>> Yes.
+>>>
+>>> There are customers who use this driver with PCI Link setup done in the
+>>> boot loader. This property tells the driver to bypass Link setup
+>>> procedure in that case. Is this undesirable and if so. how other
+>>> platforms handle it? Check first if link is trained or start the link
+>>> setup procedure? Let me know. If this is fine, please provide your Ack.
+>>
+>>
+>> Please, check the following code of Exynos PCIe diver.
+>>
+>> ./drivers/pci/host/pci-exynos.c
+>>
+>> static int exynos_pcie_establish_link(struct pcie_port *pp)
+>> {
+>>         struct exynos_pcie *exynos_pcie = to_exynos_pcie(pp);
+>>         void __iomem *elbi_base = exynos_pcie->elbi_base;
+>>         void __iomem *pmu_base = exynos_pcie->pmu_base;
+>>
+>>         if (dw_pcie_link_up(pp)) {
+>>                 dev_err(pp->dev, "Link already up\n");
+>>                 return 0;
+>>         }
+>>         .....
+>>
+>> In the case of Exynos PCIe, the Exynos PCIe driver checks the
+>> h/w bit such as PCIE_ELBI_LTSSM_ENABLE bit of PCIE_ELBI_RDLH_LINKUP
+>> offset register.
+>>
+>> If the link is already set up by the boot loader or other reasons,
+>> the driver will skip some initialization codes.
+>>
+>> The first step is that you find such h/w bit for checking link up.
+>> If so, please add the code for skipping, when the link is already
+>> set up.
+>>
+> Rob, Jingoo,
+>
+> We have similar bit to check for Link status and I have removed the DT
+> property and skip Link retrain if PCIe Link is already Up. I will be
+> resending the series with Patch 4/5 updated.
 
-However, this pull resisstor is applied based on BIT(16) -
-PULLUDENABLE - if BIT(18) is *0*, then pull as defined in BIT(17) is
-applied, else no weak pulls are applied. We defined this in reverse.
+For both keystone and exynos, is this status bit in the phy? If so,
+sounds like this should be a standard phy function op.
 
-Reference: Table 18-5 (Description of the pad configuration register
-bits) in Technical Reference Manual Revision (DRA74x revision Q:
-SPRUHI2Q Revised June 2014 and DRA72x revision F: SPRUHP2F - Revised
-June 2014)
-
-Fixes: 6e58b8f1daaf1a ("ARM: dts: DRA7: Add the dts files for dra7 SoC and dra7-evm board")
-Signed-off-by: Nishanth Menon <nm@ti.com>
----
-Patch based on v3.16-rc5 tag
-
-1: dra72x-evm:  Boot ok: http://slexy.org/raw/s20I6QXQa (needs MMC filesystem that current dts does not have.
-	- Fails in plain Vanilla 3.16-rc5 kernel due to missing patch to handle USB IP instance delta (between dra72x and dra74x) appropriately.
-	- Tested with fixes needed: https://patchwork.kernel.org/patch/4565431/ and https://patchwork.kernel.org/patch/4565461/
-
-2: dra7xx-evm:  Boot PASS: http://slexy.org/raw/s21c6X2wOd
-
-Equivalent testing on 3.14 based product kernel:
- dra72x-evm:  Boot PASS: http://slexy.org/raw/s21yIgttJw
- dra7xx-evm:  Boot PASS: http://slexy.org/raw/s20w7OZaJJ
-
-It is obvious that current users of padconf have'nt had trouble with
-the wrong definitions. I think I might have been the first to discover
-this as emmc on beagleboard-X15 (an upcoming platform) exposed this problem.
-
- include/dt-bindings/pinctrl/dra.h |    7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
-
-diff --git a/include/dt-bindings/pinctrl/dra.h b/include/dt-bindings/pinctrl/dra.h
-index 002a285..3d33794 100644
---- a/include/dt-bindings/pinctrl/dra.h
-+++ b/include/dt-bindings/pinctrl/dra.h
-@@ -30,7 +30,8 @@
- #define MUX_MODE14	0xe
- #define MUX_MODE15	0xf
- 
--#define PULL_ENA		(1 << 16)
-+#define PULL_ENA		(0 << 16)
-+#define PULL_DIS		(1 << 16)
- #define PULL_UP			(1 << 17)
- #define INPUT_EN		(1 << 18)
- #define SLEWCONTROL		(1 << 19)
-@@ -38,10 +39,10 @@
- #define WAKEUP_EVENT		(1 << 25)
- 
- /* Active pin states */
--#define PIN_OUTPUT		0
-+#define PIN_OUTPUT		(0 | PULL_DIS)
- #define PIN_OUTPUT_PULLUP	(PIN_OUTPUT | PULL_ENA | PULL_UP)
- #define PIN_OUTPUT_PULLDOWN	(PIN_OUTPUT | PULL_ENA)
--#define PIN_INPUT		INPUT_EN
-+#define PIN_INPUT		(INPUT_EN | PULL_DIS)
- #define PIN_INPUT_SLEW		(INPUT_EN | SLEWCONTROL)
- #define PIN_INPUT_PULLUP	(PULL_ENA | INPUT_EN | PULL_UP)
- #define PIN_INPUT_PULLDOWN	(PULL_ENA | INPUT_EN)
--- 
-1.7.9.5
-
+Rob
