@@ -1,45 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752063AbaGVCrq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 22:47:46 -0400
-Received: from smtp4-g21.free.fr ([212.27.42.4]:14834 "EHLO smtp4-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751139AbaGVCrp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 22:47:45 -0400
-Date: Tue, 22 Jul 2014 04:47:40 +0200
-From: Guillaume Morin <guillaume@morinfr.org>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Guillaume Morin <guillaume@morinfr.org>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, oleg.drokin@intel.com,
-        jinshan.xiong@intel.com, lai.siyao@intel.com, joe@perches.com,
-        bergwolf@gmail.com, john.hammond@intel.com, sachin.kamat@linaro.org
-Subject: Re: [PATCH] staging: llite: rw.c: use gfp_t to store GFP flags
-Message-ID: <20140722024740.GA25961@bender.morinfr.org>
-Mail-Followup-To: Greg KH <gregkh@linuxfoundation.org>,
-	Guillaume Morin <guillaume@morinfr.org>, devel@driverdev.osuosl.org,
-	linux-kernel@vger.kernel.org, oleg.drokin@intel.com,
-	jinshan.xiong@intel.com, lai.siyao@intel.com, joe@perches.com,
-	bergwolf@gmail.com, john.hammond@intel.com, sachin.kamat@linaro.org
-References: <22be101821a4af2c92ca597832cbb720c655418e.1405990074.git.guillaume@morinfr.org>
- <20140722020805.GA19215@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140722020805.GA19215@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752544AbaGVCvj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 22:51:39 -0400
+Received: from mail-we0-f172.google.com ([74.125.82.172]:38462 "EHLO
+	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752252AbaGVCvh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jul 2014 22:51:37 -0400
+From: Sam Asadi <asadi.samuel@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Sam Asadi <asadi.samuel@gmail.com>
+Subject: [PATCH 2/2] Staging: comedi: amcc_s5933: a style issue fixed
+Date: Tue, 22 Jul 2014 05:51:23 +0300
+Message-Id: <1405997483-11481-2-git-send-email-asadi.samuel@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1405997483-11481-1-git-send-email-asadi.samuel@gmail.com>
+References: <1405997483-11481-1-git-send-email-asadi.samuel@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 21 Jul 19:08, Greg KH wrote:
-> Odd thing is, that function doesn't seem to even use that variable
-> anywhere...  Can you just remove it entirely?
+A 'line over 80 characters' fixed by removing comment to the previous
+line.
 
-Oh that's right.  Resubmitted.
+Signed-off-by: Sam Asadi <asadi.samuel@gmail.com>
+---
+ drivers/staging/comedi/drivers/amcc_s5933.h |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-Thanks
-
-Guillaume.
-
+diff --git a/drivers/staging/comedi/drivers/amcc_s5933.h b/drivers/staging/comedi/drivers/amcc_s5933.h
+index 089b71f..c9f2afa 100644
+--- a/drivers/staging/comedi/drivers/amcc_s5933.h
++++ b/drivers/staging/comedi/drivers/amcc_s5933.h
+@@ -54,7 +54,8 @@
+ #define INTCSR_INBOX_FULL_INT	0x1000	/*  enable inbox full interrupt */
+ /* read, or write clear inbox full interrupt */
+ #define INTCSR_INBOX_INTR_STATUS	0x20000
+-#define INTCSR_INTR_ASSERTED	0x800000	/*  read only, interrupt asserted */
++/* read only, interrupt asserted */
++#define INTCSR_INTR_ASSERTED	0x800000
+ 
+ /****************************************************************************/
+ /* AMCC - PCI non-volatile ram command register (byte 3 of master control/status register) */
 -- 
-Guillaume Morin <guillaume@morinfr.org>
+1.7.10.4
+
