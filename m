@@ -1,107 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756804AbaGVUQp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 16:16:45 -0400
-Received: from mail-oi0-f50.google.com ([209.85.218.50]:41455 "EHLO
-	mail-oi0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756225AbaGVUQm (ORCPT
+	id S1756832AbaGVURY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 16:17:24 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48848 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751462AbaGVURX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 16:16:42 -0400
+	Tue, 22 Jul 2014 16:17:23 -0400
+Date: Tue, 22 Jul 2014 13:17:22 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Jeff Oczek <jeffoczek@gmail.com>
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging: cxt1e1: Fix static symbol sparse warnings for
+ global vars in linux.c
+Message-ID: <20140722201722.GA20515@kroah.com>
+References: <1406059671-6536-1-git-send-email-jeffoczek@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1406020499-5537-1-git-send-email-takahiro.akashi@linaro.org>
-References: <1406020499-5537-1-git-send-email-takahiro.akashi@linaro.org>
-Date: Tue, 22 Jul 2014 13:16:41 -0700
-X-Google-Sender-Auth: FI6tMZLRFZONJvQOjtv6eENGDB4
-Message-ID: <CAGXu5j+1huPbBKH25HK6PmAL3Mi-zgD5UDRp-6wx8vuPVOBDEg@mail.gmail.com>
-Subject: Re: [PATCH v5 0/3] arm64: Add seccomp support
-From: Kees Cook <keescook@chromium.org>
-To: AKASHI Takahiro <takahiro.akashi@linaro.org>
-Cc: Will Drewry <wad@chromium.org>, Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>, dsaxena@linaro.org,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linaro-kernel@lists.linaro.org, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1406059671-6536-1-git-send-email-jeffoczek@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 22, 2014 at 2:14 AM, AKASHI Takahiro
-<takahiro.akashi@linaro.org> wrote:
-> (Please apply this patch after my audit patch in order to avoid some
-> conflict on arm64/Kconfig.)
->
-> This patch enables secure computing (system call filtering) on arm64.
-> System calls can be allowed or denied by loaded bpf-style rules.
-> Architecture specific part is to run secure_computing() on syscall entry
-> and check the result. See [3/3]
+On Tue, Jul 22, 2014 at 04:07:51PM -0400, Jeff Oczek wrote:
+> Put extern declarations in cxt1e1_common.h to reduce sparse warnings for linux.c:
+> drivers/staging/cxt1e1/linux.c:86:13: warning:
+>   symbol 'error_flag' was not declared. Should it be static?
+> drivers/staging/cxt1e1/linux.c:91:13: warning:
+>   symbol 'cxt1e1_max_mru' was not declared. Should it be static?
+> drivers/staging/cxt1e1/linux.c:95:13: warning:
+>   symbol 'cxt1e1_max_mtu' was not declared. Should it be static?
+> drivers/staging/cxt1e1/linux.c:96:13: warning:
+>   symbol 'max_mtu_default' was not declared. Should it be static?
+> drivers/staging/cxt1e1/linux.c:99:13: warning:
+>   symbol 'max_txdesc_used' was not declared. Should it be static?
+> drivers/staging/cxt1e1/linux.c:100:13: warning:
+>   symbol 'max_txd:esc_default' was not declared. Should it be static?
+> drivers/staging/cxt1e1/linux.c:103:13: warning:
+>   symbol 'max_rxdesc_used' was not declared. Should it be static?
+> drivers/staging/cxt1e1/linux.c:104:13: warning:
+>   symbol 'max_rxdesc_default' was not declared. Should it be static?
+> drivers/staging/cxt1e1/linux.c:153:1: warning:
+>   symbol 'c4_wk_chan_restart' was not declared. Should it be static?
+> drivers/staging/cxt1e1/linux.c:171:1: warning:
+>   symbol 'c4_wk_chan_init' was not declared. Should it be static?
+> drivers/staging/cxt1e1/linux.c:186:1: warning:
+>   symbol 'c4_wq_port_init' was not declared. Should it be static?
+> drivers/staging/cxt1e1/linux.c:208:1: warning:
+>   symbol 'c4_wq_port_cleanup' was not declared. Should it be static?
+> 
+> Signed-off-by: Jeff Oczek <jeffoczek@gmail.com>
+> ---
+>  drivers/staging/cxt1e1/cxt1e1_common.h | 15 +++++++++++++++
+>  drivers/staging/cxt1e1/hwprobe.c       |  2 +-
+>  drivers/staging/cxt1e1/linux.c         |  2 +-
+>  drivers/staging/cxt1e1/musycc.c        |  7 +------
+>  drivers/staging/cxt1e1/pmcc4_drv.c     |  5 +----
+>  5 files changed, 19 insertions(+), 12 deletions(-)
+>  create mode 100644 drivers/staging/cxt1e1/cxt1e1_common.h
+> 
+> diff --git a/drivers/staging/cxt1e1/cxt1e1_common.h b/drivers/staging/cxt1e1/cxt1e1_common.h
+> new file mode 100644
+> index 0000000..ac6b974
+> --- /dev/null
+> +++ b/drivers/staging/cxt1e1/cxt1e1_common.h
+> @@ -0,0 +1,15 @@
+> +#ifndef __CXT1E1_COMMON_H
+> +#define __CXT1E1_COMMON_H
+> +
+> +#include "pmcc4.h"
+> +
+> +extern int error_flag;
 
-Thanks for working on this!
+I know you didn't name this variable, but wow, that's a horrid name for
+a global variable :)
 
-> Prerequisites are:
->  * "arm64: Add audit support" patch
->
-> This code is tested on ARMv8 fast model using
->  * libseccomp v2.1.1 with modifications for arm64 and verified by its "live"
->    tests, 20, 21 and 24.
->  * modified version of Kees' seccomp test for 'changing/skipping a syscall'
->    behavior
+Any way you could change this to first fix up the name of the variable
+to something a bit more "device-specific" first, before this patch?
 
-Would you be able to share this? I'd love to add it to the seccomp
-regression suite for the arm64-specific parts.
+Perhaps "cxt1e1_error_flag"?
 
-Thanks!
+> +extern int cxt1e1_max_mru;
+> +extern int cxt1e1_max_mtu;
 
--Kees
+These are fine.
 
->
-> Changes v4 -> v5:
-> * rebased to v3.16-rc
-> * add patch [1/3] to allow ptrace to change a system call
->   (please note that this patch should be applied even without seccomp.)
->
-> Changes v3 -> v4:
-> * removed the following patch and moved it to "arm64: prerequisites for
->   audit and ftrace" patchset since it is required for audit and ftrace in
->   case of !COMPAT, too.
->   "arm64: is_compat_task is defined both in asm/compat.h and linux/compat.h"
->
-> Changes v2 -> v3:
-> * removed unnecessary 'type cast' operations [2/3]
-> * check for a return value (-1) of secure_computing() explicitly [2/3]
-> * aligned with the patch, "arm64: split syscall_trace() into separate
->   functions for enter/exit" [2/3]
-> * changed default of CONFIG_SECCOMP to n [2/3]
->
-> Changes v1 -> v2:
-> * added generic seccomp.h for arm64 to utilize it [1,2/3]
-> * changed syscall_trace() to return more meaningful value (-EPERM)
->   on seccomp failure case [2/3]
-> * aligned with the change in "arm64: make a single hook to syscall_trace()
->   for all syscall features" v2 [2/3]
-> * removed is_compat_task() definition from compat.h [3/3]
->
-> AKASHI Takahiro (3):
->   arm64: ptrace: reload a syscall number after ptrace operations
->   asm-generic: Add generic seccomp.h for secure computing mode 1
->   arm64: Add seccomp support
->
->  arch/arm64/Kconfig               |   14 ++++++++++++++
->  arch/arm64/include/asm/seccomp.h |   25 +++++++++++++++++++++++++
->  arch/arm64/include/asm/unistd.h  |    3 +++
->  arch/arm64/kernel/entry.S        |    2 ++
->  arch/arm64/kernel/ptrace.c       |   18 ++++++++++++++++++
->  include/asm-generic/seccomp.h    |   28 ++++++++++++++++++++++++++++
->  6 files changed, 90 insertions(+)
->  create mode 100644 arch/arm64/include/asm/seccomp.h
->  create mode 100644 include/asm-generic/seccomp.h
->
-> --
-> 1.7.9.5
->
+> +extern int max_mtu_default;
+> +extern int max_txdesc_used;
+> +extern int max_txdesc_default;
+> +extern int max_rxdesc_used;
+> +extern int max_rxdesc_default;
 
+Again, these are bad names, can you do the same thing here?
 
+thanks,
 
--- 
-Kees Cook
-Chrome OS Security
+greg k-h
