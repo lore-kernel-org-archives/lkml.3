@@ -1,265 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756100AbaGVPia (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 11:38:30 -0400
-Received: from smtprelay05.ispgateway.de ([80.67.31.94]:33906 "EHLO
-	smtprelay05.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755703AbaGVPhV (ORCPT
+	id S1756177AbaGVPjx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 11:39:53 -0400
+Received: from relay.parallels.com ([195.214.232.42]:40358 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755764AbaGVPju (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 11:37:21 -0400
-From: Peter Feuerer <peter@piie.net>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Peter Feuerer <peter@piie.net>, Andrew Morton <akpm@linux-foundation.org>,
-        Zhang Rui <rui.zhang@intel.com>, Andreas Mohr <andi@lisas.de>,
-        Borislav Petkov <bp@suse.de>, Javi Merino <javi.merino@arm.com>,
-        linux-pm@vger.kernel.org
-Subject: [PATCH v5 3/6] thermal: Added Bang-bang thermal governor
-Date: Tue, 22 Jul 2014 17:37:13 +0200
-Message-Id: <1406043436-17068-4-git-send-email-peter@piie.net>
-X-Mailer: git-send-email 2.0.2
-In-Reply-To: <1406043436-17068-1-git-send-email-peter@piie.net>
-References: <1398561815-22033-1-git-send-email-peter@piie.net>
- <1406043436-17068-1-git-send-email-peter@piie.net>
-X-Df-Sender: cGV0ZXJAcGlpZS5uZXQ=
+	Tue, 22 Jul 2014 11:39:50 -0400
+Date: Tue, 22 Jul 2014 19:39:38 +0400
+From: Andrew Vagin <avagin@parallels.com>
+To: Eric Paris <eparis@redhat.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-security-module@vger.kernel.org>,
+        Andrew Vagin <avagin@openvz.org>,
+        "Andrew G. Morgan" <morgan@kernel.org>,
+        "Serge E. Hallyn" <serge.hallyn@canonical.com>,
+        Kees Cook <keescook@chromium.org>, Steve Grubb <sgrubb@redhat.com>,
+        Dan Walsh <dwalsh@redhat.com>, <stable@kernel.org>
+Subject: Re: [PATCH] CAPABILITIES: remove undefined caps from all processes
+Message-ID: <20140722153937.GA26122@paralelels.com>
+References: <1405976341-23818-1-git-send-email-eparis@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="koi8-r"
+Content-Disposition: inline
+In-Reply-To: <1405976341-23818-1-git-send-email-eparis@redhat.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Originating-IP: [10.30.16.48]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The bang-bang thermal governor uses a hysteresis to switch abruptly on
-or off a cooling device.  It is intended to control fans, which can
-not be throttled but just switched on or off.
-Bang-bang cannot be set as default governor as it is intended for
-special devices only.  For those special devices the driver needs to
-explicitely request it.
+On Mon, Jul 21, 2014 at 04:59:01PM -0400, Eric Paris wrote:
+> This is effectively a revert of 7b9a7ec565505699f503b4fcf61500dceb36e744
+> plus fixing it a different way...
+> 
+> We found, when trying to run an application from an application which
+> had dropped privs that the kernel does security checks on undefined
+> capability bits.  This was ESPECIALLY difficult to debug as those
+> undefined bits are hidden from /proc/$PID/status.
+> 
+> Consider a root application which drops all capabilities from ALL 4
+> capability sets.  We assume, since the application is going to set
+> eff/perm/inh from an array that it will clear not only the defined caps
+> less than CAP_LAST_CAP, but also the higher 28ish bits which are
+> undefined future capabilities.
+> 
+> The BSET gets cleared differently.  Instead it is cleared one bit at a
+> time.  The problem here is that in security/commoncap.c::cap_task_prctl()
+> we actually check the validity of a capability being read.  So any task
+> which attempts to 'read all things set in bset' followed by 'unset all
+> things set in bset' will not even attempt to unset the undefined bits
+> higher than CAP_LAST_CAP.
+> 
+> So the 'parent' will look something like:
+> CapInh:	0000000000000000
+> CapPrm:	0000000000000000
+> CapEff:	0000000000000000
+> CapBnd:	ffffffc000000000
+> 
+> All of this 'should' be fine.  Given that these are undefined bits that
+> aren't supposed to have anything to do with permissions.  But they do...
+> 
+> So lets now consider a task which cleared the eff/perm/inh completely
+> and cleared all of the valid caps in the bset (but not the invalid caps
+> it couldn't read out of the kernel).  We know that this is exactly what
+> the libcap-ng library does and what the go capabilities library does.
+> They both leave you in that above situation if you try to clear all of
+> you capapabilities from all 4 sets.  If that root task calls execve()
+> the child task will pick up all caps not blocked by the bset.  The bset
+> however does not block bits higher than CAP_LAST_CAP.  So now the child
+> task has bits in eff which are not in the parent.  These are
+> 'meaningless' undefined bits, but still bits which the parent doesn't
+> have.
+> 
+> The problem is now in cred_cap_issubset() (or any operation which does a
+> subset test) as the child, while a subset for valid cap bits, is not a
+> subset for invalid cap bits!  So now we set durring commit creds that
+> the child is not dumpable.  Given it is 'more priv' than its parent.  It
+> also means the parent cannot ptrace the child and other stupidity.
+> 
+> The solution here is 2 things.
+> 1) stop hiding capability bits in status
+> 	we hide those upper bits which meant I couldn't spot this issue
+> 2) stop giving any task undefined capability bits.  it's simple, it you
+> don't put those invalid bits in CAP_FULL_SET you won't get them in init
+> and you won't get them in any other task either.
 
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Zhang Rui <rui.zhang@intel.com>
-Cc: Andreas Mohr <andi@lisas.de>
-Cc: Borislav Petkov <bp@suse.de>
-Cc: Javi Merino <javi.merino@arm.com>
-Cc: linux-pm@vger.kernel.org
-Signed-off-by: Peter Feuerer <peter@piie.net>
----
- drivers/thermal/Kconfig         |  10 +++
- drivers/thermal/Makefile        |   1 +
- drivers/thermal/gov_bang_bang.c | 131 ++++++++++++++++++++++++++++++++++++++++
- drivers/thermal/thermal_core.c  |   5 ++
- drivers/thermal/thermal_core.h  |   8 +++
- 5 files changed, 155 insertions(+)
- create mode 100644 drivers/thermal/gov_bang_bang.c
+Pls, look at the comment for my first patch: https://lkml.org/lkml/2012/10/5/374
 
-diff --git a/drivers/thermal/Kconfig b/drivers/thermal/Kconfig
-index f9a1386..fa14d56 100644
---- a/drivers/thermal/Kconfig
-+++ b/drivers/thermal/Kconfig
-@@ -84,6 +84,16 @@ config THERMAL_GOV_STEP_WISE
- 	  Enable this to manage platform thermals using a simple linear
- 	  governor.
- 
-+config THERMAL_GOV_BANG_BANG
-+	bool "Bang Bang thermal governor"
-+	default n
-+	help
-+	  Enable this to manage platform thermals using bang bang governor.
-+
-+	  Say 'Y' here if you want to use two point temperature regulation
-+	  used for fans without throttling.  Some fan drivers depend on this
-+	  governor to be enabled (e.g. acerhdf).
-+
- config THERMAL_GOV_USER_SPACE
- 	bool "User_space thermal governor"
- 	help
-diff --git a/drivers/thermal/Makefile b/drivers/thermal/Makefile
-index de0636a..a675980 100644
---- a/drivers/thermal/Makefile
-+++ b/drivers/thermal/Makefile
-@@ -11,6 +11,7 @@ thermal_sys-$(CONFIG_THERMAL_OF)		+= of-thermal.o
- 
- # governors
- thermal_sys-$(CONFIG_THERMAL_GOV_FAIR_SHARE)	+= fair_share.o
-+thermal_sys-$(CONFIG_THERMAL_GOV_BANG_BANG)	+= gov_bang_bang.o
- thermal_sys-$(CONFIG_THERMAL_GOV_STEP_WISE)	+= step_wise.o
- thermal_sys-$(CONFIG_THERMAL_GOV_USER_SPACE)	+= user_space.o
- 
-diff --git a/drivers/thermal/gov_bang_bang.c b/drivers/thermal/gov_bang_bang.c
-new file mode 100644
-index 0000000..c5dd76b
---- /dev/null
-+++ b/drivers/thermal/gov_bang_bang.c
-@@ -0,0 +1,131 @@
-+/*
-+ *  gov_bang_bang.c - A simple thermal throttling governor using hysteresis
-+ *
-+ *  Copyright (C) 2014 Peter Feuerer <peter@piie.net>
-+ *
-+ *  Based on step_wise.c with following Copyrights:
-+ *  Copyright (C) 2012 Intel Corp
-+ *  Copyright (C) 2012 Durgadoss R <durgadoss.r@intel.com>
-+ *
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation, version 2.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See
-+ * the GNU General Public License for more details.
-+ *
-+ */
-+
-+#include <linux/thermal.h>
-+
-+#include "thermal_core.h"
-+
-+static void thermal_zone_trip_update(struct thermal_zone_device *tz, int trip)
-+{
-+	long trip_temp;
-+	unsigned long trip_hyst;
-+	struct thermal_instance *instance;
-+
-+	tz->ops->get_trip_temp(tz, trip, &trip_temp);
-+	tz->ops->get_trip_hyst(tz, trip, &trip_hyst);
-+
-+	dev_dbg(&tz->device, "Trip%d[temp=%ld]:temp=%d:hyst=%ld\n",
-+				trip, trip_temp, tz->temperature,
-+				trip_hyst);
-+
-+	mutex_lock(&tz->lock);
-+
-+	list_for_each_entry(instance, &tz->thermal_instances, tz_node) {
-+		if (instance->trip != trip)
-+			continue;
-+
-+		/* in case fan is in initial state, switch the fan off */
-+		if (instance->target == THERMAL_NO_TARGET)
-+			instance->target = 0;
-+
-+		/* in case fan is neither on nor off set the fan to active */
-+		if (instance->target != 0 && instance->target != 1) {
-+			pr_warn("Thermal instance %s controlled by bang-bang has unexpected state: %ld\n",
-+					instance->name, instance->target);
-+			instance->target = 1;
-+		}
-+
-+		/*
-+		 * enable fan when temperature exceeds trip_temp and disable
-+		 * the fan in case it falls below trip_temp minus hysteresis
-+		 */
-+		if (instance->target == 0 && tz->temperature >= trip_temp)
-+			instance->target = 1;
-+		else if (instance->target == 1 &&
-+				tz->temperature < trip_temp - trip_hyst)
-+			instance->target = 0;
-+
-+		dev_dbg(&instance->cdev->device, "target=%d\n",
-+					(int)instance->target);
-+
-+		instance->cdev->updated = false; /* cdev needs update */
-+	}
-+
-+	mutex_unlock(&tz->lock);
-+}
-+
-+/**
-+ * bang_bang_control - controls devices associated with the given zone
-+ * @tz - thermal_zone_device
-+ * @trip - the trip point
-+ *
-+ * Regulation Logic: a two point regulation, deliver cooling state depending
-+ * on the previous state shown in this diagram:
-+ *
-+ *                Fan:   OFF    ON
-+ *
-+ *                              |
-+ *                              |
-+ *          trip_temp:    +---->+
-+ *                        |     |        ^
-+ *                        |     |        |
-+ *                        |     |   Temperature
-+ * (trip_temp - hyst):    +<----+
-+ *                        |
-+ *                        |
-+ *                        |
-+ *
-+ *   * If the fan is not running and temperature exceeds trip_temp, the fan
-+ *     gets turned on.
-+ *   * In case the fan is running, temperature must fall below
-+ *     (trip_temp - hyst) so that the fan gets turned off again.
-+ *
-+ */
-+static int bang_bang_control(struct thermal_zone_device *tz, int trip)
-+{
-+	struct thermal_instance *instance;
-+
-+	thermal_zone_trip_update(tz, trip);
-+
-+	mutex_lock(&tz->lock);
-+
-+	list_for_each_entry(instance, &tz->thermal_instances, tz_node)
-+		thermal_cdev_update(instance->cdev);
-+
-+	mutex_unlock(&tz->lock);
-+
-+	return 0;
-+}
-+
-+static struct thermal_governor thermal_gov_bang_bang = {
-+	.name		= "bang_bang",
-+	.throttle	= bang_bang_control,
-+};
-+
-+int thermal_gov_bang_bang_register(void)
-+{
-+	return thermal_register_governor(&thermal_gov_bang_bang);
-+}
-+
-+void thermal_gov_bang_bang_unregister(void)
-+{
-+	thermal_unregister_governor(&thermal_gov_bang_bang);
-+}
-diff --git a/drivers/thermal/thermal_core.c b/drivers/thermal/thermal_core.c
-index 71b0ec0..4c2726b 100644
---- a/drivers/thermal/thermal_core.c
-+++ b/drivers/thermal/thermal_core.c
-@@ -1790,6 +1790,10 @@ static int __init thermal_register_governors(void)
- 	if (result)
- 		return result;
- 
-+	result = thermal_gov_bang_bang_register();
-+	if (result)
-+		return result;
-+
- 	return thermal_gov_user_space_register();
- }
- 
-@@ -1797,6 +1801,7 @@ static void thermal_unregister_governors(void)
- {
- 	thermal_gov_step_wise_unregister();
- 	thermal_gov_fair_share_unregister();
-+	thermal_gov_bang_bang_unregister();
- 	thermal_gov_user_space_unregister();
- }
- 
-diff --git a/drivers/thermal/thermal_core.h b/drivers/thermal/thermal_core.h
-index 3db339f..d15d243 100644
---- a/drivers/thermal/thermal_core.h
-+++ b/drivers/thermal/thermal_core.h
-@@ -69,6 +69,14 @@ static inline int thermal_gov_fair_share_register(void) { return 0; }
- static inline void thermal_gov_fair_share_unregister(void) {}
- #endif /* CONFIG_THERMAL_GOV_FAIR_SHARE */
- 
-+#ifdef CONFIG_THERMAL_GOV_BANG_BANG
-+int thermal_gov_bang_bang_register(void);
-+void thermal_gov_bang_bang_unregister(void);
-+#else
-+static inline int thermal_gov_bang_bang_register(void) { return 0; }
-+static inline void thermal_gov_bang_bang_unregister(void) {}
-+#endif /* CONFIG_THERMAL_GOV_BANG_BANG */
-+
- #ifdef CONFIG_THERMAL_GOV_USER_SPACE
- int thermal_gov_user_space_register(void);
- void thermal_gov_user_space_unregister(void);
--- 
-2.0.2
+The following command fails with this patch (and succeeds without).
 
+[root@avagin-fc19-cr ~]# capsh --caps="all=eip" -- -c /bin/bash
+Unable to set capabilities [--caps=all=eip]
+
+
+> 
+> Signed-off-by: Eric Paris <eparis@redhat.com>
+> Cc: Andrew Vagin <avagin@openvz.org>
+> Cc: Andrew G. Morgan <morgan@kernel.org>
+> Cc: Serge E. Hallyn <serge.hallyn@canonical.com>
+> Cc: Kees Cook <keescook@chromium.org>
+> Cc: Steve Grubb <sgrubb@redhat.com>
+> Cc: Dan Walsh <dwalsh@redhat.com>
+> Cc: stable@kernel.org
+> ---
+>  fs/proc/array.c            | 9 ---------
+>  include/linux/capability.h | 2 +-
+>  2 files changed, 1 insertion(+), 10 deletions(-)
+> 
+> diff --git a/fs/proc/array.c b/fs/proc/array.c
+> index 64db2bc..d882018 100644
+> --- a/fs/proc/array.c
+> +++ b/fs/proc/array.c
+> @@ -302,10 +302,6 @@ static void render_cap_t(struct seq_file *m, const char *header,
+>  	seq_putc(m, '\n');
+>  }
+>  
+> -/* Remove non-existent capabilities */
+> -#define NORM_CAPS(v) (v.cap[CAP_TO_INDEX(CAP_LAST_CAP)] &= \
+> -				CAP_TO_MASK(CAP_LAST_CAP + 1) - 1)
+> -
+>  static inline void task_cap(struct seq_file *m, struct task_struct *p)
+>  {
+>  	const struct cred *cred;
+> @@ -319,11 +315,6 @@ static inline void task_cap(struct seq_file *m, struct task_struct *p)
+>  	cap_bset	= cred->cap_bset;
+>  	rcu_read_unlock();
+>  
+> -	NORM_CAPS(cap_inheritable);
+> -	NORM_CAPS(cap_permitted);
+> -	NORM_CAPS(cap_effective);
+> -	NORM_CAPS(cap_bset);
+> -
+>  	render_cap_t(m, "CapInh:\t", &cap_inheritable);
+>  	render_cap_t(m, "CapPrm:\t", &cap_permitted);
+>  	render_cap_t(m, "CapEff:\t", &cap_effective);
+> diff --git a/include/linux/capability.h b/include/linux/capability.h
+> index 84b13ad..1c36782 100644
+> --- a/include/linux/capability.h
+> +++ b/include/linux/capability.h
+> @@ -79,7 +79,7 @@ extern const kernel_cap_t __cap_init_eff_set;
+>  #else /* HAND-CODED capability initializers */
+>  
+>  # define CAP_EMPTY_SET    ((kernel_cap_t){{ 0, 0 }})
+> -# define CAP_FULL_SET     ((kernel_cap_t){{ ~0, ~0 }})
+> +# define CAP_FULL_SET     ((kernel_cap_t){{ ~0, CAP_TO_MASK(CAP_LAST_CAP + 1) -1 }})
+>  # define CAP_FS_SET       ((kernel_cap_t){{ CAP_FS_MASK_B0 \
+>  				    | CAP_TO_MASK(CAP_LINUX_IMMUTABLE), \
+>  				    CAP_FS_MASK_B1 } })
+> -- 
+> 1.9.3
+> 
