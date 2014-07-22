@@ -1,65 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754336AbaGVNsc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 09:48:32 -0400
-Received: from mail-ig0-f179.google.com ([209.85.213.179]:52276 "EHLO
-	mail-ig0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750870AbaGVNsb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 09:48:31 -0400
-Date: Tue, 22 Jul 2014 14:48:24 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Joe Perches <joe@perches.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        sameo@linux.intel.com
-Subject: Re: [PATCH 09/19] mfd: ezx-pcap: Repair coding style errors picked
- up with checkpatch
-Message-ID: <20140722134824.GE16065@lee--X1>
-References: <1406027485-15657-1-git-send-email-lee.jones@linaro.org>
- <1406027485-15657-10-git-send-email-lee.jones@linaro.org>
- <1406036038.30871.19.camel@joe-AO725>
+	id S1754714AbaGVNtH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 09:49:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:64281 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752508AbaGVNtF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 09:49:05 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Gu Zheng <guz.fnst@cn.fujitsu.com>
+Cc: bcrl@kvack.org, axboe@kernel.dk, akpm@linux-foundation.org,
+        linux-aio@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/4] aio: use iovec array rather than the single one
+References: <1405996804-8262-1-git-send-email-guz.fnst@cn.fujitsu.com>
+	<1405996804-8262-4-git-send-email-guz.fnst@cn.fujitsu.com>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Tue, 22 Jul 2014 09:48:50 -0400
+In-Reply-To: <1405996804-8262-4-git-send-email-guz.fnst@cn.fujitsu.com> (Gu
+	Zheng's message of "Tue, 22 Jul 2014 10:40:04 +0800")
+Message-ID: <x49lhrl8px9.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1406036038.30871.19.camel@joe-AO725>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 22 Jul 2014, Joe Perches wrote:
+Gu Zheng <guz.fnst@cn.fujitsu.com> writes:
 
-> On Tue, 2014-07-22 at 12:11 +0100, Lee Jones wrote:
-> > This is part of an effort to clean-up the MFD subsystem.
-> > 
-> > WARNING: Missing a blank line after declarations
-> > +       u32 flags;
-> > +       void (*callback)(void *, u16[]);
-> 
-> False positive from an old version of checkpatch.
-> 
-> The one in -next doesn't emit this as it's
-> simply a function pointer declaration.
+> use an iovec array rather than the single one, so that we can avoid
+> to alloc more iovecs buffer in small(< 8) PREADV/PWRITEV cases.
 
-Thanks Joe, will fix up.
+It would be helpful to know what motivated this change and how you
+tested it.
 
-> > diff --git a/drivers/mfd/ezx-pcap.c b/drivers/mfd/ezx-pcap.c
-> []
-> > @@ -25,8 +25,9 @@ struct pcap_adc_request {
-> >  	u8 bank;
-> >  	u8 ch[2];
-> >  	u32 flags;
-> > -	void (*callback)(void *, u16[]);
-> >  	void *data;
-> > +
-> > +	void (*callback)(void *, u16[]);
-> >  };
-> 
-> 
-
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Thanks,
+Jeff
