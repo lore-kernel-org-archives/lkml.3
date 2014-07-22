@@ -1,68 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932202AbaGVVRA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 17:17:00 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:60278 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752457AbaGVVQ6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 17:16:58 -0400
-Message-ID: <53CED4BB.3080601@zytor.com>
-Date: Tue, 22 Jul 2014 14:16:43 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1756864AbaGVVUr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 17:20:47 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:48855 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754861AbaGVVUq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 17:20:46 -0400
+Date: Tue, 22 Jul 2014 22:20:36 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Grygorii Strashko <grygorii.strashko@ti.com>
+Cc: Bastian Hecht <hechtb@gmail.com>, linux-i2c@vger.kernel.org,
+        "Menon, Nishanth" <nm@ti.com>, Linux-SH <linux-sh@vger.kernel.org>,
+        Wolfram Sang <wsa@the-dreams.de>,
+        Tomoya MORINAGA <tomoya.rohm@gmail.com>,
+        open list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2 1/5] i2c: Don't start transfers when suspended
+Message-ID: <20140722212036.GL21766@n2100.arm.linux.org.uk>
+References: <1405608520-5644-1-git-send-email-hechtb@gmail.com> <53CEB196.9060903@ti.com>
 MIME-Version: 1.0
-To: Andy Lutomirski <luto@amacapital.net>
-CC: "Theodore Ts'o" <tytso@mit.edu>, kvm list <kvm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Kees Cook <keescook@chromium.org>, X86 ML <x86@kernel.org>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        Gleb Natapov <gleb@kernel.org>, Paolo Bonzini <pbonzini@redhat.com>,
-        Bandan Das <bsd@redhat.com>, Andrew Honig <ahonig@google.com>
-Subject: Re: [PATCH v4 2/5] random: Add and use arch_get_rng_seed
-References: <cover.1405620944.git.luto@amacapital.net> <9c2a0549519b4eb5eee2d5d480f8e83a574273df.1405620944.git.luto@amacapital.net> <20140722135915.GB25291@thunk.org> <CALCETrVY9KNLsbxhtLRatdb34ZP3XvMyys358dpB3oCKezdBwA@mail.gmail.com> <53CED031.9090907@zytor.com> <CALCETrV3FHinFXSWJsQjnsXM2H5OyuAbR3_1A401raLes6fNAg@mail.gmail.com> <53CED2B2.1040401@zytor.com> <CALCETrWiaHCjexw9T8CL=ey06fFKLGArVqmPJ=81WSD6Y25ePg@mail.gmail.com>
-In-Reply-To: <CALCETrWiaHCjexw9T8CL=ey06fFKLGArVqmPJ=81WSD6Y25ePg@mail.gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53CEB196.9060903@ti.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/22/2014 02:10 PM, Andy Lutomirski wrote:
-> On Tue, Jul 22, 2014 at 2:08 PM, H. Peter Anvin <hpa@zytor.com> wrote:
->> On 07/22/2014 02:04 PM, Andy Lutomirski wrote:
->>>
->>> Just to check: do you mean the RDRAND is very likely to work (i.e.
->>> arch_get_random_long will return true) or that RDRAND will actually
->>> reseed several times during initialization?
->>>
->>
->> I mean that RDRAND will actually reseed several times during
->> initialization.  The documented architectural limit is actually
->> extremely conservative.
->>
->> Either way, it isn't really different from seeding from a VM hosts
->> /dev/urandom...
-> 
-> Sure it is.  The VM host's /dev/urandom makes no guarantee (or AFAIK
-> even any particular effort) to reseed such that the output has some
-> minimum entropy per bit, so there would be no point to reading extra
-> data from it.
+On Tue, Jul 22, 2014 at 09:46:46PM +0300, Grygorii Strashko wrote:
+>  I'm not sure, this optimization is safe  (
+> Because, in many cases the access to PMIC IC needs to be allowed till late
+> stages of suspending (at least till suspend_noirq stage or even later).
+> For example, on some OMAP SoC Voltage management code need to use services
+> provided by PMIC IC, which is connected to I2C.
 
-Depends on what you define as "extra data".  If the data pulled is less
-than the size of the output pool, it *may* be fully entropic.
+This is definitely not safe.  I worked on a PXA platform a while back
+where the only way to tell the thing to "sleep" was to send an I2C
+message to a microcontroller asking it to remove power.
 
-(Fun fact: it may even have been fully entropic at the time you pull it,
-but then turn out not to be later because *another* process consumed
-data from /dev/urandom without adequate reseeding.)
+Plus, as you say, you may also have PMICs that you need to talk to
+in order to shut power off to various peripherals (and maybe even
+the CPU itself) during the suspend process.
 
-> Anyway, I'd be willing to drop the conservative RDRAND logic, but I
-> *still* think that arch_get_rng_seed is a much better interface than
-> arch_get_slow_rng_u64.
+I2C is one of those cases where devices attached to the I2C bus are
+themselves responsible for doing their own suspend shutdown at the
+appropriate time; it's not the responsibility of the I2C core to
+know this kind of system/driver dependent detail.
 
-That I will leave up to you and Ted.
-
-	-hpa
-
+-- 
+FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
+according to speedtest.net.
