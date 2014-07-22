@@ -1,101 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754603AbaGVLp5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 07:45:57 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:56377 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754393AbaGVLpz (ORCPT
+	id S1754770AbaGVLqD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 07:46:03 -0400
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:60496 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754394AbaGVLp7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 07:45:55 -0400
-Date: Tue, 22 Jul 2014 13:45:42 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Kirill Tkhai <ktkhai@parallels.com>
-Cc: linux-kernel@vger.kernel.org, Mike Galbraith <umgwanakikbuti@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Tim Chen <tim.c.chen@linux.intel.com>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Ingo Molnar <mingo@kernel.org>, Paul Turner <pjt@google.com>,
-        tkhai@yandex.ru, Oleg Nesterov <oleg@redhat.com>
-Subject: Re: [PATCH 2/5] sched: Teach scheduler to understand ONRQ_MIGRATING
- state
-Message-ID: <20140722114542.GG20603@laptop.programming.kicks-ass.net>
-References: <20140722102425.29682.24086.stgit@tkhai>
- <1406028616.3526.20.camel@tkhai>
+	Tue, 22 Jul 2014 07:45:59 -0400
+Date: Tue, 22 Jul 2014 13:46:07 +0200
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Christian =?iso-8859-1?Q?K=F6nig?= <christian.koenig@amd.com>
+Cc: Dave Airlie <airlied@gmail.com>,
+        Maarten Lankhorst <maarten.lankhorst@canonical.com>,
+        Thomas Hellstrom <thellstrom@vmware.com>,
+        nouveau <nouveau@lists.freedesktop.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        dri-devel <dri-devel@lists.freedesktop.org>,
+        Ben Skeggs <bskeggs@redhat.com>,
+        "Deucher, Alexander" <alexander.deucher@amd.com>
+Subject: Re: [PATCH 09/17] drm/radeon: use common fence implementation for
+ fences
+Message-ID: <20140722114607.GL15237@phenom.ffwll.local>
+Mail-Followup-To: Christian =?iso-8859-1?Q?K=F6nig?= <christian.koenig@amd.com>,
+	Dave Airlie <airlied@gmail.com>,
+	Maarten Lankhorst <maarten.lankhorst@canonical.com>,
+	Thomas Hellstrom <thellstrom@vmware.com>,
+	nouveau <nouveau@lists.freedesktop.org>,
+	LKML <linux-kernel@vger.kernel.org>,
+	dri-devel <dri-devel@lists.freedesktop.org>,
+	Ben Skeggs <bskeggs@redhat.com>,
+	"Deucher, Alexander" <alexander.deucher@amd.com>
+References: <20140709093124.11354.3774.stgit@patser>
+ <20140709122953.11354.46381.stgit@patser>
+ <CAPM=9tyD2ZbrcGDC3hfNb7qNdzsfnyD-ZwM7G-nOgxeu5YKuSg@mail.gmail.com>
+ <53CE2421.5040906@amd.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <1406028616.3526.20.camel@tkhai>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <53CE2421.5040906@amd.com>
+X-Operating-System: Linux phenom 3.15.0-rc3+
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 22, 2014 at 03:30:16PM +0400, Kirill Tkhai wrote:
+On Tue, Jul 22, 2014 at 10:43:13AM +0200, Christian König wrote:
+> Am 22.07.2014 06:05, schrieb Dave Airlie:
+> >On 9 July 2014 22:29, Maarten Lankhorst <maarten.lankhorst@canonical.com> wrote:
+> >>Signed-off-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+> >>---
+> >>  drivers/gpu/drm/radeon/radeon.h        |   15 +-
+> >>  drivers/gpu/drm/radeon/radeon_device.c |   60 ++++++++-
+> >>  drivers/gpu/drm/radeon/radeon_fence.c  |  223 ++++++++++++++++++++++++++------
+> >>  3 files changed, 248 insertions(+), 50 deletions(-)
+> >>
+> > From what I can see this is still suffering from the problem that we
+> >need to find a proper solution to,
+> >
+> >My summary of the issues after talking to Jerome and Ben and
+> >re-reading things is:
+> >
+> >We really need to work out a better interface into the drivers to be
+> >able to avoid random atomic entrypoints,
 > 
-> This is new on_rq state for the cases when task is migrating
-> from one src_rq to another dst_rq, and locks of the both RQs
-> are unlocked.
+> Which is exactly what I criticized from the very first beginning. Good to
+> know that I'm not the only one thinking that this isn't such a good idea.
+
+I guess I've lost context a bit, but which atomic entry point are we
+talking about? Afaics the only one that's mandatory is the is
+fence->signaled callback to check whether a fence really has been
+signalled. It's used internally by the fence code to avoid spurious
+wakeups. Afaik that should be doable already on any hardware. If that's
+not the case then we can always track the signalled state in software and
+double-check in a worker thread before updating the sw state. And wrap
+this all up into a special fence class if there's more than one driver
+needing this.
+
+There is nothing else that forces callbacks from atomic contexts upon you.
+You can use them if you see it fit, but really if it doesn't suit your
+driver you can just ignore that part and do process based waits
+everywhere.
+
+> >I'm sure you have some ideas and I think you really need to
+> >investigate them to move this thing forward,
+> >even it if means some issues with android sync pts.
 > 
-> We will use the state this way:
+> Actually I think that TTMs fence interface already gave quite a good hint
+> how it might look like. I can only guess that this won't fit with the
+> Android stuff, otherwise I can't see a good reason why we didn't stick with
+> that.
+
+Well the current plan for i915<->radeon sync from Maarten is to use these
+atomic callbacks on the i915 side. So android didn't figure into this at
+all. Actually with android the entire implementation is kinda the
+platforms problem, the generic parts just give you a userspace interface
+and some means to stack up fences.
+
+> >but none of the two major drivers seem to want the interface as-is so
+> >something needs to give
+> >
+> >My major question is why we need an atomic callback here at all, what
+> >scenario does it cover?
 > 
-> 	raw_spin_lock(&src_rq->lock);
-> 	dequeue_task(src_rq, p, 0);
-> 	p->on_rq = ONRQ_MIGRATING;
-> 	set_task_cpu(p, dst_cpu);
-> 	raw_spin_unlock(&src_rq->lock);
+> Agree totally. As far as I can see all current uses of the interface are of
+> the kind of waiting for a fence to signal.
 > 
-> 	raw_spin_lock(&dst_rq->lock);
-> 	p->on_rq = ONRQ_QUEUED;
-> 	enqueue_task(dst_rq, p, 0);
-> 	raw_spin_unlock(&dst_rq->lock);
+> No need for any callback from one driver into another, especially not in
+> atomic context. If a driver needs such a functionality it should just start
+> up a kernel thread and do it's waiting there.
 > 
-> The profit is that double_rq_lock() is not needed now,
-> and this may reduce the latencies in some situations.
-> 
-> The logic of try_to_wake_up() remained the same as it
-> was. Its behaviour changes in a small subset of cases
-> (when preempted task in ~TASK_RUNNING state is queued
->  on rq and we are migrating it to another).
+> This obviously shouldn't be an obstacle for pure hardware implementations
+> where one driver signals a semaphore another driver is waiting for, or a
+> high signal on an interrupt line directly wired between two chips. And I
+> think this is a completely different topic and not necessarily part of the
+> common fence interface we should currently focus on.
 
-more details is better ;-) Also, I think Oleg enjoys these kind of
-things, so I've added him to the CC.
+It's for mixed hw/sw stuff where we want to poke the hw from the irq
+context (if possible) since someone forgot the wire. At least on the i915
+side it boils down to one mmio write, and it's fairly pointless to launch
+a thread for that.
 
-A few questions, haven't really thought about things yet.
-
-> @@ -1491,10 +1491,14 @@ static void ttwu_activate(struct rq *rq, struct task_struct *p, int en_flags)
->  static void
->  ttwu_do_wakeup(struct rq *rq, struct task_struct *p, int wake_flags)
->  {
-> -	check_preempt_curr(rq, p, wake_flags);
->  	trace_sched_wakeup(p, true);
->  
->  	p->state = TASK_RUNNING;
-> +
-> +	if (!task_queued(p))
-> +		return;
-
-How can this happen? we're in the middle of a wakeup, we're just added
-the task to the rq and are still holding the appropriate rq->lock.
-
-> @@ -4623,9 +4629,14 @@ int set_cpus_allowed_ptr(struct task_struct *p, const struct cpumask *new_mask)
->  	struct rq *rq;
->  	unsigned int dest_cpu;
->  	int ret = 0;
-> -
-> +again:
->  	rq = task_rq_lock(p, &flags);
->  
-> +	if (unlikely(p->on_rq) == ONRQ_MIGRATING) {
-> +		task_rq_unlock(rq, p, &flags);
-> +		goto again;
-> +	}
-> +
->  	if (cpumask_equal(&p->cpus_allowed, new_mask))
->  		goto out;
->  
-
-That looks like a non-deterministic spin loop, 'waiting' for the
-migration to finish. Not particularly nice and something I think we
-should avoid for it has bad (TM) worst case behaviour.
-
-Also, why only this site and not all task_rq_lock() sites?
+So I haven't dug into ttm details but from the i915 side the current stuff
+and atomic semantics makes sense. Maybe we just need to wrap a bit more
+insulation around ttm-based drivers.
+-Daniel
+-- 
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
