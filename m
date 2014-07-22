@@ -1,101 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755933AbaGVN2D (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 09:28:03 -0400
-Received: from relay.parallels.com ([195.214.232.42]:46035 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755306AbaGVNUw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1755811AbaGVN2B (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 09:28:01 -0400
+Received: from mga02.intel.com ([134.134.136.20]:45434 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755328AbaGVNUw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 22 Jul 2014 09:20:52 -0400
-Message-ID: <1406035239.3526.66.camel@tkhai>
-Subject: Re: [PATCH 2/5] sched: Teach scheduler to understand ONRQ_MIGRATING
- state
-From: Kirill Tkhai <ktkhai@parallels.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: Peter Zijlstra <peterz@infradead.org>, <linux-kernel@vger.kernel.org>,
-        Mike Galbraith <umgwanakikbuti@gmail.com>,
-        Tim Chen <tim.c.chen@linux.intel.com>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Ingo Molnar <mingo@kernel.org>, Paul Turner <pjt@google.com>,
-        <tkhai@yandex.ru>, Oleg Nesterov <oleg@redhat.com>
-Date: Tue, 22 Jul 2014 17:20:39 +0400
-In-Reply-To: <20140722082510.0086dd67@gandalf.local.home>
-References: <20140722102425.29682.24086.stgit@tkhai>
-	 <1406028616.3526.20.camel@tkhai>
-	 <20140722114542.GG20603@laptop.programming.kicks-ass.net>
-	 <20140722082510.0086dd67@gandalf.local.home>
-Organization: Parallels
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5-2+b3 
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.30.26.172]
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,710,1400050800"; 
+   d="scan'208";a="576985957"
+From: Adrian Hunter <adrian.hunter@intel.com>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH 30/52] perf tools: Expose 'addr' functions so they can be reused
+Date: Tue, 22 Jul 2014 16:17:39 +0300
+Message-Id: <1406035081-14301-31-git-send-email-adrian.hunter@intel.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1406035081-14301-1-git-send-email-adrian.hunter@intel.com>
+References: <1406035081-14301-1-git-send-email-adrian.hunter@intel.com>
+Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki, Business Identity Code: 0357606 - 4, Domiciled in Helsinki
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-В Вт, 22/07/2014 в 08:25 -0400, Steven Rostedt пишет:
-> On Tue, 22 Jul 2014 13:45:42 +0200
-> Peter Zijlstra <peterz@infradead.org> wrote:
-> 
->  
-> > > @@ -1491,10 +1491,14 @@ static void ttwu_activate(struct rq *rq, struct task_struct *p, int en_flags)
-> > >  static void
-> > >  ttwu_do_wakeup(struct rq *rq, struct task_struct *p, int wake_flags)
-> > >  {
-> > > -	check_preempt_curr(rq, p, wake_flags);
-> > >  	trace_sched_wakeup(p, true);
-> > >  
-> > >  	p->state = TASK_RUNNING;
-> > > +
-> > > +	if (!task_queued(p))
-> > > +		return;
-> > 
-> > How can this happen? we're in the middle of a wakeup, we're just added
-> > the task to the rq and are still holding the appropriate rq->lock.
-> 
-> I believe it can be in the migrating state. A comment would be useful
-> here.
+Move some functions and functionality related to the use of
+'addr' out of builtin-script so they can be reused.  The
+moved functions are: is_bts_event() and sample_addr_correlates_sym()
+and a new function perf_event__preprocess_sample_addr() is
+created from bits of print_sample_addr().
+perf_event__preprocess_sample_addr() is the equivalent of
+perf_event__preprocess_sample() but for 'addr' instead of
+'ip'.
 
-Sure, I'll update. Stupid question: should I resend all series or one message
-in this thread is enough?
+Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+---
+ tools/perf/builtin-script.c | 34 +---------------------------------
+ tools/perf/util/event.c     | 42 ++++++++++++++++++++++++++++++++++++++++++
+ tools/perf/util/event.h     | 10 ++++++++++
+ 3 files changed, 53 insertions(+), 33 deletions(-)
 
-> 
-> > > @@ -4623,9 +4629,14 @@ int set_cpus_allowed_ptr(struct task_struct *p, const struct cpumask *new_mask)
-> > >  	struct rq *rq;
-> > >  	unsigned int dest_cpu;
-> > >  	int ret = 0;
-> > > -
-> > > +again:
-> > >  	rq = task_rq_lock(p, &flags);
-> > >  
-> > > +	if (unlikely(p->on_rq) == ONRQ_MIGRATING) {
-> > > +		task_rq_unlock(rq, p, &flags);
-> > > +		goto again;
-> > > +	}
-> > > +
-> > >  	if (cpumask_equal(&p->cpus_allowed, new_mask))
-> > >  		goto out;
-> > >  
-> > 
-> > That looks like a non-deterministic spin loop, 'waiting' for the
-> > migration to finish. Not particularly nice and something I think we
-> > should avoid for it has bad (TM) worst case behaviour.
-> 
-> As this patch doesn't introduce the MIGRATING getting set yet, I'd be
-> interested in this too. I'm assuming that the MIGRATING flag is only
-> set and then cleared within an interrupts disabled section, such that
-> the time is no more than a spinlock being taken.
-> 
-> I would also add a cpu_relax() there too.
-
-Sadly, I did't completely understand what you mean. Could you please explain
-what has to be changed?
-
-(I see wrong unlikely() place. It's an error. Is the other thing that there
-is no task_migrating() method?)
-
-
-Thanks,
-Kirill
+diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
+index c1a56f2..163d12b 100644
+--- a/tools/perf/builtin-script.c
++++ b/tools/perf/builtin-script.c
+@@ -367,27 +367,6 @@ static void print_sample_start(struct perf_sample *sample,
+ 	}
+ }
+ 
+-static bool is_bts_event(struct perf_event_attr *attr)
+-{
+-	return ((attr->type == PERF_TYPE_HARDWARE) &&
+-		(attr->config & PERF_COUNT_HW_BRANCH_INSTRUCTIONS) &&
+-		(attr->sample_period == 1));
+-}
+-
+-static bool sample_addr_correlates_sym(struct perf_event_attr *attr)
+-{
+-	if ((attr->type == PERF_TYPE_SOFTWARE) &&
+-	    ((attr->config == PERF_COUNT_SW_PAGE_FAULTS) ||
+-	     (attr->config == PERF_COUNT_SW_PAGE_FAULTS_MIN) ||
+-	     (attr->config == PERF_COUNT_SW_PAGE_FAULTS_MAJ)))
+-		return true;
+-
+-	if (is_bts_event(attr))
+-		return true;
+-
+-	return false;
+-}
+-
+ static void print_sample_addr(union perf_event *event,
+ 			  struct perf_sample *sample,
+ 			  struct machine *machine,
+@@ -395,24 +374,13 @@ static void print_sample_addr(union perf_event *event,
+ 			  struct perf_event_attr *attr)
+ {
+ 	struct addr_location al;
+-	u8 cpumode = event->header.misc & PERF_RECORD_MISC_CPUMODE_MASK;
+ 
+ 	printf("%16" PRIx64, sample->addr);
+ 
+ 	if (!sample_addr_correlates_sym(attr))
+ 		return;
+ 
+-	thread__find_addr_map(thread, machine, cpumode, MAP__FUNCTION,
+-			      sample->addr, &al);
+-	if (!al.map)
+-		thread__find_addr_map(thread, machine, cpumode, MAP__VARIABLE,
+-				      sample->addr, &al);
+-
+-	al.cpu = sample->cpu;
+-	al.sym = NULL;
+-
+-	if (al.map)
+-		al.sym = map__find_symbol(al.map, al.addr, NULL);
++	perf_event__preprocess_sample_addr(event, sample, machine, thread, &al);
+ 
+ 	if (PRINT_FIELD(SYM)) {
+ 		printf(" ");
+diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
+index dc32de0..1727574 100644
+--- a/tools/perf/util/event.c
++++ b/tools/perf/util/event.c
+@@ -875,3 +875,45 @@ int perf_event__preprocess_sample(const union perf_event *event,
+ 
+ 	return 0;
+ }
++
++bool is_bts_event(struct perf_event_attr *attr)
++{
++	return attr->type == PERF_TYPE_HARDWARE &&
++	       (attr->config & PERF_COUNT_HW_BRANCH_INSTRUCTIONS) &&
++	       attr->sample_period == 1;
++}
++
++bool sample_addr_correlates_sym(struct perf_event_attr *attr)
++{
++	if (attr->type == PERF_TYPE_SOFTWARE &&
++	    (attr->config == PERF_COUNT_SW_PAGE_FAULTS ||
++	     attr->config == PERF_COUNT_SW_PAGE_FAULTS_MIN ||
++	     attr->config == PERF_COUNT_SW_PAGE_FAULTS_MAJ))
++		return true;
++
++	if (is_bts_event(attr))
++		return true;
++
++	return false;
++}
++
++void perf_event__preprocess_sample_addr(union perf_event *event,
++					struct perf_sample *sample,
++					struct machine *machine,
++					struct thread *thread,
++					struct addr_location *al)
++{
++	u8 cpumode = event->header.misc & PERF_RECORD_MISC_CPUMODE_MASK;
++
++	thread__find_addr_map(thread, machine, cpumode, MAP__FUNCTION,
++			      sample->addr, al);
++	if (!al->map)
++		thread__find_addr_map(thread, machine, cpumode, MAP__VARIABLE,
++				      sample->addr, al);
++
++	al->cpu = sample->cpu;
++	al->sym = NULL;
++
++	if (al->map)
++		al->sym = map__find_symbol(al->map, al->addr, NULL);
++}
+diff --git a/tools/perf/util/event.h b/tools/perf/util/event.h
+index ae75b48..b8e5d1a 100644
+--- a/tools/perf/util/event.h
++++ b/tools/perf/util/event.h
+@@ -329,6 +329,16 @@ int perf_event__preprocess_sample(const union perf_event *event,
+ 				  struct addr_location *al,
+ 				  struct perf_sample *sample);
+ 
++struct thread;
++
++bool is_bts_event(struct perf_event_attr *attr);
++bool sample_addr_correlates_sym(struct perf_event_attr *attr);
++void perf_event__preprocess_sample_addr(union perf_event *event,
++					struct perf_sample *sample,
++					struct machine *machine,
++					struct thread *thread,
++					struct addr_location *al);
++
+ const char *perf_event__name(unsigned int id);
+ 
+ size_t perf_event__sample_event_size(const struct perf_sample *sample, u64 type,
+-- 
+1.8.3.2
 
