@@ -1,98 +1,327 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753467AbaGVNmH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 09:42:07 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:15006 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751009AbaGVNmE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 09:42:04 -0400
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-X-AuditID: cbfee68f-b7fef6d000003970-d1-53ce6a2a3ff9
-Content-transfer-encoding: 8BIT
-Message-id: <53CE6A2A.7090602@samsung.com>
-Date: Tue, 22 Jul 2014 22:42:02 +0900
-From: Inki Dae <inki.dae@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130803
- Thunderbird/17.0.8
-To: Andrzej Hajda <a.hajda@samsung.com>
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
-        Joonyoung Shim <jy0922.shim@samsung.com>,
-        Seung-Woo Kim <sw0312.kim@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        dri-devel@lists.freedesktop.org,
-        open list <linux-kernel@vger.kernel.org>,
-        "moderated list:ARM/S5P EXYNOS AR..." 
-	<linux-samsung-soc@vger.kernel.org>
-Subject: Re: [PATCH 00/12] drm/exynos/ipp: image post processing improvements,
- part three
-References: <1404393037-17299-1-git-send-email-a.hajda@samsung.com>
-In-reply-to: <1404393037-17299-1-git-send-email-a.hajda@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrJIsWRmVeSWpSXmKPExsWyRsSkQFcr61ywwfENRha31p1jtbjy9T2b
-	xYt7F1kszja9Ybe4vGsOm8WM8/uYLNYeuctuMWPySzYHDo/73ceZPPq2rGL0+LxJLoA5issm
-	JTUnsyy1SN8ugStjya5jjAXTOSsO3N7M2sB4mL2LkZNDQsBEYuuUDcwQtpjEhXvr2boYuTiE
-	BJYySrw628QMU/R11R1WiMR0RonOF7MYQRK8AoISPybfY+li5OBgFpCXOHIpGyTMLKAuMWne
-	ImaI+leMEu9/PGGGqNeSaOn9zAZiswioSnQemQo2hw3InrjiPlhcVCBM4sWrXWD1IkCDZp+8
-	AzaIWeAMk8TJA2vAGoQFoiXmPHzNBGILCThLrF0yF6yZU8BF4tDMpYwgDRICp9glWr+8ZIHY
-	JiDxbfIhsEslBGQlNh2A+kxS4uCKGywTGMVmIflnFsI/s5D8s4CReRWjaGpBckFxUnqRsV5x
-	Ym5xaV66XnJ+7iZGYLSd/vesfwfj3QPWhxiTgTZOZJYSTc4HRmteSbyhsZmRhamJqbGRuaUZ
-	acJK4rz3HyYFCQmkJ5akZqemFqQWxReV5qQWH2Jk4uCUamBUnhD3IHnuTsVkRSm11zyTPwiE
-	VrWzBThZVXp1bMkwzFgRVvTYpjt9zdPwoF+hxwwTw3++i3fz5lBe9TZxv+wkiawv6vW3v4TY
-	L13b/qXQ3qklIJNh13KRMxMFRNhE71WscpQpnBBjXno6lrHl0PPStxH1LX/SPqy78CiTf+5H
-	+6/3la8dCFdiKc5INNRiLipOBADVerZKzAIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrBIsWRmVeSWpSXmKPExsVy+t9jQV2trHPBBnM/aFncWneO1eLK1/ds
-	Fi/uXWSxONv0ht3i8q45bBYzzu9jslh75C67xYzJL9kcODzudx9n8ujbsorR4/MmuQDmqAZG
-	m4zUxJTUIoXUvOT8lMy8dFsl7+B453hTMwNDXUNLC3MlhbzE3FRbJRefAF23zBygE5QUyhJz
-	SoFCAYnFxUr6dpgmhIa46VrANEbo+oYEwfUYGaCBhDWMGUt2HWMsmM5ZceD2ZtYGxsPsXYyc
-	HBICJhJfV91hhbDFJC7cW8/WxcjFISQwnVGi88UsRpAEr4CgxI/J91i6GDk4mAXkJY5cygYJ
-	MwuoS0yat4gZov4Vo8T7H0+YIeq1JFp6P7OB2CwCqhKdR6aCzWEDsieuuA8WFxUIk3jxahdY
-	vQjQoNkn74ANYhY4wyRx8sAasAZhgWiJOQ9fM4HYQgLOEmuXzAVr5hRwkTg0cynjBEaBWUju
-	m4Vw3ywk9y1gZF7FKJpakFxQnJSea6RXnJhbXJqXrpecn7uJERzLz6R3MK5qsDjEKMDBqMTD
-	O0HxbLAQa2JZcWXuIUYJDmYlEd7UxHPBQrwpiZVVqUX58UWlOanFhxhNgb6byCwlmpwPTDN5
-	JfGGxiZmRpZG5oYWRsbmSuK8B1utA4UE0hNLUrNTUwtSi2D6mDg4pRoYjUMqrBojCn0tcw+v
-	WaJ8RKrz+IOTb978bps5d+Oqc++frvDyn5vmtHzmvBdzWM6rf/768syClk3HDhowGfo1HTzQ
-	EFh64uHMudz5fpnrS/Q9mkp5JHRZ2tiVGWTilyhnr/4ZynzpdvZ94aWz3vp+ndTuwfp/Yvy/
-	TzoTrn/4MPtBiqrD4mku55RYijMSDbWYi4oTAZdu4yn7AgAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S1753767AbaGVNoj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 09:44:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41664 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750987AbaGVNof (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 09:44:35 -0400
+From: "Jerome Marchand" <jmarchan@redhat.com>
+To: linux-mm@kvack.org
+Cc: linux-kernel@vger.kernel.org, linux-s390@vger.kernel.org,
+        linux-doc@vger.kernel.org, Hugh Dickins <hughd@google.com>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, linux390@de.ibm.com,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Randy Dunlap <rdunlap@infradead.org>
+Subject: [PATCH 1/5] mm, shmem: Add shmem resident memory accounting
+Date: Tue, 22 Jul 2014 15:43:48 +0200
+Message-Id: <1406036632-26552-2-git-send-email-jmarchan@redhat.com>
+In-Reply-To: <1406036632-26552-1-git-send-email-jmarchan@redhat.com>
+References: <1406036632-26552-1-git-send-email-jmarchan@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014년 07월 03일 22:10, Andrzej Hajda wrote:
-> This set of independent patches contains various improvement and fixes
-> for exynos_drm ipp framework.
-> The patchset is based on exynos-drm-next branch.
+Currently looking at /proc/<pid>/status or statm, there is no way to
+distinguish shmem pages from pages mapped to a regular file (shmem
+pages are mapped to /dev/zero), even though their implication in
+actual memory use is quite different.
+This patch adds MM_SHMEMPAGES counter to mm_rss_stat. It keeps track of
+resident shmem memory size. Its value is exposed in the new VmShm line
+of /proc/<pid>/status.
 
-Applied.
+Signed-off-by: Jerome Marchand <jmarchan@redhat.com>
+---
+ Documentation/filesystems/proc.txt |  2 ++
+ arch/s390/mm/pgtable.c             |  2 +-
+ fs/proc/task_mmu.c                 |  9 ++++++---
+ include/linux/mm.h                 |  7 +++++++
+ include/linux/mm_types.h           |  7 ++++---
+ kernel/events/uprobes.c            |  2 +-
+ mm/filemap_xip.c                   |  2 +-
+ mm/memory.c                        | 37 +++++++++++++++++++++++++++++++------
+ mm/rmap.c                          |  8 ++++----
+ 9 files changed, 57 insertions(+), 19 deletions(-)
 
-Thanks,
-Inki Dae
-
-> 
-> Regards
-> Andrzej
-> 
-> 
-> Andrzej Hajda (12):
->   drm/exynos/ipp: remove type casting
->   drm/exynos/ipp: remove unused field from exynos_drm_ipp_private
->   drm/exynos/ipp: remove struct exynos_drm_ipp_private
->   drm/exynos/ipp: correct address type
->   drm/exynos/ipp: remove temporary variable
->   drm/exynos/ipp: remove incorrect checks of list_first_entry result
->   drm/exynos/ipp: simplify memory check function
->   drm/exynos/ipp: remove useless registration checks
->   drm/exynos/ipp: simplify ipp_find_obj
->   drm/exynos/ipp: remove redundant messages
->   drm/exynos/ipp: simplify ipp_create_id
->   drm/exynos/ipp: simplify ipp_find_driver
-> 
->  drivers/gpu/drm/exynos/exynos_drm_drv.h |   7 +-
->  drivers/gpu/drm/exynos/exynos_drm_ipp.c | 259 +++++++++-----------------------
->  drivers/gpu/drm/exynos/exynos_drm_ipp.h |   4 +-
->  3 files changed, 73 insertions(+), 197 deletions(-)
-> 
+diff --git a/Documentation/filesystems/proc.txt b/Documentation/filesystems/proc.txt
+index ddc531a..1c49957 100644
+--- a/Documentation/filesystems/proc.txt
++++ b/Documentation/filesystems/proc.txt
+@@ -171,6 +171,7 @@ read the file /proc/PID/status:
+   VmLib:      1412 kB
+   VmPTE:        20 kb
+   VmSwap:        0 kB
++  VmShm:         0 kB
+   Threads:        1
+   SigQ:   0/28578
+   SigPnd: 0000000000000000
+@@ -228,6 +229,7 @@ Table 1-2: Contents of the status files (as of 2.6.30-rc7)
+  VmLib                       size of shared library code
+  VmPTE                       size of page table entries
+  VmSwap                      size of swap usage (the number of referred swapents)
++ VmShm	                      size of resident shmem memory
+  Threads                     number of threads
+  SigQ                        number of signals queued/max. number for queue
+  SigPnd                      bitmap of pending signals for the thread
+diff --git a/arch/s390/mm/pgtable.c b/arch/s390/mm/pgtable.c
+index 37b8241..9fe31b0 100644
+--- a/arch/s390/mm/pgtable.c
++++ b/arch/s390/mm/pgtable.c
+@@ -612,7 +612,7 @@ static void gmap_zap_swap_entry(swp_entry_t entry, struct mm_struct *mm)
+ 		if (PageAnon(page))
+ 			dec_mm_counter(mm, MM_ANONPAGES);
+ 		else
+-			dec_mm_counter(mm, MM_FILEPAGES);
++			dec_mm_file_counters(mm, page);
+ 	}
+ 	free_swap_and_cache(entry);
+ }
+diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
+index cfa63ee..4e60751 100644
+--- a/fs/proc/task_mmu.c
++++ b/fs/proc/task_mmu.c
+@@ -21,7 +21,7 @@
+ 
+ void task_mem(struct seq_file *m, struct mm_struct *mm)
+ {
+-	unsigned long data, text, lib, swap;
++	unsigned long data, text, lib, swap, shmem;
+ 	unsigned long hiwater_vm, total_vm, hiwater_rss, total_rss;
+ 
+ 	/*
+@@ -42,6 +42,7 @@ void task_mem(struct seq_file *m, struct mm_struct *mm)
+ 	text = (PAGE_ALIGN(mm->end_code) - (mm->start_code & PAGE_MASK)) >> 10;
+ 	lib = (mm->exec_vm << (PAGE_SHIFT-10)) - text;
+ 	swap = get_mm_counter(mm, MM_SWAPENTS);
++	shmem = get_mm_counter(mm, MM_SHMEMPAGES);
+ 	seq_printf(m,
+ 		"VmPeak:\t%8lu kB\n"
+ 		"VmSize:\t%8lu kB\n"
+@@ -54,7 +55,8 @@ void task_mem(struct seq_file *m, struct mm_struct *mm)
+ 		"VmExe:\t%8lu kB\n"
+ 		"VmLib:\t%8lu kB\n"
+ 		"VmPTE:\t%8lu kB\n"
+-		"VmSwap:\t%8lu kB\n",
++		"VmSwap:\t%8lu kB\n"
++		"VmShm:\t%8lu kB\n",
+ 		hiwater_vm << (PAGE_SHIFT-10),
+ 		total_vm << (PAGE_SHIFT-10),
+ 		mm->locked_vm << (PAGE_SHIFT-10),
+@@ -65,7 +67,8 @@ void task_mem(struct seq_file *m, struct mm_struct *mm)
+ 		mm->stack_vm << (PAGE_SHIFT-10), text, lib,
+ 		(PTRS_PER_PTE * sizeof(pte_t) *
+ 		 atomic_long_read(&mm->nr_ptes)) >> 10,
+-		swap << (PAGE_SHIFT-10));
++		swap << (PAGE_SHIFT-10),
++		shmem << (PAGE_SHIFT-10));
+ }
+ 
+ unsigned long task_vsize(struct mm_struct *mm)
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index e03dd29..e69ee9d 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -1299,6 +1299,13 @@ static inline void dec_mm_counter(struct mm_struct *mm, int member)
+ 	atomic_long_dec(&mm->rss_stat.count[member]);
+ }
+ 
++static inline void dec_mm_file_counters(struct mm_struct *mm, struct page *page)
++{
++	dec_mm_counter(mm, MM_FILEPAGES);
++	if (PageSwapBacked(page))
++		dec_mm_counter(mm, MM_SHMEMPAGES);
++}
++
+ static inline unsigned long get_mm_rss(struct mm_struct *mm)
+ {
+ 	return get_mm_counter(mm, MM_FILEPAGES) +
+diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
+index 21bff4b..e0307c8 100644
+--- a/include/linux/mm_types.h
++++ b/include/linux/mm_types.h
+@@ -322,9 +322,10 @@ struct core_state {
+ };
+ 
+ enum {
+-	MM_FILEPAGES,
+-	MM_ANONPAGES,
+-	MM_SWAPENTS,
++	MM_FILEPAGES,	/* Resident file mapping pages (includes /dev/zero) */
++	MM_ANONPAGES,	/* Resident anonymous pages */
++	MM_SWAPENTS,	/* Anonymous swap entries */
++	MM_SHMEMPAGES,	/* Resident shared memory pages */
+ 	NR_MM_COUNTERS
+ };
+ 
+diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
+index 1d0af8a..6c28c72 100644
+--- a/kernel/events/uprobes.c
++++ b/kernel/events/uprobes.c
+@@ -188,7 +188,7 @@ static int __replace_page(struct vm_area_struct *vma, unsigned long addr,
+ 	lru_cache_add_active_or_unevictable(kpage, vma);
+ 
+ 	if (!PageAnon(page)) {
+-		dec_mm_counter(mm, MM_FILEPAGES);
++		dec_mm_file_counters(mm, page);
+ 		inc_mm_counter(mm, MM_ANONPAGES);
+ 	}
+ 
+diff --git a/mm/filemap_xip.c b/mm/filemap_xip.c
+index d8d9fe3..4bd4836 100644
+--- a/mm/filemap_xip.c
++++ b/mm/filemap_xip.c
+@@ -194,7 +194,7 @@ retry:
+ 			flush_cache_page(vma, address, pte_pfn(*pte));
+ 			pteval = ptep_clear_flush(vma, address, pte);
+ 			page_remove_rmap(page);
+-			dec_mm_counter(mm, MM_FILEPAGES);
++			dec_mm_file_counters(mm, page);
+ 			BUG_ON(pte_dirty(pteval));
+ 			pte_unmap_unlock(pte, ptl);
+ 			/* must invalidate_page _before_ freeing the page */
+diff --git a/mm/memory.c b/mm/memory.c
+index eb37dfb..39820ed 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -176,6 +176,20 @@ static void check_sync_rss_stat(struct task_struct *task)
+ 
+ #endif /* SPLIT_RSS_COUNTING */
+ 
++static void inc_mm_file_counters_fast(struct mm_struct *mm, struct page *page)
++{
++	inc_mm_counter_fast(mm, MM_FILEPAGES);
++	if (PageSwapBacked(page))
++		inc_mm_counter_fast(mm, MM_SHMEMPAGES);
++}
++
++static void dec_mm_file_counters_fast(struct mm_struct *mm, struct page *page)
++{
++	dec_mm_counter_fast(mm, MM_FILEPAGES);
++	if (PageSwapBacked(page))
++		dec_mm_counter_fast(mm, MM_SHMEMPAGES);
++}
++
+ #ifdef HAVE_GENERIC_MMU_GATHER
+ 
+ static int tlb_next_batch(struct mmu_gather *tlb)
+@@ -832,8 +846,11 @@ copy_one_pte(struct mm_struct *dst_mm, struct mm_struct *src_mm,
+ 
+ 				if (PageAnon(page))
+ 					rss[MM_ANONPAGES]++;
+-				else
++				else {
+ 					rss[MM_FILEPAGES]++;
++					if (PageSwapBacked(page))
++						rss[MM_SHMEMPAGES]++;
++				}
+ 
+ 				if (is_write_migration_entry(entry) &&
+ 				    is_cow_mapping(vm_flags)) {
+@@ -875,8 +892,11 @@ copy_one_pte(struct mm_struct *dst_mm, struct mm_struct *src_mm,
+ 		page_dup_rmap(page);
+ 		if (PageAnon(page))
+ 			rss[MM_ANONPAGES]++;
+-		else
++		else {
+ 			rss[MM_FILEPAGES]++;
++			if (PageSwapBacked(page))
++				rss[MM_SHMEMPAGES]++;
++		}
+ 	}
+ 
+ out_set_pte:
+@@ -1140,6 +1160,8 @@ again:
+ 				    likely(!(vma->vm_flags & VM_SEQ_READ)))
+ 					mark_page_accessed(page);
+ 				rss[MM_FILEPAGES]--;
++				if (PageSwapBacked(page))
++					rss[MM_SHMEMPAGES]--;
+ 			}
+ 			page_remove_rmap(page);
+ 			if (unlikely(page_mapcount(page) < 0))
+@@ -1171,8 +1193,11 @@ again:
+ 
+ 				if (PageAnon(page))
+ 					rss[MM_ANONPAGES]--;
+-				else
++				else {
+ 					rss[MM_FILEPAGES]--;
++					if (PageSwapBacked(page))
++						rss[MM_SHMEMPAGES]--;
++				}
+ 			}
+ 			if (unlikely(!free_swap_and_cache(entry)))
+ 				print_bad_pte(vma, addr, ptent, NULL);
+@@ -1495,7 +1520,7 @@ static int insert_page(struct vm_area_struct *vma, unsigned long addr,
+ 
+ 	/* Ok, finally just insert the thing.. */
+ 	get_page(page);
+-	inc_mm_counter_fast(mm, MM_FILEPAGES);
++	inc_mm_file_counters_fast(mm, page);
+ 	page_add_file_rmap(page);
+ 	set_pte_at(mm, addr, pte, mk_pte(page, prot));
+ 
+@@ -2217,7 +2242,7 @@ gotten:
+ 	if (likely(pte_same(*page_table, orig_pte))) {
+ 		if (old_page) {
+ 			if (!PageAnon(old_page)) {
+-				dec_mm_counter_fast(mm, MM_FILEPAGES);
++				dec_mm_file_counters_fast(mm, old_page);
+ 				inc_mm_counter_fast(mm, MM_ANONPAGES);
+ 			}
+ 		} else
+@@ -2759,7 +2784,7 @@ void do_set_pte(struct vm_area_struct *vma, unsigned long address,
+ 		inc_mm_counter_fast(vma->vm_mm, MM_ANONPAGES);
+ 		page_add_new_anon_rmap(page, vma, address);
+ 	} else {
+-		inc_mm_counter_fast(vma->vm_mm, MM_FILEPAGES);
++		inc_mm_file_counters_fast(vma->vm_mm, page);
+ 		page_add_file_rmap(page);
+ 	}
+ 	set_pte_at(vma->vm_mm, address, pte, entry);
+diff --git a/mm/rmap.c b/mm/rmap.c
+index 3e8491c..618240d 100644
+--- a/mm/rmap.c
++++ b/mm/rmap.c
+@@ -1168,7 +1168,7 @@ static int try_to_unmap_one(struct page *page, struct vm_area_struct *vma,
+ 			if (PageAnon(page))
+ 				dec_mm_counter(mm, MM_ANONPAGES);
+ 			else
+-				dec_mm_counter(mm, MM_FILEPAGES);
++				dec_mm_file_counters(mm, page);
+ 		}
+ 		set_pte_at(mm, address, pte,
+ 			   swp_entry_to_pte(make_hwpoison_entry(page)));
+@@ -1181,7 +1181,7 @@ static int try_to_unmap_one(struct page *page, struct vm_area_struct *vma,
+ 		if (PageAnon(page))
+ 			dec_mm_counter(mm, MM_ANONPAGES);
+ 		else
+-			dec_mm_counter(mm, MM_FILEPAGES);
++			dec_mm_file_counters(mm, page);
+ 	} else if (PageAnon(page)) {
+ 		swp_entry_t entry = { .val = page_private(page) };
+ 		pte_t swp_pte;
+@@ -1225,7 +1225,7 @@ static int try_to_unmap_one(struct page *page, struct vm_area_struct *vma,
+ 		entry = make_migration_entry(page, pte_write(pteval));
+ 		set_pte_at(mm, address, pte, swp_entry_to_pte(entry));
+ 	} else
+-		dec_mm_counter(mm, MM_FILEPAGES);
++		dec_mm_file_counters(mm, page);
+ 
+ 	page_remove_rmap(page);
+ 	page_cache_release(page);
+@@ -1376,7 +1376,7 @@ static int try_to_unmap_cluster(unsigned long cursor, unsigned int *mapcount,
+ 
+ 		page_remove_rmap(page);
+ 		page_cache_release(page);
+-		dec_mm_counter(mm, MM_FILEPAGES);
++		dec_mm_file_counters(mm, page);
+ 		(*mapcount)--;
+ 	}
+ 	pte_unmap_unlock(pte - 1, ptl);
+-- 
+1.9.3
 
