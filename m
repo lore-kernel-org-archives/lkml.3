@@ -1,68 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754228AbaGVLLj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 07:11:39 -0400
-Received: from mail-ig0-f175.google.com ([209.85.213.175]:52693 "EHLO
-	mail-ig0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751253AbaGVLLi (ORCPT
+	id S1754589AbaGVLLm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 07:11:42 -0400
+Received: from mail-ig0-f172.google.com ([209.85.213.172]:35273 "EHLO
+	mail-ig0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751253AbaGVLLk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 07:11:38 -0400
+	Tue, 22 Jul 2014 07:11:40 -0400
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Cc: sameo@linux.intel.com, Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 00/19] mfd: Fix checkpatch errors
-Date: Tue, 22 Jul 2014 12:11:06 +0100
-Message-Id: <1406027485-15657-1-git-send-email-lee.jones@linaro.org>
+Subject: [PATCH 01/19] mfd: max77686: Fix 'line over 80 chars' warning
+Date: Tue, 22 Jul 2014 12:11:07 +0100
+Message-Id: <1406027485-15657-2-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1406027485-15657-1-git-send-email-lee.jones@linaro.org>
+References: <1406027485-15657-1-git-send-email-lee.jones@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'm going through the subsystem rectifying all of the warnings/errors
-checkpatch finds.  Please review as appropriate.
+This is part of an effort to clean-up the MFD subsystem.
 
-Lee Jones (19):
-  mfd: max77686: Fix 'line over 80 chars' warning
-  mfd: max8925-i2c: Fix 'blank line after declarations' warning
-  mfd: tps80031: Fix 'missing break or fall-through comment' warning
-  mfd: mcp-core: Fix 'blank line after declarations' warning
-  mfd: wm8350-irq: Fix 'line over 80 chars' warning
-  mfd: dm355evm_msp: Fix checkpatch error: insert space after ','
-  mfd: sec-core: Fix 'missing blank line after declarations' warning
-  mfd: twl6040: Fix 'insert space after ','', error
-  mfd: ezx-pcap: Repair coding style errors picked up with checkpatch
-  mfd: lp8788-irq: Fix 'missing blank line after declarations' warning
-  mfd: twl4030-irq: Fix style warnings relating to pr_warn() and sizeof()
-  mfd: max8925-core: Fix 'missing blank line after declarations' warning
-  mfd: wm8350-i2c: Replace spaces with tabs
-  mfd: twl6030-irq: Extinguish coding style warnings
-  mfd: tc6387xb: Remove unnecessary braces and correct style warnings
-  mfd: si476x-cmd: Remedy checkpatch style complains
-  mfd: ipaq-micro: Fix coding style errors/warnings reported by checkpatch
-  mfd: kempld-core: Correct a variety of checkpatch warnings
-  mfd: wm8997-tables: Suppress 'line over 80 chars' warnings
++WARNING: line over 80 characters
++                                      &max77686_rtc_regmap_config);
 
- drivers/mfd/dm355evm_msp.c  |  2 +-
- drivers/mfd/ezx-pcap.c      |  6 +++---
- drivers/mfd/ipaq-micro.c    |  8 ++++----
- drivers/mfd/kempld-core.c   | 10 ++++++----
- drivers/mfd/lp8788-irq.c    |  2 ++
- drivers/mfd/max77686.c      |  2 +-
- drivers/mfd/max8925-core.c  |  2 ++
- drivers/mfd/max8925-i2c.c   |  2 ++
- drivers/mfd/mcp-core.c      |  1 +
- drivers/mfd/sec-core.c      |  1 +
- drivers/mfd/si476x-cmd.c    | 12 ++++++------
- drivers/mfd/tc6387xb.c      |  7 +++----
- drivers/mfd/tps80031.c      |  1 +
- drivers/mfd/twl4030-irq.c   |  6 +++---
- drivers/mfd/twl6030-irq.c   |  4 +++-
- drivers/mfd/twl6040.c       |  2 +-
- drivers/mfd/wm8350-i2c.c    |  8 ++++----
- drivers/mfd/wm8350-irq.c    |  3 ++-
- drivers/mfd/wm8997-tables.c |  8 ++++----
- 19 files changed, 50 insertions(+), 37 deletions(-)
+total: 0 errors, 1 warnings, 299 lines checked
 
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
+---
+ drivers/mfd/max77686.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/mfd/max77686.c b/drivers/mfd/max77686.c
+index 8650832..f2bd699 100644
+--- a/drivers/mfd/max77686.c
++++ b/drivers/mfd/max77686.c
+@@ -166,7 +166,7 @@ static int max77686_i2c_probe(struct i2c_client *i2c,
+ 	i2c_set_clientdata(max77686->rtc, max77686);
+ 
+ 	max77686->rtc_regmap = devm_regmap_init_i2c(max77686->rtc,
+-						    &max77686_rtc_regmap_config);
++						&max77686_rtc_regmap_config);
+ 	if (IS_ERR(max77686->rtc_regmap)) {
+ 		ret = PTR_ERR(max77686->rtc_regmap);
+ 		dev_err(max77686->dev, "failed to allocate RTC regmap: %d\n",
 -- 
 1.8.3.2
 
