@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933046AbaGVW7t (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 18:59:49 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44348 "EHLO
+	id S933020AbaGVXBN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 19:01:13 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:44323 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757147AbaGVWWe (ORCPT
+	with ESMTP id S1755978AbaGVWWd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 18:22:34 -0400
+	Tue, 22 Jul 2014 18:22:33 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Thomas Jarosch <thomas.jarosch@intra2net.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
+Cc: Todd Fujinaka <todd.fujinaka@intel.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        Tim Gardner <tim.gardner@canonical.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 011/116] PCI: Add new ID for Intel GPU "spurious interrupt" quirk
-Date: Tue, 22 Jul 2014 15:20:22 -0700
-Message-Id: <1406067727-19683-12-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 001/116] igb: fix stats for i210 rx_fifo_errors
+Date: Tue, 22 Jul 2014 15:20:12 -0700
+Message-Id: <1406067727-19683-2-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1406067727-19683-1-git-send-email-kamal@canonical.com>
 References: <1406067727-19683-1-git-send-email-kamal@canonical.com>
@@ -28,42 +29,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Jarosch <thomas.jarosch@intra2net.com>
+From: Todd Fujinaka <todd.fujinaka@intel.com>
 
-commit 7c82126a94e69bbbac586f0249e7ef11e681246c upstream.
+commit e66c083aab32842f225bae2a2c30744bf96abaec upstream.
 
-After a CPU upgrade while keeping the same mainboard, we faced "spurious
-interrupt" problems again.
+RQDPC on i210/i211 is R/W not ReadClear. Clear after reading.
 
-It turned out that the new CPU also featured a new GPU with a different PCI
-ID.
-
-Add this PCI ID to the quirk table.  Probably all other Intel GPU PCI IDs
-are affected, too, but I don't want to add them without a test system.
-
-See f67fd55fa96f ("PCI: Add quirk for still enabled interrupts on Intel
-Sandy Bridge GPUs") for some history.
-
-[bhelgaas: add f67fd55fa96f reference, stable tag]
-Signed-off-by: Thomas Jarosch <thomas.jarosch@intra2net.com>
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+Signed-off-by: Todd Fujinaka <todd.fujinaka@intel.com>
+Tested-by: Aaron Brown <aaron.f.brown@intel.com>
+Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Cc: Tim Gardner <tim.gardner@canonical.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/pci/quirks.c | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/net/ethernet/intel/igb/igb_main.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
-index 8b51656..902cb3b 100644
---- a/drivers/pci/quirks.c
-+++ b/drivers/pci/quirks.c
-@@ -2952,6 +2952,7 @@ static void disable_igfx_irq(struct pci_dev *dev)
- }
- DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_INTEL, 0x0102, disable_igfx_irq);
- DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_INTEL, 0x010a, disable_igfx_irq);
-+DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_INTEL, 0x0152, disable_igfx_irq);
+diff --git a/drivers/net/ethernet/intel/igb/igb_main.c b/drivers/net/ethernet/intel/igb/igb_main.c
+index 31cfe2e..40f80c3 100644
+--- a/drivers/net/ethernet/intel/igb/igb_main.c
++++ b/drivers/net/ethernet/intel/igb/igb_main.c
+@@ -4592,8 +4592,10 @@ void igb_update_stats(struct igb_adapter *adapter,
+ 	bytes = 0;
+ 	packets = 0;
+ 	for (i = 0; i < adapter->num_rx_queues; i++) {
+-		u32 rqdpc = rd32(E1000_RQDPC(i));
+ 		struct igb_ring *ring = adapter->rx_ring[i];
++		u32 rqdpc = rd32(E1000_RQDPC(i));
++		if (hw->mac.type >= e1000_i210)
++			wr32(E1000_RQDPC(i), 0);
  
- /*
-  * Some devices may pass our check in pci_intx_mask_supported if
+ 		if (rqdpc) {
+ 			ring->rx_stats.drops += rqdpc;
 -- 
 1.9.1
 
