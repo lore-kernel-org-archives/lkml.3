@@ -1,90 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751370AbaGVAUf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 20:20:35 -0400
-Received: from mail-bn1lp0144.outbound.protection.outlook.com ([207.46.163.144]:14573
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750790AbaGVAUe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 20:20:34 -0400
-Date: Tue, 22 Jul 2014 08:13:24 +0800
-From: Peter Chen <peter.chen@freescale.com>
-To: Stefan Agner <stefan@agner.ch>
-CC: <s.hauer@pengutronix.de>, <shawn.guo@freescale.com>,
-        <b35083@freescale.com>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/6] vf610: Add USB support
-Message-ID: <20140722001322.GA6636@shlinux1.ap.freescale.net>
-References: <cover.1405702442.git.stefan@agner.ch>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <cover.1405702442.git.stefan@agner.ch>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(24454002)(51704005)(189002)(199002)(104016003)(15202345003)(86362001)(47776003)(92726001)(97736001)(107046002)(74662001)(4396001)(83072002)(69596002)(68736004)(74502001)(92566001)(105606002)(64706001)(102836001)(80022001)(81342001)(33656002)(81156004)(20776003)(46406003)(77982001)(87936001)(79102001)(110136001)(106466001)(84676001)(6806004)(19580405001)(54356999)(19580395003)(83322001)(31966008)(46102001)(85852003)(50466002)(97756001)(95666004)(76482001)(81542001)(21056001)(15975445006)(44976005)(99396002)(76176999)(83506001)(85306003)(50986999)(26826002)(23726002)(55214005);DIR:OUT;SFP:;SCL:1;SRVR:DM2PR03MB351;H:az84smr01.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;LANG:en;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
-X-Forefront-PRVS: 02801ACE41
-Authentication-Results: spf=fail (sender IP is 192.88.158.2)
- smtp.mailfrom=Peter.Chen@freescale.com; 
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
-X-OriginatorOrg: freescale.com
+	id S1751033AbaGVAWk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 20:22:40 -0400
+Received: from mga03.intel.com ([143.182.124.21]:2590 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750776AbaGVAWj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jul 2014 20:22:39 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,705,1400050800"; 
+   d="scan'208,223";a="459735166"
+Message-ID: <1405988531.2455.14.camel@rzhang1-toshiba>
+Subject: Re: 3.16-rcX crashes on resume from Suspend-To-RAM
+From: Zhang Rui <rui.zhang@intel.com>
+To: markus@gutschke.com
+Cc: linux-kernel@vger.kernel.org,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>
+Date: Tue, 22 Jul 2014 08:22:11 +0800
+In-Reply-To: <CALGCz1qzmK_0Mq8JNFYUnGtDGWSqYoHfqv0MKbqG1RySQ4bt6g@mail.gmail.com>
+References: <CALGCz1qs2A7BCbcK3vzYRxJeOESVKc7c9kcSpP0NrQFLr1UpUg@mail.gmail.com>
+	 <CALGCz1oYYkKp1frPF4vExiwqW=euYY8An+Yum4U-qsBc5NyjFg@mail.gmail.com>
+	 <1405587482.28592.64.camel@rzhang1-toshiba>
+	 <CALGCz1qzmK_0Mq8JNFYUnGtDGWSqYoHfqv0MKbqG1RySQ4bt6g@mail.gmail.com>
+Content-Type: multipart/mixed; boundary="=-O/QD/2qJHjzvB9n5yreF"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 18, 2014 at 07:01:36PM +0200, Stefan Agner wrote:
-> This patchset adds USB support for Vybrid VF610 SoC. It extends the
-> clock framework to support the USB PHY cocks, extends the device
-> tree files and adds support for the non-core registers in the
-> usbmisc_imx driver.
-> 
-> This patchset needs the eSDHC length fix available in Shawn's
-> for-next branch.
-> 
 
-Why it is related to USB patchset?
+--=-O/QD/2qJHjzvB9n5yreF
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 
-> The whole patchset proved to be working on a Colibri VF61. The
-> first USB controller runs in peripheral mode. I could successfully
-> use RNDIS, however with some stability issues: Suddenly the other
-> side was not reachable anymore and the interface needed to brought
-> down and back up again. I'm still investigating this.
+On Thu, 2014-07-17 at 10:27 -0700, Markus Gutschke wrote:
+> Please note the crash in "dmesg" right after booting. This looks relevant:
+> 
+I think the crash log also exists in 3.15 kernel, can you please verify
+this?
 
-Do you use ubuntu as host distribution? I find ubuntu will lost the
-first connection for usb-ethernet-gadget(usb0) as network interface,
-but once you re-config usb0 again (ifconfig usb0 ip up), it should work
-and will not lose connection any more.
+> https://medusa.gutschke.com/markus/acpi/after-dmesg.txt
+> https://medusa.gutschke.com/markus/acpi/acpidump.txt
+> https://medusa.gutschke.com/markus/acpi/before-platform-devices-firmware-node.txt
+> https://medusa.gutschke.com/markus/acpi/before-platform-devices.txt
+> https://medusa.gutschke.com/markus/acpi/before-pnp-devices-firmware-node.txt
+> https://medusa.gutschke.com/markus/acpi/before-pnp-devices.txt
+> https://medusa.gutschke.com/markus/acpi/after-platform-devices-firmware-node.txt
+> https://medusa.gutschke.com/markus/acpi/after-platform-devices.txt
+> https://medusa.gutschke.com/markus/acpi/after-pnp-devices-firmware-node.txt
+> https://medusa.gutschke.com/markus/acpi/after-pnp-devices.txt
 
-> 
-> The second USB controller, running in USB host mode, showed no
-> issues so far.
-> 
-> Stefan Agner (6):
->   ARM: dts: vf610: add USB PHY and controller
->   ARM: imx: clk-vf610: add USBPHY clocks
->   ARM: dts: vf610: Add usbmisc for non-core registers
->   chipidea: usbmisc_imx: Add USB support for VF610 SoCs
->   usb: phy: mxs: Add VF610 USB PHY support
->   ARM: dts: vf610-colibri: add USB support
-> 
->  arch/arm/boot/dts/vf610-colibri.dts     | 10 +++++
->  arch/arm/boot/dts/vf610.dtsi            | 55 ++++++++++++++++++++++--
->  arch/arm/mach-imx/clk-vf610.c           | 12 +++++-
->  drivers/usb/chipidea/usbmisc_imx.c      | 76 +++++++++++++++++++++++----------
->  drivers/usb/phy/phy-mxs-usb.c           |  5 +++
->  include/dt-bindings/clock/vf610-clock.h |  5 ++-
->  6 files changed, 135 insertions(+), 28 deletions(-)
-> 
-> -- 
-> 2.0.1
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-usb" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+are you building the kernel with last commit
+eec15edbb0e14485998635ea7c62e30911b465f0?
 
+If yes, please rebuild your 3.16 kernel with last commit
+b04c58b1ed26317bfb4b33d3a2d16377fc6acd0f, and re-attach the after-*
+logs.
+
+And please also apply the debug patch attached on top of commit
+b04c58b1ed26317bfb4b33d3a2d16377fc6acd0f, and see if the problem still
+exists.
+
+thanks,
+rui
+
+--=-O/QD/2qJHjzvB9n5yreF
+Content-Disposition: attachment; filename="0001-debug-patch.patch"
+Content-Type: text/x-patch; name="0001-debug-patch.patch"; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+
+>From 6e0b48c3075f9b1fcedd97c2f2454a585671dcd2 Mon Sep 17 00:00:00 2001
+From: Zhang Rui <rui.zhang@intel.com>
+Date: Tue, 22 Jul 2014 08:11:25 +0800
+Subject: [PATCH] debug patch
+
+---
+ drivers/acpi/acpi_pnp.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/drivers/acpi/acpi_pnp.c b/drivers/acpi/acpi_pnp.c
+index 4ddb0dc..1c306b4 100644
+--- a/drivers/acpi/acpi_pnp.c
++++ b/drivers/acpi/acpi_pnp.c
+@@ -317,6 +317,9 @@ static const struct acpi_device_id acpi_pnp_device_ids[] = {
+ 	/* snd-opl3sa2-pnpbios */
+ 	{"YMH0021"},
+ 	{"NMX2210"},		/* Gateway Solo 2500 */
++	{"PNP0800"},
++	{"PNP0200"},
++	{"PNP0c04"},
+ 	{""},
+ };
+ 
 -- 
+1.8.3.2
 
-Best Regards,
-Peter Chen
+
+--=-O/QD/2qJHjzvB9n5yreF--
+
