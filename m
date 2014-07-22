@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756677AbaGVTas (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 15:30:48 -0400
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:58712 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756643AbaGVTap (ORCPT
+	id S1756750AbaGVTbA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 15:31:00 -0400
+Received: from mail-we0-f175.google.com ([74.125.82.175]:57260 "EHLO
+	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756710AbaGVTa5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 15:30:45 -0400
+	Tue, 22 Jul 2014 15:30:57 -0400
 From: Marek Belisko <marek@goldelico.com>
 To: bcousson@baylibre.com, tony@atomide.com
 Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
@@ -15,9 +15,9 @@ Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
         devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org, hns@goldelico.com,
         Marek Belisko <marek@goldelico.com>
-Subject: [PATCH v2 1/7] arm: dts: omap3-gta04: Add nand support
-Date: Tue, 22 Jul 2014 21:30:14 +0200
-Message-Id: <1406057420-22269-2-git-send-email-marek@goldelico.com>
+Subject: [PATCH v2 5/7] arm: dts: omap3-gta04: Add USB host support
+Date: Tue, 22 Jul 2014 21:30:18 +0200
+Message-Id: <1406057420-22269-6-git-send-email-marek@goldelico.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1406057420-22269-1-git-send-email-marek@goldelico.com>
 References: <1406057420-22269-1-git-send-email-marek@goldelico.com>
@@ -25,78 +25,89 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the needed sections to enable nand support on
-gta04 board.
+Define USB Host port mode and the PHY device.
 
-Add nand partitions information.
+Also provide pin multiplexer information for USB host
+pins.
 
 Signed-off-by: Marek Belisko <marek@goldelico.com>
 ---
- arch/arm/boot/dts/omap3-gta04.dts | 54 +++++++++++++++++++++++++++++++++++++++
- 1 file changed, 54 insertions(+)
+ arch/arm/boot/dts/omap3-gta04.dts | 45 +++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 45 insertions(+)
 
 diff --git a/arch/arm/boot/dts/omap3-gta04.dts b/arch/arm/boot/dts/omap3-gta04.dts
-index 021311f..7d7ddd7 100644
+index 4ca1277..370c08b 100644
 --- a/arch/arm/boot/dts/omap3-gta04.dts
 +++ b/arch/arm/boot/dts/omap3-gta04.dts
-@@ -309,3 +309,57 @@
+@@ -74,9 +74,30 @@
+ 			};
  		};
  	};
- };
 +
-+&gpmc {
-+	ranges = <0 0 0x30000000 0x04>; /* CS0: NAND */
-+
-+	nand@0,0 {
-+		reg = <0 0 0>; /* CS0, offset 0 */
-+		nand-bus-width = <16>;
-+		ti,nand-ecc-opt = "bch8";
-+
-+		gpmc,sync-clk-ps = <0>;
-+		gpmc,cs-on-ns = <0>;
-+		gpmc,cs-rd-off-ns = <44>;
-+		gpmc,cs-wr-off-ns = <44>;
-+		gpmc,adv-on-ns = <6>;
-+		gpmc,adv-rd-off-ns = <34>;
-+		gpmc,adv-wr-off-ns = <44>;
-+		gpmc,we-off-ns = <40>;
-+		gpmc,oe-off-ns = <54>;
-+		gpmc,access-ns = <64>;
-+		gpmc,rd-cycle-ns = <82>;
-+		gpmc,wr-cycle-ns = <82>;
-+		gpmc,wr-access-ns = <40>;
-+		gpmc,wr-data-mux-bus-ns = <0>;
-+		gpmc,device-width = <2>;
-+
-+		#address-cells = <1>;
-+		#size-cells = <1>;
-+
-+		x-loader@0 {
-+			label = "X-Loader";
-+			reg = <0 0x80000>;
-+		};
-+
-+		bootloaders@80000 {
-+			label = "U-Boot";
-+			reg = <0x80000 0x1e0000>;
-+		};
-+
-+		bootloaders_env@260000 {
-+			label = "U-Boot Env";
-+			reg = <0x260000 0x20000>;
-+		};
-+
-+		kernel@280000 {
-+			label = "Kernel";
-+			reg = <0x280000 0x400000>;
-+		};
-+
-+		filesystem@680000 {
-+			label = "File System";
-+			reg = <0x680000 0xf980000>;
-+		};
++	hsusb2_phy: hsusb2_phy {
++		compatible = "usb-nop-xceiv";
++		reset-gpios = <&gpio6 14 GPIO_ACTIVE_LOW>;
 +	};
+ };
+ 
+ &omap3_pmx_core {
++	pinctrl-names = "default";
++	pinctrl-0 = <
++			&hsusb2_pins
++	>;
++
++	hsusb2_pins: pinmux_hsusb2_pins {
++		pinctrl-single,pins = <
++			OMAP3_CORE1_IOPAD(0x21d4, PIN_INPUT_PULLDOWN | MUX_MODE3)	/* mcspi1_cs3.hsusb2_data2 */
++			OMAP3_CORE1_IOPAD(0x21d6, PIN_INPUT_PULLDOWN | MUX_MODE3)	/* mcspi2_clk.hsusb2_data7 */
++			OMAP3_CORE1_IOPAD(0x21d8, PIN_INPUT_PULLDOWN | MUX_MODE3)	/* mcspi2_simo.hsusb2_data4 */
++			OMAP3_CORE1_IOPAD(0x21da, PIN_INPUT_PULLDOWN | MUX_MODE3)	/* mcspi2_somi.hsusb2_data5 */
++			OMAP3_CORE1_IOPAD(0x21dc, PIN_INPUT_PULLDOWN | MUX_MODE3)	/* mcspi2_cs0.hsusb2_data6 */
++			OMAP3_CORE1_IOPAD(0x21de, PIN_INPUT_PULLDOWN | MUX_MODE3)	/* mcspi2_cs1.hsusb2_data3 */
++		>;
++	};
++
+ 	uart1_pins: pinmux_uart1_pins {
+ 		pinctrl-single,pins = <
+ 			0x152 (PIN_INPUT | MUX_MODE0)		/* uart1_rx.uart1_rx */
+@@ -144,6 +165,22 @@
+ };
+ 
+ &omap3_pmx_core2 {
++	pinctrl-names = "default";
++	pinctrl-0 = <
++			&hsusb2_2_pins
++	>;
++
++	hsusb2_2_pins: pinmux_hsusb2_2_pins {
++		pinctrl-single,pins = <
++			OMAP3630_CORE2_IOPAD(0x25f0, PIN_OUTPUT | MUX_MODE3)		/* etk_d10.hsusb2_clk */
++			OMAP3630_CORE2_IOPAD(0x25f2, PIN_OUTPUT | MUX_MODE3)		/* etk_d11.hsusb2_stp */
++			OMAP3630_CORE2_IOPAD(0x25f4, PIN_INPUT_PULLDOWN | MUX_MODE3)	/* etk_d12.hsusb2_dir */
++			OMAP3630_CORE2_IOPAD(0x25f6, PIN_INPUT_PULLDOWN | MUX_MODE3)	/* etk_d13.hsusb2_nxt */
++			OMAP3630_CORE2_IOPAD(0x25f8, PIN_INPUT_PULLDOWN | MUX_MODE3)	/* etk_d14.hsusb2_data0 */
++			OMAP3630_CORE2_IOPAD(0x25fa, PIN_INPUT_PULLDOWN | MUX_MODE3)	/* etk_d15.hsusb2_data1 */
++		>;
++	};
++
+ 	spi_gpio_pins: spi_gpio_pinmux {
+ 		pinctrl-single,pins = <
+ 			OMAP3630_CORE2_IOPAD(0x25d8, PIN_OUTPUT | MUX_MODE4) /* clk */
+@@ -259,6 +296,14 @@
+ 	power = <50>;
+ };
+ 
++&usbhshost {
++	port2-mode = "ehci-phy";
 +};
++
++&usbhsehci {
++	phys = <0 &hsusb2_phy>;
++};
++
+ &mmc1 {
+ 	pinctrl-names = "default";
+ 	pinctrl-0 = <&mmc1_pins>;
 -- 
 1.9.1
 
