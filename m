@@ -1,80 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754213AbaGVIPX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 04:15:23 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:60291 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751619AbaGVIPU (ORCPT
+	id S1753349AbaGVIRZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 04:17:25 -0400
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:10995 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751937AbaGVIRW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 04:15:20 -0400
-Date: Tue, 22 Jul 2014 10:15:14 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Alban Bedel <alban.bedel@avionic-design.de>
-Cc: David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
+	Tue, 22 Jul 2014 04:17:22 -0400
+X-AuditID: cbfec7f5-b7f626d000004b39-68-53ce1e0fd5ea
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] drm/panel: add support for InnoLux N156BGE-L21 panel
-Message-ID: <20140722081512.GA18921@ulmo>
-References: <20140620201456.GA28814@mithrandir>
- <1406011135-25417-1-git-send-email-alban.bedel@avionic-design.de>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="AqsLC8rIMeq19msA"
-Content-Disposition: inline
-In-Reply-To: <1406011135-25417-1-git-send-email-alban.bedel@avionic-design.de>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Subject: [RESEND PATCH] mfd: max14577: Don't pass IRQ domain to mfd_add_devices
+Date: Tue, 22 Jul 2014 10:17:14 +0200
+Message-id: <1406017034-4023-1-git-send-email-k.kozlowski@samsung.com>
+X-Mailer: git-send-email 1.9.1
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrKJMWRmVeSWpSXmKPExsVy+t/xK7r8cueCDaYvULd4/cLQ4v7Xo4wW
+	l3fNYbM43c3qwOJx59oeNo95JwM9+rasYvT4vEkugCWKyyYlNSezLLVI3y6BK+NJf0nBNdaK
+	9W/3MDYwXmHpYuTkkBAwkbi+ahKULSZx4d56ti5GLg4hgaWMEue+bGeEcPqYJB69nsoKUsUm
+	YCyxefkSNhBbRCBL4se01WDdzAKGEj/f/WHvYuTgEBbwl1i2KQ8kzCKgKtG9dRY7iM0r4CYx
+	aclpJohlchInj01mncDIvYCRYRWjaGppckFxUnqukV5xYm5xaV66XnJ+7iZGiNe/7mBceszq
+	EKMAB6MSDy/Hi1PBQqyJZcWVuYcYJTiYlUR42/ecDRbiTUmsrEotyo8vKs1JLT7EyMTBKdXA
+	mDotyMz+IpuFPvfxRyXH7HSV1O+sncffmLd+0eSFDbz7nC+czuBZX/Fy5syWboO//7zYV6Tq
+	PvC+9dhzoqzdiXQuC5G5vPeFb8r+7w2cp7KSgaP69KzlHwXTQ158UJvi7D3nru7l4zf3HPYo
+	bb/1jrs0Wmf6n7DdK89vXHjErkc4b5+hkKHHZSWW4oxEQy3mouJEAFd3//nYAQAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The max14577 MFD cells do not have any resources so the IRQ domain
+passed to mfd_add_devices is not used.
 
---AqsLC8rIMeq19msA
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+---
+ drivers/mfd/max14577.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-On Tue, Jul 22, 2014 at 08:38:55AM +0200, Alban Bedel wrote:
-> This panel is used by the Medcom Wide and supported by the
-> simple-panel driver.
->=20
-> Signed-off-by: Alban Bedel <alban.bedel@avionic-design.de>
-> ---
-> v2: * Added the v/hsync pulses for correctness (the panel doesn't
->       really needs them)
->     * Fixed the size to report the physical size in mm
-> ---
->  .../bindings/panel/innolux,n156bge-l21.txt         |  7 ++++++
->  drivers/gpu/drm/panel/panel-simple.c               | 25 ++++++++++++++++=
-++++++
->  2 files changed, 32 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/panel/innolux,n156b=
-ge-l21.txt
+diff --git a/drivers/mfd/max14577.c b/drivers/mfd/max14577.c
+index 4a5e885383f8..ba2ac9c10b12 100644
+--- a/drivers/mfd/max14577.c
++++ b/drivers/mfd/max14577.c
+@@ -372,8 +372,7 @@ static int max14577_i2c_probe(struct i2c_client *i2c,
+ 	}
+ 
+ 	ret = mfd_add_devices(max14577->dev, -1, mfd_devs,
+-			mfd_devs_size, NULL, 0,
+-			regmap_irq_get_domain(max14577->irq_data));
++			mfd_devs_size, NULL, 0, NULL);
+ 	if (ret < 0)
+ 		goto err_mfd;
+ 
+-- 
+1.9.1
 
-Applied, thanks.
-
-I slightly reordered where the new panel was added, since they're sorted
-alphabetically by vendor, then device.
-
-Thierry
-
---AqsLC8rIMeq19msA
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJTzh2PAAoJEN0jrNd/PrOh8akP/j1N6NMocTJB18bVDDUXSc3R
-agUIpnGYLu0R+KCDeh9gfTmbxPY+PYzuCYe9597/lfeHnMAaqpu0R6NI2xRtGjyc
-wh8ikU/OKCNyTttrlDlttWt4AD8t2NpSwjBEQ5fxHBsbBnfsUCekwnGwquhcpSVo
-gv8+sUwAnO3FU7qF+S+NRj2VEpkw4G0CbSSiom4/TFTsWKEkSCQlQFSQNc6IpaBT
-nECcCq5f0gr7Th/9VlDbQI08Y/xo/vY8bEvwvNJCdOpaHInzgmE+qVgmR2Z5COVs
-N7CWP32mlY6+LB9/Vv0S6UPfDEicn9GlCnXyBpmek7RR3YdkFo0bpl+yUck/4FBE
-67jYdoe1SS8atwZB9VMYoPpmhrIgHu5frPfvX3vGOfpRcCIgfpsQxh6KZjxnloHz
-ROzrYnlPbTICoUtUHu6LpiboJg1pCd7M5NC6rShBabOykX+GtPAgzBeNDMUolfgx
-zw0QdOGFom0LHByWWpgUZ8St+pVbmX3Z6w2qVJfUgsXFQXAUCZk0NYYtCExF8gOp
-saoYdSnI8t4v6+UZ/gUwkm3iXJLhRd8h4toDfmZzEwt5BMW+1q4L9hnhfFF03TEW
-LZfkNc5AMkhc2TnZ5kQiyTTkccCVOkQVOezj4wsD0xcppqh+2I03/mLa8c4ePcR1
-cTc6QFaqRgMUsM+Ew48A
-=oAUA
------END PGP SIGNATURE-----
-
---AqsLC8rIMeq19msA--
