@@ -1,83 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757128AbaGVTvS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 15:51:18 -0400
-Received: from mail-qg0-f49.google.com ([209.85.192.49]:39370 "EHLO
-	mail-qg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757086AbaGVTvG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 15:51:06 -0400
-MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.01.1407222145360.27558@pmeerw.net>
-References: <1406057420-22269-1-git-send-email-marek@goldelico.com>
-	<1406057420-22269-3-git-send-email-marek@goldelico.com>
-	<alpine.DEB.2.01.1407222145360.27558@pmeerw.net>
-Date: Tue, 22 Jul 2014 21:51:04 +0200
-Message-ID: <CAAfyv35OU5S9KKmOug99ByxghSa==emVzM85e33y84QvaRgBDw@mail.gmail.com>
-Subject: Re: [PATCH v2 2/7] arm: dts: omap3-gta04: Fix magnetometer model
-From: Belisko Marek <marek.belisko@gmail.com>
-To: Peter Meerwald <pmeerw@pmeerw.net>
-Cc: Benoit Cousson <bcousson@baylibre.com>, Tony Lindgren <tony@atomide.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Pawel Moll <pawel.moll@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "Dr. H. Nikolaus Schaller" <hns@goldelico.com>,
-        LKML <linux-kernel@vger.kernel.org>, Rob Herring <robh+dt@kernel.org>,
-        Kumar Gala <galak@codeaurora.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1757168AbaGVTvr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 15:51:47 -0400
+Received: from mga09.intel.com ([134.134.136.24]:15061 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756872AbaGVTso (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 15:48:44 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,711,1400050800"; 
+   d="scan'208";a="547369369"
+From: Matthew Wilcox <matthew.r.wilcox@intel.com>
+To: linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Cc: Matthew Wilcox <matthew.r.wilcox@intel.com>, willy@linux.intel.com
+Subject: [PATCH v8 01/22] Fix XIP fault vs truncate race
+Date: Tue, 22 Jul 2014 15:47:49 -0400
+Message-Id: <78c38d32aa62db1bb86315cf3e287b24be900c5e.1406058387.git.matthew.r.wilcox@intel.com>
+X-Mailer: git-send-email 2.0.0
+In-Reply-To: <cover.1406058387.git.matthew.r.wilcox@intel.com>
+References: <cover.1406058387.git.matthew.r.wilcox@intel.com>
+In-Reply-To: <cover.1406058387.git.matthew.r.wilcox@intel.com>
+References: <cover.1406058387.git.matthew.r.wilcox@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 22, 2014 at 9:46 PM, Peter Meerwald <pmeerw@pmeerw.net> wrote:
->
->> gta04 is using hmc5843l not hmc5843 so fix wrong compatible
->> entry.
->
-> I guess you mean hmc5883l
-Ah right. Thanks. I'll post update version.
->
->> Signed-off-by: Marek Belisko <marek@goldelico.com>
->> ---
->>  arch/arm/boot/dts/omap3-gta04.dts | 2 +-
->>  1 file changed, 1 insertion(+), 1 deletion(-)
->>
->> diff --git a/arch/arm/boot/dts/omap3-gta04.dts b/arch/arm/boot/dts/omap3-gta04.dts
->> index 7d7ddd7..6d1a8d8 100644
->> --- a/arch/arm/boot/dts/omap3-gta04.dts
->> +++ b/arch/arm/boot/dts/omap3-gta04.dts
->> @@ -220,7 +220,7 @@
->>
->>       /* compass aka magnetometer */
->>       hmc5843@1e {
->> -             compatible = "honeywell,hmc5843";
->> +             compatible = "honeywell,hmc5843l";
->>               reg = <0x1e>;
->>       };
->>
->>
->
-> --
->
-> Peter Meerwald
-> +43-664-2444418 (mobile)
+Pagecache faults recheck i_size after taking the page lock to ensure that
+the fault didn't race against a truncate.  We don't have a page to lock
+in the XIP case, so use the i_mmap_mutex instead.  It is locked in the
+truncate path in unmap_mapping_range() after updating i_size.  So while
+we hold it in the fault path, we are guaranteed that either i_size has
+already been updated in the truncate path, or that the truncate will
+subsequently call zap_page_range_single() and so remove the mapping we
+have just inserted.
 
-BR,
+There is a window of time in which i_size has been reduced and the
+thread has a mapping to a page which will be removed from the file,
+but this is harmless as the page will not be allocated to a different
+purpose before the thread's access to it is revoked.
 
-marek
+Signed-off-by: Matthew Wilcox <matthew.r.wilcox@intel.com>
+Reviewed-by: Jan Kara <jack@suse.cz>
+---
+ mm/filemap_xip.c | 24 ++++++++++++++++++++++--
+ 1 file changed, 22 insertions(+), 2 deletions(-)
 
+diff --git a/mm/filemap_xip.c b/mm/filemap_xip.c
+index d8d9fe3..c8d23e9 100644
+--- a/mm/filemap_xip.c
++++ b/mm/filemap_xip.c
+@@ -260,8 +260,17 @@ again:
+ 		__xip_unmap(mapping, vmf->pgoff);
+ 
+ found:
++		/* We must recheck i_size under i_mmap_mutex */
++		mutex_lock(&mapping->i_mmap_mutex);
++		size = (i_size_read(inode) + PAGE_CACHE_SIZE - 1) >>
++							PAGE_CACHE_SHIFT;
++		if (unlikely(vmf->pgoff >= size)) {
++			mutex_unlock(&mapping->i_mmap_mutex);
++			return VM_FAULT_SIGBUS;
++		}
+ 		err = vm_insert_mixed(vma, (unsigned long)vmf->virtual_address,
+ 							xip_pfn);
++		mutex_unlock(&mapping->i_mmap_mutex);
+ 		if (err == -ENOMEM)
+ 			return VM_FAULT_OOM;
+ 		/*
+@@ -285,16 +294,27 @@ found:
+ 		}
+ 		if (error != -ENODATA)
+ 			goto out;
++
++		/* We must recheck i_size under i_mmap_mutex */
++		mutex_lock(&mapping->i_mmap_mutex);
++		size = (i_size_read(inode) + PAGE_CACHE_SIZE - 1) >>
++							PAGE_CACHE_SHIFT;
++		if (unlikely(vmf->pgoff >= size)) {
++			ret = VM_FAULT_SIGBUS;
++			goto unlock;
++		}
+ 		/* not shared and writable, use xip_sparse_page() */
+ 		page = xip_sparse_page();
+ 		if (!page)
+-			goto out;
++			goto unlock;
+ 		err = vm_insert_page(vma, (unsigned long)vmf->virtual_address,
+ 							page);
+ 		if (err == -ENOMEM)
+-			goto out;
++			goto unlock;
+ 
+ 		ret = VM_FAULT_NOPAGE;
++unlock:
++		mutex_unlock(&mapping->i_mmap_mutex);
+ out:
+ 		write_seqcount_end(&xip_sparse_seq);
+ 		mutex_unlock(&xip_sparse_mutex);
 -- 
-as simple and primitive as possible
--------------------------------------------------
-Marek Belisko - OPEN-NANDRA
-Freelance Developer
+2.0.0
 
-Ruska Nova Ves 219 | Presov, 08005 Slovak Republic
-Tel: +421 915 052 184
-skype: marekwhite
-twitter: #opennandra
-web: http://open-nandra.com
