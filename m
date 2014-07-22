@@ -1,315 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752854AbaGVDQW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 23:16:22 -0400
-Received: from mail-oa0-f49.google.com ([209.85.219.49]:41123 "EHLO
-	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752669AbaGVDQT (ORCPT
+	id S1752969AbaGVDTK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 23:19:10 -0400
+Received: from g4t3426.houston.hp.com ([15.201.208.54]:42816 "EHLO
+	g4t3426.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752896AbaGVDTI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 23:16:19 -0400
+	Mon, 21 Jul 2014 23:19:08 -0400
+Message-ID: <53CDD826.8050807@hp.com>
+Date: Mon, 21 Jul 2014 23:19:02 -0400
+From: Waiman Long <waiman.long@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
 MIME-Version: 1.0
-In-Reply-To: <20140714163922.GH1112@arm.com>
-References: <20140708005954.GC22939@google.com> <20140708104655.GC6501@e106497-lin.cambridge.arm.com>
- <CAErSpo75ovmGoeSHKJN0nckGDy-0gpn8kLPfHQ79CtcXxhPydw@mail.gmail.com>
- <20140708224847.GC4980@e106497-lin.cambridge.arm.com> <CAErSpo5rBt0iF2HGeDD-UH6_sPCoC647VCw0Q1v_0Rdpvcir-w@mail.gmail.com>
- <20140710094758.GA6501@e106497-lin.cambridge.arm.com> <CAErSpo5ZNCY31NztT0cLFbRVsBZqMsZ0LbTFNOTQCZUU3F7qJA@mail.gmail.com>
- <20140711141115.GB16321@arm.com> <CAErSpo7C8qzmdp+XgVi2ysXj_NcgvVY7RVfBZ2PHimLzrzANMQ@mail.gmail.com>
- <20140711180151.GH16321@arm.com> <20140714163922.GH1112@arm.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Mon, 21 Jul 2014 21:15:58 -0600
-Message-ID: <CAErSpo65RBeTgzrVefWBfjnZqTPzyz__HnC4bn8riGGDC0GkHg@mail.gmail.com>
-Subject: Re: [PATCH v8 6/9] pci: Introduce a domain number for pci_host_bridge.
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Liviu Dudau <Liviu.Dudau@arm.com>, linux-pci <linux-pci@vger.kernel.org>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Tanmay Inamdar <tinamdar@apm.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Sinan Kaya <okaya@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Device Tree ML <devicetree@vger.kernel.org>,
-        LAKML <linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+To: Randy Dunlap <rdunlap@infradead.org>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Darren Hart <dvhart@linux.intel.com>,
+        Davidlohr Bueso <davidlohr@hp.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
+        linux-doc@vger.kernel.org, Jason Low <jason.low2@hp.com>,
+        Scott J Norton <scott.norton@hp.com>
+Subject: Re: [RFC PATCH 5/5] futex, doc: add a document on how to use the
+ spinning futexes
+References: <1405956271-34339-1-git-send-email-Waiman.Long@hp.com> <1405956271-34339-6-git-send-email-Waiman.Long@hp.com> <53CD3582.707@infradead.org>
+In-Reply-To: <53CD3582.707@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 14, 2014 at 10:39 AM, Catalin Marinas
-<catalin.marinas@arm.com> wrote:
-> ...
-> Some more thinking, so I guess we could get away without changing the
-> API. On top of Liviu's tree here:
+On 07/21/2014 11:45 AM, Randy Dunlap wrote:
+> On 07/21/2014 08:24 AM, Waiman Long wrote:
+>> This patch adds a new document file on how to use the spinning futexes.
+>>
+>> Signed-off-by: Waiman Long<Waiman.Long@hp.com>
+>> ---
+>>   Documentation/spinning-futex.txt |  109 ++++++++++++++++++++++++++++++++++++++
+>>   1 files changed, 109 insertions(+), 0 deletions(-)
+>>   create mode 100644 Documentation/spinning-futex.txt
+>>
+>> diff --git a/Documentation/spinning-futex.txt b/Documentation/spinning-futex.txt
+>> new file mode 100644
+>> index 0000000..e3cb5a2
+>> --- /dev/null
+>> +++ b/Documentation/spinning-futex.txt
+>> @@ -0,0 +1,109 @@
+>> +Started by: Waiman Long<waiman.long@hp.com>
+>> +
+>> +Spinning Futex
+>> +--------------
+>> +
+>> +There are two main problems for a wait-wake futex (FUTEX_WAIT and
+>> +FUTEX_WAKE) when used for creating user-space lock primitives:
+>> +
+>> + 1) With a wait-wake futex, tasks waiting for a lock are put to sleep
+>> +    in the futex queue to be woken up by the lock owner when it is done
+>> +    with the lock. Waking up a sleeping task, however, introduces some
+>> +    additional latency which can be large especially if the critical
+>> +    section protected by the lock is relatively short. This may cause
+>> +    a performance bottleneck on large systems with many CPUs running
+>> +    applications that need a lot of inter-thread synchronization.
+>> +
+>> + 2) The performance of the wait-wake futex is currently
+>> +    spinlock-constrained.  When many threads are contending for a
+>> +    futex in a large system with many CPUs, it is not unusual to have
+>> +    spinlock contention accounting for more than 90% of the total
+>> +    CPU cycles consumed at various points in time.
+>> +
+>> +Spinning futex is a solution to both the wakeup latency and spinlock
+>> +contention problems by optimistically spinning on a locked futex
+>> +when the lock owner is running within the kernel until the lock is
+>> +free. This is the same optimistic spinning mechanism used by the kernel
+>> +mutex and rw semaphore implementations to improve performance. The
+>> +optimistic spinning was done without taking any lock.
+>                         is done
 >
-> http://linux-arm.org/git?p=linux-ld.git;a=shortlog;h=refs/heads/for-upstream/pci_v8
+>> +
+>> +Implementation
+>> +--------------
+>> +
+>> +Like the PI and robust futexes, a lock acquirer has to atomically
+>> +put its thread ID (TID) into the lower 30 bits of the 32-bit futex
+>> +which should has an original value of 0. If it succeeds, it will be
+>                  have
 >
-> I reverted "pci: Introduce a domain number for pci_host_bridge.":
+>> +the owner of the futex. Otherwise, it has to call into the kernel
+>> +using the new FUTEX_SPIN_LOCK futex(2) syscall.
+>> +
+>> +The kernel will use the setting of the most significant bit
+>> +(FUTEX_WAITERS) in the futex value to indicate one or more waiters
+>> +are sleeping and need to be woken up later on.
+>> +
+>> +When it is time to unlock, the lock owner has to atomically clear
+>> +the TID portion of the futex value. If the FUTEX_WAITERS bit is set,
+>> +it has to issue a FUTEX_SPIN_UNLOCK futex system call to wake up the
+>> +sleeping task.
+>> +
+>> +A return value of 1 from the FUTEX_SPIN_UNLOCK futex(2) syscall
+>> +indicates a task has been woken up. The syscall returns 0 if no
+>> +sleeping task is found or spinners are present to take the lock.
+>> +
+>> +The error number returned by a FUTEX_SPIN_UNLOCK call on an empty
+>> +futex can be used to decide if the spinning futex functionality is
+>> +implemented in the kernel. If it is present, the returned error number
+>> +should be ESRCH. Otherwise it will be ENOSYS.
+>> +
+>> +Currently, only the first and the second arguments (the futex address
+>> +and the opcode) of the futex(2) syscall is used. All the other
+>                                             are used.
 >
-> http://linux-arm.org/git?p=linux-ld.git;a=commitdiff;h=b44e1c7d6b01c436f6f55662a1414e925161c9ca
+>> +arguments must be set to 0 or NULL to avoid forward compatibility
+>> +problem.
+>> +
+>> +The spinning futex requires the kernel to have support for the cmpxchg
+>> +functionality. For architectures that don't support cmpxchg, spinning
+>> +futex will not be supported as well.
+>> +
+>> +Usage Scenario
+>> +--------------
+>> +
+>> +A spinning futex can be used as an exclusive lock to guard a critical
+>> +section which are unlikely to go to sleep in the kernel. The spinners
+>                   is
 >
-> and added this patch on top (if you agree with the idea, we can split it
-> nicely in arm64, OF and PCI specific parts). What we get is the
-> domain_nr in a generic structure and free the sysdata pointer for the
-> host controller driver.
+>> +in a spinning futex, however, will fall back to sleep in a wait queue
+>> +if the lock owner isn't running. Therefore, it can also be used when
+>> +the critical section is long and prone to sleeping. However, it may
+>> +not have the performance benefit when compared with a wait-wake futex
+>> +in this case.
+>> +
+>> +Sample Code
+>> +-----------
+>> +
+>> +The following are sample code to implement a simple lock and unlock
+>                   is
 >
-> ----------------8<----------------------------------------
-> From b32606aa3997fc8a45014a64f99e921eef4872b0 Mon Sep 17 00:00:00 2001
-> From: Catalin Marinas <catalin.marinas@arm.com>
-> Date: Mon, 14 Jul 2014 17:20:01 +0100
-> Subject: [PATCH] pci: Add support for generic domain_nr in pci_bus
+>> +function.
+>> +
+>> +__thread int tid;	/* Thread ID */
+>> +
+>> +void mutex_lock(int *faddr)
+>> +{
+>> +	if (cmpxchg(faddr, 0, tid) == 0)
+>> +		return;
+>> +	for (;;)
+>> +		if (futex(faddr, FUTEX_SPIN_LOCK, ...) == 0)
+>> +			break;
+>> +}
+>> +
+>> +void mutex_unlock(int *faddr)
+>> +{
+>> +	int old, fval;
+>> +
+>> +	if ((fval = cmpxchg(faddr, tid, 0)) == tid)
+>> +		return;
+>> +	/* Clear only the TID portion of the futex */
+>> +	for (;;) {
+>> +		old  = fval;
+>> +		fval = cmpxchg(faddr, old, old&  ~FUTEX_TID_MASK);
+>> +		if (fval == old)
+>> +			break;
+>> +	}
+>> +	if (fval&  FUTEX_WAITERS)
+>> +		futex(faddr, FUTEX_SPIN_UNLOCK, ...);
+>> +}
+>>
 >
-> This patch adds domain_nr in struct pci_bus if
-> CONFIG_PCI_DOMAINS_GENERIC is enabled. The default implementation for
-> pci_domain_nr() simply returns bus->domain_nr. For the root bus, the
-> core PCI code calls pci_set_domain_nr(bus, parent_device) while the
-> child buses inherit the domain nr of the parent bus.
->
-> This patch also adds an of_pci_set_domain_nr() implementation which
-> parses the device tree for the "pci-domain" property or sets domain_nr
-> to the next available value (this function could also be implemented
-> entirely in arm64).
->
-> Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
 
-I like this.  It seems like a reasonable step forward.  I don't really
-like the pci_set_domain_nr() interface because the domain conceptually
-exists before the root bus in the domain, but we can deal with that
-later.
+Thank for the grammar corrections. Will apply those to the documents.
 
-Tiny nit: please remove the "extern" on the pci_set_domain_nr()
-declaration in include/linux/pci.h; we recently removed all the rest
-(f39d5b72913e).
-
-I'd really like to see all this stuff in v3.17, but I'm going to be on
-vacation for the next three weeks and won't be able to do much until
-Aug 11, which is probably going to be in the middle of the merge
-window.  But maybe the series can be integrated in -next via an ARM
-tree or something.  If it helps, you can add my
-
-Acked-by: Bjorn Helgaas <bhelgaas@google.com>
-
-for this piece.  I don't remember how many other PCI changes are
-involved; maybe my ack on this will be enough?  Even if we can't get
-it in for the merge window, I'm open to trying to merge it after
-v3.17-rc1 if it's isolated enough.
-
-Bjorn
-
-> ---
->  arch/arm64/Kconfig           |  3 +++
->  arch/arm64/include/asm/pci.h | 10 ----------
->  arch/arm64/kernel/pci.c      |  5 +++++
->  drivers/of/of_pci.c          | 20 +++++++++++++-------
->  drivers/pci/probe.c          | 11 ++++++++---
->  include/linux/of_pci.h       |  5 +++++
->  include/linux/pci.h          | 15 +++++++++++++++
->  7 files changed, 49 insertions(+), 20 deletions(-)
->
-> diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
-> index 48ed631adde2..2c884f7453ba 100644
-> --- a/arch/arm64/Kconfig
-> +++ b/arch/arm64/Kconfig
-> @@ -160,6 +160,9 @@ config PCI
->  config PCI_DOMAINS
->         def_bool PCI
->
-> +config PCI_DOMAINS_GENERIC
-> +       def_bool PCI
-> +
->  config PCI_SYSCALL
->         def_bool PCI
->
-> diff --git a/arch/arm64/include/asm/pci.h b/arch/arm64/include/asm/pci.h
-> index 3f7856e92d66..4f091a5135b7 100644
-> --- a/arch/arm64/include/asm/pci.h
-> +++ b/arch/arm64/include/asm/pci.h
-> @@ -29,16 +29,6 @@ struct pci_host_bridge *find_pci_host_bridge(struct pci_bus *bus);
->  extern int isa_dma_bridge_buggy;
->
->  #ifdef CONFIG_PCI
-> -static inline int pci_domain_nr(struct pci_bus *bus)
-> -{
-> -       struct pci_host_bridge *bridge = find_pci_host_bridge(bus);
-> -
-> -       if (bridge)
-> -               return bridge->domain_nr;
-> -
-> -       return 0;
-> -}
-> -
->  static inline int pci_proc_domain(struct pci_bus *bus)
->  {
->         return 1;
-> diff --git a/arch/arm64/kernel/pci.c b/arch/arm64/kernel/pci.c
-> index 955d6d1cb011..d5ed1afb0d88 100644
-> --- a/arch/arm64/kernel/pci.c
-> +++ b/arch/arm64/kernel/pci.c
-> @@ -36,3 +36,8 @@ resource_size_t pcibios_align_resource(void *data, const struct resource *res,
->  {
->         return res->start;
->  }
-> +
-> +void pci_set_domain_nr(struct pci_bus *bus, struct device *parent)
-> +{
-> +       of_pci_set_domain_nr(bus, parent);
-> +}
-> diff --git a/drivers/of/of_pci.c b/drivers/of/of_pci.c
-> index e81402af5cde..54f06b748bf1 100644
-> --- a/drivers/of/of_pci.c
-> +++ b/drivers/of/of_pci.c
-> @@ -175,7 +175,7 @@ static atomic_t domain_nr = ATOMIC_INIT(-1);
->  struct pci_host_bridge *
->  of_create_pci_host_bridge(struct device *parent, struct pci_ops *ops, void *host_data)
->  {
-> -       int err, domain, busno;
-> +       int err, busno;
->         struct resource *bus_range;
->         struct pci_bus *root_bus;
->         struct pci_host_bridge *bridge;
-> @@ -186,10 +186,6 @@ of_create_pci_host_bridge(struct device *parent, struct pci_ops *ops, void *host
->         if (!bus_range)
->                 return ERR_PTR(-ENOMEM);
->
-> -       domain = of_alias_get_id(parent->of_node, "pci-domain");
-> -       if (domain == -ENODEV)
-> -               domain = atomic_inc_return(&domain_nr);
-> -
->         err = of_pci_parse_bus_range(parent->of_node, bus_range);
->         if (err) {
->                 dev_info(parent, "No bus range for %s, using default [0-255]\n",
-> @@ -207,8 +203,7 @@ of_create_pci_host_bridge(struct device *parent, struct pci_ops *ops, void *host
->                 goto err_create;
->
->         /* then create the root bus */
-> -       root_bus = pci_create_root_bus_in_domain(parent, domain, busno,
-> -                                               ops, host_data, &res);
-> +       root_bus = pci_create_root_bus(parent, busno, ops, host_data, &res);
->         if (IS_ERR(root_bus)) {
->                 err = PTR_ERR(root_bus);
->                 goto err_create;
-> @@ -225,6 +220,17 @@ err_create:
->  }
->  EXPORT_SYMBOL_GPL(of_create_pci_host_bridge);
->
-> +void of_pci_set_domain_nr(struct pci_bus *bus, struct device *parent)
-> +{
-> +       int domain;
-> +
-> +       domain = of_alias_get_id(parent->of_node, "pci-domain");
-> +       if (domain == -ENODEV)
-> +               domain = atomic_inc_return(&domain_nr);
-> +
-> +       bus->domain_nr = domain;
-> +}
-> +
->  #ifdef CONFIG_PCI_MSI
->
->  static LIST_HEAD(of_pci_msi_chip_list);
-> diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-> index 2c9266237edc..aa30a9e8915d 100644
-> --- a/drivers/pci/probe.c
-> +++ b/drivers/pci/probe.c
-> @@ -485,7 +485,7 @@ void pci_read_bridge_bases(struct pci_bus *child)
->         }
->  }
->
-> -static struct pci_bus *pci_alloc_bus(void)
-> +static struct pci_bus *pci_alloc_bus(struct pci_bus *parent)
->  {
->         struct pci_bus *b;
->
-> @@ -500,6 +500,10 @@ static struct pci_bus *pci_alloc_bus(void)
->         INIT_LIST_HEAD(&b->resources);
->         b->max_bus_speed = PCI_SPEED_UNKNOWN;
->         b->cur_bus_speed = PCI_SPEED_UNKNOWN;
-> +#ifdef CONFIG_PCI_DOMAINS_GENERIC
-> +       if (parent)
-> +               b->domain_nr = parent->domain_nr;
-> +#endif
->         return b;
->  }
->
-> @@ -670,7 +674,7 @@ static struct pci_bus *pci_alloc_child_bus(struct pci_bus *parent,
->         /*
->          * Allocate a new bus, and inherit stuff from the parent..
->          */
-> -       child = pci_alloc_bus();
-> +       child = pci_alloc_bus(parent);
->         if (!child)
->                 return NULL;
->
-> @@ -1767,13 +1771,14 @@ struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
->         bridge->dev.parent = parent;
->         bridge->dev.release = pci_release_host_bridge_dev;
->
-> -       b = pci_alloc_bus();
-> +       b = pci_alloc_bus(NULL);
->         if (!b)
->                 goto err_out;
->
->         b->sysdata = sysdata;
->         b->ops = ops;
->         b->number = b->busn_res.start = bus;
-> +       pci_set_domain_nr(b, parent);
->         b2 = pci_find_bus(pci_domain_nr(b), bus);
->         if (b2) {
->                 /* If we already got to this bus through a different bridge, ignore it */
-> diff --git a/include/linux/of_pci.h b/include/linux/of_pci.h
-> index 71e36d091db2..af16ac40c7a2 100644
-> --- a/include/linux/of_pci.h
-> +++ b/include/linux/of_pci.h
-> @@ -17,6 +17,7 @@ int of_irq_parse_and_map_pci(const struct pci_dev *dev, u8 slot, u8 pin);
->  int of_pci_parse_bus_range(struct device_node *node, struct resource *res);
->  struct pci_host_bridge *of_create_pci_host_bridge(struct device *parent,
->                                         struct pci_ops *ops, void *host_data);
-> +void of_pci_set_domain_nr(struct pci_bus *bus, struct device *parent);
->
->  #else
->  static inline int of_irq_parse_pci(const struct pci_dev *pdev, struct of_phandle_args *out_irq)
-> @@ -53,6 +54,10 @@ of_create_pci_host_bridge(struct device *parent, struct pci_ops *ops,
->  {
->         return NULL;
->  }
-> +
-> +static inline void of_pci_set_domain_nr(struct pci_bus *bus, struct device *parent)
-> +{
-> +}
->  #endif
->
->  #if defined(CONFIG_OF) && defined(CONFIG_PCI_MSI)
-> diff --git a/include/linux/pci.h b/include/linux/pci.h
-> index d32b4ed1f411..9113f62c5038 100644
-> --- a/include/linux/pci.h
-> +++ b/include/linux/pci.h
-> @@ -457,6 +457,9 @@ struct pci_bus {
->         unsigned char   primary;        /* number of primary bridge */
->         unsigned char   max_bus_speed;  /* enum pci_bus_speed */
->         unsigned char   cur_bus_speed;  /* enum pci_bus_speed */
-> +#ifdef CONFIG_PCI_DOMAINS_GENERIC
-> +       int             domain_nr;
-> +#endif
->
->         char            name[48];
->
-> @@ -1292,6 +1295,18 @@ static inline int pci_domain_nr(struct pci_bus *bus) { return 0; }
->  static inline int pci_proc_domain(struct pci_bus *bus) { return 0; }
->  #endif /* CONFIG_PCI_DOMAINS */
->
-> +#ifdef CONFIG_PCI_DOMAINS_GENERIC
-> +static inline int pci_domain_nr(struct pci_bus *bus)
-> +{
-> +       return bus->domain_nr;
-> +}
-> +extern void pci_set_domain_nr(struct pci_bus *bus, struct device *parent);
-> +#else
-> +static inline void pci_set_domain_nr(struct pci_bus *bus, struct device *parent)
-> +{
-> +}
-> +#endif
-> +
->  /* some architectures require additional setup to direct VGA traffic */
->  typedef int (*arch_set_vga_state_t)(struct pci_dev *pdev, bool decode,
->                       unsigned int command_bits, u32 flags);
+-Longman
