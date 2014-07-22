@@ -1,56 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752105AbaGVM6p (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 08:58:45 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:17657 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750930AbaGVM6o (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 08:58:44 -0400
-Date: Tue, 22 Jul 2014 15:58:20 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Fabio Falzoi <fabio.falzoi84@gmail.com>
-Cc: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, wei_wang@realsil.com.cn, joe@perches.com
-Subject: Re: [PATCH v4 1/3] Staging: rts5208: Replace custom macro with
- dev_dbg
-Message-ID: <20140722125820.GO25880@mwanda>
-References: <1405978564-11343-1-git-send-email-fabio.falzoi84@gmail.com>
- <1405978564-11343-2-git-send-email-fabio.falzoi84@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1405978564-11343-2-git-send-email-fabio.falzoi84@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	id S1752576AbaGVM7H (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 08:59:07 -0400
+Received: from s3.sipsolutions.net ([5.9.151.49]:51654 "EHLO sipsolutions.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751103AbaGVM7F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 08:59:05 -0400
+Message-ID: <1406033927.32255.33.camel@jlt4.sipsolutions.net>
+Subject: Re: [PATCH] trace-cmd: add trace-record.o to the python shared lib
+From: Johannes Berg <johannes@sipsolutions.net>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Josef Bacik <jbacik@fb.com>, linux-kernel@vger.kernel.org,
+        Darren Hart <darren@dvhart.com>
+Date: Tue, 22 Jul 2014 14:58:47 +0200
+In-Reply-To: <20140721170153.42a0d5d2@gandalf.local.home>
+References: <1405975844-2361-1-git-send-email-jbacik@fb.com>
+	 <20140721170153.42a0d5d2@gandalf.local.home>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.2-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 21, 2014 at 11:36:02PM +0200, Fabio Falzoi wrote:
-> @@ -3664,7 +3672,7 @@ static int mg_set_tpc_para_sub(struct rtsx_chip *chip, int type,
->  	int retval;
->  	u8 buf[6];
->  
-> -	RTSX_DEBUGP("--%s--\n", __func__);
-> +	dev_dbg(rtsx_dev(chip), "--%s--\n", __func__);
+On Mon, 2014-07-21 at 17:01 -0400, Steven Rostedt wrote:
+> Cc'd my python gurus.
+> 
+> Acks?
 
-All of these debug printks to mark when we have called a function should
-be deleted.  We have ftrace for that.
+> > When trying to use the python library it was giving me an error about not being
+> > able to resolve tracecmd_stat_cpu.  This is because we weren't linking
+> > trace-record.o to ctracecmd.so.  Fix this in the makefile and now I can import
+> > trace-cmd in python properly.  Thanks,
 
-> -static inline void free_zone(struct zone_entry *zone)
-> +static inline void free_zone(const struct rtsx_chip *chip,
-> +			     struct zone_entry *zone)
->  {
-> -	RTSX_DEBUGP("free_zone\n");
-> +	dev_dbg(rtsx_dev(chip), "free_zone\n");
->  
->  	if (!zone)
->  		return;
+I guess, I don't see anything wrong with that. I don't usually use
+ctracecmd.so standalone, only as part of trace-cmd, which may explain
+why I didn't see any problem?
 
-Don't add a parameter to free_zone() just for this debug printk which
-should be deleted.
-
-regards,
-dan carpenter
+johannes
 
