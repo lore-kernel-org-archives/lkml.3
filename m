@@ -1,88 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754299AbaGVJqQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 05:46:16 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:49121 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752016AbaGVJqO (ORCPT
+	id S1754365AbaGVJrt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 05:47:49 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:57142 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753392AbaGVJrr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 05:46:14 -0400
-Date: Tue, 22 Jul 2014 10:45:48 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Alexandre Courbot <gnurou@gmail.com>
-Cc: Thierry Reding <thierry.reding@gmail.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Alexandre Courbot <acourbot@nvidia.com>,
-        Terje Bergstrom <tbergstrom@nvidia.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+	Tue, 22 Jul 2014 05:47:47 -0400
+Date: Tue, 22 Jul 2014 11:47:40 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Bruno Wolff III <bruno@wolff.to>
+Cc: Dietmar Eggemann <dietmar.eggemann@arm.com>,
+        Josh Boyer <jwboyer@redhat.com>, "mingo@redhat.com" <mingo@redhat.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ulf Hansson <ulf.hansson@linaro.org>
-Message-ID: <20140722094548.GP17528@sirena.org.uk>
-References: <1404303560-32209-1-git-send-email-acourbot@nvidia.com>
- <1404303560-32209-5-git-send-email-acourbot@nvidia.com>
- <53B42B60.1000600@wwwdotorg.org>
- <53B4C9C0.4000605@nvidia.com>
- <53CD333F.2070805@wwwdotorg.org>
- <20140721211630.GA12076@mithrandir>
- <20140721225153.GJ17528@sirena.org.uk>
- <CAAVeFuKtVYNP5LFXGCEpkUtCCrK6AP+9WEVPDPs45RwAPvKKRg@mail.gmail.com>
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: Scheduler regression from
+ caffcdd8d27ba78730d5540396ce72ad022aff2c
+Message-ID: <20140722094740.GJ12054@laptop.lan>
+References: <53C7B247.2070309@arm.com>
+ <20140717123502.GL19379@twins.programming.kicks-ass.net>
+ <20140718053449.GA2039@wolff.to>
+ <20140718101633.GP9918@twins.programming.kicks-ass.net>
+ <20140718130126.GA2401@wolff.to>
+ <20140718141648.GE20603@laptop.programming.kicks-ass.net>
+ <20140718145040.GG12054@laptop.lan>
+ <20140718161602.GH12054@laptop.lan>
+ <20140721163528.GA10433@wolff.to>
+ <20140721165212.GO3935@laptop>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="aRuUY7KzmetiZjaI"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAAVeFuKtVYNP5LFXGCEpkUtCCrK6AP+9WEVPDPs45RwAPvKKRg@mail.gmail.com>
-X-Cookie: 98% lean.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 4/4] ARM: tegra: roth: add display DT node
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+In-Reply-To: <20140721165212.GO3935@laptop>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Jul 21, 2014 at 06:52:12PM +0200, Peter Zijlstra wrote:
+> On Mon, Jul 21, 2014 at 11:35:28AM -0500, Bruno Wolff III wrote:
+> > Is there more I can do to help with this now? Or should I just wait for
+> > patches to test?
+> 
+> Yeah, sorry, was wiped out today. I'll go stare harder at the P4
+> topology setup code tomorrow. Something fishy there.
 
---aRuUY7KzmetiZjaI
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Does this make your machine boot again (while giving an error)?
 
-On Tue, Jul 22, 2014 at 01:39:51PM +0900, Alexandre Courbot wrote:
+It tries to robustify the topology setup a bit, crashing on crap input
+should be avoided if possible of course.
 
-> I also don't think that would do it - for many displays the power-on
-> sequence is not as simple as "switch all the regulators on".
+I'll go stare at the x86/P4 topology code like promised.
 
-> Maybe what we would want is to have panel-simple allow panels to
-> provide a "probe" callback so they can request and manage any extra
-> resource they need. This would of course imply that custom
-> enable/disable and suspend/resume callbacks. Then the driver might not
-> be "simple" anymore, but IMHO it would not be that bad.
+---
+Subject: sched: Robustify topology setup
+From: Peter Zijlstra <peterz@infradead.org>
+Date: Mon Jul 21 23:07:06 CEST 2014
 
-This is starting to mirror the discussion about MMC/SDIO devices where
-the talk was of having a property on the device saying which power up
-scheme to use - added Ulf for that.
+We hard assume that higher topology levels are strict supersets of
+lower levels.
 
---aRuUY7KzmetiZjaI
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Detect, warn and try to fixup when we encounter this violated.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/n/tip-cgp9j2tk0qnunhtpps3udsom@git.kernel.org
+---
+ kernel/sched/core.c |   14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
 
-iQIcBAEBAgAGBQJTzjLJAAoJELSic+t+oim9rIgP/3htcCCFA2hpukO16XqiGrqC
-huwFO2DCA5zohaX3MsZxwIcdz65tzq+bjdjVUdyJgQNQIFmGwklrv/pU37lyeo31
-NhHtj7gNXrF21RUkLQsEmlZy0hkDLL5AhPRGN5ISJzyhFCx8sEm3gNR8NonB/mDX
-swqh+9HxBTET0QFSO/qtTO/H29zeBExwvA6fF9anJUJlCmjXuWdE3f7oTbg+GOvP
-4Pj8i8F/gA+e4evSidtdtsWgBjQS4ECDaxAN1+X/uNi51MFcvZSQRus7Hnh6Qc/Y
-vOfB/GGZdYXRON7ha2zzpGzsB7urCN4QgHyaPWEmqhpjrw54RDUZRc/CRx1h/tcZ
-JfhVGfpriPJlS2mRqDsVvMD8suPGfo8kOsfgEajMSK4zuHZ49Eatkf8SwZG/Ow8b
-BaKLy1XGSU0NaZO+P7qvfu7Dp5HwvMKNIRjwJsMZGOzBEkyVK4Ms1EjfKO+Or2/3
-jKPEG54V822ahzvQe7+TlNZXoCyOey+SKQSsF+iYurXdkKyMG/PlwaedUTIO/Zgo
-+fUOSngmeTd7BQAfqw1TVsRr/oDrEBckdIS8ZJdtVLvJLjQMCMhlUHmYI9VePrP1
-rxMN75rcVSwgzQcLGNPfBZe2QxZ3ZDziMn3ntXwhruFUeKILDRJ8vx6X+DVGF0X/
-3C/nbZq29Uhx8O1WIwoR
-=lpi1
------END PGP SIGNATURE-----
-
---aRuUY7KzmetiZjaI--
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -6480,6 +6480,20 @@ struct sched_domain *build_sched_domain(
+ 		sched_domain_level_max = max(sched_domain_level_max, sd->level);
+ 		child->parent = sd;
+ 		sd->child = child;
++
++		if (!cpumask_subset(sched_domain_span(child),
++				    sched_domain_span(sd))) {
++			pr_err("BUG: arch topology borken\n");
++#ifdef CONFIG_SCHED_DEBUG
++			pr_err("     the %s domain not a subset of the %s domain\n",
++					child->name, sd->name);
++#endif
++			/* Fixup, ensure @sd has at least @child cpus. */
++			cpumask_or(sched_domain_span(sd),
++				   sched_domain_span(sd),
++				   sched_domain_span(child));
++		}
++
+ 	}
+ 	set_domain_attribute(sd, attr);
+ 
