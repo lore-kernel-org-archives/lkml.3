@@ -1,120 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932174AbaGVVd5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 17:33:57 -0400
-Received: from mail-ie0-f180.google.com ([209.85.223.180]:56476 "EHLO
-	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755563AbaGVVdz convert rfc822-to-8bit (ORCPT
+	id S1756844AbaGVVoX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 17:44:23 -0400
+Received: from gloria.sntech.de ([95.129.55.99]:40380 "EHLO gloria.sntech.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751272AbaGVVoU convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 17:33:55 -0400
+	Tue, 22 Jul 2014 17:44:20 -0400
+From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
+To: Beniamino Galvani <b.galvani@gmail.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org
+Subject: Re: [PATCH] ARM: dts: rk3188-radxarock: add GPIO IR receiver node
+Date: Tue, 22 Jul 2014 23:45:47 +0200
+Message-ID: <3433422.DZFVBm30W2@diego>
+User-Agent: KMail/4.11.5 (Linux/3.13-1-amd64; KDE/4.11.3; x86_64; ; )
+In-Reply-To: <20140714190355.GA16904@gmail.com>
+References: <1405253401-15534-1-git-send-email-b.galvani@gmail.com> <2390327.HZxnbJmfOO@diego> <20140714190355.GA16904@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1404901036-27682-2-git-send-email-antoine.tenart@free-electrons.com>
-References: <1404901036-27682-1-git-send-email-antoine.tenart@free-electrons.com>
-	<1404901036-27682-2-git-send-email-antoine.tenart@free-electrons.com>
-Date: Tue, 22 Jul 2014 16:33:54 -0500
-Message-ID: <CADYTM3ZijsqSUTvBEscJCP94aWCPahPJ1se+g0+ssqwcE_yAxg@mail.gmail.com>
-Subject: Re: [PATCH 1/4] usb: move the OTG state from the USB PHY to the OTG structure
-From: Bin Liu <binmlist@gmail.com>
-To: =?UTF-8?Q?Antoine_T=C3=A9nart?= <antoine.tenart@free-electrons.com>
-Cc: balbi@ti.com, gregkh@linuxfoundation.org, Peter.Chen@freescale.com,
-        kishon@ti.com, stern@rowland.harvard.edu,
-        alexandre.belloni@free-electrons.com,
-        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
-        jszhang@marvell.com, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="iso-8859-1"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Am Montag, 14. Juli 2014, 21:04:26 schrieb Beniamino Galvani:
+> On Sun, Jul 13, 2014 at 02:37:40PM +0200, Heiko St�bner wrote:
+> > Am Sonntag, 13. Juli 2014, 14:10:01 schrieb Beniamino Galvani:
+> > > This adds a device tree node for the infrared receiver connected to a
+> > > GPIO pin on the Radxa Rock.
+> > > 
+> > > Signed-off-by: Beniamino Galvani <b.galvani@gmail.com>
+> > > ---
+> > > 
+> > >  arch/arm/boot/dts/rk3188-radxarock.dts |   13 +++++++++++++
+> > >  1 file changed, 13 insertions(+)
+> > > 
+> > > diff --git a/arch/arm/boot/dts/rk3188-radxarock.dts
+> > > b/arch/arm/boot/dts/rk3188-radxarock.dts index 19d45b4..1d87bcb 100644
+> > > --- a/arch/arm/boot/dts/rk3188-radxarock.dts
+> > > +++ b/arch/arm/boot/dts/rk3188-radxarock.dts
+> > > @@ -23,6 +23,13 @@
+> > > 
+> > >  		reg = <0x60000000 0x80000000>;
+> > >  	
+> > >  	};
+> > > 
+> > > +	ir_recv: ir-receiver {
+> > > +		compatible = "gpio-ir-receiver";
+> > > +		gpios = <&gpio0 10 1>;
+> > > +		pinctrl-names = "default";
+> > > +		pinctrl-0 = <&ir_recv_pin>;
+> > > +	};
+> > > +
+> > 
+> > hmm, on second glance, I'm actually not sure if this shouldn't belong in
+> > the soc subnode, like the gpio-keys and leds.
+> 
+> (adding devicetree mailing list)
+> 
+> I placed the IR receiver under the root node after looking at what
+> other boards do, for example:
+> 
+>   imx6dl-hummingboard.dts
+>   imx6qdl-cubox-i.dtsi
+>   dove-cubox.dts
+> 
+> On the other hand, if gpio-keys and leds are under the soc node
+> probably it makes sense to follow the same rule also for the IR
+> receiver.
 
-On Wed, Jul 9, 2014 at 5:17 AM, Antoine Ténart
-<antoine.tenart@free-electrons.com> wrote:
-> Before using the PHY framework instead of the USB PHY one, we need to
-> move the OTG state into another place, since it won't be available when
-> USB PHY isn't used. This patch moves the OTG state into the OTG
-> structure, and makes all the needed modifications in the drivers
-> using the OTG state.
->
-> Signed-off-by: Antoine Ténart <antoine.tenart@free-electrons.com>
-> ---
->  drivers/phy/phy-omap-usb2.c         |  8 +---
->  drivers/usb/chipidea/debug.c        |  3 +-
->  drivers/usb/chipidea/otg_fsm.c      | 12 ++---
->  drivers/usb/common/usb-otg-fsm.c    |  8 ++--
->  drivers/usb/host/ohci-omap.c        |  2 +-
->  drivers/usb/musb/am35x.c            | 28 +++++------
->  drivers/usb/musb/blackfin.c         | 18 +++----
->  drivers/usb/musb/da8xx.c            | 28 +++++------
->  drivers/usb/musb/davinci.c          | 18 +++----
->  drivers/usb/musb/musb_core.c        | 94 ++++++++++++++++++-------------------
->  drivers/usb/musb/musb_dsps.c        | 26 +++++-----
->  drivers/usb/musb/musb_gadget.c      | 36 +++++++-------
->  drivers/usb/musb/musb_host.c        |  8 ++--
->  drivers/usb/musb/musb_virthub.c     | 22 ++++-----
->  drivers/usb/musb/omap2430.c         | 30 ++++++------
->  drivers/usb/musb/tusb6010.c         | 40 ++++++++--------
->  drivers/usb/musb/ux500.c            | 10 ++--
->  drivers/usb/phy/phy-ab8500-usb.c    | 10 ++--
->  drivers/usb/phy/phy-fsl-usb.c       | 10 ++--
->  drivers/usb/phy/phy-generic.c       |  4 +-
->  drivers/usb/phy/phy-gpio-vbus-usb.c | 10 ++--
->  drivers/usb/phy/phy-msm-usb.c       | 34 +++++++-------
->  drivers/usb/phy/phy-mv-usb.c        | 46 +++++++++---------
->  include/linux/usb/otg.h             |  2 +
->  include/linux/usb/phy.h             |  1 -
->  25 files changed, 252 insertions(+), 256 deletions(-)
->
-> diff --git a/drivers/phy/phy-omap-usb2.c b/drivers/phy/phy-omap-usb2.c
-> index 7007c11fe07d..1f444f91ed7d 100644
-> --- a/drivers/phy/phy-omap-usb2.c
-> +++ b/drivers/phy/phy-omap-usb2.c
-> @@ -80,11 +80,9 @@ static int omap_usb_start_srp(struct usb_otg *otg)
->
->  static int omap_usb_set_host(struct usb_otg *otg, struct usb_bus *host)
->  {
-> -       struct usb_phy  *phy = otg->phy;
-> -
->         otg->host = host;
->         if (!host)
-> -               phy->state = OTG_STATE_UNDEFINED;
-> +               otg->state = OTG_STATE_UNDEFINED;
->
->         return 0;
->  }
-> @@ -92,11 +90,9 @@ static int omap_usb_set_host(struct usb_otg *otg, struct usb_bus *host)
->  static int omap_usb_set_peripheral(struct usb_otg *otg,
->                 struct usb_gadget *gadget)
->  {
-> -       struct usb_phy  *phy = otg->phy;
-> -
->         otg->gadget = gadget;
->         if (!gadget)
-> -               phy->state = OTG_STATE_UNDEFINED;
-> +               otg->state = OTG_STATE_UNDEFINED;
->
->         return 0;
->  }
-> diff --git a/drivers/usb/chipidea/debug.c b/drivers/usb/chipidea/debug.c
-> index 7cccab6ff308..9a9702773e43 100644
-> --- a/drivers/usb/chipidea/debug.c
-> +++ b/drivers/usb/chipidea/debug.c
-> @@ -219,8 +219,7 @@ int ci_otg_show(struct seq_file *s, void *unused)
->         fsm = &ci->fsm;
->
->         /* ------ State ----- */
-> -       seq_printf(s, "OTG state: %s\n\n",
+your way was the right one actually ... using artificial subnodes is not 
+encouraged at all - see comments I received , so the soc node itself also may 
+go away.
 
-Is this line removed by accident?
+I'll add the patch to my queue.
 
-> -               usb_otg_state_string(ci->transceiver->state));
-> +               usb_otg_state_string(ci->transceiver->otg.state));
->
->         /* ------ State Machine Variables ----- */
 
-<snip>
-
-Regards,
--Bin.
+Heiko
