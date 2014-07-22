@@ -1,71 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753203AbaGVG6v (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 02:58:51 -0400
-Received: from mail-bn1lp0145.outbound.protection.outlook.com ([207.46.163.145]:21260
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753133AbaGVG6u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 02:58:50 -0400
-From: Jingchang Lu <jingchang.lu@freescale.com>
-To: Shawn Guo <Shawn.Guo@freescale.com>, Stefan Agner <stefan@agner.ch>
-CC: Peter Chen <Peter.Chen@freescale.com>,
-        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 2/6] ARM: imx: clk-vf610: add USBPHY clocks
-Thread-Topic: [PATCH 2/6] ARM: imx: clk-vf610: add USBPHY clocks
-Thread-Index: AQHPoqn7p6UkNoZSCkinSDryajmVF5urZO0AgABJNsA=
-Date: Tue, 22 Jul 2014 06:58:46 +0000
-Message-ID: <59acaa7259a54090ab28b037fb412a47@BL2PR03MB467.namprd03.prod.outlook.com>
-References: <cover.1405702442.git.stefan@agner.ch>
- <fe660ff42e95a286a954c0560b2b7b2aad81634b.1405702442.git.stefan@agner.ch>
- <20140722023205.GS8537@dragon>
-In-Reply-To: <20140722023205.GS8537@dragon>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [123.151.195.49]
-x-microsoft-antispam: BCL:0;PCL:0;RULEID:
-x-forefront-prvs: 02801ACE41
-x-forefront-antispam-report: SFV:NSPM;SFS:(6009001)(377454003)(51704005)(199002)(41574002)(189002)(24454002)(13464003)(99396002)(19580395003)(95666004)(66066001)(76176999)(74662001)(101416001)(46102001)(80022001)(99286002)(106356001)(85306003)(31966008)(85852003)(83072002)(54356999)(21056001)(19580405001)(76576001)(76482001)(106116001)(87936001)(20776003)(107046002)(2656002)(77982001)(50986999)(4396001)(86362001)(74316001)(33646002)(92566001)(81342001)(64706001)(79102001)(81542001)(83322001)(74502001)(105586002)(108616002)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:BL2PR03MB337;H:BL2PR03MB467.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;LANG:en;
-Content-Type: text/plain; charset="utf-8"
+	id S1753215AbaGVG7r (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 02:59:47 -0400
+Received: from mga02.intel.com ([134.134.136.20]:63346 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751139AbaGVG7q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 02:59:46 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,708,1400050800"; 
+   d="scan'208";a="576841328"
+Date: Tue, 22 Jul 2014 09:59:41 +0300
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: linux-gpio@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>
+Subject: Re: [PATCH v2] gpiolib: Export gpiochip_request_own_desc and
+ gpiochip_free_own_desc
+Message-ID: <20140722065941.GI1655@lahna.fi.intel.com>
+References: <1406006305-22694-1-git-send-email-linux@roeck-us.net>
+ <20140722064348.GG1655@lahna.fi.intel.com>
+ <53CE0A67.7060005@roeck-us.net>
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53CE0A67.7060005@roeck-us.net>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s6M6wvx4003908
 
+On Mon, Jul 21, 2014 at 11:53:27PM -0700, Guenter Roeck wrote:
+> On 07/21/2014 11:43 PM, Mika Westerberg wrote:
+> >On Mon, Jul 21, 2014 at 10:18:25PM -0700, Guenter Roeck wrote:
+> >>Both functions were introduced to let gpio drivers request their own
+> >>gpio pins. Without exporting the functions, this can however only be
+> >>used by gpio drivers built into the kernel.
+> >
+> >The reason why these are private to drivers is that those are dangerous
+> >if used blindly.
+> >
+> >>Secondary impact is that the functions can not currently be used by
+> >>platform initialization code associated with the gpio-pca953x driver.
+> >>This code permits auto-export of gpio pins through platform data, but
+> >>if this functionality is used, the module can no longer be unloaded due
+> >>to the problem solved with the introduction of gpiochip_request_own_desc
+> >>and gpiochip_free_own_desc.
+> >>
+> >>Export both function so they can be used from modules and from
+> >>platform initialization code.
+> >
+> >However, you have valid reason above. I wonder if this requires
+> >some documentation in Documentation/gpio/driver.txt?
+> >
+> Sure. Any idea what I should write, or do you want me to come up with something ?
 
->-----Original Message-----
->From: Shawn Guo [mailto:shawn.guo@freescale.com]
->Sent: Tuesday, July 22, 2014 10:32 AM
->To: Stefan Agner; Lu Jingchang-B35083
->Cc: Chen Peter-B29397; s.hauer@pengutronix.de; linux-arm-
->kernel@lists.infradead.org; linux-usb@vger.kernel.org; linux-
->kernel@vger.kernel.org
->Subject: Re: [PATCH 2/6] ARM: imx: clk-vf610: add USBPHY clocks
->
->On Fri, Jul 18, 2014 at 07:01:38PM +0200, Stefan Agner wrote:
->> This commit adds PLL7 which is required for USBPHY1. It also adds the
->> USB PHY and USB Controller clocks and the gates to enable them.
->>
->> Signed-off-by: Stefan Agner <stefan@agner.ch>
->
->Jingchang,
->
->Does the patch look good to you?
->
->Shawn
->
-For the clk creation, I think it is ok if the functionality has been tested, thanks!
+Come up with something that lists valid usage of these two functions :)
 
-Acked-by: Jingchang Lu <jingchang.lu@freescale.com>
+Mainly that they are supposed to be used by GPIO chip drivers to request
+their own GPIOs, not consumer drivers etc. And even in GPIO chip drivers
+they should be used sparingly.
 
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+> 
+> >>Cc: Mika Westerberg <mika.westerberg@linux.intel.com>
+> >>Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+> >>---
+> >>v2: Move function declarations from consumer.h to driver.h.
+> >>
+> >>  drivers/gpio/gpiolib.c      | 2 ++
+> >>  drivers/gpio/gpiolib.h      | 3 ---
+> >>  include/linux/gpio/driver.h | 3 +++
+> >>  3 files changed, 5 insertions(+), 3 deletions(-)
+> >>
+> >>diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
+> >>index 43d9e34..04c647e 100644
+> >>--- a/drivers/gpio/gpiolib.c
+> >>+++ b/drivers/gpio/gpiolib.c
+> >>@@ -1953,6 +1953,7 @@ int gpiochip_request_own_desc(struct gpio_desc *desc, const char *label)
+> >>
+> >>  	return __gpiod_request(desc, label);
+> >>  }
+> >>+EXPORT_SYMBOL(gpiochip_request_own_desc);
+> >
+> >EXPORT_SYMBOL_GPL?
+> >
+> Ok.
+> 
+> Thanks,
+> Guenter
