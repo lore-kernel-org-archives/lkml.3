@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755394AbaGVLMo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 07:12:44 -0400
-Received: from mail-ie0-f180.google.com ([209.85.223.180]:46912 "EHLO
-	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755326AbaGVLMK (ORCPT
+	id S1755406AbaGVLNC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 07:13:02 -0400
+Received: from mail-ig0-f182.google.com ([209.85.213.182]:36162 "EHLO
+	mail-ig0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755290AbaGVLMG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 07:12:10 -0400
+	Tue, 22 Jul 2014 07:12:06 -0400
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Cc: sameo@linux.intel.com, Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 18/19] mfd: kempld-core: Correct a variety of checkpatch warnings
-Date: Tue, 22 Jul 2014 12:11:24 +0100
-Message-Id: <1406027485-15657-19-git-send-email-lee.jones@linaro.org>
+Subject: [PATCH 16/19] mfd: si476x-cmd: Remedy checkpatch style complains
+Date: Tue, 22 Jul 2014 12:11:22 +0100
+Message-Id: <1406027485-15657-17-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1406027485-15657-1-git-send-email-lee.jones@linaro.org>
 References: <1406027485-15657-1-git-send-email-lee.jones@linaro.org>
@@ -20,69 +20,57 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-WARNING: line over 80 characters
-+module_param_string(force_device_id, force_device_id, sizeof(force_device_id), 0);
-
-WARNING: msleep < 20ms can sleep for up to 20ms; see Documentation/timers/timers-howto.txt
-+               msleep(1);
-
-WARNING: __initdata should be placed after kempld_dmi_table[]
-+static struct dmi_system_id __initdata kempld_dmi_table[] = {
-
-WARNING: line over 80 characters
-+               for (id = kempld_dmi_table; id->matches[0].slot != DMI_NONE; id++)
-
-total: 0 errors, 4 warnings, 771 lines checked
-
 This is part of an effort to clean-up the MFD subsystem.
+
+WARNING: line over 80 characters
++                        struct si476x_rsq_status_args *rsqargs,
+
+WARNING: line over 80 characters
++                        struct si476x_rsq_status_report *report)
+
+WARNING: Unnecessary space before function pointer arguments
++       int (*power_up) (struct si476x_core *,
+
+WARNING: Unnecessary space before function pointer arguments
++       int (*power_down) (struct si476x_core *,
+
+total: 0 errors, 4 warnings, 1555 lines checked
 
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- drivers/mfd/kempld-core.c | 10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
+ drivers/mfd/si476x-cmd.c | 12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/mfd/kempld-core.c b/drivers/mfd/kempld-core.c
-index f7ff018..bd26961 100644
---- a/drivers/mfd/kempld-core.c
-+++ b/drivers/mfd/kempld-core.c
-@@ -24,7 +24,8 @@
- 
- #define MAX_ID_LEN 4
- static char force_device_id[MAX_ID_LEN + 1] = "";
--module_param_string(force_device_id, force_device_id, sizeof(force_device_id), 0);
-+module_param_string(force_device_id, force_device_id,
-+		    sizeof(force_device_id), 0);
- MODULE_PARM_DESC(force_device_id, "Override detected product");
- 
- /*
-@@ -36,7 +37,7 @@ static void kempld_get_hardware_mutex(struct kempld_device_data *pld)
- {
- 	/* The mutex bit will read 1 until access has been granted */
- 	while (ioread8(pld->io_index) & KEMPLD_MUTEX_KEY)
--		msleep(1);
-+		usleep_range(1000, 3000);
+diff --git a/drivers/mfd/si476x-cmd.c b/drivers/mfd/si476x-cmd.c
+index 6f1ef63..2086b46 100644
+--- a/drivers/mfd/si476x-cmd.c
++++ b/drivers/mfd/si476x-cmd.c
+@@ -1228,8 +1228,8 @@ static int si476x_core_cmd_fm_rsq_status_a10(struct si476x_core *core,
  }
  
- static void kempld_release_hardware_mutex(struct kempld_device_data *pld)
-@@ -499,7 +500,7 @@ static struct platform_driver kempld_driver = {
- 	.remove		= kempld_remove,
- };
+ static int si476x_core_cmd_fm_rsq_status_a20(struct si476x_core *core,
+-					     struct si476x_rsq_status_args *rsqargs,
+-					     struct si476x_rsq_status_report *report)
++				     struct si476x_rsq_status_args *rsqargs,
++				     struct si476x_rsq_status_report *report)
+ {
+ 	int err;
+ 	u8       resp[CMD_FM_RSQ_STATUS_A10_NRESP];
+@@ -1434,10 +1434,10 @@ typedef int (*tune_freq_func_t) (struct si476x_core *core,
+ 				 struct si476x_tune_freq_args *tuneargs);
  
--static struct dmi_system_id __initdata kempld_dmi_table[] = {
-+static struct dmi_system_id kempld_dmi_table[] __initdata = {
- 	{
- 		.ident = "BHL6",
- 		.matches = {
-@@ -736,7 +737,8 @@ static int __init kempld_init(void)
- 	int ret;
+ static struct {
+-	int (*power_up) (struct si476x_core *,
+-			 struct si476x_power_up_args *);
+-	int (*power_down) (struct si476x_core *,
+-			   struct si476x_power_down_args *);
++	int (*power_up)(struct si476x_core *,
++			struct si476x_power_up_args *);
++	int (*power_down)(struct si476x_core *,
++			  struct si476x_power_down_args *);
  
- 	if (force_device_id[0]) {
--		for (id = kempld_dmi_table; id->matches[0].slot != DMI_NONE; id++)
-+		for (id = kempld_dmi_table;
-+		     id->matches[0].slot != DMI_NONE; id++)
- 			if (strstr(id->ident, force_device_id))
- 				if (id->callback && id->callback(id))
- 					break;
+ 	tune_freq_func_t fm_tune_freq;
+ 	tune_freq_func_t am_tune_freq;
 -- 
 1.8.3.2
 
