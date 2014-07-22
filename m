@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933942AbaGVW4Z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 18:56:25 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44385 "EHLO
+	id S933782AbaGVW4X (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 18:56:23 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:44387 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932252AbaGVWWg (ORCPT
+	with ESMTP id S932263AbaGVWWg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 22 Jul 2014 18:22:36 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Mike Miller <mike.miller@hp.com>,
-        James Bottomley <JBottomley@Parallels.com>,
+Cc: hujianyang <hujianyang@huawei.com>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 018/116] [SCSI] hpsa: add HP Smart Array Gen9 PCI ID's
-Date: Tue, 22 Jul 2014 15:20:29 -0700
-Message-Id: <1406067727-19683-19-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 016/116] UBIFS: fix an mmap and fsync race condition
+Date: Tue, 22 Jul 2014 15:20:27 -0700
+Message-Id: <1406067727-19683-17-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1406067727-19683-1-git-send-email-kamal@canonical.com>
 References: <1406067727-19683-1-git-send-email-kamal@canonical.com>
@@ -28,76 +28,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mike Miller <mike.miller@hp.com>
+From: hujianyang <hujianyang@huawei.com>
 
-commit 97b9f53d7deb3b8c0acdeb52a5801f9f5080ce0f upstream.
+commit 691a7c6f28ac90cccd0dbcf81348ea90b211bdd0 upstream.
 
-This patch adds the PCI ID's for HP Smart Array Gen9 controllers. Please
-consider this patch for inclusion.
+There is a race condition in UBIFS:
 
-Signed-off-by: Mike Miller <mike.miller@hp.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Thread A (mmap)                        Thread B (fsync)
+
+->__do_fault                           ->write_cache_pages
+   -> ubifs_vm_page_mkwrite
+       -> budget_space
+       -> lock_page
+       -> release/convert_page_budget
+       -> SetPagePrivate
+       -> TestSetPageDirty
+       -> unlock_page
+                                       -> lock_page
+                                           -> TestClearPageDirty
+                                           -> ubifs_writepage
+                                               -> do_writepage
+                                                   -> release_budget
+                                                   -> ClearPagePrivate
+                                                   -> unlock_page
+   -> !(ret & VM_FAULT_LOCKED)
+   -> lock_page
+   -> set_page_dirty
+       -> ubifs_set_page_dirty
+           -> TestSetPageDirty (set page dirty without budgeting)
+   -> unlock_page
+
+This leads to situation where we have a diry page but no budget allocated for
+this page, so further write-back may fail with -ENOSPC.
+
+In this fix we return from page_mkwrite without performing unlock_page. We
+return VM_FAULT_LOCKED instead. After doing this, the race above will not
+happen.
+
+Signed-off-by: hujianyang <hujianyang@huawei.com>
+Tested-by: Laurence Withers <lwithers@guralp.com>
+Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/scsi/hpsa.c     | 25 +++++++++++++++++++++++++
- include/linux/pci_ids.h |  1 +
- 2 files changed, 26 insertions(+)
+ fs/ubifs/file.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/drivers/scsi/hpsa.c b/drivers/scsi/hpsa.c
-index 4884df9..051085d 100644
---- a/drivers/scsi/hpsa.c
-+++ b/drivers/scsi/hpsa.c
-@@ -108,6 +108,19 @@ static const struct pci_device_id hpsa_pci_device_id[] = {
- 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C, 0x1926},
- 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C, 0x1928},
- 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSF,     0x103C, 0x334d},
-+	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C, 0x1929},
-+	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C, 0x21BD},
-+	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C, 0x21BE},
-+	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C, 0x21BF},
-+	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C, 0x21C0},
-+	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C, 0x21C1},
-+	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C, 0x21C2},
-+	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C, 0x21C3},
-+	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C, 0x21C4},
-+	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C, 0x21C5},
-+	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C, 0x21C7},
-+	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C, 0x21C8},
-+	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C, 0x21C9},
- 	{PCI_VENDOR_ID_HP,     PCI_ANY_ID,	PCI_ANY_ID, PCI_ANY_ID,
- 		PCI_CLASS_STORAGE_RAID << 8, 0xffff << 8, 0},
- 	{0,}
-@@ -143,6 +156,18 @@ static struct board_type products[] = {
- 	{0x1926103C, "Smart Array", &SA5_access},
- 	{0x1928103C, "Smart Array", &SA5_access},
- 	{0x334d103C, "Smart Array P822se", &SA5_access},
-+	{0x21BD103C, "Smart Array", &SA5_access},
-+	{0x21BE103C, "Smart Array", &SA5_access},
-+	{0x21BF103C, "Smart Array", &SA5_access},
-+	{0x21C0103C, "Smart Array", &SA5_access},
-+	{0x21C1103C, "Smart Array", &SA5_access},
-+	{0x21C2103C, "Smart Array", &SA5_access},
-+	{0x21C3103C, "Smart Array", &SA5_access},
-+	{0x21C4103C, "Smart Array", &SA5_access},
-+	{0x21C5103C, "Smart Array", &SA5_access},
-+	{0x21C7103C, "Smart Array", &SA5_access},
-+	{0x21C8103C, "Smart Array", &SA5_access},
-+	{0x21C9103C, "Smart Array", &SA5_access},
- 	{0xFFFF103C, "Unknown Smart Array", &SA5_access},
- };
+diff --git a/fs/ubifs/file.c b/fs/ubifs/file.c
+index 5bc7781..bc7798d 100644
+--- a/fs/ubifs/file.c
++++ b/fs/ubifs/file.c
+@@ -1522,8 +1522,7 @@ static int ubifs_vm_page_mkwrite(struct vm_area_struct *vma,
+ 			ubifs_release_dirty_inode_budget(c, ui);
+ 	}
  
-diff --git a/include/linux/pci_ids.h b/include/linux/pci_ids.h
-index 0eb6579..ed403e9 100644
---- a/include/linux/pci_ids.h
-+++ b/include/linux/pci_ids.h
-@@ -754,6 +754,7 @@
- #define PCI_DEVICE_ID_HP_CISSE		0x323a
- #define PCI_DEVICE_ID_HP_CISSF		0x323b
- #define PCI_DEVICE_ID_HP_CISSH		0x323c
-+#define PCI_DEVICE_ID_HP_CISSI		0x3239
- #define PCI_DEVICE_ID_HP_ZX2_IOC	0x4031
+-	unlock_page(page);
+-	return 0;
++	return VM_FAULT_LOCKED;
  
- #define PCI_VENDOR_ID_PCTECH		0x1042
+ out_unlock:
+ 	unlock_page(page);
 -- 
 1.9.1
 
