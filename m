@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755950AbaGVNan (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 09:30:43 -0400
+	id S1755958AbaGVNbD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 09:31:03 -0400
 Received: from mga02.intel.com ([134.134.136.20]:45398 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755044AbaGVNU3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 09:20:29 -0400
+	id S1751088AbaGVNU2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 09:20:28 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,710,1400050800"; 
-   d="scan'208";a="576985664"
+   d="scan'208";a="576985623"
 From: Adrian Hunter <adrian.hunter@intel.com>
 To: Arnaldo Carvalho de Melo <acme@kernel.org>
 Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
@@ -16,9 +16,9 @@ Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
         Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
         Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 19/52] perf tools: Add id index
-Date: Tue, 22 Jul 2014 16:17:28 +0300
-Message-Id: <1406035081-14301-20-git-send-email-adrian.hunter@intel.com>
+Subject: [PATCH 18/52] perf evlist: Add 'system_wide' option
+Date: Tue, 22 Jul 2014 16:17:27 +0300
+Message-Id: <1406035081-14301-19-git-send-email-adrian.hunter@intel.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1406035081-14301-1-git-send-email-adrian.hunter@intel.com>
 References: <1406035081-14301-1-git-send-email-adrian.hunter@intel.com>
@@ -27,337 +27,251 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add an index of the event identifiers.
+Add an option to cause a selected event
+to be opened always without a pid when
+configured by perf_evsel__config().
 
-This is needed to queue Instruction
-Trace samples according to the mmap
-buffer from which they were recorded.
+This is needed when using the sched_switch
+tracepoint to follow object code execution.
+sched_switch occurs before the task
+switch and so it cannot record it in a
+context limited to that task.  Note
+that also means that sched_switch is
+useless when capturing data per-thread,
+as is the 'context-switches' software
+event for the same reason.
 
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 ---
- tools/perf/builtin-inject.c |   1 +
- tools/perf/util/event.c     |   1 +
- tools/perf/util/event.h     |  15 ++++++
- tools/perf/util/evlist.c    |  26 ++++++++--
- tools/perf/util/evsel.h     |   3 ++
- tools/perf/util/session.c   | 122 ++++++++++++++++++++++++++++++++++++++++++++
- tools/perf/util/session.h   |  10 ++++
- tools/perf/util/tool.h      |   3 +-
- 8 files changed, 177 insertions(+), 4 deletions(-)
+ tools/perf/util/evlist.c | 45 +++++++++++++++++++++++++++++++++++++--------
+ tools/perf/util/evsel.c  | 31 ++++++++++++++++++++++++++-----
+ tools/perf/util/evsel.h  |  1 +
+ 3 files changed, 64 insertions(+), 13 deletions(-)
 
-diff --git a/tools/perf/builtin-inject.c b/tools/perf/builtin-inject.c
-index cf6a605..ce691c4 100644
---- a/tools/perf/builtin-inject.c
-+++ b/tools/perf/builtin-inject.c
-@@ -419,6 +419,7 @@ int cmd_inject(int argc, const char **argv, const char *prefix __maybe_unused)
- 			.tracing_data	= perf_event__repipe_op2_synth,
- 			.finished_round	= perf_event__repipe_op2_synth,
- 			.build_id	= perf_event__repipe_op2_synth,
-+			.id_index	= perf_event__repipe_op2_synth,
- 		},
- 		.input_name  = "-",
- 		.samples = LIST_HEAD_INIT(inject.samples),
-diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
-index d1283cc..dc32de0 100644
---- a/tools/perf/util/event.c
-+++ b/tools/perf/util/event.c
-@@ -28,6 +28,7 @@ static const char *perf_event__names[] = {
- 	[PERF_RECORD_HEADER_TRACING_DATA]	= "TRACING_DATA",
- 	[PERF_RECORD_HEADER_BUILD_ID]		= "BUILD_ID",
- 	[PERF_RECORD_FINISHED_ROUND]		= "FINISHED_ROUND",
-+	[PERF_RECORD_ID_INDEX]			= "ID_INDEX",
- };
- 
- const char *perf_event__name(unsigned int id)
-diff --git a/tools/perf/util/event.h b/tools/perf/util/event.h
-index e5dd40a..3fa9ab1 100644
---- a/tools/perf/util/event.h
-+++ b/tools/perf/util/event.h
-@@ -185,6 +185,7 @@ enum perf_user_event_type { /* above any possible kernel type */
- 	PERF_RECORD_HEADER_TRACING_DATA		= 66,
- 	PERF_RECORD_HEADER_BUILD_ID		= 67,
- 	PERF_RECORD_FINISHED_ROUND		= 68,
-+	PERF_RECORD_ID_INDEX			= 69,
- 	PERF_RECORD_HEADER_MAX
- };
- 
-@@ -211,6 +212,19 @@ struct tracing_data_event {
- 	u32 size;
- };
- 
-+struct id_index_entry {
-+	u64 id;
-+	u64 idx;
-+	u64 cpu;
-+	u64 tid;
-+};
-+
-+struct id_index_event {
-+	struct perf_event_header header;
-+	u64 nr;
-+	struct id_index_entry entries[0];
-+};
-+
- union perf_event {
- 	struct perf_event_header	header;
- 	struct mmap_event		mmap;
-@@ -225,6 +239,7 @@ union perf_event {
- 	struct event_type_event		event_type;
- 	struct tracing_data_event	tracing_data;
- 	struct build_id_event		build_id;
-+	struct id_index_event		id_index;
- };
- 
- void perf_event__print_totals(void);
 diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-index c295b7b..10514f3 100644
+index 282e83e..c295b7b 100644
 --- a/tools/perf/util/evlist.c
 +++ b/tools/perf/util/evlist.c
-@@ -441,6 +441,22 @@ static int perf_evlist__id_add_fd(struct perf_evlist *evlist,
+@@ -265,17 +265,27 @@ int perf_evlist__add_newtp(struct perf_evlist *evlist,
  	return 0;
  }
  
-+static void perf_evlist__set_sid_idx(struct perf_evlist *evlist,
-+				     struct perf_evsel *evsel, int idx, int cpu,
-+				     int thread)
++static int perf_evlist__nr_threads(struct perf_evlist *evlist,
++				   struct perf_evsel *evsel)
 +{
-+	struct perf_sample_id *sid = SID(evsel, cpu, thread);
-+	sid->idx = idx;
-+	if (evlist->cpus && cpu >= 0)
-+		sid->cpu = evlist->cpus->map[cpu];
++	if (evsel->system_wide)
++		return 1;
 +	else
-+		sid->cpu = -1;
-+	if (!evsel->system_wide && evlist->threads && thread >= 0)
-+		sid->tid = evlist->threads->map[thread];
-+	else
-+		sid->tid = -1;
++		return thread_map__nr(evlist->threads);
 +}
 +
- struct perf_sample_id *perf_evlist__id2sid(struct perf_evlist *evlist, u64 id)
+ void perf_evlist__disable(struct perf_evlist *evlist)
  {
- 	struct hlist_head *head;
-@@ -676,9 +692,13 @@ static int perf_evlist__mmap_per_evsel(struct perf_evlist *evlist, int idx,
- 				return -1;
- 		}
+ 	int cpu, thread;
+ 	struct perf_evsel *pos;
+ 	int nr_cpus = cpu_map__nr(evlist->cpus);
+-	int nr_threads = thread_map__nr(evlist->threads);
++	int nr_threads;
  
--		if ((evsel->attr.read_format & PERF_FORMAT_ID) &&
--		    perf_evlist__id_add_fd(evlist, evsel, cpu, thread, fd) < 0)
--			return -1;
-+		if (evsel->attr.read_format & PERF_FORMAT_ID) {
-+			if (perf_evlist__id_add_fd(evlist, evsel, cpu, thread,
-+						   fd) < 0)
-+				return -1;
-+			perf_evlist__set_sid_idx(evlist, evsel, idx, cpu,
-+						 thread);
-+		}
- 	}
+ 	for (cpu = 0; cpu < nr_cpus; cpu++) {
+ 		evlist__for_each(evlist, pos) {
+ 			if (!perf_evsel__is_group_leader(pos) || !pos->fd)
+ 				continue;
++			nr_threads = perf_evlist__nr_threads(evlist, pos);
+ 			for (thread = 0; thread < nr_threads; thread++)
+ 				ioctl(FD(pos, cpu, thread),
+ 				      PERF_EVENT_IOC_DISABLE, 0);
+@@ -288,12 +298,13 @@ void perf_evlist__enable(struct perf_evlist *evlist)
+ 	int cpu, thread;
+ 	struct perf_evsel *pos;
+ 	int nr_cpus = cpu_map__nr(evlist->cpus);
+-	int nr_threads = thread_map__nr(evlist->threads);
++	int nr_threads;
  
- 	return 0;
-diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
-index dbb2a0d..330218a 100644
---- a/tools/perf/util/evsel.h
-+++ b/tools/perf/util/evsel.h
-@@ -38,6 +38,9 @@ struct perf_sample_id {
- 	struct hlist_node 	node;
- 	u64		 	id;
- 	struct perf_evsel	*evsel;
-+	int			idx;
-+	int			cpu;
-+	pid_t			tid;
- 
- 	/* Holds total ID period value for PERF_SAMPLE_READ processing. */
- 	u64			period;
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index 7b0fb03..8aa1be1 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -231,6 +231,15 @@ static int process_finished_round(struct perf_tool *tool,
- 				  union perf_event *event,
- 				  struct perf_session *session);
- 
-+static int process_id_index_stub(struct perf_tool *tool __maybe_unused,
-+				 union perf_event *event __maybe_unused,
-+				 struct perf_session *perf_session
-+				 __maybe_unused)
-+{
-+	dump_printf(": unhandled!\n");
-+	return 0;
-+}
-+
- void perf_tool__fill_defaults(struct perf_tool *tool)
+ 	for (cpu = 0; cpu < nr_cpus; cpu++) {
+ 		evlist__for_each(evlist, pos) {
+ 			if (!perf_evsel__is_group_leader(pos) || !pos->fd)
+ 				continue;
++			nr_threads = perf_evlist__nr_threads(evlist, pos);
+ 			for (thread = 0; thread < nr_threads; thread++)
+ 				ioctl(FD(pos, cpu, thread),
+ 				      PERF_EVENT_IOC_ENABLE, 0);
+@@ -305,12 +316,14 @@ int perf_evlist__disable_event(struct perf_evlist *evlist,
+ 			       struct perf_evsel *evsel)
  {
- 	if (tool->sample == NULL)
-@@ -265,6 +274,8 @@ void perf_tool__fill_defaults(struct perf_tool *tool)
- 		else
- 			tool->finished_round = process_finished_round_stub;
- 	}
-+	if (tool->id_index == NULL)
-+		tool->id_index = process_id_index_stub;
- }
-  
- static void swap_sample_id_all(union perf_event *event, void *data)
-@@ -463,6 +474,7 @@ static perf_event__swap_op perf_event__swap_ops[] = {
- 	[PERF_RECORD_HEADER_EVENT_TYPE]	  = perf_event__event_type_swap,
- 	[PERF_RECORD_HEADER_TRACING_DATA] = perf_event__tracing_data_swap,
- 	[PERF_RECORD_HEADER_BUILD_ID]	  = NULL,
-+	[PERF_RECORD_ID_INDEX]		  = perf_event__all64_swap,
- 	[PERF_RECORD_HEADER_MAX]	  = NULL,
- };
+ 	int cpu, thread, err;
++	int nr_cpus = cpu_map__nr(evlist->cpus);
++	int nr_threads = perf_evlist__nr_threads(evlist, evsel);
  
-@@ -1045,6 +1057,8 @@ static int perf_session__process_user_event(struct perf_session *session, union
- 		return tool->build_id(tool, event, session);
- 	case PERF_RECORD_FINISHED_ROUND:
- 		return tool->finished_round(tool, event, session);
-+	case PERF_RECORD_ID_INDEX:
-+		return tool->id_index(tool, event, session);
- 	default:
+ 	if (!evsel->fd)
+ 		return 0;
+ 
+-	for (cpu = 0; cpu < evlist->cpus->nr; cpu++) {
+-		for (thread = 0; thread < evlist->threads->nr; thread++) {
++	for (cpu = 0; cpu < nr_cpus; cpu++) {
++		for (thread = 0; thread < nr_threads; thread++) {
+ 			err = ioctl(FD(evsel, cpu, thread),
+ 				    PERF_EVENT_IOC_DISABLE, 0);
+ 			if (err)
+@@ -324,12 +337,14 @@ int perf_evlist__enable_event(struct perf_evlist *evlist,
+ 			      struct perf_evsel *evsel)
+ {
+ 	int cpu, thread, err;
++	int nr_cpus = cpu_map__nr(evlist->cpus);
++	int nr_threads = perf_evlist__nr_threads(evlist, evsel);
+ 
+ 	if (!evsel->fd)
  		return -EINVAL;
- 	}
-@@ -1701,3 +1715,111 @@ int __perf_session__set_tracepoints_handlers(struct perf_session *session,
- out:
- 	return err;
- }
-+
-+int perf_event__process_id_index(struct perf_tool *tool __maybe_unused,
-+				 union perf_event *event,
-+				 struct perf_session *session)
-+{
-+	struct perf_evlist *evlist = session->evlist;
-+	struct id_index_event *ie = &event->id_index;
-+	size_t i, nr, max_nr;
-+
-+	max_nr = (ie->header.size - sizeof(struct id_index_event)) /
-+		 sizeof(struct id_index_entry);
-+	nr = ie->nr;
-+	if (nr > max_nr)
-+		return -EINVAL;
-+
-+	if (dump_trace)
-+		fprintf(stdout, " nr: %zu\n", nr);
-+
-+	for (i = 0; i < nr; i++) {
-+		struct id_index_entry *e = &ie->entries[i];
-+		struct perf_sample_id *sid;
-+
-+		if (dump_trace) {
-+			fprintf(stdout,	" ... id: %"PRIu64, e->id);
-+			fprintf(stdout,	"  idx: %"PRIu64, e->idx);
-+			fprintf(stdout,	"  cpu: %"PRId64, e->cpu);
-+			fprintf(stdout,	"  tid: %"PRId64"\n", e->tid);
-+		}
-+
-+		sid = perf_evlist__id2sid(evlist, e->id);
-+		if (!sid)
-+			return -ENOENT;
-+		sid->idx = e->idx;
-+		sid->cpu = e->cpu;
-+		sid->tid = e->tid;
-+	}
-+	return 0;
-+}
-+
-+int perf_event__synthesize_id_index(struct perf_tool *tool,
-+				    perf_event__handler_t process,
-+				    struct perf_evlist *evlist,
-+				    struct machine *machine)
-+{
-+	union perf_event *ev;
+ 
+-	for (cpu = 0; cpu < evlist->cpus->nr; cpu++) {
+-		for (thread = 0; thread < evlist->threads->nr; thread++) {
++	for (cpu = 0; cpu < nr_cpus; cpu++) {
++		for (thread = 0; thread < nr_threads; thread++) {
+ 			err = ioctl(FD(evsel, cpu, thread),
+ 				    PERF_EVENT_IOC_ENABLE, 0);
+ 			if (err)
+@@ -343,7 +358,16 @@ static int perf_evlist__alloc_pollfd(struct perf_evlist *evlist)
+ {
+ 	int nr_cpus = cpu_map__nr(evlist->cpus);
+ 	int nr_threads = thread_map__nr(evlist->threads);
+-	int nfds = nr_cpus * nr_threads * evlist->nr_entries;
++	int nfds = 0;
 +	struct perf_evsel *evsel;
-+	size_t nr = 0, i = 0, sz, max_nr, n;
-+	int err;
-+
-+	pr_debug2("Synthesizing id index\n");
-+
-+	max_nr = (UINT16_MAX - sizeof(struct id_index_event)) /
-+		 sizeof(struct id_index_entry);
-+
-+	list_for_each_entry(evsel, &evlist->entries, node)
-+		nr += evsel->ids;
-+
-+	n = nr > max_nr ? max_nr : nr;
-+	sz = sizeof(struct id_index_event) + n * sizeof(struct id_index_entry);
-+	ev = zalloc(sz);
-+	if (!ev)
-+		return -ENOMEM;
-+
-+	ev->id_index.header.type = PERF_RECORD_ID_INDEX;
-+	ev->id_index.header.size = sz;
-+	ev->id_index.nr = n;
 +
 +	list_for_each_entry(evsel, &evlist->entries, node) {
-+		u32 j;
-+
-+		for (j = 0; j < evsel->ids; j++) {
-+			struct id_index_entry *e;
-+			struct perf_sample_id *sid;
-+
-+			if (i >= n) {
-+				err = process(tool, ev, NULL, machine);
-+				if (err)
-+					goto out_err;
-+				nr -= n;
-+				i = 0;
-+			}
-+
-+			e = &ev->id_index.entries[i++];
-+
-+			e->id = evsel->id[j];
-+
-+			sid = perf_evlist__id2sid(evlist, e->id);
-+			if (!sid) {
-+				free(ev);
-+				return -ENOENT;
-+			}
-+
-+			e->idx = sid->idx;
-+			e->cpu = sid->cpu;
-+			e->tid = sid->tid;
-+		}
++		if (evsel->system_wide)
++			nfds += nr_cpus;
++		else
++			nfds += nr_cpus * nr_threads;
 +	}
 +
-+	sz = sizeof(struct id_index_event) + nr * sizeof(struct id_index_entry);
-+	ev->id_index.header.size = sz;
-+	ev->id_index.nr = nr;
-+
-+	err = process(tool, ev, NULL, machine);
-+out_err:
-+	free(ev);
-+
-+	return err;
-+}
-diff --git a/tools/perf/util/session.h b/tools/perf/util/session.h
-index 0321013..39327ca 100644
---- a/tools/perf/util/session.h
-+++ b/tools/perf/util/session.h
-@@ -129,4 +129,14 @@ int __perf_session__set_tracepoints_handlers(struct perf_session *session,
- extern volatile int session_done;
+ 	evlist->pollfd = malloc(sizeof(struct pollfd) * nfds);
+ 	return evlist->pollfd != NULL ? 0 : -ENOMEM;
+ }
+@@ -636,7 +660,12 @@ static int perf_evlist__mmap_per_evsel(struct perf_evlist *evlist, int idx,
+ 	struct perf_evsel *evsel;
  
- #define session_done()	(*(volatile int *)(&session_done))
+ 	evlist__for_each(evlist, evsel) {
+-		int fd = FD(evsel, cpu, thread);
++		int fd;
 +
-+int perf_event__process_id_index(struct perf_tool *tool,
-+				 union perf_event *event,
-+				 struct perf_session *session);
++		if (evsel->system_wide && thread)
++			continue;
 +
-+int perf_event__synthesize_id_index(struct perf_tool *tool,
-+				    perf_event__handler_t process,
-+				    struct perf_evlist *evlist,
-+				    struct machine *machine);
++		fd = FD(evsel, cpu, thread);
+ 
+ 		if (*output == -1) {
+ 			*output = fd;
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index 21a373e..7baa06f 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -692,6 +692,10 @@ void perf_evsel__config(struct perf_evsel *evsel, struct record_opts *opts)
+ int perf_evsel__alloc_fd(struct perf_evsel *evsel, int ncpus, int nthreads)
+ {
+ 	int cpu, thread;
 +
- #endif /* __PERF_SESSION_H */
-diff --git a/tools/perf/util/tool.h b/tools/perf/util/tool.h
-index 4385816..f07d6fe 100644
---- a/tools/perf/util/tool.h
-+++ b/tools/perf/util/tool.h
-@@ -39,7 +39,8 @@ struct perf_tool {
- 	event_attr_op	attr;
- 	event_op2	tracing_data;
- 	event_op2	finished_round,
--			build_id;
-+			build_id,
-+			id_index;
- 	bool		ordered_samples;
- 	bool		ordering_requires_timestamps;
- };
++	if (evsel->system_wide)
++		nthreads = 1;
++
+ 	evsel->fd = xyarray__new(ncpus, nthreads, sizeof(int));
+ 
+ 	if (evsel->fd) {
+@@ -710,6 +714,9 @@ static int perf_evsel__run_ioctl(struct perf_evsel *evsel, int ncpus, int nthrea
+ {
+ 	int cpu, thread;
+ 
++	if (evsel->system_wide)
++		nthreads = 1;
++
+ 	for (cpu = 0; cpu < ncpus; cpu++) {
+ 		for (thread = 0; thread < nthreads; thread++) {
+ 			int fd = FD(evsel, cpu, thread),
+@@ -740,6 +747,9 @@ int perf_evsel__enable(struct perf_evsel *evsel, int ncpus, int nthreads)
+ 
+ int perf_evsel__alloc_id(struct perf_evsel *evsel, int ncpus, int nthreads)
+ {
++	if (evsel->system_wide)
++		nthreads = 1;
++
+ 	evsel->sample_id = xyarray__new(ncpus, nthreads, sizeof(struct perf_sample_id));
+ 	if (evsel->sample_id == NULL)
+ 		return -ENOMEM;
+@@ -784,6 +794,9 @@ void perf_evsel__close_fd(struct perf_evsel *evsel, int ncpus, int nthreads)
+ {
+ 	int cpu, thread;
+ 
++	if (evsel->system_wide)
++		nthreads = 1;
++
+ 	for (cpu = 0; cpu < ncpus; cpu++)
+ 		for (thread = 0; thread < nthreads; ++thread) {
+ 			close(FD(evsel, cpu, thread));
+@@ -872,6 +885,9 @@ int __perf_evsel__read(struct perf_evsel *evsel,
+ 	int cpu, thread;
+ 	struct perf_counts_values *aggr = &evsel->counts->aggr, count;
+ 
++	if (evsel->system_wide)
++		nthreads = 1;
++
+ 	aggr->val = aggr->ena = aggr->run = 0;
+ 
+ 	for (cpu = 0; cpu < ncpus; cpu++) {
+@@ -994,13 +1010,18 @@ static size_t perf_event_attr__fprintf(struct perf_event_attr *attr, FILE *fp)
+ static int __perf_evsel__open(struct perf_evsel *evsel, struct cpu_map *cpus,
+ 			      struct thread_map *threads)
+ {
+-	int cpu, thread;
++	int cpu, thread, nthreads;
+ 	unsigned long flags = PERF_FLAG_FD_CLOEXEC;
+ 	int pid = -1, err;
+ 	enum { NO_CHANGE, SET_TO_MAX, INCREASED_MAX } set_rlimit = NO_CHANGE;
+ 
++	if (evsel->system_wide)
++		nthreads = 1;
++	else
++		nthreads = threads->nr;
++
+ 	if (evsel->fd == NULL &&
+-	    perf_evsel__alloc_fd(evsel, cpus->nr, threads->nr) < 0)
++	    perf_evsel__alloc_fd(evsel, cpus->nr, nthreads) < 0)
+ 		return -ENOMEM;
+ 
+ 	if (evsel->cgrp) {
+@@ -1024,10 +1045,10 @@ retry_sample_id:
+ 
+ 	for (cpu = 0; cpu < cpus->nr; cpu++) {
+ 
+-		for (thread = 0; thread < threads->nr; thread++) {
++		for (thread = 0; thread < nthreads; thread++) {
+ 			int group_fd;
+ 
+-			if (!evsel->cgrp)
++			if (!evsel->cgrp && !evsel->system_wide)
+ 				pid = threads->map[thread];
+ 
+ 			group_fd = get_group_fd(evsel, cpu, thread);
+@@ -1100,7 +1121,7 @@ out_close:
+ 			close(FD(evsel, cpu, thread));
+ 			FD(evsel, cpu, thread) = -1;
+ 		}
+-		thread = threads->nr;
++		thread = nthreads;
+ 	} while (--cpu >= 0);
+ 	return err;
+ }
+diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
+index d7f93ce..dbb2a0d 100644
+--- a/tools/perf/util/evsel.h
++++ b/tools/perf/util/evsel.h
+@@ -85,6 +85,7 @@ struct perf_evsel {
+ 	bool 			needs_swap;
+ 	bool			no_aux_samples;
+ 	bool			immediate;
++	bool			system_wide;
+ 	/* parse modifier helper */
+ 	int			exclude_GH;
+ 	int			nr_members;
 -- 
 1.8.3.2
 
