@@ -1,192 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754369AbaGVJlf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 05:41:35 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39528 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754331AbaGVJld (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 05:41:33 -0400
-Date: Tue, 22 Jul 2014 11:41:29 +0200
-From: Petr =?iso-8859-1?Q?Ml=E1dek?= <pmladek@suse.cz>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Frederic Weisbecker <fweisbec@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3] ring-buffer: Race when writing and swapping cpu
- buffer in parallel
-Message-ID: <20140722094129.GM20751@pathway.suse.cz>
-References: <1405501084-16135-1-git-send-email-pmladek@suse.cz>
- <20140716124356.398e21f4@gandalf.local.home>
- <20140718153443.GC6774@pathway.suse.cz>
- <20140721144324.GG20751@pathway.suse.cz>
- <20140721120738.6029d5e4@gandalf.local.home>
+	id S1754422AbaGVJmF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 05:42:05 -0400
+Received: from mail-oa0-f53.google.com ([209.85.219.53]:45425 "EHLO
+	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752869AbaGVJmC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 05:42:02 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140721120738.6029d5e4@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <53CD4644.4010907@citrix.com>
+References: <1405688346-7349-1-git-send-email-jonathan.davies@citrix.com>
+	<20140718140821.GD20603@laptop.programming.kicks-ass.net>
+	<53CD4644.4010907@citrix.com>
+Date: Tue, 22 Jul 2014 17:35:48 +0800
+Message-ID: <CAJd=RBBjLh2VLyGLCY=+5xwCZw7vmfrOi9xhuX52w7TQTxG-_g@mail.gmail.com>
+Subject: Re: [PATCH RFC] sched/core: Make idle_cpu return 0 if doing softirq work
+From: Hillf Danton <dhillf@gmail.com>
+To: Jonathan Davies <jonathan.davies@citrix.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "David S. Miller" <davem@davemloft.net>,
+        Eric Dumazet <eric.dumazet@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 2014-07-21 12:07:38, Steven Rostedt wrote:
-> On Mon, 21 Jul 2014 16:43:24 +0200
-> Petr Mládek <pmladek@suse.cz> wrote:
-> 
-> > On Fri 2014-07-18 17:34:43, Petr Mládek wrote:
-> > > On Wed 2014-07-16 12:43:56, Steven Rostedt wrote:
-> > > > On Wed, 16 Jul 2014 10:58:04 +0200
-> > > > Petr Mladek <pmladek@suse.cz> wrote:
-> > > > 
-> > > > 
-> > > > > +/**
-> > > > > + * ring_buffer_swap_cpu - swap a CPU buffer between two ring buffers
-> > > > > + * @buffer_a: One buffer to swap with
-> > > > > + * @buffer_b: The other buffer to swap with
-> > > > > + *
-> > > > > + * This function is useful for tracers that want to take a "snapshot"
-> > > > > + * of a CPU buffer and has another back up buffer lying around.
-> > > > > + * It is expected that the tracer handles the cpu buffer not being
-> > > > > + * used at the moment.
-> > > > > + */
-> > > > > +int ring_buffer_swap_cpu(struct ring_buffer *buffer_a,
-> > > > > +			 struct ring_buffer *buffer_b, int cpu)
-> > > > > +{
-> > > > > +	struct ring_buffer_swap_info rb_swap_info = {
-> > > > > +		.buffer_a = buffer_a,
-> > > > > +		.buffer_b = buffer_b,
-> > > > > +	};
-> > > > > +	int ret;
-> > > > > +
-> > > > > +	/*
-> > > > > +	 * Swap the CPU buffer on the same CPU. Recording has to be fast
-> > > > > +	 * and and this helps to avoid memory barriers.
-> > > > > +	 */
-> > > > > +	ret = smp_call_function_single(cpu, ring_buffer_swap_this_cpu,
-> > > > > +				       (void *)&rb_swap_info, 1);
-> > > > > +	if (ret)
-> > > > > +		return ret;
-> > > > > +
-> > > > > +	return rb_swap_info.ret;
-> > > > 
-> > > > We need to check if the cpu is on the current CPU and if so, just call
-> > > > the function directly. Otherwise this can't be done from interrupt
-> > > > disabled context.
-> > > 
-> > > I see, my testing was not good enough :-(
-> > > 
-> > > So, I tried to use:
-> > > 
-> > > 	if (cpu == smp_processor_id())
-> > > 		ring_buffer_swap_this_cpu(&rb_swap_info);
-> > > 	else
-> > > 		ret = smp_call_function_single(cpu, ring_buffer_swap_this_cpu,
-> > > 					       (void *)&rb_swap_info, 1);
-> > > 
-> > > It solved the problem with enabled IRQSOFF_TRACER and
-> > > FTRACE_STARTUP_TEST because there the swap was called from the same CPU.
-> > > 
-> > > But there is still the problem when the function is called from another
-> > > CPU. I manage to trigger it by:
-> > > 
-> > >      echo 1 >/sys/kernel/debug/tracing/per_cpu/cpu0/snapshot
-> > > 
-> > > It produces:
-> > > 
-> > > [ 1594.060650] ------------[ cut here ]------------
-> > > [ 1594.060664] WARNING: CPU: 3 PID: 1558 at kernel/smp.c:242 smp_call_function_single+0xa4/0xb0()
-> > > [ 1594.060666] Modules linked in:
-> > > [ 1594.060673] CPU: 3 PID: 1558 Comm: bash Not tainted 3.16.0-rc1-2-default+ #2404
-> > > [ 1594.060676] Hardware name: Intel Corporation S2600CP/S2600CP, BIOS RMLSDP.86I.R3.27.D685.1305151734 05/15/2013
-> > > [ 1594.060679]  00000000000000f2 ffff880815b93db8 ffffffff818d34e6 ffff880815b93df8
-> > > [ 1594.060685]  ffffffff810cf28c ffff880813658150 0000000000000001 ffff880815b93e48
-> > > [ 1594.060691]  ffffffff8118b7e0 0000000000000000 0000000000000002 ffff880815b93e08
-> > > [ 1594.060696] Call Trace:
-> > > [ 1594.060705]  [<ffffffff818d34e6>] dump_stack+0x6a/0x7c
-> > > [ 1594.060713]  [<ffffffff810cf28c>] warn_slowpath_common+0x8c/0xc0
-> > > [ 1594.060720]  [<ffffffff8118b7e0>] ? ring_buffer_size+0x40/0x40
-> > > [ 1594.060725]  [<ffffffff810cf2da>] warn_slowpath_null+0x1a/0x20
-> > > [ 1594.060730]  [<ffffffff81149cc4>] smp_call_function_single+0xa4/0xb0
-> > > [ 1594.060735]  [<ffffffff8118c72f>] ring_buffer_swap_cpu+0x5f/0x70
-> > > [ 1594.060742]  [<ffffffff811981ea>] update_max_tr_single+0x8a/0x180
-> > > [ 1594.060747]  [<ffffffff8119843a>] tracing_snapshot_write+0x15a/0x1a0
-> > > [ 1594.060754]  [<ffffffff8123cf95>] vfs_write+0xd5/0x180
-> > > [ 1594.060759]  [<ffffffff8123d969>] SyS_write+0x59/0xc0
-> > > [ 1594.060766]  [<ffffffff818d8569>] system_call_fastpath+0x16/0x1b
-> > > [ 1594.060769] ---[ end trace 662a3aa81711f30e ]---
-> > > 
-> > > 
-> > > No clever idea comes to my mind now. Maybe Monday will bring some
-> > > fresh thinking.
-> > > 
-> > > I think about using IPI but this is what smp_call_function_single()
-> > > does and it warns about possible deadlocks. I am not sure if it is
-> > > because it is a generic function or if it is dangerous even in this
-> > > particular situation.
-> > 
-> > I have two more ideas but both are ugly :-(
-> > 
-> > 
-> > 1. I wonder if we really need to call ring_buffer_swap_cpu() with IRQs
-> >    disabled. It is used "only" in update_max_tr_single().
-> > 
-> >    The disabled IRQs might be needed only inside __update_max_tr()
-> >    when we do something with "current" task.
-> > 
-> >    Otherwise, update_max_tr_single() is already called with IRQs
-> >    disabled from:
-> > 
-> >        + tracing_snapshot_write() - here the IRQs are disabled only to
-> > 		call the function update_max_tr_single()/
-> > 
-> >        + check_critical_timing() - it looks to me the IRQs could get
-> > 		enabled before calling update_max_tr_single()
-> > 
-> > 
-> > 
-> > 2. Go back, do the swap on any CPU, and do memory barriers via IPI.
-> > 
-> >    I wonder if the needed memory barrier in rb_reserve_next_event()
-> >    could be avoided by calling IPI from ring_buffer_swap_cpu().
-> > 
-> >    I mean that rb_reserve_next_event() will include the current check
-> >    for swapped ring buffer without barriers. But
-> >    ring_buffer_swap_cpu() will interrupt the affected CPU and
-> >    basically do the barrier there only when needed.
-> > 
-> >    But I am not sure how this is different from calling
-> >    smp_call_function_single() from ring_buffer_swap_cpu().
-> >    And I am back on the question why it is dangerous with disabled
-> >    interrupts. I can't find any clue in git history. And I miss this
-> >    part of the picture :-(
-> > 
-> > 
-> > Any pointers or ideas are welcome.
-> > 
-> 
-> 
-> We could do:
-> 
-> 	if (irqs_disabled()) {
-> 		/* Only allowed to swap current CPU if irqs are disabled */
-> 		if (WARN_ON_ONCE(cpu != smp_processor_id())
-> 			return;
-> 		ring_buffer_swap_this_cpu();
-> 	} else {
-> 		smp_call_function_single(...);
-> 	}
-> 
-> and then we need to modify tracing_snapshot_write() to do something
-> else besides call update_max_tr_single().
-> 
-> We could modify the update_max_tr_*() to have both a irqs disabled and
-> a irqs enabled version.
+Hi Jonathan
 
-I am going to look at this solution.
+On Tue, Jul 22, 2014 at 12:56 AM, Jonathan Davies
+<jonathan.davies@citrix.com> wrote:
+>
+>
+> On 18/07/14 15:08, Peter Zijlstra wrote:
+>>
+>> On Fri, Jul 18, 2014 at 01:59:06PM +0100, Jonathan Davies wrote:
+>>>
+>>> The current implementation of idle_cpu only considers tasks that might be
+>>> in the
+>>> CPU's runqueue. If there's nothing in the specified CPU's runqueue, it
+>>> will
+>>> return 1. But if the CPU is doing work in the softirq context, it is
+>>> wrong for
+>>> idle_cpu to return 1. This patch makes it return 0.
+>>>
+>>> I observed this to be a problem with a device driver kicking a kthread by
+>>> executing wake_up from softirq context. The Completely Fair Scheduler's
+>>> select_task_rq_fair was looking for an "idle sibling" of the CPU
+>>> executing it by
+>>> calling select_idle_sibling, passing the executing CPU as the 'target'
+>>> parameter. The first thing that select_idle_sibling does is to check
+>>> whether the
+>>> 'target' CPU is idle, using idle_cpu, and to return that CPU if so.
+>>> Despite the
+>>> executing CPU being busy in softirq context, idle_cpu was returning 1,
+>>> meaning
+>>> that the scheduler would consistently try to run the kthread on the same
+>>> CPU as
+>>> the kick came from. Given that the softirq work was on-going, this led to
+>>> a
+>>> multi-millisecond delay before the scheduler eventually realised it
+>>> should
+>>> migrate the kthread to a different CPU.
+>>
+>>
+>> If your softirq takes _that_ long its broken anyhow.
+>
+>
+> Modern NICs can sustain 40 Gb/s of traffic. For network device drivers that
+> use NAPI, polling is done in softirq context. At this data-rate, the
+> per-packet processing overhead means means that a lot of CPU time is spent
+> in softirq.
+>
+Perhaps fcoe_percpu_receive_thread (linux/drivers/scsi/fcoe/fcoe.c)
+can help you.
 
-Thank you guys a lot for explanation, hints, and patience.
-
-
-Best Regards,
-Petr
+Hillf
