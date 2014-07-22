@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933958AbaGVW5k (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 18:57:40 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44376 "EHLO
+	id S934054AbaGVW7u (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 18:59:50 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:44336 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932229AbaGVWWf (ORCPT
+	with ESMTP id S1757088AbaGVWWe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 18:22:35 -0400
+	Tue, 22 Jul 2014 18:22:34 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Enrico Etxe Arte <goitizena.generoa@gmail.com>,
-        Lv Zheng <lv.zheng@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 017/116] ACPI: Fix conflict between customized DSDT and DSDT local copy
-Date: Tue, 22 Jul 2014 15:20:28 -0700
-Message-Id: <1406067727-19683-18-git-send-email-kamal@canonical.com>
+Cc: Felipe Balbi <balbi@ti.com>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 005/116] usb: dwc3: gadget: clear stall when disabling endpoint
+Date: Tue, 22 Jul 2014 15:20:16 -0700
+Message-Id: <1406067727-19683-6-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1406067727-19683-1-git-send-email-kamal@canonical.com>
 References: <1406067727-19683-1-git-send-email-kamal@canonical.com>
@@ -29,49 +26,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lv Zheng <lv.zheng@intel.com>
+From: Felipe Balbi <balbi@ti.com>
 
-commit 73577d1df8e1f31f6b1a5eebcdbc334eb0330e47 upstream.
+commit 687ef9817df7ed960d14575b9033dde3d04631fe upstream.
 
-This patch fixes the following issue:
-If DSDT is customized, no local DSDT copy is needed.
+so it seems like DWC3 IP doesn't clear stalls
+automatically when we disable an endpoint, because
+of that, we _must_ make sure stalls are cleared
+before clearing the proper bit in DALEPENA register.
 
-References: https://bugzilla.kernel.org/show_bug.cgi?id=69711
-Signed-off-by: Enrico Etxe Arte <goitizena.generoa@gmail.com>
-Signed-off-by: Lv Zheng <lv.zheng@intel.com>
-[rjw: Subject]
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-
+Reported-by: Johannes Stezenbach <js@sig21.net>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/acpi/bus.c | 7 +++++++
- 1 file changed, 7 insertions(+)
+ drivers/usb/dwc3/gadget.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/drivers/acpi/bus.c b/drivers/acpi/bus.c
-index de22f48..5e9ad05 100644
---- a/drivers/acpi/bus.c
-+++ b/drivers/acpi/bus.c
-@@ -57,6 +57,12 @@ EXPORT_SYMBOL(acpi_root_dir);
+diff --git a/drivers/usb/dwc3/gadget.c b/drivers/usb/dwc3/gadget.c
+index 418288e..288ec5e 100644
+--- a/drivers/usb/dwc3/gadget.c
++++ b/drivers/usb/dwc3/gadget.c
+@@ -603,6 +603,10 @@ static int __dwc3_gadget_ep_disable(struct dwc3_ep *dep)
  
+ 	dwc3_remove_requests(dwc, dep);
  
- #ifdef CONFIG_X86
-+#ifdef CONFIG_ACPI_CUSTOM_DSDT
-+static inline int set_copy_dsdt(const struct dmi_system_id *id)
-+{
-+	return 0;
-+}
-+#else
- static int set_copy_dsdt(const struct dmi_system_id *id)
- {
- 	printk(KERN_NOTICE "%s detected - "
-@@ -64,6 +70,7 @@ static int set_copy_dsdt(const struct dmi_system_id *id)
- 	acpi_gbl_copy_dsdt_locally = 1;
- 	return 0;
- }
-+#endif
- 
- static struct dmi_system_id dsdt_dmi_table[] __initdata = {
- 	/*
++	/* make sure HW endpoint isn't stalled */
++	if (dep->flags & DWC3_EP_STALL)
++		__dwc3_gadget_ep_set_halt(dep, 0);
++
+ 	reg = dwc3_readl(dwc->regs, DWC3_DALEPENA);
+ 	reg &= ~DWC3_DALEPENA_EP(dep->number);
+ 	dwc3_writel(dwc->regs, DWC3_DALEPENA, reg);
 -- 
 1.9.1
 
