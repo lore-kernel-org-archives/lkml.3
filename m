@@ -1,45 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755366AbaGVQJH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 12:09:07 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:57771 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755013AbaGVQJF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 12:09:05 -0400
-Date: Tue, 22 Jul 2014 18:09:02 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Peter Feuerer <peter@piie.net>
-Cc: Zhang Rui <rui.zhang@intel.com>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andreas Mohr <andi@lisas.de>, Borislav Petkov <bp@suse.de>,
-        Javi Merino <javi.merino@arm.com>
-Subject: Re: [PATCH v4 3/6] thermal: Added Bang-bang thermal governor
-Message-ID: <20140722160902.GE6462@pd.tnic>
-References: <1398561815-22033-1-git-send-email-peter@piie.net>
- <1405817480-25347-1-git-send-email-peter@piie.net>
- <1405817480-25347-4-git-send-email-peter@piie.net>
- <20140721092950.GB10016@pd.tnic>
- <1405935627.2455.6.camel@rzhang1-toshiba>
- <cone.1406041142.559920.1179.1000@galar>
+	id S1755597AbaGVQJU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 12:09:20 -0400
+Received: from mail-oi0-f46.google.com ([209.85.218.46]:44691 "EHLO
+	mail-oi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755381AbaGVQJQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 12:09:16 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <cone.1406041142.559920.1179.1000@galar>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <CA+mB=1JupzQy+R14kKAk7mTJR2FcZ+cQv-uXQSB6jEVBW95aGQ@mail.gmail.com>
+References: <1404361654-2894-1-git-send-email-sthokal@xilinx.com>
+ <20140716173824.GA24357@google.com> <CA+mB=1JupzQy+R14kKAk7mTJR2FcZ+cQv-uXQSB6jEVBW95aGQ@mail.gmail.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Tue, 22 Jul 2014 10:08:54 -0600
+Message-ID: <CAErSpo41HwMferWm8q69Sz0t-Cs1WHgwwVp1VKsoxxyvrgQhfQ@mail.gmail.com>
+Subject: Re: [PATCH v4] pcie: Add Xilinx PCIe Host Bridge IP driver
+To: Srikanth Thokala <sthokal@xilinx.com>
+Cc: Michal Simek <michal.simek@xilinx.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 22, 2014 at 04:59:02PM +0200, Peter Feuerer wrote:
-> Then the "depend on THERMAL_GOV_BANG_BANG" could be removed from
-> acerhdf Kbuild, as the "select" will take care acerhdf is compiled
-> with THERMAL_GOV_BANG_BANG enabled, right?
+On Mon, Jul 21, 2014 at 11:10 PM, Srikanth Thokala <sthokal@xilinx.com> wrote:
+> On Wed, Jul 16, 2014 at 11:08 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+>> ...
+>> I see I forgot to ask for a MAINTAINERS entry for this driver.  Can
+>> you add one?
+>
+> There was a discussion on this earlier and Michal mentioned it is not
+> required as it is
+> handled by our Xilinx record.
+>
+> Here is the reply from Michal to the MAINTAINERS update comment,
+>
+> < Reply from Michal >
+>
+>> Please also include a MAINTAINERS update for drivers/pci/host/pci-xilinx.c.
+>
+> This should be handle by our record that's why MAINTAINERS update is
+> not necessary.
+> (N: xilinx below)
 
-Yes, try it.
+That's technically true in the sense that get_maintainer.pl will do
+the right thing, but I often review patches in email (without
+extracting them), so it's more convenient to just look in MAINTAINERS
+to see if they have the right acks.  But I guess I can deal with it
+either way.
 
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+> ARM/ZYNQ ARCHITECTURE
+> M:      Michal Simek <michal.simek@xilinx.com>
+> L:      linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
+> W:      http://wiki.xilinx.com
+> T:      git git://git.xilinx.com/linux-xlnx.git
+> S:      Supported
+> F:      arch/arm/mach-zynq/
+> F:      drivers/cpuidle/cpuidle-zynq.c
+> N:      zynq
+> N:      xilinx
