@@ -1,15 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754480AbaGVLa1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 07:30:27 -0400
-Received: from relay.parallels.com ([195.214.232.42]:55853 "EHLO
+	id S1754799AbaGVLai (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 07:30:38 -0400
+Received: from relay.parallels.com ([195.214.232.42]:55877 "EHLO
 	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753855AbaGVLaX (ORCPT
+	with ESMTP id S1754552AbaGVLac (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 07:30:23 -0400
-Message-ID: <1406028616.3526.20.camel@tkhai>
-Subject: [PATCH 2/5] sched: Teach scheduler to understand ONRQ_MIGRATING
- state
+	Tue, 22 Jul 2014 07:30:32 -0400
+Message-ID: <1406028622.3526.21.camel@tkhai>
+Subject: [PATCH 3/5] sched: Remove double_rq_lock() from __migrate_task()
 From: Kirill Tkhai <ktkhai@parallels.com>
 To: <linux-kernel@vger.kernel.org>
 CC: Peter Zijlstra <peterz@infradead.org>,
@@ -19,7 +18,7 @@ CC: Peter Zijlstra <peterz@infradead.org>,
         Nicolas Pitre <nicolas.pitre@linaro.org>,
         Ingo Molnar <mingo@kernel.org>, Paul Turner <pjt@google.com>,
         <tkhai@yandex.ru>
-Date: Tue, 22 Jul 2014 15:30:16 +0400
+Date: Tue, 22 Jul 2014 15:30:22 +0400
 In-Reply-To: <20140722102425.29682.24086.stgit@tkhai>
 References: <20140722102425.29682.24086.stgit@tkhai>
 Organization: Parallels
@@ -33,139 +32,68 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-This is new on_rq state for the cases when task is migrating
-from one src_rq to another dst_rq, and locks of the both RQs
-are unlocked.
-
-We will use the state this way:
-
-	raw_spin_lock(&src_rq->lock);
-	dequeue_task(src_rq, p, 0);
-	p->on_rq = ONRQ_MIGRATING;
-	set_task_cpu(p, dst_cpu);
-	raw_spin_unlock(&src_rq->lock);
-
-	raw_spin_lock(&dst_rq->lock);
-	p->on_rq = ONRQ_QUEUED;
-	enqueue_task(dst_rq, p, 0);
-	raw_spin_unlock(&dst_rq->lock);
-
-The profit is that double_rq_lock() is not needed now,
-and this may reduce the latencies in some situations.
-
-The logic of try_to_wake_up() remained the same as it
-was. Its behaviour changes in a small subset of cases
-(when preempted task in ~TASK_RUNNING state is queued
- on rq and we are migrating it to another).
+Let's use ONRQ_MIGRATING instead.
 
 Signed-off-by: Kirill Tkhai <ktkhai@parallels.com>
 ---
- kernel/sched/core.c  |   25 ++++++++++++++++++-------
- kernel/sched/sched.h |    1 +
- 2 files changed, 19 insertions(+), 7 deletions(-)
+ kernel/sched/core.c |   22 ++++++++++++++--------
+ 1 file changed, 14 insertions(+), 8 deletions(-)
 
 diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 205f99a..78388b0 100644
+index 78388b0..4d62deb 100644
 --- a/kernel/sched/core.c
 +++ b/kernel/sched/core.c
-@@ -1214,7 +1214,7 @@ static int migration_cpu_stop(void *data);
- unsigned long wait_task_inactive(struct task_struct *p, long match_state)
+@@ -4680,20 +4680,20 @@ EXPORT_SYMBOL_GPL(set_cpus_allowed_ptr);
+  */
+ static int __migrate_task(struct task_struct *p, int src_cpu, int dest_cpu)
  {
- 	unsigned long flags;
--	int running, queued;
-+	int running, on_rq;
- 	unsigned long ncsw;
- 	struct rq *rq;
- 
-@@ -1252,7 +1252,7 @@ unsigned long wait_task_inactive(struct task_struct *p, long match_state)
- 		rq = task_rq_lock(p, &flags);
- 		trace_sched_wait_task(p);
- 		running = task_running(rq, p);
--		queued = task_queued(p);
-+		on_rq = p->on_rq;
- 		ncsw = 0;
- 		if (!match_state || p->state == match_state)
- 			ncsw = p->nvcsw | LONG_MIN; /* sets MSB */
-@@ -1284,7 +1284,7 @@ unsigned long wait_task_inactive(struct task_struct *p, long match_state)
- 		 * running right now), it's preempted, and we should
- 		 * yield - it could be a while.
- 		 */
--		if (unlikely(queued)) {
-+		if (unlikely(on_rq)) {
- 			ktime_t to = ktime_set(0, NSEC_PER_SEC/HZ);
- 
- 			set_current_state(TASK_UNINTERRUPTIBLE);
-@@ -1491,10 +1491,14 @@ static void ttwu_activate(struct rq *rq, struct task_struct *p, int en_flags)
- static void
- ttwu_do_wakeup(struct rq *rq, struct task_struct *p, int wake_flags)
- {
--	check_preempt_curr(rq, p, wake_flags);
- 	trace_sched_wakeup(p, true);
- 
- 	p->state = TASK_RUNNING;
-+
-+	if (!task_queued(p))
-+		return;
-+
-+	check_preempt_curr(rq, p, wake_flags);
- #ifdef CONFIG_SMP
- 	if (p->sched_class->task_woken)
- 		p->sched_class->task_woken(rq, p);
-@@ -1537,7 +1541,7 @@ static int ttwu_remote(struct task_struct *p, int wake_flags)
+-	struct rq *rq_dest, *rq_src;
++	struct rq *rq;
  	int ret = 0;
  
- 	rq = __task_rq_lock(p);
--	if (task_queued(p)) {
-+	if (p->on_rq) {
- 		/* check_preempt_curr() may use rq clock */
- 		update_rq_clock(rq);
- 		ttwu_do_wakeup(rq, p, wake_flags);
-@@ -1678,7 +1682,7 @@ try_to_wake_up(struct task_struct *p, unsigned int state, int wake_flags)
- 	success = 1; /* we're going to change ->state */
- 	cpu = task_cpu(p);
+ 	if (unlikely(!cpu_active(dest_cpu)))
+ 		return ret;
  
--	if (task_queued(p) && ttwu_remote(p, wake_flags))
-+	if (p->on_rq && ttwu_remote(p, wake_flags))
- 		goto stat;
+-	rq_src = cpu_rq(src_cpu);
+-	rq_dest = cpu_rq(dest_cpu);
++	rq = cpu_rq(src_cpu);
  
- #ifdef CONFIG_SMP
-@@ -1693,6 +1697,8 @@ try_to_wake_up(struct task_struct *p, unsigned int state, int wake_flags)
+ 	raw_spin_lock(&p->pi_lock);
+-	double_rq_lock(rq_src, rq_dest);
++	raw_spin_lock(&rq->lock);
+ 	/* Already moved. */
+ 	if (task_cpu(p) != src_cpu)
+ 		goto done;
++
+ 	/* Affinity changed (again). */
+ 	if (!cpumask_test_cpu(dest_cpu, tsk_cpus_allowed(p)))
+ 		goto fail;
+@@ -4703,15 +4703,21 @@ static int __migrate_task(struct task_struct *p, int src_cpu, int dest_cpu)
+ 	 * placed properly.
  	 */
- 	smp_rmb();
- 
-+	BUG_ON(p->on_rq);
+ 	if (task_queued(p)) {
+-		dequeue_task(rq_src, p, 0);
++		dequeue_task(rq, p, 0);
++		p->on_rq = ONRQ_MIGRATING;
+ 		set_task_cpu(p, dest_cpu);
+-		enqueue_task(rq_dest, p, 0);
+-		check_preempt_curr(rq_dest, p, 0);
++		raw_spin_unlock(&rq->lock);
 +
- 	p->sched_contributes_to_load = !!task_contributes_to_load(p);
- 	p->state = TASK_WAKING;
- 
-@@ -4623,9 +4629,14 @@ int set_cpus_allowed_ptr(struct task_struct *p, const struct cpumask *new_mask)
- 	struct rq *rq;
- 	unsigned int dest_cpu;
- 	int ret = 0;
--
-+again:
- 	rq = task_rq_lock(p, &flags);
- 
-+	if (unlikely(p->on_rq) == ONRQ_MIGRATING) {
-+		task_rq_unlock(rq, p, &flags);
-+		goto again;
-+	}
-+
- 	if (cpumask_equal(&p->cpus_allowed, new_mask))
- 		goto out;
- 
-diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index e5a9b6d..9b00e9b 100644
---- a/kernel/sched/sched.h
-+++ b/kernel/sched/sched.h
-@@ -17,6 +17,7 @@ struct rq;
- 
- /* .on_rq states of struct task_struct: */
- #define ONRQ_QUEUED	1
-+#define ONRQ_MIGRATING	2
- 
- extern __read_mostly int scheduler_running;
- 
++		rq = cpu_rq(dest_cpu);
++		raw_spin_lock(&rq->lock);
++		p->on_rq = ONRQ_QUEUED;
++		enqueue_task(rq, p, 0);
++		check_preempt_curr(rq, p, 0);
+ 	}
+ done:
+ 	ret = 1;
+ fail:
+-	double_rq_unlock(rq_src, rq_dest);
++	raw_spin_unlock(&rq->lock);
+ 	raw_spin_unlock(&p->pi_lock);
+ 	return ret;
+ }
 
 
 
