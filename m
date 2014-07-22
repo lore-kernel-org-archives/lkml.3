@@ -1,152 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756829AbaGVUXd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 16:23:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:59365 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751462AbaGVUXc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 16:23:32 -0400
-Message-ID: <1406060607.4463.36.camel@ul30vt.home>
-Subject: Re: [PATCH] PCI: Add device specific (non)reset for AMD GPUs
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Tue, 22 Jul 2014 14:23:27 -0600
-In-Reply-To: <20140722195557.GD19181@google.com>
-References: <20140716190955.4722.25453.stgit@gimli.home>
-	 <20140722195557.GD19181@google.com>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
+	id S1756848AbaGVUZZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 16:25:25 -0400
+Received: from g2t2354.austin.hp.com ([15.217.128.53]:48496 "EHLO
+	g2t2354.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752460AbaGVUZX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 16:25:23 -0400
+Message-ID: <53CEC8AC.7020700@hp.com>
+Date: Tue, 22 Jul 2014 16:25:16 -0400
+From: Waiman Long <waiman.long@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
+MIME-Version: 1.0
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Darren Hart <dvhart@linux.intel.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Andi Kleen <andi@firstfloor.org>, Ingo Molnar <mingo@kernel.org>,
+        Davidlohr Bueso <davidlohr@hp.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Jason Low <jason.low2@hp.com>, Scott J Norton <scott.norton@hp.com>,
+        Robert Haas <robertmhaas@gmail.com>
+Subject: Re: [RFC PATCH 0/5] futex: introduce an optimistic spinning futex
+References: <CFF29E4A.9D44E%dvhart@linux.intel.com> <alpine.DEB.2.10.1407212025130.20847@nanos> <20140721212740.GS3935@laptop> <CALCETrXSaWM6-nxr4ggtMh5qcfTQg4wRvkW8FTSbri5+_1ZbVg@mail.gmail.com> <alpine.DEB.2.10.1407212344130.20847@nanos> <CFF2E3D6.9D525%dvhart@linux.intel.com> <alpine.DEB.2.10.1407220047490.20847@nanos> <20140721213457.46623e2f@gandalf.local.home> <20140722074719.GV3935@laptop> <alpine.DEB.2.10.1407221034260.20847@nanos> <20140722084842.GZ3935@laptop> <alpine.DEB.2.10.1407221057230.20847@nanos>
+In-Reply-To: <alpine.DEB.2.10.1407221057230.20847@nanos>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-07-22 at 13:55 -0600, Bjorn Helgaas wrote:
-> On Wed, Jul 16, 2014 at 01:14:08PM -0600, Alex Williamson wrote:
-> > There are numerous ATI/AMD GPUs available that report that they
-> > support a PM reset (NoSoftRst-) but for which such a reset has no
-> > apparent effect on the device.  These devices continue to display the
-> > same framebuffer across PM reset and the fan speed remains constant,
-> > while a proper bus reset causes the display to lose sync and the fan
-> > to reset to high speed.  Create a device specific reset for ATI vendor
-> > devices that tries to catch these devices and report that
-> > pci_reset_function() is not supported.
-> > 
-> > Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-> > ---
-> > 
-> > This patch makes the series "vfio-pci: Reset improvements" far more
-> > useful for users with one of these GPUs.  If pci_reset_function()
-> > indicates that it's supported and successful, then I have no reason
-> > to resort to a bus/slot reset in the vfio-pci code.  Since it doesn't
-> > seem to do anything anyway, let's just forget that PM reset exists
-> > for these devices.
-> > 
-> >  drivers/pci/quirks.c |   53 ++++++++++++++++++++++++++++++++++++++++++++++++++
-> >  1 file changed, 53 insertions(+)
-> > 
-> > diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
-> > index 460c354..bed9c63 100644
-> > --- a/drivers/pci/quirks.c
-> > +++ b/drivers/pci/quirks.c
-> > @@ -3289,6 +3289,57 @@ static int reset_chelsio_generic_dev(struct pci_dev *dev, int probe)
-> >  	return 0;
-> >  }
-> >  
-> > +/*
-> > + * Numerous AMD/ATI GPUs report that they're capable of PM reset (NoSoftRst-)
-> > + * and pci_reset_function() reports the device as successfully reset, but
-> > + * there's no apparent effect from the reset.  Test for these, being sure to
-> > + * allow FLR should it ever exist, and use the device specific reset to
-> > + * disable any sort of function-local reset if only PM reset is available.
-> > + */
-> > +static int reset_ati_gpu(struct pci_dev *dev, int probe)
-> > +{
-> > +	u16 pm_csr;
-> > +	u32 devcap;
-> > +	int af_pos;
-> > +
-> > +	/*
-> > +	 * VGA class devices, not on the root bus, PCI function 0 of a
-> > +	 * multifunction device with PM capabilities
-> > +	 */
-> > +	if ((dev->class >> 8) != PCI_CLASS_DISPLAY_VGA ||
-> > +	    pci_is_root_bus(dev->bus) || PCI_FUNC(dev->devfn) ||
-> > +	    !dev->multifunction || !dev->pm_cap)
-> > +		return -ENOTTY;
-> > +
-> > +	/* PM reports NoSoftRst- */
-> > +	pci_read_config_word(dev, dev->pm_cap + PCI_PM_CTRL, &pm_csr);
-> > +	if (pm_csr & PCI_PM_CTRL_NO_SOFT_RESET)
-> > +		return -ENOTTY;
-> > +
-> > +	/* No PCIe FLR */
-> > +	pcie_capability_read_dword(dev, PCI_EXP_DEVCAP, &devcap);
-> > +	if (devcap & PCI_EXP_DEVCAP_FLR)
-> > +		return -ENOTTY;
-> > +
-> > +	/* No AF FLR */
-> > +	af_pos = pci_find_capability(dev, PCI_CAP_ID_AF);
-> > +	if (af_pos) {
-> > +		u8 af_cap;
-> > +
-> > +		pci_read_config_byte(dev, af_pos + PCI_AF_CAP, &af_cap);
-> > +		if ((af_cap && PCI_AF_CAP_TP) && (af_cap && PCI_AF_CAP_FLR))
-> > +			return -ENOTTY;
-> > +	}
-> > +
-> > +	/*
-> > +	 * We could attempt a singleton bus/slot reset here to override
-> > +	 * PM reset priority over these, but the devices we're interested
-> > +	 * in are multifunction GPU + audio devices in their known configs.
-> > +	 */
-> > +
-> > +	return -EINVAL;
-> > +}
-> > +
-> >  #define PCI_DEVICE_ID_INTEL_82599_SFP_VF   0x10ed
-> >  #define PCI_DEVICE_ID_INTEL_IVB_M_VGA      0x0156
-> >  #define PCI_DEVICE_ID_INTEL_IVB_M2_VGA     0x0166
-> > @@ -3304,6 +3355,8 @@ static const struct pci_dev_reset_methods pci_dev_reset_methods[] = {
-> >  		reset_intel_generic_dev },
-> >  	{ PCI_VENDOR_ID_CHELSIO, PCI_ANY_ID,
-> >  		reset_chelsio_generic_dev },
-> > +	{ PCI_VENDOR_ID_ATI, PCI_ANY_ID,
-> > +		reset_ati_gpu },
-> 
-> I'm a little confused, but maybe we just need a comment about what the
-> return values from pci_dev_specific_reset() mean.  Based on reading
-> __pci_dev_reset(), it looks like:
-> 
->   0 means "I support this reset method" (if probe) or
->   "I performed this reset" (if !probe),
->   
->   ENOTTY means "I don't support this reset method, try another one",
-> 
->   anything else means "I don't support this reset method and don't try
->   any others" (it'd be useful to know what this is good for).
-> 
-> But reset_ati_gpu() never returns 0, so it seems like your patch makes
-> it so we can never reset any ATI device at all.  So I must be missing
-> something.
+On 07/22/2014 05:59 AM, Thomas Gleixner wrote:
+> On Tue, 22 Jul 2014, Peter Zijlstra wrote:
+>> On Tue, Jul 22, 2014 at 10:39:17AM +0200, Thomas Gleixner wrote:
+>>> On Tue, 22 Jul 2014, Peter Zijlstra wrote:
+>>>> Anyway, there is one big fail in the entire futex stack that we 'need'
+>>>> to sort some day and that is NUMA. Some people (again database people)
+>>>> explicitly do not use futexes and instead use sysvsem because of this.
+>>>>
+>>>> The problem with numa futexes is that because they're vaddr based there
+>>>> is no (persistent) node information. You always end up having to fall
+>>>> back to looking in all nodes before you can guarantee there is no
+>>>> matching futex.
+>>>>
+>>>> One way to achieve it is by extending the futex value to include a node
+>>>> number, but that's obviously a complete ABI break. Then again, it should
+>>>> be pretty straight fwd, since the node number doesn't need to be part of
+>>>> the actual atomic update part, just part of the userspace storage.
+>>> So you want per node hash buckets, right? Fair enough, but how do you
+>>> make sure, that no thread/process on a different node is fiddling with
+>>> that "node bound" futex as well?
+>> You don't and that should work just as well, just slower. But since the
+>> node id is in the futex 'value' we'll always end up in the right
+>> node-hash, even if its a remote one.
+>>
+>> So yes, per node hashes, and a persistent futex->node map.
+> Which works fine as long as you only have the futex_q on the stack of
+> the blocked task. If user space is lying to you, then you just end up
+> with a bunch of threads sleeping forever. Who cares?
+>
+> But if you create independent kernel state, which we have with
+> pi_state and which you need for finegrained locking and further
+> spinning fun, you open up another can of worms. Simply because this
+> would enable rogue user space to create multiple instances of the
+> kernel internal state. I can predict the CVEs resulting from that
+> even without using a crystal ball.
+>
+> Thanks,
+>
+> 	tglx
 
-Nope, you're not missing anything.  The return value behavior is exactly
-as you describe and the ATI GPUs that advertise NoSoftRst- don't appear
-to do any sort of reset when moving them back from D3, so I'm
-effectively trying to negate that as a viable reset option.  I think
-this is what the anything-else return value is meant for.  I only return
-"I don't support this reset method and don't try any others" after I
-verify there are no other options, so if they come out with FLR support,
-that would still get precedence.  It's a little awkward, but I don't
-know how to test whether a reset function was successful.  It seems like
-it would be device specific.  Anyone from AMD reading the list that can
-comment on what sort of reset happens on these GPUs for a D3->D0 reset?
+I think NUMA futex, if implemented, is a completely independent piece 
+that have no direct relationship with optimistic spinning futex. It 
+should be a separate patch and not mixing with optimistic spinning patch 
+which will only make the latter one more complicated.
 
-Regardless, I don't really expect users other than device assignment,
-and my testing indicates that PM reset is useless on these devices for
-that.  Thanks,
-
-Alex
-
-
+-Longman
