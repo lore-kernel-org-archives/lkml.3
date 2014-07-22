@@ -1,132 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932416AbaGVTzU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 15:55:20 -0400
-Received: from mga01.intel.com ([192.55.52.88]:60693 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932154AbaGVTxO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 15:53:14 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,711,1400050800"; 
-   d="scan'208";a="565652125"
-From: Matthew Wilcox <matthew.r.wilcox@intel.com>
-To: linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Cc: Matthew Wilcox <matthew.r.wilcox@intel.com>, willy@linux.intel.com
-Subject: [PATCH v8 16/22] ext2: Remove xip.c and xip.h
-Date: Tue, 22 Jul 2014 15:48:04 -0400
-Message-Id: <7e75b98d5b2db88f29e0059adea03885e853c86b.1406058387.git.matthew.r.wilcox@intel.com>
-X-Mailer: git-send-email 2.0.0
-In-Reply-To: <cover.1406058387.git.matthew.r.wilcox@intel.com>
-References: <cover.1406058387.git.matthew.r.wilcox@intel.com>
-In-Reply-To: <cover.1406058387.git.matthew.r.wilcox@intel.com>
-References: <cover.1406058387.git.matthew.r.wilcox@intel.com>
+	id S932450AbaGVT4F (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 15:56:05 -0400
+Received: from mail-ig0-f179.google.com ([209.85.213.179]:37292 "EHLO
+	mail-ig0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932154AbaGVT4A (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 15:56:00 -0400
+Date: Tue, 22 Jul 2014 13:55:57 -0600
+From: Bjorn Helgaas <bhelgaas@google.com>
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] PCI: Add device specific (non)reset for AMD GPUs
+Message-ID: <20140722195557.GD19181@google.com>
+References: <20140716190955.4722.25453.stgit@gimli.home>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140716190955.4722.25453.stgit@gimli.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These files are now empty, so delete them
+On Wed, Jul 16, 2014 at 01:14:08PM -0600, Alex Williamson wrote:
+> There are numerous ATI/AMD GPUs available that report that they
+> support a PM reset (NoSoftRst-) but for which such a reset has no
+> apparent effect on the device.  These devices continue to display the
+> same framebuffer across PM reset and the fan speed remains constant,
+> while a proper bus reset causes the display to lose sync and the fan
+> to reset to high speed.  Create a device specific reset for ATI vendor
+> devices that tries to catch these devices and report that
+> pci_reset_function() is not supported.
+> 
+> Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+> ---
+> 
+> This patch makes the series "vfio-pci: Reset improvements" far more
+> useful for users with one of these GPUs.  If pci_reset_function()
+> indicates that it's supported and successful, then I have no reason
+> to resort to a bus/slot reset in the vfio-pci code.  Since it doesn't
+> seem to do anything anyway, let's just forget that PM reset exists
+> for these devices.
+> 
+>  drivers/pci/quirks.c |   53 ++++++++++++++++++++++++++++++++++++++++++++++++++
+>  1 file changed, 53 insertions(+)
+> 
+> diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
+> index 460c354..bed9c63 100644
+> --- a/drivers/pci/quirks.c
+> +++ b/drivers/pci/quirks.c
+> @@ -3289,6 +3289,57 @@ static int reset_chelsio_generic_dev(struct pci_dev *dev, int probe)
+>  	return 0;
+>  }
+>  
+> +/*
+> + * Numerous AMD/ATI GPUs report that they're capable of PM reset (NoSoftRst-)
+> + * and pci_reset_function() reports the device as successfully reset, but
+> + * there's no apparent effect from the reset.  Test for these, being sure to
+> + * allow FLR should it ever exist, and use the device specific reset to
+> + * disable any sort of function-local reset if only PM reset is available.
+> + */
+> +static int reset_ati_gpu(struct pci_dev *dev, int probe)
+> +{
+> +	u16 pm_csr;
+> +	u32 devcap;
+> +	int af_pos;
+> +
+> +	/*
+> +	 * VGA class devices, not on the root bus, PCI function 0 of a
+> +	 * multifunction device with PM capabilities
+> +	 */
+> +	if ((dev->class >> 8) != PCI_CLASS_DISPLAY_VGA ||
+> +	    pci_is_root_bus(dev->bus) || PCI_FUNC(dev->devfn) ||
+> +	    !dev->multifunction || !dev->pm_cap)
+> +		return -ENOTTY;
+> +
+> +	/* PM reports NoSoftRst- */
+> +	pci_read_config_word(dev, dev->pm_cap + PCI_PM_CTRL, &pm_csr);
+> +	if (pm_csr & PCI_PM_CTRL_NO_SOFT_RESET)
+> +		return -ENOTTY;
+> +
+> +	/* No PCIe FLR */
+> +	pcie_capability_read_dword(dev, PCI_EXP_DEVCAP, &devcap);
+> +	if (devcap & PCI_EXP_DEVCAP_FLR)
+> +		return -ENOTTY;
+> +
+> +	/* No AF FLR */
+> +	af_pos = pci_find_capability(dev, PCI_CAP_ID_AF);
+> +	if (af_pos) {
+> +		u8 af_cap;
+> +
+> +		pci_read_config_byte(dev, af_pos + PCI_AF_CAP, &af_cap);
+> +		if ((af_cap && PCI_AF_CAP_TP) && (af_cap && PCI_AF_CAP_FLR))
+> +			return -ENOTTY;
+> +	}
+> +
+> +	/*
+> +	 * We could attempt a singleton bus/slot reset here to override
+> +	 * PM reset priority over these, but the devices we're interested
+> +	 * in are multifunction GPU + audio devices in their known configs.
+> +	 */
+> +
+> +	return -EINVAL;
+> +}
+> +
+>  #define PCI_DEVICE_ID_INTEL_82599_SFP_VF   0x10ed
+>  #define PCI_DEVICE_ID_INTEL_IVB_M_VGA      0x0156
+>  #define PCI_DEVICE_ID_INTEL_IVB_M2_VGA     0x0166
+> @@ -3304,6 +3355,8 @@ static const struct pci_dev_reset_methods pci_dev_reset_methods[] = {
+>  		reset_intel_generic_dev },
+>  	{ PCI_VENDOR_ID_CHELSIO, PCI_ANY_ID,
+>  		reset_chelsio_generic_dev },
+> +	{ PCI_VENDOR_ID_ATI, PCI_ANY_ID,
+> +		reset_ati_gpu },
 
-Signed-off-by: Matthew Wilcox <matthew.r.wilcox@intel.com>
----
- fs/ext2/Makefile |  1 -
- fs/ext2/inode.c  |  1 -
- fs/ext2/namei.c  |  1 -
- fs/ext2/super.c  |  1 -
- fs/ext2/xip.c    | 15 ---------------
- fs/ext2/xip.h    | 16 ----------------
- 6 files changed, 35 deletions(-)
- delete mode 100644 fs/ext2/xip.c
- delete mode 100644 fs/ext2/xip.h
+I'm a little confused, but maybe we just need a comment about what the
+return values from pci_dev_specific_reset() mean.  Based on reading
+__pci_dev_reset(), it looks like:
 
-diff --git a/fs/ext2/Makefile b/fs/ext2/Makefile
-index f42af45..445b0e9 100644
---- a/fs/ext2/Makefile
-+++ b/fs/ext2/Makefile
-@@ -10,4 +10,3 @@ ext2-y := balloc.o dir.o file.o ialloc.o inode.o \
- ext2-$(CONFIG_EXT2_FS_XATTR)	 += xattr.o xattr_user.o xattr_trusted.o
- ext2-$(CONFIG_EXT2_FS_POSIX_ACL) += acl.o
- ext2-$(CONFIG_EXT2_FS_SECURITY)	 += xattr_security.o
--ext2-$(CONFIG_EXT2_FS_XIP)	 += xip.o
-diff --git a/fs/ext2/inode.c b/fs/ext2/inode.c
-index cba3833..154cbcf 100644
---- a/fs/ext2/inode.c
-+++ b/fs/ext2/inode.c
-@@ -34,7 +34,6 @@
- #include <linux/aio.h>
- #include "ext2.h"
- #include "acl.h"
--#include "xip.h"
- #include "xattr.h"
- 
- static int __ext2_write_inode(struct inode *inode, int do_sync);
-diff --git a/fs/ext2/namei.c b/fs/ext2/namei.c
-index 846c356..7ca803f 100644
---- a/fs/ext2/namei.c
-+++ b/fs/ext2/namei.c
-@@ -35,7 +35,6 @@
- #include "ext2.h"
- #include "xattr.h"
- #include "acl.h"
--#include "xip.h"
- 
- static inline int ext2_add_nondir(struct dentry *dentry, struct inode *inode)
- {
-diff --git a/fs/ext2/super.c b/fs/ext2/super.c
-index 3ac6555..747e293 100644
---- a/fs/ext2/super.c
-+++ b/fs/ext2/super.c
-@@ -35,7 +35,6 @@
- #include "ext2.h"
- #include "xattr.h"
- #include "acl.h"
--#include "xip.h"
- 
- static void ext2_sync_super(struct super_block *sb,
- 			    struct ext2_super_block *es, int wait);
-diff --git a/fs/ext2/xip.c b/fs/ext2/xip.c
-deleted file mode 100644
-index 66ca113..0000000
---- a/fs/ext2/xip.c
-+++ /dev/null
-@@ -1,15 +0,0 @@
--/*
-- *  linux/fs/ext2/xip.c
-- *
-- * Copyright (C) 2005 IBM Corporation
-- * Author: Carsten Otte (cotte@de.ibm.com)
-- */
--
--#include <linux/mm.h>
--#include <linux/fs.h>
--#include <linux/genhd.h>
--#include <linux/buffer_head.h>
--#include <linux/blkdev.h>
--#include "ext2.h"
--#include "xip.h"
--
-diff --git a/fs/ext2/xip.h b/fs/ext2/xip.h
-deleted file mode 100644
-index 87eeb04..0000000
---- a/fs/ext2/xip.h
-+++ /dev/null
-@@ -1,16 +0,0 @@
--/*
-- *  linux/fs/ext2/xip.h
-- *
-- * Copyright (C) 2005 IBM Corporation
-- * Author: Carsten Otte (cotte@de.ibm.com)
-- */
--
--#ifdef CONFIG_EXT2_FS_XIP
--static inline int ext2_use_xip (struct super_block *sb)
--{
--	struct ext2_sb_info *sbi = EXT2_SB(sb);
--	return (sbi->s_mount_opt & EXT2_MOUNT_XIP);
--}
--#else
--#define ext2_use_xip(sb)			0
--#endif
--- 
-2.0.0
+  0 means "I support this reset method" (if probe) or
+  "I performed this reset" (if !probe),
+  
+  ENOTTY means "I don't support this reset method, try another one",
 
+  anything else means "I don't support this reset method and don't try
+  any others" (it'd be useful to know what this is good for).
+
+But reset_ati_gpu() never returns 0, so it seems like your patch makes
+it so we can never reset any ATI device at all.  So I must be missing
+something.
+
+>  	{ 0 }
+>  };
+>  
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
