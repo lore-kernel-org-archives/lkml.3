@@ -1,24 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933850AbaGVWbx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 18:31:53 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44924 "EHLO
+	id S933594AbaGVW1H (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 18:27:07 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:44893 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932173AbaGVW1U (ORCPT
+	with ESMTP id S932201AbaGVW1E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 18:27:20 -0400
+	Tue, 22 Jul 2014 18:27:04 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "Theodore Ts'o" <tytso@mit.edu>, Serge Hallyn <serge.hallyn@ubuntu.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Dave Chinner <david@fromorbit.com>,
-        Andy Lutomirski <luto@amacapital.net>,
+Cc: Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Andrew Victor <linux@maxim.org.za>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 077/116] fs,userns: Change inode_capable to capable_wrt_inode_uidgid
-Date: Tue, 22 Jul 2014 15:21:28 -0700
-Message-Id: <1406067727-19683-78-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 065/116] rtc: rtc-at91rm9200: fix infinite wait for ACKUPD irq
+Date: Tue, 22 Jul 2014 15:21:16 -0700
+Message-Id: <1406067727-19683-66-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1406067727-19683-1-git-send-email-kamal@canonical.com>
 References: <1406067727-19683-1-git-send-email-kamal@canonical.com>
@@ -31,208 +33,91 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andy Lutomirski <luto@amacapital.net>
+From: Boris BREZILLON <boris.brezillon@free-electrons.com>
 
-commit 23adbe12ef7d3d4195e80800ab36b37bee28cd03 upstream.
+commit 2fe121e1f5aa3bf31b418a9790db6c400e922291 upstream.
 
-The kernel has no concept of capabilities with respect to inodes; inodes
-exist independently of namespaces.  For example, inode_capable(inode,
-CAP_LINUX_IMMUTABLE) would be nonsense.
+The rtc user must wait at least 1 sec between each time/calandar update
+(see atmel's datasheet chapter "Updating Time/Calendar").
 
-This patch changes inode_capable to check for uid and gid mappings and
-renames it to capable_wrt_inode_uidgid, which should make it more
-obvious what it does.
+Use the 1Hz interrupt to update the at91_rtc_upd_rdy flag and wait for
+the at91_rtc_wait_upd_rdy event if the rtc is not ready.
 
-Fixes CVE-2014-4014.
+This patch fixes a deadlock in an uninterruptible wait when the RTC is
+updated more than once every second.  AFAICT the bug is here from the
+beginning, but I think we should at least backport this fix to 3.10 and
+the following longterm and stable releases.
 
-Cc: Theodore Ts'o <tytso@mit.edu>
-Cc: Serge Hallyn <serge.hallyn@ubuntu.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Dave Chinner <david@fromorbit.com>
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
+Reported-by: Bryan Evenson <bevenson@melinkcorp.com>
+Tested-by: Bryan Evenson <bevenson@melinkcorp.com>
+Cc: Andrew Victor <linux@maxim.org.za>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
+Cc: Alessandro Zummo <a.zummo@towertech.it>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- fs/attr.c                  |  8 ++++----
- fs/inode.c                 | 10 +++++++---
- fs/namei.c                 | 11 ++++++-----
- fs/xfs/xfs_ioctl.c         |  2 +-
- include/linux/capability.h |  2 +-
- kernel/capability.c        | 20 ++++++++------------
- 6 files changed, 27 insertions(+), 26 deletions(-)
+ drivers/rtc/rtc-at91rm9200.c | 16 ++++++++++++++--
+ 1 file changed, 14 insertions(+), 2 deletions(-)
 
-diff --git a/fs/attr.c b/fs/attr.c
-index 1449adb..6a54f13 100644
---- a/fs/attr.c
-+++ b/fs/attr.c
-@@ -50,14 +50,14 @@ int inode_change_ok(const struct inode *inode, struct iattr *attr)
- 	if ((ia_valid & ATTR_UID) &&
- 	    (!uid_eq(current_fsuid(), inode->i_uid) ||
- 	     !uid_eq(attr->ia_uid, inode->i_uid)) &&
--	    !inode_capable(inode, CAP_CHOWN))
-+	    !capable_wrt_inode_uidgid(inode, CAP_CHOWN))
- 		return -EPERM;
+diff --git a/drivers/rtc/rtc-at91rm9200.c b/drivers/rtc/rtc-at91rm9200.c
+index 357da6b..243d8c7 100644
+--- a/drivers/rtc/rtc-at91rm9200.c
++++ b/drivers/rtc/rtc-at91rm9200.c
+@@ -41,6 +41,7 @@
+ #define AT91_RTC_EPOCH		1900UL	/* just like arch/arm/common/rtctime.c */
  
- 	/* Make sure caller can chgrp. */
- 	if ((ia_valid & ATTR_GID) &&
- 	    (!uid_eq(current_fsuid(), inode->i_uid) ||
- 	    (!in_group_p(attr->ia_gid) && !gid_eq(attr->ia_gid, inode->i_gid))) &&
--	    !inode_capable(inode, CAP_CHOWN))
-+	    !capable_wrt_inode_uidgid(inode, CAP_CHOWN))
- 		return -EPERM;
+ static DECLARE_COMPLETION(at91_rtc_updated);
++static DECLARE_COMPLETION(at91_rtc_upd_rdy);
+ static unsigned int at91_alarm_year = AT91_RTC_EPOCH;
+ static void __iomem *at91_rtc_regs;
+ static int irq;
+@@ -104,6 +105,8 @@ static int at91_rtc_settime(struct device *dev, struct rtc_time *tm)
+ 		1900 + tm->tm_year, tm->tm_mon, tm->tm_mday,
+ 		tm->tm_hour, tm->tm_min, tm->tm_sec);
  
- 	/* Make sure a caller can chmod. */
-@@ -67,7 +67,7 @@ int inode_change_ok(const struct inode *inode, struct iattr *attr)
- 		/* Also check the setgid bit! */
- 		if (!in_group_p((ia_valid & ATTR_GID) ? attr->ia_gid :
- 				inode->i_gid) &&
--		    !inode_capable(inode, CAP_FSETID))
-+		    !capable_wrt_inode_uidgid(inode, CAP_FSETID))
- 			attr->ia_mode &= ~S_ISGID;
- 	}
- 
-@@ -160,7 +160,7 @@ void setattr_copy(struct inode *inode, const struct iattr *attr)
- 		umode_t mode = attr->ia_mode;
- 
- 		if (!in_group_p(inode->i_gid) &&
--		    !inode_capable(inode, CAP_FSETID))
-+		    !capable_wrt_inode_uidgid(inode, CAP_FSETID))
- 			mode &= ~S_ISGID;
- 		inode->i_mode = mode;
- 	}
-diff --git a/fs/inode.c b/fs/inode.c
-index b98540e..2e4031e 100644
---- a/fs/inode.c
-+++ b/fs/inode.c
-@@ -1842,14 +1842,18 @@ EXPORT_SYMBOL(inode_init_owner);
-  * inode_owner_or_capable - check current task permissions to inode
-  * @inode: inode being checked
-  *
-- * Return true if current either has CAP_FOWNER to the inode, or
-- * owns the file.
-+ * Return true if current either has CAP_FOWNER in a namespace with the
-+ * inode owner uid mapped, or owns the file.
-  */
- bool inode_owner_or_capable(const struct inode *inode)
- {
-+	struct user_namespace *ns;
++	wait_for_completion(&at91_rtc_upd_rdy);
 +
- 	if (uid_eq(current_fsuid(), inode->i_uid))
- 		return true;
--	if (inode_capable(inode, CAP_FOWNER))
-+
-+	ns = current_user_ns();
-+	if (ns_capable(ns, CAP_FOWNER) && kuid_has_mapping(ns, inode->i_uid))
- 		return true;
- 	return false;
- }
-diff --git a/fs/namei.c b/fs/namei.c
-index 77dc200..8bbff22 100644
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -321,10 +321,11 @@ int generic_permission(struct inode *inode, int mask)
+ 	/* Stop Time/Calendar from counting */
+ 	cr = at91_rtc_read(AT91_RTC_CR);
+ 	at91_rtc_write(AT91_RTC_CR, cr | AT91_RTC_UPDCAL | AT91_RTC_UPDTIM);
+@@ -126,7 +129,9 @@ static int at91_rtc_settime(struct device *dev, struct rtc_time *tm)
  
- 	if (S_ISDIR(inode->i_mode)) {
- 		/* DACs are overridable for directories */
--		if (inode_capable(inode, CAP_DAC_OVERRIDE))
-+		if (capable_wrt_inode_uidgid(inode, CAP_DAC_OVERRIDE))
- 			return 0;
- 		if (!(mask & MAY_WRITE))
--			if (inode_capable(inode, CAP_DAC_READ_SEARCH))
-+			if (capable_wrt_inode_uidgid(inode,
-+						     CAP_DAC_READ_SEARCH))
- 				return 0;
- 		return -EACCES;
+ 	/* Restart Time/Calendar */
+ 	cr = at91_rtc_read(AT91_RTC_CR);
++	at91_rtc_write(AT91_RTC_SCCR, AT91_RTC_SECEV);
+ 	at91_rtc_write(AT91_RTC_CR, cr & ~(AT91_RTC_UPDCAL | AT91_RTC_UPDTIM));
++	at91_rtc_write_ier(AT91_RTC_SECEV);
+ 
+ 	return 0;
+ }
+@@ -233,8 +238,10 @@ static irqreturn_t at91_rtc_interrupt(int irq, void *dev_id)
+ 	if (rtsr) {		/* this interrupt is shared!  Is it ours? */
+ 		if (rtsr & AT91_RTC_ALARM)
+ 			events |= (RTC_AF | RTC_IRQF);
+-		if (rtsr & AT91_RTC_SECEV)
+-			events |= (RTC_UF | RTC_IRQF);
++		if (rtsr & AT91_RTC_SECEV) {
++			complete(&at91_rtc_upd_rdy);
++			at91_rtc_write_idr(AT91_RTC_SECEV);
++		}
+ 		if (rtsr & AT91_RTC_ACKUPD)
+ 			complete(&at91_rtc_updated);
+ 
+@@ -317,6 +324,11 @@ static int __init at91_rtc_probe(struct platform_device *pdev)
  	}
-@@ -334,7 +335,7 @@ int generic_permission(struct inode *inode, int mask)
- 	 * at least one exec bit set.
- 	 */
- 	if (!(mask & MAY_EXEC) || (inode->i_mode & S_IXUGO))
--		if (inode_capable(inode, CAP_DAC_OVERRIDE))
-+		if (capable_wrt_inode_uidgid(inode, CAP_DAC_OVERRIDE))
- 			return 0;
+ 	platform_set_drvdata(pdev, rtc);
  
- 	/*
-@@ -342,7 +343,7 @@ int generic_permission(struct inode *inode, int mask)
- 	 */
- 	mask &= MAY_READ | MAY_WRITE | MAY_EXEC;
- 	if (mask == MAY_READ)
--		if (inode_capable(inode, CAP_DAC_READ_SEARCH))
-+		if (capable_wrt_inode_uidgid(inode, CAP_DAC_READ_SEARCH))
- 			return 0;
++	/* enable SECEV interrupt in order to initialize at91_rtc_upd_rdy
++	 * completion.
++	 */
++	at91_rtc_write_ier(AT91_RTC_SECEV);
++
+ 	printk(KERN_INFO "AT91 Real Time Clock driver.\n");
+ 	return 0;
  
- 	return -EACCES;
-@@ -2208,7 +2209,7 @@ static inline int check_sticky(struct inode *dir, struct inode *inode)
- 		return 0;
- 	if (uid_eq(dir->i_uid, fsuid))
- 		return 0;
--	return !inode_capable(inode, CAP_FOWNER);
-+	return !capable_wrt_inode_uidgid(inode, CAP_FOWNER);
- }
- 
- /*
-diff --git a/fs/xfs/xfs_ioctl.c b/fs/xfs/xfs_ioctl.c
-index ec74a78..272a458 100644
---- a/fs/xfs/xfs_ioctl.c
-+++ b/fs/xfs/xfs_ioctl.c
-@@ -1105,7 +1105,7 @@ xfs_ioctl_setattr(
- 		 * cleared upon successful return from chown()
- 		 */
- 		if ((ip->i_d.di_mode & (S_ISUID|S_ISGID)) &&
--		    !inode_capable(VFS_I(ip), CAP_FSETID))
-+		    !capable_wrt_inode_uidgid(VFS_I(ip), CAP_FSETID))
- 			ip->i_d.di_mode &= ~(S_ISUID|S_ISGID);
- 
- 		/*
-diff --git a/include/linux/capability.h b/include/linux/capability.h
-index d9a4f7f..15f9092 100644
---- a/include/linux/capability.h
-+++ b/include/linux/capability.h
-@@ -211,7 +211,7 @@ extern bool has_ns_capability_noaudit(struct task_struct *t,
- extern bool capable(int cap);
- extern bool ns_capable(struct user_namespace *ns, int cap);
- extern bool nsown_capable(int cap);
--extern bool inode_capable(const struct inode *inode, int cap);
-+extern bool capable_wrt_inode_uidgid(const struct inode *inode, int cap);
- extern bool file_ns_capable(const struct file *file, struct user_namespace *ns, int cap);
- 
- /* audit system wants to get cap info from files as well */
-diff --git a/kernel/capability.c b/kernel/capability.c
-index a4b6744..4ba8734 100644
---- a/kernel/capability.c
-+++ b/kernel/capability.c
-@@ -445,23 +445,19 @@ bool nsown_capable(int cap)
- }
- 
- /**
-- * inode_capable - Check superior capability over inode
-+ * capable_wrt_inode_uidgid - Check nsown_capable and uid and gid mapped
-  * @inode: The inode in question
-  * @cap: The capability in question
-  *
-- * Return true if the current task has the given superior capability
-- * targeted at it's own user namespace and that the given inode is owned
-- * by the current user namespace or a child namespace.
-- *
-- * Currently we check to see if an inode is owned by the current
-- * user namespace by seeing if the inode's owner maps into the
-- * current user namespace.
-- *
-+ * Return true if the current task has the given capability targeted at
-+ * its own user namespace and that the given inode's uid and gid are
-+ * mapped into the current user namespace.
-  */
--bool inode_capable(const struct inode *inode, int cap)
-+bool capable_wrt_inode_uidgid(const struct inode *inode, int cap)
- {
- 	struct user_namespace *ns = current_user_ns();
- 
--	return ns_capable(ns, cap) && kuid_has_mapping(ns, inode->i_uid);
-+	return ns_capable(ns, cap) && kuid_has_mapping(ns, inode->i_uid) &&
-+		kgid_has_mapping(ns, inode->i_gid);
- }
--EXPORT_SYMBOL(inode_capable);
-+EXPORT_SYMBOL(capable_wrt_inode_uidgid);
 -- 
 1.9.1
 
