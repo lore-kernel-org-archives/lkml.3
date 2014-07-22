@@ -1,40 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753377AbaGVHwn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 03:52:43 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:57488 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753269AbaGVHwm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 03:52:42 -0400
-Date: Tue, 22 Jul 2014 09:51:58 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Adrian Hunter <adrian.hunter@intel.com>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] perf tools: Fix incorrect fd error comparison
-Message-ID: <20140722075158.GA29305@krava.redhat.com>
-References: <20140716142031.GD9441@krava.redhat.com>
- <1405586590-13657-1-git-send-email-adrian.hunter@intel.com>
- <1405586590-13657-2-git-send-email-adrian.hunter@intel.com>
+	id S1753408AbaGVHxi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 03:53:38 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:43147 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751619AbaGVHxg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 03:53:36 -0400
+Date: Tue, 22 Jul 2014 10:53:13 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Andrey Utkin <andrey.krieger.utkin@gmail.com>
+Cc: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
+        kgdb-bugreport@lists.sourceforge.net, dcb314@hotmail.com,
+        jason.wessel@windriver.com, wharms@bfs.de
+Subject: Re: [PATCH] kernel/debug/kdb/kdb_bp.c: fix argument range check
+Message-ID: <20140722075207.GN25880@mwanda>
+References: <1405705224-32171-1-git-send-email-andrey.krieger.utkin@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1405586590-13657-2-git-send-email-adrian.hunter@intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1405705224-32171-1-git-send-email-andrey.krieger.utkin@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 17, 2014 at 11:43:09AM +0300, Adrian Hunter wrote:
-> Zero is a valid fd.  Error comparison should check
-> for negative fd.
+On Fri, Jul 18, 2014 at 08:40:24PM +0300, Andrey Utkin wrote:
+> Dropped negativity check; enhanced upper limit check as proposed by
+> Walter Harms <wharms@bfs.de>
 > 
-> Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+> Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=80591
+> Reported-by: David Binderman <dcb314@hotmail.com>
+> Signed-off-by: Andrey Utkin <andrey.krieger.utkin@gmail.com>
+> ---
+>  kernel/debug/kdb/kdb_bp.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/kernel/debug/kdb/kdb_bp.c b/kernel/debug/kdb/kdb_bp.c
+> index 70a5046..371150f 100644
+> --- a/kernel/debug/kdb/kdb_bp.c
+> +++ b/kernel/debug/kdb/kdb_bp.c
+> @@ -39,7 +39,7 @@ static char *kdb_rwtypes[] = {
+>  
+>  static char *kdb_bptype(kdb_bp_t *bp)
+>  {
+> -	if (bp->bp_type < 0 || bp->bp_type > 4)
+> +	if (bp->bp_type >= ARRAY_SIZE(kdb_rwtypes))
+>  		return "";
 
-Acked-by: Jiri Olsa <jolsa@kernel.org>
+I like this version of the patch because it silences the static checker
+warning like the first one does but it also makes the code more
+readable.
 
-thanks,
-jirka
+regards,
+dan carpenter
+
