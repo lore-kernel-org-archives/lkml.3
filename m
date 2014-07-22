@@ -1,50 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752024AbaGVBYC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 21:24:02 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64746 "EHLO mx1.redhat.com"
+	id S1752079AbaGVBZI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 21:25:08 -0400
+Received: from mga03.intel.com ([143.182.124.21]:27226 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751460AbaGVBYA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 21:24:00 -0400
-Date: Tue, 22 Jul 2014 02:23:52 +0100
-From: Alasdair G Kergon <agk@redhat.com>
-To: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>
-Cc: Mikulas Patocka <mpatocka@redhat.com>,
-        "xinhui.pan" <xinhuix.pan@intel.com>, linux-kernel@vger.kernel.org,
-        agk@redhat.com, snitzer@redhat.com, dm-devel@redhat.com,
-        "Liu, ShuoX" <shuox.liu@intel.com>
-Subject: Re: [dm-devel] [PATCH] md/dm-ioctl.c: optimize memory allocation
-	in copy_params
-Message-ID: <20140722012352.GD6822@agk-dp.fab.redhat.com>
-Mail-Followup-To: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-	Mikulas Patocka <mpatocka@redhat.com>,
-	"xinhui.pan" <xinhuix.pan@intel.com>, linux-kernel@vger.kernel.org,
-	agk@redhat.com, snitzer@redhat.com, dm-devel@redhat.com,
-	"Liu, ShuoX" <shuox.liu@intel.com>
-References: <53B68068.2060102@intel.com> <alpine.LRH.2.02.1407081831510.27831@file01.intranet.prod.int.rdu2.redhat.com> <53BCA278.5050205@linux.intel.com> <alpine.LRH.2.02.1407091032400.4545@file01.intranet.prod.int.rdu2.redhat.com> <53CDB81B.90509@linux.intel.com>
+	id S1751143AbaGVBZG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jul 2014 21:25:06 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,706,1400050800"; 
+   d="scan'208";a="459749060"
+From: "Zheng, Lv" <lv.zheng@intel.com>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+CC: "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
+        "Brown, Len" <len.brown@intel.com>, Lv Zheng <zetalog@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "Moore, Robert" <robert.moore@intel.com>
+Subject: RE: [RFC PATCH v3 00/14] ACPI/EC: Add event storm prevention and
+ cleanup command storm prevention.
+Thread-Topic: [RFC PATCH v3 00/14] ACPI/EC: Add event storm prevention and
+ cleanup command storm prevention.
+Thread-Index: AQHPpUdgRJm/+yQRAEarvm9i5nmbj5urRLaQ
+Date: Tue, 22 Jul 2014 01:25:00 +0000
+Message-ID: <1AE640813FDE7649BE1B193DEA596E8802643E0D@SHSMSX101.ccr.corp.intel.com>
+References: <cover.1403060601.git.lv.zheng@intel.com>
+ <cover.1405922585.git.lv.zheng@intel.com> <9698076.0kdZ11M3j2@vostro.rjw.lan>
+In-Reply-To: <9698076.0kdZ11M3j2@vostro.rjw.lan>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53CDB81B.90509@linux.intel.com>
-Organization: Red Hat UK Ltd. Registered in England and Wales, number
-	03798903. Registered Office: 64 Baker Street, 4th floor, London,
-	W1U 7DF.
-User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s6M1PFQ9002275
 
->>> On 2014/7/9 6:39, Mikulas Patocka wrote:
->> Which ioctl with more than 16kB
->> arguments do you use? 
+Hi, Rafael
 
-Unanswered.  Let's ask the same question in a different way:
+> From: Rafael J. Wysocki [mailto:rjw@rjwysocki.net]
+> Sent: Tuesday, July 22, 2014 9:12 AM
+> 
+> On Monday, July 21, 2014 02:04:51 PM Lv Zheng wrote:
+> > Note that this patchset is very stable now, it is sent as RFC because it
+> > depends on an ACPICA GPE enhancement series which might be merged from
+> > ACPICA upstream.
+> 
+> Do I remember correctly that this is the plan?
+> 
+> So I'm expecting to receive the Linux versions of the relevant ACPICA changes
+> from you and then I'll apply this material on top of them.
+> 
+> We don't need to wait for the next ACPICA release with this I think, but
+> I'd like the GPE changes to be applied to upstream ACPICA at least before
+> I get them.
 
-Please supply the output of these three commands on the real-world system on
-which you believe that that particular allocation is causing you a problem:
-  dmsetup info -c
-  dmsetup table
-  dmsetup status
+Yes, I'm trying.
+I'll re-send this series after an ACPICA release cycle that contains the dependent GPE series.
 
-Alasdair
+Let me highlight the real value of this EC series:
+This is a good IO driver material to demonstrate:
+1. runtime idle: this is not implemented yet because of ACPICA issues that are not root caused, let me show this possibility this below.
+2. storming safe: can also deal with all kinds of silicon without worrying about IRQ storming.
 
+On top of this, after
+1. making sure that acpi_evaluate_object(_Qxx) won't be a blocking point, and extending the referenced period to the end of the evaluation,
+2. adding 1 more patch to the ACPICA series, using a flag to bypass the automatic GPE disabling/enabling,
+3. adding 1 more patch to make EC event poller  to disable GPE when sleeping,
+Linux EC driver can run without GPE enabled when idle.
+Which means GPE is enabled only when:
+1. there is an EC command issued from the EC space handler or
+2. the event poller thread is timed out or woken up by the EVT_SCI.
+
+So I hope this IO driver enhancement can be a good material to show such possibility.
+
+Thanks and best regards
+-Lv
+
+> 
+> Rafael
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
