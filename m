@@ -1,95 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754897AbaGVLwc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 07:52:32 -0400
-Received: from mail-we0-f182.google.com ([74.125.82.182]:44443 "EHLO
-	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751290AbaGVLwa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 07:52:30 -0400
-Date: Tue, 22 Jul 2014 13:52:39 +0200
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Christian =?iso-8859-1?Q?K=F6nig?= <christian.koenig@amd.com>
-Cc: Dave Airlie <airlied@gmail.com>,
-        Maarten Lankhorst <maarten.lankhorst@canonical.com>,
-        Thomas Hellstrom <thellstrom@vmware.com>,
-        nouveau <nouveau@lists.freedesktop.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        dri-devel <dri-devel@lists.freedesktop.org>,
-        Ben Skeggs <bskeggs@redhat.com>,
-        "Deucher, Alexander" <alexander.deucher@amd.com>
-Subject: Re: [PATCH 09/17] drm/radeon: use common fence implementation for
- fences
-Message-ID: <20140722115239.GM15237@phenom.ffwll.local>
-Mail-Followup-To: Christian =?iso-8859-1?Q?K=F6nig?= <christian.koenig@amd.com>,
-	Dave Airlie <airlied@gmail.com>,
-	Maarten Lankhorst <maarten.lankhorst@canonical.com>,
-	Thomas Hellstrom <thellstrom@vmware.com>,
-	nouveau <nouveau@lists.freedesktop.org>,
-	LKML <linux-kernel@vger.kernel.org>,
-	dri-devel <dri-devel@lists.freedesktop.org>,
-	Ben Skeggs <bskeggs@redhat.com>,
-	"Deucher, Alexander" <alexander.deucher@amd.com>
-References: <20140709093124.11354.3774.stgit@patser>
- <20140709122953.11354.46381.stgit@patser>
- <CAPM=9tyD2ZbrcGDC3hfNb7qNdzsfnyD-ZwM7G-nOgxeu5YKuSg@mail.gmail.com>
- <53CE2421.5040906@amd.com>
- <20140722114607.GL15237@phenom.ffwll.local>
+	id S1755028AbaGVLxI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 07:53:08 -0400
+Received: from mga01.intel.com ([192.55.52.88]:43840 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750843AbaGVLxH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 07:53:07 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,710,1400050800"; 
+   d="scan'208";a="573575231"
+Message-ID: <53CE5097.2000502@intel.com>
+Date: Tue, 22 Jul 2014 19:52:55 +0800
+From: "xinhui.pan" <xinhuix.pan@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
+To: Greg KH <gregkh@linuxfoundation.org>, mnipxh <mnipxh@gmail.com>
+CC: jslaby@suse.cz, linux-kernel@vger.kernel.org, yanmin_zhang@linux.intel.com
+Subject: Re: [PATCH] tty/tty_io.c: make a check before reuse cdev
+References: <53CD0BD4.4050007@gmail.com> <20140721153840.GA6802@kroah.com>
+In-Reply-To: <20140721153840.GA6802@kroah.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140722114607.GL15237@phenom.ffwll.local>
-X-Operating-System: Linux phenom 3.15.0-rc3+ 
-User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 22, 2014 at 01:46:07PM +0200, Daniel Vetter wrote:
-> On Tue, Jul 22, 2014 at 10:43:13AM +0200, Christian K�nig wrote:
-> > Am 22.07.2014 06:05, schrieb Dave Airlie:
-> > >On 9 July 2014 22:29, Maarten Lankhorst <maarten.lankhorst@canonical.com> wrote:
-> > >>Signed-off-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
-> > >>---
-> > >>  drivers/gpu/drm/radeon/radeon.h        |   15 +-
-> > >>  drivers/gpu/drm/radeon/radeon_device.c |   60 ++++++++-
-> > >>  drivers/gpu/drm/radeon/radeon_fence.c  |  223 ++++++++++++++++++++++++++------
-> > >>  3 files changed, 248 insertions(+), 50 deletions(-)
-> > >>
-> > > From what I can see this is still suffering from the problem that we
-> > >need to find a proper solution to,
-> > >
-> > >My summary of the issues after talking to Jerome and Ben and
-> > >re-reading things is:
-> > >
-> > >We really need to work out a better interface into the drivers to be
-> > >able to avoid random atomic entrypoints,
-> > 
-> > Which is exactly what I criticized from the very first beginning. Good to
-> > know that I'm not the only one thinking that this isn't such a good idea.
-> 
-> I guess I've lost context a bit, but which atomic entry point are we
-> talking about? Afaics the only one that's mandatory is the is
-> fence->signaled callback to check whether a fence really has been
-> signalled. It's used internally by the fence code to avoid spurious
-> wakeups. Afaik that should be doable already on any hardware. If that's
-> not the case then we can always track the signalled state in software and
-> double-check in a worker thread before updating the sw state. And wrap
-> this all up into a special fence class if there's more than one driver
-> needing this.
-> 
-> There is nothing else that forces callbacks from atomic contexts upon you.
-> You can use them if you see it fit, but really if it doesn't suit your
-> driver you can just ignore that part and do process based waits
-> everywhere.
 
-Aside: The fence-process-callback has already been implemented by nouveau
-with the struct fence_work in nouveau_fence.c. Would make loads of sense
-to move that code into the driver core and adapat it to Maarten's struct
-fence once this has all landed.
--Daniel
--- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+于 2014年07月21日 23:38, Greg KH 写道:
+> On Mon, Jul 21, 2014 at 08:47:16PM +0800, pp wrote:
+>> As reuse the cdev may cause panic. After we unregister the tty device, we may use tty_hangup() o
+>> other similar function to send a signal(SIGHUP) to process which has opend our device. But that
+>> not succeed if the process couldn't get the signal. for example, a process forked
+>> but his parent quited never get SIGHUP.
+>>
+>> Here is our scence.
+>> tty driver register its device and init the cdevs, then process "A" open one cdev.
+>> tty driver unregister its device and cdev_del the cdevs, call tty_hangup to (S)send signal SIGHUP to process A.
+>> But that step(S) fails.
+> 
+> How can that fail?  What driver does this fail for?
+
+hi, Greg
+	Thanks for your nice comments. :)
+	It's gsm driver that want to unregister/register tty device. We are working on our intel mobile phone,
+When the phone goes into airplane-mode, the modem will disconnect from system, then gsmld_close() -> gsmld_detach_gsm() -> tty_unregister_device().
+When the phone leaves airplane-mode, the modem will connect to system, then gsmld_open() -> gsmld_attach_gsm() -> tty_register_device()
+In this way how gsm driver works.
+It seems very normal and can work well. :)
+
+But there is always something bad for us to deal with. 
+If a process(A, its name) opens the /dev/gsmttyXX, and the process(A) is, for example, running with command "A &".
+The process(A) is not able to receive the signal SIGHUP from __tty_hangup() -> tty_signal_session_leader(). 
+There are several reasons that can stop process(A) from receiving signal SIGHUP. 
+another example, B is running, and he makes a fork(), A is the child of B, then B quit, leave A running.
+in such scenario, A is not able to receive signal SIGHUP, either. 
+Anyway, we cannot guarantee process(A) will close /dev/gsmttyXX in time. That means we don't know when we can reuse the tty_driver->cdevs[XX].
+one second, one minute? We don't know. We just don't trust user space. :)
+
+> 
+>> tty driver register its device and (D)init the cdevs again.
+> 
+> What driver does this with an "old" device, it should have created a new
+> one, otherwise, as you have pointed out, it's a bug.
+> 
+
+I can't agree more with you. we should not use "old" device. 
+gsm driver(gsm_tty_driver) call tty_register_device() to export gsmttyXX to userspace.
+but tty core code manages cdevs by itself. cdevs is not directly used by any other tty drivers. Adding a check in n_gsm.c before call tty_register_device() seems 
+breaking a rule and making things complex in my opinion.
+I also find a fact that most tty drivers only call tty_register_device() in probe(), and call tty_unregister_device() in remove().
+Q1:
+Is this a rule, too? :)
+
+I think my patch is not good enough. 
+Q2:
+How about (1)change struct *cdevs to struct **cdevs, and (2)use cdev_alloc() instead of cdev_init()? :)
+Let char_dev core code manage the cdev. when the cdev's ref-count become zero, cdev will be released by char_dev core code self.
+
+I very appreciate for your comments. and your advices are very important and helpful for me to solve this issue. 
+
+thanks,
+
+xinhui
+
+> thanks,
+> 
+> greg k-h
+> 
