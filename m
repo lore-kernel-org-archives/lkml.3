@@ -1,68 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756774AbaGVTgV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 15:36:21 -0400
-Received: from g4t3427.houston.hp.com ([15.201.208.55]:16160 "EHLO
-	g4t3427.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756535AbaGVTgT (ORCPT
+	id S1756747AbaGVThs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 15:37:48 -0400
+Received: from mail-oi0-f46.google.com ([209.85.218.46]:59661 "EHLO
+	mail-oi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752641AbaGVThq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 15:36:19 -0400
-Message-ID: <53CEBD2F.2040705@hp.com>
-Date: Tue, 22 Jul 2014 15:36:15 -0400
-From: Waiman Long <waiman.long@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
+	Tue, 22 Jul 2014 15:37:46 -0400
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>
-CC: Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Darren Hart <dvhart@linux.intel.com>,
-        Davidlohr Bueso <davidlohr@hp.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
-        linux-doc@vger.kernel.org, Jason Low <jason.low2@hp.com>,
-        Scott J Norton <scott.norton@hp.com>
-Subject: Re: [RFC PATCH 0/5] futex: introduce an optimistic spinning futex
-References: <1405956271-34339-1-git-send-email-Waiman.Long@hp.com> <20140721211801.GA12149@gmail.com>
-In-Reply-To: <20140721211801.GA12149@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <cover.1405992946.git.luto@amacapital.net>
+References: <cover.1405992946.git.luto@amacapital.net>
+Date: Tue, 22 Jul 2014 12:37:45 -0700
+X-Google-Sender-Auth: fNCVl91x2h1xy1SJ8D7LTfe-r70
+Message-ID: <CAGXu5jJ93-vto9voMENc4jX5itcd_Rm5AZjeChF57fpMYnWocA@mail.gmail.com>
+Subject: Re: [PATCH v3 0/8] Two-phase seccomp and x86 tracing changes
+From: Kees Cook <keescook@chromium.org>
+To: Andy Lutomirski <luto@amacapital.net>, "H. Peter Anvin" <hpa@zytor.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Will Drewry <wad@chromium.org>,
+        Oleg Nesterov <oleg@redhat.com>, "x86@kernel.org" <x86@kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux MIPS Mailing List <linux-mips@linux-mips.org>,
+        linux-arch <linux-arch@vger.kernel.org>,
+        linux-security-module <linux-security-module@vger.kernel.org>,
+        Alexei Starovoitov <ast@plumgrid.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/21/2014 05:18 PM, Ingo Molnar wrote:
-> * Waiman Long<Waiman.Long@hp.com>  wrote:
+On Mon, Jul 21, 2014 at 6:49 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+> [applies on jmorris's security-next tree]
 >
->> Testing done on a 4-socket Westmere-EX boxes with 40 cores (HT off)
->> showed the following performance data (average kops/s) with various
->> load factor (number of pause instructions) used in the critical
->> section using an userspace mutex microbenchmark.
->>
->>    Threads  Load	Waiting Futex	Spinning Futex 	  %Change
->>    -------  ----	-------------	--------------	  -------
->>      256	     1	     6894	    8883	    +29%
->>      256	    10	     3656	    4912	    +34%
->>      256	    50	     1332	    4358	   +227%
->>      256	   100	      792	    2753	   +248%
->>       10	     1	     6382	    4838	    -24%
->>       10	    10	     3614	    4748	    +31%
->>       10	    50	     1319	    3900	   +196%
->>       10	   100	      782	    2459	   +214%
->>        2	     1	     7905	    7194	   -9.0%
->>        2	    10	     4556	    4717	   +3.5%
->>        2	    50	     2191	    4167	    +90%
->>        2	   100	     1767	    2407	    +36%
-> So the numbers look interesting - but it would be _really_ important
-> to provide noise/sttdev figures in a sixth column as well (denoted in
-> percentage units, not in benchmark units), so that we know how
-> significant a particular speedup (or slowdown) is.
+> This is both a cleanup and a speedup.  It reduces overhead due to
+> installing a trivial seccomp filter by 87%.  The speedup comes from
+> avoiding the full syscall tracing mechanism for filters that don't
+> return SECCOMP_RET_TRACE.
 >
-> Thanks,
+> This series works by splitting the seccomp hooks into two phases.
+> The first phase evaluates the filter; it can skip syscalls, allow
+> them, kill the calling task, or pass a u32 to the second phase.  The
+> second phase requires a full tracing context, and it sends ptrace
+> events if necessary.
 >
-> 	Ingo
+> Once this is done, I implemented a similar split for the x86 syscall
+> entry work.  The C callback is invoked in two phases: the first has
+> only a partial frame, and it can request phase 2 processing with a
+> full frame.
+>
+> Finally, I switch the 64-bit system_call code to use the new split
+> entry work.  This is a net deletion of assembly code: it replaces
+> all of the audit entry muck.
+>
+> In the process, I fixed some bugs.
+>
+> If this is acceptable, someone can do the same tweak for the
+> ia32entry and entry_32 code.
+>
+> This passes all seccomp tests that I know of.  Now that it's properly
+> rebased, even the previously expected failures are gone.
+>
+> Kees, if you like this version, can you create a branch with patches
+> 1-4?  I think that the rest should go into tip/x86 once everyone's happy
+> with it.
+>
+> Changes from v2:
+>  - Fixed 32-bit x86 build (and the tests pass).
+>  - Put the doc patch where it belongs.
 
-The performance can varies quite a bit depending on what other processes 
-are running at the test execution time. I will include stddev data in 
-the next iteration of the patch.
+Thanks! This looks good to me. I'll add it to my tree.
 
--Longman
+Peter, how do you feel about this series? Do the x86 changes look good to you?
+
+-Kees
+
+>
+> Changes from v1:
+>  - Rebased on top of Kees' shiny new seccomp tree (no effect on the x86
+>    part).
+>  - Improved patch 6 vs patch 7 split (thanks Alexei!)
+>  - Fixed bogus -ENOSYS in patch 5 (thanks Kees!)
+>  - Improved changelog message in patch 6.
+>
+> Changes from RFC version:
+>  - The first three patches are more or less the same
+>  - The rest is more or less a rewrite
+>
+> Andy Lutomirski (8):
+>   seccomp,x86,arm,mips,s390: Remove nr parameter from secure_computing
+>   seccomp: Refactor the filter callback and the API
+>   seccomp: Allow arch code to provide seccomp_data
+>   seccomp: Document two-phase seccomp and arch-provided seccomp_data
+>   x86,x32,audit: Fix x32's AUDIT_ARCH wrt audit
+>   x86: Split syscall_trace_enter into two phases
+>   x86_64,entry: Treat regs->ax the same in fastpath and slowpath
+>     syscalls
+>   x86_64,entry: Use split-phase syscall_trace_enter for 64-bit syscalls
+>
+>  arch/Kconfig                   |  11 ++
+>  arch/arm/kernel/ptrace.c       |   7 +-
+>  arch/mips/kernel/ptrace.c      |   2 +-
+>  arch/s390/kernel/ptrace.c      |   2 +-
+>  arch/x86/include/asm/calling.h |   6 +-
+>  arch/x86/include/asm/ptrace.h  |   5 +
+>  arch/x86/kernel/entry_64.S     |  51 ++++-----
+>  arch/x86/kernel/ptrace.c       | 150 +++++++++++++++++++-----
+>  arch/x86/kernel/vsyscall_64.c  |   2 +-
+>  include/linux/seccomp.h        |  25 ++--
+>  kernel/seccomp.c               | 252 ++++++++++++++++++++++++++++-------------
+>  11 files changed, 360 insertions(+), 153 deletions(-)
+>
+> --
+> 1.9.3
+>
+
+
+
+-- 
+Kees Cook
+Chrome OS Security
