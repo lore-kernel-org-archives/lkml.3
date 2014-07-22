@@ -1,79 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755441AbaGVPRJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 11:17:09 -0400
-Received: from pegasos-out.vodafone.de ([80.84.1.38]:51367 "EHLO
-	pegasos-out.vodafone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751105AbaGVPRH (ORCPT
+	id S1755573AbaGVPR6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 11:17:58 -0400
+Received: from mail-ie0-f177.google.com ([209.85.223.177]:62804 "EHLO
+	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751105AbaGVPR5 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 11:17:07 -0400
-X-Spam-Flag: NO
-X-Spam-Score: -0.045
-Authentication-Results: rohrpostix2.prod.vfnet.de (amavisd-new); dkim=pass
-	header.i=@vodafone.de
-X-DKIM: OpenDKIM Filter v2.6.8 pegasos-out.vodafone.de 2364572548B
-X-DKIM: OpenDKIM Filter v2.0.2 smtp-04.vodafone.de AAB11E8415
-Message-ID: <53CE8060.8030500@vodafone.de>
-Date: Tue, 22 Jul 2014 17:16:48 +0200
-From: =?ISO-8859-1?Q?Christian_K=F6nig?= <deathsimple@vodafone.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Tue, 22 Jul 2014 11:17:57 -0400
 MIME-Version: 1.0
-To: Maarten Lankhorst <maarten.lankhorst@canonical.com>,
-        =?ISO-8859-1?Q?Christian_K=F6nig?= <christian.koenig@amd.com>,
+X-Originating-IP: [84.73.67.144]
+In-Reply-To: <53CE6AFA.1060807@vodafone.de>
+References: <20140709093124.11354.3774.stgit@patser>
+	<20140709122953.11354.46381.stgit@patser>
+	<CAPM=9tyD2ZbrcGDC3hfNb7qNdzsfnyD-ZwM7G-nOgxeu5YKuSg@mail.gmail.com>
+	<53CE2421.5040906@amd.com>
+	<20140722114607.GL15237@phenom.ffwll.local>
+	<20140722115737.GN15237@phenom.ffwll.local>
+	<53CE56ED.4040109@vodafone.de>
+	<20140722132652.GO15237@phenom.ffwll.local>
+	<53CE6AFA.1060807@vodafone.de>
+Date: Tue, 22 Jul 2014 17:17:56 +0200
+Message-ID: <CAKMK7uG1d31zU_i__wc+Yq46A0x0tPeKnMBs+NHSmHS82uMsXQ@mail.gmail.com>
+Subject: Re: [Nouveau] [PATCH 09/17] drm/radeon: use common fence
+ implementation for fences
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
+To: =?UTF-8?Q?Christian_K=C3=B6nig?= <deathsimple@vodafone.de>
+Cc: =?UTF-8?Q?Christian_K=C3=B6nig?= <christian.koenig@amd.com>,
         Dave Airlie <airlied@gmail.com>,
+        Maarten Lankhorst <maarten.lankhorst@canonical.com>,
         Thomas Hellstrom <thellstrom@vmware.com>,
         nouveau <nouveau@lists.freedesktop.org>,
         LKML <linux-kernel@vger.kernel.org>,
         dri-devel <dri-devel@lists.freedesktop.org>,
         Ben Skeggs <bskeggs@redhat.com>,
         "Deucher, Alexander" <alexander.deucher@amd.com>
-Subject: Re: [PATCH 09/17] drm/radeon: use common fence implementation for
- fences
-References: <20140709093124.11354.3774.stgit@patser> <20140709122953.11354.46381.stgit@patser> <CAPM=9tyD2ZbrcGDC3hfNb7qNdzsfnyD-ZwM7G-nOgxeu5YKuSg@mail.gmail.com> <53CE2421.5040906@amd.com> <20140722114607.GL15237@phenom.ffwll.local> <20140722115737.GN15237@phenom.ffwll.local> <53CE56ED.4040109@vodafone.de> <53CE6FB0.90500@canonical.com> <53CE7410.3090603@amd.com> <53CE74B5.3000201@canonical.com> <53CE77B4.6020801@amd.com> <53CE7974.2010209@canonical.com>
-In-Reply-To: <53CE7974.2010209@canonical.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 22.07.2014 16:47, schrieb Maarten Lankhorst:
-> op 22-07-14 16:39, Christian König schreef:
->> Am 22.07.2014 16:27, schrieb Maarten Lankhorst:
->>> op 22-07-14 16:24, Christian König schreef:
->>>>> No, you really shouldn't be doing much in the check anyway, it's meant to be a lightweight check. If you're not ready yet because of a lockup simply return not signaled yet.
->>>> It's not only the lockup case from radeon I have in mind here. For userspace queues it might be necessary to call copy_from_user to figure out if a fence is signaled or not.
->>>>
->>>> Returning false all the time is probably not a good idea either.
->>> Having userspace implement a fence sounds like an awful idea, why would you want to do that?
->> Marketing moves in mysterious ways. Don't ask me, but that the direction it currently moves with userspace queues and IOMMU etc...
->>
->>> A fence could be exported to userspace, but that would only mean it can wait for it to be signaled with an interface like poll..
->> Yeah agree totally, but the point for the fence interface is that I can't predict what's necessary to check if a fence is signaled or not on future hardware.
->>
->> For the currently available radeon hardware I can say that reading a value from a kernel page is pretty much all you need. But for older hardware that was reading from a register which might become very tricky if the hardware is power off or currently inside a reset cycle.
->>
->> Because off this I would avoid any such interface if it's not absolutely required by some use case, and currently I don't see this requirement because the functionality you want to archive could be implemented without this.
-> Oh? I've already done that in radeon_fence, there is no way enable_signaling will fiddle with hardware registers during a reset cycle.
-> I've also made sure that __radeon_fence_is_signaled grabs exclusive_lock in read mode before touching any hw state.
+On Tue, Jul 22, 2014 at 3:45 PM, Christian KÃ¶nig
+<deathsimple@vodafone.de> wrote:
+>> Would that be something you can agree to?
 >
-> Older hardware also doesn't implement optimus, so I think power off is not much of a worry for them, if you could point me at the checking done for that I could make sure that this is the case.
-
-I'm not talking about any specific radeon hardware or use case here. As 
-far as I can see you indeed solved all driver problems with the current 
-interface design.
-
-The question I'm raising is if the current interface design needs as 
-complex as it is. And my answer to this is a clear *no*, so why do you 
-want to stick with this design? I still haven't understood that.
-
-If it's just to support a further feature of direct synchronization in 
-interrupt context between different drivers then I must clearly say that 
-this is a NAK, cause you add complexity to the kernel that isn't necessary.
-
-Christian.
-
 >
-> ~Maarten
+> No, the whole enable_signaling stuff should go away. No callback from the
+> driver into the fence code, only the other way around.
 >
+> fence->signaled as well as fence->wait should become mandatory and only
+> called from process context without holding any locks, neither atomic nor
+> any mutex/semaphore (rcu might be ok).
 
+So for the enable_signaling, that's optional already. It's only for
+drivers that don't want to keep interrupts enabled all the time. You
+can opt out of that easily.
+
+Wrt holding no locks at all while calling into any fence functions,
+that's just not going to work out. The point here is to make different
+drivers work together and we can rework all the ttm and i915 code to
+work locklessly in all cases where they need to wait for someone to
+complete rendering. Or at least I don't think that's feasible. So if
+you insist that no one might call into radeon code then we simply need
+to exclude radeon from participating in any shared fencing. But that's
+a bit pointless.
+
+>> Like I've said I think restricting the insanity other people are willing
+>> to live with just because you don't like it isn't right. But it is
+>> certainly right for you to insist on not being forced into any such
+>> design. I think the above would achieve this.
+>
+>
+> I don't think so. If it's just me I would say that I'm just to cautious and
+> the idea is still save to apply to the whole kernel.
+>
+> But since Dave, Jerome and Ben seems to have similar concerns I think we
+> need to agree to a minimum and save interface for all drivers.
+
+Well I haven't yet seen a proposal that actually works. From an intel
+pov I don't care that much since we don't care about desktop prime, so
+if radeon/nouveau don't want to do that, meh. Imo the design as-is is
+fairly sound, and as simple as it can get given the requirements. I
+haven't heard an  argument convincing me otherwise, so I guess we
+won't have prime support on linux that actually works, ever.
+-Daniel
+-- 
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
