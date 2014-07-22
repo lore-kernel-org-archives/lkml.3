@@ -1,67 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756195AbaGVPpO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 11:45:14 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:50819 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755644AbaGVPpK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 11:45:10 -0400
-Date: Tue, 22 Jul 2014 16:45:03 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Felipe Balbi <balbi@ti.com>
-Cc: Peter Griffin <peter.griffin@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        maxime.coquelin@st.com, patrice.chotard@st.com,
-        srinivas.kandagatla@gmail.com, devicetree@vger.kernel.org,
-        linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
-        peppe.cavallaro@st.com
-Subject: Re: [PATCH v2 1/3] usb: dwc3: add ST dwc3 glue layer to manage dwc3
- HC
-Message-ID: <20140722154503.GC23210@lee--X1>
-References: <1404541530-27856-1-git-send-email-peter.griffin@linaro.org>
- <1404541530-27856-2-git-send-email-peter.griffin@linaro.org>
- <20140707124627.GG6407@lee--X1>
- <20140722091800.GB8233@griffinp-ThinkPad-X1-Carbon-2nd>
- <20140722145711.GC20588@saruman.home>
+	id S1755903AbaGVPrS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 11:47:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18290 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755620AbaGVPrR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 11:47:17 -0400
+Message-ID: <53CE875F.5040007@redhat.com>
+Date: Tue, 22 Jul 2014 11:46:39 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140722145711.GC20588@saruman.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Peter Zijlstra <peterz@infradead.org>
+CC: linux-kernel@vger.kernel.org, Kirill Tkhai <ktkhai@parallels.com>,
+        Tim Chen <tim.c.chen@linux.intel.com>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>, mingo@kernel.org,
+        pjt@google.com
+Subject: Re: [PATCH] sched: update last_balance only when actually balanced
+References: <20140722022121.4589c63b@annuminas.surriel.com> <20140722120445.GB3935@laptop>
+In-Reply-To: <20140722120445.GB3935@laptop>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > > > +static void st_dwc3_init(struct st_dwc3 *dwc3_data)
-> > > > +{
-> > > > +	u32 reg = st_dwc3_readl(dwc3_data->glue_base, USB2_CLKRST_CTRL);
-> > > > +
-> > > > +	reg |= aux_clk_en(1) | ext_cfg_reset_n(1) | xhci_revision(1);
-> > > > +	reg &= ~sw_pipew_reset_n(1);
-> > > 
-> > > 1?  Better to add defines for these magic numbers.  What is 1 anyway?
-> > 
-> > They are just bit setting macros, I've converted them over to use BIT macro now,
-> > so it no longer takes a parameter.
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
+
+On 07/22/2014 08:04 AM, Peter Zijlstra wrote:
+
+>> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c index
+>> 45943b2..4f7fee2 100644 --- a/kernel/sched/fair.c +++
+>> b/kernel/sched/fair.c @@ -7187,7 +7187,9 @@ static void
+>> rebalance_domains(struct rq *rq, enum cpu_idle_type idle) */ idle
+>> = idle_cpu(cpu) ? CPU_IDLE : CPU_NOT_IDLE; } -			sd->last_balance
+>> = jiffies; +			/* Only update if we actually balanced. */ +			if
+>> (continue_balancing) +				sd->last_balance = jiffies; interval =
+>> get_sd_balance_interval(sd, idle != CPU_IDLE); } if
+>> (need_serialize)
 > 
-> the macros are better, but make them upper case as everybody else.
+> Did you actually see any difference with this patch?
+> 
+> The reason I'm asking is that the sched_domains are per cpu, so
+> the above assignment is only visible to that particular cpu, not
+> other cpus.
 
-When you say that the macros are better, what do you mean?
+It was past 2AM, it may have been a placebo effect :)
 
-Defines do the job in a manner which is a great deal cleaner:
+Back to the drawing board, to figure out why the load balancing code
+is not working quite as expected...
 
-#define AUX_CLK_EN        BIT(0)
-#define SW_PIPEW_RESET_N  BIT(4)
-#define EXT_CFG_RESET_N   BIT(8)
-#define XHCI_REVISION     BIT(12)
+- -- 
+All rights reversed
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
 
-reg = AUX_CLK_EN | SW_PIPEW_RESET_N | XHCI_REVISION;
-reg &= ~SW_PIPEW_RESET_N
-
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+iQEcBAEBAgAGBQJTzodfAAoJEM553pKExN6DR3oH+wVSYjVu6eV1tzaDLw2xSvSl
+rO8hC9GtIf3LX8NVp/UTVkQXt7wWDLcpV4f+AO9+ikB9Dk5YD9wfTF6vhZVrP8GV
+Zjpd3HvO/H3RYomyDXLbocjZ97JsXBF7kxRWmYw0kixUIzhdt/sZKGc46aQXPnGy
+BfcGcYYbBKeFr9rrYTTvHwN5XVB1ZMZBEWiH/6baXGgZ5V/rTdcZDw0VGXailpbn
+eM5j33B9gCE6bYxD1uCrfZXdaO4BORCkiqfncpSVqLnl9k7B9HbY44bcbqht/qHy
+B/F/7+imlvAfhwfQAhj8EYomaAT2GI8m6Ab7frxagJURJ1McU3r+2dgkkhsSqP8=
+=QnLG
+-----END PGP SIGNATURE-----
