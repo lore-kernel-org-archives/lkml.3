@@ -1,57 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752715AbaGVGtS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 02:49:18 -0400
-Received: from ozlabs.org ([103.22.144.67]:40318 "EHLO ozlabs.org"
+	id S1752727AbaGVGwe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 02:52:34 -0400
+Received: from a.ns.miles-group.at ([95.130.255.143]:65275 "EHLO radon.swed.at"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751302AbaGVGtR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 02:49:17 -0400
-Date: Tue, 22 Jul 2014 16:49:05 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: linux-next@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Subject: linux-next: no release today
-Message-ID: <20140722164905.1e67eb75@canb.auug.org.au>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
+	id S1750932AbaGVGwd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 02:52:33 -0400
+Message-ID: <53CE0A25.7090508@nod.at>
+Date: Tue, 22 Jul 2014 08:52:21 +0200
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/SVDflKA40Dukmtg7AH4mhCV"; protocol="application/pgp-signature"
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org
+Subject: Re: Global signal cleanup, take 4
+References: <1405951409-16953-1-git-send-email-richard@sigma-star.at> <20140722144727.441bcc2a@canb.auug.org.au>
+In-Reply-To: <20140722144727.441bcc2a@canb.auug.org.au>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/SVDflKA40Dukmtg7AH4mhCV
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+Stephen,
 
-Hi all,
+Am 22.07.2014 06:47, schrieb Stephen Rothwell:
+> Hi Richard,
+> 
+> On Mon, 21 Jul 2014 16:02:46 +0200 Richard Weinberger <richard@sigma-star.at> wrote:
+>>
+>> The whole series can also be found at:
+>> git://git.kernel.org/pub/scm/linux/kernel/git/rw/misc.git signal_v4
+>>
+>> Andrew, can you please pickup this series?
+> 
+> Why don't we just add that git tree to linux-next? Then you can send
+> Linus a pull request in the next merge window.
 
-Hopefully normal service will resume tomorrow.
+That's a good idea.
+Can you please add the tree to linux-next?
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Sig_/SVDflKA40Dukmtg7AH4mhCV
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJTzglqAAoJEMDTa8Ir7ZwVuL8P/0DaTcUOD++2/RgY7GgSUnmL
-h8YKRKrnwDbjmOjRZs/b6iaLb48q1WPu6J4+cKV4zj8SAia6OGDKqj3EWbccdpWk
-E4axHFht34fsJ0L4np/xoKRobvgSSYs6pTKOrO1zHL2zfx7YGWhNhRBJCM0INaV6
-1mlMS4SiPErIt6aZdzwoUknDFKMVqRlwIo0QQL9NHwi5kVylXByZyJkjC+znPf+G
-yTdur2VNtCCfeyoraBfGvLTchdKDPeoz4Nkk0yLl7qTau9B/aOAUWxYLHQcDOwkh
-5GJQebxqV/TxCIh0HBZ+cKBsLLUSZk1npo1PKtCvDDcPyUIXyQBoS3/KlAXpkFyP
-ohvEwpPWrVjx4xSg9O5BrB9hMrDQMCdhxpq/whn2vGGcoknBkcWqIfEWQI09sORw
-3PUOpxE3/yp49ghbxESpbYzRAkkF6kX3o7mu1ErDTxHCTfmB8sSzCXeghNKJrtOr
-xvxEYCecfp5QdlTwG+jYTXsZ/ZNsK//Y4/r9EOF9N8P+HI468F/w0k3+C5FVSL9F
-pk4/A3lojNh/8T/1YMFw1s8uaLSuzUgWJTNZeCHC0oQJ9g7ylQvTszEFE5eXofGV
-ht8wVXFpAzysJRm+zHytbCM9zUlyIx1MGzFuUBL3DLqnWdrkE4f396ON/bhjqVXt
-l1/fuXS1F5DKV+6Cn0uc
-=t3uK
------END PGP SIGNATURE-----
-
---Sig_/SVDflKA40Dukmtg7AH4mhCV--
+Thanks,
+//richard
