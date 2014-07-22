@@ -1,105 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752159AbaGVEmc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 00:42:32 -0400
-Received: from mail-vc0-f178.google.com ([209.85.220.178]:53354 "EHLO
-	mail-vc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750742AbaGVEmb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 00:42:31 -0400
+	id S1752257AbaGVEoe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 00:44:34 -0400
+Received: from imap.thunk.org ([74.207.234.97]:48907 "EHLO imap.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750785AbaGVEoc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 00:44:32 -0400
+Date: Tue, 22 Jul 2014 00:44:09 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Cc: George Spelvin <linux@horizon.com>, linux-crypto@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH, RFC] random: introduce getrandom(2) system call
+Message-ID: <20140722044409.GE24960@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Hannes Frederic Sowa <hannes@stressinduktion.org>,
+	George Spelvin <linux@horizon.com>, linux-crypto@vger.kernel.org,
+	linux-kernel@vger.kernel.org
+References: <20140721112102.19300.qmail@ns.horizon.com>
+ <1405956426.2319.37.camel@localhost>
+ <1405990940.28229.4.camel@localhost>
 MIME-Version: 1.0
-In-Reply-To: <1406003194-20351-1-git-send-email-linux@roeck-us.net>
-References: <1406003194-20351-1-git-send-email-linux@roeck-us.net>
-From: Alexandre Courbot <gnurou@gmail.com>
-Date: Tue, 22 Jul 2014 13:42:10 +0900
-Message-ID: <CAAVeFu+9NTH8pbx-dvYD3xVpZ9Y5F0P9KNDQP1DMB6Qn0Sv8KQ@mail.gmail.com>
-Subject: Re: [PATCH] gpiolib: Export gpiochip_request_own_desc and gpiochip_free_own_desc
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1405990940.28229.4.camel@localhost>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 22, 2014 at 1:26 PM, Guenter Roeck <linux@roeck-us.net> wrote:
-> Both functions were introduced to let gpio drivers request their own
-> gpio pins. Without exporting the functions, this can however only be
-> used by gpio drivers built into the kernel.
->
-> Secondary impact is that the functions can not currently be used by
-> platform initialization code associated with the gpio-pca953x driver.
-> This code permits auto-export of gpio pins through platform data, but
-> if this functionality is used, the module can no longer be unloaded due
-> to the problem solved with the introduction of gpiochip_request_own_desc
-> and gpiochip_free_own_desc.
->
-> Export both function so they can be used from modules and from
-> platform initialization code.
->
-> Cc: Mika Westerberg <mika.westerberg@linux.intel.com>
-> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-> ---
->  drivers/gpio/gpiolib.c        | 2 ++
->  drivers/gpio/gpiolib.h        | 3 ---
->  include/linux/gpio/consumer.h | 3 +++
->  3 files changed, 5 insertions(+), 3 deletions(-)
->
-> diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
-> index 43d9e34..04c647e 100644
-> --- a/drivers/gpio/gpiolib.c
-> +++ b/drivers/gpio/gpiolib.c
-> @@ -1953,6 +1953,7 @@ int gpiochip_request_own_desc(struct gpio_desc *desc, const char *label)
->
->         return __gpiod_request(desc, label);
->  }
-> +EXPORT_SYMBOL(gpiochip_request_own_desc);
->
->  /**
->   * gpiochip_free_own_desc - Free GPIO requested by the chip driver
-> @@ -1966,6 +1967,7 @@ void gpiochip_free_own_desc(struct gpio_desc *desc)
->         if (desc)
->                 __gpiod_free(desc);
->  }
-> +EXPORT_SYMBOL(gpiochip_free_own_desc);
->
->  /* Drivers MUST set GPIO direction before making get/set calls.  In
->   * some cases this is done in early boot, before IRQs are enabled.
-> diff --git a/drivers/gpio/gpiolib.h b/drivers/gpio/gpiolib.h
-> index 1a4103d..2bdb69d 100644
-> --- a/drivers/gpio/gpiolib.h
-> +++ b/drivers/gpio/gpiolib.h
-> @@ -45,9 +45,6 @@ acpi_get_gpiod_by_index(struct device *dev, int index,
->  }
->  #endif
->
-> -int gpiochip_request_own_desc(struct gpio_desc *desc, const char *label);
-> -void gpiochip_free_own_desc(struct gpio_desc *desc);
-> -
->  struct gpio_desc *of_get_named_gpiod_flags(struct device_node *np,
->                    const char *list_name, int index, enum of_gpio_flags *flags);
->
-> diff --git a/include/linux/gpio/consumer.h b/include/linux/gpio/consumer.h
-> index 05e53cc..e85f7e6 100644
-> --- a/include/linux/gpio/consumer.h
-> +++ b/include/linux/gpio/consumer.h
-> @@ -32,6 +32,9 @@ struct gpio_desc *__must_check gpiod_get_index_optional(struct device *dev,
->
->  void gpiod_put(struct gpio_desc *desc);
->
-> +int gpiochip_request_own_desc(struct gpio_desc *desc, const char *label);
-> +void gpiochip_free_own_desc(struct gpio_desc *desc);
+On Tue, Jul 22, 2014 at 03:02:20AM +0200, Hannes Frederic Sowa wrote:
+> 
+> Ted, would it make sense to specifiy a 512 byte upper bound limit for
+> random entropy extraction (I am not yet convinced to do that for
+> urandom) and in case the syscall should block we make sure that we
+> extract the amount of bytes the user requested?
 
-I guess these functions should be made public in driver.h, not
-consumer.h. Users will be GPIO drivers and platform code, not device
-drivers which are the typical consumers of GPIOs.
+On some systems, it's still possible that with a large /dev/random
+extraction, you could end up blocking for hours.  So either the
+getrandom(2) syscall needs to be uninterruptible, which has one set of
+problems (and not just the user typing ^C, but also things like being
+able to process alarms, which is highly problematic indeed), or you
+need to allow it to be interruptible by a signal, in which case
+userspace needs to check the error return for things like EINTR
+anyway.  And if you have to check the error return, you might as well
+check the number of bytes returned.
 
-> +
->  struct gpio_desc *__must_check devm_gpiod_get(struct device *dev,
->                                               const char *con_id);
->  struct gpio_desc *__must_check devm_gpiod_get_index(struct device *dev,
-> --
-> 1.9.1
->
+Yes, one could in theory set up a new variant of "uninterruptible"
+signals that only exited if the signal caused the process to exit, and
+otherwise, forced a system call restart even if SA_INTERRUPTIBLE was
+not set in sigalarim, but that's add *way* more complexity than this
+deserves.
+
+Basically, I view /dev/random as an advanced call, and someone who
+uses it should know what they are doing.  It's not the default for a
+reason.
+
+						- Ted
