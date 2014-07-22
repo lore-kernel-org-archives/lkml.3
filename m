@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754083AbaGVINd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 04:13:33 -0400
-Received: from mga01.intel.com ([192.55.52.88]:46708 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753667AbaGVIKP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753669AbaGVIKP (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 22 Jul 2014 04:10:15 -0400
+Received: from mga01.intel.com ([192.55.52.88]:46705 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753206AbaGVIKM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 04:10:12 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,708,1400050800"; 
-   d="scan'208";a="573497479"
+   d="scan'208";a="573497466"
 From: "Yan, Zheng" <zheng.z.yan@intel.com>
 To: linux-kernel@vger.kernel.org
 Cc: a.p.zijlstra@chello.nl, mingo@kernel.org, acme@infradead.org,
         eranian@google.com, andi@firstfloor.org,
         "Yan, Zheng" <zheng.z.yan@intel.com>
-Subject: [PATCH v3 4/9] perf, x86: introduce setup_pebs_sample_data()
-Date: Tue, 22 Jul 2014 16:09:57 +0800
-Message-Id: <1406016602-31845-5-git-send-email-zheng.z.yan@intel.com>
+Subject: [PATCH v3 3/9] perf, x86: use the PEBS auto reload mechanism when possible
+Date: Tue, 22 Jul 2014 16:09:56 +0800
+Message-Id: <1406016602-31845-4-git-send-email-zheng.z.yan@intel.com>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1406016602-31845-1-git-send-email-zheng.z.yan@intel.com>
 References: <1406016602-31845-1-git-send-email-zheng.z.yan@intel.com>
@@ -24,140 +24,90 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-move codes that setup PEBS sample data to separate function
+When a fixed period is specified, this patch make perf use the PEBS
+auto reload mechanism. This makes normal profiling faster, because
+it avoids one costly MSR write in the PMI handler.
 
-Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
+Signef-off-by: Yan, Zheng <zheng.z.yan@intel.com>
 ---
- arch/x86/kernel/cpu/perf_event_intel_ds.c | 63 ++++++++++++++++++-------------
- 1 file changed, 36 insertions(+), 27 deletions(-)
+ arch/x86/kernel/cpu/perf_event.c          | 15 +++++++++------
+ arch/x86/kernel/cpu/perf_event.h          |  1 +
+ arch/x86/kernel/cpu/perf_event_intel_ds.c |  9 +++++++++
+ 3 files changed, 19 insertions(+), 6 deletions(-)
 
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index 8868e9b..60593bc 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -979,13 +979,16 @@ int x86_perf_event_set_period(struct perf_event *event)
+ 
+ 	per_cpu(pmc_prev_left[idx], smp_processor_id()) = left;
+ 
+-	/*
+-	 * The hw event starts counting from this event offset,
+-	 * mark it to be able to extra future deltas:
+-	 */
+-	local64_set(&hwc->prev_count, (u64)-left);
++	if (!(hwc->flags & PERF_X86_EVENT_AUTO_RELOAD) ||
++	    local64_read(&hwc->prev_count) != (u64)-left) {
++		/*
++		 * The hw event starts counting from this event offset,
++		 * mark it to be able to extra future deltas:
++		 */
++		local64_set(&hwc->prev_count, (u64)-left);
+ 
+-	wrmsrl(hwc->event_base, (u64)(-left) & x86_pmu.cntval_mask);
++		wrmsrl(hwc->event_base, (u64)(-left) & x86_pmu.cntval_mask);
++	}
+ 
+ 	/*
+ 	 * Due to erratum on certan cpu we need
+diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
+index d8165f3..fa8dfd4 100644
+--- a/arch/x86/kernel/cpu/perf_event.h
++++ b/arch/x86/kernel/cpu/perf_event.h
+@@ -69,6 +69,7 @@ struct event_constraint {
+ #define PERF_X86_EVENT_PEBS_ST		0x2 /* st data address sampling */
+ #define PERF_X86_EVENT_PEBS_ST_HSW	0x4 /* haswell style st data sampling */
+ #define PERF_X86_EVENT_COMMITTED	0x8 /* event passed commit_txn */
++#define PERF_X86_EVENT_AUTO_RELOAD	0x10 /* use PEBS auto-reload */
+ 
+ struct amd_nb {
+ 	int nb_id;  /* NorthBridge id */
 diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-index ab91b11..858c4ee 100644
+index 980970c..ab91b11 100644
 --- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
 +++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-@@ -868,8 +868,10 @@ static inline u64 intel_hsw_transaction(struct pebs_record_hsw *pebs)
- 	return txn;
+@@ -714,6 +714,8 @@ void intel_pmu_pebs_enable(struct perf_event *event)
+ 	struct hw_perf_event *hwc = &event->hw;
+ 
+ 	hwc->config &= ~ARCH_PERFMON_EVENTSEL_INT;
++	if (!event->attr.freq)
++		hwc->flags |= PERF_X86_EVENT_AUTO_RELOAD;
+ 
+ 	cpuc->pebs_enabled |= 1ULL << hwc->idx;
+ 
+@@ -721,6 +723,12 @@ void intel_pmu_pebs_enable(struct perf_event *event)
+ 		cpuc->pebs_enabled |= 1ULL << (hwc->idx + 32);
+ 	else if (event->hw.flags & PERF_X86_EVENT_PEBS_ST)
+ 		cpuc->pebs_enabled |= 1ULL << 63;
++
++	/* Use auto-reload if possible to save a MSR write in the PMI */
++	if (hwc->flags & PERF_X86_EVENT_AUTO_RELOAD) {
++		ds->pebs_event_reset[hwc->idx] =
++			(u64)-hwc->sample_period & x86_pmu.cntval_mask;
++	}
  }
  
--static void __intel_pmu_pebs_event(struct perf_event *event,
--				   struct pt_regs *iregs, void *__pebs)
-+static void setup_pebs_sample_data(struct perf_event *event,
-+				   struct pt_regs *iregs, void *__pebs,
-+				   struct perf_sample_data *data,
-+				   struct pt_regs *regs)
- {
- 	/*
- 	 * We cast to the biggest pebs_record but are careful not to
-@@ -877,21 +879,16 @@ static void __intel_pmu_pebs_event(struct perf_event *event,
- 	 */
- 	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
- 	struct pebs_record_hsw *pebs = __pebs;
--	struct perf_sample_data data;
--	struct pt_regs regs;
- 	u64 sample_type;
- 	int fll, fst;
+ void intel_pmu_pebs_disable(struct perf_event *event)
+@@ -739,6 +747,7 @@ void intel_pmu_pebs_disable(struct perf_event *event)
+ 		wrmsrl(MSR_IA32_PEBS_ENABLE, cpuc->pebs_enabled);
  
--	if (!intel_pmu_save_and_restart(event))
--		return;
--
- 	fll = event->hw.flags & PERF_X86_EVENT_PEBS_LDLAT;
- 	fst = event->hw.flags & (PERF_X86_EVENT_PEBS_ST |
- 				 PERF_X86_EVENT_PEBS_ST_HSW);
+ 	hwc->config |= ARCH_PERFMON_EVENTSEL_INT;
++	hwc->flags &= ~PERF_X86_EVENT_AUTO_RELOAD;
+ }
  
--	perf_sample_data_init(&data, 0, event->hw.last_period);
-+	perf_sample_data_init(data, 0, event->hw.last_period);
- 
--	data.period = event->hw.last_period;
-+	data->period = event->hw.last_period;
- 	sample_type = event->attr.sample_type;
- 
- 	/*
-@@ -902,19 +899,19 @@ static void __intel_pmu_pebs_event(struct perf_event *event,
- 		 * Use latency for weight (only avail with PEBS-LL)
- 		 */
- 		if (fll && (sample_type & PERF_SAMPLE_WEIGHT))
--			data.weight = pebs->lat;
-+			data->weight = pebs->lat;
- 
- 		/*
- 		 * data.data_src encodes the data source
- 		 */
- 		if (sample_type & PERF_SAMPLE_DATA_SRC) {
- 			if (fll)
--				data.data_src.val = load_latency_data(pebs->dse);
-+				data->data_src.val = load_latency_data(pebs->dse);
- 			else if (event->hw.flags & PERF_X86_EVENT_PEBS_ST_HSW)
--				data.data_src.val =
-+				data->data_src.val =
- 					precise_store_data_hsw(event, pebs->dse);
- 			else
--				data.data_src.val = precise_store_data(pebs->dse);
-+				data->data_src.val = precise_store_data(pebs->dse);
- 		}
- 	}
- 
-@@ -928,35 +925,47 @@ static void __intel_pmu_pebs_event(struct perf_event *event,
- 	 * PERF_SAMPLE_IP and PERF_SAMPLE_CALLCHAIN to function properly.
- 	 * A possible PERF_SAMPLE_REGS will have to transfer all regs.
- 	 */
--	regs = *iregs;
--	regs.flags = pebs->flags;
--	set_linear_ip(&regs, pebs->ip);
--	regs.bp = pebs->bp;
--	regs.sp = pebs->sp;
-+	*regs = *iregs;
-+	regs->flags = pebs->flags;
-+	set_linear_ip(regs, pebs->ip);
-+	regs->bp = pebs->bp;
-+	regs->sp = pebs->sp;
- 
- 	if (event->attr.precise_ip > 1 && x86_pmu.intel_cap.pebs_format >= 2) {
--		regs.ip = pebs->real_ip;
--		regs.flags |= PERF_EFLAGS_EXACT;
--	} else if (event->attr.precise_ip > 1 && intel_pmu_pebs_fixup_ip(&regs))
--		regs.flags |= PERF_EFLAGS_EXACT;
-+		regs->ip = pebs->real_ip;
-+		regs->flags |= PERF_EFLAGS_EXACT;
-+	} else if (event->attr.precise_ip > 1 && intel_pmu_pebs_fixup_ip(regs))
-+		regs->flags |= PERF_EFLAGS_EXACT;
- 	else
--		regs.flags &= ~PERF_EFLAGS_EXACT;
-+		regs->flags &= ~PERF_EFLAGS_EXACT;
- 
- 	if ((event->attr.sample_type & PERF_SAMPLE_ADDR) &&
- 	    x86_pmu.intel_cap.pebs_format >= 1)
--		data.addr = pebs->dla;
-+		data->addr = pebs->dla;
- 
- 	if (x86_pmu.intel_cap.pebs_format >= 2) {
- 		/* Only set the TSX weight when no memory weight. */
- 		if ((event->attr.sample_type & PERF_SAMPLE_WEIGHT) && !fll)
--			data.weight = intel_hsw_weight(pebs);
-+			data->weight = intel_hsw_weight(pebs);
- 
- 		if (event->attr.sample_type & PERF_SAMPLE_TRANSACTION)
--			data.txn = intel_hsw_transaction(pebs);
-+			data->txn = intel_hsw_transaction(pebs);
- 	}
- 
- 	if (has_branch_stack(event))
--		data.br_stack = &cpuc->lbr_stack;
-+		data->br_stack = &cpuc->lbr_stack;
-+}
-+
-+static void __intel_pmu_pebs_event(struct perf_event *event,
-+				   struct pt_regs *iregs, void *__pebs)
-+{
-+	struct perf_sample_data data;
-+	struct pt_regs regs;
-+
-+	if (!intel_pmu_save_and_restart(event))
-+		return;
-+
-+	setup_pebs_sample_data(event, iregs, __pebs, &data, &regs);
- 
- 	if (perf_event_overflow(event, &data, &regs))
- 		x86_pmu_stop(event, 0);
+ void intel_pmu_pebs_enable_all(void)
 -- 
 1.9.3
 
