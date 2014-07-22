@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933805AbaGVWr5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 18:47:57 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44521 "EHLO
+	id S933319AbaGVWsg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 18:48:36 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:44500 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932688AbaGVWXq (ORCPT
+	with ESMTP id S932635AbaGVWXe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 18:23:46 -0400
+	Tue, 22 Jul 2014 18:23:34 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
 Cc: Johan Hedberg <johan.hedberg@intel.com>,
         Marcel Holtmann <marcel@holtmann.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 099/116] Bluetooth: Fix setting correct authentication information for SMP STK
-Date: Tue, 22 Jul 2014 15:21:50 -0700
-Message-Id: <1406067727-19683-100-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 101/116] Bluetooth: Fix locking of hdev when calling into SMP code
+Date: Tue, 22 Jul 2014 15:21:52 -0700
+Message-Id: <1406067727-19683-102-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1406067727-19683-1-git-send-email-kamal@canonical.com>
 References: <1406067727-19683-1-git-send-email-kamal@canonical.com>
@@ -30,51 +30,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Johan Hedberg <johan.hedberg@intel.com>
 
-commit fff3490f47810e2d34b91fb9e31103e923b11c2f upstream.
+commit c73f94b8c093a615ce80eabbde0ac6eb9abfe31a upstream.
 
-When we store the STK in slave role we should set the correct
-authentication information for it. If the pairing is producing a HIGH
-security level the STK is considered authenticated, and otherwise it's
-considered unauthenticated. This patch fixes the value passed to the
-hci_add_ltk() function when adding the STK on the slave side.
+The SMP code expects hdev to be unlocked since e.g. crypto functions
+will try to (re)lock it. Therefore, we need to release the lock before
+calling into smp.c from mgmt.c. Without this we risk a deadlock whenever
+the smp_user_confirm_reply() function is called.
 
 Signed-off-by: Johan Hedberg <johan.hedberg@intel.com>
-Tested-by: Marcin Kraglak <marcin.kraglak@tieto.com>
+Tested-by: Lukasz Rymanowski <lukasz.rymanowski@tieto.com>
 Signed-off-by: Marcel Holtmann <marcel@holtmann.org>
-[ kamal: backport to 3.8-stable: context ]
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/bluetooth/smp.c | 9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
+ net/bluetooth/mgmt.c | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
-diff --git a/net/bluetooth/smp.c b/net/bluetooth/smp.c
-index 5abefb1..ba765a4 100644
---- a/net/bluetooth/smp.c
-+++ b/net/bluetooth/smp.c
-@@ -464,7 +464,7 @@ static void random_work(struct work_struct *work)
- 		hci_le_start_enc(hcon, ediv, rand, stk);
- 		hcon->enc_key_size = smp->enc_key_size;
- 	} else {
--		u8 stk[16], r[16], rand[8];
-+		u8 stk[16], r[16], rand[8], auth;
- 		__le16 ediv;
- 
- 		memset(rand, 0, sizeof(rand));
-@@ -479,8 +479,13 @@ static void random_work(struct work_struct *work)
- 		memset(stk + smp->enc_key_size, 0,
- 				SMP_MAX_ENC_KEY_SIZE - smp->enc_key_size);
- 
-+		if (hcon->pending_sec_level == BT_SECURITY_HIGH)
-+			auth = 1;
-+		else
-+			auth = 0;
-+
- 		hci_add_ltk(hcon->hdev, conn->dst, hcon->dst_type,
--			    HCI_SMP_STK_SLAVE, 0, 0, stk, smp->enc_key_size,
-+			    HCI_SMP_STK_SLAVE, 0, auth, stk, smp->enc_key_size,
- 			    ediv, rand);
+diff --git a/net/bluetooth/mgmt.c b/net/bluetooth/mgmt.c
+index d8ba861..e470516 100644
+--- a/net/bluetooth/mgmt.c
++++ b/net/bluetooth/mgmt.c
+@@ -2048,8 +2048,13 @@ static int user_pairing_resp(struct sock *sk, struct hci_dev *hdev,
  	}
  
+ 	if (type == BDADDR_LE_PUBLIC || type == BDADDR_LE_RANDOM) {
+-		/* Continue with pairing via SMP */
++		/* Continue with pairing via SMP. The hdev lock must be
++		 * released as SMP may try to recquire it for crypto
++		 * purposes.
++		 */
++		hci_dev_unlock(hdev);
+ 		err = smp_user_confirm_reply(conn, mgmt_op, passkey);
++		hci_dev_lock(hdev);
+ 
+ 		if (!err)
+ 			err = cmd_status(sk, hdev->id, mgmt_op,
 -- 
 1.9.1
 
