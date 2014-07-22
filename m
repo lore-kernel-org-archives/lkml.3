@@ -1,52 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753714AbaGVIou (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 04:44:50 -0400
-Received: from mout.kundenserver.de ([212.227.17.24]:55114 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753418AbaGVIos (ORCPT
+	id S1753491AbaGVIsw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 04:48:52 -0400
+Received: from casper.infradead.org ([85.118.1.10]:59188 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751861AbaGVIst (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 04:44:48 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Nick Krause <xerofoify@gmail.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Fix me in netx-regs.h
-Date: Tue, 22 Jul 2014 10:44:17 +0200
-Message-ID: <11713455.tffm2SOdyn@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <CAPDOMVhdK67Fc5KsamL8XKdRNy0VjKB3ub24krgwmRsnZGtQNQ@mail.gmail.com>
-References: <CAPDOMVhdK67Fc5KsamL8XKdRNy0VjKB3ub24krgwmRsnZGtQNQ@mail.gmail.com>
+	Tue, 22 Jul 2014 04:48:49 -0400
+Date: Tue, 22 Jul 2014 10:48:42 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Darren Hart <dvhart@linux.intel.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Andi Kleen <andi@firstfloor.org>, Waiman Long <Waiman.Long@hp.com>,
+        Ingo Molnar <mingo@kernel.org>, Davidlohr Bueso <davidlohr@hp.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Jason Low <jason.low2@hp.com>, Scott J Norton <scott.norton@hp.com>,
+        Robert Haas <robertmhaas@gmail.com>
+Subject: Re: [RFC PATCH 0/5] futex: introduce an optimistic spinning futex
+Message-ID: <20140722084842.GZ3935@laptop>
+References: <CFF29E4A.9D44E%dvhart@linux.intel.com>
+ <alpine.DEB.2.10.1407212025130.20847@nanos>
+ <20140721212740.GS3935@laptop>
+ <CALCETrXSaWM6-nxr4ggtMh5qcfTQg4wRvkW8FTSbri5+_1ZbVg@mail.gmail.com>
+ <alpine.DEB.2.10.1407212344130.20847@nanos>
+ <CFF2E3D6.9D525%dvhart@linux.intel.com>
+ <alpine.DEB.2.10.1407220047490.20847@nanos>
+ <20140721213457.46623e2f@gandalf.local.home>
+ <20140722074719.GV3935@laptop>
+ <alpine.DEB.2.10.1407221034260.20847@nanos>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:bdSPwQ7IgkSdPsMEfGNNKAqMqyDZ+6Hgl6T1znEpeCl
- xJUALSDvLBh6EnQb/q8n4q5V3vWGPRbSuQVPpjUL+6I0fP6J6h
- sOQ3vNVpJKYUfFhUtO4/1U9KxYy8evg5/09vH88CQh679ZNMuA
- soB8tG2Bgp2Df4FbkCVoTv+ZJ+wdnif9ctCuSZnTBDMDdrjW+e
- amyYweqO+lGvn+wkbLQpykuk0jF4agbyZfILnmFYJxzKUwlxQ0
- M5ZJ2R2mZJkdqp1EVPle0Xj94Jj8Ia1ks5JeezyD6VV3IEeO3Q
- /KOzbmc6ZXDRRAlXro3vSvAOPgHRNNSD6osdJI/uwooV4XeYEh
- PQRhQ/2n9H1FWWFGgLPo=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.10.1407221034260.20847@nanos>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 22 July 2014 00:16:26 Nick Krause wrote:
-> Hey Russell,
-> I did give thought to our previous conversations and I will still do
-> fix mes but am going to be more careful
-> with I submit them. Furthermore it seems  #define
-> NETX_GPIO_COUNTER_CTRL_GPIO_RE is not defined
-> correctly. As the maintainer what should I define it to?
+On Tue, Jul 22, 2014 at 10:39:17AM +0200, Thomas Gleixner wrote:
+> On Tue, 22 Jul 2014, Peter Zijlstra wrote:
+> > Anyway, there is one big fail in the entire futex stack that we 'need'
+> > to sort some day and that is NUMA. Some people (again database people)
+> > explicitly do not use futexes and instead use sysvsem because of this.
+> > 
+> > The problem with numa futexes is that because they're vaddr based there
+> > is no (persistent) node information. You always end up having to fall
+> > back to looking in all nodes before you can guarantee there is no
+> > matching futex.
+> > 
+> > One way to achieve it is by extending the futex value to include a node
+> > number, but that's obviously a complete ABI break. Then again, it should
+> > be pretty straight fwd, since the node number doesn't need to be part of
+> > the actual atomic update part, just part of the userspace storage.
+> 
+> So you want per node hash buckets, right? Fair enough, but how do you
+> make sure, that no thread/process on a different node is fiddling with
+> that "node bound" futex as well?
 
-Are you offering to become the maintainer for netx?
+You don't and that should work just as well, just slower. But since the
+node id is in the futex 'value' we'll always end up in the right
+node-hash, even if its a remote one.
 
-Try to get hold of a reference manual for the chip. More importantly
-than the fixme, I think we should be able to move this platform into
-ARCH_MULTIPLATFORM. This means moving the contents of the header files
-into the places where they are used, and finding a better home for the
-pfifo driver.
+So yes, per node hashes, and a persistent futex->node map.
 
-	Arnd
+And before people start talking about mempol and using that to bind
+memory to nodes and such, remember that private futexes do not have a
+vma lookup and therefore mempols are impossible to use.
