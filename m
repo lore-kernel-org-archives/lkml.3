@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933220AbaGVWZ6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 18:25:58 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44694 "EHLO
+	id S933138AbaGVWZp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 18:25:45 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:44670 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933160AbaGVWZt (ORCPT
+	with ESMTP id S933107AbaGVWZm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 18:25:49 -0400
+	Tue, 22 Jul 2014 18:25:42 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Christian Borntraeger <borntraeger@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Sebastian Ott <sebott@linux.vnet.ibm.com>,
-        Cornelia Huck <cornelia.huck@de.ibm.com>,
+Cc: Olivier Langlois <olivier@trillion01.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 039/116] s390/lowcore: reserve 96 bytes for IRB in lowcore
-Date: Tue, 22 Jul 2014 15:20:50 -0700
-Message-Id: <1406067727-19683-40-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 026/116] [media] uvcvideo: Fix clock param realtime setting
+Date: Tue, 22 Jul 2014 15:20:37 -0700
+Message-Id: <1406067727-19683-27-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1406067727-19683-1-git-send-email-kamal@canonical.com>
 References: <1406067727-19683-1-git-send-email-kamal@canonical.com>
@@ -31,65 +29,75 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christian Borntraeger <borntraeger@de.ibm.com>
+From: Olivier Langlois <olivier@trillion01.com>
 
-commit 993072ee67aa179c48c85eb19869804e68887d86 upstream.
+commit 3b35fc81e7ec552147a4fd843d0da0bbbe4ef253 upstream.
 
-The IRB might be 96 bytes if the extended-I/O-measurement facility is
-used. This feature is currently not used by Linux, but struct irb
-already has the emw defined. So let's make the irb in lowcore match the
-size of the internal data structure to be future proof.
-We also have to add a pad, to correctly align the paste.
+timestamps in v4l2 buffers returned to userspace are updated in
+uvc_video_clock_update() which uses timestamps fetched from
+uvc_video_clock_decode() by calling unconditionally ktime_get_ts().
 
-The bigger irb field also circumvents a bug in some QEMU versions that
-always write the emw field on test subchannel and therefore destroy the
-paste definitions of this CPU. Running under these QEMU version broke
-some timing functions in the VDSO and all users of these functions,
-e.g. some JREs.
+Hence setting the module clock param to realtime has no effect before
+this patch.
 
-Signed-off-by: Christian Borntraeger <borntraeger@de.ibm.com>
-Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
-Cc: Sebastian Ott <sebott@linux.vnet.ibm.com>
-Cc: Cornelia Huck <cornelia.huck@de.ibm.com>
+This has been tested with ffmpeg:
+
+ffmpeg -y -f v4l2 -input_format yuyv422 -video_size 640x480 -framerate 30 -i /dev/video0 \
+ -f alsa -acodec pcm_s16le -ar 16000 -ac 1 -i default \
+ -c:v libx264 -preset ultrafast \
+ -c:a libfdk_aac \
+ out.mkv
+
+and inspecting the v4l2 input starting timestamp.
+
+Signed-off-by: Olivier Langlois <olivier@trillion01.com>
+Signed-off-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/s390/include/asm/lowcore.h | 11 ++++++-----
- 1 file changed, 6 insertions(+), 5 deletions(-)
+ drivers/media/usb/uvc/uvc_video.c | 15 ++++++++++-----
+ 1 file changed, 10 insertions(+), 5 deletions(-)
 
-diff --git a/arch/s390/include/asm/lowcore.h b/arch/s390/include/asm/lowcore.h
-index bbf8141..2bed4f0 100644
---- a/arch/s390/include/asm/lowcore.h
-+++ b/arch/s390/include/asm/lowcore.h
-@@ -142,9 +142,9 @@ struct _lowcore {
- 	__u8	pad_0x02fc[0x0300-0x02fc];	/* 0x02fc */
+diff --git a/drivers/media/usb/uvc/uvc_video.c b/drivers/media/usb/uvc/uvc_video.c
+index e1c5bf3e..c081812 100644
+--- a/drivers/media/usb/uvc/uvc_video.c
++++ b/drivers/media/usb/uvc/uvc_video.c
+@@ -361,6 +361,14 @@ static int uvc_commit_video(struct uvc_streaming *stream,
+  * Clocks and timestamps
+  */
  
- 	/* Interrupt response block */
--	__u8	irb[64];			/* 0x0300 */
-+	__u8	irb[96];			/* 0x0300 */
++static inline void uvc_video_get_ts(struct timespec *ts)
++{
++	if (uvc_clock_param == CLOCK_MONOTONIC)
++		ktime_get_ts(ts);
++	else
++		ktime_get_real_ts(ts);
++}
++
+ static void
+ uvc_video_clock_decode(struct uvc_streaming *stream, struct uvc_buffer *buf,
+ 		       const __u8 *data, int len)
+@@ -420,7 +428,7 @@ uvc_video_clock_decode(struct uvc_streaming *stream, struct uvc_buffer *buf,
+ 	stream->clock.last_sof = dev_sof;
  
--	__u8	pad_0x0340[0x0e00-0x0340];	/* 0x0340 */
-+	__u8	pad_0x0360[0x0e00-0x0360];	/* 0x0360 */
+ 	host_sof = usb_get_current_frame_number(stream->dev->udev);
+-	ktime_get_ts(&ts);
++	uvc_video_get_ts(&ts);
  
- 	/*
- 	 * 0xe00 contains the address of the IPL Parameter Information
-@@ -288,12 +288,13 @@ struct _lowcore {
- 	__u8	pad_0x03a0[0x0400-0x03a0];	/* 0x03a0 */
+ 	/* The UVC specification allows device implementations that can't obtain
+ 	 * the USB frame number to keep their own frame counters as long as they
+@@ -1010,10 +1018,7 @@ static int uvc_video_decode_start(struct uvc_streaming *stream,
+ 			return -ENODATA;
+ 		}
  
- 	/* Interrupt response block. */
--	__u8	irb[64];			/* 0x0400 */
-+	__u8	irb[96];			/* 0x0400 */
-+	__u8	pad_0x0460[0x0480-0x0460];	/* 0x0460 */
+-		if (uvc_clock_param == CLOCK_MONOTONIC)
+-			ktime_get_ts(&ts);
+-		else
+-			ktime_get_real_ts(&ts);
++		uvc_video_get_ts(&ts);
  
- 	/* Per cpu primary space access list */
--	__u32	paste[16];			/* 0x0440 */
-+	__u32	paste[16];			/* 0x0480 */
- 
--	__u8	pad_0x0480[0x0e00-0x0480];	/* 0x0480 */
-+	__u8	pad_0x04c0[0x0e00-0x04c0];	/* 0x04c0 */
- 
- 	/*
- 	 * 0xe00 contains the address of the IPL Parameter Information
+ 		buf->buf.v4l2_buf.sequence = stream->sequence;
+ 		buf->buf.v4l2_buf.timestamp.tv_sec = ts.tv_sec;
 -- 
 1.9.1
 
