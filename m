@@ -1,52 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757268AbaGVWVO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 18:21:14 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:45425 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757219AbaGVWVM (ORCPT
+	id S1757270AbaGVWWG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 18:22:06 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:50188 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757014AbaGVWWF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 18:21:12 -0400
-Message-ID: <53CEE3D6.6070207@codeaurora.org>
-Date: Tue, 22 Jul 2014 15:21:10 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	Tue, 22 Jul 2014 18:22:05 -0400
+Date: Tue, 22 Jul 2014 23:21:45 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Richard Fitzgerald <rf@opensource.wolfsonmicro.com>
+Cc: perex@perex.cz, tiwai@suse.de, lgirdwood@gmail.com, Li.Xiubo@freescale.com,
+        lars@metafoo.de, patches@opensource.wolfsonmicro.com,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
+Message-ID: <20140722222145.GX17528@sirena.org.uk>
+References: <20140722105022.GB19663@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-To: John Stultz <john.stultz@linaro.org>
-CC: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] sched_clock: Avoid corrupting hrtimer tree during suspend
-References: <1405721392-30795-1-git-send-email-sboyd@codeaurora.org> <53C99EC5.2060602@linaro.org> <53C9A1EC.8060905@codeaurora.org> <53C9A2E7.8020307@linaro.org> <53C9ACCA.3070306@codeaurora.org> <53C9B862.5050106@linaro.org>
-In-Reply-To: <53C9B862.5050106@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="cLlE6j+44ygFdGhU"
+Content-Disposition: inline
+In-Reply-To: <20140722105022.GB19663@opensource.wolfsonmicro.com>
+X-Cookie: 98% lean.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 1/3] ASoC: wm5110: Set symmetric samplebits on AIFs
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/18/14 17:14, John Stultz wrote:
-> On 07/18/2014 04:24 PM, Stephen Boyd wrote:
->> On 07/18/14 15:42, John Stultz wrote:
->>> If its a regression (and needs -stable backports) it needs to go in via
->>> tip/timers/urgent, and not via the regular merge window.
->>>
->>> Whats the additional risk -stable wise for canceling the timer during
->>> suspend and starting it back up during resume?
->>>
->> I'd say close to zero given that we'd only be making the timer run a
->> little bit later and we have slack in there already. Here's that version.
-> Ok, thanks. I'll try to do a closer review it and get it queued. Is
-> there anyone who might be able to validate this and provide a Tested-by: ?
->
 
-Maybe someone from Linaro can give a Tested-by? I basically did this:
+--cLlE6j+44ygFdGhU
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-# grep -A1 'sched_clock' /proc/timer_list && echo mem > /sys/power/state && grep -A1 'sched_clock' /proc/timer_list
+On Tue, Jul 22, 2014 at 11:50:22AM +0100, Richard Fitzgerald wrote:
+> Different playback and capture bits-per-sample
+> are not supported on the AIFs
 
+Applied all, thanks.
 
-and made sure that the expires time was reset.
+--cLlE6j+44ygFdGhU
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
+iQIcBAEBAgAGBQJTzuP2AAoJELSic+t+oim9KykP/ibYuP5YiijWULlM1ij5RTzv
+XgdH8jkfYXdAOp43rxwiQYYYMYzAl2ve2ZVFBLUEJmSv/qpkVs/jCuezsJg1RXB4
+Qsklwg3CI3x+zVzH02S3TYCVtuT4tYFxyw2iboHXLDqpS/bhOn7IwOqR8sRfn+Cr
+6uFRNg9148Ie6BWPeCipJMHwhuQivDIM+JPW3QAYyR+YKfP/v/UJ+Nr2mx1wo/uu
+g47iVcEsmldKaLhbRLbFKNxXnTKmQo/1v8o0G8YOQBAybSBZSk7FD0+K8+6nnKVX
+6b9nKlFe07lE6wxdqYyzV8aEKYNetOK1N7D2n8DpE2sa0QX0xDjK+vq6FN8TN1V6
++A+SmFcnjlLXdlJ9WsOsk5WVx1g3bofJXd6J8mTDl2vkgEoOrbWSE76911CSHNEl
+LoM59deRtuQzJ9k2LYJ9cgw1orPvnBphI6lHTI35KGUJ/a8rrHyJZvdcYpENXKYE
+mkDA3krTHkdaqE6AwNTIPB8dwINTlR+F6Z4emMLtehVEl3eJ42/cmXDXCxLG90V0
+JZnlHYCKEW4oYyXhkR9YAhs6CxdW+nyb4hkFmYCWFXPNlpfQhwosrM9vqeSEg7JU
+IqPhiVlK3J0LTtVEelsur10E9FNPDt0BcQOWDbeYDfwF+Ijk1rDAgSNlaGwLtQcs
+4W8GSQnmgtVrDhgS+hTz
+=MXRW
+-----END PGP SIGNATURE-----
+
+--cLlE6j+44ygFdGhU--
