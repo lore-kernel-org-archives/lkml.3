@@ -1,411 +1,308 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754327AbaGVKJH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 06:09:07 -0400
-Received: from mail.aswsp.com ([193.34.35.150]:10712 "EHLO mail.aswsp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753509AbaGVKJF convert rfc822-to-8bit (ORCPT
+	id S1754604AbaGVKK1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 06:10:27 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:36077 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754431AbaGVKKX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 06:09:05 -0400
-X-Greylist: delayed 321 seconds by postgrey-1.27 at vger.kernel.org; Tue, 22 Jul 2014 06:09:05 EDT
-Date: Tue, 22 Jul 2014 12:03:46 +0200
-From: Matthieu CASTET <matthieu.castet@parrot.com>
-To: Boris BREZILLON <boris.brezillon@free-electrons.com>
-CC: David Woodhouse <dwmw2@infradead.org>,
-        Brian Norris <computersforpeace@gmail.com>,
-        <linux-mtd@lists.infradead.org>, Lee Jones <lee.jones@linaro.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] mtd: nand: define struct nand_timings
-Message-ID: <20140722120346.0f2d0e77@parrot.com>
-In-Reply-To: <1405064982-11456-2-git-send-email-boris.brezillon@free-electrons.com>
-References: <1405064982-11456-1-git-send-email-boris.brezillon@free-electrons.com>
-	<1405064982-11456-2-git-send-email-boris.brezillon@free-electrons.com>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
+	Tue, 22 Jul 2014 06:10:23 -0400
+Date: Tue, 22 Jul 2014 12:09:54 +0200
+From: Michael Grzeschik <mgr@pengutronix.de>
+To: Brian Norris <computersforpeace@gmail.com>
+Cc: Michael Grzeschik <m.grzeschik@pengutronix.de>,
+        linux-mtd@lists.infradead.org, dwmw2@infradead.org,
+        linux-kernel@vger.kernel.org, kernel@pengutronix.de
+Subject: Re: [PATH v2] mxc_nand: use our own read_page function
+Message-ID: <20140722100954.GA29623@pengutronix.de>
+References: <1403815368-29469-2-git-send-email-m.grzeschik@pengutronix.de>
+ <1403865524-25061-1-git-send-email-m.grzeschik@pengutronix.de>
+ <20140714191947.GP7537@ld-irv-0074>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="ISO-8859-15"
-Content-Transfer-Encoding: 8BIT
-X-Originating-IP: [46.218.109.88]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140714191947.GP7537@ld-irv-0074>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 11:46:28 up 17 days, 20:22, 52 users,  load average: 0,05, 0,25,
+ 0,21
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:5054:ff:fec0:8e10
+X-SA-Exim-Mail-From: mgr@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi Brian,
+
+On Mon, Jul 14, 2014 at 12:19:47PM -0700, Brian Norris wrote:
+> Hi Michael,
+> 
+> On Fri, Jun 27, 2014 at 12:38:44PM +0200, Michael Grzeschik wrote:
+> > The current approach of the read_page function is to iterate over all
+> > subpages and call the correct_data function. The correct_data function
+> > currently does the same. It iterates over all subpages and checks for
+> > correctable and uncorrectable data. This redundant call for each
+> > subpage leads to miscalculations.
+> 
+> Hmm, you certainly do have some statistic bugs, but I'm not sure you're
+> solving this correctly.
+> 
+
+This driver sure has.
+
+> > This patch changes the driver to use its own read_page function in which
+> > we call the correct_data function only once per page. With that we do
+> > the failure and correct statistics counting inside this function.
+> > 
+> > Signed-off-by: Michael Grzeschik <m.grzeschik@pengutronix.de>
+> > ---
+> > fixed printk to pr_debug
+> > 
+> >  drivers/mtd/nand/mxc_nand.c | 73 ++++++++++++++++++++++++++++++++++++++++++---
+> >  1 file changed, 69 insertions(+), 4 deletions(-)
+> > 
+> > diff --git a/drivers/mtd/nand/mxc_nand.c b/drivers/mtd/nand/mxc_nand.c
+> > index a72d508..5f9e36d 100644
+> > --- a/drivers/mtd/nand/mxc_nand.c
+> > +++ b/drivers/mtd/nand/mxc_nand.c
+> > @@ -141,6 +141,8 @@ struct mxc_nand_host;
+> >  
+> >  struct mxc_nand_devtype_data {
+> >  	void (*preset)(struct mtd_info *);
+> > +	int (*read_page)(struct mtd_info *mtd, struct nand_chip *chip,
+> > +			uint8_t *buf, int oob_required, int page);
+> >  	void (*send_cmd)(struct mxc_nand_host *, uint16_t, int);
+> >  	void (*send_addr)(struct mxc_nand_host *, uint16_t, int);
+> >  	void (*send_page)(struct mtd_info *, unsigned int);
+> > @@ -649,6 +651,59 @@ static int mxc_nand_correct_data_v1(struct mtd_info *mtd, u_char *dat,
+> >  	return 0;
+> >  }
+> >  
+> > +/**
+> > + * mxc_nand_read_page_hwecc_v2_v3 - [REPLACEABLE] hardware ECC based page read function
+> 
+> Don't include the [REPLACEABLE] language here. That's mostly just used
+> for code like nand_base, where we provide some defaults / helpers that
+> may or may not be intended to allow overrides. (Not really the best
+> approach, IMO, but that's beside the point.) So don't mark this in your
+> low-level driver.
+
+It was a copy paste leftover. Thanks for the hint.
+
+> 
+> > + * @mtd: mtd info structure
+> > + * @chip: nand chip info structure
+> > + * @buf: buffer to store read data
+> > + * @oob_required: caller requires OOB data read to chip->oob_poi
+> > + * @page: page number to read
+> > + *
+> > + * Not for syndrome calculating ECC controllers which need a special oob layout.
+> > + */
+> > +static int
+> 
+> I don't think you want a line break here, to match the style of the rest
+> of the driver.
+
+I used Lindent as I didn't know how to align it correctly. I will
+keep it in one line instead.
+
+> 
+> > +mxc_nand_read_page_hwecc_v2_v3(struct mtd_info *mtd,
+> > +			       struct nand_chip *chip,
+> > +			       uint8_t *buf, int oob_required, int page)
+> > +{
+> > +	int i, eccsize = chip->ecc.size;
+> > +	struct nand_chip *nand_chip = mtd->priv;
+> > +	struct mxc_nand_host *host = nand_chip->priv;
+> > +	int eccbytes = chip->ecc.bytes;
+> > +	int eccsteps = chip->ecc.steps;
+> > +	uint8_t *p = buf;
+> > +	uint8_t *ecc_calc = chip->buffers->ecccalc;
+> > +	uint8_t *ecc_code = chip->buffers->ecccode;
+> > +	uint32_t *eccpos = chip->ecc.layout->eccpos;
+> > +	unsigned int max_bitflips = 0;
+> > +	u32 ecc_stat, err;
+> > +	int stat;
+> > +
+> > +	ecc_stat = host->devtype_data->get_ecc_status(host);
+> > +	for (i = 0; eccsteps; eccsteps--, i += eccbytes, p += eccsize) {
+> > +		err = ecc_stat & 0xf;
+> 
+> drivers/mtd/nand/mxc_nand.c: In function 'mxc_nand_read_page_hwecc_v2_v3':
+> drivers/mtd/nand/mxc_nand.c:679:16: warning: variable 'err' set but not used [-Wunused-but-set-variable]
+> 
+> Is that intentional?
+
+No, this is also an leftover. Thanks for the hint.
+
+> 
+> > +		chip->ecc.hwctl(mtd, NAND_ECC_READ);
+> > +		chip->read_buf(mtd, p, eccsize);
+> > +		chip->ecc.calculate(mtd, p, &ecc_calc[i]);
+> > +		ecc_stat >>= 4;
+> 
+> You're also never using the value of ecc_stat, except to calculate other
+> values which are never used.
+> 
+> > +
+> 
+> Drop the extra blank line.
+> 
+> > +	}
+> > +	ecc_stat = host->devtype_data->get_ecc_status(host);
+> 
+> Result unused?
+> 
+
+Ok, this is odd. I must have messed up my patch here.
+
+> > +	chip->read_buf(mtd, chip->oob_poi, mtd->oobsize);
+> > +
+> > +	for (i = 0; i < chip->ecc.total; i++)
+> > +		ecc_code[i] = chip->oob_poi[eccpos[i]];
+> > +
+> > +	eccsteps = chip->ecc.steps;
+> > +	p = buf;
+> > +
+> > +	stat = chip->ecc.correct(mtd, p, &ecc_code[i], &ecc_calc[i]);
+> > +	max_bitflips = max_t(unsigned int, max_bitflips, stat);
+> 
+> This is wrong. First, you probably don't want to cast 'stat' to
+> unsigned, in case it's an error. Second, absent an error, this just
+> resolves to:
+> 
+> 	max_bitflips = stat;
+> 
+> So you're not actually determining the maximum per-sector bitflips,
+> you're just determining the total # of bitflips.
+> 
+> > +
+> > +	return max_bitflips;
+> 
+> So I think you have some leftover/unused code in this function
+
+Indeed.
+
+> 
+> Additionally, I'm confused because your ecc.correct() function is now
+> hiding some of the stat counting -- this is contrary to its usage
+> elsewhere. See more comments below.
+> 
+
+You are right about the hiding functionality.
+
+> > +}
+> > +
+> > +
+> >  static int mxc_nand_correct_data_v2_v3(struct mtd_info *mtd, u_char *dat,
+> >  				 u_char *read_ecc, u_char *calc_ecc)
+> >  {
+> > @@ -656,7 +711,7 @@ static int mxc_nand_correct_data_v2_v3(struct mtd_info *mtd, u_char *dat,
+> >  	struct mxc_nand_host *host = nand_chip->priv;
+> >  	u32 ecc_stat, err;
+> >  	int no_subpages = 1;
+> > -	int ret = 0;
+> > +	int ret = 0, broken = 0;
+> >  	u8 ecc_bit_mask, err_limit = 0x1;
+> >  
+> >  	ecc_bit_mask = 0xf;
+> > @@ -673,15 +728,21 @@ static int mxc_nand_correct_data_v2_v3(struct mtd_info *mtd, u_char *dat,
+> >  	do {
+> >  		err = ecc_stat & ecc_bit_mask;
+> >  		if (err > err_limit) {
+> > -			printk(KERN_WARNING "UnCorrectable RS-ECC Error\n");
+> > -			return -1;
+> > +			broken++;
+> >  		} else {
+> >  			ret += err;
+> >  		}
+> >  		ecc_stat >>= 4;
+> >  	} while (--no_subpages);
+> >  
+> > -	pr_debug("%d Symbol Correctable RS-ECC Error\n", ret);
+> > +	mtd->ecc_stats.corrected += ret;
+> > +	if (ret)
+> > +		pr_debug("%d Symbol Correctable RS-ECC Error\n", ret);
+> > +
+> > +	mtd->ecc_stats.failed += broken;
+> > +	if (broken)
+> > +		printk(KERN_WARNING "%d Symbol UnCorrectable RS-ECC Error\n",
+> > +			 broken);
+> 
+> This is wrong; either this function should not be assigned to
+> ecc.correct(), or else it should not be modifying the ecc_stats. See all
+> other examples of ecc.correct() callbacks. Additionally, it should be
+> returning negative to indicate ECC failure, which you're not doing.
+> 
+> One solution: stop don't assign an chip->ecc.correct() callback any
+> more, so that your correction logic is encapsulated entirely within
+> chip->read_page(). You would need to make mxc_nand_read_page_hwecc_v2_v3
+> call mxc_nand_correct_data_v2_v3() directly, of course. (And you could
+> even try a BUG() whenever chip->ecc.correct() is called, like
+> cafe_nand.c does.)
+> 
+> And in fact, I'd just take this one step further; kill
+> mxc_nand_correct_data_v2_v3() and just merge it with
+> mxc_nand_read_page_hwecc_v2_v3(). Then you can count bitflips (resolving
+> the 'max_bitflips' issue I pointed out above) all in one place.
+> 
+
+I think your hints all make sense. I was poking around with the
+functions we have and need to asign. Unfortunetly I ran into no clear
+picture to fix it the correct way and came up with this hacky patch.
 
 
-Do you know if all these timings will be used by the nand drivers ?
+> >  
+> >  	return ret;
+> >  }
+> > @@ -1216,6 +1277,7 @@ static const struct mxc_nand_devtype_data imx27_nand_devtype_data = {
+> >  /* v21: i.MX25, i.MX35 */
+> >  static const struct mxc_nand_devtype_data imx25_nand_devtype_data = {
+> >  	.preset = preset_v2,
+> > +	.read_page = mxc_nand_read_page_hwecc_v2_v3,
+> >  	.send_cmd = send_cmd_v1_v2,
+> >  	.send_addr = send_addr_v1_v2,
+> >  	.send_page = send_page_v2,
+> > @@ -1242,6 +1304,7 @@ static const struct mxc_nand_devtype_data imx25_nand_devtype_data = {
+> >  /* v3.2a: i.MX51 */
+> >  static const struct mxc_nand_devtype_data imx51_nand_devtype_data = {
+> >  	.preset = preset_v3,
+> > +	.read_page = mxc_nand_read_page_hwecc_v2_v3,
+> >  	.send_cmd = send_cmd_v3,
+> >  	.send_addr = send_addr_v3,
+> >  	.send_page = send_page_v3,
+> > @@ -1269,6 +1332,7 @@ static const struct mxc_nand_devtype_data imx51_nand_devtype_data = {
+> >  /* v3.2b: i.MX53 */
+> >  static const struct mxc_nand_devtype_data imx53_nand_devtype_data = {
+> >  	.preset = preset_v3,
+> > +	.read_page = mxc_nand_read_page_hwecc_v2_v3,
+> >  	.send_cmd = send_cmd_v3,
+> >  	.send_addr = send_addr_v3,
+> >  	.send_page = send_page_v3,
+> > @@ -1483,6 +1547,7 @@ static int mxcnd_probe(struct platform_device *pdev)
+> >  	this->ecc.layout = host->devtype_data->ecclayout_512;
+> >  
+> >  	if (host->pdata.hw_ecc) {
+> > +		this->ecc.read_page = host->devtype_data->read_page;
+> >  		this->ecc.calculate = mxc_nand_calculate_ecc;
+> >  		this->ecc.hwctl = mxc_nand_enable_hwecc;
+> >  		this->ecc.correct = host->devtype_data->correct_data;
+> 
+> Brian
+> 
 
-I did a similar patch [1] (that wasn't merged :( ), and I used reduced
-timing info.
+Many thanks!
 
-I also have support for the omap driver
-(http://article.gmane.org/gmane.linux.ports.arm.omap/88606/match=) and
-a controller we use in our chip (not upstream).
+Michael
 
-Matthieu
-
-[1]
-[PATCH 2/3] mtd nand : get timings from onfi
-
-We get from onfi param the max speed supported by the chip.
-A precomputed table for ONFI timings is generated.
-
-Signed-off-by: Matthieu CASTET <matthieu.castet@parrot.com>
----
- drivers/mtd/nand/Makefile      |    2 +-
- drivers/mtd/nand/nand_base.c   |    1 +
- drivers/mtd/nand/nand_timing.c |  170 ++++++++++++++++++++++++++++++++++++++++
- include/linux/mtd/nand.h       |   56 +++++++++++++
- 4 files changed, 228 insertions(+), 1 deletion(-)
- create mode 100644 drivers/mtd/nand/nand_timing.c
-
-diff --git a/drivers/mtd/nand/Makefile b/drivers/mtd/nand/Makefile
-index 2cbd091..2fc1a99 100644
---- a/drivers/mtd/nand/Makefile
-+++ b/drivers/mtd/nand/Makefile
-@@ -54,4 +54,4 @@ obj-$(CONFIG_MTD_NAND_JZ4740)		+= jz4740_nand.o
- obj-$(CONFIG_MTD_NAND_GPMI_NAND)	+= gpmi-nand/
- obj-$(CONFIG_MTD_NAND_XWAY)		+= xway_nand.o
- 
--nand-objs := nand_base.o nand_bbt.o
-+nand-objs := nand_base.o nand_bbt.o nand_timing.o
-diff --git a/drivers/mtd/nand/nand_base.c b/drivers/mtd/nand/nand_base.c
-index 8916bc6..0d6bd88 100644
---- a/drivers/mtd/nand/nand_base.c
-+++ b/drivers/mtd/nand/nand_base.c
-@@ -3238,6 +3238,7 @@ static struct nand_flash_dev *nand_get_flash_type(struct mtd_info *mtd,
- 	if (*maf_id != NAND_MFR_SAMSUNG && !type->pagesize)
- 		chip->options &= ~NAND_SAMSUNG_LP_OPTIONS;
- ident_done:
-+	nand_select_speed(chip, *maf_id, *dev_id);
- 
- 	/* Try to identify manufacturer */
- 	for (maf_idx = 0; nand_manuf_ids[maf_idx].id != 0x0; maf_idx++) {
-diff --git a/drivers/mtd/nand/nand_timing.c b/drivers/mtd/nand/nand_timing.c
-new file mode 100644
-index 0000000..7211c9c
---- /dev/null
-+++ b/drivers/mtd/nand/nand_timing.c
-@@ -0,0 +1,170 @@
-+/*
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/types.h>
-+#include <linux/mtd/mtd.h>
-+#include <linux/mtd/nand.h>
-+
-+/*
-+ * this table is precomputed from onfi timings with the following program
-+ */
-+#if 0
-+int print_timing(const struct onfi_timings *timings, int edo_off)
-+{
-+	struct reduced_onfi t;
-+	int tmp;
-+	int edo = timings->tRC < 30 && !edo_off;
-+
-+	/* nWE low */
-+	t.twp = max(timings->tWP, timings->tDS);
-+
-+	/* nCS low to nWE low */
-+	tmp = max(timings->tCLS, timings->tCS);
-+	tmp = max(tmp, timings->tALS);
-+	t.twsetup = tmp - t.twp;
-+	assert(t.twsetup >= 0);
-+
-+	/* nWE high */
-+	tmp = max(timings->tWH, timings->tDH); /* nWE high & data hold */
-+	tmp = max(tmp, timings->tCH); /* cs hold */
-+	tmp = max(tmp, timings->tCLH); /* cmd hold */
-+	t.twh = max(tmp, timings->tALH); /* addr hold */
-+
-+	assert(t.twp + t.twh <= timings->tWC);
-+	t.twc = timings->tWC;
-+
-+	t.edo = edo;
-+	if (edo == 0) {
-+
-+		/* nRE low */
-+		t.trp = max(timings->tRP, timings->tREA);
-+
-+		/* nRE high */
-+		t.treh = timings->tREH;
-+		t.trc = max(timings->tRC, t.trp + t.treh);
-+	}
-+	else {
-+		/* nRE low */
-+		t.trp = timings->tRP;
-+
-+		/* nRE high */
-+		t.treh = timings->tREH;
-+
-+		t.trc = max(timings->tRC, timings->tREA);
-+	}
-+
-+	/* nCS low to nRE low */
-+	t.trsetup = max(timings->tCEA - timings->tREA, timings->tCLR);
-+
-+	/* Min time from rdn rising edge to output hi-Z */
-+	t.bta = timings->tRHZ;
-+
-+	/* Min time from busy rising edge and rdn falling edge (read).*/
-+	t.tbusy = timings->tRR;
-+
-+	/* Min time from wrn rising edge to rdn falling edge. */
-+	t.twhr = timings->tWHR;
-+	assert(t.twhr >= 0);
-+
-+	t.tceh = 0;
-+
-+	printf("{\n");
-+	printf("/* %s edo=%d */\n", timings->name, t.edo);
-+	printf(".twp = %3d,  .twh = %3d, .twc = %3d, .twsetup = %d,\n",
-+			t.twp, t.twh, t.twc, t.twsetup);
-+	printf(".trp = %3d,  .treh = %3d, .trc = %3d, .trsetup = %d,\n",
-+			t.trp, t.treh, t.trc, t.trsetup);
-+	printf(".twhr = %d, .tceh = %d,  .bta = %d, .tbusy = %d, .edo = %d,\n",
-+			t.twhr, t.tceh, t.bta, t.tbusy, t.edo);
-+	printf("},\n");
-+#endif
-+
-+static struct reduced_onfi nand_timing[] =
-+{
-+	{
-+		/* onfi mode 0 edo=0 */
-+		.twp =  50,  .twh =  30, .twc = 100, .twsetup = 20,
-+		.trp =  50,  .treh =  30, .trc = 100, .trsetup = 60,
-+		.twhr = 120, .tceh = 0,  .bta = 200, .tbusy = 39, .edo = 0,
-+	},
-+	{
-+		/* onfi mode 1 edo=0 */
-+		.twp =  25,  .twh =  15, .twc =  45, .twsetup = 10,
-+		.trp =  30,  .treh =  15, .trc =  50, .trsetup = 15,
-+		.twhr = 80, .tceh = 0,  .bta = 100, .tbusy = 20, .edo = 0,
-+	},
-+	{
-+		/* onfi mode 2 edo=0 */
-+		.twp =  17,  .twh =  15, .twc =  35, .twsetup = 8,
-+		.trp =  25,  .treh =  15, .trc =  40, .trsetup = 10,
-+		.twhr = 80, .tceh = 0,  .bta = 100, .tbusy = 20, .edo = 0,
-+	},
-+	{
-+		/* onfi mode 3 edo=0 */
-+		.twp =  15,  .twh =  10, .twc =  30, .twsetup = 10,
-+		.trp =  20,  .treh =  10, .trc =  30, .trsetup = 10,
-+		.twhr = 60, .tceh = 0,  .bta = 100, .tbusy = 20, .edo = 0,
-+	},
-+	{
-+		/* onfi mode 4 edo=1 */
-+		.twp =  12,  .twh =  10, .twc =  25, .twsetup = 8,
-+		.trp =  12,  .treh =  10, .trc =  25, .trsetup = 10,
-+		.twhr = 60, .tceh = 0,  .bta = 100, .tbusy = 20, .edo = 1,
-+	},
-+	{
-+		/* onfi mode 5 edo=1 */
-+		.twp =  10,  .twh =   7, .twc =  20, .twsetup = 5,
-+		.trp =  10,  .treh =   7, .trc =  20, .trsetup = 10,
-+		.twhr = 60, .tceh = 0,  .bta = 100, .tbusy = 20, .edo = 1,
-+	},
-+	{
-+		/* onfi mode 4 edo=0 */
-+		.twp =  12,  .twh =  10, .twc =  25, .twsetup = 8,
-+		.trp =  20,  .treh =  10, .trc =  30, .trsetup = 10,
-+		.twhr = 60, .tceh = 0,  .bta = 100, .tbusy = 20, .edo = 0,
-+	},
-+	{
-+		/* onfi mode 5 edo=0 */
-+		.twp =  10,  .twh =   7, .twc =  20, .twsetup = 5,
-+		.trp =  16,  .treh =   7, .trc =  23, .trsetup = 10,
-+		.twhr = 60, .tceh = 0,  .bta = 100, .tbusy = 20, .edo = 0,
-+	},
-+};
-+
-+void nand_select_speed(struct nand_chip *chip, int maf_id, int dev_id)
-+{
-+	int i;
-+	chip->onfi_speed = -1;
-+	if (chip->onfi_version) {
-+		int mode = le16_to_cpu(chip->onfi_params.async_timing_mode);
-+		int max_mode = 0;
-+		for (i = 0; i <= 5; i++) {
-+			if (mode & (1 << i))
-+				max_mode = i;
-+		}
-+		chip->onfi_speed = max_mode;
-+	}
-+	/*
-+	 * For flash that are not ONFI we could use maf_id and dev_id to select a
-+	 * speed. But we need to make sure to select a speed compatible with all
-+	 * flash generation that share the same ids.
-+	 */
-+}
-+
-+const struct reduced_onfi *nand_get_timing(int mode, int edo)
-+{
-+	if (mode < 0)
-+		mode = 0;
-+	if (!edo && mode >= 4)
-+		mode += 2;
-+	if (mode >  ARRAY_SIZE(nand_timing))
-+		mode = 0;
-+	return &(nand_timing[mode]);
-+}
-+EXPORT_SYMBOL_GPL(nand_get_timing);
-diff --git a/include/linux/mtd/nand.h b/include/linux/mtd/nand.h
-index c8518d4..95f2871 100644
---- a/include/linux/mtd/nand.h
-+++ b/include/linux/mtd/nand.h
-@@ -474,6 +474,7 @@ struct nand_buffers {
-  * @pagebuf_bitflips:	[INTERN] holds the bitflip count for the page which is
-  *			currently in data_buf.
-  * @subpagesize:	[INTERN] holds the subpagesize
-+ * @onfi_speed:		[INTERN] holds the ONFI speed, -1 if not supported.
-  * @onfi_version:	[INTERN] holds the chip ONFI version (BCD encoded),
-  *			non 0 if ONFI supported.
-  * @onfi_params:	[INTERN] holds the ONFI page parameter when ONFI is
-@@ -545,6 +546,7 @@ struct nand_chip {
- 	int badblockpos;
- 	int badblockbits;
- 
-+	int	onfi_speed;
- 	int onfi_version;
- 	struct nand_onfi_params	onfi_params;
- 
-@@ -691,6 +693,60 @@ struct platform_nand_data {
- 	struct platform_nand_ctrl ctrl;
- };
- 
-+/**
-+ * timing in ns,
-+ *  there are computed from onfi table :
-+ *  twsetup = max(tCLS, tCS, tALS) - twp
-+ *  twp = max(tWP, tDS)
-+ *  twh = max(tCLH, tCH, tALH, tDH, tWH)
-+ *  twc = tWC
-+ *  trsetup = max(tCEA-tREA, tCLR)
-+ *  treh = tREH
-+ *  if (edo == 0) {
-+ *    trp = max(tRP, tREA)
-+ *    trc = max(tRC, trp + treh)
-+ *  }
-+ *  else {
-+ *    trp = tRP
-+ *    trc = max(tRC, tREA)
-+ *  }
-+ *
-+ *  bta = max(tRHZ, tCHZ)
-+ *  busy = tRR
-+ *  twhr = tWHR
-+ *
-+ *  Note that twp + twh can be smaller than twc, so you should do :
-+ *  twp_clk = ns_to_ticks(twp)
-+ *  twh_clk = ns_to_ticks(max(twh, twc - ticks_to_ns(twp_clk)))
-+ *  or
-+ *  twh_clk = ps_to_ticks(max(ns_to_ps(twh), ns_to_ps(twc) - ticks_to_ps(twp_clk)))
-+ *  using picosecond can help for rounding. For example a 156Mhz, mode=4 edo=1
-+ *  with ps we got twp_clk=twh_clk=2 (12820 ps)
-+ *  without ps we got twp_clk = 2 (12 ns) and twh_clk=3 (18 ns)
-+ *  This is because 12820 + 12820 > 15000 but 12 + 12 < 15.
-+ */
-+struct reduced_onfi {
-+	u8 twsetup; /* nCS low to nWE low */
-+	u8 twp; /* nWE low */
-+	u8 twh; /* nWE high */
-+	u8 twc; /* write cyle */
-+
-+	u8 trsetup; /* nCS low to nRE low */
-+	u8 trp; /* nRE low */
-+	u8 treh; /* nRE high */
-+	u8 trc; /* read cycle */
-+
-+	u8 bta; /* Min time from nRE rising edge to output hi-Z */
-+	u8 tbusy; /* Min time from busy rising edge and nRE falling edge */
-+	u8 twhr; /* Min time from nWE rising edge to nRE falling edge. */
-+	u8 tceh; /* Min time for nCE high */
-+
-+	u8 edo; /* edo mode */
-+};
-+
-+void nand_select_speed(struct nand_chip *chip, int maf_id, int dev_id);
-+const struct reduced_onfi *nand_get_timing(int mode, int edo);
-+
- /* Some helpers to access the data structures */
- static inline
- struct platform_nand_chip *get_platform_nandchip(struct mtd_info *mtd)
 -- 
-1.7.10.4
-Le Fri, 11 Jul 2014 09:49:41 +0200,
-Boris BREZILLON <boris.brezillon@free-electrons.com> a écrit :
-
-> Define a struct containing the standard NAND timings as described in NAND
-> datasheets.
-> 
-> Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
-> ---
->  include/linux/mtd/nand.h | 49 ++++++++++++++++++++++++++++++++++++++++++++++++
->  1 file changed, 49 insertions(+)
-> 
-> diff --git a/include/linux/mtd/nand.h b/include/linux/mtd/nand.h
-> index 2f0af28..a3a45f2 100644
-> --- a/include/linux/mtd/nand.h
-> +++ b/include/linux/mtd/nand.h
-> @@ -947,4 +947,53 @@ static inline int jedec_feature(struct nand_chip *chip)
->  	return chip->jedec_version ? le16_to_cpu(chip->jedec_params.features)
->  		: 0;
->  }
-> +
-> +/**
-> + * struct nand_sdr_timings - SDR NAND chip timings
-> + *
-> + * This struct defines the timing requirements of a SDR NAND chip.
-> + * These informations can be found in every NAND datasheets and the timings
-> + * meaning are described in the ONFI specifications:
-> + * www.onfi.org/~/media/ONFI/specs/onfi_3_1_spec.pdf (chapter 4.15 Timing
-> + * Parameters)
-> + *
-> + * All these timings are expressed in picoseconds.
-> + */
-> +
-> +struct nand_sdr_timings {
-> +	u32 tALH_min;
-> +	u32 tADL_min;
-> +	u32 tALS_min;
-> +	u32 tAR_min;
-> +	u32 tCEA_max;
-> +	u32 tCEH_min;
-> +	u32 tCH_min;
-> +	u32 tCHZ_max;
-> +	u32 tCLH_min;
-> +	u32 tCLR_min;
-> +	u32 tCLS_min;
-> +	u32 tCOH_min;
-> +	u32 tCS_min;
-> +	u32 tDH_min;
-> +	u32 tDS_min;
-> +	u32 tFEAT_max;
-> +	u32 tIR_min;
-> +	u32 tITC_max;
-> +	u32 tRC_min;
-> +	u32 tREA_max;
-> +	u32 tREH_min;
-> +	u32 tRHOH_min;
-> +	u32 tRHW_min;
-> +	u32 tRHZ_max;
-> +	u32 tRLOH_min;
-> +	u32 tRP_min;
-> +	u32 tRR_min;
-> +	u64 tRST_max;
-> +	u32 tWB_max;
-> +	u32 tWC_min;
-> +	u32 tWH_min;
-> +	u32 tWHR_min;
-> +	u32 tWP_min;
-> +	u32 tWW_min;
-> +};
->  #endif /* __LINUX_MTD_NAND_H */
-
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
