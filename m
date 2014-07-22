@@ -1,60 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757121AbaGVWZi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 18:25:38 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44656 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755778AbaGVWZe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 18:25:34 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Maurizio Lombardi <mlombard@redhat.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 033/116] ext4: fix wrong assert in ext4_mb_normalize_request()
-Date: Tue, 22 Jul 2014 15:20:44 -0700
-Message-Id: <1406067727-19683-34-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1406067727-19683-1-git-send-email-kamal@canonical.com>
-References: <1406067727-19683-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.8
+	id S933668AbaGVWnY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 18:43:24 -0400
+Received: from ozlabs.org ([103.22.144.67]:50495 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932154AbaGVWnV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 18:43:21 -0400
+Date: Wed, 23 Jul 2014 08:43:14 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: <linux-next@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Another tree in Linux -next
+Message-ID: <20140723084314.34870f0e@canb.auug.org.au>
+In-Reply-To: <20140722092208.GG28529@lee--X1>
+References: <20130731101119.GC13298@lee--X1>
+	<20130801094146.2266f4ff61ddac67cd449f53@canb.auug.org.au>
+	<20140722092208.GG28529@lee--X1>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/m/VssNg0LXbpkKpBCkwjvID"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8.13.27 -stable review patch.  If anyone has any objections, please let me know.
+--Sig_/m/VssNg0LXbpkKpBCkwjvID
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-------------------
+Hi Lee,
 
-From: Maurizio Lombardi <mlombard@redhat.com>
+On Tue, 22 Jul 2014 10:22:08 +0100 Lee Jones <lee.jones@linaro.org> wrote:
+>
+> Can I have another branch in -next please?
+>=20
+> > Sure, if you think you meet the criteria, then send me a URL:
+> >=20
+> > You will need to ensure that the patches/commits in your tree/series ha=
+ve
+> > been:
+> >      * submitted under GPL v2 (or later) and include the Contributor's
+> > 	Signed-off-by,
+> >      * posted to the relevant mailing list,
+> >      * reviewed by you (or another maintainer of your subsystem tree),
+> >      * successfully unit tested, and=20
+> >      * destined for the current or next Linux merge window.
+>=20
+> The new branch also matches the critera.
+>=20
+> Repo:   git://git.kernel.org/pub/scm/linux/kernel/git/lee/backlight.git
+> Branch: for-backlight-next
 
-commit b5b60778558cafad17bbcbf63e0310bd3c68eb17 upstream.
+Added from today.
 
-The variable "size" is expressed as number of blocks and not as
-number of clusters, this could trigger a kernel panic when using
-ext4 with the size of a cluster different from the size of a block.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Signed-off-by: Maurizio Lombardi <mlombard@redhat.com>
-Signed-off-by: Theodore Ts'o <tytso@mit.edu>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- fs/ext4/mballoc.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+--Sig_/m/VssNg0LXbpkKpBCkwjvID
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
-diff --git a/fs/ext4/mballoc.c b/fs/ext4/mballoc.c
-index 2167e90..a72f1c0 100644
---- a/fs/ext4/mballoc.c
-+++ b/fs/ext4/mballoc.c
-@@ -3030,7 +3030,7 @@ ext4_mb_normalize_request(struct ext4_allocation_context *ac,
- 	}
- 	BUG_ON(start + size <= ac->ac_o_ex.fe_logical &&
- 			start > ac->ac_o_ex.fe_logical);
--	BUG_ON(size <= 0 || size > EXT4_CLUSTERS_PER_GROUP(ac->ac_sb));
-+	BUG_ON(size <= 0 || size > EXT4_BLOCKS_PER_GROUP(ac->ac_sb));
- 
- 	/* now prepare goal request */
- 
--- 
-1.9.1
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
+iQIcBAEBCAAGBQJTzukHAAoJEMDTa8Ir7ZwVVKIP+wSf2RNkYjttKbHaiY1oQrcj
+MjVt0sMg1kKuKq3nzCq4LxKGzRQZ5zqKW13Em08+uhPGmSRVZESstteft3mh0x4i
+C6p/OXpOLJ5xlE7VDraXacEGaqHwKSDUAkG9SLi+NK4Ydw82xIXA6pxOQ0TKZ6X1
+C4COoho+PfXXxVYhGEpbaj6ZwUjfmTlBLUwrVGrUiggDDLpIO6O72RMicTyMXrvE
+Kd2Sh5c8GA7nFpjYjp72ApeqMbKYk4nTGeilzvEMoKUNROV4rUKVtomEZk5mQgwD
+/HeufnrUoMzD0YwVe1D5b/70BDAp8y/Lel2/ZDZIwvCBPJZMxaLp9thmXl+ot1CC
+NYa/2Wie3SR45whyCnymeygrralStM67iUQMn4Yd85VkOzG3XscLcFs/9yxypVeu
+oLzY/7o5RZ8DmsLUiLR6Q06yUduM6F8OTnj9gjj/BID6jmps6rrBAp5a2qK1Grv1
+N9upzHgbky9QDc9RwcyICZiLxklbiCL9pbv1i6uK5dp5Na30H105qWcHckIZ4l5S
+XrlTfQl+eBN8YCpbMamBqdOWPHaocJaBav0+qw/U8rt5ojTiehH+BRmyhqaFVECM
+Ea02eZVwCIx9C+OuojF6wj18Oc2gt8sRixVs81Qvsiw0nFo5wcP78HHGE0KV1YHS
+cc5zlqB09tk8q+cFzz6/
+=dHPL
+-----END PGP SIGNATURE-----
+
+--Sig_/m/VssNg0LXbpkKpBCkwjvID--
