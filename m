@@ -1,99 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756945AbaGVVDS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 17:03:18 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:44151 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756877AbaGVVDQ (ORCPT
+	id S1756978AbaGVVDr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 17:03:47 -0400
+Received: from www.linutronix.de ([62.245.132.108]:40588 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751482AbaGVVDp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 17:03:16 -0400
-Message-ID: <53CED190.8060702@wwwdotorg.org>
-Date: Tue, 22 Jul 2014 15:03:12 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Thierry Reding <thierry.reding@gmail.com>, Tejun Heo <tj@kernel.org>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>
-CC: Hans de Goede <hdegoede@redhat.com>,
-        Mikko Perttunen <mperttunen@nvidia.com>,
+	Tue, 22 Jul 2014 17:03:45 -0400
+Date: Tue, 22 Jul 2014 23:03:25 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Waiman Long <waiman.long@hp.com>
+cc: Darren Hart <dvhart@linux.intel.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andi Kleen <andi@firstfloor.org>, Ingo Molnar <mingo@kernel.org>,
+        Davidlohr Bueso <davidlohr@hp.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>
-Subject: Re: [PATCH v5 1/8] of: Add NVIDIA Tegra SATA controller binding
-References: <1405500863-19696-2-git-send-email-mperttunen@nvidia.com> <1405667500-7402-1-git-send-email-mperttunen@nvidia.com> <53C8C9BD.3070709@nvidia.com> <53C8F6E6.6020901@redhat.com> <20140718150603.GA7196@ulmo>
-In-Reply-To: <20140718150603.GA7196@ulmo>
-X-Enigmail-Version: 1.5.2
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="gFvM3qUNEiBIujkoUOihmKSWH10GoBB3B"
+        Linux API <linux-api@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Jason Low <jason.low2@hp.com>, Scott J Norton <scott.norton@hp.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [RFC PATCH 0/5] futex: introduce an optimistic spinning futex
+In-Reply-To: <53CEC7B3.5030109@hp.com>
+Message-ID: <alpine.DEB.2.10.1407222252460.23352@nanos>
+References: <1405956271-34339-1-git-send-email-Waiman.Long@hp.com> <8761iq3bp3.fsf@tassilo.jf.intel.com> <871tte3bjw.fsf@tassilo.jf.intel.com> <CFF29A00.9D44A%dvhart@linux.intel.com> <CFF29E4A.9D44E%dvhart@linux.intel.com> <alpine.DEB.2.10.1407212025130.20847@nanos>
+ <20140721212740.GS3935@laptop> <CALCETrXSaWM6-nxr4ggtMh5qcfTQg4wRvkW8FTSbri5+_1ZbVg@mail.gmail.com> <alpine.DEB.2.10.1407212344130.20847@nanos> <CFF2E3D6.9D525%dvhart@linux.intel.com> <alpine.DEB.2.10.1407220047490.20847@nanos> <53CEC7B3.5030109@hp.com>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---gFvM3qUNEiBIujkoUOihmKSWH10GoBB3B
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On Tue, 22 Jul 2014, Waiman Long wrote:
+> On 07/21/2014 09:01 PM, Thomas Gleixner wrote:
+> > So before anyone comes up with a "solution" for all of this tomorrow
+> > afternoon in form of another half baken patch, please sit back mull it
+> > in your head and lets have a proper discussion about the approach
+> > first.
+> > 
+> > Thanks,
+> > 
+> > 	tglx
+> 
+> Thank for your thorough analysis and suggestions on what to do to support
+> spinning futexes. You certainly know more about the internal working of futex
+> than most of us. I can  live with what you have suggested. My patch is just a
+> proof of concept piece to demonstrate optimistic spinning on futex is
+> something worthwhile to do. I think I have achieved my goal of stirring
 
-On 07/18/2014 09:06 AM, Thierry Reding wrote:
-> On Fri, Jul 18, 2014 at 12:28:54PM +0200, Hans de Goede wrote:
->> Hi,
->>
->> On 07/18/2014 09:16 AM, Mikko Perttunen wrote:
->>> So here's v5: this time, as suggested, I handle the sata clock myself=
- and let ahci_platform handle it too, leading it to be prepared+enabled t=
-wice. This works fine, and allows us to remove the DT ordering requiremen=
-t.
->>>
->>> I also have in the works a patchset that adds the name-based ahci_pla=
-tform_get_resources function, but that is not quite ready yet, even if it=
- is quite far along. Also, I am going on vacation and returning on 28.7.,=
- so if this v5 is acceptable maybe it could be merged for 3.17 and I coul=
-d work on the new get_resources scheme after I get back from vacation?
->>
->> Yes that works for me v3 of all the patches with no newer version +
->> v5 of patch 1 and 7 are pretty clean and can go into 3.17 from my pov,=
+We knew that already as Darren has proven that optimistic spinning in
+a simpler form provides a huge benefit. So you do not have achieved
+anything except annoying people with your sloppiness.
 
->> Tejun can you pick these up for 3.17 please?
->=20
-> Tejun,
->=20
-> I think the following patches can go through your tree without causing
-> breakage through unresolved dependencies:
-=2E..
-> Stephen, the rest of the patches would probably best go through the
-> Tegra tree so that we can handle the dependencies there. I've already
-> sent out pull requests for 3.17 today, but maybe Arnd and Olof can be
-> convinced to take one more.
+> interest in this area. My next step will be to look into the direction of what
+> you have suggested and figure out what actual code changes will be needed.
 
-At this point, I'm just going to wait for 3.18 for anything that didn't
-make it into 3.17.
+You really can do what you want with your time. You can either reread
+AND understand the paragraph, which I left as a quote from my previous
+mail, AND act acoordingly or just stay away from futex.c.
 
+Thanks,
 
---gFvM3qUNEiBIujkoUOihmKSWH10GoBB3B
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iQIcBAEBAgAGBQJTztGQAAoJEJuNpwkmVCGc7xwP/idWdSGs4e5mhKeFkzHeEDev
-jYyY7eBAE92DF5YFVH3a81gmRAjFuDRMm6tx8U46PEbUOygnvRDH0PsNiEQ06dtf
-DypZiailwoFwKv3jGBgtpgIDKu0u5WQAadzYn4iDwIOaAjHeYFoh99mpqO30rJFA
-jwj9ZFrBbtjF3pjRPEcUv2fxlmab8GIYFtJ9BNrSB+A52Vwns5+u7pefplPGEO+a
-v/1LgXh97K8rE9ZHNXX8VQ12nwxvlLpRvySw/cLSPKgmhVdc9lcUArVP6Mn2x5Em
-8PYEsDNap6qI/ebriNUH8GSS9+2+AkgSqBMaYbqtuUQlxfVpRwZWNQfXCtgtMulq
-YzOnQ/nH0/r5XIRyQJjZYrNEMFZ4bvEoNVPQHRiKzW7dtJXJhr669GMQe2Rt1F9l
-YG3OcT0jlBk9RSyjw3VFi6X7WSDhQM+3+sXS77bxSG0DAR/ZXXhFo9Wz4Y6G8n76
-BzOlqLZYWa6HLkH49FCzBRZzhZUFNxRs7AymBZ2cLqAWN3G8zTe6qlP/wLu6EsZZ
-qpcb3oBXZjbch0NFAwBS/GM0j4nvUdVDbPpdEHsevGSk9JEHIOtCC+xoBMe/gr6z
-0cd8FmzfkNkYKEuQW+Ya3m5Yuf5QicxsDlOiVPKQX7q3jZkf6Pru5xn4RhonGDbV
-3vDWo8h1+2uH0YygEr90
-=Jg4Y
------END PGP SIGNATURE-----
-
---gFvM3qUNEiBIujkoUOihmKSWH10GoBB3B--
+	tglx
