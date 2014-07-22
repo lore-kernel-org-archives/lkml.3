@@ -1,34 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751824AbaGVBUM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 21:20:12 -0400
-Received: from mail-ig0-f179.google.com ([209.85.213.179]:57270 "EHLO
-	mail-ig0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750888AbaGVBUK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 21:20:10 -0400
-Date: Mon, 21 Jul 2014 18:20:07 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Leonid Yegoshin <Leonid.Yegoshin@imgtec.com>
-cc: Max Filippov <jcmvbkbc@gmail.com>, linux-mm@kvack.org,
-        linux-arch@vger.kernel.org, linux-mips@linux-mips.org,
-        linux-xtensa@linux-xtensa.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] mm/highmem: make kmap cache coloring aware
-In-Reply-To: <53CDBB01.7040007@imgtec.com>
-Message-ID: <alpine.DEB.2.02.1407211819340.9778@chino.kir.corp.google.com>
-References: <1405616598-14798-1-git-send-email-jcmvbkbc@gmail.com> <alpine.DEB.2.02.1407211754350.7042@chino.kir.corp.google.com> <53CDBB01.7040007@imgtec.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1752024AbaGVBYC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 21:24:02 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:64746 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751460AbaGVBYA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jul 2014 21:24:00 -0400
+Date: Tue, 22 Jul 2014 02:23:52 +0100
+From: Alasdair G Kergon <agk@redhat.com>
+To: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>
+Cc: Mikulas Patocka <mpatocka@redhat.com>,
+        "xinhui.pan" <xinhuix.pan@intel.com>, linux-kernel@vger.kernel.org,
+        agk@redhat.com, snitzer@redhat.com, dm-devel@redhat.com,
+        "Liu, ShuoX" <shuox.liu@intel.com>
+Subject: Re: [dm-devel] [PATCH] md/dm-ioctl.c: optimize memory allocation
+	in copy_params
+Message-ID: <20140722012352.GD6822@agk-dp.fab.redhat.com>
+Mail-Followup-To: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
+	Mikulas Patocka <mpatocka@redhat.com>,
+	"xinhui.pan" <xinhuix.pan@intel.com>, linux-kernel@vger.kernel.org,
+	agk@redhat.com, snitzer@redhat.com, dm-devel@redhat.com,
+	"Liu, ShuoX" <shuox.liu@intel.com>
+References: <53B68068.2060102@intel.com> <alpine.LRH.2.02.1407081831510.27831@file01.intranet.prod.int.rdu2.redhat.com> <53BCA278.5050205@linux.intel.com> <alpine.LRH.2.02.1407091032400.4545@file01.intranet.prod.int.rdu2.redhat.com> <53CDB81B.90509@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53CDB81B.90509@linux.intel.com>
+Organization: Red Hat UK Ltd. Registered in England and Wales, number
+	03798903. Registered Office: 64 Baker Street, 4th floor, London,
+	W1U 7DF.
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 21 Jul 2014, Leonid Yegoshin wrote:
+>>> On 2014/7/9 6:39, Mikulas Patocka wrote:
+>> Which ioctl with more than 16kB
+>> arguments do you use? 
 
-> Yes, there is one, at least for MIPS. This stuff can be a common ground for
-> both platforms (MIPS and XTENSA)
-> 
+Unanswered.  Let's ask the same question in a different way:
 
-Needs the mips patch as a followup as justification for the change.
+Please supply the output of these three commands on the real-world system on
+which you believe that that particular allocation is causing you a problem:
+  dmsetup info -c
+  dmsetup table
+  dmsetup status
+
+Alasdair
+
