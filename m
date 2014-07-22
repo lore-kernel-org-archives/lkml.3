@@ -1,116 +1,228 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933464AbaGVWwq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 18:52:46 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44420 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932371AbaGVWWp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 18:22:45 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Lars-Peter Clausen <lars@metafoo.de>, Takashi Iwai <tiwai@suse.de>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 092/116] ALSA: control: Fix replacing user controls
-Date: Tue, 22 Jul 2014 15:21:43 -0700
-Message-Id: <1406067727-19683-93-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1406067727-19683-1-git-send-email-kamal@canonical.com>
-References: <1406067727-19683-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.8
+	id S933433AbaGVWxc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 18:53:32 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:36324 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932203AbaGVWx3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 18:53:29 -0400
+Message-ID: <53CEEB1C.9020202@ti.com>
+Date: Tue, 22 Jul 2014 18:52:12 -0400
+From: Murali Karicheri <m-karicheri2@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Bjorn Helgaas <bhelgaas@google.com>
+CC: <linux-pci@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Jingoo Han <jg1.han@samsung.com>,
+        Richard Zhu <r65037@freescale.com>,
+        Kishon Vijay Abraham I <kishon@ti.com>, Marek Vasut <marex@denx.de>,
+        Arnd Bergmann <arnd@arndb.de>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Randy Dunlap <rdunlap@infradead.org>
+Subject: Re: [PATCH v7 4/5] PCI: add PCI controller for keystone PCIe h/w
+References: <1405961925-27248-1-git-send-email-m-karicheri2@ti.com> <1405961925-27248-5-git-send-email-m-karicheri2@ti.com> <20140722223527.GA27965@google.com>
+In-Reply-To: <20140722223527.GA27965@google.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8.13.27 -stable review patch.  If anyone has any objections, please let me know.
+Bjorn,
 
-------------------
+On 07/22/2014 06:35 PM, Bjorn Helgaas wrote:
+> On Mon, Jul 21, 2014 at 12:58:44PM -0400, Murali Karicheri wrote:
+>> keystone PCIe controller is based on v3.65 version of the
+>> designware h/w. Main differences are
+>> 	1. No ATU support
+>> 	2. Legacy and MSI irq functions are implemented in
+>> 	   application register space
+>> 	3. MSI interrupts are multiplexed over 8 IRQ lines to the Host
+>> 	   side.
+>> All of the Application register space handing code are organized into
+>> pci-keystone-dw.c and the functions are called from pci-keystone.c
+>> to implement PCI controller driver. Also add necessary DT documentation
+>> for the driver.
+>>
+>> Signed-off-by: Murali Karicheri<m-karicheri2@ti.com>
+>> Acked-by: Santosh Shilimkar<santosh.shilimkar@ti.com>
+>> ...
+>
+>> +++ b/Documentation/devicetree/bindings/pci/pci-keystone.txt
+>> ...
+>
+>> +Note for PCI driver usage
+>> +=========================
+>> +Driver requires pci=pcie_bus_perf in the bootargs for proper functioning.
+>
+> Whoa, why is this?  Special boot args should not be required.
 
-From: Lars-Peter Clausen <lars@metafoo.de>
+This was discussed initially and I had added following commit to get 
+this working instead of a PCI quirk. To get some background please see 
+the thread for commit below that you also had signed off as well.
 
-commit 82262a46627bebb0febcc26664746c25cef08563 upstream.
+commit 8b5742ad156d30ee38486652cdbd152e2d6ebbcc
+Author: Murali Karicheri <m-karicheri2@ti.com>
+Date:   Wed May 28 13:14:53 2014 -0400
 
-There are two issues with the current implementation for replacing user
-controls. The first is that the code does not check if the control is actually a
-user control and neither does it check if the control is owned by the process
-that tries to remove it. That allows userspace applications to remove arbitrary
-controls, which can cause a user after free if a for example a driver does not
-expect a control to be removed from under its feed.
+     ARM/PCI: Call pcie_bus_configure_settings() to set MPS
 
-The second issue is that on one hand when a control is replaced the
-user_ctl_count limit is not checked and on the other hand the user_ctl_count is
-increased (even though the number of user controls does not change). This allows
-userspace, once the user_ctl_count limit as been reached, to repeatedly replace
-a control until user_ctl_count overflows. Once that happens new controls can be
-added effectively bypassing the user_ctl_count limit.
+     Call pcie_bus_configure_settings() on ARM, like for other platforms.
+     pcie_bus_configure_settings() makes sure the MPS across the bus is 
+uniform
+     and provides the ability to tune the MRSS and MPS to higher performance
+     values.  This is particularly important for embedded where there is no
+     firmware to program these PCIe settings for the OS.
 
-Both issues can be fixed by instead of open-coding the removal of the control
-that is to be replaced to use snd_ctl_remove_user_ctl(). This function does
-proper permission checks as well as decrements user_ctl_count after the control
-has been removed.
+     Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
+     Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+     CC: Russell King <linux@arm.linux.org.uk>
+     CC: Arnd Bergmann <arnd@arndb.de>
+     CC: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+     CC: Santosh Shilimkar <santosh.shilimkar@ti.com>
 
-Note that by using snd_ctl_remove_user_ctl() the check which returns -EBUSY at
-beginning of the function if the control already exists is removed. This is not
-a problem though since the check is quite useless, because the lock that is
-protecting the control list is released between the check and before adding the
-new control to the list, which means that it is possible that a different
-control with the same settings is added to the list after the check. Luckily
-there is another check that is done while holding the lock in snd_ctl_add(), so
-we'll rely on that to make sure that the same control is not added twice.
+This was added as a preparatory patch to support keystone and
+avoid a PCI quirk to do the same. Keystone has MRSS limitation
+of 256 bytes. So adding a bootargs flag was suggested a better option 
+than a PCI quirk.
 
-Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-Acked-by: Jaroslav Kysela <perex@perex.cz>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- sound/core/control.c | 25 +++++++++----------------
- 1 file changed, 9 insertions(+), 16 deletions(-)
+I will look into the rest of the comments and possibly try to address 
+them or discuss.
 
-diff --git a/sound/core/control.c b/sound/core/control.c
-index c254cab..eede351 100644
---- a/sound/core/control.c
-+++ b/sound/core/control.c
-@@ -1152,8 +1152,6 @@ static int snd_ctl_elem_add(struct snd_ctl_file *file,
- 	struct user_element *ue;
- 	int idx, err;
- 
--	if (!replace && card->user_ctl_count >= MAX_USER_CONTROLS)
--		return -ENOMEM;
- 	if (info->count < 1)
- 		return -EINVAL;
- 	access = info->access == 0 ? SNDRV_CTL_ELEM_ACCESS_READWRITE :
-@@ -1162,21 +1160,16 @@ static int snd_ctl_elem_add(struct snd_ctl_file *file,
- 				 SNDRV_CTL_ELEM_ACCESS_TLV_READWRITE));
- 	info->id.numid = 0;
- 	memset(&kctl, 0, sizeof(kctl));
--	down_write(&card->controls_rwsem);
--	_kctl = snd_ctl_find_id(card, &info->id);
--	err = 0;
--	if (_kctl) {
--		if (replace)
--			err = snd_ctl_remove(card, _kctl);
--		else
--			err = -EBUSY;
--	} else {
--		if (replace)
--			err = -ENOENT;
-+
-+	if (replace) {
-+		err = snd_ctl_remove_user_ctl(file, &info->id);
-+		if (err)
-+			return err;
- 	}
--	up_write(&card->controls_rwsem);
--	if (err < 0)
--		return err;
-+
-+	if (card->user_ctl_count >= MAX_USER_CONTROLS)
-+		return -ENOMEM;
-+
- 	memcpy(&kctl.id, &info->id, sizeof(info->id));
- 	kctl.count = info->owner ? info->owner : 1;
- 	access |= SNDRV_CTL_ELEM_ACCESS_USER;
--- 
-1.9.1
+BTW, please apply patch 1-3 that has already got ack from maintainers
+and is indepdent of this patch.
+
+Thanks
+
+Murali
+
+>
+>> diff --git a/drivers/pci/host/Kconfig b/drivers/pci/host/Kconfig
+>> index 21df477..f8bc475 100644
+>> --- a/drivers/pci/host/Kconfig
+>> +++ b/drivers/pci/host/Kconfig
+>> @@ -46,4 +46,9 @@ config PCI_HOST_GENERIC
+>>   	  Say Y here if you want to support a simple generic PCI host
+>>   	  controller, such as the one emulated by kvmtool.
+>>
+>> +config PCI_KEYSTONE
+>> +	bool "TI Keystone PCIe controller"
+>> +	depends on ARCH_KEYSTONE
+>> +	select PCIE_DW
+>> +	select PCIEPORTBUS
+>
+> It'd be nice to have some help text here.  I know, not everybody else does.
+>
+>> +++ b/drivers/pci/host/pci-keystone-dw.c
+>> ...
+>> +void ks_dw_pcie_handle_msi_irq(struct keystone_pcie *ks_pcie , int offset)
+>> +{
+>> +	struct pcie_port *pp =&ks_pcie->pp;
+>> +	u32 pending, vector;
+>> +	int src, virq;
+>> +
+>> +	pending = readl(ks_pcie->va_app_base + MSI0_IRQ_STATUS + (offset<<  4));
+>
+> Blank line here (before the block comment).
+>
+>> +	/*
+>> +	 * MSI0, Status bit 0-3 shows vectors 0, 8, 16, 24, MSI1 status bit
+>> +	 * shows 1, 9, 17, 25 and so forth
+>> +	 */
+>> +	for (src = 0; src<  4; src++) {
+>> +		if (BIT(src)&  pending) {
+>> +			vector = offset + (src<<  3);
+>> +			virq = irq_linear_revmap(pp->irq_domain, vector);
+>> +			dev_dbg(pp->dev,
+>> +				"irq: bit %d, vector %d, virq %d\n",
+>> +				 src, vector, virq);
+>> +			generic_handle_irq(virq);
+>> +		}
+>> +	}
+>> +}
+>> +
+>> ...
+>
+>> +static void __iomem *ks_pcie_cfg_setup(struct keystone_pcie *ks_pcie, u8 bus,
+>> +					unsigned int devfn)
+>> +{
+>> +	u8 device = PCI_SLOT(devfn), function = PCI_FUNC(devfn);
+>> +	struct pcie_port *pp =&ks_pcie->pp;
+>> +	u32 regval;
+>> +
+>> +	if (bus == 0)
+>> +		return pp->dbi_base;
+>> +
+>> +	regval = (bus<<  16) | (device<<  8) | function;
+>> +	/*
+>> +	 * Since Bus#1 will be a virtual bus, we need to have TYPE0
+>> +	 * access only.
+>> +	 * TYPE 1
+>> +	 */
+>> +	if (bus != 1)
+>> +		regval |= BIT(24);
+>> +
+>> +	writel(regval, ks_pcie->va_app_base + CFG_SETUP);
+>> +	return pp->va_cfg0_base;
+>> +}
+>> +
+>> +int ks_dw_pcie_rd_other_conf(struct pcie_port *pp, struct pci_bus *bus,
+>> +		unsigned int devfn, int where, int size, u32 *val)
+>> +{
+>> +	struct keystone_pcie *ks_pcie = to_keystone_pcie(pp);
+>> +	u8 bus_num = bus->number;
+>> +	void __iomem *addr;
+>> +	int ret;
+>> +
+>> +	addr = ks_pcie_cfg_setup(ks_pcie, bus_num, devfn);
+>> +	ret = dw_pcie_cfg_read(addr + (where&  ~0x3), where, size, val);
+>
+> This *looks* like it needs a lock to protect against concurrent
+> ks_pcie_cfg_setup() users, since it writes a register.
+>
+>> +
+>> +	return ret;
+>
+> Please use the same style as in ks_dw_pcie_wr_other_conf(), i.e., get rid
+> of "ret".
+>
+>> +}
+>> +
+>> +int ks_dw_pcie_wr_other_conf(struct pcie_port *pp,
+>> +		struct pci_bus *bus, unsigned int devfn, int where,
+>> +		int size, u32 val)
+>> +{
+>> +	struct keystone_pcie *ks_pcie = to_keystone_pcie(pp);
+>> +	u8 bus_num = bus->number;
+>> +	void __iomem *addr;
+>> +
+>> +	addr = ks_pcie_cfg_setup(ks_pcie, bus_num, devfn);
+>> +
+>> +	return dw_pcie_cfg_write(addr + (where&  ~0x3), where, size, val);
+>> +}
+>
+>> +++ b/drivers/pci/host/pci-keystone.c
+>> ...
+>
+>> +static struct platform_driver ks_pcie_driver __refdata = {
+>
+> Why does this need to be __refdata?  There are no other occurrences in
+> drivers/pci.
+>
+>> +	.probe  = ks_pcie_probe,
+>> +	.remove = __exit_p(ks_pcie_remove),
+>> +	.driver = {
+>> +		.name	= "keystone-pcie",
+>> +		.owner	= THIS_MODULE,
+>> +		.of_match_table = of_match_ptr(ks_pcie_of_match),
+>> +	},
+>> +};
+>
+> Bjorn
 
