@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932889AbaGVWYi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 18:24:38 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44588 "EHLO
+	id S932916AbaGVWYn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 18:24:43 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:44596 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932804AbaGVWYf (ORCPT
+	with ESMTP id S932804AbaGVWYj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 18:24:35 -0400
+	Tue, 22 Jul 2014 18:24:39 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Hugh Dickins <hughd@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Stanislaw Gruszka <stf_xl@wp.pl>,
+        "John W. Linville" <linville@tuxdriver.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 108/116] mm: fix crashes from mbind() merging vmas
-Date: Tue, 22 Jul 2014 15:21:59 -0700
-Message-Id: <1406067727-19683-109-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 105/116] rt2x00: fix rfkill regression on rt2500pci
+Date: Tue, 22 Jul 2014 15:21:56 -0700
+Message-Id: <1406067727-19683-106-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1406067727-19683-1-git-send-email-kamal@canonical.com>
 References: <1406067727-19683-1-git-send-email-kamal@canonical.com>
@@ -31,155 +28,124 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hugh Dickins <hughd@google.com>
+From: Stanislaw Gruszka <stf_xl@wp.pl>
 
-commit d05f0cdcbe6388723f1900c549b4850360545201 upstream.
+commit 616a8394b5df8c88f4dd416f4527439a4e365034 upstream.
 
-In v2.6.34 commit 9d8cebd4bcd7 ("mm: fix mbind vma merge problem")
-introduced vma merging to mbind(), but it should have also changed the
-convention of passing start vma from queue_pages_range() (formerly
-check_range()) to new_vma_page(): vma merging may have already freed
-that structure, resulting in BUG at mm/mempolicy.c:1738 and probably
-worse crashes.
+As reported by Niels, starting rfkill polling during device probe
+(commit e2bc7c5, generally sane change) broke rfkill on rt2500pci
+device. I considered that bug as some initalization issue, which
+should be fixed on rt2500pci specific code. But after several
+attempts (see bug report for details) we fail to find working solution.
+Hence I decided to revert to old behaviour on rt2500pci to fix
+regression.
 
-Fixes: 9d8cebd4bcd7 ("mm: fix mbind vma merge problem")
-Reported-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Tested-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Signed-off-by: Hugh Dickins <hughd@google.com>
-Acked-by: Christoph Lameter <cl@linux.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Minchan Kim <minchan.kim@gmail.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-[ backport to 3.8-stable: queue_pages_range was check_range; context ]
+Additionally patch also unregister rfkill on device remove instead
+of ifconfig down, what was another issue introduced by bad commit.
+
+Bug report:
+https://bugzilla.kernel.org/show_bug.cgi?id=73821
+
+Fixes: e2bc7c5f3cb8 ("rt2x00: Fix rfkill_polling register function.")
+Bisected-by: Niels <nille0386@googlemail.com>
+Reported-and-tested-by: Niels <nille0386@googlemail.com>
+Signed-off-by: Stanislaw Gruszka <stf_xl@wp.pl>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- mm/mempolicy.c | 44 +++++++++++++++++++-------------------------
- 1 file changed, 19 insertions(+), 25 deletions(-)
+ drivers/net/wireless/rt2x00/rt2500pci.c |  7 ++++++-
+ drivers/net/wireless/rt2x00/rt2x00.h    |  1 +
+ drivers/net/wireless/rt2x00/rt2x00dev.c | 24 +++++++++++++++++++++---
+ 3 files changed, 28 insertions(+), 4 deletions(-)
 
-diff --git a/mm/mempolicy.c b/mm/mempolicy.c
-index eb2848e..58198da 100644
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -621,19 +621,18 @@ static unsigned long change_prot_numa(struct vm_area_struct *vma,
-  * If pagelist != NULL then isolate pages from the LRU and
-  * put them on the pagelist.
-  */
--static struct vm_area_struct *
-+static int
- check_range(struct mm_struct *mm, unsigned long start, unsigned long end,
- 		const nodemask_t *nodes, unsigned long flags, void *private)
- {
--	int err;
--	struct vm_area_struct *first, *vma, *prev;
--
-+	int err = 0;
-+	struct vm_area_struct *vma, *prev;
+diff --git a/drivers/net/wireless/rt2x00/rt2500pci.c b/drivers/net/wireless/rt2x00/rt2500pci.c
+index 9bea10f..2ab12a4 100644
+--- a/drivers/net/wireless/rt2x00/rt2500pci.c
++++ b/drivers/net/wireless/rt2x00/rt2500pci.c
+@@ -1679,8 +1679,13 @@ static int rt2500pci_init_eeprom(struct rt2x00_dev *rt2x00dev)
+ 	/*
+ 	 * Detect if this device has an hardware controlled radio.
+ 	 */
+-	if (rt2x00_get_field16(eeprom, EEPROM_ANTENNA_HARDWARE_RADIO))
++	if (rt2x00_get_field16(eeprom, EEPROM_ANTENNA_HARDWARE_RADIO)) {
+ 		__set_bit(CAPABILITY_HW_BUTTON, &rt2x00dev->cap_flags);
++		/*
++		 * On this device RFKILL initialized during probe does not work.
++		 */
++		__set_bit(REQUIRE_DELAYED_RFKILL, &rt2x00dev->cap_flags);
++	}
  
--	first = find_vma(mm, start);
--	if (!first)
--		return ERR_PTR(-EFAULT);
-+	vma = find_vma(mm, start);
-+	if (!vma)
-+		return -EFAULT;
- 	prev = NULL;
--	for (vma = first; vma && vma->vm_start < end; vma = vma->vm_next) {
-+	for (; vma && vma->vm_start < end; vma = vma->vm_next) {
- 		unsigned long endvma = vma->vm_end;
+ 	/*
+ 	 * Check if the BBP tuning should be enabled.
+diff --git a/drivers/net/wireless/rt2x00/rt2x00.h b/drivers/net/wireless/rt2x00/rt2x00.h
+index 0751b35..dfffbfb 100644
+--- a/drivers/net/wireless/rt2x00/rt2x00.h
++++ b/drivers/net/wireless/rt2x00/rt2x00.h
+@@ -720,6 +720,7 @@ enum rt2x00_capability_flags {
+ 	REQUIRE_SW_SEQNO,
+ 	REQUIRE_HT_TX_DESC,
+ 	REQUIRE_PS_AUTOWAKE,
++	REQUIRE_DELAYED_RFKILL,
  
- 		if (endvma > end)
-@@ -643,9 +642,9 @@ check_range(struct mm_struct *mm, unsigned long start, unsigned long end,
+ 	/*
+ 	 * Capabilities
+diff --git a/drivers/net/wireless/rt2x00/rt2x00dev.c b/drivers/net/wireless/rt2x00/rt2x00dev.c
+index a1789f5..0e2cd3c 100644
+--- a/drivers/net/wireless/rt2x00/rt2x00dev.c
++++ b/drivers/net/wireless/rt2x00/rt2x00dev.c
+@@ -1032,9 +1032,10 @@ static void rt2x00lib_uninitialize(struct rt2x00_dev *rt2x00dev)
+ 		return;
  
- 		if (!(flags & MPOL_MF_DISCONTIG_OK)) {
- 			if (!vma->vm_next && vma->vm_end < end)
--				return ERR_PTR(-EFAULT);
-+				return -EFAULT;
- 			if (prev && prev->vm_end < vma->vm_start)
--				return ERR_PTR(-EFAULT);
-+				return -EFAULT;
- 		}
+ 	/*
+-	 * Unregister extra components.
++	 * Stop rfkill polling.
+ 	 */
+-	rt2x00rfkill_unregister(rt2x00dev);
++	if (test_bit(REQUIRE_DELAYED_RFKILL, &rt2x00dev->cap_flags))
++		rt2x00rfkill_unregister(rt2x00dev);
  
- 		if (is_vm_hugetlb_page(vma))
-@@ -662,15 +661,13 @@ check_range(struct mm_struct *mm, unsigned long start, unsigned long end,
+ 	/*
+ 	 * Allow the HW to uninitialize.
+@@ -1072,6 +1073,12 @@ static int rt2x00lib_initialize(struct rt2x00_dev *rt2x00dev)
  
- 			err = check_pgd_range(vma, start, endvma, nodes,
- 						flags, private);
--			if (err) {
--				first = ERR_PTR(err);
-+			if (err)
- 				break;
--			}
- 		}
- next:
- 		prev = vma;
- 	}
--	return first;
-+	return err;
+ 	set_bit(DEVICE_STATE_INITIALIZED, &rt2x00dev->flags);
+ 
++	/*
++	 * Start rfkill polling.
++	 */
++	if (test_bit(REQUIRE_DELAYED_RFKILL, &rt2x00dev->cap_flags))
++		rt2x00rfkill_register(rt2x00dev);
++
+ 	return 0;
  }
  
- /*
-@@ -1152,16 +1149,17 @@ out:
+@@ -1262,7 +1269,12 @@ int rt2x00lib_probe_dev(struct rt2x00_dev *rt2x00dev)
+ 	rt2x00link_register(rt2x00dev);
+ 	rt2x00leds_register(rt2x00dev);
+ 	rt2x00debug_register(rt2x00dev);
+-	rt2x00rfkill_register(rt2x00dev);
++
++	/*
++	 * Start rfkill polling.
++	 */
++	if (!test_bit(REQUIRE_DELAYED_RFKILL, &rt2x00dev->cap_flags))
++		rt2x00rfkill_register(rt2x00dev);
  
- /*
-  * Allocate a new page for page migration based on vma policy.
-- * Start assuming that page is mapped by vma pointed to by @private.
-+ * Start by assuming the page is mapped by the same vma as contains @start.
-  * Search forward from there, if not.  N.B., this assumes that the
-  * list of pages handed to migrate_pages()--which is how we get here--
-  * is in virtual address order.
-  */
--static struct page *new_vma_page(struct page *page, unsigned long private, int **x)
-+static struct page *new_page(struct page *page, unsigned long start, int **x)
- {
--	struct vm_area_struct *vma = (struct vm_area_struct *)private;
-+	struct vm_area_struct *vma;
- 	unsigned long uninitialized_var(address);
+ 	return 0;
  
-+	vma = find_vma(current->mm, start);
- 	while (vma) {
- 		address = page_address_in_vma(page, vma);
- 		if (address != -EFAULT)
-@@ -1187,7 +1185,7 @@ int do_migrate_pages(struct mm_struct *mm, const nodemask_t *from,
- 	return -ENOSYS;
- }
+@@ -1278,6 +1290,12 @@ void rt2x00lib_remove_dev(struct rt2x00_dev *rt2x00dev)
+ 	clear_bit(DEVICE_STATE_PRESENT, &rt2x00dev->flags);
  
--static struct page *new_vma_page(struct page *page, unsigned long private, int **x)
-+static struct page *new_page(struct page *page, unsigned long start, int **x)
- {
- 	return NULL;
- }
-@@ -1197,7 +1195,6 @@ static long do_mbind(unsigned long start, unsigned long len,
- 		     unsigned short mode, unsigned short mode_flags,
- 		     nodemask_t *nmask, unsigned long flags)
- {
--	struct vm_area_struct *vma;
- 	struct mm_struct *mm = current->mm;
- 	struct mempolicy *new;
- 	unsigned long end;
-@@ -1263,11 +1260,9 @@ static long do_mbind(unsigned long start, unsigned long len,
- 	if (err)
- 		goto mpol_out;
- 
--	vma = check_range(mm, start, end, nmask,
-+	err = check_range(mm, start, end, nmask,
- 			  flags | MPOL_MF_INVERT, &pagelist);
--
--	err = PTR_ERR(vma);	/* maybe ... */
--	if (!IS_ERR(vma))
-+	if (!err)
- 		err = mbind_range(mm, start, end, new);
- 
- 	if (!err) {
-@@ -1275,8 +1270,7 @@ static long do_mbind(unsigned long start, unsigned long len,
- 
- 		if (!list_empty(&pagelist)) {
- 			WARN_ON_ONCE(flags & MPOL_MF_LAZY);
--			nr_failed = migrate_pages(&pagelist, new_vma_page,
--						(unsigned long)vma,
-+			nr_failed = migrate_pages(&pagelist, new_page, start,
- 						false, MIGRATE_SYNC,
- 						MR_MEMPOLICY_MBIND);
- 			if (nr_failed)
+ 	/*
++	 * Stop rfkill polling.
++	 */
++	if (!test_bit(REQUIRE_DELAYED_RFKILL, &rt2x00dev->cap_flags))
++		rt2x00rfkill_unregister(rt2x00dev);
++
++	/*
+ 	 * Disable radio.
+ 	 */
+ 	rt2x00lib_disable_radio(rt2x00dev);
 -- 
 1.9.1
 
