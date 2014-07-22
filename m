@@ -1,156 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752842AbaGVKmP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 06:42:15 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:48393 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750737AbaGVKmO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 06:42:14 -0400
-Date: Tue, 22 Jul 2014 11:42:06 +0100
-From: Richard Fitzgerald <rf@opensource.wolfsonmicro.com>
-To: perex@perex.cz, tiwai@suse.de, lgirdwood@gmail.com, broonie@kernel.org
-Cc: alsa-devel@alsa-project.org, patches@opensource.wolfsonmicro.com,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2] ASoC: arizona: Disable AIF TX/RX before configuring it
-Message-ID: <20140722104206.GA19663@opensource.wolfsonmicro.com>
-References: <20140716121029.GA22222@opensource.wolfsonmicro.com>
+	id S1753226AbaGVKnJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 06:43:09 -0400
+Received: from gloria.sntech.de ([95.129.55.99]:34154 "EHLO gloria.sntech.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750737AbaGVKnH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 06:43:07 -0400
+From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Chanwoo Choi <cw00.choi@samsung.com>, jic23@kernel.org,
+        ch.naveen@samsung.com, kgene.kim@samsung.com,
+        kyungmin.park@samsung.com, t.figa@samsung.com,
+        linux-iio@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org
+Subject: Re: [PATCH 2/2] iio: adc: exynos_adc: Add support for S3C24xx ADC
+Date: Tue, 22 Jul 2014 12:44:28 +0200
+Message-ID: <175757227.TPQdXAQiJt@diego>
+User-Agent: KMail/4.11.5 (Linux/3.13-1-amd64; KDE/4.11.3; x86_64; ; )
+In-Reply-To: <5200888.DXoC06U953@wuerfel>
+References: <1405995074-3271-1-git-send-email-cw00.choi@samsung.com> <1405995074-3271-3-git-send-email-cw00.choi@samsung.com> <5200888.DXoC06U953@wuerfel>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140716121029.GA22222@opensource.wolfsonmicro.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Changes to the AIF configuration registers only take
-effect when the AIF is disabled. If the configuration
-is being changed from the previous setup, temporarily
-disable the AIF.
+Am Dienstag, 22. Juli 2014, 10:39:38 schrieb Arnd Bergmann:
+> On Tuesday 22 July 2014 11:11:14 Chanwoo Choi wrote:
+> > This patch add support for s3c2410/s3c2416/s3c2440/s3c2443 ADC. The
+> > s3c24xx
+> > is alomost same as ADCv1. But, There are a little difference as following:
+> > - ADCMUX register address to select channel
+> > - ADCDAT mask (10bit or 12bit ADC resolution according to SoC version)
+> 
+> Very good, thanks for doing this patch!
+> 
+> (adding Heiko to Cc, he's probably interested in seeing this as well.
 
-Signed-off-by: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
-Signed-off-by: Richard Fitzgerald <rf@opensource.wolfsonmicro.com>
----
- sound/soc/codecs/arizona.c |   87 +++++++++++++++++++++++++++++++++++---------
- 1 files changed, 69 insertions(+), 18 deletions(-)
+indeed. Thanks for implementing this.
 
-diff --git a/sound/soc/codecs/arizona.c b/sound/soc/codecs/arizona.c
-index fb30c82..bd41ee4 100644
---- a/sound/soc/codecs/arizona.c
-+++ b/sound/soc/codecs/arizona.c
-@@ -1234,6 +1234,27 @@ static int arizona_hw_params_rate(struct snd_pcm_substream *substream,
- 	return 0;
- }
+While trying to build a test setup for this, I noticed two points:
+
+(1) I'm not sure what the second register (a "phy enable register" according
+to the binding) is supposed to be.
+According to binding and adc code it is mandatory, but I didn't find any
+lone adc register in the s3c2416 manual.
+
+
+(2) You might need something along the lines of:
+
+diff --git a/drivers/iio/adc/Kconfig b/drivers/iio/adc/Kconfig
+index 11b048a..088c99a 100644
+--- a/drivers/iio/adc/Kconfig
++++ b/drivers/iio/adc/Kconfig
+@@ -129,7 +129,7 @@ config AT91_ADC
  
-+static bool arizona_aif_cfg_changed(struct snd_soc_codec *codec,
-+				    int base, int bclk, int lrclk, int frame)
-+{
-+	int val;
-+
-+	val = snd_soc_read(codec, base + ARIZONA_AIF_BCLK_CTRL);
-+	if (bclk != (val & ARIZONA_AIF1_BCLK_FREQ_MASK))
-+		return true;
-+
-+	val = snd_soc_read(codec, base + ARIZONA_AIF_TX_BCLK_RATE);
-+	if (lrclk != (val & ARIZONA_AIF1TX_BCPF_MASK))
-+		return true;
-+
-+	val = snd_soc_read(codec, base + ARIZONA_AIF_FRAME_CTRL_1);
-+	if (frame != (val & (ARIZONA_AIF1TX_WL_MASK |
-+			     ARIZONA_AIF1TX_SLOT_LEN_MASK)))
-+		return true;
-+
-+	return false;
-+}
-+
- static int arizona_hw_params(struct snd_pcm_substream *substream,
- 			     struct snd_pcm_hw_params *params,
- 			     struct snd_soc_dai *dai)
-@@ -1249,6 +1270,8 @@ static int arizona_hw_params(struct snd_pcm_substream *substream,
- 	int tdm_width = arizona->tdm_width[dai->id - 1];
- 	int tdm_slots = arizona->tdm_slots[dai->id - 1];
- 	int bclk, lrclk, wl, frame, bclk_target;
-+	bool reconfig;
-+	unsigned int aif_tx_state, aif_rx_state;
- 
- 	if (params_rate(params) % 8000)
- 		rates = &arizona_44k1_bclk_rates[0];
-@@ -1299,28 +1322,56 @@ static int arizona_hw_params(struct snd_pcm_substream *substream,
- 	wl = snd_pcm_format_width(params_format(params));
- 	frame = wl << ARIZONA_AIF1TX_WL_SHIFT | wl;
- 
-+	reconfig = arizona_aif_cfg_changed(codec, base, bclk, lrclk, frame);
-+
-+	if (reconfig) {
-+		/* Save AIF TX/RX state */
-+		aif_tx_state = snd_soc_read(codec,
-+					    base + ARIZONA_AIF_TX_ENABLES);
-+		aif_rx_state = snd_soc_read(codec,
-+					    base + ARIZONA_AIF_RX_ENABLES);
-+		/* Disable AIF TX/RX before reconfiguring it */
-+		regmap_update_bits_async(arizona->regmap,
-+				    base + ARIZONA_AIF_TX_ENABLES, 0xff, 0x0);
-+		regmap_update_bits(arizona->regmap,
-+				    base + ARIZONA_AIF_RX_ENABLES, 0xff, 0x0);
-+	}
-+
- 	ret = arizona_hw_params_rate(substream, params, dai);
- 	if (ret != 0)
--		return ret;
-+		goto restore_aif;
- 
--	regmap_update_bits_async(arizona->regmap,
--				 base + ARIZONA_AIF_BCLK_CTRL,
--				 ARIZONA_AIF1_BCLK_FREQ_MASK, bclk);
--	regmap_update_bits_async(arizona->regmap,
--				 base + ARIZONA_AIF_TX_BCLK_RATE,
--				 ARIZONA_AIF1TX_BCPF_MASK, lrclk);
--	regmap_update_bits_async(arizona->regmap,
--				 base + ARIZONA_AIF_RX_BCLK_RATE,
--				 ARIZONA_AIF1RX_BCPF_MASK, lrclk);
--	regmap_update_bits_async(arizona->regmap,
--				 base + ARIZONA_AIF_FRAME_CTRL_1,
--				 ARIZONA_AIF1TX_WL_MASK |
--				 ARIZONA_AIF1TX_SLOT_LEN_MASK, frame);
--	regmap_update_bits(arizona->regmap, base + ARIZONA_AIF_FRAME_CTRL_2,
--			   ARIZONA_AIF1RX_WL_MASK |
--			   ARIZONA_AIF1RX_SLOT_LEN_MASK, frame);
-+	if (reconfig) {
-+		regmap_update_bits_async(arizona->regmap,
-+					 base + ARIZONA_AIF_BCLK_CTRL,
-+					 ARIZONA_AIF1_BCLK_FREQ_MASK, bclk);
-+		regmap_update_bits_async(arizona->regmap,
-+					 base + ARIZONA_AIF_TX_BCLK_RATE,
-+					 ARIZONA_AIF1TX_BCPF_MASK, lrclk);
-+		regmap_update_bits_async(arizona->regmap,
-+					 base + ARIZONA_AIF_RX_BCLK_RATE,
-+					 ARIZONA_AIF1RX_BCPF_MASK, lrclk);
-+		regmap_update_bits_async(arizona->regmap,
-+					 base + ARIZONA_AIF_FRAME_CTRL_1,
-+					 ARIZONA_AIF1TX_WL_MASK |
-+					 ARIZONA_AIF1TX_SLOT_LEN_MASK, frame);
-+		regmap_update_bits(arizona->regmap,
-+				   base + ARIZONA_AIF_FRAME_CTRL_2,
-+				   ARIZONA_AIF1RX_WL_MASK |
-+				   ARIZONA_AIF1RX_SLOT_LEN_MASK, frame);
-+	}
- 
--	return 0;
-+restore_aif:
-+	if (reconfig) {
-+		/* Restore AIF TX/RX state */
-+		regmap_update_bits_async(arizona->regmap,
-+					 base + ARIZONA_AIF_TX_ENABLES,
-+					 0xff, aif_tx_state);
-+		regmap_update_bits(arizona->regmap,
-+				   base + ARIZONA_AIF_RX_ENABLES,
-+				   0xff, aif_rx_state);
-+	}
-+	return ret;
- }
- 
- static const char *arizona_dai_clk_str(int clk_id)
--- 
-1.7.2.5
+ config EXYNOS_ADC
+        tristate "Exynos ADC driver support"
+-       depends on ARCH_EXYNOS || (OF && COMPILE_TEST)
++       depends on ARCH_EXYNOS || ARCH_S3C24XX || ARCH_S3C64XX || (OF && COMPILE_TEST)
+        help
+          Core support for the ADC block found in the Samsung EXYNOS series
+          of SoCs for drivers such as the touchscreen and hwmon to use to share
+
+
+Thanks
+Heiko
+
+> 
+> One comment:
+> > @@ -101,12 +107,14 @@ struct exynos_adc {
+> > 
+> >  	struct completion	completion;
+> >  	
+> >  	u32			value;
+> > 
+> > +	u32			value2;
+> > 
+> >  	unsigned int            version;
+> >  
+> >  };
+> > 
+> > ...
+> > @@ -365,7 +448,7 @@ static int exynos_read_raw(struct iio_dev *indio_dev,
+> > 
+> >  		ret = -ETIMEDOUT;
+> >  	
+> >  	} else {
+> >  	
+> >  		*val = info->value;
+> > 
+> > -		*val2 = 0;
+> > +		*val2 = info->value2;
+> > 
+> >  		ret = IIO_VAL_INT;
+> >  	
+> >  	}
+> > 
+> > @@ -377,9 +460,11 @@ static int exynos_read_raw(struct iio_dev *indio_dev,
+> > 
+> >  static irqreturn_t exynos_adc_isr(int irq, void *dev_id)
+> >  {
+> >  
+> >  	struct exynos_adc *info = (struct exynos_adc *)dev_id;
+> > 
+> > +	u32 mask = info->data->mask;
+> > 
+> >  	/* Read value */
+> > 
+> > -	info->value = readl(ADC_V1_DATX(info->regs)) & ADC_DATX_MASK;
+> > +	info->value = readl(ADC_V1_DATX(info->regs)) & mask;
+> > +	info->value2 = readl(ADC_V1_DATY(info->regs)) & mask;
+> > 
+> >  	/* clear irq */
+> >  	if (info->data->clear_irq)
+> 
+> If I understand it right, this would only be necessary if we want
+> to do the touchscreen driver as a separate iio client using the
+> in-kernel interfaces. As Jonathan Cameron commented, we probably
+> don't want to do that though. Even if we do, it should be a separate
+> patch and not mixed in with the s3c24xx support.
+> 
+> Aside from this:
+> 
+> Acked-by: Arnd Bergmann <arnd@arndb.de>
+> 
+> 	Arnd
 
