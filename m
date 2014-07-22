@@ -1,100 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933854AbaGVWvK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 18:51:10 -0400
-Received: from ozlabs.org ([103.22.144.67]:55541 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932507AbaGVWvE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 18:51:04 -0400
-Date: Wed, 23 Jul 2014 08:50:57 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Richard Weinberger <richard@nod.at>
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org
-Subject: Re: Global signal cleanup, take 4
-Message-ID: <20140723085057.5d0b12d6@canb.auug.org.au>
-In-Reply-To: <53CE0A25.7090508@nod.at>
-References: <1405951409-16953-1-git-send-email-richard@sigma-star.at>
-	<20140722144727.441bcc2a@canb.auug.org.au>
-	<53CE0A25.7090508@nod.at>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
+	id S933867AbaGVWvd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 18:51:33 -0400
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:65367 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932507AbaGVWv3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 18:51:29 -0400
+Date: Tue, 22 Jul 2014 15:51:25 -0700
+From: Brian Norris <computersforpeace@gmail.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        Florian Fainelli <f.fainelli@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        Christian Daudt <bcm@fixthebug.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Matt Porter <mporter@linaro.org>, Marc Carino <marc.ceeeee@gmail.com>,
+        Gregory Fong <gregory.0xf0@gmail.com>, Olof Johansson <olof@lixom.net>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Sebastian Reichel <sre@kernel.org>
+Subject: Re: [PATCH v8 02/11] power: reset: Add reboot driver for brcmstb
+Message-ID: <20140722225125.GI28323@ld-irv-0074>
+References: <1405976886-27807-1-git-send-email-computersforpeace@gmail.com>
+ <62122849.RXJHvac7Iy@wuerfel>
+ <20140722200213.GF28323@ld-irv-0074>
+ <5224854.YNJjMxFltp@wuerfel>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/LqKh5uz_JjdXR2DRZ3TltvT"; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5224854.YNJjMxFltp@wuerfel>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/LqKh5uz_JjdXR2DRZ3TltvT
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
++ Sebastian
 
-Hi Richard,
+On Tue, Jul 22, 2014 at 11:02:07PM +0200, Arnd Bergmann wrote:
+> On Tuesday 22 July 2014 13:02:13 Brian Norris wrote:
+> > How about a third option, where we drop the 'select' statement and
+> > set POWER_RESET_BRCMSTB to be 'default y'? Then we don't have to modify
+> > the defconfig, and it gives the added bonus of choosing a sane default
+> > even if you're not based on the multi_v7_defconfig. i.e.:
+> > 
+> > diff --git a/arch/arm/mach-bcm/Kconfig b/arch/arm/mach-bcm/Kconfig
+> > index 58c01aed9752..634de7b7fd28 100644
+> > --- a/arch/arm/mach-bcm/Kconfig
+> > +++ b/arch/arm/mach-bcm/Kconfig
+> > @@ -94,7 +94,6 @@ config ARCH_BRCMSTB
+> >         select MIGHT_HAVE_PCI
+> >         select HAVE_SMP
+> >         select HAVE_ARM_ARCH_TIMER
+> > -       select POWER_RESET_BRCMSTB
+> >         select BRCMSTB_GISB_ARB
+> >         select BRCMSTB_L2_IRQ
+> >         help
+> > diff --git a/drivers/power/reset/Kconfig b/drivers/power/reset/Kconfig
+> > index fcb9825debe5..ab5d57e2766d 100644
+> > --- a/drivers/power/reset/Kconfig
+> > +++ b/drivers/power/reset/Kconfig
+> > @@ -23,6 +23,7 @@ config POWER_RESET_AXXIA
+> >  config POWER_RESET_BRCMSTB
+> >         bool "Broadcom STB reset driver"
+> >         depends on POWER_RESET && ARCH_BRCMSTB
+> > +       default y
+> >         help
+> >           This driver provides restart support for ARM-based Broadcom STB
+> >           boards.
+> 
+> I don't like this too much. Why do you want to allow disabling the
+> driver if you make it 'default y' in the first place?
 
-On Tue, 22 Jul 2014 08:52:21 +0200 Richard Weinberger <richard@nod.at> wrot=
-e:
->
-> Am 22.07.2014 06:47, schrieb Stephen Rothwell:
-> >=20
-> > On Mon, 21 Jul 2014 16:02:46 +0200 Richard Weinberger <richard@sigma-st=
-ar.at> wrote:
-> >>
-> >> The whole series can also be found at:
-> >> git://git.kernel.org/pub/scm/linux/kernel/git/rw/misc.git signal_v4
-> >>
-> >> Andrew, can you please pickup this series?
-> >=20
-> > Why don't we just add that git tree to linux-next? Then you can send
-> > Linus a pull request in the next merge window.
->=20
-> That's a good idea.
-> Can you please add the tree to linux-next?
+Not much of a reason, but I thought configurability is a positive.
+There's really not a good reason to not have this driver though; I can't
+imagine someone wanting to build our platform but not be able to reboot
+it.
 
-Added from today.  But I would prefer a more generic branch name if it
-ever changes.
+> We try to avoid 'default y' for user-selectable drivers in general.
 
-Thanks for adding your subsystem tree as a participant of linux-next.  As
-you may know, this is not a judgment of your code.  The purpose of
-linux-next is for integration testing and to lower the impact of
-conflicts between subsystems in the next merge window.=20
+I didn't know that. A default is technically different than "should a
+user be able to disable this," but I suppose the policy makes sense.
 
-You will need to ensure that the patches/commits in your tree/series have
-been:
-     * submitted under GPL v2 (or later) and include the Contributor's
-        Signed-off-by,
-     * posted to the relevant mailing list,
-     * reviewed by you (or another maintainer of your subsystem tree),
-     * successfully unit tested, and=20
-     * destined for the current or next Linux merge window.
+> I noticed that in my example, I was missing the default.
 
-Basically, this should be just what you would send to Linus (or ask him
-to fetch).  It is allowed to be rebased if you deem it necessary.
+I see. That's why I immediately ruled it out.
 
---=20
-Cheers,
-Stephen Rothwell=20
-sfr@canb.auug.org.au
+> It should have been 
+> 
+> config POWER_RESET_BRCMSTB
+>         bool "Broadcom STB reset driver" if COMPILE_TEST
+>         depends on POWER_RESET && ARM
+> 	default ARCH_BRCMSTB
 
---Sig_/LqKh5uz_JjdXR2DRZ3TltvT
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+OK, that's OK with me if it's OK with Sebastian, et al. Respin coming
+soon, separate from the mach-bcm and ARM stuff...
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+(BTW, we might consider rewriting the other config entries to be
+similar, if we really want to make this things consistently
+nitpick-proof.)
 
-iQIcBAEBCAAGBQJTzurWAAoJEMDTa8Ir7ZwVqT4P/0MJcpcuSMQ8M2ywy1VxnYyO
-M4rRZlsy/v+0hPaxGTksb10UIYJEAp/cUppOD9ib2V0G8h1FeGop5asseiSYaBgf
-sAGPimMq5ta9C0bBE7HgMl8M75Yva+St+mwaiTBCQ/U7nwvmPkWQ/Dqxil+XhNld
-Kc1NElB2io2trZ215OmDkva1AlnoRK72xWWD9//6XAkhmP3QNR63oGifSUvR0cHN
-gwqQzY0WfXEPN/tmOfhIiw5GoI9EjKOpj2Xaba4PI6lIYhL61CNnDuFDmOB1A/2S
-mO+lmZ8xEOJp6N3+461BBtearZspgxyqKZxME/KpArfqXS+hQ7hD9+2wTgABR7FD
-J9NozV3vha6cXtimTMZPq55YVFZTS5hiY4GNE7zuK1O7WUXclChYWhs/6PhIw0nF
-SErVRaqVABYfEYSBy0pdMq9QUm2Wq8AYSche93VUZ0RZII6EC71Mx15CqCKwPGQc
-uKZeVD5bfcrGxHto/sXscgab5dz0iNzWKN2AOMBeIQJRdgcOcTpADQazZA5Glo7F
-0bqcOqEY4HoGfHGuLgeIe5OQWBQy53YawFfSzaQqv0HVusr/QNwQdB4wL4rKbFl/
-vJbpiCeuyRE54N2oRntvQ674Gbev3iDyz3RjGTpPJk/FEqF9sSiJ8qT2cS9uKy/G
-jkm9NbyZe8ezy3VDsSuB
-=YTla
------END PGP SIGNATURE-----
+> This way, it always gets selected when ARCH_BRCMSTB is on and
+> COMPILE_TEST is off. With COMPILE_TEST enabled, it defaults to
+> ARCH_BRCMSTB but can be enabled or disabled for the purpose
+> of compile testing.
 
---Sig_/LqKh5uz_JjdXR2DRZ3TltvT--
+Thanks,
+Brian
