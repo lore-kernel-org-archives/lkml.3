@@ -1,209 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751851AbaGVBBa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 21:01:30 -0400
-Received: from www.linutronix.de ([62.245.132.108]:34523 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750980AbaGVBB1 (ORCPT
+	id S1751901AbaGVBC2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 21:02:28 -0400
+Received: from out4-smtp.messagingengine.com ([66.111.4.28]:33428 "EHLO
+	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751252AbaGVBC1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 21:01:27 -0400
-Date: Tue, 22 Jul 2014 03:01:00 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Darren Hart <dvhart@linux.intel.com>
-cc: Andy Lutomirski <luto@amacapital.net>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Andi Kleen <andi@firstfloor.org>, Waiman Long <Waiman.Long@hp.com>,
-        Ingo Molnar <mingo@kernel.org>, Davidlohr Bueso <davidlohr@hp.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Jason Low <jason.low2@hp.com>, Scott J Norton <scott.norton@hp.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [RFC PATCH 0/5] futex: introduce an optimistic spinning futex
-In-Reply-To: <CFF2E3D6.9D525%dvhart@linux.intel.com>
-Message-ID: <alpine.DEB.2.10.1407220047490.20847@nanos>
-References: <1405956271-34339-1-git-send-email-Waiman.Long@hp.com> <8761iq3bp3.fsf@tassilo.jf.intel.com> <871tte3bjw.fsf@tassilo.jf.intel.com> <CFF29A00.9D44A%dvhart@linux.intel.com> <CFF29E4A.9D44E%dvhart@linux.intel.com> <alpine.DEB.2.10.1407212025130.20847@nanos>
- <20140721212740.GS3935@laptop> <CALCETrXSaWM6-nxr4ggtMh5qcfTQg4wRvkW8FTSbri5+_1ZbVg@mail.gmail.com> <alpine.DEB.2.10.1407212344130.20847@nanos> <CFF2E3D6.9D525%dvhart@linux.intel.com>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Mon, 21 Jul 2014 21:02:27 -0400
+X-Sasl-enc: OvOUo/bjENUYQ55n72o6CTYDdhK6wFe1jXGnCHs1VCvl 1405990942
+Message-ID: <1405990940.28229.4.camel@localhost>
+Subject: Re: [PATCH, RFC] random: introduce getrandom(2) system call
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+To: George Spelvin <linux@horizon.com>
+Cc: linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org, tytso@mit.edu
+Date: Tue, 22 Jul 2014 03:02:20 +0200
+In-Reply-To: <1405956426.2319.37.camel@localhost>
+References: <20140721112102.19300.qmail@ns.horizon.com>
+	 <1405956426.2319.37.camel@localhost>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 21 Jul 2014, Darren Hart wrote:
-> On 7/21/14, 14:47, "Thomas Gleixner" <tglx@linutronix.de> wrote:
+On Mo, 2014-07-21 at 17:27 +0200, Hannes Frederic Sowa wrote:
+> On Mo, 2014-07-21 at 07:21 -0400, George Spelvin wrote:
+> > > I don't like partial reads/writes and think that a lot of people get
+> > > them wrong, because they often only check for negative return values.
+> > 
+> > The v1 patch, which did it right IMHO, didn't do partial reads in the
+> > case we're talking about:
+> > 
+> > +	if (count > 256)
+> > +		return -EINVAL;
 > 
-> >On Mon, 21 Jul 2014, Andy Lutomirski wrote:
-> >> On Mon, Jul 21, 2014 at 2:27 PM, Peter Zijlstra <peterz@infradead.org>
-> >>wrote:
-> >> > All this is predicated on the fact that syscalls are 'expensive'.
-> >> > Weren't syscalls only 100s of cycles? All this bitmap mucking is far
-> >> > more expensive due to cacheline misses, which due to the size of the
-> >> > things is almost guaranteed.
-> >> 
-> >> 120 - 300 cycles for me, unless tracing happens, and I'm working on
-> >> reducing the incidence of tracing.
-> >
-> >So it's a non issue indeed and definitely not worth the trouble of
-> >that extra storage, the scheduler overhead, etc.
-> >
-> >Summary: Once you can't take it atomically in user space, you've lost
-> >	 anyway. And we are better off to do the magic spinning in
-> >	 kernel where we have all the information accessible already.
-> 
-> And we have such an implementation with the FUTEX_LOCK_ADAPTIVE code we
-> discussed back in Oct 2010 (purely kernel, no VDSO), updated with some of
-> your and other's comments:
-> 
-> http://git.infradead.org/users/dvhart/linux.git/shortlog/refs/heads/futex/f
-> utex-lock/v7
-> 
-> 
-> I can work on forward porting this series to current mainline (post recent
-> security fixes) and cleaning up the commentary and such if people are
-> interested in seeing this implementation (based on Peter Z's spinning
-> mutex work iirc) resurrected...
+> I checked and unfortunately it does not; 256 bytes is way too large to
+> guarantee non-existence of partial reads. On a typical older system
+> without rdrand/rdseed you would have to limit the amount of bytes to
+> extract to about 32. That's way too low. That said, the 512 bytes check
+> only in case of extracting bytes from blocking pool would serve no
+> purpose.
 
-No. We really want to avoid more magic hackery in the futex code.
+Ted, would it make sense to specifiy a 512 byte upper bound limit for
+random entropy extraction (I am not yet convinced to do that for
+urandom) and in case the syscall should block we make sure that we
+extract the amount of bytes the user requested?
 
-Lets sit down and think about what we need:
+Having a quick look maybe something like this? Only compile tested and
+maybe can still be simplified. It guarantees we don't do a partial write
+to user space for sub 512 bytes requests.
 
- 1) Support for all existing features
+diff --git a/drivers/char/random.c b/drivers/char/random.c
+index 2721543..c0db6f5 100644
+--- a/drivers/char/random.c
++++ b/drivers/char/random.c
+@@ -1345,8 +1345,14 @@ static int arch_random_refill(void)
+ 	return n;
+ }
+ 
++enum blocking_mode {
++	NONBLOCKING,
++	SYSCALL_BLOCK,
++	DEV_RANDOM_BLOCK
++};
++
+ static ssize_t
+-_random_read(int nonblock, char __user *buf, size_t nbytes)
++_random_read(enum blocking_mode mode, char __user *buf, size_t nbytes)
+ {
+ 	ssize_t n;
+ 
+@@ -1361,7 +1367,7 @@ _random_read(int nonblock, char __user *buf, size_t nbytes)
+ 		trace_random_read(n*8, (nbytes-n)*8,
+ 				  ENTROPY_BITS(&blocking_pool),
+ 				  ENTROPY_BITS(&input_pool));
+-		if (n > 0)
++		if (mode != SYSCALL_BLOCK && n > 0)
+ 			return n;
+ 
+ 		/* Pool is (near) empty.  Maybe wait and retry. */
+@@ -1370,7 +1376,7 @@ _random_read(int nonblock, char __user *buf, size_t nbytes)
+ 		if (arch_random_refill())
+ 			continue;
+ 
+-		if (nonblock)
++		if (mode == NONBLOCKING)
+ 			return -EAGAIN;
+ 
+ 		wait_event_interruptible(random_read_wait,
+@@ -1384,7 +1390,8 @@ _random_read(int nonblock, char __user *buf, size_t nbytes)
+ static ssize_t
+ random_read(struct file *file, char __user *buf, size_t nbytes, loff_t *ppos)
+ {
+-	return _random_read(file->f_flags & O_NONBLOCK, buf, nbytes);
++	return _random_read(file->f_flags & O_NONBLOCK ? NONBLOCKING :
++			    DEV_RANDOM_BLOCK, buf, nbytes);
+ }
+ 
+ static ssize_t
+@@ -1534,8 +1541,6 @@ const struct file_operations urandom_fops = {
+ SYSCALL_DEFINE3(getrandom, char __user *, buf, size_t, count,
+ 		unsigned int, flags)
+ {
+-	int r;
+-
+ 	if (flags & ~(GRND_NONBLOCK|GRND_RANDOM))
+ 		return -EINVAL;
+ 
+@@ -1543,7 +1548,8 @@ SYSCALL_DEFINE3(getrandom, char __user *, buf, size_t, count,
+ 		count = INT_MAX;
+ 
+ 	if (flags & GRND_RANDOM)
+-		return _random_read(flags & GRND_NONBLOCK, buf, count);
++		return _random_read(flags & GRND_NONBLOCK ? NONBLOCKING :
++				    SYSCALL_BLOCK, buf, count);
+ 
+ 	if (unlikely(nonblocking_pool.initialized == 0)) {
+ 		if (flags & GRND_NONBLOCK)
 
- 2) More fine grained locking
+Bye,
+Hannes
 
- 3) Optimistic spinning
 
-@1: No discussion about that. Period.
-
-    We are not going to introduce some new futex opcode, which is
-    optimized for a microbenchmark and ignoring all of the pain we
-    went through in the last 10 years. No way, especially after the
-    recent security disaster.
-
-@2 and @3: Yes, we want that.
-
-    But again, we don't add fine grained locking just for some half
-    baken new opcode. No, we are adding it where it makes the most
-    sense and lets us reuse most of the code.
-
-    I can predict your question, how that should work :)
-
-    If we want to have fine grained locking beyond the futex hash
-    buckets and that's something we discussed before, you need a state
-    representation of the user space futex in the kernel. That's what
-    Waiman added as well, just in a way that's beyond repair.
-
-    The charm of the futex hash buckets is that they do not create
-    kernel state because the futex_q which is enqueued into the bucket
-    is on the task stack of the task which is blocked on the futex.
-
-    So much for the theory, because that stopped to be true when we
-    added support for PI futexes. They already create kernel internal
-    state which is not magically removed when the thread exits the
-    syscall. It's called pi_state.
-
-    Now the question is how is this related to the non PI magic
-    spinning optimization? Very much so.
-
-    Simply because the handling of pi_state already covers ALL the
-    corner cases which come with the extra kernel internal state and
-    they provide the full function set of futexes required by the
-    various (ab)use cases including the requeue functionality which is
-    required for condvars. It even supports caching of the pi_state
-    struct in a way which makes sense, rather than blindly slapping a
-    cached entry onto each hash bucket.
-
-    So it's not a really mind boggling thought experiment to think
-    about this magic new feature as a subset of the already existing
-    PI futex code. It is a subset, just minus the PI portion plus the
-    more fine grained locking.
-
-So the right solution is to rework the existing code.
-
-1) Make pi_state the entity which gets enqueued into the hash bucket
-   and manage the waiters in a pi_state internal queue.
-
-   Straight forward problem as it is still protected by the hash
-   bucket lock.
-   
-2) Add private locking to the pi_state to reduce the lock contention
-   on the hash bucket lock.
-
-   Straight forward conversion as well
-
-3) Make mutex a subset of rt_mutex
-
-   That makes a lot of sense, simply because a mutex is the same as a
-   rtmutex just without the PI part.
-
-   Just for the record before anyone cries murder: The original mutex
-   implemention was modeled after the rtmutex one in the first place
-   and the optimistic spinning was first introduced on rtmutexes by
-   Gregory Haskins et. al. in the context of the RT tree. Back then it
-   was too early or we were simply too stupid to see the similarities
-   and opted for a complete separate implementation.
-
-   Yes, I'm aware that this is a non-trivial problem, but if you look
-   at the details, then the non-trivial part is in the slow path were
-   stuff actually goes to sleep. The fast path of mutex and rt_mutex
-   is simply the same. So there is no reason to keep them separate. An
-   extra conditional in the slow path is not going to hurt at all.
-
-   Surely, you might say, that I'm an egoistic bastard, who just wants
-   to have the benefit of MCS for rtmutex for free. Right you are, but
-   there is a whole bunch of reasons why this makes tons of sense:
-
-   - As I said above, it's almost the same, except for the slow path
-     details, where a few extra conditionals do not matter
-
-   - Sharing the code has the obvious benefits. And it's not only
-     sharing between rtmutex and mutex, it's also sharing the
-     underlying optimizations of MCS for the kernel internal users and
-     the user space exposed ones, i.e. futexes. 
-
-   - Once unified the desired futex functionality just works with a
-     minimal impact on the futex code itself.
-
-     The futex code does not care whether the underlying primitive has
-     PI semantics or not, it just cares that all the required features
-     like proxy locking etc. are in place. And that everything like
-     timeouts, requeue etc. is just supported.
-
-   - The semantics of the new futex functionality has not to be
-     defined again. We can simply reuse the rather well defined and
-     well tested straight forward semantics of the existing PI
-     opcodes.
-
-   - That minimizes the risk massively, because all state and error
-     handling is common code. 
-
-   - Any update to the underlying primitives will benefit ALL usage
-     sites and reduces the copy and paste induced hell of MCS code
-     sprinkled all over the kernel.
-
-4) Enable user space to make use of it.
-
-   Whether this will be a separate opcode or just a new flag to the
-   existing PI opcodes is going to be just a bikeshedding question at
-   that point. :)
-
-The important point is, that we do NOT grow any new unmaintainable
-warts to the futex code. And the 650+ new lines of hackery which come
-with the proposed patch set are in no way acceptable, especially as
-they only cover the minimalistic functionality set of futexes. Not to
-talk about the other issues I've observed on the first glance.
-
-So before anyone comes up with a "solution" for all of this tomorrow
-afternoon in form of another half baken patch, please sit back mull it
-in your head and lets have a proper discussion about the approach
-first.
-
-Thanks,
-
-	tglx
