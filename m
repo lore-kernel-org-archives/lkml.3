@@ -1,112 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754448AbaGVLv6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 07:51:58 -0400
-Received: from ns.mm-sol.com ([37.157.136.199]:43996 "EHLO extserv.mm-sol.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750985AbaGVLv4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 07:51:56 -0400
-Message-ID: <53CE5059.4010107@mm-sol.com>
-Date: Tue, 22 Jul 2014 14:51:53 +0300
-From: Stanimir Varbanov <svarbanov@mm-sol.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	id S1754818AbaGVLwK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 07:52:10 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:41066 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754552AbaGVLwG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 07:52:06 -0400
+Message-ID: <53CE505F.9070101@canonical.com>
+Date: Tue, 22 Jul 2014 13:51:59 +0200
+From: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-To: Lee Jones <lee.jones@linaro.org>
-CC: linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Pawel Moll <pawel.moll@arm.com>, Rob Herring <robh+dt@kernel.org>,
-        Kumar Gala <galak@codeaurora.org>, Mark Rutland <mark.rutland@arm.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Courtney Cavin <courtney.cavin@sonymobile.com>,
-        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
-        Josh Cartwright <joshc@codeaurora.org>
-Subject: Re: [PATCH v2 1/4] mfd: pm8xxx-spmi: add support for Qualcomm SPMI
- PMICs
-References: <1405613855-27572-1-git-send-email-svarbanov@mm-sol.com> <1405613855-27572-2-git-send-email-svarbanov@mm-sol.com> <20140722110341.GE8406@lee--X1>
-In-Reply-To: <20140722110341.GE8406@lee--X1>
+To: Dave Airlie <airlied@gmail.com>
+CC: Dave Airlie <airlied@linux.ie>, Thomas Hellstrom <thellstrom@vmware.com>,
+        nouveau <nouveau@lists.freedesktop.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        dri-devel <dri-devel@lists.freedesktop.org>,
+        Ben Skeggs <bskeggs@redhat.com>,
+        "Deucher, Alexander" <alexander.deucher@amd.com>,
+        "Koenig, Christian" <christian.koenig@amd.com>
+Subject: Re: [PATCH 09/17] drm/radeon: use common fence implementation for
+ fences
+References: <20140709093124.11354.3774.stgit@patser>	<20140709122953.11354.46381.stgit@patser> <CAPM=9tyD2ZbrcGDC3hfNb7qNdzsfnyD-ZwM7G-nOgxeu5YKuSg@mail.gmail.com>
+In-Reply-To: <CAPM=9tyD2ZbrcGDC3hfNb7qNdzsfnyD-ZwM7G-nOgxeu5YKuSg@mail.gmail.com>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/22/2014 02:03 PM, Lee Jones wrote:
-> On Thu, 17 Jul 2014, Stanimir Varbanov wrote:
-> 
->> From: Josh Cartwright <joshc@codeaurora.org>
->>
->> The Qualcomm SPMI PMIC chips are components used with the
->> Snapdragon 800 series SoC family.  This driver exists
->> largely as a glue mfd component, it exists to be an owner
->> of an SPMI regmap for children devices described in
->> device tree.
->>
->> Signed-off-by: Stanimir Varbanov <svarbanov@mm-sol.com>
-> 
-> Needs to be signed off by the author.
-> 
+Hey,
+
+op 22-07-14 06:05, Dave Airlie schreef:
+> On 9 July 2014 22:29, Maarten Lankhorst <maarten.lankhorst@canonical.com> wrote:
+>> Signed-off-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
 >> ---
->>  drivers/mfd/Kconfig       |   16 +++++++++++
->>  drivers/mfd/Makefile      |    1 +
->>  drivers/mfd/pm8xxx-spmi.c |   63 +++++++++++++++++++++++++++++++++++++++++++++
->>  3 files changed, 80 insertions(+), 0 deletions(-)
->>  create mode 100644 drivers/mfd/pm8xxx-spmi.c
-> 
-> [...]
-> 
->> +++ b/drivers/mfd/pm8xxx-spmi.c
->> @@ -0,0 +1,63 @@
->> +/*
->> + * Copyright (c) 2014, The Linux Foundation. All rights reserved.
->> + *
->> + * This program is free software; you can redistribute it and/or modify
->> + * it under the terms of the GNU General Public License version 2 and
->> + * only version 2 as published by the Free Software Foundation.
->> + *
->> + * This program is distributed in the hope that it will be useful,
->> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
->> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
->> + * GNU General Public License for more details.
->> + */
-> 
-> There should be a '\n' here.
+>>  drivers/gpu/drm/radeon/radeon.h        |   15 +-
+>>  drivers/gpu/drm/radeon/radeon_device.c |   60 ++++++++-
+>>  drivers/gpu/drm/radeon/radeon_fence.c  |  223 ++++++++++++++++++++++++++------
+>>  3 files changed, 248 insertions(+), 50 deletions(-)
+>>
+> From what I can see this is still suffering from the problem that we
+> need to find a proper solution to,
+>
+> My summary of the issues after talking to Jerome and Ben and
+> re-reading things is:
+>
+> We really need to work out a better interface into the drivers to be
+> able to avoid random atomic entrypoints,
+> I'm sure you have some ideas and I think you really need to
+> investigate them to move this thing forward,
+> even it if means some issues with android sync pts.
+>
+> but none of the two major drivers seem to want the interface as-is so
+> something needs to give
+wait_queue_t (which radeon uses for fence_queue) uses atomic entrypoints too, the most common
+one being autoremove_wake_function, which wakes up the thread it was initialized from, and removes
+itself from the wait_queue_t list, in atomic fashion. It's used by __wait_event_interruptible_locked,
+if something internally wants to add some arbitrary callback it could already happen...
 
-OK.
+> My major question is why we need an atomic callback here at all, what
+> scenario does it cover?
+A atomic callback could do something like schedule_work(&work) (like nouveau_fence_work already does right now!!!!).
 
-> 
->> +#include <linux/kernel.h>
->> +#include <linux/module.h>
->> +#include <linux/spmi.h>
->> +#include <linux/regmap.h>
->> +#include <linux/of_platform.h>
-> 
-> [...]
-> 
->> +MODULE_DESCRIPTION("PM8XXX SPMI PMIC driver");
->> +MODULE_ALIAS("platform:" KBUILD_MODNAME);
+I've also added some more experimental things in my unsubmitted branch, in a codepath that's taken when synchronization is used with multiple GPU's:
 
-I will change this to:
+Nouveau: I write the new seqno to the GART fence, which I added a GPU wait for using SEMAPHORE_TRIGGER.ACQUIRE_GE.
+radeon: I write to a memory location to unblock the execution ring, this will probably be replaced by a call to the GPU scheduler.
+i915: write to the EXCC (condition code) register to unblock the ring operation when it's waiting for the condition code.
 
-MODULE_ALIAS("spmi:pm8xxx-spmi");
+But I want to emphasize that this is a hack, and driver maintainers will probably NACK it, I think I will only submit the one for nouveau, which is sane there because it schedules contexts in hardware.
+Even so that part is not final and will probably go through a few iterations before submission.
 
->> +MODULE_AUTHOR("The Linux Foundation");
-> 
-> The Linux Foundation did not write this patch.
 
-OK, I will change the author or remove the tag completely.
+> Surely we can use a workqueue based callback to ask a driver to check
+> its signalling, is it really
+> that urgent?
+Nothing prevents a driver from using that approach, even with those changes.
 
-> 
->> +MODULE_LICENSE("GPL v2");
-> 
-> Appart from that:
-> 
-> Acked-by: Lee Jones <lee.jones@linaro.org>
-> 
+Driver maintainers can still NACK the use of fence_add_callback if they want to,
+or choose not to export fences to outside the driver. Because fences are still
+not exporting, nothing will change for them compared to the current situation.
 
-Thanks. I will resend the whole patch set with your acks.
+~Maarten
 
--- 
-regards,
-Stan
