@@ -1,72 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753491AbaGVIsw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 04:48:52 -0400
-Received: from casper.infradead.org ([85.118.1.10]:59188 "EHLO
+	id S1753586AbaGVIzp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 04:55:45 -0400
+Received: from casper.infradead.org ([85.118.1.10]:59219 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751861AbaGVIst (ORCPT
+	with ESMTP id S1752100AbaGVIzn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 04:48:49 -0400
-Date: Tue, 22 Jul 2014 10:48:42 +0200
+	Tue, 22 Jul 2014 04:55:43 -0400
+Date: Tue, 22 Jul 2014 10:55:38 +0200
 From: Peter Zijlstra <peterz@infradead.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Steven Rostedt <rostedt@goodmis.org>, Darren Hart <dvhart@linux.intel.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Andi Kleen <andi@firstfloor.org>, Waiman Long <Waiman.Long@hp.com>,
-        Ingo Molnar <mingo@kernel.org>, Davidlohr Bueso <davidlohr@hp.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Jason Low <jason.low2@hp.com>, Scott J Norton <scott.norton@hp.com>,
-        Robert Haas <robertmhaas@gmail.com>
-Subject: Re: [RFC PATCH 0/5] futex: introduce an optimistic spinning futex
-Message-ID: <20140722084842.GZ3935@laptop>
-References: <CFF29E4A.9D44E%dvhart@linux.intel.com>
- <alpine.DEB.2.10.1407212025130.20847@nanos>
- <20140721212740.GS3935@laptop>
- <CALCETrXSaWM6-nxr4ggtMh5qcfTQg4wRvkW8FTSbri5+_1ZbVg@mail.gmail.com>
- <alpine.DEB.2.10.1407212344130.20847@nanos>
- <CFF2E3D6.9D525%dvhart@linux.intel.com>
- <alpine.DEB.2.10.1407220047490.20847@nanos>
- <20140721213457.46623e2f@gandalf.local.home>
- <20140722074719.GV3935@laptop>
- <alpine.DEB.2.10.1407221034260.20847@nanos>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Linux PCI <linux-pci@vger.kernel.org>, Zhang Rui <rui.zhang@intel.com>
+Subject: Re: [PATCH 0/3] ACPI / PM: Make ACPI-based PCI wakeup work for the
+ "freeze" sleep state
+Message-ID: <20140722085538.GA3935@laptop>
+References: <1907495.agrCMfRsQN@vostro.rjw.lan>
+ <9631666.En3K0jlGsY@vostro.rjw.lan>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.10.1407221034260.20847@nanos>
+In-Reply-To: <9631666.En3K0jlGsY@vostro.rjw.lan>
 User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 22, 2014 at 10:39:17AM +0200, Thomas Gleixner wrote:
-> On Tue, 22 Jul 2014, Peter Zijlstra wrote:
-> > Anyway, there is one big fail in the entire futex stack that we 'need'
-> > to sort some day and that is NUMA. Some people (again database people)
-> > explicitly do not use futexes and instead use sysvsem because of this.
-> > 
-> > The problem with numa futexes is that because they're vaddr based there
-> > is no (persistent) node information. You always end up having to fall
-> > back to looking in all nodes before you can guarantee there is no
-> > matching futex.
-> > 
-> > One way to achieve it is by extending the futex value to include a node
-> > number, but that's obviously a complete ABI break. Then again, it should
-> > be pretty straight fwd, since the node number doesn't need to be part of
-> > the actual atomic update part, just part of the userspace storage.
+On Tue, Jul 22, 2014 at 03:23:29AM +0200, Rafael J. Wysocki wrote:
+
+> That turned out to be more challenging than I had thought initially.
 > 
-> So you want per node hash buckets, right? Fair enough, but how do you
-> make sure, that no thread/process on a different node is fiddling with
-> that "node bound" futex as well?
+> The last version I sent was almost OK, but it had some issues (like it could
+> walk the PCI hierarchy before resuming any PCI devices during system resume),
+> so a new version follows.  I did my best to avoid introducing any new problems
+> with it, but I obviously might overlook something.
+> 
+> It works for me and doesn't seem to break anything as far as I can say.
+> 
+> [1/3] Make PM workqueue available for CONFIG_PM_RUNTIME unset.
+> [2/3] Rework the handling of ACPI device wakeup notifications.
+> [3/3] Enable wakeup GPEs while setting up devices for wakeup during system
+>       suspend too.
 
-You don't and that should work just as well, just slower. But since the
-node id is in the futex 'value' we'll always end up in the right
-node-hash, even if its a remote one.
-
-So yes, per node hashes, and a persistent futex->node map.
-
-And before people start talking about mempol and using that to bind
-memory to nodes and such, remember that private futexes do not have a
-vma lookup and therefore mempols are impossible to use.
+Doesn't break, doesn't 'work' either. Is there anything I can provide
+you with to make this easier? lspci output or anything like that?
