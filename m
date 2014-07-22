@@ -1,128 +1,273 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755920AbaGVN0s (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 09:26:48 -0400
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:44845 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755707AbaGVN0p (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 09:26:45 -0400
-Date: Tue, 22 Jul 2014 15:26:52 +0200
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Christian =?iso-8859-1?Q?K=F6nig?= <deathsimple@vodafone.de>
-Cc: Christian =?iso-8859-1?Q?K=F6nig?= <christian.koenig@amd.com>,
-        Dave Airlie <airlied@gmail.com>,
-        Maarten Lankhorst <maarten.lankhorst@canonical.com>,
-        Thomas Hellstrom <thellstrom@vmware.com>,
-        nouveau <nouveau@lists.freedesktop.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        dri-devel <dri-devel@lists.freedesktop.org>,
-        Ben Skeggs <bskeggs@redhat.com>,
-        "Deucher, Alexander" <alexander.deucher@amd.com>
-Subject: Re: [Nouveau] [PATCH 09/17] drm/radeon: use common fence
- implementation for fences
-Message-ID: <20140722132652.GO15237@phenom.ffwll.local>
-Mail-Followup-To: Christian =?iso-8859-1?Q?K=F6nig?= <deathsimple@vodafone.de>,
-	Christian =?iso-8859-1?Q?K=F6nig?= <christian.koenig@amd.com>,
-	Dave Airlie <airlied@gmail.com>,
-	Maarten Lankhorst <maarten.lankhorst@canonical.com>,
-	Thomas Hellstrom <thellstrom@vmware.com>,
-	nouveau <nouveau@lists.freedesktop.org>,
-	LKML <linux-kernel@vger.kernel.org>,
-	dri-devel <dri-devel@lists.freedesktop.org>,
-	Ben Skeggs <bskeggs@redhat.com>,
-	"Deucher, Alexander" <alexander.deucher@amd.com>
-References: <20140709093124.11354.3774.stgit@patser>
- <20140709122953.11354.46381.stgit@patser>
- <CAPM=9tyD2ZbrcGDC3hfNb7qNdzsfnyD-ZwM7G-nOgxeu5YKuSg@mail.gmail.com>
- <53CE2421.5040906@amd.com>
- <20140722114607.GL15237@phenom.ffwll.local>
- <20140722115737.GN15237@phenom.ffwll.local>
- <53CE56ED.4040109@vodafone.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <53CE56ED.4040109@vodafone.de>
-X-Operating-System: Linux phenom 3.15.0-rc3+ 
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1755745AbaGVN1k (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 09:27:40 -0400
+Received: from mga02.intel.com ([134.134.136.20]:45500 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753206AbaGVNU5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 09:20:57 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,710,1400050800"; 
+   d="scan'208";a="576986012"
+From: Adrian Hunter <adrian.hunter@intel.com>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH 32/52] perf tools: Add helpers for calling Python objects
+Date: Tue, 22 Jul 2014 16:17:41 +0300
+Message-Id: <1406035081-14301-33-git-send-email-adrian.hunter@intel.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1406035081-14301-1-git-send-email-adrian.hunter@intel.com>
+References: <1406035081-14301-1-git-send-email-adrian.hunter@intel.com>
+Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki, Business Identity Code: 0357606 - 4, Domiciled in Helsinki
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 22, 2014 at 02:19:57PM +0200, Christian König wrote:
-> Am 22.07.2014 13:57, schrieb Daniel Vetter:
-> >On Tue, Jul 22, 2014 at 01:46:07PM +0200, Daniel Vetter wrote:
-> >>On Tue, Jul 22, 2014 at 10:43:13AM +0200, Christian König wrote:
-> >>>Am 22.07.2014 06:05, schrieb Dave Airlie:
-> >>>>On 9 July 2014 22:29, Maarten Lankhorst <maarten.lankhorst@canonical.com> wrote:
-> >>>>>Signed-off-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
-> >>>>>---
-> >>>>>  drivers/gpu/drm/radeon/radeon.h        |   15 +-
-> >>>>>  drivers/gpu/drm/radeon/radeon_device.c |   60 ++++++++-
-> >>>>>  drivers/gpu/drm/radeon/radeon_fence.c  |  223 ++++++++++++++++++++++++++------
-> >>>>>  3 files changed, 248 insertions(+), 50 deletions(-)
-> >>>>>
-> >>>> From what I can see this is still suffering from the problem that we
-> >>>>need to find a proper solution to,
-> >>>>
-> >>>>My summary of the issues after talking to Jerome and Ben and
-> >>>>re-reading things is:
-> >>>>
-> >>>>We really need to work out a better interface into the drivers to be
-> >>>>able to avoid random atomic entrypoints,
-> >>>Which is exactly what I criticized from the very first beginning. Good to
-> >>>know that I'm not the only one thinking that this isn't such a good idea.
-> >>I guess I've lost context a bit, but which atomic entry point are we
-> >>talking about? Afaics the only one that's mandatory is the is
-> >>fence->signaled callback to check whether a fence really has been
-> >>signalled. It's used internally by the fence code to avoid spurious
-> >>wakeups. Afaik that should be doable already on any hardware. If that's
-> >>not the case then we can always track the signalled state in software and
-> >>double-check in a worker thread before updating the sw state. And wrap
-> >>this all up into a special fence class if there's more than one driver
-> >>needing this.
-> >One thing I've forgotten: The i915 scheduler that's floating around runs
-> >its bottom half from irq context. So I really want to be able to check
-> >fence state from irq context and I also want to make it possible
-> >(possible! not mandatory) to register callbacks which are run from any
-> >context asap after the fence is signalled.
-> 
-> NAK, that's just the bad design I've talked about. Checking fence state
-> inside the same driver from interrupt context is OK, because it's the
-> drivers interrupt that we are talking about here.
-> 
-> Checking fence status from another drivers interrupt context is what really
-> concerns me here, cause your driver doesn't have the slightest idea if the
-> called driver is really capable of checking the fence right now.
+The Python script API repeatedly uses the same
+lines of code to get and call objects.  Make that
+into helper functions instead.  A side-effect is
+that some reference counting bugs disappear because
+the new call_object() function always decrements
+the reference count of 'retval'.
 
-I guess my mail hasn't been clear then. If you don't like it we could add
-a bit of glue to insulate the madness and bad design i915 might do from
-radeon. That imo doesn't invalidate the overall fence interfaces.
+Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+---
+ .../util/scripting-engines/trace-event-python.c    | 114 +++++++++------------
+ 1 file changed, 47 insertions(+), 67 deletions(-)
 
-So what about the following:
-- fence->enabling_signaling is restricted to be called from process
-  context. We don't use any different yet, so would boild down to adding a
-  WARN_ON(in_interrupt) or so to fence_enable_sw_signalling.
-
-- Make fence->signaled optional (already the case) and don't implement it
-  in readon (i.e. reduce this patch here). Only downside is that radeon
-  needs to correctly (i.e. without races or so) call fence_signal. And the
-  cross-driver synchronization might be a bit less efficient. Note that
-  you can call fence_signal from wherever you want to, so hopefully that
-  doesn't restrict your implementation. 
-
-End result: No one calls into radeon from interrupt context, and this is
-guaranteed.
-
-Would that be something you can agree to?
-
-Like I've said I think restricting the insanity other people are willing
-to live with just because you don't like it isn't right. But it is
-certainly right for you to insist on not being forced into any such
-design. I think the above would achieve this.
--Daniel
+diff --git a/tools/perf/util/scripting-engines/trace-event-python.c b/tools/perf/util/scripting-engines/trace-event-python.c
+index cbce254..26e5f14 100644
+--- a/tools/perf/util/scripting-engines/trace-event-python.c
++++ b/tools/perf/util/scripting-engines/trace-event-python.c
+@@ -73,6 +73,35 @@ static void pydict_set_item_string_decref(PyObject *dict, const char *key, PyObj
+ 	Py_DECREF(val);
+ }
+ 
++static PyObject *get_handler(const char *handler_name)
++{
++	PyObject *handler;
++
++	handler = PyDict_GetItemString(main_dict, handler_name);
++	if (handler && !PyCallable_Check(handler))
++		return NULL;
++	return handler;
++}
++
++static void call_object(PyObject *handler, PyObject *args, const char *die_msg)
++{
++	PyObject *retval;
++
++	retval = PyObject_CallObject(handler, args);
++	if (retval == NULL)
++		handler_call_die(die_msg);
++	Py_DECREF(retval);
++}
++
++static void try_call_object(const char *handler_name, PyObject *args)
++{
++	PyObject *handler;
++
++	handler = get_handler(handler_name);
++	if (handler)
++		call_object(handler, args, handler_name);
++}
++
+ static void define_value(enum print_arg_type field_type,
+ 			 const char *ev_name,
+ 			 const char *field_name,
+@@ -80,7 +109,7 @@ static void define_value(enum print_arg_type field_type,
+ 			 const char *field_str)
+ {
+ 	const char *handler_name = "define_flag_value";
+-	PyObject *handler, *t, *retval;
++	PyObject *t;
+ 	unsigned long long value;
+ 	unsigned n = 0;
+ 
+@@ -98,13 +127,7 @@ static void define_value(enum print_arg_type field_type,
+ 	PyTuple_SetItem(t, n++, PyInt_FromLong(value));
+ 	PyTuple_SetItem(t, n++, PyString_FromString(field_str));
+ 
+-	handler = PyDict_GetItemString(main_dict, handler_name);
+-	if (handler && PyCallable_Check(handler)) {
+-		retval = PyObject_CallObject(handler, t);
+-		if (retval == NULL)
+-			handler_call_die(handler_name);
+-		Py_DECREF(retval);
+-	}
++	try_call_object(handler_name, t);
+ 
+ 	Py_DECREF(t);
+ }
+@@ -127,7 +150,7 @@ static void define_field(enum print_arg_type field_type,
+ 			 const char *delim)
+ {
+ 	const char *handler_name = "define_flag_field";
+-	PyObject *handler, *t, *retval;
++	PyObject *t;
+ 	unsigned n = 0;
+ 
+ 	if (field_type == PRINT_SYMBOL)
+@@ -145,13 +168,7 @@ static void define_field(enum print_arg_type field_type,
+ 	if (field_type == PRINT_FLAGS)
+ 		PyTuple_SetItem(t, n++, PyString_FromString(delim));
+ 
+-	handler = PyDict_GetItemString(main_dict, handler_name);
+-	if (handler && PyCallable_Check(handler)) {
+-		retval = PyObject_CallObject(handler, t);
+-		if (retval == NULL)
+-			handler_call_die(handler_name);
+-		Py_DECREF(retval);
+-	}
++	try_call_object(handler_name, t);
+ 
+ 	Py_DECREF(t);
+ }
+@@ -362,7 +379,7 @@ static void python_process_tracepoint(struct perf_sample *sample,
+ 				      struct thread *thread,
+ 				      struct addr_location *al)
+ {
+-	PyObject *handler, *retval, *context, *t, *obj, *callchain;
++	PyObject *handler, *context, *t, *obj, *callchain;
+ 	PyObject *dict = NULL;
+ 	static char handler_name[256];
+ 	struct format_field *field;
+@@ -387,9 +404,7 @@ static void python_process_tracepoint(struct perf_sample *sample,
+ 
+ 	sprintf(handler_name, "%s__%s", event->system, event->name);
+ 
+-	handler = PyDict_GetItemString(main_dict, handler_name);
+-	if (handler && !PyCallable_Check(handler))
+-		handler = NULL;
++	handler = get_handler(handler_name);
+ 	if (!handler) {
+ 		dict = PyDict_New();
+ 		if (!dict)
+@@ -450,19 +465,9 @@ static void python_process_tracepoint(struct perf_sample *sample,
+ 		Py_FatalError("error resizing Python tuple");
+ 
+ 	if (handler) {
+-		retval = PyObject_CallObject(handler, t);
+-		if (retval == NULL)
+-			handler_call_die(handler_name);
+-		Py_DECREF(retval);
++		call_object(handler, t, handler_name);
+ 	} else {
+-		handler = PyDict_GetItemString(main_dict, "trace_unhandled");
+-		if (handler && PyCallable_Check(handler)) {
+-
+-			retval = PyObject_CallObject(handler, t);
+-			if (retval == NULL)
+-				handler_call_die("trace_unhandled");
+-			Py_DECREF(retval);
+-		}
++		try_call_object("trace_unhandled", t);
+ 		Py_DECREF(dict);
+ 	}
+ 
+@@ -474,7 +479,7 @@ static void python_process_general_event(struct perf_sample *sample,
+ 					 struct thread *thread,
+ 					 struct addr_location *al)
+ {
+-	PyObject *handler, *retval, *t, *dict, *callchain, *dict_sample;
++	PyObject *handler, *t, *dict, *callchain, *dict_sample;
+ 	static char handler_name[64];
+ 	unsigned n = 0;
+ 
+@@ -496,8 +501,8 @@ static void python_process_general_event(struct perf_sample *sample,
+ 
+ 	snprintf(handler_name, sizeof(handler_name), "%s", "process_event");
+ 
+-	handler = PyDict_GetItemString(main_dict, handler_name);
+-	if (!handler || !PyCallable_Check(handler))
++	handler = get_handler(handler_name);
++	if (!handler)
+ 		goto exit;
+ 
+ 	pydict_set_item_string_decref(dict, "ev_name", PyString_FromString(perf_evsel__name(evsel)));
+@@ -539,10 +544,7 @@ static void python_process_general_event(struct perf_sample *sample,
+ 	if (_PyTuple_Resize(&t, n) == -1)
+ 		Py_FatalError("error resizing Python tuple");
+ 
+-	retval = PyObject_CallObject(handler, t);
+-	if (retval == NULL)
+-		handler_call_die(handler_name);
+-	Py_DECREF(retval);
++	call_object(handler, t, handler_name);
+ exit:
+ 	Py_DECREF(dict);
+ 	Py_DECREF(t);
+@@ -566,36 +568,24 @@ static void python_process_event(union perf_event *event __maybe_unused,
+ 
+ static int run_start_sub(void)
+ {
+-	PyObject *handler, *retval;
+-	int err = 0;
+-
+ 	main_module = PyImport_AddModule("__main__");
+ 	if (main_module == NULL)
+ 		return -1;
+ 	Py_INCREF(main_module);
+ 
+ 	main_dict = PyModule_GetDict(main_module);
+-	if (main_dict == NULL) {
+-		err = -1;
++	if (main_dict == NULL)
+ 		goto error;
+-	}
+ 	Py_INCREF(main_dict);
+ 
+-	handler = PyDict_GetItemString(main_dict, "trace_begin");
+-	if (handler == NULL || !PyCallable_Check(handler))
+-		goto out;
++	try_call_object("trace_begin", NULL);
+ 
+-	retval = PyObject_CallObject(handler, NULL);
+-	if (retval == NULL)
+-		handler_call_die("trace_begin");
++	return 0;
+ 
+-	Py_DECREF(retval);
+-	return err;
+ error:
+ 	Py_XDECREF(main_dict);
+ 	Py_XDECREF(main_module);
+-out:
+-	return err;
++	return -1;
+ }
+ 
+ /*
+@@ -654,23 +644,13 @@ error:
+  */
+ static int python_stop_script(void)
+ {
+-	PyObject *handler, *retval;
+-	int err = 0;
++	try_call_object("trace_end", NULL);
+ 
+-	handler = PyDict_GetItemString(main_dict, "trace_end");
+-	if (handler == NULL || !PyCallable_Check(handler))
+-		goto out;
+-
+-	retval = PyObject_CallObject(handler, NULL);
+-	if (retval == NULL)
+-		handler_call_die("trace_end");
+-	Py_DECREF(retval);
+-out:
+ 	Py_XDECREF(main_dict);
+ 	Py_XDECREF(main_module);
+ 	Py_Finalize();
+ 
+-	return err;
++	return 0;
+ }
+ 
+ static int python_generate_script(struct pevent *pevent, const char *outfile)
 -- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+1.8.3.2
+
