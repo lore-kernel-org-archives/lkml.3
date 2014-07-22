@@ -1,78 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752777AbaGVNwu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 09:52:50 -0400
-Received: from canardo.mork.no ([148.122.252.1]:37356 "EHLO canardo.mork.no"
+	id S1752881AbaGVNyI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 09:54:08 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8975 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751431AbaGVNwt convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 09:52:49 -0400
-From: =?utf-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>
-To: Nicholas Mc Guire <der.herr@hofr.at>
-Cc: Michal Marek <mmarek@suse.cz>, Julia Lawall <Julia.Lawall@lip6.fr>,
-        Gilles Muller <Gilles.Muller@lip6.fr>,
-        Nicolas Palix <nicolas.palix@imag.fr>, cocci@systeme.lip6.fr,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] scripts: coccinelle: kfree with TRACE_RET before ref is ok (resent)
-Organization: m
-References: <20140722101217.GA16183@opentech.at>
-Date: Tue, 22 Jul 2014 15:51:25 +0200
-In-Reply-To: <20140722101217.GA16183@opentech.at> (Nicholas Mc Guire's message
-	of "Tue, 22 Jul 2014 12:12:17 +0200")
-Message-ID: <87ha298psy.fsf@nemi.mork.no>
-User-Agent: Gnus/5.130011 (Ma Gnus v0.11) Emacs/24.3 (gnu/linux)
+	id S1750737AbaGVNyG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 09:54:06 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Gu Zheng <guz.fnst@cn.fujitsu.com>
+Cc: bcrl@kvack.org, axboe@kernel.dk, akpm@linux-foundation.org,
+        linux-aio@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/4] aio: remove the needless registration of ring file's private_data
+References: <1405996804-8262-1-git-send-email-guz.fnst@cn.fujitsu.com>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Tue, 22 Jul 2014 09:53:59 -0400
+In-Reply-To: <1405996804-8262-1-git-send-email-guz.fnst@cn.fujitsu.com> (Gu
+	Zheng's message of "Tue, 22 Jul 2014 10:40:01 +0800")
+Message-ID: <x49zjg17b48.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Nicholas Mc Guire <der.herr@hofr.at> writes:
+Gu Zheng <guz.fnst@cn.fujitsu.com> writes:
 
-> kfree.cocci currently triggers on constructs like
-> (resending with proper CC list and subject line)
+> Remove the registration of ring file's private_data, we do not use
+> it.
 >
-> drivers/staging/rts5208/spi.c
-> 596    if (retval < 0) {
-> 597            kfree(buf);
-> 598            rtsx_clear_spi_error(chip);
-> 599            spi_set_err_code(chip, SPI_HW_ERR);
-> 600            TRACE_RET(chip, STATUS_FAIL);
-> 601    }
-> 602
-> 603    rtsx_stor_access_xfer_buf(buf, pagelen, srb, &index, &offset,
->                             TO_XFER_BUF);
+> Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
+
+Reviewed-by: Jeff Moyer <jmoyer@redhat.com>
+
+> ---
+>  fs/aio.c |    1 -
+>  1 files changed, 0 insertions(+), 1 deletions(-)
 >
-> with:
->
-> ./drivers/staging/rts5208/spi.c:603:28-31: ERROR: reference preceded 
-> by free on line 597
->
-> but this should be fine - so TRACE_RET is added to the list of calls 
-> "protecting" access to freed objects see drivers/staging/rts5208/trace.h
-
-The TRACE_RET macro is a serious coding style violation. Fix that and
-the error will go away.  Don't change scripts to hide issues with the
-code. The code above won't just trigger an error in kfree.cocci but also
-in the head of any sane person.
-
->From Documentation/CodingStyle:
-
-<quote>
-Things to avoid when using macros:
-
-1) macros that affect control flow:
-
-#define FOO(x)                                  \
-        do {                                    \
-                if (blah(x) < 0)                \
-                        return -EBUGGERED;      \
-        } while(0)
-
-is a _very_ bad idea.  It looks like a function call but exits the "calling"
-function; don't break the internal parsers of those who will read the code.
-</quote>
-
-
-Bjørn
+> diff --git a/fs/aio.c b/fs/aio.c
+> index 955947e..ad35876 100644
+> --- a/fs/aio.c
+> +++ b/fs/aio.c
+> @@ -192,7 +192,6 @@ static struct file *aio_private_file(struct kioctx *ctx, loff_t nr_pages)
+>  	}
+>  
+>  	file->f_flags = O_RDWR;
+> -	file->private_data = ctx;
+>  	return file;
+>  }
