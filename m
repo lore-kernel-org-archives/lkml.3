@@ -1,119 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752130AbaGVHkr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 03:40:47 -0400
-Received: from mail-we0-f179.google.com ([74.125.82.179]:41030 "EHLO
-	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751569AbaGVHkp (ORCPT
+	id S1753314AbaGVHlW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 03:41:22 -0400
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:28311 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752401AbaGVHlV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 03:40:45 -0400
-Date: Tue, 22 Jul 2014 09:40:53 +0200
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Jerome Glisse <j.glisse@gmail.com>, Oded Gabbay <oded.gabbay@amd.com>,
-        Christian =?iso-8859-1?Q?K=F6nig?= <deathsimple@vodafone.de>,
-        David Airlie <airlied@linux.ie>, Alex Deucher <alexdeucher@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        John Bridgman <John.Bridgman@amd.com>, Joerg Roedel <joro@8bytes.org>,
-        Andrew Lewycky <Andrew.Lewycky@amd.com>,
-        Michel =?iso-8859-1?Q?D=E4nzer?= <michel.daenzer@amd.com>,
-        Ben Goz <Ben.Goz@amd.com>, Alexey Skidanov <Alexey.Skidanov@amd.com>,
-        Evgeny Pinchuk <Evgeny.Pinchuk@amd.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        linux-mm <linux-mm@kvack.org>
-Subject: Re: [PATCH v2 00/25] AMDKFD kernel driver
-Message-ID: <20140722074053.GI15237@phenom.ffwll.local>
-Mail-Followup-To: Jerome Glisse <j.glisse@gmail.com>,
-	Oded Gabbay <oded.gabbay@amd.com>,
-	Christian =?iso-8859-1?Q?K=F6nig?= <deathsimple@vodafone.de>,
-	David Airlie <airlied@linux.ie>,
-	Alex Deucher <alexdeucher@gmail.com>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	John Bridgman <John.Bridgman@amd.com>,
-	Joerg Roedel <joro@8bytes.org>,
-	Andrew Lewycky <Andrew.Lewycky@amd.com>,
-	Michel =?iso-8859-1?Q?D=E4nzer?= <michel.daenzer@amd.com>,
-	Ben Goz <Ben.Goz@amd.com>,
-	Alexey Skidanov <Alexey.Skidanov@amd.com>,
-	Evgeny Pinchuk <Evgeny.Pinchuk@amd.com>,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-	"dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-	linux-mm <linux-mm@kvack.org>
-References: <53CD0961.4070505@amd.com>
- <53CD17FD.3000908@vodafone.de>
- <20140721152511.GW15237@phenom.ffwll.local>
- <20140721155851.GB4519@gmail.com>
- <20140721170546.GB15237@phenom.ffwll.local>
- <53CD4DD2.10906@amd.com>
- <CAKMK7uFhvGtxj_d6X=4OBdVSm6cT1-Z-DiTE-FTWMnFjY2uqMQ@mail.gmail.com>
- <53CD5ED9.2040600@amd.com>
- <20140721190306.GB5278@gmail.com>
- <20140722072851.GH15237@phenom.ffwll.local>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140722072851.GH15237@phenom.ffwll.local>
-X-Operating-System: Linux phenom 3.15.0-rc3+ 
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Tue, 22 Jul 2014 03:41:21 -0400
+X-AuditID: cbfec7f5-b7f626d000004b39-d2-53ce159e7dd8
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org,
+        linux-api@vger.kernel.org
+Cc: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Subject: [RESEND PATCH v3 0/6] charger/mfd: max14577: Add support for MAX77836
+Date: Tue, 22 Jul 2014 09:41:00 +0200
+Message-id: <1406014866-17744-1-git-send-email-k.kozlowski@samsung.com>
+X-Mailer: git-send-email 1.9.1
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrCLMWRmVeSWpSXmKPExsVy+t/xK7rzRM8FGzw7y2+xccZ6VoupD5+w
+	WUx68p7ZYuLKycwW/W8Wslqce7WS0eL1C0OLs01v2C3ufz3KaPHtSgeTxebvHWwWl3fNYbNY
+	e+Quu8XS6xeZLCZMX8ti0br3CLvF6W5WB0GPNfPWMHpc7utl8tg56y67x8rlX9g8Nq/Q8ti0
+	qpPN4861PWwe804GevRtWcXo8XmTXABXFJdNSmpOZllqkb5dAlfG4+872Quui1R0fbjO2MD4
+	hL+LkZNDQsBEYtXDuawQtpjEhXvr2UBsIYGljBL///N2MXIB2X1MEq//vgNLsAkYS2xevoQN
+	JCEiMI1RYvGGiYwgDrPANBaJf3c7mLoYOTiEBfwk/n4VBTFZBFQl/l8G6+UVcJd41zmLHWKZ
+	nMTJY5NZJzByL2BkWMUomlqaXFCclJ5rpFecmFtcmpeul5yfu4kRErJfdzAuPWZ1iFGAg1GJ
+	h5fjxalgIdbEsuLK3EOMEhzMSiK87XvOBgvxpiRWVqUW5ccXleakFh9iZOLglGpgXMQgy3Pn
+	X+MEp0fJ/l3t7bs5VkQdzM76uqDWU/JnZULus+mRipMmbLR28V5yflvw43CO9bnK6uck3drZ
+	e1ZGz+5uzGIstg6sNm3/7vTY8dEdQ++dboI6uVMcqhUf7tJmXmq1gEWeZfHfbDm2W1t3f41U
+	Fl8dc/ZqwpHbFQdepfV/s9YR6FqrxFKckWioxVxUnAgAmyg7KzcCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 22, 2014 at 09:28:51AM +0200, Daniel Vetter wrote:
-> On Mon, Jul 21, 2014 at 03:03:07PM -0400, Jerome Glisse wrote:
-> > On Mon, Jul 21, 2014 at 09:41:29PM +0300, Oded Gabbay wrote:
-> > > On 21/07/14 21:22, Daniel Vetter wrote:
-> > > > On Mon, Jul 21, 2014 at 7:28 PM, Oded Gabbay <oded.gabbay@amd.com> wrote:
-> > > >>> I'm not sure whether we can do the same trick with the hw scheduler. But
-> > > >>> then unpinning hw contexts will drain the pipeline anyway, so I guess we
-> > > >>> can just stop feeding the hw scheduler until it runs dry. And then unpin
-> > > >>> and evict.
-> > > >> So, I'm afraid but we can't do this for AMD Kaveri because:
-> > > > 
-> > > > Well as long as you can drain the hw scheduler queue (and you can do
-> > > > that, worst case you have to unmap all the doorbells and other stuff
-> > > > to intercept further submission from userspace) you can evict stuff.
-> > > 
-> > > I can't drain the hw scheduler queue, as I can't do mid-wave preemption.
-> > > Moreover, if I use the dequeue request register to preempt a queue
-> > > during a dispatch it may be that some waves (wave groups actually) of
-> > > the dispatch have not yet been created, and when I reactivate the mqd,
-> > > they should be created but are not. However, this works fine if you use
-> > > the HIQ. the CP ucode correctly saves and restores the state of an
-> > > outstanding dispatch. I don't think we have access to the state from
-> > > software at all, so it's not a bug, it is "as designed".
-> > > 
-> > 
-> > I think here Daniel is suggesting to unmapp the doorbell page, and track
-> > each write made by userspace to it and while unmapped wait for the gpu to
-> > drain or use some kind of fence on a special queue. Once GPU is drain we
-> > can move pinned buffer, then remap the doorbell and update it to the last
-> > value written by userspace which will resume execution to the next job.
-> 
-> Exactly, just prevent userspace from submitting more. And if you have
-> misbehaving userspace that submits too much, reset the gpu and tell it
-> that you're sorry but won't schedule any more work.
-> 
-> We have this already in i915 (since like all other gpus we're not
-> preempting right now) and it works. There's some code floating around to
-> even restrict the reset to _just_ the offending submission context, with
-> nothing else getting corrupted.
-> 
-> You can do all this with the doorbells and unmapping them, but it's a
-> pain. Much easier if you have a real ioctl, and I haven't seen anyone with
-> perf data indicating that an ioctl would be too much overhead on linux.
-> Neither in this thread nor internally here at intel.
+Hi,
 
-Aside: Another reason why the ioctl is better than the doorbell is
-integration with other drivers. Yeah I know this is about compute, but
-sooner or later someone will want to e.g. post-proc video frames between
-the v4l capture device and the gpu mpeg encoder. Or something else fancy.
 
-Then you want to be able to somehow integrate into a cross-driver fence
-framework like android syncpts, and you can't do that without an ioctl for
-the compute submissions.
--Daniel
+This is a resend of third version of patches adding support for
+MAX77836 device to the max14577 drivers.
+
+This patchset was already reviewed by some of the maintainers during
+previous submissions.
+I only need acks from power tree (patches: 1, 3, 4, 6).
+
+The patches 1, 2 and 3 depend on each other so they should be
+pulled at once. Patches 4, 5 and 6 can be applied independently.
+Lee Jones said he can take the set through his tree. Still I need acks
+from power subsystem.
+
+
+Changes since v2
+================
+1. charger: Use sysfs instead of DTS for setting the fast charge timer.
+   The charger driver now selects the CONFIG_SYSFS and exports
+   a DEVICE_ATTR. (suggested by Mark Rutland)
+2. Add patch 6 with documentation of exported sysfs entry for fast
+   charge timer.
+3. charger 3/6: Add missing 'break' in switch parsing valid values
+   for fast charge timer.
+
+Changes since v1
+================
+1. charger 3/5: Add an error message for each unsuccessful parse of DT
+   property (suggested by Mark Rutland).
+2. charger 3/5: Use 'u32' type for storing values from DT (suggested
+   by Mark Rutland).
+3. charger 3/5: Remove an error message for memory allocation failure.
+
+
+The patchset (first and second part of the MAX77836 drivers) has been
+on the lists since January. Changelog for the first part of drivers:
+https://www.mail-archive.com/linux-kernel@vger.kernel.org/msg628696.html
+
+
+Best regards,
+Krzysztof Kozlowski
+
+
+Krzysztof Kozlowski (6):
+  charger: max14577: Add support for MAX77836 charger
+  regulator/mfd: max14577: Export symbols for calculating charger
+    current
+  charger: max14577: Configure battery-dependent settings from DTS and
+    sysfs
+  power: max17040: Add ID for MAX77836 Fuel Gauge block
+  devicetree: mfd: max14577: Add device tree bindings document
+  Documentation: charger: max14577: Document exported sysfs entry
+
+ Documentation/ABI/testing/sysfs-class-power        |  14 +
+ Documentation/devicetree/bindings/mfd/max14577.txt | 146 ++++++++
+ drivers/mfd/max14577.c                             | 100 +++++-
+ drivers/power/Kconfig                              |   5 +-
+ drivers/power/max14577_charger.c                   | 370 +++++++++++++++++++--
+ drivers/power/max17040_battery.c                   |   1 +
+ drivers/regulator/max14577.c                       |  80 +----
+ include/linux/mfd/max14577-private.h               |  95 ++++--
+ include/linux/mfd/max14577.h                       |  30 ++
+ 9 files changed, 703 insertions(+), 138 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/mfd/max14577.txt
+
 -- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+1.9.1
+
