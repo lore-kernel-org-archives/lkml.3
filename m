@@ -1,103 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932221AbaGVVd6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 17:33:58 -0400
-Received: from mail-ie0-f172.google.com ([209.85.223.172]:56348 "EHLO
-	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756663AbaGVVdz (ORCPT
+	id S932174AbaGVVd5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 17:33:57 -0400
+Received: from mail-ie0-f180.google.com ([209.85.223.180]:56476 "EHLO
+	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755563AbaGVVdz convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 22 Jul 2014 17:33:55 -0400
-Date: Tue, 22 Jul 2014 17:33:50 -0400
-From: Matt Porter <mporter@linaro.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org,
-        Brian Norris <computersforpeace@gmail.com>, devicetree@vger.kernel.org,
-        Florian Fainelli <f.fainelli@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        Christian Daudt <bcm@fixthebug.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Sebastian Reichel <sre@kernel.org>,
-        Gregory Fong <gregory.0xf0@gmail.com>, Olof Johansson <olof@lixom.net>,
-        David Woodhouse <dwmw2@infradead.org>
-Subject: Re: [PATCH v8 00/11] ARM: brcmstb: Add Broadcom STB SoC support
-Message-ID: <20140722213350.GX2593@beef>
-References: <1405976886-27807-1-git-send-email-computersforpeace@gmail.com>
- <5675728.WLk3P96IBM@wuerfel>
- <20140722204431.GG28323@ld-irv-0074>
- <5044348.IEPQPrahyu@wuerfel>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5044348.IEPQPrahyu@wuerfel>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1404901036-27682-2-git-send-email-antoine.tenart@free-electrons.com>
+References: <1404901036-27682-1-git-send-email-antoine.tenart@free-electrons.com>
+	<1404901036-27682-2-git-send-email-antoine.tenart@free-electrons.com>
+Date: Tue, 22 Jul 2014 16:33:54 -0500
+Message-ID: <CADYTM3ZijsqSUTvBEscJCP94aWCPahPJ1se+g0+ssqwcE_yAxg@mail.gmail.com>
+Subject: Re: [PATCH 1/4] usb: move the OTG state from the USB PHY to the OTG structure
+From: Bin Liu <binmlist@gmail.com>
+To: =?UTF-8?Q?Antoine_T=C3=A9nart?= <antoine.tenart@free-electrons.com>
+Cc: balbi@ti.com, gregkh@linuxfoundation.org, Peter.Chen@freescale.com,
+        kishon@ti.com, stern@rowland.harvard.edu,
+        alexandre.belloni@free-electrons.com,
+        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
+        jszhang@marvell.com, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 22, 2014 at 10:57:17PM +0200, Arnd Bergmann wrote:
-> On Tuesday 22 July 2014 13:44:31 Brian Norris wrote:
-> > > For the platform changes in the first patch, I would prefer to have
-> > > Matt pick up the first patch, but we can also apply it directly into
-> > > arm-soc if he prefers that.
-> > 
-> > That brings up a question related to PATCH 11 in the series (MAINTAINERS
-> > update); who will be maintaining arch/arm/mach-bcm/*brcmstb*, and how
-> > will code go upstream? It seems like Matt and Christian are officially
-> > mach-bcm maintainers, although I don't know if Christian is still
-> > involved.
-> 
-> You have to solve that question together with Matt. From my perspective
-> it would be easier if I only have to deal with one person for mach-bcm,
-> but it's really up to you.
+Hi,
+
+On Wed, Jul 9, 2014 at 5:17 AM, Antoine Ténart
+<antoine.tenart@free-electrons.com> wrote:
+> Before using the PHY framework instead of the USB PHY one, we need to
+> move the OTG state into another place, since it won't be available when
+> USB PHY isn't used. This patch moves the OTG state into the OTG
+> structure, and makes all the needed modifications in the drivers
+> using the OTG state.
 >
-> 
-> > Also, BCM7xxx shares little in common with the rest of mach-bcm, except
-> > a company name, so we'd really like at least the 'Maintainer' entries
-> > for the CC. I was planning on a separate git tree too, although it could
-> > have conflicts if we touch arch/arm/mach-bcm/{Makefile,Kconfig}.
-> > 
-> > So would we send a separate arm-soc pull request for the arm-soc
-> > targeted changes (and all future development)?
-> 
-> You can definitely have the separate MAINTAINERS entry without necessarily
-> becoming a maintainer at the same level. I know Matt is very responsive
-> and can forward your patches to arm-soc if that works for you.
+> Signed-off-by: Antoine Ténart <antoine.tenart@free-electrons.com>
+> ---
+>  drivers/phy/phy-omap-usb2.c         |  8 +---
+>  drivers/usb/chipidea/debug.c        |  3 +-
+>  drivers/usb/chipidea/otg_fsm.c      | 12 ++---
+>  drivers/usb/common/usb-otg-fsm.c    |  8 ++--
+>  drivers/usb/host/ohci-omap.c        |  2 +-
+>  drivers/usb/musb/am35x.c            | 28 +++++------
+>  drivers/usb/musb/blackfin.c         | 18 +++----
+>  drivers/usb/musb/da8xx.c            | 28 +++++------
+>  drivers/usb/musb/davinci.c          | 18 +++----
+>  drivers/usb/musb/musb_core.c        | 94 ++++++++++++++++++-------------------
+>  drivers/usb/musb/musb_dsps.c        | 26 +++++-----
+>  drivers/usb/musb/musb_gadget.c      | 36 +++++++-------
+>  drivers/usb/musb/musb_host.c        |  8 ++--
+>  drivers/usb/musb/musb_virthub.c     | 22 ++++-----
+>  drivers/usb/musb/omap2430.c         | 30 ++++++------
+>  drivers/usb/musb/tusb6010.c         | 40 ++++++++--------
+>  drivers/usb/musb/ux500.c            | 10 ++--
+>  drivers/usb/phy/phy-ab8500-usb.c    | 10 ++--
+>  drivers/usb/phy/phy-fsl-usb.c       | 10 ++--
+>  drivers/usb/phy/phy-generic.c       |  4 +-
+>  drivers/usb/phy/phy-gpio-vbus-usb.c | 10 ++--
+>  drivers/usb/phy/phy-msm-usb.c       | 34 +++++++-------
+>  drivers/usb/phy/phy-mv-usb.c        | 46 +++++++++---------
+>  include/linux/usb/otg.h             |  2 +
+>  include/linux/usb/phy.h             |  1 -
+>  25 files changed, 252 insertions(+), 256 deletions(-)
+>
+> diff --git a/drivers/phy/phy-omap-usb2.c b/drivers/phy/phy-omap-usb2.c
+> index 7007c11fe07d..1f444f91ed7d 100644
+> --- a/drivers/phy/phy-omap-usb2.c
+> +++ b/drivers/phy/phy-omap-usb2.c
+> @@ -80,11 +80,9 @@ static int omap_usb_start_srp(struct usb_otg *otg)
+>
+>  static int omap_usb_set_host(struct usb_otg *otg, struct usb_bus *host)
+>  {
+> -       struct usb_phy  *phy = otg->phy;
+> -
+>         otg->host = host;
+>         if (!host)
+> -               phy->state = OTG_STATE_UNDEFINED;
+> +               otg->state = OTG_STATE_UNDEFINED;
+>
+>         return 0;
+>  }
+> @@ -92,11 +90,9 @@ static int omap_usb_set_host(struct usb_otg *otg, struct usb_bus *host)
+>  static int omap_usb_set_peripheral(struct usb_otg *otg,
+>                 struct usb_gadget *gadget)
+>  {
+> -       struct usb_phy  *phy = otg->phy;
+> -
+>         otg->gadget = gadget;
+>         if (!gadget)
+> -               phy->state = OTG_STATE_UNDEFINED;
+> +               otg->state = OTG_STATE_UNDEFINED;
+>
+>         return 0;
+>  }
+> diff --git a/drivers/usb/chipidea/debug.c b/drivers/usb/chipidea/debug.c
+> index 7cccab6ff308..9a9702773e43 100644
+> --- a/drivers/usb/chipidea/debug.c
+> +++ b/drivers/usb/chipidea/debug.c
+> @@ -219,8 +219,7 @@ int ci_otg_show(struct seq_file *s, void *unused)
+>         fsm = &ci->fsm;
+>
+>         /* ------ State ----- */
+> -       seq_printf(s, "OTG state: %s\n\n",
 
-We had this discussion wrt Hauke's BCM5301x support. The situation is
-basically the same. To date, every instance of a BCM ARM SoC shares
-nothing more than the company name and in some rare cases a piece of
-licensed IP like the Arasan sdhci or dwc2. I can't recall who asked
-for it, but I think Olof asked to have one pull request for all of
-mach-bcm to keep things simple. So we ended up with:
+Is this line removed by accident?
 
-BROADCOM BCM5301X ARM ARCHICTURE
-M:      Hauke Mehrtens <hauke@hauke-m.de>
-L:      linux-arm-kernel@lists.infradead.org
-S:      Maintained
-F:      arch/arm/mach-bcm/bcm_5301x.c
-F:      arch/arm/boot/dts/bcm5301x.dtsi
-F:      arch/arm/boot/dts/bcm470*
+> -               usb_otg_state_string(ci->transceiver->state));
+> +               usb_otg_state_string(ci->transceiver->otg.state));
+>
+>         /* ------ State Machine Variables ----- */
 
-which could be a model for BCM7xxx maintainership and Christian and I
-can aggregate this stuff in the mach-bcm tree for pull requests to the
-arm-soc team as we are doing now. bcm2835 is an exception case since
-that was living elsewhere before the new platforms colocated in
-mach-bcm.
+<snip>
 
-> > For the reset of mach-bcm stuff, I'll just send an arm-soc pull request
-> > soon enough, unless Matt/Arnd/Olof object.
-> 
-> I'll wait for Matt to comment before pulling it, otherwise that sounds
-> fine.
-
-I'm fine with it, but we were asked to have one request for bcm5301x to
-make life easy for the arm-soc team. If we want each platform to do pull
-requests directly with arm-soc we should advise Hauke to do the same as
-well with bcm5301x. I think the chances of Kconfig/Makefile conflicts are
-relatively low as there's a dwindling amount of code of interest in new
-platform mach directories like ours.
-
-I would like to see a consistent path for all BCM platform maintainers.
-
--Matt
+Regards,
+-Bin.
