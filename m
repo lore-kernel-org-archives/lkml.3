@@ -1,70 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933508AbaGVWvC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 18:51:02 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44440 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932507AbaGVWWy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 18:22:54 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Lukas Czerner <lczerner@redhat.com>, Mike Snitzer <snitzer@redhat.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 079/116] dm thin: update discard_granularity to reflect the thin-pool blocksize
-Date: Tue, 22 Jul 2014 15:21:30 -0700
-Message-Id: <1406067727-19683-80-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1406067727-19683-1-git-send-email-kamal@canonical.com>
-References: <1406067727-19683-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.8
+	id S933854AbaGVWvK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 18:51:10 -0400
+Received: from ozlabs.org ([103.22.144.67]:55541 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932507AbaGVWvE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 18:51:04 -0400
+Date: Wed, 23 Jul 2014 08:50:57 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Richard Weinberger <richard@nod.at>
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org
+Subject: Re: Global signal cleanup, take 4
+Message-ID: <20140723085057.5d0b12d6@canb.auug.org.au>
+In-Reply-To: <53CE0A25.7090508@nod.at>
+References: <1405951409-16953-1-git-send-email-richard@sigma-star.at>
+	<20140722144727.441bcc2a@canb.auug.org.au>
+	<53CE0A25.7090508@nod.at>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/LqKh5uz_JjdXR2DRZ3TltvT"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8.13.27 -stable review patch.  If anyone has any objections, please let me know.
+--Sig_/LqKh5uz_JjdXR2DRZ3TltvT
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-------------------
+Hi Richard,
 
-From: Lukas Czerner <lczerner@redhat.com>
+On Tue, 22 Jul 2014 08:52:21 +0200 Richard Weinberger <richard@nod.at> wrot=
+e:
+>
+> Am 22.07.2014 06:47, schrieb Stephen Rothwell:
+> >=20
+> > On Mon, 21 Jul 2014 16:02:46 +0200 Richard Weinberger <richard@sigma-st=
+ar.at> wrote:
+> >>
+> >> The whole series can also be found at:
+> >> git://git.kernel.org/pub/scm/linux/kernel/git/rw/misc.git signal_v4
+> >>
+> >> Andrew, can you please pickup this series?
+> >=20
+> > Why don't we just add that git tree to linux-next? Then you can send
+> > Linus a pull request in the next merge window.
+>=20
+> That's a good idea.
+> Can you please add the tree to linux-next?
 
-commit 09869de57ed2728ae3c619803932a86cb0e2c4f8 upstream.
+Added from today.  But I would prefer a more generic branch name if it
+ever changes.
 
-DM thinp already checks whether the discard_granularity of the data
-device is a factor of the thin-pool block size.  But when using the
-dm-thin-pool's discard passdown support, DM thinp was not selecting the
-max of the underlying data device's discard_granularity and the
-thin-pool's block size.
+Thanks for adding your subsystem tree as a participant of linux-next.  As
+you may know, this is not a judgment of your code.  The purpose of
+linux-next is for integration testing and to lower the impact of
+conflicts between subsystems in the next merge window.=20
 
-Update set_discard_limits() to set discard_granularity to the max of
-these values.  This enables blkdev_issue_discard() to properly align the
-discards that are sent to the DM thin device on a full block boundary.
-As such each discard will now cover an entire DM thin-pool block and the
-block will be reclaimed.
+You will need to ensure that the patches/commits in your tree/series have
+been:
+     * submitted under GPL v2 (or later) and include the Contributor's
+        Signed-off-by,
+     * posted to the relevant mailing list,
+     * reviewed by you (or another maintainer of your subsystem tree),
+     * successfully unit tested, and=20
+     * destined for the current or next Linux merge window.
 
-Reported-by: Zdenek Kabelac <zkabelac@redhat.com>
-Signed-off-by: Lukas Czerner <lczerner@redhat.com>
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- drivers/md/dm-thin.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+Basically, this should be just what you would send to Linus (or ask him
+to fetch).  It is allowed to be rebased if you deem it necessary.
 
-diff --git a/drivers/md/dm-thin.c b/drivers/md/dm-thin.c
-index ca954b1..3d183ca 100644
---- a/drivers/md/dm-thin.c
-+++ b/drivers/md/dm-thin.c
-@@ -2479,7 +2479,8 @@ static void set_discard_limits(struct pool_c *pt, struct queue_limits *limits)
- 	 */
- 	if (pt->adjusted_pf.discard_passdown) {
- 		data_limits = &bdev_get_queue(pt->data_dev->bdev)->limits;
--		limits->discard_granularity = data_limits->discard_granularity;
-+		limits->discard_granularity = max(data_limits->discard_granularity,
-+						  pool->sectors_per_block << SECTOR_SHIFT);
- 	} else if (block_size_is_power_of_two(pool))
- 		limits->discard_granularity = pool->sectors_per_block << SECTOR_SHIFT;
- 	else
--- 
-1.9.1
+--=20
+Cheers,
+Stephen Rothwell=20
+sfr@canb.auug.org.au
 
+--Sig_/LqKh5uz_JjdXR2DRZ3TltvT
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJTzurWAAoJEMDTa8Ir7ZwVqT4P/0MJcpcuSMQ8M2ywy1VxnYyO
+M4rRZlsy/v+0hPaxGTksb10UIYJEAp/cUppOD9ib2V0G8h1FeGop5asseiSYaBgf
+sAGPimMq5ta9C0bBE7HgMl8M75Yva+St+mwaiTBCQ/U7nwvmPkWQ/Dqxil+XhNld
+Kc1NElB2io2trZ215OmDkva1AlnoRK72xWWD9//6XAkhmP3QNR63oGifSUvR0cHN
+gwqQzY0WfXEPN/tmOfhIiw5GoI9EjKOpj2Xaba4PI6lIYhL61CNnDuFDmOB1A/2S
+mO+lmZ8xEOJp6N3+461BBtearZspgxyqKZxME/KpArfqXS+hQ7hD9+2wTgABR7FD
+J9NozV3vha6cXtimTMZPq55YVFZTS5hiY4GNE7zuK1O7WUXclChYWhs/6PhIw0nF
+SErVRaqVABYfEYSBy0pdMq9QUm2Wq8AYSche93VUZ0RZII6EC71Mx15CqCKwPGQc
+uKZeVD5bfcrGxHto/sXscgab5dz0iNzWKN2AOMBeIQJRdgcOcTpADQazZA5Glo7F
+0bqcOqEY4HoGfHGuLgeIe5OQWBQy53YawFfSzaQqv0HVusr/QNwQdB4wL4rKbFl/
+vJbpiCeuyRE54N2oRntvQ674Gbev3iDyz3RjGTpPJk/FEqF9sSiJ8qT2cS9uKy/G
+jkm9NbyZe8ezy3VDsSuB
+=YTla
+-----END PGP SIGNATURE-----
+
+--Sig_/LqKh5uz_JjdXR2DRZ3TltvT--
