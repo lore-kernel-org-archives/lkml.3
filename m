@@ -1,74 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752016AbaGVFWs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 01:22:48 -0400
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:51401 "EHLO
-	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750821AbaGVFWq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 01:22:46 -0400
-X-Original-SENDERIP: 10.178.33.69
-X-Original-MAILFROM: gioh.kim@lge.com
-Message-ID: <53CDF524.3080006@lge.com>
-Date: Tue, 22 Jul 2014 14:22:44 +0900
-From: Gioh Kim <gioh.kim@lge.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1752353AbaGVF12 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 01:27:28 -0400
+Received: from purkki.adurom.net ([80.68.90.206]:36056 "EHLO purkki.adurom.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751783AbaGVF11 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 01:27:27 -0400
+From: Kalle Valo <kvalo@adurom.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Joe Perches <joe@perches.com>, Richard Weinberger <richard@nod.at>,
+        akpm@linux-foundation.org, apw@canonical.com, tytso@mit.edu,
+        dwalter@google.com, bp@suse.de, neilb@suse.de, hch@infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] checkpatch.pl: Remove --file option
+References: <1405611268-12463-1-git-send-email-richard@nod.at>
+	<1405612283.12363.10.camel@joe-AO725> <20140717160236.GD22791@pd.tnic>
+Date: Tue, 22 Jul 2014 08:27:22 +0300
+In-Reply-To: <20140717160236.GD22791@pd.tnic> (Borislav Petkov's message of
+	"Thu, 17 Jul 2014 18:02:36 +0200")
+Message-ID: <87vbqq9d51.fsf@purkki.adurom.net>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-To: Alexander Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>, Jan Kara <jack@suse.cz>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Theodore Ts'o" <tytso@mit.edu>,
-        Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org,
-        =?EUC-KR?B?wMywx8ij?= <gunho.lee@lge.com>
-Subject: [PATCH 2/2] ext4: allocate buffer-cache for superblock in, non-movable
- area
-Content-Type: text/plain; charset=EUC-KR
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A buffer-cache for superblock is disturbing page migration,
-because the buffer-cache is not released until unmount.
-The buffer-cache must be allocated from non-movable area.
+Borislav Petkov <bp@alien8.de> writes:
 
-Signed-off-by: Gioh Kim <gioh.kim@lge.com>
----
- fs/ext4/super.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+> No, checkpatch should only check patches and not whole file. It is
+> wrong. Fullstop.
 
-diff --git a/fs/ext4/super.c b/fs/ext4/super.c
-index cc6c0ff..3f0ad64 100644
---- a/fs/ext4/super.c
-+++ b/fs/ext4/super.c
-@@ -3435,7 +3435,7 @@ static int ext4_fill_super(struct super_block *sb, void *data, int silent)
-                logical_sb_block = sb_block;
-        }
+Please don't remove --file, I use it all the time when maintaining
+ath6kl and ath10k. It's a lot easier in my workflow to test the whole
+driver in one go than start testing individual patches.
 
--       if (!(bh = sb_bread(sb, logical_sb_block))) {
-+       if (!(bh = sb_bread_nonmovable(sb, logical_sb_block))) {
-                ext4_msg(sb, KERN_ERR, "unable to read superblock");
-                goto out_fail;
-        }
-@@ -3645,7 +3645,7 @@ static int ext4_fill_super(struct super_block *sb, void *data, int silent)
-                brelse(bh);
-                logical_sb_block = sb_block * EXT4_MIN_BLOCK_SIZE;
-                offset = do_div(logical_sb_block, blocksize);
--               bh = sb_bread(sb, logical_sb_block);
-+               bh = sb_bread_nonmovable(sb, logical_sb_block);
-                if (!bh) {
-                        ext4_msg(sb, KERN_ERR,
-                               "Can't read superblock on 2nd try");
-@@ -3867,7 +3867,7 @@ static int ext4_fill_super(struct super_block *sb, void *data, int silent)
-
-        for (i = 0; i < db_count; i++) {
-                block = descriptor_loc(sb, logical_sb_block, i);
--               sbi->s_group_desc[i] = sb_bread(sb, block);
-+               sbi->s_group_desc[i] = sb_bread_nonmovable(sb, block);
-                if (!sbi->s_group_desc[i]) {
-                        ext4_msg(sb, KERN_ERR,
-                               "can't read group descriptor %d", i);
---
-1.7.9.5
+-- 
+Kalle Valo
