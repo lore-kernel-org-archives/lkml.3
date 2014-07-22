@@ -1,58 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755413AbaGVM1z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 08:27:55 -0400
-Received: from mail-la0-f46.google.com ([209.85.215.46]:55400 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754183AbaGVM1x convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 08:27:53 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140722121306.GB16065@lee--X1>
-References: <1406027485-15657-1-git-send-email-lee.jones@linaro.org>
-	<1406027485-15657-2-git-send-email-lee.jones@linaro.org>
-	<CAMf-jSn4y40p+tpUNMnCMMmAEQbjXBqbfgPy3zWrTs_b85uvxg@mail.gmail.com>
-	<20140722121306.GB16065@lee--X1>
-Date: Tue, 22 Jul 2014 17:57:52 +0530
-Message-ID: <CAMf-jSmyzMzucni8-Ego1K+-TvHm5S+HaY5OQKmR1QbjTNrOGQ@mail.gmail.com>
-Subject: Re: [PATCH 01/19] mfd: max77686: Fix 'line over 80 chars' warning
-From: pramod gurav <pramod.gurav.etc@gmail.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1755500AbaGVM2c (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 08:28:32 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:44265 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754932AbaGVM2a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 08:28:30 -0400
+From: Petr Mladek <pmladek@suse.cz>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Jiri Slaby <jslaby@suse.cz>, Steven Rostedt <rostedt@goodmis.org>,
+        Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org,
+        Petr Mladek <pmladek@suse.cz>
+Subject: [PATCH 0/2] module: add within_module() and change return type
+Date: Tue, 22 Jul 2014 14:28:08 +0200
+Message-Id: <1406032090-16151-1-git-send-email-pmladek@suse.cz>
+X-Mailer: git-send-email 1.8.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 22, 2014 at 5:43 PM, Lee Jones <lee.jones@linaro.org> wrote:
-> On Tue, 22 Jul 2014, pramod gurav wrote:
->
-> It's based on the most recent MFD for-mfd-next branch.
->
-> You're missing the following patches:
->
->   mfd: max77686: Remove unneeded OOM error message
->   mfd: max77686: Make error checking consistent
->   mfd: max77686: Return correct error when pdata isn't found
->   mfd: max77686: Make platform data over-rule DT
->   mfd: max77686: Don't define dummy function if OF isn't enabled
->   mfd: max77686: Add power management support
->   mfd: max77686: Convert to use regmap_irq
->
-ok. Thanks. :)
+The condition (within_module_init() || within_module_core()) is used on several
+locations. We would like to use it also in kGraft when patching modules.
 
-> --
-> Lee Jones
-> Linaro STMicroelectronics Landing Team Lead
-> Linaro.org │ Open source software for ARM SoCs
-> Follow Linaro: Facebook | Twitter | Blog
+This small patch set introduces within_module() to do the check in one call.
+It also modifies the return type from int to bool for all three functions.
+It seems to be more appropriate.
 
+The patch set is against linux-next, top commit 594a8bbcd415c ("Add linux-next
+specific files for 20140721").
 
+Petr Mladek (2):
+  module: add within_module() function
+  module: return bool from within_module*()
+
+ include/linux/module.h | 11 +++++++++--
+ kernel/module.c        | 12 ++++--------
+ 2 files changed, 13 insertions(+), 10 deletions(-)
 
 -- 
-Thanks and Regards
-Pramod
+1.8.4
+
