@@ -1,50 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756055AbaGVRGU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 13:06:20 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:57582 "EHLO mail.zytor.com"
+	id S1756157AbaGVRJc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 13:09:32 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63045 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752620AbaGVRGT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 13:06:19 -0400
-Message-ID: <53CE99C9.30506@zytor.com>
-Date: Tue, 22 Jul 2014 10:05:13 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1755287AbaGVRJb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 13:09:31 -0400
+Date: Tue, 22 Jul 2014 22:38:34 +0530
+From: Amit Shah <amit.shah@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Virtualization List <virtualization@lists.linux-foundation.org>,
+        Rusty Russell <rusty@rustcorp.com.au>, herbert@gondor.apana.org.au,
+        keescook@chromium.org, jason@lakedaemon.net,
+        Amos Kong <akong@redhat.com>
+Subject: Re: [PATCH v2 3/4] virtio: rng: delay hwrng_register() till driver
+ is ready
+Message-ID: <20140722170834.GA23129@grmbl.mre>
+References: <cover.1405942162.git.amit.shah@redhat.com>
+ <91cb7c5b87cf2ba5ef1bacd55a7ee7bc827293a2.1405942162.git.amit.shah@redhat.com>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>, Bruno Wolff III <bruno@wolff.to>
-CC: Dietmar Eggemann <dietmar.eggemann@arm.com>,
-        Josh Boyer <jwboyer@redhat.com>, "mingo@redhat.com" <mingo@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: Scheduler regression from caffcdd8d27ba78730d5540396ce72ad022aff2c
-References: <20140718141648.GE20603@laptop.programming.kicks-ass.net> <20140718145040.GG12054@laptop.lan> <20140718161602.GH12054@laptop.lan> <20140721163528.GA10433@wolff.to> <20140721165212.GO3935@laptop> <20140722094740.GJ12054@laptop.lan> <20140722103857.GK12054@laptop.lan> <20140722121001.GA30631@wolff.to> <20140722130343.GD3935@laptop> <20140722132603.GL12054@laptop.lan> <20140722133514.GM12054@laptop.lan>
-In-Reply-To: <20140722133514.GM12054@laptop.lan>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <91cb7c5b87cf2ba5ef1bacd55a7ee7bc827293a2.1405942162.git.amit.shah@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/22/2014 06:35 AM, Peter Zijlstra wrote:
-> On Tue, Jul 22, 2014 at 03:26:03PM +0200, Peter Zijlstra wrote:
->> On Tue, Jul 22, 2014 at 03:03:43PM +0200, Peter Zijlstra wrote:
->>> Oh, of course we do SMP detection and setup after the cache setup...
->>> lovely.
->>>
->>> /me goes bang head against wall
->>
->> hpa, could we move the legacy cpuid1/cpuid4 topology detection muck up,
->> preferably right after detect_extended_topology()?
->>
->> I need c->phys_proc_id in init_intel_cacheinfo() for machines with
->> cpuid_level < 4.
+On (Mon) 21 Jul 2014 [17:15:51], Amit Shah wrote:
+> Instead of calling hwrng_register() in the probe routing, call it in the
+> scan routine.  This ensures that when hwrng_register() is successful,
+> and it requests a few random bytes to seed the kernel's pool at init,
+> we're ready to service that request.
 > 
-> Something like so.. anything obviously broken?
+> This will also enable us to remove the workaround added previously to
+> check whether probe was completed, and only then ask for data from the
+> host.  The revert follows in the next commit.
 > 
+> There's a slight behaviour change here on unsuccessful hwrng_register().
+> Previously, when hwrng_unregister() failed, the probe() routine would
 
-Nothing *obvious*.  I should stare a pass at the code.
+typo: should be hwrng_register().
 
-	-hpa
+Please fix this up when picking up the patch.
 
+Thanks,
 
+> fail, and the vqs would be torn down, and driver would be marked not
+> initialized.  Now, the vqs will remain initialized, driver would be
+> marked initialized as well, but won't be available in the list of RNGs
+> available to hwrng core.  To fix the failures, the procedure remains the
+> same, i.e. unload and re-load the module, and hope things succeed the
+> next time around.
+> 
+> Signed-off-by: Amit Shah <amit.shah@redhat.com>
+
+		Amit
