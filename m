@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933487AbaGVWoZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 18:44:25 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44631 "EHLO
+	id S933730AbaGVWou (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 18:44:50 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:44617 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932980AbaGVWZM (ORCPT
+	with ESMTP id S932957AbaGVWZD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 18:25:12 -0400
+	Tue, 22 Jul 2014 18:25:03 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Stanislaw Gruszka <sgruszka@redhat.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
+Cc: Alex Smith <alex.smith@imgtec.com>, linux-mips@linux-mips.org,
+        Ralf Baechle <ralf@linux-mips.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 103/116] rt2x00: disable TKIP on USB
-Date: Tue, 22 Jul 2014 15:21:54 -0700
-Message-Id: <1406067727-19683-104-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 112/116] recordmcount/MIPS: Fix possible incorrect mcount_loc table entries in modules
+Date: Tue, 22 Jul 2014 15:22:03 -0700
+Message-Id: <1406067727-19683-113-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1406067727-19683-1-git-send-email-kamal@canonical.com>
 References: <1406067727-19683-1-git-send-email-kamal@canonical.com>
@@ -28,57 +28,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stanislaw Gruszka <sgruszka@redhat.com>
+From: Alex Smith <alex.smith@imgtec.com>
 
-commit 8edcb0ba0d56f5914eef11eda6db8bfe74eb9ca8 upstream.
+commit 91ad11d7cc6f4472ebf177a6252fbf0fd100d798 upstream.
 
-On USB we can not get atomically TKIP key. We have to disable support
-for TKIP acceleration on USB hardware to avoid bug as showed bellow.
+On MIPS calls to _mcount in modules generate 2 instructions to load
+the _mcount address (and therefore 2 relocations). The mcount_loc
+table should only reference the first of these, so the second is
+filtered out by checking the relocation offset and ignoring ones that
+immediately follow the previous one seen.
 
-[  860.827243] BUG: scheduling while atomic: hostapd/3397/0x00000002
-<snip>
-[  860.827280] Call Trace:
-[  860.827282]  [<ffffffff81682ea6>] dump_stack+0x4d/0x66
-[  860.827284]  [<ffffffff8167eb9b>] __schedule_bug+0x47/0x55
-[  860.827285]  [<ffffffff81685bb3>] __schedule+0x733/0x7b0
-[  860.827287]  [<ffffffff81685c59>] schedule+0x29/0x70
-[  860.827289]  [<ffffffff81684f8a>] schedule_timeout+0x15a/0x2b0
-[  860.827291]  [<ffffffff8105ac50>] ? ftrace_raw_event_tick_stop+0xc0/0xc0
-[  860.827294]  [<ffffffff810c13c2>] ? __module_text_address+0x12/0x70
-[  860.827296]  [<ffffffff81686823>] wait_for_completion_timeout+0xb3/0x140
-[  860.827298]  [<ffffffff81080fc0>] ? wake_up_state+0x20/0x20
-[  860.827301]  [<ffffffff814d5b3d>] usb_start_wait_urb+0x7d/0x150
-[  860.827303]  [<ffffffff814d5cd5>] usb_control_msg+0xc5/0x110
-[  860.827305]  [<ffffffffa02fb0c6>] rt2x00usb_vendor_request+0xc6/0x160  [rt2x00usb]
-[  860.827307]  [<ffffffffa02fb215>] rt2x00usb_vendor_req_buff_lock+0x75/0x150 [rt2x00usb]
-[  860.827309]  [<ffffffffa02fb393>] rt2x00usb_vendor_request_buff+0xa3/0xe0 [rt2x00usb]
-[  860.827311]  [<ffffffffa023d1a3>] rt2x00usb_register_multiread+0x33/0x40 [rt2800usb]
-[  860.827314]  [<ffffffffa05805f9>] rt2800_get_tkip_seq+0x39/0x50  [rt2800lib]
-[  860.827321]  [<ffffffffa0480f88>] ieee80211_get_key+0x218/0x2a0  [mac80211]
-[  860.827322]  [<ffffffff815cc68c>] ? __nlmsg_put+0x6c/0x80
-[  860.827329]  [<ffffffffa051b02e>] nl80211_get_key+0x22e/0x360 [cfg80211]
+However if a module has an _mcount call at offset 0, the second
+relocation would not be filtered out due to old_r_offset == 0
+being taken to mean that the current relocation is the first one
+seen, and both would end up in the mcount_loc table.
 
-Reported-and-tested-by: Peter Wu <lekensteyn@gmail.com>
-Reported-and-tested-by: Pontus Fuchs <pontus.fuchs@gmail.com>
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+This results in ftrace_make_nop() patching both (adjacent)
+instructions to branches over the _mcount call sequence like so:
+
+  0xffffffffc08a8000:  04 00 00 10     b       0xffffffffc08a8014
+  0xffffffffc08a8004:  04 00 00 10     b       0xffffffffc08a8018
+  0xffffffffc08a8008:  2d 08 e0 03     move    at,ra
+  ...
+
+The second branch is in the delay slot of the first, which is
+defined to be unpredictable - on the platform on which this bug was
+encountered, it triggers a reserved instruction exception.
+
+Fix by initializing old_r_offset to ~0 and using that instead of 0
+to determine whether the current relocation is the first seen.
+
+Signed-off-by: Alex Smith <alex.smith@imgtec.com>
+Cc: linux-kernel@vger.kernel.org
+Cc: linux-mips@linux-mips.org
+Patchwork: https://patchwork.linux-mips.org/patch/7098/
+Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/net/wireless/rt2x00/rt2x00mac.c | 2 ++
- 1 file changed, 2 insertions(+)
+ scripts/recordmcount.h | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/net/wireless/rt2x00/rt2x00mac.c b/drivers/net/wireless/rt2x00/rt2x00mac.c
-index 65225fa..7195a30 100644
---- a/drivers/net/wireless/rt2x00/rt2x00mac.c
-+++ b/drivers/net/wireless/rt2x00/rt2x00mac.c
-@@ -489,6 +489,8 @@ int rt2x00mac_set_key(struct ieee80211_hw *hw, enum set_key_cmd cmd,
- 	crypto.cipher = rt2x00crypto_key_to_cipher(key);
- 	if (crypto.cipher == CIPHER_NONE)
- 		return -EOPNOTSUPP;
-+	if (crypto.cipher == CIPHER_TKIP && rt2x00_is_usb(rt2x00dev))
-+		return -EOPNOTSUPP;
+diff --git a/scripts/recordmcount.h b/scripts/recordmcount.h
+index 9d1421e..49b582a 100644
+--- a/scripts/recordmcount.h
++++ b/scripts/recordmcount.h
+@@ -163,11 +163,11 @@ static int mcount_adjust = 0;
  
- 	crypto.cmd = cmd;
+ static int MIPS_is_fake_mcount(Elf_Rel const *rp)
+ {
+-	static Elf_Addr old_r_offset;
++	static Elf_Addr old_r_offset = ~(Elf_Addr)0;
+ 	Elf_Addr current_r_offset = _w(rp->r_offset);
+ 	int is_fake;
+ 
+-	is_fake = old_r_offset &&
++	is_fake = (old_r_offset != ~(Elf_Addr)0) &&
+ 		(current_r_offset - old_r_offset == MIPS_FAKEMCOUNT_OFFSET);
+ 	old_r_offset = current_r_offset;
  
 -- 
 1.9.1
