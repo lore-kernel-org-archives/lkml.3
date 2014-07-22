@@ -1,174 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752969AbaGVDTK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 23:19:10 -0400
-Received: from g4t3426.houston.hp.com ([15.201.208.54]:42816 "EHLO
-	g4t3426.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752896AbaGVDTI (ORCPT
+	id S1753071AbaGVDWV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 23:22:21 -0400
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:43043 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753038AbaGVDWT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 23:19:08 -0400
-Message-ID: <53CDD826.8050807@hp.com>
-Date: Mon, 21 Jul 2014 23:19:02 -0400
-From: Waiman Long <waiman.long@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
+	Mon, 21 Jul 2014 23:22:19 -0400
+Date: Mon, 21 Jul 2014 20:21:14 -0700
+From: Brian Norris <computersforpeace@gmail.com>
+To: Michael Grzeschik <m.grzeschik@pengutronix.de>
+Cc: linux-mtd@lists.infradead.org, dwmw2@infradead.org,
+        linux-kernel@vger.kernel.org, kernel@pengutronix.de
+Subject: Re: [PATCH 1/2] mxc_nand: fix err_limit and err_mask
+Message-ID: <20140722032114.GA28323@ld-irv-0074>
+References: <1403815368-29469-1-git-send-email-m.grzeschik@pengutronix.de>
 MIME-Version: 1.0
-To: Randy Dunlap <rdunlap@infradead.org>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Darren Hart <dvhart@linux.intel.com>,
-        Davidlohr Bueso <davidlohr@hp.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
-        linux-doc@vger.kernel.org, Jason Low <jason.low2@hp.com>,
-        Scott J Norton <scott.norton@hp.com>
-Subject: Re: [RFC PATCH 5/5] futex, doc: add a document on how to use the
- spinning futexes
-References: <1405956271-34339-1-git-send-email-Waiman.Long@hp.com> <1405956271-34339-6-git-send-email-Waiman.Long@hp.com> <53CD3582.707@infradead.org>
-In-Reply-To: <53CD3582.707@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1403815368-29469-1-git-send-email-m.grzeschik@pengutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/21/2014 11:45 AM, Randy Dunlap wrote:
-> On 07/21/2014 08:24 AM, Waiman Long wrote:
->> This patch adds a new document file on how to use the spinning futexes.
->>
->> Signed-off-by: Waiman Long<Waiman.Long@hp.com>
->> ---
->>   Documentation/spinning-futex.txt |  109 ++++++++++++++++++++++++++++++++++++++
->>   1 files changed, 109 insertions(+), 0 deletions(-)
->>   create mode 100644 Documentation/spinning-futex.txt
->>
->> diff --git a/Documentation/spinning-futex.txt b/Documentation/spinning-futex.txt
->> new file mode 100644
->> index 0000000..e3cb5a2
->> --- /dev/null
->> +++ b/Documentation/spinning-futex.txt
->> @@ -0,0 +1,109 @@
->> +Started by: Waiman Long<waiman.long@hp.com>
->> +
->> +Spinning Futex
->> +--------------
->> +
->> +There are two main problems for a wait-wake futex (FUTEX_WAIT and
->> +FUTEX_WAKE) when used for creating user-space lock primitives:
->> +
->> + 1) With a wait-wake futex, tasks waiting for a lock are put to sleep
->> +    in the futex queue to be woken up by the lock owner when it is done
->> +    with the lock. Waking up a sleeping task, however, introduces some
->> +    additional latency which can be large especially if the critical
->> +    section protected by the lock is relatively short. This may cause
->> +    a performance bottleneck on large systems with many CPUs running
->> +    applications that need a lot of inter-thread synchronization.
->> +
->> + 2) The performance of the wait-wake futex is currently
->> +    spinlock-constrained.  When many threads are contending for a
->> +    futex in a large system with many CPUs, it is not unusual to have
->> +    spinlock contention accounting for more than 90% of the total
->> +    CPU cycles consumed at various points in time.
->> +
->> +Spinning futex is a solution to both the wakeup latency and spinlock
->> +contention problems by optimistically spinning on a locked futex
->> +when the lock owner is running within the kernel until the lock is
->> +free. This is the same optimistic spinning mechanism used by the kernel
->> +mutex and rw semaphore implementations to improve performance. The
->> +optimistic spinning was done without taking any lock.
->                         is done
->
->> +
->> +Implementation
->> +--------------
->> +
->> +Like the PI and robust futexes, a lock acquirer has to atomically
->> +put its thread ID (TID) into the lower 30 bits of the 32-bit futex
->> +which should has an original value of 0. If it succeeds, it will be
->                  have
->
->> +the owner of the futex. Otherwise, it has to call into the kernel
->> +using the new FUTEX_SPIN_LOCK futex(2) syscall.
->> +
->> +The kernel will use the setting of the most significant bit
->> +(FUTEX_WAITERS) in the futex value to indicate one or more waiters
->> +are sleeping and need to be woken up later on.
->> +
->> +When it is time to unlock, the lock owner has to atomically clear
->> +the TID portion of the futex value. If the FUTEX_WAITERS bit is set,
->> +it has to issue a FUTEX_SPIN_UNLOCK futex system call to wake up the
->> +sleeping task.
->> +
->> +A return value of 1 from the FUTEX_SPIN_UNLOCK futex(2) syscall
->> +indicates a task has been woken up. The syscall returns 0 if no
->> +sleeping task is found or spinners are present to take the lock.
->> +
->> +The error number returned by a FUTEX_SPIN_UNLOCK call on an empty
->> +futex can be used to decide if the spinning futex functionality is
->> +implemented in the kernel. If it is present, the returned error number
->> +should be ESRCH. Otherwise it will be ENOSYS.
->> +
->> +Currently, only the first and the second arguments (the futex address
->> +and the opcode) of the futex(2) syscall is used. All the other
->                                             are used.
->
->> +arguments must be set to 0 or NULL to avoid forward compatibility
->> +problem.
->> +
->> +The spinning futex requires the kernel to have support for the cmpxchg
->> +functionality. For architectures that don't support cmpxchg, spinning
->> +futex will not be supported as well.
->> +
->> +Usage Scenario
->> +--------------
->> +
->> +A spinning futex can be used as an exclusive lock to guard a critical
->> +section which are unlikely to go to sleep in the kernel. The spinners
->                   is
->
->> +in a spinning futex, however, will fall back to sleep in a wait queue
->> +if the lock owner isn't running. Therefore, it can also be used when
->> +the critical section is long and prone to sleeping. However, it may
->> +not have the performance benefit when compared with a wait-wake futex
->> +in this case.
->> +
->> +Sample Code
->> +-----------
->> +
->> +The following are sample code to implement a simple lock and unlock
->                   is
->
->> +function.
->> +
->> +__thread int tid;	/* Thread ID */
->> +
->> +void mutex_lock(int *faddr)
->> +{
->> +	if (cmpxchg(faddr, 0, tid) == 0)
->> +		return;
->> +	for (;;)
->> +		if (futex(faddr, FUTEX_SPIN_LOCK, ...) == 0)
->> +			break;
->> +}
->> +
->> +void mutex_unlock(int *faddr)
->> +{
->> +	int old, fval;
->> +
->> +	if ((fval = cmpxchg(faddr, tid, 0)) == tid)
->> +		return;
->> +	/* Clear only the TID portion of the futex */
->> +	for (;;) {
->> +		old  = fval;
->> +		fval = cmpxchg(faddr, old, old&  ~FUTEX_TID_MASK);
->> +		if (fval == old)
->> +			break;
->> +	}
->> +	if (fval&  FUTEX_WAITERS)
->> +		futex(faddr, FUTEX_SPIN_UNLOCK, ...);
->> +}
->>
->
+Hi Michael,
 
-Thank for the grammar corrections. Will apply those to the documents.
+Since I had a few comments for changes on patch 2, might as well comment
+here...
 
--Longman
+On Thu, Jun 26, 2014 at 10:42:47PM +0200, Michael Grzeschik wrote:
+> This patch fixes the error detection limits for the used
+> eccsize of the 1, 4 and 8 bit eccmode.
+> 
+> Signed-off-by: Michael Grzeschik <m.grzeschik@pengutronix.de>
+> ---
+>  drivers/mtd/nand/mxc_nand.c | 10 +++++++---
+>  1 file changed, 7 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/mtd/nand/mxc_nand.c b/drivers/mtd/nand/mxc_nand.c
+> index cb6c845..7fd495e 100644
+> --- a/drivers/mtd/nand/mxc_nand.c
+> +++ b/drivers/mtd/nand/mxc_nand.c
+> @@ -657,10 +657,14 @@ static int mxc_nand_correct_data_v2_v3(struct mtd_info *mtd, u_char *dat,
+>  	u32 ecc_stat, err;
+>  	int no_subpages = 1;
+>  	int ret = 0;
+> -	u8 ecc_bit_mask, err_limit;
+> +	u8 ecc_bit_mask, err_limit = 0x1;
+>  
+> -	ecc_bit_mask = (host->eccsize == 4) ? 0x7 : 0xf;
+> -	err_limit = (host->eccsize == 4) ? 0x4 : 0x8;
+> +	ecc_bit_mask = 0xf;
+> +
+> +	if (host->eccsize == 4)
+> +		err_limit = 0x2;
+> +	else if (host->eccsize == 8)
+> +		err_limit = 0x4;
+
+This would be a little more obvious as a switch statement.
+
+But please do address my comments on patch 2 (or at least reply, if you
+have questions).
+
+>  
+>  	no_subpages = mtd->writesize >> 9;
+>  
+
+Thanks,
+Brian
