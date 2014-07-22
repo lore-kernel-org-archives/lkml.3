@@ -1,54 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756003AbaGVQRI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 12:17:08 -0400
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:64414 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755486AbaGVQRG (ORCPT
+	id S1756036AbaGVQRT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 12:17:19 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:47676 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755458AbaGVQRR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 12:17:06 -0400
-Date: Tue, 22 Jul 2014 09:17:32 -0700
-From: Olof Johansson <olof@lixom.net>
-To: Maxime Coquelin <maxime.coquelin@st.com>
-Cc: Lee Jones <lee.jones@linaro.org>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, kernel@stlinux.com, arm@kernel.org
-Subject: Re: [PATCH 2/2] ARM: multi_v7_defconfig: Enable MiPHY365x - ST's
- Generic (SATA & PCIe) PHY
-Message-ID: <20140722161732.GB31092@quad.lixom.net>
-References: <1406021985-8763-1-git-send-email-lee.jones@linaro.org>
- <1406021985-8763-2-git-send-email-lee.jones@linaro.org>
- <20140722160630.GA31092@quad.lixom.net>
- <53CE8E14.9020206@st.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53CE8E14.9020206@st.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 22 Jul 2014 12:17:17 -0400
+Message-ID: <1406045831.25343.69.camel@hornet>
+Subject: Re: [RFC] sched_clock: Track monotonic raw clock
+From: Pawel Moll <pawel.moll@arm.com>
+To: John Stultz <john.stultz@linaro.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, Andy Lutomirski <luto@amacapital.net>,
+        Stephen Boyd <sboyd@codeaurora.org>, Baruch Siach <baruch@tkos.co.il>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Tue, 22 Jul 2014 17:17:11 +0100
+In-Reply-To: <53C95E97.2020805@linaro.org>
+References: <1405705419-4194-1-git-send-email-pawel.moll@arm.com>
+	 <53C95E97.2020805@linaro.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 22, 2014 at 06:15:16PM +0200, Maxime Coquelin wrote:
-> Hi Olof,
-> 
-> On 07/22/2014 06:06 PM, Olof Johansson wrote:
-> >On Tue, Jul 22, 2014 at 10:39:45AM +0100, Lee Jones wrote:
-> >>Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> >
-> >Appled both. In the future, feel free to batch them up in one commit,
-> >no need to keep them separate since they're related.
-> 
-> I added both to the pull request for defconfig I sent this afternoon.
-> Not an issue?
+On Fri, 2014-07-18 at 18:51 +0100, John Stultz wrote:
+> Very cool work! 
 
-Yes, that's an issue.
+Glad that it doesn't sound too ridiculous :-)
 
-If you comment on a patch you apply, then others will know that you have picked
-it up.
+> I've not been able to review it carefully, but one good
+> stress test would be to pick a system where the hardware used for
+> sched_clock is different from the hardware used for timekeeping.
 
-I've dropped the versions I applied now so that we don't get duplicate commits
-when I merge your branch.
+Actually I've got exactly this situation on my board. I've got two
+sources, and actually the worse (narrower and more expensive) one is
+getting eventually used (because it's registered later - separate patch
+to follow).
 
+> Although, looking again, this looks like it only works on the "generic"
+> sched_clock (so ARM/ARM64?)...
 
--Olof
+... and microblaze and xtensa right now, yes. This was just the simplest
+thing for me to start with, but I appreciate it doesn't cover all
+possible cases. Thus the debugfs attribute to tell userspace what can it
+expect from the sched_clock. A hack it is, yes.
+
+Pawel
 
