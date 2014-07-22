@@ -1,50 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753327AbaGVHAe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 03:00:34 -0400
-Received: from ozlabs.org ([103.22.144.67]:44655 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751672AbaGVHAa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 03:00:30 -0400
-Message-ID: <1406012425.28595.0.camel@concordia>
-Subject: Re: [PATCH] powerpc: Revert removing of _INIT_GLOBAL(), _STATIC()
- and _INIT_STATIC()
-From: Michael Ellerman <mpe@ellerman.id.au>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>, Olof Johansson <olof@lixom.net>,
-        linuxppc-dev@lists.ozlabs.org, LKML <linux-kernel@vger.kernel.org>,
-        Anton Blanchard <anton@samba.org>
-Date: Tue, 22 Jul 2014 17:00:25 +1000
-In-Reply-To: <1406009637.22200.14.camel@pasglop>
-References: <20140714201204.7b6fcd8e@gandalf.local.home>
-	 <1405389955.9343.48.camel@pasglop>
-	 <20140721145651.465db070@gandalf.local.home>
-	 <1406009637.22200.14.camel@pasglop>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752448AbaGVHFg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 03:05:36 -0400
+Received: from mail-ie0-f181.google.com ([209.85.223.181]:52586 "EHLO
+	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751514AbaGVHFf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 03:05:35 -0400
+Date: Tue, 22 Jul 2014 08:05:30 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Joe Perches <joe@perches.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] checkpatch: Fix false positive MISSING_BREAK warnings
+ with --file
+Message-ID: <20140722070530.GB28529@lee--X1>
+References: <20140721113948.GX30888@lee--X1>
+ <1405948406.21586.10.camel@joe-AO725>
+ <20140721132116.GZ30888@lee--X1>
+ <1405952929.27900.7.camel@joe-AO725>
+ <20140721143013.11ec351d47a9f822313247d2@linux-foundation.org>
+ <1405984193.30871.10.camel@joe-AO725>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1405984193.30871.10.camel@joe-AO725>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-07-22 at 16:13 +1000, Benjamin Herrenschmidt wrote:
-> On Mon, 2014-07-21 at 14:56 -0400, Steven Rostedt wrote:
-> > > Weird ... what are your gcc and binutils versions ? Smells like a
-> > > toolchain issue to me but I need to dig a bit more. Doesn't hit any
-> > > of my test configs here.
-> > > 
-> > 
-> > Can you test the attached config with this toolchain and see if you get
-> > the same build bug.
+On Mon, 21 Jul 2014, Joe Perches wrote:
+> Using --file mode can give false positives with MISSING_BREAK
+> fall-through warnings on simple but long multiple consecutive
+> case statements.
 > 
-> Yeah ok, I hit it too, it's one of those issues with the bloody
-> alternate feature sections getting pushed too far away. Argh.
+> Look for all lines before a case statement for a switch
+> or a statement when using --file mode.
+> 
+> Fix a misspelling of preceded while there.
+> 
+> Signed-off-by: Joe Perches <joe@perches.com>
+> Reported-by: Lee Jones <lee.jones@linaro.org>
 
-This should fix it temporarily at least:
+Solution works for me.
 
-  http://patchwork.ozlabs.org/patch/369950/
+> total: 0 errors, 0 warnings, 574 lines checked
+> 
+> drivers/mfd/tps80031.c has no obvious style problems and is ready
+> for submission.
 
-cheers
+Acked-by: Lee Jones <lee.jones@linaro.org>
 
-
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
