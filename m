@@ -1,74 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754614AbaGVKcW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 06:32:22 -0400
-Received: from mout.kundenserver.de ([212.227.126.130]:56664 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754504AbaGVKcR (ORCPT
+	id S1754726AbaGVKdB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 06:33:01 -0400
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:52063 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754658AbaGVKc7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 06:32:17 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Chen Gang <gang.chen.5i5j@gmail.com>
-Cc: Lennox Wu <lennox.wu@gmail.com>, Richard Weinberger <richard@nod.at>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Guenter Roeck <linux@roeck-us.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-iio@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Tom Gundersen <teg@jklm.no>, Thierry Reding <thierry.reding@gmail.com>,
-        Marek Vasut <marex@denx.de>, Liqin Chen <liqin.linux@gmail.com>,
-        msalter@redhat.com, linux-pwm@vger.kernel.org,
-        devel@driverdev.osuosl.org, linux-watchdog@vger.kernel.org,
-        linux-input@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        knaack.h@gmx.de, Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        jic23@kernel.org, Geert Uytterhoeven <geert@linux-m68k.org>,
-        cmetcalf@tilera.com, heiko.carstens@de.ibm.com
-Subject: Re: [PATCH] drivers: Let several drivers depends on HAS_IOMEM for 'devm_ioremap_resource'
-Date: Tue, 22 Jul 2014 12:32:06 +0200
-Message-ID: <179292068.QXZf3Zcqzf@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <53CB8FC4.4050009@gmail.com>
-References: <201407130545.23004.marex@denx.de> <53CB801D.1030603@gmail.com> <53CB8FC4.4050009@gmail.com>
+	Tue, 22 Jul 2014 06:32:59 -0400
+Date: Tue, 22 Jul 2014 11:32:52 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Stanimir Varbanov <svarbanov@mm-sol.com>
+Cc: linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Pawel Moll <pawel.moll@arm.com>, Rob Herring <robh+dt@kernel.org>,
+        Kumar Gala <galak@codeaurora.org>, Mark Rutland <mark.rutland@arm.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Courtney Cavin <courtney.cavin@sonymobile.com>,
+        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
+        Josh Cartwright <joshc@codeaurora.org>
+Subject: Re: [PATCH v2 4/4] mfd: pm8921: rename pm8921-core driver
+Message-ID: <20140722103252.GD8406@lee--X1>
+References: <1405613855-27572-1-git-send-email-svarbanov@mm-sol.com>
+ <1405613855-27572-5-git-send-email-svarbanov@mm-sol.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:uLqhMdIEHgv9s9/bqRpHd15jqnzFtwmYP0sbJVL9RTJ
- cHpXUflY0BHMVgfqbH0xgzvjwrTm6b5sfU10+hIBNcz2b0mgkA
- 2z+TUNamIOB9nlGUg+8mWgsz9wNFFB26c+xgGsmnonhfW6tv8f
- 75eCoAYxNktXMNC3plnYIVf3r7rJ1cqin4KLMAV7DQiAK2oyNS
- MxxX8T+oWwJ4UYgpqfGspbppvVxAvv4VTZmEWc4U8MiXFq6ryZ
- gpvWHOpi4984qbcyr9KJERr3oa1SlW6zEP8nJ/AAlRtymz5ZIK
- UWmUMy9jndA1qwuNiD2AICh2RUi97BtjQEAxKJCfHbSPvSZMxj
- LrgKPVlU1uA8f6siBn3M=
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1405613855-27572-5-git-send-email-svarbanov@mm-sol.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 20 July 2014 17:45:40 Chen Gang wrote:
-> > 
-> > Next, I shall:
-> > 
-> >  - Remove HAS_IOMEM and NO_IOMEM from kernel, firstly.
-> > 
-> >  - Try to make dummy IOMEM functions for score architecture.
-> > 
-> >  - Continue discussing with UML for it.
-> >
->  
-> Oh, sorry, I forgot, after remove IOMEM from kernel, also s390 and tile
-> need implement dummy IOMEM if !PCI.
+On Thu, 17 Jul 2014, Stanimir Varbanov wrote:
+
+> The pm8921-core driver presently supports pm8921 and pm8058
+> Qualcomm PMICs.  To avoid confusion with new generation PMICs
+> (like pm8941) rename the pm8921-core driver to more
+> appropriate name pm8xxx-ssbi, which reflects better that
+> those chips use SSBI interface.
 > 
-> If possible, I shall try to implement the dummy IOMEM in 'asm-generic',
-> and let uml, score, s390 and tile use them when they need.
+> Signed-off-by: Stanimir Varbanov <svarbanov@mm-sol.com>
+> ---
+>  drivers/mfd/Kconfig                          |   14 +++++-----
+>  drivers/mfd/Makefile                         |    2 +-
+>  drivers/mfd/{pm8921-core.c => pm8xxx-ssbi.c} |   38 +++++++++++++-------------
+>  3 files changed, 27 insertions(+), 27 deletions(-)
+>  rename drivers/mfd/{pm8921-core.c => pm8xxx-ssbi.c} (92%)
 
-Sorry for going round in circles, but looking back at the original patches,
-adding the extra 'depends on HAS_IOMEM' does seem much better than the
-other suggestions that came afterwards.
+Patch looks fine to me.
 
-In particular, removing HAS_IOMEM and NO_IOMEM sounds like an awful idea
-to me. I'd rather add a HAS_IOPORT in addition to also catch architectures
-that have no support for PC-style PIO.
+  Acked-by: Lee Jones <lee.jones@linaro.org>
 
-	Arnd
+I'm assuming we want to wait for the others in the set to be ready
+before applying?
 
+[...]
+
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
