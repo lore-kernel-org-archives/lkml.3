@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933875AbaGVWvx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 18:51:53 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44436 "EHLO
+	id S933888AbaGVWwN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 18:52:13 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:44430 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932497AbaGVWWw (ORCPT
+	with ESMTP id S932483AbaGVWWt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 18:22:52 -0400
+	Tue, 22 Jul 2014 18:22:49 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Johan Hedberg <johan.hedberg@intel.com>,
-        Marcel Holtmann <marcel@holtmann.org>,
+Cc: Lars-Peter Clausen <lars@metafoo.de>, Takashi Iwai <tiwai@suse.de>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 096/116] Bluetooth: Fix redundant encryption request for reauthentication
-Date: Tue, 22 Jul 2014 15:21:47 -0700
-Message-Id: <1406067727-19683-97-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 095/116] ALSA: control: Make sure that id->index does not overflow
+Date: Tue, 22 Jul 2014 15:21:46 -0700
+Message-Id: <1406067727-19683-96-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1406067727-19683-1-git-send-email-kamal@canonical.com>
 References: <1406067727-19683-1-git-send-email-kamal@canonical.com>
@@ -28,50 +27,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hedberg <johan.hedberg@intel.com>
+From: Lars-Peter Clausen <lars@metafoo.de>
 
-commit 09da1f3463eb81d59685df723b1c5950b7570340 upstream.
+commit 883a1d49f0d77d30012f114b2e19fc141beb3e8e upstream.
 
-When we're performing reauthentication (in order to elevate the
-security level from an unauthenticated key to an authenticated one) we
-do not need to issue any encryption command once authentication
-completes. Since the trigger for the encryption HCI command is the
-ENCRYPT_PEND flag this flag should not be set in this scenario.
-Instead, the REAUTH_PEND flag takes care of all necessary steps for
-reauthentication.
+The ALSA control code expects that the range of assigned indices to a control is
+continuous and does not overflow. Currently there are no checks to enforce this.
+If a control with a overflowing index range is created that control becomes
+effectively inaccessible and unremovable since snd_ctl_find_id() will not be
+able to find it. This patch adds a check that makes sure that controls with a
+overflowing index range can not be created.
 
-Signed-off-by: Johan Hedberg <johan.hedberg@intel.com>
-Signed-off-by: Marcel Holtmann <marcel@holtmann.org>
+Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+Acked-by: Jaroslav Kysela <perex@perex.cz>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/bluetooth/hci_conn.c | 9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
+ sound/core/control.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/net/bluetooth/hci_conn.c b/net/bluetooth/hci_conn.c
-index 4925a02..058897f 100644
---- a/net/bluetooth/hci_conn.c
-+++ b/net/bluetooth/hci_conn.c
-@@ -643,14 +643,17 @@ static int hci_conn_auth(struct hci_conn *conn, __u8 sec_level, __u8 auth_type)
- 	if (!test_and_set_bit(HCI_CONN_AUTH_PEND, &conn->flags)) {
- 		struct hci_cp_auth_requested cp;
- 
--		/* encrypt must be pending if auth is also pending */
--		set_bit(HCI_CONN_ENCRYPT_PEND, &conn->flags);
--
- 		cp.handle = cpu_to_le16(conn->handle);
- 		hci_send_cmd(conn->hdev, HCI_OP_AUTH_REQUESTED,
- 			     sizeof(cp), &cp);
+diff --git a/sound/core/control.c b/sound/core/control.c
+index f92ca31..6919da7 100644
+--- a/sound/core/control.c
++++ b/sound/core/control.c
+@@ -342,6 +342,9 @@ int snd_ctl_add(struct snd_card *card, struct snd_kcontrol *kcontrol)
+ 	if (snd_BUG_ON(!card || !kcontrol->info))
+ 		goto error;
+ 	id = kcontrol->id;
++	if (id.index > UINT_MAX - kcontrol->count)
++		goto error;
 +
-+		/* If we're already encrypted set the REAUTH_PEND flag,
-+		 * otherwise set the ENCRYPT_PEND.
-+		 */
- 		if (conn->key_type != 0xff)
- 			set_bit(HCI_CONN_REAUTH_PEND, &conn->flags);
-+		else
-+			set_bit(HCI_CONN_ENCRYPT_PEND, &conn->flags);
- 	}
- 
- 	return 0;
+ 	down_write(&card->controls_rwsem);
+ 	if (snd_ctl_find_id(card, &id)) {
+ 		up_write(&card->controls_rwsem);
 -- 
 1.9.1
 
