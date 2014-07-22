@@ -1,75 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755985AbaGVS2Y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 14:28:24 -0400
-Received: from g2t2353.austin.hp.com ([15.217.128.52]:42178 "EHLO
-	g2t2353.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751081AbaGVS2X (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 14:28:23 -0400
-Message-ID: <53CEAD41.9030307@hp.com>
-Date: Tue, 22 Jul 2014 14:28:17 -0400
-From: Waiman Long <waiman.long@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
-MIME-Version: 1.0
-To: Andi Kleen <andi@firstfloor.org>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Darren Hart <dvhart@linux.intel.com>,
-        Davidlohr Bueso <davidlohr@hp.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
-        linux-doc@vger.kernel.org, Jason Low <jason.low2@hp.com>,
-        Scott J Norton <scott.norton@hp.com>
-Subject: Re: [RFC PATCH 0/5] futex: introduce an optimistic spinning futex
-References: <1405956271-34339-1-git-send-email-Waiman.Long@hp.com> <8761iq3bp3.fsf@tassilo.jf.intel.com>
-In-Reply-To: <8761iq3bp3.fsf@tassilo.jf.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1756350AbaGVS3T (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 14:29:19 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:49128 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751312AbaGVS3Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 14:29:16 -0400
+From: Kees Cook <keescook@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: Kees Cook <keescook@chromium.org>, Ming Lei <ming.lei@canonical.com>,
+        Takashi Iwai <tiwai@suse.de>, James Morris <james.l.morris@oracle.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-security-module@vger.kernel.org
+Subject: [PATCH v3 0/2] security: introduce kernel_fw_from_file hook
+Date: Tue, 22 Jul 2014 11:28:59 -0700
+Message-Id: <1406053741-22795-1-git-send-email-keescook@chromium.org>
+X-Mailer: git-send-email 1.7.9.5
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/21/2014 12:42 PM, Andi Kleen wrote:
-> Waiman Long<Waiman.Long@hp.com>  writes:
->
->> This patch series introduces two new futex command codes to support
->> a new optimistic spinning futex for implementing an exclusive lock
->> primitive that should perform better than the same primitive using
->> the wait-wake futex in cases where the lock owner is actively working
->> instead of waiting for I/O completion.
-> How would you distinguish those two cases automatically?
+This adds an LSM hook to the existing firmware loading logic so that
+the LSM can reason about the origin and contents of a firmware coming
+from userspace.
 
-I don't really distinguish between these two. The purpose of this 
-paragraph is to show the best use cases for the spinning futexes is when 
-the lock owner is not likely to sleep while in the critical section.
+Thanks,
 
->> This patch series improves futex performance on two different fronts:
->>   1) Reducing the amount of the futex spinlock contention by using 2
->>      different spinlocks instead of just one for the wait-wake futex.
->>   2) Eliminating the context switching overhead and latency due to the
->>      sleeping and the waking of the waiting tasks.
-> FWIW the main problem is currently that switch-through-idle is so
-> slow. I think improving that would give a boost to far more
-> situations.
+-Kees
 
-If we can improve the context switching overhead, that can certainly 
-help a lot of applications.
-
->
->> Patch 4 changes sleeping queue from a simple FIFO list to an rbtree
->> sorted by process priority as well as the sequeunce the tasks enter
->> the kernel.
-> This seems to mix new functionality with performance improvements?
->
-> Generally adding new ordering in an user interface is risky because
-> often user programs have been tuned for specific old ordering.
-
-Not really, this patch is to emulate the current behavior of the 
-wait-wake futex which is queued in a priority queue. Because of 
-spinning, tasks may enter into sleep state in different order than when 
-they enter into the kernel. That is why I keep a sequence number to 
-track who go into the kernel first.
-
--Longman
+v3:
+- correctly return LSM error to userspace (ming.lei)
+- finalize memory map before calling LSM hook (tiwai)
+v2:
+- further clarify header comments (jmorris)
 
