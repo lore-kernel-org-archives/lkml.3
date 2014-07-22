@@ -1,71 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755945AbaGVN2F (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 09:28:05 -0400
-Received: from mga02.intel.com ([134.134.136.20]:45490 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755312AbaGVNUw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755933AbaGVN2D (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 09:28:03 -0400
+Received: from relay.parallels.com ([195.214.232.42]:46035 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755306AbaGVNUw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 22 Jul 2014 09:20:52 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,710,1400050800"; 
-   d="scan'208";a="576985931"
-From: Adrian Hunter <adrian.hunter@intel.com>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH 29/52] perf inject: Add --kallsyms parameter
-Date: Tue, 22 Jul 2014 16:17:38 +0300
-Message-Id: <1406035081-14301-30-git-send-email-adrian.hunter@intel.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1406035081-14301-1-git-send-email-adrian.hunter@intel.com>
-References: <1406035081-14301-1-git-send-email-adrian.hunter@intel.com>
-Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki, Business Identity Code: 0357606 - 4, Domiciled in Helsinki
+Message-ID: <1406035239.3526.66.camel@tkhai>
+Subject: Re: [PATCH 2/5] sched: Teach scheduler to understand ONRQ_MIGRATING
+ state
+From: Kirill Tkhai <ktkhai@parallels.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: Peter Zijlstra <peterz@infradead.org>, <linux-kernel@vger.kernel.org>,
+        Mike Galbraith <umgwanakikbuti@gmail.com>,
+        Tim Chen <tim.c.chen@linux.intel.com>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Ingo Molnar <mingo@kernel.org>, Paul Turner <pjt@google.com>,
+        <tkhai@yandex.ru>, Oleg Nesterov <oleg@redhat.com>
+Date: Tue, 22 Jul 2014 17:20:39 +0400
+In-Reply-To: <20140722082510.0086dd67@gandalf.local.home>
+References: <20140722102425.29682.24086.stgit@tkhai>
+	 <1406028616.3526.20.camel@tkhai>
+	 <20140722114542.GG20603@laptop.programming.kicks-ass.net>
+	 <20140722082510.0086dd67@gandalf.local.home>
+Organization: Parallels
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5-2+b3 
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.30.26.172]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Let perf inject take --kallsyms parameter the same as
-perf script and perf report do.  That is needed for
-decoding Instruction Trace data using a copy of
-/proc/kcore for the kernel object because the kallsyms
-path is used to locate that copy.
+В Вт, 22/07/2014 в 08:25 -0400, Steven Rostedt пишет:
+> On Tue, 22 Jul 2014 13:45:42 +0200
+> Peter Zijlstra <peterz@infradead.org> wrote:
+> 
+>  
+> > > @@ -1491,10 +1491,14 @@ static void ttwu_activate(struct rq *rq, struct task_struct *p, int en_flags)
+> > >  static void
+> > >  ttwu_do_wakeup(struct rq *rq, struct task_struct *p, int wake_flags)
+> > >  {
+> > > -	check_preempt_curr(rq, p, wake_flags);
+> > >  	trace_sched_wakeup(p, true);
+> > >  
+> > >  	p->state = TASK_RUNNING;
+> > > +
+> > > +	if (!task_queued(p))
+> > > +		return;
+> > 
+> > How can this happen? we're in the middle of a wakeup, we're just added
+> > the task to the rq and are still holding the appropriate rq->lock.
+> 
+> I believe it can be in the migrating state. A comment would be useful
+> here.
 
-Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
----
- tools/perf/Documentation/perf-inject.txt | 3 +++
- tools/perf/builtin-inject.c              | 2 ++
- 2 files changed, 5 insertions(+)
+Sure, I'll update. Stupid question: should I resend all series or one message
+in this thread is enough?
 
-diff --git a/tools/perf/Documentation/perf-inject.txt b/tools/perf/Documentation/perf-inject.txt
-index a00a342..dc7442c 100644
---- a/tools/perf/Documentation/perf-inject.txt
-+++ b/tools/perf/Documentation/perf-inject.txt
-@@ -41,6 +41,9 @@ OPTIONS
- 	tasks slept. sched_switch contains a callchain where a task slept and
- 	sched_stat contains a timeslice how long a task slept.
- 
-+--kallsyms=<file>::
-+	kallsyms pathname
-+
- SEE ALSO
- --------
- linkperf:perf-record[1], linkperf:perf-report[1], linkperf:perf-archive[1]
-diff --git a/tools/perf/builtin-inject.c b/tools/perf/builtin-inject.c
-index ce691c4..af17800 100644
---- a/tools/perf/builtin-inject.c
-+++ b/tools/perf/builtin-inject.c
-@@ -440,6 +440,8 @@ int cmd_inject(int argc, const char **argv, const char *prefix __maybe_unused)
- 			    "where and how long tasks slept"),
- 		OPT_INCR('v', "verbose", &verbose,
- 			 "be more verbose (show build ids, etc)"),
-+		OPT_STRING(0, "kallsyms", &symbol_conf.kallsyms_name, "file",
-+			   "kallsyms pathname"),
- 		OPT_END()
- 	};
- 	const char * const inject_usage[] = {
--- 
-1.8.3.2
+> 
+> > > @@ -4623,9 +4629,14 @@ int set_cpus_allowed_ptr(struct task_struct *p, const struct cpumask *new_mask)
+> > >  	struct rq *rq;
+> > >  	unsigned int dest_cpu;
+> > >  	int ret = 0;
+> > > -
+> > > +again:
+> > >  	rq = task_rq_lock(p, &flags);
+> > >  
+> > > +	if (unlikely(p->on_rq) == ONRQ_MIGRATING) {
+> > > +		task_rq_unlock(rq, p, &flags);
+> > > +		goto again;
+> > > +	}
+> > > +
+> > >  	if (cpumask_equal(&p->cpus_allowed, new_mask))
+> > >  		goto out;
+> > >  
+> > 
+> > That looks like a non-deterministic spin loop, 'waiting' for the
+> > migration to finish. Not particularly nice and something I think we
+> > should avoid for it has bad (TM) worst case behaviour.
+> 
+> As this patch doesn't introduce the MIGRATING getting set yet, I'd be
+> interested in this too. I'm assuming that the MIGRATING flag is only
+> set and then cleared within an interrupts disabled section, such that
+> the time is no more than a spinlock being taken.
+> 
+> I would also add a cpu_relax() there too.
+
+Sadly, I did't completely understand what you mean. Could you please explain
+what has to be changed?
+
+(I see wrong unlikely() place. It's an error. Is the other thing that there
+is no task_migrating() method?)
+
+
+Thanks,
+Kirill
 
