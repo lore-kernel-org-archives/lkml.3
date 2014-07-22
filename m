@@ -1,106 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756567AbaGVTNZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 15:13:25 -0400
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:55320 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750970AbaGVTNX (ORCPT
+	id S1756489AbaGVTSP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 15:18:15 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:39625 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751609AbaGVTSN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 15:13:23 -0400
-Date: Tue, 22 Jul 2014 12:14:35 -0700
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: Daniel Vetter <daniel@ffwll.ch>
-Cc: Alex Deucher <alexdeucher@gmail.com>,
-        Christian =?UTF-8?B?S8O2bmln?= <christian.koenig@amd.com>,
-        Thomas Hellstrom <thellstrom@vmware.com>,
-        nouveau <nouveau@lists.freedesktop.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        dri-devel <dri-devel@lists.freedesktop.org>,
-        "Deucher, Alexander" <alexander.deucher@amd.com>,
-        Ben Skeggs <bskeggs@redhat.com>
-Subject: Re: [PATCH 09/17] drm/radeon: use common fence implementation for
- fences
-Message-ID: <20140722121435.6bd093d0@jbarnes-desktop>
-In-Reply-To: <CAKMK7uGtfUTU=VwSnF07jncJsH1Ckie2m1FCjct60Yz88uE3cg@mail.gmail.com>
-References: <20140709093124.11354.3774.stgit@patser>
-	<20140709122953.11354.46381.stgit@patser>
-	<CAPM=9tyD2ZbrcGDC3hfNb7qNdzsfnyD-ZwM7G-nOgxeu5YKuSg@mail.gmail.com>
-	<53CE2421.5040906@amd.com>
-	<20140722114607.GL15237@phenom.ffwll.local>
-	<20140722115737.GN15237@phenom.ffwll.local>
-	<53CE56ED.4040109@vodafone.de>
-	<53CE6FB0.90500@canonical.com>
-	<53CE7410.3090603@amd.com>
-	<53CE74B5.3000201@canonical.com>
-	<53CE77B4.6020801@amd.com>
-	<CAKMK7uESXrDtCov8whOTsffg6eZdibF4qaTFaCubM=mnhN=gNQ@mail.gmail.com>
-	<CADnq5_Moy78A5JfDM0LME6_-48PW72DJpYYvEthQ5b=_amU8KQ@mail.gmail.com>
-	<CAKMK7uGtfUTU=VwSnF07jncJsH1Ckie2m1FCjct60Yz88uE3cg@mail.gmail.com>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Tue, 22 Jul 2014 15:18:13 -0400
+Message-ID: <53CEB8DB.1000301@infradead.org>
+Date: Tue, 22 Jul 2014 12:17:47 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Nick Krause <xerofoify@gmail.com>, Levente Kurusa <lkurusa@redhat.com>
+CC: Tony Luck <tony.luck@gmail.com>,
+        =?UTF-8?B?QmrDuHJuIE1vcms=?= <bjorn@mork.no>,
+        Doug Thompson <dougthompson@xmission.com>,
+        Borislav Petkov <bp@alien8.de>,
+        "m.chehab@samsung.com" <m.chehab@samsung.com>,
+        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] edac: Remove fixmes in e7xxx_edac.c
+References: <1406004789-9918-1-git-send-email-xerofoify@gmail.com>	<874my98p6u.fsf@nemi.mork.no>	<CA+8MBb+fnCNeQtyEqttxbkWx-4N+GUaKCUoCSdn5X9+bDDvTOg@mail.gmail.com>	<CAPDOMVjaf+vne4vbUPo8EPs0XnQBbNm2ZOXns8fw5pkg9tRSww@mail.gmail.com>	<CAAsK9AGtdJiz0xnmfqLBAqxmt=r+WANsmxwB_vQ3O5aKzMW1LQ@mail.gmail.com> <CAPDOMVhj72TFKbtw_93juX19WVdfUzh3KM9tCEjbTdUZvUfcUQ@mail.gmail.com>
+In-Reply-To: <CAPDOMVhj72TFKbtw_93juX19WVdfUzh3KM9tCEjbTdUZvUfcUQ@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 22 Jul 2014 17:48:18 +0200
-Daniel Vetter <daniel@ffwll.ch> wrote:
-
-> On Tue, Jul 22, 2014 at 5:42 PM, Alex Deucher <alexdeucher@gmail.com> wrote:
-> >> Fence-based syncing between userspace queues submitted stuff through
-> >> doorbells and anything submitted by the general simply wont work.
-> >> Which is why I think the doorbell is a stupid interface since I just
-> >> don't see cameras and v4l devices implementing all that complexity to
-> >> get a pure userspace side sync solution.
-> >>
-> >
-> > Like it or not this is what a lot of application writers want (look at
-> > mantle and metal and similar new APIs or android synpts).  Having
-> > queues and fences in userspace allows the application to structure
-> > things to best fit their own task graphs.  The app can decide how to
-> > deal with dependencies and synchronization explicitly instead of
-> > blocking the queues in the kernel for everyone.  Anyway, this is
-> > getting off topic.
+On 07/22/2014 11:25 AM, Nick Krause wrote:
+> On Tue, Jul 22, 2014 at 2:14 PM, Levente Kurusa <lkurusa@redhat.com> wrote:
+>> 2014-07-22 19:40 GMT+02:00 Nick Krause <xerofoify@gmail.com>:
+>>> [...]
+>>>
+>>> Tony,
+>>>
+>>> What is the value of Page shift then ? If you can tell me it would be
+>>> much easier for
+>>> me to fix this.
+>>> Cheers Nick
+>>
+>> Nick,
+>>
+>> Help is always welcome. However, what you are doing is effectively a
+>> waste of time for you and for the maintainers as well, and hence cannot
+>> be called help. You are writing emails that make absolutely no sense at all.
+>> If you want to help us out, please consider learning three things:
+>>
+>> * The language that the kernel is written in: C
+>> * The language that most kernel developers understand: English
+>> * The environment the kernel is (in most cases) written in: UNIX
+>>
+>> If you had known these, then:
+>>
+>> * ... you would have already known that FIXMEs exist for a reason which is
+>>    not at all simple.
+>>
+>> * ... you would have understood that fixing FIXMEs without ANY reasoning and
+>>    asking about it is completely useless and wastes precious maintainer time.
+>>
+>> * ... you could have used grep for finding out PAGE_SHIFT and not need to ask
+>>    for it.
+>>
+>> Nick. Look, it is good that you are enthusiastic. However, this kind
+>> of 'work' gives
+>> you an undesirable reputation, which is {IF FROM:xerofoify@* THEN TRASH}...
+>>
+>> If you really want to help out, I suggest you to find yourself a piece
+>> of hardware from
+>> the store and try to write a driver for it. That way, you will learn
+>> how it all works, and if
+>> you are intelligent enough then you might get a "Kernel Job - Payed"
+>> like you asked us
+>> for them in November.
+>>
+>> Until then, please stop trying for FIXMEs. They will not get you a
+>> commit in the kernel
+>> 99% of the time.
+>>
+>> Hope you understand,
+>>
+>> Levente Kurusa
 > 
-> Well there's explicit fences as used in opencl and android syncpts. My
-> plan is actually to support that in i915 using Maarten's struct fence
-> stuff (and there's just a very trivial patch for the android stuff in
-> merging needed to get there). What doesn't work is fences created
-> behind the kernel's back purely in userspace by giving shared memory
-> locations special meaning. Those get the kernel completely out of the
-> picture (as opposed to android syncpts, which just make sync
-> explicit).
 > 
-> I guess long-term we might need something like gpu futexes to make
-> that pure userspace syncing integrate a bit better, but imo that's (at
-> least for now) out of scope. For fences here I have the goal of one
-
-Yeah, with a little kernel help you could have a mostly kernel
-independent sync mechanism using just shared mem in userspace.  The
-kernel would just need to signal any interested clients when something
-happened (even if it didn't know what) and let userspace sort out the
-rest.  I think that would be a nice thing to provide at some point, as
-it could allow for some fine grained CPU/GPU algorithms that use
-lightweight synchronization with and without busy looping on the CPU
-side.
-
-But all of that is definitely a lower priority than getting explicit
-fencing exported to userspace to work right, both for intra-driver
-sync and inter-driver sync.
-
-> internally representation used by both implicit syncing (dma-buf on
-> classic linux, e.g. prime) and explicit fencing on android or opencl
-> or something like that.
+> Levente,
 > 
-> We don't have the code yet ready, but that's the direction i915 will
-> move towards for the near future. Jesse is working on some patches
-> already.
+> I understand what your saying and I should have searched for Page shift.
 
-Yeah I'd like to get some feedback from Maarten on my bits so I can get
-them ready for upstream.  I still need to add documentation and tests,
-but I'd like to make sure the interfaces and internals get acked first.
+so you know that PAGE_SHIFT is not always 12?
 
-Thanks,
+> In addition I am already got commits in the kernel for fix mes so I feel
+> that your comment on fix mes is incorrect.
+
+what is your goal?
+
+
 -- 
-Jesse Barnes, Intel Open Source Technology Center
+~Randy
