@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753228AbaGVHSc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 03:18:32 -0400
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:4649 "EHLO
+	id S1753325AbaGVHSy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 03:18:54 -0400
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:4654 "EHLO
 	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753177AbaGVHS3 (ORCPT
+	with ESMTP id S1753185AbaGVHSb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 03:18:29 -0400
+	Tue, 22 Jul 2014 03:18:31 -0400
 X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Tue, 22 Jul 2014 00:10:40 -0700
+	by hqnvupgp08.nvidia.com on Tue, 22 Jul 2014 00:10:42 -0700
 From: Alexandre Courbot <acourbot@nvidia.com>
 To: Linus Walleij <linus.walleij@linaro.org>
 CC: <linux-gpio@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <gnurou@gmail.com>, Alexandre Courbot <acourbot@nvidia.com>
-Subject: [PATCH 4/5] gpio: remove gpiod_lock/unlock_as_irq()
-Date: Tue, 22 Jul 2014 16:17:42 +0900
-Message-ID: <1406013463-19218-5-git-send-email-acourbot@nvidia.com>
+Subject: [PATCH 5/5] gpio: move gpio_ensure_requested() into legacy C file
+Date: Tue, 22 Jul 2014 16:17:43 +0900
+Message-ID: <1406013463-19218-6-git-send-email-acourbot@nvidia.com>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <1406013463-19218-1-git-send-email-acourbot@nvidia.com>
 References: <1406013463-19218-1-git-send-email-acourbot@nvidia.com>
@@ -26,210 +26,368 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-gpio_lock/unlock_as_irq() are working with (chip, offset) arguments and
-are thus not using the old integer namespace. Therefore, there is no
-reason to have gpiod variants of these functions working with
-descriptors, especially since the (chip, offset) tuple is more suitable
-to the users of these functions (GPIO drivers, whereas GPIO descriptors
-are targeted at GPIO consumers).
+gpio_ensure_requested() only makes sense when using the integer-based
+GPIO API, so make sure it is called from there instead of the gpiod
+API which we know cannot be called with a non-requested GPIO anyway.
+
+The uses of gpio_ensure_requested() in the gpiod API were kind of
+out-of-place anyway, so putting them in gpio-legacy.c helps clearing the
+code.
+
+Actually, considering the time this ensure_requested mechanism has been
+around, maybe we should just turn this patch into "remove
+gpio_ensure_requested()" if we know for sure that no user depend on it
+anymore?
 
 Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
 ---
- Documentation/gpio/driver.txt |  4 ++--
- drivers/gpio/gpiolib-acpi.c   |  6 +++---
- drivers/gpio/gpiolib-legacy.c | 12 ------------
- drivers/gpio/gpiolib-sysfs.c  |  4 ++--
- drivers/gpio/gpiolib.c        | 30 ++++++++++++++++--------------
- include/asm-generic/gpio.h    |  3 ---
- include/linux/gpio/driver.h   |  4 ++--
- 7 files changed, 25 insertions(+), 38 deletions(-)
+ drivers/gpio/gpiolib-legacy.c | 106 ++++++++++++++++++++++++++++++++++
+ drivers/gpio/gpiolib.c        | 129 ++----------------------------------------
+ include/asm-generic/gpio.h    |  15 +----
+ 3 files changed, 113 insertions(+), 137 deletions(-)
 
-diff --git a/Documentation/gpio/driver.txt b/Documentation/gpio/driver.txt
-index fa9a0a8b3734..224dbbcd1804 100644
---- a/Documentation/gpio/driver.txt
-+++ b/Documentation/gpio/driver.txt
-@@ -157,12 +157,12 @@ Locking IRQ usage
- Input GPIOs can be used as IRQ signals. When this happens, a driver is requested
- to mark the GPIO as being used as an IRQ:
- 
--	int gpiod_lock_as_irq(struct gpio_desc *desc)
-+	int gpio_lock_as_irq(struct gpio_chip *chip, unsigned int offset)
- 
- This will prevent the use of non-irq related GPIO APIs until the GPIO IRQ lock
- is released:
- 
--	void gpiod_unlock_as_irq(struct gpio_desc *desc)
-+	void gpio_unlock_as_irq(struct gpio_chip *chip, unsigned int offset)
- 
- When implementing an irqchip inside a GPIO driver, these two functions should
- typically be called in the .startup() and .shutdown() callbacks from the
-diff --git a/drivers/gpio/gpiolib-acpi.c b/drivers/gpio/gpiolib-acpi.c
-index 4a987917c186..d2e8600df02c 100644
---- a/drivers/gpio/gpiolib-acpi.c
-+++ b/drivers/gpio/gpiolib-acpi.c
-@@ -157,7 +157,7 @@ static acpi_status acpi_gpiochip_request_interrupt(struct acpi_resource *ares,
- 
- 	gpiod_direction_input(desc);
- 
--	ret = gpiod_lock_as_irq(desc);
-+	ret = gpio_lock_as_irq(chip, pin);
- 	if (ret) {
- 		dev_err(chip->dev, "Failed to lock GPIO as interrupt\n");
- 		goto fail_free_desc;
-@@ -212,7 +212,7 @@ static acpi_status acpi_gpiochip_request_interrupt(struct acpi_resource *ares,
- fail_free_event:
- 	kfree(event);
- fail_unlock_irq:
--	gpiod_unlock_as_irq(desc);
-+	gpio_unlock_as_irq(chip, pin);
- fail_free_desc:
- 	gpiochip_free_own_desc(desc);
- 
-@@ -263,7 +263,7 @@ static void acpi_gpiochip_free_interrupts(struct acpi_gpio_chip *acpi_gpio)
- 		desc = gpiochip_get_desc(chip, event->pin);
- 		if (WARN_ON(IS_ERR(desc)))
- 			continue;
--		gpiod_unlock_as_irq(desc);
-+		gpio_unlock_as_irq(chip, event->pin);
- 		gpiochip_free_own_desc(desc);
- 		list_del(&event->node);
- 		kfree(event);
 diff --git a/drivers/gpio/gpiolib-legacy.c b/drivers/gpio/gpiolib-legacy.c
-index eb5a4e2cee85..c3e3823a40b9 100644
+index c3e3823a40b9..9da5deee716c 100644
 --- a/drivers/gpio/gpiolib-legacy.c
 +++ b/drivers/gpio/gpiolib-legacy.c
-@@ -97,15 +97,3 @@ void gpio_free_array(const struct gpio *array, size_t num)
+@@ -5,6 +5,64 @@
+ 
+ #include "gpiolib.h"
+ 
++/* Warn when drivers omit gpio_request() calls -- legal but ill-advised
++ * when setting direction, and otherwise illegal.  Until board setup code
++ * and drivers use explicit requests everywhere (which won't happen when
++ * those calls have no teeth) we can't avoid autorequesting.  This nag
++ * message should motivate switching to explicit requests... so should
++ * the weaker cleanup after faults, compared to gpio_request().
++ *
++ * NOTE: the autorequest mechanism is going away; at this point it's
++ * only "legal" in the sense that (old) code using it won't break yet,
++ * but instead only triggers a WARN() stack dump.
++ */
++static int gpio_ensure_requested(struct gpio_desc *desc)
++{
++	struct gpio_chip *chip = desc->chip;
++	unsigned long flags;
++	bool request = false;
++	int err = 0;
++
++	spin_lock_irqsave(&gpio_lock, flags);
++
++	if (WARN(test_and_set_bit(FLAG_REQUESTED, &desc->flags) == 0,
++			"autorequest GPIO-%d\n", desc_to_gpio(desc))) {
++		if (!try_module_get(chip->owner)) {
++			gpiod_err(desc, "%s: module can't be gotten\n",
++					__func__);
++			clear_bit(FLAG_REQUESTED, &desc->flags);
++			/* lose */
++			err = -EIO;
++			goto end;
++		}
++		desc->label = "[auto]";
++		/* caller must chip->request() w/o spinlock */
++		if (chip->request)
++			request = true;
++	}
++
++end:
++	spin_unlock_irqrestore(&gpio_lock, flags);
++
++	if (request) {
++		might_sleep_if(chip->can_sleep);
++		err = chip->request(chip, gpio_chip_hwgpio(desc));
++
++		if (err < 0) {
++			gpiod_dbg(desc, "%s: chip request fail, %d\n",
++					__func__, err);
++			spin_lock_irqsave(&gpio_lock, flags);
++
++			desc->label = NULL;
++			clear_bit(FLAG_REQUESTED, &desc->flags);
++
++			spin_unlock_irqrestore(&gpio_lock, flags);
++		}
++	}
++
++	return err;
++}
++
+ void gpio_free(unsigned gpio)
+ {
+ 	gpiod_free(gpio_to_desc(gpio));
+@@ -97,3 +155,51 @@ void gpio_free_array(const struct gpio *array, size_t num)
  		gpio_free((array++)->gpio);
  }
  EXPORT_SYMBOL_GPL(gpio_free_array);
--
--int gpio_lock_as_irq(struct gpio_chip *chip, unsigned int offset)
--{
--	return gpiod_lock_as_irq(gpiochip_get_desc(chip, offset));
--}
--EXPORT_SYMBOL_GPL(gpio_lock_as_irq);
--
--void gpio_unlock_as_irq(struct gpio_chip *chip, unsigned int offset)
--{
--	return gpiod_unlock_as_irq(gpiochip_get_desc(chip, offset));
--}
--EXPORT_SYMBOL_GPL(gpio_unlock_as_irq);
-diff --git a/drivers/gpio/gpiolib-sysfs.c b/drivers/gpio/gpiolib-sysfs.c
-index f150aa288fa1..be45a9283c28 100644
---- a/drivers/gpio/gpiolib-sysfs.c
-+++ b/drivers/gpio/gpiolib-sysfs.c
-@@ -161,7 +161,7 @@ static int gpio_setup_irq(struct gpio_desc *desc, struct device *dev,
- 	desc->flags &= ~GPIO_TRIGGER_MASK;
- 
- 	if (!gpio_flags) {
--		gpiod_unlock_as_irq(desc);
-+		gpio_unlock_as_irq(desc->chip, gpio_chip_hwgpio(desc));
- 		ret = 0;
- 		goto free_id;
- 	}
-@@ -200,7 +200,7 @@ static int gpio_setup_irq(struct gpio_desc *desc, struct device *dev,
- 	if (ret < 0)
- 		goto free_id;
- 
--	ret = gpiod_lock_as_irq(desc);
-+	ret = gpio_lock_as_irq(desc->chip, gpio_chip_hwgpio(desc));
- 	if (ret < 0) {
- 		gpiod_warn(desc, "failed to flag the GPIO for IRQ\n");
- 		goto free_id;
++
++int gpio_direction_input(unsigned gpio)
++{
++	struct gpio_desc *desc = gpio_to_desc(gpio);
++	int err;
++
++	if (!desc)
++		return -EINVAL;
++
++	err = gpio_ensure_requested(desc);
++	if (err < 0)
++		return err;
++
++	return gpiod_direction_input(desc);
++}
++EXPORT_SYMBOL_GPL(gpio_direction_input);
++
++int gpio_direction_output(unsigned gpio, int value)
++{
++	struct gpio_desc *desc = gpio_to_desc(gpio);
++	int err;
++
++	if (!desc)
++		return -EINVAL;
++
++	err = gpio_ensure_requested(desc);
++	if (err < 0)
++		return err;
++
++	return gpiod_direction_output_raw(desc, value);
++}
++EXPORT_SYMBOL_GPL(gpio_direction_output);
++
++int gpio_set_debounce(unsigned gpio, unsigned debounce)
++{
++	struct gpio_desc *desc = gpio_to_desc(gpio);
++	int err;
++
++	if (!desc)
++		return -EINVAL;
++
++	err = gpio_ensure_requested(desc);
++	if (err < 0)
++		return err;
++
++	return gpiod_set_debounce(desc, debounce);
++}
++EXPORT_SYMBOL_GPL(gpio_set_debounce);
 diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
-index 38d176e31379..7582207c92e7 100644
+index 7582207c92e7..412d64e93cfb 100644
 --- a/drivers/gpio/gpiolib.c
 +++ b/drivers/gpio/gpiolib.c
-@@ -1428,44 +1428,46 @@ int gpiod_to_irq(const struct gpio_desc *desc)
- EXPORT_SYMBOL_GPL(gpiod_to_irq);
+@@ -95,39 +95,6 @@ int desc_to_gpio(const struct gpio_desc *desc)
+ EXPORT_SYMBOL_GPL(desc_to_gpio);
  
+ 
+-/* Warn when drivers omit gpio_request() calls -- legal but ill-advised
+- * when setting direction, and otherwise illegal.  Until board setup code
+- * and drivers use explicit requests everywhere (which won't happen when
+- * those calls have no teeth) we can't avoid autorequesting.  This nag
+- * message should motivate switching to explicit requests... so should
+- * the weaker cleanup after faults, compared to gpio_request().
+- *
+- * NOTE: the autorequest mechanism is going away; at this point it's
+- * only "legal" in the sense that (old) code using it won't break yet,
+- * but instead only triggers a WARN() stack dump.
+- */
+-static int gpio_ensure_requested(struct gpio_desc *desc)
+-{
+-	const struct gpio_chip *chip = desc->chip;
+-	const int gpio = desc_to_gpio(desc);
+-
+-	if (WARN(test_and_set_bit(FLAG_REQUESTED, &desc->flags) == 0,
+-			"autorequest GPIO-%d\n", gpio)) {
+-		if (!try_module_get(chip->owner)) {
+-			gpiod_err(desc, "%s: module can't be gotten\n",
+-					__func__);
+-			clear_bit(FLAG_REQUESTED, &desc->flags);
+-			/* lose */
+-			return -EIO;
+-		}
+-		desc_set_label(desc, "[auto]");
+-		/* caller must chip->request() w/o spinlock */
+-		if (chip->request)
+-			return 1;
+-	}
+-	return 0;
+-}
+-
  /**
-- * gpiod_lock_as_irq() - lock a GPIO to be used as IRQ
-- * @gpio: the GPIO line to lock as used for IRQ
-+ * gpio_lock_as_irq() - lock a GPIO to be used as IRQ
-+ * @chip: the chip the GPIO to lock belongs to
-+ * @offset: the offset of the GPIO to lock as IRQ
-  *
-  * This is used directly by GPIO drivers that want to lock down
-  * a certain GPIO line to be used for IRQs.
+  * gpiod_to_chip - Return the GPIO chip to which a GPIO descriptor belongs
+  * @desc:	descriptor to return the chip of
+@@ -964,10 +931,8 @@ void gpiochip_free_own_desc(struct gpio_desc *desc)
   */
--int gpiod_lock_as_irq(struct gpio_desc *desc)
-+int gpio_lock_as_irq(struct gpio_chip *chip, unsigned int offset)
+ int gpiod_direction_input(struct gpio_desc *desc)
  {
--	if (!desc)
-+	if (offset >= chip->ngpio)
- 		return -EINVAL;
+-	unsigned long		flags;
+ 	struct gpio_chip	*chip;
+ 	int			status = -EINVAL;
+-	int			offset;
  
--	if (test_bit(FLAG_IS_OUT, &desc->flags)) {
--		gpiod_err(desc,
-+	if (test_bit(FLAG_IS_OUT, &chip->desc[offset].flags)) {
-+		chip_err(chip,
- 			  "%s: tried to flag a GPIO set as output for IRQ\n",
- 			  __func__);
+ 	if (!desc || !desc->chip) {
+ 		pr_warn("%s: invalid GPIO\n", __func__);
+@@ -982,52 +947,20 @@ int gpiod_direction_input(struct gpio_desc *desc)
  		return -EIO;
  	}
  
--	set_bit(FLAG_USED_AS_IRQ, &desc->flags);
-+	set_bit(FLAG_USED_AS_IRQ, &chip->desc[offset].flags);
- 	return 0;
- }
--EXPORT_SYMBOL_GPL(gpiod_lock_as_irq);
-+EXPORT_SYMBOL_GPL(gpio_lock_as_irq);
+-	spin_lock_irqsave(&gpio_lock, flags);
+-
+-	status = gpio_ensure_requested(desc);
+-	if (status < 0)
+-		goto fail;
+-
+-	/* now we know the gpio is valid and chip won't vanish */
+-
+-	spin_unlock_irqrestore(&gpio_lock, flags);
+-
+-	might_sleep_if(chip->can_sleep);
+-
+-	offset = gpio_chip_hwgpio(desc);
+-	if (status) {
+-		status = chip->request(chip, offset);
+-		if (status < 0) {
+-			gpiod_dbg(desc, "%s: chip request fail, %d\n",
+-					__func__, status);
+-			/* and it's not available to anyone else ...
+-			 * gpio_request() is the fully clean solution.
+-			 */
+-			goto lose;
+-		}
+-	}
+-
+-	status = chip->direction_input(chip, offset);
++	status = chip->direction_input(chip, gpio_chip_hwgpio(desc));
+ 	if (status == 0)
+ 		clear_bit(FLAG_IS_OUT, &desc->flags);
  
- /**
-- * gpiod_unlock_as_irq() - unlock a GPIO used as IRQ
-- * @gpio: the GPIO line to unlock from IRQ usage
-+ * gpio_unlock_as_irq() - unlock a GPIO used as IRQ
-+ * @chip: the chip the GPIO to lock belongs to
-+ * @offset: the offset of the GPIO to lock as IRQ
-  *
-  * This is used directly by GPIO drivers that want to indicate
-  * that a certain GPIO is no longer used exclusively for IRQ.
-  */
--void gpiod_unlock_as_irq(struct gpio_desc *desc)
-+void gpio_unlock_as_irq(struct gpio_chip *chip, unsigned int offset)
+ 	trace_gpio_direction(desc_to_gpio(desc), 1, status);
+-lose:
+-	return status;
+-fail:
+-	spin_unlock_irqrestore(&gpio_lock, flags);
+-	if (status)
+-		gpiod_dbg(desc, "%s: status %d\n", __func__, status);
++
+ 	return status;
+ }
+ EXPORT_SYMBOL_GPL(gpiod_direction_input);
+ 
+ static int _gpiod_direction_output_raw(struct gpio_desc *desc, int value)
  {
--	if (!desc)
-+	if (offset >= chip->ngpio)
- 		return;
+-	unsigned long		flags;
+ 	struct gpio_chip	*chip;
+ 	int			status = -EINVAL;
+-	int offset;
  
--	clear_bit(FLAG_USED_AS_IRQ, &desc->flags);
-+	clear_bit(FLAG_USED_AS_IRQ, &chip->desc[offset].flags);
+ 	/* GPIOs used for IRQs shall not be set as output */
+ 	if (test_bit(FLAG_USED_AS_IRQ, &desc->flags)) {
+@@ -1053,42 +986,11 @@ static int _gpiod_direction_output_raw(struct gpio_desc *desc, int value)
+ 		return -EIO;
+ 	}
+ 
+-	spin_lock_irqsave(&gpio_lock, flags);
+-
+-	status = gpio_ensure_requested(desc);
+-	if (status < 0)
+-		goto fail;
+-
+-	/* now we know the gpio is valid and chip won't vanish */
+-
+-	spin_unlock_irqrestore(&gpio_lock, flags);
+-
+-	might_sleep_if(chip->can_sleep);
+-
+-	offset = gpio_chip_hwgpio(desc);
+-	if (status) {
+-		status = chip->request(chip, offset);
+-		if (status < 0) {
+-			gpiod_dbg(desc, "%s: chip request fail, %d\n",
+-					__func__, status);
+-			/* and it's not available to anyone else ...
+-			 * gpio_request() is the fully clean solution.
+-			 */
+-			goto lose;
+-		}
+-	}
+-
+-	status = chip->direction_output(chip, offset, value);
++	status = chip->direction_output(chip, gpio_chip_hwgpio(desc), value);
+ 	if (status == 0)
+ 		set_bit(FLAG_IS_OUT, &desc->flags);
+ 	trace_gpio_value(desc_to_gpio(desc), 0, value);
+ 	trace_gpio_direction(desc_to_gpio(desc), 0, status);
+-lose:
+-	return status;
+-fail:
+-	spin_unlock_irqrestore(&gpio_lock, flags);
+-	if (status)
+-		gpiod_dbg(desc, "%s: gpio status %d\n", __func__, status);
+ 	return status;
  }
--EXPORT_SYMBOL_GPL(gpiod_unlock_as_irq);
-+EXPORT_SYMBOL_GPL(gpio_unlock_as_irq);
  
- /**
-  * gpiod_get_raw_value_cansleep() - return a gpio's raw value
+@@ -1147,10 +1049,7 @@ EXPORT_SYMBOL_GPL(gpiod_direction_output);
+  */
+ int gpiod_set_debounce(struct gpio_desc *desc, unsigned debounce)
+ {
+-	unsigned long		flags;
+ 	struct gpio_chip	*chip;
+-	int			status = -EINVAL;
+-	int			offset;
+ 
+ 	if (!desc || !desc->chip) {
+ 		pr_warn("%s: invalid GPIO\n", __func__);
+@@ -1165,27 +1064,7 @@ int gpiod_set_debounce(struct gpio_desc *desc, unsigned debounce)
+ 		return -ENOTSUPP;
+ 	}
+ 
+-	spin_lock_irqsave(&gpio_lock, flags);
+-
+-	status = gpio_ensure_requested(desc);
+-	if (status < 0)
+-		goto fail;
+-
+-	/* now we know the gpio is valid and chip won't vanish */
+-
+-	spin_unlock_irqrestore(&gpio_lock, flags);
+-
+-	might_sleep_if(chip->can_sleep);
+-
+-	offset = gpio_chip_hwgpio(desc);
+-	return chip->set_debounce(chip, offset, debounce);
+-
+-fail:
+-	spin_unlock_irqrestore(&gpio_lock, flags);
+-	if (status)
+-		gpiod_dbg(desc, "%s: status %d\n", __func__, status);
+-
+-	return status;
++	return chip->set_debounce(chip, gpio_chip_hwgpio(desc), debounce);
+ }
+ EXPORT_SYMBOL_GPL(gpiod_set_debounce);
+ 
 diff --git a/include/asm-generic/gpio.h b/include/asm-generic/gpio.h
-index 23e364538ab5..c1d4105e1c1d 100644
+index c1d4105e1c1d..39a1d06950d9 100644
 --- a/include/asm-generic/gpio.h
 +++ b/include/asm-generic/gpio.h
-@@ -110,9 +110,6 @@ static inline int __gpio_to_irq(unsigned gpio)
- 	return gpiod_to_irq(gpio_to_desc(gpio));
- }
+@@ -63,19 +63,10 @@ static inline struct gpio_chip *gpio_to_chip(unsigned gpio)
+ extern int gpio_request(unsigned gpio, const char *label);
+ extern void gpio_free(unsigned gpio);
  
--extern int gpio_lock_as_irq(struct gpio_chip *chip, unsigned int offset);
--extern void gpio_unlock_as_irq(struct gpio_chip *chip, unsigned int offset);
--
- extern int gpio_request_one(unsigned gpio, unsigned long flags, const char *label);
- extern int gpio_request_array(const struct gpio *array, size_t num);
- extern void gpio_free_array(const struct gpio *array, size_t num);
-diff --git a/include/linux/gpio/driver.h b/include/linux/gpio/driver.h
-index 4dc79714c136..7b8b00235d29 100644
---- a/include/linux/gpio/driver.h
-+++ b/include/linux/gpio/driver.h
-@@ -146,8 +146,8 @@ extern struct gpio_chip *gpiochip_find(void *data,
- 			      int (*match)(struct gpio_chip *chip, void *data));
+-static inline int gpio_direction_input(unsigned gpio)
+-{
+-	return gpiod_direction_input(gpio_to_desc(gpio));
+-}
+-static inline int gpio_direction_output(unsigned gpio, int value)
+-{
+-	return gpiod_direction_output_raw(gpio_to_desc(gpio), value);
+-}
++extern int gpio_direction_input(unsigned gpio);
++extern int gpio_direction_output(unsigned gpio, int value);
  
- /* lock/unlock as IRQ */
--int gpiod_lock_as_irq(struct gpio_desc *desc);
--void gpiod_unlock_as_irq(struct gpio_desc *desc);
-+int gpio_lock_as_irq(struct gpio_chip *chip, unsigned int offset);
-+void gpio_unlock_as_irq(struct gpio_chip *chip, unsigned int offset);
+-static inline int gpio_set_debounce(unsigned gpio, unsigned debounce)
+-{
+-	return gpiod_set_debounce(gpio_to_desc(gpio), debounce);
+-}
++extern int gpio_set_debounce(unsigned gpio, unsigned debounce);
  
- struct gpio_chip *gpiod_to_chip(const struct gpio_desc *desc);
- 
+ static inline int gpio_get_value_cansleep(unsigned gpio)
+ {
 -- 
 2.0.1
 
