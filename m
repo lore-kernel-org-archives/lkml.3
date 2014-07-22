@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932679AbaGVWXk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 18:23:40 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44506 "EHLO
+	id S932703AbaGVWXr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 18:23:47 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:44515 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932634AbaGVWXi (ORCPT
+	with ESMTP id S932634AbaGVWXn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 18:23:38 -0400
+	Tue, 22 Jul 2014 18:23:43 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Johan Hedberg <johan.hedberg@intel.com>,
-        Marcel Holtmann <marcel@holtmann.org>,
+Cc: Bin Wang <binw@marvell.com>,
+        Nobuhiro Iwamatsu <nobuhiro.iwamatsu.yj@renesas.com>,
+        Norbert Ciosek <norbertciosek@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 097/116] Bluetooth: Fix check for connection encryption
-Date: Tue, 22 Jul 2014 15:21:48 -0700
-Message-Id: <1406067727-19683-98-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 085/116] Revert "uio: fix vma io range check in mmap"
+Date: Tue, 22 Jul 2014 15:21:36 -0700
+Message-Id: <1406067727-19683-86-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1406067727-19683-1-git-send-email-kamal@canonical.com>
 References: <1406067727-19683-1-git-send-email-kamal@canonical.com>
@@ -28,45 +30,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hedberg <johan.hedberg@intel.com>
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-commit e694788d73efe139b24f78b036deb97fe57fa8cb upstream.
+commit b29f680c4fe305902d02c1d5aa4968fe13a45fe6 upstream.
 
-The conn->link_key variable tracks the type of link key in use. It is
-set whenever we respond to a link key request as well as when we get a
-link key notification event.
+This reverts commit ddb09754e6c7239e302c7b675df9bbd415f8de5d.
 
-These two events do not however always guarantee that encryption is
-enabled: getting a link key request and responding to it may only mean
-that the remote side has requested authentication but not encryption. On
-the other hand, the encrypt change event is a certain guarantee that
-encryption is enabled. The real encryption state is already tracked in
-the conn->link_mode variable through the HCI_LM_ENCRYPT bit.
+Linus objected to this originally, I can see why it might be needed, but
+given that no one spoke up defending this patch, I'm going to revert it.
 
-This patch fixes a check for encryption in the hci_conn_auth function to
-use the proper conn->link_mode value and thereby eliminates the chance
-of a false positive result.
+If you have hardware that requires this change, please speak up in the
+future and defend the patch.
 
-Signed-off-by: Johan Hedberg <johan.hedberg@intel.com>
-Signed-off-by: Marcel Holtmann <marcel@holtmann.org>
+Reported-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Bin Wang <binw@marvell.com>
+Cc: Nobuhiro Iwamatsu <nobuhiro.iwamatsu.yj@renesas.com>
+Cc: Norbert Ciosek <norbertciosek@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/bluetooth/hci_conn.c | 2 +-
+ drivers/uio/uio.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/net/bluetooth/hci_conn.c b/net/bluetooth/hci_conn.c
-index 058897f..947a965 100644
---- a/net/bluetooth/hci_conn.c
-+++ b/net/bluetooth/hci_conn.c
-@@ -650,7 +650,7 @@ static int hci_conn_auth(struct hci_conn *conn, __u8 sec_level, __u8 auth_type)
- 		/* If we're already encrypted set the REAUTH_PEND flag,
- 		 * otherwise set the ENCRYPT_PEND.
- 		 */
--		if (conn->key_type != 0xff)
-+		if (conn->link_mode & HCI_LM_ENCRYPT)
- 			set_bit(HCI_CONN_REAUTH_PEND, &conn->flags);
- 		else
- 			set_bit(HCI_CONN_ENCRYPT_PEND, &conn->flags);
+diff --git a/drivers/uio/uio.c b/drivers/uio/uio.c
+index 354c095..9981b9b 100644
+--- a/drivers/uio/uio.c
++++ b/drivers/uio/uio.c
+@@ -657,7 +657,7 @@ static int uio_mmap_physical(struct vm_area_struct *vma)
+ 
+ 	if (mem->addr & ~PAGE_MASK)
+ 		return -ENODEV;
+-	if (vma->vm_end - vma->vm_start > PAGE_ALIGN(mem->size))
++	if (vma->vm_end - vma->vm_start > mem->size)
+ 		return -EINVAL;
+ 
+ 	vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
 -- 
 1.9.1
 
