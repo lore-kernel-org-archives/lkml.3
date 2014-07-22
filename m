@@ -1,16 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932379AbaGVWJ5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 18:09:57 -0400
-Received: from mga02.intel.com ([134.134.136.20]:26937 "EHLO mga02.intel.com"
+	id S932440AbaGVWK1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 18:10:27 -0400
+Received: from mga09.intel.com ([134.134.136.24]:4975 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932327AbaGVWJq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 18:09:46 -0400
+	id S932382AbaGVWKX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 18:10:23 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,712,1400050800"; 
-   d="scan'208";a="547426970"
-Subject: [PATCH v5 5/7] crypto: SHA1 multibuffer submit and flush routines
- for AVX2
+   d="scan'208";a="577238847"
+Subject: [PATCH v5 7/7] crypto: SHA1 multibuffer scheduler
 From: Tim Chen <tim.c.chen@linux.intel.com>
 To: Herbert Xu <herbert@gondor.apana.org.au>, "H. Peter Anvin" <hpa@zytor.com>,
         "David S.Miller" <davem@davemloft.net>,
@@ -27,8 +26,8 @@ Cc: Chandramouli Narayanan <mouli@linux.intel.com>,
 In-Reply-To: <cover.1406033477.git.tim.c.chen@linux.intel.com>
 References: <cover.1406033477.git.tim.c.chen@linux.intel.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 22 Jul 2014 15:09:41 -0700
-Message-ID: <1406066981.2970.807.camel@schen9-DESK>
+Date: Tue, 22 Jul 2014 15:09:47 -0700
+Message-ID: <1406066987.2970.809.camel@schen9-DESK>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
 Content-Transfer-Encoding: 7bit
@@ -36,361 +35,66 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch introduces the routines used to submit and flush buffers
-belonging to SHA1 crypto jobs to the SHA1 multibuffer algorithm.  It is
-implemented mostly in assembly optimized with AVX2 instructions.
+This patch introduces the multi-buffer scheduler which is responsible
+for submitting scatter-gather buffers from several SHA1 jobs to the
+multi-buffer algorithm.  It also contains the flush routine to that's
+called by the crypto daemon to complete the job when no new jobs arrive
+before the deadline of maximum latency of a SHA1 crypto job.
+
+The SHA1 multi-buffer crypto algorithm is defined and initialized in
+this patch.
 
 Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
 ---
- arch/x86/crypto/sha-mb/sha1_mb_mgr_flush_avx2.S  | 327 +++++++++++++++++++++++
- arch/x86/crypto/sha-mb/sha1_mb_mgr_init_avx2.c   |  64 +++++
- arch/x86/crypto/sha-mb/sha1_mb_mgr_submit_avx2.S | 228 ++++++++++++++++
- 3 files changed, 619 insertions(+)
- create mode 100644 arch/x86/crypto/sha-mb/sha1_mb_mgr_flush_avx2.S
- create mode 100644 arch/x86/crypto/sha-mb/sha1_mb_mgr_init_avx2.c
- create mode 100644 arch/x86/crypto/sha-mb/sha1_mb_mgr_submit_avx2.S
+ arch/x86/crypto/Makefile         |   2 +
+ arch/x86/crypto/sha-mb/Makefile  |  11 +
+ arch/x86/crypto/sha-mb/sha1_mb.c | 935 +++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 948 insertions(+)
+ create mode 100644 arch/x86/crypto/sha-mb/Makefile
+ create mode 100644 arch/x86/crypto/sha-mb/sha1_mb.c
 
-diff --git a/arch/x86/crypto/sha-mb/sha1_mb_mgr_flush_avx2.S b/arch/x86/crypto/sha-mb/sha1_mb_mgr_flush_avx2.S
+diff --git a/arch/x86/crypto/Makefile b/arch/x86/crypto/Makefile
+index 61d6e28..1189267 100644
+--- a/arch/x86/crypto/Makefile
++++ b/arch/x86/crypto/Makefile
+@@ -25,6 +25,7 @@ obj-$(CONFIG_CRYPTO_GHASH_CLMUL_NI_INTEL) += ghash-clmulni-intel.o
+ 
+ obj-$(CONFIG_CRYPTO_CRC32C_INTEL) += crc32c-intel.o
+ obj-$(CONFIG_CRYPTO_SHA1_SSSE3) += sha1-ssse3.o
++obj-$(CONFIG_CRYPTO_SHA1_MB) += sha-mb/
+ obj-$(CONFIG_CRYPTO_CRC32_PCLMUL) += crc32-pclmul.o
+ obj-$(CONFIG_CRYPTO_SHA256_SSSE3) += sha256-ssse3.o
+ obj-$(CONFIG_CRYPTO_SHA512_SSSE3) += sha512-ssse3.o
+@@ -88,3 +89,4 @@ crc32-pclmul-y := crc32-pclmul_asm.o crc32-pclmul_glue.o
+ sha256-ssse3-y := sha256-ssse3-asm.o sha256-avx-asm.o sha256-avx2-asm.o sha256_ssse3_glue.o
+ sha512-ssse3-y := sha512-ssse3-asm.o sha512-avx-asm.o sha512-avx2-asm.o sha512_ssse3_glue.o
+ crct10dif-pclmul-y := crct10dif-pcl-asm_64.o crct10dif-pclmul_glue.o
++
+diff --git a/arch/x86/crypto/sha-mb/Makefile b/arch/x86/crypto/sha-mb/Makefile
 new file mode 100644
-index 0000000..85c4e1c
+index 0000000..2f87563
 --- /dev/null
-+++ b/arch/x86/crypto/sha-mb/sha1_mb_mgr_flush_avx2.S
-@@ -0,0 +1,327 @@
-+/*
-+ * Flush routine for SHA1 multibuffer
-+ *
-+ * This file is provided under a dual BSD/GPLv2 license.  When using or
-+ * redistributing this file, you may do so under either license.
-+ *
-+ * GPL LICENSE SUMMARY
-+ *
-+ *  Copyright(c) 2014 Intel Corporation.
-+ *
-+ *  This program is free software; you can redistribute it and/or modify
-+ *  it under the terms of version 2 of the GNU General Public License as
-+ *  published by the Free Software Foundation.
-+ *
-+ *  This program is distributed in the hope that it will be useful, but
-+ *  WITHOUT ANY WARRANTY; without even the implied warranty of
-+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-+ *  General Public License for more details.
-+ *
-+ *  Contact Information:
-+ *      James Guilford <james.guilford@intel.com>
-+ *	Tim Chen <tim.c.chen@linux.intel.com>
-+ *
-+ *  BSD LICENSE
-+ *
-+ *  Copyright(c) 2014 Intel Corporation.
-+ *
-+ *  Redistribution and use in source and binary forms, with or without
-+ *  modification, are permitted provided that the following conditions
-+ *  are met:
-+ *
-+ *    * Redistributions of source code must retain the above copyright
-+ *      notice, this list of conditions and the following disclaimer.
-+ *    * Redistributions in binary form must reproduce the above copyright
-+ *      notice, this list of conditions and the following disclaimer in
-+ *      the documentation and/or other materials provided with the
-+ *      distribution.
-+ *    * Neither the name of Intel Corporation nor the names of its
-+ *      contributors may be used to endorse or promote products derived
-+ *      from this software without specific prior written permission.
-+ *
-+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-+ *  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-+ *  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-+ *  A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-+ *  OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-+ *  SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-+ *  LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-+ *  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-+ *  THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-+ *  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-+ */
-+#include <linux/linkage.h>
-+#include "sha1_mb_mgr_datastruct.S"
++++ b/arch/x86/crypto/sha-mb/Makefile
+@@ -0,0 +1,11 @@
++#
++# Arch-specific CryptoAPI modules.
++#
 +
-+
-+.extern sha1_x8_avx2
-+
-+# LINUX register definitions
-+#define arg1    %rdi
-+#define arg2    %rsi
-+
-+# Common definitions
-+#define state   arg1
-+#define job     arg2
-+#define len2    arg2
-+
-+# idx must be a register not clobbered by sha1_x8_avx2
-+#define idx		%r8
-+#define DWORD_idx	%r8d
-+
-+#define unused_lanes    %rbx
-+#define lane_data       %rbx
-+#define tmp2            %rbx
-+#define tmp2_w		%ebx
-+
-+#define job_rax         %rax
-+#define tmp1            %rax
-+#define size_offset     %rax
-+#define tmp             %rax
-+#define start_offset    %rax
-+
-+#define tmp3            %arg1
-+
-+#define extra_blocks    %arg2
-+#define p               %arg2
-+
-+
-+# STACK_SPACE needs to be an odd multiple of 8
-+_XMM_SAVE_SIZE  = 10*16
-+_GPR_SAVE_SIZE  = 8*8
-+_ALIGN_SIZE     = 8
-+
-+_XMM_SAVE       = 0
-+_GPR_SAVE       = _XMM_SAVE + _XMM_SAVE_SIZE
-+STACK_SPACE     = _GPR_SAVE + _GPR_SAVE_SIZE + _ALIGN_SIZE
-+
-+.macro LABEL prefix n
-+\prefix\n\():
-+.endm
-+
-+.macro JNE_SKIP i
-+jne     skip_\i
-+.endm
-+
-+.altmacro
-+.macro SET_OFFSET _offset
-+offset = \_offset
-+.endm
-+.noaltmacro
-+
-+# JOB* sha1_mb_mgr_flush_avx2(MB_MGR *state)
-+# arg 1 : rcx : state
-+ENTRY(sha1_mb_mgr_flush_avx2)
-+	mov	%rsp, %r10
-+	sub     $STACK_SPACE, %rsp
-+	and     $~31, %rsp
-+	mov     %rbx, _GPR_SAVE(%rsp)
-+	mov     %r10, _GPR_SAVE+8*1(%rsp) #save rsp
-+	mov	%rbp, _GPR_SAVE+8*3(%rsp)
-+	mov	%r12, _GPR_SAVE+8*4(%rsp)
-+	mov	%r13, _GPR_SAVE+8*5(%rsp)
-+	mov	%r14, _GPR_SAVE+8*6(%rsp)
-+	mov	%r15, _GPR_SAVE+8*7(%rsp)
-+
-+	# If bit (32+3) is set, then all lanes are empty
-+	mov     _unused_lanes(state), unused_lanes
-+	bt      $32+3, unused_lanes
-+	jc      return_null
-+
-+	# find a lane with a non-null job
-+	xor     idx, idx
-+	offset = (_ldata + 1 * _LANE_DATA_size + _job_in_lane)
-+	cmpq    $0, offset(state)
-+	cmovne  one(%rip), idx
-+	offset = (_ldata + 2 * _LANE_DATA_size + _job_in_lane)
-+	cmpq    $0, offset(state)
-+	cmovne  two(%rip), idx
-+	offset = (_ldata + 3 * _LANE_DATA_size + _job_in_lane)
-+	cmpq    $0, offset(state)
-+	cmovne  three(%rip), idx
-+	offset = (_ldata + 4 * _LANE_DATA_size + _job_in_lane)
-+	cmpq    $0, offset(state)
-+	cmovne  four(%rip), idx
-+	offset = (_ldata + 5 * _LANE_DATA_size + _job_in_lane)
-+	cmpq    $0, offset(state)
-+	cmovne  five(%rip), idx
-+	offset = (_ldata + 6 * _LANE_DATA_size + _job_in_lane)
-+	cmpq    $0, offset(state)
-+	cmovne  six(%rip), idx
-+	offset = (_ldata + 7 * _LANE_DATA_size + _job_in_lane)
-+	cmpq    $0, offset(state)
-+	cmovne  seven(%rip), idx
-+
-+	# copy idx to empty lanes
-+copy_lane_data:
-+	offset =  (_args + _data_ptr)
-+	mov     offset(state,idx,8), tmp
-+
-+	I = 0
-+.rep 8
-+	offset =  (_ldata + I * _LANE_DATA_size + _job_in_lane)
-+	cmpq    $0, offset(state)
-+.altmacro
-+	JNE_SKIP %I
-+	offset =  (_args + _data_ptr + 8*I)
-+	mov     tmp, offset(state)
-+	offset =  (_lens + 4*I)
-+	movl    $0xFFFFFFFF, offset(state)
-+LABEL skip_ %I
-+	I = (I+1)
-+.noaltmacro
-+.endr
-+
-+	# Find min length
-+	vmovdqa _lens+0*16(state), %xmm0
-+	vmovdqa _lens+1*16(state), %xmm1
-+
-+	vpminud %xmm1, %xmm0, %xmm2     # xmm2 has {D,C,B,A}
-+	vpalignr $8, %xmm2, %xmm3, %xmm3   # xmm3 has {x,x,D,C}
-+	vpminud %xmm3, %xmm2, %xmm2        # xmm2 has {x,x,E,F}
-+	vpalignr $4, %xmm2, %xmm3, %xmm3    # xmm3 has {x,x,x,E}
-+	vpminud %xmm3, %xmm2, %xmm2        # xmm2 has min value in low dword
-+
-+	vmovd   %xmm2, DWORD_idx
-+	mov	idx, len2
-+	and	$0xF, idx
-+	shr	$4, len2
-+	jz	len_is_0
-+
-+	vpand   clear_low_nibble(%rip), %xmm2, %xmm2
-+	vpshufd $0, %xmm2, %xmm2
-+
-+	vpsubd  %xmm2, %xmm0, %xmm0
-+	vpsubd  %xmm2, %xmm1, %xmm1
-+
-+	vmovdqa %xmm0, _lens+0*16(state)
-+	vmovdqa %xmm1, _lens+1*16(state)
-+
-+	# "state" and "args" are the same address, arg1
-+	# len is arg2
-+	call	sha1_x8_avx2
-+	# state and idx are intact
-+
-+
-+len_is_0:
-+	# process completed job "idx"
-+	imul    $_LANE_DATA_size, idx, lane_data
-+	lea     _ldata(state, lane_data), lane_data
-+
-+	mov     _job_in_lane(lane_data), job_rax
-+	movq    $0, _job_in_lane(lane_data)
-+	movl    $STS_COMPLETED, _status(job_rax)
-+	mov     _unused_lanes(state), unused_lanes
-+	shl     $4, unused_lanes
-+	or      idx, unused_lanes
-+	mov     unused_lanes, _unused_lanes(state)
-+
-+	movl	$0xFFFFFFFF, _lens(state, idx, 4)
-+
-+	vmovd    _args_digest(state , idx, 4) , %xmm0
-+	vpinsrd  $1, _args_digest+1*32(state, idx, 4), %xmm0, %xmm0
-+	vpinsrd  $2, _args_digest+2*32(state, idx, 4), %xmm0, %xmm0
-+	vpinsrd  $3, _args_digest+3*32(state, idx, 4), %xmm0, %xmm0
-+	movl    _args_digest+4*32(state, idx, 4), tmp2_w
-+
-+	vmovdqu  %xmm0, _result_digest(job_rax)
-+	offset =  (_result_digest + 1*16)
-+	mov     tmp2_w, offset(job_rax)
-+
-+return:
-+
-+	mov     _GPR_SAVE(%rsp), %rbx
-+	mov     _GPR_SAVE+8*1(%rsp), %r10 #saved rsp
-+	mov	_GPR_SAVE+8*3(%rsp), %rbp
-+	mov	_GPR_SAVE+8*4(%rsp), %r12
-+	mov	_GPR_SAVE+8*5(%rsp), %r13
-+	mov	_GPR_SAVE+8*6(%rsp), %r14
-+	mov	_GPR_SAVE+8*7(%rsp), %r15
-+	mov     %r10, %rsp
-+
-+	ret
-+
-+return_null:
-+	xor     job_rax, job_rax
-+	jmp     return
-+ENDPROC(sha1_mb_mgr_flush_avx2)
-+
-+
-+#################################################################
-+
-+.align 16
-+ENTRY(sha1_mb_mgr_get_comp_job_avx2)
-+	push    %rbx
-+
-+	## if bit 32+3 is set, then all lanes are empty
-+	mov     _unused_lanes(state), unused_lanes
-+	bt      $(32+3), unused_lanes
-+	jc      .return_null
-+
-+	# Find min length
-+	vmovdqa _lens(state), %xmm0
-+	vmovdqa _lens+1*16(state), %xmm1
-+
-+	vpminud %xmm1, %xmm0, %xmm2        # xmm2 has {D,C,B,A}
-+	vpalignr $8, %xmm2, %xmm3, %xmm3   # xmm3 has {x,x,D,C}
-+	vpminud %xmm3, %xmm2, %xmm2        # xmm2 has {x,x,E,F}
-+	vpalignr $4, %xmm2, %xmm3, %xmm3    # xmm3 has {x,x,x,E}
-+	vpminud %xmm3, %xmm2, %xmm2        # xmm2 has min value in low dword
-+
-+	vmovd   %xmm2, DWORD_idx
-+	test    $~0xF, idx
-+	jnz     .return_null
-+
-+	# process completed job "idx"
-+	imul    $_LANE_DATA_size, idx, lane_data
-+	lea     _ldata(state, lane_data), lane_data
-+
-+	mov     _job_in_lane(lane_data), job_rax
-+	movq    $0,  _job_in_lane(lane_data)
-+	movl    $STS_COMPLETED, _status(job_rax)
-+	mov     _unused_lanes(state), unused_lanes
-+	shl     $4, unused_lanes
-+	or      idx, unused_lanes
-+	mov     unused_lanes, _unused_lanes(state)
-+
-+	movl    $0xFFFFFFFF, _lens(state,  idx, 4)
-+
-+	vmovd   _args_digest(state, idx, 4), %xmm0
-+	vpinsrd $1, _args_digest+1*32(state, idx, 4), %xmm0, %xmm0
-+	vpinsrd $2, _args_digest+2*32(state, idx, 4), %xmm0, %xmm0
-+	vpinsrd $3, _args_digest+3*32(state, idx, 4), %xmm0, %xmm0
-+	movl    _args_digest+4*32(state, idx, 4), tmp2_w
-+
-+	vmovdqu %xmm0, _result_digest(job_rax)
-+	movl    tmp2_w, _result_digest+1*16(job_rax)
-+
-+	pop     %rbx
-+
-+	ret
-+
-+.return_null:
-+	xor     job_rax, job_rax
-+	pop     %rbx
-+	ret
-+ENDPROC(sha1_mb_mgr_get_comp_job_avx2)
-+
-+.data
-+
-+.align 16
-+clear_low_nibble:
-+.octa	0x000000000000000000000000FFFFFFF0
-+one:
-+.quad  1
-+two:
-+.quad  2
-+three:
-+.quad  3
-+four:
-+.quad  4
-+five:
-+.quad  5
-+six:
-+.quad  6
-+seven:
-+.quad  7
-diff --git a/arch/x86/crypto/sha-mb/sha1_mb_mgr_init_avx2.c b/arch/x86/crypto/sha-mb/sha1_mb_mgr_init_avx2.c
++avx2_supported := $(call as-instr,vpgatherdd %ymm0$(comma)(%eax$(comma)%ymm1\
++                                $(comma)4)$(comma)%ymm2,yes,no)
++ifeq ($(avx2_supported),yes)
++	obj-$(CONFIG_CRYPTO_SHA1_MB) += sha1-mb.o
++	sha1-mb-y := sha1_mb.o sha1_mb_mgr_flush_avx2.o \
++	     sha1_mb_mgr_init_avx2.o sha1_mb_mgr_submit_avx2.o sha1_x8_avx2.o
++endif
+diff --git a/arch/x86/crypto/sha-mb/sha1_mb.c b/arch/x86/crypto/sha-mb/sha1_mb.c
 new file mode 100644
-index 0000000..4ca7e16
+index 0000000..e27ff31
 --- /dev/null
-+++ b/arch/x86/crypto/sha-mb/sha1_mb_mgr_init_avx2.c
-@@ -0,0 +1,64 @@
++++ b/arch/x86/crypto/sha-mb/sha1_mb.c
+@@ -0,0 +1,935 @@
 +/*
-+ * Initialization code for multi buffer SHA1 algorithm for AVX2
++ * Multi buffer SHA1 algorithm Glue Code
 + *
 + * This file is provided under a dual BSD/GPLv2 license.  When using or
 + * redistributing this file, you may do so under either license.
@@ -442,253 +146,889 @@ index 0000000..4ca7e16
 + * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 + */
 +
-+#include "sha_mb_mgr.h"
++#define pr_fmt(fmt)	KBUILD_MODNAME ": " fmt
 +
-+void sha1_mb_mgr_init_avx2(struct sha1_mb_mgr *state)
++#include <crypto/internal/hash.h>
++#include <linux/init.h>
++#include <linux/module.h>
++#include <linux/mm.h>
++#include <linux/cryptohash.h>
++#include <linux/types.h>
++#include <linux/list.h>
++#include <crypto/scatterwalk.h>
++#include <crypto/sha.h>
++#include <crypto/mcryptd.h>
++#include <crypto/crypto_wq.h>
++#include <asm/byteorder.h>
++#include <asm/i387.h>
++#include <asm/xcr.h>
++#include <asm/xsave.h>
++#include <linux/hardirq.h>
++#include <asm/fpu-internal.h>
++#include "sha_mb_ctx.h"
++
++#define FLUSH_INTERVAL 1000 /* in usec */
++
++struct mcryptd_alg_state sha1_mb_alg_state;
++
++struct sha1_mb_ctx {
++	struct mcryptd_ahash *mcryptd_tfm;
++};
++
++static inline struct mcryptd_hash_request_ctx *cast_hash_to_mcryptd_ctx(struct sha1_hash_ctx *hash_ctx)
 +{
-+	unsigned int j;
-+	state->unused_lanes = 0xF76543210;
-+	for (j = 0; j < 8; j++) {
-+		state->lens[j] = 0xFFFFFFFF;
-+		state->ldata[j].job_in_lane = NULL;
++	struct shash_desc *desc;
++
++	desc = container_of((void *) hash_ctx, struct shash_desc, __ctx);
++	return container_of(desc, struct mcryptd_hash_request_ctx, desc);
++}
++
++static inline struct ahash_request *cast_mcryptd_ctx_to_req(struct mcryptd_hash_request_ctx *ctx)
++{
++	return container_of((void *) ctx, struct ahash_request, __ctx);
++}
++
++static void req_ctx_init(struct mcryptd_hash_request_ctx *rctx,
++				struct shash_desc *desc)
++{
++	rctx->flag = HASH_UPDATE;
++}
++
++asmlinkage void (*sha1_job_mgr_init)(struct sha1_mb_mgr *state);
++asmlinkage struct job_sha1* (*sha1_job_mgr_submit)(struct sha1_mb_mgr *state,
++							  struct job_sha1 *job);
++asmlinkage struct job_sha1* (*sha1_job_mgr_flush)(struct sha1_mb_mgr *state);
++asmlinkage struct job_sha1* (*sha1_job_mgr_get_comp_job)(struct sha1_mb_mgr *state);
++
++inline void sha1_init_digest(uint32_t *digest)
++{
++	static const uint32_t initial_digest[SHA1_DIGEST_LENGTH] = {SHA1_H0,
++					SHA1_H1, SHA1_H2, SHA1_H3, SHA1_H4 };
++	memcpy(digest, initial_digest, sizeof(initial_digest));
++}
++
++inline uint32_t sha1_pad(uint8_t padblock[SHA1_BLOCK_SIZE * 2],
++			 uint32_t total_len)
++{
++	uint32_t i = total_len & (SHA1_BLOCK_SIZE - 1);
++
++	memset(&padblock[i], 0, SHA1_BLOCK_SIZE);
++	padblock[i] = 0x80;
++
++	i += ((SHA1_BLOCK_SIZE - 1) &
++	      (0 - (total_len + SHA1_PADLENGTHFIELD_SIZE + 1)))
++	     + 1 + SHA1_PADLENGTHFIELD_SIZE;
++
++#if SHA1_PADLENGTHFIELD_SIZE == 16
++	*((uint64_t *) &padblock[i - 16]) = 0;
++#endif
++
++	*((uint64_t *) &padblock[i - 8]) = cpu_to_be64(total_len << 3);
++
++	/* Number of extra blocks to hash */
++	return i >> SHA1_LOG2_BLOCK_SIZE;
++}
++
++static struct sha1_hash_ctx *sha1_ctx_mgr_resubmit(struct sha1_ctx_mgr *mgr, struct sha1_hash_ctx *ctx)
++{
++	while (ctx) {
++		if (ctx->status & HASH_CTX_STS_COMPLETE) {
++			/* Clear PROCESSING bit */
++			ctx->status = HASH_CTX_STS_COMPLETE;
++			return ctx;
++		}
++
++		/*
++		 * If the extra blocks are empty, begin hashing what remains
++		 * in the user's buffer.
++		 */
++		if (ctx->partial_block_buffer_length == 0 &&
++		    ctx->incoming_buffer_length) {
++
++			const void *buffer = ctx->incoming_buffer;
++			uint32_t len = ctx->incoming_buffer_length;
++			uint32_t copy_len;
++
++			/*
++			 * Only entire blocks can be hashed.
++			 * Copy remainder to extra blocks buffer.
++			 */
++			copy_len = len & (SHA1_BLOCK_SIZE-1);
++
++			if (copy_len) {
++				len -= copy_len;
++				memcpy(ctx->partial_block_buffer,
++				       ((const char *) buffer + len),
++				       copy_len);
++				ctx->partial_block_buffer_length = copy_len;
++			}
++
++			ctx->incoming_buffer_length = 0;
++
++			/* len should be a multiple of the block size now */
++			assert((len % SHA1_BLOCK_SIZE) == 0);
++
++			/* Set len to the number of blocks to be hashed */
++			len >>= SHA1_LOG2_BLOCK_SIZE;
++
++			if (len) {
++
++				ctx->job.buffer = (uint8_t *) buffer;
++				ctx->job.len = len;
++				ctx = (struct sha1_hash_ctx *) sha1_job_mgr_submit(&mgr->mgr,
++										  &ctx->job);
++				continue;
++			}
++		}
++
++		/*
++		 * If the extra blocks are not empty, then we are
++		 * either on the last block(s) or we need more
++		 * user input before continuing.
++		 */
++		if (ctx->status & HASH_CTX_STS_LAST) {
++
++			uint8_t *buf = ctx->partial_block_buffer;
++			uint32_t n_extra_blocks = sha1_pad(buf, ctx->total_length);
++
++			ctx->status = (HASH_CTX_STS_PROCESSING |
++				       HASH_CTX_STS_COMPLETE);
++			ctx->job.buffer = buf;
++			ctx->job.len = (uint32_t) n_extra_blocks;
++			ctx = (struct sha1_hash_ctx *) sha1_job_mgr_submit(&mgr->mgr, &ctx->job);
++			continue;
++		}
++
++		if (ctx)
++			ctx->status = HASH_CTX_STS_IDLE;
++		return ctx;
++	}
++
++	return NULL;
++}
++
++struct sha1_hash_ctx *sha1_ctx_mgr_get_comp_ctx(struct sha1_ctx_mgr *mgr)
++{
++	/*
++	 * If get_comp_job returns NULL, there are no jobs complete.
++	 * If get_comp_job returns a job, verify that it is safe to return to the user.
++	 * If it is not ready, resubmit the job to finish processing.
++	 * If sha1_ctx_mgr_resubmit returned a job, it is ready to be returned.
++	 * Otherwise, all jobs currently being managed by the hash_ctx_mgr still need processing.
++	 */
++	struct sha1_hash_ctx *ctx;
++
++	ctx = (struct sha1_hash_ctx *) sha1_job_mgr_get_comp_job(&mgr->mgr);
++	return sha1_ctx_mgr_resubmit(mgr, ctx);
++}
++
++void sha1_ctx_mgr_init(struct sha1_ctx_mgr *mgr)
++{
++	sha1_job_mgr_init(&mgr->mgr);
++}
++
++struct sha1_hash_ctx *sha1_ctx_mgr_submit(struct sha1_ctx_mgr *mgr,
++					  struct sha1_hash_ctx *ctx,
++					  const void *buffer,
++					  uint32_t len,
++					  int flags)
++{
++	if (flags & (~HASH_ENTIRE)) {
++		/* User should not pass anything other than FIRST, UPDATE, or LAST */
++		ctx->error = HASH_CTX_ERROR_INVALID_FLAGS;
++		return ctx;
++	}
++
++	if (ctx->status & HASH_CTX_STS_PROCESSING) {
++		/* Cannot submit to a currently processing job. */
++		ctx->error = HASH_CTX_ERROR_ALREADY_PROCESSING;
++		return ctx;
++	}
++
++	if ((ctx->status & HASH_CTX_STS_COMPLETE) && !(flags & HASH_FIRST)) {
++		/* Cannot update a finished job. */
++		ctx->error = HASH_CTX_ERROR_ALREADY_COMPLETED;
++		return ctx;
++	}
++
++
++	if (flags & HASH_FIRST) {
++		/* Init digest */
++		sha1_init_digest(ctx->job.result_digest);
++
++		/* Reset byte counter */
++		ctx->total_length = 0;
++
++		/* Clear extra blocks */
++		ctx->partial_block_buffer_length = 0;
++	}
++
++	/* If we made it here, there were no errors during this call to submit */
++	ctx->error = HASH_CTX_ERROR_NONE;
++
++	/* Store buffer ptr info from user */
++	ctx->incoming_buffer = buffer;
++	ctx->incoming_buffer_length = len;
++
++	/* Store the user's request flags and mark this ctx as currently being processed. */
++	ctx->status = (flags & HASH_LAST) ?
++			(HASH_CTX_STS_PROCESSING | HASH_CTX_STS_LAST) :
++			HASH_CTX_STS_PROCESSING;
++
++	/* Advance byte counter */
++	ctx->total_length += len;
++
++	/*
++	 * If there is anything currently buffered in the extra blocks,
++	 * append to it until it contains a whole block.
++	 * Or if the user's buffer contains less than a whole block,
++	 * append as much as possible to the extra block.
++	 */
++	if ((ctx->partial_block_buffer_length) | (len < SHA1_BLOCK_SIZE)) {
++		/* Compute how many bytes to copy from user buffer into extra block */
++		uint32_t copy_len = SHA1_BLOCK_SIZE - ctx->partial_block_buffer_length;
++		if (len < copy_len)
++			copy_len = len;
++
++		if (copy_len) {
++			/* Copy and update relevant pointers and counters */
++			memcpy(&ctx->partial_block_buffer[ctx->partial_block_buffer_length],
++				buffer, copy_len);
++
++			ctx->partial_block_buffer_length += copy_len;
++			ctx->incoming_buffer = (const void *)((const char *)buffer + copy_len);
++			ctx->incoming_buffer_length = len - copy_len;
++		}
++
++		/* The extra block should never contain more than 1 block here */
++		assert(ctx->partial_block_buffer_length <= SHA1_BLOCK_SIZE);
++
++		/* If the extra block buffer contains exactly 1 block, it can be hashed. */
++		if (ctx->partial_block_buffer_length >= SHA1_BLOCK_SIZE) {
++			ctx->partial_block_buffer_length = 0;
++
++			ctx->job.buffer = ctx->partial_block_buffer;
++			ctx->job.len = 1;
++			ctx = (struct sha1_hash_ctx *) sha1_job_mgr_submit(&mgr->mgr, &ctx->job);
++		}
++	}
++
++	return sha1_ctx_mgr_resubmit(mgr, ctx);
++}
++
++struct sha1_hash_ctx *sha1_ctx_mgr_flush(struct sha1_ctx_mgr *mgr)
++{
++	struct sha1_hash_ctx *ctx;
++
++	while (1) {
++		ctx = (struct sha1_hash_ctx *) sha1_job_mgr_flush(&mgr->mgr);
++
++		/* If flush returned 0, there are no more jobs in flight. */
++		if (!ctx)
++			return NULL;
++
++		/*
++		 * If flush returned a job, resubmit the job to finish processing.
++		 */
++		ctx = sha1_ctx_mgr_resubmit(mgr, ctx);
++
++		/*
++		 * If sha1_ctx_mgr_resubmit returned a job, it is ready to be returned.
++		 * Otherwise, all jobs currently being managed by the sha1_ctx_mgr
++		 * still need processing. Loop.
++		 */
++		if (ctx)
++			return ctx;
 +	}
 +}
-diff --git a/arch/x86/crypto/sha-mb/sha1_mb_mgr_submit_avx2.S b/arch/x86/crypto/sha-mb/sha1_mb_mgr_submit_avx2.S
-new file mode 100644
-index 0000000..2ab9560
---- /dev/null
-+++ b/arch/x86/crypto/sha-mb/sha1_mb_mgr_submit_avx2.S
-@@ -0,0 +1,228 @@
-+/*
-+ * Buffer submit code for multi buffer SHA1 algorithm
-+ *
-+ * This file is provided under a dual BSD/GPLv2 license.  When using or
-+ * redistributing this file, you may do so under either license.
-+ *
-+ * GPL LICENSE SUMMARY
-+ *
-+ *  Copyright(c) 2014 Intel Corporation.
-+ *
-+ *  This program is free software; you can redistribute it and/or modify
-+ *  it under the terms of version 2 of the GNU General Public License as
-+ *  published by the Free Software Foundation.
-+ *
-+ *  This program is distributed in the hope that it will be useful, but
-+ *  WITHOUT ANY WARRANTY; without even the implied warranty of
-+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-+ *  General Public License for more details.
-+ *
-+ *  Contact Information:
-+ *      James Guilford <james.guilford@intel.com>
-+ *	Tim Chen <tim.c.chen@linux.intel.com>
-+ *
-+ *  BSD LICENSE
-+ *
-+ *  Copyright(c) 2014 Intel Corporation.
-+ *
-+ *  Redistribution and use in source and binary forms, with or without
-+ *  modification, are permitted provided that the following conditions
-+ *  are met:
-+ *
-+ *    * Redistributions of source code must retain the above copyright
-+ *      notice, this list of conditions and the following disclaimer.
-+ *    * Redistributions in binary form must reproduce the above copyright
-+ *      notice, this list of conditions and the following disclaimer in
-+ *      the documentation and/or other materials provided with the
-+ *      distribution.
-+ *    * Neither the name of Intel Corporation nor the names of its
-+ *      contributors may be used to endorse or promote products derived
-+ *      from this software without specific prior written permission.
-+ *
-+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-+ *  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-+ *  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-+ *  A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-+ *  OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-+ *  SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-+ *  LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-+ *  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-+ *  THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-+ *  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-+ */
 +
-+#include <linux/linkage.h>
-+#include "sha1_mb_mgr_datastruct.S"
++static int sha1_mb_init(struct shash_desc *desc)
++{
++	struct sha1_hash_ctx *sctx = shash_desc_ctx(desc);
 +
++	hash_ctx_init(sctx);
++	sctx->job.result_digest[0] = SHA1_H0;
++	sctx->job.result_digest[1] = SHA1_H1;
++	sctx->job.result_digest[2] = SHA1_H2;
++	sctx->job.result_digest[3] = SHA1_H3;
++	sctx->job.result_digest[4] = SHA1_H4;
++	sctx->total_length = 0;
++	sctx->partial_block_buffer_length = 0;
++	sctx->status = HASH_CTX_STS_IDLE;
 +
-+.extern sha1_x8_avx
++	return 0;
++}
 +
-+# LINUX register definitions
-+arg1    = %rdi
-+arg2    = %rsi
-+size_offset	= %rcx
-+tmp2		= %rcx
-+extra_blocks	= %rdx
++static int sha1_mb_set_results(struct mcryptd_hash_request_ctx *rctx)
++{
++	int	i;
++	struct	sha1_hash_ctx *sctx = shash_desc_ctx(&rctx->desc);
++	__be32	*dst = (__be32 *) rctx->out;
 +
-+# Common definitions
-+#define state   arg1
-+#define job     %rsi
-+#define len2    arg2
-+#define p2      arg2
++	for (i = 0; i < 5; ++i)
++		dst[i] = cpu_to_be32(sctx->job.result_digest[i]);
 +
-+# idx must be a register not clobberred by sha1_x8_avx2
-+idx		= %r8
-+DWORD_idx	= %r8d
-+last_len	= %r8
++	return 0;
++}
 +
-+p               = %r11
-+start_offset    = %r11
++static int sha_finish_walk(struct mcryptd_hash_request_ctx **ret_rctx,
++			struct mcryptd_alg_cstate *cstate, bool flush)
++{
++	int	flag = HASH_UPDATE;
++	int	nbytes, err = 0;
++	struct mcryptd_hash_request_ctx *rctx = *ret_rctx;
++	struct sha1_hash_ctx *sha_ctx;
 +
-+unused_lanes    = %rbx
-+BYTE_unused_lanes = %bl
++	/* more work ? */
++	while (!(rctx->flag & HASH_DONE)) {
++		nbytes = crypto_ahash_walk_done(&rctx->walk, 0);
++		if (nbytes < 0) {
++			err = nbytes;
++			goto out;
++		}
++		/* check if the walk is done */
++		if (crypto_ahash_walk_last(&rctx->walk)) {
++			rctx->flag |= HASH_DONE;
++			if (rctx->flag & HASH_FINAL)
++				flag |= HASH_LAST;
 +
-+job_rax         = %rax
-+len             = %rax
-+DWORD_len	= %eax
++		}
++		sha_ctx = (struct sha1_hash_ctx *) shash_desc_ctx(&rctx->desc);
++		kernel_fpu_begin();
++		sha_ctx = sha1_ctx_mgr_submit(cstate->mgr, sha_ctx, rctx->walk.data, nbytes, flag);
++		if (!sha_ctx) {
++			if (flush)
++				sha_ctx = sha1_ctx_mgr_flush(cstate->mgr);
++		}
++		kernel_fpu_end();
++		if (sha_ctx)
++			rctx = cast_hash_to_mcryptd_ctx(sha_ctx);
++		else {
++			rctx = NULL;
++			goto out;
++		}
++	}
 +
-+lane            = %rbp
-+tmp3            = %rbp
++	/* copy the results */
++	if (rctx->flag & HASH_FINAL)
++		sha1_mb_set_results(rctx);
 +
-+tmp             = %r9
-+DWORD_tmp	= %r9d
++out:
++	*ret_rctx = rctx;
++	return err;
++}
 +
-+lane_data       = %r10
++static int sha_complete_job(struct mcryptd_hash_request_ctx *rctx,
++			    struct mcryptd_alg_cstate *cstate,
++			    int err)
++{
++	struct ahash_request *req = cast_mcryptd_ctx_to_req(rctx);
++	struct sha1_hash_ctx *sha_ctx;
++	struct mcryptd_hash_request_ctx *req_ctx;
++	int ret;
 +
-+# STACK_SPACE needs to be an odd multiple of 8
-+STACK_SPACE     = 8*8 + 16*10 + 8
++	/* remove from work list */
++	spin_lock(&cstate->work_lock);
++	list_del(&rctx->waiter);
++	spin_unlock(&cstate->work_lock);
 +
-+# JOB* submit_mb_mgr_submit_avx2(MB_MGR *state, job_sha1 *job)
-+# arg 1 : rcx : state
-+# arg 2 : rdx : job
-+ENTRY(sha1_mb_mgr_submit_avx2)
++	if (irqs_disabled())
++		rctx->complete(&req->base, err);
++	else {
++		local_bh_disable();
++		rctx->complete(&req->base, err);
++		local_bh_enable();
++	}
 +
-+	mov	%rsp, %r10
-+	sub     $STACK_SPACE, %rsp
-+	and	$~31, %rsp
++	/* check to see if there are other jobs that are done */
++	sha_ctx = sha1_ctx_mgr_get_comp_ctx(cstate->mgr);
++	while (sha_ctx) {
++		req_ctx = cast_hash_to_mcryptd_ctx(sha_ctx);
++		ret = sha_finish_walk(&req_ctx, cstate, false);
++		if (req_ctx) {
++			spin_lock(&cstate->work_lock);
++			list_del(&req_ctx->waiter);
++			spin_unlock(&cstate->work_lock);
 +
-+	mov     %rbx, (%rsp)
-+	mov	%r10, 8*2(%rsp)	#save old rsp
-+	mov     %rbp, 8*3(%rsp)
-+	mov	%r12, 8*4(%rsp)
-+	mov	%r13, 8*5(%rsp)
-+	mov	%r14, 8*6(%rsp)
-+	mov	%r15, 8*7(%rsp)
++			req = cast_mcryptd_ctx_to_req(req_ctx);
++			if (irqs_disabled())
++				rctx->complete(&req->base, ret);
++			else {
++				local_bh_disable();
++				rctx->complete(&req->base, ret);
++				local_bh_enable();
++			}
++		}
++		sha_ctx = sha1_ctx_mgr_get_comp_ctx(cstate->mgr);
++	}
 +
-+	mov     _unused_lanes(state), unused_lanes
-+	mov	unused_lanes, lane
-+	and	$0xF, lane
-+	shr     $4, unused_lanes
-+	imul    $_LANE_DATA_size, lane, lane_data
-+	movl    $STS_BEING_PROCESSED, _status(job)
-+	lea     _ldata(state, lane_data), lane_data
-+	mov     unused_lanes, _unused_lanes(state)
-+	movl    _len(job),  DWORD_len
++	return 0;
++}
 +
-+	mov	job, _job_in_lane(lane_data)
-+	shl	$4, len
-+	or	lane, len
++static void sha1_mb_add_list(struct mcryptd_hash_request_ctx *rctx,
++			     struct mcryptd_alg_cstate *cstate)
++{
++	unsigned long next_flush;
++	unsigned long delay = usecs_to_jiffies(FLUSH_INTERVAL);
 +
-+	movl    DWORD_len,  _lens(state , lane, 4)
++	/* initialize tag */
++	rctx->tag.arrival = jiffies;    /* tag the arrival time */
++	rctx->tag.seq_num = cstate->next_seq_num++;
++	next_flush = rctx->tag.arrival + delay;
++	rctx->tag.expire = next_flush;
 +
-+	# Load digest words from result_digest
-+	vmovdqu	_result_digest(job), %xmm0
-+	mov	_result_digest+1*16(job), DWORD_tmp
-+	vmovd    %xmm0, _args_digest(state, lane, 4)
-+	vpextrd  $1, %xmm0, _args_digest+1*32(state , lane, 4)
-+	vpextrd  $2, %xmm0, _args_digest+2*32(state , lane, 4)
-+	vpextrd  $3, %xmm0, _args_digest+3*32(state , lane, 4)
-+	movl    DWORD_tmp, _args_digest+4*32(state , lane, 4)
++	spin_lock(&cstate->work_lock);
++	list_add_tail(&rctx->waiter, &cstate->work_list);
++	spin_unlock(&cstate->work_lock);
 +
-+	mov     _buffer(job), p
-+	mov     p, _args_data_ptr(state, lane, 8)
++	mcryptd_arm_flusher(cstate, delay);
++}
 +
-+	cmp     $0xF, unused_lanes
-+	jne     return_null
++static int sha1_mb_update(struct shash_desc *desc, const u8 *data,
++			  unsigned int len)
++{
++	struct mcryptd_hash_request_ctx *rctx =
++			container_of(desc, struct mcryptd_hash_request_ctx, desc);
++	struct mcryptd_alg_cstate *cstate =
++				this_cpu_ptr(sha1_mb_alg_state.alg_cstate);
 +
-+start_loop:
-+	# Find min length
-+	vmovdqa _lens(state), %xmm0
-+	vmovdqa _lens+1*16(state), %xmm1
-+
-+	vpminud %xmm1, %xmm0, %xmm2        # xmm2 has {D,C,B,A}
-+	vpalignr $8, %xmm2, %xmm3, %xmm3   # xmm3 has {x,x,D,C}
-+	vpminud %xmm3, %xmm2, %xmm2        # xmm2 has {x,x,E,F}
-+	vpalignr $4, %xmm2, %xmm3, %xmm3   # xmm3 has {x,x,x,E}
-+	vpminud %xmm3, %xmm2, %xmm2        # xmm2 has min value in low dword
-+
-+	vmovd   %xmm2, DWORD_idx
-+	mov    idx, len2
-+	and    $0xF, idx
-+	shr    $4, len2
-+	jz     len_is_0
-+
-+	vpand   clear_low_nibble(%rip), %xmm2, %xmm2
-+	vpshufd $0, %xmm2, %xmm2
-+
-+	vpsubd  %xmm2, %xmm0, %xmm0
-+	vpsubd  %xmm2, %xmm1, %xmm1
-+
-+	vmovdqa %xmm0, _lens + 0*16(state)
-+	vmovdqa %xmm1, _lens + 1*16(state)
++	struct ahash_request *req = cast_mcryptd_ctx_to_req(rctx);
++	struct sha1_hash_ctx *sha_ctx;
++	int ret = 0, nbytes;
 +
 +
-+	# "state" and "args" are the same address, arg1
-+	# len is arg2
-+	call    sha1_x8_avx2
++	/* sanity check */
++	if (rctx->tag.cpu != smp_processor_id()) {
++		pr_err("mcryptd error: cpu clash\n");
++		goto done;
++	}
 +
-+	# state and idx are intact
++	/* need to init context */
++	req_ctx_init(rctx, desc);
 +
-+len_is_0:
-+	# process completed job "idx"
-+	imul    $_LANE_DATA_size, idx, lane_data
-+	lea     _ldata(state, lane_data), lane_data
++	nbytes = crypto_ahash_walk_first(req, &rctx->walk);
 +
-+	mov     _job_in_lane(lane_data), job_rax
-+	mov     _unused_lanes(state), unused_lanes
-+	movq    $0, _job_in_lane(lane_data)
-+	movl    $STS_COMPLETED, _status(job_rax)
-+	shl     $4, unused_lanes
-+	or      idx, unused_lanes
-+	mov     unused_lanes, _unused_lanes(state)
++	if (nbytes < 0) {
++		ret = nbytes;
++		goto done;
++	}
 +
-+	movl	$0xFFFFFFFF, _lens(state, idx, 4)
++	if (crypto_ahash_walk_last(&rctx->walk))
++		rctx->flag |= HASH_DONE;
 +
-+	vmovd    _args_digest(state, idx, 4), %xmm0
-+	vpinsrd  $1, _args_digest+1*32(state , idx, 4), %xmm0, %xmm0
-+	vpinsrd  $2, _args_digest+2*32(state , idx, 4), %xmm0, %xmm0
-+	vpinsrd  $3, _args_digest+3*32(state , idx, 4), %xmm0, %xmm0
-+	movl    4*32(state, idx, 4), DWORD_tmp
++	/* submit */
++	sha_ctx = (struct sha1_hash_ctx *) shash_desc_ctx(desc);
++	sha1_mb_add_list(rctx, cstate);
++	kernel_fpu_begin();
++	sha_ctx = sha1_ctx_mgr_submit(cstate->mgr, sha_ctx, rctx->walk.data, nbytes, HASH_UPDATE);
++	kernel_fpu_end();
 +
-+	vmovdqu  %xmm0, _result_digest(job_rax)
-+	movl    DWORD_tmp, _result_digest+1*16(job_rax)
++	/* check if anything is returned */
++	if (!sha_ctx)
++		return -EINPROGRESS;
 +
-+return:
++	if (sha_ctx->error) {
++		ret = sha_ctx->error;
++		rctx = cast_hash_to_mcryptd_ctx(sha_ctx);
++		goto done;
++	}
 +
-+	mov     (%rsp), %rbx
-+	mov	8*2(%rsp), %r10	#save old rsp
-+	mov     8*3(%rsp), %rbp
-+	mov	8*4(%rsp), %r12
-+	mov	8*5(%rsp), %r13
-+	mov	8*6(%rsp), %r14
-+	mov	8*7(%rsp), %r15
-+	mov     %r10, %rsp
++	rctx = cast_hash_to_mcryptd_ctx(sha_ctx);
++	ret = sha_finish_walk(&rctx, cstate, false);
 +
-+	ret
++	if (!rctx)
++		return -EINPROGRESS;
++done:
++	sha_complete_job(rctx, cstate, ret);
++	return ret;
++}
 +
-+return_null:
-+	xor     job_rax, job_rax
-+	jmp     return
++static int sha1_mb_finup(struct shash_desc *desc, const u8 *data,
++			     unsigned int len, u8 *out)
++{
++	struct mcryptd_hash_request_ctx *rctx =
++			container_of(desc, struct mcryptd_hash_request_ctx, desc);
++	struct mcryptd_alg_cstate *cstate =
++				this_cpu_ptr(sha1_mb_alg_state.alg_cstate);
 +
-+ENDPROC(sha1_mb_mgr_submit_avx2)
++	struct ahash_request *req = cast_mcryptd_ctx_to_req(rctx);
++	struct sha1_hash_ctx *sha_ctx;
++	int ret = 0, flag = HASH_UPDATE, nbytes;
 +
-+.data
++	/* sanity check */
++	if (rctx->tag.cpu != smp_processor_id()) {
++		pr_err("mcryptd error: cpu clash\n");
++		goto done;
++	}
 +
-+.align 16
-+clear_low_nibble:
-+	.octa	0x000000000000000000000000FFFFFFF0
++	/* need to init context */
++	req_ctx_init(rctx, desc);
++
++	nbytes = crypto_ahash_walk_first(req, &rctx->walk);
++
++	if (nbytes < 0) {
++		ret = nbytes;
++		goto done;
++	}
++
++	if (crypto_ahash_walk_last(&rctx->walk)) {
++		rctx->flag |= HASH_DONE;
++		flag = HASH_LAST;
++	}
++	rctx->out = out;
++
++	/* submit */
++	rctx->flag |= HASH_FINAL;
++	sha_ctx = (struct sha1_hash_ctx *) shash_desc_ctx(desc);
++	sha1_mb_add_list(rctx, cstate);
++
++	kernel_fpu_begin();
++	sha_ctx = sha1_ctx_mgr_submit(cstate->mgr, sha_ctx, rctx->walk.data, nbytes, flag);
++	kernel_fpu_end();
++
++	/* check if anything is returned */
++	if (!sha_ctx)
++		return -EINPROGRESS;
++
++	if (sha_ctx->error) {
++		ret = sha_ctx->error;
++		goto done;
++	}
++
++	rctx = cast_hash_to_mcryptd_ctx(sha_ctx);
++	ret = sha_finish_walk(&rctx, cstate, false);
++	if (!rctx)
++		return -EINPROGRESS;
++done:
++	sha_complete_job(rctx, cstate, ret);
++	return ret;
++}
++
++static int sha1_mb_final(struct shash_desc *desc, u8 *out)
++{
++	struct mcryptd_hash_request_ctx *rctx =
++			container_of(desc, struct mcryptd_hash_request_ctx, desc);
++	struct mcryptd_alg_cstate *cstate =
++				this_cpu_ptr(sha1_mb_alg_state.alg_cstate);
++
++	struct sha1_hash_ctx *sha_ctx;
++	int ret = 0;
++	u8 data;
++
++	/* sanity check */
++	if (rctx->tag.cpu != smp_processor_id()) {
++		pr_err("mcryptd error: cpu clash\n");
++		goto done;
++	}
++
++	/* need to init context */
++	req_ctx_init(rctx, desc);
++
++	rctx->out = out;
++	rctx->flag |= HASH_DONE | HASH_FINAL;
++
++	sha_ctx = (struct sha1_hash_ctx *) shash_desc_ctx(desc);
++	/* flag HASH_FINAL and 0 data size */
++	sha1_mb_add_list(rctx, cstate);
++	kernel_fpu_begin();
++	sha_ctx = sha1_ctx_mgr_submit(cstate->mgr, sha_ctx, &data, 0, HASH_LAST);
++	kernel_fpu_end();
++
++	/* check if anything is returned */
++	if (!sha_ctx)
++		return -EINPROGRESS;
++
++	if (sha_ctx->error) {
++		ret = sha_ctx->error;
++		rctx = cast_hash_to_mcryptd_ctx(sha_ctx);
++		goto done;
++	}
++
++	rctx = cast_hash_to_mcryptd_ctx(sha_ctx);
++	ret = sha_finish_walk(&rctx, cstate, false);
++	if (!rctx)
++		return -EINPROGRESS;
++done:
++	sha_complete_job(rctx, cstate, ret);
++	return ret;
++}
++
++static int sha1_mb_export(struct shash_desc *desc, void *out)
++{
++	struct sha1_hash_ctx *sctx = shash_desc_ctx(desc);
++
++	memcpy(out, sctx, sizeof(*sctx));
++
++	return 0;
++}
++
++static int sha1_mb_import(struct shash_desc *desc, const void *in)
++{
++	struct sha1_hash_ctx *sctx = shash_desc_ctx(desc);
++
++	memcpy(sctx, in, sizeof(*sctx));
++
++	return 0;
++}
++
++
++static struct shash_alg sha1_mb_shash_alg = {
++	.digestsize	=	SHA1_DIGEST_SIZE,
++	.init		=	sha1_mb_init,
++	.update		=	sha1_mb_update,
++	.final		=	sha1_mb_final,
++	.finup		=	sha1_mb_finup,
++	.export		=	sha1_mb_export,
++	.import		=	sha1_mb_import,
++	.descsize	=	sizeof(struct sha1_hash_ctx),
++	.statesize	=	sizeof(struct sha1_hash_ctx),
++	.base		=	{
++		.cra_name	 = "__sha1-mb",
++		.cra_driver_name = "__intel_sha1-mb",
++		.cra_priority	 = 100,
++		/*
++		 * use ASYNC flag as some buffers in multi-buffer
++		 * algo may not have completed before hashing thread sleep
++		 */
++		.cra_flags	 = CRYPTO_ALG_TYPE_SHASH | CRYPTO_ALG_ASYNC,
++		.cra_blocksize	 = SHA1_BLOCK_SIZE,
++		.cra_module	 = THIS_MODULE,
++		.cra_list	 = LIST_HEAD_INIT(sha1_mb_shash_alg.base.cra_list),
++	}
++};
++
++static int sha1_mb_async_init(struct ahash_request *req)
++{
++	struct crypto_ahash *tfm = crypto_ahash_reqtfm(req);
++	struct sha1_mb_ctx *ctx = crypto_ahash_ctx(tfm);
++	struct ahash_request *mcryptd_req = ahash_request_ctx(req);
++	struct mcryptd_ahash *mcryptd_tfm = ctx->mcryptd_tfm;
++
++	memcpy(mcryptd_req, req, sizeof(*req));
++	ahash_request_set_tfm(mcryptd_req, &mcryptd_tfm->base);
++	return crypto_ahash_init(mcryptd_req);
++}
++
++static int sha1_mb_async_update(struct ahash_request *req)
++{
++	struct ahash_request *mcryptd_req = ahash_request_ctx(req);
++
++	struct crypto_ahash *tfm = crypto_ahash_reqtfm(req);
++	struct sha1_mb_ctx *ctx = crypto_ahash_ctx(tfm);
++	struct mcryptd_ahash *mcryptd_tfm = ctx->mcryptd_tfm;
++
++	memcpy(mcryptd_req, req, sizeof(*req));
++	ahash_request_set_tfm(mcryptd_req, &mcryptd_tfm->base);
++	return crypto_ahash_update(mcryptd_req);
++}
++
++static int sha1_mb_async_finup(struct ahash_request *req)
++{
++	struct ahash_request *mcryptd_req = ahash_request_ctx(req);
++
++	struct crypto_ahash *tfm = crypto_ahash_reqtfm(req);
++	struct sha1_mb_ctx *ctx = crypto_ahash_ctx(tfm);
++	struct mcryptd_ahash *mcryptd_tfm = ctx->mcryptd_tfm;
++
++	memcpy(mcryptd_req, req, sizeof(*req));
++	ahash_request_set_tfm(mcryptd_req, &mcryptd_tfm->base);
++	return crypto_ahash_finup(mcryptd_req);
++}
++
++static int sha1_mb_async_final(struct ahash_request *req)
++{
++	struct ahash_request *mcryptd_req = ahash_request_ctx(req);
++
++	struct crypto_ahash *tfm = crypto_ahash_reqtfm(req);
++	struct sha1_mb_ctx *ctx = crypto_ahash_ctx(tfm);
++	struct mcryptd_ahash *mcryptd_tfm = ctx->mcryptd_tfm;
++
++	memcpy(mcryptd_req, req, sizeof(*req));
++	ahash_request_set_tfm(mcryptd_req, &mcryptd_tfm->base);
++	return crypto_ahash_final(mcryptd_req);
++}
++
++int sha1_mb_async_digest(struct ahash_request *req)
++{
++	struct crypto_ahash *tfm = crypto_ahash_reqtfm(req);
++	struct sha1_mb_ctx *ctx = crypto_ahash_ctx(tfm);
++	struct ahash_request *mcryptd_req = ahash_request_ctx(req);
++	struct mcryptd_ahash *mcryptd_tfm = ctx->mcryptd_tfm;
++
++	memcpy(mcryptd_req, req, sizeof(*req));
++	ahash_request_set_tfm(mcryptd_req, &mcryptd_tfm->base);
++	return crypto_ahash_digest(mcryptd_req);
++}
++
++static int sha1_mb_async_init_tfm(struct crypto_tfm *tfm)
++{
++	struct mcryptd_ahash *mcryptd_tfm;
++	struct sha1_mb_ctx *ctx = crypto_tfm_ctx(tfm);
++	struct mcryptd_hash_ctx *mctx;
++
++	mcryptd_tfm = mcryptd_alloc_ahash("__intel_sha1-mb", 0, 0);
++	if (IS_ERR(mcryptd_tfm))
++		return PTR_ERR(mcryptd_tfm);
++	mctx = crypto_ahash_ctx(&mcryptd_tfm->base);
++	mctx->alg_state = &sha1_mb_alg_state;
++	ctx->mcryptd_tfm = mcryptd_tfm;
++	crypto_ahash_set_reqsize(__crypto_ahash_cast(tfm),
++				 sizeof(struct ahash_request) +
++				 crypto_ahash_reqsize(&mcryptd_tfm->base));
++
++	return 0;
++}
++
++static void sha1_mb_async_exit_tfm(struct crypto_tfm *tfm)
++{
++	struct sha1_mb_ctx *ctx = crypto_tfm_ctx(tfm);
++
++	mcryptd_free_ahash(ctx->mcryptd_tfm);
++}
++
++static struct ahash_alg sha1_mb_async_alg = {
++	.init           = sha1_mb_async_init,
++	.update         = sha1_mb_async_update,
++	.final          = sha1_mb_async_final,
++	.finup          = sha1_mb_async_finup,
++	.digest         = sha1_mb_async_digest,
++	.halg = {
++		.digestsize     = SHA1_DIGEST_SIZE,
++		.base = {
++			.cra_name               = "sha1",
++			.cra_driver_name        = "sha1_mb",
++			.cra_priority           = 200,
++			.cra_flags              = CRYPTO_ALG_TYPE_AHASH | CRYPTO_ALG_ASYNC,
++			.cra_blocksize          = SHA1_BLOCK_SIZE,
++			.cra_type               = &crypto_ahash_type,
++			.cra_module             = THIS_MODULE,
++			.cra_list               = LIST_HEAD_INIT(sha1_mb_async_alg.halg.base.cra_list),
++			.cra_init               = sha1_mb_async_init_tfm,
++			.cra_exit               = sha1_mb_async_exit_tfm,
++			.cra_ctxsize		= sizeof(struct sha1_mb_ctx),
++			.cra_alignmask		= 0,
++		},
++	},
++};
++
++unsigned long sha1_mb_flusher(struct mcryptd_alg_cstate *cstate)
++{
++	struct mcryptd_hash_request_ctx *rctx;
++	unsigned long cur_time;
++	unsigned long next_flush = 0;
++	struct sha1_hash_ctx *sha_ctx;
++
++
++	cur_time = jiffies;
++
++	while (!list_empty(&cstate->work_list)) {
++		rctx = list_entry(cstate->work_list.next,
++				struct mcryptd_hash_request_ctx, waiter);
++		if time_before(cur_time, rctx->tag.expire)
++			break;
++		kernel_fpu_begin();
++		sha_ctx = (struct sha1_hash_ctx *) sha1_ctx_mgr_flush(cstate->mgr);
++		kernel_fpu_end();
++		if (!sha_ctx) {
++			pr_err("sha1_mb error: nothing got flushed for non-empty list\n");
++			break;
++		}
++		rctx = cast_hash_to_mcryptd_ctx(sha_ctx);
++		sha_finish_walk(&rctx, cstate, true);
++		sha_complete_job(rctx, cstate, 0);
++	}
++
++	if (!list_empty(&cstate->work_list)) {
++		rctx = list_entry(cstate->work_list.next,
++				struct mcryptd_hash_request_ctx, waiter);
++		/* get the hash context and then flush time */
++		next_flush = rctx->tag.expire;
++		mcryptd_arm_flusher(cstate, get_delay(next_flush));
++	}
++	return next_flush;
++}
++
++static int __init sha1_mb_mod_init(void)
++{
++
++	int cpu;
++	int err;
++	struct mcryptd_alg_cstate *cpu_state;
++
++	/* check for dependent cpu features */
++	if (!boot_cpu_has(X86_FEATURE_AVX2) ||
++	    !boot_cpu_has(X86_FEATURE_BMI2))
++		return -ENODEV;
++
++	/* initialize multibuffer structures */
++	sha1_mb_alg_state.alg_cstate = alloc_percpu(struct mcryptd_alg_cstate);
++
++	sha1_job_mgr_init = sha1_mb_mgr_init_avx2;
++	sha1_job_mgr_submit = sha1_mb_mgr_submit_avx2;
++	sha1_job_mgr_flush = sha1_mb_mgr_flush_avx2;
++	sha1_job_mgr_get_comp_job = sha1_mb_mgr_get_comp_job_avx2;
++
++	if (!sha1_mb_alg_state.alg_cstate)
++		return -ENOMEM;
++	for_each_possible_cpu(cpu) {
++		cpu_state = per_cpu_ptr(sha1_mb_alg_state.alg_cstate, cpu);
++		cpu_state->next_flush = 0;
++		cpu_state->next_seq_num = 0;
++		cpu_state->flusher_engaged = false;
++		INIT_DELAYED_WORK(&cpu_state->flush, mcryptd_flusher);
++		cpu_state->cpu = cpu;
++		cpu_state->alg_state = &sha1_mb_alg_state;
++		cpu_state->mgr = (struct sha1_ctx_mgr *) kzalloc(sizeof(struct sha1_ctx_mgr), GFP_KERNEL);
++		if (!cpu_state->mgr)
++			goto err2;
++		sha1_ctx_mgr_init(cpu_state->mgr);
++		INIT_LIST_HEAD(&cpu_state->work_list);
++		spin_lock_init(&cpu_state->work_lock);
++	}
++	sha1_mb_alg_state.flusher = &sha1_mb_flusher;
++
++	err = crypto_register_shash(&sha1_mb_shash_alg);
++	if (err)
++		goto err2;
++	err = crypto_register_ahash(&sha1_mb_async_alg);
++	if (err)
++		goto err1;
++
++
++	return 0;
++err1:
++	crypto_unregister_shash(&sha1_mb_shash_alg);
++err2:
++	for_each_possible_cpu(cpu) {
++		cpu_state = per_cpu_ptr(sha1_mb_alg_state.alg_cstate, cpu);
++		kfree(cpu_state->mgr);
++	}
++	free_percpu(sha1_mb_alg_state.alg_cstate);
++	return -ENODEV;
++}
++
++static void __exit sha1_mb_mod_fini(void)
++{
++	int cpu;
++	struct mcryptd_alg_cstate *cpu_state;
++
++	crypto_unregister_ahash(&sha1_mb_async_alg);
++	crypto_unregister_shash(&sha1_mb_shash_alg);
++	for_each_possible_cpu(cpu) {
++		cpu_state = per_cpu_ptr(sha1_mb_alg_state.alg_cstate, cpu);
++		kfree(cpu_state->mgr);
++	}
++	free_percpu(sha1_mb_alg_state.alg_cstate);
++}
++
++module_init(sha1_mb_mod_init);
++module_exit(sha1_mb_mod_fini);
++
++MODULE_LICENSE("GPL");
++MODULE_DESCRIPTION("SHA1 Secure Hash Algorithm, multi buffer accelerated");
++
++MODULE_ALIAS("sha1");
 -- 
 1.7.11.7
-
 
 
