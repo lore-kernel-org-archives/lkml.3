@@ -1,50 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754992AbaGVLLw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 07:11:52 -0400
-Received: from mail-ig0-f170.google.com ([209.85.213.170]:42795 "EHLO
-	mail-ig0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754690AbaGVLLu (ORCPT
+	id S1755473AbaGVLPO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 07:15:14 -0400
+Received: from mail-we0-f175.google.com ([74.125.82.175]:61848 "EHLO
+	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754267AbaGVLPI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 07:11:50 -0400
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: sameo@linux.intel.com, Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 07/19] mfd: sec-core: Fix 'missing blank line after declarations' warning
-Date: Tue, 22 Jul 2014 12:11:13 +0100
-Message-Id: <1406027485-15657-8-git-send-email-lee.jones@linaro.org>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1406027485-15657-1-git-send-email-lee.jones@linaro.org>
-References: <1406027485-15657-1-git-send-email-lee.jones@linaro.org>
+	Tue, 22 Jul 2014 07:15:08 -0400
+Date: Tue, 22 Jul 2014 13:15:16 +0200
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Oded Gabbay <oded.gabbay@amd.com>
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>, Jerome Glisse <j.glisse@gmail.com>,
+        Christian =?iso-8859-1?Q?K=F6nig?= <deathsimple@vodafone.de>,
+        David Airlie <airlied@linux.ie>, Alex Deucher <alexdeucher@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        John Bridgman <John.Bridgman@amd.com>, Joerg Roedel <joro@8bytes.org>,
+        Andrew Lewycky <Andrew.Lewycky@amd.com>,
+        Michel =?iso-8859-1?Q?D=E4nzer?= <michel.daenzer@amd.com>,
+        Ben Goz <Ben.Goz@amd.com>, Alexey Skidanov <Alexey.Skidanov@amd.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        linux-mm <linux-mm@kvack.org>, "Sellek, Tom" <Tom.Sellek@amd.com>
+Subject: Re: [PATCH v2 00/25] AMDKFD kernel driver
+Message-ID: <20140722111515.GJ15237@phenom.ffwll.local>
+Mail-Followup-To: Oded Gabbay <oded.gabbay@amd.com>,
+	Jerome Glisse <j.glisse@gmail.com>,
+	Christian =?iso-8859-1?Q?K=F6nig?= <deathsimple@vodafone.de>,
+	David Airlie <airlied@linux.ie>,
+	Alex Deucher <alexdeucher@gmail.com>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	John Bridgman <John.Bridgman@amd.com>,
+	Joerg Roedel <joro@8bytes.org>,
+	Andrew Lewycky <Andrew.Lewycky@amd.com>,
+	Michel =?iso-8859-1?Q?D=E4nzer?= <michel.daenzer@amd.com>,
+	Ben Goz <Ben.Goz@amd.com>,
+	Alexey Skidanov <Alexey.Skidanov@amd.com>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	"dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+	linux-mm <linux-mm@kvack.org>, "Sellek, Tom" <Tom.Sellek@amd.com>
+References: <20140721155851.GB4519@gmail.com>
+ <20140721170546.GB15237@phenom.ffwll.local>
+ <53CD4DD2.10906@amd.com>
+ <CAKMK7uFhvGtxj_d6X=4OBdVSm6cT1-Z-DiTE-FTWMnFjY2uqMQ@mail.gmail.com>
+ <53CD5ED9.2040600@amd.com>
+ <20140721190306.GB5278@gmail.com>
+ <20140722072851.GH15237@phenom.ffwll.local>
+ <53CE1E9C.8020105@amd.com>
+ <CAKMK7uH+okhn4YGOzrXZ1LM3S2myxdu=_63LGMduwV-WZn06CA@mail.gmail.com>
+ <53CE346B.1080601@amd.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53CE346B.1080601@amd.com>
+X-Operating-System: Linux phenom 3.15.0-rc3+ 
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is part of an effort to clean-up the MFD subsystem.
+On Tue, Jul 22, 2014 at 12:52:43PM +0300, Oded Gabbay wrote:
+> On 22/07/14 12:21, Daniel Vetter wrote:
+> >On Tue, Jul 22, 2014 at 10:19 AM, Oded Gabbay <oded.gabbay@amd.com> wrote:
+> >>>Exactly, just prevent userspace from submitting more. And if you have
+> >>>misbehaving userspace that submits too much, reset the gpu and tell it
+> >>>that you're sorry but won't schedule any more work.
+> >>
+> >>I'm not sure how you intend to know if a userspace misbehaves or not. Can
+> >>you elaborate ?
+> >
+> >Well that's mostly policy, currently in i915 we only have a check for
+> >hangs, and if userspace hangs a bit too often then we stop it. I guess
+> >you can do that with the queue unmapping you've describe in reply to
+> >Jerome's mail.
+> >-Daniel
+> >
+> What do you mean by hang ? Like the tdr mechanism in Windows (checks if a
+> gpu job takes more than 2 seconds, I think, and if so, terminates the job).
 
-WARNING: Missing a blank line after declarations
-+               const struct of_device_id *match;
-+               match = of_match_node(sec_dt_match, i2c->dev.of_node);
-
-total: 0 errors, 1 warnings, 494 lines checked
-
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
----
- drivers/mfd/sec-core.c | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/drivers/mfd/sec-core.c b/drivers/mfd/sec-core.c
-index fb8ba64..dba7e2b 100644
---- a/drivers/mfd/sec-core.c
-+++ b/drivers/mfd/sec-core.c
-@@ -273,6 +273,7 @@ static inline unsigned long sec_i2c_get_driver_data(struct i2c_client *i2c,
- #ifdef CONFIG_OF
- 	if (i2c->dev.of_node) {
- 		const struct of_device_id *match;
-+
- 		match = of_match_node(sec_dt_match, i2c->dev.of_node);
- 		return (unsigned long)match->data;
- 	}
+Essentially yes. But we also have some hw features to kill jobs quicker,
+e.g. for media workloads.
+-Daniel
 -- 
-1.8.3.2
-
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
