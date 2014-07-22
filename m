@@ -1,86 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756264AbaGVQsh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 12:48:37 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:50126 "EHLO comal.ext.ti.com"
+	id S1756289AbaGVQtN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 12:49:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51909 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755990AbaGVQsf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 12:48:35 -0400
-Date: Tue, 22 Jul 2014 11:47:52 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Nishanth Menon <nm@ti.com>
-CC: Tony Lindgren <tony@atomide.com>, Rob Herring <robh+dt@kernel.org>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Benoit Cousson <bcousson@baylibre.com>, <devicetree@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <balbi@ti.com>
-Subject: Re: [PATCH] pinctrl: dra: dt-bindings: Fix pull enable/disable
-Message-ID: <20140722164752.GJ20588@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <1406043594-14181-1-git-send-email-nm@ti.com>
+	id S1755266AbaGVQtL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 12:49:11 -0400
+Date: Tue, 22 Jul 2014 18:47:07 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Namhyung Kim <namhyung@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Josh Poimboeuf <jpoimboe@redhat.com>, Jiri Kosina <jkosina@suse.cz>,
+        Seth Jennings <sjenning@redhat.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: Re: [RFC][PATCH 0/3] ftrace: Add dynamically allocated trampolines
+Message-ID: <20140722164707.GA15893@redhat.com>
+References: <20140703200750.648550267@goodmis.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="2VXyA7JGja7B50zs"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1406043594-14181-1-git-send-email-nm@ti.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140703200750.648550267@goodmis.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---2VXyA7JGja7B50zs
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 07/03, Steven Rostedt wrote:
+>
+> [ NOT READY FOR INCLUSION! ]
+>
+> Note, this is based off of my remove ftrace_start/stop() patch set.
 
-On Tue, Jul 22, 2014 at 10:39:54AM -0500, Nishanth Menon wrote:
-> The DRA74/72 control module pins have a weak pull up and pull down.
-> This is configured by bit offset 17. if BIT(17) is 1, a pull up is
-> selected, else a pull down is selected.
->=20
-> However, this pull resisstor is applied based on BIT(16) -
-> PULLUDENABLE - if BIT(18) is *0*, then pull as defined in BIT(17) is
-> applied, else no weak pulls are applied. We defined this in reverse.
->=20
-> Reference: Table 18-5 (Description of the pad configuration register
-> bits) in Technical Reference Manual Revision (DRA74x revision Q:
-> SPRUHI2Q Revised June 2014 and DRA72x revision F: SPRUHP2F - Revised
-> June 2014)
->=20
-> Fixes: 6e58b8f1daaf1a ("ARM: dts: DRA7: Add the dts files for dra7 SoC an=
-d dra7-evm board")
-> Signed-off-by: Nishanth Menon <nm@ti.com>
-> ---
+So I simply pulled your tree. I can't really comment these changes simply
+because I do not understand this code. But I am hunting for RHEL bug in
+(probably) this area, so I decided to take a look in a hope that may be
+this can help me to understand the current code ;)
 
-Tested on an upcoming board.
+> The way the function callback mechanism works in ftrace is that if there's
+> only one function callback registered, it will set the mcount/fentry
+> trampoline to call that function directly. But as soon as you register
+> another callback, the mcount trampoline calls a loop function that iterates
+> over all the registered callbacks (ftrace_ops) checking their hash tables
+> to see if the called function matches the ops before calling its callback.
+> This happens even if the two registered functions are not even tracing
+> the same function!
+>
+> This really sucks if you are tracing all functions, and then add a kprobe
+> or perf event that traces a single function. That will cause all the
+> other functions being traced to perform the loop test.
 
-Tested-by: Felipe Balbi <balbi@ti.com>
-Acked-by: Felipe Balbi <balbi@ti.com>
+But this is even worse or I missed something? I mean, currently even
+if you trace nothing and then add a KPROBE_FLAG_FTRACE kprobe, then
+kprobe_ftrace_handler() is called by ftrace_ops_list_func() ?
+
+After these changes it seems that kprobe will use a trampoline.
+
+And I can't understand even the basic code. Say, __ftrace_hash_rec_update:
+
+		if (inc) {
+			rec->flags++;
+			if (FTRACE_WARN_ON(ftrace_rec_count(rec) == FTRACE_REF_MAX))
+				return;
+
+			/*
+			 * If there's only a single callback registered to a
+			 * function, and the ops has a trampoline registered
+			 * for it, then we can call it directly.
+			 */
+			if (ftrace_rec_count(rec) == 1 && ops->trampoline) {
+				rec->flags |= FTRACE_FL_TRAMP;
+				ops->trampolines++;
+			} else {
+				/*
+				 * If we are adding another function callback
+				 * to this function, and the previous had a
+				 * trampoline used, then we need to go back to
+				 * the default trampoline.
+				 */
+				rec->flags &= ~FTRACE_FL_TRAMP;
+
+				/* remove trampolines from any ops for this rec */
+				ftrace_clear_tramps(rec);
+			}
+
+It seems that "else if (ftrace_rec_count(rec) == 2)" can avoid the unnecessary
+ftrace_clear_tramps() ? And not only unnecessary, ftrace_clear_tramps() decrements
+->trampolines, can't this break the accounting?
+
+		} else {
+			if (FTRACE_WARN_ON(ftrace_rec_count(rec) == 0))
+				return;
+			rec->flags--;
+
+			if (ops->trampoline && !ftrace_rec_count(rec))
+				ftrace_remove_tramp(ops, rec);
+
+I am wondering what should we do if ftrace_rec_count() becomes 1 again...
+
+ftrace_save_ops_tramp_hash():
+
+	do_for_each_ftrace_rec(pg, rec) {
+		if (ftrace_rec_count(rec) == 1 &&
+		    ftrace_ops_test(ops, rec->ip, rec)) {
+
+			/* This record had better have a trampoline */
+			if (FTRACE_WARN_ON(!(rec->flags & FTRACE_FL_TRAMP_EN)))
+				return -1;
+
+Yes, but I can't understand how this can work.
+
+This ops can have  ->trampolines > 0, but FTRACE_FL_TRAMP_EN can be cleared
+by another ftrace_ops?
+
+Suppose there is a single tracer of this function, rec->flags = TRAMP | TRAMP_EN.
+Suppose also that it traces more than 1 function, so ->trampolines > 1.
+
+Another tracer comes, __ftrace_hash_rec_update() clears TRAMP. But it should
+also do ftrace_check_record() and this should clear TRAMP_EN?
+
+And yes, I can trigger this bug if I simply do "echo function > current_tracer"
+and then add/remove a KPROBE_FLAG_FTRACE kprobe.
 
 
---=20
-balbi
+And you know, when I try to read this code I can't distinguish ->trampoline
+from ->trampolines ;)
 
---2VXyA7JGja7B50zs
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Oleg.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJTzpW4AAoJEIaOsuA1yqREdcYP+QFFwNR5fv30clGj0ReMB/UO
-mVFU2Fxw7KdDBpVp2p36/ssI9rb6/ZOF1gzXC4ChRtf8KGyX65g3mGnQhB94Zfqt
-pT79sVOp0iEoUBQjvFX9DSsO2IZB5yv00z06spB/xmfsNVsUQ8w7VaXgXy3maw6E
-qJ3LcnXsdsUyi7c0N61osZYfIzBxdNNZasFnw2EzFzJ23VWnwpvkVERy6/HhthB1
-lUxl/ygtCKuOn0CPJKuRxF17UQBgLJv2DswOzRdNTKH98yNXjwUfdgsAgpUUeJ0I
-1breDEIOy+Gig1IpeSm6RX4Xp2j4B+h4A7n2jYtA8dt4XyR3yYxdJABNYh1zmFMh
-+Emi/l1LsbnkHhq8QCeptJwb2EKK5agErO4vgigQa3A+FcopU/SuU5FXaGNb23cT
-Gv7ZC8jg2+wDbBNF2LVOvxFnVCP6+VIp7XeshrJUY0v/pI7WGbM9DJ/PxGJYt8dx
-FcSRM4jh2gIAC/tCtBTNlRC8JfX+rTMQR7e3oC0EMi/wUgalUeANVE4UlikvZmUM
-AF1gcP1iwbq3UoMeZ90Fw9l8DUMKuY2KXLvwEpMv7c02Kl3lvYGdRvkkAnVTrzN2
-DAtKL4wePLqQ8ELer4BjbZNfLcAE5S9qRO5LiKdD8IMQaq82MuGnILc6dg+NYTrQ
-gIX6VRmAaZLcRWbm4G5O
-=ODXH
------END PGP SIGNATURE-----
-
---2VXyA7JGja7B50zs--
