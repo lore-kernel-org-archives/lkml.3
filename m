@@ -1,45 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752759AbaGVHLZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 03:11:25 -0400
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:54303 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751514AbaGVHLY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 03:11:24 -0400
-From: Kiran Padwal <kiran.padwal21@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: wkang77@gmail.com, aybuke.147@gmail.com, khoroshilov@ispras.ru,
-        kiran.padwal21@gmail.com, joe@perches.com, jonathankim@gctsemi.com,
-        deanahn@gctsemi.com, teobaluta@gmail.com, dan.carpenter@oracle.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] Staging: gdm724x: gdm_usb.c: fix missing blank line after variable declaration
-Date: Tue, 22 Jul 2014 12:38:25 +0530
-Message-Id: <1406012905-31347-1-git-send-email-kiran.padwal21@gmail.com>
+	id S1752418AbaGVHQy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 03:16:54 -0400
+Received: from mga01.intel.com ([192.55.52.88]:36319 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750737AbaGVHQw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 03:16:52 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="363626800"
+From: Wanpeng Li <wanpeng.li@linux.intel.com>
+To: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>
+Cc: <hpa@zytor.com>, x86@kernel.org, Borislav Petkov <bp@alien8.de>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        David Rientjes <rientjes@google.com>,
+        Prarit Bhargava <prarit@redhat.com>,
+        Steven Rostedt <srostedt@redhat.com>,
+        Jan Kiszka <jan.kiszka@siemens.com>, Toshi Kani <toshi.kani@hp.com>,
+        linux-kernel@vger.kernel.org, Wanpeng Li <wanpeng.li@linux.intel.com>
+Subject: [PATCH] sched: fix llc shared map unreleased during cpu hotplug
+Date: Tue, 22 Jul 2014 15:16:31 +0800
+Message-Id: <1406013391-46548-1-git-send-email-wanpeng.li@linux.intel.com>
 X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Checkpatch fix - Add missing blank line after variable declaration
+[  220.262093] BUG: unable to handle kernel NULL pointer dereference at 0000000000000004
+[  220.262104] IP: [<ffffffff810e7ac9>] find_busiest_group+0x2b9/0xa30
+[  220.262111] PGD 5a9d5067 PUD 13067 PMD 0
+[  220.262117] Oops: 0000 [#3] SMP
+[...]
+[  220.262245] Call Trace:
+[  220.262252]  [<ffffffff810e8396>] load_balance+0x156/0x980
+[  220.262259]  [<ffffffff816eeffe>] ? _raw_spin_unlock_irqrestore+0x2e/0xa0
+[  220.262266]  [<ffffffff810e9aa3>] idle_balance+0xe3/0x150
+[  220.262270]  [<ffffffff816ec4e7>] __schedule+0x797/0x8d0
+[  220.262277]  [<ffffffff816ec934>] schedule+0x24/0x70
+[  220.262283]  [<ffffffff816e9cd9>] schedule_timeout+0x119/0x1f0
+[  220.262294]  [<ffffffff810bb6e0>] ? lock_timer_base+0x70/0x70
+[  220.262301]  [<ffffffff816e9dc9>] schedule_timeout_uninterruptible+0x19/0x20
+[  220.262308]  [<ffffffff810bd3e8>] msleep+0x18/0x20
+[  220.262317]  [<ffffffff813aa11a>] lock_device_hotplug_sysfs+0x2a/0x50
+[  220.262323]  [<ffffffff813aa16e>] online_store+0x2e/0x80
+[  220.262358]  [<ffffffff813a873b>] dev_attr_store+0x1b/0x20
+[  220.262366]  [<ffffffff812292fd>] sysfs_write_file+0xdd/0x160
+[  220.262377]  [<ffffffff811b7e78>] vfs_write+0xc8/0x170
+[  220.262384]  [<ffffffff811b83ca>] SyS_write+0x5a/0xa0
+[  220.262388]  [<ffffffff816f76b9>] system_call_fastpath+0x16/0x1b
 
-Signed-off-by: Kiran Padwal <kiran.padwal21@gmail.com>
+Last level cache shared map is built during cpu up and build sched domain 
+routine takes advantage of it to setup sched domain cpu topology, however, 
+llc shared map is unreleased during cpu disable which lead to invalid sched 
+domain cpu topology. This patch fix it by release llc shared map correctly
+during cpu disable.
+
+Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
 ---
- drivers/staging/gdm724x/gdm_usb.c |    1 +
- 1 file changed, 1 insertion(+)
+ arch/x86/kernel/smpboot.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/drivers/staging/gdm724x/gdm_usb.c b/drivers/staging/gdm724x/gdm_usb.c
-index ea89d53..0c1b2de 100644
---- a/drivers/staging/gdm724x/gdm_usb.c
-+++ b/drivers/staging/gdm724x/gdm_usb.c
-@@ -896,6 +896,7 @@ static void gdm_usb_disconnect(struct usb_interface *intf)
- 	struct lte_udev *udev;
- 	u16 idVendor, idProduct;
- 	struct usb_device *usbdev;
-+
- 	usbdev = interface_to_usbdev(intf);
+diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
+index 5492798..0134ec7 100644
+--- a/arch/x86/kernel/smpboot.c
++++ b/arch/x86/kernel/smpboot.c
+@@ -1292,6 +1292,9 @@ static void remove_siblinginfo(int cpu)
  
- 	idVendor = __le16_to_cpu(usbdev->descriptor.idVendor);
+ 	for_each_cpu(sibling, cpu_sibling_mask(cpu))
+ 		cpumask_clear_cpu(cpu, cpu_sibling_mask(sibling));
++	for_each_cpu(sibling, cpu_llc_shared_mask(cpu))
++		cpumask_clear_cpu(cpu, cpu_llc_shared_mask(sibling));
++	cpumask_clear(cpu_llc_shared_mask(cpu));
+ 	cpumask_clear(cpu_sibling_mask(cpu));
+ 	cpumask_clear(cpu_core_mask(cpu));
+ 	c->phys_proc_id = 0;
 -- 
-1.7.9.5
+1.9.1
 
