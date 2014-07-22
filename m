@@ -1,401 +1,502 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754920AbaGVMLY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 08:11:24 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:63555 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754476AbaGVMLW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 08:11:22 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Linux PCI <linux-pci@vger.kernel.org>, Zhang Rui <rui.zhang@intel.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: [Update][PATCH 2/3] ACPI / PM: Revork the handling of ACPI device wakeup notifications
-Date: Tue, 22 Jul 2014 14:29:42 +0200
-Message-ID: <1658618.0eushJSIkF@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <15452047.8SNvN9NOiv@vostro.rjw.lan>
-References: <1907495.agrCMfRsQN@vostro.rjw.lan> <9631666.En3K0jlGsY@vostro.rjw.lan> <15452047.8SNvN9NOiv@vostro.rjw.lan>
+	id S1754975AbaGVMMR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 08:12:17 -0400
+Received: from wolff.to ([98.103.208.27]:57113 "HELO wolff.to"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1751755AbaGVMMP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 08:12:15 -0400
+Date: Tue, 22 Jul 2014 07:10:01 -0500
+From: Bruno Wolff III <bruno@wolff.to>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Dietmar Eggemann <dietmar.eggemann@arm.com>,
+        Josh Boyer <jwboyer@redhat.com>, "mingo@redhat.com" <mingo@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: Scheduler regression from
+ caffcdd8d27ba78730d5540396ce72ad022aff2c
+Message-ID: <20140722121001.GA30631@wolff.to>
+References: <20140718053449.GA2039@wolff.to>
+ <20140718101633.GP9918@twins.programming.kicks-ass.net>
+ <20140718130126.GA2401@wolff.to>
+ <20140718141648.GE20603@laptop.programming.kicks-ass.net>
+ <20140718145040.GG12054@laptop.lan>
+ <20140718161602.GH12054@laptop.lan>
+ <20140721163528.GA10433@wolff.to>
+ <20140721165212.GO3935@laptop>
+ <20140722094740.GJ12054@laptop.lan>
+ <20140722103857.GK12054@laptop.lan>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: multipart/mixed; boundary="0OAP2g/MAC+5xKAE"
+Content-Disposition: inline
+In-Reply-To: <20140722103857.GK12054@laptop.lan>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-Since ACPI wakeup GPEs are going to be enabled during system suspend
-as well as for runtime wakeup by a subsequent patch and the same
-notify handlers will be used in both cases, rework the ACPI device
-wakeup notification framework so that the part specific to physical
-devices is always run asynchronously from the PM workqueue.  This
-prevents runtime resume callbacks for those devices from being
-run during system suspend and resume which may not be appropriate,
-among other things.
+--0OAP2g/MAC+5xKAE
+Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Disposition: inline
 
-Also make ACPI device wakeup notification handling a bit more robust
-agaist subsequent removal of ACPI device objects, whould that ever
-happen, and create a wakeup source object for each ACPI device
-configured for wakeup so that wakeup notifications for those
-devices can wake up the system from the "freeze" sleep state.
+On Tue, Jul 22, 2014 at 12:38:57 +0200,
+  Peter Zijlstra <peterz@infradead.org> wrote:
+>
+>Could you provide the output of cpuid and cpuid -r for your machine?
+>This code is magic and I've no idea what your machine is telling it to
+>do :/
 
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
----
+I am attaching both sets of output. (I also added copies to the bug report.)
 
-I noticed that acpi_pm_notify_handler() was racy with the handler
-unregistration, so added locking and a check to it.
+--0OAP2g/MAC+5xKAE
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: attachment; filename="cpuid.out"
 
----
- drivers/acpi/device_pm.c |   80 ++++++++++++++++++++++++++++++++++-------------
- drivers/acpi/pci_root.c  |    2 -
- drivers/pci/pci-acpi.c   |   60 +++++++++++------------------------
- include/acpi/acpi_bus.h  |   21 +++++++-----
- include/linux/pci-acpi.h |   13 +++++--
- 5 files changed, 101 insertions(+), 75 deletions(-)
+CPU 0:
+   vendor_id = "GenuineIntel"
+   version information (1/eax):
+      processor type  = primary processor (0)
+      family          = Intel Pentium 4/Pentium D/Pentium Extreme Edition/Celeron/Xeon/Xeon MP/Itanium2, AMD Athlon 64/Athlon XP-M/Opteron/Sempron/Turion (15)
+      model           = 0x2 (2)
+      stepping id     = 0x9 (9)
+      extended family = 0x0 (0)
+      extended model  = 0x0 (0)
+      (simple synth)  = Intel Pentium 4 (Northwood D1) / Xeon (Prestonia D1) / Mobile Pentium 4 (Northwood D1) / Mobile Pentium 4 Processor-M (Northwood D1) / Celeron 478-pin (Northwood D1), .13um
+   miscellaneous (1/ebx):
+      process local APIC physical ID = 0x0 (0)
+      cpu count                      = 0x2 (2)
+      CLFLUSH line size              = 0x8 (8)
+      brand index                    = 0xb (11)
+   brand id = 0x0b (11): Intel Xeon, .13um
+   feature information (1/edx):
+      x87 FPU on chip                        = true
+      virtual-8086 mode enhancement          = true
+      debugging extensions                   = true
+      page size extensions                   = true
+      time stamp counter                     = true
+      RDMSR and WRMSR support                = true
+      physical address extensions            = true
+      machine check exception                = true
+      CMPXCHG8B inst.                        = true
+      APIC on chip                           = true
+      SYSENTER and SYSEXIT                   = true
+      memory type range registers            = true
+      PTE global bit                         = true
+      machine check architecture             = true
+      conditional move/compare instruction   = true
+      page attribute table                   = true
+      page size extension                    = true
+      processor serial number                = false
+      CLFLUSH instruction                    = true
+      debug store                            = true
+      thermal monitor and clock ctrl         = true
+      MMX Technology                         = true
+      FXSAVE/FXRSTOR                         = true
+      SSE extensions                         = true
+      SSE2 extensions                        = true
+      self snoop                             = true
+      hyper-threading / multi-core supported = true
+      therm. monitor                         = true
+      IA64                                   = false
+      pending break event                    = true
+   feature information (1/ecx):
+      PNI/SSE3: Prescott New Instructions     = false
+      PCLMULDQ instruction                    = false
+      64-bit debug store                      = false
+      MONITOR/MWAIT                           = false
+      CPL-qualified debug store               = false
+      VMX: virtual machine extensions         = false
+      SMX: safer mode extensions              = false
+      Enhanced Intel SpeedStep Technology     = false
+      thermal monitor 2                       = false
+      SSSE3 extensions                        = false
+      context ID: adaptive or shared L1 data  = true
+      FMA instruction                         = false
+      CMPXCHG16B instruction                  = false
+      xTPR disable                            = true
+      perfmon and debug                       = false
+      process context identifiers             = false
+      direct cache access                     = false
+      SSE4.1 extensions                       = false
+      SSE4.2 extensions                       = false
+      extended xAPIC support                  = false
+      MOVBE instruction                       = false
+      POPCNT instruction                      = false
+      time stamp counter deadline             = false
+      AES instruction                         = false
+      XSAVE/XSTOR states                      = false
+      OS-enabled XSAVE/XSTOR                  = false
+      AVX: advanced vector extensions         = false
+      F16C half-precision convert instruction = false
+      RDRAND instruction                      = false
+      hypervisor guest status                 = false
+   cache and TLB information (2):
+      0x50: instruction TLB: 4K & 2M/4M pages, 64 entries
+      0x5b: data TLB: 4K & 4M pages, 64 entries
+      0x66: L1 data cache: 8K, 4-way, 64 byte lines
+      0x40: No L3 cache
+      0x70: Trace cache: 12K-uop, 8-way
+      0x7b: L2 cache: 512K, 8-way, sectored, 64 byte lines
+   extended feature flags (0x80000001/edx):
+      SYSCALL and SYSRET instructions        = false
+      execution disable                      = false
+      1-GB large page support                = false
+      RDTSCP                                 = false
+      64-bit extensions technology available = false
+   Intel feature flags (0x80000001/ecx):
+      LAHF/SAHF supported in 64-bit mode     = false
+      LZCNT advanced bit manipulation        = false
+      3DNow! PREFETCH/PREFETCHW instructions = false
+   brand = "                  Intel(R) Xeon(TM) CPU 2.66GHz"
+   (multi-processing synth): hyper-threaded (t=2)
+   (multi-processing method): Intel leaf 1
+   (synth) = Intel Xeon (Prestonia D1), .13um
+CPU 1:
+   vendor_id = "GenuineIntel"
+   version information (1/eax):
+      processor type  = primary processor (0)
+      family          = Intel Pentium 4/Pentium D/Pentium Extreme Edition/Celeron/Xeon/Xeon MP/Itanium2, AMD Athlon 64/Athlon XP-M/Opteron/Sempron/Turion (15)
+      model           = 0x2 (2)
+      stepping id     = 0x9 (9)
+      extended family = 0x0 (0)
+      extended model  = 0x0 (0)
+      (simple synth)  = Intel Pentium 4 (Northwood D1) / Xeon (Prestonia D1) / Mobile Pentium 4 (Northwood D1) / Mobile Pentium 4 Processor-M (Northwood D1) / Celeron 478-pin (Northwood D1), .13um
+   miscellaneous (1/ebx):
+      process local APIC physical ID = 0x6 (6)
+      cpu count                      = 0x2 (2)
+      CLFLUSH line size              = 0x8 (8)
+      brand index                    = 0xb (11)
+   brand id = 0x0b (11): Intel Xeon, .13um
+   feature information (1/edx):
+      x87 FPU on chip                        = true
+      virtual-8086 mode enhancement          = true
+      debugging extensions                   = true
+      page size extensions                   = true
+      time stamp counter                     = true
+      RDMSR and WRMSR support                = true
+      physical address extensions            = true
+      machine check exception                = true
+      CMPXCHG8B inst.                        = true
+      APIC on chip                           = true
+      SYSENTER and SYSEXIT                   = true
+      memory type range registers            = true
+      PTE global bit                         = true
+      machine check architecture             = true
+      conditional move/compare instruction   = true
+      page attribute table                   = true
+      page size extension                    = true
+      processor serial number                = false
+      CLFLUSH instruction                    = true
+      debug store                            = true
+      thermal monitor and clock ctrl         = true
+      MMX Technology                         = true
+      FXSAVE/FXRSTOR                         = true
+      SSE extensions                         = true
+      SSE2 extensions                        = true
+      self snoop                             = true
+      hyper-threading / multi-core supported = true
+      therm. monitor                         = true
+      IA64                                   = false
+      pending break event                    = true
+   feature information (1/ecx):
+      PNI/SSE3: Prescott New Instructions     = false
+      PCLMULDQ instruction                    = false
+      64-bit debug store                      = false
+      MONITOR/MWAIT                           = false
+      CPL-qualified debug store               = false
+      VMX: virtual machine extensions         = false
+      SMX: safer mode extensions              = false
+      Enhanced Intel SpeedStep Technology     = false
+      thermal monitor 2                       = false
+      SSSE3 extensions                        = false
+      context ID: adaptive or shared L1 data  = true
+      FMA instruction                         = false
+      CMPXCHG16B instruction                  = false
+      xTPR disable                            = true
+      perfmon and debug                       = false
+      process context identifiers             = false
+      direct cache access                     = false
+      SSE4.1 extensions                       = false
+      SSE4.2 extensions                       = false
+      extended xAPIC support                  = false
+      MOVBE instruction                       = false
+      POPCNT instruction                      = false
+      time stamp counter deadline             = false
+      AES instruction                         = false
+      XSAVE/XSTOR states                      = false
+      OS-enabled XSAVE/XSTOR                  = false
+      AVX: advanced vector extensions         = false
+      F16C half-precision convert instruction = false
+      RDRAND instruction                      = false
+      hypervisor guest status                 = false
+   cache and TLB information (2):
+      0x50: instruction TLB: 4K & 2M/4M pages, 64 entries
+      0x5b: data TLB: 4K & 4M pages, 64 entries
+      0x66: L1 data cache: 8K, 4-way, 64 byte lines
+      0x40: No L3 cache
+      0x70: Trace cache: 12K-uop, 8-way
+      0x7b: L2 cache: 512K, 8-way, sectored, 64 byte lines
+   extended feature flags (0x80000001/edx):
+      SYSCALL and SYSRET instructions        = false
+      execution disable                      = false
+      1-GB large page support                = false
+      RDTSCP                                 = false
+      64-bit extensions technology available = false
+   Intel feature flags (0x80000001/ecx):
+      LAHF/SAHF supported in 64-bit mode     = false
+      LZCNT advanced bit manipulation        = false
+      3DNow! PREFETCH/PREFETCHW instructions = false
+   brand = "                  Intel(R) Xeon(TM) CPU 2.66GHz"
+   (multi-processing synth): hyper-threaded (t=2)
+   (multi-processing method): Intel leaf 1
+   (synth) = Intel Xeon (Prestonia D1), .13um
+CPU 2:
+   vendor_id = "GenuineIntel"
+   version information (1/eax):
+      processor type  = primary processor (0)
+      family          = Intel Pentium 4/Pentium D/Pentium Extreme Edition/Celeron/Xeon/Xeon MP/Itanium2, AMD Athlon 64/Athlon XP-M/Opteron/Sempron/Turion (15)
+      model           = 0x2 (2)
+      stepping id     = 0x9 (9)
+      extended family = 0x0 (0)
+      extended model  = 0x0 (0)
+      (simple synth)  = Intel Pentium 4 (Northwood D1) / Xeon (Prestonia D1) / Mobile Pentium 4 (Northwood D1) / Mobile Pentium 4 Processor-M (Northwood D1) / Celeron 478-pin (Northwood D1), .13um
+   miscellaneous (1/ebx):
+      process local APIC physical ID = 0x1 (1)
+      cpu count                      = 0x2 (2)
+      CLFLUSH line size              = 0x8 (8)
+      brand index                    = 0xb (11)
+   brand id = 0x0b (11): Intel Xeon, .13um
+   feature information (1/edx):
+      x87 FPU on chip                        = true
+      virtual-8086 mode enhancement          = true
+      debugging extensions                   = true
+      page size extensions                   = true
+      time stamp counter                     = true
+      RDMSR and WRMSR support                = true
+      physical address extensions            = true
+      machine check exception                = true
+      CMPXCHG8B inst.                        = true
+      APIC on chip                           = true
+      SYSENTER and SYSEXIT                   = true
+      memory type range registers            = true
+      PTE global bit                         = true
+      machine check architecture             = true
+      conditional move/compare instruction   = true
+      page attribute table                   = true
+      page size extension                    = true
+      processor serial number                = false
+      CLFLUSH instruction                    = true
+      debug store                            = true
+      thermal monitor and clock ctrl         = true
+      MMX Technology                         = true
+      FXSAVE/FXRSTOR                         = true
+      SSE extensions                         = true
+      SSE2 extensions                        = true
+      self snoop                             = true
+      hyper-threading / multi-core supported = true
+      therm. monitor                         = true
+      IA64                                   = false
+      pending break event                    = true
+   feature information (1/ecx):
+      PNI/SSE3: Prescott New Instructions     = false
+      PCLMULDQ instruction                    = false
+      64-bit debug store                      = false
+      MONITOR/MWAIT                           = false
+      CPL-qualified debug store               = false
+      VMX: virtual machine extensions         = false
+      SMX: safer mode extensions              = false
+      Enhanced Intel SpeedStep Technology     = false
+      thermal monitor 2                       = false
+      SSSE3 extensions                        = false
+      context ID: adaptive or shared L1 data  = true
+      FMA instruction                         = false
+      CMPXCHG16B instruction                  = false
+      xTPR disable                            = true
+      perfmon and debug                       = false
+      process context identifiers             = false
+      direct cache access                     = false
+      SSE4.1 extensions                       = false
+      SSE4.2 extensions                       = false
+      extended xAPIC support                  = false
+      MOVBE instruction                       = false
+      POPCNT instruction                      = false
+      time stamp counter deadline             = false
+      AES instruction                         = false
+      XSAVE/XSTOR states                      = false
+      OS-enabled XSAVE/XSTOR                  = false
+      AVX: advanced vector extensions         = false
+      F16C half-precision convert instruction = false
+      RDRAND instruction                      = false
+      hypervisor guest status                 = false
+   cache and TLB information (2):
+      0x50: instruction TLB: 4K & 2M/4M pages, 64 entries
+      0x5b: data TLB: 4K & 4M pages, 64 entries
+      0x66: L1 data cache: 8K, 4-way, 64 byte lines
+      0x40: No L3 cache
+      0x70: Trace cache: 12K-uop, 8-way
+      0x7b: L2 cache: 512K, 8-way, sectored, 64 byte lines
+   extended feature flags (0x80000001/edx):
+      SYSCALL and SYSRET instructions        = false
+      execution disable                      = false
+      1-GB large page support                = false
+      RDTSCP                                 = false
+      64-bit extensions technology available = false
+   Intel feature flags (0x80000001/ecx):
+      LAHF/SAHF supported in 64-bit mode     = false
+      LZCNT advanced bit manipulation        = false
+      3DNow! PREFETCH/PREFETCHW instructions = false
+   brand = "                  Intel(R) Xeon(TM) CPU 2.66GHz"
+   (multi-processing synth): hyper-threaded (t=2)
+   (multi-processing method): Intel leaf 1
+   (synth) = Intel Xeon (Prestonia D1), .13um
+CPU 3:
+   vendor_id = "GenuineIntel"
+   version information (1/eax):
+      processor type  = primary processor (0)
+      family          = Intel Pentium 4/Pentium D/Pentium Extreme Edition/Celeron/Xeon/Xeon MP/Itanium2, AMD Athlon 64/Athlon XP-M/Opteron/Sempron/Turion (15)
+      model           = 0x2 (2)
+      stepping id     = 0x9 (9)
+      extended family = 0x0 (0)
+      extended model  = 0x0 (0)
+      (simple synth)  = Intel Pentium 4 (Northwood D1) / Xeon (Prestonia D1) / Mobile Pentium 4 (Northwood D1) / Mobile Pentium 4 Processor-M (Northwood D1) / Celeron 478-pin (Northwood D1), .13um
+   miscellaneous (1/ebx):
+      process local APIC physical ID = 0x7 (7)
+      cpu count                      = 0x2 (2)
+      CLFLUSH line size              = 0x8 (8)
+      brand index                    = 0xb (11)
+   brand id = 0x0b (11): Intel Xeon, .13um
+   feature information (1/edx):
+      x87 FPU on chip                        = true
+      virtual-8086 mode enhancement          = true
+      debugging extensions                   = true
+      page size extensions                   = true
+      time stamp counter                     = true
+      RDMSR and WRMSR support                = true
+      physical address extensions            = true
+      machine check exception                = true
+      CMPXCHG8B inst.                        = true
+      APIC on chip                           = true
+      SYSENTER and SYSEXIT                   = true
+      memory type range registers            = true
+      PTE global bit                         = true
+      machine check architecture             = true
+      conditional move/compare instruction   = true
+      page attribute table                   = true
+      page size extension                    = true
+      processor serial number                = false
+      CLFLUSH instruction                    = true
+      debug store                            = true
+      thermal monitor and clock ctrl         = true
+      MMX Technology                         = true
+      FXSAVE/FXRSTOR                         = true
+      SSE extensions                         = true
+      SSE2 extensions                        = true
+      self snoop                             = true
+      hyper-threading / multi-core supported = true
+      therm. monitor                         = true
+      IA64                                   = false
+      pending break event                    = true
+   feature information (1/ecx):
+      PNI/SSE3: Prescott New Instructions     = false
+      PCLMULDQ instruction                    = false
+      64-bit debug store                      = false
+      MONITOR/MWAIT                           = false
+      CPL-qualified debug store               = false
+      VMX: virtual machine extensions         = false
+      SMX: safer mode extensions              = false
+      Enhanced Intel SpeedStep Technology     = false
+      thermal monitor 2                       = false
+      SSSE3 extensions                        = false
+      context ID: adaptive or shared L1 data  = true
+      FMA instruction                         = false
+      CMPXCHG16B instruction                  = false
+      xTPR disable                            = true
+      perfmon and debug                       = false
+      process context identifiers             = false
+      direct cache access                     = false
+      SSE4.1 extensions                       = false
+      SSE4.2 extensions                       = false
+      extended xAPIC support                  = false
+      MOVBE instruction                       = false
+      POPCNT instruction                      = false
+      time stamp counter deadline             = false
+      AES instruction                         = false
+      XSAVE/XSTOR states                      = false
+      OS-enabled XSAVE/XSTOR                  = false
+      AVX: advanced vector extensions         = false
+      F16C half-precision convert instruction = false
+      RDRAND instruction                      = false
+      hypervisor guest status                 = false
+   cache and TLB information (2):
+      0x50: instruction TLB: 4K & 2M/4M pages, 64 entries
+      0x5b: data TLB: 4K & 4M pages, 64 entries
+      0x66: L1 data cache: 8K, 4-way, 64 byte lines
+      0x40: No L3 cache
+      0x70: Trace cache: 12K-uop, 8-way
+      0x7b: L2 cache: 512K, 8-way, sectored, 64 byte lines
+   extended feature flags (0x80000001/edx):
+      SYSCALL and SYSRET instructions        = false
+      execution disable                      = false
+      1-GB large page support                = false
+      RDTSCP                                 = false
+      64-bit extensions technology available = false
+   Intel feature flags (0x80000001/ecx):
+      LAHF/SAHF supported in 64-bit mode     = false
+      LZCNT advanced bit manipulation        = false
+      3DNow! PREFETCH/PREFETCHW instructions = false
+   brand = "                  Intel(R) Xeon(TM) CPU 2.66GHz"
+   (multi-processing synth): hyper-threaded (t=2)
+   (multi-processing method): Intel leaf 1
+   (synth) = Intel Xeon (Prestonia D1), .13um
 
-Index: linux-pm/include/acpi/acpi_bus.h
-===================================================================
---- linux-pm.orig/include/acpi/acpi_bus.h
-+++ linux-pm/include/acpi/acpi_bus.h
-@@ -315,12 +315,19 @@ struct acpi_device_wakeup_flags {
- 	u8 notifier_present:1;  /* Wake-up notify handler has been installed */
- };
- 
-+struct acpi_device_wakeup_context {
-+	struct work_struct work;
-+	struct device *dev;
-+};
-+
- struct acpi_device_wakeup {
- 	acpi_handle gpe_device;
- 	u64 gpe_number;
- 	u64 sleep_state;
- 	struct list_head resources;
- 	struct acpi_device_wakeup_flags flags;
-+	struct acpi_device_wakeup_context context;
-+	struct wakeup_source *ws;
- 	int prepare_count;
- };
- 
-@@ -504,20 +511,18 @@ int acpi_enable_wakeup_device_power(stru
- int acpi_disable_wakeup_device_power(struct acpi_device *dev);
- 
- #ifdef CONFIG_PM
--acpi_status acpi_add_pm_notifier(struct acpi_device *adev,
--				 acpi_notify_handler handler, void *context);
--acpi_status acpi_remove_pm_notifier(struct acpi_device *adev,
--				    acpi_notify_handler handler);
-+acpi_status acpi_add_pm_notifier(struct acpi_device *adev, struct device *dev,
-+				 void (*work_func)(struct work_struct *work));
-+acpi_status acpi_remove_pm_notifier(struct acpi_device *adev);
- int acpi_pm_device_sleep_state(struct device *, int *, int);
- #else
- static inline acpi_status acpi_add_pm_notifier(struct acpi_device *adev,
--					       acpi_notify_handler handler,
--					       void *context)
-+					       struct device *dev,
-+				               void (*work_func)(struct work_struct *work))
- {
- 	return AE_SUPPORT;
- }
--static inline acpi_status acpi_remove_pm_notifier(struct acpi_device *adev,
--						  acpi_notify_handler handler)
-+static inline acpi_status acpi_remove_pm_notifier(struct acpi_device *adev)
- {
- 	return AE_SUPPORT;
- }
-Index: linux-pm/drivers/acpi/device_pm.c
-===================================================================
---- linux-pm.orig/drivers/acpi/device_pm.c
-+++ linux-pm/drivers/acpi/device_pm.c
-@@ -367,29 +367,61 @@ EXPORT_SYMBOL(acpi_bus_power_manageable)
- #ifdef CONFIG_PM
- static DEFINE_MUTEX(acpi_pm_notifier_lock);
- 
-+static void acpi_pm_notify_handler(acpi_handle handle, u32 val, void *not_used)
-+{
-+	struct acpi_device *adev;
-+
-+	if (val != ACPI_NOTIFY_DEVICE_WAKE)
-+		return;
-+
-+	adev = acpi_bus_get_acpi_device(handle);
-+	if (!adev)
-+		return;
-+
-+	mutex_lock(&acpi_pm_notifier_lock);
-+
-+	if (adev->wakeup.flags.notifier_present) {
-+		__pm_wakeup_event(adev->wakeup.ws, 0);
-+		if (adev->wakeup.context.work.func)
-+			queue_pm_work(&adev->wakeup.context.work);
-+	}
-+
-+	mutex_unlock(&acpi_pm_notifier_lock);
-+
-+	acpi_bus_put_acpi_device(adev);
-+}
-+
- /**
-- * acpi_add_pm_notifier - Register PM notifier for given ACPI device.
-- * @adev: ACPI device to add the notifier for.
-- * @context: Context information to pass to the notifier routine.
-+ * acpi_add_pm_notifier - Register PM notify handler for given ACPI device.
-+ * @adev: ACPI device to add the notify handler for.
-+ * @dev: Device to generate a wakeup event for while handling the notification.
-+ * @work_func: Work function to execute when handling the notification.
-  *
-  * NOTE: @adev need not be a run-wake or wakeup device to be a valid source of
-  * PM wakeup events.  For example, wakeup events may be generated for bridges
-  * if one of the devices below the bridge is signaling wakeup, even if the
-  * bridge itself doesn't have a wakeup GPE associated with it.
-  */
--acpi_status acpi_add_pm_notifier(struct acpi_device *adev,
--				 acpi_notify_handler handler, void *context)
-+acpi_status acpi_add_pm_notifier(struct acpi_device *adev, struct device *dev,
-+				 void (*work_func)(struct work_struct *work))
- {
- 	acpi_status status = AE_ALREADY_EXISTS;
- 
-+	if (!dev && !work_func)
-+		return AE_BAD_PARAMETER;
-+
- 	mutex_lock(&acpi_pm_notifier_lock);
- 
- 	if (adev->wakeup.flags.notifier_present)
- 		goto out;
- 
--	status = acpi_install_notify_handler(adev->handle,
--					     ACPI_SYSTEM_NOTIFY,
--					     handler, context);
-+	adev->wakeup.ws = wakeup_source_register(dev_name(&adev->dev));
-+	adev->wakeup.context.dev = dev;
-+	if (work_func)
-+		INIT_WORK(&adev->wakeup.context.work, work_func);
-+
-+	status = acpi_install_notify_handler(adev->handle, ACPI_SYSTEM_NOTIFY,
-+					     acpi_pm_notify_handler, NULL);
- 	if (ACPI_FAILURE(status))
- 		goto out;
- 
-@@ -404,8 +436,7 @@ acpi_status acpi_add_pm_notifier(struct
-  * acpi_remove_pm_notifier - Unregister PM notifier from given ACPI device.
-  * @adev: ACPI device to remove the notifier from.
-  */
--acpi_status acpi_remove_pm_notifier(struct acpi_device *adev,
--				    acpi_notify_handler handler)
-+acpi_status acpi_remove_pm_notifier(struct acpi_device *adev)
- {
- 	acpi_status status = AE_BAD_PARAMETER;
- 
-@@ -416,10 +447,17 @@ acpi_status acpi_remove_pm_notifier(stru
- 
- 	status = acpi_remove_notify_handler(adev->handle,
- 					    ACPI_SYSTEM_NOTIFY,
--					    handler);
-+					    acpi_pm_notify_handler);
- 	if (ACPI_FAILURE(status))
- 		goto out;
- 
-+	if (adev->wakeup.context.work.func) {
-+		cancel_work_sync(&adev->wakeup.context.work);
-+		adev->wakeup.context.work.func = NULL;
-+	}
-+	adev->wakeup.context.dev = NULL;
-+	wakeup_source_unregister(adev->wakeup.ws);
-+
- 	adev->wakeup.flags.notifier_present = false;
- 
-  out:
-@@ -602,16 +640,15 @@ EXPORT_SYMBOL(acpi_pm_device_sleep_state
- 
- #ifdef CONFIG_PM_RUNTIME
- /**
-- * acpi_wakeup_device - Wakeup notification handler for ACPI devices.
-- * @handle: ACPI handle of the device the notification is for.
-- * @event: Type of the signaled event.
-- * @context: Device corresponding to @handle.
-+ * acpi_pm_notify_work_func - ACPI devices wakeup notification work function.
-+ * @work: Work item to handle.
-  */
--static void acpi_wakeup_device(acpi_handle handle, u32 event, void *context)
-+static void acpi_pm_notify_work_func(struct work_struct *work)
- {
--	struct device *dev = context;
-+	struct device *dev;
- 
--	if (event == ACPI_NOTIFY_DEVICE_WAKE && dev) {
-+	dev = container_of(work, struct acpi_device_wakeup_context, work)->dev;
-+	if (dev) {
- 		pm_wakeup_event(dev, 0);
- 		pm_runtime_resume(dev);
- 	}
-@@ -677,8 +714,7 @@ int acpi_pm_device_run_wake(struct devic
- }
- EXPORT_SYMBOL(acpi_pm_device_run_wake);
- #else
--static inline void acpi_wakeup_device(acpi_handle handle, u32 event,
--				      void *context) {}
-+static inline void acpi_pm_notify_work_func(struct work_struct *work) {}
- #endif /* CONFIG_PM_RUNTIME */
- 
- #ifdef CONFIG_PM_SLEEP
-@@ -1048,7 +1084,7 @@ int acpi_dev_pm_attach(struct device *de
- 	if (dev->pm_domain)
- 		return -EEXIST;
- 
--	acpi_add_pm_notifier(adev, acpi_wakeup_device, dev);
-+	acpi_add_pm_notifier(adev, dev, acpi_pm_notify_work_func);
- 	dev->pm_domain = &acpi_general_pm_domain;
- 	if (power_on) {
- 		acpi_dev_pm_full_power(adev);
-@@ -1076,7 +1112,7 @@ void acpi_dev_pm_detach(struct device *d
- 
- 	if (adev && dev->pm_domain == &acpi_general_pm_domain) {
- 		dev->pm_domain = NULL;
--		acpi_remove_pm_notifier(adev, acpi_wakeup_device);
-+		acpi_remove_pm_notifier(adev);
- 		if (power_off) {
- 			/*
- 			 * If the device's PM QoS resume latency limit or flags
-Index: linux-pm/drivers/pci/pci-acpi.c
-===================================================================
---- linux-pm.orig/drivers/pci/pci-acpi.c
-+++ linux-pm/drivers/pci/pci-acpi.c
-@@ -18,31 +18,31 @@
- #include "pci.h"
- 
- /**
-- * pci_acpi_wake_bus - Wake-up notification handler for root buses.
-- * @handle: ACPI handle of a device the notification is for.
-- * @event: Type of the signaled event.
-- * @context: PCI root bus to wake up devices on.
-+ * pci_acpi_wake_bus - Root bus wakeup notification fork function.
-+ * @work: Work item to handle.
-  */
--static void pci_acpi_wake_bus(acpi_handle handle, u32 event, void *context)
-+static void pci_acpi_wake_bus(struct work_struct *work)
- {
--	struct pci_bus *pci_bus = context;
-+	struct acpi_device *adev;
-+	struct acpi_pci_root *root;
- 
--	if (event == ACPI_NOTIFY_DEVICE_WAKE && pci_bus)
--		pci_pme_wakeup_bus(pci_bus);
-+	adev = container_of(work, struct acpi_device, wakeup.context.work);
-+	root = acpi_driver_data(adev);
-+	pci_pme_wakeup_bus(root->bus);
- }
- 
- /**
-- * pci_acpi_wake_dev - Wake-up notification handler for PCI devices.
-+ * pci_acpi_wake_dev - PCI device wakeup notification work function.
-  * @handle: ACPI handle of a device the notification is for.
-- * @event: Type of the signaled event.
-- * @context: PCI device object to wake up.
-+ * @work: Work item to handle.
-  */
--static void pci_acpi_wake_dev(acpi_handle handle, u32 event, void *context)
-+static void pci_acpi_wake_dev(struct work_struct *work)
- {
--	struct pci_dev *pci_dev = context;
-+	struct acpi_device_wakeup_context *context;
-+	struct pci_dev *pci_dev;
- 
--	if (event != ACPI_NOTIFY_DEVICE_WAKE || !pci_dev)
--		return;
-+	context = container_of(work, struct acpi_device_wakeup_context, work);
-+	pci_dev = to_pci_dev(context->dev);
- 
- 	if (pci_dev->pme_poll)
- 		pci_dev->pme_poll = false;
-@@ -65,23 +65,12 @@ static void pci_acpi_wake_dev(acpi_handl
- }
- 
- /**
-- * pci_acpi_add_bus_pm_notifier - Register PM notifier for given PCI bus.
-- * @dev: ACPI device to add the notifier for.
-- * @pci_bus: PCI bus to walk checking for PME status if an event is signaled.
-+ * pci_acpi_add_bus_pm_notifier - Register PM notifier for root PCI bus.
-+ * @dev: PCI root bridge ACPI device.
-  */
--acpi_status pci_acpi_add_bus_pm_notifier(struct acpi_device *dev,
--					 struct pci_bus *pci_bus)
-+acpi_status pci_acpi_add_bus_pm_notifier(struct acpi_device *dev)
- {
--	return acpi_add_pm_notifier(dev, pci_acpi_wake_bus, pci_bus);
--}
--
--/**
-- * pci_acpi_remove_bus_pm_notifier - Unregister PCI bus PM notifier.
-- * @dev: ACPI device to remove the notifier from.
-- */
--acpi_status pci_acpi_remove_bus_pm_notifier(struct acpi_device *dev)
--{
--	return acpi_remove_pm_notifier(dev, pci_acpi_wake_bus);
-+	return acpi_add_pm_notifier(dev, NULL, pci_acpi_wake_bus);
- }
- 
- /**
-@@ -92,16 +81,7 @@ acpi_status pci_acpi_remove_bus_pm_notif
- acpi_status pci_acpi_add_pm_notifier(struct acpi_device *dev,
- 				     struct pci_dev *pci_dev)
- {
--	return acpi_add_pm_notifier(dev, pci_acpi_wake_dev, pci_dev);
--}
--
--/**
-- * pci_acpi_remove_pm_notifier - Unregister PCI device PM notifier.
-- * @dev: ACPI device to remove the notifier from.
-- */
--acpi_status pci_acpi_remove_pm_notifier(struct acpi_device *dev)
--{
--	return acpi_remove_pm_notifier(dev, pci_acpi_wake_dev);
-+	return acpi_add_pm_notifier(dev, &pci_dev->dev, pci_acpi_wake_dev);
- }
- 
- phys_addr_t acpi_pci_root_get_mcfg_addr(acpi_handle handle)
-Index: linux-pm/include/linux/pci-acpi.h
-===================================================================
---- linux-pm.orig/include/linux/pci-acpi.h
-+++ linux-pm/include/linux/pci-acpi.h
-@@ -11,12 +11,17 @@
- #include <linux/acpi.h>
- 
- #ifdef CONFIG_ACPI
--extern acpi_status pci_acpi_add_bus_pm_notifier(struct acpi_device *dev,
--						 struct pci_bus *pci_bus);
--extern acpi_status pci_acpi_remove_bus_pm_notifier(struct acpi_device *dev);
-+extern acpi_status pci_acpi_add_bus_pm_notifier(struct acpi_device *dev);
-+static inline acpi_status pci_acpi_remove_bus_pm_notifier(struct acpi_device *dev)
-+{
-+	return acpi_remove_pm_notifier(dev);
-+}
- extern acpi_status pci_acpi_add_pm_notifier(struct acpi_device *dev,
- 					     struct pci_dev *pci_dev);
--extern acpi_status pci_acpi_remove_pm_notifier(struct acpi_device *dev);
-+static inline acpi_status pci_acpi_remove_pm_notifier(struct acpi_device *dev)
-+{
-+	return acpi_remove_pm_notifier(dev);
-+}
- extern phys_addr_t acpi_pci_root_get_mcfg_addr(acpi_handle handle);
- 
- static inline acpi_handle acpi_find_root_bridge_handle(struct pci_dev *pdev)
-Index: linux-pm/drivers/acpi/pci_root.c
-===================================================================
---- linux-pm.orig/drivers/acpi/pci_root.c
-+++ linux-pm/drivers/acpi/pci_root.c
-@@ -593,7 +593,7 @@ static int acpi_pci_root_add(struct acpi
- 	if (no_aspm)
- 		pcie_no_aspm();
- 
--	pci_acpi_add_bus_pm_notifier(device, root->bus);
-+	pci_acpi_add_bus_pm_notifier(device);
- 	if (device->wakeup.flags.run_wake)
- 		device_set_run_wake(root->bus->bridge, true);
- 
+--0OAP2g/MAC+5xKAE
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: attachment; filename="cpuidr.out"
 
+CPU 0:
+   0x00000000 0x00: eax=0x00000002 ebx=0x756e6547 ecx=0x6c65746e edx=0x49656e69
+   0x00000001 0x00: eax=0x00000f29 ebx=0x0002080b ecx=0x00004400 edx=0xbfebfbff
+   0x00000002 0x00: eax=0x665b5001 ebx=0x00000000 ecx=0x00000000 edx=0x007b7040
+   0x80000000 0x00: eax=0x80000004 ebx=0x00000000 ecx=0x00000000 edx=0x00000000
+   0x80000001 0x00: eax=0x00000000 ebx=0x00000000 ecx=0x00000000 edx=0x00000000
+   0x80000002 0x00: eax=0x20202020 ebx=0x20202020 ecx=0x20202020 edx=0x20202020
+   0x80000003 0x00: eax=0x6e492020 ebx=0x286c6574 ecx=0x58202952 edx=0x286e6f65
+   0x80000004 0x00: eax=0x20294d54 ebx=0x20555043 ecx=0x36362e32 edx=0x007a4847
+   0x80860000 0x00: eax=0x665b5001 ebx=0x00000000 ecx=0x00000000 edx=0x007b7040
+   0xc0000000 0x00: eax=0x665b5001 ebx=0x00000000 ecx=0x00000000 edx=0x007b7040
+CPU 1:
+   0x00000000 0x00: eax=0x00000002 ebx=0x756e6547 ecx=0x6c65746e edx=0x49656e69
+   0x00000001 0x00: eax=0x00000f29 ebx=0x0602080b ecx=0x00004400 edx=0xbfebfbff
+   0x00000002 0x00: eax=0x665b5001 ebx=0x00000000 ecx=0x00000000 edx=0x007b7040
+   0x80000000 0x00: eax=0x80000004 ebx=0x00000000 ecx=0x00000000 edx=0x00000000
+   0x80000001 0x00: eax=0x00000000 ebx=0x00000000 ecx=0x00000000 edx=0x00000000
+   0x80000002 0x00: eax=0x20202020 ebx=0x20202020 ecx=0x20202020 edx=0x20202020
+   0x80000003 0x00: eax=0x6e492020 ebx=0x286c6574 ecx=0x58202952 edx=0x286e6f65
+   0x80000004 0x00: eax=0x20294d54 ebx=0x20555043 ecx=0x36362e32 edx=0x007a4847
+   0x80860000 0x00: eax=0x665b5001 ebx=0x00000000 ecx=0x00000000 edx=0x007b7040
+   0xc0000000 0x00: eax=0x665b5001 ebx=0x00000000 ecx=0x00000000 edx=0x007b7040
+CPU 2:
+   0x00000000 0x00: eax=0x00000002 ebx=0x756e6547 ecx=0x6c65746e edx=0x49656e69
+   0x00000001 0x00: eax=0x00000f29 ebx=0x0102080b ecx=0x00004400 edx=0xbfebfbff
+   0x00000002 0x00: eax=0x665b5001 ebx=0x00000000 ecx=0x00000000 edx=0x007b7040
+   0x80000000 0x00: eax=0x80000004 ebx=0x00000000 ecx=0x00000000 edx=0x00000000
+   0x80000001 0x00: eax=0x00000000 ebx=0x00000000 ecx=0x00000000 edx=0x00000000
+   0x80000002 0x00: eax=0x20202020 ebx=0x20202020 ecx=0x20202020 edx=0x20202020
+   0x80000003 0x00: eax=0x6e492020 ebx=0x286c6574 ecx=0x58202952 edx=0x286e6f65
+   0x80000004 0x00: eax=0x20294d54 ebx=0x20555043 ecx=0x36362e32 edx=0x007a4847
+   0x80860000 0x00: eax=0x665b5001 ebx=0x00000000 ecx=0x00000000 edx=0x007b7040
+   0xc0000000 0x00: eax=0x665b5001 ebx=0x00000000 ecx=0x00000000 edx=0x007b7040
+CPU 3:
+   0x00000000 0x00: eax=0x00000002 ebx=0x756e6547 ecx=0x6c65746e edx=0x49656e69
+   0x00000001 0x00: eax=0x00000f29 ebx=0x0702080b ecx=0x00004400 edx=0xbfebfbff
+   0x00000002 0x00: eax=0x665b5001 ebx=0x00000000 ecx=0x00000000 edx=0x007b7040
+   0x80000000 0x00: eax=0x80000004 ebx=0x00000000 ecx=0x00000000 edx=0x00000000
+   0x80000001 0x00: eax=0x00000000 ebx=0x00000000 ecx=0x00000000 edx=0x00000000
+   0x80000002 0x00: eax=0x20202020 ebx=0x20202020 ecx=0x20202020 edx=0x20202020
+   0x80000003 0x00: eax=0x6e492020 ebx=0x286c6574 ecx=0x58202952 edx=0x286e6f65
+   0x80000004 0x00: eax=0x20294d54 ebx=0x20555043 ecx=0x36362e32 edx=0x007a4847
+   0x80860000 0x00: eax=0x665b5001 ebx=0x00000000 ecx=0x00000000 edx=0x007b7040
+   0xc0000000 0x00: eax=0x665b5001 ebx=0x00000000 ecx=0x00000000 edx=0x007b7040
+
+--0OAP2g/MAC+5xKAE--
