@@ -1,74 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752942AbaGVDij (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 23:38:39 -0400
-Received: from mail-vc0-f177.google.com ([209.85.220.177]:47773 "EHLO
-	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750949AbaGVDii (ORCPT
+	id S1752922AbaGVDmu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 23:42:50 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:50042 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750949AbaGVDmt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 23:38:38 -0400
+	Mon, 21 Jul 2014 23:42:49 -0400
+To: Christoph Hellwig <hch@lst.de>
+Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
+        linux-scsi@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
+        Bart Van Assche <bvanassche@fusionio.com>,
+        Mike Christie <michaelc@cs.wisc.edu>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Robert Elliott <Elliott@hp.com>, Webb Scales <webbnh@hp.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 01/14] scsi: add scsi_setup_cmnd helper
+From: "Martin K. Petersen" <martin.petersen@oracle.com>
+Organization: Oracle Corporation
+References: <1405678393-11497-1-git-send-email-hch@lst.de>
+	<1405678393-11497-2-git-send-email-hch@lst.de>
+Date: Mon, 21 Jul 2014 23:42:11 -0400
+In-Reply-To: <1405678393-11497-2-git-send-email-hch@lst.de> (Christoph
+	Hellwig's message of "Fri, 18 Jul 2014 12:13:00 +0200")
+Message-ID: <yq1fvhum54c.fsf@sermon.lab.mkp.net>
+User-Agent: Gnus/5.130012 (Ma Gnus v0.12) Emacs/24.2 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <20140721141851.7f270f4c@thirdoffive.cmf.nrl.navy.mil>
-References: <CAPDOMVjnK=OF8mQrXbbgGUtCRJO8oG4+PQOETEcskNk=95GLrg@mail.gmail.com>
-	<20140721091445.1ee700bb@thirdoffive.cmf.nrl.navy.mil>
-	<CAPDOMVh7cx57GtxHk-_tmorSWSj6xci-YkDrecdCLJfTANbHAQ@mail.gmail.com>
-	<20140721141851.7f270f4c@thirdoffive.cmf.nrl.navy.mil>
-Date: Mon, 21 Jul 2014 23:38:37 -0400
-Message-ID: <CAPDOMVgW2jNR3n68QhbWh7EfTHRMYRNBrZkyKAA2x-T5ZO0ZiA@mail.gmail.com>
-Subject: Re: solos-pci.c: Fix me
-From: Nick Krause <xerofoify@gmail.com>
-To: chas williams - CONTRACTOR <chas@cmf.nrl.navy.mil>
-Cc: linux-atm-general@lists.sourceforge.net, netdev@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 21, 2014 at 2:18 PM, chas williams - CONTRACTOR
-<chas@cmf.nrl.navy.mil> wrote:
-> On Mon, 21 Jul 2014 13:42:01 -0400
-> Nick Krause <xerofoify@gmail.com> wrote:
->
->> On Mon, Jul 21, 2014 at 9:14 AM, chas williams - CONTRACTOR
->> <chas@cmf.nrl.navy.mil> wrote:
-> ...
->> > @@ -850,8 +850,7 @@ static void solos_bh(unsigned long card_arg)
->> >                                 dev_kfree_skb_any(skb);
->> >                                 break;
->> >
->> > -                       case PKT_COMMAND:
->> > -                       default: /* FIXME: Not really, surely? */
->> > +                       default: /* PKT_COMMAND */
->> >                                 if (process_command(card, port, skb))
->> >                                         break;power
->> >                                 spin_lock(&card->cli_queue_lock);
->> >
->> > and be done with it since that will preserve existing behavior.
->>
->>
->> My only question then is this function causing bugs as is?
->> Cheers Nick
->>
->
-> It has been there since the first version of this driver was released.
-> If it were breaking things, I would have to guess it would have been
-> noticed by now.
->
-> Just looking at the PKT_* defines, I would wildly guess that PKT_COMMAND
-> PKT_POPEN and PKT_PCLOSE are all being handled via the PKT_COMMAND|default
-> case.  If not, popen and pclose would be leaking a skb for each usage
-> (which would be opening and closing the PVC -- not very often).
->
-> popen and pclose just seem like specialized PKT_COMMAND types.
-> process_command() woud ignore PKT_POPEN and PKT_PCLOSE since they aren't
-> long enough to contain a command.  So maybe the comment should just go
-> away.
->
-> If you had access to hardware you could probably figure this out pretty
-> quickly.  The programmer's manual doesn't seem to be available.
+>>>>> "Christoph" == Christoph Hellwig <hch@lst.de> writes:
 
+Christoph> Factor out command setup code that will be shared with the
+Christoph> blk-mq code path.
 
-Seems based on your ideas , I can remove this FIX ME. I will send a patch
-doing this.
-Cheers Nick
+Reviewed-by: Martin K. Petersen <martin.petersen@oracle.com>
+
+-- 
+Martin K. Petersen	Oracle Linux Engineering
