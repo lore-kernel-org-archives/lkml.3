@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755745AbaGVN1k (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 09:27:40 -0400
-Received: from mga02.intel.com ([134.134.136.20]:45500 "EHLO mga02.intel.com"
+	id S1755945AbaGVN2F (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 09:28:05 -0400
+Received: from mga02.intel.com ([134.134.136.20]:45490 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753206AbaGVNU5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 09:20:57 -0400
+	id S1755312AbaGVNUw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 09:20:52 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,710,1400050800"; 
-   d="scan'208";a="576986012"
+   d="scan'208";a="576985931"
 From: Adrian Hunter <adrian.hunter@intel.com>
 To: Arnaldo Carvalho de Melo <acme@kernel.org>
 Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
@@ -16,9 +16,9 @@ Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
         Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
         Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 32/52] perf tools: Add helpers for calling Python objects
-Date: Tue, 22 Jul 2014 16:17:41 +0300
-Message-Id: <1406035081-14301-33-git-send-email-adrian.hunter@intel.com>
+Subject: [PATCH 29/52] perf inject: Add --kallsyms parameter
+Date: Tue, 22 Jul 2014 16:17:38 +0300
+Message-Id: <1406035081-14301-30-git-send-email-adrian.hunter@intel.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1406035081-14301-1-git-send-email-adrian.hunter@intel.com>
 References: <1406035081-14301-1-git-send-email-adrian.hunter@intel.com>
@@ -27,247 +27,45 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Python script API repeatedly uses the same
-lines of code to get and call objects.  Make that
-into helper functions instead.  A side-effect is
-that some reference counting bugs disappear because
-the new call_object() function always decrements
-the reference count of 'retval'.
+Let perf inject take --kallsyms parameter the same as
+perf script and perf report do.  That is needed for
+decoding Instruction Trace data using a copy of
+/proc/kcore for the kernel object because the kallsyms
+path is used to locate that copy.
 
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 ---
- .../util/scripting-engines/trace-event-python.c    | 114 +++++++++------------
- 1 file changed, 47 insertions(+), 67 deletions(-)
+ tools/perf/Documentation/perf-inject.txt | 3 +++
+ tools/perf/builtin-inject.c              | 2 ++
+ 2 files changed, 5 insertions(+)
 
-diff --git a/tools/perf/util/scripting-engines/trace-event-python.c b/tools/perf/util/scripting-engines/trace-event-python.c
-index cbce254..26e5f14 100644
---- a/tools/perf/util/scripting-engines/trace-event-python.c
-+++ b/tools/perf/util/scripting-engines/trace-event-python.c
-@@ -73,6 +73,35 @@ static void pydict_set_item_string_decref(PyObject *dict, const char *key, PyObj
- 	Py_DECREF(val);
- }
+diff --git a/tools/perf/Documentation/perf-inject.txt b/tools/perf/Documentation/perf-inject.txt
+index a00a342..dc7442c 100644
+--- a/tools/perf/Documentation/perf-inject.txt
++++ b/tools/perf/Documentation/perf-inject.txt
+@@ -41,6 +41,9 @@ OPTIONS
+ 	tasks slept. sched_switch contains a callchain where a task slept and
+ 	sched_stat contains a timeslice how long a task slept.
  
-+static PyObject *get_handler(const char *handler_name)
-+{
-+	PyObject *handler;
++--kallsyms=<file>::
++	kallsyms pathname
 +
-+	handler = PyDict_GetItemString(main_dict, handler_name);
-+	if (handler && !PyCallable_Check(handler))
-+		return NULL;
-+	return handler;
-+}
-+
-+static void call_object(PyObject *handler, PyObject *args, const char *die_msg)
-+{
-+	PyObject *retval;
-+
-+	retval = PyObject_CallObject(handler, args);
-+	if (retval == NULL)
-+		handler_call_die(die_msg);
-+	Py_DECREF(retval);
-+}
-+
-+static void try_call_object(const char *handler_name, PyObject *args)
-+{
-+	PyObject *handler;
-+
-+	handler = get_handler(handler_name);
-+	if (handler)
-+		call_object(handler, args, handler_name);
-+}
-+
- static void define_value(enum print_arg_type field_type,
- 			 const char *ev_name,
- 			 const char *field_name,
-@@ -80,7 +109,7 @@ static void define_value(enum print_arg_type field_type,
- 			 const char *field_str)
- {
- 	const char *handler_name = "define_flag_value";
--	PyObject *handler, *t, *retval;
-+	PyObject *t;
- 	unsigned long long value;
- 	unsigned n = 0;
- 
-@@ -98,13 +127,7 @@ static void define_value(enum print_arg_type field_type,
- 	PyTuple_SetItem(t, n++, PyInt_FromLong(value));
- 	PyTuple_SetItem(t, n++, PyString_FromString(field_str));
- 
--	handler = PyDict_GetItemString(main_dict, handler_name);
--	if (handler && PyCallable_Check(handler)) {
--		retval = PyObject_CallObject(handler, t);
--		if (retval == NULL)
--			handler_call_die(handler_name);
--		Py_DECREF(retval);
--	}
-+	try_call_object(handler_name, t);
- 
- 	Py_DECREF(t);
- }
-@@ -127,7 +150,7 @@ static void define_field(enum print_arg_type field_type,
- 			 const char *delim)
- {
- 	const char *handler_name = "define_flag_field";
--	PyObject *handler, *t, *retval;
-+	PyObject *t;
- 	unsigned n = 0;
- 
- 	if (field_type == PRINT_SYMBOL)
-@@ -145,13 +168,7 @@ static void define_field(enum print_arg_type field_type,
- 	if (field_type == PRINT_FLAGS)
- 		PyTuple_SetItem(t, n++, PyString_FromString(delim));
- 
--	handler = PyDict_GetItemString(main_dict, handler_name);
--	if (handler && PyCallable_Check(handler)) {
--		retval = PyObject_CallObject(handler, t);
--		if (retval == NULL)
--			handler_call_die(handler_name);
--		Py_DECREF(retval);
--	}
-+	try_call_object(handler_name, t);
- 
- 	Py_DECREF(t);
- }
-@@ -362,7 +379,7 @@ static void python_process_tracepoint(struct perf_sample *sample,
- 				      struct thread *thread,
- 				      struct addr_location *al)
- {
--	PyObject *handler, *retval, *context, *t, *obj, *callchain;
-+	PyObject *handler, *context, *t, *obj, *callchain;
- 	PyObject *dict = NULL;
- 	static char handler_name[256];
- 	struct format_field *field;
-@@ -387,9 +404,7 @@ static void python_process_tracepoint(struct perf_sample *sample,
- 
- 	sprintf(handler_name, "%s__%s", event->system, event->name);
- 
--	handler = PyDict_GetItemString(main_dict, handler_name);
--	if (handler && !PyCallable_Check(handler))
--		handler = NULL;
-+	handler = get_handler(handler_name);
- 	if (!handler) {
- 		dict = PyDict_New();
- 		if (!dict)
-@@ -450,19 +465,9 @@ static void python_process_tracepoint(struct perf_sample *sample,
- 		Py_FatalError("error resizing Python tuple");
- 
- 	if (handler) {
--		retval = PyObject_CallObject(handler, t);
--		if (retval == NULL)
--			handler_call_die(handler_name);
--		Py_DECREF(retval);
-+		call_object(handler, t, handler_name);
- 	} else {
--		handler = PyDict_GetItemString(main_dict, "trace_unhandled");
--		if (handler && PyCallable_Check(handler)) {
--
--			retval = PyObject_CallObject(handler, t);
--			if (retval == NULL)
--				handler_call_die("trace_unhandled");
--			Py_DECREF(retval);
--		}
-+		try_call_object("trace_unhandled", t);
- 		Py_DECREF(dict);
- 	}
- 
-@@ -474,7 +479,7 @@ static void python_process_general_event(struct perf_sample *sample,
- 					 struct thread *thread,
- 					 struct addr_location *al)
- {
--	PyObject *handler, *retval, *t, *dict, *callchain, *dict_sample;
-+	PyObject *handler, *t, *dict, *callchain, *dict_sample;
- 	static char handler_name[64];
- 	unsigned n = 0;
- 
-@@ -496,8 +501,8 @@ static void python_process_general_event(struct perf_sample *sample,
- 
- 	snprintf(handler_name, sizeof(handler_name), "%s", "process_event");
- 
--	handler = PyDict_GetItemString(main_dict, handler_name);
--	if (!handler || !PyCallable_Check(handler))
-+	handler = get_handler(handler_name);
-+	if (!handler)
- 		goto exit;
- 
- 	pydict_set_item_string_decref(dict, "ev_name", PyString_FromString(perf_evsel__name(evsel)));
-@@ -539,10 +544,7 @@ static void python_process_general_event(struct perf_sample *sample,
- 	if (_PyTuple_Resize(&t, n) == -1)
- 		Py_FatalError("error resizing Python tuple");
- 
--	retval = PyObject_CallObject(handler, t);
--	if (retval == NULL)
--		handler_call_die(handler_name);
--	Py_DECREF(retval);
-+	call_object(handler, t, handler_name);
- exit:
- 	Py_DECREF(dict);
- 	Py_DECREF(t);
-@@ -566,36 +568,24 @@ static void python_process_event(union perf_event *event __maybe_unused,
- 
- static int run_start_sub(void)
- {
--	PyObject *handler, *retval;
--	int err = 0;
--
- 	main_module = PyImport_AddModule("__main__");
- 	if (main_module == NULL)
- 		return -1;
- 	Py_INCREF(main_module);
- 
- 	main_dict = PyModule_GetDict(main_module);
--	if (main_dict == NULL) {
--		err = -1;
-+	if (main_dict == NULL)
- 		goto error;
--	}
- 	Py_INCREF(main_dict);
- 
--	handler = PyDict_GetItemString(main_dict, "trace_begin");
--	if (handler == NULL || !PyCallable_Check(handler))
--		goto out;
-+	try_call_object("trace_begin", NULL);
- 
--	retval = PyObject_CallObject(handler, NULL);
--	if (retval == NULL)
--		handler_call_die("trace_begin");
-+	return 0;
- 
--	Py_DECREF(retval);
--	return err;
- error:
- 	Py_XDECREF(main_dict);
- 	Py_XDECREF(main_module);
--out:
--	return err;
-+	return -1;
- }
- 
- /*
-@@ -654,23 +644,13 @@ error:
-  */
- static int python_stop_script(void)
- {
--	PyObject *handler, *retval;
--	int err = 0;
-+	try_call_object("trace_end", NULL);
- 
--	handler = PyDict_GetItemString(main_dict, "trace_end");
--	if (handler == NULL || !PyCallable_Check(handler))
--		goto out;
--
--	retval = PyObject_CallObject(handler, NULL);
--	if (retval == NULL)
--		handler_call_die("trace_end");
--	Py_DECREF(retval);
--out:
- 	Py_XDECREF(main_dict);
- 	Py_XDECREF(main_module);
- 	Py_Finalize();
- 
--	return err;
-+	return 0;
- }
- 
- static int python_generate_script(struct pevent *pevent, const char *outfile)
+ SEE ALSO
+ --------
+ linkperf:perf-record[1], linkperf:perf-report[1], linkperf:perf-archive[1]
+diff --git a/tools/perf/builtin-inject.c b/tools/perf/builtin-inject.c
+index ce691c4..af17800 100644
+--- a/tools/perf/builtin-inject.c
++++ b/tools/perf/builtin-inject.c
+@@ -440,6 +440,8 @@ int cmd_inject(int argc, const char **argv, const char *prefix __maybe_unused)
+ 			    "where and how long tasks slept"),
+ 		OPT_INCR('v', "verbose", &verbose,
+ 			 "be more verbose (show build ids, etc)"),
++		OPT_STRING(0, "kallsyms", &symbol_conf.kallsyms_name, "file",
++			   "kallsyms pathname"),
+ 		OPT_END()
+ 	};
+ 	const char * const inject_usage[] = {
 -- 
 1.8.3.2
 
