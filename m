@@ -1,82 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753387AbaGVIGd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 04:06:33 -0400
-Received: from mail.karo-electronics.de ([81.173.242.67]:53927 "EHLO
-	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751937AbaGVIGb convert rfc822-to-8bit (ORCPT
+	id S1753444AbaGVIJA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 04:09:00 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:33132 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752016AbaGVII4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 04:06:31 -0400
-Date: Tue, 22 Jul 2014 10:06:13 +0200
-From: Lothar =?UTF-8?B?V2HDn21hbm4=?= <LW@KARO-electronics.de>
-To: <balbi@ti.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>,
-        Ezequiel Garcia <ezequiel@vanguardiasur.com.ar>,
-        George Cherian <george.cherian@ti.com>,
-        <linux-arm-kernel@lists.infradead.org>, Roger Quadros <rogerq@ti.com>
-Subject: Re: [PATCH 8/9] usb: phy: am335x: call
- usb_gen_phy_init()/usb_gen_phy_shutdown() in
- am335x_init()/am335x_shutdown()
-Message-ID: <20140722100613.779a3e11@ipc1.ka-ro>
-In-Reply-To: <20140721151043.GF6852@saruman.home>
-References: <1405675890-8802-2-git-send-email-LW@KARO-electronics.de>
-	<1405675890-8802-3-git-send-email-LW@KARO-electronics.de>
-	<1405675890-8802-4-git-send-email-LW@KARO-electronics.de>
-	<1405675890-8802-5-git-send-email-LW@KARO-electronics.de>
-	<1405675890-8802-6-git-send-email-LW@KARO-electronics.de>
-	<1405675890-8802-7-git-send-email-LW@KARO-electronics.de>
-	<1405675890-8802-8-git-send-email-LW@KARO-electronics.de>
-	<1405675890-8802-9-git-send-email-LW@KARO-electronics.de>
-	<20140718135713.GH24914@saruman.home>
-	<20140721100307.21172b65@ipc1.ka-ro>
-	<20140721151043.GF6852@saruman.home>
-Organization: Ka-Ro electronics GmbH
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Tue, 22 Jul 2014 04:08:56 -0400
+Date: Tue, 22 Jul 2014 01:07:03 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Sasha Levin <sasha.levin@oracle.com>
+cc: Hugh Dickins <hughd@google.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Vlastimil Babka <vbabka@suse.cz>,
+        Konstantin Khlebnikov <koct9i@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Michel Lespinasse <walken@google.com>,
+        Lukas Czerner <lczerner@redhat.com>, Dave Jones <davej@redhat.com>,
+        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/2] shmem: fix faulting into a hole while it's punched,
+ take 3
+In-Reply-To: <53CDD961.1080006@oracle.com>
+Message-ID: <alpine.LSU.2.11.1407220049140.1980@eggly.anvils>
+References: <alpine.LSU.2.11.1407150247540.2584@eggly.anvils> <53C7F55B.8030307@suse.cz> <53C7F5FF.7010006@oracle.com> <53C8FAA6.9050908@oracle.com> <alpine.LSU.2.11.1407191628450.24073@eggly.anvils> <53CDD961.1080006@oracle.com>
+User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-Felipe Balbi wrote:
-> Hi,,
-> 
-> On Mon, Jul 21, 2014 at 10:03:07AM +0200, Lothar Waßmann wrote:
-> > Hi,
+On Mon, 21 Jul 2014, Sasha Levin wrote:
+> On 07/19/2014 07:44 PM, Hugh Dickins wrote:
+> >> Otherwise, I've been unable to reproduce the shmem_fallocate hang.
+> > Great.  Andrew, I think we can say that it's now safe to send
+> > 1/2 shmem: fix faulting into a hole, not taking i_mutex
+> > 2/2 shmem: fix splicing from a hole while it's punched
+> > on to Linus whenever suits you.
 > > 
-> > > On Fri, Jul 18, 2014 at 11:31:29AM +0200, Lothar Waßmann wrote:
-> > > > This patch makes it possible to use the musb driver with HW that
-> > > > requires external regulators or clocks.
-> > > 
-> > > can you provide an example of such HW ? Are you not using the internal
-> > > PHYs ?
-> > > 
-> > The Ka-Ro electronics TX48 module uses the mmc0_clk pin as VBUSEN
-> > rathern than usb0_drvvbus. This patch makes it possible to use an
-> > external regulator to handle the VBUS switch through the 'vcc-supply'
-> > property of the underlying generic_phy device.
+> > (You have some other patches in the mainline-later section of the
+> > mmotm/series file: they're okay too, but not in doubt as these two were.)
 > 
-> OK, I get it now. But why would not use usb0_drvvbus ? You could still
-> route usb0_drvvbus to the regulator enable pin and the regulator would
-> be enabled for you once correct values are written to the IP's mailbox.
+> I think we may need to hold off on sending them...
 > 
-> I suppose this has something to do with layout constraints ?
+> It seems that this code in shmem_fault():
 > 
-Yes. The usb0_drvvbus is used for a different purpose.
+> 	/*
+> 	 * shmem_falloc_waitq points into the shmem_fallocate()
+> 	 * stack of the hole-punching task: shmem_falloc_waitq
+> 	 * is usually invalid by the time we reach here, but
+> 	 * finish_wait() does not dereference it in that case;
+> 	 * though i_lock needed lest racing with wake_up_all().
+> 	 */
+> 	spin_lock(&inode->i_lock);
+> 	finish_wait(shmem_falloc_waitq, &shmem_fault_wait);
+> 	spin_unlock(&inode->i_lock);
+> 
+> Is problematic. I'm not sure what changed, but it seems to be causing everything
+> from NULL ptr derefs:
+> 
+> [  169.922536] BUG: unable to handle kernel NULL pointer dereference at 0000000000000631
+> 
+> To memory corruptions:
+> 
+> [ 1031.264226] BUG: spinlock bad magic on CPU#1, trinity-c99/25740
+> 
+> And hangs:
+> 
+> [  212.010020] INFO: rcu_preempt detected stalls on CPUs/tasks:
 
+Ugh.
 
-Lothar Waßmann
--- 
-___________________________________________________________
+I'm so tired of this, I'm flailing around here, and could use some help.
 
-Ka-Ro electronics GmbH | Pascalstraße 22 | D - 52076 Aachen
-Phone: +49 2408 1402-0 | Fax: +49 2408 1402-10
-Geschäftsführer: Matthias Kaussen
-Handelsregistereintrag: Amtsgericht Aachen, HRB 4996
+But there is one easy change which might do it: please would you try
+changing the TASK_KILLABLE a few lines above to TASK_UNINTERRUPTIBLE.
 
-www.karo-electronics.de | info@karo-electronics.de
-___________________________________________________________
+I noticed when deciding on the i_lock'ing there, that a lot of the
+difficulty in races between the two ends, came from allowing KILLABLE
+at the faulting end.  Which was a nice courtesy, but one I'll gladly
+give up on now, if it is responsible for these troubles.
+
+Please give it a try, I don't know what else to suggest.  And I've
+no idea why the problem should emerge only now.  If this change
+does appear to fix it, please go back and forth with and without,
+to gather confidence that the problem is still reproducible without
+the fix.  If fix it turns out to be - touch wood.
+
+Thanks,
+Hugh
