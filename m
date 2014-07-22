@@ -1,118 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756007AbaGVPlh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 11:41:37 -0400
-Received: from mail-vc0-f180.google.com ([209.85.220.180]:33823 "EHLO
-	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755351AbaGVPlf (ORCPT
+	id S1756053AbaGVPmT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 11:42:19 -0400
+Received: from mail-qa0-f50.google.com ([209.85.216.50]:53549 "EHLO
+	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751391AbaGVPmS convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 11:41:35 -0400
+	Tue, 22 Jul 2014 11:42:18 -0400
 MIME-Version: 1.0
-In-Reply-To: <53CD424B.1090806@ti.com>
-References: <1405696469-7172-1-git-send-email-m-karicheri2@ti.com>
- <1405696469-7172-5-git-send-email-m-karicheri2@ti.com> <CAL_JsqKheoWrSGtxPO=AE8g9iOAqfwRa=81Ku=Cfx8_gpDysOg@mail.gmail.com>
- <53C9839C.5090604@ti.com> <006001cfa485$4f4fcff0$edef6fd0$%han@samsung.com> <53CD424B.1090806@ti.com>
-From: Rob Herring <robherring2@gmail.com>
-Date: Tue, 22 Jul 2014 10:41:12 -0500
-Message-ID: <CAL_JsqJXb28RHhZG9=-NACwAr1ooGhfMOPjtsTGO2s3Dx7ayxQ@mail.gmail.com>
-Subject: Re: [PATCH v6 4/5] PCI: add PCI controller for keystone PCIe h/w
-To: Murali Karicheri <m-karicheri2@ti.com>
-Cc: Jingoo Han <jg1.han@samsung.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Mohit Kumar <mohit.kumar@st.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Pratyush Anand <pratyush.anand@st.com>,
-        Richard Zhu <r65037@freescale.com>,
-        Kishon Vijay Abraham I <kishon@ti.com>, Marek Vasut <marex@denx.de>,
-        Arnd Bergmann <arnd@arndb.de>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Randy Dunlap <rdunlap@infradead.org>
+In-Reply-To: <CAKMK7uESXrDtCov8whOTsffg6eZdibF4qaTFaCubM=mnhN=gNQ@mail.gmail.com>
+References: <20140709093124.11354.3774.stgit@patser>
+	<20140709122953.11354.46381.stgit@patser>
+	<CAPM=9tyD2ZbrcGDC3hfNb7qNdzsfnyD-ZwM7G-nOgxeu5YKuSg@mail.gmail.com>
+	<53CE2421.5040906@amd.com>
+	<20140722114607.GL15237@phenom.ffwll.local>
+	<20140722115737.GN15237@phenom.ffwll.local>
+	<53CE56ED.4040109@vodafone.de>
+	<53CE6FB0.90500@canonical.com>
+	<53CE7410.3090603@amd.com>
+	<53CE74B5.3000201@canonical.com>
+	<53CE77B4.6020801@amd.com>
+	<CAKMK7uESXrDtCov8whOTsffg6eZdibF4qaTFaCubM=mnhN=gNQ@mail.gmail.com>
+Date: Tue, 22 Jul 2014 11:42:17 -0400
+Message-ID: <CADnq5_Moy78A5JfDM0LME6_-48PW72DJpYYvEthQ5b=_amU8KQ@mail.gmail.com>
+Subject: Re: [PATCH 09/17] drm/radeon: use common fence implementation for fences
+From: Alex Deucher <alexdeucher@gmail.com>
+To: Daniel Vetter <daniel@ffwll.ch>
+Cc: =?UTF-8?Q?Christian_K=C3=B6nig?= <christian.koenig@amd.com>,
+        Thomas Hellstrom <thellstrom@vmware.com>,
+        nouveau <nouveau@lists.freedesktop.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        dri-devel <dri-devel@lists.freedesktop.org>,
+        "Deucher, Alexander" <alexander.deucher@amd.com>,
+        Ben Skeggs <bskeggs@redhat.com>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 21, 2014 at 11:39 AM, Murali Karicheri <m-karicheri2@ti.com> wrote:
-> On 07/20/2014 09:44 PM, Jingoo Han wrote:
+On Tue, Jul 22, 2014 at 11:19 AM, Daniel Vetter <daniel@ffwll.ch> wrote:
+> On Tue, Jul 22, 2014 at 4:39 PM, Christian König
+> <christian.koenig@amd.com> wrote:
+>> Am 22.07.2014 16:27, schrieb Maarten Lankhorst:
 >>
->> On Saturday, July 19, 2014 5:29 AM, Murali Karicheri wrote:
->>>
->>> On 07/18/2014 03:31 PM, Rob Herring wrote:
->>>>
->>>> On Fri, Jul 18, 2014 at 10:14 AM, Murali Karicheri<m-karicheri2@ti.com>
->>>> wrote:
->>>
->>> --- Cut ---
+>>> op 22-07-14 16:24, Christian König schreef:
 >>>>>
->>>>> +
->>>>> +Optional properties:-
->>>>> +       phys: phandle to Generic Keystone SerDes phy for PCI
->>>>> +       phy-names: name of the Generic Keystine SerDes phy for PCI
->>>>> +         - If boot loader already does PCI link establishment, then
->>>>> phys and
->>>>> +           phy-names shouldn't be present.
->>>>> +       ti,enable-linktrain - Enable Link training.
->>>>> +         - If boot loader already does PCI link establishment, then
->>>>> this
->>>>> +           shouldn't be present.
+>>>>> No, you really shouldn't be doing much in the check anyway, it's meant
+>>>>> to be a lightweight check. If you're not ready yet because of a lockup
+>>>>> simply return not signaled yet.
 >>>>
+>>>> It's not only the lockup case from radeon I have in mind here. For
+>>>> userspace queues it might be necessary to call copy_from_user to figure out
+>>>> if a fence is signaled or not.
 >>>>
->>>> Can't you read from the h/w if the link is trained?
->>
->>
->> I agree with Rob Herring's suggestion.
->>
+>>>> Returning false all the time is probably not a good idea either.
 >>>
->>> Yes.
->>>
->>> There are customers who use this driver with PCI Link setup done in the
->>> boot loader. This property tells the driver to bypass Link setup
->>> procedure in that case. Is this undesirable and if so. how other
->>> platforms handle it? Check first if link is trained or start the link
->>> setup procedure? Let me know. If this is fine, please provide your Ack.
+>>> Having userspace implement a fence sounds like an awful idea, why would
+>>> you want to do that?
 >>
 >>
->> Please, check the following code of Exynos PCIe diver.
->>
->> ./drivers/pci/host/pci-exynos.c
->>
->> static int exynos_pcie_establish_link(struct pcie_port *pp)
->> {
->>         struct exynos_pcie *exynos_pcie = to_exynos_pcie(pp);
->>         void __iomem *elbi_base = exynos_pcie->elbi_base;
->>         void __iomem *pmu_base = exynos_pcie->pmu_base;
->>
->>         if (dw_pcie_link_up(pp)) {
->>                 dev_err(pp->dev, "Link already up\n");
->>                 return 0;
->>         }
->>         .....
->>
->> In the case of Exynos PCIe, the Exynos PCIe driver checks the
->> h/w bit such as PCIE_ELBI_LTSSM_ENABLE bit of PCIE_ELBI_RDLH_LINKUP
->> offset register.
->>
->> If the link is already set up by the boot loader or other reasons,
->> the driver will skip some initialization codes.
->>
->> The first step is that you find such h/w bit for checking link up.
->> If so, please add the code for skipping, when the link is already
->> set up.
->>
-> Rob, Jingoo,
+>> Marketing moves in mysterious ways. Don't ask me, but that the direction it
+>> currently moves with userspace queues and IOMMU etc...
 >
-> We have similar bit to check for Link status and I have removed the DT
-> property and skip Link retrain if PCIe Link is already Up. I will be
-> resending the series with Patch 4/5 updated.
+> Fence-based syncing between userspace queues submitted stuff through
+> doorbells and anything submitted by the general simply wont work.
+> Which is why I think the doorbell is a stupid interface since I just
+> don't see cameras and v4l devices implementing all that complexity to
+> get a pure userspace side sync solution.
+>
 
-For both keystone and exynos, is this status bit in the phy? If so,
-sounds like this should be a standard phy function op.
+Like it or not this is what a lot of application writers want (look at
+mantle and metal and similar new APIs or android synpts).  Having
+queues and fences in userspace allows the application to structure
+things to best fit their own task graphs.  The app can decide how to
+deal with dependencies and synchronization explicitly instead of
+blocking the queues in the kernel for everyone.  Anyway, this is
+getting off topic.
 
-Rob
+Alex
