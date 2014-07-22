@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756852AbaGVUJY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 16:09:24 -0400
-Received: from relay6-d.mail.gandi.net ([217.70.183.198]:59113 "EHLO
+	id S1756886AbaGVUJp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 16:09:45 -0400
+Received: from relay6-d.mail.gandi.net ([217.70.183.198]:46995 "EHLO
 	relay6-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756817AbaGVUJD (ORCPT
+	with ESMTP id S1756803AbaGVUJC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 16:09:03 -0400
+	Tue, 22 Jul 2014 16:09:02 -0400
 X-Originating-IP: 78.210.48.61
 From: Guillaume Clement <gclement@baobob.org>
 To: Forest Bond <forest@alittletooquiet.net>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         Guillaume Clement <gclement@baobob.org>
-Subject: [PATCH 4/5] staging: vt6655: remove unused functions
-Date: Tue, 22 Jul 2014 22:08:29 +0200
-Message-Id: <1406059710-30903-5-git-send-email-gclement@baobob.org>
+Subject: [PATCH 3/5] staging: vt6655: statify some variables
+Date: Tue, 22 Jul 2014 22:08:28 +0200
+Message-Id: <1406059710-30903-4-git-send-email-gclement@baobob.org>
 X-Mailer: git-send-email 1.8.5.5
 In-Reply-To: <1406059710-30903-1-git-send-email-gclement@baobob.org>
 References: <1406059710-30903-1-git-send-email-gclement@baobob.org>
@@ -23,215 +23,222 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The IEEE11hbMgrRxAction is not exported and never used. Deleting it
-allows to delete other functions that were only used by
-IEEE11hbMgrRxAction.
-
-This allows to fix several warnings reported by sparse.
+Some variables are used only in the context of their .c file, which
+gives warnings with sparse.
 
 Signed-off-by: Guillaume Clement <gclement@baobob.org>
 ---
- drivers/staging/vt6655/IEEE11h.c | 175 ---------------------------------------
- 1 file changed, 175 deletions(-)
+ drivers/staging/vt6655/baseband.c    | 14 +++++++-------
+ drivers/staging/vt6655/bssdb.c       |  4 ++--
+ drivers/staging/vt6655/card.c        |  6 +++---
+ drivers/staging/vt6655/device_main.c |  4 ++--
+ drivers/staging/vt6655/wcmd.c        |  2 +-
+ drivers/staging/vt6655/wmgr.c        | 10 +++++-----
+ 6 files changed, 20 insertions(+), 20 deletions(-)
 
-diff --git a/drivers/staging/vt6655/IEEE11h.c b/drivers/staging/vt6655/IEEE11h.c
-index 6cfad1c..180a27c 100644
---- a/drivers/staging/vt6655/IEEE11h.c
-+++ b/drivers/staging/vt6655/IEEE11h.c
-@@ -41,7 +41,6 @@
- #include "channel.h"
- 
- /*---------------------  Static Definitions -------------------------*/
--static int          msglevel                = MSG_LEVEL_INFO;
- 
- #pragma pack(1)
- 
-@@ -98,185 +97,11 @@ typedef struct _WLAN_FRAME_TPCREP {
+diff --git a/drivers/staging/vt6655/baseband.c b/drivers/staging/vt6655/baseband.c
+index 0985563..67bc3b4 100644
+--- a/drivers/staging/vt6655/baseband.c
++++ b/drivers/staging/vt6655/baseband.c
+@@ -75,7 +75,7 @@ static int msglevel = MSG_LEVEL_INFO;
  /*---------------------  Static Variables  --------------------------*/
  
+ #define CB_VT3253_INIT_FOR_RFMD 446
+-unsigned char byVT3253InitTab_RFMD[CB_VT3253_INIT_FOR_RFMD][2] = {
++static unsigned char byVT3253InitTab_RFMD[CB_VT3253_INIT_FOR_RFMD][2] = {
+ 	{0x00, 0x30},
+ 	{0x01, 0x00},
+ 	{0x02, 0x00},
+@@ -525,7 +525,7 @@ unsigned char byVT3253InitTab_RFMD[CB_VT3253_INIT_FOR_RFMD][2] = {
+ };
+ 
+ #define CB_VT3253B0_INIT_FOR_RFMD 256
+-unsigned char byVT3253B0_RFMD[CB_VT3253B0_INIT_FOR_RFMD][2] = {
++static unsigned char byVT3253B0_RFMD[CB_VT3253B0_INIT_FOR_RFMD][2] = {
+ 	{0x00, 0x31},
+ 	{0x01, 0x00},
+ 	{0x02, 0x00},
+@@ -786,7 +786,7 @@ unsigned char byVT3253B0_RFMD[CB_VT3253B0_INIT_FOR_RFMD][2] = {
+ 
+ #define CB_VT3253B0_AGC_FOR_RFMD2959 195
+ /* For RFMD2959 */
+-unsigned char byVT3253B0_AGC4_RFMD2959[CB_VT3253B0_AGC_FOR_RFMD2959][2] = {
++static unsigned char byVT3253B0_AGC4_RFMD2959[CB_VT3253B0_AGC_FOR_RFMD2959][2] = {
+ 	{0xF0, 0x00},
+ 	{0xF1, 0x3E},
+ 	{0xF0, 0x80},
+@@ -986,7 +986,7 @@ unsigned char byVT3253B0_AGC4_RFMD2959[CB_VT3253B0_AGC_FOR_RFMD2959][2] = {
+ 
+ #define CB_VT3253B0_INIT_FOR_AIROHA2230 256
+ /* For AIROHA */
+-unsigned char byVT3253B0_AIROHA2230[CB_VT3253B0_INIT_FOR_AIROHA2230][2] = {
++static unsigned char byVT3253B0_AIROHA2230[CB_VT3253B0_INIT_FOR_AIROHA2230][2] = {
+ 	{0x00, 0x31},
+ 	{0x01, 0x00},
+ 	{0x02, 0x00},
+@@ -1247,7 +1247,7 @@ unsigned char byVT3253B0_AIROHA2230[CB_VT3253B0_INIT_FOR_AIROHA2230][2] = {
+ 
+ #define CB_VT3253B0_INIT_FOR_UW2451 256
+ /* For UW2451 */
+-unsigned char byVT3253B0_UW2451[CB_VT3253B0_INIT_FOR_UW2451][2] = {
++static unsigned char byVT3253B0_UW2451[CB_VT3253B0_INIT_FOR_UW2451][2] = {
+ 	{0x00, 0x31},
+ 	{0x01, 0x00},
+ 	{0x02, 0x00},
+@@ -1508,7 +1508,7 @@ unsigned char byVT3253B0_UW2451[CB_VT3253B0_INIT_FOR_UW2451][2] = {
+ 
+ #define CB_VT3253B0_AGC 193
+ /* For AIROHA */
+-unsigned char byVT3253B0_AGC[CB_VT3253B0_AGC][2] = {
++static unsigned char byVT3253B0_AGC[CB_VT3253B0_AGC][2] = {
+ 	{0xF0, 0x00},
+ 	{0xF1, 0x00},
+ 	{0xF0, 0x80},
+@@ -1704,7 +1704,7 @@ unsigned char byVT3253B0_AGC[CB_VT3253B0_AGC][2] = {
+ 	{0xF0, 0x00},
+ };
+ 
+-const unsigned short awcFrameTime[MAX_RATE] =
++static const unsigned short awcFrameTime[MAX_RATE] =
+ {10, 20, 55, 110, 24, 36, 48, 72, 96, 144, 192, 216};
+ 
  /*---------------------  Static Functions  --------------------------*/
--static bool s_bRxMSRReq(PSMgmtObject pMgmt, PWLAN_FRAME_MSRREQ pMSRReq,
--			unsigned int uLength)
--{
--	size_t    uNumOfEIDs = 0;
--	bool bResult = true;
--
--	if (uLength <= WLAN_A3FR_MAXLEN)
--		memcpy(pMgmt->abyCurrentMSRReq, pMSRReq, uLength);
--	uNumOfEIDs = ((uLength - offsetof(WLAN_FRAME_MSRREQ,
--					  sMSRReqEIDs))/
--		      (sizeof(WLAN_IE_MEASURE_REQ)));
--	pMgmt->pCurrMeasureEIDRep = &(((PWLAN_FRAME_MSRREP)
--				       (pMgmt->abyCurrentMSRRep))->sMSRRepEIDs[0]);
--	pMgmt->uLengthOfRepEIDs = 0;
--	bResult = CARDbStartMeasure(pMgmt->pAdapter,
--				    ((PWLAN_FRAME_MSRREQ)
--				     (pMgmt->abyCurrentMSRReq))->sMSRReqEIDs,
--				    uNumOfEIDs
--);
--	return bResult;
--}
--
--static bool s_bRxTPCReq(PSMgmtObject pMgmt,
--			PWLAN_FRAME_TPCREQ pTPCReq,
--			unsigned char byRate,
--			unsigned char byRSSI)
--{
--	PWLAN_FRAME_TPCREP  pFrame;
--	PSTxMgmtPacket      pTxPacket = NULL;
--
--	pTxPacket = (PSTxMgmtPacket)pMgmt->pbyMgmtPacketPool;
--	memset(pTxPacket, 0, sizeof(STxMgmtPacket) + WLAN_A3FR_MAXLEN);
--	pTxPacket->p80211Header = (PUWLAN_80211HDR)((unsigned char *)pTxPacket +
--						    sizeof(STxMgmtPacket));
--
--	pFrame = (PWLAN_FRAME_TPCREP)((unsigned char *)pTxPacket +
--				      sizeof(STxMgmtPacket));
--
--	pFrame->Header.wFrameCtl = (WLAN_SET_FC_FTYPE(WLAN_FTYPE_MGMT) |
--				    WLAN_SET_FC_FSTYPE(WLAN_FSTYPE_ACTION)
--);
--
--	memcpy(pFrame->Header.abyAddr1,
--	       pTPCReq->Header.abyAddr2,
--	       WLAN_ADDR_LEN);
--	memcpy(pFrame->Header.abyAddr2,
--	       CARDpGetCurrentAddress(pMgmt->pAdapter),
--	       WLAN_ADDR_LEN);
--	memcpy(pFrame->Header.abyAddr3,
--	       pMgmt->abyCurrBSSID,
--	       WLAN_BSSID_LEN);
--
--	pFrame->byCategory = 0;
--	pFrame->byAction = 3;
--	pFrame->byDialogToken = ((PWLAN_FRAME_MSRREQ)
--				 (pMgmt->abyCurrentMSRReq))->byDialogToken;
--
--	pFrame->sTPCRepEIDs.byElementID = WLAN_EID_TPC_REP;
--	pFrame->sTPCRepEIDs.len = 2;
--	pFrame->sTPCRepEIDs.byTxPower = CARDbyGetTransmitPower(pMgmt->pAdapter);
--	switch (byRate) {
--	case RATE_54M:
--		pFrame->sTPCRepEIDs.byLinkMargin = 65 - byRSSI;
--		break;
--	case RATE_48M:
--		pFrame->sTPCRepEIDs.byLinkMargin = 66 - byRSSI;
--		break;
--	case RATE_36M:
--		pFrame->sTPCRepEIDs.byLinkMargin = 70 - byRSSI;
--		break;
--	case RATE_24M:
--		pFrame->sTPCRepEIDs.byLinkMargin = 74 - byRSSI;
--		break;
--	case RATE_18M:
--		pFrame->sTPCRepEIDs.byLinkMargin = 77 - byRSSI;
--		break;
--	case RATE_12M:
--		pFrame->sTPCRepEIDs.byLinkMargin = 79 - byRSSI;
--		break;
--	case RATE_9M:
--		pFrame->sTPCRepEIDs.byLinkMargin = 81 - byRSSI;
--		break;
--	case RATE_6M:
--	default:
--		pFrame->sTPCRepEIDs.byLinkMargin = 82 - byRSSI;
--		break;
--	}
--
--	pTxPacket->cbMPDULen = sizeof(WLAN_FRAME_TPCREP);
--	pTxPacket->cbPayloadLen = sizeof(WLAN_FRAME_TPCREP) -
--		WLAN_HDR_ADDR3_LEN;
--	if (csMgmt_xmit(pMgmt->pAdapter, pTxPacket) != CMD_STATUS_PENDING)
--		return false;
--	return true;
--}
+diff --git a/drivers/staging/vt6655/bssdb.c b/drivers/staging/vt6655/bssdb.c
+index 59679cd..eb3474d 100644
+--- a/drivers/staging/vt6655/bssdb.c
++++ b/drivers/staging/vt6655/bssdb.c
+@@ -65,14 +65,14 @@
+ /*---------------------  Static Variables  --------------------------*/
+ static int msglevel = MSG_LEVEL_INFO;
  
- /*---------------------  Export Variables  --------------------------*/
+-const unsigned short awHWRetry0[5][5] = {
++static const unsigned short awHWRetry0[5][5] = {
+ 	{RATE_18M, RATE_18M, RATE_12M, RATE_12M, RATE_12M},
+ 	{RATE_24M, RATE_24M, RATE_18M, RATE_12M, RATE_12M},
+ 	{RATE_36M, RATE_36M, RATE_24M, RATE_18M, RATE_18M},
+ 	{RATE_48M, RATE_48M, RATE_36M, RATE_24M, RATE_24M},
+ 	{RATE_54M, RATE_54M, RATE_48M, RATE_36M, RATE_36M}
+ };
+-const unsigned short awHWRetry1[5][5] = {
++static const unsigned short awHWRetry1[5][5] = {
+ 	{RATE_18M, RATE_18M, RATE_12M, RATE_6M, RATE_6M},
+ 	{RATE_24M, RATE_24M, RATE_18M, RATE_6M, RATE_6M},
+ 	{RATE_36M, RATE_36M, RATE_24M, RATE_12M, RATE_12M},
+diff --git a/drivers/staging/vt6655/card.c b/drivers/staging/vt6655/card.c
+index 988858b..e29dcd8 100644
+--- a/drivers/staging/vt6655/card.c
++++ b/drivers/staging/vt6655/card.c
+@@ -87,7 +87,7 @@ static unsigned char abyDefaultSuppRatesB[] = {WLAN_EID_SUPP_RATES, 4, 0x02, 0x0
  
- /*---------------------  Export Functions  --------------------------*/
+ /*---------------------  Static Variables  --------------------------*/
  
--/*+
-- *
-- * Description:
-- *      Handles action management frames.
-- *
-- * Parameters:
-- *  In:
-- *      pMgmt           - Management Object structure
-- *      pRxPacket       - Received packet
-- *  Out:
-- *      none
-- *
-- * Return Value: None.
-- *
-- -*/
--bool
--IEEE11hbMgrRxAction(void *pMgmtHandle, void *pRxPacket)
--{
--	PSMgmtObject            pMgmt = (PSMgmtObject) pMgmtHandle;
--	PWLAN_FRAME_ACTION      pAction = NULL;
--	unsigned int uLength = 0;
--	PWLAN_IE_CH_SW          pChannelSwitch = NULL;
--
--	/* decode the frame */
--	uLength = ((PSRxMgmtPacket)pRxPacket)->cbMPDULen;
--	if (uLength > WLAN_A3FR_MAXLEN)
--		return false;
--
--	pAction = (PWLAN_FRAME_ACTION)
--		(((PSRxMgmtPacket)pRxPacket)->p80211Header);
--
--	if (pAction->byCategory == 0) {
--		switch (pAction->byAction) {
--		case ACTION_MSRREQ:
--			return s_bRxMSRReq(pMgmt,
--					   (PWLAN_FRAME_MSRREQ)
--					   pAction,
--					   uLength);
--			break;
--		case ACTION_MSRREP:
--			break;
--		case ACTION_TPCREQ:
--			return s_bRxTPCReq(pMgmt,
--					   (PWLAN_FRAME_TPCREQ) pAction,
--					   ((PSRxMgmtPacket)pRxPacket)->byRxRate,
--					   (unsigned char)
--					   ((PSRxMgmtPacket)pRxPacket)->uRSSI);
--			break;
--		case ACTION_TPCREP:
--			break;
--		case ACTION_CHSW:
--			pChannelSwitch = (PWLAN_IE_CH_SW) (pAction->abyVars);
--			if ((pChannelSwitch->byElementID == WLAN_EID_CH_SWITCH)
--			    && (pChannelSwitch->len == 3)) {
--				/* valid element id */
--				CARDbChannelSwitch(pMgmt->pAdapter,
--						   pChannelSwitch->byMode,
--						   get_channel_mapping(pMgmt->pAdapter,
--								       pChannelSwitch->byChannel,
--								       pMgmt->eCurrentPHYMode),
--						   pChannelSwitch->byCount);
--			}
--			break;
--		default:
--			DBG_PRT(MSG_LEVEL_DEBUG,
--				KERN_INFO "Unknown Action = %d\n",
--				pAction->byAction);
--			break;
--		}
--	} else {
--		DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "Unknown Category = %d\n",
--			pAction->byCategory);
--		pAction->byCategory |= 0x80;
--
--		return true;
--	}
--	return true;
--}
--
- bool IEEE11hbMSRRepTx(void *pMgmtHandle)
+-const unsigned short cwRXBCNTSFOff[MAX_RATE] =
++static const unsigned short cwRXBCNTSFOff[MAX_RATE] =
+ {17, 17, 17, 17, 34, 23, 17, 11, 8, 5, 4, 3};
+ 
+ /*---------------------  Static Functions  --------------------------*/
+@@ -1576,7 +1576,7 @@ CARDvSafeResetRx(
+  * Return Value: response Control frame rate
+  *
+  */
+-unsigned short CARDwGetCCKControlRate(void *pDeviceHandler, unsigned short wRateIdx)
++static unsigned short CARDwGetCCKControlRate(void *pDeviceHandler, unsigned short wRateIdx)
  {
- 	PSMgmtObject            pMgmt = (PSMgmtObject) pMgmtHandle;
+ 	PSDevice    pDevice = (PSDevice) pDeviceHandler;
+ 	unsigned int ui = (unsigned int) wRateIdx;
+@@ -1603,7 +1603,7 @@ unsigned short CARDwGetCCKControlRate(void *pDeviceHandler, unsigned short wRate
+  * Return Value: response Control frame rate
+  *
+  */
+-unsigned short CARDwGetOFDMControlRate(void *pDeviceHandler, unsigned short wRateIdx)
++static unsigned short CARDwGetOFDMControlRate(void *pDeviceHandler, unsigned short wRateIdx)
+ {
+ 	PSDevice pDevice = (PSDevice) pDeviceHandler;
+ 	unsigned int ui = (unsigned int) wRateIdx;
+diff --git a/drivers/staging/vt6655/device_main.c b/drivers/staging/vt6655/device_main.c
+index 4dcdfca..5576c30 100644
+--- a/drivers/staging/vt6655/device_main.c
++++ b/drivers/staging/vt6655/device_main.c
+@@ -260,7 +260,7 @@ static CHIP_INFO chip_info_table[] = {
+ 	{0, NULL}
+ };
+ 
+-const struct pci_device_id vt6655_pci_id_table[] = {
++static const struct pci_device_id vt6655_pci_id_table[] = {
+ 	{ PCI_VDEVICE(VIA, 0x3253), (kernel_ulong_t)chip_info_table},
+ 	{ 0, }
+ };
+@@ -285,7 +285,7 @@ static int  device_ioctl(struct net_device *dev, struct ifreq *rq, int cmd);
+ static int device_notify_reboot(struct notifier_block *, unsigned long event, void *ptr);
+ static int viawget_suspend(struct pci_dev *pcid, pm_message_t state);
+ static int viawget_resume(struct pci_dev *pcid);
+-struct notifier_block device_notifier = {
++static struct notifier_block device_notifier = {
+ 	.notifier_call = device_notify_reboot,
+ 	.next = NULL,
+ 	.priority = 0,
+diff --git a/drivers/staging/vt6655/wcmd.c b/drivers/staging/vt6655/wcmd.c
+index a689645..a379cec 100644
+--- a/drivers/staging/vt6655/wcmd.c
++++ b/drivers/staging/vt6655/wcmd.c
+@@ -234,7 +234,7 @@ s_vProbeChannel(
+  *
+  -*/
+ 
+-PSTxMgmtPacket
++static PSTxMgmtPacket
+ s_MgrMakeProbeRequest(
+ 	PSDevice pDevice,
+ 	PSMgmtObject pMgmt,
+diff --git a/drivers/staging/vt6655/wmgr.c b/drivers/staging/vt6655/wmgr.c
+index cc4f5b9..9853a8f 100644
+--- a/drivers/staging/vt6655/wmgr.c
++++ b/drivers/staging/vt6655/wmgr.c
+@@ -3144,7 +3144,7 @@ s_MgrMakeBeacon(
+  *
+  -*/
+ 
+-PSTxMgmtPacket
++static PSTxMgmtPacket
+ s_MgrMakeProbeResponse(
+ 	PSDevice pDevice,
+ 	PSMgmtObject pMgmt,
+@@ -3326,7 +3326,7 @@ s_MgrMakeProbeResponse(
+  *
+  -*/
+ 
+-PSTxMgmtPacket
++static PSTxMgmtPacket
+ s_MgrMakeAssocRequest(
+ 	PSDevice pDevice,
+ 	PSMgmtObject pMgmt,
+@@ -3586,7 +3586,7 @@ s_MgrMakeAssocRequest(
+  *
+  -*/
+ 
+-PSTxMgmtPacket
++static PSTxMgmtPacket
+ s_MgrMakeReAssocRequest(
+ 	PSDevice pDevice,
+ 	PSMgmtObject pMgmt,
+@@ -3831,7 +3831,7 @@ s_MgrMakeReAssocRequest(
+  *
+  -*/
+ 
+-PSTxMgmtPacket
++static PSTxMgmtPacket
+ s_MgrMakeAssocResponse(
+ 	PSDevice pDevice,
+ 	PSMgmtObject pMgmt,
+@@ -3902,7 +3902,7 @@ s_MgrMakeAssocResponse(
+  *
+  -*/
+ 
+-PSTxMgmtPacket
++static PSTxMgmtPacket
+ s_MgrMakeReAssocResponse(
+ 	PSDevice pDevice,
+ 	PSMgmtObject pMgmt,
 -- 
 1.8.5.5
 
