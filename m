@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752673AbaGVNoh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 09:44:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50555 "EHLO mx1.redhat.com"
+	id S1754472AbaGVNpF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 09:45:05 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51802 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750930AbaGVNof (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 09:44:35 -0400
+	id S1752798AbaGVNpB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 09:45:01 -0400
 From: "Jerome Marchand" <jmarchan@redhat.com>
 To: linux-mm@kvack.org
 Cc: linux-kernel@vger.kernel.org, linux-s390@vger.kernel.org,
@@ -16,65 +16,87 @@ Cc: linux-kernel@vger.kernel.org, linux-s390@vger.kernel.org,
         Heiko Carstens <heiko.carstens@de.ibm.com>,
         Martin Schwidefsky <schwidefsky@de.ibm.com>,
         Randy Dunlap <rdunlap@infradead.org>
-Subject: [PATCH RESEND 0/5] mm, shmem: Enhance per-process accounting of shared memory
-Date: Tue, 22 Jul 2014 15:43:47 +0200
-Message-Id: <1406036632-26552-1-git-send-email-jmarchan@redhat.com>
+Subject: [PATCH 2/5] mm, shmem: Add shmem_locate function
+Date: Tue, 22 Jul 2014 15:43:49 +0200
+Message-Id: <1406036632-26552-3-git-send-email-jmarchan@redhat.com>
+In-Reply-To: <1406036632-26552-1-git-send-email-jmarchan@redhat.com>
+References: <1406036632-26552-1-git-send-email-jmarchan@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are several shortcomings with the accounting of shared memory
-(sysV shm, shared anonymous mapping, mapping to a tmpfs file). The
-values in /proc/<pid>/status and statm don't allow to distinguish
-between shmem memory and a shared mapping to a regular file, even
-though theirs implication on memory usage are quite different: at
-reclaim, file mapping can be dropped or write back on disk while shmem
-needs a place in swap. As for shmem pages that are swapped-out or in
-swap cache, they aren't accounted at all.
+The shmem subsytem is kind of a black box: the generic mm code can't
+always know where a specific page physically is. This patch adds the
+shmem_locate() function to find out the physical location of shmem
+pages (resident, in swap or swapcache). If the optional argument count
+isn't NULL and the page is resident, it also returns the mapcount value
+of this page.
+This is intended to allow finer accounting of shmem/tmpfs pages.
 
-This series addresses these issues by adding new fields to status and
-smaps file in /proc/<pid>/. The accounting of resident shared memory is
-made in the same way as it's currently done for resident memory and
-general swap (a counter in mm_rss_stat), but this approach proved
-impractical for paged-out shared memory (it would requires a rmap walk
-each time a page is paged-in).
+Signed-off-by: Jerome Marchand <jmarchan@redhat.com>
+---
+ include/linux/mm.h |  7 +++++++
+ mm/shmem.c         | 29 +++++++++++++++++++++++++++++
+ 2 files changed, 36 insertions(+)
 
-/proc/<pid>/smaps also lacks proper accounting of shared memory since
-shmem subsystem hides all implementation detail to generic mm code.
-This series adds the shmem_locate() function that returns the location
-of a particular page (resident, in swap or swap cache). Called from
-smaps code, it allows to show more detailled accounting of shmem
-mappings in smaps.
-
-Patch 1 adds a counter to keep track of resident shmem memory.
-Patch 2 adds a function to allow generic code to know the physical
-location of a shmem page.
-Patch 3 adds simple helper function.
-Patch 4 accounts swapped-out shmem in /proc/<pid>/status.
-Patch 5 adds shmem specific fields to /proc/<pid>/smaps.
-
-Thanks,
-Jerome
-
-Jerome Marchand (5):
-  mm, shmem: Add shmem resident memory accounting
-  mm, shmem: Add shmem_locate function
-  mm, shmem: Add shmem_vma() helper
-  mm, shmem: Add shmem swap memory accounting
-  mm, shmem: Show location of non-resident shmem pages in smaps
-
- Documentation/filesystems/proc.txt |  15 ++++
- arch/s390/mm/pgtable.c             |   2 +-
- fs/proc/task_mmu.c                 | 139 +++++++++++++++++++++++++++++++++++--
- include/linux/mm.h                 |  20 ++++++
- include/linux/mm_types.h           |   7 +-
- kernel/events/uprobes.c            |   2 +-
- mm/filemap_xip.c                   |   2 +-
- mm/memory.c                        |  37 ++++++++--
- mm/rmap.c                          |   8 +--
- mm/shmem.c                         |  37 ++++++++++
- 10 files changed, 249 insertions(+), 20 deletions(-)
-
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index e69ee9d..34099fa 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -1066,6 +1066,13 @@ extern bool skip_free_areas_node(unsigned int flags, int nid);
+ 
+ int shmem_zero_setup(struct vm_area_struct *);
+ #ifdef CONFIG_SHMEM
++
++#define SHMEM_NOTPRESENT	1 /* page is not present in memory */
++#define SHMEM_RESIDENT		2 /* page is resident in RAM */
++#define SHMEM_SWAPCACHE		3 /* page is in swap cache */
++#define SHMEM_SWAP		4 /* page is paged out */
++
++extern int shmem_locate(struct vm_area_struct *vma, pgoff_t pgoff, int *count);
+ bool shmem_mapping(struct address_space *mapping);
+ #else
+ static inline bool shmem_mapping(struct address_space *mapping)
+diff --git a/mm/shmem.c b/mm/shmem.c
+index b16d3e7..8aa4892 100644
+--- a/mm/shmem.c
++++ b/mm/shmem.c
+@@ -1341,6 +1341,35 @@ static int shmem_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
+ 	return ret;
+ }
+ 
++int shmem_locate(struct vm_area_struct *vma, pgoff_t pgoff, int *count)
++{
++	struct address_space *mapping = file_inode(vma->vm_file)->i_mapping;
++	struct page *page;
++	swp_entry_t swap;
++	int ret;
++
++	page = find_get_entry(mapping, pgoff);
++	if (!page) /* Not yet initialised? */
++		return SHMEM_NOTPRESENT;
++
++	if (!radix_tree_exceptional_entry(page)) {
++		ret = SHMEM_RESIDENT;
++		if (count)
++			*count = page_mapcount(page);
++		goto out;
++	}
++
++	swap = radix_to_swp_entry(page);
++	page = find_get_page(swap_address_space(swap), swap.val);
++	if (!page)
++		return SHMEM_SWAP;
++	ret = SHMEM_SWAPCACHE;
++
++out:
++	page_cache_release(page);
++	return ret;
++}
++
+ #ifdef CONFIG_NUMA
+ static int shmem_set_policy(struct vm_area_struct *vma, struct mempolicy *mpol)
+ {
 -- 
 1.9.3
 
