@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932755AbaGVWYC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 18:24:02 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44534 "EHLO
+	id S932780AbaGVWYI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 18:24:08 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:44545 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932634AbaGVWX6 (ORCPT
+	with ESMTP id S932634AbaGVWYE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 18:23:58 -0400
+	Tue, 22 Jul 2014 18:24:04 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
 Cc: Johan Hedberg <johan.hedberg@intel.com>,
         Marcel Holtmann <marcel@holtmann.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 098/116] Bluetooth: Fix SSP acceptor just-works confirmation without MITM
-Date: Tue, 22 Jul 2014 15:21:49 -0700
-Message-Id: <1406067727-19683-99-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 100/116] Bluetooth: Fix indicating discovery state when canceling inquiry
+Date: Tue, 22 Jul 2014 15:21:51 -0700
+Message-Id: <1406067727-19683-101-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1406067727-19683-1-git-send-email-kamal@canonical.com>
 References: <1406067727-19683-1-git-send-email-kamal@canonical.com>
@@ -30,47 +30,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Johan Hedberg <johan.hedberg@intel.com>
 
-commit ba15a58b179ed76a7e887177f2b06de12c58ec8f upstream.
+commit 50143a433b70e3145bcf8a4a4e54f0c11bdee32b upstream.
 
->From the Bluetooth Core Specification 4.1 page 1958:
-
-"if both devices have set the Authentication_Requirements parameter to
-one of the MITM Protection Not Required options, authentication stage 1
-shall function as if both devices set their IO capabilities to
-DisplayOnly (e.g., Numeric comparison with automatic confirmation on
-both devices)"
-
-So far our implementation has done user confirmation for all just-works
-cases regardless of the MITM requirements, however following the
-specification to the word means that we should not be doing confirmation
-when neither side has the MITM flag set.
+When inquiry is canceled through the HCI_Cancel_Inquiry command there is
+no Inquiry Complete event generated. Instead, all we get is the command
+complete for the HCI_Inquiry_Cancel command. This means that we must
+call the hci_discovery_set_state() function from the respective command
+complete handler in order to ensure that user space knows the correct
+discovery state.
 
 Signed-off-by: Johan Hedberg <johan.hedberg@intel.com>
-Tested-by: Szymon Janc <szymon.janc@tieto.com>
 Signed-off-by: Marcel Holtmann <marcel@holtmann.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/bluetooth/hci_event.c | 7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ net/bluetooth/hci_event.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
 diff --git a/net/bluetooth/hci_event.c b/net/bluetooth/hci_event.c
-index ba6f399..4d9e4b0 100644
+index 4d9e4b0..86cd8f5 100644
 --- a/net/bluetooth/hci_event.c
 +++ b/net/bluetooth/hci_event.c
-@@ -3573,8 +3573,11 @@ static void hci_user_confirm_request_evt(struct hci_dev *hdev,
+@@ -55,6 +55,10 @@ static void hci_cc_inquiry_cancel(struct hci_dev *hdev, struct sk_buff *skb)
  
- 		/* If we're not the initiators request authorization to
- 		 * proceed from user space (mgmt_user_confirm with
--		 * confirm_hint set to 1). */
--		if (!test_bit(HCI_CONN_AUTH_PEND, &conn->flags)) {
-+		 * confirm_hint set to 1). The exception is if neither
-+		 * side had MITM in which case we do auto-accept.
-+		 */
-+		if (!test_bit(HCI_CONN_AUTH_PEND, &conn->flags) &&
-+		    (loc_mitm || rem_mitm)) {
- 			BT_DBG("Confirming auto-accept as acceptor");
- 			confirm_hint = 1;
- 			goto confirm;
+ 	hci_req_complete(hdev, HCI_OP_INQUIRY_CANCEL, status);
+ 
++	hci_dev_lock(hdev);
++	hci_discovery_set_state(hdev, DISCOVERY_STOPPED);
++	hci_dev_unlock(hdev);
++
+ 	hci_conn_check_pending(hdev);
+ }
+ 
 -- 
 1.9.1
 
