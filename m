@@ -1,74 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753296AbaGVXNF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 19:13:05 -0400
-Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:40409 "EHLO
-	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752376AbaGVXNC (ORCPT
+	id S1757166AbaGVXQT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 19:16:19 -0400
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:40815 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752406AbaGVXQS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 19:13:02 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvEOABTvzlN5LHOdPGdsb2JhbABZgw6BKYInhQinUQEBAQEBAQafZQGBCRcEAQEBATg2hAMBAQU6HCMQCAMVAwklDwUlAwcaE4hBwCsXGIVjiVAHhEYFmyaWNoFWKy8
-Date: Wed, 23 Jul 2014 09:12:57 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Kamal Mostafa <kamal@canonical.com>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com, Dwight Engen <dwight.engen@oracle.com>,
-        Ben Myers <bpm@sgi.com>
-Subject: Re: [PATCH 3.8 076/116] xfs: ioctl check for capabilities in the
- current user namespace
-Message-ID: <20140722231257.GT4453@dastard>
-References: <1406067727-19683-1-git-send-email-kamal@canonical.com>
- <1406067727-19683-77-git-send-email-kamal@canonical.com>
+	Tue, 22 Jul 2014 19:16:18 -0400
+Date: Tue, 22 Jul 2014 16:16:15 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Bart Van Assche <bvanassche@acm.org>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "David S. Miller" <davem@davemloft.net>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH RESEND] spin_lock_*(): Always evaluate second argument
+In-Reply-To: <20140722133716.cff957eff4eff1cc9c1d9968@linux-foundation.org>
+Message-ID: <alpine.DEB.2.02.1407221612330.10592@chino.kir.corp.google.com>
+References: <53CE1019.10708@acm.org> <20140722133716.cff957eff4eff1cc9c1d9968@linux-foundation.org>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1406067727-19683-77-git-send-email-kamal@canonical.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 22, 2014 at 03:21:27PM -0700, Kamal Mostafa wrote:
-> 3.8.13.27 -stable review patch.  If anyone has any objections, please let me know.
-> 
-> ------------------
-> 
-> From: Dwight Engen <dwight.engen@oracle.com>
-> 
-> commit fd5e2aa8653665ae1cc60f7aca1069abdbcad3f6 upstream.
-> 
-> Use inode_capable() to check if SUID|SGID bits should be cleared to match
-> similar check in inode_change_ok().
-> 
-> The check for CAP_LINUX_IMMUTABLE was not modified since all other file
-> systems also check against init_user_ns rather than current_user_ns.
-> 
-> Only allow changing of projid from init_user_ns.
-> 
-> Reviewed-by: Dave Chinner <dchinner@redhat.com>
-> Reviewed-by: Gao feng <gaofeng@cn.fujitsu.com>
-> Signed-off-by: Dwight Engen <dwight.engen@oracle.com>
-> Signed-off-by: Ben Myers <bpm@sgi.com>
-> [ kamal: 3.8-stable prereq for
->   23adbe1 fs,userns: Change inode_capable to capable_wrt_inode_uidgid ]
-> Signed-off-by: Kamal Mostafa <kamal@canonical.com>
-> ---
->  fs/xfs/xfs_ioctl.c  | 11 +++++++++--
->  kernel/capability.c |  1 +
->  2 files changed, 10 insertions(+), 2 deletions(-)
+On Tue, 22 Jul 2014, Andrew Morton wrote:
 
-Why are you backporting this to 3.8? namespace support didn't come
-along until much later, so grabbing one patch out of themiddle of a
-patch series to allow userns support in XFS is likely to cause
-problems because there's no supporting code in XFS it.
+> > Evaluating a macro argument only if certain configuration options
+> > have been selected is confusing and error-prone. Hence always
+> > evaluate the second argument of spin_lock_nested() and
+> > spin_lock_nest_lock().
+> > 
+> > An intentional side effect of this patch is that it avoids that
+> > the following warning is reported for netif_addr_lock_nested()
+> > when building with CONFIG_DEBUG_LOCK_ALLOC=n and with W=1:
+> > 
+> > ...
+> >
+> > --- a/include/linux/spinlock.h
+> > +++ b/include/linux/spinlock.h
+> > @@ -197,8 +197,10 @@ static inline void do_raw_spin_unlock(raw_spinlock_t *lock) __releases(lock)
+> >  		 _raw_spin_lock_nest_lock(lock, &(nest_lock)->dep_map);	\
+> >  	 } while (0)
+> >  #else
+> > -# define raw_spin_lock_nested(lock, subclass)		_raw_spin_lock(lock)
+> > -# define raw_spin_lock_nest_lock(lock, nest_lock)	_raw_spin_lock(lock)
+> > +# define raw_spin_lock_nested(lock, subclass)		\
+> > +	((void)(subclass), _raw_spin_lock(lock))
+> > +# define raw_spin_lock_nest_lock(lock, nest_lock)	\
+> > +	((void)(nest_lock), _raw_spin_lock(lock))
+> >  #endif
+> >  
+> 
+> Did you try converting these to static inline functions?  That should
+> squish the warning and makes the code nicer instead of nastier...
+> 
 
-Please don't randomly cherry pick userns support patches that change
-permission checks back into kernels that don't have userns support.
+Not sure how that would be done since _raw_spin_lock isn't declared in 
+this scope.
 
-Cheers,
+Taking a second look, however, I think the patch doesn't need to modify 
+raw_spin_lock_nest_lock() for the problem being reported and evaluating 
+the parameter of type struct lockdep_map * probably is meaningless.
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+Bart, is it possible to just get away with the raw_spin_lock_nested() 
+change?
