@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755368AbaGVLCg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 07:02:36 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:46573 "EHLO bear.ext.ti.com"
+	id S1755376AbaGVLC6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 07:02:58 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:56764 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754480AbaGVK50 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 06:57:26 -0400
+	id S1754368AbaGVK5W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 06:57:22 -0400
 From: Kishon Vijay Abraham I <kishon@ti.com>
 To: <gregkh@linuxfoundation.org>
 CC: <kishon@ti.com>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH 10/28] phy: add hix5hd2-sata-phy driver
-Date: Tue, 22 Jul 2014 16:26:33 +0530
-Message-ID: <1406026611-30493-11-git-send-email-kishon@ti.com>
+Subject: [PATCH 08/28] phy: pipe3: insert delay to enumerate in GEN2 mode
+Date: Tue, 22 Jul 2014 16:26:31 +0530
+Message-ID: <1406026611-30493-9-git-send-email-kishon@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1406026611-30493-1-git-send-email-kishon@ti.com>
 References: <1406026611-30493-1-git-send-email-kishon@ti.com>
@@ -21,249 +21,209 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiancheng Xue <xuejiancheng@huawei.com>
+8-bit delay value (0xF1) is required for GEN2 devices to be enumerated
+consistently. Added an API to be called from PHY drivers to set this delay
+value and called it from PIPE3 driver to set the delay value.
 
-Add hix5hd2-sata-phy driver on Hisilicon hix5hd2 soc.
-
-Signed-off-by: Jiancheng Xue <xuejiancheng@huawei.com>
-Signed-off-by: Zhangfei Gao <zhangfei.gao@linaro.org>
 Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+Reviewed-by: Roger Quadros <rogerq@ti.com>
 ---
- drivers/phy/Kconfig            |    8 ++
- drivers/phy/Makefile           |    1 +
- drivers/phy/phy-hix5hd2-sata.c |  192 ++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 201 insertions(+)
- create mode 100644 drivers/phy/phy-hix5hd2-sata.c
+ Documentation/devicetree/bindings/phy/ti-phy.txt |   12 ++---
+ drivers/phy/phy-omap-control.c                   |   52 +++++++++++++++++++++-
+ drivers/phy/phy-ti-pipe3.c                       |    4 +-
+ include/linux/phy/omap_control_phy.h             |   10 +++++
+ 4 files changed, 71 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/phy/Kconfig b/drivers/phy/Kconfig
-index 64b98d2..30c82fc 100644
---- a/drivers/phy/Kconfig
-+++ b/drivers/phy/Kconfig
-@@ -109,6 +109,14 @@ config PHY_EXYNOS5250_SATA
- 	  SATA 3.0 Gb/s, SATA 6.0 Gb/s speeds. It supports one SATA host
- 	  port to accept one SATA device.
+diff --git a/Documentation/devicetree/bindings/phy/ti-phy.txt b/Documentation/devicetree/bindings/phy/ti-phy.txt
+index b50e1c1..305e3df 100644
+--- a/Documentation/devicetree/bindings/phy/ti-phy.txt
++++ b/Documentation/devicetree/bindings/phy/ti-phy.txt
+@@ -9,15 +9,17 @@ Required properties:
+                         e.g. USB2_PHY on OMAP5.
+  "ti,control-phy-pipe3" - if it has DPLL and individual Rx & Tx power control
+                         e.g. USB3 PHY and SATA PHY on OMAP5.
++ "ti,control-phy-pcie" - for pcie to support external clock for pcie and to
++			set PCS delay value.
++			e.g. PCIE PHY in DRA7x
+  "ti,control-phy-usb2-dra7" - if it has power down register like USB2 PHY on
+                         DRA7 platform.
+  "ti,control-phy-usb2-am437" - if it has power down register like USB2 PHY on
+                         AM437 platform.
+- - reg : Address and length of the register set for the device. It contains
+-   the address of "otghs_control" for control-phy-otghs or "power" register
+-   for other types.
+- - reg-names: should be "otghs_control" control-phy-otghs and "power" for
+-   other types.
++ - reg : register ranges as listed in the reg-names property
++ - reg-names: "otghs_control" for control-phy-otghs
++	      "power", "pcie_pcs" and "control_sma" for control-phy-pcie
++	      "power" for all other types
  
-+config PHY_HIX5HD2_SATA
-+	tristate "HIX5HD2 SATA PHY Driver"
-+	depends on ARCH_HIX5HD2 && OF && HAS_IOMEM
-+	select GENERIC_PHY
-+	select MFD_SYSCON
-+	help
-+	  Support for SATA PHY on Hisilicon hix5hd2 Soc.
-+
- config PHY_SUN4I_USB
- 	tristate "Allwinner sunxi SoC USB PHY driver"
- 	depends on ARCH_SUNXI && HAS_IOMEM && OF
-diff --git a/drivers/phy/Makefile b/drivers/phy/Makefile
-index b4f1d57..54f04d0 100644
---- a/drivers/phy/Makefile
-+++ b/drivers/phy/Makefile
-@@ -12,6 +12,7 @@ obj-$(CONFIG_OMAP_USB2)			+= phy-omap-usb2.o
- obj-$(CONFIG_TI_PIPE3)			+= phy-ti-pipe3.o
- obj-$(CONFIG_TWL4030_USB)		+= phy-twl4030-usb.o
- obj-$(CONFIG_PHY_EXYNOS5250_SATA)	+= phy-exynos5250-sata.o
-+obj-$(CONFIG_PHY_HIX5HD2_SATA)		+= phy-hix5hd2-sata.o
- obj-$(CONFIG_PHY_SUN4I_USB)		+= phy-sun4i-usb.o
- obj-$(CONFIG_PHY_SAMSUNG_USB2)		+= phy-exynos-usb2.o
- phy-exynos-usb2-y			+= phy-samsung-usb2.o
-diff --git a/drivers/phy/phy-hix5hd2-sata.c b/drivers/phy/phy-hix5hd2-sata.c
-new file mode 100644
-index 0000000..d442834
---- /dev/null
-+++ b/drivers/phy/phy-hix5hd2-sata.c
-@@ -0,0 +1,192 @@
-+/*
-+ * Copyright (c) 2014 Linaro Ltd.
-+ * Copyright (c) 2014 Hisilicon Limited.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
+ omap_control_usb: omap-control-usb@4a002300 {
+         compatible = "ti,control-phy-otghs";
+diff --git a/drivers/phy/phy-omap-control.c b/drivers/phy/phy-omap-control.c
+index 311b4f9..9487bf1 100644
+--- a/drivers/phy/phy-omap-control.c
++++ b/drivers/phy/phy-omap-control.c
+@@ -27,6 +27,41 @@
+ #include <linux/phy/omap_control_phy.h>
+ 
+ /**
++ * omap_control_pcie_pcs - set the PCS delay count
++ * @dev: the control module device
++ * @id: index of the pcie PHY (should be 1 or 2)
++ * @delay: 8 bit delay value
 + */
-+
-+#include <linux/delay.h>
-+#include <linux/io.h>
-+#include <linux/mfd/syscon.h>
-+#include <linux/module.h>
-+#include <linux/phy/phy.h>
-+#include <linux/platform_device.h>
-+#include <linux/regmap.h>
-+
-+#define SATA_PHY0_CTLL		0xa0
-+#define MPLL_MULTIPLIER_SHIFT	1
-+#define MPLL_MULTIPLIER_MASK	0xfe
-+#define MPLL_MULTIPLIER_50M	0x3c
-+#define MPLL_MULTIPLIER_100M	0x1e
-+#define PHY_RESET		BIT(0)
-+#define REF_SSP_EN		BIT(9)
-+#define SSC_EN			BIT(10)
-+#define REF_USE_PAD		BIT(23)
-+
-+#define SATA_PORT_PHYCTL	0x174
-+#define SPEED_MODE_MASK		0x6f0000
-+#define HALF_RATE_SHIFT		16
-+#define PHY_CONFIG_SHIFT	18
-+#define GEN2_EN_SHIFT		21
-+#define SPEED_CTRL		BIT(20)
-+
-+#define SATA_PORT_PHYCTL1	0x148
-+#define AMPLITUDE_MASK		0x3ffffe
-+#define AMPLITUDE_GEN3		0x68
-+#define AMPLITUDE_GEN3_SHIFT	15
-+#define AMPLITUDE_GEN2		0x56
-+#define AMPLITUDE_GEN2_SHIFT	8
-+#define AMPLITUDE_GEN1		0x56
-+#define AMPLITUDE_GEN1_SHIFT	1
-+
-+#define SATA_PORT_PHYCTL2	0x14c
-+#define PREEMPH_MASK		0x3ffff
-+#define PREEMPH_GEN3		0x20
-+#define PREEMPH_GEN3_SHIFT	12
-+#define PREEMPH_GEN2		0x15
-+#define PREEMPH_GEN2_SHIFT	6
-+#define PREEMPH_GEN1		0x5
-+#define PREEMPH_GEN1_SHIFT	0
-+
-+struct hix5hd2_priv {
-+	void __iomem	*base;
-+	struct regmap	*peri_ctrl;
-+};
-+
-+enum phy_speed_mode {
-+	SPEED_MODE_GEN1 = 0,
-+	SPEED_MODE_GEN2 = 1,
-+	SPEED_MODE_GEN3 = 2,
-+};
-+
-+static int hix5hd2_sata_phy_init(struct phy *phy)
++void omap_control_pcie_pcs(struct device *dev, u8 id, u8 delay)
 +{
-+	struct hix5hd2_priv *priv = phy_get_drvdata(phy);
-+	u32 val, data[2];
-+	int ret;
++	u32 val;
++	struct omap_control_phy	*control_phy;
 +
-+	if (priv->peri_ctrl) {
-+		ret = of_property_read_u32_array(phy->dev.of_node,
-+						 "hisilicon,power-reg",
-+						 &data[0], 2);
-+		if (ret) {
-+			dev_err(&phy->dev, "Fail read hisilicon,power-reg\n");
-+			return ret;
-+		}
-+
-+		regmap_update_bits(priv->peri_ctrl, data[0],
-+				   BIT(data[1]), BIT(data[1]));
++	if (IS_ERR(dev) || !dev) {
++		pr_err("%s: invalid device\n", __func__);
++		return;
 +	}
 +
-+	/* reset phy */
-+	val = readl_relaxed(priv->base + SATA_PHY0_CTLL);
-+	val &= ~(MPLL_MULTIPLIER_MASK | REF_USE_PAD);
-+	val |= MPLL_MULTIPLIER_50M << MPLL_MULTIPLIER_SHIFT |
-+	       REF_SSP_EN | PHY_RESET;
-+	writel_relaxed(val, priv->base + SATA_PHY0_CTLL);
-+	msleep(20);
-+	val &= ~PHY_RESET;
-+	writel_relaxed(val, priv->base + SATA_PHY0_CTLL);
++	control_phy = dev_get_drvdata(dev);
++	if (!control_phy) {
++		dev_err(dev, "%s: invalid control phy device\n", __func__);
++		return;
++	}
 +
-+	val = readl_relaxed(priv->base + SATA_PORT_PHYCTL1);
-+	val &= ~AMPLITUDE_MASK;
-+	val |= AMPLITUDE_GEN3 << AMPLITUDE_GEN3_SHIFT |
-+	       AMPLITUDE_GEN2 << AMPLITUDE_GEN2_SHIFT |
-+	       AMPLITUDE_GEN1 << AMPLITUDE_GEN1_SHIFT;
-+	writel_relaxed(val, priv->base + SATA_PORT_PHYCTL1);
++	if (control_phy->type != OMAP_CTRL_TYPE_PCIE) {
++		dev_err(dev, "%s: unsupported operation\n", __func__);
++		return;
++	}
 +
-+	val = readl_relaxed(priv->base + SATA_PORT_PHYCTL2);
-+	val &= ~PREEMPH_MASK;
-+	val |= PREEMPH_GEN3 << PREEMPH_GEN3_SHIFT |
-+	       PREEMPH_GEN2 << PREEMPH_GEN2_SHIFT |
-+	       PREEMPH_GEN1 << PREEMPH_GEN1_SHIFT;
-+	writel_relaxed(val, priv->base + SATA_PORT_PHYCTL2);
-+
-+	/* ensure PHYCTRL setting takes effect */
-+	val = readl_relaxed(priv->base + SATA_PORT_PHYCTL);
-+	val &= ~SPEED_MODE_MASK;
-+	val |= SPEED_MODE_GEN1 << HALF_RATE_SHIFT |
-+	       SPEED_MODE_GEN1 << PHY_CONFIG_SHIFT |
-+	       SPEED_MODE_GEN1 << GEN2_EN_SHIFT | SPEED_CTRL;
-+	writel_relaxed(val, priv->base + SATA_PORT_PHYCTL);
-+
-+	msleep(20);
-+	val &= ~SPEED_MODE_MASK;
-+	val |= SPEED_MODE_GEN3 << HALF_RATE_SHIFT |
-+	       SPEED_MODE_GEN3 << PHY_CONFIG_SHIFT |
-+	       SPEED_MODE_GEN3 << GEN2_EN_SHIFT | SPEED_CTRL;
-+	writel_relaxed(val, priv->base + SATA_PORT_PHYCTL);
-+
-+	val &= ~(SPEED_MODE_MASK | SPEED_CTRL);
-+	val |= SPEED_MODE_GEN2 << HALF_RATE_SHIFT |
-+	       SPEED_MODE_GEN2 << PHY_CONFIG_SHIFT |
-+	       SPEED_MODE_GEN2 << GEN2_EN_SHIFT;
-+	writel_relaxed(val, priv->base + SATA_PORT_PHYCTL);
-+
-+	return 0;
++	val = readl(control_phy->pcie_pcs);
++	val &= ~(OMAP_CTRL_PCIE_PCS_MASK <<
++		(id * OMAP_CTRL_PCIE_PCS_DELAY_COUNT_SHIFT));
++	val |= delay << (id * OMAP_CTRL_PCIE_PCS_DELAY_COUNT_SHIFT);
++	writel(val, control_phy->pcie_pcs);
 +}
++EXPORT_SYMBOL_GPL(omap_control_pcie_pcs);
 +
-+static struct phy_ops hix5hd2_sata_phy_ops = {
-+	.init		= hix5hd2_sata_phy_init,
-+	.owner		= THIS_MODULE,
-+};
++/**
+  * omap_control_phy_power - power on/off the phy using control module reg
+  * @dev: the control module device
+  * @on: 0 or 1, based on powering on or off the PHY
+@@ -61,6 +96,7 @@ void omap_control_phy_power(struct device *dev, int on)
+ 			val |= OMAP_CTRL_DEV_PHY_PD;
+ 		break;
+ 
++	case OMAP_CTRL_TYPE_PCIE:
+ 	case OMAP_CTRL_TYPE_PIPE3:
+ 		rate = clk_get_rate(control_phy->sys_clk);
+ 		rate = rate/1000000;
+@@ -211,6 +247,7 @@ EXPORT_SYMBOL_GPL(omap_control_usb_set_mode);
+ static const enum omap_control_phy_type otghs_data = OMAP_CTRL_TYPE_OTGHS;
+ static const enum omap_control_phy_type usb2_data = OMAP_CTRL_TYPE_USB2;
+ static const enum omap_control_phy_type pipe3_data = OMAP_CTRL_TYPE_PIPE3;
++static const enum omap_control_phy_type pcie_data = OMAP_CTRL_TYPE_PCIE;
+ static const enum omap_control_phy_type dra7usb2_data = OMAP_CTRL_TYPE_DRA7USB2;
+ static const enum omap_control_phy_type am437usb2_data = OMAP_CTRL_TYPE_AM437USB2;
+ 
+@@ -228,6 +265,10 @@ static const struct of_device_id omap_control_phy_id_table[] = {
+ 		.data = &pipe3_data,
+ 	},
+ 	{
++		.compatible = "ti,control-phy-pcie",
++		.data = &pcie_data,
++	},
++	{
+ 		.compatible = "ti,control-phy-usb2-dra7",
+ 		.data = &dra7usb2_data,
+ 	},
+@@ -279,7 +320,8 @@ static int omap_control_phy_probe(struct platform_device *pdev)
+ 		}
+ 	}
+ 
+-	if (control_phy->type == OMAP_CTRL_TYPE_PIPE3) {
++	if (control_phy->type == OMAP_CTRL_TYPE_PIPE3 ||
++	    control_phy->type == OMAP_CTRL_TYPE_PCIE) {
+ 		control_phy->sys_clk = devm_clk_get(control_phy->dev,
+ 			"sys_clkin");
+ 		if (IS_ERR(control_phy->sys_clk)) {
+@@ -288,6 +330,14 @@ static int omap_control_phy_probe(struct platform_device *pdev)
+ 		}
+ 	}
+ 
++	if (control_phy->type == OMAP_CTRL_TYPE_PCIE) {
++		res = platform_get_resource_byname(pdev, IORESOURCE_MEM,
++						   "pcie_pcs");
++		control_phy->pcie_pcs = devm_ioremap_resource(&pdev->dev, res);
++		if (IS_ERR(control_phy->pcie_pcs))
++			return PTR_ERR(control_phy->pcie_pcs);
++	}
 +
-+static int hix5hd2_sata_phy_probe(struct platform_device *pdev)
+ 	dev_set_drvdata(control_phy->dev, control_phy);
+ 
+ 	return 0;
+diff --git a/drivers/phy/phy-ti-pipe3.c b/drivers/phy/phy-ti-pipe3.c
+index 6174f4b..93bcd67 100644
+--- a/drivers/phy/phy-ti-pipe3.c
++++ b/drivers/phy/phy-ti-pipe3.c
+@@ -217,8 +217,10 @@ static int ti_pipe3_init(struct phy *x)
+ 	u32 val;
+ 	int ret = 0;
+ 
+-	if (of_device_is_compatible(phy->dev->of_node, "ti,phy-pipe3-pcie"))
++	if (of_device_is_compatible(phy->dev->of_node, "ti,phy-pipe3-pcie")) {
++		omap_control_pcie_pcs(phy->control_dev, phy->id, 0xF1);
+ 		return 0;
++	}
+ 
+ 	/* Bring it out of IDLE if it is IDLE */
+ 	val = ti_pipe3_readl(phy->pll_ctrl_base, PLL_CONFIGURATION2);
+diff --git a/include/linux/phy/omap_control_phy.h b/include/linux/phy/omap_control_phy.h
+index 5450403..e9e6cfb 100644
+--- a/include/linux/phy/omap_control_phy.h
++++ b/include/linux/phy/omap_control_phy.h
+@@ -23,6 +23,7 @@ enum omap_control_phy_type {
+ 	OMAP_CTRL_TYPE_OTGHS = 1,	/* Mailbox OTGHS_CONTROL */
+ 	OMAP_CTRL_TYPE_USB2,	/* USB2_PHY, power down in CONTROL_DEV_CONF */
+ 	OMAP_CTRL_TYPE_PIPE3,	/* PIPE3 PHY, DPLL & seperate Rx/Tx power */
++	OMAP_CTRL_TYPE_PCIE,	/* RX TX control of ACSPCIE */
+ 	OMAP_CTRL_TYPE_DRA7USB2, /* USB2 PHY, power and power_aux e.g. DRA7 */
+ 	OMAP_CTRL_TYPE_AM437USB2, /* USB2 PHY, power e.g. AM437x */
+ };
+@@ -33,6 +34,7 @@ struct omap_control_phy {
+ 	u32 __iomem *otghs_control;
+ 	u32 __iomem *power;
+ 	u32 __iomem *power_aux;
++	u32 __iomem *pcie_pcs;
+ 
+ 	struct clk *sys_clk;
+ 
+@@ -63,6 +65,9 @@ enum omap_control_usb_mode {
+ #define	OMAP_CTRL_PIPE3_PHY_TX_RX_POWERON	0x3
+ #define	OMAP_CTRL_PIPE3_PHY_TX_RX_POWEROFF	0x0
+ 
++#define	OMAP_CTRL_PCIE_PCS_MASK			0xff
++#define	OMAP_CTRL_PCIE_PCS_DELAY_COUNT_SHIFT	0x8
++
+ #define OMAP_CTRL_USB2_PHY_PD		BIT(28)
+ 
+ #define AM437X_CTRL_USB2_PHY_PD		BIT(0)
+@@ -74,6 +79,7 @@ enum omap_control_usb_mode {
+ void omap_control_phy_power(struct device *dev, int on);
+ void omap_control_usb_set_mode(struct device *dev,
+ 			       enum omap_control_usb_mode mode);
++void omap_control_pcie_pcs(struct device *dev, u8 id, u8 delay);
+ #else
+ 
+ static inline void omap_control_phy_power(struct device *dev, int on)
+@@ -84,6 +90,10 @@ static inline void omap_control_usb_set_mode(struct device *dev,
+ 	enum omap_control_usb_mode mode)
+ {
+ }
++
++static inline void omap_control_pcie_pcs(struct device *dev, u8 id, u8 delay)
 +{
-+	struct phy_provider *phy_provider;
-+	struct device *dev = &pdev->dev;
-+	struct resource *res;
-+	struct phy *phy;
-+	struct hix5hd2_priv *priv;
-+
-+	priv = devm_kzalloc(dev, sizeof(*priv), GFP_KERNEL);
-+	if (!priv)
-+		return -ENOMEM;
-+
-+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	priv->base = devm_ioremap(dev, res->start, resource_size(res));
-+	if (!priv->base)
-+		return -ENOMEM;
-+
-+	priv->peri_ctrl = syscon_regmap_lookup_by_phandle(dev->of_node,
-+					"hisilicon,peripheral-syscon");
-+	if (IS_ERR(priv->peri_ctrl))
-+		priv->peri_ctrl = NULL;
-+
-+	phy = devm_phy_create(dev, &hix5hd2_sata_phy_ops, NULL);
-+	if (IS_ERR(phy)) {
-+		dev_err(dev, "failed to create PHY\n");
-+		return PTR_ERR(phy);
-+	}
-+
-+	phy_set_drvdata(phy, priv);
-+	phy_provider = devm_of_phy_provider_register(dev, of_phy_simple_xlate);
-+	if (IS_ERR(phy_provider))
-+		return PTR_ERR(phy_provider);
-+
-+	return 0;
 +}
-+
-+static const struct of_device_id hix5hd2_sata_phy_of_match[] = {
-+	{.compatible = "hisilicon,hix5hd2-sata-phy",},
-+	{ },
-+};
-+MODULE_DEVICE_TABLE(of, hix5hd2_sata_phy_of_match);
-+
-+static struct platform_driver hix5hd2_sata_phy_driver = {
-+	.probe	= hix5hd2_sata_phy_probe,
-+	.driver = {
-+		.name	= "hix5hd2-sata-phy",
-+		.owner	= THIS_MODULE,
-+		.of_match_table	= hix5hd2_sata_phy_of_match,
-+	}
-+};
-+module_platform_driver(hix5hd2_sata_phy_driver);
-+
-+MODULE_AUTHOR("Jiancheng Xue <xuejiancheng@huawei.com>");
-+MODULE_DESCRIPTION("HISILICON HIX5HD2 SATA PHY driver");
-+MODULE_ALIAS("platform:hix5hd2-sata-phy");
-+MODULE_LICENSE("GPL v2");
+ #endif
+ 
+ #endif	/* __OMAP_CONTROL_PHY_H__ */
 -- 
 1.7.9.5
 
