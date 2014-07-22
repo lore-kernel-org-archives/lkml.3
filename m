@@ -1,218 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756790AbaGVUVQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 16:21:16 -0400
-Received: from g4t3426.houston.hp.com ([15.201.208.54]:38668 "EHLO
-	g4t3426.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751462AbaGVUVN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 16:21:13 -0400
-Message-ID: <53CEC7B3.5030109@hp.com>
-Date: Tue, 22 Jul 2014 16:21:07 -0400
-From: Waiman Long <waiman.long@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
-MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: Darren Hart <dvhart@linux.intel.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Andi Kleen <andi@firstfloor.org>, Ingo Molnar <mingo@kernel.org>,
-        Davidlohr Bueso <davidlohr@hp.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Jason Low <jason.low2@hp.com>, Scott J Norton <scott.norton@hp.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [RFC PATCH 0/5] futex: introduce an optimistic spinning futex
-References: <1405956271-34339-1-git-send-email-Waiman.Long@hp.com> <8761iq3bp3.fsf@tassilo.jf.intel.com> <871tte3bjw.fsf@tassilo.jf.intel.com> <CFF29A00.9D44A%dvhart@linux.intel.com> <CFF29E4A.9D44E%dvhart@linux.intel.com> <alpine.DEB.2.10.1407212025130.20847@nanos> <20140721212740.GS3935@laptop> <CALCETrXSaWM6-nxr4ggtMh5qcfTQg4wRvkW8FTSbri5+_1ZbVg@mail.gmail.com> <alpine.DEB.2.10.1407212344130.20847@nanos> <CFF2E3D6.9D525%dvhart@linux.intel.com> <alpine.DEB.2.10.1407220047490.20847@nanos>
-In-Reply-To: <alpine.DEB.2.10.1407220047490.20847@nanos>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1756829AbaGVUXd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 16:23:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59365 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751462AbaGVUXc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 16:23:32 -0400
+Message-ID: <1406060607.4463.36.camel@ul30vt.home>
+Subject: Re: [PATCH] PCI: Add device specific (non)reset for AMD GPUs
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Tue, 22 Jul 2014 14:23:27 -0600
+In-Reply-To: <20140722195557.GD19181@google.com>
+References: <20140716190955.4722.25453.stgit@gimli.home>
+	 <20140722195557.GD19181@google.com>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/21/2014 09:01 PM, Thomas Gleixner wrote:
-> On Mon, 21 Jul 2014, Darren Hart wrote:
->> On 7/21/14, 14:47, "Thomas Gleixner"<tglx@linutronix.de>  wrote:
->>
->>> On Mon, 21 Jul 2014, Andy Lutomirski wrote:
->>>> On Mon, Jul 21, 2014 at 2:27 PM, Peter Zijlstra<peterz@infradead.org>
->>>> wrote:
->>>>> All this is predicated on the fact that syscalls are 'expensive'.
->>>>> Weren't syscalls only 100s of cycles? All this bitmap mucking is far
->>>>> more expensive due to cacheline misses, which due to the size of the
->>>>> things is almost guaranteed.
->>>> 120 - 300 cycles for me, unless tracing happens, and I'm working on
->>>> reducing the incidence of tracing.
->>> So it's a non issue indeed and definitely not worth the trouble of
->>> that extra storage, the scheduler overhead, etc.
->>>
->>> Summary: Once you can't take it atomically in user space, you've lost
->>> 	 anyway. And we are better off to do the magic spinning in
->>> 	 kernel where we have all the information accessible already.
->> And we have such an implementation with the FUTEX_LOCK_ADAPTIVE code we
->> discussed back in Oct 2010 (purely kernel, no VDSO), updated with some of
->> your and other's comments:
->>
->> http://git.infradead.org/users/dvhart/linux.git/shortlog/refs/heads/futex/f
->> utex-lock/v7
->>
->>
->> I can work on forward porting this series to current mainline (post recent
->> security fixes) and cleaning up the commentary and such if people are
->> interested in seeing this implementation (based on Peter Z's spinning
->> mutex work iirc) resurrected...
-> No. We really want to avoid more magic hackery in the futex code.
->
-> Lets sit down and think about what we need:
->
->   1) Support for all existing features
->
->   2) More fine grained locking
->
->   3) Optimistic spinning
->
-> @1: No discussion about that. Period.
->
->      We are not going to introduce some new futex opcode, which is
->      optimized for a microbenchmark and ignoring all of the pain we
->      went through in the last 10 years. No way, especially after the
->      recent security disaster.
->
-> @2 and @3: Yes, we want that.
->
->      But again, we don't add fine grained locking just for some half
->      baken new opcode. No, we are adding it where it makes the most
->      sense and lets us reuse most of the code.
->
->      I can predict your question, how that should work :)
->
->      If we want to have fine grained locking beyond the futex hash
->      buckets and that's something we discussed before, you need a state
->      representation of the user space futex in the kernel. That's what
->      Waiman added as well, just in a way that's beyond repair.
->
->      The charm of the futex hash buckets is that they do not create
->      kernel state because the futex_q which is enqueued into the bucket
->      is on the task stack of the task which is blocked on the futex.
->
->      So much for the theory, because that stopped to be true when we
->      added support for PI futexes. They already create kernel internal
->      state which is not magically removed when the thread exits the
->      syscall. It's called pi_state.
->
->      Now the question is how is this related to the non PI magic
->      spinning optimization? Very much so.
->
->      Simply because the handling of pi_state already covers ALL the
->      corner cases which come with the extra kernel internal state and
->      they provide the full function set of futexes required by the
->      various (ab)use cases including the requeue functionality which is
->      required for condvars. It even supports caching of the pi_state
->      struct in a way which makes sense, rather than blindly slapping a
->      cached entry onto each hash bucket.
->
->      So it's not a really mind boggling thought experiment to think
->      about this magic new feature as a subset of the already existing
->      PI futex code. It is a subset, just minus the PI portion plus the
->      more fine grained locking.
->
-> So the right solution is to rework the existing code.
->
-> 1) Make pi_state the entity which gets enqueued into the hash bucket
->     and manage the waiters in a pi_state internal queue.
->
->     Straight forward problem as it is still protected by the hash
->     bucket lock.
->
-> 2) Add private locking to the pi_state to reduce the lock contention
->     on the hash bucket lock.
->
->     Straight forward conversion as well
->
-> 3) Make mutex a subset of rt_mutex
->
->     That makes a lot of sense, simply because a mutex is the same as a
->     rtmutex just without the PI part.
->
->     Just for the record before anyone cries murder: The original mutex
->     implemention was modeled after the rtmutex one in the first place
->     and the optimistic spinning was first introduced on rtmutexes by
->     Gregory Haskins et. al. in the context of the RT tree. Back then it
->     was too early or we were simply too stupid to see the similarities
->     and opted for a complete separate implementation.
->
->     Yes, I'm aware that this is a non-trivial problem, but if you look
->     at the details, then the non-trivial part is in the slow path were
->     stuff actually goes to sleep. The fast path of mutex and rt_mutex
->     is simply the same. So there is no reason to keep them separate. An
->     extra conditional in the slow path is not going to hurt at all.
->
->     Surely, you might say, that I'm an egoistic bastard, who just wants
->     to have the benefit of MCS for rtmutex for free. Right you are, but
->     there is a whole bunch of reasons why this makes tons of sense:
->
->     - As I said above, it's almost the same, except for the slow path
->       details, where a few extra conditionals do not matter
->
->     - Sharing the code has the obvious benefits. And it's not only
->       sharing between rtmutex and mutex, it's also sharing the
->       underlying optimizations of MCS for the kernel internal users and
->       the user space exposed ones, i.e. futexes.
->
->     - Once unified the desired futex functionality just works with a
->       minimal impact on the futex code itself.
->
->       The futex code does not care whether the underlying primitive has
->       PI semantics or not, it just cares that all the required features
->       like proxy locking etc. are in place. And that everything like
->       timeouts, requeue etc. is just supported.
->
->     - The semantics of the new futex functionality has not to be
->       defined again. We can simply reuse the rather well defined and
->       well tested straight forward semantics of the existing PI
->       opcodes.
->
->     - That minimizes the risk massively, because all state and error
->       handling is common code.
->
->     - Any update to the underlying primitives will benefit ALL usage
->       sites and reduces the copy and paste induced hell of MCS code
->       sprinkled all over the kernel.
->
-> 4) Enable user space to make use of it.
->
->     Whether this will be a separate opcode or just a new flag to the
->     existing PI opcodes is going to be just a bikeshedding question at
->     that point. :)
->
-> The important point is, that we do NOT grow any new unmaintainable
-> warts to the futex code. And the 650+ new lines of hackery which come
-> with the proposed patch set are in no way acceptable, especially as
-> they only cover the minimalistic functionality set of futexes. Not to
-> talk about the other issues I've observed on the first glance.
->
-> So before anyone comes up with a "solution" for all of this tomorrow
-> afternoon in form of another half baken patch, please sit back mull it
-> in your head and lets have a proper discussion about the approach
-> first.
->
-> Thanks,
->
-> 	tglx
+On Tue, 2014-07-22 at 13:55 -0600, Bjorn Helgaas wrote:
+> On Wed, Jul 16, 2014 at 01:14:08PM -0600, Alex Williamson wrote:
+> > There are numerous ATI/AMD GPUs available that report that they
+> > support a PM reset (NoSoftRst-) but for which such a reset has no
+> > apparent effect on the device.  These devices continue to display the
+> > same framebuffer across PM reset and the fan speed remains constant,
+> > while a proper bus reset causes the display to lose sync and the fan
+> > to reset to high speed.  Create a device specific reset for ATI vendor
+> > devices that tries to catch these devices and report that
+> > pci_reset_function() is not supported.
+> > 
+> > Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+> > ---
+> > 
+> > This patch makes the series "vfio-pci: Reset improvements" far more
+> > useful for users with one of these GPUs.  If pci_reset_function()
+> > indicates that it's supported and successful, then I have no reason
+> > to resort to a bus/slot reset in the vfio-pci code.  Since it doesn't
+> > seem to do anything anyway, let's just forget that PM reset exists
+> > for these devices.
+> > 
+> >  drivers/pci/quirks.c |   53 ++++++++++++++++++++++++++++++++++++++++++++++++++
+> >  1 file changed, 53 insertions(+)
+> > 
+> > diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
+> > index 460c354..bed9c63 100644
+> > --- a/drivers/pci/quirks.c
+> > +++ b/drivers/pci/quirks.c
+> > @@ -3289,6 +3289,57 @@ static int reset_chelsio_generic_dev(struct pci_dev *dev, int probe)
+> >  	return 0;
+> >  }
+> >  
+> > +/*
+> > + * Numerous AMD/ATI GPUs report that they're capable of PM reset (NoSoftRst-)
+> > + * and pci_reset_function() reports the device as successfully reset, but
+> > + * there's no apparent effect from the reset.  Test for these, being sure to
+> > + * allow FLR should it ever exist, and use the device specific reset to
+> > + * disable any sort of function-local reset if only PM reset is available.
+> > + */
+> > +static int reset_ati_gpu(struct pci_dev *dev, int probe)
+> > +{
+> > +	u16 pm_csr;
+> > +	u32 devcap;
+> > +	int af_pos;
+> > +
+> > +	/*
+> > +	 * VGA class devices, not on the root bus, PCI function 0 of a
+> > +	 * multifunction device with PM capabilities
+> > +	 */
+> > +	if ((dev->class >> 8) != PCI_CLASS_DISPLAY_VGA ||
+> > +	    pci_is_root_bus(dev->bus) || PCI_FUNC(dev->devfn) ||
+> > +	    !dev->multifunction || !dev->pm_cap)
+> > +		return -ENOTTY;
+> > +
+> > +	/* PM reports NoSoftRst- */
+> > +	pci_read_config_word(dev, dev->pm_cap + PCI_PM_CTRL, &pm_csr);
+> > +	if (pm_csr & PCI_PM_CTRL_NO_SOFT_RESET)
+> > +		return -ENOTTY;
+> > +
+> > +	/* No PCIe FLR */
+> > +	pcie_capability_read_dword(dev, PCI_EXP_DEVCAP, &devcap);
+> > +	if (devcap & PCI_EXP_DEVCAP_FLR)
+> > +		return -ENOTTY;
+> > +
+> > +	/* No AF FLR */
+> > +	af_pos = pci_find_capability(dev, PCI_CAP_ID_AF);
+> > +	if (af_pos) {
+> > +		u8 af_cap;
+> > +
+> > +		pci_read_config_byte(dev, af_pos + PCI_AF_CAP, &af_cap);
+> > +		if ((af_cap && PCI_AF_CAP_TP) && (af_cap && PCI_AF_CAP_FLR))
+> > +			return -ENOTTY;
+> > +	}
+> > +
+> > +	/*
+> > +	 * We could attempt a singleton bus/slot reset here to override
+> > +	 * PM reset priority over these, but the devices we're interested
+> > +	 * in are multifunction GPU + audio devices in their known configs.
+> > +	 */
+> > +
+> > +	return -EINVAL;
+> > +}
+> > +
+> >  #define PCI_DEVICE_ID_INTEL_82599_SFP_VF   0x10ed
+> >  #define PCI_DEVICE_ID_INTEL_IVB_M_VGA      0x0156
+> >  #define PCI_DEVICE_ID_INTEL_IVB_M2_VGA     0x0166
+> > @@ -3304,6 +3355,8 @@ static const struct pci_dev_reset_methods pci_dev_reset_methods[] = {
+> >  		reset_intel_generic_dev },
+> >  	{ PCI_VENDOR_ID_CHELSIO, PCI_ANY_ID,
+> >  		reset_chelsio_generic_dev },
+> > +	{ PCI_VENDOR_ID_ATI, PCI_ANY_ID,
+> > +		reset_ati_gpu },
+> 
+> I'm a little confused, but maybe we just need a comment about what the
+> return values from pci_dev_specific_reset() mean.  Based on reading
+> __pci_dev_reset(), it looks like:
+> 
+>   0 means "I support this reset method" (if probe) or
+>   "I performed this reset" (if !probe),
+>   
+>   ENOTTY means "I don't support this reset method, try another one",
+> 
+>   anything else means "I don't support this reset method and don't try
+>   any others" (it'd be useful to know what this is good for).
+> 
+> But reset_ati_gpu() never returns 0, so it seems like your patch makes
+> it so we can never reset any ATI device at all.  So I must be missing
+> something.
 
-Thank for your thorough analysis and suggestions on what to do to 
-support spinning futexes. You certainly know more about the internal 
-working of futex than most of us. I can  live with what you have 
-suggested. My patch is just a proof of concept piece to demonstrate 
-optimistic spinning on futex is something worthwhile to do. I think I 
-have achieved my goal of stirring interest in this area. My next step 
-will be to look into the direction of what you have suggested and figure 
-out what actual code changes will be needed.
+Nope, you're not missing anything.  The return value behavior is exactly
+as you describe and the ATI GPUs that advertise NoSoftRst- don't appear
+to do any sort of reset when moving them back from D3, so I'm
+effectively trying to negate that as a viable reset option.  I think
+this is what the anything-else return value is meant for.  I only return
+"I don't support this reset method and don't try any others" after I
+verify there are no other options, so if they come out with FLR support,
+that would still get precedence.  It's a little awkward, but I don't
+know how to test whether a reset function was successful.  It seems like
+it would be device specific.  Anyone from AMD reading the list that can
+comment on what sort of reset happens on these GPUs for a D3->D0 reset?
 
-Thank again for your help.
+Regardless, I don't really expect users other than device assignment,
+and my testing indicates that PM reset is useless on these devices for
+that.  Thanks,
 
--Longman
+Alex
+
 
