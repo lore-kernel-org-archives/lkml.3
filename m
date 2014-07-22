@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933363AbaGVW0V (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 18:26:21 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44779 "EHLO
+	id S932652AbaGVW0Z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 18:26:25 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:44791 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933160AbaGVW0Q (ORCPT
+	with ESMTP id S933355AbaGVW0V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 18:26:16 -0400
+	Tue, 22 Jul 2014 18:26:21 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alex Deucher <alexander.deucher@amd.com>,
+Cc: Russell King <rmk+kernel@arm.linux.org.uk>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 051/116] drm/radeon: only apply hdmi bpc pll flags when encoder mode is hdmi
-Date: Tue, 22 Jul 2014 15:21:02 -0700
-Message-Id: <1406067727-19683-52-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 024/116] ARM: stacktrace: avoid listing stacktrace functions in stacktrace
+Date: Tue, 22 Jul 2014 15:20:35 -0700
+Message-Id: <1406067727-19683-25-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1406067727-19683-1-git-send-email-kamal@canonical.com>
 References: <1406067727-19683-1-git-send-email-kamal@canonical.com>
@@ -27,84 +27,92 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Russell King <rmk+kernel@arm.linux.org.uk>
 
-commit 7d5ab3009a8ca777174f6f469277b3922d56fd4b upstream.
+commit 3683f44c42e991d313dc301504ee0fca1aeb8580 upstream.
 
-May fix display issues with non-HDMI displays.
+While debugging the FEC ethernet driver using stacktrace, it was noticed
+that the stacktraces always begin as follows:
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+ [<c00117b4>] save_stack_trace_tsk+0x0/0x98
+ [<c0011870>] save_stack_trace+0x24/0x28
+ ...
+
+This is because the stack trace code includes the stack frames for itself.
+This is incorrect behaviour, and also leads to "skip" doing the wrong
+thing (which is the number of stack frames to avoid recording.)
+
+Perversely, it does the right thing when passed a non-current thread.  Fix
+this by ensuring that we have a known constant number of frames above the
+main stack trace function, and always skip these.
+
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/gpu/drm/radeon/atombios_crtc.c | 48 ++++++++++++++++++----------------
- 1 file changed, 26 insertions(+), 22 deletions(-)
+ arch/arm/kernel/stacktrace.c | 18 +++++++++++++-----
+ 1 file changed, 13 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/gpu/drm/radeon/atombios_crtc.c b/drivers/gpu/drm/radeon/atombios_crtc.c
-index b9ff6e2..bbcc441 100644
---- a/drivers/gpu/drm/radeon/atombios_crtc.c
-+++ b/drivers/gpu/drm/radeon/atombios_crtc.c
-@@ -839,14 +839,16 @@ static void atombios_crtc_program_pll(struct drm_crtc *crtc,
- 			args.v5.ucMiscInfo = 0; /* HDMI depth, etc. */
- 			if (ss_enabled && (ss->type & ATOM_EXTERNAL_SS_MASK))
- 				args.v5.ucMiscInfo |= PIXEL_CLOCK_V5_MISC_REF_DIV_SRC;
--			switch (bpc) {
--			case 8:
--			default:
--				args.v5.ucMiscInfo |= PIXEL_CLOCK_V5_MISC_HDMI_24BPP;
--				break;
--			case 10:
--				args.v5.ucMiscInfo |= PIXEL_CLOCK_V5_MISC_HDMI_30BPP;
--				break;
-+			if (encoder_mode == ATOM_ENCODER_MODE_HDMI) {
-+				switch (bpc) {
-+				case 8:
-+				default:
-+					args.v5.ucMiscInfo |= PIXEL_CLOCK_V5_MISC_HDMI_24BPP;
-+					break;
-+				case 10:
-+					args.v5.ucMiscInfo |= PIXEL_CLOCK_V5_MISC_HDMI_30BPP;
-+					break;
-+				}
- 			}
- 			args.v5.ucTransmitterID = encoder_id;
- 			args.v5.ucEncoderMode = encoder_mode;
-@@ -861,20 +863,22 @@ static void atombios_crtc_program_pll(struct drm_crtc *crtc,
- 			args.v6.ucMiscInfo = 0; /* HDMI depth, etc. */
- 			if (ss_enabled && (ss->type & ATOM_EXTERNAL_SS_MASK))
- 				args.v6.ucMiscInfo |= PIXEL_CLOCK_V6_MISC_REF_DIV_SRC;
--			switch (bpc) {
--			case 8:
--			default:
--				args.v6.ucMiscInfo |= PIXEL_CLOCK_V6_MISC_HDMI_24BPP;
--				break;
--			case 10:
--				args.v6.ucMiscInfo |= PIXEL_CLOCK_V6_MISC_HDMI_30BPP;
--				break;
--			case 12:
--				args.v6.ucMiscInfo |= PIXEL_CLOCK_V6_MISC_HDMI_36BPP;
--				break;
--			case 16:
--				args.v6.ucMiscInfo |= PIXEL_CLOCK_V6_MISC_HDMI_48BPP;
--				break;
-+			if (encoder_mode == ATOM_ENCODER_MODE_HDMI) {
-+				switch (bpc) {
-+				case 8:
-+				default:
-+					args.v6.ucMiscInfo |= PIXEL_CLOCK_V6_MISC_HDMI_24BPP;
-+					break;
-+				case 10:
-+					args.v6.ucMiscInfo |= PIXEL_CLOCK_V6_MISC_HDMI_30BPP;
-+					break;
-+				case 12:
-+					args.v6.ucMiscInfo |= PIXEL_CLOCK_V6_MISC_HDMI_36BPP;
-+					break;
-+				case 16:
-+					args.v6.ucMiscInfo |= PIXEL_CLOCK_V6_MISC_HDMI_48BPP;
-+					break;
-+				}
- 			}
- 			args.v6.ucTransmitterID = encoder_id;
- 			args.v6.ucEncoderMode = encoder_mode;
+diff --git a/arch/arm/kernel/stacktrace.c b/arch/arm/kernel/stacktrace.c
+index af4e8c8..6582c4a 100644
+--- a/arch/arm/kernel/stacktrace.c
++++ b/arch/arm/kernel/stacktrace.c
+@@ -83,13 +83,16 @@ static int save_trace(struct stackframe *frame, void *d)
+ 	return trace->nr_entries >= trace->max_entries;
+ }
+ 
+-void save_stack_trace_tsk(struct task_struct *tsk, struct stack_trace *trace)
++/* This must be noinline to so that our skip calculation works correctly */
++static noinline void __save_stack_trace(struct task_struct *tsk,
++	struct stack_trace *trace, unsigned int nosched)
+ {
+ 	struct stack_trace_data data;
+ 	struct stackframe frame;
+ 
+ 	data.trace = trace;
+ 	data.skip = trace->skip;
++	data.no_sched_functions = nosched;
+ 
+ 	if (tsk != current) {
+ #ifdef CONFIG_SMP
+@@ -102,7 +105,6 @@ void save_stack_trace_tsk(struct task_struct *tsk, struct stack_trace *trace)
+ 			trace->entries[trace->nr_entries++] = ULONG_MAX;
+ 		return;
+ #else
+-		data.no_sched_functions = 1;
+ 		frame.fp = thread_saved_fp(tsk);
+ 		frame.sp = thread_saved_sp(tsk);
+ 		frame.lr = 0;		/* recovered from the stack */
+@@ -111,11 +113,12 @@ void save_stack_trace_tsk(struct task_struct *tsk, struct stack_trace *trace)
+ 	} else {
+ 		register unsigned long current_sp asm ("sp");
+ 
+-		data.no_sched_functions = 0;
++		/* We don't want this function nor the caller */
++		data.skip += 2;
+ 		frame.fp = (unsigned long)__builtin_frame_address(0);
+ 		frame.sp = current_sp;
+ 		frame.lr = (unsigned long)__builtin_return_address(0);
+-		frame.pc = (unsigned long)save_stack_trace_tsk;
++		frame.pc = (unsigned long)__save_stack_trace;
+ 	}
+ 
+ 	walk_stackframe(&frame, save_trace, &data);
+@@ -123,9 +126,14 @@ void save_stack_trace_tsk(struct task_struct *tsk, struct stack_trace *trace)
+ 		trace->entries[trace->nr_entries++] = ULONG_MAX;
+ }
+ 
++void save_stack_trace_tsk(struct task_struct *tsk, struct stack_trace *trace)
++{
++	__save_stack_trace(tsk, trace, 1);
++}
++
+ void save_stack_trace(struct stack_trace *trace)
+ {
+-	save_stack_trace_tsk(current, trace);
++	__save_stack_trace(current, trace, 0);
+ }
+ EXPORT_SYMBOL_GPL(save_stack_trace);
+ #endif
 -- 
 1.9.1
 
