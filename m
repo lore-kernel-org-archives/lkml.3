@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753669AbaGVIKP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 04:10:15 -0400
-Received: from mga01.intel.com ([192.55.52.88]:46705 "EHLO mga01.intel.com"
+	id S1754167AbaGVIO3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 04:14:29 -0400
+Received: from mga01.intel.com ([192.55.52.88]:46682 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753206AbaGVIKM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 04:10:12 -0400
+	id S1753558AbaGVIKJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 04:10:09 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,708,1400050800"; 
-   d="scan'208";a="573497466"
+   d="scan'208";a="573497434"
 From: "Yan, Zheng" <zheng.z.yan@intel.com>
 To: linux-kernel@vger.kernel.org
 Cc: a.p.zijlstra@chello.nl, mingo@kernel.org, acme@infradead.org,
         eranian@google.com, andi@firstfloor.org,
         "Yan, Zheng" <zheng.z.yan@intel.com>
-Subject: [PATCH v3 3/9] perf, x86: use the PEBS auto reload mechanism when possible
-Date: Tue, 22 Jul 2014 16:09:56 +0800
-Message-Id: <1406016602-31845-4-git-send-email-zheng.z.yan@intel.com>
+Subject: [PATCH v3 1/9] perf, core: introduce pmu context switch callback
+Date: Tue, 22 Jul 2014 16:09:54 +0800
+Message-Id: <1406016602-31845-2-git-send-email-zheng.z.yan@intel.com>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1406016602-31845-1-git-send-email-zheng.z.yan@intel.com>
 References: <1406016602-31845-1-git-send-email-zheng.z.yan@intel.com>
@@ -24,90 +24,182 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When a fixed period is specified, this patch make perf use the PEBS
-auto reload mechanism. This makes normal profiling faster, because
-it avoids one costly MSR write in the PMI handler.
+The callback is invoked when process is scheduled in or out.
+It provides mechanism for later patches to save/store the LBR
+stack. For the schedule in case, the callback is invoked at
+the same place that flush branch stack callback is invoked.
+So it also can replace the flush branch stack callback. To
+avoid unnecessary overhead, the callback is enabled only when
+there are events use the LBR stack.
 
-Signef-off-by: Yan, Zheng <zheng.z.yan@intel.com>
+Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
 ---
- arch/x86/kernel/cpu/perf_event.c          | 15 +++++++++------
- arch/x86/kernel/cpu/perf_event.h          |  1 +
- arch/x86/kernel/cpu/perf_event_intel_ds.c |  9 +++++++++
- 3 files changed, 19 insertions(+), 6 deletions(-)
+ arch/x86/kernel/cpu/perf_event.c |  7 +++++
+ arch/x86/kernel/cpu/perf_event.h |  2 ++
+ include/linux/perf_event.h       |  9 ++++++
+ kernel/events/core.c             | 63 ++++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 81 insertions(+)
 
 diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index 8868e9b..60593bc 100644
+index 2bdfbff..7d22972 100644
 --- a/arch/x86/kernel/cpu/perf_event.c
 +++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -979,13 +979,16 @@ int x86_perf_event_set_period(struct perf_event *event)
+@@ -1874,6 +1874,12 @@ static const struct attribute_group *x86_pmu_attr_groups[] = {
+ 	NULL,
+ };
  
- 	per_cpu(pmc_prev_left[idx], smp_processor_id()) = left;
++static void x86_pmu_sched_task(struct perf_event_context *ctx, bool sched_in)
++{
++	if (x86_pmu.sched_task)
++		x86_pmu.sched_task(ctx, sched_in);
++}
++
+ static void x86_pmu_flush_branch_stack(void)
+ {
+ 	if (x86_pmu.flush_branch_stack)
+@@ -1907,6 +1913,7 @@ static struct pmu pmu = {
  
--	/*
--	 * The hw event starts counting from this event offset,
--	 * mark it to be able to extra future deltas:
--	 */
--	local64_set(&hwc->prev_count, (u64)-left);
-+	if (!(hwc->flags & PERF_X86_EVENT_AUTO_RELOAD) ||
-+	    local64_read(&hwc->prev_count) != (u64)-left) {
-+		/*
-+		 * The hw event starts counting from this event offset,
-+		 * mark it to be able to extra future deltas:
-+		 */
-+		local64_set(&hwc->prev_count, (u64)-left);
+ 	.event_idx		= x86_pmu_event_idx,
+ 	.flush_branch_stack	= x86_pmu_flush_branch_stack,
++	.sched_task		= x86_pmu_sched_task,
+ };
  
--	wrmsrl(hwc->event_base, (u64)(-left) & x86_pmu.cntval_mask);
-+		wrmsrl(hwc->event_base, (u64)(-left) & x86_pmu.cntval_mask);
-+	}
- 
- 	/*
- 	 * Due to erratum on certan cpu we need
+ void arch_perf_update_userpage(struct perf_event_mmap_page *userpg, u64 now)
 diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
-index d8165f3..fa8dfd4 100644
+index 3b2f9bd..e70b352 100644
 --- a/arch/x86/kernel/cpu/perf_event.h
 +++ b/arch/x86/kernel/cpu/perf_event.h
-@@ -69,6 +69,7 @@ struct event_constraint {
- #define PERF_X86_EVENT_PEBS_ST		0x2 /* st data address sampling */
- #define PERF_X86_EVENT_PEBS_ST_HSW	0x4 /* haswell style st data sampling */
- #define PERF_X86_EVENT_COMMITTED	0x8 /* event passed commit_txn */
-+#define PERF_X86_EVENT_AUTO_RELOAD	0x10 /* use PEBS auto-reload */
+@@ -429,6 +429,8 @@ struct x86_pmu {
  
- struct amd_nb {
- 	int nb_id;  /* NorthBridge id */
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-index 980970c..ab91b11 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-@@ -714,6 +714,8 @@ void intel_pmu_pebs_enable(struct perf_event *event)
- 	struct hw_perf_event *hwc = &event->hw;
+ 	void		(*check_microcode)(void);
+ 	void		(*flush_branch_stack)(void);
++	void		(*sched_task)(struct perf_event_context *ctx,
++				      bool sched_in);
  
- 	hwc->config &= ~ARCH_PERFMON_EVENTSEL_INT;
-+	if (!event->attr.freq)
-+		hwc->flags |= PERF_X86_EVENT_AUTO_RELOAD;
- 
- 	cpuc->pebs_enabled |= 1ULL << hwc->idx;
- 
-@@ -721,6 +723,12 @@ void intel_pmu_pebs_enable(struct perf_event *event)
- 		cpuc->pebs_enabled |= 1ULL << (hwc->idx + 32);
- 	else if (event->hw.flags & PERF_X86_EVENT_PEBS_ST)
- 		cpuc->pebs_enabled |= 1ULL << 63;
+ 	/*
+ 	 * Intel Arch Perfmon v2+
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index 707617a..fe92e6b 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -262,6 +262,13 @@ struct pmu {
+ 	 * flush branch stack on context-switches (needed in cpu-wide mode)
+ 	 */
+ 	void (*flush_branch_stack)	(void);
 +
-+	/* Use auto-reload if possible to save a MSR write in the PMI */
-+	if (hwc->flags & PERF_X86_EVENT_AUTO_RELOAD) {
-+		ds->pebs_event_reset[hwc->idx] =
-+			(u64)-hwc->sample_period & x86_pmu.cntval_mask;
++	/*
++	 * context-switches callback for CPU PMU. Other PMUs shouldn't set
++	 * this callback
++	 */
++	void (*sched_task)		(struct perf_event_context *ctx,
++					 bool sched_in);
+ };
+ 
+ /**
+@@ -557,6 +564,8 @@ extern void perf_event_delayed_put(struct task_struct *task);
+ extern void perf_event_print_debug(void);
+ extern void perf_pmu_disable(struct pmu *pmu);
+ extern void perf_pmu_enable(struct pmu *pmu);
++extern void perf_sched_cb_user_inc(struct pmu *pmu);
++extern void perf_sched_cb_user_dec(struct pmu *pmu);
+ extern int perf_event_task_disable(void);
+ extern int perf_event_task_enable(void);
+ extern int perf_event_refresh(struct perf_event *event, int refresh);
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index 67e3b9c..7431bec 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -144,6 +144,7 @@ enum event_type_t {
+ struct static_key_deferred perf_sched_events __read_mostly;
+ static DEFINE_PER_CPU(atomic_t, perf_cgroup_events);
+ static DEFINE_PER_CPU(atomic_t, perf_branch_stack_events);
++static DEFINE_PER_CPU(int, perf_sched_cb_users);
+ 
+ static atomic_t nr_mmap_events __read_mostly;
+ static atomic_t nr_comm_events __read_mostly;
+@@ -2362,6 +2363,58 @@ unlock:
+ 	}
+ }
+ 
++void perf_sched_cb_user_inc(struct pmu *pmu)
++{
++	this_cpu_inc(perf_sched_cb_users);
++}
++
++void perf_sched_cb_user_dec(struct pmu *pmu)
++{
++	this_cpu_dec(perf_sched_cb_users);
++}
++
++/*
++ * This function provides the context switch callback to the lower code
++ * layer. It is invoked ONLY when the context switch callback is enabled.
++ */
++static void perf_pmu_sched_task(struct task_struct *prev,
++				struct task_struct *next,
++				bool sched_in)
++{
++	struct perf_cpu_context *cpuctx;
++	struct pmu *pmu;
++	unsigned long flags;
++
++	if (prev == next)
++		return;
++
++	local_irq_save(flags);
++
++	rcu_read_lock();
++
++	list_for_each_entry_rcu(pmu, &pmus, entry) {
++		if (pmu->sched_task) {
++			cpuctx = this_cpu_ptr(pmu->pmu_cpu_context);
++
++			perf_ctx_lock(cpuctx, cpuctx->task_ctx);
++
++			perf_pmu_disable(pmu);
++
++			pmu->sched_task(cpuctx->task_ctx, sched_in);
++
++			perf_pmu_enable(pmu);
++
++			perf_ctx_unlock(cpuctx, cpuctx->task_ctx);
++			/* only CPU PMU has context switch callback */
++			break;
++		}
 +	}
++
++	rcu_read_unlock();
++
++	local_irq_restore(flags);
++}
++
+ #define for_each_task_context_nr(ctxn)					\
+ 	for ((ctxn) = 0; (ctxn) < perf_nr_task_contexts; (ctxn)++)
+ 
+@@ -2381,6 +2434,9 @@ void __perf_event_task_sched_out(struct task_struct *task,
+ {
+ 	int ctxn;
+ 
++	if (__get_cpu_var(perf_sched_cb_users))
++		perf_pmu_sched_task(task, next, false);
++
+ 	for_each_task_context_nr(ctxn)
+ 		perf_event_context_sched_out(task, ctxn, next);
+ 
+@@ -2638,6 +2694,13 @@ void __perf_event_task_sched_in(struct task_struct *prev,
+ 	/* check for system-wide branch_stack events */
+ 	if (atomic_read(&__get_cpu_var(perf_branch_stack_events)))
+ 		perf_branch_stack_sched_in(prev, task);
++
++	/* check for system-wide branch_stack events */
++	if (atomic_read(&__get_cpu_var(perf_branch_stack_events)))
++		perf_branch_stack_sched_in(prev, task);
++
++	if (__get_cpu_var(perf_sched_cb_users))
++		perf_pmu_sched_task(prev, task, true);
  }
  
- void intel_pmu_pebs_disable(struct perf_event *event)
-@@ -739,6 +747,7 @@ void intel_pmu_pebs_disable(struct perf_event *event)
- 		wrmsrl(MSR_IA32_PEBS_ENABLE, cpuc->pebs_enabled);
- 
- 	hwc->config |= ARCH_PERFMON_EVENTSEL_INT;
-+	hwc->flags &= ~PERF_X86_EVENT_AUTO_RELOAD;
- }
- 
- void intel_pmu_pebs_enable_all(void)
+ static u64 perf_calculate_period(struct perf_event *event, u64 nsec, u64 count)
 -- 
 1.9.3
 
