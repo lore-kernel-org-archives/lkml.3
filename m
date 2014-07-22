@@ -1,124 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754793AbaGVNpv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 09:45:51 -0400
-Received: from pegasos-out.vodafone.de ([80.84.1.38]:41391 "EHLO
-	pegasos-out.vodafone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751681AbaGVNpt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 09:45:49 -0400
-X-Spam-Flag: NO
-X-Spam-Score: 0.2
-Authentication-Results: rohrpostix2.prod.vfnet.de (amavisd-new); dkim=pass
-	header.i=@vodafone.de
-X-DKIM: OpenDKIM Filter v2.6.8 pegasos-out.vodafone.de 4218E7252CB
-X-DKIM: OpenDKIM Filter v2.0.2 smtp-04.vodafone.de 43D1CE5B2C
-Message-ID: <53CE6AFA.1060807@vodafone.de>
-Date: Tue, 22 Jul 2014 15:45:30 +0200
-From: =?ISO-8859-1?Q?Christian_K=F6nig?= <deathsimple@vodafone.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: =?ISO-8859-1?Q?Christian_K=F6nig?= <christian.koenig@amd.com>,
-        Dave Airlie <airlied@gmail.com>,
-        Maarten Lankhorst <maarten.lankhorst@canonical.com>,
-        Thomas Hellstrom <thellstrom@vmware.com>,
-        nouveau <nouveau@lists.freedesktop.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        dri-devel <dri-devel@lists.freedesktop.org>,
-        Ben Skeggs <bskeggs@redhat.com>,
-        "Deucher, Alexander" <alexander.deucher@amd.com>
-Subject: Re: [Nouveau] [PATCH 09/17] drm/radeon: use common fence implementation
- for fences
-References: <20140709093124.11354.3774.stgit@patser> <20140709122953.11354.46381.stgit@patser> <CAPM=9tyD2ZbrcGDC3hfNb7qNdzsfnyD-ZwM7G-nOgxeu5YKuSg@mail.gmail.com> <53CE2421.5040906@amd.com> <20140722114607.GL15237@phenom.ffwll.local> <20140722115737.GN15237@phenom.ffwll.local> <53CE56ED.4040109@vodafone.de> <20140722132652.GO15237@phenom.ffwll.local>
-In-Reply-To: <20140722132652.GO15237@phenom.ffwll.local>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+	id S1754709AbaGVNpK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 09:45:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:33085 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754488AbaGVNpF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 09:45:05 -0400
+From: "Jerome Marchand" <jmarchan@redhat.com>
+To: linux-mm@kvack.org
+Cc: linux-kernel@vger.kernel.org, linux-s390@vger.kernel.org,
+        linux-doc@vger.kernel.org, Hugh Dickins <hughd@google.com>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, linux390@de.ibm.com,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Randy Dunlap <rdunlap@infradead.org>
+Subject: [PATCH 4/5] mm, shmem: Add shmem swap memory accounting
+Date: Tue, 22 Jul 2014 15:43:51 +0200
+Message-Id: <1406036632-26552-5-git-send-email-jmarchan@redhat.com>
+In-Reply-To: <1406036632-26552-1-git-send-email-jmarchan@redhat.com>
+References: <1406036632-26552-1-git-send-email-jmarchan@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 22.07.2014 15:26, schrieb Daniel Vetter:
-> On Tue, Jul 22, 2014 at 02:19:57PM +0200, Christian König wrote:
->> Am 22.07.2014 13:57, schrieb Daniel Vetter:
->>> On Tue, Jul 22, 2014 at 01:46:07PM +0200, Daniel Vetter wrote:
->>>> On Tue, Jul 22, 2014 at 10:43:13AM +0200, Christian König wrote:
->>>>> Am 22.07.2014 06:05, schrieb Dave Airlie:
->>>>>> On 9 July 2014 22:29, Maarten Lankhorst <maarten.lankhorst@canonical.com> wrote:
->>>>>>> Signed-off-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
->>>>>>> ---
->>>>>>>   drivers/gpu/drm/radeon/radeon.h        |   15 +-
->>>>>>>   drivers/gpu/drm/radeon/radeon_device.c |   60 ++++++++-
->>>>>>>   drivers/gpu/drm/radeon/radeon_fence.c  |  223 ++++++++++++++++++++++++++------
->>>>>>>   3 files changed, 248 insertions(+), 50 deletions(-)
->>>>>>>
->>>>>>  From what I can see this is still suffering from the problem that we
->>>>>> need to find a proper solution to,
->>>>>>
->>>>>> My summary of the issues after talking to Jerome and Ben and
->>>>>> re-reading things is:
->>>>>>
->>>>>> We really need to work out a better interface into the drivers to be
->>>>>> able to avoid random atomic entrypoints,
->>>>> Which is exactly what I criticized from the very first beginning. Good to
->>>>> know that I'm not the only one thinking that this isn't such a good idea.
->>>> I guess I've lost context a bit, but which atomic entry point are we
->>>> talking about? Afaics the only one that's mandatory is the is
->>>> fence->signaled callback to check whether a fence really has been
->>>> signalled. It's used internally by the fence code to avoid spurious
->>>> wakeups. Afaik that should be doable already on any hardware. If that's
->>>> not the case then we can always track the signalled state in software and
->>>> double-check in a worker thread before updating the sw state. And wrap
->>>> this all up into a special fence class if there's more than one driver
->>>> needing this.
->>> One thing I've forgotten: The i915 scheduler that's floating around runs
->>> its bottom half from irq context. So I really want to be able to check
->>> fence state from irq context and I also want to make it possible
->>> (possible! not mandatory) to register callbacks which are run from any
->>> context asap after the fence is signalled.
->> NAK, that's just the bad design I've talked about. Checking fence state
->> inside the same driver from interrupt context is OK, because it's the
->> drivers interrupt that we are talking about here.
->>
->> Checking fence status from another drivers interrupt context is what really
->> concerns me here, cause your driver doesn't have the slightest idea if the
->> called driver is really capable of checking the fence right now.
-> I guess my mail hasn't been clear then. If you don't like it we could add
-> a bit of glue to insulate the madness and bad design i915 might do from
-> radeon. That imo doesn't invalidate the overall fence interfaces.
->
-> So what about the following:
-> - fence->enabling_signaling is restricted to be called from process
->    context. We don't use any different yet, so would boild down to adding a
->    WARN_ON(in_interrupt) or so to fence_enable_sw_signalling.
->
-> - Make fence->signaled optional (already the case) and don't implement it
->    in readon (i.e. reduce this patch here). Only downside is that radeon
->    needs to correctly (i.e. without races or so) call fence_signal. And the
->    cross-driver synchronization might be a bit less efficient. Note that
->    you can call fence_signal from wherever you want to, so hopefully that
->    doesn't restrict your implementation.
->
-> End result: No one calls into radeon from interrupt context, and this is
-> guaranteed.
->
-> Would that be something you can agree to?
+Adds get_mm_shswap() which compute the size of swaped out shmem. It
+does so by pagewalking the mm and using the new shmem_locate() function
+to get the physical location of shmem pages.
+The result is displayed in the new VmShSw line of /proc/<pid>/status.
+Use mm_walk an shmem_locate() to account paged out shmem pages.
 
-No, the whole enable_signaling stuff should go away. No callback from 
-the driver into the fence code, only the other way around.
+It significantly slows down /proc/<pid>/status acccess speed when
+there is a big shmem mapping. If that is an issue, we can drop this
+patch and only display this counter in the inherently slower
+/proc/<pid>/smaps file (cf. next patch).
 
-fence->signaled as well as fence->wait should become mandatory and only 
-called from process context without holding any locks, neither atomic 
-nor any mutex/semaphore (rcu might be ok).
+Signed-off-by: Jerome Marchand <jmarchan@redhat.com>
+---
+ Documentation/filesystems/proc.txt |  2 +
+ fs/proc/task_mmu.c                 | 80 ++++++++++++++++++++++++++++++++++++--
+ 2 files changed, 79 insertions(+), 3 deletions(-)
 
-> Like I've said I think restricting the insanity other people are willing
-> to live with just because you don't like it isn't right. But it is
-> certainly right for you to insist on not being forced into any such
-> design. I think the above would achieve this.
+diff --git a/Documentation/filesystems/proc.txt b/Documentation/filesystems/proc.txt
+index 1c49957..1a15c56 100644
+--- a/Documentation/filesystems/proc.txt
++++ b/Documentation/filesystems/proc.txt
+@@ -172,6 +172,7 @@ read the file /proc/PID/status:
+   VmPTE:        20 kb
+   VmSwap:        0 kB
+   VmShm:         0 kB
++  VmShSw:        0 kB
+   Threads:        1
+   SigQ:   0/28578
+   SigPnd: 0000000000000000
+@@ -230,6 +231,7 @@ Table 1-2: Contents of the status files (as of 2.6.30-rc7)
+  VmPTE                       size of page table entries
+  VmSwap                      size of swap usage (the number of referred swapents)
+  VmShm	                      size of resident shmem memory
++ VmShSw                      size of paged out shmem memory
+  Threads                     number of threads
+  SigQ                        number of signals queued/max. number for queue
+  SigPnd                      bitmap of pending signals for the thread
+diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
+index 4e60751..73f0ce4 100644
+--- a/fs/proc/task_mmu.c
++++ b/fs/proc/task_mmu.c
+@@ -19,9 +19,80 @@
+ #include <asm/tlbflush.h>
+ #include "internal.h"
+ 
++struct shswap_stats {
++	struct vm_area_struct *vma;
++	unsigned long shswap;
++};
++
++#ifdef CONFIG_SHMEM
++static int shswap_pte(pte_t *pte, unsigned long addr, unsigned long end,
++		       struct mm_walk *walk)
++{
++	struct shswap_stats *shss = walk->private;
++	struct vm_area_struct *vma = shss->vma;
++	pgoff_t pgoff = linear_page_index(vma, addr);
++	pte_t ptent = *pte;
++
++	if (pte_none(ptent) &&
++	    shmem_locate(vma, pgoff, NULL) == SHMEM_SWAP)
++		shss->shswap += end - addr;
++
++	return 0;
++}
++
++static int shswap_pte_hole(unsigned long addr, unsigned long end,
++			   struct mm_walk *walk)
++{
++	struct shswap_stats *shss = walk->private;
++	struct vm_area_struct *vma = shss->vma;
++	pgoff_t pgoff;
++
++	for (; addr != end; addr += PAGE_SIZE) {
++		pgoff = linear_page_index(vma, addr);
++
++		if (shmem_locate(vma, pgoff, NULL) == SHMEM_SWAP)
++			shss->shswap += PAGE_SIZE;
++	}
++
++	return 0;
++}
++
++static unsigned long get_mm_shswap(struct mm_struct *mm)
++{
++	struct vm_area_struct *vma;
++	struct shswap_stats shss;
++	struct mm_walk shswap_walk = {
++		.pte_entry = shswap_pte,
++		.pte_hole = shswap_pte_hole,
++		.mm = mm,
++		.private = &shss,
++	};
++
++	memset(&shss, 0, sizeof(shss));
++
++	down_read(&mm->mmap_sem);
++	for (vma = mm->mmap; vma; vma = vma->vm_next)
++		if (shmem_vma(vma)) {
++			shss.vma = vma;
++			walk_page_range(vma->vm_start, vma->vm_end,
++					&shswap_walk);
++		}
++	up_read(&mm->mmap_sem);
++
++	return shss.shswap;
++}
++
++#else
++
++static unsigned long get_mm_shswap(struct mm_struct *mm)
++{
++	return 0;
++}
++#endif
++
+ void task_mem(struct seq_file *m, struct mm_struct *mm)
+ {
+-	unsigned long data, text, lib, swap, shmem;
++	unsigned long data, text, lib, swap, shmem, shswap;
+ 	unsigned long hiwater_vm, total_vm, hiwater_rss, total_rss;
+ 
+ 	/*
+@@ -43,6 +114,7 @@ void task_mem(struct seq_file *m, struct mm_struct *mm)
+ 	lib = (mm->exec_vm << (PAGE_SHIFT-10)) - text;
+ 	swap = get_mm_counter(mm, MM_SWAPENTS);
+ 	shmem = get_mm_counter(mm, MM_SHMEMPAGES);
++	shswap = get_mm_shswap(mm);
+ 	seq_printf(m,
+ 		"VmPeak:\t%8lu kB\n"
+ 		"VmSize:\t%8lu kB\n"
+@@ -56,7 +128,8 @@ void task_mem(struct seq_file *m, struct mm_struct *mm)
+ 		"VmLib:\t%8lu kB\n"
+ 		"VmPTE:\t%8lu kB\n"
+ 		"VmSwap:\t%8lu kB\n"
+-		"VmShm:\t%8lu kB\n",
++		"VmShm:\t%8lu kB\n"
++		"VmShSw:\t%8lu kB\n",
+ 		hiwater_vm << (PAGE_SHIFT-10),
+ 		total_vm << (PAGE_SHIFT-10),
+ 		mm->locked_vm << (PAGE_SHIFT-10),
+@@ -68,7 +141,8 @@ void task_mem(struct seq_file *m, struct mm_struct *mm)
+ 		(PTRS_PER_PTE * sizeof(pte_t) *
+ 		 atomic_long_read(&mm->nr_ptes)) >> 10,
+ 		swap << (PAGE_SHIFT-10),
+-		shmem << (PAGE_SHIFT-10));
++		shmem << (PAGE_SHIFT-10),
++		shswap >> 10);
+ }
+ 
+ unsigned long task_vsize(struct mm_struct *mm)
+-- 
+1.9.3
 
-I don't think so. If it's just me I would say that I'm just to cautious 
-and the idea is still save to apply to the whole kernel.
-
-But since Dave, Jerome and Ben seems to have similar concerns I think we 
-need to agree to a minimum and save interface for all drivers.
-
-Christian.
