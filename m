@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933138AbaGVWZp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 18:25:45 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44670 "EHLO
+	id S933273AbaGVW0F (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 18:26:05 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:44729 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933107AbaGVWZm (ORCPT
+	with ESMTP id S933160AbaGVWZ7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 18:25:42 -0400
+	Tue, 22 Jul 2014 18:25:59 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Olivier Langlois <olivier@trillion01.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+Cc: Mike Marciniszyn <mike.marciniszyn@intel.com>,
+        Roland Dreier <roland@purestorage.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 026/116] [media] uvcvideo: Fix clock param realtime setting
-Date: Tue, 22 Jul 2014 15:20:37 -0700
-Message-Id: <1406067727-19683-27-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 034/116] IB/qib: Fix port in pkey change event
+Date: Tue, 22 Jul 2014 15:20:45 -0700
+Message-Id: <1406067727-19683-35-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1406067727-19683-1-git-send-email-kamal@canonical.com>
 References: <1406067727-19683-1-git-send-email-kamal@canonical.com>
@@ -29,75 +28,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Olivier Langlois <olivier@trillion01.com>
+From: Mike Marciniszyn <mike.marciniszyn@intel.com>
 
-commit 3b35fc81e7ec552147a4fd843d0da0bbbe4ef253 upstream.
+commit 911eccd284d13d78c92ec4f1f1092c03457d732a upstream.
 
-timestamps in v4l2 buffers returned to userspace are updated in
-uvc_video_clock_update() which uses timestamps fetched from
-uvc_video_clock_decode() by calling unconditionally ktime_get_ts().
+The code used a literal 1 in dispatching an IB_EVENT_PKEY_CHANGE.
 
-Hence setting the module clock param to realtime has no effect before
-this patch.
+As of the dual port qib QDR card, this is not necessarily correct.
 
-This has been tested with ffmpeg:
+Change to use the port as specified in the call.
 
-ffmpeg -y -f v4l2 -input_format yuyv422 -video_size 640x480 -framerate 30 -i /dev/video0 \
- -f alsa -acodec pcm_s16le -ar 16000 -ac 1 -i default \
- -c:v libx264 -preset ultrafast \
- -c:a libfdk_aac \
- out.mkv
-
-and inspecting the v4l2 input starting timestamp.
-
-Signed-off-by: Olivier Langlois <olivier@trillion01.com>
-Signed-off-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Reported-by: Alex Estrin <alex.estrin@intel.com>
+Reviewed-by: Dennis Dalessandro <dennis.dalessandro@intel.com>
+Signed-off-by: Mike Marciniszyn <mike.marciniszyn@intel.com>
+Signed-off-by: Roland Dreier <roland@purestorage.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/media/usb/uvc/uvc_video.c | 15 ++++++++++-----
- 1 file changed, 10 insertions(+), 5 deletions(-)
+ drivers/infiniband/hw/qib/qib_mad.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/media/usb/uvc/uvc_video.c b/drivers/media/usb/uvc/uvc_video.c
-index e1c5bf3e..c081812 100644
---- a/drivers/media/usb/uvc/uvc_video.c
-+++ b/drivers/media/usb/uvc/uvc_video.c
-@@ -361,6 +361,14 @@ static int uvc_commit_video(struct uvc_streaming *stream,
-  * Clocks and timestamps
-  */
+diff --git a/drivers/infiniband/hw/qib/qib_mad.c b/drivers/infiniband/hw/qib/qib_mad.c
+index ccb1191..1dd9fcb 100644
+--- a/drivers/infiniband/hw/qib/qib_mad.c
++++ b/drivers/infiniband/hw/qib/qib_mad.c
+@@ -1028,7 +1028,7 @@ static int set_pkeys(struct qib_devdata *dd, u8 port, u16 *pkeys)
  
-+static inline void uvc_video_get_ts(struct timespec *ts)
-+{
-+	if (uvc_clock_param == CLOCK_MONOTONIC)
-+		ktime_get_ts(ts);
-+	else
-+		ktime_get_real_ts(ts);
-+}
-+
- static void
- uvc_video_clock_decode(struct uvc_streaming *stream, struct uvc_buffer *buf,
- 		       const __u8 *data, int len)
-@@ -420,7 +428,7 @@ uvc_video_clock_decode(struct uvc_streaming *stream, struct uvc_buffer *buf,
- 	stream->clock.last_sof = dev_sof;
- 
- 	host_sof = usb_get_current_frame_number(stream->dev->udev);
--	ktime_get_ts(&ts);
-+	uvc_video_get_ts(&ts);
- 
- 	/* The UVC specification allows device implementations that can't obtain
- 	 * the USB frame number to keep their own frame counters as long as they
-@@ -1010,10 +1018,7 @@ static int uvc_video_decode_start(struct uvc_streaming *stream,
- 			return -ENODATA;
- 		}
- 
--		if (uvc_clock_param == CLOCK_MONOTONIC)
--			ktime_get_ts(&ts);
--		else
--			ktime_get_real_ts(&ts);
-+		uvc_video_get_ts(&ts);
- 
- 		buf->buf.v4l2_buf.sequence = stream->sequence;
- 		buf->buf.v4l2_buf.timestamp.tv_sec = ts.tv_sec;
+ 		event.event = IB_EVENT_PKEY_CHANGE;
+ 		event.device = &dd->verbs_dev.ibdev;
+-		event.element.port_num = 1;
++		event.element.port_num = port;
+ 		ib_dispatch_event(&event);
+ 	}
+ 	return 0;
 -- 
 1.9.1
 
