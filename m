@@ -1,86 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755473AbaGVLPO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 07:15:14 -0400
-Received: from mail-we0-f175.google.com ([74.125.82.175]:61848 "EHLO
-	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754267AbaGVLPI (ORCPT
+	id S1755131AbaGVLPp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 07:15:45 -0400
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:34405 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754815AbaGVLLq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 07:15:08 -0400
-Date: Tue, 22 Jul 2014 13:15:16 +0200
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Oded Gabbay <oded.gabbay@amd.com>
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>, Jerome Glisse <j.glisse@gmail.com>,
-        Christian =?iso-8859-1?Q?K=F6nig?= <deathsimple@vodafone.de>,
-        David Airlie <airlied@linux.ie>, Alex Deucher <alexdeucher@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        John Bridgman <John.Bridgman@amd.com>, Joerg Roedel <joro@8bytes.org>,
-        Andrew Lewycky <Andrew.Lewycky@amd.com>,
-        Michel =?iso-8859-1?Q?D=E4nzer?= <michel.daenzer@amd.com>,
-        Ben Goz <Ben.Goz@amd.com>, Alexey Skidanov <Alexey.Skidanov@amd.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        linux-mm <linux-mm@kvack.org>, "Sellek, Tom" <Tom.Sellek@amd.com>
-Subject: Re: [PATCH v2 00/25] AMDKFD kernel driver
-Message-ID: <20140722111515.GJ15237@phenom.ffwll.local>
-Mail-Followup-To: Oded Gabbay <oded.gabbay@amd.com>,
-	Jerome Glisse <j.glisse@gmail.com>,
-	Christian =?iso-8859-1?Q?K=F6nig?= <deathsimple@vodafone.de>,
-	David Airlie <airlied@linux.ie>,
-	Alex Deucher <alexdeucher@gmail.com>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	John Bridgman <John.Bridgman@amd.com>,
-	Joerg Roedel <joro@8bytes.org>,
-	Andrew Lewycky <Andrew.Lewycky@amd.com>,
-	Michel =?iso-8859-1?Q?D=E4nzer?= <michel.daenzer@amd.com>,
-	Ben Goz <Ben.Goz@amd.com>,
-	Alexey Skidanov <Alexey.Skidanov@amd.com>,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-	"dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-	linux-mm <linux-mm@kvack.org>, "Sellek, Tom" <Tom.Sellek@amd.com>
-References: <20140721155851.GB4519@gmail.com>
- <20140721170546.GB15237@phenom.ffwll.local>
- <53CD4DD2.10906@amd.com>
- <CAKMK7uFhvGtxj_d6X=4OBdVSm6cT1-Z-DiTE-FTWMnFjY2uqMQ@mail.gmail.com>
- <53CD5ED9.2040600@amd.com>
- <20140721190306.GB5278@gmail.com>
- <20140722072851.GH15237@phenom.ffwll.local>
- <53CE1E9C.8020105@amd.com>
- <CAKMK7uH+okhn4YGOzrXZ1LM3S2myxdu=_63LGMduwV-WZn06CA@mail.gmail.com>
- <53CE346B.1080601@amd.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53CE346B.1080601@amd.com>
-X-Operating-System: Linux phenom 3.15.0-rc3+ 
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Tue, 22 Jul 2014 07:11:46 -0400
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: sameo@linux.intel.com, Lee Jones <lee.jones@linaro.org>
+Subject: [PATCH 05/19] mfd: wm8350-irq: Fix 'line over 80 chars' warning
+Date: Tue, 22 Jul 2014 12:11:11 +0100
+Message-Id: <1406027485-15657-6-git-send-email-lee.jones@linaro.org>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1406027485-15657-1-git-send-email-lee.jones@linaro.org>
+References: <1406027485-15657-1-git-send-email-lee.jones@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 22, 2014 at 12:52:43PM +0300, Oded Gabbay wrote:
-> On 22/07/14 12:21, Daniel Vetter wrote:
-> >On Tue, Jul 22, 2014 at 10:19 AM, Oded Gabbay <oded.gabbay@amd.com> wrote:
-> >>>Exactly, just prevent userspace from submitting more. And if you have
-> >>>misbehaving userspace that submits too much, reset the gpu and tell it
-> >>>that you're sorry but won't schedule any more work.
-> >>
-> >>I'm not sure how you intend to know if a userspace misbehaves or not. Can
-> >>you elaborate ?
-> >
-> >Well that's mostly policy, currently in i915 we only have a check for
-> >hangs, and if userspace hangs a bit too often then we stop it. I guess
-> >you can do that with the queue unmapping you've describe in reply to
-> >Jerome's mail.
-> >-Daniel
-> >
-> What do you mean by hang ? Like the tdr mechanism in Windows (checks if a
-> gpu job takes more than 2 seconds, I think, and if so, terminates the job).
+This is part of an effort to clean-up the MFD subsystem.
 
-Essentially yes. But we also have some hw features to kill jobs quicker,
-e.g. for media workloads.
--Daniel
+WARNING: line over 80 characters
++       wm8350->irq_base = irq_alloc_descs(irq_base, 0, ARRAY_SIZE(wm8350_irqs), 0);
+
+total: 0 errors, 1 warnings, 552 lines checked
+
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
+---
+ drivers/mfd/wm8350-irq.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/mfd/wm8350-irq.c b/drivers/mfd/wm8350-irq.c
+index cd01f79..813ff50 100644
+--- a/drivers/mfd/wm8350-irq.c
++++ b/drivers/mfd/wm8350-irq.c
+@@ -497,7 +497,8 @@ int wm8350_irq_init(struct wm8350 *wm8350, int irq,
+ 	if (pdata && pdata->irq_base > 0)
+ 		irq_base = pdata->irq_base;
+ 
+-	wm8350->irq_base = irq_alloc_descs(irq_base, 0, ARRAY_SIZE(wm8350_irqs), 0);
++	wm8350->irq_base =
++		irq_alloc_descs(irq_base, 0, ARRAY_SIZE(wm8350_irqs), 0);
+ 	if (wm8350->irq_base < 0) {
+ 		dev_warn(wm8350->dev, "Allocating irqs failed with %d\n",
+ 			wm8350->irq_base);
 -- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+1.8.3.2
+
