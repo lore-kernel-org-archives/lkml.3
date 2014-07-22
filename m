@@ -1,56 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754630AbaGVLJE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 07:09:04 -0400
-Received: from mail-wg0-f52.google.com ([74.125.82.52]:56930 "EHLO
-	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751514AbaGVLJD (ORCPT
+	id S1754228AbaGVLLj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 07:11:39 -0400
+Received: from mail-ig0-f175.google.com ([209.85.213.175]:52693 "EHLO
+	mail-ig0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751253AbaGVLLi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 07:09:03 -0400
-From: Enric Balletbo i Serra <eballetbo@iseebcn.com>
-To: gregkh@linuxfoundation.org, pavan_savoy@ti.com,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org
-Cc: Enric Balletbo i Serra <eballetbo@iseebcn.com>
-Subject: [PATCH] drivers/misc/ti-st: Load firmware from ti-connectivity directory.
-Date: Tue, 22 Jul 2014 13:08:38 +0200
-Message-Id: <1406027318-26186-1-git-send-email-eballetbo@iseebcn.com>
-X-Mailer: git-send-email 1.9.1
+	Tue, 22 Jul 2014 07:11:38 -0400
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: sameo@linux.intel.com, Lee Jones <lee.jones@linaro.org>
+Subject: [PATCH 00/19] mfd: Fix checkpatch errors
+Date: Tue, 22 Jul 2014 12:11:06 +0100
+Message-Id: <1406027485-15657-1-git-send-email-lee.jones@linaro.org>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Looks like the default location for TI firmware is inside the ti-connectivity
-directory, to be coherent with other firmware request used by TI drivers, load
-the TIInit firmware from this directory instead of /lib/firmware directly.
+I'm going through the subsystem rectifying all of the warnings/errors
+checkpatch finds.  Please review as appropriate.
 
-Signed-off-by: Enric Balletbo i Serra <eballetbo@iseebcn.com>
----
- drivers/misc/ti-st/st_kim.c | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+Lee Jones (19):
+  mfd: max77686: Fix 'line over 80 chars' warning
+  mfd: max8925-i2c: Fix 'blank line after declarations' warning
+  mfd: tps80031: Fix 'missing break or fall-through comment' warning
+  mfd: mcp-core: Fix 'blank line after declarations' warning
+  mfd: wm8350-irq: Fix 'line over 80 chars' warning
+  mfd: dm355evm_msp: Fix checkpatch error: insert space after ','
+  mfd: sec-core: Fix 'missing blank line after declarations' warning
+  mfd: twl6040: Fix 'insert space after ','', error
+  mfd: ezx-pcap: Repair coding style errors picked up with checkpatch
+  mfd: lp8788-irq: Fix 'missing blank line after declarations' warning
+  mfd: twl4030-irq: Fix style warnings relating to pr_warn() and sizeof()
+  mfd: max8925-core: Fix 'missing blank line after declarations' warning
+  mfd: wm8350-i2c: Replace spaces with tabs
+  mfd: twl6030-irq: Extinguish coding style warnings
+  mfd: tc6387xb: Remove unnecessary braces and correct style warnings
+  mfd: si476x-cmd: Remedy checkpatch style complains
+  mfd: ipaq-micro: Fix coding style errors/warnings reported by checkpatch
+  mfd: kempld-core: Correct a variety of checkpatch warnings
+  mfd: wm8997-tables: Suppress 'line over 80 chars' warnings
 
-diff --git a/drivers/misc/ti-st/st_kim.c b/drivers/misc/ti-st/st_kim.c
-index 9d3dbb2..fa6a900 100644
---- a/drivers/misc/ti-st/st_kim.c
-+++ b/drivers/misc/ti-st/st_kim.c
-@@ -244,7 +244,8 @@ static long read_local_version(struct kim_data_s *kim_gdata, char *bts_scr_name)
- 	if (version & 0x8000)
- 		maj_ver |= 0x0008;
- 
--	sprintf(bts_scr_name, "TIInit_%d.%d.%d.bts", chip, maj_ver, min_ver);
-+	sprintf(bts_scr_name, "ti-connectivity/TIInit_%d.%d.%d.bts",
-+		chip, maj_ver, min_ver);
- 
- 	/* to be accessed later via sysfs entry */
- 	kim_gdata->version.full = version;
-@@ -287,7 +288,7 @@ static long download_firmware(struct kim_data_s *kim_gdata)
- 	long len = 0;
- 	unsigned char *ptr = NULL;
- 	unsigned char *action_ptr = NULL;
--	unsigned char bts_scr_name[30] = { 0 };	/* 30 char long bts scr name? */
-+	unsigned char bts_scr_name[40] = { 0 };	/* 40 char long bts scr name? */
- 	int wr_room_space;
- 	int cmd_size;
- 	unsigned long timeout;
+ drivers/mfd/dm355evm_msp.c  |  2 +-
+ drivers/mfd/ezx-pcap.c      |  6 +++---
+ drivers/mfd/ipaq-micro.c    |  8 ++++----
+ drivers/mfd/kempld-core.c   | 10 ++++++----
+ drivers/mfd/lp8788-irq.c    |  2 ++
+ drivers/mfd/max77686.c      |  2 +-
+ drivers/mfd/max8925-core.c  |  2 ++
+ drivers/mfd/max8925-i2c.c   |  2 ++
+ drivers/mfd/mcp-core.c      |  1 +
+ drivers/mfd/sec-core.c      |  1 +
+ drivers/mfd/si476x-cmd.c    | 12 ++++++------
+ drivers/mfd/tc6387xb.c      |  7 +++----
+ drivers/mfd/tps80031.c      |  1 +
+ drivers/mfd/twl4030-irq.c   |  6 +++---
+ drivers/mfd/twl6030-irq.c   |  4 +++-
+ drivers/mfd/twl6040.c       |  2 +-
+ drivers/mfd/wm8350-i2c.c    |  8 ++++----
+ drivers/mfd/wm8350-irq.c    |  3 ++-
+ drivers/mfd/wm8997-tables.c |  8 ++++----
+ 19 files changed, 50 insertions(+), 37 deletions(-)
+
 -- 
-1.9.1
+1.8.3.2
 
