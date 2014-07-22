@@ -1,174 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757085AbaGVXKT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 19:10:19 -0400
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:60937 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755978AbaGVXKR (ORCPT
+	id S1753296AbaGVXNF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 19:13:05 -0400
+Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:40409 "EHLO
+	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752376AbaGVXNC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 19:10:17 -0400
-Date: Tue, 22 Jul 2014 16:08:32 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
+	Tue, 22 Jul 2014 19:13:02 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvEOABTvzlN5LHOdPGdsb2JhbABZgw6BKYInhQinUQEBAQEBAQafZQGBCRcEAQEBATg2hAMBAQU6HCMQCAMVAwklDwUlAwcaE4hBwCsXGIVjiVAHhEYFmyaWNoFWKy8
+Date: Wed, 23 Jul 2014 09:12:57 +1000
+From: Dave Chinner <david@fromorbit.com>
 To: Kamal Mostafa <kamal@canonical.com>
-cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Christoph Lameter <cl@linux.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH 3.8 107/116] hugetlb: fix copy_hugetlb_page_range() to
- handle migration/hwpoisoned entry
-In-Reply-To: <1406067727-19683-108-git-send-email-kamal@canonical.com>
-Message-ID: <alpine.LSU.2.11.1407221608040.3128@eggly.anvils>
-References: <1406067727-19683-1-git-send-email-kamal@canonical.com> <1406067727-19683-108-git-send-email-kamal@canonical.com>
-User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com, Dwight Engen <dwight.engen@oracle.com>,
+        Ben Myers <bpm@sgi.com>
+Subject: Re: [PATCH 3.8 076/116] xfs: ioctl check for capabilities in the
+ current user namespace
+Message-ID: <20140722231257.GT4453@dastard>
+References: <1406067727-19683-1-git-send-email-kamal@canonical.com>
+ <1406067727-19683-77-git-send-email-kamal@canonical.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1406067727-19683-77-git-send-email-kamal@canonical.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 22 Jul 2014, Kamal Mostafa wrote:
-
+On Tue, Jul 22, 2014 at 03:21:27PM -0700, Kamal Mostafa wrote:
 > 3.8.13.27 -stable review patch.  If anyone has any objections, please let me know.
 > 
 > ------------------
 > 
-> From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> From: Dwight Engen <dwight.engen@oracle.com>
 > 
-> commit 4a705fef986231a3e7a6b1a6d3c37025f021f49f upstream.
+> commit fd5e2aa8653665ae1cc60f7aca1069abdbcad3f6 upstream.
 > 
-> There's a race between fork() and hugepage migration, as a result we try
-> to "dereference" a swap entry as a normal pte, causing kernel panic.
-> The cause of the problem is that copy_hugetlb_page_range() can't handle
-> "swap entry" family (migration entry and hwpoisoned entry) so let's fix
-> it.
+> Use inode_capable() to check if SUID|SGID bits should be cleared to match
+> similar check in inode_change_ok().
 > 
-> [akpm@linux-foundation.org: coding-style fixes]
-> Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> Acked-by: Hugh Dickins <hughd@google.com>
-> Cc: Christoph Lameter <cl@linux.com>
-> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-> Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+> The check for CAP_LINUX_IMMUTABLE was not modified since all other file
+> systems also check against init_user_ns rather than current_user_ns.
+> 
+> Only allow changing of projid from init_user_ns.
+> 
+> Reviewed-by: Dave Chinner <dchinner@redhat.com>
+> Reviewed-by: Gao feng <gaofeng@cn.fujitsu.com>
+> Signed-off-by: Dwight Engen <dwight.engen@oracle.com>
+> Signed-off-by: Ben Myers <bpm@sgi.com>
+> [ kamal: 3.8-stable prereq for
+>   23adbe1 fs,userns: Change inode_capable to capable_wrt_inode_uidgid ]
 > Signed-off-by: Kamal Mostafa <kamal@canonical.com>
-
-Please drop this one for now: other -stables have carried it, but it
-was found last week to contain a bug of its own, arguably worse than
-what it's fixing.  Naoya-san has done the fix for that, it's in mmotm
-and should make its way to Linus probably this week: so please hold
-this back until that can join it - thanks.
-
-Hugh
-
 > ---
->  mm/hugetlb.c | 71 ++++++++++++++++++++++++++++++++++++------------------------
->  1 file changed, 43 insertions(+), 28 deletions(-)
-> 
-> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-> index 35fc5eb..7b180d7 100644
-> --- a/mm/hugetlb.c
-> +++ b/mm/hugetlb.c
-> @@ -2291,6 +2291,31 @@ static void set_huge_ptep_writable(struct vm_area_struct *vma,
->  		update_mmu_cache(vma, address, ptep);
->  }
->  
-> +static int is_hugetlb_entry_migration(pte_t pte)
-> +{
-> +	swp_entry_t swp;
-> +
-> +	if (huge_pte_none(pte) || pte_present(pte))
-> +		return 0;
-> +	swp = pte_to_swp_entry(pte);
-> +	if (non_swap_entry(swp) && is_migration_entry(swp))
-> +		return 1;
-> +	else
-> +		return 0;
-> +}
-> +
-> +static int is_hugetlb_entry_hwpoisoned(pte_t pte)
-> +{
-> +	swp_entry_t swp;
-> +
-> +	if (huge_pte_none(pte) || pte_present(pte))
-> +		return 0;
-> +	swp = pte_to_swp_entry(pte);
-> +	if (non_swap_entry(swp) && is_hwpoison_entry(swp))
-> +		return 1;
-> +	else
-> +		return 0;
-> +}
->  
->  int copy_hugetlb_page_range(struct mm_struct *dst, struct mm_struct *src,
->  			    struct vm_area_struct *vma)
-> @@ -2318,10 +2343,26 @@ int copy_hugetlb_page_range(struct mm_struct *dst, struct mm_struct *src,
->  
->  		spin_lock(&dst->page_table_lock);
->  		spin_lock_nested(&src->page_table_lock, SINGLE_DEPTH_NESTING);
-> -		if (!huge_pte_none(huge_ptep_get(src_pte))) {
-> +		entry = huge_ptep_get(src_pte);
-> +		if (huge_pte_none(entry)) { /* skip none entry */
-> +			;
-> +		} else if (unlikely(is_hugetlb_entry_migration(entry) ||
-> +				    is_hugetlb_entry_hwpoisoned(entry))) {
-> +			swp_entry_t swp_entry = pte_to_swp_entry(entry);
-> +
-> +			if (is_write_migration_entry(swp_entry) && cow) {
-> +				/*
-> +				 * COW mappings require pages in both
-> +				 * parent and child to be set to read.
-> +				 */
-> +				make_migration_entry_read(&swp_entry);
-> +				entry = swp_entry_to_pte(swp_entry);
-> +				set_huge_pte_at(src, addr, src_pte, entry);
-> +			}
-> +			set_huge_pte_at(dst, addr, dst_pte, entry);
-> +		} else {
->  			if (cow)
->  				huge_ptep_set_wrprotect(src, addr, src_pte);
-> -			entry = huge_ptep_get(src_pte);
->  			ptepage = pte_page(entry);
->  			get_page(ptepage);
->  			page_dup_rmap(ptepage);
-> @@ -2336,32 +2377,6 @@ nomem:
->  	return -ENOMEM;
->  }
->  
-> -static int is_hugetlb_entry_migration(pte_t pte)
-> -{
-> -	swp_entry_t swp;
-> -
-> -	if (huge_pte_none(pte) || pte_present(pte))
-> -		return 0;
-> -	swp = pte_to_swp_entry(pte);
-> -	if (non_swap_entry(swp) && is_migration_entry(swp))
-> -		return 1;
-> -	else
-> -		return 0;
-> -}
-> -
-> -static int is_hugetlb_entry_hwpoisoned(pte_t pte)
-> -{
-> -	swp_entry_t swp;
-> -
-> -	if (huge_pte_none(pte) || pte_present(pte))
-> -		return 0;
-> -	swp = pte_to_swp_entry(pte);
-> -	if (non_swap_entry(swp) && is_hwpoison_entry(swp))
-> -		return 1;
-> -	else
-> -		return 0;
-> -}
-> -
->  void __unmap_hugepage_range(struct mmu_gather *tlb, struct vm_area_struct *vma,
->  			    unsigned long start, unsigned long end,
->  			    struct page *ref_page)
-> -- 
-> 1.9.1
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+>  fs/xfs/xfs_ioctl.c  | 11 +++++++++--
+>  kernel/capability.c |  1 +
+>  2 files changed, 10 insertions(+), 2 deletions(-)
+
+Why are you backporting this to 3.8? namespace support didn't come
+along until much later, so grabbing one patch out of themiddle of a
+patch series to allow userns support in XFS is likely to cause
+problems because there's no supporting code in XFS it.
+
+Please don't randomly cherry pick userns support patches that change
+permission checks back into kernels that don't have userns support.
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
