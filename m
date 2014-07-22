@@ -1,109 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933867AbaGVWvd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 18:51:33 -0400
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:65367 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932507AbaGVWv3 (ORCPT
+	id S933875AbaGVWvx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 18:51:53 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:44436 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932497AbaGVWWw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 18:51:29 -0400
-Date: Tue, 22 Jul 2014 15:51:25 -0700
-From: Brian Norris <computersforpeace@gmail.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        Florian Fainelli <f.fainelli@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        Christian Daudt <bcm@fixthebug.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Matt Porter <mporter@linaro.org>, Marc Carino <marc.ceeeee@gmail.com>,
-        Gregory Fong <gregory.0xf0@gmail.com>, Olof Johansson <olof@lixom.net>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Sebastian Reichel <sre@kernel.org>
-Subject: Re: [PATCH v8 02/11] power: reset: Add reboot driver for brcmstb
-Message-ID: <20140722225125.GI28323@ld-irv-0074>
-References: <1405976886-27807-1-git-send-email-computersforpeace@gmail.com>
- <62122849.RXJHvac7Iy@wuerfel>
- <20140722200213.GF28323@ld-irv-0074>
- <5224854.YNJjMxFltp@wuerfel>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5224854.YNJjMxFltp@wuerfel>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 22 Jul 2014 18:22:52 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Johan Hedberg <johan.hedberg@intel.com>,
+        Marcel Holtmann <marcel@holtmann.org>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 096/116] Bluetooth: Fix redundant encryption request for reauthentication
+Date: Tue, 22 Jul 2014 15:21:47 -0700
+Message-Id: <1406067727-19683-97-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1406067727-19683-1-git-send-email-kamal@canonical.com>
+References: <1406067727-19683-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-+ Sebastian
+3.8.13.27 -stable review patch.  If anyone has any objections, please let me know.
 
-On Tue, Jul 22, 2014 at 11:02:07PM +0200, Arnd Bergmann wrote:
-> On Tuesday 22 July 2014 13:02:13 Brian Norris wrote:
-> > How about a third option, where we drop the 'select' statement and
-> > set POWER_RESET_BRCMSTB to be 'default y'? Then we don't have to modify
-> > the defconfig, and it gives the added bonus of choosing a sane default
-> > even if you're not based on the multi_v7_defconfig. i.e.:
-> > 
-> > diff --git a/arch/arm/mach-bcm/Kconfig b/arch/arm/mach-bcm/Kconfig
-> > index 58c01aed9752..634de7b7fd28 100644
-> > --- a/arch/arm/mach-bcm/Kconfig
-> > +++ b/arch/arm/mach-bcm/Kconfig
-> > @@ -94,7 +94,6 @@ config ARCH_BRCMSTB
-> >         select MIGHT_HAVE_PCI
-> >         select HAVE_SMP
-> >         select HAVE_ARM_ARCH_TIMER
-> > -       select POWER_RESET_BRCMSTB
-> >         select BRCMSTB_GISB_ARB
-> >         select BRCMSTB_L2_IRQ
-> >         help
-> > diff --git a/drivers/power/reset/Kconfig b/drivers/power/reset/Kconfig
-> > index fcb9825debe5..ab5d57e2766d 100644
-> > --- a/drivers/power/reset/Kconfig
-> > +++ b/drivers/power/reset/Kconfig
-> > @@ -23,6 +23,7 @@ config POWER_RESET_AXXIA
-> >  config POWER_RESET_BRCMSTB
-> >         bool "Broadcom STB reset driver"
-> >         depends on POWER_RESET && ARCH_BRCMSTB
-> > +       default y
-> >         help
-> >           This driver provides restart support for ARM-based Broadcom STB
-> >           boards.
-> 
-> I don't like this too much. Why do you want to allow disabling the
-> driver if you make it 'default y' in the first place?
+------------------
 
-Not much of a reason, but I thought configurability is a positive.
-There's really not a good reason to not have this driver though; I can't
-imagine someone wanting to build our platform but not be able to reboot
-it.
+From: Johan Hedberg <johan.hedberg@intel.com>
 
-> We try to avoid 'default y' for user-selectable drivers in general.
+commit 09da1f3463eb81d59685df723b1c5950b7570340 upstream.
 
-I didn't know that. A default is technically different than "should a
-user be able to disable this," but I suppose the policy makes sense.
+When we're performing reauthentication (in order to elevate the
+security level from an unauthenticated key to an authenticated one) we
+do not need to issue any encryption command once authentication
+completes. Since the trigger for the encryption HCI command is the
+ENCRYPT_PEND flag this flag should not be set in this scenario.
+Instead, the REAUTH_PEND flag takes care of all necessary steps for
+reauthentication.
 
-> I noticed that in my example, I was missing the default.
+Signed-off-by: Johan Hedberg <johan.hedberg@intel.com>
+Signed-off-by: Marcel Holtmann <marcel@holtmann.org>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ net/bluetooth/hci_conn.c | 9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
 
-I see. That's why I immediately ruled it out.
+diff --git a/net/bluetooth/hci_conn.c b/net/bluetooth/hci_conn.c
+index 4925a02..058897f 100644
+--- a/net/bluetooth/hci_conn.c
++++ b/net/bluetooth/hci_conn.c
+@@ -643,14 +643,17 @@ static int hci_conn_auth(struct hci_conn *conn, __u8 sec_level, __u8 auth_type)
+ 	if (!test_and_set_bit(HCI_CONN_AUTH_PEND, &conn->flags)) {
+ 		struct hci_cp_auth_requested cp;
+ 
+-		/* encrypt must be pending if auth is also pending */
+-		set_bit(HCI_CONN_ENCRYPT_PEND, &conn->flags);
+-
+ 		cp.handle = cpu_to_le16(conn->handle);
+ 		hci_send_cmd(conn->hdev, HCI_OP_AUTH_REQUESTED,
+ 			     sizeof(cp), &cp);
++
++		/* If we're already encrypted set the REAUTH_PEND flag,
++		 * otherwise set the ENCRYPT_PEND.
++		 */
+ 		if (conn->key_type != 0xff)
+ 			set_bit(HCI_CONN_REAUTH_PEND, &conn->flags);
++		else
++			set_bit(HCI_CONN_ENCRYPT_PEND, &conn->flags);
+ 	}
+ 
+ 	return 0;
+-- 
+1.9.1
 
-> It should have been 
-> 
-> config POWER_RESET_BRCMSTB
->         bool "Broadcom STB reset driver" if COMPILE_TEST
->         depends on POWER_RESET && ARM
-> 	default ARCH_BRCMSTB
-
-OK, that's OK with me if it's OK with Sebastian, et al. Respin coming
-soon, separate from the mach-bcm and ARM stuff...
-
-(BTW, we might consider rewriting the other config entries to be
-similar, if we really want to make this things consistently
-nitpick-proof.)
-
-> This way, it always gets selected when ARCH_BRCMSTB is on and
-> COMPILE_TEST is off. With COMPILE_TEST enabled, it defaults to
-> ARCH_BRCMSTB but can be enabled or disabled for the purpose
-> of compile testing.
-
-Thanks,
-Brian
