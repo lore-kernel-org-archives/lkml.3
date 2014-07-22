@@ -1,63 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752397AbaGVBvF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 21:51:05 -0400
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:35517 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751681AbaGVBts (ORCPT
+	id S1752490AbaGVBwI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 21:52:08 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:28726 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751031AbaGVBwG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 21:49:48 -0400
-From: Andy Lutomirski <luto@amacapital.net>
-To: linux-kernel@vger.kernel.org, Kees Cook <keescook@chromium.org>,
-        Will Drewry <wad@chromium.org>
-Cc: Oleg Nesterov <oleg@redhat.com>, x86@kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-mips@linux-mips.org,
-        linux-arch@vger.kernel.org, linux-security-module@vger.kernel.org,
-        Alexei Starovoitov <ast@plumgrid.com>, hpa@zytor.com,
-        Andy Lutomirski <luto@amacapital.net>
-Subject: [PATCH v3 4/8] seccomp: Document two-phase seccomp and arch-provided seccomp_data
-Date: Mon, 21 Jul 2014 18:49:17 -0700
-Message-Id: <7dc27063cc38b4b5a0d800ee16c1aa2a89953533.1405992946.git.luto@amacapital.net>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <cover.1405992946.git.luto@amacapital.net>
-References: <cover.1405992946.git.luto@amacapital.net>
-In-Reply-To: <cover.1405992946.git.luto@amacapital.net>
-References: <cover.1405992946.git.luto@amacapital.net>
+	Mon, 21 Jul 2014 21:52:06 -0400
+From: Ethan Zhao <ethan.zhao@oracle.com>
+To: alexander.h.duyck@intel.com, jeffrey.t.kirsher@intel.com,
+        jesse.brandeburg@intel.com, bruce.w.allan@intel.com,
+        carolyn.wyborny@intel.com, donald.c.skidmore@intel.com,
+        gregory.v.rose@intel.com, john.ronciak@intel.com,
+        mitch.a.williams@intel.com
+Cc: linux.nics@intel.com, e1000-devel@lists.sourceforge.net,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        ethan.kernel@gmail.com, Ethan Zhao <ethan.zhao@oracle.com>
+Subject: [PATCH] i40e: use global pci_vfs_assigned() to replace local i40e_vfs_are_assigned()
+Date: Tue, 22 Jul 2014 09:50:51 +0800
+Message-Id: <1405993851-24375-1-git-send-email-ethan.zhao@oracle.com>
+X-Mailer: git-send-email 1.7.1
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The description of how archs should implement seccomp filters was
-still strictly correct, but it failed to describe the newly
-available optimizations.
+There is global funcion pci_vfs_assigned(), so use it instead of composing
+local one.
 
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+Signed-off-by: Ethan Zhao <ethan.kernel@gmail.com>
 ---
- arch/Kconfig | 11 +++++++++++
- 1 file changed, 11 insertions(+)
+ drivers/net/ethernet/intel/i40e/i40e_virtchnl_pf.c |   31 +-------------------
+ 1 files changed, 1 insertions(+), 30 deletions(-)
 
-diff --git a/arch/Kconfig b/arch/Kconfig
-index 0eae9df..05d7a8a 100644
---- a/arch/Kconfig
-+++ b/arch/Kconfig
-@@ -323,6 +323,17 @@ config HAVE_ARCH_SECCOMP_FILTER
- 	    results in the system call being skipped immediately.
- 	  - seccomp syscall wired up
+diff --git a/drivers/net/ethernet/intel/i40e/i40e_virtchnl_pf.c b/drivers/net/ethernet/intel/i40e/i40e_virtchnl_pf.c
+index 02c11a7..ec59190 100644
+--- a/drivers/net/ethernet/intel/i40e/i40e_virtchnl_pf.c
++++ b/drivers/net/ethernet/intel/i40e/i40e_virtchnl_pf.c
+@@ -683,35 +683,6 @@ complete_reset:
+ 	wr32(hw, I40E_VFGEN_RSTAT1(vf->vf_id), I40E_VFR_VFACTIVE);
+ 	i40e_flush(hw);
+ }
+-
+-/**
+- * i40e_vfs_are_assigned
+- * @pf: pointer to the pf structure
+- *
+- * Determine if any VFs are assigned to VMs
+- **/
+-static bool i40e_vfs_are_assigned(struct i40e_pf *pf)
+-{
+-	struct pci_dev *pdev = pf->pdev;
+-	struct pci_dev *vfdev;
+-
+-	/* loop through all the VFs to see if we own any that are assigned */
+-	vfdev = pci_get_device(PCI_VENDOR_ID_INTEL, I40E_DEV_ID_VF , NULL);
+-	while (vfdev) {
+-		/* if we don't own it we don't care */
+-		if (vfdev->is_virtfn && pci_physfn(vfdev) == pdev) {
+-			/* if it is assigned we cannot release it */
+-			if (vfdev->dev_flags & PCI_DEV_FLAGS_ASSIGNED)
+-				return true;
+-		}
+-
+-		vfdev = pci_get_device(PCI_VENDOR_ID_INTEL,
+-				       I40E_DEV_ID_VF,
+-				       vfdev);
+-	}
+-
+-	return false;
+-}
+ #ifdef CONFIG_PCI_IOV
  
-+	  For best performance, an arch should use seccomp_phase1 and
-+	  seccomp_phase2 directly.  It should call seccomp_phase1 for all
-+	  syscalls if TIF_SECCOMP is set, but seccomp_phase1 does not
-+	  need to be called from a ptrace-safe context.  It must then
-+	  call seccomp_phase2 if seccomp_phase1 returns anything other
-+	  than SECCOMP_PHASE1_OK or SECCOMP_PHASE1_SKIP.
-+
-+	  As an additional optimization, an arch may provide seccomp_data
-+	  directly to seccomp_phase1; this avoids multiple calls
-+	  to the syscall_xyz helpers for every syscall.
-+
- config SECCOMP_FILTER
- 	def_bool y
- 	depends on HAVE_ARCH_SECCOMP_FILTER && SECCOMP && NET
+ /**
+@@ -815,7 +786,7 @@ void i40e_free_vfs(struct i40e_pf *pf)
+ 	kfree(pf->vf);
+ 	pf->vf = NULL;
+ 
+-	if (!i40e_vfs_are_assigned(pf)) {
++	if (!pci_vfs_assigned(pf->pdev)) {
+ 		pci_disable_sriov(pf->pdev);
+ 		/* Acknowledge VFLR for all VFS. Without this, VFs will fail to
+ 		 * work correctly when SR-IOV gets re-enabled.
 -- 
-1.9.3
+1.7.1
 
