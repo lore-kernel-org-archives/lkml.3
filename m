@@ -1,25 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933609AbaGVW1J (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 18:27:09 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44890 "EHLO
+	id S933630AbaGVW1P (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 18:27:15 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:44905 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932173AbaGVW1C (ORCPT
+	with ESMTP id S932173AbaGVW1K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 18:27:02 -0400
+	Tue, 22 Jul 2014 18:27:10 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Tony Luck <tony.luck@intel.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Andi Kleen <andi@firstfloor.org>, Borislav Petkov <bp@suse.de>,
-        Chen Gong <gong.chen@linux.jf.intel.com>,
+Cc: Michal Hocko <mhocko@suse.cz>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 058/116] mm/memory-failure.c: don't let collect_procs() skip over processes for MF_ACTION_REQUIRED
-Date: Tue, 22 Jul 2014 15:21:09 -0700
-Message-Id: <1406067727-19683-59-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 055/116] memcg: do not hang on OOM when killed by userspace OOM access to memory reserves
+Date: Tue, 22 Jul 2014 15:21:06 -0700
+Message-Id: <1406067727-19683-56-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1406067727-19683-1-git-send-email-kamal@canonical.com>
 References: <1406067727-19683-1-git-send-email-kamal@canonical.com>
@@ -32,125 +30,93 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tony Luck <tony.luck@intel.com>
+From: Michal Hocko <mhocko@suse.cz>
 
-commit 74614de17db6fb472370c426d4f934d8d616edf2 upstream.
+commit d8dc595ce3909fbc131bdf5ab8c9808fe624b18d upstream.
 
-When Linux sees an "action optional" machine check (where h/w has reported
-an error that is not in the current execution path) we generally do not
-want to signal a process, since most processes do not have a SIGBUS
-handler - we'd just prematurely terminate the process for a problem that
-they might never actually see.
+Eric has reported that he can see task(s) stuck in memcg OOM handler
+regularly.  The only way out is to
 
-task_early_kill() decides whether to consider a process - and it checks
-whether this specific process has been marked for early signals with
-"prctl", or if the system administrator has requested early signals for
-all processes using /proc/sys/vm/memory_failure_early_kill.
+	echo 0 > $GROUP/memory.oom_control
 
-But for MF_ACTION_REQUIRED case we must not defer.  The error is in the
-execution path of the current thread so we must send the SIGBUS
-immediatley.
+His usecase is:
 
-Fix by passing a flag argument through collect_procs*() to
-task_early_kill() so it knows whether we can defer or must take action.
+- Setup a hierarchy with memory and the freezer (disable kernel oom and
+  have a process watch for oom).
 
-Signed-off-by: Tony Luck <tony.luck@intel.com>
-Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: Andi Kleen <andi@firstfloor.org>
-Cc: Borislav Petkov <bp@suse.de>
-Cc: Chen Gong <gong.chen@linux.jf.intel.com>
+- In that memory cgroup add a process with one thread per cpu.
+
+- In one thread slowly allocate once per second I think it is 16M of ram
+  and mlock and dirty it (just to force the pages into ram and stay
+  there).
+
+- When oom is achieved loop:
+  * attempt to freeze all of the tasks.
+  * if frozen send every task SIGKILL, unfreeze, remove the directory in
+    cgroupfs.
+
+Eric has then pinpointed the issue to be memcg specific.
+
+All tasks are sitting on the memcg_oom_waitq when memcg oom is disabled.
+Those that have received fatal signal will bypass the charge and should
+continue on their way out.  The tricky part is that the exit path might
+trigger a page fault (e.g.  exit_robust_list), thus the memcg charge,
+while its memcg is still under OOM because nobody has released any charges
+yet.
+
+Unlike with the in-kernel OOM handler the exiting task doesn't get
+TIF_MEMDIE set so it doesn't shortcut further charges of the killed task
+and falls to the memcg OOM again without any way out of it as there are no
+fatal signals pending anymore.
+
+This patch fixes the issue by checking PF_EXITING early in
+mem_cgroup_try_charge and bypass the charge same as if it had fatal
+signal pending or TIF_MEMDIE set.
+
+Normally exiting tasks (aka not killed) will bypass the charge now but
+this should be OK as the task is leaving and will release memory and
+increasing the memory pressure just to release it in a moment seems
+dubious wasting of cycles.  Besides that charges after exit_signals should
+be rare.
+
+I am bringing this patch again (rebased on the current mmotm tree). I
+hope we can move forward finally. If there is still an opposition then
+I would really appreciate a concurrent approach so that we can discuss
+alternatives.
+
+http://comments.gmane.org/gmane.linux.kernel.stable/77650 is a reference
+to the followup discussion when the patch has been dropped from the mmotm
+last time.
+
+Reported-by: Eric W. Biederman <ebiederm@xmission.com>
+Signed-off-by: Michal Hocko <mhocko@suse.cz>
+Acked-by: David Rientjes <rientjes@google.com>
+Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+[ kamal: backport to 3.13: whitespace ]
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- mm/memory-failure.c | 21 ++++++++++++---------
- 1 file changed, 12 insertions(+), 9 deletions(-)
+ mm/memcontrol.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/mm/memory-failure.c b/mm/memory-failure.c
-index 0af800c..7f3ceb1 100644
---- a/mm/memory-failure.c
-+++ b/mm/memory-failure.c
-@@ -382,10 +382,12 @@ static void kill_procs(struct list_head *to_kill, int forcekill, int trapno,
- 	}
- }
- 
--static int task_early_kill(struct task_struct *tsk)
-+static int task_early_kill(struct task_struct *tsk, int force_early)
- {
- 	if (!tsk->mm)
- 		return 0;
-+	if (force_early)
-+		return 1;
- 	if (tsk->flags & PF_MCE_PROCESS)
- 		return !!(tsk->flags & PF_MCE_EARLY);
- 	return sysctl_memory_failure_early_kill;
-@@ -395,7 +397,7 @@ static int task_early_kill(struct task_struct *tsk)
-  * Collect processes when the error hit an anonymous page.
-  */
- static void collect_procs_anon(struct page *page, struct list_head *to_kill,
--			      struct to_kill **tkc)
-+			      struct to_kill **tkc, int force_early)
- {
- 	struct vm_area_struct *vma;
- 	struct task_struct *tsk;
-@@ -411,7 +413,7 @@ static void collect_procs_anon(struct page *page, struct list_head *to_kill,
- 	for_each_process (tsk) {
- 		struct anon_vma_chain *vmac;
- 
--		if (!task_early_kill(tsk))
-+		if (!task_early_kill(tsk, force_early))
- 			continue;
- 		anon_vma_interval_tree_foreach(vmac, &av->rb_root,
- 					       pgoff, pgoff) {
-@@ -430,7 +432,7 @@ static void collect_procs_anon(struct page *page, struct list_head *to_kill,
-  * Collect processes when the error hit a file mapped page.
-  */
- static void collect_procs_file(struct page *page, struct list_head *to_kill,
--			      struct to_kill **tkc)
-+			      struct to_kill **tkc, int force_early)
- {
- 	struct vm_area_struct *vma;
- 	struct task_struct *tsk;
-@@ -441,7 +443,7 @@ static void collect_procs_file(struct page *page, struct list_head *to_kill,
- 	for_each_process(tsk) {
- 		pgoff_t pgoff = page->index << (PAGE_CACHE_SHIFT - PAGE_SHIFT);
- 
--		if (!task_early_kill(tsk))
-+		if (!task_early_kill(tsk, force_early))
- 			continue;
- 
- 		vma_interval_tree_foreach(vma, &mapping->i_mmap, pgoff,
-@@ -467,7 +469,8 @@ static void collect_procs_file(struct page *page, struct list_head *to_kill,
-  * First preallocate one tokill structure outside the spin locks,
-  * so that we can kill at least one process reasonably reliable.
-  */
--static void collect_procs(struct page *page, struct list_head *tokill)
-+static void collect_procs(struct page *page, struct list_head *tokill,
-+				int force_early)
- {
- 	struct to_kill *tk;
- 
-@@ -478,9 +481,9 @@ static void collect_procs(struct page *page, struct list_head *tokill)
- 	if (!tk)
- 		return;
- 	if (PageAnon(page))
--		collect_procs_anon(page, tokill, &tk);
-+		collect_procs_anon(page, tokill, &tk, force_early);
- 	else
--		collect_procs_file(page, tokill, &tk);
-+		collect_procs_file(page, tokill, &tk, force_early);
- 	kfree(tk);
- }
- 
-@@ -950,7 +953,7 @@ static int hwpoison_user_mappings(struct page *p, unsigned long pfn,
- 	 * there's nothing that can be done.
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 3e6bb9f..c29c7d5 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -2502,8 +2502,9 @@ static int __mem_cgroup_try_charge(struct mm_struct *mm,
+ 	 * in system level. So, allow to go ahead dying process in addition to
+ 	 * MEMDIE process.
  	 */
- 	if (kill)
--		collect_procs(ppage, &tokill);
-+		collect_procs(ppage, &tokill, flags & MF_ACTION_REQUIRED);
+-	if (unlikely(test_thread_flag(TIF_MEMDIE)
+-		     || fatal_signal_pending(current)))
++	if (unlikely(test_thread_flag(TIF_MEMDIE) ||
++		     fatal_signal_pending(current) ||
++		     current->flags & PF_EXITING))
+ 		goto bypass;
  
- 	if (hpage != ppage)
- 		lock_page(ppage);
+ 	/*
 -- 
 1.9.1
 
