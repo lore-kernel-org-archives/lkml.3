@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932829AbaGVWYS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 18:24:18 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44563 "EHLO
+	id S932861AbaGVWYc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 18:24:32 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:44570 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932804AbaGVWYP (ORCPT
+	with ESMTP id S932804AbaGVWY0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 18:24:15 -0400
+	Tue, 22 Jul 2014 18:24:26 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: =?UTF-8?q?Rafa=C5=82=20Mi=C5=82ecki?= <zajec5@gmail.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
+Cc: Roland McGrath <roland@redhat.com>, Andy Lutomirski <luto@amacapital.net>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 104/116] b43: fix frequency reported on G-PHY with /new/ firmware
-Date: Tue, 22 Jul 2014 15:21:55 -0700
-Message-Id: <1406067727-19683-105-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 106/116] x86_32, entry: Do syscall exit work on badsys (CVE-2014-4508)
+Date: Tue, 22 Jul 2014 15:21:57 -0700
+Message-Id: <1406067727-19683-107-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1406067727-19683-1-git-send-email-kamal@canonical.com>
 References: <1406067727-19683-1-git-send-email-kamal@canonical.com>
@@ -31,53 +31,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: =?UTF-8?q?Rafa=C5=82=20Mi=C5=82ecki?= <zajec5@gmail.com>
+From: Andy Lutomirski <luto@amacapital.net>
 
-commit 2fc68eb122c7ea6cd5be1fe7d6650c0beb2f4f40 upstream.
+commit 554086d85e71f30abe46fc014fea31929a7c6a8a upstream.
 
-Support for firmware rev 508+ was added years ago, but we never noticed
-it reports channel in a different way for G-PHY devices. Instead of
-offset from 2400 MHz it simply passes channel id (AKA hw_value).
+The bad syscall nr paths are their own incomprehensible route
+through the entry control flow.  Rearrange them to work just like
+syscalls that return -ENOSYS.
 
-So far it was (most probably) affecting monitor mode users only, but
-the following recent commit made it noticeable for quite everybody:
+This fixes an OOPS in the audit code when fast-path auditing is
+enabled and sysenter gets a bad syscall nr (CVE-2014-4508).
 
-commit 3afc2167f60a327a2c1e1e2600ef209a3c2b75b7
-Author: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Date:   Tue Mar 4 16:50:13 2014 +0200
+This has probably been broken since Linux 2.6.27:
+af0575bba0 i386 syscall audit fast-path
 
-    cfg80211/mac80211: ignore signal if the frame was heard on wrong channel
-
-Reported-by: Aaro Koskinen <aaro.koskinen@iki.fi>
-Signed-off-by: Rafał Miłecki <zajec5@gmail.com>
-Tested-by: Aaro Koskinen <aaro.koskinen@iki.fi>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Cc: Roland McGrath <roland@redhat.com>
+Reported-by: Toralf Förster <toralf.foerster@gmx.de>
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+Link: http://lkml.kernel.org/r/e09c499eade6fc321266dd6b54da7beb28d6991c.1403558229.git.luto@amacapital.net
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/net/wireless/b43/xmit.c | 10 +++++++---
- 1 file changed, 7 insertions(+), 3 deletions(-)
+ arch/x86/kernel/entry_32.S | 10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/net/wireless/b43/xmit.c b/drivers/net/wireless/b43/xmit.c
-index e85d34b..ebcce00 100644
---- a/drivers/net/wireless/b43/xmit.c
-+++ b/drivers/net/wireless/b43/xmit.c
-@@ -810,9 +810,13 @@ void b43_rx(struct b43_wldev *dev, struct sk_buff *skb, const void *_rxhdr)
- 		break;
- 	case B43_PHYTYPE_G:
- 		status.band = IEEE80211_BAND_2GHZ;
--		/* chanid is the radio channel cookie value as used
--		 * to tune the radio. */
--		status.freq = chanid + 2400;
-+		/* Somewhere between 478.104 and 508.1084 firmware for G-PHY
-+		 * has been modified to be compatible with N-PHY and others.
-+		 */
-+		if (dev->fw.rev >= 508)
-+			status.freq = ieee80211_channel_to_frequency(chanid, status.band);
-+		else
-+			status.freq = chanid + 2400;
- 		break;
- 	case B43_PHYTYPE_N:
- 	case B43_PHYTYPE_LP:
+diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
+index 60d03c2..b32b466 100644
+--- a/arch/x86/kernel/entry_32.S
++++ b/arch/x86/kernel/entry_32.S
+@@ -434,9 +434,10 @@ sysenter_past_esp:
+ 	jnz sysenter_audit
+ sysenter_do_call:
+ 	cmpl $(NR_syscalls), %eax
+-	jae syscall_badsys
++	jae sysenter_badsys
+ 	call *sys_call_table(,%eax,4)
+ 	movl %eax,PT_EAX(%esp)
++sysenter_after_call:
+ 	LOCKDEP_SYS_EXIT
+ 	DISABLE_INTERRUPTS(CLBR_ANY)
+ 	TRACE_IRQS_OFF
+@@ -686,7 +687,12 @@ END(syscall_fault)
+ 
+ syscall_badsys:
+ 	movl $-ENOSYS,PT_EAX(%esp)
+-	jmp resume_userspace
++	jmp syscall_exit
++END(syscall_badsys)
++
++sysenter_badsys:
++	movl $-ENOSYS,PT_EAX(%esp)
++	jmp sysenter_after_call
+ END(syscall_badsys)
+ 	CFI_ENDPROC
+ /*
 -- 
 1.9.1
 
