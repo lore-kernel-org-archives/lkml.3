@@ -1,104 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754449AbaGVJ51 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 05:57:27 -0400
-Received: from mail.kmu-office.ch ([178.209.48.102]:59643 "EHLO
-	mail.kmu-office.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754295AbaGVJ5Z (ORCPT
+	id S1754432AbaGVKAZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 06:00:25 -0400
+Received: from www.linutronix.de ([62.245.132.108]:36762 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752071AbaGVKAX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 05:57:25 -0400
+	Tue, 22 Jul 2014 06:00:23 -0400
+Date: Tue, 22 Jul 2014 11:59:46 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Peter Zijlstra <peterz@infradead.org>
+cc: Steven Rostedt <rostedt@goodmis.org>, Darren Hart <dvhart@linux.intel.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Andi Kleen <andi@firstfloor.org>, Waiman Long <Waiman.Long@hp.com>,
+        Ingo Molnar <mingo@kernel.org>, Davidlohr Bueso <davidlohr@hp.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Jason Low <jason.low2@hp.com>, Scott J Norton <scott.norton@hp.com>,
+        Robert Haas <robertmhaas@gmail.com>
+Subject: Re: [RFC PATCH 0/5] futex: introduce an optimistic spinning futex
+In-Reply-To: <20140722084842.GZ3935@laptop>
+Message-ID: <alpine.DEB.2.10.1407221057230.20847@nanos>
+References: <CFF29E4A.9D44E%dvhart@linux.intel.com> <alpine.DEB.2.10.1407212025130.20847@nanos> <20140721212740.GS3935@laptop> <CALCETrXSaWM6-nxr4ggtMh5qcfTQg4wRvkW8FTSbri5+_1ZbVg@mail.gmail.com> <alpine.DEB.2.10.1407212344130.20847@nanos>
+ <CFF2E3D6.9D525%dvhart@linux.intel.com> <alpine.DEB.2.10.1407220047490.20847@nanos> <20140721213457.46623e2f@gandalf.local.home> <20140722074719.GV3935@laptop> <alpine.DEB.2.10.1407221034260.20847@nanos> <20140722084842.GZ3935@laptop>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=
-Content-Transfer-Encoding: 7bit
-Date: Tue, 22 Jul 2014 11:57:31 +0200
-From: Stefan Agner <stefan@agner.ch>
-To: Shawn Guo <shawn.guo@freescale.com>
-Cc: peter.chen@freescale.com, s.hauer@pengutronix.de, b35083@freescale.com,
-        linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/6] ARM: dts: vf610: add USB PHY and controller
-In-Reply-To: <20140722022232.GR8537@dragon>
-References: <cover.1405702442.git.stefan@agner.ch>
- <839af70e8acf139bc0f7bbdb4dd68dd146b5d6a8.1405702442.git.stefan@agner.ch>
- <20140722022232.GR8537@dragon>
-Message-ID: <64fa5f4fcf6d1331796d2fd7899e3cbd@agner.ch>
-User-Agent: Roundcube Webmail/1.0.1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 2014-07-22 04:22, schrieb Shawn Guo:
-> On Fri, Jul 18, 2014 at 07:01:37PM +0200, Stefan Agner wrote:
->> This adds USB PHY and USB controller nodes. Vybrid SoCs have two
->> independent USB cores which each supports DR (dual role). However,
->> real OTG is not supported since the OTG ID pin is not available.
->>
->> The PHYs are located within the anadig register range, hence we need
->> to change the length of the anadig registers.
->>
->> Signed-off-by: Stefan Agner <stefan@agner.ch>
->> ---
->>  arch/arm/boot/dts/vf610.dtsi | 46 +++++++++++++++++++++++++++++++++++++++++---
->>  1 file changed, 43 insertions(+), 3 deletions(-)
->>
->> diff --git a/arch/arm/boot/dts/vf610.dtsi b/arch/arm/boot/dts/vf610.dtsi
->> index 6a6190c..f6c3f02 100644
->> --- a/arch/arm/boot/dts/vf610.dtsi
->> +++ b/arch/arm/boot/dts/vf610.dtsi
->> @@ -25,6 +25,8 @@
->>  		gpio2 = &gpio3;
->>  		gpio3 = &gpio4;
->>  		gpio4 = &gpio5;
->> +		usbphy0 = &usbphy0;
->> +		usbphy1 = &usbphy1;
->>  	};
->>
->>  	cpus {
->> @@ -285,9 +287,25 @@
->>  				gpio-ranges = <&iomuxc 0 128 7>;
->>  			};
->>
->> -			anatop@40050000 {
->> -				compatible = "fsl,vf610-anatop";
->> -				reg = <0x40050000 0x1000>;
->> +			anatop: anatop@40050000 {
->> +				compatible = "fsl,vf610-anatop", "syscon";
->> +				reg = <0x40050000 0x400>;
->> +			};
->> +
->> +			usbphy0: usbphy@40050800 {
->> +				compatible = "fsl,vf610-usbphy", "fsl,imx23-usbphy";
+On Tue, 22 Jul 2014, Peter Zijlstra wrote:
+> On Tue, Jul 22, 2014 at 10:39:17AM +0200, Thomas Gleixner wrote:
+> > On Tue, 22 Jul 2014, Peter Zijlstra wrote:
+> > > Anyway, there is one big fail in the entire futex stack that we 'need'
+> > > to sort some day and that is NUMA. Some people (again database people)
+> > > explicitly do not use futexes and instead use sysvsem because of this.
+> > > 
+> > > The problem with numa futexes is that because they're vaddr based there
+> > > is no (persistent) node information. You always end up having to fall
+> > > back to looking in all nodes before you can guarantee there is no
+> > > matching futex.
+> > > 
+> > > One way to achieve it is by extending the futex value to include a node
+> > > number, but that's obviously a complete ABI break. Then again, it should
+> > > be pretty straight fwd, since the node number doesn't need to be part of
+> > > the actual atomic update part, just part of the userspace storage.
+> > 
+> > So you want per node hash buckets, right? Fair enough, but how do you
+> > make sure, that no thread/process on a different node is fiddling with
+> > that "node bound" futex as well?
 > 
-> Since phy driver will match "fsl,vf610-usbphy" anyway, we do not need
-> "fsl,imx23-usbphy" here.
-
-<snip>
-
->> @@ -309,6 +327,18 @@
->>  				reg = <0x4006b000 0x1000>;
->>  				#clock-cells = <1>;
->>  			};
->> +
->> +			usbdev0: usb@40034000 {
->> +				compatible = "fsl,imx6q-usb", "fsl,imx27-usb";
+> You don't and that should work just as well, just slower. But since the
+> node id is in the futex 'value' we'll always end up in the right
+> node-hash, even if its a remote one.
 > 
-> It doesn't really make any sense to have "fsl,imx6q-usb" here.  The
-> following one should be less confusing.
-> 
-> 	compatible = "fsl,vf610-usb", "fsl,imx27-usb";
+> So yes, per node hashes, and a persistent futex->node map.
 
+Which works fine as long as you only have the futex_q on the stack of
+the blocked task. If user space is lying to you, then you just end up
+with a bunch of threads sleeping forever. Who cares?
 
-I don't quite understand the rule here, when do we drop compatible you
-suggest in fsl,imx23-usbphy and when do we keep the "fallback" as we do
-for the USB controller?
+But if you create independent kernel state, which we have with
+pi_state and which you need for finegrained locking and further
+spinning fun, you open up another can of worms. Simply because this
+would enable rogue user space to create multiple instances of the
+kernel internal state. I can predict the CVEs resulting from that
+even without using a crystal ball.
 
-Documentation/devicetree/bindings/usb/mxs-phy.txt says:
-> "fsl,imx23-usbphy" is still a fallback for other strings
+Thanks,
 
-
-And Documentation/devicetree/bindings/usb/ci-hdrc-imx.txt says:
-> - compatible: Should be "fsl,imx27-usb"
-
---
-Stefan
-
+	tglx
