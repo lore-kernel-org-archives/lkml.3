@@ -1,87 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753288AbaGVND6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 09:03:58 -0400
-Received: from casper.infradead.org ([85.118.1.10]:60250 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752666AbaGVND5 (ORCPT
+	id S1751738AbaGVNLn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 09:11:43 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:33157 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750985AbaGVNLl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 09:03:57 -0400
-Date: Tue, 22 Jul 2014 15:03:43 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Bruno Wolff III <bruno@wolff.to>
-Cc: Dietmar Eggemann <dietmar.eggemann@arm.com>,
-        Josh Boyer <jwboyer@redhat.com>, "mingo@redhat.com" <mingo@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: Scheduler regression from
- caffcdd8d27ba78730d5540396ce72ad022aff2c
-Message-ID: <20140722130343.GD3935@laptop>
-References: <20140718101633.GP9918@twins.programming.kicks-ass.net>
- <20140718130126.GA2401@wolff.to>
- <20140718141648.GE20603@laptop.programming.kicks-ass.net>
- <20140718145040.GG12054@laptop.lan>
- <20140718161602.GH12054@laptop.lan>
- <20140721163528.GA10433@wolff.to>
- <20140721165212.GO3935@laptop>
- <20140722094740.GJ12054@laptop.lan>
- <20140722103857.GK12054@laptop.lan>
- <20140722121001.GA30631@wolff.to>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140722121001.GA30631@wolff.to>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Tue, 22 Jul 2014 09:11:41 -0400
+From: Boris BREZILLON <boris.brezillon@free-electrons.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Andrew Victor <linux@maxim.org.za>, David Airlie <airlied@linux.ie>,
+        dri-devel@lists.freedesktop.org,
+        Thierry Reding <thierry.reding@gmail.com>, linux-pwm@vger.kernel.org,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Rob Clark <robdclark@gmail.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Bo Shen <voice.shen@atmel.com>,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>
+Subject: [PATCH v4 00/11] drm: add support for Atmel HLCDC Display Controller
+Date: Tue, 22 Jul 2014 15:11:24 +0200
+Message-Id: <1406034695-15534-1-git-send-email-boris.brezillon@free-electrons.com>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 22, 2014 at 07:10:01AM -0500, Bruno Wolff III wrote:
-> On Tue, Jul 22, 2014 at 12:38:57 +0200,
->  Peter Zijlstra <peterz@infradead.org> wrote:
-> >
-> >Could you provide the output of cpuid and cpuid -r for your machine?
-> >This code is magic and I've no idea what your machine is telling it to
-> >do :/
-> 
-> I am attaching both sets of output. (I also added copies to the bug report.)
+Hello,
 
-Thanks! and yes I now see (and I should have seen before) what is
-'broken'.
+This patch series adds support for Atmel HLCDC (HLCD Controller) available
+on some Atmel SoCs (i.e. the sama5d3 family).
 
->    0x00000000 0x00: eax=0x00000002 ebx=0x756e6547 ecx=0x6c65746e edx=0x49656e69
+The HLCDC actually provides a Display Controller and a PWM device, hence I
+decided to declare an MFD device exposing 2 subdevices: a display
+controller and a PWM chip.
+This also solves a circular dependency issue preventing HLCDC driver from
+unloading.
+The HLCDC request a drm_panel device, which request a backlight device
+(a PWM backlight), which depends on a PWM which is provided by the HLCDC
+driver (hlcdc -> panel -> backlight -> hlcdc (pwm part)).
 
-This gives us cpuid_level=0x02
+The current implementation only supports sama5d3 SoCs but other SoCs should
+be easily ported by defining new compatible strings and adding HLCDC
+description structures for these SoCs.
 
->    0x00000002 0x00: eax=0x665b5001 ebx=0x00000000 ecx=0x00000000 edx=0x007b7040
+The drivers supports basic CRTC functionalities, several overlays and an
+hardware cursor.
 
-Which means that init_intel_cacheinfo() will not use cpuid4 for
-cacheinfo and we revert to cpuid2, which translates into:
+At the moment, it only supports connection to LCD panels through an RGB
+connector (defined as an LVDS connector in my implementation), though
+connection to other kind of devices (like DRM bridges) could be added later.
 
->    cache and TLB information (2):
->       0x50: instruction TLB: 4K & 2M/4M pages, 64 entries
->       0x5b: data TLB: 4K & 4M pages, 64 entries
->       0x66: L1 data cache: 8K, 4-way, 64 byte lines
->       0x40: No L3 cache
->       0x70: Trace cache: 12K-uop, 8-way
->       0x7b: L2 cache: 512K, 8-way, sectored, 64 byte lines
+It also supports several RGB formats on all planes and some YUV formats on
+the HEO overlay plane.
 
-Now the problem is that cpu_llc_id is only set on new_l[23], and set to
-l[23]_id. Both new_l[23] and l[23]_id are only set in the cpuid4 case.
+This series depends on 2 other series currently under review: [1] and [2].
 
-So for this P4 cpu_llc_id remains unset.
+Best Regards,
 
-Furthermore cpuid2 does not include cpu masks, so we need to use cpuid1:
+Boris
 
->    (multi-processing method): Intel leaf 1
+[1]http://lkml.iu.edu/hypermail/linux/kernel/1407.1/04171.html
+[2]http://www.spinics.net/lists/kernel/msg1791681.html
 
->   0x00000001 0x00: eax=0x00000f29 ebx=0x0002080b ecx=0x00004400 edx=0xbfebfbff
+Changes since v3:
+- rework the layer code to simplify several parts (locking and layer
+  disabling)
+- make use of the drm_flip_work infrastructure
+- rely on default HW cursor implementation using on the cursor plane
+- rework the display controller DT bindings (based on OF graph
+  representation)
+- add rotation support
+- retrive RGB bus format from drm_display_info
+- drop the dynamic pinctrl state selection
+- rework HLCDC output handling (previously specialized to interface
+  with LCD panels)
+- drop ".module = THIS_MODULE" lines
+- change display controller compatible string
 
-to reconstruct the topology, with the added assumption that SMT threads
-share all caches.
+Changes since v2:
+- fix coding style issues (macro indentation)
+- make use of GENMASK in several places
+- declare regmap config as a static structure
+- rework hlcdc plane update API
+- rework cursor handling to make use of the new plane update API
+- fix backporch config
+- do not use devm_regmap_init_mmio_clk to avoid extra clk_enable
+  clk disable calls when accessing registers
+- explicitely include regmap and clk headers instead of relying on
+  atmel-hlcdc.h inclusions
+- make the atmel-hlcdc driver depends on CONFIG_OF
+- separate DT bindings documentation from driver implementation
+- support several pin muxing for HLCDC pins on sama5d3 SoCs
 
-Oh, of course we do SMP detection and setup after the cache setup...
-lovely.
+Changes since v1:
+- replace the backlight driver by a PWM driver
+- make use of drm_panel infrastructure
+- split driver code in several subsystem: MFD, PWM and DRM
+- add support for overlays
+- add support for hardware cursor
 
-/me goes bang head against wall
+
+Boris BREZILLON (11):
+  mfd: add atmel-hlcdc driver
+  mfd: add documentation for atmel-hlcdc DT bindings
+  pwm: add support for atmel-hlcdc-pwm device
+  pwm: add DT bindings documentation for atmel-hlcdc-pwm driver
+  drm: add Atmel HLCDC Display Controller support
+  drm: add DT bindings documentation for atmel-hlcdc-dc driver
+  ARM: AT91/dt: split sama5d3 lcd pin definitions to match RGB mode
+    configs
+  ARM: AT91/dt: add alternative pin muxing for sama5d3 lcd pins
+  ARM: at91/dt: define the HLCDC node available on sama5d3 SoCs
+  ARM: at91/dt: add LCD panel description to sama5d3xdm.dtsi
+  ARM: at91/dt: enable the LCD panel on sama5d3xek boards
+
+ .../devicetree/bindings/drm/atmel-hlcdc-dc.txt     |  54 ++
+ .../devicetree/bindings/mfd/atmel-hlcdc.txt        |  50 ++
+ .../devicetree/bindings/pwm/atmel-hlcdc-pwm.txt    |  55 ++
+ arch/arm/boot/dts/sama5d31ek.dts                   |  20 +
+ arch/arm/boot/dts/sama5d33ek.dts                   |  20 +
+ arch/arm/boot/dts/sama5d34ek.dts                   |  20 +
+ arch/arm/boot/dts/sama5d36ek.dts                   |  20 +
+ arch/arm/boot/dts/sama5d3_lcd.dtsi                 | 205 +++++-
+ arch/arm/boot/dts/sama5d3xdm.dtsi                  |  58 ++
+ drivers/gpu/drm/Kconfig                            |   2 +
+ drivers/gpu/drm/Makefile                           |   1 +
+ drivers/gpu/drm/atmel-hlcdc/Kconfig                |  11 +
+ drivers/gpu/drm/atmel-hlcdc/Makefile               |   7 +
+ drivers/gpu/drm/atmel-hlcdc/atmel_hlcdc_crtc.c     | 286 ++++++++
+ drivers/gpu/drm/atmel-hlcdc/atmel_hlcdc_dc.c       | 488 +++++++++++++
+ drivers/gpu/drm/atmel-hlcdc/atmel_hlcdc_dc.h       | 224 ++++++
+ drivers/gpu/drm/atmel-hlcdc/atmel_hlcdc_layer.c    | 635 ++++++++++++++++
+ drivers/gpu/drm/atmel-hlcdc/atmel_hlcdc_layer.h    | 396 ++++++++++
+ drivers/gpu/drm/atmel-hlcdc/atmel_hlcdc_output.c   | 478 ++++++++++++
+ drivers/gpu/drm/atmel-hlcdc/atmel_hlcdc_plane.c    | 804 +++++++++++++++++++++
+ drivers/mfd/Kconfig                                |  12 +
+ drivers/mfd/Makefile                               |   1 +
+ drivers/mfd/atmel-hlcdc.c                          | 118 +++
+ drivers/pwm/Kconfig                                |   9 +
+ drivers/pwm/Makefile                               |   1 +
+ drivers/pwm/pwm-atmel-hlcdc.c                      | 229 ++++++
+ include/linux/mfd/atmel-hlcdc.h                    |  78 ++
+ 27 files changed, 4251 insertions(+), 31 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/drm/atmel-hlcdc-dc.txt
+ create mode 100644 Documentation/devicetree/bindings/mfd/atmel-hlcdc.txt
+ create mode 100644 Documentation/devicetree/bindings/pwm/atmel-hlcdc-pwm.txt
+ create mode 100644 drivers/gpu/drm/atmel-hlcdc/Kconfig
+ create mode 100644 drivers/gpu/drm/atmel-hlcdc/Makefile
+ create mode 100644 drivers/gpu/drm/atmel-hlcdc/atmel_hlcdc_crtc.c
+ create mode 100644 drivers/gpu/drm/atmel-hlcdc/atmel_hlcdc_dc.c
+ create mode 100644 drivers/gpu/drm/atmel-hlcdc/atmel_hlcdc_dc.h
+ create mode 100644 drivers/gpu/drm/atmel-hlcdc/atmel_hlcdc_layer.c
+ create mode 100644 drivers/gpu/drm/atmel-hlcdc/atmel_hlcdc_layer.h
+ create mode 100644 drivers/gpu/drm/atmel-hlcdc/atmel_hlcdc_output.c
+ create mode 100644 drivers/gpu/drm/atmel-hlcdc/atmel_hlcdc_plane.c
+ create mode 100644 drivers/mfd/atmel-hlcdc.c
+ create mode 100644 drivers/pwm/pwm-atmel-hlcdc.c
+ create mode 100644 include/linux/mfd/atmel-hlcdc.h
+
+-- 
+1.8.3.2
 
