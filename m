@@ -1,89 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755028AbaGVLxI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 07:53:08 -0400
-Received: from mga01.intel.com ([192.55.52.88]:43840 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750843AbaGVLxH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 07:53:07 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,710,1400050800"; 
-   d="scan'208";a="573575231"
-Message-ID: <53CE5097.2000502@intel.com>
-Date: Tue, 22 Jul 2014 19:52:55 +0800
-From: "xinhui.pan" <xinhuix.pan@intel.com>
+	id S1755106AbaGVLyD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 07:54:03 -0400
+Received: from e28smtp06.in.ibm.com ([122.248.162.6]:37241 "EHLO
+	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753730AbaGVLyB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 07:54:01 -0400
+Message-ID: <53CE50CF.3080200@linux.vnet.ibm.com>
+Date: Tue, 22 Jul 2014 17:23:51 +0530
+From: Hemant Kumar <hemant@linux.vnet.ibm.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>, mnipxh <mnipxh@gmail.com>
-CC: jslaby@suse.cz, linux-kernel@vger.kernel.org, yanmin_zhang@linux.intel.com
-Subject: Re: [PATCH] tty/tty_io.c: make a check before reuse cdev
-References: <53CD0BD4.4050007@gmail.com> <20140721153840.GA6802@kroah.com>
-In-Reply-To: <20140721153840.GA6802@kroah.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: Andi Kleen <andi@firstfloor.org>
+CC: linux-kernel@vger.kernel.org, srikar@linux.vnet.ibm.com,
+        peterz@infradead.org, oleg@redhat.com, hegdevasant@linux.vnet.ibm.com,
+        mingo@redhat.com, anton@redhat.com, systemtap@sourceware.org,
+        namhyung@kernel.org, masami.hiramatsu.pt@hitachi.com,
+        aravinda@linux.vnet.ibm.com, penberg@iki.fi
+Subject: Re: [PATCH v2 1/3] perf/sdt : Listing of SDT markers by perf
+References: <20140717054826.19995.61782.stgit@hemant-fedora> <20140717055341.19995.97042.stgit@hemant-fedora> <87d2d24kui.fsf@tassilo.jf.intel.com>
+In-Reply-To: <87d2d24kui.fsf@tassilo.jf.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14072211-9574-0000-0000-00000029415B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Andi,
 
-于 2014年07月21日 23:38, Greg KH 写道:
-> On Mon, Jul 21, 2014 at 08:47:16PM +0800, pp wrote:
->> As reuse the cdev may cause panic. After we unregister the tty device, we may use tty_hangup() o
->> other similar function to send a signal(SIGHUP) to process which has opend our device. But that
->> not succeed if the process couldn't get the signal. for example, a process forked
->> but his parent quited never get SIGHUP.
->>
->> Here is our scence.
->> tty driver register its device and init the cdevs, then process "A" open one cdev.
->> tty driver unregister its device and cdev_del the cdevs, call tty_hangup to (S)send signal SIGHUP to process A.
->> But that step(S) fails.
-> 
-> How can that fail?  What driver does this fail for?
+On 07/18/2014 11:20 PM, Andi Kleen wrote:
+> Hemant Kumar <hemant@linux.vnet.ibm.com> writes:
+>
+> First I should say supporting these probes is very useful. Thanks for
+> working on this.
 
-hi, Greg
-	Thanks for your nice comments. :)
-	It's gsm driver that want to unregister/register tty device. We are working on our intel mobile phone,
-When the phone goes into airplane-mode, the modem will disconnect from system, then gsmld_close() -> gsmld_detach_gsm() -> tty_unregister_device().
-When the phone leaves airplane-mode, the modem will connect to system, then gsmld_open() -> gsmld_attach_gsm() -> tty_register_device()
-In this way how gsm driver works.
-It seems very normal and can work well. :)
+Thanks a lot for the appreciation.
 
-But there is always something bad for us to deal with. 
-If a process(A, its name) opens the /dev/gsmttyXX, and the process(A) is, for example, running with command "A &".
-The process(A) is not able to receive the signal SIGHUP from __tty_hangup() -> tty_signal_session_leader(). 
-There are several reasons that can stop process(A) from receiving signal SIGHUP. 
-another example, B is running, and he makes a fork(), A is the child of B, then B quit, leave A running.
-in such scenario, A is not able to receive signal SIGHUP, either. 
-Anyway, we cannot guarantee process(A) will close /dev/gsmttyXX in time. That means we don't know when we can reuse the tty_driver->cdevs[XX].
-one second, one minute? We don't know. We just don't trust user space. :)
+>
+>> +
+>> +#define SDT_CACHE_DIR "/var/cache/perf/"
+> This requires running perf as root, right?
 
-> 
->> tty driver register its device and (D)init the cdevs again.
-> 
-> What driver does this with an "old" device, it should have created a new
-> one, otherwise, as you have pointed out, it's a bug.
-> 
+Yes!
 
-I can't agree more with you. we should not use "old" device. 
-gsm driver(gsm_tty_driver) call tty_register_device() to export gsmttyXX to userspace.
-but tty core code manages cdevs by itself. cdevs is not directly used by any other tty drivers. Adding a check in n_gsm.c before call tty_register_device() seems 
-breaking a rule and making things complex in my opinion.
-I also find a fact that most tty drivers only call tty_register_device() in probe(), and call tty_unregister_device() in remove().
-Q1:
-Is this a rule, too? :)
+>
+> It would be better to use the $HOME cache dir, like the recent JSON patches.
 
-I think my patch is not good enough. 
-Q2:
-How about (1)change struct *cdevs to struct **cdevs, and (2)use cdev_alloc() instead of cdev_init()? :)
-Let char_dev core code manage the cdev. when the cdev's ref-count become zero, cdev will be released by char_dev core code self.
+Hmm, seems like a good idea! We can use ~/.debug as Masami suggested.
 
-I very appreciate for your comments. and your advices are very important and helpful for me to solve this issue. 
+>
+>> +#define SDT_CACHE "perf-sdt.cache"
+>> +#define SDT_CACHE_TMP "perf-sdt.cache.tmp"
+>> +
+>> +#define DELIM ':'
+>> +
+>> +struct path_list {
+>> +	char path[PATH_MAX];
+>> +	struct list_head list;
+>> +} execs;
+>> +
+>> +/* Write operation for cache */
+>> +static void write_cache(FILE *cache, char *buffer)
+>> +{
+>> +	fprintf(cache, "%s", buffer);
+>> +}
+>> +
+> The function seems redundant.
+>
 
-thanks,
+Yeah, right. Will remove it.
 
-xinhui
+>> +/*
+>> + * get_sdt_note_info() is the function actually responsible for
+>> + * flushing the SDT notes info into the "cache" file or to the
+>> + * stdout if "cache" points to NULL. Also, this function finds out
+>> + * the build-id of an ELF to be written into "cache".
+>> + */
+>> +static void get_sdt_note_info(struct list_head *start, const char *target,
+>> +			      FILE *cache)
+>> +{
+>> +	struct sdt_note *pos;
+>> +	u8 build_id[BUILD_ID_SIZE];
+>> +	char sbuild_id[BUILD_ID_SIZE * 2 + 1];
+>> +	char buffer[2 * PATH_MAX];
+>> +
+>> +	if (list_empty(start))
+>> +		return;
+>> +
+>> +	/* Read the build id of the file */
+>> +	if (filename__read_build_id(target, &build_id,
+>> +				    sizeof(build_id)) < 0) {
+>> +		pr_debug("Couldn't read build-id in %s\n", target);
+> pr_info ?
 
-> thanks,
-> 
-> greg k-h
-> 
+Ok, pr_info will be better.
+
+>> +
+>> +/*
+>> + * Finds out the libraries present in a system as shown by the command
+>> + * "ldconfig --print-cache". Uses "=>" and '/' to find out the start of a
+>> + * dso path.
+>> + */
+> This seems like a hack. How would that handle chroot, containers etc. ?
+
+Right now, it doesn't handle chroot, containers and other path related
+stuff. We will have to figure that out!
+
+>> +static inline void append_path(char *path, struct list_head *list)
+>> +{
+>> +	char *res_path = NULL;
+>> +	struct path_list *tmp = NULL;
+>> +
+>> +	res_path = (char *)malloc(sizeof(char) * PATH_MAX);
+>> +
+>> +	if (!res_path)
+>> +		return;
+>> +
+>> +	memset(res_path, '\0', PATH_MAX);
+>> +
+>> +	if (realpath(path, res_path) && !is_present_in_list(list, res_path)) {
+>
+> O^2 algorithm ?
+
+:) Will improve that by using a hash table.
+
+>> +/*
+>> + * Obtain the list of paths from the PATH env variable
+>> + */
+> Same as above. This probably needs to be more configurable to handle
+> more ways to find binaries.
+>
+
+We can make it more configurable, but by default, it should go for
+binaries in these directories. What would you suggest?
+
+Thanks a lot for reviewing the patch. :)
+
+-- 
+Thanks,
+Hemant Kumar
+
