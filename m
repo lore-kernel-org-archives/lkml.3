@@ -1,36 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752548AbaGVEiX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 00:38:23 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:41340 "EHLO
+	id S1752645AbaGVEij (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 00:38:39 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:41349 "EHLO
 	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751466AbaGVEiV (ORCPT
+	with ESMTP id S1750803AbaGVEih (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 00:38:21 -0400
-Date: Mon, 21 Jul 2014 21:38:18 -0700 (PDT)
-Message-Id: <20140721.213818.1578856121778935701.davem@davemloft.net>
-To: linux@rasmusvillemoes.dk
-Cc: paul.gortmaker@windriver.com, sparclinux@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drivers/sbus/char: Micro-optimization in display7seg.c
+	Tue, 22 Jul 2014 00:38:37 -0400
+Date: Mon, 21 Jul 2014 21:38:36 -0700 (PDT)
+Message-Id: <20140721.213836.2235386730808030831.davem@davemloft.net>
+To: keescook@chromium.org
+Cc: linux-kernel@vger.kernel.org, sam@ravnborg.org, sparclinux@vger.kernel.org
+Subject: Re: [RESEND][PATCH] sparc: use %s for unaligned panic
 From: David Miller <davem@davemloft.net>
-In-Reply-To: <1403181112-12018-1-git-send-email-linux@rasmusvillemoes.dk>
-References: <1403181112-12018-1-git-send-email-linux@rasmusvillemoes.dk>
+In-Reply-To: <20140630203759.GA4764@www.outflux.net>
+References: <20140630203759.GA4764@www.outflux.net>
 X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
 Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 21 Jul 2014 21:38:19 -0700 (PDT)
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 21 Jul 2014 21:38:37 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rasmus Villemoes <linux@rasmusvillemoes.dk>
-Date: Thu, 19 Jun 2014 14:31:52 +0200
+From: Kees Cook <keescook@chromium.org>
+Date: Mon, 30 Jun 2014 13:37:59 -0700
 
-> Flipping a bit doesn't need four lines of code; and gcc seems to
-> actually generate two branches.
+> Since unaligned_panic() takes a literal string, make sure it can never
+> accidentally be used as a format string.
 > 
-> Signed-off-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+> Signed-off-by: Kees Cook <keescook@chromium.org>
 
-Applied to sparc-next
+Unnecessary, but harmless, so applied to sparc-next, thanks.
