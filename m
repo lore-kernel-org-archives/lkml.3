@@ -1,158 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755504AbaGVMPX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 08:15:23 -0400
-Received: from mail-ig0-f170.google.com ([209.85.213.170]:63727 "EHLO
-	mail-ig0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755348AbaGVMNv (ORCPT
+	id S1755533AbaGVMPs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 08:15:48 -0400
+Received: from casper.infradead.org ([85.118.1.10]:59991 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753064AbaGVMNu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 08:13:51 -0400
-From: Alex Elder <elder@linaro.org>
-To: akpm@linux-foundation.org
-Cc: kay@vrfy.org, pmladek@suse.cz, bp@suse.de, john.stultz@linaro.org,
-        jack@suse.cz, linux-kernel@vger.kernel.org
-Subject: [PATCH v6 4/7] printk: LOG_CONT and LOG_NEWLINE are opposites
-Date: Tue, 22 Jul 2014 07:13:47 -0500
-Message-Id: <1406031230-18107-5-git-send-email-elder@linaro.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1406031230-18107-1-git-send-email-elder@linaro.org>
-References: <1406031230-18107-1-git-send-email-elder@linaro.org>
+	Tue, 22 Jul 2014 08:13:50 -0400
+Date: Tue, 22 Jul 2014 14:13:45 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Linux PCI <linux-pci@vger.kernel.org>, Zhang Rui <rui.zhang@intel.com>
+Subject: Re: [PATCH 0/3] ACPI / PM: Make ACPI-based PCI wakeup work for the
+ "freeze" sleep state
+Message-ID: <20140722121345.GC3935@laptop>
+References: <1907495.agrCMfRsQN@vostro.rjw.lan>
+ <9631666.En3K0jlGsY@vostro.rjw.lan>
+ <20140722085538.GA3935@laptop>
+ <2866134.Da8PQoU0sW@vostro.rjw.lan>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <2866134.Da8PQoU0sW@vostro.rjw.lan>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Two log record flags--LOG_CONT and LOG_NEWLINE--are mutually
-exclusive.  That is, one or the other is always set, but they are
-never both set at the same time in a log record flags field.  What
-follows is a great deal of explanation that aims to prove this
-assertion.
+On Tue, Jul 22, 2014 at 02:23:03PM +0200, Rafael J. Wysocki wrote:
+> > Doesn't break, doesn't 'work' either.
+> 
+> This probably means that WoL on that machine is not ACPI-based.
 
-Having that knowledge allows us to simplify a bit of logic, and with
-a little more work (in follow-on patches) it allows us to do without
-a flag value, simplifying things.
+Oh lovely, of course that's an 'option' !
 
+> > Is there anything I can provide you with to make this easier? lspci output
+> > or anything like that?
+> 
+> Yes, /proc/interrupts from the machine in question would help to start with.
 
-Log record flags are held in the "cont" continuation buffer, as well
-as in "syslog_prev" and "console_prev".  Those are discussed later.
+Be sure to get a _wide_ terminal when viewing ;-)
 
-Other than that, log record flags are only set in log_store():
-    msg->flags = flags & 0x1f;
-There are 5 places log_store() is called:  twice from cont_flush();
-and three times from vprintk_emit().
+            CPU0       CPU1       CPU2       CPU3       CPU4       CPU5       CPU6       CPU7       CPU8       CPU9       CPU10      CPU11      CPU12      CPU13      CPU14      CPU15      CPU16      CPU17      CPU18      CPU19      CPU20      CPU21      CPU22      CPU23      
+   0:        433          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0   IO-APIC-edge      timer
+   1:          3          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0   IO-APIC-edge      i8042
+   3:          4          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0   IO-APIC-edge    
+   4:        357          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0   IO-APIC-edge      serial
+   8:          1          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0   IO-APIC-edge      rtc0
+   9:          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0   IO-APIC-fasteoi   acpi
+  12:          4          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0   IO-APIC-edge      i8042
+  16:          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0   IO-APIC   16-fasteoi   pata_jmicron, uhci_hcd:usb3
+  18:          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0   IO-APIC   18-fasteoi   ehci_hcd:usb1, uhci_hcd:usb7, i801_smbus
+  19:          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0   IO-APIC   19-fasteoi   uhci_hcd:usb4, uhci_hcd:usb6
+  23:          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0   IO-APIC   23-fasteoi   ehci_hcd:usb2, uhci_hcd:usb5
+  25:          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0   PCI-MSI-edge      aerdrv, PCIe PME
+  27:          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0   PCI-MSI-edge      aerdrv, PCIe PME
+  29:          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0   PCI-MSI-edge      aerdrv, PCIe PME
+  31:          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0   PCI-MSI-edge      aerdrv, PCIe PME
+  33:          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0   PCI-MSI-edge      aerdrv, PCIe PME
+  34:          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0   PCI-MSI-edge      PCIe PME
+  35:          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0   PCI-MSI-edge      PCIe PME
+  36:       2039          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0   PCI-MSI-edge      ahci
+  37:          1          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0   PCI-MSI-edge      eth0
+  38:       6467          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0   PCI-MSI-edge      eth0-TxRx-0
+  39:       5504          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0   PCI-MSI-edge      eth0-TxRx-1
+  40:       5298          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0   PCI-MSI-edge      eth0-TxRx-2
+  41:       5221          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0   PCI-MSI-edge      eth0-TxRx-3
+  42:       6415          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0   PCI-MSI-edge      eth0-TxRx-4
+  43:       5311          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0   PCI-MSI-edge      eth0-TxRx-5
+  44:       5231          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0   PCI-MSI-edge      eth0-TxRx-6
+  45:       5556          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0   PCI-MSI-edge      eth0-TxRx-7
+ NMI:          8          1          1          0          0          0          0          0          7          0          0          2          0          3          1          0          0          0          0          2          0          0          0          1   Non-maskable interrupts
+ LOC:      37022      15954      12352      10360      10326       9371       9760       9739      13134      11383      10975      11614       8692      15659      10999       9948       8597       8485      10011      15927      10431      10164       8530      10337   Local timer interrupts
+ SPU:          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0   Spurious interrupts
+ PMI:          8          1          1          0          0          0          0          0          7          0          0          2          0          3          1          0          0          0          0          2          0          0          0          1   Performance monitoring interrupts
+ IWI:          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0   IRQ work interrupts
+ RTR:         15          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0   APIC ICR read retries
+ RES:       1150        345        168         73         60         66         92         70        243         60         54         54         35        108         66         35         32         36         41        286         60         37         46         55   Rescheduling interrupts
+ CAL:         49         68         76         76         76         76        173        141        160        197        169        146         73         73         73         73         73         73         76        254         90        167         83         79   Function call interrupts
+ TLB:          0          0          0          0          0          0          0          0          1          1          0          0          1          0          0          0          0          0          0          3          1          0          1          0   TLB shootdowns
+ TRM:          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0   Thermal event interrupts
+ THR:          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0   Threshold APIC interrupts
+ MCE:          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0          0   Machine check exceptions
+ MCP:         36         36         36         36         36         36         36         36         36         36         36         36         36         36         36         36         36         36         36         36         36         36         36         36   Machine check polls
+ ERR:          0
+ MIS:          0
 
-Only two single-flag values are ever passed to cont_flush():
-LOG_CONT; and LOG_NEWLINE.  That passed-in value is provided to
-log_store() either as-is, or modified to include LOG_NOCONS.  There
-are thus four possible flag combinations supplied to log_store() by
-cont_flush():  LOG_CONT; LOG_NEWLINE; LOG_CONT|LOG_NOCONS; or
-LOG_NEWLINE|LOG_NOCONS.
+> Also /sys/kernel/debug/wakeup_sources (if /sys/kernel/debug/ is where your debugfs
+> lives) before
 
-The first call vprintk_emit() makes to log_store() passes a flags
-value of LOG_PREFIX|LOG_NEWLINE.  The second and third calls pass a
-locally-computed "lflags" value, possibly with LOG_CONT added.  The
-only possible flag combinations held in "lflags" are:  0;
-LOG_NEWLINE; LOG_PREFIX; or LOG_NEWLINE|LOG_PREFIX.  If LOG_NEWLINE
-is not set, LOG_CONT flag is added in the call to log_store().  So
-there are four possible flag combinations supplied by vprintk_emit():
-LOG_CONT; LOG_NEWLINE; LOG_PREFIX|LOG_CONT; or LOG_PREFIX|LOG_NEWLINE.
+of course not, that's /debug :-)
 
-Therefore log_store() is never provided (so never records) a flag
-value that contains both LOG_CONT and LOG_NEWLINE, and one of those
-flags is always present.
+name		active_count	event_count	wakeup_count	expire_count	active_since	total_time	max_time	last_change	prevent_suspend_time
+00:06       	0		0		0		0		0		0		0		7066		0
+00:02       	0		0		0		0		0		0		0		7056		0
+0000:00:1d.2	0		0		0		0		0		0		0		7056		0
+0000:00:1d.1	0		0		0		0		0		0		0		7046		0
+0000:00:1d.0	0		0		0		0		0		0		0		7035		0
+0000:00:1a.2	0		0		0		0		0		0		0		7025		0
+0000:00:1a.0	0		0		0		0		0		0		0		7015		0
+0000:00:1d.7	0		0		0		0		0		0		0		7004		0
+0000:00:1a.7	0		0		0		0		0		0		0		6982		0
+0000:01:00.1	0		0		0		0		0		0		0		6797		0
+0000:01:00.0	0		0		0		0		0		0		0		6591		0
+alarmtimer  	0		0		0		0		0		0		0		5012		0
+PNP0C0C:00  	0		0		0		0		0		0		0		1924		0
+PNP0C0E:00  	0		0		0		0		0		0		0		1924		0
+LNXPWRBN:00 	0		0		0		0		0		0		0		1922		0
+PNP0A08:00  	0		0		0		0		0		0		0		1838		0
+device:2a   	0		0		0		0		0		0		0		1802		0
+device:29   	0		0		0		0		0		0		0		1798		0
+device:10   	0		0		0		0		0		0		0		1763		0
+device:02   	0		0		0		0		0		0		0		1757		0
+device:00   	0		0		0		0		0		0		0		1746		0
+device:01   	0		0		0		0		0		0		0		1735		0
+device:15   	0		0		0		0		0		0		0		1730		0
+device:13   	0		0		0		0		0		0		0		1723		0
+device:12   	0		0		0		0		0		0		0		1718		0
+device:11   	0		0		0		0		0		0		0		1711		0
+device:1f   	0		0		0		0		0		0		0		1705		0
+device:1b   	0		0		0		0		0		0		0		1699		0
+device:19   	0		0		0		0		0		0		0		1693		0
+device:18   	0		0		0		0		0		0		0		1685		0
+device:16   	0		0		0		0		0		0		0		1678		0
+device:28   	0		0		0		0		0		0		0		1616		0
+device:26   	0		0		0		0		0		0		0		1612		0
+device:24   	0		0		0		0		0		0		0		1607		0
+device:22   	0		0		0		0		0		0		0		1602		0
+device:20   	0		0		0		0		0		0		0		1597		0
 
+> and after a "freeze" with an attempt to use WoL to wake it up.
 
-Meanwhile, the "cont" flags field is only ever assigned value 0, or
-a value passed to cont_flush().  The value of cont.flags is only
-ever *used* if cont.flushed is true, and that only gets set after
-the cont.flags field is assigned to the value passed to
-cont_flush().  As mentioned above, cont_flush() is never provided
-more than one flag value, and it's always either LOG_NEWLINE
-or LOG_CONT.  Therefore, for all intents and purposes, cont.flags
-only ever holds LOG_NEWLINE or LOG_CONT.
+Issued 3 WoLs then hit the power button:
 
-The only values assigned to "syslog_prev" and "console_prev" are the
-initial value LOG_NEWLINE or the flags value from a log record.  So
-none of these ever hold LOG_CONT and LOG_NEWLINE at the same time.
+name		active_count	event_count	wakeup_count	expire_count	active_since	total_time	max_time	last_change	prevent_suspend_time
+00:06       	0		0		0		0		0		0		0		7066		0
+00:02       	0		0		0		0		0		0		0		7056		0
+0000:00:1d.2	0		0		0		0		0		0		0		7056		0
+0000:00:1d.1	0		0		0		0		0		0		0		7046		0
+0000:00:1d.0	0		0		0		0		0		0		0		7035		0
+0000:00:1a.2	0		0		0		0		0		0		0		7025		0
+0000:00:1a.0	0		0		0		0		0		0		0		7015		0
+0000:00:1d.7	0		0		0		0		0		0		0		7004		0
+0000:00:1a.7	0		0		0		0		0		0		0		6982		0
+0000:01:00.1	0		0		0		0		0		0		0		6797		0
+0000:01:00.0	0		0		0		0		0		0		0		6591		0
+alarmtimer  	0		0		0		0		0		0		0		5012		0
+PNP0C0C:00  	0		0		0		0		0		0		0		1924		0
+PNP0C0E:00  	0		0		0		0		0		0		0		1924		0
+LNXPWRBN:00 	1		1		0		0		0		0		0		10597988		0
+PNP0A08:00  	0		0		0		0		0		0		0		1838		0
+device:2a   	0		0		0		0		0		0		0		1802		0
+device:29   	0		0		0		0		0		0		0		1798		0
+device:10   	0		0		0		0		0		0		0		1763		0
+device:02   	0		0		0		0		0		0		0		1757		0
+device:00   	0		0		0		0		0		0		0		1746		0
+device:01   	0		0		0		0		0		0		0		1735		0
+device:15   	0		0		0		0		0		0		0		1730		0
+device:13   	0		0		0		0		0		0		0		1723		0
+device:12   	0		0		0		0		0		0		0		1718		0
+device:11   	0		0		0		0		0		0		0		1711		0
+device:1f   	0		0		0		0		0		0		0		1705		0
+device:1b   	0		0		0		0		0		0		0		1699		0
+device:19   	0		0		0		0		0		0		0		1693		0
+device:18   	0		0		0		0		0		0		0		1685		0
+device:16   	0		0		0		0		0		0		0		1678		0
+device:28   	0		0		0		0		0		0		0		1616		0
+device:26   	0		0		0		0		0		0		0		1612		0
+device:24   	0		0		0		0		0		0		0		1607		0
+device:22   	0		0		0		0		0		0		0		1602		0
+device:20   	0		0		0		0		0		0		0		1597		0
 
-This proves that at LOG_CONT and LOG_NEWLINE are in fact mutually
-exclusive flags.
-
-This patch makes the following changes:
-    - Changes two spots in msg_print_txt() so they no longer bother
-      checking for LOG_NEWLINE once its known that LOG_CONT is set.
-    - Changes two |= assignments in vprintk_emit() to be simple
-      assignments instead, because the result is known to be the
-      same and it makes it obvious no other flags are involved.
-    - Assigns LOG_CONT to "lflags" in vprintk_emit() if it does not
-      contain LOG_NEWLINE (rather than just adding it at the time
-      of the call to log_store()).
-    - Adds a short explanatory comment.
-
-Signed-off-by: Alex Elder <elder@linaro.org>
-Reviewed-by: Petr Mládek <pmladek@suse.cz>
----
- kernel/printk/printk.c | 21 ++++++++++++---------
- 1 file changed, 12 insertions(+), 9 deletions(-)
-
-diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
-index 847e941..1ff3a05 100644
---- a/kernel/printk/printk.c
-+++ b/kernel/printk/printk.c
-@@ -1010,11 +1010,9 @@ static size_t msg_print_text(const struct printk_log *msg, enum log_flags prev,
- 		prefix = false;
- 
- 	if (msg->flags & LOG_CONT) {
--		if ((prev & LOG_CONT) && !(prev & LOG_NEWLINE))
-+		if (prev & LOG_CONT)
- 			prefix = false;
--
--		if (!(msg->flags & LOG_NEWLINE))
--			newline = false;
-+		newline = false;
- 	}
- 
- 	if ((prev & LOG_CONT) && (msg->flags & LOG_PREFIX) && len < size) {
-@@ -1661,10 +1659,16 @@ asmlinkage int vprintk_emit(int facility, int level,
- 	text_len += vscnprintf(text + text_len,
- 			       sizeof(textbuf) - text_len, fmt, args);
- 
--	/* mark and strip a trailing newline */
-+	/*
-+	 * If there's a trailing newline, flag it and strip it off.
-+	 * Otherwise we assume this is a partial log message, to be
-+	 * continued with the next call.
-+	 */
- 	if (text_len && text[text_len-1] == '\n') {
- 		text_len--;
--		lflags |= LOG_NEWLINE;
-+		lflags = LOG_NEWLINE;
-+	} else {
-+		lflags = LOG_CONT;
- 	}
- 
- 	/* strip kernel syslog prefix and extract log level or control flags */
-@@ -1694,7 +1698,7 @@ asmlinkage int vprintk_emit(int facility, int level,
- 		level = default_message_loglevel;
- 
- 	if (dict)
--		lflags |= LOG_PREFIX|LOG_NEWLINE;
-+		lflags = LOG_PREFIX|LOG_NEWLINE;
- 
- 	if (!(lflags & LOG_NEWLINE)) {
- 		/*
-@@ -1708,8 +1712,7 @@ asmlinkage int vprintk_emit(int facility, int level,
- 		if (cont_add(facility, level, text, text_len))
- 			printed_len += text_len;
- 		else
--			printed_len += log_store(facility, level,
--						 lflags | LOG_CONT, 0,
-+			printed_len += log_store(facility, level, lflags, 0,
- 						 dict, dictlen, text, text_len);
- 	} else {
- 		bool stored = false;
--- 
-1.9.1
 
