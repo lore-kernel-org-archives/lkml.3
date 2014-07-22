@@ -1,104 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754642AbaGVKQl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 06:16:41 -0400
-Received: from mail-wg0-f48.google.com ([74.125.82.48]:34043 "EHLO
-	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753780AbaGVKQk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 06:16:40 -0400
-Message-ID: <53CE39EE.5020309@linaro.org>
-Date: Tue, 22 Jul 2014 11:16:14 +0100
-From: Daniel Thompson <daniel.thompson@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: Thomas Gleixner <tglx@linutronix.de>, Jason Cooper <jason@lakedaemon.net>,
-        Marek Vasut <marex@denx.de>, Harro Haan <hrhaan@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        patches@linaro.org, linaro-kernel@lists.linaro.org,
-        John Stultz <john.stultz@linaro.org>
-Subject: Re: [PATCH RFC 5/9] ARM: Add L1 PTE non-secure mapping
-References: <1405954040-30399-1-git-send-email-daniel.thompson@linaro.org> <1405954040-30399-6-git-send-email-daniel.thompson@linaro.org> <20140721164634.GF21766@n2100.arm.linux.org.uk>
-In-Reply-To: <20140721164634.GF21766@n2100.arm.linux.org.uk>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1754266AbaGVK2h (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 06:28:37 -0400
+Received: from mga09.intel.com ([134.134.136.24]:40578 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751272AbaGVK2g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 06:28:36 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,709,1400050800"; 
+   d="asc'?scan'208";a="576922777"
+Message-ID: <1406024914.18280.59.camel@jtkirshe-mobl>
+Subject: Re: [PATCH] i40e: use global pci_vfs_assigned() to replace local
+ i40e_vfs_are_assigned()
+From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+To: Ethan Zhao <ethan.zhao@oracle.com>
+Cc: alexander.h.duyck@intel.com, jesse.brandeburg@intel.com,
+        bruce.w.allan@intel.com, carolyn.wyborny@intel.com,
+        donald.c.skidmore@intel.com, gregory.v.rose@intel.com,
+        john.ronciak@intel.com, mitch.a.williams@intel.com,
+        linux.nics@intel.com, e1000-devel@lists.sourceforge.net,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        ethan.kernel@gmail.com
+Date: Tue, 22 Jul 2014 03:28:34 -0700
+In-Reply-To: <1405993851-24375-1-git-send-email-ethan.zhao@oracle.com>
+References: <1405993851-24375-1-git-send-email-ethan.zhao@oracle.com>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-To50B+pDlOsK7ZpwkSbR"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 21/07/14 17:46, Russell King - ARM Linux wrote:
-> On Mon, Jul 21, 2014 at 03:47:16PM +0100, Daniel Thompson wrote:
->> From: Marek Vasut <marex@denx.de>
->>
->> Add new device type, MT_DEVICE_NS. This type sets the NS bit in L1 PTE [1].
->> Accesses to a memory region which is mapped this way generate non-secure
->> access to that memory area. One must be careful here, since the NS bit is
->> only available in L1 PTE, therefore when creating the mapping, the mapping
->> must be at least 1 MiB big and must be aligned to 1 MiB. If that condition
->> was false, the kernel would use regular L2 page mapping for this area instead
->> and the NS bit setting would be ineffective.
-> 
-> Right, so this says that PTE mappings are not permissible.
-> 
->> +	[MT_DEVICE_NS] = {	  /* Non-secure accesses from secure mode */
->> +		.prot_pte	= PROT_PTE_DEVICE | L_PTE_MT_DEV_SHARED |
->> +				  L_PTE_SHARED,
->> +		.prot_l1	= PMD_TYPE_TABLE,
-> 
-> However, by filling in prot_pte and prot_l1, you're telling the code that
-> it /can/ setup such a mapping.  This is screwed.
 
-I'll fix this.
+--=-To50B+pDlOsK7ZpwkSbR
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
+On Tue, 2014-07-22 at 09:50 +0800, Ethan Zhao wrote:
+> There is global funcion pci_vfs_assigned(), so use it instead of
+> composing
+> local one.
+>=20
+> Signed-off-by: Ethan Zhao <ethan.kernel@gmail.com>
+> ---
+>  drivers/net/ethernet/intel/i40e/i40e_virtchnl_pf.c |   31
+> +-------------------
+>  1 files changed, 1 insertions(+), 30 deletions(-)
 
-> If you want to deny anything but section mappings (because they don't work)
-> then you omit prot_pte and prot_l1.  With those omitted, if someone tries
-> to abuse this mapping type, then this check in create_mapping() will
-> trigger:
-> 
->         if (type->prot_l1 == 0 && ((addr | phys | length) & ~SECTION_MASK)) {
->                 printk(KERN_WARNING "BUG: map for 0x%08llx at 0x%08lx can not "
->                        "be mapped using pages, ignoring.\n",
->                        (long long)__pfn_to_phys(md->pfn), addr);
->                 return;
->         }
-> 
-> ioremap doesn't have that check; it assumes that it will always be setting
-> up PTE mappings via ioremap_page_range().  In fact, on many platforms
-> that's the only option.
+Thanks Ethan, I have added your patch to my queue.
 
-I have proposed a patch (which I just noticed is currently *really*
-broken but ignore that for now) to prevent the fallback to
-ioremap_page_range(). As you say this leaves nothing but the lookup in
-the static mappings for many platforms.
+--=-To50B+pDlOsK7ZpwkSbR
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
 
-That patches looks at PMD_SECT_NS directly but could be changed to zero
-check ->prot_l1 instead.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-That removes the danger of spuriously getting bad mappings but is
-certainly not elegant.
+iQIcBAABCgAGBQJTzjzSAAoJEOVv75VaS+3OUhUP/Rkti/SLyuGsGQkG+U6+yo7a
+807REHWrxFw9eBQY/XwLXuw+GMRCM33nF2NihmbOHfBpVovnv/47w4k+ROGHGviq
+eqONZx0JxjKwgVL96cJR1Jyj15XIUPT0u0H9QMdxkgB1pn/hChlvt8S3GbIRf5VA
+i586LCMas2+W5z5Bn9HMOKq6rnLEKJbirkKIAs0yYOMSNkpVOX7RDcB1Ohy23Wxg
+IZdREzhx2Zo1Kz3UubjxM7nWYdsR2BMs/0sFrGMXFMvQ9B3okzL48euy8Y58CHHf
+jJf0XvllJH5XV7UMYt2frzj/SE3eGhx8gYE/hsLy35pxjM85npmWJY8pwzZABk6J
+MnqlHTJppmdr+bCin/jCwENZforF+4d7tHdiCIg9wtWZLPSzvBaUR2926Pm1TMfX
+gftXrvHbBhvEYKdQNxJ1hXiTYoH0QGkd6Bb3vI6Dl7/rHpkgpcndg4H0mveeATlT
+fYSGtB4F5ux4NaomSlacHsRrwiXYgEGbI+XAFACF39Gjc1ce7oJQ0PRI9JdtipL1
+5FYwo7OQVnC8bNAyadpuYEJMjL2QsyE8lmHl+j22Rb0MmIjv90invtbDPzaDr69s
+KGc2NlD4jdH8G8xxLr5qBeMf3Fjj/myJXgSw1isB6Q/vWzFUoiZklNKc5cZlzq+X
+sNdypguBVfc4UXsC5eUg
+=2CEa
+-----END PGP SIGNATURE-----
 
+--=-To50B+pDlOsK7ZpwkSbR--
 
-> So making this interface available via ioremap() seems pointless - but
-> more importantly it's extremely error-prone.  So, MT_DEVICE_NS shouldn't
-> be using 4 at all, shouldn't be in asm/io.h, but should be with the
-> private MT_* definitions in map.h.
-
-I wanted to use ioremap() because it allows platform neutral code in the
-GIC driver to look up a staticly configured non-secure aliased mapping
-for the GIC (if it exists). Also given the mapping is used for register
-I/O ioremap() also felt "right".
-
-Is new API better? A very thin wrapper around find_static_vm_paddr()?
-
-I guess the best thing would be to allocate the mapping dynamically. It
-might be possible for __arm_ioremap_pfn_caller() to change the NS flag
-in the first-level table after allocating a naturally aligned 1MB
-vm_area and before updating the second-level? We are not required to use
-sections, however all pages that share a L1 entry get the same security
-flags.
-
-
-Daniel.
