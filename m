@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754835AbaGVK5l (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 06:57:41 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:46577 "EHLO bear.ext.ti.com"
+	id S1751861AbaGVK5t (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 06:57:49 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:46591 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754714AbaGVK5f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 06:57:35 -0400
+	id S1754714AbaGVK5p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 06:57:45 -0400
 From: Kishon Vijay Abraham I <kishon@ti.com>
 To: <gregkh@linuxfoundation.org>
 CC: <kishon@ti.com>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH 16/28] phy: qcom: Add driver for QCOM APQ8064 SATA PHY
-Date: Tue, 22 Jul 2014 16:26:39 +0530
-Message-ID: <1406026611-30493-17-git-send-email-kishon@ti.com>
+Subject: [PATCH 22/28] phy: core: Let node ptr of PHY point to PHY and not of PHY provider
+Date: Tue, 22 Jul 2014 16:26:45 +0530
+Message-ID: <1406026611-30493-23-git-send-email-kishon@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1406026611-30493-1-git-send-email-kishon@ti.com>
 References: <1406026611-30493-1-git-send-email-kishon@ti.com>
@@ -21,345 +21,374 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+In case of multi-phy PHY providers, each PHY should be modeled as a sub
+node of the PHY provider. Then each PHY will have a different node pointer
+(node pointer of sub node) than that of PHY provider. Added this provision
+in the PHY core.
+Also fixed all drivers to use the updated API.
 
-Add a PHY driver for uses with AHCI based SATA controller driver on the
-APQ8064 family of SoCs.
-
-This patch is a forward port from Qualcomm's v3.4 andriod kernel.
-
-Tested on IFC6410 board.
-
-CC: Sujit Reddy Thumma <sthumma@codeaurora.org>
-Tested-by: Kiran Padwal <kiran.padwal@smartplayin.com>
-Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
 Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+Acked-by: Lee Jones <lee.jones@linaro.org>
 ---
- drivers/phy/Kconfig                 |    7 +
- drivers/phy/Makefile                |    1 +
- drivers/phy/phy-qcom-apq8064-sata.c |  288 +++++++++++++++++++++++++++++++++++
- 3 files changed, 296 insertions(+)
- create mode 100644 drivers/phy/phy-qcom-apq8064-sata.c
+ Documentation/phy.txt               |   10 ++++++----
+ drivers/phy/phy-bcm-kona-usb2.c     |    2 +-
+ drivers/phy/phy-berlin-sata.c       |    2 +-
+ drivers/phy/phy-core.c              |   25 ++++++++++++++++++-------
+ drivers/phy/phy-exynos-dp-video.c   |    2 +-
+ drivers/phy/phy-exynos-mipi-video.c |    2 +-
+ drivers/phy/phy-exynos5-usbdrd.c    |    3 ++-
+ drivers/phy/phy-exynos5250-sata.c   |    2 +-
+ drivers/phy/phy-hix5hd2-sata.c      |    2 +-
+ drivers/phy/phy-mvebu-sata.c        |    2 +-
+ drivers/phy/phy-omap-usb2.c         |    2 +-
+ drivers/phy/phy-qcom-apq8064-sata.c |    3 ++-
+ drivers/phy/phy-samsung-usb2.c      |    3 ++-
+ drivers/phy/phy-sun4i-usb.c         |    2 +-
+ drivers/phy/phy-ti-pipe3.c          |    2 +-
+ drivers/phy/phy-twl4030-usb.c       |    2 +-
+ drivers/phy/phy-xgene.c             |    2 +-
+ include/linux/phy/phy.h             |   15 ++++++++++-----
+ 18 files changed, 52 insertions(+), 31 deletions(-)
 
-diff --git a/drivers/phy/Kconfig b/drivers/phy/Kconfig
-index 778e126..6911152 100644
---- a/drivers/phy/Kconfig
-+++ b/drivers/phy/Kconfig
-@@ -177,4 +177,11 @@ config PHY_XGENE
- 	help
- 	  This option enables support for APM X-Gene SoC multi-purpose PHY.
+diff --git a/Documentation/phy.txt b/Documentation/phy.txt
+index ebff6ee..c6594af 100644
+--- a/Documentation/phy.txt
++++ b/Documentation/phy.txt
+@@ -53,10 +53,12 @@ unregister the PHY.
+ The PHY driver should create the PHY in order for other peripheral controllers
+ to make use of it. The PHY framework provides 2 APIs to create the PHY.
  
-+config PHY_QCOM_APQ8064_SATA
-+	tristate "Qualcomm APQ8064 SATA SerDes/PHY driver"
-+	depends on ARCH_QCOM
-+	depends on HAS_IOMEM
-+	depends on OF
-+	select GENERIC_PHY
-+
- endmenu
-diff --git a/drivers/phy/Makefile b/drivers/phy/Makefile
-index 54f04d0..a4819d3 100644
---- a/drivers/phy/Makefile
-+++ b/drivers/phy/Makefile
-@@ -21,3 +21,4 @@ phy-exynos-usb2-$(CONFIG_PHY_EXYNOS4X12_USB2)	+= phy-exynos4x12-usb2.o
- phy-exynos-usb2-$(CONFIG_PHY_EXYNOS5250_USB2)	+= phy-exynos5250-usb2.o
- obj-$(CONFIG_PHY_EXYNOS5_USBDRD)	+= phy-exynos5-usbdrd.o
- obj-$(CONFIG_PHY_XGENE)			+= phy-xgene.o
-+obj-$(CONFIG_PHY_QCOM_APQ8064_SATA)	+= phy-qcom-apq8064-sata.o
+-struct phy *phy_create(struct device *dev, const struct phy_ops *ops,
+-        struct phy_init_data *init_data);
+-struct phy *devm_phy_create(struct device *dev, const struct phy_ops *ops,
+-	struct phy_init_data *init_data);
++struct phy *phy_create(struct device *dev, struct device_node *node,
++		       const struct phy_ops *ops,
++		       struct phy_init_data *init_data);
++struct phy *devm_phy_create(struct device *dev, struct device_node *node,
++			    const struct phy_ops *ops,
++			    struct phy_init_data *init_data);
+ 
+ The PHY drivers can use one of the above 2 APIs to create the PHY by passing
+ the device pointer, phy ops and init_data.
+diff --git a/drivers/phy/phy-bcm-kona-usb2.c b/drivers/phy/phy-bcm-kona-usb2.c
+index e94f5a6..894fe74 100644
+--- a/drivers/phy/phy-bcm-kona-usb2.c
++++ b/drivers/phy/phy-bcm-kona-usb2.c
+@@ -117,7 +117,7 @@ static int bcm_kona_usb2_probe(struct platform_device *pdev)
+ 
+ 	platform_set_drvdata(pdev, phy);
+ 
+-	gphy = devm_phy_create(dev, &ops, NULL);
++	gphy = devm_phy_create(dev, NULL, &ops, NULL);
+ 	if (IS_ERR(gphy))
+ 		return PTR_ERR(gphy);
+ 
+diff --git a/drivers/phy/phy-berlin-sata.c b/drivers/phy/phy-berlin-sata.c
+index c5e688b..5c3a042 100644
+--- a/drivers/phy/phy-berlin-sata.c
++++ b/drivers/phy/phy-berlin-sata.c
+@@ -239,7 +239,7 @@ static int phy_berlin_sata_probe(struct platform_device *pdev)
+ 		if (!phy_desc)
+ 			return -ENOMEM;
+ 
+-		phy = devm_phy_create(dev, &phy_berlin_sata_ops, NULL);
++		phy = devm_phy_create(dev, NULL, &phy_berlin_sata_ops, NULL);
+ 		if (IS_ERR(phy)) {
+ 			dev_err(dev, "failed to create PHY %d\n", phy_id);
+ 			return PTR_ERR(phy);
+diff --git a/drivers/phy/phy-core.c b/drivers/phy/phy-core.c
+index 527e744..ff5eec5 100644
+--- a/drivers/phy/phy-core.c
++++ b/drivers/phy/phy-core.c
+@@ -415,13 +415,20 @@ struct phy *of_phy_simple_xlate(struct device *dev, struct of_phandle_args
+ 	struct phy *phy;
+ 	struct class_dev_iter iter;
+ 	struct device_node *node = dev->of_node;
++	struct device_node *child;
+ 
+ 	class_dev_iter_init(&iter, phy_class, NULL, NULL);
+ 	while ((dev = class_dev_iter_next(&iter))) {
+ 		phy = to_phy(dev);
+-		if (node != phy->dev.of_node)
++		if (node != phy->dev.of_node) {
++			for_each_child_of_node(node, child) {
++				if (child == phy->dev.of_node)
++					goto phy_found;
++			}
+ 			continue;
++		}
+ 
++phy_found:
+ 		class_dev_iter_exit(&iter);
+ 		return phy;
+ 	}
+@@ -579,13 +586,15 @@ EXPORT_SYMBOL_GPL(devm_of_phy_get);
+ /**
+  * phy_create() - create a new phy
+  * @dev: device that is creating the new phy
++ * @node: device node of the phy
+  * @ops: function pointers for performing phy operations
+  * @init_data: contains the list of PHY consumers or NULL
+  *
+  * Called to create a phy using phy framework.
+  */
+-struct phy *phy_create(struct device *dev, const struct phy_ops *ops,
+-	struct phy_init_data *init_data)
++struct phy *phy_create(struct device *dev, struct device_node *node,
++		       const struct phy_ops *ops,
++		       struct phy_init_data *init_data)
+ {
+ 	int ret;
+ 	int id;
+@@ -620,7 +629,7 @@ struct phy *phy_create(struct device *dev, const struct phy_ops *ops,
+ 
+ 	phy->dev.class = phy_class;
+ 	phy->dev.parent = dev;
+-	phy->dev.of_node = dev->of_node;
++	phy->dev.of_node = node ?: dev->of_node;
+ 	phy->id = id;
+ 	phy->ops = ops;
+ 	phy->init_data = init_data;
+@@ -656,6 +665,7 @@ EXPORT_SYMBOL_GPL(phy_create);
+ /**
+  * devm_phy_create() - create a new phy
+  * @dev: device that is creating the new phy
++ * @node: device node of the phy
+  * @ops: function pointers for performing phy operations
+  * @init_data: contains the list of PHY consumers or NULL
+  *
+@@ -664,8 +674,9 @@ EXPORT_SYMBOL_GPL(phy_create);
+  * On driver detach, release function is invoked on the devres data,
+  * then, devres data is freed.
+  */
+-struct phy *devm_phy_create(struct device *dev, const struct phy_ops *ops,
+-	struct phy_init_data *init_data)
++struct phy *devm_phy_create(struct device *dev, struct device_node *node,
++			    const struct phy_ops *ops,
++			    struct phy_init_data *init_data)
+ {
+ 	struct phy **ptr, *phy;
+ 
+@@ -673,7 +684,7 @@ struct phy *devm_phy_create(struct device *dev, const struct phy_ops *ops,
+ 	if (!ptr)
+ 		return ERR_PTR(-ENOMEM);
+ 
+-	phy = phy_create(dev, ops, init_data);
++	phy = phy_create(dev, node, ops, init_data);
+ 	if (!IS_ERR(phy)) {
+ 		*ptr = phy;
+ 		devres_add(dev, ptr);
+diff --git a/drivers/phy/phy-exynos-dp-video.c b/drivers/phy/phy-exynos-dp-video.c
+index 098f822..8b3026e 100644
+--- a/drivers/phy/phy-exynos-dp-video.c
++++ b/drivers/phy/phy-exynos-dp-video.c
+@@ -77,7 +77,7 @@ static int exynos_dp_video_phy_probe(struct platform_device *pdev)
+ 	if (IS_ERR(state->regs))
+ 		return PTR_ERR(state->regs);
+ 
+-	phy = devm_phy_create(dev, &exynos_dp_video_phy_ops, NULL);
++	phy = devm_phy_create(dev, NULL, &exynos_dp_video_phy_ops, NULL);
+ 	if (IS_ERR(phy)) {
+ 		dev_err(dev, "failed to create Display Port PHY\n");
+ 		return PTR_ERR(phy);
+diff --git a/drivers/phy/phy-exynos-mipi-video.c b/drivers/phy/phy-exynos-mipi-video.c
+index 6d6bcf5..b55a92e 100644
+--- a/drivers/phy/phy-exynos-mipi-video.c
++++ b/drivers/phy/phy-exynos-mipi-video.c
+@@ -136,7 +136,7 @@ static int exynos_mipi_video_phy_probe(struct platform_device *pdev)
+ 	spin_lock_init(&state->slock);
+ 
+ 	for (i = 0; i < EXYNOS_MIPI_PHYS_NUM; i++) {
+-		struct phy *phy = devm_phy_create(dev,
++		struct phy *phy = devm_phy_create(dev, NULL,
+ 					&exynos_mipi_video_phy_ops, NULL);
+ 		if (IS_ERR(phy)) {
+ 			dev_err(dev, "failed to create PHY %d\n", i);
+diff --git a/drivers/phy/phy-exynos5-usbdrd.c b/drivers/phy/phy-exynos5-usbdrd.c
+index 205159d..b05302b 100644
+--- a/drivers/phy/phy-exynos5-usbdrd.c
++++ b/drivers/phy/phy-exynos5-usbdrd.c
+@@ -635,7 +635,8 @@ static int exynos5_usbdrd_phy_probe(struct platform_device *pdev)
+ 	dev_vdbg(dev, "Creating usbdrd_phy phy\n");
+ 
+ 	for (i = 0; i < EXYNOS5_DRDPHYS_NUM; i++) {
+-		struct phy *phy = devm_phy_create(dev, &exynos5_usbdrd_phy_ops,
++		struct phy *phy = devm_phy_create(dev, NULL,
++						  &exynos5_usbdrd_phy_ops,
+ 						  NULL);
+ 		if (IS_ERR(phy)) {
+ 			dev_err(dev, "Failed to create usbdrd_phy phy\n");
+diff --git a/drivers/phy/phy-exynos5250-sata.c b/drivers/phy/phy-exynos5250-sata.c
+index 0568945..19a679a 100644
+--- a/drivers/phy/phy-exynos5250-sata.c
++++ b/drivers/phy/phy-exynos5250-sata.c
+@@ -210,7 +210,7 @@ static int exynos_sata_phy_probe(struct platform_device *pdev)
+ 		return ret;
+ 	}
+ 
+-	sata_phy->phy = devm_phy_create(dev, &exynos_sata_phy_ops, NULL);
++	sata_phy->phy = devm_phy_create(dev, NULL, &exynos_sata_phy_ops, NULL);
+ 	if (IS_ERR(sata_phy->phy)) {
+ 		clk_disable_unprepare(sata_phy->phyclk);
+ 		dev_err(dev, "failed to create PHY\n");
+diff --git a/drivers/phy/phy-hix5hd2-sata.c b/drivers/phy/phy-hix5hd2-sata.c
+index d442834..6a08fa5 100644
+--- a/drivers/phy/phy-hix5hd2-sata.c
++++ b/drivers/phy/phy-hix5hd2-sata.c
+@@ -156,7 +156,7 @@ static int hix5hd2_sata_phy_probe(struct platform_device *pdev)
+ 	if (IS_ERR(priv->peri_ctrl))
+ 		priv->peri_ctrl = NULL;
+ 
+-	phy = devm_phy_create(dev, &hix5hd2_sata_phy_ops, NULL);
++	phy = devm_phy_create(dev, NULL, &hix5hd2_sata_phy_ops, NULL);
+ 	if (IS_ERR(phy)) {
+ 		dev_err(dev, "failed to create PHY\n");
+ 		return PTR_ERR(phy);
+diff --git a/drivers/phy/phy-mvebu-sata.c b/drivers/phy/phy-mvebu-sata.c
+index d70ecd6..cc3c0e1 100644
+--- a/drivers/phy/phy-mvebu-sata.c
++++ b/drivers/phy/phy-mvebu-sata.c
+@@ -99,7 +99,7 @@ static int phy_mvebu_sata_probe(struct platform_device *pdev)
+ 	if (IS_ERR(priv->clk))
+ 		return PTR_ERR(priv->clk);
+ 
+-	phy = devm_phy_create(&pdev->dev, &phy_mvebu_sata_ops, NULL);
++	phy = devm_phy_create(&pdev->dev, NULL, &phy_mvebu_sata_ops, NULL);
+ 	if (IS_ERR(phy))
+ 		return PTR_ERR(phy);
+ 
+diff --git a/drivers/phy/phy-omap-usb2.c b/drivers/phy/phy-omap-usb2.c
+index 34b3961..93d7835 100644
+--- a/drivers/phy/phy-omap-usb2.c
++++ b/drivers/phy/phy-omap-usb2.c
+@@ -263,7 +263,7 @@ static int omap_usb2_probe(struct platform_device *pdev)
+ 
+ 	platform_set_drvdata(pdev, phy);
+ 
+-	generic_phy = devm_phy_create(phy->dev, &ops, NULL);
++	generic_phy = devm_phy_create(phy->dev, NULL, &ops, NULL);
+ 	if (IS_ERR(generic_phy))
+ 		return PTR_ERR(generic_phy);
+ 
 diff --git a/drivers/phy/phy-qcom-apq8064-sata.c b/drivers/phy/phy-qcom-apq8064-sata.c
-new file mode 100644
-index 0000000..c9b4dd6
---- /dev/null
+index c9b4dd6..d7c01aa 100644
+--- a/drivers/phy/phy-qcom-apq8064-sata.c
 +++ b/drivers/phy/phy-qcom-apq8064-sata.c
-@@ -0,0 +1,288 @@
-+/*
-+ * Copyright (c) 2014, The Linux Foundation. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+
-+#include <linux/io.h>
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/of.h>
-+#include <linux/time.h>
-+#include <linux/delay.h>
-+#include <linux/clk.h>
-+#include <linux/slab.h>
-+#include <linux/platform_device.h>
-+#include <linux/phy/phy.h>
-+
-+/* PHY registers */
-+#define UNIPHY_PLL_REFCLK_CFG		0x000
-+#define UNIPHY_PLL_PWRGEN_CFG		0x014
-+#define UNIPHY_PLL_GLB_CFG		0x020
-+#define UNIPHY_PLL_SDM_CFG0		0x038
-+#define UNIPHY_PLL_SDM_CFG1		0x03C
-+#define UNIPHY_PLL_SDM_CFG2		0x040
-+#define UNIPHY_PLL_SDM_CFG3		0x044
-+#define UNIPHY_PLL_SDM_CFG4		0x048
-+#define UNIPHY_PLL_SSC_CFG0		0x04C
-+#define UNIPHY_PLL_SSC_CFG1		0x050
-+#define UNIPHY_PLL_SSC_CFG2		0x054
-+#define UNIPHY_PLL_SSC_CFG3		0x058
-+#define UNIPHY_PLL_LKDET_CFG0		0x05C
-+#define UNIPHY_PLL_LKDET_CFG1		0x060
-+#define UNIPHY_PLL_LKDET_CFG2		0x064
-+#define UNIPHY_PLL_CAL_CFG0		0x06C
-+#define UNIPHY_PLL_CAL_CFG8		0x08C
-+#define UNIPHY_PLL_CAL_CFG9		0x090
-+#define UNIPHY_PLL_CAL_CFG10		0x094
-+#define UNIPHY_PLL_CAL_CFG11		0x098
-+#define UNIPHY_PLL_STATUS		0x0C0
-+
-+#define SATA_PHY_SER_CTRL		0x100
-+#define SATA_PHY_TX_DRIV_CTRL0		0x104
-+#define SATA_PHY_TX_DRIV_CTRL1		0x108
-+#define SATA_PHY_TX_IMCAL0		0x11C
-+#define SATA_PHY_TX_IMCAL2		0x124
-+#define SATA_PHY_RX_IMCAL0		0x128
-+#define SATA_PHY_EQUAL			0x13C
-+#define SATA_PHY_OOB_TERM		0x144
-+#define SATA_PHY_CDR_CTRL0		0x148
-+#define SATA_PHY_CDR_CTRL1		0x14C
-+#define SATA_PHY_CDR_CTRL2		0x150
-+#define SATA_PHY_CDR_CTRL3		0x154
-+#define SATA_PHY_PI_CTRL0		0x168
-+#define SATA_PHY_POW_DWN_CTRL0		0x180
-+#define SATA_PHY_POW_DWN_CTRL1		0x184
-+#define SATA_PHY_TX_DATA_CTRL		0x188
-+#define SATA_PHY_ALIGNP			0x1A4
-+#define SATA_PHY_TX_IMCAL_STAT		0x1E4
-+#define SATA_PHY_RX_IMCAL_STAT		0x1E8
-+
-+#define UNIPHY_PLL_LOCK		BIT(0)
-+#define SATA_PHY_TX_CAL		BIT(0)
-+#define SATA_PHY_RX_CAL		BIT(0)
-+
-+/* default timeout set to 1 sec */
-+#define TIMEOUT_MS		10000
-+#define DELAY_INTERVAL_US	100
-+
-+struct qcom_apq8064_sata_phy {
-+	void __iomem *mmio;
-+	struct clk *cfg_clk;
-+	struct device *dev;
-+};
-+
-+/* Helper function to do poll and timeout */
-+static int read_poll_timeout(void __iomem *addr, u32 mask)
-+{
-+	unsigned long timeout = jiffies + msecs_to_jiffies(TIMEOUT_MS);
-+
-+	do {
-+		if (readl_relaxed(addr) & mask)
-+			return 0;
-+
-+		 usleep_range(DELAY_INTERVAL_US, DELAY_INTERVAL_US + 50);
-+	} while (!time_after(jiffies, timeout));
-+
-+	return -ETIMEDOUT;
-+}
-+
-+static int qcom_apq8064_sata_phy_init(struct phy *generic_phy)
-+{
-+	struct qcom_apq8064_sata_phy *phy = phy_get_drvdata(generic_phy);
-+	void __iomem *base = phy->mmio;
-+	int ret = 0;
-+
-+	/* SATA phy initialization */
-+	writel_relaxed(0x01, base + SATA_PHY_SER_CTRL);
-+	writel_relaxed(0xB1, base + SATA_PHY_POW_DWN_CTRL0);
-+	/* Make sure the power down happens before power up */
-+	mb();
-+	usleep_range(10, 60);
-+
-+	writel_relaxed(0x01, base + SATA_PHY_POW_DWN_CTRL0);
-+	writel_relaxed(0x3E, base + SATA_PHY_POW_DWN_CTRL1);
-+	writel_relaxed(0x01, base + SATA_PHY_RX_IMCAL0);
-+	writel_relaxed(0x01, base + SATA_PHY_TX_IMCAL0);
-+	writel_relaxed(0x02, base + SATA_PHY_TX_IMCAL2);
-+
-+	/* Write UNIPHYPLL registers to configure PLL */
-+	writel_relaxed(0x04, base + UNIPHY_PLL_REFCLK_CFG);
-+	writel_relaxed(0x00, base + UNIPHY_PLL_PWRGEN_CFG);
-+
-+	writel_relaxed(0x0A, base + UNIPHY_PLL_CAL_CFG0);
-+	writel_relaxed(0xF3, base + UNIPHY_PLL_CAL_CFG8);
-+	writel_relaxed(0x01, base + UNIPHY_PLL_CAL_CFG9);
-+	writel_relaxed(0xED, base + UNIPHY_PLL_CAL_CFG10);
-+	writel_relaxed(0x02, base + UNIPHY_PLL_CAL_CFG11);
-+
-+	writel_relaxed(0x36, base + UNIPHY_PLL_SDM_CFG0);
-+	writel_relaxed(0x0D, base + UNIPHY_PLL_SDM_CFG1);
-+	writel_relaxed(0xA3, base + UNIPHY_PLL_SDM_CFG2);
-+	writel_relaxed(0xF0, base + UNIPHY_PLL_SDM_CFG3);
-+	writel_relaxed(0x00, base + UNIPHY_PLL_SDM_CFG4);
-+
-+	writel_relaxed(0x19, base + UNIPHY_PLL_SSC_CFG0);
-+	writel_relaxed(0xE1, base + UNIPHY_PLL_SSC_CFG1);
-+	writel_relaxed(0x00, base + UNIPHY_PLL_SSC_CFG2);
-+	writel_relaxed(0x11, base + UNIPHY_PLL_SSC_CFG3);
-+
-+	writel_relaxed(0x04, base + UNIPHY_PLL_LKDET_CFG0);
-+	writel_relaxed(0xFF, base + UNIPHY_PLL_LKDET_CFG1);
-+
-+	writel_relaxed(0x02, base + UNIPHY_PLL_GLB_CFG);
-+	/* make sure global config LDO power down happens before power up */
-+	mb();
-+
-+	writel_relaxed(0x03, base + UNIPHY_PLL_GLB_CFG);
-+	writel_relaxed(0x05, base + UNIPHY_PLL_LKDET_CFG2);
-+
-+	/* PLL Lock wait */
-+	ret = read_poll_timeout(base + UNIPHY_PLL_STATUS, UNIPHY_PLL_LOCK);
-+	if (ret) {
-+		dev_err(phy->dev, "poll timeout UNIPHY_PLL_STATUS\n");
-+		return ret;
-+	}
-+
-+	/* TX Calibration */
-+	ret = read_poll_timeout(base + SATA_PHY_TX_IMCAL_STAT, SATA_PHY_TX_CAL);
-+	if (ret) {
-+		dev_err(phy->dev, "poll timeout SATA_PHY_TX_IMCAL_STAT\n");
-+		return ret;
-+	}
-+
-+	/* RX Calibration */
-+	ret = read_poll_timeout(base + SATA_PHY_RX_IMCAL_STAT, SATA_PHY_RX_CAL);
-+	if (ret) {
-+		dev_err(phy->dev, "poll timeout SATA_PHY_RX_IMCAL_STAT\n");
-+		return ret;
-+	}
-+
-+	/* SATA phy calibrated succesfully, power up to functional mode */
-+	writel_relaxed(0x3E, base + SATA_PHY_POW_DWN_CTRL1);
-+	writel_relaxed(0x01, base + SATA_PHY_RX_IMCAL0);
-+	writel_relaxed(0x01, base + SATA_PHY_TX_IMCAL0);
-+
-+	writel_relaxed(0x00, base + SATA_PHY_POW_DWN_CTRL1);
-+	writel_relaxed(0x59, base + SATA_PHY_CDR_CTRL0);
-+	writel_relaxed(0x04, base + SATA_PHY_CDR_CTRL1);
-+	writel_relaxed(0x00, base + SATA_PHY_CDR_CTRL2);
-+	writel_relaxed(0x00, base + SATA_PHY_PI_CTRL0);
-+	writel_relaxed(0x00, base + SATA_PHY_CDR_CTRL3);
-+	writel_relaxed(0x01, base + SATA_PHY_POW_DWN_CTRL0);
-+
-+	writel_relaxed(0x11, base + SATA_PHY_TX_DATA_CTRL);
-+	writel_relaxed(0x43, base + SATA_PHY_ALIGNP);
-+	writel_relaxed(0x04, base + SATA_PHY_OOB_TERM);
-+
-+	writel_relaxed(0x01, base + SATA_PHY_EQUAL);
-+	writel_relaxed(0x09, base + SATA_PHY_TX_DRIV_CTRL0);
-+	writel_relaxed(0x09, base + SATA_PHY_TX_DRIV_CTRL1);
-+
-+	return 0;
-+}
-+
-+static int qcom_apq8064_sata_phy_exit(struct phy *generic_phy)
-+{
-+	struct qcom_apq8064_sata_phy *phy = phy_get_drvdata(generic_phy);
-+	void __iomem *base = phy->mmio;
-+
-+	/* Power down PHY */
-+	writel_relaxed(0xF8, base + SATA_PHY_POW_DWN_CTRL0);
-+	writel_relaxed(0xFE, base + SATA_PHY_POW_DWN_CTRL1);
-+
-+	/* Power down PLL block */
-+	writel_relaxed(0x00, base + UNIPHY_PLL_GLB_CFG);
-+
-+	return 0;
-+}
-+
-+static struct phy_ops qcom_apq8064_sata_phy_ops = {
-+	.init		= qcom_apq8064_sata_phy_init,
-+	.exit		= qcom_apq8064_sata_phy_exit,
-+	.owner		= THIS_MODULE,
-+};
-+
-+static int qcom_apq8064_sata_phy_probe(struct platform_device *pdev)
-+{
-+	struct qcom_apq8064_sata_phy *phy;
-+	struct device *dev = &pdev->dev;
-+	struct resource *res;
-+	struct phy_provider *phy_provider;
-+	struct phy *generic_phy;
-+	int ret;
-+
-+	phy = devm_kzalloc(dev, sizeof(*phy), GFP_KERNEL);
-+	if (!phy)
-+		return -ENOMEM;
-+
-+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	phy->mmio = devm_ioremap_resource(dev, res);
-+	if (IS_ERR(phy->mmio))
-+		return PTR_ERR(phy->mmio);
-+
-+	generic_phy = devm_phy_create(dev, &qcom_apq8064_sata_phy_ops, NULL);
-+	if (IS_ERR(generic_phy)) {
-+		dev_err(dev, "%s: failed to create phy\n", __func__);
-+		return PTR_ERR(generic_phy);
-+	}
-+
-+	phy->dev = dev;
-+	phy_set_drvdata(generic_phy, phy);
-+	platform_set_drvdata(pdev, phy);
-+
-+	phy->cfg_clk = devm_clk_get(dev, "cfg");
-+	if (IS_ERR(phy->cfg_clk)) {
-+		dev_err(dev, "Failed to get sata cfg clock\n");
-+		return PTR_ERR(phy->cfg_clk);
-+	}
-+
-+	ret = clk_prepare_enable(phy->cfg_clk);
-+	if (ret)
-+		return ret;
-+
-+	phy_provider = devm_of_phy_provider_register(dev, of_phy_simple_xlate);
-+	if (IS_ERR(phy_provider)) {
-+		clk_disable_unprepare(phy->cfg_clk);
-+		dev_err(dev, "%s: failed to register phy\n", __func__);
-+		return PTR_ERR(phy_provider);
-+	}
-+
-+	return 0;
-+}
-+
-+static int qcom_apq8064_sata_phy_remove(struct platform_device *pdev)
-+{
-+	struct qcom_apq8064_sata_phy *phy = platform_get_drvdata(pdev);
-+
-+	clk_disable_unprepare(phy->cfg_clk);
-+
-+	return 0;
-+}
-+
-+static const struct of_device_id qcom_apq8064_sata_phy_of_match[] = {
-+	{ .compatible = "qcom,apq8064-sata-phy" },
-+	{ },
-+};
-+MODULE_DEVICE_TABLE(of, qcom_apq8064_sata_phy_of_match);
-+
-+static struct platform_driver qcom_apq8064_sata_phy_driver = {
-+	.probe	= qcom_apq8064_sata_phy_probe,
-+	.remove	= qcom_apq8064_sata_phy_remove,
-+	.driver = {
-+		.name	= "qcom-apq8064-sata-phy",
-+		.owner	= THIS_MODULE,
-+		.of_match_table	= qcom_apq8064_sata_phy_of_match,
-+	}
-+};
-+module_platform_driver(qcom_apq8064_sata_phy_driver);
-+
-+MODULE_DESCRIPTION("QCOM apq8064 SATA PHY driver");
-+MODULE_LICENSE("GPL v2");
+@@ -228,7 +228,8 @@ static int qcom_apq8064_sata_phy_probe(struct platform_device *pdev)
+ 	if (IS_ERR(phy->mmio))
+ 		return PTR_ERR(phy->mmio);
+ 
+-	generic_phy = devm_phy_create(dev, &qcom_apq8064_sata_phy_ops, NULL);
++	generic_phy = devm_phy_create(dev, NULL, &qcom_apq8064_sata_phy_ops,
++				      NULL);
+ 	if (IS_ERR(generic_phy)) {
+ 		dev_err(dev, "%s: failed to create phy\n", __func__);
+ 		return PTR_ERR(generic_phy);
+diff --git a/drivers/phy/phy-samsung-usb2.c b/drivers/phy/phy-samsung-usb2.c
+index 16aae7a..ae30640 100644
+--- a/drivers/phy/phy-samsung-usb2.c
++++ b/drivers/phy/phy-samsung-usb2.c
+@@ -196,7 +196,8 @@ static int samsung_usb2_phy_probe(struct platform_device *pdev)
+ 		struct samsung_usb2_phy_instance *p = &drv->instances[i];
+ 
+ 		dev_dbg(dev, "Creating phy \"%s\"\n", label);
+-		p->phy = devm_phy_create(dev, &samsung_usb2_phy_ops, NULL);
++		p->phy = devm_phy_create(dev, NULL, &samsung_usb2_phy_ops,
++					 NULL);
+ 		if (IS_ERR(p->phy)) {
+ 			dev_err(drv->dev, "Failed to create usb2_phy \"%s\"\n",
+ 				label);
+diff --git a/drivers/phy/phy-sun4i-usb.c b/drivers/phy/phy-sun4i-usb.c
+index 7a4ea55..61ebea4 100644
+--- a/drivers/phy/phy-sun4i-usb.c
++++ b/drivers/phy/phy-sun4i-usb.c
+@@ -295,7 +295,7 @@ static int sun4i_usb_phy_probe(struct platform_device *pdev)
+ 				return PTR_ERR(phy->pmu);
+ 		}
+ 
+-		phy->phy = devm_phy_create(dev, &sun4i_usb_phy_ops, NULL);
++		phy->phy = devm_phy_create(dev, NULL, &sun4i_usb_phy_ops, NULL);
+ 		if (IS_ERR(phy->phy)) {
+ 			dev_err(dev, "failed to create PHY %d\n", i);
+ 			return PTR_ERR(phy->phy);
+diff --git a/drivers/phy/phy-ti-pipe3.c b/drivers/phy/phy-ti-pipe3.c
+index 93bcd67..b964aa9 100644
+--- a/drivers/phy/phy-ti-pipe3.c
++++ b/drivers/phy/phy-ti-pipe3.c
+@@ -400,7 +400,7 @@ static int ti_pipe3_probe(struct platform_device *pdev)
+ 	platform_set_drvdata(pdev, phy);
+ 	pm_runtime_enable(phy->dev);
+ 
+-	generic_phy = devm_phy_create(phy->dev, &ops, NULL);
++	generic_phy = devm_phy_create(phy->dev, NULL, &ops, NULL);
+ 	if (IS_ERR(generic_phy))
+ 		return PTR_ERR(generic_phy);
+ 
+diff --git a/drivers/phy/phy-twl4030-usb.c b/drivers/phy/phy-twl4030-usb.c
+index 2e0e9b3..e1a6623 100644
+--- a/drivers/phy/phy-twl4030-usb.c
++++ b/drivers/phy/phy-twl4030-usb.c
+@@ -695,7 +695,7 @@ static int twl4030_usb_probe(struct platform_device *pdev)
+ 	otg->set_host		= twl4030_set_host;
+ 	otg->set_peripheral	= twl4030_set_peripheral;
+ 
+-	phy = devm_phy_create(twl->dev, &ops, init_data);
++	phy = devm_phy_create(twl->dev, NULL, &ops, init_data);
+ 	if (IS_ERR(phy)) {
+ 		dev_dbg(&pdev->dev, "Failed to create PHY\n");
+ 		return PTR_ERR(phy);
+diff --git a/drivers/phy/phy-xgene.c b/drivers/phy/phy-xgene.c
+index 4aa1ccd..db809b9 100644
+--- a/drivers/phy/phy-xgene.c
++++ b/drivers/phy/phy-xgene.c
+@@ -1707,7 +1707,7 @@ static int xgene_phy_probe(struct platform_device *pdev)
+ 	ctx->dev = &pdev->dev;
+ 	platform_set_drvdata(pdev, ctx);
+ 
+-	ctx->phy = devm_phy_create(ctx->dev, &xgene_phy_ops, NULL);
++	ctx->phy = devm_phy_create(ctx->dev, NULL, &xgene_phy_ops, NULL);
+ 	if (IS_ERR(ctx->phy)) {
+ 		dev_dbg(&pdev->dev, "Failed to create PHY\n");
+ 		rc = PTR_ERR(ctx->phy);
+diff --git a/include/linux/phy/phy.h b/include/linux/phy/phy.h
+index 9a86945..8cb6f81 100644
+--- a/include/linux/phy/phy.h
++++ b/include/linux/phy/phy.h
+@@ -158,9 +158,10 @@ void devm_phy_put(struct device *dev, struct phy *phy);
+ struct phy *of_phy_get(struct device_node *np, const char *con_id);
+ struct phy *of_phy_simple_xlate(struct device *dev,
+ 	struct of_phandle_args *args);
+-struct phy *phy_create(struct device *dev, const struct phy_ops *ops,
+-	struct phy_init_data *init_data);
+-struct phy *devm_phy_create(struct device *dev,
++struct phy *phy_create(struct device *dev, struct device_node *node,
++		       const struct phy_ops *ops,
++		       struct phy_init_data *init_data);
++struct phy *devm_phy_create(struct device *dev, struct device_node *node,
+ 	const struct phy_ops *ops, struct phy_init_data *init_data);
+ void phy_destroy(struct phy *phy);
+ void devm_phy_destroy(struct device *dev, struct phy *phy);
+@@ -299,13 +300,17 @@ static inline struct phy *of_phy_simple_xlate(struct device *dev,
+ }
+ 
+ static inline struct phy *phy_create(struct device *dev,
+-	const struct phy_ops *ops, struct phy_init_data *init_data)
++				     struct device_node *node,
++				     const struct phy_ops *ops,
++				     struct phy_init_data *init_data)
+ {
+ 	return ERR_PTR(-ENOSYS);
+ }
+ 
+ static inline struct phy *devm_phy_create(struct device *dev,
+-	const struct phy_ops *ops, struct phy_init_data *init_data)
++					  struct device_node *node,
++					  const struct phy_ops *ops,
++					  struct phy_init_data *init_data)
+ {
+ 	return ERR_PTR(-ENOSYS);
+ }
 -- 
 1.7.9.5
 
