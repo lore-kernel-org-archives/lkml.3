@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755487AbaGVMOP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 08:14:15 -0400
-Received: from mail-ig0-f176.google.com ([209.85.213.176]:36620 "EHLO
-	mail-ig0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755332AbaGVMNx (ORCPT
+	id S1755466AbaGVMOO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 08:14:14 -0400
+Received: from mail-ig0-f181.google.com ([209.85.213.181]:48596 "EHLO
+	mail-ig0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755379AbaGVMNy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 08:13:53 -0400
+	Tue, 22 Jul 2014 08:13:54 -0400
 From: Alex Elder <elder@linaro.org>
 To: akpm@linux-foundation.org
 Cc: kay@vrfy.org, pmladek@suse.cz, bp@suse.de, john.stultz@linaro.org,
         jack@suse.cz, linux-kernel@vger.kernel.org
-Subject: [PATCH v6 6/7] printk: honor LOG_PREFIX in msg_print_text()
-Date: Tue, 22 Jul 2014 07:13:49 -0500
-Message-Id: <1406031230-18107-7-git-send-email-elder@linaro.org>
+Subject: [PATCH v6 7/7] printk: correct some more typos
+Date: Tue, 22 Jul 2014 07:13:50 -0500
+Message-Id: <1406031230-18107-8-git-send-email-elder@linaro.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1406031230-18107-1-git-send-email-elder@linaro.org>
 References: <1406031230-18107-1-git-send-email-elder@linaro.org>
@@ -24,79 +24,63 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes a problem similar to what was addressed in the
-previous patch.
-
-All paths that read and format log records (for consoles, and for
-reading via syslog and /dev/kmsg) go through msg_print_text().  That
-function starts with some logic to determine whether the given log
-record when formatted should begin with a "prefix" string, and
-whether it should end with a newline.  That logic has a bug.
-
-The LOG_PREFIX flag in a log record indicates that when it's
-formatted, a log record should include a prefix.  This is used to
-force a record to begin a new line--even if its preceding log record
-contained LOG_CONT (indicating its content should be combined with
-the next record).
-
-Like the previous patch, the problem occurs when these flags are
-all set:
-    prev & LOG_CONT
-    msg->flags & LOG_PREFIX
-    msg->flags & LOG_CONT
-In that case, "prefix" should be true but it is not.
-
-The fix involves checking LOG_PREFIX when a message has its LOG_CONT
-flag set, and in that case allowing "prefix" to become false only
-if LOG_PREFIX is not set.  I.e., the logic for "prefix" would become:
-
-    if (prev & LOG_CONT && !(msg->flags & LOG_PREFIX))
-        prefix = false;
-    if (msg->flags & LOG_CONT)
-        if (prev & LOG_CONT && !(msg->flags & LOG_PREFIX))
-            prefix = false;
-
-However, note that this makes the (msg->flags & LOG_CONT) block
-redunant--it's handled by the test just above it.  The result
-becomes quite a bit simpler than before.
-
-The following table concisely defines the problem:
-
-     prev | msg  | msg  ||
-     CONT |PREFIX| CONT ||prefix
-    ------+------+------++------
-     clear| clear| clear||  true
-     clear| clear|  set ||  true
-     clear|  set | clear||  true
-     clear|  set |  set ||  true
-      set | clear| clear|| false
-      set | clear|  set || false
-      set |  set | clear||  true
-      set |  set |  set || false    <-- should be true
+This patch corrects a few more typographical errors in "printk.c".
 
 Signed-off-by: Alex Elder <elder@linaro.org>
 Reviewed-by: Petr Mládek <pmladek@suse.cz>
 ---
- kernel/printk/printk.c | 5 +----
- 1 file changed, 1 insertion(+), 4 deletions(-)
+ kernel/printk/printk.c | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
 diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
-index 25b7527..b630c85 100644
+index b630c85..6848e7d 100644
 --- a/kernel/printk/printk.c
 +++ b/kernel/printk/printk.c
-@@ -1010,11 +1010,8 @@ static size_t msg_print_text(const struct printk_log *msg, enum log_flags prev,
- 	if ((prev & LOG_CONT) && !(msg->flags & LOG_PREFIX))
- 		prefix = false;
+@@ -201,7 +201,7 @@ static int console_may_schedule;
+  *
+  * The optional key/value pairs are attached as continuation lines starting
+  * with a space character and terminated by a newline. All possible
+- * non-prinatable characters are escaped in the "\xff" notation.
++ * non-printable characters are escaped in the "\xff" notation.
+  *
+  * Users of the export format should ignore possible additional values
+  * separated by ',', and find the message after the ';' character.
+@@ -615,7 +615,7 @@ static ssize_t devkmsg_read(struct file *file, char __user *buf,
+ 	/*
+ 	 * If we couldn't merge continuation line fragments during the print,
+ 	 * export the stored flags to allow an optional external merge of the
+-	 * records. Merging the records isn't always neccessarily correct, like
++	 * records. Merging the records isn't always necessarily correct, like
+ 	 * when we hit a race during printing. In most cases though, it produces
+ 	 * better readable output. 'c' in the record flags mark the first
+ 	 * fragment of a line, '+' the following.
+@@ -2909,7 +2909,7 @@ bool kmsg_dump_get_buffer(struct kmsg_dumper *dumper, bool syslog,
+ 		prev = msg->flags;
+ 	}
  
--	if (msg->flags & LOG_CONT) {
--		if (prev & LOG_CONT)
--			prefix = false;
-+	if (msg->flags & LOG_CONT)
- 		newline = false;
--	}
+-	/* last message in next interation */
++	/* last message in next iteration */
+ 	next_seq = seq;
+ 	next_idx = idx;
  
- 	if ((prev & LOG_CONT) && (msg->flags & LOG_PREFIX) && len < size) {
- 		if (buf)
+@@ -2935,7 +2935,7 @@ out:
+ EXPORT_SYMBOL_GPL(kmsg_dump_get_buffer);
+ 
+ /**
+- * kmsg_dump_rewind_nolock - reset the interator (unlocked version)
++ * kmsg_dump_rewind_nolock - reset the iterator (unlocked version)
+  * @dumper: registered kmsg dumper
+  *
+  * Reset the dumper's iterator so that kmsg_dump_get_line() and
+@@ -2953,7 +2953,7 @@ void kmsg_dump_rewind_nolock(struct kmsg_dumper *dumper)
+ }
+ 
+ /**
+- * kmsg_dump_rewind - reset the interator
++ * kmsg_dump_rewind - reset the iterator
+  * @dumper: registered kmsg dumper
+  *
+  * Reset the dumper's iterator so that kmsg_dump_get_line() and
 -- 
 1.9.1
 
