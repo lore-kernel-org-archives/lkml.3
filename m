@@ -1,98 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755459AbaGVOgW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 10:36:22 -0400
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:34068 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755408AbaGVOgT (ORCPT
+	id S1755496AbaGVOgd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 10:36:33 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:35866 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754763AbaGVOgb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 10:36:19 -0400
-Message-ID: <53CE76DB.7030902@gmail.com>
-Date: Tue, 22 Jul 2014 20:06:11 +0530
-From: Varka Bhadram <varkabhadram@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Andrew Victor <linux@maxim.org.za>, David Airlie <airlied@linux.ie>,
-        dri-devel@lists.freedesktop.org,
-        Thierry Reding <thierry.reding@gmail.com>, linux-pwm@vger.kernel.org,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Rob Clark <robdclark@gmail.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-CC: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Bo Shen <voice.shen@atmel.com>
-Subject: Re: [PATCH v4 04/11] pwm: add DT bindings documentation for atmel-hlcdc-pwm
- driver
-References: <1406034695-15534-1-git-send-email-boris.brezillon@free-electrons.com> <1406034695-15534-5-git-send-email-boris.brezillon@free-electrons.com>
-In-Reply-To: <1406034695-15534-5-git-send-email-boris.brezillon@free-electrons.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Tue, 22 Jul 2014 10:36:31 -0400
+Message-ID: <1406039784.2404.8.camel@dhcp-9-2-203-236.watson.ibm.com>
+Subject: Re: [PATCH v2 0/2] security: introduce kernel_fw_from_file hook
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: Kees Cook <keescook@chromium.org>
+Cc: linux-kernel@vger.kernel.org, James Morris <james.l.morris@oracle.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Ming Lei <ming.lei@canonical.com>,
+        linux-security-module <linux-security-module@vger.kernel.org>,
+        Vivek Goyal <vgoyal@redhat.com>
+Date: Tue, 22 Jul 2014 10:36:24 -0400
+In-Reply-To: <1405969601-4234-1-git-send-email-keescook@chromium.org>
+References: <1405969601-4234-1-git-send-email-keescook@chromium.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14072214-8236-0000-0000-000004078CED
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 2014-07-21 at 12:06 -0700, Kees Cook wrote: 
+> This is a reduced version of the original patch. This adds only the LSM
+> hook to the existing firmware loading logic so that the LSM can reason
+> about the origin and contents of a firmware coming from userspace.
+> 
+> Thanks!
+> 
+> -Kees
+> 
+> v2:
+> - further clarify header comments (jmorris)
 
-On Tuesday 22 July 2014 06:41 PM, Boris BREZILLON wrote:
-> The HLCDC IP available in some Atmel SoCs (i.e. sam9x5i.e. at91sam9n12,
-> at91sam9x5 family or sama5d3 family) provide a PWM device.
->
-> The DT bindings used for this PWM device is following the default 3 cells
-> bindings described in Documentation/devicetree/bindings/pwm/pwm.txt.
->
-> Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
-> ---
->   .../devicetree/bindings/pwm/atmel-hlcdc-pwm.txt    | 55 ++++++++++++++++++++++
->   1 file changed, 55 insertions(+)
->   create mode 100644 Documentation/devicetree/bindings/pwm/atmel-hlcdc-pwm.txt
->
-> diff --git a/Documentation/devicetree/bindings/pwm/atmel-hlcdc-pwm.txt b/Documentation/devicetree/bindings/pwm/atmel-hlcdc-pwm.txt
-> new file mode 100644
-> index 0000000..86ad3e2
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/pwm/atmel-hlcdc-pwm.txt
-> @@ -0,0 +1,55 @@
-> +Device-Tree bindings for Atmel's HLCDC (High LCD Controller) PWM driver
-> +
-> +The Atmel HLCDC PWM is subdevice of the HLCDC MFD device.
-> +See ../mfd/atmel-hlcdc.txt for more details.
-> +
-> +Required properties:
-> + - compatible: value should be one of the following:
-> +   "atmel,hlcdc-pwm"
-> + - pinctr-names: the pin control state names. Should contain "default".
-> + - pinctrl-0: should contain the pinctrl states described by pinctrl
-> +   default.
-> + - #pwm-cells: should be set to 3. This PWM chip use the default 3 cells
-> +   bindings defined in Documentation/devicetree/bindings/pwm/pwm.txt.
-> +   The first cell encodes the PWM id (0 is the only acceptable value here,
-> +   because the chip only provide one PWM).
-> +   The second cell encodes the PWM period in nanoseconds.
-> +   The third cell encodes the PWM flags (the only supported flag is
-> +   PWM_POLARITY_INVERTED)
+Thanks Kees!  We now have module and firmware security hooks.  What's
+next - kexec?
 
-It will be readable if:
-Required properties:
-  - compatible	: value should be one of the following: "atmel,hlcdc-pwm"
-  - pinctr-names	: the pin control state names. Should contain "default".
-  - pinctrl-0	: should contain the pinctrl states described by pinctrl default.
-  - #pwm-cells	: should be set to 3. This PWM chip use the default 3 cells
-		  bindings defined in Documentation/devicetree/bindings/pwm/pwm.txt.
-		  The first cell encodes the PWM id (0 is the only acceptable value here,
-		  because the chip only provide one PWM).
-		  The second cell encodes the PWM period in nanoseconds.
-		  The third cell encodes the PWM flags (the only supported flag is
-		  PWM_POLARITY_INVERTED)
-....
+Please feel free to add my Acks.
 
-
--- 
-Regards,
-Varka Bhadram
+Mimi
 
