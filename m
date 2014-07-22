@@ -1,38 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751846AbaGVEhl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 00:37:41 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:41285 "EHLO
+	id S1752259AbaGVEiB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 00:38:01 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:41311 "EHLO
 	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750888AbaGVEhk (ORCPT
+	with ESMTP id S1751930AbaGVEh7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 00:37:40 -0400
-Date: Mon, 21 Jul 2014 21:37:38 -0700 (PDT)
-Message-Id: <20140721.213738.1831544429590257732.davem@davemloft.net>
-To: khalid.aziz@oracle.com
-Cc: sam@ravnborg.org, sparclinux@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3] sparc: Add support for seek and shorter read to
- /dev/mdesc
+	Tue, 22 Jul 2014 00:37:59 -0400
+Date: Mon, 21 Jul 2014 21:37:57 -0700 (PDT)
+Message-Id: <20140721.213757.334607182319263871.davem@davemloft.net>
+To: himangi774@gmail.com
+Cc: sparclinux@vger.kernel.org, linux-kernel@vger.kernel.org,
+        julia.lawall@lip6.fr, sam@ravnborg.org
+Subject: Re: [PATCH] display7seg: Introduce the use of the managed version
+ of kzalloc
 From: David Miller <davem@davemloft.net>
-In-Reply-To: <1405696541-25189-1-git-send-email-khalid.aziz@oracle.com>
-References: <1405696541-25189-1-git-send-email-khalid.aziz@oracle.com>
+In-Reply-To: <20140526213207.GA1815@himangi-Dell>
+References: <20140526213207.GA1815@himangi-Dell>
 X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
 Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 21 Jul 2014 21:37:40 -0700 (PDT)
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 21 Jul 2014 21:37:59 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Khalid Aziz <khalid.aziz@oracle.com>
-Date: Fri, 18 Jul 2014 09:15:40 -0600
+From: Himangi Saraogi <himangi774@gmail.com>
+Date: Tue, 27 May 2014 03:02:07 +0530
 
-> /dev/mdesc on Linux does not support reading arbitrary number
-> of bytes and seeking while /dev/mdesc on Solaris does. This
-> causes tools that work on Solaris to break on Linux. This patch
-> adds these two capabilities to /dev/mdesc.
+> This patch moves data allocated using kzalloc to managed data allocated
+> using devm_kzalloc and cleans now unnecessary kfrees in probe and remove
+> functions. The header file is added to make the devm function explicitly
+> available.
 > 
-> Signed-off-by: Khalid Aziz <khalid.aziz@oracle.com>
+> The following Coccinelle semantic patch was used for making a part of
+> the change:
+ ...
+> Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
+> Acked-by: Julia Lawall <julia.lawall@lip6.fr>
+> Acked-by: Sam Ravnborg <sam@ravnborg.org>
 
-Applied to sparc-next, thanks.
+Applied to sparc-next.
