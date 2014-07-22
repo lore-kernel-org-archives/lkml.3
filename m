@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755697AbaGVNVp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 09:21:45 -0400
+	id S1755719AbaGVNVu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 09:21:50 -0400
 Received: from mga09.intel.com ([134.134.136.24]:28140 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755656AbaGVNVk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 09:21:40 -0400
+	id S1755700AbaGVNVr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 09:21:47 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,710,1400050800"; 
-   d="scan'208";a="576986396"
+   d="scan'208";a="576986445"
 From: Adrian Hunter <adrian.hunter@intel.com>
 To: Arnaldo Carvalho de Melo <acme@kernel.org>
 Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
@@ -16,9 +16,9 @@ Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
         Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
         Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 50/52] perf tools: Add dso__type()
-Date: Tue, 22 Jul 2014 16:17:59 +0300
-Message-Id: <1406035081-14301-51-git-send-email-adrian.hunter@intel.com>
+Subject: [PATCH 52/52] perf tools: Add support for 32-bit compatibility VDSOs
+Date: Tue, 22 Jul 2014 16:18:01 +0300
+Message-Id: <1406035081-14301-53-git-send-email-adrian.hunter@intel.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1406035081-14301-1-git-send-email-adrian.hunter@intel.com>
 References: <1406035081-14301-1-git-send-email-adrian.hunter@intel.com>
@@ -27,161 +27,279 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-dso__type() determines wheather a dso is 32-bit,
-x32 (32-bit with 64-bit registers) or 64-bit.
-dso__type() will be used to determine the VDSO
-a program maps.
+'perf record' post-processes the event stream  to create
+a list of build-ids for object files for which sample
+events have been recorded.  That results in those object
+files being recorded in the build-id cache.
+
+In the case of VDSO, perf tools reads it from memory
+and copies it into a temporary file, which as decribed
+above, gets added to the build-id cache.
+
+Then when the perf.data file is processed by other
+tools, the build-id of VDSO is listed in the perf.data
+file and the VDSO can be read from the build-id cache.
+In that case the name of the map, the short name of the
+DSO, and the entry in the build-id cache are all
+"[vdso]".
+
+However, in the 64-bit case, there also can be 32-bit
+compatibility VDSOs.
+
+A previous patch added programs "perf-read-vdso32" and
+"perf read-vdsox32".  This patch uses those programs to
+read the correct VDSO for a thread and create a
+temporary file just as for the 64-bit VDSO.  The map
+name and the entry in the build-id cache are still
+"[vdso]" but the DSO short name becomes "[vdso32]"
+and "[vdsox32]" respectively.
 
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 ---
- tools/perf/util/dso.c            | 11 +++++++++++
- tools/perf/util/dso.h            | 10 ++++++++++
- tools/perf/util/symbol-elf.c     | 33 +++++++++++++++++++++++++++++++++
- tools/perf/util/symbol-minimal.c | 21 +++++++++++++++++++++
- tools/perf/util/symbol.h         |  2 ++
- 5 files changed, 77 insertions(+)
+ tools/perf/util/vdso.c | 170 ++++++++++++++++++++++++++++++++++++++++++++++++-
+ tools/perf/util/vdso.h |   4 +-
+ 2 files changed, 172 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/util/dso.c b/tools/perf/util/dso.c
-index e657d86..90d02c66 100644
---- a/tools/perf/util/dso.c
-+++ b/tools/perf/util/dso.c
-@@ -940,3 +940,14 @@ size_t dso__fprintf(struct dso *dso, enum map_type type, FILE *fp)
+diff --git a/tools/perf/util/vdso.c b/tools/perf/util/vdso.c
+index adca693..b721f4c 100644
+--- a/tools/perf/util/vdso.c
++++ b/tools/perf/util/vdso.c
+@@ -12,6 +12,7 @@
+ #include "util.h"
+ #include "symbol.h"
+ #include "machine.h"
++#include "thread.h"
+ #include "linux/string.h"
+ #include "debug.h"
  
- 	return ret;
- }
-+
-+enum dso_type dso__type(struct dso *dso, struct machine *machine)
-+{
-+	int fd;
-+
-+	fd = dso__data_fd(dso, machine);
-+	if (fd < 0)
-+		return DSO__TYPE_UNKNOWN;
-+
-+	return dso__type_fd(fd);
-+}
-diff --git a/tools/perf/util/dso.h b/tools/perf/util/dso.h
-index d03720b..1c72a33 100644
---- a/tools/perf/util/dso.h
-+++ b/tools/perf/util/dso.h
-@@ -5,6 +5,7 @@
- #include <linux/rbtree.h>
- #include <stdbool.h>
- #include <linux/types.h>
-+#include <linux/bitops.h>
- #include "map.h"
- #include "build-id.h"
- 
-@@ -50,6 +51,13 @@ enum dso_data_status_seen {
- 	DSO_DATA_STATUS_SEEN_ITRACE,
+@@ -22,10 +23,15 @@ struct vdso_file {
+ 	bool error;
+ 	char temp_file_name[sizeof(VDSO__TEMP_FILE_NAME)];
+ 	const char *dso_name;
++	const char *read_prog;
  };
  
-+enum dso_type {
-+	DSO__TYPE_UNKNOWN,
-+	DSO__TYPE_64BIT,
-+	DSO__TYPE_32BIT,
-+	DSO__TYPE_X32BIT,
-+};
-+
- #define DSO__SWAP(dso, type, val)			\
- ({							\
- 	type ____r = val;				\
-@@ -246,4 +254,6 @@ static inline bool dso__is_kcore(struct dso *dso)
+ struct vdso_info {
+ 	struct vdso_file vdso;
++#if BITS_PER_LONG == 64
++	struct vdso_file vdso32;
++	struct vdso_file vdsox32;
++#endif
+ };
  
- void dso__free_a2l(struct dso *dso);
+ static struct vdso_info *vdso_info__new(void)
+@@ -35,6 +41,18 @@ static struct vdso_info *vdso_info__new(void)
+ 			.temp_file_name = VDSO__TEMP_FILE_NAME,
+ 			.dso_name = DSO__NAME_VDSO,
+ 		},
++#if BITS_PER_LONG == 64
++		.vdso32  = {
++			.temp_file_name = VDSO__TEMP_FILE_NAME,
++			.dso_name = DSO__NAME_VDSO32,
++			.read_prog = "perf-read-vdso32",
++		},
++		.vdsox32  = {
++			.temp_file_name = VDSO__TEMP_FILE_NAME,
++			.dso_name = DSO__NAME_VDSOX32,
++			.read_prog = "perf-read-vdsox32",
++		},
++#endif
+ 	};
  
-+enum dso_type dso__type(struct dso *dso, struct machine *machine);
-+
- #endif /* __PERF_DSO */
-diff --git a/tools/perf/util/symbol-elf.c b/tools/perf/util/symbol-elf.c
-index 0387780..ec0b8ea 100644
---- a/tools/perf/util/symbol-elf.c
-+++ b/tools/perf/util/symbol-elf.c
-@@ -1028,6 +1028,39 @@ int file__read_maps(int fd, bool exe, mapfn_t mapfn, void *data,
- 	return err;
+ 	return memdup(&vdso_info_init, sizeof(vdso_info_init));
+@@ -117,6 +135,12 @@ void vdso__exit(struct machine *machine)
+ 
+ 	if (vdso_info->vdso.found)
+ 		unlink(vdso_info->vdso.temp_file_name);
++#if BITS_PER_LONG == 64
++	if (vdso_info->vdso32.found)
++		unlink(vdso_info->vdso.temp_file_name);
++	if (vdso_info->vdsox32.found)
++		unlink(vdso_info->vdso.temp_file_name);
++#endif
+ 
+ 	zfree(&machine->vdso_info);
+ }
+@@ -135,6 +159,143 @@ static struct dso *vdso__new(struct machine *machine, const char *short_name,
+ 	return dso;
  }
  
-+enum dso_type dso__type_fd(int fd)
++#if BITS_PER_LONG == 64
++
++static enum dso_type machine__thread_dso_type(struct machine *machine,
++					      struct thread *thread)
 +{
 +	enum dso_type dso_type = DSO__TYPE_UNKNOWN;
-+	GElf_Ehdr ehdr;
-+	Elf_Kind ek;
-+	Elf *elf;
++	struct map *map;
++	struct dso *dso;
 +
-+	elf = elf_begin(fd, PERF_ELF_C_READ_MMAP, NULL);
-+	if (elf == NULL)
-+		goto out;
-+
-+	ek = elf_kind(elf);
-+	if (ek != ELF_K_ELF)
-+		goto out_end;
-+
-+	if (gelf_getclass(elf) == ELFCLASS64) {
-+		dso_type = DSO__TYPE_64BIT;
-+		goto out_end;
++	map = map_groups__first(thread->mg, MAP__FUNCTION);
++	for (; map ; map = map_groups__next(map)) {
++		dso = map->dso;
++		if (!dso || dso->long_name[0] != '/')
++			continue;
++		dso_type = dso__type(dso, machine);
++		if (dso_type != DSO__TYPE_UNKNOWN)
++			break;
 +	}
 +
-+	if (gelf_getehdr(elf, &ehdr) == NULL)
-+		goto out_end;
-+
-+	if (ehdr.e_machine == EM_X86_64)
-+		dso_type = DSO__TYPE_X32BIT;
-+	else
-+		dso_type = DSO__TYPE_32BIT;
-+out_end:
-+	elf_end(elf);
-+out:
 +	return dso_type;
 +}
 +
- static int copy_bytes(int from, off_t from_offs, int to, off_t to_offs, u64 len)
- {
- 	ssize_t r;
-diff --git a/tools/perf/util/symbol-minimal.c b/tools/perf/util/symbol-minimal.c
-index 101f55d..c9541fe 100644
---- a/tools/perf/util/symbol-minimal.c
-+++ b/tools/perf/util/symbol-minimal.c
-@@ -305,6 +305,27 @@ static int fd__is_64_bit(int fd)
- 	return e_ident[EI_CLASS] == ELFCLASS64;
- }
- 
-+enum dso_type dso__type_fd(int fd)
++static int vdso__do_copy_compat(FILE *f, int fd)
 +{
-+	Elf64_Ehdr ehdr;
-+	int ret;
++	char buf[4096];
++	size_t count;
 +
-+	ret = fd__is_64_bit(fd);
-+	if (ret < 0)
-+		return DSO__TYPE_UNKNOWN;
++	while (1) {
++		count = fread(buf, 1, sizeof(buf), f);
++		if (ferror(f))
++			return -errno;
++		if (feof(f))
++			break;
++		if (count && writen(fd, buf, count) != (ssize_t)count)
++			return -errno;
++	}
 +
-+	if (ret)
-+		return DSO__TYPE_64BIT;
-+
-+	if (readn(fd, &ehdr, sizeof(ehdr)) != sizeof(ehdr))
-+		return DSO__TYPE_UNKNOWN;
-+
-+	if (ehdr.e_machine == EM_X86_64)
-+		return DSO__TYPE_X32BIT;
-+
-+	return DSO__TYPE_32BIT;
++	return 0;
 +}
 +
- int dso__load_sym(struct dso *dso, struct map *map __maybe_unused,
- 		  struct symsrc *ss,
- 		  struct symsrc *runtime_ss __maybe_unused,
-diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
-index 31e5400..51fb26b 100644
---- a/tools/perf/util/symbol.h
-+++ b/tools/perf/util/symbol.h
-@@ -244,6 +244,8 @@ struct symbol *dso__find_symbol_by_name(struct dso *dso, enum map_type type,
- struct symbol *dso__first_symbol(struct dso *dso, enum map_type type);
- struct symbol *dso__next_symbol(struct symbol *sym);
- 
-+enum dso_type dso__type_fd(int fd);
++static int vdso__copy_compat(const char *prog, int fd)
++{
++	FILE *f;
++	int err;
 +
- int filename__read_build_id(const char *filename, void *bf, size_t size);
- int sysfs__read_build_id(const char *filename, void *bf, size_t size);
- int modules__parse(const char *filename, void *arg,
++	f = popen(prog, "r");
++	if (!f)
++		return -errno;
++
++	err = vdso__do_copy_compat(f, fd);
++
++	if (pclose(f) == -1)
++		return -errno;
++
++	return err;
++}
++
++static int vdso__create_compat_file(const char *prog, char *temp_name)
++{
++	int fd, err;
++
++	fd = mkstemp(temp_name);
++	if (fd < 0)
++		return -errno;
++
++	err = vdso__copy_compat(prog, fd);
++
++	if (close(fd) == -1)
++		return -errno;
++
++	return err;
++}
++
++static const char *vdso__get_compat_file(struct vdso_file *vdso_file)
++{
++	int err;
++
++	if (vdso_file->found)
++		return vdso_file->temp_file_name;
++
++	if (vdso_file->error)
++		return NULL;
++
++	err = vdso__create_compat_file(vdso_file->read_prog,
++				       vdso_file->temp_file_name);
++	if (err) {
++		pr_err("%s failed, error %d\n", vdso_file->read_prog, err);
++		vdso_file->error = true;
++		return NULL;
++	}
++
++	vdso_file->found = true;
++
++	return vdso_file->temp_file_name;
++}
++
++static struct dso *vdso__findnew_compat(struct machine *machine,
++					struct vdso_file *vdso_file)
++{
++	const char *file_name;
++	struct dso *dso;
++
++	dso = dsos__find(&machine->user_dsos, vdso_file->dso_name, true);
++	if (dso)
++		return dso;
++
++	file_name = vdso__get_compat_file(vdso_file);
++	if (!file_name)
++		return NULL;
++
++	return vdso__new(machine, vdso_file->dso_name, file_name);
++}
++
++static int vdso__dso_findnew_compat(struct machine *machine,
++				    struct thread *thread,
++				    struct vdso_info *vdso_info,
++				    struct dso **dso)
++{
++	enum dso_type dso_type;
++
++	dso_type = machine__thread_dso_type(machine, thread);
++	switch (dso_type) {
++	case DSO__TYPE_32BIT:
++		*dso = vdso__findnew_compat(machine, &vdso_info->vdso32);
++		return 1;
++	case DSO__TYPE_X32BIT:
++		*dso = vdso__findnew_compat(machine, &vdso_info->vdsox32);
++		return 1;
++	case DSO__TYPE_UNKNOWN:
++	case DSO__TYPE_64BIT:
++	default:
++		return 0;
++	}
++}
++
++#endif
++
+ struct dso *vdso__dso_findnew(struct machine *machine,
+ 			      struct thread *thread __maybe_unused)
+ {
+@@ -148,6 +309,11 @@ struct dso *vdso__dso_findnew(struct machine *machine,
+ 	if (!vdso_info)
+ 		return NULL;
+ 
++#if BITS_PER_LONG == 64
++	if (vdso__dso_findnew_compat(machine, thread, vdso_info, &dso))
++		return dso;
++#endif
++
+ 	dso = dsos__find(&machine->user_dsos, DSO__NAME_VDSO, true);
+ 	if (!dso) {
+ 		char *file;
+@@ -164,5 +330,7 @@ struct dso *vdso__dso_findnew(struct machine *machine,
+ 
+ bool dso__is_vdso(struct dso *dso)
+ {
+-	return !strcmp(dso->short_name, DSO__NAME_VDSO);
++	return !strcmp(dso->short_name, DSO__NAME_VDSO) ||
++	       !strcmp(dso->short_name, DSO__NAME_VDSO32) ||
++	       !strcmp(dso->short_name, DSO__NAME_VDSOX32);
+ }
+diff --git a/tools/perf/util/vdso.h b/tools/perf/util/vdso.h
+index af9d692..d97da16 100644
+--- a/tools/perf/util/vdso.h
++++ b/tools/perf/util/vdso.h
+@@ -7,7 +7,9 @@
+ 
+ #define VDSO__MAP_NAME "[vdso]"
+ 
+-#define DSO__NAME_VDSO "[vdso]"
++#define DSO__NAME_VDSO    "[vdso]"
++#define DSO__NAME_VDSO32  "[vdso32]"
++#define DSO__NAME_VDSOX32 "[vdsox32]"
+ 
+ static inline bool is_vdso_map(const char *filename)
+ {
 -- 
 1.8.3.2
 
