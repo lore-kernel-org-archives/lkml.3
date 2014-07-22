@@ -1,190 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754813AbaGVMgX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 08:36:23 -0400
-Received: from mail-wi0-f181.google.com ([209.85.212.181]:56946 "EHLO
-	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750985AbaGVMgW (ORCPT
+	id S1754412AbaGVMkt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 08:40:49 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:24959 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750893AbaGVMks (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 08:36:22 -0400
-From: Igor Bezukh <igbzkh@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: devel@driverdev.osuosl.org, forest@alittletooquiet.net,
-        linux-kernel@vger.kernel.org, igbzkh@gmail.com
-Subject: [PATCH] Staging: vt6655: Removed redundant comments and newlines
-Date: Tue, 22 Jul 2014 15:36:10 +0300
-Message-Id: <1406032571-19626-1-git-send-email-igbzkh@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Tue, 22 Jul 2014 08:40:48 -0400
+Date: Tue, 22 Jul 2014 08:40:46 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Petr Mladek <pmladek@suse.cz>
+Cc: Rusty Russell <rusty@rustcorp.com.au>, Jiri Slaby <jslaby@suse.cz>,
+        Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] module: add within_module() function
+Message-ID: <20140722084046.13355492@gandalf.local.home>
+In-Reply-To: <1406032090-16151-2-git-send-email-pmladek@suse.cz>
+References: <1406032090-16151-1-git-send-email-pmladek@suse.cz>
+	<1406032090-16151-2-git-send-email-pmladek@suse.cz>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Removed redundant comments and newlines from 80211mgr.h header file.
+On Tue, 22 Jul 2014 14:28:09 +0200
+Petr Mladek <pmladek@suse.cz> wrote:
 
-Signed-off-by: Igor Bezukh <igbzkh@gmail.com>
----
- drivers/staging/vt6655/80211mgr.h |   38 -------------------------------------
- 1 file changed, 38 deletions(-)
+> It is just a small optimization that allows to replace few
+> occurrences of within_module_init() || within_module_core()
+> with a single call.
 
-diff --git a/drivers/staging/vt6655/80211mgr.h b/drivers/staging/vt6655/80211mgr.h
-index 065238b..8b126bb 100644
---- a/drivers/staging/vt6655/80211mgr.h
-+++ b/drivers/staging/vt6655/80211mgr.h
-@@ -34,8 +34,6 @@
- #include "ttype.h"
- #include "80211hdr.h"
- 
--/*---------------------  Export Definitions -------------------------*/
--
- #define WLAN_MIN_ARRAY          1
- 
- /* Information Element ID value */
-@@ -202,12 +200,6 @@
- #define MEASURE_MODE_INCAPABLE  0x02
- #define MEASURE_MODE_REFUSED    0x04
- 
--/*---------------------  Export Classes  ----------------------------*/
--
--/*---------------------  Export Variables  --------------------------*/
--
--/*---------------------  Export Types  ------------------------------*/
--
- /* Information Element Types */
- 
- #pragma pack(1)
-@@ -472,14 +464,11 @@ typedef struct tagWLAN_FR_BEACON {
- 	unsigned int	len;
- 	unsigned char *pBuf;
- 	PUWLAN_80211HDR         pHdr;
--	/* fixed fields */
- 	PQWORD                  pqwTimestamp;
- 	unsigned short *pwBeaconInterval;
- 	unsigned short *pwCapInfo;
--	/*-- info elements ----------*/
- 	PWLAN_IE_SSID           pSSID;
- 	PWLAN_IE_SUPP_RATES     pSuppRates;
--/*  PWLAN_IE_FH_PARMS       pFHParms; */
- 	PWLAN_IE_DS_PARMS       pDSParms;
- 	PWLAN_IE_CF_PARMS       pCFParms;
- 	PWLAN_IE_TIM            pTIM;
-@@ -501,10 +490,6 @@ typedef struct tagWLAN_FR_IBSSATIM {
- 	unsigned int	len;
- 	unsigned char *pBuf;
- 	PUWLAN_80211HDR         pHdr;
--
--	/* fixed fields */
--	/* info elements */
--	/* this frame type has a null body */
- } WLAN_FR_IBSSATIM, *PWLAN_FR_IBSSATIM;
- 
- /* Disassociation */
-@@ -513,9 +498,7 @@ typedef struct tagWLAN_FR_DISASSOC {
- 	unsigned int	len;
- 	unsigned char *pBuf;
- 	PUWLAN_80211HDR         pHdr;
--	/*-- fixed fields -----------*/
- 	unsigned short *pwReason;
--	/*-- info elements ----------*/
- } WLAN_FR_DISASSOC, *PWLAN_FR_DISASSOC;
- 
- /* Association Request */
-@@ -524,10 +507,8 @@ typedef struct tagWLAN_FR_ASSOCREQ {
- 	unsigned int	len;
- 	unsigned char *pBuf;
- 	PUWLAN_80211HDR         pHdr;
--	/*-- fixed fields -----------*/
- 	unsigned short *pwCapInfo;
- 	unsigned short *pwListenInterval;
--	/*-- info elements ----------*/
- 	PWLAN_IE_SSID           pSSID;
- 	PWLAN_IE_SUPP_RATES     pSuppRates;
- 	PWLAN_IE_RSN            pRSN;
-@@ -543,11 +524,9 @@ typedef struct tagWLAN_FR_ASSOCRESP {
- 	unsigned int	len;
- 	unsigned char *pBuf;
- 	PUWLAN_80211HDR         pHdr;
--	/*-- fixed fields -----------*/
- 	unsigned short *pwCapInfo;
- 	unsigned short *pwStatus;
- 	unsigned short *pwAid;
--	/*-- info elements ----------*/
- 	PWLAN_IE_SUPP_RATES     pSuppRates;
- 	PWLAN_IE_SUPP_RATES     pExtSuppRates;
- } WLAN_FR_ASSOCRESP, *PWLAN_FR_ASSOCRESP;
-@@ -558,13 +537,9 @@ typedef struct tagWLAN_FR_REASSOCREQ {
- 	unsigned int	len;
- 	unsigned char *pBuf;
- 	PUWLAN_80211HDR         pHdr;
--
--	/*-- fixed fields -----------*/
- 	unsigned short *pwCapInfo;
- 	unsigned short *pwListenInterval;
- 	PIEEE_ADDR              pAddrCurrAP;
--
--	/*-- info elements ----------*/
- 	PWLAN_IE_SSID           pSSID;
- 	PWLAN_IE_SUPP_RATES     pSuppRates;
- 	PWLAN_IE_RSN            pRSN;
-@@ -578,11 +553,9 @@ typedef struct tagWLAN_FR_REASSOCRESP {
- 	unsigned int	len;
- 	unsigned char *pBuf;
- 	PUWLAN_80211HDR         pHdr;
--	/*-- fixed fields -----------*/
- 	unsigned short *pwCapInfo;
- 	unsigned short *pwStatus;
- 	unsigned short *pwAid;
--	/*-- info elements ----------*/
- 	PWLAN_IE_SUPP_RATES     pSuppRates;
- 	PWLAN_IE_SUPP_RATES     pExtSuppRates;
- } WLAN_FR_REASSOCRESP, *PWLAN_FR_REASSOCRESP;
-@@ -593,8 +566,6 @@ typedef struct tagWLAN_FR_PROBEREQ {
- 	unsigned int	len;
- 	unsigned char *pBuf;
- 	PUWLAN_80211HDR         pHdr;
--	/*-- fixed fields -----------*/
--	/*-- info elements ----------*/
- 	PWLAN_IE_SSID           pSSID;
- 	PWLAN_IE_SUPP_RATES     pSuppRates;
- 	PWLAN_IE_SUPP_RATES     pExtSuppRates;
-@@ -606,11 +577,9 @@ typedef struct tagWLAN_FR_PROBERESP {
- 	unsigned int	len;
- 	unsigned char *pBuf;
- 	PUWLAN_80211HDR         pHdr;
--	/*-- fixed fields -----------*/
- 	PQWORD                  pqwTimestamp;
- 	unsigned short *pwBeaconInterval;
- 	unsigned short *pwCapInfo;
--	/*-- info elements ----------*/
- 	PWLAN_IE_SSID           pSSID;
- 	PWLAN_IE_SUPP_RATES     pSuppRates;
- 	PWLAN_IE_DS_PARMS       pDSParms;
-@@ -633,11 +602,9 @@ typedef struct tagWLAN_FR_AUTHEN {
- 	unsigned int	len;
- 	unsigned char *pBuf;
- 	PUWLAN_80211HDR         pHdr;
--	/*-- fixed fields -----------*/
- 	unsigned short *pwAuthAlgorithm;
- 	unsigned short *pwAuthSequence;
- 	unsigned short *pwStatus;
--	/*-- info elements ----------*/
- 	PWLAN_IE_CHALLENGE      pChallenge;
- } WLAN_FR_AUTHEN, *PWLAN_FR_AUTHEN;
- 
-@@ -647,14 +614,9 @@ typedef struct tagWLAN_FR_DEAUTHEN {
- 	unsigned int	len;
- 	unsigned char *pBuf;
- 	PUWLAN_80211HDR         pHdr;
--	/*-- fixed fields -----------*/
- 	unsigned short *pwReason;
--
--	/*-- info elements ----------*/
- } WLAN_FR_DEAUTHEN, *PWLAN_FR_DEAUTHEN;
- 
--/*---------------------  Export Functions  --------------------------*/
--
- void
- vMgrEncodeBeacon(
- 	PWLAN_FR_BEACON  pFrame
--- 
-1.7.9.5
+This looks like a nice clean up. Rusty, what do you think?
+
+-- Steve
+
+> 
+> Signed-off-by: Petr Mladek <pmladek@suse.cz>
+> ---
+>  include/linux/module.h |  5 +++++
+>  kernel/module.c        | 12 ++++--------
+>  2 files changed, 9 insertions(+), 8 deletions(-)
+> 
+> diff --git a/include/linux/module.h b/include/linux/module.h
+> index f520a767c86c..61d8fb2d0873 100644
+> --- a/include/linux/module.h
+> +++ b/include/linux/module.h
+> @@ -408,6 +408,11 @@ static inline int within_module_init(unsigned long addr, const struct module *mo
+>  	       addr < (unsigned long)mod->module_init + mod->init_size;
+>  }
+>  
+> +static inline int within_module(unsigned long addr, const struct module *mod)
+> +{
+> +	return within_module_init(addr, mod) || within_module_core(addr, mod);
+> +}
+> +
+>  /* Search for module by name: must hold module_mutex. */
+>  struct module *find_module(const char *name);
+>  
+> diff --git a/kernel/module.c b/kernel/module.c
+> index ae79ce615cb9..be0e479ccb5c 100644
+> --- a/kernel/module.c
+> +++ b/kernel/module.c
+> @@ -3444,8 +3444,7 @@ const char *module_address_lookup(unsigned long addr,
+>  	list_for_each_entry_rcu(mod, &modules, list) {
+>  		if (mod->state == MODULE_STATE_UNFORMED)
+>  			continue;
+> -		if (within_module_init(addr, mod) ||
+> -		    within_module_core(addr, mod)) {
+> +		if (within_module(addr, mod)) {
+>  			if (modname)
+>  				*modname = mod->name;
+>  			ret = get_ksymbol(mod, addr, size, offset);
+> @@ -3469,8 +3468,7 @@ int lookup_module_symbol_name(unsigned long addr, char *symname)
+>  	list_for_each_entry_rcu(mod, &modules, list) {
+>  		if (mod->state == MODULE_STATE_UNFORMED)
+>  			continue;
+> -		if (within_module_init(addr, mod) ||
+> -		    within_module_core(addr, mod)) {
+> +		if (within_module(addr, mod)) {
+>  			const char *sym;
+>  
+>  			sym = get_ksymbol(mod, addr, NULL, NULL);
+> @@ -3495,8 +3493,7 @@ int lookup_module_symbol_attrs(unsigned long addr, unsigned long *size,
+>  	list_for_each_entry_rcu(mod, &modules, list) {
+>  		if (mod->state == MODULE_STATE_UNFORMED)
+>  			continue;
+> -		if (within_module_init(addr, mod) ||
+> -		    within_module_core(addr, mod)) {
+> +		if (within_module(addr, mod)) {
+>  			const char *sym;
+>  
+>  			sym = get_ksymbol(mod, addr, size, offset);
+> @@ -3760,8 +3757,7 @@ struct module *__module_address(unsigned long addr)
+>  	list_for_each_entry_rcu(mod, &modules, list) {
+>  		if (mod->state == MODULE_STATE_UNFORMED)
+>  			continue;
+> -		if (within_module_core(addr, mod)
+> -		    || within_module_init(addr, mod))
+> +		if (within_module(addr, mod))
+>  			return mod;
+>  	}
+>  	return NULL;
 
