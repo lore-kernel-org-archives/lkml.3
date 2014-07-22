@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933825AbaGVWuj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 18:50:39 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44453 "EHLO
+	id S933508AbaGVWvC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 18:51:02 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:44440 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932521AbaGVWW7 (ORCPT
+	with ESMTP id S932507AbaGVWWy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 18:22:59 -0400
+	Tue, 22 Jul 2014 18:22:54 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Lars-Peter Clausen <lars@metafoo.de>, Takashi Iwai <tiwai@suse.de>,
+Cc: Lukas Czerner <lczerner@redhat.com>, Mike Snitzer <snitzer@redhat.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 094/116] ALSA: control: Handle numid overflow
-Date: Tue, 22 Jul 2014 15:21:45 -0700
-Message-Id: <1406067727-19683-95-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 079/116] dm thin: update discard_granularity to reflect the thin-pool blocksize
+Date: Tue, 22 Jul 2014 15:21:30 -0700
+Message-Id: <1406067727-19683-80-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1406067727-19683-1-git-send-email-kamal@canonical.com>
 References: <1406067727-19683-1-git-send-email-kamal@canonical.com>
@@ -27,42 +27,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lars-Peter Clausen <lars@metafoo.de>
+From: Lukas Czerner <lczerner@redhat.com>
 
-commit ac902c112d90a89e59916f751c2745f4dbdbb4bd upstream.
+commit 09869de57ed2728ae3c619803932a86cb0e2c4f8 upstream.
 
-Each control gets automatically assigned its numids when the control is created.
-The allocation is done by incrementing the numid by the amount of allocated
-numids per allocation. This means that excessive creation and destruction of
-controls (e.g. via SNDRV_CTL_IOCTL_ELEM_ADD/REMOVE) can cause the id to
-eventually overflow. Currently when this happens for the control that caused the
-overflow kctl->id.numid + kctl->count will also over flow causing it to be
-smaller than kctl->id.numid. Most of the code assumes that this is something
-that can not happen, so we need to make sure that it won't happen
+DM thinp already checks whether the discard_granularity of the data
+device is a factor of the thin-pool block size.  But when using the
+dm-thin-pool's discard passdown support, DM thinp was not selecting the
+max of the underlying data device's discard_granularity and the
+thin-pool's block size.
 
-Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-Acked-by: Jaroslav Kysela <perex@perex.cz>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Update set_discard_limits() to set discard_granularity to the max of
+these values.  This enables blkdev_issue_discard() to properly align the
+discards that are sent to the DM thin device on a full block boundary.
+As such each discard will now cover an entire DM thin-pool block and the
+block will be reclaimed.
+
+Reported-by: Zdenek Kabelac <zkabelac@redhat.com>
+Signed-off-by: Lukas Czerner <lczerner@redhat.com>
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- sound/core/control.c | 4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/md/dm-thin.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/sound/core/control.c b/sound/core/control.c
-index 7619a57..f92ca31 100644
---- a/sound/core/control.c
-+++ b/sound/core/control.c
-@@ -289,6 +289,10 @@ static bool snd_ctl_remove_numid_conflict(struct snd_card *card,
- {
- 	struct snd_kcontrol *kctl;
- 
-+	/* Make sure that the ids assigned to the control do not wrap around */
-+	if (card->last_numid >= UINT_MAX - count)
-+		card->last_numid = 0;
-+
- 	list_for_each_entry(kctl, &card->controls, list) {
- 		if (kctl->id.numid < card->last_numid + 1 + count &&
- 		    kctl->id.numid + kctl->count > card->last_numid + 1) {
+diff --git a/drivers/md/dm-thin.c b/drivers/md/dm-thin.c
+index ca954b1..3d183ca 100644
+--- a/drivers/md/dm-thin.c
++++ b/drivers/md/dm-thin.c
+@@ -2479,7 +2479,8 @@ static void set_discard_limits(struct pool_c *pt, struct queue_limits *limits)
+ 	 */
+ 	if (pt->adjusted_pf.discard_passdown) {
+ 		data_limits = &bdev_get_queue(pt->data_dev->bdev)->limits;
+-		limits->discard_granularity = data_limits->discard_granularity;
++		limits->discard_granularity = max(data_limits->discard_granularity,
++						  pool->sectors_per_block << SECTOR_SHIFT);
+ 	} else if (block_size_is_power_of_two(pool))
+ 		limits->discard_granularity = pool->sectors_per_block << SECTOR_SHIFT;
+ 	else
 -- 
 1.9.1
 
