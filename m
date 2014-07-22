@@ -1,183 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755912AbaGVPDM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 11:03:12 -0400
-Received: from w-smtp-out-7.wedos.net ([46.28.106.5]:58385 "EHLO
-	we2-f167.wedos.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753988AbaGVPDK (ORCPT
+	id S1755535AbaGVPEZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 11:04:25 -0400
+Received: from smtprelay03.ispgateway.de ([80.67.31.30]:43575 "EHLO
+	smtprelay03.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752751AbaGVPEY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 11:03:10 -0400
-Date: Tue, 22 Jul 2014 17:03:10 +0200
-From: Josef Gajdusek <atx@atalax.net>
-To: linux-iio@vger.kernel.org
-Cc: devel@driverdev.osuosl.org, gregkh@linuxfoundation.org, jic23@kernel.org,
-        linux-kernel@vger.kernel.org, pmeerw@pmeerw.net,
-        dan.carpenter@oracle.com, lars@metafoo.de
-Subject: [PATCH v5 (staging-next) 5/5] staging:iio:hmc5843: Add support for
- spi hmc5983
-Message-ID: <20140722150310.GF7845@dashie>
-References: <20140722150009.GA7845@dashie>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Tue, 22 Jul 2014 11:04:24 -0400
+References: <1398561815-22033-1-git-send-email-peter@piie.net> <1405817480-25347-1-git-send-email-peter@piie.net> <1405817480-25347-4-git-send-email-peter@piie.net> <20140721092950.GB10016@pd.tnic> <1405935627.2455.6.camel@rzhang1-toshiba>
+Message-ID: <cone.1406041142.559920.1179.1000@galar>
+X-Mailer: http://www.courier-mta.org/cone/
+From: Peter Feuerer <peter@piie.net>
+To: Zhang Rui <rui.zhang@intel.com>
+Cc: Borislav Petkov <bp@alien8.de>, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andreas Mohr <andi@lisas.de>, Borislav Petkov <bp@suse.de>,
+        Javi Merino <javi.merino@arm.com>
+Subject: Re: [PATCH v4 3/6] thermal: Added Bang-bang thermal governor
+Date: Tue, 22 Jul 2014 16:59:02 +0200
+Mime-Version: 1.0
+Content-Type: text/plain; format=flowed; charset="US-ASCII"
 Content-Disposition: inline
-In-Reply-To: <20140722150009.GA7845@dashie>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+Content-Transfer-Encoding: 7bit
+X-Df-Sender: NDA0MDk0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds support for the hmc5983 spi interface.
-This chip is almost identical to the hmc5883. The difference being added
-temperature compensation, additional available sample rate (220Hz) and an SPI
-interface.
+Hi,
 
-Signed-off-by: Josef Gajdusek <atx@atx.name>
----
- drivers/staging/iio/magnetometer/Kconfig       |  15 ++++
- drivers/staging/iio/magnetometer/Makefile      |   1 +
- drivers/staging/iio/magnetometer/hmc5843_spi.c | 100 +++++++++++++++++++++++++
- 3 files changed, 116 insertions(+)
- create mode 100644 drivers/staging/iio/magnetometer/hmc5843_spi.c
+Zhang Rui writes:
 
-diff --git a/drivers/staging/iio/magnetometer/Kconfig b/drivers/staging/iio/magnetometer/Kconfig
-index c086f33..dec814a 100644
---- a/drivers/staging/iio/magnetometer/Kconfig
-+++ b/drivers/staging/iio/magnetometer/Kconfig
-@@ -22,4 +22,19 @@ config SENSORS_HMC5843_I2C
- 	  - hmc5843_core (core functions)
- 	  - hmc5843_i2c (support for HMC5843, HMC5883, HMC5883L and HMC5983)
- 
-+config SENSORS_HMC5843_SPI
-+	tristate "Honeywell HMC5983 3-Axis Magnetometer (SPI)"
-+	depends on SPI_MASTER
-+	select SENSORS_HMC5843
-+	select REGMAP_SPI
-+	help
-+	  Say Y here to add support for the Honeywell HMC5983 3-Axis Magnetometer
-+	  (digital compass).
-+
-+	  This driver can also be compiled as a set of modules.
-+	  If so, these modules will be created:
-+	  - hmc5843_core (core functions)
-+	  - hmc5843_spi (support for HMC5983)
-+
-+
- endmenu
-diff --git a/drivers/staging/iio/magnetometer/Makefile b/drivers/staging/iio/magnetometer/Makefile
-index 65baf1c..33761a1 100644
---- a/drivers/staging/iio/magnetometer/Makefile
-+++ b/drivers/staging/iio/magnetometer/Makefile
-@@ -4,3 +4,4 @@
- 
- obj-$(CONFIG_SENSORS_HMC5843)		+= hmc5843_core.o
- obj-$(CONFIG_SENSORS_HMC5843_I2C)	+= hmc5843_i2c.o
-+obj-$(CONFIG_SENSORS_HMC5843_SPI)	+= hmc5843_spi.o
-diff --git a/drivers/staging/iio/magnetometer/hmc5843_spi.c b/drivers/staging/iio/magnetometer/hmc5843_spi.c
-new file mode 100644
-index 0000000..98c4b57
---- /dev/null
-+++ b/drivers/staging/iio/magnetometer/hmc5843_spi.c
-@@ -0,0 +1,100 @@
-+/*
-+ * SPI driver for hmc5983
-+ *
-+ * Copyright (C) Josef Gajdusek <atx@atx.name>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * */
-+
-+#include <linux/module.h>
-+#include <linux/spi/spi.h>
-+#include <linux/iio/iio.h>
-+
-+#include "hmc5843.h"
-+
-+static const struct regmap_range hmc5843_readable_ranges[] = {
-+		regmap_reg_range(0, HMC5843_ID_END),
-+};
-+
-+static struct regmap_access_table hmc5843_readable_table = {
-+		.yes_ranges = hmc5843_readable_ranges,
-+		.n_yes_ranges = ARRAY_SIZE(hmc5843_readable_ranges),
-+};
-+
-+static const struct regmap_range hmc5843_writable_ranges[] = {
-+		regmap_reg_range(0, HMC5843_MODE_REG),
-+};
-+
-+static struct regmap_access_table hmc5843_writable_table = {
-+		.yes_ranges = hmc5843_writable_ranges,
-+		.n_yes_ranges = ARRAY_SIZE(hmc5843_writable_ranges),
-+};
-+
-+static const struct regmap_range hmc5843_volatile_ranges[] = {
-+		regmap_reg_range(HMC5843_DATA_OUT_MSB_REGS, HMC5843_STATUS_REG),
-+};
-+
-+static struct regmap_access_table hmc5843_volatile_table = {
-+		.yes_ranges = hmc5843_volatile_ranges,
-+		.n_yes_ranges = ARRAY_SIZE(hmc5843_volatile_ranges),
-+};
-+
-+static struct regmap_config hmc5843_spi_regmap_config = {
-+		.reg_bits = 8,
-+		.val_bits = 8,
-+
-+		.rd_table = &hmc5843_readable_table,
-+		.wr_table = &hmc5843_writable_table,
-+		.volatile_table = &hmc5843_volatile_table,
-+
-+		/* Autoincrement address pointer */
-+		.read_flag_mask = 0xc0,
-+
-+		.cache_type = REGCACHE_RBTREE,
-+};
-+
-+static int hmc5843_spi_probe(struct spi_device *spi)
-+{
-+	int ret;
-+
-+	spi->mode = SPI_MODE_3;
-+	spi->max_speed_hz = 8000000;
-+	spi->bits_per_word = 8;
-+	ret = spi_setup(spi);
-+	if (ret)
-+		return ret;
-+
-+	return hmc5843_common_probe(&spi->dev,
-+			devm_regmap_init_spi(spi, &hmc5843_spi_regmap_config),
-+			HMC5983_ID);
-+}
-+
-+static int hmc5843_spi_remove(struct spi_device *spi)
-+{
-+	return hmc5843_common_remove(&spi->dev);
-+}
-+
-+static const struct spi_device_id hmc5843_id[] = {
-+	{ "hmc5983", HMC5983_ID },
-+	{ }
-+};
-+
-+static struct spi_driver hmc5843_driver = {
-+		.driver = {
-+				.name = "hmc5843",
-+				.pm = HMC5843_PM_OPS,
-+				.owner = THIS_MODULE,
-+		},
-+		.id_table = hmc5843_id,
-+		.probe = hmc5843_spi_probe,
-+		.remove = hmc5843_spi_remove,
-+};
-+
-+module_spi_driver(hmc5843_driver);
-+
-+MODULE_AUTHOR("Josef Gajdusek <atx@atx.name>");
-+MODULE_DESCRIPTION("HMC5983 SPI driver");
-+MODULE_LICENSE("GPL");
+> On Mon, 2014-07-21 at 11:29 +0200, Borislav Petkov wrote:
+>> On Sun, Jul 20, 2014 at 02:51:17AM +0200, Peter Feuerer wrote:
+>> > The bang-bang thermal governor uses a hysteresis to switch abruptly on
+>> > or off a cooling device.  It is intended to control fans, which can
+>> > not be throttled but just switched on or off.
+>> > Bang-bang cannot be set as default governor as it is intended for
+>> > special devices only.  For those special devices the driver needs to
+>> > explicitely request it.
+>> > 
+>> > Cc: Andrew Morton <akpm@linux-foundation.org>
+>> > Cc: Zhang Rui <rui.zhang@intel.com>
+>> > Cc: Andreas Mohr <andi@lisas.de>
+>> > Cc: Borislav Petkov <bp@suse.de>
+>> > Cc: Javi Merino <javi.merino@arm.com>
+>> > Signed-off-by: Peter Feuerer <peter@piie.net>
+>> > ---
+>> >  drivers/thermal/Kconfig         |  10 +++
+>> >  drivers/thermal/Makefile        |   1 +
+>> >  drivers/thermal/gov_bang_bang.c | 131 ++++++++++++++++++++++++++++++++++++++++
+>> >  drivers/thermal/thermal_core.c  |   5 ++
+>> >  drivers/thermal/thermal_core.h  |   8 +++
+>> >  5 files changed, 155 insertions(+)
+>> >  create mode 100644 drivers/thermal/gov_bang_bang.c
+>> > 
+>> > diff --git a/drivers/thermal/Kconfig b/drivers/thermal/Kconfig
+>> > index f9a1386..cdddf09 100644
+>> > --- a/drivers/thermal/Kconfig
+>> > +++ b/drivers/thermal/Kconfig
+>> > @@ -84,6 +84,16 @@ config THERMAL_GOV_STEP_WISE
+>> >  	  Enable this to manage platform thermals using a simple linear
+>> >  	  governor.
+>> >  
+>> > +config THERMAL_GOV_BANG_BANG
+>> > +	bool "Bang Bang thermal governor"
+>> > +	default y
+>> 
+>> Right, this is problematic.
+>> 
+>> When people are faced with the new selection after doing oldconfig, they
+>> can say yes or no.
+>> 
+>> However, as acerhdf depends on it now, prompting the user to
+>> unconditionally says yes is kinda redundant. Especially as this governor
+>> is not supposed to be default anyway.
+>> 
+>> Actually you don't need the Kconfig prompt at all as this is a sort-of
+>> "internal" governor and devices select it. IOW, it should be "default n"
+>> and ACERHDF will do "select THERMAL_GOV_BANG_BANG". Something like that
+>> at least.
+>> 
+> I agree with this approach.
+
+Yes, you are right, this looks better.  Then the "depend on 
+THERMAL_GOV_BANG_BANG" could be removed from acerhdf Kbuild, as the "select" 
+will take care acerhdf is compiled with THERMAL_GOV_BANG_BANG enabled, 
+right?
+
 -- 
-1.8.5.5
-
+--peter;
