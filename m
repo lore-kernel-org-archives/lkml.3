@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755110AbaGVLLy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 07:11:54 -0400
-Received: from mail-ie0-f170.google.com ([209.85.223.170]:39233 "EHLO
-	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754397AbaGVLLt (ORCPT
+	id S1754886AbaGVLLr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 07:11:47 -0400
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:57228 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754397AbaGVLLp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 07:11:49 -0400
+	Tue, 22 Jul 2014 07:11:45 -0400
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Cc: sameo@linux.intel.com, Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 06/19] mfd: dm355evm_msp: Fix checkpatch error: insert space after ','
-Date: Tue, 22 Jul 2014 12:11:12 +0100
-Message-Id: <1406027485-15657-7-git-send-email-lee.jones@linaro.org>
+Subject: [PATCH 04/19] mfd: mcp-core: Fix 'blank line after declarations' warning
+Date: Tue, 22 Jul 2014 12:11:10 +0100
+Message-Id: <1406027485-15657-5-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1406027485-15657-1-git-send-email-lee.jones@linaro.org>
 References: <1406027485-15657-1-git-send-email-lee.jones@linaro.org>
@@ -22,30 +22,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 This is part of an effort to clean-up the MFD subsystem.
 
-ERROR: space required after that ',' (ctx:VxV)
-+#define MSP_GPIO(bit,reg)      ((DM355EVM_MSP_ ## reg) << 3 | (bit))
-                     ^
+WARNING: Missing a blank line after declarations
++       unsigned long flags;
++       spin_lock_irqsave(&mcp->lock, flags);
 
-total: 1 errors, 0 warnings, 437 lines checked
+total: 0 errors, 1 warnings, 238 lines checked
 
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- drivers/mfd/dm355evm_msp.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/mfd/mcp-core.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/mfd/dm355evm_msp.c b/drivers/mfd/dm355evm_msp.c
-index 7a55c00..4c826f7 100644
---- a/drivers/mfd/dm355evm_msp.c
-+++ b/drivers/mfd/dm355evm_msp.c
-@@ -95,7 +95,7 @@ EXPORT_SYMBOL(dm355evm_msp_read);
-  * Many of the msp430 pins are just used as fixed-direction GPIOs.
-  * We could export a few more of them this way, if we wanted.
-  */
--#define MSP_GPIO(bit,reg)	((DM355EVM_MSP_ ## reg) << 3 | (bit))
-+#define MSP_GPIO(bit, reg)	((DM355EVM_MSP_ ## reg) << 3 | (bit))
- 
- static const u8 msp_gpios[] = {
- 	/* eight leds */
+diff --git a/drivers/mfd/mcp-core.c b/drivers/mfd/mcp-core.c
+index 62e5e36..7f5066e 100644
+--- a/drivers/mfd/mcp-core.c
++++ b/drivers/mfd/mcp-core.c
+@@ -137,6 +137,7 @@ EXPORT_SYMBOL(mcp_reg_read);
+ void mcp_enable(struct mcp *mcp)
+ {
+ 	unsigned long flags;
++
+ 	spin_lock_irqsave(&mcp->lock, flags);
+ 	if (mcp->use_count++ == 0)
+ 		mcp->ops->enable(mcp);
 -- 
 1.8.3.2
 
