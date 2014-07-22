@@ -1,49 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754509AbaGVPNn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 11:13:43 -0400
-Received: from static.88-198-71-155.clients.your-server.de ([88.198.71.155]:43589
-	"EHLO socrates.bennee.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751090AbaGVPNm (ORCPT
+	id S1755441AbaGVPRJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 11:17:09 -0400
+Received: from pegasos-out.vodafone.de ([80.84.1.38]:51367 "EHLO
+	pegasos-out.vodafone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751105AbaGVPRH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 11:13:42 -0400
-From: =?UTF-8?q?Alex=20Benn=C3=A9e?= <alex.bennee@linaro.org>
-To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Cc: =?UTF-8?q?Alex=20Benn=C3=A9e?= <alex.bennee@linaro.org>
-Subject: [PATCH] Documentation/arm64/memory.txt: fix typo
-Date: Tue, 22 Jul 2014 16:14:42 +0100
-Message-Id: <1406042082-1519-1-git-send-email-alex.bennee@linaro.org>
-X-Mailer: git-send-email 2.0.2
+	Tue, 22 Jul 2014 11:17:07 -0400
+X-Spam-Flag: NO
+X-Spam-Score: -0.045
+Authentication-Results: rohrpostix2.prod.vfnet.de (amavisd-new); dkim=pass
+	header.i=@vodafone.de
+X-DKIM: OpenDKIM Filter v2.6.8 pegasos-out.vodafone.de 2364572548B
+X-DKIM: OpenDKIM Filter v2.0.2 smtp-04.vodafone.de AAB11E8415
+Message-ID: <53CE8060.8030500@vodafone.de>
+Date: Tue, 22 Jul 2014 17:16:48 +0200
+From: =?ISO-8859-1?Q?Christian_K=F6nig?= <deathsimple@vodafone.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+To: Maarten Lankhorst <maarten.lankhorst@canonical.com>,
+        =?ISO-8859-1?Q?Christian_K=F6nig?= <christian.koenig@amd.com>,
+        Dave Airlie <airlied@gmail.com>,
+        Thomas Hellstrom <thellstrom@vmware.com>,
+        nouveau <nouveau@lists.freedesktop.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        dri-devel <dri-devel@lists.freedesktop.org>,
+        Ben Skeggs <bskeggs@redhat.com>,
+        "Deucher, Alexander" <alexander.deucher@amd.com>
+Subject: Re: [PATCH 09/17] drm/radeon: use common fence implementation for
+ fences
+References: <20140709093124.11354.3774.stgit@patser> <20140709122953.11354.46381.stgit@patser> <CAPM=9tyD2ZbrcGDC3hfNb7qNdzsfnyD-ZwM7G-nOgxeu5YKuSg@mail.gmail.com> <53CE2421.5040906@amd.com> <20140722114607.GL15237@phenom.ffwll.local> <20140722115737.GN15237@phenom.ffwll.local> <53CE56ED.4040109@vodafone.de> <53CE6FB0.90500@canonical.com> <53CE7410.3090603@amd.com> <53CE74B5.3000201@canonical.com> <53CE77B4.6020801@amd.com> <53CE7974.2010209@canonical.com>
+In-Reply-To: <53CE7974.2010209@canonical.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 8bit
-X-SA-Exim-Connect-IP: 127.0.0.1
-X-SA-Exim-Mail-From: alex.bennee@linaro.org
-X-SA-Exim-Scanned: No (on socrates.bennee.com); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is no swapper_pgd_dir, it meant swapper_pg_dir.
+Am 22.07.2014 16:47, schrieb Maarten Lankhorst:
+> op 22-07-14 16:39, Christian Kˆnig schreef:
+>> Am 22.07.2014 16:27, schrieb Maarten Lankhorst:
+>>> op 22-07-14 16:24, Christian Kˆnig schreef:
+>>>>> No, you really shouldn't be doing much in the check anyway, it's meant to be a lightweight check. If you're not ready yet because of a lockup simply return not signaled yet.
+>>>> It's not only the lockup case from radeon I have in mind here. For userspace queues it might be necessary to call copy_from_user to figure out if a fence is signaled or not.
+>>>>
+>>>> Returning false all the time is probably not a good idea either.
+>>> Having userspace implement a fence sounds like an awful idea, why would you want to do that?
+>> Marketing moves in mysterious ways. Don't ask me, but that the direction it currently moves with userspace queues and IOMMU etc...
+>>
+>>> A fence could be exported to userspace, but that would only mean it can wait for it to be signaled with an interface like poll..
+>> Yeah agree totally, but the point for the fence interface is that I can't predict what's necessary to check if a fence is signaled or not on future hardware.
+>>
+>> For the currently available radeon hardware I can say that reading a value from a kernel page is pretty much all you need. But for older hardware that was reading from a register which might become very tricky if the hardware is power off or currently inside a reset cycle.
+>>
+>> Because off this I would avoid any such interface if it's not absolutely required by some use case, and currently I don't see this requirement because the functionality you want to archive could be implemented without this.
+> Oh? I've already done that in radeon_fence, there is no way enable_signaling will fiddle with hardware registers during a reset cycle.
+> I've also made sure that __radeon_fence_is_signaled grabs exclusive_lock in read mode before touching any hw state.
+>
+> Older hardware also doesn't implement optimus, so I think power off is not much of a worry for them, if you could point me at the checking done for that I could make sure that this is the case.
 
-Signed-off-by: Alex Benn√©e <alex.bennee@linaro.org>
----
- Documentation/arm64/memory.txt | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+I'm not talking about any specific radeon hardware or use case here. As 
+far as I can see you indeed solved all driver problems with the current 
+interface design.
 
-diff --git a/Documentation/arm64/memory.txt b/Documentation/arm64/memory.txt
-index d50fa61..dd724c8 100644
---- a/Documentation/arm64/memory.txt
-+++ b/Documentation/arm64/memory.txt
-@@ -17,7 +17,7 @@ User addresses have bits 63:39 set to 0 while the kernel addresses have
- the same bits set to 1. TTBRx selection is given by bit 63 of the
- virtual address. The swapper_pg_dir contains only kernel (global)
- mappings while the user pgd contains only user (non-global) mappings.
--The swapper_pgd_dir address is written to TTBR1 and never written to
-+The swapper_pg_dir address is written to TTBR1 and never written to
- TTBR0.
- 
- 
--- 
-2.0.2
+The question I'm raising is if the current interface design needs as 
+complex as it is. And my answer to this is a clear *no*, so why do you 
+want to stick with this design? I still haven't understood that.
+
+If it's just to support a further feature of direct synchronization in 
+interrupt context between different drivers then I must clearly say that 
+this is a NAK, cause you add complexity to the kernel that isn't necessary.
+
+Christian.
+
+>
+> ~Maarten
+>
 
