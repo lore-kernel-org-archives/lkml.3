@@ -1,68 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932097AbaGVTD7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 15:03:59 -0400
-Received: from mail-la0-f47.google.com ([209.85.215.47]:39783 "EHLO
-	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755761AbaGVTBY (ORCPT
+	id S1756739AbaGVTEF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 15:04:05 -0400
+Received: from mail-la0-f51.google.com ([209.85.215.51]:51847 "EHLO
+	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932085AbaGVTD7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 15:01:24 -0400
-From: Max Filippov <jcmvbkbc@gmail.com>
-To: linux-xtensa@linux-xtensa.org
-Cc: Chris Zankel <chris@zankel.net>, Marc Gauthier <marc@cadence.com>,
-        linux-kernel@vger.kernel.org, Max Filippov <jcmvbkbc@gmail.com>,
-        linux-mm@kvack.org, linux-arch@vger.kernel.org,
-        linux-mips@linux-mips.org, David Rientjes <rientjes@google.com>
-Subject: [PATCH 0/8] xtensa: highmem support on cores with aliasing cache
-Date: Tue, 22 Jul 2014 23:01:05 +0400
-Message-Id: <1406055673-10100-1-git-send-email-jcmvbkbc@gmail.com>
-X-Mailer: git-send-email 1.8.1.4
+	Tue, 22 Jul 2014 15:03:59 -0400
+Message-ID: <1406055834.23587.1.camel@gmail.com>
+Subject: [RFC] 3.16-rc6 -- fs/direct-io.c:1011 from and to uninitialized.
+From: Ian Kumlien <ian.kumlien@gmail.com>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Tue, 22 Jul 2014 21:03:54 +0200
+Content-Type: multipart/mixed; boundary="=-AUaWtOygmYJMXQhvtnEa"
+X-Mailer: Evolution 3.12.4 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+
+--=-AUaWtOygmYJMXQhvtnEa
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
+
+This is a resend, try two... 
+
+---
 Hi,
 
-this series implements highmem support on xtensa cores with aliasing cache.
-It does so by making sure that high memory pages are always mapped at
-virtual addresses with color that match color of their physical address.
+While playing around compiling the kernel i noticed the following:
+fs/direct-io.c: In function ‘do_blockdev_direct_IO’:
+fs/direct-io.c:1022:29: warning: ‘from’ may be used uninitialized in
+this function [-Wmaybe-uninitialized]
+    ret = submit_page_section(dio, sdio, page,
+                             ^
+fs/direct-io.c:913:10: note: ‘from’ was declared here
+   size_t from, to;
+          ^
+fs/direct-io.c:1011:12: warning: ‘to’ may be used uninitialized in this
+function [-Wmaybe-uninitialized]
+    u = (to - from) >> blkbits;
+            ^
+fs/direct-io.c:913:16: note: ‘to’ was declared here
+   size_t from, to;
+                ^
+---
 
-This involves changing the generic kmap code to make it aware of cache
-coloring. This part with corresponding arch changes is cc'd linux-mm,
-linux-arch and linux-mips.
 
-The whole series can also be found at:
-git://github.com/jcmvbkbc/linux-xtensa.git xtensa-highmem-ca
+And while the fix is simple, something along the lines of:
+diff --git a/fs/direct-io.c b/fs/direct-io.c
+index 98040ba..64a8286 100644
+--- a/fs/direct-io.c
++++ b/fs/direct-io.c
+@@ -910,7 +910,7 @@ static int do_direct_IO(struct dio *dio, struct
+dio_submit *sdi
+ 
+        while (sdio->block_in_file < sdio->final_block_in_request) {
+                struct page *page;
+-               size_t from, to;
++               size_t from, to = {0};
+                page = dio_get_page(dio, sdio, &from, &to);
+                if (IS_ERR(page)) {
+                        ret = PTR_ERR(page);
+---
 
-Leonid Yegoshin (1):
-  mm/highmem: make kmap cache coloring aware
+I however don't know if it's in the correct C standard, it compiles fine
+though... (or if this is more gcc speific)
 
-Max Filippov (7):
-  xtensa: make fixmap region addressing grow with index
-  xtensa: allow fixmap and kmap span more than one page table
-  xtensa: fix TLBTEMP_BASE_2 region handling in fast_second_level_miss
-  xtensa: implement clear_user_highpage and copy_user_highpage
-  xtensa: support aliasing cache in k[un]map_atomic
-  xtensa: support aliasing cache in kmap
-  xtensa: support highmem in aliasing cache flushing code
 
- arch/xtensa/include/asm/cacheflush.h |   2 +
- arch/xtensa/include/asm/fixmap.h     |  30 +++++++--
- arch/xtensa/include/asm/highmem.h    |  18 +++++-
- arch/xtensa/include/asm/page.h       |  14 ++++-
- arch/xtensa/include/asm/pgtable.h    |   7 ++-
- arch/xtensa/kernel/entry.S           |   2 +-
- arch/xtensa/mm/cache.c               |  77 ++++++++++++++++++++---
- arch/xtensa/mm/highmem.c             |  24 +++++---
- arch/xtensa/mm/misc.S                | 116 ++++++++++++++++-------------------
- arch/xtensa/mm/mmu.c                 |  38 +++++++-----
- mm/highmem.c                         |  19 +++++-
- 11 files changed, 235 insertions(+), 112 deletions(-)
 
-Cc: linux-mm@kvack.org
-Cc: linux-arch@vger.kernel.org
-Cc: linux-mips@linux-mips.org
-Cc: David Rientjes <rientjes@google.com>
--- 
-1.8.1.4
+
+--=-AUaWtOygmYJMXQhvtnEa
+Content-Disposition: attachment; filename="direct-io-init.patch"
+Content-Transfer-Encoding: base64
+Content-Type: text/x-patch; name="direct-io-init.patch"; charset="UTF-8"
+
+Y29tbWl0IGY5NGQwNWNlMTBkODY5YzQxOGQzMjcxYmQwMjhmYzMzYmZkMjVlNmYKQXV0aG9yOiBJ
+YW4gS3VtbGllbiA8aWFuLmt1bWxpZW5AZ21haWwuY29tPgpEYXRlOiAgIFR1ZSBKdWwgMjIgMjA6
+NTc6NTAgMjAxNCArMDIwMAoKICAgIEluaXRpYWxpemUgdGhlIHRvIGFuZCBmcm9tIGZpZWxkcwog
+ICAgCiAgICBXaGlsZSBjb21wbGlsaW5nIHRoZSAzLjE2LXJjNiBrZXJuZWwgSSBzYXcgdGhpczoK
+ICAgIGZzL2RpcmVjdC1pby5jOiBJbiBmdW5jdGlvbiDigJhkb19ibG9ja2Rldl9kaXJlY3RfSU/i
+gJk6CiAgICBmcy9kaXJlY3QtaW8uYzoxMDIyOjI5OiB3YXJuaW5nOiDigJhmcm9t4oCZIG1heSBi
+ZSB1c2VkIHVuaW5pdGlhbGl6ZWQgaW4gdGhpcyBmdW5jdGlvbiBbLVdtYXliZS11bmluaXRpYWxp
+emVkXQogICAgICAgIHJldCA9IHN1Ym1pdF9wYWdlX3NlY3Rpb24oZGlvLCBzZGlvLCBwYWdlLAog
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBeCiAgICBmcy9kaXJlY3QtaW8uYzo5MTM6
+MTA6IG5vdGU6IOKAmGZyb23igJkgd2FzIGRlY2xhcmVkIGhlcmUKICAgICAgIHNpemVfdCBmcm9t
+LCB0bzsKICAgICAgICAgICAgICBeCiAgICBmcy9kaXJlY3QtaW8uYzoxMDExOjEyOiB3YXJuaW5n
+OiDigJh0b+KAmSBtYXkgYmUgdXNlZCB1bmluaXRpYWxpemVkIGluIHRoaXMgZnVuY3Rpb24gWy1X
+bWF5YmUtdW5pbml0aWFsaXplZF0KICAgICAgICB1ID0gKHRvIC0gZnJvbSkgPj4gYmxrYml0czsK
+ICAgICAgICAgICAgICAgIF4KICAgIGZzL2RpcmVjdC1pby5jOjkxMzoxNjogbm90ZTog4oCYdG/i
+gJkgd2FzIGRlY2xhcmVkIGhlcmUKICAgICAgIHNpemVfdCBmcm9tLCB0bzsKICAgICAgICAgICAg
+ICAgICAgICBeCiAgICAtLS0KICAgIAogICAgVGhpcyBzbWFsbCBjaGFuZ2VzIG1ha2VzIHN1cmUg
+dGhhdCB0aGUgdmFsdWVzIGFyZSBpbml0aWFsaXplZC4KICAgIAogICAgU2lnbmVkLW9mZi1ieTog
+SWFuIEt1bWxpZW4gPGlhbi5rdW1saWVuQGdtYWlsLmNvbT4KCmRpZmYgLS1naXQgYS9mcy9kaXJl
+Y3QtaW8uYyBiL2ZzL2RpcmVjdC1pby5jCmluZGV4IDk4MDQwYmEuLjY0YTgyODYgMTAwNjQ0Ci0t
+LSBhL2ZzL2RpcmVjdC1pby5jCisrKyBiL2ZzL2RpcmVjdC1pby5jCkBAIC05MTAsNyArOTEwLDcg
+QEAgc3RhdGljIGludCBkb19kaXJlY3RfSU8oc3RydWN0IGRpbyAqZGlvLCBzdHJ1Y3QgZGlvX3N1
+Ym1pdCAqc2RpbywKIAogICAgICAgIHdoaWxlIChzZGlvLT5ibG9ja19pbl9maWxlIDwgc2Rpby0+
+ZmluYWxfYmxvY2tfaW5fcmVxdWVzdCkgewogICAgICAgICAgICAgICAgc3RydWN0IHBhZ2UgKnBh
+Z2U7Ci0gICAgICAgICAgICAgICBzaXplX3QgZnJvbSwgdG87CisgICAgICAgICAgICAgICBzaXpl
+X3QgZnJvbSwgdG8gPSB7MH07CiAgICAgICAgICAgICAgICBwYWdlID0gZGlvX2dldF9wYWdlKGRp
+bywgc2RpbywgJmZyb20sICZ0byk7CiAgICAgICAgICAgICAgICBpZiAoSVNfRVJSKHBhZ2UpKSB7
+CiAgICAgICAgICAgICAgICAgICAgICAgIHJldCA9IFBUUl9FUlIocGFnZSk7Cg==
+
+
+--=-AUaWtOygmYJMXQhvtnEa--
 
