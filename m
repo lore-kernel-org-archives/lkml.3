@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755435AbaGVLOJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 07:14:09 -0400
-Received: from mail-ie0-f178.google.com ([209.85.223.178]:48738 "EHLO
-	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755136AbaGVLL5 (ORCPT
+	id S1755438AbaGVLOa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 07:14:30 -0400
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:61423 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755029AbaGVLLy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 07:11:57 -0400
+	Tue, 22 Jul 2014 07:11:54 -0400
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Cc: sameo@linux.intel.com, Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 11/19] mfd: twl4030-irq: Fix style warnings relating to pr_warn() and sizeof()
-Date: Tue, 22 Jul 2014 12:11:17 +0100
-Message-Id: <1406027485-15657-12-git-send-email-lee.jones@linaro.org>
+Subject: [PATCH 09/19] mfd: ezx-pcap: Repair coding style errors picked up with checkpatch
+Date: Tue, 22 Jul 2014 12:11:15 +0100
+Message-Id: <1406027485-15657-10-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1406027485-15657-1-git-send-email-lee.jones@linaro.org>
 References: <1406027485-15657-1-git-send-email-lee.jones@linaro.org>
@@ -22,51 +22,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 This is part of an effort to clean-up the MFD subsystem.
 
-WARNING: Prefer pr_warn(... to pr_warning(...
-+               pr_warning("twl4030: I2C error %d reading PIH ISR\n", ret);
+WARNING: Missing a blank line after declarations
++       u32 flags;
++       void (*callback)(void *, u16[]);
 
-WARNING: sizeof buf should be sizeof(buf)
-+       memset(buf, 0xff, sizeof buf);
+WARNING: sizeof t should be sizeof(t)
++       memset(&t, 0, sizeof t);
 
-WARNING: sizeof *agent should be sizeof(*agent)
-+       agent = kzalloc(sizeof *agent, GFP_KERNEL);
+WARNING: void function return statements are not generally useful
++       return;
++}
+
+total: 0 errors, 3 warnings, 542 lines checked
 
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- drivers/mfd/twl4030-irq.c | 6 +++---
+ drivers/mfd/ezx-pcap.c | 6 +++---
  1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/mfd/twl4030-irq.c b/drivers/mfd/twl4030-irq.c
-index 596b1f6..b1dabba 100644
---- a/drivers/mfd/twl4030-irq.c
-+++ b/drivers/mfd/twl4030-irq.c
-@@ -297,7 +297,7 @@ static irqreturn_t handle_twl4030_pih(int irq, void *devid)
- 	ret = twl_i2c_read_u8(TWL_MODULE_PIH, &pih_isr,
- 			      REG_PIH_ISR_P1);
- 	if (ret) {
--		pr_warning("twl4030: I2C error %d reading PIH ISR\n", ret);
-+		pr_warn("twl4030: I2C error %d reading PIH ISR\n", ret);
- 		return IRQ_NONE;
- 	}
+diff --git a/drivers/mfd/ezx-pcap.c b/drivers/mfd/ezx-pcap.c
+index 2ed774e..5a9a35e 100644
+--- a/drivers/mfd/ezx-pcap.c
++++ b/drivers/mfd/ezx-pcap.c
+@@ -25,8 +25,9 @@ struct pcap_adc_request {
+ 	u8 bank;
+ 	u8 ch[2];
+ 	u32 flags;
+-	void (*callback)(void *, u16[]);
+ 	void *data;
++
++	void (*callback)(void *, u16[]);
+ };
  
-@@ -338,7 +338,7 @@ static int twl4030_init_sih_modules(unsigned line)
- 	irq_line = line;
+ struct pcap_adc_sync_request {
+@@ -62,7 +63,7 @@ static int ezx_pcap_putget(struct pcap_chip *pcap, u32 *data)
+ 	struct spi_message m;
+ 	int status;
  
- 	/* disable all interrupts on our line */
--	memset(buf, 0xff, sizeof buf);
-+	memset(buf, 0xff, sizeof(buf));
- 	sih = sih_modules;
- 	for (i = 0; i < nr_sih_modules; i++, sih++) {
- 		/* skip USB -- it's funky */
-@@ -646,7 +646,7 @@ int twl4030_sih_setup(struct device *dev, int module, int irq_base)
- 	if (status < 0)
- 		return status;
+-	memset(&t, 0, sizeof t);
++	memset(&t, 0, sizeof(t));
+ 	spi_message_init(&m);
+ 	t.len = sizeof(u32);
+ 	spi_message_add_tail(&t, &m);
+@@ -211,7 +212,6 @@ static void pcap_irq_handler(unsigned int irq, struct irq_desc *desc)
  
--	agent = kzalloc(sizeof *agent, GFP_KERNEL);
-+	agent = kzalloc(sizeof(*agent), GFP_KERNEL);
- 	if (!agent)
- 		return -ENOMEM;
+ 	desc->irq_data.chip->irq_ack(&desc->irq_data);
+ 	queue_work(pcap->workqueue, &pcap->isr_work);
+-	return;
+ }
  
+ /* ADC */
 -- 
 1.8.3.2
 
