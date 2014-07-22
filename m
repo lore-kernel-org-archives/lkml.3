@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756114AbaGVPib (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 11:38:31 -0400
-Received: from smtprelay04.ispgateway.de ([80.67.31.38]:47840 "EHLO
-	smtprelay04.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756017AbaGVPhV (ORCPT
+	id S1756149AbaGVPid (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 11:38:33 -0400
+Received: from smtprelay05.ispgateway.de ([80.67.31.94]:41337 "EHLO
+	smtprelay05.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752846AbaGVPhV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 22 Jul 2014 11:37:21 -0400
 From: Peter Feuerer <peter@piie.net>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Peter Feuerer <peter@piie.net>, Andrew Morton <akpm@linux-foundation.org>,
-        Andreas Mohr <andi@lisas.de>
-Subject: [PATCH v5 2/6] acerhdf: Adding support for new models
-Date: Tue, 22 Jul 2014 17:37:12 +0200
-Message-Id: <1406043436-17068-3-git-send-email-peter@piie.net>
+        Zhang Rui <rui.zhang@intel.com>, Andreas Mohr <andi@lisas.de>,
+        Javi Merino <javi.merino@arm.com>
+Subject: [PATCH v5 4/6] acerhdf: Use bang-bang thermal governor
+Date: Tue, 22 Jul 2014 17:37:14 +0200
+Message-Id: <1406043436-17068-5-git-send-email-peter@piie.net>
 X-Mailer: git-send-email 2.0.2
 In-Reply-To: <1406043436-17068-1-git-send-email-peter@piie.net>
 References: <1398561815-22033-1-git-send-email-peter@piie.net>
@@ -23,95 +24,122 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-added following new models:
-   * Aspire 5755G
-   * AO521
-   * AO751h
-   * Aspire One 753
-   * Extensa 5420
-   * Aspire 5315
-   * Aspire 5739G
-   * TravelMate TM8573T
+acerhdf has been doing an on-off fan control using hysteresis by
+post-manipulating the outcome of thermal subsystem trip point handling.
+This patch enables acerhdf to use the bang-bang governor, which is
+intended for on-off controlled fans.
 
 Cc: Andrew Morton <akpm@linux-foundation.org>
+CC: Zhang Rui <rui.zhang@intel.com>
 Cc: Andreas Mohr <andi@lisas.de>
-Acked-by: Borislav Petkov <bp@suse.de>
+Cc: Javi Merino <javi.merino@arm.com>
+Acked-and-tested-by: Borislav Petkov <bp@suse.de>
 Signed-off-by: Peter Feuerer <peter@piie.net>
 ---
- drivers/platform/x86/acerhdf.c | 25 ++++++++++++++++++++++++-
- 1 file changed, 24 insertions(+), 1 deletion(-)
+ drivers/platform/x86/Kconfig   |  3 ++-
+ drivers/platform/x86/acerhdf.c | 36 +++++++++++++++++++++++++++++++-----
+ 2 files changed, 33 insertions(+), 6 deletions(-)
 
+diff --git a/drivers/platform/x86/Kconfig b/drivers/platform/x86/Kconfig
+index 172f26c..b5e80dc 100644
+--- a/drivers/platform/x86/Kconfig
++++ b/drivers/platform/x86/Kconfig
+@@ -38,7 +38,8 @@ config ACER_WMI
+ 
+ config ACERHDF
+ 	tristate "Acer Aspire One temperature and fan driver"
+-	depends on THERMAL && ACPI
++	select THERMAL_GOV_BANG_BANG
++	depends on ACPI
+ 	---help---
+ 	  This is a driver for Acer Aspire One netbooks. It allows to access
+ 	  the temperature sensor and to control the fan.
 diff --git a/drivers/platform/x86/acerhdf.c b/drivers/platform/x86/acerhdf.c
-index 2c58f10..f30767f 100644
+index f30767f..7fe7dbf 100644
 --- a/drivers/platform/x86/acerhdf.c
 +++ b/drivers/platform/x86/acerhdf.c
 @@ -50,7 +50,7 @@
   */
  #undef START_IN_KERNEL_MODE
  
--#define DRV_VER "0.5.29"
-+#define DRV_VER "0.5.30"
+-#define DRV_VER "0.5.30"
++#define DRV_VER "0.7.0"
  
  /*
   * According to the Atom N270 datasheet,
-@@ -199,17 +199,33 @@ static const struct bios_settings_t bios_tbl[] = {
- 	{"Acer", "Aspire 1810T",  "v1.3310", 0x55, 0x58, {0x9e, 0x00}, 0},
- 	{"Acer", "Aspire 1810TZ", "v1.3314", 0x55, 0x58, {0x9e, 0x00}, 0},
- 	{"Acer", "Aspire 1810T",  "v1.3314", 0x55, 0x58, {0x9e, 0x00}, 0},
-+	/* Acer 5755G */
-+	{"Acer", "Aspire 5755G",  "V1.20",   0xab, 0xb4, {0x00, 0x08}, 0},
-+	{"Acer", "Aspire 5755G",  "V1.21",   0xab, 0xb3, {0x00, 0x08}, 0},
-+	/* Acer 521 */
-+	{"Acer", "AO521", "V1.11", 0x55, 0x58, {0x1f, 0x00}, 0},
- 	/* Acer 531 */
- 	{"Acer", "AO531h", "v0.3104", 0x55, 0x58, {0x20, 0x00}, 0},
- 	{"Acer", "AO531h", "v0.3201", 0x55, 0x58, {0x20, 0x00}, 0},
- 	{"Acer", "AO531h", "v0.3304", 0x55, 0x58, {0x20, 0x00}, 0},
- 	/* Acer 751 */
-+	{"Acer", "AO751h", "V0.3206", 0x55, 0x58, {0x21, 0x00}, 0},
- 	{"Acer", "AO751h", "V0.3212", 0x55, 0x58, {0x21, 0x00}, 0},
-+	/* Acer 753 */
-+	{"Acer", "Aspire One 753", "V1.24", 0x93, 0xac, {0x14, 0x04}, 1},
- 	/* Acer 1825 */
- 	{"Acer", "Aspire 1825PTZ", "V1.3118", 0x55, 0x58, {0x9e, 0x00}, 0},
- 	{"Acer", "Aspire 1825PTZ", "V1.3127", 0x55, 0x58, {0x9e, 0x00}, 0},
-+	/* Acer Extensa 5420 */
-+	{"Acer", "Extensa 5420", "V1.17", 0x93, 0xac, {0x14, 0x04}, 1},
-+	/* Acer Aspire 5315 */
-+	{"Acer", "Aspire 5315", "V1.19", 0x93, 0xac, {0x14, 0x04}, 1},
-+	/* Acer Aspire 5739 */
-+	{"Acer", "Aspire 5739G", "V1.3311", 0x55, 0x58, {0x20, 0x00}, 0},
- 	/* Acer TravelMate 7730 */
- 	{"Acer", "TravelMate 7730G", "v0.3509", 0x55, 0x58, {0xaf, 0x00}, 0},
-+	/* Acer TravelMate TM8573T */
-+	{"Acer", "TM8573T", "V1.13", 0x93, 0xa8, {0x14, 0x04}, 1},
- 	/* Gateway */
- 	{"Gateway", "AOA110", "v0.3103",  0x55, 0x58, {0x21, 0x00}, 0},
- 	{"Gateway", "AOA150", "v0.3103",  0x55, 0x58, {0x20, 0x00}, 0},
-@@ -741,9 +757,15 @@ MODULE_ALIAS("dmi:*:*Acer*:pnAOA*:");
- MODULE_ALIAS("dmi:*:*Acer*:pnAO751h*:");
- MODULE_ALIAS("dmi:*:*Acer*:pnAspire*1410*:");
- MODULE_ALIAS("dmi:*:*Acer*:pnAspire*1810*:");
-+MODULE_ALIAS("dmi:*:*Acer*:pnAspire*5755G:");
- MODULE_ALIAS("dmi:*:*Acer*:pnAspire*1825PTZ:");
-+MODULE_ALIAS("dmi:*:*Acer*:pnAO521*:");
- MODULE_ALIAS("dmi:*:*Acer*:pnAO531*:");
-+MODULE_ALIAS("dmi:*:*Acer*:pnAspire*5739G:");
-+MODULE_ALIAS("dmi:*:*Acer*:pnAspire*One*753:");
-+MODULE_ALIAS("dmi:*:*Acer*:pnAspire*5315:");
- MODULE_ALIAS("dmi:*:*Acer*:TravelMate*7730G:");
-+MODULE_ALIAS("dmi:*:*Acer*:TM8573T:");
- MODULE_ALIAS("dmi:*:*Gateway*:pnAOA*:");
- MODULE_ALIAS("dmi:*:*Gateway*:pnLT31*:");
- MODULE_ALIAS("dmi:*:*Packard*Bell*:pnAOA*:");
-@@ -752,6 +774,7 @@ MODULE_ALIAS("dmi:*:*Packard*Bell*:pnDOTMU*:");
- MODULE_ALIAS("dmi:*:*Packard*Bell*:pnENBFT*:");
- MODULE_ALIAS("dmi:*:*Packard*Bell*:pnDOTMA*:");
- MODULE_ALIAS("dmi:*:*Packard*Bell*:pnDOTVR46*:");
-+MODULE_ALIAS("dmi:*:*Acer*:pnExtensa 5420*:");
+@@ -258,6 +258,14 @@ static const struct bios_settings_t bios_tbl[] = {
  
- module_init(acerhdf_init);
- module_exit(acerhdf_exit);
+ static const struct bios_settings_t *bios_cfg __read_mostly;
+ 
++/*
++ * this struct is used to instruct thermal layer to use bang_bang instead of
++ * default governor for acerhdf
++ */
++static struct thermal_zone_params acerhdf_zone_params = {
++	.governor_name = "bang_bang",
++};
++
+ static int acerhdf_get_temp(int *temp)
+ {
+ 	u8 read_temp;
+@@ -439,6 +447,17 @@ static int acerhdf_get_trip_type(struct thermal_zone_device *thermal, int trip,
+ 	return 0;
+ }
+ 
++static int acerhdf_get_trip_hyst(struct thermal_zone_device *thermal, int trip,
++				 unsigned long *temp)
++{
++	if (trip != 0)
++		return -EINVAL;
++
++	*temp = fanon - fanoff;
++
++	return 0;
++}
++
+ static int acerhdf_get_trip_temp(struct thermal_zone_device *thermal, int trip,
+ 				 unsigned long *temp)
+ {
+@@ -463,6 +482,7 @@ static struct thermal_zone_device_ops acerhdf_dev_ops = {
+ 	.get_mode = acerhdf_get_mode,
+ 	.set_mode = acerhdf_set_mode,
+ 	.get_trip_type = acerhdf_get_trip_type,
++	.get_trip_hyst = acerhdf_get_trip_hyst,
+ 	.get_trip_temp = acerhdf_get_trip_temp,
+ 	.get_crit_temp = acerhdf_get_crit_temp,
+ };
+@@ -515,9 +535,7 @@ static int acerhdf_set_cur_state(struct thermal_cooling_device *cdev,
+ 	}
+ 
+ 	if (state == 0) {
+-		/* turn fan off only if below fanoff temperature */
+-		if ((cur_state == ACERHDF_FAN_AUTO) &&
+-		    (cur_temp < fanoff))
++		if (cur_state == ACERHDF_FAN_AUTO)
+ 			acerhdf_change_fanstate(ACERHDF_FAN_OFF);
+ 	} else {
+ 		if (cur_state == ACERHDF_FAN_OFF)
+@@ -696,11 +714,19 @@ static int acerhdf_register_thermal(void)
+ 		return -EINVAL;
+ 
+ 	thz_dev = thermal_zone_device_register("acerhdf", 1, 0, NULL,
+-					      &acerhdf_dev_ops, NULL, 0,
++					      &acerhdf_dev_ops,
++					      &acerhdf_zone_params, 0,
+ 					      (kernelmode) ? interval*1000 : 0);
+ 	if (IS_ERR(thz_dev))
+ 		return -EINVAL;
+ 
++	if (strcmp(thz_dev->governor->name,
++				acerhdf_zone_params.governor_name)) {
++		pr_err("Didn't get thermal governor %s, perhaps not compiled into thermal subsystem.\n",
++				acerhdf_zone_params.governor_name);
++		return -EINVAL;
++	}
++
+ 	return 0;
+ }
+ 
 -- 
 2.0.2
 
