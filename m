@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754209AbaGVK5S (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 06:57:18 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:56754 "EHLO arroyo.ext.ti.com"
+	id S1755410AbaGVLDx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 07:03:53 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:56760 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753064AbaGVK5N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 06:57:13 -0400
+	id S1754175AbaGVK5R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 06:57:17 -0400
 From: Kishon Vijay Abraham I <kishon@ti.com>
 To: <gregkh@linuxfoundation.org>
 CC: <kishon@ti.com>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH 02/28] phy: exynos-dp-video: Use PTR_ERR_OR_ZERO
-Date: Tue, 22 Jul 2014 16:26:25 +0530
-Message-ID: <1406026611-30493-3-git-send-email-kishon@ti.com>
+Subject: [PATCH 05/28] phy: exynos5-usbdrd: Make local functions static
+Date: Tue, 22 Jul 2014 16:26:28 +0530
+Message-ID: <1406026611-30493-6-git-send-email-kishon@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1406026611-30493-1-git-send-email-kishon@ti.com>
 References: <1406026611-30493-1-git-send-email-kishon@ti.com>
@@ -21,42 +21,46 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sachin Kamat <sachin.kamat@linaro.org>
+From: Jingoo Han <jg1.han@samsung.com>
 
-PTR_ERR_OR_ZERO simplifies the code.
+Make local functions static, because these are used only in this
+file.
 
-Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
-Cc: Jingoo Han <jg1.han@samsung.com>
-Acked-by: Hans de Goede <hdegoede@redhat.com>
+Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
 ---
- drivers/phy/phy-exynos-dp-video.c |    5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+ drivers/phy/phy-exynos5-usbdrd.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/phy/phy-exynos-dp-video.c b/drivers/phy/phy-exynos-dp-video.c
-index 0786fef..098f822 100644
---- a/drivers/phy/phy-exynos-dp-video.c
-+++ b/drivers/phy/phy-exynos-dp-video.c
-@@ -9,6 +9,7 @@
-  * published by the Free Software Foundation.
-  */
+diff --git a/drivers/phy/phy-exynos5-usbdrd.c b/drivers/phy/phy-exynos5-usbdrd.c
+index 76d862b..205159d 100644
+--- a/drivers/phy/phy-exynos5-usbdrd.c
++++ b/drivers/phy/phy-exynos5-usbdrd.c
+@@ -506,7 +506,7 @@ static struct phy_ops exynos5_usbdrd_phy_ops = {
+ 	.owner		= THIS_MODULE,
+ };
  
-+#include <linux/err.h>
- #include <linux/io.h>
- #include <linux/kernel.h>
- #include <linux/module.h>
-@@ -84,10 +85,8 @@ static int exynos_dp_video_phy_probe(struct platform_device *pdev)
- 	phy_set_drvdata(phy, state);
+-const struct exynos5_usbdrd_phy_config phy_cfg_exynos5[] = {
++static const struct exynos5_usbdrd_phy_config phy_cfg_exynos5[] = {
+ 	{
+ 		.id		= EXYNOS5_DRDPHY_UTMI,
+ 		.phy_isol	= exynos5_usbdrd_phy_isol,
+@@ -521,13 +521,13 @@ const struct exynos5_usbdrd_phy_config phy_cfg_exynos5[] = {
+ 	},
+ };
  
- 	phy_provider = devm_of_phy_provider_register(dev, of_phy_simple_xlate);
--	if (IS_ERR(phy_provider))
--		return PTR_ERR(phy_provider);
+-const struct exynos5_usbdrd_phy_drvdata exynos5420_usbdrd_phy = {
++static const struct exynos5_usbdrd_phy_drvdata exynos5420_usbdrd_phy = {
+ 	.phy_cfg		= phy_cfg_exynos5,
+ 	.pmu_offset_usbdrd0_phy	= EXYNOS5_USBDRD_PHY_CONTROL,
+ 	.pmu_offset_usbdrd1_phy	= EXYNOS5420_USBDRD1_PHY_CONTROL,
+ };
  
--	return 0;
-+	return PTR_ERR_OR_ZERO(phy_provider);
- }
- 
- static const struct of_device_id exynos_dp_video_phy_of_match[] = {
+-const struct exynos5_usbdrd_phy_drvdata exynos5250_usbdrd_phy = {
++static const struct exynos5_usbdrd_phy_drvdata exynos5250_usbdrd_phy = {
+ 	.phy_cfg		= phy_cfg_exynos5,
+ 	.pmu_offset_usbdrd0_phy	= EXYNOS5_USBDRD_PHY_CONTROL,
+ };
 -- 
 1.7.9.5
 
