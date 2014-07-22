@@ -1,98 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751425AbaGVALZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 20:11:25 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:48585 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750790AbaGVALY (ORCPT
+	id S1751475AbaGVAO5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 20:14:57 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:36043 "EHLO
+	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750831AbaGVAOz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 20:11:24 -0400
-Date: Tue, 22 Jul 2014 01:10:53 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Cc: Lee Jones <lee.jones@linaro.org>, Mike Turquette <mturquette@linaro.org>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
-        Tomeu Vizoso <tomeu.vizoso@collabora.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Yadwinder Singh Brar <yadi.brar01@gmail.com>,
-        Tushar Behera <trblinux@gmail.com>, Andreas Farber <afaerber@suse.de>,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
-Message-ID: <20140722001053.GO17528@sirena.org.uk>
-References: <1405337769-3741-1-git-send-email-javier.martinez@collabora.co.uk>
- <53CD0B17.5040706@collabora.co.uk>
+	Mon, 21 Jul 2014 20:14:55 -0400
+X-Original-SENDERIP: 10.177.222.156
+X-Original-MAILFROM: minchan@kernel.org
+Date: Tue, 22 Jul 2014 09:15:45 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: Gioh Kim <gioh.kim@lge.com>, Andrew Morton <akpm@linux-foundation.org>,
+        "'?????????'" <iamjoonsoo.kim@lge.com>,
+        Laura Abbott <lauraa@codeaurora.org>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, ????????? <gunho.lee@lge.com>,
+        "'Chanho Min'" <chanho.min@lge.com>, linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH] CMA/HOTPLUG: clear buffer-head lru before page migration
+Message-ID: <20140722001545.GC15912@bbox>
+References: <53C8C290.90503@lge.com>
+ <20140721025047.GA7707@bbox>
+ <53CCB02A.7070301@lge.com>
+ <20140721073651.GA15912@bbox>
+ <20140721130146.GO10544@csn.ul.ie>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="vt4ed5MNefdcgji4"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <53CD0B17.5040706@collabora.co.uk>
-X-Cookie: 98% lean.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v8 00/13] Add Maxim 77802 PMIC support
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+In-Reply-To: <20140721130146.GO10544@csn.ul.ie>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello Mel,
 
---vt4ed5MNefdcgji4
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+On Mon, Jul 21, 2014 at 02:01:46PM +0100, Mel Gorman wrote:
+> On Mon, Jul 21, 2014 at 04:36:51PM +0900, Minchan Kim wrote:
+> 
+> I'm not reviewing this in detail at all, didn't even look at the patch
+> but two things popped out at me during the discussion.
+> 
+> > > >Anyway, why cannot CMA have the cost without affecting other subsystem?
+> > > >I mean it's okay for CMA to consume more time to shoot out the bh
+> > > >instead of simple all bh_lru invalidation because big order allocation is
+> > > >kinds of slow thing in the VM and everybody already know that and even
+> > > >sometime get failed so it's okay to add more code that extremly slow path.
+> > > 
+> > > There are 2 reasons to invalidate entire bh_lru.
+> > > 
+> > > 1. I think CMA allocation is very rare so that invalidaing bh_lru affects the system little.
+> > > How do you think about it? My platform does not call CMA allocation often.
+> > > Is the CMA allocation or Memory-Hotplug called often?
+> > 
+> > It depends on usecase and you couldn't assume anyting because we couldn't
+> > ask every people in the world. "Please ask to us whenever you try to use CMA".
+> > 
+> > The key point is how the patch is maintainable.
+> > If it's too complicate to maintain, maybe we could go with simple solution
+> > but if it's not too complicate, we can go with more smart thing to consider
+> > other cases in future. Why not?
+> > 
+> > Another point is that how user can detect where the regression is from.
+> > If we cannot notice the regression, it's not a good idea to go with simple
+> > version.
+> > 
+> 
+> The buffer LRU avoids a lookup of a radix tree. If the LRU hit rate is
+> low then the performance penalty of repeated radix tree lookups is
+> severe but the cost of missing one hot lookup because CMA invalidate it
+> is not.
+> 
+> The real cost to be concerned with is the cost of performing the
+> invalidation not the fact a lookup in the LRU was missed. It's because
+> the cost of invalidation is high that this is being pushed to CMA because
+> for CMA an allocation failure can be a functional failure and not just a
+> performance problem.
+> 
+> > > 
+> > > 2. Adding code in drop_buffers() can affect the system more that adding code in alloc_contig_range()
+> > > because the drop_buffers does not have a way to distinguish migrate type.
+> > > Even-though the lmbech results that it has almost the same performance.
+> > > But I am afraid that it can be changed.
+> > > As you said if bh_lru size can be changed it affects more than now.
+> > > SO I do not want to touch non-CMA related code.
+> > 
+> > I'm not saying to add hook in drop_buffers.
+> > What I suggest is to handle failure by bh_lrus in migrate_pages
+> > because it's not a problem only in CMA.
+> 
+> No, please do not insert a global IPI to invalidate buffer heads in the
+> general migration case. It's too expensive for either THP allocations or
+> automatic NUMA migrates. The global IPI cost is justified for rare events
+> where it causes functional problems if it fails to migreate -- CMA, memory
+> hot-remove, memory poisoning etc.
 
-On Mon, Jul 21, 2014 at 02:44:07PM +0200, Javier Martinez Canillas wrote:
-> On 07/14/2014 01:35 PM, Javier Martinez Canillas wrote:
+I didn't want to add that flushing in migrate_pages *unconditionlly*.
+Please, look at this patch. It fixes only CMA although it's an issue
+for others. Even, it depends on retry logic of upper layer of
+alloc_contig_range but even cma_alloc(ie, upper layer of alloc_contig_range)
+doesn't have retry logic. :(
+That's why I suggested it in migrate_pages.
 
-> Mark, Mike and Alessandro,
+Actually, I'd like to go with making migrate_pages's user blind on pcp
+draining stuff by squeezing that inside migrate_pages.
+IOW, current users of migrate pages don't need to be aware of per-cpu
+draining. What they should know is just they should use MIGRATE_SYNC
+for best effort but costly opeartion.
 
-> This is a gentle reminder to look at the patches that touches your subsystems
-> and provide acks if possible so Lee can merge the remainder set through the mfd
-> tree.
+For implemenation, we could use retry logic in migrate_pages.
 
-Please stop nagging, you are chasing after only one week which is
-excessive for something that isn't an urgent bugfix (especially
-with a series like this that has had many rapid repins).  Several weeks
-to a month would be more appropriate, and then resending the patches
-rather than sending contentless pings is more useful.  Sending mails
-like this just means that people have more mail to read that isn't your
-patch, it is more likely to get you negative attention than positive -
-for example, I will tend to deprioritise things where I'm being chased
-too urgently as I do not wish to encourage such behaviour by being seen
-to reward it.
+int migrate_pages(xxx)
+{
+        for (pass = 0; pass < 10 && retry; pass++)
+                if (retry && pass > 2 && mode == MIGRATE_SYNC)
+                        flush_all_of_percpu_stuff();
+}
 
-In general I would recommend taking a step back, slowing down, and if
-you are not getting a response either thinking of something else to do
-in parallel or trying to do things that make it easier to accept your
-change if there are any (sometimes it's just a case of waiting).  Look
-at how frequently the relevant maintainers tend to respond, at what the
-previous review comments have been and also consider the possibility
-that people might take holidays or just be busy.
+migrate_page has migrate_mode and retry logic with 'pass', even
+reason if we want ot filter out MR_CMA|MEMORY_HOTPLUG|MR_MEMORY_FAILURE.
+so that we could handle all of things inside migrate_pages.
 
---vt4ed5MNefdcgji4
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Normally, MIGRATE_SYNC would be expensive operation and mostly
+it is used for CMA, memory-hotplug, memory-poisoning so THP and
+automatic NUMA cannot affect so I believe adding IPI to that is not
+a big problem in such trouble condition(ie, retry && pass > 2).
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+> 
+> -- 
+> Mel Gorman
+> SUSE Labs
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
-iQIcBAEBAgAGBQJTzawKAAoJELSic+t+oim9G4QQAIEBPBa74YKG1g3X0myqrKQu
-y/Y1m4hQ5O4r2iRxtbr9VdRdOKe8K52beu9t8KROR1P4hVDTLfOduvhR/nd8a7iT
-b9L3bqmGVNDiJnijGp5CMtM90zpaWSSK+9/JAbyIPVh2JKlgkGHXCzA/I0Sgtmo9
-ENf5JtbR/pvBIKqFfd1ObouZPQ3fo1rbR3KZD24D4VZdfzGwnm/riSBEasYCM3CW
-b808Kr+9cpiD8j0TnHn4zxTdAaDLYfUmTalmHfJAKNzS0TmmBMMquiSxUBd+ln4Q
-F0fK+UYnja1DcW/gQCIBw8tXTHCl2duxT/LBl8QWIkH0qpolR8tiHB5f7Ontc7b7
-hBuTiB1Ut5EEC6BTInzZy77JXb7Ip9MI8EHfq/eqn1y0UyAC0/1cxAC8VBEVcdja
-Ry38e5piTjaZutl+1lvvM8+gxasfMCGpjsN+3KEQnHyjDDubRMsfWLrl89SMqBps
-kX/21gdhJ9FJ2jmqheoNLQeE/IpO41dpH6xG+HRBPBCoPxOg6PCNfrCCr2JeZZX+
-cWBmO+iPmlSK0eemfdNcQKm7mVEOBTkL/JbPY3oTYoFzHxoGshWr5sh88GhRmGvw
-F0Z86mJIuB8Vfv6QGX9Yt87VDYrDXbj2m8QIoZRgPqN1mf67AD+WjSYoevuULQCG
-5xYUg6PmrlMU21jsfko/
-=ReWP
------END PGP SIGNATURE-----
-
---vt4ed5MNefdcgji4--
+-- 
+Kind regards,
+Minchan Kim
