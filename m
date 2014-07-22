@@ -1,69 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756035AbaGVQ3b (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 12:29:31 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:35907 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752896AbaGVQ3a (ORCPT
+	id S1756046AbaGVQ34 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 12:29:56 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:59455 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754337AbaGVQ3y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 12:29:30 -0400
-Message-ID: <1406046564.25343.74.camel@hornet>
-Subject: Re: [PATCH v2] bus: ARM CCN PMU driver
-From: Pawel Moll <pawel.moll@arm.com>
-To: Olof Johansson <olof@lixom.net>
-Cc: Mark Rutland <Mark.Rutland@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Arnd Bergmann <arnd@arndb.de>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Stephane Eranian <eranian@google.com>,
-        "arm@kernel.org" <arm@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Kumar Gala <galak@codeaurora.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Jiri Olsa <jolsa@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Date: Tue, 22 Jul 2014 17:29:24 +0100
-In-Reply-To: <CAOesGMijrD6SxAyjvQptmAB8swqcvXNkiVS_nRCtUVtX2vYUFQ@mail.gmail.com>
-References: <1405091188-31754-1-git-send-email-pawel.moll@arm.com>
-	 <1406023886.25343.48.camel@hornet>
-	 <CAOesGMijrD6SxAyjvQptmAB8swqcvXNkiVS_nRCtUVtX2vYUFQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 22 Jul 2014 12:29:54 -0400
+Date: Tue, 22 Jul 2014 18:29:40 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Pawel Moll <pawel.moll@arm.com>
+Cc: John Stultz <john.stultz@linaro.org>, Steven Rostedt <rostedt@goodmis.org>,
+        Ingo Molnar <mingo@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, Andy Lutomirski <luto@amacapital.net>,
+        Stephen Boyd <sboyd@codeaurora.org>, Baruch Siach <baruch@tkos.co.il>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC] sched_clock: Track monotonic raw clock
+Message-ID: <20140722162940.GH3935@laptop>
+References: <1405705419-4194-1-git-send-email-pawel.moll@arm.com>
+ <20140718191338.GF3935@laptop>
+ <CALAqxLX4ia_dBO-oNY1XMnSrJdDZc87EneHj9WcxtOZaupZaCg@mail.gmail.com>
+ <20140718193417.GG3935@laptop>
+ <53C97995.2090500@linaro.org>
+ <20140718202250.GR9918@twins.programming.kicks-ass.net>
+ <20140718224100.GV3588@twins.programming.kicks-ass.net>
+ <1406045843.25343.71.camel@hornet>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1406045843.25343.71.camel@hornet>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-07-22 at 09:08 -0700, Olof Johansson wrote:
-> On Tue, Jul 22, 2014 at 3:11 AM, Pawel Moll <pawel.moll@arm.com> wrote:
-> > Hi Arnd, Kevin, Olof,
-> >
-> > On Fri, 2014-07-11 at 16:06 +0100, Pawel Moll wrote:
-> >> Driver providing perf backend for ARM Cache Coherent Network
-> >> interconnect. Supports counting all hardware events and crosspoint
-> >> watchpoints.
-> >>
-> >> Currently works with CCN-504 only, although there should be
-> >> no changes required for CCN-508 (just impossible to test it now).
-> >>
-> >> Signed-off-by: Pawel Moll <pawel.moll@arm.com>
-> >
-> > Would you consider taking this through arm-soc tree? There isn't
-> > anything in MAINTAINERS, but I vaguely remember Arnd proposing this
-> > directory in the first place...
+On Tue, Jul 22, 2014 at 05:17:23PM +0100, Pawel Moll wrote:
+> > Now, I already mentioned max error bounds, and I've not yet looked at
+> > your actual control loop, but that is something to keep in mind, we want
+> > something that's limited.
 > 
-> Yeah, drivers/bus lacks an owner and we've normally been the ones
-> merging them. Please send a fresh version of the patch over.
+> Indeed. Richard has already expressed concerns that my coefficients
+> won't work everywhere (as in with different clock rate ratios) and he's
+> most likely right. My money is on a more advanced, "self-tuning"
+> solution, where we definitely need an escape condition.
 
-I've just rebased in on top of v3.16-rc6 and there's no change
-whatsoever (which is a good thing, I guess), so I can send v3, but the
-"changes since v2" will say "nothing" :-)
+I was wanting to look up software PLLs, as I seem to remember that's
+what NTP and PTP use, but Richard should know I think.
 
-Thanks!
-
-Pawel
-
+Its not really a subject I've looked at before.
