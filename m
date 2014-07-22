@@ -1,64 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756800AbaGVTcO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 15:32:14 -0400
-Received: from mail-we0-f169.google.com ([74.125.82.169]:48810 "EHLO
-	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756681AbaGVTav (ORCPT
+	id S1756808AbaGVTeD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 15:34:03 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:43891 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756555AbaGVTeA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 15:30:51 -0400
-From: Marek Belisko <marek@goldelico.com>
-To: bcousson@baylibre.com, tony@atomide.com
-Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        linux@arm.linux.org.uk, linux-omap@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, hns@goldelico.com,
-        Marek Belisko <marek@goldelico.com>
-Subject: [PATCH v2 3/7] arm: dts: omap3-gta04: Add wifi reset node
-Date: Tue, 22 Jul 2014 21:30:16 +0200
-Message-Id: <1406057420-22269-4-git-send-email-marek@goldelico.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1406057420-22269-1-git-send-email-marek@goldelico.com>
-References: <1406057420-22269-1-git-send-email-marek@goldelico.com>
+	Tue, 22 Jul 2014 15:34:00 -0400
+Date: Tue, 22 Jul 2014 15:33:50 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Nick Krause <xerofoify@gmail.com>
+Cc: Levente Kurusa <lkurusa@redhat.com>, Tony Luck <tony.luck@gmail.com>,
+        =?iso-8859-1?Q?Bj=F8rn?= Mork <bjorn@mork.no>,
+        Doug Thompson <dougthompson@xmission.com>,
+        Borislav Petkov <bp@alien8.de>,
+        "m.chehab@samsung.com" <m.chehab@samsung.com>,
+        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] edac: Remove fixmes in e7xxx_edac.c
+Message-ID: <20140722193350.GA486@home.goodmis.org>
+References: <1406004789-9918-1-git-send-email-xerofoify@gmail.com>
+ <874my98p6u.fsf@nemi.mork.no>
+ <CA+8MBb+fnCNeQtyEqttxbkWx-4N+GUaKCUoCSdn5X9+bDDvTOg@mail.gmail.com>
+ <CAPDOMVjaf+vne4vbUPo8EPs0XnQBbNm2ZOXns8fw5pkg9tRSww@mail.gmail.com>
+ <CAAsK9AGtdJiz0xnmfqLBAqxmt=r+WANsmxwB_vQ3O5aKzMW1LQ@mail.gmail.com>
+ <CAPDOMVhj72TFKbtw_93juX19WVdfUzh3KM9tCEjbTdUZvUfcUQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAPDOMVhj72TFKbtw_93juX19WVdfUzh3KM9tCEjbTdUZvUfcUQ@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Define gpio node in tca6507 which will be used as
-wifi reset pin.
+On Tue, Jul 22, 2014 at 02:25:24PM -0400, Nick Krause wrote:
+> 
+> I understand what your saying and I should have searched for Page shift.
+> In addition I am already got commits in the kernel for fix mes so I feel
+> that your comment on fix mes is incorrect.
 
-Signed-off-by: Marek Belisko <marek@goldelico.com>
----
- arch/arm/boot/dts/omap3-gta04.dts | 8 ++++++++
- 1 file changed, 8 insertions(+)
+After seeing your other solutions to "fix mes" around the kernel, I now have to
+investigate the patches that were accepted, and see if they did not cause
+any new bugs. If any of them do, I will ask to have all your patches reverted.
 
-diff --git a/arch/arm/boot/dts/omap3-gta04.dts b/arch/arm/boot/dts/omap3-gta04.dts
-index 6d1a8d8..5b08d93 100644
---- a/arch/arm/boot/dts/omap3-gta04.dts
-+++ b/arch/arm/boot/dts/omap3-gta04.dts
-@@ -196,6 +196,9 @@
- 		#size-cells = <0>;
- 		reg = <0x45>;
- 
-+		gpio-controller;
-+		#gpio-cells = <2>;
-+
- 		gta04_led0: red_aux@0 {
- 			label = "gta04:red:aux";
- 			reg = <0x0>;
-@@ -216,6 +219,11 @@
- 			label = "gta04:green:power";
- 			reg = <0x4>;
- 		};
-+
-+		wifi_reset: wifi_reset@6 {
-+			reg = <0x6>;
-+			compatible = "gpio";
-+		};
- 	};
- 
- 	/* compass aka magnetometer */
--- 
-1.9.1
+You are not helping. You are actually doing quite the opposite. Who do you work
+for? Microsoft or Apple?
+
+-- Steve
 
