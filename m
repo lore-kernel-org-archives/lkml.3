@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933501AbaGVW0m (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 18:26:42 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44837 "EHLO
+	id S933475AbaGVW0k (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 18:26:40 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:44838 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932194AbaGVW0h (ORCPT
+	with ESMTP id S932676AbaGVW0h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 22 Jul 2014 18:26:37 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Kees Cook <keescook@chromium.org>, Jiri Kosina <jkosina@suse.cz>,
+Cc: Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 021/116] HID: core: fix validation of report id 0
-Date: Tue, 22 Jul 2014 15:20:32 -0700
-Message-Id: <1406067727-19683-22-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 067/116] idr: fix overflow bug during maximum ID calculation at maximum height
+Date: Tue, 22 Jul 2014 15:21:18 -0700
+Message-Id: <1406067727-19683-68-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1406067727-19683-1-git-send-email-kamal@canonical.com>
 References: <1406067727-19683-1-git-send-email-kamal@canonical.com>
@@ -27,56 +29,82 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kees Cook <keescook@chromium.org>
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
 
-commit 1b15d2e5b8077670b1e6a33250a0d9577efff4a5 upstream.
+commit 3afb69cb5572b3c8c898c00880803cf1a49852c4 upstream.
 
-Some drivers use the first HID report in the list instead of using an
-index. In these cases, validation uses ID 0, which was supposed to mean
-"first known report". This fixes the problem, which was causing at least
-the lgff family of devices to stop working since hid_validate_values
-was being called with ID 0, but the devices used single numbered IDs
-for their reports:
+idr_replace() open-codes the logic to calculate the maximum valid ID
+given the height of the idr tree; unfortunately, the open-coded logic
+doesn't account for the fact that the top layer may have unused slots
+and over-shifts the limit to zero when the tree is at its maximum
+height.
 
-0x05, 0x01,         /*  Usage Page (Desktop),                   */
-0x09, 0x05,         /*  Usage (Gamepad),                        */
-0xA1, 0x01,         /*  Collection (Application),               */
-0xA1, 0x02,         /*      Collection (Logical),               */
-0x85, 0x01,         /*          Report ID (1),                  */
-...
+The following test code shows it fails to replace the value for
+id=((1<<27)+42):
 
-Reported-by: Simon Wood <simon@mungewell.org>
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Reviewed-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+  static void test5(void)
+  {
+        int id;
+        DEFINE_IDR(test_idr);
+  #define TEST5_START ((1<<27)+42) /* use the highest layer */
+
+        printk(KERN_INFO "Start test5\n");
+        id = idr_alloc(&test_idr, (void *)1, TEST5_START, 0, GFP_KERNEL);
+        BUG_ON(id != TEST5_START);
+        TEST_BUG_ON(idr_replace(&test_idr, (void *)2, TEST5_START) != (void *)1);
+        idr_destroy(&test_idr);
+        printk(KERN_INFO "End of test5\n");
+  }
+
+Fix the bug by using idr_max() which correctly takes into account the
+maximum allowed shift.
+
+sub_alloc() shares the same problem and may incorrectly fail with
+-EAGAIN; however, this bug doesn't affect correct operation because
+idr_get_empty_slot(), which already uses idr_max(), retries with the
+increased @id in such cases.
+
+[tj@kernel.org: Updated patch description.]
+Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+Acked-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+[ kamal: backport to 3.8-stable: context ]
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/hid/hid-core.c | 12 +++++++++++-
- 1 file changed, 11 insertions(+), 1 deletion(-)
+ lib/idr.c | 8 +++-----
+ 1 file changed, 3 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
-index 14744e0..8ad2505 100644
---- a/drivers/hid/hid-core.c
-+++ b/drivers/hid/hid-core.c
-@@ -797,7 +797,17 @@ struct hid_report *hid_validate_values(struct hid_device *hid,
- 	 * ->numbered being checked, which may not always be the case when
- 	 * drivers go to access report values.
- 	 */
--	report = hid->report_enum[type].report_id_hash[id];
-+	if (id == 0) {
-+		/*
-+		 * Validating on id 0 means we should examine the first
-+		 * report in the list.
-+		 */
-+		report = list_entry(
-+				hid->report_enum[type].report_list.next,
-+				struct hid_report, list);
-+	} else {
-+		report = hid->report_enum[type].report_id_hash[id];
-+	}
- 	if (!report) {
- 		hid_err(hid, "missing %s %u\n", hid_report_names[type], id);
- 		return NULL;
+diff --git a/lib/idr.c b/lib/idr.c
+index 60f7619..fb49014 100644
+--- a/lib/idr.c
++++ b/lib/idr.c
+@@ -167,7 +167,7 @@ static int sub_alloc(struct idr *idp, int *starting_id, struct idr_layer **pa)
+ 			id = (id | ((1 << (IDR_BITS * l)) - 1)) + 1;
+ 
+ 			/* if already at the top layer, we need to grow */
+-			if (id >= 1 << (idp->layers * IDR_BITS)) {
++			if (id > idr_max(idp->layers)) {
+ 				*starting_id = id;
+ 				return IDR_NEED_TO_GROW;
+ 			}
+@@ -672,14 +672,12 @@ void *idr_replace(struct idr *idp, void *ptr, int id)
+ 	if (!p)
+ 		return ERR_PTR(-EINVAL);
+ 
+-	n = (p->layer+1) * IDR_BITS;
+-
+ 	id &= MAX_IDR_MASK;
+ 
+-	if (id >= (1 << n))
++	if (id > idr_max(p->layer + 1))
+ 		return ERR_PTR(-EINVAL);
+ 
+-	n -= IDR_BITS;
++	n = p->layer * IDR_BITS;
+ 	while ((n > 0) && p) {
+ 		p = p->ary[(id >> n) & IDR_MASK];
+ 		n -= IDR_BITS;
 -- 
 1.9.1
 
