@@ -1,65 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754207AbaGVMJ7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 08:09:59 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:43762 "EHLO mx2.suse.de"
+	id S1754826AbaGVMK1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 08:10:27 -0400
+Received: from 8bytes.org ([81.169.241.247]:53018 "EHLO theia.8bytes.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751823AbaGVMJ6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 08:09:58 -0400
-Message-ID: <53CE5494.3030708@suse.cz>
-Date: Tue, 22 Jul 2014 14:09:56 +0200
-From: Vlastimil Babka <vbabka@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1754139AbaGVMKY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 08:10:24 -0400
+Date: Tue, 22 Jul 2014 14:10:22 +0200
+From: Joerg Roedel <joro@8bytes.org>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Len Brown <len.brown@intel.com>,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/6 v2] PM / Hibernate: Memory bitmap scalability
+ improvements
+Message-ID: <20140722121022.GA31450@8bytes.org>
+References: <1405938422-21900-1-git-send-email-joro@8bytes.org>
+ <20140721160346.GP30979@8bytes.org>
+ <20140721230500.GA7019@amd.pavel.ucw.cz>
+ <6793803.1FXN0a3O0V@vostro.rjw.lan>
+ <20140722103443.GV30979@8bytes.org>
+ <20140722105812.GB9814@amd.pavel.ucw.cz>
 MIME-Version: 1.0
-To: Hugh Dickins <hughd@google.com>, Sasha Levin <sasha.levin@oracle.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Konstantin Khlebnikov <koct9i@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Michel Lespinasse <walken@google.com>,
-        Lukas Czerner <lczerner@redhat.com>, Dave Jones <davej@redhat.com>,
-        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Michal Hocko <mhocko@suse.cz>
-Subject: Re: [PATCH 0/2] shmem: fix faulting into a hole while it's punched,
- take 3
-References: <alpine.LSU.2.11.1407150247540.2584@eggly.anvils> <53C7F55B.8030307@suse.cz> <53C7F5FF.7010006@oracle.com> <53C8FAA6.9050908@oracle.com> <alpine.LSU.2.11.1407191628450.24073@eggly.anvils> <53CDD961.1080006@oracle.com> <alpine.LSU.2.11.1407220049140.1980@eggly.anvils> <53CE37A6.2060000@suse.cz>
-In-Reply-To: <53CE37A6.2060000@suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140722105812.GB9814@amd.pavel.ucw.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/22/2014 12:06 PM, Vlastimil Babka wrote:
-> So if this is true, the change to TASK_UNINTERRUPTIBLE will avoid the
-> problem, but it would be nicer to keep the KILLABLE state.
-> I think it could be done by testing if the wait queue still exists and
-> is the same, before attempting finish wait. If it doesn't exist, that
-> means the faulter can skip finish_wait altogether because it must be
-> already TASK_RUNNING.
->
-> shmem_falloc = inode->i_private;
-> if (shmem_falloc && shmem_falloc->waitq == shmem_falloc_waitq)
-> 	finish_wait(shmem_falloc_waitq, &shmem_fault_wait);
->
-> It might still be theoretically possible that although it has the same
-> address, it's not the same wait queue, but that doesn't hurt
-> correctness. I might be uselessly locking some other waitq's lock, but
-> the inode->i_lock still protects me from other faulters that are in the
-> same situation. The puncher is already gone.
+On Tue, Jul 22, 2014 at 12:58:12PM +0200, Pavel Machek wrote:
+> On Tue 2014-07-22 12:34:44, Joerg Roedel wrote:
+> > On Tue, Jul 22, 2014 at 02:41:29AM +0200, Rafael J. Wysocki wrote:
+> > > It looks like some specific need motivated the Joerg's work, however,
+> > > so let's just not dismiss the use case lightly without knowing it.
+> > 
+> > The motivation was to optimize the data structures for machines with
+> > large amounts of RAM without penalizing average machines. On a 12TB
+> > machine you are close to 100000 pages just for one bitmap. Scanning
+> > through that linearly to find a given bit just doesnt scale anymore in
+> > this case.
+> 
+> Can you produce backtrace where 12TB machine spends time during boot
+> with resume= parameter but no suspend image?
+> 
+> AFAICT swsusp_check() does not play with bitmaps.
 
-Actually, I was wrong and deleting from a different queue could corrupt 
-the queue head. I don't know if trinity would be able to trigger this, 
-but I wouldn't be comfortable knowing it's possible. Calling fallocate 
-twice in quick succession from the same process could easily end up at 
-the same address on the stack, no?
+I can ask for a backtrace, I currently don't have one. But I have
+perf-data for this case. It also shows that it spends most of its time
+with bitmap operations:
 
-Another also somewhat ugly possibility is to make sure that the wait 
-queue is empty before the puncher quits, regardless of the running state 
-of the processes in the queue. I think the conditions here 
-(serialization by i_lock) might allow us to do that without risking that 
-we e.g. leave anyone sleeping. But it's bending the wait queue design...
+~# time perf record /usr/sbin/resume $sdev
+resume: libgcrypt version: 1.5.0
+[ perf record: Woken up 12 times to write data ]
+[ perf record: Captured and wrote 2.882 MB perf.data (~125898 samples) ]
 
-> However it's quite ugly and if there is some wait queue debugging mode
-> (I hadn't checked) that e.g. checks if wait queues and wait objects are
-> empty before destruction, it wouldn't like this at all...
-
+real    1m16.043s
+user    0m0.016s
+sys     0m0.312s
+~# perf report --stdio |head -50
+# Events: 75K cycles
+#
+# Overhead  Command         Shared Object                                   
+Symbol
+# ........  .......  .................... 
+........................................
+#
+    56.16%   resume  [kernel.kallsyms]     [k] memory_bm_test_bit
+    19.35%   resume  [kernel.kallsyms]     [k] swsusp_free
+    14.90%   resume  [kernel.kallsyms]     [k] memory_bm_find_bit
+     7.28%   resume  [kernel.kallsyms]     [k] swsusp_page_is_forbidden
+     0.40%   resume  [kernel.kallsyms]     [k] clear_page_c_e
+     0.34%   resume  [kernel.kallsyms]     [k] native_read_tsc
+     0.22%   resume  [kernel.kallsyms]     [k] delay_tsc
+     0.19%   resume  [kernel.kallsyms]     [k] pfn_valid
+     0.11%   resume  [kernel.kallsyms]     [k] create_basic_memory_bitmaps
+     0.09%   resume  [kernel.kallsyms]     [k] _raw_spin_lock
+     0.09%   resume  [kernel.kallsyms]     [k] __alloc_pages_nodemask
+     0.07%   resume  [kernel.kallsyms]     [k] scheduler_tick
+     0.06%   resume  [kernel.kallsyms]     [k] io_serial_in
+     0.05%   resume  [kernel.kallsyms]     [k] update_curr
+     0.05%   resume  [kernel.kallsyms]     [k] idle_cpu
+     0.05%   resume  [kernel.kallsyms]     [k] perf_adjust_freq_unthr_context
+     0.04%   resume  [kernel.kallsyms]     [k] find_get_page
+     0.04%   resume  [kernel.kallsyms]     [k] __memset
+     0.04%   resume  [kernel.kallsyms]     [k] ktime_get_update_offsets
+     0.03%   resume  [kernel.kallsyms]     [k] get_page_from_freelist
+     0.03%   resume  [kernel.kallsyms]     [k] __bitmap_empty
+     0.02%   resume  [kernel.kallsyms]     [k] update_cpu_load
+     0.02%   resume  [kernel.kallsyms]     [k] update_rq_clock
+     0.02%   resume  [kernel.kallsyms]     [k] native_write_msr_safe
+     0.02%   resume  [kernel.kallsyms]     [k] mem_cgroup_del_lru_list
+     0.02%   resume  [kernel.kallsyms]     [k] free_pcppages_bulk
+     0.02%   resume  [kernel.kallsyms]     [k] __rcu_pending
+     0.02%   resume  [kernel.kallsyms]     [k] rcu_exit_nohz
+     0.01%   resume  [kernel.kallsyms]     [k] __rmqueue
+     0.01%   resume  [kernel.kallsyms]     [k] x86_pmu_disable
+     0.01%   resume  [kernel.kallsyms]     [k] touch_nmi_watchdog
+     0.01%   resume  [kernel.kallsyms]     [k] __do_softirq
+     0.01%   resume  [kernel.kallsyms]     [k] alloc_pages_current
+     0.01%   resume  [kernel.kallsyms]     [k] memory_bm_create
+     0.01%   resume  [kernel.kallsyms]     [k] check_cpu_stall
+     0.01%   resume  [kernel.kallsyms]     [k] account_system_time
+     0.01%   resume  [kernel.kallsyms]     [k] vma_prio_tree_next
+     0.01%   resume  [kernel.kallsyms]     [k] free_hot_cold_page
+     0.01%   resume  [kernel.kallsyms]     [k] find_vma
+     0.01%   resume  [kernel.kallsyms]     [k] entity_tick
+     0.01%   resume  [kernel.kallsyms]     [k] apic_timer_interrupt
+     0.01%   resume  [kernel.kallsyms]     [k] read_tsc
