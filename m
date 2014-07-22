@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933687AbaGVWli (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 18:41:38 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44703 "EHLO
+	id S933713AbaGVWmD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 18:42:03 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:44687 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933165AbaGVWZw (ORCPT
+	with ESMTP id S933141AbaGVWZq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 18:25:52 -0400
+	Tue, 22 Jul 2014 18:25:46 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alex Deucher <alexander.deucher@amd.com>,
+Cc: hujianyang <hujianyang@huawei.com>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 050/116] drm/radeon/atom: fix dithering on certain panels
-Date: Tue, 22 Jul 2014 15:21:01 -0700
-Message-Id: <1406067727-19683-51-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 046/116] UBIFS: Remove incorrect assertion in shrink_tnc()
+Date: Tue, 22 Jul 2014 15:20:57 -0700
+Message-Id: <1406067727-19683-47-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1406067727-19683-1-git-send-email-kamal@canonical.com>
 References: <1406067727-19683-1-git-send-email-kamal@canonical.com>
@@ -27,40 +28,106 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: hujianyang <hujianyang@huawei.com>
 
-commit 642528355c694f5ed68f6bff9ff520326a249f99 upstream.
+commit 72abc8f4b4e8574318189886de627a2bfe6cd0da upstream.
 
-We need to specify the encoder mode as LVDS for eDP
-when using the Crtc_Source atom table in order to properly
-set up the FMT hardware.
+I hit the same assert failed as Dolev Raviv reported in Kernel v3.10
+shows like this:
 
-bug:
-https://bugs.freedesktop.org/show_bug.cgi?id=73911
+[ 9641.164028] UBIFS assert failed in shrink_tnc at 131 (pid 13297)
+[ 9641.234078] CPU: 1 PID: 13297 Comm: mmap.test Tainted: G           O 3.10.40 #1
+[ 9641.234116] [<c0011a6c>] (unwind_backtrace+0x0/0x12c) from [<c000d0b0>] (show_stack+0x20/0x24)
+[ 9641.234137] [<c000d0b0>] (show_stack+0x20/0x24) from [<c0311134>] (dump_stack+0x20/0x28)
+[ 9641.234188] [<c0311134>] (dump_stack+0x20/0x28) from [<bf22425c>] (shrink_tnc_trees+0x25c/0x350 [ubifs])
+[ 9641.234265] [<bf22425c>] (shrink_tnc_trees+0x25c/0x350 [ubifs]) from [<bf2245ac>] (ubifs_shrinker+0x25c/0x310 [ubifs])
+[ 9641.234307] [<bf2245ac>] (ubifs_shrinker+0x25c/0x310 [ubifs]) from [<c00cdad8>] (shrink_slab+0x1d4/0x2f8)
+[ 9641.234327] [<c00cdad8>] (shrink_slab+0x1d4/0x2f8) from [<c00d03d0>] (do_try_to_free_pages+0x300/0x544)
+[ 9641.234344] [<c00d03d0>] (do_try_to_free_pages+0x300/0x544) from [<c00d0a44>] (try_to_free_pages+0x2d0/0x398)
+[ 9641.234363] [<c00d0a44>] (try_to_free_pages+0x2d0/0x398) from [<c00c6a60>] (__alloc_pages_nodemask+0x494/0x7e8)
+[ 9641.234382] [<c00c6a60>] (__alloc_pages_nodemask+0x494/0x7e8) from [<c00f62d8>] (new_slab+0x78/0x238)
+[ 9641.234400] [<c00f62d8>] (new_slab+0x78/0x238) from [<c031081c>] (__slab_alloc.constprop.42+0x1a4/0x50c)
+[ 9641.234419] [<c031081c>] (__slab_alloc.constprop.42+0x1a4/0x50c) from [<c00f80e8>] (kmem_cache_alloc_trace+0x54/0x188)
+[ 9641.234459] [<c00f80e8>] (kmem_cache_alloc_trace+0x54/0x188) from [<bf227908>] (do_readpage+0x168/0x468 [ubifs])
+[ 9641.234553] [<bf227908>] (do_readpage+0x168/0x468 [ubifs]) from [<bf2296a0>] (ubifs_readpage+0x424/0x464 [ubifs])
+[ 9641.234606] [<bf2296a0>] (ubifs_readpage+0x424/0x464 [ubifs]) from [<c00c17c0>] (filemap_fault+0x304/0x418)
+[ 9641.234638] [<c00c17c0>] (filemap_fault+0x304/0x418) from [<c00de694>] (__do_fault+0xd4/0x530)
+[ 9641.234665] [<c00de694>] (__do_fault+0xd4/0x530) from [<c00e10c0>] (handle_pte_fault+0x480/0xf54)
+[ 9641.234690] [<c00e10c0>] (handle_pte_fault+0x480/0xf54) from [<c00e2bf8>] (handle_mm_fault+0x140/0x184)
+[ 9641.234716] [<c00e2bf8>] (handle_mm_fault+0x140/0x184) from [<c0316688>] (do_page_fault+0x150/0x3ac)
+[ 9641.234737] [<c0316688>] (do_page_fault+0x150/0x3ac) from [<c000842c>] (do_DataAbort+0x3c/0xa0)
+[ 9641.234759] [<c000842c>] (do_DataAbort+0x3c/0xa0) from [<c0314e38>] (__dabt_usr+0x38/0x40)
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+After analyzing the code, I found a condition that may cause this failed
+in correct operations. Thus, I think this assertion is wrong and should be
+removed.
+
+Suppose there are two clean znodes and one dirty znode in TNC. So the
+per-filesystem atomic_t @clean_zn_cnt is (2). If commit start, dirty_znode
+is set to COW_ZNODE in get_znodes_to_commit() in case of potentially ops
+on this znode. We clear COW bit and DIRTY bit in write_index() without
+@tnc_mutex locked. We don't increase @clean_zn_cnt in this place. As the
+comments in write_index() shows, if another process hold @tnc_mutex and
+dirty this znode after we clean it, @clean_zn_cnt would be decreased to (1).
+We will increase @clean_zn_cnt to (2) with @tnc_mutex locked in
+free_obsolete_znodes() to keep it right.
+
+If shrink_tnc() performs between decrease and increase, it will release
+other 2 clean znodes it holds and found @clean_zn_cnt is less than zero
+(1 - 2 = -1), then hit the assertion. Because free_obsolete_znodes() will
+soon correct @clean_zn_cnt and no harm to fs in this case, I think this
+assertion could be removed.
+
+2 clean zondes and 1 dirty znode, @clean_zn_cnt == 2
+
+Thread A (commit)         Thread B (write or others)       Thread C (shrinker)
+->write_index
+   ->clear_bit(DIRTY_NODE)
+   ->clear_bit(COW_ZNODE)
+
+            @clean_zn_cnt == 2
+                          ->mutex_locked(&tnc_mutex)
+                          ->dirty_cow_znode
+                              ->!ubifs_zn_cow(znode)
+                              ->!test_and_set_bit(DIRTY_NODE)
+                              ->atomic_dec(&clean_zn_cnt)
+                          ->mutex_unlocked(&tnc_mutex)
+
+            @clean_zn_cnt == 1
+                                                           ->mutex_locked(&tnc_mutex)
+                                                           ->shrink_tnc
+                                                             ->destroy_tnc_subtree
+                                                             ->atomic_sub(&clean_zn_cnt, 2)
+                                                             ->ubifs_assert  <- hit
+                                                           ->mutex_unlocked(&tnc_mutex)
+
+            @clean_zn_cnt == -1
+->mutex_lock(&tnc_mutex)
+->free_obsolete_znodes
+   ->atomic_inc(&clean_zn_cnt)
+->mutux_unlock(&tnc_mutex)
+
+            @clean_zn_cnt == 0 (correct after shrink)
+
+Signed-off-by: hujianyang <hujianyang@huawei.com>
+Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/gpu/drm/radeon/atombios_encoders.c | 5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ fs/ubifs/shrinker.c | 1 -
+ 1 file changed, 1 deletion(-)
 
-diff --git a/drivers/gpu/drm/radeon/atombios_encoders.c b/drivers/gpu/drm/radeon/atombios_encoders.c
-index 71619b0..f04f3c9 100644
---- a/drivers/gpu/drm/radeon/atombios_encoders.c
-+++ b/drivers/gpu/drm/radeon/atombios_encoders.c
-@@ -1877,8 +1877,11 @@ atombios_set_encoder_crtc_source(struct drm_encoder *encoder)
- 					args.v2.ucEncodeMode = ATOM_ENCODER_MODE_CRT;
- 				else
- 					args.v2.ucEncodeMode = atombios_get_encoder_mode(encoder);
--			} else
-+			} else if (radeon_encoder->devices & (ATOM_DEVICE_LCD_SUPPORT)) {
-+				args.v2.ucEncodeMode = ATOM_ENCODER_MODE_LVDS;
-+			} else {
- 				args.v2.ucEncodeMode = atombios_get_encoder_mode(encoder);
-+			}
- 			switch (radeon_encoder->encoder_id) {
- 			case ENCODER_OBJECT_ID_INTERNAL_UNIPHY:
- 			case ENCODER_OBJECT_ID_INTERNAL_UNIPHY1:
+diff --git a/fs/ubifs/shrinker.c b/fs/ubifs/shrinker.c
+index 9e1d056..e0a7a76 100644
+--- a/fs/ubifs/shrinker.c
++++ b/fs/ubifs/shrinker.c
+@@ -128,7 +128,6 @@ static int shrink_tnc(struct ubifs_info *c, int nr, int age, int *contention)
+ 			freed = ubifs_destroy_tnc_subtree(znode);
+ 			atomic_long_sub(freed, &ubifs_clean_zn_cnt);
+ 			atomic_long_sub(freed, &c->clean_zn_cnt);
+-			ubifs_assert(atomic_long_read(&c->clean_zn_cnt) >= 0);
+ 			total_freed += freed;
+ 			znode = zprev;
+ 		}
 -- 
 1.9.1
 
