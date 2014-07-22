@@ -1,50 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755121AbaGVK6Z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 06:58:25 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:41700 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755010AbaGVK6O (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 06:58:14 -0400
-Date: Tue, 22 Jul 2014 12:58:12 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Joerg Roedel <joro@8bytes.org>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Len Brown <len.brown@intel.com>,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/6 v2] PM / Hibernate: Memory bitmap scalability
- improvements
-Message-ID: <20140722105812.GB9814@amd.pavel.ucw.cz>
-References: <1405938422-21900-1-git-send-email-joro@8bytes.org>
- <20140721160346.GP30979@8bytes.org>
- <20140721230500.GA7019@amd.pavel.ucw.cz>
- <6793803.1FXN0a3O0V@vostro.rjw.lan>
- <20140722103443.GV30979@8bytes.org>
+	id S1755229AbaGVK7I (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 06:59:08 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:56794 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754916AbaGVK5t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 06:57:49 -0400
+From: Kishon Vijay Abraham I <kishon@ti.com>
+To: <gregkh@linuxfoundation.org>
+CC: <kishon@ti.com>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH 25/28] phy: qcom: Add device tree bindings for IPQ806x SATA PHY
+Date: Tue, 22 Jul 2014 16:26:48 +0530
+Message-ID: <1406026611-30493-26-git-send-email-kishon@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1406026611-30493-1-git-send-email-kishon@ti.com>
+References: <1406026611-30493-1-git-send-email-kishon@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140722103443.GV30979@8bytes.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 2014-07-22 12:34:44, Joerg Roedel wrote:
-> On Tue, Jul 22, 2014 at 02:41:29AM +0200, Rafael J. Wysocki wrote:
-> > It looks like some specific need motivated the Joerg's work, however,
-> > so let's just not dismiss the use case lightly without knowing it.
-> 
-> The motivation was to optimize the data structures for machines with
-> large amounts of RAM without penalizing average machines. On a 12TB
-> machine you are close to 100000 pages just for one bitmap. Scanning
-> through that linearly to find a given bit just doesnt scale anymore in
-> this case.
+From: Kumar Gala <galak@codeaurora.org>
 
-Can you produce backtrace where 12TB machine spends time during boot
-with resume= parameter but no suspend image?
+Add binding spec for Qualcomm SoC PHYs, starting with the SATA PHY on
+the IPQ806x family of SoCs.
 
-AFAICT swsusp_check() does not play with bitmaps.
-									Pavel
+Signed-off-by: Kumar Gala <galak@codeaurora.org>
+Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+---
+ .../bindings/phy/qcom-ipq806x-sata-phy.txt         |   23 ++++++++++++++++++++
+ 1 file changed, 23 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/phy/qcom-ipq806x-sata-phy.txt
+
+diff --git a/Documentation/devicetree/bindings/phy/qcom-ipq806x-sata-phy.txt b/Documentation/devicetree/bindings/phy/qcom-ipq806x-sata-phy.txt
+new file mode 100644
+index 0000000..76bfbd0
+--- /dev/null
++++ b/Documentation/devicetree/bindings/phy/qcom-ipq806x-sata-phy.txt
+@@ -0,0 +1,23 @@
++Qualcomm IPQ806x SATA PHY Controller
++------------------------------------
++
++SATA PHY nodes are defined to describe on-chip SATA Physical layer controllers.
++Each SATA PHY controller should have its own node.
++
++Required properties:
++- compatible: compatible list, contains "qcom,ipq806x-sata-phy"
++- reg: offset and length of the SATA PHY register set;
++- #phy-cells: must be zero
++- clocks: must be exactly one entry
++- clock-names: must be "cfg"
++
++Example:
++	sata_phy: sata-phy@1b400000 {
++		compatible = "qcom,ipq806x-sata-phy";
++		reg = <0x1b400000 0x200>;
++
++		clocks = <&gcc SATA_PHY_CFG_CLK>;
++		clock-names = "cfg";
++
++		#phy-cells = <0>;
++	};
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+1.7.9.5
+
