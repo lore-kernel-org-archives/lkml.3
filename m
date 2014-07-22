@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932916AbaGVWYn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 18:24:43 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44596 "EHLO
+	id S932944AbaGVWY6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 18:24:58 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:44600 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932804AbaGVWYj (ORCPT
+	with ESMTP id S932804AbaGVWYz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 18:24:39 -0400
+	Tue, 22 Jul 2014 18:24:55 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Stanislaw Gruszka <stf_xl@wp.pl>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 105/116] rt2x00: fix rfkill regression on rt2500pci
-Date: Tue, 22 Jul 2014 15:21:56 -0700
-Message-Id: <1406067727-19683-106-git-send-email-kamal@canonical.com>
+Cc: Steve French <smfrench@gmail.com>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 109/116] [CIFS] fix mount failure with broken pathnames when smb3 mount with mapchars option
+Date: Tue, 22 Jul 2014 15:22:00 -0700
+Message-Id: <1406067727-19683-110-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1406067727-19683-1-git-send-email-kamal@canonical.com>
 References: <1406067727-19683-1-git-send-email-kamal@canonical.com>
@@ -28,124 +26,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stanislaw Gruszka <stf_xl@wp.pl>
+From: Steve French <smfrench@gmail.com>
 
-commit 616a8394b5df8c88f4dd416f4527439a4e365034 upstream.
+commit ce36d9ab3bab06b7b5522f5c8b68fac231b76ffb upstream.
 
-As reported by Niels, starting rfkill polling during device probe
-(commit e2bc7c5, generally sane change) broke rfkill on rt2500pci
-device. I considered that bug as some initalization issue, which
-should be fixed on rt2500pci specific code. But after several
-attempts (see bug report for details) we fail to find working solution.
-Hence I decided to revert to old behaviour on rt2500pci to fix
-regression.
+When we SMB3 mounted with mapchars (to allow reserved characters : \ / > < * ?
+via the Unicode Windows to POSIX remap range) empty paths
+(eg when we open "" to query the root of the SMB3 directory on mount) were not
+null terminated so we sent garbarge as a path name on empty paths which caused
+SMB2/SMB2.1/SMB3 mounts to fail when mapchars was specified.  mapchars is
+particularly important since Unix Extensions for SMB3 are not supported (yet)
 
-Additionally patch also unregister rfkill on device remove instead
-of ifconfig down, what was another issue introduced by bad commit.
-
-Bug report:
-https://bugzilla.kernel.org/show_bug.cgi?id=73821
-
-Fixes: e2bc7c5f3cb8 ("rt2x00: Fix rfkill_polling register function.")
-Bisected-by: Niels <nille0386@googlemail.com>
-Reported-and-tested-by: Niels <nille0386@googlemail.com>
-Signed-off-by: Stanislaw Gruszka <stf_xl@wp.pl>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Steve French <smfrench@gmail.com>
+Reviewed-by: David Disseldorp <ddiss@suse.de>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/net/wireless/rt2x00/rt2500pci.c |  7 ++++++-
- drivers/net/wireless/rt2x00/rt2x00.h    |  1 +
- drivers/net/wireless/rt2x00/rt2x00dev.c | 24 +++++++++++++++++++++---
- 3 files changed, 28 insertions(+), 4 deletions(-)
+ fs/cifs/cifs_unicode.c | 7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/net/wireless/rt2x00/rt2500pci.c b/drivers/net/wireless/rt2x00/rt2500pci.c
-index 9bea10f..2ab12a4 100644
---- a/drivers/net/wireless/rt2x00/rt2500pci.c
-+++ b/drivers/net/wireless/rt2x00/rt2500pci.c
-@@ -1679,8 +1679,13 @@ static int rt2500pci_init_eeprom(struct rt2x00_dev *rt2x00dev)
- 	/*
- 	 * Detect if this device has an hardware controlled radio.
- 	 */
--	if (rt2x00_get_field16(eeprom, EEPROM_ANTENNA_HARDWARE_RADIO))
-+	if (rt2x00_get_field16(eeprom, EEPROM_ANTENNA_HARDWARE_RADIO)) {
- 		__set_bit(CAPABILITY_HW_BUTTON, &rt2x00dev->cap_flags);
-+		/*
-+		 * On this device RFKILL initialized during probe does not work.
-+		 */
-+		__set_bit(REQUIRE_DELAYED_RFKILL, &rt2x00dev->cap_flags);
-+	}
+diff --git a/fs/cifs/cifs_unicode.c b/fs/cifs/cifs_unicode.c
+index 71d5d0a..839a5321 100644
+--- a/fs/cifs/cifs_unicode.c
++++ b/fs/cifs/cifs_unicode.c
+@@ -290,7 +290,8 @@ int
+ cifsConvertToUTF16(__le16 *target, const char *source, int srclen,
+ 		 const struct nls_table *cp, int mapChars)
+ {
+-	int i, j, charlen;
++	int i, charlen;
++	int j = 0;
+ 	char src_char;
+ 	__le16 dst_char;
+ 	wchar_t tmp;
+@@ -298,12 +299,11 @@ cifsConvertToUTF16(__le16 *target, const char *source, int srclen,
+ 	if (!mapChars)
+ 		return cifs_strtoUTF16(target, source, PATH_MAX, cp);
  
- 	/*
- 	 * Check if the BBP tuning should be enabled.
-diff --git a/drivers/net/wireless/rt2x00/rt2x00.h b/drivers/net/wireless/rt2x00/rt2x00.h
-index 0751b35..dfffbfb 100644
---- a/drivers/net/wireless/rt2x00/rt2x00.h
-+++ b/drivers/net/wireless/rt2x00/rt2x00.h
-@@ -720,6 +720,7 @@ enum rt2x00_capability_flags {
- 	REQUIRE_SW_SEQNO,
- 	REQUIRE_HT_TX_DESC,
- 	REQUIRE_PS_AUTOWAKE,
-+	REQUIRE_DELAYED_RFKILL,
+-	for (i = 0, j = 0; i < srclen; j++) {
++	for (i = 0; i < srclen; j++) {
+ 		src_char = source[i];
+ 		charlen = 1;
+ 		switch (src_char) {
+ 		case 0:
+-			put_unaligned(0, &target[j]);
+ 			goto ctoUTF16_out;
+ 		case ':':
+ 			dst_char = cpu_to_le16(UNI_COLON);
+@@ -350,6 +350,7 @@ cifsConvertToUTF16(__le16 *target, const char *source, int srclen,
+ 	}
  
- 	/*
- 	 * Capabilities
-diff --git a/drivers/net/wireless/rt2x00/rt2x00dev.c b/drivers/net/wireless/rt2x00/rt2x00dev.c
-index a1789f5..0e2cd3c 100644
---- a/drivers/net/wireless/rt2x00/rt2x00dev.c
-+++ b/drivers/net/wireless/rt2x00/rt2x00dev.c
-@@ -1032,9 +1032,10 @@ static void rt2x00lib_uninitialize(struct rt2x00_dev *rt2x00dev)
- 		return;
- 
- 	/*
--	 * Unregister extra components.
-+	 * Stop rfkill polling.
- 	 */
--	rt2x00rfkill_unregister(rt2x00dev);
-+	if (test_bit(REQUIRE_DELAYED_RFKILL, &rt2x00dev->cap_flags))
-+		rt2x00rfkill_unregister(rt2x00dev);
- 
- 	/*
- 	 * Allow the HW to uninitialize.
-@@ -1072,6 +1073,12 @@ static int rt2x00lib_initialize(struct rt2x00_dev *rt2x00dev)
- 
- 	set_bit(DEVICE_STATE_INITIALIZED, &rt2x00dev->flags);
- 
-+	/*
-+	 * Start rfkill polling.
-+	 */
-+	if (test_bit(REQUIRE_DELAYED_RFKILL, &rt2x00dev->cap_flags))
-+		rt2x00rfkill_register(rt2x00dev);
-+
- 	return 0;
+ ctoUTF16_out:
++	put_unaligned(0, &target[j]); /* Null terminate target unicode string */
+ 	return j;
  }
  
-@@ -1262,7 +1269,12 @@ int rt2x00lib_probe_dev(struct rt2x00_dev *rt2x00dev)
- 	rt2x00link_register(rt2x00dev);
- 	rt2x00leds_register(rt2x00dev);
- 	rt2x00debug_register(rt2x00dev);
--	rt2x00rfkill_register(rt2x00dev);
-+
-+	/*
-+	 * Start rfkill polling.
-+	 */
-+	if (!test_bit(REQUIRE_DELAYED_RFKILL, &rt2x00dev->cap_flags))
-+		rt2x00rfkill_register(rt2x00dev);
- 
- 	return 0;
- 
-@@ -1278,6 +1290,12 @@ void rt2x00lib_remove_dev(struct rt2x00_dev *rt2x00dev)
- 	clear_bit(DEVICE_STATE_PRESENT, &rt2x00dev->flags);
- 
- 	/*
-+	 * Stop rfkill polling.
-+	 */
-+	if (!test_bit(REQUIRE_DELAYED_RFKILL, &rt2x00dev->cap_flags))
-+		rt2x00rfkill_unregister(rt2x00dev);
-+
-+	/*
- 	 * Disable radio.
- 	 */
- 	rt2x00lib_disable_radio(rt2x00dev);
 -- 
 1.9.1
 
