@@ -1,53 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756808AbaGVTeD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 15:34:03 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:43891 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756555AbaGVTeA (ORCPT
+	id S1756789AbaGVTe5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 15:34:57 -0400
+Received: from g4t3427.houston.hp.com ([15.201.208.55]:14697 "EHLO
+	g4t3427.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756535AbaGVTez (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 15:34:00 -0400
-Date: Tue, 22 Jul 2014 15:33:50 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Nick Krause <xerofoify@gmail.com>
-Cc: Levente Kurusa <lkurusa@redhat.com>, Tony Luck <tony.luck@gmail.com>,
-        =?iso-8859-1?Q?Bj=F8rn?= Mork <bjorn@mork.no>,
-        Doug Thompson <dougthompson@xmission.com>,
-        Borislav Petkov <bp@alien8.de>,
-        "m.chehab@samsung.com" <m.chehab@samsung.com>,
-        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] edac: Remove fixmes in e7xxx_edac.c
-Message-ID: <20140722193350.GA486@home.goodmis.org>
-References: <1406004789-9918-1-git-send-email-xerofoify@gmail.com>
- <874my98p6u.fsf@nemi.mork.no>
- <CA+8MBb+fnCNeQtyEqttxbkWx-4N+GUaKCUoCSdn5X9+bDDvTOg@mail.gmail.com>
- <CAPDOMVjaf+vne4vbUPo8EPs0XnQBbNm2ZOXns8fw5pkg9tRSww@mail.gmail.com>
- <CAAsK9AGtdJiz0xnmfqLBAqxmt=r+WANsmxwB_vQ3O5aKzMW1LQ@mail.gmail.com>
- <CAPDOMVhj72TFKbtw_93juX19WVdfUzh3KM9tCEjbTdUZvUfcUQ@mail.gmail.com>
+	Tue, 22 Jul 2014 15:34:55 -0400
+Message-ID: <53CEBCDB.8060106@hp.com>
+Date: Tue, 22 Jul 2014 15:34:51 -0400
+From: Waiman Long <waiman.long@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAPDOMVhj72TFKbtw_93juX19WVdfUzh3KM9tCEjbTdUZvUfcUQ@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+To: Jason Low <jason.low2@hp.com>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Darren Hart <dvhart@linux.intel.com>,
+        Davidlohr Bueso <davidlohr@hp.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
+        linux-doc@vger.kernel.org, Scott J Norton <scott.norton@hp.com>
+Subject: Re: [RFC PATCH 2/5] futex: add optimistic spinning to FUTEX_SPIN_LOCK
+References: <1405956271-34339-1-git-send-email-Waiman.Long@hp.com>  <1405956271-34339-3-git-send-email-Waiman.Long@hp.com> <1405973838.4677.11.camel@j-VirtualBox>
+In-Reply-To: <1405973838.4677.11.camel@j-VirtualBox>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 22, 2014 at 02:25:24PM -0400, Nick Krause wrote:
-> 
-> I understand what your saying and I should have searched for Page shift.
-> In addition I am already got commits in the kernel for fix mes so I feel
-> that your comment on fix mes is incorrect.
+On 07/21/2014 04:17 PM, Jason Low wrote:
+> On Mon, 2014-07-21 at 11:24 -0400, Waiman Long wrote:
+>> This patch adds code to do optimistic spinning for the FUTEX_SPIN_LOCK
+>> primitive on the futex value when the lock owner is running. It is
+>> the same optimistic spinning technique that is done in the mutex and
+>> rw semaphore code to improve their performance especially on large
+>> systems with large number of CPUs. When the lock owner is not running,
+>> the spinning tasks will go to sleep.
+> Perhaps we could introduce a "CONFIG_FUTEX_SPIN_ON_OWNER" that depends
+> on SMP and ARCH_SUPPORTS_ATOMIC_RMW?
 
-After seeing your other solutions to "fix mes" around the kernel, I now have to
-investigate the patches that were accepted, and see if they did not cause
-any new bugs. If any of them do, I will ask to have all your patches reverted.
+The new futex opcode depends on the ability to do cmpxchg() in the futex 
+context. The code will be disabled if futex cmpxchg is not supported. I 
+guess that should be enough to limit it to just a handful of architectures.
 
-You are not helping. You are actually doing quite the opposite. Who do you work
-for? Microsoft or Apple?
+>> There is 2 major advantages of doing optimistic spinning here:
+>>   1) It eliminates the context switching latency and overhead (at
+>>      least a few us) associated with sleeping and wakeup.
+>>   2) It eliminates most of the need to call futex(2) with
+>>      FUTEX_SPIN_UNLOCK as spinning is done without the need to set
+>>      the FUTEX_WAITERS bit.
+>>   struct futex_q_head {
+>>   	struct list_head	      hnode;
+>>   	struct list_head	      waitq;
+>>   	union futex_key		      key;
+>> +	struct optimistic_spin_queue *osq;
+> And this would have to be updated to
+>
+> +	struct optimistic_spin_queue osq;
+>
+> given the recent changes to the osq lock.
 
--- Steve
+Yes, I will make the change in the next iteration of the patch.
+
+-Longman
 
