@@ -1,120 +1,380 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757033AbaGVTuJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 15:50:09 -0400
-Received: from mail-la0-f42.google.com ([209.85.215.42]:62589 "EHLO
-	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757016AbaGVTuD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 15:50:03 -0400
-MIME-Version: 1.0
-In-Reply-To: <CA+rthh9w4Tj-b9m=jeCBcGP4E8X9ssVLGom=TmYT=9-4e_nmkw@mail.gmail.com>
-References: <1402866165-17408-1-git-send-email-minipli@googlemail.com>
-	<CA+rthh-CYWjUCji4GXNeZV5CcLd3_DNaV9zFDc_DznYbyw6T+A@mail.gmail.com>
-	<CAPM=9tyAmEQq9CZn9FFOxLbE7J9TMkTMu=XHEnzaRFBBByDyew@mail.gmail.com>
-	<CA+rthh9w4Tj-b9m=jeCBcGP4E8X9ssVLGom=TmYT=9-4e_nmkw@mail.gmail.com>
-Date: Tue, 22 Jul 2014 21:50:01 +0200
-Message-ID: <CA+rthh_L1_9FoSg7HsjSjVkG_HQNCWLgzp3q1-jBrxt_FMOpdw@mail.gmail.com>
-Subject: Re: [PATCH] agp: remove read/write stubs
-From: Mathias Krause <minipli@googlemail.com>
-To: Dave Airlie <airlied@gmail.com>
-Cc: David Airlie <airlied@linux.ie>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>
-Content-Type: text/plain; charset=UTF-8
+	id S1757072AbaGVTus (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 15:50:48 -0400
+Received: from mga09.intel.com ([134.134.136.24]:15061 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756880AbaGVTso (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 15:48:44 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,711,1400050800"; 
+   d="scan'208";a="547369321"
+From: Matthew Wilcox <matthew.r.wilcox@intel.com>
+To: linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Cc: Matthew Wilcox <willy@linux.intel.com>
+Subject: [PATCH v8 07/22] Add copy_to_iter(), copy_from_iter() and iov_iter_zero()
+Date: Tue, 22 Jul 2014 15:47:55 -0400
+Message-Id: <02a76f478c739ad87d7d5354b0e63818ebea8541.1406058387.git.matthew.r.wilcox@intel.com>
+X-Mailer: git-send-email 2.0.0
+In-Reply-To: <cover.1406058387.git.matthew.r.wilcox@intel.com>
+References: <cover.1406058387.git.matthew.r.wilcox@intel.com>
+In-Reply-To: <cover.1406058387.git.matthew.r.wilcox@intel.com>
+References: <cover.1406058387.git.matthew.r.wilcox@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9 July 2014 08:52, Mathias Krause <minipli@googlemail.com> wrote:
-> On 9 July 2014 00:48, Dave Airlie <airlied@gmail.com> wrote:
->> On 2 July 2014 16:15, Mathias Krause <minipli@googlemail.com> wrote:
->>> On 15 June 2014 23:02, Mathias Krause <minipli@googlemail.com> wrote:
->>>> The VFS layer handles those in the very same way, if unset. No need for
->>>> additional stubs.
->>>>
->>>> Signed-off-by: Mathias Krause <minipli@googlemail.com>
->>>> Cc: Alexander Viro <viro@zeniv.linux.org.uk>
->>>> ---
->>>>  drivers/char/agp/frontend.c |   15 ---------------
->>>>  1 file changed, 15 deletions(-)
->>>>
->>>> diff --git a/drivers/char/agp/frontend.c b/drivers/char/agp/frontend.c
->>>> index b29703324e..09f17eb734 100644
->>>> --- a/drivers/char/agp/frontend.c
->>>> +++ b/drivers/char/agp/frontend.c
->>>> @@ -710,19 +710,6 @@ static int agp_open(struct inode *inode, struct file *file)
->>>>         return 0;
->>>>  }
->>>>
->>>> -
->>>> -static ssize_t agp_read(struct file *file, char __user *buf,
->>>> -                       size_t count, loff_t * ppos)
->>>> -{
->>>> -       return -EINVAL;
->>>> -}
->>>> -
->>>> -static ssize_t agp_write(struct file *file, const char __user *buf,
->>>> -                        size_t count, loff_t * ppos)
->>>> -{
->>>> -       return -EINVAL;
->>>> -}
->>>> -
->>>>  static int agpioc_info_wrap(struct agp_file_private *priv, void __user *arg)
->>>>  {
->>>>         struct agp_info userinfo;
->>>> @@ -1047,8 +1034,6 @@ static const struct file_operations agp_fops =
->>>>  {
->>>>         .owner          = THIS_MODULE,
->>>>         .llseek         = no_llseek,
->>>> -       .read           = agp_read,
->>>> -       .write          = agp_write,
->>>>         .unlocked_ioctl = agp_ioctl,
->>>>  #ifdef CONFIG_COMPAT
->>>>         .compat_ioctl   = compat_agp_ioctl,
->>>> --
->>>> 1.7.10.4
->>>>
->>>
->>> Ping. Any objections, comments? David?
->>
->> Are you sure VFS handles this the same way? can you point me where it
->> checks ->read and returns -EINVAL, I'm probably just missing it in my
->> quick look over fs/read_write.c
->
-> The VFS code changed during the last merge window so the ->read and
-> ->write tests are no longer directly visible. The presence of a ->read
-> / ->write function is now remembered at open(2) time and stored in
-> ->f_mode as a flag.
->
-> The corresponding commit for the VFS change is 7f7f25e82d "replace
-> checking for ->read/->aio_read presence with check in ->f_mode".
-> Despite its subject, it also handles ->write / ->aio_write. The flags
-> are set in fs/open:do_dentry_open():
->
->     if ((f->f_mode & FMODE_READ) &&
->          likely(f->f_op->read || f->f_op->aio_read || f->f_op->read_iter))
->         f->f_mode |= FMODE_CAN_READ;
->     if ((f->f_mode & FMODE_WRITE) &&
->          likely(f->f_op->write || f->f_op->aio_write || f->f_op->write_iter))
->         f->f_mode |= FMODE_CAN_WRITE;
->
-> With that change in mind, the redundancy of the agp_read() and
-> agp_write() functions can be seen for read(2) in vfs_read():
->
->     if (!(file->f_mode & FMODE_CAN_READ))
->         return -EINVAL;
->
-> ..and for write(2) in vfs_write():
->
->     if (!(file->f_mode & FMODE_CAN_WRITE))
->         return -EINVAL;
->
-> The other entry points (readv / writev / compat wrappers) have been
-> changed accordingly, so those handle a missing ->read / ->write
-> callback in the same way: returning -EINVAL.
->
-> Regards,
-> Mathias
+From: Matthew Wilcox <willy@linux.intel.com>
 
-Ping. Any more comments, David?
+For DAX, we want to be able to copy between iovecs and kernel addresses
+that don't necessarily have a struct page.  This is a fairly simple
+rearrangement for bvec iters to kmap the pages outside and pass them in,
+but for user iovecs it gets more complicated because we might try various
+different ways to kmap the memory.  Duplicating the existing logic works
+out best in this case.
+
+We need to be able to write zeroes to an iovec for reads from unwritten
+ranges in a file.  This is performed by the new iov_iter_zero() function,
+again patterned after the existing code that handles iovec iterators.
+
+Signed-off-by: Matthew Wilcox <willy@linux.intel.com>
+---
+ include/linux/uio.h |   3 +
+ mm/iov_iter.c       | 237 ++++++++++++++++++++++++++++++++++++++++++++++++----
+ 2 files changed, 226 insertions(+), 14 deletions(-)
+
+diff --git a/include/linux/uio.h b/include/linux/uio.h
+index 09a7cff..86fb3e9 100644
+--- a/include/linux/uio.h
++++ b/include/linux/uio.h
+@@ -80,6 +80,9 @@ size_t copy_page_to_iter(struct page *page, size_t offset, size_t bytes,
+ 			 struct iov_iter *i);
+ size_t copy_page_from_iter(struct page *page, size_t offset, size_t bytes,
+ 			 struct iov_iter *i);
++size_t copy_to_iter(void *addr, size_t bytes, struct iov_iter *i);
++size_t copy_from_iter(void *addr, size_t bytes, struct iov_iter *i);
++size_t iov_iter_zero(size_t bytes, struct iov_iter *);
+ unsigned long iov_iter_alignment(const struct iov_iter *i);
+ void iov_iter_init(struct iov_iter *i, int direction, const struct iovec *iov,
+ 			unsigned long nr_segs, size_t count);
+diff --git a/mm/iov_iter.c b/mm/iov_iter.c
+index 7b5dbd1..e95ed80 100644
+--- a/mm/iov_iter.c
++++ b/mm/iov_iter.c
+@@ -4,6 +4,96 @@
+ #include <linux/slab.h>
+ #include <linux/vmalloc.h>
+ 
++static size_t copy_to_iter_iovec(void *from, size_t bytes, struct iov_iter *i)
++{
++	size_t skip, copy, left, wanted;
++	const struct iovec *iov;
++	char __user *buf;
++
++	if (unlikely(bytes > i->count))
++		bytes = i->count;
++
++	if (unlikely(!bytes))
++		return 0;
++
++	wanted = bytes;
++	iov = i->iov;
++	skip = i->iov_offset;
++	buf = iov->iov_base + skip;
++	copy = min(bytes, iov->iov_len - skip);
++
++	left = __copy_to_user(buf, from, copy);
++	copy -= left;
++	skip += copy;
++	from += copy;
++	bytes -= copy;
++	while (unlikely(!left && bytes)) {
++		iov++;
++		buf = iov->iov_base;
++		copy = min(bytes, iov->iov_len);
++		left = __copy_to_user(buf, from, copy);
++		copy -= left;
++		skip = copy;
++		from += copy;
++		bytes -= copy;
++	}
++
++	if (skip == iov->iov_len) {
++		iov++;
++		skip = 0;
++	}
++	i->count -= wanted - bytes;
++	i->nr_segs -= iov - i->iov;
++	i->iov = iov;
++	i->iov_offset = skip;
++	return wanted - bytes;
++}
++
++static size_t copy_from_iter_iovec(void *to, size_t bytes, struct iov_iter *i)
++{
++	size_t skip, copy, left, wanted;
++	const struct iovec *iov;
++	char __user *buf;
++
++	if (unlikely(bytes > i->count))
++		bytes = i->count;
++
++	if (unlikely(!bytes))
++		return 0;
++
++	wanted = bytes;
++	iov = i->iov;
++	skip = i->iov_offset;
++	buf = iov->iov_base + skip;
++	copy = min(bytes, iov->iov_len - skip);
++
++	left = __copy_from_user(to, buf, copy);
++	copy -= left;
++	skip += copy;
++	to += copy;
++	bytes -= copy;
++	while (unlikely(!left && bytes)) {
++		iov++;
++		buf = iov->iov_base;
++		copy = min(bytes, iov->iov_len);
++		left = __copy_from_user(to, buf, copy);
++		copy -= left;
++		skip = copy;
++		to += copy;
++		bytes -= copy;
++	}
++
++	if (skip == iov->iov_len) {
++		iov++;
++		skip = 0;
++	}
++	i->count -= wanted - bytes;
++	i->nr_segs -= iov - i->iov;
++	i->iov = iov;
++	i->iov_offset = skip;
++	return wanted - bytes;
++}
++
+ static size_t copy_page_to_iter_iovec(struct page *page, size_t offset, size_t bytes,
+ 			 struct iov_iter *i)
+ {
+@@ -166,6 +256,50 @@ done:
+ 	return wanted - bytes;
+ }
+ 
++static size_t zero_iovec(size_t bytes, struct iov_iter *i)
++{
++	size_t skip, copy, left, wanted;
++	const struct iovec *iov;
++	char __user *buf;
++
++	if (unlikely(bytes > i->count))
++		bytes = i->count;
++
++	if (unlikely(!bytes))
++		return 0;
++
++	wanted = bytes;
++	iov = i->iov;
++	skip = i->iov_offset;
++	buf = iov->iov_base + skip;
++	copy = min(bytes, iov->iov_len - skip);
++
++	left = __clear_user(buf, copy);
++	copy -= left;
++	skip += copy;
++	bytes -= copy;
++
++	while (unlikely(!left && bytes)) {
++		iov++;
++		buf = iov->iov_base;
++		copy = min(bytes, iov->iov_len);
++		left = __clear_user(buf, copy);
++		copy -= left;
++		skip = copy;
++		bytes -= copy;
++	}
++
++	if (skip == iov->iov_len) {
++		iov++;
++		skip = 0;
++	}
++	i->count -= wanted - bytes;
++	i->nr_segs -= iov - i->iov;
++	i->iov = iov;
++	i->iov_offset = skip;
++	return wanted - bytes;
++}
++
+ static size_t __iovec_copy_from_user_inatomic(char *vaddr,
+ 			const struct iovec *iov, size_t base, size_t bytes)
+ {
+@@ -412,12 +546,17 @@ static void memcpy_to_page(struct page *page, size_t offset, char *from, size_t
+ 	kunmap_atomic(to);
+ }
+ 
+-static size_t copy_page_to_iter_bvec(struct page *page, size_t offset, size_t bytes,
+-			 struct iov_iter *i)
++static void memzero_page(struct page *page, size_t offset, size_t len)
++{
++	char *addr = kmap_atomic(page);
++	memset(addr + offset, 0, len);
++	kunmap_atomic(addr);
++}
++
++static size_t copy_to_iter_bvec(void *from, size_t bytes, struct iov_iter *i)
+ {
+ 	size_t skip, copy, wanted;
+ 	const struct bio_vec *bvec;
+-	void *kaddr, *from;
+ 
+ 	if (unlikely(bytes > i->count))
+ 		bytes = i->count;
+@@ -430,8 +569,6 @@ static size_t copy_page_to_iter_bvec(struct page *page, size_t offset, size_t by
+ 	skip = i->iov_offset;
+ 	copy = min_t(size_t, bytes, bvec->bv_len - skip);
+ 
+-	kaddr = kmap_atomic(page);
+-	from = kaddr + offset;
+ 	memcpy_to_page(bvec->bv_page, skip + bvec->bv_offset, from, copy);
+ 	skip += copy;
+ 	from += copy;
+@@ -444,7 +581,6 @@ static size_t copy_page_to_iter_bvec(struct page *page, size_t offset, size_t by
+ 		from += copy;
+ 		bytes -= copy;
+ 	}
+-	kunmap_atomic(kaddr);
+ 	if (skip == bvec->bv_len) {
+ 		bvec++;
+ 		skip = 0;
+@@ -456,12 +592,10 @@ static size_t copy_page_to_iter_bvec(struct page *page, size_t offset, size_t by
+ 	return wanted - bytes;
+ }
+ 
+-static size_t copy_page_from_iter_bvec(struct page *page, size_t offset, size_t bytes,
+-			 struct iov_iter *i)
++static size_t copy_from_iter_bvec(void *to, size_t bytes, struct iov_iter *i)
+ {
+ 	size_t skip, copy, wanted;
+ 	const struct bio_vec *bvec;
+-	void *kaddr, *to;
+ 
+ 	if (unlikely(bytes > i->count))
+ 		bytes = i->count;
+@@ -473,10 +607,6 @@ static size_t copy_page_from_iter_bvec(struct page *page, size_t offset, size_t
+ 	bvec = i->bvec;
+ 	skip = i->iov_offset;
+ 
+-	kaddr = kmap_atomic(page);
+-
+-	to = kaddr + offset;
+-
+ 	copy = min(bytes, bvec->bv_len - skip);
+ 
+ 	memcpy_from_page(to, bvec->bv_page, bvec->bv_offset + skip, copy);
+@@ -493,7 +623,6 @@ static size_t copy_page_from_iter_bvec(struct page *page, size_t offset, size_t
+ 		to += copy;
+ 		bytes -= copy;
+ 	}
+-	kunmap_atomic(kaddr);
+ 	if (skip == bvec->bv_len) {
+ 		bvec++;
+ 		skip = 0;
+@@ -505,6 +634,61 @@ static size_t copy_page_from_iter_bvec(struct page *page, size_t offset, size_t
+ 	return wanted;
+ }
+ 
++static size_t copy_page_to_iter_bvec(struct page *page, size_t offset,
++					size_t bytes, struct iov_iter *i)
++{
++	void *kaddr = kmap_atomic(page);
++	size_t wanted = copy_to_iter_bvec(kaddr + offset, bytes, i);
++	kunmap_atomic(kaddr);
++	return wanted;
++}
++
++static size_t copy_page_from_iter_bvec(struct page *page, size_t offset,
++					size_t bytes, struct iov_iter *i)
++{
++	void *kaddr = kmap_atomic(page);
++	size_t wanted = copy_from_iter_bvec(kaddr + offset, bytes, i);
++	kunmap_atomic(kaddr);
++	return wanted;
++}
++
++static size_t zero_bvec(size_t bytes, struct iov_iter *i)
++{
++	size_t skip, copy, wanted;
++	const struct bio_vec *bvec;
++
++	if (unlikely(bytes > i->count))
++		bytes = i->count;
++
++	if (unlikely(!bytes))
++		return 0;
++
++	wanted = bytes;
++	bvec = i->bvec;
++	skip = i->iov_offset;
++	copy = min_t(size_t, bytes, bvec->bv_len - skip);
++
++	memzero_page(bvec->bv_page, skip + bvec->bv_offset, copy);
++	skip += copy;
++	bytes -= copy;
++	while (bytes) {
++		bvec++;
++		copy = min(bytes, (size_t)bvec->bv_len);
++		memzero_page(bvec->bv_page, bvec->bv_offset, copy);
++		skip = copy;
++		bytes -= copy;
++	}
++	if (skip == bvec->bv_len) {
++		bvec++;
++		skip = 0;
++	}
++	i->count -= wanted - bytes;
++	i->nr_segs -= bvec - i->bvec;
++	i->bvec = bvec;
++	i->iov_offset = skip;
++	return wanted - bytes;
++}
++
+ static size_t copy_from_user_bvec(struct page *page,
+ 		struct iov_iter *i, unsigned long offset, size_t bytes)
+ {
+@@ -669,6 +853,31 @@ size_t copy_page_from_iter(struct page *page, size_t offset, size_t bytes,
+ }
+ EXPORT_SYMBOL(copy_page_from_iter);
+ 
++size_t copy_to_iter(void *addr, size_t bytes, struct iov_iter *i)
++{
++	if (i->type & ITER_BVEC)
++		return copy_to_iter_bvec(addr, bytes, i);
++	else
++		return copy_to_iter_iovec(addr, bytes, i);
++}
++
++size_t copy_from_iter(void *addr, size_t bytes, struct iov_iter *i)
++{
++	if (i->type & ITER_BVEC)
++		return copy_from_iter_bvec(addr, bytes, i);
++	else
++		return copy_from_iter_iovec(addr, bytes, i);
++}
++
++size_t iov_iter_zero(size_t bytes, struct iov_iter *i)
++{
++	if (i->type & ITER_BVEC) {
++		return zero_bvec(bytes, i);
++	} else {
++		return zero_iovec(bytes, i);
++	}
++}
++
+ size_t iov_iter_copy_from_user_atomic(struct page *page,
+ 		struct iov_iter *i, unsigned long offset, size_t bytes)
+ {
+-- 
+2.0.0
+
