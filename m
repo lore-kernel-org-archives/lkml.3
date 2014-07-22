@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933785AbaGVW2u (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 18:28:50 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44990 "EHLO
+	id S933797AbaGVW3J (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 18:29:09 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:44988 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933727AbaGVW1y (ORCPT
+	with ESMTP id S933720AbaGVW1x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 18:27:54 -0400
+	Tue, 22 Jul 2014 18:27:53 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Dwight Engen <dwight.engen@oracle.com>, Ben Myers <bpm@sgi.com>,
+Cc: Bart Van Assche <bvanassche@acm.org>,
+        Roland Dreier <roland@purestorage.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 076/116] xfs: ioctl check for capabilities in the current user namespace
-Date: Tue, 22 Jul 2014 15:21:27 -0700
-Message-Id: <1406067727-19683-77-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 063/116] IB/umad: Fix use-after-free on close
+Date: Tue, 22 Jul 2014 15:21:14 -0700
+Message-Id: <1406067727-19683-64-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1406067727-19683-1-git-send-email-kamal@canonical.com>
 References: <1406067727-19683-1-git-send-email-kamal@canonical.com>
@@ -27,76 +28,167 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dwight Engen <dwight.engen@oracle.com>
+From: Bart Van Assche <bvanassche@acm.org>
 
-commit fd5e2aa8653665ae1cc60f7aca1069abdbcad3f6 upstream.
+commit 60e1751cb52cc6d1ae04b6bd3c2b96e770b5823f upstream.
 
-Use inode_capable() to check if SUID|SGID bits should be cleared to match
-similar check in inode_change_ok().
+Avoid that closing /dev/infiniband/umad<n> or /dev/infiniband/issm<n>
+triggers a use-after-free.  __fput() invokes f_op->release() before it
+invokes cdev_put().  Make sure that the ib_umad_device structure is
+freed by the cdev_put() call instead of f_op->release().  This avoids
+that changing the port mode from IB into Ethernet and back to IB
+followed by restarting opensmd triggers the following kernel oops:
 
-The check for CAP_LINUX_IMMUTABLE was not modified since all other file
-systems also check against init_user_ns rather than current_user_ns.
+    general protection fault: 0000 [#1] PREEMPT SMP
+    RIP: 0010:[<ffffffff810cc65c>]  [<ffffffff810cc65c>] module_put+0x2c/0x170
+    Call Trace:
+     [<ffffffff81190f20>] cdev_put+0x20/0x30
+     [<ffffffff8118e2ce>] __fput+0x1ae/0x1f0
+     [<ffffffff8118e35e>] ____fput+0xe/0x10
+     [<ffffffff810723bc>] task_work_run+0xac/0xe0
+     [<ffffffff81002a9f>] do_notify_resume+0x9f/0xc0
+     [<ffffffff814b8398>] int_signal+0x12/0x17
 
-Only allow changing of projid from init_user_ns.
-
-Reviewed-by: Dave Chinner <dchinner@redhat.com>
-Reviewed-by: Gao feng <gaofeng@cn.fujitsu.com>
-Signed-off-by: Dwight Engen <dwight.engen@oracle.com>
-Signed-off-by: Ben Myers <bpm@sgi.com>
-[ kamal: 3.8-stable prereq for
-  23adbe1 fs,userns: Change inode_capable to capable_wrt_inode_uidgid ]
+Reference: https://bugzilla.kernel.org/show_bug.cgi?id=75051
+Signed-off-by: Bart Van Assche <bvanassche@acm.org>
+Reviewed-by: Yann Droneaud <ydroneaud@opteya.com>
+Signed-off-by: Roland Dreier <roland@purestorage.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- fs/xfs/xfs_ioctl.c  | 11 +++++++++--
- kernel/capability.c |  1 +
- 2 files changed, 10 insertions(+), 2 deletions(-)
+ drivers/infiniband/core/user_mad.c | 30 +++++++++++++++++++-----------
+ 1 file changed, 19 insertions(+), 11 deletions(-)
 
-diff --git a/fs/xfs/xfs_ioctl.c b/fs/xfs/xfs_ioctl.c
-index cdaef2d..ec74a78 100644
---- a/fs/xfs/xfs_ioctl.c
-+++ b/fs/xfs/xfs_ioctl.c
-@@ -976,15 +976,22 @@ xfs_ioctl_setattr(
- 	 * to the file owner ID, except in cases where the
- 	 * CAP_FSETID capability is applicable.
- 	 */
--	if (current_fsuid() != ip->i_d.di_uid && !capable(CAP_FOWNER)) {
-+	if (!inode_owner_or_capable(VFS_I(ip))) {
- 		code = XFS_ERROR(EPERM);
- 		goto error_return;
+diff --git a/drivers/infiniband/core/user_mad.c b/drivers/infiniband/core/user_mad.c
+index 9bdf576..1acb991 100644
+--- a/drivers/infiniband/core/user_mad.c
++++ b/drivers/infiniband/core/user_mad.c
+@@ -98,7 +98,7 @@ struct ib_umad_port {
+ 
+ struct ib_umad_device {
+ 	int                  start_port, end_port;
+-	struct kref          ref;
++	struct kobject       kobj;
+ 	struct ib_umad_port  port[0];
+ };
+ 
+@@ -134,14 +134,18 @@ static DECLARE_BITMAP(dev_map, IB_UMAD_MAX_PORTS);
+ static void ib_umad_add_one(struct ib_device *device);
+ static void ib_umad_remove_one(struct ib_device *device);
+ 
+-static void ib_umad_release_dev(struct kref *ref)
++static void ib_umad_release_dev(struct kobject *kobj)
+ {
+ 	struct ib_umad_device *dev =
+-		container_of(ref, struct ib_umad_device, ref);
++		container_of(kobj, struct ib_umad_device, kobj);
+ 
+ 	kfree(dev);
+ }
+ 
++static struct kobj_type ib_umad_dev_ktype = {
++	.release = ib_umad_release_dev,
++};
++
+ static int hdr_size(struct ib_umad_file *file)
+ {
+ 	return file->use_pkey_index ? sizeof (struct ib_user_mad_hdr) :
+@@ -812,7 +816,7 @@ static int ib_umad_open(struct inode *inode, struct file *filp)
+ 		goto out;
  	}
  
- 	/*
- 	 * Do a quota reservation only if projid is actually going to change.
-+	 * Only allow changing of projid from init_user_ns since it is a
-+	 * non user namespace aware identifier.
- 	 */
- 	if (mask & FSX_PROJID) {
-+		if (current_user_ns() != &init_user_ns) {
-+			code = XFS_ERROR(EINVAL);
-+			goto error_return;
-+		}
-+
- 		if (XFS_IS_QUOTA_RUNNING(mp) &&
- 		    XFS_IS_PQUOTA_ON(mp) &&
- 		    xfs_get_projid(ip) != fa->fsx_projid) {
-@@ -1098,7 +1105,7 @@ xfs_ioctl_setattr(
- 		 * cleared upon successful return from chown()
- 		 */
- 		if ((ip->i_d.di_mode & (S_ISUID|S_ISGID)) &&
--		    !capable(CAP_FSETID))
-+		    !inode_capable(VFS_I(ip), CAP_FSETID))
- 			ip->i_d.di_mode &= ~(S_ISUID|S_ISGID);
+-	kref_get(&port->umad_dev->ref);
++	kobject_get(&port->umad_dev->kobj);
  
- 		/*
-diff --git a/kernel/capability.c b/kernel/capability.c
-index f6c2ce5..a4b6744 100644
---- a/kernel/capability.c
-+++ b/kernel/capability.c
-@@ -464,3 +464,4 @@ bool inode_capable(const struct inode *inode, int cap)
+ out:
+ 	mutex_unlock(&port->file_mutex);
+@@ -851,7 +855,7 @@ static int ib_umad_close(struct inode *inode, struct file *filp)
+ 	mutex_unlock(&file->port->file_mutex);
  
- 	return ns_capable(ns, cap) && kuid_has_mapping(ns, inode->i_uid);
+ 	kfree(file);
+-	kref_put(&dev->ref, ib_umad_release_dev);
++	kobject_put(&dev->kobj);
+ 
+ 	return 0;
  }
-+EXPORT_SYMBOL(inode_capable);
+@@ -902,7 +906,7 @@ static int ib_umad_sm_open(struct inode *inode, struct file *filp)
+ 	if (ret)
+ 		goto err_clr_sm_cap;
+ 
+-	kref_get(&port->umad_dev->ref);
++	kobject_get(&port->umad_dev->kobj);
+ 
+ 	return 0;
+ 
+@@ -932,7 +936,7 @@ static int ib_umad_sm_close(struct inode *inode, struct file *filp)
+ 
+ 	up(&port->sm_sem);
+ 
+-	kref_put(&port->umad_dev->ref, ib_umad_release_dev);
++	kobject_put(&port->umad_dev->kobj);
+ 
+ 	return ret;
+ }
+@@ -1000,6 +1004,7 @@ static int find_overflow_devnum(void)
+ }
+ 
+ static int ib_umad_init_port(struct ib_device *device, int port_num,
++			     struct ib_umad_device *umad_dev,
+ 			     struct ib_umad_port *port)
+ {
+ 	int devnum;
+@@ -1032,6 +1037,7 @@ static int ib_umad_init_port(struct ib_device *device, int port_num,
+ 
+ 	cdev_init(&port->cdev, &umad_fops);
+ 	port->cdev.owner = THIS_MODULE;
++	port->cdev.kobj.parent = &umad_dev->kobj;
+ 	kobject_set_name(&port->cdev.kobj, "umad%d", port->dev_num);
+ 	if (cdev_add(&port->cdev, base, 1))
+ 		goto err_cdev;
+@@ -1050,6 +1056,7 @@ static int ib_umad_init_port(struct ib_device *device, int port_num,
+ 	base += IB_UMAD_MAX_PORTS;
+ 	cdev_init(&port->sm_cdev, &umad_sm_fops);
+ 	port->sm_cdev.owner = THIS_MODULE;
++	port->sm_cdev.kobj.parent = &umad_dev->kobj;
+ 	kobject_set_name(&port->sm_cdev.kobj, "issm%d", port->dev_num);
+ 	if (cdev_add(&port->sm_cdev, base, 1))
+ 		goto err_sm_cdev;
+@@ -1143,7 +1150,7 @@ static void ib_umad_add_one(struct ib_device *device)
+ 	if (!umad_dev)
+ 		return;
+ 
+-	kref_init(&umad_dev->ref);
++	kobject_init(&umad_dev->kobj, &ib_umad_dev_ktype);
+ 
+ 	umad_dev->start_port = s;
+ 	umad_dev->end_port   = e;
+@@ -1151,7 +1158,8 @@ static void ib_umad_add_one(struct ib_device *device)
+ 	for (i = s; i <= e; ++i) {
+ 		umad_dev->port[i - s].umad_dev = umad_dev;
+ 
+-		if (ib_umad_init_port(device, i, &umad_dev->port[i - s]))
++		if (ib_umad_init_port(device, i, umad_dev,
++				      &umad_dev->port[i - s]))
+ 			goto err;
+ 	}
+ 
+@@ -1163,7 +1171,7 @@ err:
+ 	while (--i >= s)
+ 		ib_umad_kill_port(&umad_dev->port[i - s]);
+ 
+-	kref_put(&umad_dev->ref, ib_umad_release_dev);
++	kobject_put(&umad_dev->kobj);
+ }
+ 
+ static void ib_umad_remove_one(struct ib_device *device)
+@@ -1177,7 +1185,7 @@ static void ib_umad_remove_one(struct ib_device *device)
+ 	for (i = 0; i <= umad_dev->end_port - umad_dev->start_port; ++i)
+ 		ib_umad_kill_port(&umad_dev->port[i]);
+ 
+-	kref_put(&umad_dev->ref, ib_umad_release_dev);
++	kobject_put(&umad_dev->kobj);
+ }
+ 
+ static char *umad_devnode(struct device *dev, umode_t *mode)
 -- 
 1.9.1
 
