@@ -1,59 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754058AbaGVMEp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 08:04:45 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:56755 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751290AbaGVMEn (ORCPT
+	id S1752343AbaGVMEy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 08:04:54 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:36104 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751290AbaGVMEw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 08:04:43 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Linux PCI <linux-pci@vger.kernel.org>, Zhang Rui <rui.zhang@intel.com>
-Subject: Re: [PATCH 0/3] ACPI / PM: Make ACPI-based PCI wakeup work for the "freeze" sleep state
-Date: Tue, 22 Jul 2014 14:23:03 +0200
-Message-ID: <2866134.Da8PQoU0sW@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20140722085538.GA3935@laptop>
-References: <1907495.agrCMfRsQN@vostro.rjw.lan> <9631666.En3K0jlGsY@vostro.rjw.lan> <20140722085538.GA3935@laptop>
+	Tue, 22 Jul 2014 08:04:52 -0400
+Date: Tue, 22 Jul 2014 14:04:45 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Rik van Riel <riel@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Kirill Tkhai <ktkhai@parallels.com>,
+        Tim Chen <tim.c.chen@linux.intel.com>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>, mingo@kernel.org,
+        pjt@google.com
+Subject: Re: [PATCH] sched: update last_balance only when actually balanced
+Message-ID: <20140722120445.GB3935@laptop>
+References: <20140722022121.4589c63b@annuminas.surriel.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140722022121.4589c63b@annuminas.surriel.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, July 22, 2014 10:55:38 AM Peter Zijlstra wrote:
-> On Tue, Jul 22, 2014 at 03:23:29AM +0200, Rafael J. Wysocki wrote:
+On Tue, Jul 22, 2014 at 02:21:21AM -0400, Rik van Riel wrote:
+> Currently rebalance_domains will happily update sd->last_balance
+> even if should_we_balance() decides that this CPU should not do
+> any load balancing for the sd.
 > 
-> > That turned out to be more challenging than I had thought initially.
-> > 
-> > The last version I sent was almost OK, but it had some issues (like it could
-> > walk the PCI hierarchy before resuming any PCI devices during system resume),
-> > so a new version follows.  I did my best to avoid introducing any new problems
-> > with it, but I obviously might overlook something.
-> > 
-> > It works for me and doesn't seem to break anything as far as I can say.
-> > 
-> > [1/3] Make PM workqueue available for CONFIG_PM_RUNTIME unset.
-> > [2/3] Rework the handling of ACPI device wakeup notifications.
-> > [3/3] Enable wakeup GPEs while setting up devices for wakeup during system
-> >       suspend too.
+> This can prevent the CPU that should load balance for the sd from
+> doing load balancing, which can delay active balancing essentially
+> forever.
 > 
-> Doesn't break, doesn't 'work' either.
+> The solution is to only update sd->last_balance when load_balance()
+> actually did something.
+> 
+> Signed-off-by: Rik van Riel <riel@redhat.com>
+> ---
+>  kernel/sched/fair.c | 4 +++-
+>  1 file changed, 3 insertions(+), 1 deletion(-)
+> 
+> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> index 45943b2..4f7fee2 100644
+> --- a/kernel/sched/fair.c
+> +++ b/kernel/sched/fair.c
+> @@ -7187,7 +7187,9 @@ static void rebalance_domains(struct rq *rq, enum cpu_idle_type idle)
+>  				 */
+>  				idle = idle_cpu(cpu) ? CPU_IDLE : CPU_NOT_IDLE;
+>  			}
+> -			sd->last_balance = jiffies;
+> +			/* Only update if we actually balanced. */
+> +			if (continue_balancing)
+> +				sd->last_balance = jiffies;
+>  			interval = get_sd_balance_interval(sd, idle != CPU_IDLE);
+>  		}
+>  		if (need_serialize)
 
-This probably means that WoL on that machine is not ACPI-based.
+Did you actually see any difference with this patch?
 
-> Is there anything I can provide you with to make this easier? lspci output
-> or anything like that?
-
-Yes, /proc/interrupts from the machine in question would help to start with.
-
-Also /sys/kernel/debug/wakeup_sources (if /sys/kernel/debug/ is where your debugfs
-lives) before and after a "freeze" with an attempt to use WoL to wake it up.
-
-Rafael
-
+The reason I'm asking is that the sched_domains are per cpu, so the
+above assignment is only visible to that particular cpu, not other cpus.
