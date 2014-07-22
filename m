@@ -1,93 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754186AbaGVSZ0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 14:25:26 -0400
-Received: from mail-vc0-f179.google.com ([209.85.220.179]:64377 "EHLO
-	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751027AbaGVSZZ (ORCPT
+	id S1755985AbaGVS2Y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 14:28:24 -0400
+Received: from g2t2353.austin.hp.com ([15.217.128.52]:42178 "EHLO
+	g2t2353.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751081AbaGVS2X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 14:25:25 -0400
+	Tue, 22 Jul 2014 14:28:23 -0400
+Message-ID: <53CEAD41.9030307@hp.com>
+Date: Tue, 22 Jul 2014 14:28:17 -0400
+From: Waiman Long <waiman.long@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
 MIME-Version: 1.0
-In-Reply-To: <CAAsK9AGtdJiz0xnmfqLBAqxmt=r+WANsmxwB_vQ3O5aKzMW1LQ@mail.gmail.com>
-References: <1406004789-9918-1-git-send-email-xerofoify@gmail.com>
-	<874my98p6u.fsf@nemi.mork.no>
-	<CA+8MBb+fnCNeQtyEqttxbkWx-4N+GUaKCUoCSdn5X9+bDDvTOg@mail.gmail.com>
-	<CAPDOMVjaf+vne4vbUPo8EPs0XnQBbNm2ZOXns8fw5pkg9tRSww@mail.gmail.com>
-	<CAAsK9AGtdJiz0xnmfqLBAqxmt=r+WANsmxwB_vQ3O5aKzMW1LQ@mail.gmail.com>
-Date: Tue, 22 Jul 2014 14:25:24 -0400
-Message-ID: <CAPDOMVhj72TFKbtw_93juX19WVdfUzh3KM9tCEjbTdUZvUfcUQ@mail.gmail.com>
-Subject: Re: [PATCH] edac: Remove fixmes in e7xxx_edac.c
-From: Nick Krause <xerofoify@gmail.com>
-To: Levente Kurusa <lkurusa@redhat.com>
-Cc: Tony Luck <tony.luck@gmail.com>,
-        =?UTF-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>,
-        Doug Thompson <dougthompson@xmission.com>,
-        Borislav Petkov <bp@alien8.de>,
-        "m.chehab@samsung.com" <m.chehab@samsung.com>,
-        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Andi Kleen <andi@firstfloor.org>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Darren Hart <dvhart@linux.intel.com>,
+        Davidlohr Bueso <davidlohr@hp.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
+        linux-doc@vger.kernel.org, Jason Low <jason.low2@hp.com>,
+        Scott J Norton <scott.norton@hp.com>
+Subject: Re: [RFC PATCH 0/5] futex: introduce an optimistic spinning futex
+References: <1405956271-34339-1-git-send-email-Waiman.Long@hp.com> <8761iq3bp3.fsf@tassilo.jf.intel.com>
+In-Reply-To: <8761iq3bp3.fsf@tassilo.jf.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 22, 2014 at 2:14 PM, Levente Kurusa <lkurusa@redhat.com> wrote:
-> 2014-07-22 19:40 GMT+02:00 Nick Krause <xerofoify@gmail.com>:
->> [...]
->>
->> Tony,
->>
->> What is the value of Page shift then ? If you can tell me it would be
->> much easier for
->> me to fix this.
->> Cheers Nick
+On 07/21/2014 12:42 PM, Andi Kleen wrote:
+> Waiman Long<Waiman.Long@hp.com>  writes:
 >
-> Nick,
->
-> Help is always welcome. However, what you are doing is effectively a
-> waste of time for you and for the maintainers as well, and hence cannot
-> be called help. You are writing emails that make absolutely no sense at all.
-> If you want to help us out, please consider learning three things:
->
-> * The language that the kernel is written in: C
-> * The language that most kernel developers understand: English
-> * The environment the kernel is (in most cases) written in: UNIX
->
-> If you had known these, then:
->
-> * ... you would have already known that FIXMEs exist for a reason which is
->    not at all simple.
->
-> * ... you would have understood that fixing FIXMEs without ANY reasoning and
->    asking about it is completely useless and wastes precious maintainer time.
->
-> * ... you could have used grep for finding out PAGE_SHIFT and not need to ask
->    for it.
->
-> Nick. Look, it is good that you are enthusiastic. However, this kind
-> of 'work' gives
-> you an undesirable reputation, which is {IF FROM:xerofoify@* THEN TRASH}...
->
-> If you really want to help out, I suggest you to find yourself a piece
-> of hardware from
-> the store and try to write a driver for it. That way, you will learn
-> how it all works, and if
-> you are intelligent enough then you might get a "Kernel Job - Payed"
-> like you asked us
-> for them in November.
->
-> Until then, please stop trying for FIXMEs. They will not get you a
-> commit in the kernel
-> 99% of the time.
->
-> Hope you understand,
->
-> Levente Kurusa
+>> This patch series introduces two new futex command codes to support
+>> a new optimistic spinning futex for implementing an exclusive lock
+>> primitive that should perform better than the same primitive using
+>> the wait-wake futex in cases where the lock owner is actively working
+>> instead of waiting for I/O completion.
+> How would you distinguish those two cases automatically?
 
+I don't really distinguish between these two. The purpose of this 
+paragraph is to show the best use cases for the spinning futexes is when 
+the lock owner is not likely to sleep while in the critical section.
 
-Levente,
+>> This patch series improves futex performance on two different fronts:
+>>   1) Reducing the amount of the futex spinlock contention by using 2
+>>      different spinlocks instead of just one for the wait-wake futex.
+>>   2) Eliminating the context switching overhead and latency due to the
+>>      sleeping and the waking of the waiting tasks.
+> FWIW the main problem is currently that switch-through-idle is so
+> slow. I think improving that would give a boost to far more
+> situations.
 
-I understand what your saying and I should have searched for Page shift.
-In addition I am already got commits in the kernel for fix mes so I feel
-that your comment on fix mes is incorrect.
-Nick
+If we can improve the context switching overhead, that can certainly 
+help a lot of applications.
+
+>
+>> Patch 4 changes sleeping queue from a simple FIFO list to an rbtree
+>> sorted by process priority as well as the sequeunce the tasks enter
+>> the kernel.
+> This seems to mix new functionality with performance improvements?
+>
+> Generally adding new ordering in an user interface is risky because
+> often user programs have been tuned for specific old ordering.
+
+Not really, this patch is to emulate the current behavior of the 
+wait-wake futex which is queued in a priority queue. Because of 
+spinning, tasks may enter into sleep state in different order than when 
+they enter into the kernel. That is why I keep a sequence number to 
+track who go into the kernel first.
+
+-Longman
+
