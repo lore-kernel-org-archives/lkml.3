@@ -1,62 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753605AbaGVJHb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 05:07:31 -0400
-Received: from mx07-00178001.pphosted.com ([62.209.51.94]:54686 "EHLO
-	mx07-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752016AbaGVJH3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 05:07:29 -0400
-Message-ID: <53CE29AE.3040505@st.com>
-Date: Tue, 22 Jul 2014 11:06:54 +0200
-From: Maxime Coquelin <maxime.coquelin@st.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1753944AbaGVJHp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 05:07:45 -0400
+Received: from ja.ssi.bg ([178.16.129.10]:35001 "EHLO ja.home.ssi.bg"
+	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753754AbaGVJHm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 05:07:42 -0400
+Date: Tue, 22 Jul 2014 11:52:02 +0300 (EEST)
+From: Julian Anastasov <ja@ssi.bg>
+X-X-Sender: ja@ja.home.ssi.bg
+To: Dan Carpenter <dan.carpenter@oracle.com>
+cc: Andrey Utkin <andrey.krieger.utkin@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        kernel-janitors@vger.kernel.org, coreteam@netfilter.org,
+        netfilter-devel@vger.kernel.org, lvs-devel@vger.kernel.org,
+        netdev@vger.kernel.org, dcb314@hotmail.com,
+        David Miller <davem@davemloft.net>, kadlec@blackhole.kfki.hu,
+        Patrick McHardy <kaber@trash.net>, pablo@netfilter.org,
+        Simon Horman <horms@verge.net.au>, wensong@linux-vs.org
+Subject: Re: [PATCH 3/5] net/netfilter/ipvs/ip_vs_ctl.c: drop argument range
+ check just before the check for equality
+In-Reply-To: <20140722074214.GL25880@mwanda>
+Message-ID: <alpine.LFD.2.11.1407221136420.1949@ja.home.ssi.bg>
+References: <1405697638-23767-1-git-send-email-andrey.krieger.utkin@gmail.com> <alpine.LFD.2.11.1407182339160.2273@ja.home.ssi.bg> <CANZNk83dJCXAWrQ+i5rh=sdUuiiD5ZhzDua-rjJpBZCzzNGDJA@mail.gmail.com> <alpine.LFD.2.11.1407212253100.2358@ja.home.ssi.bg>
+ <20140722074214.GL25880@mwanda>
+User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
 MIME-Version: 1.0
-To: Lee Jones <lee.jones@linaro.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>
-Cc: <kernel@stlinux.com>, <devicetree@vger.kernel.org>
-Subject: Re: [RESEND PATCH 1/1] ARM: DT: STi: STiH416: Add DT node for ST's
- SATA device
-References: <1405931573-12407-1-git-send-email-lee.jones@linaro.org>
-In-Reply-To: <1405931573-12407-1-git-send-email-lee.jones@linaro.org>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.201.23.80]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.14,0.0.0000
- definitions=2014-07-22_03:2014-07-22,2014-07-22,1970-01-01 signatures=0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Lee,
 
-On 07/21/2014 10:32 AM, Lee Jones wrote:
-> Cc: devicetree@vger.kernel.org
-> Acked-by: Alexandre Torgue <alexandre.torgue@st.com>
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> ---
->   Documentation/devicetree/bindings/ata/ahci-st.txt |  2 +-
->   arch/arm/boot/dts/stih416-b2020.dts               |  4 ++++
->   arch/arm/boot/dts/stih416-b2020e.dts              |  4 ++++
->   arch/arm/boot/dts/stih416.dtsi                    | 16 ++++++++++++++++
->   4 files changed, 25 insertions(+), 1 deletion(-)
->
-> diff --git a/Documentation/devicetree/bindings/ata/ahci-st.txt b/Documentation/devicetree/bindings/ata/ahci-st.txt
-> index 0574a77..9883542 100644
-> --- a/Documentation/devicetree/bindings/ata/ahci-st.txt
-> +++ b/Documentation/devicetree/bindings/ata/ahci-st.txt
-> @@ -21,7 +21,7 @@ Example:
->   		reg             = <0xfe380000 0x1000>;
->   		interrupts      = <GIC_SPI 157 IRQ_TYPE_NONE>;
->   		interrupt-names = "hostc";
-> -		phys	        = <&miphy365x_phy MIPHY_PORT_0 MIPHY_TYPE_SATA>;
-> +		phys	        = <&phy_port0 MIPHY_TYPE_SATA>;
->   		phy-names       = "ahci_phy";
->   		resets	        = <&powerdown STIH416_SATA0_POWERDOWN>,
->   				  <&softreset STIH416_SATA0_SOFTRESET>;
+	Hello,
 
-Patch does not apply because this file does not exist in my tree.
-Shouldn't be in a separate patch?
+On Tue, 22 Jul 2014, Dan Carpenter wrote:
 
-Regards,
-Maxime
+> On Mon, Jul 21, 2014 at 11:01:56PM +0300, Julian Anastasov wrote:
+> > @@ -2333,13 +2339,12 @@ do_ip_vs_set_ctl(struct sock *sk, int cmd, void __user *user, unsigned int len)
+> >  	struct ip_vs_dest_user_kern udest;
+> >  	struct netns_ipvs *ipvs = net_ipvs(net);
+> >  
+> > +	BUILD_BUG_ON(sizeof(arg) > 256);
+> 
+> 256 is off-by-one because u8 ranges from 0-255 so we are never able to
+> copy 256 bytes into the "arg" buffer.
+
+	I'll change it to >= 256, to catch that we can
+not hold such big size in unsigned char [gs]et_arglen and
+also as an indication that we have to use allocated buffer
+instead of stack.
+
+> > -	if (copylen > 128)
+> > +	if (*len < (int) copylen || *len < 0) {
+> > +		pr_err("get_ctl: len %d < %u\n", *len, copylen);
+> 
+> Don't let users flood dmesg.  Just return an error.  (This can be
+> triggered by non-root as well).
+
+	For now both set and get are privileged operations,
+so we can keep it, it can catch if something wrong happens
+with the structure sizes.
+
+Regards
+
+--
+Julian Anastasov <ja@ssi.bg>
