@@ -1,39 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757028AbaGVWBx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 18:01:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49340 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756950AbaGVWBv (ORCPT
+	id S1756940AbaGVWGi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 18:06:38 -0400
+Received: from smtp-outbound-1.vmware.com ([208.91.2.12]:56732 "EHLO
+	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755555AbaGVWGg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 18:01:51 -0400
-Date: Tue, 22 Jul 2014 15:01:51 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Guillaume Clement <gclement@baobob.org>
-Cc: Forest Bond <forest@alittletooquiet.net>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/5] staging: vt6655: change type of PortOffset to void
- __iomem *
-Message-ID: <20140722220151.GA29251@kroah.com>
-References: <1406059710-30903-1-git-send-email-gclement@baobob.org>
- <1406059710-30903-2-git-send-email-gclement@baobob.org>
+	Tue, 22 Jul 2014 18:06:36 -0400
+Date: Tue, 22 Jul 2014 15:06:34 -0700 (PDT)
+From: Jakob Bornecrantz <jakob@vmware.com>
+To: Dave Jones <davej@redhat.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Message-ID: <272182693.34271636.1406066794514.JavaMail.root@vmware.com>
+In-Reply-To: <20140722164927.GA21479@redhat.com>
+References: <20140722164927.GA21479@redhat.com>
+Subject: Re: vmwgfx: remove identical branches
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1406059710-30903-2-git-send-email-gclement@baobob.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.113.163.68]
+X-Mailer: Zimbra 8.0.3_GA_5664 (ZimbraWebClient - GC34 (Linux)/8.0.3_GA_5664)
+Thread-Topic: vmwgfx: remove identical branches
+Thread-Index: oAS8lXKGC9lNeanwqRjKcJtrKnbjXg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 22, 2014 at 10:08:26PM +0200, Guillaume Clement wrote:
-> PortOffset was an unsigned long, but used as an pointer to io
-> memory. Sometimes it was not properly cast before use, which caused
-> many warning by sparse.
+----- Original Message -----
+> Commit 8b7de6aa8468: "vmwgfx: Rework fence event action" removed the
+> tv_sec & tv_usec arguments to vmw_event_fence_action_create, which meant
+> that both sides of the if/else are now exactly the same.
 > 
-> By updating its type to void __iomem *, and reflecting the changes
-> where it is needed, this removes most of those warnings.
+> Remove the flag check, and just do it unconditionally.
+> 
+> Spotted with Coverity.
+> 
+> Signed-off-by: Dave Jones <davej@redhat.com>
 
-Nice job, that's the correct way to fix this.
+Reviewed-by: Jakob Bornecrantz <jakob@vmware.com>
 
-greg k-h
+and thanks for the patch.
+
+Cheers, Jakob.
+
+> 
+> diff --git a/drivers/gpu/drm/vmwgfx/vmwgfx_fence.c
+> b/drivers/gpu/drm/vmwgfx/vmwgfx_fence.c
+> index 436b013b4231..a078e6bbaf0a 100644
+> --- a/drivers/gpu/drm/vmwgfx/vmwgfx_fence.c
+> +++ b/drivers/gpu/drm/vmwgfx/vmwgfx_fence.c
+> @@ -1124,16 +1124,10 @@ int vmw_fence_event_ioctl(struct drm_device *dev,
+> void *data,
+>  
+>  	BUG_ON(fence == NULL);
+>  
+> -	if (arg->flags & DRM_VMW_FE_FLAG_REQ_TIME)
+> -		ret = vmw_event_fence_action_create(file_priv, fence,
+> -						    arg->flags,
+> -						    arg->user_data,
+> -						    true);
+> -	else
+> -		ret = vmw_event_fence_action_create(file_priv, fence,
+> -						    arg->flags,
+> -						    arg->user_data,
+> -						    true);
+> +	ret = vmw_event_fence_action_create(file_priv, fence,
+> +					    arg->flags,
+> +					    arg->user_data,
+> +					    true);
+>  
+>  	if (unlikely(ret != 0)) {
+>  		if (ret != -ERESTARTSYS)
+> 
