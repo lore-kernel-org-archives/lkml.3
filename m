@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933758AbaGVWea (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 18:34:30 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44828 "EHLO
+	id S933788AbaGVWeb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 18:34:31 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:44826 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933422AbaGVW0e (ORCPT
+	with ESMTP id S933420AbaGVW0e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 22 Jul 2014 18:26:34 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Trond Myklebust <trond.myklebust@primarydata.com>,
-        "J. Bruce Fields" <bfields@redhat.com>,
+Cc: Johannes Weiner <hannes@cmpxchg.org>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Tang Chen <tangchen@cn.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 025/116] SUNRPC: Fix a module reference leak in svc_handle_xprt
-Date: Tue, 22 Jul 2014 15:20:36 -0700
-Message-Id: <1406067727-19683-26-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 064/116] mm: vmscan: clear kswapd's special reclaim powers before exiting
+Date: Tue, 22 Jul 2014 15:21:15 -0700
+Message-Id: <1406067727-19683-65-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1406067727-19683-1-git-send-email-kamal@canonical.com>
 References: <1406067727-19683-1-git-send-email-kamal@canonical.com>
@@ -28,32 +31,96 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <trond.myklebust@primarydata.com>
+From: Johannes Weiner <hannes@cmpxchg.org>
 
-commit c789102c20bbbdda6831a273e046715be9d6af79 upstream.
+commit 71abdc15adf8c702a1dd535f8e30df50758848d2 upstream.
 
-If the accept() call fails, we need to put the module reference.
+When kswapd exits, it can end up taking locks that were previously held
+by allocating tasks while they waited for reclaim.  Lockdep currently
+warns about this:
 
-Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+On Wed, May 28, 2014 at 06:06:34PM +0800, Gu Zheng wrote:
+>  inconsistent {RECLAIM_FS-ON-W} -> {IN-RECLAIM_FS-R} usage.
+>  kswapd2/1151 [HC0[0]:SC0[0]:HE1:SE1] takes:
+>   (&sig->group_rwsem){+++++?}, at: exit_signals+0x24/0x130
+>  {RECLAIM_FS-ON-W} state was registered at:
+>     mark_held_locks+0xb9/0x140
+>     lockdep_trace_alloc+0x7a/0xe0
+>     kmem_cache_alloc_trace+0x37/0x240
+>     flex_array_alloc+0x99/0x1a0
+>     cgroup_attach_task+0x63/0x430
+>     attach_task_by_pid+0x210/0x280
+>     cgroup_procs_write+0x16/0x20
+>     cgroup_file_write+0x120/0x2c0
+>     vfs_write+0xc0/0x1f0
+>     SyS_write+0x4c/0xa0
+>     tracesys+0xdd/0xe2
+>  irq event stamp: 49
+>  hardirqs last  enabled at (49):  _raw_spin_unlock_irqrestore+0x36/0x70
+>  hardirqs last disabled at (48):  _raw_spin_lock_irqsave+0x2b/0xa0
+>  softirqs last  enabled at (0):  copy_process.part.24+0x627/0x15f0
+>  softirqs last disabled at (0):            (null)
+>
+>  other info that might help us debug this:
+>   Possible unsafe locking scenario:
+>
+>         CPU0
+>         ----
+>    lock(&sig->group_rwsem);
+>    <Interrupt>
+>      lock(&sig->group_rwsem);
+>
+>   *** DEADLOCK ***
+>
+>  no locks held by kswapd2/1151.
+>
+>  stack backtrace:
+>  CPU: 30 PID: 1151 Comm: kswapd2 Not tainted 3.10.39+ #4
+>  Call Trace:
+>    dump_stack+0x19/0x1b
+>    print_usage_bug+0x1f7/0x208
+>    mark_lock+0x21d/0x2a0
+>    __lock_acquire+0x52a/0xb60
+>    lock_acquire+0xa2/0x140
+>    down_read+0x51/0xa0
+>    exit_signals+0x24/0x130
+>    do_exit+0xb5/0xa50
+>    kthread+0xdb/0x100
+>    ret_from_fork+0x7c/0xb0
+
+This is because the kswapd thread is still marked as a reclaimer at the
+time of exit.  But because it is exiting, nobody is actually waiting on
+it to make reclaim progress anymore, and it's nothing but a regular
+thread at this point.  Be tidy and strip it of all its powers
+(PF_MEMALLOC, PF_SWAPWRITE, PF_KSWAPD, and the lockdep reclaim state)
+before returning from the thread function.
+
+Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+Reported-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
+Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Cc: Tang Chen <tangchen@cn.fujitsu.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/sunrpc/svc_xprt.c | 2 ++
- 1 file changed, 2 insertions(+)
+ mm/vmscan.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/net/sunrpc/svc_xprt.c b/net/sunrpc/svc_xprt.c
-index ca71056..9088c68 100644
---- a/net/sunrpc/svc_xprt.c
-+++ b/net/sunrpc/svc_xprt.c
-@@ -723,6 +723,8 @@ static int svc_handle_xprt(struct svc_rqst *rqstp, struct svc_xprt *xprt)
- 		newxpt = xprt->xpt_ops->xpo_accept(xprt);
- 		if (newxpt)
- 			svc_add_new_temp_xprt(serv, newxpt);
-+		else
-+			module_put(xprt->xpt_class->xcl_owner);
- 	} else if (xprt->xpt_ops->xpo_has_wspace(xprt)) {
- 		/* XPT_DATA|XPT_DEFERRED case: */
- 		dprintk("svc: server %p, pool %u, transport %p, inuse=%d\n",
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 9cbc502..cfd005c 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -3056,7 +3056,10 @@ static int kswapd(void *p)
+ 		}
+ 	}
+ 
++	tsk->flags &= ~(PF_MEMALLOC | PF_SWAPWRITE | PF_KSWAPD);
+ 	current->reclaim_state = NULL;
++	lockdep_clear_current_reclaim_state();
++
+ 	return 0;
+ }
+ 
 -- 
 1.9.1
 
