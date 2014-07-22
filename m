@@ -1,65 +1,365 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751531AbaGVAuM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 20:50:12 -0400
-Received: from mail-qc0-f177.google.com ([209.85.216.177]:61220 "EHLO
-	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750800AbaGVAuK (ORCPT
+	id S1751905AbaGVAu0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 20:50:26 -0400
+Received: from mga09.intel.com ([134.134.136.24]:13051 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751846AbaGVAuX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 20:50:10 -0400
-Date: Mon, 21 Jul 2014 20:50:05 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Jens Axboe <axboe@kernel.dk>
-Subject: Re: [PATCH percpu/for-3.17 2/2] blk-throttle: replace custom async
- percpu alloc mechanism with percpu_pool
-Message-ID: <20140722005005.GH12921@htj.dyndns.org>
-References: <20140718200804.GG13012@htj.dyndns.org>
- <20140718200834.GH13012@htj.dyndns.org>
- <20140721172734.GA13577@redhat.com>
+	Mon, 21 Jul 2014 20:50:23 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,705,1400050800"; 
+   d="scan'208";a="576722496"
+From: "Zhang, Tianfei" <tianfei.zhang@intel.com>
+To: "Ren, Qiaowei" <qiaowei.ren@intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "Hansen, Dave" <dave.hansen@intel.com>
+CC: "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "Ren, Qiaowei" <qiaowei.ren@intel.com>
+Subject: RE: [PATCH v7 09/10] x86, mpx: cleanup unused bound tables
+Thread-Topic: [PATCH v7 09/10] x86, mpx: cleanup unused bound tables
+Thread-Index: AQHPpKaoatKpZ089+EOWPEVD4gof+purRB3w
+Date: Tue, 22 Jul 2014 00:50:18 +0000
+Message-ID: <BA6F50564D52C24884F9840E07E32DEC17D5E280@CDSMSX102.ccr.corp.intel.com>
+References: <1405921124-4230-1-git-send-email-qiaowei.ren@intel.com>
+ <1405921124-4230-10-git-send-email-qiaowei.ren@intel.com>
+In-Reply-To: <1405921124-4230-10-git-send-email-qiaowei.ren@intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.17.6.105]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140721172734.GA13577@redhat.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
 
-On Mon, Jul 21, 2014 at 01:27:34PM -0400, Vivek Goyal wrote:
-> > +static bool tg_ensure_stats_cpu(struct throtl_grp *tg)
-...
-> > +	if (cmpxchg(&tg->stats_cpu, (struct tg_stats_cpu __percpu *)NULL,
-> > +		    stats_cpu))
-> > +		free_percpu(stats_cpu);
-> > +
+
+> -----Original Message-----
+> From: owner-linux-mm@kvack.org [mailto:owner-linux-mm@kvack.org] On
+> Behalf Of Qiaowei Ren
+> Sent: Monday, July 21, 2014 1:39 PM
+> To: H. Peter Anvin; Thomas Gleixner; Ingo Molnar; Hansen, Dave
+> Cc: x86@kernel.org; linux-kernel@vger.kernel.org; linux-mm@kvack.org; Ren,
+> Qiaowei
+> Subject: [PATCH v7 09/10] x86, mpx: cleanup unused bound tables
 > 
+> Since the kernel allocated those tables on-demand without userspace
+> knowledge, it is also responsible for freeing them when the associated
+> mappings go away.
 > 
-> So we are using atomic cmpxchg() so that we don't ask callers to hold queue
-> lock during this call? One of the callers is throtl_update_dispatch_stats()
-> and we don't want to grab queue lock while updating per cpu stat. In fact
-> stats were made per cpu so that we don't have to grab the lock.
+> Here, the solution for this issue is to hook do_munmap() to check whether one
+> process is MPX enabled. If yes, those bounds tables covered in the virtual
+> address region which is being unmapped will be freed also.
+> 
+> Signed-off-by: Qiaowei Ren <qiaowei.ren@intel.com>
+> ---
+>  arch/x86/include/asm/mmu_context.h |   16 +++
+>  arch/x86/include/asm/mpx.h         |    9 ++
+>  arch/x86/mm/mpx.c                  |  181
+> ++++++++++++++++++++++++++++++++++++
+>  include/asm-generic/mmu_context.h  |    6 +
+>  mm/mmap.c                          |    2 +
+>  5 files changed, 214 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/x86/include/asm/mmu_context.h
+> b/arch/x86/include/asm/mmu_context.h
+> index be12c53..af70d4f 100644
+> --- a/arch/x86/include/asm/mmu_context.h
+> +++ b/arch/x86/include/asm/mmu_context.h
+> @@ -6,6 +6,7 @@
+>  #include <asm/pgalloc.h>
+>  #include <asm/tlbflush.h>
+>  #include <asm/paravirt.h>
+> +#include <asm/mpx.h>
+>  #ifndef CONFIG_PARAVIRT
+>  #include <asm-generic/mm_hooks.h>
+> 
+> @@ -96,4 +97,19 @@ do {						\
+>  } while (0)
+>  #endif
+> 
+> +static inline void arch_unmap(struct mm_struct *mm,
+> +		struct vm_area_struct *vma,
+> +		unsigned long start, unsigned long end) { #ifdef
+> CONFIG_X86_INTEL_MPX
 
-Yeah, pretty much.  We can grab queuelock in the cold path for
-installation only but the original code already had cmpxchg, so I
-thought why not.  It could be simpler to do the following tho.
+"#indef" new line
 
-	if (already populated)
-		return;
+> +	/*
+> +	 * Check whether this vma comes from MPX-enabled application.
+> +	 * If so, release this vma related bound tables.
+> +	 */
+> +	if (mm->bd_addr && !(vma->vm_flags & VM_MPX))
+> +		mpx_unmap(mm, start, end);
+> +
+> +#endif
+> +}
+> +
+>  #endif /* _ASM_X86_MMU_CONTEXT_H */
+> diff --git a/arch/x86/include/asm/mpx.h b/arch/x86/include/asm/mpx.h index
+> 6cb0853..e848a74 100644
+> --- a/arch/x86/include/asm/mpx.h
+> +++ b/arch/x86/include/asm/mpx.h
+> @@ -42,6 +42,13 @@
+>  #define MPX_BD_SIZE_BYTES
+> (1UL<<(MPX_BD_ENTRY_OFFSET+MPX_BD_ENTRY_SHIFT))
+>  #define MPX_BT_SIZE_BYTES
+> (1UL<<(MPX_BT_ENTRY_OFFSET+MPX_BT_ENTRY_SHIFT))
+> 
+> +#define MPX_BD_ENTRY_MASK	((1<<MPX_BD_ENTRY_OFFSET)-1)
+> +#define MPX_BT_ENTRY_MASK	((1<<MPX_BT_ENTRY_OFFSET)-1)
+> +#define MPX_GET_BD_ENTRY_OFFSET(addr)
+> 	((((addr)>>(MPX_BT_ENTRY_OFFSET+ \
+> +		MPX_IGN_BITS)) & MPX_BD_ENTRY_MASK) <<
+> MPX_BD_ENTRY_SHIFT)
+> +#define MPX_GET_BT_ENTRY_OFFSET(addr)	((((addr)>>MPX_IGN_BITS) & \
+> +		MPX_BT_ENTRY_MASK) << MPX_BT_ENTRY_SHIFT)
+> +
+>  #define MPX_BNDSTA_ERROR_CODE	0x3
+>  #define MPX_BNDCFG_ENABLE_FLAG	0x1
+>  #define MPX_BD_ENTRY_VALID_FLAG	0x1
+> @@ -63,6 +70,8 @@ struct mpx_insn {
+>  #define MAX_MPX_INSN_SIZE	15
+> 
+>  unsigned long mpx_mmap(unsigned long len);
+> +void mpx_unmap(struct mm_struct *mm,
+> +		unsigned long start, unsigned long end);
+> 
+>  #ifdef CONFIG_X86_INTEL_MPX
+>  int do_mpx_bt_fault(struct xsave_struct *xsave_buf); diff --git
+> a/arch/x86/mm/mpx.c b/arch/x86/mm/mpx.c index e1b28e6..d29ec9c 100644
+> --- a/arch/x86/mm/mpx.c
+> +++ b/arch/x86/mm/mpx.c
+> @@ -2,6 +2,7 @@
+>  #include <linux/syscalls.h>
+>  #include <asm/mpx.h>
+>  #include <asm/mman.h>
+> +#include <asm/mmu_context.h>
+>  #include <linux/sched/sysctl.h>
+> 
+>  static const char *mpx_mapping_name(struct vm_area_struct *vma) @@
+> -77,3 +78,183 @@ out:
+>  	up_write(&mm->mmap_sem);
+>  	return ret;
+>  }
+> +
+> +/*
+> + * Get the base of bounds tables pointed by specific bounds
+> + * directory entry.
+> + */
+> +static int get_bt_addr(long __user *bd_entry, unsigned long *bt_addr,
+> +		unsigned int *valid)
+> +{
+> +	if (get_user(*bt_addr, bd_entry))
+> +		return -EFAULT;
+> +
+> +	*valid = *bt_addr & MPX_BD_ENTRY_VALID_FLAG;
+> +	*bt_addr &= MPX_BT_ADDR_MASK;
+> +
+> +	/*
+> +	 * If this bounds directory entry is nonzero, and meanwhile
+> +	 * the valid bit is zero, one SIGSEGV will be produced due to
+> +	 * this unexpected situation.
+> +	 */
+> +	if (!(*valid) && *bt_addr)
+> +		force_sig(SIGSEGV, current);
+> +
+> +	return 0;
+> +}
+> +
+> +/*
+> + * Free the backing physical pages of bounds table 'bt_addr'.
+> + * Assume start...end is within that bounds table.
+> + */
+> +static void zap_bt_entries(struct mm_struct *mm, unsigned long bt_addr,
+> +		unsigned long start, unsigned long end) {
+> +	struct vm_area_struct *vma;
+> +
+> +	/* Find the vma which overlaps this bounds table */
+> +	vma = find_vma(mm, bt_addr);
+> +	if (!vma || vma->vm_start > bt_addr ||
+> +			vma->vm_end < bt_addr+MPX_BT_SIZE_BYTES)
+> +		return;
+> +
+> +	zap_page_range(vma, start, end, NULL); }
+> +
+> +static void unmap_single_bt(struct mm_struct *mm, long __user *bd_entry,
+> +		unsigned long bt_addr)
+> +{
+> +	if (user_atomic_cmpxchg_inatomic(&bt_addr, bd_entry,
+> +			bt_addr | MPX_BD_ENTRY_VALID_FLAG, 0))
+> +		return;
+> +
+> +	/*
+> +	 * to avoid recursion, do_munmap() will check whether it comes
+> +	 * from one bounds table through VM_MPX flag.
+> +	 */
+> +	do_munmap(mm, bt_addr & MPX_BT_ADDR_MASK,
+> MPX_BT_SIZE_BYTES); }
+> +
+> +/*
+> + * If the bounds table pointed by bounds directory 'bd_entry' is
+> + * not shared, unmap this whole bounds table. Otherwise, only free
+> + * those backing physical pages of bounds table entries covered
+> + * in this virtual address region start...end.
+> + */
+> +static void unmap_shared_bt(struct mm_struct *mm, long __user *bd_entry,
+> +		unsigned long start, unsigned long end,
+> +		bool prev_shared, bool next_shared)
+> +{
+> +	unsigned long bt_addr;
+> +	unsigned int bde_valid = 0;
+> +
+> +	if (get_bt_addr(bd_entry, &bt_addr, &bde_valid) || !bde_valid)
+> +		return;
+> +
+> +	if (prev_shared && next_shared)
+> +		zap_bt_entries(mm, bt_addr,
+> +			bt_addr+MPX_GET_BT_ENTRY_OFFSET(start),
+> +			bt_addr+MPX_GET_BT_ENTRY_OFFSET(end-1));
+> +	else if (prev_shared)
+> +		zap_bt_entries(mm, bt_addr,
+> +			bt_addr+MPX_GET_BT_ENTRY_OFFSET(start),
+> +			bt_addr+MPX_BT_SIZE_BYTES);
+> +	else if (next_shared)
+> +		zap_bt_entries(mm, bt_addr, bt_addr,
+> +			bt_addr+MPX_GET_BT_ENTRY_OFFSET(end-1));
+> +	else
+> +		unmap_single_bt(mm, bd_entry, bt_addr); }
 
-	lock_queue;
-	if (populated inbetween)
-		unlock and return;
-	alloc;
-	install;
-	unlock_queue;
+"}" new line
 
-I don't know.  I don't think it really matters.
-
-Thanks.
-
--- 
-tejun
+> +
+> +/*
+> + * A virtual address region being munmap()ed might share bounds table
+> + * with adjacent VMAs. We only need to free the backing physical
+> + * memory of these shared bounds tables entries covered in this virtual
+> + * address region.
+> + *
+> + * the VMAs covering the virtual address region start...end have
+> +already
+> + * been split if necessary and removed from the VMA list.
+> + */
+> +static void unmap_side_bts(struct mm_struct *mm, unsigned long start,
+> +		unsigned long end)
+> +{
+> +	long __user *bde_start, *bde_end;
+> +	struct vm_area_struct *prev, *next;
+> +	bool prev_shared = false, next_shared = false;
+> +
+> +	bde_start = mm->bd_addr + MPX_GET_BD_ENTRY_OFFSET(start);
+> +	bde_end = mm->bd_addr + MPX_GET_BD_ENTRY_OFFSET(end-1);
+> +
+> +	/*
+> +	 * Check whether bde_start and bde_end are shared with adjacent
+> +	 * VMAs. Because the VMAs covering the virtual address region
+> +	 * start...end have already been removed from the VMA list, if
+> +	 * next is not NULL it will satisfy start < end <= next->vm_start.
+> +	 * And if prev is not NULL, prev->vm_end <= start < end.
+> +	 */
+> +	next = find_vma_prev(mm, start, &prev);
+> +	if (prev && MPX_GET_BD_ENTRY_OFFSET(prev->vm_end-1) ==
+> (long)bde_start)
+> +		prev_shared = true;
+> +	if (next && MPX_GET_BD_ENTRY_OFFSET(next->vm_start) ==
+> (long)bde_end)
+> +		next_shared = true;
+> +
+> +	/*
+> +	 * This virtual address region being munmap()ed is only
+> +	 * covered by one bounds table.
+> +	 *
+> +	 * In this case, if this table is also shared with adjacent
+> +	 * VMAs, only part of the backing physical memory of the bounds
+> +	 * table need be freeed. Otherwise the whole bounds table need
+> +	 * be unmapped.
+> +	 */
+> +	if (bde_start == bde_end) {
+> +		unmap_shared_bt(mm, bde_start, start, end,
+> +				prev_shared, next_shared);
+> +		return;
+> +	}
+> +
+> +	/*
+> +	 * If more than one bounds tables are covered in this virtual
+> +	 * address region being munmap()ed, we need to separately check
+> +	 * whether bde_start and bde_end are shared with adjacent VMAs.
+> +	 */
+> +	unmap_shared_bt(mm, bde_start, start, end, prev_shared, false);
+> +	unmap_shared_bt(mm, bde_end, start, end, false, next_shared); }
+> +
+> +/*
+> + * Free unused bounds tables covered in a virtual address region being
+> + * munmap()ed. Assume end > start.
+> + *
+> + * This function will be called by do_munmap(), and the VMAs covering
+> + * the virtual address region start...end have already been split if
+> + * necessary and remvoed from the VMA list.
+> + */
+> +void mpx_unmap(struct mm_struct *mm,
+> +		unsigned long start, unsigned long end) {
+> +	long __user *bd_entry, *bde_start, *bde_end;
+> +	unsigned long bt_addr;
+> +	unsigned int bde_valid;
+> +
+> +	/*
+> +	 * unmap bounds tables pointed out by start/end bounds directory
+> +	 * entries, or only free part of their backing physical memroy
+> +	 * if they are shared with adjacent VMAs.
+> +	 */
+> +	unmap_side_bts(mm, start, end);
+> +
+> +	/*
+> +	 * unmap those bounds table which are entirely covered in this
+> +	 * virtual address region.
+> +	 */
+> +	bde_start = mm->bd_addr + MPX_GET_BD_ENTRY_OFFSET(start);
+> +	bde_end = mm->bd_addr + MPX_GET_BD_ENTRY_OFFSET(end-1);
+> +	for (bd_entry = bde_start + 1; bd_entry < bde_end; bd_entry++) {
+> +		if (get_bt_addr(bd_entry, &bt_addr, &bde_valid))
+> +			return;
+> +		if (!bde_valid)
+> +			continue;
+> +		unmap_single_bt(mm, bd_entry, bt_addr);
+> +	}
+> +}
+> diff --git a/include/asm-generic/mmu_context.h
+> b/include/asm-generic/mmu_context.h
+> index a7eec91..ac558ca 100644
+> --- a/include/asm-generic/mmu_context.h
+> +++ b/include/asm-generic/mmu_context.h
+> @@ -42,4 +42,10 @@ static inline void activate_mm(struct mm_struct
+> *prev_mm,  {  }
+> 
+> +static inline void arch_unmap(struct mm_struct *mm,
+> +			struct vm_area_struct *vma,
+> +			unsigned long start, unsigned long end) { }
+> +
+>  #endif /* __ASM_GENERIC_MMU_CONTEXT_H */ diff --git a/mm/mmap.c
+> b/mm/mmap.c index 129b847..8550d84 100644
+> --- a/mm/mmap.c
+> +++ b/mm/mmap.c
+> @@ -2560,6 +2560,8 @@ int do_munmap(struct mm_struct *mm, unsigned
+> long start, size_t len)
+>  	/* Fix up all other VM information */
+>  	remove_vma_list(mm, vma);
+> 
+> +	arch_unmap(mm, vma, start, end);
+> +
+>  	return 0;
+>  }
+> 
+> --
+> 1.7.1
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in the body to
+> majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
