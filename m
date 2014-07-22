@@ -1,27 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933200AbaGVWZz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 18:25:55 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44699 "EHLO
+	id S933652AbaGVWko (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 18:40:44 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:44706 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933107AbaGVWZv (ORCPT
+	with ESMTP id S933174AbaGVWZx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 18:25:51 -0400
+	Tue, 22 Jul 2014 18:25:53 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: =?UTF-8?q?Krzysztof=20Ha=C5=82asa?= <khalasa@piap.pl>,
-        Johannes Berg <johannes.berg@intel.com>,
+Cc: Leif Lindholm <leif.lindholm@linaro.org>,
+        Grant Likely <grant.likely@linaro.org>, linux-mips@linux-mips.org,
+        devicetree@vger.kernel.org, Mark Rutland <mark.rutland@arm.com>,
+        gaurav.minocha@alumni.ubc.ca, Ralf Baechle <ralf@linux-mips.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 030/116] mac80211: fix IBSS join by initializing last_scan_completed
-Date: Tue, 22 Jul 2014 15:20:41 -0700
-Message-Id: <1406067727-19683-31-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 029/116] MIPS: DTS: Fix missing device_type="memory" property in memory nodes
+Date: Tue, 22 Jul 2014 15:20:40 -0700
+Message-Id: <1406067727-19683-30-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1406067727-19683-1-git-send-email-kamal@canonical.com>
 References: <1406067727-19683-1-git-send-email-kamal@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,33 +30,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: =?UTF-8?q?Krzysztof=20Ha=C5=82asa?= <khalasa@piap.pl>
+From: Leif Lindholm <leif.lindholm@linaro.org>
 
-commit c7d37a66e345df2fdf1aa7b2c9a6d3d53846ca5b upstream.
+commit 1d530fa42a317deca1c4a4780d18e2dbf316e0cb upstream.
 
-Without this fix, freshly rebooted Linux creates a new IBSS
-instead of joining an existing one. Only when jiffies counter
-overflows after 5 minutes the IBSS can be successfully joined.
+A few platforms lack a 'device_type = "memory"' for their memory
+nodes, relying on an old ppc quirk in order to discover its memory.
+Add the missing data so that all parsing code can find memory nodes
+correctly.
 
-Signed-off-by: Krzysztof Hałasa <khalasa@piap.pl>
-[edit commit message slightly]
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: Leif Lindholm <leif.lindholm@linaro.org>
+Acked-by: John Crispin <blogic@openwrt.org>
+Signed-off-by: Grant Likely <grant.likely@linaro.org>
+Cc: linux-mips@linux-mips.org
+Cc: devicetree@vger.kernel.org
+Cc: Mark Rutland <mark.rutland@arm.com>
+Cc: gaurav.minocha@alumni.ubc.ca
+Patchwork: https://patchwork.linux-mips.org/patch/6989/
+Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
+[ kamal: backport to 3.8-stable: only lantiq/dts/easy50712.dts ]
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/mac80211/ibss.c | 1 +
+ arch/mips/lantiq/dts/easy50712.dts | 1 +
  1 file changed, 1 insertion(+)
 
-diff --git a/net/mac80211/ibss.c b/net/mac80211/ibss.c
-index 217064a..808628a 100644
---- a/net/mac80211/ibss.c
-+++ b/net/mac80211/ibss.c
-@@ -1091,6 +1091,7 @@ int ieee80211_ibss_join(struct ieee80211_sub_if_data *sdata,
- 	sdata->u.ibss.privacy = params->privacy;
- 	sdata->u.ibss.control_port = params->control_port;
- 	sdata->u.ibss.basic_rates = params->basic_rates;
-+	sdata->u.ibss.last_scan_completed = jiffies;
- 	memcpy(sdata->vif.bss_conf.mcast_rate, params->mcast_rate,
- 	       sizeof(params->mcast_rate));
+diff --git a/arch/mips/lantiq/dts/easy50712.dts b/arch/mips/lantiq/dts/easy50712.dts
+index 68c1731..de53a1b 100644
+--- a/arch/mips/lantiq/dts/easy50712.dts
++++ b/arch/mips/lantiq/dts/easy50712.dts
+@@ -8,6 +8,7 @@
+ 	};
+ 
+ 	memory@0 {
++		device_type = "memory";
+ 		reg = <0x0 0x2000000>;
+ 	};
  
 -- 
 1.9.1
