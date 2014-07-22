@@ -1,55 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753093AbaGVU3P (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 16:29:15 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:51594 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751249AbaGVU3N (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 16:29:13 -0400
-Date: Tue, 22 Jul 2014 13:29:12 -0700 (PDT)
-Message-Id: <20140722.132912.1992477435842193780.davem@davemloft.net>
-To: quentin@armitage.org.uk
-Cc: kuznet@ms2.inr.ac.ru, jmorris@namei.org, yoshfuji@linux-ipv6.org,
-        kaber@trash.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] ipv4: Make IP_MULTICAST_ALL and IP_MSFILTER work on
- raw sockets
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1406016610.2990.7.camel@samson1.armitage.org.uk>
-References: <1406016610.2990.7.camel@samson1.armitage.org.uk>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Tue, 22 Jul 2014 13:29:13 -0700 (PDT)
+	id S1756811AbaGVUei (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 16:34:38 -0400
+Received: from imap.thunk.org ([74.207.234.97]:50579 "EHLO imap.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752000AbaGVUeg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 16:34:36 -0400
+Date: Tue, 22 Jul 2014 09:59:15 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: kvm@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        linux-kernel@vger.kernel.org, Kees Cook <keescook@chromium.org>,
+        x86@kernel.org, Daniel Borkmann <dborkman@redhat.com>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        Gleb Natapov <gleb@kernel.org>, Paolo Bonzini <pbonzini@redhat.com>,
+        bsd@redhat.com, Andrew Honig <ahonig@google.com>
+Subject: Re: [PATCH v4 2/5] random: Add and use arch_get_rng_seed
+Message-ID: <20140722135915.GB25291@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Andy Lutomirski <luto@amacapital.net>, kvm@vger.kernel.org,
+	"H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
+	Kees Cook <keescook@chromium.org>, x86@kernel.org,
+	Daniel Borkmann <dborkman@redhat.com>,
+	Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+	Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+	Gleb Natapov <gleb@kernel.org>, Paolo Bonzini <pbonzini@redhat.com>,
+	bsd@redhat.com, Andrew Honig <ahonig@google.com>
+References: <cover.1405620944.git.luto@amacapital.net>
+ <9c2a0549519b4eb5eee2d5d480f8e83a574273df.1405620944.git.luto@amacapital.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <9c2a0549519b4eb5eee2d5d480f8e83a574273df.1405620944.git.luto@amacapital.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Quentin Armitage <quentin@armitage.org.uk>
-Date: Tue, 22 Jul 2014 09:10:10 +0100
+On Thu, Jul 17, 2014 at 11:22:17AM -0700, Andy Lutomirski wrote:
+> Currently, init_std_data contains its own logic for using arch
+> random sources.  This logic is a bit strange: it reads one long of
+> arch random data per byte of internal state.
 
-> Currently, although IP_MULTICAST_ALL and IP_MSFILTER ioctl calls succeed on
-> raw sockets, there is no code to implement the functionality on received
-> packets; it is only implemented for UDP sockets. The raw(7) man page states:
-> "In addition, all ip(7) IPPROTO_IP socket options valid for datagram sockets
-> are supported", which implies these ioctls should work on raw sockets.
-> 
-> To fix this, add a call to ip_mc_sf_allow on raw sockets.
-> 
-> This should not break any existing code, since the current position of
-> not calling ip_mc_sf_filter makes it behave as if neither the IP_MULTICAST_ALL
-> nor the IP_MSFILTER ioctl had been called. Adding the call to ip_mc_sf_allow
-> will therefore maintain the current behaviour so long as IP_MULTICAST_ALL and
-> IP_MSFILTER ioctls are not called. Any code that currently is calling
-> IP_MULTICAST_ALL or IP_MSFILTER ioctls on raw sockets presumably is wanting
-> the filter to be applied, although no filtering will currently be occurring.
-> 
-> Signed-off-by: Quentin Armitage <quentin@armitage.org.uk>
-> ---
-> v2: * Fixed subject line
+This isn't true.  Check out the init_std_data() a bit more closely.
 
-Your email client has corrupted the patch, transforming TAB characters
-into spaces, amongst other things.
+	unsigned long rv;
 
-Please correct this and resubmit your patch.
+	...
+
+	for (i = r->poolinfo->poolbytes; i > 0; i -= sizeof(rv)) {
+	    ...
+
+In particular, note the "i -= sizeof(rv)".  We are reading one bit per
+bit of internal state beeing seeded.
+
+> Assuming the arch sources are perfect, this is the right thing to
+> do.  They're not, though, so the followup patch attempts to
+> implement the correct logic on x86.
+
+... and that's not a problem because we aren't giving any entropy
+credit --- and this is deliberate, because we don't want to trust
+un-auditable hardware.  We are deliberately trying to be conservative
+here.
+
+So I don't think either this patch or the next one is needed.  It adds
+far more complexity than is warranted.
+
+Regards,
+
+						- Ted
