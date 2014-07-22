@@ -1,109 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754752AbaGVNtr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 09:49:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11052 "EHLO mx1.redhat.com"
+	id S1752777AbaGVNwu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 09:52:50 -0400
+Received: from canardo.mork.no ([148.122.252.1]:37356 "EHLO canardo.mork.no"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751090AbaGVNto (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 09:49:44 -0400
-Date: Tue, 22 Jul 2014 09:49:23 -0400
-From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-To: Przemo Firszt <przemo@firszt.eu>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
-        Ping Cheng <pinglinux@gmail.com>, Jason Gerecke <killertofu@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
-Subject: Re: [PATCH 0/5] Input - wacom: battery enhancements and unifying
- hid-wacom and wacom
-Message-ID: <20140722134923.GA357@mail.corp.redhat.com>
-References: <1405017900-16024-1-git-send-email-benjamin.tissoires@redhat.com>
- <1405804548.13990.7.camel@fedora-lan>
+	id S1751431AbaGVNwt convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 09:52:49 -0400
+From: =?utf-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>
+To: Nicholas Mc Guire <der.herr@hofr.at>
+Cc: Michal Marek <mmarek@suse.cz>, Julia Lawall <Julia.Lawall@lip6.fr>,
+        Gilles Muller <Gilles.Muller@lip6.fr>,
+        Nicolas Palix <nicolas.palix@imag.fr>, cocci@systeme.lip6.fr,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] scripts: coccinelle: kfree with TRACE_RET before ref is ok (resent)
+Organization: m
+References: <20140722101217.GA16183@opentech.at>
+Date: Tue, 22 Jul 2014 15:51:25 +0200
+In-Reply-To: <20140722101217.GA16183@opentech.at> (Nicholas Mc Guire's message
+	of "Tue, 22 Jul 2014 12:12:17 +0200")
+Message-ID: <87ha298psy.fsf@nemi.mork.no>
+User-Agent: Gnus/5.130011 (Ma Gnus v0.11) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1405804548.13990.7.camel@fedora-lan>
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Przemo,
+Nicholas Mc Guire <der.herr@hofr.at> writes:
 
-On Jul 19 2014 or thereabouts, Przemo Firszt wrote:
-> Dnia 2014-07-10, czw o godzinie 14:44 -0400, Benjamin Tissoires pisze:
-> > Hi guys,
-> > 
-> > Continuing on the Wacom cleanup, here are 5 patches.
-> > 
-> > The first two enhance the battery reporting for the Wireless receiver by
-> > adding the status of the battery (discharging, full, charging) - inspired by
-> > the code found in hid-wacom.c, and also by adding notifications to the power
-> > system so that upower knows when the battery changed.
-> > 
-> > The last three are the handling of the two Wacom Bluetooth devices in wacom.ko.
-> > Some enhancements here:
-> > - Intuos4 now supports other tools than just the plain stylus (mouse, artpen, ...)
-> > - one less driver for Wacom (~700 lines of code less in total)
-> > - unifying access to LEDs/OLEDs from Bluetooth and USB devices
-> > 
-> > However, I did not backport the speed attribute and the ac power device (which
-> > is infered by the battery status). I don't know if there are users of those two,
-> > so I let them aside for now. Przemo, any ideas if this is actually used?
-> > 
-> > This whole code is based on top of the previous HID conversion patches.
-> > I pushed a branch with all I have queued on the list here:
-> > https://github.com/bentiss/linux/commits/hid-wacom-legacy-3.16-rc4
-> > 
-> > Again, given that there has been no answer on how this can be merged upstream
-> > (Jiri? Dmitry?), I just piled those on top of the previous.
-> > I wouldn't to resplit the input and hid specific changes if this is the choice
-> > that is made.
-> > 
-> > Cheers,
-> > Benjamin
-> > 
-> > Benjamin Tissoires (5):
-> >   Input - wacom: enhance Wireless Receiver battery reporting
-> >   Input - wacom: use a specific name for the battery device
-> >   Input - wacom: handle Graphire BT tablets in wacom.ko
-> >   Input - wacom: handle Intuos 4 BT in wacom.ko
-> >   HID: remove hid-wacom Bluetooth driver
-> > 
-> >  drivers/hid/Kconfig              |   8 -
-> >  drivers/hid/Makefile             |   1 -
-> >  drivers/hid/hid-core.c           |   2 -
-> >  drivers/hid/hid-wacom.c          | 973 ---------------------------------------
-> >  drivers/input/tablet/wacom.h     |   6 +
-> >  drivers/input/tablet/wacom_sys.c | 114 ++++-
-> >  drivers/input/tablet/wacom_wac.c | 189 +++++++-
-> >  drivers/input/tablet/wacom_wac.h |   8 +
-> >  8 files changed, 303 insertions(+), 998 deletions(-)
-> >  delete mode 100644 drivers/hid/hid-wacom.c
-> > 
-> Benjamin,
-> I think we might try to fix that [1] as well when making changes to the
-> sysfs entries. Currently every tablet connected wirelessly will trigger
-> creating new sysfs entries:
-> 
-> /sys/class/power_supply/wacom_ac
-> /sys/class/power_supply/wacom_battery
-> 
-> so sysfs is not happy about attempts to create duplicates. We need to
-> distinguish between devices using consecutive numbers or something else.
-> 
-> [1] https://sourceforge.net/p/linuxwacom/bugs/248/
+> kfree.cocci currently triggers on constructs like
+> (resending with proper CC list and subject line)
+>
+> drivers/staging/rts5208/spi.c
+> 596    if (retval < 0) {
+> 597            kfree(buf);
+> 598            rtsx_clear_spi_error(chip);
+> 599            spi_set_err_code(chip, SPI_HW_ERR);
+> 600            TRACE_RET(chip, STATUS_FAIL);
+> 601    }
+> 602
+> 603    rtsx_stor_access_xfer_buf(buf, pagelen, srb, &index, &offset,
+>                             TO_XFER_BUF);
+>
+> with:
+>
+> ./drivers/staging/rts5208/spi.c:603:28-31: ERROR: reference preceded 
+> by free on line 597
+>
+> but this should be fine - so TRACE_RET is added to the list of calls 
+> "protecting" access to freed objects see drivers/staging/rts5208/trace.h
 
-Right. In this first attempt, I tried to change "wacom_" by the actual
-name of the tablet. I would thought it was OK because no one will ever
-try to plug the same model twice. I was wrong, and a counter seem to be
-the solution for that. I'll address that in the v2.
+The TRACE_RET macro is a serious coding style violation. Fix that and
+the error will go away.  Don't change scripts to hide issues with the
+code. The code above won't just trigger an error in kfree.cocci but also
+in the head of any sane person.
 
-Also note that the bug is both in the current USB driver (wacom.ko) and
-the bluetooth one (hid-wacom.ko). Merging these two drivers will prevent
-us to have to do this fix twice :)
+>From Documentation/CodingStyle:
 
-Just as a head up, I will not be able to work on this patch series
-before Thursday (I mean testing with actual hardware). I'd be happy if
-we can manage to push that in 3.17, but this will mostly depend if
-Dmitry is fine with the USB-to-HID conversion of the wacom.ko driver.
+<quote>
+Things to avoid when using macros:
 
-Cheers,
-Benjamin
+1) macros that affect control flow:
+
+#define FOO(x)                                  \
+        do {                                    \
+                if (blah(x) < 0)                \
+                        return -EBUGGERED;      \
+        } while(0)
+
+is a _very_ bad idea.  It looks like a function call but exits the "calling"
+function; don't break the internal parsers of those who will read the code.
+</quote>
+
+
+Bjørn
