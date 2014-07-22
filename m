@@ -1,118 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754139AbaGVNMP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 09:12:15 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:33290 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752171AbaGVNLx (ORCPT
+	id S1754363AbaGVNMs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 09:12:48 -0400
+Received: from aso-006-i404.relay.mailchannels.net ([143.95.81.33]:42849 "EHLO
+	relay.mailchannels.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750756AbaGVNMp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 09:11:53 -0400
-From: Boris BREZILLON <boris.brezillon@free-electrons.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Andrew Victor <linux@maxim.org.za>, David Airlie <airlied@linux.ie>,
-        dri-devel@lists.freedesktop.org,
-        Thierry Reding <thierry.reding@gmail.com>, linux-pwm@vger.kernel.org,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Rob Clark <robdclark@gmail.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Bo Shen <voice.shen@atmel.com>,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>
-Subject: [PATCH v4 10/11] ARM: at91/dt: add LCD panel description to sama5d3xdm.dtsi
-Date: Tue, 22 Jul 2014 15:11:34 +0200
-Message-Id: <1406034695-15534-11-git-send-email-boris.brezillon@free-electrons.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1406034695-15534-1-git-send-email-boris.brezillon@free-electrons.com>
-References: <1406034695-15534-1-git-send-email-boris.brezillon@free-electrons.com>
+	Tue, 22 Jul 2014 09:12:45 -0400
+X-Greylist: delayed 3152 seconds by postgrey-1.27 at vger.kernel.org; Tue, 22 Jul 2014 09:12:43 EDT
+X-Sender-Id: arvixe|x-authuser|jenniferdavidson@phillyguides.org
+X-Sender-Id: arvixe|x-authuser|jenniferdavidson@phillyguides.org
+X-MC-Relay: Bad
+X-MailChannels-SenderId: arvixe|x-authuser|jenniferdavidson@phillyguides.org
+X-MailChannels-Auth-Id: arvixe
+Message-ID: <2778E0FA-7575-4259-B7D7-D9C68C6F5FF2@PARSLEY.arvixe.com>
+X-AuthUser: jenniferdavidson@phillyguides.org
+Reply-To: <richard.wg@qq.com>
+From: "Richard Wong" <jenniferdavidson@phillyguides.org>
+Subject: Good Day
+Date: Tue, 22 Jul 2014 06:19:37 -0500
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="Windows-1251"
+Content-Transfer-Encoding: 7bit
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2600.0000
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add LCD panel related nodes (backlight, regulators and panel) to sama5d3
-Display Module dtsi.
+I have a business proposal I would like to share with you, on your response I will email you with more details.
 
-Reference LCD pin muxing used by sama5d3xek boards.
+I await your quick response.
 
-Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
----
- arch/arm/boot/dts/sama5d3xdm.dtsi | 58 +++++++++++++++++++++++++++++++++++++++
- 1 file changed, 58 insertions(+)
+Kind regards
+Richard Wong
 
-diff --git a/arch/arm/boot/dts/sama5d3xdm.dtsi b/arch/arm/boot/dts/sama5d3xdm.dtsi
-index 035ab72..91975eb 100644
---- a/arch/arm/boot/dts/sama5d3xdm.dtsi
-+++ b/arch/arm/boot/dts/sama5d3xdm.dtsi
-@@ -36,6 +36,64 @@
- 					};
- 				};
- 			};
-+
-+			hlcdc: hlcdc@f0030000 {
-+				hlcdc-display-controller {
-+					pinctrl-names = "default";
-+					pinctrl-0 = <&pinctrl_lcd_base &pinctrl_lcd_rgb888_alt>;
-+
-+					port@0 {
-+						hlcdc_panel_output: endpoint@0 {
-+							reg = <0>;
-+							remote-endpoint = <&panel_input>;
-+						};
-+					};
-+				};
-+			};
-+		};
-+	};
-+
-+	bl_reg: backlight_regulator {
-+		compatible = "regulator-fixed";
-+		regulator-name = "backlight-power-supply";
-+		regulator-min-microvolt = <5000000>;
-+		regulator-max-microvolt = <5000000>;
-+		status = "disabled";
-+	};
-+
-+	panel_reg: panel_regulator {
-+		compatible = "regulator-fixed";
-+		regulator-name = "panel-power-supply";
-+		regulator-min-microvolt = <3300000>;
-+		regulator-max-microvolt = <3300000>;
-+		status = "disabled";
-+	};
-+
-+	backlight: backlight {
-+		compatible = "pwm-backlight";
-+		pwms = <&hlcdc_pwm 0 50000 0>;
-+		brightness-levels = <0 4 8 16 32 64 128 255>;
-+		default-brightness-level = <6>;
-+		power-supply = <&bl_reg>;
-+		status = "disabled";
-+	};
-+
-+	panel: panel {
-+		compatible = "foxlink,fl500wvr00-a0t", "simple-panel";
-+		backlight = <&backlight>;
-+		power-supply = <&panel_reg>;
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+		status = "disabled";
-+
-+		port@0 {
-+			#address-cells = <1>;
-+			#size-cells = <0>;
-+
-+			panel_input: endpoint@0 {
-+				reg = <0>;
-+				remote-endpoint = <&hlcdc_panel_output>;
-+			};
- 		};
- 	};
- };
--- 
-1.8.3.2
 
