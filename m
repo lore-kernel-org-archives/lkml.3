@@ -1,68 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753944AbaGVJHp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 05:07:45 -0400
-Received: from ja.ssi.bg ([178.16.129.10]:35001 "EHLO ja.home.ssi.bg"
-	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753754AbaGVJHm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 05:07:42 -0400
-Date: Tue, 22 Jul 2014 11:52:02 +0300 (EEST)
-From: Julian Anastasov <ja@ssi.bg>
-X-X-Sender: ja@ja.home.ssi.bg
-To: Dan Carpenter <dan.carpenter@oracle.com>
-cc: Andrey Utkin <andrey.krieger.utkin@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        kernel-janitors@vger.kernel.org, coreteam@netfilter.org,
-        netfilter-devel@vger.kernel.org, lvs-devel@vger.kernel.org,
-        netdev@vger.kernel.org, dcb314@hotmail.com,
-        David Miller <davem@davemloft.net>, kadlec@blackhole.kfki.hu,
-        Patrick McHardy <kaber@trash.net>, pablo@netfilter.org,
-        Simon Horman <horms@verge.net.au>, wensong@linux-vs.org
-Subject: Re: [PATCH 3/5] net/netfilter/ipvs/ip_vs_ctl.c: drop argument range
- check just before the check for equality
-In-Reply-To: <20140722074214.GL25880@mwanda>
-Message-ID: <alpine.LFD.2.11.1407221136420.1949@ja.home.ssi.bg>
-References: <1405697638-23767-1-git-send-email-andrey.krieger.utkin@gmail.com> <alpine.LFD.2.11.1407182339160.2273@ja.home.ssi.bg> <CANZNk83dJCXAWrQ+i5rh=sdUuiiD5ZhzDua-rjJpBZCzzNGDJA@mail.gmail.com> <alpine.LFD.2.11.1407212253100.2358@ja.home.ssi.bg>
- <20140722074214.GL25880@mwanda>
-User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
+	id S1753907AbaGVJJX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 05:09:23 -0400
+Received: from mail-bl2lp0209.outbound.protection.outlook.com ([207.46.163.209]:30821
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752664AbaGVJJU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 05:09:20 -0400
+From: Subbaraya Sundeep Bhatta <subbaraya.sundeep.bhatta@xilinx.com>
+To: <balbi@ti.com>, <devicetree@vger.kernel.org>
+CC: <gregkh@linuxfoundation.org>, <michals@xilinx.com>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <svemula@xilinx.com>, <anirudh@xilinx.com>, <sbhatta@xilinx.com>
+Subject: [PATCH v4 1/2] usb: doc: udc-xilinx: Add devicetree bindings
+Date: Tue, 22 Jul 2014 14:38:49 +0530
+X-Mailer: git-send-email 1.7.4
+X-RCIS-Action: ALLOW
+Message-ID: <4affe9b7-db88-445d-bcc4-7bc69e7259a5@BY2FFO11FD025.protection.gbl>
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:149.199.60.83;CTRY:US;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(438002)(199002)(189002)(87936001)(48376002)(19580395003)(4396001)(88136002)(46102001)(77982001)(50986999)(77096002)(99396002)(74316001)(104016003)(74502001)(83322001)(44976005)(6806004)(106466001)(83072002)(19580405001)(85852003)(87286001)(81542001)(62966002)(81342001)(102836001)(1496007)(92726001)(50226001)(31696002)(104166001)(50466002)(92566001)(86362001)(93916002)(47776003)(85306003)(64706001)(89996001)(76482001)(70736001)(79102001)(80022001)(77156001)(31966008)(53416004)(21056001)(95666004)(107046002)(74662001)(229853001)(20776003)(107986001);DIR:OUT;SFP:;SCL:1;SRVR:BY2FFO11HUB061;H:xsj-pvapsmtpgw01;FPR:;MLV:sfv;PTR:unknown-60-83.xilinx.com;A:1;MX:1;LANG:en;
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain
+X-OriginatorOrg: xilinx.onmicrosoft.com
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
+X-Forefront-PRVS: 02801ACE41
+Authentication-Results: spf=pass (sender IP is 149.199.60.83)
+ smtp.mailfrom=subbaraya.sundeep.bhatta@xilinx.com; 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Add devicetree bindings for Xilinx udc driver.
 
-	Hello,
+Signed-off-by: Subbaraya Sundeep Bhatta <sbhatta@xilinx.com>
+---
+Changes for v4:
+	- renamed xlnx,axi-usb2-device-4.00.a to xlnx,usb2-device-4.00.a
+Changes for v3:
+        - None
+Changes for v2:
+        - replaced xlnx,include-dma with xlnx,has-builtin-dma
 
-On Tue, 22 Jul 2014, Dan Carpenter wrote:
+ .../devicetree/bindings/usb/udc-xilinx.txt         |   18 ++++++++++++++++++
+ 1 files changed, 18 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/usb/udc-xilinx.txt
 
-> On Mon, Jul 21, 2014 at 11:01:56PM +0300, Julian Anastasov wrote:
-> > @@ -2333,13 +2339,12 @@ do_ip_vs_set_ctl(struct sock *sk, int cmd, void __user *user, unsigned int len)
-> >  	struct ip_vs_dest_user_kern udest;
-> >  	struct netns_ipvs *ipvs = net_ipvs(net);
-> >  
-> > +	BUILD_BUG_ON(sizeof(arg) > 256);
-> 
-> 256 is off-by-one because u8 ranges from 0-255 so we are never able to
-> copy 256 bytes into the "arg" buffer.
+diff --git a/Documentation/devicetree/bindings/usb/udc-xilinx.txt b/Documentation/devicetree/bindings/usb/udc-xilinx.txt
+new file mode 100644
+index 0000000..47b4e39
+--- /dev/null
++++ b/Documentation/devicetree/bindings/usb/udc-xilinx.txt
+@@ -0,0 +1,18 @@
++Xilinx USB2 device controller
++
++Required properties:
++- compatible		: Should be "xlnx,usb2-device-4.00.a"
++- reg			: Physical base address and size of the USB2
++			  device registers map.
++- interrupts		: Should contain single irq line of USB2 device
++			  controller
++- xlnx,has-builtin-dma	: if DMA is included
++
++Example:
++ 		axi-usb2-device@42e00000 {
++                        compatible = "xlnx,usb2-device-4.00.a";
++                        interrupts = <0x0 0x39 0x1>;
++                        reg = <0x42e00000 0x10000>;
++                        xlnx,has-builtin-dma;
++                };
++
+-- 
+1.7.4
 
-	I'll change it to >= 256, to catch that we can
-not hold such big size in unsigned char [gs]et_arglen and
-also as an indication that we have to use allocated buffer
-instead of stack.
 
-> > -	if (copylen > 128)
-> > +	if (*len < (int) copylen || *len < 0) {
-> > +		pr_err("get_ctl: len %d < %u\n", *len, copylen);
-> 
-> Don't let users flood dmesg.  Just return an error.  (This can be
-> triggered by non-root as well).
-
-	For now both set and get are privileged operations,
-so we can keep it, it can catch if something wrong happens
-with the structure sizes.
-
-Regards
-
---
-Julian Anastasov <ja@ssi.bg>
