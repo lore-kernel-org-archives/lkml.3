@@ -1,74 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754187AbaGVLuS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 07:50:18 -0400
-Received: from mail-la0-f41.google.com ([209.85.215.41]:47522 "EHLO
-	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750893AbaGVLuQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 07:50:16 -0400
+	id S1754448AbaGVLv6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 07:51:58 -0400
+Received: from ns.mm-sol.com ([37.157.136.199]:43996 "EHLO extserv.mm-sol.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750985AbaGVLv4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 07:51:56 -0400
+Message-ID: <53CE5059.4010107@mm-sol.com>
+Date: Tue, 22 Jul 2014 14:51:53 +0300
+From: Stanimir Varbanov <svarbanov@mm-sol.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-In-Reply-To: <1406027485-15657-3-git-send-email-lee.jones@linaro.org>
-References: <1406027485-15657-1-git-send-email-lee.jones@linaro.org>
-	<1406027485-15657-3-git-send-email-lee.jones@linaro.org>
-Date: Tue, 22 Jul 2014 17:20:15 +0530
-Message-ID: <CAMf-jSn5zZ1FBt+atzB9frZZ6yu_OTTfmJF2e7CEgQDbdzytBg@mail.gmail.com>
-Subject: Re: [PATCH 02/19] mfd: max8925-i2c: Fix 'blank line after
- declarations' warning
-From: pramod gurav <pramod.gurav.etc@gmail.com>
 To: Lee Jones <lee.jones@linaro.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Samuel Ortiz <sameo@linux.intel.com>
+CC: linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Pawel Moll <pawel.moll@arm.com>, Rob Herring <robh+dt@kernel.org>,
+        Kumar Gala <galak@codeaurora.org>, Mark Rutland <mark.rutland@arm.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Courtney Cavin <courtney.cavin@sonymobile.com>,
+        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
+        Josh Cartwright <joshc@codeaurora.org>
+Subject: Re: [PATCH v2 1/4] mfd: pm8xxx-spmi: add support for Qualcomm SPMI
+ PMICs
+References: <1405613855-27572-1-git-send-email-svarbanov@mm-sol.com> <1405613855-27572-2-git-send-email-svarbanov@mm-sol.com> <20140722110341.GE8406@lee--X1>
+In-Reply-To: <20140722110341.GE8406@lee--X1>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 22, 2014 at 4:41 PM, Lee Jones <lee.jones@linaro.org> wrote:
-> This is part of an effort to clean-up the MFD subsystem.
->
-> WARNING: Missing a blank line after declarations
-> +       int ret;
-> +       ret = i2c_add_driver(&max8925_driver);
->
-> total: 0 errors, 1 warnings, 275 lines checked
->
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> ---
->  drivers/mfd/max8925-i2c.c | 2 ++
->  1 file changed, 2 insertions(+)
->
-> diff --git a/drivers/mfd/max8925-i2c.c b/drivers/mfd/max8925-i2c.c
-> index a83eed5..ecbe78e 100644
-> --- a/drivers/mfd/max8925-i2c.c
-> +++ b/drivers/mfd/max8925-i2c.c
-> @@ -257,9 +257,11 @@ static struct i2c_driver max8925_driver = {
->  static int __init max8925_i2c_init(void)
->  {
->         int ret;
-> +
->         ret = i2c_add_driver(&max8925_driver);
->         if (ret != 0)
->                 pr_err("Failed to register MAX8925 I2C driver: %d\n", ret);
-> +
-There are more such changes required in this file. If they could go
-with this, will be good.
->         return ret;
->  }
->  subsys_initcall(max8925_i2c_init);
-> --
-> 1.8.3.2
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+On 07/22/2014 02:03 PM, Lee Jones wrote:
+> On Thu, 17 Jul 2014, Stanimir Varbanov wrote:
+> 
+>> From: Josh Cartwright <joshc@codeaurora.org>
+>>
+>> The Qualcomm SPMI PMIC chips are components used with the
+>> Snapdragon 800 series SoC family.  This driver exists
+>> largely as a glue mfd component, it exists to be an owner
+>> of an SPMI regmap for children devices described in
+>> device tree.
+>>
+>> Signed-off-by: Stanimir Varbanov <svarbanov@mm-sol.com>
+> 
+> Needs to be signed off by the author.
+> 
+>> ---
+>>  drivers/mfd/Kconfig       |   16 +++++++++++
+>>  drivers/mfd/Makefile      |    1 +
+>>  drivers/mfd/pm8xxx-spmi.c |   63 +++++++++++++++++++++++++++++++++++++++++++++
+>>  3 files changed, 80 insertions(+), 0 deletions(-)
+>>  create mode 100644 drivers/mfd/pm8xxx-spmi.c
+> 
+> [...]
+> 
+>> +++ b/drivers/mfd/pm8xxx-spmi.c
+>> @@ -0,0 +1,63 @@
+>> +/*
+>> + * Copyright (c) 2014, The Linux Foundation. All rights reserved.
+>> + *
+>> + * This program is free software; you can redistribute it and/or modify
+>> + * it under the terms of the GNU General Public License version 2 and
+>> + * only version 2 as published by the Free Software Foundation.
+>> + *
+>> + * This program is distributed in the hope that it will be useful,
+>> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+>> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+>> + * GNU General Public License for more details.
+>> + */
+> 
+> There should be a '\n' here.
 
+OK.
 
+> 
+>> +#include <linux/kernel.h>
+>> +#include <linux/module.h>
+>> +#include <linux/spmi.h>
+>> +#include <linux/regmap.h>
+>> +#include <linux/of_platform.h>
+> 
+> [...]
+> 
+>> +MODULE_DESCRIPTION("PM8XXX SPMI PMIC driver");
+>> +MODULE_ALIAS("platform:" KBUILD_MODNAME);
+
+I will change this to:
+
+MODULE_ALIAS("spmi:pm8xxx-spmi");
+
+>> +MODULE_AUTHOR("The Linux Foundation");
+> 
+> The Linux Foundation did not write this patch.
+
+OK, I will change the author or remove the tag completely.
+
+> 
+>> +MODULE_LICENSE("GPL v2");
+> 
+> Appart from that:
+> 
+> Acked-by: Lee Jones <lee.jones@linaro.org>
+> 
+
+Thanks. I will resend the whole patch set with your acks.
 
 -- 
-Thanks and Regards
-Pramod
+regards,
+Stan
