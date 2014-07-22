@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753796AbaGVNMK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 09:12:10 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:33275 "EHLO
+	id S1754222AbaGVNMR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 09:12:17 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:33283 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752094AbaGVNLv (ORCPT
+	with ESMTP id S1752188AbaGVNLy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 09:11:51 -0400
+	Tue, 22 Jul 2014 09:11:54 -0400
 From: Boris BREZILLON <boris.brezillon@free-electrons.com>
 To: Nicolas Ferre <nicolas.ferre@atmel.com>,
         Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
@@ -24,9 +24,9 @@ Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
         linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         Bo Shen <voice.shen@atmel.com>,
         Boris BREZILLON <boris.brezillon@free-electrons.com>
-Subject: [PATCH v4 08/11] ARM: AT91/dt: add alternative pin muxing for sama5d3 lcd pins
-Date: Tue, 22 Jul 2014 15:11:32 +0200
-Message-Id: <1406034695-15534-9-git-send-email-boris.brezillon@free-electrons.com>
+Subject: [PATCH v4 11/11] ARM: at91/dt: enable the LCD panel on sama5d3xek boards
+Date: Tue, 22 Jul 2014 15:11:35 +0200
+Message-Id: <1406034695-15534-12-git-send-email-boris.brezillon@free-electrons.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1406034695-15534-1-git-send-email-boris.brezillon@free-electrons.com>
 References: <1406034695-15534-1-git-send-email-boris.brezillon@free-electrons.com>
@@ -34,81 +34,163 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Define alternative pin muxing for the LCDC pins.
+Enable LCD related nodes.
 
 Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
 ---
- arch/arm/boot/dts/sama5d3_lcd.dtsi | 50 ++++++++++++++++++++++++++++++++++++++
- 1 file changed, 50 insertions(+)
+ arch/arm/boot/dts/sama5d31ek.dts | 20 ++++++++++++++++++++
+ arch/arm/boot/dts/sama5d33ek.dts | 20 ++++++++++++++++++++
+ arch/arm/boot/dts/sama5d34ek.dts | 20 ++++++++++++++++++++
+ arch/arm/boot/dts/sama5d36ek.dts | 20 ++++++++++++++++++++
+ 4 files changed, 80 insertions(+)
 
-diff --git a/arch/arm/boot/dts/sama5d3_lcd.dtsi b/arch/arm/boot/dts/sama5d3_lcd.dtsi
-index 2186b89..e7581f6 100644
---- a/arch/arm/boot/dts/sama5d3_lcd.dtsi
-+++ b/arch/arm/boot/dts/sama5d3_lcd.dtsi
-@@ -82,6 +82,28 @@
- 							 AT91_PIOA 13 AT91_PERIPH_A AT91_PINCTRL_NONE	/* LCDD13 pin */
- 							 AT91_PIOA 14 AT91_PERIPH_A AT91_PINCTRL_NONE	/* LCDD14 pin */
- 							 AT91_PIOA 15 AT91_PERIPH_A AT91_PINCTRL_NONE	/* LCDD15 pin */
-+							 AT91_PIOA 16 AT91_PERIPH_A AT91_PINCTRL_NONE	/* LCDD16 pin */
-+							 AT91_PIOA 17 AT91_PERIPH_A AT91_PINCTRL_NONE>;	/* LCDD17 pin */
-+					};
+diff --git a/arch/arm/boot/dts/sama5d31ek.dts b/arch/arm/boot/dts/sama5d31ek.dts
+index 04eec0d..6e605fe 100644
+--- a/arch/arm/boot/dts/sama5d31ek.dts
++++ b/arch/arm/boot/dts/sama5d31ek.dts
+@@ -33,6 +33,10 @@
+ 				status = "okay";
+ 			};
+ 
++			hlcdc: hlcdc@f0030000 {
++				status = "okay";
++			};
 +
-+					pinctrl_lcd_rgb666_alt: lcd-rgb-2-alt {
-+						atmel,pins =
-+							<AT91_PIOA 0 AT91_PERIPH_A AT91_PINCTRL_NONE	/* LCDD0 pin */
-+							 AT91_PIOA 1 AT91_PERIPH_A AT91_PINCTRL_NONE	/* LCDD1 pin */
-+							 AT91_PIOA 2 AT91_PERIPH_A AT91_PINCTRL_NONE	/* LCDD2 pin */
-+							 AT91_PIOA 3 AT91_PERIPH_A AT91_PINCTRL_NONE	/* LCDD3 pin */
-+							 AT91_PIOA 4 AT91_PERIPH_A AT91_PINCTRL_NONE	/* LCDD4 pin */
-+							 AT91_PIOA 5 AT91_PERIPH_A AT91_PINCTRL_NONE	/* LCDD5 pin */
-+							 AT91_PIOA 6 AT91_PERIPH_A AT91_PINCTRL_NONE	/* LCDD6 pin */
-+							 AT91_PIOA 7 AT91_PERIPH_A AT91_PINCTRL_NONE	/* LCDD7 pin */
-+							 AT91_PIOA 8 AT91_PERIPH_A AT91_PINCTRL_NONE	/* LCDD8 pin */
-+							 AT91_PIOA 9 AT91_PERIPH_A AT91_PINCTRL_NONE	/* LCDD9 pin */
-+							 AT91_PIOA 10 AT91_PERIPH_A AT91_PINCTRL_NONE	/* LCDD10 pin */
-+							 AT91_PIOA 11 AT91_PERIPH_A AT91_PINCTRL_NONE	/* LCDD11 pin */
-+							 AT91_PIOA 12 AT91_PERIPH_A AT91_PINCTRL_NONE	/* LCDD12 pin */
-+							 AT91_PIOA 13 AT91_PERIPH_A AT91_PINCTRL_NONE	/* LCDD13 pin */
-+							 AT91_PIOA 14 AT91_PERIPH_A AT91_PINCTRL_NONE	/* LCDD14 pin */
-+							 AT91_PIOA 15 AT91_PERIPH_A AT91_PINCTRL_NONE	/* LCDD15 pin */
- 							 AT91_PIOC 14 AT91_PERIPH_C AT91_PINCTRL_NONE	/* LCDD16 pin */
- 							 AT91_PIOC 13 AT91_PERIPH_C AT91_PINCTRL_NONE>;	/* LCDD17 pin */
- 					};
-@@ -104,6 +126,34 @@
- 							 AT91_PIOA 13 AT91_PERIPH_A AT91_PINCTRL_NONE	/* LCDD13 pin */
- 							 AT91_PIOA 14 AT91_PERIPH_A AT91_PINCTRL_NONE	/* LCDD14 pin */
- 							 AT91_PIOA 15 AT91_PERIPH_A AT91_PINCTRL_NONE	/* LCDD15 pin */
-+							 AT91_PIOA 16 AT91_PERIPH_A AT91_PINCTRL_NONE	/* LCDD16 pin */
-+							 AT91_PIOA 17 AT91_PERIPH_A AT91_PINCTRL_NONE	/* LCDD17 pin */
-+							 AT91_PIOA 18 AT91_PERIPH_A AT91_PINCTRL_NONE	/* LCDD18 pin */
-+							 AT91_PIOA 19 AT91_PERIPH_A AT91_PINCTRL_NONE	/* LCDD19 pin */
-+							 AT91_PIOA 20 AT91_PERIPH_A AT91_PINCTRL_NONE	/* LCDD20 pin */
-+							 AT91_PIOA 21 AT91_PERIPH_A AT91_PINCTRL_NONE	/* LCDD21 pin */
-+							 AT91_PIOA 22 AT91_PERIPH_A AT91_PINCTRL_NONE	/* LCDD22 pin */
-+							 AT91_PIOA 23 AT91_PERIPH_A AT91_PINCTRL_NONE>;	/* LCDD23 pin */
-+					};
+ 			macb1: ethernet@f802c000 {
+ 				status = "okay";
+ 			};
+@@ -46,6 +50,22 @@
+ 		};
+ 	};
+ 
++	bl_reg: backlight_regulator {
++		status = "okay";
++	};
 +
-+					pinctrl_lcd_rgb888_alt: lcd-rgb-3-alt {
-+						atmel,pins =
-+							<AT91_PIOA 0 AT91_PERIPH_A AT91_PINCTRL_NONE	/* LCDD0 pin */
-+							 AT91_PIOA 1 AT91_PERIPH_A AT91_PINCTRL_NONE	/* LCDD1 pin */
-+							 AT91_PIOA 2 AT91_PERIPH_A AT91_PINCTRL_NONE	/* LCDD2 pin */
-+							 AT91_PIOA 3 AT91_PERIPH_A AT91_PINCTRL_NONE	/* LCDD3 pin */
-+							 AT91_PIOA 4 AT91_PERIPH_A AT91_PINCTRL_NONE	/* LCDD4 pin */
-+							 AT91_PIOA 5 AT91_PERIPH_A AT91_PINCTRL_NONE	/* LCDD5 pin */
-+							 AT91_PIOA 6 AT91_PERIPH_A AT91_PINCTRL_NONE	/* LCDD6 pin */
-+							 AT91_PIOA 7 AT91_PERIPH_A AT91_PINCTRL_NONE	/* LCDD7 pin */
-+							 AT91_PIOA 8 AT91_PERIPH_A AT91_PINCTRL_NONE	/* LCDD8 pin */
-+							 AT91_PIOA 9 AT91_PERIPH_A AT91_PINCTRL_NONE	/* LCDD9 pin */
-+							 AT91_PIOA 10 AT91_PERIPH_A AT91_PINCTRL_NONE	/* LCDD10 pin */
-+							 AT91_PIOA 11 AT91_PERIPH_A AT91_PINCTRL_NONE	/* LCDD11 pin */
-+							 AT91_PIOA 12 AT91_PERIPH_A AT91_PINCTRL_NONE	/* LCDD12 pin */
-+							 AT91_PIOA 13 AT91_PERIPH_A AT91_PINCTRL_NONE	/* LCDD13 pin */
-+							 AT91_PIOA 14 AT91_PERIPH_A AT91_PINCTRL_NONE	/* LCDD14 pin */
-+							 AT91_PIOA 15 AT91_PERIPH_A AT91_PINCTRL_NONE	/* LCDD15 pin */
- 							 AT91_PIOC 14 AT91_PERIPH_C AT91_PINCTRL_NONE	/* LCDD16 pin */
- 							 AT91_PIOC 13 AT91_PERIPH_C AT91_PINCTRL_NONE	/* LCDD17 pin */
- 							 AT91_PIOC 12 AT91_PERIPH_C AT91_PINCTRL_NONE	/* LCDD18 pin */
++	panel_reg: panel_regulator {
++		status = "okay";
++	};
++
++	backlight: backlight {
++		status = "okay";
++	};
++
++	panel: panel {
++		status = "okay";
++	};
++
+ 	sound {
+ 		status = "okay";
+ 	};
+diff --git a/arch/arm/boot/dts/sama5d33ek.dts b/arch/arm/boot/dts/sama5d33ek.dts
+index cbd6a3f..0400641 100644
+--- a/arch/arm/boot/dts/sama5d33ek.dts
++++ b/arch/arm/boot/dts/sama5d33ek.dts
+@@ -36,9 +36,29 @@
+ 			macb0: ethernet@f0028000 {
+ 				status = "okay";
+ 			};
++
++			hlcdc: hlcdc@f0030000 {
++				status = "okay";
++			};
+ 		};
+ 	};
+ 
++	bl_reg: backlight_regulator {
++		status = "okay";
++	};
++
++	panel_reg: panel_regulator {
++		status = "okay";
++	};
++
++	backlight: backlight {
++		status = "okay";
++	};
++
++	panel: panel {
++		status = "okay";
++	};
++
+ 	sound {
+ 		status = "okay";
+ 	};
+diff --git a/arch/arm/boot/dts/sama5d34ek.dts b/arch/arm/boot/dts/sama5d34ek.dts
+index 878aa16..9cf473e 100644
+--- a/arch/arm/boot/dts/sama5d34ek.dts
++++ b/arch/arm/boot/dts/sama5d34ek.dts
+@@ -46,6 +46,10 @@
+ 			macb0: ethernet@f0028000 {
+ 				status = "okay";
+ 			};
++
++			hlcdc: hlcdc@f0030000 {
++				status = "okay";
++			};
+ 		};
+ 	};
+ 
+@@ -56,6 +60,22 @@
+ 		};
+ 	};
+ 
++	bl_reg: backlight_regulator {
++		status = "okay";
++	};
++
++	panel_reg: panel_regulator {
++		status = "okay";
++	};
++
++	backlight: backlight {
++		status = "okay";
++	};
++
++	panel: panel {
++		status = "okay";
++	};
++
+ 	sound {
+ 		status = "okay";
+ 	};
+diff --git a/arch/arm/boot/dts/sama5d36ek.dts b/arch/arm/boot/dts/sama5d36ek.dts
+index 59576c6..1c65741 100644
+--- a/arch/arm/boot/dts/sama5d36ek.dts
++++ b/arch/arm/boot/dts/sama5d36ek.dts
+@@ -41,12 +41,32 @@
+ 				status = "okay";
+ 			};
+ 
++			hlcdc: hlcdc@f0030000 {
++				status = "okay";
++			};
++
+ 			macb1: ethernet@f802c000 {
+ 				status = "okay";
+ 			};
+ 		};
+ 	};
+ 
++	bl_reg: backlight_regulator {
++		status = "okay";
++	};
++
++	panel_reg: panel_regulator {
++		status = "okay";
++	};
++
++	backlight: backlight {
++		status = "okay";
++	};
++
++	panel: panel {
++		status = "okay";
++	};
++
+ 	sound {
+ 		status = "okay";
+ 	};
 -- 
 1.8.3.2
 
