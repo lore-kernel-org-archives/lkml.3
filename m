@@ -1,141 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752265AbaGVCWx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 22:22:53 -0400
-Received: from mail-bn1lp0141.outbound.protection.outlook.com ([207.46.163.141]:53285
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752084AbaGVCWv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 22:22:51 -0400
-Date: Tue, 22 Jul 2014 10:22:33 +0800
-From: Shawn Guo <shawn.guo@freescale.com>
-To: Stefan Agner <stefan@agner.ch>
-CC: <peter.chen@freescale.com>, <s.hauer@pengutronix.de>,
-        <b35083@freescale.com>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/6] ARM: dts: vf610: add USB PHY and controller
-Message-ID: <20140722022232.GR8537@dragon>
-References: <cover.1405702442.git.stefan@agner.ch>
- <839af70e8acf139bc0f7bbdb4dd68dd146b5d6a8.1405702442.git.stefan@agner.ch>
+	id S1752805AbaGVCYr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 22:24:47 -0400
+Received: from static.92.5.9.176.clients.your-server.de ([176.9.5.92]:53868
+	"EHLO mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752275AbaGVCYn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jul 2014 22:24:43 -0400
+Date: Tue, 22 Jul 2014 04:24:38 +0200
+From: "Serge E. Hallyn" <serge@hallyn.com>
+To: Eric Paris <eparis@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        Andrew Vagin <avagin@openvz.org>,
+        "Andrew G. Morgan" <morgan@kernel.org>,
+        "Serge E. Hallyn" <serge.hallyn@canonical.com>,
+        Kees Cook <keescook@chromium.org>, Steve Grubb <sgrubb@redhat.com>,
+        Dan Walsh <dwalsh@redhat.com>, stable@kernel.org
+Subject: Re: [PATCH] CAPABILITIES: remove undefined caps from all processes
+Message-ID: <20140722022438.GA26981@mail.hallyn.com>
+References: <1405976341-23818-1-git-send-email-eparis@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <839af70e8acf139bc0f7bbdb4dd68dd146b5d6a8.1405702442.git.stefan@agner.ch>
+In-Reply-To: <1405976341-23818-1-git-send-email-eparis@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(52314003)(24454002)(199002)(189002)(51704005)(81342001)(83072002)(76482001)(83506001)(69596002)(102836001)(33716001)(46102001)(68736004)(33656002)(85306003)(57986006)(50986999)(105606002)(54356999)(85852003)(77982001)(97756001)(80022001)(4396001)(47776003)(31966008)(46406003)(6806004)(19580395003)(20776003)(97736001)(19580405001)(50466002)(74662001)(64706001)(83322001)(79102001)(26826002)(104016003)(86362001)(81156004)(92566001)(95666004)(23726002)(76176999)(87936001)(107046002)(81542001)(74502001)(92726001)(21056001)(99396002)(84676001)(44976005)(110136001)(106466001)(217873001);DIR:OUT;SFP:;SCL:1;SRVR:BLUPR03MB472;H:az84smr01.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;LANG:en;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
-X-Forefront-PRVS: 02801ACE41
-Authentication-Results: spf=fail (sender IP is 192.88.158.2)
- smtp.mailfrom=Shawn.Guo@freescale.com; 
-X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 18, 2014 at 07:01:37PM +0200, Stefan Agner wrote:
-> This adds USB PHY and USB controller nodes. Vybrid SoCs have two
-> independent USB cores which each supports DR (dual role). However,
-> real OTG is not supported since the OTG ID pin is not available.
+Quoting Eric Paris (eparis@redhat.com):
+> This is effectively a revert of 7b9a7ec565505699f503b4fcf61500dceb36e744
+> plus fixing it a different way...
 > 
-> The PHYs are located within the anadig register range, hence we need
-> to change the length of the anadig registers.
+> We found, when trying to run an application from an application which
+> had dropped privs that the kernel does security checks on undefined
+> capability bits.  This was ESPECIALLY difficult to debug as those
+> undefined bits are hidden from /proc/$PID/status.
 > 
-> Signed-off-by: Stefan Agner <stefan@agner.ch>
+> Consider a root application which drops all capabilities from ALL 4
+> capability sets.  We assume, since the application is going to set
+> eff/perm/inh from an array that it will clear not only the defined caps
+> less than CAP_LAST_CAP, but also the higher 28ish bits which are
+> undefined future capabilities.
+> 
+> The BSET gets cleared differently.  Instead it is cleared one bit at a
+> time.  The problem here is that in security/commoncap.c::cap_task_prctl()
+> we actually check the validity of a capability being read.  So any task
+> which attempts to 'read all things set in bset' followed by 'unset all
+> things set in bset' will not even attempt to unset the undefined bits
+> higher than CAP_LAST_CAP.
+> 
+> So the 'parent' will look something like:
+> CapInh:	0000000000000000
+> CapPrm:	0000000000000000
+> CapEff:	0000000000000000
+> CapBnd:	ffffffc000000000
+> 
+> All of this 'should' be fine.  Given that these are undefined bits that
+> aren't supposed to have anything to do with permissions.  But they do...
+> 
+> So lets now consider a task which cleared the eff/perm/inh completely
+> and cleared all of the valid caps in the bset (but not the invalid caps
+> it couldn't read out of the kernel).  We know that this is exactly what
+> the libcap-ng library does and what the go capabilities library does.
+> They both leave you in that above situation if you try to clear all of
+> you capapabilities from all 4 sets.  If that root task calls execve()
+> the child task will pick up all caps not blocked by the bset.  The bset
+> however does not block bits higher than CAP_LAST_CAP.  So now the child
+> task has bits in eff which are not in the parent.  These are
+> 'meaningless' undefined bits, but still bits which the parent doesn't
+> have.
+> 
+> The problem is now in cred_cap_issubset() (or any operation which does a
+> subset test) as the child, while a subset for valid cap bits, is not a
+> subset for invalid cap bits!  So now we set durring commit creds that
+> the child is not dumpable.  Given it is 'more priv' than its parent.  It
+> also means the parent cannot ptrace the child and other stupidity.
+> 
+> The solution here is 2 things.
+> 1) stop hiding capability bits in status
+> 	we hide those upper bits which meant I couldn't spot this issue
+> 2) stop giving any task undefined capability bits.  it's simple, it you
+> don't put those invalid bits in CAP_FULL_SET you won't get them in init
+> and you won't get them in any other task either.
+> 
+> Signed-off-by: Eric Paris <eparis@redhat.com>
+> Cc: Andrew Vagin <avagin@openvz.org>
+> Cc: Andrew G. Morgan <morgan@kernel.org>
+> Cc: Serge E. Hallyn <serge.hallyn@canonical.com>
+
+Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
+
+> Cc: Kees Cook <keescook@chromium.org>
+> Cc: Steve Grubb <sgrubb@redhat.com>
+> Cc: Dan Walsh <dwalsh@redhat.com>
+> Cc: stable@kernel.org
 > ---
->  arch/arm/boot/dts/vf610.dtsi | 46 +++++++++++++++++++++++++++++++++++++++++---
->  1 file changed, 43 insertions(+), 3 deletions(-)
+>  fs/proc/array.c            | 9 ---------
+>  include/linux/capability.h | 2 +-
+>  2 files changed, 1 insertion(+), 10 deletions(-)
 > 
-> diff --git a/arch/arm/boot/dts/vf610.dtsi b/arch/arm/boot/dts/vf610.dtsi
-> index 6a6190c..f6c3f02 100644
-> --- a/arch/arm/boot/dts/vf610.dtsi
-> +++ b/arch/arm/boot/dts/vf610.dtsi
-> @@ -25,6 +25,8 @@
->  		gpio2 = &gpio3;
->  		gpio3 = &gpio4;
->  		gpio4 = &gpio5;
-> +		usbphy0 = &usbphy0;
-> +		usbphy1 = &usbphy1;
->  	};
+> diff --git a/fs/proc/array.c b/fs/proc/array.c
+> index 64db2bc..d882018 100644
+> --- a/fs/proc/array.c
+> +++ b/fs/proc/array.c
+> @@ -302,10 +302,6 @@ static void render_cap_t(struct seq_file *m, const char *header,
+>  	seq_putc(m, '\n');
+>  }
 >  
->  	cpus {
-> @@ -285,9 +287,25 @@
->  				gpio-ranges = <&iomuxc 0 128 7>;
->  			};
+> -/* Remove non-existent capabilities */
+> -#define NORM_CAPS(v) (v.cap[CAP_TO_INDEX(CAP_LAST_CAP)] &= \
+> -				CAP_TO_MASK(CAP_LAST_CAP + 1) - 1)
+> -
+>  static inline void task_cap(struct seq_file *m, struct task_struct *p)
+>  {
+>  	const struct cred *cred;
+> @@ -319,11 +315,6 @@ static inline void task_cap(struct seq_file *m, struct task_struct *p)
+>  	cap_bset	= cred->cap_bset;
+>  	rcu_read_unlock();
 >  
-> -			anatop@40050000 {
-> -				compatible = "fsl,vf610-anatop";
-> -				reg = <0x40050000 0x1000>;
-> +			anatop: anatop@40050000 {
-> +				compatible = "fsl,vf610-anatop", "syscon";
-> +				reg = <0x40050000 0x400>;
-> +			};
-> +
-> +			usbphy0: usbphy@40050800 {
-> +				compatible = "fsl,vf610-usbphy", "fsl,imx23-usbphy";
-
-Since phy driver will match "fsl,vf610-usbphy" anyway, we do not need
-"fsl,imx23-usbphy" here.
-
-> +				reg = <0x40050800 0x400>;
-> +				interrupts = <0 50 IRQ_TYPE_LEVEL_HIGH>;
-> +				clocks = <&clks VF610_CLK_USBPHY0>;
-> +				fsl,anatop = <&anatop>;
-> +			};
-> +
-> +			usbphy1: usbphy@40050c00 {
-> +				compatible = "fsl,vf610-usbphy", "fsl,imx23-usbphy";
-> +				reg = <0x40050c00 0x400>;
-> +				interrupts = <0 51 IRQ_TYPE_LEVEL_HIGH>;
-> +				clocks = <&clks VF610_CLK_USBPHY1>;
-> +				fsl,anatop = <&anatop>;
->  			};
+> -	NORM_CAPS(cap_inheritable);
+> -	NORM_CAPS(cap_permitted);
+> -	NORM_CAPS(cap_effective);
+> -	NORM_CAPS(cap_bset);
+> -
+>  	render_cap_t(m, "CapInh:\t", &cap_inheritable);
+>  	render_cap_t(m, "CapPrm:\t", &cap_permitted);
+>  	render_cap_t(m, "CapEff:\t", &cap_effective);
+> diff --git a/include/linux/capability.h b/include/linux/capability.h
+> index 84b13ad..1c36782 100644
+> --- a/include/linux/capability.h
+> +++ b/include/linux/capability.h
+> @@ -79,7 +79,7 @@ extern const kernel_cap_t __cap_init_eff_set;
+>  #else /* HAND-CODED capability initializers */
 >  
->  			i2c0: i2c@40066000 {
-> @@ -309,6 +327,18 @@
->  				reg = <0x4006b000 0x1000>;
->  				#clock-cells = <1>;
->  			};
-> +
-> +			usbdev0: usb@40034000 {
-> +				compatible = "fsl,imx6q-usb", "fsl,imx27-usb";
-
-It doesn't really make any sense to have "fsl,imx6q-usb" here.  The
-following one should be less confusing.
-
-	compatible = "fsl,vf610-usb", "fsl,imx27-usb";
-
-Shawn
-
-> +				reg = <0x40034000 0x800>;
-> +				interrupts = <0 75 IRQ_TYPE_LEVEL_HIGH>;
-> +				clocks = <&clks VF610_CLK_USBC0>;
-> +				fsl,usbphy = <&usbphy0>;
-> +				dr_mode = "peripheral";
-> +				status = "disabled";
-> +			};
-> +
-> +
->  		};
->  
->  		aips1: aips-bus@40080000 {
-> @@ -371,6 +401,16 @@
->  				status = "disabled";
->  			};
->  
-> +			usbh1: usb@400b4000 {
-> +				compatible = "fsl,imx6q-usb", "fsl,imx27-usb";
-> +				reg = <0x400b4000 0x800>;
-> +				interrupts = <0 76 IRQ_TYPE_LEVEL_HIGH>;
-> +				clocks = <&clks VF610_CLK_USBC1>;
-> +				fsl,usbphy = <&usbphy1>;
-> +				dr_mode = "host";
-> +				status = "disabled";
-> +			};
-> +
->  			ftm: ftm@400b8000 {
->  				compatible = "fsl,ftm-timer";
->  				reg = <0x400b8000 0x1000 0x400b9000 0x1000>;
+>  # define CAP_EMPTY_SET    ((kernel_cap_t){{ 0, 0 }})
+> -# define CAP_FULL_SET     ((kernel_cap_t){{ ~0, ~0 }})
+> +# define CAP_FULL_SET     ((kernel_cap_t){{ ~0, CAP_TO_MASK(CAP_LAST_CAP + 1) -1 }})
+>  # define CAP_FS_SET       ((kernel_cap_t){{ CAP_FS_MASK_B0 \
+>  				    | CAP_TO_MASK(CAP_LINUX_IMMUTABLE), \
+>  				    CAP_FS_MASK_B1 } })
 > -- 
-> 2.0.1
+> 1.9.3
 > 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
