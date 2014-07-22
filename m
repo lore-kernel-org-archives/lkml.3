@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933682AbaGVW1m (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 18:27:42 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44943 "EHLO
+	id S933700AbaGVW1q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 18:27:46 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:44957 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932753AbaGVW1h (ORCPT
+	with ESMTP id S932753AbaGVW1o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 18:27:37 -0400
+	Tue, 22 Jul 2014 18:27:44 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Mel Gorman <mgorman@suse.de>, Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Hans de Goede <hdegoede@redhat.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 054/116] mm: vmscan: do not throttle based on pfmemalloc reserves if node has no ZONE_NORMAL
-Date: Tue, 22 Jul 2014 15:21:05 -0700
-Message-Id: <1406067727-19683-55-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 069/116] Input: elantech - don't set bit 1 of reg_10 when the no_hw_res quirk is set
+Date: Tue, 22 Jul 2014 15:21:20 -0700
+Message-Id: <1406067727-19683-70-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1406067727-19683-1-git-send-email-kamal@canonical.com>
 References: <1406067727-19683-1-git-send-email-kamal@canonical.com>
@@ -28,108 +28,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mel Gorman <mgorman@suse.de>
+From: Hans de Goede <hdegoede@redhat.com>
 
-commit 675becce15f320337499bc1a9356260409a5ba29 upstream.
+commit fb4f8f568a9def02240ef9bf7aabd246dc63a081 upstream.
 
-throttle_direct_reclaim() is meant to trigger during swap-over-network
-during which the min watermark is treated as a pfmemalloc reserve.  It
-throttes on the first node in the zonelist but this is flawed.
+The touchpad on the GIGABYTE U2442 not only stops communicating when we try
+to set bit 3 (enable real hardware resolution) of reg_10, but on some BIOS
+versions also when we set bit 1 (enable two finger mode auto correct).
 
-The user-visible impact is that a process running on CPU whose local
-memory node has no ZONE_NORMAL will stall for prolonged periods of time,
-possibly indefintely.  This is due to throttle_direct_reclaim thinking the
-pfmemalloc reserves are depleted when in fact they don't exist on that
-node.
+I've asked the original reporter of:
+https://bugzilla.kernel.org/show_bug.cgi?id=61151
 
-On a NUMA machine running a 32-bit kernel (I know) allocation requests
-from CPUs on node 1 would detect no pfmemalloc reserves and the process
-gets throttled.  This patch adjusts throttling of direct reclaim to
-throttle based on the first node in the zonelist that has a usable
-ZONE_NORMAL or lower zone.
+To check that not setting bit 1 does not lead to any adverse effects on his
+model / BIOS revision, and it does not, so this commit fixes the touchpad
+not working on these versions by simply never setting bit 1 for laptop
+models with the no_hw_res quirk.
 
-[akpm@linux-foundation.org: coding-style fixes]
-Signed-off-by: Mel Gorman <mgorman@suse.de>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Reported-and-tested-by: James Lademann <jwlademann@gmail.com>
+Tested-by: Philipp Wolfer <ph.wolfer@gmail.com>
+Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- mm/vmscan.c | 43 +++++++++++++++++++++++++++++++++++++------
- 1 file changed, 37 insertions(+), 6 deletions(-)
+ drivers/input/mouse/elantech.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 9dcc836..9cbc502 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -2226,10 +2226,17 @@ static bool pfmemalloc_watermark_ok(pg_data_t *pgdat)
+diff --git a/drivers/input/mouse/elantech.c b/drivers/input/mouse/elantech.c
+index dc66ca8..729f75d 100644
+--- a/drivers/input/mouse/elantech.c
++++ b/drivers/input/mouse/elantech.c
+@@ -819,7 +819,7 @@ static int elantech_set_absolute_mode(struct psmouse *psmouse)
+ 		if (etd->set_hw_resolution)
+ 			etd->reg_10 = 0x0b;
+ 		else
+-			etd->reg_10 = 0x03;
++			etd->reg_10 = 0x01;
  
- 	for (i = 0; i <= ZONE_NORMAL; i++) {
- 		zone = &pgdat->node_zones[i];
-+		if (!populated_zone(zone))
-+			continue;
-+
- 		pfmemalloc_reserve += min_wmark_pages(zone);
- 		free_pages += zone_page_state(zone, NR_FREE_PAGES);
- 	}
+ 		if (elantech_write_reg(psmouse, 0x10, etd->reg_10))
+ 			rc = -1;
+@@ -1282,7 +1282,8 @@ static int elantech_reconnect(struct psmouse *psmouse)
+ }
  
-+	/* If there are no reserves (unexpected config) then do not throttle */
-+	if (!pfmemalloc_reserve)
-+		return true;
-+
- 	wmark_ok = free_pages > pfmemalloc_reserve / 2;
- 
- 	/* kswapd must be awake if processes are being throttled */
-@@ -2254,9 +2261,9 @@ static bool pfmemalloc_watermark_ok(pg_data_t *pgdat)
- static bool throttle_direct_reclaim(gfp_t gfp_mask, struct zonelist *zonelist,
- 					nodemask_t *nodemask)
- {
-+	struct zoneref *z;
- 	struct zone *zone;
--	int high_zoneidx = gfp_zone(gfp_mask);
--	pg_data_t *pgdat;
-+	pg_data_t *pgdat = NULL;
- 
- 	/*
- 	 * Kernel threads should not be throttled as they may be indirectly
-@@ -2275,10 +2282,34 @@ static bool throttle_direct_reclaim(gfp_t gfp_mask, struct zonelist *zonelist,
- 	if (fatal_signal_pending(current))
- 		goto out;
- 
--	/* Check if the pfmemalloc reserves are ok */
--	first_zones_zonelist(zonelist, high_zoneidx, NULL, &zone);
--	pgdat = zone->zone_pgdat;
--	if (pfmemalloc_watermark_ok(pgdat))
-+	/*
-+	 * Check if the pfmemalloc reserves are ok by finding the first node
-+	 * with a usable ZONE_NORMAL or lower zone. The expectation is that
-+	 * GFP_KERNEL will be required for allocating network buffers when
-+	 * swapping over the network so ZONE_HIGHMEM is unusable.
-+	 *
-+	 * Throttling is based on the first usable node and throttled processes
-+	 * wait on a queue until kswapd makes progress and wakes them. There
-+	 * is an affinity then between processes waking up and where reclaim
-+	 * progress has been made assuming the process wakes on the same node.
-+	 * More importantly, processes running on remote nodes will not compete
-+	 * for remote pfmemalloc reserves and processes on different nodes
-+	 * should make reasonable progress.
-+	 */
-+	for_each_zone_zonelist_nodemask(zone, z, zonelist,
-+					gfp_mask, nodemask) {
-+		if (zone_idx(zone) > ZONE_NORMAL)
-+			continue;
-+
-+		/* Throttle based on the first usable node */
-+		pgdat = zone->zone_pgdat;
-+		if (pfmemalloc_watermark_ok(pgdat))
-+			goto out;
-+		break;
-+	}
-+
-+	/* If no zone was usable by the allocation flags then do not throttle */
-+	if (!pgdat)
- 		goto out;
- 
- 	/* Account for the throttling */
+ /*
+- * Some hw_version 3 models go into error state when we try to set bit 3 of r10
++ * Some hw_version 3 models go into error state when we try to set
++ * bit 3 and/or bit 1 of r10.
+  */
+ static const struct dmi_system_id no_hw_res_dmi_table[] = {
+ #if defined(CONFIG_DMI) && defined(CONFIG_X86)
 -- 
 1.9.1
 
