@@ -1,182 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756987AbaGVTtr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 15:49:47 -0400
-Received: from mga11.intel.com ([192.55.52.93]:38851 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756815AbaGVTsq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 15:48:46 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,711,1400050800"; 
-   d="scan'208";a="573816529"
-From: Matthew Wilcox <matthew.r.wilcox@intel.com>
-To: linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Cc: Matthew Wilcox <matthew.r.wilcox@intel.com>, willy@linux.intel.com
-Subject: [PATCH v8 09/22] Replace ext2_clear_xip_target with dax_clear_blocks
-Date: Tue, 22 Jul 2014 15:47:57 -0400
-Message-Id: <5e3d0f4340cde0281bb9d9aa7c72d763088f77af.1406058387.git.matthew.r.wilcox@intel.com>
-X-Mailer: git-send-email 2.0.0
-In-Reply-To: <cover.1406058387.git.matthew.r.wilcox@intel.com>
-References: <cover.1406058387.git.matthew.r.wilcox@intel.com>
-In-Reply-To: <cover.1406058387.git.matthew.r.wilcox@intel.com>
-References: <cover.1406058387.git.matthew.r.wilcox@intel.com>
+	id S1757033AbaGVTuJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 15:50:09 -0400
+Received: from mail-la0-f42.google.com ([209.85.215.42]:62589 "EHLO
+	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757016AbaGVTuD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 15:50:03 -0400
+MIME-Version: 1.0
+In-Reply-To: <CA+rthh9w4Tj-b9m=jeCBcGP4E8X9ssVLGom=TmYT=9-4e_nmkw@mail.gmail.com>
+References: <1402866165-17408-1-git-send-email-minipli@googlemail.com>
+	<CA+rthh-CYWjUCji4GXNeZV5CcLd3_DNaV9zFDc_DznYbyw6T+A@mail.gmail.com>
+	<CAPM=9tyAmEQq9CZn9FFOxLbE7J9TMkTMu=XHEnzaRFBBByDyew@mail.gmail.com>
+	<CA+rthh9w4Tj-b9m=jeCBcGP4E8X9ssVLGom=TmYT=9-4e_nmkw@mail.gmail.com>
+Date: Tue, 22 Jul 2014 21:50:01 +0200
+Message-ID: <CA+rthh_L1_9FoSg7HsjSjVkG_HQNCWLgzp3q1-jBrxt_FMOpdw@mail.gmail.com>
+Subject: Re: [PATCH] agp: remove read/write stubs
+From: Mathias Krause <minipli@googlemail.com>
+To: Dave Airlie <airlied@gmail.com>
+Cc: David Airlie <airlied@linux.ie>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is practically generic code; other filesystems will want to call
-it from other places, but there's nothing ext2-specific about it.
+On 9 July 2014 08:52, Mathias Krause <minipli@googlemail.com> wrote:
+> On 9 July 2014 00:48, Dave Airlie <airlied@gmail.com> wrote:
+>> On 2 July 2014 16:15, Mathias Krause <minipli@googlemail.com> wrote:
+>>> On 15 June 2014 23:02, Mathias Krause <minipli@googlemail.com> wrote:
+>>>> The VFS layer handles those in the very same way, if unset. No need for
+>>>> additional stubs.
+>>>>
+>>>> Signed-off-by: Mathias Krause <minipli@googlemail.com>
+>>>> Cc: Alexander Viro <viro@zeniv.linux.org.uk>
+>>>> ---
+>>>>  drivers/char/agp/frontend.c |   15 ---------------
+>>>>  1 file changed, 15 deletions(-)
+>>>>
+>>>> diff --git a/drivers/char/agp/frontend.c b/drivers/char/agp/frontend.c
+>>>> index b29703324e..09f17eb734 100644
+>>>> --- a/drivers/char/agp/frontend.c
+>>>> +++ b/drivers/char/agp/frontend.c
+>>>> @@ -710,19 +710,6 @@ static int agp_open(struct inode *inode, struct file *file)
+>>>>         return 0;
+>>>>  }
+>>>>
+>>>> -
+>>>> -static ssize_t agp_read(struct file *file, char __user *buf,
+>>>> -                       size_t count, loff_t * ppos)
+>>>> -{
+>>>> -       return -EINVAL;
+>>>> -}
+>>>> -
+>>>> -static ssize_t agp_write(struct file *file, const char __user *buf,
+>>>> -                        size_t count, loff_t * ppos)
+>>>> -{
+>>>> -       return -EINVAL;
+>>>> -}
+>>>> -
+>>>>  static int agpioc_info_wrap(struct agp_file_private *priv, void __user *arg)
+>>>>  {
+>>>>         struct agp_info userinfo;
+>>>> @@ -1047,8 +1034,6 @@ static const struct file_operations agp_fops =
+>>>>  {
+>>>>         .owner          = THIS_MODULE,
+>>>>         .llseek         = no_llseek,
+>>>> -       .read           = agp_read,
+>>>> -       .write          = agp_write,
+>>>>         .unlocked_ioctl = agp_ioctl,
+>>>>  #ifdef CONFIG_COMPAT
+>>>>         .compat_ioctl   = compat_agp_ioctl,
+>>>> --
+>>>> 1.7.10.4
+>>>>
+>>>
+>>> Ping. Any objections, comments? David?
+>>
+>> Are you sure VFS handles this the same way? can you point me where it
+>> checks ->read and returns -EINVAL, I'm probably just missing it in my
+>> quick look over fs/read_write.c
+>
+> The VFS code changed during the last merge window so the ->read and
+> ->write tests are no longer directly visible. The presence of a ->read
+> / ->write function is now remembered at open(2) time and stored in
+> ->f_mode as a flag.
+>
+> The corresponding commit for the VFS change is 7f7f25e82d "replace
+> checking for ->read/->aio_read presence with check in ->f_mode".
+> Despite its subject, it also handles ->write / ->aio_write. The flags
+> are set in fs/open:do_dentry_open():
+>
+>     if ((f->f_mode & FMODE_READ) &&
+>          likely(f->f_op->read || f->f_op->aio_read || f->f_op->read_iter))
+>         f->f_mode |= FMODE_CAN_READ;
+>     if ((f->f_mode & FMODE_WRITE) &&
+>          likely(f->f_op->write || f->f_op->aio_write || f->f_op->write_iter))
+>         f->f_mode |= FMODE_CAN_WRITE;
+>
+> With that change in mind, the redundancy of the agp_read() and
+> agp_write() functions can be seen for read(2) in vfs_read():
+>
+>     if (!(file->f_mode & FMODE_CAN_READ))
+>         return -EINVAL;
+>
+> ..and for write(2) in vfs_write():
+>
+>     if (!(file->f_mode & FMODE_CAN_WRITE))
+>         return -EINVAL;
+>
+> The other entry points (readv / writev / compat wrappers) have been
+> changed accordingly, so those handle a missing ->read / ->write
+> callback in the same way: returning -EINVAL.
+>
+> Regards,
+> Mathias
 
-Make it a little more generic by allowing it to take a count of the number
-of bytes to zero rather than fixing it to a single page.  Thanks to Dave
-Hansen for suggesting that I need to call cond_resched() if zeroing more
-than one page.
-
-Signed-off-by: Matthew Wilcox <matthew.r.wilcox@intel.com>
----
- fs/dax.c           | 35 +++++++++++++++++++++++++++++++++++
- fs/ext2/inode.c    |  8 +++++---
- fs/ext2/xip.c      | 14 --------------
- fs/ext2/xip.h      |  3 ---
- include/linux/fs.h |  6 ++++++
- 5 files changed, 46 insertions(+), 20 deletions(-)
-
-diff --git a/fs/dax.c b/fs/dax.c
-index 108c68e..02e226f 100644
---- a/fs/dax.c
-+++ b/fs/dax.c
-@@ -20,8 +20,43 @@
- #include <linux/fs.h>
- #include <linux/genhd.h>
- #include <linux/mutex.h>
-+#include <linux/sched.h>
- #include <linux/uio.h>
- 
-+int dax_clear_blocks(struct inode *inode, sector_t block, long size)
-+{
-+	struct block_device *bdev = inode->i_sb->s_bdev;
-+	sector_t sector = block << (inode->i_blkbits - 9);
-+
-+	might_sleep();
-+	do {
-+		void *addr;
-+		unsigned long pfn;
-+		long count;
-+
-+		count = bdev_direct_access(bdev, sector, &addr, &pfn, size);
-+		if (count < 0)
-+			return count;
-+		while (count > 0) {
-+			unsigned pgsz = PAGE_SIZE - offset_in_page(addr);
-+			if (pgsz > count)
-+				pgsz = count;
-+			if (pgsz < PAGE_SIZE)
-+				memset(addr, 0, pgsz);
-+			else
-+				clear_page(addr);
-+			addr += pgsz;
-+			size -= pgsz;
-+			count -= pgsz;
-+			sector += pgsz / 512;
-+			cond_resched();
-+		}
-+	} while (size);
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(dax_clear_blocks);
-+
- static long dax_get_addr(struct buffer_head *bh, void **addr, unsigned blkbits)
- {
- 	unsigned long pfn;
-diff --git a/fs/ext2/inode.c b/fs/ext2/inode.c
-index 3ccd5fd..52978b8 100644
---- a/fs/ext2/inode.c
-+++ b/fs/ext2/inode.c
-@@ -733,10 +733,12 @@ static int ext2_get_blocks(struct inode *inode,
- 
- 	if (IS_DAX(inode)) {
- 		/*
--		 * we need to clear the block
-+		 * block must be initialised before we put it in the tree
-+		 * so that it's not found by another thread before it's
-+		 * initialised
- 		 */
--		err = ext2_clear_xip_target (inode,
--			le32_to_cpu(chain[depth-1].key));
-+		err = dax_clear_blocks(inode, le32_to_cpu(chain[depth-1].key),
-+						1 << inode->i_blkbits);
- 		if (err) {
- 			mutex_unlock(&ei->truncate_mutex);
- 			goto cleanup;
-diff --git a/fs/ext2/xip.c b/fs/ext2/xip.c
-index bbc5fec..8cfca3a 100644
---- a/fs/ext2/xip.c
-+++ b/fs/ext2/xip.c
-@@ -42,20 +42,6 @@ __ext2_get_block(struct inode *inode, pgoff_t pgoff, int create,
- 	return rc;
- }
- 
--int
--ext2_clear_xip_target(struct inode *inode, sector_t block)
--{
--	void *kaddr;
--	unsigned long pfn;
--	long size;
--
--	size = __inode_direct_access(inode, block, &kaddr, &pfn, PAGE_SIZE);
--	if (size < 0)
--		return size;
--	clear_page(kaddr);
--	return 0;
--}
--
- void ext2_xip_verify_sb(struct super_block *sb)
- {
- 	struct ext2_sb_info *sbi = EXT2_SB(sb);
-diff --git a/fs/ext2/xip.h b/fs/ext2/xip.h
-index 29be737..b2592f2 100644
---- a/fs/ext2/xip.h
-+++ b/fs/ext2/xip.h
-@@ -7,8 +7,6 @@
- 
- #ifdef CONFIG_EXT2_FS_XIP
- extern void ext2_xip_verify_sb (struct super_block *);
--extern int ext2_clear_xip_target (struct inode *, sector_t);
--
- static inline int ext2_use_xip (struct super_block *sb)
- {
- 	struct ext2_sb_info *sbi = EXT2_SB(sb);
-@@ -19,6 +17,5 @@ int ext2_get_xip_mem(struct address_space *, pgoff_t, int,
- #else
- #define ext2_xip_verify_sb(sb)			do { } while (0)
- #define ext2_use_xip(sb)			0
--#define ext2_clear_xip_target(inode, chain)	0
- #define ext2_get_xip_mem			NULL
- #endif
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 87a135a..e38138b 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -2463,11 +2463,17 @@ extern int generic_file_open(struct inode * inode, struct file * filp);
- extern int nonseekable_open(struct inode * inode, struct file * filp);
- 
- #ifdef CONFIG_FS_XIP
-+int dax_clear_blocks(struct inode *, sector_t block, long size);
- extern int xip_file_mmap(struct file * file, struct vm_area_struct * vma);
- extern int xip_truncate_page(struct address_space *mapping, loff_t from);
- ssize_t dax_do_io(int rw, struct kiocb *, struct inode *, struct iov_iter *,
- 		loff_t, get_block_t, dio_iodone_t, int flags);
- #else
-+static inline int dax_clear_blocks(struct inode *i, sector_t blk, long sz)
-+{
-+	return 0;
-+}
-+
- static inline int xip_truncate_page(struct address_space *mapping, loff_t from)
- {
- 	return 0;
--- 
-2.0.0
-
+Ping. Any more comments, David?
