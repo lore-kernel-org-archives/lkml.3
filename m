@@ -1,111 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752094AbaGVNcc (ORCPT <rfc822;w@1wt.eu>);
+	id S1755804AbaGVNcf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 09:32:35 -0400
+Received: from mail-wg0-f49.google.com ([74.125.82.49]:63055 "EHLO
+	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754785AbaGVNcc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 22 Jul 2014 09:32:32 -0400
-Received: from mga02.intel.com ([134.134.136.20]:45360 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754785AbaGVNUV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 09:20:21 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,710,1400050800"; 
-   d="scan'208";a="576985511"
-From: Adrian Hunter <adrian.hunter@intel.com>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH 14/52] perf tools: Add dsos__hit_all()
-Date: Tue, 22 Jul 2014 16:17:23 +0300
-Message-Id: <1406035081-14301-15-git-send-email-adrian.hunter@intel.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1406035081-14301-1-git-send-email-adrian.hunter@intel.com>
-References: <1406035081-14301-1-git-send-email-adrian.hunter@intel.com>
-Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki, Business Identity Code: 0357606 - 4, Domiciled in Helsinki
+From: Matei Oprea <eu@opreamatei.ro>
+To: akpm@linux-foundation.org
+Cc: hpa@zytor.com, linux-kernel@vger.kernel.org,
+        Matei Oprea <eu@opreamatei.ro>,
+        ROSEdu Kernel Community <firefly@lists.rosedu.org>
+Subject: [PATCH] staging: init: main: fix sparse warning Fix sparse warning "should it be static"
+Date: Tue, 22 Jul 2014 09:32:20 -0400
+Message-Id: <1406035940-15937-1-git-send-email-eu@opreamatei.ro>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add ability to mark all dsos as hit.
-
-This is needed in the case of Instruction
-Tracing.  It takes so long to decode an
-Instruction Trace that it is not worth
-doing just to determine which dsos are
-hit.  A later patch takes this into use.
-
-Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+Signed-off-by: Matei Oprea <eu@opreamatei.ro>
+Cc: ROSEdu Kernel Community <firefly@lists.rosedu.org>
 ---
- tools/perf/util/header.c | 41 +++++++++++++++++++++++++++++++++++++++++
- tools/perf/util/header.h |  2 ++
- 2 files changed, 43 insertions(+)
+ init/main.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-index 893f8e2..a588a3e 100644
---- a/tools/perf/util/header.c
-+++ b/tools/perf/util/header.c
-@@ -200,6 +200,47 @@ static int write_buildid(const char *name, size_t name_len, u8 *build_id,
- 	return write_padded(fd, name, name_len + 1, len);
- }
+diff --git a/init/main.c b/init/main.c
+index e8ae1fe..25cc270 100644
+--- a/init/main.c
++++ b/init/main.c
+@@ -160,7 +160,8 @@ static int __init set_reset_devices(char *str)
+ __setup("reset_devices", set_reset_devices);
  
-+static int __dsos__hit_all(struct list_head *head)
-+{
-+	struct dso *pos;
-+
-+	list_for_each_entry(pos, head, node)
-+		pos->hit = true;
-+
-+	return 0;
-+}
-+
-+static int machine__hit_all_dsos(struct machine *machine)
-+{
-+	int err;
-+
-+	err = __dsos__hit_all(&machine->kernel_dsos);
-+	if (err)
-+		return err;
-+
-+	return __dsos__hit_all(&machine->user_dsos);
-+}
-+
-+int dsos__hit_all(struct perf_session *session)
-+{
-+	struct rb_node *nd;
-+	int err;
-+
-+	err = machine__hit_all_dsos(&session->machines.host);
-+	if (err)
-+		return err;
-+
-+	for (nd = rb_first(&session->machines.guests); nd; nd = rb_next(nd)) {
-+		struct machine *pos = rb_entry(nd, struct machine, rb_node);
-+
-+		err = machine__hit_all_dsos(pos);
-+		if (err)
-+			return err;
-+	}
-+
-+	return 0;
-+}
-+
- static int __dsos__write_buildid_table(struct list_head *head,
- 				       struct machine *machine,
- 				       pid_t pid, u16 misc, int fd)
-diff --git a/tools/perf/util/header.h b/tools/perf/util/header.h
-index d08cfe4..8f5cbae 100644
---- a/tools/perf/util/header.h
-+++ b/tools/perf/util/header.h
-@@ -151,6 +151,8 @@ int perf_event__process_build_id(struct perf_tool *tool,
- 				 struct perf_session *session);
- bool is_perf_magic(u64 magic);
+ static const char * argv_init[MAX_INIT_ARGS+2] = { "init", NULL, };
+-const char * envp_init[MAX_INIT_ENVS+2] = { "HOME=/", "TERM=linux", NULL, };
++static const char *envp_init[MAX_INIT_ENVS+2] = { "HOME=/",
++						  "TERM=linux", NULL, };
+ static const char *panic_later, *panic_param;
  
-+int dsos__hit_all(struct perf_session *session);
-+
- /*
-  * arch specific callback
-  */
+ extern const struct obs_kernel_param __setup_start[], __setup_end[];
 -- 
-1.8.3.2
+1.7.10.4
 
