@@ -1,60 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752800AbaGVFrT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 01:47:19 -0400
-Received: from mail-vc0-f175.google.com ([209.85.220.175]:52401 "EHLO
-	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751290AbaGVFrQ (ORCPT
+	id S1752169AbaGVF7G (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 01:59:06 -0400
+Received: from e28smtp01.in.ibm.com ([122.248.162.1]:48655 "EHLO
+	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750742AbaGVF7E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 01:47:16 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAPM=9txDw7fJpeFB72OdSgAVuaZbpfivV-9imT9V1MBYDvBv-A@mail.gmail.com>
-References: <1405390206-5081-1-git-send-email-acourbot@nvidia.com>
- <CAAVeFuJFCQdRuuJ=WQAL65MMoWzPj03evGiXmfQh=2K7+i5Gdg@mail.gmail.com> <CAPM=9txDw7fJpeFB72OdSgAVuaZbpfivV-9imT9V1MBYDvBv-A@mail.gmail.com>
-From: Alexandre Courbot <gnurou@gmail.com>
-Date: Tue, 22 Jul 2014 14:46:55 +0900
-Message-ID: <CAAVeFuLfREn00Qw51Q9=0ncqO-WAR87Sf=0VWOPETrk9T5sG2w@mail.gmail.com>
-Subject: Re: [PATCH RESEND] drm/ttm: expose CPU address of DMA-allocated pages
-To: Dave Airlie <airlied@gmail.com>
-Cc: Alexandre Courbot <acourbot@nvidia.com>, David Airlie <airlied@linux.ie>,
-        Ben Skeggs <bskeggs@redhat.com>,
-        David Herrmann <dh.herrmann@gmail.com>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 22 Jul 2014 01:59:04 -0400
+From: Wei Yang <weiyang@linux.vnet.ibm.com>
+To: walken@google.com, akpm@linux-foundation.org,
+        xiaoguangrong@linux.vnet.ibm.com
+Cc: linux-kernel@vger.kernel.org, Wei Yang <weiyang@linux.vnet.ibm.com>
+Subject: [PATCH] rbtree: fix typo in comment of __rb_insert()
+Date: Tue, 22 Jul 2014 13:58:52 +0800
+Message-Id: <1406008733-17186-1-git-send-email-weiyang@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.9.5
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14072205-4790-0000-0000-000002CF60D9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 22, 2014 at 2:07 PM, Dave Airlie <airlied@gmail.com> wrote:
-> On 22 July 2014 14:21, Alexandre Courbot <gnurou@gmail.com> wrote:
->> DRM maintainers, could I have a comment about this patch? A bunch of
->> Nouveau changes depend on it.
->
-> I'm not sure we really have anyone who is in a great position to comment,
->
-> my major issue would be its allocate a large chunk of RAM that might
-> not be needed
-> in all cases, and if we could avoid that when we don't need it, then
-> it would be good.
+In case 1, it passes down the BLACK color from G to p and u, and maintains the
+color of n. By doing so, it maintains the black height of the sub-tree.
 
-Strictly speaking memory allocated using dma_alloc_coherent() should
-only be accessed by the CPU through the returned mapping, so having
-this extra information is probably as legitimate as the current
-dma_address array.
+While in the comment, it marks the color of n to BLACK. This is a typo and not
+consistents with the code.
 
-Now I agree that this results in more memory being used, which is
-especially sad since this information is already known in the dma_page
-internal structure. Maybe we could expose the whole dma_pages instead
-of just the dma address? That way both addresses would be accessible
-for the same memory cost (we will need an array to store the adresses
-to the dma_pages).
+This patch fixs this typo in comment.
 
->
-> Or maybe we could join some allocations together, but with the Linux
-> mm subsystem,
-> who knows maybe separate small allocs have a better hope of success.
->
-> Dave.
+Signed-off-by: Wei Yang <weiyang@linux.vnet.ibm.com>
+---
+ lib/rbtree.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/lib/rbtree.c b/lib/rbtree.c
+index 65f4eff..c16c81a 100644
+--- a/lib/rbtree.c
++++ b/lib/rbtree.c
+@@ -101,7 +101,7 @@ __rb_insert(struct rb_node *node, struct rb_root *root,
+ 				 *      / \          / \
+ 				 *     p   u  -->   P   U
+ 				 *    /            /
+-				 *   n            N
++				 *   n            n
+ 				 *
+ 				 * However, since g's parent might be red, and
+ 				 * 4) does not allow this, we need to recurse
+-- 
+1.7.9.5
+
