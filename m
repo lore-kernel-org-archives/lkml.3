@@ -1,51 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755496AbaGVOgd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 10:36:33 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:35866 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754763AbaGVOgb (ORCPT
+	id S1755313AbaGVOi3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 10:38:29 -0400
+Received: from mail-qa0-f49.google.com ([209.85.216.49]:48477 "EHLO
+	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752157AbaGVOi2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 10:36:31 -0400
-Message-ID: <1406039784.2404.8.camel@dhcp-9-2-203-236.watson.ibm.com>
-Subject: Re: [PATCH v2 0/2] security: introduce kernel_fw_from_file hook
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: Kees Cook <keescook@chromium.org>
-Cc: linux-kernel@vger.kernel.org, James Morris <james.l.morris@oracle.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ming Lei <ming.lei@canonical.com>,
-        linux-security-module <linux-security-module@vger.kernel.org>,
-        Vivek Goyal <vgoyal@redhat.com>
-Date: Tue, 22 Jul 2014 10:36:24 -0400
-In-Reply-To: <1405969601-4234-1-git-send-email-keescook@chromium.org>
-References: <1405969601-4234-1-git-send-email-keescook@chromium.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14072214-8236-0000-0000-000004078CED
+	Tue, 22 Jul 2014 10:38:28 -0400
+Date: Tue, 22 Jul 2014 10:38:24 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2 V2] workqueue: remove the argument @wakeup from
+ worker_set_flags()
+Message-ID: <20140722143824.GC13851@htj.dyndns.org>
+References: <20140718225317.GC5739@htj.dyndns.org>
+ <1406005330-11864-1-git-send-email-laijs@cn.fujitsu.com>
+ <1406005330-11864-2-git-send-email-laijs@cn.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1406005330-11864-2-git-send-email-laijs@cn.fujitsu.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-07-21 at 12:06 -0700, Kees Cook wrote: 
-> This is a reduced version of the original patch. This adds only the LSM
-> hook to the existing firmware loading logic so that the LSM can reason
-> about the origin and contents of a firmware coming from userspace.
+On Tue, Jul 22, 2014 at 01:02:00PM +0800, Lai Jiangshan wrote:
+> worker_set_flags() doesn't necessarily wake next worker and the @wakeup
+> can be removed, the caller can use the following conbination instead
+> when needed:
 > 
-> Thanks!
+> 	worker_set_flags();
+> 	if (need_more_worker(pool))
+>  		wake_up_worker(pool);
 > 
-> -Kees
+> It reduces the machine-code and footprint for the process_one_work()
+> if worker_set_flags() is really inlined.
 > 
-> v2:
-> - further clarify header comments (jmorris)
+> Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
 
-Thanks Kees!  We now have module and firmware security hooks.  What's
-next - kexec?
+Applied 1-2 to wq/for-3.17 w/ descriptions and comments updated.
 
-Please feel free to add my Acks.
+Thanks.
 
-Mimi
-
+-- 
+tejun
