@@ -1,91 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754368AbaGVOAk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 10:00:40 -0400
-Received: from mail.kernel.org ([198.145.19.201]:45595 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750870AbaGVOAj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 10:00:39 -0400
-Date: Tue, 22 Jul 2014 11:00:34 -0300
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: Adrian Hunter <adrian.hunter@intel.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 01/52] perf tools: Fix jump label always changing during
- tracing
-Message-ID: <20140722140034.GE20303@kernel.org>
-References: <1406035081-14301-1-git-send-email-adrian.hunter@intel.com>
- <1406035081-14301-2-git-send-email-adrian.hunter@intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1406035081-14301-2-git-send-email-adrian.hunter@intel.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1754525AbaGVOBz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 10:01:55 -0400
+Received: from mail-ig0-f181.google.com ([209.85.213.181]:55586 "EHLO
+	mail-ig0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750893AbaGVOBx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 10:01:53 -0400
+From: Alex Elder <elder@linaro.org>
+To: akpm@linux-foundation.org
+Cc: kay@vrfy.org, pmladek@suse.cz, bp@suse.de, john.stultz@linaro.org,
+        jack@suse.cz, linux-kernel@vger.kernel.org
+Subject: [PATCH v2 0/2] printk: more log flag simplification
+Date: Tue, 22 Jul 2014 09:01:55 -0500
+Message-Id: <1406037717-9670-1-git-send-email-elder@linaro.org>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Tue, Jul 22, 2014 at 04:17:10PM +0300, Adrian Hunter escreveu:
-> Intel PT decoding walks the object code to reconstruct
-> the trace.  A jump label change during tracing causes
-> decoding errors.
-> 
-> The "Enable close-on-exec flag on perf file descriptor"
-> patch caused there to be always a jump label change.
-> 
-> It was found that using a per-cpu context instead of a
-> per-thread context for the probe of the close-on-exec
-> feature, made the problem go away.
+This series eliminates the LOG_CONT entirely from the printk/log code.
+It builds on another series, posted earlier today:
+    http://www.spinics.net/lists/kernel/msg1791665.html
+This series was originally longer, but in review I was reminded
+that some of the simplifications I had done were not valid.
 
-And it is ok for our purposes, as this code just needs to figure out if
-PERF_FLAG_FD_CLOEXEC is present, but I wonder when this kind of thing
-will hit again...
+The first patch exploits the fact that LOG_CONT and LOG_NEWLINE
+are inverses, and uses LOG_NEWLINE (or its negation) anywhere
+LOG_CONT is used.  As a result, LOG_CONT is no longer needed, so
+it's eliminated.
 
-Anyway, I'll take this patch.
+The second patch improves some comments and makes a few small
+code cleanups, now that it's gone through this transformation.
 
-- Arnaldo
- 
-> Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
-> ---
->  tools/perf/util/cloexec.c | 9 +++++++--
->  1 file changed, 7 insertions(+), 2 deletions(-)
-> 
-> diff --git a/tools/perf/util/cloexec.c b/tools/perf/util/cloexec.c
-> index c5d05ec..6a37be5 100644
-> --- a/tools/perf/util/cloexec.c
-> +++ b/tools/perf/util/cloexec.c
-> @@ -1,3 +1,4 @@
-> +#include <sched.h>
->  #include "util.h"
->  #include "../perf.h"
->  #include "cloexec.h"
-> @@ -14,9 +15,13 @@ static int perf_flag_probe(void)
->  	};
->  	int fd;
->  	int err;
-> +	int cpu = sched_getcpu();
-> +
-> +	if (cpu < 0)
-> +		cpu = 0;
->  
->  	/* check cloexec flag */
-> -	fd = sys_perf_event_open(&attr, 0, -1, -1,
-> +	fd = sys_perf_event_open(&attr, -1, cpu, -1,
->  				 PERF_FLAG_FD_CLOEXEC);
->  	err = errno;
->  
-> @@ -30,7 +35,7 @@ static int perf_flag_probe(void)
->  		  err, strerror(err));
->  
->  	/* not supported, confirm error related to PERF_FLAG_FD_CLOEXEC */
-> -	fd = sys_perf_event_open(&attr, 0, -1, -1, 0);
-> +	fd = sys_perf_event_open(&attr, -1, cpu, -1, 0);
->  	err = errno;
->  
->  	if (WARN_ONCE(fd < 0,
-> -- 
-> 1.8.3.2
+					-Alex
+
+This series is available here:
+    http://git.linaro.org/landing-teams/working/broadcom/kernel.git
+    Branch review/more-printk-flags-v2
+It is based on branch review/printk-flags-v6 in that same repository.
+
+Alex Elder (2):
+  printk: kill LOG_CONT
+  printk: improve some commentary; tidy up
+
+ kernel/printk/printk.c | 99 ++++++++++++++++++++++++++++++--------------------
+ 1 file changed, 59 insertions(+), 40 deletions(-)
+
+-- 
+1.9.1
+
