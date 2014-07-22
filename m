@@ -1,61 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756340AbaGVSxq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 14:53:46 -0400
-Received: from utopia.booyaka.com ([74.50.51.50]:53943 "EHLO
-	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751185AbaGVSxo (ORCPT
+	id S1756497AbaGVSzN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 14:55:13 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:34623 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751641AbaGVSzL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 14:53:44 -0400
-Date: Tue, 22 Jul 2014 18:53:43 +0000 (UTC)
-From: Paul Walmsley <paul@pwsan.com>
-To: Tony Lindgren <tony@atomide.com>
-cc: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
-        Mugunthan V N <mugunthanvnm@ti.com>, devicetree@vger.kernel.org,
-        Russell King <linux@arm.linux.org.uk>, Rajendra Nayak <rnayak@ti.com>,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [Re-send PATCH 1/1] arm: dra7xx: Add hwmod data for MDIO and
- CPSW
-In-Reply-To: <20140717075028.GG18374@atomide.com>
-Message-ID: <alpine.DEB.2.02.1407221853340.25593@utopia.booyaka.com>
-References: <1404825399-10330-1-git-send-email-mugunthanvnm@ti.com> <20140709095552.GA25154@breakpoint.cc> <20140709100147.GB25154@breakpoint.cc> <alpine.DEB.2.02.1407152019020.21432@utopia.booyaka.com> <20140716070643.GC3378@breakpoint.cc>
- <alpine.DEB.2.02.1407161854360.23074@utopia.booyaka.com> <20140717075028.GG18374@atomide.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 22 Jul 2014 14:55:11 -0400
+From: Jassi Brar <jaswinder.singh@linaro.org>
+To: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: ks.giri@samsung.com, arnd@arndb.de, ijc@hellion.org.uk,
+        mark.rutland@arm.com, robh@kernel.org, pawel.moll@arm.com,
+        courtney.cavin@sonymobile.com, mporter@linaro.org,
+        slapdau@yahoo.com.au, lftan.linux@gmail.com, loic.pallardy@st.com,
+        s-anna@ti.com, ashwin.chaugule@linaro.org, bjorn@kryo.se,
+        patches@linaro.org, t.takinishi@jp.fujitsu.com, broonie@linaro.org,
+        khilman@linaro.org, mollie.wu@linaro.org, andy.green@linaro.org,
+        lee.jones@linaro.org, Jassi Brar <jaswinder.singh@linaro.org>
+Subject: [PATCHv9 0/4] Common Mailbox Framework
+Date: Wed, 23 Jul 2014 00:24:10 +0530
+Message-Id: <1406055250-29159-1-git-send-email-jaswinder.singh@linaro.org>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 17 Jul 2014, Tony Lindgren wrote:
+Hello,
+  Here is the next revision of Mailbox framwork.
 
-> * Paul Walmsley <paul@pwsan.com> [140716 11:59]:
-> > On Wed, 16 Jul 2014, Sebastian Andrzej Siewior wrote:
-> > 
-> > > On 2014-07-15 20:21:21 [+0000], Paul Walmsley wrote:
-> > > 
-> > > > > Acked-by: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
-> > > > > 
-> > > > > This is basically what Tony hasked me to do: No IRQ numbers & iomem.
-> > > > 
-> > > > Sorry - I'm a bit confused - Sebastian, did you test this one?  If so, is 
-> > > > it okay to add a Tested-by from you?
-> > > 
-> > > Tested-by: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
-> > 
-> > Thanks Sebastian.
-> > 
-> > Mugunthan, next step would be for you to get a Reviewed-by: by someone who 
-> > has access to the (non-public) DRA7xx TRM, and can review for SoC 
-> > integration.  Since Rajendra is no longer at TI, the right person is 
-> > probably Tony.
-> > 
-> > Then this patch should be mergeable.
-> 
-> Yeah took a look at it and acked it.
+Changes since v8:
+ o Nits like spelling corrections and a couple symbol renames
+ o Made 'mbox-names' optional in favor of index of mailbox
+   specifier in 'mboxes' property. Which results in
+     mbox_request_channel(struct mbox_client *cl)
+	to
+     mbox_request_channel(struct mbox_client *cl, int index)
+ o Separate out Documentation and Bindings patches.
 
-Thanks queued for 3.17.
+Changes since v7:
+ o Added documentation and example usage.
+ o Merged all patches into one that create api, bindings and
+   documentation.
+
+Changes since v6:
+ o Separate out generic DT bindings patch.
+ o Discard unnecessary aligned attributes.
+
+Changes since v5:
+ o Use standard error types instead of special type mbox_result.
+ o Constify client struct in request_channel
+ o Use reinit_completion instead of init_completion every time.
+ o Improve commentary in bindings and code.
+
+Changes since v4:
+ o Common DT binding for Controller and Client drivers
+    As a result, discard string based channel matching
+ o Provide for an atomic 'peek' api, that a client could
+    call to trigger the controller driver push data upwards.
+ o OMAP and Highbank conversion to new api is left out, which
+    can be converted later by the developers.
+
+Changes since v3:
+ o Change name of symbols from ipc to mbox
+ o Return real types instead of void *
+ o Align structures
+ o Change some symbol names
+        rxcb -> rx_callback
+        txcb -> tx_done
+ o Added kernel-doc for exported API
+ o Dropped the cl_id and use clients pointer for callbacks.
+ o Fixed locking of channel pool
+ o Return negative error code for unsuccessful ipc_send_message()
+ o Module referencing during mailbox assignment to a client.
+ o Made error code symbols specific to mailbox.
+
+Thanks
 
 
-- Paul
+Jassi Brar (3):
+  mailbox: Introduce framework for mailbox
+  doc: add documentation for mailbox framework
+  dt: mailbox: add generic bindings
+
+Suman Anna (1):
+  mailbox: rename pl320-ipc specific mailbox.h
+
+ .../devicetree/bindings/mailbox/mailbox.txt        |  36 ++
+ Documentation/mailbox.txt                          | 122 ++++++
+ MAINTAINERS                                        |   8 +
+ arch/arm/mach-highbank/highbank.c                  |   2 +-
+ drivers/cpufreq/highbank-cpufreq.c                 |   2 +-
+ drivers/mailbox/Makefile                           |   4 +
+ drivers/mailbox/mailbox.c                          | 467 +++++++++++++++++++++
+ drivers/mailbox/pl320-ipc.c                        |   2 +-
+ include/linux/mailbox_client.h                     |  45 ++
+ include/linux/mailbox_controller.h                 | 131 ++++++
+ include/linux/{mailbox.h => pl320-ipc.h}           |   0
+ 11 files changed, 816 insertions(+), 3 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/mailbox/mailbox.txt
+ create mode 100644 Documentation/mailbox.txt
+ create mode 100644 drivers/mailbox/mailbox.c
+ create mode 100644 include/linux/mailbox_client.h
+ create mode 100644 include/linux/mailbox_controller.h
+ rename include/linux/{mailbox.h => pl320-ipc.h} (100%)
+
+-- 
+1.8.1.2
+
