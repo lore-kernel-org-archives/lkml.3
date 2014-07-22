@@ -1,56 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754177AbaGVJPy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 05:15:54 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:49352 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753869AbaGVJPv (ORCPT
+	id S1754220AbaGVJQB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 05:16:01 -0400
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:38262 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753658AbaGVJP7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 05:15:51 -0400
-Date: Tue, 22 Jul 2014 12:14:41 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Julian Anastasov <ja@ssi.bg>
-Cc: Andrey Utkin <andrey.krieger.utkin@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        kernel-janitors@vger.kernel.org, coreteam@netfilter.org,
-        netfilter-devel@vger.kernel.org, lvs-devel@vger.kernel.org,
-        netdev@vger.kernel.org, dcb314@hotmail.com,
-        David Miller <davem@davemloft.net>, kadlec@blackhole.kfki.hu,
-        Patrick McHardy <kaber@trash.net>, pablo@netfilter.org,
-        Simon Horman <horms@verge.net.au>, wensong@linux-vs.org
-Subject: Re: [PATCH 3/5] net/netfilter/ipvs/ip_vs_ctl.c: drop argument range
- check just before the check for equality
-Message-ID: <20140722091441.GN18338@mwanda>
-References: <1405697638-23767-1-git-send-email-andrey.krieger.utkin@gmail.com>
- <alpine.LFD.2.11.1407182339160.2273@ja.home.ssi.bg>
- <CANZNk83dJCXAWrQ+i5rh=sdUuiiD5ZhzDua-rjJpBZCzzNGDJA@mail.gmail.com>
- <alpine.LFD.2.11.1407212253100.2358@ja.home.ssi.bg>
- <20140722074214.GL25880@mwanda>
- <alpine.LFD.2.11.1407221136420.1949@ja.home.ssi.bg>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.11.1407221136420.1949@ja.home.ssi.bg>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	Tue, 22 Jul 2014 05:15:59 -0400
+From: AKASHI Takahiro <takahiro.akashi@linaro.org>
+To: wad@chromium.org, catalin.marinas@arm.com, will.deacon@arm.com,
+        keescook@chromium.org
+Cc: dsaxena@linaro.org, linux-arm-kernel@lists.infradead.org,
+        linaro-kernel@lists.linaro.org, linux-kernel@vger.kernel.org,
+        AKASHI Takahiro <takahiro.akashi@linaro.org>
+Subject: [PATCH v5 2/3] asm-generic: Add generic seccomp.h for secure computing mode 1
+Date: Tue, 22 Jul 2014 18:14:58 +0900
+Message-Id: <1406020499-5537-3-git-send-email-takahiro.akashi@linaro.org>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1406020499-5537-1-git-send-email-takahiro.akashi@linaro.org>
+References: <1406020499-5537-1-git-send-email-takahiro.akashi@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 22, 2014 at 11:52:02AM +0300, Julian Anastasov wrote:
-> > > -	if (copylen > 128)
-> > > +	if (*len < (int) copylen || *len < 0) {
-> > > +		pr_err("get_ctl: len %d < %u\n", *len, copylen);
-> > 
-> > Don't let users flood dmesg.  Just return an error.  (This can be
-> > triggered by non-root as well).
-> 
-> 	For now both set and get are privileged operations,
-> so we can keep it, it can catch if something wrong happens
-> with the structure sizes.
+Those values (__NR_seccomp_*) are used solely in secure_computing()
+to identify mode 1 system calls. If compat system calls have different
+syscall numbers, asm/seccomp.h may override them.
 
-If you have namespaces enabled then it's not *that* privaleged.
+Acked-by: Arnd Bergmann <arnd@arndb.de>
+Signed-off-by: AKASHI Takahiro <takahiro.akashi@linaro.org>
+---
+ include/asm-generic/seccomp.h |   28 ++++++++++++++++++++++++++++
+ 1 file changed, 28 insertions(+)
+ create mode 100644 include/asm-generic/seccomp.h
 
-regards,
-dan carpenter
+diff --git a/include/asm-generic/seccomp.h b/include/asm-generic/seccomp.h
+new file mode 100644
+index 0000000..5e97022
+--- /dev/null
++++ b/include/asm-generic/seccomp.h
+@@ -0,0 +1,28 @@
++/*
++ * include/asm-generic/seccomp.h
++ *
++ * Copyright (C) 2014 Linaro Limited
++ * Author: AKASHI Takahiro <takahiro.akashi@linaro.org>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++#ifndef _ASM_GENERIC_SECCOMP_H
++#define _ASM_GENERIC_SECCOMP_H
++
++#include <asm-generic/unistd.h>
++
++#if defined(CONFIG_COMPAT) && !defined(__NR_seccomp_read_32)
++#define __NR_seccomp_read_32		__NR_read
++#define __NR_seccomp_write_32		__NR_write
++#define __NR_seccomp_exit_32		__NR_exit
++#define __NR_seccomp_sigreturn_32	__NR_rt_sigreturn
++#endif /* CONFIG_COMPAT && ! already defined */
++
++#define __NR_seccomp_read		__NR_read
++#define __NR_seccomp_write		__NR_write
++#define __NR_seccomp_exit		__NR_exit
++#define __NR_seccomp_sigreturn		__NR_rt_sigreturn
++
++#endif /* _ASM_GENERIC_SECCOMP_H */
+-- 
+1.7.9.5
 
