@@ -1,57 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755142AbaGVLeI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 07:34:08 -0400
-Received: from mout.kundenserver.de ([212.227.126.187]:57998 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752361AbaGVLeG (ORCPT
+	id S1753855AbaGVLna (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 07:43:30 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:40913 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753323AbaGVLn2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 07:34:06 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Lee Jones <lee.jones@linaro.org>, linux-kernel@vger.kernel.org,
-        sameo@linux.intel.com
-Subject: Re: [PATCH 03/19] mfd: tps80031: Fix 'missing break or fall-through comment' warning
-Date: Tue, 22 Jul 2014 13:33:29 +0200
-Message-ID: <5230900.iFlbGceLXl@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1406027485-15657-4-git-send-email-lee.jones@linaro.org>
-References: <1406027485-15657-1-git-send-email-lee.jones@linaro.org> <1406027485-15657-4-git-send-email-lee.jones@linaro.org>
+	Tue, 22 Jul 2014 07:43:28 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 96.249.243.124
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/k32KBfuvrDb6qNZAhfum6t1i6HZ1ysyE=
+X-DKIM: OpenDKIM Filter v2.0.1 titan 529765B276C
+Date: Tue, 22 Jul 2014 07:43:20 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Herbert Xu <herbert@gondor.apana.org.au>
+Cc: Amit Shah <amit.shah@redhat.com>, linux-kernel@vger.kernel.org,
+        Virtualization List <virtualization@lists.linux-foundation.org>,
+        Rusty Russell <rusty@rustcorp.com.au>, keescook@chromium.org,
+        Amos Kong <akong@redhat.com>
+Subject: Re: [PATCH v2 3/4] virtio: rng: delay hwrng_register() till driver
+ is ready
+Message-ID: <20140722114320.GB18750@titan.lakedaemon.net>
+References: <cover.1405942162.git.amit.shah@redhat.com>
+ <91cb7c5b87cf2ba5ef1bacd55a7ee7bc827293a2.1405942162.git.amit.shah@redhat.com>
+ <20140721121116.GA18750@titan.lakedaemon.net>
+ <20140721124124.GA7846@gondor.apana.org.au>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:0XO/7qhXgs3X2to3FX1Udc03EDkMcNIyHfhbsuLI9zX
- Y3BOK5zhfGjS9zOy57gbE4c6RZExhkYAgbgN4dX644r4m135PO
- Z48iVXmdFRN5xu2AZMB1SFG4kciKh3gCzON/sF7AAmrUP9NGr0
- W4BoR3P6QMc1UrMW+AMF6LgjlXXkwTOzf6rFZcyYuK/hUiWdUl
- gRt9UO5epLy0EgNZOEpbnHuaw+igFv9+OfuWCRQO0TPmvJ6uB7
- bHcaj6EiuGz32025E1ouBMWaQ4fOJ1yp12mbN5LSUsm3n6EiZF
- KbE3SfnEMZcX+MAWYkUrD909LOHT4VP3jO7qOXrUwrvVY2266g
- zqNXxj+BBIR8Zeh7x4Pg=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140721124124.GA7846@gondor.apana.org.au>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 22 July 2014 12:11:09 Lee Jones wrote:
-> --- a/drivers/mfd/tps80031.c
-> +++ b/drivers/mfd/tps80031.c
-> @@ -334,6 +334,7 @@ static bool rd_wr_reg_id1(struct device *dev, unsigned int reg)
->         case TPS80031_PREQ1_RES_ASS_A ... TPS80031_PREQ3_RES_ASS_C:
->         case TPS80031_SMPS_OFFSET ... TPS80031_BATDEBOUNCING:
->         case TPS80031_CFG_INPUT_PUPD1 ... TPS80031_CFG_SMPS_PD:
-> +               /* Fall through */
->         case TPS80031_BACKUP_REG:
->                 return true;
->         default:
+On Mon, Jul 21, 2014 at 08:41:24PM +0800, Herbert Xu wrote:
+> On Mon, Jul 21, 2014 at 08:11:16AM -0400, Jason Cooper wrote:
+> >
+> > > @@ -136,15 +137,6 @@ static int probe_common(struct virtio_device *vdev)
+> > >  		return err;
+> > >  	}
+> > >  
+> > > -	err = hwrng_register(&vi->hwrng);
+> > > -	if (err) {
+> > > -		vdev->config->del_vqs(vdev);
+> > > -		vi->vq = NULL;
+> > > -		kfree(vi);
+> > > -		ida_simple_remove(&rng_index_ida, index);
+> > > -		return err;
+> > > -	}
+> > > -
+> > 
+> > This needs to stay.  register, and failure to do so, should occur in the
+> > probe routine.
+> 
+> Why? 
 
-This one seems to make the code look worse: You are only adding the comment
-to one case, not all of them, and it was perfectly understandable
-before.
+hmm, yes. On reviewing the code, my objection was silly.  It mostly
+stemmed from the commit message's mentioning of reduced error handling.
 
-Further, there are a couple of other functions following this one that
-also don't have that comment.
+thx,
 
-It seems checkpatch missed all the other cases because they contain '...'
-lists, whereas the one above does not. I think it's better left alone.
-
-	Arnd
+Jason.
