@@ -1,111 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756695AbaGVTDD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 15:03:03 -0400
-Received: from mail-lb0-f173.google.com ([209.85.217.173]:45341 "EHLO
-	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756490AbaGVTBb (ORCPT
+	id S1756579AbaGVTB1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 15:01:27 -0400
+Received: from mail-qg0-f52.google.com ([209.85.192.52]:63122 "EHLO
+	mail-qg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752208AbaGVTBY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 15:01:31 -0400
-From: Max Filippov <jcmvbkbc@gmail.com>
-To: linux-xtensa@linux-xtensa.org
-Cc: Chris Zankel <chris@zankel.net>, Marc Gauthier <marc@cadence.com>,
-        linux-kernel@vger.kernel.org, Max Filippov <jcmvbkbc@gmail.com>
-Subject: [PATCH 5/8] xtensa: support aliasing cache in k[un]map_atomic
-Date: Tue, 22 Jul 2014 23:01:10 +0400
-Message-Id: <1406055673-10100-6-git-send-email-jcmvbkbc@gmail.com>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1406055673-10100-1-git-send-email-jcmvbkbc@gmail.com>
-References: <1406055673-10100-1-git-send-email-jcmvbkbc@gmail.com>
+	Tue, 22 Jul 2014 15:01:24 -0400
+Date: Tue, 22 Jul 2014 15:01:20 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Thierry Reding <thierry.reding@gmail.com>,
+        Stephen Warren <swarren@wwwdotorg.org>, linux-pci@vger.kernel.org,
+        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] resource: Add device-managed
+ request/release_resource()
+Message-ID: <20140722190120.GM13851@htj.dyndns.org>
+References: <1405062505-2606-1-git-send-email-thierry.reding@gmail.com>
+ <20140722185002.GC19181@google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140722185002.GC19181@google.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Map high memory pages at virtual addresses with color that match color
-of their physical address. Existing cache alias management mechanisms
-may be used with such pages.
+Hello,
 
-Signed-off-by: Max Filippov <jcmvbkbc@gmail.com>
----
- arch/xtensa/include/asm/fixmap.h |  3 ++-
- arch/xtensa/include/asm/page.h   |  2 ++
- arch/xtensa/mm/highmem.c         | 17 ++++++++++-------
- 3 files changed, 14 insertions(+), 8 deletions(-)
+On Tue, Jul 22, 2014 at 12:50:02PM -0600, Bjorn Helgaas wrote:
+> [+cc Tejun, LKML]
+> 
+> On Fri, Jul 11, 2014 at 09:08:24AM +0200, Thierry Reding wrote:
+> > From: Thierry Reding <treding@nvidia.com>
+> > 
+> > Provide device-managed implementations of the request_resource() and
+> > release_resource() functions. Upon failure to request a resource, the
+> > new devm_request_resource() function will output an error message for
+> > consistent error reporting.
+> > 
+> > Signed-off-by: Thierry Reding <treding@nvidia.com>
+> 
+> This seems OK to me, but I don't consider myself a devres maintainer.  I
+> added Tejun and LKML for any comment.  Minor nit below.
 
-diff --git a/arch/xtensa/include/asm/fixmap.h b/arch/xtensa/include/asm/fixmap.h
-index a43cd52..62b507d 100644
---- a/arch/xtensa/include/asm/fixmap.h
-+++ b/arch/xtensa/include/asm/fixmap.h
-@@ -38,7 +38,8 @@ enum fixed_addresses {
- #ifdef CONFIG_HIGHMEM
- 	/* reserved pte's for temporary kernel mappings */
- 	FIX_KMAP_BEGIN,
--	FIX_KMAP_END = FIX_KMAP_BEGIN + (KM_TYPE_NR * NR_CPUS) - 1,
-+	FIX_KMAP_END = FIX_KMAP_BEGIN +
-+		(KM_TYPE_NR * NR_CPUS * DCACHE_N_COLORS) - 1,
- #endif
- 	__end_of_fixed_addresses
- };
-diff --git a/arch/xtensa/include/asm/page.h b/arch/xtensa/include/asm/page.h
-index 11721cc..abe24c6 100644
---- a/arch/xtensa/include/asm/page.h
-+++ b/arch/xtensa/include/asm/page.h
-@@ -78,7 +78,9 @@
- # define DCACHE_ALIAS_EQ(a,b)	((((a) ^ (b)) & DCACHE_ALIAS_MASK) == 0)
- #else
- # define DCACHE_ALIAS_ORDER	0
-+# define DCACHE_ALIAS(a)	((void)(a), 0)
- #endif
-+#define DCACHE_N_COLORS		(1 << DCACHE_ALIAS_ORDER)
- 
- #if ICACHE_WAY_SIZE > PAGE_SIZE
- # define ICACHE_ALIAS_ORDER	(ICACHE_WAY_SHIFT - PAGE_SHIFT)
-diff --git a/arch/xtensa/mm/highmem.c b/arch/xtensa/mm/highmem.c
-index 2e95a76..466abae 100644
---- a/arch/xtensa/mm/highmem.c
-+++ b/arch/xtensa/mm/highmem.c
-@@ -14,18 +14,23 @@
- 
- static pte_t *kmap_pte;
- 
-+static inline enum fixed_addresses kmap_idx(int type, unsigned long color)
-+{
-+	return (type + KM_TYPE_NR * smp_processor_id()) * DCACHE_N_COLORS +
-+		color;
-+}
-+
- void *kmap_atomic(struct page *page)
- {
- 	enum fixed_addresses idx;
- 	unsigned long vaddr;
--	int type;
- 
- 	pagefault_disable();
- 	if (!PageHighMem(page))
- 		return page_address(page);
- 
--	type = kmap_atomic_idx_push();
--	idx = type + KM_TYPE_NR * smp_processor_id();
-+	idx = kmap_idx(kmap_atomic_idx_push(),
-+		       DCACHE_ALIAS(page_to_phys(page)));
- 	vaddr = __fix_to_virt(FIX_KMAP_BEGIN + idx);
- #ifdef CONFIG_DEBUG_HIGHMEM
- 	BUG_ON(!pte_none(*(kmap_pte + idx)));
-@@ -38,12 +43,10 @@ EXPORT_SYMBOL(kmap_atomic);
- 
- void __kunmap_atomic(void *kvaddr)
- {
--	int idx, type;
--
- 	if (kvaddr >= (void *)FIXADDR_START &&
- 	    kvaddr < (void *)FIXADDR_TOP) {
--		type = kmap_atomic_idx();
--		idx = type + KM_TYPE_NR * smp_processor_id();
-+		int idx = kmap_idx(kmap_atomic_idx(),
-+				   DCACHE_ALIAS((unsigned long)kvaddr));
- 
- 		/*
- 		 * Force other mappings to Oops if they'll try to access this
+If there are gonna be users of the interface, sure.
+
+> > +int devm_request_resource(struct device *dev, struct resource *root,
+> > +			  struct resource *new)
+> > +{
+> > +	struct resource *conflict, **ptr;
+> > +
+> > +	ptr = devres_alloc(devm_resource_release, sizeof(*ptr), GFP_KERNEL);
+> > +	if (!ptr)
+> > +		return -ENOMEM;
+> > +
+> > +	*ptr = new;
+> > +
+> > +	conflict = request_resource_conflict(root, new);
+> > +	if (!conflict) {
+> > +		devres_add(dev, ptr);
+> > +		return 0;
+> > +	}
+> > +
+> > +	dev_err(dev, "resource collision: %pR conflicts with %s %pR\n", new,
+> > +		conflict->name, conflict);
+> > +	devres_free(ptr);
+> > +	return -EBUSY;
+> 
+> Personally I would write this as:
+> 
+>   conflict = request_resource_conflict(...);
+>   if (conflict) {
+>     dev_err(...);
+>     devres_free(...);
+>     return -EBUSY;
+>   }
+> 
+>   devres_add(...);
+>   return 0;
+> 
+> so the straight-line path is the normal, non-error path and errors are
+> detected and dealt with in the "if" bodies.  Right now the "if" bodies
+> are a mix of error handling and normal path.  But that's just my personal
+> preference.
+
+Agreed.
+
+> > +static int devm_resource_match(struct device *dev, void *res, void *data)
+> > +{
+> > +	struct resource **ptr = res;
+> > +
+> > +	if (WARN_ON(!ptr || !*ptr))
+> > +		return 0;
+
+How would !ptr or !*ptr possibly happen?  Wouldn't that be a bug
+already?
+
+Thanks.
+
 -- 
-1.8.1.4
-
+tejun
