@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932288AbaGVWWh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 18:22:37 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44331 "EHLO
+	id S933942AbaGVW4Z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 18:56:25 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:44385 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756999AbaGVWWe (ORCPT
+	with ESMTP id S932252AbaGVWWg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 18:22:34 -0400
+	Tue, 22 Jul 2014 18:22:36 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Trond Myklebust <trond.myklebust@primarydata.com>,
+Cc: Mike Miller <mike.miller@hp.com>,
+        James Bottomley <JBottomley@Parallels.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 004/116] NFS: Don't declare inode uptodate unless all attributes were checked
-Date: Tue, 22 Jul 2014 15:20:15 -0700
-Message-Id: <1406067727-19683-5-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 018/116] [SCSI] hpsa: add HP Smart Array Gen9 PCI ID's
+Date: Tue, 22 Jul 2014 15:20:29 -0700
+Message-Id: <1406067727-19683-19-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1406067727-19683-1-git-send-email-kamal@canonical.com>
 References: <1406067727-19683-1-git-send-email-kamal@canonical.com>
@@ -27,111 +28,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <trond.myklebust@primarydata.com>
+From: Mike Miller <mike.miller@hp.com>
 
-commit 43b6535e717d2f656f71d9bd16022136b781c934 upstream.
+commit 97b9f53d7deb3b8c0acdeb52a5801f9f5080ce0f upstream.
 
-Fix a bug, whereby nfs_update_inode() was declaring the inode to be
-up to date despite not having checked all the attributes.
-The bug occurs because the temporary variable in which we cache
-the validity information is 'sanitised' before reapplying to
-nfsi->cache_validity.
+This patch adds the PCI ID's for HP Smart Array Gen9 controllers. Please
+consider this patch for inclusion.
 
-Reported-by: Kinglong Mee <kinglongmee@gmail.com>
-Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
+Signed-off-by: Mike Miller <mike.miller@hp.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- fs/nfs/inode.c | 26 +++++++++++++++++---------
- 1 file changed, 17 insertions(+), 9 deletions(-)
+ drivers/scsi/hpsa.c     | 25 +++++++++++++++++++++++++
+ include/linux/pci_ids.h |  1 +
+ 2 files changed, 26 insertions(+)
 
-diff --git a/fs/nfs/inode.c b/fs/nfs/inode.c
-index ebeb94c..a5130f1 100644
---- a/fs/nfs/inode.c
-+++ b/fs/nfs/inode.c
-@@ -1381,18 +1381,20 @@ static int nfs_update_inode(struct inode *inode, struct nfs_fattr *fattr)
- 			inode->i_version = fattr->change_attr;
- 		}
- 	} else if (server->caps & NFS_CAP_CHANGE_ATTR)
--		invalid |= save_cache_validity;
-+		nfsi->cache_validity |= save_cache_validity;
+diff --git a/drivers/scsi/hpsa.c b/drivers/scsi/hpsa.c
+index 4884df9..051085d 100644
+--- a/drivers/scsi/hpsa.c
++++ b/drivers/scsi/hpsa.c
+@@ -108,6 +108,19 @@ static const struct pci_device_id hpsa_pci_device_id[] = {
+ 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C, 0x1926},
+ 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C, 0x1928},
+ 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSF,     0x103C, 0x334d},
++	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C, 0x1929},
++	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C, 0x21BD},
++	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C, 0x21BE},
++	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C, 0x21BF},
++	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C, 0x21C0},
++	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C, 0x21C1},
++	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C, 0x21C2},
++	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C, 0x21C3},
++	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C, 0x21C4},
++	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C, 0x21C5},
++	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C, 0x21C7},
++	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C, 0x21C8},
++	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C, 0x21C9},
+ 	{PCI_VENDOR_ID_HP,     PCI_ANY_ID,	PCI_ANY_ID, PCI_ANY_ID,
+ 		PCI_CLASS_STORAGE_RAID << 8, 0xffff << 8, 0},
+ 	{0,}
+@@ -143,6 +156,18 @@ static struct board_type products[] = {
+ 	{0x1926103C, "Smart Array", &SA5_access},
+ 	{0x1928103C, "Smart Array", &SA5_access},
+ 	{0x334d103C, "Smart Array P822se", &SA5_access},
++	{0x21BD103C, "Smart Array", &SA5_access},
++	{0x21BE103C, "Smart Array", &SA5_access},
++	{0x21BF103C, "Smart Array", &SA5_access},
++	{0x21C0103C, "Smart Array", &SA5_access},
++	{0x21C1103C, "Smart Array", &SA5_access},
++	{0x21C2103C, "Smart Array", &SA5_access},
++	{0x21C3103C, "Smart Array", &SA5_access},
++	{0x21C4103C, "Smart Array", &SA5_access},
++	{0x21C5103C, "Smart Array", &SA5_access},
++	{0x21C7103C, "Smart Array", &SA5_access},
++	{0x21C8103C, "Smart Array", &SA5_access},
++	{0x21C9103C, "Smart Array", &SA5_access},
+ 	{0xFFFF103C, "Unknown Smart Array", &SA5_access},
+ };
  
- 	if (fattr->valid & NFS_ATTR_FATTR_MTIME) {
- 		memcpy(&inode->i_mtime, &fattr->mtime, sizeof(inode->i_mtime));
- 	} else if (server->caps & NFS_CAP_MTIME)
--		invalid |= save_cache_validity & (NFS_INO_INVALID_ATTR
-+		nfsi->cache_validity |= save_cache_validity &
-+				(NFS_INO_INVALID_ATTR
- 				| NFS_INO_REVAL_FORCED);
+diff --git a/include/linux/pci_ids.h b/include/linux/pci_ids.h
+index 0eb6579..ed403e9 100644
+--- a/include/linux/pci_ids.h
++++ b/include/linux/pci_ids.h
+@@ -754,6 +754,7 @@
+ #define PCI_DEVICE_ID_HP_CISSE		0x323a
+ #define PCI_DEVICE_ID_HP_CISSF		0x323b
+ #define PCI_DEVICE_ID_HP_CISSH		0x323c
++#define PCI_DEVICE_ID_HP_CISSI		0x3239
+ #define PCI_DEVICE_ID_HP_ZX2_IOC	0x4031
  
- 	if (fattr->valid & NFS_ATTR_FATTR_CTIME) {
- 		memcpy(&inode->i_ctime, &fattr->ctime, sizeof(inode->i_ctime));
- 	} else if (server->caps & NFS_CAP_CTIME)
--		invalid |= save_cache_validity & (NFS_INO_INVALID_ATTR
-+		nfsi->cache_validity |= save_cache_validity &
-+				(NFS_INO_INVALID_ATTR
- 				| NFS_INO_REVAL_FORCED);
- 
- 	/* Check if our cached file size is stale */
-@@ -1415,7 +1417,8 @@ static int nfs_update_inode(struct inode *inode, struct nfs_fattr *fattr)
- 					(long long)new_isize);
- 		}
- 	} else
--		invalid |= save_cache_validity & (NFS_INO_INVALID_ATTR
-+		nfsi->cache_validity |= save_cache_validity &
-+				(NFS_INO_INVALID_ATTR
- 				| NFS_INO_REVAL_PAGECACHE
- 				| NFS_INO_REVAL_FORCED);
- 
-@@ -1423,7 +1426,8 @@ static int nfs_update_inode(struct inode *inode, struct nfs_fattr *fattr)
- 	if (fattr->valid & NFS_ATTR_FATTR_ATIME)
- 		memcpy(&inode->i_atime, &fattr->atime, sizeof(inode->i_atime));
- 	else if (server->caps & NFS_CAP_ATIME)
--		invalid |= save_cache_validity & (NFS_INO_INVALID_ATIME
-+		nfsi->cache_validity |= save_cache_validity &
-+				(NFS_INO_INVALID_ATIME
- 				| NFS_INO_REVAL_FORCED);
- 
- 	if (fattr->valid & NFS_ATTR_FATTR_MODE) {
-@@ -1434,7 +1438,8 @@ static int nfs_update_inode(struct inode *inode, struct nfs_fattr *fattr)
- 			invalid |= NFS_INO_INVALID_ATTR|NFS_INO_INVALID_ACCESS|NFS_INO_INVALID_ACL;
- 		}
- 	} else if (server->caps & NFS_CAP_MODE)
--		invalid |= save_cache_validity & (NFS_INO_INVALID_ATTR
-+		nfsi->cache_validity |= save_cache_validity &
-+				(NFS_INO_INVALID_ATTR
- 				| NFS_INO_INVALID_ACCESS
- 				| NFS_INO_INVALID_ACL
- 				| NFS_INO_REVAL_FORCED);
-@@ -1445,7 +1450,8 @@ static int nfs_update_inode(struct inode *inode, struct nfs_fattr *fattr)
- 			inode->i_uid = fattr->uid;
- 		}
- 	} else if (server->caps & NFS_CAP_OWNER)
--		invalid |= save_cache_validity & (NFS_INO_INVALID_ATTR
-+		nfsi->cache_validity |= save_cache_validity &
-+				(NFS_INO_INVALID_ATTR
- 				| NFS_INO_INVALID_ACCESS
- 				| NFS_INO_INVALID_ACL
- 				| NFS_INO_REVAL_FORCED);
-@@ -1456,7 +1462,8 @@ static int nfs_update_inode(struct inode *inode, struct nfs_fattr *fattr)
- 			inode->i_gid = fattr->gid;
- 		}
- 	} else if (server->caps & NFS_CAP_OWNER_GROUP)
--		invalid |= save_cache_validity & (NFS_INO_INVALID_ATTR
-+		nfsi->cache_validity |= save_cache_validity &
-+				(NFS_INO_INVALID_ATTR
- 				| NFS_INO_INVALID_ACCESS
- 				| NFS_INO_INVALID_ACL
- 				| NFS_INO_REVAL_FORCED);
-@@ -1469,7 +1476,8 @@ static int nfs_update_inode(struct inode *inode, struct nfs_fattr *fattr)
- 			set_nlink(inode, fattr->nlink);
- 		}
- 	} else if (server->caps & NFS_CAP_NLINK)
--		invalid |= save_cache_validity & (NFS_INO_INVALID_ATTR
-+		nfsi->cache_validity |= save_cache_validity &
-+				(NFS_INO_INVALID_ATTR
- 				| NFS_INO_REVAL_FORCED);
- 
- 	if (fattr->valid & NFS_ATTR_FATTR_SPACE_USED) {
+ #define PCI_VENDOR_ID_PCTECH		0x1042
 -- 
 1.9.1
 
