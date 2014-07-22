@@ -1,129 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751587AbaGVBoM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 21:44:12 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:13019 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750888AbaGVBoL (ORCPT
+	id S1751986AbaGVBtc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 21:49:32 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:52049 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751327AbaGVBta (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 21:44:11 -0400
-Date: Mon, 21 Jul 2014 21:44:08 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tony Luck <tony.luck@intel.com>
-Subject: [GIT PULL] tracing: Fix wraparound problems in "uptime" trace clock
-Message-ID: <20140721214408.0e569d6d@gandalf.local.home>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+	Mon, 21 Jul 2014 21:49:30 -0400
+From: Andy Lutomirski <luto@amacapital.net>
+To: linux-kernel@vger.kernel.org, Kees Cook <keescook@chromium.org>,
+        Will Drewry <wad@chromium.org>
+Cc: Oleg Nesterov <oleg@redhat.com>, x86@kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-mips@linux-mips.org,
+        linux-arch@vger.kernel.org, linux-security-module@vger.kernel.org,
+        Alexei Starovoitov <ast@plumgrid.com>, hpa@zytor.com,
+        Andy Lutomirski <luto@amacapital.net>
+Subject: [PATCH v3 0/8] Two-phase seccomp and x86 tracing changes
+Date: Mon, 21 Jul 2014 18:49:13 -0700
+Message-Id: <cover.1405992946.git.luto@amacapital.net>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+[applies on jmorris's security-next tree]
 
-Linus,
+This is both a cleanup and a speedup.  It reduces overhead due to
+installing a trivial seccomp filter by 87%.  The speedup comes from
+avoiding the full syscall tracing mechanism for filters that don't
+return SECCOMP_RET_TRACE.
 
-Tony Luck found that using the "uptime" trace clock that uses jiffies
-as a counter was converted to nanoseconds (silly), and after 1 hour
-11 minutes and 34 seconds, this monotonic clock would wrap, causing
-havoc with the tracing system and making the clock useless.
+This series works by splitting the seccomp hooks into two phases.
+The first phase evaluates the filter; it can skip syscalls, allow
+them, kill the calling task, or pass a u32 to the second phase.  The
+second phase requires a full tracing context, and it sends ptrace
+events if necessary.
 
-He converted that clock to use jiffies_64 and made it into a counter
-instead of nanosecond conversions, and displayed the clock with the
-straight jiffy count, which works much better than it did in the past.
+Once this is done, I implemented a similar split for the x86 syscall
+entry work.  The C callback is invoked in two phases: the first has
+only a partial frame, and it can request phase 2 processing with a
+full frame.
 
-With your last email, it seems that you are a bit grumpy about fixes, I
-hope this is fine. You still scare me more than Greg does.
+Finally, I switch the 64-bit system_call code to use the new split
+entry work.  This is a net deletion of assembly code: it replaces
+all of the audit entry muck.
 
-Please pull the latest trace-fixes-v3.16-rc6 tree, which can be found at:
+In the process, I fixed some bugs.
 
+If this is acceptable, someone can do the same tweak for the
+ia32entry and entry_32 code.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
-trace-fixes-v3.16-rc6
+This passes all seccomp tests that I know of.  Now that it's properly
+rebased, even the previously expected failures are gone.
 
-Tag SHA1: 86dfce3341c86da617cb3d03cad39ded60ed7543
-Head SHA1: 58d4e21e50ff3cc57910a8abc20d7e14375d2f61
+Kees, if you like this version, can you create a branch with patches
+1-4?  I think that the rest should go into tip/x86 once everyone's happy
+with it.
 
+Changes from v2:
+ - Fixed 32-bit x86 build (and the tests pass).
+ - Put the doc patch where it belongs.
 
-Tony Luck (1):
-      tracing: Fix wraparound problems in "uptime" trace clock
+Changes from v1:
+ - Rebased on top of Kees' shiny new seccomp tree (no effect on the x86
+   part).
+ - Improved patch 6 vs patch 7 split (thanks Alexei!)
+ - Fixed bogus -ENOSYS in patch 5 (thanks Kees!)
+ - Improved changelog message in patch 6.
 
-----
- kernel/trace/trace.c       | 2 +-
- kernel/trace/trace_clock.c | 9 +++++----
- 2 files changed, 6 insertions(+), 5 deletions(-)
----------------------------
-commit 58d4e21e50ff3cc57910a8abc20d7e14375d2f61
-Author: Tony Luck <tony.luck@intel.com>
-Date:   Fri Jul 18 11:43:01 2014 -0700
+Changes from RFC version:
+ - The first three patches are more or less the same
+ - The rest is more or less a rewrite
 
-    tracing: Fix wraparound problems in "uptime" trace clock
-    
-    The "uptime" trace clock added in:
-    
-        commit 8aacf017b065a805d27467843490c976835eb4a5
-        tracing: Add "uptime" trace clock that uses jiffies
-    
-    has wraparound problems when the system has been up more
-    than 1 hour 11 minutes and 34 seconds. It converts jiffies
-    to nanoseconds using:
-            (u64)jiffies_to_usecs(jiffy) * 1000ULL
-    but since jiffies_to_usecs() only returns a 32-bit value, it
-    truncates at 2^32 microseconds.  An additional problem on 32-bit
-    systems is that the argument is "unsigned long", so fixing the
-    return value only helps until 2^32 jiffies (49.7 days on a HZ=1000
-    system).
-    
-    Avoid these problems by using jiffies_64 as our basis, and
-    not converting to nanoseconds (we do convert to clock_t because
-    user facing API must not be dependent on internal kernel
-    HZ values).
-    
-    Link: http://lkml.kernel.org/p/99d63c5bfe9b320a3b428d773825a37095bf6a51.1405708254.git.tony.luck@intel.com
-    
-    Cc: stable@vger.kernel.org # 3.10+
-    Fixes: 8aacf017b065 "tracing: Add "uptime" trace clock that uses jiffies"
-    Signed-off-by: Tony Luck <tony.luck@intel.com>
-    Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Andy Lutomirski (8):
+  seccomp,x86,arm,mips,s390: Remove nr parameter from secure_computing
+  seccomp: Refactor the filter callback and the API
+  seccomp: Allow arch code to provide seccomp_data
+  seccomp: Document two-phase seccomp and arch-provided seccomp_data
+  x86,x32,audit: Fix x32's AUDIT_ARCH wrt audit
+  x86: Split syscall_trace_enter into two phases
+  x86_64,entry: Treat regs->ax the same in fastpath and slowpath
+    syscalls
+  x86_64,entry: Use split-phase syscall_trace_enter for 64-bit syscalls
 
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index bda9621638cc..291397e66669 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -823,7 +823,7 @@ static struct {
- 	{ trace_clock_local,	"local",	1 },
- 	{ trace_clock_global,	"global",	1 },
- 	{ trace_clock_counter,	"counter",	0 },
--	{ trace_clock_jiffies,	"uptime",	1 },
-+	{ trace_clock_jiffies,	"uptime",	0 },
- 	{ trace_clock,		"perf",		1 },
- 	ARCH_TRACE_CLOCKS
- };
-diff --git a/kernel/trace/trace_clock.c b/kernel/trace/trace_clock.c
-index 26dc348332b7..57b67b1f24d1 100644
---- a/kernel/trace/trace_clock.c
-+++ b/kernel/trace/trace_clock.c
-@@ -59,13 +59,14 @@ u64 notrace trace_clock(void)
- 
- /*
-  * trace_jiffy_clock(): Simply use jiffies as a clock counter.
-+ * Note that this use of jiffies_64 is not completely safe on
-+ * 32-bit systems. But the window is tiny, and the effect if
-+ * we are affected is that we will have an obviously bogus
-+ * timestamp on a trace event - i.e. not life threatening.
-  */
- u64 notrace trace_clock_jiffies(void)
- {
--	u64 jiffy = jiffies - INITIAL_JIFFIES;
--
--	/* Return nsecs */
--	return (u64)jiffies_to_usecs(jiffy) * 1000ULL;
-+	return jiffies_64_to_clock_t(jiffies_64 - INITIAL_JIFFIES);
- }
- 
- /*
+ arch/Kconfig                   |  11 ++
+ arch/arm/kernel/ptrace.c       |   7 +-
+ arch/mips/kernel/ptrace.c      |   2 +-
+ arch/s390/kernel/ptrace.c      |   2 +-
+ arch/x86/include/asm/calling.h |   6 +-
+ arch/x86/include/asm/ptrace.h  |   5 +
+ arch/x86/kernel/entry_64.S     |  51 ++++-----
+ arch/x86/kernel/ptrace.c       | 150 +++++++++++++++++++-----
+ arch/x86/kernel/vsyscall_64.c  |   2 +-
+ include/linux/seccomp.h        |  25 ++--
+ kernel/seccomp.c               | 252 ++++++++++++++++++++++++++++-------------
+ 11 files changed, 360 insertions(+), 153 deletions(-)
+
+-- 
+1.9.3
+
