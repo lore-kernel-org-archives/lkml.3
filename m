@@ -1,133 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756021AbaGVNee (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 09:34:34 -0400
-Received: from mga02.intel.com ([134.134.136.20]:51607 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754142AbaGVNT7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 09:19:59 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,710,1400050800"; 
-   d="scan'208";a="576985454"
-From: Adrian Hunter <adrian.hunter@intel.com>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH 05/52] perf tools: Add machine__kernel_ip()
-Date: Tue, 22 Jul 2014 16:17:14 +0300
-Message-Id: <1406035081-14301-6-git-send-email-adrian.hunter@intel.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1406035081-14301-1-git-send-email-adrian.hunter@intel.com>
-References: <1406035081-14301-1-git-send-email-adrian.hunter@intel.com>
-Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki, Business Identity Code: 0357606 - 4, Domiciled in Helsinki
+	id S1755742AbaGVNfV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 09:35:21 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:59737 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752171AbaGVNfT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 09:35:19 -0400
+Date: Tue, 22 Jul 2014 15:35:14 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Bruno Wolff III <bruno@wolff.to>
+Cc: Dietmar Eggemann <dietmar.eggemann@arm.com>,
+        Josh Boyer <jwboyer@redhat.com>, "mingo@redhat.com" <mingo@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: Scheduler regression from
+ caffcdd8d27ba78730d5540396ce72ad022aff2c
+Message-ID: <20140722133514.GM12054@laptop.lan>
+References: <20140718141648.GE20603@laptop.programming.kicks-ass.net>
+ <20140718145040.GG12054@laptop.lan>
+ <20140718161602.GH12054@laptop.lan>
+ <20140721163528.GA10433@wolff.to>
+ <20140721165212.GO3935@laptop>
+ <20140722094740.GJ12054@laptop.lan>
+ <20140722103857.GK12054@laptop.lan>
+ <20140722121001.GA30631@wolff.to>
+ <20140722130343.GD3935@laptop>
+ <20140722132603.GL12054@laptop.lan>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140722132603.GL12054@laptop.lan>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a function to determine if an address is in
-the kernel.  This is based on the kernel function
-kernel_ip().
+On Tue, Jul 22, 2014 at 03:26:03PM +0200, Peter Zijlstra wrote:
+> On Tue, Jul 22, 2014 at 03:03:43PM +0200, Peter Zijlstra wrote:
+> > Oh, of course we do SMP detection and setup after the cache setup...
+> > lovely.
+> > 
+> > /me goes bang head against wall
+> 
+> hpa, could we move the legacy cpuid1/cpuid4 topology detection muck up,
+> preferably right after detect_extended_topology()?
+> 
+> I need c->phys_proc_id in init_intel_cacheinfo() for machines with
+> cpuid_level < 4.
 
-Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+Something like so.. anything obviously broken?
+
 ---
- tools/perf/util/event.c   |  6 +++---
- tools/perf/util/machine.c | 23 +++++++++++++++++++++++
- tools/perf/util/machine.h | 17 +++++++++++++++++
- 3 files changed, 43 insertions(+), 3 deletions(-)
+ arch/x86/kernel/cpu/intel.c           | 22 +++++++++++-----------
+ arch/x86/kernel/cpu/intel_cacheinfo.c | 12 ++++++++++++
+ 2 files changed, 23 insertions(+), 11 deletions(-)
 
-diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
-index 7e0e8ae..d1283cc 100644
---- a/tools/perf/util/event.c
-+++ b/tools/perf/util/event.c
-@@ -784,9 +784,9 @@ try_again:
- 		 * "[vdso]" dso, but for now lets use the old trick of looking
- 		 * in the whole kernel symbol list.
- 		 */
--		if ((long long)al->addr < 0 &&
--		    cpumode == PERF_RECORD_MISC_USER &&
--		    machine && mg != &machine->kmaps) {
-+		if (cpumode == PERF_RECORD_MISC_USER && machine &&
-+		    mg != &machine->kmaps &&
-+		    machine__kernel_ip(machine, al->addr)) {
- 			mg = &machine->kmaps;
- 			load_map = true;
- 			goto try_again;
-diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
-index f0539aa..04c17a7 100644
---- a/tools/perf/util/machine.c
-+++ b/tools/perf/util/machine.c
-@@ -29,6 +29,7 @@ int machine__init(struct machine *machine, const char *root_dir, pid_t pid)
- 	machine->symbol_filter = NULL;
- 	machine->id_hdr_size = 0;
- 	machine->comm_exec = false;
-+	machine->kernel_start = 0;
+diff --git a/arch/x86/kernel/cpu/intel.c b/arch/x86/kernel/cpu/intel.c
+index 0fd955778f35..9483ee5b3991 100644
+--- a/arch/x86/kernel/cpu/intel.c
++++ b/arch/x86/kernel/cpu/intel.c
+@@ -370,6 +370,17 @@ static void init_intel(struct cpuinfo_x86 *c)
+ 	 */
+ 	detect_extended_topology(c);
  
- 	machine->root_dir = strdup(root_dir);
- 	if (machine->root_dir == NULL)
-@@ -1509,3 +1510,25 @@ int __machine__synthesize_threads(struct machine *machine, struct perf_tool *too
- 	/* command specified */
- 	return 0;
- }
-+
-+int machine__get_kernel_start(struct machine *machine)
-+{
-+	struct map *map = machine__kernel_map(machine, MAP__FUNCTION);
-+	int err = 0;
-+
-+	/*
-+	 * The only addresses above 2^63 are kernel addresses of a 64-bit
-+	 * kernel.  Note that addresses are unsigned so that on a 32-bit system
-+	 * all addresses including kernel addresses are less than 2^32.  In
-+	 * that case (32-bit system), if the kernel mapping is unknown, all
-+	 * addresses will be assumed to be in user space - see
-+	 * machine__kernel_ip().
-+	 */
-+	machine->kernel_start = 1ULL << 63;
-+	if (map) {
-+		err = map__load(map, machine->symbol_filter);
-+		if (map->start)
-+			machine->kernel_start = map->start;
++	if (!cpu_has(c, X86_FEATURE_XTOPOLOGY)) {
++		/*
++		 * let's use the legacy cpuid vector 0x1 and 0x4 for topology
++		 * detection.
++		 */
++		c->x86_max_cores = intel_num_cpu_cores(c);
++#ifdef CONFIG_X86_32
++		detect_ht(c);
++#endif
 +	}
-+	return err;
-+}
-diff --git a/tools/perf/util/machine.h b/tools/perf/util/machine.h
-index 383c725..be97021 100644
---- a/tools/perf/util/machine.h
-+++ b/tools/perf/util/machine.h
-@@ -33,6 +33,7 @@ struct machine {
- 	struct list_head  kernel_dsos;
- 	struct map_groups kmaps;
- 	struct map	  *vmlinux_maps[MAP__NR_TYPES];
-+	u64		  kernel_start;
- 	symbol_filter_t	  symbol_filter;
- };
++
+ 	l2 = init_intel_cacheinfo(c);
+ 	if (c->cpuid_level > 9) {
+ 		unsigned eax = cpuid_eax(10);
+@@ -438,17 +449,6 @@ static void init_intel(struct cpuinfo_x86 *c)
+ 		set_cpu_cap(c, X86_FEATURE_P3);
+ #endif
  
-@@ -42,6 +43,22 @@ struct map *machine__kernel_map(struct machine *machine, enum map_type type)
- 	return machine->vmlinux_maps[type];
- }
+-	if (!cpu_has(c, X86_FEATURE_XTOPOLOGY)) {
+-		/*
+-		 * let's use the legacy cpuid vector 0x1 and 0x4 for topology
+-		 * detection.
+-		 */
+-		c->x86_max_cores = intel_num_cpu_cores(c);
+-#ifdef CONFIG_X86_32
+-		detect_ht(c);
+-#endif
+-	}
+-
+ 	/* Work around errata */
+ 	srat_detect_node(c);
  
-+int machine__get_kernel_start(struct machine *machine);
+diff --git a/arch/x86/kernel/cpu/intel_cacheinfo.c b/arch/x86/kernel/cpu/intel_cacheinfo.c
+index a952e9c85b6f..9c8f7394c612 100644
+--- a/arch/x86/kernel/cpu/intel_cacheinfo.c
++++ b/arch/x86/kernel/cpu/intel_cacheinfo.c
+@@ -730,6 +730,18 @@ unsigned int init_intel_cacheinfo(struct cpuinfo_x86 *c)
+ #endif
+ 	}
+ 
++#ifdef CONFIG_X86_HT
++	/*
++	 * If cpu_llc_id is not yet set, this means cpuid_level < 4 which in
++	 * turns means that the only possibility is SMT (as indicated in
++	 * cpuid1). Since cpuid2 doesn't specify shared caches, and we know
++	 * that SMT shares all caches, we can unconditionally set cpu_llc_id to
++	 * c->phys_proc_id.
++	 */
++	if (per_cpu(cpu_llc_id, cpu) == BAD_APICID)
++		per_cpu(cpu_llc_id, cpu) = c->phys_proc_id;
++#endif
 +
-+static inline u64 machine__kernel_start(struct machine *machine)
-+{
-+	if (!machine->kernel_start)
-+		machine__get_kernel_start(machine);
-+	return machine->kernel_start;
-+}
-+
-+static inline bool machine__kernel_ip(struct machine *machine, u64 ip)
-+{
-+	u64 kernel_start = machine__kernel_start(machine);
-+
-+	return ip >= kernel_start;
-+}
-+
- struct thread *machine__find_thread(struct machine *machine, pid_t pid,
- 				    pid_t tid);
- struct comm *machine__thread_exec_comm(struct machine *machine,
--- 
-1.8.3.2
-
+ 	c->x86_cache_size = l3 ? l3 : (l2 ? l2 : (l1i+l1d));
+ 
+ 	return l2;
