@@ -1,73 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751562AbaGVAXM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 20:23:12 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:61541 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751341AbaGVAXJ (ORCPT
+	id S1751267AbaGVAdE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 20:33:04 -0400
+Received: from g2t2354.austin.hp.com ([15.217.128.53]:42007 "EHLO
+	g2t2354.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750949AbaGVAdC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 20:23:09 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Pavel Machek <pavel@ucw.cz>, Joerg Roedel <joro@8bytes.org>
-Cc: Len Brown <len.brown@intel.com>, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/6 v2] PM / Hibernate: Memory bitmap scalability improvements
-Date: Tue, 22 Jul 2014 02:41:29 +0200
-Message-ID: <6793803.1FXN0a3O0V@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20140721230500.GA7019@amd.pavel.ucw.cz>
-References: <1405938422-21900-1-git-send-email-joro@8bytes.org> <20140721160346.GP30979@8bytes.org> <20140721230500.GA7019@amd.pavel.ucw.cz>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	Mon, 21 Jul 2014 20:33:02 -0400
+Message-ID: <1405989175.25048.5.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [RFC PATCH 0/5] futex: introduce an optimistic spinning futex
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Darren Hart <dvhart@linux.intel.com>, Andi Kleen <andi@firstfloor.org>,
+        Waiman Long <Waiman.Long@hp.com>, Ingo Molnar <mingo@kernel.org>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Jason Low <jason.low2@hp.com>, Scott J Norton <scott.norton@hp.com>
+Date: Mon, 21 Jul 2014 17:32:55 -0700
+In-Reply-To: <CALCETrXSaWM6-nxr4ggtMh5qcfTQg4wRvkW8FTSbri5+_1ZbVg@mail.gmail.com>
+References: <1405956271-34339-1-git-send-email-Waiman.Long@hp.com>
+	 <8761iq3bp3.fsf@tassilo.jf.intel.com> <871tte3bjw.fsf@tassilo.jf.intel.com>
+	 <CFF29A00.9D44A%dvhart@linux.intel.com>
+	 <CFF29E4A.9D44E%dvhart@linux.intel.com>
+	 <alpine.DEB.2.10.1407212025130.20847@nanos> <20140721212740.GS3935@laptop>
+	 <CALCETrXSaWM6-nxr4ggtMh5qcfTQg4wRvkW8FTSbri5+_1ZbVg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, July 22, 2014 01:05:00 AM Pavel Machek wrote:
-> Hi!
+On Mon, 2014-07-21 at 14:31 -0700, Andy Lutomirski wrote:
+> On Mon, Jul 21, 2014 at 2:27 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> > All this is predicated on the fact that syscalls are 'expensive'.
+> > Weren't syscalls only 100s of cycles? All this bitmap mucking is far
+> > more expensive due to cacheline misses, which due to the size of the
+> > things is almost guaranteed.
 > 
-> On Mon 2014-07-21 18:03:46, Joerg Roedel wrote:
-> > On Mon, Jul 21, 2014 at 04:10:27PM +0200, Pavel Machek wrote:
-> > > > And Linux is only made for sane people? Thats pretty new to me ;-)
-> > > 
-> > > Yeah, but please don't optimize for insane people :-).
-> > 
-> > Thats rather discriminating, even more when you realize that 'insane' is
-> > a very subjective attribute.
-> 
-> You admitted you don't even have access to machine you are trying to
-> optimize for.
-> 
-> > > #6 is bugfix. We should take it. Rest is performance improvement for
-> > > insane config. I don't think we should take it.
-> > 
-> > Have you any other reason against these changes besides your
-> > proven-to-be-wrong disbelief that it is necessary?
-> 
-> Where you proven me wrong?
-> 
-> If kernel is preparing bitmaps before checking resume signature, that
-> is bug that costs you 60 seconds boot time on your 12TB machine. Fix
-> that bug. It will benefit everyone.
-> 
-> Software watchdog during hibernation on 12TB machine is a bug that
-> hits insane people. Ok, lets fix it.
-> 
-> Optimizing hibernation for memory-is-empty case is wrong. Linux tries
-> to use as much memory as it can.
-> 
-> Hibernating 12TB machine will take 5 hours or more. Redoing data
-> structures to save 60 seconds of 5 hour process is not worth
-> it. Nobody sane would hibernate 12TB machine.
+> 120 - 300 cycles for me, unless tracing happens, and I'm working on
+> reducing the incidence of tracing.
 
-It looks like some specific need motivated the Joerg's work, however,
-so let's just not dismiss the use case lightly without knowing it.
+fwiw here's what lmbench's lat_ctx says on my system . For 'accuracy', I
+kept the runs short.
 
-That said I would like to know how much time we save through this
-optimization relative to the total hibernation time on systems with
-various amounts of memory (say, 4 GB, 8 GB, 16 GB, 32 GB, more) and
-whether or not it makes hibernation slower in any case.
-
-Rafael
+http://www.stgolabs.net/lat_ctx.png
 
