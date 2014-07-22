@@ -1,24 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932802AbaGVWYO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 18:24:14 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44552 "EHLO
+	id S932829AbaGVWYS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 18:24:18 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:44563 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932769AbaGVWYJ (ORCPT
+	with ESMTP id S932804AbaGVWYP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 18:24:09 -0400
+	Tue, 22 Jul 2014 18:24:15 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Dmitry Kasatkin <d.kasatkin@samsung.com>,
-        Mimi Zohar <zohar@linux.vnet.ibm.com>,
+Cc: =?UTF-8?q?Rafa=C5=82=20Mi=C5=82ecki?= <zajec5@gmail.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 082/116] ima: introduce ima_kernel_read()
-Date: Tue, 22 Jul 2014 15:21:33 -0700
-Message-Id: <1406067727-19683-83-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 104/116] b43: fix frequency reported on G-PHY with /new/ firmware
+Date: Tue, 22 Jul 2014 15:21:55 -0700
+Message-Id: <1406067727-19683-105-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1406067727-19683-1-git-send-email-kamal@canonical.com>
 References: <1406067727-19683-1-git-send-email-kamal@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,171 +31,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dmitry Kasatkin <d.kasatkin@samsung.com>
+From: =?UTF-8?q?Rafa=C5=82=20Mi=C5=82ecki?= <zajec5@gmail.com>
 
-commit 0430e49b6e7c6b5e076be8fefdee089958c9adad upstream.
+commit 2fc68eb122c7ea6cd5be1fe7d6650c0beb2f4f40 upstream.
 
-Commit 8aac62706 "move exit_task_namespaces() outside of exit_notify"
-introduced the kernel opps since the kernel v3.10, which happens when
-Apparmor and IMA-appraisal are enabled at the same time.
+Support for firmware rev 508+ was added years ago, but we never noticed
+it reports channel in a different way for G-PHY devices. Instead of
+offset from 2400 MHz it simply passes channel id (AKA hw_value).
 
-----------------------------------------------------------------------
-[  106.750167] BUG: unable to handle kernel NULL pointer dereference at
-0000000000000018
-[  106.750221] IP: [<ffffffff811ec7da>] our_mnt+0x1a/0x30
-[  106.750241] PGD 0
-[  106.750254] Oops: 0000 [#1] SMP
-[  106.750272] Modules linked in: cuse parport_pc ppdev bnep rfcomm
-bluetooth rpcsec_gss_krb5 nfsd auth_rpcgss nfs_acl nfs lockd sunrpc
-fscache dm_crypt intel_rapl x86_pkg_temp_thermal intel_powerclamp
-kvm_intel snd_hda_codec_hdmi kvm crct10dif_pclmul crc32_pclmul
-ghash_clmulni_intel aesni_intel aes_x86_64 glue_helper lrw gf128mul
-ablk_helper cryptd snd_hda_codec_realtek dcdbas snd_hda_intel
-snd_hda_codec snd_hwdep snd_pcm snd_page_alloc snd_seq_midi
-snd_seq_midi_event snd_rawmidi psmouse snd_seq microcode serio_raw
-snd_timer snd_seq_device snd soundcore video lpc_ich coretemp mac_hid lp
-parport mei_me mei nbd hid_generic e1000e usbhid ahci ptp hid libahci
-pps_core
-[  106.750658] CPU: 6 PID: 1394 Comm: mysqld Not tainted 3.13.0-rc7-kds+ #15
-[  106.750673] Hardware name: Dell Inc. OptiPlex 9010/0M9KCM, BIOS A08
-09/19/2012
-[  106.750689] task: ffff8800de804920 ti: ffff880400fca000 task.ti:
-ffff880400fca000
-[  106.750704] RIP: 0010:[<ffffffff811ec7da>]  [<ffffffff811ec7da>]
-our_mnt+0x1a/0x30
-[  106.750725] RSP: 0018:ffff880400fcba60  EFLAGS: 00010286
-[  106.750738] RAX: 0000000000000000 RBX: 0000000000000100 RCX:
-ffff8800d51523e7
-[  106.750764] RDX: ffffffffffffffea RSI: ffff880400fcba34 RDI:
-ffff880402d20020
-[  106.750791] RBP: ffff880400fcbae0 R08: 0000000000000000 R09:
-0000000000000001
-[  106.750817] R10: 0000000000000000 R11: 0000000000000001 R12:
-ffff8800d5152300
-[  106.750844] R13: ffff8803eb8df510 R14: ffff880400fcbb28 R15:
-ffff8800d51523e7
-[  106.750871] FS:  0000000000000000(0000) GS:ffff88040d200000(0000)
-knlGS:0000000000000000
-[  106.750910] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-[  106.750935] CR2: 0000000000000018 CR3: 0000000001c0e000 CR4:
-00000000001407e0
-[  106.750962] Stack:
-[  106.750981]  ffffffff813434eb ffff880400fcbb20 ffff880400fcbb18
-0000000000000000
-[  106.751037]  ffff8800de804920 ffffffff8101b9b9 0001800000000000
-0000000000000100
-[  106.751093]  0000010000000000 0000000000000002 000000000000000e
-ffff8803eb8df500
-[  106.751149] Call Trace:
-[  106.751172]  [<ffffffff813434eb>] ? aa_path_name+0x2ab/0x430
-[  106.751199]  [<ffffffff8101b9b9>] ? sched_clock+0x9/0x10
-[  106.751225]  [<ffffffff8134a68d>] aa_path_perm+0x7d/0x170
-[  106.751250]  [<ffffffff8101b945>] ? native_sched_clock+0x15/0x80
-[  106.751276]  [<ffffffff8134aa73>] aa_file_perm+0x33/0x40
-[  106.751301]  [<ffffffff81348c5e>] common_file_perm+0x8e/0xb0
-[  106.751327]  [<ffffffff81348d78>] apparmor_file_permission+0x18/0x20
-[  106.751355]  [<ffffffff8130c853>] security_file_permission+0x23/0xa0
-[  106.751382]  [<ffffffff811c77a2>] rw_verify_area+0x52/0xe0
-[  106.751407]  [<ffffffff811c789d>] vfs_read+0x6d/0x170
-[  106.751432]  [<ffffffff811cda31>] kernel_read+0x41/0x60
-[  106.751457]  [<ffffffff8134fd45>] ima_calc_file_hash+0x225/0x280
-[  106.751483]  [<ffffffff8134fb52>] ? ima_calc_file_hash+0x32/0x280
-[  106.751509]  [<ffffffff8135022d>] ima_collect_measurement+0x9d/0x160
-[  106.751536]  [<ffffffff810b552d>] ? trace_hardirqs_on+0xd/0x10
-[  106.751562]  [<ffffffff8134f07c>] ? ima_file_free+0x6c/0xd0
-[  106.751587]  [<ffffffff81352824>] ima_update_xattr+0x34/0x60
-[  106.751612]  [<ffffffff8134f0d0>] ima_file_free+0xc0/0xd0
-[  106.751637]  [<ffffffff811c9635>] __fput+0xd5/0x300
-[  106.751662]  [<ffffffff811c98ae>] ____fput+0xe/0x10
-[  106.751687]  [<ffffffff81086774>] task_work_run+0xc4/0xe0
-[  106.751712]  [<ffffffff81066fad>] do_exit+0x2bd/0xa90
-[  106.751738]  [<ffffffff8173c958>] ? retint_swapgs+0x13/0x1b
-[  106.751763]  [<ffffffff8106780c>] do_group_exit+0x4c/0xc0
-[  106.751788]  [<ffffffff81067894>] SyS_exit_group+0x14/0x20
-[  106.751814]  [<ffffffff8174522d>] system_call_fastpath+0x1a/0x1f
-[  106.751839] Code: c3 0f 1f 44 00 00 55 48 89 e5 e8 22 fe ff ff 5d c3
-0f 1f 44 00 00 55 65 48 8b 04 25 c0 c9 00 00 48 8b 80 28 06 00 00 48 89
-e5 5d <48> 8b 40 18 48 39 87 c0 00 00 00 0f 94 c0 c3 0f 1f 80 00 00 00
-[  106.752185] RIP  [<ffffffff811ec7da>] our_mnt+0x1a/0x30
-[  106.752214]  RSP <ffff880400fcba60>
-[  106.752236] CR2: 0000000000000018
-[  106.752258] ---[ end trace 3c520748b4732721 ]---
-----------------------------------------------------------------------
+So far it was (most probably) affecting monitor mode users only, but
+the following recent commit made it noticeable for quite everybody:
 
-The reason for the oops is that IMA-appraisal uses "kernel_read()" when
-file is closed. kernel_read() honors LSM security hook which calls
-Apparmor handler, which uses current->nsproxy->mnt_ns. The 'guilty'
-commit changed the order of cleanup code so that nsproxy->mnt_ns was
-not already available for Apparmor.
+commit 3afc2167f60a327a2c1e1e2600ef209a3c2b75b7
+Author: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Date:   Tue Mar 4 16:50:13 2014 +0200
 
-Discussion about the issue with Al Viro and Eric W. Biederman suggested
-that kernel_read() is too high-level for IMA. Another issue, except
-security checking, that was identified is mandatory locking. kernel_read
-honors it as well and it might prevent IMA from calculating necessary hash.
-It was suggested to use simplified version of the function without security
-and locking checks.
+    cfg80211/mac80211: ignore signal if the frame was heard on wrong channel
 
-This patch introduces special version ima_kernel_read(), which skips security
-and mandatory locking checking. It prevents the kernel oops to happen.
-
-Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
-Suggested-by: Eric W. Biederman <ebiederm@xmission.com>
-Signed-off-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Reported-by: Aaro Koskinen <aaro.koskinen@iki.fi>
+Signed-off-by: Rafał Miłecki <zajec5@gmail.com>
+Tested-by: Aaro Koskinen <aaro.koskinen@iki.fi>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- security/integrity/ima/ima_crypto.c | 32 +++++++++++++++++++++++++++++++-
- 1 file changed, 31 insertions(+), 1 deletion(-)
+ drivers/net/wireless/b43/xmit.c | 10 +++++++---
+ 1 file changed, 7 insertions(+), 3 deletions(-)
 
-diff --git a/security/integrity/ima/ima_crypto.c b/security/integrity/ima/ima_crypto.c
-index b21ee5b..bb65b0d 100644
---- a/security/integrity/ima/ima_crypto.c
-+++ b/security/integrity/ima/ima_crypto.c
-@@ -21,6 +21,36 @@
- #include <linux/slab.h>
- #include "ima.h"
- 
-+/**
-+ * ima_kernel_read - read file content
-+ *
-+ * This is a function for reading file content instead of kernel_read().
-+ * It does not perform locking checks to ensure it cannot be blocked.
-+ * It does not perform security checks because it is irrelevant for IMA.
-+ *
-+ */
-+static int ima_kernel_read(struct file *file, loff_t offset,
-+			   char *addr, unsigned long count)
-+{
-+	mm_segment_t old_fs;
-+	char __user *buf = addr;
-+	ssize_t ret;
-+
-+	if (!(file->f_mode & FMODE_READ))
-+		return -EBADF;
-+	if (!file->f_op->read && !file->f_op->aio_read)
-+		return -EINVAL;
-+
-+	old_fs = get_fs();
-+	set_fs(get_ds());
-+	if (file->f_op->read)
-+		ret = file->f_op->read(file, buf, count, &offset);
-+	else
-+		ret = do_sync_read(file, buf, count, &offset);
-+	set_fs(old_fs);
-+	return ret;
-+}
-+
- static int init_desc(struct hash_desc *desc)
- {
- 	int rc;
-@@ -67,7 +97,7 @@ int ima_calc_hash(struct file *file, char *digest)
- 	while (offset < i_size) {
- 		int rbuf_len;
- 
--		rbuf_len = kernel_read(file, offset, rbuf, PAGE_SIZE);
-+		rbuf_len = ima_kernel_read(file, offset, rbuf, PAGE_SIZE);
- 		if (rbuf_len < 0) {
- 			rc = rbuf_len;
- 			break;
+diff --git a/drivers/net/wireless/b43/xmit.c b/drivers/net/wireless/b43/xmit.c
+index e85d34b..ebcce00 100644
+--- a/drivers/net/wireless/b43/xmit.c
++++ b/drivers/net/wireless/b43/xmit.c
+@@ -810,9 +810,13 @@ void b43_rx(struct b43_wldev *dev, struct sk_buff *skb, const void *_rxhdr)
+ 		break;
+ 	case B43_PHYTYPE_G:
+ 		status.band = IEEE80211_BAND_2GHZ;
+-		/* chanid is the radio channel cookie value as used
+-		 * to tune the radio. */
+-		status.freq = chanid + 2400;
++		/* Somewhere between 478.104 and 508.1084 firmware for G-PHY
++		 * has been modified to be compatible with N-PHY and others.
++		 */
++		if (dev->fw.rev >= 508)
++			status.freq = ieee80211_channel_to_frequency(chanid, status.band);
++		else
++			status.freq = chanid + 2400;
+ 		break;
+ 	case B43_PHYTYPE_N:
+ 	case B43_PHYTYPE_LP:
 -- 
 1.9.1
 
