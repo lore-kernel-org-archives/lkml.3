@@ -1,90 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756881AbaGVVCm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 17:02:42 -0400
-Received: from mout.kundenserver.de ([212.227.126.131]:53354 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752460AbaGVVCk (ORCPT
+	id S1756945AbaGVVDS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 17:03:18 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:44151 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756877AbaGVVDQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 17:02:40 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Brian Norris <computersforpeace@gmail.com>, devicetree@vger.kernel.org,
-        Florian Fainelli <f.fainelli@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        Christian Daudt <bcm@fixthebug.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Matt Porter <mporter@linaro.org>, Marc Carino <marc.ceeeee@gmail.com>,
-        Gregory Fong <gregory.0xf0@gmail.com>, Olof Johansson <olof@lixom.net>,
-        David Woodhouse <dwmw2@infradead.org>
-Subject: Re: [PATCH v8 02/11] power: reset: Add reboot driver for brcmstb
-Date: Tue, 22 Jul 2014 23:02:07 +0200
-Message-ID: <5224854.YNJjMxFltp@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20140722200213.GF28323@ld-irv-0074>
-References: <1405976886-27807-1-git-send-email-computersforpeace@gmail.com> <62122849.RXJHvac7Iy@wuerfel> <20140722200213.GF28323@ld-irv-0074>
+	Tue, 22 Jul 2014 17:03:16 -0400
+Message-ID: <53CED190.8060702@wwwdotorg.org>
+Date: Tue, 22 Jul 2014 15:03:12 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:YnV/dN3NhyEAyoEA14z3xCxkiTMymq1DLSDvCgYUY0f
- unpeGTk1MQpZaDXWWA8NlLCs04xRpQDVE46F1q9fgTZk3lO1P3
- Sl11dGM1oZlUdRAz5SFVdsN0YyVoL0yJ19Zhh1+NxSBuaK/lzp
- SuIyIKhIdnKti0rSQnRXWLNNtFkDaBbJB1ylwFtdyBSSwepzEb
- IPq6AwRVe1FN3ehS6YzSTQ8oqud7nIDAIdqGMedWXAbJN1U2qW
- dmyMqGPa7ISiDMQAuxqslQ6UvSeg7mJ15qslgBOBHOHeb6n5OK
- 0yGDHl4h1al5hL9WIj/x/z/qlo9wBXq+WKxSBnuFfb5iAJ2w0u
- Pzz40D+eri+frde3FzJM=
+To: Thierry Reding <thierry.reding@gmail.com>, Tejun Heo <tj@kernel.org>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>
+CC: Hans de Goede <hdegoede@redhat.com>,
+        Mikko Perttunen <mperttunen@nvidia.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>
+Subject: Re: [PATCH v5 1/8] of: Add NVIDIA Tegra SATA controller binding
+References: <1405500863-19696-2-git-send-email-mperttunen@nvidia.com> <1405667500-7402-1-git-send-email-mperttunen@nvidia.com> <53C8C9BD.3070709@nvidia.com> <53C8F6E6.6020901@redhat.com> <20140718150603.GA7196@ulmo>
+In-Reply-To: <20140718150603.GA7196@ulmo>
+X-Enigmail-Version: 1.5.2
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="gFvM3qUNEiBIujkoUOihmKSWH10GoBB3B"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 22 July 2014 13:02:13 Brian Norris wrote:
-> How about a third option, where we drop the 'select' statement and
-> set POWER_RESET_BRCMSTB to be 'default y'? Then we don't have to modify
-> the defconfig, and it gives the added bonus of choosing a sane default
-> even if you're not based on the multi_v7_defconfig. i.e.:
-> 
-> diff --git a/arch/arm/mach-bcm/Kconfig b/arch/arm/mach-bcm/Kconfig
-> index 58c01aed9752..634de7b7fd28 100644
-> --- a/arch/arm/mach-bcm/Kconfig
-> +++ b/arch/arm/mach-bcm/Kconfig
-> @@ -94,7 +94,6 @@ config ARCH_BRCMSTB
->         select MIGHT_HAVE_PCI
->         select HAVE_SMP
->         select HAVE_ARM_ARCH_TIMER
-> -       select POWER_RESET_BRCMSTB
->         select BRCMSTB_GISB_ARB
->         select BRCMSTB_L2_IRQ
->         help
-> diff --git a/drivers/power/reset/Kconfig b/drivers/power/reset/Kconfig
-> index fcb9825debe5..ab5d57e2766d 100644
-> --- a/drivers/power/reset/Kconfig
-> +++ b/drivers/power/reset/Kconfig
-> @@ -23,6 +23,7 @@ config POWER_RESET_AXXIA
->  config POWER_RESET_BRCMSTB
->         bool "Broadcom STB reset driver"
->         depends on POWER_RESET && ARCH_BRCMSTB
-> +       default y
->         help
->           This driver provides restart support for ARM-based Broadcom STB
->           boards.
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--gFvM3qUNEiBIujkoUOihmKSWH10GoBB3B
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-I don't like this too much. Why do you want to allow disabling the
-driver if you make it 'default y' in the first place?
+On 07/18/2014 09:06 AM, Thierry Reding wrote:
+> On Fri, Jul 18, 2014 at 12:28:54PM +0200, Hans de Goede wrote:
+>> Hi,
+>>
+>> On 07/18/2014 09:16 AM, Mikko Perttunen wrote:
+>>> So here's v5: this time, as suggested, I handle the sata clock myself=
+ and let ahci_platform handle it too, leading it to be prepared+enabled t=
+wice. This works fine, and allows us to remove the DT ordering requiremen=
+t.
+>>>
+>>> I also have in the works a patchset that adds the name-based ahci_pla=
+tform_get_resources function, but that is not quite ready yet, even if it=
+ is quite far along. Also, I am going on vacation and returning on 28.7.,=
+ so if this v5 is acceptable maybe it could be merged for 3.17 and I coul=
+d work on the new get_resources scheme after I get back from vacation?
+>>
+>> Yes that works for me v3 of all the patches with no newer version +
+>> v5 of patch 1 and 7 are pretty clean and can go into 3.17 from my pov,=
 
-We try to avoid 'default y' for user-selectable drivers in general.
-I noticed that in my example, I was missing the default. It should
-have been 
+>> Tejun can you pick these up for 3.17 please?
+>=20
+> Tejun,
+>=20
+> I think the following patches can go through your tree without causing
+> breakage through unresolved dependencies:
+=2E..
+> Stephen, the rest of the patches would probably best go through the
+> Tegra tree so that we can handle the dependencies there. I've already
+> sent out pull requests for 3.17 today, but maybe Arnd and Olof can be
+> convinced to take one more.
 
-config POWER_RESET_BRCMSTB
-        bool "Broadcom STB reset driver" if COMPILE_TEST
-        depends on POWER_RESET && ARM
-	default ARCH_BRCMSTB
+At this point, I'm just going to wait for 3.18 for anything that didn't
+make it into 3.17.
 
-This way, it always gets selected when ARCH_BRCMSTB is on and
-COMPILE_TEST is off. With COMPILE_TEST enabled, it defaults to
-ARCH_BRCMSTB but can be enabled or disabled for the purpose
-of compile testing.
 
-	Arnd
+--gFvM3qUNEiBIujkoUOihmKSWH10GoBB3B
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iQIcBAEBAgAGBQJTztGQAAoJEJuNpwkmVCGc7xwP/idWdSGs4e5mhKeFkzHeEDev
+jYyY7eBAE92DF5YFVH3a81gmRAjFuDRMm6tx8U46PEbUOygnvRDH0PsNiEQ06dtf
+DypZiailwoFwKv3jGBgtpgIDKu0u5WQAadzYn4iDwIOaAjHeYFoh99mpqO30rJFA
+jwj9ZFrBbtjF3pjRPEcUv2fxlmab8GIYFtJ9BNrSB+A52Vwns5+u7pefplPGEO+a
+v/1LgXh97K8rE9ZHNXX8VQ12nwxvlLpRvySw/cLSPKgmhVdc9lcUArVP6Mn2x5Em
+8PYEsDNap6qI/ebriNUH8GSS9+2+AkgSqBMaYbqtuUQlxfVpRwZWNQfXCtgtMulq
+YzOnQ/nH0/r5XIRyQJjZYrNEMFZ4bvEoNVPQHRiKzW7dtJXJhr669GMQe2Rt1F9l
+YG3OcT0jlBk9RSyjw3VFi6X7WSDhQM+3+sXS77bxSG0DAR/ZXXhFo9Wz4Y6G8n76
+BzOlqLZYWa6HLkH49FCzBRZzhZUFNxRs7AymBZ2cLqAWN3G8zTe6qlP/wLu6EsZZ
+qpcb3oBXZjbch0NFAwBS/GM0j4nvUdVDbPpdEHsevGSk9JEHIOtCC+xoBMe/gr6z
+0cd8FmzfkNkYKEuQW+Ya3m5Yuf5QicxsDlOiVPKQX7q3jZkf6Pru5xn4RhonGDbV
+3vDWo8h1+2uH0YygEr90
+=Jg4Y
+-----END PGP SIGNATURE-----
+
+--gFvM3qUNEiBIujkoUOihmKSWH10GoBB3B--
