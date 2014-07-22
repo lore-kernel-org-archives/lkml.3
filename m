@@ -1,83 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756916AbaGVULR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 16:11:17 -0400
-Received: from mail-qg0-f52.google.com ([209.85.192.52]:48092 "EHLO
-	mail-qg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756777AbaGVULN (ORCPT
+	id S1756746AbaGVUPE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 16:15:04 -0400
+Received: from mail-oi0-f51.google.com ([209.85.218.51]:36812 "EHLO
+	mail-oi0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751462AbaGVUPC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 16:11:13 -0400
-Date: Tue, 22 Jul 2014 16:11:09 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Jesse Brandeburg <jesse.brandeburg@gmail.com>
-Cc: Mike Qiu <qiudayu@linux.vnet.ibm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-ide@vger.kernel.org, wenxiong@linux.vnet.ibm.com,
-        brking@linux.vnet.ibm.com, zhenghch@cn.ibm.com, haokexin@gmail.com
-Subject: Re: [PATCH 2/2] libata: Fix NULL pointer of scsi_host in ata_port
-Message-ID: <20140722201109.GN13851@htj.dyndns.org>
-References: <1406040688-1762-1-git-send-email-qiudayu@linux.vnet.ibm.com>
- <53CE7C29.6050908@linux.vnet.ibm.com>
- <CAEuXFExJAq5hpYe8R_De7hOtGN1Jrx6HCQt0tQBAKnDTKEpaBA@mail.gmail.com>
+	Tue, 22 Jul 2014 16:15:02 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAEuXFExJAq5hpYe8R_De7hOtGN1Jrx6HCQt0tQBAKnDTKEpaBA@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1406020499-5537-2-git-send-email-takahiro.akashi@linaro.org>
+References: <1406020499-5537-1-git-send-email-takahiro.akashi@linaro.org>
+	<1406020499-5537-2-git-send-email-takahiro.akashi@linaro.org>
+Date: Tue, 22 Jul 2014 13:15:01 -0700
+X-Google-Sender-Auth: UgzKSIMP7_ZqighXIRGznyxdGrc
+Message-ID: <CAGXu5jKkJUGn_MpEEr8U=n_A+iW9s8vSX1WoVNzRJMVyGQRjpA@mail.gmail.com>
+Subject: Re: [PATCH v5 1/3] arm64: ptrace: reload a syscall number after
+ ptrace operations
+From: Kees Cook <keescook@chromium.org>
+To: AKASHI Takahiro <takahiro.akashi@linaro.org>
+Cc: Will Drewry <wad@chromium.org>, Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>, dsaxena@linaro.org,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linaro-kernel@lists.linaro.org, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Tue, Jul 22, 2014 at 2:14 AM, AKASHI Takahiro
+<takahiro.akashi@linaro.org> wrote:
+> Arm64 holds a syscall number in w8(x8) register. Ptrace tracer may change
+> its value either to:
+>   * any valid syscall number to alter a system call, or
+>   * -1 to skip a system call
+>
+> This patch implements this behavior by reloading that value into syscallno
+> in struct pt_regs after tracehook_report_syscall_entry() or
+> secure_computing(). In case of '-1', a return value of system call can also
+> be changed by the tracer setting the value to x0 register, and so
+> sys_ni_nosyscall() should not be called.
+>
+> See also:
+>     42309ab4, ARM: 8087/1: ptrace: reload syscall number after
+>               secure_computing() check
+>
+> Signed-off-by: AKASHI Takahiro <takahiro.akashi@linaro.org>
+> ---
+>  arch/arm64/kernel/entry.S  |    2 ++
+>  arch/arm64/kernel/ptrace.c |   13 +++++++++++++
+>  2 files changed, 15 insertions(+)
+>
+> diff --git a/arch/arm64/kernel/entry.S b/arch/arm64/kernel/entry.S
+> index 5141e79..de8bdbc 100644
+> --- a/arch/arm64/kernel/entry.S
+> +++ b/arch/arm64/kernel/entry.S
+> @@ -628,6 +628,8 @@ ENDPROC(el0_svc)
+>  __sys_trace:
+>         mov     x0, sp
+>         bl      syscall_trace_enter
+> +       cmp     w0, #-1                         // skip syscall?
+> +       b.eq    ret_to_user
+>         adr     lr, __sys_trace_return          // return address
+>         uxtw    scno, w0                        // syscall number (possibly new)
+>         mov     x1, sp                          // pointer to regs
+> diff --git a/arch/arm64/kernel/ptrace.c b/arch/arm64/kernel/ptrace.c
+> index 70526cf..100d7d1 100644
+> --- a/arch/arm64/kernel/ptrace.c
+> +++ b/arch/arm64/kernel/ptrace.c
+> @@ -21,6 +21,7 @@
+>
+>  #include <linux/audit.h>
+>  #include <linux/compat.h>
+> +#include <linux/errno.h>
+>  #include <linux/kernel.h>
+>  #include <linux/sched.h>
+>  #include <linux/mm.h>
+> @@ -1109,9 +1110,21 @@ static void tracehook_report_syscall(struct pt_regs *regs,
+>
+>  asmlinkage int syscall_trace_enter(struct pt_regs *regs)
+>  {
+> +       unsigned long saved_x0, saved_x8;
+> +
+> +       saved_x0 = regs->regs[0];
+> +       saved_x8 = regs->regs[8];
+> +
+>         if (test_thread_flag(TIF_SYSCALL_TRACE))
+>                 tracehook_report_syscall(regs, PTRACE_SYSCALL_ENTER);
+>
+> +       regs->syscallno = regs->regs[8];
+> +       if ((long)regs->syscallno == ~0UL) { /* skip this syscall */
+> +               regs->regs[8] = saved_x8;
+> +               if (regs->regs[0] == saved_x0) /* not changed by user */
+> +                       regs->regs[0] = -ENOSYS;
 
-Can you please test the following patch?
+I'm not sure this is right compared to other architectures. Generally
+when a tracer performs a syscall skip, it's up to them to also adjust
+the return value. They may want to be faking a syscall, and what if
+the value they want to return happens to be what x0 was going into the
+tracer? It would have no way to avoid this -ENOSYS case. I think
+things are fine without this test.
 
-diff --git a/drivers/ata/libata-core.c b/drivers/ata/libata-core.c
-index d19c37a7..773f4e6 100644
---- a/drivers/ata/libata-core.c
-+++ b/drivers/ata/libata-core.c
-@@ -4798,9 +4798,8 @@ void swap_buf_le16(u16 *buf, unsigned int buf_words)
- static struct ata_queued_cmd *ata_qc_new(struct ata_port *ap)
- {
- 	struct ata_queued_cmd *qc = NULL;
--	unsigned int i, tag, max_queue;
--
--	max_queue = ap->scsi_host->can_queue;
-+	unsigned int max_queue = ap->host->n_tags;
-+	unsigned int i, tag;
- 
- 	/* no command while frozen */
- 	if (unlikely(ap->pflags & ATA_PFLAG_FROZEN))
-@@ -6094,6 +6093,7 @@ void ata_host_init(struct ata_host *host, struct device *dev,
- {
- 	spin_lock_init(&host->lock);
- 	mutex_init(&host->eh_mutex);
-+	host->n_tags = ATA_MAX_QUEUE;
- 	host->dev = dev;
- 	host->ops = ops;
- }
-@@ -6179,11 +6179,7 @@ int ata_host_register(struct ata_host *host, struct scsi_host_template *sht)
- 	 * The max queue supported by hardware must not be greater than
- 	 * ATA_MAX_QUEUE.
- 	 */
--	if (sht->can_queue > ATA_MAX_QUEUE) {
--		dev_err(host->dev, "BUG: the hardware max queue is too large\n");
--		WARN_ON(1);
--		return -EINVAL;
--	}
-+	host->n_tags = clamp(sht->can_queue, 1, ATA_MAX_QUEUE);
- 
- 	/* host must have been started */
- 	if (!(host->flags & ATA_HOST_STARTED)) {
-diff --git a/include/linux/libata.h b/include/linux/libata.h
-index 5ab4e3a..92abb49 100644
---- a/include/linux/libata.h
-+++ b/include/linux/libata.h
-@@ -593,6 +593,7 @@ struct ata_host {
- 	struct device 		*dev;
- 	void __iomem * const	*iomap;
- 	unsigned int		n_ports;
-+	unsigned int		n_tags;			/* nr of NCQ tags */
- 	void			*private_data;
- 	struct ata_port_operations *ops;
- 	unsigned long		flags;
+-Kees
+
+> +       }
+> +
+>         if (test_thread_flag(TIF_SYSCALL_TRACEPOINT))
+>                 trace_sys_enter(regs, regs->syscallno);
+>
+> --
+> 1.7.9.5
+>
+
+
+
+-- 
+Kees Cook
+Chrome OS Security
