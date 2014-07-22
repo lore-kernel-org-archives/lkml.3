@@ -1,80 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752823AbaGVGNX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 02:13:23 -0400
-Received: from darkcity.gna.ch ([195.226.6.51]:49172 "EHLO mail.gna.ch"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750798AbaGVGNW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 02:13:22 -0400
-Message-ID: <53CE00EF.70108@daenzer.net>
-Date: Tue, 22 Jul 2014 15:13:03 +0900
-From: =?windows-1252?Q?Michel_D=E4nzer?= <michel@daenzer.net>
-User-Agent: Mozilla/5.0 (X11; Linux ppc; rv:31.0) Gecko/20100101 Icedove/31.0
-MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: Random panic in load_balance() with 3.16-rc
-References: <53C77BB8.6030804@daenzer.net> <20140717075820.GE19379@twins.programming.kicks-ass.net> <53C8E90F.1010306@daenzer.net>
-In-Reply-To: <53C8E90F.1010306@daenzer.net>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="l15pSpKXl6sGq00E9pO4mH88P5b2UpPGq"
+	id S1752942AbaGVGOU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 02:14:20 -0400
+Received: from gate.crashing.org ([63.228.1.57]:59455 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751979AbaGVGOT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 02:14:19 -0400
+Message-ID: <1406009637.22200.14.camel@pasglop>
+Subject: Re: [PATCH] powerpc: Revert removing of _INIT_GLOBAL(), _STATIC()
+ and _INIT_STATIC()
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, linuxppc-dev@lists.ozlabs.org,
+        Anton Blanchard <anton@samba.org>, Olof Johansson <olof@lixom.net>
+Date: Tue, 22 Jul 2014 16:13:57 +1000
+In-Reply-To: <20140721145651.465db070@gandalf.local.home>
+References: <20140714201204.7b6fcd8e@gandalf.local.home>
+	 <1405389955.9343.48.camel@pasglop>
+	 <20140721145651.465db070@gandalf.local.home>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---l15pSpKXl6sGq00E9pO4mH88P5b2UpPGq
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: quoted-printable
+On Mon, 2014-07-21 at 14:56 -0400, Steven Rostedt wrote:
+> > Weird ... what are your gcc and binutils versions ? Smells like a
+> > toolchain issue to me but I need to dig a bit more. Doesn't hit any
+> > of my test configs here.
+> > 
+> 
+> Can you test the attached config with this toolchain and see if you get
+> the same build bug.
 
-On 18.07.2014 18:29, Michel D=E4nzer wrote:
-> On 17.07.2014 16:58, Peter Zijlstra wrote:
->> On Thu, Jul 17, 2014 at 04:31:04PM +0900, Michel D=E4nzer wrote:
->>>
->>> I've been running into the panic captured in the attached picture (ho=
-pe
->>> it's legible) randomly while running 3.16-rc4 and -rc5. I haven't
->>> noticed any pattern as to when it happens; at least once it happened
->>> while the box was basically sitting idle.
->>>
->>> dmesg, .config and /proc/cpuinfo attached as well; let me know if you=
+Yeah ok, I hit it too, it's one of those issues with the bloody
+alternate feature sections getting pushed too far away. Argh.
 
->>> need anything else.
->>
->> Does lkml.kernel.org/r/20140716145546.GA6922@wolff.to cure things?
->=20
-> Yes, adding back
->=20
->                cpumask_clear(sched_group_cpus(sg));
->=20
-> seems to do the trick, thanks.
+I'm trying to fix that trainwreck (similar issues also breaks our
+allmodconfig), we have a whole mess of problems caused by our
+hand crafted assembly growing beyond the reach of conditional
+branches with the right set of options.
 
-I'm afraid it happened again with 3.16-rc5 plus the above change. It
-seemed to last longer than before, but maybe that was just luck.
+I'll see what I can do...
 
-Going to try 3.16-rc6 now.
+> https://www.kernel.org/pub/tools/crosstool/files/bin/x86_64/4.6.3/x86_64-gcc-4.6.3-nolibc_powerpc64-linux.tar.bz2
 
 
---=20
-Earthling Michel D=E4nzer            |                  http://www.amd.co=
-m
-Libre software enthusiast          |                Mesa and X developer
-
-
---l15pSpKXl6sGq00E9pO4mH88P5b2UpPGq
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-Comment: Using GnuPG with Icedove - http://www.enigmail.net/
-
-iD8DBQFTzgDvWoGvjmrbsgARAgfaAJ42JhtciuscIxWEszBTzoZibIKNZQCffHPL
-sUgY7KQbQGUIivnZXXEfZdw=
-=8pqb
------END PGP SIGNATURE-----
-
---l15pSpKXl6sGq00E9pO4mH88P5b2UpPGq--
