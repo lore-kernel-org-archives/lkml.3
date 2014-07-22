@@ -1,86 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755466AbaGVMOO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 08:14:14 -0400
-Received: from mail-ig0-f181.google.com ([209.85.213.181]:48596 "EHLO
-	mail-ig0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755379AbaGVMNy (ORCPT
+	id S1755497AbaGVMOp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 08:14:45 -0400
+Received: from mx07-00178001.pphosted.com ([62.209.51.94]:45280 "EHLO
+	mx07-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753841AbaGVMOM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 08:13:54 -0400
-From: Alex Elder <elder@linaro.org>
-To: akpm@linux-foundation.org
-Cc: kay@vrfy.org, pmladek@suse.cz, bp@suse.de, john.stultz@linaro.org,
-        jack@suse.cz, linux-kernel@vger.kernel.org
-Subject: [PATCH v6 7/7] printk: correct some more typos
-Date: Tue, 22 Jul 2014 07:13:50 -0500
-Message-Id: <1406031230-18107-8-git-send-email-elder@linaro.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1406031230-18107-1-git-send-email-elder@linaro.org>
-References: <1406031230-18107-1-git-send-email-elder@linaro.org>
+	Tue, 22 Jul 2014 08:14:12 -0400
+Message-ID: <53CE556C.10607@st.com>
+Date: Tue, 22 Jul 2014 14:13:32 +0200
+From: Maxime Coquelin <maxime.coquelin@st.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: Peter Griffin <peter.griffin@linaro.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <chris@printf.net>, <ulf.hansson@linaro.org>, <patrice.chotard@st.com>,
+        <srinivas.kandagatla@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
+        Olof Johansson <olof@lixom.net>, <khilman@linaro.org>
+Cc: <devicetree@vger.kernel.org>, <linux-mmc@vger.kernel.org>,
+        <kernel@stlinux.com>
+Subject: Re: [STLinux Kernel] [PATCH v3 10/10] MAINTAINERS: Add sdhci-st file
+ to ARCH/STI architecture
+References: <1401899424-1365-1-git-send-email-peter.griffin@linaro.org>	<1401899424-1365-11-git-send-email-peter.griffin@linaro.org> <53A80754.9000900@st.com>
+In-Reply-To: <53A80754.9000900@st.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.201.23.80]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.14,0.0.0000
+ definitions=2014-07-22_04:2014-07-22,2014-07-22,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch corrects a few more typographical errors in "printk.c".
+Hi Olof, Arnd, Kevin,
 
-Signed-off-by: Alex Elder <elder@linaro.org>
-Reviewed-by: Petr Mládek <pmladek@suse.cz>
----
- kernel/printk/printk.c | 10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+	I am preparing two tags for v3.17 regarding STi platform.
+	One for DT, and one for defconfigs.
 
-diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
-index b630c85..6848e7d 100644
---- a/kernel/printk/printk.c
-+++ b/kernel/printk/printk.c
-@@ -201,7 +201,7 @@ static int console_may_schedule;
-  *
-  * The optional key/value pairs are attached as continuation lines starting
-  * with a space character and terminated by a newline. All possible
-- * non-prinatable characters are escaped in the "\xff" notation.
-+ * non-printable characters are escaped in the "\xff" notation.
-  *
-  * Users of the export format should ignore possible additional values
-  * separated by ',', and find the message after the ';' character.
-@@ -615,7 +615,7 @@ static ssize_t devkmsg_read(struct file *file, char __user *buf,
- 	/*
- 	 * If we couldn't merge continuation line fragments during the print,
- 	 * export the stored flags to allow an optional external merge of the
--	 * records. Merging the records isn't always neccessarily correct, like
-+	 * records. Merging the records isn't always necessarily correct, like
- 	 * when we hit a race during printing. In most cases though, it produces
- 	 * better readable output. 'c' in the record flags mark the first
- 	 * fragment of a line, '+' the following.
-@@ -2909,7 +2909,7 @@ bool kmsg_dump_get_buffer(struct kmsg_dumper *dumper, bool syslog,
- 		prev = msg->flags;
- 	}
- 
--	/* last message in next interation */
-+	/* last message in next iteration */
- 	next_seq = seq;
- 	next_idx = idx;
- 
-@@ -2935,7 +2935,7 @@ out:
- EXPORT_SYMBOL_GPL(kmsg_dump_get_buffer);
- 
- /**
-- * kmsg_dump_rewind_nolock - reset the interator (unlocked version)
-+ * kmsg_dump_rewind_nolock - reset the iterator (unlocked version)
-  * @dumper: registered kmsg dumper
-  *
-  * Reset the dumper's iterator so that kmsg_dump_get_line() and
-@@ -2953,7 +2953,7 @@ void kmsg_dump_rewind_nolock(struct kmsg_dumper *dumper)
- }
- 
- /**
-- * kmsg_dump_rewind - reset the interator
-+ * kmsg_dump_rewind - reset the iterator
-  * @dumper: registered kmsg dumper
-  *
-  * Reset the dumper's iterator so that kmsg_dump_get_line() and
--- 
-1.9.1
+	Except this one, I have no patches for ARM-SoC.
+	Can you take this patch directly?
 
+	Or should I send a pull request with this one only?
+
+Regards,
+Maxime
+
+On 06/23/2014 12:54 PM, Maxime Coquelin wrote:
+>
+>
+> On 06/04/2014 06:30 PM, Peter Griffin wrote:
+>> Signed-off-by: Peter Griffin <peter.griffin@linaro.org>
+>
+> Acked-by: Maxime Coquelin <maxime.coquelin@st.com>
+>
+>> --- MAINTAINERS | 1 + 1 file changed, 1 insertion(+)
+>>
+>> diff --git a/MAINTAINERS b/MAINTAINERS index 6dc67b1..19dc265
+>> 100644 --- a/MAINTAINERS +++ b/MAINTAINERS @@ -1306,6 +1306,7 @@ F:
+>> drivers/pinctrl/pinctrl-st.c F:	drivers/media/rc/st_rc.c F:
+>> drivers/i2c/busses/i2c-st.c F:	drivers/tty/serial/st-asc.c +F:
+>> drivers/mmc/host/sdhci-st.c
+>>
+>> ARM/TECHNOLOGIC SYSTEMS TS7250 MACHINE SUPPORT M:	Lennert Buytenhek
+>> <kernel@wantstofly.org>
+>>
+>
+>
+>
+> _______________________________________________
+> Kernel mailing list
+> Kernel@stlinux.com
+> http://www.stlinux.com/mailman/listinfo/kernel
+>
