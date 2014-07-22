@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933417AbaGVW0a (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 18:26:30 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44807 "EHLO
+	id S933446AbaGVW0f (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 18:26:35 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:44819 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932676AbaGVW01 (ORCPT
+	with ESMTP id S932676AbaGVW0c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 18:26:27 -0400
+	Tue, 22 Jul 2014 18:26:32 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Bart Van Assche <bvanassche@acm.org>,
-        Roland Dreier <roland@purestorage.com>,
+Cc: Jeff Mahoney <jeffm@suse.com>, Jan Kara <jack@suse.cz>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 022/116] IB/srp: Fix a sporadic crash triggered by cable pulling
-Date: Tue, 22 Jul 2014 15:20:33 -0700
-Message-Id: <1406067727-19683-23-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 023/116] reiserfs: call truncate_setsize under tailpack mutex
+Date: Tue, 22 Jul 2014 15:20:34 -0700
+Message-Id: <1406067727-19683-24-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1406067727-19683-1-git-send-email-kamal@canonical.com>
 References: <1406067727-19683-1-git-send-email-kamal@canonical.com>
@@ -28,43 +27,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bart Van Assche <bvanassche@acm.org>
+From: Jeff Mahoney <jeffm@suse.com>
 
-commit 024ca90151f5e4296d30f72c13ff9a075e23c9ec upstream.
+commit 22e7478ddbcb670e33fab72d0bbe7c394c3a2c84 upstream.
 
-Avoid that the loops that iterate over the request ring can encounter
-a pointer to a SCSI command in req->scmnd that is no longer associated
-with that request. If the function srp_unmap_data() is invoked twice
-for a SCSI command that is not in flight then that would cause
-ib_fmr_pool_unmap() to be invoked with an invalid pointer as argument,
-resulting in a kernel oops.
+Prior to commit 0e4f6a791b1e (Fix reiserfs_file_release()), reiserfs
+truncates serialized on i_mutex. They mostly still do, with the exception
+of reiserfs_file_release. That blocks out other writers via the tailpack
+mutex and the inode openers counter adjusted in reiserfs_file_open.
 
-Reported-by: Sagi Grimberg <sagig@mellanox.com>
-Reference: http://thread.gmane.org/gmane.linux.drivers.rdma/19068/focus=19069
-Signed-off-by: Bart Van Assche <bvanassche@acm.org>
-Reviewed-by: Sagi Grimberg <sagig@mellanox.com>
-Signed-off-by: Roland Dreier <roland@purestorage.com>
+However, NFS will call reiserfs_setattr without having called ->open, so
+we end up with a race when nfs is calling ->setattr while another
+process is releasing the file. Ultimately, it triggers the
+BUG_ON(inode->i_size != new_file_size) check in maybe_indirect_to_direct.
+
+The solution is to pull the lock into reiserfs_setattr to encompass the
+truncate_setsize call as well.
+
+Signed-off-by: Jeff Mahoney <jeffm@suse.com>
+Signed-off-by: Jan Kara <jack@suse.cz>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/infiniband/ulp/srp/ib_srp.c | 6 ++++++
- 1 file changed, 6 insertions(+)
+ fs/reiserfs/inode.c | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/infiniband/ulp/srp/ib_srp.c b/drivers/infiniband/ulp/srp/ib_srp.c
-index e070166..5682e8e 100644
---- a/drivers/infiniband/ulp/srp/ib_srp.c
-+++ b/drivers/infiniband/ulp/srp/ib_srp.c
-@@ -1410,6 +1410,12 @@ err_unmap:
- err_iu:
- 	srp_put_tx_iu(target, iu, SRP_IU_CMD);
- 
-+	/*
-+	 * Avoid that the loops that iterate over the request ring can
-+	 * encounter a dangling SCSI command pointer.
-+	 */
-+	req->scmnd = NULL;
-+
- 	spin_lock_irqsave(&target->lock, flags);
- 	list_add(&req->list, &target->free_reqs);
+diff --git a/fs/reiserfs/inode.c b/fs/reiserfs/inode.c
+index ca71b1f..0c1e96e 100644
+--- a/fs/reiserfs/inode.c
++++ b/fs/reiserfs/inode.c
+@@ -3210,8 +3210,14 @@ int reiserfs_setattr(struct dentry *dentry, struct iattr *attr)
+ 	    attr->ia_size != i_size_read(inode)) {
+ 		error = inode_newsize_ok(inode, attr->ia_size);
+ 		if (!error) {
++			/*
++			 * Could race against reiserfs_file_release
++			 * if called from NFS, so take tailpack mutex.
++			 */
++			mutex_lock(&REISERFS_I(inode)->tailpack);
+ 			truncate_setsize(inode, attr->ia_size);
+-			reiserfs_vfs_truncate_file(inode);
++			reiserfs_truncate_file(inode, 1);
++			mutex_unlock(&REISERFS_I(inode)->tailpack);
+ 		}
+ 	}
  
 -- 
 1.9.1
