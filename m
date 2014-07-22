@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933808AbaGVWgM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 18:36:12 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44797 "EHLO
+	id S933757AbaGVWgy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 18:36:54 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:44782 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933160AbaGVW0X (ORCPT
+	with ESMTP id S933335AbaGVW0T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 18:26:23 -0400
+	Tue, 22 Jul 2014 18:26:19 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Aleksander Morgado <aleksander@aleksander.es>,
-        Johan Hovold <jhovold@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Bart Van Assche <bvanassche@acm.org>, Yann Droneaud <ydroneaud@opteya.com>,
+        Roland Dreier <roland@purestorage.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 042/116] usb: qcserial: add additional Sierra Wireless QMI devices
-Date: Tue, 22 Jul 2014 15:20:53 -0700
-Message-Id: <1406067727-19683-43-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 043/116] IB/umad: Fix error handling
+Date: Tue, 22 Jul 2014 15:20:54 -0700
+Message-Id: <1406067727-19683-44-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1406067727-19683-1-git-send-email-kamal@canonical.com>
 References: <1406067727-19683-1-git-send-email-kamal@canonical.com>
@@ -29,61 +28,134 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Aleksander Morgado <aleksander@aleksander.es>
+From: Bart Van Assche <bvanassche@acm.org>
 
-commit 0ce5fb58564fd85aa8fd2d24209900e2e845317b upstream.
+commit 8ec0a0e6b58218bdc1db91dd70ebfcd6ad8dd6cd upstream.
 
-A set of new VID/PIDs retrieved from the out-of-tree GobiNet/GobiSerial
-Sierra Wireless drivers.
+Avoid leaking a kref count in ib_umad_open() if port->ib_dev == NULL
+or if nonseekable_open() fails.
 
-Signed-off-by: Aleksander Morgado <aleksander@aleksander.es>
-Link: http://marc.info/?l=linux-usb&m=140136310027293&w=2
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-[ Aleksander: backport to 3.13-stable ]
+Avoid leaking a kref count, that sm_sem is kept down and also that the
+IB_PORT_SM capability mask is not cleared in ib_umad_sm_open() if
+nonseekable_open() fails.
+
+Since container_of() never returns NULL, remove the code that tests
+whether container_of() returns NULL.
+
+Moving the kref_get() call from the start of ib_umad_*open() to the
+end is safe since it is the responsibility of the caller of these
+functions to ensure that the cdev pointer remains valid until at least
+when these functions return.
+
+Signed-off-by: Bart Van Assche <bvanassche@acm.org>
+
+[ydroneaud@opteya.com: rework a bit to reduce the amount of code changed]
+
+Signed-off-by: Yann Droneaud <ydroneaud@opteya.com>
+
+[ nonseekable_open() can't actually fail, but....  - Roland ]
+
+Signed-off-by: Roland Dreier <roland@purestorage.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/usb/serial/qcserial.c | 18 ++++++++++++++++++
- 1 file changed, 18 insertions(+)
+ drivers/infiniband/core/user_mad.c | 49 +++++++++++++++++++++-----------------
+ 1 file changed, 27 insertions(+), 22 deletions(-)
 
-diff --git a/drivers/usb/serial/qcserial.c b/drivers/usb/serial/qcserial.c
-index 781e4db..43d93db 100644
---- a/drivers/usb/serial/qcserial.c
-+++ b/drivers/usb/serial/qcserial.c
-@@ -145,15 +145,33 @@ static const struct usb_device_id id_table[] = {
- 	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x901f, 0)},	/* Sierra Wireless EM7355 Device Management */
- 	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x901f, 2)},	/* Sierra Wireless EM7355 NMEA */
- 	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x901f, 3)},	/* Sierra Wireless EM7355 Modem */
-+	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9040, 0)},	/* Sierra Wireless Modem Device Management */
-+	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9040, 2)},	/* Sierra Wireless Modem NMEA */
-+	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9040, 3)},	/* Sierra Wireless Modem Modem */
- 	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9041, 0)},	/* Sierra Wireless MC7305/MC7355 Device Management */
- 	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9041, 2)},	/* Sierra Wireless MC7305/MC7355 NMEA */
- 	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9041, 3)},	/* Sierra Wireless MC7305/MC7355 Modem */
- 	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9051, 0)},	/* Netgear AirCard 340U Device Management */
- 	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9051, 2)},	/* Netgear AirCard 340U NMEA */
- 	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9051, 3)},	/* Netgear AirCard 340U Modem */
-+	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9053, 0)},	/* Sierra Wireless Modem Device Management */
-+	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9053, 2)},	/* Sierra Wireless Modem NMEA */
-+	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9053, 3)},	/* Sierra Wireless Modem Modem */
-+	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9054, 0)},	/* Sierra Wireless Modem Device Management */
-+	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9054, 2)},	/* Sierra Wireless Modem NMEA */
-+	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9054, 3)},	/* Sierra Wireless Modem Modem */
- 	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9055, 0)},	/* Netgear AirCard 341U Device Management */
- 	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9055, 2)},	/* Netgear AirCard 341U NMEA */
- 	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9055, 3)},	/* Netgear AirCard 341U Modem */
-+	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9056, 0)},	/* Sierra Wireless Modem Device Management */
-+	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9056, 2)},	/* Sierra Wireless Modem NMEA */
-+	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9056, 3)},	/* Sierra Wireless Modem Modem */
-+	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9060, 0)},	/* Sierra Wireless Modem Device Management */
-+	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9060, 2)},	/* Sierra Wireless Modem NMEA */
-+	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9060, 3)},	/* Sierra Wireless Modem Modem */
-+	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9061, 0)},	/* Sierra Wireless Modem Device Management */
-+	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9061, 2)},	/* Sierra Wireless Modem NMEA */
-+	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9061, 3)},	/* Sierra Wireless Modem Modem */
- 	{USB_DEVICE_INTERFACE_NUMBER(0x413c, 0x81a2, 0)},	/* Dell Wireless 5806 Gobi(TM) 4G LTE Mobile Broadband Card Device Management */
- 	{USB_DEVICE_INTERFACE_NUMBER(0x413c, 0x81a2, 2)},	/* Dell Wireless 5806 Gobi(TM) 4G LTE Mobile Broadband Card NMEA */
- 	{USB_DEVICE_INTERFACE_NUMBER(0x413c, 0x81a2, 3)},	/* Dell Wireless 5806 Gobi(TM) 4G LTE Mobile Broadband Card Modem */
+diff --git a/drivers/infiniband/core/user_mad.c b/drivers/infiniband/core/user_mad.c
+index f0d588f..9bdf576 100644
+--- a/drivers/infiniband/core/user_mad.c
++++ b/drivers/infiniband/core/user_mad.c
+@@ -780,27 +780,19 @@ static int ib_umad_open(struct inode *inode, struct file *filp)
+ {
+ 	struct ib_umad_port *port;
+ 	struct ib_umad_file *file;
+-	int ret;
++	int ret = -ENXIO;
+ 
+ 	port = container_of(inode->i_cdev, struct ib_umad_port, cdev);
+-	if (port)
+-		kref_get(&port->umad_dev->ref);
+-	else
+-		return -ENXIO;
+ 
+ 	mutex_lock(&port->file_mutex);
+ 
+-	if (!port->ib_dev) {
+-		ret = -ENXIO;
++	if (!port->ib_dev)
+ 		goto out;
+-	}
+ 
++	ret = -ENOMEM;
+ 	file = kzalloc(sizeof *file, GFP_KERNEL);
+-	if (!file) {
+-		kref_put(&port->umad_dev->ref, ib_umad_release_dev);
+-		ret = -ENOMEM;
++	if (!file)
+ 		goto out;
+-	}
+ 
+ 	mutex_init(&file->mutex);
+ 	spin_lock_init(&file->send_lock);
+@@ -814,6 +806,13 @@ static int ib_umad_open(struct inode *inode, struct file *filp)
+ 	list_add_tail(&file->port_list, &port->file_list);
+ 
+ 	ret = nonseekable_open(inode, filp);
++	if (ret) {
++		list_del(&file->port_list);
++		kfree(file);
++		goto out;
++	}
++
++	kref_get(&port->umad_dev->ref);
+ 
+ out:
+ 	mutex_unlock(&port->file_mutex);
+@@ -880,10 +879,6 @@ static int ib_umad_sm_open(struct inode *inode, struct file *filp)
+ 	int ret;
+ 
+ 	port = container_of(inode->i_cdev, struct ib_umad_port, sm_cdev);
+-	if (port)
+-		kref_get(&port->umad_dev->ref);
+-	else
+-		return -ENXIO;
+ 
+ 	if (filp->f_flags & O_NONBLOCK) {
+ 		if (down_trylock(&port->sm_sem)) {
+@@ -898,17 +893,27 @@ static int ib_umad_sm_open(struct inode *inode, struct file *filp)
+ 	}
+ 
+ 	ret = ib_modify_port(port->ib_dev, port->port_num, 0, &props);
+-	if (ret) {
+-		up(&port->sm_sem);
+-		goto fail;
+-	}
++	if (ret)
++		goto err_up_sem;
+ 
+ 	filp->private_data = port;
+ 
+-	return nonseekable_open(inode, filp);
++	ret = nonseekable_open(inode, filp);
++	if (ret)
++		goto err_clr_sm_cap;
++
++	kref_get(&port->umad_dev->ref);
++
++	return 0;
++
++err_clr_sm_cap:
++	swap(props.set_port_cap_mask, props.clr_port_cap_mask);
++	ib_modify_port(port->ib_dev, port->port_num, 0, &props);
++
++err_up_sem:
++	up(&port->sm_sem);
+ 
+ fail:
+-	kref_put(&port->umad_dev->ref, ib_umad_release_dev);
+ 	return ret;
+ }
+ 
 -- 
 1.9.1
 
