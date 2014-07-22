@@ -1,51 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756603AbaGVTV0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 15:21:26 -0400
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:44695 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752625AbaGVTVY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 15:21:24 -0400
-From: Arjun Sreedharan <arjun024@gmail.com>
-To: rjw@rjwysocki.net
-Cc: lenb@kernel.org, linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] PNPACPI: check return value of pnpacpi_parse_allocated_resource() and pnpacpi_parse_resource_option_data()
-Date: Wed, 23 Jul 2014 00:43:39 +0530
-Message-Id: <1406056419-3047-1-git-send-email-arjun024@gmail.com>
-X-Mailer: git-send-email 1.7.11.7
+	id S1756585AbaGVTWu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 15:22:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52996 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751609AbaGVTWt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 15:22:49 -0400
+Date: Tue, 22 Jul 2014 21:22:06 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Adrian Hunter <adrian.hunter@intel.com>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 17/52] perf evlist: Add perf_evlist__set_tracking_event()
+Message-ID: <20140722192206.GD29750@krava.redhat.com>
+References: <1406035081-14301-1-git-send-email-adrian.hunter@intel.com>
+ <1406035081-14301-18-git-send-email-adrian.hunter@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1406035081-14301-18-git-send-email-adrian.hunter@intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Handle error condition since pnpacpi_parse_allocated_resource() and pnpacpi_parse_resource_option_data() could return -EPERM.
+On Tue, Jul 22, 2014 at 04:17:26PM +0300, Adrian Hunter wrote:
 
-Signed-off-by: Arjun Sreedharan <arjun024@gmail.com>
----
- drivers/pnp/pnpacpi/core.c | 8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+SNIP
 
-diff --git a/drivers/pnp/pnpacpi/core.c b/drivers/pnp/pnpacpi/core.c
-index b81448b..c3214e9 100644
---- a/drivers/pnp/pnpacpi/core.c
-+++ b/drivers/pnp/pnpacpi/core.c
-@@ -272,10 +272,14 @@ static int __init pnpacpi_add_device(struct acpi_device *device)
- 		strncpy(dev->name, acpi_device_bid(device), sizeof(dev->name));
- 
- 	if (dev->active)
--		pnpacpi_parse_allocated_resource(dev);
-+		error = pnpacpi_parse_allocated_resource(dev);
-+		if (error)
-+			return error;
- 
- 	if (dev->capabilities & PNP_CONFIGURABLE)
--		pnpacpi_parse_resource_option_data(dev);
-+		error = pnpacpi_parse_resource_option_data(dev);
-+		if (error)
-+			return error;
- 
- 	list_for_each_entry(id, &device->pnp.ids, list) {
- 		if (!strcmp(id->id, pnpid))
--- 
-1.7.11.7
+>  }
+> +
+> +int perf_evlist__set_tracking_event(struct perf_evlist *evlist,
+> +				    struct perf_evsel *tracking_evsel)
+> +{
+> +	struct perf_evsel *evsel;
+> +
+> +	if (tracking_evsel->idx == 0)
+> +		return 0;
+> +
+> +	if (tracking_evsel->leader->nr_members > 1)
+> +		return -EINVAL;
+> +
+> +	list_for_each_entry(evsel, &evlist->entries, node) {
+> +		if (evsel->idx < tracking_evsel->idx)
+> +			evsel->idx += 1;
+> +	}
+> +	tracking_evsel->idx = 0;
+> +
+> +	return 0;
+> +}
 
+wouldnt it be better to add evsel->is_tracking bool for this?
+
+jirka
