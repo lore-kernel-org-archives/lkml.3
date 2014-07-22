@@ -1,28 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756095AbaGVQRc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 12:17:32 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:48483 "EHLO
+	id S1756113AbaGVQRy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 12:17:54 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:47767 "EHLO
 	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755382AbaGVQR3 (ORCPT
+	by vger.kernel.org with ESMTP id S1756016AbaGVQRS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 12:17:29 -0400
-Message-ID: <1406045849.25343.72.camel@hornet>
+	Tue, 22 Jul 2014 12:17:18 -0400
+Message-ID: <1406045838.25343.70.camel@hornet>
 Subject: Re: [RFC] sched_clock: Track monotonic raw clock
 From: Pawel Moll <pawel.moll@arm.com>
-To: Richard Cochran <richardcochran@gmail.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: John Stultz <john.stultz@linaro.org>, Steven Rostedt <rostedt@goodmis.org>,
+        Ingo Molnar <mingo@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Mel Gorman <mgorman@suse.de>, Andy Lutomirski <luto@amacapital.net>,
-        John Stultz <john.stultz@linaro.org>,
         Stephen Boyd <sboyd@codeaurora.org>, Baruch Siach <baruch@tkos.co.il>,
         Thomas Gleixner <tglx@linutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Tue, 22 Jul 2014 17:17:29 +0100
-In-Reply-To: <20140719050233.GA4408@netboy>
+        lkml <linux-kernel@vger.kernel.org>
+Date: Tue, 22 Jul 2014 17:17:18 +0100
+In-Reply-To: <20140718193417.GG3935@laptop>
 References: <1405705419-4194-1-git-send-email-pawel.moll@arm.com>
-	 <20140719050233.GA4408@netboy>
+	 <20140718191338.GF3935@laptop>
+	 <CALAqxLX4ia_dBO-oNY1XMnSrJdDZc87EneHj9WcxtOZaupZaCg@mail.gmail.com>
+	 <20140718193417.GG3935@laptop>
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.10.4-0ubuntu1 
 Mime-Version: 1.0
@@ -31,55 +32,19 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2014-07-19 at 06:02 +0100, Richard Cochran wrote:
-> On Fri, Jul 18, 2014 at 06:43:39PM +0100, Pawel Moll wrote:
-> > 
-> > This code definitely needs more work and testing (I'm not 100%
-> > sure if the Kp and Ki I've picked for the proportional and
-> > integral terms are universal),
+On Fri, 2014-07-18 at 20:34 +0100, Peter Zijlstra wrote:
+> On Fri, Jul 18, 2014 at 12:25:48PM -0700, John Stultz wrote:
+> > Also, assuming we someday will merge the x86 sched_clock logic into
+> > the generic sched_clock code, we'll have to handle cases where they
+> > aren't the same.
 > 
-> I wouldn't bet on it.
+> I prefer that to not happen. I spend quite a bit of time and effort to
+> make the x86 code go fast, and that generic code doesn't look like fast
+> at all.
 
-Yeah, I should have said: I'm 100% sure they are not universal.
-
-> > but for now wanted to see
-> > if this approach makes any sense whatsoever.
-> 
-> You are reading sched_clock and mono-raw together every so
-> often. Really stupid question: Why not just place that information
-> into the trace buffer and let user space do the clock correction?
-
-That approach has been also discussed, last time in the mentioned
-thread:
-
-http://thread.gmane.org/gmane.linux.kernel/1611683/focus=1612554
-http://thread.gmane.org/gmane.linux.kernel/1611683/focus=1612554
-
-With both Ingo and John showing preference towards the clock alignment,
-so that's where I looked this time (I've already done custom perf
-ioctls, posix clocks... don't really know how many different ways I've
-tried).
-
-> ...
-> 
-> > +		/* Tune the cyc_to_ns formula */
-> > +		mult_adj = sign * (error >> 2) + (cd.error_int >> 2);
-> 
-> So Kp = Ki = 0.25? And did you say that the sample rate is 10/second?
-> 
-> I guess that, while this works well on your machine, it might not
-> always do so, depending on the mono-raw clock. Probably Kp/i need to
-> be tunable to a particular system. Even better would be to leave this
-> out of the kernel altogether.
-
-My hope is that, given that time correlation is pretty "static" process
-(the clock skew should be reasonable, otherwise the time source are
-plainly rubbish), there will be a way of implementing this in a
-self-tuning way. I may be proven wrong, but it seems like a noble thing
-to try.
-
-I fully agree that there is no place for manual PI regulator tuning in
-the kernel.
+Actually one of my long-ish time goals to is to speed it up (withing the
+generic framework) for arm64 as well, so we may get back to the
+discussion then :-)
 
 Pawel
 
