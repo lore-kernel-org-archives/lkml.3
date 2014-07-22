@@ -1,121 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756747AbaGVThs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 15:37:48 -0400
-Received: from mail-oi0-f46.google.com ([209.85.218.46]:59661 "EHLO
-	mail-oi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752641AbaGVThq (ORCPT
+	id S1756611AbaGVTkA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 15:40:00 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:54525 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754757AbaGVTj7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 15:37:46 -0400
+	Tue, 22 Jul 2014 15:39:59 -0400
+Date: Tue, 22 Jul 2014 21:39:39 +0200
+From: Richard Cochran <richardcochran@gmail.com>
+To: Pawel Moll <pawel.moll@arm.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, Andy Lutomirski <luto@amacapital.net>,
+        John Stultz <john.stultz@linaro.org>,
+        Stephen Boyd <sboyd@codeaurora.org>, Baruch Siach <baruch@tkos.co.il>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC] sched_clock: Track monotonic raw clock
+Message-ID: <20140722193939.GA15507@localhost.localdomain>
+References: <1405705419-4194-1-git-send-email-pawel.moll@arm.com>
+ <20140719050233.GA4408@netboy>
+ <1406045849.25343.72.camel@hornet>
 MIME-Version: 1.0
-In-Reply-To: <cover.1405992946.git.luto@amacapital.net>
-References: <cover.1405992946.git.luto@amacapital.net>
-Date: Tue, 22 Jul 2014 12:37:45 -0700
-X-Google-Sender-Auth: fNCVl91x2h1xy1SJ8D7LTfe-r70
-Message-ID: <CAGXu5jJ93-vto9voMENc4jX5itcd_Rm5AZjeChF57fpMYnWocA@mail.gmail.com>
-Subject: Re: [PATCH v3 0/8] Two-phase seccomp and x86 tracing changes
-From: Kees Cook <keescook@chromium.org>
-To: Andy Lutomirski <luto@amacapital.net>, "H. Peter Anvin" <hpa@zytor.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Will Drewry <wad@chromium.org>,
-        Oleg Nesterov <oleg@redhat.com>, "x86@kernel.org" <x86@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux MIPS Mailing List <linux-mips@linux-mips.org>,
-        linux-arch <linux-arch@vger.kernel.org>,
-        linux-security-module <linux-security-module@vger.kernel.org>,
-        Alexei Starovoitov <ast@plumgrid.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1406045849.25343.72.camel@hornet>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 21, 2014 at 6:49 PM, Andy Lutomirski <luto@amacapital.net> wrote:
-> [applies on jmorris's security-next tree]
->
-> This is both a cleanup and a speedup.  It reduces overhead due to
-> installing a trivial seccomp filter by 87%.  The speedup comes from
-> avoiding the full syscall tracing mechanism for filters that don't
-> return SECCOMP_RET_TRACE.
->
-> This series works by splitting the seccomp hooks into two phases.
-> The first phase evaluates the filter; it can skip syscalls, allow
-> them, kill the calling task, or pass a u32 to the second phase.  The
-> second phase requires a full tracing context, and it sends ptrace
-> events if necessary.
->
-> Once this is done, I implemented a similar split for the x86 syscall
-> entry work.  The C callback is invoked in two phases: the first has
-> only a partial frame, and it can request phase 2 processing with a
-> full frame.
->
-> Finally, I switch the 64-bit system_call code to use the new split
-> entry work.  This is a net deletion of assembly code: it replaces
-> all of the audit entry muck.
->
-> In the process, I fixed some bugs.
->
-> If this is acceptable, someone can do the same tweak for the
-> ia32entry and entry_32 code.
->
-> This passes all seccomp tests that I know of.  Now that it's properly
-> rebased, even the previously expected failures are gone.
->
-> Kees, if you like this version, can you create a branch with patches
-> 1-4?  I think that the rest should go into tip/x86 once everyone's happy
-> with it.
->
-> Changes from v2:
->  - Fixed 32-bit x86 build (and the tests pass).
->  - Put the doc patch where it belongs.
+On Tue, Jul 22, 2014 at 05:17:29PM +0100, Pawel Moll wrote:
+> That approach has been also discussed, last time in the mentioned
+> thread:
+> 
+> http://thread.gmane.org/gmane.linux.kernel/1611683/focus=1612554
+> http://thread.gmane.org/gmane.linux.kernel/1611683/focus=1612554
+> 
+> With both Ingo and John showing preference towards the clock alignment,
+> so that's where I looked this time (I've already done custom perf
+> ioctls, posix clocks... don't really know how many different ways I've
+> tried).
 
-Thanks! This looks good to me. I'll add it to my tree.
+I re-read that thread, and it sounds like Ingo also suggested simply
+tracing the system time updates, leaving the correlation to the perf
+clock to user space. This is what I mean, too.
 
-Peter, how do you feel about this series? Do the x86 changes look good to you?
+John and Ingo said that exporting MONO-RAW would be "ideal", and maybe
+it would be (in the sense of easy-to-use), but only if it were always
+correct.  However, hacking some half baked servo into the kernel will
+fail, at least some of the time.  When it does fail, there is no way
+to figure out what happened, because the servo code obliterates the
+information in the original time stamps.
 
--Kees
+So the only reasonable way, IMHO, is to simply provide the needed
+information in the traces, and then add some user space code to find
+the relationship between the perf clock and the system clock. The
+great advantage of this approach is that you don't have to create a
+perfect servo from day one. The time stamps can be re-analyzed at any
+time after the fact.
 
->
-> Changes from v1:
->  - Rebased on top of Kees' shiny new seccomp tree (no effect on the x86
->    part).
->  - Improved patch 6 vs patch 7 split (thanks Alexei!)
->  - Fixed bogus -ENOSYS in patch 5 (thanks Kees!)
->  - Improved changelog message in patch 6.
->
-> Changes from RFC version:
->  - The first three patches are more or less the same
->  - The rest is more or less a rewrite
->
-> Andy Lutomirski (8):
->   seccomp,x86,arm,mips,s390: Remove nr parameter from secure_computing
->   seccomp: Refactor the filter callback and the API
->   seccomp: Allow arch code to provide seccomp_data
->   seccomp: Document two-phase seccomp and arch-provided seccomp_data
->   x86,x32,audit: Fix x32's AUDIT_ARCH wrt audit
->   x86: Split syscall_trace_enter into two phases
->   x86_64,entry: Treat regs->ax the same in fastpath and slowpath
->     syscalls
->   x86_64,entry: Use split-phase syscall_trace_enter for 64-bit syscalls
->
->  arch/Kconfig                   |  11 ++
->  arch/arm/kernel/ptrace.c       |   7 +-
->  arch/mips/kernel/ptrace.c      |   2 +-
->  arch/s390/kernel/ptrace.c      |   2 +-
->  arch/x86/include/asm/calling.h |   6 +-
->  arch/x86/include/asm/ptrace.h  |   5 +
->  arch/x86/kernel/entry_64.S     |  51 ++++-----
->  arch/x86/kernel/ptrace.c       | 150 +++++++++++++++++++-----
->  arch/x86/kernel/vsyscall_64.c  |   2 +-
->  include/linux/seccomp.h        |  25 ++--
->  kernel/seccomp.c               | 252 ++++++++++++++++++++++++++++-------------
->  11 files changed, 360 insertions(+), 153 deletions(-)
->
-> --
-> 1.9.3
->
+And if you are going to use this for clusters, then you really want
+the global time and not MONO-RAW. I would suggest using CLOCK_TAI.
 
-
-
--- 
-Kees Cook
-Chrome OS Security
+Thanks,
+Richard
