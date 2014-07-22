@@ -1,68 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753550AbaGVI0z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 04:26:55 -0400
-Received: from hofr.at ([212.69.189.236]:35407 "EHLO mail.hofr.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753182AbaGVI0w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 04:26:52 -0400
-X-Greylist: delayed 459 seconds by postgrey-1.27 at vger.kernel.org; Tue, 22 Jul 2014 04:26:52 EDT
-Date: Tue, 22 Jul 2014 10:19:09 +0200
-From: Nicholas Mc Guire <der.herr@hofr.at>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: cocci@systeme.lip6.fr
-Subject: [PATCH] kfree followed by a TRACE_RET before ref should be ok
-Message-ID: <20140722081909.GA7723@opentech.at>
+	id S1753097AbaGVIbz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 04:31:55 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:37890 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750891AbaGVIbx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 04:31:53 -0400
+Message-ID: <53CE2126.9000804@gmail.com>
+Date: Tue, 22 Jul 2014 14:00:30 +0530
+From: Varka Bhadram <varkabhadram@gmail.com>
+Organization: CDAC-HYD
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Alexandre Courbot <acourbot@nvidia.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+CC: linux-gpio@vger.kernel.org, linux-kernel@vger.kernel.org, gnurou@gmail.com
+Subject: Re: [PATCH 5/5] gpio: move gpio_ensure_requested() into legacy C
+ file
+References: <1406013463-19218-1-git-send-email-acourbot@nvidia.com> <1406013463-19218-6-git-send-email-acourbot@nvidia.com>
+In-Reply-To: <1406013463-19218-6-git-send-email-acourbot@nvidia.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 07/22/2014 12:47 PM, Alexandre Courbot wrote:
 
-kfree.cocci currently triggers on constructs like
+(...)
 
-drivers/staging/rts5208/spi.c:
-596    if (retval < 0) {
-597            kfree(buf);
-598            rtsx_clear_spi_error(chip);
-599            spi_set_err_code(chip, SPI_HW_ERR);
-600            TRACE_RET(chip, STATUS_FAIL);
-601    }
-602
-603    rtsx_stor_access_xfer_buf(buf, pagelen, srb, &index, &offset,
-                            TO_XFER_BUF);
+> +	if (WARN(test_and_set_bit(FLAG_REQUESTED, &desc->flags) == 0,
+> +			"autorequest GPIO-%d\n", desc_to_gpio(desc))) {
+> +		if (!try_module_get(chip->owner)) {
+> +			gpiod_err(desc, "%s: module can't be gotten\n",
+> +					__func__);
 
-with:
+Should match open parenthesis '('
 
-./drivers/staging/rts5208/spi.c:603:28-31: ERROR: reference preceded 
-by free on line 597
+	gpiod_err(desc, "%s: module can't be gotten\n",
+		  __func__);
 
-but this should be fine - so TRACE_RET is added to the list of calls 
-"protecting" access to freed objects see drivers/staging/rts5208/trace.h
+> +			clear_bit(FLAG_REQUESTED, &desc->flags);
+> +			/* lose */
+> +			err = -EIO;
+> +			goto end;
+> +		}
+> +		desc->label = "[auto]";
+> +		/* caller must chip->request() w/o spinlock */
+> +		if (chip->request)
+> +			request = true;
+> +	}
+> +
+> +end:
+> +	spin_unlock_irqrestore(&gpio_lock, flags);
+> +
+> +	if (request) {
+> +		might_sleep_if(chip->can_sleep);
+> +		err = chip->request(chip, gpio_chip_hwgpio(desc));
+> +
+> +		if (err < 0) {
+> +			gpiod_dbg(desc, "%s: chip request fail, %d\n",
+> +					__func__, err);
+
+Dto..
+
+(...)
 
 
-Acked-by: Julia Lawall <julia.lawall@lip6.fr>
-Signed-off-by: Nicholas Mc Guire <der.herr@hofr.at>
----
- scripts/coccinelle/free/kfree.cocci |    2 ++
- 1 file changed, 2 insertions(+)
-
-diff --git a/scripts/coccinelle/free/kfree.cocci b/scripts/coccinelle/free/kfree.cocci
-index 577b780..04d3f4f 100644
---- a/scripts/coccinelle/free/kfree.cocci
-+++ b/scripts/coccinelle/free/kfree.cocci
-@@ -101,6 +101,8 @@ kfree@p1(E,...)
- |
-  return_ACPI_STATUS(...)
- |
-+ TRACE_RET(...)
-+|
-  E@p2 // bad use
- )
- 
 -- 
-1.7.10.4
+Regards,
+Varka Bhadram.
 
