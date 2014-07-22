@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755862AbaGVNXx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 09:23:53 -0400
+	id S1755872AbaGVNYK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 09:24:10 -0400
 Received: from mga02.intel.com ([134.134.136.20]:45622 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755550AbaGVNVa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755491AbaGVNVa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 22 Jul 2014 09:21:30 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,710,1400050800"; 
-   d="scan'208";a="576986322"
+   d="scan'208";a="576986290"
 From: Adrian Hunter <adrian.hunter@intel.com>
 To: Arnaldo Carvalho de Melo <acme@kernel.org>
 Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
@@ -16,9 +16,9 @@ Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
         Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
         Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 46/52] perf tools: Fix the lifetime of the VDSO temporary file
-Date: Tue, 22 Jul 2014 16:17:55 +0300
-Message-Id: <1406035081-14301-47-git-send-email-adrian.hunter@intel.com>
+Subject: [PATCH 45/52] perf tools: Group VDSO global variables into a structure
+Date: Tue, 22 Jul 2014 16:17:54 +0300
+Message-Id: <1406035081-14301-46-git-send-email-adrian.hunter@intel.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1406035081-14301-1-git-send-email-adrian.hunter@intel.com>
 References: <1406035081-14301-1-git-send-email-adrian.hunter@intel.com>
@@ -27,160 +27,117 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The VDSO temporary file is unlinked when a session is
-deleted.  That precludes the possibilities that there
-is no session or there is more than one session.
-Correctly the vdso belongs to the machine so put the
-information on 'struct machine' and get rid of the global
-variables.
+This is preparation for removing the global variables
+used in vdso.c and thereby fixing the lifetime of the
+VDSO temporary file.
+
+Also allowance is made for the later addition of
+support for compat VDSOs.
 
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 ---
- tools/perf/util/machine.c |  2 ++
- tools/perf/util/machine.h |  3 +++
- tools/perf/util/session.c |  2 --
- tools/perf/util/vdso.c    | 39 +++++++++++++++++++++++++++++----------
- tools/perf/util/vdso.h    |  2 +-
- 5 files changed, 35 insertions(+), 13 deletions(-)
+ tools/perf/util/vdso.c | 44 ++++++++++++++++++++++++++++++++------------
+ 1 file changed, 32 insertions(+), 12 deletions(-)
 
-diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
-index 5d21792..9b9fd26 100644
---- a/tools/perf/util/machine.c
-+++ b/tools/perf/util/machine.c
-@@ -8,6 +8,7 @@
- #include "sort.h"
- #include "strlist.h"
- #include "thread.h"
-+#include "vdso.h"
- #include <stdbool.h>
- #include <symbol/kallsyms.h>
- #include "unwind.h"
-@@ -107,6 +108,7 @@ void machine__exit(struct machine *machine)
- 	map_groups__exit(&machine->kmaps);
- 	dsos__delete(&machine->user_dsos);
- 	dsos__delete(&machine->kernel_dsos);
-+	vdso__exit(machine);
- 	zfree(&machine->root_dir);
- 	zfree(&machine->current_tid);
- }
-diff --git a/tools/perf/util/machine.h b/tools/perf/util/machine.h
-index f91a7e1..f385f23 100644
---- a/tools/perf/util/machine.h
-+++ b/tools/perf/util/machine.h
-@@ -20,6 +20,8 @@ union perf_event;
- 
- extern const char *ref_reloc_sym_names[];
- 
-+struct vdso_info;
-+
- struct machine {
- 	struct rb_node	  rb_node;
- 	pid_t		  pid;
-@@ -29,6 +31,7 @@ struct machine {
- 	struct rb_root	  threads;
- 	struct list_head  dead_threads;
- 	struct thread	  *last_match;
-+	struct vdso_info  *vdso_info;
- 	struct list_head  user_dsos;
- 	struct list_head  kernel_dsos;
- 	struct map_groups kmaps;
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index ca3cd1f..5ad5e12 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -14,7 +14,6 @@
- #include "util.h"
- #include "cpumap.h"
- #include "perf_regs.h"
--#include "vdso.h"
- 
- static int perf_session__open(struct perf_session *session)
- {
-@@ -176,7 +175,6 @@ void perf_session__delete(struct perf_session *session)
- 	if (session->file)
- 		perf_data_file__close(session->file);
- 	free(session);
--	vdso__exit();
- }
- 
- static int process_event_synth_tracing_data_stub(struct perf_tool *tool
 diff --git a/tools/perf/util/vdso.c b/tools/perf/util/vdso.c
-index 75245f0..fdaccaf 100644
+index da5ba4d..75245f0 100644
 --- a/tools/perf/util/vdso.c
 +++ b/tools/perf/util/vdso.c
-@@ -28,14 +28,17 @@ struct vdso_info {
- 	struct vdso_file vdso;
- };
+@@ -15,8 +15,27 @@
+ #include "linux/string.h"
+ #include "debug.h"
  
--static struct vdso_info vdso_info_ = {
--	.vdso = {
--		.temp_file_name = VDSO__TEMP_FILE_NAME,
--		.dso_name = VDSO__MAP_NAME,
--	},
--};
--
--static struct vdso_info *vdso_info = &vdso_info_;
-+static struct vdso_info *vdso_info__new(void)
-+{
-+	static const struct vdso_info vdso_info_init = {
-+		.vdso    = {
-+			.temp_file_name = VDSO__TEMP_FILE_NAME,
-+			.dso_name = VDSO__MAP_NAME,
-+		},
-+	};
+-static bool vdso_found;
+-static char vdso_file[] = "/tmp/perf-vdso.so-XXXXXX";
++#define VDSO__TEMP_FILE_NAME "/tmp/perf-vdso.so-XXXXXX"
 +
-+	return memdup(&vdso_info_init, sizeof(vdso_info_init));
-+}
++struct vdso_file {
++	bool found;
++	bool error;
++	char temp_file_name[sizeof(VDSO__TEMP_FILE_NAME)];
++	const char *dso_name;
++};
++
++struct vdso_info {
++	struct vdso_file vdso;
++};
++
++static struct vdso_info vdso_info_ = {
++	.vdso = {
++		.temp_file_name = VDSO__TEMP_FILE_NAME,
++		.dso_name = VDSO__MAP_NAME,
++	},
++};
++
++static struct vdso_info *vdso_info = &vdso_info_;
  
  static int find_vdso_map(void **start, void **end)
  {
-@@ -105,16 +108,32 @@ static char *get_file(struct vdso_file *vdso_file)
+@@ -49,7 +68,7 @@ static int find_vdso_map(void **start, void **end)
+ 	return !found;
+ }
+ 
+-static char *get_file(void)
++static char *get_file(struct vdso_file *vdso_file)
+ {
+ 	char *vdso = NULL;
+ 	char *buf = NULL;
+@@ -57,10 +76,10 @@ static char *get_file(void)
+ 	size_t size;
+ 	int fd;
+ 
+-	if (vdso_found)
+-		return vdso_file;
++	if (vdso_file->found)
++		return vdso_file->temp_file_name;
+ 
+-	if (find_vdso_map(&start, &end))
++	if (vdso_file->error || find_vdso_map(&start, &end))
+ 		return NULL;
+ 
+ 	size = end - start;
+@@ -69,26 +88,27 @@ static char *get_file(void)
+ 	if (!buf)
+ 		return NULL;
+ 
+-	fd = mkstemp(vdso_file);
++	fd = mkstemp(vdso_file->temp_file_name);
+ 	if (fd < 0)
+ 		goto out;
+ 
+ 	if (size == (size_t) write(fd, buf, size))
+-		vdso = vdso_file;
++		vdso = vdso_file->temp_file_name;
+ 
+ 	close(fd);
+ 
+  out:
+ 	free(buf);
+ 
+-	vdso_found = (vdso != NULL);
++	vdso_file->found = (vdso != NULL);
++	vdso_file->error = !vdso_file->found;
  	return vdso;
  }
  
--void vdso__exit(void)
-+void vdso__exit(struct machine *machine)
+ void vdso__exit(void)
  {
-+	struct vdso_info *vdso_info = machine->vdso_info;
-+
-+	if (!vdso_info)
-+		return;
-+
- 	if (vdso_info->vdso.found)
- 		unlink(vdso_info->vdso.temp_file_name);
-+
-+	zfree(&machine->vdso_info);
+-	if (vdso_found)
+-		unlink(vdso_file);
++	if (vdso_info->vdso.found)
++		unlink(vdso_info->vdso.temp_file_name);
  }
  
  struct dso *vdso__dso_findnew(struct machine *machine)
- {
--	struct dso *dso = dsos__find(&machine->user_dsos, VDSO__MAP_NAME, true);
-+	struct vdso_info *vdso_info;
-+	struct dso *dso;
-+
-+	if (!machine->vdso_info)
-+		machine->vdso_info = vdso_info__new();
-+
-+	vdso_info = machine->vdso_info;
-+	if (!vdso_info)
-+		return NULL;
- 
-+	dso = dsos__find(&machine->user_dsos, VDSO__MAP_NAME, true);
+@@ -98,7 +118,7 @@ struct dso *vdso__dso_findnew(struct machine *machine)
  	if (!dso) {
  		char *file;
  
-diff --git a/tools/perf/util/vdso.h b/tools/perf/util/vdso.h
-index 9ab0738..7cf1576 100644
---- a/tools/perf/util/vdso.h
-+++ b/tools/perf/util/vdso.h
-@@ -15,6 +15,6 @@ static inline bool is_vdso_map(const char *filename)
- struct machine;
+-		file = get_file();
++		file = get_file(&vdso_info->vdso);
+ 		if (!file)
+ 			return NULL;
  
- struct dso *vdso__dso_findnew(struct machine *machine);
--void vdso__exit(void);
-+void vdso__exit(struct machine *machine);
- 
- #endif /* __PERF_VDSO__ */
 -- 
 1.8.3.2
 
