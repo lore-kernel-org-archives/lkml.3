@@ -1,92 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753444AbaGVIJA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 04:09:00 -0400
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:33132 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752016AbaGVII4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 04:08:56 -0400
-Date: Tue, 22 Jul 2014 01:07:03 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Sasha Levin <sasha.levin@oracle.com>
-cc: Hugh Dickins <hughd@google.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Vlastimil Babka <vbabka@suse.cz>,
-        Konstantin Khlebnikov <koct9i@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Michel Lespinasse <walken@google.com>,
-        Lukas Czerner <lczerner@redhat.com>, Dave Jones <davej@redhat.com>,
-        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/2] shmem: fix faulting into a hole while it's punched,
- take 3
-In-Reply-To: <53CDD961.1080006@oracle.com>
-Message-ID: <alpine.LSU.2.11.1407220049140.1980@eggly.anvils>
-References: <alpine.LSU.2.11.1407150247540.2584@eggly.anvils> <53C7F55B.8030307@suse.cz> <53C7F5FF.7010006@oracle.com> <53C8FAA6.9050908@oracle.com> <alpine.LSU.2.11.1407191628450.24073@eggly.anvils> <53CDD961.1080006@oracle.com>
-User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
+	id S1753493AbaGVIJM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 04:09:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7558 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750891AbaGVIJG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 04:09:06 -0400
+Message-ID: <53CE1C10.8070400@redhat.com>
+Date: Tue, 22 Jul 2014 10:08:48 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Nadav Amit <nadav.amit@gmail.com>, Nadav Amit <namit@cs.technion.ac.il>
+CC: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
+        gleb@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/7] KVM: x86: Function for determining exception type
+References: <1405942650-22589-1-git-send-email-namit@cs.technion.ac.il> <1405942650-22589-3-git-send-email-namit@cs.technion.ac.il> <53CD0514.8040308@redhat.com> <53CD866A.9020704@gmail.com>
+In-Reply-To: <53CD866A.9020704@gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 21 Jul 2014, Sasha Levin wrote:
-> On 07/19/2014 07:44 PM, Hugh Dickins wrote:
-> >> Otherwise, I've been unable to reproduce the shmem_fallocate hang.
-> > Great.  Andrew, I think we can say that it's now safe to send
-> > 1/2 shmem: fix faulting into a hole, not taking i_mutex
-> > 2/2 shmem: fix splicing from a hole while it's punched
-> > on to Linus whenever suits you.
-> > 
-> > (You have some other patches in the mainline-later section of the
-> > mmotm/series file: they're okay too, but not in doubt as these two were.)
+Il 21/07/2014 23:30, Nadav Amit ha scritto:
+> Few comments to see we are on the same page:
 > 
-> I think we may need to hold off on sending them...
-> 
-> It seems that this code in shmem_fault():
-> 
-> 	/*
-> 	 * shmem_falloc_waitq points into the shmem_fallocate()
-> 	 * stack of the hole-punching task: shmem_falloc_waitq
-> 	 * is usually invalid by the time we reach here, but
-> 	 * finish_wait() does not dereference it in that case;
-> 	 * though i_lock needed lest racing with wake_up_all().
-> 	 */
-> 	spin_lock(&inode->i_lock);
-> 	finish_wait(shmem_falloc_waitq, &shmem_fault_wait);
-> 	spin_unlock(&inode->i_lock);
-> 
-> Is problematic. I'm not sure what changed, but it seems to be causing everything
-> from NULL ptr derefs:
-> 
-> [  169.922536] BUG: unable to handle kernel NULL pointer dereference at 0000000000000631
-> 
-> To memory corruptions:
-> 
-> [ 1031.264226] BUG: spinlock bad magic on CPU#1, trinity-c99/25740
-> 
-> And hangs:
-> 
-> [  212.010020] INFO: rcu_preempt detected stalls on CPUs/tasks:
+> On 7/21/14, 3:18 PM, Paolo Bonzini wrote:
+>> Il 21/07/2014 13:37, Nadav Amit ha scritto:
+>>> +int kvm_exception_type(unsigned int nr)
+>>
+>> The manual calls this the exception class.
+> Yes, but it also calls it exception "type" (see table 6-1
+> "Protected-Mode Exceptions and Interrupts" on the SDM).
+> I called it exception type, since there is a function exception_class
+> that is used to handle nested exceptions.
 
-Ugh.
+Ok.
 
-I'm so tired of this, I'm flailing around here, and could use some help.
+>>> +    case VE_VECTOR:
+>>> +        return EXCPT_FAULT;
+>>> +    case DB_VECTOR:
+>>> +        return EXCPT_FAULT_OR_TRAP;
+>>
+>> It is only a fault for instruction fetch breakpoints.  You can modify
+>> kvm_vcpu_check_breakpoint to set RF, add a comment here that fault
+>> handling is done elsewhere, and return EXCPT_TRAP.
+> Unless I am mistaken, kvm_vcpu_check_breakpoint checks only for
+> instruction breakpoint. Since instruction breakpoint should not cause RF
+> to be set, this function should not be changed.
 
-But there is one easy change which might do it: please would you try
-changing the TASK_KILLABLE a few lines above to TASK_UNINTERRUPTIBLE.
+You're right ("For any fault-class exception except a debug exception
+generated in response to an instruction breakpoint, the
+value pushed for RF is 1").  It's the debug exception handler that has
+to set RF (and then iretd/iretq will modify RF).
 
-I noticed when deciding on the i_lock'ing there, that a lot of the
-difficulty in races between the two ends, came from allowing KILLABLE
-at the faulting end.  Which was a nice courtesy, but one I'll gladly
-give up on now, if it is responsible for these troubles.
+> Anyhow, I would return EXCPT_TRAP on DB_VECTOR.
 
-Please give it a try, I don't know what else to suggest.  And I've
-no idea why the problem should emerge only now.  If this change
-does appear to fix it, please go back and forth with and without,
-to gather confidence that the problem is still reproducible without
-the fix.  If fix it turns out to be - touch wood.
+Yeah, just add a comment that it can be a fault for instruction fetch
+breakpoints, but we treat it as a trap for the purposes of (not) setting RF.
 
-Thanks,
-Hugh
+Alternatively, just rename the function to exception_sets_rf and return
+true/false.
+
+Paolo
