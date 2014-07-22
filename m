@@ -1,114 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756027AbaGVP4m (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 11:56:42 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:26928 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754795AbaGVP4l (ORCPT
+	id S1756079AbaGVP4z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 11:56:55 -0400
+Received: from mail-ig0-f169.google.com ([209.85.213.169]:52078 "EHLO
+	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755830AbaGVP4x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 11:56:41 -0400
-Date: Tue, 22 Jul 2014 16:56:22 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Laura Abbott <lauraa@codeaurora.org>
-Cc: Will Deacon <Will.Deacon@arm.com>, David Riley <davidriley@chromium.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Ritesh Harjain <ritesh.harjani@gmail.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCHv4 5/5] arm64: Add atomic pool for non-coherent and CMA
- allocations.
-Message-ID: <20140722155622.GL2219@arm.com>
-References: <1404324218-4743-1-git-send-email-lauraa@codeaurora.org>
- <1404324218-4743-6-git-send-email-lauraa@codeaurora.org>
- <20140718134343.GA4608@arm.com>
- <53CD9601.5070001@codeaurora.org>
+	Tue, 22 Jul 2014 11:56:53 -0400
+Date: Tue, 22 Jul 2014 16:56:45 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Felipe Balbi <balbi@ti.com>
+Cc: Peter Griffin <peter.griffin@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        maxime.coquelin@st.com, patrice.chotard@st.com,
+        srinivas.kandagatla@gmail.com, devicetree@vger.kernel.org,
+        linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
+        peppe.cavallaro@st.com
+Subject: Re: [PATCH v2 1/3] usb: dwc3: add ST dwc3 glue layer to manage dwc3
+ HC
+Message-ID: <20140722155645.GD23210@lee--X1>
+References: <1404541530-27856-1-git-send-email-peter.griffin@linaro.org>
+ <1404541530-27856-2-git-send-email-peter.griffin@linaro.org>
+ <20140707124627.GG6407@lee--X1>
+ <20140722091800.GB8233@griffinp-ThinkPad-X1-Carbon-2nd>
+ <20140722145711.GC20588@saruman.home>
+ <20140722154503.GC23210@lee--X1>
+ <20140722155117.GF20588@saruman.home>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <53CD9601.5070001@codeaurora.org>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140722155117.GF20588@saruman.home>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 21, 2014 at 11:36:49PM +0100, Laura Abbott wrote:
-> On 7/18/2014 6:43 AM, Catalin Marinas wrote:
-> > On Wed, Jul 02, 2014 at 07:03:38PM +0100, Laura Abbott wrote:
-> >> @@ -73,50 +124,56 @@ static void __dma_free_coherent(struct device *dev, size_t size,
-> >>  				void *vaddr, dma_addr_t dma_handle,
-> >>  				struct dma_attrs *attrs)
-> >>  {
-> >> +	bool freed;
-> >> +	phys_addr_t paddr = dma_to_phys(dev, dma_handle);
-> >> +
-> >>  	if (dev == NULL) {
-> >>  		WARN_ONCE(1, "Use an actual device structure for DMA allocation\n");
-> >>  		return;
-> >>  	}
-> >>  
-> >> -	if (IS_ENABLED(CONFIG_DMA_CMA)) {
-> >> -		phys_addr_t paddr = dma_to_phys(dev, dma_handle);
-> >>  
-> >> -		dma_release_from_contiguous(dev,
-> >> +	freed = dma_release_from_contiguous(dev,
-> >>  					phys_to_page(paddr),
-> >>  					size >> PAGE_SHIFT);
-> >> -	} else {
-> >> +	if (!freed)
-> >>  		swiotlb_free_coherent(dev, size, vaddr, dma_handle);
-> >> -	}
-> >>  }
+On Tue, 22 Jul 2014, Felipe Balbi wrote:
+
+> On Tue, Jul 22, 2014 at 04:45:03PM +0100, Lee Jones wrote:
+> > > > > > +static void st_dwc3_init(struct st_dwc3 *dwc3_data)
+> > > > > > +{
+> > > > > > +	u32 reg = st_dwc3_readl(dwc3_data->glue_base, USB2_CLKRST_CTRL);
+> > > > > > +
+> > > > > > +	reg |= aux_clk_en(1) | ext_cfg_reset_n(1) | xhci_revision(1);
+> > > > > > +	reg &= ~sw_pipew_reset_n(1);
+> > > > > 
+> > > > > 1?  Better to add defines for these magic numbers.  What is 1 anyway?
+> > > > 
+> > > > They are just bit setting macros, I've converted them over to use BIT macro now,
+> > > > so it no longer takes a parameter.
+> > > 
+> > > the macros are better, but make them upper case as everybody else.
 > > 
-> > Is __dma_free_coherent() ever called in atomic context? If yes, the
-> > dma_release_from_contiguous() may not like it since it tries to acquire
-> > a mutex. But since we don't have the gfp flags here, we don't have an
-> > easy way to know what to call.
+> > When you say that the macros are better, what do you mean?
 > > 
-> > So the initial idea of always calling __alloc_from_pool() for both
-> > coherent/non-coherent cases would work better (but still with a single
-> > shared pool, see below).
+> > Defines do the job in a manner which is a great deal cleaner:
+> > 
+> > #define AUX_CLK_EN        BIT(0)
+> > #define SW_PIPEW_RESET_N  BIT(4)
+> > #define EXT_CFG_RESET_N   BIT(8)
+> > #define XHCI_REVISION     BIT(12)
+> > 
+> > reg = AUX_CLK_EN | SW_PIPEW_RESET_N | XHCI_REVISION;
+> > reg &= ~SW_PIPEW_RESET_N
 > 
-> We should be okay
-> 
-> __dma_free_coherent -> dma_release_from_contiguous -> cma_release which
-> bounds checks the CMA region before taking any mutexes unless I missed
-> something.
+> this is what I meant ;-) I see what I wrote can be very ambiguous :-p
 
-Ah, good point. I missed the pfn range check in
-dma_release_from_contiguous.
-
-> The existing behavior on arm is to not allow non-atomic allocations to be
-> freed atomic context when CMA is enabled so we'd be giving arm64 more
-> leeway there.  Is being able to free non-atomic allocations in atomic
-> context really necessary?
-
-No. I was worried that an atomic coherent allocation (falling back to
-swiotlb) would trigger some CMA mutex in atomic context on the freeing
-path. But you are right, it shouldn't happen.
-
-> >> +		page = dma_alloc_from_contiguous(NULL, nr_pages,
-> >> +					get_order(atomic_pool_size));
-> >> +	else
-> >> +		page = alloc_pages(GFP_KERNEL, get_order(atomic_pool_size));
-> > 
-> > One problem here is that the atomic pool wouldn't be able to honour
-> > GFP_DMA (in the latest kernel, CMA is by default in ZONE_DMA). You
-> > should probably pass GFP_KERNEL|GFP_DMA here. You could also use the
-> > swiotlb_alloc_coherent() which, with a NULL dev, assumes 32-bit DMA mask
-> > but it still expects GFP_DMA to be passed.
-> > 
-> 
-> I think I missed updating this to GFP_DMA. The only advantage I would see
-> to using swiotlb_alloc_coherent vs. alloc_pages directly would be to
-> allow the fallback to using a bounce buffer if __get_free_pages failed.
-> I'll keep this as alloc_pages for now; it can be changed later if there
-> is a particular need for swiotlb behavior.
-
-That's fine. Since we don't have a device at this point, I don't see how
-swiotlb could fall back to the bounce buffer.
-
-Thanks.
+Okay great, thanks for clarifying. :)
 
 -- 
-Catalin
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
