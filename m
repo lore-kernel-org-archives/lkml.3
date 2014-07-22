@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755582AbaGVN3L (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 09:29:11 -0400
+	id S1755653AbaGVN3u (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 09:29:50 -0400
 Received: from mga02.intel.com ([134.134.136.20]:45434 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755240AbaGVNUr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 09:20:47 -0400
+	id S1753020AbaGVNUk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 09:20:40 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,710,1400050800"; 
-   d="scan'208";a="576985865"
+   d="scan'208";a="576985815"
 From: Adrian Hunter <adrian.hunter@intel.com>
 To: Arnaldo Carvalho de Melo <acme@kernel.org>
 Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
@@ -16,9 +16,9 @@ Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
         Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
         Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 26/52] perf tools: Add dso__data_size()
-Date: Tue, 22 Jul 2014 16:17:35 +0300
-Message-Id: <1406035081-14301-27-git-send-email-adrian.hunter@intel.com>
+Subject: [PATCH 23/52] perf tools: Move rdtsc() function
+Date: Tue, 22 Jul 2014 16:17:32 +0300
+Message-Id: <1406035081-14301-24-git-send-email-adrian.hunter@intel.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1406035081-14301-1-git-send-email-adrian.hunter@intel.com>
 References: <1406035081-14301-1-git-send-email-adrian.hunter@intel.com>
@@ -27,68 +27,78 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a function to return the dso data size, for use
-in estimating the size an instruction cache.
+Move the rdtsc() function so it can
+be reusued.
 
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 ---
- tools/perf/util/dso.c | 22 ++++++++++++++++++++++
- tools/perf/util/dso.h |  2 ++
- 2 files changed, 24 insertions(+)
+ tools/perf/arch/x86/util/tsc.c      | 9 +++++++++
+ tools/perf/tests/perf-time-to-tsc.c | 9 ---------
+ tools/perf/util/tsc.c               | 5 +++++
+ tools/perf/util/tsc.h               | 1 +
+ 4 files changed, 15 insertions(+), 9 deletions(-)
 
-diff --git a/tools/perf/util/dso.c b/tools/perf/util/dso.c
-index 84e4a05..e657d86 100644
---- a/tools/perf/util/dso.c
-+++ b/tools/perf/util/dso.c
-@@ -544,6 +544,28 @@ static int data_file_size(struct dso *dso)
+diff --git a/tools/perf/arch/x86/util/tsc.c b/tools/perf/arch/x86/util/tsc.c
+index 3655f24..fd28684 100644
+--- a/tools/perf/arch/x86/util/tsc.c
++++ b/tools/perf/arch/x86/util/tsc.c
+@@ -37,3 +37,12 @@ int perf_read_tsc_conversion(const struct perf_event_mmap_page *pc,
+ 
  	return 0;
  }
- 
-+/**
-+ * dso__data_size - Return dso data size
-+ * @dso: dso object
-+ * @machine: machine object
-+ *
-+ * Return: dso data size
-+ */
-+off_t dso__data_size(struct dso *dso, struct machine *machine)
++
++u64 rdtsc(void)
 +{
-+	int fd;
++	unsigned int low, high;
 +
-+	fd = dso__data_fd(dso, machine);
-+	if (fd < 0)
-+		return fd;
++	asm volatile("rdtsc" : "=a" (low), "=d" (high));
 +
-+	if (data_file_size(dso))
-+		return -1;
-+
-+	/* For now just estimate dso data size is close to file size */
-+	return dso->data.file_size;
++	return low | ((u64)high) << 32;
 +}
-+
- static ssize_t data_read_offset(struct dso *dso, u64 offset,
- 				u8 *data, ssize_t size)
- {
-diff --git a/tools/perf/util/dso.h b/tools/perf/util/dso.h
-index c805f60..af1c256 100644
---- a/tools/perf/util/dso.h
-+++ b/tools/perf/util/dso.h
-@@ -166,6 +166,7 @@ int dso__read_binary_type_filename(const struct dso *dso, enum dso_binary_type t
-  * The dso__data_* external interface provides following functions:
-  *   dso__data_fd
-  *   dso__data_close
-+ *   dso__data_size
-  *   dso__data_read_offset
-  *   dso__data_read_addr
-  *
-@@ -203,6 +204,7 @@ int dso__read_binary_type_filename(const struct dso *dso, enum dso_binary_type t
- int dso__data_fd(struct dso *dso, struct machine *machine);
- void dso__data_close(struct dso *dso);
+diff --git a/tools/perf/tests/perf-time-to-tsc.c b/tools/perf/tests/perf-time-to-tsc.c
+index 0372f6e..f238442 100644
+--- a/tools/perf/tests/perf-time-to-tsc.c
++++ b/tools/perf/tests/perf-time-to-tsc.c
+@@ -25,15 +25,6 @@
+ 	}					\
+ }
  
-+off_t dso__data_size(struct dso *dso, struct machine *machine);
- ssize_t dso__data_read_offset(struct dso *dso, struct machine *machine,
- 			      u64 offset, u8 *data, ssize_t size);
- ssize_t dso__data_read_addr(struct dso *dso, struct map *map,
+-static u64 rdtsc(void)
+-{
+-	unsigned int low, high;
+-
+-	asm volatile("rdtsc" : "=a" (low), "=d" (high));
+-
+-	return low | ((u64)high) << 32;
+-}
+-
+ /**
+  * test__perf_time_to_tsc - test converting perf time to TSC.
+  *
+diff --git a/tools/perf/util/tsc.c b/tools/perf/util/tsc.c
+index ef4749836..4d4210d 100644
+--- a/tools/perf/util/tsc.c
++++ b/tools/perf/util/tsc.c
+@@ -23,3 +23,8 @@ u64 tsc_to_perf_time(u64 cyc, struct perf_tsc_conversion *tc)
+ 	return tc->time_zero + quot * tc->time_mult +
+ 	       ((rem * tc->time_mult) >> tc->time_shift);
+ }
++
++u64 __weak rdtsc(void)
++{
++	return 0;
++}
+diff --git a/tools/perf/util/tsc.h b/tools/perf/util/tsc.h
+index 4eca848..a8b78f1 100644
+--- a/tools/perf/util/tsc.h
++++ b/tools/perf/util/tsc.h
+@@ -7,5 +7,6 @@
+ 
+ u64 perf_time_to_tsc(u64 ns, struct perf_tsc_conversion *tc);
+ u64 tsc_to_perf_time(u64 cyc, struct perf_tsc_conversion *tc);
++u64 rdtsc(void);
+ 
+ #endif
 -- 
 1.8.3.2
 
