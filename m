@@ -1,15 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932359AbaGVWJt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 18:09:49 -0400
+	id S932379AbaGVWJ5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 18:09:57 -0400
 Received: from mga02.intel.com ([134.134.136.20]:26937 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932294AbaGVWJn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 18:09:43 -0400
+	id S932327AbaGVWJq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 18:09:46 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,712,1400050800"; 
-   d="scan'208";a="547426953"
-Subject: [PATCH v5 4/7] crypto: SHA1 multibuffer algorithm data structures
+   d="scan'208";a="547426970"
+Subject: [PATCH v5 5/7] crypto: SHA1 multibuffer submit and flush routines
+ for AVX2
 From: Tim Chen <tim.c.chen@linux.intel.com>
 To: Herbert Xu <herbert@gondor.apana.org.au>, "H. Peter Anvin" <hpa@zytor.com>,
         "David S.Miller" <davem@davemloft.net>,
@@ -26,8 +27,8 @@ Cc: Chandramouli Narayanan <mouli@linux.intel.com>,
 In-Reply-To: <cover.1406033477.git.tim.c.chen@linux.intel.com>
 References: <cover.1406033477.git.tim.c.chen@linux.intel.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 22 Jul 2014 15:09:38 -0700
-Message-ID: <1406066978.2970.806.camel@schen9-DESK>
+Date: Tue, 22 Jul 2014 15:09:41 -0700
+Message-ID: <1406066981.2970.807.camel@schen9-DESK>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
 Content-Transfer-Encoding: 7bit
@@ -35,29 +36,28 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch introduces the data structures and prototypes of functions
-needed for computing SHA1 hash using multi-buffer.  Included are the
-structures of the multi-buffer SHA1 job, job scheduler in C and x86
-assembly.
+This patch introduces the routines used to submit and flush buffers
+belonging to SHA1 crypto jobs to the SHA1 multibuffer algorithm.  It is
+implemented mostly in assembly optimized with AVX2 instructions.
 
 Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
 ---
- arch/x86/crypto/sha-mb/sha1_mb_mgr_datastruct.S | 287 ++++++++++++++++++++++++
- arch/x86/crypto/sha-mb/sha_mb_ctx.h             | 136 +++++++++++
- arch/x86/crypto/sha-mb/sha_mb_mgr.h             | 110 +++++++++
- 3 files changed, 533 insertions(+)
- create mode 100644 arch/x86/crypto/sha-mb/sha1_mb_mgr_datastruct.S
- create mode 100644 arch/x86/crypto/sha-mb/sha_mb_ctx.h
- create mode 100644 arch/x86/crypto/sha-mb/sha_mb_mgr.h
+ arch/x86/crypto/sha-mb/sha1_mb_mgr_flush_avx2.S  | 327 +++++++++++++++++++++++
+ arch/x86/crypto/sha-mb/sha1_mb_mgr_init_avx2.c   |  64 +++++
+ arch/x86/crypto/sha-mb/sha1_mb_mgr_submit_avx2.S | 228 ++++++++++++++++
+ 3 files changed, 619 insertions(+)
+ create mode 100644 arch/x86/crypto/sha-mb/sha1_mb_mgr_flush_avx2.S
+ create mode 100644 arch/x86/crypto/sha-mb/sha1_mb_mgr_init_avx2.c
+ create mode 100644 arch/x86/crypto/sha-mb/sha1_mb_mgr_submit_avx2.S
 
-diff --git a/arch/x86/crypto/sha-mb/sha1_mb_mgr_datastruct.S b/arch/x86/crypto/sha-mb/sha1_mb_mgr_datastruct.S
+diff --git a/arch/x86/crypto/sha-mb/sha1_mb_mgr_flush_avx2.S b/arch/x86/crypto/sha-mb/sha1_mb_mgr_flush_avx2.S
 new file mode 100644
-index 0000000..86688c6
+index 0000000..85c4e1c
 --- /dev/null
-+++ b/arch/x86/crypto/sha-mb/sha1_mb_mgr_datastruct.S
-@@ -0,0 +1,287 @@
++++ b/arch/x86/crypto/sha-mb/sha1_mb_mgr_flush_avx2.S
+@@ -0,0 +1,327 @@
 +/*
-+ * Header file for multi buffer SHA1 algorithm data structure
++ * Flush routine for SHA1 multibuffer
 + *
 + * This file is provided under a dual BSD/GPLv2 license.  When using or
 + * redistributing this file, you may do so under either license.
@@ -109,248 +109,288 @@ index 0000000..86688c6
 + *  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 + * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 + */
++#include <linux/linkage.h>
++#include "sha1_mb_mgr_datastruct.S"
 +
-+# Macros for defining data structures
 +
-+# Usage example
++.extern sha1_x8_avx2
 +
-+#START_FIELDS	# JOB_AES
-+###	name		size	align
-+#FIELD	_plaintext,	8,	8	# pointer to plaintext
-+#FIELD	_ciphertext,	8,	8	# pointer to ciphertext
-+#FIELD	_IV,		16,	8	# IV
-+#FIELD	_keys,		8,	8	# pointer to keys
-+#FIELD	_len,		4,	4	# length in bytes
-+#FIELD	_status,	4,	4	# status enumeration
-+#FIELD	_user_data,	8,	8	# pointer to user data
-+#UNION  _union,         size1,  align1, \
-+#	                size2,  align2, \
-+#	                size3,  align3, \
-+#	                ...
-+#END_FIELDS
-+#%assign _JOB_AES_size	_FIELD_OFFSET
-+#%assign _JOB_AES_align	_STRUCT_ALIGN
++# LINUX register definitions
++#define arg1    %rdi
++#define arg2    %rsi
 +
-+#########################################################################
++# Common definitions
++#define state   arg1
++#define job     arg2
++#define len2    arg2
 +
-+# Alternate "struc-like" syntax:
-+#	STRUCT job_aes2
-+#	RES_Q	.plaintext,	1
-+#	RES_Q	.ciphertext,	1
-+#	RES_DQ	.IV,		1
-+#	RES_B	.nested,	_JOB_AES_SIZE, _JOB_AES_ALIGN
-+#	RES_U	.union,		size1, align1, \
-+#				size2, align2, \
-+#				...
-+#	ENDSTRUCT
-+#	# Following only needed if nesting
-+#	%assign job_aes2_size	_FIELD_OFFSET
-+#	%assign job_aes2_align	_STRUCT_ALIGN
-+#
-+# RES_* macros take a name, a count and an optional alignment.
-+# The count in in terms of the base size of the macro, and the
-+# default alignment is the base size.
-+# The macros are:
-+# Macro    Base size
-+# RES_B	    1
-+# RES_W	    2
-+# RES_D     4
-+# RES_Q     8
-+# RES_DQ   16
-+# RES_Y    32
-+# RES_Z    64
-+#
-+# RES_U defines a union. It's arguments are a name and two or more
-+# pairs of "size, alignment"
-+#
-+# The two assigns are only needed if this structure is being nested
-+# within another. Even if the assigns are not done, one can still use
-+# STRUCT_NAME_size as the size of the structure.
-+#
-+# Note that for nesting, you still need to assign to STRUCT_NAME_size.
-+#
-+# The differences between this and using "struc" directly are that each
-+# type is implicitly aligned to its natural length (although this can be
-+# over-ridden with an explicit third parameter), and that the structure
-+# is padded at the end to its overall alignment.
-+#
++# idx must be a register not clobbered by sha1_x8_avx2
++#define idx		%r8
++#define DWORD_idx	%r8d
 +
-+#########################################################################
++#define unused_lanes    %rbx
++#define lane_data       %rbx
++#define tmp2            %rbx
++#define tmp2_w		%ebx
 +
-+#ifndef _SHA1_MB_MGR_DATASTRUCT_ASM_
-+#define _SHA1_MB_MGR_DATASTRUCT_ASM_
++#define job_rax         %rax
++#define tmp1            %rax
++#define size_offset     %rax
++#define tmp             %rax
++#define start_offset    %rax
 +
-+## START_FIELDS
-+.macro START_FIELDS
-+ _FIELD_OFFSET = 0
-+ _STRUCT_ALIGN = 0
++#define tmp3            %arg1
++
++#define extra_blocks    %arg2
++#define p               %arg2
++
++
++# STACK_SPACE needs to be an odd multiple of 8
++_XMM_SAVE_SIZE  = 10*16
++_GPR_SAVE_SIZE  = 8*8
++_ALIGN_SIZE     = 8
++
++_XMM_SAVE       = 0
++_GPR_SAVE       = _XMM_SAVE + _XMM_SAVE_SIZE
++STACK_SPACE     = _GPR_SAVE + _GPR_SAVE_SIZE + _ALIGN_SIZE
++
++.macro LABEL prefix n
++\prefix\n\():
 +.endm
 +
-+## FIELD name size align
-+.macro FIELD name size align
-+ _FIELD_OFFSET = (_FIELD_OFFSET + (\align) - 1) & (~ ((\align)-1))
-+ \name	= _FIELD_OFFSET
-+ _FIELD_OFFSET = _FIELD_OFFSET + (\size)
-+.if (\align > _STRUCT_ALIGN)
-+ _STRUCT_ALIGN = \align
-+.endif
++.macro JNE_SKIP i
++jne     skip_\i
 +.endm
 +
-+## END_FIELDS
-+.macro END_FIELDS
-+ _FIELD_OFFSET = (_FIELD_OFFSET + _STRUCT_ALIGN-1) & (~ (_STRUCT_ALIGN-1))
++.altmacro
++.macro SET_OFFSET _offset
++offset = \_offset
 +.endm
++.noaltmacro
 +
-+########################################################################
++# JOB* sha1_mb_mgr_flush_avx2(MB_MGR *state)
++# arg 1 : rcx : state
++ENTRY(sha1_mb_mgr_flush_avx2)
++	mov	%rsp, %r10
++	sub     $STACK_SPACE, %rsp
++	and     $~31, %rsp
++	mov     %rbx, _GPR_SAVE(%rsp)
++	mov     %r10, _GPR_SAVE+8*1(%rsp) #save rsp
++	mov	%rbp, _GPR_SAVE+8*3(%rsp)
++	mov	%r12, _GPR_SAVE+8*4(%rsp)
++	mov	%r13, _GPR_SAVE+8*5(%rsp)
++	mov	%r14, _GPR_SAVE+8*6(%rsp)
++	mov	%r15, _GPR_SAVE+8*7(%rsp)
 +
-+.macro STRUCT p1
-+START_FIELDS
-+.struc \p1
-+.endm
++	# If bit (32+3) is set, then all lanes are empty
++	mov     _unused_lanes(state), unused_lanes
++	bt      $32+3, unused_lanes
++	jc      return_null
 +
-+.macro ENDSTRUCT
-+ tmp = _FIELD_OFFSET
-+ END_FIELDS
-+ tmp = (_FIELD_OFFSET - %%tmp)
-+.if (tmp > 0)
-+	.lcomm	tmp
-+.endif
-+.endstruc
-+.endm
++	# find a lane with a non-null job
++	xor     idx, idx
++	offset = (_ldata + 1 * _LANE_DATA_size + _job_in_lane)
++	cmpq    $0, offset(state)
++	cmovne  one(%rip), idx
++	offset = (_ldata + 2 * _LANE_DATA_size + _job_in_lane)
++	cmpq    $0, offset(state)
++	cmovne  two(%rip), idx
++	offset = (_ldata + 3 * _LANE_DATA_size + _job_in_lane)
++	cmpq    $0, offset(state)
++	cmovne  three(%rip), idx
++	offset = (_ldata + 4 * _LANE_DATA_size + _job_in_lane)
++	cmpq    $0, offset(state)
++	cmovne  four(%rip), idx
++	offset = (_ldata + 5 * _LANE_DATA_size + _job_in_lane)
++	cmpq    $0, offset(state)
++	cmovne  five(%rip), idx
++	offset = (_ldata + 6 * _LANE_DATA_size + _job_in_lane)
++	cmpq    $0, offset(state)
++	cmovne  six(%rip), idx
++	offset = (_ldata + 7 * _LANE_DATA_size + _job_in_lane)
++	cmpq    $0, offset(state)
++	cmovne  seven(%rip), idx
 +
-+## RES_int name size align
-+.macro RES_int p1 p2 p3
-+ name = \p1
-+ size = \p2
-+ align = .\p3
++	# copy idx to empty lanes
++copy_lane_data:
++	offset =  (_args + _data_ptr)
++	mov     offset(state,idx,8), tmp
 +
-+ _FIELD_OFFSET = (_FIELD_OFFSET + (align) - 1) & (~ ((align)-1))
-+.align align
-+.lcomm name size
-+ _FIELD_OFFSET = _FIELD_OFFSET + (size)
-+.if (align > _STRUCT_ALIGN)
-+ _STRUCT_ALIGN = align
-+.endif
-+.endm
++	I = 0
++.rep 8
++	offset =  (_ldata + I * _LANE_DATA_size + _job_in_lane)
++	cmpq    $0, offset(state)
++.altmacro
++	JNE_SKIP %I
++	offset =  (_args + _data_ptr + 8*I)
++	mov     tmp, offset(state)
++	offset =  (_lens + 4*I)
++	movl    $0xFFFFFFFF, offset(state)
++LABEL skip_ %I
++	I = (I+1)
++.noaltmacro
++.endr
 +
++	# Find min length
++	vmovdqa _lens+0*16(state), %xmm0
++	vmovdqa _lens+1*16(state), %xmm1
 +
++	vpminud %xmm1, %xmm0, %xmm2     # xmm2 has {D,C,B,A}
++	vpalignr $8, %xmm2, %xmm3, %xmm3   # xmm3 has {x,x,D,C}
++	vpminud %xmm3, %xmm2, %xmm2        # xmm2 has {x,x,E,F}
++	vpalignr $4, %xmm2, %xmm3, %xmm3    # xmm3 has {x,x,x,E}
++	vpminud %xmm3, %xmm2, %xmm2        # xmm2 has min value in low dword
 +
-+# macro RES_B name, size [, align]
-+.macro RES_B _name, _size, _align=1
-+RES_int _name _size _align
-+.endm
++	vmovd   %xmm2, DWORD_idx
++	mov	idx, len2
++	and	$0xF, idx
++	shr	$4, len2
++	jz	len_is_0
 +
-+# macro RES_W name, size [, align]
-+.macro RES_W _name, _size, _align=2
-+RES_int _name 2*(_size) _align
-+.endm
++	vpand   clear_low_nibble(%rip), %xmm2, %xmm2
++	vpshufd $0, %xmm2, %xmm2
 +
-+# macro RES_D name, size [, align]
-+.macro RES_D _name, _size, _align=4
-+RES_int _name 4*(_size) _align
-+.endm
++	vpsubd  %xmm2, %xmm0, %xmm0
++	vpsubd  %xmm2, %xmm1, %xmm1
 +
-+# macro RES_Q name, size [, align]
-+.macro RES_Q _name, _size, _align=8
-+RES_int _name 8*(_size) _align
-+.endm
++	vmovdqa %xmm0, _lens+0*16(state)
++	vmovdqa %xmm1, _lens+1*16(state)
 +
-+# macro RES_DQ name, size [, align]
-+.macro RES_DQ _name, _size, _align=16
-+RES_int _name 16*(_size) _align
-+.endm
-+
-+# macro RES_Y name, size [, align]
-+.macro RES_Y _name, _size, _align=32
-+RES_int _name 32*(_size) _align
-+.endm
-+
-+# macro RES_Z name, size [, align]
-+.macro RES_Z _name, _size, _align=64
-+RES_int _name 64*(_size) _align
-+.endm
-+
-+
-+#endif
-+
-+########################################################################
-+#### Define constants
-+########################################################################
-+
-+########################################################################
-+#### Define SHA1 Out Of Order Data Structures
-+########################################################################
-+
-+START_FIELDS    # LANE_DATA
-+###     name            size    align
-+FIELD   _job_in_lane,   8,      8       # pointer to job object
-+END_FIELDS
-+
-+_LANE_DATA_size = _FIELD_OFFSET
-+_LANE_DATA_align = _STRUCT_ALIGN
-+
-+########################################################################
-+
-+START_FIELDS    # SHA1_ARGS_X8
-+###     name            size    align
-+FIELD   _digest,        4*5*8,  16      # transposed digest
-+FIELD   _data_ptr,      8*8,    8       # array of pointers to data
-+END_FIELDS
-+
-+_SHA1_ARGS_X4_size =     _FIELD_OFFSET
-+_SHA1_ARGS_X4_align =    _STRUCT_ALIGN
-+_SHA1_ARGS_X8_size =     _FIELD_OFFSET
-+_SHA1_ARGS_X8_align =    _STRUCT_ALIGN
-+
-+########################################################################
-+
-+START_FIELDS    # MB_MGR
-+###     name            size    align
-+FIELD   _args,          _SHA1_ARGS_X4_size, _SHA1_ARGS_X4_align
-+FIELD   _lens,          4*8,    8
-+FIELD   _unused_lanes,  8,      8
-+FIELD   _ldata,         _LANE_DATA_size*8, _LANE_DATA_align
-+END_FIELDS
-+
-+_MB_MGR_size =   _FIELD_OFFSET
-+_MB_MGR_align =  _STRUCT_ALIGN
-+
-+_args_digest    =     _args + _digest
-+_args_data_ptr  =     _args + _data_ptr
++	# "state" and "args" are the same address, arg1
++	# len is arg2
++	call	sha1_x8_avx2
++	# state and idx are intact
 +
 +
-+########################################################################
-+#### Define constants
-+########################################################################
++len_is_0:
++	# process completed job "idx"
++	imul    $_LANE_DATA_size, idx, lane_data
++	lea     _ldata(state, lane_data), lane_data
 +
-+#define STS_UNKNOWN             0
-+#define STS_BEING_PROCESSED     1
-+#define STS_COMPLETED           2
++	mov     _job_in_lane(lane_data), job_rax
++	movq    $0, _job_in_lane(lane_data)
++	movl    $STS_COMPLETED, _status(job_rax)
++	mov     _unused_lanes(state), unused_lanes
++	shl     $4, unused_lanes
++	or      idx, unused_lanes
++	mov     unused_lanes, _unused_lanes(state)
 +
-+########################################################################
-+#### Define JOB_SHA1 structure
-+########################################################################
++	movl	$0xFFFFFFFF, _lens(state, idx, 4)
 +
-+START_FIELDS    # JOB_SHA1
++	vmovd    _args_digest(state , idx, 4) , %xmm0
++	vpinsrd  $1, _args_digest+1*32(state, idx, 4), %xmm0, %xmm0
++	vpinsrd  $2, _args_digest+2*32(state, idx, 4), %xmm0, %xmm0
++	vpinsrd  $3, _args_digest+3*32(state, idx, 4), %xmm0, %xmm0
++	movl    _args_digest+4*32(state, idx, 4), tmp2_w
 +
-+###     name                            size    align
-+FIELD   _buffer,                        8,      8       # pointer to buffer
-+FIELD   _len,                           4,      4       # length in bytes
-+FIELD   _result_digest,                 5*4,    32      # Digest (output)
-+FIELD   _status,                        4,      4
-+FIELD   _user_data,                     8,      8
-+END_FIELDS
++	vmovdqu  %xmm0, _result_digest(job_rax)
++	offset =  (_result_digest + 1*16)
++	mov     tmp2_w, offset(job_rax)
 +
-+_JOB_SHA1_size =  _FIELD_OFFSET
-+_JOB_SHA1_align = _STRUCT_ALIGN
-diff --git a/arch/x86/crypto/sha-mb/sha_mb_ctx.h b/arch/x86/crypto/sha-mb/sha_mb_ctx.h
++return:
++
++	mov     _GPR_SAVE(%rsp), %rbx
++	mov     _GPR_SAVE+8*1(%rsp), %r10 #saved rsp
++	mov	_GPR_SAVE+8*3(%rsp), %rbp
++	mov	_GPR_SAVE+8*4(%rsp), %r12
++	mov	_GPR_SAVE+8*5(%rsp), %r13
++	mov	_GPR_SAVE+8*6(%rsp), %r14
++	mov	_GPR_SAVE+8*7(%rsp), %r15
++	mov     %r10, %rsp
++
++	ret
++
++return_null:
++	xor     job_rax, job_rax
++	jmp     return
++ENDPROC(sha1_mb_mgr_flush_avx2)
++
++
++#################################################################
++
++.align 16
++ENTRY(sha1_mb_mgr_get_comp_job_avx2)
++	push    %rbx
++
++	## if bit 32+3 is set, then all lanes are empty
++	mov     _unused_lanes(state), unused_lanes
++	bt      $(32+3), unused_lanes
++	jc      .return_null
++
++	# Find min length
++	vmovdqa _lens(state), %xmm0
++	vmovdqa _lens+1*16(state), %xmm1
++
++	vpminud %xmm1, %xmm0, %xmm2        # xmm2 has {D,C,B,A}
++	vpalignr $8, %xmm2, %xmm3, %xmm3   # xmm3 has {x,x,D,C}
++	vpminud %xmm3, %xmm2, %xmm2        # xmm2 has {x,x,E,F}
++	vpalignr $4, %xmm2, %xmm3, %xmm3    # xmm3 has {x,x,x,E}
++	vpminud %xmm3, %xmm2, %xmm2        # xmm2 has min value in low dword
++
++	vmovd   %xmm2, DWORD_idx
++	test    $~0xF, idx
++	jnz     .return_null
++
++	# process completed job "idx"
++	imul    $_LANE_DATA_size, idx, lane_data
++	lea     _ldata(state, lane_data), lane_data
++
++	mov     _job_in_lane(lane_data), job_rax
++	movq    $0,  _job_in_lane(lane_data)
++	movl    $STS_COMPLETED, _status(job_rax)
++	mov     _unused_lanes(state), unused_lanes
++	shl     $4, unused_lanes
++	or      idx, unused_lanes
++	mov     unused_lanes, _unused_lanes(state)
++
++	movl    $0xFFFFFFFF, _lens(state,  idx, 4)
++
++	vmovd   _args_digest(state, idx, 4), %xmm0
++	vpinsrd $1, _args_digest+1*32(state, idx, 4), %xmm0, %xmm0
++	vpinsrd $2, _args_digest+2*32(state, idx, 4), %xmm0, %xmm0
++	vpinsrd $3, _args_digest+3*32(state, idx, 4), %xmm0, %xmm0
++	movl    _args_digest+4*32(state, idx, 4), tmp2_w
++
++	vmovdqu %xmm0, _result_digest(job_rax)
++	movl    tmp2_w, _result_digest+1*16(job_rax)
++
++	pop     %rbx
++
++	ret
++
++.return_null:
++	xor     job_rax, job_rax
++	pop     %rbx
++	ret
++ENDPROC(sha1_mb_mgr_get_comp_job_avx2)
++
++.data
++
++.align 16
++clear_low_nibble:
++.octa	0x000000000000000000000000FFFFFFF0
++one:
++.quad  1
++two:
++.quad  2
++three:
++.quad  3
++four:
++.quad  4
++five:
++.quad  5
++six:
++.quad  6
++seven:
++.quad  7
+diff --git a/arch/x86/crypto/sha-mb/sha1_mb_mgr_init_avx2.c b/arch/x86/crypto/sha-mb/sha1_mb_mgr_init_avx2.c
 new file mode 100644
-index 0000000..e36069d
+index 0000000..4ca7e16
 --- /dev/null
-+++ b/arch/x86/crypto/sha-mb/sha_mb_ctx.h
-@@ -0,0 +1,136 @@
++++ b/arch/x86/crypto/sha-mb/sha1_mb_mgr_init_avx2.c
+@@ -0,0 +1,64 @@
 +/*
-+ * Header file for multi buffer SHA context
++ * Initialization code for multi buffer SHA1 algorithm for AVX2
 + *
 + * This file is provided under a dual BSD/GPLv2 license.  When using or
 + * redistributing this file, you may do so under either license.
@@ -401,98 +441,26 @@ index 0000000..e36069d
 + *  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 + * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 + */
-+
-+#ifndef _SHA_MB_CTX_INTERNAL_H
-+#define _SHA_MB_CTX_INTERNAL_H
 +
 +#include "sha_mb_mgr.h"
 +
-+#define HASH_UPDATE          0x00
-+#define HASH_FIRST           0x01
-+#define HASH_LAST            0x02
-+#define HASH_ENTIRE          0x03
-+#define HASH_DONE	     0x04
-+#define HASH_FINAL	     0x08
-+
-+#define HASH_CTX_STS_IDLE       0x00
-+#define HASH_CTX_STS_PROCESSING 0x01
-+#define HASH_CTX_STS_LAST       0x02
-+#define HASH_CTX_STS_COMPLETE   0x04
-+
-+enum hash_ctx_error {
-+	HASH_CTX_ERROR_NONE               =  0,
-+	HASH_CTX_ERROR_INVALID_FLAGS      = -1,
-+	HASH_CTX_ERROR_ALREADY_PROCESSING = -2,
-+	HASH_CTX_ERROR_ALREADY_COMPLETED  = -3,
-+
-+#ifdef HASH_CTX_DEBUG
-+	HASH_CTX_ERROR_DEBUG_DIGEST_MISMATCH = -4,
-+#endif
-+};
-+
-+
-+#define hash_ctx_user_data(ctx)  ((ctx)->user_data)
-+#define hash_ctx_digest(ctx)     ((ctx)->job.result_digest)
-+#define hash_ctx_processing(ctx) ((ctx)->status & HASH_CTX_STS_PROCESSING)
-+#define hash_ctx_complete(ctx)   ((ctx)->status == HASH_CTX_STS_COMPLETE)
-+#define hash_ctx_status(ctx)     ((ctx)->status)
-+#define hash_ctx_error(ctx)      ((ctx)->error)
-+#define hash_ctx_init(ctx) \
-+	do { \
-+		(ctx)->error = HASH_CTX_ERROR_NONE; \
-+		(ctx)->status = HASH_CTX_STS_COMPLETE; \
-+	} while (0)
-+
-+
-+/* Hash Constants and Typedefs */
-+#define SHA1_DIGEST_LENGTH          5
-+#define SHA1_LOG2_BLOCK_SIZE        6
-+
-+#define SHA1_PADLENGTHFIELD_SIZE    8
-+
-+#ifdef SHA_MB_DEBUG
-+#define assert(expr) \
-+do { \
-+	if (unlikely(!(expr))) { \
-+		printk(KERN_ERR "Assertion failed! %s,%s,%s,line=%d\n", \
-+		#expr, __FILE__, __func__, __LINE__); \
-+	} \
-+} while (0)
-+#else
-+#define assert(expr) do {} while (0)
-+#endif
-+
-+struct sha1_ctx_mgr {
-+	struct sha1_mb_mgr mgr;
-+};
-+
-+/* typedef struct sha1_ctx_mgr sha1_ctx_mgr; */
-+
-+struct sha1_hash_ctx {
-+	/* Must be at struct offset 0 */
-+	struct job_sha1       job;
-+	/* status flag */
-+	int status;
-+	/* error flag */
-+	int error;
-+
-+	uint32_t	total_length;
-+	const void	*incoming_buffer;
-+	uint32_t	incoming_buffer_length;
-+	uint8_t		partial_block_buffer[SHA1_BLOCK_SIZE * 2];
-+	uint32_t	partial_block_buffer_length;
-+	void		*user_data;
-+};
-+
-+#endif
-diff --git a/arch/x86/crypto/sha-mb/sha_mb_mgr.h b/arch/x86/crypto/sha-mb/sha_mb_mgr.h
++void sha1_mb_mgr_init_avx2(struct sha1_mb_mgr *state)
++{
++	unsigned int j;
++	state->unused_lanes = 0xF76543210;
++	for (j = 0; j < 8; j++) {
++		state->lens[j] = 0xFFFFFFFF;
++		state->ldata[j].job_in_lane = NULL;
++	}
++}
+diff --git a/arch/x86/crypto/sha-mb/sha1_mb_mgr_submit_avx2.S b/arch/x86/crypto/sha-mb/sha1_mb_mgr_submit_avx2.S
 new file mode 100644
-index 0000000..08ad1a9
+index 0000000..2ab9560
 --- /dev/null
-+++ b/arch/x86/crypto/sha-mb/sha_mb_mgr.h
-@@ -0,0 +1,110 @@
++++ b/arch/x86/crypto/sha-mb/sha1_mb_mgr_submit_avx2.S
+@@ -0,0 +1,228 @@
 +/*
-+ * Header file for multi buffer SHA1 algorithm manager
++ * Buffer submit code for multi buffer SHA1 algorithm
 + *
 + * This file is provided under a dual BSD/GPLv2 license.  When using or
 + * redistributing this file, you may do so under either license.
@@ -544,63 +512,181 @@ index 0000000..08ad1a9
 + *  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 + * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 + */
-+#ifndef __SHA_MB_MGR_H
-+#define __SHA_MB_MGR_H
++
++#include <linux/linkage.h>
++#include "sha1_mb_mgr_datastruct.S"
 +
 +
-+#include <linux/types.h>
++.extern sha1_x8_avx
 +
-+#define NUM_SHA1_DIGEST_WORDS 5
++# LINUX register definitions
++arg1    = %rdi
++arg2    = %rsi
++size_offset	= %rcx
++tmp2		= %rcx
++extra_blocks	= %rdx
 +
-+enum job_sts {	STS_UNKNOWN = 0,
-+		STS_BEING_PROCESSED = 1,
-+		STS_COMPLETED = 2,
-+		STS_INTERNAL_ERROR = 3,
-+		STS_ERROR = 4
-+};
++# Common definitions
++#define state   arg1
++#define job     %rsi
++#define len2    arg2
++#define p2      arg2
 +
-+struct job_sha1 {
-+	u8	*buffer;
-+	u32	len;
-+	u32	result_digest[NUM_SHA1_DIGEST_WORDS] __aligned(32);
-+	enum	job_sts status;
-+	void	*user_data;
-+};
++# idx must be a register not clobberred by sha1_x8_avx2
++idx		= %r8
++DWORD_idx	= %r8d
++last_len	= %r8
 +
-+/* SHA1 out-of-order scheduler */
++p               = %r11
++start_offset    = %r11
 +
-+/* typedef uint32_t sha1_digest_array[5][8]; */
++unused_lanes    = %rbx
++BYTE_unused_lanes = %bl
 +
-+struct sha1_args_x8 {
-+	uint32_t	digest[5][8];
-+	uint8_t		*data_ptr[8];
-+};
++job_rax         = %rax
++len             = %rax
++DWORD_len	= %eax
 +
-+struct sha1_lane_data {
-+	struct job_sha1 *job_in_lane;
-+};
++lane            = %rbp
++tmp3            = %rbp
 +
-+struct sha1_mb_mgr {
-+	struct sha1_args_x8 args;
++tmp             = %r9
++DWORD_tmp	= %r9d
 +
-+	uint32_t lens[8];
++lane_data       = %r10
 +
-+	/* each byte is index (0...7) of unused lanes */
-+	uint64_t unused_lanes;
-+	/* byte 4 is set to FF as a flag */
-+	struct sha1_lane_data ldata[8];
-+};
++# STACK_SPACE needs to be an odd multiple of 8
++STACK_SPACE     = 8*8 + 16*10 + 8
++
++# JOB* submit_mb_mgr_submit_avx2(MB_MGR *state, job_sha1 *job)
++# arg 1 : rcx : state
++# arg 2 : rdx : job
++ENTRY(sha1_mb_mgr_submit_avx2)
++
++	mov	%rsp, %r10
++	sub     $STACK_SPACE, %rsp
++	and	$~31, %rsp
++
++	mov     %rbx, (%rsp)
++	mov	%r10, 8*2(%rsp)	#save old rsp
++	mov     %rbp, 8*3(%rsp)
++	mov	%r12, 8*4(%rsp)
++	mov	%r13, 8*5(%rsp)
++	mov	%r14, 8*6(%rsp)
++	mov	%r15, 8*7(%rsp)
++
++	mov     _unused_lanes(state), unused_lanes
++	mov	unused_lanes, lane
++	and	$0xF, lane
++	shr     $4, unused_lanes
++	imul    $_LANE_DATA_size, lane, lane_data
++	movl    $STS_BEING_PROCESSED, _status(job)
++	lea     _ldata(state, lane_data), lane_data
++	mov     unused_lanes, _unused_lanes(state)
++	movl    _len(job),  DWORD_len
++
++	mov	job, _job_in_lane(lane_data)
++	shl	$4, len
++	or	lane, len
++
++	movl    DWORD_len,  _lens(state , lane, 4)
++
++	# Load digest words from result_digest
++	vmovdqu	_result_digest(job), %xmm0
++	mov	_result_digest+1*16(job), DWORD_tmp
++	vmovd    %xmm0, _args_digest(state, lane, 4)
++	vpextrd  $1, %xmm0, _args_digest+1*32(state , lane, 4)
++	vpextrd  $2, %xmm0, _args_digest+2*32(state , lane, 4)
++	vpextrd  $3, %xmm0, _args_digest+3*32(state , lane, 4)
++	movl    DWORD_tmp, _args_digest+4*32(state , lane, 4)
++
++	mov     _buffer(job), p
++	mov     p, _args_data_ptr(state, lane, 8)
++
++	cmp     $0xF, unused_lanes
++	jne     return_null
++
++start_loop:
++	# Find min length
++	vmovdqa _lens(state), %xmm0
++	vmovdqa _lens+1*16(state), %xmm1
++
++	vpminud %xmm1, %xmm0, %xmm2        # xmm2 has {D,C,B,A}
++	vpalignr $8, %xmm2, %xmm3, %xmm3   # xmm3 has {x,x,D,C}
++	vpminud %xmm3, %xmm2, %xmm2        # xmm2 has {x,x,E,F}
++	vpalignr $4, %xmm2, %xmm3, %xmm3   # xmm3 has {x,x,x,E}
++	vpminud %xmm3, %xmm2, %xmm2        # xmm2 has min value in low dword
++
++	vmovd   %xmm2, DWORD_idx
++	mov    idx, len2
++	and    $0xF, idx
++	shr    $4, len2
++	jz     len_is_0
++
++	vpand   clear_low_nibble(%rip), %xmm2, %xmm2
++	vpshufd $0, %xmm2, %xmm2
++
++	vpsubd  %xmm2, %xmm0, %xmm0
++	vpsubd  %xmm2, %xmm1, %xmm1
++
++	vmovdqa %xmm0, _lens + 0*16(state)
++	vmovdqa %xmm1, _lens + 1*16(state)
 +
 +
-+#define SHA1_MB_MGR_NUM_LANES_AVX2 8
++	# "state" and "args" are the same address, arg1
++	# len is arg2
++	call    sha1_x8_avx2
 +
-+void sha1_mb_mgr_init_avx2(struct sha1_mb_mgr *state);
-+struct job_sha1 *sha1_mb_mgr_submit_avx2(struct sha1_mb_mgr *state,
-+					 struct job_sha1 *job);
-+struct job_sha1 *sha1_mb_mgr_flush_avx2(struct sha1_mb_mgr *state);
-+struct job_sha1 *sha1_mb_mgr_get_comp_job_avx2(struct sha1_mb_mgr *state);
++	# state and idx are intact
 +
-+#endif
++len_is_0:
++	# process completed job "idx"
++	imul    $_LANE_DATA_size, idx, lane_data
++	lea     _ldata(state, lane_data), lane_data
++
++	mov     _job_in_lane(lane_data), job_rax
++	mov     _unused_lanes(state), unused_lanes
++	movq    $0, _job_in_lane(lane_data)
++	movl    $STS_COMPLETED, _status(job_rax)
++	shl     $4, unused_lanes
++	or      idx, unused_lanes
++	mov     unused_lanes, _unused_lanes(state)
++
++	movl	$0xFFFFFFFF, _lens(state, idx, 4)
++
++	vmovd    _args_digest(state, idx, 4), %xmm0
++	vpinsrd  $1, _args_digest+1*32(state , idx, 4), %xmm0, %xmm0
++	vpinsrd  $2, _args_digest+2*32(state , idx, 4), %xmm0, %xmm0
++	vpinsrd  $3, _args_digest+3*32(state , idx, 4), %xmm0, %xmm0
++	movl    4*32(state, idx, 4), DWORD_tmp
++
++	vmovdqu  %xmm0, _result_digest(job_rax)
++	movl    DWORD_tmp, _result_digest+1*16(job_rax)
++
++return:
++
++	mov     (%rsp), %rbx
++	mov	8*2(%rsp), %r10	#save old rsp
++	mov     8*3(%rsp), %rbp
++	mov	8*4(%rsp), %r12
++	mov	8*5(%rsp), %r13
++	mov	8*6(%rsp), %r14
++	mov	8*7(%rsp), %r15
++	mov     %r10, %rsp
++
++	ret
++
++return_null:
++	xor     job_rax, job_rax
++	jmp     return
++
++ENDPROC(sha1_mb_mgr_submit_avx2)
++
++.data
++
++.align 16
++clear_low_nibble:
++	.octa	0x000000000000000000000000FFFFFFF0
 -- 
 1.7.11.7
 
