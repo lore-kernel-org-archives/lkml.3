@@ -1,114 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932972AbaGVWam (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 18:30:42 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44951 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933669AbaGVW1l (ORCPT
+	id S933832AbaGVWa7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 18:30:59 -0400
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:43799 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932501AbaGVWa5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 18:27:41 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Andy Lutomirski <luto@amacapital.net>, Eric Paris <eparis@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 073/116] auditsc: audit_krule mask accesses need bounds checking
-Date: Tue, 22 Jul 2014 15:21:24 -0700
-Message-Id: <1406067727-19683-74-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1406067727-19683-1-git-send-email-kamal@canonical.com>
-References: <1406067727-19683-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.8
+	Tue, 22 Jul 2014 18:30:57 -0400
+Date: Tue, 22 Jul 2014 15:30:53 -0700
+From: Brian Norris <computersforpeace@gmail.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org, Matt Porter <mporter@linaro.org>,
+        devicetree@vger.kernel.org, Florian Fainelli <f.fainelli@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        Christian Daudt <bcm@fixthebug.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Sebastian Reichel <sre@kernel.org>,
+        Gregory Fong <gregory.0xf0@gmail.com>, Olof Johansson <olof@lixom.net>,
+        David Woodhouse <dwmw2@infradead.org>
+Subject: Re: [PATCH v8 00/11] ARM: brcmstb: Add Broadcom STB SoC support
+Message-ID: <20140722223053.GH28323@ld-irv-0074>
+References: <1405976886-27807-1-git-send-email-computersforpeace@gmail.com>
+ <5044348.IEPQPrahyu@wuerfel>
+ <20140722213350.GX2593@beef>
+ <6456081.JRV4vu9CHq@wuerfel>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <6456081.JRV4vu9CHq@wuerfel>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8.13.27 -stable review patch.  If anyone has any objections, please let me know.
+On Wed, Jul 23, 2014 at 12:24:23AM +0200, Arnd Bergmann wrote:
+> On Tuesday 22 July 2014 17:33:50 Matt Porter wrote:
+> > > > For the reset of mach-bcm stuff, I'll just send an arm-soc pull request
+> > > > soon enough, unless Matt/Arnd/Olof object.
+> > > 
+> > > I'll wait for Matt to comment before pulling it, otherwise that sounds
+> > > fine.
+> > 
+> > I'm fine with it, but we were asked to have one request for bcm5301x to
+> > make life easy for the arm-soc team.
 
-------------------
+That's all news to me; thanks for the explanation.
 
-From: Andy Lutomirski <luto@amacapital.net>
+> > If we want each platform to do pull
+> > requests directly with arm-soc we should advise Hauke to do the same as
+> > well with bcm5301x. I think the chances of Kconfig/Makefile conflicts are
+> > relatively low as there's a dwindling amount of code of interest in new
+> > platform mach directories like ours.
+> > 
+> > I would like to see a consistent path for all BCM platform maintainers.
+> 
+> Ok. Brian, please send the pull request or patches to Matt then.
 
-commit a3c54931199565930d6d84f4c3456f6440aefd41 upstream.
+Sure thing. I'll drop the 'select POWER_RESET_BRCMSTB' and also drop our
+git tree from MAINTAINERS. I'll send v9 of the reboot driver separately,
+targeted at Sebastian (or else to also defer to Matt's tree).
 
-Fixes an easy DoS and possible information disclosure.
-
-This does nothing about the broken state of x32 auditing.
-
-eparis: If the admin has enabled auditd and has specifically loaded
-audit rules.  This bug has been around since before git.  Wow...
-
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-Signed-off-by: Eric Paris <eparis@redhat.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- kernel/auditsc.c | 27 ++++++++++++++++++---------
- 1 file changed, 18 insertions(+), 9 deletions(-)
-
-diff --git a/kernel/auditsc.c b/kernel/auditsc.c
-index ba198b1..999a48d 100644
---- a/kernel/auditsc.c
-+++ b/kernel/auditsc.c
-@@ -859,6 +859,22 @@ static enum audit_state audit_filter_task(struct task_struct *tsk, char **key)
- 	return AUDIT_BUILD_CONTEXT;
- }
- 
-+static int audit_in_mask(const struct audit_krule *rule, unsigned long val)
-+{
-+	int word, bit;
-+
-+	if (val > 0xffffffff)
-+		return false;
-+
-+	word = AUDIT_WORD(val);
-+	if (word >= AUDIT_BITMASK_SIZE)
-+		return false;
-+
-+	bit = AUDIT_BIT(val);
-+
-+	return rule->mask[word] & bit;
-+}
-+
- /* At syscall entry and exit time, this filter is called if the
-  * audit_state is not low enough that auditing cannot take place, but is
-  * also not high enough that we already know we have to write an audit
-@@ -876,11 +892,8 @@ static enum audit_state audit_filter_syscall(struct task_struct *tsk,
- 
- 	rcu_read_lock();
- 	if (!list_empty(list)) {
--		int word = AUDIT_WORD(ctx->major);
--		int bit  = AUDIT_BIT(ctx->major);
--
- 		list_for_each_entry_rcu(e, list, list) {
--			if ((e->rule.mask[word] & bit) == bit &&
-+			if (audit_in_mask(&e->rule, ctx->major) &&
- 			    audit_filter_rules(tsk, &e->rule, ctx, NULL,
- 					       &state, false)) {
- 				rcu_read_unlock();
-@@ -900,20 +913,16 @@ static enum audit_state audit_filter_syscall(struct task_struct *tsk,
- static int audit_filter_inode_name(struct task_struct *tsk,
- 				   struct audit_names *n,
- 				   struct audit_context *ctx) {
--	int word, bit;
- 	int h = audit_hash_ino((u32)n->ino);
- 	struct list_head *list = &audit_inode_hash[h];
- 	struct audit_entry *e;
- 	enum audit_state state;
- 
--	word = AUDIT_WORD(ctx->major);
--	bit  = AUDIT_BIT(ctx->major);
--
- 	if (list_empty(list))
- 		return 0;
- 
- 	list_for_each_entry_rcu(e, list, list) {
--		if ((e->rule.mask[word] & bit) == bit &&
-+		if (audit_in_mask(&e->rule, ctx->major) &&
- 		    audit_filter_rules(tsk, &e->rule, ctx, n, &state, false)) {
- 			ctx->current_state = state;
- 			return 1;
--- 
-1.9.1
-
+Thanks,
+Brian
