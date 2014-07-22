@@ -1,104 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756579AbaGVTB1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 15:01:27 -0400
-Received: from mail-qg0-f52.google.com ([209.85.192.52]:63122 "EHLO
-	mail-qg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752208AbaGVTBY (ORCPT
+	id S1756711AbaGVTDc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 15:03:32 -0400
+Received: from mail-la0-f45.google.com ([209.85.215.45]:56379 "EHLO
+	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752208AbaGVTB2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 15:01:24 -0400
-Date: Tue, 22 Jul 2014 15:01:20 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Thierry Reding <thierry.reding@gmail.com>,
-        Stephen Warren <swarren@wwwdotorg.org>, linux-pci@vger.kernel.org,
-        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] resource: Add device-managed
- request/release_resource()
-Message-ID: <20140722190120.GM13851@htj.dyndns.org>
-References: <1405062505-2606-1-git-send-email-thierry.reding@gmail.com>
- <20140722185002.GC19181@google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140722185002.GC19181@google.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Tue, 22 Jul 2014 15:01:28 -0400
+From: Max Filippov <jcmvbkbc@gmail.com>
+To: linux-xtensa@linux-xtensa.org
+Cc: Chris Zankel <chris@zankel.net>, Marc Gauthier <marc@cadence.com>,
+        linux-kernel@vger.kernel.org, Max Filippov <jcmvbkbc@gmail.com>,
+        stable@vger.kernel.org
+Subject: [PATCH 3/8] xtensa: fix TLBTEMP_BASE_2 region handling in fast_second_level_miss
+Date: Tue, 22 Jul 2014 23:01:08 +0400
+Message-Id: <1406055673-10100-4-git-send-email-jcmvbkbc@gmail.com>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1406055673-10100-1-git-send-email-jcmvbkbc@gmail.com>
+References: <1406055673-10100-1-git-send-email-jcmvbkbc@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Current definition of TLBTEMP_BASE_2 is always 32K above the
+TLBTEMP_BASE_1, whereas fast_second_level_miss handler for the TLBTEMP
+region analyzes virtual address bit (PAGE_SHIFT + DCACHE_ALIAS_ORDER)
+to determine TLBTEMP region where the fault happened. The size of the
+TLBTEMP region is also checked incorrectly: not 64K, but twice data
+cache way size (whicht may as well be less than the instruction cache
+way size).
 
-On Tue, Jul 22, 2014 at 12:50:02PM -0600, Bjorn Helgaas wrote:
-> [+cc Tejun, LKML]
-> 
-> On Fri, Jul 11, 2014 at 09:08:24AM +0200, Thierry Reding wrote:
-> > From: Thierry Reding <treding@nvidia.com>
-> > 
-> > Provide device-managed implementations of the request_resource() and
-> > release_resource() functions. Upon failure to request a resource, the
-> > new devm_request_resource() function will output an error message for
-> > consistent error reporting.
-> > 
-> > Signed-off-by: Thierry Reding <treding@nvidia.com>
-> 
-> This seems OK to me, but I don't consider myself a devres maintainer.  I
-> added Tejun and LKML for any comment.  Minor nit below.
+Fix TLBTEMP_BASE_2 to be TLBTEMP_BASE_1 + data cache way size.
+Provide TLBTEMP_SIZE that is a greater of doubled data cache way size or
+the instruction cache way size, and use it to determine if the second
+level TLB miss occured in the TLBTEMP region.
 
-If there are gonna be users of the interface, sure.
+Practical occurence of page faults in the TLBTEMP area is extremely
+rare, this code can be tested by deletion of all w[di]tlb instructions
+in the tlbtemp_mapping region.
 
-> > +int devm_request_resource(struct device *dev, struct resource *root,
-> > +			  struct resource *new)
-> > +{
-> > +	struct resource *conflict, **ptr;
-> > +
-> > +	ptr = devres_alloc(devm_resource_release, sizeof(*ptr), GFP_KERNEL);
-> > +	if (!ptr)
-> > +		return -ENOMEM;
-> > +
-> > +	*ptr = new;
-> > +
-> > +	conflict = request_resource_conflict(root, new);
-> > +	if (!conflict) {
-> > +		devres_add(dev, ptr);
-> > +		return 0;
-> > +	}
-> > +
-> > +	dev_err(dev, "resource collision: %pR conflicts with %s %pR\n", new,
-> > +		conflict->name, conflict);
-> > +	devres_free(ptr);
-> > +	return -EBUSY;
-> 
-> Personally I would write this as:
-> 
->   conflict = request_resource_conflict(...);
->   if (conflict) {
->     dev_err(...);
->     devres_free(...);
->     return -EBUSY;
->   }
-> 
->   devres_add(...);
->   return 0;
-> 
-> so the straight-line path is the normal, non-error path and errors are
-> detected and dealt with in the "if" bodies.  Right now the "if" bodies
-> are a mix of error handling and normal path.  But that's just my personal
-> preference.
+Cc: stable@vger.kernel.org
+Signed-off-by: Max Filippov <jcmvbkbc@gmail.com>
+---
+ arch/xtensa/include/asm/pgtable.h | 7 ++++++-
+ arch/xtensa/kernel/entry.S        | 2 +-
+ 2 files changed, 7 insertions(+), 2 deletions(-)
 
-Agreed.
-
-> > +static int devm_resource_match(struct device *dev, void *res, void *data)
-> > +{
-> > +	struct resource **ptr = res;
-> > +
-> > +	if (WARN_ON(!ptr || !*ptr))
-> > +		return 0;
-
-How would !ptr or !*ptr possibly happen?  Wouldn't that be a bug
-already?
-
-Thanks.
-
+diff --git a/arch/xtensa/include/asm/pgtable.h b/arch/xtensa/include/asm/pgtable.h
+index 4b0ca35..b2173e5 100644
+--- a/arch/xtensa/include/asm/pgtable.h
++++ b/arch/xtensa/include/asm/pgtable.h
+@@ -67,7 +67,12 @@
+ #define VMALLOC_START		0xC0000000
+ #define VMALLOC_END		0xC7FEFFFF
+ #define TLBTEMP_BASE_1		0xC7FF0000
+-#define TLBTEMP_BASE_2		0xC7FF8000
++#define TLBTEMP_BASE_2		(TLBTEMP_BASE_1 + DCACHE_WAY_SIZE)
++#if 2 * DCACHE_WAY_SIZE > ICACHE_WAY_SIZE
++#define TLBTEMP_SIZE		(2 * DCACHE_WAY_SIZE)
++#else
++#define TLBTEMP_SIZE		ICACHE_WAY_SIZE
++#endif
+ 
+ /*
+  * For the Xtensa architecture, the PTE layout is as follows:
+diff --git a/arch/xtensa/kernel/entry.S b/arch/xtensa/kernel/entry.S
+index ef7f499..a5c586d 100644
+--- a/arch/xtensa/kernel/entry.S
++++ b/arch/xtensa/kernel/entry.S
+@@ -1565,7 +1565,7 @@ ENTRY(fast_second_level_miss)
+ 	rsr	a0, excvaddr
+ 	bltu	a0, a3, 2f
+ 
+-	addi	a1, a0, -(2 << (DCACHE_ALIAS_ORDER + PAGE_SHIFT))
++	addi	a1, a0, -TLBTEMP_SIZE
+ 	bgeu	a1, a3, 2f
+ 
+ 	/* Check if we have to restore an ITLB mapping. */
 -- 
-tejun
+1.8.1.4
+
