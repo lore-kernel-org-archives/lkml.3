@@ -1,96 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754114AbaGVJPr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 05:15:47 -0400
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:63274 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753869AbaGVJPp (ORCPT
+	id S1754177AbaGVJPy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 05:15:54 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:49352 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753869AbaGVJPv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 05:15:45 -0400
-From: AKASHI Takahiro <takahiro.akashi@linaro.org>
-To: wad@chromium.org, catalin.marinas@arm.com, will.deacon@arm.com,
-        keescook@chromium.org
-Cc: dsaxena@linaro.org, linux-arm-kernel@lists.infradead.org,
-        linaro-kernel@lists.linaro.org, linux-kernel@vger.kernel.org,
-        AKASHI Takahiro <takahiro.akashi@linaro.org>
-Subject: [PATCH v5 1/3] arm64: ptrace: reload a syscall number after ptrace operations
-Date: Tue, 22 Jul 2014 18:14:57 +0900
-Message-Id: <1406020499-5537-2-git-send-email-takahiro.akashi@linaro.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1406020499-5537-1-git-send-email-takahiro.akashi@linaro.org>
-References: <1406020499-5537-1-git-send-email-takahiro.akashi@linaro.org>
+	Tue, 22 Jul 2014 05:15:51 -0400
+Date: Tue, 22 Jul 2014 12:14:41 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Julian Anastasov <ja@ssi.bg>
+Cc: Andrey Utkin <andrey.krieger.utkin@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        kernel-janitors@vger.kernel.org, coreteam@netfilter.org,
+        netfilter-devel@vger.kernel.org, lvs-devel@vger.kernel.org,
+        netdev@vger.kernel.org, dcb314@hotmail.com,
+        David Miller <davem@davemloft.net>, kadlec@blackhole.kfki.hu,
+        Patrick McHardy <kaber@trash.net>, pablo@netfilter.org,
+        Simon Horman <horms@verge.net.au>, wensong@linux-vs.org
+Subject: Re: [PATCH 3/5] net/netfilter/ipvs/ip_vs_ctl.c: drop argument range
+ check just before the check for equality
+Message-ID: <20140722091441.GN18338@mwanda>
+References: <1405697638-23767-1-git-send-email-andrey.krieger.utkin@gmail.com>
+ <alpine.LFD.2.11.1407182339160.2273@ja.home.ssi.bg>
+ <CANZNk83dJCXAWrQ+i5rh=sdUuiiD5ZhzDua-rjJpBZCzzNGDJA@mail.gmail.com>
+ <alpine.LFD.2.11.1407212253100.2358@ja.home.ssi.bg>
+ <20140722074214.GL25880@mwanda>
+ <alpine.LFD.2.11.1407221136420.1949@ja.home.ssi.bg>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.11.1407221136420.1949@ja.home.ssi.bg>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arm64 holds a syscall number in w8(x8) register. Ptrace tracer may change
-its value either to:
-  * any valid syscall number to alter a system call, or
-  * -1 to skip a system call
+On Tue, Jul 22, 2014 at 11:52:02AM +0300, Julian Anastasov wrote:
+> > > -	if (copylen > 128)
+> > > +	if (*len < (int) copylen || *len < 0) {
+> > > +		pr_err("get_ctl: len %d < %u\n", *len, copylen);
+> > 
+> > Don't let users flood dmesg.  Just return an error.  (This can be
+> > triggered by non-root as well).
+> 
+> 	For now both set and get are privileged operations,
+> so we can keep it, it can catch if something wrong happens
+> with the structure sizes.
 
-This patch implements this behavior by reloading that value into syscallno
-in struct pt_regs after tracehook_report_syscall_entry() or
-secure_computing(). In case of '-1', a return value of system call can also
-be changed by the tracer setting the value to x0 register, and so
-sys_ni_nosyscall() should not be called.
+If you have namespaces enabled then it's not *that* privaleged.
 
-See also:
-    42309ab4, ARM: 8087/1: ptrace: reload syscall number after
-	      secure_computing() check
-
-Signed-off-by: AKASHI Takahiro <takahiro.akashi@linaro.org>
----
- arch/arm64/kernel/entry.S  |    2 ++
- arch/arm64/kernel/ptrace.c |   13 +++++++++++++
- 2 files changed, 15 insertions(+)
-
-diff --git a/arch/arm64/kernel/entry.S b/arch/arm64/kernel/entry.S
-index 5141e79..de8bdbc 100644
---- a/arch/arm64/kernel/entry.S
-+++ b/arch/arm64/kernel/entry.S
-@@ -628,6 +628,8 @@ ENDPROC(el0_svc)
- __sys_trace:
- 	mov	x0, sp
- 	bl	syscall_trace_enter
-+	cmp	w0, #-1				// skip syscall?
-+	b.eq	ret_to_user
- 	adr	lr, __sys_trace_return		// return address
- 	uxtw	scno, w0			// syscall number (possibly new)
- 	mov	x1, sp				// pointer to regs
-diff --git a/arch/arm64/kernel/ptrace.c b/arch/arm64/kernel/ptrace.c
-index 70526cf..100d7d1 100644
---- a/arch/arm64/kernel/ptrace.c
-+++ b/arch/arm64/kernel/ptrace.c
-@@ -21,6 +21,7 @@
- 
- #include <linux/audit.h>
- #include <linux/compat.h>
-+#include <linux/errno.h>
- #include <linux/kernel.h>
- #include <linux/sched.h>
- #include <linux/mm.h>
-@@ -1109,9 +1110,21 @@ static void tracehook_report_syscall(struct pt_regs *regs,
- 
- asmlinkage int syscall_trace_enter(struct pt_regs *regs)
- {
-+	unsigned long saved_x0, saved_x8;
-+
-+	saved_x0 = regs->regs[0];
-+	saved_x8 = regs->regs[8];
-+
- 	if (test_thread_flag(TIF_SYSCALL_TRACE))
- 		tracehook_report_syscall(regs, PTRACE_SYSCALL_ENTER);
- 
-+	regs->syscallno = regs->regs[8];
-+	if ((long)regs->syscallno == ~0UL) { /* skip this syscall */
-+		regs->regs[8] = saved_x8;
-+		if (regs->regs[0] == saved_x0) /* not changed by user */
-+			regs->regs[0] = -ENOSYS;
-+	}
-+
- 	if (test_thread_flag(TIF_SYSCALL_TRACEPOINT))
- 		trace_sys_enter(regs, regs->syscallno);
- 
--- 
-1.7.9.5
+regards,
+dan carpenter
 
