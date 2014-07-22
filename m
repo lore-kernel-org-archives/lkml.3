@@ -1,145 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753275AbaGVDqa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 23:46:30 -0400
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:56010 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753128AbaGVDpl (ORCPT
+	id S1753003AbaGVDsD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 23:48:03 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:51406 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751252AbaGVDsA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 23:45:41 -0400
-From: Alexei Starovoitov <ast@plumgrid.com>
-To: "David S. Miller" <davem@davemloft.net>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Jiri Olsa <jolsa@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>, linux-api@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH RFC v3 net-next 2/3] samples: bpf: eBPF example in C
-Date: Mon, 21 Jul 2014 20:45:22 -0700
-Message-Id: <1406000723-4872-3-git-send-email-ast@plumgrid.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1406000723-4872-1-git-send-email-ast@plumgrid.com>
-References: <1406000723-4872-1-git-send-email-ast@plumgrid.com>
+	Mon, 21 Jul 2014 23:48:00 -0400
+To: Christoph Hellwig <hch@lst.de>
+Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
+        linux-scsi@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
+        Bart Van Assche <bvanassche@fusionio.com>,
+        Mike Christie <michaelc@cs.wisc.edu>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Robert Elliott <Elliott@hp.com>, Webb Scales <webbnh@hp.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 03/14] scsi: centralize command re-queueing in scsi_dispatch_fn
+From: "Martin K. Petersen" <martin.petersen@oracle.com>
+Organization: Oracle Corporation
+References: <1405678393-11497-1-git-send-email-hch@lst.de>
+	<1405678393-11497-4-git-send-email-hch@lst.de>
+Date: Mon, 21 Jul 2014 23:46:22 -0400
+In-Reply-To: <1405678393-11497-4-git-send-email-hch@lst.de> (Christoph
+	Hellwig's message of "Fri, 18 Jul 2014 12:13:02 +0200")
+Message-ID: <yq17g36m4xd.fsf@sermon.lab.mkp.net>
+User-Agent: Gnus/5.130012 (Ma Gnus v0.12) Emacs/24.2 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ex1_kern.c - C program which will be compiled into eBPF
-to filter netif_receive_skb events on skb->dev->name == "lo"
+>>>>> "Christoph" == Christoph Hellwig <hch@lst.de> writes:
 
-ex1_user.c - corresponding user space component that
-forever reads /sys/.../trace_pipe
+Christoph> Make sure we only have the logic for requeing commands in one
+Christoph> place.
 
-Usage:
-$ sudo ex1 ex1_kern.o
+Reviewed-by: Martin K. Petersen <martin.petersen@oracle.com>
 
-should see:
-writing bpf-4 -> /sys/kernel/debug/tracing/events/net/netif_receive_skb/filter
-  ping-25476 [001] ..s3  5639.718218: __netif_receive_skb_core: skb 4d51700 dev b9e6000
-  ping-25476 [001] ..s3  5639.718262: __netif_receive_skb_core: skb 4d51400 dev b9e6000
-
-  ping-25476 [002] ..s3  5640.716233: __netif_receive_skb_core: skb 5d06500 dev b9e6000
-  ping-25476 [002] ..s3  5640.716272: __netif_receive_skb_core: skb 5d06300 dev b9e6000
-
-Ctrl-C at any time, kernel will auto cleanup
-
-Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
----
- samples/bpf/Makefile   |   15 +++++++++++++--
- samples/bpf/ex1_kern.c |   27 +++++++++++++++++++++++++++
- samples/bpf/ex1_user.c |   11 +++++++++++
- 3 files changed, 51 insertions(+), 2 deletions(-)
- create mode 100644 samples/bpf/ex1_kern.c
- create mode 100644 samples/bpf/ex1_user.c
-
-diff --git a/samples/bpf/Makefile b/samples/bpf/Makefile
-index caf1ab93b37c..c97f408fcd6d 100644
---- a/samples/bpf/Makefile
-+++ b/samples/bpf/Makefile
-@@ -2,12 +2,23 @@
- obj- := dummy.o
- 
- # List of programs to build
--hostprogs-y := sock_example dropmon
-+hostprogs-y := sock_example dropmon ex1
- 
- sock_example-objs := sock_example.o libbpf.o
- dropmon-objs := dropmon.o libbpf.o
-+ex1-objs := bpf_load.o libbpf.o ex1_user.o
- 
- # Tell kbuild to always build the programs
--always := $(hostprogs-y)
-+always := $(hostprogs-y) ex1_kern.o
- 
- HOSTCFLAGS += -I$(objtree)/usr/include
-+
-+HOSTCFLAGS_bpf_load.o += -I$(objtree)/usr/include -Wno-unused-variable
-+HOSTLOADLIBES_ex1 += -lelf
-+
-+LLC=$(srctree)/tools/bpf/llvm/bld/Debug+Asserts/bin/llc
-+
-+%.o: %.c
-+	clang $(NOSTDINC_FLAGS) $(LINUXINCLUDE) $(EXTRA_CFLAGS) \
-+		-D__KERNEL__ -Wno-unused-value -Wno-pointer-sign \
-+		-O2 -emit-llvm -c $< -o -| $(LLC) -o $@
-diff --git a/samples/bpf/ex1_kern.c b/samples/bpf/ex1_kern.c
-new file mode 100644
-index 000000000000..3fa7e4db0be6
---- /dev/null
-+++ b/samples/bpf/ex1_kern.c
-@@ -0,0 +1,27 @@
-+#include <linux/skbuff.h>
-+#include <linux/netdevice.h>
-+#include <uapi/linux/bpf.h>
-+#include <trace/bpf_trace.h>
-+#include "bpf_helpers.h"
-+
-+SEC("events/net/netif_receive_skb")
-+int bpf_prog1(struct bpf_context *ctx)
-+{
-+	/*
-+	 * attaches to /sys/kernel/debug/tracing/events/net/netif_receive_skb
-+	 * prints events for loobpack device only
-+	 */
-+	char devname[] = "lo";
-+	struct net_device *dev;
-+	struct sk_buff *skb = 0;
-+
-+	skb = (struct sk_buff *) ctx->arg1;
-+	dev = bpf_load_pointer(&skb->dev);
-+	if (bpf_memcmp(dev->name, devname, 2) == 0) {
-+		char fmt[] = "skb %x dev %x\n";
-+		bpf_printk(fmt, sizeof(fmt), skb, dev);
-+	}
-+	return 0;
-+}
-+
-+char license[] SEC("license") = "GPL";
-diff --git a/samples/bpf/ex1_user.c b/samples/bpf/ex1_user.c
-new file mode 100644
-index 000000000000..d90c543ba30c
---- /dev/null
-+++ b/samples/bpf/ex1_user.c
-@@ -0,0 +1,11 @@
-+#include "bpf_load.h"
-+
-+int main(int ac, char **argv)
-+{
-+	if (load_bpf_file(argv[1]))
-+		return 1;
-+
-+	read_trace_pipe();
-+
-+	return 0;
-+}
 -- 
-1.7.9.5
-
+Martin K. Petersen	Oracle Linux Engineering
