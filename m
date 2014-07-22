@@ -1,96 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752418AbaGVE0w (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 00:26:52 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:35297 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750785AbaGVE0u (ORCPT
+	id S1753098AbaGVEbW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 00:31:22 -0400
+Received: from mail-vc0-f182.google.com ([209.85.220.182]:50794 "EHLO
+	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751974AbaGVEbU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 00:26:50 -0400
-From: Guenter Roeck <linux@roeck-us.net>
-To: linux-gpio@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Guenter Roeck <linux@roeck-us.net>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>
-Subject: [PATCH] gpiolib: Export gpiochip_request_own_desc and gpiochip_free_own_desc
-Date: Mon, 21 Jul 2014 21:26:34 -0700
-Message-Id: <1406003194-20351-1-git-send-email-linux@roeck-us.net>
-X-Mailer: git-send-email 1.9.1
+	Tue, 22 Jul 2014 00:31:20 -0400
+MIME-Version: 1.0
+In-Reply-To: <53C7DEE3.6060107@roeck-us.net>
+References: <1405552260-30511-1-git-send-email-linux@roeck-us.net>
+ <CAAVeFuLtUpKKVWAvJ-bw_b36jYFhrzaWeswnJKyehbwn=6y+4Q@mail.gmail.com>
+ <53C76F3C.6090104@roeck-us.net> <CAAVeFuKC19AK8BjM7OBm=FWm0ua5YJXoGRkpOvM1TWkz9yOZ5Q@mail.gmail.com>
+ <53C7DEE3.6060107@roeck-us.net>
+From: Alexandre Courbot <gnurou@gmail.com>
+Date: Tue, 22 Jul 2014 13:30:59 +0900
+Message-ID: <CAAVeFuJigwAg09p4LQ+9g_LYusYe_G-y_aBWP0rr-AG-yz5V-A@mail.gmail.com>
+Subject: Re: [PATCH] gpio: Add support for GPIOF_ACTIVE_LOW to gpio_request_one
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Both functions were introduced to let gpio drivers request their own
-gpio pins. Without exporting the functions, this can however only be
-used by gpio drivers built into the kernel.
+On Thu, Jul 17, 2014 at 11:34 PM, Guenter Roeck <linux@roeck-us.net> wrote:
+> On 07/17/2014 12:26 AM, Alexandre Courbot wrote:
+>>
+>> On Thu, Jul 17, 2014 at 3:37 PM, Guenter Roeck <linux@roeck-us.net> wrote:
+>>>
+>>> On 07/16/2014 11:09 PM, Alexandre Courbot wrote:
+>>>>
+>>>>
+>>>> On Thu, Jul 17, 2014 at 8:11 AM, Guenter Roeck <linux@roeck-us.net>
+>>>> wrote:
+>>>>>
+>>>>>
+>>>>> The gpio include file and the gpio documentation declare and document
+>>>>> GPIOF_ACTIVE_LOW as one of the flags to be passed to gpio_request_one
+>>>>> and related functions. However, the flag is not evaluated or used.
+>>>>>
+>>>>> Check the flag in gpio_request_one and set the gpio internal flag
+>>>>> FLAG_ACTIVE_LOW if it is set.
+>>>>
+>>>>
+>>>>
+>>>> What is the point since the integer GPIO API has no clue of the
+>>>> active-low status of a GPIO? It is only used by the gpiod and sysfs
+>>>> interfaces.
+>>>>
+>>>
+>>> One can use gpio_request_one() to export a gpio pin to user space from
+>>> the kernel. That code path does use the flag, as you point out yourself
+>>> above.
+>>
+>>
+>> Ok, in that case I suppose it makes sense.
+>>
+>> Reviewed-by: Alexandre Courbot <acourbot@nvidia.com>
+>>
+>>> One could also argue that the integer gpio API _should_ support this as
+>>> well,
+>>> but that is a different question.
+>>
+>>
+>> Probably not going to happen. The integer GPIO interface is deprecated
+>> and users who need new features should seriously consider switching to
+>> gpiod.
+>>
+>
+> The new API is unfortunately not equivalent to the old one. For example,
+> if I understand correctly, gpiod_get is expected to be used instead of
+> gpio_request_one.
 
-Secondary impact is that the functions can not currently be used by
-platform initialization code associated with the gpio-pca953x driver.
-This code permits auto-export of gpio pins through platform data, but
-if this functionality is used, the module can no longer be unloaded due
-to the problem solved with the introduction of gpiochip_request_own_desc
-and gpiochip_free_own_desc.
+That is correct. The reason is to have a separate authority to assigns
+GPIOs and prevent drivers from arbitrarily requesting any GPIO they
+want, as long as everybody sticks to the gpiod interface.
 
-Export both function so they can be used from modules and from
-platform initialization code.
+> That may work nicely in a world with full DT or ACPI
+> support, but doesn't work as well otherwise unless one drops the notion
+> of using platform specific drivers built as modules (gpiod_add_lookup_table
+> is not exported, and there is no remove function).
+>
+> Specifically, I don't see an easy way to convert mdio-gpio to use the new
+> model, and that driver could really use support for an API which supports
+> active-low pins.
 
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
----
- drivers/gpio/gpiolib.c        | 2 ++
- drivers/gpio/gpiolib.h        | 3 ---
- include/linux/gpio/consumer.h | 3 +++
- 3 files changed, 5 insertions(+), 3 deletions(-)
+If you want to benefit from the active-low property but cannot use
+gpiod_get() for some reason, you can still request a GPIO by
+gpio_request_one() and then convert it to a descriptor with
+gpio_to_desc(), which is what I suspect your patch will allow you to
+do. But the real fix would be to work any limitations that gpiod has
+that prevent you from doing what you need.
 
-diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
-index 43d9e34..04c647e 100644
---- a/drivers/gpio/gpiolib.c
-+++ b/drivers/gpio/gpiolib.c
-@@ -1953,6 +1953,7 @@ int gpiochip_request_own_desc(struct gpio_desc *desc, const char *label)
- 
- 	return __gpiod_request(desc, label);
- }
-+EXPORT_SYMBOL(gpiochip_request_own_desc);
- 
- /**
-  * gpiochip_free_own_desc - Free GPIO requested by the chip driver
-@@ -1966,6 +1967,7 @@ void gpiochip_free_own_desc(struct gpio_desc *desc)
- 	if (desc)
- 		__gpiod_free(desc);
- }
-+EXPORT_SYMBOL(gpiochip_free_own_desc);
- 
- /* Drivers MUST set GPIO direction before making get/set calls.  In
-  * some cases this is done in early boot, before IRQs are enabled.
-diff --git a/drivers/gpio/gpiolib.h b/drivers/gpio/gpiolib.h
-index 1a4103d..2bdb69d 100644
---- a/drivers/gpio/gpiolib.h
-+++ b/drivers/gpio/gpiolib.h
-@@ -45,9 +45,6 @@ acpi_get_gpiod_by_index(struct device *dev, int index,
- }
- #endif
- 
--int gpiochip_request_own_desc(struct gpio_desc *desc, const char *label);
--void gpiochip_free_own_desc(struct gpio_desc *desc);
--
- struct gpio_desc *of_get_named_gpiod_flags(struct device_node *np,
- 		   const char *list_name, int index, enum of_gpio_flags *flags);
- 
-diff --git a/include/linux/gpio/consumer.h b/include/linux/gpio/consumer.h
-index 05e53cc..e85f7e6 100644
---- a/include/linux/gpio/consumer.h
-+++ b/include/linux/gpio/consumer.h
-@@ -32,6 +32,9 @@ struct gpio_desc *__must_check gpiod_get_index_optional(struct device *dev,
- 
- void gpiod_put(struct gpio_desc *desc);
- 
-+int gpiochip_request_own_desc(struct gpio_desc *desc, const char *label);
-+void gpiochip_free_own_desc(struct gpio_desc *desc);
-+
- struct gpio_desc *__must_check devm_gpiod_get(struct device *dev,
- 					      const char *con_id);
- struct gpio_desc *__must_check devm_gpiod_get_index(struct device *dev,
--- 
-1.9.1
-
+I am not familiar with mdio-gpio - could you explain what makes it
+impossible to convert this driver to the new model in your view?
