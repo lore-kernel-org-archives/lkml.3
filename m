@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933730AbaGVWou (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 18:44:50 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44617 "EHLO
+	id S933769AbaGVWpT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 18:45:19 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:44611 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932957AbaGVWZD (ORCPT
+	with ESMTP id S932948AbaGVWZA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 18:25:03 -0400
+	Tue, 22 Jul 2014 18:25:00 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alex Smith <alex.smith@imgtec.com>, linux-mips@linux-mips.org,
-        Ralf Baechle <ralf@linux-mips.org>,
+Cc: Nicholas Bellinger <nab@linux-iscsi.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 112/116] recordmcount/MIPS: Fix possible incorrect mcount_loc table entries in modules
-Date: Tue, 22 Jul 2014 15:22:03 -0700
-Message-Id: <1406067727-19683-113-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 115/116] iscsi-target: Fix incorrect np->np_thread NULL assignment
+Date: Tue, 22 Jul 2014 15:22:06 -0700
+Message-Id: <1406067727-19683-116-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1406067727-19683-1-git-send-email-kamal@canonical.com>
 References: <1406067727-19683-1-git-send-email-kamal@canonical.com>
@@ -28,64 +27,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Smith <alex.smith@imgtec.com>
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-commit 91ad11d7cc6f4472ebf177a6252fbf0fd100d798 upstream.
+commit db6077fd0b7dd41dc6ff18329cec979379071f87 upstream.
 
-On MIPS calls to _mcount in modules generate 2 instructions to load
-the _mcount address (and therefore 2 relocations). The mcount_loc
-table should only reference the first of these, so the second is
-filtered out by checking the relocation offset and ignoring ones that
-immediately follow the previous one seen.
+When shutting down a target there is a race condition between
+iscsit_del_np() and __iscsi_target_login_thread().
+The latter sets the thread pointer to NULL, and the former
+tries to issue kthread_stop() on that pointer without any
+synchronization.
 
-However if a module has an _mcount call at offset 0, the second
-relocation would not be filtered out due to old_r_offset == 0
-being taken to mean that the current relocation is the first one
-seen, and both would end up in the mcount_loc table.
+This patch moves the np->np_thread NULL assignment into
+iscsit_del_np(), after kthread_stop() has completed. It also
+removes the signal_pending() + np_state check, and only
+exits when kthread_should_stop() is true.
 
-This results in ftrace_make_nop() patching both (adjacent)
-instructions to branches over the _mcount call sequence like so:
-
-  0xffffffffc08a8000:  04 00 00 10     b       0xffffffffc08a8014
-  0xffffffffc08a8004:  04 00 00 10     b       0xffffffffc08a8018
-  0xffffffffc08a8008:  2d 08 e0 03     move    at,ra
-  ...
-
-The second branch is in the delay slot of the first, which is
-defined to be unpredictable - on the platform on which this bug was
-encountered, it triggers a reserved instruction exception.
-
-Fix by initializing old_r_offset to ~0 and using that instead of 0
-to determine whether the current relocation is the first seen.
-
-Signed-off-by: Alex Smith <alex.smith@imgtec.com>
-Cc: linux-kernel@vger.kernel.org
-Cc: linux-mips@linux-mips.org
-Patchwork: https://patchwork.linux-mips.org/patch/7098/
-Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
+Reported-by: Hannes Reinecke <hare@suse.de>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- scripts/recordmcount.h | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/target/iscsi/iscsi_target.c       | 1 +
+ drivers/target/iscsi/iscsi_target_login.c | 5 -----
+ 2 files changed, 1 insertion(+), 5 deletions(-)
 
-diff --git a/scripts/recordmcount.h b/scripts/recordmcount.h
-index 9d1421e..49b582a 100644
---- a/scripts/recordmcount.h
-+++ b/scripts/recordmcount.h
-@@ -163,11 +163,11 @@ static int mcount_adjust = 0;
+diff --git a/drivers/target/iscsi/iscsi_target.c b/drivers/target/iscsi/iscsi_target.c
+index a6326f1..ba56bfe 100644
+--- a/drivers/target/iscsi/iscsi_target.c
++++ b/drivers/target/iscsi/iscsi_target.c
+@@ -460,6 +460,7 @@ int iscsit_del_np(struct iscsi_np *np)
+ 		 */
+ 		send_sig(SIGINT, np->np_thread, 1);
+ 		kthread_stop(np->np_thread);
++		np->np_thread = NULL;
+ 	}
+ 	iscsit_del_np_comm(np);
  
- static int MIPS_is_fake_mcount(Elf_Rel const *rp)
- {
--	static Elf_Addr old_r_offset;
-+	static Elf_Addr old_r_offset = ~(Elf_Addr)0;
- 	Elf_Addr current_r_offset = _w(rp->r_offset);
- 	int is_fake;
+diff --git a/drivers/target/iscsi/iscsi_target_login.c b/drivers/target/iscsi/iscsi_target_login.c
+index fdb632f..6b82c62 100644
+--- a/drivers/target/iscsi/iscsi_target_login.c
++++ b/drivers/target/iscsi/iscsi_target_login.c
+@@ -1167,11 +1167,6 @@ old_sess_out:
  
--	is_fake = old_r_offset &&
-+	is_fake = (old_r_offset != ~(Elf_Addr)0) &&
- 		(current_r_offset - old_r_offset == MIPS_FAKEMCOUNT_OFFSET);
- 	old_r_offset = current_r_offset;
- 
+ out:
+ 	stop = kthread_should_stop();
+-	if (!stop && signal_pending(current)) {
+-		spin_lock_bh(&np->np_thread_lock);
+-		stop = (np->np_thread_state == ISCSI_NP_THREAD_SHUTDOWN);
+-		spin_unlock_bh(&np->np_thread_lock);
+-	}
+ 	/* Wait for another socket.. */
+ 	if (!stop)
+ 		return 1;
 -- 
 1.9.1
 
