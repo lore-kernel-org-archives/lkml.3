@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755872AbaGVNYK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 09:24:10 -0400
-Received: from mga02.intel.com ([134.134.136.20]:45622 "EHLO mga02.intel.com"
+	id S1755878AbaGVNYk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 09:24:40 -0400
+Received: from mga02.intel.com ([134.134.136.20]:45540 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755491AbaGVNVa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 09:21:30 -0400
+	id S1751063AbaGVNVS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 09:21:18 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,710,1400050800"; 
-   d="scan'208";a="576986290"
+   d="scan'208";a="576986202"
 From: Adrian Hunter <adrian.hunter@intel.com>
 To: Arnaldo Carvalho de Melo <acme@kernel.org>
 Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
@@ -16,9 +16,9 @@ Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
         Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
         Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 45/52] perf tools: Group VDSO global variables into a structure
-Date: Tue, 22 Jul 2014 16:17:54 +0300
-Message-Id: <1406035081-14301-46-git-send-email-adrian.hunter@intel.com>
+Subject: [PATCH 41/52] perf tools: Add 'flush' callback to scripting API
+Date: Tue, 22 Jul 2014 16:17:50 +0300
+Message-Id: <1406035081-14301-42-git-send-email-adrian.hunter@intel.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1406035081-14301-1-git-send-email-adrian.hunter@intel.com>
 References: <1406035081-14301-1-git-send-email-adrian.hunter@intel.com>
@@ -27,117 +27,155 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is preparation for removing the global variables
-used in vdso.c and thereby fixing the lifetime of the
-VDSO temporary file.
-
-Also allowance is made for the later addition of
-support for compat VDSOs.
+In order to defer some output via the scripting API,
+there needs to be a callback after session processing
+but before the session is deleted.
 
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 ---
- tools/perf/util/vdso.c | 44 ++++++++++++++++++++++++++++++++------------
- 1 file changed, 32 insertions(+), 12 deletions(-)
+ tools/perf/builtin-script.c                            | 12 ++++++++++++
+ tools/perf/util/scripting-engines/trace-event-perl.c   |  6 ++++++
+ tools/perf/util/scripting-engines/trace-event-python.c |  6 ++++++
+ tools/perf/util/trace-event-scripting.c                |  7 +++++++
+ tools/perf/util/trace-event.h                          |  1 +
+ 5 files changed, 32 insertions(+)
 
-diff --git a/tools/perf/util/vdso.c b/tools/perf/util/vdso.c
-index da5ba4d..75245f0 100644
---- a/tools/perf/util/vdso.c
-+++ b/tools/perf/util/vdso.c
-@@ -15,8 +15,27 @@
- #include "linux/string.h"
- #include "debug.h"
- 
--static bool vdso_found;
--static char vdso_file[] = "/tmp/perf-vdso.so-XXXXXX";
-+#define VDSO__TEMP_FILE_NAME "/tmp/perf-vdso.so-XXXXXX"
-+
-+struct vdso_file {
-+	bool found;
-+	bool error;
-+	char temp_file_name[sizeof(VDSO__TEMP_FILE_NAME)];
-+	const char *dso_name;
-+};
-+
-+struct vdso_info {
-+	struct vdso_file vdso;
-+};
-+
-+static struct vdso_info vdso_info_ = {
-+	.vdso = {
-+		.temp_file_name = VDSO__TEMP_FILE_NAME,
-+		.dso_name = VDSO__MAP_NAME,
-+	},
-+};
-+
-+static struct vdso_info *vdso_info = &vdso_info_;
- 
- static int find_vdso_map(void **start, void **end)
- {
-@@ -49,7 +68,7 @@ static int find_vdso_map(void **start, void **end)
- 	return !found;
+diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
+index 163d12b..4d4fe4e 100644
+--- a/tools/perf/builtin-script.c
++++ b/tools/perf/builtin-script.c
+@@ -485,6 +485,11 @@ static int default_start_script(const char *script __maybe_unused,
+ 	return 0;
  }
  
--static char *get_file(void)
-+static char *get_file(struct vdso_file *vdso_file)
++static int default_flush_script(void)
++{
++	return 0;
++}
++
+ static int default_stop_script(void)
  {
- 	char *vdso = NULL;
- 	char *buf = NULL;
-@@ -57,10 +76,10 @@ static char *get_file(void)
- 	size_t size;
- 	int fd;
+ 	return 0;
+@@ -498,6 +503,7 @@ static int default_generate_script(struct pevent *pevent __maybe_unused,
  
--	if (vdso_found)
--		return vdso_file;
-+	if (vdso_file->found)
-+		return vdso_file->temp_file_name;
- 
--	if (find_vdso_map(&start, &end))
-+	if (vdso_file->error || find_vdso_map(&start, &end))
- 		return NULL;
- 
- 	size = end - start;
-@@ -69,26 +88,27 @@ static char *get_file(void)
- 	if (!buf)
- 		return NULL;
- 
--	fd = mkstemp(vdso_file);
-+	fd = mkstemp(vdso_file->temp_file_name);
- 	if (fd < 0)
- 		goto out;
- 
- 	if (size == (size_t) write(fd, buf, size))
--		vdso = vdso_file;
-+		vdso = vdso_file->temp_file_name;
- 
- 	close(fd);
- 
-  out:
- 	free(buf);
- 
--	vdso_found = (vdso != NULL);
-+	vdso_file->found = (vdso != NULL);
-+	vdso_file->error = !vdso_file->found;
- 	return vdso;
+ static struct scripting_ops default_scripting_ops = {
+ 	.start_script		= default_start_script,
++	.flush_script		= default_flush_script,
+ 	.stop_script		= default_stop_script,
+ 	.process_event		= process_event,
+ 	.generate_script	= default_generate_script,
+@@ -513,6 +519,11 @@ static void setup_scripting(void)
+ 	scripting_ops = &default_scripting_ops;
  }
  
- void vdso__exit(void)
++static int flush_scripting(void)
++{
++	return scripting_ops->flush_script();
++}
++
+ static int cleanup_scripting(void)
  {
--	if (vdso_found)
--		unlink(vdso_file);
-+	if (vdso_info->vdso.found)
-+		unlink(vdso_info->vdso.temp_file_name);
+ 	pr_debug("\nperf script stopped\n");
+@@ -1806,6 +1817,7 @@ int cmd_script(int argc, const char **argv, const char *prefix __maybe_unused)
+ 
+ 	err = __cmd_script(&script);
+ 
++	flush_scripting();
+ 	perf_session__delete(session);
+ 	cleanup_scripting();
+ out:
+diff --git a/tools/perf/util/scripting-engines/trace-event-perl.c b/tools/perf/util/scripting-engines/trace-event-perl.c
+index b2dba9c..0a01bac 100644
+--- a/tools/perf/util/scripting-engines/trace-event-perl.c
++++ b/tools/perf/util/scripting-engines/trace-event-perl.c
+@@ -432,6 +432,11 @@ error:
+ 	return err;
  }
  
- struct dso *vdso__dso_findnew(struct machine *machine)
-@@ -98,7 +118,7 @@ struct dso *vdso__dso_findnew(struct machine *machine)
- 	if (!dso) {
- 		char *file;
++static int perl_flush_script(void)
++{
++	return 0;
++}
++
+ /*
+  * Stop trace script
+  */
+@@ -633,6 +638,7 @@ static int perl_generate_script(struct pevent *pevent, const char *outfile)
+ struct scripting_ops perl_scripting_ops = {
+ 	.name = "Perl",
+ 	.start_script = perl_start_script,
++	.flush_script = perl_flush_script,
+ 	.stop_script = perl_stop_script,
+ 	.process_event = perl_process_event,
+ 	.generate_script = perl_generate_script,
+diff --git a/tools/perf/util/scripting-engines/trace-event-python.c b/tools/perf/util/scripting-engines/trace-event-python.c
+index 5f7b76b..ed754d0 100644
+--- a/tools/perf/util/scripting-engines/trace-event-python.c
++++ b/tools/perf/util/scripting-engines/trace-event-python.c
+@@ -1022,6 +1022,11 @@ error:
+ 	return err;
+ }
  
--		file = get_file();
-+		file = get_file(&vdso_info->vdso);
- 		if (!file)
- 			return NULL;
++static int python_flush_script(void)
++{
++	return 0;
++}
++
+ /*
+  * Stop trace script
+  */
+@@ -1210,6 +1215,7 @@ static int python_generate_script(struct pevent *pevent, const char *outfile)
+ struct scripting_ops python_scripting_ops = {
+ 	.name = "Python",
+ 	.start_script = python_start_script,
++	.flush_script = python_flush_script,
+ 	.stop_script = python_stop_script,
+ 	.process_event = python_process_event,
+ 	.generate_script = python_generate_script,
+diff --git a/tools/perf/util/trace-event-scripting.c b/tools/perf/util/trace-event-scripting.c
+index 57aaccc..5c9bdd1 100644
+--- a/tools/perf/util/trace-event-scripting.c
++++ b/tools/perf/util/trace-event-scripting.c
+@@ -30,6 +30,11 @@
  
+ struct scripting_context *scripting_context;
+ 
++static int flush_script_unsupported(void)
++{
++	return 0;
++}
++
+ static int stop_script_unsupported(void)
+ {
+ 	return 0;
+@@ -74,6 +79,7 @@ static int python_generate_script_unsupported(struct pevent *pevent
+ struct scripting_ops python_scripting_unsupported_ops = {
+ 	.name = "Python",
+ 	.start_script = python_start_script_unsupported,
++	.flush_script = flush_script_unsupported,
+ 	.stop_script = stop_script_unsupported,
+ 	.process_event = process_event_unsupported,
+ 	.generate_script = python_generate_script_unsupported,
+@@ -137,6 +143,7 @@ static int perl_generate_script_unsupported(struct pevent *pevent
+ struct scripting_ops perl_scripting_unsupported_ops = {
+ 	.name = "Perl",
+ 	.start_script = perl_start_script_unsupported,
++	.flush_script = flush_script_unsupported,
+ 	.stop_script = stop_script_unsupported,
+ 	.process_event = process_event_unsupported,
+ 	.generate_script = perl_generate_script_unsupported,
+diff --git a/tools/perf/util/trace-event.h b/tools/perf/util/trace-event.h
+index 7b6d686..52aaa19 100644
+--- a/tools/perf/util/trace-event.h
++++ b/tools/perf/util/trace-event.h
+@@ -64,6 +64,7 @@ struct perf_session;
+ struct scripting_ops {
+ 	const char *name;
+ 	int (*start_script) (const char *script, int argc, const char **argv);
++	int (*flush_script) (void);
+ 	int (*stop_script) (void);
+ 	void (*process_event) (union perf_event *event,
+ 			       struct perf_sample *sample,
 -- 
 1.8.3.2
 
