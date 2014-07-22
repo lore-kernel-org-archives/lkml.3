@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754222AbaGVNMR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 09:12:17 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:33283 "EHLO
+	id S1754139AbaGVNMP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 09:12:15 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:33290 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752188AbaGVNLy (ORCPT
+	with ESMTP id S1752171AbaGVNLx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 09:11:54 -0400
+	Tue, 22 Jul 2014 09:11:53 -0400
 From: Boris BREZILLON <boris.brezillon@free-electrons.com>
 To: Nicolas Ferre <nicolas.ferre@atmel.com>,
         Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
@@ -24,9 +24,9 @@ Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
         linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         Bo Shen <voice.shen@atmel.com>,
         Boris BREZILLON <boris.brezillon@free-electrons.com>
-Subject: [PATCH v4 11/11] ARM: at91/dt: enable the LCD panel on sama5d3xek boards
-Date: Tue, 22 Jul 2014 15:11:35 +0200
-Message-Id: <1406034695-15534-12-git-send-email-boris.brezillon@free-electrons.com>
+Subject: [PATCH v4 10/11] ARM: at91/dt: add LCD panel description to sama5d3xdm.dtsi
+Date: Tue, 22 Jul 2014 15:11:34 +0200
+Message-Id: <1406034695-15534-11-git-send-email-boris.brezillon@free-electrons.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1406034695-15534-1-git-send-email-boris.brezillon@free-electrons.com>
 References: <1406034695-15534-1-git-send-email-boris.brezillon@free-electrons.com>
@@ -34,163 +34,85 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enable LCD related nodes.
+Add LCD panel related nodes (backlight, regulators and panel) to sama5d3
+Display Module dtsi.
+
+Reference LCD pin muxing used by sama5d3xek boards.
 
 Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
 ---
- arch/arm/boot/dts/sama5d31ek.dts | 20 ++++++++++++++++++++
- arch/arm/boot/dts/sama5d33ek.dts | 20 ++++++++++++++++++++
- arch/arm/boot/dts/sama5d34ek.dts | 20 ++++++++++++++++++++
- arch/arm/boot/dts/sama5d36ek.dts | 20 ++++++++++++++++++++
- 4 files changed, 80 insertions(+)
+ arch/arm/boot/dts/sama5d3xdm.dtsi | 58 +++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 58 insertions(+)
 
-diff --git a/arch/arm/boot/dts/sama5d31ek.dts b/arch/arm/boot/dts/sama5d31ek.dts
-index 04eec0d..6e605fe 100644
---- a/arch/arm/boot/dts/sama5d31ek.dts
-+++ b/arch/arm/boot/dts/sama5d31ek.dts
-@@ -33,6 +33,10 @@
- 				status = "okay";
- 			};
- 
-+			hlcdc: hlcdc@f0030000 {
-+				status = "okay";
-+			};
-+
- 			macb1: ethernet@f802c000 {
- 				status = "okay";
- 			};
-@@ -46,6 +50,22 @@
- 		};
- 	};
- 
-+	bl_reg: backlight_regulator {
-+		status = "okay";
-+	};
-+
-+	panel_reg: panel_regulator {
-+		status = "okay";
-+	};
-+
-+	backlight: backlight {
-+		status = "okay";
-+	};
-+
-+	panel: panel {
-+		status = "okay";
-+	};
-+
- 	sound {
- 		status = "okay";
- 	};
-diff --git a/arch/arm/boot/dts/sama5d33ek.dts b/arch/arm/boot/dts/sama5d33ek.dts
-index cbd6a3f..0400641 100644
---- a/arch/arm/boot/dts/sama5d33ek.dts
-+++ b/arch/arm/boot/dts/sama5d33ek.dts
-@@ -36,9 +36,29 @@
- 			macb0: ethernet@f0028000 {
- 				status = "okay";
+diff --git a/arch/arm/boot/dts/sama5d3xdm.dtsi b/arch/arm/boot/dts/sama5d3xdm.dtsi
+index 035ab72..91975eb 100644
+--- a/arch/arm/boot/dts/sama5d3xdm.dtsi
++++ b/arch/arm/boot/dts/sama5d3xdm.dtsi
+@@ -36,6 +36,64 @@
+ 					};
+ 				};
  			};
 +
 +			hlcdc: hlcdc@f0030000 {
-+				status = "okay";
++				hlcdc-display-controller {
++					pinctrl-names = "default";
++					pinctrl-0 = <&pinctrl_lcd_base &pinctrl_lcd_rgb888_alt>;
++
++					port@0 {
++						hlcdc_panel_output: endpoint@0 {
++							reg = <0>;
++							remote-endpoint = <&panel_input>;
++						};
++					};
++				};
 +			};
- 		};
- 	};
- 
++		};
++	};
++
 +	bl_reg: backlight_regulator {
-+		status = "okay";
++		compatible = "regulator-fixed";
++		regulator-name = "backlight-power-supply";
++		regulator-min-microvolt = <5000000>;
++		regulator-max-microvolt = <5000000>;
++		status = "disabled";
 +	};
 +
 +	panel_reg: panel_regulator {
-+		status = "okay";
++		compatible = "regulator-fixed";
++		regulator-name = "panel-power-supply";
++		regulator-min-microvolt = <3300000>;
++		regulator-max-microvolt = <3300000>;
++		status = "disabled";
 +	};
 +
 +	backlight: backlight {
-+		status = "okay";
++		compatible = "pwm-backlight";
++		pwms = <&hlcdc_pwm 0 50000 0>;
++		brightness-levels = <0 4 8 16 32 64 128 255>;
++		default-brightness-level = <6>;
++		power-supply = <&bl_reg>;
++		status = "disabled";
 +	};
 +
 +	panel: panel {
-+		status = "okay";
-+	};
++		compatible = "foxlink,fl500wvr00-a0t", "simple-panel";
++		backlight = <&backlight>;
++		power-supply = <&panel_reg>;
++		#address-cells = <1>;
++		#size-cells = <0>;
++		status = "disabled";
 +
- 	sound {
- 		status = "okay";
- 	};
-diff --git a/arch/arm/boot/dts/sama5d34ek.dts b/arch/arm/boot/dts/sama5d34ek.dts
-index 878aa16..9cf473e 100644
---- a/arch/arm/boot/dts/sama5d34ek.dts
-+++ b/arch/arm/boot/dts/sama5d34ek.dts
-@@ -46,6 +46,10 @@
- 			macb0: ethernet@f0028000 {
- 				status = "okay";
- 			};
++		port@0 {
++			#address-cells = <1>;
++			#size-cells = <0>;
 +
-+			hlcdc: hlcdc@f0030000 {
-+				status = "okay";
++			panel_input: endpoint@0 {
++				reg = <0>;
++				remote-endpoint = <&hlcdc_panel_output>;
 +			};
  		};
  	};
- 
-@@ -56,6 +60,22 @@
- 		};
- 	};
- 
-+	bl_reg: backlight_regulator {
-+		status = "okay";
-+	};
-+
-+	panel_reg: panel_regulator {
-+		status = "okay";
-+	};
-+
-+	backlight: backlight {
-+		status = "okay";
-+	};
-+
-+	panel: panel {
-+		status = "okay";
-+	};
-+
- 	sound {
- 		status = "okay";
- 	};
-diff --git a/arch/arm/boot/dts/sama5d36ek.dts b/arch/arm/boot/dts/sama5d36ek.dts
-index 59576c6..1c65741 100644
---- a/arch/arm/boot/dts/sama5d36ek.dts
-+++ b/arch/arm/boot/dts/sama5d36ek.dts
-@@ -41,12 +41,32 @@
- 				status = "okay";
- 			};
- 
-+			hlcdc: hlcdc@f0030000 {
-+				status = "okay";
-+			};
-+
- 			macb1: ethernet@f802c000 {
- 				status = "okay";
- 			};
- 		};
- 	};
- 
-+	bl_reg: backlight_regulator {
-+		status = "okay";
-+	};
-+
-+	panel_reg: panel_regulator {
-+		status = "okay";
-+	};
-+
-+	backlight: backlight {
-+		status = "okay";
-+	};
-+
-+	panel: panel {
-+		status = "okay";
-+	};
-+
- 	sound {
- 		status = "okay";
- 	};
+ };
 -- 
 1.8.3.2
 
