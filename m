@@ -1,113 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753489AbaGVIhH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 04:37:07 -0400
-Received: from mail-ie0-f171.google.com ([209.85.223.171]:48791 "EHLO
-	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752016AbaGVIhB (ORCPT
+	id S1753533AbaGVIj5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 04:39:57 -0400
+Received: from mout.kundenserver.de ([212.227.126.131]:53265 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751861AbaGVIjx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 04:37:01 -0400
-Date: Tue, 22 Jul 2014 09:36:55 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Wei-Chun Pan <weichun.pan@advantech.com.tw>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, Jean Delvare <jdelvare@suse.de>,
-        Guenter Roeck <linux@roeck-us.net>,
-        "Louis.Lu" <Louis.Lu@advantech.com.tw>,
-        "Neo.Lo" <neo.lo@advantech.com.tw>,
-        "Hank.Peng" <Hank.Peng@advantech.com.tw>,
-        "Kevin.Ong" <Kevin.Ong@advantech.com.tw>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/4] mfd: imanager2: Add Advantech EC APIs support for
- IT8516/18/28
-Message-ID: <20140722083655.GE28529@lee--X1>
-References: <1405342486-17031-1-git-send-email-weichun.pan@advantech.com.tw>
- <1405342486-17031-2-git-send-email-weichun.pan@advantech.com.tw>
+	Tue, 22 Jul 2014 04:39:53 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Chanwoo Choi <cw00.choi@samsung.com>
+Cc: jic23@kernel.org, ch.naveen@samsung.com, kgene.kim@samsung.com,
+        kyungmin.park@samsung.com, t.figa@samsung.com,
+        linux-iio@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        heiko.stuebner@bq.com
+Subject: Re: [PATCH 2/2] iio: adc: exynos_adc: Add support for S3C24xx ADC
+Date: Tue, 22 Jul 2014 10:39:38 +0200
+Message-ID: <5200888.DXoC06U953@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1405995074-3271-3-git-send-email-cw00.choi@samsung.com>
+References: <1405995074-3271-1-git-send-email-cw00.choi@samsung.com> <1405995074-3271-3-git-send-email-cw00.choi@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1405342486-17031-2-git-send-email-weichun.pan@advantech.com.tw>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:W47rk9YUQ/ub4GzBLPO33wx75ymbD/M4317Tpwvp0NK
+ DJws9nsmOJTkgsDNTPE1D62WLUCLUhGKnZNTHbi1QPcZbBCaQg
+ d3wI/tcfW3JHTi1/G7n5xnzbjV9ch2uHXus/ZKk8C2LUJViYpK
+ hLs50lnhGxHU5vglfvz2mujDjb9NsW7oN8gcH39ZdNJ5L2JXTA
+ L339igCRC4/Z6qjwgHHVmLIQ9c34dHOmmSb05lnTolAOEIbnnJ
+ CH6gXNaAcFwtbKteSPzaR4uQ2KpALj1Qa/O8atW3/6mmoQXRRj
+ qBKIaqFcpEbgRD9niMC172dKODqjI3y4kiA1wKB+NAyh7isPjB
+ j3ArpZ4vg4OHVdWliee4=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 14 Jul 2014, Wei-Chun Pan wrote:
+On Tuesday 22 July 2014 11:11:14 Chanwoo Choi wrote:
+> This patch add support for s3c2410/s3c2416/s3c2440/s3c2443 ADC. The s3c24xx
+> is alomost same as ADCv1. But, There are a little difference as following:
+> - ADCMUX register address to select channel
+> - ADCDAT mask (10bit or 12bit ADC resolution according to SoC version)
 
-You have to write a commit log here.  What is this?  Why is it needed?
-What problem does it solve?  What happens if it's not provided?  How
-is it implemented?  Etc etc.
+Very good, thanks for doing this patch!
 
-> Signed-off-by: Wei-Chun Pan <weichun.pan@advantech.com.tw>
-> ---
->  drivers/mfd/imanager2_ec.c | 615 +++++++++++++++++++++++++++++++++++++++++++++
->  1 file changed, 615 insertions(+)
->  create mode 100644 drivers/mfd/imanager2_ec.c
-> 
-> diff --git a/drivers/mfd/imanager2_ec.c b/drivers/mfd/imanager2_ec.c
-> new file mode 100644
-> index 0000000..f7a0003
-> --- /dev/null
-> +++ b/drivers/mfd/imanager2_ec.c
-> @@ -0,0 +1,615 @@
-> +/*
-> + * imanager2_ec.c - MFD accessing driver of Advantech EC IT8516/18/28
-> + * Copyright (C) 2014  Richard Vidal-Dorsch <richard.dorsch@advantech.com>
-> + *
-> + * This program is free software: you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License as published by
-> + * the Free Software Foundation, either version 3 of the License, or
-> + * (at your option) any later version.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + *
-> + * You should have received a copy of the GNU General Public License
-> + * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+(adding Heiko to Cc, he's probably interested in seeing this as well.
 
-I'd prefer if you used the short version.
+One comment:
+ 
+> @@ -101,12 +107,14 @@ struct exynos_adc {
+>  	struct completion	completion;
+>  
+>  	u32			value;
+> +	u32			value2;
+>  	unsigned int            version;
+>  };
+> ...
+> @@ -365,7 +448,7 @@ static int exynos_read_raw(struct iio_dev *indio_dev,
+>  		ret = -ETIMEDOUT;
+>  	} else {
+>  		*val = info->value;
+> -		*val2 = 0;
+> +		*val2 = info->value2;
+>  		ret = IIO_VAL_INT;
+>  	}
+>  
+> @@ -377,9 +460,11 @@ static int exynos_read_raw(struct iio_dev *indio_dev,
+>  static irqreturn_t exynos_adc_isr(int irq, void *dev_id)
+>  {
+>  	struct exynos_adc *info = (struct exynos_adc *)dev_id;
+> +	u32 mask = info->data->mask;
+>  
+>  	/* Read value */
+> -	info->value = readl(ADC_V1_DATX(info->regs)) & ADC_DATX_MASK;
+> +	info->value = readl(ADC_V1_DATX(info->regs)) & mask;
+> +	info->value2 = readl(ADC_V1_DATY(info->regs)) & mask;
+>  
+>  	/* clear irq */
+>  	if (info->data->clear_irq)
 
-> + */
-> +
-> +#include <linux/io.h>
-> +#include <linux/delay.h>
+If I understand it right, this would only be necessary if we want
+to do the touchscreen driver as a separate iio client using the
+in-kernel interfaces. As Jonathan Cameron commented, we probably
+don't want to do that though. Even if we do, it should be a separate
+patch and not mixed in with the s3c24xx support.
 
-I'm sure that you're missing a whole bunch of header files here.  You
-are to include all files that you make use of in _this_ file.
+Aside from this:
 
-> +#include <linux/mfd/imanager2_ec.h>
+Acked-by: Arnd Bergmann <arnd@arndb.de>
 
-Comment this line out to see what is not defined.  At the very least
-you will need export.h and err.h.
-
-[...]
-
-> +static int imanager2_read_mailbox(u32 ecflag, u8 offset, u8 *data)
-> +{
-> +	if (ecflag & EC_FLAG_IO_MAILBOX) {
-> +		int ret = ec_wait_ibc0();
-> +		if (ret)
-> +			return ret;
-> +		inb(EC_IO_PORT_DATA);
-> +		outb(offset + EC_IO_CMD_READ_OFFSET, EC_IO_PORT_CMD);
-> +
-> +		return ec_inb_after_obf1(data);
-> +	} else {
-> +		outb(offset, EC_ITE_PORT_OFS);
-> +		*data = inb(EC_ITE_PORT_DATA);
-> +	}
-> +
-> +	return 0;
-> +}
-
-All of the Mailbox controller code in this file should live in
-drivers/mailbox.
-
-Also, does your Mailbox controller support IRQs?
-
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+	Arnd
