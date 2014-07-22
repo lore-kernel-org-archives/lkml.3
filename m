@@ -1,65 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756200AbaGVQnJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 12:43:09 -0400
-Received: from mail-ie0-f169.google.com ([209.85.223.169]:46623 "EHLO
-	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754740AbaGVQnH (ORCPT
+	id S1756002AbaGVQpP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 12:45:15 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:60420 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754581AbaGVQpN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 12:43:07 -0400
+	Tue, 22 Jul 2014 12:45:13 -0400
+Message-ID: <53CE9514.1050903@wwwdotorg.org>
+Date: Tue, 22 Jul 2014 10:45:08 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-X-Originating-IP: [84.73.67.144]
-In-Reply-To: <CAKMK7uFugmw_pP1nyA1ws5tMB6iCe1CqBHeWHoYzQ0wXE301EA@mail.gmail.com>
-References: <20140709093124.11354.3774.stgit@patser>
-	<20140709122953.11354.46381.stgit@patser>
-	<CAPM=9tyD2ZbrcGDC3hfNb7qNdzsfnyD-ZwM7G-nOgxeu5YKuSg@mail.gmail.com>
-	<53CE2421.5040906@amd.com>
-	<20140722114607.GL15237@phenom.ffwll.local>
-	<20140722115737.GN15237@phenom.ffwll.local>
-	<53CE56ED.4040109@vodafone.de>
-	<20140722132652.GO15237@phenom.ffwll.local>
-	<53CE6AFA.1060807@vodafone.de>
-	<CAKMK7uG1d31zU_i__wc+Yq46A0x0tPeKnMBs+NHSmHS82uMsXQ@mail.gmail.com>
-	<53CE84AA.9030703@amd.com>
-	<CAKMK7uFa8vMBV9_JenbFGnFXtV_r9dk=WjbMkkCDWcauhrDdJg@mail.gmail.com>
-	<53CE8A57.2000803@vodafone.de>
-	<CAKMK7uFugmw_pP1nyA1ws5tMB6iCe1CqBHeWHoYzQ0wXE301EA@mail.gmail.com>
-Date: Tue, 22 Jul 2014 18:43:07 +0200
-Message-ID: <CAKMK7uHda2bsSG4Rsjb+=McYo50J0sS4vGqJ0R==ajc9HbqV7Q@mail.gmail.com>
-Subject: Re: [Nouveau] [PATCH 09/17] drm/radeon: use common fence
- implementation for fences
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
-To: =?UTF-8?Q?Christian_K=C3=B6nig?= <deathsimple@vodafone.de>
-Cc: =?UTF-8?Q?Christian_K=C3=B6nig?= <christian.koenig@amd.com>,
-        Thomas Hellstrom <thellstrom@vmware.com>,
-        nouveau <nouveau@lists.freedesktop.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        dri-devel <dri-devel@lists.freedesktop.org>,
-        "Deucher, Alexander" <alexander.deucher@amd.com>,
-        Ben Skeggs <bskeggs@redhat.com>
+To: Andrew Bresticker <abrestic@chromium.org>
+CC: Mikko Perttunen <mperttunen@nvidia.com>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Subject: Re: [PATCH 5/8] of: Add Tegra124 EMC bindings
+References: <1405088313-20048-1-git-send-email-mperttunen@nvidia.com>	<1405088313-20048-6-git-send-email-mperttunen@nvidia.com>	<CAL1qeaGHfjQhLHvgzt85hmbuY4FOG5-k=f80=CNvzPDEgi9_6w@mail.gmail.com>	<53CD860B.7030800@wwwdotorg.org> <CAL1qeaHtGQxCO3cGdeCRUYuk6mxei6z1B63-iZdBECEbFqGhHw@mail.gmail.com>
+In-Reply-To: <CAL1qeaHtGQxCO3cGdeCRUYuk6mxei6z1B63-iZdBECEbFqGhHw@mail.gmail.com>
+X-Enigmail-Version: 1.5.2
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 22, 2014 at 6:21 PM, Daniel Vetter <daniel.vetter@ffwll.ch> wrote:
-> But like I've said fence->signaled is optional so you don't need this
-> necessarily, as long as radeon eventually calls fence_signaled once
-> the fence has completed.
+On 07/21/2014 04:52 PM, Andrew Bresticker wrote:
+> On Mon, Jul 21, 2014 at 2:28 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+>> On 07/11/2014 10:43 AM, Andrew Bresticker wrote:
+>>> On Fri, Jul 11, 2014 at 7:18 AM, Mikko Perttunen <mperttunen@nvidia.com> wrote:
+>>>> Add binding documentation for the nvidia,tegra124-emc device tree
+>>>> node.
+>>>
+>>>> diff --git a/Documentation/devicetree/bindings/memory-controllers/tegra-emc.txt b/Documentation/devicetree/bindings/memory-controllers/tegra-emc.txt
+>>>
+>>>> +Required properties :
+>>>> +- compatible : "nvidia,tegra124-emc".
+>>>> +- reg : Should contain 1 or 2 entries:
+>>>> +  - EMC register set
+>>>> +  - MC register set : Required only if no node with
+>>>> +    'compatible = "nvidia,tegra124-mc"' exists. The MC register set
+>>>> +    is first read from the MC node. If it doesn't exist, it is read
+>>>> +    from this property.
+>>>> +- timings : Should contain 1 entry for each supported clock rate.
+>>>> +  Entries should be named "timing@n" where n is a 0-based increasing
+>>>> +  number. The timings must be listed in rate-ascending order.
+>>>
+>>> There are upcoming boards which support multiple DRAM configurations
+>>> and require a separate set of timings for each configuration.  Could
+>>> we instead have multiple sets of timings with the proper one selected
+>>> at runtime by RAM code, as reported by PMC_STRAPPING_OPT_A_0?
+>>> Something like:
+>>>
+>>> emc {
+>>>         emc-table@0 {
+>>>                 nvidia,ram-code = <0>;
+>>>                 timing@0 {
+>>>                         ...
+>>>                 };
+>>>                 ...
+>>>         };
+>>
+>> Until recently, there was a binding for Tegra20 EMC in mainline. We
+>> should make sure the Tegra124 driver (or rather binding...) is at least
+>> as feature-ful as that was.
+>>
+>> Furthermore, I thought that with some boards, there were more RAM
+>> options that there were available RAM code strap bits. I assume that in
+>> mainline, we'll simply have different base DT files for the different
+>> sets of configurations? Or, will we want to add another level to the DT
+>> to represent different sets of RAM code values? I'm not sure what data
+>> source the bootloader uses to determine which set of RAM configuration
+>> to use when there aren't enough entries in the BCT for the boot ROM to
+>> do this automatically, and whether we have any way to get that value
+>> into the kernel, so it could use it for the extra DT level lookup?
+> 
+> For the ChromeOS boards at least we are neither limited by the number
+> of strapping bits (4) nor the number of BCT entries supported by the
+> boot ROM (since coreboot does not rely on the boot ROM for SDRAM
+> initialization), so having a single set of SDRAM configurations for
+> each board, indexed by APBDEV_PMC_STRAPPING_OPT_A_0[7:4] works just
+> fine.
 
-Actually I've chatted a bit with Maarten about the different ways we
-could restrict both the calling context and the implementations for
-fence callbacks to avoid surprises. One is certainyl that we need
-WARN_ON(in_interrupt) around the wait, enable_singaling and add
-callback stuff.
+Does the bootloader adjust the DT that's passed to the kernel so that
+only the relevant single set of EMC timings is contained in the DT?
 
-But we also talked about ensure that the ->signaled callback never
-sleeps by wrapping it in a preempt_enable/disable section. Currently
-sleeping is allowed in ->signaled, which the radeon implementation
-here does. I think it would be reasonable to forbid this and drop
-__radeon_fence_signaled.
--Daniel
--- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+On a system where the boot ROM initializes RAM, and where the HW design
+might have multiple SDRAM configuration, here's what usually happens:
+
+a) The BCT contains N sets of SDRAM configurations.
+
+b) The boot ROM reads the SDRAM strapping bits, and uses them to pick
+the correct SDRAM configuration from the N sets in the BCT.
+
+c) The kernel DT has N sets of SDRAM configurations.
+
+d) The kernel reads the SDRAM strapping bits, and uses them to pick the
+correct SDRAM configuration from the N sets in the DT.
+
+On the ChromeOS boards (so (a) and (b) above are irrelevant) where N is
+too large to fit into APBDEV_PMC_STRAPPING_OPT_A_0[7:4], (c) and (d)
+won't work. I assume the kernel DT therefore must be adjusted to only
+contain the single SDRAM configuration that is relevant for the current HW?
+
+(isn't STRAPPING_OPT_A split into 2 2-bit fields; 2 bits for SDRAM index
+and 2 bits for boot flash index, so max N is quite small?)
