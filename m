@@ -1,215 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755705AbaGVN0m (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 09:26:42 -0400
-Received: from mga02.intel.com ([134.134.136.20]:45540 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755429AbaGVNVK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 09:21:10 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,710,1400050800"; 
-   d="scan'208";a="576986100"
-From: Adrian Hunter <adrian.hunter@intel.com>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH 37/52] perf tools: Add branch_type and in_tx to Python export
-Date: Tue, 22 Jul 2014 16:17:46 +0300
-Message-Id: <1406035081-14301-38-git-send-email-adrian.hunter@intel.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1406035081-14301-1-git-send-email-adrian.hunter@intel.com>
-References: <1406035081-14301-1-git-send-email-adrian.hunter@intel.com>
-Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki, Business Identity Code: 0357606 - 4, Domiciled in Helsinki
+	id S1755920AbaGVN0s (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 09:26:48 -0400
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:44845 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755707AbaGVN0p (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 09:26:45 -0400
+Date: Tue, 22 Jul 2014 15:26:52 +0200
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Christian =?iso-8859-1?Q?K=F6nig?= <deathsimple@vodafone.de>
+Cc: Christian =?iso-8859-1?Q?K=F6nig?= <christian.koenig@amd.com>,
+        Dave Airlie <airlied@gmail.com>,
+        Maarten Lankhorst <maarten.lankhorst@canonical.com>,
+        Thomas Hellstrom <thellstrom@vmware.com>,
+        nouveau <nouveau@lists.freedesktop.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        dri-devel <dri-devel@lists.freedesktop.org>,
+        Ben Skeggs <bskeggs@redhat.com>,
+        "Deucher, Alexander" <alexander.deucher@amd.com>
+Subject: Re: [Nouveau] [PATCH 09/17] drm/radeon: use common fence
+ implementation for fences
+Message-ID: <20140722132652.GO15237@phenom.ffwll.local>
+Mail-Followup-To: Christian =?iso-8859-1?Q?K=F6nig?= <deathsimple@vodafone.de>,
+	Christian =?iso-8859-1?Q?K=F6nig?= <christian.koenig@amd.com>,
+	Dave Airlie <airlied@gmail.com>,
+	Maarten Lankhorst <maarten.lankhorst@canonical.com>,
+	Thomas Hellstrom <thellstrom@vmware.com>,
+	nouveau <nouveau@lists.freedesktop.org>,
+	LKML <linux-kernel@vger.kernel.org>,
+	dri-devel <dri-devel@lists.freedesktop.org>,
+	Ben Skeggs <bskeggs@redhat.com>,
+	"Deucher, Alexander" <alexander.deucher@amd.com>
+References: <20140709093124.11354.3774.stgit@patser>
+ <20140709122953.11354.46381.stgit@patser>
+ <CAPM=9tyD2ZbrcGDC3hfNb7qNdzsfnyD-ZwM7G-nOgxeu5YKuSg@mail.gmail.com>
+ <53CE2421.5040906@amd.com>
+ <20140722114607.GL15237@phenom.ffwll.local>
+ <20140722115737.GN15237@phenom.ffwll.local>
+ <53CE56ED.4040109@vodafone.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <53CE56ED.4040109@vodafone.de>
+X-Operating-System: Linux phenom 3.15.0-rc3+ 
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add branch_type and in_tx to Python db export and
-the export-to-postgresql.py script.
+On Tue, Jul 22, 2014 at 02:19:57PM +0200, Christian König wrote:
+> Am 22.07.2014 13:57, schrieb Daniel Vetter:
+> >On Tue, Jul 22, 2014 at 01:46:07PM +0200, Daniel Vetter wrote:
+> >>On Tue, Jul 22, 2014 at 10:43:13AM +0200, Christian König wrote:
+> >>>Am 22.07.2014 06:05, schrieb Dave Airlie:
+> >>>>On 9 July 2014 22:29, Maarten Lankhorst <maarten.lankhorst@canonical.com> wrote:
+> >>>>>Signed-off-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+> >>>>>---
+> >>>>>  drivers/gpu/drm/radeon/radeon.h        |   15 +-
+> >>>>>  drivers/gpu/drm/radeon/radeon_device.c |   60 ++++++++-
+> >>>>>  drivers/gpu/drm/radeon/radeon_fence.c  |  223 ++++++++++++++++++++++++++------
+> >>>>>  3 files changed, 248 insertions(+), 50 deletions(-)
+> >>>>>
+> >>>> From what I can see this is still suffering from the problem that we
+> >>>>need to find a proper solution to,
+> >>>>
+> >>>>My summary of the issues after talking to Jerome and Ben and
+> >>>>re-reading things is:
+> >>>>
+> >>>>We really need to work out a better interface into the drivers to be
+> >>>>able to avoid random atomic entrypoints,
+> >>>Which is exactly what I criticized from the very first beginning. Good to
+> >>>know that I'm not the only one thinking that this isn't such a good idea.
+> >>I guess I've lost context a bit, but which atomic entry point are we
+> >>talking about? Afaics the only one that's mandatory is the is
+> >>fence->signaled callback to check whether a fence really has been
+> >>signalled. It's used internally by the fence code to avoid spurious
+> >>wakeups. Afaik that should be doable already on any hardware. If that's
+> >>not the case then we can always track the signalled state in software and
+> >>double-check in a worker thread before updating the sw state. And wrap
+> >>this all up into a special fence class if there's more than one driver
+> >>needing this.
+> >One thing I've forgotten: The i915 scheduler that's floating around runs
+> >its bottom half from irq context. So I really want to be able to check
+> >fence state from irq context and I also want to make it possible
+> >(possible! not mandatory) to register callbacks which are run from any
+> >context asap after the fence is signalled.
+> 
+> NAK, that's just the bad design I've talked about. Checking fence state
+> inside the same driver from interrupt context is OK, because it's the
+> drivers interrupt that we are talking about here.
+> 
+> Checking fence status from another drivers interrupt context is what really
+> concerns me here, cause your driver doesn't have the slightest idea if the
+> called driver is really capable of checking the fence right now.
 
-Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
----
- tools/perf/scripts/python/export-to-postgresql.py  | 32 ++++++++++++++++++----
- .../util/scripting-engines/trace-event-python.c    | 30 +++++++++++++++++++-
- 2 files changed, 55 insertions(+), 7 deletions(-)
+I guess my mail hasn't been clear then. If you don't like it we could add
+a bit of glue to insulate the madness and bad design i915 might do from
+radeon. That imo doesn't invalidate the overall fence interfaces.
 
-diff --git a/tools/perf/scripts/python/export-to-postgresql.py b/tools/perf/scripts/python/export-to-postgresql.py
-index d8f6df0..bb79aec 100644
---- a/tools/perf/scripts/python/export-to-postgresql.py
-+++ b/tools/perf/scripts/python/export-to-postgresql.py
-@@ -123,6 +123,10 @@ do_query(query, 'CREATE TABLE symbols ('
- 		'sym_end	bigint,'
- 		'binding	integer,'
- 		'name		varchar(2048))')
-+do_query(query, 'CREATE TABLE branch_types ('
-+		'id		integer		NOT NULL,'
-+		'name		varchar(80))')
-+
- if branches:
- 	do_query(query, 'CREATE TABLE samples ('
- 		'id		bigint		NOT NULL,'
-@@ -139,7 +143,9 @@ if branches:
- 		'to_dso_id	bigint,'
- 		'to_symbol_id	bigint,'
- 		'to_sym_offset	bigint,'
--		'to_ip		bigint)')
-+		'to_ip		bigint,'
-+		'branch_type	integer,'
-+		'in_tx		boolean)')
- else:
- 	do_query(query, 'CREATE TABLE samples ('
- 		'id		bigint		NOT NULL,'
-@@ -160,7 +166,9 @@ else:
- 		'period		bigint,'
- 		'weight		bigint,'
- 		'transaction	bigint,'
--		'data_src	bigint)')
-+		'data_src	bigint,'
-+		'branch_type	integer,'
-+		'in_tx		boolean)')
- 
- do_query(query, 'CREATE VIEW samples_view AS '
- 	'SELECT '
-@@ -178,7 +186,9 @@ do_query(query, 'CREATE VIEW samples_view AS '
- 		'to_hex(to_ip) AS to_ip_hex,'
- 		'(SELECT name FROM symbols WHERE id = to_symbol_id) AS to_symbol,'
- 		'to_sym_offset,'
--		'(SELECT short_name FROM dsos WHERE id = to_dso_id) AS to_dso_short_name'
-+		'(SELECT short_name FROM dsos WHERE id = to_dso_id) AS to_dso_short_name,'
-+		'(SELECT name FROM branch_types WHERE id = branch_type) AS branch_type_name,'
-+		'in_tx'
- 	' FROM samples')
- 
- 
-@@ -234,6 +244,7 @@ comm_file		= open_output_file("comm_table.bin")
- comm_thread_file	= open_output_file("comm_thread_table.bin")
- dso_file		= open_output_file("dso_table.bin")
- symbol_file		= open_output_file("symbol_table.bin")
-+branch_type_file	= open_output_file("branch_type_table.bin")
- sample_file		= open_output_file("sample_table.bin")
- 
- def trace_begin():
-@@ -257,6 +268,7 @@ def trace_end():
- 	copy_output_file(comm_thread_file,	"comm_threads")
- 	copy_output_file(dso_file,		"dsos")
- 	copy_output_file(symbol_file,		"symbols")
-+	copy_output_file(branch_type_file,	"branch_types")
- 	copy_output_file(sample_file,		"samples")
- 
- 	print datetime.datetime.today(), "Removing intermediate files..."
-@@ -267,6 +279,7 @@ def trace_end():
- 	remove_output_file(comm_thread_file)
- 	remove_output_file(dso_file)
- 	remove_output_file(symbol_file)
-+	remove_output_file(branch_type_file)
- 	remove_output_file(sample_file)
- 	os.rmdir(output_dir_name)
- 	print datetime.datetime.today(), "Adding primary keys"
-@@ -277,6 +290,7 @@ def trace_end():
- 	do_query(query, 'ALTER TABLE comm_threads    ADD PRIMARY KEY (id)')
- 	do_query(query, 'ALTER TABLE dsos            ADD PRIMARY KEY (id)')
- 	do_query(query, 'ALTER TABLE symbols         ADD PRIMARY KEY (id)')
-+	do_query(query, 'ALTER TABLE branch_types    ADD PRIMARY KEY (id)')
- 	do_query(query, 'ALTER TABLE samples         ADD PRIMARY KEY (id)')
- 
- 	print datetime.datetime.today(), "Adding foreign keys"
-@@ -352,9 +366,15 @@ def symbol_table(symbol_id, dso_id, sym_start, sym_end, binding, symbol_name, *x
- 	value = struct.pack(fmt, 6, 8, symbol_id, 8, dso_id, 8, sym_start, 8, sym_end, 4, binding, n, symbol_name)
- 	symbol_file.write(value)
- 
--def sample_table(sample_id, evsel_id, machine_id, thread_id, comm_id, dso_id, symbol_id, sym_offset, ip, time, cpu, to_dso_id, to_symbol_id, to_sym_offset, to_ip, period, weight, transaction, data_src, *x):
-+def branch_type_table(branch_type, name, *x):
-+	n = len(name)
-+	fmt = "!hiii" + str(n) + "s"
-+	value = struct.pack(fmt, 2, 4, branch_type, n, name)
-+	branch_type_file.write(value)
-+
-+def sample_table(sample_id, evsel_id, machine_id, thread_id, comm_id, dso_id, symbol_id, sym_offset, ip, time, cpu, to_dso_id, to_symbol_id, to_sym_offset, to_ip, period, weight, transaction, data_src, branch_type, in_tx, *x):
- 	if branches:
--		value = struct.pack("!hiqiqiqiqiqiqiqiqiqiqiiiqiqiqiq", 15, 8, sample_id, 8, evsel_id, 8, machine_id, 8, thread_id, 8, comm_id, 8, dso_id, 8, symbol_id, 8, sym_offset, 8, ip, 8, time, 4, cpu, 8, to_dso_id, 8, to_symbol_id, 8, to_sym_offset, 8, to_ip)
-+		value = struct.pack("!hiqiqiqiqiqiqiqiqiqiqiiiqiqiqiqiiiB", 17, 8, sample_id, 8, evsel_id, 8, machine_id, 8, thread_id, 8, comm_id, 8, dso_id, 8, symbol_id, 8, sym_offset, 8, ip, 8, time, 4, cpu, 8, to_dso_id, 8, to_symbol_id, 8, to_sym_offset, 8, to_ip, 4, branch_type, 1, in_tx)
- 	else:
--		value = struct.pack("!hiqiqiqiqiqiqiqiqiqiqiiiqiqiqiqiqiqiqiq", 19, 8, sample_id, 8, evsel_id, 8, machine_id, 8, thread_id, 8, comm_id, 8, dso_id, 8, symbol_id, 8, sym_offset, 8, ip, 8, time, 4, cpu, 8, to_dso_id, 8, to_symbol_id, 8, to_sym_offset, 8, to_ip, 8, period, 8, weight, 8, transaction, 8, data_src)
-+		value = struct.pack("!hiqiqiqiqiqiqiqiqiqiqiiiqiqiqiqiqiqiqiqiiiB", 21, 8, sample_id, 8, evsel_id, 8, machine_id, 8, thread_id, 8, comm_id, 8, dso_id, 8, symbol_id, 8, sym_offset, 8, ip, 8, time, 4, cpu, 8, to_dso_id, 8, to_symbol_id, 8, to_sym_offset, 8, to_ip, 8, period, 8, weight, 8, transaction, 8, data_src, 4, branch_type, 1, in_tx)
- 	sample_file.write(value)
-diff --git a/tools/perf/util/scripting-engines/trace-event-python.c b/tools/perf/util/scripting-engines/trace-event-python.c
-index 3062eb8..45483a4 100644
---- a/tools/perf/util/scripting-engines/trace-event-python.c
-+++ b/tools/perf/util/scripting-engines/trace-event-python.c
-@@ -65,6 +65,7 @@ struct tables {
- 	PyObject		*comm_thread_handler;
- 	PyObject		*dso_handler;
- 	PyObject		*symbol_handler;
-+	PyObject		*branch_type_handler;
- 	PyObject		*sample_handler;
- 	bool			db_export_mode;
- };
-@@ -662,13 +663,31 @@ static int python_export_symbol(struct db_export *dbe, struct symbol *sym,
- 	return 0;
- }
- 
-+static int python_export_branch_type(struct db_export *dbe, u32 branch_type,
-+				     const char *name)
-+{
-+	struct tables *tables = container_of(dbe, struct tables, dbe);
-+	PyObject *t;
-+
-+	t = tuple_new(2);
-+
-+	tuple_set_s32(t, 0, branch_type);
-+	tuple_set_string(t, 1, name);
-+
-+	call_object(tables->branch_type_handler, t, "branch_type_table");
-+
-+	Py_DECREF(t);
-+
-+	return 0;
-+}
-+
- static int python_export_sample(struct db_export *dbe,
- 				struct export_sample *es)
- {
- 	struct tables *tables = container_of(dbe, struct tables, dbe);
- 	PyObject *t;
- 
--	t = tuple_new(19);
-+	t = tuple_new(21);
- 
- 	tuple_set_u64(t, 0, es->db_id);
- 	tuple_set_u64(t, 1, es->evsel->db_id);
-@@ -689,6 +708,8 @@ static int python_export_sample(struct db_export *dbe,
- 	tuple_set_u64(t, 16, es->sample->weight);
- 	tuple_set_u64(t, 17, es->sample->transaction);
- 	tuple_set_u64(t, 18, es->sample->data_src);
-+	tuple_set_s32(t, 19, es->sample->flags & PERF_BRANCH_MASK);
-+	tuple_set_s32(t, 20, !!(es->sample->flags & PERF_FLAG_IN_TX));
- 
- 	call_object(tables->sample_handler, t, "sample_table");
- 
-@@ -855,6 +876,7 @@ static void set_table_handlers(struct tables *tables)
- 	SET_TABLE_HANDLER(comm_thread);
- 	SET_TABLE_HANDLER(dso);
- 	SET_TABLE_HANDLER(symbol);
-+	SET_TABLE_HANDLER(branch_type);
- 	SET_TABLE_HANDLER(sample);
- }
- 
-@@ -904,6 +926,12 @@ static int python_start_script(const char *script, int argc, const char **argv)
- 
- 	set_table_handlers(tables);
- 
-+	if (tables->db_export_mode) {
-+		err = db_export__branch_types(&tables->dbe);
-+		if (err)
-+			goto error;
-+	}
-+
- 	return err;
- error:
- 	Py_Finalize();
+So what about the following:
+- fence->enabling_signaling is restricted to be called from process
+  context. We don't use any different yet, so would boild down to adding a
+  WARN_ON(in_interrupt) or so to fence_enable_sw_signalling.
+
+- Make fence->signaled optional (already the case) and don't implement it
+  in readon (i.e. reduce this patch here). Only downside is that radeon
+  needs to correctly (i.e. without races or so) call fence_signal. And the
+  cross-driver synchronization might be a bit less efficient. Note that
+  you can call fence_signal from wherever you want to, so hopefully that
+  doesn't restrict your implementation. 
+
+End result: No one calls into radeon from interrupt context, and this is
+guaranteed.
+
+Would that be something you can agree to?
+
+Like I've said I think restricting the insanity other people are willing
+to live with just because you don't like it isn't right. But it is
+certainly right for you to insist on not being forced into any such
+design. I think the above would achieve this.
+-Daniel
 -- 
-1.8.3.2
-
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
