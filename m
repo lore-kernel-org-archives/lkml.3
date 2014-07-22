@@ -1,100 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756489AbaGVTSP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 15:18:15 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:39625 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751609AbaGVTSN (ORCPT
+	id S1756564AbaGVTSx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 15:18:53 -0400
+Received: from mail-lb0-f172.google.com ([209.85.217.172]:44831 "EHLO
+	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755761AbaGVTSw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 15:18:13 -0400
-Message-ID: <53CEB8DB.1000301@infradead.org>
-Date: Tue, 22 Jul 2014 12:17:47 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Nick Krause <xerofoify@gmail.com>, Levente Kurusa <lkurusa@redhat.com>
-CC: Tony Luck <tony.luck@gmail.com>,
-        =?UTF-8?B?QmrDuHJuIE1vcms=?= <bjorn@mork.no>,
-        Doug Thompson <dougthompson@xmission.com>,
-        Borislav Petkov <bp@alien8.de>,
-        "m.chehab@samsung.com" <m.chehab@samsung.com>,
-        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] edac: Remove fixmes in e7xxx_edac.c
-References: <1406004789-9918-1-git-send-email-xerofoify@gmail.com>	<874my98p6u.fsf@nemi.mork.no>	<CA+8MBb+fnCNeQtyEqttxbkWx-4N+GUaKCUoCSdn5X9+bDDvTOg@mail.gmail.com>	<CAPDOMVjaf+vne4vbUPo8EPs0XnQBbNm2ZOXns8fw5pkg9tRSww@mail.gmail.com>	<CAAsK9AGtdJiz0xnmfqLBAqxmt=r+WANsmxwB_vQ3O5aKzMW1LQ@mail.gmail.com> <CAPDOMVhj72TFKbtw_93juX19WVdfUzh3KM9tCEjbTdUZvUfcUQ@mail.gmail.com>
-In-Reply-To: <CAPDOMVhj72TFKbtw_93juX19WVdfUzh3KM9tCEjbTdUZvUfcUQ@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	Tue, 22 Jul 2014 15:18:52 -0400
+Message-ID: <1406056727.29265.2.camel@gmail.com>
+Subject: Re: [RFC] 3.16-rc6 -- fs/direct-io.c:1011 from and to uninitialized.
+From: Ian Kumlien <ian.kumlien@gmail.com>
+To: Richard Weinberger <richard.weinberger@gmail.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Tue, 22 Jul 2014 21:18:47 +0200
+In-Reply-To: <CAFLxGvwViHHZyX7se1gLkzDNnhp3raSmdV0=fieMssEZ=9BTQw@mail.gmail.com>
+References: <1406055834.23587.1.camel@gmail.com>
+	 <CAFLxGvwViHHZyX7se1gLkzDNnhp3raSmdV0=fieMssEZ=9BTQw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.4 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/22/2014 11:25 AM, Nick Krause wrote:
-> On Tue, Jul 22, 2014 at 2:14 PM, Levente Kurusa <lkurusa@redhat.com> wrote:
->> 2014-07-22 19:40 GMT+02:00 Nick Krause <xerofoify@gmail.com>:
->>> [...]
->>>
->>> Tony,
->>>
->>> What is the value of Page shift then ? If you can tell me it would be
->>> much easier for
->>> me to fix this.
->>> Cheers Nick
->>
->> Nick,
->>
->> Help is always welcome. However, what you are doing is effectively a
->> waste of time for you and for the maintainers as well, and hence cannot
->> be called help. You are writing emails that make absolutely no sense at all.
->> If you want to help us out, please consider learning three things:
->>
->> * The language that the kernel is written in: C
->> * The language that most kernel developers understand: English
->> * The environment the kernel is (in most cases) written in: UNIX
->>
->> If you had known these, then:
->>
->> * ... you would have already known that FIXMEs exist for a reason which is
->>    not at all simple.
->>
->> * ... you would have understood that fixing FIXMEs without ANY reasoning and
->>    asking about it is completely useless and wastes precious maintainer time.
->>
->> * ... you could have used grep for finding out PAGE_SHIFT and not need to ask
->>    for it.
->>
->> Nick. Look, it is good that you are enthusiastic. However, this kind
->> of 'work' gives
->> you an undesirable reputation, which is {IF FROM:xerofoify@* THEN TRASH}...
->>
->> If you really want to help out, I suggest you to find yourself a piece
->> of hardware from
->> the store and try to write a driver for it. That way, you will learn
->> how it all works, and if
->> you are intelligent enough then you might get a "Kernel Job - Payed"
->> like you asked us
->> for them in November.
->>
->> Until then, please stop trying for FIXMEs. They will not get you a
->> commit in the kernel
->> 99% of the time.
->>
->> Hope you understand,
->>
->> Levente Kurusa
+On tis, 2014-07-22 at 21:12 +0200, Richard Weinberger wrote:
+> On Tue, Jul 22, 2014 at 9:03 PM, Ian Kumlien <ian.kumlien@gmail.com> wrote:
+> > This is a resend, try two...
+> 
+> Please see "[PATCH v3] direct-io: fix uninitialized warning in do_direct_IO()".
+
+That looks like a better approach, couldn't find it before i started
+sending this and my emails are autofiltered if you send via the web
+ui.. ;)
+
+> > ---
+> > Hi,
+> >
+> > While playing around compiling the kernel i noticed the following:
+> > fs/direct-io.c: In function ‘do_blockdev_direct_IO’:
+> > fs/direct-io.c:1022:29: warning: ‘from’ may be used uninitialized in
+> > this function [-Wmaybe-uninitialized]
+> >     ret = submit_page_section(dio, sdio, page,
+> >                              ^
+> > fs/direct-io.c:913:10: note: ‘from’ was declared here
+> >    size_t from, to;
+> >           ^
+> > fs/direct-io.c:1011:12: warning: ‘to’ may be used uninitialized in this
+> > function [-Wmaybe-uninitialized]
+> >     u = (to - from) >> blkbits;
+> >             ^
+> > fs/direct-io.c:913:16: note: ‘to’ was declared here
+> >    size_t from, to;
+> >                 ^
+> > ---
+> >
+> >
+> > And while the fix is simple, something along the lines of:
+> > diff --git a/fs/direct-io.c b/fs/direct-io.c
+> > index 98040ba..64a8286 100644
+> > --- a/fs/direct-io.c
+> > +++ b/fs/direct-io.c
+> > @@ -910,7 +910,7 @@ static int do_direct_IO(struct dio *dio, struct
+> > dio_submit *sdi
+> >
+> >         while (sdio->block_in_file < sdio->final_block_in_request) {
+> >                 struct page *page;
+> > -               size_t from, to;
+> > +               size_t from, to = {0};
+> >                 page = dio_get_page(dio, sdio, &from, &to);
+> >                 if (IS_ERR(page)) {
+> >                         ret = PTR_ERR(page);
+> > ---
+> >
+> > I however don't know if it's in the correct C standard, it compiles fine
+> > though... (or if this is more gcc speific)
+> >
+> >
+> >
 > 
 > 
-> Levente,
 > 
-> I understand what your saying and I should have searched for Page shift.
-
-so you know that PAGE_SHIFT is not always 12?
-
-> In addition I am already got commits in the kernel for fix mes so I feel
-> that your comment on fix mes is incorrect.
-
-what is your goal?
 
 
--- 
-~Randy
