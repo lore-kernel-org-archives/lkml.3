@@ -1,74 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756940AbaGVWGi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 18:06:38 -0400
-Received: from smtp-outbound-1.vmware.com ([208.91.2.12]:56732 "EHLO
-	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755555AbaGVWGg (ORCPT
+	id S1757053AbaGVWHA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 18:07:00 -0400
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:46463 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756961AbaGVWG6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 18:06:36 -0400
-Date: Tue, 22 Jul 2014 15:06:34 -0700 (PDT)
-From: Jakob Bornecrantz <jakob@vmware.com>
-To: Dave Jones <davej@redhat.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Message-ID: <272182693.34271636.1406066794514.JavaMail.root@vmware.com>
-In-Reply-To: <20140722164927.GA21479@redhat.com>
-References: <20140722164927.GA21479@redhat.com>
-Subject: Re: vmwgfx: remove identical branches
+	Tue, 22 Jul 2014 18:06:58 -0400
+Date: Tue, 22 Jul 2014 15:06:56 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Nicholas Krause <xerofoify@gmail.com>
+cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
+        gleb@kernel.org, pbonzini@redhat.com, linux-kernel@vger.kernel.org,
+        kvm@vger.kernel.org
+Subject: Re: [PATCH] x86: Remove Fix me in main.c and add include statement
+ for kvm_para.h
+In-Reply-To: <1406065658-3866-1-git-send-email-xerofoify@gmail.com>
+Message-ID: <alpine.DEB.2.02.1407221506240.5814@chino.kir.corp.google.com>
+References: <1406065658-3866-1-git-send-email-xerofoify@gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.113.163.68]
-X-Mailer: Zimbra 8.0.3_GA_5664 (ZimbraWebClient - GC34 (Linux)/8.0.3_GA_5664)
-Thread-Topic: vmwgfx: remove identical branches
-Thread-Index: oAS8lXKGC9lNeanwqRjKcJtrKnbjXg==
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------ Original Message -----
-> Commit 8b7de6aa8468: "vmwgfx: Rework fence event action" removed the
-> tv_sec & tv_usec arguments to vmw_event_fence_action_create, which meant
-> that both sides of the if/else are now exactly the same.
-> 
-> Remove the flag check, and just do it unconditionally.
-> 
-> Spotted with Coverity.
-> 
-> Signed-off-by: Dave Jones <davej@redhat.com>
+On Tue, 22 Jul 2014, Nicholas Krause wrote:
 
-Reviewed-by: Jakob Bornecrantz <jakob@vmware.com>
-
-and thanks for the patch.
-
-Cheers, Jakob.
-
+> This patch removes a fix me by including linux/types.h in kvm_para.h
+> as stated by the  fix me in main.c and also removes the comment from
+> main.c too.
 > 
-> diff --git a/drivers/gpu/drm/vmwgfx/vmwgfx_fence.c
-> b/drivers/gpu/drm/vmwgfx/vmwgfx_fence.c
-> index 436b013b4231..a078e6bbaf0a 100644
-> --- a/drivers/gpu/drm/vmwgfx/vmwgfx_fence.c
-> +++ b/drivers/gpu/drm/vmwgfx/vmwgfx_fence.c
-> @@ -1124,16 +1124,10 @@ int vmw_fence_event_ioctl(struct drm_device *dev,
-> void *data,
+> Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
+> ---
+>  arch/x86/kernel/cpu/mtrr/main.c | 2 +-
+>  include/linux/kvm_para.h        | 3 +--
+>  2 files changed, 2 insertions(+), 3 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/cpu/mtrr/main.c b/arch/x86/kernel/cpu/mtrr/main.c
+> index f961de9..7ba314b 100644
+> --- a/arch/x86/kernel/cpu/mtrr/main.c
+> +++ b/arch/x86/kernel/cpu/mtrr/main.c
+> @@ -33,7 +33,7 @@
 >  
->  	BUG_ON(fence == NULL);
+>  #define DEBUG
 >  
-> -	if (arg->flags & DRM_VMW_FE_FLAG_REQ_TIME)
-> -		ret = vmw_event_fence_action_create(file_priv, fence,
-> -						    arg->flags,
-> -						    arg->user_data,
-> -						    true);
-> -	else
-> -		ret = vmw_event_fence_action_create(file_priv, fence,
-> -						    arg->flags,
-> -						    arg->user_data,
-> -						    true);
-> +	ret = vmw_event_fence_action_create(file_priv, fence,
-> +					    arg->flags,
-> +					    arg->user_data,
-> +					    true);
+> -#include <linux/types.h> /* FIXME: kvm_para.h needs this */
+> +#include <linux/types.h>
 >  
->  	if (unlikely(ret != 0)) {
->  		if (ret != -ERESTARTSYS)
-> 
+>  #include <linux/stop_machine.h>
+>  #include <linux/kvm_para.h>
+> diff --git a/include/linux/kvm_para.h b/include/linux/kvm_para.h
+> index 00a97bb..21d1be2 100644
+> --- a/include/linux/kvm_para.h
+> +++ b/include/linux/kvm_para.h
+> @@ -2,8 +2,7 @@
+>  #define __LINUX_KVM_PARA_H
+>  
+>  #include <uapi/linux/kvm_para.h>
+> -
+> -
+> +#include <linux/types.h>
+>  static inline int kvm_para_has_feature(unsigned int feature)
+>  {
+>  	if (kvm_arch_para_features() & (1UL << feature))
+
+There's no build error reported that would indicate that this is needed, 
+so this patch isn't justifiable.
