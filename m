@@ -1,81 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934049AbaGVW7C (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 18:59:02 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42093 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932676AbaGVW67 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 18:58:59 -0400
-Date: Tue, 22 Jul 2014 18:58:41 -0400
-From: Mike Snitzer <snitzer@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>, Pekka Enberg <penberg@iki.fi>,
-        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
-        linux-mm@kvack.org, dm-devel@redhat.com, linux-kernel@vger.kernel.org,
-        "Alasdair G. Kergon" <agk@redhat.com>,
-        Mikulas Patocka <mpatocka@redhat.com>,
-        Zdenek Kabelac <zkabelac@redhat.com>
-Subject: [git pull] stable mm/slab_common.c fix for 3.16-rc7
-Message-ID: <20140722225841.GA5379@redhat.com>
-References: <alpine.LRH.2.02.1403041711300.29476@file01.intranet.prod.int.rdu2.redhat.com>
- <20140325170324.GC580@redhat.com>
- <alpine.DEB.2.10.1403251306260.26471@nuc>
- <20140523201632.GA16013@redhat.com>
- <537FBD6F.1070009@iki.fi>
- <20140722221421.GA11318@redhat.com>
- <alpine.DEB.2.02.1407221539020.5814@chino.kir.corp.google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1407221539020.5814@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S933958AbaGVW5k (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 18:57:40 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:44376 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932229AbaGVWWf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 18:22:35 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Enrico Etxe Arte <goitizena.generoa@gmail.com>,
+        Lv Zheng <lv.zheng@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 017/116] ACPI: Fix conflict between customized DSDT and DSDT local copy
+Date: Tue, 22 Jul 2014 15:20:28 -0700
+Message-Id: <1406067727-19683-18-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1406067727-19683-1-git-send-email-kamal@canonical.com>
+References: <1406067727-19683-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+3.8.13.27 -stable review patch.  If anyone has any objections, please let me know.
 
-Not sure you'll be OK with what I've done or not but I pulled in a
-1-liner "slab/urgent" fix that Pekka staged a couple months ago.  I've
-made it available through a signed tag in the linux-dm.git tree.  My
-reasoning on why this is OK is it regularly impacts DM and Pekka already
-Signed-off on it (as did other mm developers).  I'm pretty sure Pekka
-just forgot to follow through preparing a pull request for 3.15.
+------------------
 
-If you'd rather take this direct from Pekka (or wait for Andrew to pick
-up the same patch which David just sent him) that is fine by me, I just
-want the issue fixed.
+From: Lv Zheng <lv.zheng@intel.com>
 
-The following changes since commit 048e5a07f282c57815b3901d4a68a77fa131ce0a:
+commit 73577d1df8e1f31f6b1a5eebcdbc334eb0330e47 upstream.
 
-  dm cache metadata: do not allow the data block size to change (2014-07-15 14:07:50 -0400)
+This patch fixes the following issue:
+If DSDT is customized, no local DSDT copy is needed.
 
-are available in the git repository at:
+References: https://bugzilla.kernel.org/show_bug.cgi?id=69711
+Signed-off-by: Enrico Etxe Arte <goitizena.generoa@gmail.com>
+Signed-off-by: Lv Zheng <lv.zheng@intel.com>
+[rjw: Subject]
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/device-mapper/linux-dm.git tags/urgent-slab-fix
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ drivers/acpi/bus.c | 7 +++++++
+ 1 file changed, 7 insertions(+)
 
-for you to fetch changes up to 45ccaf4764278f6544db412d38a1bae056ee3acc:
+diff --git a/drivers/acpi/bus.c b/drivers/acpi/bus.c
+index de22f48..5e9ad05 100644
+--- a/drivers/acpi/bus.c
++++ b/drivers/acpi/bus.c
+@@ -57,6 +57,12 @@ EXPORT_SYMBOL(acpi_root_dir);
+ 
+ 
+ #ifdef CONFIG_X86
++#ifdef CONFIG_ACPI_CUSTOM_DSDT
++static inline int set_copy_dsdt(const struct dmi_system_id *id)
++{
++	return 0;
++}
++#else
+ static int set_copy_dsdt(const struct dmi_system_id *id)
+ {
+ 	printk(KERN_NOTICE "%s detected - "
+@@ -64,6 +70,7 @@ static int set_copy_dsdt(const struct dmi_system_id *id)
+ 	acpi_gbl_copy_dsdt_locally = 1;
+ 	return 0;
+ }
++#endif
+ 
+ static struct dmi_system_id dsdt_dmi_table[] __initdata = {
+ 	/*
+-- 
+1.9.1
 
-  Merge branch 'slab/urgent' of git://git.kernel.org/pub/scm/linux/kernel/git/penberg/linux into for-3.16-rcX (2014-07-22 18:38:27 -0400)
-
-Please pull, thanks.
-Mike
-
-----------------------------------------------------------------
-
-This fixes the broken duplicate slab name check in
-kmem_cache_sanity_check() that has been repeatedly reported (as recently
-as today against Fedora rawhide).  Pekka seemed to have it staged for a
-late 3.15-rc in his 'slab/urgent' branch but never sent a pull request,
-see: https://lkml.org/lkml/2014/5/23/648
-
-----------------------------------------------------------------
-Mike Snitzer (1):
-      Merge branch 'slab/urgent' of git://git.kernel.org/.../penberg/linux into for-3.16-rcX
-
-Mikulas Patocka (1):
-      slab_common: fix the check for duplicate slab names
-
- mm/slab_common.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
