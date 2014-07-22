@@ -1,63 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754759AbaGVMIV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 08:08:21 -0400
-Received: from mail-ie0-f178.google.com ([209.85.223.178]:56999 "EHLO
-	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750893AbaGVMIU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 08:08:20 -0400
-Date: Tue, 22 Jul 2014 13:08:14 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        sameo@linux.intel.com
-Subject: Re: [PATCH 03/19] mfd: tps80031: Fix 'missing break or fall-through
- comment' warning
-Message-ID: <20140722120814.GA16065@lee--X1>
-References: <1406027485-15657-1-git-send-email-lee.jones@linaro.org>
- <1406027485-15657-4-git-send-email-lee.jones@linaro.org>
- <5230900.iFlbGceLXl@wuerfel>
+	id S1754207AbaGVMJ7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 08:09:59 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:43762 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751823AbaGVMJ6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 08:09:58 -0400
+Message-ID: <53CE5494.3030708@suse.cz>
+Date: Tue, 22 Jul 2014 14:09:56 +0200
+From: Vlastimil Babka <vbabka@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <5230900.iFlbGceLXl@wuerfel>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Hugh Dickins <hughd@google.com>, Sasha Levin <sasha.levin@oracle.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Konstantin Khlebnikov <koct9i@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Michel Lespinasse <walken@google.com>,
+        Lukas Czerner <lczerner@redhat.com>, Dave Jones <davej@redhat.com>,
+        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Michal Hocko <mhocko@suse.cz>
+Subject: Re: [PATCH 0/2] shmem: fix faulting into a hole while it's punched,
+ take 3
+References: <alpine.LSU.2.11.1407150247540.2584@eggly.anvils> <53C7F55B.8030307@suse.cz> <53C7F5FF.7010006@oracle.com> <53C8FAA6.9050908@oracle.com> <alpine.LSU.2.11.1407191628450.24073@eggly.anvils> <53CDD961.1080006@oracle.com> <alpine.LSU.2.11.1407220049140.1980@eggly.anvils> <53CE37A6.2060000@suse.cz>
+In-Reply-To: <53CE37A6.2060000@suse.cz>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 22 Jul 2014, Arnd Bergmann wrote:
+On 07/22/2014 12:06 PM, Vlastimil Babka wrote:
+> So if this is true, the change to TASK_UNINTERRUPTIBLE will avoid the
+> problem, but it would be nicer to keep the KILLABLE state.
+> I think it could be done by testing if the wait queue still exists and
+> is the same, before attempting finish wait. If it doesn't exist, that
+> means the faulter can skip finish_wait altogether because it must be
+> already TASK_RUNNING.
+>
+> shmem_falloc = inode->i_private;
+> if (shmem_falloc && shmem_falloc->waitq == shmem_falloc_waitq)
+> 	finish_wait(shmem_falloc_waitq, &shmem_fault_wait);
+>
+> It might still be theoretically possible that although it has the same
+> address, it's not the same wait queue, but that doesn't hurt
+> correctness. I might be uselessly locking some other waitq's lock, but
+> the inode->i_lock still protects me from other faulters that are in the
+> same situation. The puncher is already gone.
 
-> On Tuesday 22 July 2014 12:11:09 Lee Jones wrote:
-> > --- a/drivers/mfd/tps80031.c
-> > +++ b/drivers/mfd/tps80031.c
-> > @@ -334,6 +334,7 @@ static bool rd_wr_reg_id1(struct device *dev, unsigned int reg)
-> >         case TPS80031_PREQ1_RES_ASS_A ... TPS80031_PREQ3_RES_ASS_C:
-> >         case TPS80031_SMPS_OFFSET ... TPS80031_BATDEBOUNCING:
-> >         case TPS80031_CFG_INPUT_PUPD1 ... TPS80031_CFG_SMPS_PD:
-> > +               /* Fall through */
-> >         case TPS80031_BACKUP_REG:
-> >                 return true;
-> >         default:
-> 
-> This one seems to make the code look worse: You are only adding the comment
-> to one case, not all of them, and it was perfectly understandable
-> before.
-> 
-> Further, there are a couple of other functions following this one that
-> also don't have that comment.
-> 
-> It seems checkpatch missed all the other cases because they contain '...'
-> lists, whereas the one above does not. I think it's better left alone.
+Actually, I was wrong and deleting from a different queue could corrupt 
+the queue head. I don't know if trinity would be able to trigger this, 
+but I wouldn't be comfortable knowing it's possible. Calling fallocate 
+twice in quick succession from the same process could easily end up at 
+the same address on the stack, no?
 
-You're right.  I forgot to remove this patch from the set.
+Another also somewhat ugly possibility is to make sure that the wait 
+queue is empty before the puncher quits, regardless of the running state 
+of the processes in the queue. I think the conditions here 
+(serialization by i_lock) might allow us to do that without risking that 
+we e.g. leave anyone sleeping. But it's bending the wait queue design...
 
-Please see: https://lkml.org/lkml/2014/7/21/223
+> However it's quite ugly and if there is some wait queue debugging mode
+> (I hadn't checked) that e.g. checks if wait queues and wait objects are
+> empty before destruction, it wouldn't like this at all...
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
