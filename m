@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932588AbaGVWXN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 18:23:13 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44470 "EHLO
+	id S932608AbaGVWXZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 18:23:25 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:44479 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932541AbaGVWXK (ORCPT
+	with ESMTP id S932541AbaGVWXU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 18:23:10 -0400
+	Tue, 22 Jul 2014 18:23:20 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Mario Schuknecht <mario.schuknecht@dresearch-fe.de>,
-        Jonathan Cameron <jic23@kernel.org>,
+Cc: Zhang Dongxing <dongxing.zhang@intel.com>,
+        xiaoming wang <xiaoming.wang@intel.com>, Takashi Iwai <tiwai@suse.de>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 083/116] staging: iio: tsl2x7x_core: fix proximity treshold
-Date: Tue, 22 Jul 2014 15:21:34 -0700
-Message-Id: <1406067727-19683-84-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 080/116] ALSA: compress: Cancel the optimization of compiler and fix the size of struct for all platform.
+Date: Tue, 22 Jul 2014 15:21:31 -0700
+Message-Id: <1406067727-19683-81-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1406067727-19683-1-git-send-email-kamal@canonical.com>
 References: <1406067727-19683-1-git-send-email-kamal@canonical.com>
@@ -28,40 +28,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mario Schuknecht <mario.schuknecht@dresearch-fe.de>
+From: "Wang, Xiaoming" <xiaoming.wang@intel.com>
 
-commit c404618cd06dad771495fe1cf9d5a63b5664f65f upstream.
+commit 2bd0ae464a6cf7363bbf72c8545e0aa43caa57f0 upstream.
 
-Consider high byte of proximity min and max treshold in function
-'tsl2x7x_chip_on'. So far, the high byte was not set.
+Cancel the optimization of compiler for struct snd_compr_avail
+which size will be 0x1c in 32bit kernel while 0x20 in 64bit
+kernel under the optimizer. That will make compaction between
+32bit and 64bit. So add packed to fix the size of struct
+snd_compr_avail to 0x1c for all platform.
 
-Signed-off-by: Mario Schuknecht <mario.schuknecht@dresearch-fe.de>
-Signed-off-by: Jonathan Cameron <jic23@kernel.org>
+Signed-off-by: Zhang Dongxing <dongxing.zhang@intel.com>
+Signed-off-by: xiaoming wang <xiaoming.wang@intel.com>
+Acked-by: Vinod Koul <vinod.koul@intel.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/staging/iio/light/tsl2x7x_core.c | 8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ include/uapi/sound/compress_offload.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/staging/iio/light/tsl2x7x_core.c b/drivers/staging/iio/light/tsl2x7x_core.c
-index 395d8f6..b15b7cb 100644
---- a/drivers/staging/iio/light/tsl2x7x_core.c
-+++ b/drivers/staging/iio/light/tsl2x7x_core.c
-@@ -725,9 +725,13 @@ static int tsl2x7x_chip_on(struct iio_dev *indio_dev)
- 	chip->tsl2x7x_config[TSL2X7X_PRX_COUNT] =
- 			chip->tsl2x7x_settings.prox_pulse_count;
- 	chip->tsl2x7x_config[TSL2X7X_PRX_MINTHRESHLO] =
--	chip->tsl2x7x_settings.prox_thres_low;
-+			(chip->tsl2x7x_settings.prox_thres_low) & 0xFF;
-+	chip->tsl2x7x_config[TSL2X7X_PRX_MINTHRESHHI] =
-+			(chip->tsl2x7x_settings.prox_thres_low >> 8) & 0xFF;
- 	chip->tsl2x7x_config[TSL2X7X_PRX_MAXTHRESHLO] =
--			chip->tsl2x7x_settings.prox_thres_high;
-+			(chip->tsl2x7x_settings.prox_thres_high) & 0xFF;
-+	chip->tsl2x7x_config[TSL2X7X_PRX_MAXTHRESHHI] =
-+			(chip->tsl2x7x_settings.prox_thres_high >> 8) & 0xFF;
+diff --git a/include/uapi/sound/compress_offload.h b/include/uapi/sound/compress_offload.h
+index 9aa8624..9c94dd8 100644
+--- a/include/uapi/sound/compress_offload.h
++++ b/include/uapi/sound/compress_offload.h
+@@ -80,7 +80,7 @@ struct snd_compr_tstamp {
+ struct snd_compr_avail {
+ 	__u64 avail;
+ 	struct snd_compr_tstamp tstamp;
+-};
++} __attribute__((packed));
  
- 	/* and make sure we're not already on */
- 	if (chip->tsl2x7x_chip_status == TSL2X7X_CHIP_WORKING) {
+ enum snd_compr_direction {
+ 	SND_COMPRESS_PLAYBACK = 0,
 -- 
 1.9.1
 
