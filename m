@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932652AbaGVW0Z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 18:26:25 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44791 "EHLO
+	id S933417AbaGVW0a (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 18:26:30 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:44807 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933355AbaGVW0V (ORCPT
+	with ESMTP id S932676AbaGVW01 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 18:26:21 -0400
+	Tue, 22 Jul 2014 18:26:27 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Russell King <rmk+kernel@arm.linux.org.uk>,
+Cc: Bart Van Assche <bvanassche@acm.org>,
+        Roland Dreier <roland@purestorage.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 024/116] ARM: stacktrace: avoid listing stacktrace functions in stacktrace
-Date: Tue, 22 Jul 2014 15:20:35 -0700
-Message-Id: <1406067727-19683-25-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 022/116] IB/srp: Fix a sporadic crash triggered by cable pulling
+Date: Tue, 22 Jul 2014 15:20:33 -0700
+Message-Id: <1406067727-19683-23-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1406067727-19683-1-git-send-email-kamal@canonical.com>
 References: <1406067727-19683-1-git-send-email-kamal@canonical.com>
@@ -27,92 +28,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Russell King <rmk+kernel@arm.linux.org.uk>
+From: Bart Van Assche <bvanassche@acm.org>
 
-commit 3683f44c42e991d313dc301504ee0fca1aeb8580 upstream.
+commit 024ca90151f5e4296d30f72c13ff9a075e23c9ec upstream.
 
-While debugging the FEC ethernet driver using stacktrace, it was noticed
-that the stacktraces always begin as follows:
+Avoid that the loops that iterate over the request ring can encounter
+a pointer to a SCSI command in req->scmnd that is no longer associated
+with that request. If the function srp_unmap_data() is invoked twice
+for a SCSI command that is not in flight then that would cause
+ib_fmr_pool_unmap() to be invoked with an invalid pointer as argument,
+resulting in a kernel oops.
 
- [<c00117b4>] save_stack_trace_tsk+0x0/0x98
- [<c0011870>] save_stack_trace+0x24/0x28
- ...
-
-This is because the stack trace code includes the stack frames for itself.
-This is incorrect behaviour, and also leads to "skip" doing the wrong
-thing (which is the number of stack frames to avoid recording.)
-
-Perversely, it does the right thing when passed a non-current thread.  Fix
-this by ensuring that we have a known constant number of frames above the
-main stack trace function, and always skip these.
-
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Reported-by: Sagi Grimberg <sagig@mellanox.com>
+Reference: http://thread.gmane.org/gmane.linux.drivers.rdma/19068/focus=19069
+Signed-off-by: Bart Van Assche <bvanassche@acm.org>
+Reviewed-by: Sagi Grimberg <sagig@mellanox.com>
+Signed-off-by: Roland Dreier <roland@purestorage.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/arm/kernel/stacktrace.c | 18 +++++++++++++-----
- 1 file changed, 13 insertions(+), 5 deletions(-)
+ drivers/infiniband/ulp/srp/ib_srp.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-diff --git a/arch/arm/kernel/stacktrace.c b/arch/arm/kernel/stacktrace.c
-index af4e8c8..6582c4a 100644
---- a/arch/arm/kernel/stacktrace.c
-+++ b/arch/arm/kernel/stacktrace.c
-@@ -83,13 +83,16 @@ static int save_trace(struct stackframe *frame, void *d)
- 	return trace->nr_entries >= trace->max_entries;
- }
+diff --git a/drivers/infiniband/ulp/srp/ib_srp.c b/drivers/infiniband/ulp/srp/ib_srp.c
+index e070166..5682e8e 100644
+--- a/drivers/infiniband/ulp/srp/ib_srp.c
++++ b/drivers/infiniband/ulp/srp/ib_srp.c
+@@ -1410,6 +1410,12 @@ err_unmap:
+ err_iu:
+ 	srp_put_tx_iu(target, iu, SRP_IU_CMD);
  
--void save_stack_trace_tsk(struct task_struct *tsk, struct stack_trace *trace)
-+/* This must be noinline to so that our skip calculation works correctly */
-+static noinline void __save_stack_trace(struct task_struct *tsk,
-+	struct stack_trace *trace, unsigned int nosched)
- {
- 	struct stack_trace_data data;
- 	struct stackframe frame;
- 
- 	data.trace = trace;
- 	data.skip = trace->skip;
-+	data.no_sched_functions = nosched;
- 
- 	if (tsk != current) {
- #ifdef CONFIG_SMP
-@@ -102,7 +105,6 @@ void save_stack_trace_tsk(struct task_struct *tsk, struct stack_trace *trace)
- 			trace->entries[trace->nr_entries++] = ULONG_MAX;
- 		return;
- #else
--		data.no_sched_functions = 1;
- 		frame.fp = thread_saved_fp(tsk);
- 		frame.sp = thread_saved_sp(tsk);
- 		frame.lr = 0;		/* recovered from the stack */
-@@ -111,11 +113,12 @@ void save_stack_trace_tsk(struct task_struct *tsk, struct stack_trace *trace)
- 	} else {
- 		register unsigned long current_sp asm ("sp");
- 
--		data.no_sched_functions = 0;
-+		/* We don't want this function nor the caller */
-+		data.skip += 2;
- 		frame.fp = (unsigned long)__builtin_frame_address(0);
- 		frame.sp = current_sp;
- 		frame.lr = (unsigned long)__builtin_return_address(0);
--		frame.pc = (unsigned long)save_stack_trace_tsk;
-+		frame.pc = (unsigned long)__save_stack_trace;
- 	}
- 
- 	walk_stackframe(&frame, save_trace, &data);
-@@ -123,9 +126,14 @@ void save_stack_trace_tsk(struct task_struct *tsk, struct stack_trace *trace)
- 		trace->entries[trace->nr_entries++] = ULONG_MAX;
- }
- 
-+void save_stack_trace_tsk(struct task_struct *tsk, struct stack_trace *trace)
-+{
-+	__save_stack_trace(tsk, trace, 1);
-+}
++	/*
++	 * Avoid that the loops that iterate over the request ring can
++	 * encounter a dangling SCSI command pointer.
++	 */
++	req->scmnd = NULL;
 +
- void save_stack_trace(struct stack_trace *trace)
- {
--	save_stack_trace_tsk(current, trace);
-+	__save_stack_trace(current, trace, 0);
- }
- EXPORT_SYMBOL_GPL(save_stack_trace);
- #endif
+ 	spin_lock_irqsave(&target->lock, flags);
+ 	list_add(&req->list, &target->free_reqs);
+ 
 -- 
 1.9.1
 
