@@ -1,146 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752522AbaGVFni (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 01:43:38 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:41819 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750885AbaGVFng convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 01:43:36 -0400
-Date: Mon, 21 Jul 2014 22:43:31 -0700 (PDT)
-Message-Id: <20140721.224331.776951850963391346.davem@davemloft.net>
-To: torvalds@linux-foundation.org
-CC: akpm@linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [GIT] Networking
-From: David Miller <davem@davemloft.net>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 21 Jul 2014 22:43:32 -0700 (PDT)
+	id S1752667AbaGVFrB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 01:47:01 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:35430 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751290AbaGVFq7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 01:46:59 -0400
+Message-ID: <53CDFAD0.6090208@suse.de>
+Date: Tue, 22 Jul 2014 07:46:56 +0200
+From: Hannes Reinecke <hare@suse.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Kent Overstreet <kmo@daterainc.com>
+CC: John Utz <John.Utz@wdc.com>, Mike Snitzer <snitzer@redhat.com>,
+        "dm-devel@redhat.com" <dm-devel@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Jens Axboe <axboe@kernel.dk>, tytso@mit.edu
+Subject: Re: ZAC target (Was: Re: dm-multipath: Accept failed paths for multipath
+ maps)
+References: <52B1B046.3040301@suse.de> <1387380498.7608.6.camel@ict-vth-stewarts01.ict.englab.netapp.com> <20140718000411.GB337@redhat.com> <8A51900D08212F40B3DE22453052F69839C46AF4@wdscexmb02> <20140718021806.GA1143@redhat.com> <8A51900D08212F40B3DE22453052F69839C46B5B@wdscexmb02> <53C8B757.2000904@suse.de> <20140718143855.GA4762@redhat.com> <8A51900D08212F40B3DE22453052F69839C46EC0@wdscexmb02> <53CD226D.1070309@suse.de> <20140721192825.GA25962@kmo-pixel>
+In-Reply-To: <20140721192825.GA25962@kmo-pixel>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 07/21/2014 09:28 PM, Kent Overstreet wrote:
+> On Mon, Jul 21, 2014 at 04:23:41PM +0200, Hannes Reinecke wrote:
+>> On 07/18/2014 07:04 PM, John Utz wrote:
+>>>> On 07/18/2014 05:31 AM, John Utz wrote:
+>>>>> Thankyou very much for the exhaustive answer! I forwarded on to my
+>>>>> project peers because i don't think any of us where aware of the
+>>>>> existing infrastructure.
+>>>>>
+>>>>> Of course, said infrastructure would have to be taught about ZAC,
+>>>>> but it seems like it would be a nice place to start testing from....
+>>>>>
+>>>> ZAC is a different beast altogether; I've posted an initial set of
+>>>> patches a while back on linux-scsi.
+>>>> But I don't think multipath needs to be changed for that.
+>>>> Other areas of device-mapper most certainly do.
+>>>
+>>> Pretty sure John is working on a new ZAC-oriented DM target.
+>>>
+>>> YUP.
+>>>
+>>> Per Ted T'so's suggestion several months ago, the goal is to create
+>>> a new DM target that implements the ZAC/ZBC command set and the SMR
+>>> write pointer architecture so that FSfolksen can try their hand at
+>>> porting their stuff to it.
+>>>
+>>> It's in the very early stages so there is nothing to show yet, but
+>>> development is ongoing. There are a few unknowns about how to surface
+>>> some specific behaviors (new verbs and errors, particularly errors
+>>> with sense codes that return a write pointer) but i have not gotten
+>>> far enuf along in development to be able to construct succint and
+>>> specific questions on the topic so that will have to wait for a bit.
+>>>
+>> I was pondering the 'best' ZAC implementation, too, and found the
+>> 'report zones' command _very_ cumbersome to use.
+>> Especially the fact that in theory each zone could have a different size
+>> _and_ plenty of zones could be present will be making zone lookup hellish.
+>>
+>> However: it seems to me that we might benefit from a generic
+>> 'block boundaries' implementation.
+>> Reasoning here is that several subsystems (RAID, ZAC/ZBC, and things like
+>> referrals) impose I/O scheduling boundaries which must not be crossed when
+>> assembling requests.
+>
+> Wasn't Ted working on such a thing?
+>
+>> Seeing that we already have some block limitations I was wondering if we
+>> couldn't have some set of 'I/O scheduling boundaries' as part
+>> of the request_queue structure.
+>
+> I'd prefer not to dump yet more crap in request_queue, but that's a fairly minor
+> quibble :)
+>
+> I also tend to think having different size zones is crazy and I would avoid
+> making any effort to support that in practice, but OTOH there's good reason for
+> wanting one or two "normal" zones and the rest append only so the interface is
+> going to have to accomadate some differences between zones.
+>
+> Also, depending on the approach supporting different size zones might not
+> actually be problematic. If you're starting with something that's pure COW and
+> you're just plugging in this "ZAC allocation" stuff (which I think is what I'm
+> going to do in bcache) then it might not actually be an issue.
+>
+No, what I was suggesting is to introduce 'I/O scheduling barriers'.
+Some devices like RAID or indeed ZAC have internal boundaries which 
+cannot be crossed by any I/O. So either the I/O has to be split up 
+or the I/O scheduler have to be made aware of these boundaries.
 
-1) Null termination fix in dns_resolver got the pointer dereferncing wrong,
-   fix from Ben Hutchings.
+I have had this issue several times now (once with implementing 
+Referrals, now with ZAC) so I was wondering whether we can have some 
+sort of generic implementation in the block layer.
 
-2) ip_options_compile() has a benign but real buffer overflow when parsing
-   options.  From Eric Dumazet.
+And as we're already having request queue limits this might fall 
+quite naturally into it. Or so I thought.
 
-3) Table updates can crash in netfilter's nftables if none of the state flags
-   indicate an actual change, from Pablo Neira Ayuso.
+Hmm. Guess I should start coding here.
 
-4) Fix race in nf_tables dumping, also from Pablo.
+Cheers,
 
-5) GRE-GRO support broke the forwarding path because the segmentation state
-   was not fully initialized in these paths, from Jerry Chu.
-
-6) sunvnet driver leaks objects and potentially crashes on module unload,
-   from Sowmini Varadhan.
-
-7) We can accidently generate the same handle for several u32 classifier
-   filters, fix from Cong Wang.
-
-8) Several edge case bug fixes in fragment handling in xen-netback, from
-   Zoltan Kiss.
-
-Please pull, thanks!
-
-The following changes since commit b6603fe574af289dbe9eb9fb4c540bca04f5a053:
-
-  Merge tag 'for-linus-20140716' of git://git.infradead.org/linux-mtd (2014-07-16 10:11:42 -1000)
-
-are available in the git repository at:
-
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/davem/net.git master
-
-for you to fetch changes up to 850717ef00d8a224cf1aaffc9c636ea67e01cce2:
-
-  Merge tag 'batman-adv-fix-for-davem' of git://git.open-mesh.org/linux-merge (2014-07-21 20:19:09 -0700)
-
-----------------------------------------------------------------
-
-Amir Vadai (1):
-      net/mlx4_en: cq->irq_desc wasn't set in legacy EQ's
-
-Antonio Quartulli (1):
-      batman-adv: fix TT VLAN inconsistency on VLAN re-add
-
-Ben Hutchings (1):
-      dns_resolver: Null-terminate the right string
-
-Bjørn Mork (2):
-      net: qmi_wwan: add two Sierra Wireless/Netgear devices
-      net: huawei_cdc_ncm: add "subclass 3" devices
-
-Christoph Schulz (1):
-      net: ppp: fix creating PPP pass and active filters
-
-Cong Wang (1):
-      net_sched: avoid generating same handle for u32 filters
-
-Dan Carpenter (1):
-      wan/x25_asy: integer overflow in x25_asy_change_mtu()
-
-David S. Miller (3):
-      Merge git://git.kernel.org/.../pablo/nf
-      Merge branch 'xen-netback'
-      Merge tag 'batman-adv-fix-for-davem' of git://git.open-mesh.org/linux-merge
-
-Eric Dumazet (2):
-      netfilter: nf_tables: 64bit stats need some extra synchronization
-      ipv4: fix buffer overflow in ip_options_compile()
-
-Jerry Chu (1):
-      net-gre-gro: Fix a bug that breaks the forwarding path
-
-Michel Dänzer (1):
-      r8169: Enable RX_MULTI_EN for RTL_GIGA_MAC_VER_40
-
-Pablo Neira Ayuso (3):
-      netfilter: nf_tables: skip transaction if no update flags in tables
-      netfilter: nf_tables: safe RCU iteration on list when dumping
-      netfilter: nf_tables: set NLM_F_DUMP_INTR if netlink dumping is stale
-
-Simon Wunderlich (1):
-      batman-adv: drop QinQ claim frames in bridge loop avoidance
-
-Sowmini Varadhan (1):
-      sunvnet: clean up objects created in vnet_new() on vnet_exit()
-
-Zoltan Kiss (4):
-      xen-netback: Fix handling frag_list on grant op error path
-      xen-netback: Fix releasing frag_list skbs in error path
-      xen-netback: Fix releasing header slot on error path
-      xen-netback: Fix pointer incrementation to avoid incorrect logging
-
- drivers/isdn/i4l/isdn_ppp.c                |  20 +++++++++---
- drivers/net/ethernet/mellanox/mlx4/en_cq.c |   7 +++--
- drivers/net/ethernet/realtek/r8169.c       |   2 ++
- drivers/net/ethernet/sun/sunvnet.c         |  20 +++++++++++-
- drivers/net/ppp/ppp_generic.c              |  22 +++++++++----
- drivers/net/usb/huawei_cdc_ncm.c           |   3 ++
- drivers/net/usb/qmi_wwan.c                 |   2 ++
- drivers/net/wan/x25_asy.c                  |   6 +++-
- drivers/net/xen-netback/netback.c          |  86 +++++++++++++++++++++++++++++++++++++--------------
- include/net/netfilter/nf_tables.h          |   6 ++--
- include/net/netns/nftables.h               |   2 +-
- net/batman-adv/bridge_loop_avoidance.c     |  44 ++++++++++++++++++++------
- net/batman-adv/soft-interface.c            |  60 +++++++++++++++++++++++++++---------
- net/batman-adv/translation-table.c         |  26 ++++++++++++++++
- net/batman-adv/types.h                     |   2 ++
- net/core/dev.c                             |   2 ++
- net/dns_resolver/dns_query.c               |   2 +-
- net/ipv4/af_inet.c                         |   3 ++
- net/ipv4/gre_offload.c                     |   3 ++
- net/ipv4/ip_options.c                      |   4 +++
- net/ipv4/tcp_offload.c                     |   2 +-
- net/ipv6/tcpv6_offload.c                   |   2 +-
- net/netfilter/nf_tables_api.c              | 140 +++++++++++++++++++++++++++++++++++++++++++++++++++++------------------------------
- net/netfilter/nf_tables_core.c             |  10 +++---
- net/sched/cls_u32.c                        |  19 +++++++++---
- 25 files changed, 367 insertions(+), 128 deletions(-)
+Hannes
+-- 
+Dr. Hannes Reinecke		      zSeries & Storage
+hare@suse.de			      +49 911 74053 688
+SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg
+GF: J. Hawn, J. Guild, F. Imendörffer, HRB 16746 (AG Nürnberg)
