@@ -1,110 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755947AbaGVPf2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 11:35:28 -0400
-Received: from mail-bn1blp0183.outbound.protection.outlook.com ([207.46.163.183]:46076
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753793AbaGVPf0 convert rfc822-to-8bit (ORCPT
+	id S1755973AbaGVPgf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 11:36:35 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:21676 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752846AbaGVPge (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 11:35:26 -0400
-X-WSS-ID: 0N94DYN-07-FIQ-02
-X-M-MSG: 
-Message-ID: <53CE84AA.9030703@amd.com>
-Date: Tue, 22 Jul 2014 17:35:06 +0200
-From: =?UTF-8?B?Q2hyaXN0aWFuIEvDtm5pZw==?= <christian.koenig@amd.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Daniel Vetter <daniel.vetter@ffwll.ch>,
-        =?UTF-8?B?Q2hyaXN0aWFuIEvDtm5p?= =?UTF-8?B?Zw==?= 
-	<deathsimple@vodafone.de>
-CC: Dave Airlie <airlied@gmail.com>,
-        Maarten Lankhorst <maarten.lankhorst@canonical.com>,
-        Thomas Hellstrom <thellstrom@vmware.com>,
-        nouveau <nouveau@lists.freedesktop.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        dri-devel <dri-devel@lists.freedesktop.org>,
-        Ben Skeggs <bskeggs@redhat.com>,
-        "Deucher, Alexander" <alexander.deucher@amd.com>
-Subject: Re: [Nouveau] [PATCH 09/17] drm/radeon: use common fence implementation
- for fences
-References: <20140709093124.11354.3774.stgit@patser>
-	<20140709122953.11354.46381.stgit@patser>
-	<CAPM=9tyD2ZbrcGDC3hfNb7qNdzsfnyD-ZwM7G-nOgxeu5YKuSg@mail.gmail.com>
-	<53CE2421.5040906@amd.com>	<20140722114607.GL15237@phenom.ffwll.local>
-	<20140722115737.GN15237@phenom.ffwll.local>	<53CE56ED.4040109@vodafone.de>
-	<20140722132652.GO15237@phenom.ffwll.local>	<53CE6AFA.1060807@vodafone.de>
- <CAKMK7uG1d31zU_i__wc+Yq46A0x0tPeKnMBs+NHSmHS82uMsXQ@mail.gmail.com>
-In-Reply-To: <CAKMK7uG1d31zU_i__wc+Yq46A0x0tPeKnMBs+NHSmHS82uMsXQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-X-Originating-IP: [10.224.155.194]
-Content-Transfer-Encoding: 8BIT
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:165.204.84.221;CTRY:US;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(428002)(24454002)(377454003)(199002)(189002)(51704005)(47776003)(85182001)(74502001)(97736001)(68736004)(64126003)(92566001)(107046002)(33656002)(65806001)(31966008)(80022001)(81342001)(20776003)(105586002)(102836001)(64706001)(85852003)(65956001)(19580395003)(92726001)(561944003)(99396002)(93886003)(50466002)(81542001)(83322001)(4396001)(65816999)(36756003)(87266999)(85306003)(86362001)(76482001)(77982001)(76176999)(85202003)(80316001)(87936001)(106466001)(19580405001)(46102001)(54356999)(74662001)(83072002)(79102001)(95666004)(83506001)(44976005)(84676001)(23676002)(21056001)(101416001)(59896001)(50986999);DIR:OUT;SFP:;SCL:1;SRVR:BN1PR02MB037;H:atltwp01.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;LANG:en;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
-X-Forefront-PRVS: 02801ACE41
-Authentication-Results: spf=none (sender IP is 165.204.84.221)
- smtp.mailfrom=Christian.Koenig@amd.com; 
-X-OriginatorOrg: amd4.onmicrosoft.com
+	Tue, 22 Jul 2014 11:36:34 -0400
+X-AuditID: cbfec7f5-b7f626d000004b39-63-53ce84fee43c
+Subject: [PATCH 1/2] ARM: LPAE: load upper bits of early TTBR0/TTBR1
+From: Konstantin Khlebnikov <k.khlebnikov@samsung.com>
+To: Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org
+Cc: Will Deacon <will.deacon@arm.com>, linux-kernel@vger.kernel.org,
+        Vitaly Andrianov <vitalya@ti.com>, Cyril Chemparathy <cyril@ti.com>
+Date: Tue, 22 Jul 2014 19:36:23 +0400
+Message-id: <20140722153623.25088.37742.stgit@buzz>
+User-Agent: StGit/0.17.1-dirty
+MIME-version: 1.0
+Content-type: text/plain; charset=utf-8
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrOLMWRmVeSWpSXmKPExsVy+t/xa7r/Ws4FG7zfqmQxf+dxVosfO3tZ
+	LTY9vsZqcXnXHDaL25d5Lfo+3WexePnxBIsDu8eaeWsYPVqae9g8Ni+p9+jbsorR4/iN7Uwe
+	nzfJBbBFcdmkpOZklqUW6dslcGWsnHSQvWAPV8WunxuYGhi3cnQxcnJICJhILFi3jw3CFpO4
+	cG89kM3FISSwlFHib2c/M4TTyCRxt/U2I0iVsICLRMfXvWA2m4CZxLZ9EHERAX+J9VvOgzUw
+	C3QxSlz8cpMdJMEioCrx/thHpi5GDg5eAWOJSb/BwqICchIrL7ewgti8AoISPybfYwEpYRZQ
+	l5gyJRckzCwgL7F5zVvmCYx8s5BUzUKomoWkagEj8ypG0dTS5ILipPRcI73ixNzi0rx0veT8
+	3E2MkMD9uoNx6TGrQ4wCHIxKPLwcL04FC7EmlhVX5h5ilOBgVhLhTak/FyzEm5JYWZValB9f
+	VJqTWnyIkYmDU6qBcdNs005dC8H7aV+dOnVDHto7tFy+mqsW8JxLReHiz7+CgsHHyzauv3W5
+	R1zGcLn5ofc7976vPnzo4//YGi01gfqOldcZAs4dUOq6cLb4jKJ+bsqOLWyCdaeOaNT4zS/a
+	ZNCb7dxbLys4O+J25LYSK4GD3A8sTaYIpHCIGGyS++VqPWPJ5mgVJZbijERDLeai4kQAP0Kp
+	3DoCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 22.07.2014 17:17, schrieb Daniel Vetter:
-> On Tue, Jul 22, 2014 at 3:45 PM, Christian König
-> <deathsimple@vodafone.de> wrote:
->>> Would that be something you can agree to?
->>
->> No, the whole enable_signaling stuff should go away. No callback from the
->> driver into the fence code, only the other way around.
->>
->> fence->signaled as well as fence->wait should become mandatory and only
->> called from process context without holding any locks, neither atomic nor
->> any mutex/semaphore (rcu might be ok).
-> So for the enable_signaling, that's optional already. It's only for
-> drivers that don't want to keep interrupts enabled all the time. You
-> can opt out of that easily.
->
-> Wrt holding no locks at all while calling into any fence functions,
-> that's just not going to work out. The point here is to make different
-> drivers work together and we can rework all the ttm and i915 code to
-> work locklessly in all cases where they need to wait for someone to
-> complete rendering. Or at least I don't think that's feasible. So if
-> you insist that no one might call into radeon code then we simply need
-> to exclude radeon from participating in any shared fencing. But that's
-> a bit pointless.
->
->>> Like I've said I think restricting the insanity other people are willing
->>> to live with just because you don't like it isn't right. But it is
->>> certainly right for you to insist on not being forced into any such
->>> design. I think the above would achieve this.
->>
->> I don't think so. If it's just me I would say that I'm just to cautious and
->> the idea is still save to apply to the whole kernel.
->>
->> But since Dave, Jerome and Ben seems to have similar concerns I think we
->> need to agree to a minimum and save interface for all drivers.
-> Well I haven't yet seen a proposal that actually works.
+This patch fixes booting when idmap pgd lays above 4gb. Commit
+4756dcbfd37 mostly had fixed this, but it'd failed to load upper bits.
 
-How about this:
+Also this fixes adding TTBR1_OFFSET to TTRR1: if lower part overflows
+carry flag must be added to the upper part.
 
-Drivers exporting fences need to provide a fence->signaled and a 
-fence->wait function, everything else like fence->enable_signaling or 
-calling fence_signaled() from the driver is optional.
+Signed-off-by: Konstantin Khlebnikov <k.khlebnikov@samsung.com>
+Cc: Cyril Chemparathy <cyril@ti.com>
+Cc: Vitaly Andrianov <vitalya@ti.com>
+---
+ arch/arm/mm/proc-v7-3level.S |    7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
 
-Drivers wanting to use exported fences don't call fence->signaled or 
-fence->wait in atomic or interrupt context, and not with holding any 
-global locking primitives (like mmap_sem etc...). Holding locking 
-primitives local to the driver is ok, as long as they don't conflict 
-with anything possible used by their own fence implementation.
-
-Christian.
-
->   From an intel
-> pov I don't care that much since we don't care about desktop prime, so
-> if radeon/nouveau don't want to do that, meh. Imo the design as-is is
-> fairly sound, and as simple as it can get given the requirements. I
-> haven't heard an  argument convincing me otherwise, so I guess we
-> won't have prime support on linux that actually works, ever.
-> -Daniel
+diff --git a/arch/arm/mm/proc-v7-3level.S b/arch/arm/mm/proc-v7-3level.S
+index 22e3ad6..f0481dd 100644
+--- a/arch/arm/mm/proc-v7-3level.S
++++ b/arch/arm/mm/proc-v7-3level.S
+@@ -140,12 +140,11 @@ ENDPROC(cpu_v7_set_pte_ext)
+ 	mov	\tmp, \ttbr1, lsr #(32 - ARCH_PGD_SHIFT)	@ upper bits
+ 	mov	\ttbr1, \ttbr1, lsl #ARCH_PGD_SHIFT		@ lower bits
+ 	addls	\ttbr1, \ttbr1, #TTBR1_OFFSET
+-	mcrr	p15, 1, \ttbr1, \zero, c2			@ load TTBR1
++	adcls	\tmp, \tmp, #0
++	mcrr	p15, 1, \ttbr1, \tmp, c2			@ load TTBR1
+ 	mov	\tmp, \ttbr0, lsr #(32 - ARCH_PGD_SHIFT)	@ upper bits
+ 	mov	\ttbr0, \ttbr0, lsl #ARCH_PGD_SHIFT		@ lower bits
+-	mcrr	p15, 0, \ttbr0, \zero, c2			@ load TTBR0
+-	mcrr	p15, 1, \ttbr1, \zero, c2			@ load TTBR1
+-	mcrr	p15, 0, \ttbr0, \zero, c2			@ load TTBR0
++	mcrr	p15, 0, \ttbr0, \tmp, c2			@ load TTBR0
+ 	.endm
+ 
+ 	/*
 
