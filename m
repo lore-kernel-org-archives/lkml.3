@@ -1,50 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752166AbaGVBJ4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 21:09:56 -0400
-Received: from mail.nordixnett.no ([195.18.176.59]:21857 "EHLO
-	mail.nordixnett.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751317AbaGVBJz convert rfc822-to-8bit (ORCPT
+	id S1751817AbaGVBOt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 21:14:49 -0400
+Received: from mailapp01.imgtec.com ([195.59.15.196]:13122 "EHLO
+	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750800AbaGVBOr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 21:09:55 -0400
-X-Greylist: delayed 2992 seconds by postgrey-1.27 at vger.kernel.org; Mon, 21 Jul 2014 21:09:54 EDT
-Message-ID: <20140722014916.53211ntlrpiu1blo@webmail.nordixnett.no>
-Date: Tue, 22 Jul 2014 01:49:16 +0200
-From: STANDARD LOAN <standardloan0@rediffmail.com>
-To: undisclosed-recipients:;
-Subject: KREDIT ANGEBOT
+	Mon, 21 Jul 2014 21:14:47 -0400
+Message-ID: <53CDBB01.7040007@imgtec.com>
+Date: Mon, 21 Jul 2014 18:14:41 -0700
+From: Leonid Yegoshin <Leonid.Yegoshin@imgtec.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=ISO-8859-1;
- DelSp="Yes";
- format="flowed"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-User-Agent: Internet Messaging Program (IMP) H3 (4.3.11)
+To: David Rientjes <rientjes@google.com>
+CC: Max Filippov <jcmvbkbc@gmail.com>, <linux-mm@kvack.org>,
+        <linux-arch@vger.kernel.org>, <linux-mips@linux-mips.org>,
+        <linux-xtensa@linux-xtensa.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] mm/highmem: make kmap cache coloring aware
+References: <1405616598-14798-1-git-send-email-jcmvbkbc@gmail.com> <alpine.DEB.2.02.1407211754350.7042@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.02.1407211754350.7042@chino.kir.corp.google.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.65.146]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 07/21/2014 05:58 PM, David Rientjes wrote:
+> On Thu, 17 Jul 2014, Max Filippov wrote:
+>
+>> From: Leonid Yegoshin <Leonid.Yegoshin@imgtec.com>
+>>
+>> Provide hooks that allow architectures with aliasing cache to align
+>> mapping address of high pages according to their color. Such architectures
+>> may enforce similar coloring of low- and high-memory page mappings and
+>> reuse existing cache management functions to support highmem.
+>>
+> Typically a change like this would be proposed along with a change to an
+> architecture which would define this new ARCH_PKMAP_COLORING and have its
+> own overriding definitions.  Based on who you sent this patch to, it looks
+> like that would be mips and xtensa.  Now the only question is where are
+> those patches to add the alternate definitions for those platforms?
+Yes, there is one, at least for MIPS. This stuff can be a common ground 
+for both platforms (MIPS and XTENSA)
 
+>
+>> Signed-off-by: Leonid Yegoshin <Leonid.Yegoshin@imgtec.com>
+>> [ Max: extract architecture-independent part of the original patch, clean
+>>    up checkpatch and build warnings. ]
+>> Signed-off-by: Max Filippov <jcmvbkbc@gmail.com>
+>> ---
+>> Changes v1->v2:
+>> - fix description
+>>
+>>   mm/highmem.c | 19 ++++++++++++++++---
+>>   1 file changed, 16 insertions(+), 3 deletions(-)
+>>
+>> diff --git a/mm/highmem.c b/mm/highmem.c
+>> index b32b70c..6898a8b 100644
+>> --- a/mm/highmem.c
+>> +++ b/mm/highmem.c
+>> @@ -44,6 +44,14 @@ DEFINE_PER_CPU(int, __kmap_atomic_idx);
+>>    */
+>>   #ifdef CONFIG_HIGHMEM
+>>   
+>> +#ifndef ARCH_PKMAP_COLORING
+>> +#define set_pkmap_color(pg, cl)		/* */
+> This is typically done with do {} while (0).
+>
+>> +#define get_last_pkmap_nr(p, cl)	(p)
+>> +#define get_next_pkmap_nr(p, cl)	(((p) + 1) & LAST_PKMAP_MASK)
+>> +#define is_no_more_pkmaps(p, cl)	(!(p))
+> That's not gramatically proper.
+>
+>> +#define get_next_pkmap_counter(c, cl)	((c) - 1)
+>> +#endif
+>> +
+>>   unsigned long totalhigh_pages __read_mostly;
+>>   EXPORT_SYMBOL(totalhigh_pages);
+>>   
+>> @@ -161,19 +169,24 @@ static inline unsigned long map_new_virtual(struct page *page)
+>>   {
+>>   	unsigned long vaddr;
+>>   	int count;
+>> +	int color __maybe_unused;
+>> +
+>> +	set_pkmap_color(page, color);
+>> +	last_pkmap_nr = get_last_pkmap_nr(last_pkmap_nr, color);
+>>   
+>>   start:
+>>   	count = LAST_PKMAP;
+>>   	/* Find an empty entry */
+>>   	for (;;) {
+>> -		last_pkmap_nr = (last_pkmap_nr + 1) & LAST_PKMAP_MASK;
+>> -		if (!last_pkmap_nr) {
+>> +		last_pkmap_nr = get_next_pkmap_nr(last_pkmap_nr, color);
+>> +		if (is_no_more_pkmaps(last_pkmap_nr, color)) {
+>>   			flush_all_zero_pkmaps();
+>>   			count = LAST_PKMAP;
+>>   		}
+>>   		if (!pkmap_count[last_pkmap_nr])
+>>   			break;	/* Found a usable entry */
+>> -		if (--count)
+>> +		count = get_next_pkmap_counter(count, color);
+> And that's not equivalent at all, --count decrements the auto variable and
+> then tests it for being non-zero.  Your get_next_pkmap_counter() never
+> decrements count.
+David, the statements
 
+             count = get_next_pkmap_counter(count, color);
+             if (count > 0)
 
-Sie benötigen die Finanzierung?
-Haben Sie Geschäfts-oder persönliche Darlehen benötigen?
-Wollen Sie Ihr Unternehmen refinanzieren wollen?
+are extended in STANDARD (non colored) case to
 
-Unser Unternehmen ist in den Vereinigten Staaten und Europa. Wir geben  
-Darlehen an jedem einzelnen Unternehmen und bei 2% Zinsen jährlich.  
-Für weitere Informationen, Kontakt E-standardloan0@rediffmail.com
+             count = (count - 1);
+             if (count > 0)
 
-Hinweis: Leiten Sie Ihre Antwort auf diese E-Mail NUR:  
-standardloan0@rediffmail.com
+which are perfect equivalent of
 
-==========================================================
+             if (--count)
 
-Do you need funding?
-Do you need Business or personal Loan?
-Do you wish to refinance your company?
+>
+>> +		if (count > 0)
+>>   			continue;
+>>   
+>>   		/*
 
-Our company is based in United States and Europe. We give out loan to  
-any individual and company at 2% interest rate yearly. For more  
-information, Contact Email: standardloan0@rediffmail.com
