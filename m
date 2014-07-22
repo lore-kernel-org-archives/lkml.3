@@ -1,102 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755396AbaGVLDw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 07:03:52 -0400
-Received: from mail-ig0-f180.google.com ([209.85.213.180]:49048 "EHLO
-	mail-ig0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755106AbaGVLDs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 07:03:48 -0400
-Date: Tue, 22 Jul 2014 12:03:41 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Stanimir Varbanov <svarbanov@mm-sol.com>
-Cc: linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Pawel Moll <pawel.moll@arm.com>, Rob Herring <robh+dt@kernel.org>,
-        Kumar Gala <galak@codeaurora.org>, Mark Rutland <mark.rutland@arm.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Courtney Cavin <courtney.cavin@sonymobile.com>,
-        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
-        Josh Cartwright <joshc@codeaurora.org>
-Subject: Re: [PATCH v2 1/4] mfd: pm8xxx-spmi: add support for Qualcomm SPMI
- PMICs
-Message-ID: <20140722110341.GE8406@lee--X1>
-References: <1405613855-27572-1-git-send-email-svarbanov@mm-sol.com>
- <1405613855-27572-2-git-send-email-svarbanov@mm-sol.com>
+	id S1754876AbaGVLE3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 07:04:29 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:56757 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754154AbaGVK5Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 06:57:16 -0400
+From: Kishon Vijay Abraham I <kishon@ti.com>
+To: <gregkh@linuxfoundation.org>
+CC: <kishon@ti.com>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH 04/28] phy: sun4i-usb: Use PTR_ERR_OR_ZERO
+Date: Tue, 22 Jul 2014 16:26:27 +0530
+Message-ID: <1406026611-30493-5-git-send-email-kishon@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1406026611-30493-1-git-send-email-kishon@ti.com>
+References: <1406026611-30493-1-git-send-email-kishon@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1405613855-27572-2-git-send-email-svarbanov@mm-sol.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 17 Jul 2014, Stanimir Varbanov wrote:
+From: Sachin Kamat <sachin.kamat@linaro.org>
 
-> From: Josh Cartwright <joshc@codeaurora.org>
-> 
-> The Qualcomm SPMI PMIC chips are components used with the
-> Snapdragon 800 series SoC family.  This driver exists
-> largely as a glue mfd component, it exists to be an owner
-> of an SPMI regmap for children devices described in
-> device tree.
-> 
-> Signed-off-by: Stanimir Varbanov <svarbanov@mm-sol.com>
+PTR_ERR_OR_ZERO simplifies the code.
 
-Needs to be signed off by the author.
+Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
+Cc: Maxime Ripard <maxime.ripard@free-electrons.com>
+Acked-by: Hans de Goede <hdegoede@redhat.com>
+Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+---
+ drivers/phy/phy-sun4i-usb.c |    5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
 
-> ---
->  drivers/mfd/Kconfig       |   16 +++++++++++
->  drivers/mfd/Makefile      |    1 +
->  drivers/mfd/pm8xxx-spmi.c |   63 +++++++++++++++++++++++++++++++++++++++++++++
->  3 files changed, 80 insertions(+), 0 deletions(-)
->  create mode 100644 drivers/mfd/pm8xxx-spmi.c
-
-[...]
-
-> +++ b/drivers/mfd/pm8xxx-spmi.c
-> @@ -0,0 +1,63 @@
-> +/*
-> + * Copyright (c) 2014, The Linux Foundation. All rights reserved.
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 and
-> + * only version 2 as published by the Free Software Foundation.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + */
-
-There should be a '\n' here.
-
-> +#include <linux/kernel.h>
-> +#include <linux/module.h>
-> +#include <linux/spmi.h>
-> +#include <linux/regmap.h>
-> +#include <linux/of_platform.h>
-
-[...]
-
-> +MODULE_DESCRIPTION("PM8XXX SPMI PMIC driver");
-> +MODULE_ALIAS("platform:" KBUILD_MODNAME);
-> +MODULE_AUTHOR("The Linux Foundation");
-
-The Linux Foundation did not write this patch.
-
-> +MODULE_LICENSE("GPL v2");
-
-Appart from that:
-
-Acked-by: Lee Jones <lee.jones@linaro.org>
-
+diff --git a/drivers/phy/phy-sun4i-usb.c b/drivers/phy/phy-sun4i-usb.c
+index 115d8d5..7a4ea55 100644
+--- a/drivers/phy/phy-sun4i-usb.c
++++ b/drivers/phy/phy-sun4i-usb.c
+@@ -22,6 +22,7 @@
+  */
+ 
+ #include <linux/clk.h>
++#include <linux/err.h>
+ #include <linux/io.h>
+ #include <linux/kernel.h>
+ #include <linux/module.h>
+@@ -306,10 +307,8 @@ static int sun4i_usb_phy_probe(struct platform_device *pdev)
+ 
+ 	dev_set_drvdata(dev, data);
+ 	phy_provider = devm_of_phy_provider_register(dev, sun4i_usb_phy_xlate);
+-	if (IS_ERR(phy_provider))
+-		return PTR_ERR(phy_provider);
+ 
+-	return 0;
++	return PTR_ERR_OR_ZERO(phy_provider);
+ }
+ 
+ static const struct of_device_id sun4i_usb_phy_of_match[] = {
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+1.7.9.5
+
