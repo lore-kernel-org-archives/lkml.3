@@ -1,78 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751709AbaGVApm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jul 2014 20:45:42 -0400
-Received: from mail-ie0-f178.google.com ([209.85.223.178]:48601 "EHLO
-	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750889AbaGVApk (ORCPT
+	id S1751783AbaGVAq2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jul 2014 20:46:28 -0400
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:52356 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751531AbaGVAq0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jul 2014 20:45:40 -0400
-Date: Mon, 21 Jul 2014 17:45:38 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Andrew Morton <akpm@linux-foundation.org>, Lennox Wu <lennox.wu@gmail.com>
-cc: Guenter Roeck <linux@roeck-us.net>, Liqin Chen <liqin.linux@gmail.com>,
-        Chen Gang <gang.chen.5i5j@gmail.com>, linux-kernel@vger.kernel.org
-Subject: [patch] score, ptrace: Remove the macros which not be used
- currently
-In-Reply-To: <alpine.DEB.2.02.1407171437270.5185@chino.kir.corp.google.com>
-Message-ID: <alpine.DEB.2.02.1407211744190.7042@chino.kir.corp.google.com>
-References: <53AC10CB.3000007@gmail.com> <alpine.DEB.2.02.1406261456150.12443@chino.kir.corp.google.com> <alpine.DEB.2.02.1407161849090.19429@chino.kir.corp.google.com> <CAF0htA5eVTPQC0c1XfzU=RHnNWLtRgtYbN+se5HPLYkJ9_E=5w@mail.gmail.com> <53C73534.1090502@roeck-us.net>
- <CAF0htA6awFMsfPRRr9=s4Hcxcu586WHWRwyg=C0zc2Yr7CyvKQ@mail.gmail.com> <alpine.DEB.2.02.1407171437270.5185@chino.kir.corp.google.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Mon, 21 Jul 2014 20:46:26 -0400
+Message-ID: <53CDB45C.10805@collabora.co.uk>
+Date: Tue, 22 Jul 2014 02:46:20 +0200
+From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Mark Brown <broonie@kernel.org>
+CC: Lee Jones <lee.jones@linaro.org>, Mike Turquette <mturquette@linaro.org>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
+        Tomeu Vizoso <tomeu.vizoso@collabora.com>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Yadwinder Singh Brar <yadi.brar01@gmail.com>,
+        Tushar Behera <trblinux@gmail.com>, Andreas Farber <afaerber@suse.de>,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v8 00/13] Add Maxim 77802 PMIC support
+References: <1405337769-3741-1-git-send-email-javier.martinez@collabora.co.uk> <53CD0B17.5040706@collabora.co.uk> <20140722001053.GO17528@sirena.org.uk>
+In-Reply-To: <20140722001053.GO17528@sirena.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Chen Gang <gang.chen.5i5j@gmail.com>
+On 07/22/2014 02:10 AM, Mark Brown wrote:
+> On Mon, Jul 21, 2014 at 02:44:07PM +0200, Javier Martinez Canillas wrote:
+>> On 07/14/2014 01:35 PM, Javier Martinez Canillas wrote:
+> 
+>> Mark, Mike and Alessandro,
+> 
+>> This is a gentle reminder to look at the patches that touches your subsystems
+>> and provide acks if possible so Lee can merge the remainder set through the mfd
+>> tree.
+> 
+> Please stop nagging, you are chasing after only one week which is
+> excessive for something that isn't an urgent bugfix (especially
+> with a series like this that has had many rapid repins).  Several weeks
+> to a month would be more appropriate, and then resending the patches
+> rather than sending contentless pings is more useful.  Sending mails
+> like this just means that people have more mail to read that isn't your
+> patch, it is more likely to get you negative attention than positive -
+> for example, I will tend to deprioritise things where I'm being chased
+> too urgently as I do not wish to encourage such behaviour by being seen
+> to reward it.
+> 
 
-'COUNTER' and other same kind macros are too common to use, and easy to
-get conflict with other modules.
+I didn't mean to bother you. It's true that it has been only a week since I
+posted v8 of this series but I didn't have feedback for the clock, rtc and
+regulator drivers since v5 which was posted on June, 26 so I thought that a ping
+just to be sure it was not forgotten was not that bad. But sorry I won't do it
+again and will just wait.
 
-At present, they are not used, so it is OK to simply remove them. And the
-related warning (allmodconfig with score):
+About the many re-spins, as most mfd drivers this PMIC support touches different
+subsystems and the series had many patches so each time I had feedback for some
+patches I prepared a new version and reposted the whole series. This doesn't
+mean that all the patches changed from version to version though, some patches
+have not changed for several revisions.
 
-    CC [M]  drivers/md/raid1.o
-  In file included from drivers/md/raid1.c:42:0:
-  drivers/md/bitmap.h:93:0: warning: "COUNTER" redefined
-   #define COUNTER(x) (((bitmap_counter_t) x) & COUNTER_MAX)
-   ^
-  In file included from ./arch/score/include/asm/ptrace.h:4:0,
-                   from include/linux/sched.h:31,
-                   from include/linux/blkdev.h:4,
-                   from drivers/md/raid1.c:36:
-  ./arch/score/include/uapi/asm/ptrace.h:13:0: note: this is the location of the previous definition
-   #define COUNTER  38
+> In general I would recommend taking a step back, slowing down, and if
+> you are not getting a response either thinking of something else to do
+> in parallel or trying to do things that make it easier to accept your
+> change if there are any (sometimes it's just a case of waiting).  Look
+> at how frequently the relevant maintainers tend to respond, at what the
+> previous review comments have been and also consider the possibility
+> that people might take holidays or just be busy.
+> 
 
-Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
-Signed-off-by: David Rientjes <rientjes@google.com>
----
- Andrew, since the maintainers of score are non-responsive, could you 
- please pick this up?
+Sorry, I didn't mean to imply that you are not busy or might be on holidays. I
+guess I just got anxious due the merge window being close...
 
- arch/score/include/uapi/asm/ptrace.h | 11 -----------
- 1 file changed, 11 deletions(-)
-
-diff --git a/arch/score/include/uapi/asm/ptrace.h b/arch/score/include/uapi/asm/ptrace.h
---- a/arch/score/include/uapi/asm/ptrace.h
-+++ b/arch/score/include/uapi/asm/ptrace.h
-@@ -4,17 +4,6 @@
- #define PTRACE_GETREGS		12
- #define PTRACE_SETREGS		13
- 
--#define PC		32
--#define CONDITION	33
--#define ECR		34
--#define EMA		35
--#define CEH		36
--#define CEL		37
--#define COUNTER		38
--#define LDCR		39
--#define STCR		40
--#define PSR		41
--
- #define SINGLESTEP16_INSN	0x7006
- #define SINGLESTEP32_INSN	0x840C8000
- #define BREAKPOINT16_INSN	0x7002		/* work on SPG300 */
+Best regards,
+Javier
