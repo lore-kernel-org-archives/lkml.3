@@ -1,57 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756018AbaGVNeH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 09:34:07 -0400
-Received: from smtprelay0006.hostedemail.com ([216.40.44.6]:34662 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755999AbaGVNeE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 09:34:04 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:599:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1539:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3870:3871:3872:4250:4321:4605:5007:6119:7652:10004:10400:10562:10848:11026:11232:11658:11914:12217:12517:12519:12740:13069:13161:13229:13255:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: wall71_5da92bd73b51
-X-Filterd-Recvd-Size: 1576
-Message-ID: <1406036038.30871.19.camel@joe-AO725>
-Subject: Re: [PATCH 09/19] mfd: ezx-pcap: Repair coding style errors picked
- up with checkpatch
-From: Joe Perches <joe@perches.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        sameo@linux.intel.com
-Date: Tue, 22 Jul 2014 06:33:58 -0700
-In-Reply-To: <1406027485-15657-10-git-send-email-lee.jones@linaro.org>
-References: <1406027485-15657-1-git-send-email-lee.jones@linaro.org>
-	 <1406027485-15657-10-git-send-email-lee.jones@linaro.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1756021AbaGVNee (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 09:34:34 -0400
+Received: from mga02.intel.com ([134.134.136.20]:51607 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754142AbaGVNT7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 09:19:59 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,710,1400050800"; 
+   d="scan'208";a="576985454"
+From: Adrian Hunter <adrian.hunter@intel.com>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH 05/52] perf tools: Add machine__kernel_ip()
+Date: Tue, 22 Jul 2014 16:17:14 +0300
+Message-Id: <1406035081-14301-6-git-send-email-adrian.hunter@intel.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1406035081-14301-1-git-send-email-adrian.hunter@intel.com>
+References: <1406035081-14301-1-git-send-email-adrian.hunter@intel.com>
+Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki, Business Identity Code: 0357606 - 4, Domiciled in Helsinki
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-07-22 at 12:11 +0100, Lee Jones wrote:
-> This is part of an effort to clean-up the MFD subsystem.
-> 
-> WARNING: Missing a blank line after declarations
-> +       u32 flags;
-> +       void (*callback)(void *, u16[]);
+Add a function to determine if an address is in
+the kernel.  This is based on the kernel function
+kernel_ip().
 
-False positive from an old version of checkpatch.
+Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+---
+ tools/perf/util/event.c   |  6 +++---
+ tools/perf/util/machine.c | 23 +++++++++++++++++++++++
+ tools/perf/util/machine.h | 17 +++++++++++++++++
+ 3 files changed, 43 insertions(+), 3 deletions(-)
 
-The one in -next doesn't emit this as it's
-simply a function pointer declaration.
-
-> diff --git a/drivers/mfd/ezx-pcap.c b/drivers/mfd/ezx-pcap.c
-[]
-> @@ -25,8 +25,9 @@ struct pcap_adc_request {
->  	u8 bank;
->  	u8 ch[2];
->  	u32 flags;
-> -	void (*callback)(void *, u16[]);
->  	void *data;
-> +
-> +	void (*callback)(void *, u16[]);
->  };
-
+diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
+index 7e0e8ae..d1283cc 100644
+--- a/tools/perf/util/event.c
++++ b/tools/perf/util/event.c
+@@ -784,9 +784,9 @@ try_again:
+ 		 * "[vdso]" dso, but for now lets use the old trick of looking
+ 		 * in the whole kernel symbol list.
+ 		 */
+-		if ((long long)al->addr < 0 &&
+-		    cpumode == PERF_RECORD_MISC_USER &&
+-		    machine && mg != &machine->kmaps) {
++		if (cpumode == PERF_RECORD_MISC_USER && machine &&
++		    mg != &machine->kmaps &&
++		    machine__kernel_ip(machine, al->addr)) {
+ 			mg = &machine->kmaps;
+ 			load_map = true;
+ 			goto try_again;
+diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
+index f0539aa..04c17a7 100644
+--- a/tools/perf/util/machine.c
++++ b/tools/perf/util/machine.c
+@@ -29,6 +29,7 @@ int machine__init(struct machine *machine, const char *root_dir, pid_t pid)
+ 	machine->symbol_filter = NULL;
+ 	machine->id_hdr_size = 0;
+ 	machine->comm_exec = false;
++	machine->kernel_start = 0;
+ 
+ 	machine->root_dir = strdup(root_dir);
+ 	if (machine->root_dir == NULL)
+@@ -1509,3 +1510,25 @@ int __machine__synthesize_threads(struct machine *machine, struct perf_tool *too
+ 	/* command specified */
+ 	return 0;
+ }
++
++int machine__get_kernel_start(struct machine *machine)
++{
++	struct map *map = machine__kernel_map(machine, MAP__FUNCTION);
++	int err = 0;
++
++	/*
++	 * The only addresses above 2^63 are kernel addresses of a 64-bit
++	 * kernel.  Note that addresses are unsigned so that on a 32-bit system
++	 * all addresses including kernel addresses are less than 2^32.  In
++	 * that case (32-bit system), if the kernel mapping is unknown, all
++	 * addresses will be assumed to be in user space - see
++	 * machine__kernel_ip().
++	 */
++	machine->kernel_start = 1ULL << 63;
++	if (map) {
++		err = map__load(map, machine->symbol_filter);
++		if (map->start)
++			machine->kernel_start = map->start;
++	}
++	return err;
++}
+diff --git a/tools/perf/util/machine.h b/tools/perf/util/machine.h
+index 383c725..be97021 100644
+--- a/tools/perf/util/machine.h
++++ b/tools/perf/util/machine.h
+@@ -33,6 +33,7 @@ struct machine {
+ 	struct list_head  kernel_dsos;
+ 	struct map_groups kmaps;
+ 	struct map	  *vmlinux_maps[MAP__NR_TYPES];
++	u64		  kernel_start;
+ 	symbol_filter_t	  symbol_filter;
+ };
+ 
+@@ -42,6 +43,22 @@ struct map *machine__kernel_map(struct machine *machine, enum map_type type)
+ 	return machine->vmlinux_maps[type];
+ }
+ 
++int machine__get_kernel_start(struct machine *machine);
++
++static inline u64 machine__kernel_start(struct machine *machine)
++{
++	if (!machine->kernel_start)
++		machine__get_kernel_start(machine);
++	return machine->kernel_start;
++}
++
++static inline bool machine__kernel_ip(struct machine *machine, u64 ip)
++{
++	u64 kernel_start = machine__kernel_start(machine);
++
++	return ip >= kernel_start;
++}
++
+ struct thread *machine__find_thread(struct machine *machine, pid_t pid,
+ 				    pid_t tid);
+ struct comm *machine__thread_exec_comm(struct machine *machine,
+-- 
+1.8.3.2
 
