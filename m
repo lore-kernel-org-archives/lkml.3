@@ -1,62 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934054AbaGVW7u (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 18:59:50 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44336 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757088AbaGVWWe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 18:22:34 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Felipe Balbi <balbi@ti.com>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 005/116] usb: dwc3: gadget: clear stall when disabling endpoint
-Date: Tue, 22 Jul 2014 15:20:16 -0700
-Message-Id: <1406067727-19683-6-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1406067727-19683-1-git-send-email-kamal@canonical.com>
-References: <1406067727-19683-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.8
+	id S934068AbaGVW76 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 18:59:58 -0400
+Received: from imap.thunk.org ([74.207.234.97]:51128 "EHLO imap.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932866AbaGVW7z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 18:59:55 -0400
+Date: Tue, 22 Jul 2014 18:59:50 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Cc: George Spelvin <linux@horizon.com>, linux-crypto@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH, RFC] random: introduce getrandom(2) system call
+Message-ID: <20140722225950.GU25291@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Hannes Frederic Sowa <hannes@stressinduktion.org>,
+	George Spelvin <linux@horizon.com>, linux-crypto@vger.kernel.org,
+	linux-kernel@vger.kernel.org
+References: <20140721112102.19300.qmail@ns.horizon.com>
+ <1405956426.2319.37.camel@localhost>
+ <1405990940.28229.4.camel@localhost>
+ <20140722044409.GE24960@thunk.org>
+ <1406022592.2407.9.camel@localhost>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1406022592.2407.9.camel@localhost>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8.13.27 -stable review patch.  If anyone has any objections, please let me know.
+On Tue, Jul 22, 2014 at 11:49:52AM +0200, Hannes Frederic Sowa wrote:
+> 
+> I think a lot of checks are of the type "if (getrandom() < 0)", so this
+> actually was the kind of programming errors I wanted to guard against. 
+> Also, on some systems it is very likely that we return a short write to
+> user space, so it prevents this very common situation. Even if one would
+> like to extract 64 bytes randomness, one would often need two calls to
+> getrandom() on my virtualized systems. Would be great to know that in
+> blocking mode, either I get a -1 or the buffer is always filled and I
+> won't need to do pointer arithmetic to fill the rest of the buffer.
 
-------------------
+But why would you need to use GRND_RANDOM in your scenario, and accept
+your application potentially getting stalled and stuck in amber for
+perhaps hours?  If you are going to accept your application stalling
+like that, you can do the pointer arithmatic.  It's really not hard,
+and someone who can't do that, again, shouldn't be allowd anywhere
+near crypto code in the first place (and if they are, they'll probably
+be making lots of other, equally fatal if not more so, newbie
+mistakes).
 
-From: Felipe Balbi <balbi@ti.com>
-
-commit 687ef9817df7ed960d14575b9033dde3d04631fe upstream.
-
-so it seems like DWC3 IP doesn't clear stalls
-automatically when we disable an endpoint, because
-of that, we _must_ make sure stalls are cleared
-before clearing the proper bit in DALEPENA register.
-
-Reported-by: Johannes Stezenbach <js@sig21.net>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- drivers/usb/dwc3/gadget.c | 4 ++++
- 1 file changed, 4 insertions(+)
-
-diff --git a/drivers/usb/dwc3/gadget.c b/drivers/usb/dwc3/gadget.c
-index 418288e..288ec5e 100644
---- a/drivers/usb/dwc3/gadget.c
-+++ b/drivers/usb/dwc3/gadget.c
-@@ -603,6 +603,10 @@ static int __dwc3_gadget_ep_disable(struct dwc3_ep *dep)
- 
- 	dwc3_remove_requests(dwc, dep);
- 
-+	/* make sure HW endpoint isn't stalled */
-+	if (dep->flags & DWC3_EP_STALL)
-+		__dwc3_gadget_ep_set_halt(dep, 0);
-+
- 	reg = dwc3_readl(dwc->regs, DWC3_DALEPENA);
- 	reg &= ~DWC3_DALEPENA_EP(dep->number);
- 	dwc3_writel(dwc->regs, DWC3_DALEPENA, reg);
--- 
-1.9.1
-
+							- Ted
