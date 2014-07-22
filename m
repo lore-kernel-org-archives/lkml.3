@@ -1,31 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756064AbaGVQRZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 12:17:25 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:48071 "EHLO
+	id S1756095AbaGVQRc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 12:17:32 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:48483 "EHLO
 	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755382AbaGVQRX (ORCPT
+	by vger.kernel.org with ESMTP id S1755382AbaGVQR3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 12:17:23 -0400
-Message-ID: <1406045843.25343.71.camel@hornet>
+	Tue, 22 Jul 2014 12:17:29 -0400
+Message-ID: <1406045849.25343.72.camel@hornet>
 Subject: Re: [RFC] sched_clock: Track monotonic raw clock
 From: Pawel Moll <pawel.moll@arm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: John Stultz <john.stultz@linaro.org>, Steven Rostedt <rostedt@goodmis.org>,
-        Ingo Molnar <mingo@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
+To: Richard Cochran <richardcochran@gmail.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Mel Gorman <mgorman@suse.de>, Andy Lutomirski <luto@amacapital.net>,
+        John Stultz <john.stultz@linaro.org>,
         Stephen Boyd <sboyd@codeaurora.org>, Baruch Siach <baruch@tkos.co.il>,
         Thomas Gleixner <tglx@linutronix.de>,
-        lkml <linux-kernel@vger.kernel.org>
-Date: Tue, 22 Jul 2014 17:17:23 +0100
-In-Reply-To: <20140718224100.GV3588@twins.programming.kicks-ass.net>
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Tue, 22 Jul 2014 17:17:29 +0100
+In-Reply-To: <20140719050233.GA4408@netboy>
 References: <1405705419-4194-1-git-send-email-pawel.moll@arm.com>
-	 <20140718191338.GF3935@laptop>
-	 <CALAqxLX4ia_dBO-oNY1XMnSrJdDZc87EneHj9WcxtOZaupZaCg@mail.gmail.com>
-	 <20140718193417.GG3935@laptop> <53C97995.2090500@linaro.org>
-	 <20140718202250.GR9918@twins.programming.kicks-ass.net>
-	 <20140718224100.GV3588@twins.programming.kicks-ass.net>
+	 <20140719050233.GA4408@netboy>
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.10.4-0ubuntu1 
 Mime-Version: 1.0
@@ -34,57 +31,55 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-07-18 at 23:41 +0100, Peter Zijlstra wrote:
-> So something that might be usable for all of us would be the
-> 'abstracted' control loop.
+On Sat, 2014-07-19 at 06:02 +0100, Richard Cochran wrote:
+> On Fri, Jul 18, 2014 at 06:43:39PM +0100, Pawel Moll wrote:
+> > 
+> > This code definitely needs more work and testing (I'm not 100%
+> > sure if the Kp and Ki I've picked for the proportional and
+> > integral terms are universal),
 > 
-> So the problem is, given a Set Point (CLOCK_MONOTONIC_RAW), a Process
-> Variable (sched_clock) compute a Control Output (multiplier).
-> 
-> If that were implemented with an interface like:
-> 
-> 
-> struct sched_clock_cl; /* Control Loop state */
-> 
-> /**
->  * sched_clock_cl_init - intialize the control loop
->  */
-> extern void sched_clock_cl_init(struct sched_clock_cl *sccl, u32 mult, u32 shift);
-> 
-> /**
->  * sched_clock_cl_update - compute a new multiplier for sched_clock
->  * @sccl - pointer to control loop state structure
->  * @sp - current set-point, aka. CLOCK_MONOTONIC_RAW
->  * @pv - current process-variable, aka. sched_clock()
->  */
-> extern u32 sched_clock_cl_update(struct sched_clock_cl *sccl, u64 sp, u64 pv);
+> I wouldn't bet on it.
 
-Yeah, happy to provide this.
+Yeah, I should have said: I'm 100% sure they are not universal.
 
-> That way I can run one per-cpu and try and keep each individual CPU
-> synced up to CLOCK_MONOTONIC_RAW, thereby also providing some inter-cpu
-> guarantee (due to max error bounds on the control loop, etc..).
+> > but for now wanted to see
+> > if this approach makes any sense whatsoever.
 > 
-> And you can run a single instance for the generic sched_clock code,
-> since that's globally consistent.
+> You are reading sched_clock and mono-raw together every so
+> often. Really stupid question: Why not just place that information
+> into the trace buffer and let user space do the clock correction?
+
+That approach has been also discussed, last time in the mentioned
+thread:
+
+http://thread.gmane.org/gmane.linux.kernel/1611683/focus=1612554
+http://thread.gmane.org/gmane.linux.kernel/1611683/focus=1612554
+
+With both Ingo and John showing preference towards the clock alignment,
+so that's where I looked this time (I've already done custom perf
+ioctls, posix clocks... don't really know how many different ways I've
+tried).
+
+> ...
 > 
-> And we'd all still be using the same control loop logic.
+> > +		/* Tune the cyc_to_ns formula */
+> > +		mult_adj = sign * (error >> 2) + (cd.error_int >> 2);
 > 
-> Now, I already mentioned max error bounds, and I've not yet looked at
-> your actual control loop, but that is something to keep in mind, we want
-> something that's limited.
+> So Kp = Ki = 0.25? And did you say that the sample rate is 10/second?
+> 
+> I guess that, while this works well on your machine, it might not
+> always do so, depending on the mono-raw clock. Probably Kp/i need to
+> be tunable to a particular system. Even better would be to leave this
+> out of the kernel altogether.
 
-Indeed. Richard has already expressed concerns that my coefficients
-won't work everywhere (as in with different clock rate ratios) and he's
-most likely right. My money is on a more advanced, "self-tuning"
-solution, where we definitely need an escape condition.
+My hope is that, given that time correlation is pretty "static" process
+(the clock skew should be reasonable, otherwise the time source are
+plainly rubbish), there will be a way of implementing this in a
+self-tuning way. I may be proven wrong, but it seems like a noble thing
+to try.
 
-> If we can do this (and I'm fairly sure we can) we can in fact kill some
-> rather ugly code.
-
-I'm really glad we're more or less on the same page. Will do some more
-research in different conditions. Of course all ideas and suggestions
-are more than welcome!
+I fully agree that there is no place for manual PI regulator tuning in
+the kernel.
 
 Pawel
 
