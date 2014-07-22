@@ -1,53 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756020AbaGVQAH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 12:00:07 -0400
-Received: from mail-vc0-f172.google.com ([209.85.220.172]:36450 "EHLO
-	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755703AbaGVQAE (ORCPT
+	id S1755906AbaGVQEn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 12:04:43 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:56184 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752205AbaGVQEl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 12:00:04 -0400
-MIME-Version: 1.0
-X-Originating-IP: [173.13.129.225]
-In-Reply-To: <53CE556C.10607@st.com>
-References: <1401899424-1365-1-git-send-email-peter.griffin@linaro.org>
-	<1401899424-1365-11-git-send-email-peter.griffin@linaro.org>
-	<53A80754.9000900@st.com>
-	<53CE556C.10607@st.com>
-Date: Tue, 22 Jul 2014 09:00:02 -0700
-Message-ID: <CAOesGMhEnwGJR+SgM6XJhW9WT5LAo_-Hxd+kfQHBz7thu+QFJA@mail.gmail.com>
-Subject: Re: [STLinux Kernel] [PATCH v3 10/10] MAINTAINERS: Add sdhci-st file
- to ARCH/STI architecture
-From: Olof Johansson <olof@lixom.net>
-To: Maxime Coquelin <maxime.coquelin@st.com>
-Cc: Peter Griffin <peter.griffin@linaro.org>,
+	Tue, 22 Jul 2014 12:04:41 -0400
+Date: Tue, 22 Jul 2014 17:04:08 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Laura Abbott <lauraa@codeaurora.org>
+Cc: Will Deacon <Will.Deacon@arm.com>, David Riley <davidriley@chromium.org>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Chris Ball <chris@printf.net>, Ulf Hansson <ulf.hansson@linaro.org>,
-        Patrice CHOTARD <patrice.chotard@st.com>,
-        Srinivas Kandagatla <srinivas.kandagatla@gmail.com>,
-        Arnd Bergmann <arnd@arndb.de>, Kevin Hilman <khilman@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "kernel@stlinux.com" <kernel@stlinux.com>
-Content-Type: text/plain; charset=UTF-8
+        Ritesh Harjain <ritesh.harjani@gmail.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCHv4 3/5] common: dma-mapping: Introduce common remapping
+ functions
+Message-ID: <20140722160408.GM2219@arm.com>
+References: <1404324218-4743-1-git-send-email-lauraa@codeaurora.org>
+ <1404324218-4743-4-git-send-email-lauraa@codeaurora.org>
+ <20140718135349.GB4608@arm.com>
+ <53CD6B1C.2010801@codeaurora.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53CD6B1C.2010801@codeaurora.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 22, 2014 at 5:13 AM, Maxime Coquelin <maxime.coquelin@st.com> wrote:
-> Hi Olof, Arnd, Kevin,
->
->         I am preparing two tags for v3.17 regarding STi platform.
->         One for DT, and one for defconfigs.
->
->         Except this one, I have no patches for ARM-SoC.
->         Can you take this patch directly?
->
->         Or should I send a pull request with this one only?
+On Mon, Jul 21, 2014 at 08:33:48PM +0100, Laura Abbott wrote:
+> On 7/18/2014 6:53 AM, Catalin Marinas wrote:
+> > On Wed, Jul 02, 2014 at 07:03:36PM +0100, Laura Abbott wrote:
+> >> +void *dma_common_pages_remap(struct page **pages, size_t size,
+> >> +			unsigned long vm_flags, pgprot_t prot,
+> >> +			const void *caller)
+> >> +{
+> >> +	struct vm_struct *area;
+> >> +
+> >> +	area = get_vm_area_caller(size, vm_flags, caller);
+> >> +	if (!area)
+> >> +		return NULL;
+> >> +
+> >> +	if (map_vm_area(area, prot, &pages)) {
+> >> +		vunmap(area->addr);
+> >> +		return NULL;
+> >> +	}
+> >> +
+> >> +	return area->addr;
+> >> +}
+> > 
+> > Why not just replace this function with vmap()? It is nearly identical.
+> 
+> With this version, the caller stored and printed via /proc/vmallocinfo
+> is the actual caller of the DMA API whereas if we just call vmap we
+> don't get any useful caller information. Going to vmap would change
+> the existing behavior on ARM so it seems unwise to switch.
 
-We can apply directly. I'll do that in a moment here.
+OK.
 
+> Another option is to move this into vmalloc.c and add vmap_caller.
 
--Olof
+Maybe as a subsequent clean-up (once this series gets merged).
+
+-- 
+Catalin
