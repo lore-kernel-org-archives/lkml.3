@@ -1,51 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754170AbaGVJ33 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 05:29:29 -0400
-Received: from mga14.intel.com ([192.55.52.115]:62386 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752667AbaGVJ32 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 05:29:28 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,709,1400050800"; 
-   d="scan'208";a="565362189"
-Date: Tue, 22 Jul 2014 17:30:23 +0800
-From: Wanpeng Li <wanpeng.li@linux.intel.com>
-To: "Chen, Gong" <gong.chen@linux.intel.com>
-Cc: hpa@zytor.com, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>, x86@kernel.org,
-        Borislav Petkov <bp@alien8.de>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>,
-        Prarit Bhargava <prarit@redhat.com>,
-        Steven Rostedt <srostedt@redhat.com>,
-        Jan Kiszka <jan.kiszka@siemens.com>, Toshi Kani <toshi.kani@hp.com>,
-        linux-kernel@vger.kernel.org, Wanpeng Li <wanpeng.li@linux.intel.com>
-Subject: Re: [PATCH v2] x86, hotplug: fix llc shared map unreleased during
- cpu hotplug
-Message-ID: <20140722093023.GA6841@kernel>
-Reply-To: Wanpeng Li <wanpeng.li@linux.intel.com>
-References: <1406016292-55968-1-git-send-email-wanpeng.li@linux.intel.com>
- <20140722084641.GA5730@gchen.bj.intel.com>
+	id S1754233AbaGVJbf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 05:31:35 -0400
+Received: from mx08-00178001.pphosted.com ([91.207.212.93]:44673 "EHLO
+	mx08-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752802AbaGVJbd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 05:31:33 -0400
+Message-ID: <53CE2F58.3040508@st.com>
+Date: Tue, 22 Jul 2014 11:31:04 +0200
+From: Maxime Coquelin <maxime.coquelin@st.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140722084641.GA5730@gchen.bj.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Lee Jones <lee.jones@linaro.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>
+Cc: <kernel@stlinux.com>, <devicetree@vger.kernel.org>
+Subject: Re: [PATCH v2 1/1] ARM: DT: STi: STiH416: Add DT node for ST's SATA
+ device
+References: <1405931573-12407-1-git-send-email-lee.jones@linaro.org> <20140722092834.GA8406@lee--X1>
+In-Reply-To: <20140722092834.GA8406@lee--X1>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.201.23.80]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.14,0.0.0000
+ definitions=2014-07-22_04:2014-07-22,2014-07-22,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 22, 2014 at 04:46:41AM -0400, Chen, Gong wrote:
->On Tue, Jul 22, 2014 at 04:04:52PM +0800, Wanpeng Li wrote:
->> Subject: [PATCH v2] x86, hotplug: fix llc shared map unreleased during cpu
->>  hotplug
->
->See this link:
->https://lkml.org/lkml/2014/7/17/78
 
-Interesting, thanks for your pointing out.
+
+On 07/22/2014 11:28 AM, Lee Jones wrote:
+> ARM: DT: STi: STiH416: Add DT node for ST's SATA device
+>
+> Cc: devicetree@vger.kernel.org
+> Acked-by: Alexandre Torgue <alexandre.torgue@st.com>
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+>
+
+Thanks for the fixup.
+Patch added to my queue for v3.17
 
 Regards,
-Wanpeng Li 
-
+Maxime
