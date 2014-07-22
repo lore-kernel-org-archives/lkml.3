@@ -1,97 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934022AbaGVW6d (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 18:58:33 -0400
-Received: from mail-ig0-f179.google.com ([209.85.213.179]:56582 "EHLO
-	mail-ig0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933644AbaGVW6A (ORCPT
+	id S934039AbaGVW6k (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 18:58:40 -0400
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:41656 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933436AbaGVW6g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 18:58:00 -0400
-Date: Tue, 22 Jul 2014 15:57:58 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: Vladimir Davydov <vdavydov@parallels.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Christoph Lameter <cl@linux.com>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Pekka Enberg <penberg@kernel.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: [patch 1/2] mm, slub: fix false-positive lockdep warning in
- free_partial()
-In-Reply-To: <alpine.DEB.2.02.1407221550500.9885@chino.kir.corp.google.com>
-Message-ID: <alpine.DEB.2.02.1407221556330.9885@chino.kir.corp.google.com>
-References: <alpine.DEB.2.02.1407221550500.9885@chino.kir.corp.google.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 22 Jul 2014 18:58:36 -0400
+Message-ID: <1406069908.3363.7.camel@edumazet-glaptop2.roam.corp.google.com>
+Subject: Re: [PATCH 4/6] net/macb: add RX checksum offload feature
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Cyrille Pitchen <cyrille.pitchen@atmel.com>
+Cc: nicolas.ferre@atmel.com, davem@davemloft.net,
+        linux-arm-kernel@lists.infradead.org, netdev@vger.kernel.org,
+        soren.brinkmann@xilinx.com, linux-kernel@vger.kernel.org
+Date: Wed, 23 Jul 2014 00:58:28 +0200
+In-Reply-To: <53CE9109.9040407@atmel.com>
+References: <cover.1405689937.git.cyrille.pitchen@atmel.com>
+		 <f29965fee23dc0de99b388373017efeffa1aac10.1405689937.git.cyrille.pitchen@atmel.com>
+	 <1405697784.10255.99.camel@edumazet-glaptop2.roam.corp.google.com>
+	 <53CE9109.9040407@atmel.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 8bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Vladimir Davydov <vdavydov@parallels.com>
+On Tue, 2014-07-22 at 18:27 +0200, Cyrille Pitchen wrote:
+> Le 18/07/2014 17:36, Eric Dumazet a écrit :
+> > On Fri, 2014-07-18 at 16:21 +0200, Cyrille Pitchen wrote:
+> >> Signed-off-by: Cyrille Pitchen <cyrille.pitchen@atmel.com>
+> >> ---
+> >>  drivers/net/ethernet/cadence/macb.c | 29 ++++++++++++++++++++++++++++-
+> >>  drivers/net/ethernet/cadence/macb.h |  2 ++
+> >>  2 files changed, 30 insertions(+), 1 deletion(-)
+> >>
+> >> diff --git a/drivers/net/ethernet/cadence/macb.c b/drivers/net/ethernet/cadence/macb.c
+> >> index 9bdcd1b..6acd6e2 100644
+> >> --- a/drivers/net/ethernet/cadence/macb.c
+> >> +++ b/drivers/net/ethernet/cadence/macb.c
+> >> @@ -766,6 +766,8 @@ static int gem_rx(struct macb *bp, int budget)
+> >>  
+> >>  		skb->protocol = eth_type_trans(skb, bp->dev);
+> >>  		skb_checksum_none_assert(skb);
+> >> +		if (bp->dev->features & NETIF_F_RXCSUM)
+> >> +			skb->ip_summed = CHECKSUM_UNNECESSARY;
+> >>  
+> > 
+> > 
+> > Really ?
+> > 
+> > If this is what you meant, this deserves a big and fat comment.
+> > 
+> > 
+> > 
+> Hi Eric,
+> 
+> Isn't it the proper way to do? According to Cadence documentation
+> about RX checksum offload:
+> "If any of the checksums (IP, TCP or UDP) are verified incorrect by
+> the GEM, the packet is discarded."
+> 
+> If I understand, when RX checksum offload is enabled setting bit 24 of
+> the Network Configuration Register, the driver only receives RX frames
+> with correct checksum. Then it tells the kernel that there's no need
+> to verify the checksum again in software. This is done setting
+> skb->ip_summed to CHECKSUM_UNNECESSARY. Intel e1000 driver does the
+> same in e1000_rx_checksum() function.
+> 
+> Also bit 24 of the Network Configuration Register is updated by
+> macb_open() and macb_set_features() so it always matches the state of
+> NETIF_F_RXCSUM flag in dev->features, once the network interface is
+> up. That's why I'd rather read from dev->features than read from
+> register.
+> 
+> Did I make a mistake? Is it the kind of comment you expect to be
+> added?
+> 
+> Regards,
 
-Commit c65c1877bd68 ("slub: use lockdep_assert_held") requires
-remove_partial() to be called with n->list_lock held, but free_partial()
-called from kmem_cache_close() on cache destruction does not follow this
-rule, leading to a warning:
+Usually, frames are not discarded, and a bit is present in rx descriptor
+to tell us if (TCP) checksum was validated by the NIC
 
-  WARNING: CPU: 0 PID: 2787 at mm/slub.c:1536 __kmem_cache_shutdown+0x1b2/0x1f0()
-  Modules linked in:
-  CPU: 0 PID: 2787 Comm: modprobe Tainted: G        W    3.14.0-rc1-mm1+ #1
-  Hardware name:
-   0000000000000600 ffff88003ae1dde8 ffffffff816d9583 0000000000000600
-   0000000000000000 ffff88003ae1de28 ffffffff8107c107 0000000000000000
-   ffff880037ab2b00 ffff88007c240d30 ffffea0001ee5280 ffffea0001ee52a0
-  Call Trace:
-   [<ffffffff816d9583>] dump_stack+0x51/0x6e
-   [<ffffffff8107c107>] warn_slowpath_common+0x87/0xb0
-   [<ffffffff8107c145>] warn_slowpath_null+0x15/0x20
-   [<ffffffff811c7fe2>] __kmem_cache_shutdown+0x1b2/0x1f0
-   [<ffffffff811908d3>] kmem_cache_destroy+0x43/0xf0
-   [<ffffffffa013a123>] xfs_destroy_zones+0x103/0x110 [xfs]
-   [<ffffffffa0192b54>] exit_xfs_fs+0x38/0x4e4 [xfs]
-   [<ffffffff811036fa>] SyS_delete_module+0x19a/0x1f0
-   [<ffffffff816dfcd8>] ? retint_swapgs+0x13/0x1b
-   [<ffffffff810d2125>] ? trace_hardirqs_on_caller+0x105/0x1d0
-   [<ffffffff81359efe>] ? trace_hardirqs_on_thunk+0x3a/0x3f
-   [<ffffffff816e8539>] system_call_fastpath+0x16/0x1b
+We want tcpdump to get a copy of corrupted TCP frames, even if TCP stack
+drops them later.
 
-Although this cannot actually result in a race, because on cache
-destruction there should not be any concurrent frees or allocations from
-the cache, let's add spin_lock/unlock to free_partial() just to keep
-lockdep happy.
+If this NIC drops incorrect frames, I am afraid we cant use this RX
+offload at all.
 
-Acked-by: Christoph Lameter <cl@linux.com>
-Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
-Signed-off-by: Pekka Enberg <penberg@kernel.org>
-Signed-off-by: David Rientjes <rientjes@google.com>
----
- mm/slub.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/mm/slub.c b/mm/slub.c
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -3195,12 +3195,13 @@ static void list_slab_objects(struct kmem_cache *s, struct page *page,
- /*
-  * Attempt to free all partial slabs on a node.
-  * This is called from kmem_cache_close(). We must be the last thread
-- * using the cache and therefore we do not need to lock anymore.
-+ * using the cache, but we still have to lock for lockdep's sake.
-  */
- static void free_partial(struct kmem_cache *s, struct kmem_cache_node *n)
- {
- 	struct page *page, *h;
- 
-+	spin_lock_irq(&n->list_lock);
- 	list_for_each_entry_safe(page, h, &n->partial, lru) {
- 		if (!page->inuse) {
- 			__remove_partial(n, page);
-@@ -3210,6 +3211,7 @@ static void free_partial(struct kmem_cache *s, struct kmem_cache_node *n)
- 			"Objects remaining in %s on kmem_cache_close()");
- 		}
- 	}
-+	spin_unlock_irq(&n->list_lock);
- }
- 
- /*
+
