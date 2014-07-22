@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932368AbaGVWWk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 18:22:40 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44341 "EHLO
+	id S933606AbaGVWx6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 18:53:58 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:44405 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757143AbaGVWWe (ORCPT
+	with ESMTP id S932312AbaGVWWj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 18:22:34 -0400
+	Tue, 22 Jul 2014 18:22:39 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 015/116] iwlwifi: pcie: try to get ownership several times
-Date: Tue, 22 Jul 2014 15:20:26 -0700
-Message-Id: <1406067727-19683-16-git-send-email-kamal@canonical.com>
+Cc: Mike Frysinger <vapier@gentoo.org>, "H.J. Lu" <hjl.tools@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 014/116] x86, x32: Use compat shims for io_{setup,submit}
+Date: Tue, 22 Jul 2014 15:20:25 -0700
+Message-Id: <1406067727-19683-15-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1406067727-19683-1-git-send-email-kamal@canonical.com>
 References: <1406067727-19683-1-git-send-email-kamal@canonical.com>
@@ -27,66 +27,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+From: Mike Frysinger <vapier@gentoo.org>
 
-commit 501fd9895c1d7d8161ed56698ae2fccb10ef14f5 upstream.
+commit 7fd44dacdd803c0bbf38bf478d51d280902bb0f1 upstream.
 
-Some races with the hardware can happen when we take
-ownership of the device. Don't give up after the first try.
+The io_setup takes a pointer to a context id of type aio_context_t.
+This in turn is typed to a __kernel_ulong_t.  We could tweak the
+exported headers to define this as a 64bit quantity for specific
+ABIs, but since we already have a 32bit compat shim for the x86 ABI,
+let's just re-use that logic.  The libaio package is also written to
+expect this as a pointer type, so a compat shim would simplify that.
 
-Reviewed-by: Johannes Berg <johannes.berg@intel.com>
-Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+The io_submit func operates on an array of pointers to iocb structs.
+Padding out the array to be 64bit aligned is a huge pain, so convert
+it over to the existing compat shim too.
+
+We don't convert io_getevents to the compat func as its only purpose
+is to handle the timespec struct, and the x32 ABI uses 64bit times.
+
+With this change, the libaio package can now pass its testsuite when
+built for the x32 ABI.
+
+Signed-off-by: Mike Frysinger <vapier@gentoo.org>
+Link: http://lkml.kernel.org/r/1399250595-5005-1-git-send-email-vapier@gentoo.org
+Cc: H.J. Lu <hjl.tools@gmail.com>
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/net/wireless/iwlwifi/pcie/trans.c | 26 ++++++++++++++++----------
- 1 file changed, 16 insertions(+), 10 deletions(-)
+ arch/x86/syscalls/syscall_64.tbl | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/net/wireless/iwlwifi/pcie/trans.c b/drivers/net/wireless/iwlwifi/pcie/trans.c
-index be0f8b9..68335b5 100644
---- a/drivers/net/wireless/iwlwifi/pcie/trans.c
-+++ b/drivers/net/wireless/iwlwifi/pcie/trans.c
-@@ -304,6 +304,7 @@ static int iwl_pcie_prepare_card_hw(struct iwl_trans *trans)
- {
- 	int ret;
- 	int t = 0;
-+	int iter;
- 
- 	IWL_DEBUG_INFO(trans, "iwl_trans_prepare_card_hw enter\n");
- 
-@@ -312,18 +313,23 @@ static int iwl_pcie_prepare_card_hw(struct iwl_trans *trans)
- 	if (ret >= 0)
- 		return 0;
- 
--	/* If HW is not ready, prepare the conditions to check again */
--	iwl_set_bit(trans, CSR_HW_IF_CONFIG_REG,
--		    CSR_HW_IF_CONFIG_REG_PREPARE);
-+	for (iter = 0; iter < 10; iter++) {
-+		/* If HW is not ready, prepare the conditions to check again */
-+		iwl_set_bit(trans, CSR_HW_IF_CONFIG_REG,
-+			    CSR_HW_IF_CONFIG_REG_PREPARE);
-+
-+		do {
-+			ret = iwl_pcie_set_hw_ready(trans);
-+			if (ret >= 0)
-+				return 0;
- 
--	do {
--		ret = iwl_pcie_set_hw_ready(trans);
--		if (ret >= 0)
--			return 0;
-+			usleep_range(200, 1000);
-+			t += 200;
-+		} while (t < 150000);
-+		msleep(25);
-+	}
- 
--		usleep_range(200, 1000);
--		t += 200;
--	} while (t < 150000);
-+	IWL_DEBUG_INFO(trans, "got NIC after %d iterations\n", iter);
- 
- 	return ret;
- }
+diff --git a/arch/x86/syscalls/syscall_64.tbl b/arch/x86/syscalls/syscall_64.tbl
+index dc97328..0a42b1e 100644
+--- a/arch/x86/syscalls/syscall_64.tbl
++++ b/arch/x86/syscalls/syscall_64.tbl
+@@ -212,10 +212,10 @@
+ 203	common	sched_setaffinity	sys_sched_setaffinity
+ 204	common	sched_getaffinity	sys_sched_getaffinity
+ 205	64	set_thread_area
+-206	common	io_setup		sys_io_setup
++206	64	io_setup		sys_io_setup
+ 207	common	io_destroy		sys_io_destroy
+ 208	common	io_getevents		sys_io_getevents
+-209	common	io_submit		sys_io_submit
++209	64	io_submit		sys_io_submit
+ 210	common	io_cancel		sys_io_cancel
+ 211	64	get_thread_area
+ 212	common	lookup_dcookie		sys_lookup_dcookie
+@@ -356,3 +356,5 @@
+ 540	x32	process_vm_writev	compat_sys_process_vm_writev
+ 541	x32	setsockopt		compat_sys_setsockopt
+ 542	x32	getsockopt		compat_sys_getsockopt
++543	x32	io_setup		compat_sys_io_setup
++544	x32	io_submit		compat_sys_io_submit
 -- 
 1.9.1
 
