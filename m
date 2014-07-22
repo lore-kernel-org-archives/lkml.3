@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755329AbaGVNUw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 09:20:52 -0400
+	id S1755235AbaGVNUp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 09:20:45 -0400
 Received: from mga02.intel.com ([134.134.136.20]:45434 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752242AbaGVNUt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 09:20:49 -0400
+	id S1752419AbaGVNUm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 09:20:42 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,710,1400050800"; 
-   d="scan'208";a="576985890"
+   d="scan'208";a="576985835"
 From: Adrian Hunter <adrian.hunter@intel.com>
 To: Arnaldo Carvalho de Melo <acme@kernel.org>
 Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
@@ -16,9 +16,9 @@ Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
         Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
         Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 27/52] perf tools: Add a thread stack for synthesizing call chains
-Date: Tue, 22 Jul 2014 16:17:36 +0300
-Message-Id: <1406035081-14301-28-git-send-email-adrian.hunter@intel.com>
+Subject: [PATCH 24/52] perf evlist: Add perf_evlist__enable_event_idx()
+Date: Tue, 22 Jul 2014 16:17:33 +0300
+Message-Id: <1406035081-14301-25-git-send-email-adrian.hunter@intel.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1406035081-14301-1-git-send-email-adrian.hunter@intel.com>
 References: <1406035081-14301-1-git-send-email-adrian.hunter@intel.com>
@@ -27,315 +27,86 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a thread stack for synthesizing call chains from call
-and return events.
+Add a function to enable a specific event
+within a specific perf event buffer.
 
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 ---
- tools/perf/Makefile.perf       |   2 +
- tools/perf/util/event.h        |  26 +++++++
- tools/perf/util/thread-stack.c | 151 +++++++++++++++++++++++++++++++++++++++++
- tools/perf/util/thread-stack.h |  32 +++++++++
- tools/perf/util/thread.c       |   3 +
- tools/perf/util/thread.h       |   3 +
- 6 files changed, 217 insertions(+)
- create mode 100644 tools/perf/util/thread-stack.c
- create mode 100644 tools/perf/util/thread-stack.h
+ tools/perf/util/evlist.c | 47 +++++++++++++++++++++++++++++++++++++++++++++++
+ tools/perf/util/evlist.h |  2 ++
+ 2 files changed, 49 insertions(+)
 
-diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
-index 2240974..f4333b5 100644
---- a/tools/perf/Makefile.perf
-+++ b/tools/perf/Makefile.perf
-@@ -302,6 +302,7 @@ LIB_H += ui/util.h
- LIB_H += ui/ui.h
- LIB_H += util/data.h
- LIB_H += util/kvm-stat.h
-+LIB_H += util/thread-stack.h
+diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
+index 10514f3..8eb6e72 100644
+--- a/tools/perf/util/evlist.c
++++ b/tools/perf/util/evlist.c
+@@ -354,6 +354,53 @@ int perf_evlist__enable_event(struct perf_evlist *evlist,
+ 	return 0;
+ }
  
- LIB_OBJS += $(OUTPUT)util/abspath.o
- LIB_OBJS += $(OUTPUT)util/alias.o
-@@ -377,6 +378,7 @@ LIB_OBJS += $(OUTPUT)util/srcline.o
- LIB_OBJS += $(OUTPUT)util/data.o
- LIB_OBJS += $(OUTPUT)util/tsc.o
- LIB_OBJS += $(OUTPUT)util/cloexec.o
-+LIB_OBJS += $(OUTPUT)util/thread-stack.o
- 
- LIB_OBJS += $(OUTPUT)ui/setup.o
- LIB_OBJS += $(OUTPUT)ui/helpline.o
-diff --git a/tools/perf/util/event.h b/tools/perf/util/event.h
-index 3fa9ab1..ae75b48 100644
---- a/tools/perf/util/event.h
-+++ b/tools/perf/util/event.h
-@@ -143,6 +143,32 @@ struct branch_stack {
- 	struct branch_entry	entries[0];
- };
- 
-+enum {
-+	PERF_FLAG_BRANCH		= 1ULL << 0,
-+	PERF_FLAG_CALL			= 1ULL << 1,
-+	PERF_FLAG_RETURN		= 1ULL << 2,
-+	PERF_FLAG_CONDITIONAL		= 1ULL << 3,
-+	PERF_FLAG_SYSCALLRET		= 1ULL << 4,
-+	PERF_FLAG_ASYNC			= 1ULL << 5,
-+	PERF_FLAG_INTERRUPT		= 1ULL << 6,
-+	PERF_FLAG_TX_ABORT		= 1ULL << 7,
-+	PERF_FLAG_TRACE_BEGIN		= 1ULL << 8,
-+	PERF_FLAG_TRACE_END		= 1ULL << 9,
-+	PERF_FLAG_IN_TX			= 1ULL << 10,
-+};
-+
-+#define PERF_BRANCH_MASK	(\
-+	PERF_FLAG_BRANCH	|\
-+	PERF_FLAG_CALL		|\
-+	PERF_FLAG_RETURN	|\
-+	PERF_FLAG_CONDITIONAL	|\
-+	PERF_FLAG_SYSCALLRET	|\
-+	PERF_FLAG_ASYNC		|\
-+	PERF_FLAG_INTERRUPT	|\
-+	PERF_FLAG_TX_ABORT	|\
-+	PERF_FLAG_TRACE_BEGIN	|\
-+	PERF_FLAG_TRACE_END)
-+
- struct perf_sample {
- 	u64 ip;
- 	u32 pid, tid;
-diff --git a/tools/perf/util/thread-stack.c b/tools/perf/util/thread-stack.c
-new file mode 100644
-index 0000000..c1ca2a9
---- /dev/null
-+++ b/tools/perf/util/thread-stack.c
-@@ -0,0 +1,151 @@
-+/*
-+ * thread-stack.c: Synthesize a thread's stack using call / return events
-+ * Copyright (c) 2014, Intel Corporation.
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms and conditions of the GNU General Public License,
-+ * version 2, as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
-+ *
-+ */
-+
-+#include "thread.h"
-+#include "event.h"
-+#include "util.h"
-+#include "thread-stack.h"
-+
-+#define STACK_GROWTH 4096
-+
-+struct thread_stack_entry {
-+	u64 ret_addr;
-+};
-+
-+struct thread_stack {
-+	struct thread_stack_entry *stack;
-+	size_t cnt;
-+	size_t sz;
-+	u64 trace_nr;
-+};
-+
-+static void thread_stack__grow(struct thread_stack *ts)
++static int perf_evlist__enable_event_cpu(struct perf_evlist *evlist,
++					 struct perf_evsel *evsel, int cpu)
 +{
-+	struct thread_stack_entry *new_stack;
-+	size_t sz, new_sz;
++	int thread, err;
++	int nr_threads = perf_evlist__nr_threads(evlist, evsel);
 +
-+	new_sz = ts->sz + STACK_GROWTH;
-+	sz = new_sz * sizeof(struct thread_stack_entry);
-+	new_stack = realloc(ts->stack, sz);
-+	if (new_stack) {
-+		ts->stack = new_stack;
-+		ts->sz = new_sz;
++	if (!evsel->fd)
++		return -EINVAL;
++
++	for (thread = 0; thread < nr_threads; thread++) {
++		err = ioctl(FD(evsel, cpu, thread),
++			    PERF_EVENT_IOC_ENABLE, 0);
++		if (err)
++			return err;
 +	}
++	return 0;
 +}
 +
-+static struct thread_stack *thread_stack__new(void)
++static int perf_evlist__enable_event_thread(struct perf_evlist *evlist,
++					    struct perf_evsel *evsel,
++					    int thread)
 +{
-+	struct thread_stack *ts;
++	int cpu, err;
++	int nr_cpus = cpu_map__nr(evlist->cpus);
 +
-+	ts = zalloc(sizeof(struct thread_stack));
-+	if (!ts)
-+		return NULL;
++	if (!evsel->fd)
++		return -EINVAL;
 +
-+	thread_stack__grow(ts);
-+	if (!ts->stack) {
-+		free(ts);
-+		return NULL;
++	for (cpu = 0; cpu < nr_cpus; cpu++) {
++		err = ioctl(FD(evsel, cpu, thread), PERF_EVENT_IOC_ENABLE, 0);
++		if (err)
++			return err;
 +	}
-+
-+	return ts;
++	return 0;
 +}
 +
-+static void thread_stack__push(struct thread_stack *ts, u64 ret_addr)
++int perf_evlist__enable_event_idx(struct perf_evlist *evlist,
++				  struct perf_evsel *evsel, int idx)
 +{
-+	if (ts->cnt == ts->sz) {
-+		thread_stack__grow(ts);
-+		if (ts->cnt == ts->sz)
-+			ts->cnt = 0;
-+	}
++	bool per_cpu_mmaps = !cpu_map__empty(evlist->cpus);
 +
-+	ts->stack[ts->cnt++].ret_addr = ret_addr;
-+}
-+
-+static void thread_stack__pop(struct thread_stack *ts, u64 ret_addr)
-+{
-+	if (!ts->cnt)
-+		return;
-+
-+	if (ts->stack[ts->cnt - 1].ret_addr == ret_addr) {
-+		ts->cnt -= 1;
-+	} else {
-+		size_t i = ts->cnt - 1;
-+
-+		while (i--) {
-+			if (ts->stack[i].ret_addr == ret_addr) {
-+				ts->cnt = i;
-+				return;
-+			}
-+		}
-+	}
-+}
-+
-+void thread_stack__event(struct thread *thread, u32 flags, u64 from_ip,
-+			 u64 to_ip, u16 insn_len, u64 trace_nr)
-+{
-+	if (!thread)
-+		return;
-+
-+	if (!thread->ts) {
-+		thread->ts = thread_stack__new();
-+		if (!thread->ts)
-+			return;
-+		thread->ts->trace_nr = trace_nr;
-+	}
-+
-+	if (trace_nr != thread->ts->trace_nr) {
-+		thread->ts->trace_nr = trace_nr;
-+		thread->ts->cnt = 0;
-+	}
-+
-+	if (flags & PERF_FLAG_CALL) {
-+		u64 ret_addr;
-+
-+		if (!to_ip)
-+			return;
-+		ret_addr = from_ip + insn_len;
-+		if (ret_addr == to_ip)
-+			return; /* Zero-length calls are excluded */
-+		thread_stack__push(thread->ts, ret_addr);
-+	} else if (flags & PERF_FLAG_RETURN) {
-+		if (!from_ip)
-+			return;
-+		thread_stack__pop(thread->ts, to_ip);
-+	}
-+}
-+
-+void thread_stack__free(struct thread *thread)
-+{
-+	if (thread->ts) {
-+		zfree(&thread->ts->stack);
-+		zfree(&thread->ts);
-+	}
-+}
-+
-+void thread_stack__sample(struct thread *thread, struct ip_callchain *chain,
-+			  size_t sz, u64 ip)
-+{
-+	size_t i;
-+
-+	if (!thread || !thread->ts)
-+		chain->nr = 1;
++	if (per_cpu_mmaps)
++		return perf_evlist__enable_event_cpu(evlist, evsel, idx);
 +	else
-+		chain->nr = min(sz, thread->ts->cnt + 1);
-+
-+	chain->ips[0] = ip;
-+
-+	for (i = 1; i < chain->nr; i++)
-+		chain->ips[i] = thread->ts->stack[thread->ts->cnt - i].ret_addr;
++		return perf_evlist__enable_event_thread(evlist, evsel, idx);
 +}
-diff --git a/tools/perf/util/thread-stack.h b/tools/perf/util/thread-stack.h
-new file mode 100644
-index 0000000..c0ba4cf
---- /dev/null
-+++ b/tools/perf/util/thread-stack.h
-@@ -0,0 +1,32 @@
-+/*
-+ * thread-stack.h: Synthesize a thread's stack using call / return events
-+ * Copyright (c) 2014, Intel Corporation.
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms and conditions of the GNU General Public License,
-+ * version 2, as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
-+ *
-+ */
 +
-+#ifndef __PERF_THREAD_STACK_H
-+#define __PERF_THREAD_STACK_H
-+
-+#include <sys/types.h>
-+
-+#include <linux/types.h>
-+
-+struct thread;
-+struct ip_callchain;
-+
-+void thread_stack__event(struct thread *thread, u32 flags, u64 from_ip,
-+			 u64 to_ip, u16 insn_len, u64 trace_nr);
-+void thread_stack__sample(struct thread *thread, struct ip_callchain *chain,
-+			  size_t sz, u64 ip);
-+void thread_stack__free(struct thread *thread);
-+
-+#endif
-diff --git a/tools/perf/util/thread.c b/tools/perf/util/thread.c
-index a9df7f2..088c036 100644
---- a/tools/perf/util/thread.c
-+++ b/tools/perf/util/thread.c
-@@ -4,6 +4,7 @@
- #include <string.h>
- #include "session.h"
- #include "thread.h"
-+#include "thread-stack.h"
- #include "util.h"
- #include "debug.h"
- #include "comm.h"
-@@ -61,6 +62,8 @@ void thread__delete(struct thread *thread)
+ static int perf_evlist__alloc_pollfd(struct perf_evlist *evlist)
  {
- 	struct comm *comm, *tmp;
+ 	int nr_cpus = cpu_map__nr(evlist->cpus);
+diff --git a/tools/perf/util/evlist.h b/tools/perf/util/evlist.h
+index 657a36c..70f2676 100644
+--- a/tools/perf/util/evlist.h
++++ b/tools/perf/util/evlist.h
+@@ -122,6 +122,8 @@ int perf_evlist__disable_event(struct perf_evlist *evlist,
+ 			       struct perf_evsel *evsel);
+ int perf_evlist__enable_event(struct perf_evlist *evlist,
+ 			      struct perf_evsel *evsel);
++int perf_evlist__enable_event_idx(struct perf_evlist *evlist,
++				  struct perf_evsel *evsel, int idx);
  
-+	thread_stack__free(thread);
-+
- 	if (thread->mg) {
- 		map_groups__put(thread->mg);
- 		thread->mg = NULL;
-diff --git a/tools/perf/util/thread.h b/tools/perf/util/thread.h
-index 8c75fa7..a057820 100644
---- a/tools/perf/util/thread.h
-+++ b/tools/perf/util/thread.h
-@@ -8,6 +8,8 @@
- #include "symbol.h"
- #include <strlist.h>
- 
-+struct thread_stack;
-+
- struct thread {
- 	union {
- 		struct rb_node	 rb_node;
-@@ -25,6 +27,7 @@ struct thread {
- 	int			comm_len;
- 
- 	void			*priv;
-+	struct thread_stack	*ts;
- };
- 
- struct machine;
+ void perf_evlist__set_selected(struct perf_evlist *evlist,
+ 			       struct perf_evsel *evsel);
 -- 
 1.8.3.2
 
