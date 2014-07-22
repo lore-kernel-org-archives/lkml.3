@@ -1,25 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933300AbaGVWjA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 18:39:00 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44745 "EHLO
+	id S933249AbaGVW0B (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 18:26:01 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:44727 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933252AbaGVW0D (ORCPT
+	with ESMTP id S933222AbaGVWZ6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 18:26:03 -0400
+	Tue, 22 Jul 2014 18:25:58 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Bin Wang <binw@marvell.com>,
-        Nobuhiro Iwamatsu <nobuhiro.iwamatsu.yj@renesas.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 037/116] uio: fix vma io range check in mmap
-Date: Tue, 22 Jul 2014 15:20:48 -0700
-Message-Id: <1406067727-19683-38-git-send-email-kamal@canonical.com>
+Cc: =?UTF-8?q?Andreas=20Schr=C3=A4gle?= <ajs124.ajs124@gmail.com>,
+        Tejun Heo <tj@kernel.org>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 031/116] ahci: add PCI ID for Marvell 88SE91A0 SATA Controller
+Date: Tue, 22 Jul 2014 15:20:42 -0700
+Message-Id: <1406067727-19683-32-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1406067727-19683-1-git-send-email-kamal@canonical.com>
 References: <1406067727-19683-1-git-send-email-kamal@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,41 +30,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bin Wang <binw@marvell.com>
+From: =?UTF-8?q?Andreas=20Schr=C3=A4gle?= <ajs124.ajs124@gmail.com>
 
-commit ddb09754e6c7239e302c7b675df9bbd415f8de5d upstream.
+commit 754a292fe6b08196cb135c03b404444e17de520a upstream.
 
-the vma range size is always page size aligned in mmap, while the
-real io space range may not be page aligned, thus leading to range
-check failure in the uio_mmap_physical().
+Add support for Marvell Technology Group Ltd. 88SE91A0 SATA 6Gb/s
+Controller by adding its PCI ID.
 
-for example, in a case of io range size "mem->size == 1KB", and we
-have (vma->vm_end - vma->vm_start) == 4KB, due to "len" is aligned
-to page size in do_mmap_pgoff().
-
-now fix this issue by align mem->size to page size in the check.
-
-Signed-off-by: Bin Wang <binw@marvell.com>
-Signed-off-by: Nobuhiro Iwamatsu <nobuhiro.iwamatsu.yj@renesas.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Andreas Schrägle <ajs124.ajs124@gmail.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+[ kamal: backport to 3.8-stable ]
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/uio/uio.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/ata/ahci.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/drivers/uio/uio.c b/drivers/uio/uio.c
-index 9981b9b..354c095 100644
---- a/drivers/uio/uio.c
-+++ b/drivers/uio/uio.c
-@@ -657,7 +657,7 @@ static int uio_mmap_physical(struct vm_area_struct *vma)
- 
- 	if (mem->addr & ~PAGE_MASK)
- 		return -ENODEV;
--	if (vma->vm_end - vma->vm_start > mem->size)
-+	if (vma->vm_end - vma->vm_start > PAGE_ALIGN(mem->size))
- 		return -EINVAL;
- 
- 	vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
+diff --git a/drivers/ata/ahci.c b/drivers/ata/ahci.c
+index f0faa0d..c752e6f 100644
+--- a/drivers/ata/ahci.c
++++ b/drivers/ata/ahci.c
+@@ -440,6 +440,8 @@ static const struct pci_device_id ahci_pci_tbl[] = {
+ 	  .driver_data = board_ahci_yes_fbs },			/* 88se9172 */
+ 	{ PCI_DEVICE(0x1b4b, 0x9192),
+ 	  .driver_data = board_ahci_yes_fbs },			/* 88se9172 on some Gigabyte */
++	{ PCI_DEVICE(0x1b4b, 0x91a0),
++	  .driver_data = board_ahci_yes_fbs },
+ 	{ PCI_DEVICE(0x1b4b, 0x91a3),
+ 	  .driver_data = board_ahci_yes_fbs },
+ 	{ PCI_DEVICE(0x1b4b, 0x9230),
 -- 
 1.9.1
 
