@@ -1,166 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755896AbaGVNY6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 09:24:58 -0400
-Received: from mga02.intel.com ([134.134.136.20]:45540 "EHLO mga02.intel.com"
+	id S1755913AbaGVNZL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 09:25:11 -0400
+Received: from mga11.intel.com ([192.55.52.93]:36040 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755408AbaGVNVN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 09:21:13 -0400
+	id S1754868AbaGVNZJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 09:25:09 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,710,1400050800"; 
-   d="scan'208";a="576986142"
+   d="scan'208";a="565444780"
+Message-ID: <53CE65F3.9050004@intel.com>
+Date: Tue, 22 Jul 2014 16:24:03 +0300
 From: Adrian Hunter <adrian.hunter@intel.com>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
+ Business Identity Code: 0357606 - 4, Domiciled in Helsinki 
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Jiri Olsa <jolsa@redhat.com>
+CC: Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
         Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH 39/52] perf tools: Add call information to the database export API
-Date: Tue, 22 Jul 2014 16:17:48 +0300
-Message-Id: <1406035081-14301-40-git-send-email-adrian.hunter@intel.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1406035081-14301-1-git-send-email-adrian.hunter@intel.com>
-References: <1406035081-14301-1-git-send-email-adrian.hunter@intel.com>
-Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki, Business Identity Code: 0357606 - 4, Domiciled in Helsinki
+        Stephane Eranian <eranian@google.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V3] perf tools: Record whether a dso has data
+References: <1405586590-13657-3-git-send-email-adrian.hunter@intel.com> <1405587510-15037-1-git-send-email-adrian.hunter@intel.com> <20140722075515.GB29305@krava.redhat.com>
+In-Reply-To: <20140722075515.GB29305@krava.redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make it possible for the database export API to use the
-enhanced thread stack and export detailed information
-about paired calls and returns.
+On 07/22/2014 10:55 AM, Jiri Olsa wrote:
+> On Thu, Jul 17, 2014 at 11:58:30AM +0300, Adrian Hunter wrote:
+>> Add 'data_status' to record whether a dso has data
+>> (i.e. an object file)
+> 
+> I might have seen it in your last patsent, but forgot.. what is
+> this data_status going to be used for?
 
-Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
----
- tools/perf/util/db-export.c | 52 ++++++++++++++++++++++++++++++++++++++++++++-
- tools/perf/util/db-export.h | 12 +++++++++++
- 2 files changed, 63 insertions(+), 1 deletion(-)
+I have changed it a bit in the latest posting.  It was originally
+for two purposes:
+	1. to prevent repeatedly attempting to open a file that
+was not there (very time consuming if you do it millions of times)
+	2. to report the error exactly once
 
-diff --git a/tools/perf/util/db-export.c b/tools/perf/util/db-export.c
-index c5b6e02..ca79616 100644
---- a/tools/perf/util/db-export.c
-+++ b/tools/perf/util/db-export.c
-@@ -21,6 +21,7 @@
- #include "comm.h"
- #include "symbol.h"
- #include "event.h"
-+#include "thread-stack.h"
- #include "db-export.h"
- 
- int db_export__init(struct db_export *dbe)
-@@ -29,8 +30,10 @@ int db_export__init(struct db_export *dbe)
- 	return 0;
- }
- 
--void db_export__exit(struct db_export *dbe __maybe_unused)
-+void db_export__exit(struct db_export *dbe)
- {
-+	call_return_processor__free(dbe->crp);
-+	dbe->crp = NULL;
- }
- 
- int db_export__evsel(struct db_export *dbe, struct perf_evsel *evsel)
-@@ -268,6 +271,13 @@ int db_export__sample(struct db_export *dbe, union perf_event *event,
- 				     &es.addr_sym_db_id, &es.addr_offset);
- 		if (err)
- 			return err;
-+		if (dbe->crp) {
-+			err = thread_stack__process(thread, comm, sample, al,
-+						    &addr_al, es.db_id,
-+						    dbe->crp);
-+			if (err)
-+				return err;
-+		}
- 	}
- 
- 	if (dbe->export_sample)
-@@ -314,3 +324,43 @@ int db_export__branch_types(struct db_export *dbe)
- 	}
- 	return err;
- }
-+
-+int db_export__call_path(struct db_export *dbe, struct call_path *cp)
-+{
-+	int err;
-+
-+	if (cp->db_id)
-+		return 0;
-+
-+	if (cp->parent) {
-+		err = db_export__call_path(dbe, cp->parent);
-+		if (err)
-+			return err;
-+	}
-+
-+	cp->db_id = ++dbe->call_path_last_db_id;
-+
-+	if (dbe->export_call_path)
-+		return dbe->export_call_path(dbe, cp);
-+
-+	return 0;
-+}
-+
-+int db_export__call_return(struct db_export *dbe, struct call_return *cr)
-+{
-+	int err;
-+
-+	if (cr->db_id)
-+		return 0;
-+
-+	err = db_export__call_path(dbe, cr->cp);
-+	if (err)
-+		return err;
-+
-+	cr->db_id = ++dbe->call_return_last_db_id;
-+
-+	if (dbe->export_call_return)
-+		return dbe->export_call_return(dbe, cr);
-+
-+	return 0;
-+}
-diff --git a/tools/perf/util/db-export.h b/tools/perf/util/db-export.h
-index e4baa45..dd5ac2a 100644
---- a/tools/perf/util/db-export.h
-+++ b/tools/perf/util/db-export.h
-@@ -25,6 +25,9 @@ struct comm;
- struct dso;
- struct perf_sample;
- struct addr_location;
-+struct call_return_processor;
-+struct call_path;
-+struct call_return;
- 
- struct export_sample {
- 	union perf_event	*event;
-@@ -57,6 +60,10 @@ struct db_export {
- 	int (*export_branch_type)(struct db_export *dbe, u32 branch_type,
- 				  const char *name);
- 	int (*export_sample)(struct db_export *dbe, struct export_sample *es);
-+	int (*export_call_path)(struct db_export *dbe, struct call_path *cp);
-+	int (*export_call_return)(struct db_export *dbe,
-+				  struct call_return *cr);
-+	struct call_return_processor *crp;
- 	u64 evsel_last_db_id;
- 	u64 machine_last_db_id;
- 	u64 thread_last_db_id;
-@@ -65,6 +72,8 @@ struct db_export {
- 	u64 dso_last_db_id;
- 	u64 symbol_last_db_id;
- 	u64 sample_last_db_id;
-+	u64 call_path_last_db_id;
-+	u64 call_return_last_db_id;
- };
- 
- int db_export__init(struct db_export *dbe);
-@@ -89,4 +98,7 @@ int db_export__sample(struct db_export *dbe, union perf_event *event,
- 
- int db_export__branch_types(struct db_export *dbe);
- 
-+int db_export__call_path(struct db_export *dbe, struct call_path *cp);
-+int db_export__call_return(struct db_export *dbe, struct call_return *cr);
-+
- #endif
--- 
-1.8.3.2
+But I realized it did not meet the 2nd objective so I have added
+another patch that does.  See "perf tools: Add dso__data_status_seen()"
+
+> 
+> SNIP
+> 
+>> diff --git a/tools/perf/util/dso.h b/tools/perf/util/dso.h
+>> index c239e86..07d0a58 100644
+>> --- a/tools/perf/util/dso.h
+>> +++ b/tools/perf/util/dso.h
+>> @@ -40,6 +40,12 @@ enum dso_swap_type {
+>>  	DSO_SWAP__YES,
+>>  };
+>>  
+>> +enum dso_data_status {
+>> +	DSO_DATA_STATUS_ERROR	= -1,
+>> +	DSO_DATA_STATUS_UNKNOWN	= 0,
+>> +	DSO_DATA_STATUS_OK	= 1,
+>> +};
+>> +
+>>  #define DSO__SWAP(dso, type, val)			\
+>>  ({							\
+>>  	type ____r = val;				\
+>> @@ -104,6 +110,7 @@ struct dso {
+>>  	struct {
+>>  		struct rb_root	 cache;
+>>  		int		 fd;
+>> +		int		 data_status;
+> 
+> also please call it just 'status' it's already in 'data' struct
+
+I made that change too.
+
 
