@@ -1,141 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756952AbaGVTtV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 15:49:21 -0400
-Received: from mga09.intel.com ([134.134.136.24]:15130 "EHLO mga09.intel.com"
+	id S1757001AbaGVTts (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 15:49:48 -0400
+Received: from mga02.intel.com ([134.134.136.20]:48828 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756934AbaGVTtO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 15:49:14 -0400
+	id S1756890AbaGVTsq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 15:48:46 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,711,1400050800"; 
-   d="scan'208";a="577174601"
+   d="scan'208";a="547369370"
 From: Matthew Wilcox <matthew.r.wilcox@intel.com>
 To: linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org
-Cc: Matthew Wilcox <willy@linux.intel.com>,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>
-Subject: [PATCH v8 22/22] brd: Rename XIP to DAX
-Date: Tue, 22 Jul 2014 15:48:10 -0400
-Message-Id: <f1a3237e1a5a8440675251bb07946076337bd7bf.1406058387.git.matthew.r.wilcox@intel.com>
+Cc: Matthew Wilcox <matthew.r.wilcox@intel.com>, willy@linux.intel.com
+Subject: [PATCH v8 00/22] Support ext4 on NV-DIMMs
+Date: Tue, 22 Jul 2014 15:47:48 -0400
+Message-Id: <cover.1406058387.git.matthew.r.wilcox@intel.com>
 X-Mailer: git-send-email 2.0.0
-In-Reply-To: <cover.1406058387.git.matthew.r.wilcox@intel.com>
-References: <cover.1406058387.git.matthew.r.wilcox@intel.com>
-In-Reply-To: <cover.1406058387.git.matthew.r.wilcox@intel.com>
-References: <cover.1406058387.git.matthew.r.wilcox@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Matthew Wilcox <willy@linux.intel.com>
+One of the primary uses for NV-DIMMs is to expose them as a block device
+and use a filesystem to store files on the NV-DIMM.  While that works,
+it currently wastes memory and CPU time buffering the files in the page
+cache.  We have support in ext2 for bypassing the page cache, but it
+has some races which are unfixable in the current design.  This series
+of patches rewrite the underlying support, and add support for direct
+access to ext4.
 
-Since this is relating to FS_XIP, not KERNEL_XIP, it should be called
-DAX instead of XIP.
+I would particularly welcome feedback from mm people on patch 5 ("Add
+vm_replace_mixed()") and from fs people on patch 7 ("Add copy_to_iter(),
+copy_from_iter() and iov_iter_zero()").
 
-Signed-off-by: Matthew Wilcox <matthew.r.wilcox@intel.com>
----
- drivers/block/Kconfig | 13 +++++++------
- drivers/block/brd.c   | 14 +++++++-------
- fs/Kconfig            |  4 ++--
- 3 files changed, 16 insertions(+), 15 deletions(-)
+This iteration of the patchset rebases to 3.16-rc6 and makes substantial
+changes based on Jan Kara's feedback:
 
-diff --git a/drivers/block/Kconfig b/drivers/block/Kconfig
-index 014a1cf..1b8094d 100644
---- a/drivers/block/Kconfig
-+++ b/drivers/block/Kconfig
-@@ -393,14 +393,15 @@ config BLK_DEV_RAM_SIZE
- 	  The default value is 4096 kilobytes. Only change this if you know
- 	  what you are doing.
- 
--config BLK_DEV_XIP
--	bool "Support XIP filesystems on RAM block device"
--	depends on BLK_DEV_RAM
-+config BLK_DEV_RAM_DAX
-+	bool "Support Direct Access (DAX) to RAM block devices"
-+	depends on BLK_DEV_RAM && FS_DAX
- 	default n
- 	help
--	  Support XIP filesystems (such as ext2 with XIP support on) on
--	  top of block ram device. This will slightly enlarge the kernel, and
--	  will prevent RAM block device backing store memory from being
-+	  Support filesystems using DAX to access RAM block devices.  This
-+	  avoids double-buffering data in the page cache before copying it
-+	  to the block device.  Answering Y will slightly enlarge the kernel,
-+	  and will prevent RAM block device backing store memory from being
- 	  allocated from highmem (only a problem for highmem systems).
- 
- config CDROM_PKTCDVD
-diff --git a/drivers/block/brd.c b/drivers/block/brd.c
-index 96e4c96..33a39e7 100644
---- a/drivers/block/brd.c
-+++ b/drivers/block/brd.c
-@@ -97,13 +97,13 @@ static struct page *brd_insert_page(struct brd_device *brd, sector_t sector)
- 	 * Must use NOIO because we don't want to recurse back into the
- 	 * block or filesystem layers from page reclaim.
- 	 *
--	 * Cannot support XIP and highmem, because our ->direct_access
--	 * routine for XIP must return memory that is always addressable.
--	 * If XIP was reworked to use pfns and kmap throughout, this
-+	 * Cannot support DAX and highmem, because our ->direct_access
-+	 * routine for DAX must return memory that is always addressable.
-+	 * If DAX was reworked to use pfns and kmap throughout, this
- 	 * restriction might be able to be lifted.
- 	 */
- 	gfp_flags = GFP_NOIO | __GFP_ZERO;
--#ifndef CONFIG_BLK_DEV_XIP
-+#ifndef CONFIG_BLK_DEV_RAM_DAX
- 	gfp_flags |= __GFP_HIGHMEM;
- #endif
- 	page = alloc_page(gfp_flags);
-@@ -369,7 +369,7 @@ static int brd_rw_page(struct block_device *bdev, sector_t sector,
- 	return err;
- }
- 
--#ifdef CONFIG_BLK_DEV_XIP
-+#ifdef CONFIG_BLK_DEV_RAM_DAX
- static long brd_direct_access(struct block_device *bdev, sector_t sector,
- 			void **kaddr, unsigned long *pfn, long size)
- {
-@@ -392,6 +392,8 @@ static long brd_direct_access(struct block_device *bdev, sector_t sector,
- 	 * file is mapped to the next page of physical RAM */
- 	return min_t(long, PAGE_SIZE, size);
- }
-+#else
-+#define brd_direct_access NULL
- #endif
- 
- static int brd_ioctl(struct block_device *bdev, fmode_t mode,
-@@ -432,9 +434,7 @@ static const struct block_device_operations brd_fops = {
- 	.owner =		THIS_MODULE,
- 	.rw_page =		brd_rw_page,
- 	.ioctl =		brd_ioctl,
--#ifdef CONFIG_BLK_DEV_XIP
- 	.direct_access =	brd_direct_access,
--#endif
- };
- 
- /*
-diff --git a/fs/Kconfig b/fs/Kconfig
-index a9eb53d..117900f 100644
---- a/fs/Kconfig
-+++ b/fs/Kconfig
-@@ -34,7 +34,7 @@ source "fs/btrfs/Kconfig"
- source "fs/nilfs2/Kconfig"
- 
- config FS_DAX
--	bool "Direct Access support"
-+	bool "Direct Access (DAX) support"
- 	depends on MMU
- 	help
- 	  Direct Access (DAX) can be used on memory-backed block devices.
-@@ -45,7 +45,7 @@ config FS_DAX
- 
- 	  If you do not have a block device that is capable of using this,
- 	  or if unsure, say N.  Saying Y will increase the size of the kernel
--	  by about 2kB.
-+	  by about 5kB.
- 
- endif # BLOCK
- 
+ - Handles errors in copy_user_bh()
+ - Changes calling convention for dax_get_addr() / dax_get_pfn() to take a
+   blkbits argument instead of an inode argument
+ - Cache inode->i_blkbits in a local variable
+ - Rename file offset to 'pos' to fit the rest of the VFS
+ - Added a FIXME to fall back to buffered I/O if the filesystem doesn't
+   support filling a hole from within the direct I/O path.  Mysterious
+   and complex are the ways of get_block implementations.
+ - Moved the call to inode_dio_done() to after end_io() to fix a race
+ - Added a comment about why we have to recheck i_size under the page lock
+ - Use vm_insert_page() in the COW path instead of returning VM_FAULT_COWED
+ - Handle errors coming back from dax_get_pfn() correctly in do_dax_fault()
+ - Removes zero pages from the process' address space before trying to
+   replace them with the PFN of the newly allocated block
+ - Factor out bdev_direct_access() to support partitioning properly
+ - Rework the i_mmap_mutex locking to remove an inversion vs the page lock
+ - Make the ext2 rename of -o xip to -o dax more graceful
+ - Only update file mtime/ctime on a write fault, not a read fault
+
+
+Matthew Wilcox (21):
+  Fix XIP fault vs truncate race
+  Allow page fault handlers to perform the COW
+  axonram: Fix bug in direct_access
+  Change direct_access calling convention
+  Add vm_replace_mixed()
+  Introduce IS_DAX(inode)
+  Add copy_to_iter(), copy_from_iter() and iov_iter_zero()
+  Replace XIP read and write with DAX I/O
+  Replace ext2_clear_xip_target with dax_clear_blocks
+  Replace the XIP page fault handler with the DAX page fault handler
+  Replace xip_truncate_page with dax_truncate_page
+  Replace XIP documentation with DAX documentation
+  Remove get_xip_mem
+  ext2: Remove ext2_xip_verify_sb()
+  ext2: Remove ext2_use_xip
+  ext2: Remove xip.c and xip.h
+  Remove CONFIG_EXT2_FS_XIP and rename CONFIG_FS_XIP to CONFIG_FS_DAX
+  ext2: Remove ext2_aops_xip
+  Get rid of most mentions of XIP in ext2
+  xip: Add xip_zero_page_range
+  brd: Rename XIP to DAX
+
+Ross Zwisler (1):
+  ext4: Add DAX functionality
+
+ Documentation/filesystems/Locking  |   3 -
+ Documentation/filesystems/dax.txt  |  91 +++++++
+ Documentation/filesystems/ext4.txt |   2 +
+ Documentation/filesystems/xip.txt  |  68 -----
+ arch/powerpc/sysdev/axonram.c      |  14 +-
+ drivers/block/Kconfig              |  13 +-
+ drivers/block/brd.c                |  22 +-
+ drivers/s390/block/dcssblk.c       |  19 +-
+ fs/Kconfig                         |  21 +-
+ fs/Makefile                        |   1 +
+ fs/block_dev.c                     |  28 +++
+ fs/dax.c                           | 503 +++++++++++++++++++++++++++++++++++++
+ fs/exofs/inode.c                   |   1 -
+ fs/ext2/Kconfig                    |  11 -
+ fs/ext2/Makefile                   |   1 -
+ fs/ext2/ext2.h                     |  10 +-
+ fs/ext2/file.c                     |  45 +++-
+ fs/ext2/inode.c                    |  38 +--
+ fs/ext2/namei.c                    |  13 +-
+ fs/ext2/super.c                    |  53 ++--
+ fs/ext2/xip.c                      |  91 -------
+ fs/ext2/xip.h                      |  26 --
+ fs/ext4/ext4.h                     |   6 +
+ fs/ext4/file.c                     |  53 +++-
+ fs/ext4/indirect.c                 |  18 +-
+ fs/ext4/inode.c                    |  51 ++--
+ fs/ext4/namei.c                    |  10 +-
+ fs/ext4/super.c                    |  39 ++-
+ fs/open.c                          |   5 +-
+ include/linux/blkdev.h             |   6 +-
+ include/linux/fs.h                 |  49 +++-
+ include/linux/mm.h                 |   9 +-
+ include/linux/uio.h                |   3 +
+ mm/Makefile                        |   1 -
+ mm/fadvise.c                       |   6 +-
+ mm/filemap.c                       |   6 +-
+ mm/filemap_xip.c                   | 483 -----------------------------------
+ mm/iov_iter.c                      | 237 +++++++++++++++--
+ mm/madvise.c                       |   2 +-
+ mm/memory.c                        |  45 ++--
+ 40 files changed, 1228 insertions(+), 875 deletions(-)
+ create mode 100644 Documentation/filesystems/dax.txt
+ delete mode 100644 Documentation/filesystems/xip.txt
+ create mode 100644 fs/dax.c
+ delete mode 100644 fs/ext2/xip.c
+ delete mode 100644 fs/ext2/xip.h
+ delete mode 100644 mm/filemap_xip.c
+
 -- 
 2.0.0
 
