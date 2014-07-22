@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933739AbaGVWma (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 18:42:30 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44676 "EHLO
+	id S933766AbaGVWmr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 18:42:47 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:44672 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932514AbaGVWZo (ORCPT
+	with ESMTP id S933086AbaGVWZn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 18:25:44 -0400
+	Tue, 22 Jul 2014 18:25:43 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Aleksander Morgado <aleksander@aleksander.es>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Jan Kara <jack@suse.cz>, "Theodore Ts'o" <tytso@mit.edu>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 041/116] usb: qcserial: add Netgear AirCard 341U
-Date: Tue, 22 Jul 2014 15:20:52 -0700
-Message-Id: <1406067727-19683-42-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 032/116] ext4: fix zeroing of page during writeback
+Date: Tue, 22 Jul 2014 15:20:43 -0700
+Message-Id: <1406067727-19683-33-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1406067727-19683-1-git-send-email-kamal@canonical.com>
 References: <1406067727-19683-1-git-send-email-kamal@canonical.com>
@@ -28,32 +27,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Aleksander Morgado <aleksander@aleksander.es>
+From: Jan Kara <jack@suse.cz>
 
-commit ff1fcd50bc2459744e6f948310bc18eb7d6e8c72 upstream.
+commit eeece469dedadf3918bad50ad80f4616a0064e90 upstream.
 
-Signed-off-by: Aleksander Morgado <aleksander@aleksander.es>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-[ Aleksander: backport to 3.13-stable ]
+Tail of a page straddling inode size must be zeroed when being written
+out due to POSIX requirement that modifications of mmaped page beyond
+inode size must not be written to the file. ext4_bio_write_page() did
+this only for blocks fully beyond inode size but didn't properly zero
+blocks partially beyond inode size. Fix this.
+
+The problem has been uncovered by mmap_11-4 test in openposix test suite
+(part of LTP).
+
+Reported-by: Xiaoguang Wang <wangxg.fnst@cn.fujitsu.com>
+Fixes: 5a0dc7365c240
+Fixes: bd2d0210cf22f
+Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Theodore Ts'o <tytso@mit.edu>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/usb/serial/qcserial.c | 3 +++
- 1 file changed, 3 insertions(+)
+ fs/ext4/page-io.c | 24 ++++++++++++------------
+ 1 file changed, 12 insertions(+), 12 deletions(-)
 
-diff --git a/drivers/usb/serial/qcserial.c b/drivers/usb/serial/qcserial.c
-index 6c0a542..781e4db 100644
---- a/drivers/usb/serial/qcserial.c
-+++ b/drivers/usb/serial/qcserial.c
-@@ -151,6 +151,9 @@ static const struct usb_device_id id_table[] = {
- 	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9051, 0)},	/* Netgear AirCard 340U Device Management */
- 	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9051, 2)},	/* Netgear AirCard 340U NMEA */
- 	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9051, 3)},	/* Netgear AirCard 340U Modem */
-+	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9055, 0)},	/* Netgear AirCard 341U Device Management */
-+	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9055, 2)},	/* Netgear AirCard 341U NMEA */
-+	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9055, 3)},	/* Netgear AirCard 341U Modem */
- 	{USB_DEVICE_INTERFACE_NUMBER(0x413c, 0x81a2, 0)},	/* Dell Wireless 5806 Gobi(TM) 4G LTE Mobile Broadband Card Device Management */
- 	{USB_DEVICE_INTERFACE_NUMBER(0x413c, 0x81a2, 2)},	/* Dell Wireless 5806 Gobi(TM) 4G LTE Mobile Broadband Card NMEA */
- 	{USB_DEVICE_INTERFACE_NUMBER(0x413c, 0x81a2, 3)},	/* Dell Wireless 5806 Gobi(TM) 4G LTE Mobile Broadband Card Modem */
+diff --git a/fs/ext4/page-io.c b/fs/ext4/page-io.c
+index 311d1db..a30ef89 100644
+--- a/fs/ext4/page-io.c
++++ b/fs/ext4/page-io.c
+@@ -446,24 +446,24 @@ int ext4_bio_write_page(struct ext4_io_submit *io,
+ 	set_page_writeback(page);
+ 	ClearPageError(page);
+ 
++	/*
++	 * Comments copied from block_write_full_page_endio:
++	 *
++	 * The page straddles i_size.  It must be zeroed out on each and every
++	 * writepage invocation because it may be mmapped.  "A file is mapped
++	 * in multiples of the page size.  For a file that is not a multiple of
++	 * the page size, the remaining memory is zeroed when mapped, and
++	 * writes to that region are not written out to the file."
++	 */
++	if (len < PAGE_CACHE_SIZE)
++		zero_user_segment(page, len, PAGE_CACHE_SIZE);
++
+ 	for (bh = head = page_buffers(page), block_start = 0;
+ 	     bh != head || !block_start;
+ 	     block_start = block_end, bh = bh->b_this_page) {
+ 
+ 		block_end = block_start + blocksize;
+ 		if (block_start >= len) {
+-			/*
+-			 * Comments copied from block_write_full_page_endio:
+-			 *
+-			 * The page straddles i_size.  It must be zeroed out on
+-			 * each and every writepage invocation because it may
+-			 * be mmapped.  "A file is mapped in multiples of the
+-			 * page size.  For a file that is not a multiple of
+-			 * the  page size, the remaining memory is zeroed when
+-			 * mapped, and writes to that region are not written
+-			 * out to the file."
+-			 */
+-			zero_user_segment(page, block_start, block_end);
+ 			clear_buffer_dirty(bh);
+ 			set_buffer_uptodate(bh);
+ 			continue;
 -- 
 1.9.1
 
