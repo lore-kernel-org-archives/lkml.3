@@ -1,118 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752640AbaGVGrw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 02:47:52 -0400
-Received: from mail-vc0-f182.google.com ([209.85.220.182]:59532 "EHLO
-	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751302AbaGVGrv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 02:47:51 -0400
+	id S1752715AbaGVGtS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 02:49:18 -0400
+Received: from ozlabs.org ([103.22.144.67]:40318 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751302AbaGVGtR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 02:49:17 -0400
+Date: Tue, 22 Jul 2014 16:49:05 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: linux-next@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Subject: linux-next: no release today
+Message-ID: <20140722164905.1e67eb75@canb.auug.org.au>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
 MIME-Version: 1.0
-In-Reply-To: <20140722064348.GG1655@lahna.fi.intel.com>
-References: <1406006305-22694-1-git-send-email-linux@roeck-us.net> <20140722064348.GG1655@lahna.fi.intel.com>
-From: Alexandre Courbot <gnurou@gmail.com>
-Date: Tue, 22 Jul 2014 15:47:29 +0900
-Message-ID: <CAAVeFuLuUvdRrwy+8c4sPxr1yBqMpvDiogfPf218WsvsySC50Q@mail.gmail.com>
-Subject: Re: [PATCH v2] gpiolib: Export gpiochip_request_own_desc and gpiochip_free_own_desc
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: Guenter Roeck <linux@roeck-us.net>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/SVDflKA40Dukmtg7AH4mhCV"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 22, 2014 at 3:43 PM, Mika Westerberg
-<mika.westerberg@linux.intel.com> wrote:
-> On Mon, Jul 21, 2014 at 10:18:25PM -0700, Guenter Roeck wrote:
->> Both functions were introduced to let gpio drivers request their own
->> gpio pins. Without exporting the functions, this can however only be
->> used by gpio drivers built into the kernel.
->
-> The reason why these are private to drivers is that those are dangerous
-> if used blindly.
->
->> Secondary impact is that the functions can not currently be used by
->> platform initialization code associated with the gpio-pca953x driver.
->> This code permits auto-export of gpio pins through platform data, but
->> if this functionality is used, the module can no longer be unloaded due
->> to the problem solved with the introduction of gpiochip_request_own_desc
->> and gpiochip_free_own_desc.
->>
->> Export both function so they can be used from modules and from
->> platform initialization code.
->
-> However, you have valid reason above. I wonder if this requires
-> some documentation in Documentation/gpio/driver.txt?
+--Sig_/SVDflKA40Dukmtg7AH4mhCV
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Indeed, that would be nice - at least to explain that these are not to
-be used inconsiderably.
+Hi all,
 
->
->> Cc: Mika Westerberg <mika.westerberg@linux.intel.com>
->> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
->> ---
->> v2: Move function declarations from consumer.h to driver.h.
->>
->>  drivers/gpio/gpiolib.c      | 2 ++
->>  drivers/gpio/gpiolib.h      | 3 ---
->>  include/linux/gpio/driver.h | 3 +++
->>  3 files changed, 5 insertions(+), 3 deletions(-)
->>
->> diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
->> index 43d9e34..04c647e 100644
->> --- a/drivers/gpio/gpiolib.c
->> +++ b/drivers/gpio/gpiolib.c
->> @@ -1953,6 +1953,7 @@ int gpiochip_request_own_desc(struct gpio_desc *desc, const char *label)
->>
->>       return __gpiod_request(desc, label);
->>  }
->> +EXPORT_SYMBOL(gpiochip_request_own_desc);
->
-> EXPORT_SYMBOL_GPL?
->
->>
->>  /**
->>   * gpiochip_free_own_desc - Free GPIO requested by the chip driver
->> @@ -1966,6 +1967,7 @@ void gpiochip_free_own_desc(struct gpio_desc *desc)
->>       if (desc)
->>               __gpiod_free(desc);
->>  }
->> +EXPORT_SYMBOL(gpiochip_free_own_desc);
->
-> ditto.
->
->>  /* Drivers MUST set GPIO direction before making get/set calls.  In
->>   * some cases this is done in early boot, before IRQs are enabled.
->> diff --git a/drivers/gpio/gpiolib.h b/drivers/gpio/gpiolib.h
->> index 1a4103d..2bdb69d 100644
->> --- a/drivers/gpio/gpiolib.h
->> +++ b/drivers/gpio/gpiolib.h
->> @@ -45,9 +45,6 @@ acpi_get_gpiod_by_index(struct device *dev, int index,
->>  }
->>  #endif
->>
->> -int gpiochip_request_own_desc(struct gpio_desc *desc, const char *label);
->> -void gpiochip_free_own_desc(struct gpio_desc *desc);
->> -
->>  struct gpio_desc *of_get_named_gpiod_flags(struct device_node *np,
->>                  const char *list_name, int index, enum of_gpio_flags *flags);
->>
->> diff --git a/include/linux/gpio/driver.h b/include/linux/gpio/driver.h
->> index 573e4f3..8e07d58 100644
->> --- a/include/linux/gpio/driver.h
->> +++ b/include/linux/gpio/driver.h
->> @@ -223,6 +223,9 @@ int gpiochip_irqchip_add(struct gpio_chip *gpiochip,
->>
->>  #endif /* CONFIG_GPIO_IRQCHIP */
->>
->> +int gpiochip_request_own_desc(struct gpio_desc *desc, const char *label);
->> +void gpiochip_free_own_desc(struct gpio_desc *desc);
->> +
->>  #else /* CONFIG_GPIOLIB */
->>
->>  static inline struct gpio_chip *gpiod_to_chip(const struct gpio_desc *desc)
->> --
->> 1.9.1
+Hopefully normal service will resume tomorrow.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Sig_/SVDflKA40Dukmtg7AH4mhCV
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJTzglqAAoJEMDTa8Ir7ZwVuL8P/0DaTcUOD++2/RgY7GgSUnmL
+h8YKRKrnwDbjmOjRZs/b6iaLb48q1WPu6J4+cKV4zj8SAia6OGDKqj3EWbccdpWk
+E4axHFht34fsJ0L4np/xoKRobvgSSYs6pTKOrO1zHL2zfx7YGWhNhRBJCM0INaV6
+1mlMS4SiPErIt6aZdzwoUknDFKMVqRlwIo0QQL9NHwi5kVylXByZyJkjC+znPf+G
+yTdur2VNtCCfeyoraBfGvLTchdKDPeoz4Nkk0yLl7qTau9B/aOAUWxYLHQcDOwkh
+5GJQebxqV/TxCIh0HBZ+cKBsLLUSZk1npo1PKtCvDDcPyUIXyQBoS3/KlAXpkFyP
+ohvEwpPWrVjx4xSg9O5BrB9hMrDQMCdhxpq/whn2vGGcoknBkcWqIfEWQI09sORw
+3PUOpxE3/yp49ghbxESpbYzRAkkF6kX3o7mu1ErDTxHCTfmB8sSzCXeghNKJrtOr
+xvxEYCecfp5QdlTwG+jYTXsZ/ZNsK//Y4/r9EOF9N8P+HI468F/w0k3+C5FVSL9F
+pk4/A3lojNh/8T/1YMFw1s8uaLSuzUgWJTNZeCHC0oQJ9g7ylQvTszEFE5eXofGV
+ht8wVXFpAzysJRm+zHytbCM9zUlyIx1MGzFuUBL3DLqnWdrkE4f396ON/bhjqVXt
+l1/fuXS1F5DKV+6Cn0uc
+=t3uK
+-----END PGP SIGNATURE-----
+
+--Sig_/SVDflKA40Dukmtg7AH4mhCV--
