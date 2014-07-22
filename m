@@ -1,49 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756300AbaGVSMh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 14:12:37 -0400
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:62550 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756086AbaGVSMg (ORCPT
+	id S1756211AbaGVSOa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 14:14:30 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:34990 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751402AbaGVSO2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 14:12:36 -0400
-Date: Tue, 22 Jul 2014 23:42:28 +0530
-From: Himangi Saraogi <himangi774@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Cc: julia.lawall@lip6.fr
-Subject: [PATCH] staging: gdm724x: Use NLMSG_HDRLEN
-Message-ID: <20140722181228.GA3324@himangi-Dell>
+	Tue, 22 Jul 2014 14:14:28 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAPDOMVjaf+vne4vbUPo8EPs0XnQBbNm2ZOXns8fw5pkg9tRSww@mail.gmail.com>
+References: <1406004789-9918-1-git-send-email-xerofoify@gmail.com>
+	<874my98p6u.fsf@nemi.mork.no>
+	<CA+8MBb+fnCNeQtyEqttxbkWx-4N+GUaKCUoCSdn5X9+bDDvTOg@mail.gmail.com>
+	<CAPDOMVjaf+vne4vbUPo8EPs0XnQBbNm2ZOXns8fw5pkg9tRSww@mail.gmail.com>
+Date: Tue, 22 Jul 2014 20:14:27 +0200
+X-Google-Sender-Auth: uTKshn4j9nhpq4MLZ5E-e_ZyNto
+Message-ID: <CAAsK9AGtdJiz0xnmfqLBAqxmt=r+WANsmxwB_vQ3O5aKzMW1LQ@mail.gmail.com>
+Subject: Re: [PATCH] edac: Remove fixmes in e7xxx_edac.c
+From: Levente Kurusa <lkurusa@redhat.com>
+To: Nick Krause <xerofoify@gmail.com>
+Cc: Tony Luck <tony.luck@gmail.com>,
+        =?UTF-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>,
+        Doug Thompson <dougthompson@xmission.com>,
+        Borislav Petkov <bp@alien8.de>,
+        "m.chehab@samsung.com" <m.chehab@samsung.com>,
+        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace use of  NLMSG_SPACE(0) with NLMSG_HDRLEN as they are equivalent
-and NLMSG_SPACE seems to be deprecated.
+2014-07-22 19:40 GMT+02:00 Nick Krause <xerofoify@gmail.com>:
+> [...]
+>
+> Tony,
+>
+> What is the value of Page shift then ? If you can tell me it would be
+> much easier for
+> me to fix this.
+> Cheers Nick
 
-Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
----
-To send to: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,devel@driverdev.osuosl.org,linux-kernel@vger.kernel.org
- drivers/staging/gdm724x/netlink_k.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Nick,
 
-diff --git a/drivers/staging/gdm724x/netlink_k.c b/drivers/staging/gdm724x/netlink_k.c
-index 5ddd369..59a1830 100644
---- a/drivers/staging/gdm724x/netlink_k.c
-+++ b/drivers/staging/gdm724x/netlink_k.c
-@@ -54,7 +54,7 @@ static void netlink_rcv_cb(struct sk_buff *skb)
- 		return;
- 	}
- 
--	if (skb->len < NLMSG_SPACE(0)) {
-+	if (skb->len < NLMSG_HDRLEN) {
- 		pr_err("nl cb - invalid skb length\n");
- 		return;
- 	}
--- 
-1.9.1
+Help is always welcome. However, what you are doing is effectively a
+waste of time for you and for the maintainers as well, and hence cannot
+be called help. You are writing emails that make absolutely no sense at all.
+If you want to help us out, please consider learning three things:
 
+* The language that the kernel is written in: C
+* The language that most kernel developers understand: English
+* The environment the kernel is (in most cases) written in: UNIX
+
+If you had known these, then:
+
+* ... you would have already known that FIXMEs exist for a reason which is
+   not at all simple.
+
+* ... you would have understood that fixing FIXMEs without ANY reasoning and
+   asking about it is completely useless and wastes precious maintainer time.
+
+* ... you could have used grep for finding out PAGE_SHIFT and not need to ask
+   for it.
+
+Nick. Look, it is good that you are enthusiastic. However, this kind
+of 'work' gives
+you an undesirable reputation, which is {IF FROM:xerofoify@* THEN TRASH}...
+
+If you really want to help out, I suggest you to find yourself a piece
+of hardware from
+the store and try to write a driver for it. That way, you will learn
+how it all works, and if
+you are intelligent enough then you might get a "Kernel Job - Payed"
+like you asked us
+for them in November.
+
+Until then, please stop trying for FIXMEs. They will not get you a
+commit in the kernel
+99% of the time.
+
+Hope you understand,
+
+Levente Kurusa
