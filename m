@@ -1,74 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753484AbaGVKrr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 06:47:47 -0400
-Received: from mail.nordixnett.no ([195.18.176.59]:11932 "EHLO
-	mail.nordixnett.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750801AbaGVKrp convert rfc822-to-8bit (ORCPT
+	id S1753685AbaGVKu1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 06:50:27 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:48424 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753524AbaGVKu0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 06:47:45 -0400
-X-Greylist: delayed 804 seconds by postgrey-1.27 at vger.kernel.org; Tue, 22 Jul 2014 06:47:45 EDT
-Message-ID: <20140722123220.5994692iij9p3v78@webmail.nordixnett.no>
-Date: Tue, 22 Jul 2014 12:32:20 +0200
-From: DIAMOND SWISS LOAN COMPANY <diamondswissloanscompany@gmail.com>
-Reply-to: standardloan0@rediffmail.com
-To: undisclosed-recipients:;
-Subject: lening bieden
+	Tue, 22 Jul 2014 06:50:26 -0400
+Date: Tue, 22 Jul 2014 11:50:22 +0100
+From: Richard Fitzgerald <rf@opensource.wolfsonmicro.com>
+To: perex@perex.cz, tiwai@suse.de, broonie@kernel.org
+Cc: lgirdwood@gmail.com, Li.Xiubo@freescale.com, lars@metafoo.de,
+        patches@opensource.wolfsonmicro.com, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 1/3] ASoC: wm5110: Set symmetric samplebits on AIFs
+Message-ID: <20140722105022.GB19663@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=ISO-8859-1;
- DelSp="Yes";
- format="flowed"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-User-Agent: Internet Messaging Program (IMP) H3 (4.3.11)
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Goede dag,
-      
-     We zijn Diamond Zwitserse lening bedrijf het geven van leningen  
-per post advertentie. Wij bieden verschillende soorten leningen (korte  
-en lange termijn leningen, persoonlijke leningen, leningen aan  
-bedrijven, enz.) met 3% rente. Wij geven leningen aan mensen in nood  
-niet, ongeacht hun locatie, geslacht, burgerlijke staat, opleiding,  
-status van de taak, maar moet een wettelijke middelen van  
-terugbetaling hebben. Onze leningen variëren tussen 5.000,00 tot  
-10.000.000,00 US Dollar of Euro of Pond met een maximale duur van 20  
-jaar. Als u geïnteresseerd bent in meer informatie, vul dan het  
-onderstaande formulier in en stuur het naar ons e-mailadres:  
-diamondswissloanscompany@gmail.com
+Different playback and capture bits-per-sample
+are not supported on the AIFs
 
-Gelieve in te vullen:
+Signed-off-by: Richard Fitzgerald <rf@opensource.wolfsonmicro.com>
+---
+ sound/soc/codecs/wm5110.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
-naam:
+diff --git a/sound/soc/codecs/wm5110.c b/sound/soc/codecs/wm5110.c
+index 62ef544..2f2ec26 100644
+--- a/sound/soc/codecs/wm5110.c
++++ b/sound/soc/codecs/wm5110.c
+@@ -1485,6 +1485,7 @@ static struct snd_soc_dai_driver wm5110_dai[] = {
+ 		 },
+ 		.ops = &arizona_dai_ops,
+ 		.symmetric_rates = 1,
++		.symmetric_samplebits = 1,
+ 	},
+ 	{
+ 		.name = "wm5110-aif2",
+@@ -1506,6 +1507,7 @@ static struct snd_soc_dai_driver wm5110_dai[] = {
+ 		 },
+ 		.ops = &arizona_dai_ops,
+ 		.symmetric_rates = 1,
++		.symmetric_samplebits = 1,
+ 	},
+ 	{
+ 		.name = "wm5110-aif3",
+@@ -1527,6 +1529,7 @@ static struct snd_soc_dai_driver wm5110_dai[] = {
+ 		 },
+ 		.ops = &arizona_dai_ops,
+ 		.symmetric_rates = 1,
++		.symmetric_samplebits = 1,
+ 	},
+ 	{
+ 		.name = "wm5110-slim1",
+-- 
+1.7.2.5
 
-adres:
-
-Leeftijd:
-
-Geslacht:
-
-Contact-Phone:
-
-Beroep:
-
-Maandelijks inkomen:
-
-Het benodigde bedrag van de lening:
-
-Duur van de lening:
-
-Het doel van de lening:
-
-land:
-
-Postcode:
-
-
-"Wij tonen u een betere manier om uw financiële vrijheid"
-
-Met vriendelijke groet,
-Mr Diamond Peters (algemeen directeur).
-De heer Bill Anthony (Marketing Manager)
