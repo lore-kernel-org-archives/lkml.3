@@ -1,70 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753051AbaGVHX0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 03:23:26 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:38735 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751514AbaGVHXZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 03:23:25 -0400
-Message-ID: <53CE1154.4010002@ti.com>
-Date: Tue, 22 Jul 2014 12:53:00 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1753410AbaGVHXe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 03:23:34 -0400
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:54775 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753210AbaGVHXa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 03:23:30 -0400
+Date: Tue, 22 Jul 2014 09:23:37 +0200
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Oded Gabbay <oded.gabbay@amd.com>
+Cc: Jerome Glisse <j.glisse@gmail.com>,
+        Andrew Lewycky <Andrew.Lewycky@amd.com>,
+        Michel =?iso-8859-1?Q?D=E4nzer?= <michel.daenzer@amd.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        linux-mm <linux-mm@kvack.org>, Evgeny Pinchuk <Evgeny.Pinchuk@amd.com>,
+        Alexey Skidanov <Alexey.Skidanov@amd.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH v2 00/25] AMDKFD kernel driver
+Message-ID: <20140722072337.GG15237@phenom.ffwll.local>
+Mail-Followup-To: Oded Gabbay <oded.gabbay@amd.com>,
+	Jerome Glisse <j.glisse@gmail.com>,
+	Andrew Lewycky <Andrew.Lewycky@amd.com>,
+	Michel =?iso-8859-1?Q?D=E4nzer?= <michel.daenzer@amd.com>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	"dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+	linux-mm <linux-mm@kvack.org>,
+	Evgeny Pinchuk <Evgeny.Pinchuk@amd.com>,
+	Alexey Skidanov <Alexey.Skidanov@amd.com>,
+	Andrew Morton <akpm@linux-foundation.org>
+References: <20140720174652.GE3068@gmail.com>
+ <53CD0961.4070505@amd.com>
+ <53CD17FD.3000908@vodafone.de>
+ <53CD1FB6.1000602@amd.com>
+ <20140721155437.GA4519@gmail.com>
+ <53CD5122.5040804@amd.com>
+ <20140721181433.GA5196@gmail.com>
+ <53CD5DBC.7010301@amd.com>
+ <20140721185940.GA5278@gmail.com>
+ <53CD68BF.4020308@amd.com>
 MIME-Version: 1.0
-To: Lee Jones <lee.jones@linaro.org>,
-        Kishon Vijay Abraham I <kishon@uda0393678>
-CC: <linux-arm-kernel@lists.infrared.org>, <linux-kernel@vger.kernel.org>,
-        <kernel@stlinux.com>
-Subject: Re: [PATCH v3 0/5] phy: miphy365x: Introduce support for MiPHY365x
-References: <1404906074-31992-1-git-send-email-lee.jones@linaro.org> <20140721062805.GA8781@uda0393678> <20140721073959.GR30888@lee--X1>
-In-Reply-To: <20140721073959.GR30888@lee--X1>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53CD68BF.4020308@amd.com>
+X-Operating-System: Linux phenom 3.15.0-rc3+ 
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon, Jul 21, 2014 at 10:23:43PM +0300, Oded Gabbay wrote:
+> But Jerome, the core problem still remains in effect, even with your
+> suggestion. If an application, either via userspace queue or via ioctl,
+> submits a long-running kernel, than the CPU in general can't stop the
+> GPU from running it. And if that kernel does while(1); than that's it,
+> game's over, and no matter how you submitted the work. So I don't really
+> see the big advantage in your proposal. Only in CZ we can stop this wave
+> (by CP H/W scheduling only). What are you saying is basically I won't
+> allow people to use compute on Linux KV system because it _may_ get the
+> system stuck.
+> 
+> So even if I really wanted to, and I may agree with you theoretically on
+> that, I can't fulfill your desire to make the "kernel being able to
+> preempt at any time and be able to decrease or increase user queue
+> priority so overall kernel is in charge of resources management and it
+> can handle rogue client in proper fashion". Not in KV, and I guess not
+> in CZ as well.
 
-On Monday 21 July 2014 01:09 PM, Lee Jones wrote:
-> Hi Kishon,
-> 
->>> This patchset is based on the two core patches you sent to the
->>> list which facilitate creating PHYs residing on multi-channel
->>> controllers.  The changes since the last submission centre
->>> around dynamic PHY creation based solely on what is provided via
->>> Device Tree, as requested.  The other review comments have also
->>> been addressed in this set.
->>
->> Merged the first four patches of this series. (merged v3+1 for 1st patch).
->> I'm not sure who would be merging the dt patch (5/5). But for now I've merged
->> 2/5 in linux-phy tree since the phy patch seems to be dependent on it.
->> So the dt patch can be merged only after -rc1. However if whoever merges
->> dt wants to get it merged during the merge window, I can prepare a common
->> branch which both of us can merge to. Either ways, dt Maintainer should
->> let me know.
-> 
-> Thanks for applying.  It would be really helpful if you could put just
-> patch 2/5 onto an immutable branch and provide a tag e that Maxime
-> could pull from.
+At least on intel the execlist stuff which is used for preemption can be
+used by both the cpu and the firmware scheduler. So we can actually
+preempt when doing cpu scheduling.
 
-Sure. Created tag
-git://git.kernel.org/pub/scm/linux/kernel/git/kishon/linux-phy.git
-miphy365x_dt_common_header (branch:miphy365x_dt_header). It is based on 3.16-rc5.
+It sounds like current amd hw doesn't have any preemption at all. And
+without preemption I don't think we should ever consider to allow
+userspace to directly submit stuff to the hw and overload. Imo the kernel
+_must_ sit in between and reject clients that don't behave. Of course you
+can only ever react (worst case with a gpu reset, there's code floating
+around for that on intel-gfx), but at least you can do something.
 
-Thanks
-Kishon
-> 
-> Kind regards,
-> Lee
-> 
->>>  .../devicetree/bindings/phy/phy-miphy365x.txt      |  76 +++
->>>  arch/arm/boot/dts/stih416-b2020-revE.dts           |  10 +
->>>  arch/arm/boot/dts/stih416-b2020.dts                |  12 +
->>>  arch/arm/boot/dts/stih416.dtsi                     |  22 +
->>>  drivers/phy/Kconfig                                |  10 +
->>>  drivers/phy/Makefile                               |   1 +
->>>  drivers/phy/phy-miphy365x.c                        | 636 +++++++++++++++++++++
->>>  include/dt-bindings/phy/phy-miphy365x.h            |  14 +
->>>  8 files changed, 781 insertions(+)
-> 
+If userspace has a direct submit path to the hw then this gets really
+tricky, if not impossible.
+-Daniel
+-- 
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
