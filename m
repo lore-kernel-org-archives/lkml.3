@@ -1,109 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756836AbaGVUxK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 16:53:10 -0400
-Received: from www.linutronix.de ([62.245.132.108]:40507 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752460AbaGVUxI (ORCPT
+	id S1756890AbaGVUxe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 16:53:34 -0400
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:57598 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756857AbaGVUxc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 16:53:08 -0400
-Date: Tue, 22 Jul 2014 22:52:39 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Waiman Long <waiman.long@hp.com>
-cc: Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Darren Hart <dvhart@linux.intel.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Andi Kleen <andi@firstfloor.org>, Ingo Molnar <mingo@kernel.org>,
-        Davidlohr Bueso <davidlohr@hp.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Jason Low <jason.low2@hp.com>, Scott J Norton <scott.norton@hp.com>,
-        Robert Haas <robertmhaas@gmail.com>
-Subject: Re: [RFC PATCH 0/5] futex: introduce an optimistic spinning futex
-In-Reply-To: <53CEC8AC.7020700@hp.com>
-Message-ID: <alpine.DEB.2.10.1407222243210.23352@nanos>
-References: <CFF29E4A.9D44E%dvhart@linux.intel.com> <alpine.DEB.2.10.1407212025130.20847@nanos> <20140721212740.GS3935@laptop> <CALCETrXSaWM6-nxr4ggtMh5qcfTQg4wRvkW8FTSbri5+_1ZbVg@mail.gmail.com> <alpine.DEB.2.10.1407212344130.20847@nanos>
- <CFF2E3D6.9D525%dvhart@linux.intel.com> <alpine.DEB.2.10.1407220047490.20847@nanos> <20140721213457.46623e2f@gandalf.local.home> <20140722074719.GV3935@laptop> <alpine.DEB.2.10.1407221034260.20847@nanos> <20140722084842.GZ3935@laptop>
- <alpine.DEB.2.10.1407221057230.20847@nanos> <53CEC8AC.7020700@hp.com>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	Tue, 22 Jul 2014 16:53:32 -0400
+Date: Tue, 22 Jul 2014 14:53:26 -0600
+From: Bjorn Helgaas <bhelgaas@google.com>
+To: Kishon Vijay Abraham I <kishon@ti.com>
+Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-pci@vger.kernel.org, jg1.han@samsung.com, mohit.kumar@st.com,
+        linux-kernel@vger.kernel.org, grant.likely@linaro.org,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Marek Vasut <marex@denx.de>, Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH v3 1/4] PCI: designware: Configuration space should be
+ specified in 'reg'
+Message-ID: <20140722205326.GA25432@google.com>
+References: <1405587643-13808-1-git-send-email-kishon@ti.com>
+ <1405587643-13808-2-git-send-email-kishon@ti.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1405587643-13808-2-git-send-email-kishon@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 22 Jul 2014, Waiman Long wrote:
-
-> On 07/22/2014 05:59 AM, Thomas Gleixner wrote:
-> > On Tue, 22 Jul 2014, Peter Zijlstra wrote:
-> > > On Tue, Jul 22, 2014 at 10:39:17AM +0200, Thomas Gleixner wrote:
-> > > > On Tue, 22 Jul 2014, Peter Zijlstra wrote:
-> > > > > Anyway, there is one big fail in the entire futex stack that we 'need'
-> > > > > to sort some day and that is NUMA. Some people (again database people)
-> > > > > explicitly do not use futexes and instead use sysvsem because of this.
-> > > > > 
-> > > > > The problem with numa futexes is that because they're vaddr based
-> > > > > there
-> > > > > is no (persistent) node information. You always end up having to fall
-> > > > > back to looking in all nodes before you can guarantee there is no
-> > > > > matching futex.
-> > > > > 
-> > > > > One way to achieve it is by extending the futex value to include a
-> > > > > node
-> > > > > number, but that's obviously a complete ABI break. Then again, it
-> > > > > should
-> > > > > be pretty straight fwd, since the node number doesn't need to be part
-> > > > > of
-> > > > > the actual atomic update part, just part of the userspace storage.
-> > > > So you want per node hash buckets, right? Fair enough, but how do you
-> > > > make sure, that no thread/process on a different node is fiddling with
-> > > > that "node bound" futex as well?
-> > > You don't and that should work just as well, just slower. But since the
-> > > node id is in the futex 'value' we'll always end up in the right
-> > > node-hash, even if its a remote one.
-> > > 
-> > > So yes, per node hashes, and a persistent futex->node map.
-> > Which works fine as long as you only have the futex_q on the stack of
-> > the blocked task. If user space is lying to you, then you just end up
-> > with a bunch of threads sleeping forever. Who cares?
-> > 
-> > But if you create independent kernel state, which we have with
-> > pi_state and which you need for finegrained locking and further
-> > spinning fun, you open up another can of worms. Simply because this
-> > would enable rogue user space to create multiple instances of the
-> > kernel internal state. I can predict the CVEs resulting from that
-> > even without using a crystal ball.
-> > 
-> > Thanks,
-> > 
-> > 	tglx
+On Thu, Jul 17, 2014 at 02:30:40PM +0530, Kishon Vijay Abraham I wrote:
+> The configuration address space has so far been specified in *ranges*,
+> however it should be specified in *reg* making it a platform MEM resource.
+> Hence used 'platform_get_resource_*' API to get configuration address
+> space in the designware driver.
 > 
-> I think NUMA futex, if implemented, is a completely independent piece that
-> have no direct relationship with optimistic spinning futex. It should be a
-> separate patch and not mixing with optimistic spinning patch which will only
-> make the latter one more complicated.
+> Cc: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+> Cc: Bjorn Helgaas <bhelgaas@google.com>
+> Cc: Marek Vasut <marex@denx.de>
+> Cc: Arnd Bergmann <arnd@arndb.de>
+> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+> Acked-by: Mohit Kumar <mohit.kumar@st.com>
+> Acked-by: Jingoo Han <jg1.han@samsung.com>
+> ---
+>  .../devicetree/bindings/pci/designware-pcie.txt    |    4 ++++
+>  drivers/pci/host/pcie-designware.c                 |   17 +++++++++++++++--
+>  2 files changed, 19 insertions(+), 2 deletions(-)
+> 
+> diff --git a/Documentation/devicetree/bindings/pci/designware-pcie.txt b/Documentation/devicetree/bindings/pci/designware-pcie.txt
+> index d0d15ee..ed0d9b9 100644
+> --- a/Documentation/devicetree/bindings/pci/designware-pcie.txt
+> +++ b/Documentation/devicetree/bindings/pci/designware-pcie.txt
+> @@ -2,6 +2,10 @@
+>  
+>  Required properties:
+>  - compatible: should contain "snps,dw-pcie" to identify the core.
+> +- reg: Should contain the configuration address space.
+> +- reg-names: Must be "config" for the PCIe configuration space.
+> +    (The old way of getting the configuration address space from "ranges"
+> +    is deprecated and should be avoided.)
 
-Bullshit. Of course it handles separate issues, but Peter is
-completely right, that the NUMA aspect is a far bigger issue than the
-optimistic spinning stuff. Do you have an idea what the costs of cross
-node memory access and cacheline bouncing are? Obviously not, as you
-only interest seems to be to slap optimistic spinning to every place
-which deals with locking.
+I'm not a devicetree person, so please excuse my floundering here.
+There doesn't seem to be consistent usage of "reg" or "reg-names".
+Here's what I found in the existing Documentation/devicetree/bindings/pci
+stuff:
 
-And if you had tried to read _AND_ understand the discussion above,
-you might have noticed that providing NUMA awareness requires a lot of
-the functionality which is needed for optimistic spinning as well.
+  83xx-512x-pci.txt
+    - reg: should contain two address length tuples
+	The first is for the internal pci bridge registers
+	The second is for the pci config space access registers
 
-But no, you did not even take the time to think about it, you just
-claim that it makes your optimistic stuff more complicated. Just get
-it, there is a world outside of optimistic spinning.
+  fsl,imx6q-pcie.txt
+    - reg: base addresse and length of the pcie controller
 
-Thanks,
+  host-generic-pci.txt
+    - reg            : The Configuration Space base address and size, as accessed
+		       from the parent bus.
 
-	tglx
+  nvidia,tegra20-pcie.txt
+    - reg: A list of physical base address and length for each set of controller
+      registers. Must contain an entry for each entry in the reg-names property.
+    - reg-names: Must include the following entries:
+      "pads": PADS registers
+      "afi": AFI registers
+      "cs": configuration space region
+
+  pci-rcar-gen2.txt
+    - reg:  A list of physical regions to access the device: the first is
+	    the operational registers for the OHCI/EHCI controllers and the
+	    second is for the bridge configuration and control registers.
+
+  ralink,rt3883-pci.txt
+     - reg: specifies the physical base address of the controller and
+       the length of the memory mapped region.
+
+  rcar-pci.txt
+    - reg: base address and length of the pcie controller registers.
+
+  samsung,exynos5440-pcie.txt
+    - reg: base addresses and lengths of the pcie controller,
+	  the phy controller, additional register for the phy controller.
+
+  v3-v360epc-pci.txt
+    - reg: should contain the base address of the V3 adapter.
+
+So my questions are:
+
+1) Is "reg" the right place for configuration space?  I assume this is
+CAM or ECAM.  Only 83xx-512x-pci.txt, host-generic-pci.txt, and
+nvidia,tegra20-pcie.txt mention using "reg" for config space; all the
+others use "reg" for register space for the PCIe controller itself.
+
+2) Is "config" the correct value for "reg-names"?  Only
+nvidia,tegra20-pcie.txt has something similar, and it wants "cs".
+Should these be the same?
+
+3) Doesn't this add a revlock (kernels with this patch require a new
+device tree that adds "reg" and "reg-names"?  I know both Mohit and
+Jingoo acked this [1,2], so I'm just double-checking that this is
+expected and desired.
+
+Bjorn
+
+[1] http://lkml.kernel.org/r/2CC2A0A4A178534D93D5159BF3BCB6619C5F94EFC8@EAPEX1MAIL1.st.com
+[2] http://marc.info/?l=linux-pci&m=140482389231290&w=2
+
+
+>  - #address-cells: set to <3>
+>  - #size-cells: set to <2>
+>  - device_type: set to "pci"
+> diff --git a/drivers/pci/host/pcie-designware.c b/drivers/pci/host/pcie-designware.c
+> index 1eaf4df..0b7b455 100644
+> --- a/drivers/pci/host/pcie-designware.c
+> +++ b/drivers/pci/host/pcie-designware.c
+> @@ -20,6 +20,7 @@
+>  #include <linux/of_pci.h>
+>  #include <linux/pci.h>
+>  #include <linux/pci_regs.h>
+> +#include <linux/platform_device.h>
+>  #include <linux/types.h>
+>  
+>  #include "pcie-designware.h"
+> @@ -396,11 +397,23 @@ static const struct irq_domain_ops msi_domain_ops = {
+>  int __init dw_pcie_host_init(struct pcie_port *pp)
+>  {
+>  	struct device_node *np = pp->dev->of_node;
+> +	struct platform_device *pdev = to_platform_device(pp->dev);
+>  	struct of_pci_range range;
+>  	struct of_pci_range_parser parser;
+> +	struct resource *cfg_res;
+>  	u32 val;
+>  	int i;
+>  
+> +	cfg_res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "config");
+> +	if (cfg_res) {
+> +		pp->config.cfg0_size = resource_size(cfg_res)/2;
+> +		pp->config.cfg1_size = resource_size(cfg_res)/2;
+> +		pp->cfg0_base = cfg_res->start;
+> +		pp->cfg1_base = cfg_res->start + pp->config.cfg0_size;
+> +	} else {
+> +		dev_err(pp->dev, "missing *config* reg space\n");
+> +	}
+> +
+>  	if (of_pci_range_parser_init(&parser, np)) {
+>  		dev_err(pp->dev, "missing ranges property\n");
+>  		return -EINVAL;
+> @@ -433,6 +446,8 @@ int __init dw_pcie_host_init(struct pcie_port *pp)
+>  			of_pci_range_to_resource(&range, np, &pp->cfg);
+>  			pp->config.cfg0_size = resource_size(&pp->cfg)/2;
+>  			pp->config.cfg1_size = resource_size(&pp->cfg)/2;
+> +			pp->cfg0_base = pp->cfg.start;
+> +			pp->cfg1_base = pp->cfg.start + pp->config.cfg0_size;
+>  		}
+>  	}
+>  
+> @@ -445,8 +460,6 @@ int __init dw_pcie_host_init(struct pcie_port *pp)
+>  		}
+>  	}
+>  
+> -	pp->cfg0_base = pp->cfg.start;
+> -	pp->cfg1_base = pp->cfg.start + pp->config.cfg0_size;
+>  	pp->mem_base = pp->mem.start;
+>  
+>  	pp->va_cfg0_base = devm_ioremap(pp->dev, pp->cfg0_base,
+> -- 
+> 1.7.9.5
+> 
