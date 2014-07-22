@@ -1,92 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753533AbaGVIj5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 04:39:57 -0400
-Received: from mout.kundenserver.de ([212.227.126.131]:53265 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751861AbaGVIjx (ORCPT
+	id S1753612AbaGVIkF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 04:40:05 -0400
+Received: from www.linutronix.de ([62.245.132.108]:36325 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751861AbaGVIj7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 04:39:53 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Chanwoo Choi <cw00.choi@samsung.com>
-Cc: jic23@kernel.org, ch.naveen@samsung.com, kgene.kim@samsung.com,
-        kyungmin.park@samsung.com, t.figa@samsung.com,
-        linux-iio@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        heiko.stuebner@bq.com
-Subject: Re: [PATCH 2/2] iio: adc: exynos_adc: Add support for S3C24xx ADC
-Date: Tue, 22 Jul 2014 10:39:38 +0200
-Message-ID: <5200888.DXoC06U953@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1405995074-3271-3-git-send-email-cw00.choi@samsung.com>
-References: <1405995074-3271-1-git-send-email-cw00.choi@samsung.com> <1405995074-3271-3-git-send-email-cw00.choi@samsung.com>
+	Tue, 22 Jul 2014 04:39:59 -0400
+Date: Tue, 22 Jul 2014 10:39:17 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Peter Zijlstra <peterz@infradead.org>
+cc: Steven Rostedt <rostedt@goodmis.org>, Darren Hart <dvhart@linux.intel.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Andi Kleen <andi@firstfloor.org>, Waiman Long <Waiman.Long@hp.com>,
+        Ingo Molnar <mingo@kernel.org>, Davidlohr Bueso <davidlohr@hp.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Jason Low <jason.low2@hp.com>, Scott J Norton <scott.norton@hp.com>,
+        Robert Haas <robertmhaas@gmail.com>
+Subject: Re: [RFC PATCH 0/5] futex: introduce an optimistic spinning futex
+In-Reply-To: <20140722074719.GV3935@laptop>
+Message-ID: <alpine.DEB.2.10.1407221034260.20847@nanos>
+References: <871tte3bjw.fsf@tassilo.jf.intel.com> <CFF29A00.9D44A%dvhart@linux.intel.com> <CFF29E4A.9D44E%dvhart@linux.intel.com> <alpine.DEB.2.10.1407212025130.20847@nanos> <20140721212740.GS3935@laptop> <CALCETrXSaWM6-nxr4ggtMh5qcfTQg4wRvkW8FTSbri5+_1ZbVg@mail.gmail.com>
+ <alpine.DEB.2.10.1407212344130.20847@nanos> <CFF2E3D6.9D525%dvhart@linux.intel.com> <alpine.DEB.2.10.1407220047490.20847@nanos> <20140721213457.46623e2f@gandalf.local.home> <20140722074719.GV3935@laptop>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:W47rk9YUQ/ub4GzBLPO33wx75ymbD/M4317Tpwvp0NK
- DJws9nsmOJTkgsDNTPE1D62WLUCLUhGKnZNTHbi1QPcZbBCaQg
- d3wI/tcfW3JHTi1/G7n5xnzbjV9ch2uHXus/ZKk8C2LUJViYpK
- hLs50lnhGxHU5vglfvz2mujDjb9NsW7oN8gcH39ZdNJ5L2JXTA
- L339igCRC4/Z6qjwgHHVmLIQ9c34dHOmmSb05lnTolAOEIbnnJ
- CH6gXNaAcFwtbKteSPzaR4uQ2KpALj1Qa/O8atW3/6mmoQXRRj
- qBKIaqFcpEbgRD9niMC172dKODqjI3y4kiA1wKB+NAyh7isPjB
- j3ArpZ4vg4OHVdWliee4=
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 22 July 2014 11:11:14 Chanwoo Choi wrote:
-> This patch add support for s3c2410/s3c2416/s3c2440/s3c2443 ADC. The s3c24xx
-> is alomost same as ADCv1. But, There are a little difference as following:
-> - ADCMUX register address to select channel
-> - ADCDAT mask (10bit or 12bit ADC resolution according to SoC version)
+On Tue, 22 Jul 2014, Peter Zijlstra wrote:
+> Anyway, there is one big fail in the entire futex stack that we 'need'
+> to sort some day and that is NUMA. Some people (again database people)
+> explicitly do not use futexes and instead use sysvsem because of this.
+> 
+> The problem with numa futexes is that because they're vaddr based there
+> is no (persistent) node information. You always end up having to fall
+> back to looking in all nodes before you can guarantee there is no
+> matching futex.
+> 
+> One way to achieve it is by extending the futex value to include a node
+> number, but that's obviously a complete ABI break. Then again, it should
+> be pretty straight fwd, since the node number doesn't need to be part of
+> the actual atomic update part, just part of the userspace storage.
 
-Very good, thanks for doing this patch!
+So you want per node hash buckets, right? Fair enough, but how do you
+make sure, that no thread/process on a different node is fiddling with
+that "node bound" futex as well?
 
-(adding Heiko to Cc, he's probably interested in seeing this as well.
+Thanks,
 
-One comment:
- 
-> @@ -101,12 +107,14 @@ struct exynos_adc {
->  	struct completion	completion;
->  
->  	u32			value;
-> +	u32			value2;
->  	unsigned int            version;
->  };
-> ...
-> @@ -365,7 +448,7 @@ static int exynos_read_raw(struct iio_dev *indio_dev,
->  		ret = -ETIMEDOUT;
->  	} else {
->  		*val = info->value;
-> -		*val2 = 0;
-> +		*val2 = info->value2;
->  		ret = IIO_VAL_INT;
->  	}
->  
-> @@ -377,9 +460,11 @@ static int exynos_read_raw(struct iio_dev *indio_dev,
->  static irqreturn_t exynos_adc_isr(int irq, void *dev_id)
->  {
->  	struct exynos_adc *info = (struct exynos_adc *)dev_id;
-> +	u32 mask = info->data->mask;
->  
->  	/* Read value */
-> -	info->value = readl(ADC_V1_DATX(info->regs)) & ADC_DATX_MASK;
-> +	info->value = readl(ADC_V1_DATX(info->regs)) & mask;
-> +	info->value2 = readl(ADC_V1_DATY(info->regs)) & mask;
->  
->  	/* clear irq */
->  	if (info->data->clear_irq)
+	tglx
 
-If I understand it right, this would only be necessary if we want
-to do the touchscreen driver as a separate iio client using the
-in-kernel interfaces. As Jonathan Cameron commented, we probably
-don't want to do that though. Even if we do, it should be a separate
-patch and not mixed in with the s3c24xx support.
-
-Aside from this:
-
-Acked-by: Arnd Bergmann <arnd@arndb.de>
-
-	Arnd
