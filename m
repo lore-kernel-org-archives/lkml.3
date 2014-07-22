@@ -1,70 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755437AbaGVMY3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 08:24:29 -0400
-Received: from 8bytes.org ([81.169.241.247]:53060 "EHLO theia.8bytes.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751823AbaGVMY0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 08:24:26 -0400
-Date: Tue, 22 Jul 2014 14:24:24 +0200
-From: Joerg Roedel <joro@8bytes.org>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Len Brown <len.brown@intel.com>,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/6 v2] PM / Hibernate: Memory bitmap scalability
- improvements
-Message-ID: <20140722122424.GB31450@8bytes.org>
-References: <1405938422-21900-1-git-send-email-joro@8bytes.org>
- <20140721160346.GP30979@8bytes.org>
- <20140721230500.GA7019@amd.pavel.ucw.cz>
- <6793803.1FXN0a3O0V@vostro.rjw.lan>
- <20140722103443.GV30979@8bytes.org>
- <20140722105546.GA9814@amd.pavel.ucw.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140722105546.GA9814@amd.pavel.ucw.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755506AbaGVMZL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 08:25:11 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:32948 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754184AbaGVMXy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 08:23:54 -0400
+From: Boris BREZILLON <boris.brezillon@free-electrons.com>
+To: Thierry Reding <thierry.reding@gmail.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Cc: David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        linux-media@vger.kernel.org,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>
+Subject: [PATCH 4/5] drm: panel: simple-panel: add support for bus_format retrieval
+Date: Tue, 22 Jul 2014 14:23:46 +0200
+Message-Id: <1406031827-12432-5-git-send-email-boris.brezillon@free-electrons.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1406031827-12432-1-git-send-email-boris.brezillon@free-electrons.com>
+References: <1406031827-12432-1-git-send-email-boris.brezillon@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 22, 2014 at 12:55:46PM +0200, Pavel Machek wrote:
-> On Tue 2014-07-22 12:34:44, Joerg Roedel wrote:
+Provide a way to specify panel requirement in terms of supported media bus
+format (particularly useful for panels connected to an RGB or LVDS bus).
 
-> Writing out every single page on 12TB machine to disk does not scale,
-> either :-).
+Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
+---
+ drivers/gpu/drm/panel/panel-simple.c | 5 +++++
+ 1 file changed, 5 insertions(+)
 
-But there is not much potential optimizing the write-out either (in
-software). But that doesn't mean we shouldn't do the parts better that
-we *can* do better.
-
-> > I also see how the problem could be solved differently, but what I
-> > didn't get from the discussion yet is: What is actually *wrong* with
-> > *this* approach?
-> 
-> It throws complex / tricky to review code at a problem...
-
-A radix tree implementation is neither tricky nor overly complex. Also,
-if you have questions about particular parts of the implementation I am
-happy to explain them/add a comment to make them more clear.
-
-But all you did so far was looking for reasons why this change is bad,
-and as that failed you went back to just question its usefulnes.
-
-> that is not a problem in any reasonable configuration.
-
-What is reasonable heavily depends on who you ask. Only if its not an
-issue for you doesn't mean it isn't for anybody else. For our partner
-the current situation is a real world problem and these patches fix
-it.
-
-> Now... should I spend half an hour reviewing your changes, or are we
-> maybe better without them?
-
-I bet you already spent more than half an hour discussing reasons with
-me not to review this code.
-
-
-	Joerg
+diff --git a/drivers/gpu/drm/panel/panel-simple.c b/drivers/gpu/drm/panel/panel-simple.c
+index 3f76944..42fd6d1 100644
+--- a/drivers/gpu/drm/panel/panel-simple.c
++++ b/drivers/gpu/drm/panel/panel-simple.c
+@@ -41,6 +41,8 @@ struct panel_desc {
+ 		unsigned int width;
+ 		unsigned int height;
+ 	} size;
++
++	enum video_bus_format bus_format;
+ };
+ 
+ struct panel_simple {
+@@ -89,6 +91,9 @@ static int panel_simple_get_fixed_modes(struct panel_simple *panel)
+ 
+ 	connector->display_info.width_mm = panel->desc->size.width;
+ 	connector->display_info.height_mm = panel->desc->size.height;
++	if (panel->desc->bus_format)
++		drm_display_info_set_bus_formats(&connector->display_info,
++						 &panel->desc->bus_format, 1);
+ 
+ 	return num;
+ }
+-- 
+1.8.3.2
 
