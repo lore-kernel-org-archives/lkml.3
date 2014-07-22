@@ -1,90 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752717AbaGVH2W (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 03:28:22 -0400
-Received: from mx08-00178001.pphosted.com ([91.207.212.93]:59533 "EHLO
-	mx08-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750737AbaGVH2V (ORCPT
+	id S1753177AbaGVH2q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 03:28:46 -0400
+Received: from mail-wg0-f50.google.com ([74.125.82.50]:49118 "EHLO
+	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752818AbaGVH2o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 03:28:21 -0400
-Message-ID: <53CE128B.9060307@st.com>
-Date: Tue, 22 Jul 2014 09:28:11 +0200
-From: Maxime Coquelin <maxime.coquelin@st.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Tue, 22 Jul 2014 03:28:44 -0400
+Date: Tue, 22 Jul 2014 09:28:51 +0200
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Jerome Glisse <j.glisse@gmail.com>
+Cc: Oded Gabbay <oded.gabbay@amd.com>, Daniel Vetter <daniel@ffwll.ch>,
+        Christian =?iso-8859-1?Q?K=F6nig?= <deathsimple@vodafone.de>,
+        David Airlie <airlied@linux.ie>, Alex Deucher <alexdeucher@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        John Bridgman <John.Bridgman@amd.com>, Joerg Roedel <joro@8bytes.org>,
+        Andrew Lewycky <Andrew.Lewycky@amd.com>,
+        Michel =?iso-8859-1?Q?D=E4nzer?= <michel.daenzer@amd.com>,
+        Ben Goz <Ben.Goz@amd.com>, Alexey Skidanov <Alexey.Skidanov@amd.com>,
+        Evgeny Pinchuk <Evgeny.Pinchuk@amd.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        linux-mm <linux-mm@kvack.org>
+Subject: Re: [PATCH v2 00/25] AMDKFD kernel driver
+Message-ID: <20140722072851.GH15237@phenom.ffwll.local>
+Mail-Followup-To: Jerome Glisse <j.glisse@gmail.com>,
+	Oded Gabbay <oded.gabbay@amd.com>,
+	Christian =?iso-8859-1?Q?K=F6nig?= <deathsimple@vodafone.de>,
+	David Airlie <airlied@linux.ie>,
+	Alex Deucher <alexdeucher@gmail.com>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	John Bridgman <John.Bridgman@amd.com>,
+	Joerg Roedel <joro@8bytes.org>,
+	Andrew Lewycky <Andrew.Lewycky@amd.com>,
+	Michel =?iso-8859-1?Q?D=E4nzer?= <michel.daenzer@amd.com>,
+	Ben Goz <Ben.Goz@amd.com>,
+	Alexey Skidanov <Alexey.Skidanov@amd.com>,
+	Evgeny Pinchuk <Evgeny.Pinchuk@amd.com>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	"dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+	linux-mm <linux-mm@kvack.org>
+References: <20140720174652.GE3068@gmail.com>
+ <53CD0961.4070505@amd.com>
+ <53CD17FD.3000908@vodafone.de>
+ <20140721152511.GW15237@phenom.ffwll.local>
+ <20140721155851.GB4519@gmail.com>
+ <20140721170546.GB15237@phenom.ffwll.local>
+ <53CD4DD2.10906@amd.com>
+ <CAKMK7uFhvGtxj_d6X=4OBdVSm6cT1-Z-DiTE-FTWMnFjY2uqMQ@mail.gmail.com>
+ <53CD5ED9.2040600@amd.com>
+ <20140721190306.GB5278@gmail.com>
 MIME-Version: 1.0
-To: Kishon Vijay Abraham I <kishon@ti.com>, Lee Jones <lee.jones@linaro.org>,
-        Kishon Vijay Abraham I <kishon@uda0393678>
-Cc: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infrared.org>,
-        <kernel@stlinux.com>
-Subject: Re: [STLinux Kernel] [PATCH v3 0/5] phy: miphy365x: Introduce support
- for MiPHY365x
-References: <1404906074-31992-1-git-send-email-lee.jones@linaro.org>	<20140721062805.GA8781@uda0393678> <20140721073959.GR30888@lee--X1> <53CE1154.4010002@ti.com>
-In-Reply-To: <53CE1154.4010002@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.201.23.80]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.14,0.0.0000
- definitions=2014-07-22_03:2014-07-22,2014-07-22,1970-01-01 signatures=0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140721190306.GB5278@gmail.com>
+X-Operating-System: Linux phenom 3.15.0-rc3+ 
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Jul 21, 2014 at 03:03:07PM -0400, Jerome Glisse wrote:
+> On Mon, Jul 21, 2014 at 09:41:29PM +0300, Oded Gabbay wrote:
+> > On 21/07/14 21:22, Daniel Vetter wrote:
+> > > On Mon, Jul 21, 2014 at 7:28 PM, Oded Gabbay <oded.gabbay@amd.com> wrote:
+> > >>> I'm not sure whether we can do the same trick with the hw scheduler. But
+> > >>> then unpinning hw contexts will drain the pipeline anyway, so I guess we
+> > >>> can just stop feeding the hw scheduler until it runs dry. And then unpin
+> > >>> and evict.
+> > >> So, I'm afraid but we can't do this for AMD Kaveri because:
+> > > 
+> > > Well as long as you can drain the hw scheduler queue (and you can do
+> > > that, worst case you have to unmap all the doorbells and other stuff
+> > > to intercept further submission from userspace) you can evict stuff.
+> > 
+> > I can't drain the hw scheduler queue, as I can't do mid-wave preemption.
+> > Moreover, if I use the dequeue request register to preempt a queue
+> > during a dispatch it may be that some waves (wave groups actually) of
+> > the dispatch have not yet been created, and when I reactivate the mqd,
+> > they should be created but are not. However, this works fine if you use
+> > the HIQ. the CP ucode correctly saves and restores the state of an
+> > outstanding dispatch. I don't think we have access to the state from
+> > software at all, so it's not a bug, it is "as designed".
+> > 
+> 
+> I think here Daniel is suggesting to unmapp the doorbell page, and track
+> each write made by userspace to it and while unmapped wait for the gpu to
+> drain or use some kind of fence on a special queue. Once GPU is drain we
+> can move pinned buffer, then remap the doorbell and update it to the last
+> value written by userspace which will resume execution to the next job.
 
+Exactly, just prevent userspace from submitting more. And if you have
+misbehaving userspace that submits too much, reset the gpu and tell it
+that you're sorry but won't schedule any more work.
 
-On 07/22/2014 09:23 AM, Kishon Vijay Abraham I wrote:
-> Hi,
->
-> On Monday 21 July 2014 01:09 PM, Lee Jones wrote:
->> Hi Kishon,
->>
->>>> This patchset is based on the two core patches you sent to the
->>>> list which facilitate creating PHYs residing on multi-channel
->>>> controllers.  The changes since the last submission centre
->>>> around dynamic PHY creation based solely on what is provided via
->>>> Device Tree, as requested.  The other review comments have also
->>>> been addressed in this set.
->>>
->>> Merged the first four patches of this series. (merged v3+1 for 1st patch).
->>> I'm not sure who would be merging the dt patch (5/5). But for now I've merged
->>> 2/5 in linux-phy tree since the phy patch seems to be dependent on it.
->>> So the dt patch can be merged only after -rc1. However if whoever merges
->>> dt wants to get it merged during the merge window, I can prepare a common
->>> branch which both of us can merge to. Either ways, dt Maintainer should
->>> let me know.
->>
->> Thanks for applying.  It would be really helpful if you could put just
->> patch 2/5 onto an immutable branch and provide a tag e that Maxime
->> could pull from.
->
-> Sure. Created tag
-> git://git.kernel.org/pub/scm/linux/kernel/git/kishon/linux-phy.git
-> miphy365x_dt_common_header (branch:miphy365x_dt_header). It is based on 3.16-rc5.
+We have this already in i915 (since like all other gpus we're not
+preempting right now) and it works. There's some code floating around to
+even restrict the reset to _just_ the offending submission context, with
+nothing else getting corrupted.
 
-Thanks Kishon, I will merge it today.
-
-Regards,
-Maxime
-
->
-> Thanks
-> Kishon
->>
->> Kind regards,
->> Lee
->>
->>>>   .../devicetree/bindings/phy/phy-miphy365x.txt      |  76 +++
->>>>   arch/arm/boot/dts/stih416-b2020-revE.dts           |  10 +
->>>>   arch/arm/boot/dts/stih416-b2020.dts                |  12 +
->>>>   arch/arm/boot/dts/stih416.dtsi                     |  22 +
->>>>   drivers/phy/Kconfig                                |  10 +
->>>>   drivers/phy/Makefile                               |   1 +
->>>>   drivers/phy/phy-miphy365x.c                        | 636 +++++++++++++++++++++
->>>>   include/dt-bindings/phy/phy-miphy365x.h            |  14 +
->>>>   8 files changed, 781 insertions(+)
->>
->
-> _______________________________________________
-> Kernel mailing list
-> Kernel@stlinux.com
-> http://www.stlinux.com/mailman/listinfo/kernel
->
+You can do all this with the doorbells and unmapping them, but it's a
+pain. Much easier if you have a real ioctl, and I haven't seen anyone with
+perf data indicating that an ioctl would be too much overhead on linux.
+Neither in this thread nor internally here at intel.
+-Daniel
+-- 
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
