@@ -1,67 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752865AbaGVEkO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 00:40:14 -0400
-Received: from mail-vc0-f179.google.com ([209.85.220.179]:64666 "EHLO
-	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750821AbaGVEkM (ORCPT
+	id S1752159AbaGVEmc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 00:42:32 -0400
+Received: from mail-vc0-f178.google.com ([209.85.220.178]:53354 "EHLO
+	mail-vc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750742AbaGVEmb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 00:40:12 -0400
+	Tue, 22 Jul 2014 00:42:31 -0400
 MIME-Version: 1.0
-In-Reply-To: <20140721225153.GJ17528@sirena.org.uk>
-References: <1404303560-32209-1-git-send-email-acourbot@nvidia.com>
- <1404303560-32209-5-git-send-email-acourbot@nvidia.com> <53B42B60.1000600@wwwdotorg.org>
- <53B4C9C0.4000605@nvidia.com> <53CD333F.2070805@wwwdotorg.org>
- <20140721211630.GA12076@mithrandir> <20140721225153.GJ17528@sirena.org.uk>
+In-Reply-To: <1406003194-20351-1-git-send-email-linux@roeck-us.net>
+References: <1406003194-20351-1-git-send-email-linux@roeck-us.net>
 From: Alexandre Courbot <gnurou@gmail.com>
-Date: Tue, 22 Jul 2014 13:39:51 +0900
-Message-ID: <CAAVeFuKtVYNP5LFXGCEpkUtCCrK6AP+9WEVPDPs45RwAPvKKRg@mail.gmail.com>
-Subject: Re: [PATCH 4/4] ARM: tegra: roth: add display DT node
-To: Mark Brown <broonie@kernel.org>
-Cc: Thierry Reding <thierry.reding@gmail.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Alexandre Courbot <acourbot@nvidia.com>,
-        Terje Bergstrom <tbergstrom@nvidia.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Tue, 22 Jul 2014 13:42:10 +0900
+Message-ID: <CAAVeFu+9NTH8pbx-dvYD3xVpZ9Y5F0P9KNDQP1DMB6Qn0Sv8KQ@mail.gmail.com>
+Subject: Re: [PATCH] gpiolib: Export gpiochip_request_own_desc and gpiochip_free_own_desc
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 22, 2014 at 7:51 AM, Mark Brown <broonie@kernel.org> wrote:
-> On Mon, Jul 21, 2014 at 11:16:32PM +0200, Thierry Reding wrote:
->> On Mon, Jul 21, 2014 at 09:35:27AM -0600, Stephen Warren wrote:
+On Tue, Jul 22, 2014 at 1:26 PM, Guenter Roeck <linux@roeck-us.net> wrote:
+> Both functions were introduced to let gpio drivers request their own
+> gpio pins. Without exporting the functions, this can however only be
+> used by gpio drivers built into the kernel.
 >
->> > > vdd-2v8-display needs to remain always-on however. Here we may hit a
->> > > limitation of the simple-panel driver, where only one power supply can
->> > > be provided.
+> Secondary impact is that the functions can not currently be used by
+> platform initialization code associated with the gpio-pca953x driver.
+> This code permits auto-export of gpio pins through platform data, but
+> if this functionality is used, the module can no longer be unloaded due
+> to the problem solved with the introduction of gpiochip_request_own_desc
+> and gpiochip_free_own_desc.
 >
->> > Can't we fix the simple-panel driver to allow a list of regulators in
->> > the property?
+> Export both function so they can be used from modules and from
+> platform initialization code.
 >
->> I have no objection to allowing that. But I don't think there's a way to
->> do that with the current regulator API. You can use the bulk API, but
->> that requires separate properties, not multiple regulators in one
->> property.
+> Cc: Mika Westerberg <mika.westerberg@linux.intel.com>
+> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+> ---
+>  drivers/gpio/gpiolib.c        | 2 ++
+>  drivers/gpio/gpiolib.h        | 3 ---
+>  include/linux/gpio/consumer.h | 3 +++
+>  3 files changed, 5 insertions(+), 3 deletions(-)
 >
->> Perhaps one idea to solve this would be to make the regulator API return
->> a regulator handle that in fact controls an array of regulators? Adding
->> Mark.
+> diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
+> index 43d9e34..04c647e 100644
+> --- a/drivers/gpio/gpiolib.c
+> +++ b/drivers/gpio/gpiolib.c
+> @@ -1953,6 +1953,7 @@ int gpiochip_request_own_desc(struct gpio_desc *desc, const char *label)
 >
-> I'm really not comfortable with that idea, it seems like most of the
-> users would be abusing it - one of the biggest issues is always getting
-> people to understand that their driver may be used in other systems with
-> the supplies mapped differently.  If you were going to do something
-> along those lines you'd need to do something that enumerated all the
-> supply properties on the device.
+>         return __gpiod_request(desc, label);
+>  }
+> +EXPORT_SYMBOL(gpiochip_request_own_desc);
+>
+>  /**
+>   * gpiochip_free_own_desc - Free GPIO requested by the chip driver
+> @@ -1966,6 +1967,7 @@ void gpiochip_free_own_desc(struct gpio_desc *desc)
+>         if (desc)
+>                 __gpiod_free(desc);
+>  }
+> +EXPORT_SYMBOL(gpiochip_free_own_desc);
+>
+>  /* Drivers MUST set GPIO direction before making get/set calls.  In
+>   * some cases this is done in early boot, before IRQs are enabled.
+> diff --git a/drivers/gpio/gpiolib.h b/drivers/gpio/gpiolib.h
+> index 1a4103d..2bdb69d 100644
+> --- a/drivers/gpio/gpiolib.h
+> +++ b/drivers/gpio/gpiolib.h
+> @@ -45,9 +45,6 @@ acpi_get_gpiod_by_index(struct device *dev, int index,
+>  }
+>  #endif
+>
+> -int gpiochip_request_own_desc(struct gpio_desc *desc, const char *label);
+> -void gpiochip_free_own_desc(struct gpio_desc *desc);
+> -
+>  struct gpio_desc *of_get_named_gpiod_flags(struct device_node *np,
+>                    const char *list_name, int index, enum of_gpio_flags *flags);
+>
+> diff --git a/include/linux/gpio/consumer.h b/include/linux/gpio/consumer.h
+> index 05e53cc..e85f7e6 100644
+> --- a/include/linux/gpio/consumer.h
+> +++ b/include/linux/gpio/consumer.h
+> @@ -32,6 +32,9 @@ struct gpio_desc *__must_check gpiod_get_index_optional(struct device *dev,
+>
+>  void gpiod_put(struct gpio_desc *desc);
+>
+> +int gpiochip_request_own_desc(struct gpio_desc *desc, const char *label);
+> +void gpiochip_free_own_desc(struct gpio_desc *desc);
 
-I also don't think that would do it - for many displays the power-on
-sequence is not as simple as "switch all the regulators on".
+I guess these functions should be made public in driver.h, not
+consumer.h. Users will be GPIO drivers and platform code, not device
+drivers which are the typical consumers of GPIOs.
 
-Maybe what we would want is to have panel-simple allow panels to
-provide a "probe" callback so they can request and manage any extra
-resource they need. This would of course imply that custom
-enable/disable and suspend/resume callbacks. Then the driver might not
-be "simple" anymore, but IMHO it would not be that bad.
+> +
+>  struct gpio_desc *__must_check devm_gpiod_get(struct device *dev,
+>                                               const char *con_id);
+>  struct gpio_desc *__must_check devm_gpiod_get_index(struct device *dev,
+> --
+> 1.9.1
+>
