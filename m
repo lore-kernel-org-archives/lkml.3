@@ -1,66 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753047AbaGVODp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 10:03:45 -0400
-Received: from mail-ig0-f171.google.com ([209.85.213.171]:54689 "EHLO
-	mail-ig0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750801AbaGVODo (ORCPT
+	id S1754136AbaGVOFT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 10:05:19 -0400
+Received: from canardo.mork.no ([148.122.252.1]:37513 "EHLO canardo.mork.no"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750930AbaGVOFR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 10:03:44 -0400
-Date: Tue, 22 Jul 2014 15:03:38 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: pramod gurav <pramod.gurav.etc@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 02/19] mfd: max8925-i2c: Fix 'blank line after
- declarations' warning
-Message-ID: <20140722140338.GF16065@lee--X1>
-References: <1406027485-15657-1-git-send-email-lee.jones@linaro.org>
- <1406027485-15657-3-git-send-email-lee.jones@linaro.org>
- <CAMf-jSn5zZ1FBt+atzB9frZZ6yu_OTTfmJF2e7CEgQDbdzytBg@mail.gmail.com>
- <20140722121556.GC16065@lee--X1>
- <CAMf-jSmyJ1r8eFe-kU2LwgYzNuqkNqNHvUVk088f4AUaULEugg@mail.gmail.com>
+	Tue, 22 Jul 2014 10:05:17 -0400
+From: =?utf-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>
+To: Nicholas Krause <xerofoify@gmail.com>
+Cc: dougthompson@xmission.com, bp@alien8.de, m.chehab@samsung.com,
+        linux-edac@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] edac: Remove fixmes in e7xxx_edac.c
+Organization: m
+References: <1406004789-9918-1-git-send-email-xerofoify@gmail.com>
+Date: Tue, 22 Jul 2014 16:04:41 +0200
+In-Reply-To: <1406004789-9918-1-git-send-email-xerofoify@gmail.com> (Nicholas
+	Krause's message of "Tue, 22 Jul 2014 00:53:09 -0400")
+Message-ID: <874my98p6u.fsf@nemi.mork.no>
+User-Agent: Gnus/5.130011 (Ma Gnus v0.11) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAMf-jSmyJ1r8eFe-kU2LwgYzNuqkNqNHvUVk088f4AUaULEugg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 22 Jul 2014, pramod gurav wrote:
+Nicholas Krause <xerofoify@gmail.com> writes:
 
-> On Tue, Jul 22, 2014 at 5:45 PM, Lee Jones <lee.jones@linaro.org> wrote:
-> > On Tue, 22 Jul 2014, pramod gurav wrote:
-> >> There are more such changes required in this file. If they could go
-> >> with this, will be good.
-> >
-> > Checkpatch only found this one:
-> Yes, there is only one missing blank warning in this source file. What
-> I was pointing out to was the extra line you added before return
-> statement. There are more such extra lines needed.
-> I created a patch for that but I am not sure how I would insert that
-> here in between this reply.
+> This removes two Page shift fixs me in this file and not checking
+> if row is -1 in process_ce as it cannot be this value or be must
+> exit this function by returning.
+>
+> Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
+> ---
+>  drivers/edac/e7xxx_edac.c | 10 +++++-----
+>  1 file changed, 5 insertions(+), 5 deletions(-)
+>
+> diff --git a/drivers/edac/e7xxx_edac.c b/drivers/edac/e7xxx_edac.c
+> index 3cda79b..563983f 100644
+> --- a/drivers/edac/e7xxx_edac.c
+> +++ b/drivers/edac/e7xxx_edac.c
+> @@ -211,12 +211,13 @@ static void process_ce(struct mem_ctl_info *mci, struct e7xxx_error_info *info)
+>  	edac_dbg(3, "\n");
+>  	/* read the error address */
+>  	error_1b = info->dram_celog_add;
+> -	/* FIXME - should use PAGE_SHIFT */
+> -	page = error_1b >> 6;	/* convert the address to 4k page */
+> +	page = error_1b >> PAGE_SHIFT;	/* convert the address to 4k page */
 
-Well to be honest, I was just being cheeky with that change, as it's
-not really an issue, just a preference of mine.  If you really feel
-passionate about it I will accept your patch if you submit it based on
-for-mfd-next in the MFD repo [1].
+I just have to bite...  Where did you get the idea that you can go
+around and "fix" FIMXE's like they were spelling errors?
 
-> >> WARNING: Missing a blank line after declarations
-> >> #260: FILE: drivers/mfd/max8925-i2c.c:260:
-> >> +     int ret;
-> >> +     ret = i2c_add_driver(&max8925_driver);
-> >>
-> >> total: 0 errors, 1 warnings, 275 lines checked
-> >
-> > Can you point me to the others please?
 
-[1] git://git.kernel.org/pub/scm/linux/kernel/git/lee/mfd.git
-
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Bjørn
