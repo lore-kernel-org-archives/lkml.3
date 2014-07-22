@@ -1,27 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933082AbaGVWZ2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 18:25:28 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44645 "EHLO
+	id S933106AbaGVWZl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 18:25:41 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:44650 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933051AbaGVWZX (ORCPT
+	with ESMTP id S933086AbaGVWZ3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 18:25:23 -0400
+	Tue, 22 Jul 2014 18:25:29 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jukka Taimisto <jtt@codenomicon.com>,
-        Johan Hedberg <johan.hedberg@intel.com>,
+Cc: Huang Rui <ray.huang@amd.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 047/116] Bluetooth: Fix L2CAP deadlock
-Date: Tue, 22 Jul 2014 15:20:58 -0700
-Message-Id: <1406067727-19683-48-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 038/116] usb: usbtest: fix unlink write error with pattern 1
+Date: Tue, 22 Jul 2014 15:20:49 -0700
+Message-Id: <1406067727-19683-39-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1406067727-19683-1-git-send-email-kamal@canonical.com>
 References: <1406067727-19683-1-git-send-email-kamal@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,91 +28,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jukka Taimisto <jtt@codenomicon.com>
+From: Huang Rui <ray.huang@amd.com>
 
-commit 8a96f3cd22878fc0bb564a8478a6e17c0b8dca73 upstream.
+commit e4d58f5dcb7d7be45df8def31881ebfae99c75da upstream.
 
--[0x01 Introduction
+TEST 12 and TEST 24 unlinks the URB write request for N times. When
+host and gadget both initialize pattern 1 (mod 63) data series to
+transfer, the gadget side will complain the wrong data which is not
+expected.  Because in host side, usbtest doesn't fill the data buffer
+as mod 63 and this patch fixed it.
 
-We have found a programming error causing a deadlock in Bluetooth subsystem
-of Linux kernel. The problem is caused by missing release_sock() call when
-L2CAP connection creation fails due full accept queue.
+[20285.488974] dwc3 dwc3.0.auto: ep1out-bulk: Transfer Not Ready
+[20285.489181] dwc3 dwc3.0.auto: ep1out-bulk: reason Transfer Not Active
+[20285.489423] dwc3 dwc3.0.auto: ep1out-bulk: req ffff8800aa6cb480 dma aeb50800 length 512 last
+[20285.489727] dwc3 dwc3.0.auto: ep1out-bulk: cmd 'Start Transfer' params 00000000 a9eaf000 00000000
+[20285.490055] dwc3 dwc3.0.auto: Command Complete --> 0
+[20285.490281] dwc3 dwc3.0.auto: ep1out-bulk: Transfer Not Ready
+[20285.490492] dwc3 dwc3.0.auto: ep1out-bulk: reason Transfer Active
+[20285.490713] dwc3 dwc3.0.auto: ep1out-bulk: endpoint busy
+[20285.490909] dwc3 dwc3.0.auto: ep1out-bulk: Transfer Complete
+[20285.491117] dwc3 dwc3.0.auto: request ffff8800aa6cb480 from ep1out-bulk completed 512/512 ===> 0
+[20285.491431] zero gadget: bad OUT byte, buf[1] = 0
+[20285.491605] dwc3 dwc3.0.auto: ep1out-bulk: cmd 'Set Stall' params 00000000 00000000 00000000
+[20285.491915] dwc3 dwc3.0.auto: Command Complete --> 0
+[20285.492099] dwc3 dwc3.0.auto: queing request ffff8800aa6cb480 to ep1out-bulk length 512
+[20285.492387] dwc3 dwc3.0.auto: ep1out-bulk: Transfer Not Ready
+[20285.492595] dwc3 dwc3.0.auto: ep1out-bulk: reason Transfer Not Active
+[20285.492830] dwc3 dwc3.0.auto: ep1out-bulk: req ffff8800aa6cb480 dma aeb51000 length 512 last
+[20285.493135] dwc3 dwc3.0.auto: ep1out-bulk: cmd 'Start Transfer' params 00000000 a9eaf000 00000000
+[20285.493465] dwc3 dwc3.0.auto: Command Complete --> 0
 
-The issue can be reproduced with 3.15-rc5 kernel and is also present in
-earlier kernels.
-
--[0x02 Details
-
-The problem occurs when multiple L2CAP connections are created to a PSM which
-contains listening socket (like SDP) and left pending, for example,
-configuration (the underlying ACL link is not disconnected between
-connections).
-
-When L2CAP connection request is received and listening socket is found the
-l2cap_sock_new_connection_cb() function (net/bluetooth/l2cap_sock.c) is called.
-This function locks the 'parent' socket and then checks if the accept queue
-is full.
-
-1178         lock_sock(parent);
-1179
-1180         /* Check for backlog size */
-1181         if (sk_acceptq_is_full(parent)) {
-1182                 BT_DBG("backlog full %d", parent->sk_ack_backlog);
-1183                 return NULL;
-1184         }
-
-If case the accept queue is full NULL is returned, but the 'parent' socket
-is not released. Thus when next L2CAP connection request is received the code
-blocks on lock_sock() since the parent is still locked.
-
-Also note that for connections already established and waiting for
-configuration to complete a timeout will occur and l2cap_chan_timeout()
-(net/bluetooth/l2cap_core.c) will be called. All threads calling this
-function will also be blocked waiting for the channel mutex since the thread
-which is waiting on lock_sock() alread holds the channel mutex.
-
-We were able to reproduce this by sending continuously L2CAP connection
-request followed by disconnection request containing invalid CID. This left
-the created connections pending configuration.
-
-After the deadlock occurs it is impossible to kill bluetoothd, btmon will not
-get any more data etc. requiring reboot to recover.
-
--[0x03 Fix
-
-Releasing the 'parent' socket when l2cap_sock_new_connection_cb() returns NULL
-seems to fix the issue.
-
-Signed-off-by: Jukka Taimisto <jtt@codenomicon.com>
-Reported-by: Tommi Mäkilä <tmakila@codenomicon.com>
-Signed-off-by: Johan Hedberg <johan.hedberg@intel.com>
+Signed-off-by: Huang Rui <ray.huang@amd.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/bluetooth/l2cap_sock.c | 5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ drivers/usb/misc/usbtest.c | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
-diff --git a/net/bluetooth/l2cap_sock.c b/net/bluetooth/l2cap_sock.c
-index 1bcfb84..59011c4 100644
---- a/net/bluetooth/l2cap_sock.c
-+++ b/net/bluetooth/l2cap_sock.c
-@@ -943,13 +943,16 @@ static struct l2cap_chan *l2cap_sock_new_connection_cb(struct l2cap_chan *chan)
- 	/* Check for backlog size */
- 	if (sk_acceptq_is_full(parent)) {
- 		BT_DBG("backlog full %d", parent->sk_ack_backlog);
-+		release_sock(parent);
- 		return NULL;
+diff --git a/drivers/usb/misc/usbtest.c b/drivers/usb/misc/usbtest.c
+index 268148d..66cf0c5 100644
+--- a/drivers/usb/misc/usbtest.c
++++ b/drivers/usb/misc/usbtest.c
+@@ -1138,6 +1138,11 @@ static int unlink1(struct usbtest_dev *dev, int pipe, int size, int async)
+ 	urb->context = &completion;
+ 	urb->complete = unlink1_callback;
+ 
++	if (usb_pipeout(urb->pipe)) {
++		simple_fill_buf(urb);
++		urb->transfer_flags |= URB_ZERO_PACKET;
++	}
++
+ 	/* keep the endpoint busy.  there are lots of hc/hcd-internal
+ 	 * states, and testing should get to all of them over time.
+ 	 *
+@@ -1268,6 +1273,11 @@ static int unlink_queued(struct usbtest_dev *dev, int pipe, unsigned num,
+ 				unlink_queued_callback, &ctx);
+ 		ctx.urbs[i]->transfer_dma = buf_dma;
+ 		ctx.urbs[i]->transfer_flags = URB_NO_TRANSFER_DMA_MAP;
++
++		if (usb_pipeout(ctx.urbs[i]->pipe)) {
++			simple_fill_buf(ctx.urbs[i]);
++			ctx.urbs[i]->transfer_flags |= URB_ZERO_PACKET;
++		}
  	}
  
- 	sk = l2cap_sock_alloc(sock_net(parent), NULL, BTPROTO_L2CAP,
- 			      GFP_ATOMIC);
--	if (!sk)
-+	if (!sk) {
-+		release_sock(parent);
- 		return NULL;
-+        }
- 
- 	bt_sock_reclassify_lock(sk, BTPROTO_L2CAP);
- 
+ 	/* Submit all the URBs and then unlink URBs num - 4 and num - 2. */
 -- 
 1.9.1
 
