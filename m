@@ -1,121 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752129AbaGVNS4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 09:18:56 -0400
-Received: from mail-bn1blp0188.outbound.protection.outlook.com ([207.46.163.188]:40640
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750737AbaGVNSy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 09:18:54 -0400
-Date: Tue, 22 Jul 2014 21:18:33 +0800
-From: Shawn Guo <shawn.guo@freescale.com>
-To: Stefan Agner <stefan@agner.ch>
-CC: <peter.chen@freescale.com>, <s.hauer@pengutronix.de>,
-        <b35083@freescale.com>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/6] ARM: dts: vf610: add USB PHY and controller
-Message-ID: <20140722131832.GY8537@dragon>
-References: <cover.1405702442.git.stefan@agner.ch>
- <839af70e8acf139bc0f7bbdb4dd68dd146b5d6a8.1405702442.git.stefan@agner.ch>
- <20140722022232.GR8537@dragon> <64fa5f4fcf6d1331796d2fd7899e3cbd@agner.ch>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <64fa5f4fcf6d1331796d2fd7899e3cbd@agner.ch>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(189002)(377424004)(51704005)(199002)(52314003)(24454002)(84676001)(104016003)(110136001)(21056001)(31966008)(107046002)(86362001)(23726002)(97736001)(33656002)(99396002)(92726001)(92566001)(54356999)(76176999)(74662001)(93886003)(76482001)(46102001)(81156004)(50986999)(95666004)(33716001)(57986006)(74502001)(83072002)(46406003)(105606002)(85306003)(81342001)(81542001)(19580405001)(97756001)(19580395003)(68736004)(20776003)(87936001)(47776003)(50466002)(83506001)(44976005)(85852003)(69596002)(64706001)(106466001)(102836001)(6806004)(77982001)(80022001)(83322001)(4396001)(26826002)(79102001)(217873001);DIR:OUT;SFP:;SCL:1;SRVR:DM2PR03MB479;H:az84smr01.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;LANG:en;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
-X-Forefront-PRVS: 02801ACE41
-Authentication-Results: spf=fail (sender IP is 192.88.158.2)
- smtp.mailfrom=Shawn.Guo@freescale.com; 
-X-OriginatorOrg: freescale.com
+	id S1753280AbaGVNTL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 09:19:11 -0400
+Received: from mga02.intel.com ([134.134.136.20]:29223 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752259AbaGVNTI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 09:19:08 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,710,1400050800"; 
+   d="scan'208";a="576985403"
+From: Adrian Hunter <adrian.hunter@intel.com>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH 00/52] perf tools: More preparation for call graph from Intel BTS
+Date: Tue, 22 Jul 2014 16:17:09 +0300
+Message-Id: <1406035081-14301-1-git-send-email-adrian.hunter@intel.com>
+X-Mailer: git-send-email 1.8.3.2
+Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki, Business Identity Code: 0357606 - 4, Domiciled in Helsinki
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 22, 2014 at 11:57:31AM +0200, Stefan Agner wrote:
-> Am 2014-07-22 04:22, schrieb Shawn Guo:
-> > On Fri, Jul 18, 2014 at 07:01:37PM +0200, Stefan Agner wrote:
-> >> This adds USB PHY and USB controller nodes. Vybrid SoCs have two
-> >> independent USB cores which each supports DR (dual role). However,
-> >> real OTG is not supported since the OTG ID pin is not available.
-> >>
-> >> The PHYs are located within the anadig register range, hence we need
-> >> to change the length of the anadig registers.
-> >>
-> >> Signed-off-by: Stefan Agner <stefan@agner.ch>
-> >> ---
-> >>  arch/arm/boot/dts/vf610.dtsi | 46 +++++++++++++++++++++++++++++++++++++++++---
-> >>  1 file changed, 43 insertions(+), 3 deletions(-)
-> >>
-> >> diff --git a/arch/arm/boot/dts/vf610.dtsi b/arch/arm/boot/dts/vf610.dtsi
-> >> index 6a6190c..f6c3f02 100644
-> >> --- a/arch/arm/boot/dts/vf610.dtsi
-> >> +++ b/arch/arm/boot/dts/vf610.dtsi
-> >> @@ -25,6 +25,8 @@
-> >>  		gpio2 = &gpio3;
-> >>  		gpio3 = &gpio4;
-> >>  		gpio4 = &gpio5;
-> >> +		usbphy0 = &usbphy0;
-> >> +		usbphy1 = &usbphy1;
-> >>  	};
-> >>
-> >>  	cpus {
-> >> @@ -285,9 +287,25 @@
-> >>  				gpio-ranges = <&iomuxc 0 128 7>;
-> >>  			};
-> >>
-> >> -			anatop@40050000 {
-> >> -				compatible = "fsl,vf610-anatop";
-> >> -				reg = <0x40050000 0x1000>;
-> >> +			anatop: anatop@40050000 {
-> >> +				compatible = "fsl,vf610-anatop", "syscon";
-> >> +				reg = <0x40050000 0x400>;
-> >> +			};
-> >> +
-> >> +			usbphy0: usbphy@40050800 {
-> >> +				compatible = "fsl,vf610-usbphy", "fsl,imx23-usbphy";
-> > 
-> > Since phy driver will match "fsl,vf610-usbphy" anyway, we do not need
-> > "fsl,imx23-usbphy" here.
-> 
-> <snip>
-> 
-> >> @@ -309,6 +327,18 @@
-> >>  				reg = <0x4006b000 0x1000>;
-> >>  				#clock-cells = <1>;
-> >>  			};
-> >> +
-> >> +			usbdev0: usb@40034000 {
-> >> +				compatible = "fsl,imx6q-usb", "fsl,imx27-usb";
-> > 
-> > It doesn't really make any sense to have "fsl,imx6q-usb" here.  The
-> > following one should be less confusing.
-> > 
-> > 	compatible = "fsl,vf610-usb", "fsl,imx27-usb";
-> 
-> 
-> I don't quite understand the rule here, when do we drop compatible you
-> suggest in fsl,imx23-usbphy and when do we keep the "fallback" as we do
-> for the USB controller?
-> 
-> Documentation/devicetree/bindings/usb/mxs-phy.txt says:
-> > "fsl,imx23-usbphy" is still a fallback for other strings
+Hi
 
-As "fsl,vf610-usbphy" should be added into mxs-phy.txt as a new
-compatible string, "fsl,imx23-usbphy" will not be the "fallback" of it,
-so there is no point to have "fsl,imx23-usbphy" for vf610 usbphy.
+Here is the next selection of patches based on tip/perf/core.
 
-> 
-> And Documentation/devicetree/bindings/usb/ci-hdrc-imx.txt says:
-> > - compatible: Should be "fsl,imx27-usb"
+They can also be found here:
 
-The "fsl,imx27-usb" is the only compatible string defined by the
-binding, and vf610 usb will also match it, so we need to have it in the
-vf610 usb compatible string.  "fsl,vf610-usb" is put there only for
-saving DTB update in case someday vf610 usb needs a new programming
-model and the binding needs to be extended to have "fsl,vf610-usb" as
-a new compatible.
+	http://git.infradead.org/users/ahunter/linux-perf.git/shortlog/refs/heads/for-acme
 
-Shawn
+
+Adrian Hunter (52):
+      perf tools: Fix jump label always changing during tracing
+      perf tools: Identify which comms are from exec
+      perf tools: Add machine__thread_exec_comm()
+      perf tools: Fix missing label symbols
+      perf tools: Add machine__kernel_ip()
+      perf script: Improve srcline display for BTS
+      perf script: Do not print dangling '=>' for BTS
+      perf tools: Fix incorrect fd error comparison
+      perf tools: Record whether a dso has data
+      perf tools: Add dso__data_status_seen()
+      perf tools: Let a user specify a PMU event without any config terms
+      perf tools: Let default config be defined for a PMU
+      perf tools: Add perf_pmu__scan_file()
+      perf tools: Add dsos__hit_all()
+      perf tools: Add cpu to struct thread
+      perf tools: Add ability to record the current tid for each cpu
+      perf evlist: Add perf_evlist__set_tracking_event()
+      perf evlist: Add 'system_wide' option
+      perf tools: Add id index
+      perf pmu: Let pmu's with no events show up on perf list
+      perf session: Add ability to skip 4GiB or more
+      perf session: Add perf_session__deliver_synth_event()
+      perf tools: Move rdtsc() function
+      perf evlist: Add perf_evlist__enable_event_idx()
+      perf session: Add perf_session__peek_event()
+      perf tools: Add dso__data_size()
+      perf tools: Add a thread stack for synthesizing call chains
+      perf script: Allow callchains if any event samples them
+      perf inject: Add --kallsyms parameter
+      perf tools: Expose 'addr' functions so they can be reused
+      perf tools: Add facility to export data in database-friendly way
+      perf tools: Add helpers for calling Python objects
+      perf tools: Extend Python script interface to export data in a database-friendly way
+      perf tools: Add Python script to export to postgresql
+      perf tools: Add flags and insn_len to struct sample
+      perf tools: Add branch type to db export
+      perf tools: Add branch_type and in_tx to Python export
+      perf tools: Enhance the thread stack to output call/return data
+      perf tools: Add call information to the database export API
+      perf tools: Add call information to Python export
+      perf tools: Add 'flush' callback to scripting API
+      perf tools: Defer export of comms that were not 'set'
+      perf tools: Add perf-with-kcore script
+      perf tools: Pass machine to vdso__dso_findnew()
+      perf tools: Group VDSO global variables into a structure
+      perf tools: Fix the lifetime of the VDSO temporary file
+      perf tools: Add vdso__new()
+      perf tools: Separate the VDSO map name from the VDSO dso name
+      perf tools: Build programs to copy 32-bit compatibility VDSOs
+      perf tools: Add dso__type()
+      perf tools: Add thread parameter to vdso__dso_findnew()
+      perf tools: Add support for 32-bit compatibility VDSOs
+
+ tools/perf/.gitignore                              |   1 +
+ tools/perf/Documentation/perf-inject.txt           |   3 +
+ tools/perf/Makefile.perf                           |  46 +-
+ tools/perf/arch/x86/util/tsc.c                     |   9 +
+ tools/perf/builtin-inject.c                        |   3 +
+ tools/perf/builtin-script.c                        |  89 ++-
+ tools/perf/config/Makefile                         |  21 +
+ tools/perf/config/Makefile.arch                    |   8 +
+ tools/perf/perf-read-vdso.c                        |  59 ++
+ tools/perf/perf-with-kcore.sh                      | 259 ++++++++
+ .../scripts/python/bin/export-to-postgresql-record |   8 +
+ .../scripts/python/bin/export-to-postgresql-report |  29 +
+ tools/perf/scripts/python/export-to-postgresql.py  | 444 +++++++++++++
+ tools/perf/tests/perf-time-to-tsc.c                |   9 -
+ tools/perf/tests/pmu.c                             |   2 +-
+ tools/perf/util/cloexec.c                          |   9 +-
+ tools/perf/util/comm.c                             |   7 +-
+ tools/perf/util/comm.h                             |   7 +-
+ tools/perf/util/db-export.c                        | 426 +++++++++++++
+ tools/perf/util/db-export.h                        | 107 ++++
+ tools/perf/util/dso.c                              |  70 ++-
+ tools/perf/util/dso.h                              |  26 +
+ tools/perf/util/event.c                            |  49 +-
+ tools/perf/util/event.h                            |  53 ++
+ tools/perf/util/evlist.c                           | 138 ++++-
+ tools/perf/util/evlist.h                           |   5 +
+ tools/perf/util/evsel.c                            |  31 +-
+ tools/perf/util/evsel.h                            |   5 +
+ tools/perf/util/header.c                           |  51 +-
+ tools/perf/util/header.h                           |   2 +
+ tools/perf/util/machine.c                          | 109 +++-
+ tools/perf/util/machine.h                          |  30 +
+ tools/perf/util/map.c                              |   9 +-
+ tools/perf/util/map.h                              |   5 +-
+ tools/perf/util/parse-events.c                     |  13 +-
+ tools/perf/util/parse-events.y                     |  10 +
+ tools/perf/util/pmu.c                              |  92 ++-
+ tools/perf/util/pmu.h                              |  13 +-
+ .../perf/util/scripting-engines/trace-event-perl.c |   6 +
+ .../util/scripting-engines/trace-event-python.c    | 511 +++++++++++++--
+ tools/perf/util/session.c                          | 237 ++++++-
+ tools/perf/util/session.h                          |  20 +
+ tools/perf/util/symbol-elf.c                       |  37 +-
+ tools/perf/util/symbol-minimal.c                   |  21 +
+ tools/perf/util/symbol.h                           |   3 +
+ tools/perf/util/thread-stack.c                     | 690 +++++++++++++++++++++
+ tools/perf/util/thread-stack.h                     |  79 +++
+ tools/perf/util/thread.c                           |  28 +-
+ tools/perf/util/thread.h                           |  15 +-
+ tools/perf/util/tool.h                             |   3 +-
+ tools/perf/util/trace-event-scripting.c            |   7 +
+ tools/perf/util/trace-event.h                      |   1 +
+ tools/perf/util/tsc.c                              |   5 +
+ tools/perf/util/tsc.h                              |   1 +
+ tools/perf/util/vdso.c                             | 264 +++++++-
+ tools/perf/util/vdso.h                             |  15 +-
+ 56 files changed, 3961 insertions(+), 239 deletions(-)
+ create mode 100644 tools/perf/perf-read-vdso.c
+ create mode 100644 tools/perf/perf-with-kcore.sh
+ create mode 100644 tools/perf/scripts/python/bin/export-to-postgresql-record
+ create mode 100644 tools/perf/scripts/python/bin/export-to-postgresql-report
+ create mode 100644 tools/perf/scripts/python/export-to-postgresql.py
+ create mode 100644 tools/perf/util/db-export.c
+ create mode 100644 tools/perf/util/db-export.h
+ create mode 100644 tools/perf/util/thread-stack.c
+ create mode 100644 tools/perf/util/thread-stack.h
+
+ 
+ Regards
+ Adrian
