@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754851AbaGVMXy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 08:23:54 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:32919 "EHLO
+	id S1755150AbaGVMX4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 08:23:56 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:32941 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752361AbaGVMXw (ORCPT
+	with ESMTP id S1754033AbaGVMXy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 08:23:52 -0400
+	Tue, 22 Jul 2014 08:23:54 -0400
 From: Boris BREZILLON <boris.brezillon@free-electrons.com>
 To: Thierry Reding <thierry.reding@gmail.com>,
         Laurent Pinchart <laurent.pinchart@ideasonboard.com>
@@ -15,49 +15,102 @@ Cc: David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
         Mauro Carvalho Chehab <m.chehab@samsung.com>,
         linux-media@vger.kernel.org,
         Boris BREZILLON <boris.brezillon@free-electrons.com>
-Subject: [PATCH 0/5] video: describe data bus formats
-Date: Tue, 22 Jul 2014 14:23:42 +0200
-Message-Id: <1406031827-12432-1-git-send-email-boris.brezillon@free-electrons.com>
+Subject: [PATCH 3/5] drm: add bus_formats and nbus_formats fields to drm_display_info
+Date: Tue, 22 Jul 2014 14:23:45 +0200
+Message-Id: <1406031827-12432-4-git-send-email-boris.brezillon@free-electrons.com>
 X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1406031827-12432-1-git-send-email-boris.brezillon@free-electrons.com>
+References: <1406031827-12432-1-git-send-email-boris.brezillon@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Add bus_formats and nbus_formats fields and
+drm_display_info_set_bus_formats helper function to specify the bus
+formats supported by a given display.
 
-This patch series is a proposal to describe the different data formats used
-by HW components to connect with each other.
+This information can be used by display controller drivers to configure
+the output interface appropriately (i.e. RGB565, RGB666 or RGB888 on raw
+RGB or LVDS busses).
 
-This is just a copy of the existing V4L2_MBUS_FMT defintions with a neutral
-name so that it can be used by V4L2 and DRM/KMS subsystem.
+Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
+---
+ drivers/gpu/drm/drm_crtc.c | 28 ++++++++++++++++++++++++++++
+ include/drm/drm_crtc.h     |  8 ++++++++
+ 2 files changed, 36 insertions(+)
 
-This series also makes use of this video_bus_format enum in the DRM/KMS
-subsystem to define the data fomats supported on the connector <-> device
-link.
-
-The video bus formats are not documented yet (and I don't know where this doc
-should be stored), but I'm pretty sure this version won't be the last one ;-).
-
-Best Regards,
-
-Boris
-
-Boris BREZILLON (5):
-  video: move mediabus format definition to a more standard place
-  video: add RGB444_1X12 and RGB565_1X16 bus formats
-  drm: add bus_formats and nbus_formats fields to drm_display_info
-  drm: panel: simple-panel: add support for bus_format retrieval
-  drm: panel: simple-panel: add bus format information for foxlink panel
-
- drivers/gpu/drm/drm_crtc.c            |  28 +++++
- drivers/gpu/drm/panel/panel-simple.c  |   6 ++
- include/drm/drm_crtc.h                |   8 ++
- include/uapi/linux/Kbuild             |   1 +
- include/uapi/linux/v4l2-mediabus.h    | 185 +++++++++++++++-------------------
- include/uapi/linux/video-bus-format.h | 129 ++++++++++++++++++++++++
- 6 files changed, 251 insertions(+), 106 deletions(-)
- create mode 100644 include/uapi/linux/video-bus-format.h
-
+diff --git a/drivers/gpu/drm/drm_crtc.c b/drivers/gpu/drm/drm_crtc.c
+index c808a09..50c8395 100644
+--- a/drivers/gpu/drm/drm_crtc.c
++++ b/drivers/gpu/drm/drm_crtc.c
+@@ -825,6 +825,34 @@ static void drm_mode_remove(struct drm_connector *connector,
+ 	drm_mode_destroy(connector->dev, mode);
+ }
+ 
++/*
++ * drm_display_info_set_bus_formats - set the supported bus formats
++ * @info: display info to store bus formats in
++ * @fmts: array containing the supported bus formats
++ * @nfmts: the number of entries in the fmts array
++ *
++ * Store the suppported bus formats in display info structure.
++ */
++int drm_display_info_set_bus_formats(struct drm_display_info *info,
++				     const enum video_bus_format *fmts,
++				     int nfmts)
++{
++	enum video_bus_format *formats = NULL;
++
++	if (fmts && nfmts) {
++		formats = kmemdup(fmts, sizeof(*fmts) * nfmts, GFP_KERNEL);
++		if (!formats)
++			return -ENOMEM;
++	}
++
++	kfree(info->bus_formats);
++	info->bus_formats = formats;
++	info->nbus_formats = formats ? nfmts : 0;
++
++	return 0;
++}
++EXPORT_SYMBOL(drm_display_info_set_bus_formats);
++
+ /**
+  * drm_connector_init - Init a preallocated connector
+  * @dev: DRM device
+diff --git a/include/drm/drm_crtc.h b/include/drm/drm_crtc.h
+index e529b68..957729b 100644
+--- a/include/drm/drm_crtc.h
++++ b/include/drm/drm_crtc.h
+@@ -31,6 +31,7 @@
+ #include <linux/idr.h>
+ #include <linux/fb.h>
+ #include <linux/hdmi.h>
++#include <linux/video-bus-format.h>
+ #include <drm/drm_mode.h>
+ #include <drm/drm_fourcc.h>
+ #include <drm/drm_modeset_lock.h>
+@@ -121,6 +122,9 @@ struct drm_display_info {
+ 	enum subpixel_order subpixel_order;
+ 	u32 color_formats;
+ 
++	const enum video_bus_format *bus_formats;
++	int nbus_formats;
++
+ 	/* Mask of supported hdmi deep color modes */
+ 	u8 edid_hdmi_dc_modes;
+ 
+@@ -964,6 +968,10 @@ extern int drm_mode_connector_set_path_property(struct drm_connector *connector,
+ extern int drm_mode_connector_update_edid_property(struct drm_connector *connector,
+ 						struct edid *edid);
+ 
++extern int drm_display_info_set_bus_formats(struct drm_display_info *info,
++					    const enum video_bus_format *fmts,
++					    int nfmts);
++
+ static inline bool drm_property_type_is(struct drm_property *property,
+ 		uint32_t type)
+ {
 -- 
 1.8.3.2
 
