@@ -1,75 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756334AbaGVReQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 13:34:16 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:42930 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756317AbaGVReO (ORCPT
+	id S1756379AbaGVRfF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 13:35:05 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:26479 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756129AbaGVRfD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 13:34:14 -0400
-Message-ID: <53CEA093.6060106@wwwdotorg.org>
-Date: Tue, 22 Jul 2014 11:34:11 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Tue, 22 Jul 2014 13:35:03 -0400
+Date: Tue, 22 Jul 2014 13:34:44 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Ethan Zhao <ethan.zhao@oracle.com>
+Cc: bhelgaas@google.com, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, gleb@kernel.org, pbonzini@redhat.com,
+        kvm@vger.kernel.org, boris.ostrovsky@oracle.com,
+        david.vrabel@citrix.com, xen-devel@lists.xenproject.org,
+        alex.williamson@redhat.com, alexander.h.duyck@intel.com,
+        ethan.kernel@gmail.com
+Subject: Re: [PATCH 3/4] xen-pciback: use pci device flag operation helper
+ function
+Message-ID: <20140722173444.GB14061@konrad-lan.dumpdata.com>
+References: <1406045944-1587-1-git-send-email-ethan.zhao@oracle.com>
+ <1406045944-1587-4-git-send-email-ethan.zhao@oracle.com>
 MIME-Version: 1.0
-To: Andrew Bresticker <abrestic@chromium.org>
-CC: Mikko Perttunen <mperttunen@nvidia.com>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCH 5/8] of: Add Tegra124 EMC bindings
-References: <1405088313-20048-1-git-send-email-mperttunen@nvidia.com>	<1405088313-20048-6-git-send-email-mperttunen@nvidia.com>	<CAL1qeaGHfjQhLHvgzt85hmbuY4FOG5-k=f80=CNvzPDEgi9_6w@mail.gmail.com>	<53CD860B.7030800@wwwdotorg.org>	<CAL1qeaHtGQxCO3cGdeCRUYuk6mxei6z1B63-iZdBECEbFqGhHw@mail.gmail.com>	<53CE9514.1050903@wwwdotorg.org> <CAL1qeaEkL+mxb0S4JhQbXBjyNyKJndffTSjMaAFQD6ooDJPd+Q@mail.gmail.com>
-In-Reply-To: <CAL1qeaEkL+mxb0S4JhQbXBjyNyKJndffTSjMaAFQD6ooDJPd+Q@mail.gmail.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1406045944-1587-4-git-send-email-ethan.zhao@oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/22/2014 11:22 AM, Andrew Bresticker wrote:
-> On Tue, Jul 22, 2014 at 9:45 AM, Stephen Warren <swarren@wwwdotorg.org> wrote:
->>
->> Does the bootloader adjust the DT that's passed to the kernel so that
->> only the relevant single set of EMC timings is contained in the DT?
+On Wed, Jul 23, 2014 at 12:19:03AM +0800, Ethan Zhao wrote:
+> Use pci device flag operation helper functions when set device
+> to assigned or deassigned state.
 > 
-> No, the DT contains all possible EMC timings for that board.
-> 
->> On a system where the boot ROM initializes RAM, and where the HW design
->> might have multiple SDRAM configuration, here's what usually happens:
->>
->> a) The BCT contains N sets of SDRAM configurations.
->>
->> b) The boot ROM reads the SDRAM strapping bits, and uses them to pick
->> the correct SDRAM configuration from the N sets in the BCT.
->>
->> c) The kernel DT has N sets of SDRAM configurations.
->>
->> d) The kernel reads the SDRAM strapping bits, and uses them to pick the
->> correct SDRAM configuration from the N sets in the DT.
->>
->> On the ChromeOS boards (so (a) and (b) above are irrelevant) where N is
->> too large to fit into APBDEV_PMC_STRAPPING_OPT_A_0[7:4], (c) and (d)
->> won't work. I assume the kernel DT therefore must be adjusted to only
->> contain the single SDRAM configuration that is relevant for the current HW?
->>
->> (isn't STRAPPING_OPT_A split into 2 2-bit fields; 2 bits for SDRAM index
->> and 2 bits for boot flash index, so max N is quite small?)
-> 
-> Right, there are normally only 2 SDRAM strapping bits available.
-> ChromeOS gets around this by having 4 identical boot device entries in
-> the BCT, so all possible values of STRAPPING_OPT_A[7:6] map to the
-> same boot device.  This allows us to use all 4 strapping bits in
-> coreboot to pick the SDRAM configuration.
+> Signed-off-by: Ethan Zhao <ethan.zhao@oracle.com>
 
-OK, that explains how it works.
-
-But that means that when the kernel reads the strapping options, it will
-have to know if it uses just 2 bits (standard) or all 4 bits
-(non-standard) to index into the DT's array of SDRAM configurations.
-We'll need a DT property to represent that.
+Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> ---
+>  drivers/xen/xen-pciback/pci_stub.c |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/xen/xen-pciback/pci_stub.c b/drivers/xen/xen-pciback/pci_stub.c
+> index 62fcd48..71f69f1 100644
+> --- a/drivers/xen/xen-pciback/pci_stub.c
+> +++ b/drivers/xen/xen-pciback/pci_stub.c
+> @@ -133,7 +133,7 @@ static void pcistub_device_release(struct kref *kref)
+>  	xen_pcibk_config_free_dyn_fields(dev);
+>  	xen_pcibk_config_free_dev(dev);
+>  
+> -	dev->dev_flags &= ~PCI_DEV_FLAGS_ASSIGNED;
+> +	pci_set_dev_deassigned(dev);
+>  	pci_dev_put(dev);
+>  
+>  	kfree(psdev);
+> @@ -404,7 +404,7 @@ static int pcistub_init_device(struct pci_dev *dev)
+>  	dev_dbg(&dev->dev, "reset device\n");
+>  	xen_pcibk_reset_device(dev);
+>  
+> -	dev->dev_flags |= PCI_DEV_FLAGS_ASSIGNED;
+> +	pci_set_dev_assigned(dev);
+>  	return 0;
+>  
+>  config_release:
+> -- 
+> 1.7.1
+> 
