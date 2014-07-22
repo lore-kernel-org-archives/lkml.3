@@ -1,94 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752086AbaGVRvN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 13:51:13 -0400
-Received: from v-182-163-72-114.ub-freebit.net ([182.163.72.114]:42858 "EHLO
-	ns.name.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750748AbaGVRvL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 13:51:11 -0400
-X-Greylist: delayed 4510 seconds by postgrey-1.27 at vger.kernel.org; Tue, 22 Jul 2014 13:51:11 EDT
+	id S1756326AbaGVR7h (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 13:59:37 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:41133 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754840AbaGVR7e (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 13:59:34 -0400
+Date: Tue, 22 Jul 2014 10:59:27 -0700
+From: Brian Norris <computersforpeace@gmail.com>
+To: Boris BREZILLON <boris.brezillon@free-electrons.com>
+Cc: kbuild test robot <fengguang.wu@intel.com>, kbuild-all@01.org,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        linux-mtd@lists.infradead.org, linux-sparse@vger.kernel.org
+Subject: Re: [l2-mtd:master 25/29] drivers/mtd/nand/nand_timings.c:45:29:
+ sparse: constant 250000000000 is so big it is long
+Message-ID: <20140722175927.GB28323@ld-irv-0074>
+References: <53cddd54.HZL7GYXhCV8fvSa4%fengguang.wu@intel.com>
+ <20140722102813.060bc776@bbrezillon>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8;
- format=flowed
-Content-Transfer-Encoding: 8bit
-Date: Wed, 23 Jul 2014 01:13:16 +0900
-From: "Dr. Michael Johnson" <dr.michaeljohnson798@yahoo.co.uk>
-To: undisclosed-recipients:;
-Subject: Von Dr. Michael Johnson
-Reply-To: dr.michael_johnson@yahoo.co.uk
-Mail-Reply-To: dr.michael_johnson@yahoo.co.uk
-Message-ID: <b7fdd7e2a4c3009566185606a5adff6b@lucinan.com>
-User-Agent: Roundcube Webmail/1.0.0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - ns.name.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - yahoo.co.uk
-X-Get-Message-Sender-Via: ns.name.com: authenticated_id: lucinan/only user confirmed/virtual account not confirmed
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140722102813.060bc776@bbrezillon>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Lieber Freund,
++ linux-mtd, lkml, linux-sparse
 
-Wie geht es Ihnen heute? Ich hoffe, fein, ich bin Dr. Michael Johnson 
-von Harlesden, North West London, hier in England. Ich arbeite für 
-NatWest Bank London (National Westminster Bank Plc.). Ich schreibe Ihnen 
-aus meinem Büro, die von einer großen immensen Nutzen für beide von uns 
-sein wird. In meiner Abteilung, wobei die Co-Trainer (Greater Region 
-London), entdeckte ich eine verlassene Summe von £ 15 Millionen Pounces 
-(fünfzehn Millionen Pfund Sterling) in einem Konto, das zu einem unserer 
-ausländischen Kunden verstorbenen Herrn Ron Bramlage, ein 
-US-amerikanischer gehört, die Leben in Kansas Staaten, die ein Opfer von 
-einem Hubschrauberabsturz im vergangenen Jahr 8. Juni 2012, in Florida 
-Sumpf ihn und Familienmitglieder zu töten war. Ron war 45 Jahre alt. 
-Auch in der Chopper zum Zeitpunkt des Absturzes war seine Frau Rebecca, 
-43, und die Kinder des Paares - Brandon, 15; Boston, 13; Beau, 11; und 
-8-jährige Roxanne - getötet wurden. Der Pilot war auch tot ist.
+On Tue, Jul 22, 2014 at 10:28:13AM +0200, Boris BREZILLON wrote:
+> On Tue, 22 Jul 2014 11:41:08 +0800 kbuild test robot <fengguang.wu@intel.com> wrote:
+> > tree:   git://git.infradead.org/users/dedekind/l2-mtd.git master
+> > head:   e4e069347030ab0fea7304d06704fb3b64e5fe40
+> > commit: 974647ea8a13021a91d558df61d598bcabf73439 [25/29] mtd: nand: add ONFI timing mode to nand_timings converter
+> > reproduce: make C=1 CF=-D__CHECK_ENDIAN__
+> > 
+> > 
+> > sparse warnings: (new ones prefixed by >>)
+> > 
+> > >> drivers/mtd/nand/nand_timings.c:45:29: sparse: constant 250000000000 is so big it is long
+> > 
+> > vim +45 drivers/mtd/nand/nand_timings.c
+> > 
+> >     29			.tCLS_min = 50000,
+> >     30			.tCOH_min = 0,
+> >     31			.tCS_min = 70000,
+> >     32			.tDH_min = 20000,
+> >     33			.tDS_min = 40000,
+> >     34			.tFEAT_max = 1000000,
+> >     35			.tIR_min = 10000,
+> >     36			.tITC_max = 1000000,
+> >     37			.tRC_min = 100000,
+> >     38			.tREA_max = 40000,
+> >     39			.tREH_min = 30000,
+> >     40			.tRHOH_min = 0,
+> >     41			.tRHW_min = 200000,
+> >     42			.tRHZ_max = 200000,
+> >     43			.tRLOH_min = 0,
+> >     44			.tRP_min = 50000,
+> >   > 45			.tRST_max = 250000000000,
+> 
+> Appending ULL to the numerical constant should fix this warning.
+> 
+> Do you want me to send a patch fixing this bug ?
 
-Die Wahl der Kontaktaufnahme mit Ihnen ist aus der geographischen Natur, 
-wo Sie leben, vor allem aufgrund der Sensibilität der Transaktion und 
-die Vertraulichkeit hier, jetzt unsere Bank gewartet hat für keine der 
-Verwandten zu kommen-up für die Behauptung, aber niemand hat geweckt 
-getan, ich persönlich unterlegen in der Suche die Verwandten für eine 
-lange Zeit jetzt. Mein lieber Freund, ich suche Ihre Zustimmung an Sie 
-als nächsten Angehörigen / Wird Zuschussempfänger des Verstorbenen zu 
-präsentieren, so dass die Erlöse aus diesem Konto bei £ 15 Millionen 
-Pounces kann Ihnen bezahlt werden bewertet.
+No bug here, AFAICT. I noted already that, although this may appear to
+overflow, it is in fact using standard behavior which says the constant
+will be promoted to the proper type.
 
-Das wird für mich ausgezahlt oder geteilt in diese Prozentsätze, 60% und 
-40% zu Ihnen, ich habe alle notwendigen rechtlichen Dokumente, die wir 
-verwendet werden, um diese Behauptung wir machen gesichert. Alles was 
-ich brauche ist es, in Ihrem Namen zu den Dokumenten zu füllen und 
-legalisiert es in den Hof und NatWest Bank hier, um Sie als berechtigten 
-Empfänger nachweisen, ist Alles, was ich jetzt brauche Ihre ehrliche 
-Zusammenarbeit, Verschwiegenheit und Vertrauen, damit wir sehen diese 
-Transaktion durch. Ich garantiere Ihnen, dass dies unter einer legitimen 
-Anordnung, die Sie von einem Verstoß gegen das Gesetz hier in London und 
-in Ihrem Land zu schützen wird ausgeführt.
+My comments:
 
-Bitte, bitte geben Sie mir die folgenden: wie haben wir 5 Tage, um es 
-durchziehen, das ist sehr, sehr URGENT PLEASE.
+  http://lists.infradead.org/pipermail/linux-arm-kernel/2014-April/252494.html
 
-1. Vollständiger Name:
-2. Ihre Telefon-Nummer:
-3. Ihr Kontakt Adresse:
-4. Alter / Geschlecht:
-5. Core-Job / Beruf:
+Looking at ISO draft N1124 (this is approximately C11, the first PDF I
+had lying around), section 6.4.4.1 (statement 5):
 
-Dies ist meine persönliche e-Mail unten, bitte kontaktieren Sie mich mit 
-Ihrem ausgefüllten Daten:
+  "The type of an integer constant is the first of the corresponding
+  list in which its value can be represented."
 
-E-MAIL: dr.michael_johnson_office@accountant.com
+So I think this is a sparse false positive. Notably, Fengguang's build
+system also showed some complaints from an avr32 GCC toolchain. This is
+also a bug.
 
-Ich habe Sie kontaktiert zu glauben, dass Sie nicht weglaufen mit meinen 
-eigenen Anteil an diesem Fonds, wenn es Ihrem Konto ankommt, hoffe ich, 
-können Sie auf diese vertrauen? , wie Sie wissen, diese Transaktion 
-beinhalten riesige Menge an Geld. Bitte freundlich zeigen Ihr Interesse, 
-indem Sie mich mit Ihren Angaben wie oben, so kann ich Ihnen weitere 
-Informationen, wie werden wir diesen Fonds aus London innerhalb von 5 
-Bankarbeitstagen auf Ihr Konto über bekommen erbringen. Endeavour zu 
-antworten, anstatt halten mich wartete.
+Given that there are at least a few non-standards-compliant warnings out
+there (and possibly real toolchain bugs, if they're giving these
+warnings), perhaps it's prudent to patch this with a 'ULL' suffix, even
+though I prefer not to work around bugs in tools in principle.
 
-Mit besten Grüßen,
-Dr. Michael Johnson
+Brian
