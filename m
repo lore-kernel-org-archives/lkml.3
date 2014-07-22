@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932729AbaGVWXx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 18:23:53 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44527 "EHLO
+	id S932755AbaGVWYC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 18:24:02 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:44534 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932634AbaGVWXv (ORCPT
+	with ESMTP id S932634AbaGVWX6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 18:23:51 -0400
+	Tue, 22 Jul 2014 18:23:58 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Dan Carpenter <dan.carpenter@oracle.com>,
-        Jonathan Cameron <jic23@kernel.org>,
+Cc: Johan Hedberg <johan.hedberg@intel.com>,
+        Marcel Holtmann <marcel@holtmann.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 084/116] iio: adc: at91: signedness bug in at91_adc_get_trigger_value_by_name()
-Date: Tue, 22 Jul 2014 15:21:35 -0700
-Message-Id: <1406067727-19683-85-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 098/116] Bluetooth: Fix SSP acceptor just-works confirmation without MITM
+Date: Tue, 22 Jul 2014 15:21:49 -0700
+Message-Id: <1406067727-19683-99-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1406067727-19683-1-git-send-email-kamal@canonical.com>
 References: <1406067727-19683-1-git-send-email-kamal@canonical.com>
@@ -28,79 +28,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Johan Hedberg <johan.hedberg@intel.com>
 
-commit 4f3bcd878f1d3c730fe00f619b7260c6125d49eb upstream.
+commit ba15a58b179ed76a7e887177f2b06de12c58ec8f upstream.
 
-at91_adc_get_trigger_value_by_name() was returning -ENOMEM truncated to
-a positive u8 and that doesn't work.  I've changed it to int and
-refactored it to preserve the error code.
+>From the Bluetooth Core Specification 4.1 page 1958:
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Acked-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Tested-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Signed-off-by: Jonathan Cameron <jic23@kernel.org>
+"if both devices have set the Authentication_Requirements parameter to
+one of the MITM Protection Not Required options, authentication stage 1
+shall function as if both devices set their IO capabilities to
+DisplayOnly (e.g., Numeric comparison with automatic confirmation on
+both devices)"
+
+So far our implementation has done user confirmation for all just-works
+cases regardless of the MITM requirements, however following the
+specification to the word means that we should not be doing confirmation
+when neither side has the MITM flag set.
+
+Signed-off-by: Johan Hedberg <johan.hedberg@intel.com>
+Tested-by: Szymon Janc <szymon.janc@tieto.com>
+Signed-off-by: Marcel Holtmann <marcel@holtmann.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/iio/adc/at91_adc.c | 16 ++++++++--------
- 1 file changed, 8 insertions(+), 8 deletions(-)
+ net/bluetooth/hci_event.c | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/iio/adc/at91_adc.c b/drivers/iio/adc/at91_adc.c
-index a526c0e..aa78185 100644
---- a/drivers/iio/adc/at91_adc.c
-+++ b/drivers/iio/adc/at91_adc.c
-@@ -157,12 +157,11 @@ static int at91_adc_channel_init(struct iio_dev *idev)
- 	return idev->num_channels;
- }
+diff --git a/net/bluetooth/hci_event.c b/net/bluetooth/hci_event.c
+index ba6f399..4d9e4b0 100644
+--- a/net/bluetooth/hci_event.c
++++ b/net/bluetooth/hci_event.c
+@@ -3573,8 +3573,11 @@ static void hci_user_confirm_request_evt(struct hci_dev *hdev,
  
--static u8 at91_adc_get_trigger_value_by_name(struct iio_dev *idev,
-+static int at91_adc_get_trigger_value_by_name(struct iio_dev *idev,
- 					     struct at91_adc_trigger *triggers,
- 					     const char *trigger_name)
- {
- 	struct at91_adc_state *st = iio_priv(idev);
--	u8 value = 0;
- 	int i;
- 
- 	for (i = 0; i < st->trigger_number; i++) {
-@@ -175,15 +174,16 @@ static u8 at91_adc_get_trigger_value_by_name(struct iio_dev *idev,
- 			return -ENOMEM;
- 
- 		if (strcmp(trigger_name, name) == 0) {
--			value = triggers[i].value;
- 			kfree(name);
--			break;
-+			if (triggers[i].value == 0)
-+				return -EINVAL;
-+			return triggers[i].value;
- 		}
- 
- 		kfree(name);
- 	}
- 
--	return value;
-+	return -EINVAL;
- }
- 
- static int at91_adc_configure_trigger(struct iio_trigger *trig, bool state)
-@@ -193,14 +193,14 @@ static int at91_adc_configure_trigger(struct iio_trigger *trig, bool state)
- 	struct iio_buffer *buffer = idev->buffer;
- 	struct at91_adc_reg_desc *reg = st->registers;
- 	u32 status = at91_adc_readl(st, reg->trigger_register);
--	u8 value;
-+	int value;
- 	u8 bit;
- 
- 	value = at91_adc_get_trigger_value_by_name(idev,
- 						   st->trigger_list,
- 						   idev->trig->name);
--	if (value == 0)
--		return -EINVAL;
-+	if (value < 0)
-+		return value;
- 
- 	if (state) {
- 		st->buffer = kmalloc(idev->scan_bytes, GFP_KERNEL);
+ 		/* If we're not the initiators request authorization to
+ 		 * proceed from user space (mgmt_user_confirm with
+-		 * confirm_hint set to 1). */
+-		if (!test_bit(HCI_CONN_AUTH_PEND, &conn->flags)) {
++		 * confirm_hint set to 1). The exception is if neither
++		 * side had MITM in which case we do auto-accept.
++		 */
++		if (!test_bit(HCI_CONN_AUTH_PEND, &conn->flags) &&
++		    (loc_mitm || rem_mitm)) {
+ 			BT_DBG("Confirming auto-accept as acceptor");
+ 			confirm_hint = 1;
+ 			goto confirm;
 -- 
 1.9.1
 
