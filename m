@@ -1,127 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933974AbaGVW5m (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 18:57:42 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44375 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932216AbaGVWWf (ORCPT
+	id S933998AbaGVW6C (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 18:58:02 -0400
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:45771 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932213AbaGVW56 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 18:22:35 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Florian Westphal <fw@strlen.de>, Pablo Neira Ayuso <pablo@netfilter.org>,
-        Chris J Arges <chris.j.arges@canonical.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 002/116] netfilter: nf_nat: fix oops on netns removal
-Date: Tue, 22 Jul 2014 15:20:13 -0700
-Message-Id: <1406067727-19683-3-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1406067727-19683-1-git-send-email-kamal@canonical.com>
-References: <1406067727-19683-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.8
+	Tue, 22 Jul 2014 18:57:58 -0400
+Date: Tue, 22 Jul 2014 15:57:55 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Vladimir Davydov <vdavydov@parallels.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Christoph Lameter <cl@linux.com>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Pekka Enberg <penberg@kernel.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: [patch 0/2] mm, slub: remaining changes for -mm
+Message-ID: <alpine.DEB.2.02.1407221550500.9885@chino.kir.corp.google.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8.13.27 -stable review patch.  If anyone has any objections, please let me know.
+Two patches remain in Pekka's slab/next branch that can deferred to 3.17 
+but need to get pushed to -mm.
 
-------------------
-
-From: Florian Westphal <fw@strlen.de>
-
-commit 945b2b2d259d1a4364a2799e80e8ff32f8c6ee6f upstream.
-
-Quoting Samu Kallio:
-
- Basically what's happening is, during netns cleanup,
- nf_nat_net_exit gets called before ipv4_net_exit. As I understand
- it, nf_nat_net_exit is supposed to kill any conntrack entries which
- have NAT context (through nf_ct_iterate_cleanup), but for some
- reason this doesn't happen (perhaps something else is still holding
- refs to those entries?).
-
- When ipv4_net_exit is called, conntrack entries (including those
- with NAT context) are cleaned up, but the
- nat_bysource hashtable is long gone - freed in nf_nat_net_exit. The
- bug happens when attempting to free a conntrack entry whose NAT hash
- 'prev' field points to a slot in the freed hash table (head for that
- bin).
-
-We ignore conntracks with null nat bindings.  But this is wrong,
-as these are in bysource hash table as well.
-
-Restore nat-cleaning for the netns-is-being-removed case.
-
-bug:
-https://bugzilla.kernel.org/show_bug.cgi?id=65191
-
-Fixes: c2d421e1718 ('netfilter: nf_nat: fix race when unloading protocol modules')
-Reported-by: Samu Kallio <samu.kallio@aberdeencloud.com>
-Debugged-by: Samu Kallio <samu.kallio@aberdeencloud.com>
-Signed-off-by: Florian Westphal <fw@strlen.de>
-Tested-by: Samu Kallio <samu.kallio@aberdeencloud.com>
-Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
-[ kamal: backport to 3.8-stable: context ]
-Cc: Chris J Arges <chris.j.arges@canonical.com>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+Unless there's an objection, it should be possible to remove Pekka's slab 
+trees from linux-next until he starts pushing changes again.
 ---
- net/netfilter/nf_nat_core.c | 35 ++++++++++++++++++++++++++++++++++-
- 1 file changed, 34 insertions(+), 1 deletion(-)
-
-diff --git a/net/netfilter/nf_nat_core.c b/net/netfilter/nf_nat_core.c
-index 4bc2aaf..e40b77d 100644
---- a/net/netfilter/nf_nat_core.c
-+++ b/net/netfilter/nf_nat_core.c
-@@ -486,6 +486,39 @@ static int nf_nat_proto_remove(struct nf_conn *i, void *data)
- 	return i->status & IPS_NAT_MASK ? 1 : 0;
- }
- 
-+static int nf_nat_proto_clean(struct nf_conn *ct, void *data)
-+{
-+	struct nf_conn_nat *nat = nfct_nat(ct);
-+
-+	if (nf_nat_proto_remove(ct, data))
-+		return 1;
-+
-+	if (!nat || !nat->ct)
-+		return 0;
-+
-+	/* This netns is being destroyed, and conntrack has nat null binding.
-+	 * Remove it from bysource hash, as the table will be freed soon.
-+	 *
-+	 * Else, when the conntrack is destoyed, nf_nat_cleanup_conntrack()
-+	 * will delete entry from already-freed table.
-+	 */
-+	if (!del_timer(&ct->timeout))
-+		return 1;
-+
-+	spin_lock_bh(&nf_nat_lock);
-+	hlist_del_rcu(&nat->bysource);
-+	ct->status &= ~IPS_NAT_DONE_MASK;
-+	nat->ct = NULL;
-+	spin_unlock_bh(&nf_nat_lock);
-+
-+	add_timer(&ct->timeout);
-+
-+	/* don't delete conntrack.  Although that would make things a lot
-+	 * simpler, we'd end up flushing all conntracks on nat rmmod.
-+	 */
-+	return 0;
-+}
-+
- static void nf_nat_l4proto_clean(u8 l3proto, u8 l4proto)
- {
- 	struct nf_nat_proto_clean clean = {
-@@ -748,7 +781,7 @@ static void __net_exit nf_nat_net_exit(struct net *net)
- {
- 	struct nf_nat_proto_clean clean = {};
- 
--	nf_ct_iterate_cleanup(net, &nf_nat_proto_remove, &clean);
-+	nf_ct_iterate_cleanup(net, nf_nat_proto_clean, &clean);
- 	synchronize_rcu();
- 	nf_ct_free_hashtable(net->ct.nat_bysource, net->ct.nat_htable_size);
- }
--- 
-1.9.1
-
+ mm/slub.c |   16 +++++++++-------
+ 1 file changed, 9 insertions(+), 7 deletions(-)
