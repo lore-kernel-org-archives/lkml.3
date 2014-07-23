@@ -1,64 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755635AbaGWGjU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 02:39:20 -0400
-Received: from regular2.263xmail.com ([211.157.152.4]:47216 "EHLO
-	regular2.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754552AbaGWGjT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 02:39:19 -0400
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 0
-X-MAIL-DELIVERY: 1
-X-ABS-CHECKED: 4
-X-KSVirus-check: 0
-X-RL-SENDER: wxt@rock-chips.com
-X-FST-TO: heiko@sntech.de
-X-SENDER-IP: 58.22.7.114
-X-LOGIN-NAME: wxt@rock-chips.com
-X-UNIQUE-TAG: <066f2e1fdb1689b54f17d4ca2178b6e1>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 0
-From: Caesar Wang <caesar.wang@rock-chips.com>
-To: heiko@sntech.de, thierry.reding@gmail.com, b.galvani@gmail.com
-Cc: linux-arm-kernel@lists.infradead.org, linux-pwm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, cf@rock-chips.com,
-        huangtao@rock-chips.com, hj@rock-chips.com, xjq@rock-chips.com,
-        addy.ke@rock-chips.com, Caesar Wang <caesar.wang@rock-chips.com>
-Subject: [PATCH v3 1/2] pwm: rockchip: document RK3288 SoC compatible
-Date: Wed, 23 Jul 2014 14:38:40 +0800
-Message-Id: <1406097521-6457-2-git-send-email-caesar.wang@rock-chips.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1406097521-6457-1-git-send-email-caesar.wang@rock-chips.com>
-References: <1406097521-6457-1-git-send-email-caesar.wang@rock-chips.com>
+	id S1756281AbaGWGlA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 02:41:00 -0400
+Received: from ozlabs.org ([103.22.144.67]:59362 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755786AbaGWGk6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jul 2014 02:40:58 -0400
+Date: Wed, 23 Jul 2014 16:40:49 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>,
+        David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Anish Bhatt <anish@chelsio.com>, Karen Xie <kxie@chelsio.com>,
+        Manoj Malviya <manojmalviya@chelsio.com>,
+        Hannes Reinecke <hare@suse.de>, Christoph Hellwig <hch@lst.de>
+Subject: linux-next: manual merge of the scsi tree with the net-next tree
+Message-ID: <20140723164049.413272e8@canb.auug.org.au>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/rVQsC.i=_LPMhX4.0hLTXPD"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Document new compatible for PWM founding on RK3288 SoC
+--Sig_/rVQsC.i=_LPMhX4.0hLTXPD
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Caesar Wang <caesar.wang@rock-chips.com>
----
- Documentation/devicetree/bindings/pwm/pwm-rockchip.txt | 5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+Hi James,
 
-diff --git a/Documentation/devicetree/bindings/pwm/pwm-rockchip.txt b/Documentation/devicetree/bindings/pwm/pwm-rockchip.txt
-index 3182126..2b7c109 100644
---- a/Documentation/devicetree/bindings/pwm/pwm-rockchip.txt
-+++ b/Documentation/devicetree/bindings/pwm/pwm-rockchip.txt
-@@ -1,7 +1,10 @@
- Rockchip PWM controller
- 
- Required properties:
-- - compatible: should be "rockchip,rk2928-pwm"
-+ - compatible: should be "rockchip,<name>-pwm"
-+   "rockchip,rk2928-pwm": found on RK29XX,RK3066 and RK3188 SoCs
-+   "rockchip,rk3288-pwm": found on RK3288 SoC
-+   "rockchip,vop-pwm": found integrated in VOP on RK3288 SoC
-  - reg: physical base address and length of the controller's registers
-  - clocks: phandle and clock specifier of the PWM reference clock
-  - #pwm-cells: should be 2. See pwm.txt in this directory for a
--- 
-1.9.1
+Today's linux-next merge of the scsi tree got a conflict in
+drivers/scsi/cxgbi/libcxgbi.h between commit fc8d0590d914 ("libcxgbi:
+Add ipv6 api to driver") from the net-next tree and commit 1abf635d2f33
+("scsi: use 64-bit value for 'max_luns'") from the scsi tree.
 
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc drivers/scsi/cxgbi/libcxgbi.h
+index 8ad73d913f02,538d7a64e138..000000000000
+--- a/drivers/scsi/cxgbi/libcxgbi.h
++++ b/drivers/scsi/cxgbi/libcxgbi.h
+@@@ -708,8 -692,7 +708,8 @@@ struct cxgbi_device *cxgbi_device_regis
+  void cxgbi_device_unregister(struct cxgbi_device *);
+  void cxgbi_device_unregister_all(unsigned int flag);
+  struct cxgbi_device *cxgbi_device_find_by_lldev(void *);
+ +struct cxgbi_device *cxgbi_device_find_by_netdev(struct net_device *, int=
+ *);
+- int cxgbi_hbas_add(struct cxgbi_device *, unsigned int, unsigned int,
++ int cxgbi_hbas_add(struct cxgbi_device *, u64, unsigned int,
+  			struct scsi_host_template *,
+  			struct scsi_transport_template *);
+  void cxgbi_hbas_remove(struct cxgbi_device *);
+
+--Sig_/rVQsC.i=_LPMhX4.0hLTXPD
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJTz1j3AAoJEMDTa8Ir7ZwV9IgQAJN5QgiB9JsR/5a3wAr4U1jq
+4PZ10HfNLYl2vhNBnylSBr4VcAMKmm3fAKbeJUatuXIHt9DTr4noATcVnaXhuXJR
+VFnbLYL+yG8JWdvfAbjlLsCWB9Iv1ZFsA2K7JTOfELIwz3pFrX3OTJeCyDdrK21w
+p27CCDZl288VQyn9uFLYk8yc5fD2euus3XmTz5uujLwXHSwCS4LSa04kJSgn9wFo
+oa4VP6q7bs1IT0Kwh7JMdWN7cGif94gCtFOrU940KPdcddgEXnTvbi6FKTXMW9VS
+oEYhOvqj5yJEiNHsq/2qyPR0lwnkHl43L15UxlZ2M3/7tHUZXKsOybv0qYQHgDm1
+w1oRDTlrSIbNEfOhmX/tDg/Ei5PBDxoobkBfz0BnPda6FeMYx8eg2hteSsYarphW
+ivK2JnKoJcM+jLT2mjel4xRXT5bk7jpc89YfONe2K+U0C8k0dGpcq26ba4T6IEqU
+n5nEoMbz/lWklhJAOdgIoyKUZpZRNtRwl4/IWBAIAyaVXENmU4m+GbOZ+OBJKLdI
+prhWYXiaOlpctOqR63axaKRzXQq8lLS7870BtYEMq0C/HwxknEP8opKsvWmimjuN
+Gie7oM8dYNCcOzx+OEI0I9m0HY9HqP7BvbiuykzZL78gci5AuA3I9B3jpI8oqqYq
+RikGmIrHpOZPWcxvFosY
+=9q0h
+-----END PGP SIGNATURE-----
+
+--Sig_/rVQsC.i=_LPMhX4.0hLTXPD--
