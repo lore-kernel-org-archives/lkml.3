@@ -1,87 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757497AbaGWOZJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 10:25:09 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:41070 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753028AbaGWOZH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 10:25:07 -0400
-Date: Wed, 23 Jul 2014 16:24:54 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Dietmar Eggemann <dietmar.eggemann@arm.com>
-Cc: Michel =?iso-8859-1?Q?D=E4nzer?= <michel@daenzer.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Random panic in load_balance() with 3.16-rc
-Message-ID: <20140723142454.GQ12054@laptop.lan>
-References: <53CF31AE.30403@daenzer.net>
- <CA+55aFwyURgG717kmuAXzKcHddN_63GirtwHZB4ePKH+8qVtJw@mail.gmail.com>
- <20140723064948.GK3935@laptop>
- <53CF6CC4.6090207@daenzer.net>
- <20140723082819.GR3935@laptop>
- <20140723092536.GO12054@laptop.lan>
- <53CF80EE.5050702@daenzer.net>
- <53CF844A.5050106@arm.com>
- <20140723111110.GT3935@laptop>
- <20140723113021.GP12054@laptop.lan>
+	id S932089AbaGWOZf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 10:25:35 -0400
+Received: from mail.kernel.org ([198.145.19.201]:45546 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755353AbaGWOZe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jul 2014 10:25:34 -0400
+Date: Wed, 23 Jul 2014 11:25:25 -0300
+From: Arnaldo Carvalho de Melo <acme@kernel.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Adrian Hunter <adrian.hunter@intel.com>,
+        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 13/52] perf tools: Add perf_pmu__scan_file()
+Message-ID: <20140723142525.GM20303@kernel.org>
+References: <1406035081-14301-1-git-send-email-adrian.hunter@intel.com>
+ <1406035081-14301-14-git-send-email-adrian.hunter@intel.com>
+ <20140722190901.GC29750@krava.redhat.com>
+ <53CF5531.90709@intel.com>
+ <20140723093638.GA1207@krava.brq.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140723113021.GP12054@laptop.lan>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <20140723093638.GA1207@krava.brq.redhat.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 23, 2014 at 01:30:21PM +0200, Peter Zijlstra wrote:
-> On Wed, Jul 23, 2014 at 01:11:10PM +0200, Peter Zijlstra wrote:
-> > On Wed, Jul 23, 2014 at 10:45:46AM +0100, Dietmar Eggemann wrote:
-> > > Doesn't the picture showing the captured panic reveal more information.
-> > > Haven't seen it myself, I just saw Peter's reply to your email
+Em Wed, Jul 23, 2014 at 11:36:38AM +0200, Jiri Olsa escreveu:
+> On Wed, Jul 23, 2014 at 09:24:49AM +0300, Adrian Hunter wrote:
+> > On 07/22/2014 10:09 PM, Jiri Olsa wrote:
+> > > On Tue, Jul 22, 2014 at 04:17:22PM +0300, Adrian Hunter wrote:
+> > > 
+> > > SNIP
+> > > 
+> > >> +
+> > >> +static FILE *perf_pmu__open_file(struct perf_pmu *pmu, const char *name)
+> > >> +{
+> > >> +	struct stat st;
+> > >> +	char path[PATH_MAX];
+> > >> +	const char *sysfs;
+> > >> +
+> > >> +	sysfs = sysfs__mountpoint();
+> > >> +	if (!sysfs)
+> > >> +		return NULL;
+> > >> +
+> > >> +	snprintf(path, PATH_MAX,
+> > >> +		 "%s" EVENT_SOURCE_DEVICE_PATH "%s/%s", sysfs, pmu->name, name);
+> > >> +
+> > >> +	if (stat(path, &st) < 0)
+> > >> +		return NULL;
+> > >> +
+> > >> +	return fopen(path, "r");
+> > >> +}
+> > > 
+> > > looks like this function could be used in pmu_cpumask and pmu_type
+> > > and maybe others
 > > 
-> > Its a general protection fault from somewhere in load_balance(), I send
-> > you the picture.
-> > 
-> > It would help to get addr2line of the RIP I suppose.
-> > 
-> > Michel provided a config, so lemme go try and build that, maybe my gcc
-> > will generate similar code to his and the function offset is enough
-> > clue.
+> > There is existing code duplication between them.  Given the large number of
+> > patches I would say it is easier to deal with that separately.
 > 
-> So the code section says the faulting instruction is:
-> 
->   f3 a5
-> 
-> followed by:
-> 
->   48 89 c7 85 50 ff ff 
-> 
-> or so.
-> 
-> My compiled code is 'different', the function is shorter, but there's a
-> f3 a5 somewhere not too far short of +d7 at +a8. I have (objdump -SD):
-> 
->     35a8:       f3 a5                   rep movsl %ds:(%rsi),%es:(%rdi)
-> 
->         for_each_cpu_and(i, sched_group_cpus(group), env->cpus) {
->                 unsigned long capacity, capacity_factor, wl;
->                 enum fbq_type rt;
-> 
->                 rq = cpu_rq(i);
->     35aa:       48 c7 c1 00 00 00 00    mov    $0x0,%rcx
-> 
-> And that's the only part that could possibly match.
-> 
-> That looks like the start of find_busiest_queue(). I'm not entirely sure
-> what the rep movsl is operating on, lemme try and figure that out.
+> ook, jirka
 
-Ah, this appears to be load_balance()'s:
+Is this an Acked-by: jirka?
 
-	cpumask_copy(cpus, cpu_active_mask);
-
-Which totally doesn't make sense, both src and dst are static storage.
-Dst is the most interesting since its per-cpu storage, but still.
-
-No way either of those should generate a #GP. Puzzled.
+- Arnaldo
