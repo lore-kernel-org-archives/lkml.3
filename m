@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757164AbaGWCgt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 22:36:49 -0400
+	id S932854AbaGWCgx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 22:36:53 -0400
 Received: from mga02.intel.com ([134.134.136.20]:44642 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755632AbaGWCgr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 22:36:47 -0400
+	id S1755632AbaGWCgv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 22:36:51 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,714,1400050800"; 
-   d="scan'208";a="577336368"
+   d="scan'208";a="547517203"
 From: "Chen, Gong" <gong.chen@linux.intel.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@kernel.org, tglx@linutronix.de, paulus@samba.org,
@@ -21,9 +21,9 @@ Cc: mingo@kernel.org, tglx@linutronix.de, paulus@samba.org,
         rostedt@goodmis.org, rric@kernel.org, gregkh@linuxfoundation.org,
         mhocko@suse.cz, david@fromorbit.com,
         "Chen, Gong" <gong.chen@linux.intel.com>
-Subject: [RFC PATCH v1 46/70] block, blk-mq: _FROZEN Cleanup
-Date: Tue, 22 Jul 2014 21:59:22 -0400
-Message-Id: <1406080786-3938-47-git-send-email-gong.chen@linux.intel.com>
+Subject: [RFC PATCH v1 47/70] block, blk-iopoll: _FROZEN Cleanup
+Date: Tue, 22 Jul 2014 21:59:23 -0400
+Message-Id: <1406080786-3938-48-git-send-email-gong.chen@linux.intel.com>
 X-Mailer: git-send-email 2.0.0.rc2
 In-Reply-To: <1406080786-3938-1-git-send-email-gong.chen@linux.intel.com>
 References: <1406080786-3938-1-git-send-email-gong.chen@linux.intel.com>
@@ -31,42 +31,26 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove XXX_FROZEN state from block/blk-mq.
+Remove XXX_FROZEN state from block/blk-iopoll.
 
 Signed-off-by: Chen, Gong <gong.chen@linux.intel.com>
 ---
- block/blk-mq.c | 10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
+ block/blk-iopoll.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/block/blk-mq.c b/block/blk-mq.c
-index ad69ef6..b5cd279 100644
---- a/block/blk-mq.c
-+++ b/block/blk-mq.c
-@@ -1522,9 +1522,11 @@ static int blk_mq_hctx_notify(void *data, unsigned long action,
- {
- 	struct blk_mq_hw_ctx *hctx = data;
- 
--	if (action == CPU_DEAD || action == CPU_DEAD_FROZEN)
-+	action &= ~CPU_TASKS_FROZEN;
-+
-+	if (action == CPU_DEAD)
- 		return blk_mq_hctx_cpu_offline(hctx, cpu);
--	else if (action == CPU_ONLINE || action == CPU_ONLINE_FROZEN)
-+	else if (action == CPU_ONLINE)
- 		return blk_mq_hctx_cpu_online(hctx, cpu);
- 
- 	return NOTIFY_OK;
-@@ -1939,8 +1941,8 @@ static int blk_mq_queue_reinit_notify(struct notifier_block *nb,
- 	 * offline CPUs to first hardware queue. We will re-init the queue
- 	 * below to get optimal settings.
+diff --git a/block/blk-iopoll.c b/block/blk-iopoll.c
+index 0736729..ba88c82 100644
+--- a/block/blk-iopoll.c
++++ b/block/blk-iopoll.c
+@@ -193,7 +193,7 @@ static int blk_iopoll_cpu_notify(struct notifier_block *self,
+ 	 * If a CPU goes away, splice its entries to the current CPU
+ 	 * and trigger a run of the softirq
  	 */
--	if (action != CPU_DEAD && action != CPU_DEAD_FROZEN &&
--	    action != CPU_ONLINE && action != CPU_ONLINE_FROZEN)
-+	action &= ~CPU_TASKS_FROZEN;
-+	if (action != CPU_DEAD && action != CPU_ONLINE)
- 		return NOTIFY_OK;
+-	if (action == CPU_DEAD || action == CPU_DEAD_FROZEN) {
++	if ((action & ~CPU_TASKS_FROZEN) == CPU_DEAD) {
+ 		int cpu = (unsigned long) hcpu;
  
- 	mutex_lock(&all_q_mutex);
+ 		local_irq_disable();
 -- 
 2.0.0.rc2
 
