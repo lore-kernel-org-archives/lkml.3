@@ -1,96 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933674AbaGWU4k (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 16:56:40 -0400
-Received: from mail.kernel.org ([198.145.19.201]:35192 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933189AbaGWU4i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 16:56:38 -0400
-Message-ID: <53D02212.5030705@kernel.org>
-Date: Wed, 23 Jul 2014 21:58:58 +0100
-From: Jonathan Cameron <jic23@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
-MIME-Version: 1.0
-To: Chanwoo Choi <cw00.choi@samsung.com>
-CC: ch.naveen@samsung.com, arnd@arndb.de, kgene.kim@samsung.com,
-        kyungmin.park@samsung.com, t.figa@samsung.com,
-        linux-iio@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org
-Subject: Re: [PATCHv8 3/4] iio: devicetree: Add DT binding documentation for
- Exynos3250 ADC
-References: <1405994696-3117-1-git-send-email-cw00.choi@samsung.com> <1405994696-3117-4-git-send-email-cw00.choi@samsung.com>
-In-Reply-To: <1405994696-3117-4-git-send-email-cw00.choi@samsung.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
+	id S933702AbaGWU5T (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 16:57:19 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58749 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933267AbaGWU5Q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jul 2014 16:57:16 -0400
+Date: Wed, 23 Jul 2014 13:57:14 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: David Rientjes <rientjes@google.com>
+Cc: Sasha Levin <sasha.levin@oracle.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Jan Kara <jack@suse.cz>,
+        Dave Jones <davej@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: fs: use after free in /proc/pid/mountinfo
+Message-Id: <20140723135714.54b97f8184ae69ba9fb32228@linux-foundation.org>
+In-Reply-To: <alpine.DEB.2.02.1407151558450.32274@chino.kir.corp.google.com>
+References: <53B3F331.7090204@oracle.com>
+	<53B4CAB8.5070407@oracle.com>
+	<alpine.DEB.2.02.1407031434470.10658@chino.kir.corp.google.com>
+	<53B6C051.2060704@oracle.com>
+	<20140706100420.GB3589@osiris>
+	<20140709142406.GA27561@osiris>
+	<20140709133138.c523aa03883be5417a4d19a4@linux-foundation.org>
+	<53BDBDE7.8090600@oracle.com>
+	<20140709155939.48b126f891132370532cb999@linux-foundation.org>
+	<53C53223.5040502@oracle.com>
+	<alpine.DEB.2.02.1407151558450.32274@chino.kir.corp.google.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22/07/14 03:04, Chanwoo Choi wrote:
-> This patch add DT binding documentation for Exynos3250 ADC IP. Exynos3250 has
-> special clock ('sclk_adc') for ADC which provide clock to internal ADC.
->
-> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
-> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
-> Reviewed-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
-> Reviewed-by: Tomasz Figa <t.figa@samsung.com>
-> Acked-by: Kukjin Kim <kgene.kim@samsung.com>
-> Acked-by: Arnd Bergmann <arnd@arndb.de>
-Applied to the togreg branch of iio.git - pushed out as testing for now.
+On Tue, 15 Jul 2014 16:01:34 -0700 (PDT) David Rientjes <rientjes@google.com> wrote:
 
-> ---
->   .../devicetree/bindings/arm/samsung/exynos-adc.txt | 25 ++++++++++++++++++++--
->   1 file changed, 23 insertions(+), 2 deletions(-)
->
-> diff --git a/Documentation/devicetree/bindings/arm/samsung/exynos-adc.txt b/Documentation/devicetree/bindings/arm/samsung/exynos-adc.txt
-> index 832fe8c..adc61b0 100644
-> --- a/Documentation/devicetree/bindings/arm/samsung/exynos-adc.txt
-> +++ b/Documentation/devicetree/bindings/arm/samsung/exynos-adc.txt
-> @@ -14,14 +14,21 @@ Required properties:
->   				for exynos4412/5250 controllers.
->   			Must be "samsung,exynos-adc-v2" for
->   				future controllers.
-> +			Must be "samsung,exynos3250-adc" for
-> +				controllers compatible with ADC of Exynos3250.
->   - reg:			Contains ADC register address range (base address and
->   			length) and the address of the phy enable register.
->   - interrupts: 		Contains the interrupt information for the timer. The
->   			format is being dependent on which interrupt controller
->   			the Samsung device uses.
->   - #io-channel-cells = <1>; As ADC has multiple outputs
-> -- clocks		From common clock binding: handle to adc clock.
-> -- clock-names		From common clock binding: Shall be "adc".
-> +- clocks		From common clock bindings: handles to clocks specified
-> +			in "clock-names" property, in the same order.
-> +- clock-names		From common clock bindings: list of clock input names
-> +			used by ADC block:
-> +			- "adc" : ADC bus clock
-> +			- "sclk" : ADC special clock (only for Exynos3250 and
-> +				   compatible ADC block)
->   - vdd-supply		VDD input supply.
->
->   Note: child nodes can be added for auto probing from device tree.
-> @@ -41,6 +48,20 @@ adc: adc@12D10000 {
->   	vdd-supply = <&buck5_reg>;
->   };
->
-> +Example: adding device info in dtsi file for Exynos3250 with additional sclk
-> +
-> +adc: adc@126C0000 {
-> +	compatible = "samsung,exynos3250-adc", "samsung,exynos-adc-v2;
-> +	reg = <0x126C0000 0x100>, <0x10020718 0x4>;
-> +	interrupts = <0 137 0>;
-> +	#io-channel-cells = <1>;
-> +	io-channel-ranges;
-> +
-> +	clocks = <&cmu CLK_TSADC>, <&cmu CLK_SCLK_TSADC>;
-> +	clock-names = "adc", "sclk";
-> +
-> +	vdd-supply = <&buck5_reg>;
-> +};
->
->   Example: Adding child nodes in dts file
->
->
+> On Tue, 15 Jul 2014, Sasha Levin wrote:
+> 
+> > I've been running mainline for a while, and while I can reproduce a different
+> > bug for Hugh, I can't reproduce this one at all. Not sure how to call it now,
+> > maybe memory corruption from somewhere else (I did find an unrelated memory
+> > corruption couple days ago)?
+> > 
+> 
+> I have a very large /proc/pid/mountinfo on one of my busy systems with VM 
+> and slub debugging enabled and have not been able to reproduce the issue 
+> while reading it in a loop for 24 hours.  I would call the patch good on 
+> that basis, but it's very strange you'd report this problem a day after 
+> the patch was merged and could not reproduce it once it was reverted.  
+> (Unless the patch was misapplied locally and reapplying it now worked, but 
+> I doubt you originally merged -mm patches into a local tree yourself.)
+
+I was going to revert "fs/seq_file: fallback to vmalloc allocation" but
+the idea of doing that is so lame and pathetic that I think I'll not do
+that.  If we have a bug then let's just find and fix it when someone is
+able to trigger it.
+
 
