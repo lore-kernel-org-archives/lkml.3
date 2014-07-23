@@ -1,119 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932442AbaGWMAv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 08:00:51 -0400
-Received: from mail-yh0-f44.google.com ([209.85.213.44]:34660 "EHLO
-	mail-yh0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756208AbaGWMAt convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 08:00:49 -0400
+	id S1757160AbaGWMDe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 08:03:34 -0400
+Received: from mail.kernel.org ([198.145.19.201]:38377 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753413AbaGWMDd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jul 2014 08:03:33 -0400
+Date: Wed, 23 Jul 2014 14:03:26 +0200
+From: Sebastian Reichel <sre@kernel.org>
+To: Tony Lindgren <tony@atomide.com>
+Cc: Nishanth Menon <nm@ti.com>, dbaryshkov@gmail.com, balbi@ti.com,
+        linux@arm.linux.org.uk, dwmw2@infradead.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org
+Subject: Re: [PATCH V2 1/2] power: twl4030_charger: detect battery presence
+ prior to enabling charger
+Message-ID: <20140723120326.GA18172@earth.universe>
+References: <1401313610-14252-1-git-send-email-nm@ti.com>
+ <1401313610-14252-2-git-send-email-nm@ti.com>
+ <20140723092420.GE22006@atomide.com>
 MIME-Version: 1.0
-In-Reply-To: <1406116613-4514-1-git-send-email-viniciustinti@gmail.com>
-References: <CALD9WKxTzPYeaAZRrYYuLjNK4VvF1pDxzeDPDvWLuSOpw7_1Tw@mail.gmail.com>
-	<1406116613-4514-1-git-send-email-viniciustinti@gmail.com>
-Date: Wed, 23 Jul 2014 09:00:49 -0300
-Message-ID: <CALD9WKzGmCeCPdwO4hCMtAjEjFoB8=oiQjUktT4PN4ewtDY7XA@mail.gmail.com>
-Subject: Re: [PATCH v2] kbuild: add support to generate LLVM bitcode files
-From: Tinti <viniciustinti@gmail.com>
-To: Sam Ravnborg <sam@ravnborg.org>
-Cc: Michal Marek <mmarek@suse.cz>, Renato Golin <renato.golin@linaro.org>,
-        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Behan Webster <behanw@converseincode.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: multipart/signed; micalg=pgp-sha512;
+	protocol="application/pgp-signature"; boundary="liOOAslEiF7prFVr"
+Content-Disposition: inline
+In-Reply-To: <20140723092420.GE22006@atomide.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 23, 2014 at 8:56 AM, Vinícius Tinti <viniciustinti@gmail.com> wrote:
-> Allows kbuild to generate LLVM bitcode files with the .ll extension.
->
->   # from c code
->   CC=clang make kernel/pid.ll
->
->   # from asm code
->   CC=clang make arch/x86/kernel/preempt.ll
->
-> Signed-off-by: Vinícius Tinti <viniciustinti@gmail.com>
-> Signed-off-by: Behan Webster <behanw@converseincode.com>
-> ---
->  .gitignore             |  1 +
->  Makefile               |  6 ++++++
->  scripts/Makefile.build | 14 ++++++++++++++
->  3 files changed, 21 insertions(+)
->
-> diff --git a/.gitignore b/.gitignore
-> index f4c0b09..c5a7656 100644
-> --- a/.gitignore
-> +++ b/.gitignore
-> @@ -32,6 +32,7 @@
->  *.lzo
->  *.patch
->  *.gcno
-> +*.ll
->  modules.builtin
->  Module.symvers
->
-> diff --git a/Makefile b/Makefile
-> index 6b27741..7826c33 100644
-> --- a/Makefile
-> +++ b/Makefile
-> @@ -1213,6 +1213,8 @@ help:
->         @echo  '                    (default: $$(INSTALL_MOD_PATH)/lib/firmware)'
->         @echo  '  dir/            - Build all files in dir and below'
->         @echo  '  dir/file.[oisS] - Build specified target only'
-> +       @echo  '  dir/file.ll     - Build the LLVM bitcode file'
-> +       @echo  '                    (requires a compiler support for LLVM bitcode generation)'
->         @echo  '  dir/file.lst    - Build specified mixed source/assembly target only'
->         @echo  '                    (requires a recent binutils and recent build (System.map))'
->         @echo  '  dir/file.ko     - Build module including final link'
-> @@ -1483,6 +1485,10 @@ endif
->         $(Q)$(MAKE) $(build)=$(build-dir) $(target-dir)$(notdir $@)
->  %.symtypes: %.c prepare scripts FORCE
->         $(Q)$(MAKE) $(build)=$(build-dir) $(target-dir)$(notdir $@)
-> +%.ll: %.c prepare scripts FORCE
-> +       $(Q)$(MAKE) $(build)=$(build-dir) $(target-dir)$(notdir $@)
-> +%.ll: %.S prepare scripts FORCE
-> +       $(Q)$(MAKE) $(build)=$(build-dir) $(target-dir)$(notdir $@)
->
->  # Modules
->  /: prepare scripts FORCE
-> diff --git a/scripts/Makefile.build b/scripts/Makefile.build
-> index bf3e677..4d97e4f 100644
-> --- a/scripts/Makefile.build
-> +++ b/scripts/Makefile.build
-> @@ -174,6 +174,20 @@ cmd_cc_symtypes_c =                                                         \
->  $(obj)/%.symtypes : $(src)/%.c FORCE
->         $(call cmd,cc_symtypes_c)
->
-> +# LLVM bitcode
-> +# Generate .ll files from .s and .c
-> +quiet_cmd_cc_ll_c = CC $(quiet_modtag)  $@
-> +      cmd_cc_ll_c = $(CC) $(c_flags) -emit-llvm -S -o $@ $<
-> +
-> +$(obj)/%.ll: $(src)/%.c FORCE
-> +       $(call if_changed_dep,cc_ll_c)
-> +
-> +quiet_cmd_as_ll_S = CPP $(quiet_modtag) $@
-> +      cmd_as_ll_S = $(CPP) $(a_flags)   -o $@ $<
-> +
-> +$(obj)/%.ll: $(src)/%.S FORCE
-> +       $(call if_changed_dep,as_ll_S)
-> +
->  # C (.c) files
->  # The C file is compiled and updated dependency information is generated.
->  # (See cmd_cc_o_c + relevant part of rule_cc_o_c)
-> --
-> 2.0.1
->
 
-The preempt.s works for me as well the preempt.ll.
+--liOOAslEiF7prFVr
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-The make help now displays about the .ll files but I have not found
-other section in Documentation about it. If there is please let me know.
-I have also added the *.ll in .gitignore.
+On Wed, Jul 23, 2014 at 02:24:20AM -0700, Tony Lindgren wrote:
+> * Nishanth Menon <nm@ti.com> [140528 14:48]:
+> > TWL4030's Battery Charger seems to be designed for non-hotpluggable
+> > batteries.
+> >=20
+> > If battery is not present in the system, BATSTS is always set with the
+> > expectation that software will take actions to move to a required safe
+> > state (could be power down or disable various charger paths).
+> >=20
+> > It does not seem possible even by manipulating the edge detection
+> > of the event (using BCIEDR2 register) to have a consistent hotplug
+> > handling. This seems to be the result of BATSTS interrupt generated
+> > when the thermistor of the battery pack is disconnected from the
+> > dedicated ADIN1 pin. Clearing the status just results in the status
+> > being regenerated by the monitoring ADC(MADC) and disabling the
+> > edges of event just makes hotplug no longer function. The only
+> > other option is to disable the detection of the MADC by disabling
+> > BCIMFEN4::BATSTSMCHGEN (battery presence detector) - but then, we can
+> > never again detect battery reconnection.
+> >=20
+> > So, detect battery presence based on precharge(which is hardware
+> > automatic state) or default main charger configuration at the time of
+> > probe and enable charger logic only if battery was present.
+> >=20
+> > Reported-by: Russell King <linux@arm.linux.org.uk>
+> > Tested-by: Tony Lindgren <tony@atomide.com>
+> > Signed-off-by: Nishanth Menon <nm@ti.com>
+>=20
+> Dmitry, can we please get this first patch merged? This is needed
+> on some omap3 platforms for DT based booting when no battery is
+> present.
+>=20
+> Only the second patch in this series is still being discussed AFAIK.
 
-Regards
+applied to battery-2.6.git:
 
--- 
-Simplicity is the ultimate sophistication
+http://git.infradead.org/battery-2.6.git/commit/61a7784efd3c89ffb6242f29bce=
+e170dd7f55e6b
+
+-- Sebastian
+
+--liOOAslEiF7prFVr
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBCgAGBQJTz6SNAAoJENju1/PIO/qaHJkP/jIQ5vuKGdmU/31Rs09nPP06
+aEHNQh1NTP80NgP0o/B3M3VOKxd3hA/2/CA5vld/RsxXoq70VYCv5wg+pF/AhtMs
+qBDnTqyRwxhzsGEgUvXBC/66mivljyzpT6yCjvIH8jblAZSqGomH/2195dA3WaIv
+55NmZYpFrYFR04GgV+WwDEy9zjyZWDf00aEvgU0epJGsaWs1llGdsQK2/rht1Gxh
+UyswKHYNiY9tTKeY6+J6mi7Vd6Jfw7QaHXfFpw0dwc5CBXBXS26qC43qDbt6QhSz
+98bWv7kD8boUci2O0xbCiuTcSoCkCbrn5RTtHBhWq5gUaSnUoEngkUzTXtnL6NBR
+EyxIml5RCqDgy31DbvzC4XM2Cr0eoqp8L0KnxRYheRJ8k+L6s2aVQngfOjrMJ/yX
+XnXQg0NOWOpBYe3pwV5H7Dv4EEafnJImkCh2omOkXMYipzUbYTzNzbSEUp9NQNTJ
+Uf2ytipj4mSFeFW4Ii+LQmCras2HOhiNqOqd1Sow2H2YOUUwxvSc00+LqlaDSQyq
+jz0QQTLAKG0fbmVq/z08a1vlbIpBQwvRBhltNTtb6SFVuffBe3d9wsNWPyI2X96R
+oT/QGsefrVlGaJVRB7dc32Q25CJBNHfzL+wHgX2P0OocSMudEnoVqWqzDyL4Tzd6
+bt9B8Fi4GTEJt/Aydm2n
+=gvF8
+-----END PGP SIGNATURE-----
+
+--liOOAslEiF7prFVr--
