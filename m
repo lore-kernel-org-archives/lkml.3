@@ -1,64 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757503AbaGWMtj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 08:49:39 -0400
-Received: from mail-lb0-f172.google.com ([209.85.217.172]:49941 "EHLO
-	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757153AbaGWMth (ORCPT
+	id S1754014AbaGWMwi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 08:52:38 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:18673 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752123AbaGWMwh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 08:49:37 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140723120654.GF11241@linux.vnet.ibm.com>
-References: <1406092194-13004-1-git-send-email-bobby.prani@gmail.com>
- <1406092194-13004-3-git-send-email-bobby.prani@gmail.com> <20140723120654.GF11241@linux.vnet.ibm.com>
-From: Pranith Kumar <bobby.prani@gmail.com>
-Date: Wed, 23 Jul 2014 08:49:06 -0400
-Message-ID: <CAJhHMCC17qTfHUvmHw5OK8xfeqxvNeAXPhzT7+xgpny_dLnq0g@mail.gmail.com>
-Subject: Re: [PATCH 02/16] rcu: Check return value for cpumask allocation
-To: Paul McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Josh Triplett <josh@joshtriplett.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        "open list:READ-COPY UPDATE..." <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 23 Jul 2014 08:52:37 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+To: geert@linux-m68k.org
+Cc: rostedt@goodmis.org, gnomes@lxorguk.ukuu.org.uk, linux@roeck-us.net,
+        xerofoify@gmail.com, linux-m68k@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Sasha Levin <sasha.levin@oracle.com>,
+        Sasha Levin <sashal@kernel.org>
+Subject: [PATCH] m68k/q40: Revert "m68k/q40: Fix q40_irq_startup() to return -ENXIO on failures"
+Date: Wed, 23 Jul 2014 08:51:39 -0400
+Message-Id: <1406119899-22659-1-git-send-email-sasha.levin@oracle.com>
+X-Mailer: git-send-email 1.9.1
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 23, 2014 at 8:06 AM, Paul E. McKenney
-<paulmck@linux.vnet.ibm.com> wrote:
-> On Wed, Jul 23, 2014 at 01:09:39AM -0400, Pranith Kumar wrote:
->> This commit add a check for return value of zalloc_cpumask_var() used while
->> allocating cpumask for rcu_nocb_mask.
->>
->> Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
->> ---
->>  kernel/rcu/tree_plugin.h | 5 ++++-
->>  1 file changed, 4 insertions(+), 1 deletion(-)
->>
->> diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
->> index f07b643..bac9797 100644
->> --- a/kernel/rcu/tree_plugin.h
->> +++ b/kernel/rcu/tree_plugin.h
->> @@ -88,7 +88,10 @@ static void __init rcu_bootup_announce_oddness(void)
->>  #ifdef CONFIG_RCU_NOCB_CPU
->>  #ifndef CONFIG_RCU_NOCB_CPU_NONE
->>       if (!have_rcu_nocb_mask) {
->> -             zalloc_cpumask_var(&rcu_nocb_mask, GFP_KERNEL);
->> +             if (!zalloc_cpumask_var(&rcu_nocb_mask, GFP_KERNEL)) {
->> +                     pr_info("rcu_nocb_mask allocation failed\n");
->> +                     return;
->
-> Good catch, but this "return" is an accident waiting to happen.  The
-> accident will happen as soon as another RCU option appears, and the
-> person adding it quite naturally adds it at the end of this function.
-> The cleanest approach is to make an rcu_bootup_announce_oddness_nocb()
-> as one commit that does -only- code motion, and the make this change
-> as another commit.
->
+Revert since we're trying to return -ENXIO from a function returning
+unsigned int. Not only it causes compiler warnings it's also obviously
+incorrect.
 
-OK, I will resubmit this change as a 2 patch change.
+In general, watch for patches from Nick Krause since they are not even
+build tested.
 
+Signed-off-by: Sasha Levin <sashal@kernel.org>
+---
+ arch/m68k/q40/q40ints.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/m68k/q40/q40ints.c b/arch/m68k/q40/q40ints.c
+index 9dfa1ea..513f9bb 100644
+--- a/arch/m68k/q40/q40ints.c
++++ b/arch/m68k/q40/q40ints.c
+@@ -49,7 +49,7 @@ static unsigned int q40_irq_startup(struct irq_data *data)
+ 	case 1: case 2: case 8: case 9:
+ 	case 11: case 12: case 13:
+ 		printk("%s: ISA IRQ %d not implemented by HW\n", __func__, irq);
+-		return -ENXIO;
++		/* FIXME return -ENXIO; */
+ 	}
+ 	return 0;
+ }
 -- 
-Pranith
+1.9.1
+
