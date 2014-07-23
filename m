@@ -1,124 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757069AbaGWHwp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 03:52:45 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:60832 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756212AbaGWHwn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 03:52:43 -0400
-From: Jan Kara <jack@suse.cz>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Andreas Bombe <aeb@debian.org>,
-        Jan Kara <jack@suse.cz>
-Subject: [PATCH] printk: enable interrupts before calling console_trylock_for_printk()
-Date: Wed, 23 Jul 2014 09:52:34 +0200
-Message-Id: <1406101954-16194-1-git-send-email-jack@suse.cz>
-X-Mailer: git-send-email 1.8.1.4
+	id S1756524AbaGWH6j (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 03:58:39 -0400
+Received: from pegasos-out.vodafone.de ([80.84.1.38]:55979 "EHLO
+	pegasos-out.vodafone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751301AbaGWH6h (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jul 2014 03:58:37 -0400
+X-Spam-Flag: NO
+X-Spam-Score: 0.2
+Authentication-Results: rohrpostix2.prod.vfnet.de (amavisd-new); dkim=pass
+	header.i=@vodafone.de
+X-DKIM: OpenDKIM Filter v2.6.8 pegasos-out.vodafone.de 851246A2DE6
+X-DKIM: OpenDKIM Filter v2.0.2 smtp-04.vodafone.de 8BEA3E5AB9
+Message-ID: <53CF6B18.5070107@vodafone.de>
+Date: Wed, 23 Jul 2014 09:58:16 +0200
+From: =?UTF-8?B?Q2hyaXN0aWFuIEvDtm5pZw==?= <deathsimple@vodafone.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Maarten Lankhorst <maarten.lankhorst@canonical.com>,
+        =?UTF-8?B?Q2hyaXM=?= =?UTF-8?B?dGlhbiBLw7ZuaWc=?= 
+	<christian.koenig@amd.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+CC: Thomas Hellstrom <thellstrom@vmware.com>,
+        nouveau <nouveau@lists.freedesktop.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        dri-devel <dri-devel@lists.freedesktop.org>,
+        Ben Skeggs <bskeggs@redhat.com>,
+        "Deucher, Alexander" <alexander.deucher@amd.com>
+Subject: Re: [Nouveau] [PATCH 09/17] drm/radeon: use common fence implementation
+ for fences
+References: <20140709093124.11354.3774.stgit@patser>	<20140709122953.11354.46381.stgit@patser>	<CAPM=9tyD2ZbrcGDC3hfNb7qNdzsfnyD-ZwM7G-nOgxeu5YKuSg@mail.gmail.com>	<53CE2421.5040906@amd.com>	<20140722114607.GL15237@phenom.ffwll.local>	<20140722115737.GN15237@phenom.ffwll.local>	<53CE56ED.4040109@vodafone.de>	<20140722132652.GO15237@phenom.ffwll.local>	<53CE6AFA.1060807@vodafone.de>	<CAKMK7uG1d31zU_i__wc+Yq46A0x0tPeKnMBs+NHSmHS82uMsXQ@mail.gmail.com>	<53CE84AA.9030703@amd.com>	<CAKMK7uFa8vMBV9_JenbFGnFXtV_r9dk=WjbMkkCDWcauhrDdJg@mail.gmail.com>	<53CE8A57.2000803@vodafone.de>	<53CF58FB.8070609@canonical.com>	<53CF5B9F.1050800@amd.com>	<53CF5EFE.6070307@canonical.com>	<53CF63C2.7070407@vodafone.de> <CAKMK7uGJj+UwcnnzA+fj_=uWPN3i0sneWkoD+wfPJ_8Q6Y-DQg@mail.gmail.com> <53CF6622.6060803@amd.com> <53CF699D.9070902@canonical.com>
+In-Reply-To: <53CF699D.9070902@canonical.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We need interrupts disabled when calling console_trylock_for_printk()
-only so that cpu id we pass to can_use_console() remains valid (for
-other things console_sem provides all the exclusion we need and
-deadlocks on console_sem due to interrupts are impossible because we use
-down_trylock()).  However if we are rescheduled, we are guaranteed to
-run on an online cpu so we can easily just get the cpu id in
-can_use_console().
+> Regardless of the fence implementation, why would it be a good idea to do a full lockup recovery when some other driver is
+> calling your wait function? That doesn't seem to be a nice thing to do, so I think a timeout is the best error you could return here,
+> other drivers have to deal with that anyway.
+The problem is that we need to guarantee that the lockup will be 
+resolved eventually.
 
-We can lose a bit of performance when we enable interrupts in
-vprintk_emit() and then disable them again in console_unlock() but OTOH
-it can somewhat reduce interrupt latency caused by console_unlock().
+Just imagine an application using prime is locking up Radeon and because 
+of that gets killed by the user. Nothing else in the system would use 
+the Radeon hardware any more and so radeon gets only called by another 
+driver waiting patiently for radeon to finish rendering which never 
+happens because the whole thing is locked up and we don't get a chance 
+to recover.
 
-We differ from (reverted) commit 939f04bec1a4 in that we avoid calling
-console_unlock() from vprintk_emit() with lockdep enabled as that has
-unveiled quite some bugs leading to system freezes during boot (e.g.
-https://lkml.org/lkml/2014/5/30/242,
-https://lkml.org/lkml/2014/6/28/521).
+Christian.
 
-Tested-by: Andreas Bombe <aeb@debian.org>
-Signed-off-by: Jan Kara <jack@suse.cz>
----
- kernel/printk/printk.c | 31 +++++++++++++++++++++----------
- 1 file changed, 21 insertions(+), 10 deletions(-)
-
- Andrew, can you please queue this patch? Thanks.
-
-diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
-index 13e839dbca07..fe4154d83fe4 100644
---- a/kernel/printk/printk.c
-+++ b/kernel/printk/printk.c
-@@ -1416,10 +1416,9 @@ static int have_callable_console(void)
- /*
-  * Can we actually use the console at this time on this cpu?
-  *
-- * Console drivers may assume that per-cpu resources have
-- * been allocated. So unless they're explicitly marked as
-- * being able to cope (CON_ANYTIME) don't call them until
-- * this CPU is officially up.
-+ * Console drivers may assume that per-cpu resources have been allocated. So
-+ * unless they're explicitly marked as being able to cope (CON_ANYTIME) don't
-+ * call them until this CPU is officially up.
-  */
- static inline int can_use_console(unsigned int cpu)
- {
-@@ -1432,8 +1431,10 @@ static inline int can_use_console(unsigned int cpu)
-  * console_lock held, and 'console_locked' set) if it
-  * is successful, false otherwise.
-  */
--static int console_trylock_for_printk(unsigned int cpu)
-+static int console_trylock_for_printk(void)
- {
-+	unsigned int cpu = smp_processor_id();
-+
- 	if (!console_trylock())
- 		return 0;
- 	/*
-@@ -1608,7 +1609,8 @@ asmlinkage int vprintk_emit(int facility, int level,
- 		 */
- 		if (!oops_in_progress && !lockdep_recursing(current)) {
- 			recursion_bug = 1;
--			goto out_restore_irqs;
-+			local_irq_restore(flags);
-+			return 0;
- 		}
- 		zap_locks();
- 	}
-@@ -1716,21 +1718,30 @@ asmlinkage int vprintk_emit(int facility, int level,
- 
- 	logbuf_cpu = UINT_MAX;
- 	raw_spin_unlock(&logbuf_lock);
-+	lockdep_on();
-+	local_irq_restore(flags);
- 
- 	/* If called from the scheduler, we can not call up(). */
- 	if (!in_sched) {
-+		lockdep_off();
-+		/*
-+		 * Disable preemption to avoid being preempted while holding
-+		 * console_sem which would prevent anyone from printing to
-+		 * console
-+		 */
-+		preempt_disable();
-+
- 		/*
- 		 * Try to acquire and then immediately release the console
- 		 * semaphore.  The release will print out buffers and wake up
- 		 * /dev/kmsg and syslog() users.
- 		 */
--		if (console_trylock_for_printk(this_cpu))
-+		if (console_trylock_for_printk())
- 			console_unlock();
-+		preempt_enable();
-+		lockdep_on();
- 	}
- 
--	lockdep_on();
--out_restore_irqs:
--	local_irq_restore(flags);
- 	return printed_len;
- }
- EXPORT_SYMBOL(vprintk_emit);
--- 
-1.8.1.4
+Am 23.07.2014 09:51, schrieb Maarten Lankhorst:
+> op 23-07-14 09:37, Christian König schreef:
+>> Am 23.07.2014 09:31, schrieb Daniel Vetter:
+>>> On Wed, Jul 23, 2014 at 9:26 AM, Christian König
+>>> <deathsimple@vodafone.de> wrote:
+>>>> It's not a locking problem I'm talking about here. Radeons lockup handling
+>>>> kicks in when anything calls into the driver from the outside, if you have a
+>>>> fence wait function that's called from the outside but doesn't handle
+>>>> lockups you essentially rely on somebody else calling another radeon
+>>>> function for the lockup to be resolved.
+>>> So you don't have a timer in radeon that periodically checks whether
+>>> progress is still being made? That's the approach we're using in i915,
+>>> together with some tricks to kick any stuck waiters so that we can
+>>> reliably step in and grab locks for the reset.
+>> We tried this approach, but it didn't worked at all.
+>>
+>> I already considered trying it again because of the upcoming fence implementation, but reconsidering that when a driver is forced to change it's handling because of the fence implementation that's just another hint that there is something wrong here.
+> As far as I can tell it wouldn't need to be reworked for the fence implementation currently, only the moment you want to allow callers outside of radeon. :-)
+> Doing a GPU lockup recovery in the wait function would be messy even right now, you would hit a deadlock in ttm_bo_delayed_delete -> ttm_bo_cleanup_refs_and_unlock.
+>
+> Regardless of the fence implementation, why would it be a good idea to do a full lockup recovery when some other driver is
+> calling your wait function? That doesn't seem to be a nice thing to do, so I think a timeout is the best error you could return here,
+> other drivers have to deal with that anyway.
+>
+> ~Maarten
+>
 
