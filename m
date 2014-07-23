@@ -1,49 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758130AbaGWPPo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 11:15:44 -0400
-Received: from vps0.lunn.ch ([178.209.37.122]:51874 "EHLO vps0.lunn.ch"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751692AbaGWPPl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 11:15:41 -0400
-Date: Wed, 23 Jul 2014 17:10:33 +0200
-From: Andrew Lunn <andrew@lunn.ch>
-To: Jason Cooper <jason@lakedaemon.net>
-Cc: benoitm974 <yahoo@perenite.com>, devicetree@vger.kernel.org,
-        Russell King <linux@arm.linux.org.uk>, Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        linux-kernel@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
-        Kumar Gala <galak@codeaurora.org>, benoitm@perenite.com,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 2/2] Adding lenovo in vendor
-Message-ID: <20140723151033.GF2856@lunn.ch>
-References: <1406117232-5962-1-git-send-email-yahoo@perenite.com>
- <1406117232-5962-2-git-send-email-yahoo@perenite.com>
- <20140723134756.GG23220@titan.lakedaemon.net>
+	id S1757920AbaGWPRZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 11:17:25 -0400
+Received: from mail-vc0-f175.google.com ([209.85.220.175]:62678 "EHLO
+	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756005AbaGWPRX convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jul 2014 11:17:23 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140723134756.GG23220@titan.lakedaemon.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <87ppgwgscz.fsf@nemi.mork.no>
+References: <CAPDOMViK086vShRiYAF2kTp2w1d8Qyw42GJ_QZmbB422SYg2KA@mail.gmail.com>
+	<87ppgwgscz.fsf@nemi.mork.no>
+Date: Wed, 23 Jul 2014 11:17:21 -0400
+Message-ID: <CAPDOMVhBsw2V5+ppf5A9ui57dWuYXtXTsTRz63pz69uANwpgnA@mail.gmail.com>
+Subject: Re: Work Ideas
+From: Nick Krause <xerofoify@gmail.com>
+To: =?UTF-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > +lenovo	LENOVO
-> 
-> is this their official, registered company name?
+On Wed, Jul 23, 2014 at 8:41 AM, Bjørn Mork <bjorn@mork.no> wrote:
+> Nick Krause <xerofoify@gmail.com> writes:
+>
+>> I am working for some work in the kernel. I am new to the kernel but I
+>> am read Robert Love's
+>> book and another book on device drivers,  so my theory is good is
+>> prettygood other then not
+>> being up to date on the newest features in the latest kernels. If
+>> anyone wants to give me
+>> something to do I don't mind what type of work .
+>
+> There are a couple of basic skills which are necessary whether your line
+> of work is kernel programming or lawn mowing.  One of the most important
+> ones is "know your own limitations". Another one is "take feedback".
+>
+> I suggest you work on those for a while.  No additional hardware should
+> be necessary.
+>
+>
+>
+> Bjørn
 
-http://www.lenovo.com/ww/lenovo/FAQs.html says
-
-1. What is Lenovo’s stock symbol (ticker)?
-HKSE: 992.hk
-ADR (Level I): LNVGY
-
-So i think lenovo is probably the more understandable vendor prefix,
-even if it is not the official stock ticker.
-
-However there official registered company name appears to be
-Lenovo Group Limited.
-
-       Andrew
+Very well then I guess the community wants me to listen better to the
+maintainers and
+not do stupid things :).
+Thanks Bjorn,
+Nick
