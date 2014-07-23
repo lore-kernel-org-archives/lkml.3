@@ -1,56 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758111AbaGWPTQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 11:19:16 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:42897 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757732AbaGWPTP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 11:19:15 -0400
-Date: Wed, 23 Jul 2014 17:19:09 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Miklos Szeredi <miklos@szeredi.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>, Tejun Heo <tj@kernel.org>,
-        Vladimir Davydov <vdavydov@parallels.com>, linux-mm@kvack.org,
-        cgroups@vger.kernel.org,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [patch 13/13] mm: memcontrol: rewrite uncharge API
-Message-ID: <20140723151909.GC16721@dhcp22.suse.cz>
-References: <20140715082545.GA9366@dhcp22.suse.cz>
- <20140715121935.GB9366@dhcp22.suse.cz>
- <20140718071246.GA21565@dhcp22.suse.cz>
- <20140718144554.GG29639@cmpxchg.org>
- <CAJfpegt9k+YULet3vhmG3br7zSiHy-DRL+MiEE=HRzcs+mLzbw@mail.gmail.com>
- <20140719173911.GA1725@cmpxchg.org>
- <20140722150825.GA4517@dhcp22.suse.cz>
- <CAJfpegscT-ptQzq__uUV2TOn7Uvs6x4FdWGTQb9Fe9MEJr2KjA@mail.gmail.com>
- <20140723143847.GB16721@dhcp22.suse.cz>
- <20140723150608.GF1725@cmpxchg.org>
+	id S1758163AbaGWPT0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 11:19:26 -0400
+Received: from mail-vc0-f175.google.com ([209.85.220.175]:42434 "EHLO
+	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757732AbaGWPTX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jul 2014 11:19:23 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140723150608.GF1725@cmpxchg.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140723064657.GK30558@pburton-laptop>
+References: <CAPDOMVjNyAwo53Coz8MFuUs70M7j1e3QWprus5vGpTfAw=hspg@mail.gmail.com>
+	<20140723064657.GK30558@pburton-laptop>
+Date: Wed, 23 Jul 2014 11:19:23 -0400
+Message-ID: <CAPDOMVg6qMBBaT5t8Cqu7NH7FZxs=-y2SZ9uBgYGv2tgBr3yvw@mail.gmail.com>
+Subject: Re: smp-cmp.c: CDFIXMES
+From: Nick Krause <xerofoify@gmail.com>
+To: Paul Burton <paul.burton@imgtec.com>
+Cc: Ralf Baechle <ralf@linux-mips.org>, John Crispin <blogic@openwrt.org>,
+        markos.chandras@imgtec.com, Steven.Hill@imgtec.com,
+        Linux-MIPS <linux-mips@linux-mips.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 23-07-14 11:06:08, Johannes Weiner wrote:
-> On Wed, Jul 23, 2014 at 04:38:47PM +0200, Michal Hocko wrote:
-[...]
-> > OK, thanks for the clarification. I had this feeling but couldn't wrap
-> > my head around the indirection of the code.
-> > 
-> > It seems that checkig PageCgroupUsed(new) and bail out early in
-> > mem_cgroup_migrate should just work, no?
-> 
-> If the new page is already charged as page cache, we could just drop
-> the call to mem_cgroup_migrate() altogether.
+On Wed, Jul 23, 2014 at 2:46 AM, Paul Burton <paul.burton@imgtec.com> wrote:
+> On Wed, Jul 23, 2014 at 12:40:59AM -0400, Nick Krause wrote:
+>> Are the lines with  CDFIXME still needed? If not please tell me as I
+>> will send in a patch removing these
+>> two from this file in order to help you guys out :).
+>> Cheers Nick
+>
+> Hi Nick,
+>
+> I imagine the only answer any of us can give you is "we don't know". If
+> we did then we'd have removed the code or the comments already.
+>
+> Please do note that the smp-cmp.c file lives behind a Kconfig option
+> that is now marked as deprecated, and that there is other work going on
+> in areas related to clocksource & clock events on the applicable
+> systems. So whilst someone could spend the time figuring out whether
+> those lines are useful, I expect that cleaning up these old FIXMEs is
+> not a particularly high priority for anyone right now.
+>
+> If you'll leave them alone for a while I expect they'll disappear one
+> way or another in a few cycles time, along with the rest of the file.
+>
+> Thanks,
+>     Paul
 
-Yeah, it is just that we do not want to do all the
-page->page_cgroup->PageCgroupUsed thing in replace_page_cache_page.
 
--- 
-Michal Hocko
-SUSE Labs
+That's Ok Paul, just wanted to known when the file was going away as it seemed
+old if you want help with this please let me known :).
+Cheers Nick
