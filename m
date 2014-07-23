@@ -1,49 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933276AbaGWTl2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 15:41:28 -0400
-Received: from mout.kundenserver.de ([212.227.126.130]:60291 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932693AbaGWTl1 (ORCPT
+	id S933055AbaGWTqo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 15:46:44 -0400
+Received: from mail-out.m-online.net ([212.18.0.9]:45575 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932665AbaGWTqm convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 15:41:27 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH RFC] arm/mach-imximx/iomux-v3: Do not export symbol without public declaration
-Date: Wed, 23 Jul 2014 21:41:18 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-35-generic; KDE/4.3.2; x86_64; ; )
-Cc: Alexander Stein <alexander.stein@systec-electronic.com>,
-        Shawn Guo <shawn.guo@freescale.com>,
-        Sascha Hauer <kernel@pengutronix.de>,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org
-References: <1406120520-14390-1-git-send-email-alexander.stein@systec-electronic.com>
-In-Reply-To: <1406120520-14390-1-git-send-email-alexander.stein@systec-electronic.com>
+	Wed, 23 Jul 2014 15:46:42 -0400
+X-Auth-Info: BD+1bi02XZ9GZILkSTWCx6q2bw1OGKa+3qkG/73cW04=
+From: Marek Vasut <marex@denx.de>
+To: Corentin LABBE <clabbe.montjoie@gmail.com>
+Subject: Re: [PATCH 3/3] crypto: Add Allwinner Security System crypto accelerator
+Date: Wed, 23 Jul 2014 21:38:35 +0200
+User-Agent: KMail/1.13.7 (Linux/3.13-trunk-amd64; KDE/4.13.1; x86_64; ; )
+Cc: Herbert Xu <herbert@gondor.apana.org.au>, robh+dt@kernel.org,
+        pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        rdunlap@infradead.org, maxime.ripard@free-electrons.com,
+        linux@arm.linux.org.uk, davem@davemloft.net, grant.likely@linaro.org,
+        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org
+References: <1400771396-9686-1-git-send-email-clabbe.montjoie@gmail.com> <201407231751.02050.marex@denx.de> <53D0045C.6090605@gmail.com>
+In-Reply-To: <53D0045C.6090605@gmail.com>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201407232141.18946.arnd@arndb.de>
-X-Provags-ID: V02:K0:sbEfayme4zYhLTm2fYkZbtCYN7N7o+pfAsgcbCqGzgn
- mGFQoh/dVnd9KwE4vzg4uVQcPD0By6grBOHHcoVRFCN24Sx5Tk
- Z90ULC1o7m3WVJICcy1Vtvgi3XeracD0nYiQ0FhEZIkVZAhWHW
- lB2aRfjrtNal6b3/6GJv/xCQFMIsG7QY3Z3c1KXyXczcz8514c
- I0zY5IPuzcZW4NbDG7GmjWgevy5HAiVLnUwHYR0nxNsmnLEjuq
- HvWd5pBR5aRnqB2vGKK7RgLouzwegDiqNptnPDZZE2nKaxhNA2
- HgwO8GwV5wayOL4qWNi2/wg5oV79kqo6jhPHlJ33ddGdYjCviD
- 3lmkKiDVjjPm7wh++kfs=
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201407232138.35268.marex@denx.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 23 July 2014, Alexander Stein wrote:
-> Both mxc_iomux_v3_setup_pad and mxc_iomux_v3_setup_multiple_pads are
-> declared in iomux-v3.h which can't be used in any module. None of the
-> objects in this directory is tristate. Neither can the header be included
-> in out-of-tree modules.
+On Wednesday, July 23, 2014 at 08:52:12 PM, Corentin LABBE wrote:
+> Le 23/07/2014 17:51, Marek Vasut a écrit :
+> > On Wednesday, July 23, 2014 at 04:13:09 PM, Herbert Xu wrote:
+> >> On Wed, Jul 23, 2014 at 04:07:20PM +0200, Marek Vasut wrote:
+> >>> On Wednesday, July 23, 2014 at 03:57:35 PM, Herbert Xu wrote:
+> >>>> On Sat, May 24, 2014 at 02:00:03PM +0200, Marek Vasut wrote:
+> >>>>>> +	}
+> >>>>>> +#endif
+> >>>>>> +
+> >>>>>> +#ifdef CONFIG_CRYPTO_DEV_SUNXI_SS_MD5
+> >>>>>> +	err = crypto_register_shash(&sunxi_md5_alg);
+> >>>>> 
+> >>>>> Do not use shash for such device. This is clearly and ahash (and
+> >>>>> async in general) device. The rule of a thumb here is that you use
+> >>>>> sync algos only for devices which have dedicated instructions for
+> >>>>> computing the transformation. For devices which are attached to some
+> >>>>> kind of bus, you use async algos (ahash etc).
+> >>>> 
+> >>>> I'm sorry that I didn't catch this earlier but there is no such
+> >>>> rule.
+> >>>> 
+> >>>> Unless you need the async interface you should stick to the sync
+> >>>> interfaces for the sake of simplicity.
+> >>>> 
+> >>>> We have a number of existing drivers that are synchronous but
+> >>>> using the async interface.  They should either be converted
+> >>>> over to the sync interface or made interrupt-driven if possible.
+> >>> 
+> >>> Sure, but this device is interrupt driven and uses DMA to feed the
+> >>> crypto engine, therefore async, right ?
+> >> 
+> >> If it's interrupt-driven, then yes it would certainly make sense to
+> >> be async.  But all I see is polling in the latest posting, was the
+> >> first version different?
+> > 
+> > I stand corrected then, sorry.
+> > 
+> > Is it possible to use DMA to feed the crypto accelerator, Corentin?
+> > 
+> > Best regards,
+> > Marek Vasut
 > 
-> Signed-off-by: Alexander Stein <alexander.stein@systec-electronic.com>
+> Yes, DMA is possible and will be implemented soon.
+> So if I have well understood, I keep using async interface.
 
-Makese sense, but I think if you do this, it would be reasonable
-to do the same for all three iomux implementations (v1, imx31, v3).
+Yeah, in this case, using DMA and async interface combo is the way to go.
 
-	Arnd
+Best regards,
+Marek Vasut
