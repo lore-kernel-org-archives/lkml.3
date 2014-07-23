@@ -1,76 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755809AbaGWDPO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 23:15:14 -0400
-Received: from mga01.intel.com ([192.55.52.88]:33565 "EHLO mga01.intel.com"
+	id S1756085AbaGWDRC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 23:17:02 -0400
+Received: from mga09.intel.com ([134.134.136.24]:60737 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755259AbaGWDPN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 23:15:13 -0400
+	id S1755259AbaGWDRA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 23:17:00 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,714,1400050800"; 
-   d="scan'208";a="565823139"
-Message-ID: <53CF28BD.6050603@linux.intel.com>
-Date: Wed, 23 Jul 2014 11:15:09 +0800
-From: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+   d="scan'208";a="577350165"
+Message-ID: <53CF2925.3030803@linux.intel.com>
+Date: Wed, 23 Jul 2014 11:16:53 +0800
+From: Jiang Liu <jiang.liu@linux.intel.com>
+Organization: Intel
+User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-To: Mikulas Patocka <mpatocka@redhat.com>,
-        "xinhui.pan" <xinhuix.pan@intel.com>, linux-kernel@vger.kernel.org,
-        agk@redhat.com, snitzer@redhat.com, dm-devel@redhat.com,
-        "Liu, ShuoX" <shuox.liu@intel.com>
-Subject: Re: [dm-devel] [PATCH] md/dm-ioctl.c: optimize memory allocation
- in copy_params
-References: <53B68068.2060102@intel.com> <alpine.LRH.2.02.1407081831510.27831@file01.intranet.prod.int.rdu2.redhat.com> <53BCA278.5050205@linux.intel.com> <alpine.LRH.2.02.1407091032400.4545@file01.intranet.prod.int.rdu2.redhat.com> <53CDB81B.90509@linux.intel.com> <20140722012352.GD6822@agk-dp.fab.redhat.com> <20140722020458.GE6822@agk-dp.fab.redhat.com>
-In-Reply-To: <20140722020458.GE6822@agk-dp.fab.redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Christoph Lameter <cl@gentwo.org>, Tejun Heo <tj@kernel.org>
+CC: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        David Rientjes <rientjes@google.com>,
+        Mike Galbraith <umgwanakikbuti@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
+        Vladimir Davydov <vdavydov@parallels.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Rik van Riel <riel@redhat.com>, Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Jianyu Zhan <nasa4836@gmail.com>, malc <av1474@comtv.ru>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Fabian Frederick <fabf@skynet.be>, Tony Luck <tony.luck@intel.com>,
+        linux-mm@kvack.org, linux-hotplug@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC Patch V1 07/30] mm: Use cpu_to_mem()/numa_mem_id() to support
+ memoryless node
+References: <1405064267-11678-1-git-send-email-jiang.liu@linux.intel.com> <1405064267-11678-8-git-send-email-jiang.liu@linux.intel.com> <20140711144205.GA27706@htj.dyndns.org> <alpine.DEB.2.11.1407111012210.25527@gentwo.org> <20140711152156.GB29137@htj.dyndns.org> <alpine.DEB.2.11.1407111056060.27349@gentwo.org> <20140711160152.GC30865@htj.dyndns.org> <alpine.DEB.2.11.1407111117560.27592@gentwo.org> <20140711162451.GD30865@htj.dyndns.org> <alpine.DEB.2.11.1407111220410.4511@gentwo.org> <20140711182814.GE30865@htj.dyndns.org> <alpine.DEB.2.11.1407111405280.5070@gentwo.org>
+In-Reply-To: <alpine.DEB.2.11.1407111405280.5070@gentwo.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/7/22 10:04, Alasdair G Kergon wrote:
-> On Tue, Jul 22, 2014 at 02:23:52AM +0100, Alasdair G Kergon wrote:
->> Unanswered.  Let's ask the same question in a different way:
->   
-> A quick search for 'vold' returns:
->    https://android.googlesource.com/platform/system/vold/
-> and the code there requests a fixed 64K allocation to hold the names of
-> active volumes.
->
-> So unlike libdevmapper-based applications where a smaller allocation is
-> used at first and only extended if needed, Android just assumes that
-> 64KB is enough for everyone.
->
-> So is your claim that:
->
-> 1. This 64KB allocation for the brief duration of the ioctl to store the
-> names of active device-mapper volumes leads to memory problems?
-> [Mustn't the system *already* be in a bad state if this pushes it over
-> the limit?]
+Hi Tejun and Christoph,
+	Thanks for your suggestions and discussion. Tejun really
+gives a good point to hide memoryless node interface from normal
+slab users. I will rework the patch set to go that direction.
+Regards!
+Gerry
 
-It's a good question.
-1) Usually, Android mobile runs for a long time. It's very command that
-users don't turn off the phones for months. Users might start lots of
-applications. memory is used up in the end. Kernel might recollect memory
-over and over again.
-2) We never blames this Out of memory issue fully to DM.
-3) We want to improve the OOM issue.
-
->
-> and
->
-> 2. The systems on which this memory shortage occurs have so many volumes
-> (with long names?) that a smaller allocation would not suffice?
-
-64K is small, comparing with 2GB, even 4GB total memory. However, this 64K
-by kmalloc has a strict criteria. It might be continuous physical memory
-and align with 64K. If memory is used up, freed memory is very fragmented.
-Such 64K criteria is a hard request.
-Usually, driver can allocate such memory at booting initialization. After
-that, it should allocate many sparse pages instead of continuous memory.
-Here 64K allocation is after booting.
-
-Thanks for the kind comments.
-
-Yanmin
-
+On 2014/7/12 3:11, Christoph Lameter wrote:
+> On Fri, 11 Jul 2014, Tejun Heo wrote:
+> 
+>> On Fri, Jul 11, 2014 at 12:29:30PM -0500, Christoph Lameter wrote:
+>>> GFP_THISNODE is mostly used by allocators that need memory from specific
+>>> nodes. The use of numa_mem_id() there is useful because one will not
+>>> get any memory at all when attempting to allocate from a memoryless
+>>> node using GFP_THISNODE.
+>>
+>> As long as it's in allocator proper, it doesn't matter all that much
+>> but the changes are clearly not contained, are they?
+> 
+> Well there is a proliferation of memory allocators recently. NUMA is often
+> a second thought in those.
+> 
