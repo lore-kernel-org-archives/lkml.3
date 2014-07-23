@@ -1,61 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932488AbaGWRMh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 13:12:37 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:36249 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932145AbaGWRMg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 13:12:36 -0400
+	id S932593AbaGWROX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 13:14:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61407 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932201AbaGWROW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jul 2014 13:14:22 -0400
+Date: Wed, 23 Jul 2014 13:14:16 -0400 (EDT)
+From: Mikulas Patocka <mpatocka@redhat.com>
+X-X-Sender: mpatocka@file01.intranet.prod.int.rdu2.redhat.com
+To: Alasdair G Kergon <agk@redhat.com>
+cc: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
+        "xinhui.pan" <xinhuix.pan@intel.com>, linux-kernel@vger.kernel.org,
+        snitzer@redhat.com, dm-devel@redhat.com,
+        "Liu, ShuoX" <shuox.liu@intel.com>
+Subject: Re: [dm-devel] [PATCH] md/dm-ioctl.c: optimize memory allocation in
+ copy_params
+In-Reply-To: <20140723125407.GG6822@agk-dp.fab.redhat.com>
+Message-ID: <alpine.LRH.2.02.1407231307200.4177@file01.intranet.prod.int.rdu2.redhat.com>
+References: <53B68068.2060102@intel.com> <alpine.LRH.2.02.1407081831510.27831@file01.intranet.prod.int.rdu2.redhat.com> <53BCA278.5050205@linux.intel.com> <alpine.LRH.2.02.1407091032400.4545@file01.intranet.prod.int.rdu2.redhat.com> <53CDB81B.90509@linux.intel.com>
+ <20140722012352.GD6822@agk-dp.fab.redhat.com> <53CF26B2.6060503@linux.intel.com> <alpine.LRH.2.02.1407230816000.29551@file01.intranet.prod.int.rdu2.redhat.com> <20140723125407.GG6822@agk-dp.fab.redhat.com>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <20140723170324.GZ3935@laptop>
-References: <20140723082819.GR3935@laptop>
-	<20140723092536.GO12054@laptop.lan>
-	<53CF80EE.5050702@daenzer.net>
-	<53CF844A.5050106@arm.com>
-	<20140723111110.GT3935@laptop>
-	<20140723113021.GP12054@laptop.lan>
-	<20140723142454.GQ12054@laptop.lan>
-	<CA+55aFwZ7kAqqhaE4g89CJLkpJOwGxcN4u+cc0ODfqjQ0rVMiA@mail.gmail.com>
-	<20140723155526.GW3935@laptop>
-	<CA+55aFzSU5u8MiGqRZ6BVojQPnxbd1hxmFY_BA=UuCAygxR8WQ@mail.gmail.com>
-	<20140723170324.GZ3935@laptop>
-Date: Wed, 23 Jul 2014 10:12:35 -0700
-X-Google-Sender-Auth: dLiuLm37tTKliK7Txc5UEGJv_Lk
-Message-ID: <CA+55aFwQSmBAs=QH9jAZz5JY7YFrDeuPH1RjFH+YKVr2NQM38g@mail.gmail.com>
-Subject: Re: Random panic in load_balance() with 3.16-rc
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Dietmar Eggemann <dietmar.eggemann@arm.com>,
-        =?UTF-8?Q?Michel_D=C3=A4nzer?= <michel@daenzer.net>,
-        Ingo Molnar <mingo@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 23, 2014 at 10:03 AM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Wed, Jul 23, 2014 at 09:54:23AM -0700, Linus Torvalds wrote:
->>
->> And I wonder if I have a clue. Look, load_balance_mask is a
->> "cpumask_var_t", but I don't see a "alloc_cpumask_var()" for it.
->> That's broken with CONFIG_CPUMASK_OFFSTACK.
->
-> kernel/sched/core.c:sched_init()
->
-> plays horrible allocation tricks..
 
-No it does not. It allocates a cpumask. Nothing more. If you think it
-allocates a "cpumask_var()", you are wrong.
 
-I agree that the code is an unreadable mess, but that's what
-"cpumask_size()" is: the minimum required size of the bitmask in a
-cpumask.
+On Wed, 23 Jul 2014, Alasdair G Kergon wrote:
 
-A cpumask_var is TOTALLY DIFFERENT. It's *either* a cpumask _or_ just
-a pointer to an externally allocated cpumask.
+> On Wed, Jul 23, 2014 at 08:16:58AM -0400, Mikulas Patocka wrote:
+> > So, it means that you do not use device mapper at all. So, why are you 
+> > trying to change memory allocation in device mapper?
+>  
+> So the *test* they run is asking device-mapper to briefly reserve a 64KB
+> buffer when there is no data to report:  The answer is not to run that
+> pointless test:)
+> 
+> And if a single 64KB allocation really is a big deal, then patch 'vold'
+> in userspace so it doesn't ask for 64KB when it clearly doesn't need it!
+> 
+> + int Devmapper::dumpState(SocketClient *c) {
+> +    char *buffer = (char *) malloc(1024 * 64);
+> 
+> The code has just
+> #define DEVMAPPER_BUFFER_SIZE 4096
+> for all the other dm ioctls it issues.
+> 
+> Only use a larger value when it is needed i.e. if DM_BUFFER_FULL_FLAG gets set.
+> 
+> Alasdair
 
-sched_init() definitely does _not_ allocate a cpumask_var.
+Device mapper shouldn't depend on allocation on any contiguous memory - it 
+will fall back to vmalloc. I still can't believe that their suggested 
+patch makes any difference.
 
-                Linus
+This pattern is being repeated over and over in the kernel - for example:
+
+        if (PIDLIST_TOO_LARGE(count))
+                return vmalloc(count * sizeof(pid_t));
+        else
+                return kmalloc(count * sizeof(pid_t), GFP_KERNEL);
+
+
+        if (is_vmalloc_addr(p))
+                vfree(p);
+        else
+                kfree(p);
+
+- I think we should make two functions that do this operation (for example 
+kvalloc and kvfree) and convert device mapper and other users to these 
+functions. Then, other kernel subsystems can start to use them to fix 
+memory fragmentation issues.
+
+Mikulas
