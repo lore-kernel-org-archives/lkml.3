@@ -1,59 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757737AbaGWOJz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 10:09:55 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:61353 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754619AbaGWOJy (ORCPT
+	id S1757789AbaGWOKU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 10:10:20 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:36161 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752208AbaGWOKS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 10:09:54 -0400
-X-Originating-IP: 108.223.40.66
-Message-ID: <53CFC231.8090701@roeck-us.net>
-Date: Wed, 23 Jul 2014 07:09:53 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Wed, 23 Jul 2014 10:10:18 -0400
+Date: Wed, 23 Jul 2014 07:10:14 -0700
+From: Christoph Hellwig <hch@infradead.org>
+To: Sitsofe Wheeler <sitsofe@gmail.com>
+Cc: "K. Y. Srinivasan" <kys@microsoft.com>, gregkh@linuxfoundation.org,
+        linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
+        ohering@suse.com, apw@canonical.com, jasowang@redhat.com,
+        jbottomley@parallels.com, linux-scsi@vger.kernel.org
+Subject: Re: [PATCH 1/1] Drivers: scsi: storvsc: Add blist flags
+Message-ID: <20140723141014.GA892@infradead.org>
+References: <1405983961-18782-1-git-send-email-kys@microsoft.com>
+ <20140723100448.GA2540@sucs.org>
+ <20140723115128.GB16881@infradead.org>
+ <20140723125443.GA16103@sucs.org>
 MIME-Version: 1.0
-To: Nicholas Krause <xerofoify@gmail.com>, monstr@monstr.eu
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] microblaze: Add comment for defines
-References: <1406089658-4671-1-git-send-email-xerofoify@gmail.com>
-In-Reply-To: <1406089658-4671-1-git-send-email-xerofoify@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140723125443.GA16103@sucs.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/22/2014 09:27 PM, Nicholas Krause wrote:
-> This adds a comment for and removes a fix me by labeling these
-> defines as memory cache definitions.
->
-> Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
-> ---
->   arch/microblaze/include/asm/pvr.h | 2 +-
->   1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/arch/microblaze/include/asm/pvr.h b/arch/microblaze/include/asm/pvr.h
-> index 4bbdb4c..441f3a0 100644
-> --- a/arch/microblaze/include/asm/pvr.h
-> +++ b/arch/microblaze/include/asm/pvr.h
-> @@ -186,7 +186,7 @@ struct pvr_s {
->   #define PVR_DCACHE_USE_FSL(_pvr)	(_pvr.pvr[5] & PVR5_DCACHE_USE_FSL_MASK)
->   #define PVR_DCACHE_ALLOW_WR(_pvr) \
->   			(_pvr.pvr[5] & PVR5_DCACHE_ALLOW_WR_MASK)
-> -/* FIXME two shifts on one line needs any comment */
-> +/* memory caches */
+On Wed, Jul 23, 2014 at 01:54:43PM +0100, Sitsofe Wheeler wrote:
+> That's good to know (I was worried the device would not be detected as
+> supporting discard because it doesn't report lbpme and doesn't declare a
+> conformance version (see below)).
 
-"two shifts on one line needs any comment"
+Ok, that makes things worse - you might be able to force it through
+sysfs, though.
 
-You are not providing the comment asked for. The FIXME requests a comment explaining
-why the double shift is needed, not just a random comment like the one you provided
-that doesn't explain anything.
+> Is there a tree with all these updates
+> in or do they need to be pieced together from this email thread?
 
-Guenter
+I'm picking this up for my scsi-queue tree.  Still need a review
+for the patch we're replying to before that one can go in, though.
 
->   #define PVR_DCACHE_LINE_LEN(_pvr) \
->   		(1 << ((_pvr.pvr[5] & PVR5_DCACHE_LINE_LEN_MASK) >> 21))
->   #define PVR_DCACHE_BYTE_SIZE(_pvr) \
->
+> Additionally is it worth quirking sd_try_rc16_first on when
+> BLIST_TRY_VPD_PAGES is present?
 
+Sounds reasonable to me.
