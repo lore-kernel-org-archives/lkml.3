@@ -1,55 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756991AbaGWKxZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 06:53:25 -0400
-Received: from mx2.parallels.com ([199.115.105.18]:41131 "EHLO
-	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752345AbaGWKxW (ORCPT
+	id S1757198AbaGWKyM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 06:54:12 -0400
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:39718 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751432AbaGWKyL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 06:53:22 -0400
-Date: Wed, 23 Jul 2014 14:53:12 +0400
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: <akpm@linux-foundation.org>
-CC: <mhocko@suse.cz>, <hannes@cmpxchg.org>, <cl@linux.com>,
-        <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH -mm 0/6] memcg: release memcg_cache_id on css offline
-Message-ID: <20140723105312.GC30850@esperanza>
-References: <cover.1405941342.git.vdavydov@parallels.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <cover.1405941342.git.vdavydov@parallels.com>
+	Wed, 23 Jul 2014 06:54:11 -0400
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+To: linux-kernel@vger.kernel.org
+Subject: [PATCH 02/25] clocksource: sh_cmt: Replace global spinlock with a per-device spinlock
+Date: Wed, 23 Jul 2014 12:53:44 +0200
+Message-Id: <1406112847-26275-2-git-send-email-daniel.lezcano@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1406112847-26275-1-git-send-email-daniel.lezcano@linaro.org>
+References: <53CF93B2.6040903@linaro.org>
+ <1406112847-26275-1-git-send-email-daniel.lezcano@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 21, 2014 at 03:47:10PM +0400, Vladimir Davydov wrote:
-> This patch set makes memcg release memcg_cache_id on css offline. This
-> way the memcg_caches arrays size will be limited by the number of alive
-> kmem-active memory cgroups, which is much better.
+From: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
 
-Hi Andrew,
+The global spinlock is used to protect the shared start/stop register.
+Now that all CMT channels are handled by a single device instance, use a
+per-device spinlock.
 
-While preparing the per-memcg slab shrinkers patch set, I realized that
-releasing memcg_cache_id on css offline is incorrect, because after css
-offline there still can be elements on per-memcg list_lrus, which are
-indexed by memcg_cache_id. We could re-parent them, but this is what we
-decided to avoid in order to keep things clean and simple. So it seems
-there's nothing we can do except keeping memcg_cache_ids till css free.
+Signed-off-by: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
+Tested-by: Simon Horman <horms+renesas@verge.net.au>
+---
+ drivers/clocksource/sh_cmt.c |    9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
 
-I wonder if we could reclaim memory from per memcg arrays (per memcg
-list_lrus, kmem_caches) on memory pressure. May be, we could use
-flex_array to achieve that.
+diff --git a/drivers/clocksource/sh_cmt.c b/drivers/clocksource/sh_cmt.c
+index fcd38db..190c655 100644
+--- a/drivers/clocksource/sh_cmt.c
++++ b/drivers/clocksource/sh_cmt.c
+@@ -118,6 +118,8 @@ struct sh_cmt_device {
+ 	void __iomem *mapbase;
+ 	struct clk *clk;
+ 
++	raw_spinlock_t lock; /* Protect the shared start/stop register */
++
+ 	struct sh_cmt_channel *channels;
+ 	unsigned int num_channels;
+ 
+@@ -299,14 +301,12 @@ static unsigned long sh_cmt_get_counter(struct sh_cmt_channel *ch,
+ 	return v2;
+ }
+ 
+-static DEFINE_RAW_SPINLOCK(sh_cmt_lock);
+-
+ static void sh_cmt_start_stop_ch(struct sh_cmt_channel *ch, int start)
+ {
+ 	unsigned long flags, value;
+ 
+ 	/* start stop register shared by multiple timer channels */
+-	raw_spin_lock_irqsave(&sh_cmt_lock, flags);
++	raw_spin_lock_irqsave(&ch->cmt->lock, flags);
+ 	value = sh_cmt_read_cmstr(ch);
+ 
+ 	if (start)
+@@ -315,7 +315,7 @@ static void sh_cmt_start_stop_ch(struct sh_cmt_channel *ch, int start)
+ 		value &= ~(1 << ch->timer_bit);
+ 
+ 	sh_cmt_write_cmstr(ch, value);
+-	raw_spin_unlock_irqrestore(&sh_cmt_lock, flags);
++	raw_spin_unlock_irqrestore(&ch->cmt->lock, flags);
+ }
+ 
+ static int sh_cmt_enable(struct sh_cmt_channel *ch, unsigned long *rate)
+@@ -934,6 +934,7 @@ static int sh_cmt_setup(struct sh_cmt_device *cmt, struct platform_device *pdev)
+ 
+ 	memset(cmt, 0, sizeof(*cmt));
+ 	cmt->pdev = pdev;
++	raw_spin_lock_init(&cmt->lock);
+ 
+ 	if (!cfg) {
+ 		dev_err(&cmt->pdev->dev, "missing platform data\n");
+-- 
+1.7.9.5
 
-Anyway, could you please drop the following patches from the mmotm tree
-(all this set except patch 1, which is a mere cleanup)?
-
-  memcg-release-memcg_cache_id-on-css-offline
-  memcg-keep-all-children-of-each-root-cache-on-a-list
-  memcg-add-pointer-to-owner-cache-to-memcg_cache_params
-  memcg-make-memcg_cache_id-static
-  slab-use-mem_cgroup_id-for-per-memcg-cache-naming
-
-Sorry about the noise.
-
-Thank you.
