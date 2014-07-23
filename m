@@ -1,71 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757452AbaGWImS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 04:42:18 -0400
-Received: from mail-ig0-f171.google.com ([209.85.213.171]:39765 "EHLO
-	mail-ig0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757081AbaGWImP convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 04:42:15 -0400
-MIME-Version: 1.0
-X-Originating-IP: [84.73.67.144]
-In-Reply-To: <53CF7191.2090008@canonical.com>
-References: <20140709093124.11354.3774.stgit@patser>
-	<20140709122953.11354.46381.stgit@patser>
-	<CAPM=9tyD2ZbrcGDC3hfNb7qNdzsfnyD-ZwM7G-nOgxeu5YKuSg@mail.gmail.com>
-	<53CE2421.5040906@amd.com>
-	<20140722114607.GL15237@phenom.ffwll.local>
-	<20140722115737.GN15237@phenom.ffwll.local>
-	<53CE56ED.4040109@vodafone.de>
-	<20140722132652.GO15237@phenom.ffwll.local>
-	<53CE6AFA.1060807@vodafone.de>
-	<CAKMK7uG1d31zU_i__wc+Yq46A0x0tPeKnMBs+NHSmHS82uMsXQ@mail.gmail.com>
-	<53CE84AA.9030703@amd.com>
-	<CAKMK7uFa8vMBV9_JenbFGnFXtV_r9dk=WjbMkkCDWcauhrDdJg@mail.gmail.com>
-	<53CE8A57.2000803@vodafone.de>
-	<53CF58FB.8070609@canonical.com>
-	<53CF5B9F.1050800@amd.com>
-	<53CF5EFE.6070307@canonical.com>
-	<53CF63C2.7070407@vodafone.de>
-	<CAKMK7uGJj+UwcnnzA+fj_=uWPN3i0sneWkoD+wfPJ_8Q6Y-DQg@mail.gmail.com>
-	<53CF6622.6060803@amd.com>
-	<53CF699D.9070902@canonical.com>
-	<53CF6B18.5070107@vodafone.de>
-	<CAKMK7uGd65HR11thcv8KjDw-RnTa7W-QGOzFGFd+oO_hp8wyHA@mail.gmail.com>
-	<53CF7035.2060808@amd.com>
-	<53CF7191.2090008@canonical.com>
-Date: Wed, 23 Jul 2014 10:42:14 +0200
-Message-ID: <CAKMK7uGLqzePAREsWhX0D1oN4FdqKwPgAL6x8sULpJSqYH5LwA@mail.gmail.com>
-Subject: Re: [Nouveau] [PATCH 09/17] drm/radeon: use common fence
- implementation for fences
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
-To: Maarten Lankhorst <maarten.lankhorst@canonical.com>
-Cc: =?UTF-8?Q?Christian_K=C3=B6nig?= <christian.koenig@amd.com>,
-        =?UTF-8?Q?Christian_K=C3=B6nig?= <deathsimple@vodafone.de>,
-        Thomas Hellstrom <thellstrom@vmware.com>,
-        nouveau <nouveau@lists.freedesktop.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        dri-devel <dri-devel@lists.freedesktop.org>,
-        Ben Skeggs <bskeggs@redhat.com>,
-        "Deucher, Alexander" <alexander.deucher@amd.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1757508AbaGWIm6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 04:42:58 -0400
+Received: from mout.gmx.net ([212.227.15.15]:58806 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757444AbaGWImz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jul 2014 04:42:55 -0400
+Message-ID: <1406104966.9114.42.camel@schoellingm.dzne.de>
+Subject: Re: [PATCH, RFC] random: introduce getrandom(2) system call
+From: Manuel =?ISO-8859-1?Q?Sch=F6lling?= <manuel.schoelling@gmx.de>
+To: tytso@mit.edu
+Cc: linux-kernel@vger.kernel.org, linux-abi@vger.kernel.org,
+        linux-crypto@vger.kernel.org, beck@openbsd.org
+Date: Wed, 23 Jul 2014 10:42:46 +0200
+In-Reply-To: <1405588695-12014-1-git-send-email-tytso@mit.edu>
+References: <1405588695-12014-1-git-send-email-tytso@mit.edu>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:3ZohXpHTpJaeBsljyY1n9MkIS2uhALTo5Wn4T96cdMpX9m1lmwJ
+ ldm9fS9G9xrEvV7H2NuI6kbH1FzP9rfEixshV3zzTJrHF/m64kXSw0gTd52sMKSNgjLP8rE
+ 8+qEvAePInaDxorLsiJjVfaeQQwjIGXY/UaVnRTMbrV8c+OpNMt2B/Gc68dIsAoUfY6+PxE
+ fMWOFyG6c4ZvFUGk/WABg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 23, 2014 at 10:25 AM, Maarten Lankhorst
-<maarten.lankhorst@canonical.com> wrote:
-> In this case if the sync was to i915 the i915 lockup procedure would take care of itself. It wouldn't fix radeon, but it would at least unblock your intel card again. I haven't specifically added a special case to attempt to unblock external fences, but I've considered it. :-)
+Hi,
 
-Actually the i915 reset stuff relies crucially on being able to kick
-all waiters holding driver locks. Since the current fence code only
-exposes an opaque wait function without exposing the underlying wait
-queue we won't be able to sleep on both the fence queue and the reset
-queue. So would pose a problem if we add fence_wait calls to our
-driver.
--Daniel
--- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+I am wondering if we could improve the design of the system call a bit
+to prevent programming errors.
+Right now, EINVAL is returned in case of invalid flags (or in the older
+version of getrandom() also if buflen is too large), EFAULT if buf is an
+invalid address and EAGAIN if there is not enough entropy.
+
+However, of course no programmer is save against programming errors.
+Everybody *should* check the return value of syscalls, but sometimes it
+is forgotten, and theoretically you must be stoned to death for that.
+
+Still, we should think about how we could prevent these errors. Here is
+a list of possible modifications of getrandom() and pros and cons:
+
+1. memset(buf, 0x0, buflen) in case of an error
+pros:
+ - it is more obvious to the userspace programmer that the content of
+buffer does *not* contain random bytes
+cons:
+ - in case even the zero-ed buf is not noticed by the programmer, she/he
+might end up using a 100% predictable string of "random bytes". In
+contrast if zero-ing the buf is ommitted, you would at least end up
+using some (not-cryptographically) random bytes from somewhere in RAM.
+
+I am aware that this memset() call should theoretically be superfluous
+but it would only be executed in very rare cases where the programmer
+misuses getrandom().
+
+
+2. int getrandom(void **buf, size_t buflen, unsigned int flags)
+                      ^^
+If flags, are fine, return a pointer to a buffer of random bytes,
+otherwise return a pointer to NULL.
+
+pros:
+ - it would ensure that an error in a getrandom() call cannot be
+ignored.
+cons:
+ - not sure if a syscall should allocate memory in the name of a
+userspace program
+ - not a very unix-like syscall signature
+ - anytime getrandom() is called, it will allocate a new buffer which
+might end up in decreased performance (however, getrandom() should not
+be called multiple times)
+
+
+3. send a signal to the userland process that (by default) leads to an
+abnormal termination of the process
+Essentially an error in getrandom() could be seen as critical as a
+division by 0.
+
+pros:
+ - the userspace programmer is forced to handle this error (otherwise
+the signal would terminate the program)
+cons:
+ - adds more complexity to the userspace program that might lead to new
+programming errors
+
+
+These are three possibilities. Maybe one of you is more creative and can
+come up with a much better idea. At the moment, I like option 2 the
+best, because it forces the programmer to deal with these errors, but
+probably one of you has a good point why this is not a good idea.
+Handling the NULL pointer would be much easier than using signals
+(option 3). However, it lead to a syscall signature that is different
+from, let's say read(), because the syscall itself would allocate its
+buffer.
+
+Again, I am aware that you must always check return values, but
+programming errors happen. E.g. everybody knows that you cannot trust
+data that you received via network, yet heartbleed happened.
+Here we have the chance to eradicate a critical programming error by
+improving the syscall design and I think we should spend some time
+thinking about that.
+
+
+Best,
+
+Manuel
+
+
