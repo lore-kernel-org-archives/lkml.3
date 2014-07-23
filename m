@@ -1,71 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932585AbaGWQtX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 12:49:23 -0400
-Received: from mail.kernel.org ([198.145.19.201]:53676 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757951AbaGWQtV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 12:49:21 -0400
-Date: Wed, 23 Jul 2014 09:49:16 -0700
-From: Alexei Starovoitov <ast@kernel.org>
-To: Daniel Borkmann <dborkman@redhat.com>
-Cc: Varka Bhadram <varkabhadram@gmail.com>,
-        Alexei Starovoitov <ast@plumgrid.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH net-next 1/2] net: filter: split filter.c into two files
-Message-ID: <20140723164915.GA5461@pg-vmw-gw1>
-References: <1406095319-3627-1-git-send-email-ast@plumgrid.com>
- <1406095319-3627-2-git-send-email-ast@plumgrid.com>
- <53CF522E.9090408@gmail.com>
- <53CF782C.2040401@redhat.com>
+	id S932644AbaGWQuS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 12:50:18 -0400
+Received: from mail-oi0-f54.google.com ([209.85.218.54]:33959 "EHLO
+	mail-oi0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757886AbaGWQuP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jul 2014 12:50:15 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53CF782C.2040401@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <53CFA33F.6030307@nvidia.com>
+References: <1405957142-19416-1-git-send-email-ttynkkynen@nvidia.com>
+	<1405957142-19416-15-git-send-email-ttynkkynen@nvidia.com>
+	<CAKohpomQthJ_XE-HhzW07Q4aVtxQVy97iaL0Vy6Q4Lhw22A=VA@mail.gmail.com>
+	<53CFA33F.6030307@nvidia.com>
+Date: Wed, 23 Jul 2014 22:20:14 +0530
+Message-ID: <CAKohponLh66Ubr6=wY2OZCCrK11KZDj=DmXXqXsGGTHSG45wpA@mail.gmail.com>
+Subject: Re: [PATCH v2 14/16] cpufreq: Add cpufreq driver for Tegra124
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
+Cc: "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Paul Walmsley <pwalmsley@nvidia.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 23, 2014 at 10:54:04AM +0200, Daniel Borkmann wrote:
-> On 07/23/2014 08:11 AM, Varka Bhadram wrote:
-> >On 07/23/2014 11:31 AM, Alexei Starovoitov wrote:
-> >>BPF is used in several kernel components. This split creates logical boundary
-> >>between generic eBPF core and the rest
-> >>
-> >>kernel/bpf/core.c: eBPF interpreter
-> >>
-> >>net/core/filter.c: classic->eBPF converter, classic verifiers, socket filters
-> >>
-> >>This patch only moves functions.
-> >
-> >If we are moving the code also its good to do cleanup.
-> >
-> >Run checkpatch.pl on this...
-> 
-> Not sure what you understand as a cleanup, but there's nothing
-> wrong with it and most things reported are either intentional or
-> false positives as you might have seen already. The only thing
+On 23 July 2014 17:27, Tuomas Tynkkynen <ttynkkynen@nvidia.com> wrote:
+> The platform device is required for the deferred probe that can happen if the
+> DFLL driver hasn't initialized yet, and module_init() callbacks don't seem to
+> respect -EPROBE_DEFER.
 
-+1. interpreter code is quite polished already.
-Few lines are longer than 80 char, but wrapping will look ugly.
-The rest are false positives, since checkpatch is struggling to
-understand jump-threaded code.
-
-> one could do later on perhaps is to rename related functions to
-> have consistently a 'bpf' prefix instead of 'sk' since they
-> won't be under net/ anymore.
-
-yes. it's on my todo list. The sk_* functions and 'struct sk_filter'
-look out of place in kernel/bpf/*
-The first renaming patch of sock_filter_int->bpf_insn I've sent as rfc:
-http://patchwork.ozlabs.org/patch/371332/
-
-'struct sk_filter' I'm thinking to rename as 'struct bpf_prog'
-
-Speaking of kernel/bpf/* comment style...
-I would prefer to keep networking comments to save lines.
-
+Oh, which call in this file will return EPROBE_DEFER? I couldn't make out
+which one will depend on DFLL driver.
