@@ -1,49 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755661AbaGWNYV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 09:24:21 -0400
-Received: from mail-la0-f46.google.com ([209.85.215.46]:38473 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755458AbaGWNYT (ORCPT
+	id S1756014AbaGWNYy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 09:24:54 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:52671 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751143AbaGWNYw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 09:24:19 -0400
+	Wed, 23 Jul 2014 09:24:52 -0400
+From: Mugunthan V N <mugunthanvnm@ti.com>
+To: <bcousson@baylibre.com>, <tony@atomide.com>
+CC: <devicetree@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Mugunthan V N <mugunthanvnm@ti.com>
+Subject: [PATCH 0/3] Add DRA7xx CPSW Ethernet support in Device Tree
+Date: Wed, 23 Jul 2014 18:54:39 +0530
+Message-ID: <1406121882-32658-1-git-send-email-mugunthanvnm@ti.com>
+X-Mailer: git-send-email 2.0.2.673.g9ab0882
 MIME-Version: 1.0
-In-Reply-To: <20140723120907.GG11241@linux.vnet.ibm.com>
-References: <1406092194-13004-1-git-send-email-bobby.prani@gmail.com>
- <1406092194-13004-5-git-send-email-bobby.prani@gmail.com> <20140723120907.GG11241@linux.vnet.ibm.com>
-From: Pranith Kumar <bobby.prani@gmail.com>
-Date: Wed, 23 Jul 2014 09:23:47 -0400
-Message-ID: <CAJhHMCAQ7+HzXfH7E3LNbUVG_zf-1edj6yPBHQ9wtbTrBAoa7A@mail.gmail.com>
-Subject: Re: [PATCH 04/16] rcu: Remove redundant check for an online CPU
-To: Paul McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Josh Triplett <josh@joshtriplett.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        "open list:READ-COPY UPDATE..." <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 23, 2014 at 8:09 AM, Paul E. McKenney
-<paulmck@linux.vnet.ibm.com> wrote:
-> On Wed, Jul 23, 2014 at 01:09:41AM -0400, Pranith Kumar wrote:
->> rcu_prcess_callbacks() is the softirq handler for RCU which is raised from
->> invoke_rcu_core() which is called from __call_rcu_core().
->>
->> Each of these three functions checks if the cpu is online. We can remove the
->> redundant ones. This commit removes one of these redundant check.
->>
->> Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
->
-> Sorry, but no.  There can be a long delay between raise_softirq() and
-> this function starting, particularly if ksoftirqd gets involved.  The
-> CPU could easily go offline in the meantime.
->
+Adding device tree entry for CPSW to make it work in Dual EMAC mode.
 
-That makes sense. I guess one of the other two checks in
-__call_rcu_core() or invoke_rcu_core() can go then?
+These patches were tested with DRA7 hwmod patches on top of linux-next.
+The patches were already reviewed [1] and has been waiting for cross bar
+and hwmod to be pulled in. Now since all dependent patches has already
+pulled in, so reposting the patches again.
+
+[1] https://lkml.org/lkml/2014/5/13/89
+
+Mugunthan V N (3):
+  pinctrl: dra7: dt-bindings: add pin off modes for dra7 SoC
+  arm/dts: dra7xx: Add CPSW and MDIO module nodes for dra7xx
+  arm/dts: dra7xx: Enable CPSW and MDIO for dra7xx EVM
+
+ arch/arm/boot/dts/dra7-evm.dts    | 105 ++++++++++++++++++++++++++++++++++++++
+ arch/arm/boot/dts/dra7.dtsi       |  58 +++++++++++++++++++++
+ include/dt-bindings/pinctrl/dra.h |   8 +++
+ 3 files changed, 171 insertions(+)
 
 -- 
-Pranith
+2.0.2.673.g9ab0882
+
