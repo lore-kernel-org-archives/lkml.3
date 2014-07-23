@@ -1,131 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933541AbaGWUZU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 16:25:20 -0400
-Received: from mail-oa0-f41.google.com ([209.85.219.41]:42523 "EHLO
-	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933170AbaGWUZR (ORCPT
+	id S933546AbaGWU0E (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 16:26:04 -0400
+Received: from mail-qa0-f45.google.com ([209.85.216.45]:49614 "EHLO
+	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933047AbaGWU0C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 16:25:17 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAMEtUuwE1oLUZb2QM243uKGSAfT_ahozducakpi9uvADzsj5XA@mail.gmail.com>
-References: <1405657206-12060-1-git-send-email-ast@plumgrid.com>
-	<1405657206-12060-8-git-send-email-ast@plumgrid.com>
-	<CAGXu5j+cvG5BhNSA=UrcbYs3LPSZUZyj4_ey8=9O0KgbUYUd9g@mail.gmail.com>
-	<CAMEtUuwE1oLUZb2QM243uKGSAfT_ahozducakpi9uvADzsj5XA@mail.gmail.com>
-Date: Wed, 23 Jul 2014 13:25:16 -0700
-X-Google-Sender-Auth: I7ro2kEnhq1H8_HuDNTjjxckrVc
-Message-ID: <CAGXu5jKA9gArKaqODsD0kswmP0Q77w152VXhq9zCS4pgTZf+Jg@mail.gmail.com>
-Subject: Re: [PATCH RFC v2 net-next 07/16] bpf: add lookup/update/delete/iterate
- methods to BPF maps
-From: Kees Cook <keescook@chromium.org>
-To: Alexei Starovoitov <ast@plumgrid.com>
-Cc: "David S. Miller" <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Jiri Olsa <jolsa@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
+	Wed, 23 Jul 2014 16:26:02 -0400
+Date: Wed, 23 Jul 2014 16:25:54 -0400
+From: Jerome Glisse <j.glisse@gmail.com>
+To: Alex Deucher <alexdeucher@gmail.com>
+Cc: Christian =?iso-8859-1?Q?K=F6nig?= <deathsimple@vodafone.de>,
+        Oded Gabbay <oded.gabbay@amd.com>, David Airlie <airlied@linux.ie>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+        John Bridgman <John.Bridgman@amd.com>, Joerg Roedel <joro@8bytes.org>,
+        Andrew Lewycky <Andrew.Lewycky@amd.com>,
+        Michel =?iso-8859-1?Q?D=E4nzer?= <michel.daenzer@amd.com>,
+        Ben Goz <Ben.Goz@amd.com>, Alexey Skidanov <Alexey.Skidanov@amd.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        linux-mm <linux-mm@kvack.org>, "Sellek, Tom" <Tom.Sellek@amd.com>
+Subject: Re: [PATCH v2 00/25] AMDKFD kernel driver
+Message-ID: <20140723202551.GA6519@gmail.com>
+References: <20140721190306.GB5278@gmail.com>
+ <20140722072851.GH15237@phenom.ffwll.local>
+ <53CE1E9C.8020105@amd.com>
+ <CAKMK7uH+okhn4YGOzrXZ1LM3S2myxdu=_63LGMduwV-WZn06CA@mail.gmail.com>
+ <53CE346B.1080601@amd.com>
+ <20140722111515.GJ15237@phenom.ffwll.local>
+ <53CF5B30.50209@amd.com>
+ <53CF5E78.8070208@vodafone.de>
+ <20140723145604.GA2956@gmail.com>
+ <CADnq5_P9xWdJ22LViAFr1qMboc8UuP5PVAS0MFNJ0h_tr_n80g@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CADnq5_P9xWdJ22LViAFr1qMboc8UuP5PVAS0MFNJ0h_tr_n80g@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 23, 2014 at 12:49 PM, Alexei Starovoitov <ast@plumgrid.com> wrote:
-> On Wed, Jul 23, 2014 at 11:25 AM, Kees Cook <keescook@chromium.org> wrote:
->>> +
->>> +       /* lookup key in a given map referenced by map_id
->>> +        * err = bpf_map_lookup_elem(int map_id, void *key, void *value)
->>
->> This needs map_id documentation updates too?
->
-> yes. will grep for it just to make sure.
->
->>> +static int get_map_id(struct fd f)
->>> +{
->>> +       struct bpf_map *map;
->>> +
->>> +       if (!f.file)
->>> +               return -EBADF;
->>> +
->>> +       if (f.file->f_op != &bpf_map_fops) {
->>> +               fdput(f);
->>
->> It feels weird to me to do the fdput inside this function. Instead,
->> should map_lookup_elem get a "err_put" label, instead?
->
-> I don't think it will work, since I'm not sure that fd.flags will be zero
-> when fd.file == NULL. It looks so by analyzing return code path
-> in fs/file.c, but I wasn't sure that I followed all code paths,
-> so I just picked this style from fs/timerfd.c assuming it was
-> done this away on purpose and there can be the case where
-> fd.file == null and fd.flags !=0. In such case we cannot call fdput().
+On Wed, Jul 23, 2014 at 03:49:57PM -0400, Alex Deucher wrote:
+> On Wed, Jul 23, 2014 at 10:56 AM, Jerome Glisse <j.glisse@gmail.com> wrote:
+> > On Wed, Jul 23, 2014 at 09:04:24AM +0200, Christian König wrote:
+> >> Am 23.07.2014 08:50, schrieb Oded Gabbay:
+> >> >On 22/07/14 14:15, Daniel Vetter wrote:
+> >> >>On Tue, Jul 22, 2014 at 12:52:43PM +0300, Oded Gabbay wrote:
+> >> >>>On 22/07/14 12:21, Daniel Vetter wrote:
+> >> >>>>On Tue, Jul 22, 2014 at 10:19 AM, Oded Gabbay <oded.gabbay@amd.com>
+> >> >>>>wrote:
+> >> >>>>>>Exactly, just prevent userspace from submitting more. And if you
+> >> >>>>>>have
+> >> >>>>>>misbehaving userspace that submits too much, reset the gpu and
+> >> >>>>>>tell it
+> >> >>>>>>that you're sorry but won't schedule any more work.
+> >> >>>>>
+> >> >>>>>I'm not sure how you intend to know if a userspace misbehaves or
+> >> >>>>>not. Can
+> >> >>>>>you elaborate ?
+> >> >>>>
+> >> >>>>Well that's mostly policy, currently in i915 we only have a check for
+> >> >>>>hangs, and if userspace hangs a bit too often then we stop it. I guess
+> >> >>>>you can do that with the queue unmapping you've describe in reply to
+> >> >>>>Jerome's mail.
+> >> >>>>-Daniel
+> >> >>>>
+> >> >>>What do you mean by hang ? Like the tdr mechanism in Windows (checks
+> >> >>>if a
+> >> >>>gpu job takes more than 2 seconds, I think, and if so, terminates the
+> >> >>>job).
+> >> >>
+> >> >>Essentially yes. But we also have some hw features to kill jobs quicker,
+> >> >>e.g. for media workloads.
+> >> >>-Daniel
+> >> >>
+> >> >
+> >> >Yeah, so this is what I'm talking about when I say that you and Jerome
+> >> >come from a graphics POV and amdkfd come from a compute POV, no offense
+> >> >intended.
+> >> >
+> >> >For compute jobs, we simply can't use this logic to terminate jobs.
+> >> >Graphics are mostly Real-Time while compute jobs can take from a few ms to
+> >> >a few hours!!! And I'm not talking about an entire application runtime but
+> >> >on a single submission of jobs by the userspace app. We have tests with
+> >> >jobs that take between 20-30 minutes to complete. In theory, we can even
+> >> >imagine a compute job which takes 1 or 2 days (on larger APUs).
+> >> >
+> >> >Now, I understand the question of how do we prevent the compute job from
+> >> >monopolizing the GPU, and internally here we have some ideas that we will
+> >> >probably share in the next few days, but my point is that I don't think we
+> >> >can terminate a compute job because it is running for more than x seconds.
+> >> >It is like you would terminate a CPU process which runs more than x
+> >> >seconds.
+> >>
+> >> Yeah that's why one of the first things I've did was making the timeout
+> >> configurable in the radeon module.
+> >>
+> >> But it doesn't necessary needs be a timeout, we should also kill a running
+> >> job submission if the CPU process associated with the job is killed.
+> >>
+> >> >I think this is a *very* important discussion (detecting a misbehaved
+> >> >compute process) and I would like to continue it, but I don't think moving
+> >> >the job submission from userspace control to kernel control will solve
+> >> >this core problem.
+> >>
+> >> We need to get this topic solved, otherwise the driver won't make it
+> >> upstream. Allowing userpsace to monopolizing resources either memory, CPU or
+> >> GPU time or special things like counters etc... is a strict no go for a
+> >> kernel module.
+> >>
+> >> I agree that moving the job submission from userpsace to kernel wouldn't
+> >> solve this problem. As Daniel and I pointed out now multiple times it's
+> >> rather easily possible to prevent further job submissions from userspace, in
+> >> the worst case by unmapping the doorbell page.
+> >>
+> >> Moving it to an IOCTL would just make it a bit less complicated.
+> >>
+> >
+> > It is not only complexity, my main concern is not really the amount of memory
+> > pinned (well it would be if it was vram which by the way you need to remove
+> > the api that allow to allocate vram just so that it clearly shows that vram is
+> > not allowed).
+> >
+> > Issue is with GPU address space fragmentation, new process hsa queue might be
+> > allocated in middle of gtt space and stays there for so long that i will forbid
+> > any big buffer to be bind to gtt. Thought with virtual address space for graphics
+> > this is less of an issue and only the kernel suffer but still it might block the
+> > kernel from evicting some VRAM because i can not bind a system buffer big enough
+> > to GTT because some GTT space is taken by some HSA queue.
+> >
+> > To mitigate this at very least, you need to implement special memory allocation
+> > inside ttm and radeon to force this per queue to be allocate for instance from
+> > top of GTT space. Like reserve top 8M of GTT and have it grow/shrink depending
+> > on number of queue.
+> 
+> This same sort of thing can already happen with gfx, although it's
+> less likely since the workloads are usually shorter.  That said, we
+> can issue compute jobs right today with the current CS ioctl and we
+> may end up with a buffer pinned in an inopportune spot.
 
-Yeah, hm, looking around, this does seem to be the case. I guess the
-thought is that when get_map_id fails, struct fd has been handled.
-Maybe add a comment above that function as a reminder?
+I thought compute was using virtual address space (well on > cayman at least).
 
->>> +       err = -EFAULT;
->>> +       if (copy_to_user(uvalue, value, map->value_size) != 0)
->>> +               goto free_key;
->>
->> I'm made uncomfortable with memory copying where explicit lengths from
->> userspace aren't being used. It does look like it would be redundant,
->> though. Are there other syscalls where the kernel may stomp on user
->> memory based on internal kernel sizes? I think this is fine as-is, but
->> it makes me want to think harder about it. :)
->
-> good question :)
-> key_size and value_size are passed initially from user space.
-> Kernel only verifies and allocates internal map elements with given
-> sizes. Then it copies the value back with the size it remembered.
-> If user space said at map creation time that value_size is 100,
-> it should be using it consistently in user space program.
+> I'm not sure
+> reserving a static pool at init really helps that much.  If you aren't
+> using any HSA apps, it just wastes gtt space.  So you have a trade
+> off: waste memory for a possibly unused MQD descriptor pool or
+> allocate MQD descriptors on the fly, but possibly end up with a long
+> running one stuck in a bad location.  Additionally, we already have a
+> ttm flag for whether we want to allocate from the top or bottom of the
+> pool.  We use it today for gfx depending on the buffer (e.g., buffers
+> smaller than 512k are allocated from the bottom and buffers larger
+> than 512 are allocated from the top).  So we can't really re-size a
+> static buffer easily as there may already be other buffers pinned up
+> there.
 
-Yeah, I think this should be fine as-is.
+Again here iirc only kernel use the GTT space everything else (userspace)
+is using virtual address space or am i forgeting something ?
 
->
->>> +       err = -ENOMEM;
->>> +       next_key = kmalloc(map->key_size, GFP_ATOMIC);
->>
->> In the interests of defensiveness, I'd use kzalloc here.
->
-> I think it would be an overkill. Map implementation must consume
-> all bytes of incoming 'key' and return exactly the same number
-> of bytes in 'next_key'. Otherwise the whole iteration over map
-> with 'get_next_key' won't work. So if map implementation is
-> broken, it will be seen right away. No security leak here :)
+My point was not so much to be static but to enforce doing it from one
+end of the address space and to have shrink/grow depending on usage forcing
+anything else out of that range.
 
-Okay, fair enough. I had a few similar suggestions later. I kind of
-wish there was a kcalloc that didn't zero memory to handle the case of
-multiplied size input, but no need to spend the time clearing.
+On VM GPU only thing left using the "global" GTT is the kernel, it uses it
+for ring and for moving buffer around. I would assume that pining ring buffers
+at begining of address space no matter what there size is would be a good idea
+as anyway those will not fragment ie there lifetime is the lifetime of the
+driver.
 
->
->>> +       case BPF_MAP_GET_NEXT_KEY:
->>> +               return map_get_next_key((int) arg2, (void __user *) arg3,
->>> +                                       (void __user *) arg4);
->>
->> Same observation as the other syscall cmd: perhaps arg5 == 0 should be
->> checked? Also, since each of these functions looks up the fd and
->
-> yes. will do.
->
->> builds the key, maybe those should be added to a common helper instead
->> of copy/pasting into each demuxed function?
->
-> well, get_map_id() is a common helper. I didn't move fdget() all
-> the way to switch statement, since it looks less readable.
+My point is that all the HSA queue buffer can have a lifetime way bigger than
+anything we have now, really now we can bind/unbind any buffer btw cs submission
+modulo OpenCL task.
 
--Kees
+> 
+> If we add sysfs controls to limit the amount of hsa processes, and
+> queues per process so you could use this to dynamically limit the max
+> amount gtt memory that would be in use for MQD descriptors.
 
--- 
-Kees Cook
-Chrome OS Security
+No this can not be set dynamicly, once a process has created its queue
+it has it and i see no channel to tell userspace: "sorry buddy but no
+more room for you"
+
+> 
+> Alex
