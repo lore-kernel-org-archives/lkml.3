@@ -1,123 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933882AbaGWWLQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 18:11:16 -0400
-Received: from relay3.sgi.com ([192.48.152.1]:50924 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S933651AbaGWWLO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 18:11:14 -0400
-X-Greylist: delayed 368 seconds by postgrey-1.27 at vger.kernel.org; Wed, 23 Jul 2014 18:11:14 EDT
-Date: Wed, 23 Jul 2014 17:05:38 -0500
-From: Alex Thorlton <athorlton@sgi.com>
-To: linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Cc: akpm@linux-foundation.org, mgorman@suse.de, riel@redhat.com,
-        kirill.shutemov@linux.intel.com, mingo@kernel.org, hughd@google.com,
-        lliubbo@gmail.com, hannes@cmpxchg.org, rientjes@google.com,
-        srivatsa.bhat@linux.vnet.ibm.com, dave.hansen@linux.intel.com,
-        dfults@sgi.com, hedi@sgi.com
-Subject: [BUG] THP allocations escape cpuset when defrag is off
-Message-ID: <20140723220538.GT8578@sgi.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S933934AbaGWWMz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 18:12:55 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:38336 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933576AbaGWWMy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jul 2014 18:12:54 -0400
+Date: Wed, 23 Jul 2014 15:12:52 -0700 (PDT)
+Message-Id: <20140723.151252.513994964059108010.davem@davemloft.net>
+To: jasowang@redhat.com
+Cc: rusty@rustcorp.com.au, mst@redhat.com,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 net-next 0/2] rx busy polling support for virtio-net
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1406104435-24077-1-git-send-email-jasowang@redhat.com>
+References: <1406104435-24077-1-git-send-email-jasowang@redhat.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Wed, 23 Jul 2014 15:12:53 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey everyone,
+From: Jason Wang <jasowang@redhat.com>
+Date: Wed, 23 Jul 2014 16:33:53 +0800
 
-We're hitting an interesting bug on systems with THP defrag turned off.
-It seems that we're able to make very large THP allocations outside of
-our cpuset.  Here's the test procedure I've been using:
+> This series introduces the support for rx busy polling support. This
+> was useful for reduing the latency for a kvm guest. Instead of
+> introducing new states and spinlocks, this series re-uses NAPI state
+> to synchonrize between NAPI and busy polling. This grealy simplified
+> the codes and reduce the overheads of spinlocks for normal NAPI fast
+> path.
+> 
+> Test was done between a kvm guest and an external host. Two hosts were
+> connected through 40gb mlx4 cards. With both busy_poll and  busy_read
+> are set to 50 in guest, 1 byte netperf tcp_rr shows 127% improvement:
+> transaction rate was increased from 8353.33 to 18966.87.
+> 
+> Changes from V2:
+> - Avoid introducing new states and spinlocks by reusuing the NAPI
+>   state
+> - Fix the budget calculation in virtnet_poll()
+> - Drop patch 1/3 from V2 since it was useless
+> 
+> Changes from V1:
+> - split the patch info smaller ones
+> - add more details about test setup/configuration
 
-- Create a mem_exclusive/hardwall cpuset that is restricted to memory
-  on one node.
-- Turn off swap (swapoff -a).  This step is not explicitly necessary,
-  but it appears to speed up the reaction time of the OOM killer
-  considerably.
-- Turn off THP compaction/defrag.
-- Run memhog inside the cpuset.  Tell it to allocate far more memory
-  than should be available inside the cpuset.
-
-Quick example:
-
-# cat /sys/kernel/mm/transparent_hugepage/enabled
-[always] madvise never
-# cat /sys/kernel/mm/transparent_hugepage/defrag
-always madvise [never]
-# grep "[0-9]" cpu* mem*         <-- from /dev/cpuset/test01
-cpu_exclusive:0
-cpus:8-15
-mem_exclusive:1
-mem_hardwall:1
-memory_migrate:0
-memory_pressure:0
-memory_spread_page:1
-memory_spread_slab:1
-mems:1                           <-- ~32g per node
-# cat /proc/self/cpuset
-/test01
-# memhog 80g > /dev/null
-(Runs to completion, which is the bug)
-
-Monitoring 'numactl --hardware' with watch, you can see memhog's
-allocations start spilling over onto the other nodes.  Take note that
-this can be somewhat intermittent.  Often when running this test
-immediately after a boot, the OOM killer will catch memhog and stop it
-immediately, but subsequent runs can either run to completion, or at
-least soak up good chunks of memory on nodes which they're not supposed
-to be permitted to allocate memory on, before being killed.  I'm not
-positive on all the factors that influence this timing yet.  It seems to
-reproduce very reliably if you toggle swap back and forth with each run:
-
-(Run before this was killed by OOM with swap off)
-# swapon -a
-# memhog 80g > /dev/null
-# swapoff -a
-# memhog 80g > /dev/null
-(Both of these ran to completion.  Again, a sign of the bug)
-
-After digging through the code quite a bit, I've managed to turn up
-something that I think could be the cause of the problem here.  In
-alloc_hugepage_vma we send a gfp_mask generated using
-alloc_hugepage_gfpmask, which removes the ___GFP_WAIT bit from the
-gfp_mask when defrag is off.
-
-Further down in pagefault code path, when we fall back to the slowpath
-for allocations (from my testing, this fallback appears to happen around
-the same time that we run out of memory on our cpuset's node), we see
-that, without the ___GFP_WAIT bit set, we will clear the ALLOC_CPUSET
-flag from alloc_flags, which in turn allows us to grab memory from
-any node. (See __alloc_pages_slowpath and gfp_to_alloc_flags to see
-where ALLOC_CPUSET gets wiped out).
-
-This simple patch seems to keep things inside our cpuset:
-
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index 33514d8..7a05576 100644
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -754,7 +754,7 @@ static int __do_huge_pmd_anonymous_page(struct
-mm_struct *mm,
-
- static inline gfp_t alloc_hugepage_gfpmask(int defrag, gfp_t extra_gfp)
- {
--       return (GFP_TRANSHUGE & ~(defrag ? 0 : __GFP_WAIT)) | extra_gfp;
-+       return GFP_TRANSHUGE | extra_gfp;
- }
-
-My debug code shows that certain code paths are still allowing
-ALLOC_CPUSET to get pulled off the alloc_flags with the patch, but
-monitoring the memory usage shows that we're staying on node, aside from
-some very small allocations, which may be other types of allocations that
-are not necessarly confined to a cpuset.  Need a bit more research to
-confirm that.
-
-So, my question ends up being, why do we wipe out ___GFP_WAIT when
-defrag is off?  I'll trust that there is good reason to do that, but, if
-so, is the behavior that I'm seeing expected?
-
-Any input is greatly appreciated.  Thanks!
-
-- Alex
+Series applied, thanks Jason.
