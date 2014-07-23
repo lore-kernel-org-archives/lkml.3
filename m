@@ -1,68 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755298AbaGWM24 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 08:28:56 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:49029 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754763AbaGWM2y (ORCPT
+	id S1755971AbaGWM3P (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 08:29:15 -0400
+Received: from cpc2-cwma8-2-0-cust224.7-3.cable.virginm.net ([82.20.154.225]:57266
+	"EHLO alan.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755434AbaGWM3O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 08:28:54 -0400
-Date: Wed, 23 Jul 2014 05:28:49 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Pranith Kumar <bobby.prani@gmail.com>
-Cc: Josh Triplett <josh@joshtriplett.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        "open list:READ-COPY UPDATE..." <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 15/16] rcu: Check for a nocb cpu before trying to spawn
- nocb threads
-Message-ID: <20140723122849.GN11241@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1406092194-13004-1-git-send-email-bobby.prani@gmail.com>
- <1406092194-13004-16-git-send-email-bobby.prani@gmail.com>
+	Wed, 23 Jul 2014 08:29:14 -0400
+X-Greylist: delayed 618 seconds by postgrey-1.27 at vger.kernel.org; Wed, 23 Jul 2014 08:29:12 EDT
+Date: Wed, 23 Jul 2014 13:18:38 +0100
+From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+To: Nicholas Krause <xerofoify@gmail.com>
+Cc: wein@de.ibm.com, stefan.haberland@de.ibm.com, schwidefsky@de.ibm.com,
+        heiko.carstens@de.ibm.com, linux390@de.ibm.com,
+        linux-s390@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] s390: Fix me in dasd_eer.c
+Message-ID: <20140723131838.36359512@alan.etchedpixels.co.uk>
+In-Reply-To: <1406010572-13217-1-git-send-email-xerofoify@gmail.com>
+References: <1406010572-13217-1-git-send-email-xerofoify@gmail.com>
+Organization: Intel Corporation
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1406092194-13004-16-git-send-email-bobby.prani@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14072312-0928-0000-0000-0000039B2B99
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 23, 2014 at 01:09:52AM -0400, Pranith Kumar wrote:
-> This commit tries to spawn nocb kthreads only when the CPU is marked as a nocb
-> cpu. This is a minor optimization.
-> 
-> Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
+On Tue, 22 Jul 2014 02:29:32 -0400
+Nicholas Krause <xerofoify@gmail.com> wrote:
 
-This only happens once at boot time, so I am happier with the single check
-at the bottom.  So sorry, but no.
+> This patch changes return type to EMEDUIMTYPE in function, dasd_eer_enable
+> for when checking if the medium has no errors according to this function.
+> 
+> Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
 
-							Thanx, Paul
-
-> ---
->  kernel/rcu/tree_plugin.h | 3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
-> 
-> diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
-> index 541c776..8abff0a 100644
-> --- a/kernel/rcu/tree_plugin.h
-> +++ b/kernel/rcu/tree_plugin.h
-> @@ -1490,7 +1490,8 @@ static void rcu_prepare_kthreads(int cpu)
->  		return;
-> 
->  	rcu_spawn_one_boost_kthread(rcu_state_p, rnp);
-> -	rcu_spawn_all_nocb_kthreads(cpu);
-> +	if (rcu_is_nocb_cpu(cpu))
-> +		rcu_spawn_all_nocb_kthreads(cpu);
->  }
-> 
->  #else /* #ifdef CONFIG_RCU_BOOST */
-> -- 
-> 2.0.0.rc2
-> 
-
+What distributions have you tested this with and what configurations?
