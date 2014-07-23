@@ -1,108 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933744AbaGWVjc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 17:39:32 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:52233 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933705AbaGWVj1 (ORCPT
+	id S933765AbaGWVmF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 17:42:05 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:57339 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933386AbaGWVmC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 17:39:27 -0400
-Message-ID: <53D02B8A.6010007@wwwdotorg.org>
-Date: Wed, 23 Jul 2014 15:39:22 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Wed, 23 Jul 2014 17:42:02 -0400
 MIME-Version: 1.0
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: Nick Dyer <nick.dyer@itdev.co.uk>, Yufeng Shen <miletus@google.com>,
-        Daniel Kurtz <djkurtz@chromium.org>,
-        Henrik Rydberg <rydberg@euromail.se>,
-        Joonyoung Shim <jy0922.shim@samsung.com>,
-        Alan Bowens <Alan.Bowens@atmel.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Peter Meerwald <pmeerw@pmeerw.net>,
-        Benson Leung <bleung@chromium.org>,
-        Olof Johansson <olofj@chromium.org>, Sekhar Nori <nsekhar@ti.com>
-Subject: Re: [PATCH 00/15] atmel_mxt_ts - device tree, bootloader, etc
-References: <1404399697-26484-1-git-send-email-nick.dyer@itdev.co.uk> <53CECAEC.8080905@wwwdotorg.org> <53CFD50C.4040509@itdev.co.uk> <53CFEF6E.2060905@wwwdotorg.org> <20140723202949.GA958@core.coreip.homeip.net>
-In-Reply-To: <20140723202949.GA958@core.coreip.homeip.net>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CAGXu5jLbcrR76=omiqRNERhjZS8bsR1-jG+Ctra97uCrpHLPUA@mail.gmail.com>
+References: <1405657206-12060-1-git-send-email-ast@plumgrid.com>
+	<1405657206-12060-9-git-send-email-ast@plumgrid.com>
+	<CAGXu5jK1hrwvPs7f+mSOer+81J9SBxwMrqb=6fFeZQ7hd-FMzA@mail.gmail.com>
+	<CAMEtUuyRUG6ZdRvL0JuakD0zPdYo3WoqQepK7_b_MW+r2aVzVA@mail.gmail.com>
+	<CAGXu5jLbcrR76=omiqRNERhjZS8bsR1-jG+Ctra97uCrpHLPUA@mail.gmail.com>
+Date: Wed, 23 Jul 2014 14:42:01 -0700
+Message-ID: <CAMEtUuxx7e2PHv4cpPtnOHqamandoE3Y8-uMdRBiRGZKYGbv8w@mail.gmail.com>
+Subject: Re: [PATCH RFC v2 net-next 08/16] bpf: add hashtable type of BPF maps
+From: Alexei Starovoitov <ast@plumgrid.com>
+To: Kees Cook <keescook@chromium.org>
+Cc: "David S. Miller" <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Jiri Olsa <jolsa@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/23/2014 02:29 PM, Dmitry Torokhov wrote:
-> On Wed, Jul 23, 2014 at 11:22:54AM -0600, Stephen Warren wrote:
->> On 07/23/2014 09:30 AM, Nick Dyer wrote:
->>> On 22/07/14 21:34, Stephen Warren wrote:
->>>> Unfortunately, I still can't get these to work on my system.
->>>>
->>>> Per your "Re: atmel_mxt_ts: defaulting irqflags to
->>>> IRQF_TRIGGER_FALLING", I set up the IRQ type in the Tegra DT file, and
->>>> then applied this series on top of next-20140721. The driver appears to
->>>> initialize OK, but neither X nor evtest see any events from the device.
->>>> The IRQ count in /proc/interrupts doesn't increase when I touch the
->>>> touchpad, but does when I press it hard enough to trigger the physical
->>>> button.
->>>
->>> You're using the T19/GPIO support, then? In which case, there appears to be
->>> something wrong on the touch controller rather than the driver itself.
+On Wed, Jul 23, 2014 at 1:33 PM, Kees Cook <keescook@chromium.org> wrote:
 >>
->> I assume I'm using T19, since there's a physical click action on the
->> touchpad along with the normal touch detection.
+>>>> +       htab->slab_name = kasprintf(GFP_USER, "bpf_htab_%p", htab);
+>>>
+>>> This leaks a kernel heap memory pointer to userspace. If a unique name
+>>> needed, I think map_id should be used instead.
 >>
->>>> A boot log with debug enabled follows. No additional kernel log
->>>> messages are generated by touches or clicks.
->>>
->>> Perhaps I should add some debug to mxt_input_button() - currently it will
->>> not debug the fact that a click is received, although I guess that you will
->>> see it in getevent.
->>>
->>>> Do you have any idea what I should try?
->>>
->>> I am suspicious that it may be that the power sequencing isn't quite right,
->>> which sometimes leads to parts of the chip not working properly (eg GPIO
->>> buttons working, but no touch).
->>>
->>> The patch "use deep sleep when stopped" removes the reset on every resume
->>> (which would otherwise kill resume performance). But that reset tends to
->>> paper over a device which hasn't been powered up properly in the first place.
->>>
->>> Could you try issuing a manual reset and see if the touch starts working? I
->>> would normally do this by compiling our obp-utils software from
->>> https://github.com/atmel-maxtouch/obp-utils using ndk-build and doing
->>> something like:
->>>
->>> mxt-app -d i2c-dev:1-004b --reset
->>>
->>> (you need CONFIG_I2C_DEBUG to make /dev/i2c-1 appear)
->>
->> That didn't make any difference.
->>
->> I also tried the tool interactively. the "Display raw (M)essages" option
->> never displayed anything, and the couple of self-tests I tried just
->> timed out. "Read (I)nfo block" did display some values that seemed like
->> they might be correct rather than random data.
->>
->> Interestingly though, I did bisect the series and found "Input:
->> atmel_mxt_ts - use deep sleep mode when stopped" causes the problem. If
->> I apply the whole series and revert that one patch, the touchpad works
->> for mouse movement, but interestingly not for taps or physical clicks.
-> 
-> I ended up applying everything but the "deep sleep" patch. I wonder if
-> you have any keys defined to indicate that it is a touchpad and activate
-> tap-to-click support in userspace.
+>> it leaks, how? slabinfo is only available to root.
+>> The same code exists in conntrack:
+>> net/netfilter/nf_conntrack_core.c:1767
+>
+> Right, in extreme cases, there are system configurations where leaking
+> addresses even to root can be considered a bug. There are a lot of
+> these situations in the kernel still, that's true. However, if we can
+> at all avoid it, I'd really like to avoid adding new ones. Nearly all
+> the cases of using a memory pointer is for uniqueness concerns, but I
+> think can already get that from the map_id.
 
-Yes, I have one GPIO defined in the keymap, for the physical
-push-to-click button:
-
->                 trackpad@4b {
->                         compatible = "atmel,maxtouch";
->                         reg = <0x4b>;
->                         interrupt-parent = <&gpio>;
->                         interrupts = <TEGRA_GPIO(W, 3) IRQ_TYPE_LEVEL_LOW>;
->                         linux,gpio-keymap = <0 0 0 BTN_LEFT>;
->                 };
-
-(at some point long ago, this did work fine, just by adding my DT
-binding/parsing patch on top of what was in linux-next).
+ok. fair enough. I think slab name doesn't have to be unique anymore.
+It's used to be a requirement in older kernels. If it is ok to reuse now,
+I'll just use the same for all hash-type maps.
+Advice from slab expert would be great...
