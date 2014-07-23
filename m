@@ -1,103 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757583AbaGWOdb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 10:33:31 -0400
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:36274 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753005AbaGWOd3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 10:33:29 -0400
-Date: Wed, 23 Jul 2014 15:33:23 +0100
-From: Peter Griffin <peter.griffin@linaro.org>
-To: Felipe Balbi <balbi@ti.com>
-Cc: Lee Jones <lee.jones@linaro.org>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, maxime.coquelin@st.com,
-        patrice.chotard@st.com, srinivas.kandagatla@gmail.com,
-        devicetree@vger.kernel.org, linux-usb@vger.kernel.org,
-        linux-omap@vger.kernel.org, peppe.cavallaro@st.com
-Subject: Re: [PATCH v2 1/3] usb: dwc3: add ST dwc3 glue layer to manage dwc3
- HC
-Message-ID: <20140723143323.GA26565@griffinp-ThinkPad-X1-Carbon-2nd>
-References: <1404541530-27856-1-git-send-email-peter.griffin@linaro.org>
- <1404541530-27856-2-git-send-email-peter.griffin@linaro.org>
- <20140707124627.GG6407@lee--X1>
- <20140722091800.GB8233@griffinp-ThinkPad-X1-Carbon-2nd>
- <20140722145711.GC20588@saruman.home>
+	id S1757745AbaGWOeO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 10:34:14 -0400
+Received: from mail.kernel.org ([198.145.19.201]:46110 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756543AbaGWOeM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jul 2014 10:34:12 -0400
+Date: Wed, 23 Jul 2014 11:34:08 -0300
+From: Arnaldo Carvalho de Melo <acme@kernel.org>
+To: Adrian Hunter <adrian.hunter@intel.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 16/52] perf tools: Add ability to record the current tid
+ for each cpu
+Message-ID: <20140723143408.GN20303@kernel.org>
+References: <1406035081-14301-1-git-send-email-adrian.hunter@intel.com>
+ <1406035081-14301-17-git-send-email-adrian.hunter@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140722145711.GC20588@saruman.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1406035081-14301-17-git-send-email-adrian.hunter@intel.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Felipe,
-
-Thanks for reviewing, see my comments inline: -
-
-> > > Just use {read,write}l_relaxed() directly.
-> > 
-> > Ok, unabstracted in v3
+Em Tue, Jul 22, 2014 at 04:17:25PM +0300, Adrian Hunter escreveu:
+> Add an array to struct machine to store
+> the current tid running on each cpu.
+> Add machine functions to get / set
+> the tid for a cpu.
 > 
-> no, no... all other glues add their own local helpers for register
-> access. This is good for tracing, it's very easy to add a tracepoint to
-> this sort of function and get very low overhead tracing of every
-> register access.
+> This will be used to determine the tid
+> when decoding a per-cpu Instruction Trace.
 
-I've put the IO accessors back in for V3
+Most machines don't have MAX_NR_CPUS cpus, but then this per-machine
+struct cost will be suffered only by tools that use this new facility,
+so it wouldn't be fair at this point to ask you to use a growing array.
 
-> > They are just bit setting macros, I've converted them over to use BIT macro now,
-> > so it no longer takes a parameter.
+See tools/perf/builtin-trace.c trace__set_fd_pathname() to see how it
+does for a thread fd->pathname table learn't from either reading
+/proc/PID/fd/ or using 'perf probe' made vfs_getname
+wannabe-tracepoints.
+
+But in general, try to avoid using these FOO_MAX_BAR things :-\
+
+- Arnaldo
+
+> Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+> ---
+>  tools/perf/util/machine.c | 46 ++++++++++++++++++++++++++++++++++++++++++++++
+>  tools/perf/util/machine.h |  5 +++++
+>  2 files changed, 51 insertions(+)
 > 
-> the macros are better, but make them upper case as everybody else.
-
-Fixed in v3.
-
-
-> > I've asked ST how this value was derirved and why. It came from validation. 
-> > The docs don't mention that it is necessary, and removing it
-> > seems to have no ill effects. So I've removed this udelay in v3.
-> 
-> make sure to test with many, many iterations just to make sure.
-
-Yes will do, I've been booting my board all day, and so far no failures.
-
-> > Ok. Do the DT folks have any comment on this?
-> 
-> look at the child's dr-mode property instead of adding your own.
-
-Thanks for the hint, now using dr-mode binding in V3 :-)
- 
-> 
-> > > > +	dwc3_data->glue_base = devm_request_and_ioremap(dev, res);
-> 
-> use devm_ioremap_resource()
-
-Fixed in V3
-
-> > Your right, this was wrong. It was some legacy code which is
-> > unnecessary and I've removed this in v3.
-> 
-> if you're going for DT, why don't you create the parent and the child
-> from DT as omap/exynos/qcom are doing ?
-
-Now creating parent and child from DT like OMAP in v3
-
-> > > > +	reset_control_assert(dwc3_data->rstc_pwrdn);
-> > > > +
-> > > > +	pinctrl_pm_select_sleep_state(dev);
-> 
-> pinctrl will select sleep and default states automatically for you.
-
-I've left this in v3, as greping around I couldn't see how that could happen automatically.
-
-Also I just double checked with linusw on irc who confirmed that the only state which is 
-ever auto-selected is "default". All other states, as well as going back to default
-state need to be explicitly called.
-
-Hope thats ok.
-
-regards,
-
-Peter.
+> diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
+> index 04c17a7..34dd63f 100644
+> --- a/tools/perf/util/machine.c
+> +++ b/tools/perf/util/machine.c
+> @@ -47,6 +47,8 @@ int machine__init(struct machine *machine, const char *root_dir, pid_t pid)
+>  		thread__set_comm(thread, comm, 0);
+>  	}
+>  
+> +	machine->current_tid = NULL;
+> +
+>  	return 0;
+>  }
+>  
+> @@ -106,6 +108,7 @@ void machine__exit(struct machine *machine)
+>  	dsos__delete(&machine->user_dsos);
+>  	dsos__delete(&machine->kernel_dsos);
+>  	zfree(&machine->root_dir);
+> +	zfree(&machine->current_tid);
+>  }
+>  
+>  void machine__delete(struct machine *machine)
+> @@ -1532,3 +1535,46 @@ int machine__get_kernel_start(struct machine *machine)
+>  	}
+>  	return err;
+>  }
+> +
+> +pid_t machine__get_current_tid(struct machine *machine, int cpu)
+> +{
+> +	if (cpu < 0 || cpu >= MAX_NR_CPUS || !machine->current_tid)
+> +		return -1;
+> +
+> +	return machine->current_tid[cpu];
+> +}
+> +
+> +int machine__set_current_tid(struct machine *machine, int cpu, pid_t pid,
+> +			     pid_t tid)
+> +{
+> +	struct thread *thread;
+> +
+> +	if (cpu < 0)
+> +		return -EINVAL;
+> +
+> +	if (!machine->current_tid) {
+> +		int i;
+> +
+> +		machine->current_tid = calloc(MAX_NR_CPUS, sizeof(pid_t));
+> +		if (!machine->current_tid)
+> +			return -ENOMEM;
+> +		for (i = 0; i < MAX_NR_CPUS; i++)
+> +			machine->current_tid[i] = -1;
+> +	}
+> +
+> +	if (cpu >= MAX_NR_CPUS) {
+> +		pr_err("Requested CPU %d too large. ", cpu);
+> +		pr_err("Consider raising MAX_NR_CPUS\n");
+> +		return -EINVAL;
+> +	}
+> +
+> +	machine->current_tid[cpu] = tid;
+> +
+> +	thread = machine__findnew_thread(machine, pid, tid);
+> +	if (!thread)
+> +		return -ENOMEM;
+> +
+> +	thread->cpu = cpu;
+> +
+> +	return 0;
+> +}
+> diff --git a/tools/perf/util/machine.h b/tools/perf/util/machine.h
+> index be97021..6442d65 100644
+> --- a/tools/perf/util/machine.h
+> +++ b/tools/perf/util/machine.h
+> @@ -35,6 +35,7 @@ struct machine {
+>  	struct map	  *vmlinux_maps[MAP__NR_TYPES];
+>  	u64		  kernel_start;
+>  	symbol_filter_t	  symbol_filter;
+> +	pid_t		  *current_tid;
+>  };
+>  
+>  static inline
+> @@ -212,4 +213,8 @@ int machine__synthesize_threads(struct machine *machine, struct target *target,
+>  					     perf_event__process, data_mmap);
+>  }
+>  
+> +pid_t machine__get_current_tid(struct machine *machine, int cpu);
+> +int machine__set_current_tid(struct machine *machine, int cpu, pid_t pid,
+> +			     pid_t tid);
+> +
+>  #endif /* __PERF_MACHINE_H */
+> -- 
+> 1.8.3.2
