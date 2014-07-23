@@ -1,40 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758117AbaGWOtY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 10:49:24 -0400
-Received: from legacy.ddn.com ([64.47.133.206]:36713 "EHLO legacy.ddn.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757973AbaGWOtV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 10:49:21 -0400
-Date: Wed, 23 Jul 2014 08:49:17 -0600
-From: Greg Edwards <gedwards@ddn.com>
-To: Joerg Roedel <joro@8bytes.org>
-CC: David Woodhouse <dwmw2@infradead.org>, <iommu@lists.linux-foundation.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] iommu/vt-d: fix race between free_irte() and get_irte()
-Message-ID: <20140723144917.GA26986@psuche.datadirectnet.com>
-References: <20140722142719.GA28143@psuche.datadirectnet.com>
- <20140723144024.GA14017@8bytes.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20140723144024.GA14017@8bytes.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Originating-IP: [10.32.22.129]
+	id S1758132AbaGWOts (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 10:49:48 -0400
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:48537 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757973AbaGWOtq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jul 2014 10:49:46 -0400
+From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
+To: devel@driverdev.osuosl.org, gregkh@linuxfoundation.org
+Cc: Sudip Mukherjee <sudipm.mukherjee@gmail.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH] staging:bcm:Transmit.c:coding style:line over 80 char
+Date: Wed, 23 Jul 2014 20:19:12 +0530
+Message-Id: <1406126952-12726-1-git-send-email-sudipm.mukherjee@gmail.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 23, 2014 at 04:40:24PM +0200, Joerg Roedel wrote:
-> On Tue, Jul 22, 2014 at 08:27:19AM -0600, Greg Edwards wrote:
->> get_irte() can race with free_irte() and dereference a NULL iommu
->> pointer.
->
-> Have you seen any real occurance of this race? Get_irte is called in the
-> set_affinity path, how can that race with the irq being freed?
 
-Yes, that's how we hit it.  A process was setting the CPU affinity while
-QEMU was releasing the IRQ.  We have a CI stress test that turned this
-up.
+Signed-off-by: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
+---
+ drivers/staging/bcm/Transmit.c | 10 +++++++---
+ 1 file changed, 7 insertions(+), 3 deletions(-)
 
-Greg
+diff --git a/drivers/staging/bcm/Transmit.c b/drivers/staging/bcm/Transmit.c
+index 05fae92..622a482 100644
+--- a/drivers/staging/bcm/Transmit.c
++++ b/drivers/staging/bcm/Transmit.c
+@@ -89,7 +89,8 @@ int SendControlPacket(struct bcm_mini_adapter *Adapter, char *pControlPacket)
+  * to the target via the host h/w interface.
+  * @return  zero(success) or -ve value(failure)
+  */
+-int SetupNextSend(struct bcm_mini_adapter *Adapter,  struct sk_buff *Packet, USHORT Vcid)
++int SetupNextSend(struct bcm_mini_adapter *Adapter,
++		struct sk_buff *Packet, USHORT Vcid)
+ {
+ 	int	status = 0;
+ 	bool	bHeaderSupressionEnabled = false;
+@@ -205,7 +206,9 @@ int tx_pkt_handler(struct bcm_mini_adapter *Adapter)
+ 	int status = 0;
+ 
+ 	while (!kthread_should_stop()) {
+-		/* FIXME - the timeout looks like workaround for racey usage of TxPktAvail */
++		/* FIXME - the timeout looks like workaround
++		 *  for racey usage of TxPktAvail
++		*/
+ 		if (Adapter->LinkUpStatus)
+ 			wait_event_timeout(Adapter->tx_packet_wait_queue,
+ 					   tx_pending(Adapter),
+@@ -229,7 +232,8 @@ int tx_pkt_handler(struct bcm_mini_adapter *Adapter)
+ 		if (Adapter->bEndPointHalted == TRUE) {
+ 			Bcm_clear_halt_of_endpoints(Adapter);
+ 			Adapter->bEndPointHalted = false;
+-			StartInterruptUrb((struct bcm_interface_adapter *)(Adapter->pvInterfaceAdapter));
++			StartInterruptUrb((struct bcm_interface_adapter *)
++					(Adapter->pvInterfaceAdapter));
+ 		}
+ 
+ 		if (Adapter->LinkUpStatus && !Adapter->IdleMode) {
+-- 
+1.8.1.2
+
