@@ -1,141 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933406AbaGWUX1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 16:23:27 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:47125 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933091AbaGWUX0 (ORCPT
+	id S933481AbaGWUYF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 16:24:05 -0400
+Received: from mail-we0-f171.google.com ([74.125.82.171]:53706 "EHLO
+	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933091AbaGWUYD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 16:23:26 -0400
-Date: Wed, 23 Jul 2014 13:23:20 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Pranith Kumar <bobby.prani@gmail.com>
-Cc: Josh Triplett <josh@joshtriplett.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        "open list:READ-COPY UPDATE..." <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 09/16] rcu: Remove redundant check for online cpu
-Message-ID: <20140723202320.GF11241@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140723122112.GJ11241@linux.vnet.ibm.com>
- <CAJhHMCAoLQPnJYCeqftXwZb6D4ECuJb4g04b4OO5BLf6iC1ENw@mail.gmail.com>
- <20140723135024.GR11241@linux.vnet.ibm.com>
- <CAJhHMCAZ__1xkEou44iux=Z6v6NAKPrTvWob6tqorm23nNygOA@mail.gmail.com>
- <20140723142314.GV11241@linux.vnet.ibm.com>
- <CAJhHMCA4Fdd4JbtKdNGABFYRBCqaLukLbydLAFA-3RiZXaTngA@mail.gmail.com>
- <20140723153018.GY11241@linux.vnet.ibm.com>
- <CAJhHMCBDZyHYCo01T421f+No0ZBWfjsUXijg+MT1A2U621izpA@mail.gmail.com>
- <20140723191542.GA9398@linux.vnet.ibm.com>
- <53D0180B.40709@gmail.com>
+	Wed, 23 Jul 2014 16:24:03 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53D0180B.40709@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14072320-1542-0000-0000-0000037F7BCB
+In-Reply-To: <CAMbhsRRP2xE2UHqJd-X=ggsc=rqzhwTwVKpaYGMjC840YhTSYg@mail.gmail.com>
+References: <CAPDOMVjrFzrveTuYeZQ1o7XEYP_pcmF0Z9b2_Y9eGVidvzy+ig@mail.gmail.com>
+	<CAMbhsRRP2xE2UHqJd-X=ggsc=rqzhwTwVKpaYGMjC840YhTSYg@mail.gmail.com>
+Date: Wed, 23 Jul 2014 16:24:01 -0400
+Message-ID: <CAPDOMVgzo_9yVm4JenC_WijOWVN7QAgqyo8_Sm4ou0foea-yjg@mail.gmail.com>
+Subject: Re: staging: Unwritten function for ion_carveout_heap.c
+From: Nick Krause <xerofoify@gmail.com>
+To: Colin Cross <ccross@android.com>
+Cc: Greg KH <gregkh@linuxfoundation.org>, John Stultz <john.stultz@linaro.org>,
+        Rebecca Zavin <rebecca@android.com>,
+        Laura Abbott <lauraa@codeaurora.org>, gioh.kim@lge.com,
+        benjamin.gaignard@linaro.org,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 23, 2014 at 04:16:11PM -0400, Pranith Kumar wrote:
-> On Wed, Jul 23, 2014 at 3:15 PM, Paul E. McKenney
-> <paulmck@linux.vnet.ibm.com> wrote:
-> >> > If you change the "awake" to something like "am_online", I could get
-> >> > behind this one.
-> >>
-> >> OK! I will submit that in the next series(with the zalloc check).
-> >
-> > You caught me at a weak moment...  This change just adds an extra
-> > line of code and doesn't really help anything.
-> >
-> > So please leave this one out.
-> >
-> 
-> <resending as the assembly was garbled>
-> 
-> It adds an extra line of code and generates better assembly code. Last
-> try to convince you before I give up :-)
+On Wed, Jul 23, 2014 at 4:10 PM, Colin Cross <ccross@android.com> wrote:
+> On Wed, Jul 23, 2014 at 1:04 PM, Nick Krause <xerofoify@gmail.com> wrote:
+>> Hey Greg and others.
+>> Sorry for another email but it seems the function,
+>> ion_carveout_heap_unmap_dma is
+>> just returning and not doing anything useful. Furthermore I am new so
+>> I don't known how
+>> to write this function but this may  be causing  some rather  serious
+>> bugs as if the dma heap
+>> is not unmaped and we  call this function a lot this will make the
+>> kernel not able to handle dma requests
+>> for this driver and other drivers that need this and in turn lead to
+>> a oops or even a kernel panic due to leaked
+>> dma allocated memory. I would recommend writing this function or
+>> helping me write it in
+>> other to avoid some rather serious bugs without a proper dma unmapping
+>> function for this driver  :).
+>> Nick
+>
+> Look at ion_carveout_heap_map_dma - it doesn't do anything, it just
+> returns a pre-existing virtual address.  That means there is nothing
+> to do in unmap.
+>
+> map_dma is actually a bit of a misnomer here, as the actual mapping is
+> done in ion_map_dma_buf.  All ion_carveout_heap_map_dma does is return
+> the sg table for ion_map_dma_buf to pass to dma_map_sg.
 
-If you got this kind of savings in __rcu_read_lock() or
-__rcu_read_unlock(), I might be interested.  Hard to get excited about
-__call_rcu_core(), especially given that a smarter compiler might be
-able to make this transformation on its own.
 
-							Thanx, Paul
-
-> Size:
->         text    data     bss     dec     hex filename
-> before  30664    7844      32   38540    968c kernel/rcu/tree.o
-> after   30648    7844      32   38524    967c kernel/rcu/tree.o
-> 
-> Assembly:
-> 
-> Before:
-> 
-> 	if (!rcu_is_watching() && cpu_online(smp_processor_id()))
->     26d3:	83 e2 01             	and    $0x1,%edx
->     26d6:	75 1f                	jne    26f7 <__call_rcu+0x1c7>
->     26d8:	65 8b 14 25 00 00 00 	mov    %gs:0x0,%edx
->     26df:	00 
-> 			26dc: R_X86_64_32S	cpu_number
->     26e0:	48 8b 0d 00 00 00 00 	mov    0x0(%rip),%rcx        # 26e7 <__call_rcu+0x1b7>
-> 			26e3: R_X86_64_PC32	cpu_online_mask-0x4
->     26e7:	89 d2                	mov    %edx,%edx
->     26e9:	48 0f a3 11          	bt     %rdx,(%rcx)
->     26ed:	19 d2                	sbb    %edx,%edx
->     26ef:	85 d2                	test   %edx,%edx
->     26f1:	0f 85 29 02 00 00    	jne    2920 <__call_rcu+0x3f0>
-> 		invoke_rcu_core();
-> 
-> 	/* If interrupts were disabled or CPU offline, don't invoke RCU core. */
-> 	if (irqs_disabled_flags(flags) || cpu_is_offline(smp_processor_id()))
->     26f7:	48 f7 45 d0 00 02 00 	testq  $0x200,-0x30(%rbp)
->     26fe:	00 
->     26ff:	0f 84 e6 fe ff ff    	je     25eb <__call_rcu+0xbb>
->     2705:	65 8b 14 25 00 00 00 	mov    %gs:0x0,%edx
->     270c:	00 
-> 			2709: R_X86_64_32S	cpu_number
->     270d:	48 8b 0d 00 00 00 00 	mov    0x0(%rip),%rcx        # 2714 <__call_rcu+0x1e4>
-> 			2710: R_X86_64_PC32	cpu_online_mask-0x4
->     2714:	89 d2                	mov    %edx,%edx
->     2716:	48 0f a3 11          	bt     %rdx,(%rcx)
->     271a:	19 d2                	sbb    %edx,%edx
->     271c:	85 d2                	test   %edx,%edx
->     271e:	0f 84 c7 fe ff ff    	je     25eb <__call_rcu+0xbb>
-> 
-> After:
-> 
-> 	bool cpu_up = cpu_online(smp_processor_id());
->     26c1:	65 8b 14 25 00 00 00 	mov    %gs:0x0,%edx
->     26c8:	00 
-> 			26c5: R_X86_64_32S	cpu_number
->     26c9:	48 8b 0d 00 00 00 00 	mov    0x0(%rip),%rcx        # 26d0 <__call_rcu+0x1a0>
-> 			26cc: R_X86_64_PC32	cpu_online_mask-0x4
->     26d0:	89 d2                	mov    %edx,%edx
->     26d2:	48 0f a3 11          	bt     %rdx,(%rcx)
->     26d6:	19 d2                	sbb    %edx,%edx
->     26d8:	85 d2                	test   %edx,%edx
->     26da:	41 0f 95 c4          	setne  %r12b
-> 
-> 	if (!rcu_is_watching() && cpu_up)
->     26f0:	83 e2 01             	and    $0x1,%edx
->     26f3:	75 09                	jne    26fe <__call_rcu+0x1ce>
->     26f5:	45 84 e4             	test   %r12b,%r12b
->     26f8:	0f 85 12 02 00 00    	jne    2910 <__call_rcu+0x3e0>
-> 		invoke_rcu_core();
-> 
-> 	/* If interrupts were disabled or CPU offline, don't invoke RCU core. */
-> 	if (irqs_disabled_flags(flags) || !cpu_up)
->     26fe:	48 f7 45 d0 00 02 00 	testq  $0x200,-0x30(%rbp)
->     2705:	00 
->     2706:	0f 84 df fe ff ff    	je     25eb <__call_rcu+0xbb>
->     270c:	45 84 e4             	test   %r12b,%r12b
->     270f:	0f 84 d6 fe ff ff    	je     25eb <__call_rcu+0xbb>
-> 
-> -- 
-> Pranith
-> 
-
+Very well then I guess this is closed then.
+Cheers Nick
