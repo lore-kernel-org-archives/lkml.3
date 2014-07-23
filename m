@@ -1,113 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757923AbaGWOhM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 10:37:12 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:6685 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753110AbaGWOhL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 10:37:11 -0400
-Date: Wed, 23 Jul 2014 10:37:07 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Nick Krause <xerofoify@gmail.com>
-Cc: Levente Kurusa <lkurusa@redhat.com>, Tony Luck <tony.luck@gmail.com>,
-        =?ISO-8859-1?B?Qmr4cm4=?= Mork <bjorn@mork.no>,
-        Doug Thompson <dougthompson@xmission.com>,
-        Borislav Petkov <bp@alien8.de>,
-        "m.chehab@samsung.com" <m.chehab@samsung.com>,
-        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] edac: Remove fixmes in e7xxx_edac.c
-Message-ID: <20140723103707.64071c00@gandalf.local.home>
-In-Reply-To: <CAPDOMVipLiXuYqndO_gnMYocDLVsHX9zcTdSMUV_EjJo72nx6w@mail.gmail.com>
-References: <1406004789-9918-1-git-send-email-xerofoify@gmail.com>
-	<874my98p6u.fsf@nemi.mork.no>
-	<CA+8MBb+fnCNeQtyEqttxbkWx-4N+GUaKCUoCSdn5X9+bDDvTOg@mail.gmail.com>
-	<CAPDOMVjaf+vne4vbUPo8EPs0XnQBbNm2ZOXns8fw5pkg9tRSww@mail.gmail.com>
-	<CAAsK9AGtdJiz0xnmfqLBAqxmt=r+WANsmxwB_vQ3O5aKzMW1LQ@mail.gmail.com>
-	<CAPDOMVhj72TFKbtw_93juX19WVdfUzh3KM9tCEjbTdUZvUfcUQ@mail.gmail.com>
-	<20140722193350.GA486@home.goodmis.org>
-	<CAPDOMVipLiXuYqndO_gnMYocDLVsHX9zcTdSMUV_EjJo72nx6w@mail.gmail.com>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
+	id S1757952AbaGWOiO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 10:38:14 -0400
+Received: from darkcity.gna.ch ([195.226.6.51]:50041 "EHLO mail.gna.ch"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1756831AbaGWOiL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jul 2014 10:38:11 -0400
+Message-ID: <53CFC8C8.3070304@daenzer.net>
+Date: Wed, 23 Jul 2014 23:38:00 +0900
+From: =?windows-1252?Q?Michel_D=E4nzer?= <michel@daenzer.net>
+User-Agent: Mozilla/5.0 (X11; Linux ppc; rv:31.0) Gecko/20100101 Icedove/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+To: Peter Zijlstra <peterz@infradead.org>,
+        Dietmar Eggemann <dietmar.eggemann@arm.com>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Random panic in load_balance() with 3.16-rc
+References: <53CF31AE.30403@daenzer.net> <CA+55aFwyURgG717kmuAXzKcHddN_63GirtwHZB4ePKH+8qVtJw@mail.gmail.com> <20140723064948.GK3935@laptop> <53CF6CC4.6090207@daenzer.net> <20140723082819.GR3935@laptop> <20140723092536.GO12054@laptop.lan> <53CF80EE.5050702@daenzer.net> <53CF844A.5050106@arm.com> <20140723111110.GT3935@laptop> <20140723113021.GP12054@laptop.lan> <20140723142454.GQ12054@laptop.lan>
+In-Reply-To: <20140723142454.GQ12054@laptop.lan>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 22 Jul 2014 16:56:06 -0400
-Nick Krause <xerofoify@gmail.com> wrote:
-
-> On Tue, Jul 22, 2014 at 3:33 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> > On Tue, Jul 22, 2014 at 02:25:24PM -0400, Nick Krause wrote:
-> >>
-> >> I understand what your saying and I should have searched for Page shift.
-> >> In addition I am already got commits in the kernel for fix mes so I feel
-> >> that your comment on fix mes is incorrect.
-> >
-> > After seeing your other solutions to "fix mes" around the kernel, I now have to
-> > investigate the patches that were accepted, and see if they did not cause
-> > any new bugs. If any of them do, I will ask to have all your patches reverted.
-> >
-> > You are not helping. You are actually doing quite the opposite. Who do you work
-> > for? Microsoft or Apple?
-> >
-> > -- Steve
-> >
+On 23.07.2014 23:24, Peter Zijlstra wrote:
+> On Wed, Jul 23, 2014 at 01:30:21PM +0200, Peter Zijlstra wrote:
+>> On Wed, Jul 23, 2014 at 01:11:10PM +0200, Peter Zijlstra wrote:
+>>> On Wed, Jul 23, 2014 at 10:45:46AM +0100, Dietmar Eggemann wrote:
+>>>> Doesn't the picture showing the captured panic reveal more information.
+>>>> Haven't seen it myself, I just saw Peter's reply to your email
+>>>
+>>> Its a general protection fault from somewhere in load_balance(), I send
+>>> you the picture.
+>>>
+>>> It would help to get addr2line of the RIP I suppose.
+>>>
+>>> Michel provided a config, so lemme go try and build that, maybe my gcc
+>>> will generate similar code to his and the function offset is enough
+>>> clue.
+>>
+>> So the code section says the faulting instruction is:
+>>
+>>   f3 a5
+>>
+>> followed by:
+>>
+>>   48 89 c7 85 50 ff ff 
+>>
+>> or so.
+>>
+>> My compiled code is 'different', the function is shorter, but there's a
+>> f3 a5 somewhere not too far short of +d7 at +a8. I have (objdump -SD):
+>>
+>>     35a8:       f3 a5                   rep movsl %ds:(%rsi),%es:(%rdi)
+>>
+>>         for_each_cpu_and(i, sched_group_cpus(group), env->cpus) {
+>>                 unsigned long capacity, capacity_factor, wl;
+>>                 enum fbq_type rt;
+>>
+>>                 rq = cpu_rq(i);
+>>     35aa:       48 c7 c1 00 00 00 00    mov    $0x0,%rcx
+>>
+>> And that's the only part that could possibly match.
+>>
+>> That looks like the start of find_busiest_queue(). I'm not entirely sure
+>> what the rep movsl is operating on, lemme try and figure that out.
 > 
-> I don't work for any companies. And here is one of them that has been accepted.
-> I am removing two fix mes in this file as after dicussing then it  seems
-> there is no reason to check against Null for usb_device as it can never
-> be NULL and this is check is therefore not needed.
-
-http://marc.info/?l=linux-m68k&m=140612440420712&w=2
-
-And your patches seem to be getting reverted. Wow, I think you broke a
-new record in having the percentage of patches added to the kernel and
-then reverted. Even before they made it to mainline.
-
-You may be the only developer that has all their commits reverted
-before they ever make it into the mainline tree!
-
-Congratulations! I think it is wise now for all maintainers to add your
-email to their /dev/null folder. It will help them from wasting any
-more of their precious time on you.
-
--- Steve
-
-
-
+> Ah, this appears to be load_balance()'s:
 > 
-> Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
-> ---
->  drivers/usb/core/hcd.c | 4 ----
->  1 file changed, 4 deletions(-)
-> 
-> diff --git a/drivers/usb/core/hcd.c b/drivers/usb/core/hcd.c
-> index bec31e2..487abcf 100644
-> --- a/drivers/usb/core/hcd.c
-> +++ b/drivers/usb/core/hcd.c
-> @@ -855,8 +855,6 @@ static ssize_t authorized_default_show(struct device *dev,
->         struct usb_bus *usb_bus = rh_usb_dev->bus;
->         struct usb_hcd *usb_hcd;
-> 
-> -       if (usb_bus == NULL)    /* FIXME: not sure if this case is possible */
-> -               return -ENODEV;
->         usb_hcd = bus_to_hcd(usb_bus);
->         return snprintf(buf, PAGE_SIZE, "%u\n", usb_hcd->authorized_default);
->  }
-> @@ -871,8 +869,6 @@ static ssize_t authorized_default_store(
-> struct device *dev,
->         struct usb_bus *usb_bus = rh_usb_dev->bus;
->         struct usb_hcd *usb_hcd;
-> 
-> -       if (usb_bus == NULL)    /* FIXME: not sure if this case is possible */
-> -               return -ENODEV;
->         usb_hcd = bus_to_hcd(usb_bus);
->         result = sscanf(buf, "%u\n", &val);
->         if (result == 1) {
-> Nick
+> 	cpumask_copy(cpus, cpu_active_mask);
 
+Right, according to addr2line it's the memcpy in bitmap_copy().
+
+
+> Which totally doesn't make sense, both src and dst are static storage.
+> Dst is the most interesting since its per-cpu storage, but still.
+> 
+> No way either of those should generate a #GP. Puzzled.
+
+Could it be the memcpy length being off or something like that?
+
+
+-- 
+Earthling Michel Dänzer            |                  http://www.amd.com
+Libre software enthusiast          |                Mesa and X developer
