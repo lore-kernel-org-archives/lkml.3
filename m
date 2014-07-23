@@ -1,60 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756895AbaGWHc3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 03:32:29 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:47216 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755935AbaGWHc2 (ORCPT
+	id S1756966AbaGWHeL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 03:34:11 -0400
+Received: from mail-ie0-f176.google.com ([209.85.223.176]:58140 "EHLO
+	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751553AbaGWHeJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 03:32:28 -0400
-Message-ID: <53CF64F9.7020701@canonical.com>
-Date: Wed, 23 Jul 2014 09:32:09 +0200
-From: Maarten Lankhorst <maarten.lankhorst@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Wed, 23 Jul 2014 03:34:09 -0400
+Date: Wed, 23 Jul 2014 08:34:03 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Another tree in Linux -next
+Message-ID: <20140723073403.GF23210@lee--X1>
+References: <20130731101119.GC13298@lee--X1>
+ <20130801094146.2266f4ff61ddac67cd449f53@canb.auug.org.au>
+ <20140722092208.GG28529@lee--X1>
+ <20140723084314.34870f0e@canb.auug.org.au>
 MIME-Version: 1.0
-To: =?UTF-8?B?Q2hyaXN0aWFuIEvDtm5pZw==?= <christian.koenig@amd.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-CC: =?UTF-8?B?Q2hyaXN0aWFuIEvDtm5pZw==?= <deathsimple@vodafone.de>,
-        Dave Airlie <airlied@gmail.com>,
-        Thomas Hellstrom <thellstrom@vmware.com>,
-        nouveau <nouveau@lists.freedesktop.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        dri-devel <dri-devel@lists.freedesktop.org>,
-        Ben Skeggs <bskeggs@redhat.com>,
-        "Deucher, Alexander" <alexander.deucher@amd.com>
-Subject: Re: [Nouveau] [PATCH 09/17] drm/radeon: use common fence implementation
- for fences
-References: <20140709093124.11354.3774.stgit@patser>	<20140709122953.11354.46381.stgit@patser>	<CAPM=9tyD2ZbrcGDC3hfNb7qNdzsfnyD-ZwM7G-nOgxeu5YKuSg@mail.gmail.com>	<53CE2421.5040906@amd.com>	<20140722114607.GL15237@phenom.ffwll.local>	<20140722115737.GN15237@phenom.ffwll.local>	<53CE56ED.4040109@vodafone.de>	<20140722132652.GO15237@phenom.ffwll.local>	<53CE6AFA.1060807@vodafone.de>	<CAKMK7uG1d31zU_i__wc+Yq46A0x0tPeKnMBs+NHSmHS82uMsXQ@mail.gmail.com>	<53CE84AA.9030703@amd.com>	<CAKMK7uFa8vMBV9_JenbFGnFXtV_r9dk=WjbMkkCDWcauhrDdJg@mail.gmail.com>	<53CE8A57.2000803@vodafone.de>	<53CF58FB.8070609@canonical.com>	<53CF5B9F.1050800@amd.com>	<53CF5EFE.6070307@canonical.com> <CAKMK7uHijSve_CsDE+pUk8+tjCAZjL7-nZCKeUkKuuufCPS4tQ@mail.gmail.com> <53CF6128.6010703@amd.com>
-In-Reply-To: <53CF6128.6010703@amd.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140723084314.34870f0e@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-op 23-07-14 09:15, Christian König schreef:
-> Am 23.07.2014 09:09, schrieb Daniel Vetter:
->> On Wed, Jul 23, 2014 at 9:06 AM, Maarten Lankhorst
->> <maarten.lankhorst@canonical.com> wrote:
->>>> Can we somehow avoid the need to call fence_signal() at all? The interrupts at least on radeon are way to unreliable for such a thing. Can enable_signalling fail? What's the reason for fence_signaled() in the first place?
->>> It doesn't need to be completely reliable, or finish immediately.
->>>
->>> And any time wake_up_all(&rdev->fence_queue) is called all the fences that were enabled will be rechecked.
->> I raised this already somewhere else, but should we have some common
->> infrastructure in the core fence code to recheck fences periodically?
->> radeon doesn't seem to be the only hw where this isn't reliable
->> enough. Of course timer-based rechecking would only work if the driver
->> provides the fence->signalled callback to recheck actual fence state.
->
-> Yeah, agree. The proposal won't work reliable at all with radeon.
->
-> Interrupts are accumulated before sending them to the CPU, e.g. you can get one interrupt for multiple fences finished. If it's just the interrupt for the last fence submitted that gets lost you are completely screwed up because you won't get another interrupt.
->
-> I had that problem multiple times while working on UVD support, resulting in the driver thinking that it can't submit more jobs because non of the interrupts for the already submitted fence cam through.
-Yeah but all the fences that have .enable_signaling will get signaled from a single interrupt, or when any waiter calls radeon_fence_process.
+On Wed, 23 Jul 2014, Stephen Rothwell wrote:
+> On Tue, 22 Jul 2014 10:22:08 +0100 Lee Jones <lee.jones@linaro.org> wrote:
+> >
+> > Can I have another branch in -next please?
+> > 
+> > > Sure, if you think you meet the criteria, then send me a URL:
+> > > 
+> > > You will need to ensure that the patches/commits in your tree/series have
+> > > been:
+> > >      * submitted under GPL v2 (or later) and include the Contributor's
+> > > 	Signed-off-by,
+> > >      * posted to the relevant mailing list,
+> > >      * reviewed by you (or another maintainer of your subsystem tree),
+> > >      * successfully unit tested, and 
+> > >      * destined for the current or next Linux merge window.
+> > 
+> > The new branch also matches the critera.
+> > 
+> > Repo:   git://git.kernel.org/pub/scm/linux/kernel/git/lee/backlight.git
+> > Branch: for-backlight-next
+> 
+> Added from today.
 
-> Apart from that interrupts on Macs usually don't work at all, so we really need a solution where calling fence_signaled() is completely optional.
-I haven't had a problem with interrupts on my mbp after d1f9809ed1315c4cdc5760cf2f59626fd3276952, but it should be trivial to start a timer that periodically does wake_up_all, and gets its timeout reset in a call to radeon_fence_process. It could either be added as a work item, or as a normal timer (disabled during gpu lockup recovery to prevent checks from fiddling with things it shouldn't).
+Thanks Stephen, much obliged.
 
-~Maarten
-
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
