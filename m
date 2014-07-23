@@ -1,129 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932110AbaGWL56 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 07:57:58 -0400
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:13980 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757160AbaGWL54 (ORCPT
+	id S932272AbaGWL6J (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 07:58:09 -0400
+Received: from mail-yk0-f171.google.com ([209.85.160.171]:35013 "EHLO
+	mail-yk0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757637AbaGWL6F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 07:57:56 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Wed, 23 Jul 2014 04:50:02 -0700
-Message-ID: <53CFA33F.6030307@nvidia.com>
-Date: Wed, 23 Jul 2014 14:57:51 +0300
-From: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Wed, 23 Jul 2014 07:58:05 -0400
+From: =?UTF-8?q?Vin=C3=ADcius=20Tinti?= <viniciustinti@gmail.com>
+To: Sam Ravnborg <sam@ravnborg.org>, Michal Marek <mmarek@suse.cz>
+Cc: Renato Golin <renato.golin@linaro.org>, linux-kbuild@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        =?UTF-8?q?Vin=C3=ADcius=20Tinti?= <viniciustinti@gmail.com>,
+        Behan Webster <behanw@converseincode.com>
+Subject: [PATCH v2] kbuild: add support to generate LLVM bitcode files
+Date: Wed, 23 Jul 2014 08:56:53 -0300
+Message-Id: <1406116613-4514-1-git-send-email-viniciustinti@gmail.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <CALD9WKxTzPYeaAZRrYYuLjNK4VvF1pDxzeDPDvWLuSOpw7_1Tw@mail.gmail.com>
+References: <CALD9WKxTzPYeaAZRrYYuLjNK4VvF1pDxzeDPDvWLuSOpw7_1Tw@mail.gmail.com>
 MIME-Version: 1.0
-To: Viresh Kumar <viresh.kumar@linaro.org>
-CC: "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Paul Walmsley <pwalmsley@nvidia.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH v2 14/16] cpufreq: Add cpufreq driver for Tegra124
-References: <1405957142-19416-1-git-send-email-ttynkkynen@nvidia.com>	<1405957142-19416-15-git-send-email-ttynkkynen@nvidia.com> <CAKohpomQthJ_XE-HhzW07Q4aVtxQVy97iaL0Vy6Q4Lhw22A=VA@mail.gmail.com>
-In-Reply-To: <CAKohpomQthJ_XE-HhzW07Q4aVtxQVy97iaL0Vy6Q4Lhw22A=VA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Allows kbuild to generate LLVM bitcode files with the .ll extension.
 
+  # from c code
+  CC=clang make kernel/pid.ll
 
-On 23/07/14 07:44, Viresh Kumar wrote:
-> On 21 July 2014 21:09, Tuomas Tynkkynen <ttynkkynen@nvidia.com> wrote:
-> 
->> diff --git a/drivers/cpufreq/Kconfig.arm b/drivers/cpufreq/Kconfig.arm
->> index 7364a53..df3c73e 100644
->> --- a/drivers/cpufreq/Kconfig.arm
->> +++ b/drivers/cpufreq/Kconfig.arm
->> @@ -244,6 +244,7 @@ config ARM_SPEAR_CPUFREQ
->>  config ARM_TEGRA_CPUFREQ
->>         bool "TEGRA CPUFreq support"
->>         depends on ARCH_TEGRA
->> +       depends on GENERIC_CPUFREQ_CPU0
-> 
-> Wouldn't this also disturb the existing cpufreq driver for earlier
-> tegra platforms? i.e. we don't need cpufreq-cpu0 for them
-> atleast as of now.
-> 
->>         default y
->>         help
->>           This adds the CPUFreq driver support for TEGRA SOCs.
->> diff --git a/drivers/cpufreq/Makefile b/drivers/cpufreq/Makefile
->> index db6d9a2..3437d24 100644
->> --- a/drivers/cpufreq/Makefile
->> +++ b/drivers/cpufreq/Makefile
->> @@ -76,6 +76,7 @@ obj-$(CONFIG_ARM_SA1100_CPUFREQ)      += sa1100-cpufreq.o
->>  obj-$(CONFIG_ARM_SA1110_CPUFREQ)       += sa1110-cpufreq.o
->>  obj-$(CONFIG_ARM_SPEAR_CPUFREQ)                += spear-cpufreq.o
->>  obj-$(CONFIG_ARM_TEGRA_CPUFREQ)                += tegra-cpufreq.o
->> +obj-$(CONFIG_ARM_TEGRA_CPUFREQ)                += tegra124-cpufreq.o
-> 
-> Maybe, you can update the same line if you want.
+  # from asm code
+  CC=clang make arch/x86/kernel/preempt.ll
 
-Oh, right.
+Signed-off-by: Vinícius Tinti <viniciustinti@gmail.com>
+Signed-off-by: Behan Webster <behanw@converseincode.com>
+---
+ .gitignore             |  1 +
+ Makefile               |  6 ++++++
+ scripts/Makefile.build | 14 ++++++++++++++
+ 3 files changed, 21 insertions(+)
 
-> 
->>  obj-$(CONFIG_ARM_VEXPRESS_SPC_CPUFREQ) += vexpress-spc-cpufreq.o
->>
->>  ##################################################################################
->> diff --git a/drivers/cpufreq/tegra124-cpufreq.c b/drivers/cpufreq/tegra124-cpufreq.c
-> 
->> +static struct cpufreq_frequency_table *freq_table;
->> +
->> +static struct device *cpu_dev;
->> +static struct clk *cpu_clk;
->> +static struct clk *pllp_clk;
->> +static struct clk *pllx_clk;
->> +static struct clk *dfll_clk;
-> 
-> The routines in this file are going to be called just once at boot, right?
-> In that case we are actually wasting some memory by creating globals.
-> Probably just move all these in a struct and allocate it at runtime.
-> 
-
-Sure.
-
-[...]
->> +
->> +       ret = dev_pm_opp_init_cpufreq_table(cpu_dev, &freq_table);
->> +       if (ret)
->> +               goto out_put_pllp_clk;
-> 
-> Why do you need this? cpufreq-cpu0 also does it and this freq_table is
-> just not getting used at all then.
-> 
-
-Oops, yes I forgot to remove that part when making the conversion.
-
->> +
->> +       pdev = platform_device_register_simple("cpufreq-tegra124", -1, NULL, 0);
->> +       if (IS_ERR(pdev)) {
->> +               platform_driver_unregister(&tegra124_cpufreq_platdrv);
->> +               return PTR_ERR(pdev);
->> +       }
-> 
-> Why create another unnecessary platform-device/driver here? If
-> of_find_matching_node() passes and you really need to probe cpufreq-cpu0
-> here, then just remove the other two calls and move probe's implementation
-> here only.
-> 
-
-The platform device is required for the deferred probe that can happen if the
-DFLL driver hasn't initialized yet, and module_init() callbacks don't seem to
-respect -EPROBE_DEFER.
-
-[...]
-
+diff --git a/.gitignore b/.gitignore
+index f4c0b09..c5a7656 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -32,6 +32,7 @@
+ *.lzo
+ *.patch
+ *.gcno
++*.ll
+ modules.builtin
+ Module.symvers
+ 
+diff --git a/Makefile b/Makefile
+index 6b27741..7826c33 100644
+--- a/Makefile
++++ b/Makefile
+@@ -1213,6 +1213,8 @@ help:
+ 	@echo  '                    (default: $$(INSTALL_MOD_PATH)/lib/firmware)'
+ 	@echo  '  dir/            - Build all files in dir and below'
+ 	@echo  '  dir/file.[oisS] - Build specified target only'
++	@echo  '  dir/file.ll     - Build the LLVM bitcode file'
++	@echo  '                    (requires a compiler support for LLVM bitcode generation)'
+ 	@echo  '  dir/file.lst    - Build specified mixed source/assembly target only'
+ 	@echo  '                    (requires a recent binutils and recent build (System.map))'
+ 	@echo  '  dir/file.ko     - Build module including final link'
+@@ -1483,6 +1485,10 @@ endif
+ 	$(Q)$(MAKE) $(build)=$(build-dir) $(target-dir)$(notdir $@)
+ %.symtypes: %.c prepare scripts FORCE
+ 	$(Q)$(MAKE) $(build)=$(build-dir) $(target-dir)$(notdir $@)
++%.ll: %.c prepare scripts FORCE
++	$(Q)$(MAKE) $(build)=$(build-dir) $(target-dir)$(notdir $@)
++%.ll: %.S prepare scripts FORCE
++	$(Q)$(MAKE) $(build)=$(build-dir) $(target-dir)$(notdir $@)
+ 
+ # Modules
+ /: prepare scripts FORCE
+diff --git a/scripts/Makefile.build b/scripts/Makefile.build
+index bf3e677..4d97e4f 100644
+--- a/scripts/Makefile.build
++++ b/scripts/Makefile.build
+@@ -174,6 +174,20 @@ cmd_cc_symtypes_c =                                                         \
+ $(obj)/%.symtypes : $(src)/%.c FORCE
+ 	$(call cmd,cc_symtypes_c)
+ 
++# LLVM bitcode
++# Generate .ll files from .s and .c
++quiet_cmd_cc_ll_c = CC $(quiet_modtag)  $@
++      cmd_cc_ll_c = $(CC) $(c_flags) -emit-llvm -S -o $@ $<
++
++$(obj)/%.ll: $(src)/%.c FORCE
++	$(call if_changed_dep,cc_ll_c)
++
++quiet_cmd_as_ll_S = CPP $(quiet_modtag) $@
++      cmd_as_ll_S = $(CPP) $(a_flags)   -o $@ $<
++
++$(obj)/%.ll: $(src)/%.S FORCE
++	$(call if_changed_dep,as_ll_S)
++
+ # C (.c) files
+ # The C file is compiled and updated dependency information is generated.
+ # (See cmd_cc_o_c + relevant part of rule_cc_o_c)
 -- 
-nvpublic
+2.0.1
+
