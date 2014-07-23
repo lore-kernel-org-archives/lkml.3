@@ -1,76 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756744AbaGWLSJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 07:18:09 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:56470 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754537AbaGWLSI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 07:18:08 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Arjun <arjun024@gmail.com>
-Cc: Len Brown <lenb@kernel.org>, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] PNPACPI: check return value of pnpacpi_parse_allocated_resource() and pnpacpi_parse_resource_option_data()
-Date: Wed, 23 Jul 2014 13:36:31 +0200
-Message-ID: <4234415.npFyMyvrKf@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <CAJFMrCH1yeZfEo=z6Vj-qaK=Qpiu9KoqJOLsUo-p1yYcxr+L-g@mail.gmail.com>
-References: <1406056419-3047-1-git-send-email-arjun024@gmail.com> <6018343.yi13pxNXUP@vostro.rjw.lan> <CAJFMrCH1yeZfEo=z6Vj-qaK=Qpiu9KoqJOLsUo-p1yYcxr+L-g@mail.gmail.com>
+	id S1756507AbaGWLVU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 07:21:20 -0400
+Received: from mail-bn1lp0144.outbound.protection.outlook.com ([207.46.163.144]:15652
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753068AbaGWLVT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jul 2014 07:21:19 -0400
+From: Nicolin Chen <nicoleotsuka@gmail.com>
+To: <broonie@kernel.org>
+CC: <linux-kernel@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
+        <alsa-devel@alsa-project.org>, <timur@tabi.org>,
+        <Li.Xiubo@freescale.com>, <b42378@freescale.com>,
+        <b02247@freescale.com>
+Subject: [PATCH 0/3] ASoC: fsl_sai: Fix some issues in fsl_sai_trigger()
+Date: Wed, 23 Jul 2014 19:23:37 +0800
+Message-ID: <cover.1406113865.git.nicoleotsuka@gmail.com>
+X-Mailer: git-send-email 1.8.4
+X-EOPAttributedMessage: 0
+X-Matching-Connectors: 130505880767496397;(91ab9b29-cfa4-454e-5278-08d120cd25b8);()
+X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(199002)(189002)(31966008)(87286001)(85852003)(93916002)(64706001)(92726001)(68736004)(88136002)(82202001)(104016003)(2351001)(55446002)(107046002)(81442001)(92566001)(81156004)(47776003)(36756003)(50226001)(102836001)(106466001)(46102001)(73972005)(20776003)(105596002)(81342001)(80022001)(61266001)(97736001)(95666004)(86362001)(79102001)(104166001)(50466002)(87572001)(62966002)(44976005)(99396002)(69596002)(110136001)(229853001)(6806004)(81542001)(48376002)(21056001)(26826002)(77156001)(4396001)(83072002)(74662001)(33646002)(87936001)(73392001)(74502001)(77982001)(84676001)(50986999)(85306003)(89996001);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR03MB362;H:az84smr01.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;LANG:en;
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
+X-Forefront-PRVS: 028166BF91
+Authentication-Results: spf=softfail (sender IP is 192.88.158.2)
+ smtp.mailfrom=nicoleotsuka@gmail.com; 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, July 23, 2014 01:56:36 PM Arjun wrote:
-> ACPI 5.0 resource types like FixedDMA will fail pnpacpi_allocated_resource().
-> pnpacpi_add_device() has to return error in that case.
+The series of patches focus on issue fix inside fsl_sai_trigger().
 
-Why?
+Nicolin Chen (3):
+  ASoC: fsl_sai: Reduce race condition during TE/RE enabling
+  ASoC: fsl_sai: Don't reset FIFO until TE/RE bit is unset
+  ASoC: fsl_sai: Improve enable flow in fsl_sai_trigger()
 
-> On 23 July 2014 03:42, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
-> > On Wednesday, July 23, 2014 12:43:39 AM Arjun Sreedharan wrote:
-> >> Handle error condition since pnpacpi_parse_allocated_resource() and pnpacpi_parse_resource_option_data() could return -EPERM.
-> >>
-> >> Signed-off-by: Arjun Sreedharan <arjun024@gmail.com>
-> >
-> > I wonder if this fixes any functional issue you've seen or someone has
-> > reported to you or it's just an "Oh, we probably should handle the return
-> > values here" kind of thing?
-> >
-> >> ---
-> >>  drivers/pnp/pnpacpi/core.c | 8 ++++++--
-> >>  1 file changed, 6 insertions(+), 2 deletions(-)
-> >>
-> >> diff --git a/drivers/pnp/pnpacpi/core.c b/drivers/pnp/pnpacpi/core.c
-> >> index b81448b..c3214e9 100644
-> >> --- a/drivers/pnp/pnpacpi/core.c
-> >> +++ b/drivers/pnp/pnpacpi/core.c
-> >> @@ -272,10 +272,14 @@ static int __init pnpacpi_add_device(struct acpi_device *device)
-> >>               strncpy(dev->name, acpi_device_bid(device), sizeof(dev->name));
-> >>
-> >>       if (dev->active)
-> >> -             pnpacpi_parse_allocated_resource(dev);
-> >> +             error = pnpacpi_parse_allocated_resource(dev);
-> >> +             if (error)
-> >> +                     return error;
-> >>
-> >>       if (dev->capabilities & PNP_CONFIGURABLE)
-> >> -             pnpacpi_parse_resource_option_data(dev);
-> >> +             error = pnpacpi_parse_resource_option_data(dev);
-> >> +             if (error)
-> >> +                     return error;
-> >>
-> >>       list_for_each_entry(id, &device->pnp.ids, list) {
-> >>               if (!strcmp(id->id, pnpid))
-> >>
-> >
-> > --
-> > I speak only for myself.
-> > Rafael J. Wysocki, Intel Open Source Technology Center.
+ sound/soc/fsl/fsl_sai.c | 40 +++++++++++++++++++++++-----------------
+ 1 file changed, 23 insertions(+), 17 deletions(-)
 
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+1.8.4
+
