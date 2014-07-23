@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757300AbaGWD6l (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 23:58:41 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:59692 "EHLO bear.ext.ti.com"
+	id S1751633AbaGWEG6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 00:06:58 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:59959 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756140AbaGWD6j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 23:58:39 -0400
-Message-ID: <53CF32C1.9040807@ti.com>
-Date: Wed, 23 Jul 2014 09:27:53 +0530
+	id S1751184AbaGWEG5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jul 2014 00:06:57 -0400
+Message-ID: <53CF34B8.6000602@ti.com>
+Date: Wed, 23 Jul 2014 09:36:16 +0530
 From: Lokesh Vutla <lokeshvutla@ti.com>
 User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
 MIME-Version: 1.0
@@ -16,10 +16,10 @@ CC: <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <linux-kernel@vger.kernel.org>, <tony@atomide.com>, <paul@pwsan.com>,
         <linux@arm.linux.org.uk>, <nsekhar@ti.com>, <j-keerthy@ti.com>,
         <rogerq@ti.com>
-Subject: Re: [PATCH 2/2] ARM: DRA7: hwmod: Add dra74x and dra72x specific
+Subject: Re: [PATCH 0/2] ARM: DRA7: hwmod: Add dra74x and dra72x specific
  ocp interface lists
-References: <1405499774-19770-1-git-send-email-lokeshvutla@ti.com> <1405499774-19770-3-git-send-email-lokeshvutla@ti.com> <53CE9652.4080304@ti.com>
-In-Reply-To: <53CE9652.4080304@ti.com>
+References: <1405499774-19770-1-git-send-email-lokeshvutla@ti.com> <53CE952D.6040705@ti.com>
+In-Reply-To: <53CE952D.6040705@ti.com>
 Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
@@ -27,112 +27,51 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi Nishanth,
-On Tuesday 22 July 2014 10:20 PM, Nishanth Menon wrote:
+On Tuesday 22 July 2014 10:15 PM, Nishanth Menon wrote:
 > On 07/16/2014 03:36 AM, Lokesh Vutla wrote:
->> From: Rajendra Nayak <rnayak@ti.com>
+>> This series add seperate ocp interface lists that are specific to dra74x
+>> and dra72x, and moving USB OTG SS4 to dra74x only since its not present
+>> in dra72x. Without this USB OTG SS4 hwmod gives an abort on dra72x.
 >>
->> To deal with IPs which are specific to dra74x and dra72x, maintain seperate
->> ocp interface lists, while keeping the common list for all common IPs.
+>> Adding support for soc_is_dra74x() and soc_is_dra72x() in order to differentiate
+>> between dra74x and dra72x and pass the respective ocp interface lists.
 >>
->> Move USB OTG SS4 to dra74x only list since its unavailable in
->> dra72x and is giving an abort during boot. The dra72x only list
->> is empty for now and a placeholder for future hwmod additions which
->> are specific to dra72x.
+>> Verified on dra74x evm and dra72x evm using 3.16-rc5 based mainline kernel.
 >>
->> Fixes: d904b38 ARM: DRA7: hwmod: Add SYSCONFIG for usb_otg_ss
-> 
-> please use a format as following:
-> Fixes: d904b38df0db13 ("ARM: DRA7: hwmod: Add SYSCONFIG for usb_otg_ss")
-> 
->> Reported-by: Keerthy <j-keerthy@ti.com>
->> Signed-off-by: Rajendra Nayak <rnayak@ti.com>
->> Signed-off-by: Lokesh Vutla <lokeshvutla@ti.com>
->> ---
+>> Before:
+>> dra74x : http://paste.ubuntu.com/7802364/ 
+>> dra72x : http://paste.ubuntu.com/7802334/ (Kernel panic)
+>>
+>> After-
+>> dra74x : http://paste.ubuntu.com/7802340/
+>> dra72x : http://paste.ubuntu.com/7802338/ (booted)
+>>
+>> Rajendra Nayak (2):
+>>   ARM: DRA7: Add support for soc_is_dra74x() and soc_is_dra72x()
+>>     varients
+>>   ARM: DRA7: hwmod: Add dra74x and dra72x specific ocp interface lists
+>>
 >>  arch/arm/mach-omap2/omap_hwmod.c          |    3 +++
 >>  arch/arm/mach-omap2/omap_hwmod_7xx_data.c |   22 ++++++++++++++++++++--
->>  2 files changed, 23 insertions(+), 2 deletions(-)
+>>  arch/arm/mach-omap2/soc.h                 |    7 +++++++
+>>  3 files changed, 30 insertions(+), 2 deletions(-)
 >>
->> diff --git a/arch/arm/mach-omap2/omap_hwmod.c b/arch/arm/mach-omap2/omap_hwmod.c
->> index 6c074f3..14f8370 100644
->> --- a/arch/arm/mach-omap2/omap_hwmod.c
->> +++ b/arch/arm/mach-omap2/omap_hwmod.c
->> @@ -3345,6 +3345,9 @@ int __init omap_hwmod_register_links(struct omap_hwmod_ocp_if **ois)
->>  	if (!ois)
->>  		return 0;
->>  
->> +	if (ois[0] == NULL) /*empty list*/
-> /* Empty list */ ?
->> +		return 0;
->> +
+> Tested-by: Nishanth Menon <nm@ti.com>
+Thanks..
 > 
-> This change looks like a different patch?
-Since we are introducing empty lists in this patch, I guess
-this can go in the same patch.
-> 
->>  	if (!linkspace) {
->>  		if (_alloc_linkspace(ois)) {
->>  			pr_err("omap_hwmod: could not allocate link space\n");
->> diff --git a/arch/arm/mach-omap2/omap_hwmod_7xx_data.c b/arch/arm/mach-omap2/omap_hwmod_7xx_data.c
->> index 284324f..c95033c 100644
->> --- a/arch/arm/mach-omap2/omap_hwmod_7xx_data.c
->> +++ b/arch/arm/mach-omap2/omap_hwmod_7xx_data.c
->> @@ -35,6 +35,7 @@
->>  #include "i2c.h"
->>  #include "mmc.h"
->>  #include "wd_timer.h"
->> +#include "soc.h"
->>  
->>  /* Base offset for all DRA7XX interrupts external to MPUSS */
->>  #define DRA7XX_IRQ_GIC_START	32
->> @@ -2705,7 +2706,6 @@ static struct omap_hwmod_ocp_if *dra7xx_hwmod_ocp_ifs[] __initdata = {
->>  	&dra7xx_l4_per3__usb_otg_ss1,
->>  	&dra7xx_l4_per3__usb_otg_ss2,
->>  	&dra7xx_l4_per3__usb_otg_ss3,
->> -	&dra7xx_l4_per3__usb_otg_ss4,
->>  	&dra7xx_l3_main_1__vcp1,
->>  	&dra7xx_l4_per2__vcp1,
->>  	&dra7xx_l3_main_1__vcp2,
->> @@ -2714,8 +2714,26 @@ static struct omap_hwmod_ocp_if *dra7xx_hwmod_ocp_ifs[] __initdata = {
->>  	NULL,
->>  };
->>  
->> +static struct omap_hwmod_ocp_if *dra74x_hwmod_ocp_ifs[] __initdata = {
->> +	&dra7xx_l4_per3__usb_otg_ss4,
->> +	NULL,
->> +};
->> +
->> +static struct omap_hwmod_ocp_if *dra72x_hwmod_ocp_ifs[] __initdata = {
->> +	NULL,
->> +};
->> +
->>  int __init dra7xx_hwmod_init(void)
->>  {
->> +	int ret;
->> +
->>  	omap_hwmod_init();
->> -	return omap_hwmod_register_links(dra7xx_hwmod_ocp_ifs);
->> +	ret = omap_hwmod_register_links(dra7xx_hwmod_ocp_ifs);
-> if (ret)
-> 	goto out;
->> +
->> +	if (!ret && soc_is_dra74x())
-> no need of !ret
->> +		return omap_hwmod_register_links(dra74x_hwmod_ocp_ifs);
-> ret = omap_hwmod_register_links(dra74x_hwmod_ocp_ifs);
->> +	else if (!ret && soc_is_dra72x())
-> no need of else and !ret
->> +		return omap_hwmod_register_links(dra72x_hwmod_ocp_ifs);
-> ret = omap_hwmod_register_links(dra72x_hwmod_ocp_ifs);
->> +
-> 
-> out:
-Ok. Will do this and repost.
+> BUT, I suggest a follow up series to do exactly the same (moving stuff
+> that are not common from dra7.dtsi to dra72x.dtsi and 74x.dtsi) as
+> well to ensure that dts indicates exactly the same information (only
+> the applicable IPs are present in dts).
+The separation of dra72x.dtsi and dra74x.dtsi is already happened and the patch is
+already present in mainline[1].
+Looks like usb_otg_ss4 is still present in dra7.dtsi, but this should go into dra74x.dtsi.
+I ll take it up.
+
+[1] https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=38b248db60e32734417534b57f9ab687c445113a
 
 Thanks and regards,
 Lokesh
->> +	return ret;
->>  }
->>
-> 
+
 > 
 
