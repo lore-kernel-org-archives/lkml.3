@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756995AbaGWCfU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 22:35:20 -0400
-Received: from mga11.intel.com ([192.55.52.93]:54690 "EHLO mga11.intel.com"
+	id S1757063AbaGWCfZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 22:35:25 -0400
+Received: from mga14.intel.com ([192.55.52.115]:45022 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753119AbaGWCfR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 22:35:17 -0400
+	id S1753119AbaGWCfW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 22:35:22 -0400
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,714,1400050800"; 
-   d="scan'208";a="565812270"
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="363778522"
 From: "Chen, Gong" <gong.chen@linux.intel.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@kernel.org, tglx@linutronix.de, paulus@samba.org,
@@ -21,9 +21,9 @@ Cc: mingo@kernel.org, tglx@linutronix.de, paulus@samba.org,
         rostedt@goodmis.org, rric@kernel.org, gregkh@linuxfoundation.org,
         mhocko@suse.cz, david@fromorbit.com,
         "Chen, Gong" <gong.chen@linux.intel.com>
-Subject: [RFC PATCH v1 35/70] mm, slab: _FROZEN Cleanup
-Date: Tue, 22 Jul 2014 21:59:11 -0400
-Message-Id: <1406080786-3938-36-git-send-email-gong.chen@linux.intel.com>
+Subject: [RFC PATCH v1 36/70] mm, vmscan: _FROZEN Cleanup
+Date: Tue, 22 Jul 2014 21:59:12 -0400
+Message-Id: <1406080786-3938-37-git-send-email-gong.chen@linux.intel.com>
 X-Mailer: git-send-email 2.0.0.rc2
 In-Reply-To: <1406080786-3938-1-git-send-email-gong.chen@linux.intel.com>
 References: <1406080786-3938-1-git-send-email-gong.chen@linux.intel.com>
@@ -31,59 +31,26 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove XXX_FROZEN state from mm/slab.
+Remove XXX_FROZEN state from mm/vmscan.
 
 Signed-off-by: Chen, Gong <gong.chen@linux.intel.com>
 ---
- mm/slab.c | 8 +-------
- 1 file changed, 1 insertion(+), 7 deletions(-)
+ mm/vmscan.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/mm/slab.c b/mm/slab.c
-index 3070b92..5490528 100644
---- a/mm/slab.c
-+++ b/mm/slab.c
-@@ -1325,20 +1325,17 @@ static int cpuup_callback(struct notifier_block *nfb,
- 	long cpu = (long)hcpu;
- 	int err = 0;
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 0f16ffe..25c0109 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -3454,7 +3454,7 @@ static int cpu_callback(struct notifier_block *nfb, unsigned long action,
+ {
+ 	int nid;
  
--	switch (action) {
-+	switch (action & ~CPU_TASKS_FROZEN) {
- 	case CPU_UP_PREPARE:
--	case CPU_UP_PREPARE_FROZEN:
- 		mutex_lock(&slab_mutex);
- 		err = cpuup_prepare(cpu);
- 		mutex_unlock(&slab_mutex);
- 		break;
- 	case CPU_ONLINE:
--	case CPU_ONLINE_FROZEN:
- 		start_cpu_timer(cpu);
- 		break;
- #ifdef CONFIG_HOTPLUG_CPU
-   	case CPU_DOWN_PREPARE:
--  	case CPU_DOWN_PREPARE_FROZEN:
- 		/*
- 		 * Shutdown cache reaper. Note that the slab_mutex is
- 		 * held so that if cache_reap() is invoked it cannot do
-@@ -1350,11 +1347,9 @@ static int cpuup_callback(struct notifier_block *nfb,
- 		per_cpu(slab_reap_work, cpu).work.func = NULL;
-   		break;
-   	case CPU_DOWN_FAILED:
--  	case CPU_DOWN_FAILED_FROZEN:
- 		start_cpu_timer(cpu);
-   		break;
- 	case CPU_DEAD:
--	case CPU_DEAD_FROZEN:
- 		/*
- 		 * Even if all the cpus of a node are down, we don't free the
- 		 * kmem_cache_node of any cache. This to avoid a race between
-@@ -1366,7 +1361,6 @@ static int cpuup_callback(struct notifier_block *nfb,
- 		/* fall through */
- #endif
- 	case CPU_UP_CANCELED:
--	case CPU_UP_CANCELED_FROZEN:
- 		mutex_lock(&slab_mutex);
- 		cpuup_canceled(cpu);
- 		mutex_unlock(&slab_mutex);
+-	if (action == CPU_ONLINE || action == CPU_ONLINE_FROZEN) {
++	if ((action & ~CPU_TASKS_FROZEN) == CPU_ONLINE) {
+ 		for_each_node_state(nid, N_MEMORY) {
+ 			pg_data_t *pgdat = NODE_DATA(nid);
+ 			const struct cpumask *mask;
 -- 
 2.0.0.rc2
 
