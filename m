@@ -1,54 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756602AbaGWKxJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 06:53:09 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:43608 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751103AbaGWKxG (ORCPT
+	id S1756991AbaGWKxZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 06:53:25 -0400
+Received: from mx2.parallels.com ([199.115.105.18]:41131 "EHLO
+	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752345AbaGWKxW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 06:53:06 -0400
-Date: Wed, 23 Jul 2014 12:53:04 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Lan Tianyu <tianyu.lan@intel.com>
-Cc: rjw@rjwysocki.net, len.brown@intel.com, peterz@infradead.org,
-        toshi.kani@hp.com, mingo@kernel.org, akpm@linux-foundation.org,
-        todd.e.brandt@linux.intel.com, fabf@skynet.be,
-        srivatsa.bhat@linux.vnet.ibm.com, ego@linux.vnet.ibm.com,
-        rafael.j.wysocki@intel.com, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org
-Subject: Re: [RFC PATCH] PM/CPU: Parallel enabling nonboot cpus with resume
- devices
-Message-ID: <20140723105304.GA22675@amd.pavel.ucw.cz>
-References: <1406106694-3306-1-git-send-email-tianyu.lan@intel.com>
+	Wed, 23 Jul 2014 06:53:22 -0400
+Date: Wed, 23 Jul 2014 14:53:12 +0400
+From: Vladimir Davydov <vdavydov@parallels.com>
+To: <akpm@linux-foundation.org>
+CC: <mhocko@suse.cz>, <hannes@cmpxchg.org>, <cl@linux.com>,
+        <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH -mm 0/6] memcg: release memcg_cache_id on css offline
+Message-ID: <20140723105312.GC30850@esperanza>
+References: <cover.1405941342.git.vdavydov@parallels.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <1406106694-3306-1-git-send-email-tianyu.lan@intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <cover.1405941342.git.vdavydov@parallels.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+On Mon, Jul 21, 2014 at 03:47:10PM +0400, Vladimir Davydov wrote:
+> This patch set makes memcg release memcg_cache_id on css offline. This
+> way the memcg_caches arrays size will be limited by the number of alive
+> kmem-active memory cgroups, which is much better.
 
-> In the current world, all nonboot cpus are enabled serially during system
-> resume. System resume sequence is that boot cpu enables nonboot cpu one by
-> one and then resume devices. Before resuming devices, there are few tasks
-> assigned to nonboot cpus after they are brought up. This waste cpu usage.
-> 
-> To accelerate S3, this patches adds a new kernel configure
-> PM_PARALLEL_CPU_UP_FOR_SUSPEND to allow boot cpu to go forward to resume
-> devices after bringing up one nonboot cpu. The nonboot cpu will be in charge
-> of bringing up other cpus. This makes enabling cpu2~x parallel with resuming
-> devices. From the test result on 4 logical core laptop, the time of resume
-> device almost wasn't affected by enabling nonboot cpus lately while the start
-> point is almost 30ms earlier than before.
+Hi Andrew,
 
-Does this mean that userspace can now run seeing the "offlined" cpus
-still in offline state?
+While preparing the per-memcg slab shrinkers patch set, I realized that
+releasing memcg_cache_id on css offline is incorrect, because after css
+offline there still can be elements on per-memcg list_lrus, which are
+indexed by memcg_cache_id. We could re-parent them, but this is what we
+decided to avoid in order to keep things clean and simple. So it seems
+there's nothing we can do except keeping memcg_cache_ids till css free.
 
-									Pavel
+I wonder if we could reclaim memory from per memcg arrays (per memcg
+list_lrus, kmem_caches) on memory pressure. May be, we could use
+flex_array to achieve that.
 
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Anyway, could you please drop the following patches from the mmotm tree
+(all this set except patch 1, which is a mere cleanup)?
+
+  memcg-release-memcg_cache_id-on-css-offline
+  memcg-keep-all-children-of-each-root-cache-on-a-list
+  memcg-add-pointer-to-owner-cache-to-memcg_cache_params
+  memcg-make-memcg_cache_id-static
+  slab-use-mem_cgroup_id-for-per-memcg-cache-naming
+
+Sorry about the noise.
+
+Thank you.
