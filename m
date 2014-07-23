@@ -1,88 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755096AbaGWMyS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 08:54:18 -0400
-Received: from mail.kernel.org ([198.145.19.201]:40599 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753976AbaGWMyP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 08:54:15 -0400
-Date: Wed, 23 Jul 2014 14:54:09 +0200
-From: Sebastian Reichel <sre@kernel.org>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        linux-kernel@vger.kernel.org, David Woodhouse <dwmw2@infradead.org>,
-        Dmitry Artamonow <mad_soft@inbox.ru>
-Subject: Re: [PATCH] power: add driver for battery reading on iPaq h3xxx
-Message-ID: <20140723125409.GC18172@earth.universe>
-References: <1405157629-10550-1-git-send-email-linus.walleij@linaro.org>
+	id S1755440AbaGWMyy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 08:54:54 -0400
+Received: from mail-oa0-f41.google.com ([209.85.219.41]:42687 "EHLO
+	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751122AbaGWMyw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jul 2014 08:54:52 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha512;
-	protocol="application/pgp-signature"; boundary="zCKi3GIZzVBPywwA"
-Content-Disposition: inline
-In-Reply-To: <1405157629-10550-1-git-send-email-linus.walleij@linaro.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Date: Wed, 23 Jul 2014 14:54:51 +0200
+Message-ID: <CACRpkda7-1cMyS5fyf1Rr+OamLmEYWeCe0VYJP_=4zSa-WFy7g@mail.gmail.com>
+Subject: [GIT PULL] pin control fixes for v3.16
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---zCKi3GIZzVBPywwA
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-
 Hi Linus,
 
-On Sat, Jul 12, 2014 at 11:33:49AM +0200, Linus Walleij wrote:
-> [...]
-> +
-> +#define BATT_PERIOD 100000 /* 10 seconds in milliseconds */
+here are three pin control fixes for the v3.16 series. Sorry that some
+of these arrive late, the summer heat in Sweden makes me slow.
 
-that's 100 seconds...
+Please pull them in.
 
-> [...]
-> +
-> +struct micro_battery {
-> +	struct ipaq_micro *micro;
-> +	struct workqueue_struct *wq;
-> +	struct delayed_work update;
-> +	u8 ac;
-> +	u8 chemistry;
-> +	unsigned int voltage;
-> +	u16 temperature;
-> +	u8 flag;
-> +};
-> +
-> [...]
-> +
-> +static struct power_supply micro_battery = {
-                              ^^^^^^^^^^^^^
-I would prefer to have a name different from the struct defined
-above.
+Yours,
+Linus Walleij
 
-> [...]
 
--- Sebastian
+The following changes since commit 1795cd9b3a91d4b5473c97f491d63892442212ab:
 
---zCKi3GIZzVBPywwA
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+  Linux 3.16-rc5 (2014-07-13 14:04:33 -0700)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+are available in the git repository at:
 
-iQIcBAEBCgAGBQJTz7BxAAoJENju1/PIO/qa/5oP/0jKdc7MviJmJSDuwOxMbsjM
-NB0zsi4B61uhKMjdSAfaJ6oE5SDRZqjpOTQkgGbygu3guc6df4RxJkHKC2BbUI51
-CWF+nvxslr/iBKfwW3SfUp2pY4jTCnrPxppfMbxnrsxbbSl1e1tNKt4bXEQTmoXg
-5xcLMxup0gSyiIZuBfB/XdlUpvm1rreTJf21AQIhne8bOplHf7arKAuHQO/tNVCX
-Jqp006wIkwnxcVGoTvDP6WXTJH4TAXROwIafd7semgjh1uBXRlCviuSKHofbU6J+
-2lsrPOVc2Qn2gxLNUPO94LQr+L93T9WIWHoAElyMJDGQHU+flWDE0TZ3Of17vvFH
-KQ1Oi1wEeYabMvcOeQh4McezsH+BXEbYXaLW4+jq0BcCvZR8uanltbo0XuL1iQzS
-sijNOdCrRTzpgxFnOJkMp6llm54TXRg6t7CfAni7CdRdQsR/ghRUHSNAaFqwgs4j
-Fi6iggjWKt3J/6VXMjMLpu3aL7kNntJLzVR8hMTgb3MQpQ4BoAspIaK9ER4d0JHV
-KCprvE/Y1qa+C6tfr/0uNG+JWkcu2D4PPcZQhmQigvu+8pKUUeNAa0GjGi0xpx/G
-5rMR5OGnP3+bBzpbuq59n8Q+orr0mn5jexoZ8ESvf1/74REH3uLelJgMfxTNCnaM
-RK45c/zxJsAEI/3CbwU5
-=t++l
------END PGP SIGNATURE-----
+  git://git.kernel.org/pub/scm/linux/kernel/git/linusw/linux-pinctrl.git
+tags/pinctrl-v3.16-3
 
---zCKi3GIZzVBPywwA--
+for you to fetch changes up to fe132649b5b28c19bc657d167c232180774739f8:
+
+  gpio: rcar: Add support for DT IRQ flags (2014-07-15 20:55:15 +0200)
+
+----------------------------------------------------------------
+Pin control fixes for v3.16:
+- An IRQ handling fix for the STi driver, also for stable
+- Another IRQ fix for the RCAR GPIO driver
+- A MAINTAINERS entry
+
+----------------------------------------------------------------
+Laurent Pinchart (2):
+      MAINTAINERS: Add entry for the Renesas pin controller driver
+      gpio: rcar: Add support for DT IRQ flags
+
+Maxime COQUELIN (1):
+      pinctrl: st: Fix irqmux handler
+
+ MAINTAINERS                  | 6 ++++++
+ drivers/gpio/gpio-rcar.c     | 1 +
+ drivers/pinctrl/pinctrl-st.c | 2 +-
+ 3 files changed, 8 insertions(+), 1 deletion(-)
