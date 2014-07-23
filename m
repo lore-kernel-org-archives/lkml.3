@@ -1,81 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757207AbaGWCuk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 22:50:40 -0400
-Received: from e23smtp01.au.ibm.com ([202.81.31.143]:39780 "EHLO
-	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756624AbaGWCui (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 22:50:38 -0400
-Message-ID: <53CF22F5.6000206@linux.vnet.ibm.com>
-Date: Wed, 23 Jul 2014 10:50:29 +0800
-From: Mike Qiu <qiudayu@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
+	id S1755690AbaGWDGa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 23:06:30 -0400
+Received: from mga01.intel.com ([192.55.52.88]:18923 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752196AbaGWDG3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 23:06:29 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,714,1400050800"; 
+   d="scan'208";a="565820935"
+Message-ID: <53CF26B2.6060503@linux.intel.com>
+Date: Wed, 23 Jul 2014 11:06:26 +0800
+From: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: cgroups@vger.kernel.org
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Tejun Heo <tj@kernel.org>, lizefan@huawei.com
-Subject: WARNING: at kernel/cpuset.c:1139
+To: Mikulas Patocka <mpatocka@redhat.com>,
+        "xinhui.pan" <xinhuix.pan@intel.com>, linux-kernel@vger.kernel.org,
+        agk@redhat.com, snitzer@redhat.com, dm-devel@redhat.com,
+        "Liu, ShuoX" <shuox.liu@intel.com>
+Subject: Re: [dm-devel] [PATCH] md/dm-ioctl.c: optimize memory allocation
+ in copy_params
+References: <53B68068.2060102@intel.com> <alpine.LRH.2.02.1407081831510.27831@file01.intranet.prod.int.rdu2.redhat.com> <53BCA278.5050205@linux.intel.com> <alpine.LRH.2.02.1407091032400.4545@file01.intranet.prod.int.rdu2.redhat.com> <53CDB81B.90509@linux.intel.com> <20140722012352.GD6822@agk-dp.fab.redhat.com>
+In-Reply-To: <20140722012352.GD6822@agk-dp.fab.redhat.com>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14072302-1618-0000-0000-000000A00D81
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit 734d45130cb ("cpuset: update cs->effective_{cpus, mems} when 
-config changes") introduce the below warning in my server.
+On 2014/7/22 9:23, Alasdair G Kergon wrote:
+>>>> On 2014/7/9 6:39, Mikulas Patocka wrote:
+>>> Which ioctl with more than 16kB
+>>> arguments do you use?
+> Unanswered.  Let's ask the same question in a different way:
+>
+> Please supply the output of these three commands on the real-world system on
+> which you believe that that particular allocation is causing you a problem:
+>    dmsetup info -c
+>    dmsetup table
+>    dmsetup status
 
-[   35.652137] ------------[ cut here ]------------
-[   35.652141] WARNING: at kernel/cpuset.c:1139
-[   35.652142] Modules linked in: ebtable_nat xt_CHECKSUM bridge stp llc 
-be2iscsi iscsi_boot_sysfs bnx2i cnic uio cxgb4i cxgb4 cxgb3i cxgb3 mdio 
-libcxgbi ib_iser iptable_mangle nf_conntrack_ipv4 rdma_cm nf_defrag_ipv4 
-xt_conntrack iw_cm nf_conntrack ib_cm ib_sa ib_mad ebtable_filter 
-ib_core ebtables ip6_tables ib_addr iscsi_tcp libiscsi_tcp libiscsi 
-scsi_transport_iscsi e1000e ses ptp enclosure pps_core be2net shpchp 
-vhost_net tun macvtap macvlan vhost kvm binfmt_misc uinput lpfc 
-scsi_transport_fc ipr
-[   35.652185] CPU: 36 PID: 1363 Comm: libvirtd Not tainted 
-3.16.0-rc5-next-20140721+ #93
-[   35.652187] task: c0000003b3443a00 ti: c0000003bb008000 task.ti: 
-c0000003bb008000
-[   35.652189] NIP: c00000000015ff38 LR: c00000000015ff2c CTR: 
-0000000000000000
-[   35.652190] REGS: c0000003bb00b850 TRAP: 0700   Not tainted 
-(3.16.0-rc5-next-20140721+)
-[   35.652191] MSR: 9000000000029032 <SF,HV,EE,ME,IR,DR,RI> CR: 
-24004824  XER: 00000000
-[   35.652196] CFAR: c00000000045f6cc SOFTE: 1
-GPR00: c00000000015ff04 c0000003bb00bad0 c00000000145acf8 0000000000000001
-GPR04: c0000003b3dae5d0 0000000000000100 0000000000000000 0000000000000000
-GPR08: c0000003b3dae548 0000000000000004 0000000000000000 0000000000000004
-GPR12: 0000000000000001 c00000000feea200 0000008066727bd8 0000008066727a30
-GPR16: 00000080667dfa08 0000008066727a68 00000080667279f8 00000080667279d0
-GPR20: c00000000166acf8 c0000003b3dae530 c000000001311990 c0000003b3dae5d0
-GPR24: c0000003b3dae530 c0000003b3dadc00 c0000003b3dae400 0000000000000001
-GPR28: 0000000000000000 c000000001311968 c0000003b1873100 c0000003b3dae400
-[   35.652219] NIP [c00000000015ff38] .cpuset_write_resmask+0x438/0x8c0
-[   35.652221] LR [c00000000015ff2c] .cpuset_write_resmask+0x42c/0x8c0
-[   35.652222] Call Trace:
-[   35.652224] [c0000003bb00bad0] [c00000000015ff04] 
-.cpuset_write_resmask+0x404/0x8c0 (unreliable)
-[   35.652227] [c0000003bb00bba0] [c000000000156f08] 
-.cgroup_file_write+0x78/0x190
-[   35.652230] [c0000003bb00bc50] [c00000000030c490] 
-.kernfs_fop_write+0x150/0x1e0
-[   35.652233] [c0000003bb00bcf0] [c00000000026b6d0] .vfs_write+0xe0/0x270
-[   35.652235] [c0000003bb00bd90] [c00000000026be24] .SyS_write+0x64/0x110
-[   35.652238] [c0000003bb00be30] [c00000000000a158] syscall_exit+0x0/0x98
-[   35.652239] Instruction dump:
-[   35.652240] e93a0000 39549528 e9290118 7fa95000 419e0024 7ea3ab78 
-7ee4bb78 38a00100
-[   35.652243] 482ff719 60000000 2fa30000 419e0008 <0fe00000> 7f43d378 
-4bfffa71 813a006c
-[   35.652247] ---[ end trace f91b0c3aadfe71a6 ]---
+Android doesn't include the command. We compiled lvm2-2_02_107.tar.gz and copy
+dmsetup to the board. But command reports No devices.
 
-Thanks,
-Mike
+# /data/bin/dmsetup info
+No devices found
+
+# cat /proc/devices
+Character devices:
+   1 mem
+   4 /dev/vc/0
+   4 tty
+   4 ttyS
+   4 ttyMFD
+   5 /dev/tty
+   5 /dev/console
+   5 /dev/ptmx
+   7 vcs
+  10 misc
+  13 input
+  21 sg
+  29 fb
+  81 video4linux
+  89 i2c
+108 ppp
+116 alsa
+128 ptm
+136 pts
+153 spi
+166 ttyACM
+180 usb
+188 ttyUSB
+189 usb_device
+202 cpu/msr
+203 cpu/cpuid
+226 drm
+241 mdm_ctrl
+242 sep54
+243 roccat
+244 hidraw
+245 ttyGS
+246 usbmon
+247 ttyPTI
+248 gsmtty
+249 bsg
+250 iio
+251 ptp
+252 pps
+253 media
+254 rtc
+
+Block devices:
+   1 ramdisk
+259 blkext
+   7 loop
+   8 sd
+   9 md
+  11 sr
+  65 sd
+  66 sd
+  67 sd
+  68 sd
+  69 sd
+  70 sd
+  71 sd
+128 sd
+129 sd
+130 sd
+131 sd
+132 sd
+133 sd
+134 sd
+135 sd
+179 mmc
+253 device-mapper
+254 mdp
 
