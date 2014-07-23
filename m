@@ -1,254 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754855AbaGWMfx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 08:35:53 -0400
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:5999 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750787AbaGWMfv (ORCPT
+	id S1756583AbaGWMf5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 08:35:57 -0400
+Received: from mail-ie0-f170.google.com ([209.85.223.170]:46402 "EHLO
+	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755213AbaGWMfz convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 08:35:51 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Wed, 23 Jul 2014 05:24:02 -0700
-Message-ID: <53CFAC22.40106@nvidia.com>
-Date: Wed, 23 Jul 2014 15:35:46 +0300
-From: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Wed, 23 Jul 2014 08:35:55 -0400
 MIME-Version: 1.0
-To: Thierry Reding <thierry.reding@gmail.com>
-CC: "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Paul Walmsley <pwalmsley@nvidia.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH v2 14/16] cpufreq: Add cpufreq driver for Tegra124
-References: <1405957142-19416-1-git-send-email-ttynkkynen@nvidia.com> <1405957142-19416-15-git-send-email-ttynkkynen@nvidia.com> <20140723070949.GB15759@ulmo.nvidia.com>
-In-Reply-To: <20140723070949.GB15759@ulmo.nvidia.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <53CF5B9F.1050800@amd.com>
+References: <20140709093124.11354.3774.stgit@patser>
+	<20140709122953.11354.46381.stgit@patser>
+	<CAPM=9tyD2ZbrcGDC3hfNb7qNdzsfnyD-ZwM7G-nOgxeu5YKuSg@mail.gmail.com>
+	<53CE2421.5040906@amd.com>
+	<20140722114607.GL15237@phenom.ffwll.local>
+	<20140722115737.GN15237@phenom.ffwll.local>
+	<53CE56ED.4040109@vodafone.de>
+	<20140722132652.GO15237@phenom.ffwll.local>
+	<53CE6AFA.1060807@vodafone.de>
+	<CAKMK7uG1d31zU_i__wc+Yq46A0x0tPeKnMBs+NHSmHS82uMsXQ@mail.gmail.com>
+	<53CE84AA.9030703@amd.com>
+	<CAKMK7uFa8vMBV9_JenbFGnFXtV_r9dk=WjbMkkCDWcauhrDdJg@mail.gmail.com>
+	<53CE8A57.2000803@vodafone.de>
+	<53CF58FB.8070609@canonical.com>
+	<53CF5B9F.1050800@amd.com>
+Date: Wed, 23 Jul 2014 08:35:54 -0400
+Message-ID: <CAF6AEGtDB0cX1dtRGr3j7m2gBEv-+KqVOy49U4jgCuu=cRdJmQ@mail.gmail.com>
+Subject: Re: [Nouveau] [PATCH 09/17] drm/radeon: use common fence
+ implementation for fences
+From: Rob Clark <robdclark@gmail.com>
+To: =?UTF-8?Q?Christian_K=C3=B6nig?= <christian.koenig@amd.com>
+Cc: Maarten Lankhorst <maarten.lankhorst@canonical.com>,
+        =?UTF-8?Q?Christian_K=C3=B6nig?= <deathsimple@vodafone.de>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Thomas Hellstrom <thellstrom@vmware.com>,
+        nouveau <nouveau@lists.freedesktop.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        dri-devel <dri-devel@lists.freedesktop.org>,
+        Ben Skeggs <bskeggs@redhat.com>,
+        "Deucher, Alexander" <alexander.deucher@amd.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Jul 23, 2014 at 2:52 AM, Christian König
+<christian.koenig@amd.com> wrote:
+> Am 23.07.2014 08:40, schrieb Maarten Lankhorst:
+>
+>> op 22-07-14 17:59, Christian König schreef:
+>>>
+>>> Am 22.07.2014 17:42, schrieb Daniel Vetter:
+>>>>
+>>>> On Tue, Jul 22, 2014 at 5:35 PM, Christian König
+>>>> <christian.koenig@amd.com> wrote:
+>>>>>
+>>>>> Drivers exporting fences need to provide a fence->signaled and a
+>>>>> fence->wait
+>>>>> function, everything else like fence->enable_signaling or calling
+>>>>> fence_signaled() from the driver is optional.
+>>>>>
+>>>>> Drivers wanting to use exported fences don't call fence->signaled or
+>>>>> fence->wait in atomic or interrupt context, and not with holding any
+>>>>> global
+>>>>> locking primitives (like mmap_sem etc...). Holding locking primitives
+>>>>> local
+>>>>> to the driver is ok, as long as they don't conflict with anything
+>>>>> possible
+>>>>> used by their own fence implementation.
+>>>>
+>>>> Well that's almost what we have right now with the exception that
+>>>> drivers are allowed (actually must for correctness when updating
+>>>> fences) the ww_mutexes for dma-bufs (or other buffer objects).
+>>>
+>>> In this case sorry for so much noise. I really haven't looked in so much
+>>> detail into anything but Maarten's Radeon patches.
+>>>
+>>> But how does that then work right now? My impression was that it's
+>>> mandatory for drivers to call fence_signaled()?
+>>
+>> It's only mandatory to call fence_signal() if the .enable_signaling
+>> callback has been called, else you can get away with never calling signaling
+>> a fence at all before dropping the last refcount to it.
+>> This allows you to keep interrupts disabled when you don't need them.
+>
+>
+> Can we somehow avoid the need to call fence_signal() at all? The interrupts
+> at least on radeon are way to unreliable for such a thing. Can
+> enable_signalling fail? What's the reason for fence_signaled() in the first
+> place?
+>
 
+the device you are sharing with may not be able to do hw<->hw
+signalling.. think about buffer sharing w/ camera, for example.
 
-On 23/07/14 10:09, Thierry Reding wrote:
-> * PGP Signed by an unknown key
-> 
-> On Mon, Jul 21, 2014 at 06:39:00PM +0300, Tuomas Tynkkynen wrote:
-> [...]
->> diff --git a/drivers/cpufreq/tegra124-cpufreq.c b/drivers/cpufreq/tegra124-cpufreq.c
-> [...]
->> +static int tegra124_cpu_switch_to_dfll(void)
->> +{
->> +	struct clk *original_cpu_clk_parent;
-> 
-> Maybe just "parent"?
-> 
->> +	unsigned long rate;
->> +	struct dev_pm_opp *opp;
->> +	int ret;
->> +
->> +	rate = clk_get_rate(cpu_clk);
->> +	opp = dev_pm_opp_find_freq_ceil(cpu_dev, &rate);
->> +	if (IS_ERR(opp))
->> +		return PTR_ERR(opp);
->> +
->> +	ret = clk_set_rate(dfll_clk, rate);
->> +	if (ret)
->> +		return ret;
->> +
->> +	original_cpu_clk_parent = clk_get_parent(cpu_clk);
->> +	clk_set_parent(cpu_clk, pllp_clk);
->> +	if (ret)
->> +		return ret;
->> +
->> +	ret = clk_prepare_enable(dfll_clk);
->> +	if (ret)
->> +		goto out_switch_to_original_parent;
-> 
-> This could simply be "out" or "err" or anything else shorter than the
-> above.
-> 
->> +
->> +	clk_set_parent(cpu_clk, dfll_clk);
->> +
->> +	return 0;
->> +
->> +out_switch_to_original_parent:
->> +	clk_set_parent(cpu_clk, original_cpu_clk_parent);
->> +
->> +	return ret;
->> +}
->> +
->> +static struct platform_device_info cpufreq_cpu0_devinfo = {
->> +	.name = "cpufreq-cpu0",
->> +};
->> +
->> +static int tegra124_cpufreq_probe(struct platform_device *pdev)
->> +{
->> +	int ret;
->> +
->> +	cpu_dev = get_cpu_device(0);
->> +	if (!cpu_dev)
->> +		return -ENODEV;
->> +
->> +	cpu_clk = of_clk_get_by_name(cpu_dev->of_node, "cpu_g");
->> +	if (IS_ERR(cpu_clk))
->> +		return PTR_ERR(cpu_clk);
->> +
->> +	dfll_clk = of_clk_get_by_name(cpu_dev->of_node, "dfll");
->> +	if (IS_ERR(dfll_clk)) {
->> +		ret = PTR_ERR(dfll_clk);
->> +		goto out_put_cpu_clk;
->> +	}
->> +
->> +	pllx_clk = of_clk_get_by_name(cpu_dev->of_node, "pll_x");
->> +	if (IS_ERR(pllx_clk)) {
->> +		ret = PTR_ERR(pllx_clk);
->> +		goto out_put_dfll_clk;
->> +	}
->> +
->> +	pllp_clk = of_clk_get_by_name(cpu_dev->of_node, "pll_p");
->> +	if (IS_ERR(pllp_clk)) {
->> +		ret = PTR_ERR(pllp_clk);
->> +		goto out_put_pllx_clk;
->> +	}
-> 
-> Can the above not be devm_clk_get(cpu_dev, "...") so that you can remove
-> all the clk_put() calls in the cleanup code below?
+You probably want your ->enable_signalling() to enable whatever
+workaround periodic-polling you need to do to catch missed irq's (and
+then call fence->signal() once you detect the fence has passed.
 
-That would allocate the clks under the cpu_dev's devres list, i.e. all the
-clk_puts wouldn't happen when the cpufreq driver goes away, but only when
-cpu_dev itself goes away.
+fwiw, I haven't had a chance to read this whole thread yet, but I
+expect that a lot of the SoC devices, especially ones with separate
+kms-only display and gpu drivers, will want callback from gpu's irq to
+bang a few display controller registers.  I agree in general callbacks
+from atomic ctx is probably something you want to avoid, but in this
+particular case I think it is worth the extra complexity.  Nothing is
+stopping a driver from using a callback that just chucks something on
+a workqueue, whereas the inverse is not possible.
 
-> 
->> +
->> +	ret = dev_pm_opp_init_cpufreq_table(cpu_dev, &freq_table);
->> +	if (ret)
->> +		goto out_put_pllp_clk;
->> +
->> +	ret = tegra124_cpu_switch_to_dfll();
->> +	if (ret)
->> +		goto out_free_table;
->> +
->> +	platform_device_register_full(&cpufreq_cpu0_devinfo);
-> 
-> Should the cpufreq_cpu0_devinfo device perhaps be a child of pdev?
+BR,
+-R
 
-Yeah, I suppose it should.
-
->> +
->> +	return 0;
->> +
->> +out_free_table:
->> +	dev_pm_opp_free_cpufreq_table(cpu_dev, &freq_table);
->> +out_put_pllp_clk:
->> +	clk_put(pllp_clk);
->> +out_put_pllx_clk:
->> +	clk_put(pllx_clk);
->> +out_put_dfll_clk:
->> +	clk_put(dfll_clk);
->> +out_put_cpu_clk:
->> +	clk_put(cpu_clk);
->> +
->> +	return ret;
->> +}
->> +
->> +static struct platform_driver tegra124_cpufreq_platdrv = {
->> +	.driver = {
->> +		.name	= "cpufreq-tegra124",
->> +		.owner	= THIS_MODULE,
->> +	},
->> +	.probe		= tegra124_cpufreq_probe,
-> 
-> Note that simply leaving out .remove() here doesn't guarantee that the
-> driver won't be unloaded. Also building it into the kernel doesn't
-> prevent that. You can still unbind the driver via sysfs. So you'd need
-> to add a .suppress_bind_attrs = true above.
-
-I hadn't heard about suppress_bind_attrs before, it indeed sounds useful.
-
-> But is there even a reason why we need that? Couldn't we make the
-> driver's .remove() undo what .probe() did so that the driver can be
-> unloaded?
-
-I guess that could be done, though to fully undo everything the regulator
-voltage would also need to be saved/restored.
-
-> Otherwise it probably makes more sense not to use a driver (and dummy
-> device) at all as Viresh already mentioned.
-> 
-
-The dummy platform device is only required for probe deferral, if that
-could be solved in a different way then yes.
-
->> +};
->> +
->> +static const struct of_device_id soc_of_matches[] = {
->> +	{ .compatible = "nvidia,tegra124", },
->> +	{}
->> +};
->> +
->> +static int __init tegra_cpufreq_init(void)
->> +{
->> +	int ret;
->> +	struct platform_device *pdev;
->> +
->> +	if (!of_find_matching_node(NULL, soc_of_matches))
->> +		return -ENODEV;
-> 
-> I think this could be of_machine_is_compatible() since there's only a
-> single entry in the match table. If there's a good chance that we may
-> end up with more entries, perhaps now would be a good time to add an
-> of_match_machine() function?
-
-I think this driver should work on Tegra132 without modifications.
-of_match_machine() does sound useful for some of the other cpufreq
-drivers as well and likely for your soc_is_tegra() from the PMC
-series as well.
-
-> 
->> +
->> +	ret = platform_driver_register(&tegra124_cpufreq_platdrv);
->> +	if (ret)
->> +		return ret;
->> +
->> +	pdev = platform_device_register_simple("cpufreq-tegra124", -1, NULL, 0);
->> +	if (IS_ERR(pdev)) {
->> +		platform_driver_unregister(&tegra124_cpufreq_platdrv);
->> +		return PTR_ERR(pdev);
->> +	}
->> +
->> +	return 0;
->> +}
->> +
->> +MODULE_AUTHOR("Tuomas Tynkkynen <ttynkkynen@nvidia.com>");
->> +MODULE_DESCRIPTION("cpufreq driver for nVIDIA Tegra124");
-> 
-> We use "NVIDIA" everywhere nowadays.
-> 
->> +MODULE_LICENSE("GPLv2");
-> 
-> The correct license string is "GPL v2".
-> 
->> +module_init(tegra_cpufreq_init);
-> 
-> The placement of this is unusual. It should go immediately below the
-> tegra_cpufreq_init() function.
-> 
-
-Ok.
-
-Thanks,
-Tuomas
-
--- 
-nvpublic
+>
+>>>> Agreed that any shared locks are out of the way (especially stuff like
+>>>> dev->struct_mutex or other non-strictly driver-private stuff, i915 is
+>>>> really bad here still).
+>>>
+>>> Yeah that's also an point I've wanted to note on Maartens patch. Radeon
+>>> grabs the read side of it's exclusive semaphore while waiting for fences
+>>> (because it assumes that the fence it waits for is a Radeon fence).
+>>>
+>>> Assuming that we need to wait in both directions with Prime (e.g. Intel
+>>> driver needs to wait for Radeon to finish rendering and Radeon needs to wait
+>>> for Intel to finish displaying), this might become a perfect example of
+>>> locking inversion.
+>>
+>> In the preliminary patches where I can sync radeon with other GPU's I've
+>> been very careful in all the places that call into fences, to make sure that
+>> radeon wouldn't try to handle lockups for a different (possibly also radeon)
+>> card.
+>
+>
+> That's actually not such a good idea.
+>
+> In case of a lockup we need to handle the lockup cause otherwise it could
+> happen that radeon waits for the lockup to be resolved and the lockup
+> handling needs to wait for a fence that's never signaled because of the
+> lockup.
+>
+> Christian.
+>
+>
+>>
+>> This is also why fence_is_signaled should never block, and why it trylocks
+>> the exclusive_lock. :-) I think lockdep would complain if I grabbed
+>> exclusive_lock while blocking in is_signaled.
+>>
+>>>> So from the core fence framework I think we already have exactly this,
+>>>> and we only need to adjust the radeon implementation a bit to make it
+>>>> less risky and invasive to the radeon driver logic.
+>>>
+>>> Agree. Well the biggest problem I see is that exclusive semaphore I need
+>>> to take when anything calls into the driver. For the fence code I need to
+>>> move that down into the fence->signaled handler, cause that now can be
+>>> called from outside the driver.
+>>>
+>>> Maarten solved this by telling the driver in the lockup handler (where we
+>>> grab the write side of the exclusive lock) that all interrupts are already
+>>> enabled, so that fence->signaled hopefully wouldn't mess with the hardware
+>>> at all. While this probably works, it just leaves me with a feeling that we
+>>> are doing something wrong here.
+>>
+>> There is unfortunately no global mechanism to say 'this card is locked up,
+>> please don't call into any of my fences', and I don't associate fences with
+>> devices, and radeon doesn't keep a global list of fences.
+>> If all of that existed, it would complicate the interface and its callers
+>> a lot, while I like to keep things simple.
+>> So I did the best I could, and simply prevented the fence calls from
+>> fiddling with the hardware. Fortunately gpu lockup is not a common
+>> operation. :-)
+>>
+>> ~Maarten
+>>
+>>
+>
+> _______________________________________________
+> dri-devel mailing list
+> dri-devel@lists.freedesktop.org
+> http://lists.freedesktop.org/mailman/listinfo/dri-devel
