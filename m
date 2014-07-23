@@ -1,159 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756299AbaGWLBr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 07:01:47 -0400
-Received: from mga11.intel.com ([192.55.52.93]:41334 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751295AbaGWLBp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 07:01:45 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,716,1400050800"; 
-   d="scan'208";a="565984104"
-Message-ID: <53CF95BE.7060909@intel.com>
-Date: Wed, 23 Jul 2014 14:00:14 +0300
-From: Adrian Hunter <adrian.hunter@intel.com>
-Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
- Business Identity Code: 0357606 - 4, Domiciled in Helsinki 
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1753828AbaGWLH1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 07:07:27 -0400
+Received: from mail-bn1blp0189.outbound.protection.outlook.com ([207.46.163.189]:19940
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751103AbaGWLHZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jul 2014 07:07:25 -0400
+Date: Wed, 23 Jul 2014 18:59:41 +0800
+From: Peter Chen <peter.chen@freescale.com>
+To: Antoine =?iso-8859-1?Q?T=E9nart?= 
+	<antoine.tenart@free-electrons.com>
+CC: <balbi@ti.com>, <gregkh@linuxfoundation.org>, <kishon@ti.com>,
+        <stern@rowland.harvard.edu>, <sergei.shtylyov@cogentembedded.com>,
+        <yoshihiro.shimoda.uh@renesas.com>,
+        <alexandre.belloni@free-electrons.com>,
+        <thomas.petazzoni@free-electrons.com>, <zmxu@marvell.com>,
+        <jszhang@marvell.com>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 6/8] usb: allow to supply the PHY in the drivers
+ when using HCD
+Message-ID: <20140723105940.GA5071@shlinux1.ap.freescale.net>
+References: <1405435156-27297-1-git-send-email-antoine.tenart@free-electrons.com>
+ <1405435156-27297-7-git-send-email-antoine.tenart@free-electrons.com>
 MIME-Version: 1.0
-To: Jiri Olsa <jolsa@redhat.com>
-CC: Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH V2 17/52] perf evlist: Add perf_evlist__set_tracking_event()
-References: <1406035081-14301-1-git-send-email-adrian.hunter@intel.com> <1406035081-14301-18-git-send-email-adrian.hunter@intel.com> <20140722192206.GD29750@krava.redhat.com> <53CF5559.8050908@intel.com>
-In-Reply-To: <53CF5559.8050908@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1405435156-27297-7-git-send-email-antoine.tenart@free-electrons.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(24454002)(51704005)(189002)(199002)(81542001)(23756003)(4396001)(74502001)(575784001)(80022001)(102836001)(20776003)(64706001)(47776003)(81342001)(79102001)(74662001)(83072002)(44976005)(19580405001)(68736004)(6806004)(84676001)(69596002)(83506001)(87936001)(21056001)(31966008)(76176999)(86362001)(92726001)(110136001)(50986999)(54356999)(85852003)(26826002)(83322001)(99396002)(92566001)(97736001)(107046002)(104016003)(106466001)(85306003)(46102001)(105606002)(19580395003)(77982001)(50466002)(33656002)(95666004)(76482001)(81156004);DIR:OUT;SFP:;SCL:1;SRVR:BL2PR03MB563;H:az84smr01.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;LANG:en;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
+X-Forefront-PRVS: 028166BF91
+Authentication-Results: spf=fail (sender IP is 192.88.158.2)
+ smtp.mailfrom=Peter.Chen@freescale.com; 
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a function to change which event is used
-to track mmap, comm and task events.
+On Tue, Jul 15, 2014 at 04:39:14PM +0200, Antoine Ténart wrote:
+> This patch modify the generic code handling PHYs to allow them to be
+> supplied from the drivers. This adds checks to ensure no PHY was already
+> there when looking for one in the generic code. This also makes sure we
+> do not modify its state in the generic HCD functions, it it was
+> provided by the driver.
 
-This is needed with Instruction Tracing
-because the Instruction Tracing event
-must come first but cannot be used for
-tracking because it will be disabled
-under some circumstances.
+one extra "it"
 
-Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
----
+> 
+> Signed-off-by: Antoine Ténart <antoine.tenart@free-electrons.com>
+> ---
+>  drivers/usb/core/hcd.c | 7 ++++---
+>  1 file changed, 4 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/usb/core/hcd.c b/drivers/usb/core/hcd.c
+> index 228bad89f09b..ce9ea309ab0f 100644
+> --- a/drivers/usb/core/hcd.c
+> +++ b/drivers/usb/core/hcd.c
+> @@ -2650,7 +2650,7 @@ int usb_add_hcd(struct usb_hcd *hcd,
+>  		}
+>  	}
+>  
+> -	if (IS_ENABLED(CONFIG_GENERIC_PHY)) {
+> +	if (IS_ENABLED(CONFIG_GENERIC_PHY) && !hcd->phy) {
+>  		struct phy *phy = phy_get(hcd->self.controller, "usb");
+>  
+>  		if (IS_ERR(phy)) {
+> @@ -2670,6 +2670,7 @@ int usb_add_hcd(struct usb_hcd *hcd,
+>  				goto err_phy;
+>  			}
+>  			hcd->phy = phy;
+> +			hcd->remove_phy = 1;
+>  		}
+>  	}
+>  
+> @@ -2816,7 +2817,7 @@ err_allocate_root_hub:
+>  err_register_bus:
+>  	hcd_buffer_destroy(hcd);
+>  err_create_buf:
+> -	if (IS_ENABLED(CONFIG_GENERIC_PHY) && hcd->phy) {
+> +	if (IS_ENABLED(CONFIG_GENERIC_PHY) && hcd->remove_phy && hcd->phy) {
+>  		phy_power_off(hcd->phy);
+>  		phy_exit(hcd->phy);
+>  		phy_put(hcd->phy);
+> @@ -2900,7 +2901,7 @@ void usb_remove_hcd(struct usb_hcd *hcd)
+>  	usb_deregister_bus(&hcd->self);
+>  	hcd_buffer_destroy(hcd);
+>  
+> -	if (IS_ENABLED(CONFIG_GENERIC_PHY) && hcd->phy) {
+> +	if (IS_ENABLED(CONFIG_GENERIC_PHY) && hcd->remove_phy && hcd->phy) {
+>  		phy_power_off(hcd->phy);
+>  		phy_exit(hcd->phy);
+>  		phy_put(hcd->phy);
+> -- 
+> 1.9.1
+> 
 
-
-V2:
-	Changed to use evsel->tracking as suggested by Jiri
-
-	Note this patch now applies after the patch
-		"perf evlist: Add 'system_wide' option"
-
-	The change is reflected in the branch here:
-
-		http://git.infradead.org/users/ahunter/linux-perf.git/shortlog/refs/heads/for-acme
-
-
- tools/perf/util/evlist.c | 17 +++++++++++++++++
- tools/perf/util/evlist.h |  3 +++
- tools/perf/util/evsel.c  |  3 ++-
- tools/perf/util/evsel.h  |  1 +
- tools/perf/util/record.c |  2 +-
- 5 files changed, 24 insertions(+), 2 deletions(-)
-
-diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-index 7cfc371..e47d724 100644
---- a/tools/perf/util/evlist.c
-+++ b/tools/perf/util/evlist.c
-@@ -122,6 +122,7 @@ void perf_evlist__add(struct perf_evlist *evlist, struct perf_evsel *entry)
- {
- 	list_add_tail(&entry->node, &evlist->entries);
- 	entry->idx = evlist->nr_entries;
-+	entry->tracking = !entry->idx;
- 
- 	if (!evlist->nr_entries++)
- 		perf_evlist__set_id_pos(evlist);
-@@ -1279,3 +1280,19 @@ void perf_evlist__to_front(struct perf_evlist *evlist,
- 
- 	list_splice(&move, &evlist->entries);
- }
-+
-+void perf_evlist__set_tracking_event(struct perf_evlist *evlist,
-+				     struct perf_evsel *tracking_evsel)
-+{
-+	struct perf_evsel *evsel;
-+
-+	if (tracking_evsel->tracking)
-+		return;
-+
-+	evlist__for_each(evlist, evsel) {
-+		if (evsel != tracking_evsel)
-+			evsel->tracking = false;
-+	}
-+
-+	tracking_evsel->tracking = true;
-+}
-diff --git a/tools/perf/util/evlist.h b/tools/perf/util/evlist.h
-index f5173cd..e0084f9 100644
---- a/tools/perf/util/evlist.h
-+++ b/tools/perf/util/evlist.h
-@@ -262,4 +262,7 @@ void perf_evlist__to_front(struct perf_evlist *evlist,
- #define evlist__for_each_safe(evlist, tmp, evsel) \
- 	__evlist__for_each_safe(&(evlist)->entries, tmp, evsel)
- 
-+void perf_evlist__set_tracking_event(struct perf_evlist *evlist,
-+				     struct perf_evsel *tracking_evsel);
-+
- #endif /* __PERF_EVLIST_H */
-diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index 7baa06f..fbe0ce4 100644
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -162,6 +162,7 @@ void perf_evsel__init(struct perf_evsel *evsel,
- 		      struct perf_event_attr *attr, int idx)
- {
- 	evsel->idx	   = idx;
-+	evsel->tracking	   = !idx;
- 	evsel->attr	   = *attr;
- 	evsel->leader	   = evsel;
- 	evsel->unit	   = "";
-@@ -561,7 +562,7 @@ void perf_evsel__config(struct perf_evsel *evsel, struct record_opts *opts)
- {
- 	struct perf_evsel *leader = evsel->leader;
- 	struct perf_event_attr *attr = &evsel->attr;
--	int track = !evsel->idx; /* only the first counter needs these */
-+	int track = evsel->tracking;
- 	bool per_cpu = opts->target.default_per_cpu && !opts->target.per_thread;
- 
- 	attr->sample_id_all = perf_missing_features.sample_id_all ? 0 : 1;
-diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
-index dbb2a0d..7bc314b 100644
---- a/tools/perf/util/evsel.h
-+++ b/tools/perf/util/evsel.h
-@@ -86,6 +86,7 @@ struct perf_evsel {
- 	bool			no_aux_samples;
- 	bool			immediate;
- 	bool			system_wide;
-+	bool			tracking;
- 	/* parse modifier helper */
- 	int			exclude_GH;
- 	int			nr_members;
-diff --git a/tools/perf/util/record.c b/tools/perf/util/record.c
-index fe8079e..787b882 100644
---- a/tools/perf/util/record.c
-+++ b/tools/perf/util/record.c
-@@ -106,7 +106,7 @@ void perf_evlist__config(struct perf_evlist *evlist, struct record_opts *opts)
- 
- 	evlist__for_each(evlist, evsel) {
- 		perf_evsel__config(evsel, opts);
--		if (!evsel->idx && use_comm_exec)
-+		if (evsel->tracking && use_comm_exec)
- 			evsel->attr.comm_exec = 1;
- 	}
- 
 -- 
-1.8.3.2
 
-
+Best Regards,
+Peter Chen
