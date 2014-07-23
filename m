@@ -1,53 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757656AbaGWOJS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 10:09:18 -0400
-Received: from mail.kernel.org ([198.145.19.201]:44821 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757115AbaGWOJP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 10:09:15 -0400
-Date: Wed, 23 Jul 2014 11:09:08 -0300
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: Adrian Hunter <adrian.hunter@intel.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 05/41] perf tools: Identify which comms are from exec
-Message-ID: <20140723140908.GK20303@kernel.org>
-References: <1405332185-4050-1-git-send-email-adrian.hunter@intel.com>
- <1405332185-4050-6-git-send-email-adrian.hunter@intel.com>
- <20140714203237.GA18133@kernel.org>
- <53C513CC.1010202@intel.com>
- <20140723140752.GJ20303@kernel.org>
+	id S1757737AbaGWOJz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 10:09:55 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:61353 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754619AbaGWOJy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jul 2014 10:09:54 -0400
+X-Originating-IP: 108.223.40.66
+Message-ID: <53CFC231.8090701@roeck-us.net>
+Date: Wed, 23 Jul 2014 07:09:53 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140723140752.GJ20303@kernel.org>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Nicholas Krause <xerofoify@gmail.com>, monstr@monstr.eu
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] microblaze: Add comment for defines
+References: <1406089658-4671-1-git-send-email-xerofoify@gmail.com>
+In-Reply-To: <1406089658-4671-1-git-send-email-xerofoify@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Wed, Jul 23, 2014 at 11:07:52AM -0300, Arnaldo Carvalho de Melo escreveu:
-> Em Tue, Jul 15, 2014 at 02:43:08PM +0300, Adrian Hunter escreveu:
-> > >> @@ -106,6 +107,8 @@ int comm__override(struct comm *comm, const char *str, u64 timestamp)
-> > >>  	comm_str__put(old);
-> > >>  	comm->comm_str = new;
-> > >>  	comm->start = timestamp;
-> > >> +	if (exec && !comm->exec)
-> > >> +		comm->exec = true;
-> 
-> > > Why do you need the !comm->exec test?
->  
-> > Dunno
-> 
-> I saw that you kept it in the last patchkit submitted, I'll just drop
-> it, needless obfuscation.
+On 07/22/2014 09:27 PM, Nicholas Krause wrote:
+> This adds a comment for and removes a fix me by labeling these
+> defines as memory cache definitions.
+>
+> Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
+> ---
+>   arch/microblaze/include/asm/pvr.h | 2 +-
+>   1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/arch/microblaze/include/asm/pvr.h b/arch/microblaze/include/asm/pvr.h
+> index 4bbdb4c..441f3a0 100644
+> --- a/arch/microblaze/include/asm/pvr.h
+> +++ b/arch/microblaze/include/asm/pvr.h
+> @@ -186,7 +186,7 @@ struct pvr_s {
+>   #define PVR_DCACHE_USE_FSL(_pvr)	(_pvr.pvr[5] & PVR5_DCACHE_USE_FSL_MASK)
+>   #define PVR_DCACHE_ALLOW_WR(_pvr) \
+>   			(_pvr.pvr[5] & PVR5_DCACHE_ALLOW_WR_MASK)
+> -/* FIXME two shifts on one line needs any comment */
+> +/* memory caches */
 
-Also why do you need to "identify which comms are from exec", was it
-good for?
+"two shifts on one line needs any comment"
 
-- Arnaldo
+You are not providing the comment asked for. The FIXME requests a comment explaining
+why the double shift is needed, not just a random comment like the one you provided
+that doesn't explain anything.
+
+Guenter
+
+>   #define PVR_DCACHE_LINE_LEN(_pvr) \
+>   		(1 << ((_pvr.pvr[5] & PVR5_DCACHE_LINE_LEN_MASK) >> 21))
+>   #define PVR_DCACHE_BYTE_SIZE(_pvr) \
+>
+
