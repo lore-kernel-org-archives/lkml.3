@@ -1,72 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757322AbaGWONw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 10:13:52 -0400
-Received: from helcar.apana.org.au ([209.40.204.226]:59779 "EHLO
-	helcar.apana.org.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752817AbaGWONt (ORCPT
+	id S1757573AbaGWOOa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 10:14:30 -0400
+Received: from e33.co.us.ibm.com ([32.97.110.151]:33124 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751936AbaGWOO3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 10:13:49 -0400
-Date: Wed, 23 Jul 2014 22:13:09 +0800
-From: Herbert Xu <herbert@gondor.apana.org.au>
-To: Marek Vasut <marex@denx.de>
-Cc: LABBE Corentin <clabbe.montjoie@gmail.com>, robh+dt@kernel.org,
-        pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        rdunlap@infradead.org, maxime.ripard@free-electrons.com,
-        linux@arm.linux.org.uk, davem@davemloft.net, grant.likely@linaro.org,
-        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org
-Subject: Re: [PATCH 3/3] crypto: Add Allwinner Security System crypto
- accelerator
-Message-ID: <20140723141309.GA30324@gondor.apana.org.au>
-References: <1400771396-9686-1-git-send-email-clabbe.montjoie@gmail.com>
- <201405241400.03456.marex@denx.de>
- <20140723135735.GA30132@gondor.apana.org.au>
- <201407231607.21106.marex@denx.de>
+	Wed, 23 Jul 2014 10:14:29 -0400
+Date: Wed, 23 Jul 2014 07:14:24 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Pranith Kumar <bobby.prani@gmail.com>
+Cc: Josh Triplett <josh@joshtriplett.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        "open list:READ-COPY UPDATE..." <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 04/16] rcu: Remove redundant check for an online CPU
+Message-ID: <20140723141424.GT11241@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1406092194-13004-1-git-send-email-bobby.prani@gmail.com>
+ <1406092194-13004-5-git-send-email-bobby.prani@gmail.com>
+ <20140723120907.GG11241@linux.vnet.ibm.com>
+ <CAJhHMCAQ7+HzXfH7E3LNbUVG_zf-1edj6yPBHQ9wtbTrBAoa7A@mail.gmail.com>
+ <20140723134116.GP11241@linux.vnet.ibm.com>
+ <CAJhHMCAgrnxPTqTJjQ+Yw8LFgQBM3VHm6yWNf_Ct0nvAw-CmoQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201407231607.21106.marex@denx.de>
+In-Reply-To: <CAJhHMCAgrnxPTqTJjQ+Yw8LFgQBM3VHm6yWNf_Ct0nvAw-CmoQ@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14072314-0928-0000-0000-0000039315FA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 23, 2014 at 04:07:20PM +0200, Marek Vasut wrote:
-> On Wednesday, July 23, 2014 at 03:57:35 PM, Herbert Xu wrote:
-> > On Sat, May 24, 2014 at 02:00:03PM +0200, Marek Vasut wrote:
-> > > > +	}
-> > > > +#endif
-> > > > +
-> > > > +#ifdef CONFIG_CRYPTO_DEV_SUNXI_SS_MD5
-> > > > +	err = crypto_register_shash(&sunxi_md5_alg);
-> > > 
-> > > Do not use shash for such device. This is clearly and ahash (and async in
-> > > general) device. The rule of a thumb here is that you use sync algos only
-> > > for devices which have dedicated instructions for computing the
-> > > transformation. For devices which are attached to some kind of bus, you
-> > > use async algos (ahash etc).
-> > 
-> > I'm sorry that I didn't catch this earlier but there is no such
-> > rule.
-> > 
-> > Unless you need the async interface you should stick to the sync
-> > interfaces for the sake of simplicity.
-> > 
-> > We have a number of existing drivers that are synchronous but
-> > using the async interface.  They should either be converted
-> > over to the sync interface or made interrupt-driven if possible.
+On Wed, Jul 23, 2014 at 10:01:14AM -0400, Pranith Kumar wrote:
+> On Wed, Jul 23, 2014 at 9:41 AM, Paul E. McKenney
+> <paulmck@linux.vnet.ibm.com> wrote:
+> > On Wed, Jul 23, 2014 at 09:23:47AM -0400, Pranith Kumar wrote:
+> >> On Wed, Jul 23, 2014 at 8:09 AM, Paul E. McKenney
+> >> <paulmck@linux.vnet.ibm.com> wrote:
+> >> > On Wed, Jul 23, 2014 at 01:09:41AM -0400, Pranith Kumar wrote:
+> >> >> rcu_prcess_callbacks() is the softirq handler for RCU which is raised from
+> >> >> invoke_rcu_core() which is called from __call_rcu_core().
+> >> >>
+> >> >> Each of these three functions checks if the cpu is online. We can remove the
+> >> >> redundant ones. This commit removes one of these redundant check.
+> >> >>
+> >> >> Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
+> >> >
+> >> > Sorry, but no.  There can be a long delay between raise_softirq() and
+> >> > this function starting, particularly if ksoftirqd gets involved.  The
+> >> > CPU could easily go offline in the meantime.
+> >> >
+> >>
+> >> That makes sense. I guess one of the other two checks in
+> >> __call_rcu_core() or invoke_rcu_core() can go then?
+> >
+> > What would have to be the case for this suggested change to be safe?
+> > Does that condition in fact hold?
+> >
 > 
-> Sure, but this device is interrupt driven and uses DMA to feed the crypto 
-> engine, therefore async, right ?
+> The only scenario which is unsafe is when this thread is preempted and
+> scheduled on a dying CPU. In that case we should turn off interrupts.
+> 
+> Actually, checking the code, I see that interrupts are turned off
+> already before we call _call_rcu_core(). So I am not sure such a case
+> will happen. On the other hand invoke_rcu_core() will be a one line
+> function which might as well be in-lined to avoid the double cpu
+> online check.
+> 
+> What am I missing?
 
-If it's interrupt-driven, then yes it would certainly make sense to
-be async.  But all I see is polling in the latest posting, was the
-first version different?
+I am not sure.  Perhaps the fact that __call_rcu_core() doesn't call
+invoke_rcu_core() unless the condition holds (which means that you
+cannnot remove the check from __call_rcu_core()) or maybe the fact that
+invoke_rcu_core() is called from many other places, which means that
+you might not be able to remove the check from invoke_rcu_core().
 
-Cheers,
--- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+							Thanx, Paul
+
