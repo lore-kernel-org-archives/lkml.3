@@ -1,103 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933124AbaGWTPu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 15:15:50 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:51957 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932514AbaGWTPs (ORCPT
+	id S933051AbaGWTRd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 15:17:33 -0400
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:13507 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932514AbaGWTRc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 15:15:48 -0400
-Date: Wed, 23 Jul 2014 12:15:42 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Pranith Kumar <bobby.prani@gmail.com>
-Cc: Josh Triplett <josh@joshtriplett.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        "open list:READ-COPY UPDATE..." <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 09/16] rcu: Remove redundant check for online cpu
-Message-ID: <20140723191542.GA9398@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1406092194-13004-1-git-send-email-bobby.prani@gmail.com>
- <1406092194-13004-10-git-send-email-bobby.prani@gmail.com>
- <20140723122112.GJ11241@linux.vnet.ibm.com>
- <CAJhHMCAoLQPnJYCeqftXwZb6D4ECuJb4g04b4OO5BLf6iC1ENw@mail.gmail.com>
- <20140723135024.GR11241@linux.vnet.ibm.com>
- <CAJhHMCAZ__1xkEou44iux=Z6v6NAKPrTvWob6tqorm23nNygOA@mail.gmail.com>
- <20140723142314.GV11241@linux.vnet.ibm.com>
- <CAJhHMCA4Fdd4JbtKdNGABFYRBCqaLukLbydLAFA-3RiZXaTngA@mail.gmail.com>
- <20140723153018.GY11241@linux.vnet.ibm.com>
- <CAJhHMCBDZyHYCo01T421f+No0ZBWfjsUXijg+MT1A2U621izpA@mail.gmail.com>
+	Wed, 23 Jul 2014 15:17:32 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Wed, 23 Jul 2014 12:09:37 -0700
+Message-ID: <53D00A47.7050203@nvidia.com>
+Date: Wed, 23 Jul 2014 22:17:27 +0300
+From: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAJhHMCBDZyHYCo01T421f+No0ZBWfjsUXijg+MT1A2U621izpA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14072319-7164-0000-0000-000003562311
+To: Viresh Kumar <viresh.kumar@linaro.org>
+CC: "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Paul Walmsley <pwalmsley@nvidia.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH v2 14/16] cpufreq: Add cpufreq driver for Tegra124
+References: <1405957142-19416-1-git-send-email-ttynkkynen@nvidia.com>	<1405957142-19416-15-git-send-email-ttynkkynen@nvidia.com>	<CAKohpomQthJ_XE-HhzW07Q4aVtxQVy97iaL0Vy6Q4Lhw22A=VA@mail.gmail.com>	<53CFA33F.6030307@nvidia.com> <CAKohponLh66Ubr6=wY2OZCCrK11KZDj=DmXXqXsGGTHSG45wpA@mail.gmail.com>
+In-Reply-To: <CAKohponLh66Ubr6=wY2OZCCrK11KZDj=DmXXqXsGGTHSG45wpA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 23, 2014 at 11:44:43AM -0400, Pranith Kumar wrote:
-> On Wed, Jul 23, 2014 at 11:30 AM, Paul E. McKenney
-> <paulmck@linux.vnet.ibm.com> wrote:
-> > On Wed, Jul 23, 2014 at 11:11:45AM -0400, Pranith Kumar wrote:
-> >> On Wed, Jul 23, 2014 at 10:23 AM, Paul E. McKenney
-> >> <paulmck@linux.vnet.ibm.com> wrote:
-> >> > On Wed, Jul 23, 2014 at 10:12:54AM -0400, Pranith Kumar wrote:
-> >> >> On Wed, Jul 23, 2014 at 9:50 AM, Paul E. McKenney
-> >> >> <paulmck@linux.vnet.ibm.com> wrote:
-> >> >> > On Wed, Jul 23, 2014 at 08:59:06AM -0400, Pranith Kumar wrote:
-> >> >> >> On Wed, Jul 23, 2014 at 8:21 AM, Paul E. McKenney
-> >> >> >> <paulmck@linux.vnet.ibm.com> wrote:
-> >> >> >> > On Wed, Jul 23, 2014 at 01:09:46AM -0400, Pranith Kumar wrote:
-> >> >> >> >> There are two checks for an online CPU if two if() conditions. This commit
-> >> >> >> >> simplies this by replacing it with only one check for the online CPU.
-> >> >> >> >>
-> >> >> >> >> Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
-> >> >> >> >
-> >> >> >> > I admit that it is very early in the morning my time, but I don't see
-> >> >> >> > this change as preserving the semantics in all cases.  Please recheck
-> >> >> >> > your changes to the second check.
-> >> >> >> >
-> >> >> >> >                                                         Thanx, Paul
-> >> >> >>
-> >> >> >> I guess you must be thrown off by the complementary checks, the first
-> >> >> >> check is for cpu_online() and second is for cpu_is_offline(). :)
-> >> >> >>
-> >> >> >> Previously, if a cpu is offline, the first condition is false and the
-> >> >> >> second condition is true, so we return from the second if() condition.
-> >> >> >> The same semantics are being preserved.
-> >> >> >
-> >> >> > Fair enough!
-> >> >> >
-> >> >> > Nevertheless, I am not seeing this as a simplification.
-> >> >>
-> >> >> I am not sure what you mean here, do you mean that both the checks are
-> >> >> actually required?
-> >> >
-> >> > I mean that the current compound tests each mean something.  Pulling out
-> >> > the offline test adds lines of code and obscures that meaning.   This means
-> >> > that it is easier (for me, anyway) to see why the current code is correct
-> >> > than it is to see why your suggested change is correct.
-> >> >
-> >>
-> >> That is a valid point. I did not mean to reduce readability of the
-> >> code. Just trying to avoid the overhead of smp_processor_id().
-> >>
-> >> Not sure if you would prefer this, but how about the following?
-> >
-> > If you change the "awake" to something like "am_online", I could get
-> > behind this one.
+
+
+On 23/07/14 19:50, Viresh Kumar wrote:
+> On 23 July 2014 17:27, Tuomas Tynkkynen <ttynkkynen@nvidia.com> wrote:
+>> The platform device is required for the deferred probe that can happen if the
+>> DFLL driver hasn't initialized yet, and module_init() callbacks don't seem to
+>> respect -EPROBE_DEFER.
 > 
-> OK! I will submit that in the next series(with the zalloc check).
+> Oh, which call in this file will return EPROBE_DEFER? I couldn't make out
+> which one will depend on DFLL driver.
+> 
 
-You caught me at a weak moment...  This change just adds an extra
-line of code and doesn't really help anything.
+It's this:
 
-So please leave this one out.
++static int tegra124_cpufreq_probe(struct platform_device *pdev)
++{
+[...]
++
++	dfll_clk = of_clk_get_by_name(cpu_dev->of_node, "dfll");
++	if (IS_ERR(dfll_clk)) {
++		ret = PTR_ERR(dfll_clk);
++		goto out_put_cpu_clk;
++	}
 
-							Thanx, Paul
-
+-- 
+nvpublic
