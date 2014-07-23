@@ -1,73 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933799AbaGWWYf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 18:24:35 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:65275 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933386AbaGWWYe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 18:24:34 -0400
-Message-ID: <53D0361B.8060003@nod.at>
-Date: Thu, 24 Jul 2014 00:24:27 +0200
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S933896AbaGWW2N (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 18:28:13 -0400
+Received: from mail-ig0-f182.google.com ([209.85.213.182]:57828 "EHLO
+	mail-ig0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933576AbaGWW2M (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jul 2014 18:28:12 -0400
+Date: Wed, 23 Jul 2014 15:28:09 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Alex Thorlton <athorlton@sgi.com>
+cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, mgorman@suse.de, riel@redhat.com,
+        kirill.shutemov@linux.intel.com, mingo@kernel.org, hughd@google.com,
+        lliubbo@gmail.com, hannes@cmpxchg.org,
+        srivatsa.bhat@linux.vnet.ibm.com, dave.hansen@linux.intel.com,
+        dfults@sgi.com, hedi@sgi.com
+Subject: Re: [BUG] THP allocations escape cpuset when defrag is off
+In-Reply-To: <20140723220538.GT8578@sgi.com>
+Message-ID: <alpine.DEB.2.02.1407231516570.23495@chino.kir.corp.google.com>
+References: <20140723220538.GT8578@sgi.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Himangi Saraogi <himangi774@gmail.com>, Jeff Dike <jdike@addtoit.com>,
-        user-mode-linux-devel@lists.sourceforge.net,
-        user-mode-linux-user@lists.sourceforge.net,
-        linux-kernel@vger.kernel.org
-CC: Julia Lawall <julia.lawall@lip6.fr>
-Subject: Re: [PATCH] uml/net_kern: Eliminate NULL test after alloc_bootmem
-References: <20140719113405.GA23568@himangi-Dell>
-In-Reply-To: <20140719113405.GA23568@himangi-Dell>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Himangi,
+On Wed, 23 Jul 2014, Alex Thorlton wrote:
 
-Am 19.07.2014 13:34, schrieb Himangi Saraogi:
-> alloc_bootmem and related functions never return NULL. Thus a NULL
-> test or memset after calls to these functions is unnecessary.
+> Hey everyone,
 > 
-> The following Coccinelle semantic patch was used for making the change:
+> We're hitting an interesting bug on systems with THP defrag turned off.
+> It seems that we're able to make very large THP allocations outside of
+> our cpuset.  Here's the test procedure I've been using:
 > 
-> @@
-> expression E;
-> statement S;
-> @@
+> - Create a mem_exclusive/hardwall cpuset that is restricted to memory
+>   on one node.
+> - Turn off swap (swapoff -a).  This step is not explicitly necessary,
+>   but it appears to speed up the reaction time of the OOM killer
+>   considerably.
+> - Turn off THP compaction/defrag.
+> - Run memhog inside the cpuset.  Tell it to allocate far more memory
+>   than should be available inside the cpuset.
 > 
-> E = \(alloc_bootmem\|alloc_bootmem_low\|alloc_bootmem_pages\|alloc_bootmem_low_pages\)(...)
-> ... when != E
-> - if (E == NULL) S
+> Quick example:
 > 
-> Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
-> Acked-by: Julia Lawall <julia.lawall@lip6.fr>
+> # cat /sys/kernel/mm/transparent_hugepage/enabled
+> [always] madvise never
+> # cat /sys/kernel/mm/transparent_hugepage/defrag
+> always madvise [never]
+> # grep "[0-9]" cpu* mem*         <-- from /dev/cpuset/test01
+> cpu_exclusive:0
+> cpus:8-15
+> mem_exclusive:1
+> mem_hardwall:1
+> memory_migrate:0
+> memory_pressure:0
+> memory_spread_page:1
+> memory_spread_slab:1
+> mems:1                           <-- ~32g per node
+> # cat /proc/self/cpuset
+> /test01
+> # memhog 80g > /dev/null
+> (Runs to completion, which is the bug)
+> 
+> Monitoring 'numactl --hardware' with watch, you can see memhog's
+> allocations start spilling over onto the other nodes.  Take note that
+> this can be somewhat intermittent.  Often when running this test
+> immediately after a boot, the OOM killer will catch memhog and stop it
+> immediately, but subsequent runs can either run to completion, or at
+> least soak up good chunks of memory on nodes which they're not supposed
+> to be permitted to allocate memory on, before being killed.  I'm not
+> positive on all the factors that influence this timing yet.  It seems to
+> reproduce very reliably if you toggle swap back and forth with each run:
+> 
+> (Run before this was killed by OOM with swap off)
+> # swapon -a
+> # memhog 80g > /dev/null
+> # swapoff -a
+> # memhog 80g > /dev/null
+> (Both of these ran to completion.  Again, a sign of the bug)
+> 
+> After digging through the code quite a bit, I've managed to turn up
+> something that I think could be the cause of the problem here.  In
+> alloc_hugepage_vma we send a gfp_mask generated using
+> alloc_hugepage_gfpmask, which removes the ___GFP_WAIT bit from the
+> gfp_mask when defrag is off.
+> 
+> Further down in pagefault code path, when we fall back to the slowpath
+> for allocations (from my testing, this fallback appears to happen around
+> the same time that we run out of memory on our cpuset's node), we see
+> that, without the ___GFP_WAIT bit set, we will clear the ALLOC_CPUSET
+> flag from alloc_flags, which in turn allows us to grab memory from
+> any node. (See __alloc_pages_slowpath and gfp_to_alloc_flags to see
+> where ALLOC_CPUSET gets wiped out).
+> 
+> This simple patch seems to keep things inside our cpuset:
+> 
+> diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+> index 33514d8..7a05576 100644
+> --- a/mm/huge_memory.c
+> +++ b/mm/huge_memory.c
+> @@ -754,7 +754,7 @@ static int __do_huge_pmd_anonymous_page(struct
+> mm_struct *mm,
+> 
+>  static inline gfp_t alloc_hugepage_gfpmask(int defrag, gfp_t extra_gfp)
+>  {
+> -       return (GFP_TRANSHUGE & ~(defrag ? 0 : __GFP_WAIT)) | extra_gfp;
+> +       return GFP_TRANSHUGE | extra_gfp;
+>  }
+> 
+> My debug code shows that certain code paths are still allowing
+> ALLOC_CPUSET to get pulled off the alloc_flags with the patch, but
+> monitoring the memory usage shows that we're staying on node, aside from
+> some very small allocations, which may be other types of allocations that
+> are not necessarly confined to a cpuset.  Need a bit more research to
+> confirm that.
+> 
 
-Thank you! All three patches are now queued for 3.17.
+ALLOC_CPUSET should get stripped for the cases outlined in 
+__cpuset_node_allowed_softwall(), specifically for GFP_ATOMIC which does 
+not have __GFP_WAIT set.
 
-Thanks,
-//richard
+> So, my question ends up being, why do we wipe out ___GFP_WAIT when
+> defrag is off?  I'll trust that there is good reason to do that, but, if
+> so, is the behavior that I'm seeing expected?
+> 
 
-> ---
->  arch/um/drivers/net_kern.c | 4 ----
->  1 file changed, 4 deletions(-)
-> 
-> diff --git a/arch/um/drivers/net_kern.c b/arch/um/drivers/net_kern.c
-> index 7d26d9c..f70dd54 100644
-> --- a/arch/um/drivers/net_kern.c
-> +++ b/arch/um/drivers/net_kern.c
-> @@ -659,10 +659,6 @@ static int __init eth_setup(char *str)
->  	}
->  
->  	new = alloc_bootmem(sizeof(*new));
-> -	if (new == NULL) {
-> -		printk(KERN_ERR "eth_init : alloc_bootmem failed\n");
-> -		return 1;
-> -	}
->  
->  	INIT_LIST_HEAD(&new->list);
->  	new->index = n;
-> 
+The intention is to avoid memory compaction (and direct reclaim), 
+obviously, which does not run when __GFP_WAIT is not set.  But you're 
+exactly right that this abuses the allocflags conversion that allows 
+ALLOC_CPUSET to get cleared because it is using the aforementioned 
+GFP_ATOMIC exception for cpuset allocation.
+
+We can't use PF_MEMALLOC or TIF_MEMDIE for hugepage allocation because it 
+affects the allowed watermarks and nothing else prevents memory compaction 
+or direct reclaim from running in the page allocator slowpath.
+
+So it looks like a modification to the page allocator is needed, see 
+below.
+
+It's also been a long-standing issue that cpusets and mempolicies are 
+ignored by khugepaged that allows memory to be migrated remotely to nodes 
+that are not allowed by a cpuset's mems or a mempolicy's nodemask.  Even 
+with this issue fixed, you may find that some memory is migrated remotely, 
+although it may be negligible, by khugepaged.
+
+ [ We should really rename __GFP_NO_KSWAPD to __GFP_THP and not allow the
+   other users to piggyback off it. ]
+---
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -2447,7 +2447,8 @@ static inline int
+ gfp_to_alloc_flags(gfp_t gfp_mask)
+ {
+ 	int alloc_flags = ALLOC_WMARK_MIN | ALLOC_CPUSET;
+-	const gfp_t wait = gfp_mask & __GFP_WAIT;
++	const bool atomic = (gfp_mask & (__GFP_WAIT | __GFP_NO_KSWAPD)) ==
++			    __GFP_WAIT;
+ 
+ 	/* __GFP_HIGH is assumed to be the same as ALLOC_HIGH to save a branch. */
+ 	BUILD_BUG_ON(__GFP_HIGH != (__force gfp_t) ALLOC_HIGH);
+@@ -2456,20 +2457,20 @@ gfp_to_alloc_flags(gfp_t gfp_mask)
+ 	 * The caller may dip into page reserves a bit more if the caller
+ 	 * cannot run direct reclaim, or if the caller has realtime scheduling
+ 	 * policy or is asking for __GFP_HIGH memory.  GFP_ATOMIC requests will
+-	 * set both ALLOC_HARDER (!wait) and ALLOC_HIGH (__GFP_HIGH).
++	 * set both ALLOC_HARDER (atomic == true) and ALLOC_HIGH (__GFP_HIGH).
+ 	 */
+ 	alloc_flags |= (__force int) (gfp_mask & __GFP_HIGH);
+ 
+-	if (!wait) {
++	if (atomic) {
+ 		/*
+ 		 * Not worth trying to allocate harder for
+ 		 * __GFP_NOMEMALLOC even if it can't schedule.
+ 		 */
+-		if  (!(gfp_mask & __GFP_NOMEMALLOC))
++		if (!(gfp_mask & __GFP_NOMEMALLOC))
+ 			alloc_flags |= ALLOC_HARDER;
+ 		/*
+-		 * Ignore cpuset if GFP_ATOMIC (!wait) rather than fail alloc.
+-		 * See also cpuset_zone_allowed() comment in kernel/cpuset.c.
++		 * Ignore cpuset for GFP_ATOMIC rather than fail alloc.
++		 * See also cpuset_zone_allowed_softwall() comment.
+ 		 */
+ 		alloc_flags &= ~ALLOC_CPUSET;
+ 	} else if (unlikely(rt_task(current)) && !in_interrupt())
