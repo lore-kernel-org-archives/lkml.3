@@ -1,127 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758487AbaGWXnp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 19:43:45 -0400
-Received: from mail-lb0-f178.google.com ([209.85.217.178]:41047 "EHLO
-	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758439AbaGWXno (ORCPT
+	id S1758600AbaGWXoj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 19:44:39 -0400
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:47955 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758541AbaGWXof (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 19:43:44 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140723162851.GA17665@linux.vnet.ibm.com>
-References: <20140723162851.GA17665@linux.vnet.ibm.com>
-From: Pranith Kumar <bobby.prani@gmail.com>
-Date: Wed, 23 Jul 2014 19:43:12 -0400
-Message-ID: <CAJhHMCB2P1c25XXTHTYecvdO+oZbtVLDuo6Vpp+r=0uoFT3HQw@mail.gmail.com>
-Subject: Re: [PATCH RFC tip/core/rcu 1/2] Eliminate redundant
- rcu_sysidle_state variable
-To: Paul McKenney <paulmck@linux.vnet.ibm.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Dipankar Sarma <dipankar@in.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Josh Triplett <josh@joshtriplett.org>, tglx@linutronix.de,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        David Howells <dhowells@redhat.com>,
-        Eric Dumazet <edumazet@google.com>, dvhart@linux.intel.com,
-        =?UTF-8?B?RnLDqWTDqXJpYyBXZWlzYmVja2Vy?= <fweisbec@gmail.com>,
-        Oleg Nesterov <oleg@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 23 Jul 2014 19:44:35 -0400
+From: Grant Likely <grant.likely@linaro.org>
+To: linux-kernel@vger.kernel.org, Nathan Fontenot <nfont@austin.ibm.com>,
+        Tyrel Datwyler <turtle.in.the.kernel@gmail.com>,
+        Pantelis Antoniou <pantelis.antoniou@konsulko.com>,
+        devicetree@vger.kernel.org
+Cc: Grant Likely <grant.likely@linaro.org>
+Subject: [PATCH 01/10] of/platform: Fix of_platform_device_destroy iteration of devices
+Date: Wed, 23 Jul 2014 17:44:15 -0600
+Message-Id: <1406159064-21366-2-git-send-email-grant.likely@linaro.org>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1406159064-21366-1-git-send-email-grant.likely@linaro.org>
+References: <1406159064-21366-1-git-send-email-grant.likely@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 23, 2014 at 12:28 PM, Paul E. McKenney
-<paulmck@linux.vnet.ibm.com> wrote:
-> Now that we have rcu_state_p, which references rcu_preempt_state for
-> TREE_PREEMPT_RCU and rcu_sched_state for TREE_RCU, we don't need a
-> separate rcu_sysidle_state variable.  This commit therefore eliminates
-> rcu_preempt_state in favor of rcu_state_p.
->
-> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
->
+of_platform_destroy does not work properly, since the tree
+population test was iterating on all devices having as its parent
+the given platform device.
 
-Reviewed-by: Pranith Kumar <bobby.prani@gmail.com>
+The check was intended to check whether any other platform or amba
+devices created by of_platform_populate were still populated, but
+instead checked for every kind of device. This is wrong, since platform
+devices typically create a subsystem regular device and set themselves
+as parents.
 
+Instead, go ahead and call the unregister functions for any devices
+created with of_platform_populate. The driver core will take care of
+unbinding drivers, and drivers are responsible for getting rid of any
+child devices that weren't created by of_platform_populate.
 
-> diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
-> index 24f5bd54ca9b..e31fa71c4d3a 100644
-> --- a/kernel/rcu/tree_plugin.h
-> +++ b/kernel/rcu/tree_plugin.h
-> @@ -2662,16 +2662,6 @@ static void __maybe_unused rcu_kick_nohz_cpu(int cpu)
->
->  #ifdef CONFIG_NO_HZ_FULL_SYSIDLE
->
-> -/*
-> - * Define RCU flavor that holds sysidle state.  This needs to be the
-> - * most active flavor of RCU.
-> - */
-> -#ifdef CONFIG_PREEMPT_RCU
-> -static struct rcu_state *rcu_sysidle_state = &rcu_preempt_state;
-> -#else /* #ifdef CONFIG_PREEMPT_RCU */
-> -static struct rcu_state *rcu_sysidle_state = &rcu_sched_state;
-> -#endif /* #else #ifdef CONFIG_PREEMPT_RCU */
-> -
->  static int full_sysidle_state;         /* Current system-idle state. */
->  #define RCU_SYSIDLE_NOT                0       /* Some CPU is not idle. */
->  #define RCU_SYSIDLE_SHORT      1       /* All CPUs idle for brief period. */
-> @@ -2813,7 +2803,7 @@ static void rcu_sysidle_check_cpu(struct rcu_data *rdp, bool *isidle,
->          * not the flavor of RCU that tracks sysidle state, or if this
->          * is an offline or the timekeeping CPU, nothing to do.
->          */
-> -       if (!*isidle || rdp->rsp != rcu_sysidle_state ||
-> +       if (!*isidle || rdp->rsp != rcu_state_p ||
->             cpu_is_offline(rdp->cpu) || rdp->cpu == tick_do_timer_cpu)
->                 return;
->         if (rcu_gp_in_progress(rdp->rsp))
-> @@ -2839,7 +2829,7 @@ static void rcu_sysidle_check_cpu(struct rcu_data *rdp, bool *isidle,
->   */
->  static bool is_sysidle_rcu_state(struct rcu_state *rsp)
->  {
-> -       return rsp == rcu_sysidle_state;
-> +       return rsp == rcu_state_p;
->  }
->
->  /*
-> @@ -2917,7 +2907,7 @@ static void rcu_sysidle_cancel(void)
->  static void rcu_sysidle_report(struct rcu_state *rsp, int isidle,
->                                unsigned long maxj, bool gpkt)
->  {
-> -       if (rsp != rcu_sysidle_state)
-> +       if (rsp != rcu_state_p)
->                 return;  /* Wrong flavor, ignore. */
->         if (gpkt && nr_cpu_ids <= CONFIG_NO_HZ_FULL_SYSIDLE_SMALL)
->                 return;  /* Running state machine from timekeeping CPU. */
-> @@ -2986,13 +2976,12 @@ bool rcu_sys_is_idle(void)
->
->                         /* Scan all the CPUs looking for nonidle CPUs. */
->                         for_each_possible_cpu(cpu) {
-> -                               rdp = per_cpu_ptr(rcu_sysidle_state->rda, cpu);
-> +                               rdp = per_cpu_ptr(rcu_state_p->rda, cpu);
->                                 rcu_sysidle_check_cpu(rdp, &isidle, &maxj);
->                                 if (!isidle)
->                                         break;
->                         }
-> -                       rcu_sysidle_report(rcu_sysidle_state,
-> -                                          isidle, maxj, false);
-> +                       rcu_sysidle_report(rcu_state_p, isidle, maxj, false);
->                         oldrss = rss;
->                         rss = ACCESS_ONCE(full_sysidle_state);
->                 }
-> @@ -3019,7 +3008,7 @@ bool rcu_sys_is_idle(void)
->          * provided by the memory allocator.
->          */
->         if (nr_cpu_ids > CONFIG_NO_HZ_FULL_SYSIDLE_SMALL &&
-> -           !rcu_gp_in_progress(rcu_sysidle_state) &&
-> +           !rcu_gp_in_progress(rcu_state_p) &&
->             !rsh.inuse && xchg(&rsh.inuse, 1) == 0)
->                 call_rcu(&rsh.rh, rcu_sysidle_cb);
->         return false;
->
+Signed-off-by: Grant Likely <grant.likely@linaro.org>
+Signed-off-by: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
+---
+ drivers/of/platform.c       | 32 +++++++++-----------------------
+ include/linux/of.h          |  1 +
+ include/linux/of_platform.h |  7 ++-----
+ 3 files changed, 12 insertions(+), 28 deletions(-)
 
-
-
+diff --git a/drivers/of/platform.c b/drivers/of/platform.c
+index 500436f9be7f..0197725e033a 100644
+--- a/drivers/of/platform.c
++++ b/drivers/of/platform.c
+@@ -422,6 +422,7 @@ static int of_platform_bus_create(struct device_node *bus,
+ 			break;
+ 		}
+ 	}
++	of_node_set_flag(bus, OF_POPULATED_BUS);
+ 	return rc;
+ }
+ 
+@@ -508,19 +509,13 @@ EXPORT_SYMBOL_GPL(of_platform_populate);
+ 
+ static int of_platform_device_destroy(struct device *dev, void *data)
+ {
+-	bool *children_left = data;
+-
+ 	/* Do not touch devices not populated from the device tree */
+-	if (!dev->of_node || !of_node_check_flag(dev->of_node, OF_POPULATED)) {
+-		*children_left = true;
++	if (!dev->of_node || !of_node_check_flag(dev->of_node, OF_POPULATED))
+ 		return 0;
+-	}
+ 
+-	/* Recurse, but don't touch this device if it has any children left */
+-	if (of_platform_depopulate(dev) != 0) {
+-		*children_left = true;
+-		return 0;
+-	}
++	/* Recurse for any nodes that were treated as busses */
++	if (of_node_check_flag(dev->of_node, OF_POPULATED_BUS))
++		device_for_each_child(dev, NULL, of_platform_device_destroy);
+ 
+ 	if (dev->bus == &platform_bus_type)
+ 		platform_device_unregister(to_platform_device(dev));
+@@ -528,19 +523,15 @@ static int of_platform_device_destroy(struct device *dev, void *data)
+ 	else if (dev->bus == &amba_bustype)
+ 		amba_device_unregister(to_amba_device(dev));
+ #endif
+-	else {
+-		*children_left = true;
+-		return 0;
+-	}
+ 
+ 	of_node_clear_flag(dev->of_node, OF_POPULATED);
+-
++	of_node_clear_flag(dev->of_node, OF_POPULATED_BUS);
+ 	return 0;
+ }
+ 
+ /**
+  * of_platform_depopulate() - Remove devices populated from device tree
+- * @parent: device which childred will be removed
++ * @parent: device which children will be removed
+  *
+  * Complementary to of_platform_populate(), this function removes children
+  * of the given device (and, recurrently, their children) that have been
+@@ -550,14 +541,9 @@ static int of_platform_device_destroy(struct device *dev, void *data)
+  * Returns 0 when all children devices have been removed or
+  * -EBUSY when some children remained.
+  */
+-int of_platform_depopulate(struct device *parent)
++void of_platform_depopulate(struct device *parent)
+ {
+-	bool children_left = false;
+-
+-	device_for_each_child(parent, &children_left,
+-			      of_platform_device_destroy);
+-
+-	return children_left ? -EBUSY : 0;
++	device_for_each_child(parent, NULL, of_platform_device_destroy);
+ }
+ EXPORT_SYMBOL_GPL(of_platform_depopulate);
+ 
+diff --git a/include/linux/of.h b/include/linux/of.h
+index 196b34c1ef4e..abf829a1f150 100644
+--- a/include/linux/of.h
++++ b/include/linux/of.h
+@@ -204,6 +204,7 @@ static inline unsigned long of_read_ulong(const __be32 *cell, int size)
+ #define OF_DYNAMIC	1 /* node and properties were allocated via kmalloc */
+ #define OF_DETACHED	2 /* node has been detached from the device tree */
+ #define OF_POPULATED	3 /* device already created for the node */
++#define OF_POPULATED_BUS	4 /* of_platform_populate recursed to children of this node */
+ 
+ #define OF_IS_DYNAMIC(x) test_bit(OF_DYNAMIC, &x->_flags)
+ #define OF_MARK_DYNAMIC(x) set_bit(OF_DYNAMIC, &x->_flags)
+diff --git a/include/linux/of_platform.h b/include/linux/of_platform.h
+index d96e1badbee0..c2b0627a2317 100644
+--- a/include/linux/of_platform.h
++++ b/include/linux/of_platform.h
+@@ -72,7 +72,7 @@ extern int of_platform_populate(struct device_node *root,
+ 				const struct of_device_id *matches,
+ 				const struct of_dev_auxdata *lookup,
+ 				struct device *parent);
+-extern int of_platform_depopulate(struct device *parent);
++extern void of_platform_depopulate(struct device *parent);
+ #else
+ static inline int of_platform_populate(struct device_node *root,
+ 					const struct of_device_id *matches,
+@@ -81,10 +81,7 @@ static inline int of_platform_populate(struct device_node *root,
+ {
+ 	return -ENODEV;
+ }
+-static inline int of_platform_depopulate(struct device *parent)
+-{
+-	return -ENODEV;
+-}
++static inline void of_platform_depopulate(struct device *parent) { }
+ #endif
+ 
+ #endif	/* _LINUX_OF_PLATFORM_H */
 -- 
-Pranith
+1.9.1
+
