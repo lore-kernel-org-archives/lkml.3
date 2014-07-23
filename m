@@ -1,60 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933052AbaGWSdt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 14:33:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:65473 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932584AbaGWSds (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 14:33:48 -0400
-Date: Wed, 23 Jul 2014 13:33:32 -0500
-From: David Teigland <teigland@redhat.com>
-To: Jeff Layton <jlayton@poochiereds.net>
-Cc: Joe Perches <joe@perches.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@ZenIV.linux.org.uk>,
-        Christine Caulfield <ccaulfie@redhat.com>,
-        "J. Bruce Fields" <bfields@fieldses.org>,
-        Trond Myklebust <trond.myklebust@primarydata.com>,
-        cluster-devel@redhat.com, linux-kernel@vger.kernel.org,
-        linux-nfs@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH 9/9] fs: dlm: lockd: Convert int result to unsigned char
- type
-Message-ID: <20140723183332.GA21992@redhat.com>
-References: <cover.1405879494.git.joe@perches.com>
- <65b9ba0dba9c79a938267d5bed7ed0a8211e89ed.1405879494.git.joe@perches.com>
- <20140723141139.2cf90cb0@tlielax.poochiereds.net>
+	id S933086AbaGWSfK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 14:35:10 -0400
+Received: from mail-vc0-f170.google.com ([209.85.220.170]:38319 "EHLO
+	mail-vc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932584AbaGWSfI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jul 2014 14:35:08 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140723141139.2cf90cb0@tlielax.poochiereds.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140723182518.GD3935@laptop>
+References: <53CF844A.5050106@arm.com>
+	<20140723111110.GT3935@laptop>
+	<20140723113021.GP12054@laptop.lan>
+	<20140723142454.GQ12054@laptop.lan>
+	<CA+55aFwZ7kAqqhaE4g89CJLkpJOwGxcN4u+cc0ODfqjQ0rVMiA@mail.gmail.com>
+	<20140723155526.GW3935@laptop>
+	<CA+55aFzSU5u8MiGqRZ6BVojQPnxbd1hxmFY_BA=UuCAygxR8WQ@mail.gmail.com>
+	<20140723170324.GZ3935@laptop>
+	<CA+55aFwQSmBAs=QH9jAZz5JY7YFrDeuPH1RjFH+YKVr2NQM38g@mail.gmail.com>
+	<CA+55aFzDWritxv5RiqwcZ1qCKJQKK-Lw6StYFF7qx5YWgiCUTQ@mail.gmail.com>
+	<20140723182518.GD3935@laptop>
+Date: Wed, 23 Jul 2014 11:35:06 -0700
+X-Google-Sender-Auth: rsQVOudldHoWMFLU_aVO-J_Pqqw
+Message-ID: <CA+55aFyFT9n5wUNifEHY6+t2bEcD91kL7+dqXuBMSMJvLeDDJQ@mail.gmail.com>
+Subject: Re: Random panic in load_balance() with 3.16-rc
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Dietmar Eggemann <dietmar.eggemann@arm.com>,
+        =?UTF-8?Q?Michel_D=C3=A4nzer?= <michel@daenzer.net>,
+        Ingo Molnar <mingo@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 23, 2014 at 02:11:39PM -0400, Jeff Layton wrote:
-> On Sun, 20 Jul 2014 11:23:43 -0700
-> Joe Perches <joe@perches.com> wrote:
-> 
-> > op->info.rv is an s32, but it's only used as a u8.
-> > 
-> 
-> I don't understand this patch. info.rv is s32 (and I assume that "rv"
-> stands for "return value"). What I don't get is why you think it's just
-> used as a u8. It seems to be used more like a bool than anything else,
+On Wed, Jul 23, 2014 at 11:25 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Wed, Jul 23, 2014 at 10:26:21AM -0700, Linus Torvalds wrote:
+>>
+>> The whole - and really *only* - point of __get_cpu_var is to get the
+>> address of a a cpu variable. If you want to read the *value* of the
+>> variable, you should use "this_cpu_read()", which can use things like
+>> special instructions or segments to read the percpu area.
+>
+> I think this code predates all the this_cpu* magic. But yes, agreed.
 
-Thank you, Jeff.
+It turns out - now that I've stared at the code for much too long for
+my own sanity - that this code actually depends very subtly on
+"__get_cpu_var()".
 
-        /* info.rv from userspace is 1 for conflict, 0 for no-conflict,
-           -ENOENT if there are no locks on the file */
+And not in good ways.
 
-        rv = op->info.rv;
+So what happens is that the games that "cpumask_var_t" plays in order
+to make code work correctly with both on-stack and off-stack
+configurations are really toxic to good per-cpu use.
 
-> and I'm not sure that "type" is really a good description for it. Maybe
-> it should be a "bool" and named "conflict", given the comments in
-> dlm_posix_get ?
+For the off-stack case, a cpumask_var_t is a pointer to the real
+allocation, and using "__get_cpu_var()" is very suboptimal, because it
+gets that pointer by following the percpu offset explicitly. So we
+load the percpu offset, then we load the offset to "load_balance_mask"
+within that, and then we load the pointer off that. We'd be much
+better off using "this_cpu_read()", which can just use the percpu area
+directly to read the pointer.
 
-type is not a good name.
+HOWEVER.
 
-Sorry Joe, I'm not a fan of your patches.
+For the direct case, a "cpumask_var_t" is an array, exactly so that
+accessing it will just return the address of it, so that you can get
+the "struct cpumask *" directly.  And there the whole dance with
+adding the percpu offset is actually the right thing, because what you
+want is the address to the percpu area. And you cannot use
+"this_cpu_read()", because that wants to read the _value_, which is
+not what we want at all.
 
-Dave
+Ugh. So it's not just the initialization that is subtle, the use of
+those per-cpu "cpumask_var_t" is sadly suboptimal too.
+
+But the code does appear to be correct. It just is messy, avoids the
+proper abstractions, and generates suboptimal code for the off-stack
+case.
+
+               Linus
