@@ -1,47 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757633AbaGWJW0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 05:22:26 -0400
-Received: from casper.infradead.org ([85.118.1.10]:36145 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753112AbaGWJWC (ORCPT
+	id S1757660AbaGWJZ3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 05:25:29 -0400
+Received: from e23smtp07.au.ibm.com ([202.81.31.140]:35200 "EHLO
+	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757422AbaGWJZ0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 05:22:02 -0400
-Date: Wed, 23 Jul 2014 11:21:54 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Lan Tianyu <tianyu.lan@intel.com>
-Cc: rjw@rjwysocki.net, len.brown@intel.com, pavel@ucw.cz, toshi.kani@hp.com,
-        mingo@kernel.org, akpm@linux-foundation.org,
-        todd.e.brandt@linux.intel.com, fabf@skynet.be,
-        srivatsa.bhat@linux.vnet.ibm.com, ego@linux.vnet.ibm.com,
-        rafael.j.wysocki@intel.com, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [RFC PATCH] PM/CPU: Parallel enabling nonboot cpus with resume
- devices
-Message-ID: <20140723092154.GH20603@laptop.programming.kicks-ass.net>
-References: <1406106694-3306-1-git-send-email-tianyu.lan@intel.com>
+	Wed, 23 Jul 2014 05:25:26 -0400
+Subject: [PATCH 1/2] printk: Add function to return log buffer address and
+ size
+To: linux-kernel@vger.kernel.org
+From: Vasant Hegde <hegdevasant@linux.vnet.ibm.com>
+Cc: linuxppc-dev@lists.ozlabs.org
+Date: Wed, 23 Jul 2014 14:55:17 +0530
+Message-ID: <20140723092506.5170.34633.stgit@hegdevasant.in.ibm.com>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1406106694-3306-1-git-send-email-tianyu.lan@intel.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14072309-0260-0000-0000-000005702883
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 23, 2014 at 05:11:34PM +0800, Lan Tianyu wrote:
-> In the current world, all nonboot cpus are enabled serially during system
-> resume. System resume sequence is that boot cpu enables nonboot cpu one by
-> one and then resume devices. Before resuming devices, there are few tasks
-> assigned to nonboot cpus after they are brought up. This waste cpu usage.
-> 
-> To accelerate S3, this patches adds a new kernel configure
-> PM_PARALLEL_CPU_UP_FOR_SUSPEND to allow boot cpu to go forward to resume
-> devices after bringing up one nonboot cpu. The nonboot cpu will be in charge
-> of bringing up other cpus. This makes enabling cpu2~x parallel with resuming
-> devices. From the test result on 4 logical core laptop, the time of resume
-> device almost wasn't affected by enabling nonboot cpus lately while the start
-> point is almost 30ms earlier than before.
+Platforms like IBM Power Systems supports service processor
+assisted dump. It provides interface to add memory region to
+be captured when system is crashed.
 
-Why is this a CONFIG and why do we want to add more warts to the cpu
-hotplug instead of fixing it 'proper'?
+During initialization/running we can add kernel memory region
+to be collected.
+
+Presently we don't have a way to get the log buffer base address
+and size. This patch adds support to return log buffer address
+and size.
+
+
+Signed-off-by: Vasant Hegde <hegdevasant@linux.vnet.ibm.com>
+
+---
+Next patch extends arch specific code to add log buffer to platform
+dump.
+
+ include/linux/printk.h |    3 +++
+ kernel/printk/printk.c |   12 ++++++++++++
+ 2 files changed, 15 insertions(+)
+
+diff --git a/include/linux/printk.h b/include/linux/printk.h
+index 319ff7e..aae82c4 100644
+--- a/include/linux/printk.h
++++ b/include/linux/printk.h
+@@ -10,6 +10,9 @@
+ extern const char linux_banner[];
+ extern const char linux_proc_banner[];
+ 
++extern void *get_log_buf_addr(void);
++extern u32 get_log_buf_len(void);
++
+ static inline int printk_get_level(const char *buffer)
+ {
+ 	if (buffer[0] == KERN_SOH_ASCII && buffer[1]) {
+diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
+index 13e839d..4049f7b 100644
+--- a/kernel/printk/printk.c
++++ b/kernel/printk/printk.c
+@@ -270,6 +270,18 @@ static char __log_buf[__LOG_BUF_LEN] __aligned(LOG_ALIGN);
+ static char *log_buf = __log_buf;
+ static u32 log_buf_len = __LOG_BUF_LEN;
+ 
++/* Return log buffer address */
++void *get_log_buf_addr(void)
++{
++	return log_buf;
++}
++
++/* Return log buffer size */
++u32 get_log_buf_len(void)
++{
++	return log_buf_len;
++}
++
+ /* human readable text of the record */
+ static char *log_text(const struct printk_log *msg)
+ {
+
