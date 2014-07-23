@@ -1,57 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755495AbaGWM4m (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 08:56:42 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:39288 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751088AbaGWM4l (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 08:56:41 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-To: gregkh@linuxfoundation.org
-Cc: stern@rowland.harvard.edu, mail@beyermatthias.de, hdegoede@redhat.com,
-        sarah.a.sharp@linux.intel.com, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, rostedt@goodmis.org,
-        Sasha Levin <sasha.levin@oracle.com>, Sasha Levin <sashal@kernel.org>
-Subject: [PATCH] usb-core: Revert "usb-core: Remove Fix mes in file hcd.c"
-Date: Wed, 23 Jul 2014 08:56:10 -0400
-Message-Id: <1406120170-22983-1-git-send-email-sasha.levin@oracle.com>
-X-Mailer: git-send-email 1.9.1
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	id S1753821AbaGWM6Z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 08:58:25 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39244 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751049AbaGWM6Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jul 2014 08:58:24 -0400
+Date: Wed, 23 Jul 2014 13:58:18 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Michal Hocko <mhocko@suse.cz>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux-MM <linux-mm@kvack.org>
+Subject: Re: [PATCH 1/2] mm: Avoid full RCU lookup of memcg for statistics
+ updates
+Message-ID: <20140723125818.GT10819@suse.de>
+References: <1406114656-16350-1-git-send-email-mgorman@suse.de>
+ <1406114656-16350-2-git-send-email-mgorman@suse.de>
+ <20140723114449.GE1725@cmpxchg.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20140723114449.GE1725@cmpxchg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Revert since the commit message is incorrect and the original author refuses
-to fix/maintain it because "it's in the kernel already".
+On Wed, Jul 23, 2014 at 07:44:49AM -0400, Johannes Weiner wrote:
+> On Wed, Jul 23, 2014 at 12:24:15PM +0100, Mel Gorman wrote:
+> > When updating memcg VM statistics like PGFAULT we take the rcu read
+> > lock and lookup the memcg. For statistic updates this is overkill
+> > when the process may not belong to a memcg. This patch adds a light
+> > check to check if a memcg potentially exists. It's race-prone in that
+> > some VM stats may be missed when a process first joins a memcg but
+> > that is not serious enough to justify a constant performance penalty.
+> 
+> Tasks always belong to a memcg, the root group per default.  There
+> isn't really any accounting that could be omitted.
+> 
 
-Signed-off-by: Sasha Levin <sashal@kernel.org>
----
- drivers/usb/core/hcd.c | 4 ++++
- 1 file changed, 4 insertions(+)
+Crap, ok, I had not taken that into account. The lookup of that cannot
+really be avoided. It's a pity because the stats on the root memcg are
+not likely to be that interesting. Thanks for reviewing.
 
-diff --git a/drivers/usb/core/hcd.c b/drivers/usb/core/hcd.c
-index 487abcf..bec31e2 100644
---- a/drivers/usb/core/hcd.c
-+++ b/drivers/usb/core/hcd.c
-@@ -855,6 +855,8 @@ static ssize_t authorized_default_show(struct device *dev,
- 	struct usb_bus *usb_bus = rh_usb_dev->bus;
- 	struct usb_hcd *usb_hcd;
- 
-+	if (usb_bus == NULL)	/* FIXME: not sure if this case is possible */
-+		return -ENODEV;
- 	usb_hcd = bus_to_hcd(usb_bus);
- 	return snprintf(buf, PAGE_SIZE, "%u\n", usb_hcd->authorized_default);
- }
-@@ -869,6 +871,8 @@ static ssize_t authorized_default_store(struct device *dev,
- 	struct usb_bus *usb_bus = rh_usb_dev->bus;
- 	struct usb_hcd *usb_hcd;
- 
-+	if (usb_bus == NULL)	/* FIXME: not sure if this case is possible */
-+		return -ENODEV;
- 	usb_hcd = bus_to_hcd(usb_bus);
- 	result = sscanf(buf, "%u\n", &val);
- 	if (result == 1) {
 -- 
-1.9.1
-
+Mel Gorman
+SUSE Labs
