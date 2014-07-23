@@ -1,182 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757626AbaGWJJf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 05:09:35 -0400
-Received: from mga01.intel.com ([192.55.52.88]:13606 "EHLO mga01.intel.com"
+	id S1757663AbaGWJKr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 05:10:47 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:34102 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757588AbaGWJJb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 05:09:31 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,716,1400050800"; 
-   d="scan'208";a="565944627"
-From: Lan Tianyu <tianyu.lan@intel.com>
-To: rjw@rjwysocki.net, len.brown@intel.com, pavel@ucw.cz, peterz@infradead.org,
-        toshi.kani@hp.com, mingo@kernel.org, akpm@linux-foundation.org,
-        todd.e.brandt@linux.intel.com, fabf@skynet.be,
-        srivatsa.bhat@linux.vnet.ibm.com, tianyu.lan@intel.com,
-        ego@linux.vnet.ibm.com
-Cc: rafael.j.wysocki@intel.com, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org
-Subject: [RFC PATCH] PM/CPU: Parallel enabling nonboot cpus with resume devices
-Date: Wed, 23 Jul 2014 17:11:34 +0800
-Message-Id: <1406106694-3306-1-git-send-email-tianyu.lan@intel.com>
-X-Mailer: git-send-email 1.8.3.1
+	id S1757501AbaGWJKp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jul 2014 05:10:45 -0400
+Date: Wed, 23 Jul 2014 11:10:40 +0200
+From: Jan Kara <jack@suse.cz>
+To: Matthew Wilcox <matthew.r.wilcox@intel.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Matthew Wilcox <willy@linux.intel.com>
+Subject: Re: [PATCH v8 05/22] Add vm_replace_mixed()
+Message-ID: <20140723091040.GC15688@quack.suse.cz>
+References: <cover.1406058387.git.matthew.r.wilcox@intel.com>
+ <b1052af08b49965fd0e6b87b6733b89294c8cc1e.1406058387.git.matthew.r.wilcox@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <b1052af08b49965fd0e6b87b6733b89294c8cc1e.1406058387.git.matthew.r.wilcox@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In the current world, all nonboot cpus are enabled serially during system
-resume. System resume sequence is that boot cpu enables nonboot cpu one by
-one and then resume devices. Before resuming devices, there are few tasks
-assigned to nonboot cpus after they are brought up. This waste cpu usage.
+On Tue 22-07-14 15:47:53, Matthew Wilcox wrote:
+> From: Matthew Wilcox <willy@linux.intel.com>
+> 
+> vm_insert_mixed() will fail if there is already a valid PTE at that
+> location.  The DAX code would rather replace the previous value with
+> the new PTE.
+> 
+> Signed-off-by: Matthew Wilcox <willy@linux.intel.com>
+  This looks good to me although I'm not an expert in this area. So just:
+Acked-by: Jan Kara <jack@suse.cz>
 
-To accelerate S3, this patches adds a new kernel configure
-PM_PARALLEL_CPU_UP_FOR_SUSPEND to allow boot cpu to go forward to resume
-devices after bringing up one nonboot cpu. The nonboot cpu will be in charge
-of bringing up other cpus. This makes enabling cpu2~x parallel with resuming
-devices. From the test result on 4 logical core laptop, the time of resume
-device almost wasn't affected by enabling nonboot cpus lately while the start
-point is almost 30ms earlier than before.
+								Honza
 
-Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
----
- kernel/cpu.c         | 82 ++++++++++++++++++++++++++++++++++++++++++++++------
- kernel/power/Kconfig | 13 +++++++++
- 2 files changed, 86 insertions(+), 9 deletions(-)
-
-diff --git a/kernel/cpu.c b/kernel/cpu.c
-index a343bde..d4c1353 100644
---- a/kernel/cpu.c
-+++ b/kernel/cpu.c
-@@ -551,9 +551,27 @@ void __weak arch_enable_nonboot_cpus_end(void)
- {
- }
- 
-+static int _cpu_up_with_trace(int cpu)
-+{
-+	int error;
-+
-+	trace_suspend_resume(TPS("CPU_ON"), cpu, true);
-+	error = _cpu_up(cpu, 1);
-+	trace_suspend_resume(TPS("CPU_ON"), cpu, false);
-+	if (error) {
-+		pr_warn("Error taking CPU%d up: %d\n", cpu, error);
-+		return error;
-+	}
-+
-+	pr_info("CPU%d is up\n", cpu);
-+	return 0;
-+}
-+
-+#ifndef CONFIG_PM_PARALLEL_CPU_UP_FOR_SUSPEND
-+
- void __ref enable_nonboot_cpus(void)
- {
--	int cpu, error;
-+	int cpu;
- 
- 	/* Allow everyone to use the CPU hotplug again */
- 	cpu_maps_update_begin();
-@@ -566,14 +584,7 @@ void __ref enable_nonboot_cpus(void)
- 	arch_enable_nonboot_cpus_begin();
- 
- 	for_each_cpu(cpu, frozen_cpus) {
--		trace_suspend_resume(TPS("CPU_ON"), cpu, true);
--		error = _cpu_up(cpu, 1);
--		trace_suspend_resume(TPS("CPU_ON"), cpu, false);
--		if (!error) {
--			pr_info("CPU%d is up\n", cpu);
--			continue;
--		}
--		pr_warn("Error taking CPU%d up: %d\n", cpu, error);
-+		_cpu_up_with_trace(cpu);
- 	}
- 
- 	arch_enable_nonboot_cpus_end();
-@@ -583,6 +594,59 @@ out:
- 	cpu_maps_update_done();
- }
- 
-+#else
-+
-+static int async_enable_nonboot_cpus(void *data)
-+{
-+	int cpu;
-+
-+	cpu_maps_update_begin();
-+
-+	for_each_cpu(cpu, frozen_cpus) {
-+		_cpu_up_with_trace(cpu);
-+	}
-+
-+	arch_enable_nonboot_cpus_end();
-+	cpumask_clear(frozen_cpus);
-+	cpu_maps_update_done();
-+	return 0;
-+}
-+
-+void __ref enable_nonboot_cpus(void)
-+{
-+	struct task_struct *tsk;
-+	int cpu;
-+
-+	/* Allow everyone to use the CPU hotplug again */
-+	cpu_maps_update_begin();
-+	cpu_hotplug_disabled = 0;
-+	if (cpumask_empty(frozen_cpus))
-+		goto out;
-+
-+	arch_enable_nonboot_cpus_begin();
-+
-+	cpu = cpumask_first(frozen_cpus);
-+	cpumask_clear_cpu(cpu, frozen_cpus);
-+
-+	_cpu_up_with_trace(cpu);
-+
-+	if (cpumask_empty(frozen_cpus)) {
-+		arch_enable_nonboot_cpus_end();
-+	} else {
-+		tsk = kthread_create_on_cpu(async_enable_nonboot_cpus,
-+				NULL, cpu, "async-enable-nonboot-cpus");
-+		if (IS_ERR(tsk)) {
-+			pr_err("Failed to create async enable nonboot cpus thread.\n");
-+			goto out;
-+		}
-+
-+		kthread_unpark(tsk);
-+	}
-+out:
-+	cpu_maps_update_done();
-+}
-+#endif
-+
- static int __init alloc_frozen_cpus(void)
- {
- 	if (!alloc_cpumask_var(&frozen_cpus, GFP_KERNEL|__GFP_ZERO))
-diff --git a/kernel/power/Kconfig b/kernel/power/Kconfig
-index 9a83d78..e5e6671 100644
---- a/kernel/power/Kconfig
-+++ b/kernel/power/Kconfig
-@@ -110,6 +110,19 @@ config PM_AUTOSLEEP
- 	Allow the kernel to trigger a system transition into a global sleep
- 	state automatically whenever there are no active wakeup sources.
- 
-+config PM_PARALLEL_CPU_UP_FOR_SUSPEND
-+	bool "Parallel non-boot cpus up for system suspend"
-+	depends on SMP
-+	depends on PM_SLEEP
-+	default n
-+	---help---
-+	In the current world, all nonboot cpus are enabled serially during system
-+	resume. System resume sequence is that boot cpu enables nonboot cpu one by
-+	one and then resume devices. Before resuming devices, there are few tasks
-+	assigned to nonboot cpus. To accelerate S3, this option allows boot cpu
-+	to go forward to resume devices after bringing up one nonboot cpu. The
-+	nonboot cpu will be in charge of bring up other cpus.
-+
- config PM_WAKELOCKS
- 	bool "User space wakeup sources interface"
- 	depends on PM_SLEEP
+> ---
+>  include/linux/mm.h |  8 ++++++--
+>  mm/memory.c        | 34 +++++++++++++++++++++-------------
+>  2 files changed, 27 insertions(+), 15 deletions(-)
+> 
+> diff --git a/include/linux/mm.h b/include/linux/mm.h
+> index e04f531..8d1194c 100644
+> --- a/include/linux/mm.h
+> +++ b/include/linux/mm.h
+> @@ -1958,8 +1958,12 @@ int remap_pfn_range(struct vm_area_struct *, unsigned long addr,
+>  int vm_insert_page(struct vm_area_struct *, unsigned long addr, struct page *);
+>  int vm_insert_pfn(struct vm_area_struct *vma, unsigned long addr,
+>  			unsigned long pfn);
+> -int vm_insert_mixed(struct vm_area_struct *vma, unsigned long addr,
+> -			unsigned long pfn);
+> +int __vm_insert_mixed(struct vm_area_struct *vma, unsigned long addr,
+> +			unsigned long pfn, bool replace);
+> +#define vm_insert_mixed(vma, addr, pfn)	\
+> +	__vm_insert_mixed(vma, addr, pfn, false)
+> +#define vm_replace_mixed(vma, addr, pfn)	\
+> +	__vm_insert_mixed(vma, addr, pfn, true)
+>  int vm_iomap_memory(struct vm_area_struct *vma, phys_addr_t start, unsigned long len);
+>  
+>  
+> diff --git a/mm/memory.c b/mm/memory.c
+> index 42bf429..cf06c97 100644
+> --- a/mm/memory.c
+> +++ b/mm/memory.c
+> @@ -1476,7 +1476,7 @@ pte_t *__get_locked_pte(struct mm_struct *mm, unsigned long addr,
+>   * pages reserved for the old functions anyway.
+>   */
+>  static int insert_page(struct vm_area_struct *vma, unsigned long addr,
+> -			struct page *page, pgprot_t prot)
+> +			struct page *page, pgprot_t prot, bool replace)
+>  {
+>  	struct mm_struct *mm = vma->vm_mm;
+>  	int retval;
+> @@ -1492,8 +1492,12 @@ static int insert_page(struct vm_area_struct *vma, unsigned long addr,
+>  	if (!pte)
+>  		goto out;
+>  	retval = -EBUSY;
+> -	if (!pte_none(*pte))
+> -		goto out_unlock;
+> +	if (!pte_none(*pte)) {
+> +		if (!replace)
+> +			goto out_unlock;
+> +		VM_BUG_ON(!mutex_is_locked(&vma->vm_file->f_mapping->i_mmap_mutex));
+> +		zap_page_range_single(vma, addr, PAGE_SIZE, NULL);
+> +	}
+>  
+>  	/* Ok, finally just insert the thing.. */
+>  	get_page(page);
+> @@ -1549,12 +1553,12 @@ int vm_insert_page(struct vm_area_struct *vma, unsigned long addr,
+>  		BUG_ON(vma->vm_flags & VM_PFNMAP);
+>  		vma->vm_flags |= VM_MIXEDMAP;
+>  	}
+> -	return insert_page(vma, addr, page, vma->vm_page_prot);
+> +	return insert_page(vma, addr, page, vma->vm_page_prot, false);
+>  }
+>  EXPORT_SYMBOL(vm_insert_page);
+>  
+>  static int insert_pfn(struct vm_area_struct *vma, unsigned long addr,
+> -			unsigned long pfn, pgprot_t prot)
+> +			unsigned long pfn, pgprot_t prot, bool replace)
+>  {
+>  	struct mm_struct *mm = vma->vm_mm;
+>  	int retval;
+> @@ -1566,8 +1570,12 @@ static int insert_pfn(struct vm_area_struct *vma, unsigned long addr,
+>  	if (!pte)
+>  		goto out;
+>  	retval = -EBUSY;
+> -	if (!pte_none(*pte))
+> -		goto out_unlock;
+> +	if (!pte_none(*pte)) {
+> +		if (!replace)
+> +			goto out_unlock;
+> +		VM_BUG_ON(!mutex_is_locked(&vma->vm_file->f_mapping->i_mmap_mutex));
+> +		zap_page_range_single(vma, addr, PAGE_SIZE, NULL);
+> +	}
+>  
+>  	/* Ok, finally just insert the thing.. */
+>  	entry = pte_mkspecial(pfn_pte(pfn, prot));
+> @@ -1620,14 +1628,14 @@ int vm_insert_pfn(struct vm_area_struct *vma, unsigned long addr,
+>  	if (track_pfn_insert(vma, &pgprot, pfn))
+>  		return -EINVAL;
+>  
+> -	ret = insert_pfn(vma, addr, pfn, pgprot);
+> +	ret = insert_pfn(vma, addr, pfn, pgprot, false);
+>  
+>  	return ret;
+>  }
+>  EXPORT_SYMBOL(vm_insert_pfn);
+>  
+> -int vm_insert_mixed(struct vm_area_struct *vma, unsigned long addr,
+> -			unsigned long pfn)
+> +int __vm_insert_mixed(struct vm_area_struct *vma, unsigned long addr,
+> +			unsigned long pfn, bool replace)
+>  {
+>  	BUG_ON(!(vma->vm_flags & VM_MIXEDMAP));
+>  
+> @@ -1645,11 +1653,11 @@ int vm_insert_mixed(struct vm_area_struct *vma, unsigned long addr,
+>  		struct page *page;
+>  
+>  		page = pfn_to_page(pfn);
+> -		return insert_page(vma, addr, page, vma->vm_page_prot);
+> +		return insert_page(vma, addr, page, vma->vm_page_prot, replace);
+>  	}
+> -	return insert_pfn(vma, addr, pfn, vma->vm_page_prot);
+> +	return insert_pfn(vma, addr, pfn, vma->vm_page_prot, replace);
+>  }
+> -EXPORT_SYMBOL(vm_insert_mixed);
+> +EXPORT_SYMBOL(__vm_insert_mixed);
+>  
+>  /*
+>   * maps a range of physical memory into the requested pages. the old
+> -- 
+> 2.0.0
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 -- 
-1.8.3.1
-
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
