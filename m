@@ -1,62 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756802AbaGWOGo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 10:06:44 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:60078 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755353AbaGWOGm (ORCPT
+	id S1757239AbaGWOHa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 10:07:30 -0400
+Received: from mail-out.m-online.net ([212.18.0.10]:58819 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755276AbaGWOH1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 10:06:42 -0400
-X-Originating-IP: 108.223.40.66
-Message-ID: <53CFC170.9090505@roeck-us.net>
-Date: Wed, 23 Jul 2014 07:06:40 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Wed, 23 Jul 2014 10:07:27 -0400
+X-Auth-Info: mHKB0WdNCe4oFlyBOgXYILwk3k7DbXh6n/FtHEmud9Y=
+From: Marek Vasut <marex@denx.de>
+To: Herbert Xu <herbert@gondor.apana.org.au>
+Subject: Re: [PATCH 3/3] crypto: Add Allwinner Security System crypto accelerator
+Date: Wed, 23 Jul 2014 16:07:20 +0200
+User-Agent: KMail/1.13.7 (Linux/3.13-trunk-amd64; KDE/4.13.1; x86_64; ; )
+Cc: LABBE Corentin <clabbe.montjoie@gmail.com>, robh+dt@kernel.org,
+        pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        rdunlap@infradead.org, maxime.ripard@free-electrons.com,
+        linux@arm.linux.org.uk, davem@davemloft.net, grant.likely@linaro.org,
+        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org
+References: <1400771396-9686-1-git-send-email-clabbe.montjoie@gmail.com> <201405241400.03456.marex@denx.de> <20140723135735.GA30132@gondor.apana.org.au>
+In-Reply-To: <20140723135735.GA30132@gondor.apana.org.au>
 MIME-Version: 1.0
-To: Sasha Levin <sasha.levin@oracle.com>, geert@linux-m68k.org
-CC: rostedt@goodmis.org, gnomes@lxorguk.ukuu.org.uk, xerofoify@gmail.com,
-        linux-m68k@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Sasha Levin <sashal@kernel.org>
-Subject: Re: [PATCH] m68k/q40: Revert "m68k/q40: Fix q40_irq_startup() to
- return -ENXIO on failures"
-References: <1406119899-22659-1-git-send-email-sasha.levin@oracle.com>
-In-Reply-To: <1406119899-22659-1-git-send-email-sasha.levin@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: Text/Plain;
+  charset="us-ascii"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201407231607.21106.marex@denx.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/23/2014 05:51 AM, Sasha Levin wrote:
-> Revert since we're trying to return -ENXIO from a function returning
-> unsigned int. Not only it causes compiler warnings it's also obviously
-> incorrect.
->
-> In general, watch for patches from Nick Krause since they are not even
-> build tested.
->
-> Signed-off-by: Sasha Levin <sashal@kernel.org>
+On Wednesday, July 23, 2014 at 03:57:35 PM, Herbert Xu wrote:
+> On Sat, May 24, 2014 at 02:00:03PM +0200, Marek Vasut wrote:
+> > > +	}
+> > > +#endif
+> > > +
+> > > +#ifdef CONFIG_CRYPTO_DEV_SUNXI_SS_MD5
+> > > +	err = crypto_register_shash(&sunxi_md5_alg);
+> > 
+> > Do not use shash for such device. This is clearly and ahash (and async in
+> > general) device. The rule of a thumb here is that you use sync algos only
+> > for devices which have dedicated instructions for computing the
+> > transformation. For devices which are attached to some kind of bus, you
+> > use async algos (ahash etc).
+> 
+> I'm sorry that I didn't catch this earlier but there is no such
+> rule.
+> 
+> Unless you need the async interface you should stick to the sync
+> interfaces for the sake of simplicity.
+> 
+> We have a number of existing drivers that are synchronous but
+> using the async interface.  They should either be converted
+> over to the sync interface or made interrupt-driven if possible.
 
-Guess I wasn't fast enough with my comments :-(
+Sure, but this device is interrupt driven and uses DMA to feed the crypto 
+engine, therefore async, right ?
 
-Acked-by: Guenter Roeck <linux@roeck-us.net>
-
-> ---
->   arch/m68k/q40/q40ints.c | 2 +-
->   1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/arch/m68k/q40/q40ints.c b/arch/m68k/q40/q40ints.c
-> index 9dfa1ea..513f9bb 100644
-> --- a/arch/m68k/q40/q40ints.c
-> +++ b/arch/m68k/q40/q40ints.c
-> @@ -49,7 +49,7 @@ static unsigned int q40_irq_startup(struct irq_data *data)
->   	case 1: case 2: case 8: case 9:
->   	case 11: case 12: case 13:
->   		printk("%s: ISA IRQ %d not implemented by HW\n", __func__, irq);
-> -		return -ENXIO;
-> +		/* FIXME return -ENXIO; */
->   	}
->   	return 0;
->   }
->
-
+Best regards,
+Marek Vasut
