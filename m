@@ -1,188 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758194AbaGWPsi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 11:48:38 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.230]:61950 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1758123AbaGWPsh (ORCPT
+	id S1758242AbaGWPu0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 11:50:26 -0400
+Received: from mail-ie0-f170.google.com ([209.85.223.170]:54452 "EHLO
+	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758123AbaGWPuX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 11:48:37 -0400
-Date: Wed, 23 Jul 2014 11:48:33 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Namhyung Kim <namhyung@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Josh Poimboeuf <jpoimboe@redhat.com>, Jiri Kosina <jkosina@suse.cz>,
-        Seth Jennings <sjenning@redhat.com>, Jiri Slaby <jslaby@suse.cz>
-Subject: Re: [RFC][PATCH 0/3] ftrace: Add dynamically allocated trampolines
-Message-ID: <20140723114833.49170d63@gandalf.local.home>
-In-Reply-To: <20140723120805.GB21376@redhat.com>
-References: <20140703200750.648550267@goodmis.org>
-	<20140722164707.GA15893@redhat.com>
-	<20140722150236.592662a6@gandalf.local.home>
-	<20140723120805.GB21376@redhat.com>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
+	Wed, 23 Jul 2014 11:50:23 -0400
+Date: Wed, 23 Jul 2014 16:50:16 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Peter Griffin <peter.griffin@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        maxime.coquelin@st.com, patrice.chotard@st.com,
+        srinivas.kandagatla@gmail.com, devicetree@vger.kernel.org,
+        balbi@ti.com, linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
+        peppe.cavallaro@st.com
+Subject: Re: [PATCH v3 1/3] usb: dwc3: add ST dwc3 glue layer to manage dwc3
+ HC
+Message-ID: <20140723155016.GM23210@lee--X1>
+References: <1406126915-30601-1-git-send-email-peter.griffin@linaro.org>
+ <1406126915-30601-2-git-send-email-peter.griffin@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1406126915-30601-2-git-send-email-peter.griffin@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 23 Jul 2014 14:08:05 +0200
-Oleg Nesterov <oleg@redhat.com> wrote:
+On Wed, 23 Jul 2014, Peter Griffin wrote:
 
-> On 07/22, Steven Rostedt wrote:
-> >
-> > On Tue, 22 Jul 2014 18:47:07 +0200
-> > Oleg Nesterov <oleg@redhat.com> wrote:
-> >
-> > > On 07/03, Steven Rostedt wrote:
-> > >
-> > > > The way the function callback mechanism works in ftrace is that if there's
-> > > > only one function callback registered, it will set the mcount/fentry
-> > > > trampoline to call that function directly. But as soon as you register
-> > > > another callback, the mcount trampoline calls a loop function that iterates
-> > > > over all the registered callbacks (ftrace_ops) checking their hash tables
-> > > > to see if the called function matches the ops before calling its callback.
-> > > > This happens even if the two registered functions are not even tracing
-> > > > the same function!
-> > > >
-> > > > This really sucks if you are tracing all functions, and then add a kprobe
-> > > > or perf event that traces a single function. That will cause all the
-> > > > other functions being traced to perform the loop test.
-> > >
-> > > But this is even worse or I missed something? I mean, currently even
-> > > if you trace nothing and then add a KPROBE_FLAG_FTRACE kprobe, then
-> > > kprobe_ftrace_handler() is called by ftrace_ops_list_func() ?
-> >
-> > It shouldn't be. It should get called directly from the trampoline. The
-> > allocated trampoline should never call the list op. Well, it might
-> > during the conversion for safety, but after that, trampolines should
-> > only call the registered ftrace_ops->func directly.
+> This patch adds the ST glue logic to manage the DWC3 HC
+> on STiH407 SoC family. It manages the powerdown signal,
+> and configures the internal glue logic and syscfg registers.
 > 
-> I meant the current code (I am reading 3.16-rc2). Even if we have a single
-> KPROBE_FLAG_FTRACE kprobe, kprobe_ftrace_handler() won't be called directly.
-> 
+> Signed-off-by: Giuseppe Cavallaro <peppe.cavallaro@st.com>
+> Signed-off-by: Peter Griffin <peter.griffin@linaro.org>
+> ---
+>  drivers/usb/dwc3/Kconfig   |   9 ++
+>  drivers/usb/dwc3/Makefile  |   1 +
+>  drivers/usb/dwc3/dwc3-st.c | 338 +++++++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 348 insertions(+)
+>  create mode 100644 drivers/usb/dwc3/dwc3-st.c
 
-Oh, I thought we were still talking about the trampolines, that's not
-in 3.16-rc2.
+[...]
 
-> Or I misunderstood your reply? Just in case, let me check...
-> 
-> With this stupid patch
-> 
-> 	--- a/kernel/trace/ftrace.c
-> 	+++ b/kernel/trace/ftrace.c
-> 	@@ -4464,6 +4464,7 @@ __ftrace_ops_list_func(unsigned long ip, unsigned long parent_ip,
-> 					printk("op=%p %pS\n", op, op);
-> 					goto out;
-> 				}
-> 	+			pr_crit("LIST_FUNC -> %pf()\n",  op->func);
-> 				op->func(ip, parent_ip, op, regs);
-> 			}
-> 		} while_for_each_ftrace_op(op);
-> 
-> I do
-> 	# cd /sys/kernel/debug/tracing/
-> 	# echo "p:xx SyS_prctl+0x1c" >| kprobe_events
-> 	# cat ../kprobes/list
-> 	ffffffff81056c4c  k  SyS_prctl+0x1c    [DISABLED][FTRACE]
-> 	# echo 1 >| events/kprobes/xx/enable
-> 	#
-> 	# perl -e 'syscall 157,-1'
-> 	# dmesg
-> 	LIST_FUNC -> kprobe_ftrace_handler()
-> 
-> so it is really called by the loop test code.
-> 
-> And I guess that after your patches kprobe_ftrace_handler() should be called
-> from the trampoline in this case.
+> +/*
+> + * For all fields in USB2_VBUS_MNGMNT_SEL1
+> + * 2’b00 : Override value from Reg 0x30 is selected
+> + * 2’b01 : utmiotg_<signal_name> from usb3_top is selected
+> + * 2’b10 : pipew_<signal_name> from PIPEW instance is selected
+> + * 2’b11 : value is 1'b0
+> + */
+> +#define REG30	0x0
+> +#define UTMIOTG	0x1
+> +#define PIPEW	0x2
+> +#define ZERO	0x3
 
-No it wont be. Not until we have Paul McKenney's task_rcu code that
-will return after all tasks have either gone through userspace or a
-schedule. Hmm, maybe on a !CONFIG_PREEMPT it will be OK. Oh, I can have
-that be OK now on !CONFIG_PREEMPT. Maybe I'll do that too.
+Possible register values are usually prefixed with something
+descriptive which identifies them.
 
-kprobe ftrace_ops are allocated which sets the FTRACE_OPS_FL_DYNAMIC
-flag. You'll see that flag checked in update_ftrace_function(), and if
-it is set, it forces the ftrace_ops_list_func() to be used.
+USB2_VBUS_ looks appropriate here.
 
-Why?
+[...]
 
-Because we can not know if a task has just jumped to the function with
-the ops that has been freed. Here's what I mean:
+> +/**
+> + * struct st_dwc3 - st-dwc3 driver private structure
+> + * @dwc3:		platform device pointer
+> + * @dev:		device pointer
+> + * @glue_base		ioaddr for the glue registers
+> + * @regmap		regmap pointer for getting syscfg
+> + * @syscfg_reg_off	usb syscfg control offset
+> + * @dr_mode		drd static host/device config
+> + * @rstc_pwrdn		rest controller for powerdown signal
+> + * @rstc_rst		reset controller for softreset signal
 
+Some of these have ':', some of them don't.  I suggest you standardise
+to 'all do'.
 
-	foo()
-	  [mcount called --> ftrace_caller trampoline]
-           ftrace_caller
-             load ftrace_ops into parameter
-             <interrupt>
-             preempt_schedule()
-       [new task]
-       kfree(kprobe ftrace_ops);
-       [schedule back]
-             call kprobes ftrace ops func
-               uses ops, but it was freed!
-               [BOOM!]
+> + *
 
+Superflous line in comment.
 
-A trampoline can not access anything that can be freed. In this case,
-the kprobes ftrace_ops can be, and that forces the list function to be
-used. Why is the list function ok? Because it does:
+> + */
+> +
 
-	preempt_disable();
-	loop all ops
-		ops->func()
-	preempt_enable();
+Superflous '\n'.
 
-And after we disconnect an ops from the list, we call
-schedule_on_each_cpu() before freeing it.
+Take a look how you did the function headers below.
 
-Why not use synchronize_sched()?
+[...]
 
-Because ftrace can be called outside of areas that rcu is aware of,
-including the rcu infrastructure itself. That means there's a extremely
-rare case that synchronize_sched() can return before that loop of ops
-is finished.
+> +static int st_dwc3_drd_init(struct st_dwc3 *dwc3_data)
+> +{
+> +	u32 val;
+> +	int err;
+> +
+> +	err = regmap_read(dwc3_data->regmap, dwc3_data->syscfg_reg_off, &val);
+> +	if (err)
+> +		return err;
+> +
+> +	switch (dwc3_data->dr_mode) {
+> +	case USB_DR_MODE_PERIPHERAL:
+> +		val |= USB_SET_PORT_DEVICE;
+> +		dev_dbg(dwc3_data->dev, "Configuring as Device\n");
+> +		break;
+> +
+> +	case USB_DR_MODE_HOST:
+> +		val &= USB_HOST_DEFAULT_MASK;
+> +		dev_dbg(dwc3_data->dev, "Configuring as Host\n");
+> +		break;
+> +
+> +	default:
+> +		dev_err(dwc3_data->dev, "Unsupported mode of operation %d\n"
+> +			, dwc3_data->dr_mode);
 
-Although it's extremely rare, and even possibly impossible to hit, the
-fact that theoretically it can be, we must do the even slower but
-guaranteed safe schedule_on_each_cpu() to make sure that nothing was in
-that preempt disable location before we free it.
+',' should be on the line above.
 
-> 
-> > > ftrace_save_ops_tramp_hash():
-> > >
-> > > 	do_for_each_ftrace_rec(pg, rec) {
-> > > 		if (ftrace_rec_count(rec) == 1 &&
-> > > 		    ftrace_ops_test(ops, rec->ip, rec)) {
-> > >
-> > > 			/* This record had better have a trampoline */
-> > > 			if (FTRACE_WARN_ON(!(rec->flags & FTRACE_FL_TRAMP_EN)))
-> > > 				return -1;
-> > >
-> > > Yes, but I can't understand how this can work.
-> >
-> > I wanted the back to 1 case to happen after we get the up to one case
-> > working. That is, I don't want to worry about it now ;-)  As you can
-> > see, this code has enough things to try to keep straight without adding
-> > more complexity to the mix.
-> 
-> Yes, I see... but note that this WARN_ON() looks wrong in any case. At
-> least currently.
+> +		return -EINVAL;
+> +	}
+> +
+> +	return regmap_write(dwc3_data->regmap, dwc3_data->syscfg_reg_off, val);
+> +}
 
-Yeah, in my linux-next repo it quite possibly can be. I'm looking into
-fixing that now.
+All of this stuff is pretty minor.
 
-Thanks!
+Once fixed apply my Ack on the next revision:
 
--- Steve
+Acked-by: Lee Jones <lee.jones@linaro.org>
 
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
