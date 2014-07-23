@@ -1,77 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757812AbaGWKH7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 06:07:59 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:50836 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757778AbaGWKH6 (ORCPT
+	id S1757846AbaGWKIt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 06:08:49 -0400
+Received: from relay1.mentorg.com ([192.94.38.131]:46091 "EHLO
+	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756127AbaGWKIs convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 06:07:58 -0400
-Date: Wed, 23 Jul 2014 11:07:46 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Nicolin Chen <Guangyu.Chen@freescale.com>
-Cc: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        alsa-devel@alsa-project.org, timur@tabi.org, Li.Xiubo@freescale.com,
-        b02247@freescale.com, b42378@freescale.com
-Message-ID: <20140723100746.GC17528@sirena.org.uk>
-References: <cover.1405603108.git.nicoleotsuka@gmail.com>
- <9ef07dc9cc98b19e3f81f8374617605bf0d9faeb.1405603108.git.nicoleotsuka@gmail.com>
- <20140718101810.GA15150@MrMyself>
- <20140723095229.GA25639@MrMyself>
+	Wed, 23 Jul 2014 06:08:48 -0400
+From: "Sharma, Sanjeev" <Sanjeev_Sharma@mentor.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "waydi1@gmail.com" <waydi1@gmail.com>,
+        "swetland@google.com" <swetland@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "daniel@ffwll.ch" <daniel@ffwll.ch>
+Subject: RE: [PATCH] staging: android: Fixed missing blank line
+Thread-Topic: [PATCH] staging: android: Fixed missing blank line
+Thread-Index: AQHPokHKPX3m4qRn7Ey277r1/fasOZumZz0AgAcQNZA=
+Date: Wed, 23 Jul 2014 10:08:44 +0000
+Message-ID: <FDC088D3B5555644AE135ED28A7ABDE938F0397E@EU-MBX-04.mgc.mentorg.com>
+References: <1405658874-24448-1-git-send-email-sanjeev_sharma@mentor.com>
+ <20140718231610.GA29987@kroah.com>
+In-Reply-To: <20140718231610.GA29987@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [137.202.0.76]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="NFhhVVeDTkyNvWHh"
-Content-Disposition: inline
-In-Reply-To: <20140723095229.GA25639@MrMyself>
-X-Cookie: 98% lean.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 1/2] ASoC: fsl_sai: Reset FIFOs after disabling TE/RE
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+X-OriginalArrivalTime: 23 Jul 2014 10:08:46.0367 (UTC) FILETIME=[17374AF0:01CFA65E]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Thanks, so this is also available in next kernel release version.
 
---NFhhVVeDTkyNvWHh
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Regards
+Sanjeev Sharma
 
-On Wed, Jul 23, 2014 at 05:52:32PM +0800, Nicolin Chen wrote:
+-----Original Message-----
+From: Greg KH [mailto:gregkh@linuxfoundation.org] 
+Sent: Saturday, July 19, 2014 4:46 AM
+To: Sharma, Sanjeev
+Cc: devel@driverdev.osuosl.org; waydi1@gmail.com; swetland@google.com; linux-kernel@vger.kernel.org; daniel@ffwll.ch
+Subject: Re: [PATCH] staging: android: Fixed missing blank line
 
-> I found this two patches are merged into for-next branch, although I have=
-n't
-> got the 'applied' email.=20
+On Fri, Jul 18, 2014 at 10:17:54AM +0530, Sanjeev Sharma wrote:
+> This patch will add an blank line after declaration reported by 
+> checkpatch.pl script.
+> 
+> Signed-off-by: Sanjeev Sharma <Sanjeev_Sharma@mentor.com>
+> ---
+>  drivers/staging/android/sw_sync.c | 2 ++
+>  1 file changed, 2 insertions(+)
+> 
+> diff --git a/drivers/staging/android/sw_sync.c 
+> b/drivers/staging/android/sw_sync.c
+> index a76db3f..863d4b1 100644
+> --- a/drivers/staging/android/sw_sync.c
+> +++ b/drivers/staging/android/sw_sync.c
+> @@ -97,6 +97,7 @@ static void sw_sync_pt_value_str(struct sync_pt *sync_pt,
+>  				       char *str, int size)
+>  {
+>  	struct sw_sync_pt *pt = (struct sw_sync_pt *)sync_pt;
+> +
+>  	snprintf(str, size, "%d", pt->value);  }
+>  
+> @@ -156,6 +157,7 @@ static int sw_sync_open(struct inode *inode, 
+> struct file *file)  static int sw_sync_release(struct inode *inode, 
+> struct file *file)  {
+>  	struct sw_sync_timeline *obj = file->private_data;
+> +
+>  	sync_timeline_destroy(&obj->obj);
+>  	return 0;
+>  }
 
-> Is that possible for you to drop this one? If not, I'll send another patch
-> to fix this.
-
-Please send a patch, I'd already applied it by the time you asked me to
-drop it.
-
---NFhhVVeDTkyNvWHh
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJTz4lvAAoJELSic+t+oim9x7gP/06hLfS/OM3JrvPuAaXXqvgK
-7G0nVvMQh/QopDYZ10MJNxU+w0CCFpP1yPbhqkZrDLQH0WxXlzlDFgVMzmFKHmJw
-qYkwrWD6vzjSxEecrCEtsYIXhAn4FUNgOATa5FrqVT1pBCXrY8kIXkaclzB7YOOL
-Ob5lsdGIf3YXQnsWt+sFF1CLKTb4rDXg0Oe3PTmHbqdQx4Gwbls2TmE37za8XKtf
-UtZgN91zsxgZYMOKRUeqQpvCaIHIQbZTipoDjOTaw0Ocdb6NusTVUw9lJXrrrP52
-8SPlJqs+KwJGThv5xjFNmn8fDTx0P+SfzIXPcc56xiHDdpe00Ziy3zKv7PDUaq6o
-HuIzOWJvIClrc/WoyayiEbUtnJsKkl/1v1L15tkipb5H7wz0OL0a9JdPf7lDMR/3
-N1WvtAjkcYJNVEoYhVuuUymqqkT1MKEq64blgX7wuretgt3ZVVpfLhVYdL0ltzcN
-ZKZnzKlEm/aTMz9x9gArLiy6AomAgGYf9wDZd6hriyqm5Ll2toT7dnvRClZ6ugkt
-SDdbCbl9i9w0DRZdFNOAJkQzJ/mBmUR0SjQ08aWxBu2Rb5IUtzUmAPayHSDcKOeY
-vLiYUGTgbokKtmkvFw12uvtFFJjsprK5gOrsSnK5EsOTmYfU63EAk4XCKGsCEhsn
-aMvVzC+PZdV3wMX42zEV
-=8XPw
------END PGP SIGNATURE-----
-
---NFhhVVeDTkyNvWHh--
+I already applied a previous version of this patch, with your gmail address :(
