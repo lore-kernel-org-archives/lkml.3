@@ -1,30 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757291AbaGVX7u (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 19:59:50 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:50390 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757236AbaGVX7s (ORCPT
+	id S1757310AbaGWACn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 20:02:43 -0400
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:42132 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757283AbaGWACl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 19:59:48 -0400
-Date: Tue, 22 Jul 2014 16:58:02 -0700 (PDT)
+	Tue, 22 Jul 2014 20:02:41 -0400
+Date: Tue, 22 Jul 2014 17:01:03 -0700 (PDT)
 From: Hugh Dickins <hughd@google.com>
 X-X-Sender: hugh@eggly.anvils
-To: Sasha Levin <sasha.levin@oracle.com>
-cc: Hugh Dickins <hughd@google.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Vlastimil Babka <vbabka@suse.cz>,
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Sasha Levin <sasha.levin@oracle.com>, Vlastimil Babka <vbabka@suse.cz>,
         Konstantin Khlebnikov <koct9i@gmail.com>,
         Johannes Weiner <hannes@cmpxchg.org>,
         Michel Lespinasse <walken@google.com>,
         Lukas Czerner <lczerner@redhat.com>, Dave Jones <davej@redhat.com>,
         linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/2] shmem: fix faulting into a hole while it's punched,
- take 3
-In-Reply-To: <53CEF197.9040600@oracle.com>
-Message-ID: <alpine.LSU.2.11.1407221657150.32060@eggly.anvils>
-References: <alpine.LSU.2.11.1407150247540.2584@eggly.anvils> <53C7F55B.8030307@suse.cz> <53C7F5FF.7010006@oracle.com> <53C8FAA6.9050908@oracle.com> <alpine.LSU.2.11.1407191628450.24073@eggly.anvils> <53CDD961.1080006@oracle.com> <alpine.LSU.2.11.1407220049140.1980@eggly.anvils>
- <53CEF197.9040600@oracle.com>
+Subject: [PATCH] shmem: fix faulting into a hole, not taking i_mutex: fix
+Message-ID: <alpine.LSU.2.11.1407221658290.32060@eggly.anvils>
 User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -32,13 +27,30 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 22 Jul 2014, Sasha Levin wrote:
-> On 07/22/2014 04:07 AM, Hugh Dickins wrote:
-> > But there is one easy change which might do it: please would you try
-> > changing the TASK_KILLABLE a few lines above to TASK_UNINTERRUPTIBLE.
-> 
-> That seems to have done the trick, everything works fine.
+Sasha reports various nasty trinity crashes when shmem_fault() tries
+to finish_wait(), we guess from rare cases when the wait_queue_head
+on shmem_fallocate()'s stack has already gone.  Fix those by using
+TASK_UNINTERRUPIBLE instead of TASK_KILLABLE in prepare_to_wait(),
+that's much simpler and safer: TASK_KILLABLE was a nice aspiration,
+but not worth any more hassle.
 
-Super, thank you Sasha: patch to Andrew follows.
+Reported-and-tested-by: Sasha Levin <sasha.levin@oracle.com>
+Signed-off-by: Hugh Dickins <hughd@google.com>
+---
+Andrew, please fold this into
+shmem-fix-faulting-into-a-hole-not-taking-i_mutex.patch
+before sending the fixes on to Linus - thanks.
 
-Hugh
+ mm/shmem.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- mmotm/mm/shmem.c	2014-07-22 16:35:49.683985586 -0700
++++ linux/mm/shmem.c	2014-07-22 16:36:35.459984108 -0700
+@@ -1283,7 +1283,7 @@ static int shmem_fault(struct vm_area_st
+ 
+ 			shmem_falloc_waitq = shmem_falloc->waitq;
+ 			prepare_to_wait(shmem_falloc_waitq, &shmem_fault_wait,
+-					TASK_KILLABLE);
++					TASK_UNINTERRUPTIBLE);
+ 			spin_unlock(&inode->i_lock);
+ 			schedule();
