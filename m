@@ -1,48 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758249AbaGWQVb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 12:21:31 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56867 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755835AbaGWQVa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 12:21:30 -0400
-Date: Wed, 23 Jul 2014 09:21:29 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-Cc: Wang YanQing <udknight@gmail.com>, linus.walleij@linaro.org,
-        jhovold@gmail.com, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] usb:serial:pl2303: add GPIOs interface on PL2303
-Message-ID: <20140723162129.GB6871@kroah.com>
-References: <20140720063841.GA28059@udknight>
- <20140723170314.23864779@alan.etchedpixels.co.uk>
+	id S1758162AbaGWQWD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 12:22:03 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:55495 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756450AbaGWQWB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jul 2014 12:22:01 -0400
+Date: Wed, 23 Jul 2014 18:21:58 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: "Chen, Gong" <gong.chen@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, tglx@linutronix.de,
+        paulus@samba.org, benh@kernel.crashing.org, tony.luck@intel.com,
+        hpa@zytor.com, jkosina@suse.cz, rafael.j.wysocki@intel.com,
+        linux@arm.linux.org.uk, ralf@linux-mips.org, schwidefsky@de.ibm.com,
+        davem@davemloft.net, viro@zeniv.linux.org.uk, fweisbec@gmail.com,
+        cl@linux.com, akpm@linux-foundation.org, axboe@kernel.dk,
+        JBottomley@parallels.com, neilb@suse.de, christoffer.dall@linaro.org,
+        rostedt@goodmis.org, rric@kernel.org, gregkh@linuxfoundation.org,
+        mhocko@suse.cz, david@fromorbit.com
+Subject: Re: [RFC PATCH v1 09/70] x86, mce_amd: _FROZEN Cleanup
+Message-ID: <20140723162158.GE21707@pd.tnic>
+References: <1406080786-3938-1-git-send-email-gong.chen@linux.intel.com>
+ <1406080786-3938-10-git-send-email-gong.chen@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20140723170314.23864779@alan.etchedpixels.co.uk>
+In-Reply-To: <1406080786-3938-10-git-send-email-gong.chen@linux.intel.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 23, 2014 at 05:03:14PM +0100, One Thousand Gnomes wrote:
-> > +		if (gpiochip_remove(&spriv->gpio->gpio_chip))
-> > +			dev_err(&serial->interface->dev, "unable to remove gpio_chip?\n");
-> > +		kfree(spriv->gpio);
-> > +	}
-> > +#endif
-> >  	kfree(spriv);
+On Tue, Jul 22, 2014 at 09:58:45PM -0400, Chen, Gong wrote:
+> Remove XXX_FROZEN state from x86/mce_amd.
 > 
-> Only other question I have - if I have multiple PL2303HX adapters how
-> will I work out which GPIO lines belong to which /dev/ttyUSB* interface ?
+> Signed-off-by: Chen, Gong <gong.chen@linux.intel.com>
 
-sysfs _should_ show you this, as it should point to the "parent" device,
-which will be associated with the ttyUSB interface.  Well, both the tty
-device and the gpio device will have the same parent, is that good
-enough to determine this, or should the gpio device have the tty device
-as its parent?
+Acked-by: Borislav Petkov <bp@suse.de>
 
-thanks,
+-- 
+Regards/Gruss,
+    Boris.
 
-greg k-h
+Sent from a fat crate under my desk. Formatting is fine.
+--
