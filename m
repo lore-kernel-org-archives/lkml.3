@@ -1,86 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758490AbaGWX1d (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 19:27:33 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:18109 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758444AbaGWX1b (ORCPT
+	id S1758531AbaGWX3d (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 19:29:33 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:53049 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1757992AbaGWX3c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 19:27:31 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 96.249.243.124
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+bzcR6Fc+ax89hiy+QKovtZZ/38dZQokY=
-X-DKIM: OpenDKIM Filter v2.0.1 titan 064545B452E
-Date: Wed, 23 Jul 2014 19:27:15 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: Benoit Masson <yahoo@perenite.com>
-Cc: benoitm@perenite.com, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        andrew@lunn.ch, gregory.clement@free-electrons.com,
-        sebastian.hesselbarth@googlemail.com
-Subject: Re: [PATCH 2/2] ARM: mvebu: Added dts defintion for Lenovo Iomega
- ix4-300d NAS
-Message-ID: <20140723232715.GL23220@titan.lakedaemon.net>
-References: <1406155973-13657-1-git-send-email-yahoo@perenite.com>
+	Wed, 23 Jul 2014 19:29:32 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Hyogi Gim <hyogi.gim@lge.com>, Alessandro Zummo <a.zummo@towertech.it>,
+        rtc-linux@googlegroups.com, linux-kernel@vger.kernel.org,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: [PATCH] driver/rtc/class.c: check the error after rtc_read_time()
+Date: Thu, 24 Jul 2014 01:47:57 +0200
+Message-ID: <5828425.VYTqh3MBtu@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140723145634.656752d0fe2fa124db48b4fc@linux-foundation.org>
+References: <1405412723-10062-1-git-send-email-hyogi.gim@lge.com> <20140723145634.656752d0fe2fa124db48b4fc@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1406155973-13657-1-git-send-email-yahoo@perenite.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Benoit,
-
-This looks a lot better, thanks for turning it around so quickly!
-
-My only general comment is just for the future.  When submitting new
-versions of patches, please add a 'V2' inside the brackets on the
-Subject line.  Or v3, or v4, or v14 in rare cases ;-)
-
-It really helps us patch wranglers keep track of which version to apply.
-
-One small comment below.
-
-On Wed, Jul 23, 2014 at 03:52:53PM -0700, Benoit Masson wrote:
-> The Lenovo Iomega ix4-300d is a 4-Bay sata NAS with dual Gb,
->  USB2.0 & 3.0, powered by a Marvell Armada XP MV78230 dual core CPU.
+On Wednesday, July 23, 2014 02:56:34 PM Andrew Morton wrote:
+> On Tue, 15 Jul 2014 17:25:23 +0900 Hyogi Gim <hyogi.gim@lge.com> wrote:
 > 
-> http://shop.lenovo.com/fr/fr/servers/network-storage/lenovoemc/ix4-300d/
-> Signed-off-by: Benoit Masson <yahoo@perenite.com>
-> ---
->  arch/arm/boot/dts/Makefile                      |   3 +-
->  arch/arm/boot/dts/armada-xp-lenovo-ix4-300d.dts | 284 ++++++++++++++++++++++++
->  2 files changed, 286 insertions(+), 1 deletion(-)
->  create mode 100644 arch/arm/boot/dts/armada-xp-lenovo-ix4-300d.dts
-...
-> diff --git a/arch/arm/boot/dts/armada-xp-lenovo-ix4-300d.dts b/arch/arm/boot/dts/armada-xp-lenovo-ix4-300d.dts
-> new file mode 100644
-> index 0000000..1f33cbc
-> --- /dev/null
-> +++ b/arch/arm/boot/dts/armada-xp-lenovo-ix4-300d.dts
-...
-> +	/* Warning: you need both eth1 & 0 PHY initialized
-> +		(i.e having them up does the tweak)
-> +		for poweroff to shutdown otherwise it reboots */
+> > In rtc_suspend() and rtc_resume(), the error after rtc_read_time() is not
+> > checked. If rtc device fail to read time, we cannot guarantee the following
+> > process.
+> > 
+> > Add the verification code for returned rtc_read_time() error.
+> > 
+> > ...
+> >
+> > --- a/drivers/rtc/class.c
+> > +++ b/drivers/rtc/class.c
+> > @@ -53,6 +53,7 @@ static int rtc_suspend(struct device *dev)
+> >  	struct rtc_device	*rtc = to_rtc_device(dev);
+> >  	struct rtc_time		tm;
+> >  	struct timespec		delta, delta_delta;
+> > +	int err;
+> >  
+> >  	if (has_persistent_clock())
+> >  		return 0;
+> > @@ -61,7 +62,12 @@ static int rtc_suspend(struct device *dev)
+> >  		return 0;
+> >  
+> >  	/* snapshot the current RTC and system time at suspend*/
+> > -	rtc_read_time(rtc, &tm);
+> > +	err = rtc_read_time(rtc, &tm);
+> > +	if (err < 0) {
+> > +		pr_debug("%s:  fail to read rtc time\n", dev_name(&rtc->dev));
+> > +		return 0;
+> > +	}
+> 
+> OK, it makes no sense to go ahead and set the system time from a
+> garbage rtc_time.
+> 
+> But I'm wondering if we should propagate the error back to the
+> rtc_suspend() caller.  What does the PM core do if a particular
+> device's ->suspend or ->resume fails?
 
-nit: multi-line comments are like this:
+It aborts the suspend.
 
-	/*
-	 * Warning: you need both eth1 & 0 PHY initialized (i.e having
-	 * them up does the tweak) for poweroff to shutdown otherwise it
-	 * reboots
-	 */
+Rafael
 
-If that's the only thing left, I'll fix it up when I pull it in.  No
-need to respin just for this.
-
-thx,
-
-Jason.
