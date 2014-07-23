@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932491AbaGWFM7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 01:12:59 -0400
-Received: from mail-yk0-f172.google.com ([209.85.160.172]:64822 "EHLO
-	mail-yk0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757306AbaGWFK5 (ORCPT
+	id S932536AbaGWFN2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 01:13:28 -0400
+Received: from mail-yh0-f49.google.com ([209.85.213.49]:44990 "EHLO
+	mail-yh0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757346AbaGWFKv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 01:10:57 -0400
+	Wed, 23 Jul 2014 01:10:51 -0400
 From: Pranith Kumar <bobby.prani@gmail.com>
 To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
         Josh Triplett <josh@joshtriplett.org>,
@@ -14,9 +14,9 @@ To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
         Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
         Lai Jiangshan <laijs@cn.fujitsu.com>,
         linux-kernel@vger.kernel.org (open list:READ-COPY UPDATE...)
-Subject: [PATCH 09/16] rcu: Remove redundant check for online cpu
-Date: Wed, 23 Jul 2014 01:09:46 -0400
-Message-Id: <1406092194-13004-10-git-send-email-bobby.prani@gmail.com>
+Subject: [PATCH 06/16] rcu: Clear gp_flags only when actually starting new gp
+Date: Wed, 23 Jul 2014 01:09:43 -0400
+Message-Id: <1406092194-13004-7-git-send-email-bobby.prani@gmail.com>
 X-Mailer: git-send-email 2.0.0.rc2
 In-Reply-To: <1406092194-13004-1-git-send-email-bobby.prani@gmail.com>
 References: <1406092194-13004-1-git-send-email-bobby.prani@gmail.com>
@@ -24,40 +24,38 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are two checks for an online CPU if two if() conditions. This commit
-simplies this by replacing it with only one check for the online CPU.
+We are clearing the gp_flags before we check if a grace period is in progress.
+If a grace period is in progress, we return after incorrectly clearing the
+gp_flags. The code comments say that this is highly unlikely, but just to be
+safe this commit moves the clearing of gp_flags to after the check for grace
+period in progress.
 
 Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
 ---
- kernel/rcu/tree.c | 9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
+ kernel/rcu/tree.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
 diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
-index 5dcbf36..8d598a2 100644
+index 044946e..b14cecd 100644
 --- a/kernel/rcu/tree.c
 +++ b/kernel/rcu/tree.c
-@@ -2602,15 +2602,18 @@ static void __call_rcu_core(struct rcu_state *rsp, struct rcu_data *rdp,
- {
- 	bool needwake;
+@@ -1605,7 +1605,6 @@ static int rcu_gp_init(struct rcu_state *rsp)
+ 		raw_spin_unlock_irq(&rnp->lock);
+ 		return 0;
+ 	}
+-	ACCESS_ONCE(rsp->gp_flags) = 0; /* Clear all flags: New grace period. */
  
-+	if (!cpu_online(smp_processor_id()))
-+		return;
+ 	if (WARN_ON_ONCE(rcu_gp_in_progress(rsp))) {
+ 		/*
+@@ -1616,6 +1615,8 @@ static int rcu_gp_init(struct rcu_state *rsp)
+ 		return 0;
+ 	}
+ 
++	ACCESS_ONCE(rsp->gp_flags) = 0; /* Clear all flags: New grace period. */
 +
- 	/*
- 	 * If called from an extended quiescent state, invoke the RCU
- 	 * core in order to force a re-evaluation of RCU's idleness.
- 	 */
--	if (!rcu_is_watching() && cpu_online(smp_processor_id()))
-+	if (!rcu_is_watching())
- 		invoke_rcu_core();
- 
--	/* If interrupts were disabled or CPU offline, don't invoke RCU core. */
--	if (irqs_disabled_flags(flags) || cpu_is_offline(smp_processor_id()))
-+	/* If interrupts were disabled, don't invoke RCU core. */
-+	if (irqs_disabled_flags(flags))
- 		return;
- 
- 	/*
+ 	/* Advance to a new grace period and initialize state. */
+ 	record_gp_stall_check_time(rsp);
+ 	/* Record GP times before starting GP, hence smp_store_release(). */
 -- 
 2.0.0.rc2
 
