@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933967AbaGWXos (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 19:44:48 -0400
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:42902 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758624AbaGWXom (ORCPT
+	id S933926AbaGWXoq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 19:44:46 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:48463 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758618AbaGWXom (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 23 Jul 2014 19:44:42 -0400
 From: Grant Likely <grant.likely@linaro.org>
@@ -13,9 +13,9 @@ To: linux-kernel@vger.kernel.org, Nathan Fontenot <nfont@austin.ibm.com>,
         Pantelis Antoniou <pantelis.antoniou@konsulko.com>,
         devicetree@vger.kernel.org
 Cc: Grant Likely <grant.likely@linaro.org>
-Subject: [PATCH 09/10] of: Reorder device tree changes and notifiers
-Date: Wed, 23 Jul 2014 17:44:23 -0600
-Message-Id: <1406159064-21366-10-git-send-email-grant.likely@linaro.org>
+Subject: [PATCH 10/10] of: Transactional DT support.
+Date: Wed, 23 Jul 2014 17:44:24 -0600
+Message-Id: <1406159064-21366-11-git-send-email-grant.likely@linaro.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1406159064-21366-1-git-send-email-grant.likely@linaro.org>
 References: <1406159064-21366-1-git-send-email-grant.likely@linaro.org>
@@ -23,250 +23,620 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, devicetree reconfig notifiers get emitted before the change
-is applied to the tree, but that behaviour is problematic if the
-receiver wants the determine the new state of the tree. The current
-users don't care, but the changeset code to follow will be making
-multiple changes at once. Reorder notifiers to get emitted after the
-change has been applied to the tree so that callbacks see the new tree
-state.
+From: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
 
-At the same time, fixup the existing callbacks to expect the new order.
-There are a few callbacks that compare the old and new values of a
-changed property. Put both property pointers into the of_prop_reconfig
-structure.
+Introducing DT transactional support.
 
-The current notifiers also allow the notifier callback to fail and
-cancel the change to the tree, but that feature isn't actually used.
-It really isn't valid to ignore a tree modification provided by firmware
-anyway, so remove the ability to cancel a change to the tree.
+A DT transaction is a method which allows one to apply changes
+in the live tree, in such a way that either the full set of changes
+take effect, or the state of the tree can be rolled-back to the
+state it was before it was attempted. An applied transaction
+can be rolled-back at any time.
 
+Documentation is in
+	Documentation/devicetree/changesets.txt
+
+Signed-off-by: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
+[glikely: Removed device notifiers and reworked to be more consistent]
 Signed-off-by: Grant Likely <grant.likely@linaro.org>
-Cc: Nathan Fontenot <nfont@austin.ibm.com>
 ---
- arch/powerpc/platforms/pseries/hotplug-memory.c |  2 +-
- drivers/crypto/nx/nx-842.c                      | 30 +++++++------------------
- drivers/of/base.c                               | 21 ++++++++---------
- drivers/of/dynamic.c                            | 18 +++++++--------
- drivers/of/of_private.h                         |  4 ++--
- include/linux/of.h                              |  1 +
- 6 files changed, 29 insertions(+), 47 deletions(-)
+ Documentation/devicetree/changesets.txt |  40 ++++
+ drivers/of/dynamic.c                    | 344 ++++++++++++++++++++++++++++++++
+ drivers/of/of_private.h                 |   9 +
+ drivers/of/selftest.c                   |  51 +++++
+ drivers/of/testcase-data/testcases.dtsi |  10 +
+ include/linux/of.h                      |  76 +++++++
+ 6 files changed, 530 insertions(+)
+ create mode 100644 Documentation/devicetree/changesets.txt
 
-diff --git a/arch/powerpc/platforms/pseries/hotplug-memory.c b/arch/powerpc/platforms/pseries/hotplug-memory.c
-index 7995135170a3..ac01e188faef 100644
---- a/arch/powerpc/platforms/pseries/hotplug-memory.c
-+++ b/arch/powerpc/platforms/pseries/hotplug-memory.c
-@@ -194,7 +194,7 @@ static int pseries_update_drconf_memory(struct of_prop_reconfig *pr)
- 	if (!memblock_size)
- 		return -EINVAL;
- 
--	p = (u32 *)of_get_property(pr->dn, "ibm,dynamic-memory", NULL);
-+	p = (u32 *) pr->old_prop->value;
- 	if (!p)
- 		return -EINVAL;
- 
-diff --git a/drivers/crypto/nx/nx-842.c b/drivers/crypto/nx/nx-842.c
-index 502edf0a2933..c897c3a5ee17 100644
---- a/drivers/crypto/nx/nx-842.c
-+++ b/drivers/crypto/nx/nx-842.c
-@@ -936,28 +936,14 @@ static int nx842_OF_upd(struct property *new_prop)
- 		goto error_out;
- 	}
- 
--	/* Set ptr to new property if provided */
--	if (new_prop) {
--		/* Single property */
--		if (!strncmp(new_prop->name, "status", new_prop->length)) {
--			status = new_prop;
--
--		} else if (!strncmp(new_prop->name, "ibm,max-sg-len",
--					new_prop->length)) {
--			maxsglen = new_prop;
--
--		} else if (!strncmp(new_prop->name, "ibm,max-sync-cop",
--					new_prop->length)) {
--			maxsyncop = new_prop;
--
--		} else {
--			/*
--			 * Skip the update, the property being updated
--			 * has no impact.
--			 */
--			goto out;
--		}
--	}
-+	/*
-+	 * If this is a property update, there are only certain properties that
-+	 * we care about. Bail if it isn't in the below list
-+	 */
-+	if (new_prop && (strncmp(new_prop->name, "status", new_prop->length) ||
-+		         strncmp(new_prop->name, "ibm,max-sg-len", new_prop->length) ||
-+		         strncmp(new_prop->name, "ibm,max-sync-cop", new_prop->length)))
-+		goto out;
- 
- 	/* Perform property updates */
- 	ret = nx842_OF_upd_status(new_devdata, status);
-diff --git a/drivers/of/base.c b/drivers/of/base.c
-index ededf8e33145..a7ad1013edfa 100644
---- a/drivers/of/base.c
-+++ b/drivers/of/base.c
-@@ -1674,10 +1674,6 @@ int of_add_property(struct device_node *np, struct property *prop)
- 	unsigned long flags;
- 	int rc;
- 
--	rc = of_property_notify(OF_RECONFIG_ADD_PROPERTY, np, prop);
--	if (rc)
--		return rc;
--
- 	mutex_lock(&of_mutex);
- 
- 	raw_spin_lock_irqsave(&devtree_lock, flags);
-@@ -1689,6 +1685,9 @@ int of_add_property(struct device_node *np, struct property *prop)
- 
- 	mutex_unlock(&of_mutex);
- 
-+	if (!rc)
-+		of_property_notify(OF_RECONFIG_ADD_PROPERTY, np, prop, NULL);
+diff --git a/Documentation/devicetree/changesets.txt b/Documentation/devicetree/changesets.txt
+new file mode 100644
+index 000000000000..935ba5acc34e
+--- /dev/null
++++ b/Documentation/devicetree/changesets.txt
+@@ -0,0 +1,40 @@
++A DT changeset is a method which allows one to apply changes
++in the live tree in such a way that either the full set of changes
++will be applied, or none of them will be. If an error occurs partway
++through applying the changeset, then the tree will be rolled back to the
++previous state. A changeset can also be removed after it has been
++applied.
 +
- 	return rc;
- }
- 
-@@ -1731,10 +1730,6 @@ int of_remove_property(struct device_node *np, struct property *prop)
- 	unsigned long flags;
- 	int rc;
- 
--	rc = of_property_notify(OF_RECONFIG_REMOVE_PROPERTY, np, prop);
--	if (rc)
--		return rc;
--
- 	mutex_lock(&of_mutex);
- 
- 	raw_spin_lock_irqsave(&devtree_lock, flags);
-@@ -1746,6 +1741,9 @@ int of_remove_property(struct device_node *np, struct property *prop)
- 
- 	mutex_unlock(&of_mutex);
- 
-+	if (!rc)
-+		of_property_notify(OF_RECONFIG_REMOVE_PROPERTY, np, prop, NULL);
++When a changeset is applied, all of the changes get applied to the tree
++at once before emitting OF_RECONFIG notifiers. This is so that the
++receiver sees a complete and consistent state of the tree when it
++receives the notifier.
 +
- 	return rc;
- }
- 
-@@ -1805,10 +1803,6 @@ int of_update_property(struct device_node *np, struct property *newprop)
- 	if (!newprop->name)
- 		return -EINVAL;
- 
--	rc = of_property_notify(OF_RECONFIG_UPDATE_PROPERTY, np, newprop);
--	if (rc)
--		return rc;
--
- 	mutex_lock(&of_mutex);
- 
- 	raw_spin_lock_irqsave(&devtree_lock, flags);
-@@ -1820,6 +1814,9 @@ int of_update_property(struct device_node *np, struct property *newprop)
- 
- 	mutex_unlock(&of_mutex);
- 
-+	if (!rc)
-+		of_property_notify(OF_RECONFIG_UPDATE_PROPERTY, np, newprop, oldprop);
++The sequence of a changeset is as follows.
 +
- 	return rc;
- }
- 
++1. of_changeset_init() - initializes a changeset
++
++2. A number of DT tree change calls, of_changeset_attach_node(),
++of_changeset_detach_node(), of_changeset_add_property(),
++of_changeset_remove_property, of_changeset_update_property() to prepare
++a set of changes. No changes to the active tree are made at this point.
++All the change operations are recorded in the of_changeset 'entries'
++list.
++
++3. mutex_lock(of_mutex) - starts a changeset; The global of_mutex
++ensures there can only be one editor at a time.
++
++4. of_changeset_apply() - Apply the changes to the tree. Either the
++entire changeset will get applied, or if there is an error the tree will
++be restored to the previous state
++
++5. mutex_unlock(of_mutex) - All operations complete, release the mutex
++
++If a successfully applied changeset needs to be removed, it can be done
++with the following sequence.
++
++1. mutex_lock(of_mutex)
++
++2. of_changeset_revert()
++
++3. mutex_unlock(of_mutex)
 diff --git a/drivers/of/dynamic.c b/drivers/of/dynamic.c
-index 7c020b9a3317..7bd5501736a6 100644
+index 7bd5501736a6..c1002b7be786 100644
 --- a/drivers/of/dynamic.c
 +++ b/drivers/of/dynamic.c
-@@ -83,7 +83,7 @@ int of_reconfig_notify(unsigned long action, void *p)
+@@ -314,3 +314,347 @@ struct device_node *__of_node_alloc(const char *full_name, gfp_t allocflags)
+ 	kfree(node);
+ 	return NULL;
  }
- 
- int of_property_notify(int action, struct device_node *np,
--		       struct property *prop)
-+		       struct property *prop, struct property *oldprop)
- {
- 	struct of_prop_reconfig pr;
- 
-@@ -93,6 +93,7 @@ int of_property_notify(int action, struct device_node *np,
- 
- 	pr.dn = np;
- 	pr.prop = prop;
-+	pr.old_prop = oldprop;
- 	return of_reconfig_notify(action, &pr);
- }
- 
-@@ -125,11 +126,6 @@ void __of_attach_node(struct device_node *np)
- int of_attach_node(struct device_node *np)
- {
- 	unsigned long flags;
--	int rc;
--
--	rc = of_reconfig_notify(OF_RECONFIG_ATTACH_NODE, np);
--	if (rc)
--		return rc;
- 
- 	mutex_lock(&of_mutex);
- 	raw_spin_lock_irqsave(&devtree_lock, flags);
-@@ -138,6 +134,9 @@ int of_attach_node(struct device_node *np)
- 
- 	__of_attach_node_sysfs(np);
- 	mutex_unlock(&of_mutex);
 +
-+	of_reconfig_notify(OF_RECONFIG_ATTACH_NODE, np);
++static void __of_changeset_entry_destroy(struct of_changeset_entry *ce)
++{
++	of_node_put(ce->np);
++	list_del(&ce->node);
++	kfree(ce);
++}
 +
- 	return 0;
- }
- 
-@@ -188,10 +187,6 @@ int of_detach_node(struct device_node *np)
- 	unsigned long flags;
- 	int rc = 0;
- 
--	rc = of_reconfig_notify(OF_RECONFIG_DETACH_NODE, np);
--	if (rc)
--		return rc;
--
- 	mutex_lock(&of_mutex);
- 	raw_spin_lock_irqsave(&devtree_lock, flags);
- 	__of_detach_node(np);
-@@ -199,6 +194,9 @@ int of_detach_node(struct device_node *np)
- 
- 	__of_detach_node_sysfs(np);
- 	mutex_unlock(&of_mutex);
++#ifdef DEBUG
++static void __of_changeset_entry_dump(struct of_changeset_entry *ce)
++{
++	switch (ce->action) {
++	case OF_RECONFIG_ADD_PROPERTY:
++		pr_debug("%p: %s %s/%s\n",
++			ce, "ADD_PROPERTY   ", ce->np->full_name,
++			ce->prop->name);
++		break;
++	case OF_RECONFIG_REMOVE_PROPERTY:
++		pr_debug("%p: %s %s/%s\n",
++			ce, "REMOVE_PROPERTY", ce->np->full_name,
++			ce->prop->name);
++		break;
++	case OF_RECONFIG_UPDATE_PROPERTY:
++		pr_debug("%p: %s %s/%s\n",
++			ce, "UPDATE_PROPERTY", ce->np->full_name,
++			ce->prop->name);
++		break;
++	case OF_RECONFIG_ATTACH_NODE:
++		pr_debug("%p: %s %s\n",
++			ce, "ATTACH_NODE    ", ce->np->full_name);
++		break;
++	case OF_RECONFIG_DETACH_NODE:
++		pr_debug("%p: %s %s\n",
++			ce, "DETACH_NODE    ", ce->np->full_name);
++		break;
++	}
++}
++#else
++static inline void __of_changeset_entry_dump(struct of_changeset_entry *ce)
++{
++	/* empty */
++}
++#endif
 +
-+	of_reconfig_notify(OF_RECONFIG_DETACH_NODE, np);
++static void __of_changeset_entry_invert(struct of_changeset_entry *ce,
++					  struct of_changeset_entry *rce)
++{
++	memcpy(rce, ce, sizeof(*rce));
 +
- 	return rc;
- }
- 
++	switch (ce->action) {
++	case OF_RECONFIG_ATTACH_NODE:
++		rce->action = OF_RECONFIG_DETACH_NODE;
++		break;
++	case OF_RECONFIG_DETACH_NODE:
++		rce->action = OF_RECONFIG_ATTACH_NODE;
++		break;
++	case OF_RECONFIG_ADD_PROPERTY:
++		rce->action = OF_RECONFIG_REMOVE_PROPERTY;
++		break;
++	case OF_RECONFIG_REMOVE_PROPERTY:
++		rce->action = OF_RECONFIG_ADD_PROPERTY;
++		break;
++	case OF_RECONFIG_UPDATE_PROPERTY:
++		rce->old_prop = ce->prop;
++		rce->prop = ce->old_prop;
++		break;
++	}
++}
++
++static void __of_changeset_entry_notify(struct of_changeset_entry *ce, bool revert)
++{
++	struct of_changeset_entry ce_inverted;
++	int ret;
++
++	if (revert) {
++		__of_changeset_entry_invert(ce, &ce_inverted);
++		ce = &ce_inverted;
++	}
++
++	switch (ce->action) {
++	case OF_RECONFIG_ATTACH_NODE:
++	case OF_RECONFIG_DETACH_NODE:
++		ret = of_reconfig_notify(ce->action, ce->np);
++		break;
++	case OF_RECONFIG_ADD_PROPERTY:
++	case OF_RECONFIG_REMOVE_PROPERTY:
++	case OF_RECONFIG_UPDATE_PROPERTY:
++		ret = of_property_notify(ce->action, ce->np, ce->prop, ce->old_prop);
++		break;
++	default:
++		pr_err("%s: invalid devicetree changeset action: %i\n", __func__,
++			(int)ce->action);
++		return;
++	}
++
++	if (ret)
++		pr_err("%s: notifier error @%s\n", __func__, ce->np->full_name);
++}
++
++static int __of_changeset_entry_apply(struct of_changeset_entry *ce)
++{
++	struct property *old_prop, **propp;
++	unsigned long flags;
++	int ret = 0;
++
++	__of_changeset_entry_dump(ce);
++
++	raw_spin_lock_irqsave(&devtree_lock, flags);
++	switch (ce->action) {
++	case OF_RECONFIG_ATTACH_NODE:
++		__of_attach_node(ce->np);
++		break;
++	case OF_RECONFIG_DETACH_NODE:
++		__of_detach_node(ce->np);
++		break;
++	case OF_RECONFIG_ADD_PROPERTY:
++		/* If the property is in deadprops then it must be removed */
++		for (propp = &ce->np->deadprops; *propp; propp = &(*propp)->next) {
++			if (*propp == ce->prop) {
++				*propp = ce->prop->next;
++				ce->prop->next = NULL;
++				break;
++			}
++		}
++
++		ret = __of_add_property(ce->np, ce->prop);
++		if (ret) {
++			pr_err("%s: add_property failed @%s/%s\n",
++				__func__, ce->np->full_name,
++				ce->prop->name);
++			break;
++		}
++		break;
++	case OF_RECONFIG_REMOVE_PROPERTY:
++		ret = __of_remove_property(ce->np, ce->prop);
++		if (ret) {
++			pr_err("%s: remove_property failed @%s/%s\n",
++				__func__, ce->np->full_name,
++				ce->prop->name);
++			break;
++		}
++		break;
++
++	case OF_RECONFIG_UPDATE_PROPERTY:
++		/* If the property is in deadprops then it must be removed */
++		for (propp = &ce->np->deadprops; *propp; propp = &(*propp)->next) {
++			if (*propp == ce->prop) {
++				*propp = ce->prop->next;
++				ce->prop->next = NULL;
++				break;
++			}
++		}
++
++		ret = __of_update_property(ce->np, ce->prop, &old_prop);
++		if (ret) {
++			pr_err("%s: update_property failed @%s/%s\n",
++				__func__, ce->np->full_name,
++				ce->prop->name);
++			break;
++		}
++		break;
++	default:
++		ret = -EINVAL;
++	}
++	raw_spin_unlock_irqrestore(&devtree_lock, flags);
++
++	if (ret)
++		return ret;
++
++	switch (ce->action) {
++	case OF_RECONFIG_ATTACH_NODE:
++		__of_attach_node_sysfs(ce->np);
++		break;
++	case OF_RECONFIG_DETACH_NODE:
++		__of_detach_node_sysfs(ce->np);
++		break;
++	case OF_RECONFIG_ADD_PROPERTY:
++		/* ignore duplicate names */
++		__of_add_property_sysfs(ce->np, ce->prop);
++		break;
++	case OF_RECONFIG_REMOVE_PROPERTY:
++		__of_remove_property_sysfs(ce->np, ce->prop);
++		break;
++	case OF_RECONFIG_UPDATE_PROPERTY:
++		__of_update_property_sysfs(ce->np, ce->prop, ce->old_prop);
++		break;
++	}
++
++	return 0;
++}
++
++static inline int __of_changeset_entry_revert(struct of_changeset_entry *ce)
++{
++	struct of_changeset_entry ce_inverted;
++
++	__of_changeset_entry_invert(ce, &ce_inverted);
++	return __of_changeset_entry_apply(&ce_inverted);
++}
++
++/**
++ * of_changeset_init - Initialize a changeset for use
++ *
++ * @ocs:	changeset pointer
++ *
++ * Initialize a changeset structure
++ */
++void of_changeset_init(struct of_changeset *ocs)
++{
++	memset(ocs, 0, sizeof(*ocs));
++	INIT_LIST_HEAD(&ocs->entries);
++}
++
++/**
++ * of_changeset_destroy - Destroy a changeset
++ *
++ * @ocs:	changeset pointer
++ *
++ * Destroys a changeset. Note that if a changeset is applied,
++ * its changes to the tree cannot be reverted.
++ */
++void of_changeset_destroy(struct of_changeset *ocs)
++{
++	struct of_changeset_entry *ce, *cen;
++
++	list_for_each_entry_safe_reverse(ce, cen, &ocs->entries, node)
++		__of_changeset_entry_destroy(ce);
++}
++
++/**
++ * of_changeset_apply - Applies a changeset
++ *
++ * @ocs:	changeset pointer
++ *
++ * Applies a changeset to the live tree.
++ * Any side-effects of live tree state changes are applied here on
++ * sucess, like creation/destruction of devices and side-effects
++ * like creation of sysfs properties and directories.
++ * Returns 0 on success, a negative error value in case of an error.
++ * On error the partially applied effects are reverted.
++ */
++int of_changeset_apply(struct of_changeset *ocs)
++{
++	struct of_changeset_entry *ce;
++	int ret;
++
++	/* perform the rest of the work */
++	pr_debug("of_changeset: applying...\n");
++	list_for_each_entry(ce, &ocs->entries, node) {
++		ret = __of_changeset_entry_apply(ce);
++		if (ret) {
++			pr_err("%s: Error applying changeset (%d)\n", __func__, ret);
++			list_for_each_entry_continue_reverse(ce, &ocs->entries, node)
++				__of_changeset_entry_revert(ce);
++			return ret;
++		}
++	}
++	pr_debug("of_changeset: applied, emitting notifiers.\n");
++
++	/* drop the global lock while emitting notifiers */
++	mutex_unlock(&of_mutex);
++	list_for_each_entry(ce, &ocs->entries, node)
++		__of_changeset_entry_notify(ce, 0);
++	mutex_lock(&of_mutex);
++	pr_debug("of_changeset: notifiers sent.\n");
++
++	return 0;
++}
++
++/**
++ * of_changeset_revert - Reverts an applied changeset
++ *
++ * @ocs:	changeset pointer
++ *
++ * Reverts a changeset returning the state of the tree to what it
++ * was before the application.
++ * Any side-effects like creation/destruction of devices and
++ * removal of sysfs properties and directories are applied.
++ * Returns 0 on success, a negative error value in case of an error.
++ */
++int of_changeset_revert(struct of_changeset *ocs)
++{
++	struct of_changeset_entry *ce;
++	int ret;
++
++	pr_debug("of_changeset: reverting...\n");
++	list_for_each_entry_reverse(ce, &ocs->entries, node) {
++		ret = __of_changeset_entry_revert(ce);
++		if (ret) {
++			pr_err("%s: Error reverting changeset (%d)\n", __func__, ret);
++			list_for_each_entry_continue(ce, &ocs->entries, node)
++				__of_changeset_entry_apply(ce);
++			return ret;
++		}
++	}
++	pr_debug("of_changeset: reverted, emitting notifiers.\n");
++
++	/* drop the global lock while emitting notifiers */
++	mutex_unlock(&of_mutex);
++	list_for_each_entry_reverse(ce, &ocs->entries, node)
++		__of_changeset_entry_notify(ce, 1);
++	mutex_lock(&of_mutex);
++	pr_debug("of_changeset: notifiers sent.\n");
++
++	return 0;
++}
++
++/**
++ * of_changeset_action - Perform a changeset action
++ *
++ * @ocs:	changeset pointer
++ * @action:	action to perform
++ * @np:		Pointer to device node
++ * @prop:	Pointer to property
++ *
++ * On action being one of:
++ * + OF_RECONFIG_ATTACH_NODE
++ * + OF_RECONFIG_DETACH_NODE,
++ * + OF_RECONFIG_ADD_PROPERTY
++ * + OF_RECONFIG_REMOVE_PROPERTY,
++ * + OF_RECONFIG_UPDATE_PROPERTY
++ * Returns 0 on success, a negative error value in case of an error.
++ */
++int of_changeset_action(struct of_changeset *ocs, unsigned long action,
++		struct device_node *np, struct property *prop)
++{
++	struct of_changeset_entry *ce;
++
++	ce = kzalloc(sizeof(*ce), GFP_KERNEL);
++	if (!ce) {
++		pr_err("%s: Failed to allocate\n", __func__);
++		return -ENOMEM;
++	}
++	/* get a reference to the node */
++	ce->action = action;
++	ce->np = of_node_get(np);
++	ce->prop = prop;
++
++	if (action == OF_RECONFIG_UPDATE_PROPERTY && prop)
++		ce->old_prop = of_find_property(np, prop->name, NULL);
++
++	/* add it to the list */
++	list_add_tail(&ce->node, &ocs->entries);
++	return 0;
++}
 diff --git a/drivers/of/of_private.h b/drivers/of/of_private.h
-index 8129c0e58d70..f69ccb1fa308 100644
+index f69ccb1fa308..858e0a5d9a11 100644
 --- a/drivers/of/of_private.h
 +++ b/drivers/of/of_private.h
-@@ -43,11 +43,11 @@ static inline struct device_node *kobj_to_device_node(struct kobject *kobj)
+@@ -81,4 +81,13 @@ extern int __of_attach_node_sysfs(struct device_node *np);
+ extern void __of_detach_node(struct device_node *np);
+ extern void __of_detach_node_sysfs(struct device_node *np);
  
- #if defined(CONFIG_OF_DYNAMIC)
- extern int of_property_notify(int action, struct device_node *np,
--			      struct property *prop);
-+			      struct property *prop, struct property *old_prop);
- extern void of_node_release(struct kobject *kobj);
- #else /* CONFIG_OF_DYNAMIC */
- static inline int of_property_notify(int action, struct device_node *np,
--				     struct property *prop)
-+				     struct property *prop, struct property *old_prop)
- {
- 	return 0;
++/* iterators for transactions, used for overlays */
++/* forward iterator */
++#define for_each_transaction_entry(_oft, _te) \
++	list_for_each_entry(_te, &(_oft)->te_list, node)
++
++/* reverse iterator */
++#define for_each_transaction_entry_reverse(_oft, _te) \
++	list_for_each_entry_reverse(_te, &(_oft)->te_list, node)
++
+ #endif /* _LINUX_OF_PRIVATE_H */
+diff --git a/drivers/of/selftest.c b/drivers/of/selftest.c
+index ee2166f0f36a..04e39a183e53 100644
+--- a/drivers/of/selftest.c
++++ b/drivers/of/selftest.c
+@@ -293,6 +293,56 @@ static void __init of_selftest_property_copy(void)
+ #endif
  }
+ 
++static void __init of_selftest_changeset(void)
++{
++#ifdef CONFIG_OF_DYNAMIC
++	struct property *ppadd, padd = { .name = "prop-add", .length = 0, .value = "" };
++	struct property *ppupdate, pupdate = { .name = "prop-update", .length = 5, .value = "abcd" };
++	struct property *ppremove;
++	struct device_node *n1, *n2, *n21, *nremove, *parent;
++	struct of_changeset chgset;
++
++	of_changeset_init(&chgset);
++	n1 = __of_node_alloc("/testcase-data/changeset/n1", GFP_KERNEL);
++	selftest(n1, "testcase setup failure\n");
++	n2 = __of_node_alloc("/testcase-data/changeset/n2", GFP_KERNEL);
++	selftest(n2, "testcase setup failure\n");
++	n21 = __of_node_alloc("/testcase-data/changeset/n2/n21", GFP_KERNEL);
++	selftest(n21, "testcase setup failure %p\n", n21);
++	nremove = of_find_node_by_path("/testcase-data/changeset/node-remove");
++	selftest(nremove, "testcase setup failure\n");
++	ppadd = __of_prop_dup(&padd, GFP_KERNEL);
++	selftest(ppadd, "testcase setup failure\n");
++	ppupdate = __of_prop_dup(&pupdate, GFP_KERNEL);
++	selftest(ppupdate, "testcase setup failure\n");
++	parent = nremove->parent;
++	n1->parent = parent;
++	n2->parent = parent;
++	n21->parent = n2;
++	n2->child = n21;
++	ppremove = of_find_property(parent, "prop-remove", NULL);
++	selftest(ppremove, "failed to find removal prop");
++
++	of_changeset_init(&chgset);
++	selftest(!of_changeset_attach_node(&chgset, n1), "fail attach n1\n");
++	selftest(!of_changeset_attach_node(&chgset, n2), "fail attach n2\n");
++	selftest(!of_changeset_detach_node(&chgset, nremove), "fail remove node\n");
++	selftest(!of_changeset_attach_node(&chgset, n21), "fail attach n21\n");
++	selftest(!of_changeset_add_property(&chgset, parent, ppadd), "fail add prop\n");
++	selftest(!of_changeset_update_property(&chgset, parent, ppupdate), "fail update prop\n");
++	selftest(!of_changeset_remove_property(&chgset, parent, ppremove), "fail remove prop\n");
++	mutex_lock(&of_mutex);
++	selftest(!of_changeset_apply(&chgset), "apply failed\n");
++	mutex_unlock(&of_mutex);
++
++	mutex_lock(&of_mutex);
++	selftest(!of_changeset_revert(&chgset), "revert failed\n");
++	mutex_unlock(&of_mutex);
++
++	of_changeset_destroy(&chgset);
++#endif
++}
++
+ static void __init of_selftest_parse_interrupts(void)
+ {
+ 	struct device_node *np;
+@@ -561,6 +611,7 @@ static int __init of_selftest(void)
+ 	of_selftest_parse_phandle_with_args();
+ 	of_selftest_property_match_string();
+ 	of_selftest_property_copy();
++	of_selftest_changeset();
+ 	of_selftest_parse_interrupts();
+ 	of_selftest_parse_interrupts_extended();
+ 	of_selftest_match_node();
+diff --git a/drivers/of/testcase-data/testcases.dtsi b/drivers/of/testcase-data/testcases.dtsi
+index 6d8d980ac858..669bb07df142 100644
+--- a/drivers/of/testcase-data/testcases.dtsi
++++ b/drivers/of/testcase-data/testcases.dtsi
+@@ -1,3 +1,13 @@
++/ {
++	testcase-data {
++		changeset {
++			prop-update = "hello";
++			prop-remove = "world";
++			node-remove {
++			};
++		};
++	};
++};
+ #include "tests-phandle.dtsi"
+ #include "tests-interrupts.dtsi"
+ #include "tests-match.dtsi"
 diff --git a/include/linux/of.h b/include/linux/of.h
-index 705fa12fca7f..400f18cb4fff 100644
+index 400f18cb4fff..bc91fbb13ce8 100644
 --- a/include/linux/of.h
 +++ b/include/linux/of.h
-@@ -321,6 +321,7 @@ extern int of_update_property(struct device_node *np, struct property *newprop);
- struct of_prop_reconfig {
- 	struct device_node	*dn;
- 	struct property		*prop;
-+	struct property		*old_prop;
- };
+@@ -786,4 +786,80 @@ typedef void (*of_init_fn_1)(struct device_node *);
+ #define OF_DECLARE_2(table, name, compat, fn) \
+ 		_OF_DECLARE(table, name, compat, fn, of_init_fn_2)
  
- extern int of_reconfig_notifier_register(struct notifier_block *);
++/**
++ * struct of_changeset_entry	- Holds a changeset entry
++ *
++ * @node:	list_head for the log list
++ * @action:	notifier action
++ * @np:		pointer to the device node affected
++ * @prop:	pointer to the property affected
++ * @old_prop:	hold a pointer to the original property
++ *
++ * Every modification of the device tree during a changeset
++ * is held in a list of of_changeset_entry structures.
++ * That way we can recover from a partial application, or we can
++ * revert the changeset
++ */
++struct of_changeset_entry {
++	struct list_head node;
++	unsigned long action;
++	struct device_node *np;
++	struct property *prop;
++	struct property *old_prop;
++};
++
++/**
++ * struct of_changeset - changeset tracker structure
++ *
++ * @entries:	list_head for the changeset entries
++ *
++ * changesets are a convenient way to apply bulk changes to the
++ * live tree. In case of an error, changes are rolled-back.
++ * changesets live on after initial application, and if not
++ * destroyed after use, they can be reverted in one single call.
++ */
++struct of_changeset {
++	struct list_head entries;
++};
++
++#ifdef CONFIG_OF_DYNAMIC
++extern void of_changeset_init(struct of_changeset *ocs);
++extern void of_changeset_destroy(struct of_changeset *ocs);
++extern int of_changeset_apply(struct of_changeset *ocs);
++extern int of_changeset_revert(struct of_changeset *ocs);
++extern int of_changeset_action(struct of_changeset *ocs,
++		unsigned long action, struct device_node *np,
++		struct property *prop);
++
++static inline int of_changeset_attach_node(struct of_changeset *ocs,
++		struct device_node *np)
++{
++	return of_changeset_action(ocs, OF_RECONFIG_ATTACH_NODE, np, NULL);
++}
++
++static inline int of_changeset_detach_node(struct of_changeset *ocs,
++		struct device_node *np)
++{
++	return of_changeset_action(ocs, OF_RECONFIG_DETACH_NODE, np, NULL);
++}
++
++static inline int of_changeset_add_property(struct of_changeset *ocs,
++		struct device_node *np, struct property *prop)
++{
++	return of_changeset_action(ocs, OF_RECONFIG_ADD_PROPERTY, np, prop);
++}
++
++static inline int of_changeset_remove_property(struct of_changeset *ocs,
++		struct device_node *np, struct property *prop)
++{
++	return of_changeset_action(ocs, OF_RECONFIG_REMOVE_PROPERTY, np, prop);
++}
++
++static inline int of_changeset_update_property(struct of_changeset *ocs,
++		struct device_node *np, struct property *prop)
++{
++	return of_changeset_action(ocs, OF_RECONFIG_UPDATE_PROPERTY, np, prop);
++}
++#endif
++
+ #endif /* _LINUX_OF_H */
 -- 
 1.9.1
 
