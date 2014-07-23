@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756626AbaGWCca (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 22:32:30 -0400
-Received: from mga09.intel.com ([134.134.136.24]:34020 "EHLO mga09.intel.com"
+	id S1756653AbaGWCcn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 22:32:43 -0400
+Received: from mga14.intel.com ([192.55.52.115]:44637 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752157AbaGWCc1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 22:32:27 -0400
+	id S1752157AbaGWCcl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 22:32:41 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,714,1400050800"; 
-   d="scan'208";a="577335011"
+   d="scan'208";a="565811568"
 From: "Chen, Gong" <gong.chen@linux.intel.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@kernel.org, tglx@linutronix.de, paulus@samba.org,
@@ -21,9 +21,9 @@ Cc: mingo@kernel.org, tglx@linutronix.de, paulus@samba.org,
         rostedt@goodmis.org, rric@kernel.org, gregkh@linuxfoundation.org,
         mhocko@suse.cz, david@fromorbit.com,
         "Chen, Gong" <gong.chen@linux.intel.com>
-Subject: [RFC PATCH v1 13/70] x86, x2apic_cluster: _FROZEN Cleanup
-Date: Tue, 22 Jul 2014 21:58:49 -0400
-Message-Id: <1406080786-3938-14-git-send-email-gong.chen@linux.intel.com>
+Subject: [RFC PATCH v1 15/70] x86, kernel, cpuid: _FROZEN Cleanup
+Date: Tue, 22 Jul 2014 21:58:51 -0400
+Message-Id: <1406080786-3938-16-git-send-email-gong.chen@linux.intel.com>
 X-Mailer: git-send-email 2.0.0.rc2
 In-Reply-To: <1406080786-3938-1-git-send-email-gong.chen@linux.intel.com>
 References: <1406080786-3938-1-git-send-email-gong.chen@linux.intel.com>
@@ -31,44 +31,34 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove XXX_FROZEN state from x86/x2apic_cluster.
+Remove XXX_FROZEN state from x86/kernel/cpuid.
 
 Signed-off-by: Chen, Gong <gong.chen@linux.intel.com>
 ---
- arch/x86/kernel/apic/x2apic_cluster.c | 11 ++++++++---
- 1 file changed, 8 insertions(+), 3 deletions(-)
+ arch/x86/kernel/cpuid.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/kernel/apic/x2apic_cluster.c b/arch/x86/kernel/apic/x2apic_cluster.c
-index e66766b..bfd2369 100644
---- a/arch/x86/kernel/apic/x2apic_cluster.c
-+++ b/arch/x86/kernel/apic/x2apic_cluster.c
-@@ -154,8 +154,11 @@ update_clusterinfo(struct notifier_block *nfb, unsigned long action, void *hcpu)
- 	unsigned int cpu;
- 	int err = 0;
- 
--	switch (action) {
-+	switch (action & ~CPU_TASKS_FROZEN) {
+diff --git a/arch/x86/kernel/cpuid.c b/arch/x86/kernel/cpuid.c
+index 3225ae6c..0288e4f 100644
+--- a/arch/x86/kernel/cpuid.c
++++ b/arch/x86/kernel/cpuid.c
+@@ -161,12 +161,14 @@ static int cpuid_class_cpu_callback(struct notifier_block *nfb,
  	case CPU_UP_PREPARE:
-+		if (action & CPU_TASKS_FROZEN)
-+			break;
-+
- 		if (!zalloc_cpumask_var(&per_cpu(cpus_in_cluster, this_cpu),
- 					GFP_KERNEL)) {
- 			err = -ENOMEM;
-@@ -165,9 +168,11 @@ update_clusterinfo(struct notifier_block *nfb, unsigned long action, void *hcpu)
- 			err = -ENOMEM;
- 		}
+ 		err = cpuid_device_create(cpu);
  		break;
 -	case CPU_UP_CANCELED:
 -	case CPU_UP_CANCELED_FROZEN:
  	case CPU_DEAD:
-+		/* fall though to next if action == CPU_DEAD */
-+		if (action & CPU_TASKS_FROZEN)
-+			break;
-+	case CPU_UP_CANCELED:
- 		for_each_online_cpu(cpu) {
- 			if (x2apic_cluster(this_cpu) != x2apic_cluster(cpu))
- 				continue;
+ 		cpuid_device_destroy(cpu);
+ 		break;
+ 	}
++
++	if ((action & ~CPU_TASKS_FROZEN) == CPU_UP_CANCELED)
++		cpuid_device_destroy(cpu);
++
+ 	return notifier_from_errno(err);
+ }
+ 
 -- 
 2.0.0.rc2
 
