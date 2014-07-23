@@ -1,70 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933661AbaGWVP6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 17:15:58 -0400
-Received: from mail-qg0-f43.google.com ([209.85.192.43]:61697 "EHLO
-	mail-qg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933281AbaGWVP4 (ORCPT
+	id S933696AbaGWVQr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 17:16:47 -0400
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:54319 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933498AbaGWVQp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 17:15:56 -0400
+	Wed, 23 Jul 2014 17:16:45 -0400
+Date: Thu, 24 Jul 2014 02:46:38 +0530
+From: Himangi Saraogi <himangi774@gmail.com>
+To: Karsten Keil <isdn@linux-pingi.de>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Julia Lawall <julia.lawall@lip6.fr>
+Subject: [PATCH] isdn: use constants instead of magicnumbers
+Message-ID: <20140723211638.GA4283@himangi-Dell>
 MIME-Version: 1.0
-In-Reply-To: <20140716205053.190013055@linutronix.de>
-References: <20140716205018.175419210@linutronix.de>
-	<20140716205053.190013055@linutronix.de>
-Date: Wed, 23 Jul 2014 14:15:55 -0700
-Message-ID: <CALAqxLX-mnLW5Ou-iwtRpRTbznhsBVzECHYPijifkvRsiHgv_Q@mail.gmail.com>
-Subject: Re: [patch V2 12/64] timekeeper: Move tk_xtime to core code
-From: John Stultz <john.stultz@linaro.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 16, 2014 at 2:04 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> Index: tip/kernel/time/timekeeping.c
-> ===================================================================
-> --- tip.orig/kernel/time/timekeeping.c
-> +++ tip/kernel/time/timekeeping.c
-> @@ -51,6 +51,15 @@ static inline void tk_normalize_xtime(st
->         }
->  }
->
-> +static inline struct timespec64 tk_xtime(struct timekeeper *tk)
-> +{
-> +       struct timespec64 ts;
-> +
-> +       ts.tv_sec = tk->xtime_sec;
-> +       ts.tv_nsec = (long)(tk->xtime_nsec >> tk->shift);
-> +       return ts;
-> +}
-> +
->  static void tk_set_xtime(struct timekeeper *tk, const struct timespec64 *ts)
->  {
->         tk->xtime_sec = ts->tv_sec;
-> @@ -199,6 +208,40 @@ static inline s64 timekeeping_get_ns_raw
->         return nsec + arch_gettimeoffset();
->  }
->
-> +#ifdef CONFIG_GENERIC_TIME_VSYSCALL_OLD
-> +
-> +static inline void update_vsyscall(struct timekeeper *tk)
-> +{
-> +       struct timespec xt;
-> +
-> +       xt = tk_xtime(tk);
-> +       update_vsyscall_old(&xt, &tk->wall_to_monotonic, tk->clock, tk->mult);
-> +}
+This patch changes instances of magic numbers like 4 and 8 to equivalent
+constants.
 
-So one gotcha here, and I realized I missed this in my timekeeping
-timespec64 conversion patch, is that here we're calling tk_xtime()
-which returns a timespec64, and we stuff it into a timespec.
+The Coccinelle semantic patch used for making the change is as follows:
 
-Now, the reason we didn't see the compiler gripe on this, was that the
-only VSYSCALL_OLD implementations left are ia64 and ppc64.
+// <smpl>
+@r@
+type T;
+T E;
+identifier fld;
+identifier c;
+@@
 
-I'll add a fixup patch to the queue to address this.
+E->fld & c
 
-thanks
--john
+@s@
+constant C;
+identifier r.c;
+@@
+
+#define c C
+
+@@
+r.T E;
+identifier r.fld;
+identifier r.c;
+constant s.C;
+@@
+
+ E->fld &
+- C
++ c
+// </smpl>
+
+Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
+Acked-by: Julia Lawall <julia.lawall@lip6.fr>
+---
+To send to: Karsten Keil <isdn@linux-pingi.de>,netdev@vger.kernel.org,linux-kernel@vger.kernel.org
+ drivers/isdn/i4l/isdn_net.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/isdn/i4l/isdn_net.c b/drivers/isdn/i4l/isdn_net.c
+index c2ed624..94affa5 100644
+--- a/drivers/isdn/i4l/isdn_net.c
++++ b/drivers/isdn/i4l/isdn_net.c
+@@ -2918,8 +2918,8 @@ isdn_net_getcfg(isdn_net_ioctl_cfg *cfg)
+ 			cfg->callback = 2;
+ 		cfg->cbhup = (lp->flags & ISDN_NET_CBHUP) ? 1 : 0;
+ 		cfg->dialmode = lp->flags & ISDN_NET_DIALMODE_MASK;
+-		cfg->chargehup = (lp->hupflags & 4) ? 1 : 0;
+-		cfg->ihup = (lp->hupflags & 8) ? 1 : 0;
++		cfg->chargehup = (lp->hupflags & ISDN_CHARGEHUP) ? 1 : 0;
++		cfg->ihup = (lp->hupflags & ISDN_INHUP) ? 1 : 0;
+ 		cfg->cbdelay = lp->cbdelay;
+ 		cfg->dialmax = lp->dialmax;
+ 		cfg->triggercps = lp->triggercps;
+-- 
+1.9.1
+
