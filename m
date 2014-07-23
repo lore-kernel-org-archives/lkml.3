@@ -1,224 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757331AbaGWAN2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 20:13:28 -0400
-Received: from mail-ig0-f179.google.com ([209.85.213.179]:32923 "EHLO
-	mail-ig0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756914AbaGWAN0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 20:13:26 -0400
-Date: Tue, 22 Jul 2014 18:13:22 -0600
-From: Bjorn Helgaas <bhelgaas@google.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        Alex Williamson <alex.williamson@redhat.com>
-Subject: [GIT PULL] PCI changes for v3.17
-Message-ID: <20140723001322.GA29769@google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757274AbaGWAWM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 20:22:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:25978 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756914AbaGWAWL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 20:22:11 -0400
+Message-ID: <1406074923.4463.45.camel@ul30vt.home>
+Subject: Re: [PATCH] PCI: Add device specific (non)reset for AMD GPUs
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Tue, 22 Jul 2014 18:22:03 -0600
+In-Reply-To: <20140722215259.GE19181@google.com>
+References: <20140716190955.4722.25453.stgit@gimli.home>
+	 <20140722195557.GD19181@google.com> <1406060607.4463.36.camel@ul30vt.home>
+	 <20140722215259.GE19181@google.com>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Tue, 2014-07-22 at 15:52 -0600, Bjorn Helgaas wrote:
+> On Tue, Jul 22, 2014 at 02:23:27PM -0600, Alex Williamson wrote:
+> > On Tue, 2014-07-22 at 13:55 -0600, Bjorn Helgaas wrote:
+> > > On Wed, Jul 16, 2014 at 01:14:08PM -0600, Alex Williamson wrote:
+> > > > There are numerous ATI/AMD GPUs available that report that they
+> > > > support a PM reset (NoSoftRst-) but for which such a reset has no
+> > > > apparent effect on the device.  These devices continue to display the
+> > > > same framebuffer across PM reset and the fan speed remains constant,
+> > > > while a proper bus reset causes the display to lose sync and the fan
+> > > > to reset to high speed.  Create a device specific reset for ATI vendor
+> > > > devices that tries to catch these devices and report that
+> > > > pci_reset_function() is not supported.
+> > > > 
+> > > > Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+> > > > ---
+> > > > 
+> > > > This patch makes the series "vfio-pci: Reset improvements" far more
+> > > > useful for users with one of these GPUs.  If pci_reset_function()
+> > > > indicates that it's supported and successful, then I have no reason
+> > > > to resort to a bus/slot reset in the vfio-pci code.  Since it doesn't
+> > > > seem to do anything anyway, let's just forget that PM reset exists
+> > > > for these devices.
+> > > > 
+> > > >  drivers/pci/quirks.c |   53 ++++++++++++++++++++++++++++++++++++++++++++++++++
+> > > >  1 file changed, 53 insertions(+)
+> > > > 
+> > > > diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
+> > > > index 460c354..bed9c63 100644
+> > > > --- a/drivers/pci/quirks.c
+> > > > +++ b/drivers/pci/quirks.c
+> > > > @@ -3289,6 +3289,57 @@ static int reset_chelsio_generic_dev(struct pci_dev *dev, int probe)
+> > > >  	return 0;
+> > > >  }
+> > > >  
+> > > > +/*
+> > > > + * Numerous AMD/ATI GPUs report that they're capable of PM reset (NoSoftRst-)
+> > > > + * and pci_reset_function() reports the device as successfully reset, but
+> > > > + * there's no apparent effect from the reset.  Test for these, being sure to
+> > > > + * allow FLR should it ever exist, and use the device specific reset to
+> > > > + * disable any sort of function-local reset if only PM reset is available.
+> > > > + */
+> > > > +static int reset_ati_gpu(struct pci_dev *dev, int probe)
+> > > > +{
+> > > > +	u16 pm_csr;
+> > > > +	u32 devcap;
+> > > > +	int af_pos;
+> > > > +
+> > > > +	/*
+> > > > +	 * VGA class devices, not on the root bus, PCI function 0 of a
+> > > > +	 * multifunction device with PM capabilities
+> > > > +	 */
+> > > > +	if ((dev->class >> 8) != PCI_CLASS_DISPLAY_VGA ||
+> > > > +	    pci_is_root_bus(dev->bus) || PCI_FUNC(dev->devfn) ||
+> > > > +	    !dev->multifunction || !dev->pm_cap)
+> > > > +		return -ENOTTY;
+> > > > +
+> > > > +	/* PM reports NoSoftRst- */
+> > > > +	pci_read_config_word(dev, dev->pm_cap + PCI_PM_CTRL, &pm_csr);
+> > > > +	if (pm_csr & PCI_PM_CTRL_NO_SOFT_RESET)
+> > > > +		return -ENOTTY;
+> > > > +
+> > > > +	/* No PCIe FLR */
+> > > > +	pcie_capability_read_dword(dev, PCI_EXP_DEVCAP, &devcap);
+> > > > +	if (devcap & PCI_EXP_DEVCAP_FLR)
+> > > > +		return -ENOTTY;
+> > > > +
+> > > > +	/* No AF FLR */
+> > > > +	af_pos = pci_find_capability(dev, PCI_CAP_ID_AF);
+> > > > +	if (af_pos) {
+> > > > +		u8 af_cap;
+> > > > +
+> > > > +		pci_read_config_byte(dev, af_pos + PCI_AF_CAP, &af_cap);
+> > > > +		if ((af_cap && PCI_AF_CAP_TP) && (af_cap && PCI_AF_CAP_FLR))
+> > > > +			return -ENOTTY;
+> > > > +	}
+> > > > +
+> > > > +	/*
+> > > > +	 * We could attempt a singleton bus/slot reset here to override
+> > > > +	 * PM reset priority over these, but the devices we're interested
+> > > > +	 * in are multifunction GPU + audio devices in their known configs.
+> > > > +	 */
+> > > > +
+> > > > +	return -EINVAL;
+> > > > +}
+> > > > +
+> > > >  #define PCI_DEVICE_ID_INTEL_82599_SFP_VF   0x10ed
+> > > >  #define PCI_DEVICE_ID_INTEL_IVB_M_VGA      0x0156
+> > > >  #define PCI_DEVICE_ID_INTEL_IVB_M2_VGA     0x0166
+> > > > @@ -3304,6 +3355,8 @@ static const struct pci_dev_reset_methods pci_dev_reset_methods[] = {
+> > > >  		reset_intel_generic_dev },
+> > > >  	{ PCI_VENDOR_ID_CHELSIO, PCI_ANY_ID,
+> > > >  		reset_chelsio_generic_dev },
+> > > > +	{ PCI_VENDOR_ID_ATI, PCI_ANY_ID,
+> > > > +		reset_ati_gpu },
+> > > 
+> > > I'm a little confused, but maybe we just need a comment about what the
+> > > return values from pci_dev_specific_reset() mean.  Based on reading
+> > > __pci_dev_reset(), it looks like:
+> > > 
+> > >   0 means "I support this reset method" (if probe) or
+> > >   "I performed this reset" (if !probe),
+> > >   
+> > >   ENOTTY means "I don't support this reset method, try another one",
+> > > 
+> > >   anything else means "I don't support this reset method and don't try
+> > >   any others" (it'd be useful to know what this is good for).
+> > > 
+> > > But reset_ati_gpu() never returns 0, so it seems like your patch makes
+> > > it so we can never reset any ATI device at all.  So I must be missing
+> > > something.
+> > 
+> > Nope, you're not missing anything.  The return value behavior is exactly
+> > as you describe and the ATI GPUs that advertise NoSoftRst- don't appear
+> > to do any sort of reset when moving them back from D3, so I'm
+> > effectively trying to negate that as a viable reset option.  I think
+> > this is what the anything-else return value is meant for.  I only return
+> > "I don't support this reset method and don't try any others" after I
+> > verify there are no other options, so if they come out with FLR support,
+> > that would still get precedence.  It's a little awkward, but I don't
+> > know how to test whether a reset function was successful.  It seems like
+> > it would be device specific.  Anyone from AMD reading the list that can
+> > comment on what sort of reset happens on these GPUs for a D3->D0 reset?
+> 
+> I was expecting to see "return 0" for some of the cases, e.g., maybe
+> for non-GPU devices that support FLR or AF FLR.
+> 
+> You currently always return -ENOTTY or -EINVAL, which means we won't
+> support any kind of reset on any ATI device.  It looks like most ATI
+> devices are graphics, but there are a few IDE, USB, SMBus, SATA, etc.
+> devices that look like they'll be caught by this quirk.  That doesn't
+> sound like what you intend.
 
-These are for the v3.17 merge window, not for v3.16.
+The goal of the function is to identify a GPU (VGA) device that only
+supports PM reset and return -EINVAL to indicate we can't do a function
+level reset.  Any other case returns -ENOTTY to indicate we don't handle
+the device, try something else.  This function therefore never returns 0
+because it doesn't provide a reset mechanism of its own.  It only blocks
+the known useless reset or defers to a standard reset.  Anything that's
+not a class VGA display drops out through the first -ENOTTY path.  I
+think it's doing what I intend, but maybe you're still spotting
+something wrong with my methodology.  Thanks,
 
-I'll be on vacation until Aug 11, and I suspect the merge window will open
-before then, so I'm sending this to you early.  There are more things I'd
-like to get into v3.17, so I hope to send another pull request soon after
-I return.
+Alex
 
-The most notable pieces here are:
-
-  - Support BARs up to 128GB (up from 8GB)
-  - Fix SR-IOV resource assignment when we fail to expand a resource
-  - Rework pciehp to handle a common hardware erratum
-  - Cleanup MSI
-  - Fix NIC renaming issue
-  - Fix VGA default device issue on EFI systems
-  - Fix ASPM configuration (previously we didn't enable it as expected)
-
-Alex Williamson has graciously agreed to take care of any major issues with
-this if you take it before I return.
-
-
-The following changes since commit 7171511eaec5bf23fb06078f59784a3a0626b38f:
-
-  Linux 3.16-rc1 (2014-06-15 17:45:28 -1000)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/helgaas/pci.git tags/pci-v3.17-changes
-
-for you to fetch changes up to 792688fde431b4fdb2cf10a6f7589a8176b6b14a:
-
-  Merge branches 'pci/host-generic', 'pci/host-mvebu', 'pci/host-rcar', 'pci/host-tegra', 'pci/msi', 'pci/misc', 'pci/resource' and 'pci/virtualization' into next (2014-07-16 17:09:47 -0600)
-
-----------------------------------------------------------------
-PCI changes for the v3.17 merge window:
-
-  Resource management
-    - Support BAR sizes up to 128GB (Yinghai Lu)
-    - Keep original resource if we fail to expand it (Guo Chao)
-    - Return conventional error values from pci_revert_fw_address() (Bjorn Helgaas)
-    - Tidy resource assignment messages (Bjorn Helgaas)
-    - Don't exclude low BIOS area for non-PCI cards (Christoph Schulz)
-
-  PCI device hotplug
-    - Prevent NULL dereference during pciehp probe (Andreas Noever)
-    - Make pciehp pcie_wait_cmd() self-contained (Bjorn Helgaas)
-    - Wait for pciehp hotplug command completion lazily (Bjorn Helgaas)
-    - Compute pciehp timeout from hotplug command start time (Bjorn Helgaas)
-    - Remove pciehp assumptions about which commands cause completion events (Bjorn Helgaas)
-    - Clear pciehp Data Link Layer State Changed during init (Myron Stowe)
-    - Remove pciehp struct controller.no_cmd_complete (Rajat Jain)
-    - Remove cpqphp unnecessary null test (Fabian Frederick)
-    - Remove "invalid IRQ" warning for hot-added PCIe ports (Jiang Liu)
-
-  IOMMU
-    - Add DMA alias quirk for Intel 82801 bridge (Alex Williamson)
-
-  MSI
-    - Add internal msix_clear_and_set_ctrl() (Yijing Wang)
-    - Remove unused msi_enabled_mask() (Yijing Wang)
-    - Cache Multiple Message Capable in struct msi_desc (Yijing Wang)
-    - Add msi_setup_entry() to clean up initialization (Yijing Wang)
-    - Remove unused msi_remove_pci_irq_vectors() (Yijing Wang)
-    - Retrieve first MSI IRQ from msi_desc rather than pci_dev (Yijing Wang)
-    - Remove unused list access in __pci_restore_msix_state() (Yijing Wang)
-    - Use irq_get_msi_desc() to simplify code (Yijing Wang)
-
-  Generic host bridge driver
-    - Fix GPL v2 license string typo (Bjorn Helgaas)
-
-  Marvell MVEBU
-    - Fix GPL v2 license string typo (Thierry Reding)
-
-  NVIDIA Tegra
-    - Use correct initial HW settings (Phil Edworthy)
-    - Remove rcar_pcie_setup_window() resource argument (Phil Edworthy)
-    - Fix GPL v2 license string typo (Thierry Reding)
-
-  Renesas R-Car
-    - Remove redundant config accessor register checks (Sergei Shtylyov)
-    - Fix GPL v2 license string typo (Bjorn Helgaas)
-
-  Virtualization
-    - Factor secondary bus reset logic (Gavin Shan)
-    - Remove duplicate powerpc reset logic (Gavin Shan)
-
-  Miscellaneous
-    - Rework default VGA detection for EFI (Bruno Prémont)
-    - Fix sysfs "acpi_index" and "label" errors for NIC renaming (Simone Gotti)
-    - Configure ASPM at pci_enable_device()-time (Vidya Sagar)
-    - Add include/linux/pci_ids.h include guard (Rasmus Villemoes)
-
-----------------------------------------------------------------
-Alex Williamson (1):
-      PCI: Add bridge DMA alias quirk for Intel 82801 bridge
-
-Andreas Noever (1):
-      PCI: Prevent NULL dereference during pciehp probe
-
-Bjorn Helgaas (11):
-      PCI: pciehp: Make pcie_wait_cmd() self-contained
-      PCI: pciehp: Wait for hotplug command completion lazily
-      PCI: pciehp: Compute timeout from hotplug command start time
-      PCI: pciehp: Remove assumptions about which commands cause completion events
-      PCI: Cleanup control flow
-      PCI: Return conventional error values from pci_revert_fw_address()
-      PCI: Tidy resource assignment messages
-      Merge branches 'pci/host-rcar', 'pci/hotplug', 'pci/iommu', 'pci/misc' and 'pci/msi' into next
-      PCI: rcar: Fix GPL v2 license string typo
-      PCI: generic: Fix GPL v2 license string typo
-      Merge branches 'pci/host-generic', 'pci/host-mvebu', 'pci/host-rcar', 'pci/host-tegra', 'pci/msi', 'pci/misc', 'pci/resource' and 'pci/virtualization' into next
-
-Bruno Prémont (1):
-      x86, ia64: Move EFI_FB vga_default_device() initialization to pci_vga_fixup()
-
-Christoph Schulz (1):
-      x86: don't exclude low BIOS area when allocating address space for non-PCI cards
-
-Fabian Frederick (1):
-      PCI: cpqphp: Remove unnecessary null test before debugfs_remove()
-
-Gavin Shan (2):
-      PCI: Make resetting secondary bus logic common
-      powerpc/pci: Remove duplicate logic
-
-Guo Chao (1):
-      PCI: Keep original resource if we fail to expand it
-
-Jiang Liu (1):
-      PCI/portdrv: Remove warning about invalid IRQ for hot-added PCIe ports
-
-Myron Stowe (1):
-      PCI: pciehp: Clear Data Link Layer State Changed during init
-
-Phil Edworthy (3):
-      PCI: rcar: Use correct initial HW settings
-      PCI: rcar: Cleanup style and formatting
-      PCI: rcar: Remove rcar_pcie_setup_window() resource argument
-
-Rajat Jain (1):
-      PCI: pciehp: Remove struct controller.no_cmd_complete
-
-Rasmus Villemoes (1):
-      PCI: Add include guard to include/linux/pci_ids.h
-
-Sergei Shtylyov (1):
-      PCI: rcar: Remove redundant config accessor register number checks
-
-Simone Gotti (1):
-      ACPI / PCI: Fix sysfs acpi_index and label errors
-
-Thierry Reding (2):
-      PCI: mvebu: Fix GPL v2 license string typo
-      PCI: tegra: Fix GPL v2 license string typo
-
-Vidya Sagar (1):
-      PCI: Configure ASPM when enabling device
-
-Yijing Wang (8):
-      PCI/MSI: Add internal msix_clear_and_set_ctrl() function
-      PCI/MSI: Remove unused msi_enabled_mask()
-      PCI/MSI: Cache Multiple Message Capable in struct msi_desc
-      PCI/MSI: Add msi_setup_entry() to clean up MSI initialization
-      PCI/MSI: Remove unused function msi_remove_pci_irq_vectors()
-      PCI/MSI: Retrieve first MSI IRQ from msi_desc rather than pci_dev
-      PCI/MSI: Remove unused list access in __pci_restore_msix_state()
-      PCI/MSI: Use irq_get_msi_desc() to simplify code
-
-Yinghai Lu (1):
-      PCI: Support BAR sizes up to 128GB
-
- arch/ia64/pci/fixup.c               |  22 +++++
- arch/powerpc/kernel/pci-common.c    |  11 +--
- arch/x86/include/asm/vga.h          |   6 --
- arch/x86/kernel/resource.c          |   8 +-
- arch/x86/pci/fixup.c                |  21 +++++
- arch/x86/pci/i386.c                 |   4 +
- drivers/pci/host/pci-host-generic.c |   2 +-
- drivers/pci/host/pci-mvebu.c        |   2 +-
- drivers/pci/host/pci-tegra.c        |   2 +-
- drivers/pci/host/pcie-rcar.c        | 158 ++++++++++++++++--------------------
- drivers/pci/hotplug/cpqphp_sysfs.c  |   3 +-
- drivers/pci/hotplug/pciehp.h        |   3 +-
- drivers/pci/hotplug/pciehp_core.c   |   7 ++
- drivers/pci/hotplug/pciehp_hpc.c    | 101 ++++++++++-------------
- drivers/pci/msi.c                   | 141 ++++++++++++++------------------
- drivers/pci/pci-label.c             |  18 ++--
- drivers/pci/pci.c                   |  19 +++--
- drivers/pci/pcie/portdrv_pci.c      |   4 -
- drivers/pci/quirks.c                |   2 +
- drivers/pci/setup-bus.c             |   2 +-
- drivers/pci/setup-res.c             |  75 ++++++++---------
- drivers/video/fbdev/efifb.c         |  39 ---------
- include/linux/msi.h                 |   3 +-
- include/linux/pci.h                 |   4 +-
- include/linux/pci_ids.h             |   4 +
- 25 files changed, 313 insertions(+), 348 deletions(-)
