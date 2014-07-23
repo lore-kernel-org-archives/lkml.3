@@ -1,74 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756320AbaGWDSH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 23:18:07 -0400
-Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:14399 "EHLO
-	mx0b-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755576AbaGWDSF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 23:18:05 -0400
-From: Neil Zhang <zhangwm@marvell.com>
-To: <linux-kernel@vger.kernel.org>
-CC: <akpm@linux-foundation.org>, Neil Zhang <zhangwm@marvell.com>
-Subject: [PATCH] kernel: printk: fix bool assignements
-Date: Wed, 23 Jul 2014 11:17:58 +0800
-Message-ID: <1406085478-19221-1-git-send-email-zhangwm@marvell.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1756528AbaGWDSY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 23:18:24 -0400
+Received: from mga02.intel.com ([134.134.136.20]:37664 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756429AbaGWDSU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 23:18:20 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,714,1400050800"; 
+   d="scan'208";a="577350575"
+Message-ID: <53CF2977.2040307@linux.intel.com>
+Date: Wed, 23 Jul 2014 11:18:15 +0800
+From: Jiang Liu <jiang.liu@linux.intel.com>
+Organization: Intel
+User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.14,0.0.0000
- definitions=2014-07-23_01:2014-07-22,2014-07-23,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=1
- phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
- scancount=1 engine=7.0.1-1402240000 definitions=main-1407230043
+To: Michal Hocko <mhocko@suse.cz>
+CC: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        David Rientjes <rientjes@google.com>,
+        Mike Galbraith <umgwanakikbuti@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Tony Luck <tony.luck@intel.com>,
+        linux-mm@kvack.org, linux-hotplug@vger.kernel.org,
+        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
+Subject: Re: [RFC Patch V1 09/30] mm, memcg: Use cpu_to_mem()/numa_mem_id()
+ to support memoryless node
+References: <1405064267-11678-1-git-send-email-jiang.liu@linux.intel.com> <1405064267-11678-10-git-send-email-jiang.liu@linux.intel.com> <20140718073614.GC21453@dhcp22.suse.cz>
+In-Reply-To: <20140718073614.GC21453@dhcp22.suse.cz>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix coccinelle warnings.
+Hi Michal,
+	Thanks for your comments! As discussed, we will
+rework the patch set in another direction to hide memoryless
+node from normal slab users.
+Regards!
+Gerry
 
-Signed-off-by: Neil Zhang <zhangwm@marvell.com>
----
- kernel/printk/printk.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
-
-diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
-index 13e839d..89894e5 100644
---- a/kernel/printk/printk.c
-+++ b/kernel/printk/printk.c
-@@ -881,7 +881,7 @@ static bool __read_mostly ignore_loglevel;
- 
- static int __init ignore_loglevel_setup(char *str)
- {
--	ignore_loglevel = 1;
-+	ignore_loglevel = true;
- 	pr_info("debug: ignoring loglevel setting.\n");
- 
- 	return 0;
-@@ -948,7 +948,7 @@ static inline void boot_delay_msec(int level)
- #endif
- 
- #if defined(CONFIG_PRINTK_TIME)
--static bool printk_time = 1;
-+static bool printk_time = true;
- #else
- static bool printk_time;
- #endif
-@@ -1959,12 +1959,12 @@ int update_console_cmdline(char *name, int idx, char *name_new, int idx_new, cha
- 	return -1;
- }
- 
--bool console_suspend_enabled = 1;
-+bool console_suspend_enabled = true;
- EXPORT_SYMBOL(console_suspend_enabled);
- 
- static int __init console_suspend_disable(char *str)
- {
--	console_suspend_enabled = 0;
-+	console_suspend_enabled = false;
- 	return 1;
- }
- __setup("no_console_suspend", console_suspend_disable);
--- 
-1.7.9.5
-
+On 2014/7/18 15:36, Michal Hocko wrote:
+> On Fri 11-07-14 15:37:26, Jiang Liu wrote:
+>> When CONFIG_HAVE_MEMORYLESS_NODES is enabled, cpu_to_node()/numa_node_id()
+>> may return a node without memory, and later cause system failure/panic
+>> when calling kmalloc_node() and friends with returned node id.
+>> So use cpu_to_mem()/numa_mem_id() instead to get the nearest node with
+>> memory for the/current cpu.
+>>
+>> If CONFIG_HAVE_MEMORYLESS_NODES is disabled, cpu_to_mem()/numa_mem_id()
+>> is the same as cpu_to_node()/numa_node_id().
+> 
+> The change makes difference only for really tiny memcgs. If we really
+> have all pages on unevictable list or anon with no swap allowed and that
+> is the reason why no node is set in scan_nodes mask then reclaiming
+> memoryless node or any arbitrary close one doesn't make any difference.
+> The current memcg might not have any memory on that node at all.
+> 
+> So the change doesn't make any practical difference and the changelog is
+> misleading.
+> 
+>> Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+>> ---
+>>  mm/memcontrol.c |    2 +-
+>>  1 file changed, 1 insertion(+), 1 deletion(-)
+>>
+>> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+>> index a2c7bcb0e6eb..d6c4b7255ca9 100644
+>> --- a/mm/memcontrol.c
+>> +++ b/mm/memcontrol.c
+>> @@ -1933,7 +1933,7 @@ int mem_cgroup_select_victim_node(struct mem_cgroup *memcg)
+>>  	 * we use curret node.
+>>  	 */
+>>  	if (unlikely(node == MAX_NUMNODES))
+>> -		node = numa_node_id();
+>> +		node = numa_mem_id();
+>>  
+>>  	memcg->last_scanned_node = node;
+>>  	return node;
+>> -- 
+>> 1.7.10.4
+>>
+> 
