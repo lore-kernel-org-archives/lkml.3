@@ -1,140 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757878AbaGWJlf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 05:41:35 -0400
-Received: from mail.mev.co.uk ([62.49.15.74]:35901 "EHLO mail.mev.co.uk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756127AbaGWJld (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 05:41:33 -0400
-From: Ian Abbott <abbotti@mev.co.uk>
-To: driverdev-devel@linuxdriverproject.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ian Abbott <abbotti@mev.co.uk>,
-        H Hartley Sweeten <hartleys@visionengravers.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 2/4] staging: comedi: ni_65xx: refactor edge detection configuration
-Date: Wed, 23 Jul 2014 10:41:19 +0100
-Message-Id: <1406108481-23910-3-git-send-email-abbotti@mev.co.uk>
-X-Mailer: git-send-email 2.0.0
-In-Reply-To: <1406108481-23910-1-git-send-email-abbotti@mev.co.uk>
-References: <1406108481-23910-1-git-send-email-abbotti@mev.co.uk>
+	id S1757670AbaGWJo1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 05:44:27 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:34374 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757478AbaGWJo0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jul 2014 05:44:26 -0400
+MIME-Version: 1.0
+X-Originating-IP: [84.73.67.144]
+In-Reply-To: <CAKMK7uG85KV94PTqkzvY8RPxg6ApRKHVZrD20e48GHZM=s06=w@mail.gmail.com>
+References: <20140709093124.11354.3774.stgit@patser>
+	<53CE6AFA.1060807@vodafone.de>
+	<CAKMK7uG1d31zU_i__wc+Yq46A0x0tPeKnMBs+NHSmHS82uMsXQ@mail.gmail.com>
+	<53CE84AA.9030703@amd.com>
+	<CAKMK7uFa8vMBV9_JenbFGnFXtV_r9dk=WjbMkkCDWcauhrDdJg@mail.gmail.com>
+	<53CE8A57.2000803@vodafone.de>
+	<53CF58FB.8070609@canonical.com>
+	<53CF5B9F.1050800@amd.com>
+	<53CF5EFE.6070307@canonical.com>
+	<53CF63C2.7070407@vodafone.de>
+	<CAKMK7uGJj+UwcnnzA+fj_=uWPN3i0sneWkoD+wfPJ_8Q6Y-DQg@mail.gmail.com>
+	<53CF6622.6060803@amd.com>
+	<53CF699D.9070902@canonical.com>
+	<53CF6B18.5070107@vodafone.de>
+	<CAKMK7uGd65HR11thcv8KjDw-RnTa7W-QGOzFGFd+oO_hp8wyHA@mail.gmail.com>
+	<53CF7035.2060808@amd.com>
+	<53CF7191.2090008@canonical.com>
+	<CAKMK7uGLqzePAREsWhX0D1oN4FdqKwPgAL6x8sULpJSqYH5LwA@mail.gmail.com>
+	<53CF765E.7020802@vodafone.de>
+	<CAKMK7uE1G-EjbJ2RAXC3ZfkaCo=Gber5PJuRG623Yoz9D=FmGw@mail.gmail.com>
+	<53CF8010.9060809@amd.com>
+	<CAKMK7uEowhvc+4Jc6t2NAeE1joFaohJ6cP7sU-Akut6b3ta=1g@mail.gmail.com>
+	<53CF822E.7050601@amd.com>
+	<CAKMK7uG85KV94PTqkzvY8RPxg6ApRKHVZrD20e48GHZM=s06=w@mail.gmail.com>
+Date: Wed, 23 Jul 2014 11:44:25 +0200
+Message-ID: <CAKMK7uHEgdU+Uz-OnRGvT_wFjOXHpZmgZcrORsBrST_MY5_ADA@mail.gmail.com>
+Subject: Re: [Nouveau] [PATCH 09/17] drm/radeon: use common fence
+ implementation for fences
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
+To: =?UTF-8?Q?Christian_K=C3=B6nig?= <christian.koenig@amd.com>
+Cc: =?UTF-8?Q?Christian_K=C3=B6nig?= <deathsimple@vodafone.de>,
+        Maarten Lankhorst <maarten.lankhorst@canonical.com>,
+        Thomas Hellstrom <thellstrom@vmware.com>,
+        nouveau <nouveau@lists.freedesktop.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        dri-devel <dri-devel@lists.freedesktop.org>,
+        Ben Skeggs <bskeggs@redhat.com>,
+        "Deucher, Alexander" <alexander.deucher@amd.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Refactor the code that updates the rising and falling edge detection
-registers into new function `ni_65xx_update_edge_detection()`.  This
-updates the rising and falling edge detection registers for up to 32
-channels starting at an arbitrary channel.  Call it from the code that
-handles the `INSN_CONFIG_CHANGE_NOTIFY` instruction, which is limited to
-the first 32 channels.
+On Wed, Jul 23, 2014 at 11:39 AM, Daniel Vetter <daniel.vetter@ffwll.ch> wrote:
+> The scheduler needs to keep track of a lot of fences, so I think we'll
+> have to register callbacks, not a simple wait function. We must keep
+> track of all the non-i915 fences for all oustanding batches. Also, the
+> scheduler doesn't eliminate the hw queue, only keep it much slower so
+> that we can sneak in higher priority things.
+>
+> Really, scheduler or not is orthogonal.
 
-(For the purposes of edge detection, the channels are in the natural
-port order of the board, 8 channels per port.  In practice, this is all
-the digital I/O channels (if any), followed by all the digital input
-channels (if any), followed by all the digital output channels (if any).
-
-Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
----
- drivers/staging/comedi/drivers/ni_65xx.c | 71 ++++++++++++++++++++++----------
- 1 file changed, 49 insertions(+), 22 deletions(-)
-
-diff --git a/drivers/staging/comedi/drivers/ni_65xx.c b/drivers/staging/comedi/drivers/ni_65xx.c
-index 0f9185e..f7566fe 100644
---- a/drivers/staging/comedi/drivers/ni_65xx.c
-+++ b/drivers/staging/comedi/drivers/ni_65xx.c
-@@ -317,6 +317,54 @@ static void ni_65xx_disable_input_filters(struct comedi_device *dev)
- 	writel(0x00000000, devpriv->mmio + NI_65XX_FILTER_REG);
- }
- 
-+/* updates edge detection for base_chan to base_chan+31 */
-+static void ni_65xx_update_edge_detection(struct comedi_device *dev,
-+					  unsigned int base_chan,
-+					  unsigned int rising,
-+					  unsigned int falling)
-+{
-+	struct ni_65xx_private *devpriv = dev->private;
-+	unsigned int num_ports = ni_65xx_num_ports(dev);
-+	unsigned int port;
-+
-+	if (base_chan >= NI_65XX_PORT_TO_CHAN(num_ports))
-+		return;
-+
-+	for (port = NI_65XX_CHAN_TO_PORT(base_chan); port < num_ports; port++) {
-+		int bitshift = (int)(NI_65XX_PORT_TO_CHAN(port) - base_chan);
-+		unsigned int port_mask, port_rising, port_falling;
-+
-+		if (bitshift >= 32)
-+			break;
-+
-+		if (bitshift >= 0) {
-+			port_mask = ~0U >> bitshift;
-+			port_rising = rising >> bitshift;
-+			port_falling = falling >> bitshift;
-+		} else {
-+			port_mask = ~0U << -bitshift;
-+			port_rising = rising << -bitshift;
-+			port_falling = falling << -bitshift;
-+		}
-+		if (port_mask & 0xff) {
-+			if (~port_mask & 0xff) {
-+				port_rising |=
-+				    readb(devpriv->mmio +
-+					  NI_65XX_RISE_EDGE_ENA_REG(port)) &
-+				    ~port_mask;
-+				port_falling |=
-+				    readb(devpriv->mmio +
-+					  NI_65XX_FALL_EDGE_ENA_REG(port)) &
-+				    ~port_mask;
-+			}
-+			writeb(port_rising & 0xff,
-+			       devpriv->mmio + NI_65XX_RISE_EDGE_ENA_REG(port));
-+			writeb(port_falling & 0xff,
-+			       devpriv->mmio + NI_65XX_FALL_EDGE_ENA_REG(port));
-+		}
-+	}
-+}
-+
- static int ni_65xx_dio_insn_config(struct comedi_device *dev,
- 				   struct comedi_subdevice *s,
- 				   struct comedi_insn *insn,
-@@ -545,8 +593,6 @@ static int ni_65xx_intr_insn_config(struct comedi_device *dev,
- 				    struct comedi_insn *insn,
- 				    unsigned int *data)
- {
--	struct ni_65xx_private *devpriv = dev->private;
--
- 	switch (data[0]) {
- 	case INSN_CONFIG_CHANGE_NOTIFY:
- 		/* add instruction to check_insn_config_length() */
-@@ -556,26 +602,7 @@ static int ni_65xx_intr_insn_config(struct comedi_device *dev,
- 		/*
- 		 * This only works for the first 4 ports (32 channels)!
- 		 */
--
--		/* set the channels to monitor for rising edges */
--		writeb(data[1] & 0xff,
--		       devpriv->mmio + NI_65XX_RISE_EDGE_ENA_REG(0));
--		writeb((data[1] >> 8) & 0xff,
--		       devpriv->mmio + NI_65XX_RISE_EDGE_ENA_REG(1));
--		writeb((data[1] >> 16) & 0xff,
--		       devpriv->mmio + NI_65XX_RISE_EDGE_ENA_REG(2));
--		writeb((data[1] >> 24) & 0xff,
--		       devpriv->mmio + NI_65XX_RISE_EDGE_ENA_REG(3));
--
--		/* set the channels to monitor for falling edges */
--		writeb(data[2] & 0xff,
--		       devpriv->mmio + NI_65XX_FALL_EDGE_ENA_REG(0));
--		writeb((data[2] >> 8) & 0xff,
--		       devpriv->mmio + NI_65XX_FALL_EDGE_ENA_REG(1));
--		writeb((data[2] >> 16) & 0xff,
--		       devpriv->mmio + NI_65XX_FALL_EDGE_ENA_REG(2));
--		writeb((data[2] >> 24) & 0xff,
--		       devpriv->mmio + NI_65XX_FALL_EDGE_ENA_REG(3));
-+		ni_65xx_update_edge_detection(dev, 0, data[1], data[2]);
- 		break;
- 	default:
- 		return -EINVAL;
+Also see my other comment about interactions between wait_fence and
+the i915 reset logic. We can't actually use it from within the
+scheduler code since that would deadlock.
+-Daniel
 -- 
-2.0.0
-
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
