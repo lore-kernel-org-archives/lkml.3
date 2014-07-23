@@ -1,76 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759265AbaGXNtA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 09:49:00 -0400
-Received: from relay.parallels.com ([195.214.232.42]:50841 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758923AbaGXNs5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 09:48:57 -0400
-Date: Thu, 24 Jul 2014 17:48:28 +0400
-From: Andrew Vagin <avagin@parallels.com>
-To: Kees Cook <keescook@chromium.org>
-CC: Cyrill Gorcunov <gorcunov@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Tejun Heo <tj@kernel.org>,
-        Andrew Vagin <avagin@openvz.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        Julien Tinnes <jln@google.com>
-Subject: Re: [RFC 2/2] prctl: PR_SET_MM -- Introduce PR_SET_MM_MAP operation
-Message-ID: <20140724134828.GA3553@paralelels.com>
-References: <20140703143318.568554771@openvz.org>
- <20140703151102.842945837@openvz.org>
- <20140708190849.GC17860@moon.sw.swsoft.com>
- <20140708143830.ea078ef01e1d7d31276edbcd@linux-foundation.org>
- <20140708221336.GL17860@moon.sw.swsoft.com>
- <20140709141318.GM17860@moon.sw.swsoft.com>
- <CAGXu5jKmTSb0YmNFDtr-jymrhy_s_PXUuvj3WKYffSU98gwyqg@mail.gmail.com>
- <20140709150604.GN17860@moon.sw.swsoft.com>
- <20140711173625.GD19702@moon>
- <CAGXu5jL3exT4j+8rjMv1O54uJWQ5UHL69Z-24b61rhXROqZamQ@mail.gmail.com>
+	id S1759282AbaGXNti (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 09:49:38 -0400
+Received: from mail.kernel.org ([198.145.19.201]:42420 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759138AbaGXNth (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jul 2014 09:49:37 -0400
+Date: Wed, 23 Jul 2014 11:05:32 -0300
+From: Arnaldo Carvalho de Melo <acme@kernel.org>
+To: Adrian Hunter <adrian.hunter@intel.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 01/52] perf tools: Fix jump label always changing during
+ tracing
+Message-ID: <20140723140532.GI20303@kernel.org>
+References: <1406035081-14301-1-git-send-email-adrian.hunter@intel.com>
+ <1406035081-14301-2-git-send-email-adrian.hunter@intel.com>
+ <20140722140034.GE20303@kernel.org>
+ <20140722141135.GF3935@laptop>
+ <53CF5124.2090901@intel.com>
+ <20140723065822.GN3935@laptop>
+ <53CF6121.3050500@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="koi8-r"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAGXu5jL3exT4j+8rjMv1O54uJWQ5UHL69Z-24b61rhXROqZamQ@mail.gmail.com>
+In-Reply-To: <53CF6121.3050500@intel.com>
+X-Url: http://acmel.wordpress.com
 User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Originating-IP: [10.30.16.48]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 22, 2014 at 01:07:51PM -0700, Kees Cook wrote:
-> >  - @exe_fd is referred from /proc/$pid/exe and when generating
-> >    coredump. We uses prctl_set_mm_exe_file_locked helper to update
-> >    this member, so exe-file link modification remains one-shot
-> >    action.
-> 
-> Controlling exe_fd without privileges may turn out to be dangerous. At
-> least things like tomoyo examine it for making policy decisions (see
-> tomoyo_manager()).
->
+Em Wed, Jul 23, 2014 at 10:15:45AM +0300, Adrian Hunter escreveu:
+> On 07/23/2014 09:58 AM, Peter Zijlstra wrote:
+> > On Wed, Jul 23, 2014 at 09:07:32AM +0300, Adrian Hunter wrote:
+> >> On 07/22/2014 05:11 PM, Peter Zijlstra wrote:
+> >>> On Tue, Jul 22, 2014 at 11:00:34AM -0300, Arnaldo Carvalho de Melo wrote:
+> >>>> Em Tue, Jul 22, 2014 at 04:17:10PM +0300, Adrian Hunter escreveu:
+> >>>>> Intel PT decoding walks the object code to reconstruct
+> >>>>> the trace.  A jump label change during tracing causes
+> >>>>> decoding errors.
 
-We don't want to reduce security. How can we get a process with a
-target exe link, which executes our code?
+> >>> You'd better fix that, jump_labels can change any time and they're all
+> >>> over the frigging place.
 
-We can execute the target file and attach to it with ptrace. ptrace
-allows to inject and execute any code.
+> >> Perhaps a general method is needed to be able to deal with kernel
+> >> self-modifying code.
 
-So if we are sure that we are able to do a previous scenario, we can
-safely change exe-link, can't we?
+> > I know people are looking at doing the same to userspace, is that also a
+> > problem?
 
-prctl already has a check of permissions to execute the target file.
-If we execute a file. What can prevent us to attach to the process with ptrace?
+> Yes, most significantly JIT-compiled code.
 
-The file can have a suid bit, so after executing it we may lose ability
-to attach to it. To check that we can check that uid and gid is zero
-in a current userns (local root).
+It would be great to figure out the parts that were patched, so as to
+have the original and patched lines disassembled and properly marked as
+such in the annotation widgets, using a different colour, and allowing
+to flip to/from original/patched.
 
-What else do we need to check?
+I wonder if there is some place with a list of the areas that were
+patched or that can be patched if enabled, etc, surely there is one for
+ftrace stuff, etc.
 
-Thanks,
-Andrey
+- Arnaldo
