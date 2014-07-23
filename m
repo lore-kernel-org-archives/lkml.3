@@ -1,119 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753384AbaGWBxi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 21:53:38 -0400
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:57297 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751949AbaGWBxg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 21:53:36 -0400
-Message-ID: <53CF159C.8040102@greenwavereality.com>
-Date: Tue, 22 Jul 2014 18:53:32 -0700
-From: Bob Richmond <robert.richmond@greenwavereality.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1753846AbaGWCBI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 22:01:08 -0400
+Received: from ozlabs.org ([103.22.144.67]:48736 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751185AbaGWCBG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 22:01:06 -0400
+Date: Wed, 23 Jul 2014 12:00:54 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>,
+        "John W. Linville" <linville@tuxdriver.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
+        David Spinadel <david.spinadel@intel.com>
+Subject: linux-next: manual merge of the net-next tree with the wireless
+ tree
+Message-ID: <20140723120054.7c0e08b3@canb.auug.org.au>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: Adding neighbor cache entry solely initiated by multicast traffic
-Content-Type: multipart/mixed;
- boundary="------------050208040009090506070305"
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/J9S=tJ7N1qL3kZRoKJynCb7"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------050208040009090506070305
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+--Sig_/J9S=tJ7N1qL3kZRoKJynCb7
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-For a device on the local network that mostly functions as a multicast 
-receiver, the only packets a router may see from this client are IGMP 
-membership reports. I believe that alone should be enough information to 
-establish a neighbor cache entry for it.
+Hi all,
 
-A client intending to unicast to the router will first ARP for the 
-router's address, and the router will then respond to the ARP AND cache 
-the client's address to avoid ARPing for the client's address when 
-replying to original packet.
+Today's linux-next merge of the net-next tree got a conflict in
+drivers/net/wireless/iwlwifi/mvm/mac80211.c between commit c6a21ff31994
+("iwlwifi: mvm: fix merge damage") from the wireless tree and commit
+fb98be5e9419 ("iwlwifi: mvm: add unified LMAC scan API") from the
+net-next tree.
 
-I believe this patch functions in the same spirit of that approach.
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-Something like this is necessary for a router managing multicast 
-subscriptions in userspace using the ipmr API. Such a thing would need 
-to know which interface an IGMP membership report came in on, in order 
-to establish a vif route for it. Without a netlink message indicating a 
-new neighbor for the subscriber's IP address, it can't be known which 
-vif to establish the route on.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Is there anything glaringly wrong with this?
-
---------------050208040009090506070305
-Content-Type: text/x-patch;
- name="linux-3.4.91_add_neighbour_on_multicast.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename="linux-3.4.91_add_neighbour_on_multicast.patch"
-
-*** linux-3.4.91/net/ipv4/route.c.orig	2014-05-18 05:26:09.000000000 -0700
---- linux-3.4.91/net/ipv4/route.c	2014-07-22 17:20:03.156032862 -0700
-***************
-*** 2008,2031 ****
---- 2008,2033 ----
-  	return dst_alloc(&ipv4_dst_ops, dev, 1, -1,
-  			 DST_HOST |
-  			 (nopolicy ? DST_NOPOLICY : 0) |
-  			 (noxfrm ? DST_NOXFRM : 0));
-  }
-  
-  /* called in rcu_read_lock() section */
-  static int ip_route_input_mc(struct sk_buff *skb, __be32 daddr, __be32 saddr,
-  				u8 tos, struct net_device *dev, int our)
-  {
-  	unsigned int hash;
-  	struct rtable *rth;
-+ 	struct neighbour *n;
-+ 	char lladdr[8];
-  	__be32 spec_dst;
-  	struct in_device *in_dev = __in_dev_get_rcu(dev);
-  	u32 itag = 0;
-  	int err;
-  
-  	/* Primary sanity checks. */
-  
-  	if (in_dev == NULL)
-  		return -EINVAL;
-  
-  	if (ipv4_is_multicast(saddr) || ipv4_is_lbcast(saddr) ||
-  	    ipv4_is_loopback(saddr) || skb->protocol != htons(ETH_P_IP))
-***************
-*** 2072,2095 ****
---- 2074,2101 ----
-  		rth->dst.input= ip_local_deliver;
-  		rth->rt_flags |= RTCF_LOCAL;
+diff --cc drivers/net/wireless/iwlwifi/mvm/mac80211.c
+index 98556d03c1ed,2eb6ebee4467..000000000000
+--- a/drivers/net/wireless/iwlwifi/mvm/mac80211.c
++++ b/drivers/net/wireless/iwlwifi/mvm/mac80211.c
+@@@ -303,6 -321,16 +321,9 @@@ int iwl_mvm_mac_setup_register(struct i
+  		hw->uapsd_max_sp_len =3D IWL_UAPSD_MAX_SP;
   	}
-  
-  #ifdef CONFIG_IP_MROUTE
-  	if (!ipv4_is_local_multicast(daddr) && IN_DEV_MFORWARD(in_dev))
-  		rth->dst.input = ip_mr_input;
-  #endif
-  	RT_CACHE_STAT_INC(in_slow_mc);
-  
-  	hash = rt_hash(daddr, saddr, dev->ifindex, rt_genid(dev_net(dev)));
-  	rth = rt_intern_hash(hash, rth, skb, dev->ifindex);
-+ 	if (dev_parse_header(skb, lladdr) > 0) {
-+ 		n = __neigh_lookup(&arp_tbl, &saddr, dev, 1);
-+ 		neigh_update(n, lladdr, NUD_REACHABLE, 0);
-+ 	}
-  	return IS_ERR(rth) ? PTR_ERR(rth) : 0;
-  
-  e_nobufs:
-  	return -ENOBUFS;
-  e_inval:
-  	return -EINVAL;
-  e_err:
-  	return err;
-  }
-  
-  
-  static void ip_handle_martian_source(struct net_device *dev,
+ =20
+ -	if (mvm->fw->ucode_capa.flags & IWL_UCODE_TLV_FLAGS_UAPSD_SUPPORT &&
+ -	    !iwlwifi_mod_params.uapsd_disable) {
+ -		hw->flags |=3D IEEE80211_HW_SUPPORTS_UAPSD;
+ -		hw->uapsd_queues =3D IWL_UAPSD_AC_INFO;
+ -		hw->uapsd_max_sp_len =3D IWL_UAPSD_MAX_SP;
+ -	}
+ -
++ 	if (mvm->fw->ucode_capa.api[0] & IWL_UCODE_TLV_API_LMAC_SCAN)
++ 		hw->flags |=3D IEEE80211_SINGLE_HW_SCAN_ON_ALL_BANDS;
++=20
+  	hw->sta_data_size =3D sizeof(struct iwl_mvm_sta);
+  	hw->vif_data_size =3D sizeof(struct iwl_mvm_vif);
+  	hw->chanctx_data_size =3D sizeof(u16);
 
---------------050208040009090506070305--
+--Sig_/J9S=tJ7N1qL3kZRoKJynCb7
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJTzxddAAoJEMDTa8Ir7ZwVeTMP/0zDAnFq4PJFpqhSbdTbiJaA
+d1PtX/4wujbmQhHdnJsyywrxojVx7h1zZbZURQvcO/ZhYCCmSCY4K1KeeiwOwnEx
+cu49s/fXjM2S9+8a7TL4SbkysQgF74yerhm9Kg3CRkgHb8oM2Zg8wyah1jXBKCCr
+3Nig5aamlrFsi8VAPCbrfmCzW9QnynSxEmZFPGS/S2bMiirK+Rdy6o/qkNtlC/a7
+aNUdPU5UlayGrhP7fiIdQ2KH3RG9xptGliGkUZT1zjFEKC4bzC90yjdCveNUhKYZ
+5ww1Z0wA5ZNcjNN9vLCdiBuwr7/LOPjVi7OQ/9PbMq2I3vLWpsMoZ28XlWx9eeed
+4MbhD9VoZMb3ZkZGW6rLZhL903ZfRTVpKT20XOAbsx8XZUHou9nP58pGJFXeTpsH
+NnSkpW/Z93GQeRLYny6rP55xh4kAuwyGL7IfqvyihyzdHjFQATs5ojKduiriO+5Z
+yHbP76kdSx0FaNjckIPLyXsBo4HZJwO3iyhsxLVxqu4qBcA2QKIqFs+zZPkkgnwF
+LC1azGjiqYpR/H7eOPGEolbXRuN0hq/H3j0sbMfh+ulrkavPpAyvMW8axewZKOB7
+GN2mlksU5yqtNbLYWesR8swtPoCzGjd8+H1W30dxQ9pvfdj2+P55tYZohppDr9If
+r2g9EcV5ildgdKBRXJp+
+=BRSD
+-----END PGP SIGNATURE-----
+
+--Sig_/J9S=tJ7N1qL3kZRoKJynCb7--
