@@ -1,69 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755485AbaGWGai (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 02:30:38 -0400
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:62786 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753477AbaGWGaf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 02:30:35 -0400
+	id S1755708AbaGWGbW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 02:31:22 -0400
+Received: from mga11.intel.com ([192.55.52.93]:29274 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755604AbaGWGbV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jul 2014 02:31:21 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,715,1400050800"; 
+   d="scan'208";a="574040590"
+Message-ID: <53CF56AD.5090902@intel.com>
+Date: Wed, 23 Jul 2014 14:31:09 +0800
+From: "xinhui.pan" <xinhuix.pan@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-In-Reply-To: <20140709142333.503a9e39@alan.etchedpixels.co.uk>
-References: <1403781875-5425-1-git-send-email-t.figa@samsung.com>
-	<20140626113939.GP32514@n2100.arm.linux.org.uk>
-	<53AC0BCC.1010608@samsung.com>
-	<CAD8Lp45MvDLsxehayx8uuGt3w3O0vGskiFjb1vdvtOyOv2nG2w@mail.gmail.com>
-	<20140709142333.503a9e39@alan.etchedpixels.co.uk>
-Date: Wed, 23 Jul 2014 07:30:33 +0100
-Message-ID: <CAD8Lp47GpiRabx56u5F+qrY=mx_OOj2dOqfQ6_=4TBe=JskDkQ@mail.gmail.com>
-Subject: Re: [PATCH 0/3] Deterministic UART numbering on Samsung SoCs
-From: Daniel Drake <drake@endlessm.com>
-To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-Cc: Tomasz Figa <t.figa@samsung.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org, devicetree@vger.kernel.org,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Rob Herring <robh+dt@kernel.org>, Mark Rutland <mark.rutland@arm.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, Tomasz Figa <tomasz.figa@gmail.com>
+To: Greg KH <gregkh@linuxfoundation.org>, Jiri Slaby <jslaby@suse.cz>
+CC: linux-kernel@vger.kernel.org,
+        "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
+        mnipxh <mnipxh@gmail.com>
+Subject: [PATCH] tty/n_gsm.c: get gsm->num after gsm_activate_mux
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 9, 2014 at 2:23 PM, One Thousand Gnomes
-<gnomes@lxorguk.ukuu.org.uk> wrote:
->> I like the sound of going to the standard ttyS notation and only
->> providing ports for ones that exist, but is this userspace-visible
->
-> ttyS is 8250 compatible UARTS.
->
-> If the Samsung is not an 8250 compatible UART then it doesn't belong as
-> ttyS from the kernel perspective.
+gsm->num is the index of gsm_mux[], it's invalid before calling gsm_activate_mux.
 
-OK, thanks for pointing that out.
+Signed-off-by: xinhui.pan <xinhuiX.pan@intel.com>
+---
+ drivers/tty/n_gsm.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-So we stick with the ttySAC namespace. And by doing that, and sticking
-to the existing and documented behaviour, it seems like we have
-already addressed Russells's concern:
-
-> The problem you're raising is very much the same problem you have when
-> there are multiple USB serial devices connected to the machine - you
-> just get a bunch of /dev/ttyUSB* devices which are unordered (they can
-> change on each boot, or change order if you disconnect and reconnect
-> them.)
-
-In this case, we have a dedicated namespace and the path information
-is already fully encoded in the device name. The order and number of
-ports are fixed, they can't be disconnected and reconnected. There is
-no real risk of an additional serial controller driver coming to play
-in the ttySAC namespace.
-
-So I think Tomasz's approach is good - although I haven't looked at
-the code in detail.
-
-Thanks
-Daniel
+diff --git a/drivers/tty/n_gsm.c b/drivers/tty/n_gsm.c
+index 2ebe47b..81e7ccb 100644
+--- a/drivers/tty/n_gsm.c
++++ b/drivers/tty/n_gsm.c
+@@ -2230,8 +2230,7 @@ static int gsmld_output(struct gsm_mux *gsm, u8 *data, int len)
+ 
+ static int gsmld_attach_gsm(struct tty_struct *tty, struct gsm_mux *gsm)
+ {
+-	int ret, i;
+-	int base = gsm->num << 6; /* Base for this MUX */
++	int ret, i, base;
+ 
+ 	gsm->tty = tty_kref_get(tty);
+ 	gsm->output = gsmld_output;
+@@ -2241,6 +2240,7 @@ static int gsmld_attach_gsm(struct tty_struct *tty, struct gsm_mux *gsm)
+ 	else {
+ 		/* Don't register device 0 - this is the control channel and not
+ 		   a usable tty interface */
++		base = gsm->num << 6; /* Base for this MUX */
+ 		for (i = 1; i < NUM_DLCI; i++)
+ 			tty_register_device(gsm_tty_driver, base + i, NULL);
+ 	}
+-- 
+1.7.9.5
