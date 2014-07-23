@@ -1,94 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757230AbaGWNwy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 09:52:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:57224 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752799AbaGWNwx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 09:52:53 -0400
-Date: Wed, 23 Jul 2014 09:52:45 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Jan Beulich <JBeulich@suse.com>
-Cc: mmarek@suse.cz, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: genksyms: separating public headers from private header files
-Message-ID: <20140723135245.GL7959@redhat.com>
-References: <20140716151915.GS7959@redhat.com>
- <53CF8E500200007800024FD1@mail.emea.novell.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53CF8E500200007800024FD1@mail.emea.novell.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932153AbaGWNxM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 09:53:12 -0400
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:40828 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757248AbaGWNxJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jul 2014 09:53:09 -0400
+From: sudip <sudipm.mukherjee@gmail.com>
+To: devel@driverdev.osuosl.org, gregkh@linuxfoundation.org
+Cc: sudip <sudipm.mukherjee@gmail.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH] staging: bcm : Transmit.c : fixed coding style problem 
+Date: Wed, 23 Jul 2014 19:22:30 +0530
+Message-Id: <1406123550-11951-1-git-send-email-sudipm.mukherjee@gmail.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 23, 2014 at 09:28:32AM +0100, Jan Beulich wrote:
-> >>> On 16.07.14 at 17:19, <dzickus@redhat.com> wrote:
-> > Hi Jan, Michal,
-> > 
-> > I am not sure who maintains genksyms officially, so I am sending this
-> > question to the two of you as folks who seemed to have contributed to the
-> > tool. :-)
-> > 
-> > I noticed with genksyms that a symbol is opaquely defined in a
-> > public header file (on purpose) and then fully defined in a private
-> > header.  This is normal practice.  Further, symbol checksumming is done on
-> > EXPORT_SYMBOLs in a private c file that includes the private header
-> > files.
-> > 
-> > As a result, even though a struct symbol is intentionally opaquely defined
-> > in a public header file consumed by a third party module, the symbol
-> > checksumming still includes the full definition (because the private c
-> > file with the actual export symbol has the full definition).  This has
-> > made it difficult to modify the private header file struct because it
-> > breaks the symbol checksumming.
-> > 
-> > For example, let's consider
-> > 
-> > block/blk-core.c:EXPORT_SYMBOL(blk_put_queue);
-> > 
-> > blk_put_queue will eventually depend on struct blkcq_gq.
-> > 
-> > Now publicly blkcg_gq is defined opaquely in 
-> > 
-> > include/linux/blkdev.h
-> > 
-> > and privately in
-> > 
-> > block/block-cgroup.h
-> > 
-> > Now when we checksum blk_put_queue both include/linux/blkdev.h and
-> > block/block-cgroup.h are included in block/blk-core.c, so blkcg_gq is
-> > fully defined for checksumming.
-> > 
-> > Later if we modify blkcq_gq in block/block-cgroup.h the checksum changes,
-> > even though it can debated that block-cgroup.h is a private header file
-> > and it should not impact kabi for third party modules.
-> > 
-> > Have either of you run into this?  Or is the argument that private files
-> > should not impact the checksum not as strong as I might think?  Or is it a
-> > technical problem of how to separate the public includes from the private
-> > includes in the preprocessed file?
-> 
-> Yes, I think we've run into this (if not elsewhere then by seeing [and
-> having to wave] false positive kABI changes). Besides being a
-> technical problem of separating one kind of header from the other, I'm
-> also unsure whether uniformly ignoring definitions in private headers
-> would always be correct. Hence I think a possible solution to this ought
-> to involve manual annotation of structures not to participate in CRC
-> calculations.
+applies to next-20140723
 
-Yeah, I wasn't sure how feasible this would be or how to logically prove
-the correctness of this approach.
 
-I can how tagging each struct could help, just a lot of tagging has to be
-done and I know our developers may not be proactive in all the right
-cases.
+Signed-off-by: sudip <sudipm.mukherjee@gmail.com>
+---
+ drivers/staging/bcm/Transmit.c | 9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
 
-Thanks for the feedback!  I'll see if I can come up with a solution though
-we can't utilize it for a few years as our RHEL6/7 products kabi checksums
-are locked down. :-/
+diff --git a/drivers/staging/bcm/Transmit.c b/drivers/staging/bcm/Transmit.c
+index 05fae92..10586f8 100644
+--- a/drivers/staging/bcm/Transmit.c
++++ b/drivers/staging/bcm/Transmit.c
+@@ -89,7 +89,8 @@ int SendControlPacket(struct bcm_mini_adapter *Adapter, char *pControlPacket)
+  * to the target via the host h/w interface.
+  * @return  zero(success) or -ve value(failure)
+  */
+-int SetupNextSend(struct bcm_mini_adapter *Adapter,  struct sk_buff *Packet, USHORT Vcid)
++int SetupNextSend(struct bcm_mini_adapter *Adapter,
++		struct sk_buff *Packet, USHORT Vcid)
+ {
+ 	int	status = 0;
+ 	bool	bHeaderSupressionEnabled = false;
+@@ -205,7 +206,8 @@ int tx_pkt_handler(struct bcm_mini_adapter *Adapter)
+ 	int status = 0;
+ 
+ 	while (!kthread_should_stop()) {
+-		/* FIXME - the timeout looks like workaround for racey usage of TxPktAvail */
++		/* FIXME - the timeout looks like workaround
++		   for racey usage of TxPktAvail */
+ 		if (Adapter->LinkUpStatus)
+ 			wait_event_timeout(Adapter->tx_packet_wait_queue,
+ 					   tx_pending(Adapter),
+@@ -229,7 +231,8 @@ int tx_pkt_handler(struct bcm_mini_adapter *Adapter)
+ 		if (Adapter->bEndPointHalted == TRUE) {
+ 			Bcm_clear_halt_of_endpoints(Adapter);
+ 			Adapter->bEndPointHalted = false;
+-			StartInterruptUrb((struct bcm_interface_adapter *)(Adapter->pvInterfaceAdapter));
++			StartInterruptUrb((struct bcm_interface_adapter *)
++					(Adapter->pvInterfaceAdapter));
+ 		}
+ 
+ 		if (Adapter->LinkUpStatus && !Adapter->IdleMode) {
+-- 
+1.8.1.2
 
-Cheers,
-Don
