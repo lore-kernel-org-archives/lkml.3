@@ -1,76 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756042AbaGWESO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 00:18:14 -0400
-Received: from mx08-00178001.pphosted.com ([91.207.212.93]:46543 "EHLO
-	mx08-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752157AbaGWESM convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 00:18:12 -0400
-From: Mohit KUMAR DCG <Mohit.KUMAR@st.com>
-To: Bjorn Helgaas <bhelgaas@google.com>,
-        Kishon Vijay Abraham I <kishon@ti.com>
-Cc: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "jg1.han@samsung.com" <jg1.han@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>
-Date: Wed, 23 Jul 2014 12:17:52 +0800
-Subject: RE: [PATCH v3 0/4] dra7: Add PCIe support
-Thread-Topic: [PATCH v3 0/4] dra7: Add PCIe support
-Thread-Index: Ac+l9IwTWAfjs1UYSJ+DUnZWGai0rQAODqag
-Message-ID: <2CC2A0A4A178534D93D5159BF3BCB661A61189AF02@EAPEX1MAIL1.st.com>
-References: <1405587643-13808-1-git-send-email-kishon@ti.com>
- <20140722213306.GB25432@google.com>
-In-Reply-To: <20140722213306.GB25432@google.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="Windows-1252"
-Content-Transfer-Encoding: 8BIT
+	id S1752393AbaGWEVn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 00:21:43 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:52757 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751041AbaGWEVl convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jul 2014 00:21:41 -0400
 MIME-Version: 1.0
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.14,0.0.0000
- definitions=2014-07-23_01:2014-07-22,2014-07-23,1970-01-01 signatures=0
+In-Reply-To: <53CF31AE.30403@daenzer.net>
+References: <53C77BB8.6030804@daenzer.net>
+	<20140717075820.GE19379@twins.programming.kicks-ass.net>
+	<53C8E90F.1010306@daenzer.net>
+	<53CE00EF.70108@daenzer.net>
+	<53CF31AE.30403@daenzer.net>
+Date: Tue, 22 Jul 2014 21:21:40 -0700
+X-Google-Sender-Auth: o1j-Txjd01LXe4aOfk-8kzUVyzw
+Message-ID: <CA+55aFwyURgG717kmuAXzKcHddN_63GirtwHZB4ePKH+8qVtJw@mail.gmail.com>
+Subject: Re: Random panic in load_balance() with 3.16-rc
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: =?UTF-8?Q?Michel_D=C3=A4nzer?= <michel@daenzer.net>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Bjorn,
+On Tue, Jul 22, 2014 at 8:53 PM, Michel Dänzer <michel@daenzer.net> wrote:
+>
+> Just happened again with the same change on top of 3.16-rc6.
 
-> -----Original Message-----
-> From: Bjorn Helgaas [mailto:bhelgaas@google.com]
-> Sent: Wednesday, July 23, 2014 3:03 AM
-> To: Kishon Vijay Abraham I
-> Cc: devicetree@vger.kernel.org; linux-doc@vger.kernel.org; linux-
-> pci@vger.kernel.org; jg1.han@samsung.com; Mohit KUMAR DCG; linux-
-> kernel@vger.kernel.org; grant.likely@linaro.org
-> Subject: Re: [PATCH v3 0/4] dra7: Add PCIe support
-> 
-> On Thu, Jul 17, 2014 at 02:30:39PM +0530, Kishon Vijay Abraham I wrote:
-> > Changes from v2:
-> > * Added myself as MAINTAINER of pcie dra7xx driver
+The (maybe) related bugzilla entry is just odd. Bruno Wolff reports
+that the BUG_ON() in his added patch triggers:
 
-[...]
++               cpumask_clear(sched_group_cpus(sg));
++               sg->sgc->capacity = 0;
++               BUG_ON(!cpumask_empty(sched_group_cpus(sg)));
 
-> 
-> I applied these to pci/host-designware for v3.17.  This will not be in my first
-> pull request because I'm going on vacation and won't have time to get
-> everything through -next and tagged.  But I'm planning a second pull request
-> that will include this.
-> 
-> Mohit, I applied your ack of "use untranslated address" from the v1 posting
-> (your mail of Jul 09) to the corresponding patch here, since Kishon didn't
-> carry it forward.  Let me know if that's not OK.
+where it *just* did a cpumask_clear(), and now the BUG_ON() triggers
+that it's no longer empty?
 
-- yes, OK with me. 
+That would imply an allocation error, but all the sched groups seem to
+be properly allocated with the proper addition of cpumask_size().
 
-Thanks
-Mohit
-> 
-> I also squashed the last two patches into one so the DT binding
-> documentation goes along with the dra7xx driver addition.
-> 
-> Bjorn
+And his config file even has NR_CPUS being 32, so it should be a
+single word of bitmap, which triggers all the simple code.
+
+Completely insane, in other words.
+
+           Linus
