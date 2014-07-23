@@ -1,99 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932907AbaGWTN1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 15:13:27 -0400
-Received: from mail-vc0-f179.google.com ([209.85.220.179]:50081 "EHLO
-	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932514AbaGWTN0 convert rfc822-to-8bit (ORCPT
+	id S933060AbaGWTPW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 15:15:22 -0400
+Received: from mail-oa0-f45.google.com ([209.85.219.45]:50035 "EHLO
+	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932514AbaGWTPV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 15:13:26 -0400
+	Wed, 23 Jul 2014 15:15:21 -0400
 MIME-Version: 1.0
-In-Reply-To: <87a980getx.fsf@nemi.mork.no>
-References: <1406053161-5048-1-git-send-email-xerofoify@gmail.com>
-	<8738dsi7l7.fsf@nemi.mork.no>
-	<CAPDOMVjwzfmHAKGBENfpxN2cswckq2T=QbQa56k3w0X+cDuJKg@mail.gmail.com>
-	<87a980getx.fsf@nemi.mork.no>
-Date: Wed, 23 Jul 2014 15:13:24 -0400
-Message-ID: <CAPDOMVjB3vLwfDAkSGpLMtth-TpQwuPgBRKKc9wmxHqFcH69uQ@mail.gmail.com>
-Subject: Re: [PATCH] drbd: Remove fix me statements
-From: Nick Krause <xerofoify@gmail.com>
-To: =?UTF-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>
-Cc: drbd-dev@lists.linbit.com, drbd-user@lists.linbit.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <alpine.DEB.2.10.1407232048240.23352@nanos>
+References: <1406141136-19501-1-git-send-email-f.fainelli@gmail.com> <alpine.DEB.2.10.1407232048240.23352@nanos>
+From: Florian Fainelli <f.fainelli@gmail.com>
+Date: Wed, 23 Jul 2014 12:14:40 -0700
+Message-ID: <CAGVrzcbMKOGV20OGWY9n7xw3f=6+oyRvza+qRbCHfbVECmTLNQ@mail.gmail.com>
+Subject: Re: [PATCH v2] genirq: bug on inconstent flags and flow handler
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jason Cooper <jason@lakedaemon.net>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 23, 2014 at 1:33 PM, Bjørn Mork <bjorn@mork.no> wrote:
-> Nick Krause <xerofoify@gmail.com> writes:
+2014-07-23 11:49 GMT-07:00 Thomas Gleixner <tglx@linutronix.de>:
+> On Wed, 23 Jul 2014, Florian Fainelli wrote:
 >
->> Bjorn,
->> Can we remove the double locking  as you are stating or do  we still need it
->> to protect against the list being accessed  as the list seems to be moving
->> to a spinlock protected list.
+>> It is currently possible for a generic irq chip driver to set IRQ_LEVEL
+>> and have its irq flow handler be handle_edge_irq. Setting IRQ_LEVEL in
+>> such a case does not make sense, and will actually prevent e.g: the
+>> software resend logic from kicking, and potential other problems too.
+>>
+>> Signed-off-by: Florian Fainelli <f.fainelli@gmail.com>
+>> ---
+>> Changes in v2:
+>> - replaced WARN_ON() with BUG_ON() since we really don't want to continue
+>>   as suggested by Jason Cooper
 >
-> I wouldn't know.
+> I disagree here. It's not a reason take the machine down. Its good
+> enough to WARN. That keeps the machine alive and lets us debug that
+> stuff.
+
+Works for me!
+
 >
-> The only thing I know is that the original author of those lines, who we
-> must assume has thorough knowlegde of this code, did not know how to fix
-> that in a simple and straight forward way.
->
-> From this we can deduce that there is more to it than just changing a
-> couple of lines. If you don't alrady know this code in and out, then you
-> would have to start by analyzing the current locking model and
-> understanding that.  Then, assuming the current double locking is in
-> fact necessary, you would need to redesign it so that you can make one
-> of the locks go away.  Then you need to implement your new design.  Then
-> test it _thoroughly_ to eliminate all the small bugs. Everyone adds bugs
-> when writing non-trivial code.  (You seem to think that you can delegate
-> all the bug squashing to others simply because you don't own the
-> hardware.  That is not so.  If you don't have access to hardware for
-> testing, then you should not add any bugs.  Yes, this implies that you
-> cannot write non-trivial code for hardware you don't have). Then you must
-> verify that the result is at least as efficient as the old code was. Or
-> there would be no point, would there?
->
-> When all this is done, and the testing shows it is a success, *then* you
-> can remove the FIXME comment with a nice commit message explaining the
-> new locking model and why it now is safe to drop one of the locks.
->
-> There is a fat chance that this just isn't worth all the work.  Which is
-> most likely why the FIXME was stuck there in the first place.
->
-> You should understand that noone will add a FIXME for anything trivial.
-> And if an author who knows the code well finds something non-trivial,
-> then you should definitely not touch it without investing enough time to
-> have a similar understanding of the code.
->
-> Note again that I am writing all this as purely generic comments.  I
-> don't know anything at all about the code in question, and I wouldn't
-> dare touching it without spending a lot of time understanding it first.
->
-> As Steven said: find an area to focus on.  Spend some time understanding
-> a small part of the kernel instead of jumping all around.
->
-> And: Being able to test code yourself is absolutely necessary in the
-> beginning.  But you don't necessarily have to run out and buy some odd
-> new hardware for that. I'm pretty sure many drivers and other parts of
-> the kernel is in use on the hardware you already have at hand :-)
-> Choose among those parts for your learning experience.
->
-> Your USB hcd patch is a nice example of code that you most likely can
-> test yourself.  And the pacth was fine too, except for the lack of a
-> proper commit message explaining why it was OK.  But most of us will
-> just look at the "Acked-by: Alan Stern" line and figure that the change
-> definitely must be fine :-)
+> Lemme find V1 ....
+
+Here it is: https://lkml.org/lkml/2014/7/1/468
+
 >
 >
-> Bjørn (who also has sumitted his share of buggy patches, creating
-> unnecessary work for innoncent maintainers in the past.  Sorry about
-> that Greg, Oliver, Alan, David, Mauro and all the others... I'm afraid I
-> cannot even guarantee that it won't happen again, but I do try my best)
+>>  kernel/irq/chip.c | 7 ++++++-
+>>  1 file changed, 6 insertions(+), 1 deletion(-)
+>>
+>> diff --git a/kernel/irq/chip.c b/kernel/irq/chip.c
+>> index a2b28a2fd7b1..17a66b56cd96 100644
+>> --- a/kernel/irq/chip.c
+>> +++ b/kernel/irq/chip.c
+>> @@ -749,8 +749,13 @@ void irq_modify_status(unsigned int irq, unsigned long clr, unsigned long set)
+>>               irqd_set(&desc->irq_data, IRQD_PER_CPU);
+>>       if (irq_settings_can_move_pcntxt(desc))
+>>               irqd_set(&desc->irq_data, IRQD_MOVE_PCNTXT);
+>> -     if (irq_settings_is_level(desc))
+>> +     if (irq_settings_is_level(desc)) {
+>> +             /* Setting IRQD_LEVEL does not make sense on non-level
+>> +              * sensitive interrupts
+>> +              */
+>> +             BUG_ON(desc->handle_irq != handle_level_irq);
+>>               irqd_set(&desc->irq_data, IRQD_LEVEL);
+>> +     }
+>>
+>>       irqd_set(&desc->irq_data, irq_settings_get_trigger_mask(desc));
+>>
+>> --
+>> 1.9.1
+>>
+>>
 
 
-Bjorn ,
-Thanks for the reply and the advice seems this is more work then
-I am time for now.
-Cheers Nick
+
+-- 
+Florian
