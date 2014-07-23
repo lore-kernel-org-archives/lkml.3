@@ -1,100 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758096AbaGWPG5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 11:06:57 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:33195 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758064AbaGWPGy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 11:06:54 -0400
-Date: Wed, 23 Jul 2014 11:06:08 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Miklos Szeredi <miklos@szeredi.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>, Tejun Heo <tj@kernel.org>,
-        Vladimir Davydov <vdavydov@parallels.com>, linux-mm@kvack.org,
-        cgroups@vger.kernel.org,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [patch 13/13] mm: memcontrol: rewrite uncharge API
-Message-ID: <20140723150608.GF1725@cmpxchg.org>
-References: <1403124045-24361-14-git-send-email-hannes@cmpxchg.org>
- <20140715082545.GA9366@dhcp22.suse.cz>
- <20140715121935.GB9366@dhcp22.suse.cz>
- <20140718071246.GA21565@dhcp22.suse.cz>
- <20140718144554.GG29639@cmpxchg.org>
- <CAJfpegt9k+YULet3vhmG3br7zSiHy-DRL+MiEE=HRzcs+mLzbw@mail.gmail.com>
- <20140719173911.GA1725@cmpxchg.org>
- <20140722150825.GA4517@dhcp22.suse.cz>
- <CAJfpegscT-ptQzq__uUV2TOn7Uvs6x4FdWGTQb9Fe9MEJr2KjA@mail.gmail.com>
- <20140723143847.GB16721@dhcp22.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140723143847.GB16721@dhcp22.suse.cz>
+	id S1758126AbaGWPHT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 11:07:19 -0400
+Received: from smtprelay0154.hostedemail.com ([216.40.44.154]:36747 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1757804AbaGWPHP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jul 2014 11:07:15 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:355:379:541:599:968:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1540:1593:1594:1711:1730:1747:1777:1792:2198:2199:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3867:3868:3870:3871:3872:4321:5007:6117:6119:7652:7903:10004:10400:10848:11658:11914:12296:12517:12519:12740:13069:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: shape70_4c77ecea424f
+X-Filterd-Recvd-Size: 1640
+Message-ID: <1406128031.2755.21.camel@joe-AO725>
+Subject: Re: [PATCH V2] SYSV: logging update
+From: Joe Perches <joe@perches.com>
+To: Fabian Frederick <fabf@skynet.be>
+Cc: linux-kernel@vger.kernel.org, hch@infradead.org
+Date: Wed, 23 Jul 2014 08:07:11 -0700
+In-Reply-To: <1406127018-15953-1-git-send-email-fabf@skynet.be>
+References: <1406127018-15953-1-git-send-email-fabf@skynet.be>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 23, 2014 at 04:38:47PM +0200, Michal Hocko wrote:
-> On Tue 22-07-14 17:44:43, Miklos Szeredi wrote:
-> > On Tue, Jul 22, 2014 at 5:08 PM, Michal Hocko <mhocko@suse.cz> wrote:
-> > > On Sat 19-07-14 13:39:11, Johannes Weiner wrote:
-> > >> On Fri, Jul 18, 2014 at 05:12:54PM +0200, Miklos Szeredi wrote:
-> > >> > On Fri, Jul 18, 2014 at 4:45 PM, Johannes Weiner <hannes@cmpxchg.org> wrote:
-> > >> >
-> > >> > > I assumed the source page would always be new, according to this part
-> > >> > > in fuse_try_move_page():
-> > >> > >
-> > >> > >         /*
-> > >> > >          * This is a new and locked page, it shouldn't be mapped or
-> > >> > >          * have any special flags on it
-> > >> > >          */
-> > >> > >         if (WARN_ON(page_mapped(oldpage)))
-> > >> > >                 goto out_fallback_unlock;
-> > >> > >         if (WARN_ON(page_has_private(oldpage)))
-> > >> > >                 goto out_fallback_unlock;
-> > >> > >         if (WARN_ON(PageDirty(oldpage) || PageWriteback(oldpage)))
-> > >> > >                 goto out_fallback_unlock;
-> > >> > >         if (WARN_ON(PageMlocked(oldpage)))
-> > >> > >                 goto out_fallback_unlock;
-> > >> > >
-> > >> > > However, it's in the page cache and I can't really convince myself
-> > >> > > that it's not also on the LRU.  Miklos, I have trouble pinpointing
-> > >> > > where oldpage is instantiated exactly and what state it might be in -
-> > >> > > can it already be on the LRU?
-> > >> >
-> > >> > oldpage comes from ->readpages() (*NOT* ->readpage()), i.e. readahead.
-> > >> >
-> > >> > AFAICS it is added to the LRU in read_cache_pages(), so it looks like
-> > >> > it is definitely on the LRU at that point.
-> > >
-> > > OK, so my understanding of the code was wrong :/ and staring at it for
-> > > quite a while didn't help much. The fuse code is so full of indirection
-> > > it makes my head spin.
-> > 
-> > Definitely needs a rewrite.  But forget the complexities for the
-> > moment and just consider this single case:
-> > 
-> >  ->readpages() is called to do some readahead, pages are locked, added
-> > to the page cache and, AFAICS, charged to a memcg (in
-> > add_to_page_cache_lru()).
-> > 
-> >  - fuse sends a READ request to userspace and it gets a reply with
-> > splice(... SPLICE_F_MOVE).  What this means that a bunch of pages of
-> > indefinite origin are to replace (if possible) the pages already in
-> > the page cache.  If not possible, for some reason, it falls back to
-> > copying the contents.  So, AFAICS, the oldpage and the newpage can be
-> > charged to a different memcg.
+On Wed, 2014-07-23 at 16:50 +0200, Fabian Frederick wrote:
+> -use current logging functions
+> -replace no level printk by pr_err
+> -add debug.c / sysv_err function to include sb->s_id
+> -standardize prefix: "sysv (sb id): " and remove sb id from various logging at different places.
+> -use __func__
+> -coalesce formats
 
-Can the new page be anything else than previous page cache?  The pipe
-buffer stealing code truncates them, but at that point they would
-already be charged as cache.
+Seems fine but:
 
-> OK, thanks for the clarification. I had this feeling but couldn't wrap
-> my head around the indirection of the code.
-> 
-> It seems that checkig PageCgroupUsed(new) and bail out early in
-> mem_cgroup_migrate should just work, no?
+> diff --git a/fs/sysv/debug.c b/fs/sysv/debug.c
+[]
+> @@ -0,0 +1,15 @@
+> +#define pr_fmt(fmt) KBUILD_MODNAME " " fmt
 
-If the new page is already charged as page cache, we could just drop
-the call to mem_cgroup_migrate() altogether.
+Please use KBUILD_MODNAME ": " fmt
+
+> +
+> +#include "sysv.h"
+> +
+> +void sysv_err(struct super_block *sb, const char *fmt, ...)
+> +{
+> +	struct va_format vaf;
+> +	va_list args;
+> +
+> +	va_start(args, fmt);
+> +	vaf.fmt = fmt;
+> +	vaf.va = &args;
+> +	pr_err("(%s): %pV\n", sb->s_id, &vaf);
+
+This trailing \n is not necessary and causes
+blank lines in the log.
+
+All callers already use it.
+
+
