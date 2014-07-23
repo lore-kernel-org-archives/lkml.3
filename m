@@ -1,51 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933194AbaGWSbV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 14:31:21 -0400
-Received: from casper.infradead.org ([85.118.1.10]:38245 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932841AbaGWSbS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 14:31:18 -0400
-Date: Wed, 23 Jul 2014 20:31:17 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Dietmar Eggemann <dietmar.eggemann@arm.com>,
-        Michel =?iso-8859-1?Q?D=E4nzer?= <michel@daenzer.net>,
-        Ingo Molnar <mingo@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Random panic in load_balance() with 3.16-rc
-Message-ID: <20140723183117.GF3935@laptop>
-References: <53CF844A.5050106@arm.com>
- <20140723111110.GT3935@laptop>
- <20140723113021.GP12054@laptop.lan>
- <20140723142454.GQ12054@laptop.lan>
- <CA+55aFwZ7kAqqhaE4g89CJLkpJOwGxcN4u+cc0ODfqjQ0rVMiA@mail.gmail.com>
- <20140723155526.GW3935@laptop>
- <CA+55aFzSU5u8MiGqRZ6BVojQPnxbd1hxmFY_BA=UuCAygxR8WQ@mail.gmail.com>
- <20140723170324.GZ3935@laptop>
- <CA+55aFwQSmBAs=QH9jAZz5JY7YFrDeuPH1RjFH+YKVr2NQM38g@mail.gmail.com>
- <CA+55aFz9z=58iEj3qx4Oip=iPYxzgSaPe945Xzd8Z60_v1EEzQ@mail.gmail.com>
+	id S933052AbaGWSdt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 14:33:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:65473 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932584AbaGWSds (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jul 2014 14:33:48 -0400
+Date: Wed, 23 Jul 2014 13:33:32 -0500
+From: David Teigland <teigland@redhat.com>
+To: Jeff Layton <jlayton@poochiereds.net>
+Cc: Joe Perches <joe@perches.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@ZenIV.linux.org.uk>,
+        Christine Caulfield <ccaulfie@redhat.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>,
+        Trond Myklebust <trond.myklebust@primarydata.com>,
+        cluster-devel@redhat.com, linux-kernel@vger.kernel.org,
+        linux-nfs@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH 9/9] fs: dlm: lockd: Convert int result to unsigned char
+ type
+Message-ID: <20140723183332.GA21992@redhat.com>
+References: <cover.1405879494.git.joe@perches.com>
+ <65b9ba0dba9c79a938267d5bed7ed0a8211e89ed.1405879494.git.joe@perches.com>
+ <20140723141139.2cf90cb0@tlielax.poochiereds.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+55aFz9z=58iEj3qx4Oip=iPYxzgSaPe945Xzd8Z60_v1EEzQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <20140723141139.2cf90cb0@tlielax.poochiereds.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 23, 2014 at 11:07:40AM -0700, Linus Torvalds wrote:
-
->  - *static* per-cpu allocations might want to use "cpumask_var_t" (to
-> avoid having a full "struct cpumask_t") along with doing a
-> "zalloc_cpumask_var_node(..)" for each cpu.
+On Wed, Jul 23, 2014 at 02:11:39PM -0400, Jeff Layton wrote:
+> On Sun, 20 Jul 2014 11:23:43 -0700
+> Joe Perches <joe@perches.com> wrote:
 > 
-> sched_init() follows that last pattern, except it open-codes that
-> zalloc_cpumask_var_node() in an odd way that confused me.
+> > op->info.rv is an s32, but it's only used as a u8.
+> > 
 > 
-> So I take my patch back. It's wrong, because it only allocates that
-> cpumask_size() if CONFIG_CPUMASK_OFFSTACK is true.
+> I don't understand this patch. info.rv is s32 (and I assume that "rv"
+> stands for "return value"). What I don't get is why you think it's just
+> used as a u8. It seems to be used more like a bool than anything else,
 
-What it doesn't do is keep the allocation on the right node, so killing
-that stuff is helping more than just readability.
+Thank you, Jeff.
+
+        /* info.rv from userspace is 1 for conflict, 0 for no-conflict,
+           -ENOENT if there are no locks on the file */
+
+        rv = op->info.rv;
+
+> and I'm not sure that "type" is really a good description for it. Maybe
+> it should be a "bool" and named "conflict", given the comments in
+> dlm_posix_get ?
+
+type is not a good name.
+
+Sorry Joe, I'm not a fan of your patches.
+
+Dave
