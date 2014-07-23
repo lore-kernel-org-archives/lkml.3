@@ -1,62 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757239AbaGWOHa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 10:07:30 -0400
-Received: from mail-out.m-online.net ([212.18.0.10]:58819 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755276AbaGWOH1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 10:07:27 -0400
-X-Auth-Info: mHKB0WdNCe4oFlyBOgXYILwk3k7DbXh6n/FtHEmud9Y=
-From: Marek Vasut <marex@denx.de>
-To: Herbert Xu <herbert@gondor.apana.org.au>
-Subject: Re: [PATCH 3/3] crypto: Add Allwinner Security System crypto accelerator
-Date: Wed, 23 Jul 2014 16:07:20 +0200
-User-Agent: KMail/1.13.7 (Linux/3.13-trunk-amd64; KDE/4.13.1; x86_64; ; )
-Cc: LABBE Corentin <clabbe.montjoie@gmail.com>, robh+dt@kernel.org,
-        pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        rdunlap@infradead.org, maxime.ripard@free-electrons.com,
-        linux@arm.linux.org.uk, davem@davemloft.net, grant.likely@linaro.org,
-        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org
-References: <1400771396-9686-1-git-send-email-clabbe.montjoie@gmail.com> <201405241400.03456.marex@denx.de> <20140723135735.GA30132@gondor.apana.org.au>
-In-Reply-To: <20140723135735.GA30132@gondor.apana.org.au>
+	id S1757470AbaGWOH6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 10:07:58 -0400
+Received: from mail.kernel.org ([198.145.19.201]:44748 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751314AbaGWOH5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jul 2014 10:07:57 -0400
+Date: Wed, 23 Jul 2014 11:07:52 -0300
+From: Arnaldo Carvalho de Melo <acme@kernel.org>
+To: Adrian Hunter <adrian.hunter@intel.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 05/41] perf tools: Identify which comms are from exec
+Message-ID: <20140723140752.GJ20303@kernel.org>
+References: <1405332185-4050-1-git-send-email-adrian.hunter@intel.com>
+ <1405332185-4050-6-git-send-email-adrian.hunter@intel.com>
+ <20140714203237.GA18133@kernel.org>
+ <53C513CC.1010202@intel.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201407231607.21106.marex@denx.de>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53C513CC.1010202@intel.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, July 23, 2014 at 03:57:35 PM, Herbert Xu wrote:
-> On Sat, May 24, 2014 at 02:00:03PM +0200, Marek Vasut wrote:
-> > > +	}
-> > > +#endif
-> > > +
-> > > +#ifdef CONFIG_CRYPTO_DEV_SUNXI_SS_MD5
-> > > +	err = crypto_register_shash(&sunxi_md5_alg);
-> > 
-> > Do not use shash for such device. This is clearly and ahash (and async in
-> > general) device. The rule of a thumb here is that you use sync algos only
-> > for devices which have dedicated instructions for computing the
-> > transformation. For devices which are attached to some kind of bus, you
-> > use async algos (ahash etc).
-> 
-> I'm sorry that I didn't catch this earlier but there is no such
-> rule.
-> 
-> Unless you need the async interface you should stick to the sync
-> interfaces for the sake of simplicity.
-> 
-> We have a number of existing drivers that are synchronous but
-> using the async interface.  They should either be converted
-> over to the sync interface or made interrupt-driven if possible.
+Em Tue, Jul 15, 2014 at 02:43:08PM +0300, Adrian Hunter escreveu:
+> >> @@ -106,6 +107,8 @@ int comm__override(struct comm *comm, const char *str, u64 timestamp)
+> >>  	comm_str__put(old);
+> >>  	comm->comm_str = new;
+> >>  	comm->start = timestamp;
+> >> +	if (exec && !comm->exec)
+> >> +		comm->exec = true;
 
-Sure, but this device is interrupt driven and uses DMA to feed the crypto 
-engine, therefore async, right ?
+> > Why do you need the !comm->exec test?
+ 
+> Dunno
 
-Best regards,
-Marek Vasut
+I saw that you kept it in the last patchkit submitted, I'll just drop
+it, needless obfuscation.
+
+- Arnaldo
