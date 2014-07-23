@@ -1,75 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932859AbaGWTId (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 15:08:33 -0400
-Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:10320 "EHLO
-	mx0b-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932514AbaGWTIc (ORCPT
+	id S932982AbaGWTI6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 15:08:58 -0400
+Received: from e32.co.us.ibm.com ([32.97.110.150]:39481 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932514AbaGWTIz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 15:08:32 -0400
-Message-ID: <53D007F3.4040006@fb.com>
-Date: Wed, 23 Jul 2014 21:07:31 +0200
-From: Jens Axboe <axboe@fb.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Matias Bjorling <m@bjorling.me>, Christoph Hellwig <hch@infradead.org>
-CC: <willy@linux.intel.com>, <keith.busch@intel.com>, <sbradshaw@micron.com>,
-        <tom.leiming@gmail.com>, <rlnelson@google.com>,
-        <linux-kernel@vger.kernel.org>, <linux-nvme@lists.infradead.org>
-Subject: Re: [PATCH v10] NVMe: Convert to blk-mq
-References: <1404226382-7179-1-git-send-email-m@bjorling.me> <1404226382-7179-2-git-send-email-m@bjorling.me> <20140714124131.GA311@infradead.org> <53D005D6.8050302@bjorling.me>
-In-Reply-To: <53D005D6.8050302@bjorling.me>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+	Wed, 23 Jul 2014 15:08:55 -0400
+Message-ID: <1406142529.14764.63.camel@dhcp-9-2-203-236.watson.ibm.com>
+Subject: Re: [PATCH v1 0/4] ima: require signed user-space initialization
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: Dmitry Kasatkin <dmitry.kasatkin@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Dmitry Kasatkin <d.kasatkin@samsung.com>,
+        linux-ima-devel@lists.sourceforge.net,
+        linux-security-module <linux-security-module@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Sergey Poznyakoff <gray@gnu.org>
+Date: Wed, 23 Jul 2014 15:08:49 -0400
+In-Reply-To: <CACE9dm-FdxDb5ifFfOfQUbU=j7A81NBYWhHJu8LmyCMdD2==5g@mail.gmail.com>
+References: <cover.1405428802.git.d.kasatkin@samsung.com>
+	 <20140715143315.eef78daf3eb41ef0d61f30d1@linux-foundation.org>
+	 <CACE9dm-FdxDb5ifFfOfQUbU=j7A81NBYWhHJu8LmyCMdD2==5g@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.57.29]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.14,0.0.0000
- definitions=2014-07-23_07:2014-07-23,2014-07-23,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0
- kscore.is_bulkscore=1.1234346786182e-12 kscore.compositescore=0
- circleOfTrustscore=0 compositescore=0.324642340081358
- urlsuspect_oldscore=0.324642340081358 suspectscore=0
- recipient_domain_to_sender_totalscore=0 phishscore=0 bulkscore=0
- kscore.is_spamscore=0 recipient_to_sender_totalscore=0
- recipient_domain_to_sender_domain_totalscore=2524143
- rbsscore=0.324642340081358 spamscore=0
- recipient_to_sender_domain_totalscore=0 urlsuspectscore=0.9 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
- definitions=main-1407230226
-X-FB-Internal: deliver
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14072319-0928-0000-0000-0000039DFFF6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-07-23 20:58, Matias Bjorling wrote:
->>> +    iod = nvme_alloc_iod(psegs, blk_rq_bytes(req), GFP_ATOMIC);
->>>       if (!iod)
->>> +        return result;
->>
->> So there's still a memory allocation for each request here.  Any reason
->> this can't be preallocated at least for reasonable sized I/O?
->
-> Not at all. I've kept from adding optimizations in the first pass. The
-> patches following can implement the optimizations. Jens already has a
-> patch for this in his tree. It also removes GFP_ATOMIC.
+On Wed, 2014-07-16 at 23:26 +0300, Dmitry Kasatkin wrote: 
+> Hello,
+> 
+> 
+> On Wed, Jul 16, 2014 at 12:33 AM, Andrew Morton
+> <akpm@linux-foundation.org> wrote:
+> > On Tue, 15 Jul 2014 15:54:19 +0300 Dmitry Kasatkin <d.kasatkin@samsung.com> wrote:
+> >
+> >> Currently secure IMA/EVM initialization has to be done from the initramfs,
+> >> embedded in the signed kernel image. Many systems do not want to use
+> >> initramfs or usage of embedded initramfs makes it difficult to have
+> >> multi-target kernels.
+> >>
+> >> This is a very simple patchset which makes it possible to perform secure
+> >> initialization by requiring initial user-space to be signed.
+> >>
+> >> It does it by:
+> >> - introducing IMA public keys loading hook
+> >> - loading IMA trusted public key into .ima trusted keyring
+> >> - making default IMA appraisal policy to require everything to be signed
+> >>
+> >> When builtin initramfs is not in use, keys cannot be read from initcalls,
+> >> because root filesystem is not yet mounted. In order to read keys before
+> >> executing init process, ima_prepare_keys() hook is introduced. Reading
+> >> public keys from the kernel is justified because signature verification
+> >> key is needed in order to verify anything else which is read from the
+> >> file system. Public keys are X509 certificates and itself signed by the
+> >> trusted key from the .system keyring. Kernel BIG KEYS support is an example
+> >> of reading keys directly by the kernel.
+> >>
+> >> CONFIG_IMA_APPRAISE_SIGNED_INIT kernel option is provided to make the IMA
+> >> default appraisal policy to required signature validation. Signed init
+> >> process need to initialize EVM key and load appropriate IMA policy which
+> >> would not require everything to be signed.
+> >>
+> >> Unless real '/sbin/init' is signed, a simple and practical way is to place
+> >> all signed programs, libraries, scripts and configuration files under
+> >> dedicated directory, for example '/ima', and run signed init process by
+> >> providing a kernel command line parameter 'init=/ima/init'
+> >
+> > The kernel may already have loaded kernel modules before it gets around
+> > to mounting rootfs and running /sbin/init.  How does that fit into the
+> > overall signing scheme?  And how did /sbin/modprobe get its signature
+> > checked?
+> >
+> >
+> 
+> If kernel embedded initramfs is in use then it is signed together with kernel,
+> and this functionality is not needed and no need to enable it with
+> kernel configuration.
+> 
+> As it is IMA extensions and it is entirely based on IMA functionality
+> it requires extended attribute support.
+> 
+> If externally loaded initramfs is used, then that one uses cpio based
+> archive that does not support extended attributes and thus external
+> initramfs cannot be used for secure initialization.
 
-That is correct, and that is the way the series should be done. I've got 
-patches getting rid of this allocation for smaller IO:
+Right, but GNU tar version 1.27.1 supports Posix.1 (ustar) format, which
+has xattr support.  GNU CPIO supports the Posix.1 tar format.  The
+question is whether CPIO supports the included xattrs.
 
-http://git.kernel.dk/?p=linux-block.git;a=commit;h=04497c3394f3220111d4274704a1ff6bdd3ceae3
+> This functionality is targeted to be used without initramfs on normal
+> filesystems supporting xattrs. In such case, modprobe cannot be loaded before
+> rootfs is mounted. Any filesystems and block device drivers obviously
+> need to be embedded into the kernel. In the place where
+> ima_prepare_keys() hooks is called, we have
+> 
+>    ima_prepare_keys();
+>    load_default_modules();
+> 
+> So we load keys after mounting rootfs and before calling load_default_modules().
+> So if anything useful kernel loads with load_default_modules, will be
+> loaded after IMA key is available and thus modprobe will be verified.
+> 
+> 
+> > The proposed interface and implementation look reasonable to me.
+> > Opening and reading a file from the root fs is a bit unusual, but we
+> > already do something similar with "/sbin/init" and the reasoning here
+> > is similar.
+> >
+> > The only alternative I can immediately think of is to bundle the public
+> > keys into a kernel module and load them into the kernel that way but
+> >
+> > - if/when we implement module signing, we have a chicken-and-egg problem
+> >
+> > - doing it via a kernel module seems a bit fake - a bit of trickery
+> >   to reduce code duplication.  Better to do it explicitly.
+> >
+> 
+> This was the idea. Kernel has embedded certificate signing key on the
+> .system keyring. Filesystem image/package can come with own signing key
+> and that one is loaded and verified by existing KEY infrastructure.
+> Entire signed init code can come as rpm or deb package with its own key.
+> That is benefit of loading key.
 
-which is a noticable win for high IOPS smaller IO.
+Ok, this type of solution addresses the concerns of devices, but we also
+need a viable solution for systems with an initramfs.
 
->> Seems like blk-mq would make your life easier by exporting an iterator
->> that goes over each in-use request instead of the current
->> blk_mq_tag_busy_iter prototype.  blk_mq_timeout_check would also be able
->> to make use of that, so maybe that would be a good preparatory patch?
->
-> Yes. I'll prepare a patch and send it off to Jens.
-
-Thanks, that will clean it up nicely. It's a bit backwards these days, 
-since the mechanism got changed.
-
-
--- 
-Jens Axboe
+Mimi
 
