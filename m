@@ -1,85 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756528AbaGWDSY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 23:18:24 -0400
-Received: from mga02.intel.com ([134.134.136.20]:37664 "EHLO mga02.intel.com"
+	id S1756714AbaGWDSc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 23:18:32 -0400
+Received: from ozlabs.org ([103.22.144.67]:43714 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756429AbaGWDSU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 23:18:20 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,714,1400050800"; 
-   d="scan'208";a="577350575"
-Message-ID: <53CF2977.2040307@linux.intel.com>
-Date: Wed, 23 Jul 2014 11:18:15 +0800
-From: Jiang Liu <jiang.liu@linux.intel.com>
-Organization: Intel
-User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1756429AbaGWDSa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 23:18:30 -0400
+Date: Wed, 23 Jul 2014 13:18:22 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Daniel Vetter <daniel.vetter@ffwll.ch>, <intel-gfx@lists.freedesktop.org>,
+        <dri-devel@lists.freedesktop.org>, Dave Airlie <airlied@linux.ie>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: manual merge of the drm-intel tree with the drm tree
+Message-ID: <20140723131822.3d058c1e@canb.auug.org.au>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
 MIME-Version: 1.0
-To: Michal Hocko <mhocko@suse.cz>
-CC: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        David Rientjes <rientjes@google.com>,
-        Mike Galbraith <umgwanakikbuti@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Tony Luck <tony.luck@intel.com>,
-        linux-mm@kvack.org, linux-hotplug@vger.kernel.org,
-        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
-Subject: Re: [RFC Patch V1 09/30] mm, memcg: Use cpu_to_mem()/numa_mem_id()
- to support memoryless node
-References: <1405064267-11678-1-git-send-email-jiang.liu@linux.intel.com> <1405064267-11678-10-git-send-email-jiang.liu@linux.intel.com> <20140718073614.GC21453@dhcp22.suse.cz>
-In-Reply-To: <20140718073614.GC21453@dhcp22.suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/uNNKylsmTlb/e=tsHHFmDVV"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Michal,
-	Thanks for your comments! As discussed, we will
-rework the patch set in another direction to hide memoryless
-node from normal slab users.
-Regards!
-Gerry
+--Sig_/uNNKylsmTlb/e=tsHHFmDVV
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-On 2014/7/18 15:36, Michal Hocko wrote:
-> On Fri 11-07-14 15:37:26, Jiang Liu wrote:
->> When CONFIG_HAVE_MEMORYLESS_NODES is enabled, cpu_to_node()/numa_node_id()
->> may return a node without memory, and later cause system failure/panic
->> when calling kmalloc_node() and friends with returned node id.
->> So use cpu_to_mem()/numa_mem_id() instead to get the nearest node with
->> memory for the/current cpu.
->>
->> If CONFIG_HAVE_MEMORYLESS_NODES is disabled, cpu_to_mem()/numa_mem_id()
->> is the same as cpu_to_node()/numa_node_id().
-> 
-> The change makes difference only for really tiny memcgs. If we really
-> have all pages on unevictable list or anon with no swap allowed and that
-> is the reason why no node is set in scan_nodes mask then reclaiming
-> memoryless node or any arbitrary close one doesn't make any difference.
-> The current memcg might not have any memory on that node at all.
-> 
-> So the change doesn't make any practical difference and the changelog is
-> misleading.
-> 
->> Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
->> ---
->>  mm/memcontrol.c |    2 +-
->>  1 file changed, 1 insertion(+), 1 deletion(-)
->>
->> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
->> index a2c7bcb0e6eb..d6c4b7255ca9 100644
->> --- a/mm/memcontrol.c
->> +++ b/mm/memcontrol.c
->> @@ -1933,7 +1933,7 @@ int mem_cgroup_select_victim_node(struct mem_cgroup *memcg)
->>  	 * we use curret node.
->>  	 */
->>  	if (unlikely(node == MAX_NUMNODES))
->> -		node = numa_node_id();
->> +		node = numa_mem_id();
->>  
->>  	memcg->last_scanned_node = node;
->>  	return node;
->> -- 
->> 1.7.10.4
->>
-> 
+Hi all,
+
+Today's linux-next merge of the drm-intel tree got a conflict in
+drivers/gpu/drm/i915/intel_dp.c between commit b19729617929 ("drm/i915:
+fix psr match conditions screw ups") from the drm tree and commit
+24acaf94ed4a ("drm/i915: Fix up PSR frontbuffer tracking") from the
+drm-intel tree.
+
+I fixed it up (I think - see below) and can carry the fix as necessary
+(no action is required).
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc drivers/gpu/drm/i915/intel_dp.c
+index eda73ea3002f,9274ddfd78c7..000000000000
+--- a/drivers/gpu/drm/i915/intel_dp.c
++++ b/drivers/gpu/drm/i915/intel_dp.c
+@@@ -1801,20 -1762,17 +1796,18 @@@ static bool intel_edp_psr_match_conditi
+  	struct intel_digital_port *dig_port =3D dp_to_dig_port(intel_dp);
+  	struct drm_device *dev =3D dig_port->base.base.dev;
+  	struct drm_i915_private *dev_priv =3D dev->dev_private;
+ -	struct drm_crtc *crtc =3D dig_port->base.base.crtc;
+ -	struct intel_crtc *intel_crtc =3D to_intel_crtc(crtc);
+ +	struct drm_crtc *crtc;
+ +	struct intel_crtc *intel_crtc;
+- 	struct drm_i915_gem_object *obj;
+- 	struct intel_encoder *intel_encoder =3D &dp_to_dig_port(intel_dp)->base;
+ =20
+- 	dev_priv->psr.source_ok =3D false;
++ 	lockdep_assert_held(&dev_priv->psr.lock);
++ 	lockdep_assert_held(&dev->struct_mutex);
++ 	WARN_ON(!drm_modeset_is_locked(&dev->mode_config.connection_mutex));
+++	crtc =3D dig_port->base.base.crtc;
++ 	WARN_ON(!drm_modeset_is_locked(&crtc->mutex));
+ =20
+- 	if (!HAS_PSR(dev)) {
+- 		DRM_DEBUG_KMS("PSR not supported on this platform\n");
+- 		return false;
+- 	}
++ 	dev_priv->psr.source_ok =3D false;
+ =20
+- 	if (IS_HASWELL(dev) && (intel_encoder->type !=3D INTEL_OUTPUT_EDP ||
+- 				dig_port->port !=3D PORT_A)) {
++ 	if (IS_HASWELL(dev) && dig_port->port !=3D PORT_A) {
+  		DRM_DEBUG_KMS("HSW ties PSR to DDI A (eDP)\n");
+  		return false;
+  	}
+@@@ -1847,11 -1786,6 +1821,7 @@@
+  	if (IS_BROADWELL(dev))
+  		goto out;
+ =20
+- 	if (I915_READ(SPRCTL(intel_crtc->pipe)) & SPRITE_ENABLE) {
+- 		DRM_DEBUG_KMS("PSR condition failed: Sprite is Enabled\n");
+- 		return false;
+- 	}
+-=20
+++	intel_crtc =3D to_intel_crtc(crtc);
+  	if (I915_READ(HSW_STEREO_3D_CTL(intel_crtc->config.cpu_transcoder)) &
+  	    S3D_ENABLE) {
+  		DRM_DEBUG_KMS("PSR condition failed: Stereo 3D is Enabled\n");
+@@@ -3712,10 -3620,7 +3753,8 @@@ intel_dp_detect(struct drm_connector *c
+  	enum drm_connector_status status;
+  	enum intel_display_power_domain power_domain;
+  	struct edid *edid =3D NULL;
+ +	bool ret;
+ =20
+- 	intel_runtime_pm_get(dev_priv);
+-=20
+  	power_domain =3D intel_display_port_power_domain(intel_encoder);
+  	intel_display_power_get(dev_priv, power_domain);
+ =20
+
+--Sig_/uNNKylsmTlb/e=tsHHFmDVV
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJTzymDAAoJEMDTa8Ir7ZwV9SUP/jZRQYdhTag7ytu1Nv40Bssx
+XZujRmAseEbv/ArDkmaaKEW3ICXeeky4gC4LitSegDG3A4Mc8EUgnlQIGbrreP8Y
+tnBiXQSSiQVX2sntSiMHxLMA0ruqsLA+GOxkvg4qhlor8aHMnSCs5R3F05/XYHF5
+F5ekmLHnXaLwDCbDJcVObqCjrU77LfQT9GkmOSU+yUYq9i7bpeOOt2gVxb4KbxzG
+z6vn2DyMGRAzLo+QgxRQLGcs3PdOccs6nHGoP8gu3vdKy0rZR4b4jy1JUFlX255n
+FU0Jzhozz+4W7v5i1WUVMC9dL3D/MA06Nnegnes6gOpONhLaPZFxxiYbOChTKqr7
+nUn0H3+aUj8iLw6XYaYqRiXyIvolDVXH/1t8ngf0QMQRs1/IAau8nOMYnQ+00Yuk
+UgrSu4nLk/FXhJtImGMID5TDWC3Wt+sK8mY49igTpvx6Prw4Wh2PTEQW2hMSNWpM
+YUbD+M6ojpKA3TnUEJMFZrbEwnZYsX3fl7/VApCKqFjRQaUmGw14X8FgqwrBd1PN
+Ul5sIDadsczBDZYmqvrRAnoX3bQhNGI8qHmf0dlUrXnlKlcv6OHCmG9nK9P1Kt56
+WhWMCKEZasxVIFMF1nSe9tbhAKbWMtepqLtTLGyPLQlewZSFrmgZkh+i7XY5LvsL
+Ms7lLdEnrOrtj0KdD3O6
+=ZFLF
+-----END PGP SIGNATURE-----
+
+--Sig_/uNNKylsmTlb/e=tsHHFmDVV--
