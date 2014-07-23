@@ -1,102 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755336AbaGWBbp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 21:31:45 -0400
-Received: from mga11.intel.com ([192.55.52.93]:33242 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755209AbaGWBbo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 21:31:44 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,714,1400050800"; 
-   d="scan'208";a="573954605"
-From: "Zheng, Lv" <lv.zheng@intel.com>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-CC: "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
-        "Brown, Len" <len.brown@intel.com>, Lv Zheng <zetalog@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "Moore, Robert" <robert.moore@intel.com>
-Subject: RE: [RFC PATCH v3 00/14] ACPI/EC: Add event storm prevention and
- cleanup command storm prevention.
-Thread-Topic: [RFC PATCH v3 00/14] ACPI/EC: Add event storm prevention and
- cleanup command storm prevention.
-Thread-Index: AQHPpUdgRJm/+yQRAEarvm9i5nmbj5urRLaQgADfbACAALyqEA==
-Date: Wed, 23 Jul 2014 01:31:39 +0000
-Message-ID: <1AE640813FDE7649BE1B193DEA596E880264430C@SHSMSX101.ccr.corp.intel.com>
-References: <cover.1403060601.git.lv.zheng@intel.com>
- <9698076.0kdZ11M3j2@vostro.rjw.lan>
- <1AE640813FDE7649BE1B193DEA596E8802643E0D@SHSMSX101.ccr.corp.intel.com>
- <1600083.bSeASC3AGv@vostro.rjw.lan>
-In-Reply-To: <1600083.bSeASC3AGv@vostro.rjw.lan>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="utf-8"
+	id S1755383AbaGWBd0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 21:33:26 -0400
+Received: from mail-la0-f53.google.com ([209.85.215.53]:46730 "EHLO
+	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752896AbaGWBdY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 21:33:24 -0400
 MIME-Version: 1.0
+In-Reply-To: <CA+55aFyefnFjmOs-QZhFn68-6+tWO30VqU6ipP6BzAra=xOaFg@mail.gmail.com>
+References: <CALCETrVx=cLZjgALizYKWATSjOvhmwPHQvOJRkMgdb=iNRNf8w@mail.gmail.com>
+ <CA+55aFyefnFjmOs-QZhFn68-6+tWO30VqU6ipP6BzAra=xOaFg@mail.gmail.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Tue, 22 Jul 2014 18:33:02 -0700
+Message-ID: <CALCETrUjKXfwbWkUytMXLSmKROLBVY7tRYWPHnEC01Fj=aiTkQ@mail.gmail.com>
+Subject: Re: STI architectural question (and lretq -- I'm not even kidding)
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "H. Peter Anvin" <hpa@linux.intel.com>, Borislav Petkov <bp@alien8.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        X86 ML <x86@kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s6N1Vo4c012256
 
-Hi,
+On Tue, Jul 22, 2014 at 6:03 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> On Tue, Jul 22, 2014 at 5:10 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+>>
+>> But here's the problem: what happens if an NMI or MCE happens between
+>> the sti and the lretq?  I think an MCE just might be okay -- it's not
+>> really recoverable anyway.  (Except for the absurd MCE broadcast crap,
+>> which may cause this to be a problem.)  But what about an NMI between
+>> sti and lretq?
+>
+> Sadly, it's not architected.
+>
+> The "mov ss" and "pop ss" do indeed suppress even NMI. And that *has*
+> to be true, because in legacy real mode - where there is no protection
+> domain change, and the "lss" instruction didn't originally exist - the
+> "pop/mov ss" and "mov sp" instruction sequence had to be entirely
+> atomic. And this is even very officially documented. From the intel
+> system manual:
+>
+>     "A POP SS instruction inhibits all interrupts, including the NMI
+> interrupt, until after execution of the next instruction. This action
+> allows sequential execution of POP SS and MOV ESP, EBP instructions
+> without the danger of having an invalid stack during an interrupt.
+> However, use of the LSS instruction is the preferred method of loading
+> the SS and ESP registers"
+>
+> However, while "sti" has conceptually the same one-instruction
+> interrupt window disable as mov/pop ss, it looks like Intel broke it
+> for NMI. The documentation only talks about "external, maskable
+> interrupts", and while I suspect *many* micro-architectures also end
+> up disabling NMI for the next instruction, there are many reasons to
+> think not all do.
+>
+> See for example
+>
+>     http://www.sandpile.org/x86/inter.htm
+>
+> and note #5 under external interrupt suppression.
+>
+> Now, sandpile is pretty old, but Christian Ludloff used to get things
+> like that right.
+>
+> So I'm afraid that "sti; lret" is not guaranteed to be architecturally
+> NMI-safe. But it *might* be safe on certain micro-architectures, and
+> maybe somebody inside Intel or AMD can give us a hint about when it is
+> safe and when it isn't.
 
-> From: Rafael J. Wysocki [mailto:rjw@rjwysocki.net]
-> Sent: Wednesday, July 23, 2014 6:15 AM
-> 
-> On Tuesday, July 22, 2014 01:25:00 AM Zheng, Lv wrote:
-> > Hi, Rafael
-> >
-> > > From: Rafael J. Wysocki [mailto:rjw@rjwysocki.net]
-> > > Sent: Tuesday, July 22, 2014 9:12 AM
-> > >
-> > > On Monday, July 21, 2014 02:04:51 PM Lv Zheng wrote:
-> > > > Note that this patchset is very stable now, it is sent as RFC because it
-> > > > depends on an ACPICA GPE enhancement series which might be merged from
-> > > > ACPICA upstream.
-> > >
-> > > Do I remember correctly that this is the plan?
-> > >
-> > > So I'm expecting to receive the Linux versions of the relevant ACPICA changes
-> > > from you and then I'll apply this material on top of them.
-> > >
-> > > We don't need to wait for the next ACPICA release with this I think, but
-> > > I'd like the GPE changes to be applied to upstream ACPICA at least before
-> > > I get them.
-> >
-> > Yes, I'm trying.
-> > I'll re-send this series after an ACPICA release cycle that contains the dependent GPE series.
-> >
-> > Let me highlight the real value of this EC series:
-> > This is a good IO driver material to demonstrate:
-> > 1. runtime idle: this is not implemented yet because of ACPICA issues that are not root caused, let me show this possibility this
-> below.
-> > 2. storming safe: can also deal with all kinds of silicon without worrying about IRQ storming.
-> >
-> > On top of this, after
-> > 1. making sure that acpi_evaluate_object(_Qxx) won't be a blocking point, and extending the referenced period to the end of the
-> evaluation,
-> > 2. adding 1 more patch to the ACPICA series, using a flag to bypass the automatic GPE disabling/enabling,
-> > 3. adding 1 more patch to make EC event poller  to disable GPE when sleeping,
-> > Linux EC driver can run without GPE enabled when idle.
-> > Which means GPE is enabled only when:
-> > 1. there is an EC command issued from the EC space handler or
-> > 2. the event poller thread is timed out or woken up by the EVT_SCI.
-> >
-> > So I hope this IO driver enhancement can be a good material to show such possibility.
-> 
-> Yes, it is a good patchset, but I'd like to merge it in an ordered way.
-> That is, ACPICA upstream first, patches for Linux from that, the EC series on
-> top of this.  OK?
+:)  I'm apparently not the only one who finds playing with evil
+architectural stuff to be unreasonably fun.
 
-Sure.
+FWIW, both the VMX and SVM code in kvm seem to explicitly implement
+NMI suppression in the STI window.  I can't figure out how #MC
+broadcast delivery works.  Grr.
 
-Thanks and best regards
--Lv
+In any event, at least the fixup would be straightforward: just do
+something like:
 
-> 
-> Rafael
+void fixup_lret_nmi(struct pt_regs *regs) {
+  if (regs->rip == native_lret_to_userspace && !user_mode_vm(regs)) {
+    regs->rip = native_sti_before_lret_to_userspace;
+    regs->flags &= ~X86_EFLAGS_IF;
+  }
+}
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+and call it from the NMI and MCE code.  This is probably preferable to
+relying on special friendly microarchitectures.
+
+Of course, this does nothing at all to protect us from #MC after sti
+on return from #MC to userspace, but I think we're screwed regardless
+-- we could just as easily get a second #MC before the sti.  Machine
+check broadcast was the worst idea ever.
+
+Anyway, I updated the tag.
+
+--Andy
