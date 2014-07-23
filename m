@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758020AbaGWKzT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 06:55:19 -0400
-Received: from mail-we0-f176.google.com ([74.125.82.176]:61086 "EHLO
-	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757982AbaGWKyi (ORCPT
+	id S1757980AbaGWKyh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 06:54:37 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:57560 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757954AbaGWKye (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 06:54:38 -0400
+	Wed, 23 Jul 2014 06:54:34 -0400
 From: Daniel Lezcano <daniel.lezcano@linaro.org>
 To: linux-kernel@vger.kernel.org
-Subject: [PATCH 24/25] clocksource: exynos_mct: Use readl_relaxed/writel_relaxed
-Date: Wed, 23 Jul 2014 12:54:06 +0200
-Message-Id: <1406112847-26275-24-git-send-email-daniel.lezcano@linaro.org>
+Subject: [PATCH 21/25] clocksource: pxa: Add device-tree support for PXA timer
+Date: Wed, 23 Jul 2014 12:54:03 +0200
+Message-Id: <1406112847-26275-21-git-send-email-daniel.lezcano@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1406112847-26275-1-git-send-email-daniel.lezcano@linaro.org>
 References: <53CF93B2.6040903@linaro.org>
@@ -20,112 +20,234 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Doug Anderson <dianders@chromium.org>
+From: Robert Jarzmik <robert.jarzmik@free.fr>
 
-Using the __raw functions is discouraged.  Update the file to
-consistently use the proper functions.
+Add device-tree support to PXA platforms.
+The driver still needs to maintain backward non device-tree
+compatibility as well, which implies :
+ - a non device-tree init function
+ - a static registers base address in the driver
 
-Signed-off-by: Doug Anderson <dianders@chromium.org>
-Signed-off-by: Kukjin Kim <kgene.kim@samsung.com>
+Signed-off-by: Robert Jarzmik <robert.jarzmik@free.fr>
 Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
 ---
- drivers/clocksource/exynos_mct.c |   24 ++++++++++++------------
- 1 file changed, 12 insertions(+), 12 deletions(-)
+ drivers/clocksource/pxa_timer.c |  137 +++++++++++++++++++++++++++++----------
+ 1 file changed, 101 insertions(+), 36 deletions(-)
 
-diff --git a/drivers/clocksource/exynos_mct.c b/drivers/clocksource/exynos_mct.c
-index ab51bf20a..2df03e2 100644
---- a/drivers/clocksource/exynos_mct.c
-+++ b/drivers/clocksource/exynos_mct.c
-@@ -94,7 +94,7 @@ static void exynos4_mct_write(unsigned int value, unsigned long offset)
- 	u32 mask;
- 	u32 i;
+diff --git a/drivers/clocksource/pxa_timer.c b/drivers/clocksource/pxa_timer.c
+index fca174e..941f3f3 100644
+--- a/drivers/clocksource/pxa_timer.c
++++ b/drivers/clocksource/pxa_timer.c
+@@ -15,14 +15,30 @@
+ #include <linux/kernel.h>
+ #include <linux/init.h>
+ #include <linux/interrupt.h>
++#include <linux/clk.h>
+ #include <linux/clockchips.h>
++#include <linux/of_address.h>
++#include <linux/of_irq.h>
+ #include <linux/sched_clock.h>
  
--	__raw_writel(value, reg_base + offset);
-+	writel_relaxed(value, reg_base + offset);
+ #include <asm/div64.h>
+-#include <asm/mach/irq.h>
+-#include <asm/mach/time.h>
+-#include <mach/regs-ost.h>
+-#include <mach/irqs.h>
++
++#define OSMR0		0x00	/* OS Timer 0 Match Register */
++#define OSMR1		0x04	/* OS Timer 1 Match Register */
++#define OSMR2		0x08	/* OS Timer 2 Match Register */
++#define OSMR3		0x0C	/* OS Timer 3 Match Register */
++
++#define OSCR		0x10	/* OS Timer Counter Register */
++#define OSSR		0x14	/* OS Timer Status Register */
++#define OWER		0x18	/* OS Timer Watchdog Enable Register */
++#define OIER		0x1C	/* OS Timer Interrupt Enable Register */
++
++#define OSSR_M3		(1 << 3)	/* Match status channel 3 */
++#define OSSR_M2		(1 << 2)	/* Match status channel 2 */
++#define OSSR_M1		(1 << 1)	/* Match status channel 1 */
++#define OSSR_M0		(1 << 0)	/* Match status channel 0 */
++
++#define OIER_E0		(1 << 0)	/* Interrupt enable channel 0 */
  
- 	if (likely(offset >= EXYNOS4_MCT_L_BASE(0))) {
- 		stat_addr = (offset & ~EXYNOS4_MCT_L_MASK) + MCT_L_WSTAT_OFFSET;
-@@ -144,8 +144,8 @@ static void exynos4_mct_write(unsigned int value, unsigned long offset)
+ /*
+  * This is PXA's sched_clock implementation. This has a resolution
+@@ -33,9 +49,14 @@
+  * calls to sched_clock() which should always be the case in practice.
+  */
  
- 	/* Wait maximum 1 ms until written values are applied */
- 	for (i = 0; i < loops_per_jiffy / 1000 * HZ; i++)
--		if (__raw_readl(reg_base + stat_addr) & mask) {
--			__raw_writel(mask, reg_base + stat_addr);
-+		if (readl_relaxed(reg_base + stat_addr) & mask) {
-+			writel_relaxed(mask, reg_base + stat_addr);
- 			return;
- 		}
- 
-@@ -157,7 +157,7 @@ static void exynos4_mct_frc_start(void)
++#define timer_readl(reg) readl_relaxed(timer_base + (reg))
++#define timer_writel(val, reg) writel_relaxed((val), timer_base + (reg))
++
++static void __iomem *timer_base;
++
+ static u64 notrace pxa_read_sched_clock(void)
  {
- 	u32 reg;
- 
--	reg = __raw_readl(reg_base + EXYNOS4_MCT_G_TCON);
-+	reg = readl_relaxed(reg_base + EXYNOS4_MCT_G_TCON);
- 	reg |= MCT_G_TCON_START;
- 	exynos4_mct_write(reg, EXYNOS4_MCT_G_TCON);
+-	return readl_relaxed(OSCR);
++	return timer_readl(OSCR);
  }
-@@ -165,12 +165,12 @@ static void exynos4_mct_frc_start(void)
- static cycle_t notrace _exynos4_frc_read(void)
+ 
+ 
+@@ -47,8 +68,8 @@ pxa_ost0_interrupt(int irq, void *dev_id)
+ 	struct clock_event_device *c = dev_id;
+ 
+ 	/* Disarm the compare/match, signal the event. */
+-	writel_relaxed(readl_relaxed(OIER) & ~OIER_E0, OIER);
+-	writel_relaxed(OSSR_M0, OSSR);
++	timer_writel(timer_readl(OIER) & ~OIER_E0, OIER);
++	timer_writel(OSSR_M0, OSSR);
+ 	c->event_handler(c);
+ 
+ 	return IRQ_HANDLED;
+@@ -59,10 +80,10 @@ pxa_osmr0_set_next_event(unsigned long delta, struct clock_event_device *dev)
  {
- 	unsigned int lo, hi;
--	u32 hi2 = __raw_readl(reg_base + EXYNOS4_MCT_G_CNT_U);
-+	u32 hi2 = readl_relaxed(reg_base + EXYNOS4_MCT_G_CNT_U);
+ 	unsigned long next, oscr;
  
- 	do {
- 		hi = hi2;
--		lo = __raw_readl(reg_base + EXYNOS4_MCT_G_CNT_L);
--		hi2 = __raw_readl(reg_base + EXYNOS4_MCT_G_CNT_U);
-+		lo = readl_relaxed(reg_base + EXYNOS4_MCT_G_CNT_L);
-+		hi2 = readl_relaxed(reg_base + EXYNOS4_MCT_G_CNT_U);
- 	} while (hi != hi2);
+-	writel_relaxed(readl_relaxed(OIER) | OIER_E0, OIER);
+-	next = readl_relaxed(OSCR) + delta;
+-	writel_relaxed(next, OSMR0);
+-	oscr = readl_relaxed(OSCR);
++	timer_writel(timer_readl(OIER) | OIER_E0, OIER);
++	next = timer_readl(OSCR) + delta;
++	timer_writel(next, OSMR0);
++	oscr = timer_readl(OSCR);
  
- 	return ((cycle_t)hi << 32) | lo;
-@@ -225,7 +225,7 @@ static void exynos4_mct_comp0_stop(void)
+ 	return (signed)(next - oscr) <= MIN_OSCR_DELTA ? -ETIME : 0;
+ }
+@@ -72,15 +93,15 @@ pxa_osmr0_set_mode(enum clock_event_mode mode, struct clock_event_device *dev)
  {
- 	unsigned int tcon;
+ 	switch (mode) {
+ 	case CLOCK_EVT_MODE_ONESHOT:
+-		writel_relaxed(readl_relaxed(OIER) & ~OIER_E0, OIER);
+-		writel_relaxed(OSSR_M0, OSSR);
++		timer_writel(timer_readl(OIER) & ~OIER_E0, OIER);
++		timer_writel(OSSR_M0, OSSR);
+ 		break;
  
--	tcon = __raw_readl(reg_base + EXYNOS4_MCT_G_TCON);
-+	tcon = readl_relaxed(reg_base + EXYNOS4_MCT_G_TCON);
- 	tcon &= ~(MCT_G_TCON_COMP0_ENABLE | MCT_G_TCON_COMP0_AUTO_INC);
+ 	case CLOCK_EVT_MODE_UNUSED:
+ 	case CLOCK_EVT_MODE_SHUTDOWN:
+ 		/* initializing, released, or preparing for suspend */
+-		writel_relaxed(readl_relaxed(OIER) & ~OIER_E0, OIER);
+-		writel_relaxed(OSSR_M0, OSSR);
++		timer_writel(timer_readl(OIER) & ~OIER_E0, OIER);
++		timer_writel(OSSR_M0, OSSR);
+ 		break;
  
- 	exynos4_mct_write(tcon, EXYNOS4_MCT_G_TCON);
-@@ -238,7 +238,7 @@ static void exynos4_mct_comp0_start(enum clock_event_mode mode,
- 	unsigned int tcon;
- 	cycle_t comp_cycle;
+ 	case CLOCK_EVT_MODE_RESUME:
+@@ -94,12 +115,12 @@ static unsigned long osmr[4], oier, oscr;
  
--	tcon = __raw_readl(reg_base + EXYNOS4_MCT_G_TCON);
-+	tcon = readl_relaxed(reg_base + EXYNOS4_MCT_G_TCON);
+ static void pxa_timer_suspend(struct clock_event_device *cedev)
+ {
+-	osmr[0] = readl_relaxed(OSMR0);
+-	osmr[1] = readl_relaxed(OSMR1);
+-	osmr[2] = readl_relaxed(OSMR2);
+-	osmr[3] = readl_relaxed(OSMR3);
+-	oier = readl_relaxed(OIER);
+-	oscr = readl_relaxed(OSCR);
++	osmr[0] = timer_readl(OSMR0);
++	osmr[1] = timer_readl(OSMR1);
++	osmr[2] = timer_readl(OSMR2);
++	osmr[3] = timer_readl(OSMR3);
++	oier = timer_readl(OIER);
++	oscr = timer_readl(OSCR);
+ }
  
- 	if (mode == CLOCK_EVT_MODE_PERIODIC) {
- 		tcon |= MCT_G_TCON_COMP0_AUTO_INC;
-@@ -327,7 +327,7 @@ static void exynos4_mct_tick_stop(struct mct_clock_event_device *mevt)
- 	unsigned long mask = MCT_L_TCON_INT_START | MCT_L_TCON_TIMER_START;
- 	unsigned long offset = mevt->base + MCT_L_TCON_OFFSET;
+ static void pxa_timer_resume(struct clock_event_device *cedev)
+@@ -113,12 +134,12 @@ static void pxa_timer_resume(struct clock_event_device *cedev)
+ 	if (osmr[0] - oscr < MIN_OSCR_DELTA)
+ 		osmr[0] += MIN_OSCR_DELTA;
  
--	tmp = __raw_readl(reg_base + offset);
-+	tmp = readl_relaxed(reg_base + offset);
- 	if (tmp & mask) {
- 		tmp &= ~mask;
- 		exynos4_mct_write(tmp, offset);
-@@ -349,7 +349,7 @@ static void exynos4_mct_tick_start(unsigned long cycles,
- 	/* enable MCT tick interrupt */
- 	exynos4_mct_write(0x1, mevt->base + MCT_L_INT_ENB_OFFSET);
+-	writel_relaxed(osmr[0], OSMR0);
+-	writel_relaxed(osmr[1], OSMR1);
+-	writel_relaxed(osmr[2], OSMR2);
+-	writel_relaxed(osmr[3], OSMR3);
+-	writel_relaxed(oier, OIER);
+-	writel_relaxed(oscr, OSCR);
++	timer_writel(osmr[0], OSMR0);
++	timer_writel(osmr[1], OSMR1);
++	timer_writel(osmr[2], OSMR2);
++	timer_writel(osmr[3], OSMR3);
++	timer_writel(oier, OIER);
++	timer_writel(oscr, OSCR);
+ }
+ #else
+ #define pxa_timer_suspend NULL
+@@ -142,21 +163,65 @@ static struct irqaction pxa_ost0_irq = {
+ 	.dev_id		= &ckevt_pxa_osmr0,
+ };
  
--	tmp = __raw_readl(reg_base + mevt->base + MCT_L_TCON_OFFSET);
-+	tmp = readl_relaxed(reg_base + mevt->base + MCT_L_TCON_OFFSET);
- 	tmp |= MCT_L_TCON_INT_START | MCT_L_TCON_TIMER_START |
- 	       MCT_L_TCON_INTERVAL_MODE;
- 	exynos4_mct_write(tmp, mevt->base + MCT_L_TCON_OFFSET);
-@@ -401,7 +401,7 @@ static int exynos4_mct_tick_clear(struct mct_clock_event_device *mevt)
- 		exynos4_mct_tick_stop(mevt);
+-void __init pxa_timer_init(void)
++static void pxa_timer_common_init(int irq, unsigned long clock_tick_rate)
+ {
+-	unsigned long clock_tick_rate = get_clock_tick_rate();
+-
+-	writel_relaxed(0, OIER);
+-	writel_relaxed(OSSR_M0 | OSSR_M1 | OSSR_M2 | OSSR_M3, OSSR);
++	timer_writel(0, OIER);
++	timer_writel(OSSR_M0 | OSSR_M1 | OSSR_M2 | OSSR_M3, OSSR);
  
- 	/* Clear the MCT tick interrupt */
--	if (__raw_readl(reg_base + mevt->base + MCT_L_INT_CSTAT_OFFSET) & 1) {
-+	if (readl_relaxed(reg_base + mevt->base + MCT_L_INT_CSTAT_OFFSET) & 1) {
- 		exynos4_mct_write(0x1, mevt->base + MCT_L_INT_CSTAT_OFFSET);
- 		return 1;
- 	} else {
+ 	sched_clock_register(pxa_read_sched_clock, 32, clock_tick_rate);
+ 
+ 	ckevt_pxa_osmr0.cpumask = cpumask_of(0);
+ 
+-	setup_irq(IRQ_OST0, &pxa_ost0_irq);
++	setup_irq(irq, &pxa_ost0_irq);
+ 
+-	clocksource_mmio_init(OSCR, "oscr0", clock_tick_rate, 200, 32,
+-		clocksource_mmio_readl_up);
++	clocksource_mmio_init(timer_base + OSCR, "oscr0", clock_tick_rate, 200,
++			      32, clocksource_mmio_readl_up);
+ 	clockevents_config_and_register(&ckevt_pxa_osmr0, clock_tick_rate,
+-		MIN_OSCR_DELTA * 2, 0x7fffffff);
++					MIN_OSCR_DELTA * 2, 0x7fffffff);
++}
++
++static void __init pxa_timer_dt_init(struct device_node *np)
++{
++	struct clk *clk;
++	int irq;
++
++	/* timer registers are shared with watchdog timer */
++	timer_base = of_iomap(np, 0);
++	if (!timer_base)
++		panic("%s: unable to map resource\n", np->name);
++
++	clk = of_clk_get(np, 0);
++	if (IS_ERR(clk)) {
++		pr_crit("%s: unable to get clk\n", np->name);
++		return;
++	}
++	clk_prepare_enable(clk);
++
++	/* we are only interested in OS-timer0 irq */
++	irq = irq_of_parse_and_map(np, 0);
++	if (irq <= 0) {
++		pr_crit("%s: unable to parse OS-timer0 irq\n", np->name);
++		return;
++	}
++
++	pxa_timer_common_init(irq, clk_get_rate(clk));
++}
++CLOCKSOURCE_OF_DECLARE(pxa_timer, "marvell,pxa-timer", pxa_timer_dt_init);
++
++/*
++ * Legacy timer init for non device-tree boards.
++ */
++void __init pxa_timer_nodt_init(int irq, void __iomem *base,
++	unsigned long clock_tick_rate)
++{
++	struct clk *clk;
++
++	timer_base = base;
++	clk = clk_get(NULL, "OSTIMER0");
++	if (clk && !IS_ERR(clk))
++		clk_prepare_enable(clk);
++	else
++		pr_crit("%s: unable to get clk\n", __func__);
++
++	pxa_timer_common_init(irq, clock_tick_rate);
+ }
 -- 
 1.7.9.5
 
