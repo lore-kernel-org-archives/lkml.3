@@ -1,44 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752157AbaGWE1p (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 00:27:45 -0400
-Received: from mail-ie0-f170.google.com ([209.85.223.170]:51891 "EHLO
-	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750913AbaGWE1n (ORCPT
+	id S1755570AbaGWEbX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 00:31:23 -0400
+Received: from smtprelay0201.hostedemail.com ([216.40.44.201]:36301 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751246AbaGWEbW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 00:27:43 -0400
-From: Nicholas Krause <xerofoify@gmail.com>
-To: monstr@monstr.eu
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] microblaze: Add comment for defines
-Date: Wed, 23 Jul 2014 00:27:38 -0400
-Message-Id: <1406089658-4671-1-git-send-email-xerofoify@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	Wed, 23 Jul 2014 00:31:22 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:800:960:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1540:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3865:3866:3867:3870:3871:4321:5007:7652:10004:10400:10848:11658:11914:12043:12517:12519:12555:13069:13221:13229:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: teeth02_8013e1a99c448
+X-Filterd-Recvd-Size: 1878
+Message-ID: <1406089878.2755.11.camel@joe-AO725>
+Subject: [PATCH] checkpatch: Fix false positives for --strict "space after
+ cast" test
+From: Joe Perches <joe@perches.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Hartley Sweeten <HartleyS@visionengravers.com>,
+        Andy Whitcroft <apw@canonical.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Tue, 22 Jul 2014 21:31:18 -0700
+In-Reply-To: <1406056988.2755.1.camel@joe-AO725>
+References: <DC148C5AA1CEBA4E87973D432B1C2D8825F13B6F@P3PWEX4MB008.ex4.secureserver.net>
+	 <1406056988.2755.1.camel@joe-AO725>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds a comment for and removes a fix me by labeling these
-defines as memory cache definitions.
+commit 89da401f6cff ("checkpatch: improve "no space after cast" test")
+in -next improved the cast test for non pointer types, but also
+introduced false positives for some types of static inlines.
 
-Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
+Add a test for an open brace to the exclusions to avoid these
+false positives.
+
+Reported-by: Hartley Sweeten <HartleyS@visionengravers.com>
+Signed-off-by: Joe Perches <joe@perches.com>
 ---
- arch/microblaze/include/asm/pvr.h | 2 +-
+ scripts/checkpatch.pl | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/microblaze/include/asm/pvr.h b/arch/microblaze/include/asm/pvr.h
-index 4bbdb4c..441f3a0 100644
---- a/arch/microblaze/include/asm/pvr.h
-+++ b/arch/microblaze/include/asm/pvr.h
-@@ -186,7 +186,7 @@ struct pvr_s {
- #define PVR_DCACHE_USE_FSL(_pvr)	(_pvr.pvr[5] & PVR5_DCACHE_USE_FSL_MASK)
- #define PVR_DCACHE_ALLOW_WR(_pvr) \
- 			(_pvr.pvr[5] & PVR5_DCACHE_ALLOW_WR_MASK)
--/* FIXME two shifts on one line needs any comment */
-+/* memory caches */
- #define PVR_DCACHE_LINE_LEN(_pvr) \
- 		(1 << ((_pvr.pvr[5] & PVR5_DCACHE_LINE_LEN_MASK) >> 21))
- #define PVR_DCACHE_BYTE_SIZE(_pvr) \
--- 
-1.9.1
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index dc72a9b..7dcfc75 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -2418,7 +2418,7 @@ sub process {
+ 			}
+ 		}
+ 
+-		if ($line =~ /^\+.*\(\s*$Type\s*\)[ \t]+(?!$Assignment|$Arithmetic)/) {
++		if ($line =~ /^\+.*\(\s*$Type\s*\)[ \t]+(?!$Assignment|$Arithmetic|{)/) {
+ 			if (CHK("SPACING",
+ 				"No space is necessary after a cast\n" . $herecurr) &&
+ 			    $fix) {
+
 
