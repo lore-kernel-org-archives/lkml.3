@@ -1,92 +1,346 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758341AbaGWWuT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 18:50:19 -0400
-Received: from mail-ie0-f177.google.com ([209.85.223.177]:40014 "EHLO
-	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758291AbaGWWuM (ORCPT
+	id S1757488AbaGWWxK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 18:53:10 -0400
+Received: from mail-we0-f181.google.com ([74.125.82.181]:53172 "EHLO
+	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750808AbaGWWxI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 18:50:12 -0400
-Date: Wed, 23 Jul 2014 15:50:09 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Alex Thorlton <athorlton@sgi.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        kirill.shutemov@linux.intel.com, Ingo Molnar <mingo@kernel.org>,
-        Hugh Dickins <hughd@google.com>, lliubbo@gmail.com,
-        Johannes Weiner <hannes@cmpxchg.org>, srivatsa.bhat@linux.vnet.ibm.com,
-        Dave Hansen <dave.hansen@linux.intel.com>, dfults@sgi.com,
-        hedi@sgi.com
-Subject: [patch] mm, thp: do not allow thp faults to avoid cpuset
- restrictions
-In-Reply-To: <alpine.DEB.2.02.1407231516570.23495@chino.kir.corp.google.com>
-Message-ID: <alpine.DEB.2.02.1407231545520.1389@chino.kir.corp.google.com>
-References: <20140723220538.GT8578@sgi.com> <alpine.DEB.2.02.1407231516570.23495@chino.kir.corp.google.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 23 Jul 2014 18:53:08 -0400
+From: Benoit Masson <yahoo@perenite.com>
+To: benoitm@perenite.com, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: jason@lakedaemon.net, andrew@lunn.ch, gregory.clement@free-electrons.com,
+        sebastian.hesselbarth@googlemail.com,
+        Benoit Masson <yahoo@perenite.com>
+Subject: [PATCH 2/2] ARM: mvebu: Added dts defintion for Lenovo Iomega ix4-300d NAS
+Date: Wed, 23 Jul 2014 15:52:53 -0700
+Message-Id: <1406155973-13657-1-git-send-email-yahoo@perenite.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The page allocator relies on __GFP_WAIT to determine if ALLOC_CPUSET 
-should be set in allocflags.  ALLOC_CPUSET controls if a page allocation 
-should be restricted only to the set of allowed cpuset mems.
+The Lenovo Iomega ix4-300d is a 4-Bay sata NAS with dual Gb,
+ USB2.0 & 3.0, powered by a Marvell Armada XP MV78230 dual core CPU.
 
-Transparent hugepages clears __GFP_WAIT when defrag is disabled to prevent 
-the fault path from using memory compaction or direct reclaim.  Thus, it 
-is unfairly able to allocate outside of its cpuset mems restriction as a 
-side-effect.
-
-This patch ensures that ALLOC_CPUSET is only cleared when the gfp mask is 
-truly GFP_ATOMIC by verifying it is also not a thp allocation.
-
-Reported-by: Alex Thorlton <athorlton@sgi.com>
-Cc: stable@vger.kernel.org
-Signed-off-by: David Rientjes <rientjes@google.com>
+http://shop.lenovo.com/fr/fr/servers/network-storage/lenovoemc/ix4-300d/
+Signed-off-by: Benoit Masson <yahoo@perenite.com>
 ---
- mm/page_alloc.c | 16 ++++++++--------
- 1 file changed, 8 insertions(+), 8 deletions(-)
+ arch/arm/boot/dts/Makefile                      |   3 +-
+ arch/arm/boot/dts/armada-xp-lenovo-ix4-300d.dts | 284 ++++++++++++++++++++++++
+ 2 files changed, 286 insertions(+), 1 deletion(-)
+ create mode 100644 arch/arm/boot/dts/armada-xp-lenovo-ix4-300d.dts
 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -2447,7 +2447,7 @@ static inline int
- gfp_to_alloc_flags(gfp_t gfp_mask)
- {
- 	int alloc_flags = ALLOC_WMARK_MIN | ALLOC_CPUSET;
--	const gfp_t wait = gfp_mask & __GFP_WAIT;
-+	const bool atomic = !(gfp_mask & (__GFP_WAIT | __GFP_NO_KSWAPD));
- 
- 	/* __GFP_HIGH is assumed to be the same as ALLOC_HIGH to save a branch. */
- 	BUILD_BUG_ON(__GFP_HIGH != (__force gfp_t) ALLOC_HIGH);
-@@ -2456,20 +2456,20 @@ gfp_to_alloc_flags(gfp_t gfp_mask)
- 	 * The caller may dip into page reserves a bit more if the caller
- 	 * cannot run direct reclaim, or if the caller has realtime scheduling
- 	 * policy or is asking for __GFP_HIGH memory.  GFP_ATOMIC requests will
--	 * set both ALLOC_HARDER (!wait) and ALLOC_HIGH (__GFP_HIGH).
-+	 * set both ALLOC_HARDER (atomic == true) and ALLOC_HIGH (__GFP_HIGH).
- 	 */
- 	alloc_flags |= (__force int) (gfp_mask & __GFP_HIGH);
- 
--	if (!wait) {
-+	if (atomic) {
- 		/*
--		 * Not worth trying to allocate harder for
--		 * __GFP_NOMEMALLOC even if it can't schedule.
-+		 * Not worth trying to allocate harder for __GFP_NOMEMALLOC even
-+		 * if it can't schedule.
- 		 */
--		if  (!(gfp_mask & __GFP_NOMEMALLOC))
-+		if (!(gfp_mask & __GFP_NOMEMALLOC))
- 			alloc_flags |= ALLOC_HARDER;
- 		/*
--		 * Ignore cpuset if GFP_ATOMIC (!wait) rather than fail alloc.
--		 * See also cpuset_zone_allowed() comment in kernel/cpuset.c.
-+		 * Ignore cpuset mems for GFP_ATOMIC rather than fail, see the
-+		 * comment for __cpuset_node_allowed_softwall().
- 		 */
- 		alloc_flags &= ~ALLOC_CPUSET;
- 	} else if (unlikely(rt_task(current)) && !in_interrupt())
+diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
+index adb5ed9..4429495 100644
+--- a/arch/arm/boot/dts/Makefile
++++ b/arch/arm/boot/dts/Makefile
+@@ -437,8 +437,9 @@ dtb-$(CONFIG_MACH_ARMADA_XP) += \
+ 	armada-xp-axpwifiap.dtb \
+ 	armada-xp-db.dtb \
+ 	armada-xp-gp.dtb \
+-	armada-xp-netgear-rn2120.dtb \
++	armada-xp-lenovo-ix4-300d.dtb \
+ 	armada-xp-matrix.dtb \
++	armada-xp-netgear-rn2120.dtb \
+ 	armada-xp-openblocks-ax3-4.dtb
+ dtb-$(CONFIG_MACH_DOVE) += dove-cm-a510.dtb \
+ 	dove-cubox.dtb \
+diff --git a/arch/arm/boot/dts/armada-xp-lenovo-ix4-300d.dts b/arch/arm/boot/dts/armada-xp-lenovo-ix4-300d.dts
+new file mode 100644
+index 0000000..1f33cbc
+--- /dev/null
++++ b/arch/arm/boot/dts/armada-xp-lenovo-ix4-300d.dts
+@@ -0,0 +1,284 @@
++/*
++ * Device Tree file for Lenovo Iomega ix4-300d
++ *
++ * Copyright (C) 2014, Benoit Masson <yahoo@perenite.com>
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * as published by the Free Software Foundation; either version
++ * 2 of the License, or (at your option) any later version.
++ */
++
++/dts-v1/;
++
++#include <dt-bindings/input/input.h>
++#include <dt-bindings/gpio/gpio.h>
++#include "armada-xp-mv78230.dtsi"
++
++/ {
++	model = "Lenovo Iomega ix4-300d";
++	compatible = "lenovo,ix4-300d", "marvell,armadaxp-mv78230",
++		     "marvell,armadaxp", "marvell,armada-370-xp";
++
++	chosen {
++		bootargs = "console=ttyS0,115200 earlyprintk";
++		stdout-path = "/soc/internal-regs/serial@12000";
++	};
++
++	memory {
++		device_type = "memory";
++		reg = <0 0x00000000 0 0x20000000>; /* 512MB */
++	};
++
++	soc {
++		ranges = <MBUS_ID(0xf0, 0x01) 0 0 0xd0000000 0x100000
++			MBUS_ID(0x01, 0x1d) 0 0 0xfff00000 0x100000>;
++
++		pcie-controller {
++			status = "okay";
++
++			/* Quad port sata: Marvell 88SX7042 */
++			pcie@1,0 {
++				/* Port 0, Lane 0 */
++				status = "okay";
++			};
++
++			/* USB 3.0 xHCI controller: NEC D720200F1 */
++			pcie@5,0 {
++				/* Port 1, Lane 0 */
++				status = "okay";
++			};
++		};
++
++		internal-regs {
++			pinctrl {
++				poweroff_pin: poweroff-pin {
++					marvell,pins = "mpp24";
++					marvell,function = "gpio";
++				};
++
++				power_button_pin: power-button-pin {
++					marvell,pins = "mpp44";
++					marvell,function = "gpio";
++				};
++
++				reset_button_pin: reset-button-pin {
++					marvell,pins = "mpp45";
++					marvell,function = "gpio";
++				};
++				select_button_pin: select-button-pin {
++					marvell,pins = "mpp41";
++					marvell,function = "gpio";
++				};
++
++				scroll_button_pin: scroll-button-pin {
++					marvell,pins = "mpp42";
++					marvell,function = "gpio";
++				};
++
++				hdd_led_pin: hdd-led-pin {
++					marvell,pins = "mpp26";
++					marvell,function = "gpio";
++				};
++			};
++
++			serial@12000 {
++				status = "okay";
++			};
++
++			mdio {
++				phy0: ethernet-phy@0 { /* Marvell 88E1318 */
++					reg = <0>;
++				};
++
++				phy1: ethernet-phy@1 { /* Marvell 88E1318 */
++					reg = <1>;
++				};
++			};
++
++			ethernet@70000 {
++				status = "okay";
++				phy = <&phy0>;
++				phy-mode = "rgmii-id";
++			};
++
++			ethernet@74000 {
++				status = "okay";
++				phy = <&phy1>;
++				phy-mode = "rgmii-id";
++			};
++
++			usb@50000 {
++				status = "okay";
++			};
++
++			usb@51000 {
++				status = "okay";
++			};
++
++			i2c@11000 {
++				compatible = "marvell,mv78230-a0-i2c",
++					"marvell,mv64xxx-i2c";
++				clock-frequency = <400000>;
++				status = "okay";
++
++				adt7473@2e {
++					compatible = "adi,adt7473";
++					reg = <0x2e>;
++				};
++
++				pcf8563@51 {
++					compatible = "nxp,pcf8563";
++					reg = <0x51>;
++				};
++
++			};
++
++			nand@d0000 {
++				status = "okay";
++				num-cs = <1>;
++				marvell,nand-keep-config;
++				marvell,nand-enable-arbiter;
++				nand-on-flash-bbt;
++
++				partition@0 {
++					label = "u-boot";
++					reg = <0x0000000 0xe0000>;
++					read-only;
++				};
++
++				partition@e0000 {
++					label = "u-boot-env";
++					reg = <0xe0000 0x20000>;
++					read-only;
++				};
++
++				partition@100000 {
++					label = "u-boot-env2";
++					reg = <0x100000 0x20000>;
++					read-only;
++				};
++
++				partition@120000 {
++					label = "zImage";
++					reg = <0x120000 0x400000>;
++				};
++
++				partition@520000 {
++					label = "initrd";
++					reg = <0x520000 0x400000>;
++				};
++
++				partition@xE00000 {
++					label = "boot";
++					reg = <0xE00000 0x3F200000>;
++				};
++
++				partition@flash {
++					label = "flash";
++					reg = <0x0 0x40000000>;
++				};
++			};
++		};
++	};
++
++	gpio-keys {
++		compatible = "gpio-keys";
++		pinctrl-0 = <&power_button_pin &reset_button_pin
++			&select_button_pin &scroll_button_pin>;
++		pinctrl-names = "default";
++
++		power-button {
++			label = "Power Button";
++			linux,code = <KEY_POWER>;
++			gpios = <&gpio1 12 GPIO_ACTIVE_HIGH>;
++		};
++
++		reset-button {
++			label = "Reset Button";
++			linux,code = <KEY_RESTART>;
++			gpios = <&gpio1 13 GPIO_ACTIVE_LOW>;
++		};
++
++		select-button {
++			label = "Select Button";
++			linux,code = <BTN_SELECT>;
++			gpios = <&gpio1 9 GPIO_ACTIVE_LOW>;
++		};
++
++		scroll-button {
++			label = "Scroll Button";
++			linux,code = <KEY_SCROLLDOWN>;
++			gpios = <&gpio1 10 GPIO_ACTIVE_LOW>;
++		};
++	};
++
++	spi3 {
++		compatible = "spi-gpio";
++		status = "okay";
++		gpio-sck = <&gpio0 25 0>;
++		gpio-mosi = <&gpio1 15 0>; /*gpio 47*/
++		cs-gpios = <&gpio0 27 0 >;
++		num-chipselects = <1>;
++		#address-cells = <1>;
++		#size-cells = <0>;
++
++		gpio2: gpio2@0 {
++			compatible = "fairchild,74hc595";
++			gpio-controller;
++			#gpio-cells = <2>;
++			reg = <0>;
++			registers-number = <2>;
++			spi-max-frequency = <100000>;
++		};
++	};
++
++	gpio-leds {
++		compatible = "gpio-leds";
++		pinctrl-0 = <&hdd_led_pin>;
++		pinctrl-names = "default";
++
++		hdd-led {
++			label = "ix4-300d:hdd:blue";
++			gpios = <&gpio0 26 GPIO_ACTIVE_HIGH>;
++			default-state = "off";
++		};
++
++		power-led {
++			label = "ix4-300d:power:white";
++			gpios = <&gpio2 1 GPIO_ACTIVE_LOW>;
++			/* init blinking while booting */
++			linux,default-trigger = "timer";
++			default-state = "on";
++		};
++
++		sysfail-led {
++			label = "ix4-300d:sysfail:red";
++			gpios = <&gpio2 2 GPIO_ACTIVE_HIGH>;
++			default-state = "off";
++		};
++
++		sys-led {
++			label = "ix4-300d:sys:blue";
++			gpios = <&gpio2 3 GPIO_ACTIVE_HIGH>;
++			default-state = "off";
++		};
++
++		hddfail-led {
++			label = "ix4-300d:hddfail:red";
++			gpios = <&gpio2 4 GPIO_ACTIVE_HIGH>;
++			default-state = "off";
++		};
++
++	};
++
++	/* Warning: you need both eth1 & 0 PHY initialized
++		(i.e having them up does the tweak)
++		for poweroff to shutdown otherwise it reboots */
++	gpio-poweroff {
++		compatible = "gpio-poweroff";
++		pinctrl-0 = <&poweroff_pin>;
++		pinctrl-names = "default";
++		gpios = <&gpio0 24 GPIO_ACTIVE_HIGH>;
++	};
++};
+-- 
+1.9.1
+
