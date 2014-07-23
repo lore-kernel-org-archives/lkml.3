@@ -1,47 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757464AbaGWHo4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 03:44:56 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:14864 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1757438AbaGWHox (ORCPT
+	id S1757493AbaGWHpX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 03:45:23 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.243]:55623 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757208AbaGWHpS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 03:44:53 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 99.127.230.128
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19hQGIpqYBOPCx2jLOMf24e
-Date: Wed, 23 Jul 2014 00:43:28 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Nick Krause <xerofoify@gmail.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: omap-wakeupgen.c: Remove function for fix me
-Message-ID: <20140723074328.GI18374@atomide.com>
-References: <CAPDOMVinWFVKY=mMOA1f6pd4orOgcKh1kE01MPVaLZi0Z_tMmg@mail.gmail.com>
+	Wed, 23 Jul 2014 03:45:18 -0400
+Message-ID: <53CF6808.4070206@atmel.com>
+Date: Wed, 23 Jul 2014 09:45:12 +0200
+From: Cyrille Pitchen <cyrille.pitchen@atmel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAPDOMVinWFVKY=mMOA1f6pd4orOgcKh1kE01MPVaLZi0Z_tMmg@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: David Miller <davem@davemloft.net>
+CC: <nicolas.ferre@atmel.com>, <linux-arm-kernel@lists.infradead.org>,
+        <netdev@vger.kernel.org>, <soren.brinkmann@xilinx.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/6] net/macb: add scatter-gather hw feature
+References: <cover.1405689937.git.cyrille.pitchen@atmel.com>	<fda3a504240e1f6863107ef6bf1e78586671a030.1405689937.git.cyrille.pitchen@atmel.com> <20140720.211337.211665722122921773.davem@davemloft.net>
+In-Reply-To: <20140720.211337.211665722122921773.davem@davemloft.net>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Nick Krause <xerofoify@gmail.com> [140722 14:12]:
-> static void __init irq_pm_init(void)
-> 382 {
-> 383         /* FIXME: Remove this when MPU OSWR support is added */
-> 384         if (!soc_is_omap54xx())
-> 385                 cpu_pm_register_notifier(&irq_notifier_block);
-> 386 }
-> I am wondering is this omap supported now if it is can I remove it?
+Le 21/07/2014 06:13, David Miller a écrit :
+> From: Cyrille Pitchen <cyrille.pitchen@atmel.com>
+> Date: Fri, 18 Jul 2014 16:21:14 +0200
+> 
+>> +		if (tx_skb->mapped_as_page) {
+>> +			dma_unmap_page(&bp->pdev->dev, tx_skb->mapping,
+>> +				       tx_skb->size, DMA_TO_DEVICE);
+>> +		} else {
+>> +			dma_unmap_single(&bp->pdev->dev, tx_skb->mapping,
+>> +					 tx_skb->size, DMA_TO_DEVICE);
+>> +		}
+> 
+> Please do not use curly braces for basic block composed of a single statement.
+> 
+Hi David,
 
-Does REVISIT cause issues for you with cscope? It may be easier to
-replace the cscope bugging FIXME statements with just REVISIT unless
-a real fix is provided.
+thanks for your review, I'll fix it in the next series of patch.
 
 Regards,
 
-Tony
+Cyrille
