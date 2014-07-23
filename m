@@ -1,64 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934012AbaGWWb7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 18:31:59 -0400
-Received: from vps0.lunn.ch ([178.209.37.122]:52052 "EHLO vps0.lunn.ch"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933646AbaGWWb5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 18:31:57 -0400
-Date: Thu, 24 Jul 2014 00:26:40 +0200
-From: Andrew Lunn <andrew@lunn.ch>
-To: Benoit Masson <benoitm@perenite.com>
-Cc: Andrew Lunn <andrew@lunn.ch>, Jason Cooper <jason@lakedaemon.net>,
-        benoitm974 <yahoo@perenite.com>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@googlemail.com>
-Subject: Re: [PATCH 1/2] Added dts defintion for Lenovo ix4-300d nas
-Message-ID: <20140723222640.GA28485@lunn.ch>
-References: <1406117232-5962-1-git-send-email-yahoo@perenite.com>
- <20140723134534.GF23220@titan.lakedaemon.net>
- <20140723141443.GC2856@lunn.ch>
- <47823826-CDE8-47D2-B1B6-B688118CF985@perenite.com>
- <20140723164958.GH2856@lunn.ch>
- <9AE6F1AD-9296-47E9-91E2-9E34AA48EBB4@perenite.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <9AE6F1AD-9296-47E9-91E2-9E34AA48EBB4@perenite.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S934032AbaGWWc3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 18:32:29 -0400
+Received: from g4t3426.houston.hp.com ([15.201.208.54]:23223 "EHLO
+	g4t3426.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933646AbaGWWc1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jul 2014 18:32:27 -0400
+Message-ID: <1406154742.2488.19.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: futex: wake explicit / wait on multiple memory locations
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: Milosz Tanski <milosz@adfin.com>
+Cc: Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@timesys.com>,
+        Eric Dumazet <dada1@cosmosbay.com>, Darren Hart <dvhltc@us.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Wed, 23 Jul 2014 15:32:22 -0700
+In-Reply-To: <53CFE1F4.60705@adfin.com>
+References: <53CFE1F4.60705@adfin.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Both phy are :
-> marvell,88e1318
+On Wed, 2014-07-23 at 12:25 -0400, Milosz Tanski wrote:
+> I'm using futexes to control scheduling for a userspace application with multiple queues. 
+> There's a global work queue and a specific pre-thread queue. And I would like to have a 
+> choice between waking up any thread or a specific thread.
 
-I don't have the datasheet for this specific phy model, but i do have
-the datasheet for another similar phy.
- 
-> example of a minimal reg write that lead MPP24 to shutdown instead
-> of rebooting on original BSP driver
+I'm afraid not: the api does not have a place for such an argument:
 
-> XXXXX BasicInit
+       FUTEX_WAKE
+              This operation wakes at most val processes waiting
+              on this futex address (i.e., inside FUTEX_WAIT).  
+              The arguments timeout, uaddr2 and val3 are ignored.
 
-I'm assuming regOffs is decimal, and data is hex?
+In any case, when you start with this sort of thing it starts to get
+messy, real fast. You have to play games with the number of tasks to
+wakeup in a single futex wake call vs the "chosen" task(s).
 
-> phyAdr 0: regOffs: 16 data: 3
+> Is there are mechanism in the futex API by which I can control which thread to wake up.
 
-Copper Specific control register. 3 means Polarity Reversal Disable &
-Jabber function disable.
+Nope. FIFO and rt tasks always in front.
 
-> phyAdr 0: regOffs: 10 data: 830
-
-Reg 10 is the 1000BASE-T Status register, which is read only!
-
-So this is not making much sense. Are we missing some changes to the
-page register? Register 16 of page 3 is the LED control register.
-
-     Andrew
+Thanks,
+Davidlohr
 
