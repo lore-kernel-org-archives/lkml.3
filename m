@@ -1,201 +1,248 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758546AbaGWW6t (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 18:58:49 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:35581 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753840AbaGWW6p (ORCPT
+	id S1758567AbaGWW7G (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 18:59:06 -0400
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:38058 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758223AbaGWW7E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 18:58:45 -0400
-Message-ID: <53D03E23.1000801@codeaurora.org>
-Date: Wed, 23 Jul 2014 15:58:43 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
-CC: linux-mmc@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
-        Chris Ball <chris@printf.net>, Ulf Hansson <ulf.hansson@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
-        agross@codeaurora.org, linux-arm-msm@vger.kernel.org
-Subject: Re: [PATCH v2] mmc: mmci: Add qcom dml support to the driver.
-References: <1405625780-13503-1-git-send-email-srinivas.kandagatla@linaro.org> <1405716797-28122-1-git-send-email-srinivas.kandagatla@linaro.org>
-In-Reply-To: <1405716797-28122-1-git-send-email-srinivas.kandagatla@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Wed, 23 Jul 2014 18:59:04 -0400
+From: Ming Lei <ming.lei@canonical.com>
+To: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org
+Cc: Andrew Morton <akpm@linux-foundation.org>, Zach Brown <zab@zabbo.net>,
+        Dave Kleikamp <dave.kleikamp@oracle.com>,
+        Benjamin LaHaise <bcrl@kvack.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org, linux-aio@kvack.org (open list:AIO),
+        Ming Lei <ming.lei@canonical.com>
+Subject: [PATCH 7/9] aio: add aio_kernel_() interface
+Date: Thu, 24 Jul 2014 06:55:28 +0800
+Message-Id: <1406156130-15575-8-git-send-email-ming.lei@canonical.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1406156130-15575-1-git-send-email-ming.lei@canonical.com>
+References: <1406156130-15575-1-git-send-email-ming.lei@canonical.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/18/14 13:53, Srinivas Kandagatla wrote:
->
-> @@ -468,6 +473,11 @@ static void mmci_dma_setup(struct mmci_host *host)
->  		if (max_seg_size < host->mmc->max_seg_size)
->  			host->mmc->max_seg_size = max_seg_size;
->  	}
-> +
-> +	if (variant->qcom_dml && host->dma_rx_channel && host->dma_tx_channel) {
-> +		if (dml_hw_init(host, host->mmc->parent->of_node))
-> +			variant->qcom_dml = false;
-> +	}
+From: Dave Kleikamp <dave.kleikamp@oracle.com>
 
-Style nit: Braces aren't needed.
+This adds an interface that lets kernel callers submit aio iocbs without
+going through the user space syscalls.  This lets kernel callers avoid
+the management limits and overhead of the context.  It will also let us
+integrate aio operations with other kernel apis that the user space
+interface doesn't have access to.
 
-> +
-> +void dml_start_xfer(struct mmci_host *host, struct mmc_data *data)
-> +{
-> +	u32 config;
-> +	void __iomem *base = host->base + DML_OFFSET;
-> +
-> +	if (data->flags & MMC_DATA_READ) {
-> +		/* Read operation: configure DML for producer operation */
-> +		/* Set producer CRCI-x and disable consumer CRCI */
-> +		config = readl_relaxed(base + DML_CONFIG);
-> +		config = (config & ~PRODUCER_CRCI_MSK) | PRODUCER_CRCI_X_SEL;
-> +		config = (config & ~CONSUMER_CRCI_MSK) | CONSUMER_CRCI_DISABLE;
-> +		writel_relaxed(config, base + DML_CONFIG);
-> +
-> +		/* Set the Producer BAM block size */
-> +		writel_relaxed(data->blksz, base + DML_PRODUCER_BAM_BLOCK_SIZE);
-> +
-> +		/* Set Producer BAM Transaction size */
-> +		writel_relaxed(data->blocks * data->blksz,
-> +			       base + DML_PRODUCER_BAM_TRANS_SIZE);
-> +		/* Set Producer Transaction End bit */
-> +		config = readl_relaxed(base + DML_CONFIG);
-> +		config |= PRODUCER_TRANS_END_EN;
-> +		writel_relaxed(config, base + DML_CONFIG);
-> +		/* Trigger producer */
-> +		writel_relaxed(1, base + DML_PRODUCER_START);
-> +	} else {
-> +		/* Write operation: configure DML for consumer operation */
-> +		/* Set consumer CRCI-x and disable producer CRCI*/
-> +		config = readl_relaxed(base + DML_CONFIG);
-> +		config = (config & ~CONSUMER_CRCI_MSK) | CONSUMER_CRCI_X_SEL;
-> +		config = (config & ~PRODUCER_CRCI_MSK) | PRODUCER_CRCI_DISABLE;
-> +		writel_relaxed(config, base + DML_CONFIG);
-> +		/* Clear Producer Transaction End bit */
-> +		config = readl_relaxed(base + DML_CONFIG);
-> +		config &= ~PRODUCER_TRANS_END_EN;
-> +		writel_relaxed(config, base + DML_CONFIG);
-> +		/* Trigger consumer */
-> +		writel_relaxed(1, base + DML_CONSUMER_START);
-> +	}
+This patch is based on Dave's posts in below links:
 
-I think we need a memory barrier here. Does the DML need to be enabled
-before the mmci driver sets MCI_DPSM_DMAENABLE? My understanding is that
-relaxed accesses to different devices aren't ordered with respect to one
-another.  So not having a memory barrier here could cause the
-consumer/producer to be enabled after MCI_DPSM_DMAENABLE is set in the
-mmci hardware. Downstream I see that we have an mb(), but I think we
-could just a wmb() because we're just ordering with the mmci hardware right?
+	https://lkml.org/lkml/2013/10/16/365
+	https://groups.google.com/forum/#!topic/linux.kernel/l7mogGJZoKQ
 
-Is there any ordering required between bam and dml? I think enabling bam
-could happen after enabling the consumer unless we had a wmb() after we
-kick off bam and before we write a 1 to DML_CONSUMER_START.
+And most of the patch is from Dave's directly.
 
-> +}
-> +
-> +static int of_get_dml_pipe_index(struct device_node *np, const char *name)
+Cc: Zach Brown <zab@zabbo.net>
+Cc: Dave Kleikamp <dave.kleikamp@oracle.com>
+Cc: Benjamin LaHaise <bcrl@kvack.org>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>
+Cc: linux-fsdevel@vger.kernel.org
+Cc: linux-aio@kvack.org (open list:AIO)
+Signed-off-by: Ming Lei <ming.lei@canonical.com>
+---
+ fs/aio.c            |  114 +++++++++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/aio.h |   21 +++++++++-
+ 2 files changed, 134 insertions(+), 1 deletion(-)
 
-return type of u32?
-
-> +{
-> +	int index;
-> +	struct of_phandle_args	dma_spec;
-> +
-> +	index = of_property_match_string(np, "dma-names", name);
-> +
-> +	if (index < 0)
-> +		return -ENODEV;
-> +
-> +	if (of_parse_phandle_with_args(np, "dmas", "#dma-cells", index,
-> +				       &dma_spec))
-> +		return -ENODEV;
-> +
-> +	if (dma_spec.args_count)
-> +		return dma_spec.args[0];
-> +
-> +	return -ENODEV;
-> +}
-
-Much cleaner!
-
-> +
-> +/* Initialize the dml hardware connected to SD Card controller */
-> +int dml_hw_init(struct mmci_host *host, struct device_node *np)
-> +{
-> +	u32 config;
-> +	void __iomem *base;
-> +	u32 consumer_id, producer_id;
-> +
-> +	consumer_id = of_get_dml_pipe_index(np, "tx");
-> +	producer_id = of_get_dml_pipe_index(np, "rx");
-> +
-> +	if (producer_id < 0 || consumer_id < 0)
-> +		return -ENODEV;
-> +
-> +	base = host->base + DML_OFFSET;
-> +
-> +	/* Reset the DML block */
-> +	writel_relaxed(1, base + DML_SW_RESET);
-> +
-> +	/* Disable the producer and consumer CRCI */
-> +	config = (PRODUCER_CRCI_DISABLE | CONSUMER_CRCI_DISABLE);
-> +	/*
-> +	 * Disable the bypass mode. Bypass mode will only be used
-> +	 * if data transfer is to happen in PIO mode and don't
-> +	 * want the BAM interface to connect with SDCC-DML.
-> +	 */
-> +	config &= ~BYPASS;
-> +	/*
-> +	 * Disable direct mode as we don't DML to MASTER the AHB bus.
-> +	 * BAM connected with DML should MASTER the AHB bus.
-> +	 */
-> +	config &= ~DIRECT_MODE;
-> +	/*
-> +	 * Disable infinite mode transfer as we won't be doing any
-> +	 * infinite size data transfers. All data transfer will be
-> +	 * of finite data size.
-> +	 */
-> +	config &= ~INFINITE_CONS_TRANS;
-> +	writel_relaxed(config, base + DML_CONFIG);
-> +
-> +	/*
-> +	 * Initialize the logical BAM pipe size for producer
-> +	 * and consumer.
-> +	 */
-> +	writel_relaxed(PRODUCER_PIPE_LOGICAL_SIZE,
-> +		       base + DML_PRODUCER_PIPE_LOGICAL_SIZE);
-> +	writel_relaxed(CONSUMER_PIPE_LOGICAL_SIZE,
-> +		       base + DML_CONSUMER_PIPE_LOGICAL_SIZE);
-> +
-> +	/* Initialize Producer/consumer pipe id */
-> +	writel_relaxed(producer_id | (consumer_id << CONSUMER_PIPE_ID_SHFT),
-> +		       base + DML_PIPE_ID);
-> +
-
-We have an mb() here too. Not sure why though. There's lots of comments
-downstream but not where it actually would help!
-
-> +	return 0;
-> +}
-> diff --git a/drivers/mmc/host/mmci_qcom_dml.h b/drivers/mmc/host/mmci_qcom_dml.h
-> new file mode 100644
-> index 0000000..412e9a3
-> --- /dev/null
-> +++ b/drivers/mmc/host/mmci_qcom_dml.h
-> @@ -0,0 +1,31 @@
-> +/*
-> + *
-> + * Copyright (c) 2014, Code Aurora Forum. All rights reserved.
-
-Hmm I see:
-
-Copyright (c) 2011, The Linux Foundation. All rights reserved.
-
-in these files. Can you use that?
-
+diff --git a/fs/aio.c b/fs/aio.c
+index d93bfa6..7a081b7 100644
+--- a/fs/aio.c
++++ b/fs/aio.c
+@@ -948,6 +948,9 @@ void aio_complete(struct kiocb *iocb, long res, long res2)
+ 		iocb->ki_ctx = ERR_PTR(-EXDEV);
+ 		wake_up_process(iocb->ki_obj.tsk);
+ 		return;
++	} else if (is_kernel_kiocb(iocb)) {
++		iocb->ki_obj.complete(iocb->ki_user_data, res);
++		return;
+ 	}
+ 
+ 	if (iocb->ki_list.next) {
+@@ -1395,6 +1398,117 @@ rw_common:
+ 	return 0;
+ }
+ 
++/*
++ * This allocates an iocb that will be used to submit and track completion of
++ * an IO that is issued from kernel space.
++ *
++ * The caller is expected to call the appropriate aio_kernel_init_() functions
++ * and then call aio_kernel_submit().  From that point forward progress is
++ * guaranteed by the file system aio method.  Eventually the caller's
++ * completion callback will be called.
++ *
++ * These iocbs are special.  They don't have a context, we don't limit the
++ * number pending, and they can't be canceled.
++ */
++struct kiocb *aio_kernel_alloc(gfp_t gfp, unsigned extra)
++{
++	return kzalloc(sizeof(struct kiocb) + extra, gfp);
++}
++EXPORT_SYMBOL_GPL(aio_kernel_alloc);
++
++void aio_kernel_free(struct kiocb *iocb)
++{
++	kfree(iocb);
++}
++EXPORT_SYMBOL_GPL(aio_kernel_free);
++
++/*
++ * ptr and count can be a buff and bytes or an iov and segs.
++ */
++void aio_kernel_init_rw(struct kiocb *iocb, struct file *filp,
++			size_t nr, loff_t off,
++			void (*complete)(u64 user_data, long res),
++			u64 user_data)
++{
++	iocb->ki_filp = filp;
++	iocb->ki_nbytes = nr;
++	iocb->ki_pos = off;
++	iocb->ki_ctx = (void *)-1;
++
++	iocb->ki_obj.complete = complete;
++	iocb->ki_user_data = user_data;
++}
++EXPORT_SYMBOL_GPL(aio_kernel_init_rw);
++
++static ssize_t aio_read_iter(struct kiocb *iocb, struct iov_iter *iter)
++{
++	struct file *file = iocb->ki_filp;
++	ssize_t ret;
++
++	if (unlikely(!(file->f_mode & FMODE_READ)))
++		return -EBADF;
++
++	ret = security_file_permission(file, MAY_READ);
++	if (unlikely(ret))
++		return ret;
++
++	if (!file->f_op->read_iter)
++		return -EINVAL;
++
++	return file->f_op->read_iter(iocb, iter);
++}
++
++static ssize_t aio_write_iter(struct kiocb *iocb, struct iov_iter *iter)
++{
++	struct file *file = iocb->ki_filp;
++	ssize_t ret;
++
++	if (unlikely(!(file->f_mode & FMODE_WRITE)))
++		return -EBADF;
++
++	ret = security_file_permission(file, MAY_WRITE);
++	if (unlikely(ret))
++		return ret;
++
++	if (!file->f_op->write_iter)
++		return -EINVAL;
++
++	file_start_write(file);
++	ret = file->f_op->write_iter(iocb, iter);
++	file_end_write(file);
++
++	return ret;
++}
++
++/*
++ * The iocb is our responsibility once this is called.  The caller must not
++ * reference it.
++ *
++ * Callers must be prepared for their iocb completion callback to be called the
++ * moment they enter this function.  The completion callback may be called from
++ * any context.
++ *
++ * Returns: 0: the iocb completion callback will be called with the op result
++ * negative errno: the operation was not submitted and the iocb was freed
++ */
++int aio_kernel_submit(struct kiocb *iocb, unsigned op,
++		      struct iov_iter *iter)
++{
++	int ret = -EINVAL;
++
++	if (WARN_ON(!is_kernel_kiocb(iocb) || !iocb->ki_obj.complete
++			|| !iocb->ki_filp || !(iter->type & ITER_BVEC)))
++		return ret;
++
++	if (op == IOCB_CMD_READ_ITER)
++		ret = aio_read_iter(iocb, iter);
++	else if (op == IOCB_CMD_WRITE_ITER)
++		ret = aio_write_iter(iocb, iter);
++
++	return ret;
++}
++EXPORT_SYMBOL_GPL(aio_kernel_submit);
++
+ static int io_submit_one(struct kioctx *ctx, struct iocb __user *user_iocb,
+ 			 struct iocb *iocb, bool compat)
+ {
+diff --git a/include/linux/aio.h b/include/linux/aio.h
+index d9c92da..c68504d 100644
+--- a/include/linux/aio.h
++++ b/include/linux/aio.h
+@@ -14,6 +14,12 @@ struct kiocb;
+ 
+ #define KIOCB_KEY		0
+ 
++/* opcode values not exposed to user space */
++enum {
++	IOCB_CMD_READ_ITER = 0x10000,
++	IOCB_CMD_WRITE_ITER = 0x10001,
++};
++
+ /*
+  * We use ki_cancel == KIOCB_CANCELLED to indicate that a kiocb has been either
+  * cancelled or completed (this makes a certain amount of sense because
+@@ -31,13 +37,15 @@ typedef int (kiocb_cancel_fn)(struct kiocb *);
+ 
+ struct kiocb {
+ 	struct file		*ki_filp;
+-	struct kioctx		*ki_ctx;	/* NULL for sync ops */
++	struct kioctx		*ki_ctx;	/* NULL for sync ops,
++						 * -1 for kernel caller */
+ 	kiocb_cancel_fn		*ki_cancel;
+ 	void			*private;
+ 
+ 	union {
+ 		void __user		*user;
+ 		struct task_struct	*tsk;
++		void			(*complete)(u64 user_data, long res);
+ 	} ki_obj;
+ 
+ 	__u64			ki_user_data;	/* user's data for completion */
+@@ -59,6 +67,11 @@ static inline bool is_sync_kiocb(struct kiocb *kiocb)
+ 	return kiocb->ki_ctx == NULL;
+ }
+ 
++static inline bool is_kernel_kiocb(struct kiocb *kiocb)
++{
++	return kiocb->ki_ctx == (void *)-1;
++}
++
+ static inline void init_sync_kiocb(struct kiocb *kiocb, struct file *filp)
+ {
+ 	*kiocb = (struct kiocb) {
+@@ -77,6 +90,12 @@ extern void exit_aio(struct mm_struct *mm);
+ extern long do_io_submit(aio_context_t ctx_id, long nr,
+ 			 struct iocb __user *__user *iocbpp, bool compat);
+ void kiocb_set_cancel_fn(struct kiocb *req, kiocb_cancel_fn *cancel);
++struct kiocb *aio_kernel_alloc(gfp_t gfp, unsigned extra);
++void aio_kernel_free(struct kiocb *iocb);
++void aio_kernel_init_rw(struct kiocb *iocb, struct file *filp, size_t nr,
++			loff_t off, void (*complete)(u64 user_data, long res),
++			u64 user_data);
++int aio_kernel_submit(struct kiocb *iocb, unsigned op, struct iov_iter *iter);
+ #else
+ static inline ssize_t wait_on_sync_kiocb(struct kiocb *iocb) { return 0; }
+ static inline void aio_complete(struct kiocb *iocb, long res, long res2) { }
 -- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+1.7.9.5
 
