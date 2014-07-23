@@ -1,191 +1,299 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758036AbaGWP6p (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 11:58:45 -0400
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:43684 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752625AbaGWP6n (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 11:58:43 -0400
-Message-ID: <53CFDBAE.4040601@gmail.com>
-Date: Wed, 23 Jul 2014 18:58:38 +0300
-From: Boaz Harrosh <openosd@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1757466AbaGWQAa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 12:00:30 -0400
+Received: from gloria.sntech.de ([95.129.55.99]:48723 "EHLO gloria.sntech.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754151AbaGWQA1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jul 2014 12:00:27 -0400
+From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
+To: Caesar Wang <caesar.wang@rock-chips.com>
+Cc: thierry.reding@gmail.com, b.galvani@gmail.com,
+        linux-arm-kernel@lists.infradead.org, linux-pwm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, cf@rock-chips.com,
+        huangtao@rock-chips.com, hj@rock-chips.com, xjq@rock-chips.com,
+        addy.ke@rock-chips.com
+Subject: Re: [PATCH v3 2/2] pwm: rockchip: Added to support for RK3288 SoC
+Date: Wed, 23 Jul 2014 18:01:46 +0200
+Message-ID: <1648580.P46ct6rREY@diego>
+User-Agent: KMail/4.11.5 (Linux/3.13-1-amd64; KDE/4.11.3; x86_64; ; )
+In-Reply-To: <1406097521-6457-3-git-send-email-caesar.wang@rock-chips.com>
+References: <1406097521-6457-1-git-send-email-caesar.wang@rock-chips.com> <1406097521-6457-3-git-send-email-caesar.wang@rock-chips.com>
 MIME-Version: 1.0
-To: Matthew Wilcox <matthew.r.wilcox@intel.com>, linux-fsdevel@vger.kernel.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-CC: willy@linux.intel.com
-Subject: Re: [PATCH v8 00/22] Support ext4 on NV-DIMMs
-References: <cover.1406058387.git.matthew.r.wilcox@intel.com>
-In-Reply-To: <cover.1406058387.git.matthew.r.wilcox@intel.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/22/2014 10:47 PM, Matthew Wilcox wrote:
-> One of the primary uses for NV-DIMMs is to expose them as a block device
-> and use a filesystem to store files on the NV-DIMM.  While that works,
-> it currently wastes memory and CPU time buffering the files in the page
-> cache.  We have support in ext2 for bypassing the page cache, but it
-> has some races which are unfixable in the current design.  This series
-> of patches rewrite the underlying support, and add support for direct
-> access to ext4.
+Hi Caesar.
+
+Am Mittwoch, 23. Juli 2014, 14:38:41 schrieb Caesar Wang:
+> This patch added to support the PWM controller found on
+> RK3288 SoC.
 > 
-> I would particularly welcome feedback from mm people on patch 5 ("Add
-> vm_replace_mixed()") and from fs people on patch 7 ("Add copy_to_iter(),
-> copy_from_iter() and iov_iter_zero()").
+> Signed-off-by: Caesar Wang <caesar.wang@rock-chips.com>
+> ---
+>  drivers/pwm/pwm-rockchip.c | 141
+> +++++++++++++++++++++++++++++++++++++++------ 1 file changed, 122
+> insertions(+), 19 deletions(-)
 > 
-> This iteration of the patchset rebases to 3.16-rc6 and makes substantial
-> changes based on Jan Kara's feedback:
+> diff --git a/drivers/pwm/pwm-rockchip.c b/drivers/pwm/pwm-rockchip.c
+> index eec2145..8d72a98 100644
+> --- a/drivers/pwm/pwm-rockchip.c
+> +++ b/drivers/pwm/pwm-rockchip.c
+> @@ -2,6 +2,7 @@
+>   * PWM driver for Rockchip SoCs
+>   *
+>   * Copyright (C) 2014 Beniamino Galvani <b.galvani@gmail.com>
+> + * Copyright (C) 2014 Caesar Wang <caesar.wang@rock-chips.com>
+
+you might want to check who actually holds the copyright for your 
+contributions, I guess a "Copyright (C) 2014 Rockchip"-something would be more 
+appropriate?
+
+
+>   *
+>   * This program is free software; you can redistribute it and/or
+>   * modify it under the terms of the GNU General Public License
+> @@ -12,6 +13,7 @@
+>  #include <linux/io.h>
+>  #include <linux/module.h>
+>  #include <linux/of.h>
+> +#include <linux/of_device.h>
+>  #include <linux/platform_device.h>
+>  #include <linux/pwm.h>
+>  #include <linux/time.h>
+> @@ -25,17 +27,89 @@
 > 
-
-Hi Matthew
-
-Thank you for all your hard work. I will review and test this series, and
-report.
-
-Have you please pushed this tree to git hub. It used to be on the prd
-tree, if you could just add another branch there, it would be cool.
-(https://github.com/01org/prd)
-
-I've been testing performance with the 3.14 based tree against a post-pmfs
-fs that uses prd, vs ext4-dax vs shmem: (Same memory workset sizes)
-ext4-dax is over prd same as pmfs, 32G + 32G system memory
-shmem is using the same 32G work-sets but on a 64G system memory (no prd)
-
-With reads they are all the same with pmfs-prd a bit on top.
-But writes, shmem is by far far better. I'll Investigate this farther, it
-does not make sense looks like a serialization of writes somewhere.
-(All numbers rounded)
-
-fio 4K random reads 24 threads (different files):
-pmfs-prd: 7,300,000
-ext4-dax: 6,200,000
-shmem:    6,150,000
-
-fio 4k random writes 24 threads (different files):
-pmfs-prd: 900,000
-ext4-dax: 800,000
-shmem:    3,500,000
-
-BTW:
-With the new pmfs-prd which I have also ported to the DAX tree - the old
-pmfs was copy/pasting xip-write and xip-mmap from generic code with some
-private hacks, but was still using xip-read stuff. I have just moved the
-old xip-read stuff inside (like write path did before) and so ported to the
-dax tree which removed these functions. I have spent a couple of hours on
-looking on the DAX read/write/mmap path vs the current pmfs read/write/mmap
-paths. Though they are very similar and clearly originated from the same code
-The new DAX code is even more alien to pmfs, specially with the current use
-of buffer-heads. (It could be made to work but with lots of extra shimming)
-So the current DAX form is more "block" based and not very suited to a pure
-memory based FS. If any of those come up they will need their own interfaces
-more similar to shmem's private implementation.
-
-Above you said regarding the old xip:
-	".. but it has some races which are unfixable in the current design"
-
-I have tested pmfs-prd under xfstest and I'm passing lots of them. I cannot
-easily spot the race you are talking about. (More like dir seeks and missing
-stuff) Could you point me to a test I should run, to try and find it?
-
-Thanks have a good day
-Boaz
-
->  - Handles errors in copy_user_bh()
->  - Changes calling convention for dax_get_addr() / dax_get_pfn() to take a
->    blkbits argument instead of an inode argument
->  - Cache inode->i_blkbits in a local variable
->  - Rename file offset to 'pos' to fit the rest of the VFS
->  - Added a FIXME to fall back to buffered I/O if the filesystem doesn't
->    support filling a hole from within the direct I/O path.  Mysterious
->    and complex are the ways of get_block implementations.
->  - Moved the call to inode_dio_done() to after end_io() to fix a race
->  - Added a comment about why we have to recheck i_size under the page lock
->  - Use vm_insert_page() in the COW path instead of returning VM_FAULT_COWED
->  - Handle errors coming back from dax_get_pfn() correctly in do_dax_fault()
->  - Removes zero pages from the process' address space before trying to
->    replace them with the PFN of the newly allocated block
->  - Factor out bdev_direct_access() to support partitioning properly
->  - Rework the i_mmap_mutex locking to remove an inversion vs the page lock
->  - Make the ext2 rename of -o xip to -o dax more graceful
->  - Only update file mtime/ctime on a write fault, not a read fault
+>  #define PRESCALER		2
 > 
+> +#define PWM_ENABLE		(1 << 0)
+> +#define PWM_CONTINUOUS		(1 << 1)
+> +#define PWM_DUTY_POSITIVE	(1 << 3)
+> +#define PWM_INACTIVE_NEGATIVE	(0 << 4)
+> +#define PWM_OUTPUT_LEFT		(0 << 5)
+> +#define PWM_LP_DISABLE		(0 << 8)
+> +
+>  struct rockchip_pwm_chip {
+>  	struct pwm_chip chip;
+>  	struct clk *clk;
+> +	const struct rockchip_pwm_data *data;
+>  	void __iomem *base;
+>  };
 > 
-> Matthew Wilcox (21):
->   Fix XIP fault vs truncate race
->   Allow page fault handlers to perform the COW
->   axonram: Fix bug in direct_access
->   Change direct_access calling convention
->   Add vm_replace_mixed()
->   Introduce IS_DAX(inode)
->   Add copy_to_iter(), copy_from_iter() and iov_iter_zero()
->   Replace XIP read and write with DAX I/O
->   Replace ext2_clear_xip_target with dax_clear_blocks
->   Replace the XIP page fault handler with the DAX page fault handler
->   Replace xip_truncate_page with dax_truncate_page
->   Replace XIP documentation with DAX documentation
->   Remove get_xip_mem
->   ext2: Remove ext2_xip_verify_sb()
->   ext2: Remove ext2_use_xip
->   ext2: Remove xip.c and xip.h
->   Remove CONFIG_EXT2_FS_XIP and rename CONFIG_FS_XIP to CONFIG_FS_DAX
->   ext2: Remove ext2_aops_xip
->   Get rid of most mentions of XIP in ext2
->   xip: Add xip_zero_page_range
->   brd: Rename XIP to DAX
+> +struct rockchip_pwm_regs {
+> +	unsigned long duty;
+> +	unsigned long period;
+> +	unsigned long cntr;
+> +	unsigned long ctrl;
+> +};
+> +
+> +struct rockchip_pwm_data {
+> +	struct rockchip_pwm_regs regs;
+> +	unsigned int prescaler;
+> +
+> +	void (*set_enable)(struct pwm_chip *chip, bool enable);
+> +};
+> +
+>  static inline struct rockchip_pwm_chip *to_rockchip_pwm_chip(struct
+> pwm_chip *c) {
+>  	return container_of(c, struct rockchip_pwm_chip, chip);
+>  }
 > 
-> Ross Zwisler (1):
->   ext4: Add DAX functionality
+> +static void rockchip_pwm_set_enable_v1(struct pwm_chip *chip, bool enable)
+> +{
+> +	struct rockchip_pwm_chip *pc = to_rockchip_pwm_chip(chip);
+> +	u32 val = 0;
+> +	u32 enable_conf = PWM_CTRL_OUTPUT_EN | PWM_CTRL_TIMER_EN;
+> +
+> +	val = readl_relaxed(pc->base + pc->data->regs.ctrl);
+> +
+> +	if (enable)
+> +		val |= enable_conf;
+> +	else
+> +		val &= ~enable_conf;
+> +
+> +	writel_relaxed(val, pc->base + pc->data->regs.ctrl);
+> +}
+> +
+> +static void rockchip_pwm_set_enable_v2(struct pwm_chip *chip, bool enable)
+> +{
+> +	struct rockchip_pwm_chip *pc = to_rockchip_pwm_chip(chip);
+> +	u32 val = 0;
+> +	u32 enable_conf = PWM_OUTPUT_LEFT | PWM_LP_DISABLE | PWM_ENABLE |
+> +		PWM_CONTINUOUS | PWM_DUTY_POSITIVE | PWM_INACTIVE_NEGATIVE;
+> +
+> +	val = readl_relaxed(pc->base + pc->data->regs.ctrl);
+> +
+> +	if (enable)
+> +		val |= enable_conf;
+> +	else
+> +		val &= ~enable_conf;
+> +
+> +	writel_relaxed(val, pc->base + pc->data->regs.ctrl);
+> +}
+> +
+> +static void rockchip_pwm_set_enable_vop(struct pwm_chip *chip, bool enable)
+> +{
+> +	struct rockchip_pwm_chip *pc = to_rockchip_pwm_chip(chip);
+> +	u32 val = 0;
+> +	u32 enable_conf = PWM_OUTPUT_LEFT | PWM_LP_DISABLE | PWM_ENABLE |
+> +		PWM_CONTINUOUS | PWM_DUTY_POSITIVE | PWM_INACTIVE_NEGATIVE;
+> +
+> +	val = readl_relaxed(pc->base + pc->data->regs.ctrl);
+> +
+> +	if (enable)
+> +		val |= enable_conf;
+> +	else
+> +		val &= ~enable_conf;
+> +
+> +	writel_relaxed(val, pc->base + pc->data->regs.ctrl);
+> +}
+
+not sure if I'm just blind ... do rockchip_pwm_set_enable_v2 and 
+rockchip_pwm_set_enable_vop differ at all?
+
+If they don't differ, I guess pwm_data_vop should just use 
+rockchip_pwm_set_enable_v2 instead of duplicating it.
+
+
+Heiko
+
+> +
+>  static int rockchip_pwm_config(struct pwm_chip *chip, struct pwm_device
+> *pwm, int duty_ns, int period_ns)
+>  {
+> @@ -52,20 +126,20 @@ static int rockchip_pwm_config(struct pwm_chip *chip,
+> struct pwm_device *pwm, * default prescaler value for all practical clock
+> rate values.
+>  	 */
+>  	div = clk_rate * period_ns;
+> -	do_div(div, PRESCALER * NSEC_PER_SEC);
+> +	do_div(div, pc->data->prescaler * NSEC_PER_SEC);
+>  	period = div;
 > 
->  Documentation/filesystems/Locking  |   3 -
->  Documentation/filesystems/dax.txt  |  91 +++++++
->  Documentation/filesystems/ext4.txt |   2 +
->  Documentation/filesystems/xip.txt  |  68 -----
->  arch/powerpc/sysdev/axonram.c      |  14 +-
->  drivers/block/Kconfig              |  13 +-
->  drivers/block/brd.c                |  22 +-
->  drivers/s390/block/dcssblk.c       |  19 +-
->  fs/Kconfig                         |  21 +-
->  fs/Makefile                        |   1 +
->  fs/block_dev.c                     |  28 +++
->  fs/dax.c                           | 503 +++++++++++++++++++++++++++++++++++++
->  fs/exofs/inode.c                   |   1 -
->  fs/ext2/Kconfig                    |  11 -
->  fs/ext2/Makefile                   |   1 -
->  fs/ext2/ext2.h                     |  10 +-
->  fs/ext2/file.c                     |  45 +++-
->  fs/ext2/inode.c                    |  38 +--
->  fs/ext2/namei.c                    |  13 +-
->  fs/ext2/super.c                    |  53 ++--
->  fs/ext2/xip.c                      |  91 -------
->  fs/ext2/xip.h                      |  26 --
->  fs/ext4/ext4.h                     |   6 +
->  fs/ext4/file.c                     |  53 +++-
->  fs/ext4/indirect.c                 |  18 +-
->  fs/ext4/inode.c                    |  51 ++--
->  fs/ext4/namei.c                    |  10 +-
->  fs/ext4/super.c                    |  39 ++-
->  fs/open.c                          |   5 +-
->  include/linux/blkdev.h             |   6 +-
->  include/linux/fs.h                 |  49 +++-
->  include/linux/mm.h                 |   9 +-
->  include/linux/uio.h                |   3 +
->  mm/Makefile                        |   1 -
->  mm/fadvise.c                       |   6 +-
->  mm/filemap.c                       |   6 +-
->  mm/filemap_xip.c                   | 483 -----------------------------------
->  mm/iov_iter.c                      | 237 +++++++++++++++--
->  mm/madvise.c                       |   2 +-
->  mm/memory.c                        |  45 ++--
->  40 files changed, 1228 insertions(+), 875 deletions(-)
->  create mode 100644 Documentation/filesystems/dax.txt
->  delete mode 100644 Documentation/filesystems/xip.txt
->  create mode 100644 fs/dax.c
->  delete mode 100644 fs/ext2/xip.c
->  delete mode 100644 fs/ext2/xip.h
->  delete mode 100644 mm/filemap_xip.c
+>  	div = clk_rate * duty_ns;
+> -	do_div(div, PRESCALER * NSEC_PER_SEC);
+> +	do_div(div, pc->data->prescaler * NSEC_PER_SEC);
+>  	duty = div;
 > 
+>  	ret = clk_enable(pc->clk);
+>  	if (ret)
+>  		return ret;
+> 
+> -	writel(period, pc->base + PWM_LRC);
+> -	writel(duty, pc->base + PWM_HRC);
+> -	writel(0, pc->base + PWM_CNTR);
+> +	writel(period, pc->base + pc->data->regs.period);
+> +	writel(duty, pc->base + pc->data->regs.duty);
+> +	writel(0, pc->base + pc->data->regs.cntr);
+> 
+>  	clk_disable(pc->clk);
+> 
+> @@ -76,15 +150,12 @@ static int rockchip_pwm_enable(struct pwm_chip *chip,
+> struct pwm_device *pwm) {
+>  	struct rockchip_pwm_chip *pc = to_rockchip_pwm_chip(chip);
+>  	int ret;
+> -	u32 val;
+> 
+>  	ret = clk_enable(pc->clk);
+>  	if (ret)
+>  		return ret;
+> 
+> -	val = readl_relaxed(pc->base + PWM_CTRL);
+> -	val |= PWM_CTRL_OUTPUT_EN | PWM_CTRL_TIMER_EN;
+> -	writel_relaxed(val, pc->base + PWM_CTRL);
+> +	pc->data->set_enable(chip, true);
+> 
+>  	return 0;
+>  }
+> @@ -92,11 +163,8 @@ static int rockchip_pwm_enable(struct pwm_chip *chip,
+> struct pwm_device *pwm) static void rockchip_pwm_disable(struct pwm_chip
+> *chip, struct pwm_device *pwm) {
+>  	struct rockchip_pwm_chip *pc = to_rockchip_pwm_chip(chip);
+> -	u32 val;
+> 
+> -	val = readl_relaxed(pc->base + PWM_CTRL);
+> -	val &= ~(PWM_CTRL_OUTPUT_EN | PWM_CTRL_TIMER_EN);
+> -	writel_relaxed(val, pc->base + PWM_CTRL);
+> +	pc->data->set_enable(chip, false);
+> 
+>  	clk_disable(pc->clk);
+>  }
+> @@ -108,12 +176,52 @@ static const struct pwm_ops rockchip_pwm_ops = {
+>  	.owner = THIS_MODULE,
+>  };
+> 
+> +static const struct rockchip_pwm_data pwm_data_v1 = {
+> +	.regs.duty = PWM_HRC,
+> +	.regs.period = PWM_LRC,
+> +	.regs.cntr = PWM_CNTR,
+> +	.regs.ctrl = PWM_CTRL,
+> +	.prescaler = PRESCALER,
+> +	.set_enable = rockchip_pwm_set_enable_v1,
+> +};
+> +
+> +static const struct rockchip_pwm_data pwm_data_v2 = {
+> +	.regs.duty = PWM_LRC,
+> +	.regs.period = PWM_HRC,
+> +	.regs.cntr = PWM_CNTR,
+> +	.regs.ctrl = PWM_CTRL,
+> +	.prescaler = PRESCALER-1,
+> +	.set_enable = rockchip_pwm_set_enable_v2,
+> +};
+> +
+> +static const struct rockchip_pwm_data pwm_data_vop = {
+> +	.regs.duty = PWM_LRC,
+> +	.regs.period = PWM_HRC,
+> +	.regs.cntr = PWM_CTRL,
+> +	.regs.ctrl = PWM_CNTR,
+> +	.prescaler = PRESCALER-1,
+> +	.set_enable = rockchip_pwm_set_enable_vop,
+> +};
+> +
+> +static const struct of_device_id rockchip_pwm_dt_ids[] = {
+> +	{ .compatible = "rockchip,rk2928-pwm", .data = &pwm_data_v1},
+> +	{ .compatible = "rockchip,rk3288-pwm", .data = &pwm_data_v2},
+> +	{ .compatible = "rockchip,vop-pwm", .data = &pwm_data_vop},
+> +	{ /* sentinel */ }
+> +};
+> +MODULE_DEVICE_TABLE(of, rockchip_pwm_dt_ids);
+> +
+>  static int rockchip_pwm_probe(struct platform_device *pdev)
+>  {
+> +	const struct of_device_id *id;
+>  	struct rockchip_pwm_chip *pc;
+>  	struct resource *r;
+>  	int ret;
+> 
+> +	id = of_match_device(rockchip_pwm_dt_ids, &pdev->dev);
+> +	if (!id)
+> +		return -EINVAL;
+> +
+>  	pc = devm_kzalloc(&pdev->dev, sizeof(*pc), GFP_KERNEL);
+>  	if (!pc)
+>  		return -ENOMEM;
+> @@ -133,6 +241,7 @@ static int rockchip_pwm_probe(struct platform_device
+> *pdev)
+> 
+>  	platform_set_drvdata(pdev, pc);
+> 
+> +	pc->data = id->data;
+>  	pc->chip.dev = &pdev->dev;
+>  	pc->chip.ops = &rockchip_pwm_ops;
+>  	pc->chip.base = -1;
+> @@ -156,12 +265,6 @@ static int rockchip_pwm_remove(struct platform_device
+> *pdev) return pwmchip_remove(&pc->chip);
+>  }
+> 
+> -static const struct of_device_id rockchip_pwm_dt_ids[] = {
+> -	{ .compatible = "rockchip,rk2928-pwm" },
+> -	{ /* sentinel */ }
+> -};
+> -MODULE_DEVICE_TABLE(of, rockchip_pwm_dt_ids);
+> -
+>  static struct platform_driver rockchip_pwm_driver = {
+>  	.driver = {
+>  		.name = "rockchip-pwm",
 
