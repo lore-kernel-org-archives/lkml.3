@@ -1,102 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755952AbaGWDGv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 23:06:51 -0400
-Received: from ozlabs.org ([103.22.144.67]:33835 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755815AbaGWDGt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 23:06:49 -0400
-Date: Wed, 23 Jul 2014 13:06:41 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Daniel Vetter <daniel.vetter@ffwll.ch>, <intel-gfx@lists.freedesktop.org>,
-        <dri-devel@lists.freedesktop.org>, Dave Airlie <airlied@linux.ie>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Borun Fu <borun.fu@intel.com>, Sagar Kamble <sagar.a.kamble@intel.com>
-Subject: linux-next: manual merge of the drm-intel tree with the drm tree
-Message-ID: <20140723130641.480be385@canb.auug.org.au>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
+	id S1755612AbaGWDKx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 23:10:53 -0400
+Received: from mail-vc0-f175.google.com ([209.85.220.175]:52100 "EHLO
+	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752196AbaGWDKw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 23:10:52 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/p3AIIOIk1oU0mWO7uFkJ1Kq"; protocol="application/pgp-signature"
+In-Reply-To: <20140722201740.GA11459@roeck-us.net>
+References: <1406013463-19218-1-git-send-email-acourbot@nvidia.com>
+ <1406013463-19218-4-git-send-email-acourbot@nvidia.com> <20140722201740.GA11459@roeck-us.net>
+From: Alexandre Courbot <gnurou@gmail.com>
+Date: Wed, 23 Jul 2014 12:10:31 +0900
+Message-ID: <CAAVeFuJAudOY-s3x38sv13SNo8zfofLWKOKBhKQPYAm1fAj4kw@mail.gmail.com>
+Subject: Re: [PATCH 3/5] gpio: make gpiochip_get_desc() gpiolib-private
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Alexandre Courbot <acourbot@nvidia.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/p3AIIOIk1oU0mWO7uFkJ1Kq
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Wed, Jul 23, 2014 at 5:17 AM, Guenter Roeck <linux@roeck-us.net> wrote:
+> On Tue, Jul 22, 2014 at 04:17:41PM +0900, Alexandre Courbot wrote:
+>> As GPIO descriptors are not going to remain unique anymore, having this
+>> function public is not safe. Restrain its use to gpiolib since we have
+>> no user outside of it.
+>>
+> If I implement a gpio chip driver built as module, and I want to use
+> gpiochip_request_own_desc(), how am I supposed to get desc ?
+>
+> I understand that there is still gpio_to_desc(), but I would have thought
+> that
+>         desc = gpiochip_get_desc(chip, pin);
+> would be better than
+>         desc = gpio_to_desc(chip->base + pin);
+>
+> Not that it makes much of a difference for me, just asking.
 
-Hi all,
+Actually I was thinking of changing the prototype of
+gpiochip_request_own_desc(), and your comment definitely strenghtens
+that idea. gpiochip functions should not work with descriptors,
+especially since we are going to switch to a multiple-consumer scheme
+where there won't be any canonical descriptor anymore. Thus, how about
+turning gpiochip_request_own_desc() into this:
 
-Today's linux-next merge of the drm-intel tree got a conflict in
-drivers/gpu/drm/i915/intel_display.c between commit d05410f9a450
-("drm/i915: split conversion function out into separate function") from
-the drm tree and commit 6b09e72050b4 ("drm/i915: Power gating display
-wells during i915_pm_suspend") from the drm-intel tree.
+struct gpio_desc *
+gpiochip_request_own_desc(struct gpio_chip *chip, u16 hwnum, const char *label);
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+which would basically do both the gpiochip_get_desc() and former
+gpiochip_request_own_desc() in one call. I think it should satisfy
+everybody and removes the need to have gpiochip_get_desc() (a not very
+useful function by itself) exposed out of gpiolib.
 
-P.S. Daniel, that drm-intel tree commit has no Signed-off-by from its
-author ...
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc drivers/gpu/drm/i915/intel_display.c
-index a5af732b87b8,1389d8a30f0a..000000000000
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@@ -4314,27 -4300,6 +4314,23 @@@ static void i9xx_pfit_enable(struct int
-  	I915_WRITE(BCLRPAT(crtc->pipe), 0);
-  }
- =20
- +static enum intel_display_power_domain port_to_power_domain(enum port por=
-t)
- +{
- +	switch (port) {
- +	case PORT_A:
- +		return POWER_DOMAIN_PORT_DDI_A_4_LANES;
- +	case PORT_B:
- +		return POWER_DOMAIN_PORT_DDI_B_4_LANES;
- +	case PORT_C:
- +		return POWER_DOMAIN_PORT_DDI_C_4_LANES;
- +	case PORT_D:
- +		return POWER_DOMAIN_PORT_DDI_D_4_LANES;
- +	default:
- +		WARN_ON_ONCE(1);
- +		return POWER_DOMAIN_PORT_OTHER;
- +	}
- +}
- +
-- #define for_each_power_domain(domain, mask)				\
-- 	for ((domain) =3D 0; (domain) < POWER_DOMAIN_NUM; (domain)++)	\
-- 		if ((1 << (domain)) & (mask))
--=20
-  enum intel_display_power_domain
-  intel_display_port_power_domain(struct intel_encoder *intel_encoder)
-  {
-
---Sig_/p3AIIOIk1oU0mWO7uFkJ1Kq
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJTzybGAAoJEMDTa8Ir7ZwVbcsP/0x+/eC5TlJHspRGyvhY7HjW
-ktglRuCJlLnC5PZ7KatVJHTSF9bzmkgqOy1W/YqS0PLcRQ4HnVXc0B3DsDxaizVm
-ue3K4tdmtzIATKMk35iqtv8yW3aVNmMz4OYf67uP28s3SXxzGF36/CLaSH78Nq5E
-DeWEsVkLxVOFDCGB3eVIy07HKT3VBkPn+WW25Uki4r+NUAMw7Cyej2AbBFmEXn4r
-An4opXTL7J3zIdsAeccN4sV3rb8dVCzl749i3n9BmPAdqdKmjUSIwBzo0NPPvIxg
-sQuQ1SbAxpvrEFl/L+eyfyN6FeTkR2oHXzoaRK4NxISKArVLX0HWKsF35XDIgoVV
-4Z7MbM8XGGJzCfmpsYwMlMxvosih1ZrzlOs/8MRwa3J/LUVjbkjNWD78iHW2HwVv
-/27OODoewMgF+47ruuAsUxPu1+z8sYICY+xdOCXBcoyZzixMPUYKIMw58JiUxlM9
-iZN3c6vzuZReyE6S0pGvSmPM/64EdZYuy52VCN8QmpXfA/C+t8GsTSI4b0SDwNxp
-m/XiurdNiFftYW6a5UHx15pNzf6BKoR8rjef4iVEMv70eDD6c9l3bo3c97Uu/UVX
-XyU5EUd97EokFjQV0cunM3zeQ20Q1F+FgxBWPwS/9dCK90BmR1oJ7DCroyR+do8j
-20VJ5dkCa82YnT2Yffdp
-=9LdS
------END PGP SIGNATURE-----
-
---Sig_/p3AIIOIk1oU0mWO7uFkJ1Kq--
+I will send a patch taking care of this if you agree that makes sense.
