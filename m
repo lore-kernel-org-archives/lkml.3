@@ -1,78 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756803AbaGWLaZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 07:30:25 -0400
-Received: from casper.infradead.org ([85.118.1.10]:36559 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751103AbaGWLaY (ORCPT
+	id S1756973AbaGWLbb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 07:31:31 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:30279 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752278AbaGWLb1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 07:30:24 -0400
-Date: Wed, 23 Jul 2014 13:30:21 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Dietmar Eggemann <dietmar.eggemann@arm.com>
-Cc: Michel =?iso-8859-1?Q?D=E4nzer?= <michel@daenzer.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Random panic in load_balance() with 3.16-rc
-Message-ID: <20140723113021.GP12054@laptop.lan>
-References: <53CE00EF.70108@daenzer.net>
- <53CF31AE.30403@daenzer.net>
- <CA+55aFwyURgG717kmuAXzKcHddN_63GirtwHZB4ePKH+8qVtJw@mail.gmail.com>
- <20140723064948.GK3935@laptop>
- <53CF6CC4.6090207@daenzer.net>
- <20140723082819.GR3935@laptop>
- <20140723092536.GO12054@laptop.lan>
- <53CF80EE.5050702@daenzer.net>
- <53CF844A.5050106@arm.com>
- <20140723111110.GT3935@laptop>
+	Wed, 23 Jul 2014 07:31:27 -0400
+Date: Wed, 23 Jul 2014 14:30:23 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Chen Gang <gang.chen.5i5j@gmail.com>
+Cc: linux-iio@vger.kernel.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>, teg@jklm.no,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Lennox Wu <lennox.wu@gmail.com>, Marek Vasut <marex@denx.de>,
+        Liqin Chen <liqin.linux@gmail.com>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Richard Weinberger <richard@nod.at>,
+        Geert Uytterhoeven <geert@linux-m68k.org>, msalter@redhat.com,
+        Guenter Roeck <linux@roeck-us.net>, linux-pwm@vger.kernel.org,
+        devel@driverdev.osuosl.org, linux-watchdog@vger.kernel.org,
+        arnd@arndb.de, linux-input@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        dmitry.torokhov@gmail.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        knaack.h@gmx.de, Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Mischa.Jonker@synopsys.com, jic23@kernel.org
+Subject: Re: [PATCH] drivers: Let several drivers depends on HAS_IOMEM for
+ 'devm_ioremap_resource'
+Message-ID: <20140723113023.GT25880@mwanda>
+References: <53C47725.8000005@gmail.com>
+ <53C47B76.4080306@roeck-us.net>
+ <53C47FB7.6080304@gmail.com>
+ <53C53CE1.4090803@gmail.com>
+ <53C7269E.4010702@gmail.com>
+ <20140717083756.GA19686@ulmo>
+ <53C7905D.9090003@gmail.com>
+ <20140717091601.GF25880@mwanda>
+ <53C7951F.6000906@gmail.com>
+ <53CF97E2.9000906@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140723111110.GT3935@laptop>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <53CF97E2.9000906@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 23, 2014 at 01:11:10PM +0200, Peter Zijlstra wrote:
-> On Wed, Jul 23, 2014 at 10:45:46AM +0100, Dietmar Eggemann wrote:
-> > Doesn't the picture showing the captured panic reveal more information.
-> > Haven't seen it myself, I just saw Peter's reply to your email
+On Wed, Jul 23, 2014 at 07:09:22PM +0800, Chen Gang wrote:
 > 
-> Its a general protection fault from somewhere in load_balance(), I send
-> you the picture.
 > 
-> It would help to get addr2line of the RIP I suppose.
+> On 07/17/2014 05:19 PM, Chen Gang wrote:
+> > 
+> > 
+> > On 07/17/2014 05:16 PM, Dan Carpenter wrote:
+> >> On Thu, Jul 17, 2014 at 04:59:09PM +0800, Chen Gang wrote:
+> >>>>> +	return (__force void __iomem *)ERR_PTR(-ENXIO);
+> >>>>
+> >>>> There's apparently an IOMEM_ERR_PTR() for this nowadays...
+> >>>>
+> >>>
+> >>> IOMEM_ERR_PTR() is defined within "lib/devres.c", not in "./include".
+> >>> But may we move it from "lib/devres.c" to "./include/linux/err.h"?
+> >>>
+> >>> For me, I am not quite sure, it may need additional discussion, but at
+> >>> least, that will be another patch.
+> >>
+> >> Yes.  Move it there.  That is the right place.
+> >>
 > 
-> Michel provided a config, so lemme go try and build that, maybe my gcc
-> will generate similar code to his and the function offset is enough
-> clue.
+> Sorry for replying late about IOMEM_ERR_PTR().
+> 
+> Although no objections within 2 days, for me, when move something to
+> generic header file, it is not only for future using, but also for
+> solving current issue, or it has to be suspended for waiting 'trigger'.
+> 
+> So for me, the patch about IOMEM_ERR_PTR() need be suspended, until some
+> member find an issue which may be related with IOMEM_ERR_PTR(), more or
+> less.
 
-So the code section says the faulting instruction is:
+Matthias Brugger already moved it to include/linux/io.h on Friday.
 
-  f3 a5
-
-followed by:
-
-  48 89 c7 85 50 ff ff 
-
-or so.
-
-My compiled code is 'different', the function is shorter, but there's a
-f3 a5 somewhere not too far short of +d7 at +a8. I have (objdump -SD):
-
-    35a8:       f3 a5                   rep movsl %ds:(%rsi),%es:(%rdi)
-
-        for_each_cpu_and(i, sched_group_cpus(group), env->cpus) {
-                unsigned long capacity, capacity_factor, wl;
-                enum fbq_type rt;
-
-                rq = cpu_rq(i);
-    35aa:       48 c7 c1 00 00 00 00    mov    $0x0,%rcx
-
-And that's the only part that could possibly match.
-
-That looks like the start of find_busiest_queue(). I'm not entirely sure
-what the rep movsl is operating on, lemme try and figure that out.
+regards,
+dan carpenter
 
