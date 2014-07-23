@@ -1,65 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932154AbaGWHJX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 03:09:23 -0400
-Received: from mail-ig0-f182.google.com ([209.85.213.182]:37165 "EHLO
-	mail-ig0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753477AbaGWHJW (ORCPT
+	id S932235AbaGWHJa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 03:09:30 -0400
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:46143 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755693AbaGWHJ1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 03:09:22 -0400
+	Wed, 23 Jul 2014 03:09:27 -0400
+Message-ID: <53CF5F9E.4020404@linaro.org>
+Date: Wed, 23 Jul 2014 16:09:18 +0900
+From: AKASHI Takahiro <takahiro.akashi@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-X-Originating-IP: [84.73.67.144]
-In-Reply-To: <53CF5EFE.6070307@canonical.com>
-References: <20140709093124.11354.3774.stgit@patser>
-	<20140709122953.11354.46381.stgit@patser>
-	<CAPM=9tyD2ZbrcGDC3hfNb7qNdzsfnyD-ZwM7G-nOgxeu5YKuSg@mail.gmail.com>
-	<53CE2421.5040906@amd.com>
-	<20140722114607.GL15237@phenom.ffwll.local>
-	<20140722115737.GN15237@phenom.ffwll.local>
-	<53CE56ED.4040109@vodafone.de>
-	<20140722132652.GO15237@phenom.ffwll.local>
-	<53CE6AFA.1060807@vodafone.de>
-	<CAKMK7uG1d31zU_i__wc+Yq46A0x0tPeKnMBs+NHSmHS82uMsXQ@mail.gmail.com>
-	<53CE84AA.9030703@amd.com>
-	<CAKMK7uFa8vMBV9_JenbFGnFXtV_r9dk=WjbMkkCDWcauhrDdJg@mail.gmail.com>
-	<53CE8A57.2000803@vodafone.de>
-	<53CF58FB.8070609@canonical.com>
-	<53CF5B9F.1050800@amd.com>
-	<53CF5EFE.6070307@canonical.com>
-Date: Wed, 23 Jul 2014 09:09:21 +0200
-Message-ID: <CAKMK7uHijSve_CsDE+pUk8+tjCAZjL7-nZCKeUkKuuufCPS4tQ@mail.gmail.com>
-Subject: Re: [Nouveau] [PATCH 09/17] drm/radeon: use common fence
- implementation for fences
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
-To: Maarten Lankhorst <maarten.lankhorst@canonical.com>
-Cc: =?UTF-8?Q?Christian_K=C3=B6nig?= <christian.koenig@amd.com>,
-        =?UTF-8?Q?Christian_K=C3=B6nig?= <deathsimple@vodafone.de>,
-        Dave Airlie <airlied@gmail.com>,
-        Thomas Hellstrom <thellstrom@vmware.com>,
-        nouveau <nouveau@lists.freedesktop.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        dri-devel <dri-devel@lists.freedesktop.org>,
-        Ben Skeggs <bskeggs@redhat.com>,
-        "Deucher, Alexander" <alexander.deucher@amd.com>
-Content-Type: text/plain; charset=UTF-8
+To: Kees Cook <keescook@chromium.org>
+CC: Will Drewry <wad@chromium.org>, Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>, dsaxena@linaro.org,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linaro-kernel@lists.linaro.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v5 0/3] arm64: Add seccomp support
+References: <1406020499-5537-1-git-send-email-takahiro.akashi@linaro.org> <CAGXu5j+1huPbBKH25HK6PmAL3Mi-zgD5UDRp-6wx8vuPVOBDEg@mail.gmail.com>
+In-Reply-To: <CAGXu5j+1huPbBKH25HK6PmAL3Mi-zgD5UDRp-6wx8vuPVOBDEg@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 23, 2014 at 9:06 AM, Maarten Lankhorst
-<maarten.lankhorst@canonical.com> wrote:
->> Can we somehow avoid the need to call fence_signal() at all? The interrupts at least on radeon are way to unreliable for such a thing. Can enable_signalling fail? What's the reason for fence_signaled() in the first place?
-> It doesn't need to be completely reliable, or finish immediately.
+On 07/23/2014 05:16 AM, Kees Cook wrote:
+> On Tue, Jul 22, 2014 at 2:14 AM, AKASHI Takahiro
+> <takahiro.akashi@linaro.org> wrote:
+>> (Please apply this patch after my audit patch in order to avoid some
+>> conflict on arm64/Kconfig.)
+>>
+>> This patch enables secure computing (system call filtering) on arm64.
+>> System calls can be allowed or denied by loaded bpf-style rules.
+>> Architecture specific part is to run secure_computing() on syscall entry
+>> and check the result. See [3/3]
 >
-> And any time wake_up_all(&rdev->fence_queue) is called all the fences that were enabled will be rechecked.
+> Thanks for working on this!
+>
+>> Prerequisites are:
+>>   * "arm64: Add audit support" patch
+>>
+>> This code is tested on ARMv8 fast model using
+>>   * libseccomp v2.1.1 with modifications for arm64 and verified by its "live"
+>>     tests, 20, 21 and 24.
+>>   * modified version of Kees' seccomp test for 'changing/skipping a syscall'
+>>     behavior
+>
+> Would you be able to share this? I'd love to add it to the seccomp
+> regression suite for the arm64-specific parts.
 
-I raised this already somewhere else, but should we have some common
-infrastructure in the core fence code to recheck fences periodically?
-radeon doesn't seem to be the only hw where this isn't reliable
-enough. Of course timer-based rechecking would only work if the driver
-provides the fence->signalled callback to recheck actual fence state.
--Daniel
--- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+Yep, I forked your repo here:
+https://github.com/t-akashi/seccomp.git
+(See trace_arm64 branch)
+
+Thanks,
+-Takahiro AKASHI
+
+> Thanks!
+>
+> -Kees
+>
+>>
+>> Changes v4 -> v5:
+>> * rebased to v3.16-rc
+>> * add patch [1/3] to allow ptrace to change a system call
+>>    (please note that this patch should be applied even without seccomp.)
+>>
+>> Changes v3 -> v4:
+>> * removed the following patch and moved it to "arm64: prerequisites for
+>>    audit and ftrace" patchset since it is required for audit and ftrace in
+>>    case of !COMPAT, too.
+>>    "arm64: is_compat_task is defined both in asm/compat.h and linux/compat.h"
+>>
+>> Changes v2 -> v3:
+>> * removed unnecessary 'type cast' operations [2/3]
+>> * check for a return value (-1) of secure_computing() explicitly [2/3]
+>> * aligned with the patch, "arm64: split syscall_trace() into separate
+>>    functions for enter/exit" [2/3]
+>> * changed default of CONFIG_SECCOMP to n [2/3]
+>>
+>> Changes v1 -> v2:
+>> * added generic seccomp.h for arm64 to utilize it [1,2/3]
+>> * changed syscall_trace() to return more meaningful value (-EPERM)
+>>    on seccomp failure case [2/3]
+>> * aligned with the change in "arm64: make a single hook to syscall_trace()
+>>    for all syscall features" v2 [2/3]
+>> * removed is_compat_task() definition from compat.h [3/3]
+>>
+>> AKASHI Takahiro (3):
+>>    arm64: ptrace: reload a syscall number after ptrace operations
+>>    asm-generic: Add generic seccomp.h for secure computing mode 1
+>>    arm64: Add seccomp support
+>>
+>>   arch/arm64/Kconfig               |   14 ++++++++++++++
+>>   arch/arm64/include/asm/seccomp.h |   25 +++++++++++++++++++++++++
+>>   arch/arm64/include/asm/unistd.h  |    3 +++
+>>   arch/arm64/kernel/entry.S        |    2 ++
+>>   arch/arm64/kernel/ptrace.c       |   18 ++++++++++++++++++
+>>   include/asm-generic/seccomp.h    |   28 ++++++++++++++++++++++++++++
+>>   6 files changed, 90 insertions(+)
+>>   create mode 100644 arch/arm64/include/asm/seccomp.h
+>>   create mode 100644 include/asm-generic/seccomp.h
+>>
+>> --
+>> 1.7.9.5
+>>
+>
+>
+>
