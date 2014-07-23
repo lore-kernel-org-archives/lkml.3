@@ -1,74 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756241AbaGWLL6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 07:11:58 -0400
-Received: from mail-by2lp0244.outbound.protection.outlook.com ([207.46.163.244]:19600
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751145AbaGWLL4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 07:11:56 -0400
-From: Yao Yuan <yao.yuan@freescale.com>
-To: =?utf-8?B?TG90aGFyIFdhw59tYW5u?= <LW@KARO-electronics.de>
-CC: "wsa@the-dreams.de" <wsa@the-dreams.de>, "marex@denx.de" <marex@denx.de>,
-        "mark.rutland@arm.com" <mark.rutland@arm.com>,
-        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
+	id S1756375AbaGWLNh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 07:13:37 -0400
+Received: from mout.kundenserver.de ([212.227.17.13]:55943 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752519AbaGWLNd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jul 2014 07:13:33 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Catalin Marinas <catalin.marinas@arm.com>,
+        Laura Abbott <lauraa@codeaurora.org>,
+        Will Deacon <Will.Deacon@arm.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>
-Subject: RE: [PATCH v5 1/2] i2c: add DMA support for freescale i2c driver
-Thread-Topic: [PATCH v5 1/2] i2c: add DMA support for freescale i2c driver
-Thread-Index: AQHPplZGZJt1rYr+30mdcMiYBrLa6JutadwAgAAUuKA=
-Date: Wed, 23 Jul 2014 11:11:53 +0000
-Message-ID: <b1778af62e7b42b39381fb2699b34eb1@BL2PR03MB338.namprd03.prod.outlook.com>
-References: <1406103883-3572-1-git-send-email-yao.yuan@freescale.com>
-	<1406103883-3572-2-git-send-email-yao.yuan@freescale.com>
- <20140723114834.411f6bb4@ipc1.ka-ro>
-In-Reply-To: <20140723114834.411f6bb4@ipc1.ka-ro>
-Accept-Language: en-US, zh-CN
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [123.151.195.50]
-x-microsoft-antispam: BCL:0;PCL:0;RULEID:
-x-forefront-prvs: 028166BF91
-x-forefront-antispam-report: SFV:NSPM;SFS:(6009001)(51704005)(199002)(24454002)(189002)(76176999)(46102001)(86362001)(19580405001)(74662001)(64706001)(80022001)(21056001)(106116001)(76482001)(85306003)(79102001)(2656002)(101416001)(4396001)(105586002)(77982001)(95666004)(85852003)(81542001)(20776003)(66066001)(99396002)(87936001)(92566001)(110136001)(83322001)(50986999)(54356999)(107046002)(81342001)(76576001)(99286002)(74316001)(106356001)(19580395003)(31966008)(33646002)(74502001)(83072002)(108616002)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:BL2PR03MB340;H:BL2PR03MB338.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;LANG:en;
-Content-Type: text/plain; charset="utf-8"
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Ritesh Harjain <ritesh.harjani@gmail.com>,
+        David Riley <davidriley@chromium.org>
+Subject: Re: [PATCHv4 5/5] arm64: Add atomic pool for non-coherent and CMA allocations.
+Date: Wed, 23 Jul 2014 13:12:45 +0200
+Message-ID: <7974618.dpxEl8UzaM@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140722210352.GA10604@arm.com>
+References: <1404324218-4743-1-git-send-email-lauraa@codeaurora.org> <201407222006.44666.arnd@arndb.de> <20140722210352.GA10604@arm.com>
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:Fc4rXPLd+VHqZ8PPkIY0RHdzU2pK2ymNu533lb1rmbk
+ Iyec3cV33kXekjP/77GLbXw0RzB+paG/WrCC2N0mT8dU2W/lXV
+ yyn78yxOURBBwJk/gAPc/3Ok8BPVVlRKe+YqUL/LhM0W+lZscg
+ EKocDyX/bY4HZoHUpEMEEg7sgHVbdGc+c6Qq12SIjIEovCdKR1
+ wmG5/v0SA2AYYeP8OUMzrQqz1YdQkAhXQXgKe5X3eCE4Us52bA
+ s/Ej1g9+jgLAt1mwueI9tyEL3+7kDOBzNua1zXqd7GEnCNpV8o
+ TCZsfmITGuMuuV7cL1ePK+sO5MsqIJHOz70qtdhFnFinZ1ngT9
+ 4G0LhUedeTx7oOtReL9Q=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s6NBC2ai015372
 
-Hi,
-
-Thanks for your review.
-
-Lothar WaÃŸmann wrote:
-> Yuan Yao wrote:
-> > Add dma support for i2c. This function depend on DMA driver.
-> > You can turn on it by write both the dmas and dma-name properties in dts node.
-> >
-> > Signed-off-by: Yuan Yao <yao.yuan@freescale.com>
-> > ---
-> >  drivers/i2c/busses/i2c-imx.c | 377
-[...]
-> > +
-> > +fail_rx:
-> > +	dma_release_channel(dma->chan_rx);
-> > +fail_tx:
-> > +	dma_release_channel(dma->chan_tx);
-> > +fail_al:
-> > +	devm_kfree(dev, dma);
-> >
-> No need for this one (that's the whole point of using devm_kzalloc())!
+On Tuesday 22 July 2014 22:03:52 Catalin Marinas wrote:
+> On Tue, Jul 22, 2014 at 07:06:44PM +0100, Arnd Bergmann wrote:
+> > On Wednesday 02 July 2014, Laura Abbott wrote:
+> > > +       pgprot_t prot = __pgprot(PROT_NORMAL_NC);
+> > > +       unsigned long nr_pages = atomic_pool_size >> PAGE_SHIFT;
+> > > +       struct page *page;
+> > > +       void *addr;
+> > > +
+> > > +
+> > > +       if (dev_get_cma_area(NULL))
+> > > +               page = dma_alloc_from_contiguous(NULL, nr_pages,
+> > > +                                       get_order(atomic_pool_size));
+> > > +       else
+> > > +               page = alloc_pages(GFP_KERNEL, get_order(atomic_pool_size));
+> > > +
+> > > +
+> > > +       if (page) {
+> > > +               int ret;
+> > > +
+> > > +               atomic_pool = gen_pool_create(PAGE_SHIFT, -1);
+> > > +               if (!atomic_pool)
+> > > +                       goto free_page;
+> > > +
+> > > +               addr = dma_common_contiguous_remap(page, atomic_pool_size,
+> > > +                                       VM_USERMAP, prot, atomic_pool_init);
+> > > +
+> > 
+> > I just stumbled over this thread and noticed the code here: When you do
+> > alloc_pages() above, you actually get pages that are already mapped into
+> > the linear kernel mapping as cacheable pages. Your new
+> > dma_common_contiguous_remap tries to map them as noncacheable. This
+> > seems broken because it allows the CPU to treat both mappings as
+> > cacheable, and that won't be coherent with device DMA.
 > 
+> It does *not* allow the CPU to treat both as cacheable. It treats the
+> non-cacheable mapping as non-cacheable (and the cacheable one as
+> cacheable). The only requirements the ARM ARM makes in this situation
+> (B2.9 point 5 in the ARMv8 ARM):
+> 
+> - Before writing to a location not using the Write-Back attribute,
+>   software must invalidate, or clean, a location from the caches if any
+>   agent might have written to the location with the Write-Back
+>   attribute. This avoids the possibility of overwriting the location
+>   with stale data.
+> - After writing to a location with the Write-Back attribute, software
+>   must clean the location from the caches, to make the write visible to
+>   external memory.
+> - Before reading the location with a cacheable attribute, software must
+>   invalidate the location from the caches, to ensure that any value held
+>   in the caches reflects the last value made visible in external memory.
+> 
+> So we as long as the CPU accesses such memory only via the non-cacheable
+> mapping, the only requirement is to flush the cache so that there are no
+> dirty lines that could be evicted.
 
-When DMA request failed, I2C will switch to PIO mode. So if the failed reason is just like DMA channel request failed. At this time the DMA should free by devm_kfree(). Is it?
+Ok, thanks for the explanation.
 
-[...]
-Thanks.
-Yuan Yao
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+> (if the mismatched attributes were for example Normal vs Device, the
+> Device guarantees would be lost but in the cacheable vs non-cacheable
+> it's not too bad; same for ARMv7).
+
+Right, that's probabably what I misremembered.
+
+> > > +               if (!addr)
+> > > +                       goto destroy_genpool;
+> > > +
+> > > +               memset(addr, 0, atomic_pool_size);
+> > > +               __dma_flush_range(addr, addr + atomic_pool_size);
+> > 
+> > It also seems weird to flush the cache on a virtual address of
+> > an uncacheable mapping. Is that well-defined?
+> 
+> Yes. According to D5.8.1 (Data and unified caches), "if cache
+> maintenance is performed on a memory location, the effect of that cache
+> maintenance is visible to all aliases of that physical memory location.
+> These properties are consistent with implementing all caches that can
+> handle data accesses as Physically-indexed, physically-tagged (PIPT)
+> caches".
+
+interesting.
+
+> > In the CMA case, the
+> > original mapping should already be uncached here, so you don't need
+> > to flush it.
+> 
+> I don't think it is non-cacheable already, at least not for arm64 (CMA
+> can be used on coherent architectures as well).
+
+Ok, I see it now.
+
+Sorry for all the confusion on my part.
+
+	Arnd
