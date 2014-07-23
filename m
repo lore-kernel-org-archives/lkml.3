@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757434AbaGWCpn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 22:45:43 -0400
-Received: from mga02.intel.com ([134.134.136.20]:44421 "EHLO mga02.intel.com"
+	id S932571AbaGWCez (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 22:34:55 -0400
+Received: from mga01.intel.com ([192.55.52.88]:34330 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757078AbaGWCfj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 22:35:39 -0400
+	id S1754903AbaGWCew (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 22:34:52 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,714,1400050800"; 
-   d="scan'208";a="547516840"
+   d="scan'208";a="565812109"
 From: "Chen, Gong" <gong.chen@linux.intel.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@kernel.org, tglx@linutronix.de, paulus@samba.org,
@@ -21,9 +21,9 @@ Cc: mingo@kernel.org, tglx@linutronix.de, paulus@samba.org,
         rostedt@goodmis.org, rric@kernel.org, gregkh@linuxfoundation.org,
         mhocko@suse.cz, david@fromorbit.com,
         "Chen, Gong" <gong.chen@linux.intel.com>
-Subject: [RFC PATCH v1 38/70] mm, memcontrol: _FROZEN Cleanup
-Date: Tue, 22 Jul 2014 21:59:14 -0400
-Message-Id: <1406080786-3938-39-git-send-email-gong.chen@linux.intel.com>
+Subject: [RFC PATCH v1 30/70] kernel, hrtimer: _FROZEN Cleanup
+Date: Tue, 22 Jul 2014 21:59:06 -0400
+Message-Id: <1406080786-3938-31-git-send-email-gong.chen@linux.intel.com>
 X-Mailer: git-send-email 2.0.0.rc2
 In-Reply-To: <1406080786-3938-1-git-send-email-gong.chen@linux.intel.com>
 References: <1406080786-3938-1-git-send-email-gong.chen@linux.intel.com>
@@ -31,26 +31,46 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove XXX_FROZEN state from mm/memcontrol.
+Remove XXX_FROZEN state from kernel/hrtimer.
 
 Signed-off-by: Chen, Gong <gong.chen@linux.intel.com>
 ---
- mm/memcontrol.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ kernel/hrtimer.c | 10 +---------
+ 1 file changed, 1 insertion(+), 9 deletions(-)
 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index a2c7bcb..871667d 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -2540,7 +2540,7 @@ static int memcg_cpu_hotplug_callback(struct notifier_block *nb,
- 	if (action == CPU_ONLINE)
- 		return NOTIFY_OK;
+diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
+index 3ab2899..a37958e 100644
+--- a/kernel/hrtimer.c
++++ b/kernel/hrtimer.c
+@@ -1756,27 +1756,19 @@ static int hrtimer_cpu_notify(struct notifier_block *self,
+ {
+ 	int scpu = (long)hcpu;
  
--	if (action != CPU_DEAD && action != CPU_DEAD_FROZEN)
-+	if ((action & ~CPU_TASKS_FROZEN) != CPU_DEAD)
- 		return NOTIFY_OK;
- 
- 	for_each_mem_cgroup(iter)
+-	switch (action) {
+-
++	switch (action & ~CPU_TASKS_FROZEN) {
+ 	case CPU_UP_PREPARE:
+-	case CPU_UP_PREPARE_FROZEN:
+ 		init_hrtimers_cpu(scpu);
+ 		break;
+-
+ #ifdef CONFIG_HOTPLUG_CPU
+ 	case CPU_DYING:
+-	case CPU_DYING_FROZEN:
+ 		clockevents_notify(CLOCK_EVT_NOTIFY_CPU_DYING, &scpu);
+ 		break;
+ 	case CPU_DEAD:
+-	case CPU_DEAD_FROZEN:
+-	{
+ 		clockevents_notify(CLOCK_EVT_NOTIFY_CPU_DEAD, &scpu);
+ 		migrate_hrtimers(scpu);
+ 		break;
+-	}
+ #endif
+-
+ 	default:
+ 		break;
+ 	}
 -- 
 2.0.0.rc2
 
