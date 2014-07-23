@@ -1,84 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932666AbaGWQvE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 12:51:04 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:60719 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932082AbaGWQvA (ORCPT
+	id S932456AbaGWQw6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 12:52:58 -0400
+Received: from mail-out.m-online.net ([212.18.0.9]:37121 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756793AbaGWQw5 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 12:51:00 -0400
-Date: Wed, 23 Jul 2014 18:50:51 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
-        josh@joshtriplett.org, tglx@linutronix.de, rostedt@goodmis.org,
-        dhowells@redhat.com, edumazet@google.com, dvhart@linux.intel.com,
-        oleg@redhat.com, bobby.prani@gmail.com
-Subject: Re: [PATCH tip/core/rcu] Do not keep timekeeping CPU tick running
- for non-nohz_full= CPUs
-Message-ID: <20140723165050.GI23175@localhost.localdomain>
-References: <20140719165350.GA18411@linux.vnet.ibm.com>
- <20140719180120.GA20887@localhost.localdomain>
- <20140720114759.GO8690@linux.vnet.ibm.com>
- <20140720203417.GV9918@twins.programming.kicks-ass.net>
- <20140721155741.GW8690@linux.vnet.ibm.com>
- <20140721170459.GP3935@laptop>
- <20140721173306.GA8690@linux.vnet.ibm.com>
- <20140723162346.GE23175@localhost.localdomain>
- <20140723163159.GZ11241@linux.vnet.ibm.com>
+	Wed, 23 Jul 2014 12:52:57 -0400
+X-Auth-Info: n3z8uy77uG0dTwGAIabwDH4vr8mYCAmzlxYG/GYJbZM=
+From: Marek Vasut <marex@denx.de>
+To: Lothar =?iso-8859-1?q?Wa=DFmann?= <LW@karo-electronics.de>
+Subject: Re: [PATCH v5 1/2] i2c: add DMA support for freescale i2c driver
+Date: Wed, 23 Jul 2014 18:52:53 +0200
+User-Agent: KMail/1.13.7 (Linux/3.13-trunk-amd64; KDE/4.13.1; x86_64; ; )
+Cc: Varka Bhadram <varkabhadram@gmail.com>, Yao Yuan <yao.yuan@freescale.com>,
+        "wsa@the-dreams.de" <wsa@the-dreams.de>,
+        "mark.rutland@arm.com" <mark.rutland@arm.com>,
+        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>
+References: <1406103883-3572-1-git-send-email-yao.yuan@freescale.com> <53CF9933.8030908@gmail.com> <20140723141502.2d726afe@ipc1.ka-ro>
+In-Reply-To: <20140723141502.2d726afe@ipc1.ka-ro>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140723163159.GZ11241@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201407231852.53893.marex@denx.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 23, 2014 at 09:31:59AM -0700, Paul E. McKenney wrote:
-> On Wed, Jul 23, 2014 at 06:23:48PM +0200, Frederic Weisbecker wrote:
-> > On Mon, Jul 21, 2014 at 10:33:06AM -0700, Paul E. McKenney wrote:
-> > > On Mon, Jul 21, 2014 at 07:04:59PM +0200, Peter Zijlstra wrote:
-> > > > On Mon, Jul 21, 2014 at 08:57:41AM -0700, Paul E. McKenney wrote:
-> > > > > On Sun, Jul 20, 2014 at 10:34:17PM +0200, Peter Zijlstra wrote:
-> > > > > > On Sun, Jul 20, 2014 at 04:47:59AM -0700, Paul E. McKenney wrote:
-> > > > > > > So we really have to have -all- the CPUs be idle to turn off the timekeeper.
-> > > > > > 
-> > > > > > That seems to be pretty unavoidable any which way around.
-> > > > > 
-> > > > > Hmmm...  The exception would be the likely common case where none of
-> > > > > the CPUs are flagged as nohz_full= CPUs.  If we handled that case as
-> > > > > if CONFIG_NO_HZ_FULL=n, we would have handled almost all of
-> > > > > the problem.
-> > > > 
-> > > > You mean that is not currently the case? Yes that seems like a fairly
-> > > > sane thing to do.
+On Wednesday, July 23, 2014 at 02:15:02 PM, Lothar Waßmann wrote:
+> Hi,
+> 
+> Varka Bhadram wrote:
+> > On 07/23/2014 04:41 PM, Yao Yuan wrote:
+> > > Hi,
 > > > 
-> > > Hard to say -- need to see where Frederic is putting the call to
-> > > rcu_sys_is_idle().  On the RCU side, I could potentially lower overhead
-> > > by checking tick_nohz_full_enabled() in a few functions.
+> > > Thanks for your review.
+> > > 
+> > > Lothar Waßmann wrote:
+> > >> Yuan Yao wrote:
+> > >>> Add dma support for i2c. This function depend on DMA driver.
+> > >>> You can turn on it by write both the dmas and dma-name properties in
+> > >>> dts node.
+> > >>> 
+> > >>> Signed-off-by: Yuan Yao <yao.yuan@freescale.com>
+> > >>> ---
+> > >>> 
+> > >>>   drivers/i2c/busses/i2c-imx.c | 377
+> > > 
+> > > [...]
+> > > 
+> > >>> +
+> > >>> +fail_rx:
+> > >>> +	dma_release_channel(dma->chan_rx);
+> > >>> +fail_tx:
+> > >>> +	dma_release_channel(dma->chan_tx);
+> > >>> +fail_al:
+> > >>> +	devm_kfree(dev, dma);
+> > >> 
+> > >> No need for this one (that's the whole point of using devm_kzalloc())!
+> > > 
+> > > When DMA request failed, I2C will switch to PIO mode. So if the failed
+> > > reason is just like DMA channel request failed. At this time the DMA
+> > > should free by devm_kfree(). Is it?
 > > 
-> > Yeah you definetly can.
+> > If probe failed the memory will be freed automatically because
+> > we are using devm_kzalloc()...
 > > 
-> > Just put this in the very beginning of rcu_sys_is_idle():
-> > 
-> >             if (tick_nohz_full_enabled())
-> >                 return true;
+> > If we use devm_kzalloc() ,no need to free manually on fail...
 > 
-> That would be !tick_nohz_full_enabled(), right?  But please see below.
+> Yes, but as Yuan Yao stated, the driver will still work
+> without DMA but carry around the unecessary allocated imx_i2c_dma
+> struct.
+> The devm_kfree() is not in the failure path of the driver's probe()
+> function, but in the function that tries to initialize the optional DMA
+> support.
 
-Right.
+If the DMA fails, I'd just make the entire probe fail. In case you cannot probe 
+DMA for your hardware, which is exected to be DMA capable, it means something is 
+wrong anyway.
 
-> 
-> > That imply perhaps a more appropriate name like rcu_sys_need_timekeeper(),
-> > with inverted condition.
-> 
-> Ah, I thought that you already avoided invoking rcu_sys_is_idle() when
-> !tick_nohz_full_enabled(), so I didn't add a check to that function.
-> Are you planning to change this?  Or am I having eyesight problems?
-
-Ah right, I forgot that I already have that check from the caller.
-
-Thanks.
+Best regards,
+Marek Vasut
