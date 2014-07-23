@@ -1,92 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752484AbaGWMFc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 08:05:32 -0400
-Received: from mail.kernel.org ([198.145.19.201]:38490 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750829AbaGWMFa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 08:05:30 -0400
-Date: Wed, 23 Jul 2014 14:05:24 +0200
-From: Sebastian Reichel <sre@kernel.org>
-To: Brian Norris <computersforpeace@gmail.com>
-Cc: Gregory Fong <gregory.0xf0@gmail.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Marc Carino <marc.ceeeee@gmail.com>, Matt Porter <mporter@linaro.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>, linux-pm@vger.kernel.org
-Subject: Re: [PATCH v9] power: reset: Add reboot driver for brcmstb
-Message-ID: <20140723120523.GB18172@earth.universe>
-References: <1406072883-16035-1-git-send-email-computersforpeace@gmail.com>
+	id S1750921AbaGWMHC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 08:07:02 -0400
+Received: from e32.co.us.ibm.com ([32.97.110.150]:41442 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750715AbaGWMHA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jul 2014 08:07:00 -0400
+Date: Wed, 23 Jul 2014 05:06:54 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Pranith Kumar <bobby.prani@gmail.com>
+Cc: Josh Triplett <josh@joshtriplett.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        "open list:READ-COPY UPDATE..." <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 02/16] rcu: Check return value for cpumask allocation
+Message-ID: <20140723120654.GF11241@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1406092194-13004-1-git-send-email-bobby.prani@gmail.com>
+ <1406092194-13004-3-git-send-email-bobby.prani@gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha512;
-	protocol="application/pgp-signature"; boundary="bCsyhTFzCvuiizWE"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1406072883-16035-1-git-send-email-computersforpeace@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1406092194-13004-3-git-send-email-bobby.prani@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14072312-0928-0000-0000-0000039B100A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---bCsyhTFzCvuiizWE
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-Hi Brian,
-
-On Tue, Jul 22, 2014 at 04:48:03PM -0700, Brian Norris wrote:
-> Add support for reboot functionality on boards with ARM-based
-> Broadcom STB chipsets. Make it built-in by default for ARCH_BRCMSTB,
-> but allow it to be configurable under COMPILE_TEST.
->=20
-> Signed-off-by: Marc Carino <marc.ceeeee@gmail.com>
-> Signed-off-by: Brian Norris <computersforpeace@gmail.com>
-> Cc: Sebastian Reichel <sre@kernel.org>
-> Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
-> Cc: David Woodhouse <dwmw2@infradead.org>
-> Cc: linux-pm@vger.kernel.org
-> Signed-off-by: Brian Norris <computersforpeace@gmail.com>
+On Wed, Jul 23, 2014 at 01:09:39AM -0400, Pranith Kumar wrote:
+> This commit add a check for return value of zalloc_cpumask_var() used while
+> allocating cpumask for rcu_nocb_mask.
+> 
+> Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
 > ---
-> Hi Sebastian, can you merge this, or else defer this to Matt?
->=20
-> This driver is mostly unchanged for a while, but it hasn't gotten an Ack =
-=66rom
-> any PM guys. It is now separated from the rest of its accompanying series:
->=20
->   https://lkml.org/lkml/2014/7/21/647
->   https://lkml.org/lkml/2014/7/21/801
->=20
-> The DT bindings have gotten review somewhere in the course of 8
-> versions.
+>  kernel/rcu/tree_plugin.h | 5 ++++-
+>  1 file changed, 4 insertions(+), 1 deletion(-)
+> 
+> diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
+> index f07b643..bac9797 100644
+> --- a/kernel/rcu/tree_plugin.h
+> +++ b/kernel/rcu/tree_plugin.h
+> @@ -88,7 +88,10 @@ static void __init rcu_bootup_announce_oddness(void)
+>  #ifdef CONFIG_RCU_NOCB_CPU
+>  #ifndef CONFIG_RCU_NOCB_CPU_NONE
+>  	if (!have_rcu_nocb_mask) {
+> -		zalloc_cpumask_var(&rcu_nocb_mask, GFP_KERNEL);
+> +		if (!zalloc_cpumask_var(&rcu_nocb_mask, GFP_KERNEL)) {
+> +			pr_info("rcu_nocb_mask allocation failed\n");
+> +			return;
 
-applied to battery-2.6.git:
+Good catch, but this "return" is an accident waiting to happen.  The
+accident will happen as soon as another RCU option appears, and the
+person adding it quite naturally adds it at the end of this function.
+The cleanest approach is to make an rcu_bootup_announce_oddness_nocb()
+as one commit that does -only- code motion, and the make this change
+as another commit.
 
-http://git.infradead.org/battery-2.6.git/commit/030494e75064cb4fcbeb609d845=
-ae0c9ceade2b9
+							Thanx, Paul
 
--- Sebastian
+> +		}
+>  		have_rcu_nocb_mask = true;
+>  	}
+>  #ifdef CONFIG_RCU_NOCB_CPU_ZERO
+> -- 
+> 2.0.0.rc2
+> 
 
---bCsyhTFzCvuiizWE
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBCgAGBQJTz6UDAAoJENju1/PIO/qakrEP+wUvvGywbUbPZfz5CBEiXSoR
-Ph/6ZwjSP7NMdbiML91Sg46N1y/0JbXaiSn3z7jsUZQOjqOxTDBy765nOCupp9Kt
-dZs5e7ZvY0dyav+XhwParkbxTOdalAqLD9T0ze/xXnoO2MBww5uu+mDuFOUgoVaP
-ZM5URRHXFpdzVjwDAQNh1YdwIsBie8xZct2uLoY1lAuXlGwKXL2cTBCjzrDiN3Bc
-zw25Wnjrl2hHyWf1Wc11keS8vu32p2fJYTy2st4lfcDuA8ySEmWOz38COoAbAsJ2
-t2JlotqqZbceRbdzpLkh5SKu1yUNwmovhV8JL/LoMrnrBFl4E3U3xZJkwCrqTs3o
-SCYTLhy+ZdScXIlEG3Kzq74Sng7QRkI40sWGHW63bTHnuTxQWi7sj3dsNouxTaKa
-y3bnyJChRu7aEH676PZF3YP4n2opDo+RfUJjMYRzrCKIsWWe23IeIVjUnGDJwvQo
-L73zb7JKYQl8GmkR8PDcwVEDl0cfNQmTGubXyntbkos3J6oFUqLhyu7UvoWRNVeI
-IG7a+bw4z0aaBMG5SlUC0n7HWmR8M9aeYlhjmh8UOTh/p6g9T+Q0pOStgLoqBAuK
-WR4Y4/wbtsBzJ67ByUYqF7nxdxT15W9QBpvzMk6LL7+skNQgr4Ymd7HaeGARHVYW
-G3BssnFFKkZDLPRvr18Z
-=S3rf
------END PGP SIGNATURE-----
-
---bCsyhTFzCvuiizWE--
