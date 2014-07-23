@@ -1,493 +1,235 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754682AbaGWBZv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 21:25:51 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:25523 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754163AbaGWBZt (ORCPT
+	id S1755048AbaGWB1e (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 21:27:34 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:16553 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751692AbaGWB1b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 21:25:49 -0400
-To: Sreekanth Reddy <sreekanth.reddy@avagotech.com>
-Cc: "Martin K. Petersen" <martin.petersen@oracle.com>, jejb@kernel.org,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        linux-scsi@vger.kernel.org,
-        Sathya Prakash <Sathya.Prakash@avagotech.com>,
-        Nagalakshmi Nandigama <Nagalakshmi.Nandigama@avagotech.com>,
-        linux-kernel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>
-Subject: Re: [RESEND][PATCH 07/10][SCSI]mpt2sas: Added Reply Descriptor Post Queue (RDPQ) Array support
-From: "Martin K. Petersen" <martin.petersen@oracle.com>
-Organization: Oracle Corporation
-References: <20140625103445.GA12943@avagotech.com>
-	<yq1zjg2m6lu.fsf@sermon.lab.mkp.net>
-	<CAK=zhgoQt5J=jh4jShAy5rBXNz34sN-tqf=uZDkY4zQJ9XhM5g@mail.gmail.com>
-Date: Tue, 22 Jul 2014 21:25:05 -0400
-In-Reply-To: <CAK=zhgoQt5J=jh4jShAy5rBXNz34sN-tqf=uZDkY4zQJ9XhM5g@mail.gmail.com>
-	(Sreekanth Reddy's message of "Tue, 22 Jul 2014 18:47:07 +0530")
-Message-ID: <yq18unklvda.fsf@sermon.lab.mkp.net>
-User-Agent: Gnus/5.130012 (Ma Gnus v0.12) Emacs/24.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	Tue, 22 Jul 2014 21:27:31 -0400
+X-AuditID: cbfee68f-b7fef6d000003970-15-53cf0f81c281
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Murali Karicheri'" <m-karicheri2@ti.com>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Cc: "'Santosh Shilimkar'" <santosh.shilimkar@ti.com>,
+        "'Russell King'" <linux@arm.linux.org.uk>,
+        "'Grant Likely'" <grant.likely@linaro.org>,
+        "'Rob Herring'" <robh+dt@kernel.org>,
+        "'Bjorn Helgaas'" <bhelgaas@google.com>,
+        "'Richard Zhu'" <r65037@freescale.com>,
+        "'Kishon Vijay Abraham I'" <kishon@ti.com>,
+        "'Marek Vasut'" <marex@denx.de>, "'Arnd Bergmann'" <arnd@arndb.de>,
+        "'Pawel Moll'" <pawel.moll@arm.com>,
+        "'Mark Rutland'" <mark.rutland@arm.com>,
+        "'Ian Campbell'" <ijc+devicetree@hellion.org.uk>,
+        "'Kumar Gala'" <galak@codeaurora.org>,
+        "'Randy Dunlap'" <rdunlap@infradead.org>,
+        "'Jingoo Han'" <jg1.han@samsung.com>
+References: <1405961925-27248-1-git-send-email-m-karicheri2@ti.com>
+ <1405961925-27248-4-git-send-email-m-karicheri2@ti.com>
+In-reply-to: <1405961925-27248-4-git-send-email-m-karicheri2@ti.com>
+Subject: Re: [PATCH v7 3/5] PCI: designware: enhance dw_pcie_host_init() to
+ support v3.65 DW hardware
+Date: Wed, 23 Jul 2014 10:27:28 +0900
+Message-id: <003201cfa615$44615ff0$cd241fd0$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac+lBVI6UuGp3R+5Rm6OXxFBZmHNyABD8G0Q
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrHKsWRmVeSWpSXmKPExsVy+t8zfd1G/vPBBn+e8Vv8nXSM3WJJU4bF
+	y0OaFv1vFrJaHPizg9Hi3KuVjBaXF15itbjwtIfNYtPja6wWl3fNYbM4O+84m8Xty7wWfb0H
+	2CzetDUyWiy9fpHJYsL0tSwWj2cJW7y9M53FonXvEXaL131rmB1EPNbMW8Po0dLcw+bx+9ck
+	Ro/Lfb1MHvNmnWDx+He4n8ljwaZSj5XLv7B5bF6h5bFpVSebx51re4C8JfUefVtWMXocv7Gd
+	yePzJrkA/igum5TUnMyy1CJ9uwSujMPL5rMVrNCt6Lq+jqWBcatKFyMHh4SAicTtiZldjJxA
+	ppjEhXvr2boYuTiEBJYxSjR9WcsKUzP3gCREfDqjxKuT15ghnN+MEg2Hu1hButkE1CS+fDnM
+	DpIQEehllPg4YQfYKGaBuywSm+efZAepEhKolWh8tZYJxOYUcJE419bEDGILC6RLnO56xwhi
+	swioSnw/dBzM5hWwlTh4cA4bhC0o8WPyPRYQm1lAS2L9zuNMELa8xOY1b5khTlWXePRXFyQs
+	ImAk8XLjPWaIEhGJfS9AxnMBlXRzSix8+JQdYpeAxLfJh1ggemUlNh1ghgSFpMTBFTdYJjBK
+	zEKyeRaSzbOQbJ6FZMUCRpZVjKKpBckFxUnpRcZ6xYm5xaV56XrJ+bmbGCFpqX8H490D1ocY
+	k4HWT2SWEk3OB6a1vJJ4Q2MzIwtTE1NjI3NLM9KElcR57z9MChISSE8sSc1OTS1ILYovKs1J
+	LT7EyMTBKdXA6Bc2q/mRzWYtj+0KKcstrgq0yXQ/ZGHsvx9dtNWP2y+zecrRb6+j9QzCXRTX
+	nzOMlD/25or0y5oVXf7/Zq5sWqjToDRp1943DCpds35ceai/ySz7i/OWpFTfnh3+nu0f2m9I
+	y7/4cfqF6SauIvYfH6sevpphtkT1evscVVZZn5JbTT0x36wMlViKMxINtZiLihMB7BNoHmED	AAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrHKsWRmVeSWpSXmKPExsVy+t9jQd1G/vPBBk33OS3+TjrGbrGkKcPi
+	5SFNi/43C1ktDvzZwWhx7tVKRovLCy+xWlx42sNmsenxNVaLy7vmsFmcnXeczeL2ZV6Lvt4D
+	bBZv2hoZLZZev8hkMWH6WhaLx7OELd7emc5i0br3CLvF6741zA4iHmvmrWH0aGnuYfP4/WsS
+	o8flvl4mj3mzTrB4/Dvcz+SxYFOpx8rlX9g8Nq/Q8ti0qpPN4861PUDeknqPvi2rGD2O39jO
+	5PF5k1wAf1QDo01GamJKapFCal5yfkpmXrqtkndwvHO8qZmBoa6hpYW5kkJeYm6qrZKLT4Cu
+	W2YO0M9KCmWJOaVAoYDE4mIlfTtME0JD3HQtYBojdH1DguB6jAzQQMI6xozDy+azFazQrei6
+	vo6lgXGrShcjB4eEgInE3AOSXYycQKaYxIV769m6GLk4hASmM0q8OnmNGcL5zSjRcLiLFaSK
+	TUBN4suXw+wgCRGBXkaJjxN2gLUwC9xlkdg8/yQ7SJWQQK1E46u1TCA2p4CLxLm2JmYQW1gg
+	XeJ01ztGEJtFQFXi+6HjYDavgK3EwYNz2CBsQYkfk++xgNjMAloS63ceZ4Kw5SU2r3nLDHG2
+	usSjv7ogYREBI4mXG+8xQ5SISOx78Y5xAqPQLCSTZiGZNAvJpFlIWhYwsqxiFE0tSC4oTkrP
+	NdIrTswtLs1L10vOz93ECE57z6R3MK5qsDjEKMDBqMTDW1BzLliINbGsuDL3EKMEB7OSCG90
+	K1CINyWxsiq1KD++qDQntfgQoynQoxOZpUST84EpOa8k3tDYxMzI0sjMwsjE3FxJnPdgq3Wg
+	kEB6YklqdmpqQWoRTB8TB6dUA6OJTBBj3RztOOscr+J/DV2exl1X1X+IWrA1PZnroBizaC1v
+	4xqex5zLiotOfwm09ZK32OUmvqH63gxWFbWFEVctIk4lT9DR5v3+bP6eW3Mf3VnvOUdZNeI/
+	uynvpLuWGQZxQmqSU+O0eE+Ju+/a46S/fT5DkO7WJ5lLp4hx9jJPNHpy7N1sayWW4oxEQy3m
+	ouJEADLoRdSRAwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "Sreekanth" == Sreekanth Reddy <sreekanth.reddy@avagotech.com> writes:
+On Tuesday, July 22, 2014 1:59 AM, Murali Karicheri wrote:
+> 
+> keystone PCI controller is based on v3.65 designware hardware. This
+> version differs from newer versions of the hardware in few functional
+> areas discussed below that makes it necessary to change dw_pcie_host_init()
+> to support v3.65 based PCI controller.
+> 
+>  1. No support for ATU port. So any ATU specific resource handling code
+>     is to be bypassed for v3.65 h/w.
+>  2. MSI controller uses Application space to implement MSI and 32 MSI
+>     interrupts are multiplexed over 8 IRQs to the host. Hence the code
+>     to process MSI IRQ needs to be different. This patch allows platform
+>     driver to provide its own irq_domain_ops ptr to irq_domain_add_linear()
+>     through an API callback from the designware core driver.
+>  3. MSI interrupt generation requires EP to write to the RC's application
+>     register. So enhance the driver to allow setup of inbound access to
+>     MSI irq register as a post scan bus API callback.
+> 
+> Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
+> Reviewed-by: Pratyush Anand <pratyush.anand@st.com>
+> Acked-by: Mohit KUMAR <mohit.kumar@st.com>
+> 
+> CC: Santosh Shilimkar <santosh.shilimkar@ti.com>
+> CC: Russell King <linux@arm.linux.org.uk>
+> CC: Grant Likely <grant.likely@linaro.org>
+> CC: Rob Herring <robh+dt@kernel.org>
+> CC: Jingoo Han <jg1.han@samsung.com>
 
-Sreekanth,
+Acked-by: Jingoo Han <jg1.han@samsung.com>
 
->> Why do you need to special case !rdpq? Isn't reply_queue_count = 1 in
->> that case?
+Best regards,
+Jingoo Han
 
-Sreekanth> [Sreekanth] we have added this RDPQ support in phase18. So,
-Sreekanth> the firmware from less than phase18 doesn't have this RDPQ
-Sreekanth> support.
+> CC: Bjorn Helgaas <bhelgaas@google.com>
+> CC: Richard Zhu <r65037@freescale.com>
+> CC: Kishon Vijay Abraham I <kishon@ti.com>
+> CC: Marek Vasut <marex@denx.de>
+> CC: Arnd Bergmann <arnd@arndb.de>
+> CC: Pawel Moll <pawel.moll@arm.com>
+> CC: Mark Rutland <mark.rutland@arm.com>
+> CC: Ian Campbell <ijc+devicetree@hellion.org.uk>
+> CC: Kumar Gala <galak@codeaurora.org>
+> CC: Randy Dunlap <rdunlap@infradead.org>
+> CC: Grant Likely <grant.likely@linaro.org>
+> ---
+>  drivers/pci/host/pcie-designware.c |   54 +++++++++++++++++++++++-------------
+>  drivers/pci/host/pcie-designware.h |    2 ++
+>  2 files changed, 36 insertions(+), 20 deletions(-)
+> 
+> diff --git a/drivers/pci/host/pcie-designware.c b/drivers/pci/host/pcie-designware.c
+> index 905941c..35bb4af 100644
+> --- a/drivers/pci/host/pcie-designware.c
+> +++ b/drivers/pci/host/pcie-designware.c
+> @@ -420,8 +420,8 @@ int __init dw_pcie_host_init(struct pcie_port *pp)
+>  	struct device_node *np = pp->dev->of_node;
+>  	struct of_pci_range range;
+>  	struct of_pci_range_parser parser;
+> +	int i, ret;
+>  	u32 val;
+> -	int i;
+> 
+>  	if (of_pci_range_parser_init(&parser, np)) {
+>  		dev_err(pp->dev, "missing ranges property\n");
+> @@ -467,21 +467,26 @@ int __init dw_pcie_host_init(struct pcie_port *pp)
+>  		}
+>  	}
+> 
+> -	pp->cfg0_base = pp->cfg.start;
+> -	pp->cfg1_base = pp->cfg.start + pp->config.cfg0_size;
+>  	pp->mem_base = pp->mem.start;
+> 
+> -	pp->va_cfg0_base = devm_ioremap(pp->dev, pp->cfg0_base,
+> -					pp->config.cfg0_size);
+>  	if (!pp->va_cfg0_base) {
+> -		dev_err(pp->dev, "error with ioremap in function\n");
+> -		return -ENOMEM;
+> +		pp->cfg0_base = pp->cfg.start;
+> +		pp->va_cfg0_base = devm_ioremap(pp->dev, pp->cfg0_base,
+> +						pp->config.cfg0_size);
+> +		if (!pp->va_cfg0_base) {
+> +			dev_err(pp->dev, "error with ioremap in function\n");
+> +			return -ENOMEM;
+> +		}
+>  	}
+> -	pp->va_cfg1_base = devm_ioremap(pp->dev, pp->cfg1_base,
+> -					pp->config.cfg1_size);
+> +
+>  	if (!pp->va_cfg1_base) {
+> -		dev_err(pp->dev, "error with ioremap\n");
+> -		return -ENOMEM;
+> +		pp->cfg1_base = pp->cfg.start + pp->config.cfg0_size;
+> +		pp->va_cfg1_base = devm_ioremap(pp->dev, pp->cfg1_base,
+> +						pp->config.cfg1_size);
+> +		if (!pp->va_cfg1_base) {
+> +			dev_err(pp->dev, "error with ioremap\n");
+> +			return -ENOMEM;
+> +		}
+>  	}
+> 
+>  	if (of_property_read_u32(np, "num-lanes", &pp->lanes)) {
+> @@ -490,16 +495,22 @@ int __init dw_pcie_host_init(struct pcie_port *pp)
+>  	}
+> 
+>  	if (IS_ENABLED(CONFIG_PCI_MSI)) {
+> -		pp->irq_domain = irq_domain_add_linear(pp->dev->of_node,
+> -					MAX_MSI_IRQS, &msi_domain_ops,
+> -					&dw_pcie_msi_chip);
+> -		if (!pp->irq_domain) {
+> -			dev_err(pp->dev, "irq domain init failed\n");
+> -			return -ENXIO;
+> -		}
+> +		if (!pp->ops->msi_host_init) {
+> +			pp->irq_domain = irq_domain_add_linear(pp->dev->of_node,
+> +						MAX_MSI_IRQS, &msi_domain_ops,
+> +						&dw_pcie_msi_chip);
+> +			if (!pp->irq_domain) {
+> +				dev_err(pp->dev, "irq domain init failed\n");
+> +				return -ENXIO;
+> +			}
+> 
+> -		for (i = 0; i < MAX_MSI_IRQS; i++)
+> -			irq_create_mapping(pp->irq_domain, i);
+> +			for (i = 0; i < MAX_MSI_IRQS; i++)
+> +				irq_create_mapping(pp->irq_domain, i);
+> +		} else {
+> +			ret = pp->ops->msi_host_init(pp, &dw_pcie_msi_chip);
+> +			if (ret < 0)
+> +				return ret;
+> +		}
+>  	}
+> 
+>  	if (pp->ops->host_init)
+> @@ -759,6 +770,9 @@ static struct pci_bus *dw_pcie_scan_bus(int nr, struct pci_sys_data *sys)
+>  		BUG();
+>  	}
+> 
+> +	if (bus && pp->ops->scan_bus)
+> +		pp->ops->scan_bus(pp);
+> +
+>  	return bus;
+>  }
+> 
+> diff --git a/drivers/pci/host/pcie-designware.h b/drivers/pci/host/pcie-designware.h
+> index 387f69e..080c649 100644
+> --- a/drivers/pci/host/pcie-designware.h
+> +++ b/drivers/pci/host/pcie-designware.h
+> @@ -70,6 +70,8 @@ struct pcie_host_ops {
+>  	void (*msi_set_irq)(struct pcie_port *pp, int irq);
+>  	void (*msi_clear_irq)(struct pcie_port *pp, int irq);
+>  	u32 (*get_msi_data)(struct pcie_port *pp);
+> +	void (*scan_bus)(struct pcie_port *pp);
+> +	int (*msi_host_init)(struct pcie_port *pp, struct msi_chip *chip);
+>  };
+> 
+>  int dw_pcie_cfg_read(void __iomem *addr, int where, int size, u32 *val);
+> --
+> 1.7.9.5
 
-Yes, but a single allocation is a subset of multiple allocations. That
-has nothing to do with firmware phase and whether RDPQ is available or
-not.
-
-I have attached a simplified patch below. I probably messed something up
-but you get the idea.
-
-When a new feature is introduced you guys generally go:
-
-	if (new_feature) {
-		/* Huge block of code */
-	} else {
-		/* Almost identical huge block of original code */
-	}
-
-I assume that's done to leave the original code paths unchanged. But
-that approach doesn't fly around here. You'll have to come up with a
-generic approach that reduces code duplication and which minimizes the
-differences between the new feature and the old one.
-
-As an example:
-
-Original patch:
- mpt2sas_base.c |  923 +++++++++++++++++++++++++++++++++------------------------
- mpt2sas_base.h |   18 -
- 2 files changed, 558 insertions(+), 383 deletions(-)
-
-My patch:
- mpt2sas_base.c |  207 +++++++++++++++++++++++++++++++++++++++++----------------
- mpt2sas_base.h |   18 +++-
- 2 files changed, 166 insertions(+), 59 deletions(-)
-
-
-commit ef510bd8dc0e43f8c58012ba9f54213b26381464
-Author: Martin K. Petersen <martin.petersen@oracle.com>
-Date:   Tue Jul 22 20:56:27 2014 -0400
-
-    Up to now, driver allocates a single contiguous block of memory pool for
-    all reply queues and passes down a single address in the
-    ReplyDescriptorPostQueueAddress field of the IOC Init Request Message to
-    the firmware.
-    
-    When firmware receives this address, it will program each of the Reply
-    Descriptor Post Queue registers, as each reply queue has its own
-    register. Thus the firmware, starting from a base address it determines
-    the starting address of the subsequent reply queues through some simple
-    arithmetic calculations.
-    
-    The size of this contiguous block of memory pool is directly
-    proportional to number of MSI-X vectors and the HBA queue depth. For
-    example higher MSI-X vectors requires larger contiguous block of memory
-    pool.
-    
-    But some of the OS kernels are unable to allocate this larger
-    contiguous block of memory pool.
-    
-    So, the proposal is to allocate memory independently for each Reply
-    Queue and pass down all of the addresses to the firmware.  Then the
-    firmware will just take each address and program the value into the
-    correct register.
-    
-    When HBAs with older firmware(i.e. without RDPQ capability) is used with
-    this new driver then the max_msix_vectors value would be set to 8 by
-    default.
-    
-    Signed-off-by: Sreekanth Reddy <Sreekanth.Reddy@avagotech.com>
-    Signed-off-by: Martin K. Petersen <martin.petersen@oracle.com>
-
-diff --git a/drivers/scsi/mpt2sas/mpt2sas_base.c b/drivers/scsi/mpt2sas/mpt2sas_base.c
-index 22c4575241fc..2d39d5196788 100644
---- a/drivers/scsi/mpt2sas/mpt2sas_base.c
-+++ b/drivers/scsi/mpt2sas/mpt2sas_base.c
-@@ -92,6 +92,8 @@ static int disable_discovery = -1;
- module_param(disable_discovery, int, 0);
- MODULE_PARM_DESC(disable_discovery, " disable discovery ");
- 
-+static int _base_get_ioc_facts(struct MPT2SAS_ADAPTER *ioc, int sleep_flag);
-+
- /**
-  * _scsih_set_fwfault_debug - global setting of ioc->fwfault_debug.
-  *
-@@ -1424,6 +1426,9 @@ _base_enable_msix(struct MPT2SAS_ADAPTER *ioc)
- 	ioc->reply_queue_count = min_t(int, ioc->cpu_count,
- 	    ioc->msix_vector_count);
- 
-+	if (!ioc->rdpq_array_enable && max_msix_vectors == -1)
-+		max_msix_vectors = 8;
-+
- 	if (max_msix_vectors > 0) {
- 		ioc->reply_queue_count = min_t(int, max_msix_vectors,
- 		    ioc->reply_queue_count);
-@@ -1552,6 +1557,16 @@ mpt2sas_base_map_resources(struct MPT2SAS_ADAPTER *ioc)
- 	}
- 
- 	_base_mask_interrupts(ioc);
-+
-+	r = _base_get_ioc_facts(ioc, CAN_SLEEP);
-+	if (r)
-+		goto out_fail;
-+
-+	if (!ioc->rdpq_array_enable_assigned) {
-+		ioc->rdpq_array_enable = ioc->rdpq_array_capable;
-+		ioc->rdpq_array_enable_assigned = 1;
-+	}
-+
- 	r = _base_enable_msix(ioc);
- 	if (r)
- 		goto out_fail;
-@@ -2390,15 +2405,25 @@ _base_release_memory_pools(struct MPT2SAS_ADAPTER *ioc)
- 		ioc->reply_free = NULL;
- 	}
- 
--	if (ioc->reply_post_free) {
--		pci_pool_free(ioc->reply_post_free_dma_pool,
--		    ioc->reply_post_free, ioc->reply_post_free_dma);
-+	if (ioc->reply_post) {
-+		for (i = 0; i < ioc->reply_queue_count ; i++) {
-+			struct reply_post_struct *rps = &ioc->reply_post[i];
-+
-+			if (rps->reply_post_free) {
-+				pci_pool_free(ioc->reply_post_free_dma_pool,
-+					      rps->reply_post_free,
-+					      rps->reply_post_free_dma);
-+				dexitprintk(ioc, printk(MPT2SAS_INFO_FMT
-+					"reply_post_free_pool(0x%p): free\n",
-+					ioc->name, rps->reply_post_free));
-+				rps->reply_post_free = NULL;
-+			}
-+		}
-+
- 		if (ioc->reply_post_free_dma_pool)
- 			pci_pool_destroy(ioc->reply_post_free_dma_pool);
--		dexitprintk(ioc, printk(MPT2SAS_INFO_FMT
--		    "reply_post_free_pool(0x%p): free\n", ioc->name,
--		    ioc->reply_post_free));
--		ioc->reply_post_free = NULL;
-+
-+		kfree(ioc->reply_post);
- 	}
- 
- 	if (ioc->config_page) {
-@@ -2443,7 +2468,7 @@ _base_allocate_memory_pools(struct MPT2SAS_ADAPTER *ioc,  int sleep_flag)
- 	struct mpt2sas_facts *facts;
- 	u16 max_sge_elements;
- 	u16 chains_needed_per_io;
--	u32 sz, total_sz, reply_post_free_sz;
-+	u32 sz, total_sz;
- 	u32 retry_sz;
- 	u16 max_request_credit;
- 	int i;
-@@ -2752,36 +2777,52 @@ chain_done:
- 	    "(0x%llx)\n", ioc->name, (unsigned long long)ioc->reply_free_dma));
- 	total_sz += sz;
- 
--	/* reply post queue, 16 byte align */
--	reply_post_free_sz = ioc->reply_post_queue_depth *
--	    sizeof(Mpi2DefaultReplyDescriptor_t);
--	if (_base_is_controller_msix_enabled(ioc))
--		sz = reply_post_free_sz * ioc->reply_queue_count;
--	else
--		sz = reply_post_free_sz;
--	ioc->reply_post_free_dma_pool = pci_pool_create("reply_post_free pool",
--	    ioc->pdev, sz, 16, 0);
--	if (!ioc->reply_post_free_dma_pool) {
--		printk(MPT2SAS_ERR_FMT "reply_post_free pool: pci_pool_create "
--		    "failed\n", ioc->name);
-+	/* reply post queue, 16-byte alignment, do not cross 2GB boundary */
-+	sz = ioc->reply_post_queue_depth * sizeof(Mpi2DefaultReplyDescriptor_t);
-+
-+	ioc->reply_post = kcalloc(ioc->reply_queue_count,
-+				  sizeof(struct reply_post_struct), GFP_KERNEL);
-+	if (!ioc->reply_post) {
-+		printk(MPT2SAS_ERR_FMT "reply_post_free pool: kcalloc failed\n",
-+		       ioc->name);
- 		goto out;
- 	}
--	ioc->reply_post_free = pci_pool_alloc(ioc->reply_post_free_dma_pool ,
--	    GFP_KERNEL, &ioc->reply_post_free_dma);
--	if (!ioc->reply_post_free) {
--		printk(MPT2SAS_ERR_FMT "reply_post_free pool: pci_pool_alloc "
--		    "failed\n", ioc->name);
-+
-+	ioc->reply_post_free_dma_pool =
-+		pci_pool_create("reply_post_free pool", ioc->pdev, sz, 16,
-+				2L * 1024 * 1024 * 1024);
-+	if (!ioc->reply_post_free_dma_pool) {
-+		printk(MPT2SAS_ERR_FMT
-+		       "reply_post_free pool: pci_pool_create failed\n",
-+		       ioc->name);
- 		goto out;
- 	}
--	memset(ioc->reply_post_free, 0, sz);
--	dinitprintk(ioc, printk(MPT2SAS_INFO_FMT "reply post free pool"
--	    "(0x%p): depth(%d), element_size(%d), pool_size(%d kB)\n",
--	    ioc->name, ioc->reply_post_free, ioc->reply_post_queue_depth, 8,
--	    sz/1024));
--	dinitprintk(ioc, printk(MPT2SAS_INFO_FMT "reply_post_free_dma = "
--	    "(0x%llx)\n", ioc->name, (unsigned long long)
--	    ioc->reply_post_free_dma));
--	total_sz += sz;
-+
-+	for (i = 0; i < ioc->reply_queue_count ; i++) {
-+		ioc->reply_post[i].reply_post_free =
-+			pci_pool_alloc(ioc->reply_post_free_dma_pool,
-+				       GFP_KERNEL,
-+				       &ioc->reply_post[i].reply_post_free_dma);
-+		if (!ioc->reply_post[i].reply_post_free) {
-+			printk(MPT2SAS_ERR_FMT
-+			       "reply_post_free pool: pci_pool_alloc failed\n"
-+			       , ioc->name);
-+			goto out;
-+		}
-+
-+		dinitprintk(ioc, printk(MPT2SAS_INFO_FMT
-+					"reply post free pool (0x%p): depth(%d),"
-+					"element_size(%d), pool_size(%d kB)\n",
-+					ioc->name,
-+					ioc->reply_post[i].reply_post_free,
-+					ioc->reply_post_queue_depth, 8,
-+					sz/1024));
-+		dinitprintk(ioc, printk(MPT2SAS_INFO_FMT
-+					"reply_post_free_dma = (0x%llx)\n",
-+					ioc->name, (unsigned long long)
-+					ioc->reply_post[i].reply_post_free_dma));
-+	}
-+	total_sz += sz * ioc->reply_queue_count;
- 
- 	ioc->config_page_sz = 512;
- 	ioc->config_page = pci_alloc_consistent(ioc->pdev,
-@@ -2793,15 +2834,15 @@ chain_done:
- 	}
- 	dinitprintk(ioc, printk(MPT2SAS_INFO_FMT "config page(0x%p): size"
- 	    "(%d)\n", ioc->name, ioc->config_page, ioc->config_page_sz));
--	dinitprintk(ioc, printk(MPT2SAS_INFO_FMT "config_page_dma"
--	    "(0x%llx)\n", ioc->name, (unsigned long long)ioc->config_page_dma));
-+	dinitprintk(ioc, printk(MPT2SAS_INFO_FMT "config_page_dma (0x%llx)\n",
-+	    ioc->name, (unsigned long long)ioc->config_page_dma));
- 	total_sz += ioc->config_page_sz;
- 
- 	printk(MPT2SAS_INFO_FMT "Allocated physical memory: size(%d kB)\n",
- 	    ioc->name, total_sz/1024);
--	printk(MPT2SAS_INFO_FMT "Current Controller Queue Depth(%d), "
--	    "Max Controller Queue Depth(%d)\n",
--	    ioc->name, ioc->shost->can_queue, facts->RequestCredit);
-+	printk(MPT2SAS_INFO_FMT
-+	"Current Controller Queue Depth(%d), Max Controller Queue Depth(%d)\n",
-+	 ioc->name, ioc->shost->can_queue, facts->RequestCredit);
- 	printk(MPT2SAS_INFO_FMT "Scatter Gather Elements per IO(%d)\n",
- 	    ioc->name, ioc->shost->sg_tablesize);
- 	return 0;
-@@ -3489,9 +3530,12 @@ _base_send_ioc_init(struct MPT2SAS_ADAPTER *ioc, int sleep_flag)
- {
- 	Mpi2IOCInitRequest_t mpi_request;
- 	Mpi2IOCInitReply_t mpi_reply;
--	int r;
-+	int i, r = 0;
- 	struct timeval current_time;
- 	u16 ioc_status;
-+	u32 reply_post_free_array_sz = 0;
-+	Mpi2IOCInitRDPQArrayEntry *reply_post_free_array = NULL;
-+	dma_addr_t reply_post_free_array_dma;
- 
- 	dinitprintk(ioc, printk(MPT2SAS_INFO_FMT "%s\n", ioc->name,
- 	    __func__));
-@@ -3520,9 +3564,35 @@ _base_send_ioc_init(struct MPT2SAS_ADAPTER *ioc, int sleep_flag)
- 	    cpu_to_le64((u64)ioc->request_dma);
- 	mpi_request.ReplyFreeQueueAddress =
- 	    cpu_to_le64((u64)ioc->reply_free_dma);
--	mpi_request.ReplyDescriptorPostQueueAddress =
--	    cpu_to_le64((u64)ioc->reply_post_free_dma);
- 
-+	if (ioc->rdpq_array_enable) {
-+		reply_post_free_array_sz = ioc->reply_queue_count *
-+		    sizeof(Mpi2IOCInitRDPQArrayEntry);
-+
-+		reply_post_free_array = pci_alloc_consistent(ioc->pdev,
-+				reply_post_free_array_sz,
-+				&reply_post_free_array_dma);
-+
-+		if (!reply_post_free_array) {
-+			printk(MPT2SAS_ERR_FMT
-+			       "reply_post_free_array: pci_alloc_consistent failed\n",
-+			       ioc->name);
-+			r = -ENOMEM;
-+			goto out;
-+		}
-+
-+		memset(reply_post_free_array, 0, reply_post_free_array_sz);
-+
-+		for (i = 0; i < ioc->reply_queue_count; i++)
-+			reply_post_free_array[i].RDPQBaseAddress =
-+			    cpu_to_le64(ioc->reply_post[i].reply_post_free_dma);
-+
-+		mpi_request.MsgFlags = MPI2_IOCINIT_MSGFLAG_RDPQ_ARRAY_MODE;
-+		mpi_request.ReplyDescriptorPostQueueAddress =
-+		    cpu_to_le64(reply_post_free_array_dma);
-+	} else
-+		mpi_request.ReplyDescriptorPostQueueAddress =
-+		    cpu_to_le64(ioc->reply_post[0].reply_post_free_dma);
- 
- 	/* This time stamp specifies number of milliseconds
- 	 * since epoch ~ midnight January 1, 1970.
-@@ -3550,7 +3620,7 @@ _base_send_ioc_init(struct MPT2SAS_ADAPTER *ioc, int sleep_flag)
- 	if (r != 0) {
- 		printk(MPT2SAS_ERR_FMT "%s: handshake failed (r=%d)\n",
- 		    ioc->name, __func__, r);
--		return r;
-+		goto out;
- 	}
- 
- 	ioc_status = le16_to_cpu(mpi_reply.IOCStatus) & MPI2_IOCSTATUS_MASK;
-@@ -3560,7 +3630,13 @@ _base_send_ioc_init(struct MPT2SAS_ADAPTER *ioc, int sleep_flag)
- 		r = -EIO;
- 	}
- 
--	return 0;
-+ out:
-+	if (reply_post_free_array)
-+		pci_free_consistent(ioc->pdev, reply_post_free_array_sz,
-+				    reply_post_free_array,
-+				    reply_post_free_array_dma);
-+
-+	return r;
- }
- 
- /**
-@@ -4092,8 +4168,6 @@ _base_make_ioc_operational(struct MPT2SAS_ADAPTER *ioc, int sleep_flag)
- 	struct _tr_list *delayed_tr, *delayed_tr_next;
- 	u8 hide_flag;
- 	struct adapter_reply_queue *reply_q;
--	long reply_post_free;
--	u32 reply_post_free_sz;
- 
- 	dinitprintk(ioc, printk(MPT2SAS_INFO_FMT "%s\n", ioc->name,
- 	    __func__));
-@@ -4164,20 +4238,32 @@ _base_make_ioc_operational(struct MPT2SAS_ADAPTER *ioc, int sleep_flag)
- 		_base_assign_reply_queues(ioc);
- 
- 	/* initialize Reply Post Free Queue */
--	reply_post_free = (long)ioc->reply_post_free;
--	reply_post_free_sz = ioc->reply_post_queue_depth *
--	    sizeof(Mpi2DefaultReplyDescriptor_t);
- 	list_for_each_entry(reply_q, &ioc->reply_queue_list, list) {
-+		Mpi2ReplyDescriptorsUnion_t *reply_post_free;
-+		unsigned int reply_post_free_sz, index = 0;
-+
-+		reply_post_free_sz = ioc->reply_post_queue_depth *
-+			sizeof(Mpi2DefaultReplyDescriptor_t);
-+		reply_post_free = ioc->reply_post[index].reply_post_free;
-+
-+		reply_q->reply_post_free = reply_post_free;
- 		reply_q->reply_post_host_index = 0;
--		reply_q->reply_post_free = (Mpi2ReplyDescriptorsUnion_t *)
--		    reply_post_free;
--		for (i = 0; i < ioc->reply_post_queue_depth; i++)
--			reply_q->reply_post_free[i].Words =
--							cpu_to_le64(ULLONG_MAX);
-+
-+		memset(reply_post_free, 0xff, reply_post_free_sz);
-+
- 		if (!_base_is_controller_msix_enabled(ioc))
- 			goto skip_init_reply_post_free_queue;
--		reply_post_free += reply_post_free_sz;
-+
-+		/*
-+		 * If RDPQ is enabled, switch to the next allocation.
-+		 * Otherwise advance within the contiguous region.
-+		 */
-+		if (ioc->rdpq_array_enable)
-+			index++;
-+		else
-+			reply_post_free += reply_post_free_sz;
- 	}
-+
-  skip_init_reply_post_free_queue:
- 
- 	r = _base_send_ioc_init(ioc, sleep_flag);
-@@ -4304,6 +4390,7 @@ mpt2sas_base_attach(struct MPT2SAS_ADAPTER *ioc)
- 		}
- 	}
- 
-+	ioc->rdpq_array_enable_assigned = 0;
- 	r = mpt2sas_base_map_resources(ioc);
- 	if (r)
- 		goto out_free_resources;
-@@ -4664,6 +4751,16 @@ mpt2sas_base_hard_reset_handler(struct MPT2SAS_ADAPTER *ioc, int sleep_flag,
- 		r = -EFAULT;
- 		goto out;
- 	}
-+
-+	r = _base_get_ioc_facts(ioc, CAN_SLEEP);
-+	if (r)
-+		goto out;
-+
-+	if (ioc->rdpq_array_enable && !ioc->rdpq_array_capable)
-+		panic("%s: Issue occurred with flashing controller firmware."
-+		      "Please reboot the system and ensure that the correct"
-+		      "firmware version is running\n", ioc->name);
-+
- 	r = _base_make_ioc_operational(ioc, sleep_flag);
- 	if (!r)
- 		_base_reset_handler(ioc, MPT2_IOC_DONE_RESET);
-diff --git a/drivers/scsi/mpt2sas/mpt2sas_base.h b/drivers/scsi/mpt2sas/mpt2sas_base.h
-index fd3b998c75b1..e9749cb7c044 100644
---- a/drivers/scsi/mpt2sas/mpt2sas_base.h
-+++ b/drivers/scsi/mpt2sas/mpt2sas_base.h
-@@ -634,6 +634,11 @@ struct mpt2sas_port_facts {
- 	u16			MaxPostedCmdBuffers;
- };
- 
-+struct reply_post_struct {
-+	Mpi2ReplyDescriptorsUnion_t	*reply_post_free;
-+	dma_addr_t			reply_post_free_dma;
-+};
-+
- /**
-  * enum mutex_type - task management mutex type
-  * @TM_MUTEX_OFF: mutex is not required becuase calling function is acquiring it
-@@ -777,8 +782,11 @@ typedef void (*MPT2SAS_FLUSH_RUNNING_CMDS)(struct MPT2SAS_ADAPTER *ioc);
-  * @reply_free_dma_pool:
-  * @reply_free_host_index: tail index in pool to insert free replys
-  * @reply_post_queue_depth: reply post queue depth
-- * @reply_post_free: pool for reply post (64bit descriptor)
-- * @reply_post_free_dma:
-+ * @reply_post_struct: struct for reply_post_free physical & virt address
-+ * @rdpq_array_capable: FW supports multiple reply queue addresses in ioc_init
-+ * @rdpq_array_enable: rdpq_array support is enabled in the driver
-+ * @rdpq_array_enable_assigned: this ensures that rdpq_array_enable flag
-+ *				is assigned only ones
-  * @reply_queue_count: number of reply queue's
-  * @reply_queue_list: link list contaning the reply queue info
-  * @reply_post_host_index: head index in the pool where FW completes IO
-@@ -970,11 +978,13 @@ struct MPT2SAS_ADAPTER {
- 
- 	/* reply post queue */
- 	u16 		reply_post_queue_depth;
--	Mpi2ReplyDescriptorsUnion_t *reply_post_free;
--	dma_addr_t	reply_post_free_dma;
-+	struct reply_post_struct *reply_post;
- 	struct dma_pool *reply_post_free_dma_pool;
- 	u8		reply_queue_count;
- 	struct list_head reply_queue_list;
-+	u8              rdpq_array_capable;
-+	u8              rdpq_array_enable;
-+	u8              rdpq_array_enable_assigned;
- 
- 	struct list_head delayed_tr_list;
- 	struct list_head delayed_tr_volume_list;
