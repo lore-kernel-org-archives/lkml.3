@@ -1,44 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933071AbaGWSlO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 14:41:14 -0400
-Received: from casper.infradead.org ([85.118.1.10]:38285 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932697AbaGWSlN (ORCPT
+	id S933226AbaGWSlY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 14:41:24 -0400
+Received: from mail-oi0-f51.google.com ([209.85.218.51]:60248 "EHLO
+	mail-oi0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932697AbaGWSlV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 14:41:13 -0400
-Date: Wed, 23 Jul 2014 20:41:11 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Dietmar Eggemann <dietmar.eggemann@arm.com>,
-        Michel =?iso-8859-1?Q?D=E4nzer?= <michel@daenzer.net>,
-        Ingo Molnar <mingo@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Random panic in load_balance() with 3.16-rc
-Message-ID: <20140723184111.GG3935@laptop>
-References: <20140723113021.GP12054@laptop.lan>
- <20140723142454.GQ12054@laptop.lan>
- <CA+55aFwZ7kAqqhaE4g89CJLkpJOwGxcN4u+cc0ODfqjQ0rVMiA@mail.gmail.com>
- <20140723155526.GW3935@laptop>
- <CA+55aFzSU5u8MiGqRZ6BVojQPnxbd1hxmFY_BA=UuCAygxR8WQ@mail.gmail.com>
- <20140723170324.GZ3935@laptop>
- <CA+55aFwQSmBAs=QH9jAZz5JY7YFrDeuPH1RjFH+YKVr2NQM38g@mail.gmail.com>
- <CA+55aFzDWritxv5RiqwcZ1qCKJQKK-Lw6StYFF7qx5YWgiCUTQ@mail.gmail.com>
- <20140723182518.GD3935@laptop>
- <CA+55aFyFT9n5wUNifEHY6+t2bEcD91kL7+dqXuBMSMJvLeDDJQ@mail.gmail.com>
+	Wed, 23 Jul 2014 14:41:21 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFyFT9n5wUNifEHY6+t2bEcD91kL7+dqXuBMSMJvLeDDJQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <CAOwfj2PsBhW3j4Tm4UMc1iCf=-xX8bhKcNLuo+iMzQw=jZog+A@mail.gmail.com>
+References: <20140704113907.468a366a@canb.auug.org.au> <20140707.195330.1593299312055099195.davem@davemloft.net>
+ <CAOwfj2PsBhW3j4Tm4UMc1iCf=-xX8bhKcNLuo+iMzQw=jZog+A@mail.gmail.com>
+From: Florian Fainelli <f.fainelli@gmail.com>
+Date: Wed, 23 Jul 2014 11:40:40 -0700
+Message-ID: <CAGVrzcZWGQiSjBs0iKofLvnk7wFth2VkZ02ycaic855O5EzxFw@mail.gmail.com>
+Subject: Re: linux-next: build failure after merge of the net tree
+To: Vince Bridgers <vbridgers2013@gmail.com>
+Cc: David Miller <davem@davemloft.net>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        linux-next <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 23, 2014 at 11:35:06AM -0700, Linus Torvalds wrote:
-> But the code does appear to be correct. It just is messy, avoids the
-> proper abstractions, and generates suboptimal code for the off-stack
-> case.
+2014-07-23 11:38 GMT-07:00 Vince Bridgers <vbridgers2013@gmail.com>:
+> Hi all,
+>
+> On Mon, Jul 7, 2014 at 9:53 PM, David Miller <davem@davemloft.net> wrote:
+>> From: Stephen Rothwell <sfr@canb.auug.org.au>
+>> Date: Fri, 4 Jul 2014 11:39:07 +1000
+>>
+>>> After merging the net tree, today's linux-next build (x86_64
+>>> allmodconfig) failed like this:
+>>>
+>>> ERROR: "phy_resume" [drivers/net/ethernet/stmicro/stmmac/stmmac.ko] undefined!
+>>>
+>>> Caused by commit 0acf16768740 ("net: stmmac: add platform init/exit for
+>>> Altera's ARM socfpga").
+>>>
+>>> I reverted that commit for today.
+>>
+>> Vince you haven't made any effort to fix this build failure, so I am reverting
+>> your changes.
+>
+> My apologies, I was out on vacation and I should have checked for this
+> before submitting. I have a corrected patch that I'm ready to submit.
 
-OK, that leaves us agreeing we want to clean that up, but still no
-closer to explaining WTH happened on Michel's machine. Weird that.
+net-next does contain a change that adds EXPORT_SYMBOLE() to
+phy_resume and phy_suspend, you might be able to get along with just
+re-submitting your patches if they still apply cleanly?
+-- 
+Florian
