@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933226AbaGWSlY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 14:41:24 -0400
-Received: from mail-oi0-f51.google.com ([209.85.218.51]:60248 "EHLO
-	mail-oi0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932697AbaGWSlV (ORCPT
+	id S933234AbaGWSm7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 14:42:59 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:41750 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932697AbaGWSm5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 14:41:21 -0400
+	Wed, 23 Jul 2014 14:42:57 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAOwfj2PsBhW3j4Tm4UMc1iCf=-xX8bhKcNLuo+iMzQw=jZog+A@mail.gmail.com>
-References: <20140704113907.468a366a@canb.auug.org.au> <20140707.195330.1593299312055099195.davem@davemloft.net>
- <CAOwfj2PsBhW3j4Tm4UMc1iCf=-xX8bhKcNLuo+iMzQw=jZog+A@mail.gmail.com>
-From: Florian Fainelli <f.fainelli@gmail.com>
-Date: Wed, 23 Jul 2014 11:40:40 -0700
-Message-ID: <CAGVrzcZWGQiSjBs0iKofLvnk7wFth2VkZ02ycaic855O5EzxFw@mail.gmail.com>
+In-Reply-To: <CAGVrzcZWGQiSjBs0iKofLvnk7wFth2VkZ02ycaic855O5EzxFw@mail.gmail.com>
+References: <20140704113907.468a366a@canb.auug.org.au>
+	<20140707.195330.1593299312055099195.davem@davemloft.net>
+	<CAOwfj2PsBhW3j4Tm4UMc1iCf=-xX8bhKcNLuo+iMzQw=jZog+A@mail.gmail.com>
+	<CAGVrzcZWGQiSjBs0iKofLvnk7wFth2VkZ02ycaic855O5EzxFw@mail.gmail.com>
+Date: Wed, 23 Jul 2014 13:42:55 -0500
+Message-ID: <CAOwfj2O8wZWcWsjvTFX+uXEqS9pA5z4vh9szPfGcuQSYcoCgew@mail.gmail.com>
 Subject: Re: linux-next: build failure after merge of the net tree
-To: Vince Bridgers <vbridgers2013@gmail.com>
+From: Vince Bridgers <vbridgers2013@gmail.com>
+To: Florian Fainelli <f.fainelli@gmail.com>
 Cc: David Miller <davem@davemloft.net>,
         Stephen Rothwell <sfr@canb.auug.org.au>,
         "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
@@ -26,31 +28,38 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-07-23 11:38 GMT-07:00 Vince Bridgers <vbridgers2013@gmail.com>:
-> Hi all,
->
-> On Mon, Jul 7, 2014 at 9:53 PM, David Miller <davem@davemloft.net> wrote:
->> From: Stephen Rothwell <sfr@canb.auug.org.au>
->> Date: Fri, 4 Jul 2014 11:39:07 +1000
+On Wed, Jul 23, 2014 at 1:40 PM, Florian Fainelli <f.fainelli@gmail.com> wrote:
+> 2014-07-23 11:38 GMT-07:00 Vince Bridgers <vbridgers2013@gmail.com>:
+>> Hi all,
 >>
->>> After merging the net tree, today's linux-next build (x86_64
->>> allmodconfig) failed like this:
+>> On Mon, Jul 7, 2014 at 9:53 PM, David Miller <davem@davemloft.net> wrote:
+>>> From: Stephen Rothwell <sfr@canb.auug.org.au>
+>>> Date: Fri, 4 Jul 2014 11:39:07 +1000
 >>>
->>> ERROR: "phy_resume" [drivers/net/ethernet/stmicro/stmmac/stmmac.ko] undefined!
+>>>> After merging the net tree, today's linux-next build (x86_64
+>>>> allmodconfig) failed like this:
+>>>>
+>>>> ERROR: "phy_resume" [drivers/net/ethernet/stmicro/stmmac/stmmac.ko] undefined!
+>>>>
+>>>> Caused by commit 0acf16768740 ("net: stmmac: add platform init/exit for
+>>>> Altera's ARM socfpga").
+>>>>
+>>>> I reverted that commit for today.
 >>>
->>> Caused by commit 0acf16768740 ("net: stmmac: add platform init/exit for
->>> Altera's ARM socfpga").
->>>
->>> I reverted that commit for today.
+>>> Vince you haven't made any effort to fix this build failure, so I am reverting
+>>> your changes.
 >>
->> Vince you haven't made any effort to fix this build failure, so I am reverting
->> your changes.
+>> My apologies, I was out on vacation and I should have checked for this
+>> before submitting. I have a corrected patch that I'm ready to submit.
 >
-> My apologies, I was out on vacation and I should have checked for this
-> before submitting. I have a corrected patch that I'm ready to submit.
+> net-next does contain a change that adds EXPORT_SYMBOLE() to
+> phy_resume and phy_suspend, you might be able to get along with just
+> re-submitting your patches if they still apply cleanly?
+> --
+> Florian
 
-net-next does contain a change that adds EXPORT_SYMBOLE() to
-phy_resume and phy_suspend, you might be able to get along with just
-re-submitting your patches if they still apply cleanly?
--- 
-Florian
+Ok, I was just parsing the other email thread. I'll try that.
+
+Cheers
+
+Vince
