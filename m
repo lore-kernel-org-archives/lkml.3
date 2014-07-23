@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933012AbaGWTgl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 15:36:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:9015 "EHLO mx1.redhat.com"
+	id S933137AbaGWTgr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 15:36:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51855 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932387AbaGWTgk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 15:36:40 -0400
-Date: Wed, 23 Jul 2014 21:35:01 +0200
+	id S932387AbaGWTgn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jul 2014 15:36:43 -0400
+Date: Wed, 23 Jul 2014 21:35:03 +0200
 From: Oleg Nesterov <oleg@redhat.com>
 To: Steven Rostedt <rostedt@goodmis.org>
 Cc: Namhyung Kim <namhyung@kernel.org>, Ingo Molnar <mingo@redhat.com>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 1/2] ftrace: Kill
-	tracing_{start,stop}_sched_switch_record() and
-	tracing_sched_switch_assign_trace()
-Message-ID: <20140723193501.GA30214@redhat.com>
+Subject: [PATCH 2/2] ftrace: Kill the dead code in probe_sched_switch() and
+	probe_sched_wakeup()
+Message-ID: <20140723193503.GA30217@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -24,88 +23,92 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-tracing_{start,stop}_sched_switch_record() have no callers since
-87d80de2800d "tracing: Remove obsolete sched_switch tracer".
-
-The last caller of tracing_sched_switch_assign_trace() was removed
-by 30dbb20e68e6 "tracing: Remove boot tracer".
+After the previous patch it is clear that "tracer_enabled" can never be
+true, we can remove the "if (tracer_enabled)" code in probe_sched_switch()
+and probe_sched_wakeup(). Plus we can obviously remove tracer_enabled,
+ctx_trace, and sched_stopped as well.
 
 Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 ---
- kernel/trace/trace.h              |    3 --
- kernel/trace/trace_sched_switch.c |   48 -------------------------------------
- 2 files changed, 0 insertions(+), 51 deletions(-)
+ kernel/trace/trace_sched_switch.c |   40 -------------------------------------
+ 1 files changed, 0 insertions(+), 40 deletions(-)
 
-diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
-index 9258f5a..df2b33b 100644
---- a/kernel/trace/trace.h
-+++ b/kernel/trace/trace.h
-@@ -595,9 +595,6 @@ void set_graph_array(struct trace_array *tr);
- 
- void tracing_start_cmdline_record(void);
- void tracing_stop_cmdline_record(void);
--void tracing_sched_switch_assign_trace(struct trace_array *tr);
--void tracing_stop_sched_switch_record(void);
--void tracing_start_sched_switch_record(void);
- int register_tracer(struct tracer *type);
- int is_tracing_stopped(void);
- 
 diff --git a/kernel/trace/trace_sched_switch.c b/kernel/trace/trace_sched_switch.c
-index 3f34dc9..3b60301 100644
+index 3b60301..f7c7f4f 100644
 --- a/kernel/trace/trace_sched_switch.c
 +++ b/kernel/trace/trace_sched_switch.c
-@@ -197,51 +197,3 @@ void tracing_stop_cmdline_record(void)
+@@ -14,12 +14,8 @@
+ 
+ #include "trace.h"
+ 
+-static struct trace_array	*ctx_trace;
+-static int __read_mostly	tracer_enabled;
+ static int			sched_ref;
+ static DEFINE_MUTEX(sched_register_mutex);
+-static int			sched_stopped;
+-
+ 
+ void
+ tracing_sched_switch_trace(struct trace_array *tr,
+@@ -52,29 +48,11 @@ tracing_sched_switch_trace(struct trace_array *tr,
+ static void
+ probe_sched_switch(void *ignore, struct task_struct *prev, struct task_struct *next)
  {
- 	tracing_stop_sched_switch();
- }
+-	struct trace_array_cpu *data;
+-	unsigned long flags;
+-	int cpu;
+-	int pc;
 -
--/**
-- * tracing_start_sched_switch_record - start tracing context switches
-- *
-- * Turns on context switch tracing for a tracer.
-- */
--void tracing_start_sched_switch_record(void)
--{
--	if (unlikely(!ctx_trace)) {
--		WARN_ON(1);
+ 	if (unlikely(!sched_ref))
+ 		return;
+ 
+ 	tracing_record_cmdline(prev);
+ 	tracing_record_cmdline(next);
+-
+-	if (!tracer_enabled || sched_stopped)
 -		return;
--	}
 -
--	tracing_start_sched_switch();
+-	pc = preempt_count();
+-	local_irq_save(flags);
+-	cpu = raw_smp_processor_id();
+-	data = per_cpu_ptr(ctx_trace->trace_buffer.data, cpu);
 -
--	mutex_lock(&sched_register_mutex);
--	tracer_enabled++;
--	mutex_unlock(&sched_register_mutex);
--}
+-	if (likely(!atomic_read(&data->disabled)))
+-		tracing_sched_switch_trace(ctx_trace, prev, next, flags, pc);
 -
--/**
-- * tracing_stop_sched_switch_record - start tracing context switches
-- *
-- * Turns off context switch tracing for a tracer.
-- */
--void tracing_stop_sched_switch_record(void)
--{
--	mutex_lock(&sched_register_mutex);
--	tracer_enabled--;
--	WARN_ON(tracer_enabled < 0);
--	mutex_unlock(&sched_register_mutex);
+-	local_irq_restore(flags);
+ }
+ 
+ void
+@@ -108,28 +86,10 @@ tracing_sched_wakeup_trace(struct trace_array *tr,
+ static void
+ probe_sched_wakeup(void *ignore, struct task_struct *wakee, int success)
+ {
+-	struct trace_array_cpu *data;
+-	unsigned long flags;
+-	int cpu, pc;
 -
--	tracing_stop_sched_switch();
--}
+ 	if (unlikely(!sched_ref))
+ 		return;
+ 
+ 	tracing_record_cmdline(current);
 -
--/**
-- * tracing_sched_switch_assign_trace - assign a trace array for ctx switch
-- * @tr: trace array pointer to assign
-- *
-- * Some tracers might want to record the context switches in their
-- * trace. This function lets those tracers assign the trace array
-- * to use.
-- */
--void tracing_sched_switch_assign_trace(struct trace_array *tr)
--{
--	ctx_trace = tr;
--}
+-	if (!tracer_enabled || sched_stopped)
+-		return;
 -
+-	pc = preempt_count();
+-	local_irq_save(flags);
+-	cpu = raw_smp_processor_id();
+-	data = per_cpu_ptr(ctx_trace->trace_buffer.data, cpu);
+-
+-	if (likely(!atomic_read(&data->disabled)))
+-		tracing_sched_wakeup_trace(ctx_trace, wakee, current,
+-					   flags, pc);
+-
+-	local_irq_restore(flags);
+ }
+ 
+ static int tracing_sched_register(void)
 -- 
 1.5.5.1
 
