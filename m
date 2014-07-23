@@ -1,112 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757340AbaGWHmX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 03:42:23 -0400
-Received: from mail-oa0-f50.google.com ([209.85.219.50]:49855 "EHLO
-	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756212AbaGWHmS (ORCPT
+	id S1757359AbaGWHmf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 03:42:35 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:48515 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752519AbaGWHmd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 03:42:18 -0400
+	Wed, 23 Jul 2014 03:42:33 -0400
+X-IronPort-AV: E=Sophos;i="5.00,931,1396972800"; 
+   d="scan'208";a="33671753"
+From: Tang Chen <tangchen@cn.fujitsu.com>
+To: <gleb@kernel.org>, <mtosatti@redhat.com>, <nadav.amit@gmail.com>,
+        <jan.kiszka@web.de>
+CC: <kvm@vger.kernel.org>, <laijs@cn.fujitsu.com>,
+        <isimatu.yasuaki@jp.fujitsu.com>, <guz.fnst@cn.fujitsu.com>,
+        <linux-kernel@vger.kernel.org>, <tangchen@cn.fujitsu.com>
+Subject: [PATCH v3 0/6] kvm, mem-hotplug: Do not pin ept identity pagetable and apic access page.
+Date: Wed, 23 Jul 2014 15:42:04 -0400
+Message-ID: <1406144530-23002-1-git-send-email-tangchen@cn.fujitsu.com>
+X-Mailer: git-send-email 1.9.3
 MIME-Version: 1.0
-In-Reply-To: <20140722144559.382c5243@annuminas.surriel.com>
-References: <20140722144559.382c5243@annuminas.surriel.com>
-From: Vincent Guittot <vincent.guittot@linaro.org>
-Date: Wed, 23 Jul 2014 09:41:55 +0200
-Message-ID: <CAKfTPtDdAzZcMA5bJvhyrdH9J1F69jMy5q3w5xc4t+PSKPQ0eA@mail.gmail.com>
-Subject: Re: [PATCH] sched: make update_sd_pick_busiest return true on a
- busier sd
-To: Rik van Riel <riel@redhat.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Michael Neuling <mikey@neuling.org>, Ingo Molnar <mingo@kernel.org>,
-        Paul Turner <pjt@google.com>, jhladky@redhat.com, ktkhai@parallels.com,
-        tim.c.chen@linux.intel.com, Nicolas Pitre <nicolas.pitre@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
+X-Originating-IP: [10.167.226.71]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22 July 2014 20:45, Rik van Riel <riel@redhat.com> wrote:
-> Currently update_sd_pick_busiest only returns true when an sd
-> is overloaded, or for SD_ASYM_PACKING when a domain is busier
-> than average and a higher numbered domain than the target.
->
-> This breaks load balancing between domains that are not overloaded,
-> in the !SD_ASYM_PACKING case. This patch makes update_sd_pick_busiest
-> return true when the busiest sd yet is encountered.
->
-> On a 4 node system, this seems to result in the load balancer finally
-> putting 1 thread of a 4 thread test run of "perf bench numa mem" on
-> each node, where before the load was generally not spread across all
-> nodes.
->
-> Behaviour for SD_ASYM_PACKING does not seem to match the comment,
-> in that groups with below average load average are ignored, but I
-> have no hardware to test that so I have left the behaviour of that
-> code unchanged.
->
-> Cc: mikey@neuling.org
-> Cc: peterz@infradead.org
-> Signed-off-by: Rik van Riel <riel@redhat.com>
-> ---
->  kernel/sched/fair.c | 18 +++++++++++-------
->  1 file changed, 11 insertions(+), 7 deletions(-)
->
-> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-> index fea7d33..ff4ddba 100644
-> --- a/kernel/sched/fair.c
-> +++ b/kernel/sched/fair.c
-> @@ -5942,16 +5942,20 @@ static bool update_sd_pick_busiest(struct lb_env *env,
->          * numbered CPUs in the group, therefore mark all groups
->          * higher than ourself as busy.
->          */
-> -       if ((env->sd->flags & SD_ASYM_PACKING) && sgs->sum_nr_running &&
-> -           env->dst_cpu < group_first_cpu(sg)) {
-> -               if (!sds->busiest)
-> -                       return true;
-> +       if (env->sd->flags & SD_ASYM_PACKING) {
-> +               if (sgs->sum_nr_running && env->dst_cpu < group_first_cpu(sg)) {
-> +                       if (!sds->busiest)
-> +                               return true;
->
-> -               if (group_first_cpu(sds->busiest) > group_first_cpu(sg))
-> -                       return true;
-> +                       if (group_first_cpu(sds->busiest) > group_first_cpu(sg))
-> +                               return true;
-> +               }
-> +
-> +               return false;
->         }
->
-> -       return false;
-> +       /* See above: sgs->avg_load > sds->busiest_stat.avg_load */
-> +       return true;
+ept identity pagetable and apic access page in kvm are pinned in memory.
+As a result, they cannot be migrated/hot-removed.
 
-Hi Rik,
+But actually they don't need to be pinned in memory.
 
-I can see one issue with a default return set to true.  You increase
-the number of time where we will not effectively migrate a task
-because we don't ensure that we will take the overloaded group if
-there is one. We can be in a situation where a group is overloaded but
-the load_balance will select a not overloaded group with an average
-load higher than sched_domain average value just because it is checked
-after.
+[For ept identity page]
+Just do not pin it. When it is migrated, guest will be able to find the
+new page in the next ept violation.
 
-Regarding your issue with "perf bench numa mem" that is not spread on
-all nodes, SD_PREFER_SIBLING flag (of DIE level) should do the job by
-reducing the capacity of  "not local DIE" group at NUMA level to 1
-task during the load balance computation. So you should have 1 task
-per sched_group at NUMA level.
+[For apic access page]
+The hpa of apic access page is stored in VMCS APIC_ACCESS_ADDR pointer.
+When apic access page is migrated, we update VMCS APIC_ACCESS_ADDR pointer
+for each vcpu in addition.
 
-Vincent
+NOTE: Patch 1~5 are tested with -cpu xxx,-x2apic option, and they work well.
+      Patch 6 is not tested yet, not sure if it is right.
+
+Change log v2 -> v3:
+1. Remove original [PATCH 3/6] since ept_identity_pagetable has been removed
+   in new [PATCH 3/6].
+2. In [PATCH 3/6], fix the problem that kvm->slots_lock does not protect 
+   kvm->arch.ept_identity_pagetable_done checking.
+3. In [PATCH 3/6], drop gfn_to_page() since ept_identity_pagetable has been 
+   removed.
+4. Add new [PATCH 4/6], remove redundant variable in init_rmode_identity_map(), 
+   and make it return 0 on success.
+5. In [PATCH 5/6], drop put_page(kvm->arch.apic_access_page) from x86.c .
+6. In [PATCH 5/6], update kvm->arch.apic_access_page in vcpu_reload_apic_access_page().
+7. Add new [PATCH 6/6], reload apic access page in L2->L1 exit.
+
+Change log v1 -> v2:
+1. Add [PATCH 4/5] to remove unnecessary kvm_arch->ept_identity_pagetable.
+2. In [PATCH 5/5], only introduce KVM_REQ_APIC_PAGE_RELOAD request.
+3. In [PATCH 5/5], add set_apic_access_page_addr() for svm.
 
 
->  }
->
->  #ifdef CONFIG_NUMA_BALANCING
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Tang Chen (6):
+  kvm: Add gfn_to_page_no_pin() to translate gfn to page without
+    pinning.
+  kvm: Use APIC_DEFAULT_PHYS_BASE macro as the apic access page address.
+  kvm: Remove ept_identity_pagetable from struct kvm_arch.
+  kvm: Make init_rmode_identity_map() return 0 on success.
+  kvm, mem-hotplug: Do not pin apic access page in memory.
+  kvm, mem-hotplug: Reload L1's apic access page if it is migrated when
+    L2 is running.
+
+ arch/x86/include/asm/kvm_host.h |   3 +-
+ arch/x86/kvm/svm.c              |  15 +++++-
+ arch/x86/kvm/vmx.c              | 108 +++++++++++++++++++++++++++-------------
+ arch/x86/kvm/x86.c              |  22 ++++++--
+ include/linux/kvm_host.h        |   3 ++
+ virt/kvm/kvm_main.c             |  29 ++++++++++-
+ 6 files changed, 139 insertions(+), 41 deletions(-)
+
+-- 
+1.8.3.1
+
