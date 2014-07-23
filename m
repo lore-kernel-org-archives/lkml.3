@@ -1,50 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758112AbaGWPM4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 11:12:56 -0400
-Received: from mail-la0-f41.google.com ([209.85.215.41]:39644 "EHLO
-	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757743AbaGWPMy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 11:12:54 -0400
+	id S932594AbaGWPNR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 11:13:17 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:42769 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758091AbaGWPNP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jul 2014 11:13:15 -0400
+Message-ID: <53CFD0E2.10507@zytor.com>
+Date: Wed, 23 Jul 2014 08:12:34 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-In-Reply-To: <20140723104917.GB23102@pd.tnic>
-References: <CALCETrVx=cLZjgALizYKWATSjOvhmwPHQvOJRkMgdb=iNRNf8w@mail.gmail.com>
- <CA+55aFyefnFjmOs-QZhFn68-6+tWO30VqU6ipP6BzAra=xOaFg@mail.gmail.com>
- <CALCETrUjKXfwbWkUytMXLSmKROLBVY7tRYWPHnEC01Fj=aiTkQ@mail.gmail.com> <20140723104917.GB23102@pd.tnic>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Wed, 23 Jul 2014 08:12:32 -0700
-Message-ID: <CALCETrVzKJZiEmxuVNv8_7dybh-4AQYRA5Yb5ms+vK9CKYEorA@mail.gmail.com>
-Subject: Re: STI architectural question (and lretq -- I'm not even kidding)
-To: Borislav Petkov <bp@alien8.de>
-Cc: "H. Peter Anvin" <hpa@linux.intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+To: Peter Zijlstra <peterz@infradead.org>, Bruno Wolff III <bruno@wolff.to>
+CC: Dietmar Eggemann <dietmar.eggemann@arm.com>,
+        Josh Boyer <jwboyer@redhat.com>, "mingo@redhat.com" <mingo@redhat.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        X86 ML <x86@kernel.org>
-Content-Type: text/plain; charset=UTF-8
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: Scheduler regression from caffcdd8d27ba78730d5540396ce72ad022aff2c
+References: <20140718145040.GG12054@laptop.lan> <20140718161602.GH12054@laptop.lan> <20140721163528.GA10433@wolff.to> <20140721165212.GO3935@laptop> <20140722094740.GJ12054@laptop.lan> <20140722103857.GK12054@laptop.lan> <20140722121001.GA30631@wolff.to> <20140722130343.GD3935@laptop> <20140722132603.GL12054@laptop.lan> <20140722133514.GM12054@laptop.lan> <20140723151140.GR12054@laptop.lan>
+In-Reply-To: <20140723151140.GR12054@laptop.lan>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Jul 23, 2014 3:49 AM, "Borislav Petkov" <bp@alien8.de> wrote:
->
-> On Tue, Jul 22, 2014 at 06:33:02PM -0700, Andy Lutomirski wrote:
-> > Of course, this does nothing at all to protect us from #MC after sti
-> > on return from #MC to userspace, but I think we're screwed regardless
-> > -- we could just as easily get a second #MC before the sti. Machine
-> > check broadcast was the worst idea ever.
->
-> Please do not think that a raised #MC means the machine is gone. There
-> are MC errors which are reported with the exception mechanism and from
-> which we can and do recover, regardless of broadcasting or not.
->
+On 07/23/2014 08:11 AM, Peter Zijlstra wrote:
+> 
+> OK, so that's become the below patch. I'll feed it to Ingo if that's OK
+> with hpa.
+> 
 
-How are we supposed to survive two machine checks in rapid succession?
- The second will fire as soon as the first one is acked, I imagine.
-Unless we switch stacks before acking the MCE, the return address of
-the first one will be lost.
+I'll grab it directly, it is a bit quicker that way.
 
-In any event, I'll do a manual fixup for this in my patch.
+	-hpa
 
 
---Andy
