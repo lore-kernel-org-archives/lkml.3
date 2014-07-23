@@ -1,78 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932573AbaGWPeu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 11:34:50 -0400
-Received: from mail-ig0-f169.google.com ([209.85.213.169]:53112 "EHLO
-	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932487AbaGWPec (ORCPT
+	id S1758219AbaGWPf1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 11:35:27 -0400
+Received: from mail-vc0-f176.google.com ([209.85.220.176]:63511 "EHLO
+	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757765AbaGWPfW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 11:34:32 -0400
-Date: Wed, 23 Jul 2014 16:34:25 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Peter Griffin <peter.griffin@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        maxime.coquelin@st.com, patrice.chotard@st.com,
-        srinivas.kandagatla@gmail.com, devicetree@vger.kernel.org,
-        balbi@ti.com, linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
-        peppe.cavallaro@st.com
-Subject: Re: [PATCH v3 2/3] usb: dwc3: dwc3-st: Add st-dwc3 devicetree
- bindings documentation
-Message-ID: <20140723153425.GL23210@lee--X1>
-References: <1406126915-30601-1-git-send-email-peter.griffin@linaro.org>
- <1406126915-30601-3-git-send-email-peter.griffin@linaro.org>
+	Wed, 23 Jul 2014 11:35:22 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1406126915-30601-3-git-send-email-peter.griffin@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140723103707.64071c00@gandalf.local.home>
+References: <1406004789-9918-1-git-send-email-xerofoify@gmail.com>
+	<874my98p6u.fsf@nemi.mork.no>
+	<CA+8MBb+fnCNeQtyEqttxbkWx-4N+GUaKCUoCSdn5X9+bDDvTOg@mail.gmail.com>
+	<CAPDOMVjaf+vne4vbUPo8EPs0XnQBbNm2ZOXns8fw5pkg9tRSww@mail.gmail.com>
+	<CAAsK9AGtdJiz0xnmfqLBAqxmt=r+WANsmxwB_vQ3O5aKzMW1LQ@mail.gmail.com>
+	<CAPDOMVhj72TFKbtw_93juX19WVdfUzh3KM9tCEjbTdUZvUfcUQ@mail.gmail.com>
+	<20140722193350.GA486@home.goodmis.org>
+	<CAPDOMVipLiXuYqndO_gnMYocDLVsHX9zcTdSMUV_EjJo72nx6w@mail.gmail.com>
+	<20140723103707.64071c00@gandalf.local.home>
+Date: Wed, 23 Jul 2014 11:35:21 -0400
+Message-ID: <CAPDOMVh+zVQZQWjS1mTDmZo9frvk9t+kzN4_cOaoDgaNePF2AA@mail.gmail.com>
+Subject: Re: [PATCH] edac: Remove fixmes in e7xxx_edac.c
+From: Nick Krause <xerofoify@gmail.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Levente Kurusa <lkurusa@redhat.com>, Tony Luck <tony.luck@gmail.com>,
+        =?UTF-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>,
+        Doug Thompson <dougthompson@xmission.com>,
+        Borislav Petkov <bp@alien8.de>,
+        "m.chehab@samsung.com" <m.chehab@samsung.com>,
+        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 23 Jul 2014, Peter Griffin wrote:
-
-> This patch documents the device tree documentation required for
-> the ST usb3 controller glue layer found in STiH407 devices.
-> 
-> Signed-off-by: Giuseppe Cavallaro <peppe.cavallaro@st.com>
-> Signed-off-by: Peter Griffin <peter.griffin@linaro.org>
-> ---
->  Documentation/devicetree/bindings/usb/dwc3-st.txt | 69 +++++++++++++++++++++++
->  1 file changed, 69 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/usb/dwc3-st.txt
-> 
-> diff --git a/Documentation/devicetree/bindings/usb/dwc3-st.txt b/Documentation/devicetree/bindings/usb/dwc3-st.txt
-> new file mode 100644
-> index 0000000..de3fea3
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/usb/dwc3-st.txt
-> @@ -0,0 +1,69 @@
-> +ST DWC3 glue logic
-> +
-> +This file documents the parameters for the dwc3-st driver.
-> +This driver controls the glue logic used to configure the dwc3 core on
-> +STiH407 based platforms.
-> +
-> +Required properties:
-> + - compatible	: must be "st,stih407-dwc3"
-
-Does this only exist for Cannes?
-
-> + - reg		: glue logic base address and USB syscfg ctrl register offset
-> + - reg-names	: should be "reg-glue" and "syscfg-reg"
-> + - st,syscon	: should be phandle to system configuration node which
-> +		  encompasses the glue registers
-
-This should be st,syscfg.  As you have it in the example.
-
-Besides this small issue, I don't see anything controversial so once
-fixed up, you can apply my:
-
-Acked-by: Lee Jones <lee.jones@linaro.org>
-
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+On Wed, Jul 23, 2014 at 10:37 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
+> On Tue, 22 Jul 2014 16:56:06 -0400
+> Nick Krause <xerofoify@gmail.com> wrote:
+>
+>> On Tue, Jul 22, 2014 at 3:33 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
+>> > On Tue, Jul 22, 2014 at 02:25:24PM -0400, Nick Krause wrote:
+>> >>
+>> >> I understand what your saying and I should have searched for Page shift.
+>> >> In addition I am already got commits in the kernel for fix mes so I feel
+>> >> that your comment on fix mes is incorrect.
+>> >
+>> > After seeing your other solutions to "fix mes" around the kernel, I now have to
+>> > investigate the patches that were accepted, and see if they did not cause
+>> > any new bugs. If any of them do, I will ask to have all your patches reverted.
+>> >
+>> > You are not helping. You are actually doing quite the opposite. Who do you work
+>> > for? Microsoft or Apple?
+>> >
+>> > -- Steve
+>> >
+>>
+>> I don't work for any companies. And here is one of them that has been accepted.
+>> I am removing two fix mes in this file as after dicussing then it  seems
+>> there is no reason to check against Null for usb_device as it can never
+>> be NULL and this is check is therefore not needed.
+>
+> http://marc.info/?l=linux-m68k&m=140612440420712&w=2
+>
+> And your patches seem to be getting reverted. Wow, I think you broke a
+> new record in having the percentage of patches added to the kernel and
+> then reverted. Even before they made it to mainline.
+>
+> You may be the only developer that has all their commits reverted
+> before they ever make it into the mainline tree!
+>
+> Congratulations! I think it is wise now for all maintainers to add your
+> email to their /dev/null folder. It will help them from wasting any
+> more of their precious time on you.
+>
+> -- Steve
+Steve, I  have make a few mistakes. That doesn't give you the right to
+put me under a waste of time yet.
+Nick
