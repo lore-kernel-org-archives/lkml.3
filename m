@@ -1,116 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933741AbaGWV4P (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 17:56:15 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:60267 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933386AbaGWV4N (ORCPT
+	id S933857AbaGWV4g (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 17:56:36 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59032 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933624AbaGWV4f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 17:56:13 -0400
-Message-ID: <53D02F7B.5020309@codeaurora.org>
-Date: Wed, 23 Jul 2014 14:56:11 -0700
-From: Laura Abbott <lauraa@codeaurora.org>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Catalin Marinas <catalin.marinas@arm.com>
-CC: Will Deacon <Will.Deacon@arm.com>, David Riley <davidriley@chromium.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Ritesh Harjain <ritesh.harjani@gmail.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCHv4 3/5] common: dma-mapping: Introduce common remapping
- functions
-References: <1406079308-5232-1-git-send-email-lauraa@codeaurora.org> <1406079308-5232-4-git-send-email-lauraa@codeaurora.org> <20140723104554.GB1366@localhost>
-In-Reply-To: <20140723104554.GB1366@localhost>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 23 Jul 2014 17:56:35 -0400
+Date: Wed, 23 Jul 2014 14:56:34 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Hyogi Gim <hyogi.gim@lge.com>
+Cc: Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
+        linux-kernel@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: [PATCH] driver/rtc/class.c: check the error after
+ rtc_read_time()
+Message-Id: <20140723145634.656752d0fe2fa124db48b4fc@linux-foundation.org>
+In-Reply-To: <1405412723-10062-1-git-send-email-hyogi.gim@lge.com>
+References: <1405412723-10062-1-git-send-email-hyogi.gim@lge.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7/23/2014 3:45 AM, Catalin Marinas wrote:
-> On Wed, Jul 23, 2014 at 02:35:06AM +0100, Laura Abbott wrote:
->> --- a/arch/arm/mm/dma-mapping.c
->> +++ b/arch/arm/mm/dma-mapping.c
->> @@ -298,37 +298,19 @@ static void *
->>  __dma_alloc_remap(struct page *page, size_t size, gfp_t gfp, pgprot_t prot,
->>  	const void *caller)
->>  {
->> -	struct vm_struct *area;
->> -	unsigned long addr;
->> -
->>  	/*
->>  	 * DMA allocation can be mapped to user space, so lets
->>  	 * set VM_USERMAP flags too.
->>  	 */
->> -	area = get_vm_area_caller(size, VM_ARM_DMA_CONSISTENT | VM_USERMAP,
->> -				  caller);
->> -	if (!area)
->> -		return NULL;
->> -	addr = (unsigned long)area->addr;
->> -	area->phys_addr = __pfn_to_phys(page_to_pfn(page));
->> -
->> -	if (ioremap_page_range(addr, addr + size, area->phys_addr, prot)) {
->> -		vunmap((void *)addr);
->> -		return NULL;
->> -	}
->> -	return (void *)addr;
->> +	return dma_common_contiguous_remap(page, size,
->> +			VM_ARM_DMA_CONSISTENT | VM_USERMAP,
->> +			prot, caller);
-> 
-> I think we still need at least a comment in the commit log since the arm
-> code is moving from ioremap_page_range() to map_vm_area(). There is a
-> slight performance penalty with the addition of a kmalloc() on this
-> path.
-> 
-> Or even better (IMO), see below.
-> 
->> --- a/drivers/base/dma-mapping.c
->> +++ b/drivers/base/dma-mapping.c
-> [...]
->> +void *dma_common_contiguous_remap(struct page *page, size_t size,
->> +			unsigned long vm_flags,
->> +			pgprot_t prot, const void *caller)
->> +{
->> +	int i;
->> +	struct page **pages;
->> +	void *ptr;
->> +
->> +	pages = kmalloc(sizeof(struct page *) << get_order(size), GFP_KERNEL);
->> +	if (!pages)
->> +		return NULL;
->> +
->> +	for (i = 0; i < (size >> PAGE_SHIFT); i++)
->> +		pages[i] = page + i;
->> +
->> +	ptr = dma_common_pages_remap(pages, size, vm_flags, prot, caller);
->> +
->> +	kfree(pages);
->> +
->> +	return ptr;
->> +}
-> 
-> You could avoid the dma_common_page_remap() here (and kmalloc) and
-> simply use ioremap_page_range(). We know that
-> dma_common_contiguous_remap() is only called with contiguous physical
-> range, so ioremap_page_range() is suitable. It also makes it a
-> non-functional change for arch/arm.
-> 
+On Tue, 15 Jul 2014 17:25:23 +0900 Hyogi Gim <hyogi.gim@lge.com> wrote:
 
-My original thought with using map_vm_area vs. ioremap_page_range was
-that ioremap_page_range is really intended for mapping io devices and
-the like into the kernel virtual address space. map_vm_area is designed
-to handle pages of kernel managed memory. Perhaps it's too nit-picky
-a distinction though.
+> In rtc_suspend() and rtc_resume(), the error after rtc_read_time() is not
+> checked. If rtc device fail to read time, we cannot guarantee the following
+> process.
+> 
+> Add the verification code for returned rtc_read_time() error.
+> 
+> ...
+>
+> --- a/drivers/rtc/class.c
+> +++ b/drivers/rtc/class.c
+> @@ -53,6 +53,7 @@ static int rtc_suspend(struct device *dev)
+>  	struct rtc_device	*rtc = to_rtc_device(dev);
+>  	struct rtc_time		tm;
+>  	struct timespec		delta, delta_delta;
+> +	int err;
+>  
+>  	if (has_persistent_clock())
+>  		return 0;
+> @@ -61,7 +62,12 @@ static int rtc_suspend(struct device *dev)
+>  		return 0;
+>  
+>  	/* snapshot the current RTC and system time at suspend*/
+> -	rtc_read_time(rtc, &tm);
+> +	err = rtc_read_time(rtc, &tm);
+> +	if (err < 0) {
+> +		pr_debug("%s:  fail to read rtc time\n", dev_name(&rtc->dev));
+> +		return 0;
+> +	}
 
-Thanks,
-Laura
+OK, it makes no sense to go ahead and set the system time from a
+garbage rtc_time.
 
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+But I'm wondering if we should propagate the error back to the
+rtc_suspend() caller.  What does the PM core do if a particular
+device's ->suspend or ->resume fails?
+
+>  	getnstimeofday(&old_system);
+>  	rtc_tm_to_time(&tm, &old_rtc.tv_sec);
+>  
+> @@ -94,6 +100,7 @@ static int rtc_resume(struct device *dev)
+>  	struct rtc_time		tm;
+>  	struct timespec		new_system, new_rtc;
+>  	struct timespec		sleep_time;
+> +	int err;
+>  
+>  	if (has_persistent_clock())
+>  		return 0;
+> @@ -104,7 +111,12 @@ static int rtc_resume(struct device *dev)
+>  
+>  	/* snapshot the current rtc and system time at resume */
+>  	getnstimeofday(&new_system);
+> -	rtc_read_time(rtc, &tm);
+> +	err = rtc_read_time(rtc, &tm);
+> +	if (err < 0) {
+> +		pr_debug("%s:  fail to read rtc time\n", dev_name(&rtc->dev));
+> +		return 0;
+> +	}
+> +
+>  	if (rtc_valid_tm(&tm) != 0) {
+>  		pr_debug("%s:  bogus resume time\n", dev_name(&rtc->dev));
+>  		return 0;
+
