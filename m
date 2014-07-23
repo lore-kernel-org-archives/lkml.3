@@ -1,84 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932754AbaGWSFK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 14:05:10 -0400
-Received: from asavdk3.altibox.net ([109.247.116.14]:56963 "EHLO
-	asavdk3.altibox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932561AbaGWSFI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 14:05:08 -0400
-Date: Wed, 23 Jul 2014 20:05:01 +0200
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Andi Kleen <ak@linux.intel.com>
-Cc: Andi Kleen <andi@firstfloor.org>, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Dirk Gouders <dirk@gouders.net>,
-        mmarek@suse.cz
-Subject: Re: [PATCH 1/2] kbuild: Support split debug info v3
-Message-ID: <20140723180501.GA15749@ravnborg.org>
-References: <1405466172-17055-1-git-send-email-andi@firstfloor.org>
- <20140720190420.GA4630@ravnborg.org>
- <20140720211901.GQ5803@tassilo.jf.intel.com>
+	id S932819AbaGWSHY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 14:07:24 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:34867 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932316AbaGWSHW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jul 2014 14:07:22 -0400
+Date: Wed, 23 Jul 2014 20:07:18 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: "Chen, Gong" <gong.chen@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, tglx@linutronix.de,
+        paulus@samba.org, benh@kernel.crashing.org, tony.luck@intel.com,
+        hpa@zytor.com, jkosina@suse.cz, rafael.j.wysocki@intel.com,
+        linux@arm.linux.org.uk, ralf@linux-mips.org, schwidefsky@de.ibm.com,
+        davem@davemloft.net, viro@zeniv.linux.org.uk, fweisbec@gmail.com,
+        cl@linux.com, akpm@linux-foundation.org, axboe@kernel.dk,
+        JBottomley@parallels.com, neilb@suse.de, christoffer.dall@linaro.org,
+        rostedt@goodmis.org, rric@kernel.org, gregkh@linuxfoundation.org,
+        mhocko@suse.cz, david@fromorbit.com
+Subject: Re: [RFC PATCH v1 12/70] x86, pci, amd_bus: _FROZEN Cleanup
+Message-ID: <20140723180718.GH21707@pd.tnic>
+References: <1406080786-3938-1-git-send-email-gong.chen@linux.intel.com>
+ <1406080786-3938-13-git-send-email-gong.chen@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20140720211901.GQ5803@tassilo.jf.intel.com>
+In-Reply-To: <1406080786-3938-13-git-send-email-gong.chen@linux.intel.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 20, 2014 at 02:19:01PM -0700, Andi Kleen wrote:
-> > Why are as only called with -Wa,-gdwarf-2 in the non-split case?
-> > Is this a bug or intentional?
-> > If it is intentional then it is not explained.
+On Tue, Jul 22, 2014 at 09:58:48PM -0400, Chen, Gong wrote:
+> Remove XXX_FROZEN state from x86/pci/amd_bus.
 > 
-> Probably was a merging mistake. Will fix.
+> Signed-off-by: Chen, Gong <gong.chen@linux.intel.com>
+> ---
+>  arch/x86/pci/amd_bus.c | 3 +--
+>  1 file changed, 1 insertion(+), 2 deletions(-)
 > 
-> > > +	help
-> > > +	  Generate debug info into separate .dwo files. This can be
-> > > +	  faster for building than including the debug information directly
-> > Here the "faster" part is promoted.
-> > But in your cover letter you actually highlight the "smaller" case
-> > as more significant.
-> > Maybe include info on both positive items.
-> 
-> I currently don't see it significantly faster in my setup, will
-> mention size. It may be in others though. Feel free to test.
+> diff --git a/arch/x86/pci/amd_bus.c b/arch/x86/pci/amd_bus.c
+> index c20d2cc..30f0fca9 100644
+> --- a/arch/x86/pci/amd_bus.c
+> +++ b/arch/x86/pci/amd_bus.c
+> @@ -341,9 +341,8 @@ static int amd_cpu_notify(struct notifier_block *self, unsigned long action,
+>  			  void *hcpu)
+>  {
+>  	int cpu = (long)hcpu;
+> -	switch (action) {
+> +	switch (action & ~CPU_TASKS_FROZEN) {
+>  	case CPU_ONLINE:
+> -	case CPU_ONLINE_FROZEN:
+>  		smp_call_function_single(cpu, enable_pci_io_ecs, NULL, 0);
+>  		break;
+>  	default:
 
-I tried to test this on my setup - it is a Intel Atom with 2 cores.
-16 GB RAM, a 7200 RPM stat disk.
-In other words a low-spec setup.
+Or you can kill all the switch-case gunk and make it even more readable:
 
-Base config was "make allnoconfig"
+Index: b/arch/x86/pci/amd_bus.c
+===================================================================
+--- a/arch/x86/pci/amd_bus.c	2014-07-23 20:04:44.074436425 +0200
++++ b/arch/x86/pci/amd_bus.c	2014-07-23 20:05:14.282436087 +0200
+@@ -340,15 +340,9 @@ static void enable_pci_io_ecs(void *unus
+ static int amd_cpu_notify(struct notifier_block *self, unsigned long action,
+ 			  void *hcpu)
+ {
+-	int cpu = (long)hcpu;
+-	switch (action) {
+-	case CPU_ONLINE:
+-	case CPU_ONLINE_FROZEN:
+-		smp_call_function_single(cpu, enable_pci_io_ecs, NULL, 0);
+-		break;
+-	default:
+-		break;
+-	}
++	if ((action & ~CPU_TASKS_FROZEN) == CPU_ONLINE)
++		smp_call_function_single((long)hcpu, enable_pci_io_ecs, NULL, 0);
++
+ 	return NOTIFY_OK;
+ }
 
-make KCFLAGS=-g
-real    3m35.967s
-user    12m19.270s
-sys     1m15.082s
+-- 
+Regards/Gruss,
+    Boris.
 
-make KCFLAGS=-gsplit-dwarf
-real    3m33.366s
-user    12m11.156s
-sys     1m17.772s
-
-I did like this:
-echo time make -j4 -s KCFLAGS=-gsplit-dwarf
-time make -j4 -s KCFLAGS=-gsplit-dwarf
-echo time make -j4 -s KCFLAGS=-g
-time make -j4 -s KCFLAGS=-g
-echo time make -j4 -s KCFLAGS=-gsplit-dwarf
-time make -j4 -s KCFLAGS=-gsplit-dwarf
-echo time make -j4 -s KCFLAGS=-g
-time make -j4 -s KCFLAGS=-g
-echo time make -j4 -s KCFLAGS=-gsplit-dwarf
-time make -j4 -s KCFLAGS=-gsplit-dwarf
-echo time make -j4 -s KCFLAGS=-g
-time make -j4 -s KCFLAGS=-g
-
-The figures are from last run - but the other runs had compareable times.
-So in short I see a ~3 seconds speedup - out of 210 seconds.
-Thats less than I anticipated.
-
-But a speed-up never the less - which was consistent over all three runs.
-
-	Sam
+Sent from a fat crate under my desk. Formatting is fine.
+--
