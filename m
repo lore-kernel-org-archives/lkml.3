@@ -1,61 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757581AbaGWJHw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 05:07:52 -0400
-Received: from mail.orcon.net.nz ([219.88.242.62]:33082 "EHLO
-	mail.orcon.net.nz" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1757115AbaGWJHu (ORCPT
+	id S1757604AbaGWJJW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 05:09:22 -0400
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:45119 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751347AbaGWJJU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 05:07:50 -0400
-X-Greylist: delayed 895 seconds by postgrey-1.27 at vger.kernel.org; Wed, 23 Jul 2014 05:07:49 EDT
-Date: Wed, 23 Jul 2014 20:52:44 +1200
-From: Michael Cree <mcree@orcon.net.nz>
-To: linux-alpha@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Richard Henderson <rth@twiddle.net>
-Subject: Bug: retry of clone() on Alpha can result in zeroed process thread
- pointer
-Message-ID: <20140723085244.GB4799@omega>
-Mail-Followup-To: Michael Cree <mcree@orcon.net.nz>,
-	linux-alpha@vger.kernel.org, linux-kernel@vger.kernel.org,
-	Richard Henderson <rth@twiddle.net>
+	Wed, 23 Jul 2014 05:09:20 -0400
+Message-ID: <53CF7BB7.8080509@linaro.org>
+Date: Wed, 23 Jul 2014 18:09:11 +0900
+From: AKASHI Takahiro <takahiro.akashi@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Bayes-Prob: 0.0001 (Score 0: No Bayes scoring rules defined, tokens from: outbound)
-X-Spam-Score: -2.62 () [Hold at 3.00] FREEMAIL_FROM:0.001,FSL_HELO_NON_FQDN_1:0.001,HELO_NO_DOMAIN:0.001,RDNS_DYNAMIC:0.363,T_TO_NO_BRKTS_FREEMAIL:0.01,CC(NZ:-3)
-X-CanIt-Geo: ip=60.234.221.162; country=NZ; latitude=-41.0000; longitude=174.0000; http://maps.google.com/maps?q=-41.0000,174.0000&z=6
-X-CanItPRO-Stream: base:outbound
-X-Canit-Stats-ID: 02MtIQKIi - 8357b29e0eb7 - 20140723
+To: Will Deacon <will.deacon@arm.com>
+CC: Kees Cook <keescook@chromium.org>, Will Drewry <wad@chromium.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "dsaxena@linaro.org" <dsaxena@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v5 1/3] arm64: ptrace: reload a syscall number after ptrace
+ operations
+References: <1406020499-5537-1-git-send-email-takahiro.akashi@linaro.org> <1406020499-5537-2-git-send-email-takahiro.akashi@linaro.org> <CAGXu5jKkJUGn_MpEEr8U=n_A+iW9s8vSX1WoVNzRJMVyGQRjpA@mail.gmail.com> <53CF5E53.3060409@linaro.org> <20140723082505.GB27260@arm.com>
+In-Reply-To: <20140723082505.GB27260@arm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I am seeing a bug in clone() on the Alpha architecture.  Reported to
-Debian as https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=755397
+On 07/23/2014 05:25 PM, Will Deacon wrote:
+> On Wed, Jul 23, 2014 at 08:03:47AM +0100, AKASHI Takahiro wrote:
+>> On 07/23/2014 05:15 AM, Kees Cook wrote:
+>>> On Tue, Jul 22, 2014 at 2:14 AM, AKASHI Takahiro
+>>> <takahiro.akashi@linaro.org> wrote:
+>>>>    asmlinkage int syscall_trace_enter(struct pt_regs *regs)
+>>>>    {
+>>>> +       unsigned long saved_x0, saved_x8;
+>>>> +
+>>>> +       saved_x0 = regs->regs[0];
+>>>> +       saved_x8 = regs->regs[8];
+>>>> +
+>>>>           if (test_thread_flag(TIF_SYSCALL_TRACE))
+>>>>                   tracehook_report_syscall(regs, PTRACE_SYSCALL_ENTER);
+>>>>
+>>>> +       regs->syscallno = regs->regs[8];
+>>>> +       if ((long)regs->syscallno == ~0UL) { /* skip this syscall */
+>>>> +               regs->regs[8] = saved_x8;
+>>>> +               if (regs->regs[0] == saved_x0) /* not changed by user */
+>>>> +                       regs->regs[0] = -ENOSYS;
+>>>
+>>> I'm not sure this is right compared to other architectures. Generally
+>>> when a tracer performs a syscall skip, it's up to them to also adjust
+>>> the return value. They may want to be faking a syscall, and what if
+>>> the value they want to return happens to be what x0 was going into the
+>>> tracer? It would have no way to avoid this -ENOSYS case. I think
+>>> things are fine without this test.
+>>
+>> Yeah, I know this issue, but was not sure that setting a return value
+>> is mandatory. (x86 seems to return -ENOSYS by default if not explicitly
+>> specified.)
+>> Is "fake a system call" a more appropriate word than "skip"?
+>>
+>> I will defer to Will.
+>
+> I agree with Kees -- iirc, I only suggested restoring x8.
 
-The test suite of glibc sometimes fails in the nptl/tst-eintr3 test
-with a segmentation fault.  I have tracked it down to the thread
-pointer returned by the rduniq PALcall is occasionally zero when
-it should point to the TLS.  I have only ever seen this occur when
-running a SMP kernel.
+OK.
 
-Running strace on nptl/tst-eintr3 reveals that the clone() syscall
-is retried by the kernel if an ERESTARTNOINTR error occurs.  At
-$syscall_error in arch/alpha/kernel/entry.S the kernel handles the
-error and in doing that it writes to 72(sp) which is where the value
-of the a3 CPU register on entry to the kernel is stored.  Then the
-kernel retries the clone() function.  But the alpha specific code
-for copy_thread() in arch/alpha/kernel/process.c does not use the
-passed a3 cpu register (the argument tls), instead it goes to the
-saved stack to get the value of the a3 register, which on the
-second call to clone() has been modified to no longer be the value
-of the a3 cpu register on entry to the kernel.  And a latent bomb
-is laid for userspace in the form of an incorrect process unique
-value (which is the thread pointer) in the PCB.
+-Takahiro AKASHI
 
-Am I correct in my analysis and, if so, can we get a fix for this
-please.
-
-Cheers
-Michael.
+> Will
+>
