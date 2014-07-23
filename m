@@ -1,93 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753422AbaGWFma (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 01:42:30 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:63950 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752821AbaGWFm1 (ORCPT
+	id S1753772AbaGWFqH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 01:46:07 -0400
+Received: from smtprelay.synopsys.com ([198.182.60.111]:56237 "EHLO
+	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751347AbaGWFqF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 01:42:27 -0400
-X-Originating-IP: 108.223.40.66
-Message-ID: <53CF4B42.6060106@roeck-us.net>
-Date: Tue, 22 Jul 2014 22:42:26 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Nick Krause <xerofoify@gmail.com>
-CC: Geert Uytterhoeven <geert@linux-m68k.org>,
-        linux-m68k <linux-m68k@vger.kernel.org>,
+	Wed, 23 Jul 2014 01:46:05 -0400
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+To: David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+CC: Johannes Weiner <hannes@cmpxchg.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] m68k: Remove printk statement and add return statement
- in q40ints.c
-References: <1406088515-4026-1-git-send-email-xerofoify@gmail.com>	<53CF3FFB.4080809@roeck-us.net> <CAPDOMVgJ1-L0wvxwkdut9XDsAHNFd_VsEN75W_Thn1P-phgnuw@mail.gmail.com>
-In-Reply-To: <CAPDOMVgJ1-L0wvxwkdut9XDsAHNFd_VsEN75W_Thn1P-phgnuw@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Subject: Re: [patch] mm, arc: remove obsolete pagefault oom killer comment
+Thread-Topic: [patch] mm, arc: remove obsolete pagefault oom killer comment
+Thread-Index: AQHPphIrZLjlRQS6Z0a4T9juTDiBgA==
+Date: Wed, 23 Jul 2014 05:45:59 +0000
+Message-ID: <C2D7FE5348E1B147BCA15975FBA230753C4B4FAC@IN01WEMBXA.internal.synopsys.com>
+References: <alpine.DEB.2.02.1407221804200.21164@chino.kir.corp.google.com>
+Accept-Language: en-US, en-IN
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.12.196.93]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/22/2014 09:56 PM, Nick Krause wrote:
-> On Wed, Jul 23, 2014 at 12:54 AM, Guenter Roeck <linux@roeck-us.net> wrote:
->> On 07/22/2014 09:08 PM, Nicholas Krause wrote:
->>>
->>> This removes the printk statement for irqs not defined by the hardware in
->>> function q40_irq_startup and instead returns -ENXIO as stated by the fix
->>> me message.
->>>
->>> Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
->>> ---
->>>    arch/m68k/q40/q40ints.c | 3 +--
->>>    1 file changed, 1 insertion(+), 2 deletions(-)
->>>
->>> diff --git a/arch/m68k/q40/q40ints.c b/arch/m68k/q40/q40ints.c
->>> index 513f9bb..86f05c0 100644
->>> --- a/arch/m68k/q40/q40ints.c
->>> +++ b/arch/m68k/q40/q40ints.c
->>> @@ -48,8 +48,7 @@ static unsigned int q40_irq_startup(struct irq_data
->>> *data)
->>>          switch (irq) {
->>>          case 1: case 2: case 8: case 9:
->>>          case 11: case 12: case 13:
->>> -               printk("%s: ISA IRQ %d not implemented by HW\n", __func__,
->>> irq);
->>> -               /* FIXME return -ENXIO; */
->>> +               return -ENXIO;
->>
->>
->> Returning -ENXIO from a function returning an unsigned int isn't really very
->> helpful,
->> don't you think ?
->>
->> With all those FIXMEs, you might want to keep in mind that there is
->> typically a
->> good reason for it. If it was as easy as your proposed fix, you can assume
->> that the FIXME would not have been there in the first place.
->>
->> Guenter
->>
+On Wednesday 23 July 2014 06:35 AM, David Rientjes wrote:
+> Commit 609838cfed97 ("mm: invoke oom-killer from remaining unconverted page 
+> fault handlers") converted arc to call pagefault_out_of_memory(), so remove
+> the comment about future conversion.
 >
->
-> Sorry Guenter,
-> That's fine. can I can change  the return type of the function or is
-> that going to break things?
-> Nick
->
+> Cc: Johannes Weiner <hannes@cmpxchg.org>
+> Signed-off-by: David Rientjes <rientjes@google.com>
 
-Please have a look at the context. q40_irq_startup is used to initialize
-struct irq_chip.irq_startup, which expects an unsigned int as return value.
-To make things more interesting, the caller (function irq_startup) assigns
-the result to an int. However, _callers_ of irq_startup either ignore
-the return value, or assume that an interrupt is pending if the return
-value is not 0.
+Thx David,
 
-So all your change accomplishes is to tell the caller that an interrupt
-would be pending. Changing the return value to int will only result
-in a compile warning but otherwise not change anything.
+Applied to ARC for-next.
 
-Unless you put in the effort to really analyze the code, and that applies
-to each FIXME you are trying to fix, I would suggest to leave it alone.
-Otherwise we just end up worse than before.
-
-Guenter
-
+-Vineet
