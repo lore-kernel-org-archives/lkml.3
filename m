@@ -1,59 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756966AbaGWHeL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 03:34:11 -0400
-Received: from mail-ie0-f176.google.com ([209.85.223.176]:58140 "EHLO
-	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751553AbaGWHeJ (ORCPT
+	id S1757018AbaGWHfZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 03:35:25 -0400
+Received: from casper.infradead.org ([85.118.1.10]:35689 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752920AbaGWHfX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 03:34:09 -0400
-Date: Wed, 23 Jul 2014 08:34:03 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Another tree in Linux -next
-Message-ID: <20140723073403.GF23210@lee--X1>
-References: <20130731101119.GC13298@lee--X1>
- <20130801094146.2266f4ff61ddac67cd449f53@canb.auug.org.au>
- <20140722092208.GG28529@lee--X1>
- <20140723084314.34870f0e@canb.auug.org.au>
+	Wed, 23 Jul 2014 03:35:23 -0400
+Date: Wed, 23 Jul 2014 09:35:18 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Mike Galbraith <umgwanakikbuti@gmail.com>
+Cc: Andi Kleen <andi@firstfloor.org>, Waiman Long <Waiman.Long@hp.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        Darren Hart <dvhart@linux.intel.com>,
+        Davidlohr Bueso <davidlohr@hp.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
+        linux-doc@vger.kernel.org, Jason Low <jason.low2@hp.com>,
+        Scott J Norton <scott.norton@hp.com>
+Subject: Re: [RFC PATCH 0/5] futex: introduce an optimistic spinning futex
+Message-ID: <20140723073518.GP3935@laptop>
+References: <1405956271-34339-1-git-send-email-Waiman.Long@hp.com>
+ <8761iq3bp3.fsf@tassilo.jf.intel.com>
+ <1406091303.5076.33.camel@marge.simpson.net>
+ <20140723065736.GM3935@laptop>
+ <1406100346.5076.98.camel@marge.simpson.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140723084314.34870f0e@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1406100346.5076.98.camel@marge.simpson.net>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 23 Jul 2014, Stephen Rothwell wrote:
-> On Tue, 22 Jul 2014 10:22:08 +0100 Lee Jones <lee.jones@linaro.org> wrote:
-> >
-> > Can I have another branch in -next please?
-> > 
-> > > Sure, if you think you meet the criteria, then send me a URL:
-> > > 
-> > > You will need to ensure that the patches/commits in your tree/series have
-> > > been:
-> > >      * submitted under GPL v2 (or later) and include the Contributor's
-> > > 	Signed-off-by,
-> > >      * posted to the relevant mailing list,
-> > >      * reviewed by you (or another maintainer of your subsystem tree),
-> > >      * successfully unit tested, and 
-> > >      * destined for the current or next Linux merge window.
-> > 
-> > The new branch also matches the critera.
-> > 
-> > Repo:   git://git.kernel.org/pub/scm/linux/kernel/git/lee/backlight.git
-> > Branch: for-backlight-next
-> 
-> Added from today.
+On Wed, Jul 23, 2014 at 09:25:46AM +0200, Mike Galbraith wrote:
+> I also resurrect mwait_idle(), as while you may consider it obsolete, I
+> still love my lovely little Q6600 box (power sucking pig) dearly :)
 
-Thanks Stephen, much obliged.
-
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Yeah, I keep forgetting about that one.. we should get that fixed.
