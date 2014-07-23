@@ -1,118 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755690AbaGWDGa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 23:06:30 -0400
-Received: from mga01.intel.com ([192.55.52.88]:18923 "EHLO mga01.intel.com"
+	id S1755952AbaGWDGv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 23:06:51 -0400
+Received: from ozlabs.org ([103.22.144.67]:33835 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752196AbaGWDG3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 23:06:29 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,714,1400050800"; 
-   d="scan'208";a="565820935"
-Message-ID: <53CF26B2.6060503@linux.intel.com>
-Date: Wed, 23 Jul 2014 11:06:26 +0800
-From: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1755815AbaGWDGt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 23:06:49 -0400
+Date: Wed, 23 Jul 2014 13:06:41 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Daniel Vetter <daniel.vetter@ffwll.ch>, <intel-gfx@lists.freedesktop.org>,
+        <dri-devel@lists.freedesktop.org>, Dave Airlie <airlied@linux.ie>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Borun Fu <borun.fu@intel.com>, Sagar Kamble <sagar.a.kamble@intel.com>
+Subject: linux-next: manual merge of the drm-intel tree with the drm tree
+Message-ID: <20140723130641.480be385@canb.auug.org.au>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
 MIME-Version: 1.0
-To: Mikulas Patocka <mpatocka@redhat.com>,
-        "xinhui.pan" <xinhuix.pan@intel.com>, linux-kernel@vger.kernel.org,
-        agk@redhat.com, snitzer@redhat.com, dm-devel@redhat.com,
-        "Liu, ShuoX" <shuox.liu@intel.com>
-Subject: Re: [dm-devel] [PATCH] md/dm-ioctl.c: optimize memory allocation
- in copy_params
-References: <53B68068.2060102@intel.com> <alpine.LRH.2.02.1407081831510.27831@file01.intranet.prod.int.rdu2.redhat.com> <53BCA278.5050205@linux.intel.com> <alpine.LRH.2.02.1407091032400.4545@file01.intranet.prod.int.rdu2.redhat.com> <53CDB81B.90509@linux.intel.com> <20140722012352.GD6822@agk-dp.fab.redhat.com>
-In-Reply-To: <20140722012352.GD6822@agk-dp.fab.redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/p3AIIOIk1oU0mWO7uFkJ1Kq"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/7/22 9:23, Alasdair G Kergon wrote:
->>>> On 2014/7/9 6:39, Mikulas Patocka wrote:
->>> Which ioctl with more than 16kB
->>> arguments do you use?
-> Unanswered.  Let's ask the same question in a different way:
->
-> Please supply the output of these three commands on the real-world system on
-> which you believe that that particular allocation is causing you a problem:
->    dmsetup info -c
->    dmsetup table
->    dmsetup status
+--Sig_/p3AIIOIk1oU0mWO7uFkJ1Kq
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Android doesn't include the command. We compiled lvm2-2_02_107.tar.gz and copy
-dmsetup to the board. But command reports No devices.
+Hi all,
 
-# /data/bin/dmsetup info
-No devices found
+Today's linux-next merge of the drm-intel tree got a conflict in
+drivers/gpu/drm/i915/intel_display.c between commit d05410f9a450
+("drm/i915: split conversion function out into separate function") from
+the drm tree and commit 6b09e72050b4 ("drm/i915: Power gating display
+wells during i915_pm_suspend") from the drm-intel tree.
 
-# cat /proc/devices
-Character devices:
-   1 mem
-   4 /dev/vc/0
-   4 tty
-   4 ttyS
-   4 ttyMFD
-   5 /dev/tty
-   5 /dev/console
-   5 /dev/ptmx
-   7 vcs
-  10 misc
-  13 input
-  21 sg
-  29 fb
-  81 video4linux
-  89 i2c
-108 ppp
-116 alsa
-128 ptm
-136 pts
-153 spi
-166 ttyACM
-180 usb
-188 ttyUSB
-189 usb_device
-202 cpu/msr
-203 cpu/cpuid
-226 drm
-241 mdm_ctrl
-242 sep54
-243 roccat
-244 hidraw
-245 ttyGS
-246 usbmon
-247 ttyPTI
-248 gsmtty
-249 bsg
-250 iio
-251 ptp
-252 pps
-253 media
-254 rtc
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-Block devices:
-   1 ramdisk
-259 blkext
-   7 loop
-   8 sd
-   9 md
-  11 sr
-  65 sd
-  66 sd
-  67 sd
-  68 sd
-  69 sd
-  70 sd
-  71 sd
-128 sd
-129 sd
-130 sd
-131 sd
-132 sd
-133 sd
-134 sd
-135 sd
-179 mmc
-253 device-mapper
-254 mdp
+P.S. Daniel, that drm-intel tree commit has no Signed-off-by from its
+author ...
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
+diff --cc drivers/gpu/drm/i915/intel_display.c
+index a5af732b87b8,1389d8a30f0a..000000000000
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@@ -4314,27 -4300,6 +4314,23 @@@ static void i9xx_pfit_enable(struct int
+  	I915_WRITE(BCLRPAT(crtc->pipe), 0);
+  }
+ =20
+ +static enum intel_display_power_domain port_to_power_domain(enum port por=
+t)
+ +{
+ +	switch (port) {
+ +	case PORT_A:
+ +		return POWER_DOMAIN_PORT_DDI_A_4_LANES;
+ +	case PORT_B:
+ +		return POWER_DOMAIN_PORT_DDI_B_4_LANES;
+ +	case PORT_C:
+ +		return POWER_DOMAIN_PORT_DDI_C_4_LANES;
+ +	case PORT_D:
+ +		return POWER_DOMAIN_PORT_DDI_D_4_LANES;
+ +	default:
+ +		WARN_ON_ONCE(1);
+ +		return POWER_DOMAIN_PORT_OTHER;
+ +	}
+ +}
+ +
+- #define for_each_power_domain(domain, mask)				\
+- 	for ((domain) =3D 0; (domain) < POWER_DOMAIN_NUM; (domain)++)	\
+- 		if ((1 << (domain)) & (mask))
+-=20
+  enum intel_display_power_domain
+  intel_display_port_power_domain(struct intel_encoder *intel_encoder)
+  {
+
+--Sig_/p3AIIOIk1oU0mWO7uFkJ1Kq
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJTzybGAAoJEMDTa8Ir7ZwVbcsP/0x+/eC5TlJHspRGyvhY7HjW
+ktglRuCJlLnC5PZ7KatVJHTSF9bzmkgqOy1W/YqS0PLcRQ4HnVXc0B3DsDxaizVm
+ue3K4tdmtzIATKMk35iqtv8yW3aVNmMz4OYf67uP28s3SXxzGF36/CLaSH78Nq5E
+DeWEsVkLxVOFDCGB3eVIy07HKT3VBkPn+WW25Uki4r+NUAMw7Cyej2AbBFmEXn4r
+An4opXTL7J3zIdsAeccN4sV3rb8dVCzl749i3n9BmPAdqdKmjUSIwBzo0NPPvIxg
+sQuQ1SbAxpvrEFl/L+eyfyN6FeTkR2oHXzoaRK4NxISKArVLX0HWKsF35XDIgoVV
+4Z7MbM8XGGJzCfmpsYwMlMxvosih1ZrzlOs/8MRwa3J/LUVjbkjNWD78iHW2HwVv
+/27OODoewMgF+47ruuAsUxPu1+z8sYICY+xdOCXBcoyZzixMPUYKIMw58JiUxlM9
+iZN3c6vzuZReyE6S0pGvSmPM/64EdZYuy52VCN8QmpXfA/C+t8GsTSI4b0SDwNxp
+m/XiurdNiFftYW6a5UHx15pNzf6BKoR8rjef4iVEMv70eDD6c9l3bo3c97Uu/UVX
+XyU5EUd97EokFjQV0cunM3zeQ20Q1F+FgxBWPwS/9dCK90BmR1oJ7DCroyR+do8j
+20VJ5dkCa82YnT2Yffdp
+=9LdS
+-----END PGP SIGNATURE-----
+
+--Sig_/p3AIIOIk1oU0mWO7uFkJ1Kq--
