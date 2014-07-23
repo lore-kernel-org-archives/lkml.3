@@ -1,82 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933060AbaGWTPW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 15:15:22 -0400
-Received: from mail-oa0-f45.google.com ([209.85.219.45]:50035 "EHLO
-	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932514AbaGWTPV (ORCPT
+	id S933124AbaGWTPu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 15:15:50 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:51957 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932514AbaGWTPs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 15:15:21 -0400
+	Wed, 23 Jul 2014 15:15:48 -0400
+Date: Wed, 23 Jul 2014 12:15:42 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Pranith Kumar <bobby.prani@gmail.com>
+Cc: Josh Triplett <josh@joshtriplett.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        "open list:READ-COPY UPDATE..." <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 09/16] rcu: Remove redundant check for online cpu
+Message-ID: <20140723191542.GA9398@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1406092194-13004-1-git-send-email-bobby.prani@gmail.com>
+ <1406092194-13004-10-git-send-email-bobby.prani@gmail.com>
+ <20140723122112.GJ11241@linux.vnet.ibm.com>
+ <CAJhHMCAoLQPnJYCeqftXwZb6D4ECuJb4g04b4OO5BLf6iC1ENw@mail.gmail.com>
+ <20140723135024.GR11241@linux.vnet.ibm.com>
+ <CAJhHMCAZ__1xkEou44iux=Z6v6NAKPrTvWob6tqorm23nNygOA@mail.gmail.com>
+ <20140723142314.GV11241@linux.vnet.ibm.com>
+ <CAJhHMCA4Fdd4JbtKdNGABFYRBCqaLukLbydLAFA-3RiZXaTngA@mail.gmail.com>
+ <20140723153018.GY11241@linux.vnet.ibm.com>
+ <CAJhHMCBDZyHYCo01T421f+No0ZBWfjsUXijg+MT1A2U621izpA@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.10.1407232048240.23352@nanos>
-References: <1406141136-19501-1-git-send-email-f.fainelli@gmail.com> <alpine.DEB.2.10.1407232048240.23352@nanos>
-From: Florian Fainelli <f.fainelli@gmail.com>
-Date: Wed, 23 Jul 2014 12:14:40 -0700
-Message-ID: <CAGVrzcbMKOGV20OGWY9n7xw3f=6+oyRvza+qRbCHfbVECmTLNQ@mail.gmail.com>
-Subject: Re: [PATCH v2] genirq: bug on inconstent flags and flow handler
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jason Cooper <jason@lakedaemon.net>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAJhHMCBDZyHYCo01T421f+No0ZBWfjsUXijg+MT1A2U621izpA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14072319-7164-0000-0000-000003562311
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-07-23 11:49 GMT-07:00 Thomas Gleixner <tglx@linutronix.de>:
-> On Wed, 23 Jul 2014, Florian Fainelli wrote:
->
->> It is currently possible for a generic irq chip driver to set IRQ_LEVEL
->> and have its irq flow handler be handle_edge_irq. Setting IRQ_LEVEL in
->> such a case does not make sense, and will actually prevent e.g: the
->> software resend logic from kicking, and potential other problems too.
->>
->> Signed-off-by: Florian Fainelli <f.fainelli@gmail.com>
->> ---
->> Changes in v2:
->> - replaced WARN_ON() with BUG_ON() since we really don't want to continue
->>   as suggested by Jason Cooper
->
-> I disagree here. It's not a reason take the machine down. Its good
-> enough to WARN. That keeps the machine alive and lets us debug that
-> stuff.
+On Wed, Jul 23, 2014 at 11:44:43AM -0400, Pranith Kumar wrote:
+> On Wed, Jul 23, 2014 at 11:30 AM, Paul E. McKenney
+> <paulmck@linux.vnet.ibm.com> wrote:
+> > On Wed, Jul 23, 2014 at 11:11:45AM -0400, Pranith Kumar wrote:
+> >> On Wed, Jul 23, 2014 at 10:23 AM, Paul E. McKenney
+> >> <paulmck@linux.vnet.ibm.com> wrote:
+> >> > On Wed, Jul 23, 2014 at 10:12:54AM -0400, Pranith Kumar wrote:
+> >> >> On Wed, Jul 23, 2014 at 9:50 AM, Paul E. McKenney
+> >> >> <paulmck@linux.vnet.ibm.com> wrote:
+> >> >> > On Wed, Jul 23, 2014 at 08:59:06AM -0400, Pranith Kumar wrote:
+> >> >> >> On Wed, Jul 23, 2014 at 8:21 AM, Paul E. McKenney
+> >> >> >> <paulmck@linux.vnet.ibm.com> wrote:
+> >> >> >> > On Wed, Jul 23, 2014 at 01:09:46AM -0400, Pranith Kumar wrote:
+> >> >> >> >> There are two checks for an online CPU if two if() conditions. This commit
+> >> >> >> >> simplies this by replacing it with only one check for the online CPU.
+> >> >> >> >>
+> >> >> >> >> Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
+> >> >> >> >
+> >> >> >> > I admit that it is very early in the morning my time, but I don't see
+> >> >> >> > this change as preserving the semantics in all cases.  Please recheck
+> >> >> >> > your changes to the second check.
+> >> >> >> >
+> >> >> >> >                                                         Thanx, Paul
+> >> >> >>
+> >> >> >> I guess you must be thrown off by the complementary checks, the first
+> >> >> >> check is for cpu_online() and second is for cpu_is_offline(). :)
+> >> >> >>
+> >> >> >> Previously, if a cpu is offline, the first condition is false and the
+> >> >> >> second condition is true, so we return from the second if() condition.
+> >> >> >> The same semantics are being preserved.
+> >> >> >
+> >> >> > Fair enough!
+> >> >> >
+> >> >> > Nevertheless, I am not seeing this as a simplification.
+> >> >>
+> >> >> I am not sure what you mean here, do you mean that both the checks are
+> >> >> actually required?
+> >> >
+> >> > I mean that the current compound tests each mean something.  Pulling out
+> >> > the offline test adds lines of code and obscures that meaning.   This means
+> >> > that it is easier (for me, anyway) to see why the current code is correct
+> >> > than it is to see why your suggested change is correct.
+> >> >
+> >>
+> >> That is a valid point. I did not mean to reduce readability of the
+> >> code. Just trying to avoid the overhead of smp_processor_id().
+> >>
+> >> Not sure if you would prefer this, but how about the following?
+> >
+> > If you change the "awake" to something like "am_online", I could get
+> > behind this one.
+> 
+> OK! I will submit that in the next series(with the zalloc check).
 
-Works for me!
+You caught me at a weak moment...  This change just adds an extra
+line of code and doesn't really help anything.
 
->
-> Lemme find V1 ....
+So please leave this one out.
 
-Here it is: https://lkml.org/lkml/2014/7/1/468
+							Thanx, Paul
 
->
->
->>  kernel/irq/chip.c | 7 ++++++-
->>  1 file changed, 6 insertions(+), 1 deletion(-)
->>
->> diff --git a/kernel/irq/chip.c b/kernel/irq/chip.c
->> index a2b28a2fd7b1..17a66b56cd96 100644
->> --- a/kernel/irq/chip.c
->> +++ b/kernel/irq/chip.c
->> @@ -749,8 +749,13 @@ void irq_modify_status(unsigned int irq, unsigned long clr, unsigned long set)
->>               irqd_set(&desc->irq_data, IRQD_PER_CPU);
->>       if (irq_settings_can_move_pcntxt(desc))
->>               irqd_set(&desc->irq_data, IRQD_MOVE_PCNTXT);
->> -     if (irq_settings_is_level(desc))
->> +     if (irq_settings_is_level(desc)) {
->> +             /* Setting IRQD_LEVEL does not make sense on non-level
->> +              * sensitive interrupts
->> +              */
->> +             BUG_ON(desc->handle_irq != handle_level_irq);
->>               irqd_set(&desc->irq_data, IRQD_LEVEL);
->> +     }
->>
->>       irqd_set(&desc->irq_data, irq_settings_get_trigger_mask(desc));
->>
->> --
->> 1.9.1
->>
->>
-
-
-
--- 
-Florian
