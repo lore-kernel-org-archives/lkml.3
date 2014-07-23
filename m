@@ -1,110 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933301AbaGWTtV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 15:49:21 -0400
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:65345 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932665AbaGWTtT (ORCPT
+	id S933345AbaGWTth (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 15:49:37 -0400
+Received: from mail-wi0-f176.google.com ([209.85.212.176]:56266 "EHLO
+	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932665AbaGWTtf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 15:49:19 -0400
+	Wed, 23 Jul 2014 15:49:35 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAGXu5j+cvG5BhNSA=UrcbYs3LPSZUZyj4_ey8=9O0KgbUYUd9g@mail.gmail.com>
-References: <1405657206-12060-1-git-send-email-ast@plumgrid.com>
-	<1405657206-12060-8-git-send-email-ast@plumgrid.com>
-	<CAGXu5j+cvG5BhNSA=UrcbYs3LPSZUZyj4_ey8=9O0KgbUYUd9g@mail.gmail.com>
-Date: Wed, 23 Jul 2014 12:49:17 -0700
-Message-ID: <CAMEtUuwE1oLUZb2QM243uKGSAfT_ahozducakpi9uvADzsj5XA@mail.gmail.com>
-Subject: Re: [PATCH RFC v2 net-next 07/16] bpf: add lookup/update/delete/iterate
- methods to BPF maps
-From: Alexei Starovoitov <ast@plumgrid.com>
-To: Kees Cook <keescook@chromium.org>
-Cc: "David S. Miller" <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Jiri Olsa <jolsa@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <4234415.npFyMyvrKf@vostro.rjw.lan>
+References: <1406056419-3047-1-git-send-email-arjun024@gmail.com>
+ <6018343.yi13pxNXUP@vostro.rjw.lan> <CAJFMrCH1yeZfEo=z6Vj-qaK=Qpiu9KoqJOLsUo-p1yYcxr+L-g@mail.gmail.com>
+ <4234415.npFyMyvrKf@vostro.rjw.lan>
+From: Arjun Sreedharan <arjun024@gmail.com>
+Date: Thu, 24 Jul 2014 01:19:12 +0530
+Message-ID: <CAJFMrCEBmHbWznsfwtmk89zdrHiUveOZqL8Da=FvyN3GWQUraA@mail.gmail.com>
+Subject: Re: [PATCH] PNPACPI: check return value of pnpacpi_parse_allocated_resource()
+ and pnpacpi_parse_resource_option_data()
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Len Brown <lenb@kernel.org>, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 23, 2014 at 11:25 AM, Kees Cook <keescook@chromium.org> wrote:
->> +
->> +       /* lookup key in a given map referenced by map_id
->> +        * err = bpf_map_lookup_elem(int map_id, void *key, void *value)
+On 23 July 2014 17:06, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
+> On Wednesday, July 23, 2014 01:56:36 PM Arjun wrote:
+>> ACPI 5.0 resource types like FixedDMA will fail pnpacpi_allocated_resource().
+>> pnpacpi_add_device() has to return error in that case.
 >
-> This needs map_id documentation updates too?
-
-yes. will grep for it just to make sure.
-
->> +static int get_map_id(struct fd f)
->> +{
->> +       struct bpf_map *map;
->> +
->> +       if (!f.file)
->> +               return -EBADF;
->> +
->> +       if (f.file->f_op != &bpf_map_fops) {
->> +               fdput(f);
+> Why?
 >
-> It feels weird to me to do the fdput inside this function. Instead,
-> should map_lookup_elem get a "err_put" label, instead?
 
-I don't think it will work, since I'm not sure that fd.flags will be zero
-when fd.file == NULL. It looks so by analyzing return code path
-in fs/file.c, but I wasn't sure that I followed all code paths,
-so I just picked this style from fs/timerfd.c assuming it was
-done this away on purpose and there can be the case where
-fd.file == null and fd.flags !=0. In such case we cannot call fdput().
+OK. I presume that for unsupported types like ACPI_RESOURCE_TYPE_FIXED_DMA
+pnpacpi_set_resources() will fail.
 
->> +       err = -EFAULT;
->> +       if (copy_to_user(uvalue, value, map->value_size) != 0)
->> +               goto free_key;
+>> On 23 July 2014 03:42, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
+>> > On Wednesday, July 23, 2014 12:43:39 AM Arjun Sreedharan wrote:
+>> >> Handle error condition since pnpacpi_parse_allocated_resource() and pnpacpi_parse_resource_option_data() could return -EPERM.
+>> >>
+>> >> Signed-off-by: Arjun Sreedharan <arjun024@gmail.com>
+>> >
+>> > I wonder if this fixes any functional issue you've seen or someone has
+>> > reported to you or it's just an "Oh, we probably should handle the return
+>> > values here" kind of thing?
+>> >
+>> >> ---
+>> >>  drivers/pnp/pnpacpi/core.c | 8 ++++++--
+>> >>  1 file changed, 6 insertions(+), 2 deletions(-)
+>> >>
+>> >> diff --git a/drivers/pnp/pnpacpi/core.c b/drivers/pnp/pnpacpi/core.c
+>> >> index b81448b..c3214e9 100644
+>> >> --- a/drivers/pnp/pnpacpi/core.c
+>> >> +++ b/drivers/pnp/pnpacpi/core.c
+>> >> @@ -272,10 +272,14 @@ static int __init pnpacpi_add_device(struct acpi_device *device)
+>> >>               strncpy(dev->name, acpi_device_bid(device), sizeof(dev->name));
+>> >>
+>> >>       if (dev->active)
+>> >> -             pnpacpi_parse_allocated_resource(dev);
+>> >> +             error = pnpacpi_parse_allocated_resource(dev);
+>> >> +             if (error)
+>> >> +                     return error;
+>> >>
+>> >>       if (dev->capabilities & PNP_CONFIGURABLE)
+>> >> -             pnpacpi_parse_resource_option_data(dev);
+>> >> +             error = pnpacpi_parse_resource_option_data(dev);
+>> >> +             if (error)
+>> >> +                     return error;
+>> >>
+>> >>       list_for_each_entry(id, &device->pnp.ids, list) {
+>> >>               if (!strcmp(id->id, pnpid))
+>> >>
+>> >
+>> > --
+>> > I speak only for myself.
+>> > Rafael J. Wysocki, Intel Open Source Technology Center.
 >
-> I'm made uncomfortable with memory copying where explicit lengths from
-> userspace aren't being used. It does look like it would be redundant,
-> though. Are there other syscalls where the kernel may stomp on user
-> memory based on internal kernel sizes? I think this is fine as-is, but
-> it makes me want to think harder about it. :)
-
-good question :)
-key_size and value_size are passed initially from user space.
-Kernel only verifies and allocates internal map elements with given
-sizes. Then it copies the value back with the size it remembered.
-If user space said at map creation time that value_size is 100,
-it should be using it consistently in user space program.
-
->> +       err = -ENOMEM;
->> +       next_key = kmalloc(map->key_size, GFP_ATOMIC);
->
-> In the interests of defensiveness, I'd use kzalloc here.
-
-I think it would be an overkill. Map implementation must consume
-all bytes of incoming 'key' and return exactly the same number
-of bytes in 'next_key'. Otherwise the whole iteration over map
-with 'get_next_key' won't work. So if map implementation is
-broken, it will be seen right away. No security leak here :)
-
->> +       case BPF_MAP_GET_NEXT_KEY:
->> +               return map_get_next_key((int) arg2, (void __user *) arg3,
->> +                                       (void __user *) arg4);
->
-> Same observation as the other syscall cmd: perhaps arg5 == 0 should be
-> checked? Also, since each of these functions looks up the fd and
-
-yes. will do.
-
-> builds the key, maybe those should be added to a common helper instead
-> of copy/pasting into each demuxed function?
-
-well, get_map_id() is a common helper. I didn't move fdget() all
-the way to switch statement, since it looks less readable.
+> --
+> I speak only for myself.
+> Rafael J. Wysocki, Intel Open Source Technology Center.
