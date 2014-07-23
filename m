@@ -1,59 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933481AbaGWUYF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 16:24:05 -0400
-Received: from mail-we0-f171.google.com ([74.125.82.171]:53706 "EHLO
-	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933091AbaGWUYD (ORCPT
+	id S933517AbaGWUYH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 16:24:07 -0400
+Received: from mout.kundenserver.de ([212.227.126.130]:50338 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933423AbaGWUYE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 16:24:03 -0400
+	Wed, 23 Jul 2014 16:24:04 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Pawel Moll <pawel.moll@arm.com>
+Subject: Re: [PATCH RESEND v2] bus: ARM CCN PMU driver
+Date: Wed, 23 Jul 2014 22:23:38 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-35-generic; KDE/4.3.2; x86_64; ; )
+Cc: Olof Johansson <olof@lixom.net>, Rob Herring <robh+dt@kernel.org>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Stephane Eranian <eranian@google.com>, Jiri Olsa <jolsa@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        arm@kernel.org
+References: <1406050379-15199-1-git-send-email-pawel.moll@arm.com>
+In-Reply-To: <1406050379-15199-1-git-send-email-pawel.moll@arm.com>
 MIME-Version: 1.0
-In-Reply-To: <CAMbhsRRP2xE2UHqJd-X=ggsc=rqzhwTwVKpaYGMjC840YhTSYg@mail.gmail.com>
-References: <CAPDOMVjrFzrveTuYeZQ1o7XEYP_pcmF0Z9b2_Y9eGVidvzy+ig@mail.gmail.com>
-	<CAMbhsRRP2xE2UHqJd-X=ggsc=rqzhwTwVKpaYGMjC840YhTSYg@mail.gmail.com>
-Date: Wed, 23 Jul 2014 16:24:01 -0400
-Message-ID: <CAPDOMVgzo_9yVm4JenC_WijOWVN7QAgqyo8_Sm4ou0foea-yjg@mail.gmail.com>
-Subject: Re: staging: Unwritten function for ion_carveout_heap.c
-From: Nick Krause <xerofoify@gmail.com>
-To: Colin Cross <ccross@android.com>
-Cc: Greg KH <gregkh@linuxfoundation.org>, John Stultz <john.stultz@linaro.org>,
-        Rebecca Zavin <rebecca@android.com>,
-        Laura Abbott <lauraa@codeaurora.org>, gioh.kim@lge.com,
-        benjamin.gaignard@linaro.org,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201407232223.39341.arnd@arndb.de>
+X-Provags-ID: V02:K0:udWdDohILSM+w6KdFDuHheuQQxv39c8+uMjqnV7xPbC
+ z2p8iMoZLUNZLqdnqAa0E8t0x6XiFmgr7d83P4V6hHsEO0NSX2
+ LkKcTv6uLNuBSOmnk/aDOgD8WsT/rj1hHaWFucRyhQHqQSrjzt
+ MCuiQ0K+rOvMMJOHVZ1F8VFMrUQRn2qX63Z+GM906hny9ncq38
+ oOkIJeAC/udnOc3Xb90obULo1XPorMBb4RcoAknynpLoocmuRK
+ 7yRfN2aWxNSXFxQY3KE8JjGQxwisAIKHq6Qhr+PEUshL8PVrKK
+ bHkg+WezGWzebuEgZ5S7FwvihgVtRj7zOHE0i63B9/DEBd5zdK
+ NfXZuPc1ZPo+xRvsU57Y=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 23, 2014 at 4:10 PM, Colin Cross <ccross@android.com> wrote:
-> On Wed, Jul 23, 2014 at 1:04 PM, Nick Krause <xerofoify@gmail.com> wrote:
->> Hey Greg and others.
->> Sorry for another email but it seems the function,
->> ion_carveout_heap_unmap_dma is
->> just returning and not doing anything useful. Furthermore I am new so
->> I don't known how
->> to write this function but this may  be causing  some rather  serious
->> bugs as if the dma heap
->> is not unmaped and we  call this function a lot this will make the
->> kernel not able to handle dma requests
->> for this driver and other drivers that need this and in turn lead to
->> a oops or even a kernel panic due to leaked
->> dma allocated memory. I would recommend writing this function or
->> helping me write it in
->> other to avoid some rather serious bugs without a proper dma unmapping
->> function for this driver  :).
->> Nick
->
-> Look at ion_carveout_heap_map_dma - it doesn't do anything, it just
-> returns a pre-existing virtual address.  That means there is nothing
-> to do in unmap.
->
-> map_dma is actually a bit of a misnomer here, as the actual mapping is
-> done in ion_map_dma_buf.  All ion_carveout_heap_map_dma does is return
-> the sg table for ion_map_dma_buf to pass to dma_map_sg.
+On Tuesday 22 July 2014, Pawel Moll wrote:
+> Driver providing perf backend for ARM Cache Coherent Network
+> interconnect. Supports counting all hardware events and crosspoint
+> watchpoints.
+> 
+> Currently works with CCN-504 only, although there should be
+> no changes required for CCN-508 (just impossible to test it now).
+> 
+> Signed-off-by: Pawel Moll <pawel.moll@arm.com>
 
+Applied to next/drivers, thanks!
 
-Very well then I guess this is closed then.
-Cheers Nick
+	Arnd
