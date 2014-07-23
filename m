@@ -1,66 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756615AbaGWHbx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 03:31:53 -0400
-Received: from mail-ig0-f180.google.com ([209.85.213.180]:37684 "EHLO
-	mail-ig0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751432AbaGWHbw convert rfc822-to-8bit (ORCPT
+	id S1756895AbaGWHc3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 03:32:29 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:47216 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755935AbaGWHc2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 03:31:52 -0400
+	Wed, 23 Jul 2014 03:32:28 -0400
+Message-ID: <53CF64F9.7020701@canonical.com>
+Date: Wed, 23 Jul 2014 09:32:09 +0200
+From: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-X-Originating-IP: [84.73.67.144]
-In-Reply-To: <53CF63C2.7070407@vodafone.de>
-References: <20140709093124.11354.3774.stgit@patser>
-	<20140709122953.11354.46381.stgit@patser>
-	<CAPM=9tyD2ZbrcGDC3hfNb7qNdzsfnyD-ZwM7G-nOgxeu5YKuSg@mail.gmail.com>
-	<53CE2421.5040906@amd.com>
-	<20140722114607.GL15237@phenom.ffwll.local>
-	<20140722115737.GN15237@phenom.ffwll.local>
-	<53CE56ED.4040109@vodafone.de>
-	<20140722132652.GO15237@phenom.ffwll.local>
-	<53CE6AFA.1060807@vodafone.de>
-	<CAKMK7uG1d31zU_i__wc+Yq46A0x0tPeKnMBs+NHSmHS82uMsXQ@mail.gmail.com>
-	<53CE84AA.9030703@amd.com>
-	<CAKMK7uFa8vMBV9_JenbFGnFXtV_r9dk=WjbMkkCDWcauhrDdJg@mail.gmail.com>
-	<53CE8A57.2000803@vodafone.de>
-	<53CF58FB.8070609@canonical.com>
-	<53CF5B9F.1050800@amd.com>
-	<53CF5EFE.6070307@canonical.com>
-	<53CF63C2.7070407@vodafone.de>
-Date: Wed, 23 Jul 2014 09:31:51 +0200
-Message-ID: <CAKMK7uGJj+UwcnnzA+fj_=uWPN3i0sneWkoD+wfPJ_8Q6Y-DQg@mail.gmail.com>
-Subject: Re: [Nouveau] [PATCH 09/17] drm/radeon: use common fence
- implementation for fences
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
-To: =?UTF-8?Q?Christian_K=C3=B6nig?= <deathsimple@vodafone.de>
-Cc: Maarten Lankhorst <maarten.lankhorst@canonical.com>,
-        =?UTF-8?Q?Christian_K=C3=B6nig?= <christian.koenig@amd.com>,
+To: =?UTF-8?B?Q2hyaXN0aWFuIEvDtm5pZw==?= <christian.koenig@amd.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+CC: =?UTF-8?B?Q2hyaXN0aWFuIEvDtm5pZw==?= <deathsimple@vodafone.de>,
+        Dave Airlie <airlied@gmail.com>,
         Thomas Hellstrom <thellstrom@vmware.com>,
         nouveau <nouveau@lists.freedesktop.org>,
         LKML <linux-kernel@vger.kernel.org>,
         dri-devel <dri-devel@lists.freedesktop.org>,
         Ben Skeggs <bskeggs@redhat.com>,
         "Deucher, Alexander" <alexander.deucher@amd.com>
+Subject: Re: [Nouveau] [PATCH 09/17] drm/radeon: use common fence implementation
+ for fences
+References: <20140709093124.11354.3774.stgit@patser>	<20140709122953.11354.46381.stgit@patser>	<CAPM=9tyD2ZbrcGDC3hfNb7qNdzsfnyD-ZwM7G-nOgxeu5YKuSg@mail.gmail.com>	<53CE2421.5040906@amd.com>	<20140722114607.GL15237@phenom.ffwll.local>	<20140722115737.GN15237@phenom.ffwll.local>	<53CE56ED.4040109@vodafone.de>	<20140722132652.GO15237@phenom.ffwll.local>	<53CE6AFA.1060807@vodafone.de>	<CAKMK7uG1d31zU_i__wc+Yq46A0x0tPeKnMBs+NHSmHS82uMsXQ@mail.gmail.com>	<53CE84AA.9030703@amd.com>	<CAKMK7uFa8vMBV9_JenbFGnFXtV_r9dk=WjbMkkCDWcauhrDdJg@mail.gmail.com>	<53CE8A57.2000803@vodafone.de>	<53CF58FB.8070609@canonical.com>	<53CF5B9F.1050800@amd.com>	<53CF5EFE.6070307@canonical.com> <CAKMK7uHijSve_CsDE+pUk8+tjCAZjL7-nZCKeUkKuuufCPS4tQ@mail.gmail.com> <53CF6128.6010703@amd.com>
+In-Reply-To: <53CF6128.6010703@amd.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 23, 2014 at 9:26 AM, Christian König
-<deathsimple@vodafone.de> wrote:
-> It's not a locking problem I'm talking about here. Radeons lockup handling
-> kicks in when anything calls into the driver from the outside, if you have a
-> fence wait function that's called from the outside but doesn't handle
-> lockups you essentially rely on somebody else calling another radeon
-> function for the lockup to be resolved.
+op 23-07-14 09:15, Christian König schreef:
+> Am 23.07.2014 09:09, schrieb Daniel Vetter:
+>> On Wed, Jul 23, 2014 at 9:06 AM, Maarten Lankhorst
+>> <maarten.lankhorst@canonical.com> wrote:
+>>>> Can we somehow avoid the need to call fence_signal() at all? The interrupts at least on radeon are way to unreliable for such a thing. Can enable_signalling fail? What's the reason for fence_signaled() in the first place?
+>>> It doesn't need to be completely reliable, or finish immediately.
+>>>
+>>> And any time wake_up_all(&rdev->fence_queue) is called all the fences that were enabled will be rechecked.
+>> I raised this already somewhere else, but should we have some common
+>> infrastructure in the core fence code to recheck fences periodically?
+>> radeon doesn't seem to be the only hw where this isn't reliable
+>> enough. Of course timer-based rechecking would only work if the driver
+>> provides the fence->signalled callback to recheck actual fence state.
+>
+> Yeah, agree. The proposal won't work reliable at all with radeon.
+>
+> Interrupts are accumulated before sending them to the CPU, e.g. you can get one interrupt for multiple fences finished. If it's just the interrupt for the last fence submitted that gets lost you are completely screwed up because you won't get another interrupt.
+>
+> I had that problem multiple times while working on UVD support, resulting in the driver thinking that it can't submit more jobs because non of the interrupts for the already submitted fence cam through.
+Yeah but all the fences that have .enable_signaling will get signaled from a single interrupt, or when any waiter calls radeon_fence_process.
 
-So you don't have a timer in radeon that periodically checks whether
-progress is still being made? That's the approach we're using in i915,
-together with some tricks to kick any stuck waiters so that we can
-reliably step in and grab locks for the reset.
--Daniel
--- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+> Apart from that interrupts on Macs usually don't work at all, so we really need a solution where calling fence_signaled() is completely optional.
+I haven't had a problem with interrupts on my mbp after d1f9809ed1315c4cdc5760cf2f59626fd3276952, but it should be trivial to start a timer that periodically does wake_up_all, and gets its timeout reset in a call to radeon_fence_process. It could either be added as a work item, or as a normal timer (disabled during gpu lockup recovery to prevent checks from fiddling with things it shouldn't).
+
+~Maarten
+
