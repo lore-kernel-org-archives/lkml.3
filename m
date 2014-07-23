@@ -1,59 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756823AbaGWNRn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 09:17:43 -0400
-Received: from cpc2-cwma8-2-0-cust224.7-3.cable.virginm.net ([82.20.154.225]:58018
-	"EHLO alan.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751754AbaGWNRl (ORCPT
+	id S1757150AbaGWNSG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 09:18:06 -0400
+Received: from mail-we0-f175.google.com ([74.125.82.175]:53511 "EHLO
+	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755572AbaGWNQB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 09:17:41 -0400
-Date: Wed, 23 Jul 2014 14:17:21 +0100
-From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-To: Linda Walsh <lkml@tlinx.org>
-Cc: Dave Chinner <david@fromorbit.com>,
-        Linux-Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: Howto tell kernel to use 4096 as granularity & minimum size?
-Message-ID: <20140723141721.3d374d87@alan.etchedpixels.co.uk>
-In-Reply-To: <53CD7BE2.3040909@tlinx.org>
-References: <53CC0EAA.2010202@tlinx.org>
-	<20140720222818.GM4453@dastard>
-	<53CD7BE2.3040909@tlinx.org>
-Organization: Intel Corporation
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 23 Jul 2014 09:16:01 -0400
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: linux-kernel@vger.kernel.org, hch@infradead.org, viro@zeniv.linux.org.uk,
+        linux-fsdevel@vger.kernel.org
+Cc: Miklos Szeredi <mszeredi@suse.cz>, Richard Weinberger <richard@nod.at>
+Subject: [PATCH 6/7] hostfs: support rename flags
+Date: Wed, 23 Jul 2014 15:15:35 +0200
+Message-Id: <1406121336-1379-7-git-send-email-miklos@szeredi.hu>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1406121336-1379-1-git-send-email-miklos@szeredi.hu>
+References: <1406121336-1379-1-git-send-email-miklos@szeredi.hu>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 21 Jul 2014 13:45:22 -0700
-Linda Walsh <lkml@tlinx.org> wrote:
+From: Miklos Szeredi <mszeredi@suse.cz>
 
-> Dave Chinner wrote:
-> >
-> >> I can partition the disk and setup the allocation size
-> >> to 4096, but I'd like to tell the kernel to use a
-> >> virtual-size of 4096 for the sector as an additional
-> >> performance 'hint', so nothing will even try to use
-> >> smaller i/o's than that.
-> >>     
-> >
-> > Just format the filesystem with 4k sector size.
-> ---
->     Good idea,  though.. I wanted to set it for the whole "disk"(array)
-> as it (multiple 4T drives) will be subdivided into multiple filesystems
-> and have lvm and a partition table under the file system(s),
-> so telling the kernel to only do 4K alloc+io's to the whole thing
-> would cover the most with the least.
+Support RENAME_NOREPLACE and RENAME_EXCHANGE flags on hostfs if the
+underlying filesystem supports it.
 
-Also before you format it read the specification if you are using SATA
-drives. The disk is not necessarily aligned so that the physical/logical
-block boundary is as you'd expect. Some devices have a partial physical
-sector at the start in order to make it happen to work nicely with legacy
-software.
+Since renameat2(2) is not yet in any libc, use syscall(2) to invoke the
+renameat2 syscall.
 
-Good fdisk tools know about this. It's in the ATA8 specification for
-identify.
+Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+Cc: Richard Weinberger <richard@nod.at>
+---
+ fs/hostfs/hostfs.h      |  1 +
+ fs/hostfs/hostfs_kern.c | 30 ++++++++++++++++++++----------
+ fs/hostfs/hostfs_user.c | 28 ++++++++++++++++++++++++++++
+ 3 files changed, 49 insertions(+), 10 deletions(-)
 
-Alan
+diff --git a/fs/hostfs/hostfs.h b/fs/hostfs/hostfs.h
+index 9c88da0e855a..4fcd40d6f308 100644
+--- a/fs/hostfs/hostfs.h
++++ b/fs/hostfs/hostfs.h
+@@ -89,6 +89,7 @@ extern int do_mknod(const char *file, int mode, unsigned int major,
+ extern int link_file(const char *from, const char *to);
+ extern int hostfs_do_readlink(char *file, char *buf, int size);
+ extern int rename_file(char *from, char *to);
++extern int rename2_file(char *from, char *to, unsigned int flags);
+ extern int do_statfs(char *root, long *bsize_out, long long *blocks_out,
+ 		     long long *bfree_out, long long *bavail_out,
+ 		     long long *files_out, long long *ffree_out,
+diff --git a/fs/hostfs/hostfs_kern.c b/fs/hostfs/hostfs_kern.c
+index bb529f3b7f2b..fd62cae0fdcb 100644
+--- a/fs/hostfs/hostfs_kern.c
++++ b/fs/hostfs/hostfs_kern.c
+@@ -741,21 +741,31 @@ static int hostfs_mknod(struct inode *dir, struct dentry *dentry, umode_t mode,
+ 	return err;
+ }
+ 
+-static int hostfs_rename(struct inode *from_ino, struct dentry *from,
+-			 struct inode *to_ino, struct dentry *to)
++static int hostfs_rename2(struct inode *old_dir, struct dentry *old_dentry,
++			  struct inode *new_dir, struct dentry *new_dentry,
++			  unsigned int flags)
+ {
+-	char *from_name, *to_name;
++	char *old_name, *new_name;
+ 	int err;
+ 
+-	if ((from_name = dentry_name(from)) == NULL)
++	if (flags & ~(RENAME_NOREPLACE | RENAME_EXCHANGE))
++		return -EINVAL;
++
++	old_name = dentry_name(old_dentry);
++	if (old_name == NULL)
+ 		return -ENOMEM;
+-	if ((to_name = dentry_name(to)) == NULL) {
+-		__putname(from_name);
++	new_name = dentry_name(new_dentry);
++	if (new_name == NULL) {
++		__putname(old_name);
+ 		return -ENOMEM;
+ 	}
+-	err = rename_file(from_name, to_name);
+-	__putname(from_name);
+-	__putname(to_name);
++	if (!flags)
++		err = rename_file(old_name, new_name);
++	else
++		err = rename2_file(old_name, new_name, flags);
++
++	__putname(old_name);
++	__putname(new_name);
+ 	return err;
+ }
+ 
+@@ -867,7 +877,7 @@ static const struct inode_operations hostfs_dir_iops = {
+ 	.mkdir		= hostfs_mkdir,
+ 	.rmdir		= hostfs_rmdir,
+ 	.mknod		= hostfs_mknod,
+-	.rename		= hostfs_rename,
++	.rename2	= hostfs_rename2,
+ 	.permission	= hostfs_permission,
+ 	.setattr	= hostfs_setattr,
+ };
+diff --git a/fs/hostfs/hostfs_user.c b/fs/hostfs/hostfs_user.c
+index 67838f3aa20a..9765dab95cbd 100644
+--- a/fs/hostfs/hostfs_user.c
++++ b/fs/hostfs/hostfs_user.c
+@@ -14,6 +14,7 @@
+ #include <sys/time.h>
+ #include <sys/types.h>
+ #include <sys/vfs.h>
++#include <sys/syscall.h>
+ #include "hostfs.h"
+ #include <utime.h>
+ 
+@@ -360,6 +361,33 @@ int rename_file(char *from, char *to)
+ 	return 0;
+ }
+ 
++int rename2_file(char *from, char *to, unsigned int flags)
++{
++	int err;
++
++#ifndef SYS_renameat2
++#  ifdef __x86_64__
++#    define SYS_renameat2 316
++#  endif
++#  ifdef __i386__
++#    define SYS_renameat2 353
++#  endif
++#endif
++
++#ifdef SYS_renameat2
++	err = syscall(SYS_renameat2, AT_FDCWD, from, AT_FDCWD, to, flags);
++	if (err < 0) {
++		if (errno != ENOSYS)
++			return -errno;
++		else
++			return -EINVAL;
++	}
++	return 0;
++#else
++	return -EINVAL;
++#endif
++}
++
+ int do_statfs(char *root, long *bsize_out, long long *blocks_out,
+ 	      long long *bfree_out, long long *bavail_out,
+ 	      long long *files_out, long long *ffree_out,
+-- 
+1.8.1.4
+
