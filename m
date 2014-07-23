@@ -1,47 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932172AbaGWPIy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 11:08:54 -0400
-Received: from mail-vc0-f179.google.com ([209.85.220.179]:51266 "EHLO
-	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756908AbaGWPIx (ORCPT
+	id S932255AbaGWPKL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 11:10:11 -0400
+Received: from mail-qg0-f43.google.com ([209.85.192.43]:59127 "EHLO
+	mail-qg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755095AbaGWPKJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 11:08:53 -0400
+	Wed, 23 Jul 2014 11:10:09 -0400
+Date: Wed, 23 Jul 2014 11:10:06 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] workqueue: get the probable node ID from the first CPU
+ of the mask
+Message-ID: <20140723151006.GC7103@htj.dyndns.org>
+References: <1406005442-12070-1-git-send-email-laijs@cn.fujitsu.com>
+ <20140722153023.GF13851@htj.dyndns.org>
+ <53CF0F46.8000508@cn.fujitsu.com>
 MIME-Version: 1.0
-In-Reply-To: <20140723074328.GI18374@atomide.com>
-References: <CAPDOMVinWFVKY=mMOA1f6pd4orOgcKh1kE01MPVaLZi0Z_tMmg@mail.gmail.com>
-	<20140723074328.GI18374@atomide.com>
-Date: Wed, 23 Jul 2014 11:08:51 -0400
-Message-ID: <CAPDOMVjrSskMHq0ZdB6mpGJBn9gvbpguLSK-+aHaV9k0QrqzHA@mail.gmail.com>
-Subject: Re: omap-wakeupgen.c: Remove function for fix me
-From: Nick Krause <xerofoify@gmail.com>
-To: Tony Lindgren <tony@atomide.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53CF0F46.8000508@cn.fujitsu.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 23, 2014 at 3:43 AM, Tony Lindgren <tony@atomide.com> wrote:
-> * Nick Krause <xerofoify@gmail.com> [140722 14:12]:
->> static void __init irq_pm_init(void)
->> 382 {
->> 383         /* FIXME: Remove this when MPU OSWR support is added */
->> 384         if (!soc_is_omap54xx())
->> 385                 cpu_pm_register_notifier(&irq_notifier_block);
->> 386 }
->> I am wondering is this omap supported now if it is can I remove it?
->
-> Does REVISIT cause issues for you with cscope? It may be easier to
-> replace the cscope bugging FIXME statements with just REVISIT unless
-> a real fix is provided.
->
-> Regards,
->
-> Tony
+On Wed, Jul 23, 2014 at 09:26:30AM +0800, Lai Jiangshan wrote:
+> On 07/22/2014 11:30 PM, Tejun Heo wrote:
+> > On Tue, Jul 22, 2014 at 01:04:02PM +0800, Lai Jiangshan wrote:
+> >> +		node = cpu_to_node(cpumask_first(pool->attrs->cpumask));
+> > 
+> > Minor but maybe cpumask_any() is a better fit here?
+> > 
+> 
+> It is OK, the result are the same. But I still think cpumask_first() is better since
+> its name sounds deterministic while we need a deterministic value for pool->node.
 
+The CPU can be any CPU in the mask.  That's the whole point of
+cpumask_any().  Please use it.
 
-Very well then , seems like a good idea will try later.
-Nick
+-- 
+tejun
