@@ -1,69 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756920AbaGWHIh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 03:08:37 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:38540 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756134AbaGWHIf (ORCPT
+	id S932154AbaGWHJX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 03:09:23 -0400
+Received: from mail-ig0-f182.google.com ([209.85.213.182]:37165 "EHLO
+	mail-ig0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753477AbaGWHJW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 03:08:35 -0400
-Date: Wed, 23 Jul 2014 09:08:31 +0200
-From: Antoine =?iso-8859-1?Q?T=E9nart?= 
-	<antoine.tenart@free-electrons.com>
-To: Bin Liu <binmlist@gmail.com>
-Cc: Antoine =?iso-8859-1?Q?T=E9nart?= 
-	<antoine.tenart@free-electrons.com>,
-        balbi@ti.com, gregkh@linuxfoundation.org, Peter.Chen@freescale.com,
-        kishon@ti.com, stern@rowland.harvard.edu,
-        alexandre.belloni@free-electrons.com,
-        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
-        jszhang@marvell.com, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/4] usb: move the OTG state from the USB PHY to the OTG
- structure
-Message-ID: <20140723070831.GA10816@kwain>
-References: <1404901036-27682-1-git-send-email-antoine.tenart@free-electrons.com>
- <1404901036-27682-2-git-send-email-antoine.tenart@free-electrons.com>
- <CADYTM3ZijsqSUTvBEscJCP94aWCPahPJ1se+g0+ssqwcE_yAxg@mail.gmail.com>
+	Wed, 23 Jul 2014 03:09:22 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CADYTM3ZijsqSUTvBEscJCP94aWCPahPJ1se+g0+ssqwcE_yAxg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [84.73.67.144]
+In-Reply-To: <53CF5EFE.6070307@canonical.com>
+References: <20140709093124.11354.3774.stgit@patser>
+	<20140709122953.11354.46381.stgit@patser>
+	<CAPM=9tyD2ZbrcGDC3hfNb7qNdzsfnyD-ZwM7G-nOgxeu5YKuSg@mail.gmail.com>
+	<53CE2421.5040906@amd.com>
+	<20140722114607.GL15237@phenom.ffwll.local>
+	<20140722115737.GN15237@phenom.ffwll.local>
+	<53CE56ED.4040109@vodafone.de>
+	<20140722132652.GO15237@phenom.ffwll.local>
+	<53CE6AFA.1060807@vodafone.de>
+	<CAKMK7uG1d31zU_i__wc+Yq46A0x0tPeKnMBs+NHSmHS82uMsXQ@mail.gmail.com>
+	<53CE84AA.9030703@amd.com>
+	<CAKMK7uFa8vMBV9_JenbFGnFXtV_r9dk=WjbMkkCDWcauhrDdJg@mail.gmail.com>
+	<53CE8A57.2000803@vodafone.de>
+	<53CF58FB.8070609@canonical.com>
+	<53CF5B9F.1050800@amd.com>
+	<53CF5EFE.6070307@canonical.com>
+Date: Wed, 23 Jul 2014 09:09:21 +0200
+Message-ID: <CAKMK7uHijSve_CsDE+pUk8+tjCAZjL7-nZCKeUkKuuufCPS4tQ@mail.gmail.com>
+Subject: Re: [Nouveau] [PATCH 09/17] drm/radeon: use common fence
+ implementation for fences
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
+To: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+Cc: =?UTF-8?Q?Christian_K=C3=B6nig?= <christian.koenig@amd.com>,
+        =?UTF-8?Q?Christian_K=C3=B6nig?= <deathsimple@vodafone.de>,
+        Dave Airlie <airlied@gmail.com>,
+        Thomas Hellstrom <thellstrom@vmware.com>,
+        nouveau <nouveau@lists.freedesktop.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        dri-devel <dri-devel@lists.freedesktop.org>,
+        Ben Skeggs <bskeggs@redhat.com>,
+        "Deucher, Alexander" <alexander.deucher@amd.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Wed, Jul 23, 2014 at 9:06 AM, Maarten Lankhorst
+<maarten.lankhorst@canonical.com> wrote:
+>> Can we somehow avoid the need to call fence_signal() at all? The interrupts at least on radeon are way to unreliable for such a thing. Can enable_signalling fail? What's the reason for fence_signaled() in the first place?
+> It doesn't need to be completely reliable, or finish immediately.
+>
+> And any time wake_up_all(&rdev->fence_queue) is called all the fences that were enabled will be rechecked.
 
-On Tue, Jul 22, 2014 at 04:33:54PM -0500, Bin Liu wrote:
-> On Wed, Jul 9, 2014 at 5:17 AM, Antoine Ténart
-> <antoine.tenart@free-electrons.com> wrote:
-> > diff --git a/drivers/usb/chipidea/debug.c b/drivers/usb/chipidea/debug.c
-> > index 7cccab6ff308..9a9702773e43 100644
-> > --- a/drivers/usb/chipidea/debug.c
-> > +++ b/drivers/usb/chipidea/debug.c
-> > @@ -219,8 +219,7 @@ int ci_otg_show(struct seq_file *s, void *unused)
-> >         fsm = &ci->fsm;
-> >
-> >         /* ------ State ----- */
-> > -       seq_printf(s, "OTG state: %s\n\n",
-> 
-> Is this line removed by accident?
-> 
-> > -               usb_otg_state_string(ci->transceiver->state));
-> > +               usb_otg_state_string(ci->transceiver->otg.state));
-> >
-> >         /* ------ State Machine Variables ----- */
-
-It is. I'll fix this.
-
-Thanks!
-
-Antoine
-
+I raised this already somewhere else, but should we have some common
+infrastructure in the core fence code to recheck fences periodically?
+radeon doesn't seem to be the only hw where this isn't reliable
+enough. Of course timer-based rechecking would only work if the driver
+provides the fence->signalled callback to recheck actual fence state.
+-Daniel
 -- 
-Antoine Ténart, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
