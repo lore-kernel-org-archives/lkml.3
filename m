@@ -1,244 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756994AbaGWHJ6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 03:09:58 -0400
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:38620 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756644AbaGWHJ4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 03:09:56 -0400
-Date: Wed, 23 Jul 2014 09:09:50 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
-Cc: linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-pm@vger.kernel.org,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Paul Walmsley <pwalmsley@nvidia.com>, devicetree@vger.kernel.org
-Subject: Re: [PATCH v2 14/16] cpufreq: Add cpufreq driver for Tegra124
-Message-ID: <20140723070949.GB15759@ulmo.nvidia.com>
-References: <1405957142-19416-1-git-send-email-ttynkkynen@nvidia.com>
- <1405957142-19416-15-git-send-email-ttynkkynen@nvidia.com>
+	id S1756578AbaGWHQE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 03:16:04 -0400
+Received: from dns-bn1lp0143.outbound.protection.outlook.com ([207.46.163.143]:12927
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755803AbaGWHQC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jul 2014 03:16:02 -0400
+X-WSS-ID: 0N95LIK-07-EKI-02
+X-M-MSG: 
+Message-ID: <53CF6128.6010703@amd.com>
+Date: Wed, 23 Jul 2014 09:15:52 +0200
+From: =?UTF-8?B?Q2hyaXN0aWFuIEvDtm5pZw==?= <christian.koenig@amd.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Bn2rw/3z4jIqBvZU"
-Content-Disposition: inline
-In-Reply-To: <1405957142-19416-15-git-send-email-ttynkkynen@nvidia.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Maarten Lankhorst <maarten.lankhorst@canonical.com>
+CC: =?UTF-8?B?Q2hyaXN0aWFuIEvDtm5pZw==?= <deathsimple@vodafone.de>,
+        "Dave Airlie" <airlied@gmail.com>,
+        Thomas Hellstrom <thellstrom@vmware.com>,
+        nouveau <nouveau@lists.freedesktop.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        dri-devel <dri-devel@lists.freedesktop.org>,
+        Ben Skeggs <bskeggs@redhat.com>,
+        "Deucher, Alexander" <alexander.deucher@amd.com>
+Subject: Re: [Nouveau] [PATCH 09/17] drm/radeon: use common fence implementation
+ for fences
+References: <20140709093124.11354.3774.stgit@patser>
+	<20140709122953.11354.46381.stgit@patser>
+	<CAPM=9tyD2ZbrcGDC3hfNb7qNdzsfnyD-ZwM7G-nOgxeu5YKuSg@mail.gmail.com>
+	<53CE2421.5040906@amd.com>	<20140722114607.GL15237@phenom.ffwll.local>
+	<20140722115737.GN15237@phenom.ffwll.local>	<53CE56ED.4040109@vodafone.de>
+	<20140722132652.GO15237@phenom.ffwll.local>	<53CE6AFA.1060807@vodafone.de>
+	<CAKMK7uG1d31zU_i__wc+Yq46A0x0tPeKnMBs+NHSmHS82uMsXQ@mail.gmail.com>
+	<53CE84AA.9030703@amd.com>
+	<CAKMK7uFa8vMBV9_JenbFGnFXtV_r9dk=WjbMkkCDWcauhrDdJg@mail.gmail.com>
+	<53CE8A57.2000803@vodafone.de>	<53CF58FB.8070609@canonical.com>
+	<53CF5B9F.1050800@amd.com>	<53CF5EFE.6070307@canonical.com>
+ <CAKMK7uHijSve_CsDE+pUk8+tjCAZjL7-nZCKeUkKuuufCPS4tQ@mail.gmail.com>
+In-Reply-To: <CAKMK7uHijSve_CsDE+pUk8+tjCAZjL7-nZCKeUkKuuufCPS4tQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.224.155.198]
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:165.204.84.221;CTRY:US;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(428002)(377454003)(189002)(199002)(24454002)(51704005)(107046002)(99396002)(101416001)(85202003)(20776003)(74662001)(106466001)(44976005)(81542001)(92726001)(80316001)(19580405001)(95666004)(81342001)(46102001)(23676002)(47776003)(86362001)(83322001)(59896001)(65806001)(79102001)(87936001)(4396001)(93886003)(97736001)(85852003)(65956001)(19580395003)(80022001)(50466002)(50986999)(77982001)(21056001)(64706001)(76482001)(84676001)(85306003)(85182001)(36756003)(64126003)(68736004)(105586002)(65816999)(561944003)(33656002)(87266999)(102836001)(83506001)(54356999)(83072002)(76176999);DIR:OUT;SFP:;SCL:1;SRVR:BN1PR02MB039;H:atltwp01.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;LANG:en;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
+X-Forefront-PRVS: 028166BF91
+Authentication-Results: spf=none (sender IP is 165.204.84.221)
+ smtp.mailfrom=Christian.Koenig@amd.com; 
+X-OriginatorOrg: amd4.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Am 23.07.2014 09:09, schrieb Daniel Vetter:
+> On Wed, Jul 23, 2014 at 9:06 AM, Maarten Lankhorst
+> <maarten.lankhorst@canonical.com> wrote:
+>>> Can we somehow avoid the need to call fence_signal() at all? The interrupts at least on radeon are way to unreliable for such a thing. Can enable_signalling fail? What's the reason for fence_signaled() in the first place?
+>> It doesn't need to be completely reliable, or finish immediately.
+>>
+>> And any time wake_up_all(&rdev->fence_queue) is called all the fences that were enabled will be rechecked.
+> I raised this already somewhere else, but should we have some common
+> infrastructure in the core fence code to recheck fences periodically?
+> radeon doesn't seem to be the only hw where this isn't reliable
+> enough. Of course timer-based rechecking would only work if the driver
+> provides the fence->signalled callback to recheck actual fence state.
 
---Bn2rw/3z4jIqBvZU
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Yeah, agree. The proposal won't work reliable at all with radeon.
 
-On Mon, Jul 21, 2014 at 06:39:00PM +0300, Tuomas Tynkkynen wrote:
-[...]
-> diff --git a/drivers/cpufreq/tegra124-cpufreq.c b/drivers/cpufreq/tegra124-cpufreq.c
-[...]
-> +static int tegra124_cpu_switch_to_dfll(void)
-> +{
-> +	struct clk *original_cpu_clk_parent;
+Interrupts are accumulated before sending them to the CPU, e.g. you can 
+get one interrupt for multiple fences finished. If it's just the 
+interrupt for the last fence submitted that gets lost you are completely 
+screwed up because you won't get another interrupt.
 
-Maybe just "parent"?
+I had that problem multiple times while working on UVD support, 
+resulting in the driver thinking that it can't submit more jobs because 
+non of the interrupts for the already submitted fence cam through.
 
-> +	unsigned long rate;
-> +	struct dev_pm_opp *opp;
-> +	int ret;
-> +
-> +	rate = clk_get_rate(cpu_clk);
-> +	opp = dev_pm_opp_find_freq_ceil(cpu_dev, &rate);
-> +	if (IS_ERR(opp))
-> +		return PTR_ERR(opp);
-> +
-> +	ret = clk_set_rate(dfll_clk, rate);
-> +	if (ret)
-> +		return ret;
-> +
-> +	original_cpu_clk_parent = clk_get_parent(cpu_clk);
-> +	clk_set_parent(cpu_clk, pllp_clk);
-> +	if (ret)
-> +		return ret;
-> +
-> +	ret = clk_prepare_enable(dfll_clk);
-> +	if (ret)
-> +		goto out_switch_to_original_parent;
+Apart from that interrupts on Macs usually don't work at all, so we 
+really need a solution where calling fence_signaled() is completely 
+optional.
 
-This could simply be "out" or "err" or anything else shorter than the
-above.
+Christian.
 
-> +
-> +	clk_set_parent(cpu_clk, dfll_clk);
-> +
-> +	return 0;
-> +
-> +out_switch_to_original_parent:
-> +	clk_set_parent(cpu_clk, original_cpu_clk_parent);
-> +
-> +	return ret;
-> +}
-> +
-> +static struct platform_device_info cpufreq_cpu0_devinfo = {
-> +	.name = "cpufreq-cpu0",
-> +};
-> +
-> +static int tegra124_cpufreq_probe(struct platform_device *pdev)
-> +{
-> +	int ret;
-> +
-> +	cpu_dev = get_cpu_device(0);
-> +	if (!cpu_dev)
-> +		return -ENODEV;
-> +
-> +	cpu_clk = of_clk_get_by_name(cpu_dev->of_node, "cpu_g");
-> +	if (IS_ERR(cpu_clk))
-> +		return PTR_ERR(cpu_clk);
-> +
-> +	dfll_clk = of_clk_get_by_name(cpu_dev->of_node, "dfll");
-> +	if (IS_ERR(dfll_clk)) {
-> +		ret = PTR_ERR(dfll_clk);
-> +		goto out_put_cpu_clk;
-> +	}
-> +
-> +	pllx_clk = of_clk_get_by_name(cpu_dev->of_node, "pll_x");
-> +	if (IS_ERR(pllx_clk)) {
-> +		ret = PTR_ERR(pllx_clk);
-> +		goto out_put_dfll_clk;
-> +	}
-> +
-> +	pllp_clk = of_clk_get_by_name(cpu_dev->of_node, "pll_p");
-> +	if (IS_ERR(pllp_clk)) {
-> +		ret = PTR_ERR(pllp_clk);
-> +		goto out_put_pllx_clk;
-> +	}
+> -Daniel
 
-Can the above not be devm_clk_get(cpu_dev, "...") so that you can remove
-all the clk_put() calls in the cleanup code below?
-
-> +
-> +	ret = dev_pm_opp_init_cpufreq_table(cpu_dev, &freq_table);
-> +	if (ret)
-> +		goto out_put_pllp_clk;
-> +
-> +	ret = tegra124_cpu_switch_to_dfll();
-> +	if (ret)
-> +		goto out_free_table;
-> +
-> +	platform_device_register_full(&cpufreq_cpu0_devinfo);
-
-Should the cpufreq_cpu0_devinfo device perhaps be a child of pdev?
-
-> +
-> +	return 0;
-> +
-> +out_free_table:
-> +	dev_pm_opp_free_cpufreq_table(cpu_dev, &freq_table);
-> +out_put_pllp_clk:
-> +	clk_put(pllp_clk);
-> +out_put_pllx_clk:
-> +	clk_put(pllx_clk);
-> +out_put_dfll_clk:
-> +	clk_put(dfll_clk);
-> +out_put_cpu_clk:
-> +	clk_put(cpu_clk);
-> +
-> +	return ret;
-> +}
-> +
-> +static struct platform_driver tegra124_cpufreq_platdrv = {
-> +	.driver = {
-> +		.name	= "cpufreq-tegra124",
-> +		.owner	= THIS_MODULE,
-> +	},
-> +	.probe		= tegra124_cpufreq_probe,
-
-Note that simply leaving out .remove() here doesn't guarantee that the
-driver won't be unloaded. Also building it into the kernel doesn't
-prevent that. You can still unbind the driver via sysfs. So you'd need
-to add a .suppress_bind_attrs = true above.
-
-But is there even a reason why we need that? Couldn't we make the
-driver's .remove() undo what .probe() did so that the driver can be
-unloaded?
-
-Otherwise it probably makes more sense not to use a driver (and dummy
-device) at all as Viresh already mentioned.
-
-> +};
-> +
-> +static const struct of_device_id soc_of_matches[] = {
-> +	{ .compatible = "nvidia,tegra124", },
-> +	{}
-> +};
-> +
-> +static int __init tegra_cpufreq_init(void)
-> +{
-> +	int ret;
-> +	struct platform_device *pdev;
-> +
-> +	if (!of_find_matching_node(NULL, soc_of_matches))
-> +		return -ENODEV;
-
-I think this could be of_machine_is_compatible() since there's only a
-single entry in the match table. If there's a good chance that we may
-end up with more entries, perhaps now would be a good time to add an
-of_match_machine() function?
-
-> +
-> +	ret = platform_driver_register(&tegra124_cpufreq_platdrv);
-> +	if (ret)
-> +		return ret;
-> +
-> +	pdev = platform_device_register_simple("cpufreq-tegra124", -1, NULL, 0);
-> +	if (IS_ERR(pdev)) {
-> +		platform_driver_unregister(&tegra124_cpufreq_platdrv);
-> +		return PTR_ERR(pdev);
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-> +MODULE_AUTHOR("Tuomas Tynkkynen <ttynkkynen@nvidia.com>");
-> +MODULE_DESCRIPTION("cpufreq driver for nVIDIA Tegra124");
-
-We use "NVIDIA" everywhere nowadays.
-
-> +MODULE_LICENSE("GPLv2");
-
-The correct license string is "GPL v2".
-
-> +module_init(tegra_cpufreq_init);
-
-The placement of this is unusual. It should go immediately below the
-tegra_cpufreq_init() function.
-
-Thierry
-
---Bn2rw/3z4jIqBvZU
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJTz1+9AAoJEN0jrNd/PrOh/EAQAJBcwuXVkH5dl3y34PdjlYX2
-yU1D4sfgqW8uwyuinNSbYCnOxNbvrSUHj+qFZ2N5ODjQq0NzYN+u1nYJT4Mke/By
-kjtx5tFOQZz0K1CvDaHu6sR9YBhd2ELz4BPM+ZBBhE3GFB6cD/K7i0fbMrS7c3Mz
-Je+xd279cPZwMYWE5K9BVylLjNiQf+ICHuFKtGc0X0/Y/YzAg7239HE3mzR1IjCN
-jVdKCfU7l9xRQBRT1/zFYes88U/L8ZMafoFbzd8mUyCNefTjKnzUCvzfdc9qQHUs
-/Zzf/8ctkmKSpyistuFPEdGDMpa0jai6j1Bj6lQjdsk8jV1HKE2zBp+FAWirvhEO
-piTtRyH/3XFjMpaVEJBU1BVZoo1KOi2GdFwY2vFHHIwczWPD6KMRhz+0nOq+A0y6
-lpbp8MDZGDykxnR/IaT7gK3jzuHNPfkRUXYRVshOkA6ccB8ldOvyI6hquYKfNcoN
-Ifzpq6MfQjDGfvjtuBEYinl7WZy2UkwiMWGnTz7zBeRD4SbRPN4U09oVyTlYWmoO
-tu52/oVzt3EZn3PMY7OW60d4U6qiY74Ow3lAQ/+elcYq91M4jTCbxTF6QbD/CzJl
-7R6dp93MuKRLBRuaozWAUX9zKiBfND/vAPoKqVL83zZRaRsEVmwUOtTZFyaoVgvX
-+GiJXWBm5Gce54ay1SlI
-=JKm2
------END PGP SIGNATURE-----
-
---Bn2rw/3z4jIqBvZU--
