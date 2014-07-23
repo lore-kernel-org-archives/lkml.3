@@ -1,68 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758455AbaGWPgq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 11:36:46 -0400
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:53163 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758150AbaGWPgo (ORCPT
+	id S1758502AbaGWPiJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 11:38:09 -0400
+Received: from mail-vc0-f171.google.com ([209.85.220.171]:43750 "EHLO
+	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757785AbaGWPiH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 11:36:44 -0400
-Date: Wed, 23 Jul 2014 08:37:59 -0700
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: Daniel Vetter <daniel@ffwll.ch>
-Cc: Thomas Hellstrom <thellstrom@vmware.com>,
-        nouveau <nouveau@lists.freedesktop.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        dri-devel <dri-devel@lists.freedesktop.org>,
-        "Deucher, Alexander" <alexander.deucher@amd.com>,
-        Ben Skeggs <bskeggs@redhat.com>, Alex Deucher <alexdeucher@gmail.com>,
-        Christian =?UTF-8?B?S8O2bmln?= <christian.koenig@amd.com>
-Subject: Re: [Nouveau] [PATCH 09/17] drm/radeon: use common fence
- implementation for fences
-Message-ID: <20140723083759.6b730d67@jbarnes-desktop>
-In-Reply-To: <CAKMK7uG-zX2ZDSoQ+XmXOvUeAZzvbdsv02+fX47uJUt=21cRaQ@mail.gmail.com>
-References: <20140709093124.11354.3774.stgit@patser>
-	<20140709122953.11354.46381.stgit@patser>
-	<CAPM=9tyD2ZbrcGDC3hfNb7qNdzsfnyD-ZwM7G-nOgxeu5YKuSg@mail.gmail.com>
-	<53CE2421.5040906@amd.com>
-	<20140722114607.GL15237@phenom.ffwll.local>
-	<20140722115737.GN15237@phenom.ffwll.local>
-	<53CE56ED.4040109@vodafone.de>
-	<53CE6FB0.90500@canonical.com>
-	<53CE7410.3090603@amd.com>
-	<53CE74B5.3000201@canonical.com>
-	<53CE77B4.6020801@amd.com>
-	<CAKMK7uESXrDtCov8whOTsffg6eZdibF4qaTFaCubM=mnhN=gNQ@mail.gmail.com>
-	<CADnq5_Moy78A5JfDM0LME6_-48PW72DJpYYvEthQ5b=_amU8KQ@mail.gmail.com>
-	<CAKMK7uGtfUTU=VwSnF07jncJsH1Ckie2m1FCjct60Yz88uE3cg@mail.gmail.com>
-	<20140722121435.6bd093d0@jbarnes-desktop>
-	<CAKMK7uG-zX2ZDSoQ+XmXOvUeAZzvbdsv02+fX47uJUt=21cRaQ@mail.gmail.com>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 23 Jul 2014 11:38:07 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140723151911.GM14599@beardog.cce.hp.com>
+References: <CAPDOMVhvixp4+3P8RPUhM0iT_Ovo2kgPTUBorxPny9t_Fo2UUw@mail.gmail.com>
+	<E97154CC48E26246A93194D00057266054F11A3F@G9W0745.americas.hpqcorp.net>
+	<20140723144148.GL14599@beardog.cce.hp.com>
+	<53CFD0A5.7010609@infradead.org>
+	<20140723151911.GM14599@beardog.cce.hp.com>
+Date: Wed, 23 Jul 2014 11:38:06 -0400
+Message-ID: <CAPDOMVhrZe+_ewQQe1y-pam=3rNtF8tjMt3Kgprc3WavVur1QQ@mail.gmail.com>
+Subject: Re: cciss_scsi.c: Fix me
+From: Nick Krause <xerofoify@gmail.com>
+To: scameron@beardog.cce.hp.com
+Cc: Randy Dunlap <rdunlap@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        scott.benesh@hp.com, iss_storagedev@hp.com,
+        michael.miller@canonical.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 23 Jul 2014 11:47:15 +0200
-Daniel Vetter <daniel@ffwll.ch> wrote:
+On Wed, Jul 23, 2014 at 11:19 AM,  <scameron@beardog.cce.hp.com> wrote:
+> On Wed, Jul 23, 2014 at 08:11:33AM -0700, Randy Dunlap wrote:
+>> On 07/23/2014 07:41 AM, scameron@beardog.cce.hp.com wrote:
+>> > On Wed, Jul 23, 2014 at 02:15:29PM +0000, Benesh, Scott wrote:
+>> >> From: Nick Krause [mailto:xerofoify@gmail.com]
+>> >> Sent: Saturday, July 19, 2014 11:51 PM
+>> >> To: mike.miller@hp.com
+>> >> Cc: ISS StorageDev; linux-kernel@vger.kernel.org
+>> >> Subject: cciss_scsi.c: Fix me
+>> >>
+>> >> Hey Mike,
+>> >> I seem to be hitting a fix me message in this file in function,cciss_scsi_queue_command_lck.
+>> >> I am wondering what you want to do when C is Null?
+>> >> Cheers Nick
+>> >
+>> > Hi Nick,
+>> >
+>> > Mike's moved on from HP to Canonical now.
+>> >
+>> > It looks like you're running out of commands for tape drives,
+>> > which shouldn't ever happen, since we set
+>> >
+>> >     sh->can_queue = cciss_tape_cmds;
+>> >
+>> > and we allocate that many commands + 2....
+>> >
+>> > scsi_cmd_stack_setup(ctlr_info_t *h, struct cciss_scsi_adapter_data_t *sa)
+>> > {
+>> >         int i;
+>> >         struct cciss_scsi_cmd_stack_t *stk;
+>> >         size_t size;
+>> >
+>> >         stk = &sa->cmd_stack;
+>> >         stk->nelems = cciss_tape_cmds + 2;
+>> >
+>> > You're apparently hitting this:
+>> >
+>> >         spin_lock_irqsave(&h->lock, flags);
+>> >         c = scsi_cmd_alloc(h);
+>> >         spin_unlock_irqrestore(&h->lock, flags);
+>> >         if (c == NULL) {                        /* trouble... */
+>> >                 dev_warn(&h->pdev->dev, "scsi_cmd_alloc returned NULL!\n");
+>> >                 /* FIXME: next 3 lines are -> BAD! <- */
+>> >                 cmd->result = DID_NO_CONNECT << 16;
+>> >                 done(cmd);
+>> >                 return 0;
+>> >         }
+>> >
+>> > which means that scsi_cmd_alloc returned NULL, which only happens
+>> > if the thing has run out of commands.
+>> >
+>> > It's not obvious to me how it can be that it runs out of commands.
+>> > Maybe we're losing them somehow, but this has not previously been
+>> > a problem that I'm aware of.
+>> >
+>> > Are you able to reproduce the problem?
+>> >
+>> > What's going on on the system when it happens?
+>> >
+>> > putting in a dump_stack(); near that FIXME might give a clue.
+>> >
+>> > Which kernel are you running?
+>> >
+>> > -- steve
+>>
+>> Hi Steve,
+>>
+>> You apparently have not been following the Nick saga.
+>>
+>> Nick is using cscope to search for FIXMEs in the kernel source tree and
+>> then trying to generate patches to remove or 'fix' them.
+>>
+>> He is not hitting a kernel oops or panic or bug.
+>
+> Ah, ok, thanks.  That explains it, because I was pretty sure that
+> code is a "this will never happen" case.
+>
+> -- steve
+>
 
-> On Tue, Jul 22, 2014 at 9:14 PM, Jesse Barnes <jbarnes@virtuousgeek.org> wrote:
-> >> We don't have the code yet ready, but that's the direction i915 will
-> >> move towards for the near future. Jesse is working on some patches
-> >> already.
-> >
-> > Yeah I'd like to get some feedback from Maarten on my bits so I can get
-> > them ready for upstream.  I still need to add documentation and tests,
-> > but I'd like to make sure the interfaces and internals get acked first.
-> 
-> Review works better if you supply a pointer to the patches ;-) I asked
-> Maarten whether he looked at it and he said he didn't know where ...
 
-Oh I provided it in IRC earlier, figured Maarten was just busy. :)
-
-Tree is android-dma-buf-i915-fences in my fdo linux repo.
-
--- 
-Jesse Barnes, Intel Open Source Technology Center
+Fine I give up you guys don't want me to touch these fix mes and leave
+them alone.
+Cheers Nick
