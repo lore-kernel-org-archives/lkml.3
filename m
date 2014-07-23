@@ -1,47 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757861AbaGWJkm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 05:40:42 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:38101 "EHLO mail.skyhub.de"
+	id S1757940AbaGWJlk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 05:41:40 -0400
+Received: from mail.mev.co.uk ([62.49.15.74]:35915 "EHLO mail.mev.co.uk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757745AbaGWJkl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 05:40:41 -0400
-Date: Wed, 23 Jul 2014 11:40:38 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andy Lutomirski <luto@amacapital.net>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        X86 ML <x86@kernel.org>
-Subject: Re: STI architectural question (and lretq -- I'm not even kidding)
-Message-ID: <20140723094038.GA23102@pd.tnic>
-References: <CALCETrVx=cLZjgALizYKWATSjOvhmwPHQvOJRkMgdb=iNRNf8w@mail.gmail.com>
- <CA+55aFyefnFjmOs-QZhFn68-6+tWO30VqU6ipP6BzAra=xOaFg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <CA+55aFyefnFjmOs-QZhFn68-6+tWO30VqU6ipP6BzAra=xOaFg@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1757668AbaGWJle (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jul 2014 05:41:34 -0400
+From: Ian Abbott <abbotti@mev.co.uk>
+To: driverdev-devel@linuxdriverproject.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Ian Abbott <abbotti@mev.co.uk>,
+        H Hartley Sweeten <hartleys@visionengravers.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 4/4] staging: comedi: ni_65xx: disable edge detection on initialization
+Date: Wed, 23 Jul 2014 10:41:21 +0100
+Message-Id: <1406108481-23910-5-git-send-email-abbotti@mev.co.uk>
+X-Mailer: git-send-email 2.0.0
+In-Reply-To: <1406108481-23910-1-git-send-email-abbotti@mev.co.uk>
+References: <1406108481-23910-1-git-send-email-abbotti@mev.co.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 22, 2014 at 06:03:35PM -0700, Linus Torvalds wrote:
-> So I'm afraid that "sti; lret" is not guaranteed to be architecturally
-> NMI-safe. But it *might* be safe on certain micro-architectures, and
-> maybe somebody inside Intel or AMD can give us a hint about when it is
-> safe and when it isn't.
+When the hardware is being initialized, the edge detection interrupts
+are cleared and disabled.  Also disable edge detection for all channels
+at this time so they start off in a known state.
 
->From AMD's APM, STI section:
+Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
+---
+ drivers/staging/comedi/drivers/ni_65xx.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-"Sets the interrupt flag (IF) in the rFLAGS register to 1, thereby
-allowing external interrupts received on the INTR input. Interrupts
-received on the non-maskable interrupt (NMI) input are not affected by
-this instruction."
-
+diff --git a/drivers/staging/comedi/drivers/ni_65xx.c b/drivers/staging/comedi/drivers/ni_65xx.c
+index ddf9135..1b8a397 100644
+--- a/drivers/staging/comedi/drivers/ni_65xx.c
++++ b/drivers/staging/comedi/drivers/ni_65xx.c
+@@ -804,6 +804,7 @@ static int ni_65xx_auto_attach(struct comedi_device *dev,
+ 	}
+ 
+ 	ni_65xx_disable_input_filters(dev);
++	ni_65xx_disable_edge_detection(dev);
+ 
+ 	return 0;
+ }
 -- 
-Regards/Gruss,
-    Boris.
+2.0.0
 
-Sent from a fat crate under my desk. Formatting is fine.
---
