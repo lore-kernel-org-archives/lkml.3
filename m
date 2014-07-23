@@ -1,80 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758310AbaGWPaZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 11:30:25 -0400
-Received: from kdh-gw.itdev.co.uk ([89.21.227.133]:13796 "EHLO
-	hermes.kdh.itdev.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1757100AbaGWPaX (ORCPT
+	id S1758333AbaGWPah (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 11:30:37 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:32892 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757971AbaGWPaY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 11:30:23 -0400
-Message-ID: <53CFD50C.4040509@itdev.co.uk>
-Date: Wed, 23 Jul 2014 16:30:20 +0100
-From: Nick Dyer <nick.dyer@itdev.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Wed, 23 Jul 2014 11:30:24 -0400
+Date: Wed, 23 Jul 2014 08:30:18 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Pranith Kumar <bobby.prani@gmail.com>
+Cc: Josh Triplett <josh@joshtriplett.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        "open list:READ-COPY UPDATE..." <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 09/16] rcu: Remove redundant check for online cpu
+Message-ID: <20140723153018.GY11241@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1406092194-13004-1-git-send-email-bobby.prani@gmail.com>
+ <1406092194-13004-10-git-send-email-bobby.prani@gmail.com>
+ <20140723122112.GJ11241@linux.vnet.ibm.com>
+ <CAJhHMCAoLQPnJYCeqftXwZb6D4ECuJb4g04b4OO5BLf6iC1ENw@mail.gmail.com>
+ <20140723135024.GR11241@linux.vnet.ibm.com>
+ <CAJhHMCAZ__1xkEou44iux=Z6v6NAKPrTvWob6tqorm23nNygOA@mail.gmail.com>
+ <20140723142314.GV11241@linux.vnet.ibm.com>
+ <CAJhHMCA4Fdd4JbtKdNGABFYRBCqaLukLbydLAFA-3RiZXaTngA@mail.gmail.com>
 MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Yufeng Shen <miletus@google.com>, Daniel Kurtz <djkurtz@chromium.org>,
-        Henrik Rydberg <rydberg@euromail.se>,
-        Joonyoung Shim <jy0922.shim@samsung.com>,
-        Alan Bowens <Alan.Bowens@atmel.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Peter Meerwald <pmeerw@pmeerw.net>,
-        Benson Leung <bleung@chromium.org>,
-        Olof Johansson <olofj@chromium.org>, Sekhar Nori <nsekhar@ti.com>
-Subject: Re: [PATCH 00/15] atmel_mxt_ts - device tree, bootloader, etc
-References: <1404399697-26484-1-git-send-email-nick.dyer@itdev.co.uk> <53CECAEC.8080905@wwwdotorg.org>
-In-Reply-To: <53CECAEC.8080905@wwwdotorg.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAJhHMCA4Fdd4JbtKdNGABFYRBCqaLukLbydLAFA-3RiZXaTngA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14072315-7164-0000-0000-00000354B561
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22/07/14 21:34, Stephen Warren wrote:
-> Unfortunately, I still can't get these to work on my system.
+On Wed, Jul 23, 2014 at 11:11:45AM -0400, Pranith Kumar wrote:
+> On Wed, Jul 23, 2014 at 10:23 AM, Paul E. McKenney
+> <paulmck@linux.vnet.ibm.com> wrote:
+> > On Wed, Jul 23, 2014 at 10:12:54AM -0400, Pranith Kumar wrote:
+> >> On Wed, Jul 23, 2014 at 9:50 AM, Paul E. McKenney
+> >> <paulmck@linux.vnet.ibm.com> wrote:
+> >> > On Wed, Jul 23, 2014 at 08:59:06AM -0400, Pranith Kumar wrote:
+> >> >> On Wed, Jul 23, 2014 at 8:21 AM, Paul E. McKenney
+> >> >> <paulmck@linux.vnet.ibm.com> wrote:
+> >> >> > On Wed, Jul 23, 2014 at 01:09:46AM -0400, Pranith Kumar wrote:
+> >> >> >> There are two checks for an online CPU if two if() conditions. This commit
+> >> >> >> simplies this by replacing it with only one check for the online CPU.
+> >> >> >>
+> >> >> >> Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
+> >> >> >
+> >> >> > I admit that it is very early in the morning my time, but I don't see
+> >> >> > this change as preserving the semantics in all cases.  Please recheck
+> >> >> > your changes to the second check.
+> >> >> >
+> >> >> >                                                         Thanx, Paul
+> >> >>
+> >> >> I guess you must be thrown off by the complementary checks, the first
+> >> >> check is for cpu_online() and second is for cpu_is_offline(). :)
+> >> >>
+> >> >> Previously, if a cpu is offline, the first condition is false and the
+> >> >> second condition is true, so we return from the second if() condition.
+> >> >> The same semantics are being preserved.
+> >> >
+> >> > Fair enough!
+> >> >
+> >> > Nevertheless, I am not seeing this as a simplification.
+> >>
+> >> I am not sure what you mean here, do you mean that both the checks are
+> >> actually required?
+> >
+> > I mean that the current compound tests each mean something.  Pulling out
+> > the offline test adds lines of code and obscures that meaning.   This means
+> > that it is easier (for me, anyway) to see why the current code is correct
+> > than it is to see why your suggested change is correct.
+> >
 > 
-> Per your "Re: atmel_mxt_ts: defaulting irqflags to
-> IRQF_TRIGGER_FALLING", I set up the IRQ type in the Tegra DT file, and
-> then applied this series on top of next-20140721. The driver appears to
-> initialize OK, but neither X nor evtest see any events from the device.
-> The IRQ count in /proc/interrupts doesn't increase when I touch the
-> touchpad, but does when I press it hard enough to trigger the physical
-> button.
+> That is a valid point. I did not mean to reduce readability of the
+> code. Just trying to avoid the overhead of smp_processor_id().
+> 
+> Not sure if you would prefer this, but how about the following?
 
-You're using the T19/GPIO support, then? In which case, there appears to be
-something wrong on the touch controller rather than the driver itself.
+If you change the "awake" to something like "am_online", I could get
+behind this one.
 
-> A boot log with debug enabled follows. No additional kernel log
-> messages are generated by touches or clicks.
+							Thanx, Paul
 
-Perhaps I should add some debug to mxt_input_button() - currently it will
-not debug the fact that a click is received, although I guess that you will
-see it in getevent.
+> diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
+> index f1ba773..3a26008 100644
+> --- a/kernel/rcu/tree.c
+> +++ b/kernel/rcu/tree.c
+> @@ -2516,15 +2516,16 @@ static void __call_rcu_core(struct rcu_state
+> *rsp, struct rcu_data *rdp,
+>  {
+>         bool needwake;
+> 
+> +       bool awake = cpu_online(smp_processor_id);
+>         /*
+>          * If called from an extended quiescent state, invoke the RCU
+>          * core in order to force a re-evaluation of RCU's idleness.
+>          */
+> -       if (!rcu_is_watching() && cpu_online(smp_processor_id()))
+> +       if (!rcu_is_watching() && awake)
+>                 invoke_rcu_core();
+> 
+>         /* If interrupts were disabled or CPU offline, don't invoke RCU core. */
+> -       if (irqs_disabled_flags(flags) || cpu_is_offline(smp_processor_id()))
+> +       if (irqs_disabled_flags(flags) || !awake)
+>                 return;
+> 
+>         /*
+> 
+> 
+> >
+> >> >> --
+> >> >> Pranith.
+> >> >>
+> >> >>
+> >> >>
+> >> >> >
+> >> >> >> ---
+> >> >> >>  kernel/rcu/tree.c | 9 ++++++---
+> >> >> >>  1 file changed, 6 insertions(+), 3 deletions(-)
+> >> >> >>
+> >> >> >> diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
+> >> >> >> index 5dcbf36..8d598a2 100644
+> >> >> >> --- a/kernel/rcu/tree.c
+> >> >> >> +++ b/kernel/rcu/tree.c
+> >> >> >> @@ -2602,15 +2602,18 @@ static void __call_rcu_core(struct rcu_state *rsp, struct rcu_data *rdp,
+> >> >> >>  {
+> >> >> >>       bool needwake;
+> >> >> >>
+> >> >> >> +     if (!cpu_online(smp_processor_id()))
+> >> >> >> +             return;
+> >> >> >> +
+> >> >> >>       /*
+> >> >> >>        * If called from an extended quiescent state, invoke the RCU
+> >> >> >>        * core in order to force a re-evaluation of RCU's idleness.
+> >> >> >>        */
+> >> >> >> -     if (!rcu_is_watching() && cpu_online(smp_processor_id()))
+> >> >> >> +     if (!rcu_is_watching())
+> >> >> >>               invoke_rcu_core();
+> >> >> >>
+> >> >> >> -     /* If interrupts were disabled or CPU offline, don't invoke RCU core. */
+> >> >> >> -     if (irqs_disabled_flags(flags) || cpu_is_offline(smp_processor_id()))
+> >> >> >> +     /* If interrupts were disabled, don't invoke RCU core. */
+> >> >> >> +     if (irqs_disabled_flags(flags))
+> >> >> >>               return;
+> >> >> >>
+> >> >> >>       /*
+> >> >> >> --
+> >> >> >> 2.0.0.rc2
+> >> >> >>
+> >> >> >
+> >> >>
+> >> >>
+> >> >>
+> >> >> --
+> >> >> Pranith
+> >> >>
+> >> >
+> >>
+> >>
+> >>
+> >> --
+> >> Pranith
+> >>
+> >
+> 
+> 
+> 
+> -- 
+> Pranith
+> 
 
-> Do you have any idea what I should try?
-
-I am suspicious that it may be that the power sequencing isn't quite right,
-which sometimes leads to parts of the chip not working properly (eg GPIO
-buttons working, but no touch).
-
-The patch "use deep sleep when stopped" removes the reset on every resume
-(which would otherwise kill resume performance). But that reset tends to
-paper over a device which hasn't been powered up properly in the first place.
-
-Could you try issuing a manual reset and see if the touch starts working? I
-would normally do this by compiling our obp-utils software from
-https://github.com/atmel-maxtouch/obp-utils using ndk-build and doing
-something like:
-
-mxt-app -d i2c-dev:1-004b --reset
-
-(you need CONFIG_I2C_DEBUG to make /dev/i2c-1 appear)
-
-If this works, then we need to adjust the board file that powers it on, the
-correct power on sequence is contained in this later patch:
-https://github.com/ndyer/linux/commit/97e938fa5863
-
->> [    1.831998] atmel_mxt_ts 1-004b: Interrupt triggered but zero messages
-
-FWIW, this warning generally means you should be using the CHG line mode 1
-in T18 COMMSCONFIG. It's benign, though.
