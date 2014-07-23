@@ -1,88 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756973AbaGWLbb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 07:31:31 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:30279 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752278AbaGWLb1 (ORCPT
+	id S1756957AbaGWLdV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 07:33:21 -0400
+Received: from mail-wg0-f43.google.com ([74.125.82.43]:50095 "EHLO
+	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752886AbaGWLdT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 07:31:27 -0400
-Date: Wed, 23 Jul 2014 14:30:23 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Chen Gang <gang.chen.5i5j@gmail.com>
-Cc: linux-iio@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>, teg@jklm.no,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Lennox Wu <lennox.wu@gmail.com>, Marek Vasut <marex@denx.de>,
-        Liqin Chen <liqin.linux@gmail.com>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Richard Weinberger <richard@nod.at>,
-        Geert Uytterhoeven <geert@linux-m68k.org>, msalter@redhat.com,
-        Guenter Roeck <linux@roeck-us.net>, linux-pwm@vger.kernel.org,
-        devel@driverdev.osuosl.org, linux-watchdog@vger.kernel.org,
-        arnd@arndb.de, linux-input@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        dmitry.torokhov@gmail.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        knaack.h@gmx.de, Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Mischa.Jonker@synopsys.com, jic23@kernel.org
-Subject: Re: [PATCH] drivers: Let several drivers depends on HAS_IOMEM for
- 'devm_ioremap_resource'
-Message-ID: <20140723113023.GT25880@mwanda>
-References: <53C47725.8000005@gmail.com>
- <53C47B76.4080306@roeck-us.net>
- <53C47FB7.6080304@gmail.com>
- <53C53CE1.4090803@gmail.com>
- <53C7269E.4010702@gmail.com>
- <20140717083756.GA19686@ulmo>
- <53C7905D.9090003@gmail.com>
- <20140717091601.GF25880@mwanda>
- <53C7951F.6000906@gmail.com>
- <53CF97E2.9000906@gmail.com>
+	Wed, 23 Jul 2014 07:33:19 -0400
+Date: Wed, 23 Jul 2014 12:33:14 +0100
+From: Stephane Chazelas <stephane.chazelas@gmail.com>
+To: linux-kernel@vger.kernel.org
+Subject: network interfaces called "all", "default" or "config"
+Message-ID: <20140723113314.GA7798@chaz.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <53CF97E2.9000906@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 23, 2014 at 07:09:22PM +0800, Chen Gang wrote:
-> 
-> 
-> On 07/17/2014 05:19 PM, Chen Gang wrote:
-> > 
-> > 
-> > On 07/17/2014 05:16 PM, Dan Carpenter wrote:
-> >> On Thu, Jul 17, 2014 at 04:59:09PM +0800, Chen Gang wrote:
-> >>>>> +	return (__force void __iomem *)ERR_PTR(-ENXIO);
-> >>>>
-> >>>> There's apparently an IOMEM_ERR_PTR() for this nowadays...
-> >>>>
-> >>>
-> >>> IOMEM_ERR_PTR() is defined within "lib/devres.c", not in "./include".
-> >>> But may we move it from "lib/devres.c" to "./include/linux/err.h"?
-> >>>
-> >>> For me, I am not quite sure, it may need additional discussion, but at
-> >>> least, that will be another patch.
-> >>
-> >> Yes.  Move it there.  That is the right place.
-> >>
-> 
-> Sorry for replying late about IOMEM_ERR_PTR().
-> 
-> Although no objections within 2 days, for me, when move something to
-> generic header file, it is not only for future using, but also for
-> solving current issue, or it has to be suspended for waiting 'trigger'.
-> 
-> So for me, the patch about IOMEM_ERR_PTR() need be suspended, until some
-> member find an issue which may be related with IOMEM_ERR_PTR(), more or
-> less.
+Hiya,
 
-Matthias Brugger already moved it to include/linux/io.h on Friday.
+you may want to forbid the creation of interfaces whose name is
+one of the special files in /proc/net and /proc/sys.
 
-regards,
-dan carpenter
+I can see some characters (like space, tab, newline, slash,
+dot...) are alread forbidden in interface names (EINVAL), but
+one can do for instance:
 
+sudo ip link add link eth0 all type vlan id 2
+sudo ip link add link eth0 default type vlan id 3
+sudo ip link add link eth0 config type vlan id 4
+
+Interestingly, after you add a "all" or "default", the
+corresponding /proc/sys/net/ipv[46]/conf/(all|default) become
+empty, and remain so even after you've removed the interface.
+
+Adding an interface called "config" masks /proc/net/vlan/config
+
+(tested with 3.14-1-amd64 on debian)
+
+-- 
+Stephane
