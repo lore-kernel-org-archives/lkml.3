@@ -1,100 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757541AbaGWJEF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 05:04:05 -0400
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:62611 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757374AbaGWJEC (ORCPT
+	id S1757594AbaGWJES (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 05:04:18 -0400
+Received: from mail-we0-f173.google.com ([74.125.82.173]:42129 "EHLO
+	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757374AbaGWJEO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 05:04:02 -0400
-Message-ID: <53CF7A73.8010402@ozlabs.ru>
-Date: Wed, 23 Jul 2014 19:03:47 +1000
-From: Alexey Kardashevskiy <aik@ozlabs.ru>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>, Jesse Brandeburg <jesse.brandeburg@gmail.com>
-CC: Mike Qiu <qiudayu@linux.vnet.ibm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-ide@vger.kernel.org, wenxiong@linux.vnet.ibm.com,
-        brking@linux.vnet.ibm.com, zhenghch@cn.ibm.com, haokexin@gmail.com
-Subject: Re: [PATCH 2/2] libata: Fix NULL pointer of scsi_host in ata_port
-References: <1406040688-1762-1-git-send-email-qiudayu@linux.vnet.ibm.com> <53CE7C29.6050908@linux.vnet.ibm.com> <CAEuXFExJAq5hpYe8R_De7hOtGN1Jrx6HCQt0tQBAKnDTKEpaBA@mail.gmail.com> <20140722201109.GN13851@htj.dyndns.org>
-In-Reply-To: <20140722201109.GN13851@htj.dyndns.org>
-Content-Type: text/plain; charset=KOI8-R
-Content-Transfer-Encoding: 7bit
+	Wed, 23 Jul 2014 05:04:14 -0400
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Jingoo Han <jg1.han@samsung.com>, Bryan Wu <cooloney@gmail.com>,
+        Lee Jones <lee.jones@linaro.org>, linux-kernel@vger.kernel.org
+Cc: Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH v2] fb: backlight: add driver for iPAQ micro backlight
+Date: Wed, 23 Jul 2014 11:04:03 +0200
+Message-Id: <1406106243-20498-1-git-send-email-linus.walleij@linaro.org>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/23/2014 06:11 AM, Tejun Heo wrote:
-> Hello,
-> 
-> Can you please test the following patch?
+This adds a driver for the backlight controlled by the microcontroller
+on the Compaq iPAQ series of handheld computers: h3100, h3600
+and h3700.
 
-Tested-by: Alexey Kardashevskiy <aik@ozlabs.ru>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+---
+ChangeLog v1->v2:
+- Add a comment to clarify message format
+- Coding format and style fixes
+- Drop driver announce boilerplate
+- Drop empty remove() function
+---
+ drivers/video/backlight/Kconfig         |  9 ++++
+ drivers/video/backlight/Makefile        |  1 +
+ drivers/video/backlight/ipaq_micro_bl.c | 83 +++++++++++++++++++++++++++++++++
+ 3 files changed, 93 insertions(+)
+ create mode 100644 drivers/video/backlight/ipaq_micro_bl.c
 
-on POWER8 + IBM IPR SCSI.
-
-
-
-
-> 
-> diff --git a/drivers/ata/libata-core.c b/drivers/ata/libata-core.c
-> index d19c37a7..773f4e6 100644
-> --- a/drivers/ata/libata-core.c
-> +++ b/drivers/ata/libata-core.c
-> @@ -4798,9 +4798,8 @@ void swap_buf_le16(u16 *buf, unsigned int buf_words)
->  static struct ata_queued_cmd *ata_qc_new(struct ata_port *ap)
->  {
->  	struct ata_queued_cmd *qc = NULL;
-> -	unsigned int i, tag, max_queue;
-> -
-> -	max_queue = ap->scsi_host->can_queue;
-> +	unsigned int max_queue = ap->host->n_tags;
-> +	unsigned int i, tag;
->  
->  	/* no command while frozen */
->  	if (unlikely(ap->pflags & ATA_PFLAG_FROZEN))
-> @@ -6094,6 +6093,7 @@ void ata_host_init(struct ata_host *host, struct device *dev,
->  {
->  	spin_lock_init(&host->lock);
->  	mutex_init(&host->eh_mutex);
-> +	host->n_tags = ATA_MAX_QUEUE;
->  	host->dev = dev;
->  	host->ops = ops;
->  }
-> @@ -6179,11 +6179,7 @@ int ata_host_register(struct ata_host *host, struct scsi_host_template *sht)
->  	 * The max queue supported by hardware must not be greater than
->  	 * ATA_MAX_QUEUE.
->  	 */
-> -	if (sht->can_queue > ATA_MAX_QUEUE) {
-> -		dev_err(host->dev, "BUG: the hardware max queue is too large\n");
-> -		WARN_ON(1);
-> -		return -EINVAL;
-> -	}
-> +	host->n_tags = clamp(sht->can_queue, 1, ATA_MAX_QUEUE);
->  
->  	/* host must have been started */
->  	if (!(host->flags & ATA_HOST_STARTED)) {
-> diff --git a/include/linux/libata.h b/include/linux/libata.h
-> index 5ab4e3a..92abb49 100644
-> --- a/include/linux/libata.h
-> +++ b/include/linux/libata.h
-> @@ -593,6 +593,7 @@ struct ata_host {
->  	struct device 		*dev;
->  	void __iomem * const	*iomap;
->  	unsigned int		n_ports;
-> +	unsigned int		n_tags;			/* nr of NCQ tags */
->  	void			*private_data;
->  	struct ata_port_operations *ops;
->  	unsigned long		flags;
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-
-
+diff --git a/drivers/video/backlight/Kconfig b/drivers/video/backlight/Kconfig
+index 5d449059a556..cc153f55d9f9 100644
+--- a/drivers/video/backlight/Kconfig
++++ b/drivers/video/backlight/Kconfig
+@@ -207,6 +207,15 @@ config BACKLIGHT_GENERIC
+ 	  known as the Corgi backlight driver. If you have a Sharp Zaurus
+ 	  SL-C7xx, SL-Cxx00 or SL-6000x say y.
+ 
++config BACKLIGHT_IPAQ_MICRO
++	tristate "iPAQ microcontroller backlight driver"
++	depends on MFD_IPAQ_MICRO
++	default y
++	help
++	  Say y to enable the backlight driver for Compaq iPAQ handheld
++	  computers. Say yes if you have one of the h3100/h3600/h3700
++	  machines.
++
+ config BACKLIGHT_LM3533
+ 	tristate "Backlight Driver for LM3533"
+ 	depends on BACKLIGHT_CLASS_DEVICE
+diff --git a/drivers/video/backlight/Makefile b/drivers/video/backlight/Makefile
+index bb820024f346..a9ea34a39cad 100644
+--- a/drivers/video/backlight/Makefile
++++ b/drivers/video/backlight/Makefile
+@@ -36,6 +36,7 @@ obj-$(CONFIG_BACKLIGHT_GENERIC)		+= generic_bl.o
+ obj-$(CONFIG_BACKLIGHT_GPIO)		+= gpio_backlight.o
+ obj-$(CONFIG_BACKLIGHT_HP680)		+= hp680_bl.o
+ obj-$(CONFIG_BACKLIGHT_HP700)		+= jornada720_bl.o
++obj-$(CONFIG_BACKLIGHT_IPAQ_MICRO)	+= ipaq_micro_bl.o
+ obj-$(CONFIG_BACKLIGHT_LM3533)		+= lm3533_bl.o
+ obj-$(CONFIG_BACKLIGHT_LM3630A)		+= lm3630a_bl.o
+ obj-$(CONFIG_BACKLIGHT_LM3639)		+= lm3639_bl.o
+diff --git a/drivers/video/backlight/ipaq_micro_bl.c b/drivers/video/backlight/ipaq_micro_bl.c
+new file mode 100644
+index 000000000000..88a3816da31e
+--- /dev/null
++++ b/drivers/video/backlight/ipaq_micro_bl.c
+@@ -0,0 +1,83 @@
++/*
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * iPAQ microcontroller backlight support
++ * Author : Linus Walleij <linus.walleij@linaro.org>
++ */
++
++#include <linux/module.h>
++#include <linux/init.h>
++#include <linux/platform_device.h>
++#include <linux/backlight.h>
++#include <linux/mfd/ipaq-micro.h>
++#include <linux/fb.h>
++#include <linux/err.h>
++
++static int micro_bl_update_status(struct backlight_device *bd)
++{
++	struct ipaq_micro *micro = dev_get_drvdata(&bd->dev);
++	int intensity = bd->props.brightness;
++	struct ipaq_micro_msg msg = {
++		.id = MSG_BACKLIGHT,
++		.tx_len = 3,
++	};
++
++	if (bd->props.power != FB_BLANK_UNBLANK)
++		intensity = 0;
++	if (bd->props.state & (BL_CORE_FBBLANK | BL_CORE_SUSPENDED))
++		intensity = 0;
++
++	/*
++	 * Message format:
++	 * Byte 0: backlight instance (usually 1)
++	 * Byte 1: on/off
++	 * Byte 2: intensity, 0-255
++	 */
++	msg.tx_data[0] = 0x01;
++	msg.tx_data[1] = intensity > 0 ? 1 : 0;
++	msg.tx_data[2] = intensity;
++	return ipaq_micro_tx_msg_sync(micro, &msg);
++}
++
++static const struct backlight_ops micro_bl_ops = {
++	.options = BL_CORE_SUSPENDRESUME,
++	.update_status  = micro_bl_update_status,
++};
++
++static struct backlight_properties micro_bl_props = {
++	.type = BACKLIGHT_RAW,
++	.max_brightness = 255,
++	.power = FB_BLANK_UNBLANK,
++	.brightness = 64,
++};
++
++static int micro_backlight_probe(struct platform_device *pdev)
++{
++	struct backlight_device *bd;
++	struct ipaq_micro *micro = dev_get_drvdata(pdev->dev.parent);
++
++	bd = devm_backlight_device_register(&pdev->dev, "ipaq-micro-backlight",
++					    &pdev->dev, micro, &micro_bl_ops,
++					    &micro_bl_props);
++	if (IS_ERR(bd))
++		return PTR_ERR(bd);
++
++	platform_set_drvdata(pdev, bd);
++	backlight_update_status(bd);
++
++	return 0;
++}
++
++struct platform_driver micro_backlight_device_driver = {
++	.driver = {
++		.name    = "ipaq-micro-backlight",
++	},
++	.probe   = micro_backlight_probe,
++};
++module_platform_driver(micro_backlight_device_driver);
++
++MODULE_LICENSE("GPL");
++MODULE_DESCRIPTION("driver for iPAQ Atmel micro backlight");
++MODULE_ALIAS("platform:ipaq-micro-backlight");
 -- 
-Alexey
+1.9.3
+
