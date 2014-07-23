@@ -1,201 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933436AbaGWUQW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 16:16:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:9480 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932847AbaGWUQR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 16:16:17 -0400
-From: Eric Paris <eparis@redhat.com>
-To: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org
-Cc: Eric Paris <eparis@redhat.com>, Andrew Vagin <avagin@openvz.org>,
-        "Andrew G. Morgan" <morgan@kernel.org>,
-        "Serge E. Hallyn" <serge.hallyn@canonical.com>,
-        Kees Cook <keescook@chromium.org>, Steve Grubb <sgrubb@redhat.com>,
-        Dan Walsh <dwalsh@redhat.com>, stable@vger.kernel.org
-Subject: [PATCH] CAPABILITIES: remove undefined caps from all processes
-Date: Wed, 23 Jul 2014 15:36:26 -0400
-Message-Id: <1406144186-23002-1-git-send-email-eparis@redhat.com>
+	id S933458AbaGWUR2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 16:17:28 -0400
+Received: from mail-oa0-f54.google.com ([209.85.219.54]:56382 "EHLO
+	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932847AbaGWUR1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jul 2014 16:17:27 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAPDOMVjrFzrveTuYeZQ1o7XEYP_pcmF0Z9b2_Y9eGVidvzy+ig@mail.gmail.com>
+References: <CAPDOMVjrFzrveTuYeZQ1o7XEYP_pcmF0Z9b2_Y9eGVidvzy+ig@mail.gmail.com>
+Date: Wed, 23 Jul 2014 13:10:29 -0700
+X-Google-Sender-Auth: B02Ye4HB2KsLWEKTlFIqppDDVrI
+Message-ID: <CAMbhsRRP2xE2UHqJd-X=ggsc=rqzhwTwVKpaYGMjC840YhTSYg@mail.gmail.com>
+Subject: Re: staging: Unwritten function for ion_carveout_heap.c
+From: Colin Cross <ccross@android.com>
+To: Nick Krause <xerofoify@gmail.com>
+Cc: Greg KH <gregkh@linuxfoundation.org>, John Stultz <john.stultz@linaro.org>,
+        Rebecca Zavin <rebecca@android.com>,
+        Laura Abbott <lauraa@codeaurora.org>, gioh.kim@lge.com,
+        benjamin.gaignard@linaro.org,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is effectively a revert of 7b9a7ec565505699f503b4fcf61500dceb36e744
-plus fixing it a different way...
+On Wed, Jul 23, 2014 at 1:04 PM, Nick Krause <xerofoify@gmail.com> wrote:
+> Hey Greg and others.
+> Sorry for another email but it seems the function,
+> ion_carveout_heap_unmap_dma is
+> just returning and not doing anything useful. Furthermore I am new so
+> I don't known how
+> to write this function but this may  be causing  some rather  serious
+> bugs as if the dma heap
+> is not unmaped and we  call this function a lot this will make the
+> kernel not able to handle dma requests
+> for this driver and other drivers that need this and in turn lead to
+> a oops or even a kernel panic due to leaked
+> dma allocated memory. I would recommend writing this function or
+> helping me write it in
+> other to avoid some rather serious bugs without a proper dma unmapping
+> function for this driver  :).
+> Nick
 
-We found, when trying to run an application from an application which
-had dropped privs that the kernel does security checks on undefined
-capability bits.  This was ESPECIALLY difficult to debug as those
-undefined bits are hidden from /proc/$PID/status.
+Look at ion_carveout_heap_map_dma - it doesn't do anything, it just
+returns a pre-existing virtual address.  That means there is nothing
+to do in unmap.
 
-Consider a root application which drops all capabilities from ALL 4
-capability sets.  We assume, since the application is going to set
-eff/perm/inh from an array that it will clear not only the defined caps
-less than CAP_LAST_CAP, but also the higher 28ish bits which are
-undefined future capabilities.
-
-The BSET gets cleared differently.  Instead it is cleared one bit at a
-time.  The problem here is that in security/commoncap.c::cap_task_prctl()
-we actually check the validity of a capability being read.  So any task
-which attempts to 'read all things set in bset' followed by 'unset all
-things set in bset' will not even attempt to unset the undefined bits
-higher than CAP_LAST_CAP.
-
-So the 'parent' will look something like:
-CapInh:	0000000000000000
-CapPrm:	0000000000000000
-CapEff:	0000000000000000
-CapBnd:	ffffffc000000000
-
-All of this 'should' be fine.  Given that these are undefined bits that
-aren't supposed to have anything to do with permissions.  But they do...
-
-So lets now consider a task which cleared the eff/perm/inh completely
-and cleared all of the valid caps in the bset (but not the invalid caps
-it couldn't read out of the kernel).  We know that this is exactly what
-the libcap-ng library does and what the go capabilities library does.
-They both leave you in that above situation if you try to clear all of
-you capapabilities from all 4 sets.  If that root task calls execve()
-the child task will pick up all caps not blocked by the bset.  The bset
-however does not block bits higher than CAP_LAST_CAP.  So now the child
-task has bits in eff which are not in the parent.  These are
-'meaningless' undefined bits, but still bits which the parent doesn't
-have.
-
-The problem is now in cred_cap_issubset() (or any operation which does a
-subset test) as the child, while a subset for valid cap bits, is not a
-subset for invalid cap bits!  So now we set durring commit creds that
-the child is not dumpable.  Given it is 'more priv' than its parent.  It
-also means the parent cannot ptrace the child and other stupidity.
-
-The solution here:
-1) stop hiding capability bits in status
-	This makes debugging easier!
-
-2) stop giving any task undefined capability bits.  it's simple, it you
-don't put those invalid bits in CAP_FULL_SET you won't get them in init
-and you won't get them in any other task either.
-	This fixes the cap_issubset() tests and resulting fallout (which
-	made the init task in a docker container untraceable among other
-	things)
-
-3) mask out undefined bits when sys_capset() is called as it might use
-~0, ~0 to denote 'all capabilities' for backward/forward compatibility.
-	This lets 'capsh --caps="all=eip" -- -c /bin/bash' run.
-
-4) mask out undefined bit when we read a file capability off of disk as
-again likely all bits are set in the xattr for forward/backward
-compatibility.
-	This lets 'setcap all+pe /bin/bash; /bin/bash' run
-
-Signed-off-by: Eric Paris <eparis@redhat.com>
-Cc: Andrew Vagin <avagin@openvz.org>
-Cc: Andrew G. Morgan <morgan@kernel.org>
-Cc: Serge E. Hallyn <serge.hallyn@canonical.com>
-Cc: Kees Cook <keescook@chromium.org>
-Cc: Steve Grubb <sgrubb@redhat.com>
-Cc: Dan Walsh <dwalsh@redhat.com>
-Cc: stable@vger.kernel.org
----
- fs/proc/array.c            | 11 +----------
- include/linux/capability.h |  5 ++++-
- kernel/audit.c             |  2 +-
- kernel/capability.c        |  4 ++++
- security/commoncap.c       |  3 +++
- 5 files changed, 13 insertions(+), 12 deletions(-)
-
-diff --git a/fs/proc/array.c b/fs/proc/array.c
-index 64db2bc..3e1290b 100644
---- a/fs/proc/array.c
-+++ b/fs/proc/array.c
-@@ -297,15 +297,11 @@ static void render_cap_t(struct seq_file *m, const char *header,
- 	seq_puts(m, header);
- 	CAP_FOR_EACH_U32(__capi) {
- 		seq_printf(m, "%08x",
--			   a->cap[(_KERNEL_CAPABILITY_U32S-1) - __capi]);
-+			   a->cap[CAP_LAST_U32 - __capi]);
- 	}
- 	seq_putc(m, '\n');
- }
- 
--/* Remove non-existent capabilities */
--#define NORM_CAPS(v) (v.cap[CAP_TO_INDEX(CAP_LAST_CAP)] &= \
--				CAP_TO_MASK(CAP_LAST_CAP + 1) - 1)
--
- static inline void task_cap(struct seq_file *m, struct task_struct *p)
- {
- 	const struct cred *cred;
-@@ -319,11 +315,6 @@ static inline void task_cap(struct seq_file *m, struct task_struct *p)
- 	cap_bset	= cred->cap_bset;
- 	rcu_read_unlock();
- 
--	NORM_CAPS(cap_inheritable);
--	NORM_CAPS(cap_permitted);
--	NORM_CAPS(cap_effective);
--	NORM_CAPS(cap_bset);
--
- 	render_cap_t(m, "CapInh:\t", &cap_inheritable);
- 	render_cap_t(m, "CapPrm:\t", &cap_permitted);
- 	render_cap_t(m, "CapEff:\t", &cap_effective);
-diff --git a/include/linux/capability.h b/include/linux/capability.h
-index 84b13ad..aa93e5e 100644
---- a/include/linux/capability.h
-+++ b/include/linux/capability.h
-@@ -78,8 +78,11 @@ extern const kernel_cap_t __cap_init_eff_set;
- # error Fix up hand-coded capability macro initializers
- #else /* HAND-CODED capability initializers */
- 
-+#define CAP_LAST_U32			((_KERNEL_CAPABILITY_U32S) - 1)
-+#define CAP_LAST_U32_VALID_MASK		(CAP_TO_MASK(CAP_LAST_CAP + 1) -1)
-+
- # define CAP_EMPTY_SET    ((kernel_cap_t){{ 0, 0 }})
--# define CAP_FULL_SET     ((kernel_cap_t){{ ~0, ~0 }})
-+# define CAP_FULL_SET     ((kernel_cap_t){{ ~0, CAP_LAST_U32_VALID_MASK }})
- # define CAP_FS_SET       ((kernel_cap_t){{ CAP_FS_MASK_B0 \
- 				    | CAP_TO_MASK(CAP_LINUX_IMMUTABLE), \
- 				    CAP_FS_MASK_B1 } })
-diff --git a/kernel/audit.c b/kernel/audit.c
-index 3ef2e0e..ba2ff5a 100644
---- a/kernel/audit.c
-+++ b/kernel/audit.c
-@@ -1677,7 +1677,7 @@ void audit_log_cap(struct audit_buffer *ab, char *prefix, kernel_cap_t *cap)
- 	audit_log_format(ab, " %s=", prefix);
- 	CAP_FOR_EACH_U32(i) {
- 		audit_log_format(ab, "%08x",
--				 cap->cap[(_KERNEL_CAPABILITY_U32S-1) - i]);
-+				 cap->cap[CAP_LAST_U32 - i]);
- 	}
- }
- 
-diff --git a/kernel/capability.c b/kernel/capability.c
-index a5cf13c..989f5bf 100644
---- a/kernel/capability.c
-+++ b/kernel/capability.c
-@@ -258,6 +258,10 @@ SYSCALL_DEFINE2(capset, cap_user_header_t, header, const cap_user_data_t, data)
- 		i++;
- 	}
- 
-+	effective.cap[CAP_LAST_U32] &= CAP_LAST_U32_VALID_MASK;
-+	permitted.cap[CAP_LAST_U32] &= CAP_LAST_U32_VALID_MASK;
-+	inheritable.cap[CAP_LAST_U32] &= CAP_LAST_U32_VALID_MASK;
-+
- 	new = prepare_creds();
- 	if (!new)
- 		return -ENOMEM;
-diff --git a/security/commoncap.c b/security/commoncap.c
-index b9d613e..963dc59 100644
---- a/security/commoncap.c
-+++ b/security/commoncap.c
-@@ -421,6 +421,9 @@ int get_vfs_caps_from_disk(const struct dentry *dentry, struct cpu_vfs_cap_data
- 		cpu_caps->inheritable.cap[i] = le32_to_cpu(caps.data[i].inheritable);
- 	}
- 
-+	cpu_caps->permitted.cap[CAP_LAST_U32] &= CAP_LAST_U32_VALID_MASK;
-+	cpu_caps->inheritable.cap[CAP_LAST_U32] &= CAP_LAST_U32_VALID_MASK;
-+
- 	return 0;
- }
- 
--- 
-1.9.3
-
+map_dma is actually a bit of a misnomer here, as the actual mapping is
+done in ion_map_dma_buf.  All ion_carveout_heap_map_dma does is return
+the sg table for ion_map_dma_buf to pass to dma_map_sg.
