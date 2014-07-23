@@ -1,51 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753212AbaGWA7J (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 20:59:09 -0400
-Received: from mga14.intel.com ([192.55.52.115]:32572 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751143AbaGWA7H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 20:59:07 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,713,1400050800"; 
-   d="scan'208";a="565780799"
-Message-ID: <53CF08D7.7080908@intel.com>
-Date: Wed, 23 Jul 2014 08:59:03 +0800
-From: "Yan, Zheng" <zheng.z.yan@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1754348AbaGWBDi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 21:03:38 -0400
+Received: from mail-vc0-f179.google.com ([209.85.220.179]:49100 "EHLO
+	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751066AbaGWBDg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 21:03:36 -0400
 MIME-Version: 1.0
-To: Andi Kleen <andi@firstfloor.org>
-CC: linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl, mingo@kernel.org,
-        acme@infradead.org, eranian@google.com
-Subject: Re: [PATCH v3 5/9] perf, x86: large PEBS interrupt threshold
-References: <1406016602-31845-1-git-send-email-zheng.z.yan@intel.com> <1406016602-31845-6-git-send-email-zheng.z.yan@intel.com> <20140722161617.GQ18735@two.firstfloor.org>
-In-Reply-To: <20140722161617.GQ18735@two.firstfloor.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CALCETrVx=cLZjgALizYKWATSjOvhmwPHQvOJRkMgdb=iNRNf8w@mail.gmail.com>
+References: <CALCETrVx=cLZjgALizYKWATSjOvhmwPHQvOJRkMgdb=iNRNf8w@mail.gmail.com>
+Date: Tue, 22 Jul 2014 18:03:35 -0700
+X-Google-Sender-Auth: _K9WcFau9mMrxarqWULk4-JI2OM
+Message-ID: <CA+55aFyefnFjmOs-QZhFn68-6+tWO30VqU6ipP6BzAra=xOaFg@mail.gmail.com>
+Subject: Re: STI architectural question (and lretq -- I'm not even kidding)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: "H. Peter Anvin" <hpa@linux.intel.com>, Borislav Petkov <bp@alien8.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        X86 ML <x86@kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/23/2014 12:16 AM, Andi Kleen wrote:
->> +	/*
->> +	 * When the event is constrained enough we can use a larger
->> +	 * threshold and run the event with less frequent PMI.
->> +	 */
->> +	if (0 && /* disable this temporarily */
-> 
-> Where in the patchkit does it get reenabled?
+On Tue, Jul 22, 2014 at 5:10 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+>
+> But here's the problem: what happens if an NMI or MCE happens between
+> the sti and the lretq?  I think an MCE just might be okay -- it's not
+> really recoverable anyway.  (Except for the absurd MCE broadcast crap,
+> which may cause this to be a problem.)  But what about an NMI between
+> sti and lretq?
 
-enabled by patch 7
-> 
-> -Andi
-> 
->> +	    (hwc->flags & PERF_X86_EVENT_AUTO_RELOAD) &&
->> +	    !(event->attr.sample_type & ~PEBS_FREERUNNING_FLAGS)) {
->> +		threshold = ds->pebs_absolute_maximum -
->> +			x86_pmu.max_pebs_events * x86_pmu.pebs_record_size;
->> +	} else {
->> +		threshold = ds->pebs_buffer_base + x86_pmu.pebs_record_size;
->> +	}
->> +	if (first_pebs || ds->pebs_interrupt_threshold > threshold)
->> +		ds->pebs_interrupt_threshold = threshold;
+Sadly, it's not architected.
 
+The "mov ss" and "pop ss" do indeed suppress even NMI. And that *has*
+to be true, because in legacy real mode - where there is no protection
+domain change, and the "lss" instruction didn't originally exist - the
+"pop/mov ss" and "mov sp" instruction sequence had to be entirely
+atomic. And this is even very officially documented. From the intel
+system manual:
+
+    "A POP SS instruction inhibits all interrupts, including the NMI
+interrupt, until after execution of the next instruction. This action
+allows sequential execution of POP SS and MOV ESP, EBP instructions
+without the danger of having an invalid stack during an interrupt.
+However, use of the LSS instruction is the preferred method of loading
+the SS and ESP registers"
+
+However, while "sti" has conceptually the same one-instruction
+interrupt window disable as mov/pop ss, it looks like Intel broke it
+for NMI. The documentation only talks about "external, maskable
+interrupts", and while I suspect *many* micro-architectures also end
+up disabling NMI for the next instruction, there are many reasons to
+think not all do.
+
+See for example
+
+    http://www.sandpile.org/x86/inter.htm
+
+and note #5 under external interrupt suppression.
+
+Now, sandpile is pretty old, but Christian Ludloff used to get things
+like that right.
+
+So I'm afraid that "sti; lret" is not guaranteed to be architecturally
+NMI-safe. But it *might* be safe on certain micro-architectures, and
+maybe somebody inside Intel or AMD can give us a hint about when it is
+safe and when it isn't.
+
+                Linus
