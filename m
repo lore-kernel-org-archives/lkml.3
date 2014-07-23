@@ -1,118 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757808AbaGWOpP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 10:45:15 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:37852 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753831AbaGWOpN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 10:45:13 -0400
-Date: Wed, 23 Jul 2014 07:45:09 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Pranith Kumar <bobby.prani@gmail.com>
-Cc: Josh Triplett <josh@joshtriplett.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 00/16] rcu: Some minor fixes and cleanups
-Message-ID: <20140723144509.GW11241@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1406092194-13004-1-git-send-email-bobby.prani@gmail.com>
+	id S1757979AbaGWOpa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 10:45:30 -0400
+Received: from mail.kernel.org ([198.145.19.201]:46832 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757705AbaGWOp2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jul 2014 10:45:28 -0400
+Date: Wed, 23 Jul 2014 11:45:22 -0300
+From: Arnaldo Carvalho de Melo <acme@kernel.org>
+To: Adrian Hunter <adrian.hunter@intel.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 21/52] perf session: Add ability to skip 4GiB or more
+Message-ID: <20140723144522.GO20303@kernel.org>
+References: <1406035081-14301-1-git-send-email-adrian.hunter@intel.com>
+ <1406035081-14301-22-git-send-email-adrian.hunter@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1406092194-13004-1-git-send-email-bobby.prani@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14072314-6688-0000-0000-000003809B18
+In-Reply-To: <1406035081-14301-22-git-send-email-adrian.hunter@intel.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 23, 2014 at 01:09:37AM -0400, Pranith Kumar wrote:
-> Hi Paul,
+Em Tue, Jul 22, 2014 at 04:17:30PM +0300, Adrian Hunter escreveu:
+> A session can be made to skip portions of the input
+> file.  Do not limit that size to 32-bits.
+
+Aren't there two changes here? One that is described in the changelog,
+another that makes the value returned by perf_session__process_event to
+be properly used if > 0?
+
+Can you please split and provide relevant changeset comments?
+
+- Arnaldo
+ 
+> Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+> ---
+>  tools/perf/util/session.c | 20 +++++++++++++-------
+>  1 file changed, 13 insertions(+), 7 deletions(-)
 > 
-> This is a series of minor fixes and cleanup patches which I found while studying
-> the code. All my previous pending (but not rejected ;) patches are superseded by
-> this series, expect the rcutorture snprintf changes. I am still waiting for you
-> to decide on that one :)
-> 
-> These changes have been tested by the kvm rcutorture test setup. Some tests give
-> me stall warnings, but otherwise have SUCCESS messages in the logs.
+> diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+> index 8aa1be1..708e1c1 100644
+> --- a/tools/perf/util/session.c
+> +++ b/tools/perf/util/session.c
+> @@ -1026,8 +1026,10 @@ static int perf_session_deliver_event(struct perf_session *session,
+>  	}
+>  }
+>  
+> -static int perf_session__process_user_event(struct perf_session *session, union perf_event *event,
+> -					    struct perf_tool *tool, u64 file_offset)
+> +static s64 perf_session__process_user_event(struct perf_session *session,
+> +					    union perf_event *event,
+> +					    struct perf_tool *tool,
+> +					    u64 file_offset)
+>  {
+>  	int fd = perf_data_file__fd(session->file);
+>  	int err;
+> @@ -1073,7 +1075,7 @@ static void event_swap(union perf_event *event, bool sample_id_all)
+>  		swap(event, sample_id_all);
+>  }
+>  
+> -static int perf_session__process_event(struct perf_session *session,
+> +static s64 perf_session__process_event(struct perf_session *session,
+>  				       union perf_event *event,
+>  				       struct perf_tool *tool,
+>  				       u64 file_offset)
+> @@ -1184,7 +1186,7 @@ static int __perf_session__process_pipe_events(struct perf_session *session,
+>  	union perf_event *event;
+>  	uint32_t size, cur_size = 0;
+>  	void *buf = NULL;
+> -	int skip = 0;
+> +	s64 skip = 0;
+>  	u64 head;
+>  	ssize_t err;
+>  	void *p;
+> @@ -1313,13 +1315,13 @@ int __perf_session__process_events(struct perf_session *session,
+>  				   u64 file_size, struct perf_tool *tool)
+>  {
+>  	int fd = perf_data_file__fd(session->file);
+> -	u64 head, page_offset, file_offset, file_pos;
+> +	u64 head, page_offset, file_offset, file_pos, size;
+>  	int err, mmap_prot, mmap_flags, map_idx = 0;
+>  	size_t	mmap_size;
+>  	char *buf, *mmaps[NUM_MMAPS];
+>  	union perf_event *event;
+> -	uint32_t size;
+>  	struct ui_progress prog;
+> +	s64 skip;
+>  
+>  	perf_tool__fill_defaults(tool);
+>  
+> @@ -1380,7 +1382,8 @@ more:
+>  	size = event->header.size;
+>  
+>  	if (size < sizeof(struct perf_event_header) ||
+> -	    perf_session__process_event(session, event, tool, file_pos) < 0) {
+> +	    (skip = perf_session__process_event(session, event, tool, file_pos))
+> +									< 0) {
+>  		pr_err("%#" PRIx64 " [%#x]: failed to process type: %d\n",
+>  		       file_offset + head, event->header.size,
+>  		       event->header.type);
+> @@ -1388,6 +1391,9 @@ more:
+>  		goto out_err;
+>  	}
+>  
+> +	if (skip)
+> +		size += skip;
+> +
 
-For patches 1, 3, 5, 8, 12, and 13, once you get a Reviewed-by from one
-of the co-maintainers or designated reviewers, I will queue them.
-The other patches I have responded to.
+I.e. the above 
 
->                                                                     But those
-> are occuring even without these changes with the tip paul/rcu/dev. May be it is
-> because I am running them for a duration of 4 minutes each only?
-
-When you say "stall warnings", do you mean RCU CPU stall warnings?
-I don't see those.  They might be due to your having fewer CPUs than
-some of the tests call for.  It might be worth trying to tell the test
-to leave one or two of your CPUs alone.  One way to do this is to give
-the script a maxcpus= boot argument.
-
-If you instead mean the "BAD SEQ" warning out of the kvm.sh script,
-this can happen due to KVM/qemu losing IPIs.  I have been holding off
-making RCU tolerate IPI lossage on the grounds that this is a KVM/qemu
-bug that needs fixing.
-
-On run duration...  It depends:
-
-o	If you are changing boot-time-only code, it is best to use very
-	short test times (such as your four minutes).  If there is any
-	non-determistic aspect to the change, you should of course run
-	the test several times.
-
-o	For deterministic changes to code paths, running each test for
-	30 minutes might suffice.
-
-o	For changes subject to concurrency effects, the test duration
-	depends on the probabilities.  Typical run length might be
-	four hours per test.  I have reason to believe that there have
-	been some bugs that occurred roughly once per hundred hours
-	of test time.
-
-	This means that in general, pure testing is insufficient for RCU.
-
-Of course, for many bugs, the more CPUs you throw at it, the more likely
-the bug.  It would be good to enhance rcutorture to make these sorts
-of bugs more likely to occur on smaller systems.  Or for the formal
-validation guys to raise their game so as to be able to deal with RCU.  ;-)
-
-							Thanx, Paul
-
-> --
-> Pranith.
-> 
-> Pranith Kumar (16):
->   rcu: Use rcu_num_nodes instead of NUM_RCU_NODES
->   rcu: Check return value for cpumask allocation
->   rcu: Fix comment for gp_state field values
->   rcu: Remove redundant check for an online CPU
->   rcu: Add noreturn attribute to boost kthread
->   rcu: Clear gp_flags only when actually starting new gp
->   rcu: Save and restore irq flags in rcu_gp_cleanup()
->   rcu: Clean up rcu_spawn_one_boost_kthread()
->   rcu: Remove redundant check for online cpu
->   rcu: Check for RCU_FLAG_GP_INIT bit in gp_flags for spurious wakeup
->   rcu: Check for spurious wakeup using return value
->   rcu: Rename rcu_spawn_gp_kthread() to rcu_spawn_kthreads()
->   rcu: Spawn nocb kthreads from rcu_prepare_kthreads()
->   rcu: Remove redundant checks for rcu_scheduler_fully_active
->   rcu: Check for a nocb cpu before trying to spawn nocb threads
->   rcu: kvm.sh: Fix error when you pass --cpus argument
-> 
->  kernel/rcu/tree.c                             | 42 ++++++++++++++-------------
->  kernel/rcu/tree.h                             |  4 +--
->  kernel/rcu/tree_plugin.h                      | 40 +++++++++++++------------
->  tools/testing/selftests/rcutorture/bin/kvm.sh |  4 +--
->  4 files changed, 47 insertions(+), 43 deletions(-)
-> 
+>  	head += size;
+>  	file_pos += size;
+>  
 > -- 
-> 2.0.0.rc2
-> 
-
+> 1.8.3.2
