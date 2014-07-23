@@ -1,137 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933900AbaGWVVP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 17:21:15 -0400
-Received: from smtp-69.nebula.fi ([83.145.220.69]:47595 "EHLO smtp.nebula.fi"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933795AbaGWVUV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 17:20:21 -0400
-From: Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>
-To: linux-kernel@vger.kernel.org, linux@openrisc.net
-Cc: jonas@southpole.se,
-        Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>
-Subject: [PATCH 3/6] openrisc: add cmpxchg and xchg implementations
-Date: Thu, 24 Jul 2014 00:18:13 +0300
-Message-Id: <1406150296-13308-4-git-send-email-stefan.kristiansson@saunalahti.fi>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1406150296-13308-1-git-send-email-stefan.kristiansson@saunalahti.fi>
-References: <1406150296-13308-1-git-send-email-stefan.kristiansson@saunalahti.fi>
+	id S933907AbaGWVW2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 17:22:28 -0400
+Received: from mail-we0-f171.google.com ([74.125.82.171]:52572 "EHLO
+	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933336AbaGWVWZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jul 2014 17:22:25 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAGXu5jKA9gArKaqODsD0kswmP0Q77w152VXhq9zCS4pgTZf+Jg@mail.gmail.com>
+References: <1405657206-12060-1-git-send-email-ast@plumgrid.com>
+	<1405657206-12060-8-git-send-email-ast@plumgrid.com>
+	<CAGXu5j+cvG5BhNSA=UrcbYs3LPSZUZyj4_ey8=9O0KgbUYUd9g@mail.gmail.com>
+	<CAMEtUuwE1oLUZb2QM243uKGSAfT_ahozducakpi9uvADzsj5XA@mail.gmail.com>
+	<CAGXu5jKA9gArKaqODsD0kswmP0Q77w152VXhq9zCS4pgTZf+Jg@mail.gmail.com>
+Date: Wed, 23 Jul 2014 14:22:24 -0700
+Message-ID: <CAMEtUuy6DsrTF1ejA64nfYvBUJ2mUb4M=sjkVAwswf4Ot=P7Gw@mail.gmail.com>
+Subject: Re: [PATCH RFC v2 net-next 07/16] bpf: add lookup/update/delete/iterate
+ methods to BPF maps
+From: Alexei Starovoitov <ast@plumgrid.com>
+To: Kees Cook <keescook@chromium.org>
+Cc: "David S. Miller" <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Jiri Olsa <jolsa@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Optimized version that make use of the l.lwa and l.swa instructions
-if available.
+On Wed, Jul 23, 2014 at 1:25 PM, Kees Cook <keescook@chromium.org> wrote:
+> On Wed, Jul 23, 2014 at 12:49 PM, Alexei Starovoitov <ast@plumgrid.com> wrote:
+>> On Wed, Jul 23, 2014 at 11:25 AM, Kees Cook <keescook@chromium.org> wrote:
+>>>> +
+>>>> +       /* lookup key in a given map referenced by map_id
+>>>> +        * err = bpf_map_lookup_elem(int map_id, void *key, void *value)
+>>>
+>>> This needs map_id documentation updates too?
+>>
+>> yes. will grep for it just to make sure.
+>>
+>>>> +static int get_map_id(struct fd f)
+>>>> +{
+>>>> +       struct bpf_map *map;
+>>>> +
+>>>> +       if (!f.file)
+>>>> +               return -EBADF;
+>>>> +
+>>>> +       if (f.file->f_op != &bpf_map_fops) {
+>>>> +               fdput(f);
+>>>
+>>> It feels weird to me to do the fdput inside this function. Instead,
+>>> should map_lookup_elem get a "err_put" label, instead?
+>>
+>> I don't think it will work, since I'm not sure that fd.flags will be zero
+>> when fd.file == NULL. It looks so by analyzing return code path
+>> in fs/file.c, but I wasn't sure that I followed all code paths,
+>> so I just picked this style from fs/timerfd.c assuming it was
+>> done this away on purpose and there can be the case where
+>> fd.file == null and fd.flags !=0. In such case we cannot call fdput().
+>
+> Yeah, hm, looking around, this does seem to be the case. I guess the
+> thought is that when get_map_id fails, struct fd has been handled.
 
-Signed-off-by: Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>
----
- arch/openrisc/include/asm/Kbuild    |  2 -
- arch/openrisc/include/asm/cmpxchg.h | 83 +++++++++++++++++++++++++++++++++++++
- 2 files changed, 83 insertions(+), 2 deletions(-)
- create mode 100644 arch/openrisc/include/asm/cmpxchg.h
+correct.
 
-diff --git a/arch/openrisc/include/asm/Kbuild b/arch/openrisc/include/asm/Kbuild
-index 17f1e83..013b64a 100644
---- a/arch/openrisc/include/asm/Kbuild
-+++ b/arch/openrisc/include/asm/Kbuild
-@@ -10,8 +10,6 @@ generic-y += bugs.h
- generic-y += cacheflush.h
- generic-y += checksum.h
- generic-y += clkdev.h
--generic-y += cmpxchg-local.h
--generic-y += cmpxchg.h
- generic-y += cputime.h
- generic-y += current.h
- generic-y += device.h
-diff --git a/arch/openrisc/include/asm/cmpxchg.h b/arch/openrisc/include/asm/cmpxchg.h
-new file mode 100644
-index 0000000..4e40411
---- /dev/null
-+++ b/arch/openrisc/include/asm/cmpxchg.h
-@@ -0,0 +1,83 @@
-+/*
-+ * Copyright (C) 2014 Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>
-+ *
-+ * This file is licensed under the terms of the GNU General Public License
-+ * version 2.  This program is licensed "as is" without any warranty of any
-+ * kind, whether express or implied.
-+ */
-+
-+#ifndef __ASM_OPENRISC_CMPXCHG_H
-+#define __ASM_OPENRISC_CMPXCHG_H
-+
-+#include  <linux/types.h>
-+
-+#ifdef CONFIG_OPENRISC_HAVE_INST_LWA_SWA
-+
-+/*
-+ * This function doesn't exist, so you'll get a linker error
-+ * if something tries to do an invalid cmpxchg().
-+ */
-+extern void __cmpxchg_called_with_bad_pointer(void);
-+
-+#define __HAVE_ARCH_CMPXCHG 1
-+
-+static inline unsigned long
-+__cmpxchg(volatile void *ptr, unsigned long old, unsigned long new, int size)
-+{
-+	if (size != 4) {
-+		__cmpxchg_called_with_bad_pointer();
-+		return old;
-+	}
-+
-+	__asm__ __volatile__(
-+		"1:	l.lwa %0, 0(%1)		\n"
-+		"	l.sfeq %0, %2		\n"
-+		"	l.bnf 1f		\n"
-+		"	 l.nop			\n"
-+		"	l.swa 0(%1), %3		\n"
-+		"	l.bnf 1b		\n"
-+		"1:	 l.nop			\n"
-+		: "=&r"(old)
-+		: "r"(ptr), "r"(old), "r"(new)
-+		: "cc", "memory");
-+
-+	return old;
-+}
-+
-+#define cmpxchg(ptr, o, n) ((typeof(*(ptr)))__cmpxchg((ptr), \
-+	(unsigned long)(o), (unsigned long)(n), sizeof(*(ptr))))
-+
-+/*
-+ * This function doesn't exist, so you'll get a linker error if
-+ * something tries to do an invalidly-sized xchg().
-+ */
-+extern void __xchg_called_with_bad_pointer(void);
-+
-+static inline unsigned long __xchg(unsigned long val, volatile void *ptr,
-+				   int size)
-+{
-+	if (size != 4) {
-+		__xchg_called_with_bad_pointer();
-+		return val;
-+	}
-+
-+	__asm__ __volatile__(
-+		"1:	l.lwa %0, 0(%1)		\n"
-+		"	l.swa 0(%1), %2		\n"
-+		"	l.bnf 1b		\n"
-+		"	 l.nop			\n"
-+		: "=&r"(val)
-+		: "r"(ptr), "r"(val)
-+		: "cc", "memory");
-+
-+	return val;
-+}
-+
-+#define xchg(ptr, with) \
-+	((typeof(*(ptr)))__xchg((unsigned long)(with), (ptr), sizeof(*(ptr))))
-+
-+#else
-+#include <asm-generic/cmpxchg.h>
-+#endif
-+
-+#endif /* __ASM_OPENRISC_CMPXCHG_H */
--- 
-1.8.3.2
+> Maybe add a comment above that function as a reminder?
 
+yes. will do.
