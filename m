@@ -1,80 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758219AbaGWPf1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 11:35:27 -0400
-Received: from mail-vc0-f176.google.com ([209.85.220.176]:63511 "EHLO
-	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757765AbaGWPfW (ORCPT
+	id S1758344AbaGWPgI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 11:36:08 -0400
+Received: from mail-oa0-f51.google.com ([209.85.219.51]:49478 "EHLO
+	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758290AbaGWPgG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 11:35:22 -0400
+	Wed, 23 Jul 2014 11:36:06 -0400
 MIME-Version: 1.0
-In-Reply-To: <20140723103707.64071c00@gandalf.local.home>
-References: <1406004789-9918-1-git-send-email-xerofoify@gmail.com>
-	<874my98p6u.fsf@nemi.mork.no>
-	<CA+8MBb+fnCNeQtyEqttxbkWx-4N+GUaKCUoCSdn5X9+bDDvTOg@mail.gmail.com>
-	<CAPDOMVjaf+vne4vbUPo8EPs0XnQBbNm2ZOXns8fw5pkg9tRSww@mail.gmail.com>
-	<CAAsK9AGtdJiz0xnmfqLBAqxmt=r+WANsmxwB_vQ3O5aKzMW1LQ@mail.gmail.com>
-	<CAPDOMVhj72TFKbtw_93juX19WVdfUzh3KM9tCEjbTdUZvUfcUQ@mail.gmail.com>
-	<20140722193350.GA486@home.goodmis.org>
-	<CAPDOMVipLiXuYqndO_gnMYocDLVsHX9zcTdSMUV_EjJo72nx6w@mail.gmail.com>
-	<20140723103707.64071c00@gandalf.local.home>
-Date: Wed, 23 Jul 2014 11:35:21 -0400
-Message-ID: <CAPDOMVh+zVQZQWjS1mTDmZo9frvk9t+kzN4_cOaoDgaNePF2AA@mail.gmail.com>
-Subject: Re: [PATCH] edac: Remove fixmes in e7xxx_edac.c
-From: Nick Krause <xerofoify@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Levente Kurusa <lkurusa@redhat.com>, Tony Luck <tony.luck@gmail.com>,
-        =?UTF-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>,
-        Doug Thompson <dougthompson@xmission.com>,
-        Borislav Petkov <bp@alien8.de>,
-        "m.chehab@samsung.com" <m.chehab@samsung.com>,
-        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+In-Reply-To: <53CF5F9E.4020404@linaro.org>
+References: <1406020499-5537-1-git-send-email-takahiro.akashi@linaro.org>
+	<CAGXu5j+1huPbBKH25HK6PmAL3Mi-zgD5UDRp-6wx8vuPVOBDEg@mail.gmail.com>
+	<53CF5F9E.4020404@linaro.org>
+Date: Wed, 23 Jul 2014 08:36:05 -0700
+X-Google-Sender-Auth: 2L8S1udKfTyfcTWDJ5T_PuoJv9A
+Message-ID: <CAGXu5j+2MXht31xQcsXL2DaRGrgxn2YxJY8vgbDHHKZAcidfbA@mail.gmail.com>
+Subject: Re: [PATCH v5 0/3] arm64: Add seccomp support
+From: Kees Cook <keescook@chromium.org>
+To: AKASHI Takahiro <takahiro.akashi@linaro.org>
+Cc: Will Drewry <wad@chromium.org>, Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>, Deepak Saxena <dsaxena@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linaro-kernel@lists.linaro.org, LKML <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 23, 2014 at 10:37 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> On Tue, 22 Jul 2014 16:56:06 -0400
-> Nick Krause <xerofoify@gmail.com> wrote:
->
->> On Tue, Jul 22, 2014 at 3:33 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
->> > On Tue, Jul 22, 2014 at 02:25:24PM -0400, Nick Krause wrote:
->> >>
->> >> I understand what your saying and I should have searched for Page shift.
->> >> In addition I am already got commits in the kernel for fix mes so I feel
->> >> that your comment on fix mes is incorrect.
->> >
->> > After seeing your other solutions to "fix mes" around the kernel, I now have to
->> > investigate the patches that were accepted, and see if they did not cause
->> > any new bugs. If any of them do, I will ask to have all your patches reverted.
->> >
->> > You are not helping. You are actually doing quite the opposite. Who do you work
->> > for? Microsoft or Apple?
->> >
->> > -- Steve
->> >
+On Wed, Jul 23, 2014 at 12:09 AM, AKASHI Takahiro
+<takahiro.akashi@linaro.org> wrote:
+> On 07/23/2014 05:16 AM, Kees Cook wrote:
 >>
->> I don't work for any companies. And here is one of them that has been accepted.
->> I am removing two fix mes in this file as after dicussing then it  seems
->> there is no reason to check against Null for usb_device as it can never
->> be NULL and this is check is therefore not needed.
+>> On Tue, Jul 22, 2014 at 2:14 AM, AKASHI Takahiro
+>> <takahiro.akashi@linaro.org> wrote:
+>>>
+>>> (Please apply this patch after my audit patch in order to avoid some
+>>> conflict on arm64/Kconfig.)
+>>>
+>>> This patch enables secure computing (system call filtering) on arm64.
+>>> System calls can be allowed or denied by loaded bpf-style rules.
+>>> Architecture specific part is to run secure_computing() on syscall entry
+>>> and check the result. See [3/3]
+>>
+>>
+>> Thanks for working on this!
+>>
+>>> Prerequisites are:
+>>>   * "arm64: Add audit support" patch
+>>>
+>>> This code is tested on ARMv8 fast model using
+>>>   * libseccomp v2.1.1 with modifications for arm64 and verified by its
+>>> "live"
+>>>     tests, 20, 21 and 24.
+>>>   * modified version of Kees' seccomp test for 'changing/skipping a
+>>> syscall'
+>>>     behavior
+>>
+>>
+>> Would you be able to share this? I'd love to add it to the seccomp
+>> regression suite for the arm64-specific parts.
 >
-> http://marc.info/?l=linux-m68k&m=140612440420712&w=2
 >
-> And your patches seem to be getting reverted. Wow, I think you broke a
-> new record in having the percentage of patches added to the kernel and
-> then reverted. Even before they made it to mainline.
+> Yep, I forked your repo here:
+> https://github.com/t-akashi/seccomp.git
+> (See trace_arm64 branch)
+
+Great, thanks! I'll incorporate your changes into my trace branch. (It
+looks like using PTRACE_GETREGSET works on all archs, so I'll switch
+to using that for all.)
+
+-Kees
+
 >
-> You may be the only developer that has all their commits reverted
-> before they ever make it into the mainline tree!
+> Thanks,
+> -Takahiro AKASHI
 >
-> Congratulations! I think it is wise now for all maintainers to add your
-> email to their /dev/null folder. It will help them from wasting any
-> more of their precious time on you.
 >
-> -- Steve
-Steve, I  have make a few mistakes. That doesn't give you the right to
-put me under a waste of time yet.
-Nick
+>> Thanks!
+>>
+>> -Kees
+>>
+>>>
+>>> Changes v4 -> v5:
+>>> * rebased to v3.16-rc
+>>> * add patch [1/3] to allow ptrace to change a system call
+>>>    (please note that this patch should be applied even without seccomp.)
+>>>
+>>> Changes v3 -> v4:
+>>> * removed the following patch and moved it to "arm64: prerequisites for
+>>>    audit and ftrace" patchset since it is required for audit and ftrace
+>>> in
+>>>    case of !COMPAT, too.
+>>>    "arm64: is_compat_task is defined both in asm/compat.h and
+>>> linux/compat.h"
+>>>
+>>> Changes v2 -> v3:
+>>> * removed unnecessary 'type cast' operations [2/3]
+>>> * check for a return value (-1) of secure_computing() explicitly [2/3]
+>>> * aligned with the patch, "arm64: split syscall_trace() into separate
+>>>    functions for enter/exit" [2/3]
+>>> * changed default of CONFIG_SECCOMP to n [2/3]
+>>>
+>>> Changes v1 -> v2:
+>>> * added generic seccomp.h for arm64 to utilize it [1,2/3]
+>>> * changed syscall_trace() to return more meaningful value (-EPERM)
+>>>    on seccomp failure case [2/3]
+>>> * aligned with the change in "arm64: make a single hook to
+>>> syscall_trace()
+>>>    for all syscall features" v2 [2/3]
+>>> * removed is_compat_task() definition from compat.h [3/3]
+>>>
+>>> AKASHI Takahiro (3):
+>>>    arm64: ptrace: reload a syscall number after ptrace operations
+>>>    asm-generic: Add generic seccomp.h for secure computing mode 1
+>>>    arm64: Add seccomp support
+>>>
+>>>   arch/arm64/Kconfig               |   14 ++++++++++++++
+>>>   arch/arm64/include/asm/seccomp.h |   25 +++++++++++++++++++++++++
+>>>   arch/arm64/include/asm/unistd.h  |    3 +++
+>>>   arch/arm64/kernel/entry.S        |    2 ++
+>>>   arch/arm64/kernel/ptrace.c       |   18 ++++++++++++++++++
+>>>   include/asm-generic/seccomp.h    |   28 ++++++++++++++++++++++++++++
+>>>   6 files changed, 90 insertions(+)
+>>>   create mode 100644 arch/arm64/include/asm/seccomp.h
+>>>   create mode 100644 include/asm-generic/seccomp.h
+>>>
+>>> --
+>>> 1.7.9.5
+>>>
+>>
+>>
+>>
+>
+
+
+
+-- 
+Kees Cook
+Chrome OS Security
