@@ -1,53 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752965AbaGWMrg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 08:47:36 -0400
-Received: from mail-oa0-f50.google.com ([209.85.219.50]:62635 "EHLO
-	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751475AbaGWMre convert rfc822-to-8bit (ORCPT
+	id S1754697AbaGWMrt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 08:47:49 -0400
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:34040 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753765AbaGWMrq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 08:47:34 -0400
-MIME-Version: 1.0
-In-Reply-To: <1405610748-7583-1-git-send-email-iivanov@mm-sol.com>
-References: <1405610748-7583-1-git-send-email-iivanov@mm-sol.com>
-Date: Wed, 23 Jul 2014 14:47:33 +0200
-Message-ID: <CACRpkdZCj0OwAwqjiBXQumEs3oeQuMeAFy7T5MCaVAvTBqS7Nw@mail.gmail.com>
-Subject: Re: [PATCH v2 0/4] New Qualcomm PMIC pin controller drivers
-From: Linus Walleij <linus.walleij@linaro.org>
-To: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@linaro.org>,
-        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
-        Mark Brown <broonie@kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Wed, 23 Jul 2014 08:47:46 -0400
+X-AuditID: cbfec7f4-b7fac6d000006cfe-9b-53cfaef01f0f
+Message-id: <53CFAEEE.7040702@samsung.com>
+Date: Wed, 23 Jul 2014 14:47:42 +0200
+From: Tomasz Figa <t.figa@samsung.com>
+Organization: Samsung R&D Institute Poland
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.6.0
+MIME-version: 1.0
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>, linux-samsung-soc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Cc: Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Subject: Re: [PATCH v2 1/2] clk: samsung: exynos4: Enable ARMCLK down feature
+References: <1405694193-29643-1-git-send-email-k.kozlowski@samsung.com>
+In-reply-to: <1405694193-29643-1-git-send-email-k.kozlowski@samsung.com>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrDLMWRmVeSWpSXmKPExsVy+t/xy7of1p0PNvj8XMRi44z1rBavXxha
+	9C64ymZxtukNu8Wmx9dYLS7vmsNmMeP8PiaLtUfusls8nXCRzYHT4861PWwem5fUe/RtWcXo
+	8XmTXABLFJdNSmpOZllqkb5dAlfGvVuN7AVTmSoWH2hnaWC8w9jFyMkhIWAisehaNzOELSZx
+	4d56ti5GLg4hgaWMEv0nfrNCOJ8ZJbqm32ACqeIV0JJofTMHqIqDg0VAVeL+pwyQMJuAmsTn
+	hkdsIDY/UMmapussILaoQITEgb5nrBCtghI/Jt8Di4sIvGKUOPzQCWQ+s8AURonmSUvB5gsL
+	+Eos+vKBHcQWEnCXOLbpHwvILk4BD4nfF2NAwswCOhL7W6exQdjyEpvXvGWewCg4C8mKWUjK
+	ZiEpW8DIvIpRNLU0uaA4KT3XUK84Mbe4NC9dLzk/dxMjJAa+7GBcfMzqEKMAB6MSDy/Dw1PB
+	QqyJZcWVuYcYJTiYlUR4V/ecDxbiTUmsrEotyo8vKs1JLT7EyMTBKdXA2Lxqo8oXtvptjzRL
+	M4rSzsRNv76xJu6r0fT9ttdXJSXkaf0RPt667PnXRzmxxQ+W5jnHeHzp7+SqcS/MFPXevCO/
+	ctUTbj+PKmNzI6M/x4OkJko+ujBhw9KThVP27GJd0G+V8vHtNu+dxXO0r/9t7/6V7xU/U/LH
+	jgT/AC6zxjuOVcuW9nomKbEUZyQaajEXFScCAGCVq5pfAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 17, 2014 at 5:25 PM, Ivan T. Ivanov <iivanov@mm-sol.com> wrote:
+Hi Krzysztof,
 
-> Patches could be applied on top of the Bjorn Andersson
-> qcom,pm8xxx-gpio driver, which could be found here[2].
->
-> Fist patch modify Bjorn's driver and bindings to make room
-> for newer Qualcomm PMIC chips. It is not completely ready.
+On 18.07.2014 16:36, Krzysztof Kozlowski wrote:
+> Enable ARMCLK down feature on all Exynos4 SoCs. The frequency of
+> ARMCLK will be reduced upon entering idle mode (WFI or WFE).
 
-I like what I'm seeing :-)
+Will apply the whole series to Samsung clock tree.
 
-Good cooperation and joint efforts. That's the spirit!
-
-In the end, Björn can you provide a pullable branch for me?
-
-This will likely be v3.18 development cycle material as
-the v3.17 merge window is quite close.
-
-Yours,
-Linus Walleij
+Best regards,
+Tomasz
