@@ -1,56 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757310AbaGWACn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 20:02:43 -0400
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:42132 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757283AbaGWACl (ORCPT
+	id S1757296AbaGWAKp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 20:10:45 -0400
+Received: from qmta08.emeryville.ca.mail.comcast.net ([76.96.30.80]:56993 "EHLO
+	qmta08.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757113AbaGWAKo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 20:02:41 -0400
-Date: Tue, 22 Jul 2014 17:01:03 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: Sasha Levin <sasha.levin@oracle.com>, Vlastimil Babka <vbabka@suse.cz>,
-        Konstantin Khlebnikov <koct9i@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Michel Lespinasse <walken@google.com>,
-        Lukas Czerner <lczerner@redhat.com>, Dave Jones <davej@redhat.com>,
-        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] shmem: fix faulting into a hole, not taking i_mutex: fix
-Message-ID: <alpine.LSU.2.11.1407221658290.32060@eggly.anvils>
-User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 22 Jul 2014 20:10:44 -0400
+From: Shuah Khan <shuah.kh@samsung.com>
+To: ming.lei@canonical.com, gregkh@linuxfoundation.org
+Cc: Shuah Khan <shuah.kh@samsung.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH] firmware loader: Fix _request_firmware_load() return val for fw load abort
+Date: Tue, 22 Jul 2014 18:10:38 -0600
+Message-Id: <1406074238-13649-1-git-send-email-shuah.kh@samsung.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sasha reports various nasty trinity crashes when shmem_fault() tries
-to finish_wait(), we guess from rare cases when the wait_queue_head
-on shmem_fallocate()'s stack has already gone.  Fix those by using
-TASK_UNINTERRUPIBLE instead of TASK_KILLABLE in prepare_to_wait(),
-that's much simpler and safer: TASK_KILLABLE was a nice aspiration,
-but not worth any more hassle.
+_request_firmware_load() returns -ENOMEM when fw load is aborted after
+timeout. Call is_fw_load_aborted() to check if fw load is aborted and
+if true return -EAGAIN.
 
-Reported-and-tested-by: Sasha Levin <sasha.levin@oracle.com>
-Signed-off-by: Hugh Dickins <hughd@google.com>
+Signed-off-by: Shuah Khan <shuah.kh@samsung.com>
 ---
-Andrew, please fold this into
-shmem-fix-faulting-into-a-hole-not-taking-i_mutex.patch
-before sending the fixes on to Linus - thanks.
+ drivers/base/firmware_class.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
- mm/shmem.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- mmotm/mm/shmem.c	2014-07-22 16:35:49.683985586 -0700
-+++ linux/mm/shmem.c	2014-07-22 16:36:35.459984108 -0700
-@@ -1283,7 +1283,7 @@ static int shmem_fault(struct vm_area_st
+diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
+index d276e33..3f928b0 100644
+--- a/drivers/base/firmware_class.c
++++ b/drivers/base/firmware_class.c
+@@ -911,7 +911,9 @@ static int _request_firmware_load(struct firmware_priv *fw_priv,
+ 	wait_for_completion(&buf->completion);
  
- 			shmem_falloc_waitq = shmem_falloc->waitq;
- 			prepare_to_wait(shmem_falloc_waitq, &shmem_fault_wait,
--					TASK_KILLABLE);
-+					TASK_UNINTERRUPTIBLE);
- 			spin_unlock(&inode->i_lock);
- 			schedule();
+ 	cancel_delayed_work_sync(&fw_priv->timeout_work);
+-	if (!buf->data)
++	if (is_fw_load_aborted(buf))
++		retval = -EAGAIN;
++	else if (!buf->data)
+ 		retval = -ENOMEM;
+ 
+ 	device_remove_file(f_dev, &dev_attr_loading);
+-- 
+1.7.10.4
+
