@@ -1,76 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758386AbaGWPdP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 11:33:15 -0400
-Received: from smtp.csie.ntu.edu.tw ([140.112.30.61]:36455 "EHLO
-	smtp.csie.ntu.edu.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757460AbaGWPdM (ORCPT
+	id S932293AbaGWPeX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 11:34:23 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:52368 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753996AbaGWPeV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 11:33:12 -0400
-From: Chen-Yu Tsai <wens@csie.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Rob Herring <robh+dt@kernel.org>
-Cc: Chen-Yu Tsai <wens@csie.org>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v5 0/2] serial: 8250_dw: optional reset control and deferred probe support
-Date: Wed, 23 Jul 2014 23:33:05 +0800
-Message-Id: <1406129587-24668-1-git-send-email-wens@csie.org>
-X-Mailer: git-send-email 2.0.1
+	Wed, 23 Jul 2014 11:34:21 -0400
+From: Andy Lutomirski <luto@amacapital.net>
+To: "H. Peter Anvin" <hpa@zytor.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        x86@kernel.org, Borislav Petkov <bp@alien8.de>
+Cc: Andy Lutomirski <luto@amacapital.net>
+Subject: [PATCH 0/2] x86_64: LRET to userspace
+Date: Wed, 23 Jul 2014 08:34:10 -0700
+Message-Id: <cover.1406129131.git.luto@amacapital.net>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+This series is based on tip/perf/urgent.  It should apply to any
+recent kernel, but my test case [1] will OOPS without the fix in
+tip/perf/urgent.
 
-This series adds optional reset control and deferred probing support
-to 8250_dw. These are required to support the UARTs on sun6i/sun8i.
-They were originally part of my sun8i PRCM series. The other parts
-of that series have been merged already. It would be really nice
-if we could get these 2 in as well.
+The first patch or something like it is needed for 3.16, regardless
+of any lret hackery -- I think it's making its way toward a pull
+request this week, but I haven't seen it land in -tip yet.
 
-Patch 1 adds optional reset control support to the 8250_dw, which
-is used by sun6i and sun8i platforms. Till now, this wasn't needed
-from a working standpoint, as the bootloader de-asserts the reset
-control on the console UART for us. However, during the development
-of the sun8i patches, I noticed other UARTs wouldn't work. Also the
-new sun6i A31 Hummingbird has multiple UARTs available, which would
-require this patch.
+I'm repeating it here because the LRET stuff won't work on paravirt,
+and patch 1 puts the machinery for that in place.
 
-Patch 2 adds deferred probing to 8250_dw. In my case, even though
-the clocks and reset controller "devices" were registered before
-the UART, the 8250_dw driver binded with the UART devices before
-the clocks and resets were available. This resulted in the 8250_dw
-driver failing. I only tested the R_UART device.
+tl;dr Read patch 2.  To test, apply patch 1 and consider basing on
+tip/perf/urgent.
 
-Patch 2 also does proper cleanup in the event that probing failed.
+[1] sigreturn_32 from https://gitorious.org/linux-test-utils/linux-clock-tests/
 
-Maxime, I dropped your Acked-by because I added the cleanup code
-path.
+Andy Lutomirski (2):
+  x86_64,entry,xen: Do not invoke espfix64 on Xen
+  x86_64,entry: Use lret to return to userspace when possible
 
-Changes since v4:
-  - Rebased onto tty-next (4847914)
-  - Do proper cleanup in the probe function if errors are encountered.
-
-No changes before v4.
-
-
-Cheers
-ChenYu
-
-
-Chen-Yu Tsai (2):
-  serial: 8250_dw: Add optional reset control support
-  serial: 8250_dw: Add support for deferred probing
-
- .../bindings/serial/snps-dw-apb-uart.txt           |  1 +
- drivers/tty/serial/8250/8250_dw.c                  | 50 +++++++++++++++++++---
- 2 files changed, 44 insertions(+), 7 deletions(-)
+ arch/x86/include/asm/irqflags.h     |   3 +-
+ arch/x86/include/asm/paravirt.h     |   4 ++
+ arch/x86/include/asm/traps.h        |   6 ++
+ arch/x86/kernel/cpu/mcheck/mce.c    |   2 +
+ arch/x86/kernel/entry_64.S          | 121 ++++++++++++++++++++++++++++++------
+ arch/x86/kernel/nmi.c               |  21 +++++++
+ arch/x86/kernel/paravirt_patch_64.c |   2 -
+ 7 files changed, 136 insertions(+), 23 deletions(-)
 
 -- 
-2.0.1
+1.9.3
 
