@@ -1,51 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932096AbaGWOQD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 10:16:03 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:38130 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751904AbaGWOQB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 10:16:01 -0400
-Date: Wed, 23 Jul 2014 07:15:58 -0700
-From: Christoph Hellwig <hch@infradead.org>
-To: Sitsofe Wheeler <sitsofe@gmail.com>
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>, gregkh@linuxfoundation.org,
-        linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
-        ohering@suse.com, apw@canonical.com, jasowang@redhat.com,
-        jbottomley@parallels.com, hch@infradead.org,
-        linux-scsi@vger.kernel.org
-Subject: Re: [PATCH 1/1] Drivers: scsi: storvsc: Add blist flags
-Message-ID: <20140723141558.GA9705@infradead.org>
-References: <1405983961-18782-1-git-send-email-kys@microsoft.com>
- <20140723141028.GA22724@sucs.org>
+	id S1755851AbaGWOUO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 10:20:14 -0400
+Received: from vps0.lunn.ch ([178.209.37.122]:51818 "EHLO vps0.lunn.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751754AbaGWOUM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jul 2014 10:20:12 -0400
+Date: Wed, 23 Jul 2014 16:14:43 +0200
+From: Andrew Lunn <andrew@lunn.ch>
+To: Jason Cooper <jason@lakedaemon.net>
+Cc: benoitm974 <yahoo@perenite.com>, benoitm@perenite.com,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Andrew Lunn <andrew@lunn.ch>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@googlemail.com>
+Subject: Re: [PATCH 1/2] Added dts defintion for Lenovo ix4-300d nas
+Message-ID: <20140723141443.GC2856@lunn.ch>
+References: <1406117232-5962-1-git-send-email-yahoo@perenite.com>
+ <20140723134534.GF23220@titan.lakedaemon.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140723141028.GA22724@sucs.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+In-Reply-To: <20140723134534.GF23220@titan.lakedaemon.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 23, 2014 at 03:10:28PM +0100, Sitsofe Wheeler wrote:
-> I'm not sure this alone will work - won't sdev_bflags/bflags have
-> already been built at this point?
+Hi Benoit,
 
-They've been built up, but we can still or new values into it.  It looks
-fine to me from review, but if you can test it on an actualy hypverv
-setup that would be valueable feedback.
+> 
+> > +			};
+> > +
+> > +			serial@12000 {
+> > +				clocks = <&coreclk 0>;
 
-> If the setting of this has to stay in
-> this function why don't you (also) set sdevice->try_vpd_pages in a
-> similar way to no_write_same?
+I don't think you need the clocks property. It should be already set
+in armada-xp.dtsi.
 
-We could probably do that.  I don't actually like this whole split
-between the blacklist flags, and the bitfields.  I'll see if we can
-just get rid of those bitfields an always just use the blacklist
-flags directly, now that we have precedence of setting them in drivers
-and not just the table keyed by the inquiry data.  But that's a longer
-term project, this late in the 3.17 cycle I'd just like to merge
-something that gets discards on hyperv to work.
+> > +				adt7473@2e {
+> > +					compatible = "adt7473";
+
+Please include a vendor prefix here. 
+
+
+> > +					reg = <0x2e>;
+> > +				};
+> > +
+> > +				pcf8563@51 {
+> > +					compatible = "pcf8563";
+
+and a vendor prefix here.
+
+> > +	/* warning: you need both eth1 & 0 to be initialize for poweroff to shutdown otherwise it reboots */
+
+What do you mean by initialized? Driver loaded? Interface up? 
+
+> This is a great first version
+
+I agree with Jason, well done.
+
+  Andrew
