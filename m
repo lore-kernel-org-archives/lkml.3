@@ -1,388 +1,224 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758154AbaGWOuG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 10:50:06 -0400
-Received: from mailrelay006.isp.belgacom.be ([195.238.6.172]:54935 "EHLO
-	mailrelay006.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758063AbaGWOtF (ORCPT
+	id S1758141AbaGWOuF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 10:50:05 -0400
+Received: from mail-vc0-f181.google.com ([209.85.220.181]:33596 "EHLO
+	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758065AbaGWOtF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 23 Jul 2014 10:49:05 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Aq4KAADLz1NXQypd/2dsb2JhbABZgw5SV682BQEBAQEBAQUBbgGXK4dNgQsXdoQxLyOBGjeIRgHAQYV7iVCETQWbLZRAg0o7Lw
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel@vger.kernel.org
-Cc: hch@infradead.org, joe@perches.com, Fabian Frederick <fabf@skynet.be>
-Subject: [PATCH V2] SYSV: logging update
-Date: Wed, 23 Jul 2014 16:50:18 +0200
-Message-Id: <1406127018-15953-1-git-send-email-fabf@skynet.be>
-X-Mailer: git-send-email 1.8.4.5
+MIME-Version: 1.0
+In-Reply-To: <53CF5456.90503@roeck-us.net>
+References: <1406013463-19218-1-git-send-email-acourbot@nvidia.com>
+ <1406013463-19218-4-git-send-email-acourbot@nvidia.com> <20140722201740.GA11459@roeck-us.net>
+ <CAAVeFuJAudOY-s3x38sv13SNo8zfofLWKOKBhKQPYAm1fAj4kw@mail.gmail.com>
+ <53CF305A.6080007@roeck-us.net> <CAAVeFu+fCq5e=YinNk++10oJPv8R2LeTbYV=6G95WSuw1f9_gQ@mail.gmail.com>
+ <53CF5456.90503@roeck-us.net>
+From: Alexandre Courbot <gnurou@gmail.com>
+Date: Wed, 23 Jul 2014 23:48:44 +0900
+Message-ID: <CAAVeFu+S_oKF3=UM9TuPfLs=4cGC0LVv=B1_pjVWVGZOL49h2Q@mail.gmail.com>
+Subject: Re: [PATCH 3/5] gpio: make gpiochip_get_desc() gpiolib-private
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Alexandre Courbot <acourbot@nvidia.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
--use current logging functions
--replace no level printk by pr_err
--add debug.c / sysv_err function to include sb->s_id
--standardize prefix: "sysv (sb id): " and remove sb id from various logging at different places.
--use __func__
--coalesce formats
+On Wed, Jul 23, 2014 at 3:21 PM, Guenter Roeck <linux@roeck-us.net> wrote:
+> On 07/22/2014 10:39 PM, Alexandre Courbot wrote:
+>>
+>> On Wed, Jul 23, 2014 at 12:47 PM, Guenter Roeck <linux@roeck-us.net>
+>> wrote:
+>>>
+>>> On 07/22/2014 08:10 PM, Alexandre Courbot wrote:
+>>>>
+>>>>
+>>>> On Wed, Jul 23, 2014 at 5:17 AM, Guenter Roeck <linux@roeck-us.net>
+>>>> wrote:
+>>>>>
+>>>>>
+>>>>> On Tue, Jul 22, 2014 at 04:17:41PM +0900, Alexandre Courbot wrote:
+>>>>>>
+>>>>>>
+>>>>>> As GPIO descriptors are not going to remain unique anymore, having
+>>>>>> this
+>>>>>> function public is not safe. Restrain its use to gpiolib since we have
+>>>>>> no user outside of it.
+>>>>>>
+>>>>> If I implement a gpio chip driver built as module, and I want to use
+>>>>> gpiochip_request_own_desc(), how am I supposed to get desc ?
+>>>>>
+>>>>> I understand that there is still gpio_to_desc(), but I would have
+>>>>> thought
+>>>>> that
+>>>>>           desc = gpiochip_get_desc(chip, pin);
+>>>>> would be better than
+>>>>>           desc = gpio_to_desc(chip->base + pin);
+>>>>>
+>>>>> Not that it makes much of a difference for me, just asking.
+>>>>
+>>>>
+>>>>
+>>>> Actually I was thinking of changing the prototype of
+>>>> gpiochip_request_own_desc(), and your comment definitely strenghtens
+>>>> that idea. gpiochip functions should not work with descriptors,
+>>>> especially since we are going to switch to a multiple-consumer scheme
+>>>> where there won't be any canonical descriptor anymore. Thus, how about
+>>>> turning gpiochip_request_own_desc() into this:
+>>>>
+>>>> struct gpio_desc *
+>>>> gpiochip_request_own_desc(struct gpio_chip *chip, u16 hwnum, const char
+>>>> *label);
+>>>>
+>>>> which would basically do both the gpiochip_get_desc() and former
+>>>> gpiochip_request_own_desc() in one call. I think it should satisfy
+>>>> everybody and removes the need to have gpiochip_get_desc() (a not very
+>>>> useful function by itself) exposed out of gpiolib.
+>>>>
+>>>> I will send a patch taking care of this if you agree that makes sense.
+>>>>
+>>>
+>>> I think you also plan to remove the capability to retrieve the chip
+>>> pointer, don't you ? If so, I won't be able to use the function from
+>>> the pca953x platform init function, since I won't be able to get the
+>>> pointer to the gpio chip. Even if you don't remove gpiod_to_chip(),
+>>> things would become a bit messy, since I would first have to convert
+>>> a pin to a desc and then to the chip pointer. Anyway, that change
+>>> would mean that exporting gpiochip_request_own_desc or its replacement
+>>> won't solve one of the problems addressed by my patch anymore, leaving
+>>> me more or less in the dark :-(.
+>>
+>>
+>> Here is why this change is taking place: right now you have a clear
+>> descriptor/pin mapping, i.e. there is only one descriptor per pin,
+>> anytime. For various reasons this is going to change soon, and
+>> descriptors will be allocated the provided to GPIO consumers as an
+>> abstraction of the pin. Meaning that you cannot really "get the
+>> descriptor for that pin" anymore. Since gpiochip_request_own_desc()'s
+>> purpose is precisely to request one descriptor for drivers to use, the
+>> new prototype makes much more sense IMHO.
+>>
+>> Another reason to have it work on a gpio_chip is that the gpio_chip
+>> pointer is a token to doing certain "priviledged" operations. Like
+>> obtaining an arbitrary descriptor. If consumers can get a pointer to
+>> the gpio_chip of a descriptor, this means they can basically do
+>> anything.
+>>
+> I understand, but my problem with pca953x platform initialization
+> is that the code to do that is outside the gpio directory in platform code.
+> Even though this is not consumer code, it still needs a means to perform
+> operations on a gpio pin, whatever those means are.
+>
+>
+>> Being in the board code, it seems to be that you are in a good
+>> position to obtain a pointer to the gpio_chip, and without knowing
+>> better I'd say that's what you should try to do. But maybe I would
+>> understand your problem better if you could post a small patch of what
+>> you want to achieve here.
+>>
+> Ok, but how do I get the pointer to the gpio chip from platform code
+> if gpiod_to_chip is gone ?
+>
+> I attached the relevant parts of a platform file (scu.c), the one utilizing
+> pca953x initialization code to auto-export gpio pins. It currently uses
+> gpio_request_one(), which I am trying to replace. I can send you
+> the complete file if you like, but it is 1,600 bytes long so I figured
+> that would not help much.
 
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
----
+Great, that's exactly what I need to understand where your troubles are.
 
-V2: add sb->s_id in logging (suggested by Christoph Hellwig)
+First that's a very special case you are working on, and one that is
+likely to be frown upon (basically, user-space drivers). An
+upstreamable solution would likely be to write proper kernel drivers
+for whatever is using these GPIOs and the one I have to recommend
+here. I understand that you probably have customer requirements that
+are going against that, and that consequently you are ok with a
+non-upstreamable solution.
 
+If non-upstream is ok, you can probably abuse gpio_request_one()
+followed by gpio_to_desc(). After we switch to multi-descriptors,
+gpio_request_one() will allocate the unique descriptor to be used by
+the integer API, and gpio_to_desc() will return it. That would be the
+simplest solution.
 
- fs/sysv/Makefile |  2 +-
- fs/sysv/balloc.c | 28 +++++++++++++++-------------
- fs/sysv/debug.c  | 15 +++++++++++++++
- fs/sysv/ialloc.c | 14 +++++++-------
- fs/sysv/inode.c  | 15 ++++++---------
- fs/sysv/itree.c  |  2 +-
- fs/sysv/super.c  | 28 +++++++++++-----------------
- fs/sysv/sysv.h   |  3 +++
- 8 files changed, 59 insertions(+), 48 deletions(-)
- create mode 100644 fs/sysv/debug.c
+Using lookup tables here seems to be out of place, because as I
+understand it you want this driver to be a loadable module. We could
+consider exporting gpiod_add_lookup_table() - after all, if you have
+the ability to load a kernel module, you certainly can reconfigure a
+few GPIOs. Then you could probably generate your tables dynamically -
+I believe it would not take that much code. Doing so will allow you to
+go without the integer API at all. If you are out-of-tree already, you
+probably don't care.
 
-diff --git a/fs/sysv/Makefile b/fs/sysv/Makefile
-index 3591f9d..46721fb 100644
---- a/fs/sysv/Makefile
-+++ b/fs/sysv/Makefile
-@@ -5,4 +5,4 @@
- obj-$(CONFIG_SYSV_FS) += sysv.o
- 
- sysv-objs := ialloc.o balloc.o inode.o itree.o file.o dir.o \
--	     namei.o super.o symlink.o
-+	     namei.o super.o symlink.o debug.o
-diff --git a/fs/sysv/balloc.c b/fs/sysv/balloc.c
-index 921c053..aae4ee4 100644
---- a/fs/sysv/balloc.c
-+++ b/fs/sysv/balloc.c
-@@ -56,7 +56,8 @@ void sysv_free_block(struct super_block * sb, sysv_zone_t nr)
- 		return;
- 
- 	if (block < sbi->s_firstdatazone || block >= sbi->s_nzones) {
--		printk("sysv_free_block: trying to free block not in datazone\n");
-+		sysv_err(sb, "%s: trying to free block not in datazone\n",
-+			 __func__);
- 		return;
- 	}
- 
-@@ -64,7 +65,7 @@ void sysv_free_block(struct super_block * sb, sysv_zone_t nr)
- 	count = fs16_to_cpu(sbi, *sbi->s_bcache_count);
- 
- 	if (count > sbi->s_flc_size) {
--		printk("sysv_free_block: flc_count > flc_size\n");
-+		sysv_err(sb, "%s: flc_count > flc_size\n", __func__);
- 		mutex_unlock(&sbi->s_lock);
- 		return;
- 	}
-@@ -76,7 +77,7 @@ void sysv_free_block(struct super_block * sb, sysv_zone_t nr)
- 		block += sbi->s_block_base;
- 		bh = sb_getblk(sb, block);
- 		if (!bh) {
--			printk("sysv_free_block: getblk() failed\n");
-+			sysv_err(sb, "%s: getblk() failed\n", __func__);
- 			mutex_unlock(&sbi->s_lock);
- 			return;
- 		}
-@@ -118,8 +119,8 @@ sysv_zone_t sysv_new_block(struct super_block * sb)
- 	*sbi->s_bcache_count = cpu_to_fs16(sbi, count);
- 
- 	if (block < sbi->s_firstdatazone || block >= sbi->s_nzones) {
--		printk("sysv_new_block: new block %d is not in data zone\n",
--			block);
-+		sysv_err(sb, "%s: new block %d is not in data zone\n",
-+			 __func__, block);
- 		goto Enospc;
- 	}
- 
-@@ -128,14 +129,16 @@ sysv_zone_t sysv_new_block(struct super_block * sb)
- 
- 		block += sbi->s_block_base;
- 		if (!(bh = sb_bread(sb, block))) {
--			printk("sysv_new_block: cannot read free-list block\n");
-+			sysv_err(sb, "%s: cannot read free-list block\n",
-+				 __func__);
- 			/* retry this same block next time */
- 			*sbi->s_bcache_count = cpu_to_fs16(sbi, 1);
- 			goto Enospc;
- 		}
- 		count = fs16_to_cpu(sbi, *(__fs16*)bh->b_data);
- 		if (count > sbi->s_flc_size) {
--			printk("sysv_new_block: free-list block with >flc_size entries\n");
-+			sysv_err(sb, "%s: free-list block with >flc_size entries\n",
-+				 __func__);
- 			brelse(bh);
- 			goto Enospc;
- 		}
-@@ -215,22 +218,21 @@ done:
- 	return count;
- 
- Einval:
--	printk("sysv_count_free_blocks: new block %d is not in data zone\n",
--		block);
-+	sysv_err(sb, "%s: new block %d is not in data zone\n", __func__, block);
- 	goto trust_sb;
- Eio:
--	printk("sysv_count_free_blocks: cannot read free-list block\n");
-+	sysv_err(sb, "%s: cannot read free-list block\n", __func__);
- 	goto trust_sb;
- E2big:
--	printk("sysv_count_free_blocks: >flc_size entries in free-list block\n");
-+	sysv_err(sb, "%s: >flc_size entries in free-list block\n", __func__);
- 	if (bh)
- 		brelse(bh);
- trust_sb:
- 	count = sb_count;
- 	goto done;
- Ecount:
--	printk("sysv_count_free_blocks: free block count was %d, "
--		"correcting to %d\n", sb_count, count);
-+	sysv_err(sb, "%s: free block count was %d, correcting to %d\n",
-+	       __func__, sb_count, count);
- 	if (!(sb->s_flags & MS_RDONLY)) {
- 		*sbi->s_free_blocks = cpu_to_fs32(sbi, count);
- 		dirty_sb(sb);
-diff --git a/fs/sysv/debug.c b/fs/sysv/debug.c
-new file mode 100644
-index 0000000..8afcf38
---- /dev/null
-+++ b/fs/sysv/debug.c
-@@ -0,0 +1,15 @@
-+#define pr_fmt(fmt) KBUILD_MODNAME " " fmt
-+
-+#include "sysv.h"
-+
-+void sysv_err(struct super_block *sb, const char *fmt, ...)
-+{
-+	struct va_format vaf;
-+	va_list args;
-+
-+	va_start(args, fmt);
-+	vaf.fmt = fmt;
-+	vaf.va = &args;
-+	pr_err("(%s): %pV\n", sb->s_id, &vaf);
-+	va_end(args);
-+}
-diff --git a/fs/sysv/ialloc.c b/fs/sysv/ialloc.c
-index f9db4eb..dccf5e2 100644
---- a/fs/sysv/ialloc.c
-+++ b/fs/sysv/ialloc.c
-@@ -109,13 +109,14 @@ void sysv_free_inode(struct inode * inode)
- 	sb = inode->i_sb;
- 	ino = inode->i_ino;
- 	if (ino <= SYSV_ROOT_INO || ino > sbi->s_ninodes) {
--		printk("sysv_free_inode: inode 0,1,2 or nonexistent inode\n");
-+		sysv_err(sb, "%s: inode 0,1,2 or nonexistent inode\n",
-+			 __func__);
- 		return;
- 	}
- 	raw_inode = sysv_raw_inode(sb, ino, &bh);
- 	if (!raw_inode) {
--		printk("sysv_free_inode: unable to read inode block on device "
--		       "%s\n", inode->i_sb->s_id);
-+		sysv_err(sb, "%s: unable to read inode block on device\n",
-+			 __func__);
- 		return;
- 	}
- 	mutex_lock(&sbi->s_lock);
-@@ -217,9 +218,8 @@ out:
- 	return count;
- 
- Einval:
--	printk("sysv_count_free_inodes: "
--		"free inode count was %d, correcting to %d\n",
--		sb_count, count);
-+	sysv_err(sb, "%s: free inode count was %d, correcting to %d\n",
-+		 __func__, sb_count, count);
- 	if (!(sb->s_flags & MS_RDONLY)) {
- 		*sbi->s_sb_total_free_inodes = cpu_to_fs16(SYSV_SB(sb), count);
- 		dirty_sb(sb);
-@@ -227,7 +227,7 @@ Einval:
- 	goto out;
- 
- Eio:
--	printk("sysv_count_free_inodes: unable to read inode table\n");
-+	sysv_err(sb, "%s: unable to read inode table\n", __func__);
- trust_sb:
- 	count = sb_count;
- 	goto out;
-diff --git a/fs/sysv/inode.c b/fs/sysv/inode.c
-index 8895630..2d0644f 100644
---- a/fs/sysv/inode.c
-+++ b/fs/sysv/inode.c
-@@ -184,8 +184,7 @@ struct inode *sysv_iget(struct super_block *sb, unsigned int ino)
- 	unsigned int block;
- 
- 	if (!ino || ino > sbi->s_ninodes) {
--		printk("Bad inode number on dev %s: %d is out of range\n",
--		       sb->s_id, ino);
-+		sysv_err(sb, "Bad inode number %d is out of range\n", ino);
- 		return ERR_PTR(-EIO);
- 	}
- 
-@@ -197,8 +196,7 @@ struct inode *sysv_iget(struct super_block *sb, unsigned int ino)
- 
- 	raw_inode = sysv_raw_inode(sb, ino, &bh);
- 	if (!raw_inode) {
--		printk("Major problem: unable to read inode from dev %s\n",
--		       inode->i_sb->s_id);
-+		sysv_err(sb, "Major problem: unable to read inode from dev\n");
- 		goto bad_inode;
- 	}
- 	/* SystemV FS: kludge permissions if ino==SYSV_ROOT_INO ?? */
-@@ -246,13 +244,12 @@ static int __sysv_write_inode(struct inode *inode, int wait)
- 
- 	ino = inode->i_ino;
- 	if (!ino || ino > sbi->s_ninodes) {
--		printk("Bad inode number on dev %s: %d is out of range\n",
--		       inode->i_sb->s_id, ino);
-+		sysv_err(sb, "Bad inode number %d is out of range\n", ino);
- 		return -EIO;
- 	}
- 	raw_inode = sysv_raw_inode(sb, ino, &bh);
- 	if (!raw_inode) {
--		printk("unable to read i-node block\n");
-+		sysv_err(sb, "unable to read i-node block\n");
- 		return -EIO;
- 	}
- 
-@@ -275,8 +272,8 @@ static int __sysv_write_inode(struct inode *inode, int wait)
- 	if (wait) {
-                 sync_dirty_buffer(bh);
-                 if (buffer_req(bh) && !buffer_uptodate(bh)) {
--                        printk ("IO error syncing sysv inode [%s:%08x]\n",
--                                sb->s_id, ino);
-+			sysv_err(sb, "IO error syncing sysv inode [%s:%08x]\n",
-+				 sb->s_id, ino);
-                         err = -EIO;
-                 }
-         }
-diff --git a/fs/sysv/itree.c b/fs/sysv/itree.c
-index 66bc316..0742a8b 100644
---- a/fs/sysv/itree.c
-+++ b/fs/sysv/itree.c
-@@ -29,7 +29,7 @@ static int block_to_path(struct inode *inode, long block, int offsets[DEPTH])
- 	int n = 0;
- 
- 	if (block < 0) {
--		printk("sysv_block_map: block < 0\n");
-+		sysv_err(sb, "%s: block < 0\n", __func__);
- 	} else if (block < DIRECT) {
- 		offsets[n++] = block;
- 	} else if ( (block -= DIRECT) < indirect_blocks) {
-diff --git a/fs/sysv/super.c b/fs/sysv/super.c
-index eda1095..7b667c0 100644
---- a/fs/sysv/super.c
-+++ b/fs/sysv/super.c
-@@ -217,9 +217,7 @@ static int detect_sysv(struct sysv_sb_info *sbi, struct buffer_head *bh)
-  		sbi->s_type = FSTYPE_AFS;
- 		sbi->s_forced_ro = 1;
-  		if (!(sb->s_flags & MS_RDONLY)) {
-- 			printk("SysV FS: SCO EAFS on %s detected, " 
-- 				"forcing read-only mode.\n", 
-- 				sb->s_id);
-+			sysv_err(sb, "SCO EAFS detected, forcing read-only mode.\n");
-  		}
-  		return type;
-  	}
-@@ -240,8 +238,7 @@ static int detect_sysv(struct sysv_sb_info *sbi, struct buffer_head *bh)
-            feature read-only mode seems to be a reasonable approach... -KGB */
- 
- 	if (type >= 0x10) {
--		printk("SysV FS: can't handle long file names on %s, "
--		       "forcing read-only mode.\n", sb->s_id);
-+		sysv_err(sb, "can't handle long file names, forcing read-only mode.\n");
- 		sbi->s_forced_ro = 1;
- 	}
- 
-@@ -326,8 +323,8 @@ static int complete_read_super(struct super_block *sb, int silent, int size)
- 		<< sbi->s_inodes_per_block_bits;
- 
- 	if (!silent)
--		printk("VFS: Found a %s FS (block size = %ld) on device %s\n",
--		       found, sb->s_blocksize, sb->s_id);
-+		sysv_err(sb, "VFS: Found a %s FS (block size = %ld) on device\n",
-+		       found, sb->s_blocksize);
- 
- 	sb->s_magic = SYSV_MAGIC_BASE + sbi->s_type;
- 	/* set up enough so that it can read an inode */
-@@ -338,12 +335,12 @@ static int complete_read_super(struct super_block *sb, int silent, int size)
- 		sb->s_d_op = &sysv_dentry_operations;
- 	root_inode = sysv_iget(sb, SYSV_ROOT_INO);
- 	if (IS_ERR(root_inode)) {
--		printk("SysV FS: get root inode failed\n");
-+		sysv_err(sb, "get root inode failed\n");
- 		return 0;
- 	}
- 	sb->s_root = d_make_root(root_inode);
- 	if (!sb->s_root) {
--		printk("SysV FS: get root dentry failed\n");
-+		sysv_err(sb, "get root dentry failed\n");
- 		return 0;
- 	}
- 	return 1;
-@@ -415,7 +412,7 @@ static int sysv_fill_super(struct super_block *sb, void *data, int silent)
- 	brelse(bh1);
- 	brelse(bh);
- 	sb_set_blocksize(sb, BLOCK_SIZE);
--	printk("oldfs: cannot read superblock\n");
-+	sysv_err(sb, "oldfs: cannot read superblock\n");
- failed:
- 	kfree(sbi);
- 	return -EINVAL;
-@@ -423,13 +420,12 @@ failed:
- Eunknown:
- 	brelse(bh);
- 	if (!silent)
--		printk("VFS: unable to find oldfs superblock on device %s\n",
--			sb->s_id);
-+		sysv_err(sb, "VFS: unable to find oldfs superblock on device\n");
- 	goto failed;
- Ebadsize:
- 	brelse(bh);
- 	if (!silent)
--		printk("VFS: oldfs: unsupported block size (%dKb)\n",
-+		sysv_err(sb, "VFS: oldfs: unsupported block size (%dKb)\n",
- 			1<<(size-2));
- 	goto failed;
- }
-@@ -494,8 +490,7 @@ static int v7_fill_super(struct super_block *sb, void *data, int silent)
- 
- 	if ((bh = sb_bread(sb, 1)) == NULL) {
- 		if (!silent)
--			printk("VFS: unable to read V7 FS superblock on "
--			       "device %s.\n", sb->s_id);
-+			sysv_err(sb, "VFS: unable to read V7 FS superblock on device\n");
- 		goto failed;
- 	}
- 
-@@ -518,8 +513,7 @@ detected:
- 		return 0;
- 
- failed:
--	printk(KERN_ERR "VFS: could not find a valid V7 on %s.\n",
--		sb->s_id);
-+	sysv_err(sb, "VFS: could not find a valid V7\n");
- 	brelse(bh);
- 	kfree(sbi);
- 	return -EINVAL;
-diff --git a/fs/sysv/sysv.h b/fs/sysv/sysv.h
-index 69d4889..d3c9d50 100644
---- a/fs/sysv/sysv.h
-+++ b/fs/sysv/sysv.h
-@@ -120,6 +120,9 @@ static inline void dirty_sb(struct super_block *sb)
- 		mark_buffer_dirty(sbi->s_bh2);
- }
- 
-+/* debug.c */
-+extern __printf(2, 3)
-+void sysv_err(struct super_block *, const char *, ...);
- 
- /* ialloc.c */
- extern struct sysv_inode *sysv_raw_inode(struct super_block *, unsigned,
--- 
-1.8.4.5
+In the end your driver is a GPIO consumer combined with a few extra
+GPIO mappings, so you should be able to implement it using the current
+API in consumer.h and driver.h (maybe just a few changes for the
+lookup tables if you want to go that way).
 
+The export thing is a different issue, let's treat it below.
+
+>
+> I also attached a patch that tries to replace gpio_request_one with
+> gpiochip_request_own_desc in a gpio chip driver; maybe that gives
+> you an idea of that part of the problem.
+
+Mmm what problem is this code supposed to highlight here? The proposed
+change of prototype for gpiochip_request_own_desc()? This is a GPIO
+driver, so don't you have a pointer to the gpio_chip here that allows
+you to use this interface without problem?
+
+Sorry if I miss some of your points - you have to explain your problem
+like you would to a 5 years old. :P
+
+>
+>
+>>>
+>>> I was thinking about implementing a separate platform driver which
+>>> would enable me to auto-export (or initialize, if needed) gpio pins
+>>> from arbitrary gpio drivers to user space. I could make this work
+>>> with both devicetree data and platform data. Sure, that driver
+>>> would not have a chance to get accepted upstream, since it would use
+>>> devicetree data to, in a sense, configure the system, but on the
+>>> upside it would be independent of gpio API changes, and it would
+>>> work for _all_ gpio chips, not just for the ones with gpio driver
+>>> support. Unfortunately this approach doesn't really work either,
+>>> since exported pin names need to be configured with the chip driver,
+>>> and can not be selected afterwards when a pin is actually exported.
+>>>
+>>> On the other side, would you agree to adding something like
+>>> gpiod_export_name(), which would export a gpio pin with given name,
+>>> not using the default or chip->names ? That might help solving
+>>> at least some of my problems, and I would no longer depend on
+>>> gpiochip_request_own_desc or any of the related functions.
+>>
+>>
+>> Isn't that what gpiod_export_link() does?
+>>
+> This function assumes the existence of an exported pin,
+> and the resulting link is not in /sys/class/gpio but elsewhere.
+> That is not really the idea here; I did not want to create a second
+> export directory just for the sake of having well defined pin names
+> in some arbitrary place; the idea was to have those well defined
+> names in /sys/cass/gpio, and /sys/class/gpio is not available
+> as target for linking outside the gpio subsystem (if I remember
+> correctly because gpio_class is static and not exported).
+
+We have grown radically against the sysfs interface recently - and the
+fact that it never fits everyone's needs (like your very specific
+naming requirements) adds just more fuel to this ressentment. I think
+you can achieve something very close using gpiod_export_link(), if you
+export all your GPIOs under your scu device. It won't be under
+/sys/class/gpio but rather under /sys/devices/platform/scu (or
+something like that), which seems to make even more sense to me as
+they are to be used by this device.
+
+My rationale here is you don't know who exported a GPIO under
+/sys/class/gpio. It could be the driver you expect, or not. With
+gpiod_export_link(), you know exactly which device provides you the
+GPIO, and which function it is supposed to fulfil. So IMHO this is a
+much better place for user-space to get GPIOs. If you cannot live with
+this, I will need more arguments to understand why this cannot suit.
