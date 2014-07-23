@@ -1,51 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757789AbaGWOKU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 10:10:20 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:36161 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752208AbaGWOKS (ORCPT
+	id S1757841AbaGWOKg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 10:10:36 -0400
+Received: from mail-wi0-f176.google.com ([209.85.212.176]:42608 "EHLO
+	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757793AbaGWOKe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 10:10:18 -0400
-Date: Wed, 23 Jul 2014 07:10:14 -0700
-From: Christoph Hellwig <hch@infradead.org>
-To: Sitsofe Wheeler <sitsofe@gmail.com>
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>, gregkh@linuxfoundation.org,
-        linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
-        ohering@suse.com, apw@canonical.com, jasowang@redhat.com,
-        jbottomley@parallels.com, linux-scsi@vger.kernel.org
+	Wed, 23 Jul 2014 10:10:34 -0400
+Date: Wed, 23 Jul 2014 15:10:28 +0100
+From: Sitsofe Wheeler <sitsofe@gmail.com>
+To: "K. Y. Srinivasan" <kys@microsoft.com>
+Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org, ohering@suse.com, apw@canonical.com,
+        jasowang@redhat.com, jbottomley@parallels.com, hch@infradead.org,
+        linux-scsi@vger.kernel.org
 Subject: Re: [PATCH 1/1] Drivers: scsi: storvsc: Add blist flags
-Message-ID: <20140723141014.GA892@infradead.org>
+Message-ID: <20140723141028.GA22724@sucs.org>
 References: <1405983961-18782-1-git-send-email-kys@microsoft.com>
- <20140723100448.GA2540@sucs.org>
- <20140723115128.GB16881@infradead.org>
- <20140723125443.GA16103@sucs.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140723125443.GA16103@sucs.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+In-Reply-To: <1405983961-18782-1-git-send-email-kys@microsoft.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 23, 2014 at 01:54:43PM +0100, Sitsofe Wheeler wrote:
-> That's good to know (I was worried the device would not be detected as
-> supporting discard because it doesn't report lbpme and doesn't declare a
-> conformance version (see below)).
+On Mon, Jul 21, 2014 at 04:06:01PM -0700, K. Y. Srinivasan wrote:
+> Add blist flags to permit the reading of the VPD pages even when
+> the target may claim SPC-2 compliance. MSFT targets currently
+> claim SPC-2 compliance while they implement post SPC-2 features.
+> With this patch we can correctly handle WRITE_SAME_16 issues.
+> 
+>  static void storvsc_on_channel_callback(void *context);
+> @@ -1449,6 +1451,14 @@ static int storvsc_device_configure(struct scsi_device *sdevice)
+>  
+>  	sdevice->no_write_same = 1;
+>  
+> +	/*
+> +	 * Add blist flags to permit the reading of the VPD pages even when
+> +	 * the target may claim SPC-2 compliance. MSFT targets currently
+> +	 * claim SPC-2 compliance while they implement post SPC-2 features.
+> +	 * With this patch we can correctly handle WRITE_SAME_16 issues.
+> +	 */
+> +	sdevice->sdev_bflags |= msft_blist_flags;
+> +
 
-Ok, that makes things worse - you might be able to force it through
-sysfs, though.
+I'm not sure this alone will work - won't sdev_bflags/bflags have
+already been built at this point? If the setting of this has to stay in
+this function why don't you (also) set sdevice->try_vpd_pages in a
+similar way to no_write_same?
 
-> Is there a tree with all these updates
-> in or do they need to be pieced together from this email thread?
-
-I'm picking this up for my scsi-queue tree.  Still need a review
-for the patch we're replying to before that one can go in, though.
-
-> Additionally is it worth quirking sd_try_rc16_first on when
-> BLIST_TRY_VPD_PAGES is present?
-
-Sounds reasonable to me.
+-- 
+Sitsofe | http://sucs.org/~sits/
