@@ -1,38 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756043AbaGWDvT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 23:51:19 -0400
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:59277 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753765AbaGWDvS (ORCPT
+	id S1756872AbaGWDvX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 23:51:23 -0400
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:45566 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753791AbaGWDvV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 23:51:18 -0400
+	Tue, 22 Jul 2014 23:51:21 -0400
 From: varkabhadram@gmail.com
 To: netdev@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, davem@davemloft.net,
         Varka Bhadram <varkab@cdac.in>
-Subject: [PATCH net-next v3 0/2] cleanup for Realtek 8139CP
-Date: Wed, 23 Jul 2014 09:19:47 +0530
-Message-Id: <1406087389-4436-1-git-send-email-varkabhadram@gmail.com>
+Subject: [PATCH net-next v3 1/2] ethernet: realtek: use module_pci_driver
+Date: Wed, 23 Jul 2014 09:19:48 +0530
+Message-Id: <1406087389-4436-2-git-send-email-varkabhadram@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1406087389-4436-1-git-send-email-varkabhadram@gmail.com>
+References: <1406087389-4436-1-git-send-email-varkabhadram@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Varka Bhadram <varkab@cdac.in>
 
-changes since v2:
-        - making version info print once.
-changes sice v1:
-        - remove unused varible warning
+This patch converts to use the macro module_pci_driver, which makes
+the code smaller and simpler.
 
-Varka Bhadram (2):
-  ethernet: realtek: use module_pci_driver
-  ethernet: realtek: use pci_device_id
+Previously in this driver we are having driver version info will be
+printed log buffer based on whether the driver selected as module
+or statically into image itself. By using the module_pci_driver that
+part of the code removed. For the first time of the device init,
+we are making the version info to be printed once.
 
- drivers/net/ethernet/realtek/8139cp.c |   36 +++++++++------------------------
- 1 file changed, 9 insertions(+), 27 deletions(-)
+Signed-off-by: Varka Bhadram <varkab@cdac.in>
+---
+ drivers/net/ethernet/realtek/8139cp.c |   22 ++--------------------
+ 1 file changed, 2 insertions(+), 20 deletions(-)
 
+diff --git a/drivers/net/ethernet/realtek/8139cp.c b/drivers/net/ethernet/realtek/8139cp.c
+index 2bc728e..be101ca 100644
+--- a/drivers/net/ethernet/realtek/8139cp.c
++++ b/drivers/net/ethernet/realtek/8139cp.c
+@@ -1887,11 +1887,7 @@ static int cp_init_one (struct pci_dev *pdev, const struct pci_device_id *ent)
+ 	resource_size_t pciaddr;
+ 	unsigned int addr_len, i, pci_using_dac;
+ 
+-#ifndef MODULE
+-	static int version_printed;
+-	if (version_printed++ == 0)
+-		pr_info("%s", version);
+-#endif
++	pr_info_once("%s", version);
+ 
+ 	if (pdev->vendor == PCI_VENDOR_ID_REALTEK &&
+ 	    pdev->device == PCI_DEVICE_ID_REALTEK_8139 && pdev->revision < 0x20) {
+@@ -2121,18 +2117,4 @@ static struct pci_driver cp_driver = {
+ #endif
+ };
+ 
+-static int __init cp_init (void)
+-{
+-#ifdef MODULE
+-	pr_info("%s", version);
+-#endif
+-	return pci_register_driver(&cp_driver);
+-}
+-
+-static void __exit cp_exit (void)
+-{
+-	pci_unregister_driver (&cp_driver);
+-}
+-
+-module_init(cp_init);
+-module_exit(cp_exit);
++module_pci_driver(cp_driver);
 -- 
 1.7.9.5
 
