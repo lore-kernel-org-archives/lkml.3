@@ -1,109 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933181AbaGWSa6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 14:30:58 -0400
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:50115 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933035AbaGWSaz (ORCPT
+	id S933194AbaGWSbV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 14:31:21 -0400
+Received: from casper.infradead.org ([85.118.1.10]:38245 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932841AbaGWSbS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 14:30:55 -0400
-From: WANG Chao <wangchao19890207@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: John Stultz <john.stultz@linaro.org>,
-        Rebecca Schultz Zavin <rebecca@android.com>,
-        Colin Cross <ccross@android.com>,
-        Mitchel Humpherys <mitchelh@codeaurora.org>,
-        Laura Abbott <lauraa@codeaurora.org>, Gioh Kim <gioh.kim@lge.com>,
-        Benjamin Gaignard <benjamin.gaignard@linaro.org>,
-        =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
-        Tomas Winkler <tomas.winkler@intel.com>,
-        Chen Gang <gang.chen.5i5j@gmail.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Heesub Shin <heesub.shin@samsung.com>,
-        devel@driverdev.osuosl.org (open list:STAGING SUBSYSTEM),
-        linux-kernel@vger.kernel.org (open list)
-Subject: [linux-next PATCH] staging: android: ion: fix void function return statements
-Date: Thu, 24 Jul 2014 02:30:17 +0800
-Message-Id: <1406140230-23799-1-git-send-email-wangchao19890207@gmail.com>
-X-Mailer: git-send-email 1.9.3
+	Wed, 23 Jul 2014 14:31:18 -0400
+Date: Wed, 23 Jul 2014 20:31:17 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Dietmar Eggemann <dietmar.eggemann@arm.com>,
+        Michel =?iso-8859-1?Q?D=E4nzer?= <michel@daenzer.net>,
+        Ingo Molnar <mingo@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Random panic in load_balance() with 3.16-rc
+Message-ID: <20140723183117.GF3935@laptop>
+References: <53CF844A.5050106@arm.com>
+ <20140723111110.GT3935@laptop>
+ <20140723113021.GP12054@laptop.lan>
+ <20140723142454.GQ12054@laptop.lan>
+ <CA+55aFwZ7kAqqhaE4g89CJLkpJOwGxcN4u+cc0ODfqjQ0rVMiA@mail.gmail.com>
+ <20140723155526.GW3935@laptop>
+ <CA+55aFzSU5u8MiGqRZ6BVojQPnxbd1hxmFY_BA=UuCAygxR8WQ@mail.gmail.com>
+ <20140723170324.GZ3935@laptop>
+ <CA+55aFwQSmBAs=QH9jAZz5JY7YFrDeuPH1RjFH+YKVr2NQM38g@mail.gmail.com>
+ <CA+55aFz9z=58iEj3qx4Oip=iPYxzgSaPe945Xzd8Z60_v1EEzQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFz9z=58iEj3qx4Oip=iPYxzgSaPe945Xzd8Z60_v1EEzQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix checkpatch warning of void function return statements, found under
-drivers/staging/android/ion.
+On Wed, Jul 23, 2014 at 11:07:40AM -0700, Linus Torvalds wrote:
 
-Signed-off-by: WANG Chao <wangchao19890207@gmail.com>
----
- drivers/staging/android/ion/ion.c               | 1 -
- drivers/staging/android/ion/ion_carveout_heap.c | 1 -
- drivers/staging/android/ion/ion_chunk_heap.c    | 1 -
- drivers/staging/android/ion/ion_dummy_driver.c  | 2 --
- drivers/staging/android/ion/ion_system_heap.c   | 1 -
- 5 files changed, 6 deletions(-)
+>  - *static* per-cpu allocations might want to use "cpumask_var_t" (to
+> avoid having a full "struct cpumask_t") along with doing a
+> "zalloc_cpumask_var_node(..)" for each cpu.
+> 
+> sched_init() follows that last pattern, except it open-codes that
+> zalloc_cpumask_var_node() in an odd way that confused me.
+> 
+> So I take my patch back. It's wrong, because it only allocates that
+> cpumask_size() if CONFIG_CPUMASK_OFFSTACK is true.
 
-diff --git a/drivers/staging/android/ion/ion.c b/drivers/staging/android/ion/ion.c
-index cad76ae..56604f4 100644
---- a/drivers/staging/android/ion/ion.c
-+++ b/drivers/staging/android/ion/ion.c
-@@ -1057,7 +1057,6 @@ static void *ion_dma_buf_kmap(struct dma_buf *dmabuf, unsigned long offset)
- static void ion_dma_buf_kunmap(struct dma_buf *dmabuf, unsigned long offset,
- 			       void *ptr)
- {
--	return;
- }
- 
- static int ion_dma_buf_begin_cpu_access(struct dma_buf *dmabuf, size_t start,
-diff --git a/drivers/staging/android/ion/ion_carveout_heap.c b/drivers/staging/android/ion/ion_carveout_heap.c
-index dcb6f21..9156d82 100644
---- a/drivers/staging/android/ion/ion_carveout_heap.c
-+++ b/drivers/staging/android/ion/ion_carveout_heap.c
-@@ -133,7 +133,6 @@ static struct sg_table *ion_carveout_heap_map_dma(struct ion_heap *heap,
- static void ion_carveout_heap_unmap_dma(struct ion_heap *heap,
- 					struct ion_buffer *buffer)
- {
--	return;
- }
- 
- static struct ion_heap_ops carveout_heap_ops = {
-diff --git a/drivers/staging/android/ion/ion_chunk_heap.c b/drivers/staging/android/ion/ion_chunk_heap.c
-index 9c3e49a..3e6ec2e 100644
---- a/drivers/staging/android/ion/ion_chunk_heap.c
-+++ b/drivers/staging/android/ion/ion_chunk_heap.c
-@@ -126,7 +126,6 @@ static struct sg_table *ion_chunk_heap_map_dma(struct ion_heap *heap,
- static void ion_chunk_heap_unmap_dma(struct ion_heap *heap,
- 				     struct ion_buffer *buffer)
- {
--	return;
- }
- 
- static struct ion_heap_ops chunk_heap_ops = {
-diff --git a/drivers/staging/android/ion/ion_dummy_driver.c b/drivers/staging/android/ion/ion_dummy_driver.c
-index 6d0a38a..f3ea1c3 100644
---- a/drivers/staging/android/ion/ion_dummy_driver.c
-+++ b/drivers/staging/android/ion/ion_dummy_driver.c
-@@ -152,7 +152,5 @@ static void __exit ion_dummy_exit(void)
- 				dummy_heaps[ION_HEAP_TYPE_CHUNK].size);
- 		chunk_ptr = NULL;
- 	}
--
--	return;
- }
- __exitcall(ion_dummy_exit);
-diff --git a/drivers/staging/android/ion/ion_system_heap.c b/drivers/staging/android/ion/ion_system_heap.c
-index 6b77c51..da2a63c 100644
---- a/drivers/staging/android/ion/ion_system_heap.c
-+++ b/drivers/staging/android/ion/ion_system_heap.c
-@@ -205,7 +205,6 @@ static struct sg_table *ion_system_heap_map_dma(struct ion_heap *heap,
- static void ion_system_heap_unmap_dma(struct ion_heap *heap,
- 				      struct ion_buffer *buffer)
- {
--	return;
- }
- 
- static int ion_system_heap_shrink(struct ion_heap *heap, gfp_t gfp_mask,
--- 
-1.9.3
-
+What it doesn't do is keep the allocation on the right node, so killing
+that stuff is helping more than just readability.
