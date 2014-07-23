@@ -1,101 +1,237 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755383AbaGWBd0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 21:33:26 -0400
-Received: from mail-la0-f53.google.com ([209.85.215.53]:46730 "EHLO
-	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752896AbaGWBdY (ORCPT
+	id S1755667AbaGWBfT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 21:35:19 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:54600 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755508AbaGWBfP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 21:33:24 -0400
-MIME-Version: 1.0
-In-Reply-To: <CA+55aFyefnFjmOs-QZhFn68-6+tWO30VqU6ipP6BzAra=xOaFg@mail.gmail.com>
-References: <CALCETrVx=cLZjgALizYKWATSjOvhmwPHQvOJRkMgdb=iNRNf8w@mail.gmail.com>
- <CA+55aFyefnFjmOs-QZhFn68-6+tWO30VqU6ipP6BzAra=xOaFg@mail.gmail.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Tue, 22 Jul 2014 18:33:02 -0700
-Message-ID: <CALCETrUjKXfwbWkUytMXLSmKROLBVY7tRYWPHnEC01Fj=aiTkQ@mail.gmail.com>
-Subject: Re: STI architectural question (and lretq -- I'm not even kidding)
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "H. Peter Anvin" <hpa@linux.intel.com>, Borislav Petkov <bp@alien8.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        X86 ML <x86@kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 22 Jul 2014 21:35:15 -0400
+From: Laura Abbott <lauraa@codeaurora.org>
+To: Will Deacon <will.deacon@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>
+Cc: Laura Abbott <lauraa@codeaurora.org>,
+        David Riley <davidriley@chromium.org>,
+        linux-arm-kernel@lists.infradead.org,
+        Ritesh Harjain <ritesh.harjani@gmail.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: [PATCHv4 3/5] common: dma-mapping: Introduce common remapping functions
+Date: Tue, 22 Jul 2014 18:35:06 -0700
+Message-Id: <1406079308-5232-4-git-send-email-lauraa@codeaurora.org>
+X-Mailer: git-send-email 1.8.2.1
+In-Reply-To: <1406079308-5232-1-git-send-email-lauraa@codeaurora.org>
+References: <1406079308-5232-1-git-send-email-lauraa@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 22, 2014 at 6:03 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Tue, Jul 22, 2014 at 5:10 PM, Andy Lutomirski <luto@amacapital.net> wrote:
->>
->> But here's the problem: what happens if an NMI or MCE happens between
->> the sti and the lretq?  I think an MCE just might be okay -- it's not
->> really recoverable anyway.  (Except for the absurd MCE broadcast crap,
->> which may cause this to be a problem.)  But what about an NMI between
->> sti and lretq?
->
-> Sadly, it's not architected.
->
-> The "mov ss" and "pop ss" do indeed suppress even NMI. And that *has*
-> to be true, because in legacy real mode - where there is no protection
-> domain change, and the "lss" instruction didn't originally exist - the
-> "pop/mov ss" and "mov sp" instruction sequence had to be entirely
-> atomic. And this is even very officially documented. From the intel
-> system manual:
->
->     "A POP SS instruction inhibits all interrupts, including the NMI
-> interrupt, until after execution of the next instruction. This action
-> allows sequential execution of POP SS and MOV ESP, EBP instructions
-> without the danger of having an invalid stack during an interrupt.
-> However, use of the LSS instruction is the preferred method of loading
-> the SS and ESP registers"
->
-> However, while "sti" has conceptually the same one-instruction
-> interrupt window disable as mov/pop ss, it looks like Intel broke it
-> for NMI. The documentation only talks about "external, maskable
-> interrupts", and while I suspect *many* micro-architectures also end
-> up disabling NMI for the next instruction, there are many reasons to
-> think not all do.
->
-> See for example
->
->     http://www.sandpile.org/x86/inter.htm
->
-> and note #5 under external interrupt suppression.
->
-> Now, sandpile is pretty old, but Christian Ludloff used to get things
-> like that right.
->
-> So I'm afraid that "sti; lret" is not guaranteed to be architecturally
-> NMI-safe. But it *might* be safe on certain micro-architectures, and
-> maybe somebody inside Intel or AMD can give us a hint about when it is
-> safe and when it isn't.
+For architectures without coherent DMA, memory for DMA may
+need to be remapped with coherent attributes. Factor out
+the the remapping code from arm and put it in a
+common location to reduced code duplication.
 
-:)  I'm apparently not the only one who finds playing with evil
-architectural stuff to be unreasonably fun.
+Signed-off-by: Laura Abbott <lauraa@codeaurora.org>
+---
+ arch/arm/mm/dma-mapping.c                | 57 +++++----------------------
+ drivers/base/dma-mapping.c               | 67 ++++++++++++++++++++++++++++++++
+ include/asm-generic/dma-mapping-common.h |  9 +++++
+ 3 files changed, 85 insertions(+), 48 deletions(-)
 
-FWIW, both the VMX and SVM code in kvm seem to explicitly implement
-NMI suppression in the STI window.  I can't figure out how #MC
-broadcast delivery works.  Grr.
+diff --git a/arch/arm/mm/dma-mapping.c b/arch/arm/mm/dma-mapping.c
+index 3116880..8c4c755 100644
+--- a/arch/arm/mm/dma-mapping.c
++++ b/arch/arm/mm/dma-mapping.c
+@@ -298,37 +298,19 @@ static void *
+ __dma_alloc_remap(struct page *page, size_t size, gfp_t gfp, pgprot_t prot,
+ 	const void *caller)
+ {
+-	struct vm_struct *area;
+-	unsigned long addr;
+-
+ 	/*
+ 	 * DMA allocation can be mapped to user space, so lets
+ 	 * set VM_USERMAP flags too.
+ 	 */
+-	area = get_vm_area_caller(size, VM_ARM_DMA_CONSISTENT | VM_USERMAP,
+-				  caller);
+-	if (!area)
+-		return NULL;
+-	addr = (unsigned long)area->addr;
+-	area->phys_addr = __pfn_to_phys(page_to_pfn(page));
+-
+-	if (ioremap_page_range(addr, addr + size, area->phys_addr, prot)) {
+-		vunmap((void *)addr);
+-		return NULL;
+-	}
+-	return (void *)addr;
++	return dma_common_contiguous_remap(page, size,
++			VM_ARM_DMA_CONSISTENT | VM_USERMAP,
++			prot, caller);
+ }
+ 
+ static void __dma_free_remap(void *cpu_addr, size_t size)
+ {
+-	unsigned int flags = VM_ARM_DMA_CONSISTENT | VM_USERMAP;
+-	struct vm_struct *area = find_vm_area(cpu_addr);
+-	if (!area || (area->flags & flags) != flags) {
+-		WARN(1, "trying to free invalid coherent area: %p\n", cpu_addr);
+-		return;
+-	}
+-	unmap_kernel_range((unsigned long)cpu_addr, size);
+-	vunmap(cpu_addr);
++	dma_common_free_remap(cpu_addr, size,
++			VM_ARM_DMA_CONSISTENT | VM_USERMAP);
+ }
+ 
+ #define DEFAULT_DMA_COHERENT_POOL_SIZE	SZ_256K
+@@ -1262,29 +1244,8 @@ static void *
+ __iommu_alloc_remap(struct page **pages, size_t size, gfp_t gfp, pgprot_t prot,
+ 		    const void *caller)
+ {
+-	unsigned int i, nr_pages = PAGE_ALIGN(size) >> PAGE_SHIFT;
+-	struct vm_struct *area;
+-	unsigned long p;
+-
+-	area = get_vm_area_caller(size, VM_ARM_DMA_CONSISTENT | VM_USERMAP,
+-				  caller);
+-	if (!area)
+-		return NULL;
+-
+-	area->pages = pages;
+-	area->nr_pages = nr_pages;
+-	p = (unsigned long)area->addr;
+-
+-	for (i = 0; i < nr_pages; i++) {
+-		phys_addr_t phys = __pfn_to_phys(page_to_pfn(pages[i]));
+-		if (ioremap_page_range(p, p + PAGE_SIZE, phys, prot))
+-			goto err;
+-		p += PAGE_SIZE;
+-	}
+-	return area->addr;
+-err:
+-	unmap_kernel_range((unsigned long)area->addr, size);
+-	vunmap(area->addr);
++	return dma_common_pages_remap(pages, size,
++			VM_ARM_DMA_CONSISTENT | VM_USERMAP, prot, caller);
+ 	return NULL;
+ }
+ 
+@@ -1492,8 +1453,8 @@ void arm_iommu_free_attrs(struct device *dev, size_t size, void *cpu_addr,
+ 	}
+ 
+ 	if (!dma_get_attr(DMA_ATTR_NO_KERNEL_MAPPING, attrs)) {
+-		unmap_kernel_range((unsigned long)cpu_addr, size);
+-		vunmap(cpu_addr);
++		dma_common_free_remap(cpu_addr, size,
++			VM_ARM_DMA_CONSISTENT | VM_USERMAP);
+ 	}
+ 
+ 	__iommu_remove_mapping(dev, handle, size);
+diff --git a/drivers/base/dma-mapping.c b/drivers/base/dma-mapping.c
+index 6cd08e1..ddaad8d 100644
+--- a/drivers/base/dma-mapping.c
++++ b/drivers/base/dma-mapping.c
+@@ -10,6 +10,8 @@
+ #include <linux/dma-mapping.h>
+ #include <linux/export.h>
+ #include <linux/gfp.h>
++#include <linux/slab.h>
++#include <linux/vmalloc.h>
+ #include <asm-generic/dma-coherent.h>
+ 
+ /*
+@@ -267,3 +269,68 @@ int dma_common_mmap(struct device *dev, struct vm_area_struct *vma,
+ 	return ret;
+ }
+ EXPORT_SYMBOL(dma_common_mmap);
++
++/*
++ * remaps an allocated contiguous region into another vm_area.
++ * Cannot be used in non-sleeping contexts
++ */
++
++void *dma_common_contiguous_remap(struct page *page, size_t size,
++			unsigned long vm_flags,
++			pgprot_t prot, const void *caller)
++{
++	int i;
++	struct page **pages;
++	void *ptr;
++
++	pages = kmalloc(sizeof(struct page *) << get_order(size), GFP_KERNEL);
++	if (!pages)
++		return NULL;
++
++	for (i = 0; i < (size >> PAGE_SHIFT); i++)
++		pages[i] = page + i;
++
++	ptr = dma_common_pages_remap(pages, size, vm_flags, prot, caller);
++
++	kfree(pages);
++
++	return ptr;
++}
++
++/*
++ * remaps an array of PAGE_SIZE pages into another vm_area
++ * Cannot be used in non-sleeping contexts
++ */
++void *dma_common_pages_remap(struct page **pages, size_t size,
++			unsigned long vm_flags, pgprot_t prot,
++			const void *caller)
++{
++	struct vm_struct *area;
++
++	area = get_vm_area_caller(size, vm_flags, caller);
++	if (!area)
++		return NULL;
++
++	if (map_vm_area(area, prot, pages)) {
++		vunmap(area->addr);
++		return NULL;
++	}
++
++	return area->addr;
++}
++
++/*
++ * unmaps a range previously mapped by dma_common_*_remap
++ */
++void dma_common_free_remap(void *cpu_addr, size_t size, unsigned long vm_flags)
++{
++	struct vm_struct *area = find_vm_area(cpu_addr);
++
++	if (!area || (area->flags & vm_flags) != vm_flags) {
++		WARN(1, "trying to free invalid coherent area: %p\n", cpu_addr);
++		return;
++	}
++
++	unmap_kernel_range((unsigned long)cpu_addr, size);
++	vunmap(cpu_addr);
++}
+diff --git a/include/asm-generic/dma-mapping-common.h b/include/asm-generic/dma-mapping-common.h
+index de8bf89..a9fd248 100644
+--- a/include/asm-generic/dma-mapping-common.h
++++ b/include/asm-generic/dma-mapping-common.h
+@@ -179,6 +179,15 @@ dma_sync_sg_for_device(struct device *dev, struct scatterlist *sg,
+ extern int dma_common_mmap(struct device *dev, struct vm_area_struct *vma,
+ 			   void *cpu_addr, dma_addr_t dma_addr, size_t size);
+ 
++void *dma_common_contiguous_remap(struct page *page, size_t size,
++			unsigned long vm_flags,
++			pgprot_t prot, const void *caller);
++
++void *dma_common_pages_remap(struct page **pages, size_t size,
++			unsigned long vm_flags, pgprot_t prot,
++			const void *caller);
++void dma_common_free_remap(void *cpu_addr, size_t size, unsigned long vm_flags);
++
+ /**
+  * dma_mmap_attrs - map a coherent DMA allocation into user space
+  * @dev: valid struct device pointer, or NULL for ISA and EISA-like devices
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
 
-In any event, at least the fixup would be straightforward: just do
-something like:
-
-void fixup_lret_nmi(struct pt_regs *regs) {
-  if (regs->rip == native_lret_to_userspace && !user_mode_vm(regs)) {
-    regs->rip = native_sti_before_lret_to_userspace;
-    regs->flags &= ~X86_EFLAGS_IF;
-  }
-}
-
-and call it from the NMI and MCE code.  This is probably preferable to
-relying on special friendly microarchitectures.
-
-Of course, this does nothing at all to protect us from #MC after sti
-on return from #MC to userspace, but I think we're screwed regardless
--- we could just as easily get a second #MC before the sti.  Machine
-check broadcast was the worst idea ever.
-
-Anyway, I updated the tag.
-
---Andy
