@@ -1,83 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757479AbaGWI0T (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 04:26:19 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:41075 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757367AbaGWI0P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 04:26:15 -0400
-Message-ID: <53CF718C.1060109@ti.com>
-Date: Wed, 23 Jul 2014 13:55:48 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1757502AbaGWI0z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 04:26:55 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:36301 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757367AbaGWI0w (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jul 2014 04:26:52 -0400
+Date: Wed, 23 Jul 2014 09:25:05 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: AKASHI Takahiro <takahiro.akashi@linaro.org>
+Cc: Kees Cook <keescook@chromium.org>, Will Drewry <wad@chromium.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "dsaxena@linaro.org" <dsaxena@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v5 1/3] arm64: ptrace: reload a syscall number after
+ ptrace operations
+Message-ID: <20140723082505.GB27260@arm.com>
+References: <1406020499-5537-1-git-send-email-takahiro.akashi@linaro.org>
+ <1406020499-5537-2-git-send-email-takahiro.akashi@linaro.org>
+ <CAGXu5jKkJUGn_MpEEr8U=n_A+iW9s8vSX1WoVNzRJMVyGQRjpA@mail.gmail.com>
+ <53CF5E53.3060409@linaro.org>
 MIME-Version: 1.0
-To: Bjorn Helgaas <bhelgaas@google.com>
-CC: <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <linux-pci@vger.kernel.org>, <jg1.han@samsung.com>,
-        <mohit.kumar@st.com>, <linux-kernel@vger.kernel.org>,
-        <grant.likely@linaro.org>
-Subject: Re: [PATCH v3 0/4] dra7: Add PCIe support
-References: <1405587643-13808-1-git-send-email-kishon@ti.com> <20140722213306.GB25432@google.com>
-In-Reply-To: <20140722213306.GB25432@google.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53CF5E53.3060409@linaro.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Jul 23, 2014 at 08:03:47AM +0100, AKASHI Takahiro wrote:
+> On 07/23/2014 05:15 AM, Kees Cook wrote:
+> > On Tue, Jul 22, 2014 at 2:14 AM, AKASHI Takahiro
+> > <takahiro.akashi@linaro.org> wrote:
+> >>   asmlinkage int syscall_trace_enter(struct pt_regs *regs)
+> >>   {
+> >> +       unsigned long saved_x0, saved_x8;
+> >> +
+> >> +       saved_x0 = regs->regs[0];
+> >> +       saved_x8 = regs->regs[8];
+> >> +
+> >>          if (test_thread_flag(TIF_SYSCALL_TRACE))
+> >>                  tracehook_report_syscall(regs, PTRACE_SYSCALL_ENTER);
+> >>
+> >> +       regs->syscallno = regs->regs[8];
+> >> +       if ((long)regs->syscallno == ~0UL) { /* skip this syscall */
+> >> +               regs->regs[8] = saved_x8;
+> >> +               if (regs->regs[0] == saved_x0) /* not changed by user */
+> >> +                       regs->regs[0] = -ENOSYS;
+> >
+> > I'm not sure this is right compared to other architectures. Generally
+> > when a tracer performs a syscall skip, it's up to them to also adjust
+> > the return value. They may want to be faking a syscall, and what if
+> > the value they want to return happens to be what x0 was going into the
+> > tracer? It would have no way to avoid this -ENOSYS case. I think
+> > things are fine without this test.
+> 
+> Yeah, I know this issue, but was not sure that setting a return value
+> is mandatory. (x86 seems to return -ENOSYS by default if not explicitly
+> specified.)
+> Is "fake a system call" a more appropriate word than "skip"?
+> 
+> I will defer to Will.
 
+I agree with Kees -- iirc, I only suggested restoring x8.
 
-On Wednesday 23 July 2014 03:03 AM, Bjorn Helgaas wrote:
-> On Thu, Jul 17, 2014 at 02:30:39PM +0530, Kishon Vijay Abraham I wrote:
->> Changes from v2:
->> * Added myself as MAINTAINER of pcie dra7xx driver
->>
->> Changes from v1:
->> * fixed dw_pcie_prog_viewport_io_outbound() to use untranslated address
->> * split dra7xx patch into driver part and documentation part
->>
->> [1] is split into separate series in order for individual subsystem
->> Maintainers to pick up the patches. This series handles the PCIe
->> support for DRA7.
->>
->> Rebased to pci -next.
->>
->> [1] -> https://lkml.org/lkml/2014/5/29/258
->>
->> Kishon Vijay Abraham I (4):
->>   PCI: designware: Configuration space should be specified in 'reg'
->>   PCI: designware: use untranslated address while programming ATU
->>   Documentation: pci: ti: Add dt binding documentation for PCIe in
->>     DRA7xx
->>   PCI: host: pcie-dra7xx: add support for pcie-dra7xx controller
->>
->>  .../devicetree/bindings/pci/designware-pcie.txt    |    4 +
->>  Documentation/devicetree/bindings/pci/ti-pci.txt   |   59 +++
->>  MAINTAINERS                                        |    8 +
->>  drivers/pci/host/Kconfig                           |   10 +
->>  drivers/pci/host/Makefile                          |    1 +
->>  drivers/pci/host/pci-dra7xx.c                      |  458 ++++++++++++++++++++
->>  drivers/pci/host/pcie-designware.c                 |   72 ++-
->>  drivers/pci/host/pcie-designware.h                 |    4 +
->>  8 files changed, 600 insertions(+), 16 deletions(-)
->>  create mode 100644 Documentation/devicetree/bindings/pci/ti-pci.txt
->>  create mode 100644 drivers/pci/host/pci-dra7xx.c
-> 
-> I applied these to pci/host-designware for v3.17.  This will not be in my
-> first pull request because I'm going on vacation and won't have time to get
-> everything through -next and tagged.  But I'm planning a second pull
-> request that will include this.
-> 
-> Mohit, I applied your ack of "use untranslated address" from the v1 posting
-> (your mail of Jul 09) to the corresponding patch here, since Kishon didn't
-> carry it forward.  Let me know if that's not OK.
-> 
-> I also squashed the last two patches into one so the DT binding
-> documentation goes along with the dra7xx driver addition.
-> 
-
-Thanks Bjorn.
-
--Kishon
-> Bjorn
-> 
+Will
