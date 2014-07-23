@@ -1,89 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933077AbaGWTab (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 15:30:31 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:39999 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932620AbaGWTa2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 15:30:28 -0400
+	id S933012AbaGWTgl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 15:36:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9015 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932387AbaGWTgk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jul 2014 15:36:40 -0400
+Date: Wed, 23 Jul 2014 21:35:01 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Namhyung Kim <namhyung@kernel.org>, Ingo Molnar <mingo@redhat.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 1/2] ftrace: Kill
+	tracing_{start,stop}_sched_switch_record() and
+	tracing_sched_switch_assign_trace()
+Message-ID: <20140723193501.GA30214@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <CAGXu5jJAOyA=UB-k4fmu84RTB_ygHAs2UqtbBfUPs2JCaxo0Eg@mail.gmail.com>
-References: <1405657206-12060-1-git-send-email-ast@plumgrid.com>
-	<1405657206-12060-6-git-send-email-ast@plumgrid.com>
-	<CAGXu5jJAOyA=UB-k4fmu84RTB_ygHAs2UqtbBfUPs2JCaxo0Eg@mail.gmail.com>
-Date: Wed, 23 Jul 2014 12:30:24 -0700
-Message-ID: <CAMEtUuwZW5bzreAG5_u1xopXwP7f59HHFk4eJttj11DuZwTBEA@mail.gmail.com>
-Subject: Re: [PATCH RFC v2 net-next 05/16] bpf: introduce syscall(BPF, ...)
- and BPF maps
-From: Alexei Starovoitov <ast@plumgrid.com>
-To: Kees Cook <keescook@chromium.org>
-Cc: "David S. Miller" <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Jiri Olsa <jolsa@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140723193444.GA30194@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 23, 2014 at 11:02 AM, Kees Cook <keescook@chromium.org> wrote:
->> --- a/Documentation/networking/filter.txt
->> +++ b/Documentation/networking/filter.txt
->>
->> +eBPF maps
->> +---------
->> +'maps' is a generic storage of different types for sharing data between kernel
->> +and userspace.
->> +
->> +The maps are accessed from user space via BPF syscall, which has commands:
->> +- create a map with given id, type and attributes
->> +  map_id = bpf_map_create(int map_id, map_type, struct nlattr *attr, int len)
->> +  returns positive map id or negative error
->
-> Looks like these docs need updating for the fd-based approach instead
-> of the map_id approach?
+tracing_{start,stop}_sched_switch_record() have no callers since
+87d80de2800d "tracing: Remove obsolete sched_switch tracer".
 
-ohh, yes. updated it in srcs and in commit log, but forgot in docs.
+The last caller of tracing_sched_switch_assign_trace() was removed
+by 30dbb20e68e6 "tracing: Remove boot tracer".
 
->> +SYSCALL_DEFINE5(bpf, int, cmd, unsigned long, arg2, unsigned long, arg3,
->> +               unsigned long, arg4, unsigned long, arg5)
->> +{
->> +       if (!capable(CAP_SYS_ADMIN))
->> +               return -EPERM;
->
-> It might be valuable to have a comment here describing why this is
-> currently limited to CAP_SYS_ADMIN.
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+---
+ kernel/trace/trace.h              |    3 --
+ kernel/trace/trace_sched_switch.c |   48 -------------------------------------
+ 2 files changed, 0 insertions(+), 51 deletions(-)
 
-makes sense.
-There are several reasons it should be limited to root initially:
-- to phase changes in gradually
-- verifier is not detecting pointer leaks yet
-- full security audit wasn't performed
-- tracing and network analytics are root only anyway
-Currently eBPF is safe (non-crashing), since safety is relatively easy
-to enforce by static analysis. For somebody with compiler background
-it's natural to think about bounds, alignments, uninitialized access, etc.
-So I'm confident that I didn't miss anything big in 'safety' aspect.
-'Non-root security' is harder. I'll add pointer leak detection first
-and will ask for more suggestions.
+diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
+index 9258f5a..df2b33b 100644
+--- a/kernel/trace/trace.h
++++ b/kernel/trace/trace.h
+@@ -595,9 +595,6 @@ void set_graph_array(struct trace_array *tr);
+ 
+ void tracing_start_cmdline_record(void);
+ void tracing_stop_cmdline_record(void);
+-void tracing_sched_switch_assign_trace(struct trace_array *tr);
+-void tracing_stop_sched_switch_record(void);
+-void tracing_start_sched_switch_record(void);
+ int register_tracer(struct tracer *type);
+ int is_tracing_stopped(void);
+ 
+diff --git a/kernel/trace/trace_sched_switch.c b/kernel/trace/trace_sched_switch.c
+index 3f34dc9..3b60301 100644
+--- a/kernel/trace/trace_sched_switch.c
++++ b/kernel/trace/trace_sched_switch.c
+@@ -197,51 +197,3 @@ void tracing_stop_cmdline_record(void)
+ {
+ 	tracing_stop_sched_switch();
+ }
+-
+-/**
+- * tracing_start_sched_switch_record - start tracing context switches
+- *
+- * Turns on context switch tracing for a tracer.
+- */
+-void tracing_start_sched_switch_record(void)
+-{
+-	if (unlikely(!ctx_trace)) {
+-		WARN_ON(1);
+-		return;
+-	}
+-
+-	tracing_start_sched_switch();
+-
+-	mutex_lock(&sched_register_mutex);
+-	tracer_enabled++;
+-	mutex_unlock(&sched_register_mutex);
+-}
+-
+-/**
+- * tracing_stop_sched_switch_record - start tracing context switches
+- *
+- * Turns off context switch tracing for a tracer.
+- */
+-void tracing_stop_sched_switch_record(void)
+-{
+-	mutex_lock(&sched_register_mutex);
+-	tracer_enabled--;
+-	WARN_ON(tracer_enabled < 0);
+-	mutex_unlock(&sched_register_mutex);
+-
+-	tracing_stop_sched_switch();
+-}
+-
+-/**
+- * tracing_sched_switch_assign_trace - assign a trace array for ctx switch
+- * @tr: trace array pointer to assign
+- *
+- * Some tracers might want to record the context switches in their
+- * trace. This function lets those tracers assign the trace array
+- * to use.
+- */
+-void tracing_sched_switch_assign_trace(struct trace_array *tr)
+-{
+-	ctx_trace = tr;
+-}
+-
+-- 
+1.5.5.1
 
->> +       switch (cmd) {
->> +       case BPF_MAP_CREATE:
->> +               return map_create((enum bpf_map_type) arg2,
->> +                                 (struct nlattr __user *) arg3, (int) arg4);
->
-> I'd recommend requiring arg5 == 0 here, just for future flexibility.
-
-Though I expect all extensions to go through nlattr attributes,
-it's indeed cleaner to enforce arg5==0 here and for all other cmds.
