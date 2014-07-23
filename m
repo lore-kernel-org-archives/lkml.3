@@ -1,88 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756152AbaGWGtz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 02:49:55 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:46668 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755362AbaGWGty (ORCPT
+	id S1756397AbaGWGuU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 02:50:20 -0400
+Received: from cassarossa.samfundet.no ([193.35.52.29]:38137 "EHLO
+	cassarossa.samfundet.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753763AbaGWGuS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 02:49:54 -0400
-Date: Wed, 23 Jul 2014 08:49:48 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Michel =?iso-8859-1?Q?D=E4nzer?= <michel@daenzer.net>,
-        Ingo Molnar <mingo@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Random panic in load_balance() with 3.16-rc
-Message-ID: <20140723064948.GK3935@laptop>
-References: <53C77BB8.6030804@daenzer.net>
- <20140717075820.GE19379@twins.programming.kicks-ass.net>
- <53C8E90F.1010306@daenzer.net>
- <53CE00EF.70108@daenzer.net>
- <53CF31AE.30403@daenzer.net>
- <CA+55aFwyURgG717kmuAXzKcHddN_63GirtwHZB4ePKH+8qVtJw@mail.gmail.com>
+	Wed, 23 Jul 2014 02:50:18 -0400
+Date: Wed, 23 Jul 2014 08:50:13 +0200
+From: Hans-Christian Egtvedt <egtvedt@samfundet.no>
+To: Nicholas Krause <xerofoify@gmail.com>
+Cc: hskinnemoen@gmail.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] avr32: Remove unnessary variables from page.h
+Message-ID: <20140723065013.GA15677@samfundet.no>
+References: <1406097756-7912-1-git-send-email-xerofoify@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CA+55aFwyURgG717kmuAXzKcHddN_63GirtwHZB4ePKH+8qVtJw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <1406097756-7912-1-git-send-email-xerofoify@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 22, 2014 at 09:21:40PM -0700, Linus Torvalds wrote:
-> On Tue, Jul 22, 2014 at 8:53 PM, Michel Dänzer <michel@daenzer.net> wrote:
-> >
-> > Just happened again with the same change on top of 3.16-rc6.
+Around Wed 23 Jul 2014 02:42:36 -0400 or thereabout, Nicholas Krause wrote:
+> This removes the unneeded variables memory_start and memory_end in
+> order to fix this fix me message.
 > 
-> The (maybe) related bugzilla entry is just odd. Bruno Wolff reports
-> that the BUG_ON() in his added patch triggers:
+> Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
+
+This is already applied to my local for-linus branch, it will be pushed once
+Linus opens up for merges after 3.16 is released.
+
+> ---
+>  arch/avr32/include/asm/page.h | 2 --
+>  1 file changed, 2 deletions(-)
 > 
-> +               cpumask_clear(sched_group_cpus(sg));
-> +               sg->sgc->capacity = 0;
-> +               BUG_ON(!cpumask_empty(sched_group_cpus(sg)));
-> 
-> where it *just* did a cpumask_clear(), and now the BUG_ON() triggers
-> that it's no longer empty?
-> 
-> That would imply an allocation error, but all the sched groups seem to
-> be properly allocated with the proper addition of cpumask_size().
-> 
-> And his config file even has NR_CPUS being 32, so it should be a
-> single word of bitmap, which triggers all the simple code.
-> 
-> Completely insane, in other words.
-
-So we've had this other thread where the same happened:
-
- lkml.kernel.org/r/20140716145546.GA6922@wolff.to
-
-(pointed Michel to that earlier)
-
-And that seems to be sorted now (just found positive feedback in my
-Inbox this morning), it was a question of the arch code supplying
-completely 'broken' topology information, and the scheduler trusting it
-too much.
-
-The real fix in that thread is:
-
- lkml.kernel.org/r/20140722133514.GM12054@laptop.lan
-
-And I'll also add this to make the scheduler less trusting:
-
- lkml.kernel.org/r/20140722094740.GJ12054@laptop.lan
-
-Michael, that's not going to tell us what's wrong with your machine, as
-you've not got the ancient dual P4 Xeon Bruno's got. Seeing how your
-cpuinfo says:
-
-model name      : AMD A10-7850K Radeon R7, 12 Compute Cores 4C+8G
-
-but we can start the same debugging session I suppose.
-
-Could you run with this patch on top:
-
- lkml.kernel.org/r/20140718101633.GP9918@twins.programming.kicks-ass.net
-
-And provide us with the dmesg after boot?
+> diff --git a/arch/avr32/include/asm/page.h b/arch/avr32/include/asm/page.h
+> index f805d1c..701006f 100644
+> --- a/arch/avr32/include/asm/page.h
+> +++ b/arch/avr32/include/asm/page.h
+> @@ -42,8 +42,6 @@ typedef struct page *pgtable_t;
+>  #define __pgd(x)		((pgd_t) { (x) })
+>  #define __pgprot(x)		((pgprot_t) { (x) })
+>  
+> -/* FIXME: These should be removed soon */
+> -extern unsigned long memory_start, memory_end;
+>  
+>  /* Pure 2^n version of get_order */
+>  static inline int get_order(unsigned long size)
+-- 
+mvh
+Hans-Christian Egtvedt
