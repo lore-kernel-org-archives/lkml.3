@@ -1,90 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758175AbaGWP0N (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 11:26:13 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:35107 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758070AbaGWP0L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 11:26:11 -0400
-Message-ID: <53CFD404.7070704@ti.com>
-Date: Wed, 23 Jul 2014 11:25:56 -0400
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1758203AbaGWP1A (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 11:27:00 -0400
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:53481 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758070AbaGWP06 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jul 2014 11:26:58 -0400
+Date: Wed, 23 Jul 2014 16:26:49 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Jassi Brar <jaswinder.singh@linaro.org>
+Cc: Devicetree List <devicetree@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        "ks.giri@samsung.com" <ks.giri@samsung.com>,
+        Arnd Bergmann <arnd@arndb.de>, ijc@hellion.org.uk,
+        Mark Rutland <mark.rutland@arm.com>, robh@kernel.org,
+        Pawel Moll <pawel.moll@arm.com>,
+        Courtney Cavin <courtney.cavin@sonymobile.com>,
+        Matt Porter <mporter@linaro.org>,
+        Craig McGeachie <slapdau@yahoo.com.au>,
+        LeyFoon Tan <lftan.linux@gmail.com>,
+        Loic Pallardy <loic.pallardy@st.com>, "Anna, Suman" <s-anna@ti.com>,
+        Ashwin Chaugule <ashwin.chaugule@linaro.org>,
+        Bjorn Andersson <bjorn@kryo.se>, Patch Tracking <patches@linaro.org>,
+        Tetsuya Takinishi <t.takinishi@jp.fujitsu.com>,
+        Mark Brown <broonie@linaro.org>, Kevin Hilman <khilman@linaro.org>,
+        Mollie Wu <mollie.wu@linaro.org>, Andy Green <andy.green@linaro.org>
+Subject: Re: [PATCHv9 2/4] mailbox: Introduce framework for mailbox
+Message-ID: <20140723152649.GJ23210@lee--X1>
+References: <1406055250-29159-1-git-send-email-jaswinder.singh@linaro.org>
+ <1406055374-29275-1-git-send-email-jaswinder.singh@linaro.org>
+ <20140723085411.GG23210@lee--X1>
+ <CAJe_ZhfaLqgKb3oK-m5Rpae5+zeAEk9-DLFOovq4qjBgg64b-w@mail.gmail.com>
 MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>,
-        Grygorii Strashko <grygorii.strashko@ti.com>,
-        Suman Anna <s-anna@ti.com>,
-        Jaswinder Singh <jaswinder.singh@linaro.org>,
-        Alexander Shiyan <shc_work@mail.ru>
-CC: Alexandre Courbot <gnurou@gmail.com>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        <ivan.khoronzhuk@ti.com>, Muralidharan Karicheri <m-karicheri2@ti.com>,
-        Rob Herring <robh+dt@kernel.org>, Kumar Gala <galak@codeaurora.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v1] gpio: keystone: add dsp gpio controller driver
-References: <1405507426-18992-1-git-send-email-grygorii.strashko@ti.com> <CACRpkdYY_a_9G-VLBbv2a22Cg4j0t3Wv4W1h0n6-ccCXgVJXsA@mail.gmail.com>
-In-Reply-To: <CACRpkdYY_a_9G-VLBbv2a22Cg4j0t3Wv4W1h0n6-ccCXgVJXsA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAJe_ZhfaLqgKb3oK-m5Rpae5+zeAEk9-DLFOovq4qjBgg64b-w@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 23 July 2014 11:10 AM, Linus Walleij wrote:
-> On Wed, Jul 16, 2014 at 12:43 PM, Grygorii Strashko
-> <grygorii.strashko@ti.com> wrote:
-> 
->> From: Murali Karicheri <m-karicheri2@ti.com>
->>
->> On Keystone SOCs, ARM host can send interrupts to DSP cores using the
->> DSP GPIO controller IP. Each DSP GPIO controller provides 28 IRQ signals for
->> each DSP core. This is one of the component used by the IPC mechanism used
->> on Keystone SOCs.
->>
->> Keystone 2 DSP GPIO controller has specific features:
->> - each GPIO can be configured only as output pin;
->> - setting GPIO value to 1 causes IRQ generation on target DSP core;
->> - reading pin value returns 0 - if IRQ was handled or 1 - IRQ is still
->>   pending.
->>
->> Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
->> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
-> 
-> Pardon me. How is this GENERAL PURPOSE Input/Output?
-> 
-> It seems very very much SPECIAL PURPOSE to me, it's like
-> you're just shoehorning some IPC mechanism into the GPIO
-> subsystem, and this may be because the datasheet calls it
-> GPIO when it's not.
->
-> What other stuff than DSP is connected to these lines, and is it
-> really even external lines? Aren't these just polysilicon rails
-> pretty much hammered to be used by the DSP and nothing else.
->
-> What is the difference between this and a mailbox IRQ line
-> and the kind of stuff handled by drivers/mailbox?
->
-I will try to answer this. This IP is indeed a GPIO block
-but the IO's are used just OUTPUT lines from Linux
-HOST perspective. These IOs are connected to the DSPs
-as input/IRQ lines. The DSP-ARM host IPC mechanism used on
-Keystone is Linux user-space based and it does as one of the
-component.
+On Wed, 23 Jul 2014, Jassi Brar wrote:
+> On 23 July 2014 14:24, Lee Jones <lee.jones@linaro.org> wrote:
+> > On Wed, 23 Jul 2014, Jassi Brar wrote:
+> >> Introduce common framework for client/protocol drivers and
+> >> controller drivers of Inter-Processor-Communication (IPC).
+> >>
+> >> Client driver developers should have a look at
+> >>  include/linux/mailbox_client.h to understand the part of
+> >> the API exposed to client drivers.
+> >> Similarly controller driver developers should have a look
+> >> at include/linux/mailbox_controller.h
+> >>
+> >> Signed-off-by: Jassi Brar <jaswinder.singh@linaro.org>
+> >> ---
+> >>  MAINTAINERS                        |   8 +
+> >>  drivers/mailbox/Makefile           |   4 +
+> >>  drivers/mailbox/mailbox.c          | 467 +++++++++++++++++++++++++++++++++++++
+> >>  include/linux/mailbox_client.h     |  45 ++++
+> >>  include/linux/mailbox_controller.h | 131 +++++++++++
+> >>  5 files changed, 655 insertions(+)
+> >>  create mode 100644 drivers/mailbox/mailbox.c
+> >>  create mode 100644 include/linux/mailbox_client.h
+> >>  create mode 100644 include/linux/mailbox_controller.h
 
-Its not mailbox since there is no payload etc attached to it.
-GPIO lib does expose the IO's to userspace and thats what is
-being the case here. I think it is a legitimate usecase.
+[...]
 
-Sometimes the sending signals to another co-processor might
-appear like shoehorning or odd but it just uses standard
-GPIO library and its capabilities as is.
+> >> diff --git a/drivers/mailbox/mailbox.c b/drivers/mailbox/mailbox.c
+> >> new file mode 100644
+> >> index 0000000..99c0d23
+> >> --- /dev/null
+> >> +++ b/drivers/mailbox/mailbox.c
+> >> @@ -0,0 +1,467 @@
+> >> +/*
+> >> + * Mailbox: Common code for Mailbox controllers and users
+> >> + *
+> >> + * Copyright (C) 2013-2014 Linaro Ltd.
+> >> + * Author: Jassi Brar <jassisinghbrar@gmail.com>
+> >
+> > (C) Linaro, but you've supplied your Gmail?
+> >
+> I don't understand how that's a problem. Is it?
+> I always try to post from my Linaro id still.
 
-Regards,
-Santosh
+I don't know to be honest.  I always use my Linaro address when using
+Linaro's time (and sometimes when I'm using my own), and plan to
+s/linaro.org/gmail.com when/if I move on.  Not sure if there's even a
+policy on this, just thought I'd mention it.
 
+[...]
 
+> >> +     if (!dev || !dev->of_node) {
+> >> +             pr_debug("%s: No owner device node\n", __func__);
+> >
+> > Are you sure you want all of this debug prints in the final version?
+> >
+> pr_debug is as good as absent unless DEBUG is defined
 
+I'm more concerned with how the code looks than the system log, but if
+think it will be useful to someone, by all means keep it in.
 
+[...]
 
+> >> +     if (chan->txdone_method == (TXDONE_BY_POLL | TXDONE_BY_ACK))
+> >> +             chan->txdone_method = TXDONE_BY_POLL;
+> >
+> > Unless you're leaving it there for clarity, you can drop the
+> > "TXDONE_BY_POLL |" from if().
+> >
+> We need to check for both.
 
+What I'm trying to get at is; if it's already TXDONE_BY_POLL, there is no
+need to set it to TXDONE_BY_POLL.
+
+[...]
+
+> >> +++ b/include/linux/mailbox_controller.h
+> >> @@ -0,0 +1,131 @@
+> >> +/*
+> >> + * This program is free software; you can redistribute it and/or modify
+> >> + * it under the terms of the GNU General Public License version 2 as
+> >> + * published by the Free Software Foundation.
+> >> + */
+> >> +
+> >> +#ifndef __MAILBOX_CONTROLLER_H
+> >> +#define __MAILBOX_CONTROLLER_H
+> >> +
+> >> +#include <linux/of.h>
+> >
+> > completion.h
+> > device.h
+> > timer.h
+> >
+> > Etc.
+> >
+> And what else? :)
+
+I'm not going to do all the work for you Jassi. ;)
+
+(Actually, that's as far as I got.  It was more a hint for you to look
+to see _if_ there are any others to add, not to say that there were.)
+
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
