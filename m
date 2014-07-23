@@ -1,78 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752755AbaGWM0P (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 08:26:15 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:40288 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750787AbaGWM0O (ORCPT
+	id S1753333AbaGWM1Q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 08:27:16 -0400
+Received: from canardo.mork.no ([148.122.252.1]:54447 "EHLO canardo.mork.no"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752186AbaGWM1P convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 08:26:14 -0400
-Date: Wed, 23 Jul 2014 05:26:08 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Pranith Kumar <bobby.prani@gmail.com>
-Cc: Josh Triplett <josh@joshtriplett.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        "open list:READ-COPY UPDATE..." <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 11/16] rcu: Check for spurious wakeup using return value
-Message-ID: <20140723122608.GL11241@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1406092194-13004-1-git-send-email-bobby.prani@gmail.com>
- <1406092194-13004-12-git-send-email-bobby.prani@gmail.com>
+	Wed, 23 Jul 2014 08:27:15 -0400
+From: =?utf-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>
+To: Nicholas Krause <xerofoify@gmail.com>
+Cc: drbd-dev@lists.linbit.com, drbd-user@lists.linbit.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drbd: Remove fix me statements
+Organization: m
+References: <1406053161-5048-1-git-send-email-xerofoify@gmail.com>
+Date: Wed, 23 Jul 2014 14:27:00 +0200
+In-Reply-To: <1406053161-5048-1-git-send-email-xerofoify@gmail.com> (Nicholas
+	Krause's message of "Tue, 22 Jul 2014 14:19:21 -0400")
+Message-ID: <8738dsi7l7.fsf@nemi.mork.no>
+User-Agent: Gnus/5.130011 (Ma Gnus v0.11) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1406092194-13004-12-git-send-email-bobby.prani@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14072312-6688-0000-0000-0000037FB96C
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 23, 2014 at 01:09:48AM -0400, Pranith Kumar wrote:
-> When the gp_kthread wakes up from the wait event, it returns 0 if the wake up is
-> due to the condition having been met. This commit checks this return value
-> for a spurious wake up before calling rcu_gp_init().
-> 
-> Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
+Nicholas Krause <xerofoify@gmail.com> writes:
 
-How does this added check help?  I don't see that it does.  If the flag
-is set, we want to wake up.  If we get a spurious wakeup, but then the
-flag gets set before we actually wake up, we still want to wake up.
+> This removes no longer needed fix me statements
 
-So sorry, but no.
+If you claim that they no longer are needed then I expect you to explain
+what's changed since they were added.
 
-							Thanx, Paul
+> as the spinlocks
+> are needed to protect against other users of the list accessing
+>  it when items on it are being moved off it.
 
-PS.  BTW, the ones that I am not immediately responding to are those
-     that I will recheck later on and possibly accept.
+Yes, that's most likely why the locking is there.
 
-> ---
->  kernel/rcu/tree.c | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
-> index f8847d9..3b20ad2 100644
-> --- a/kernel/rcu/tree.c
-> +++ b/kernel/rcu/tree.c
-> @@ -1790,11 +1790,11 @@ static int __noreturn rcu_gp_kthread(void *arg)
->  					       ACCESS_ONCE(rsp->gpnum),
->  					       TPS("reqwait"));
->  			rsp->gp_state = RCU_GP_WAIT_GPS;
-> -			wait_event_interruptible(rsp->gp_wq,
-> +			ret = wait_event_interruptible(rsp->gp_wq,
->  						 ACCESS_ONCE(rsp->gp_flags) &
->  						 RCU_GP_FLAG_INIT);
->  			/* Locking provides needed memory barrier. */
-> -			if (rcu_gp_init(rsp))
-> +			if (!ret && rcu_gp_init(rsp))
->  				break;
->  			cond_resched();
->  			flush_signals(current);
-> -- 
-> 2.0.0.rc2
-> 
+The FIXMEs on the other hand, are probably there to tell you that it
+would be nice to get rid of the double locking.  I don't see that
+changing.
+
+
+Bjørn
 
