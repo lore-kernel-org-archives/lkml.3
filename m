@@ -1,126 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753465AbaGWMQZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 08:16:25 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:56818 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750797AbaGWMQX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 08:16:23 -0400
-Date: Wed, 23 Jul 2014 05:16:15 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Pranith Kumar <bobby.prani@gmail.com>
-Cc: Josh Triplett <josh@joshtriplett.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        "open list:READ-COPY UPDATE..." <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 07/16] rcu: Save and restore irq flags in rcu_gp_cleanup()
-Message-ID: <20140723121615.GI11241@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1406092194-13004-1-git-send-email-bobby.prani@gmail.com>
- <1406092194-13004-8-git-send-email-bobby.prani@gmail.com>
+	id S1754690AbaGWMRD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 08:17:03 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55235 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751984AbaGWMRB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jul 2014 08:17:01 -0400
+Date: Wed, 23 Jul 2014 08:16:58 -0400 (EDT)
+From: Mikulas Patocka <mpatocka@redhat.com>
+X-X-Sender: mpatocka@file01.intranet.prod.int.rdu2.redhat.com
+To: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>
+cc: "xinhui.pan" <xinhuix.pan@intel.com>, linux-kernel@vger.kernel.org,
+        agk@redhat.com, snitzer@redhat.com, dm-devel@redhat.com,
+        "Liu, ShuoX" <shuox.liu@intel.com>
+Subject: Re: [dm-devel] [PATCH] md/dm-ioctl.c: optimize memory allocation in
+ copy_params
+In-Reply-To: <53CF26B2.6060503@linux.intel.com>
+Message-ID: <alpine.LRH.2.02.1407230816000.29551@file01.intranet.prod.int.rdu2.redhat.com>
+References: <53B68068.2060102@intel.com> <alpine.LRH.2.02.1407081831510.27831@file01.intranet.prod.int.rdu2.redhat.com> <53BCA278.5050205@linux.intel.com> <alpine.LRH.2.02.1407091032400.4545@file01.intranet.prod.int.rdu2.redhat.com> <53CDB81B.90509@linux.intel.com>
+ <20140722012352.GD6822@agk-dp.fab.redhat.com> <53CF26B2.6060503@linux.intel.com>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1406092194-13004-8-git-send-email-bobby.prani@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14072312-1344-0000-0000-000003022245
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 23, 2014 at 01:09:44AM -0400, Pranith Kumar wrote:
-> We use raw_spin_lock_irqsave/restore() family of functions throughout the code
-> but for two locations. This commit replaces raw_spin_lock_irq()/unlock_irq()
-> with irqsave/restore() in one such location. This is not strictly necessary,
-> so I did not change the other location. I will update the other location if
-> this is accepted :)
-> 
-> This commit changes raw_spin_lock_irq()/unlock_irq() to lock_irqsave()/restore().
-> 
-> Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
 
-I sympathize, as I used to take the approach that you are advocating.
 
-The reason that I changed is that we -know- that interrupts are enabled
-at this point in the code, so there is no point in incurring the extra
-cognitive and machine overhead of the _irqsave() variant.  Plus the
-current code has documentation benefits -- it tells you that the author
-felt that irqs could not possible be disabled here.
+On Wed, 23 Jul 2014, Zhang, Yanmin wrote:
 
-So sorry, but no.
+> On 2014/7/22 9:23, Alasdair G Kergon wrote:
+> > > > > On 2014/7/9 6:39, Mikulas Patocka wrote:
+> > > > Which ioctl with more than 16kB
+> > > > arguments do you use?
+> > Unanswered.  Let's ask the same question in a different way:
+> > 
+> > Please supply the output of these three commands on the real-world system on
+> > which you believe that that particular allocation is causing you a problem:
+> >    dmsetup info -c
+> >    dmsetup table
+> >    dmsetup status
+> 
+> Android doesn't include the command. We compiled lvm2-2_02_107.tar.gz and copy
+> dmsetup to the board. But command reports No devices.
+> 
+> # /data/bin/dmsetup info
+> No devices found
 
-							Thanx, Paul
+So, it means that you do not use device mapper at all. So, why are you 
+trying to change memory allocation in device mapper?
 
-> ---
->  kernel/rcu/tree.c | 14 +++++++-------
->  1 file changed, 7 insertions(+), 7 deletions(-)
-> 
-> diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
-> index b14cecd..5dcbf36 100644
-> --- a/kernel/rcu/tree.c
-> +++ b/kernel/rcu/tree.c
-> @@ -1706,13 +1706,13 @@ static int rcu_gp_fqs(struct rcu_state *rsp, int fqs_state_in)
->   */
->  static void rcu_gp_cleanup(struct rcu_state *rsp)
->  {
-> -	unsigned long gp_duration;
-> +	unsigned long gp_duration, flags;
->  	bool needgp = false;
->  	int nocb = 0;
->  	struct rcu_data *rdp;
->  	struct rcu_node *rnp = rcu_get_root(rsp);
-> 
-> -	raw_spin_lock_irq(&rnp->lock);
-> +	raw_spin_lock_irqsave(&rnp->lock, flags);
->  	smp_mb__after_unlock_lock();
->  	gp_duration = jiffies - rsp->gp_start;
->  	if (gp_duration > rsp->gp_max)
-> @@ -1726,7 +1726,7 @@ static void rcu_gp_cleanup(struct rcu_state *rsp)
->  	 * safe for us to drop the lock in order to mark the grace
->  	 * period as completed in all of the rcu_node structures.
->  	 */
-> -	raw_spin_unlock_irq(&rnp->lock);
-> +	raw_spin_unlock_irqrestore(&rnp->lock, flags);
-> 
->  	/*
->  	 * Propagate new ->completed value to rcu_node structures so
-> @@ -1738,7 +1738,7 @@ static void rcu_gp_cleanup(struct rcu_state *rsp)
->  	 * grace period is recorded in any of the rcu_node structures.
->  	 */
->  	rcu_for_each_node_breadth_first(rsp, rnp) {
-> -		raw_spin_lock_irq(&rnp->lock);
-> +		raw_spin_lock_irqsave(&rnp->lock, flags);
->  		smp_mb__after_unlock_lock();
->  		ACCESS_ONCE(rnp->completed) = rsp->gpnum;
->  		rdp = this_cpu_ptr(rsp->rda);
-> @@ -1746,11 +1746,11 @@ static void rcu_gp_cleanup(struct rcu_state *rsp)
->  			needgp = __note_gp_changes(rsp, rnp, rdp) || needgp;
->  		/* smp_mb() provided by prior unlock-lock pair. */
->  		nocb += rcu_future_gp_cleanup(rsp, rnp);
-> -		raw_spin_unlock_irq(&rnp->lock);
-> +		raw_spin_unlock_irqrestore(&rnp->lock, flags);
->  		cond_resched();
->  	}
->  	rnp = rcu_get_root(rsp);
-> -	raw_spin_lock_irq(&rnp->lock);
-> +	raw_spin_lock_irqsave(&rnp->lock, flags);
->  	smp_mb__after_unlock_lock(); /* Order GP before ->completed update. */
->  	rcu_nocb_gp_set(rnp, nocb);
-> 
-> @@ -1767,7 +1767,7 @@ static void rcu_gp_cleanup(struct rcu_state *rsp)
->  				       ACCESS_ONCE(rsp->gpnum),
->  				       TPS("newreq"));
->  	}
-> -	raw_spin_unlock_irq(&rnp->lock);
-> +	raw_spin_unlock_irqrestore(&rnp->lock, flags);
->  }
-> 
->  /*
-> -- 
-> 2.0.0.rc2
-> 
-
+Mikulas
