@@ -1,56 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758163AbaGWPT0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 11:19:26 -0400
-Received: from mail-vc0-f175.google.com ([209.85.220.175]:42434 "EHLO
-	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757732AbaGWPTX (ORCPT
+	id S1758185AbaGWPTm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 11:19:42 -0400
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:54149 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757732AbaGWPTk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 11:19:23 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140723064657.GK30558@pburton-laptop>
-References: <CAPDOMVjNyAwo53Coz8MFuUs70M7j1e3QWprus5vGpTfAw=hspg@mail.gmail.com>
-	<20140723064657.GK30558@pburton-laptop>
-Date: Wed, 23 Jul 2014 11:19:23 -0400
-Message-ID: <CAPDOMVg6qMBBaT5t8Cqu7NH7FZxs=-y2SZ9uBgYGv2tgBr3yvw@mail.gmail.com>
-Subject: Re: smp-cmp.c: CDFIXMES
-From: Nick Krause <xerofoify@gmail.com>
-To: Paul Burton <paul.burton@imgtec.com>
-Cc: Ralf Baechle <ralf@linux-mips.org>, John Crispin <blogic@openwrt.org>,
-        markos.chandras@imgtec.com, Steven.Hill@imgtec.com,
-        Linux-MIPS <linux-mips@linux-mips.org>,
+	Wed, 23 Jul 2014 11:19:40 -0400
+X-Sasl-enc: kUYsT6l/RpWFHVBR1Sjf2131dm/goMFO5lzqRtU9MaWL 1406128779
+Message-ID: <1406128778.26440.9.camel@localhost>
+Subject: Re: Reading large amounts from /dev/urandom broken
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+To: "Theodore Ts'o" <tytso@mit.edu>
+Cc: Andrey Utkin <andrey.krieger.utkin@gmail.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Date: Wed, 23 Jul 2014 17:19:38 +0200
+In-Reply-To: <20140723151459.GA6673@thunk.org>
+References: <CANZNk81nyws__swPUoxz912wi5PJ2CBXbiLpJ-Jc4oLcX+J8vw@mail.gmail.com>
+	 <20140723151459.GA6673@thunk.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 23, 2014 at 2:46 AM, Paul Burton <paul.burton@imgtec.com> wrote:
-> On Wed, Jul 23, 2014 at 12:40:59AM -0400, Nick Krause wrote:
->> Are the lines with  CDFIXME still needed? If not please tell me as I
->> will send in a patch removing these
->> two from this file in order to help you guys out :).
->> Cheers Nick
->
-> Hi Nick,
->
-> I imagine the only answer any of us can give you is "we don't know". If
-> we did then we'd have removed the code or the comments already.
->
-> Please do note that the smp-cmp.c file lives behind a Kconfig option
-> that is now marked as deprecated, and that there is other work going on
-> in areas related to clocksource & clock events on the applicable
-> systems. So whilst someone could spend the time figuring out whether
-> those lines are useful, I expect that cleaning up these old FIXMEs is
-> not a particularly high priority for anyone right now.
->
-> If you'll leave them alone for a while I expect they'll disappear one
-> way or another in a few cycles time, along with the rest of the file.
->
-> Thanks,
->     Paul
+On Mi, 2014-07-23 at 11:14 -0400, Theodore Ts'o wrote:
+> On Wed, Jul 23, 2014 at 04:52:21PM +0300, Andrey Utkin wrote:
+> > Dear developers, please check bugzilla ticket
+> > https://bugzilla.kernel.org/show_bug.cgi?id=80981 (not the initial
+> > issue, but starting with comment#3.
+> > 
+> > Reading from /dev/urandom gives EOF after 33554431 bytes.  I believe
+> > it is introduced by commit 79a8468747c5f95ed3d5ce8376a3e82e0c5857fc,
+> > with the chunk
+> > 
+> > nbytes = min_t(size_t, nbytes, INT_MAX >> (ENTROPY_SHIFT + 3));
+> > 
+> > which is described in commit message as "additional paranoia check to
+> > prevent overly large count values to be passed into urandom_read()".
+> > 
+> > I don't know why people pull such large amounts of data from urandom,
+> > but given today there are two bugreports regarding problems doing
+> > that, i consider that this is practiced.
+> 
+> I've inquired on the bugzilla why the reporter is abusing urandom in
+> this way.  The other commenter on the bug replicated the problem, but
+> that's not a "second bug report" in my book.
+> 
+> At the very least, this will probably cause me to insert a warning
+> printk: "insane user of /dev/urandom: [current->comm] requested %d
+> bytes" whenever someone tries to request more than 4k.
 
+Ok, I would be fine with that.
 
-That's Ok Paul, just wanted to known when the file was going away as it seemed
-old if you want help with this please let me known :).
-Cheers Nick
+The dd if=/dev/urandom of=random_file.dat seems reasonable to me to try
+to not break it. But, of course, there are other possibilities.
+
+Bye,
+Hannes
+
