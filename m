@@ -1,111 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757508AbaGWIm6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 04:42:58 -0400
-Received: from mout.gmx.net ([212.227.15.15]:58806 "EHLO mout.gmx.net"
+	id S1757336AbaGWIpS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 04:45:18 -0400
+Received: from ozlabs.org ([103.22.144.67]:52494 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757444AbaGWImz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 04:42:55 -0400
-Message-ID: <1406104966.9114.42.camel@schoellingm.dzne.de>
-Subject: Re: [PATCH, RFC] random: introduce getrandom(2) system call
-From: Manuel =?ISO-8859-1?Q?Sch=F6lling?= <manuel.schoelling@gmx.de>
-To: tytso@mit.edu
-Cc: linux-kernel@vger.kernel.org, linux-abi@vger.kernel.org,
-        linux-crypto@vger.kernel.org, beck@openbsd.org
-Date: Wed, 23 Jul 2014 10:42:46 +0200
-In-Reply-To: <1405588695-12014-1-git-send-email-tytso@mit.edu>
-References: <1405588695-12014-1-git-send-email-tytso@mit.edu>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:3ZohXpHTpJaeBsljyY1n9MkIS2uhALTo5Wn4T96cdMpX9m1lmwJ
- ldm9fS9G9xrEvV7H2NuI6kbH1FzP9rfEixshV3zzTJrHF/m64kXSw0gTd52sMKSNgjLP8rE
- 8+qEvAePInaDxorLsiJjVfaeQQwjIGXY/UaVnRTMbrV8c+OpNMt2B/Gc68dIsAoUfY6+PxE
- fMWOFyG6c4ZvFUGk/WABg==
+	id S1751347AbaGWIpQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jul 2014 04:45:16 -0400
+Date: Wed, 23 Jul 2014 18:45:07 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        abdoulaye berthe <berthe.ab@gmail.com>
+Subject: linux-next: build warnings after merge of the gpio tree
+Message-ID: <20140723184507.30c4b211@canb.auug.org.au>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/yn5VGM_H4eVjqUn7HO2Ruhb"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+--Sig_/yn5VGM_H4eVjqUn7HO2Ruhb
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-I am wondering if we could improve the design of the system call a bit
-to prevent programming errors.
-Right now, EINVAL is returned in case of invalid flags (or in the older
-version of getrandom() also if buflen is too large), EFAULT if buf is an
-invalid address and EAGAIN if there is not enough entropy.
+Hi Linus,
 
-However, of course no programmer is save against programming errors.
-Everybody *should* check the return value of syscalls, but sometimes it
-is forgotten, and theoretically you must be stoned to death for that.
+After merging the gpio tree, today's linux-next build (powerpc
+allyesconfig) produced these warnings:
 
-Still, we should think about how we could prevent these errors. Here is
-a list of possible modifications of getrandom() and pros and cons:
+drivers/gpio/gpio-ucb1400.c: In function 'ucb1400_gpio_remove':
+drivers/gpio/gpio-ucb1400.c:92:2: warning: ignoring return value of 'gpioch=
+ip_remove', declared with attribute warn_unused_result [-Wunused-result]
+  gpiochip_remove(&ucb->gc);
+  ^
 
-1. memset(buf, 0x0, buflen) in case of an error
-pros:
- - it is more obvious to the userspace programmer that the content of
-buffer does *not* contain random bytes
-cons:
- - in case even the zero-ed buf is not noticed by the programmer, she/he
-might end up using a 100% predictable string of "random bytes". In
-contrast if zero-ing the buf is ommitted, you would at least end up
-using some (not-cryptographically) random bytes from somewhere in RAM.
+And lots of similar ones.
 
-I am aware that this memset() call should theoretically be superfluous
-but it would only be executed in very rare cases where the programmer
-misuses getrandom().
+Introduced by commit 9f5132ae82fd ("gpio: remove all usage of
+gpio_remove retval in driver/gpio").
 
+Maybe the __must_check attribute should be removed from the declaration
+of the function before removing the retval checking ...
 
-2. int getrandom(void **buf, size_t buflen, unsigned int flags)
-                      ^^
-If flags, are fine, return a pointer to a buffer of random bytes,
-otherwise return a pointer to NULL.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-pros:
- - it would ensure that an error in a getrandom() call cannot be
-ignored.
-cons:
- - not sure if a syscall should allocate memory in the name of a
-userspace program
- - not a very unix-like syscall signature
- - anytime getrandom() is called, it will allocate a new buffer which
-might end up in decreased performance (however, getrandom() should not
-be called multiple times)
+--Sig_/yn5VGM_H4eVjqUn7HO2Ruhb
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-3. send a signal to the userland process that (by default) leads to an
-abnormal termination of the process
-Essentially an error in getrandom() could be seen as critical as a
-division by 0.
+iQIcBAEBCAAGBQJTz3YYAAoJEMDTa8Ir7ZwVzLAP/AkkRRt9mdgWu63BrFWxjEJ8
+INy0cE41C/envalGoPeootPvd6bYZY48GD9ZOSOijhK16TVYaGOuMxY3pN7v4qF5
+yHxSnZpioGAsLBQ6t3vt7NB90Whi5Vm+t1sU0OAtx8lZ+gBr2nFRV1q9Epr9exmu
+gbJrftCh5Hr+TRrW2hErcmGeDtNn5RaQqABAuopBf/TtKLaEtzgF72p3svaWbDp0
+yoL6QIr5Q2pfEBxUlvg0vF/ko/DuXANXDBFdsWl2er6aZlpXMXqHzZMnFEUrNmNV
+Q4qWbwtS0twvPXy9X9ndtkV+5lHqxaUMMigSRyNY+FtqF+vSer4SwIaunnb+5jqe
+inAUkvyiptlk+iOR6O+Q9jgLGRDQqVyctnmlsLO6VA1uewyxMW9fSzr7ccqVMjZd
+EbgmzXBO7CopwwFBkIYPXjjEQaYw0eWybd5/Wen2wuuNQ8fmhA38tPTeWhR7V87I
+BOD7Gku7ofX67abpRkbvFO/ardy/66eD6xylHTZ/r2wVEy0ain42+CtTGKe67hse
++mGDzUWE+M/0qqPiyqzPOf+3psxgOlcnF35JawwrmRTJ0DSzSw64y3UHVgVRajmr
++kV1fdDDNjzlmW7F9uc+Wu8HOwRChVcyk7mvySKDK6RsvNj3wOuHWGBJgUVd7A3k
+vHeeif2jPIiCQU2KkU6g
+=uKeq
+-----END PGP SIGNATURE-----
 
-pros:
- - the userspace programmer is forced to handle this error (otherwise
-the signal would terminate the program)
-cons:
- - adds more complexity to the userspace program that might lead to new
-programming errors
-
-
-These are three possibilities. Maybe one of you is more creative and can
-come up with a much better idea. At the moment, I like option 2 the
-best, because it forces the programmer to deal with these errors, but
-probably one of you has a good point why this is not a good idea.
-Handling the NULL pointer would be much easier than using signals
-(option 3). However, it lead to a syscall signature that is different
-from, let's say read(), because the syscall itself would allocate its
-buffer.
-
-Again, I am aware that you must always check return values, but
-programming errors happen. E.g. everybody knows that you cannot trust
-data that you received via network, yet heartbleed happened.
-Here we have the chance to eradicate a critical programming error by
-improving the syscall design and I think we should spend some time
-thinking about that.
-
-
-Best,
-
-Manuel
-
-
+--Sig_/yn5VGM_H4eVjqUn7HO2Ruhb--
