@@ -1,103 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757517AbaGWMgU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 08:36:20 -0400
-Received: from mail-bn1blp0184.outbound.protection.outlook.com ([207.46.163.184]:43601
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753005AbaGWMgR convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 08:36:17 -0400
-X-WSS-ID: 0N960CC-07-S8O-02
-X-M-MSG: 
-Message-ID: <53CFAC38.9050501@amd.com>
-Date: Wed, 23 Jul 2014 14:36:08 +0200
-From: =?UTF-8?B?Q2hyaXN0aWFuIEvDtm5pZw==?= <christian.koenig@amd.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1753037AbaGWMjt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 08:39:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2199 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751936AbaGWMjr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jul 2014 08:39:47 -0400
+Date: Wed, 23 Jul 2014 08:39:44 -0400 (EDT)
+From: Mikulas Patocka <mpatocka@redhat.com>
+X-X-Sender: mpatocka@file01.intranet.prod.int.rdu2.redhat.com
+To: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>
+cc: "xinhui.pan" <xinhuix.pan@intel.com>, linux-kernel@vger.kernel.org,
+        agk@redhat.com, snitzer@redhat.com, dm-devel@redhat.com,
+        "Liu, ShuoX" <shuox.liu@intel.com>
+Subject: Re: [dm-devel] [PATCH] md/dm-ioctl.c: optimize memory allocation in
+ copy_params
+In-Reply-To: <53CDB81B.90509@linux.intel.com>
+Message-ID: <alpine.LRH.2.02.1407230817080.29551@file01.intranet.prod.int.rdu2.redhat.com>
+References: <53B68068.2060102@intel.com> <alpine.LRH.2.02.1407081831510.27831@file01.intranet.prod.int.rdu2.redhat.com> <53BCA278.5050205@linux.intel.com> <alpine.LRH.2.02.1407091032400.4545@file01.intranet.prod.int.rdu2.redhat.com>
+ <53CDB81B.90509@linux.intel.com>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
 MIME-Version: 1.0
-To: Daniel Vetter <daniel.vetter@ffwll.ch>
-CC: Maarten Lankhorst <maarten.lankhorst@canonical.com>,
-        =?UTF-8?B?Q2hyaXM=?= =?UTF-8?B?dGlhbiBLw7ZuaWc=?= 
-	<deathsimple@vodafone.de>,
-        Thomas Hellstrom <thellstrom@vmware.com>,
-        nouveau <nouveau@lists.freedesktop.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        dri-devel <dri-devel@lists.freedesktop.org>,
-        Ben Skeggs <bskeggs@redhat.com>,
-        "Deucher, Alexander" <alexander.deucher@amd.com>
-Subject: Re: [Nouveau] [PATCH 09/17] drm/radeon: use common fence implementation
- for fences
-References: <20140709093124.11354.3774.stgit@patser>
-	<53CF58FB.8070609@canonical.com>	<53CF5B9F.1050800@amd.com>
-	<53CF5EFE.6070307@canonical.com>	<53CF63C2.7070407@vodafone.de>
-	<CAKMK7uGJj+UwcnnzA+fj_=uWPN3i0sneWkoD+wfPJ_8Q6Y-DQg@mail.gmail.com>
-	<53CF6622.6060803@amd.com>	<53CF699D.9070902@canonical.com>
-	<53CF6B18.5070107@vodafone.de>
-	<CAKMK7uGd65HR11thcv8KjDw-RnTa7W-QGOzFGFd+oO_hp8wyHA@mail.gmail.com>
-	<53CF7035.2060808@amd.com>	<53CF7191.2090008@canonical.com>
-	<CAKMK7uGLqzePAREsWhX0D1oN4FdqKwPgAL6x8sULpJSqYH5LwA@mail.gmail.com>
-	<53CF765E.7020802@vodafone.de>
-	<CAKMK7uE1G-EjbJ2RAXC3ZfkaCo=Gber5PJuRG623Yoz9D=FmGw@mail.gmail.com>
-	<53CF8010.9060809@amd.com>
-	<CAKMK7uEowhvc+4Jc6t2NAeE1joFaohJ6cP7sU-Akut6b3ta=1g@mail.gmail.com>
-	<53CF822E.7050601@amd.com>
-	<CAKMK7uG85KV94PTqkzvY8RPxg6ApRKHVZrD20e48GHZM=s06=w@mail.gmail.com>
-	<53CF84C7.2020507@vodafone.de>	<53CF8693.1040006@canonical.com>
-	<53CF8AB1.2000009@amd.com>
- <CAKMK7uEgGzKb3Vsnz0FCgFCcSM39QntEisg0JMg=HOvnwLCZgw@mail.gmail.com>
-In-Reply-To: <CAKMK7uEgGzKb3Vsnz0FCgFCcSM39QntEisg0JMg=HOvnwLCZgw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-X-Originating-IP: [10.224.155.198]
-Content-Transfer-Encoding: 8BIT
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:165.204.84.221;CTRY:US;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(428002)(189002)(199002)(377454003)(51704005)(24454002)(74662001)(68736004)(19580395003)(23676002)(83322001)(110136001)(65816999)(79102001)(84676001)(99396002)(83506001)(74502001)(44976005)(21056001)(93886003)(19580405001)(33656002)(50466002)(36756003)(59896001)(85182001)(92566001)(85852003)(77982001)(87266999)(80316001)(83072002)(50986999)(54356999)(76176999)(92726001)(80022001)(65956001)(46102001)(65806001)(85306003)(47776003)(64706001)(86362001)(20776003)(102836001)(81342001)(81542001)(105586002)(107046002)(101416001)(97736001)(106466001)(87936001)(31966008)(85202003)(4396001)(76482001)(64126003)(95666004);DIR:OUT;SFP:;SCL:1;SRVR:CO1PR02MB046;H:atltwp01.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;LANG:en;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
-X-Forefront-PRVS: 028166BF91
-Authentication-Results: spf=none (sender IP is 165.204.84.221)
- smtp.mailfrom=Christian.Koenig@amd.com; 
-X-OriginatorOrg: amd4.onmicrosoft.com
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 23.07.2014 12:52, schrieb Daniel Vetter:
-> On Wed, Jul 23, 2014 at 12:13 PM, Christian König
-> <christian.koenig@amd.com> wrote:
->>> And the dma-buf would still have fences belonging to both drivers, and it
->>> would still call from outside the driver.
->>
->> Calling from outside the driver is fine as long as the driver can do
->> everything necessary to complete it's work and isn't forced into any ugly
->> hacks and things that are not 100% reliable.
->>
->> So I don't see much other approach as integrating recovery code for not
->> firing interrupts and some kind of lockup handling into the fence code as
->> well.
-> That approach doesn't really work at that well since every driver has
-> it's own reset semantics. And we're trying to move away from global
-> reset to fine-grained reset. So stop-the-world reset is out of
-> fashion, at least for i915. As you said, reset is normal in gpus and
-> we're trying to make reset less invasive. I really don't see a point
-> in imposing a reset scheme upon all drivers and I think you have about
-> as much motivation to convert radeon to the scheme used by i915 as
-> I'll have for converting to the one used by radeon. If it would fit at
-> all.
-Oh my! No, I didn't wanted to suggest any global reset infrastructure.
 
-My idea was more that the fence framework provides a 
-fence->process_signaling callback that is periodically called after 
-enable_signaling is called to trigger manual signal processing in the 
-driver.
 
-This would both be suitable as a fallback in case of not working 
-interrupts as well as a chance for any driver to do necessary lockup 
-handling.
+On Tue, 22 Jul 2014, Zhang, Yanmin wrote:
 
-Christian.
+> Sorry for replying you too late. I am very busy in some other critical issues.
+> 
+> > The question is - does this particular kmalloc in device mapper cause out
+> > of memory or killing of other tasks? It has flags __GFP_NORETRY,
+> 
+> When memory is fragmented, drivers need allocate small pages instead of 
+> big memory. Even with __GFP_NORETRY, driver might get a big memory by 
+> luck. That means other drivers would get fewer chances to fulfill their 
+> memory requests, such like allocating 2 pages for task_struct. Later on, 
+> OOM might happen.
 
-> I guess for radeon we just have to add tons of insulation by punting
-> all callbacks to work items so that radeon can do whatever it wants.
-> Plus start a delayed_work based fallback when ->enable_signalling is
-> called to make sure we work on platforms that lack interrupts.
-> -Daniel
+You claim that that big kmalloc causes memory fragmentation. But memory 
+can get fragmented even if no big kmalloc is used. For example, this 
+program will cause memory fragmentation despite the fact that it never 
+does any multi-page allocation:
+int main(void)
+{
+        int i;
+        char *array[65536];
+        for (i = 0; i < 65536; i++) {
+                array[i] = mmap(NULL, 4096, PROT_READ | PROT_WRITE, 
+MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
+                if (array[i] == MAP_FAILED) perror("mmap"), exit(1);
+                array[i][0] = 3;
+        }
+        for (i = 0; i < 65536; i += 2) {
+                if (munmap(array[i], 4096)) perror("munmap"), exit(1);
+        }
+        pause();
+        return 0;
+}
 
+If you have problems with memory fragmentation - find the piece of code 
+that is failing because of fragmented memory and fix it.
+
+To fix it:
+* if it is DMA memory for device
+  * use continuous memory allocator, or
+  * preallocate the chunk of memory when the driver is loaded and never 
+    free it
+* if it is general memory allocation with kmalloc
+  * change the algorithm, so that it doesn't require big allocation
+  * use the same trick as device mapper - try kmalloc and if it fails, try 
+    vmalloc.
+
+> > __GFP_NOMEMALLOC, __GFP_NOWARN so it shouldn't cause any trouble. It
+> > should just fail silently if memory is fragmented.
+> 
+> It's hard to say this call causes out of memory. There are many such places
+> in kernel to allocate big continuous memory. One is in seq_read, where we
+> created a patch to use vmalloc instead of kmalloc to fix it, but got far
+> worse comments as it's very old code. Another is in our own gfx driver.
+> We want to fix all. We can't blame the OOM to just one place.
+
+vmalloc is much slower than kmalloc, so you can't just go over the Linux 
+source and change every large kmalloc to vmalloc.
+
+You can change seq_read to use the same trick as device mapper (use 
+kmalloc and if it fails, fall back to vmalloc).
+
+> Monkey testing is popular for Android development. We run the testing 
+> frequently. It might start lots of applications. Eventually, it is a 
+> comprehensive testing.
+
+I ask again - do you have some statistically significant test results that 
+show that your patch makes any difference to stability? I suppose, no...
+
+> > Do you have some stacktrace that identifies this kmalloc as a problem?
+> 
+> Sometimes, when OOM happens, kernel log shows some backtrace of big 
+> continuous memory allocation failure. Sometimes, when board can't 
+> respond and watchdog might reset the board after saving thread callchain 
+> into disk.
+
+Find places, where the OOM happens (those, that you see on your 
+stacktrace) and fix them.
+
+> > Do this test - prepare two kernels that are identical, except that one
+> > kernel has that one-line change in dm-ioctl. Boot each kernel 10 times, do
+> > exactly the same operation after boot. Does the kernel with the patch
+> > always behave correctly and does the kernel without the patch always fail?
+> 
+> No. Instead of just one, many places have impact on the OOM issue.
+
+I repeat again - find the piece of code that is failing because of 
+fragmented memory and fix it.
+
+Device mapper isn't failing (because it falls back to vmalloc), so leave 
+it alone.
+
+> > Report the result - how many failures did you get with or without that
+> > one-line patch. Without such a test - I just don't believe that your patch
+> > makes any difference.
+> > 
+> > Another question - your patch only makes change if some device mapper
+> > ioctl has more than 16kB arugments. Which ioctl with more than 16kB
+> > arguments do you use? Do you load such a big table to device mapper? How
+> > often do you call that ioctl with such big arguments?
+> 
+> Xinhui's email mentions the ioctl details. In android, there is a command
+> "dumpstate", it run many other commands to collect information. In our
+> scenario, it run command "vdc dump", and vdc uses socket to pass some
+> parameters to "vold", then vold generates ioctl.
+> 
+> Thanks for your patience.
+
+Mikulas
