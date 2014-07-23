@@ -1,61 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757769AbaGWJps (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 05:45:48 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:55670 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757574AbaGWJpq convert rfc822-to-8bit (ORCPT
+	id S1757797AbaGWJrS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 05:47:18 -0400
+Received: from mail-ig0-f179.google.com ([209.85.213.179]:35224 "EHLO
+	mail-ig0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757442AbaGWJrQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 05:45:46 -0400
-Message-ID: <53CF844A.5050106@arm.com>
-Date: Wed, 23 Jul 2014 10:45:46 +0100
-From: Dietmar Eggemann <dietmar.eggemann@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Wed, 23 Jul 2014 05:47:16 -0400
 MIME-Version: 1.0
-To: =?windows-1252?Q?Michel_D=E4nzer?= <michel@daenzer.net>,
-        Peter Zijlstra <peterz@infradead.org>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Random panic in load_balance() with 3.16-rc
-References: <53C77BB8.6030804@daenzer.net> <20140717075820.GE19379@twins.programming.kicks-ass.net> <53C8E90F.1010306@daenzer.net> <53CE00EF.70108@daenzer.net> <53CF31AE.30403@daenzer.net> <CA+55aFwyURgG717kmuAXzKcHddN_63GirtwHZB4ePKH+8qVtJw@mail.gmail.com> <20140723064948.GK3935@laptop> <53CF6CC4.6090207@daenzer.net> <20140723082819.GR3935@laptop> <20140723092536.GO12054@laptop.lan> <53CF80EE.5050702@daenzer.net>
-In-Reply-To: <53CF80EE.5050702@daenzer.net>
-X-OriginalArrivalTime: 23 Jul 2014 09:45:43.0742 (UTC) FILETIME=[DF1B75E0:01CFA65A]
-X-MC-Unique: 114072310454406501
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
+X-Originating-IP: [84.73.67.144]
+In-Reply-To: <20140722121435.6bd093d0@jbarnes-desktop>
+References: <20140709093124.11354.3774.stgit@patser>
+	<20140709122953.11354.46381.stgit@patser>
+	<CAPM=9tyD2ZbrcGDC3hfNb7qNdzsfnyD-ZwM7G-nOgxeu5YKuSg@mail.gmail.com>
+	<53CE2421.5040906@amd.com>
+	<20140722114607.GL15237@phenom.ffwll.local>
+	<20140722115737.GN15237@phenom.ffwll.local>
+	<53CE56ED.4040109@vodafone.de>
+	<53CE6FB0.90500@canonical.com>
+	<53CE7410.3090603@amd.com>
+	<53CE74B5.3000201@canonical.com>
+	<53CE77B4.6020801@amd.com>
+	<CAKMK7uESXrDtCov8whOTsffg6eZdibF4qaTFaCubM=mnhN=gNQ@mail.gmail.com>
+	<CADnq5_Moy78A5JfDM0LME6_-48PW72DJpYYvEthQ5b=_amU8KQ@mail.gmail.com>
+	<CAKMK7uGtfUTU=VwSnF07jncJsH1Ckie2m1FCjct60Yz88uE3cg@mail.gmail.com>
+	<20140722121435.6bd093d0@jbarnes-desktop>
+Date: Wed, 23 Jul 2014 11:47:15 +0200
+X-Google-Sender-Auth: AaVhvVQH5yYlvd7Ky6rX8HgWD1w
+Message-ID: <CAKMK7uG-zX2ZDSoQ+XmXOvUeAZzvbdsv02+fX47uJUt=21cRaQ@mail.gmail.com>
+Subject: Re: [Nouveau] [PATCH 09/17] drm/radeon: use common fence
+ implementation for fences
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+Cc: Thomas Hellstrom <thellstrom@vmware.com>,
+        nouveau <nouveau@lists.freedesktop.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        dri-devel <dri-devel@lists.freedesktop.org>,
+        "Deucher, Alexander" <alexander.deucher@amd.com>,
+        Ben Skeggs <bskeggs@redhat.com>, Alex Deucher <alexdeucher@gmail.com>,
+        =?UTF-8?Q?Christian_K=C3=B6nig?= <christian.koenig@amd.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23/07/14 10:31, Michel Dänzer wrote:
-> On 23.07.2014 18:25, Peter Zijlstra wrote:
->> On Wed, Jul 23, 2014 at 10:28:19AM +0200, Peter Zijlstra wrote:
->>
->>> Of course, the other thing that patch did is clear sgp->power (now
->>> sgc->capacity). 
->>
->> Hmm, re-reading the thread there isn't a clear confirmation its this
->> patch at all. Could you perhaps bisect this to either verify it is
->> indeed that patch we're talking about:
->>
->> caffcdd8d27b ("sched: Do not zero sg->cpumask and sg->sgp->power in build_sched_groups()")
->>
->> or find which patch is causing this.
-> 
-> It can take a long time for the problem to occur, so I need to run at
-> least for one or two days to be at least somewhat sure a given kernel is
-> not affected.
+On Tue, Jul 22, 2014 at 9:14 PM, Jesse Barnes <jbarnes@virtuousgeek.org> wrote:
+>> We don't have the code yet ready, but that's the direction i915 will
+>> move towards for the near future. Jesse is working on some patches
+>> already.
+>
+> Yeah I'd like to get some feedback from Maarten on my bits so I can get
+> them ready for upstream.  I still need to add documentation and tests,
+> but I'd like to make sure the interfaces and internals get acked first.
 
-Doesn't the picture showing the captured panic reveal more information.
-Haven't seen it myself, I just saw Peter's reply to your email
-
-https://lkml.org/lkml/2014/7/17/100
-
-> 
-> I'll try reproducing the problem with your previous suggestions first,
-> but if I manage to do that, I guess there's no alternative to bisecting...
-> 
-> 
-
-
+Review works better if you supply a pointer to the patches ;-) I asked
+Maarten whether he looked at it and he said he didn't know where ...
+-Daniel
+-- 
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
