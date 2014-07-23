@@ -1,91 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757899AbaGWKck (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 06:32:40 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:20039 "EHLO
+	id S1757828AbaGWKqP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 06:46:15 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:23404 "EHLO
 	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757022AbaGWKci (ORCPT
+	by vger.kernel.org with ESMTP id S1752448AbaGWKqO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 06:32:38 -0400
-Date: Wed, 23 Jul 2014 11:32:19 +0100
+	Wed, 23 Jul 2014 06:46:14 -0400
+Date: Wed, 23 Jul 2014 11:45:54 +0100
 From: Catalin Marinas <catalin.marinas@arm.com>
-To: Alexei Starovoitov <ast@plumgrid.com>
-Cc: Will Deacon <Will.Deacon@arm.com>, Zi Shen Lim <zlim.lnx@gmail.com>,
-        Jiang Liu <liuj97@gmail.com>,
-        AKASHI Takahiro <takahiro.akashi@linaro.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Chema Gonzalez <chema@google.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+To: Laura Abbott <lauraa@codeaurora.org>
+Cc: Will Deacon <Will.Deacon@arm.com>, David Riley <davidriley@chromium.org>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Subject: Re: [PATCH 00/14] arm64: eBPF JIT compiler
-Message-ID: <20140723103219.GA1366@localhost>
-References: <1405708100-13604-1-git-send-email-zlim.lnx@gmail.com>
- <20140721091623.GA16122@arm.com>
- <CAMEtUuyC+MykPDO0ghTc=oex7KPLEy=BLRgWBdW+qJY7JXQmDQ@mail.gmail.com>
+        Ritesh Harjain <ritesh.harjani@gmail.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCHv4 3/5] common: dma-mapping: Introduce common remapping
+ functions
+Message-ID: <20140723104554.GB1366@localhost>
+References: <1406079308-5232-1-git-send-email-lauraa@codeaurora.org>
+ <1406079308-5232-4-git-send-email-lauraa@codeaurora.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAMEtUuyC+MykPDO0ghTc=oex7KPLEy=BLRgWBdW+qJY7JXQmDQ@mail.gmail.com>
+In-Reply-To: <1406079308-5232-4-git-send-email-lauraa@codeaurora.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 21, 2014 at 04:49:29PM +0100, Alexei Starovoitov wrote:
-> On Mon, Jul 21, 2014 at 2:16 AM, Will Deacon <will.deacon@arm.com> wrote:
-> > On Fri, Jul 18, 2014 at 07:28:06PM +0100, Zi Shen Lim wrote:
-> >> This series implements eBPF JIT compiler for arm64.
-> >> Please see [14/14] for change log.
-> >>
-> >> Patches [1-13/14] implement code generation functions.
-> >> Patch [14/14] implements the actual eBPF JIT compiler.
-> >>
-> >> Many thanks to everyone who's reviewed the code from
-> >> RFCv1->RFCv3, especially Alexei for BPF bits, and Will
-> >> for ARM64 codegen bits :)
-> >>
-> >> BTW, I'm happy to maintain arch/arm64/net (i.e. arm64 BPF bits).
-> >> Should I add a patch updating MAINTAINERS as Patch 15?
-> >
-> > I don't think that's necessary at the moment, but if we start seeing an
-> > influx of patches to arch/arm64/net, then that could make sense in the
-> > future.
-> >
-> >> This series requires a patch that exports a function
-> >> from net/core (resulting from RFCv1 discussion). This patch
-> >> has been merged into net-next @ 9f12fbe603f7
-> >> ("net: filter: move load_pointer() into filter.h").
-> >>
-> >> This series applies against net-next and is tested working
-> >> with lib/test_bpf on ARMv8 Foundation Model.
-> >
-> > Looks like it works on my Juno board too, so:
-> >
-> >   Acked-by: Will Deacon <will.deacon@arm.com>
-> >
-> > for the series.
-> >
-> > It's a bit late for 3.17 now, so I guess we'll queue this for 3.18 (which
-> > also means the dependency on -next isn't an issue). Perhaps you could repost
-> > around -rc3?
-> 
-> Thanks for testing! Nice to see it working on real hw.
-> I'm not sure why you're proposing a 4+ week delay. The patches
-> will rot instead of getting used and tested. Imo it makes sense to
-> get them into net-next now for 3.17.
-> JIT is disabled by sysctl by default anyway.
+On Wed, Jul 23, 2014 at 02:35:06AM +0100, Laura Abbott wrote:
+> --- a/arch/arm/mm/dma-mapping.c
+> +++ b/arch/arm/mm/dma-mapping.c
+> @@ -298,37 +298,19 @@ static void *
+>  __dma_alloc_remap(struct page *page, size_t size, gfp_t gfp, pgprot_t prot,
+>  	const void *caller)
+>  {
+> -	struct vm_struct *area;
+> -	unsigned long addr;
+> -
+>  	/*
+>  	 * DMA allocation can be mapped to user space, so lets
+>  	 * set VM_USERMAP flags too.
+>  	 */
+> -	area = get_vm_area_caller(size, VM_ARM_DMA_CONSISTENT | VM_USERMAP,
+> -				  caller);
+> -	if (!area)
+> -		return NULL;
+> -	addr = (unsigned long)area->addr;
+> -	area->phys_addr = __pfn_to_phys(page_to_pfn(page));
+> -
+> -	if (ioremap_page_range(addr, addr + size, area->phys_addr, prot)) {
+> -		vunmap((void *)addr);
+> -		return NULL;
+> -	}
+> -	return (void *)addr;
+> +	return dma_common_contiguous_remap(page, size,
+> +			VM_ARM_DMA_CONSISTENT | VM_USERMAP,
+> +			prot, caller);
 
-We normally like some patches (especially new functionality) to sit in
-linux-next for a while before the mering window (ideally starting with
--rc4 or -rc5). We are at -rc6 already, so getting close to the 3.17
-merging window.
+I think we still need at least a comment in the commit log since the arm
+code is moving from ioremap_page_range() to map_vm_area(). There is a
+slight performance penalty with the addition of a kmalloc() on this
+path.
 
-Another aspect is that the arm64/bpf branch depends on the net tree, so
-it can't easily go in via the arm64 tree for 3.17 (3.18 would not be a
-problem).
+Or even better (IMO), see below.
+
+> --- a/drivers/base/dma-mapping.c
+> +++ b/drivers/base/dma-mapping.c
+[...]
+> +void *dma_common_contiguous_remap(struct page *page, size_t size,
+> +			unsigned long vm_flags,
+> +			pgprot_t prot, const void *caller)
+> +{
+> +	int i;
+> +	struct page **pages;
+> +	void *ptr;
+> +
+> +	pages = kmalloc(sizeof(struct page *) << get_order(size), GFP_KERNEL);
+> +	if (!pages)
+> +		return NULL;
+> +
+> +	for (i = 0; i < (size >> PAGE_SHIFT); i++)
+> +		pages[i] = page + i;
+> +
+> +	ptr = dma_common_pages_remap(pages, size, vm_flags, prot, caller);
+> +
+> +	kfree(pages);
+> +
+> +	return ptr;
+> +}
+
+You could avoid the dma_common_page_remap() here (and kmalloc) and
+simply use ioremap_page_range(). We know that
+dma_common_contiguous_remap() is only called with contiguous physical
+range, so ioremap_page_range() is suitable. It also makes it a
+non-functional change for arch/arm.
 
 -- 
 Catalin
