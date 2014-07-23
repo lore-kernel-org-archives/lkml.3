@@ -1,83 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757611AbaGWOI7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 10:08:59 -0400
-Received: from mx2.parallels.com ([199.115.105.18]:40371 "EHLO
-	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755382AbaGWOI4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 10:08:56 -0400
-Date: Wed, 23 Jul 2014 18:08:37 +0400
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: Michal Hocko <mhocko@suse.cz>
-CC: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
-        <cgroups@vger.kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Tejun Heo <tj@kernel.org>, Li Zefan <lizefan@huawei.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Hugh Dickins <hughd@google.com>, David Rientjes <rientjes@google.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Balbir Singh <bsingharora@gmail.com>
-Subject: Re: [PATCH RFC 0/5] Virtual Memory Resource Controller for cgroups
-Message-ID: <20140723140837.GE30850@esperanza>
-References: <cover.1404383187.git.vdavydov@parallels.com>
- <20140704121621.GE12466@dhcp22.suse.cz>
- <20140704153853.GA369@esperanza>
- <20140716120146.GI7121@dhcp22.suse.cz>
+	id S1757656AbaGWOJS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 10:09:18 -0400
+Received: from mail.kernel.org ([198.145.19.201]:44821 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757115AbaGWOJP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jul 2014 10:09:15 -0400
+Date: Wed, 23 Jul 2014 11:09:08 -0300
+From: Arnaldo Carvalho de Melo <acme@kernel.org>
+To: Adrian Hunter <adrian.hunter@intel.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 05/41] perf tools: Identify which comms are from exec
+Message-ID: <20140723140908.GK20303@kernel.org>
+References: <1405332185-4050-1-git-send-email-adrian.hunter@intel.com>
+ <1405332185-4050-6-git-send-email-adrian.hunter@intel.com>
+ <20140714203237.GA18133@kernel.org>
+ <53C513CC.1010202@intel.com>
+ <20140723140752.GJ20303@kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140716120146.GI7121@dhcp22.suse.cz>
+In-Reply-To: <20140723140752.GJ20303@kernel.org>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 16, 2014 at 02:01:47PM +0200, Michal Hocko wrote:
-> On Fri 04-07-14 19:38:53, Vladimir Davydov wrote:
-> > Considering the example I've given above, both of these won't help if
-> > the system has other active CTs: the container will be forcefully kept
-> > around its high/low limit and, since it's definitely not enough for it,
-> > it will be finally killed crossing out the computations it's spent so
-> > much time on. High limit won't be good for the container even if there's
-> > no other load on the node - it will be constantly swapping out anon
-> > memory and evicting file caches. The application won't die quickly then,
-> > but it will get a heavy slowdown, which is no better than killing I
-> > guess.
+Em Wed, Jul 23, 2014 at 11:07:52AM -0300, Arnaldo Carvalho de Melo escreveu:
+> Em Tue, Jul 15, 2014 at 02:43:08PM +0300, Adrian Hunter escreveu:
+> > >> @@ -106,6 +107,8 @@ int comm__override(struct comm *comm, const char *str, u64 timestamp)
+> > >>  	comm_str__put(old);
+> > >>  	comm->comm_str = new;
+> > >>  	comm->start = timestamp;
+> > >> +	if (exec && !comm->exec)
+> > >> +		comm->exec = true;
 > 
-> It will get vmpressure notifications though and can help to release
-> excessive buffers which were allocated optimistically.
-
-But the user will only get the notification *after* his application has
-touched the memory within the limit, which may take quite a long time.
-
-> > Also, I guess it'd be beneficial to have
-> > 
-> >  - mlocked pages accounting per cgroup, because they affect memory
-> >    reclaim, and how low/high limits work, so it'd be nice to have them
-> >    limited to a sane value;
-> > 
-> >  - shmem areas accounting per cgroup, because the total amount of shmem
-> >    on the system is limited, and it'll be no good if malicious
-> >    containers eat it all.
-> > 
-> > IMO It wouldn't be a good idea to overwhelm memcg with those limits, the
-> > VM controller suits much better.
+> > > Why do you need the !comm->exec test?
+>  
+> > Dunno
 > 
-> yeah, I do not think adding more to memcg is a good idea. I am still not
-> sure whether working around bad design decisions in applications is a
-> good rationale for a new controller.
+> I saw that you kept it in the last patchkit submitted, I'll just drop
+> it, needless obfuscation.
 
-Where do you see "bad design decision" in the example I've given above?
-To recap, the user doesn't know how much memory his application is going
-to consume and he wants to be notified about a potential failure as soon
-as possible instead of waiting until it touches all the memory within
-the container limit.
+Also why do you need to "identify which comms are from exec", was it
+good for?
 
-Also, what's wrong if an application wants to eat a lot of shared
-memory, which is a limited resource? Suppose the user sets memsw.limit
-for his container to half of RAM hoping it's isolated and won't cause
-any troubles, but eventually he finds other workloads failing on the
-host due to the processes inside it has eaten all available shmem.
-
-Thanks.
+- Arnaldo
