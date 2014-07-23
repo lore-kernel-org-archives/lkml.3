@@ -1,82 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933055AbaGWTqo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 15:46:44 -0400
-Received: from mail-out.m-online.net ([212.18.0.9]:45575 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932665AbaGWTqm convert rfc822-to-8bit (ORCPT
+	id S933216AbaGWTrK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 15:47:10 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:21397 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932665AbaGWTrI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 15:46:42 -0400
-X-Auth-Info: BD+1bi02XZ9GZILkSTWCx6q2bw1OGKa+3qkG/73cW04=
-From: Marek Vasut <marex@denx.de>
-To: Corentin LABBE <clabbe.montjoie@gmail.com>
-Subject: Re: [PATCH 3/3] crypto: Add Allwinner Security System crypto accelerator
-Date: Wed, 23 Jul 2014 21:38:35 +0200
-User-Agent: KMail/1.13.7 (Linux/3.13-trunk-amd64; KDE/4.13.1; x86_64; ; )
-Cc: Herbert Xu <herbert@gondor.apana.org.au>, robh+dt@kernel.org,
-        pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        rdunlap@infradead.org, maxime.ripard@free-electrons.com,
-        linux@arm.linux.org.uk, davem@davemloft.net, grant.likely@linaro.org,
-        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org
-References: <1400771396-9686-1-git-send-email-clabbe.montjoie@gmail.com> <201407231751.02050.marex@denx.de> <53D0045C.6090605@gmail.com>
-In-Reply-To: <53D0045C.6090605@gmail.com>
+	Wed, 23 Jul 2014 15:47:08 -0400
+To: Sreekanth Reddy <sreekanth.reddy@avagotech.com>
+Cc: "Martin K. Petersen" <martin.petersen@oracle.com>, jejb@kernel.org,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@vger.kernel.org,
+        Sathya Prakash <Sathya.Prakash@avagotech.com>,
+        Nagalakshmi Nandigama <Nagalakshmi.Nandigama@avagotech.com>,
+        linux-kernel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>
+Subject: Re: [RESEND][PATCH 07/10][SCSI]mpt2sas: Added Reply Descriptor Post Queue (RDPQ) Array support
+From: "Martin K. Petersen" <martin.petersen@oracle.com>
+Organization: Oracle Corporation
+References: <20140625103445.GA12943@avagotech.com>
+	<yq1zjg2m6lu.fsf@sermon.lab.mkp.net>
+	<CAK=zhgoQt5J=jh4jShAy5rBXNz34sN-tqf=uZDkY4zQJ9XhM5g@mail.gmail.com>
+	<yq18unklvda.fsf@sermon.lab.mkp.net>
+	<CAK=zhgpDWJLBMBB1mV-7u+o_UC86PiOCAp4vi4-UAn_hXHtF2A@mail.gmail.com>
+Date: Wed, 23 Jul 2014 15:46:26 -0400
+In-Reply-To: <CAK=zhgpDWJLBMBB1mV-7u+o_UC86PiOCAp4vi4-UAn_hXHtF2A@mail.gmail.com>
+	(Sreekanth Reddy's message of "Wed, 23 Jul 2014 23:07:37 +0530")
+Message-ID: <yq1r41bkgdp.fsf@sermon.lab.mkp.net>
+User-Agent: Gnus/5.130012 (Ma Gnus v0.12) Emacs/24.2 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201407232138.35268.marex@denx.de>
+Content-Type: text/plain
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, July 23, 2014 at 08:52:12 PM, Corentin LABBE wrote:
-> Le 23/07/2014 17:51, Marek Vasut a écrit :
-> > On Wednesday, July 23, 2014 at 04:13:09 PM, Herbert Xu wrote:
-> >> On Wed, Jul 23, 2014 at 04:07:20PM +0200, Marek Vasut wrote:
-> >>> On Wednesday, July 23, 2014 at 03:57:35 PM, Herbert Xu wrote:
-> >>>> On Sat, May 24, 2014 at 02:00:03PM +0200, Marek Vasut wrote:
-> >>>>>> +	}
-> >>>>>> +#endif
-> >>>>>> +
-> >>>>>> +#ifdef CONFIG_CRYPTO_DEV_SUNXI_SS_MD5
-> >>>>>> +	err = crypto_register_shash(&sunxi_md5_alg);
-> >>>>> 
-> >>>>> Do not use shash for such device. This is clearly and ahash (and
-> >>>>> async in general) device. The rule of a thumb here is that you use
-> >>>>> sync algos only for devices which have dedicated instructions for
-> >>>>> computing the transformation. For devices which are attached to some
-> >>>>> kind of bus, you use async algos (ahash etc).
-> >>>> 
-> >>>> I'm sorry that I didn't catch this earlier but there is no such
-> >>>> rule.
-> >>>> 
-> >>>> Unless you need the async interface you should stick to the sync
-> >>>> interfaces for the sake of simplicity.
-> >>>> 
-> >>>> We have a number of existing drivers that are synchronous but
-> >>>> using the async interface.  They should either be converted
-> >>>> over to the sync interface or made interrupt-driven if possible.
-> >>> 
-> >>> Sure, but this device is interrupt driven and uses DMA to feed the
-> >>> crypto engine, therefore async, right ?
-> >> 
-> >> If it's interrupt-driven, then yes it would certainly make sense to
-> >> be async.  But all I see is polling in the latest posting, was the
-> >> first version different?
-> > 
-> > I stand corrected then, sorry.
-> > 
-> > Is it possible to use DMA to feed the crypto accelerator, Corentin?
-> > 
-> > Best regards,
-> > Marek Vasut
-> 
-> Yes, DMA is possible and will be implemented soon.
-> So if I have well understood, I keep using async interface.
+>>>>> "Sreekanth" == Sreekanth Reddy <sreekanth.reddy@avagotech.com> writes:
 
-Yeah, in this case, using DMA and async interface combo is the way to go.
+Sreekanth,
 
-Best regards,
-Marek Vasut
+Sreekanth> 2. As per MPI Spec, each set of 8 reply descriptor post
+Sreekanth> queues must have the same value for the upper 32-bits of
+Sreekanth> their memory address. So allocated set of eight queues in a
+Sreekanth> single pool and added a new function is_MSB_are_same() to
+Sreekanth> check whether higher 32 bits of this pool memory address are
+Sreekanth> same or not. If this functions returns zero then we are
+Sreekanth> saving these pools in the bad_reply_post_pool list. then
+Sreekanth> releasing these pools once we get the required memory pools.
+
+Why don't you just set pci_set_consistent_dma_mask() to DMA_BIT_MASK(32)
+before you allocate the queue entries?
+
+-- 
+Martin K. Petersen	Oracle Linux Engineering
