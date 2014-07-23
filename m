@@ -1,155 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757234AbaGWDvd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 23:51:33 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:60571 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756876AbaGWDv1 (ORCPT
+	id S1757094AbaGWDv2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 23:51:28 -0400
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:57537 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753791AbaGWDvY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 23:51:27 -0400
-X-IronPort-AV: E=Sophos;i="5.00,931,1396972800"; 
-   d="scan'208";a="33663173"
-Message-ID: <53CF2E61.3000601@cn.fujitsu.com>
-Date: Wed, 23 Jul 2014 11:39:13 +0800
-From: Gu Zheng <guz.fnst@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
-MIME-Version: 1.0
-To: Chao Yu <chao2.yu@samsung.com>, "'Andrey Tsyvarev'" <tsyvarev@ispras.ru>
-CC: "'Jaegeuk Kim'" <jaegeuk@kernel.org>,
-        "'linux-kernel'" <linux-kernel@vger.kernel.org>,
-        "'Alexey Khoroshilov'" <khoroshilov@ispras.ru>,
-        <linux-f2fs-devel@lists.sourceforge.net>
-Subject: Re: [f2fs-dev] f2fs: Possible use-after-free when umount filesystem
-References: <52F320FC.50803@ispras.ru> <534BC29B.3020408@ispras.ru> <53CCF1EC.30008@ispras.ru> <53CDC9AF.2050605@cn.fujitsu.com> <53CE3722.60307@ispras.ru> <000001cfa61b$c693b350$53bb19f0$@samsung.com>
-In-Reply-To: <000001cfa61b$c693b350$53bb19f0$@samsung.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.167.226.100]
+	Tue, 22 Jul 2014 23:51:24 -0400
+From: varkabhadram@gmail.com
+To: netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, davem@davemloft.net,
+        Varka Bhadram <varkab@cdac.in>
+Subject: [PATCH net-next v3 2/2] ethernet: realtek: use pci_device_id
+Date: Wed, 23 Jul 2014 09:19:49 +0530
+Message-Id: <1406087389-4436-3-git-send-email-varkabhadram@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1406087389-4436-1-git-send-email-varkabhadram@gmail.com>
+References: <1406087389-4436-1-git-send-email-varkabhadram@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-On 07/23/2014 10:12 AM, Chao Yu wrote:
+From: Varka Bhadram <varkab@cdac.in>
 
-> Hi Andrey Gu,
-> 
->> -----Original Message-----
->> From: Andrey Tsyvarev [mailto:tsyvarev@ispras.ru]
->> Sent: Tuesday, July 22, 2014 6:04 PM
->> To: Gu Zheng
->> Cc: Jaegeuk Kim; linux-kernel; Alexey Khoroshilov; linux-f2fs-devel@lists.sourceforge.net
->> Subject: Re: [f2fs-dev] f2fs: Possible use-after-free when umount filesystem
->>
->> Hi Gu,
->>
->>>> Investigation shows, that f2fs_evict_inode, when called for 'meta_inode', uses
->> invalidate_mapping_pages() for 'node_inode'.
->>>> But 'node_inode' is deleted before 'meta_inode' in f2fs_put_super via iput().
->>>>
->>>> It seems that in common usage scenario this use-after-free is benign, because 'node_inode'
->> remains partially valid data even after kmem_cache_free().
->>>> But things may change if, while 'meta_inode' is evicted in one f2fs filesystem, another (mounted)
->> f2fs filesystem requests inode from cache, and formely
->>>> 'node_inode' of the first filesystem is returned.
->>> The analysis seems reasonable. Have you tried to swap the reclaim order of node_inde
->>> and meta_inode?
->>>
->>> diff --git a/fs/f2fs/super.c b/fs/f2fs/super.c
->>> index 870fe19..e114418 100644
->>> --- a/fs/f2fs/super.c
->>> +++ b/fs/f2fs/super.c
->>> @@ -430,8 +430,8 @@ static void f2fs_put_super(struct super_block *sb)
->>>          if (sbi->s_dirty && get_pages(sbi, F2FS_DIRTY_NODES))
->>>                  write_checkpoint(sbi, true);
->>>
->>> -       iput(sbi->node_inode);
->>>          iput(sbi->meta_inode);
->>> +       iput(sbi->node_inode);
->>>
->>>          /* destroy f2fs internal modules */
->>>          destroy_node_manager(sbi);
->>>
->>> Thanks,
->>> Gu
->>
->> With reclaim order of node_inode and meta_inode swapped, use-after-free
->> error disappears.
->>
->> But shouldn't initialization order of these inodes be swapped too?
->> As meta_inode uses node_inode, it seems logical that it should be
->> initialized after it.
+This patch use the struct pci_device_id instead of using macro
+DEFINE_PCI_DEVICE_TABLE which is deprecated and should not be used.
+And also moves these ids after probe and remove functionalities.
 
-The initialization order dose not affect anything, so swapping the order dose not
-make more sense here.
+Signed-off-by: Varka Bhadram <varkab@cdac.in>
+---
+ drivers/net/ethernet/realtek/8139cp.c |   14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
 
-> 
-> IMO, it's not easy to exchange order of initialization between meta_inode and
-> node_inode, because we should use meta_inode in get_valid_checkpoint for valid
-> cp first for usual verification, then init node_inode.
-
-Yeah, but I think just moving node_inode's initialization to the front of meta_inode
-dose not break anything.
-
-> 
-> As I checked, nids for both meta_inode and node_inode are reservation, so it's not
-> necessary for us to invalidate pages which will never alloced.
-> 
-> How about skipping it as following?
-
-It seems the right way to fix this issue.
-
-To Andrey:
-Could you please try this one?
-
-Thanks,
-Gu
-
-> 
-> diff --git a/fs/f2fs/inode.c b/fs/f2fs/inode.c
-> index 2cf6962..cafba3c 100644
-> --- a/fs/f2fs/inode.c
-> +++ b/fs/f2fs/inode.c
-> @@ -273,7 +273,7 @@ void f2fs_evict_inode(struct inode *inode)
->  
->  	if (inode->i_ino == F2FS_NODE_INO(sbi) ||
->  			inode->i_ino == F2FS_META_INO(sbi))
-> -		goto no_delete;
-> +		goto out_clear;
->  
->  	f2fs_bug_on(get_dirty_dents(inode));
->  	remove_dirty_dir_inode(inode);
-> @@ -295,6 +295,7 @@ void f2fs_evict_inode(struct inode *inode)
->  
->  	sb_end_intwrite(inode->i_sb);
->  no_delete:
-> -	clear_inode(inode);
->  	invalidate_mapping_pages(NODE_MAPPING(sbi), inode->i_ino, inode->i_ino);
-> +out_clear:
-> +	clear_inode(inode);
->  }
-> 
->>
->> --
->> Best regards,
->>
->> Andrey Tsyvarev
->> Linux Verification Center, ISPRAS
->> web:http://linuxtesting.org
->>
->>
->> ------------------------------------------------------------------------------
->> Want fast and easy access to all the code in your enterprise? Index and
->> search up to 200,000 lines of code with a free copy of Black Duck
->> Code Sight - the same software that powers the world's largest code
->> search on Ohloh, the Black Duck Open Hub! Try it now.
->> http://p.sf.net/sfu/bds
->> _______________________________________________
->> Linux-f2fs-devel mailing list
->> Linux-f2fs-devel@lists.sourceforge.net
->> https://lists.sourceforge.net/lists/listinfo/linux-f2fs-devel
-> 
-> .
-> 
-
+diff --git a/drivers/net/ethernet/realtek/8139cp.c b/drivers/net/ethernet/realtek/8139cp.c
+index be101ca..75b1693 100644
+--- a/drivers/net/ethernet/realtek/8139cp.c
++++ b/drivers/net/ethernet/realtek/8139cp.c
+@@ -382,13 +382,6 @@ static int cp_get_eeprom(struct net_device *dev,
+ static int cp_set_eeprom(struct net_device *dev,
+ 			 struct ethtool_eeprom *eeprom, u8 *data);
+ 
+-static DEFINE_PCI_DEVICE_TABLE(cp_pci_tbl) = {
+-	{ PCI_DEVICE(PCI_VENDOR_ID_REALTEK,	PCI_DEVICE_ID_REALTEK_8139), },
+-	{ PCI_DEVICE(PCI_VENDOR_ID_TTTECH,	PCI_DEVICE_ID_TTTECH_MC322), },
+-	{ },
+-};
+-MODULE_DEVICE_TABLE(pci, cp_pci_tbl);
+-
+ static struct {
+ 	const char str[ETH_GSTRING_LEN];
+ } ethtool_stats_keys[] = {
+@@ -2106,6 +2099,13 @@ static int cp_resume (struct pci_dev *pdev)
+ }
+ #endif /* CONFIG_PM */
+ 
++static const struct pci_device_id cp_pci_tbl[] = {
++        { PCI_DEVICE(PCI_VENDOR_ID_REALTEK,     PCI_DEVICE_ID_REALTEK_8139), },
++        { PCI_DEVICE(PCI_VENDOR_ID_TTTECH,      PCI_DEVICE_ID_TTTECH_MC322), },
++        { },
++};
++MODULE_DEVICE_TABLE(pci, cp_pci_tbl);
++
+ static struct pci_driver cp_driver = {
+ 	.name         = DRV_NAME,
+ 	.id_table     = cp_pci_tbl,
+-- 
+1.7.9.5
 
