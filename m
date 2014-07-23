@@ -1,89 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757952AbaGWOiO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 10:38:14 -0400
-Received: from darkcity.gna.ch ([195.226.6.51]:50041 "EHLO mail.gna.ch"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1756831AbaGWOiL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 10:38:11 -0400
-Message-ID: <53CFC8C8.3070304@daenzer.net>
-Date: Wed, 23 Jul 2014 23:38:00 +0900
-From: =?windows-1252?Q?Michel_D=E4nzer?= <michel@daenzer.net>
-User-Agent: Mozilla/5.0 (X11; Linux ppc; rv:31.0) Gecko/20100101 Icedove/31.0
+	id S1757863AbaGWOix (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 10:38:53 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:41876 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751754AbaGWOiv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jul 2014 10:38:51 -0400
+Date: Wed, 23 Jul 2014 16:38:47 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, Tejun Heo <tj@kernel.org>,
+        Vladimir Davydov <vdavydov@parallels.com>, linux-mm@kvack.org,
+        cgroups@vger.kernel.org,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [patch 13/13] mm: memcontrol: rewrite uncharge API
+Message-ID: <20140723143847.GB16721@dhcp22.suse.cz>
+References: <1403124045-24361-1-git-send-email-hannes@cmpxchg.org>
+ <1403124045-24361-14-git-send-email-hannes@cmpxchg.org>
+ <20140715082545.GA9366@dhcp22.suse.cz>
+ <20140715121935.GB9366@dhcp22.suse.cz>
+ <20140718071246.GA21565@dhcp22.suse.cz>
+ <20140718144554.GG29639@cmpxchg.org>
+ <CAJfpegt9k+YULet3vhmG3br7zSiHy-DRL+MiEE=HRzcs+mLzbw@mail.gmail.com>
+ <20140719173911.GA1725@cmpxchg.org>
+ <20140722150825.GA4517@dhcp22.suse.cz>
+ <CAJfpegscT-ptQzq__uUV2TOn7Uvs6x4FdWGTQb9Fe9MEJr2KjA@mail.gmail.com>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>,
-        Dietmar Eggemann <dietmar.eggemann@arm.com>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Random panic in load_balance() with 3.16-rc
-References: <53CF31AE.30403@daenzer.net> <CA+55aFwyURgG717kmuAXzKcHddN_63GirtwHZB4ePKH+8qVtJw@mail.gmail.com> <20140723064948.GK3935@laptop> <53CF6CC4.6090207@daenzer.net> <20140723082819.GR3935@laptop> <20140723092536.GO12054@laptop.lan> <53CF80EE.5050702@daenzer.net> <53CF844A.5050106@arm.com> <20140723111110.GT3935@laptop> <20140723113021.GP12054@laptop.lan> <20140723142454.GQ12054@laptop.lan>
-In-Reply-To: <20140723142454.GQ12054@laptop.lan>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAJfpegscT-ptQzq__uUV2TOn7Uvs6x4FdWGTQb9Fe9MEJr2KjA@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23.07.2014 23:24, Peter Zijlstra wrote:
-> On Wed, Jul 23, 2014 at 01:30:21PM +0200, Peter Zijlstra wrote:
->> On Wed, Jul 23, 2014 at 01:11:10PM +0200, Peter Zijlstra wrote:
->>> On Wed, Jul 23, 2014 at 10:45:46AM +0100, Dietmar Eggemann wrote:
->>>> Doesn't the picture showing the captured panic reveal more information.
->>>> Haven't seen it myself, I just saw Peter's reply to your email
->>>
->>> Its a general protection fault from somewhere in load_balance(), I send
->>> you the picture.
->>>
->>> It would help to get addr2line of the RIP I suppose.
->>>
->>> Michel provided a config, so lemme go try and build that, maybe my gcc
->>> will generate similar code to his and the function offset is enough
->>> clue.
->>
->> So the code section says the faulting instruction is:
->>
->>   f3 a5
->>
->> followed by:
->>
->>   48 89 c7 85 50 ff ff 
->>
->> or so.
->>
->> My compiled code is 'different', the function is shorter, but there's a
->> f3 a5 somewhere not too far short of +d7 at +a8. I have (objdump -SD):
->>
->>     35a8:       f3 a5                   rep movsl %ds:(%rsi),%es:(%rdi)
->>
->>         for_each_cpu_and(i, sched_group_cpus(group), env->cpus) {
->>                 unsigned long capacity, capacity_factor, wl;
->>                 enum fbq_type rt;
->>
->>                 rq = cpu_rq(i);
->>     35aa:       48 c7 c1 00 00 00 00    mov    $0x0,%rcx
->>
->> And that's the only part that could possibly match.
->>
->> That looks like the start of find_busiest_queue(). I'm not entirely sure
->> what the rep movsl is operating on, lemme try and figure that out.
+On Tue 22-07-14 17:44:43, Miklos Szeredi wrote:
+> On Tue, Jul 22, 2014 at 5:08 PM, Michal Hocko <mhocko@suse.cz> wrote:
+> > On Sat 19-07-14 13:39:11, Johannes Weiner wrote:
+> >> On Fri, Jul 18, 2014 at 05:12:54PM +0200, Miklos Szeredi wrote:
+> >> > On Fri, Jul 18, 2014 at 4:45 PM, Johannes Weiner <hannes@cmpxchg.org> wrote:
+> >> >
+> >> > > I assumed the source page would always be new, according to this part
+> >> > > in fuse_try_move_page():
+> >> > >
+> >> > >         /*
+> >> > >          * This is a new and locked page, it shouldn't be mapped or
+> >> > >          * have any special flags on it
+> >> > >          */
+> >> > >         if (WARN_ON(page_mapped(oldpage)))
+> >> > >                 goto out_fallback_unlock;
+> >> > >         if (WARN_ON(page_has_private(oldpage)))
+> >> > >                 goto out_fallback_unlock;
+> >> > >         if (WARN_ON(PageDirty(oldpage) || PageWriteback(oldpage)))
+> >> > >                 goto out_fallback_unlock;
+> >> > >         if (WARN_ON(PageMlocked(oldpage)))
+> >> > >                 goto out_fallback_unlock;
+> >> > >
+> >> > > However, it's in the page cache and I can't really convince myself
+> >> > > that it's not also on the LRU.  Miklos, I have trouble pinpointing
+> >> > > where oldpage is instantiated exactly and what state it might be in -
+> >> > > can it already be on the LRU?
+> >> >
+> >> > oldpage comes from ->readpages() (*NOT* ->readpage()), i.e. readahead.
+> >> >
+> >> > AFAICS it is added to the LRU in read_cache_pages(), so it looks like
+> >> > it is definitely on the LRU at that point.
+> >
+> > OK, so my understanding of the code was wrong :/ and staring at it for
+> > quite a while didn't help much. The fuse code is so full of indirection
+> > it makes my head spin.
 > 
-> Ah, this appears to be load_balance()'s:
+> Definitely needs a rewrite.  But forget the complexities for the
+> moment and just consider this single case:
 > 
-> 	cpumask_copy(cpus, cpu_active_mask);
-
-Right, according to addr2line it's the memcpy in bitmap_copy().
-
-
-> Which totally doesn't make sense, both src and dst are static storage.
-> Dst is the most interesting since its per-cpu storage, but still.
+>  ->readpages() is called to do some readahead, pages are locked, added
+> to the page cache and, AFAICS, charged to a memcg (in
+> add_to_page_cache_lru()).
 > 
-> No way either of those should generate a #GP. Puzzled.
+>  - fuse sends a READ request to userspace and it gets a reply with
+> splice(... SPLICE_F_MOVE).  What this means that a bunch of pages of
+> indefinite origin are to replace (if possible) the pages already in
+> the page cache.  If not possible, for some reason, it falls back to
+> copying the contents.  So, AFAICS, the oldpage and the newpage can be
+> charged to a different memcg.
 
-Could it be the memcpy length being off or something like that?
+OK, thanks for the clarification. I had this feeling but couldn't wrap
+my head around the indirection of the code.
 
+It seems that checkig PageCgroupUsed(new) and bail out early in
+mem_cgroup_migrate should just work, no?
 
+> > How should we test this code path, Miklos?
+> 
+>   fusexmp_fh -osplice_write,splice_move /mnt/fuse
+> 
+> This will mirror / under /mnt/fuse and will use splice to move data
+> from the underlying filesystem to the fuse filesystem, hopefully.
+> 
+> It would be useful if it had some instrumentation telling us the
+> actual number of pages successfully moved, but it doesn't have that
+> yet.
+
+Thanks I will try to play with this tomorrow when I have more time.
 -- 
-Earthling Michel Dänzer            |                  http://www.amd.com
-Libre software enthusiast          |                Mesa and X developer
+Michal Hocko
+SUSE Labs
