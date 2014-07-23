@@ -1,49 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753821AbaGWM6Z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 08:58:25 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39244 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751049AbaGWM6Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 08:58:24 -0400
-Date: Wed, 23 Jul 2014 13:58:18 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Michal Hocko <mhocko@suse.cz>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux-MM <linux-mm@kvack.org>
-Subject: Re: [PATCH 1/2] mm: Avoid full RCU lookup of memcg for statistics
- updates
-Message-ID: <20140723125818.GT10819@suse.de>
-References: <1406114656-16350-1-git-send-email-mgorman@suse.de>
- <1406114656-16350-2-git-send-email-mgorman@suse.de>
- <20140723114449.GE1725@cmpxchg.org>
+	id S1754135AbaGWM7j (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 08:59:39 -0400
+Received: from mail-lb0-f171.google.com ([209.85.217.171]:47368 "EHLO
+	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751375AbaGWM7h (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jul 2014 08:59:37 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20140723114449.GE1725@cmpxchg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140723122112.GJ11241@linux.vnet.ibm.com>
+References: <1406092194-13004-1-git-send-email-bobby.prani@gmail.com>
+ <1406092194-13004-10-git-send-email-bobby.prani@gmail.com> <20140723122112.GJ11241@linux.vnet.ibm.com>
+From: Pranith Kumar <bobby.prani@gmail.com>
+Date: Wed, 23 Jul 2014 08:59:06 -0400
+Message-ID: <CAJhHMCAoLQPnJYCeqftXwZb6D4ECuJb4g04b4OO5BLf6iC1ENw@mail.gmail.com>
+Subject: Re: [PATCH 09/16] rcu: Remove redundant check for online cpu
+To: Paul McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Josh Triplett <josh@joshtriplett.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        "open list:READ-COPY UPDATE..." <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 23, 2014 at 07:44:49AM -0400, Johannes Weiner wrote:
-> On Wed, Jul 23, 2014 at 12:24:15PM +0100, Mel Gorman wrote:
-> > When updating memcg VM statistics like PGFAULT we take the rcu read
-> > lock and lookup the memcg. For statistic updates this is overkill
-> > when the process may not belong to a memcg. This patch adds a light
-> > check to check if a memcg potentially exists. It's race-prone in that
-> > some VM stats may be missed when a process first joins a memcg but
-> > that is not serious enough to justify a constant performance penalty.
-> 
-> Tasks always belong to a memcg, the root group per default.  There
-> isn't really any accounting that could be omitted.
-> 
+On Wed, Jul 23, 2014 at 8:21 AM, Paul E. McKenney
+<paulmck@linux.vnet.ibm.com> wrote:
+> On Wed, Jul 23, 2014 at 01:09:46AM -0400, Pranith Kumar wrote:
+>> There are two checks for an online CPU if two if() conditions. This commit
+>> simplies this by replacing it with only one check for the online CPU.
+>>
+>> Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
+>
+> I admit that it is very early in the morning my time, but I don't see
+> this change as preserving the semantics in all cases.  Please recheck
+> your changes to the second check.
+>
+>                                                         Thanx, Paul
 
-Crap, ok, I had not taken that into account. The lookup of that cannot
-really be avoided. It's a pity because the stats on the root memcg are
-not likely to be that interesting. Thanks for reviewing.
+I guess you must be thrown off by the complementary checks, the first
+check is for cpu_online() and second is for cpu_is_offline(). :)
+
+Previously, if a cpu is offline, the first condition is false and the
+second condition is true, so we return from the second if() condition.
+The same semantics are being preserved.
+
+--
+Pranith.
+
+
+
+>
+>> ---
+>>  kernel/rcu/tree.c | 9 ++++++---
+>>  1 file changed, 6 insertions(+), 3 deletions(-)
+>>
+>> diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
+>> index 5dcbf36..8d598a2 100644
+>> --- a/kernel/rcu/tree.c
+>> +++ b/kernel/rcu/tree.c
+>> @@ -2602,15 +2602,18 @@ static void __call_rcu_core(struct rcu_state *rsp, struct rcu_data *rdp,
+>>  {
+>>       bool needwake;
+>>
+>> +     if (!cpu_online(smp_processor_id()))
+>> +             return;
+>> +
+>>       /*
+>>        * If called from an extended quiescent state, invoke the RCU
+>>        * core in order to force a re-evaluation of RCU's idleness.
+>>        */
+>> -     if (!rcu_is_watching() && cpu_online(smp_processor_id()))
+>> +     if (!rcu_is_watching())
+>>               invoke_rcu_core();
+>>
+>> -     /* If interrupts were disabled or CPU offline, don't invoke RCU core. */
+>> -     if (irqs_disabled_flags(flags) || cpu_is_offline(smp_processor_id()))
+>> +     /* If interrupts were disabled, don't invoke RCU core. */
+>> +     if (irqs_disabled_flags(flags))
+>>               return;
+>>
+>>       /*
+>> --
+>> 2.0.0.rc2
+>>
+>
+
+
 
 -- 
-Mel Gorman
-SUSE Labs
+Pranith
