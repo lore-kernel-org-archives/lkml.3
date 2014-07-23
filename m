@@ -1,52 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757920AbaGWPRZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 11:17:25 -0400
-Received: from mail-vc0-f175.google.com ([209.85.220.175]:62678 "EHLO
-	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756005AbaGWPRX convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 11:17:23 -0400
+	id S1758111AbaGWPTQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 11:19:16 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:42897 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757732AbaGWPTP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jul 2014 11:19:15 -0400
+Date: Wed, 23 Jul 2014 17:19:09 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Miklos Szeredi <miklos@szeredi.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, Tejun Heo <tj@kernel.org>,
+        Vladimir Davydov <vdavydov@parallels.com>, linux-mm@kvack.org,
+        cgroups@vger.kernel.org,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [patch 13/13] mm: memcontrol: rewrite uncharge API
+Message-ID: <20140723151909.GC16721@dhcp22.suse.cz>
+References: <20140715082545.GA9366@dhcp22.suse.cz>
+ <20140715121935.GB9366@dhcp22.suse.cz>
+ <20140718071246.GA21565@dhcp22.suse.cz>
+ <20140718144554.GG29639@cmpxchg.org>
+ <CAJfpegt9k+YULet3vhmG3br7zSiHy-DRL+MiEE=HRzcs+mLzbw@mail.gmail.com>
+ <20140719173911.GA1725@cmpxchg.org>
+ <20140722150825.GA4517@dhcp22.suse.cz>
+ <CAJfpegscT-ptQzq__uUV2TOn7Uvs6x4FdWGTQb9Fe9MEJr2KjA@mail.gmail.com>
+ <20140723143847.GB16721@dhcp22.suse.cz>
+ <20140723150608.GF1725@cmpxchg.org>
 MIME-Version: 1.0
-In-Reply-To: <87ppgwgscz.fsf@nemi.mork.no>
-References: <CAPDOMViK086vShRiYAF2kTp2w1d8Qyw42GJ_QZmbB422SYg2KA@mail.gmail.com>
-	<87ppgwgscz.fsf@nemi.mork.no>
-Date: Wed, 23 Jul 2014 11:17:21 -0400
-Message-ID: <CAPDOMVhBsw2V5+ppf5A9ui57dWuYXtXTsTRz63pz69uANwpgnA@mail.gmail.com>
-Subject: Re: Work Ideas
-From: Nick Krause <xerofoify@gmail.com>
-To: =?UTF-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140723150608.GF1725@cmpxchg.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 23, 2014 at 8:41 AM, Bjørn Mork <bjorn@mork.no> wrote:
-> Nick Krause <xerofoify@gmail.com> writes:
->
->> I am working for some work in the kernel. I am new to the kernel but I
->> am read Robert Love's
->> book and another book on device drivers,  so my theory is good is
->> prettygood other then not
->> being up to date on the newest features in the latest kernels. If
->> anyone wants to give me
->> something to do I don't mind what type of work .
->
-> There are a couple of basic skills which are necessary whether your line
-> of work is kernel programming or lawn mowing.  One of the most important
-> ones is "know your own limitations". Another one is "take feedback".
->
-> I suggest you work on those for a while.  No additional hardware should
-> be necessary.
->
->
->
-> Bjørn
+On Wed 23-07-14 11:06:08, Johannes Weiner wrote:
+> On Wed, Jul 23, 2014 at 04:38:47PM +0200, Michal Hocko wrote:
+[...]
+> > OK, thanks for the clarification. I had this feeling but couldn't wrap
+> > my head around the indirection of the code.
+> > 
+> > It seems that checkig PageCgroupUsed(new) and bail out early in
+> > mem_cgroup_migrate should just work, no?
+> 
+> If the new page is already charged as page cache, we could just drop
+> the call to mem_cgroup_migrate() altogether.
 
-Very well then I guess the community wants me to listen better to the
-maintainers and
-not do stupid things :).
-Thanks Bjorn,
-Nick
+Yeah, it is just that we do not want to do all the
+page->page_cgroup->PageCgroupUsed thing in replace_page_cache_page.
+
+-- 
+Michal Hocko
+SUSE Labs
