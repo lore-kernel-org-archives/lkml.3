@@ -1,79 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754337AbaGWC3a (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 22:29:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18997 "EHLO mx1.redhat.com"
+	id S1755420AbaGWCaA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 22:30:00 -0400
+Received: from mout.perfora.net ([74.208.4.196]:65405 "EHLO mout.perfora.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751875AbaGWC33 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 22:29:29 -0400
-From: Daniel Bristot de Oliveira <bristot@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: peterz@infradead.org, mingo@kernel.org, tglx@linutronix.de,
-        stable@vger.kernel.org, rostedt@goodmis.org
-Subject: [PATCH] sched: fix sched_setparam() policy=-1 logic
-Date: Tue, 22 Jul 2014 23:27:41 -0300
-Message-Id: <9ebe0566a08dbbb3999759d3f20d6004bb2dbcfa.1406079891.git.bristot@redhat.com>
+	id S1755250AbaGWC35 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 22:29:57 -0400
+X-Greylist: delayed 373 seconds by postgrey-1.27 at vger.kernel.org; Tue, 22 Jul 2014 22:29:57 EDT
+From: Marcel Ziswiler <marcel@ziswiler.com>
+To: swarren@wwwdotorg.org, thierry.reding@gmail.com
+Cc: linux@arm.linux.org.uk, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-tegra@vger.kernel.org, stefan@agner.ch, marcel@ziswiler.com
+Subject: [PATCH] ARM: tegra: apalis t30: fix device tree compatible node
+Date: Wed, 23 Jul 2014 04:23:00 +0200
+Message-Id: <aa2cbaac07707c3d64599d3841b9d6f77567a91f.1406081870.git.marcel@ziswiler.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Provags-ID: V02:K0:OzuaTWyE79ORie8Edz88SM/3pFWTmnJMuoihr62Xstv
+ 2CdhwHqadvEC+xuM+fppPPecrm0LZUnrR/57psqY3PrC+/yYbk
+ hWizoOzA56Mmd38J3V6SK+g1a2K04j96B9Z3f+v+3S2cCpLpaQ
+ 0XbhReL7eTY/LNnZ7N2my+yr2OB8PtbGN6vuVl00eI1vIWAvKz
+ kqu1iNHuTMw2r19qErVFAWoQ5MSwJwc7yHMc1EV3ijEQpI8oY9
+ f/KpCFSxWhE0P1P8Dhzzh/8jkqNmwTl3TAc5sbqYZ5SbmuWhwN
+ eu9LdLY+hR96oxy6IucGWtFvUJTeY5f7SU4vGTAjTY437vP7tb
+ Dfq7AMDaOaTOTNdqKKzfLF16EZccjKAC6djEuiSNJCZV/+dFDo
+ teCKh3A2/4lnCWqhGg6c8/h7UN1T7PD1/v3XuC1R5ZTImr4S4+
+ q0c9ztm2a8TnBsy1jSZaE7xldqQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The scheduler uses policy=-1 to preserve the current policy state to
-implement sched_setparam(). But, as (int) -1 is equals to 0xffffffff,
-it's matching the if (policy & SCHED_RESET_ON_FORK) on
-_sched_setscheduler(). This match changes the policy value to an
-invalid value, breaking the sched_setparam() syscall.
+Working on sound support I noticed the Apalis T30 Evaluation board
+device tree missing the more generic Apalis T30 compatible string.
 
-This patch checks policy=-1 before check the SCHED_RESET_ON_FORK flag.
-
-The following program shows the bug:
-
-int main(void)
-{
-	struct sched_param param = {
-		.sched_priority = 5,
-	};
-
-	sched_setscheduler(0, SCHED_FIFO, &param);
-	param.sched_priority = 1;
-	sched_setparam(0, &param);
-	param.sched_priority = 0;
-	sched_getparam(0, &param);
-	if (param.sched_priority != 1)
-		printf("failed priority setting (found %d instead of 1)\n",
-			param.sched_priority);
-	else
-		printf("priority setting fine\n");
-}
-
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: stable@vger.kernel.org # 3.14+
-Fixes: 7479f3c9cf67 "sched: Move SCHED_RESET_ON_FORK into attr::sched_flags"
-Reviewed-by: Steven Rostedt <rostedt@goodmis.org>
-Signed-off-by: Daniel Bristot de Oliveira <bristot@redhat.com>
-
+Signed-off-by: Marcel Ziswiler <marcel@ziswiler.com>
 ---
- kernel/sched/core.c | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ arch/arm/boot/dts/tegra30-apalis-eval.dts |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index bc1638b..0acf96b 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -3558,9 +3558,10 @@ static int _sched_setscheduler(struct task_struct *p, int policy,
- 	};
+diff --git a/arch/arm/boot/dts/tegra30-apalis-eval.dts b/arch/arm/boot/dts/tegra30-apalis-eval.dts
+index 9921433..45d40f0 100644
+--- a/arch/arm/boot/dts/tegra30-apalis-eval.dts
++++ b/arch/arm/boot/dts/tegra30-apalis-eval.dts
+@@ -5,7 +5,7 @@
  
- 	/*
--	 * Fixup the legacy SCHED_RESET_ON_FORK hack
-+	 * Fixup the legacy SCHED_RESET_ON_FORK hack, except if
-+	 * the policy=-1 was passed by sched_setparam().
- 	 */
--	if (policy & SCHED_RESET_ON_FORK) {
-+	if ((policy != -1) && (policy & SCHED_RESET_ON_FORK)) {
- 		attr.sched_flags |= SCHED_FLAG_RESET_ON_FORK;
- 		policy &= ~SCHED_RESET_ON_FORK;
- 		attr.sched_policy = policy;
+ / {
+ 	model = "Toradex Apalis T30 on Apalis Evaluation Board";
+-	compatible = "toradex,apalis_t30-eval", "nvidia,tegra30";
++	compatible = "toradex,apalis_t30-eval", "toradex,apalis_t30", "nvidia,tegra30";
+ 
+ 	aliases {
+ 		rtc0 = "/i2c@7000c000/rtc@68";
 -- 
-1.9.3
+1.7.9.5
 
