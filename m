@@ -1,81 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756663AbaGWOck (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 10:32:40 -0400
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:58355 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752817AbaGWOci (ORCPT
+	id S1757583AbaGWOdb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 10:33:31 -0400
+Received: from mail-wg0-f45.google.com ([74.125.82.45]:36274 "EHLO
+	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753005AbaGWOd3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 10:32:38 -0400
-X-Sasl-enc: TTKrUeugAZLvDGUMKZRlQ6aYTuWn5eK5TGu4Nt8kDrtB 1406125954
-Message-ID: <1406125952.26440.7.camel@localhost>
-Subject: Re: Reading large amounts from /dev/urandom broken
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
-To: Andrey Utkin <andrey.krieger.utkin@gmail.com>
-Cc: tytso@mit.edu,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Wed, 23 Jul 2014 16:32:32 +0200
-In-Reply-To: <CANZNk81nyws__swPUoxz912wi5PJ2CBXbiLpJ-Jc4oLcX+J8vw@mail.gmail.com>
-References: <CANZNk81nyws__swPUoxz912wi5PJ2CBXbiLpJ-Jc4oLcX+J8vw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 23 Jul 2014 10:33:29 -0400
+Date: Wed, 23 Jul 2014 15:33:23 +0100
+From: Peter Griffin <peter.griffin@linaro.org>
+To: Felipe Balbi <balbi@ti.com>
+Cc: Lee Jones <lee.jones@linaro.org>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, maxime.coquelin@st.com,
+        patrice.chotard@st.com, srinivas.kandagatla@gmail.com,
+        devicetree@vger.kernel.org, linux-usb@vger.kernel.org,
+        linux-omap@vger.kernel.org, peppe.cavallaro@st.com
+Subject: Re: [PATCH v2 1/3] usb: dwc3: add ST dwc3 glue layer to manage dwc3
+ HC
+Message-ID: <20140723143323.GA26565@griffinp-ThinkPad-X1-Carbon-2nd>
+References: <1404541530-27856-1-git-send-email-peter.griffin@linaro.org>
+ <1404541530-27856-2-git-send-email-peter.griffin@linaro.org>
+ <20140707124627.GG6407@lee--X1>
+ <20140722091800.GB8233@griffinp-ThinkPad-X1-Carbon-2nd>
+ <20140722145711.GC20588@saruman.home>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140722145711.GC20588@saruman.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andrey,
+Hi Felipe,
 
-thanks for the heads up!
+Thanks for reviewing, see my comments inline: -
 
-On Mi, 2014-07-23 at 16:52 +0300, Andrey Utkin wrote:
-> Dear developers, please check bugzilla ticket
-> https://bugzilla.kernel.org/show_bug.cgi?id=80981 (not the initial
-> issue, but starting with comment#3.
+> > > Just use {read,write}l_relaxed() directly.
+> > 
+> > Ok, unabstracted in v3
 > 
-> Reading from /dev/urandom gives EOF after 33554431 bytes.  I believe
-> it is introduced by commit 79a8468747c5f95ed3d5ce8376a3e82e0c5857fc,
-> with the chunk
-> 
-> nbytes = min_t(size_t, nbytes, INT_MAX >> (ENTROPY_SHIFT + 3));
-> 
-> which is described in commit message as "additional paranoia check to
-> prevent overly large count values to be passed into urandom_read()".
-> 
-> I don't know why people pull such large amounts of data from urandom,
-> but given today there are two bugreports regarding problems doing
-> that, i consider that this is practiced.
+> no, no... all other glues add their own local helpers for register
+> access. This is good for tracing, it's very easy to add a tracepoint to
+> this sort of function and get very low overhead tracing of every
+> register access.
 
-Ted, we should roll back the min_t change and just account for SIZE_MAX
-bytes in case we overflow the nbytes << (ENTROPY_SHIFT + 3) calculation.
+I've put the IO accessors back in for V3
 
-Or something alike?
+> > They are just bit setting macros, I've converted them over to use BIT macro now,
+> > so it no longer takes a parameter.
+> 
+> the macros are better, but make them upper case as everybody else.
 
-diff --git a/drivers/char/random.c b/drivers/char/random.c
-index 71529e1..f11a6cc 100644
---- a/drivers/char/random.c
-+++ b/drivers/char/random.c
-@@ -1006,7 +1006,10 @@ retry:
- 		WARN_ON(1);
- 		entropy_count = 0;
- 	}
--	nfrac = ibytes << (ENTROPY_SHIFT + 3);
-+	if (ibytes > SIZE_MAX >> (ENTROPY_SHIFT + 3))
-+		nfrac = SIZE_MAX;
-+	else
-+		nfrac = ibytes << (ENTROPY_SHIFT + 3);
- 	if ((size_t) entropy_count > nfrac)
- 		entropy_count -= nfrac;
- 	else
-@@ -1386,7 +1389,6 @@ urandom_read(struct file *file, char __user *buf,
-size_t nbytes, loff_t *ppos)
- 			    "with %d bits of entropy available\n",
- 			    current->comm, nonblocking_pool.entropy_total);
+Fixed in v3.
+
+
+> > I've asked ST how this value was derirved and why. It came from validation. 
+> > The docs don't mention that it is necessary, and removing it
+> > seems to have no ill effects. So I've removed this udelay in v3.
+> 
+> make sure to test with many, many iterations just to make sure.
+
+Yes will do, I've been booting my board all day, and so far no failures.
+
+> > Ok. Do the DT folks have any comment on this?
+> 
+> look at the child's dr-mode property instead of adding your own.
+
+Thanks for the hint, now using dr-mode binding in V3 :-)
  
--	nbytes = min_t(size_t, nbytes, INT_MAX >> (ENTROPY_SHIFT + 3));
- 	ret = extract_entropy_user(&nonblocking_pool, buf, nbytes);
- 
- 	trace_urandom_read(8 * nbytes, ENTROPY_BITS(&nonblocking_pool),
+> 
+> > > > +	dwc3_data->glue_base = devm_request_and_ioremap(dev, res);
+> 
+> use devm_ioremap_resource()
 
+Fixed in V3
 
+> > Your right, this was wrong. It was some legacy code which is
+> > unnecessary and I've removed this in v3.
+> 
+> if you're going for DT, why don't you create the parent and the child
+> from DT as omap/exynos/qcom are doing ?
+
+Now creating parent and child from DT like OMAP in v3
+
+> > > > +	reset_control_assert(dwc3_data->rstc_pwrdn);
+> > > > +
+> > > > +	pinctrl_pm_select_sleep_state(dev);
+> 
+> pinctrl will select sleep and default states automatically for you.
+
+I've left this in v3, as greping around I couldn't see how that could happen automatically.
+
+Also I just double checked with linusw on irc who confirmed that the only state which is 
+ever auto-selected is "default". All other states, as well as going back to default
+state need to be explicitly called.
+
+Hope thats ok.
+
+regards,
+
+Peter.
