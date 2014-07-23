@@ -1,104 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758052AbaGWQBg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 12:01:36 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:44289 "EHLO mx2.suse.de"
+	id S1757998AbaGWQCS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 12:02:18 -0400
+Received: from mga09.intel.com ([134.134.136.24]:46086 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754176AbaGWQBf convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 12:01:35 -0400
-Date: Wed, 23 Jul 2014 18:01:30 +0200
-From: Jean Delvare <jdelvare@suse.de>
-To: Himangi Saraogi <himangi774@gmail.com>
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, Julia Lawall <julia.lawall@lip6.fr>
-Subject: Re: [PATCH] EEPROM: Introduce the use of devm_kzalloc
-Message-ID: <20140723180130.33980275@endymion.delvare>
-In-Reply-To: <20140723144318.GA3247@himangi-Dell>
-References: <20140723144318.GA3247@himangi-Dell>
-Organization: SUSE Linux
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
+	id S1754658AbaGWQCR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jul 2014 12:02:17 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,718,1400050800"; 
+   d="scan'208";a="547831250"
+Message-ID: <53CFDC79.8040804@intel.com>
+Date: Wed, 23 Jul 2014 09:02:01 -0700
+From: Dave Hansen <dave.hansen@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: "Ren, Qiaowei" <qiaowei.ren@intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>
+CC: "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: [PATCH v7 03/10] x86, mpx: add macro cpu_has_mpx
+References: <1405921124-4230-1-git-send-email-qiaowei.ren@intel.com> <1405921124-4230-4-git-send-email-qiaowei.ren@intel.com> <53CE8EEC.2090402@intel.com> <9E0BE1322F2F2246BD820DA9FC397ADE0170079E@shsmsx102.ccr.corp.intel.com>
+In-Reply-To: <9E0BE1322F2F2246BD820DA9FC397ADE0170079E@shsmsx102.ccr.corp.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Himangi,
-
-On Wed, 23 Jul 2014 20:13:18 +0530, Himangi Saraogi wrote:
-> This patch introduces the use of devm_kzalloc and does away with the
-> kfrees in the probe and remove functions. Also, a label and the err
-> variable are removed.
+On 07/22/2014 07:35 PM, Ren, Qiaowei wrote:
+> The checking about MPX feature should be as follow:
 > 
-> Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
-> Acked-by: Julia Lawall <julia.lawall@lip6.fr>
-> ---
->  drivers/misc/eeprom/eeprom.c | 21 +++++----------------
->  1 file changed, 5 insertions(+), 16 deletions(-)
+>         if (pcntxt_mask & XSTATE_EAGER) {
+>                 if (eagerfpu == DISABLE) {
+>                         pr_err("eagerfpu not present, disabling some xstate features: 0x%llx\n",
+>                                         pcntxt_mask & XSTATE_EAGER);
+>                         pcntxt_mask &= ~XSTATE_EAGER;
+>                 } else {
+>                         eagerfpu = ENABLE;
+>                 }
+>         }
 > 
-> diff --git a/drivers/misc/eeprom/eeprom.c b/drivers/misc/eeprom/eeprom.c
-> index 33f8673..6d75fcf 100644
-> --- a/drivers/misc/eeprom/eeprom.c
-> +++ b/drivers/misc/eeprom/eeprom.c
-> @@ -159,12 +159,11 @@ static int eeprom_probe(struct i2c_client *client,
->  {
->  	struct i2c_adapter *adapter = client->adapter;
->  	struct eeprom_data *data;
-> -	int err;
->  
-> -	if (!(data = kzalloc(sizeof(struct eeprom_data), GFP_KERNEL))) {
-> -		err = -ENOMEM;
-> -		goto exit;
-> -	}
-> +	data = devm_kzalloc(&client->dev, sizeof(struct eeprom_data),
-> +			    GFP_KERNEL)
+> This patch was merged into kernel the ending of last year (https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=e7d820a5e549b3eb6c3f9467507566565646a669 )
 
-That does not even build:
+Should we be doing a clear_cpu_cap(X86_FEATURE_MPX) in here?
 
-drivers/misc/eeprom/eeprom.c: In function ‘eeprom_probe’:
-drivers/misc/eeprom/eeprom.c:165:2: error: expected ‘;’ before ‘if’
-  if (!data)
-  ^
+This isn't major, but I can't _ever_ imagine a user being able to track
+down why MPX is not working from this message.  Should we spruce it up
+somehow?
 
-Please test-build patches before you send them. That's a minimum,
-ideally you should also do basic run-time testing if possible.
-
-Please also note my new e-mail address and use that when you resubmit.
-
-> +	if (!data)
-> +		return -ENOMEM;
->  
->  	memset(data->data, 0xff, EEPROM_SIZE);
->  	i2c_set_clientdata(client, data);
-> @@ -190,22 +189,12 @@ static int eeprom_probe(struct i2c_client *client,
->  	}
->  
->  	/* create the sysfs eeprom file */
-> -	err = sysfs_create_bin_file(&client->dev.kobj, &eeprom_attr);
-> -	if (err)
-> -		goto exit_kfree;
-> -
-> -	return 0;
-> -
-> -exit_kfree:
-> -	kfree(data);
-> -exit:
-> -	return err;
-> +	return sysfs_create_bin_file(&client->dev.kobj, &eeprom_attr);
->  }
->  
->  static int eeprom_remove(struct i2c_client *client)
->  {
->  	sysfs_remove_bin_file(&client->dev.kobj, &eeprom_attr);
-> -	kfree(i2c_get_clientdata(client));
->  
->  	return 0;
->  }
-
-
--- 
-Jean Delvare
-SUSE L3 Support
