@@ -1,99 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757816AbaGWJjw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 05:39:52 -0400
-Received: from mail-oa0-f43.google.com ([209.85.219.43]:64059 "EHLO
-	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757801AbaGWJju (ORCPT
+	id S1757843AbaGWJkE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 05:40:04 -0400
+Received: from mail-bn1blp0190.outbound.protection.outlook.com ([207.46.163.190]:30140
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1757824AbaGWJkA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 05:39:50 -0400
+	Wed, 23 Jul 2014 05:40:00 -0400
+X-WSS-ID: 0N95S6J-07-KLG-02
+X-M-MSG: 
+Message-ID: <53CF82E7.2040102@amd.com>
+Date: Wed, 23 Jul 2014 11:39:51 +0200
+From: =?UTF-8?B?Q2hyaXN0aWFuIEvDtm5pZw==?= <christian.koenig@amd.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-From: Jean-Michel Hautbois <jhautbois@gmail.com>
-Date: Wed, 23 Jul 2014 11:39:35 +0200
-Message-ID: <CAL8zT=g5aO1aNbADQ9Usv6J952D5t8_NvmDozTjvtczq-BGbrw@mail.gmail.com>
-Subject: [PATCH v4] Lattice ECP3 FPGA: Correct endianness
-To: linux-kernel <linux-kernel@vger.kernel.org>, Arnd Bergmann <arnd@arndb.de>,
-        gregkh@linuxfoundation.org, Stefan Roese <sr@denx.de>
-Content-Type: text/plain; charset=UTF-8
+To: Maarten Lankhorst <maarten.lankhorst@canonical.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+CC: =?UTF-8?B?Q2hyaXN0aWFuIEvDtm5pZw==?= <deathsimple@vodafone.de>,
+        "Thomas Hellstrom" <thellstrom@vmware.com>,
+        nouveau <nouveau@lists.freedesktop.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        dri-devel <dri-devel@lists.freedesktop.org>,
+        Ben Skeggs <bskeggs@redhat.com>,
+        "Deucher, Alexander" <alexander.deucher@amd.com>
+Subject: Re: [Nouveau] [PATCH 09/17] drm/radeon: use common fence implementation
+ for fences
+References: <20140709093124.11354.3774.stgit@patser>
+	<CAKMK7uG1d31zU_i__wc+Yq46A0x0tPeKnMBs+NHSmHS82uMsXQ@mail.gmail.com>
+	<53CE84AA.9030703@amd.com>
+	<CAKMK7uFa8vMBV9_JenbFGnFXtV_r9dk=WjbMkkCDWcauhrDdJg@mail.gmail.com>
+	<53CE8A57.2000803@vodafone.de>	<53CF58FB.8070609@canonical.com>
+	<53CF5B9F.1050800@amd.com>	<53CF5EFE.6070307@canonical.com>
+	<53CF63C2.7070407@vodafone.de>
+	<CAKMK7uGJj+UwcnnzA+fj_=uWPN3i0sneWkoD+wfPJ_8Q6Y-DQg@mail.gmail.com>
+	<53CF6622.6060803@amd.com>	<53CF699D.9070902@canonical.com>
+	<53CF6B18.5070107@vodafone.de>
+	<CAKMK7uGd65HR11thcv8KjDw-RnTa7W-QGOzFGFd+oO_hp8wyHA@mail.gmail.com>
+	<53CF7035.2060808@amd.com>	<53CF7191.2090008@canonical.com>
+	<CAKMK7uGLqzePAREsWhX0D1oN4FdqKwPgAL6x8sULpJSqYH5LwA@mail.gmail.com>
+	<53CF765E.7020802@vodafone.de>
+	<CAKMK7uE1G-EjbJ2RAXC3ZfkaCo=Gber5PJuRG623Yoz9D=FmGw@mail.gmail.com>
+	<53CF8010.9060809@amd.com>
+ <CAKMK7uEowhvc+4Jc6t2NAeE1joFaohJ6cP7sU-Akut6b3ta=1g@mail.gmail.com>
+ <53CF822E.7050601@amd.com> <53CF828E.5020201@canonical.com>
+In-Reply-To: <53CF828E.5020201@canonical.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+X-Originating-IP: [10.224.155.198]
+Content-Transfer-Encoding: 8BIT
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:165.204.84.221;CTRY:US;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(428002)(24454002)(377454003)(199002)(189002)(377424004)(51704005)(85182001)(65806001)(33656002)(68736004)(64126003)(107046002)(47776003)(85852003)(65956001)(80022001)(20776003)(81342001)(64706001)(102836001)(105586002)(19580395003)(92726001)(99396002)(93886003)(50466002)(80316001)(81542001)(84676001)(83322001)(4396001)(36756003)(65816999)(87266999)(86362001)(85306003)(76482001)(77982001)(76176999)(87936001)(106466001)(79102001)(54356999)(95666004)(97736001)(83072002)(85202003)(23676002)(21056001)(44976005)(101416001)(19580405001)(46102001)(83506001)(59896001)(50986999)(74662001);DIR:OUT;SFP:;SCL:1;SRVR:BN1PR02MB037;H:atltwp01.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;LANG:en;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
+X-Forefront-PRVS: 028166BF91
+Authentication-Results: spf=none (sender IP is 165.204.84.221)
+ smtp.mailfrom=Christian.Koenig@amd.com; 
+X-OriginatorOrg: amd4.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This code corrects endianness and avoids a sparse error.
-Tested with Lattice ECP3-35 with Freescale i.MX6.
-It also sends uevent in order to load it.
+Am 23.07.2014 11:38, schrieb Maarten Lankhorst:
+> op 23-07-14 11:36, Christian König schreef:
+>> Am 23.07.2014 11:30, schrieb Daniel Vetter:
+>>> On Wed, Jul 23, 2014 at 11:27 AM, Christian König
+>>> <christian.koenig@amd.com> wrote:
+>>>> You submit a job to the hardware and then block the job to wait for radeon
+>>>> to be finished? Well than this would indeed require a hardware reset, but
+>>>> wouldn't that make the whole problem even worse?
+>>>>
+>>>> I mean currently we block one userspace process to wait for other hardware
+>>>> to be finished with a buffer, but what you are describing here blocks the
+>>>> whole hardware to wait for other hardware which in the end blocks all
+>>>> userspace process accessing the hardware.
+>>> There is nothing new here with prime - if one context hangs the gpu it
+>>> blocks everyone else on i915.
+>>>
+>>>> Talking about alternative approaches wouldn't it be simpler to just offload
+>>>> the waiting to a different kernel or userspace thread?
+>>> Well this is exactly what we'll do once we have the scheduler. But
+>>> this is an orthogonal issue imo.
+>> Mhm, could have the scheduler first?
+>>
+>> Cause that sounds like reducing the necessary fence interface to just a fence->wait function.
+> You would also lose benefits like having a 'perf timechart' for gpu's.
 
-Signed-off-by: Jean-Michel Hautbois <jean-michel.hautbois@vodalys.com>
----
- drivers/misc/lattice-ecp3-config.c | 16 +++++++++-------
- 1 file changed, 9 insertions(+), 7 deletions(-)
+I can live with that, when it reduces the complexity of the fence interface.
 
-diff --git a/drivers/misc/lattice-ecp3-config.c
-b/drivers/misc/lattice-ecp3-config.c
-index bb26f08..2c86319 100644
---- a/drivers/misc/lattice-ecp3-config.c
-+++ b/drivers/misc/lattice-ecp3-config.c
-@@ -16,6 +16,7 @@
- #include <linux/spi/spi.h>
- #include <linux/platform_device.h>
- #include <linux/delay.h>
-+#include <asm/unaligned.h>
+Christian.
 
- #define FIRMWARE_NAME    "lattice-ecp3.bit"
+>
+> ~Maarten
+>
 
-@@ -92,8 +93,8 @@ static void firmware_load(const struct firmware *fw,
-void *context)
-     /* Trying to speak with the FPGA via SPI... */
-     txbuf[0] = FPGA_CMD_READ_ID;
-     ret = spi_write_then_read(spi, txbuf, 8, rxbuf, rx_len);
--    dev_dbg(&spi->dev, "FPGA JTAG ID=%08x\n", *(u32 *)&rxbuf[4]);
--    jedec_id = *(u32 *)&rxbuf[4];
-+    jedec_id = get_unaligned_be32(&rxbuf[4]);
-+    dev_dbg(&spi->dev, "FPGA JTAG ID=%08x\n", jedec_id);
-
-     for (i = 0; i < ARRAY_SIZE(ecp3_dev); i++) {
-         if (jedec_id == ecp3_dev[i].jedec_id)
-@@ -110,7 +111,8 @@ static void firmware_load(const struct firmware
-*fw, void *context)
-
-     txbuf[0] = FPGA_CMD_READ_STATUS;
-     ret = spi_write_then_read(spi, txbuf, 8, rxbuf, rx_len);
--    dev_dbg(&spi->dev, "FPGA Status=%08x\n", *(u32 *)&rxbuf[4]);
-+    status = get_unaligned_be32(&rxbuf[4]);
-+    dev_dbg(&spi->dev, "FPGA Status=%08x\n", status);
-
-     buffer = kzalloc(fw->size + 8, GFP_KERNEL);
-     if (!buffer) {
-@@ -142,7 +144,7 @@ static void firmware_load(const struct firmware
-*fw, void *context)
-     for (i = 0; i < FPGA_CLEAR_LOOP_COUNT; i++) {
-         txbuf[0] = FPGA_CMD_READ_STATUS;
-         ret = spi_write_then_read(spi, txbuf, 8, rxbuf, rx_len);
--        status = *(u32 *)&rxbuf[4];
-+        status = get_unaligned_be32(&rxbuf[4]);
-         if (status == FPGA_STATUS_CLEARED)
-             break;
-
-@@ -165,8 +167,8 @@ static void firmware_load(const struct firmware
-*fw, void *context)
-
-     txbuf[0] = FPGA_CMD_READ_STATUS;
-     ret = spi_write_then_read(spi, txbuf, 8, rxbuf, rx_len);
--    dev_dbg(&spi->dev, "FPGA Status=%08x\n", *(u32 *)&rxbuf[4]);
--    status = *(u32 *)&rxbuf[4];
-+    status = get_unaligned_be32(&rxbuf[4]);
-+    dev_dbg(&spi->dev, "FPGA Status=%08x\n", status);
-
-     /* Check result */
-     if (status & FPGA_STATUS_DONE)
-@@ -197,7 +199,7 @@ static int lattice_ecp3_probe(struct spi_device *spi)
-     spi_set_drvdata(spi, data);
-
-     init_completion(&data->fw_loaded);
--    err = request_firmware_nowait(THIS_MODULE, FW_ACTION_NOHOTPLUG,
-+    err = request_firmware_nowait(THIS_MODULE, FW_ACTION_HOTPLUG,
-                       FIRMWARE_NAME, &spi->dev,
-                       GFP_KERNEL, spi, firmware_load);
-     if (err) {
--- 
-2.0.0
