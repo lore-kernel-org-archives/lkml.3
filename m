@@ -1,83 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758225AbaGWQEQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 12:04:16 -0400
-Received: from cpc2-cwma8-2-0-cust224.7-3.cable.virginm.net ([82.20.154.225]:58840
-	"EHLO alan.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757646AbaGWQEP (ORCPT
+	id S1758251AbaGWQE2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 12:04:28 -0400
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:44857 "EHLO
+	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1757646AbaGWQE0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 12:04:15 -0400
-Date: Wed, 23 Jul 2014 17:03:14 +0100
-From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-To: Wang YanQing <udknight@gmail.com>
-Cc: gregkh@linuxfoundation.org, linus.walleij@linaro.org, jhovold@gmail.com,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] usb:serial:pl2303: add GPIOs interface on PL2303
-Message-ID: <20140723170314.23864779@alan.etchedpixels.co.uk>
-In-Reply-To: <20140720063841.GA28059@udknight>
-References: <20140720063841.GA28059@udknight>
-Organization: Intel Corporation
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	Wed, 23 Jul 2014 12:04:26 -0400
+Message-ID: <53CFDD05.4010104@hurleysoftware.com>
+Date: Wed, 23 Jul 2014 12:04:21 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+To: "xinhui.pan" <xinhuix.pan@intel.com>
+CC: Greg KH <gregkh@linuxfoundation.org>, mnipxh <mnipxh@gmail.com>,
+        jslaby@suse.cz, linux-kernel@vger.kernel.org,
+        yanmin_zhang@linux.intel.com
+Subject: Re: [PATCH] tty/tty_io.c: make a check before reuse cdev
+References: <53CD0BD4.4050007@gmail.com> <20140721153840.GA6802@kroah.com> <53CE5097.2000502@intel.com> <53CE941B.1030102@hurleysoftware.com> <53CF7EAC.8010201@intel.com>
+In-Reply-To: <53CF7EAC.8010201@intel.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> --- a/drivers/usb/serial/pl2303.c
-> +++ b/drivers/usb/serial/pl2303.c
-> @@ -28,6 +28,9 @@
->  #include <linux/usb.h>
->  #include <linux/usb/serial.h>
->  #include <asm/unaligned.h>
-> +#ifdef CONFIG_USB_SERIAL_PL2303_GPIO
-> +#include <linux/gpio.h>
-> +#endif
->  #include "pl2303.h"
+Hi Xinhui,
 
-Just include the file anyway it does no harm
+On 07/23/2014 05:21 AM, xinhui.pan wrote:
+> 于 2014年07月23日 00:40, Peter Hurley 写道:
+>> On 07/22/2014 07:52 AM, xinhui.pan wrote:
+>>> 于 2014年07月21日 23:38, Greg KH 写道:
+>>>> On Mon, Jul 21, 2014 at 08:47:16PM +0800, pp wrote:
 
->  
->  
-> @@ -143,9 +146,27 @@ struct pl2303_type_data {
->  	unsigned long quirks;
->  };
->  
-> +#ifdef CONFIG_USB_SERIAL_PL2303_GPIO
-> +struct pl2303_gpio {
-> +	/*
-> +	 * 0..3: unknown (zero)
-> +	 * 4: gp0 output enable (1: gp0 pin is output, 0: gp0 pin is input)
-> +	 * 5: gp1 output enable (1: gp1 pin is output, 0: gp1 pin is input)
-> +	 * 6: gp0 pin value
-> +	 * 7: gp1 pin value
-> +	 */
-> +	u8 index;
-> +	struct usb_serial *serial;
-> +	struct gpio_chip gpio_chip;
-> +};
-> +#endif
+>>>>> tty driver register its device and (D)init the cdevs again.
+>>>>
+>>>> What driver does this with an "old" device, it should have created a new
+>>>> one, otherwise, as you have pointed out, it's a bug.
+>>>>
+>>>
+>>> I can't agree more with you. we should not use "old" device.
+>>
+>> This is a gsm driver problem. The GSM driver is reusing device indexes
+>> for still-open ttys.
+>>
+>> The GSM driver uses a global table, gsm_mux[], to allocate device indexes
+>> but prematurely clears the table entry in gsm_mux_cleanup(). If instead,
+>> clearing the gsm_mux table entry were deferred to gsm_mux_free(), then
+>> device indexes would not be getting reused until after the last tty
+>> associated with the last gsm attach was closed.
+>>
+> 
+> Very nice solution. We will check if this can cause any risk, both to kernel and user space.
+> Using a new tty base to register with new cdevs may give us more chance to wait PROCESS quit/close.
+> when total 256 tty used up, what we should do is still in discuss.
 
-Declaring the struct anyway does no harm
+I saw your patch for the use of gsm->num before gsm_activate_mux() has
+allocated the table entry; thanks for fixing that.
 
+As for what to do if all the gsm_mux table entries are used: if the error
+is infrequent, I suggest simply returning an error which is what the
+driver does currently. Otherwise, a more dynamic allocation scheme may be required.
 
->  	struct pl2303_serial_private *spriv = usb_get_serial_data(serial);
->  
-> +#ifdef CONFIG_USB_SERIAL_PL2303_GPIO
-> +	if (spriv && spriv->gpio) {
+I did notice while reviewing the error handling that gsmld_open() will
+leak the entire composite ldisc data allocated by gsm_alloc_mux() if
+gsmld_attach_gsm() fails.
 
-Can spriv ever be NULL - how would that occur?
+Regards,
+Peter Hurley
 
-
-> +		if (gpiochip_remove(&spriv->gpio->gpio_chip))
-> +			dev_err(&serial->interface->dev, "unable to remove gpio_chip?\n");
-> +		kfree(spriv->gpio);
-> +	}
-> +#endif
->  	kfree(spriv);
-
-Only other question I have - if I have multiple PL2303HX adapters how
-will I work out which GPIO lines belong to which /dev/ttyUSB* interface ?
-
-Do we need a way to actually ask the serial port for its GPIO range ?
