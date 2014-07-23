@@ -1,82 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932180AbaGWI6V (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 04:58:21 -0400
-Received: from host-92-27-6-192.static.as13285.net ([92.27.6.192]:34216 "EHLO
-	samson.armitage.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757371AbaGWI6R (ORCPT
+	id S1757496AbaGWJAr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 05:00:47 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:43136 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756428AbaGWJAo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 04:58:17 -0400
-Message-ID: <1406105881.2990.60.camel@samson1.armitage.org.uk>
-Subject: [PATCH v3] ipv4: Make IP_MULTICAST_ALL and IP_MSFILTER work on raw
- sockets
-From: Quentin Armitage <quentin@armitage.org.uk>
-To: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>, James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org,
-        "David S.Miller" <davem@davemloft.net>
-Cc: linux-kernel@vger.kernel.org
-Date: Wed, 23 Jul 2014 09:58:01 +0100
-Organization: The Armitage family
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+	Wed, 23 Jul 2014 05:00:44 -0400
+Message-ID: <53CF7978.4090709@ti.com>
+Date: Wed, 23 Jul 2014 14:29:36 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: <balbi@ti.com>, Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+CC: Tony Lindgren <tony@atomide.com>, <linux-kernel@vger.kernel.org>,
+        <marek.belisko@gmail.com>, <linux@arm.linux.org.uk>,
+        <gregkh@linuxfoundation.org>, <linux-omap@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-usb@vger.kernel.org>,
+        <hns@goldelico.com>
+Subject: Re: [PATCH v3 0/2] usb: fix controller-PHY binding for OMAP3 platform
+References: <1387209225-11520-1-git-send-email-kishon@ti.com> <20131216223826.GG26293@atomide.com> <20131216234829.GC29284@saruman.home> <2288457.9ZfWAQMUao@avalon> <20140721151557.GH6852@saruman.home>
+In-Reply-To: <20140721151557.GH6852@saruman.home>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, although IP_MULTICAST_ALL and IP_MSFILTER ioctl calls succeed on
-raw sockets, there is no code to implement the functionality on received
-packets; it is only implemented for UDP sockets. The raw(7) man page states:
-"In addition, all ip(7) IPPROTO_IP socket options valid for datagram sockets
-are supported", which implies these ioctls should work on raw sockets.
+Hi Felipe,
 
-To fix this, add a call to ip_mc_sf_allow on raw sockets.
+On Monday 21 July 2014 08:45 PM, Felipe Balbi wrote:
+> Hi,
+> 
+> On Mon, Jul 21, 2014 at 05:04:57PM +0200, Laurent Pinchart wrote:
+>> Hi Felipe,
+>>
+>> What happened to these two patches ?
+> 
+> looks like I lost them.
+> 
+>> On Monday 16 December 2013 17:48:29 Felipe Balbi wrote:
+>>> On Mon, Dec 16, 2013 at 02:38:27PM -0800, Tony Lindgren wrote:
+>>>> * Felipe Balbi <balbi@ti.com> [131216 13:31]:
+>>>>> On Mon, Dec 16, 2013 at 09:23:43PM +0530, Kishon Vijay Abraham I wrote:
+>>>>>> After the platform devices are created using PLATFORM_DEVID_AUTO, the
+>>>>>> device names given in usb_bind_phy (in board file) does not match with
+>>>>>> the actual device name causing the USB PHY library not to return the
+>>>>>> PHY reference when the MUSB controller request for the PHY in the
+>>>>>> non-dt boot case.
+>>>>>> So removed creating platform devices using PLATFORM_DEVID_AUTO in
+>>>>>> omap2430.c.
+>>>>>>
+>>>>>> Did enumeration testing in omap3 beagle.
+>>>>>>
+>>>>>> Changes from v2:
+>>>>>> * Fixed the commit log
+>>>>>>
+>>>>>> Changes from v1:
+>>>>>> * refreshed to the latested mainline kernel
+>>>>>> * added musb_put_id from omap2430 remove.
+>>>>>
+>>>>> Tony, how do you want to handle this ? You want me to provide you a
+>>>>> branch which we both merge ?
+>>>>
+>>>> Yes that would be great thanks. For the mach-omap2 touching parts:
+>>>>
+>>>> Acked-by: Tony Lindgren <tony@atomide.com>
+>>>
+>>> Here it is, let me know if you prefer a signed tag:
+>>>
+>>> The following changes since commit 6ce4eac1f600b34f2f7f58f9cd8f0503d79e42ae:
+>>>
+>>>   Linux 3.13-rc1 (2013-11-22 11:30:55 -0800)
+>>>
+>>> are available in the git repository at:
+>>>
+>>>   git://git.kernel.org/pub/scm/linux/kernel/git/balbi/usb.git
+>>> usb-phy-binding-omap3
+>>>
+>>> for you to fetch changes up to 23ada3130cf4e56acb86fdff4c26113188d52d18:
+>>>
+>>>   arm: omap: remove *.auto* from device names given in usb_bind_phy
+>>> (2013-12-16 17:44:43 -0600)
+>>>
+>>> ----------------------------------------------------------------
+>>> Kishon Vijay Abraham I (2):
+>>>       usb: musb: omap: remove using PLATFORM_DEVID_AUTO in omap2430.c
+>>>       arm: omap: remove *.auto* from device names given in usb_bind_phy
+> 
+> Kishon, are these still valid ?
 
-This should not break any existing code, since the current position of
-not calling ip_mc_sf_filter makes it behave as if neither the IP_MULTICAST_ALL
-nor the IP_MSFILTER ioctl had been called. Adding the call to ip_mc_sf_allow
-will therefore maintain the current behaviour so long as IP_MULTICAST_ALL and
-IP_MSFILTER ioctls are not called. Any code that currently is calling
-IP_MULTICAST_ALL or IP_MSFILTER ioctls on raw sockets presumably is wanting
-the filter to be applied, although no filtering will currently be occurring.
+Looks like board-2430sdp.c got removed. Apart from that the reset of the patch
+series is still applicable for non-dt boot.
 
-Signed-off-by: Quentin Armitage <quentin@armitage.org.uk>
----
-v2: * Fixed subject line
-
-v3: * Fix space/tab formatting. With apologies to all concerned.
-
----
- net/ipv4/raw.c |    5 ++++-
- 1 files changed, 4 insertions(+), 1 deletions(-)
-
-diff --git a/net/ipv4/raw.c b/net/ipv4/raw.c
-index 2c65160..2e1628c 100644
---- a/net/ipv4/raw.c
-+++ b/net/ipv4/raw.c
-@@ -58,6 +58,7 @@
- #include <linux/in_route.h>
- #include <linux/route.h>
- #include <linux/skbuff.h>
-+#include <linux/igmp.h>
- #include <net/net_namespace.h>
- #include <net/dst.h>
- #include <net/sock.h>
-@@ -174,7 +175,9 @@ static int raw_v4_input(struct sk_buff *skb, const struct iphdr *iph, int hash)
- 
- 	while (sk) {
- 		delivered = 1;
--		if (iph->protocol != IPPROTO_ICMP || !icmp_filter(sk, skb)) {
-+		if ((iph->protocol != IPPROTO_ICMP || !icmp_filter(sk, skb)) &&
-+		    ip_mc_sf_allow(sk, iph->daddr, iph->saddr,
-+				   skb->dev->ifindex)) {
- 			struct sk_buff *clone = skb_clone(skb, GFP_ATOMIC);
- 
- 			/* Not releasing hash table! */
--- 
-1.7.7.6
-
-
-
+Thanks
+Kishon
