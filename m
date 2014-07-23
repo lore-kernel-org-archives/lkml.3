@@ -1,88 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932819AbaGWSHY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 14:07:24 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:34867 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932316AbaGWSHW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 14:07:22 -0400
-Date: Wed, 23 Jul 2014 20:07:18 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: "Chen, Gong" <gong.chen@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, tglx@linutronix.de,
-        paulus@samba.org, benh@kernel.crashing.org, tony.luck@intel.com,
-        hpa@zytor.com, jkosina@suse.cz, rafael.j.wysocki@intel.com,
-        linux@arm.linux.org.uk, ralf@linux-mips.org, schwidefsky@de.ibm.com,
-        davem@davemloft.net, viro@zeniv.linux.org.uk, fweisbec@gmail.com,
-        cl@linux.com, akpm@linux-foundation.org, axboe@kernel.dk,
-        JBottomley@parallels.com, neilb@suse.de, christoffer.dall@linaro.org,
-        rostedt@goodmis.org, rric@kernel.org, gregkh@linuxfoundation.org,
-        mhocko@suse.cz, david@fromorbit.com
-Subject: Re: [RFC PATCH v1 12/70] x86, pci, amd_bus: _FROZEN Cleanup
-Message-ID: <20140723180718.GH21707@pd.tnic>
-References: <1406080786-3938-1-git-send-email-gong.chen@linux.intel.com>
- <1406080786-3938-13-git-send-email-gong.chen@linux.intel.com>
+	id S932860AbaGWSHq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 14:07:46 -0400
+Received: from mail-vc0-f177.google.com ([209.85.220.177]:44144 "EHLO
+	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932289AbaGWSHp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jul 2014 14:07:45 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1406080786-3938-13-git-send-email-gong.chen@linux.intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <CA+55aFwQSmBAs=QH9jAZz5JY7YFrDeuPH1RjFH+YKVr2NQM38g@mail.gmail.com>
+References: <20140723082819.GR3935@laptop>
+	<20140723092536.GO12054@laptop.lan>
+	<53CF80EE.5050702@daenzer.net>
+	<53CF844A.5050106@arm.com>
+	<20140723111110.GT3935@laptop>
+	<20140723113021.GP12054@laptop.lan>
+	<20140723142454.GQ12054@laptop.lan>
+	<CA+55aFwZ7kAqqhaE4g89CJLkpJOwGxcN4u+cc0ODfqjQ0rVMiA@mail.gmail.com>
+	<20140723155526.GW3935@laptop>
+	<CA+55aFzSU5u8MiGqRZ6BVojQPnxbd1hxmFY_BA=UuCAygxR8WQ@mail.gmail.com>
+	<20140723170324.GZ3935@laptop>
+	<CA+55aFwQSmBAs=QH9jAZz5JY7YFrDeuPH1RjFH+YKVr2NQM38g@mail.gmail.com>
+Date: Wed, 23 Jul 2014 11:07:40 -0700
+X-Google-Sender-Auth: eY0McPtFeXtGsN3Fykx-V0lKtcY
+Message-ID: <CA+55aFz9z=58iEj3qx4Oip=iPYxzgSaPe945Xzd8Z60_v1EEzQ@mail.gmail.com>
+Subject: Re: Random panic in load_balance() with 3.16-rc
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Dietmar Eggemann <dietmar.eggemann@arm.com>,
+        =?UTF-8?Q?Michel_D=C3=A4nzer?= <michel@daenzer.net>,
+        Ingo Molnar <mingo@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 22, 2014 at 09:58:48PM -0400, Chen, Gong wrote:
-> Remove XXX_FROZEN state from x86/pci/amd_bus.
-> 
-> Signed-off-by: Chen, Gong <gong.chen@linux.intel.com>
-> ---
->  arch/x86/pci/amd_bus.c | 3 +--
->  1 file changed, 1 insertion(+), 2 deletions(-)
-> 
-> diff --git a/arch/x86/pci/amd_bus.c b/arch/x86/pci/amd_bus.c
-> index c20d2cc..30f0fca9 100644
-> --- a/arch/x86/pci/amd_bus.c
-> +++ b/arch/x86/pci/amd_bus.c
-> @@ -341,9 +341,8 @@ static int amd_cpu_notify(struct notifier_block *self, unsigned long action,
->  			  void *hcpu)
->  {
->  	int cpu = (long)hcpu;
-> -	switch (action) {
-> +	switch (action & ~CPU_TASKS_FROZEN) {
->  	case CPU_ONLINE:
-> -	case CPU_ONLINE_FROZEN:
->  		smp_call_function_single(cpu, enable_pci_io_ecs, NULL, 0);
->  		break;
->  	default:
+On Wed, Jul 23, 2014 at 10:12 AM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+>
+> A cpumask_var is TOTALLY DIFFERENT. It's *either* a cpumask _or_ just
+> a pointer to an externally allocated cpumask.
+>
+> sched_init() definitely does _not_ allocate a cpumask_var.
 
-Or you can kill all the switch-case gunk and make it even more readable:
+I take that back. It does end up allocating it properly, it just
+avoids all the correct abstractions.
 
-Index: b/arch/x86/pci/amd_bus.c
-===================================================================
---- a/arch/x86/pci/amd_bus.c	2014-07-23 20:04:44.074436425 +0200
-+++ b/arch/x86/pci/amd_bus.c	2014-07-23 20:05:14.282436087 +0200
-@@ -340,15 +340,9 @@ static void enable_pci_io_ecs(void *unus
- static int amd_cpu_notify(struct notifier_block *self, unsigned long action,
- 			  void *hcpu)
- {
--	int cpu = (long)hcpu;
--	switch (action) {
--	case CPU_ONLINE:
--	case CPU_ONLINE_FROZEN:
--		smp_call_function_single(cpu, enable_pci_io_ecs, NULL, 0);
--		break;
--	default:
--		break;
--	}
-+	if ((action & ~CPU_TASKS_FROZEN) == CPU_ONLINE)
-+		smp_call_function_single((long)hcpu, enable_pci_io_ecs, NULL, 0);
-+
- 	return NOTIFY_OK;
- }
+In general, the rule of thumb should be:
 
--- 
-Regards/Gruss,
-    Boris.
+ - stack allocations should use "cpumask_var_t cpus" and they
+absolutely *have* to be paired with an "alloc_cpumask_var(&cpus,
+GFP_KERNEL)". Having a "struct cpumask" on stack is very wrong.
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+ - random single nonstack allocations should probably just use a plain
+"struct cpumask" (or cpumask_t, but we really shouldn't use typedef's
+unless they actively abstract some per-config *changing* type).
+
+ - dynamic allocations that are size-conscious (because there's a lot
+of them) should allocate a "struct cpumask *" by using
+"cpumask_size()". They have a pointer anyway, they allocate things
+dynamically anyway, extra indirection through a cpumask_var_t would
+just be unnecessary.
+
+ - *static* per-cpu allocations might want to use "cpumask_var_t" (to
+avoid having a full "struct cpumask_t") along with doing a
+"zalloc_cpumask_var_node(..)" for each cpu.
+
+sched_init() follows that last pattern, except it open-codes that
+zalloc_cpumask_var_node() in an odd way that confused me.
+
+So I take my patch back. It's wrong, because it only allocates that
+cpumask_size() if CONFIG_CPUMASK_OFFSTACK is true.
+
+Ugh, that code really is unreadable.
+
+               Linus
