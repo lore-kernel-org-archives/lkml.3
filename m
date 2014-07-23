@@ -1,166 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758028AbaGWOl3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 10:41:29 -0400
-Received: from mail-we0-f173.google.com ([74.125.82.173]:59244 "EHLO
-	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757823AbaGWOlZ (ORCPT
+	id S1757894AbaGWOmm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 10:42:42 -0400
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:33489 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756913AbaGWOml (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 10:41:25 -0400
-Date: Wed, 23 Jul 2014 16:41:31 +0200
-From: Daniel Vetter <daniel@ffwll.ch>
-To: "Bridgman, John" <John.Bridgman@amd.com>
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>,
-        "Gabbay, Oded" <Oded.Gabbay@amd.com>,
-        Jerome Glisse <j.glisse@gmail.com>,
-        Christian =?iso-8859-1?Q?K=F6nig?= <deathsimple@vodafone.de>,
-        David Airlie <airlied@linux.ie>, Alex Deucher <alexdeucher@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Joerg Roedel <joro@8bytes.org>,
-        "Lewycky, Andrew" <Andrew.Lewycky@amd.com>,
-        "Daenzer, Michel" <Michel.Daenzer@amd.com>,
-        "Goz, Ben" <Ben.Goz@amd.com>,
-        "Skidanov, Alexey" <Alexey.Skidanov@amd.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        linux-mm <linux-mm@kvack.org>, "Sellek, Tom" <Tom.Sellek@amd.com>
-Subject: Re: [PATCH v2 00/25] AMDKFD kernel driver
-Message-ID: <20140723144130.GV15237@phenom.ffwll.local>
-Mail-Followup-To: "Bridgman, John" <John.Bridgman@amd.com>,
-	"Gabbay, Oded" <Oded.Gabbay@amd.com>,
-	Jerome Glisse <j.glisse@gmail.com>,
-	Christian =?iso-8859-1?Q?K=F6nig?= <deathsimple@vodafone.de>,
-	David Airlie <airlied@linux.ie>,
-	Alex Deucher <alexdeucher@gmail.com>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Joerg Roedel <joro@8bytes.org>,
-	"Lewycky, Andrew" <Andrew.Lewycky@amd.com>,
-	"Daenzer, Michel" <Michel.Daenzer@amd.com>,
-	"Goz, Ben" <Ben.Goz@amd.com>,
-	"Skidanov, Alexey" <Alexey.Skidanov@amd.com>,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-	"dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-	linux-mm <linux-mm@kvack.org>, "Sellek, Tom" <Tom.Sellek@amd.com>
-References: <53CD5ED9.2040600@amd.com>
- <20140721190306.GB5278@gmail.com>
- <20140722072851.GH15237@phenom.ffwll.local>
- <53CE1E9C.8020105@amd.com>
- <CAKMK7uH+okhn4YGOzrXZ1LM3S2myxdu=_63LGMduwV-WZn06CA@mail.gmail.com>
- <53CE346B.1080601@amd.com>
- <20140722111515.GJ15237@phenom.ffwll.local>
- <53CF5B30.50209@amd.com>
- <CAKMK7uFtSStEewVivbXAT1VC4t2Y+suTaEmQA4=UptK1UBLSmg@mail.gmail.com>
- <D89D60253BB73A4E8C62F9FD18A939CA01066B1B@storexdag02.amd.com>
+	Wed, 23 Jul 2014 10:42:41 -0400
+Date: Wed, 23 Jul 2014 20:12:31 +0530
+From: Himangi Saraogi <himangi774@gmail.com>
+To: "J. Bruce Fields" <bfields@fieldses.org>, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: julia.lawall@lip6.fr
+Subject: [PATCH] infsd4: convert comma to semicolon
+Message-ID: <20140723144231.GA3229@himangi-Dell>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <D89D60253BB73A4E8C62F9FD18A939CA01066B1B@storexdag02.amd.com>
-X-Operating-System: Linux phenom 3.15.0-rc3+ 
-User-Agent: Mutt/1.5.23 (2014-03-12)
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 23, 2014 at 01:33:24PM +0000, Bridgman, John wrote:
-> 
-> 
-> >-----Original Message-----
-> >From: Daniel Vetter [mailto:daniel.vetter@ffwll.ch]
-> >Sent: Wednesday, July 23, 2014 3:06 AM
-> >To: Gabbay, Oded
-> >Cc: Jerome Glisse; Christian König; David Airlie; Alex Deucher; Andrew
-> >Morton; Bridgman, John; Joerg Roedel; Lewycky, Andrew; Daenzer, Michel;
-> >Goz, Ben; Skidanov, Alexey; linux-kernel@vger.kernel.org; dri-
-> >devel@lists.freedesktop.org; linux-mm; Sellek, Tom
-> >Subject: Re: [PATCH v2 00/25] AMDKFD kernel driver
-> >
-> >On Wed, Jul 23, 2014 at 8:50 AM, Oded Gabbay <oded.gabbay@amd.com>
-> >wrote:
-> >> On 22/07/14 14:15, Daniel Vetter wrote:
-> >>>
-> >>> On Tue, Jul 22, 2014 at 12:52:43PM +0300, Oded Gabbay wrote:
-> >>>>
-> >>>> On 22/07/14 12:21, Daniel Vetter wrote:
-> >>>>>
-> >>>>> On Tue, Jul 22, 2014 at 10:19 AM, Oded Gabbay
-> ><oded.gabbay@amd.com>
-> >>>>> wrote:
-> >>>>>>>
-> >>>>>>> Exactly, just prevent userspace from submitting more. And if you
-> >>>>>>> have misbehaving userspace that submits too much, reset the gpu
-> >>>>>>> and tell it that you're sorry but won't schedule any more work.
-> >>>>>>
-> >>>>>>
-> >>>>>> I'm not sure how you intend to know if a userspace misbehaves or not.
-> >>>>>> Can
-> >>>>>> you elaborate ?
-> >>>>>
-> >>>>>
-> >>>>> Well that's mostly policy, currently in i915 we only have a check
-> >>>>> for hangs, and if userspace hangs a bit too often then we stop it.
-> >>>>> I guess you can do that with the queue unmapping you've describe in
-> >>>>> reply to Jerome's mail.
-> >>>>> -Daniel
-> >>>>>
-> >>>> What do you mean by hang ? Like the tdr mechanism in Windows (checks
-> >>>> if a gpu job takes more than 2 seconds, I think, and if so,
-> >>>> terminates the job).
-> >>>
-> >>>
-> >>> Essentially yes. But we also have some hw features to kill jobs
-> >>> quicker, e.g. for media workloads.
-> >>> -Daniel
-> >>>
-> >>
-> >> Yeah, so this is what I'm talking about when I say that you and Jerome
-> >> come from a graphics POV and amdkfd come from a compute POV, no
-> >offense intended.
-> >>
-> >> For compute jobs, we simply can't use this logic to terminate jobs.
-> >> Graphics are mostly Real-Time while compute jobs can take from a few
-> >> ms to a few hours!!! And I'm not talking about an entire application
-> >> runtime but on a single submission of jobs by the userspace app. We
-> >> have tests with jobs that take between 20-30 minutes to complete. In
-> >> theory, we can even imagine a compute job which takes 1 or 2 days (on
-> >larger APUs).
-> >>
-> >> Now, I understand the question of how do we prevent the compute job
-> >> from monopolizing the GPU, and internally here we have some ideas that
-> >> we will probably share in the next few days, but my point is that I
-> >> don't think we can terminate a compute job because it is running for more
-> >than x seconds.
-> >> It is like you would terminate a CPU process which runs more than x
-> >seconds.
-> >>
-> >> I think this is a *very* important discussion (detecting a misbehaved
-> >> compute process) and I would like to continue it, but I don't think
-> >> moving the job submission from userspace control to kernel control
-> >> will solve this core problem.
-> >
-> >Well graphics gets away with cooperative scheduling since usually people
-> >want to see stuff within a few frames, so we can legitimately kill jobs after a
-> >fairly short timeout. Imo if you want to allow userspace to submit compute
-> >jobs that are atomic and take a few minutes to hours with no break-up in
-> >between and no hw means to preempt then that design is screwed up. We
-> >really can't tell the core vm that "sorry we will hold onto these gobloads of
-> >memory you really need now for another few hours". Pinning memory like
-> >that essentially without a time limit is restricted to root.
-> 
-> Hi Daniel;
-> 
-> I don't really understand the reference to "gobloads of memory". Unlike
-> radeon graphics, the userspace data for HSA applications is maintained
-> in pageable system memory and accessed via the IOMMUv2 (ATC/PRI). The
-> IOMMUv2 driver and mm subsystem takes care of faulting in memory pages
-> as needed, nothing is long-term pinned.
+Replace a comma between expression statements by a semicolon. This changes
+the semantics of the code, but given the current indentation appears to be
+what is intended.
 
-Yeah I've lost that part of the equation a bit since I've always thought
-that proper faulting support without preemption is not really possible. I
-guess those platforms completely stall on a fault until the ptes are all
-set up?
--Daniel
+A simplified version of the Coccinelle semantic patch that performs this
+transformation is as follows:
+// <smpl>
+@r@
+expression e1,e2;
+@@
+
+ e1
+-,
++;
+ e2;
+// </smpl>
+
+Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
+Acked-by: Julia Lawall <julia.lawall@lip6.fr>
+---
+ fs/nfsd/nfs4callback.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/fs/nfsd/nfs4callback.c b/fs/nfsd/nfs4callback.c
+index 564d723..c393d6c 100644
+--- a/fs/nfsd/nfs4callback.c
++++ b/fs/nfsd/nfs4callback.c
+@@ -678,7 +678,7 @@ static int setup_callback_client(struct nfs4_client *clp, struct nfs4_cb_conn *c
+ 				(clp->cl_cred.cr_flavor >= RPC_AUTH_GSS_KRB5))
+ 			return -EINVAL;
+ 		args.client_name = clp->cl_cred.cr_principal;
+-		args.prognumber	= conn->cb_prog,
++		args.prognumber	= conn->cb_prog;
+ 		args.protocol = XPRT_TRANSPORT_TCP;
+ 		args.authflavor = clp->cl_cred.cr_flavor;
+ 		clp->cl_cb_ident = conn->cb_ident;
 -- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+1.9.1
+
