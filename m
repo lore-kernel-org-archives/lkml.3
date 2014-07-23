@@ -1,91 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756324AbaGWLh1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 07:37:27 -0400
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:41644 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751241AbaGWLhY (ORCPT
+	id S1756527AbaGWLiq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 07:38:46 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:46351 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751103AbaGWLio (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 07:37:24 -0400
-Message-ID: <53CF9E66.9050101@gmail.com>
-Date: Wed, 23 Jul 2014 19:37:10 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Wed, 23 Jul 2014 07:38:44 -0400
+Date: Wed, 23 Jul 2014 13:38:40 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Linux PCI <linux-pci@vger.kernel.org>, Zhang Rui <rui.zhang@intel.com>
+Subject: Re: [PATCH 0/3] ACPI / PM: Make ACPI-based PCI wakeup work for the
+ "freeze" sleep state
+Message-ID: <20140723113840.GJ20603@laptop.programming.kicks-ass.net>
+References: <1907495.agrCMfRsQN@vostro.rjw.lan>
+ <3271848.fNJ1rk2xTa@vostro.rjw.lan>
+ <20140723072850.GO3935@laptop>
+ <1938033.aGLPbNTjeQ@vostro.rjw.lan>
 MIME-Version: 1.0
-To: Dan Carpenter <dan.carpenter@oracle.com>
-CC: linux-iio@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>, teg@jklm.no,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Lennox Wu <lennox.wu@gmail.com>, Marek Vasut <marex@denx.de>,
-        Liqin Chen <liqin.linux@gmail.com>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Richard Weinberger <richard@nod.at>,
-        Geert Uytterhoeven <geert@linux-m68k.org>, msalter@redhat.com,
-        Guenter Roeck <linux@roeck-us.net>, linux-pwm@vger.kernel.org,
-        devel@driverdev.osuosl.org, linux-watchdog@vger.kernel.org,
-        arnd@arndb.de, linux-input@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        dmitry.torokhov@gmail.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        knaack.h@gmx.de, Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Mischa.Jonker@synopsys.com, jic23@kernel.org
-Subject: Re: [PATCH] drivers: Let several drivers depends on HAS_IOMEM for
- 'devm_ioremap_resource'
-References: <53C47725.8000005@gmail.com> <53C47B76.4080306@roeck-us.net> <53C47FB7.6080304@gmail.com> <53C53CE1.4090803@gmail.com> <53C7269E.4010702@gmail.com> <20140717083756.GA19686@ulmo> <53C7905D.9090003@gmail.com> <20140717091601.GF25880@mwanda> <53C7951F.6000906@gmail.com> <53CF97E2.9000906@gmail.com> <20140723113023.GT25880@mwanda>
-In-Reply-To: <20140723113023.GT25880@mwanda>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1938033.aGLPbNTjeQ@vostro.rjw.lan>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On 07/23/2014 07:30 PM, Dan Carpenter wrote:
-> On Wed, Jul 23, 2014 at 07:09:22PM +0800, Chen Gang wrote:
->>
->>
->> On 07/17/2014 05:19 PM, Chen Gang wrote:
->>>
->>>
->>> On 07/17/2014 05:16 PM, Dan Carpenter wrote:
->>>> On Thu, Jul 17, 2014 at 04:59:09PM +0800, Chen Gang wrote:
->>>>>>> +	return (__force void __iomem *)ERR_PTR(-ENXIO);
->>>>>>
->>>>>> There's apparently an IOMEM_ERR_PTR() for this nowadays...
->>>>>>
->>>>>
->>>>> IOMEM_ERR_PTR() is defined within "lib/devres.c", not in "./include".
->>>>> But may we move it from "lib/devres.c" to "./include/linux/err.h"?
->>>>>
->>>>> For me, I am not quite sure, it may need additional discussion, but at
->>>>> least, that will be another patch.
->>>>
->>>> Yes.  Move it there.  That is the right place.
->>>>
->>
->> Sorry for replying late about IOMEM_ERR_PTR().
->>
->> Although no objections within 2 days, for me, when move something to
->> generic header file, it is not only for future using, but also for
->> solving current issue, or it has to be suspended for waiting 'trigger'.
->>
->> So for me, the patch about IOMEM_ERR_PTR() need be suspended, until some
->> member find an issue which may be related with IOMEM_ERR_PTR(), more or
->> less.
+On Wed, Jul 23, 2014 at 01:43:59PM +0200, Rafael J. Wysocki wrote:
+> On Wednesday, July 23, 2014 09:28:50 AM Peter Zijlstra wrote:
+> > On Wed, Jul 23, 2014 at 12:26:20AM +0200, Rafael J. Wysocki wrote:
+> > > All of that indicates that the machine in question has WoL based on native PCIe
+> > > PME signaling.  In that case it doesn't wake up from the "freeze" state, because
+> > > some code is missing.
+> > 
+> > Didn't wake, but it did show:
+> > 
+> > 0000:00:01.0:pcie01     1               1               0               0               0               0               0               99207           0
+> > LNXPWRBN:00             1               1               0               0               0               0               0               99191           0
+> > 
+> > So at least something's moving, although its not quite working yet.
 > 
-> Matthias Brugger already moved it to include/linux/io.h on Friday.
+> That may be because I forgot about one piece, sorry about that.
+> This patch:
 > 
+> https://patchwork.kernel.org/patch/4526561/
+> 
+> (which I think is in tip already) is needed to make enable_irq_wake()
+> work with the "freeze" state.
+> 
+> Can you please apply this in addition and retest?
 
-OK, thank you for your work.
+I appear to have that hunk already (I'm running -tip based kernels).
 
-And for me, this 'long discussion' can be finished now (keeping current
-status no touch). But if any members have additional suggestions and
-ideas, still welcome to reply directly.
-
-
-Thanks.
--- 
-Chen Gang
-
-Open, share, and attitude like air, water, and life which God blessed
+(also, patchwork blows chunks :/)
