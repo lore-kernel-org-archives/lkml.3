@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758629AbaGWXom (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 19:44:42 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:49187 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758541AbaGWXok (ORCPT
+	id S1758643AbaGWXpi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 19:45:38 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:33485 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758610AbaGWXol (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 19:44:40 -0400
+	Wed, 23 Jul 2014 19:44:41 -0400
 From: Grant Likely <grant.likely@linaro.org>
 To: linux-kernel@vger.kernel.org, Nathan Fontenot <nfont@austin.ibm.com>,
         Tyrel Datwyler <turtle.in.the.kernel@gmail.com>,
         Pantelis Antoniou <pantelis.antoniou@konsulko.com>,
         devicetree@vger.kernel.org
-Cc: Grant Likely <grant.likely@linaro.org>
-Subject: [PATCH 05/10] of: Create unlocked versions of node and property add/remove functions
-Date: Wed, 23 Jul 2014 17:44:19 -0600
-Message-Id: <1406159064-21366-6-git-send-email-grant.likely@linaro.org>
+Cc: Grant Likely <grant.likely@linaro.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [PATCH 08/10] of: Move dynamic node fixups out of powerpc and into common code
+Date: Wed, 23 Jul 2014 17:44:22 -0600
+Message-Id: <1406159064-21366-9-git-send-email-grant.likely@linaro.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1406159064-21366-1-git-send-email-grant.likely@linaro.org>
 References: <1406159064-21366-1-git-send-email-grant.likely@linaro.org>
@@ -23,295 +24,161 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
+PowerPC does an odd thing with dynamic nodes. It uses a notifier to
+catch new node additions and set some of the values like name and type.
+This makes no sense since that same code can be put directly into
+of_attach_node(). Besides, all dynamic node users need this, not just
+powerpc. Fix this problem by moving the logic out of arch/powerpc and
+into drivers/of/dynamic.c.
 
-The DT overlay code will need to manipulate nodes and properties while
-already holding the devicetree lock, or on nodes that are not yet
-attached to the tree, but the current helper functions don't allow that.
-Extract the core behaviour from the accessors and create the following
-unlocked variants.
+It is also important to remove this notifier because we want to move the
+firing of notifiers from before the tree is modified to after so that
+the receiver gets a consistent view of the tree, but that is
+incompatible with notifiers that modify the node.
 
-The unlocked variants require either the lock to already be held or for
-the nodes to be detached from the tree. Changes to live nodes will not
-get updated in sysfs, so the caller must arrange for housekeeping to
-take place after dropping the lock.
-
-The new functions are: __of_add_property(), __of_remove_property(),
-__of_update_property(), __of_attach_node() and __of_detach_node().
-
-Signed-off-by: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
-[Remove unnecessary diff hunks and rewrite commit text]
 Signed-off-by: Grant Likely <grant.likely@linaro.org>
+Cc: Nathan Fontenot <nfont@austin.ibm.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 ---
- drivers/of/base.c       | 91 +++++++++++++++++++++++++++++--------------------
- drivers/of/dynamic.c    | 63 ++++++++++++++++++----------------
- drivers/of/of_private.h |  8 +++++
- 3 files changed, 96 insertions(+), 66 deletions(-)
+ arch/powerpc/kernel/prom.c | 70 ----------------------------------------------
+ drivers/of/base.c          |  4 +--
+ drivers/of/dynamic.c       | 13 +++++++++
+ drivers/of/of_private.h    |  2 ++
+ 4 files changed, 17 insertions(+), 72 deletions(-)
 
+diff --git a/arch/powerpc/kernel/prom.c b/arch/powerpc/kernel/prom.c
+index b694b0730971..9e8d8a880d6f 100644
+--- a/arch/powerpc/kernel/prom.c
++++ b/arch/powerpc/kernel/prom.c
+@@ -821,76 +821,6 @@ int cpu_to_chip_id(int cpu)
+ }
+ EXPORT_SYMBOL(cpu_to_chip_id);
+ 
+-#ifdef CONFIG_PPC_PSERIES
+-/*
+- * Fix up the uninitialized fields in a new device node:
+- * name, type and pci-specific fields
+- */
+-
+-static int of_finish_dynamic_node(struct device_node *node)
+-{
+-	struct device_node *parent = of_get_parent(node);
+-	int err = 0;
+-	const phandle *ibm_phandle;
+-
+-	node->name = of_get_property(node, "name", NULL);
+-	node->type = of_get_property(node, "device_type", NULL);
+-
+-	if (!node->name)
+-		node->name = "<NULL>";
+-	if (!node->type)
+-		node->type = "<NULL>";
+-
+-	if (!parent) {
+-		err = -ENODEV;
+-		goto out;
+-	}
+-
+-	/* We don't support that function on PowerMac, at least
+-	 * not yet
+-	 */
+-	if (machine_is(powermac))
+-		return -ENODEV;
+-
+-	/* fix up new node's phandle field */
+-	if ((ibm_phandle = of_get_property(node, "ibm,phandle", NULL)))
+-		node->phandle = *ibm_phandle;
+-
+-out:
+-	of_node_put(parent);
+-	return err;
+-}
+-
+-static int prom_reconfig_notifier(struct notifier_block *nb,
+-				  unsigned long action, void *node)
+-{
+-	int err;
+-
+-	switch (action) {
+-	case OF_RECONFIG_ATTACH_NODE:
+-		err = of_finish_dynamic_node(node);
+-		if (err < 0)
+-			printk(KERN_ERR "finish_node returned %d\n", err);
+-		break;
+-	default:
+-		err = 0;
+-		break;
+-	}
+-	return notifier_from_errno(err);
+-}
+-
+-static struct notifier_block prom_reconfig_nb = {
+-	.notifier_call = prom_reconfig_notifier,
+-	.priority = 10, /* This one needs to run first */
+-};
+-
+-static int __init prom_reconfig_setup(void)
+-{
+-	return of_reconfig_notifier_register(&prom_reconfig_nb);
+-}
+-__initcall(prom_reconfig_setup);
+-#endif
+-
+ bool arch_match_cpu_phys_id(int cpu, u64 phys_id)
+ {
+ 	return (int)phys_id == get_hard_smp_processor_id(cpu);
 diff --git a/drivers/of/base.c b/drivers/of/base.c
-index 0d8955605738..b403f9d98461 100644
+index ad4929cbd876..ededf8e33145 100644
 --- a/drivers/of/base.c
 +++ b/drivers/of/base.c
-@@ -1659,7 +1659,7 @@ EXPORT_SYMBOL(of_count_phandle_with_args);
- /**
-  * __of_add_property - Add a property to a node without lock operations
+@@ -266,8 +266,8 @@ EXPORT_SYMBOL(of_find_all_nodes);
+  * Find a property with a given name for a given node
+  * and return the value.
   */
--static int __of_add_property(struct device_node *np, struct property *prop)
-+int __of_add_property(struct device_node *np, struct property *prop)
+-static const void *__of_get_property(const struct device_node *np,
+-				     const char *name, int *lenp)
++const void *__of_get_property(const struct device_node *np,
++			      const char *name, int *lenp)
  {
- 	struct property **next;
+ 	struct property *pp = __of_find_property(np, name, lenp);
  
-@@ -1701,6 +1701,25 @@ int of_add_property(struct device_node *np, struct property *prop)
- 	return rc;
- }
- 
-+int __of_remove_property(struct device_node *np, struct property *prop)
-+{
-+	struct property **next;
-+
-+	for (next = &np->properties; *next; next = &(*next)->next) {
-+		if (*next == prop)
-+			break;
-+	}
-+	if (*next == NULL)
-+		return -ENODEV;
-+
-+	/* found the node */
-+	*next = prop->next;
-+	prop->next = np->deadprops;
-+	np->deadprops = prop;
-+
-+	return 0;
-+}
-+
- /**
-  * of_remove_property - Remove a property from a node.
-  *
-@@ -1711,9 +1730,7 @@ int of_add_property(struct device_node *np, struct property *prop)
-  */
- int of_remove_property(struct device_node *np, struct property *prop)
- {
--	struct property **next;
- 	unsigned long flags;
--	int found = 0;
- 	int rc;
- 
- 	rc = of_property_notify(OF_RECONFIG_REMOVE_PROPERTY, np, prop);
-@@ -1721,22 +1738,11 @@ int of_remove_property(struct device_node *np, struct property *prop)
- 		return rc;
- 
- 	raw_spin_lock_irqsave(&devtree_lock, flags);
--	next = &np->properties;
--	while (*next) {
--		if (*next == prop) {
--			/* found the node */
--			*next = prop->next;
--			prop->next = np->deadprops;
--			np->deadprops = prop;
--			found = 1;
--			break;
--		}
--		next = &(*next)->next;
--	}
-+	rc = __of_remove_property(np, prop);
- 	raw_spin_unlock_irqrestore(&devtree_lock, flags);
- 
--	if (!found)
--		return -ENODEV;
-+	if (rc)
-+		return rc;
- 
- 	/* at early boot, bail hear and defer setup to of_init() */
- 	if (!of_kset)
-@@ -1747,6 +1753,32 @@ int of_remove_property(struct device_node *np, struct property *prop)
- 	return 0;
- }
- 
-+int __of_update_property(struct device_node *np, struct property *newprop,
-+		struct property **oldpropp)
-+{
-+	struct property **next, *oldprop;
-+
-+	for (next = &np->properties; *next; next = &(*next)->next) {
-+		if (of_prop_cmp((*next)->name, newprop->name) == 0)
-+			break;
-+	}
-+	*oldpropp = oldprop = *next;
-+
-+	if (oldprop) {
-+		/* replace the node */
-+		newprop->next = oldprop->next;
-+		*next = newprop;
-+		oldprop->next = np->deadprops;
-+		np->deadprops = oldprop;
-+	} else {
-+		/* new node */
-+		newprop->next = NULL;
-+		*next = newprop;
-+	}
-+
-+	return 0;
-+}
-+
- /*
-  * of_update_property - Update a property in a node, if the property does
-  * not exist, add it.
-@@ -1758,34 +1790,19 @@ int of_remove_property(struct device_node *np, struct property *prop)
-  */
- int of_update_property(struct device_node *np, struct property *newprop)
- {
--	struct property **next, *oldprop;
-+	struct property *oldprop;
- 	unsigned long flags;
- 	int rc;
- 
-+	if (!newprop->name)
-+		return -EINVAL;
-+
- 	rc = of_property_notify(OF_RECONFIG_UPDATE_PROPERTY, np, newprop);
- 	if (rc)
- 		return rc;
- 
--	if (!newprop->name)
--		return -EINVAL;
--
- 	raw_spin_lock_irqsave(&devtree_lock, flags);
--	next = &np->properties;
--	oldprop = __of_find_property(np, newprop->name, NULL);
--	if (!oldprop) {
--		/* add the new node */
--		rc = __of_add_property(np, newprop);
--	} else while (*next) {
--		/* replace the node */
--		if (*next == oldprop) {
--			newprop->next = oldprop->next;
--			*next = newprop;
--			oldprop->next = np->deadprops;
--			np->deadprops = oldprop;
--			break;
--		}
--		next = &(*next)->next;
--	}
-+	rc = __of_update_property(np, newprop, &oldprop);
- 	raw_spin_unlock_irqrestore(&devtree_lock, flags);
- 	if (rc)
- 		return rc;
 diff --git a/drivers/of/dynamic.c b/drivers/of/dynamic.c
-index e0c4c6e25980..75fcc66fcefd 100644
+index b96d83100987..7c020b9a3317 100644
 --- a/drivers/of/dynamic.c
 +++ b/drivers/of/dynamic.c
-@@ -94,6 +94,15 @@ int of_property_notify(int action, struct device_node *np,
- 	return of_reconfig_notify(action, &pr);
- }
+@@ -98,6 +98,19 @@ int of_property_notify(int action, struct device_node *np,
  
-+void __of_attach_node(struct device_node *np)
-+{
-+	np->sibling = np->parent->child;
-+	np->allnext = np->parent->allnext;
-+	np->parent->allnext = np;
-+	np->parent->child = np;
-+	of_node_clear_flag(np, OF_DETACHED);
-+}
-+
- /**
-  * of_attach_node() - Plug a device node into the tree and global list.
-  */
-@@ -107,46 +116,23 @@ int of_attach_node(struct device_node *np)
- 		return rc;
- 
- 	raw_spin_lock_irqsave(&devtree_lock, flags);
--	np->sibling = np->parent->child;
--	np->allnext = np->parent->allnext;
--	np->parent->allnext = np;
--	np->parent->child = np;
--	of_node_clear_flag(np, OF_DETACHED);
-+	__of_attach_node(np);
- 	raw_spin_unlock_irqrestore(&devtree_lock, flags);
- 
- 	of_node_add(np);
- 	return 0;
- }
- 
--/**
-- * of_detach_node() - "Unplug" a node from the device tree.
-- *
-- * The caller must hold a reference to the node.  The memory associated with
-- * the node is not freed until its refcount goes to zero.
-- */
--int of_detach_node(struct device_node *np)
-+void __of_detach_node(struct device_node *np)
+ void __of_attach_node(struct device_node *np)
  {
- 	struct device_node *parent;
--	unsigned long flags;
--	int rc = 0;
--
--	rc = of_reconfig_notify(OF_RECONFIG_DETACH_NODE, np);
--	if (rc)
--		return rc;
- 
--	raw_spin_lock_irqsave(&devtree_lock, flags);
--
--	if (of_node_check_flag(np, OF_DETACHED)) {
--		/* someone already detached it */
--		raw_spin_unlock_irqrestore(&devtree_lock, flags);
--		return rc;
--	}
-+	if (WARN_ON(of_node_check_flag(np, OF_DETACHED)))
-+		return;
- 
- 	parent = np->parent;
--	if (!parent) {
--		raw_spin_unlock_irqrestore(&devtree_lock, flags);
--		return rc;
--	}
-+	if (WARN_ON(!parent))
-+		return;
- 
- 	if (of_allnodes == np)
- 		of_allnodes = np->allnext;
-@@ -171,6 +157,25 @@ int of_detach_node(struct device_node *np)
- 	}
- 
- 	of_node_set_flag(np, OF_DETACHED);
-+}
++	const __be32 *phandle;
++	int sz;
 +
-+/**
-+ * of_detach_node() - "Unplug" a node from the device tree.
-+ *
-+ * The caller must hold a reference to the node.  The memory associated with
-+ * the node is not freed until its refcount goes to zero.
-+ */
-+int of_detach_node(struct device_node *np)
-+{
-+	unsigned long flags;
-+	int rc = 0;
++	np->name = __of_get_property(np, "name", NULL) ? : "<NULL>";
++	np->type = __of_get_property(np, "device_type", NULL) ? : "<NULL>";
 +
-+	rc = of_reconfig_notify(OF_RECONFIG_DETACH_NODE, np);
-+	if (rc)
-+		return rc;
++	phandle = __of_get_property(np, "phandle", &sz);
++	if (!phandle)
++		phandle = __of_get_property(np, "linux,phandle", &sz);
++	if (IS_ENABLED(PPC_PSERIES) && !phandle)
++		phandle = __of_get_property(np, "ibm,phandle", &sz);
++	np->phandle = (phandle && (sz >= 4)) ? be32_to_cpup(phandle) : 0;
 +
-+	raw_spin_lock_irqsave(&devtree_lock, flags);
-+	__of_detach_node(np);
- 	raw_spin_unlock_irqrestore(&devtree_lock, flags);
- 
- 	of_node_remove(np);
+ 	np->child = NULL;
+ 	np->sibling = np->parent->child;
+ 	np->allnext = np->parent->allnext;
 diff --git a/drivers/of/of_private.h b/drivers/of/of_private.h
-index 1799ed2b3808..0f6089722af9 100644
+index 0d99ba8caeed..8129c0e58d70 100644
 --- a/drivers/of/of_private.h
 +++ b/drivers/of/of_private.h
-@@ -61,4 +61,12 @@ static inline int of_property_notify(int action, struct device_node *np,
+@@ -63,6 +63,8 @@ static inline int of_property_notify(int action, struct device_node *np,
  struct property *__of_prop_dup(const struct property *prop, gfp_t allocflags);
  struct device_node *__of_node_alloc(const char *full_name, gfp_t allocflags);
  
-+extern int __of_add_property(struct device_node *np, struct property *prop);
-+extern int __of_remove_property(struct device_node *np, struct property *prop);
-+extern int __of_update_property(struct device_node *np,
-+		struct property *newprop, struct property **oldprop);
-+
-+extern void __of_attach_node(struct device_node *np);
-+extern void __of_detach_node(struct device_node *np);
-+
- #endif /* _LINUX_OF_PRIVATE_H */
++extern const void *__of_get_property(const struct device_node *np,
++				     const char *name, int *lenp);
+ extern int __of_add_property(struct device_node *np, struct property *prop);
+ extern int __of_add_property_sysfs(struct device_node *np,
+ 		struct property *prop);
 -- 
 1.9.1
 
