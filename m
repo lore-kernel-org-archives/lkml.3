@@ -1,83 +1,466 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933086AbaGWSfK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 14:35:10 -0400
-Received: from mail-vc0-f170.google.com ([209.85.220.170]:38319 "EHLO
-	mail-vc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932584AbaGWSfI (ORCPT
+	id S933080AbaGWSgW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 14:36:22 -0400
+Received: from mail-oi0-f41.google.com ([209.85.218.41]:36733 "EHLO
+	mail-oi0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932674AbaGWSgT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 14:35:08 -0400
+	Wed, 23 Jul 2014 14:36:19 -0400
 MIME-Version: 1.0
-In-Reply-To: <20140723182518.GD3935@laptop>
-References: <53CF844A.5050106@arm.com>
-	<20140723111110.GT3935@laptop>
-	<20140723113021.GP12054@laptop.lan>
-	<20140723142454.GQ12054@laptop.lan>
-	<CA+55aFwZ7kAqqhaE4g89CJLkpJOwGxcN4u+cc0ODfqjQ0rVMiA@mail.gmail.com>
-	<20140723155526.GW3935@laptop>
-	<CA+55aFzSU5u8MiGqRZ6BVojQPnxbd1hxmFY_BA=UuCAygxR8WQ@mail.gmail.com>
-	<20140723170324.GZ3935@laptop>
-	<CA+55aFwQSmBAs=QH9jAZz5JY7YFrDeuPH1RjFH+YKVr2NQM38g@mail.gmail.com>
-	<CA+55aFzDWritxv5RiqwcZ1qCKJQKK-Lw6StYFF7qx5YWgiCUTQ@mail.gmail.com>
-	<20140723182518.GD3935@laptop>
-Date: Wed, 23 Jul 2014 11:35:06 -0700
-X-Google-Sender-Auth: rsQVOudldHoWMFLU_aVO-J_Pqqw
-Message-ID: <CA+55aFyFT9n5wUNifEHY6+t2bEcD91kL7+dqXuBMSMJvLeDDJQ@mail.gmail.com>
-Subject: Re: Random panic in load_balance() with 3.16-rc
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Dietmar Eggemann <dietmar.eggemann@arm.com>,
-        =?UTF-8?Q?Michel_D=C3=A4nzer?= <michel@daenzer.net>,
-        Ingo Molnar <mingo@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+In-Reply-To: <1405657206-12060-9-git-send-email-ast@plumgrid.com>
+References: <1405657206-12060-1-git-send-email-ast@plumgrid.com>
+	<1405657206-12060-9-git-send-email-ast@plumgrid.com>
+Date: Wed, 23 Jul 2014 11:36:18 -0700
+X-Google-Sender-Auth: cIPN00D_aCs2w4-JcfIyl71-8cE
+Message-ID: <CAGXu5jK1hrwvPs7f+mSOer+81J9SBxwMrqb=6fFeZQ7hd-FMzA@mail.gmail.com>
+Subject: Re: [PATCH RFC v2 net-next 08/16] bpf: add hashtable type of BPF maps
+From: Kees Cook <keescook@chromium.org>
+To: Alexei Starovoitov <ast@plumgrid.com>
+Cc: "David S. Miller" <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Jiri Olsa <jolsa@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 23, 2014 at 11:25 AM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Wed, Jul 23, 2014 at 10:26:21AM -0700, Linus Torvalds wrote:
->>
->> The whole - and really *only* - point of __get_cpu_var is to get the
->> address of a a cpu variable. If you want to read the *value* of the
->> variable, you should use "this_cpu_read()", which can use things like
->> special instructions or segments to read the percpu area.
+On Thu, Jul 17, 2014 at 9:19 PM, Alexei Starovoitov <ast@plumgrid.com> wrote:
+> add new map type: BPF_MAP_TYPE_HASH
+> and its simple (not auto resizeable) hash table implementation
 >
-> I think this code predates all the this_cpu* magic. But yes, agreed.
+> Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
+> ---
+>  include/uapi/linux/bpf.h |    1 +
+>  kernel/bpf/Makefile      |    2 +-
+>  kernel/bpf/hashtab.c     |  371 ++++++++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 373 insertions(+), 1 deletion(-)
+>  create mode 100644 kernel/bpf/hashtab.c
+>
+> diff --git a/include/uapi/linux/bpf.h b/include/uapi/linux/bpf.h
+> index 5e1bfbc9cdc7..3ea11ba053a8 100644
+> --- a/include/uapi/linux/bpf.h
+> +++ b/include/uapi/linux/bpf.h
+> @@ -347,6 +347,7 @@ enum bpf_map_attributes {
+>
+>  enum bpf_map_type {
+>         BPF_MAP_TYPE_UNSPEC,
+> +       BPF_MAP_TYPE_HASH,
+>  };
+>
+>  #endif /* _UAPI__LINUX_BPF_H__ */
+> diff --git a/kernel/bpf/Makefile b/kernel/bpf/Makefile
+> index e9f7334ed07a..558e12712ebc 100644
+> --- a/kernel/bpf/Makefile
+> +++ b/kernel/bpf/Makefile
+> @@ -1 +1 @@
+> -obj-y := core.o syscall.o
+> +obj-y := core.o syscall.o hashtab.o
+> diff --git a/kernel/bpf/hashtab.c b/kernel/bpf/hashtab.c
+> new file mode 100644
+> index 000000000000..6e481cacbba3
+> --- /dev/null
+> +++ b/kernel/bpf/hashtab.c
+> @@ -0,0 +1,371 @@
+> +/* Copyright (c) 2011-2014 PLUMgrid, http://plumgrid.com
+> + *
+> + * This program is free software; you can redistribute it and/or
+> + * modify it under the terms of version 2 of the GNU General Public
+> + * License as published by the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope that it will be useful, but
+> + * WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+> + * General Public License for more details.
+> + */
+> +#include <linux/bpf.h>
+> +#include <net/netlink.h>
+> +#include <linux/jhash.h>
+> +
+> +struct bpf_htab {
+> +       struct bpf_map map;
+> +       struct hlist_head *buckets;
+> +       struct kmem_cache *elem_cache;
+> +       char *slab_name;
+> +       spinlock_t lock;
+> +       u32 count; /* number of elements in this hashtable */
+> +       u32 n_buckets; /* number of hash buckets */
+> +       u32 elem_size; /* size of each element in bytes */
+> +};
+> +
+> +/* each htab element is struct htab_elem + key + value */
+> +struct htab_elem {
+> +       struct hlist_node hash_node;
+> +       struct rcu_head rcu;
+> +       struct bpf_htab *htab;
+> +       u32 hash;
+> +       u32 pad;
+> +       char key[0];
+> +};
+> +
+> +#define HASH_MAX_BUCKETS 1024
+> +#define BPF_MAP_MAX_KEY_SIZE 256
+> +static struct bpf_map *htab_map_alloc(struct nlattr *attr[BPF_MAP_ATTR_MAX + 1])
+> +{
+> +       struct bpf_htab *htab;
+> +       int err, i;
+> +
+> +       htab = kmalloc(sizeof(*htab), GFP_USER);
 
-It turns out - now that I've stared at the code for much too long for
-my own sanity - that this code actually depends very subtly on
-"__get_cpu_var()".
+I'd prefer kzalloc here.
 
-And not in good ways.
+> +       if (!htab)
+> +               return ERR_PTR(-ENOMEM);
+> +
+> +       /* look for mandatory map attributes */
+> +       err = -EINVAL;
+> +       if (!attr[BPF_MAP_KEY_SIZE])
+> +               goto free_htab;
+> +       htab->map.key_size = nla_get_u32(attr[BPF_MAP_KEY_SIZE]);
+> +
+> +       if (!attr[BPF_MAP_VALUE_SIZE])
+> +               goto free_htab;
+> +       htab->map.value_size = nla_get_u32(attr[BPF_MAP_VALUE_SIZE]);
+> +
+> +       if (!attr[BPF_MAP_MAX_ENTRIES])
+> +               goto free_htab;
+> +       htab->map.max_entries = nla_get_u32(attr[BPF_MAP_MAX_ENTRIES]);
+> +
+> +       htab->n_buckets = (htab->map.max_entries <= HASH_MAX_BUCKETS) ?
+> +                         htab->map.max_entries : HASH_MAX_BUCKETS;
+> +
+> +       /* hash table size must be power of 2 */
+> +       if ((htab->n_buckets & (htab->n_buckets - 1)) != 0)
+> +               goto free_htab;
+> +
+> +       err = -E2BIG;
+> +       if (htab->map.key_size > BPF_MAP_MAX_KEY_SIZE)
+> +               goto free_htab;
+> +
+> +       err = -ENOMEM;
+> +       htab->buckets = kmalloc(htab->n_buckets * sizeof(struct hlist_head),
+> +                               GFP_USER);
 
-So what happens is that the games that "cpumask_var_t" plays in order
-to make code work correctly with both on-stack and off-stack
-configurations are really toxic to good per-cpu use.
+I'd prefer kcalloc here, even though n_buckets can't currently trigger
+an integer overflow.
 
-For the off-stack case, a cpumask_var_t is a pointer to the real
-allocation, and using "__get_cpu_var()" is very suboptimal, because it
-gets that pointer by following the percpu offset explicitly. So we
-load the percpu offset, then we load the offset to "load_balance_mask"
-within that, and then we load the pointer off that. We'd be much
-better off using "this_cpu_read()", which can just use the percpu area
-directly to read the pointer.
+> +
+> +       if (!htab->buckets)
+> +               goto free_htab;
+> +
+> +       for (i = 0; i < htab->n_buckets; i++)
+> +               INIT_HLIST_HEAD(&htab->buckets[i]);
+> +
+> +       spin_lock_init(&htab->lock);
+> +       htab->count = 0;
+> +
+> +       htab->elem_size = sizeof(struct htab_elem) +
+> +                         round_up(htab->map.key_size, 8) +
+> +                         htab->map.value_size;
+> +
+> +       htab->slab_name = kasprintf(GFP_USER, "bpf_htab_%p", htab);
 
-HOWEVER.
+This leaks a kernel heap memory pointer to userspace. If a unique name
+needed, I think map_id should be used instead.
 
-For the direct case, a "cpumask_var_t" is an array, exactly so that
-accessing it will just return the address of it, so that you can get
-the "struct cpumask *" directly.  And there the whole dance with
-adding the percpu offset is actually the right thing, because what you
-want is the address to the percpu area. And you cannot use
-"this_cpu_read()", because that wants to read the _value_, which is
-not what we want at all.
+> +       if (!htab->slab_name)
+> +               goto free_buckets;
+> +
+> +       htab->elem_cache = kmem_cache_create(htab->slab_name,
+> +                                            htab->elem_size, 0, 0, NULL);
+> +       if (!htab->elem_cache)
+> +               goto free_slab_name;
+> +
+> +       return &htab->map;
+> +
+> +free_slab_name:
+> +       kfree(htab->slab_name);
+> +free_buckets:
+> +       kfree(htab->buckets);
+> +free_htab:
+> +       kfree(htab);
+> +       return ERR_PTR(err);
+> +}
+> +
+> +static inline u32 htab_map_hash(const void *key, u32 key_len)
+> +{
+> +       return jhash(key, key_len, 0);
+> +}
+> +
+> +static inline struct hlist_head *select_bucket(struct bpf_htab *htab, u32 hash)
+> +{
+> +       return &htab->buckets[hash & (htab->n_buckets - 1)];
+> +}
+> +
+> +static struct htab_elem *lookup_elem_raw(struct hlist_head *head, u32 hash,
+> +                                        void *key, u32 key_size)
+> +{
+> +       struct htab_elem *l;
+> +
+> +       hlist_for_each_entry_rcu(l, head, hash_node) {
+> +               if (l->hash == hash && !memcmp(&l->key, key, key_size))
+> +                       return l;
+> +       }
+> +       return NULL;
+> +}
+> +
+> +/* Must be called with rcu_read_lock. */
+> +static void *htab_map_lookup_elem(struct bpf_map *map, void *key)
+> +{
+> +       struct bpf_htab *htab = container_of(map, struct bpf_htab, map);
+> +       struct hlist_head *head;
+> +       struct htab_elem *l;
+> +       u32 hash, key_size;
+> +
+> +       WARN_ON_ONCE(!rcu_read_lock_held());
+> +
+> +       key_size = map->key_size;
+> +
+> +       hash = htab_map_hash(key, key_size);
+> +
+> +       head = select_bucket(htab, hash);
+> +
+> +       l = lookup_elem_raw(head, hash, key, key_size);
+> +
+> +       if (l)
+> +               return l->key + round_up(map->key_size, 8);
+> +       else
+> +               return NULL;
+> +}
+> +
+> +/* Must be called with rcu_read_lock. */
+> +static int htab_map_get_next_key(struct bpf_map *map, void *key, void *next_key)
+> +{
+> +       struct bpf_htab *htab = container_of(map, struct bpf_htab, map);
+> +       struct hlist_head *head;
+> +       struct htab_elem *l, *next_l;
+> +       u32 hash, key_size;
+> +       int i;
+> +
+> +       WARN_ON_ONCE(!rcu_read_lock_held());
+> +
+> +       key_size = map->key_size;
+> +
+> +       hash = htab_map_hash(key, key_size);
+> +
+> +       head = select_bucket(htab, hash);
+> +
+> +       /* lookup the key */
+> +       l = lookup_elem_raw(head, hash, key, key_size);
+> +
+> +       if (!l) {
+> +               i = 0;
+> +               goto find_first_elem;
+> +       }
+> +
+> +       /* key was found, get next key in the same bucket */
+> +       next_l = hlist_entry_safe(rcu_dereference_raw(hlist_next_rcu(&l->hash_node)),
+> +                                 struct htab_elem, hash_node);
+> +
+> +       if (next_l) {
+> +               /* if next elem in this hash list is non-zero, just return it */
+> +               memcpy(next_key, next_l->key, key_size);
+> +               return 0;
+> +       } else {
+> +               /* no more elements in this hash list, go to the next bucket */
+> +               i = hash & (htab->n_buckets - 1);
+> +               i++;
+> +       }
+> +
+> +find_first_elem:
+> +       /* iterate over buckets */
+> +       for (; i < htab->n_buckets; i++) {
+> +               head = select_bucket(htab, i);
+> +
+> +               /* pick first element in the bucket */
+> +               next_l = hlist_entry_safe(rcu_dereference_raw(hlist_first_rcu(head)),
+> +                                         struct htab_elem, hash_node);
+> +               if (next_l) {
+> +                       /* if it's not empty, just return it */
+> +                       memcpy(next_key, next_l->key, key_size);
+> +                       return 0;
+> +               }
+> +       }
+> +
+> +       /* itereated over all buckets and all elements */
+> +       return -ENOENT;
+> +}
+> +
+> +static struct htab_elem *htab_alloc_elem(struct bpf_htab *htab)
+> +{
+> +       void *l;
+> +
+> +       l = kmem_cache_alloc(htab->elem_cache, GFP_ATOMIC);
+> +       if (!l)
+> +               return ERR_PTR(-ENOMEM);
+> +       return l;
+> +}
+> +
+> +static void free_htab_elem_rcu(struct rcu_head *rcu)
+> +{
+> +       struct htab_elem *l = container_of(rcu, struct htab_elem, rcu);
+> +
+> +       kmem_cache_free(l->htab->elem_cache, l);
+> +}
+> +
+> +static void release_htab_elem(struct bpf_htab *htab, struct htab_elem *l)
+> +{
+> +       l->htab = htab;
+> +       call_rcu(&l->rcu, free_htab_elem_rcu);
+> +}
+> +
+> +/* Must be called with rcu_read_lock. */
+> +static int htab_map_update_elem(struct bpf_map *map, void *key, void *value)
+> +{
+> +       struct bpf_htab *htab = container_of(map, struct bpf_htab, map);
+> +       struct htab_elem *l_new, *l_old;
+> +       struct hlist_head *head;
+> +       u32 key_size;
+> +
+> +       WARN_ON_ONCE(!rcu_read_lock_held());
+> +
+> +       l_new = htab_alloc_elem(htab);
+> +       if (IS_ERR(l_new))
+> +               return -ENOMEM;
+> +
+> +       key_size = map->key_size;
+> +
+> +       memcpy(l_new->key, key, key_size);
+> +       memcpy(l_new->key + round_up(key_size, 8), value, map->value_size);
+> +
+> +       l_new->hash = htab_map_hash(l_new->key, key_size);
+> +
+> +       head = select_bucket(htab, l_new->hash);
+> +
+> +       l_old = lookup_elem_raw(head, l_new->hash, key, key_size);
+> +
+> +       spin_lock_bh(&htab->lock);
+> +       if (!l_old && unlikely(htab->count >= map->max_entries)) {
+> +               /* if elem with this 'key' doesn't exist and we've reached
+> +                * max_entries limit, fail insertion of new elem
+> +                */
+> +               spin_unlock_bh(&htab->lock);
+> +               kmem_cache_free(htab->elem_cache, l_new);
+> +               return -EFBIG;
+> +       }
+> +
+> +       /* add new element to the head of the list, so that concurrent
+> +        * search will find it before old elem
+> +        */
+> +       hlist_add_head_rcu(&l_new->hash_node, head);
+> +       if (l_old) {
+> +               hlist_del_rcu(&l_old->hash_node);
+> +               release_htab_elem(htab, l_old);
+> +       } else {
+> +               htab->count++;
+> +       }
+> +       spin_unlock_bh(&htab->lock);
+> +
+> +       return 0;
+> +}
+> +
+> +/* Must be called with rcu_read_lock. */
+> +static int htab_map_delete_elem(struct bpf_map *map, void *key)
+> +{
+> +       struct bpf_htab *htab = container_of(map, struct bpf_htab, map);
+> +       struct htab_elem *l;
+> +       struct hlist_head *head;
+> +       u32 hash, key_size;
+> +
+> +       WARN_ON_ONCE(!rcu_read_lock_held());
+> +
+> +       key_size = map->key_size;
+> +
+> +       hash = htab_map_hash(key, key_size);
+> +
+> +       head = select_bucket(htab, hash);
+> +
+> +       l = lookup_elem_raw(head, hash, key, key_size);
+> +
+> +       if (l) {
+> +               spin_lock_bh(&htab->lock);
+> +               hlist_del_rcu(&l->hash_node);
+> +               htab->count--;
+> +               release_htab_elem(htab, l);
+> +               spin_unlock_bh(&htab->lock);
+> +               return 0;
+> +       }
+> +       return -ESRCH;
+> +}
+> +
+> +static void delete_all_elements(struct bpf_htab *htab)
+> +{
+> +       int i;
+> +
+> +       for (i = 0; i < htab->n_buckets; i++) {
+> +               struct hlist_head *head = select_bucket(htab, i);
+> +               struct hlist_node *n;
+> +               struct htab_elem *l;
+> +
+> +               hlist_for_each_entry_safe(l, n, head, hash_node) {
+> +                       hlist_del_rcu(&l->hash_node);
+> +                       htab->count--;
+> +                       kmem_cache_free(htab->elem_cache, l);
+> +               }
+> +       }
+> +}
+> +
+> +/* called when map->refcnt goes to zero */
+> +static void htab_map_free(struct bpf_map *map)
+> +{
+> +       struct bpf_htab *htab = container_of(map, struct bpf_htab, map);
+> +
+> +       /* wait for all outstanding updates to complete */
+> +       synchronize_rcu();
+> +
+> +       /* kmem_cache_free all htab elements */
+> +       delete_all_elements(htab);
+> +
+> +       /* and destroy cache, which might sleep */
+> +       kmem_cache_destroy(htab->elem_cache);
+> +
+> +       kfree(htab->buckets);
+> +       kfree(htab->slab_name);
+> +       kfree(htab);
+> +}
+> +
+> +static struct bpf_map_ops htab_ops = {
+> +       .map_alloc = htab_map_alloc,
+> +       .map_free = htab_map_free,
+> +       .map_get_next_key = htab_map_get_next_key,
+> +       .map_lookup_elem = htab_map_lookup_elem,
+> +       .map_update_elem = htab_map_update_elem,
+> +       .map_delete_elem = htab_map_delete_elem,
+> +};
+> +
+> +static struct bpf_map_type_list tl = {
+> +       .ops = &htab_ops,
+> +       .type = BPF_MAP_TYPE_HASH,
+> +};
+> +
+> +static int __init register_htab_map(void)
+> +{
+> +       bpf_register_map_type(&tl);
+> +       return 0;
+> +}
+> +late_initcall(register_htab_map);
+> --
+> 1.7.9.5
+>
 
-Ugh. So it's not just the initialization that is subtle, the use of
-those per-cpu "cpumask_var_t" is sadly suboptimal too.
+-Kees
 
-But the code does appear to be correct. It just is messy, avoids the
-proper abstractions, and generates suboptimal code for the off-stack
-case.
-
-               Linus
+-- 
+Kees Cook
+Chrome OS Security
