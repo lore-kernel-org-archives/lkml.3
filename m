@@ -1,90 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932247AbaGWPav (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 11:30:51 -0400
-Received: from mailsec108.isp.belgacom.be ([195.238.20.104]:1860 "EHLO
-	mailsec108.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758348AbaGWPau convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 11:30:50 -0400
-X-Cloudmark-SP-Filtered: true
-X-Cloudmark-SP-Result: v=1.1 cv=UGN7JNw3bPEHpwjh5ACRRBK85/3fvewMg9DN/Z6sboU= c=1 sm=2
- a=BvXeENiMdHAA:10 a=IkcTkHD0fZMA:10 a=IJv9LcIfAAAA:8
- a=JUB8fNl_A1OsHX5GLncA:9 a=QEXdDO2ut3YA:10 a=K6kUPx8HyhEA:10
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ApoFAFDUz1PD7hTU/2dsb2JhbABZgw5SV4J4rEMBAQEBAQEGmBqHTQGBCxZ2hAMBAQQBIwRSBQsFBhgCAhgOAgJXBhMRiCkMqQiGf5AzF4EshE+JHTMHgniBTgWvbYNKOy8
-Date: Wed, 23 Jul 2014 17:30:48 +0200 (CEST)
-From: Fabian Frederick <fabf@skynet.be>
-Reply-To: Fabian Frederick <fabf@skynet.be>
-To: Joe Perches <joe@perches.com>
-Cc: linux-kernel@vger.kernel.org, hch@infradead.org
-Message-ID: <1974949051.1018368.1406129448295.open-xchange@webmail.nmp.skynet.be>
-In-Reply-To: <1406128031.2755.21.camel@joe-AO725>
-References: <1406127018-15953-1-git-send-email-fabf@skynet.be> <1406128031.2755.21.camel@joe-AO725>
-Subject: Re: [PATCH V2] SYSV: logging update
+	id S1758355AbaGWPbh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 11:31:37 -0400
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:36838 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755732AbaGWPbf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jul 2014 11:31:35 -0400
+Date: Wed, 23 Jul 2014 16:31:25 +0100
+From: Sitsofe Wheeler <sitsofe@gmail.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: "K. Y. Srinivasan" <kys@microsoft.com>, gregkh@linuxfoundation.org,
+        linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
+        ohering@suse.com, apw@canonical.com, jasowang@redhat.com,
+        jbottomley@parallels.com, linux-scsi@vger.kernel.org
+Subject: Re: [PATCH 1/1] Drivers: scsi: storvsc: Add blist flags
+Message-ID: <20140723153125.GA520@sucs.org>
+References: <1405983961-18782-1-git-send-email-kys@microsoft.com>
+ <20140723100448.GA2540@sucs.org>
+ <20140723115128.GB16881@infradead.org>
+ <20140723125443.GA16103@sucs.org>
+ <20140723141014.GA892@infradead.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-Priority: 3
-Importance: Medium
-X-Mailer: Open-Xchange Mailer v7.2.2-Rev27
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140723141014.GA892@infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Jul 23, 2014 at 07:10:14AM -0700, Christoph Hellwig wrote:
+> On Wed, Jul 23, 2014 at 01:54:43PM +0100, Sitsofe Wheeler wrote:
+> > That's good to know (I was worried the device would not be detected as
+> > supporting discard because it doesn't report lbpme and doesn't declare a
+> > conformance version (see below)).
+> 
+> Ok, that makes things worse - you might be able to force it through
+> sysfs, though.
 
+I've got a hack that seems to be working for me - see below.
 
-> On 23 July 2014 at 17:07 Joe Perches <joe@perches.com> wrote:
->
->
-> On Wed, 2014-07-23 at 16:50 +0200, Fabian Frederick wrote:
-> > -use current logging functions
-> > -replace no level printk by pr_err
-> > -add debug.c / sysv_err function to include sb->s_id
-> > -standardize prefix: "sysv (sb id): " and remove sb id from various logging
-> > at different places.
-> > -use __func__
-> > -coalesce formats
->
-> Seems fine but:
->
-> > diff --git a/fs/sysv/debug.c b/fs/sysv/debug.c
-> []
-> > @@ -0,0 +1,15 @@
-> > +#define pr_fmt(fmt) KBUILD_MODNAME " " fmt
->
-> Please use KBUILD_MODNAME ": " fmt
+> > Is there a tree with all these updates
+> > in or do they need to be pieced together from this email thread?
+> 
+> I'm picking this up for my scsi-queue tree.  Still need a review
+> for the patch we're replying to before that one can go in, though.
 
-fs logging is generally like the following:
+OK.
 
-"sysv(sb->s_id): "
+> > Additionally is it worth quirking sd_try_rc16_first on when
+> > BLIST_TRY_VPD_PAGES is present?
+> 
+> Sounds reasonable to me.
 
-with KBUILD_MODNAME ": " :
+OK did you want me to post a set of changes to your patch? I've
+basically changed the patches from bypassing the SCSI level check (to
+allow scanning of VPD pages) to also try READ_CAPACITY(16) first and
+bypass lbpme checks. Now it's more of a case of BLIST_TRY_LBP...
 
-"sysv: (sb->s_id)"
-
-
->
-> > +
-> > +#include "sysv.h"
-> > +
-> > +void sysv_err(struct super_block *sb, const char *fmt, ...)
-> > +{
-> > +   struct va_format vaf;
-> > +   va_list args;
-> > +
-> > +   va_start(args, fmt);
-> > +   vaf.fmt = fmt;
-> > +   vaf.va = &args;
-> > +   pr_err("(%s): %pV\n", sb->s_id, &vaf);
->
-> This trailing \n is not necessary and causes
-> blank lines in the log.
->
-> All callers already use it.
-
-I could remove it from all callers instead ?
-Thanks,
-Fabian
->
->
+-- 
+Sitsofe | http://sucs.org/~sits/
