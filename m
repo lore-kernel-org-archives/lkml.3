@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933816AbaGWVrR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 17:47:17 -0400
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:60068 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933568AbaGWVrP (ORCPT
+	id S933715AbaGWVvI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 17:51:08 -0400
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:48158 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933437AbaGWVvF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 17:47:15 -0400
-Date: Thu, 24 Jul 2014 03:17:07 +0530
-From: Himangi Saraogi <himangi774@gmail.com>
-To: Yehuda Sadeh <yehuda@inktank.com>, Sage Weil <sage@inktank.com>,
-        Alex Elder <elder@kernel.org>, ceph-devel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: Julia Lawall <julia.lawall@lip6.fr>
-Subject: [PATCH] rbd: Use rbd_segment_name_free
-Message-ID: <20140723214707.GA8100@himangi-Dell>
+	Wed, 23 Jul 2014 17:51:05 -0400
+Date: Wed, 23 Jul 2014 14:50:56 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: linux-input@vger.kernel.org
+Cc: Nick Dyer <nick.dyer@itdev.co.uk>, Yufeng Shen <miletus@chromium.org>,
+        Benson Leung <bleung@chromium.org>,
+        Daniel Kurtz <djkurtz@chromium.org>,
+        Iiro Valkonen <iiro.valkonen@atmel.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH] Input: atmel_mxt_ts - simplify mxt_initialize a bit
+Message-ID: <20140723215054.GA14362@core.coreip.homeip.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -23,70 +24,151 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Free memory allocated using kmem_cache_zalloc using kmem_cache_free
-rather than kfree. The helper rbd_segment_name_free does the job here.
-Its position is shifted above the calling function.
+I think having control flow with 2 goto/labels/flags is quite hard to read,
+this version is a bit more readable IMO.
 
-The Coccinelle semantic patch that detects this change is as follows:
-
-// <smpl>
-@@
-expression x,E,c;
-@@
-
- x = \(kmem_cache_alloc\|kmem_cache_zalloc\|kmem_cache_alloc_node\)(c,...)
- ... when != x = E
-     when != &x
-?-kfree(x)
-+kmem_cache_free(c,x)
-// </smpl>
-
-Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
-Acked-by: Julia Lawall <julia.lawall@lip6.fr>
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 ---
- drivers/block/rbd.c | 16 ++++++++--------
- 1 file changed, 8 insertions(+), 8 deletions(-)
+ drivers/input/touchscreen/atmel_mxt_ts.c | 81 +++++++++++++++++---------------
+ 1 file changed, 42 insertions(+), 39 deletions(-)
 
-diff --git a/drivers/block/rbd.c b/drivers/block/rbd.c
-index b2c98c1..1b86b5e 100644
---- a/drivers/block/rbd.c
-+++ b/drivers/block/rbd.c
-@@ -1139,6 +1139,13 @@ static void rbd_dev_mapping_clear(struct rbd_device *rbd_dev)
- 	rbd_dev->mapping.features = 0;
+diff --git a/drivers/input/touchscreen/atmel_mxt_ts.c b/drivers/input/touchscreen/atmel_mxt_ts.c
+index c6dfd0a..5882352 100644
+--- a/drivers/input/touchscreen/atmel_mxt_ts.c
++++ b/drivers/input/touchscreen/atmel_mxt_ts.c
+@@ -355,7 +355,6 @@ static int mxt_bootloader_read(struct mxt_data *data,
+ 	msg.buf = val;
+ 
+ 	ret = i2c_transfer(data->client->adapter, &msg, 1);
+-
+ 	if (ret == 1) {
+ 		ret = 0;
+ 	} else {
+@@ -410,6 +409,7 @@ static int mxt_lookup_bootloader_address(struct mxt_data *data, bool retry)
+ 	case 0x5b:
+ 		bootloader = appmode - 0x26;
+ 		break;
++
+ 	default:
+ 		dev_err(&data->client->dev,
+ 			"Appmode i2c address 0x%02x not found\n",
+@@ -421,20 +421,20 @@ static int mxt_lookup_bootloader_address(struct mxt_data *data, bool retry)
+ 	return 0;
  }
  
-+static void rbd_segment_name_free(const char *name)
-+{
-+	/* The explicit cast here is needed to drop the const qualifier */
-+
-+	kmem_cache_free(rbd_segment_name_cache, (void *)name);
-+}
-+
- static const char *rbd_segment_name(struct rbd_device *rbd_dev, u64 offset)
+-static int mxt_probe_bootloader(struct mxt_data *data, bool retry)
++static int mxt_probe_bootloader(struct mxt_data *data, bool alt_address)
  {
- 	char *name;
-@@ -1158,20 +1165,13 @@ static const char *rbd_segment_name(struct rbd_device *rbd_dev, u64 offset)
- 	if (ret < 0 || ret > CEPH_MAX_OID_NAME_LEN) {
- 		pr_err("error formatting segment name for #%llu (%d)\n",
- 			segment, ret);
--		kfree(name);
-+		rbd_segment_name_free(name);
- 		name = NULL;
+ 	struct device *dev = &data->client->dev;
+-	int ret;
++	int error;
+ 	u8 val;
+ 	bool crc_failure;
+ 
+-	ret = mxt_lookup_bootloader_address(data, retry);
+-	if (ret)
+-		return ret;
++	error = mxt_lookup_bootloader_address(data, alt_address);
++	if (error)
++		return error;
+ 
+-	ret = mxt_bootloader_read(data, &val, 1);
+-	if (ret)
+-		return ret;
++	error = mxt_bootloader_read(data, &val, 1);
++	if (error)
++		return error;
+ 
+ 	/* Check app crc fail mode */
+ 	crc_failure = (val & ~MXT_BOOT_STATUS_MASK) == MXT_APP_CRC_FAIL;
+@@ -1653,41 +1653,39 @@ static void mxt_config_cb(const struct firmware *cfg, void *ctx)
+ static int mxt_initialize(struct mxt_data *data)
+ {
+ 	struct i2c_client *client = data->client;
++	int recovery_attempts = 0;
+ 	int error;
+-	bool alt_bootloader_addr = false;
+-	bool retry = false;
+ 
+-retry_info:
+-	error = mxt_get_info(data);
+-	if (error) {
+-retry_bootloader:
+-		error = mxt_probe_bootloader(data, alt_bootloader_addr);
++	while (1) {
++		error = mxt_get_info(data);
++		if (!error)
++			break;
++
++		/* Check bootloader state */
++		error = mxt_probe_bootloader(data, false);
+ 		if (error) {
+-			if (alt_bootloader_addr) {
++			dev_info(&client->dev, "Trying alternate bootloader address\n");
++			error = mxt_probe_bootloader(data, true);
++			if (error) {
+ 				/* Chip is not in appmode or bootloader mode */
+ 				return error;
+ 			}
++		}
+ 
+-			dev_info(&client->dev, "Trying alternate bootloader address\n");
+-			alt_bootloader_addr = true;
+-			goto retry_bootloader;
+-		} else {
+-			if (retry) {
+-				dev_err(&client->dev, "Could not recover from bootloader mode\n");
+-				/*
+-				 * We can reflash from this state, so do not
+-				 * abort init
+-				 */
+-				data->in_bootloader = true;
+-				return 0;
+-			}
+-
+-			/* Attempt to exit bootloader into app mode */
+-			mxt_send_bootloader_cmd(data, false);
+-			msleep(MXT_FW_RESET_TIME);
+-			retry = true;
+-			goto retry_info;
++		/* OK, we are in bootloader, see if we can recover */
++		if (++recovery_attempts > 1) {
++			dev_err(&client->dev, "Could not recover from bootloader mode\n");
++			/*
++			 * We can reflash from this state, so do not
++			 * abort initialization.
++			 */
++			data->in_bootloader = true;
++			return 0;
+ 		}
++
++		/* Attempt to exit bootloader into app mode */
++		mxt_send_bootloader_cmd(data, false);
++		msleep(MXT_FW_RESET_TIME);
  	}
  
- 	return name;
- }
+ 	/* Get object table information */
+@@ -1701,9 +1699,14 @@ retry_bootloader:
+ 	if (error)
+ 		goto err_free_object_table;
  
--static void rbd_segment_name_free(const char *name)
--{
--	/* The explicit cast here is needed to drop the const qualifier */
--
--	kmem_cache_free(rbd_segment_name_cache, (void *)name);
--}
--
- static u64 rbd_segment_offset(struct rbd_device *rbd_dev, u64 offset)
- {
- 	u64 segment_size = (u64) 1 << rbd_dev->header.obj_order;
+-	request_firmware_nowait(THIS_MODULE, true, MXT_CFG_NAME,
+-				&data->client->dev, GFP_KERNEL, data,
+-				mxt_config_cb);
++	error = request_firmware_nowait(THIS_MODULE, true, MXT_CFG_NAME,
++					&client->dev, GFP_KERNEL, data,
++					mxt_config_cb);
++	if (error) {
++		dev_err(&client->dev, "Failed to invoke firmware loader: %d\n",
++			error);
++		goto err_free_object_table;
++	}
+ 
+ 	return 0;
+ 
 -- 
-1.9.1
+2.0.0.526.g5318336
 
+
+-- 
+Dmitry
