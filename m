@@ -1,55 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757450AbaGWI0O (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 04:26:14 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:47482 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757367AbaGWI0C (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 04:26:02 -0400
-Message-ID: <53CF7191.2090008@canonical.com>
-Date: Wed, 23 Jul 2014 10:25:53 +0200
-From: Maarten Lankhorst <maarten.lankhorst@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1757479AbaGWI0T (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 04:26:19 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:41075 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757367AbaGWI0P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jul 2014 04:26:15 -0400
+Message-ID: <53CF718C.1060109@ti.com>
+Date: Wed, 23 Jul 2014 13:55:48 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-To: =?UTF-8?B?Q2hyaXN0aWFuIEvDtm5pZw==?= <christian.koenig@amd.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        =?UTF-8?B?Q2hyaXN0aWFuIEvDtm5pZw==?= <deathsimple@vodafone.de>
-CC: Thomas Hellstrom <thellstrom@vmware.com>,
-        nouveau <nouveau@lists.freedesktop.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        dri-devel <dri-devel@lists.freedesktop.org>,
-        Ben Skeggs <bskeggs@redhat.com>,
-        "Deucher, Alexander" <alexander.deucher@amd.com>
-Subject: Re: [Nouveau] [PATCH 09/17] drm/radeon: use common fence implementation
- for fences
-References: <20140709093124.11354.3774.stgit@patser>	<20140709122953.11354.46381.stgit@patser>	<CAPM=9tyD2ZbrcGDC3hfNb7qNdzsfnyD-ZwM7G-nOgxeu5YKuSg@mail.gmail.com>	<53CE2421.5040906@amd.com>	<20140722114607.GL15237@phenom.ffwll.local>	<20140722115737.GN15237@phenom.ffwll.local>	<53CE56ED.4040109@vodafone.de>	<20140722132652.GO15237@phenom.ffwll.local>	<53CE6AFA.1060807@vodafone.de>	<CAKMK7uG1d31zU_i__wc+Yq46A0x0tPeKnMBs+NHSmHS82uMsXQ@mail.gmail.com>	<53CE84AA.9030703@amd.com>	<CAKMK7uFa8vMBV9_JenbFGnFXtV_r9dk=WjbMkkCDWcauhrDdJg@mail.gmail.com>	<53CE8A57.2000803@vodafone.de>	<53CF58FB.8070609@canonical.com>	<53CF5B9F.1050800@amd.com>	<53CF5EFE.6070307@canonical.com>	<53CF63C2.7070407@vodafone.de>	<CAKMK7uGJj+UwcnnzA+fj_=uWPN3i0sneWkoD+wfPJ_8Q6Y-DQg@mail.gmail.com>	<53CF6622.6060803@amd.com>	<53CF699D.9070902@canonical.com>	<53CF6B18.5070107@vodafone.de> <CAKMK7uGd65HR11thcv8KjDw-RnTa7W-QGOzFGFd+oO_hp8wyHA@mail.gmail.com> <53CF7035.2060808@amd.com>
-In-Reply-To: <53CF7035.2060808@amd.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: Bjorn Helgaas <bhelgaas@google.com>
+CC: <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <linux-pci@vger.kernel.org>, <jg1.han@samsung.com>,
+        <mohit.kumar@st.com>, <linux-kernel@vger.kernel.org>,
+        <grant.likely@linaro.org>
+Subject: Re: [PATCH v3 0/4] dra7: Add PCIe support
+References: <1405587643-13808-1-git-send-email-kishon@ti.com> <20140722213306.GB25432@google.com>
+In-Reply-To: <20140722213306.GB25432@google.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-op 23-07-14 10:20, Christian König schreef:
-> Am 23.07.2014 10:07, schrieb Daniel Vetter:
->> On Wed, Jul 23, 2014 at 9:58 AM, Christian König
->> <deathsimple@vodafone.de> wrote:
->>> Just imagine an application using prime is locking up Radeon and because of
->>> that gets killed by the user. Nothing else in the system would use the
->>> Radeon hardware any more and so radeon gets only called by another driver
->>> waiting patiently for radeon to finish rendering which never happens because
->>> the whole thing is locked up and we don't get a chance to recover.
->> But isn't that possible already without fences? X hangs radeon, user
->> crashes X for unrelated reasons before radeon will notice the hang.
->> Then no one uses radeon any longer and the hang stays undetected.
->
-> Yeah, especially with multimedia application. But I don't really care about this problem because the next time an application tries to use the block in question we actually do the reset and everything is fine.
->
-> In your example we would do the reset when the next X server starts, before that point nobody would care because nobody uses the hardware.
->
-> An additional problem here is that resets are something perfect normal for radeon. For example UVD can "crash" when you feed it with invalid bitstream data, (ok actually it send an interrupt and stops any processing for the driver to investigate). To continue processing you need to go through a rather complicated reset procedure.
-In this case if the sync was to i915 the i915 lockup procedure would take care of itself. It wouldn't fix radeon, but it would at least unblock your intel card again. I haven't specifically added a special case to attempt to unblock external fences, but I've considered it. :-)
 
-~Maarten
 
+On Wednesday 23 July 2014 03:03 AM, Bjorn Helgaas wrote:
+> On Thu, Jul 17, 2014 at 02:30:39PM +0530, Kishon Vijay Abraham I wrote:
+>> Changes from v2:
+>> * Added myself as MAINTAINER of pcie dra7xx driver
+>>
+>> Changes from v1:
+>> * fixed dw_pcie_prog_viewport_io_outbound() to use untranslated address
+>> * split dra7xx patch into driver part and documentation part
+>>
+>> [1] is split into separate series in order for individual subsystem
+>> Maintainers to pick up the patches. This series handles the PCIe
+>> support for DRA7.
+>>
+>> Rebased to pci -next.
+>>
+>> [1] -> https://lkml.org/lkml/2014/5/29/258
+>>
+>> Kishon Vijay Abraham I (4):
+>>   PCI: designware: Configuration space should be specified in 'reg'
+>>   PCI: designware: use untranslated address while programming ATU
+>>   Documentation: pci: ti: Add dt binding documentation for PCIe in
+>>     DRA7xx
+>>   PCI: host: pcie-dra7xx: add support for pcie-dra7xx controller
+>>
+>>  .../devicetree/bindings/pci/designware-pcie.txt    |    4 +
+>>  Documentation/devicetree/bindings/pci/ti-pci.txt   |   59 +++
+>>  MAINTAINERS                                        |    8 +
+>>  drivers/pci/host/Kconfig                           |   10 +
+>>  drivers/pci/host/Makefile                          |    1 +
+>>  drivers/pci/host/pci-dra7xx.c                      |  458 ++++++++++++++++++++
+>>  drivers/pci/host/pcie-designware.c                 |   72 ++-
+>>  drivers/pci/host/pcie-designware.h                 |    4 +
+>>  8 files changed, 600 insertions(+), 16 deletions(-)
+>>  create mode 100644 Documentation/devicetree/bindings/pci/ti-pci.txt
+>>  create mode 100644 drivers/pci/host/pci-dra7xx.c
+> 
+> I applied these to pci/host-designware for v3.17.  This will not be in my
+> first pull request because I'm going on vacation and won't have time to get
+> everything through -next and tagged.  But I'm planning a second pull
+> request that will include this.
+> 
+> Mohit, I applied your ack of "use untranslated address" from the v1 posting
+> (your mail of Jul 09) to the corresponding patch here, since Kishon didn't
+> carry it forward.  Let me know if that's not OK.
+> 
+> I also squashed the last two patches into one so the DT binding
+> documentation goes along with the dra7xx driver addition.
+> 
+
+Thanks Bjorn.
+
+-Kishon
+> Bjorn
+> 
