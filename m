@@ -1,24 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757359AbaGWHmf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 03:42:35 -0400
+	id S932160AbaGWHmj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 03:42:39 -0400
 Received: from cn.fujitsu.com ([59.151.112.132]:48515 "EHLO
 	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752519AbaGWHmd (ORCPT
+	with ESMTP id S1753919AbaGWHmf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 03:42:33 -0400
+	Wed, 23 Jul 2014 03:42:35 -0400
 X-IronPort-AV: E=Sophos;i="5.00,931,1396972800"; 
-   d="scan'208";a="33671753"
+   d="scan'208";a="33671756"
 From: Tang Chen <tangchen@cn.fujitsu.com>
 To: <gleb@kernel.org>, <mtosatti@redhat.com>, <nadav.amit@gmail.com>,
         <jan.kiszka@web.de>
 CC: <kvm@vger.kernel.org>, <laijs@cn.fujitsu.com>,
         <isimatu.yasuaki@jp.fujitsu.com>, <guz.fnst@cn.fujitsu.com>,
         <linux-kernel@vger.kernel.org>, <tangchen@cn.fujitsu.com>
-Subject: [PATCH v3 0/6] kvm, mem-hotplug: Do not pin ept identity pagetable and apic access page.
-Date: Wed, 23 Jul 2014 15:42:04 -0400
-Message-ID: <1406144530-23002-1-git-send-email-tangchen@cn.fujitsu.com>
+Subject: [PATCH v3 1/6] kvm: Add gfn_to_page_no_pin() to translate gfn to page without pinning.
+Date: Wed, 23 Jul 2014 15:42:05 -0400
+Message-ID: <1406144530-23002-2-git-send-email-tangchen@cn.fujitsu.com>
 X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1406144530-23002-1-git-send-email-tangchen@cn.fujitsu.com>
+References: <1406144530-23002-1-git-send-email-tangchen@cn.fujitsu.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-Originating-IP: [10.167.226.71]
@@ -26,60 +28,59 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ept identity pagetable and apic access page in kvm are pinned in memory.
-As a result, they cannot be migrated/hot-removed.
+gfn_to_page() will finally call hva_to_pfn() to get the pfn, and pin the page
+in memory by calling GUP functions. This function unpins the page.
 
-But actually they don't need to be pinned in memory.
+Will be used by the followed patches.
 
-[For ept identity page]
-Just do not pin it. When it is migrated, guest will be able to find the
-new page in the next ept violation.
+Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
+---
+ include/linux/kvm_host.h |  1 +
+ virt/kvm/kvm_main.c      | 17 ++++++++++++++++-
+ 2 files changed, 17 insertions(+), 1 deletion(-)
 
-[For apic access page]
-The hpa of apic access page is stored in VMCS APIC_ACCESS_ADDR pointer.
-When apic access page is migrated, we update VMCS APIC_ACCESS_ADDR pointer
-for each vcpu in addition.
-
-NOTE: Patch 1~5 are tested with -cpu xxx,-x2apic option, and they work well.
-      Patch 6 is not tested yet, not sure if it is right.
-
-Change log v2 -> v3:
-1. Remove original [PATCH 3/6] since ept_identity_pagetable has been removed
-   in new [PATCH 3/6].
-2. In [PATCH 3/6], fix the problem that kvm->slots_lock does not protect 
-   kvm->arch.ept_identity_pagetable_done checking.
-3. In [PATCH 3/6], drop gfn_to_page() since ept_identity_pagetable has been 
-   removed.
-4. Add new [PATCH 4/6], remove redundant variable in init_rmode_identity_map(), 
-   and make it return 0 on success.
-5. In [PATCH 5/6], drop put_page(kvm->arch.apic_access_page) from x86.c .
-6. In [PATCH 5/6], update kvm->arch.apic_access_page in vcpu_reload_apic_access_page().
-7. Add new [PATCH 6/6], reload apic access page in L2->L1 exit.
-
-Change log v1 -> v2:
-1. Add [PATCH 4/5] to remove unnecessary kvm_arch->ept_identity_pagetable.
-2. In [PATCH 5/5], only introduce KVM_REQ_APIC_PAGE_RELOAD request.
-3. In [PATCH 5/5], add set_apic_access_page_addr() for svm.
-
-
-Tang Chen (6):
-  kvm: Add gfn_to_page_no_pin() to translate gfn to page without
-    pinning.
-  kvm: Use APIC_DEFAULT_PHYS_BASE macro as the apic access page address.
-  kvm: Remove ept_identity_pagetable from struct kvm_arch.
-  kvm: Make init_rmode_identity_map() return 0 on success.
-  kvm, mem-hotplug: Do not pin apic access page in memory.
-  kvm, mem-hotplug: Reload L1's apic access page if it is migrated when
-    L2 is running.
-
- arch/x86/include/asm/kvm_host.h |   3 +-
- arch/x86/kvm/svm.c              |  15 +++++-
- arch/x86/kvm/vmx.c              | 108 +++++++++++++++++++++++++++-------------
- arch/x86/kvm/x86.c              |  22 ++++++--
- include/linux/kvm_host.h        |   3 ++
- virt/kvm/kvm_main.c             |  29 ++++++++++-
- 6 files changed, 139 insertions(+), 41 deletions(-)
-
+diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
+index ec4e3bd..7c58d9d 100644
+--- a/include/linux/kvm_host.h
++++ b/include/linux/kvm_host.h
+@@ -541,6 +541,7 @@ int gfn_to_page_many_atomic(struct kvm *kvm, gfn_t gfn, struct page **pages,
+ 			    int nr_pages);
+ 
+ struct page *gfn_to_page(struct kvm *kvm, gfn_t gfn);
++struct page *gfn_to_page_no_pin(struct kvm *kvm, gfn_t gfn);
+ unsigned long gfn_to_hva(struct kvm *kvm, gfn_t gfn);
+ unsigned long gfn_to_hva_prot(struct kvm *kvm, gfn_t gfn, bool *writable);
+ unsigned long gfn_to_hva_memslot(struct kvm_memory_slot *slot, gfn_t gfn);
+diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
+index 4b6c01b..6091849 100644
+--- a/virt/kvm/kvm_main.c
++++ b/virt/kvm/kvm_main.c
+@@ -1371,9 +1371,24 @@ struct page *gfn_to_page(struct kvm *kvm, gfn_t gfn)
+ 
+ 	return kvm_pfn_to_page(pfn);
+ }
+-
+ EXPORT_SYMBOL_GPL(gfn_to_page);
+ 
++struct page *gfn_to_page_no_pin(struct kvm *kvm, gfn_t gfn)
++{
++	struct page *page = gfn_to_page(kvm, gfn);
++
++	/*
++	 * gfn_to_page() will finally call hva_to_pfn() to get the pfn, and pin
++	 * the page in memory by calling GUP functions. This function unpins
++	 * the page.
++	 */
++	if (!is_error_page(page))
++		put_page(page);
++
++	return page;
++}
++EXPORT_SYMBOL_GPL(gfn_to_page_no_pin);
++
+ void kvm_release_page_clean(struct page *page)
+ {
+ 	WARN_ON(is_error_page(page));
 -- 
 1.8.3.1
 
