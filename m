@@ -1,109 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758183AbaGWQT5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 12:19:57 -0400
-Received: from mail-vc0-f172.google.com ([209.85.220.172]:57017 "EHLO
-	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755359AbaGWQTz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 12:19:55 -0400
+	id S1758229AbaGWQU3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 12:20:29 -0400
+Received: from mga02.intel.com ([134.134.136.20]:30790 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758144AbaGWQU1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jul 2014 12:20:27 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,718,1400050800"; 
+   d="scan'208";a="547840471"
+Message-ID: <53CFE0C6.905@intel.com>
+Date: Wed, 23 Jul 2014 09:20:22 -0700
+From: Dave Hansen <dave.hansen@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-In-Reply-To: <20140723120748.5ef6e1b5@gandalf.local.home>
-References: <1406004789-9918-1-git-send-email-xerofoify@gmail.com>
-	<874my98p6u.fsf@nemi.mork.no>
-	<CA+8MBb+fnCNeQtyEqttxbkWx-4N+GUaKCUoCSdn5X9+bDDvTOg@mail.gmail.com>
-	<CAPDOMVjaf+vne4vbUPo8EPs0XnQBbNm2ZOXns8fw5pkg9tRSww@mail.gmail.com>
-	<CAAsK9AGtdJiz0xnmfqLBAqxmt=r+WANsmxwB_vQ3O5aKzMW1LQ@mail.gmail.com>
-	<CAPDOMVhj72TFKbtw_93juX19WVdfUzh3KM9tCEjbTdUZvUfcUQ@mail.gmail.com>
-	<20140722193350.GA486@home.goodmis.org>
-	<CAPDOMVipLiXuYqndO_gnMYocDLVsHX9zcTdSMUV_EjJo72nx6w@mail.gmail.com>
-	<20140723103707.64071c00@gandalf.local.home>
-	<CAPDOMVh+zVQZQWjS1mTDmZo9frvk9t+kzN4_cOaoDgaNePF2AA@mail.gmail.com>
-	<20140723120748.5ef6e1b5@gandalf.local.home>
-Date: Wed, 23 Jul 2014 12:19:50 -0400
-Message-ID: <CAPDOMVjbatYy9GtK6Jcu96-cDNB8C-ejboKW_x8s0NCFzQt64Q@mail.gmail.com>
-Subject: Re: [PATCH] edac: Remove fixmes in e7xxx_edac.c
-From: Nick Krause <xerofoify@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Levente Kurusa <lkurusa@redhat.com>, Tony Luck <tony.luck@gmail.com>,
-        =?UTF-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>,
-        Doug Thompson <dougthompson@xmission.com>,
-        Borislav Petkov <bp@alien8.de>,
-        "m.chehab@samsung.com" <m.chehab@samsung.com>,
-        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Qiaowei Ren <qiaowei.ren@intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>
+CC: x86@kernel.org, linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH v7 08/10] x86, mpx: add prctl commands PR_MPX_REGISTER,
+ PR_MPX_UNREGISTER
+References: <1405921124-4230-1-git-send-email-qiaowei.ren@intel.com> <1405921124-4230-9-git-send-email-qiaowei.ren@intel.com>
+In-Reply-To: <1405921124-4230-9-git-send-email-qiaowei.ren@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 23, 2014 at 12:07 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> On Wed, 23 Jul 2014 11:35:21 -0400
-> Nick Krause <xerofoify@gmail.com> wrote:
->
->> Steve, I  have make a few mistakes. That doesn't give you the right to
->> put me under a waste of time yet.
->
-> Nobody is upset at you for making a few mistakes. But ignoring advice
-> from people is something quite different, and that is what tends to
-> piss people off.
->
-> You were told time and time again to stop this fixme craze because you
-> obviously didn't know the details of what you were fixing, but you
-> continued to care on. The issue is with these patches that you probably
-> caught a maintainer off guard, and they just accepted it thinking you
-> had some clue to the code you were fixing. Thus, not only are you
-> removing crucial comments about areas of code that needs more
-> attention, you end up making things worse. Your actions are dangerous to
-> the kernel and the fact you ignoring everyone telling you to stop it,
-> makes you dangerous to the kernel. That gives me the right to put you
-> under the "waste of time" folder.
->
-> Now it may seem that I'm being rather harsh to you, and I may be. The
-> Linux kernel is a serious project and it can not afford having to deal
-> with those that do not listen.
->
-> That said...
->
-> I see you stated in another email:
->
-> "Very well then I guess the community wants me to listen better to the
-> maintainers and not do stupid things"
->
->
-> Finally, you are listening.
->
-> You obviously are very enthusiastic, and I would like you not to waste
-> your own time and energy trying to help in a not so helpful way. If you
-> really want to help the Linux community, here's what you do.
->
-> Find a single area to focus on. Not a key word throughout the kernel.
-> Look at the USB stack, or find some driver in staging that is for some
-> really cheap hardware that you can afford. And get it cleaned up and
-> working nicely. Start simple. Try to understand that area completely.
->
-> Remember, nobody understand every aspect of the kernel. All the main
-> kernel developers are experts in select parts. I wouldn't even try
-> fixing "fixmes" in parts of the kernel that I'm unfamiliar with.
->
-> Find a part of the kernel, and learn every aspect of that part inside
-> and out. Study the code. Boot the kernel. Make a modification of that
-> code and see what happens. Yes! Break it (but don't submit a patch that
-> does ;). Sometimes breaking stuff is the best way to understand why it
-> worked in the first place. Use function graph tracing to see the code
-> flow.
->
-> After you have done that, and you really have a good understanding of
-> that part of the kernel, you should in the mean time see a way to
-> enhance it, or better yet, find a real bug and fix it. Then you can
-> submit a patch and that will be something of use.
->
-> Moral of the story: Learn the kernel before submitting a patch, do not
-> submit a patch to help you learn the kernel.
->
-> -- Steve
+On 07/20/2014 10:38 PM, Qiaowei Ren wrote:
+> +	pr_debug("MPX BD base address %p\n", mm->bd_addr);
+> +	return 0;
+> +}
 
+Please remove all of the pr_debug()s.  They're not appropriate for
+common paths in production code.
 
-Steve ,
-Thanks for your help.
-Cheers Nick
+There's another one in allocate_bt(), btw.
