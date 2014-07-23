@@ -1,83 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758214AbaGWP2J (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 11:28:09 -0400
-Received: from zill.ext.symas.net ([69.43.206.106]:39070 "EHLO
-	zill.ext.symas.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756125AbaGWP2I (ORCPT
-	<rfc822;Linux-Kernel@Vger.Kernel.ORG>);
-	Wed, 23 Jul 2014 11:28:08 -0400
-Message-ID: <53CFD483.2010106@symas.com>
-Date: Wed, 23 Jul 2014 08:28:03 -0700
-From: Howard Chu <hyc@symas.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:29.0) Gecko/20100101 Firefox/29.0 SeaMonkey/2.26a1
+	id S1758230AbaGWP2X (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 11:28:23 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:58213 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758091AbaGWP2V (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jul 2014 11:28:21 -0400
+Message-ID: <53CFD444.4010700@ti.com>
+Date: Wed, 23 Jul 2014 11:27:00 -0400
+From: Murali Karicheri <m-karicheri2@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-To: Matthew Wilcox <willy@linux.intel.com>
-CC: Linux Kernel Mailing List <Linux-Kernel@vger.kernel.org>
-Subject: Re: [PATCH v8 00/22] Support ext4 on NV-DIMMs
-References: <cover.1406058387.git.matthew.r.wilcox@intel.com> <00ad731b459e32ce965af8530bcd611a141e41b6.1406058387.git.matthew.r.wilcox@intel.com> <20140723121025.GE10317@node.dhcp.inet.fi> <20140723135514.GB6754@linux.intel.com> <53CFC258.6050803@symas.com> <20140723143453.GE6754@linux.intel.com>
-In-Reply-To: <20140723143453.GE6754@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Bjorn Helgaas <bhelgaas@google.com>
+CC: <linux-pci@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Mohit Kumar <mohit.kumar@st.com>,
+        Jingoo Han <jg1.han@samsung.com>,
+        Pratyush Anand <pratyush.anand@st.com>,
+        Richard Zhu <r65037@freescale.com>,
+        Kishon Vijay Abraham I <kishon@ti.com>, Marek Vasut <marex@denx.de>,
+        Arnd Bergmann <arnd@arndb.de>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Randy Dunlap <rdunlap@infradead.org>
+Subject: Re: [PATCH v7 0/5] Add Keystone PCIe controller driver
+References: <1405961925-27248-1-git-send-email-m-karicheri2@ti.com> <20140722225708.GB27965@google.com>
+In-Reply-To: <20140722225708.GB27965@google.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Matthew Wilcox wrote:
-> On Wed, Jul 23, 2014 at 07:10:32AM -0700, Howard Chu wrote:
->> Matthew Wilcox wrote:
->>> One of the primary uses for NV-DIMMs is to expose them as a block device
->>> and use a filesystem to store files on the NV-DIMM. While that works,
->>> it currently wastes memory and CPU time buffering the files in the page
->>> cache. We have support in ext2 for bypassing the page cache, but it
->>> has some races which are unfixable in the current design. This series
->>> of patches rewrite the underlying support, and add support for direct
->>> access to ext4.
+
+Bjorn,
+
+On 07/22/2014 06:57 PM, Bjorn Helgaas wrote:
+> On Mon, Jul 21, 2014 at 12:58:40PM -0400, Murali Karicheri wrote:
+
+>> Murali Karicheri (5):
+>>    PCI: designware: add rd[wr]_other_conf API
+>>    PCI: designware: refactor MSI code to work with v3.65 dw hardware
+>
+> I applied the above two to my pci/host-designware branch.  The rest didn't
+> apply cleanly because I applied Kishon's DRA7xx changes first, and there
+> are several conflicts.  Can you rebase the rest of them on top of
+> pci/host-designware?
+
+Thanks for applying 1 and 2.
+
+I will fix up 3 based on your branch and send you updated patch 3 and 4 
+today.  Hope you can apply this updated patch so that I don't have to 
+address any rebase issues. Regarding the MRSS comment, I will discuss it 
+on that thread and send you a fix for removing the bootargs depedency 
+based on what comes out of that discussion. Is that fine?
+
+Regards,
+
+Murali
+
+>
+>>    PCI: designware: enhance dw_pcie_host_init() to support v3.65 DW
+>>      hardware
+>>    PCI: add PCI controller for keystone PCIe h/w
+>>    PCI: keystone: Update maintainer information
+>
+> You can squash the MAINTAINERS update into the driver addition.  They're
+> logically part of the same change.
+>
+> Bjorn
+>
+>>   .../devicetree/bindings/pci/pci-keystone.txt       |   68 +++
+>>   MAINTAINERS                                        |    7 +
+>>   drivers/pci/host/Kconfig                           |    5 +
+>>   drivers/pci/host/Makefile                          |    1 +
+>>   drivers/pci/host/pci-keystone-dw.c                 |  521 ++++++++++++++++++++
+>>   drivers/pci/host/pci-keystone.c                    |  386 +++++++++++++++
+>>   drivers/pci/host/pci-keystone.h                    |   58 +++
+>>   drivers/pci/host/pcie-designware.c                 |  116 +++--
+>>   drivers/pci/host/pcie-designware.h                 |    9 +
+>>   9 files changed, 1135 insertions(+), 36 deletions(-)
+>>   create mode 100644 Documentation/devicetree/bindings/pci/pci-keystone.txt
+>>   create mode 100644 drivers/pci/host/pci-keystone-dw.c
+>>   create mode 100644 drivers/pci/host/pci-keystone.c
+>>   create mode 100644 drivers/pci/host/pci-keystone.h
 >>
->> This is an awful lot of work to go thru just to get a glorified ext4
->> RAMdisk. RAMdisks are one of the worst possible uses for RAM, requiring
->> users to explicitly copy files to them before getting any benefit. Using RAM
->> for a page cache instead brings benefits to all file accesses without
->> requiring any user intervention.
->
-> Perhaps you misunderstand the problem.  There are many different kinds
-> of NV-DIMM out there today with different performance characteristics.
-> One that has been described to me has write times 1000x slower than read
-> times.  In that situation, you can't possibly "just use it as page cache";
-> you need to place the read-often; write-rarely files on that media.
+>> --
+>> 1.7.9.5
+>>
 
-Thanks for the clarification. Yes, I was assuming "NVDIMM" to mean something 
-with DRAM performance + persistence, like http://www.agigatech.com/ddr3.php or 
-http://www.vikingtechnology.com/nvdimm-technology . That's also the definition 
-in Wikipedia http://en.wikipedia.org/wiki/NVDIMM
-
-  (NVDIMM) is a computer memory DRAM DIMM that retains data even when
-   electrical power is removed
-
-What NVDIMM did you have in mind? It doesn't sound like Flash DIMM, which is 
-nowhere near DRAM performance for reads or writes. Closest so far would be 
-STT-MRAM but the capacity/density isn't really there yet.
-
->> If the NVDIMM range was reserved for exclusive use of the page cache, then
->> you would have an avenue to get persistence/safety for every filesystem
->> mounted on a machine, not just a special case ext4.
->
-> No you wouldn't; you'd also need to have a mechanism to store the state
-> of the page cache persistently.
-
-OK, so you have to arrange for the page cache manager to use the NVRAM for its 
-own data structures as well.
-
-> And you have to make sure that the
-> filesystem does appropriate cache invalidations.  By going the route
-> here, we can use the existing caching mechanisms (eg FS-Cache) which
-> have solved all the hard problems of making sure that local caches are
-> coherent with storage.
-
-OK. Thanks again for the explanation.
-
--- 
-   -- Howard Chu
-   CTO, Symas Corp.           http://www.symas.com
-   Director, Highland Sun     http://highlandsun.com/hyc/
-   Chief Architect, OpenLDAP  http://www.openldap.org/project/
