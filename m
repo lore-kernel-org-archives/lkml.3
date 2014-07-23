@@ -1,95 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758230AbaGWP2X (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 11:28:23 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:58213 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758091AbaGWP2V (ORCPT
+	id S1758245AbaGWP2b (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 11:28:31 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:64296 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1758091AbaGWP22 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 11:28:21 -0400
-Message-ID: <53CFD444.4010700@ti.com>
-Date: Wed, 23 Jul 2014 11:27:00 -0400
-From: Murali Karicheri <m-karicheri2@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Wed, 23 Jul 2014 11:28:28 -0400
+Date: Wed, 23 Jul 2014 11:28:26 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Daniel Bristot de Oliveira <bristot@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH] sched: Use macro for magic number of -1 for setparam
+Message-ID: <20140723112826.6ed6cbce@gandalf.local.home>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-To: Bjorn Helgaas <bhelgaas@google.com>
-CC: <linux-pci@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Mohit Kumar <mohit.kumar@st.com>,
-        Jingoo Han <jg1.han@samsung.com>,
-        Pratyush Anand <pratyush.anand@st.com>,
-        Richard Zhu <r65037@freescale.com>,
-        Kishon Vijay Abraham I <kishon@ti.com>, Marek Vasut <marex@denx.de>,
-        Arnd Bergmann <arnd@arndb.de>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Randy Dunlap <rdunlap@infradead.org>
-Subject: Re: [PATCH v7 0/5] Add Keystone PCIe controller driver
-References: <1405961925-27248-1-git-send-email-m-karicheri2@ti.com> <20140722225708.GB27965@google.com>
-In-Reply-To: <20140722225708.GB27965@google.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Instead of passing around a magic number -1 for the sched_setparam()
+policy, use a more descriptive macro name like SETPARAM_POLICY.
 
-Bjorn,
+[ based on top of Daniel's sched_setparam() fix ]
 
-On 07/22/2014 06:57 PM, Bjorn Helgaas wrote:
-> On Mon, Jul 21, 2014 at 12:58:40PM -0400, Murali Karicheri wrote:
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ kernel/sched/core.c |   17 ++++++++++-------
+ 1 file changed, 10 insertions(+), 7 deletions(-)
 
->> Murali Karicheri (5):
->>    PCI: designware: add rd[wr]_other_conf API
->>    PCI: designware: refactor MSI code to work with v3.65 dw hardware
->
-> I applied the above two to my pci/host-designware branch.  The rest didn't
-> apply cleanly because I applied Kishon's DRA7xx changes first, and there
-> are several conflicts.  Can you rebase the rest of them on top of
-> pci/host-designware?
-
-Thanks for applying 1 and 2.
-
-I will fix up 3 based on your branch and send you updated patch 3 and 4 
-today.  Hope you can apply this updated patch so that I don't have to 
-address any rebase issues. Regarding the MRSS comment, I will discuss it 
-on that thread and send you a fix for removing the bootargs depedency 
-based on what comes out of that discussion. Is that fine?
-
-Regards,
-
-Murali
-
->
->>    PCI: designware: enhance dw_pcie_host_init() to support v3.65 DW
->>      hardware
->>    PCI: add PCI controller for keystone PCIe h/w
->>    PCI: keystone: Update maintainer information
->
-> You can squash the MAINTAINERS update into the driver addition.  They're
-> logically part of the same change.
->
-> Bjorn
->
->>   .../devicetree/bindings/pci/pci-keystone.txt       |   68 +++
->>   MAINTAINERS                                        |    7 +
->>   drivers/pci/host/Kconfig                           |    5 +
->>   drivers/pci/host/Makefile                          |    1 +
->>   drivers/pci/host/pci-keystone-dw.c                 |  521 ++++++++++++++++++++
->>   drivers/pci/host/pci-keystone.c                    |  386 +++++++++++++++
->>   drivers/pci/host/pci-keystone.h                    |   58 +++
->>   drivers/pci/host/pcie-designware.c                 |  116 +++--
->>   drivers/pci/host/pcie-designware.h                 |    9 +
->>   9 files changed, 1135 insertions(+), 36 deletions(-)
->>   create mode 100644 Documentation/devicetree/bindings/pci/pci-keystone.txt
->>   create mode 100644 drivers/pci/host/pci-keystone-dw.c
->>   create mode 100644 drivers/pci/host/pci-keystone.c
->>   create mode 100644 drivers/pci/host/pci-keystone.h
->>
->> --
->> 1.7.9.5
->>
-
+Index: linux-trace.git/kernel/sched/core.c
+===================================================================
+--- linux-trace.git.orig/kernel/sched/core.c	2014-07-23 11:19:24.396368654 -0400
++++ linux-trace.git/kernel/sched/core.c	2014-07-23 11:27:30.013401767 -0400
+@@ -3203,12 +3203,18 @@
+ 	dl_se->dl_yielded = 0;
+ }
+ 
++/*
++ * sched_setparam() passes in -1 for its policy, to let the functions
++ * it calls know not to change it.
++ */
++#define SETPARAM_POLICY	-1
++
+ static void __setscheduler_params(struct task_struct *p,
+ 		const struct sched_attr *attr)
+ {
+ 	int policy = attr->sched_policy;
+ 
+-	if (policy == -1) /* setparam */
++	if (policy == SETPARAM_POLICY)
+ 		policy = p->policy;
+ 
+ 	p->policy = policy;
+@@ -3557,11 +3563,8 @@
+ 		.sched_nice	= PRIO_TO_NICE(p->static_prio),
+ 	};
+ 
+-	/*
+-	 * Fixup the legacy SCHED_RESET_ON_FORK hack, except if
+-	 * the policy=-1 was passed by sched_setparam().
+-	 */
+-	if ((policy != -1) && (policy & SCHED_RESET_ON_FORK)) {
++	/* Fixup the legacy SCHED_RESET_ON_FORK hack. */
++	if ((policy != SETPARAM_POLICY) && (policy & SCHED_RESET_ON_FORK)) {
+ 		attr.sched_flags |= SCHED_FLAG_RESET_ON_FORK;
+ 		policy &= ~SCHED_RESET_ON_FORK;
+ 		attr.sched_policy = policy;
+@@ -3731,7 +3734,7 @@
+  */
+ SYSCALL_DEFINE2(sched_setparam, pid_t, pid, struct sched_param __user *, param)
+ {
+-	return do_sched_setscheduler(pid, -1, param);
++	return do_sched_setscheduler(pid, SETPARAM_POLICY, param);
+ }
+ 
+ /**
