@@ -1,45 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757426AbaGWDyJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 23:54:09 -0400
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:42040 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755865AbaGWDyH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 23:54:07 -0400
-Message-ID: <53CF319C.4070605@linaro.org>
-Date: Wed, 23 Jul 2014 11:53:00 +0800
-From: Hanjun Guo <hanjun.guo@linaro.org>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1757300AbaGWD6l (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 23:58:41 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:59692 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756140AbaGWD6j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 23:58:39 -0400
+Message-ID: <53CF32C1.9040807@ti.com>
+Date: Wed, 23 Jul 2014 09:27:53 +0530
+From: Lokesh Vutla <lokeshvutla@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
 MIME-Version: 1.0
-To: Lv Zheng <lv.zheng@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Len Brown <len.brown@intel.com>
-CC: Lv Zheng <zetalog@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org
-Subject: Re: [PATCH v3 6/7] ACPI: Add support to force header inclusion rules
- for <acpi/acpi.h>.
-References: <cover.1387336613.git.lv.zheng@intel.com> <cover.1405500886.git.lv.zheng@intel.com> <83e64d3b252019ce4b13fa46244a5c9a63bfc69f.1405500886.git.lv.zheng@intel.com>
-In-Reply-To: <83e64d3b252019ce4b13fa46244a5c9a63bfc69f.1405500886.git.lv.zheng@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Nishanth Menon <nm@ti.com>
+CC: <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, <tony@atomide.com>, <paul@pwsan.com>,
+        <linux@arm.linux.org.uk>, <nsekhar@ti.com>, <j-keerthy@ti.com>,
+        <rogerq@ti.com>
+Subject: Re: [PATCH 2/2] ARM: DRA7: hwmod: Add dra74x and dra72x specific
+ ocp interface lists
+References: <1405499774-19770-1-git-send-email-lokeshvutla@ti.com> <1405499774-19770-3-git-send-email-lokeshvutla@ti.com> <53CE9652.4080304@ti.com>
+In-Reply-To: <53CE9652.4080304@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Lv,
-
-On 2014-7-16 16:58, Lv Zheng wrote:
-> As there is only CONFIG_ACPI=n processing in the <linux/acpi.h>, it is not
-> safe to include <acpi/acpi.h> directly for source out of Linux ACPI
-> subsystems.
+Hi Nishanth,
+On Tuesday 22 July 2014 10:20 PM, Nishanth Menon wrote:
+> On 07/16/2014 03:36 AM, Lokesh Vutla wrote:
+>> From: Rajendra Nayak <rnayak@ti.com>
+>>
+>> To deal with IPs which are specific to dra74x and dra72x, maintain seperate
+>> ocp interface lists, while keeping the common list for all common IPs.
+>>
+>> Move USB OTG SS4 to dra74x only list since its unavailable in
+>> dra72x and is giving an abort during boot. The dra72x only list
+>> is empty for now and a placeholder for future hwmod additions which
+>> are specific to dra72x.
+>>
+>> Fixes: d904b38 ARM: DRA7: hwmod: Add SYSCONFIG for usb_otg_ss
 > 
-> This patch adds error messaging to warn developers of such wrong
-> inclusions.
+> please use a format as following:
+> Fixes: d904b38df0db13 ("ARM: DRA7: hwmod: Add SYSCONFIG for usb_otg_ss")
+> 
+>> Reported-by: Keerthy <j-keerthy@ti.com>
+>> Signed-off-by: Rajendra Nayak <rnayak@ti.com>
+>> Signed-off-by: Lokesh Vutla <lokeshvutla@ti.com>
+>> ---
+>>  arch/arm/mach-omap2/omap_hwmod.c          |    3 +++
+>>  arch/arm/mach-omap2/omap_hwmod_7xx_data.c |   22 ++++++++++++++++++++--
+>>  2 files changed, 23 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/arch/arm/mach-omap2/omap_hwmod.c b/arch/arm/mach-omap2/omap_hwmod.c
+>> index 6c074f3..14f8370 100644
+>> --- a/arch/arm/mach-omap2/omap_hwmod.c
+>> +++ b/arch/arm/mach-omap2/omap_hwmod.c
+>> @@ -3345,6 +3345,9 @@ int __init omap_hwmod_register_links(struct omap_hwmod_ocp_if **ois)
+>>  	if (!ois)
+>>  		return 0;
+>>  
+>> +	if (ois[0] == NULL) /*empty list*/
+> /* Empty list */ ?
+>> +		return 0;
+>> +
+> 
+> This change looks like a different patch?
+Since we are introducing empty lists in this patch, I guess
+this can go in the same patch.
+> 
+>>  	if (!linkspace) {
+>>  		if (_alloc_linkspace(ois)) {
+>>  			pr_err("omap_hwmod: could not allocate link space\n");
+>> diff --git a/arch/arm/mach-omap2/omap_hwmod_7xx_data.c b/arch/arm/mach-omap2/omap_hwmod_7xx_data.c
+>> index 284324f..c95033c 100644
+>> --- a/arch/arm/mach-omap2/omap_hwmod_7xx_data.c
+>> +++ b/arch/arm/mach-omap2/omap_hwmod_7xx_data.c
+>> @@ -35,6 +35,7 @@
+>>  #include "i2c.h"
+>>  #include "mmc.h"
+>>  #include "wd_timer.h"
+>> +#include "soc.h"
+>>  
+>>  /* Base offset for all DRA7XX interrupts external to MPUSS */
+>>  #define DRA7XX_IRQ_GIC_START	32
+>> @@ -2705,7 +2706,6 @@ static struct omap_hwmod_ocp_if *dra7xx_hwmod_ocp_ifs[] __initdata = {
+>>  	&dra7xx_l4_per3__usb_otg_ss1,
+>>  	&dra7xx_l4_per3__usb_otg_ss2,
+>>  	&dra7xx_l4_per3__usb_otg_ss3,
+>> -	&dra7xx_l4_per3__usb_otg_ss4,
+>>  	&dra7xx_l3_main_1__vcp1,
+>>  	&dra7xx_l4_per2__vcp1,
+>>  	&dra7xx_l3_main_1__vcp2,
+>> @@ -2714,8 +2714,26 @@ static struct omap_hwmod_ocp_if *dra7xx_hwmod_ocp_ifs[] __initdata = {
+>>  	NULL,
+>>  };
+>>  
+>> +static struct omap_hwmod_ocp_if *dra74x_hwmod_ocp_ifs[] __initdata = {
+>> +	&dra7xx_l4_per3__usb_otg_ss4,
+>> +	NULL,
+>> +};
+>> +
+>> +static struct omap_hwmod_ocp_if *dra72x_hwmod_ocp_ifs[] __initdata = {
+>> +	NULL,
+>> +};
+>> +
+>>  int __init dra7xx_hwmod_init(void)
+>>  {
+>> +	int ret;
+>> +
+>>  	omap_hwmod_init();
+>> -	return omap_hwmod_register_links(dra7xx_hwmod_ocp_ifs);
+>> +	ret = omap_hwmod_register_links(dra7xx_hwmod_ocp_ifs);
+> if (ret)
+> 	goto out;
+>> +
+>> +	if (!ret && soc_is_dra74x())
+> no need of !ret
+>> +		return omap_hwmod_register_links(dra74x_hwmod_ocp_ifs);
+> ret = omap_hwmod_register_links(dra74x_hwmod_ocp_ifs);
+>> +	else if (!ret && soc_is_dra72x())
+> no need of else and !ret
+>> +		return omap_hwmod_register_links(dra72x_hwmod_ocp_ifs);
+> ret = omap_hwmod_register_links(dra72x_hwmod_ocp_ifs);
+>> +
+> 
+> out:
+Ok. Will do this and repost.
 
-Thanks for doing this, it makes life much easier for people who want to
-use ACPI but not so familiar with ACPI.
-
-Best Regards
-Hanjun
+Thanks and regards,
+Lokesh
+>> +	return ret;
+>>  }
+>>
+> 
+> 
 
