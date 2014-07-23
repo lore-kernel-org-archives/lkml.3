@@ -1,164 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756688AbaGWPyS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 11:54:18 -0400
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:64453 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755726AbaGWPyQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 11:54:16 -0400
-Message-ID: <53CFDA9F.2010406@gmail.com>
-Date: Wed, 23 Jul 2014 21:24:07 +0530
-From: Varka Bhadram <varkabhadram@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1757563AbaGWPym (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 11:54:42 -0400
+Received: from 99-65-72-228.uvs.sntcca.sbcglobal.net ([99.65.72.228]:15117
+	"EHLO stargate.chelsio.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756924AbaGWPyk convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jul 2014 11:54:40 -0400
+From: Karen Xie <kxie@chelsio.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        David Miller <davem@davemloft.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+CC: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Anish Bhatt <anish@chelsio.com>,
+        Manoj Malviya <manojmalviya@chelsio.com>,
+        "Hannes Reinecke" <hare@suse.de>, Christoph Hellwig <hch@lst.de>
+Subject: RE: linux-next: manual merge of the scsi tree with the net-next tree
+Thread-Topic: linux-next: manual merge of the scsi tree with the net-next
+ tree
+Thread-Index: AQHPpkESJGweCoS5WEePwS4hjc9+aJut0BvP
+Date: Wed, 23 Jul 2014 15:54:27 +0000
+Message-ID: <1442C3287A121140B690F7F20F94463D05BB32@nice.asicdesigners.com>
+References: <20140723164049.413272e8@canb.auug.org.au>
+In-Reply-To: <20140723164049.413272e8@canb.auug.org.au>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [67.207.112.58]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Grygorii Strashko <grygorii.strashko@ti.com>, santosh.shilimkar@ti.com,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>, linux-gpio@vger.kernel.org
-CC: ivan.khoronzhuk@ti.com, m-karicheri2@ti.com,
-        Rob Herring <robh+dt@kernel.org>, Kumar Gala <galak@codeaurora.org>,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] gpio: keystone: add dsp gpio controller driver
-References: <1406126699-10053-1-git-send-email-grygorii.strashko@ti.com>
-In-Reply-To: <1406126699-10053-1-git-send-email-grygorii.strashko@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Stephen, thanks a lot!
+________________________________________
+From: Stephen Rothwell [sfr@canb.auug.org.au]
+Sent: Tuesday, July 22, 2014 11:40 PM
+To: James Bottomley; David Miller; netdev@vger.kernel.org
+Cc: linux-next@vger.kernel.org; linux-kernel@vger.kernel.org; Anish Bhatt; Karen Xie; Manoj Malviya; Hannes Reinecke; Christoph Hellwig
+Subject: linux-next: manual merge of the scsi tree with the net-next tree
 
-On Wednesday 23 July 2014 08:14 PM, Grygorii Strashko wrote:
+Hi James,
 
-(...)
+Today's linux-next merge of the scsi tree got a conflict in
+drivers/scsi/cxgbi/libcxgbi.h between commit fc8d0590d914 ("libcxgbi:
+Add ipv6 api to driver") from the net-next tree and commit 1abf635d2f33
+("scsi: use 64-bit value for 'max_luns'") from the scsi tree.
 
-> +
-> +Required Properties:
-> +- compatible: should be "ti,keystone-dsp-gpio"
-> +
-> +- ti,syscon-dev : phandle/offset pair. The phandle to syscon used to
-> +				  access device state control registers and the offset
-> +				  in order to use block of device's specific registers.
-> +
-> +- gpio-controller : Marks the device node as a gpio controller.
-> +
-> +- #gpio-cells : Should be one.
-> +				See gpio.txt in this directory for a of the cells format
-> +
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-proper indentation for all the properties...
+--
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-> +Please refer to gpio.txt in this directory for details of the common GPIO
-> +bindings used by client devices.
-> +
-> +Example:
-> +	dspgpio0: keystone_dsp_gpio@02620240 {
-> +		compatible = "ti,keystone-dsp-gpio";
-> +		ti,syscon-dev = <&devctrl 0x240>;
-> +		gpio-controller;
-> +		#gpio-cells = <2>;
-> +	};
-> +
-> +	dsp0: dsp0 {
-> +		compatible = "linux,rproc-user";
-> +		...
-> +		kick-gpio = <&dspgpio0 27>;
-> +	};
-> diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
-> index 4a1b511..990871f 100644
-> --- a/drivers/gpio/Kconfig
-> +++ b/drivers/gpio/Kconfig
-> @@ -158,6 +158,14 @@ config GPIO_EP93XX
->   	depends on ARCH_EP93XX
->   	select GPIO_GENERIC
->   
-> +config GPIO_KEYSTONE_DSP
-> +	tristate "Keystone DSP GPIO support"
-> +	depends on ARCH_KEYSTONE
-> +	help
-> +	  Say yes here to support the DSP GPIO driver for Keystone 2. This defines
-> +	  up to 28 GPIOs per each Remote (DSP) core. This is used to send
-> +	  signals from ARM to the Remote (DSP) core.
-> +
->   config GPIO_ZEVIO
->   	bool "LSI ZEVIO SoC memory mapped GPIOs"
->   	depends on ARM && OF_GPIO
-> diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
-> index d10f6a9..15c3389 100644
-> --- a/drivers/gpio/Makefile
-> +++ b/drivers/gpio/Makefile
-> @@ -34,6 +34,7 @@ obj-$(CONFIG_GPIO_IOP)		+= gpio-iop.o
->   obj-$(CONFIG_GPIO_IT8761E)	+= gpio-it8761e.o
->   obj-$(CONFIG_GPIO_JANZ_TTL)	+= gpio-janz-ttl.o
->   obj-$(CONFIG_GPIO_KEMPLD)	+= gpio-kempld.o
-> +obj-$(CONFIG_GPIO_KEYSTONE_DSP)	+= gpio-keystone.o
->   obj-$(CONFIG_ARCH_KS8695)	+= gpio-ks8695.o
->   obj-$(CONFIG_GPIO_INTEL_MID)	+= gpio-intel-mid.o
->   obj-$(CONFIG_GPIO_LP3943)	+= gpio-lp3943.o
-> diff --git a/drivers/gpio/gpio-keystone.c b/drivers/gpio/gpio-keystone.c
-> new file mode 100644
-> index 0000000..7909a1c
-> --- /dev/null
-> +++ b/drivers/gpio/gpio-keystone.c
-> @@ -0,0 +1,138 @@
-> +/*
-> + * Keystone 2 DSP GPIO support.
-> + *
-> + * Copyright (C) 2014 Texas Instruments, Inc.
-> + * Author: Murali Karicheri <m-karicheri2@ti.com>
-> + *	   Grygorii Strashko <grygorii.strashko@ti.com>
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + */
-> +#include <linux/module.h>
-> +#include <linux/of_platform.h>
-> +#include <linux/gpio.h>
-> +#include <linux/mfd/syscon.h>
-> +#include <linux/regmap.h>
-> +
-
-includes in alphabetical order..
-
-> +/* 28 bits in IPCGRx are treated as GPIO pins to generate interrupt */
-> +#define GPIOS_PER_BANK		28
-> +#define GPIO_OFFSET		4
-> +
-> +struct keystone_gpio_bank {
-> +	struct gpio_chip	 chip;
-> +	struct device		*dev;
-> +	struct regmap		*devctrl_regs;
-> +	u32			devctrl_offset;
-> +};
-> +#define chip_to_bank(c) \
-> +	container_of(c, struct keystone_gpio_bank, chip)
-> +
-> +static int keystone_gpio_direction_out(struct gpio_chip *c,
-> +					unsigned ofs, int val)
-> +{
-> +	return 0;
-> +}
-> +
-> +static int keystone_gpio_get(struct gpio_chip *c, unsigned ofs)
-> +{
-> +	struct keystone_gpio_bank *bank = chip_to_bank(c);
-> +	int bit = ofs + GPIO_OFFSET;
-> +	int ret;
-> +	u32 val = 0;
-> +
-> +	ret = regmap_read(bank->devctrl_regs, bank->devctrl_offset, &val);
-> +	if (ret < 0)
-> +		dev_dbg(bank->dev, "gpio read failed ret(%d)\n", ret);
-
-If this read fails what will happen...?
-
-we will get the debug message and return (val >> bit) & 1, But this val can be garbage or zero...?
-
-> +
-> +	return (val >> bit) & 1;
-> +}
-
--- 
--Varka Bhadram
-
+diff --cc drivers/scsi/cxgbi/libcxgbi.h
+index 8ad73d913f02,538d7a64e138..000000000000
+--- a/drivers/scsi/cxgbi/libcxgbi.h
++++ b/drivers/scsi/cxgbi/libcxgbi.h
+@@@ -708,8 -692,7 +708,8 @@@ struct cxgbi_device *cxgbi_device_regis
+  void cxgbi_device_unregister(struct cxgbi_device *);
+  void cxgbi_device_unregister_all(unsigned int flag);
+  struct cxgbi_device *cxgbi_device_find_by_lldev(void *);
+ +struct cxgbi_device *cxgbi_device_find_by_netdev(struct net_device *, int *);
+- int cxgbi_hbas_add(struct cxgbi_device *, unsigned int, unsigned int,
++ int cxgbi_hbas_add(struct cxgbi_device *, u64, unsigned int,
+                        struct scsi_host_template *,
+                        struct scsi_transport_template *);
+  void cxgbi_hbas_remove(struct cxgbi_device *);
