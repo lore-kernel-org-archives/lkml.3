@@ -1,58 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755941AbaGWEyV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 00:54:21 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:63429 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751570AbaGWEyU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 00:54:20 -0400
-X-Originating-IP: 108.223.40.66
-Message-ID: <53CF3FFB.4080809@roeck-us.net>
-Date: Tue, 22 Jul 2014 21:54:19 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Nicholas Krause <xerofoify@gmail.com>, geert@linux-m68k.org
-CC: linux-m68k@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] m68k: Remove printk statement and add return statement
- in q40ints.c
-References: <1406088515-4026-1-git-send-email-xerofoify@gmail.com>
-In-Reply-To: <1406088515-4026-1-git-send-email-xerofoify@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1751041AbaGWEyu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 00:54:50 -0400
+Received: from gate.crashing.org ([63.228.1.57]:47380 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751991AbaGWEyt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jul 2014 00:54:49 -0400
+Message-ID: <1406091277.22200.44.camel@pasglop>
+Subject: [git pull] Please pull powerpc.git merge branch
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>
+Date: Wed, 23 Jul 2014 14:54:37 +1000
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.2 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/22/2014 09:08 PM, Nicholas Krause wrote:
-> This removes the printk statement for irqs not defined by the hardware in
-> function q40_irq_startup and instead returns -ENXIO as stated by the fix
-> me message.
->
-> Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
-> ---
->   arch/m68k/q40/q40ints.c | 3 +--
->   1 file changed, 1 insertion(+), 2 deletions(-)
->
-> diff --git a/arch/m68k/q40/q40ints.c b/arch/m68k/q40/q40ints.c
-> index 513f9bb..86f05c0 100644
-> --- a/arch/m68k/q40/q40ints.c
-> +++ b/arch/m68k/q40/q40ints.c
-> @@ -48,8 +48,7 @@ static unsigned int q40_irq_startup(struct irq_data *data)
->   	switch (irq) {
->   	case 1: case 2: case 8: case 9:
->   	case 11: case 12: case 13:
-> -		printk("%s: ISA IRQ %d not implemented by HW\n", __func__, irq);
-> -		/* FIXME return -ENXIO; */
-> +		return -ENXIO;
+Hi Linus !
 
-Returning -ENXIO from a function returning an unsigned int isn't really very helpful,
-don't you think ?
+Here is a handful of powerpc fixes for 3.16. They are all pretty
+simple and self contained and should still make this release.
 
-With all those FIXMEs, you might want to keep in mind that there is typically a
-good reason for it. If it was as easy as your proposed fix, you can assume
-that the FIXME would not have been there in the first place.
+Cheers,
+Ben.
 
-Guenter
+The following changes since commit f56029410a13cae3652d1f34788045c40a13ffc7:
+
+  powerpc/perf: Never program book3s PMCs with values >= 0x80000000 (2014-07-11 13:50:47 +1000)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/benh/powerpc.git merge
+
+for you to fetch changes up to 6f5405bc2ee0102bb3856e2cdea64ff415db2e0c:
+
+  powerpc: use _GLOBAL_TOC for memmove (2014-07-22 15:56:04 +1000)
+
+----------------------------------------------------------------
+Aneesh Kumar K.V (1):
+      powerpc: subpage_protect: Increase the array size to take care of 64TB
+
+Joel Stanley (1):
+      powerpc: Disable doorbells on Power8 DD1.x
+
+Li Zhong (1):
+      powerpc: use _GLOBAL_TOC for memmove
+
+Paul Mackerras (1):
+      powerpc: Fix bugs in emulate_step()
+
+Tyrel Datwyler (1):
+      powerpc/pseries: dynamically added OF nodes need to call of_node_init
+
+ arch/powerpc/include/asm/cputable.h       |  1 +
+ arch/powerpc/include/asm/mmu-hash64.h     |  3 ++-
+ arch/powerpc/kernel/cputable.c            | 20 ++++++++++++++++++++
+ arch/powerpc/lib/mem_64.S                 |  2 +-
+ arch/powerpc/lib/sstep.c                  | 10 +++++-----
+ arch/powerpc/platforms/pseries/dlpar.c    |  1 +
+ arch/powerpc/platforms/pseries/reconfig.c |  1 +
+ 7 files changed, 31 insertions(+), 7 deletions(-)
+
 
