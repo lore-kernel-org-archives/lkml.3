@@ -1,45 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932644AbaGWQuS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 12:50:18 -0400
-Received: from mail-oi0-f54.google.com ([209.85.218.54]:33959 "EHLO
-	mail-oi0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757886AbaGWQuP (ORCPT
+	id S932666AbaGWQvE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 12:51:04 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:60719 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932082AbaGWQvA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 12:50:15 -0400
+	Wed, 23 Jul 2014 12:51:00 -0400
+Date: Wed, 23 Jul 2014 18:50:51 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        josh@joshtriplett.org, tglx@linutronix.de, rostedt@goodmis.org,
+        dhowells@redhat.com, edumazet@google.com, dvhart@linux.intel.com,
+        oleg@redhat.com, bobby.prani@gmail.com
+Subject: Re: [PATCH tip/core/rcu] Do not keep timekeeping CPU tick running
+ for non-nohz_full= CPUs
+Message-ID: <20140723165050.GI23175@localhost.localdomain>
+References: <20140719165350.GA18411@linux.vnet.ibm.com>
+ <20140719180120.GA20887@localhost.localdomain>
+ <20140720114759.GO8690@linux.vnet.ibm.com>
+ <20140720203417.GV9918@twins.programming.kicks-ass.net>
+ <20140721155741.GW8690@linux.vnet.ibm.com>
+ <20140721170459.GP3935@laptop>
+ <20140721173306.GA8690@linux.vnet.ibm.com>
+ <20140723162346.GE23175@localhost.localdomain>
+ <20140723163159.GZ11241@linux.vnet.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <53CFA33F.6030307@nvidia.com>
-References: <1405957142-19416-1-git-send-email-ttynkkynen@nvidia.com>
-	<1405957142-19416-15-git-send-email-ttynkkynen@nvidia.com>
-	<CAKohpomQthJ_XE-HhzW07Q4aVtxQVy97iaL0Vy6Q4Lhw22A=VA@mail.gmail.com>
-	<53CFA33F.6030307@nvidia.com>
-Date: Wed, 23 Jul 2014 22:20:14 +0530
-Message-ID: <CAKohponLh66Ubr6=wY2OZCCrK11KZDj=DmXXqXsGGTHSG45wpA@mail.gmail.com>
-Subject: Re: [PATCH v2 14/16] cpufreq: Add cpufreq driver for Tegra124
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
-Cc: "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Paul Walmsley <pwalmsley@nvidia.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140723163159.GZ11241@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23 July 2014 17:27, Tuomas Tynkkynen <ttynkkynen@nvidia.com> wrote:
-> The platform device is required for the deferred probe that can happen if the
-> DFLL driver hasn't initialized yet, and module_init() callbacks don't seem to
-> respect -EPROBE_DEFER.
+On Wed, Jul 23, 2014 at 09:31:59AM -0700, Paul E. McKenney wrote:
+> On Wed, Jul 23, 2014 at 06:23:48PM +0200, Frederic Weisbecker wrote:
+> > On Mon, Jul 21, 2014 at 10:33:06AM -0700, Paul E. McKenney wrote:
+> > > On Mon, Jul 21, 2014 at 07:04:59PM +0200, Peter Zijlstra wrote:
+> > > > On Mon, Jul 21, 2014 at 08:57:41AM -0700, Paul E. McKenney wrote:
+> > > > > On Sun, Jul 20, 2014 at 10:34:17PM +0200, Peter Zijlstra wrote:
+> > > > > > On Sun, Jul 20, 2014 at 04:47:59AM -0700, Paul E. McKenney wrote:
+> > > > > > > So we really have to have -all- the CPUs be idle to turn off the timekeeper.
+> > > > > > 
+> > > > > > That seems to be pretty unavoidable any which way around.
+> > > > > 
+> > > > > Hmmm...  The exception would be the likely common case where none of
+> > > > > the CPUs are flagged as nohz_full= CPUs.  If we handled that case as
+> > > > > if CONFIG_NO_HZ_FULL=n, we would have handled almost all of
+> > > > > the problem.
+> > > > 
+> > > > You mean that is not currently the case? Yes that seems like a fairly
+> > > > sane thing to do.
+> > > 
+> > > Hard to say -- need to see where Frederic is putting the call to
+> > > rcu_sys_is_idle().  On the RCU side, I could potentially lower overhead
+> > > by checking tick_nohz_full_enabled() in a few functions.
+> > 
+> > Yeah you definetly can.
+> > 
+> > Just put this in the very beginning of rcu_sys_is_idle():
+> > 
+> >             if (tick_nohz_full_enabled())
+> >                 return true;
+> 
+> That would be !tick_nohz_full_enabled(), right?  But please see below.
 
-Oh, which call in this file will return EPROBE_DEFER? I couldn't make out
-which one will depend on DFLL driver.
+Right.
+
+> 
+> > That imply perhaps a more appropriate name like rcu_sys_need_timekeeper(),
+> > with inverted condition.
+> 
+> Ah, I thought that you already avoided invoking rcu_sys_is_idle() when
+> !tick_nohz_full_enabled(), so I didn't add a check to that function.
+> Are you planning to change this?  Or am I having eyesight problems?
+
+Ah right, I forgot that I already have that check from the caller.
+
+Thanks.
