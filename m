@@ -1,88 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932456AbaGWQw6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 12:52:58 -0400
-Received: from mail-out.m-online.net ([212.18.0.9]:37121 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756793AbaGWQw5 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 12:52:57 -0400
-X-Auth-Info: n3z8uy77uG0dTwGAIabwDH4vr8mYCAmzlxYG/GYJbZM=
-From: Marek Vasut <marex@denx.de>
-To: Lothar =?iso-8859-1?q?Wa=DFmann?= <LW@karo-electronics.de>
-Subject: Re: [PATCH v5 1/2] i2c: add DMA support for freescale i2c driver
-Date: Wed, 23 Jul 2014 18:52:53 +0200
-User-Agent: KMail/1.13.7 (Linux/3.13-trunk-amd64; KDE/4.13.1; x86_64; ; )
-Cc: Varka Bhadram <varkabhadram@gmail.com>, Yao Yuan <yao.yuan@freescale.com>,
-        "wsa@the-dreams.de" <wsa@the-dreams.de>,
-        "mark.rutland@arm.com" <mark.rutland@arm.com>,
-        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>
-References: <1406103883-3572-1-git-send-email-yao.yuan@freescale.com> <53CF9933.8030908@gmail.com> <20140723141502.2d726afe@ipc1.ka-ro>
-In-Reply-To: <20140723141502.2d726afe@ipc1.ka-ro>
+	id S932524AbaGWQyF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 12:54:05 -0400
+Received: from mail.kernel.org ([198.145.19.201]:53959 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932081AbaGWQyC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jul 2014 12:54:02 -0400
+Date: Wed, 23 Jul 2014 13:53:58 -0300
+From: Arnaldo Carvalho de Melo <acme@kernel.org>
+To: Adrian Hunter <adrian.hunter@intel.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 05/41] perf tools: Identify which comms are from exec
+Message-ID: <20140723165358.GP20303@kernel.org>
+References: <1405332185-4050-1-git-send-email-adrian.hunter@intel.com>
+ <1405332185-4050-6-git-send-email-adrian.hunter@intel.com>
+ <20140714203237.GA18133@kernel.org>
+ <53C513CC.1010202@intel.com>
+ <20140723140752.GJ20303@kernel.org>
+ <20140723140908.GK20303@kernel.org>
+ <53CFE6F3.4010605@intel.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201407231852.53893.marex@denx.de>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53CFE6F3.4010605@intel.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, July 23, 2014 at 02:15:02 PM, Lothar Waßmann wrote:
-> Hi,
-> 
-> Varka Bhadram wrote:
-> > On 07/23/2014 04:41 PM, Yao Yuan wrote:
-> > > Hi,
-> > > 
-> > > Thanks for your review.
-> > > 
-> > > Lothar Waßmann wrote:
-> > >> Yuan Yao wrote:
-> > >>> Add dma support for i2c. This function depend on DMA driver.
-> > >>> You can turn on it by write both the dmas and dma-name properties in
-> > >>> dts node.
-> > >>> 
-> > >>> Signed-off-by: Yuan Yao <yao.yuan@freescale.com>
-> > >>> ---
-> > >>> 
-> > >>>   drivers/i2c/busses/i2c-imx.c | 377
-> > > 
-> > > [...]
-> > > 
-> > >>> +
-> > >>> +fail_rx:
-> > >>> +	dma_release_channel(dma->chan_rx);
-> > >>> +fail_tx:
-> > >>> +	dma_release_channel(dma->chan_tx);
-> > >>> +fail_al:
-> > >>> +	devm_kfree(dev, dma);
-> > >> 
-> > >> No need for this one (that's the whole point of using devm_kzalloc())!
-> > > 
-> > > When DMA request failed, I2C will switch to PIO mode. So if the failed
-> > > reason is just like DMA channel request failed. At this time the DMA
-> > > should free by devm_kfree(). Is it?
-> > 
-> > If probe failed the memory will be freed automatically because
-> > we are using devm_kzalloc()...
-> > 
-> > If we use devm_kzalloc() ,no need to free manually on fail...
-> 
-> Yes, but as Yuan Yao stated, the driver will still work
-> without DMA but carry around the unecessary allocated imx_i2c_dma
-> struct.
-> The devm_kfree() is not in the failure path of the driver's probe()
-> function, but in the function that tries to initialize the optional DMA
-> support.
+Em Wed, Jul 23, 2014 at 07:46:43PM +0300, Adrian Hunter escreveu:
+> On 23/07/2014 5:09 p.m., Arnaldo Carvalho de Melo wrote:
+> >Em Wed, Jul 23, 2014 at 11:07:52AM -0300, Arnaldo Carvalho de Melo escreveu:
+> >>Em Tue, Jul 15, 2014 at 02:43:08PM +0300, Adrian Hunter escreveu:
+> >>>>>@@ -106,6 +107,8 @@ int comm__override(struct comm *comm, const char *str, u64 timestamp)
+> >>>>>  	comm_str__put(old);
+> >>>>>  	comm->comm_str = new;
+> >>>>>  	comm->start = timestamp;
+> >>>>>+	if (exec && !comm->exec)
+> >>>>>+		comm->exec = true;
 
-If the DMA fails, I'd just make the entire probe fail. In case you cannot probe 
-DMA for your hardware, which is exected to be DMA capable, it means something is 
-wrong anyway.
+> >>>>Why do you need the !comm->exec test?
 
-Best regards,
-Marek Vasut
+> >>>Dunno
+
+> >>I saw that you kept it in the last patchkit submitted, I'll just drop
+> >>it, needless obfuscation.
+ 
+> Sorry I forgot.
+ 
+> >Also why do you need to "identify which comms are from exec", was it
+> >good for?
+ 
+> It is for grouping together all the data from a single execution, which
+> is needed for pairing calls and returns e.g. any outstanding calls when
+> a process exec's will never return.
+
+Ok, thanks, I'll add it to the patch log, as I did with some others.
+
+I'll continue after lunch, what I have so far is in the tmp.perf/core in
+my tree, at git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux.git
+
+- Arnaldo
