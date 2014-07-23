@@ -1,74 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751905AbaGWNPY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 09:15:24 -0400
-Received: from mail-la0-f49.google.com ([209.85.215.49]:58096 "EHLO
-	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750722AbaGWNPX (ORCPT
+	id S1754523AbaGWNPy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 09:15:54 -0400
+Received: from mail-we0-f169.google.com ([74.125.82.169]:57370 "EHLO
+	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752625AbaGWNPw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 09:15:23 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140723122849.GN11241@linux.vnet.ibm.com>
-References: <1406092194-13004-1-git-send-email-bobby.prani@gmail.com>
- <1406092194-13004-16-git-send-email-bobby.prani@gmail.com> <20140723122849.GN11241@linux.vnet.ibm.com>
-From: Pranith Kumar <bobby.prani@gmail.com>
-Date: Wed, 23 Jul 2014 09:14:51 -0400
-Message-ID: <CAJhHMCDGGTtcW2ENQowKFoujLmqum8yn5ppH1RP=kv5UU+qdPw@mail.gmail.com>
-Subject: Re: [PATCH 15/16] rcu: Check for a nocb cpu before trying to spawn
- nocb threads
-To: Paul McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Josh Triplett <josh@joshtriplett.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        "open list:READ-COPY UPDATE..." <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 23 Jul 2014 09:15:52 -0400
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: linux-kernel@vger.kernel.org, hch@infradead.org, viro@zeniv.linux.org.uk,
+        linux-fsdevel@vger.kernel.org
+Subject: [PATCH 0/7] first iteration of rename2 support
+Date: Wed, 23 Jul 2014 15:15:29 +0200
+Message-Id: <1406121336-1379-1-git-send-email-miklos@szeredi.hu>
+X-Mailer: git-send-email 1.8.1.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 23, 2014 at 8:28 AM, Paul E. McKenney
-<paulmck@linux.vnet.ibm.com> wrote:
-> On Wed, Jul 23, 2014 at 01:09:52AM -0400, Pranith Kumar wrote:
->> This commit tries to spawn nocb kthreads only when the CPU is marked as a nocb
->> cpu. This is a minor optimization.
->>
->> Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
->
-> This only happens once at boot time, so I am happier with the single check
-> at the bottom.  So sorry, but no.
->
+Add support for rename flags to a couple more filesystems, while gradually
+migrating away from ->rename() to ->rename2().
 
+RENAME_NOREPLACE is really easy for the majority (here only btrfs, shmem, hostfs
+and cifs are done), so more of the this is coming if this series is well
+received.
 
-Actually this happens whenever a CPU is coming online, but yes, it is
-a minor optimization for hotplug.
+  git://git.kernel.org/pub/scm/linux/kernel/git/mszeredi/vfs.git renameat2
 
->                                                         Thanx, Paul
->
->> ---
->>  kernel/rcu/tree_plugin.h | 3 ++-
->>  1 file changed, 2 insertions(+), 1 deletion(-)
->>
->> diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
->> index 541c776..8abff0a 100644
->> --- a/kernel/rcu/tree_plugin.h
->> +++ b/kernel/rcu/tree_plugin.h
->> @@ -1490,7 +1490,8 @@ static void rcu_prepare_kthreads(int cpu)
->>               return;
->>
->>       rcu_spawn_one_boost_kthread(rcu_state_p, rnp);
->> -     rcu_spawn_all_nocb_kthreads(cpu);
->> +     if (rcu_is_nocb_cpu(cpu))
->> +             rcu_spawn_all_nocb_kthreads(cpu);
->>  }
->>
->>  #else /* #ifdef CONFIG_RCU_BOOST */
->> --
->> 2.0.0.rc2
->>
->
+Thanks,
+Miklos
+---
 
+Miklos Szeredi (7):
+      vfs: call rename2 if exists
+      bad_inode: add ->rename2()
+      btrfs: add RENAME_NOREPLACE
+      shmem: support RENAME_NOREPLACE
+      shmem: support RENAME_EXCHANGE
+      hostfs: support rename flags
+      cifs: support RENAME_NOREPLACE
 
+---
+ fs/bad_inode.c          |  7 ++++---
+ fs/btrfs/inode.c        | 12 +++++++++++-
+ fs/cifs/cifsfs.c        |  2 +-
+ fs/cifs/cifsfs.h        |  4 ++--
+ fs/cifs/inode.c         | 14 ++++++++++++--
+ fs/ext4/namei.c         |  1 -
+ fs/fuse/dir.c           |  7 -------
+ fs/hostfs/hostfs.h      |  1 +
+ fs/hostfs/hostfs_kern.c | 30 ++++++++++++++++++++----------
+ fs/hostfs/hostfs_user.c | 28 ++++++++++++++++++++++++++++
+ fs/namei.c              |  5 +++--
+ mm/shmem.c              | 32 ++++++++++++++++++++++++++++++--
+ 12 files changed, 112 insertions(+), 31 deletions(-)
 
--- 
-Pranith
