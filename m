@@ -1,61 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758134AbaGWQSj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 12:18:39 -0400
-Received: from mail-lb0-f176.google.com ([209.85.217.176]:37352 "EHLO
-	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756250AbaGWQSh (ORCPT
+	id S1758183AbaGWQT5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 12:19:57 -0400
+Received: from mail-vc0-f172.google.com ([209.85.220.172]:57017 "EHLO
+	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755359AbaGWQTz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 12:18:37 -0400
+	Wed, 23 Jul 2014 12:19:55 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAC5umygiEpKBsHQ+OvKvw8pRD1DO0fCPA29qs=kNRho35xkt_g@mail.gmail.com>
-References: <1405606659-3802-1-git-send-email-akinobu.mita@gmail.com>
-	<x49pph325wj.fsf@segfault.boston.devel.redhat.com>
-	<CAC5umygiEpKBsHQ+OvKvw8pRD1DO0fCPA29qs=kNRho35xkt_g@mail.gmail.com>
-Date: Thu, 24 Jul 2014 01:18:36 +0900
-Message-ID: <CAC5umyg04M27xH5GSwhyVW8W4RPyFROYo4EbgxnrQ2RRqo_gaA@mail.gmail.com>
-Subject: Re: [PATCH] block_dev: implement readpages() to optimize sequential read
-From: Akinobu Mita <akinobu.mita@gmail.com>
-To: Jeff Moyer <jmoyer@redhat.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jens Axboe <axboe@kernel.dk>, Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org
+In-Reply-To: <20140723120748.5ef6e1b5@gandalf.local.home>
+References: <1406004789-9918-1-git-send-email-xerofoify@gmail.com>
+	<874my98p6u.fsf@nemi.mork.no>
+	<CA+8MBb+fnCNeQtyEqttxbkWx-4N+GUaKCUoCSdn5X9+bDDvTOg@mail.gmail.com>
+	<CAPDOMVjaf+vne4vbUPo8EPs0XnQBbNm2ZOXns8fw5pkg9tRSww@mail.gmail.com>
+	<CAAsK9AGtdJiz0xnmfqLBAqxmt=r+WANsmxwB_vQ3O5aKzMW1LQ@mail.gmail.com>
+	<CAPDOMVhj72TFKbtw_93juX19WVdfUzh3KM9tCEjbTdUZvUfcUQ@mail.gmail.com>
+	<20140722193350.GA486@home.goodmis.org>
+	<CAPDOMVipLiXuYqndO_gnMYocDLVsHX9zcTdSMUV_EjJo72nx6w@mail.gmail.com>
+	<20140723103707.64071c00@gandalf.local.home>
+	<CAPDOMVh+zVQZQWjS1mTDmZo9frvk9t+kzN4_cOaoDgaNePF2AA@mail.gmail.com>
+	<20140723120748.5ef6e1b5@gandalf.local.home>
+Date: Wed, 23 Jul 2014 12:19:50 -0400
+Message-ID: <CAPDOMVjbatYy9GtK6Jcu96-cDNB8C-ejboKW_x8s0NCFzQt64Q@mail.gmail.com>
+Subject: Re: [PATCH] edac: Remove fixmes in e7xxx_edac.c
+From: Nick Krause <xerofoify@gmail.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Levente Kurusa <lkurusa@redhat.com>, Tony Luck <tony.luck@gmail.com>,
+        =?UTF-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>,
+        Doug Thompson <dougthompson@xmission.com>,
+        Borislav Petkov <bp@alien8.de>,
+        "m.chehab@samsung.com" <m.chehab@samsung.com>,
+        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-07-18 8:14 GMT+09:00 Akinobu Mita <akinobu.mita@gmail.com>:
-> 2014-07-18 3:31 GMT+09:00 Jeff Moyer <jmoyer@redhat.com>:
->> Akinobu Mita <akinobu.mita@gmail.com> writes:
->>
->>> Sequential read from a block device is expected to be equal or faster
->>> than from the file on a filesystem.  But it is not correct due to the
->>> lack of effective readpages() in the address space operations for
->>> block device.
->>
->> Ah, a trip down memory lane.  ;-)  Here's a thread showing issues with
->> the last time this was proposed (by me, incidentally):
->>
->> https://lkml.org/lkml/2009/6/2/480
->>
->> At the very least, we need to see numbers on a real device, and see it
->> booted on something with >4k page size before taking this back in.
+On Wed, Jul 23, 2014 at 12:07 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
+> On Wed, 23 Jul 2014 11:35:21 -0400
+> Nick Krause <xerofoify@gmail.com> wrote:
 >
-> Thanks for the information.  First, I'll try to reproduce the >4k page
-> size issue with qemu with the architecture which can support 64k page.
+>> Steve, I  have make a few mistakes. That doesn't give you the right to
+>> put me under a waste of time yet.
+>
+> Nobody is upset at you for making a few mistakes. But ignoring advice
+> from people is something quite different, and that is what tends to
+> piss people off.
+>
+> You were told time and time again to stop this fixme craze because you
+> obviously didn't know the details of what you were fixing, but you
+> continued to care on. The issue is with these patches that you probably
+> caught a maintainer off guard, and they just accepted it thinking you
+> had some clue to the code you were fixing. Thus, not only are you
+> removing crucial comments about areas of code that needs more
+> attention, you end up making things worse. Your actions are dangerous to
+> the kernel and the fact you ignoring everyone telling you to stop it,
+> makes you dangerous to the kernel. That gives me the right to put you
+> under the "waste of time" folder.
+>
+> Now it may seem that I'm being rather harsh to you, and I may be. The
+> Linux kernel is a serious project and it can not afford having to deal
+> with those that do not listen.
+>
+> That said...
+>
+> I see you stated in another email:
+>
+> "Very well then I guess the community wants me to listen better to the
+> maintainers and not do stupid things"
+>
+>
+> Finally, you are listening.
+>
+> You obviously are very enthusiastic, and I would like you not to waste
+> your own time and energy trying to help in a not so helpful way. If you
+> really want to help the Linux community, here's what you do.
+>
+> Find a single area to focus on. Not a key word throughout the kernel.
+> Look at the USB stack, or find some driver in staging that is for some
+> really cheap hardware that you can afford. And get it cleaned up and
+> working nicely. Start simple. Try to understand that area completely.
+>
+> Remember, nobody understand every aspect of the kernel. All the main
+> kernel developers are experts in select parts. I wouldn't even try
+> fixing "fixmes" in parts of the kernel that I'm unfamiliar with.
+>
+> Find a part of the kernel, and learn every aspect of that part inside
+> and out. Study the code. Boot the kernel. Make a modification of that
+> code and see what happens. Yes! Break it (but don't submit a patch that
+> does ;). Sometimes breaking stuff is the best way to understand why it
+> worked in the first place. Use function graph tracing to see the code
+> flow.
+>
+> After you have done that, and you really have a good understanding of
+> that part of the kernel, you should in the mean time see a way to
+> enhance it, or better yet, find a real bug and fix it. Then you can
+> submit a patch and that will be something of use.
+>
+> Moral of the story: Learn the kernel before submitting a patch, do not
+> submit a patch to help you learn the kernel.
+>
+> -- Steve
 
-I can reproduce the issue which attempts to access beyond end of
-device, and it turns out that this can be reproducible on 4K page
-system, too.
 
-This problem only happens when reading a partition which is being
-mounted by the filesystem at the same time.  The filesystem sets
-the blocksize to a multiple of the logical block size by set_blocksize()
-while it is mounted.  If the end of the partition is not aligned on
-the new blocksize, reading the end of the partition causes access
-beyond end of device.
-
-So this patch is incomplete, and some guard check code is required in
-mpage_readpages() or altenative solution is needed.
+Steve ,
+Thanks for your help.
+Cheers Nick
