@@ -1,99 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757569AbaGWI5S (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 04:57:18 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:36689 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753112AbaGWI5K (ORCPT
+	id S932180AbaGWI6V (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 04:58:21 -0400
+Received: from host-92-27-6-192.static.as13285.net ([92.27.6.192]:34216 "EHLO
+	samson.armitage.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757371AbaGWI6R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 04:57:10 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v2.0.1
-X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-3
-Message-ID: <53CF78A7.5070302@jp.fujitsu.com>
-Date: Wed, 23 Jul 2014 17:56:07 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Wanpeng Li <wanpeng.li@linux.intel.com>
-CC: <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>, <x86@kernel.org>,
-        Borislav Petkov <bp@alien8.de>, David Rientjes <rientjes@google.com>,
-        Prarit Bhargava <prarit@redhat.com>,
-        Steven Rostedt <srostedt@redhat.com>,
-        Jan Kiszka <jan.kiszka@siemens.com>, Toshi Kani <toshi.kani@hp.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] x86, hotplug: fix llc shared map unreleased during
- cpu hotplug
-References: <1406016292-55968-1-git-send-email-wanpeng.li@linux.intel.com>
-In-Reply-To: <1406016292-55968-1-git-send-email-wanpeng.li@linux.intel.com>
-Content-Type: text/plain; charset="ISO-2022-JP"
+	Wed, 23 Jul 2014 04:58:17 -0400
+Message-ID: <1406105881.2990.60.camel@samson1.armitage.org.uk>
+Subject: [PATCH v3] ipv4: Make IP_MULTICAST_ALL and IP_MSFILTER work on raw
+ sockets
+From: Quentin Armitage <quentin@armitage.org.uk>
+To: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>, James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org,
+        "David S.Miller" <davem@davemloft.net>
+Cc: linux-kernel@vger.kernel.org
+Date: Wed, 23 Jul 2014 09:58:01 +0100
+Organization: The Armitage family
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
 Content-Transfer-Encoding: 7bit
-X-SecurityPolicyCheck-GC: OK by FENCE-Mail
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/07/22 17:04), Wanpeng Li wrote:
-> [  220.262093] BUG: unable to handle kernel NULL pointer dereference at 0000000000000004
-> [  220.262104] IP: [<ffffffff810e7ac9>] find_busiest_group+0x2b9/0xa30
-> [  220.262111] PGD 5a9d5067 PUD 13067 PMD 0
-> [  220.262117] Oops: 0000 [#3] SMP
-> [...]
-> [  220.262245] Call Trace:
-> [  220.262252]  [<ffffffff810e8396>] load_balance+0x156/0x980
-> [  220.262259]  [<ffffffff816eeffe>] ? _raw_spin_unlock_irqrestore+0x2e/0xa0
-> [  220.262266]  [<ffffffff810e9aa3>] idle_balance+0xe3/0x150
-> [  220.262270]  [<ffffffff816ec4e7>] __schedule+0x797/0x8d0
-> [  220.262277]  [<ffffffff816ec934>] schedule+0x24/0x70
-> [  220.262283]  [<ffffffff816e9cd9>] schedule_timeout+0x119/0x1f0
-> [  220.262294]  [<ffffffff810bb6e0>] ? lock_timer_base+0x70/0x70
-> [  220.262301]  [<ffffffff816e9dc9>] schedule_timeout_uninterruptible+0x19/0x20
-> [  220.262308]  [<ffffffff810bd3e8>] msleep+0x18/0x20
-> [  220.262317]  [<ffffffff813aa11a>] lock_device_hotplug_sysfs+0x2a/0x50
-> [  220.262323]  [<ffffffff813aa16e>] online_store+0x2e/0x80
-> [  220.262358]  [<ffffffff813a873b>] dev_attr_store+0x1b/0x20
-> [  220.262366]  [<ffffffff812292fd>] sysfs_write_file+0xdd/0x160
-> [  220.262377]  [<ffffffff811b7e78>] vfs_write+0xc8/0x170
-> [  220.262384]  [<ffffffff811b83ca>] SyS_write+0x5a/0xa0
-> [  220.262388]  [<ffffffff816f76b9>] system_call_fastpath+0x16/0x1b
-> 
-> Last level cache shared map is built during cpu up and build sched domain
-> routine takes advantage of it to setup sched domain cpu topology, however,
-> llc shared map is unreleased during cpu disable which lead to invalid sched
-> domain cpu topology. This patch fix it by release llc shared map correctly
-> during cpu disable.
-> 
+Currently, although IP_MULTICAST_ALL and IP_MSFILTER ioctl calls succeed on
+raw sockets, there is no code to implement the functionality on received
+packets; it is only implemented for UDP sockets. The raw(7) man page states:
+"In addition, all ip(7) IPPROTO_IP socket options valid for datagram sockets
+are supported", which implies these ioctls should work on raw sockets.
 
-I posted a latest patch as follows:
-https://lkml.org/lkml/2014/7/22/1018
+To fix this, add a call to ip_mc_sf_allow on raw sockets.
 
-Could you confirm the patch fixes your issue?
+This should not break any existing code, since the current position of
+not calling ip_mc_sf_filter makes it behave as if neither the IP_MULTICAST_ALL
+nor the IP_MSFILTER ioctl had been called. Adding the call to ip_mc_sf_allow
+will therefore maintain the current behaviour so long as IP_MULTICAST_ALL and
+IP_MSFILTER ioctls are not called. Any code that currently is calling
+IP_MULTICAST_ALL or IP_MSFILTER ioctls on raw sockets presumably is wanting
+the filter to be applied, although no filtering will currently be occurring.
 
-Thanks,
-Yasuaki Ishimatsu
+Signed-off-by: Quentin Armitage <quentin@armitage.org.uk>
+---
+v2: * Fixed subject line
 
-> Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
-> ---
-> v1 -> v2:
->   * fix subject line
-> 
->   arch/x86/kernel/smpboot.c | 3 +++
->   1 file changed, 3 insertions(+)
-> 
-> diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
-> index 5492798..0134ec7 100644
-> --- a/arch/x86/kernel/smpboot.c
-> +++ b/arch/x86/kernel/smpboot.c
-> @@ -1292,6 +1292,9 @@ static void remove_siblinginfo(int cpu)
->   
->   	for_each_cpu(sibling, cpu_sibling_mask(cpu))
->   		cpumask_clear_cpu(cpu, cpu_sibling_mask(sibling));
-> +	for_each_cpu(sibling, cpu_llc_shared_mask(cpu))
-> +		cpumask_clear_cpu(cpu, cpu_llc_shared_mask(sibling));
-> +	cpumask_clear(cpu_llc_shared_mask(cpu));
->   	cpumask_clear(cpu_sibling_mask(cpu));
->   	cpumask_clear(cpu_core_mask(cpu));
->   	c->phys_proc_id = 0;
-> 
+v3: * Fix space/tab formatting. With apologies to all concerned.
+
+---
+ net/ipv4/raw.c |    5 ++++-
+ 1 files changed, 4 insertions(+), 1 deletions(-)
+
+diff --git a/net/ipv4/raw.c b/net/ipv4/raw.c
+index 2c65160..2e1628c 100644
+--- a/net/ipv4/raw.c
++++ b/net/ipv4/raw.c
+@@ -58,6 +58,7 @@
+ #include <linux/in_route.h>
+ #include <linux/route.h>
+ #include <linux/skbuff.h>
++#include <linux/igmp.h>
+ #include <net/net_namespace.h>
+ #include <net/dst.h>
+ #include <net/sock.h>
+@@ -174,7 +175,9 @@ static int raw_v4_input(struct sk_buff *skb, const struct iphdr *iph, int hash)
+ 
+ 	while (sk) {
+ 		delivered = 1;
+-		if (iph->protocol != IPPROTO_ICMP || !icmp_filter(sk, skb)) {
++		if ((iph->protocol != IPPROTO_ICMP || !icmp_filter(sk, skb)) &&
++		    ip_mc_sf_allow(sk, iph->daddr, iph->saddr,
++				   skb->dev->ifindex)) {
+ 			struct sk_buff *clone = skb_clone(skb, GFP_ATOMIC);
+ 
+ 			/* Not releasing hash table! */
+-- 
+1.7.7.6
+
 
 
