@@ -1,73 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756763AbaGWDVB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 23:21:01 -0400
-Received: from mga02.intel.com ([134.134.136.20]:53340 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755544AbaGWDU7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 23:20:59 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,714,1400050800"; 
-   d="scan'208";a="577351432"
-Message-ID: <53CF29F4.7040700@linux.intel.com>
-Date: Wed, 23 Jul 2014 11:20:20 +0800
-From: Jiang Liu <jiang.liu@linux.intel.com>
-Organization: Intel
-User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1756249AbaGWDXp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 23:23:45 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:44205 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753988AbaGWDXo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 23:23:44 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v2.0.1
+X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-3
+Message-ID: <53CF2A81.7080505@jp.fujitsu.com>
+Date: Wed, 23 Jul 2014 12:22:41 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: Nishanth Aravamudan <nacc@linux.vnet.ibm.com>,
-        Alexander Duyck <alexander.duyck@gmail.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        David Rientjes <rientjes@google.com>,
-        Mike Galbraith <umgwanakikbuti@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Jesse Brandeburg <jesse.brandeburg@intel.com>,
-        Bruce Allan <bruce.w.allan@intel.com>,
-        Carolyn Wyborny <carolyn.wyborny@intel.com>,
-        Don Skidmore <donald.c.skidmore@intel.com>,
-        Greg Rose <gregory.v.rose@intel.com>,
-        Alex Duyck <alexander.h.duyck@intel.com>,
-        John Ronciak <john.ronciak@intel.com>,
-        Mitch Williams <mitch.a.williams@intel.com>,
-        Linux NICS <linux.nics@intel.com>, Tony Luck <tony.luck@intel.com>,
-        linux-mm@kvack.org, linux-hotplug@vger.kernel.org,
-        linux-kernel@vger.kernel.org, e1000-devel@lists.sourceforge.net,
-        Netdev <netdev@vger.kernel.org>
-Subject: Re: [RFC Patch V1 15/30] mm, igb: Use cpu_to_mem()/numa_mem_id()
- to support memoryless node
-References: <1405064267-11678-1-git-send-email-jiang.liu@linux.intel.com> <1405064267-11678-16-git-send-email-jiang.liu@linux.intel.com> <20140721174218.GD4156@linux.vnet.ibm.com> <CAKgT0UdZdbduP-=R7uRCxJVxt1yCDoHpnercnDoyrCbWNtx=6Q@mail.gmail.com> <20140721210900.GI4156@linux.vnet.ibm.com>
-In-Reply-To: <20140721210900.GI4156@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: <tglx@linutronix.de>, <mingo@redhat.com>, <hpa@zytor.com>, <bp@alien8.de>,
+        <gong.chen@linux.intel.com>, <tony.luck@intel.com>,
+        <toshi.kani@hp.com>
+CC: <x86@kernel.org>, <imammedo@redhat.com>, <huawei.libin@huawei.com>,
+        <paul.gortmaker@windriver.com>, <linux-kernel@vger.kernel.org>,
+        <srivatsa.bhat@linux.vnet.ibm.com>, <umgwanakikbuti@gmail.com>,
+        <peterz@infradead.org>
+Subject: [PATCH v4] x86,cpu-hotplug: assign same CPU number to readded CPU
+Content-Type: text/plain; charset="UTF-8"; format=flowed
 Content-Transfer-Encoding: 7bit
+X-SecurityPolicyCheck-GC: OK by FENCE-Mail
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Nishanth and Alexander,
-	Thanks for review, will update the comments
-in next version.
-Regards!
-Gerry
+llc_shared_map is not cleared even if CPU is offline or hot removed.
+So when hot-plugging CPU and assigning new CPU number to hot-added CPU,
+the mask has wrong value. The mask is used by CSF schduler to create
+sched_domain. So it breaks CFS scheduler.
 
-On 2014/7/22 5:09, Nishanth Aravamudan wrote:
-> On 21.07.2014 [12:53:33 -0700], Alexander Duyck wrote:
->> I do agree the description should probably be changed.  There shouldn't be
->> any panics involved, only a performance impact as it will be reallocating
->> always if it is on a node with no memory.
-> 
-> Yep, thanks for the review.
-> 
->> My intention on this was to make certain that the memory used is from the
->> closest node possible.  As such I believe this change likely honours that.
-> 
-> Absolutely, just wanted to make it explicit that it's not a functional
-> fix, just a performance fix (presuming this shows up at all on systems
-> that have memoryless NUMA nodes).
-> 
-> I'd suggest an update to the comments, as well.
-> 
-> Thanks,
-> Nish
-> 
+Here is a example on my system.
+My system has 4 sockets and each socket has 15 cores and HT is enabled.
+In this case, each core of sockes is numbered as follows:
+
+          | CPU#
+Socket#0 | 0-14 , 60-74
+Socket#1 | 15-29, 75-89
+Socket#2 | 30-44, 90-104
+Socket#3 | 45-59, 105-119
+
+Then llc_shared_mask of CPU#30 has 0x3fff80000001fffc0000000.
+It means that last level cache of Socket#2 is shared with
+CPU#30-44 and 90-104.
+
+When hot-removing socket#2 and #3, each core of sockets is numbered
+as follows:
+
+          | CPU#
+Socket#0 | 0-14 , 60-74
+Socket#1 | 15-29, 75-89
+
+But llc_shared_mask is not cleared. So llc_shared_mask of CPU#30 remains
+having 0x3fff80000001fffc0000000.
+
+After that, when hot-adding socket#2 and #3, each core of sockets is
+numbered as follows:
+
+          | CPU#
+Socket#0 | 0-14 , 60-74
+Socket#1 | 15-29, 75-89
+Socket#2 | 30-59
+Socket#3 | 90-119
+
+Then llc_shared_mask of CPU#30 becomes 0x3fff8000fffffffc0000000.
+It means that last level cache of Socket#2 is shared with CPU#30-59
+and 90-104. So the mask has wrong value.
+
+At first, I cleared hot-removed CPU number's bit from llc_shared_map
+when hot removing CPU. But Borislav suggested that the problem will
+disappear if readded CPU is assigned same CPU number. And llc_shared_map
+must not be changed.
+
+So the patch assigns same CPU number to readded CPU by linking CPU
+number to APIC ID. And by the patch, the problem disappers.
+
+Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Suggested-by: Borislav Petkov <bp@alien8.de>
+Reviewed-by: Toshi Kani <toshi.kani@hp.com>
+---
+v2: change cpuid to cpunum
+v3: fix Borislav's email address of Suggested-by
+     fix typo (ACPI ID to APIC ID)
+v4: change cpu_used_xxx to cpu_number_xxx
+---
+  arch/x86/kernel/apic/apic.c | 33 ++++++++++++++++++++++++++++++++-
+  1 file changed, 32 insertions(+), 1 deletion(-)
+
+diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
+index ad28db7..5cecc3b 100644
+--- a/arch/x86/kernel/apic/apic.c
++++ b/arch/x86/kernel/apic/apic.c
+@@ -220,6 +220,23 @@ static void apic_pm_activate(void);
+  static unsigned long apic_phys;
+
+  /*
++ * Bind APIC ID to Logical CPU number
++ * Logical CPU number to APIC ID does not change by this array
++ * even if CPU is hotplugged. So don't clear the array even if
++ * CPU is hot-removed
++ */
++static int apicid_to_cpunum[MAX_LOCAL_APIC] = {
++	[0 ... MAX_LOCAL_APIC-1] = -1,
++};
++
++/*
++ * Represent Logical CPU number bound to APIC ID
++ * Don't clear a bit even if CPU is hot-removed
++ */
++static DECLARE_BITMAP(cpu_number_bits, CONFIG_NR_CPUS);
++static struct cpumask *const cpu_number_mask = to_cpumask(cpu_number_bits);
++
++/*
+   * Get the LAPIC version
+   */
+  static inline int lapic_get_version(void)
+@@ -2122,6 +2139,17 @@ void disconnect_bsp_APIC(int virt_wire_setup)
+  	apic_write(APIC_LVT1, value);
+  }
+
++static int get_cpunum(int apicid)
++{
++	int cpu;
++
++	cpu = apicid_to_cpunum[apicid];
++	if (cpu < 0)
++		cpu = cpumask_next_zero(-1, cpu_number_mask);
++
++	return cpu;
++}
++
+  int generic_processor_info(int apicid, int version)
+  {
+  	int cpu, max = nr_cpu_ids;
+@@ -2199,7 +2227,9 @@ int generic_processor_info(int apicid, int version)
+  		 */
+  		cpu = 0;
+  	} else
+-		cpu = cpumask_next_zero(-1, cpu_present_mask);
++		cpu = get_cpunum(apicid);
++
++	apicid_to_cpunum[apicid] = cpu;
+
+  	/*
+  	 * Validate version
+@@ -2228,6 +2258,7 @@ int generic_processor_info(int apicid, int version)
+  	early_per_cpu(x86_cpu_to_logical_apicid, cpu) =
+  		apic->x86_32_early_logical_apicid(cpu);
+  #endif
++	cpumask_set_cpu(cpu, cpu_number_mask);
+  	set_cpu_possible(cpu, true);
+  	set_cpu_present(cpu, true);
+
