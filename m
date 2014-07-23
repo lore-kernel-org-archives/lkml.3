@@ -1,47 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757296AbaGWAKp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 20:10:45 -0400
-Received: from qmta08.emeryville.ca.mail.comcast.net ([76.96.30.80]:56993 "EHLO
-	qmta08.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757113AbaGWAKo (ORCPT
+	id S1757316AbaGWALU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 20:11:20 -0400
+Received: from mail-la0-f44.google.com ([209.85.215.44]:52663 "EHLO
+	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753112AbaGWALT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 20:10:44 -0400
-From: Shuah Khan <shuah.kh@samsung.com>
-To: ming.lei@canonical.com, gregkh@linuxfoundation.org
-Cc: Shuah Khan <shuah.kh@samsung.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH] firmware loader: Fix _request_firmware_load() return val for fw load abort
-Date: Tue, 22 Jul 2014 18:10:38 -0600
-Message-Id: <1406074238-13649-1-git-send-email-shuah.kh@samsung.com>
-X-Mailer: git-send-email 1.9.1
+	Tue, 22 Jul 2014 20:11:19 -0400
+MIME-Version: 1.0
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Tue, 22 Jul 2014 17:10:57 -0700
+Message-ID: <CALCETrVx=cLZjgALizYKWATSjOvhmwPHQvOJRkMgdb=iNRNf8w@mail.gmail.com>
+Subject: STI architectural question (and lretq -- I'm not even kidding)
+To: "H. Peter Anvin" <hpa@linux.intel.com>, Borislav Petkov <bp@alien8.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        X86 ML <x86@kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-_request_firmware_load() returns -ENOMEM when fw load is aborted after
-timeout. Call is_fw_load_aborted() to check if fw load is aborted and
-if true return -EAGAIN.
+It turns out that lretq-to-outer-privilege-level is about 100 cycles
+faster than iretq on Sandy Bridge.  This may be enough to be worth
+using for returns to userspace, despite the added complexity and
+scariness.
 
-Signed-off-by: Shuah Khan <shuah.kh@samsung.com>
----
- drivers/base/firmware_class.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+Here's where it gets nasty.  Before using lretq, we have to have
+interrupts on, and we have to have gs == usergs.  If an asynchronous
+non-paranoid interrupt happens then, we're screwed, and I don't really
+want to teach the IRQ code to handle this special case.
 
-diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
-index d276e33..3f928b0 100644
---- a/drivers/base/firmware_class.c
-+++ b/drivers/base/firmware_class.c
-@@ -911,7 +911,9 @@ static int _request_firmware_load(struct firmware_priv *fw_priv,
- 	wait_for_completion(&buf->completion);
- 
- 	cancel_delayed_work_sync(&fw_priv->timeout_work);
--	if (!buf->data)
-+	if (is_fw_load_aborted(buf))
-+		retval = -EAGAIN;
-+	else if (!buf->data)
- 		retval = -ENOMEM;
- 
- 	device_remove_file(f_dev, &dev_attr_loading);
--- 
-1.7.10.4
+There's an easy "solution": do sti;lretq.  This even works in my
+limited testing (whereas sti;nop;lretq blows up very quickly).
 
+But here's the problem: what happens if an NMI or MCE happens between
+the sti and the lretq?  I think an MCE just might be okay -- it's not
+really recoverable anyway.  (Except for the absurd MCE broadcast crap,
+which may cause this to be a problem.)  But what about an NMI between
+sti and lretq?
+
+The NMI itself won't cause any problem.  But the NMI will return to
+the lretq with interrupts *on*, and we lose.
+
+The Intel SDM helpfully says "The IF flag and the STI and CLI
+instructions do not prohibit the generation of exceptions and NMI
+interrupts. NMI interrupts (and SMIs) may be blocked for one
+macroinstruction following an STI."  Does that mean that this isn't a
+problem?  What about on AMD?
+
+An alternative would be to do a manual fixup in the NMI and MCE code.  Yuck.
+
+The implementation is here, in case you want to play with it:
+
+https://git.kernel.org/cgit/linux/kernel/git/luto/linux.git/tag/?id=lretq-to-userspace
+
+--Andy
+
+P.S. I'm sure there will be any number of CPU errata here, especially
+since lretq-from-long-mode-to-outer-privilege-level is involved, which
+might be completely unused in any major OS.
+
+P.P.S. At least on Sandy Bridge, lretq has the same 16-bit SS problem as iret.
