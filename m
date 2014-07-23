@@ -1,157 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933351AbaGWUWZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 16:22:25 -0400
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:37922 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933261AbaGWUWX (ORCPT
+	id S933406AbaGWUX1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 16:23:27 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:47125 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933091AbaGWUX0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 16:22:23 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAGXu5j+gMepR-euMhBjYqMVHsdJM-Do5yc0rLw5dMK-C9BBieA@mail.gmail.com>
-References: <1405657206-12060-1-git-send-email-ast@plumgrid.com>
-	<1405657206-12060-10-git-send-email-ast@plumgrid.com>
-	<CAGXu5j+gMepR-euMhBjYqMVHsdJM-Do5yc0rLw5dMK-C9BBieA@mail.gmail.com>
-Date: Wed, 23 Jul 2014 13:22:21 -0700
-Message-ID: <CAMEtUuw9paQJXEzg=dJw6z--3UqFp-pWq4uyxV-oT4_0_+7Gxg@mail.gmail.com>
-Subject: Re: [PATCH RFC v2 net-next 09/16] bpf: expand BPF syscall with
- program load/unload
-From: Alexei Starovoitov <ast@plumgrid.com>
-To: Kees Cook <keescook@chromium.org>
-Cc: "David S. Miller" <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andy Lutomirski <luto@amacapital.net>,
+	Wed, 23 Jul 2014 16:23:26 -0400
+Date: Wed, 23 Jul 2014 13:23:20 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Pranith Kumar <bobby.prani@gmail.com>
+Cc: Josh Triplett <josh@joshtriplett.org>,
         Steven Rostedt <rostedt@goodmis.org>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Jiri Olsa <jolsa@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        "open list:READ-COPY UPDATE..." <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 09/16] rcu: Remove redundant check for online cpu
+Message-ID: <20140723202320.GF11241@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140723122112.GJ11241@linux.vnet.ibm.com>
+ <CAJhHMCAoLQPnJYCeqftXwZb6D4ECuJb4g04b4OO5BLf6iC1ENw@mail.gmail.com>
+ <20140723135024.GR11241@linux.vnet.ibm.com>
+ <CAJhHMCAZ__1xkEou44iux=Z6v6NAKPrTvWob6tqorm23nNygOA@mail.gmail.com>
+ <20140723142314.GV11241@linux.vnet.ibm.com>
+ <CAJhHMCA4Fdd4JbtKdNGABFYRBCqaLukLbydLAFA-3RiZXaTngA@mail.gmail.com>
+ <20140723153018.GY11241@linux.vnet.ibm.com>
+ <CAJhHMCBDZyHYCo01T421f+No0ZBWfjsUXijg+MT1A2U621izpA@mail.gmail.com>
+ <20140723191542.GA9398@linux.vnet.ibm.com>
+ <53D0180B.40709@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53D0180B.40709@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14072320-1542-0000-0000-0000037F7BCB
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 23, 2014 at 12:00 PM, Kees Cook <keescook@chromium.org> wrote:
-> On Thu, Jul 17, 2014 at 9:19 PM, Alexei Starovoitov <ast@plumgrid.com> wrote:
->> eBPF programs are safe run-to-completion functions with load/unload
->> methods from userspace similar to kernel modules.
->>
->> User space API:
->>
->> - load eBPF program
->>   fd = bpf_prog_load(bpf_prog_type, struct nlattr *prog, int len)
->>
->>   where 'prog' is a sequence of sections (TEXT, LICENSE, MAP_ASSOC)
->>   TEXT - array of eBPF instructions
->>   LICENSE - must be GPL compatible to call helper functions marked gpl_only
->>   MAP_FIXUP - array of {insn idx, map fd} used by kernel to adjust
->>   imm constants in 'mov' instructions used to access maps
->
-> Nit: naming mismatch between MAP_ASSOC vs MAP_FIXUP.
+On Wed, Jul 23, 2014 at 04:16:11PM -0400, Pranith Kumar wrote:
+> On Wed, Jul 23, 2014 at 3:15 PM, Paul E. McKenney
+> <paulmck@linux.vnet.ibm.com> wrote:
+> >> > If you change the "awake" to something like "am_online", I could get
+> >> > behind this one.
+> >>
+> >> OK! I will submit that in the next series(with the zalloc check).
+> >
+> > You caught me at a weak moment...  This change just adds an extra
+> > line of code and doesn't really help anything.
+> >
+> > So please leave this one out.
+> >
+> 
+> <resending as the assembly was garbled>
+> 
+> It adds an extra line of code and generates better assembly code. Last
+> try to convince you before I give up :-)
 
-ohh yes, I used map_assoc name initially and forgot to rename it
-in commit log. will fix.
+If you got this kind of savings in __rcu_read_lock() or
+__rcu_read_unlock(), I might be interested.  Hard to get excited about
+__call_rcu_core(), especially given that a smarter compiler might be
+able to make this transformation on its own.
 
->> + */
->> +static int fixup_bpf_map_id(struct sk_filter *prog, struct nlattr *map_fixup)
->> +{
->> +       struct {
->> +               u32 insn_idx;
->> +               u32 ufd;
->> +       } *fixup = nla_data(map_fixup);
->> +       int fixup_len = nla_len(map_fixup) / sizeof(*fixup);
->> +       struct bpf_insn *insn;
->> +       struct fd f;
->> +       u32 idx;
->> +       int i, map_id;
->> +
->> +       if (fixup_len <= 0)
->> +               return -EINVAL;
->> +
->> +       for (i = 0; i < fixup_len; i++) {
->> +               idx = fixup[i].insn_idx;
->> +               if (idx >= prog->len)
->> +                       return -EINVAL;
->> +
->> +               insn = &prog->insnsi[idx];
->> +               if (insn->code != (BPF_ALU64 | BPF_MOV | BPF_K) &&
->> +                   insn->code != (BPF_ALU | BPF_MOV | BPF_K))
->> +                       return -EINVAL;
->> +
->> +               f = fdget(fixup[i].ufd);
->> +
->> +               map_id = get_map_id(f);
->> +
->> +               if (map_id < 0)
->> +                       return map_id;
->> +
->> +               insn->imm = map_id;
->> +               fdput(f);
->
-> It looks like there a potentially race risk of a map_id changing out
-> from under a running program? Between the call to fixup_bpf_map_id()
-> and the bpf_map_get() calls during bpf_prog_load() below...
+							Thanx, Paul
 
-Excellent question!
-If user space created a bunch of maps and has another thread
-that closes fds (and may be creating new maps) while main thread is
-doing syscall(prog_load,...) then map_ids stored inside instructions
-can become stale by the time bpf_check() is called. In such case
-bpf_check() will reject the program. Either it will find unknown map_id
-or map will have invalid key/value ranges for the program to access.
-So this is not an issue, but I agree the code is not obviously correct.
-My bad to allow such subtle races.
-I'll increase mutex_lock() range.
+> Size:
+>         text    data     bss     dec     hex filename
+> before  30664    7844      32   38540    968c kernel/rcu/tree.o
+> after   30648    7844      32   38524    967c kernel/rcu/tree.o
+> 
+> Assembly:
+> 
+> Before:
+> 
+> 	if (!rcu_is_watching() && cpu_online(smp_processor_id()))
+>     26d3:	83 e2 01             	and    $0x1,%edx
+>     26d6:	75 1f                	jne    26f7 <__call_rcu+0x1c7>
+>     26d8:	65 8b 14 25 00 00 00 	mov    %gs:0x0,%edx
+>     26df:	00 
+> 			26dc: R_X86_64_32S	cpu_number
+>     26e0:	48 8b 0d 00 00 00 00 	mov    0x0(%rip),%rcx        # 26e7 <__call_rcu+0x1b7>
+> 			26e3: R_X86_64_PC32	cpu_online_mask-0x4
+>     26e7:	89 d2                	mov    %edx,%edx
+>     26e9:	48 0f a3 11          	bt     %rdx,(%rcx)
+>     26ed:	19 d2                	sbb    %edx,%edx
+>     26ef:	85 d2                	test   %edx,%edx
+>     26f1:	0f 85 29 02 00 00    	jne    2920 <__call_rcu+0x3f0>
+> 		invoke_rcu_core();
+> 
+> 	/* If interrupts were disabled or CPU offline, don't invoke RCU core. */
+> 	if (irqs_disabled_flags(flags) || cpu_is_offline(smp_processor_id()))
+>     26f7:	48 f7 45 d0 00 02 00 	testq  $0x200,-0x30(%rbp)
+>     26fe:	00 
+>     26ff:	0f 84 e6 fe ff ff    	je     25eb <__call_rcu+0xbb>
+>     2705:	65 8b 14 25 00 00 00 	mov    %gs:0x0,%edx
+>     270c:	00 
+> 			2709: R_X86_64_32S	cpu_number
+>     270d:	48 8b 0d 00 00 00 00 	mov    0x0(%rip),%rcx        # 2714 <__call_rcu+0x1e4>
+> 			2710: R_X86_64_PC32	cpu_online_mask-0x4
+>     2714:	89 d2                	mov    %edx,%edx
+>     2716:	48 0f a3 11          	bt     %rdx,(%rcx)
+>     271a:	19 d2                	sbb    %edx,%edx
+>     271c:	85 d2                	test   %edx,%edx
+>     271e:	0f 84 c7 fe ff ff    	je     25eb <__call_rcu+0xbb>
+> 
+> After:
+> 
+> 	bool cpu_up = cpu_online(smp_processor_id());
+>     26c1:	65 8b 14 25 00 00 00 	mov    %gs:0x0,%edx
+>     26c8:	00 
+> 			26c5: R_X86_64_32S	cpu_number
+>     26c9:	48 8b 0d 00 00 00 00 	mov    0x0(%rip),%rcx        # 26d0 <__call_rcu+0x1a0>
+> 			26cc: R_X86_64_PC32	cpu_online_mask-0x4
+>     26d0:	89 d2                	mov    %edx,%edx
+>     26d2:	48 0f a3 11          	bt     %rdx,(%rcx)
+>     26d6:	19 d2                	sbb    %edx,%edx
+>     26d8:	85 d2                	test   %edx,%edx
+>     26da:	41 0f 95 c4          	setne  %r12b
+> 
+> 	if (!rcu_is_watching() && cpu_up)
+>     26f0:	83 e2 01             	and    $0x1,%edx
+>     26f3:	75 09                	jne    26fe <__call_rcu+0x1ce>
+>     26f5:	45 84 e4             	test   %r12b,%r12b
+>     26f8:	0f 85 12 02 00 00    	jne    2910 <__call_rcu+0x3e0>
+> 		invoke_rcu_core();
+> 
+> 	/* If interrupts were disabled or CPU offline, don't invoke RCU core. */
+> 	if (irqs_disabled_flags(flags) || !cpu_up)
+>     26fe:	48 f7 45 d0 00 02 00 	testq  $0x200,-0x30(%rbp)
+>     2705:	00 
+>     2706:	0f 84 df fe ff ff    	je     25eb <__call_rcu+0xbb>
+>     270c:	45 84 e4             	test   %r12b,%r12b
+>     270f:	0f 84 d6 fe ff ff    	je     25eb <__call_rcu+0xbb>
+> 
+> -- 
+> Pranith
+> 
 
->> +       if (tb[BPF_PROG_MAP_FIXUP]) {
->> +               /* if program is using maps, fixup map_ids */
->> +               err = fixup_bpf_map_id(prog, tb[BPF_PROG_MAP_FIXUP]);
->> +               if (err < 0)
->> +                       goto free_prog;
->> +       }
->> +
->> +       /* allocate eBPF related auxilary data */
->> +       prog->info = kzalloc(sizeof(struct bpf_prog_info), GFP_USER);
->> +       if (!prog->info)
->> +               goto free_prog;
->> +       prog->ebpf = 1;
->> +       prog->info->is_gpl_compatible = is_gpl;
->> +
->> +       /* find program type: socket_filter vs tracing_filter */
->> +       err = find_prog_type(type, prog);
->> +       if (err < 0)
->> +               goto free_prog;
->> +
->> +       /* lock maps to prevent any changes to maps, since eBPF program may
->> +        * use them. In such case bpf_check() will populate prog->used_maps
->> +        */
->> +       mutex_lock(&bpf_map_lock);
->> +
->> +       /* run eBPF verifier */
->> +       /* err = bpf_check(prog); */
->> +
->> +       if (err == 0 && prog->info->used_maps) {
->> +               /* program passed verifier and it's using some maps,
->> +                * hold them
->> +                */
->> +               for (i = 0; i < prog->info->used_map_cnt; i++) {
->> +                       map = bpf_map_get(prog->info->used_maps[i]);
->> +                       BUG_ON(!map);
->> +                       atomic_inc(&map->refcnt);
->> +               }
->> +       }
->> +       mutex_unlock(&bpf_map_lock);
->
-> As mentioned above, I think fixup_bpf_map_id needs to be done under
-> the map_lock mutex, unless I'm misunderstanding something in the
-> object lifetime.
-
-yes. Excellent point. Will increase the range.
-
-Thank you so much for the review!
