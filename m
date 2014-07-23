@@ -1,49 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757289AbaGWIIH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 04:08:07 -0400
-Received: from mail.emea.novell.com ([130.57.118.101]:44830 "EHLO
-	mail.emea.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751347AbaGWIIC convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:4:1>);
-	Wed, 23 Jul 2014 04:08:02 -0400
-Message-Id: <53CF897E0200007800024FB4@mail.emea.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 14.0.0 
-Date: Wed, 23 Jul 2014 09:07:58 +0100
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: "Andy Lutomirski" <luto@amacapital.net>, <mingo@elte.hu>,
-        <tglx@linutronix.de>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ix86: fix vDSO build
-References: <53B5863B02000078000204D5@mail.emea.novell.com>
- <53BF1A94.50009@zytor.com>
-In-Reply-To: <53BF1A94.50009@zytor.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1757327AbaGWIKm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 04:10:42 -0400
+Received: from mail-we0-f173.google.com ([74.125.82.173]:64694 "EHLO
+	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757190AbaGWIKk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jul 2014 04:10:40 -0400
+Message-ID: <53CF6DE9.3090505@linaro.org>
+Date: Wed, 23 Jul 2014 09:10:17 +0100
+From: Daniel Thompson <daniel.thompson@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dan Carpenter <dan.carpenter@oracle.com>
+CC: linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
+        yrl.pp-manager.tt@hitachi.com
+Subject: Re: [PATCH] serial/core: Fix too big allocation for attribute member
+References: <20140723060622.2647.96316.stgit@yuno-kbuild.novalocal>
+In-Reply-To: <20140723060622.2647.96316.stgit@yuno-kbuild.novalocal>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 11.07.14 at 00:58, <hpa@zytor.com> wrote:
-> On 07/03/2014 07:35 AM, Jan Beulich wrote:
->> Relying on static functions used just once to get inlined (and
->> subsequently have dead code paths eliminated) is wrong: Compilers are
->> free to decide whether they do this, regardless of optimization level.
->> With this not happening for vdso_addr() (observed with gcc 4.1.x), an
->> unresolved reference to align_vdso_addr() causes the build to fail.
+On 23/07/14 07:06, Yoshihiro YUNOMAE wrote:
+> Current code allocates too much data for tty_groups member of uart_port struct,
+> so fix it.
 > 
-> The fix seems odd... more of the flavor of "happens to work" unless I'm
-> misunderstanding something.  If this needs to be inlined, wouldn't
-> __always_inline make more sense?
-> 
-> What am I missing?
+> Signed-off-by: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
+> CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> CC: Dan Carpenter <dan.carpenter@oracle.com>
 
-I think this is a matter of taste: Personally I think __always_inline should
-be used rather rarely, as it takes away decisions from the compiler that
-it would (generally) be in the better position to make.
+Reviewed-by: Daniel Thompson <daniel.thompson@linaro.org>
 
-Sorry for the late reply (was on vacation),
-Jan
-
+(using linux-next tree for context).
