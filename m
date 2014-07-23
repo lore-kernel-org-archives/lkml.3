@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932213AbaGWCdT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 22:33:19 -0400
-Received: from mga01.intel.com ([192.55.52.88]:34089 "EHLO mga01.intel.com"
+	id S932373AbaGWCd1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 22:33:27 -0400
+Received: from mga11.intel.com ([192.55.52.93]:48643 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932085AbaGWCdR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 22:33:17 -0400
+	id S932085AbaGWCdV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 22:33:21 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,714,1400050800"; 
-   d="scan'208";a="573974400"
+   d="scan'208";a="565811649"
 From: "Chen, Gong" <gong.chen@linux.intel.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@kernel.org, tglx@linutronix.de, paulus@samba.org,
@@ -21,9 +21,9 @@ Cc: mingo@kernel.org, tglx@linutronix.de, paulus@samba.org,
         rostedt@goodmis.org, rric@kernel.org, gregkh@linuxfoundation.org,
         mhocko@suse.cz, david@fromorbit.com,
         "Chen, Gong" <gong.chen@linux.intel.com>
-Subject: [RFC PATCH v1 17/70] arm, vfp, vfpmodule: _FROZEN Cleanup
-Date: Tue, 22 Jul 2014 21:58:53 -0400
-Message-Id: <1406080786-3938-18-git-send-email-gong.chen@linux.intel.com>
+Subject: [RFC PATCH v1 18/70] arm, kvm: _FROZEN Cleanup
+Date: Tue, 22 Jul 2014 21:58:54 -0400
+Message-Id: <1406080786-3938-19-git-send-email-gong.chen@linux.intel.com>
 X-Mailer: git-send-email 2.0.0.rc2
 In-Reply-To: <1406080786-3938-1-git-send-email-gong.chen@linux.intel.com>
 References: <1406080786-3938-1-git-send-email-gong.chen@linux.intel.com>
@@ -31,31 +31,28 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove XXX_FROZEN state from arm/vfp/vfpmodule.
+Remove XXX_FROZEN state from arm/kvm.
 
 Signed-off-by: Chen, Gong <gong.chen@linux.intel.com>
 ---
- arch/arm/vfp/vfpmodule.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ arch/arm/kvm/arm.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/arch/arm/vfp/vfpmodule.c b/arch/arm/vfp/vfpmodule.c
-index 2f37e1d..a1a6154 100644
---- a/arch/arm/vfp/vfpmodule.c
-+++ b/arch/arm/vfp/vfpmodule.c
-@@ -642,9 +642,11 @@ int vfp_restore_user_hwstate(struct user_vfp __user *ufp,
- static int vfp_hotplug(struct notifier_block *b, unsigned long action,
- 	void *hcpu)
+diff --git a/arch/arm/kvm/arm.c b/arch/arm/kvm/arm.c
+index 3c82b37..0014464 100644
+--- a/arch/arm/kvm/arm.c
++++ b/arch/arm/kvm/arm.c
+@@ -860,9 +860,8 @@ static void cpu_init_hyp_mode(void *dummy)
+ static int hyp_init_cpu_notify(struct notifier_block *self,
+ 			       unsigned long action, void *cpu)
  {
--	if (action == CPU_DYING || action == CPU_DYING_FROZEN)
-+	action &= ~CPU_TASKS_FROZEN;
-+
-+	if (action == CPU_DYING)
- 		vfp_current_hw_state[(long)hcpu] = NULL;
--	else if (action == CPU_STARTING || action == CPU_STARTING_FROZEN)
-+	else if (action == CPU_STARTING)
- 		vfp_enable(NULL);
- 	return NOTIFY_OK;
- }
+-	switch (action) {
++	switch (action & ~CPU_TASKS_FROZEN) {
+ 	case CPU_STARTING:
+-	case CPU_STARTING_FROZEN:
+ 		cpu_init_hyp_mode(NULL);
+ 		break;
+ 	}
 -- 
 2.0.0.rc2
 
