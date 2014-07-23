@@ -1,137 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932973AbaGWSLp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 14:11:45 -0400
-Received: from mail-qg0-f43.google.com ([209.85.192.43]:33667 "EHLO
-	mail-qg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932735AbaGWSLn (ORCPT
+	id S932998AbaGWSMT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 14:12:19 -0400
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:54334 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932562AbaGWSMR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 14:11:43 -0400
-Date: Wed, 23 Jul 2014 14:11:39 -0400
-From: Jeff Layton <jlayton@poochiereds.net>
-To: Joe Perches <joe@perches.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@ZenIV.linux.org.uk>,
-        David Teigland <teigland@redhat.com>,
-        Christine Caulfield <ccaulfie@redhat.com>,
-        "J. Bruce Fields" <bfields@fieldses.org>,
-        Trond Myklebust <trond.myklebust@primarydata.com>,
-        cluster-devel@redhat.com, linux-kernel@vger.kernel.org,
-        linux-nfs@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH 9/9] fs: dlm: lockd: Convert int result to unsigned char
- type
-Message-ID: <20140723141139.2cf90cb0@tlielax.poochiereds.net>
-In-Reply-To: <65b9ba0dba9c79a938267d5bed7ed0a8211e89ed.1405879494.git.joe@perches.com>
-References: <cover.1405879494.git.joe@perches.com>
-	<65b9ba0dba9c79a938267d5bed7ed0a8211e89ed.1405879494.git.joe@perches.com>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.22; x86_64-redhat-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 23 Jul 2014 14:12:17 -0400
+From: Guenter Roeck <linux@roeck-us.net>
+To: linux-gpio@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Guenter Roeck <linux@roeck-us.net>
+Subject: [RFC PATCH] gpiolib: Provide and export gpiod_export_name
+Date: Wed, 23 Jul 2014 11:12:12 -0700
+Message-Id: <1406139132-5404-1-git-send-email-linux@roeck-us.net>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 20 Jul 2014 11:23:43 -0700
-Joe Perches <joe@perches.com> wrote:
+gpiod_export_name is similar to gpiod_export, but lets the user
+determine the name used to export a gpio pin.
 
-> op->info.rv is an s32, but it's only used as a u8.
-> 
+Currently, the pin name is determined by the chip driver with
+the 'names' array in the gpio_chip data structure, or it is set
+to gpioX, where X is the pin number, if no name is provided by
+the chip driver.
 
-I don't understand this patch. info.rv is s32 (and I assume that "rv"
-stands for "return value"). What I don't get is why you think it's just
-used as a u8. It seems to be used more like a bool than anything else,
-and I'm not sure that "type" is really a good description for it. Maybe
-it should be a "bool" and named "conflict", given the comments in
-dlm_posix_get ?
+It is, however, desirable to be able to provide the pin name when
+exporting the pin, for example from platform code. In other words,
+it would be useful to move the naming decision from the pin provider
+to the pin consumer. The gpio-pca953x driver provides this capability
+as part of its platform data. Other drivers could be enhanced in a
+similar way; however, this is not always possible or easy to accomplish.
+For example, mfd client drivers such as gpio-ich already use platform
+data to pass information from the mfd master driver to the client driver.
+Overloading this platform data to also provide an array of gpio pin names
+would be a challenge if not impossible.
 
-> Signed-off-by: Joe Perches <joe@perches.com>
-> ---
->  fs/dlm/plock.c     |  6 +++---
->  fs/lockd/svclock.c | 10 +++++-----
->  include/linux/fs.h |  2 +-
->  3 files changed, 9 insertions(+), 9 deletions(-)
-> 
-> diff --git a/fs/dlm/plock.c b/fs/dlm/plock.c
-> index 3e0b6fc..267849d 100644
-> --- a/fs/dlm/plock.c
-> +++ b/fs/dlm/plock.c
-> @@ -30,7 +30,7 @@ struct plock_op {
->  
->  struct plock_xop {
->  	struct plock_op xop;
-> -	int (*callback)(struct file_lock *fl, int result);
-> +	int (*callback)(struct file_lock *fl, unsigned char type);
->  	void *fl;
->  	void *file;
->  	struct file_lock flc;
-> @@ -190,7 +190,7 @@ static int dlm_plock_callback(struct plock_op *op)
->  	struct file *file;
->  	struct file_lock *fl;
->  	struct file_lock *flc;
-> -	int (*notify)(struct file_lock *fl, int result) = NULL;
-> +	int (*notify)(struct file_lock *fl, unsigned char type) = NULL;
->  	struct plock_xop *xop = (struct plock_xop *)op;
->  	int rv = 0;
->  
-> @@ -209,7 +209,7 @@ static int dlm_plock_callback(struct plock_op *op)
->  	notify = xop->callback;
->  
->  	if (op->info.rv) {
-> -		notify(fl, op->info.rv);
-> +		notify(fl, (unsigned char)op->info.rv);
->  		goto out;
->  	}
->  
-> diff --git a/fs/lockd/svclock.c b/fs/lockd/svclock.c
-> index 2a61701..15532b9 100644
-> --- a/fs/lockd/svclock.c
-> +++ b/fs/lockd/svclock.c
-> @@ -667,16 +667,16 @@ nlmsvc_cancel_blocked(struct net *net, struct nlm_file *file, struct nlm_lock *l
->   * deferred rpc for GETLK and SETLK.
->   */
->  static void
-> -nlmsvc_update_deferred_block(struct nlm_block *block, int result)
-> +nlmsvc_update_deferred_block(struct nlm_block *block, unsigned char type)
->  {
->  	block->b_flags |= B_GOT_CALLBACK;
-> -	if (result == 0)
-> +	if (type == 0)
->  		block->b_granted = 1;
->  	else
->  		block->b_flags |= B_TIMED_OUT;
->  }
->  
-> -static int nlmsvc_grant_deferred(struct file_lock *fl, int result)
-> +static int nlmsvc_grant_deferred(struct file_lock *fl, unsigned char type)
->  {
->  	struct nlm_block *block;
->  	int rc = -ENOENT;
-> @@ -691,8 +691,8 @@ static int nlmsvc_grant_deferred(struct file_lock *fl, int result)
->  					rc = -ENOLCK;
->  					break;
->  				}
-> -				nlmsvc_update_deferred_block(block, result);
-> -			} else if (result == 0)
-> +				nlmsvc_update_deferred_block(block, type);
-> +			} else if (type == 0)
->  				block->b_granted = 1;
->  
->  			nlmsvc_insert_block_locked(block, 0);
-> diff --git a/include/linux/fs.h b/include/linux/fs.h
-> index d083a67..7fbce66 100644
-> --- a/include/linux/fs.h
-> +++ b/include/linux/fs.h
-> @@ -842,7 +842,7 @@ struct lock_manager_operations {
->  	int (*lm_compare_owner)(struct file_lock *fl1, struct file_lock *fl2);
->  	unsigned long (*lm_owner_key)(struct file_lock *fl);
->  	void (*lm_notify)(struct file_lock *fl);	/* unblock callback */
-> -	int (*lm_grant)(struct file_lock *fl, int result);
-> +	int (*lm_grant)(struct file_lock *fl, unsigned char type);
->  	void (*lm_break)(struct file_lock *fl);
->  	int (*lm_change)(struct file_lock **fl, int type);
->  };
+The alternative to use gpiod_export_link is also not always desirable,
+since it only creates a named link to a different directory, meaning
+the named gpio pin is not available in /sys/class/gpio but only
+in some platform specific directory and thus not as generic as possible
+and/or useful.
 
+A specific example for a use case is a gpio pin which reports AC power
+loss to user space. Depending on the platform and platform variant,
+the pin can be provided by various gpio chip drivers and pin numbers.
+It would be very desirable to have a well defined location such as
+/sys/class/gpio/ac_power_loss for this pin, so user space knows where
+to find the attribute without knowledge of the underlying platform
+variant or oher hardware details.
 
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+---
+Applies to tip of linux-gpio/for-next.
+
+ Documentation/gpio/sysfs.txt  | 12 ++++++++----
+ drivers/gpio/gpiolib-sysfs.c  | 23 ++++++++++++++++-------
+ include/linux/gpio/consumer.h |  9 +++++++++
+ 3 files changed, 33 insertions(+), 11 deletions(-)
+
+diff --git a/Documentation/gpio/sysfs.txt b/Documentation/gpio/sysfs.txt
+index c2c3a97..8e301b2 100644
+--- a/Documentation/gpio/sysfs.txt
++++ b/Documentation/gpio/sysfs.txt
+@@ -125,7 +125,11 @@ requested using gpio_request():
+ 	/* export the GPIO to userspace */
+ 	int gpiod_export(struct gpio_desc *desc, bool direction_may_change);
+ 
+-	/* reverse gpio_export() */
++	/* export named GPIO to userspace */
++	int gpiod_export_name(struct gpio_desc *desc, const char *ioname,
++			bool direction_may_change);
++
++	/* reverse gpio_export() / gpiod_export_name() */
+ 	void gpiod_unexport(struct gpio_desc *desc);
+ 
+ 	/* create a sysfs link to an exported GPIO node */
+@@ -136,9 +140,9 @@ requested using gpio_request():
+ 	int gpiod_sysfs_set_active_low(struct gpio_desc *desc, int value);
+ 
+ After a kernel driver requests a GPIO, it may only be made available in
+-the sysfs interface by gpiod_export(). The driver can control whether the
+-signal direction may change. This helps drivers prevent userspace code
+-from accidentally clobbering important system state.
++the sysfs interface by gpiod_export() or gpiod_export_name(). The driver
++can control whether the signal direction may change. This helps drivers
++prevent userspace code from accidentally clobbering important system state.
+ 
+ This explicit exporting can help with debugging (by making some kinds
+ of experiments easier), or can provide an always-there interface that's
+diff --git a/drivers/gpio/gpiolib-sysfs.c b/drivers/gpio/gpiolib-sysfs.c
+index be45a92..7d36230 100644
+--- a/drivers/gpio/gpiolib-sysfs.c
++++ b/drivers/gpio/gpiolib-sysfs.c
+@@ -523,13 +523,12 @@ static struct class gpio_class = {
+  *
+  * Returns zero on success, else an error.
+  */
+-int gpiod_export(struct gpio_desc *desc, bool direction_may_change)
++int gpiod_export_name(struct gpio_desc *desc, const char *ioname,
++		      bool direction_may_change)
+ {
+ 	unsigned long		flags;
+ 	int			status;
+-	const char		*ioname = NULL;
+ 	struct device		*dev;
+-	int			offset;
+ 
+ 	/* can't export until sysfs is available ... */
+ 	if (!gpio_class.p) {
+@@ -560,10 +559,6 @@ int gpiod_export(struct gpio_desc *desc, bool direction_may_change)
+ 		direction_may_change = false;
+ 	spin_unlock_irqrestore(&gpio_lock, flags);
+ 
+-	offset = gpio_chip_hwgpio(desc);
+-	if (desc->chip->names && desc->chip->names[offset])
+-		ioname = desc->chip->names[offset];
+-
+ 	dev = device_create(&gpio_class, desc->chip->dev, MKDEV(0, 0),
+ 			    desc, ioname ? ioname : "gpio%u",
+ 			    desc_to_gpio(desc));
+@@ -600,6 +595,20 @@ fail_unlock:
+ 	gpiod_dbg(desc, "%s: status %d\n", __func__, status);
+ 	return status;
+ }
++EXPORT_SYMBOL_GPL(gpiod_export_name);
++
++int gpiod_export(struct gpio_desc *desc, bool direction_may_change)
++{
++	const char *ioname = NULL;
++
++	if (desc) {
++		int offset = gpio_chip_hwgpio(desc);
++
++		if (desc->chip->names && desc->chip->names[offset])
++			ioname = desc->chip->names[offset];
++	}
++	return gpiod_export_name(desc, ioname, direction_may_change);
++}
+ EXPORT_SYMBOL_GPL(gpiod_export);
+ 
+ static int match_export(struct device *dev, const void *data)
+diff --git a/include/linux/gpio/consumer.h b/include/linux/gpio/consumer.h
+index 05e53cc..986da3e 100644
+--- a/include/linux/gpio/consumer.h
++++ b/include/linux/gpio/consumer.h
+@@ -260,6 +260,8 @@ static inline int desc_to_gpio(const struct gpio_desc *desc)
+ #if IS_ENABLED(CONFIG_GPIOLIB) && IS_ENABLED(CONFIG_GPIO_SYSFS)
+ 
+ int gpiod_export(struct gpio_desc *desc, bool direction_may_change);
++int gpiod_export_name(struct gpio_desc *desc, const char *ioname,
++		      bool direction_may_change);
+ int gpiod_export_link(struct device *dev, const char *name,
+ 		      struct gpio_desc *desc);
+ int gpiod_sysfs_set_active_low(struct gpio_desc *desc, int value);
+@@ -273,6 +275,13 @@ static inline int gpiod_export(struct gpio_desc *desc,
+ 	return -ENOSYS;
+ }
+ 
++static inline int gpiod_export_name(struct gpio_desc *desc,
++				    const char *ioname,
++				    bool direction_may_change)
++{
++	return -ENOSYS;
++}
++
+ static inline int gpiod_export_link(struct device *dev, const char *name,
+ 				    struct gpio_desc *desc)
+ {
 -- 
-Jeff Layton <jlayton@poochiereds.net>
+1.9.1
+
