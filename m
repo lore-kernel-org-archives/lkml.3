@@ -1,57 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932397AbaGWQqs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 12:46:48 -0400
-Received: from mga09.intel.com ([134.134.136.24]:54065 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932271AbaGWQqr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 12:46:47 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,718,1400050800"; 
-   d="scan'208";a="547852961"
-Message-ID: <53CFE6F3.4010605@intel.com>
-Date: Wed, 23 Jul 2014 19:46:43 +0300
-From: Adrian Hunter <adrian.hunter@intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S932478AbaGWQrg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 12:47:36 -0400
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:56650 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932271AbaGWQre (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jul 2014 12:47:34 -0400
+Date: Wed, 23 Jul 2014 18:47:23 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Petr =?iso-8859-1?Q?Ml=E1dek?= <pmladek@suse.cz>,
+        Ingo Molnar <mingo@elte.hu>, Jiri Kosina <jkosina@suse.cz>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3] ring-buffer: Race when writing and swapping cpu
+ buffer in parallel
+Message-ID: <20140723164721.GH23175@localhost.localdomain>
+References: <1405501084-16135-1-git-send-email-pmladek@suse.cz>
+ <20140716124356.398e21f4@gandalf.local.home>
+ <20140718153443.GC6774@pathway.suse.cz>
+ <20140721144324.GG20751@pathway.suse.cz>
+ <20140721154317.GS8690@linux.vnet.ibm.com>
+ <20140723162845.GF23175@localhost.localdomain>
+ <20140723123458.314a43fa@gandalf.local.home>
 MIME-Version: 1.0
-To: Arnaldo Carvalho de Melo <acme@kernel.org>
-CC: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 05/41] perf tools: Identify which comms are from exec
-References: <1405332185-4050-1-git-send-email-adrian.hunter@intel.com> <1405332185-4050-6-git-send-email-adrian.hunter@intel.com> <20140714203237.GA18133@kernel.org> <53C513CC.1010202@intel.com> <20140723140752.GJ20303@kernel.org> <20140723140908.GK20303@kernel.org>
-In-Reply-To: <20140723140908.GK20303@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140723123458.314a43fa@gandalf.local.home>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23/07/2014 5:09 p.m., Arnaldo Carvalho de Melo wrote:
-> Em Wed, Jul 23, 2014 at 11:07:52AM -0300, Arnaldo Carvalho de Melo escreveu:
->> Em Tue, Jul 15, 2014 at 02:43:08PM +0300, Adrian Hunter escreveu:
->>>>> @@ -106,6 +107,8 @@ int comm__override(struct comm *comm, const char *str, u64 timestamp)
->>>>>   	comm_str__put(old);
->>>>>   	comm->comm_str = new;
->>>>>   	comm->start = timestamp;
->>>>> +	if (exec && !comm->exec)
->>>>> +		comm->exec = true;
->>
->>>> Why do you need the !comm->exec test?
->>
->>> Dunno
->>
->> I saw that you kept it in the last patchkit submitted, I'll just drop
->> it, needless obfuscation.
+On Wed, Jul 23, 2014 at 12:34:58PM -0400, Steven Rostedt wrote:
+> On Wed, 23 Jul 2014 18:28:48 +0200
+> Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> 
+> > On Mon, Jul 21, 2014 at 08:43:17AM -0700, Paul E. McKenney wrote:
+> > > On Mon, Jul 21, 2014 at 04:43:24PM +0200, Petr Mládek wrote:
+> > > > 2. Go back, do the swap on any CPU, and do memory barriers via IPI.
+> > > > 
+> > > >    I wonder if the needed memory barrier in rb_reserve_next_event()
+> > > >    could be avoided by calling IPI from ring_buffer_swap_cpu().
+> > > > 
+> > > >    I mean that rb_reserve_next_event() will include the current check
+> > > >    for swapped ring buffer without barriers. But
+> > > >    ring_buffer_swap_cpu() will interrupt the affected CPU and
+> > > >    basically do the barrier there only when needed.
+> > > > 
+> > > >    But I am not sure how this is different from calling
+> > > >    smp_call_function_single() from ring_buffer_swap_cpu().
+> > > >    And I am back on the question why it is dangerous with disabled
+> > > >    interrupts. I can't find any clue in git history. And I miss this
+> > > >    part of the picture :-(
+> > > 
+> > > IIRC, deadlock in the case where two CPUs attempt to invoke
+> > > smp_call_function_single() at each other, but both have
+> > > interrupts disabled.  It might be possible to avoid this by telling
+> > > smp_call_function_single() not to wait for a response, but this often
+> > > just re-introduces the deadlock at a higher level.
+> > 
+> > FWIW, this is what smp_call_function_single_async() does. But then the call
+> > must synchronized such that no concurrent call happen until the IPI completion.
+> > 
+> > Otherwise you also have irq_work_queue_on() (not yet upstream but in tip/timers/nohz
+> > and tip/sched/core).
+> 
+> Well, the code in question must wait for the IPI to finish, thus as
+> Paul said, we just push the issue to the caller.
 
-Sorry I forgot.
-
->
-> Also why do you need to "identify which comms are from exec", was it
-> good for?
-
-It is for grouping together all the data from a single execution, which
-is needed for pairing calls and returns e.g. any outstanding calls when
-a process exec's will never return.
+Ah right if we need to wait for IPI completion from irqs disabled, I fear we can't.
