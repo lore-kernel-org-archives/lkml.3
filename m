@@ -1,150 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933986AbaGWXri (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 19:47:38 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:38906 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758548AbaGWXrg (ORCPT
+	id S1758708AbaGWXrd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 19:47:33 -0400
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:36395 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758553AbaGWXog (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 19:47:36 -0400
-Message-ID: <53D04996.2030902@codeaurora.org>
-Date: Wed, 23 Jul 2014 16:47:34 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Bjorn Andersson <bjorn.andersson@sonymobile.com>
-CC: "Ivan T. Ivanov" <iivanov@mm-sol.com>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Mark Brown <broonie@kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
-Subject: Re: [PATCH RESEND v2 1/4] pinctrl: Update Qualcomm pm8xxx GPIO parameters
- definitions
-References: <1405610748-7583-5-git-send-email-iivanov@mm-sol.com> <1405626085-14069-1-git-send-email-iivanov@mm-sol.com> <20140722214643.GH19700@sonymobile.com>
-In-Reply-To: <20140722214643.GH19700@sonymobile.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Wed, 23 Jul 2014 19:44:36 -0400
+From: Grant Likely <grant.likely@linaro.org>
+To: linux-kernel@vger.kernel.org, Nathan Fontenot <nfont@austin.ibm.com>,
+        Tyrel Datwyler <turtle.in.the.kernel@gmail.com>,
+        Pantelis Antoniou <pantelis.antoniou@konsulko.com>,
+        devicetree@vger.kernel.org
+Cc: Grant Likely <grant.likely@linaro.org>
+Subject: [PATCH 02/10] of: rename of_aliases_mutex to just of_mutex
+Date: Wed, 23 Jul 2014 17:44:16 -0600
+Message-Id: <1406159064-21366-3-git-send-email-grant.likely@linaro.org>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1406159064-21366-1-git-send-email-grant.likely@linaro.org>
+References: <1406159064-21366-1-git-send-email-grant.likely@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/22/14 14:46, Bjorn Andersson wrote:
-> For pm8941 the valid power supply values are:
->  GPIO 1-14
->    0: VPH
->    2: SMPS3
->    3: LDO6
->
->  GPIO 15-18
->   2: SMPS3
->   3: LDO6
->
->  GPIO 19-36
->   0: VPH
->   1: VDD_TORCH
->   2: SPMS3
->   3: LDO6
->
->  MPP 1-8
->   0: VPH
->   1: LDO1
->   2: SPMS3
->   3: LDO6
->
-> For pma8084 the valid power supply values are:
->  GPIO 1-22
->   0: VPH
->   2: SPMS4
->   3: LDO6
->
->  MPP 1-8
->   0: VPH
->   1: LDO1
->   2: SMPS4
->   3: LDO6
->
-> Please add these constants to the table of valid power-source values and use
-> something like I did to translate them to register values - it makes the DT
-> much more readable.
+From: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
 
-The DT could be similarly readable if we had a bunch of #defines for the
-different VIN settings that resolved to the final register value for
-that pmic. Something like PM8921_GPIO1_14_VPH, PM8921_GPIO19_36_VPH,
-etc. There would be a lot of them, but then the driver could be really
-simple and just jam whatever value is in the DT into the register
-without having to bounce through a mapping table in software to figure
-out the register value. If we did this for the functions also then I
-believe we achieve readability without requiring a bunch of drivers for
-each and every single pmic?
+We're overloading usage of of_aliases_mutex for sysfs changes,
+so rename to something that is more generic.
 
->
->>         Value type: <string>
->>         Definition: Specify the alternative function to be configured for the
->> -                   specified pins.  Valid values are:
->> -                       "normal",
->> -                       "paired",
->> -                       "func1",
->> -                       "func2",
->> -                       "dtest1",
->> -                       "dtest2",
->> -                       "dtest3",
->> -                       "dtest4"
->> +                   specified pins.  Valid values is: "gpio"
->>
->>  - bias-disable:
->>         Usage: optional
->> @@ -99,18 +95,6 @@ to specify in a pin configuration subnode:
->>         Value type: <none>
->>         Definition: The specified pins should be configued as pull down.
->>
->> -- bias-pull-up:
->> -       Usage: optional
->> -       Value type: <u32> (optional)
->> -       Definition: The specified pins should be configued as pull up. An
->> -                   optional argument can be used to configure the strength.
->> -                   Valid values are; as defined in
->> -                   <dt-bindings/pinctrl/qcom,pm8xxx-gpio.h>:
->> -                   1: 30uA                     (PM8XXX_GPIO_PULL_UP_30)
->> -                   2: 1.5uA                    (PM8XXX_GPIO_PULL_UP_1P5)
->> -                   3: 31.5uA                   (PM8XXX_GPIO_PULL_UP_31P5)
->> -                   4: 1.5uA + 30uA boost       (PM8XXX_GPIO_PULL_UP_1P5_30)
->> -
-> As described above, I belive we should make this:
->
-> - bias-pull-up:
-> 	Usage: optional
-> 	Value type: <empty>
-> 	Definition: The specified pins should be configured as pull up.
->
-> - qcom,pull-up-strength:
-> 	Usage: optional
-> 	Value type: <u32>
-> 	Definition: Specifies the strength to use for pull up, if selected.
->                     Valid values are; as defined in
->                     <dt-bindings/pinctrl/qcom,pm8xxx-gpio.h>:
->                     1: 30uA                     (PM8XXX_GPIO_PULL_UP_30)
->                     2: 1.5uA                    (PM8XXX_GPIO_PULL_UP_1P5)
->                     3: 31.5uA                   (PM8XXX_GPIO_PULL_UP_31P5)
->                     4: 1.5uA + 30uA boost       (PM8XXX_GPIO_PULL_UP_1P5_30)
-> 		    If this property is ommited 30uA strength will be used if
-> 		    pull up is selected.
+Signed-off-by: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
+Signed-off-by: Grant Likely <grant.likely@linaro.org>
+---
+ drivers/of/base.c       | 19 +++++++++----------
+ drivers/of/device.c     |  4 ++--
+ drivers/of/of_private.h |  2 +-
+ 3 files changed, 12 insertions(+), 13 deletions(-)
 
-Why is 30uA special? Just because most drivers use it? I'd prefer we
-always be explicit about which pull-up we want so that nothing is left
-up to the driver implementation.
-
-Also according to the hw folks the 1.5uA + 30uA boost has never been
-used so I say let's drop that feature. If we need it one day we can
-always add a qcom,pull-up-boost or something (I highly doubt we'll need
-it). Doing that allows us to specify this in actual SI units. Maybe even
-allowing us to have a generic pull-up-strength (or
-bias-pull-up-strength) specified in SI units of mA?
-
+diff --git a/drivers/of/base.c b/drivers/of/base.c
+index b9864806e9b8..e48a1b90a392 100644
+--- a/drivers/of/base.c
++++ b/drivers/of/base.c
+@@ -40,10 +40,9 @@ static struct device_node *of_stdout;
+ static struct kset *of_kset;
+ 
+ /*
+- * Used to protect the of_aliases; but also overloaded to hold off addition of
+- * nodes to sysfs
++ * Used to protect the of_aliases, to hold off addition of nodes to sysfs
+  */
+-DEFINE_MUTEX(of_aliases_mutex);
++DEFINE_MUTEX(of_mutex);
+ 
+ /* use when traversing tree through the allnext, child, sibling,
+  * or parent members of struct device_node.
+@@ -255,13 +254,13 @@ int of_node_add(struct device_node *np)
+ 	 * Grab the mutex here so that in a race condition between of_init() and
+ 	 * of_node_add(), node addition will still be consistent.
+ 	 */
+-	mutex_lock(&of_aliases_mutex);
++	mutex_lock(&of_mutex);
+ 	if (of_kset)
+ 		rc = __of_node_add(np);
+ 	else
+ 		/* This scenario may be perfectly valid, but report it anyway */
+ 		pr_info("of_node_add(%s) before of_init()\n", np->full_name);
+-	mutex_unlock(&of_aliases_mutex);
++	mutex_unlock(&of_mutex);
+ 	return rc;
+ }
+ 
+@@ -289,15 +288,15 @@ static int __init of_init(void)
+ 	struct device_node *np;
+ 
+ 	/* Create the kset, and register existing nodes */
+-	mutex_lock(&of_aliases_mutex);
++	mutex_lock(&of_mutex);
+ 	of_kset = kset_create_and_add("devicetree", NULL, firmware_kobj);
+ 	if (!of_kset) {
+-		mutex_unlock(&of_aliases_mutex);
++		mutex_unlock(&of_mutex);
+ 		return -ENOMEM;
+ 	}
+ 	for_each_of_allnodes(np)
+ 		__of_node_add(np);
+-	mutex_unlock(&of_aliases_mutex);
++	mutex_unlock(&of_mutex);
+ 
+ 	/* Symlink in /proc as required by userspace ABI */
+ 	if (of_allnodes)
+@@ -2122,7 +2121,7 @@ int of_alias_get_id(struct device_node *np, const char *stem)
+ 	struct alias_prop *app;
+ 	int id = -ENODEV;
+ 
+-	mutex_lock(&of_aliases_mutex);
++	mutex_lock(&of_mutex);
+ 	list_for_each_entry(app, &aliases_lookup, link) {
+ 		if (strcmp(app->stem, stem) != 0)
+ 			continue;
+@@ -2132,7 +2131,7 @@ int of_alias_get_id(struct device_node *np, const char *stem)
+ 			break;
+ 		}
+ 	}
+-	mutex_unlock(&of_aliases_mutex);
++	mutex_unlock(&of_mutex);
+ 
+ 	return id;
+ }
+diff --git a/drivers/of/device.c b/drivers/of/device.c
+index dafb9736ab9b..46d6c75c1404 100644
+--- a/drivers/of/device.c
++++ b/drivers/of/device.c
+@@ -160,7 +160,7 @@ void of_device_uevent(struct device *dev, struct kobj_uevent_env *env)
+ 	add_uevent_var(env, "OF_COMPATIBLE_N=%d", seen);
+ 
+ 	seen = 0;
+-	mutex_lock(&of_aliases_mutex);
++	mutex_lock(&of_mutex);
+ 	list_for_each_entry(app, &aliases_lookup, link) {
+ 		if (dev->of_node == app->np) {
+ 			add_uevent_var(env, "OF_ALIAS_%d=%s", seen,
+@@ -168,7 +168,7 @@ void of_device_uevent(struct device *dev, struct kobj_uevent_env *env)
+ 			seen++;
+ 		}
+ 	}
+-	mutex_unlock(&of_aliases_mutex);
++	mutex_unlock(&of_mutex);
+ }
+ 
+ int of_device_uevent_modalias(struct device *dev, struct kobj_uevent_env *env)
+diff --git a/drivers/of/of_private.h b/drivers/of/of_private.h
+index ff350c8fa7ac..fcc70e74dfe0 100644
+--- a/drivers/of/of_private.h
++++ b/drivers/of/of_private.h
+@@ -31,6 +31,6 @@ struct alias_prop {
+ 	char stem[0];
+ };
+ 
+-extern struct mutex of_aliases_mutex;
++extern struct mutex of_mutex;
+ extern struct list_head aliases_lookup;
+ #endif /* _LINUX_OF_PRIVATE_H */
 -- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+1.9.1
 
