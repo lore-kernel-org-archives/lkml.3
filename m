@@ -1,176 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932321AbaGWJ0A (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 05:26:00 -0400
-Received: from e23smtp02.au.ibm.com ([202.81.31.144]:57476 "EHLO
-	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932201AbaGWJZz (ORCPT
+	id S932398AbaGWJ16 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 05:27:58 -0400
+Received: from mail-bn1blp0189.outbound.protection.outlook.com ([207.46.163.189]:23804
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753112AbaGWJ14 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 05:25:55 -0400
-Subject: [PATCH 2/2] powerpc/powernv: Interface to add opal dump region
-To: linux-kernel@vger.kernel.org
-From: Vasant Hegde <hegdevasant@linux.vnet.ibm.com>
-Cc: linuxppc-dev@lists.ozlabs.org
-Date: Wed, 23 Jul 2014 14:55:45 +0530
-Message-ID: <20140723092525.5170.25926.stgit@hegdevasant.in.ibm.com>
-In-Reply-To: <20140723092506.5170.34633.stgit@hegdevasant.in.ibm.com>
-References: <20140723092506.5170.34633.stgit@hegdevasant.in.ibm.com>
-User-Agent: StGit/0.16
+	Wed, 23 Jul 2014 05:27:56 -0400
+X-WSS-ID: 0N95RMD-07-K6Z-02
+X-M-MSG: 
+Message-ID: <53CF8010.9060809@amd.com>
+Date: Wed, 23 Jul 2014 11:27:44 +0200
+From: =?UTF-8?B?Q2hyaXN0aWFuIEvDtm5pZw==?= <christian.koenig@amd.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14072309-5490-0000-0000-000000757AD2
+To: Daniel Vetter <daniel.vetter@ffwll.ch>,
+        =?UTF-8?B?Q2hyaXN0aWFuIEvDtm5p?= =?UTF-8?B?Zw==?= 
+	<deathsimple@vodafone.de>
+CC: Maarten Lankhorst <maarten.lankhorst@canonical.com>,
+        Thomas Hellstrom <thellstrom@vmware.com>,
+        nouveau <nouveau@lists.freedesktop.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        dri-devel <dri-devel@lists.freedesktop.org>,
+        Ben Skeggs <bskeggs@redhat.com>,
+        "Deucher, Alexander" <alexander.deucher@amd.com>
+Subject: Re: [Nouveau] [PATCH 09/17] drm/radeon: use common fence implementation
+ for fences
+References: <20140709093124.11354.3774.stgit@patser>
+	<20140722115737.GN15237@phenom.ffwll.local>	<53CE56ED.4040109@vodafone.de>
+	<20140722132652.GO15237@phenom.ffwll.local>	<53CE6AFA.1060807@vodafone.de>
+	<CAKMK7uG1d31zU_i__wc+Yq46A0x0tPeKnMBs+NHSmHS82uMsXQ@mail.gmail.com>
+	<53CE84AA.9030703@amd.com>
+	<CAKMK7uFa8vMBV9_JenbFGnFXtV_r9dk=WjbMkkCDWcauhrDdJg@mail.gmail.com>
+	<53CE8A57.2000803@vodafone.de>	<53CF58FB.8070609@canonical.com>
+	<53CF5B9F.1050800@amd.com>	<53CF5EFE.6070307@canonical.com>
+	<53CF63C2.7070407@vodafone.de>
+	<CAKMK7uGJj+UwcnnzA+fj_=uWPN3i0sneWkoD+wfPJ_8Q6Y-DQg@mail.gmail.com>
+	<53CF6622.6060803@amd.com>	<53CF699D.9070902@canonical.com>
+	<53CF6B18.5070107@vodafone.de>
+	<CAKMK7uGd65HR11thcv8KjDw-RnTa7W-QGOzFGFd+oO_hp8wyHA@mail.gmail.com>
+	<53CF7035.2060808@amd.com>	<53CF7191.2090008@canonical.com>
+	<CAKMK7uGLqzePAREsWhX0D1oN4FdqKwPgAL6x8sULpJSqYH5LwA@mail.gmail.com>
+	<53CF765E.7020802@vodafone.de>
+ <CAKMK7uE1G-EjbJ2RAXC3ZfkaCo=Gber5PJuRG623Yoz9D=FmGw@mail.gmail.com>
+In-Reply-To: <CAKMK7uE1G-EjbJ2RAXC3ZfkaCo=Gber5PJuRG623Yoz9D=FmGw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+X-Originating-IP: [10.224.155.198]
+Content-Transfer-Encoding: 8BIT
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:165.204.84.221;CTRY:US;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(428002)(51704005)(24454002)(199002)(189002)(377454003)(80022001)(21056001)(76482001)(64706001)(50466002)(77982001)(50986999)(4396001)(93886003)(87936001)(79102001)(97736001)(65806001)(59896001)(65956001)(19580395003)(85852003)(102836001)(87266999)(54356999)(83072002)(76176999)(83506001)(85306003)(65816999)(84676001)(105586002)(33656002)(68736004)(85182001)(64126003)(36756003)(106466001)(74662001)(20776003)(99396002)(107046002)(85202003)(101416001)(23676002)(86362001)(83322001)(47776003)(46102001)(81542001)(44976005)(81342001)(95666004)(19580405001)(92726001)(80316001);DIR:OUT;SFP:;SCL:1;SRVR:BN1PR02MB039;H:atltwp01.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;LANG:en;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
+X-Forefront-PRVS: 028166BF91
+Authentication-Results: spf=none (sender IP is 165.204.84.221)
+ smtp.mailfrom=Christian.Koenig@amd.com; 
+X-OriginatorOrg: amd4.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-PowerNV platform is capable of capturing host memory region when system
-crashes (because of host/firmware). We have new OPAL API to register
-memory region to be capture when system crashes.
+Am 23.07.2014 10:54, schrieb Daniel Vetter:
+> On Wed, Jul 23, 2014 at 10:46 AM, Christian König
+> <deathsimple@vodafone.de> wrote:
+>> Am 23.07.2014 10:42, schrieb Daniel Vetter:
+>>
+>>> On Wed, Jul 23, 2014 at 10:25 AM, Maarten Lankhorst
+>>> <maarten.lankhorst@canonical.com> wrote:
+>>>> In this case if the sync was to i915 the i915 lockup procedure would take
+>>>> care of itself. It wouldn't fix radeon, but it would at least unblock your
+>>>> intel card again. I haven't specifically added a special case to attempt to
+>>>> unblock external fences, but I've considered it. :-)
+>>> Actually the i915 reset stuff relies crucially on being able to kick
+>>> all waiters holding driver locks. Since the current fence code only
+>>> exposes an opaque wait function without exposing the underlying wait
+>>> queue we won't be able to sleep on both the fence queue and the reset
+>>> queue. So would pose a problem if we add fence_wait calls to our
+>>> driver.
+>>
+>> And apart from that I really think that I misunderstood Maarten. But his
+>> explanation sounds like i915 would do a reset because Radeon is locked up,
+>> right?
+>>
+>> Well if that's really the case then I would question the interface even
+>> more, cause that is really nonsense.
+> I disagree - the entire point of fences is that we can do multi-gpu
+> work asynchronously. So by the time we'll notice that radeon's dead we
+> have accepted the batch from userspace already. The only way to get
+> rid of it again is through our reset machinery, which also tells
+> userspace that we couldn't execute the batch. Whether we actually need
+> to do a hw reset depends upon whether we've committed the batch to the
+> hw already. Atm that's always the case, but the scheduler will change
+> that. So I have no issues with intel doing a reset when other drivers
+> don't signal fences.
 
-This patch adds support for new API and also registers kernel log buffer.
+You submit a job to the hardware and then block the job to wait for 
+radeon to be finished? Well than this would indeed require a hardware 
+reset, but wouldn't that make the whole problem even worse?
 
-Signed-off-by: Vasant Hegde <hegdevasant@linux.vnet.ibm.com>
----
- arch/powerpc/include/asm/opal.h                   |   12 +++++
- arch/powerpc/platforms/powernv/Makefile           |    2 -
- arch/powerpc/platforms/powernv/opal-dump-region.c |   46 +++++++++++++++++++++
- arch/powerpc/platforms/powernv/opal-wrappers.S    |    1 
- arch/powerpc/platforms/powernv/opal.c             |    2 +
- 5 files changed, 62 insertions(+), 1 deletion(-)
- create mode 100644 arch/powerpc/platforms/powernv/opal-dump-region.c
+I mean currently we block one userspace process to wait for other 
+hardware to be finished with a buffer, but what you are describing here 
+blocks the whole hardware to wait for other hardware which in the end 
+blocks all userspace process accessing the hardware.
 
-diff --git a/arch/powerpc/include/asm/opal.h b/arch/powerpc/include/asm/opal.h
-index 0da1dbd..6b9c01e 100644
---- a/arch/powerpc/include/asm/opal.h
-+++ b/arch/powerpc/include/asm/opal.h
-@@ -147,6 +147,7 @@ struct opal_sg_list {
- #define OPAL_SET_PARAM				90
- #define OPAL_DUMP_RESEND			91
- #define OPAL_DUMP_INFO2				94
-+#define OPAL_REGISTER_DUMP_REGION		98
- 
- #ifndef __ASSEMBLY__
- 
-@@ -860,6 +861,7 @@ int64_t opal_get_param(uint64_t token, uint32_t param_id, uint64_t buffer,
- int64_t opal_set_param(uint64_t token, uint32_t param_id, uint64_t buffer,
- 		uint64_t length);
- int64_t opal_sensor_read(uint32_t sensor_hndl, int token, __be32 *sensor_data);
-+int64_t opal_register_dump_region(uint32_t id, uint64_t start, uint64_t end);
- 
- /* Internal functions */
- extern int early_init_dt_scan_opal(unsigned long node, const char *uname,
-@@ -899,6 +901,7 @@ extern int opal_elog_init(void);
- extern void opal_platform_dump_init(void);
- extern void opal_sys_param_init(void);
- extern void opal_msglog_init(void);
-+extern void opal_dump_region_init(void);
- 
- extern int opal_machine_check(struct pt_regs *regs);
- extern bool opal_mce_check_early_recovery(struct pt_regs *regs);
-@@ -912,6 +915,15 @@ struct opal_sg_list *opal_vmalloc_to_sg_list(void *vmalloc_addr,
- 					     unsigned long vmalloc_size);
- void opal_free_sg_list(struct opal_sg_list *sg);
- 
-+/*
-+ * Dump regions ids
-+ *   0x01 - 0x7F : OPAL
-+ *   0x80 - 0xFF : Kernel
-+ */
-+#define DUMP_REGION_HOST_START		0x80
-+#define DUMP_REGION_LOG_BUF		0x80
-+#define DUMP_REGION_HOST_END		0xFF
-+
- #endif /* __ASSEMBLY__ */
- 
- #endif /* __OPAL_H */
-diff --git a/arch/powerpc/platforms/powernv/Makefile b/arch/powerpc/platforms/powernv/Makefile
-index 4ad227d..e2819aa 100644
---- a/arch/powerpc/platforms/powernv/Makefile
-+++ b/arch/powerpc/platforms/powernv/Makefile
-@@ -1,7 +1,7 @@
- obj-y			+= setup.o opal-wrappers.o opal.o opal-async.o
- obj-y			+= opal-rtc.o opal-nvram.o opal-lpc.o opal-flash.o
- obj-y			+= rng.o opal-elog.o opal-dump.o opal-sysparam.o opal-sensor.o
--obj-y			+= opal-msglog.o
-+obj-y			+= opal-msglog.o opal-dump-region.o
- 
- obj-$(CONFIG_SMP)	+= smp.o subcore.o subcore-asm.o
- obj-$(CONFIG_PCI)	+= pci.o pci-p5ioc2.o pci-ioda.o
-diff --git a/arch/powerpc/platforms/powernv/opal-dump-region.c b/arch/powerpc/platforms/powernv/opal-dump-region.c
-new file mode 100644
-index 0000000..2cce388
---- /dev/null
-+++ b/arch/powerpc/platforms/powernv/opal-dump-region.c
-@@ -0,0 +1,46 @@
-+/*
-+ * PowerNV OPAL dump memory region interface
-+ *
-+ * Copyright 2014 IBM Corp.
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * as published by the Free Software Foundation; either version
-+ * 2 of the License, or (at your option) any later version.
-+ */
-+
-+#include <linux/pagemap.h>
-+#include <linux/printk.h>
-+#include <asm/opal.h>
-+
-+/*
-+ * Pass kernel address range (start, size) that will be included in
-+ * system dump (collected by service processor whenever system crashes).
-+ *
-+ * @id		: Memory region ID (see opal.h)
-+ * @addr	: Start address
-+ * @size	: size in bytes
-+ */
-+static int add_dump_region_entry(uint32_t id, void *addr, uint64_t size)
-+{
-+	__be32 be_id = cpu_to_be32(id);
-+	__be64 be_addr = cpu_to_be64(__pa(addr));
-+	__be64 be_size = cpu_to_be64(size);
-+
-+	return opal_register_dump_region(be_id, be_addr, be_size);
-+}
-+
-+void __init opal_dump_region_init(void)
-+{
-+	void *addr;
-+	uint64_t size;
-+	int rc;
-+
-+	/* Register kernel log buffer */
-+	addr = get_log_buf_addr();
-+	size = get_log_buf_len();
-+	rc = add_dump_region_entry(DUMP_REGION_LOG_BUF, addr, size);
-+	if (rc)
-+		pr_warn("DUMP: Failed to register kernel log buffer. "
-+			"rc = %d\n", rc);
-+}
-diff --git a/arch/powerpc/platforms/powernv/opal-wrappers.S b/arch/powerpc/platforms/powernv/opal-wrappers.S
-index 4abbff2..935c30a 100644
---- a/arch/powerpc/platforms/powernv/opal-wrappers.S
-+++ b/arch/powerpc/platforms/powernv/opal-wrappers.S
-@@ -146,3 +146,4 @@ OPAL_CALL(opal_sync_host_reboot,		OPAL_SYNC_HOST_REBOOT);
- OPAL_CALL(opal_sensor_read,			OPAL_SENSOR_READ);
- OPAL_CALL(opal_get_param,			OPAL_GET_PARAM);
- OPAL_CALL(opal_set_param,			OPAL_SET_PARAM);
-+OPAL_CALL(opal_register_dump_region,		OPAL_REGISTER_DUMP_REGION);
-diff --git a/arch/powerpc/platforms/powernv/opal.c b/arch/powerpc/platforms/powernv/opal.c
-index 1999756..2834303 100644
---- a/arch/powerpc/platforms/powernv/opal.c
-+++ b/arch/powerpc/platforms/powernv/opal.c
-@@ -616,6 +616,8 @@ static int __init opal_init(void)
- 	/* Create "opal" kobject under /sys/firmware */
- 	rc = opal_sysfs_init();
- 	if (rc == 0) {
-+		/* Setup dump region interface */
-+		opal_dump_region_init();
- 		/* Setup error log interface */
- 		rc = opal_elog_init();
- 		/* Setup code update interface */
+Talking about alternative approaches wouldn't it be simpler to just 
+offload the waiting to a different kernel or userspace thread?
+
+Christian.
+
+>
+> Also this isn't a problem with the interface really, but with the
+> current implementation for radeon. And getting cross-driver reset
+> notifications right will require more work either way.
+> -Daniel
 
