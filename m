@@ -1,62 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755858AbaGWGok (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 02:44:40 -0400
-Received: from mga02.intel.com ([134.134.136.20]:4871 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755146AbaGWGoh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 02:44:37 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,715,1400050800"; 
-   d="scan'208";a="547603453"
-From: Lan Tianyu <tianyu.lan@intel.com>
-To: rjw@rjwysocki.net, lenb@kernel.org
-Cc: Lan Tianyu <tianyu.lan@intel.com>, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH V2] ACPI/NVS: Not save NVS region for new machine to accelerate S3
-Date: Wed, 23 Jul 2014 14:42:33 +0800
-Message-Id: <1406097753-7398-1-git-send-email-tianyu.lan@intel.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1405662922-23606-1-git-send-email-tianyu.lan@intel.com>
-References: <1405662922-23606-1-git-send-email-tianyu.lan@intel.com>
+	id S1756071AbaGWGrG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 02:47:06 -0400
+Received: from mailapp01.imgtec.com ([195.59.15.196]:9924 "EHLO
+	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752720AbaGWGrE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jul 2014 02:47:04 -0400
+Date: Wed, 23 Jul 2014 07:46:57 +0100
+From: Paul Burton <paul.burton@imgtec.com>
+To: Nick Krause <xerofoify@gmail.com>
+CC: Ralf Baechle <ralf@linux-mips.org>, John Crispin <blogic@openwrt.org>,
+        <markos.chandras@imgtec.com>, <Steven.Hill@imgtec.com>,
+        Linux-MIPS <linux-mips@linux-mips.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: smp-cmp.c: CDFIXMES
+Message-ID: <20140723064657.GK30558@pburton-laptop>
+References: <CAPDOMVjNyAwo53Coz8MFuUs70M7j1e3QWprus5vGpTfAw=hspg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Disposition: inline
+In-Reply-To: <CAPDOMVjNyAwo53Coz8MFuUs70M7j1e3QWprus5vGpTfAw=hspg@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Originating-IP: [192.168.79.200]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-NVS region is saved and restored unconditionally for machines without
-nvs_nosave quirk during S3. Tested some new machines and the operation
-is not necessary. Saving NVS region also affects S2RAM speed. The time of
-NVS saving and restoring depends on the size of NVS region and it consumes
-7~10ms normally.
+On Wed, Jul 23, 2014 at 12:40:59AM -0400, Nick Krause wrote:
+> Are the lines with  CDFIXME still needed? If not please tell me as I
+> will send in a patch removing these
+> two from this file in order to help you guys out :).
+> Cheers Nick
 
-This patch is to make machines produced from 2012 to now not saving NVS region
-to accelerate S3.
+Hi Nick,
 
-Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
----
-Change since V1:
-	Change the order between checking acpisleep quirk table and setting
-the flag of nosaving nvs for S3.
+I imagine the only answer any of us can give you is "we don't know". If
+we did then we'd have removed the code or the comments already.
 
- drivers/acpi/sleep.c | 5 +++++
- 1 file changed, 5 insertions(+)
+Please do note that the smp-cmp.c file lives behind a Kconfig option
+that is now marked as deprecated, and that there is other work going on
+in areas related to clocksource & clock events on the applicable
+systems. So whilst someone could spend the time figuring out whether
+those lines are useful, I expect that cleaning up these old FIXMEs is
+not a particularly high priority for anyone right now.
 
-diff --git a/drivers/acpi/sleep.c b/drivers/acpi/sleep.c
-index b3e3cc7..54da4a3 100644
---- a/drivers/acpi/sleep.c
-+++ b/drivers/acpi/sleep.c
-@@ -322,6 +322,11 @@ static struct dmi_system_id acpisleep_dmi_table[] __initdata = {
- 
- static void acpi_sleep_dmi_check(void)
- {
-+	int year;
-+
-+	if (dmi_get_date(DMI_BIOS_DATE, &year, NULL, NULL) && year >= 2012)
-+		acpi_nvs_nosave_s3();
-+
- 	dmi_check_system(acpisleep_dmi_table);
- }
- 
--- 
-1.8.4.rc0.1.g8f6a3e5.dirty
+If you'll leave them alone for a while I expect they'll disappear one
+way or another in a few cycles time, along with the rest of the file.
 
+Thanks,
+    Paul
