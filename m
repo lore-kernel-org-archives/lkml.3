@@ -1,108 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758001AbaGWQoK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 12:44:10 -0400
-Received: from mail-oa0-f49.google.com ([209.85.219.49]:64435 "EHLO
-	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756598AbaGWQoH (ORCPT
+	id S932262AbaGWQq1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 12:46:27 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:9813 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756598AbaGWQqZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 12:44:07 -0400
-MIME-Version: 1.0
-In-Reply-To: <53CFD444.4010700@ti.com>
-References: <1405961925-27248-1-git-send-email-m-karicheri2@ti.com>
- <20140722225708.GB27965@google.com> <53CFD444.4010700@ti.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Wed, 23 Jul 2014 10:43:44 -0600
-Message-ID: <CAErSpo6gEVP7XbiPZ90MP4zn5mrjaJLZTW0_sdjg9Q6HjnnkFg@mail.gmail.com>
-Subject: Re: [PATCH v7 0/5] Add Keystone PCIe controller driver
-To: Murali Karicheri <m-karicheri2@ti.com>
-Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+	Wed, 23 Jul 2014 12:46:25 -0400
+X-AuditID: cbfee61b-f79f86d00000144c-a8-53cfe6dff6f8
+From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Jesse Brandeburg <jesse.brandeburg@gmail.com>,
+        Mike Qiu <qiudayu@linux.vnet.ibm.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-arm <linux-arm-kernel@lists.infradead.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Mohit Kumar <mohit.kumar@st.com>,
-        Jingoo Han <jg1.han@samsung.com>,
-        Pratyush Anand <pratyush.anand@st.com>,
-        Richard Zhu <r65037@freescale.com>,
-        Kishon Vijay Abraham I <kishon@ti.com>, Marek Vasut <marex@denx.de>,
-        Arnd Bergmann <arnd@arndb.de>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Randy Dunlap <rdunlap@infradead.org>
-Content-Type: text/plain; charset=UTF-8
+        linux-ide@vger.kernel.org, wenxiong@linux.vnet.ibm.com,
+        brking@linux.vnet.ibm.com, zhenghch@cn.ibm.com, haokexin@gmail.com,
+        Peter Hurley <peter@hurleysoftware.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Alexey Kardashevskiy <aik@ozlabs.ru>
+Subject: Re: [PATCH libata/for-3.16-fixes] libata: introduce ata_host->n_tags
+ to avoid oops on SAS controllers
+Date: Wed, 23 Jul 2014 18:46:05 +0200
+Message-id: <2111455.4B0otWTvWT@amdc1032>
+User-Agent: KMail/4.8.4 (Linux/3.2.0-54-generic-pae; KDE/4.8.5; i686; ; )
+In-reply-to: <20140723163601.GE7103@htj.dyndns.org>
+References: <1406040688-1762-1-git-send-email-qiudayu@linux.vnet.ibm.com>
+ <4586703.PjmVDM7Oct@amdc1032> <20140723163601.GE7103@htj.dyndns.org>
+MIME-version: 1.0
+Content-transfer-encoding: 7Bit
+Content-type: text/plain; charset=us-ascii
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpgkeLIzCtJLcpLzFFi42I5/e+xoO79Z+eDDS70C1n0Hi+y6JrFbnHs
+	+QNWi/OP5SyO7XjEZHF51xw2i2OX/jFaHO89wGTRc3Aio8Wv5UcZLT68u8Vi8fTjNVYHHo/m
+	23fZPHbOusvuseLPejaPzSu0PDat6mTzeHBoM4vHjbvNbB6fN8kFcERx2aSk5mSWpRbp2yVw
+	ZZx93s5ScISjYs/ri2wNjJfZuhg5OSQETCReb98DZYtJXLi3Hsjm4hASmM4oMb/hIiNIQkig
+	hUliyUYwm03ASmJi+yowW0RAVuLKtIeMIA3MAlOZJRZd6gLq5uAQFiiQ+LA2F6SGRUBV4nL3
+	dRYQm1dAU6J9w1dWEFtUwFNix/aVYIs5BYwllv38zgixeAKjxKPGzawQDYISPybfA2tmFpCX
+	2Ld/KiuErSWxfudxpgmMArOQlM1CUjYLSdkCRuZVjKKpBckFxUnpuUZ6xYm5xaV56XrJ+bmb
+	GMHx8kx6B+OqBotDjAIcjEo8vB17zwcLsSaWFVfmHmKU4GBWEuFdew8oxJuSWFmVWpQfX1Sa
+	k1p8iFGag0VJnPdgq3WgkEB6YklqdmpqQWoRTJaJg1OqgXFtOa/c9h/30r9trpRrTM85tv9+
+	xMROo77qz9eWb/U6rxSps3UaW+x+HY+5G45fk2zouZTbZ6X59v/UB22Nf/tnxYTrrHXWDTFf
+	cP0Rr1yaRLVAYfaBiKN7l1bnSc14MqdI/KK622W9tSIf7jL/SNrL+8SDMy11i9FTs0/mT+1l
+	W/WsZlht11BiKc5INNRiLipOBADdSDaZkwIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 23, 2014 at 9:27 AM, Murali Karicheri <m-karicheri2@ti.com> wrote:
->
-> Bjorn,
->
->
-> On 07/22/2014 06:57 PM, Bjorn Helgaas wrote:
->>
->> On Mon, Jul 21, 2014 at 12:58:40PM -0400, Murali Karicheri wrote:
->
->
->>> Murali Karicheri (5):
->>>    PCI: designware: add rd[wr]_other_conf API
->>>    PCI: designware: refactor MSI code to work with v3.65 dw hardware
->>
->>
->> I applied the above two to my pci/host-designware branch.  The rest didn't
->> apply cleanly because I applied Kishon's DRA7xx changes first, and there
->> are several conflicts.  Can you rebase the rest of them on top of
->> pci/host-designware?
->
->
-> Thanks for applying 1 and 2.
->
-> I will fix up 3 based on your branch and send you updated patch 3 and 4
-> today.  Hope you can apply this updated patch so that I don't have to
-> address any rebase issues. Regarding the MRSS comment, I will discuss it on
-> that thread and send you a fix for removing the bootargs depedency based on
-> what comes out of that discussion. Is that fine?
+On Wednesday, July 23, 2014 12:36:01 PM Tejun Heo wrote:
+> Hello,
+> 
+> On Wed, Jul 23, 2014 at 06:31:58PM +0200, Bartlomiej Zolnierkiewicz wrote:
+> > Hmmm, wasn't ATA_MAX_QUEUE used before not ATA_MAX_QUEUE - 1?
+> > 
+> > It seems that after your patch the loop in the ata_qc_new() will use
+> > only 30 tags and not 31 ones?
+> 
+> It was always 31 (ATA_MAX_QUEUE - 1) with the tag 31 reserved for EH
+> commands.  The previous patch just used limit value which is one too
+> high.  I'm planning to change that but this is the way it has always
+> been.
 
-Yep, sounds reasonable.  I'm about to leave for vacation, so I won't
-be able to apply these until mid-August, but I think we can still get
-them into v3.17 since it's new hardware that shouldn't affect anything
-else.
+I see, thanks for explaining this.
 
-For MRSS, I'll probably open a bugzilla and reference it in the
-changelog just so we don't forget about it.
+BTW:
+		/* the last tag is reserved for internal command. */
+		if (tag == ATA_TAG_INTERNAL)
+			continue;
 
->>>    PCI: designware: enhance dw_pcie_host_init() to support v3.65 DW
->>>      hardware
->>>    PCI: add PCI controller for keystone PCIe h/w
->>>    PCI: keystone: Update maintainer information
->>
->>
->> You can squash the MAINTAINERS update into the driver addition.  They're
->> logically part of the same change.
->>
->> Bjorn
->>
->>>   .../devicetree/bindings/pci/pci-keystone.txt       |   68 +++
->>>   MAINTAINERS                                        |    7 +
->>>   drivers/pci/host/Kconfig                           |    5 +
->>>   drivers/pci/host/Makefile                          |    1 +
->>>   drivers/pci/host/pci-keystone-dw.c                 |  521
->>> ++++++++++++++++++++
->>>   drivers/pci/host/pci-keystone.c                    |  386
->>> +++++++++++++++
->>>   drivers/pci/host/pci-keystone.h                    |   58 +++
->>>   drivers/pci/host/pcie-designware.c                 |  116 +++--
->>>   drivers/pci/host/pcie-designware.h                 |    9 +
->>>   9 files changed, 1135 insertions(+), 36 deletions(-)
->>>   create mode 100644
->>> Documentation/devicetree/bindings/pci/pci-keystone.txt
->>>   create mode 100644 drivers/pci/host/pci-keystone-dw.c
->>>   create mode 100644 drivers/pci/host/pci-keystone.c
->>>   create mode 100644 drivers/pci/host/pci-keystone.h
->>>
->>> --
->>> 1.7.9.5
->>>
->
+in ata_qc_new()'s loop now becomes a dead code (loop will be done
+maximum ATA_MAX_QUEUE - 2 times and ATA_TAG_INTERNAL is defined
+as ATA_MAX_QUEUE - 1).  Compiler can probably optimize it away so
+as a bonus of your patch we may get one condition check less in
+a hot-path. :)
+
+Best regards,
+--
+Bartlomiej Zolnierkiewicz
+Samsung R&D Institute Poland
+Samsung Electronics
+
