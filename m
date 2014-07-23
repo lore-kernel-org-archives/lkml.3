@@ -1,136 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932982AbaGWTI6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 15:08:58 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:39481 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932514AbaGWTIz (ORCPT
+	id S932907AbaGWTN1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 15:13:27 -0400
+Received: from mail-vc0-f179.google.com ([209.85.220.179]:50081 "EHLO
+	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932514AbaGWTN0 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 15:08:55 -0400
-Message-ID: <1406142529.14764.63.camel@dhcp-9-2-203-236.watson.ibm.com>
-Subject: Re: [PATCH v1 0/4] ima: require signed user-space initialization
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: Dmitry Kasatkin <dmitry.kasatkin@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Dmitry Kasatkin <d.kasatkin@samsung.com>,
-        linux-ima-devel@lists.sourceforge.net,
-        linux-security-module <linux-security-module@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Sergey Poznyakoff <gray@gnu.org>
-Date: Wed, 23 Jul 2014 15:08:49 -0400
-In-Reply-To: <CACE9dm-FdxDb5ifFfOfQUbU=j7A81NBYWhHJu8LmyCMdD2==5g@mail.gmail.com>
-References: <cover.1405428802.git.d.kasatkin@samsung.com>
-	 <20140715143315.eef78daf3eb41ef0d61f30d1@linux-foundation.org>
-	 <CACE9dm-FdxDb5ifFfOfQUbU=j7A81NBYWhHJu8LmyCMdD2==5g@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14072319-0928-0000-0000-0000039DFFF6
+	Wed, 23 Jul 2014 15:13:26 -0400
+MIME-Version: 1.0
+In-Reply-To: <87a980getx.fsf@nemi.mork.no>
+References: <1406053161-5048-1-git-send-email-xerofoify@gmail.com>
+	<8738dsi7l7.fsf@nemi.mork.no>
+	<CAPDOMVjwzfmHAKGBENfpxN2cswckq2T=QbQa56k3w0X+cDuJKg@mail.gmail.com>
+	<87a980getx.fsf@nemi.mork.no>
+Date: Wed, 23 Jul 2014 15:13:24 -0400
+Message-ID: <CAPDOMVjB3vLwfDAkSGpLMtth-TpQwuPgBRKKc9wmxHqFcH69uQ@mail.gmail.com>
+Subject: Re: [PATCH] drbd: Remove fix me statements
+From: Nick Krause <xerofoify@gmail.com>
+To: =?UTF-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>
+Cc: drbd-dev@lists.linbit.com, drbd-user@lists.linbit.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-07-16 at 23:26 +0300, Dmitry Kasatkin wrote: 
-> Hello,
-> 
-> 
-> On Wed, Jul 16, 2014 at 12:33 AM, Andrew Morton
-> <akpm@linux-foundation.org> wrote:
-> > On Tue, 15 Jul 2014 15:54:19 +0300 Dmitry Kasatkin <d.kasatkin@samsung.com> wrote:
-> >
-> >> Currently secure IMA/EVM initialization has to be done from the initramfs,
-> >> embedded in the signed kernel image. Many systems do not want to use
-> >> initramfs or usage of embedded initramfs makes it difficult to have
-> >> multi-target kernels.
-> >>
-> >> This is a very simple patchset which makes it possible to perform secure
-> >> initialization by requiring initial user-space to be signed.
-> >>
-> >> It does it by:
-> >> - introducing IMA public keys loading hook
-> >> - loading IMA trusted public key into .ima trusted keyring
-> >> - making default IMA appraisal policy to require everything to be signed
-> >>
-> >> When builtin initramfs is not in use, keys cannot be read from initcalls,
-> >> because root filesystem is not yet mounted. In order to read keys before
-> >> executing init process, ima_prepare_keys() hook is introduced. Reading
-> >> public keys from the kernel is justified because signature verification
-> >> key is needed in order to verify anything else which is read from the
-> >> file system. Public keys are X509 certificates and itself signed by the
-> >> trusted key from the .system keyring. Kernel BIG KEYS support is an example
-> >> of reading keys directly by the kernel.
-> >>
-> >> CONFIG_IMA_APPRAISE_SIGNED_INIT kernel option is provided to make the IMA
-> >> default appraisal policy to required signature validation. Signed init
-> >> process need to initialize EVM key and load appropriate IMA policy which
-> >> would not require everything to be signed.
-> >>
-> >> Unless real '/sbin/init' is signed, a simple and practical way is to place
-> >> all signed programs, libraries, scripts and configuration files under
-> >> dedicated directory, for example '/ima', and run signed init process by
-> >> providing a kernel command line parameter 'init=/ima/init'
-> >
-> > The kernel may already have loaded kernel modules before it gets around
-> > to mounting rootfs and running /sbin/init.  How does that fit into the
-> > overall signing scheme?  And how did /sbin/modprobe get its signature
-> > checked?
-> >
-> >
-> 
-> If kernel embedded initramfs is in use then it is signed together with kernel,
-> and this functionality is not needed and no need to enable it with
-> kernel configuration.
-> 
-> As it is IMA extensions and it is entirely based on IMA functionality
-> it requires extended attribute support.
-> 
-> If externally loaded initramfs is used, then that one uses cpio based
-> archive that does not support extended attributes and thus external
-> initramfs cannot be used for secure initialization.
+On Wed, Jul 23, 2014 at 1:33 PM, Bjørn Mork <bjorn@mork.no> wrote:
+> Nick Krause <xerofoify@gmail.com> writes:
+>
+>> Bjorn,
+>> Can we remove the double locking  as you are stating or do  we still need it
+>> to protect against the list being accessed  as the list seems to be moving
+>> to a spinlock protected list.
+>
+> I wouldn't know.
+>
+> The only thing I know is that the original author of those lines, who we
+> must assume has thorough knowlegde of this code, did not know how to fix
+> that in a simple and straight forward way.
+>
+> From this we can deduce that there is more to it than just changing a
+> couple of lines. If you don't alrady know this code in and out, then you
+> would have to start by analyzing the current locking model and
+> understanding that.  Then, assuming the current double locking is in
+> fact necessary, you would need to redesign it so that you can make one
+> of the locks go away.  Then you need to implement your new design.  Then
+> test it _thoroughly_ to eliminate all the small bugs. Everyone adds bugs
+> when writing non-trivial code.  (You seem to think that you can delegate
+> all the bug squashing to others simply because you don't own the
+> hardware.  That is not so.  If you don't have access to hardware for
+> testing, then you should not add any bugs.  Yes, this implies that you
+> cannot write non-trivial code for hardware you don't have). Then you must
+> verify that the result is at least as efficient as the old code was. Or
+> there would be no point, would there?
+>
+> When all this is done, and the testing shows it is a success, *then* you
+> can remove the FIXME comment with a nice commit message explaining the
+> new locking model and why it now is safe to drop one of the locks.
+>
+> There is a fat chance that this just isn't worth all the work.  Which is
+> most likely why the FIXME was stuck there in the first place.
+>
+> You should understand that noone will add a FIXME for anything trivial.
+> And if an author who knows the code well finds something non-trivial,
+> then you should definitely not touch it without investing enough time to
+> have a similar understanding of the code.
+>
+> Note again that I am writing all this as purely generic comments.  I
+> don't know anything at all about the code in question, and I wouldn't
+> dare touching it without spending a lot of time understanding it first.
+>
+> As Steven said: find an area to focus on.  Spend some time understanding
+> a small part of the kernel instead of jumping all around.
+>
+> And: Being able to test code yourself is absolutely necessary in the
+> beginning.  But you don't necessarily have to run out and buy some odd
+> new hardware for that. I'm pretty sure many drivers and other parts of
+> the kernel is in use on the hardware you already have at hand :-)
+> Choose among those parts for your learning experience.
+>
+> Your USB hcd patch is a nice example of code that you most likely can
+> test yourself.  And the pacth was fine too, except for the lack of a
+> proper commit message explaining why it was OK.  But most of us will
+> just look at the "Acked-by: Alan Stern" line and figure that the change
+> definitely must be fine :-)
+>
+>
+> Bjørn (who also has sumitted his share of buggy patches, creating
+> unnecessary work for innoncent maintainers in the past.  Sorry about
+> that Greg, Oliver, Alan, David, Mauro and all the others... I'm afraid I
+> cannot even guarantee that it won't happen again, but I do try my best)
 
-Right, but GNU tar version 1.27.1 supports Posix.1 (ustar) format, which
-has xattr support.  GNU CPIO supports the Posix.1 tar format.  The
-question is whether CPIO supports the included xattrs.
 
-> This functionality is targeted to be used without initramfs on normal
-> filesystems supporting xattrs. In such case, modprobe cannot be loaded before
-> rootfs is mounted. Any filesystems and block device drivers obviously
-> need to be embedded into the kernel. In the place where
-> ima_prepare_keys() hooks is called, we have
-> 
->    ima_prepare_keys();
->    load_default_modules();
-> 
-> So we load keys after mounting rootfs and before calling load_default_modules().
-> So if anything useful kernel loads with load_default_modules, will be
-> loaded after IMA key is available and thus modprobe will be verified.
-> 
-> 
-> > The proposed interface and implementation look reasonable to me.
-> > Opening and reading a file from the root fs is a bit unusual, but we
-> > already do something similar with "/sbin/init" and the reasoning here
-> > is similar.
-> >
-> > The only alternative I can immediately think of is to bundle the public
-> > keys into a kernel module and load them into the kernel that way but
-> >
-> > - if/when we implement module signing, we have a chicken-and-egg problem
-> >
-> > - doing it via a kernel module seems a bit fake - a bit of trickery
-> >   to reduce code duplication.  Better to do it explicitly.
-> >
-> 
-> This was the idea. Kernel has embedded certificate signing key on the
-> .system keyring. Filesystem image/package can come with own signing key
-> and that one is loaded and verified by existing KEY infrastructure.
-> Entire signed init code can come as rpm or deb package with its own key.
-> That is benefit of loading key.
-
-Ok, this type of solution addresses the concerns of devices, but we also
-need a viable solution for systems with an initramfs.
-
-Mimi
-
+Bjorn ,
+Thanks for the reply and the advice seems this is more work then
+I am time for now.
+Cheers Nick
