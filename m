@@ -1,74 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757477AbaGWOIr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 10:08:47 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:47700 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751314AbaGWOIq (ORCPT
+	id S1757611AbaGWOI7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 10:08:59 -0400
+Received: from mx2.parallels.com ([199.115.105.18]:40371 "EHLO
+	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755382AbaGWOI4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 10:08:46 -0400
-Date: Wed, 23 Jul 2014 17:08:40 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: sudip <sudipm.mukherjee@gmail.com>
-Cc: devel@driverdev.osuosl.org, gregkh@linuxfoundation.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: bcm : Transmit.c : fixed coding style problem
-Message-ID: <20140723140840.GU25880@mwanda>
-References: <1406123550-11951-1-git-send-email-sudipm.mukherjee@gmail.com>
+	Wed, 23 Jul 2014 10:08:56 -0400
+Date: Wed, 23 Jul 2014 18:08:37 +0400
+From: Vladimir Davydov <vdavydov@parallels.com>
+To: Michal Hocko <mhocko@suse.cz>
+CC: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
+        <cgroups@vger.kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Tejun Heo <tj@kernel.org>, Li Zefan <lizefan@huawei.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Hugh Dickins <hughd@google.com>, David Rientjes <rientjes@google.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Balbir Singh <bsingharora@gmail.com>
+Subject: Re: [PATCH RFC 0/5] Virtual Memory Resource Controller for cgroups
+Message-ID: <20140723140837.GE30850@esperanza>
+References: <cover.1404383187.git.vdavydov@parallels.com>
+ <20140704121621.GE12466@dhcp22.suse.cz>
+ <20140704153853.GA369@esperanza>
+ <20140716120146.GI7121@dhcp22.suse.cz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <1406123550-11951-1-git-send-email-sudipm.mukherjee@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+In-Reply-To: <20140716120146.GI7121@dhcp22.suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Subject is too general.  Which coding style issue did you fix?
-
-On Wed, Jul 23, 2014 at 07:22:30PM +0530, sudip wrote:
-
-Use your full name.  "Sudip Mukherjee" not just "sudip".
-
-> applies to next-20140723
-
-Leave this out.
-
+On Wed, Jul 16, 2014 at 02:01:47PM +0200, Michal Hocko wrote:
+> On Fri 04-07-14 19:38:53, Vladimir Davydov wrote:
+> > Considering the example I've given above, both of these won't help if
+> > the system has other active CTs: the container will be forcefully kept
+> > around its high/low limit and, since it's definitely not enough for it,
+> > it will be finally killed crossing out the computations it's spent so
+> > much time on. High limit won't be good for the container even if there's
+> > no other load on the node - it will be constantly swapping out anon
+> > memory and evicting file caches. The application won't die quickly then,
+> > but it will get a heavy slowdown, which is no better than killing I
+> > guess.
 > 
+> It will get vmpressure notifications though and can help to release
+> excessive buffers which were allocated optimistically.
+
+But the user will only get the notification *after* his application has
+touched the memory within the limit, which may take quite a long time.
+
+> > Also, I guess it'd be beneficial to have
+> > 
+> >  - mlocked pages accounting per cgroup, because they affect memory
+> >    reclaim, and how low/high limits work, so it'd be nice to have them
+> >    limited to a sane value;
+> > 
+> >  - shmem areas accounting per cgroup, because the total amount of shmem
+> >    on the system is limited, and it'll be no good if malicious
+> >    containers eat it all.
+> > 
+> > IMO It wouldn't be a good idea to overwhelm memcg with those limits, the
+> > VM controller suits much better.
 > 
-> Signed-off-by: sudip <sudipm.mukherjee@gmail.com>
+> yeah, I do not think adding more to memcg is a good idea. I am still not
+> sure whether working around bad design decisions in applications is a
+> good rationale for a new controller.
 
-Use your real name again.
+Where do you see "bad design decision" in the example I've given above?
+To recap, the user doesn't know how much memory his application is going
+to consume and he wants to be notified about a potential failure as soon
+as possible instead of waiting until it touches all the memory within
+the container limit.
 
-> ---
->  drivers/staging/bcm/Transmit.c | 9 ++++++---
->  1 file changed, 6 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/staging/bcm/Transmit.c b/drivers/staging/bcm/Transmit.c
-> index 05fae92..10586f8 100644
-> --- a/drivers/staging/bcm/Transmit.c
-> +++ b/drivers/staging/bcm/Transmit.c
-> @@ -89,7 +89,8 @@ int SendControlPacket(struct bcm_mini_adapter *Adapter, char *pControlPacket)
->   * to the target via the host h/w interface.
->   * @return  zero(success) or -ve value(failure)
->   */
-> -int SetupNextSend(struct bcm_mini_adapter *Adapter,  struct sk_buff *Packet, USHORT Vcid)
-> +int SetupNextSend(struct bcm_mini_adapter *Adapter,
-> +		struct sk_buff *Packet, USHORT Vcid)
->  {
->  	int	status = 0;
->  	bool	bHeaderSupressionEnabled = false;
-> @@ -205,7 +206,8 @@ int tx_pkt_handler(struct bcm_mini_adapter *Adapter)
->  	int status = 0;
->  
->  	while (!kthread_should_stop()) {
-> -		/* FIXME - the timeout looks like workaround for racey usage of TxPktAvail */
-> +		/* FIXME - the timeout looks like workaround
-> +		   for racey usage of TxPktAvail */
+Also, what's wrong if an application wants to eat a lot of shared
+memory, which is a limited resource? Suppose the user sets memsw.limit
+for his container to half of RAM hoping it's isolated and won't cause
+any troubles, but eventually he finds other workloads failing on the
+host due to the processes inside it has eaten all available shmem.
 
-This is not proper style for muti-line comments.
-
-regards,
-dan carpenter
-
+Thanks.
