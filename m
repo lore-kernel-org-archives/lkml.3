@@ -1,51 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933149AbaGWS3o (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 14:29:44 -0400
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:43699 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932584AbaGWS3m (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 14:29:42 -0400
-From: WANG Chao <wangchao19890207@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: John Stultz <john.stultz@linaro.org>,
-        Tomas Winkler <tomas.winkler@intel.com>,
-        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
-        Chen Gang <gang.chen.5i5j@gmail.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        devel@driverdev.osuosl.org (open list:STAGING SUBSYSTEM),
-        linux-kernel@vger.kernel.org (open list)
-Subject: [linux-next PATCH] staging: android: ion: fix prefer kcalloc over kzalloc with multiply
-Date: Thu, 24 Jul 2014 02:29:23 +0800
-Message-Id: <1406140165-23503-1-git-send-email-wangchao19890207@gmail.com>
-X-Mailer: git-send-email 1.9.3
+	id S933156AbaGWSaz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 14:30:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50076 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932598AbaGWSay (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jul 2014 14:30:54 -0400
+Date: Wed, 23 Jul 2014 20:29:11 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Steven Rostedt <rostedt@goodmis.org>, Namhyung Kim <namhyung@kernel.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ftrace: kill global_start_up
+Message-ID: <20140723182911.GA19253@redhat.com>
+References: <20140720151814.GA32439@redhat.com> <20140721094706.60eb3877@gandalf.local.home> <20140721095046.4343746d@gandalf.local.home>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140721095046.4343746d@gandalf.local.home>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix checkpatch warning of prefer kcalloc over kzalloc with multiply,
-found under drivers/staging/android/ion/.
+On 07/21, Steven Rostedt wrote:
+>
+> On Mon, 21 Jul 2014 09:47:06 -0400
+> Steven Rostedt <rostedt@goodmis.org> wrote:
+>
+> > On Sun, 20 Jul 2014 17:18:14 +0200
+> > Oleg Nesterov <oleg@redhat.com> wrote:
+> >
+> > > global_start_up is read-only and always zero. It seems that 4104d326
+> > > "ftrace: Remove global function list and call function directly" simply
+> > > forgot to remove this no longer used variable.
+> > >
+> >
+> > Sure, just after I got done testing my entire 3.17 queue and posted it
+> > for linux-next, you decide to send me yet another fix! ;-)
+> >
+> > Thanks, applied.
+> >
+> > I'll wait and see what other fixes you send me before I run my 10 hour
+> > tests.
+> >
+>
+> Nevermind, seems that Namhyung Kim beat you to it (and it's already in
+> my for-next branch).
+>
+> http://lkml.kernel.org/r/1402584972-17824-1-git-send-email-namhyung@kernel.org
 
-Signed-off-by: WANG Chao <wangchao19890207@gmail.com>
----
- drivers/staging/android/ion/ion_dummy_driver.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Thanks for your report Steven, I updated my ~/people-i-hate file.
 
-diff --git a/drivers/staging/android/ion/ion_dummy_driver.c b/drivers/staging/android/ion/ion_dummy_driver.c
-index 3a45e79..6d0a38a 100644
---- a/drivers/staging/android/ion/ion_dummy_driver.c
-+++ b/drivers/staging/android/ion/ion_dummy_driver.c
-@@ -68,7 +68,7 @@ static int __init ion_dummy_init(void)
- 	int i, err;
- 
- 	idev = ion_device_create(NULL);
--	heaps = kzalloc(sizeof(struct ion_heap *) * dummy_ion_pdata.nr,
-+	heaps = kcalloc(dummy_ion_pdata.nr, sizeof(struct ion_heap *),
- 			GFP_KERNEL);
- 	if (!heaps)
- 		return -ENOMEM;
--- 
-1.9.3
+
+This motivated me to try to find something else unused. And it seems that
+almost all code in kernel/trace/trace_sched_switch.c is dead? Hmm, and
+probably even event_context_switch... I'll recheck and send the patch.
+
+But is there any documentation about /sys/kernel/debug/tracing/events/ftrace/*
+files ?
+
+OK, as I just figured out ftrace/function is special, it is visible to
+perf and thus "record ftrace:function" should work.
+
+But what a user can do with other files? You obviously can't enable, say,
+ftrace/bputs, if I understand correctly this is for trace_puts().
+
+Confused...
+
+Oleg.
 
