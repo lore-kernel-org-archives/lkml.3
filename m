@@ -1,54 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754697AbaGWMrt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 08:47:49 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:34040 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753765AbaGWMrq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 08:47:46 -0400
-X-AuditID: cbfec7f4-b7fac6d000006cfe-9b-53cfaef01f0f
-Message-id: <53CFAEEE.7040702@samsung.com>
-Date: Wed, 23 Jul 2014 14:47:42 +0200
-From: Tomasz Figa <t.figa@samsung.com>
-Organization: Samsung R&D Institute Poland
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.6.0
-MIME-version: 1.0
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Kukjin Kim <kgene.kim@samsung.com>, linux-samsung-soc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Cc: Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Subject: Re: [PATCH v2 1/2] clk: samsung: exynos4: Enable ARMCLK down feature
-References: <1405694193-29643-1-git-send-email-k.kozlowski@samsung.com>
-In-reply-to: <1405694193-29643-1-git-send-email-k.kozlowski@samsung.com>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrDLMWRmVeSWpSXmKPExsVy+t/xy7of1p0PNvj8XMRi44z1rBavXxha
-	9C64ymZxtukNu8Wmx9dYLS7vmsNmMeP8PiaLtUfusls8nXCRzYHT4861PWwem5fUe/RtWcXo
-	8XmTXABLFJdNSmpOZllqkb5dAlfGvVuN7AVTmSoWH2hnaWC8w9jFyMkhIWAisehaNzOELSZx
-	4d56ti5GLg4hgaWMEv0nfrNCOJ8ZJbqm32ACqeIV0JJofTMHqIqDg0VAVeL+pwyQMJuAmsTn
-	hkdsIDY/UMmapussILaoQITEgb5nrBCtghI/Jt8Di4sIvGKUOPzQCWQ+s8AURonmSUvB5gsL
-	+Eos+vKBHcQWEnCXOLbpHwvILk4BD4nfF2NAwswCOhL7W6exQdjyEpvXvGWewCg4C8mKWUjK
-	ZiEpW8DIvIpRNLU0uaA4KT3XUK84Mbe4NC9dLzk/dxMjJAa+7GBcfMzqEKMAB6MSDy/Dw1PB
-	QqyJZcWVuYcYJTiYlUR4V/ecDxbiTUmsrEotyo8vKs1JLT7EyMTBKdXA2Lxqo8oXtvptjzRL
-	M4rSzsRNv76xJu6r0fT9ttdXJSXkaf0RPt667PnXRzmxxQ+W5jnHeHzp7+SqcS/MFPXevCO/
-	ctUTbj+PKmNzI6M/x4OkJko+ujBhw9KThVP27GJd0G+V8vHtNu+dxXO0r/9t7/6V7xU/U/LH
-	jgT/AC6zxjuOVcuW9nomKbEUZyQaajEXFScCAGCVq5pfAgAA
+	id S1756584AbaGWMsO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 08:48:14 -0400
+Received: from ns.mm-sol.com ([37.157.136.199]:39603 "EHLO extserv.mm-sol.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755204AbaGWMsL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jul 2014 08:48:11 -0400
+Message-ID: <1406119669.28520.10.camel@iivanov-dev>
+Subject: Re: [PATCH RESEND v2 1/4] pinctrl: Update Qualcomm pm8xxx GPIO
+ parameters definitions
+From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+To: Bjorn Andersson <bjorn.andersson@sonymobile.com>
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Mark Brown <broonie@kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
+Date: Wed, 23 Jul 2014 15:47:49 +0300
+In-Reply-To: <20140722214643.GH19700@sonymobile.com>
+References: <1405610748-7583-5-git-send-email-iivanov@mm-sol.com>
+	 <1405626085-14069-1-git-send-email-iivanov@mm-sol.com>
+	 <20140722214643.GH19700@sonymobile.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.1-2ubuntu2~saucy1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Krzysztof,
+On Tue, 2014-07-22 at 14:46 -0700, Bjorn Andersson wrote:
+> On Thu, Jul 17, 2014 at 12:41 PM, Ivan T. Ivanov <iivanov@mm-sol.com> wrote:
+> > From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+> >
+> 
+> Hi Ivan,
+> 
+> Sorry for the slow response, I wanted to respin my pm8xxx-gpio driver to figure
+> out some resonable answers to you.
+> 
 
-On 18.07.2014 16:36, Krzysztof Kozlowski wrote:
-> Enable ARMCLK down feature on all Exynos4 SoCs. The frequency of
-> ARMCLK will be reduced upon entering idle mode (WFI or WFE).
+<snip>
 
-Will apply the whole series to Samsung clock tree.
+> 
+> > PM8018, PM8038, PM8058, PM8917, PM8921 pin controller hardware
+> > support only one function 'gpio'. Currently GPIO's will
+> > support only 'normal' mode. Rest of the modes will be added
+> > later, if needed.
+> >
+> 
+> This is not true.
+> 
+> As I said before, there is no such thing as "pin controller hardware"; both on
+> pm8xxx and qpnp-pin there are two different HW blocks, one for GPIO and one for
+> MPP. And if you look in your pinconf_set function you will see that they are
+> very different.
+> 
+> I'm still trying to figure out the correct pinmux mapping for the various
+> pmics, but the current indication is a list that looks like this:
+>   "gpio"
+>   "paired"
+>   "ext_reg_en"
+>   "ext_smps_en"
+>   "fclk"
+>   "kypd_drv"
+>   "kypd_sns"
+>   "lpa"
+>   "lpg"
+>   "mp3_clk"
+>   "sleep_clk"
+>   "uart"
+>   "uim"
+>   "upl"
+> 
+> I haven't looked through the dts files for 8974 and 8084, but it's not possible
+> to describe the previous Qualcomm reference formfactor devices (MTP) with only
+> "gpio".
 
-Best regards,
-Tomasz
+
