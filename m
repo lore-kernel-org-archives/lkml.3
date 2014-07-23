@@ -1,45 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754552AbaGWNL2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 09:11:28 -0400
-Received: from helcar.apana.org.au ([209.40.204.226]:43071 "EHLO
-	helcar.apana.org.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751509AbaGWNL0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 09:11:26 -0400
-Date: Wed, 23 Jul 2014 21:10:48 +0800
-From: Herbert Xu <herbert@gondor.apana.org.au>
-To: Christophe Leroy <christophe.leroy@c-s.fr>
-Cc: Kim Phillips <kim.phillips@freescale.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org,
-        Joakim Tjernlund <joakim.tjernlund@transmode.se>,
-        linux-crypto@vger.kernel.org
-Subject: Re: [RFC, prePATCH] crypto: talitos modified for powerpc 88x
- security engine
-Message-ID: <20140723131048.GB29178@gondor.apana.org.au>
-References: <20140711120939.DD0031A9740@localhost.localdomain>
+	id S1755288AbaGWNLf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 09:11:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3374 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751509AbaGWNLe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jul 2014 09:11:34 -0400
+Date: Wed, 23 Jul 2014 15:10:50 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Adrian Hunter <adrian.hunter@intel.com>,
+        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 52/52] perf tools: Add support for 32-bit compatibility
+ VDSOs
+Message-ID: <20140723131050.GB17252@krava.brq.redhat.com>
+References: <1406035081-14301-1-git-send-email-adrian.hunter@intel.com>
+ <1406035081-14301-53-git-send-email-adrian.hunter@intel.com>
+ <20140723130525.GA17252@krava.brq.redhat.com>
+ <20140723130949.GH20303@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140711120939.DD0031A9740@localhost.localdomain>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140723130949.GH20303@kernel.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 11, 2014 at 02:09:39PM +0200, Christophe Leroy wrote:
-> Here is a pre-patch for the support of the SEC ENGINE of MPC88x/MPC82xx
-> I have tried to make use of defines in order to keep a single driver for the two
-> TALITOS variants as suggested by Kim, but I'm not too happy about the quantity
-> of #ifdef
+On Wed, Jul 23, 2014 at 10:09:49AM -0300, Arnaldo Carvalho de Melo wrote:
+> Em Wed, Jul 23, 2014 at 03:05:25PM +0200, Jiri Olsa escreveu:
+> > On Tue, Jul 22, 2014 at 04:18:01PM +0300, Adrian Hunter wrote:
+> > > 'perf record' post-processes the event stream  to create
+> > > a list of build-ids for object files for which sample
+> > > events have been recorded.  That results in those object
+> > > files being recorded in the build-id cache.
+> > > 
+> > > In the case of VDSO, perf tools reads it from memory
+> > > and copies it into a temporary file, which as decribed
+> > > above, gets added to the build-id cache.
+> > > 
+> > > Then when the perf.data file is processed by other
+> > > tools, the build-id of VDSO is listed in the perf.data
+> > > file and the VDSO can be read from the build-id cache.
+> > > In that case the name of the map, the short name of the
+> > > DSO, and the entry in the build-id cache are all
+> > > "[vdso]".
+> > > 
+> > 
+> > heya,
+> > I reviewed vdso changes:
+> > 
+> > perf tools: Pass machine to vdso__dso_findnew()
+> > perf tools: Group VDSO global variables into a structure
+> > perf tools: Fix the lifetime of the VDSO temporary file
+> > perf tools: Add vdso__new()
+> > perf tools: Separate the VDSO map name from the VDSO dso name
+> > perf tools: Build programs to copy 32-bit compatibility VDSOs
+> > perf tools: Add dso__type()
+> > perf tools: Add thread parameter to vdso__dso_findnew()
+> > perf tools: Add support for 32-bit compatibility VDSOs
+> > 
+> > apart from small comments for above patches:
+> > 
+> > Acked-by: Jiri Olsa <jolsa@redhat.com>
+> > 
+> > Arnaldo,
+> > I can handle those if needed, please let me know
+> 
+> I can take those after I go thru them, will add your acked-by. But since
+> you sayd "I reviewed", wouldn't it be better to s/Acked-by/Reviewed-by/g
 
-Yeah these ifdefs have got to go.
+ok, both's fine with me
 
-Cheers,
--- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+jirka
