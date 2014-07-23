@@ -1,103 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758283AbaGWQaA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 12:30:00 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:53294 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756518AbaGWQ37 (ORCPT
+	id S1758044AbaGWQcH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 12:32:07 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:46501 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755835AbaGWQcE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 12:29:59 -0400
-Date: Wed, 23 Jul 2014 09:29:51 -0700
+	Wed, 23 Jul 2014 12:32:04 -0400
+Date: Wed, 23 Jul 2014 09:31:59 -0700
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
-        josh@joshtriplett.org, tglx@linutronix.de, peterz@infradead.org,
-        rostedt@goodmis.org, dhowells@redhat.com, edumazet@google.com,
-        dvhart@linux.intel.com, fweisbec@gmail.com, oleg@redhat.com,
-        bobby.prani@gmail.com
-Subject: [PATCH RFC tip/core/rcu 2/2] Don't track sysidle state if no
- nohz_full= CPUs
-Message-ID: <20140723162951.GA17743@linux.vnet.ibm.com>
+        josh@joshtriplett.org, tglx@linutronix.de, rostedt@goodmis.org,
+        dhowells@redhat.com, edumazet@google.com, dvhart@linux.intel.com,
+        oleg@redhat.com, bobby.prani@gmail.com
+Subject: Re: [PATCH tip/core/rcu] Do not keep timekeeping CPU tick running
+ for non-nohz_full= CPUs
+Message-ID: <20140723163159.GZ11241@linux.vnet.ibm.com>
 Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140723162851.GA17665@linux.vnet.ibm.com>
+References: <20140719165350.GA18411@linux.vnet.ibm.com>
+ <20140719180120.GA20887@localhost.localdomain>
+ <20140720114759.GO8690@linux.vnet.ibm.com>
+ <20140720203417.GV9918@twins.programming.kicks-ass.net>
+ <20140721155741.GW8690@linux.vnet.ibm.com>
+ <20140721170459.GP3935@laptop>
+ <20140721173306.GA8690@linux.vnet.ibm.com>
+ <20140723162346.GE23175@localhost.localdomain>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140723162851.GA17665@linux.vnet.ibm.com>
+In-Reply-To: <20140723162346.GE23175@localhost.localdomain>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14072316-0928-0000-0000-0000039CF892
+x-cbid: 14072316-9332-0000-0000-0000017B0C87
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If there are no nohz_full= CPUs, then there is currently no reason to
-track sysidle state.  This commit therefore short-circuits this state
-tracking if !tick_nohz_full_enabled().
+On Wed, Jul 23, 2014 at 06:23:48PM +0200, Frederic Weisbecker wrote:
+> On Mon, Jul 21, 2014 at 10:33:06AM -0700, Paul E. McKenney wrote:
+> > On Mon, Jul 21, 2014 at 07:04:59PM +0200, Peter Zijlstra wrote:
+> > > On Mon, Jul 21, 2014 at 08:57:41AM -0700, Paul E. McKenney wrote:
+> > > > On Sun, Jul 20, 2014 at 10:34:17PM +0200, Peter Zijlstra wrote:
+> > > > > On Sun, Jul 20, 2014 at 04:47:59AM -0700, Paul E. McKenney wrote:
+> > > > > > So we really have to have -all- the CPUs be idle to turn off the timekeeper.
+> > > > > 
+> > > > > That seems to be pretty unavoidable any which way around.
+> > > > 
+> > > > Hmmm...  The exception would be the likely common case where none of
+> > > > the CPUs are flagged as nohz_full= CPUs.  If we handled that case as
+> > > > if CONFIG_NO_HZ_FULL=n, we would have handled almost all of
+> > > > the problem.
+> > > 
+> > > You mean that is not currently the case? Yes that seems like a fairly
+> > > sane thing to do.
+> > 
+> > Hard to say -- need to see where Frederic is putting the call to
+> > rcu_sys_is_idle().  On the RCU side, I could potentially lower overhead
+> > by checking tick_nohz_full_enabled() in a few functions.
+> 
+> Yeah you definetly can.
+> 
+> Just put this in the very beginning of rcu_sys_is_idle():
+> 
+>             if (tick_nohz_full_enabled())
+>                 return true;
 
-Note that these checks will need to be revisited if nohz_full= state
-can ever be changed at runtime.
+That would be !tick_nohz_full_enabled(), right?  But please see below.
 
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> That imply perhaps a more appropriate name like rcu_sys_need_timekeeper(),
+> with inverted condition.
 
-diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
-index e31fa71c4d3a..c31eb28ae8bb 100644
---- a/kernel/rcu/tree_plugin.h
-+++ b/kernel/rcu/tree_plugin.h
-@@ -2679,6 +2679,10 @@ static void rcu_sysidle_enter(struct rcu_dynticks *rdtp, int irq)
- {
- 	unsigned long j;
- 
-+	/* If there are no nohz_full= CPUs, no need to track this. */
-+	if (!tick_nohz_full_enabled())
-+		return;
-+
- 	/* Adjust nesting, check for fully idle. */
- 	if (irq) {
- 		rdtp->dynticks_idle_nesting--;
-@@ -2744,6 +2748,10 @@ void rcu_sysidle_force_exit(void)
-  */
- static void rcu_sysidle_exit(struct rcu_dynticks *rdtp, int irq)
- {
-+	/* If there are no nohz_full= CPUs, no need to track this. */
-+	if (!tick_nohz_full_enabled())
-+		return;
-+
- 	/* Adjust nesting, check for already non-idle. */
- 	if (irq) {
- 		rdtp->dynticks_idle_nesting++;
-@@ -2798,6 +2806,10 @@ static void rcu_sysidle_check_cpu(struct rcu_data *rdp, bool *isidle,
- 	unsigned long j;
- 	struct rcu_dynticks *rdtp = rdp->dynticks;
- 
-+	/* If there are no nohz_full= CPUs, don't check system-wide idleness. */
-+	if (!tick_nohz_full_enabled())
-+		return;
-+
- 	/*
- 	 * If some other CPU has already reported non-idle, if this is
- 	 * not the flavor of RCU that tracks sysidle state, or if this
-@@ -2924,6 +2936,10 @@ static void rcu_sysidle_report(struct rcu_state *rsp, int isidle,
- static void rcu_sysidle_report_gp(struct rcu_state *rsp, int isidle,
- 				  unsigned long maxj)
- {
-+	/* If there are no nohz_full= CPUs, no need to track this. */
-+	if (!tick_nohz_full_enabled())
-+		return;
-+
- 	rcu_sysidle_report(rsp, isidle, maxj, true);
- }
- 
-@@ -2950,7 +2966,8 @@ static void rcu_sysidle_cb(struct rcu_head *rhp)
- 
- /*
-  * Check to see if the system is fully idle, other than the timekeeping CPU.
-- * The caller must have disabled interrupts.
-+ * The caller must have disabled interrupts.  This is not intended to be
-+ * called unless tick_nohz_full_enabled().
-  */
- bool rcu_sys_is_idle(void)
- {
+Ah, I thought that you already avoided invoking rcu_sys_is_idle() when
+!tick_nohz_full_enabled(), so I didn't add a check to that function.
+Are you planning to change this?  Or am I having eyesight problems?
+
+							Thanx, Paul
 
