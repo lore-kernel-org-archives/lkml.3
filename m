@@ -1,89 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753930AbaGWNFw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 09:05:52 -0400
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:44296 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751721AbaGWNFv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 09:05:51 -0400
-From: Michal Simek <michal.simek@xilinx.com>
-To: linux-arm-kernel@lists.infradead.org
-Cc: monstr@monstr.eu, Josh Cartwright <josh.cartwright@ni.com>,
-        Steffen Trumtrar <s.trumtrar@pengutronix.de>,
-        Rob Herring <robherring2@gmail.com>,
-        Peter Crosthwaite <peter.crosthwaite@xilinx.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] ARM: zynq: DT: Add CAN node
-Date: Wed, 23 Jul 2014 15:05:39 +0200
-Message-Id: <52d799e17cd3539713625c6f6a6666620f52d692.1406120732.git.michal.simek@xilinx.com>
-X-Mailer: git-send-email 1.8.2.3
-Content-Type: multipart/signed;
-    boundary="=_mimegpg-monstr-desktop-15168-1406120739-0001";
-    micalg=pgp-sha1; protocol="application/pgp-signature"
+	id S1754749AbaGWNGZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 09:06:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48718 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751049AbaGWNGY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jul 2014 09:06:24 -0400
+Date: Wed, 23 Jul 2014 15:05:25 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Adrian Hunter <adrian.hunter@intel.com>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 52/52] perf tools: Add support for 32-bit compatibility
+ VDSOs
+Message-ID: <20140723130525.GA17252@krava.brq.redhat.com>
+References: <1406035081-14301-1-git-send-email-adrian.hunter@intel.com>
+ <1406035081-14301-53-git-send-email-adrian.hunter@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1406035081-14301-53-git-send-email-adrian.hunter@intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a MIME GnuPG-signed message.  If you see this text, it means that
-your E-mail or Usenet software does not support MIME signed messages.
-The Internet standard for MIME PGP messages, RFC 2015, was published in 1996.
-To open this message correctly you will need to install E-mail or Usenet
-software that supports modern Internet standards.
+On Tue, Jul 22, 2014 at 04:18:01PM +0300, Adrian Hunter wrote:
+> 'perf record' post-processes the event stream  to create
+> a list of build-ids for object files for which sample
+> events have been recorded.  That results in those object
+> files being recorded in the build-id cache.
+> 
+> In the case of VDSO, perf tools reads it from memory
+> and copies it into a temporary file, which as decribed
+> above, gets added to the build-id cache.
+> 
+> Then when the perf.data file is processed by other
+> tools, the build-id of VDSO is listed in the perf.data
+> file and the VDSO can be read from the build-id cache.
+> In that case the name of the map, the short name of the
+> DSO, and the entry in the build-id cache are all
+> "[vdso]".
+> 
 
---=_mimegpg-monstr-desktop-15168-1406120739-0001
+heya,
+I reviewed vdso changes:
 
-Add node describing Zynq's CAN controller.
+perf tools: Pass machine to vdso__dso_findnew()
+perf tools: Group VDSO global variables into a structure
+perf tools: Fix the lifetime of the VDSO temporary file
+perf tools: Add vdso__new()
+perf tools: Separate the VDSO map name from the VDSO dso name
+perf tools: Build programs to copy 32-bit compatibility VDSOs
+perf tools: Add dso__type()
+perf tools: Add thread parameter to vdso__dso_findnew()
+perf tools: Add support for 32-bit compatibility VDSOs
 
-Signed-off-by: Michal Simek <michal.simek@xilinx.com>
----
+apart from small comments for above patches:
 
- arch/arm/boot/dts/zynq-7000.dtsi | 13 ++++++++++++-
- 1 file changed, 12 insertions(+), 1 deletion(-)
+Acked-by: Jiri Olsa <jolsa@redhat.com>
 
-diff --git a/arch/arm/boot/dts/zynq-7000.dtsi b/arch/arm/boot/dts/zynq-7000.dtsi
-index 366ca6434f54..2287d9b4ed1a 100644
---- a/arch/arm/boot/dts/zynq-7000.dtsi
-+++ b/arch/arm/boot/dts/zynq-7000.dtsi
-@@ -71,7 +71,18 @@
- 			interrupts = <0 7 4>;
- 			interrupt-parent = <&intc>;
- 			clocks = <&clkc 12>;
--		};
-+		};
-+
-+		can0: can@e0008000 {
-+			compatible = "xlnx,zynq-can-1.0";
-+			clocks = <&clkc 19>, <&clkc 36>;
-+			clock-names = "can_clk", "pclk";
-+			reg = <0xe0008000 0x1000>;
-+			interrupts = <0 28 4>;
-+			interrupt-parent = <&intc>;
-+			tx-fifo-depth = <0x40>;
-+			rx-fifo-depth = <0x40>;
-+		};
+Arnaldo,
+I can handle those if needed, please let me know
 
- 		gpio0: gpio@e000a000 {
- 			compatible = "xlnx,zynq-gpio-1.0";
---
-1.8.2.3
-
-
---=_mimegpg-monstr-desktop-15168-1406120739-0001
-Content-Type: application/pgp-signature
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEABECAAYFAlPPsyMACgkQykllyylKDCHZ5QCdHzTK3S445rKKGyN00zN/DSJ3
-KRIAnRwQHSzcPFTZrj44DUBy7/ZTh4Lt
-=o/23
------END PGP SIGNATURE-----
-
---=_mimegpg-monstr-desktop-15168-1406120739-0001--
+thanks,
+jirka
