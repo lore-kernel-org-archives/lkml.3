@@ -1,84 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756584AbaGWMsO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 08:48:14 -0400
-Received: from ns.mm-sol.com ([37.157.136.199]:39603 "EHLO extserv.mm-sol.com"
+	id S1756937AbaGWMtX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 08:49:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17023 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755204AbaGWMsL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 08:48:11 -0400
-Message-ID: <1406119669.28520.10.camel@iivanov-dev>
-Subject: Re: [PATCH RESEND v2 1/4] pinctrl: Update Qualcomm pm8xxx GPIO
- parameters definitions
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-To: Bjorn Andersson <bjorn.andersson@sonymobile.com>
-Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Mark Brown <broonie@kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
-Date: Wed, 23 Jul 2014 15:47:49 +0300
-In-Reply-To: <20140722214643.GH19700@sonymobile.com>
-References: <1405610748-7583-5-git-send-email-iivanov@mm-sol.com>
-	 <1405626085-14069-1-git-send-email-iivanov@mm-sol.com>
-	 <20140722214643.GH19700@sonymobile.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.1-2ubuntu2~saucy1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751952AbaGWMtW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jul 2014 08:49:22 -0400
+Date: Wed, 23 Jul 2014 14:48:49 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Adrian Hunter <adrian.hunter@intel.com>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 49/52] perf tools: Build programs to copy 32-bit
+ compatibility VDSOs
+Message-ID: <20140723124849.GB1207@krava.brq.redhat.com>
+References: <1406035081-14301-1-git-send-email-adrian.hunter@intel.com>
+ <1406035081-14301-50-git-send-email-adrian.hunter@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1406035081-14301-50-git-send-email-adrian.hunter@intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-07-22 at 14:46 -0700, Bjorn Andersson wrote:
-> On Thu, Jul 17, 2014 at 12:41 PM, Ivan T. Ivanov <iivanov@mm-sol.com> wrote:
-> > From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-> >
-> 
-> Hi Ivan,
-> 
-> Sorry for the slow response, I wanted to respin my pm8xxx-gpio driver to figure
-> out some resonable answers to you.
-> 
+On Tue, Jul 22, 2014 at 04:17:58PM +0300, Adrian Hunter wrote:
 
-<snip>
+SNIP
 
-> 
-> > PM8018, PM8038, PM8058, PM8917, PM8921 pin controller hardware
-> > support only one function 'gpio'. Currently GPIO's will
-> > support only 'normal' mode. Rest of the modes will be added
-> > later, if needed.
-> >
-> 
-> This is not true.
-> 
-> As I said before, there is no such thing as "pin controller hardware"; both on
-> pm8xxx and qpnp-pin there are two different HW blocks, one for GPIO and one for
-> MPP. And if you look in your pinconf_set function you will see that they are
-> very different.
-> 
-> I'm still trying to figure out the correct pinmux mapping for the various
-> pmics, but the current indication is a list that looks like this:
->   "gpio"
->   "paired"
->   "ext_reg_en"
->   "ext_smps_en"
->   "fclk"
->   "kypd_drv"
->   "kypd_sns"
->   "lpa"
->   "lpg"
->   "mp3_clk"
->   "sleep_clk"
->   "uart"
->   "uim"
->   "upl"
-> 
-> I haven't looked through the dts files for 8974 and 8084, but it's not possible
-> to describe the previous Qualcomm reference formfactor devices (MTP) with only
-> "gpio".
+> index 1f67aa0..45ab040 100644
+> --- a/tools/perf/config/Makefile
+> +++ b/tools/perf/config/Makefile
+> @@ -604,6 +604,27 @@ ifdef HAVE_KVM_STAT_SUPPORT
+>      CFLAGS += -DHAVE_KVM_STAT_SUPPORT
+>  endif
+>  
+> +ifeq (${IS_64_BIT}, 1)
+> +  ifndef NO_PERF_READ_VDSO32
+> +    CAN_DO := $(shell echo "main() {}" | ${CC} -m32 -x c - >/dev/null 2>/dev/null && echo 1 || echo 0)
+> +    ifneq (${CAN_DO}, 1)
+> +      NO_PERF_READ_VDSO32 := 1
+> +    endif
+> +  endif
+> +  ifneq (${IS_X86_64}, 1)
+> +    NO_PERF_READ_VDSOX32 := 1
+> +  endif
+> +  ifndef NO_PERF_READ_VDSOX32
+> +    CAN_DO := $(shell echo 'main() {}' | ${CC} -mx32 -x c - >/dev/null 2>/dev/null && echo 1 || echo 0)
+> +    ifneq (${CAN_DO}, 1)
+> +      NO_PERF_READ_VDSOX32 := 1
+> +    endif
+> +  endif
 
+please move those check into feature config code under config/features/..
 
+SNIP
+
+> +++ b/tools/perf/perf-read-vdso.c
+> @@ -0,0 +1,59 @@
+> +#include <stdio.h>
+> +#include <string.h>
+> +
+> +#define VDSO__MAP_NAME "[vdso]"
+> +
+> +static int find_vdso_map(void **start, void **end)
+> +{
+> +	FILE *maps;
+> +	char line[128];
+> +	int found = 0;
+> +
+> +	maps = fopen("/proc/self/maps", "r");
+> +	if (!maps) {
+> +		fprintf(stderr, "vdso: cannot open maps\n");
+> +		return -1;
+> +	}
+> +
+> +	while (!found && fgets(line, sizeof(line), maps)) {
+> +		int m = -1;
+> +
+> +		/* We care only about private r-x mappings. */
+> +		if (2 != sscanf(line, "%p-%p r-xp %*x %*x:%*x %*u %n",
+> +				start, end, &m))
+> +			continue;
+> +		if (m < 0)
+> +			continue;
+> +
+> +		if (!strncmp(&line[m], VDSO__MAP_NAME,
+> +			     sizeof(VDSO__MAP_NAME) - 1))
+> +			found = 1;
+> +	}
+> +
+> +	fclose(maps);
+> +	return !found;
+> +}
+
+hum, any easy way to use/share find_vdso_map from vdso.c?
+I guess this way is more straighforward and clear.. it's
+probably not worthy for function this simple
+
+jirka
