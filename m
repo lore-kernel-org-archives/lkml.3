@@ -1,84 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758061AbaGWK55 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 06:57:57 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:43715 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752886AbaGWK5x (ORCPT
+	id S1758094AbaGWK6d (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 06:58:33 -0400
+Received: from mail-we0-f182.google.com ([74.125.82.182]:59095 "EHLO
+	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932272AbaGWKyU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 06:57:53 -0400
-Date: Wed, 23 Jul 2014 12:57:51 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Joerg Roedel <joro@8bytes.org>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Len Brown <len.brown@intel.com>,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/6 v2] PM / Hibernate: Memory bitmap scalability
- improvements
-Message-ID: <20140723105750.GB22675@amd.pavel.ucw.cz>
-References: <1405938422-21900-1-git-send-email-joro@8bytes.org>
- <20140721160346.GP30979@8bytes.org>
- <20140721230500.GA7019@amd.pavel.ucw.cz>
- <6793803.1FXN0a3O0V@vostro.rjw.lan>
- <20140722103443.GV30979@8bytes.org>
- <20140722105812.GB9814@amd.pavel.ucw.cz>
- <20140722121022.GA31450@8bytes.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140722121022.GA31450@8bytes.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 23 Jul 2014 06:54:20 -0400
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+To: linux-kernel@vger.kernel.org
+Subject: [PATCH 10/25] clocksource: sh_mtu2: Add DT support
+Date: Wed, 23 Jul 2014 12:53:52 +0200
+Message-Id: <1406112847-26275-10-git-send-email-daniel.lezcano@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1406112847-26275-1-git-send-email-daniel.lezcano@linaro.org>
+References: <53CF93B2.6040903@linaro.org>
+ <1406112847-26275-1-git-send-email-daniel.lezcano@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 2014-07-22 14:10:22, Joerg Roedel wrote:
-> On Tue, Jul 22, 2014 at 12:58:12PM +0200, Pavel Machek wrote:
-> > On Tue 2014-07-22 12:34:44, Joerg Roedel wrote:
-> > > On Tue, Jul 22, 2014 at 02:41:29AM +0200, Rafael J. Wysocki wrote:
-> > > > It looks like some specific need motivated the Joerg's work, however,
-> > > > so let's just not dismiss the use case lightly without knowing it.
-> > > 
-> > > The motivation was to optimize the data structures for machines with
-> > > large amounts of RAM without penalizing average machines. On a 12TB
-> > > machine you are close to 100000 pages just for one bitmap. Scanning
-> > > through that linearly to find a given bit just doesnt scale anymore in
-> > > this case.
-> > 
-> > Can you produce backtrace where 12TB machine spends time during boot
-> > with resume= parameter but no suspend image?
-> > 
-> > AFAICT swsusp_check() does not play with bitmaps.
-> 
-> I can ask for a backtrace, I currently don't have one. But I have
-> perf-data for this case. It also shows that it spends most of its time
-> with bitmap operations:
-> 
-> ~# time perf record /usr/sbin/resume $sdev
-> resume: libgcrypt version: 1.5.0
-> [ perf record: Woken up 12 times to write data ]
-> [ perf record: Captured and wrote 2.882 MB perf.data (~125898
-samples) ]
+From: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
 
-Aha, but that's the userland code... suspend package, resume.c: 
+Document DT bindings and parse them in the MTU2 driver.
 
-        dev = open(snapshot_dev_name, O_WRONLY);
-        if (dev < 0) {
-                error = ENOENT;
-                goto Free;
-        }
+Signed-off-by: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
+Tested-by: Wolfram Sang <wsa@sang-engineering.com>
+---
+ .../devicetree/bindings/timer/renesas,mtu2.txt     |   39 ++++++++++++++++++++
+ drivers/clocksource/sh_mtu2.c                      |    8 ++++
+ 2 files changed, 47 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/timer/renesas,mtu2.txt
 
-        resume_dev = open_resume_dev(resume_dev_name, &swsusp_header);
-        if (resume_dev == -ENOMEDIUM) {
-                error = 0;
-                goto Close;
-        } else if (resume_dev < 0) {
-                error = -resume_dev;
-                goto Close;
-        }
-
-What your probably want to do is open_resume_dev first, and only
-open(snapshot_dev_name...) if it finds correct signature.
-									Pavel
+diff --git a/Documentation/devicetree/bindings/timer/renesas,mtu2.txt b/Documentation/devicetree/bindings/timer/renesas,mtu2.txt
+new file mode 100644
+index 0000000..917453f
+--- /dev/null
++++ b/Documentation/devicetree/bindings/timer/renesas,mtu2.txt
+@@ -0,0 +1,39 @@
++* Renesas R-Car Multi-Function Timer Pulse Unit 2 (MTU2)
++
++The MTU2 is a multi-purpose, multi-channel timer/counter with configurable
++clock inputs and programmable compare match.
++
++Channels share hardware resources but their counter and compare match value
++are independent. The MTU2 hardware supports five channels indexed from 0 to 4.
++
++Required Properties:
++
++  - compatible: must contain "renesas,mtu2"
++
++  - reg: base address and length of the registers block for the timer module.
++
++  - interrupts: interrupt specifiers for the timer, one for each entry in
++    interrupt-names.
++  - interrupt-names: must contain one entry named "tgi?a" for each enabled
++    channel, where "?" is the channel index expressed as one digit from "0" to
++    "4".
++
++  - clocks: a list of phandle + clock-specifier pairs, one for each entry
++    in clock-names.
++  - clock-names: must contain "fck" for the functional clock.
++
++
++Example: R7S72100 (RZ/A1H) MTU2 node
++
++	mtu2: timer@fcff0000 {
++		compatible = "renesas,mtu2";
++		reg = <0xfcff0000 0x400>;
++		interrupts = <0 139 IRQ_TYPE_LEVEL_HIGH>,
++			     <0 146 IRQ_TYPE_LEVEL_HIGH>,
++			     <0 150 IRQ_TYPE_LEVEL_HIGH>,
++			     <0 154 IRQ_TYPE_LEVEL_HIGH>,
++			     <0 159 IRQ_TYPE_LEVEL_HIGH>;
++		interrupt-names = "tgi0a", "tgi1a", "tgi2a", "tgi3a", "tgi4a";
++		clocks = <&mstp3_clks R7S72100_CLK_MTU2>;
++		clock-names = "fck";
++	};
+diff --git a/drivers/clocksource/sh_mtu2.c b/drivers/clocksource/sh_mtu2.c
+index b0c229f..3d88698 100644
+--- a/drivers/clocksource/sh_mtu2.c
++++ b/drivers/clocksource/sh_mtu2.c
+@@ -23,6 +23,7 @@
+ #include <linux/ioport.h>
+ #include <linux/irq.h>
+ #include <linux/module.h>
++#include <linux/of.h>
+ #include <linux/platform_device.h>
+ #include <linux/pm_domain.h>
+ #include <linux/pm_runtime.h>
+@@ -500,11 +501,18 @@ static const struct platform_device_id sh_mtu2_id_table[] = {
+ };
+ MODULE_DEVICE_TABLE(platform, sh_mtu2_id_table);
+ 
++static const struct of_device_id sh_mtu2_of_table[] __maybe_unused = {
++	{ .compatible = "renesas,mtu2" },
++	{ }
++};
++MODULE_DEVICE_TABLE(of, sh_mtu2_of_table);
++
+ static struct platform_driver sh_mtu2_device_driver = {
+ 	.probe		= sh_mtu2_probe,
+ 	.remove		= sh_mtu2_remove,
+ 	.driver		= {
+ 		.name	= "sh_mtu2",
++		.of_match_table = of_match_ptr(sh_mtu2_of_table),
+ 	},
+ 	.id_table	= sh_mtu2_id_table,
+ };
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+1.7.9.5
+
