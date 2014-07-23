@@ -1,206 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758724AbaGWXrf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 19:47:35 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:33757 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758548AbaGWXog (ORCPT
+	id S933986AbaGWXri (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 19:47:38 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:38906 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758548AbaGWXrg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 19:44:36 -0400
-From: Grant Likely <grant.likely@linaro.org>
-To: linux-kernel@vger.kernel.org, Nathan Fontenot <nfont@austin.ibm.com>,
-        Tyrel Datwyler <turtle.in.the.kernel@gmail.com>,
-        Pantelis Antoniou <pantelis.antoniou@konsulko.com>,
-        devicetree@vger.kernel.org
-Cc: Grant Likely <grant.likely@linaro.org>
-Subject: [PATCH 04/10] OF: Utility helper functions for dynamic nodes
-Date: Wed, 23 Jul 2014 17:44:18 -0600
-Message-Id: <1406159064-21366-5-git-send-email-grant.likely@linaro.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1406159064-21366-1-git-send-email-grant.likely@linaro.org>
-References: <1406159064-21366-1-git-send-email-grant.likely@linaro.org>
+	Wed, 23 Jul 2014 19:47:36 -0400
+Message-ID: <53D04996.2030902@codeaurora.org>
+Date: Wed, 23 Jul 2014 16:47:34 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Bjorn Andersson <bjorn.andersson@sonymobile.com>
+CC: "Ivan T. Ivanov" <iivanov@mm-sol.com>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Mark Brown <broonie@kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
+Subject: Re: [PATCH RESEND v2 1/4] pinctrl: Update Qualcomm pm8xxx GPIO parameters
+ definitions
+References: <1405610748-7583-5-git-send-email-iivanov@mm-sol.com> <1405626085-14069-1-git-send-email-iivanov@mm-sol.com> <20140722214643.GH19700@sonymobile.com>
+In-Reply-To: <20140722214643.GH19700@sonymobile.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
+On 07/22/14 14:46, Bjorn Andersson wrote:
+> For pm8941 the valid power supply values are:
+>  GPIO 1-14
+>    0: VPH
+>    2: SMPS3
+>    3: LDO6
+>
+>  GPIO 15-18
+>   2: SMPS3
+>   3: LDO6
+>
+>  GPIO 19-36
+>   0: VPH
+>   1: VDD_TORCH
+>   2: SPMS3
+>   3: LDO6
+>
+>  MPP 1-8
+>   0: VPH
+>   1: LDO1
+>   2: SPMS3
+>   3: LDO6
+>
+> For pma8084 the valid power supply values are:
+>  GPIO 1-22
+>   0: VPH
+>   2: SPMS4
+>   3: LDO6
+>
+>  MPP 1-8
+>   0: VPH
+>   1: LDO1
+>   2: SMPS4
+>   3: LDO6
+>
+> Please add these constants to the table of valid power-source values and use
+> something like I did to translate them to register values - it makes the DT
+> much more readable.
 
-Introduce helper functions for working with the live DT tree,
-all of them related to dynamically adding/removing nodes and
-properties.
+The DT could be similarly readable if we had a bunch of #defines for the
+different VIN settings that resolved to the final register value for
+that pmic. Something like PM8921_GPIO1_14_VPH, PM8921_GPIO19_36_VPH,
+etc. There would be a lot of them, but then the driver could be really
+simple and just jam whatever value is in the DT into the register
+without having to bounce through a mapping table in software to figure
+out the register value. If we did this for the functions also then I
+believe we achieve readability without requiring a bunch of drivers for
+each and every single pmic?
 
-__of_prop_dup() copies a property dynamically
-__of_node_alloc() creates an empty node
+>
+>>         Value type: <string>
+>>         Definition: Specify the alternative function to be configured for the
+>> -                   specified pins.  Valid values are:
+>> -                       "normal",
+>> -                       "paired",
+>> -                       "func1",
+>> -                       "func2",
+>> -                       "dtest1",
+>> -                       "dtest2",
+>> -                       "dtest3",
+>> -                       "dtest4"
+>> +                   specified pins.  Valid values is: "gpio"
+>>
+>>  - bias-disable:
+>>         Usage: optional
+>> @@ -99,18 +95,6 @@ to specify in a pin configuration subnode:
+>>         Value type: <none>
+>>         Definition: The specified pins should be configued as pull down.
+>>
+>> -- bias-pull-up:
+>> -       Usage: optional
+>> -       Value type: <u32> (optional)
+>> -       Definition: The specified pins should be configued as pull up. An
+>> -                   optional argument can be used to configure the strength.
+>> -                   Valid values are; as defined in
+>> -                   <dt-bindings/pinctrl/qcom,pm8xxx-gpio.h>:
+>> -                   1: 30uA                     (PM8XXX_GPIO_PULL_UP_30)
+>> -                   2: 1.5uA                    (PM8XXX_GPIO_PULL_UP_1P5)
+>> -                   3: 31.5uA                   (PM8XXX_GPIO_PULL_UP_31P5)
+>> -                   4: 1.5uA + 30uA boost       (PM8XXX_GPIO_PULL_UP_1P5_30)
+>> -
+> As described above, I belive we should make this:
+>
+> - bias-pull-up:
+> 	Usage: optional
+> 	Value type: <empty>
+> 	Definition: The specified pins should be configured as pull up.
+>
+> - qcom,pull-up-strength:
+> 	Usage: optional
+> 	Value type: <u32>
+> 	Definition: Specifies the strength to use for pull up, if selected.
+>                     Valid values are; as defined in
+>                     <dt-bindings/pinctrl/qcom,pm8xxx-gpio.h>:
+>                     1: 30uA                     (PM8XXX_GPIO_PULL_UP_30)
+>                     2: 1.5uA                    (PM8XXX_GPIO_PULL_UP_1P5)
+>                     3: 31.5uA                   (PM8XXX_GPIO_PULL_UP_31P5)
+>                     4: 1.5uA + 30uA boost       (PM8XXX_GPIO_PULL_UP_1P5_30)
+> 		    If this property is ommited 30uA strength will be used if
+> 		    pull up is selected.
 
-Bug fix about prop->len == 0 by Ionut Nicu <ioan.nicu.ext@nsn.com>
+Why is 30uA special? Just because most drivers use it? I'd prefer we
+always be explicit about which pull-up we want so that nothing is left
+up to the driver implementation.
 
-Signed-off-by: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
-[glikely: Added unittest for of_copy_property and dropped fine-grained allocations]
-[glikely: removed name, type and phandle arguments from __of_node_alloc]
-Signed-off-by: Grant Likely <grant.likely@linaro.org>
----
- drivers/of/dynamic.c    | 77 +++++++++++++++++++++++++++++++++++++++++++++++++
- drivers/of/of_private.h | 10 +++++++
- drivers/of/selftest.c   | 28 ++++++++++++++++++
- 3 files changed, 115 insertions(+)
+Also according to the hw folks the 1.5uA + 30uA boost has never been
+used so I say let's drop that feature. If we need it one day we can
+always add a qcom,pull-up-boost or something (I highly doubt we'll need
+it). Doing that allows us to specify this in actual SI units. Maybe even
+allowing us to have a generic pull-up-strength (or
+bias-pull-up-strength) specified in SI units of mA?
 
-diff --git a/drivers/of/dynamic.c b/drivers/of/dynamic.c
-index 125994330437..e0c4c6e25980 100644
---- a/drivers/of/dynamic.c
-+++ b/drivers/of/dynamic.c
-@@ -214,3 +214,80 @@ void of_node_release(struct kobject *kobj)
- 	kfree(node->data);
- 	kfree(node);
- }
-+
-+/**
-+ * __of_prop_dup - Copy a property dynamically.
-+ * @prop:	Property to copy
-+ * @allocflags:	Allocation flags (typically pass GFP_KERNEL)
-+ *
-+ * Copy a property by dynamically allocating the memory of both the
-+ * property stucture and the property name & contents. The property's
-+ * flags have the OF_DYNAMIC bit set so that we can differentiate between
-+ * dynamically allocated properties and not.
-+ * Returns the newly allocated property or NULL on out of memory error.
-+ */
-+struct property *__of_prop_dup(const struct property *prop, gfp_t allocflags)
-+{
-+	struct property *new;
-+
-+	new = kzalloc(sizeof(*new), allocflags);
-+	if (!new)
-+		return NULL;
-+
-+	/*
-+	 * NOTE: There is no check for zero length value.
-+	 * In case of a boolean property This will allocate a value
-+	 * of zero bytes. We do this to work around the use
-+	 * of of_get_property() calls on boolean values.
-+	 */
-+	new->name = kstrdup(prop->name, allocflags);
-+	new->value = kmemdup(prop->value, prop->length, allocflags);
-+	new->length = prop->length;
-+	if (!new->name || !new->value)
-+		goto err_free;
-+
-+	/* mark the property as dynamic */
-+	of_property_set_flag(new, OF_DYNAMIC);
-+
-+	return new;
-+
-+ err_free:
-+	kfree(new->name);
-+	kfree(new->value);
-+	kfree(new);
-+	return NULL;
-+}
-+
-+/**
-+ * __of_node_alloc() - Create an empty device node dynamically.
-+ * @full_name:	Full name of the new device node
-+ * @allocflags:	Allocation flags (typically pass GFP_KERNEL)
-+ *
-+ * Create an empty device tree node, suitable for further modification.
-+ * The node data are dynamically allocated and all the node flags
-+ * have the OF_DYNAMIC & OF_DETACHED bits set.
-+ * Returns the newly allocated node or NULL on out of memory error.
-+ */
-+struct device_node *__of_node_alloc(const char *full_name, gfp_t allocflags)
-+{
-+	struct device_node *node;
-+
-+	node = kzalloc(sizeof(*node), allocflags);
-+	if (!node)
-+		return NULL;
-+
-+	node->full_name = kstrdup(full_name, allocflags);
-+	of_node_set_flag(node, OF_DYNAMIC);
-+	of_node_set_flag(node, OF_DETACHED);
-+	if (!node->full_name)
-+		goto err_free;
-+
-+	of_node_init(node);
-+
-+	return node;
-+
-+ err_free:
-+	kfree(node->full_name);
-+	kfree(node);
-+	return NULL;
-+}
-diff --git a/drivers/of/of_private.h b/drivers/of/of_private.h
-index c270f2037779..1799ed2b3808 100644
---- a/drivers/of/of_private.h
-+++ b/drivers/of/of_private.h
-@@ -51,4 +51,14 @@ static inline int of_property_notify(int action, struct device_node *np,
- }
- #endif /* CONFIG_OF_DYNAMIC */
- 
-+/**
-+ * General utilities for working with live trees.
-+ *
-+ * All functions with two leading underscores operate
-+ * without taking node references, so you either have to
-+ * own the devtree lock or work on detached trees only.
-+ */
-+struct property *__of_prop_dup(const struct property *prop, gfp_t allocflags);
-+struct device_node *__of_node_alloc(const char *full_name, gfp_t allocflags);
-+
- #endif /* _LINUX_OF_PRIVATE_H */
-diff --git a/drivers/of/selftest.c b/drivers/of/selftest.c
-index 077314eebb95..ee2166f0f36a 100644
---- a/drivers/of/selftest.c
-+++ b/drivers/of/selftest.c
-@@ -16,6 +16,8 @@
- #include <linux/slab.h>
- #include <linux/device.h>
- 
-+#include "of_private.h"
-+
- static struct selftest_results {
- 	int passed;
- 	int failed;
-@@ -266,6 +268,31 @@ static void __init of_selftest_property_match_string(void)
- 	selftest(rc == -EILSEQ, "unterminated string; rc=%i", rc);
- }
- 
-+#define propcmp(p1, p2) (((p1)->length == (p2)->length) && \
-+			(p1)->value && (p2)->value && \
-+			!memcmp((p1)->value, (p2)->value, (p1)->length) && \
-+			!strcmp((p1)->name, (p2)->name))
-+static void __init of_selftest_property_copy(void)
-+{
-+#ifdef CONFIG_OF_DYNAMIC
-+	struct property p1 = { .name = "p1", .length = 0, .value = "" };
-+	struct property p2 = { .name = "p2", .length = 5, .value = "abcd" };
-+	struct property *new;
-+
-+	new = __of_prop_dup(&p1, GFP_KERNEL);
-+	selftest(new && propcmp(&p1, new), "empty property didn't copy correctly\n");
-+	kfree(new->value);
-+	kfree(new->name);
-+	kfree(new);
-+
-+	new = __of_prop_dup(&p2, GFP_KERNEL);
-+	selftest(new && propcmp(&p2, new), "non-empty property didn't copy correctly\n");
-+	kfree(new->value);
-+	kfree(new->name);
-+	kfree(new);
-+#endif
-+}
-+
- static void __init of_selftest_parse_interrupts(void)
- {
- 	struct device_node *np;
-@@ -533,6 +560,7 @@ static int __init of_selftest(void)
- 	of_selftest_dynamic();
- 	of_selftest_parse_phandle_with_args();
- 	of_selftest_property_match_string();
-+	of_selftest_property_copy();
- 	of_selftest_parse_interrupts();
- 	of_selftest_parse_interrupts_extended();
- 	of_selftest_match_node();
 -- 
-1.9.1
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
 
