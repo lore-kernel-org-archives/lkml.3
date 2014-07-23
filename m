@@ -1,46 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757925AbaGWQRa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 12:17:30 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:34731 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756450AbaGWQR3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 12:17:29 -0400
-Date: Wed, 23 Jul 2014 18:17:26 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: "Chen, Gong" <gong.chen@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, tglx@linutronix.de,
-        paulus@samba.org, benh@kernel.crashing.org, tony.luck@intel.com,
-        hpa@zytor.com, jkosina@suse.cz, rafael.j.wysocki@intel.com,
-        linux@arm.linux.org.uk, ralf@linux-mips.org, schwidefsky@de.ibm.com,
-        davem@davemloft.net, viro@zeniv.linux.org.uk, fweisbec@gmail.com,
-        cl@linux.com, akpm@linux-foundation.org, axboe@kernel.dk,
-        JBottomley@parallels.com, neilb@suse.de, christoffer.dall@linaro.org,
-        rostedt@goodmis.org, rric@kernel.org, gregkh@linuxfoundation.org,
-        mhocko@suse.cz, david@fromorbit.com
-Subject: Re: [RFC PATCH v1 08/70] x86, mce, therm_throt: _FROZEN Cleanup
-Message-ID: <20140723161725.GD21707@pd.tnic>
-References: <1406080786-3938-1-git-send-email-gong.chen@linux.intel.com>
- <1406080786-3938-9-git-send-email-gong.chen@linux.intel.com>
+	id S1758134AbaGWQSj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 12:18:39 -0400
+Received: from mail-lb0-f176.google.com ([209.85.217.176]:37352 "EHLO
+	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756250AbaGWQSh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jul 2014 12:18:37 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1406080786-3938-9-git-send-email-gong.chen@linux.intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <CAC5umygiEpKBsHQ+OvKvw8pRD1DO0fCPA29qs=kNRho35xkt_g@mail.gmail.com>
+References: <1405606659-3802-1-git-send-email-akinobu.mita@gmail.com>
+	<x49pph325wj.fsf@segfault.boston.devel.redhat.com>
+	<CAC5umygiEpKBsHQ+OvKvw8pRD1DO0fCPA29qs=kNRho35xkt_g@mail.gmail.com>
+Date: Thu, 24 Jul 2014 01:18:36 +0900
+Message-ID: <CAC5umyg04M27xH5GSwhyVW8W4RPyFROYo4EbgxnrQ2RRqo_gaA@mail.gmail.com>
+Subject: Re: [PATCH] block_dev: implement readpages() to optimize sequential read
+From: Akinobu Mita <akinobu.mita@gmail.com>
+To: Jeff Moyer <jmoyer@redhat.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jens Axboe <axboe@kernel.dk>, Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 22, 2014 at 09:58:44PM -0400, Chen, Gong wrote:
-> Remove XXX_FROZEN state from mce/therm_throt.
-> 
-> Signed-off-by: Chen, Gong <gong.chen@linux.intel.com>
+2014-07-18 8:14 GMT+09:00 Akinobu Mita <akinobu.mita@gmail.com>:
+> 2014-07-18 3:31 GMT+09:00 Jeff Moyer <jmoyer@redhat.com>:
+>> Akinobu Mita <akinobu.mita@gmail.com> writes:
+>>
+>>> Sequential read from a block device is expected to be equal or faster
+>>> than from the file on a filesystem.  But it is not correct due to the
+>>> lack of effective readpages() in the address space operations for
+>>> block device.
+>>
+>> Ah, a trip down memory lane.  ;-)  Here's a thread showing issues with
+>> the last time this was proposed (by me, incidentally):
+>>
+>> https://lkml.org/lkml/2009/6/2/480
+>>
+>> At the very least, we need to see numbers on a real device, and see it
+>> booted on something with >4k page size before taking this back in.
+>
+> Thanks for the information.  First, I'll try to reproduce the >4k page
+> size issue with qemu with the architecture which can support 64k page.
 
-Acked-by: Borislav Petkov <bp@suse.de>
+I can reproduce the issue which attempts to access beyond end of
+device, and it turns out that this can be reproducible on 4K page
+system, too.
 
--- 
-Regards/Gruss,
-    Boris.
+This problem only happens when reading a partition which is being
+mounted by the filesystem at the same time.  The filesystem sets
+the blocksize to a multiple of the logical block size by set_blocksize()
+while it is mounted.  If the end of the partition is not aligned on
+the new blocksize, reading the end of the partition causes access
+beyond end of device.
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+So this patch is incomplete, and some guard check code is required in
+mpage_readpages() or altenative solution is needed.
