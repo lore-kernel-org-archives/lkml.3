@@ -1,51 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756678AbaGWEzK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 00:55:10 -0400
-Received: from mail-we0-f182.google.com ([74.125.82.182]:47734 "EHLO
-	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756136AbaGWEzH (ORCPT
+	id S1756950AbaGWEzR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 00:55:17 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:51379 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756136AbaGWEzN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 00:55:07 -0400
-Message-ID: <1406091303.5076.33.camel@marge.simpson.net>
-Subject: Re: [RFC PATCH 0/5] futex: introduce an optimistic spinning futex
-From: Mike Galbraith <umgwanakikbuti@gmail.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Waiman Long <Waiman.Long@hp.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Darren Hart <dvhart@linux.intel.com>,
-        Davidlohr Bueso <davidlohr@hp.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
-        linux-doc@vger.kernel.org, Jason Low <jason.low2@hp.com>,
-        Scott J Norton <scott.norton@hp.com>
-Date: Wed, 23 Jul 2014 06:55:03 +0200
-In-Reply-To: <8761iq3bp3.fsf@tassilo.jf.intel.com>
-References: <1405956271-34339-1-git-send-email-Waiman.Long@hp.com>
-	 <8761iq3bp3.fsf@tassilo.jf.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Wed, 23 Jul 2014 00:55:13 -0400
+X-AuditID: cbfee68e-b7fb96d000004bfc-a8-53cf402f0d8c
+Date: Wed, 23 Jul 2014 04:55:11 +0000 (GMT)
+From: Eunbong Song <eunb.song@samsung.com>
+Subject: Re: RE: [PATCH] lib : lz4 using put_unaligned_le16 instead of
+ put_unaligned
+To: Chanho Min <chanho.min@lge.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "hyojun.im@lge.com" <hyojun.im@lge.com>
+Reply-to: eunb.song@samsung.com
+MIME-version: 1.0
+X-MTR: 20140723044751327@eunb.song
+Msgkey: 20140723044751327@eunb.song
+X-EPLocale: ko_KR.euc-kr
+X-Priority: 3
+X-EPWebmail-Msg-Type: personal
+X-EPWebmail-Reply-Demand: 0
+X-EPApproval-Locale: 
+X-EPHeader: ML
+X-EPTrCode: 
+X-EPTrName: 
+X-MLAttribute: 
+X-RootMTR: 20140723044751327@eunb.song
+X-ParentMTR: 
+X-ArchiveUser: EV
+X-CPGSPASS: N
+Content-type: text/plain; charset=euc-kr
+MIME-version: 1.0
+Message-id: <30989786.490921406091310576.JavaMail.weblogic@epml01>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrMJsWRmVeSWpSXmKPExsVy+t8zHV19h/PBBtPv61hc3jWHzYHR4/Mm
+	uQDGqAZGm8Si5IzMslSF1Lzk/JTMvHRbpdAQN10LJYWM/OISW6VoIwNjPSNTEz0jE3M9S4NY
+	KyNTJYW8xNxUW6UKXaheJYWi5AKg2tzKYqABOal6UHG94tS8FIes/FKQS/SKE3OLS/PS9ZLz
+	c5UUyhJzSoFGKOknTGXMOLe0rOAfS8Wh3gtMDYwvWLoYOTmEBFQkWv5/ZwSxJQRMJKZPPMEO
+	YYtJXLi3nq2LkQuoZhmjxKT3L5hhiq62HIBKzGGU+HOjlw0kwSKgKrHh0nSwIjYBbYkfB66C
+	2cICIRLNU6eA2SICSRId/bPANjAL5EgsnHaJDeIKeYnJpy+DxXkFBCVOznzCArFMSeJT/2Ym
+	iLiyxNvJu6Guk5CYNf0CK4TNKzGj/SlUvZzEtK9roA6Vljg/awMjzDeLvz+GivNLHLu9A2gm
+	B1jvk/vBMGN2b/7CBmELSEw9cxCqVV3iZeM5qFY+iTUL30KtEpQ4fa2bGab3/pa5TBBvKUpM
+	6X4I9aKWxJcf+9jQvcUr4CQx7flm9gmMyrOQpGYhaZ+FpB1ZzQJGllWMoqkFyQXFSelFRsiR
+	vYkRkgb7djDePGB9iHE/IzBOJjJLiSbnAxNpXkm8obGZkYWpiamxkbmlGYXCJqYWFiZGVBFW
+	Eudd9DApSEggPbEkNTs1tSC1KL6oNCe1+BAjEwenVANj/dwW2fbC6mwNJ4GeJ817jWx+zmgT
+	vPr+kvjmm1+Xp4q2bRO1ffh1Le8ByTpmyZOzyp3+N27n2z2pZtXq7/u2B6cY7im569OYJuG4
+	Izkg8W757HZJi34pdtmDLwU+H9KJXBrx4QCfw3cXm/fl064efnX7yQL3GWc/nt97Lme188FN
+	9m5XpTe6KrEUZyQaajEXFScCACzRtj/2AwAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpkk+LIzCtJLcpLzFFi42I5/e92r66+w/lggwP/NC0u75rD5sDo8XmT
+	XABjVIZNRmpiSmqRQmpecn5KZl66rZJ3cLxzvKmZgaGuoaWFuZJCXmJuqq2Si0+ArltmDtBQ
+	JYWyxJxSoFBAYnGxkr6dTVF+aUmqQkZ+cYmtUrSRgbGekamJnpGxgZ6JQayVoYGBkSlQVUJG
+	xrmlZQX/WCoO9V5gamB8wdLFyMkhJKAi0fL/OyOILSFgInG15QAbhC0mceHeeiCbC6hmDqPE
+	nxu9YAkWAVWJDZemM4PYbALaEj8OXAWzhQVCJJqnTgGzRQSSJDr6Z7GD2MwCORILp11ig1gm
+	LzH59GWwOK+AoMTJmU9YIJYpSXzq38wEEVeWeDt5NztEXEJi1vQLrBA2r8SM9qdQ9XIS076u
+	YYawpSXOz9rACHP04u+PoeL8Esdu7wCayQHW++R+MMyY3Zu/QP0oIDH1zEGoVnWJl43noFr5
+	JNYsfAu1SlDi9LVuZpje+1vmMkG8pSgxpfsh1ItaEl9+7GND9xavgJPEtOeb2Scwys1CkpqF
+	pH0WknZkNQsYWVYxiqYWJBcUJ6VXGOoVJ+YWl+al6yXn525iBCeoZwt3MH45b32IUYCDUYmH
+	V6LqXLAQa2JZcWXuIUYJDmYlEd7X2ueDhXhTEiurUovy44tKc1KLDzEmAyNwIrOUaHI+MHnm
+	lcQbGhsYGxpamhuYGhpZkCasJM5792ZSkJBAemJJanZqakFqEcwWJg5OqQZGhwyDix0NyaJ6
+	j3bsVFe/vdL59+H4Jta1XefOX1jE8qX5jlPlwlOPtFbefZpdrJl1zHyi7NMVaRWeE9fvSF41
+	bYqN6bRVzHsyfnw1CbD4ovBOIMHvd9Q3pwVKbfuEvtgXa9TMvtins0xXsq+x/MG/4/+fv+XY
+	wWP5Z+/agi+tmyp6WRg0dU7eU2Ipzkg01GIuKk4EACfLL+yUAwAA
+DLP-Filter: Pass
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s6N4tQYn013358
 
-On Mon, 2014-07-21 at 09:42 -0700, Andi Kleen wrote:
 
-> FWIW the main problem is currently that switch-through-idle is so 
-> slow. I think improving that would give a boost to far more
-> situations.
 
-Two high frequency idle enter/exit suckage spots:
+>  If your patch is applied, the data which is compressed
+> by your big-endian system won't be decompressed in other little-endian system.
 
-1) nohz (tick) - it's expensive to start/stop tick on every micro-idle,
-throttle it or something.
+I can't understand this. Please, could you explain this more ?
+My patch just replaces put_unaligned with put_unaligned_le16. and this just write compression data
+in little endian byte-order  regardless of machine byte-order, like ext file system. 
+So, i guess there is no  problem what you pointed 
 
-2) ondemand governor - tweak silly default settings to reflect the
-reality that we routinely schedule communicating threads cross core.
-
-(3. seek/destroy fastpath cycles, damn things multiply over time)
-
--Mike
-
+Thanks. ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
