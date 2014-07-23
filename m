@@ -1,67 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755851AbaGWOUO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 10:20:14 -0400
-Received: from vps0.lunn.ch ([178.209.37.122]:51818 "EHLO vps0.lunn.ch"
+	id S1756589AbaGWOVq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 10:21:46 -0400
+Received: from mta-out1.inet.fi ([62.71.2.202]:52194 "EHLO jenni2.inet.fi"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751754AbaGWOUM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 10:20:12 -0400
-Date: Wed, 23 Jul 2014 16:14:43 +0200
-From: Andrew Lunn <andrew@lunn.ch>
-To: Jason Cooper <jason@lakedaemon.net>
-Cc: benoitm974 <yahoo@perenite.com>, benoitm@perenite.com,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Andrew Lunn <andrew@lunn.ch>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@googlemail.com>
-Subject: Re: [PATCH 1/2] Added dts defintion for Lenovo ix4-300d nas
-Message-ID: <20140723141443.GC2856@lunn.ch>
-References: <1406117232-5962-1-git-send-email-yahoo@perenite.com>
- <20140723134534.GF23220@titan.lakedaemon.net>
+	id S1751692AbaGWOVo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jul 2014 10:21:44 -0400
+Date: Wed, 23 Jul 2014 17:20:48 +0300
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Matthew Wilcox <willy@linux.intel.com>
+Cc: Matthew Wilcox <matthew.r.wilcox@intel.com>, linux-fsdevel@vger.kernel.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v8 05/22] Add vm_replace_mixed()
+Message-ID: <20140723142048.GA11963@node.dhcp.inet.fi>
+References: <cover.1406058387.git.matthew.r.wilcox@intel.com>
+ <b1052af08b49965fd0e6b87b6733b89294c8cc1e.1406058387.git.matthew.r.wilcox@intel.com>
+ <20140723114540.GD10317@node.dhcp.inet.fi>
+ <20140723135221.GA6754@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140723134534.GF23220@titan.lakedaemon.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140723135221.GA6754@linux.intel.com>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Benoit,
+On Wed, Jul 23, 2014 at 09:52:22AM -0400, Matthew Wilcox wrote:
+> On Wed, Jul 23, 2014 at 02:45:40PM +0300, Kirill A. Shutemov wrote:
+> > On Tue, Jul 22, 2014 at 03:47:53PM -0400, Matthew Wilcox wrote:
+> > > From: Matthew Wilcox <willy@linux.intel.com>
+> > > 
+> > > vm_insert_mixed() will fail if there is already a valid PTE at that
+> > > location.  The DAX code would rather replace the previous value with
+> > > the new PTE.
+> 
+> > > @@ -1492,8 +1492,12 @@ static int insert_page(struct vm_area_struct *vma, unsigned long addr,
+> > >  	if (!pte)
+> > >  		goto out;
+> > >  	retval = -EBUSY;
+> > > -	if (!pte_none(*pte))
+> > > -		goto out_unlock;
+> > > +	if (!pte_none(*pte)) {
+> > > +		if (!replace)
+> > > +			goto out_unlock;
+> > > +		VM_BUG_ON(!mutex_is_locked(&vma->vm_file->f_mapping->i_mmap_mutex));
+> > > +		zap_page_range_single(vma, addr, PAGE_SIZE, NULL);
+> > 
+> > zap_page_range_single() takes ptl by itself in zap_pte_range(). It's not
+> > going to work.
+> 
+> I have a test program that exercises this path ... it seems to work!
+> Following the code, I don't understand why it does.  Maybe it's not
+> exercising this path after all?  I've attached the program (so that I
+> have an "oh, duh" moment about 5 seconds after sending the email).
+
+See below.
 
 > 
-> > +			};
-> > +
-> > +			serial@12000 {
-> > +				clocks = <&coreclk 0>;
+> > And zap_page_range*() is pretty heavy weapon to shoot down one pte, which
+> > we already have pointer to. Why?
+> 
+> I'd love to use a lighter-weight weapon!  What would you recommend using,
+> zap_pte_range()?
 
-I don't think you need the clocks property. It should be already set
-in armada-xp.dtsi.
+The most straight-forward way: extract body of pte cycle from
+zap_pte_range() to separate function -- zap_pte() -- and use it.
 
-> > +				adt7473@2e {
-> > +					compatible = "adt7473";
+> #include <stdio.h>
+> #include <stdlib.h>
+> #include <string.h>
+> #include <sys/types.h>
+> #include <sys/mman.h>
+> #include <fcntl.h>
+> #include <unistd.h>
+> #include <errno.h>
+> 
+> int
+> main(int argc, char *argv[])
+> {
+> 	int fd;
+> 	void *addr;
+> 	char buf[4096];
+> 
+> 	if (argc != 2) {
+> 		fprintf(stderr, "usage: %s filename\n", argv[0]);
+> 		exit(1);
+> 	}
+> 
+> 	if ((fd = open(argv[1], O_CREAT|O_RDWR, 0666)) < 0) {
+> 		perror(argv[1]);
+> 		exit(1);
+> 	}
+> 
+> 	if (ftruncate(fd, 4096) < 0) {
 
-Please include a vendor prefix here. 
+Shouldn't this be ftruncate(fd, 0)? Otherwise the memcpy() below will
+fault in page from backing storage, not hole and write will not replace
+anything.
+
+> 		perror("ftruncate");
+> 		exit(1);
+> 	}
+> 
+> 	if ((addr = mmap(NULL, 4096, PROT_READ|PROT_WRITE, MAP_SHARED,
+> 					fd, 0)) == MAP_FAILED) {
+> 		perror("mmap");
+> 		exit(1);
+> 	}
+> 
+> 	close(fd);
+> 
+> 	/* first read */
+> 	memcpy(buf, addr, 4096);
+> 
+> 	/* now write a bit */
+> 	memcpy(addr, buf, 8);
+> 
+> 	printf("%s: test passed.\n", argv[0]);
+> 	exit(0);
+> }
 
 
-> > +					reg = <0x2e>;
-> > +				};
-> > +
-> > +				pcf8563@51 {
-> > +					compatible = "pcf8563";
-
-and a vendor prefix here.
-
-> > +	/* warning: you need both eth1 & 0 to be initialize for poweroff to shutdown otherwise it reboots */
-
-What do you mean by initialized? Driver loaded? Interface up? 
-
-> This is a great first version
-
-I agree with Jason, well done.
-
-  Andrew
+-- 
+ Kirill A. Shutemov
