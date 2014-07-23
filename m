@@ -1,49 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932622AbaGWPNW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 11:13:22 -0400
-Received: from kdh-gw.itdev.co.uk ([89.21.227.133]:26627 "EHLO
-	hermes.kdh.itdev.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932596AbaGWPNT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 11:13:19 -0400
-Message-ID: <53CFD109.2050005@itdev.co.uk>
-Date: Wed, 23 Jul 2014 16:13:13 +0100
-From: Nick Dyer <nick.dyer@itdev.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1757990AbaGWPPG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 11:15:06 -0400
+Received: from imap.thunk.org ([74.207.234.97]:52523 "EHLO imap.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756440AbaGWPPE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jul 2014 11:15:04 -0400
+Date: Wed, 23 Jul 2014 11:14:59 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Andrey Utkin <andrey.krieger.utkin@gmail.com>
+Cc: hannes@stressinduktion.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Reading large amounts from /dev/urandom broken
+Message-ID: <20140723151459.GA6673@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Andrey Utkin <andrey.krieger.utkin@gmail.com>,
+	hannes@stressinduktion.org,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+References: <CANZNk81nyws__swPUoxz912wi5PJ2CBXbiLpJ-Jc4oLcX+J8vw@mail.gmail.com>
 MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Yufeng Shen <miletus@google.com>, Daniel Kurtz <djkurtz@chromium.org>,
-        Henrik Rydberg <rydberg@euromail.se>,
-        Joonyoung Shim <jy0922.shim@samsung.com>,
-        Alan Bowens <Alan.Bowens@atmel.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Peter Meerwald <pmeerw@pmeerw.net>,
-        Benson Leung <bleung@chromium.org>,
-        Olof Johansson <olofj@chromium.org>, Sekhar Nori <nsekhar@ti.com>,
-        Stephen Warren <swarren@nvidia.com>
-Subject: Re: [PATCH 04/15] Input: atmel_mxt_ts - implement device tree support
-References: <1404399697-26484-1-git-send-email-nick.dyer@itdev.co.uk> <1404399697-26484-5-git-send-email-nick.dyer@itdev.co.uk> <53CECB6C.2030207@wwwdotorg.org>
-In-Reply-To: <53CECB6C.2030207@wwwdotorg.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CANZNk81nyws__swPUoxz912wi5PJ2CBXbiLpJ-Jc4oLcX+J8vw@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22/07/14 21:37, Stephen Warren wrote:
-> On 07/03/2014 09:01 AM, nick.dyer@itdev.co.uk wrote:
->> From: Stephen Warren <swarren@nvidia.com>
+On Wed, Jul 23, 2014 at 04:52:21PM +0300, Andrey Utkin wrote:
+> Dear developers, please check bugzilla ticket
+> https://bugzilla.kernel.org/show_bug.cgi?id=80981 (not the initial
+> issue, but starting with comment#3.
 > 
->> diff --git a/Documentation/devicetree/bindings/input/atmel,maxtouch.txt b/Documentation/devicetree/bindings/input/atmel,maxtouch.txt
+> Reading from /dev/urandom gives EOF after 33554431 bytes.  I believe
+> it is introduced by commit 79a8468747c5f95ed3d5ce8376a3e82e0c5857fc,
+> with the chunk
 > 
->> +	touch@4b {
->> +		compatible = "atmel,maxtouch";
->> +		reg = <0x4b>;
->> +		interrupt-parent = <&gpio>;
->> +		interrupts = <TEGRA_GPIO(W, 3) GPIO_ACTIVE_HIGH>;
+> nbytes = min_t(size_t, nbytes, INT_MAX >> (ENTROPY_SHIFT + 3));
 > 
-> Oops. s/GPIO_ACTIVE_HIGH/IRQ_TYPE_LEVEL_LOW/ there; I evidently typed
-> something stupid into the doc when I wrote it!
+> which is described in commit message as "additional paranoia check to
+> prevent overly large count values to be passed into urandom_read()".
+> 
+> I don't know why people pull such large amounts of data from urandom,
+> but given today there are two bugreports regarding problems doing
+> that, i consider that this is practiced.
 
-OK, fixed this. I thought it was some tegra quirk I wasn't aware of!
+I've inquired on the bugzilla why the reporter is abusing urandom in
+this way.  The other commenter on the bug replicated the problem, but
+that's not a "second bug report" in my book.
+
+At the very least, this will probably cause me to insert a warning
+printk: "insane user of /dev/urandom: [current->comm] requested %d
+bytes" whenever someone tries to request more than 4k.
+
+						- Ted
