@@ -1,53 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757945AbaGWLZi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 07:25:38 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:52473 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756664AbaGWLZf (ORCPT
+	id S1756803AbaGWLaZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 07:30:25 -0400
+Received: from casper.infradead.org ([85.118.1.10]:36559 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751103AbaGWLaY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 07:25:35 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Linux PCI <linux-pci@vger.kernel.org>, Zhang Rui <rui.zhang@intel.com>
-Subject: Re: [PATCH 0/3] ACPI / PM: Make ACPI-based PCI wakeup work for the "freeze" sleep state
-Date: Wed, 23 Jul 2014 13:43:59 +0200
-Message-ID: <1938033.aGLPbNTjeQ@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20140723072850.GO3935@laptop>
-References: <1907495.agrCMfRsQN@vostro.rjw.lan> <3271848.fNJ1rk2xTa@vostro.rjw.lan> <20140723072850.GO3935@laptop>
+	Wed, 23 Jul 2014 07:30:24 -0400
+Date: Wed, 23 Jul 2014 13:30:21 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Dietmar Eggemann <dietmar.eggemann@arm.com>
+Cc: Michel =?iso-8859-1?Q?D=E4nzer?= <michel@daenzer.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Random panic in load_balance() with 3.16-rc
+Message-ID: <20140723113021.GP12054@laptop.lan>
+References: <53CE00EF.70108@daenzer.net>
+ <53CF31AE.30403@daenzer.net>
+ <CA+55aFwyURgG717kmuAXzKcHddN_63GirtwHZB4ePKH+8qVtJw@mail.gmail.com>
+ <20140723064948.GK3935@laptop>
+ <53CF6CC4.6090207@daenzer.net>
+ <20140723082819.GR3935@laptop>
+ <20140723092536.GO12054@laptop.lan>
+ <53CF80EE.5050702@daenzer.net>
+ <53CF844A.5050106@arm.com>
+ <20140723111110.GT3935@laptop>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140723111110.GT3935@laptop>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, July 23, 2014 09:28:50 AM Peter Zijlstra wrote:
-> On Wed, Jul 23, 2014 at 12:26:20AM +0200, Rafael J. Wysocki wrote:
-> > All of that indicates that the machine in question has WoL based on native PCIe
-> > PME signaling.  In that case it doesn't wake up from the "freeze" state, because
-> > some code is missing.
+On Wed, Jul 23, 2014 at 01:11:10PM +0200, Peter Zijlstra wrote:
+> On Wed, Jul 23, 2014 at 10:45:46AM +0100, Dietmar Eggemann wrote:
+> > Doesn't the picture showing the captured panic reveal more information.
+> > Haven't seen it myself, I just saw Peter's reply to your email
 > 
-> Didn't wake, but it did show:
+> Its a general protection fault from somewhere in load_balance(), I send
+> you the picture.
 > 
-> 0000:00:01.0:pcie01     1               1               0               0               0               0               0               99207           0
-> LNXPWRBN:00             1               1               0               0               0               0               0               99191           0
+> It would help to get addr2line of the RIP I suppose.
 > 
-> So at least something's moving, although its not quite working yet.
+> Michel provided a config, so lemme go try and build that, maybe my gcc
+> will generate similar code to his and the function offset is enough
+> clue.
 
-That may be because I forgot about one piece, sorry about that.
-This patch:
+So the code section says the faulting instruction is:
 
-https://patchwork.kernel.org/patch/4526561/
+  f3 a5
 
-(which I think is in tip already) is needed to make enable_irq_wake()
-work with the "freeze" state.
+followed by:
 
-Can you please apply this in addition and retest?
+  48 89 c7 85 50 ff ff 
 
-Rafael
+or so.
+
+My compiled code is 'different', the function is shorter, but there's a
+f3 a5 somewhere not too far short of +d7 at +a8. I have (objdump -SD):
+
+    35a8:       f3 a5                   rep movsl %ds:(%rsi),%es:(%rdi)
+
+        for_each_cpu_and(i, sched_group_cpus(group), env->cpus) {
+                unsigned long capacity, capacity_factor, wl;
+                enum fbq_type rt;
+
+                rq = cpu_rq(i);
+    35aa:       48 c7 c1 00 00 00 00    mov    $0x0,%rcx
+
+And that's the only part that could possibly match.
+
+That looks like the start of find_busiest_queue(). I'm not entirely sure
+what the rep movsl is operating on, lemme try and figure that out.
 
