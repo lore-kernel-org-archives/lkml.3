@@ -1,56 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933396AbaGWTvB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 15:51:01 -0400
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:34226 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932665AbaGWTvA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 15:51:00 -0400
-From: Nicholas Krause <xerofoify@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: john.stultz@linaro.org, rebecca@android.com, ccross@android.com,
-        mitchelh@codeaurora.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] staging: Remove checkpatch errors in ion.c for android staging
+	id S933410AbaGWTwF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 15:52:05 -0400
+Received: from mga02.intel.com ([134.134.136.20]:64317 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932825AbaGWTwE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jul 2014 15:52:04 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,719,1400050800"; 
+   d="scan'208";a="577780755"
 Date: Wed, 23 Jul 2014 15:50:55 -0400
-Message-Id: <1406145055-4578-1-git-send-email-xerofoify@gmail.com>
-X-Mailer: git-send-email 1.9.1
+From: Matthew Wilcox <willy@linux.intel.com>
+To: Boaz Harrosh <openosd@gmail.com>
+Cc: Matthew Wilcox <matthew.r.wilcox@intel.com>, linux-fsdevel@vger.kernel.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v8 00/22] Support ext4 on NV-DIMMs
+Message-ID: <20140723195055.GF6754@linux.intel.com>
+References: <cover.1406058387.git.matthew.r.wilcox@intel.com>
+ <53CFDBAE.4040601@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53CFDBAE.4040601@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch removes a few errors that checkpatch gives when run
-on ion.c. I didn't remove the warning from returning in a void
-function as we need to write ion_dma_buf_kunmap and I have no
-idea how to do this as all we are doing in this function as of now
-is returning and leaking the memory allocated in ion_dma_buf_kmap.
+On Wed, Jul 23, 2014 at 06:58:38PM +0300, Boaz Harrosh wrote:
+> Have you please pushed this tree to git hub. It used to be on the prd
+> tree, if you could just add another branch there, it would be cool.
+> (https://github.com/01org/prd)
 
-Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
----
- drivers/staging/android/ion/ion.c | 2 ++
- 1 file changed, 2 insertions(+)
+Ross handles the care & feeding of that tree ... he'll push that branch
+out soon.
 
-diff --git a/drivers/staging/android/ion/ion.c b/drivers/staging/android/ion/ion.c
-index 389b8f6..934d55d 100644
---- a/drivers/staging/android/ion/ion.c
-+++ b/drivers/staging/android/ion/ion.c
-@@ -56,6 +56,7 @@ struct ion_device {
- 	struct mutex buffer_lock;
- 	struct rw_semaphore lock;
- 	struct plist_head heaps;
-+
- 	long (*custom_ioctl)(struct ion_client *client, unsigned int cmd,
- 			     unsigned long arg);
- 	struct rb_root clients;
-@@ -805,6 +806,7 @@ struct ion_client *ion_client_create(struct ion_device *dev,
- 						client, &debug_client_fops);
- 	if (!client->debug_root) {
- 		char buf[256], *path;
-+
- 		path = dentry_path(dev->clients_debug_root, buf, 256);
- 		pr_err("Failed to create client debugfs at %s/%s\n",
- 			path, client->display_name);
---
-1.9.1
+> With reads they are all the same with pmfs-prd a bit on top.
+> But writes, shmem is by far far better. I'll Investigate this farther, it
+> does not make sense looks like a serialization of writes somewhere.
 
+I imagine there's locking that needs to happen for real filesystems that
+shmem can happily ignore.  Maybe one of the journal locks?
+
+> (All numbers rounded)
+> 
+> fio 4K random reads 24 threads (different files):
+> pmfs-prd: 7,300,000
+> ext4-dax: 6,200,000
+> shmem:    6,150,000
+> 
+> fio 4k random writes 24 threads (different files):
+> pmfs-prd: 900,000
+> ext4-dax: 800,000
+> shmem:    3,500,000
+> 
+> BTW:
+> With the new pmfs-prd which I have also ported to the DAX tree - the old
+> pmfs was copy/pasting xip-write and xip-mmap from generic code with some
+> private hacks, but was still using xip-read stuff. I have just moved the
+> old xip-read stuff inside (like write path did before) and so ported to the
+> dax tree which removed these functions. I have spent a couple of hours on
+> looking on the DAX read/write/mmap path vs the current pmfs read/write/mmap
+> paths. Though they are very similar and clearly originated from the same code
+> The new DAX code is even more alien to pmfs, specially with the current use
+> of buffer-heads. (It could be made to work but with lots of extra shimming)
+> So the current DAX form is more "block" based and not very suited to a pure
+> memory based FS. If any of those come up they will need their own interfaces
+> more similar to shmem's private implementation.
+
+I think you misunderstand the point of buffer_head.  It's not "this is
+block based", it's "this is how filesystems describe their extents to
+the VFS/block layer".
+
+> Above you said regarding the old xip:
+> 	".. but it has some races which are unfixable in the current design"
+> 
+> I have tested pmfs-prd under xfstest and I'm passing lots of them. I cannot
+> easily spot the race you are talking about. (More like dir seeks and missing
+> stuff) Could you point me to a test I should run, to try and find it?
+
+xfstests seems to have more "check correct functionality" tests than
+"find races" tests.  I'm trying to persuade our QA people to write more
+tests for xfstests with little success so far.  Consider truncate()
+vs page fault.  Consider truncate() versus read().  Consider write()
+to a hole vs page fault on that hole.
+
+Oh, and as for pmfs itself ... consider the fact that it uses RCU for
+locking, except the only call to synchronise_rcu() is commented out.
+So it only has RCU read locks, which compile to, er, nothing.  If the
+RCU were actually protecting anything, the fact that it takes mutexes
+while in an RCU locked section would rather invalidate the RCU protection.
+
+So, yeah.  Actually getting the locking right has an effect on
+performance.
