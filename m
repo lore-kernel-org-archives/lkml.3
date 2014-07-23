@@ -1,72 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757502AbaGWI0z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 04:26:55 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:36301 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757367AbaGWI0w (ORCPT
+	id S1757523AbaGWI1E (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 04:27:04 -0400
+Received: from mail-we0-f182.google.com ([74.125.82.182]:34231 "EHLO
+	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757367AbaGWI06 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 04:26:52 -0400
-Date: Wed, 23 Jul 2014 09:25:05 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: AKASHI Takahiro <takahiro.akashi@linaro.org>
-Cc: Kees Cook <keescook@chromium.org>, Will Drewry <wad@chromium.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "dsaxena@linaro.org" <dsaxena@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v5 1/3] arm64: ptrace: reload a syscall number after
- ptrace operations
-Message-ID: <20140723082505.GB27260@arm.com>
-References: <1406020499-5537-1-git-send-email-takahiro.akashi@linaro.org>
- <1406020499-5537-2-git-send-email-takahiro.akashi@linaro.org>
- <CAGXu5jKkJUGn_MpEEr8U=n_A+iW9s8vSX1WoVNzRJMVyGQRjpA@mail.gmail.com>
- <53CF5E53.3060409@linaro.org>
+	Wed, 23 Jul 2014 04:26:58 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53CF5E53.3060409@linaro.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <6018343.yi13pxNXUP@vostro.rjw.lan>
+References: <1406056419-3047-1-git-send-email-arjun024@gmail.com> <6018343.yi13pxNXUP@vostro.rjw.lan>
+From: Arjun <arjun024@gmail.com>
+Date: Wed, 23 Jul 2014 13:56:36 +0530
+Message-ID: <CAJFMrCH1yeZfEo=z6Vj-qaK=Qpiu9KoqJOLsUo-p1yYcxr+L-g@mail.gmail.com>
+Subject: Re: [PATCH] PNPACPI: check return value of pnpacpi_parse_allocated_resource()
+ and pnpacpi_parse_resource_option_data()
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Len Brown <lenb@kernel.org>, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 23, 2014 at 08:03:47AM +0100, AKASHI Takahiro wrote:
-> On 07/23/2014 05:15 AM, Kees Cook wrote:
-> > On Tue, Jul 22, 2014 at 2:14 AM, AKASHI Takahiro
-> > <takahiro.akashi@linaro.org> wrote:
-> >>   asmlinkage int syscall_trace_enter(struct pt_regs *regs)
-> >>   {
-> >> +       unsigned long saved_x0, saved_x8;
-> >> +
-> >> +       saved_x0 = regs->regs[0];
-> >> +       saved_x8 = regs->regs[8];
-> >> +
-> >>          if (test_thread_flag(TIF_SYSCALL_TRACE))
-> >>                  tracehook_report_syscall(regs, PTRACE_SYSCALL_ENTER);
-> >>
-> >> +       regs->syscallno = regs->regs[8];
-> >> +       if ((long)regs->syscallno == ~0UL) { /* skip this syscall */
-> >> +               regs->regs[8] = saved_x8;
-> >> +               if (regs->regs[0] == saved_x0) /* not changed by user */
-> >> +                       regs->regs[0] = -ENOSYS;
-> >
-> > I'm not sure this is right compared to other architectures. Generally
-> > when a tracer performs a syscall skip, it's up to them to also adjust
-> > the return value. They may want to be faking a syscall, and what if
-> > the value they want to return happens to be what x0 was going into the
-> > tracer? It would have no way to avoid this -ENOSYS case. I think
-> > things are fine without this test.
-> 
-> Yeah, I know this issue, but was not sure that setting a return value
-> is mandatory. (x86 seems to return -ENOSYS by default if not explicitly
-> specified.)
-> Is "fake a system call" a more appropriate word than "skip"?
-> 
-> I will defer to Will.
+ACPI 5.0 resource types like FixedDMA will fail pnpacpi_allocated_resource().
+pnpacpi_add_device() has to return error in that case.
 
-I agree with Kees -- iirc, I only suggested restoring x8.
-
-Will
+On 23 July 2014 03:42, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
+> On Wednesday, July 23, 2014 12:43:39 AM Arjun Sreedharan wrote:
+>> Handle error condition since pnpacpi_parse_allocated_resource() and pnpacpi_parse_resource_option_data() could return -EPERM.
+>>
+>> Signed-off-by: Arjun Sreedharan <arjun024@gmail.com>
+>
+> I wonder if this fixes any functional issue you've seen or someone has
+> reported to you or it's just an "Oh, we probably should handle the return
+> values here" kind of thing?
+>
+>> ---
+>>  drivers/pnp/pnpacpi/core.c | 8 ++++++--
+>>  1 file changed, 6 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/drivers/pnp/pnpacpi/core.c b/drivers/pnp/pnpacpi/core.c
+>> index b81448b..c3214e9 100644
+>> --- a/drivers/pnp/pnpacpi/core.c
+>> +++ b/drivers/pnp/pnpacpi/core.c
+>> @@ -272,10 +272,14 @@ static int __init pnpacpi_add_device(struct acpi_device *device)
+>>               strncpy(dev->name, acpi_device_bid(device), sizeof(dev->name));
+>>
+>>       if (dev->active)
+>> -             pnpacpi_parse_allocated_resource(dev);
+>> +             error = pnpacpi_parse_allocated_resource(dev);
+>> +             if (error)
+>> +                     return error;
+>>
+>>       if (dev->capabilities & PNP_CONFIGURABLE)
+>> -             pnpacpi_parse_resource_option_data(dev);
+>> +             error = pnpacpi_parse_resource_option_data(dev);
+>> +             if (error)
+>> +                     return error;
+>>
+>>       list_for_each_entry(id, &device->pnp.ids, list) {
+>>               if (!strcmp(id->id, pnpid))
+>>
+>
+> --
+> I speak only for myself.
+> Rafael J. Wysocki, Intel Open Source Technology Center.
