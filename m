@@ -1,49 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757831AbaGWJrV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 05:47:21 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:51016 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757597AbaGWJrR (ORCPT
+	id S1757937AbaGWJsJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 05:48:09 -0400
+Received: from pegasos-out.vodafone.de ([80.84.1.38]:40799 "EHLO
+	pegasos-out.vodafone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757863AbaGWJsH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 05:47:17 -0400
-Message-Id: <1406108835.2603.144733749.2407B407@webmail.messagingengine.com>
-X-Sasl-Enc: yN+HpT5NYj2FLyBAoA66nECwIrRY0o4udyYaTYpYXQSd 1406108835
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
-To: "Theodore Ts'o" <tytso@mit.edu>
-Cc: George Spelvin <linux@horizon.com>, linux-crypto@vger.kernel.org,
-        linux-kernel@vger.kernel.org
+	Wed, 23 Jul 2014 05:48:07 -0400
+X-Spam-Flag: NO
+X-Spam-Score: -0.045
+Authentication-Results: rohrpostix2.prod.vfnet.de (amavisd-new); dkim=pass
+	header.i=@vodafone.de
+X-DKIM: OpenDKIM Filter v2.6.8 pegasos-out.vodafone.de 7EAA46A1F8F
+X-DKIM: OpenDKIM Filter v2.0.2 smtp-04.vodafone.de 0D98FE843C
+Message-ID: <53CF84C7.2020507@vodafone.de>
+Date: Wed, 23 Jul 2014 11:47:51 +0200
+From: =?UTF-8?B?Q2hyaXN0aWFuIEvDtm5pZw==?= <deathsimple@vodafone.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
+To: Daniel Vetter <daniel.vetter@ffwll.ch>,
+        =?UTF-8?B?Q2hyaXN0aWFuIEvDtm5p?= =?UTF-8?B?Zw==?= 
+	<christian.koenig@amd.com>
+CC: Maarten Lankhorst <maarten.lankhorst@canonical.com>,
+        Thomas Hellstrom <thellstrom@vmware.com>,
+        nouveau <nouveau@lists.freedesktop.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        dri-devel <dri-devel@lists.freedesktop.org>,
+        Ben Skeggs <bskeggs@redhat.com>,
+        "Deucher, Alexander" <alexander.deucher@amd.com>
+Subject: Re: [Nouveau] [PATCH 09/17] drm/radeon: use common fence implementation
+ for fences
+References: <20140709093124.11354.3774.stgit@patser>	<CAKMK7uFa8vMBV9_JenbFGnFXtV_r9dk=WjbMkkCDWcauhrDdJg@mail.gmail.com>	<53CE8A57.2000803@vodafone.de>	<53CF58FB.8070609@canonical.com>	<53CF5B9F.1050800@amd.com>	<53CF5EFE.6070307@canonical.com>	<53CF63C2.7070407@vodafone.de>	<CAKMK7uGJj+UwcnnzA+fj_=uWPN3i0sneWkoD+wfPJ_8Q6Y-DQg@mail.gmail.com>	<53CF6622.6060803@amd.com>	<53CF699D.9070902@canonical.com>	<53CF6B18.5070107@vodafone.de>	<CAKMK7uGd65HR11thcv8KjDw-RnTa7W-QGOzFGFd+oO_hp8wyHA@mail.gmail.com>	<53CF7035.2060808@amd.com>	<53CF7191.2090008@canonical.com>	<CAKMK7uGLqzePAREsWhX0D1oN4FdqKwPgAL6x8sULpJSqYH5LwA@mail.gmail.com>	<53CF765E.7020802@vodafone.de>	<CAKMK7uE1G-EjbJ2RAXC3ZfkaCo=Gber5PJuRG623Yoz9D=FmGw@mail.gmail.com>	<53CF8010.9060809@amd.com>	<CAKMK7uEowhvc+4Jc6t2NAeE1joFaohJ6cP7sU-Akut6b3ta=1g@mail.gmail.com>	<53CF822E.7050601@amd.com>	<CAKMK7uG85KV94PTqkzvY8RPxg6ApRKHVZrD20e48GHZM=s06=w@mail.gmail.com> <CAKMK7uHEgdU+Uz-OnRGvT_wFjOXHpZmgZcrORsBrST_MY5_ADA@mail.gmail
+ .com>
+In-Reply-To: <CAKMK7uHEgdU+Uz-OnRGvT_wFjOXHpZmgZcrORsBrST_MY5_ADA@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain
-X-Mailer: MessagingEngine.com Webmail Interface - ajax-c420910d
-Subject: Re: [PATCH, RFC] random: introduce getrandom(2) system call
-Date: Wed, 23 Jul 2014 11:47:15 +0200
-In-Reply-To: <20140722225950.GU25291@thunk.org>
-References: <20140721112102.19300.qmail@ns.horizon.com>
- <1405956426.2319.37.camel@localhost>
- <1405990940.28229.4.camel@localhost> <20140722044409.GE24960@thunk.org>
- <1406022592.2407.9.camel@localhost> <20140722225950.GU25291@thunk.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Am 23.07.2014 11:44, schrieb Daniel Vetter:
+> On Wed, Jul 23, 2014 at 11:39 AM, Daniel Vetter <daniel.vetter@ffwll.ch> wrote:
+>> The scheduler needs to keep track of a lot of fences, so I think we'll
+>> have to register callbacks, not a simple wait function. We must keep
+>> track of all the non-i915 fences for all oustanding batches. Also, the
+>> scheduler doesn't eliminate the hw queue, only keep it much slower so
+>> that we can sneak in higher priority things.
+>>
+>> Really, scheduler or not is orthogonal.
+> Also see my other comment about interactions between wait_fence and
+> the i915 reset logic. We can't actually use it from within the
+> scheduler code since that would deadlock.
 
-On Wed, Jul 23, 2014, at 00:59, Theodore Ts'o wrote:
-> But why would you need to use GRND_RANDOM in your scenario, and accept
-> your application potentially getting stalled and stuck in amber for
-> perhaps hours?  If you are going to accept your application stalling
-> like that, you can do the pointer arithmatic.  It's really not hard,
-> and someone who can't do that, again, shouldn't be allowd anywhere
-> near crypto code in the first place (and if they are, they'll probably
-> be making lots of other, equally fatal if not more so, newbie
-> mistakes).
+Yeah, I see. You would need some way to abort the waiting on other 
+devices fences in case of a lockup.
 
-I favored the idea of having a non-failing non-partial-read getrandom
-syscall. But I am with you if it often causes long stalls that we should
-stick to the old semantics.
+What about an userspace thread to offload waiting and command submission to?
 
-Thanks,
-Hannes
+Just playing with ideas right now,
+Christian.
+
+> -Daniel
 
