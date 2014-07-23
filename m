@@ -1,83 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756281AbaGWGlA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 02:41:00 -0400
-Received: from ozlabs.org ([103.22.144.67]:59362 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755786AbaGWGk6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 02:40:58 -0400
-Date: Wed, 23 Jul 2014 16:40:49 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>,
-        David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Anish Bhatt <anish@chelsio.com>, Karen Xie <kxie@chelsio.com>,
-        Manoj Malviya <manojmalviya@chelsio.com>,
-        Hannes Reinecke <hare@suse.de>, Christoph Hellwig <hch@lst.de>
-Subject: linux-next: manual merge of the scsi tree with the net-next tree
-Message-ID: <20140723164049.413272e8@canb.auug.org.au>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
+	id S1756429AbaGWGlL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 02:41:11 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:46987 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756305AbaGWGlH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jul 2014 02:41:07 -0400
+Message-ID: <53CF58FB.8070609@canonical.com>
+Date: Wed, 23 Jul 2014 08:40:59 +0200
+From: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/rVQsC.i=_LPMhX4.0hLTXPD"; protocol="application/pgp-signature"
+To: =?UTF-8?B?Q2hyaXN0aWFuIEvDtm5pZw==?= <deathsimple@vodafone.de>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        =?UTF-8?B?Q2hyaXN0aWFuIEvDtm5pZw==?= <christian.koenig@amd.com>
+CC: Dave Airlie <airlied@gmail.com>, Thomas Hellstrom <thellstrom@vmware.com>,
+        nouveau <nouveau@lists.freedesktop.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        dri-devel <dri-devel@lists.freedesktop.org>,
+        Ben Skeggs <bskeggs@redhat.com>,
+        "Deucher, Alexander" <alexander.deucher@amd.com>
+Subject: Re: [Nouveau] [PATCH 09/17] drm/radeon: use common fence implementation
+ for fences
+References: <20140709093124.11354.3774.stgit@patser>	<20140709122953.11354.46381.stgit@patser>	<CAPM=9tyD2ZbrcGDC3hfNb7qNdzsfnyD-ZwM7G-nOgxeu5YKuSg@mail.gmail.com>	<53CE2421.5040906@amd.com>	<20140722114607.GL15237@phenom.ffwll.local>	<20140722115737.GN15237@phenom.ffwll.local>	<53CE56ED.4040109@vodafone.de>	<20140722132652.GO15237@phenom.ffwll.local>	<53CE6AFA.1060807@vodafone.de>	<CAKMK7uG1d31zU_i__wc+Yq46A0x0tPeKnMBs+NHSmHS82uMsXQ@mail.gmail.com>	<53CE84AA.9030703@amd.com> <CAKMK7uFa8vMBV9_JenbFGnFXtV_r9dk=WjbMkkCDWcauhrDdJg@mail.gmail.com> <53CE8A57.2000803@vodafone.de>
+In-Reply-To: <53CE8A57.2000803@vodafone.de>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/rVQsC.i=_LPMhX4.0hLTXPD
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+op 22-07-14 17:59, Christian König schreef:
+> Am 22.07.2014 17:42, schrieb Daniel Vetter:
+>> On Tue, Jul 22, 2014 at 5:35 PM, Christian König
+>> <christian.koenig@amd.com> wrote:
+>>> Drivers exporting fences need to provide a fence->signaled and a fence->wait
+>>> function, everything else like fence->enable_signaling or calling
+>>> fence_signaled() from the driver is optional.
+>>>
+>>> Drivers wanting to use exported fences don't call fence->signaled or
+>>> fence->wait in atomic or interrupt context, and not with holding any global
+>>> locking primitives (like mmap_sem etc...). Holding locking primitives local
+>>> to the driver is ok, as long as they don't conflict with anything possible
+>>> used by their own fence implementation.
+>> Well that's almost what we have right now with the exception that
+>> drivers are allowed (actually must for correctness when updating
+>> fences) the ww_mutexes for dma-bufs (or other buffer objects).
+>
+> In this case sorry for so much noise. I really haven't looked in so much detail into anything but Maarten's Radeon patches.
+>
+> But how does that then work right now? My impression was that it's mandatory for drivers to call fence_signaled()?
+It's only mandatory to call fence_signal() if the .enable_signaling callback has been called, else you can get away with never calling signaling a fence at all before dropping the last refcount to it.
+This allows you to keep interrupts disabled when you don't need them.
+>> Locking
+>> correctness is enforced with some extremely nasty lockdep annotations
+>> + additional debugging infrastructure enabled with
+>> CONFIG_DEBUG_WW_MUTEX_SLOWPATH. We really need to be able to hold
+>> dma-buf ww_mutexes while updating fences or waiting for them. And
+>> obviously for ->wait we need non-atomic context, not just
+>> non-interrupt.
+>
+> Sounds mostly reasonable, but for holding the dma-buf ww_mutex, wouldn't be an RCU be more appropriate here? E.g. aren't we just interested that the current assigned fence at some point is signaled?
+You can wait with RCU, without holding the ww_mutex, by calling reservation_object_wait_timeout_rcu on ttm_bo->resv.
+If you don't want to block you could test with reservation_object_test_signaled_rcu.
+Or if you want a copy of all fences without taking locks, try reservation_object_get_fences_rcu. (Might be out of date by the time the function returns if you don't hold ww_mutex, if you hold ww_mutex you probably don't need to call this function.)
 
-Hi James,
+I didn't add non-rcu versions, but using the RCU functions would work with ww_mutex held too, probably with some small overhead.
+> Something like grab ww_mutexes, grab a reference to the current fence object, release ww_mutex, wait for fence, release reference to the fence object.
+This is what I do currently. :-) The reservation_object that's embedded in TTM gets shared with the dma-buf, so there will be no special case needed for dma-buf at all, all objects can simply be shared and the synchronization is handled in the same way.
 
-Today's linux-next merge of the scsi tree got a conflict in
-drivers/scsi/cxgbi/libcxgbi.h between commit fc8d0590d914 ("libcxgbi:
-Add ipv6 api to driver") from the net-next tree and commit 1abf635d2f33
-("scsi: use 64-bit value for 'max_luns'") from the scsi tree.
+ttm_bo_reserve and friends automatically end up locking the dma-buf too, and lockdep works on it.
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+>
+>> Agreed that any shared locks are out of the way (especially stuff like
+>> dev->struct_mutex or other non-strictly driver-private stuff, i915 is
+>> really bad here still).
+>
+> Yeah that's also an point I've wanted to note on Maartens patch. Radeon grabs the read side of it's exclusive semaphore while waiting for fences (because it assumes that the fence it waits for is a Radeon fence).
+>
+> Assuming that we need to wait in both directions with Prime (e.g. Intel driver needs to wait for Radeon to finish rendering and Radeon needs to wait for Intel to finish displaying), this might become a perfect example of locking inversion.
+In the preliminary patches where I can sync radeon with other GPU's I've been very careful in all the places that call into fences, to make sure that radeon wouldn't try to handle lockups for a different (possibly also radeon) card.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+This is also why fence_is_signaled should never block, and why it trylocks the exclusive_lock. :-) I think lockdep would complain if I grabbed exclusive_lock while blocking in is_signaled.
 
-diff --cc drivers/scsi/cxgbi/libcxgbi.h
-index 8ad73d913f02,538d7a64e138..000000000000
---- a/drivers/scsi/cxgbi/libcxgbi.h
-+++ b/drivers/scsi/cxgbi/libcxgbi.h
-@@@ -708,8 -692,7 +708,8 @@@ struct cxgbi_device *cxgbi_device_regis
-  void cxgbi_device_unregister(struct cxgbi_device *);
-  void cxgbi_device_unregister_all(unsigned int flag);
-  struct cxgbi_device *cxgbi_device_find_by_lldev(void *);
- +struct cxgbi_device *cxgbi_device_find_by_netdev(struct net_device *, int=
- *);
-- int cxgbi_hbas_add(struct cxgbi_device *, unsigned int, unsigned int,
-+ int cxgbi_hbas_add(struct cxgbi_device *, u64, unsigned int,
-  			struct scsi_host_template *,
-  			struct scsi_transport_template *);
-  void cxgbi_hbas_remove(struct cxgbi_device *);
+>> So from the core fence framework I think we already have exactly this,
+>> and we only need to adjust the radeon implementation a bit to make it
+>> less risky and invasive to the radeon driver logic.
+>
+> Agree. Well the biggest problem I see is that exclusive semaphore I need to take when anything calls into the driver. For the fence code I need to move that down into the fence->signaled handler, cause that now can be called from outside the driver.
+>
+> Maarten solved this by telling the driver in the lockup handler (where we grab the write side of the exclusive lock) that all interrupts are already enabled, so that fence->signaled hopefully wouldn't mess with the hardware at all. While this probably works, it just leaves me with a feeling that we are doing something wrong here.
+There is unfortunately no global mechanism to say 'this card is locked up, please don't call into any of my fences', and I don't associate fences with devices, and radeon doesn't keep a global list of fences.
+If all of that existed, it would complicate the interface and its callers a lot, while I like to keep things simple.
+So I did the best I could, and simply prevented the fence calls from fiddling with the hardware. Fortunately gpu lockup is not a common operation. :-)
 
---Sig_/rVQsC.i=_LPMhX4.0hLTXPD
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+~Maarten
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
 
-iQIcBAEBCAAGBQJTz1j3AAoJEMDTa8Ir7ZwV9IgQAJN5QgiB9JsR/5a3wAr4U1jq
-4PZ10HfNLYl2vhNBnylSBr4VcAMKmm3fAKbeJUatuXIHt9DTr4noATcVnaXhuXJR
-VFnbLYL+yG8JWdvfAbjlLsCWB9Iv1ZFsA2K7JTOfELIwz3pFrX3OTJeCyDdrK21w
-p27CCDZl288VQyn9uFLYk8yc5fD2euus3XmTz5uujLwXHSwCS4LSa04kJSgn9wFo
-oa4VP6q7bs1IT0Kwh7JMdWN7cGif94gCtFOrU940KPdcddgEXnTvbi6FKTXMW9VS
-oEYhOvqj5yJEiNHsq/2qyPR0lwnkHl43L15UxlZ2M3/7tHUZXKsOybv0qYQHgDm1
-w1oRDTlrSIbNEfOhmX/tDg/Ei5PBDxoobkBfz0BnPda6FeMYx8eg2hteSsYarphW
-ivK2JnKoJcM+jLT2mjel4xRXT5bk7jpc89YfONe2K+U0C8k0dGpcq26ba4T6IEqU
-n5nEoMbz/lWklhJAOdgIoyKUZpZRNtRwl4/IWBAIAyaVXENmU4m+GbOZ+OBJKLdI
-prhWYXiaOlpctOqR63axaKRzXQq8lLS7870BtYEMq0C/HwxknEP8opKsvWmimjuN
-Gie7oM8dYNCcOzx+OEI0I9m0HY9HqP7BvbiuykzZL78gci5AuA3I9B3jpI8oqqYq
-RikGmIrHpOZPWcxvFosY
-=9q0h
------END PGP SIGNATURE-----
-
---Sig_/rVQsC.i=_LPMhX4.0hLTXPD--
