@@ -1,55 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756781AbaGWHQy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 03:16:54 -0400
-Received: from mga11.intel.com ([192.55.52.93]:38028 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755829AbaGWHQx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 03:16:53 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,715,1400050800"; 
-   d="scan'208";a="565903758"
-Message-ID: <53CF6121.3050500@intel.com>
-Date: Wed, 23 Jul 2014 10:15:45 +0300
-From: Adrian Hunter <adrian.hunter@intel.com>
-Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
- Business Identity Code: 0357606 - 4, Domiciled in Helsinki 
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1756762AbaGWHVs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 03:21:48 -0400
+Received: from mail-la0-f54.google.com ([209.85.215.54]:57699 "EHLO
+	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755783AbaGWHVp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jul 2014 03:21:45 -0400
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Arnaldo Carvalho de Melo <acme@kernel.org>, linux-kernel@vger.kernel.org,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 01/52] perf tools: Fix jump label always changing during
- tracing
-References: <1406035081-14301-1-git-send-email-adrian.hunter@intel.com> <1406035081-14301-2-git-send-email-adrian.hunter@intel.com> <20140722140034.GE20303@kernel.org> <20140722141135.GF3935@laptop> <53CF5124.2090901@intel.com> <20140723065822.GN3935@laptop>
-In-Reply-To: <20140723065822.GN3935@laptop>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1405957142-19416-15-git-send-email-ttynkkynen@nvidia.com>
+References: <1405957142-19416-1-git-send-email-ttynkkynen@nvidia.com>
+	<1405957142-19416-15-git-send-email-ttynkkynen@nvidia.com>
+Date: Wed, 23 Jul 2014 12:51:43 +0530
+Message-ID: <CAMf-jSkOF3qN=GSju=tsMp5SBUo+TqNQOROnirr=N_zz7Ca43Q@mail.gmail.com>
+Subject: Re: [PATCH v2 14/16] cpufreq: Add cpufreq driver for Tegra124
+From: pramod gurav <pramod.gurav.etc@gmail.com>
+To: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
+Cc: linux-tegra@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-pm@vger.kernel.org, Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Paul Walmsley <pwalmsley@nvidia.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/23/2014 09:58 AM, Peter Zijlstra wrote:
-> On Wed, Jul 23, 2014 at 09:07:32AM +0300, Adrian Hunter wrote:
->> On 07/22/2014 05:11 PM, Peter Zijlstra wrote:
->>> On Tue, Jul 22, 2014 at 11:00:34AM -0300, Arnaldo Carvalho de Melo wrote:
->>>> Em Tue, Jul 22, 2014 at 04:17:10PM +0300, Adrian Hunter escreveu:
->>>>> Intel PT decoding walks the object code to reconstruct
->>>>> the trace.  A jump label change during tracing causes
->>>>> decoding errors.
->>>
->>> You'd better fix that, jump_labels can change any time and they're all
->>> over the frigging place.
->>>
->>
->> Perhaps a general method is needed to be able to deal with kernel
->> self-modifying code.
-> 
-> I know people are looking at doing the same to userspace, is that also a
-> problem?
+On Mon, Jul 21, 2014 at 9:09 PM, Tuomas Tynkkynen <ttynkkynen@nvidia.com> wrote:
+> Add a new cpufreq driver for Tegra124. Instead of using the PLLX as
 
-Yes, most significantly JIT-compiled code.
+<snip>
 
+> +
+> +static int tegra124_cpu_switch_to_dfll(void)
+> +{
+> +       struct clk *original_cpu_clk_parent;
+> +       unsigned long rate;
+> +       struct dev_pm_opp *opp;
+> +       int ret;
+> +
+> +       rate = clk_get_rate(cpu_clk);
+> +       opp = dev_pm_opp_find_freq_ceil(cpu_dev, &rate);
+> +       if (IS_ERR(opp))
+> +               return PTR_ERR(opp);
+> +
+> +       ret = clk_set_rate(dfll_clk, rate);
+> +       if (ret)
+> +               return ret;
+> +
+> +       original_cpu_clk_parent = clk_get_parent(cpu_clk);
+> +       clk_set_parent(cpu_clk, pllp_clk);
+
+Needs return check.
+
+> +       if (ret)
+> +               return ret;
+Which 'ret' is being checked here? nothing is assigned here. May be
+fixing previous comment will fix this.
+
+> +
+> +       ret = clk_prepare_enable(dfll_clk);
+
+<snip>
+
+> Please read the FAQ at  http://www.tux.org/lkml/
+
+
+
+-- 
+Thanks and Regards
+Pramod
