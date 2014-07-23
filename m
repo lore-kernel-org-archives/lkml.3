@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932824AbaGWCgk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 22:36:40 -0400
-Received: from mga01.intel.com ([192.55.52.88]:34603 "EHLO mga01.intel.com"
+	id S1757164AbaGWCgt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 22:36:49 -0400
+Received: from mga02.intel.com ([134.134.136.20]:44642 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932623AbaGWCgi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 22:36:38 -0400
+	id S1755632AbaGWCgr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 22:36:47 -0400
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="363778753"
+X-IronPort-AV: E=Sophos;i="5.01,714,1400050800"; 
+   d="scan'208";a="577336368"
 From: "Chen, Gong" <gong.chen@linux.intel.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@kernel.org, tglx@linutronix.de, paulus@samba.org,
@@ -21,9 +21,9 @@ Cc: mingo@kernel.org, tglx@linutronix.de, paulus@samba.org,
         rostedt@goodmis.org, rric@kernel.org, gregkh@linuxfoundation.org,
         mhocko@suse.cz, david@fromorbit.com,
         "Chen, Gong" <gong.chen@linux.intel.com>
-Subject: [RFC PATCH v1 45/70] net, core, dev: _FROZEN Cleanup
-Date: Tue, 22 Jul 2014 21:59:21 -0400
-Message-Id: <1406080786-3938-46-git-send-email-gong.chen@linux.intel.com>
+Subject: [RFC PATCH v1 46/70] block, blk-mq: _FROZEN Cleanup
+Date: Tue, 22 Jul 2014 21:59:22 -0400
+Message-Id: <1406080786-3938-47-git-send-email-gong.chen@linux.intel.com>
 X-Mailer: git-send-email 2.0.0.rc2
 In-Reply-To: <1406080786-3938-1-git-send-email-gong.chen@linux.intel.com>
 References: <1406080786-3938-1-git-send-email-gong.chen@linux.intel.com>
@@ -31,26 +31,42 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove XXX_FROZEN state from net/core/dev.
+Remove XXX_FROZEN state from block/blk-mq.
 
 Signed-off-by: Chen, Gong <gong.chen@linux.intel.com>
 ---
- net/core/dev.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ block/blk-mq.c | 10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
 
-diff --git a/net/core/dev.c b/net/core/dev.c
-index 7990984..2c3801a 100644
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -6805,7 +6805,7 @@ static int dev_cpu_callback(struct notifier_block *nfb,
- 	unsigned int cpu, oldcpu = (unsigned long)ocpu;
- 	struct softnet_data *sd, *oldsd;
+diff --git a/block/blk-mq.c b/block/blk-mq.c
+index ad69ef6..b5cd279 100644
+--- a/block/blk-mq.c
++++ b/block/blk-mq.c
+@@ -1522,9 +1522,11 @@ static int blk_mq_hctx_notify(void *data, unsigned long action,
+ {
+ 	struct blk_mq_hw_ctx *hctx = data;
  
--	if (action != CPU_DEAD && action != CPU_DEAD_FROZEN)
-+	if ((action & ~CPU_TASKS_FROZEN) != CPU_DEAD)
+-	if (action == CPU_DEAD || action == CPU_DEAD_FROZEN)
++	action &= ~CPU_TASKS_FROZEN;
++
++	if (action == CPU_DEAD)
+ 		return blk_mq_hctx_cpu_offline(hctx, cpu);
+-	else if (action == CPU_ONLINE || action == CPU_ONLINE_FROZEN)
++	else if (action == CPU_ONLINE)
+ 		return blk_mq_hctx_cpu_online(hctx, cpu);
+ 
+ 	return NOTIFY_OK;
+@@ -1939,8 +1941,8 @@ static int blk_mq_queue_reinit_notify(struct notifier_block *nb,
+ 	 * offline CPUs to first hardware queue. We will re-init the queue
+ 	 * below to get optimal settings.
+ 	 */
+-	if (action != CPU_DEAD && action != CPU_DEAD_FROZEN &&
+-	    action != CPU_ONLINE && action != CPU_ONLINE_FROZEN)
++	action &= ~CPU_TASKS_FROZEN;
++	if (action != CPU_DEAD && action != CPU_ONLINE)
  		return NOTIFY_OK;
  
- 	local_irq_disable();
+ 	mutex_lock(&all_q_mutex);
 -- 
 2.0.0.rc2
 
