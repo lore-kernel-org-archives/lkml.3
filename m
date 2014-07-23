@@ -1,101 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757552AbaGWIzF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 04:55:05 -0400
-Received: from mail-ie0-f169.google.com ([209.85.223.169]:38072 "EHLO
-	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755177AbaGWIy4 convert rfc822-to-8bit (ORCPT
+	id S1757569AbaGWI5S (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 04:57:18 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:36689 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753112AbaGWI5K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 04:54:56 -0400
+	Wed, 23 Jul 2014 04:57:10 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v2.0.1
+X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-3
+Message-ID: <53CF78A7.5070302@jp.fujitsu.com>
+Date: Wed, 23 Jul 2014 17:56:07 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-X-Originating-IP: [84.73.67.144]
-In-Reply-To: <53CF765E.7020802@vodafone.de>
-References: <20140709093124.11354.3774.stgit@patser>
-	<53CE2421.5040906@amd.com>
-	<20140722114607.GL15237@phenom.ffwll.local>
-	<20140722115737.GN15237@phenom.ffwll.local>
-	<53CE56ED.4040109@vodafone.de>
-	<20140722132652.GO15237@phenom.ffwll.local>
-	<53CE6AFA.1060807@vodafone.de>
-	<CAKMK7uG1d31zU_i__wc+Yq46A0x0tPeKnMBs+NHSmHS82uMsXQ@mail.gmail.com>
-	<53CE84AA.9030703@amd.com>
-	<CAKMK7uFa8vMBV9_JenbFGnFXtV_r9dk=WjbMkkCDWcauhrDdJg@mail.gmail.com>
-	<53CE8A57.2000803@vodafone.de>
-	<53CF58FB.8070609@canonical.com>
-	<53CF5B9F.1050800@amd.com>
-	<53CF5EFE.6070307@canonical.com>
-	<53CF63C2.7070407@vodafone.de>
-	<CAKMK7uGJj+UwcnnzA+fj_=uWPN3i0sneWkoD+wfPJ_8Q6Y-DQg@mail.gmail.com>
-	<53CF6622.6060803@amd.com>
-	<53CF699D.9070902@canonical.com>
-	<53CF6B18.5070107@vodafone.de>
-	<CAKMK7uGd65HR11thcv8KjDw-RnTa7W-QGOzFGFd+oO_hp8wyHA@mail.gmail.com>
-	<53CF7035.2060808@amd.com>
-	<53CF7191.2090008@canonical.com>
-	<CAKMK7uGLqzePAREsWhX0D1oN4FdqKwPgAL6x8sULpJSqYH5LwA@mail.gmail.com>
-	<53CF765E.7020802@vodafone.de>
-Date: Wed, 23 Jul 2014 10:54:55 +0200
-Message-ID: <CAKMK7uE1G-EjbJ2RAXC3ZfkaCo=Gber5PJuRG623Yoz9D=FmGw@mail.gmail.com>
-Subject: Re: [Nouveau] [PATCH 09/17] drm/radeon: use common fence
- implementation for fences
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
-To: =?UTF-8?Q?Christian_K=C3=B6nig?= <deathsimple@vodafone.de>
-Cc: Maarten Lankhorst <maarten.lankhorst@canonical.com>,
-        =?UTF-8?Q?Christian_K=C3=B6nig?= <christian.koenig@amd.com>,
-        Thomas Hellstrom <thellstrom@vmware.com>,
-        nouveau <nouveau@lists.freedesktop.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        dri-devel <dri-devel@lists.freedesktop.org>,
-        Ben Skeggs <bskeggs@redhat.com>,
-        "Deucher, Alexander" <alexander.deucher@amd.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Wanpeng Li <wanpeng.li@linux.intel.com>
+CC: <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, <x86@kernel.org>,
+        Borislav Petkov <bp@alien8.de>, David Rientjes <rientjes@google.com>,
+        Prarit Bhargava <prarit@redhat.com>,
+        Steven Rostedt <srostedt@redhat.com>,
+        Jan Kiszka <jan.kiszka@siemens.com>, Toshi Kani <toshi.kani@hp.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] x86, hotplug: fix llc shared map unreleased during
+ cpu hotplug
+References: <1406016292-55968-1-git-send-email-wanpeng.li@linux.intel.com>
+In-Reply-To: <1406016292-55968-1-git-send-email-wanpeng.li@linux.intel.com>
+Content-Type: text/plain; charset="ISO-2022-JP"
+Content-Transfer-Encoding: 7bit
+X-SecurityPolicyCheck-GC: OK by FENCE-Mail
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 23, 2014 at 10:46 AM, Christian König
-<deathsimple@vodafone.de> wrote:
-> Am 23.07.2014 10:42, schrieb Daniel Vetter:
->
->> On Wed, Jul 23, 2014 at 10:25 AM, Maarten Lankhorst
->> <maarten.lankhorst@canonical.com> wrote:
->>>
->>> In this case if the sync was to i915 the i915 lockup procedure would take
->>> care of itself. It wouldn't fix radeon, but it would at least unblock your
->>> intel card again. I haven't specifically added a special case to attempt to
->>> unblock external fences, but I've considered it. :-)
->>
->> Actually the i915 reset stuff relies crucially on being able to kick
->> all waiters holding driver locks. Since the current fence code only
->> exposes an opaque wait function without exposing the underlying wait
->> queue we won't be able to sleep on both the fence queue and the reset
->> queue. So would pose a problem if we add fence_wait calls to our
->> driver.
->
->
-> And apart from that I really think that I misunderstood Maarten. But his
-> explanation sounds like i915 would do a reset because Radeon is locked up,
-> right?
->
-> Well if that's really the case then I would question the interface even
-> more, cause that is really nonsense.
+(2014/07/22 17:04), Wanpeng Li wrote:
+> [  220.262093] BUG: unable to handle kernel NULL pointer dereference at 0000000000000004
+> [  220.262104] IP: [<ffffffff810e7ac9>] find_busiest_group+0x2b9/0xa30
+> [  220.262111] PGD 5a9d5067 PUD 13067 PMD 0
+> [  220.262117] Oops: 0000 [#3] SMP
+> [...]
+> [  220.262245] Call Trace:
+> [  220.262252]  [<ffffffff810e8396>] load_balance+0x156/0x980
+> [  220.262259]  [<ffffffff816eeffe>] ? _raw_spin_unlock_irqrestore+0x2e/0xa0
+> [  220.262266]  [<ffffffff810e9aa3>] idle_balance+0xe3/0x150
+> [  220.262270]  [<ffffffff816ec4e7>] __schedule+0x797/0x8d0
+> [  220.262277]  [<ffffffff816ec934>] schedule+0x24/0x70
+> [  220.262283]  [<ffffffff816e9cd9>] schedule_timeout+0x119/0x1f0
+> [  220.262294]  [<ffffffff810bb6e0>] ? lock_timer_base+0x70/0x70
+> [  220.262301]  [<ffffffff816e9dc9>] schedule_timeout_uninterruptible+0x19/0x20
+> [  220.262308]  [<ffffffff810bd3e8>] msleep+0x18/0x20
+> [  220.262317]  [<ffffffff813aa11a>] lock_device_hotplug_sysfs+0x2a/0x50
+> [  220.262323]  [<ffffffff813aa16e>] online_store+0x2e/0x80
+> [  220.262358]  [<ffffffff813a873b>] dev_attr_store+0x1b/0x20
+> [  220.262366]  [<ffffffff812292fd>] sysfs_write_file+0xdd/0x160
+> [  220.262377]  [<ffffffff811b7e78>] vfs_write+0xc8/0x170
+> [  220.262384]  [<ffffffff811b83ca>] SyS_write+0x5a/0xa0
+> [  220.262388]  [<ffffffff816f76b9>] system_call_fastpath+0x16/0x1b
+> 
+> Last level cache shared map is built during cpu up and build sched domain
+> routine takes advantage of it to setup sched domain cpu topology, however,
+> llc shared map is unreleased during cpu disable which lead to invalid sched
+> domain cpu topology. This patch fix it by release llc shared map correctly
+> during cpu disable.
+> 
 
-I disagree - the entire point of fences is that we can do multi-gpu
-work asynchronously. So by the time we'll notice that radeon's dead we
-have accepted the batch from userspace already. The only way to get
-rid of it again is through our reset machinery, which also tells
-userspace that we couldn't execute the batch. Whether we actually need
-to do a hw reset depends upon whether we've committed the batch to the
-hw already. Atm that's always the case, but the scheduler will change
-that. So I have no issues with intel doing a reset when other drivers
-don't signal fences.
+I posted a latest patch as follows:
+https://lkml.org/lkml/2014/7/22/1018
 
-Also this isn't a problem with the interface really, but with the
-current implementation for radeon. And getting cross-driver reset
-notifications right will require more work either way.
--Daniel
--- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+Could you confirm the patch fixes your issue?
+
+Thanks,
+Yasuaki Ishimatsu
+
+> Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
+> ---
+> v1 -> v2:
+>   * fix subject line
+> 
+>   arch/x86/kernel/smpboot.c | 3 +++
+>   1 file changed, 3 insertions(+)
+> 
+> diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
+> index 5492798..0134ec7 100644
+> --- a/arch/x86/kernel/smpboot.c
+> +++ b/arch/x86/kernel/smpboot.c
+> @@ -1292,6 +1292,9 @@ static void remove_siblinginfo(int cpu)
+>   
+>   	for_each_cpu(sibling, cpu_sibling_mask(cpu))
+>   		cpumask_clear_cpu(cpu, cpu_sibling_mask(sibling));
+> +	for_each_cpu(sibling, cpu_llc_shared_mask(cpu))
+> +		cpumask_clear_cpu(cpu, cpu_llc_shared_mask(sibling));
+> +	cpumask_clear(cpu_llc_shared_mask(cpu));
+>   	cpumask_clear(cpu_sibling_mask(cpu));
+>   	cpumask_clear(cpu_core_mask(cpu));
+>   	c->phys_proc_id = 0;
+> 
+
+
