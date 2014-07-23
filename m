@@ -1,37 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758255AbaGWWzG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 18:55:06 -0400
-Received: from mail-ie0-f169.google.com ([209.85.223.169]:65091 "EHLO
-	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757992AbaGWWzD (ORCPT
+	id S933624AbaGWW4J (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 18:56:09 -0400
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:62958 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758143AbaGWW4G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 18:55:03 -0400
-Date: Wed, 23 Jul 2014 15:55:00 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: "Theodore Ts'o" <tytso@mit.edu>, Olof Johansson <olof@lixom.net>,
-        Chen Gang <gang.chen.5i5j@gmail.com>,
-        Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] fs/ext4/super.c: Let 'counters' switched by SMP
-In-Reply-To: <20140721191148.GB24960@thunk.org>
-Message-ID: <alpine.DEB.2.02.1407231554450.1389@chino.kir.corp.google.com>
-References: <53C47E59.8030502@gmail.com> <20140715093154.GB1451@thunk.org> <CAOesGMhmENA+eojUYBOCJQBNq4zcWx8C-qDCv5umNPm0it8qxg@mail.gmail.com> <20140721191148.GB24960@thunk.org>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 23 Jul 2014 18:56:06 -0400
+From: Ming Lei <ming.lei@canonical.com>
+To: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org
+Cc: Andrew Morton <akpm@linux-foundation.org>, Zach Brown <zab@zabbo.net>,
+        Dave Kleikamp <dave.kleikamp@oracle.com>,
+        Benjamin LaHaise <bcrl@kvack.org>
+Subject: [PATCH 0/9] block/aio: loop mq conversion and kernel aio
+Date: Thu, 24 Jul 2014 06:55:21 +0800
+Message-Id: <1406156130-15575-1-git-send-email-ming.lei@canonical.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 21 Jul 2014, Theodore Ts'o wrote:
+Hi,
 
-> Right, sorry, I'm currently in vacation in Rome, and the network
-> connection was really lousy here now that I'm no longer at the ACACES
-> summer school in Fiuggi.  (Also, now that I'm no longer actually
-> teaching, I've beeen trying to actually do the disconnecting and
-> sightseeing thing.  :-)
-> 
+The first 6 patches convert current loop driver into blk-mq, and
+loop's scalability can get improved a lot.
 
-Confirmed this is now fixed in linux-next, thanks Ted!
+The 7th and 8th patches introduce kernel AIO support, most of
+is borrow from Dave's work last year, and thanks to ITER_BVEC,
+now it is easier to implement kernel AIO now.
+
+The 9th patch uses kernel AIO with O_DIRECT to improve loop's
+performance in single thread.
+
+With blk-mq and kernel AIO, both scalability and performance
+of loop driver get lot of improvement.
+
+Thanks,
+
