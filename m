@@ -1,75 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757604AbaGWJJW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 05:09:22 -0400
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:45119 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751347AbaGWJJU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 05:09:20 -0400
-Message-ID: <53CF7BB7.8080509@linaro.org>
-Date: Wed, 23 Jul 2014 18:09:11 +0900
-From: AKASHI Takahiro <takahiro.akashi@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Will Deacon <will.deacon@arm.com>
-CC: Kees Cook <keescook@chromium.org>, Will Drewry <wad@chromium.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "dsaxena@linaro.org" <dsaxena@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v5 1/3] arm64: ptrace: reload a syscall number after ptrace
- operations
-References: <1406020499-5537-1-git-send-email-takahiro.akashi@linaro.org> <1406020499-5537-2-git-send-email-takahiro.akashi@linaro.org> <CAGXu5jKkJUGn_MpEEr8U=n_A+iW9s8vSX1WoVNzRJMVyGQRjpA@mail.gmail.com> <53CF5E53.3060409@linaro.org> <20140723082505.GB27260@arm.com>
-In-Reply-To: <20140723082505.GB27260@arm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1757626AbaGWJJf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 05:09:35 -0400
+Received: from mga01.intel.com ([192.55.52.88]:13606 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757588AbaGWJJb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jul 2014 05:09:31 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,716,1400050800"; 
+   d="scan'208";a="565944627"
+From: Lan Tianyu <tianyu.lan@intel.com>
+To: rjw@rjwysocki.net, len.brown@intel.com, pavel@ucw.cz, peterz@infradead.org,
+        toshi.kani@hp.com, mingo@kernel.org, akpm@linux-foundation.org,
+        todd.e.brandt@linux.intel.com, fabf@skynet.be,
+        srivatsa.bhat@linux.vnet.ibm.com, tianyu.lan@intel.com,
+        ego@linux.vnet.ibm.com
+Cc: rafael.j.wysocki@intel.com, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org
+Subject: [RFC PATCH] PM/CPU: Parallel enabling nonboot cpus with resume devices
+Date: Wed, 23 Jul 2014 17:11:34 +0800
+Message-Id: <1406106694-3306-1-git-send-email-tianyu.lan@intel.com>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/23/2014 05:25 PM, Will Deacon wrote:
-> On Wed, Jul 23, 2014 at 08:03:47AM +0100, AKASHI Takahiro wrote:
->> On 07/23/2014 05:15 AM, Kees Cook wrote:
->>> On Tue, Jul 22, 2014 at 2:14 AM, AKASHI Takahiro
->>> <takahiro.akashi@linaro.org> wrote:
->>>>    asmlinkage int syscall_trace_enter(struct pt_regs *regs)
->>>>    {
->>>> +       unsigned long saved_x0, saved_x8;
->>>> +
->>>> +       saved_x0 = regs->regs[0];
->>>> +       saved_x8 = regs->regs[8];
->>>> +
->>>>           if (test_thread_flag(TIF_SYSCALL_TRACE))
->>>>                   tracehook_report_syscall(regs, PTRACE_SYSCALL_ENTER);
->>>>
->>>> +       regs->syscallno = regs->regs[8];
->>>> +       if ((long)regs->syscallno == ~0UL) { /* skip this syscall */
->>>> +               regs->regs[8] = saved_x8;
->>>> +               if (regs->regs[0] == saved_x0) /* not changed by user */
->>>> +                       regs->regs[0] = -ENOSYS;
->>>
->>> I'm not sure this is right compared to other architectures. Generally
->>> when a tracer performs a syscall skip, it's up to them to also adjust
->>> the return value. They may want to be faking a syscall, and what if
->>> the value they want to return happens to be what x0 was going into the
->>> tracer? It would have no way to avoid this -ENOSYS case. I think
->>> things are fine without this test.
->>
->> Yeah, I know this issue, but was not sure that setting a return value
->> is mandatory. (x86 seems to return -ENOSYS by default if not explicitly
->> specified.)
->> Is "fake a system call" a more appropriate word than "skip"?
->>
->> I will defer to Will.
->
-> I agree with Kees -- iirc, I only suggested restoring x8.
+In the current world, all nonboot cpus are enabled serially during system
+resume. System resume sequence is that boot cpu enables nonboot cpu one by
+one and then resume devices. Before resuming devices, there are few tasks
+assigned to nonboot cpus after they are brought up. This waste cpu usage.
 
-OK.
+To accelerate S3, this patches adds a new kernel configure
+PM_PARALLEL_CPU_UP_FOR_SUSPEND to allow boot cpu to go forward to resume
+devices after bringing up one nonboot cpu. The nonboot cpu will be in charge
+of bringing up other cpus. This makes enabling cpu2~x parallel with resuming
+devices. From the test result on 4 logical core laptop, the time of resume
+device almost wasn't affected by enabling nonboot cpus lately while the start
+point is almost 30ms earlier than before.
 
--Takahiro AKASHI
+Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+---
+ kernel/cpu.c         | 82 ++++++++++++++++++++++++++++++++++++++++++++++------
+ kernel/power/Kconfig | 13 +++++++++
+ 2 files changed, 86 insertions(+), 9 deletions(-)
 
-> Will
->
+diff --git a/kernel/cpu.c b/kernel/cpu.c
+index a343bde..d4c1353 100644
+--- a/kernel/cpu.c
++++ b/kernel/cpu.c
+@@ -551,9 +551,27 @@ void __weak arch_enable_nonboot_cpus_end(void)
+ {
+ }
+ 
++static int _cpu_up_with_trace(int cpu)
++{
++	int error;
++
++	trace_suspend_resume(TPS("CPU_ON"), cpu, true);
++	error = _cpu_up(cpu, 1);
++	trace_suspend_resume(TPS("CPU_ON"), cpu, false);
++	if (error) {
++		pr_warn("Error taking CPU%d up: %d\n", cpu, error);
++		return error;
++	}
++
++	pr_info("CPU%d is up\n", cpu);
++	return 0;
++}
++
++#ifndef CONFIG_PM_PARALLEL_CPU_UP_FOR_SUSPEND
++
+ void __ref enable_nonboot_cpus(void)
+ {
+-	int cpu, error;
++	int cpu;
+ 
+ 	/* Allow everyone to use the CPU hotplug again */
+ 	cpu_maps_update_begin();
+@@ -566,14 +584,7 @@ void __ref enable_nonboot_cpus(void)
+ 	arch_enable_nonboot_cpus_begin();
+ 
+ 	for_each_cpu(cpu, frozen_cpus) {
+-		trace_suspend_resume(TPS("CPU_ON"), cpu, true);
+-		error = _cpu_up(cpu, 1);
+-		trace_suspend_resume(TPS("CPU_ON"), cpu, false);
+-		if (!error) {
+-			pr_info("CPU%d is up\n", cpu);
+-			continue;
+-		}
+-		pr_warn("Error taking CPU%d up: %d\n", cpu, error);
++		_cpu_up_with_trace(cpu);
+ 	}
+ 
+ 	arch_enable_nonboot_cpus_end();
+@@ -583,6 +594,59 @@ out:
+ 	cpu_maps_update_done();
+ }
+ 
++#else
++
++static int async_enable_nonboot_cpus(void *data)
++{
++	int cpu;
++
++	cpu_maps_update_begin();
++
++	for_each_cpu(cpu, frozen_cpus) {
++		_cpu_up_with_trace(cpu);
++	}
++
++	arch_enable_nonboot_cpus_end();
++	cpumask_clear(frozen_cpus);
++	cpu_maps_update_done();
++	return 0;
++}
++
++void __ref enable_nonboot_cpus(void)
++{
++	struct task_struct *tsk;
++	int cpu;
++
++	/* Allow everyone to use the CPU hotplug again */
++	cpu_maps_update_begin();
++	cpu_hotplug_disabled = 0;
++	if (cpumask_empty(frozen_cpus))
++		goto out;
++
++	arch_enable_nonboot_cpus_begin();
++
++	cpu = cpumask_first(frozen_cpus);
++	cpumask_clear_cpu(cpu, frozen_cpus);
++
++	_cpu_up_with_trace(cpu);
++
++	if (cpumask_empty(frozen_cpus)) {
++		arch_enable_nonboot_cpus_end();
++	} else {
++		tsk = kthread_create_on_cpu(async_enable_nonboot_cpus,
++				NULL, cpu, "async-enable-nonboot-cpus");
++		if (IS_ERR(tsk)) {
++			pr_err("Failed to create async enable nonboot cpus thread.\n");
++			goto out;
++		}
++
++		kthread_unpark(tsk);
++	}
++out:
++	cpu_maps_update_done();
++}
++#endif
++
+ static int __init alloc_frozen_cpus(void)
+ {
+ 	if (!alloc_cpumask_var(&frozen_cpus, GFP_KERNEL|__GFP_ZERO))
+diff --git a/kernel/power/Kconfig b/kernel/power/Kconfig
+index 9a83d78..e5e6671 100644
+--- a/kernel/power/Kconfig
++++ b/kernel/power/Kconfig
+@@ -110,6 +110,19 @@ config PM_AUTOSLEEP
+ 	Allow the kernel to trigger a system transition into a global sleep
+ 	state automatically whenever there are no active wakeup sources.
+ 
++config PM_PARALLEL_CPU_UP_FOR_SUSPEND
++	bool "Parallel non-boot cpus up for system suspend"
++	depends on SMP
++	depends on PM_SLEEP
++	default n
++	---help---
++	In the current world, all nonboot cpus are enabled serially during system
++	resume. System resume sequence is that boot cpu enables nonboot cpu one by
++	one and then resume devices. Before resuming devices, there are few tasks
++	assigned to nonboot cpus. To accelerate S3, this option allows boot cpu
++	to go forward to resume devices after bringing up one nonboot cpu. The
++	nonboot cpu will be in charge of bring up other cpus.
++
+ config PM_WAKELOCKS
+ 	bool "User space wakeup sources interface"
+ 	depends on PM_SLEEP
+-- 
+1.8.3.1
+
