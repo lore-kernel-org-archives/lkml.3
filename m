@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757959AbaGWKye (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 06:54:34 -0400
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:43243 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932409AbaGWKyY (ORCPT
+	id S1758006AbaGWKyl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 06:54:41 -0400
+Received: from mail-we0-f169.google.com ([74.125.82.169]:34161 "EHLO
+	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757623AbaGWKyd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 06:54:24 -0400
+	Wed, 23 Jul 2014 06:54:33 -0400
 From: Daniel Lezcano <daniel.lezcano@linaro.org>
 To: linux-kernel@vger.kernel.org
-Subject: [PATCH 13/25] clocksource: Add support for the Mediatek SoCs
-Date: Wed, 23 Jul 2014 12:53:55 +0200
-Message-Id: <1406112847-26275-13-git-send-email-daniel.lezcano@linaro.org>
+Subject: [PATCH 20/25] clocksource: pxa: Move PXA timer to clocksource framework
+Date: Wed, 23 Jul 2014 12:54:02 +0200
+Message-Id: <1406112847-26275-20-git-send-email-daniel.lezcano@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1406112847-26275-1-git-send-email-daniel.lezcano@linaro.org>
 References: <53CF93B2.6040903@linaro.org>
@@ -20,331 +20,383 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Matthias Brugger <matthias.bgg@gmail.com>
+From: Robert Jarzmik <robert.jarzmik@free.fr>
 
-This patch adds a clock source and clock event for the timer found
-on the Mediatek SoCs.
+Move time.c from arch/arm/mach-pxa/time.c to
+drivers/clocksource/pxa_timer.c.
 
-The Mediatek General Purpose Timer block provides five 32 bit timers and
-one 64 bit timer.
-
-Two 32 bit timers are used by this driver:
-TIMER1: clock events supporting periodic and oneshot events
-TIMER2: clock source configured as a free running counter
-
-The General Purpose Timer block can be run with two clocks. A 13 MHz system
-clock and the RTC clock running at 32 KHz. This implementation uses the system
-clock with no clock source divider.
-
-The interrupts are shared between the different timers and have to be read back
-from a register. We just enable one interrupt for the clock event. The clock
-event timer is used by all cores.
-
-Signed-off-by: Matthias Brugger <matthias.bgg@gmail.com>
-Acked-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Robert Jarzmik <robert.jarzmik@free.fr>
 Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
 ---
- drivers/clocksource/Kconfig     |    5 +
+ arch/arm/mach-pxa/Makefile      |    2 +-
+ arch/arm/mach-pxa/time.c        |  162 ---------------------------------------
  drivers/clocksource/Makefile    |    1 +
- drivers/clocksource/mtk_timer.c |  261 +++++++++++++++++++++++++++++++++++++++
- 3 files changed, 267 insertions(+)
- create mode 100644 drivers/clocksource/mtk_timer.c
+ drivers/clocksource/pxa_timer.c |  162 +++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 164 insertions(+), 163 deletions(-)
+ delete mode 100644 arch/arm/mach-pxa/time.c
+ create mode 100644 drivers/clocksource/pxa_timer.c
 
-diff --git a/drivers/clocksource/Kconfig b/drivers/clocksource/Kconfig
-index b17c909..497356d 100644
---- a/drivers/clocksource/Kconfig
-+++ b/drivers/clocksource/Kconfig
-@@ -151,6 +151,11 @@ config VF_PIT_TIMER
- config SYS_SUPPORTS_SH_CMT
-         bool
+diff --git a/arch/arm/mach-pxa/Makefile b/arch/arm/mach-pxa/Makefile
+index 648867a..2fe1824 100644
+--- a/arch/arm/mach-pxa/Makefile
++++ b/arch/arm/mach-pxa/Makefile
+@@ -4,7 +4,7 @@
  
-+config MTK_TIMER
-+	select CLKSRC_OF
-+	select CLKSRC_MMIO
-+	bool
-+
- config SYS_SUPPORTS_SH_MTU2
-         bool
+ # Common support (must be linked before board specific support)
+ obj-y				+= clock.o devices.o generic.o irq.o \
+-				   time.o reset.o
++				   reset.o
+ obj-$(CONFIG_PM)		+= pm.o sleep.o standby.o
  
+ # Generic drivers that other drivers may depend upon
+diff --git a/arch/arm/mach-pxa/time.c b/arch/arm/mach-pxa/time.c
+deleted file mode 100644
+index fca174e..0000000
+--- a/arch/arm/mach-pxa/time.c
++++ /dev/null
+@@ -1,162 +0,0 @@
+-/*
+- * arch/arm/mach-pxa/time.c
+- *
+- * PXA clocksource, clockevents, and OST interrupt handlers.
+- * Copyright (c) 2007 by Bill Gatliff <bgat@billgatliff.com>.
+- *
+- * Derived from Nicolas Pitre's PXA timer handler Copyright (c) 2001
+- * by MontaVista Software, Inc.  (Nico, your code rocks!)
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License version 2 as
+- * published by the Free Software Foundation.
+- */
+-
+-#include <linux/kernel.h>
+-#include <linux/init.h>
+-#include <linux/interrupt.h>
+-#include <linux/clockchips.h>
+-#include <linux/sched_clock.h>
+-
+-#include <asm/div64.h>
+-#include <asm/mach/irq.h>
+-#include <asm/mach/time.h>
+-#include <mach/regs-ost.h>
+-#include <mach/irqs.h>
+-
+-/*
+- * This is PXA's sched_clock implementation. This has a resolution
+- * of at least 308 ns and a maximum value of 208 days.
+- *
+- * The return value is guaranteed to be monotonic in that range as
+- * long as there is always less than 582 seconds between successive
+- * calls to sched_clock() which should always be the case in practice.
+- */
+-
+-static u64 notrace pxa_read_sched_clock(void)
+-{
+-	return readl_relaxed(OSCR);
+-}
+-
+-
+-#define MIN_OSCR_DELTA 16
+-
+-static irqreturn_t
+-pxa_ost0_interrupt(int irq, void *dev_id)
+-{
+-	struct clock_event_device *c = dev_id;
+-
+-	/* Disarm the compare/match, signal the event. */
+-	writel_relaxed(readl_relaxed(OIER) & ~OIER_E0, OIER);
+-	writel_relaxed(OSSR_M0, OSSR);
+-	c->event_handler(c);
+-
+-	return IRQ_HANDLED;
+-}
+-
+-static int
+-pxa_osmr0_set_next_event(unsigned long delta, struct clock_event_device *dev)
+-{
+-	unsigned long next, oscr;
+-
+-	writel_relaxed(readl_relaxed(OIER) | OIER_E0, OIER);
+-	next = readl_relaxed(OSCR) + delta;
+-	writel_relaxed(next, OSMR0);
+-	oscr = readl_relaxed(OSCR);
+-
+-	return (signed)(next - oscr) <= MIN_OSCR_DELTA ? -ETIME : 0;
+-}
+-
+-static void
+-pxa_osmr0_set_mode(enum clock_event_mode mode, struct clock_event_device *dev)
+-{
+-	switch (mode) {
+-	case CLOCK_EVT_MODE_ONESHOT:
+-		writel_relaxed(readl_relaxed(OIER) & ~OIER_E0, OIER);
+-		writel_relaxed(OSSR_M0, OSSR);
+-		break;
+-
+-	case CLOCK_EVT_MODE_UNUSED:
+-	case CLOCK_EVT_MODE_SHUTDOWN:
+-		/* initializing, released, or preparing for suspend */
+-		writel_relaxed(readl_relaxed(OIER) & ~OIER_E0, OIER);
+-		writel_relaxed(OSSR_M0, OSSR);
+-		break;
+-
+-	case CLOCK_EVT_MODE_RESUME:
+-	case CLOCK_EVT_MODE_PERIODIC:
+-		break;
+-	}
+-}
+-
+-#ifdef CONFIG_PM
+-static unsigned long osmr[4], oier, oscr;
+-
+-static void pxa_timer_suspend(struct clock_event_device *cedev)
+-{
+-	osmr[0] = readl_relaxed(OSMR0);
+-	osmr[1] = readl_relaxed(OSMR1);
+-	osmr[2] = readl_relaxed(OSMR2);
+-	osmr[3] = readl_relaxed(OSMR3);
+-	oier = readl_relaxed(OIER);
+-	oscr = readl_relaxed(OSCR);
+-}
+-
+-static void pxa_timer_resume(struct clock_event_device *cedev)
+-{
+-	/*
+-	 * Ensure that we have at least MIN_OSCR_DELTA between match
+-	 * register 0 and the OSCR, to guarantee that we will receive
+-	 * the one-shot timer interrupt.  We adjust OSMR0 in preference
+-	 * to OSCR to guarantee that OSCR is monotonically incrementing.
+-	 */
+-	if (osmr[0] - oscr < MIN_OSCR_DELTA)
+-		osmr[0] += MIN_OSCR_DELTA;
+-
+-	writel_relaxed(osmr[0], OSMR0);
+-	writel_relaxed(osmr[1], OSMR1);
+-	writel_relaxed(osmr[2], OSMR2);
+-	writel_relaxed(osmr[3], OSMR3);
+-	writel_relaxed(oier, OIER);
+-	writel_relaxed(oscr, OSCR);
+-}
+-#else
+-#define pxa_timer_suspend NULL
+-#define pxa_timer_resume NULL
+-#endif
+-
+-static struct clock_event_device ckevt_pxa_osmr0 = {
+-	.name		= "osmr0",
+-	.features	= CLOCK_EVT_FEAT_ONESHOT,
+-	.rating		= 200,
+-	.set_next_event	= pxa_osmr0_set_next_event,
+-	.set_mode	= pxa_osmr0_set_mode,
+-	.suspend	= pxa_timer_suspend,
+-	.resume		= pxa_timer_resume,
+-};
+-
+-static struct irqaction pxa_ost0_irq = {
+-	.name		= "ost0",
+-	.flags		= IRQF_TIMER | IRQF_IRQPOLL,
+-	.handler	= pxa_ost0_interrupt,
+-	.dev_id		= &ckevt_pxa_osmr0,
+-};
+-
+-void __init pxa_timer_init(void)
+-{
+-	unsigned long clock_tick_rate = get_clock_tick_rate();
+-
+-	writel_relaxed(0, OIER);
+-	writel_relaxed(OSSR_M0 | OSSR_M1 | OSSR_M2 | OSSR_M3, OSSR);
+-
+-	sched_clock_register(pxa_read_sched_clock, 32, clock_tick_rate);
+-
+-	ckevt_pxa_osmr0.cpumask = cpumask_of(0);
+-
+-	setup_irq(IRQ_OST0, &pxa_ost0_irq);
+-
+-	clocksource_mmio_init(OSCR, "oscr0", clock_tick_rate, 200, 32,
+-		clocksource_mmio_readl_up);
+-	clockevents_config_and_register(&ckevt_pxa_osmr0, clock_tick_rate,
+-		MIN_OSCR_DELTA * 2, 0x7fffffff);
+-}
 diff --git a/drivers/clocksource/Makefile b/drivers/clocksource/Makefile
-index 800b130..da1ac09 100644
+index e40435d..7fd9fd1 100644
 --- a/drivers/clocksource/Makefile
 +++ b/drivers/clocksource/Makefile
-@@ -34,6 +34,7 @@ obj-$(CONFIG_CLKSRC_SAMSUNG_PWM)	+= samsung_pwm_timer.o
- obj-$(CONFIG_FSL_FTM_TIMER)	+= fsl_ftm_timer.o
- obj-$(CONFIG_VF_PIT_TIMER)	+= vf_pit_timer.o
- obj-$(CONFIG_CLKSRC_QCOM)	+= qcom-timer.o
-+obj-$(CONFIG_MTK_TIMER)		+= mtk_timer.o
- 
- obj-$(CONFIG_ARM_ARCH_TIMER)		+= arm_arch_timer.o
- obj-$(CONFIG_ARM_GLOBAL_TIMER)		+= arm_global_timer.o
-diff --git a/drivers/clocksource/mtk_timer.c b/drivers/clocksource/mtk_timer.c
+@@ -20,6 +20,7 @@ obj-$(CONFIG_ARCH_CLPS711X)	+= clps711x-timer.o
+ obj-$(CONFIG_ARCH_MARCO)	+= timer-marco.o
+ obj-$(CONFIG_ARCH_MOXART)	+= moxart_timer.o
+ obj-$(CONFIG_ARCH_MXS)		+= mxs_timer.o
++obj-$(CONFIG_ARCH_PXA)		+= pxa_timer.o
+ obj-$(CONFIG_ARCH_PRIMA2)	+= timer-prima2.o
+ obj-$(CONFIG_ARCH_U300)		+= timer-u300.o
+ obj-$(CONFIG_SUN4I_TIMER)	+= sun4i_timer.o
+diff --git a/drivers/clocksource/pxa_timer.c b/drivers/clocksource/pxa_timer.c
 new file mode 100644
-index 0000000..32a3d25
+index 0000000..fca174e
 --- /dev/null
-+++ b/drivers/clocksource/mtk_timer.c
-@@ -0,0 +1,261 @@
++++ b/drivers/clocksource/pxa_timer.c
+@@ -0,0 +1,162 @@
 +/*
-+ * Mediatek SoCs General-Purpose Timer handling.
++ * arch/arm/mach-pxa/time.c
 + *
-+ * Copyright (C) 2014 Matthias Brugger
++ * PXA clocksource, clockevents, and OST interrupt handlers.
++ * Copyright (c) 2007 by Bill Gatliff <bgat@billgatliff.com>.
 + *
-+ * Matthias Brugger <matthias.bgg@gmail.com>
++ * Derived from Nicolas Pitre's PXA timer handler Copyright (c) 2001
++ * by MontaVista Software, Inc.  (Nico, your code rocks!)
 + *
 + * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
 + */
 +
-+#include <linux/clk.h>
-+#include <linux/clockchips.h>
++#include <linux/kernel.h>
++#include <linux/init.h>
 +#include <linux/interrupt.h>
-+#include <linux/irq.h>
-+#include <linux/irqreturn.h>
-+#include <linux/of.h>
-+#include <linux/of_address.h>
-+#include <linux/of_irq.h>
-+#include <linux/slab.h>
++#include <linux/clockchips.h>
++#include <linux/sched_clock.h>
 +
-+#define GPT_IRQ_EN_REG		0x00
-+#define GPT_IRQ_ENABLE(val)	BIT((val) - 1)
-+#define GPT_IRQ_ACK_REG		0x08
-+#define GPT_IRQ_ACK(val)	BIT((val) - 1)
++#include <asm/div64.h>
++#include <asm/mach/irq.h>
++#include <asm/mach/time.h>
++#include <mach/regs-ost.h>
++#include <mach/irqs.h>
 +
-+#define TIMER_CTRL_REG(val)	(0x10 * (val))
-+#define TIMER_CTRL_OP(val)	(((val) & 0x3) << 4)
-+#define TIMER_CTRL_OP_ONESHOT	(0)
-+#define TIMER_CTRL_OP_REPEAT	(1)
-+#define TIMER_CTRL_OP_FREERUN	(3)
-+#define TIMER_CTRL_CLEAR	(2)
-+#define TIMER_CTRL_ENABLE	(1)
-+#define TIMER_CTRL_DISABLE	(0)
++/*
++ * This is PXA's sched_clock implementation. This has a resolution
++ * of at least 308 ns and a maximum value of 208 days.
++ *
++ * The return value is guaranteed to be monotonic in that range as
++ * long as there is always less than 582 seconds between successive
++ * calls to sched_clock() which should always be the case in practice.
++ */
 +
-+#define TIMER_CLK_REG(val)	(0x04 + (0x10 * (val)))
-+#define TIMER_CLK_SRC(val)	(((val) & 0x1) << 4)
-+#define TIMER_CLK_SRC_SYS13M	(0)
-+#define TIMER_CLK_SRC_RTC32K	(1)
-+#define TIMER_CLK_DIV1		(0x0)
-+#define TIMER_CLK_DIV2		(0x1)
-+
-+#define TIMER_CNT_REG(val)	(0x08 + (0x10 * (val)))
-+#define TIMER_CMP_REG(val)	(0x0C + (0x10 * (val)))
-+
-+#define GPT_CLK_EVT	1
-+#define GPT_CLK_SRC	2
-+
-+struct mtk_clock_event_device {
-+	void __iomem *gpt_base;
-+	u32 ticks_per_jiffy;
-+	struct clock_event_device dev;
-+};
-+
-+static inline struct mtk_clock_event_device *to_mtk_clk(
-+				struct clock_event_device *c)
++static u64 notrace pxa_read_sched_clock(void)
 +{
-+	return container_of(c, struct mtk_clock_event_device, dev);
++	return readl_relaxed(OSCR);
 +}
 +
-+static void mtk_clkevt_time_stop(struct mtk_clock_event_device *evt, u8 timer)
++
++#define MIN_OSCR_DELTA 16
++
++static irqreturn_t
++pxa_ost0_interrupt(int irq, void *dev_id)
 +{
-+	u32 val;
++	struct clock_event_device *c = dev_id;
 +
-+	val = readl(evt->gpt_base + TIMER_CTRL_REG(timer));
-+	writel(val & ~TIMER_CTRL_ENABLE, evt->gpt_base +
-+			TIMER_CTRL_REG(timer));
-+}
-+
-+static void mtk_clkevt_time_setup(struct mtk_clock_event_device *evt,
-+				unsigned long delay, u8 timer)
-+{
-+	writel(delay, evt->gpt_base + TIMER_CMP_REG(timer));
-+}
-+
-+static void mtk_clkevt_time_start(struct mtk_clock_event_device *evt,
-+		bool periodic, u8 timer)
-+{
-+	u32 val;
-+
-+	/* Acknowledge interrupt */
-+	writel(GPT_IRQ_ACK(timer), evt->gpt_base + GPT_IRQ_ACK_REG);
-+
-+	val = readl(evt->gpt_base + TIMER_CTRL_REG(timer));
-+
-+	/* Clear 2 bit timer operation mode field */
-+	val &= ~TIMER_CTRL_OP(0x3);
-+
-+	if (periodic)
-+		val |= TIMER_CTRL_OP(TIMER_CTRL_OP_REPEAT);
-+	else
-+		val |= TIMER_CTRL_OP(TIMER_CTRL_OP_ONESHOT);
-+
-+	writel(val | TIMER_CTRL_ENABLE | TIMER_CTRL_CLEAR,
-+	       evt->gpt_base + TIMER_CTRL_REG(timer));
-+}
-+
-+static void mtk_clkevt_mode(enum clock_event_mode mode,
-+				struct clock_event_device *clk)
-+{
-+	struct mtk_clock_event_device *evt = to_mtk_clk(clk);
-+
-+	mtk_clkevt_time_stop(evt, GPT_CLK_EVT);
-+
-+	switch (mode) {
-+	case CLOCK_EVT_MODE_PERIODIC:
-+		mtk_clkevt_time_setup(evt, evt->ticks_per_jiffy, GPT_CLK_EVT);
-+		mtk_clkevt_time_start(evt, true, GPT_CLK_EVT);
-+		break;
-+	case CLOCK_EVT_MODE_ONESHOT:
-+		/* Timer is enabled in set_next_event */
-+		break;
-+	case CLOCK_EVT_MODE_UNUSED:
-+	case CLOCK_EVT_MODE_SHUTDOWN:
-+	default:
-+		/* No more interrupts will occur as source is disabled */
-+		break;
-+	}
-+}
-+
-+static int mtk_clkevt_next_event(unsigned long event,
-+				   struct clock_event_device *clk)
-+{
-+	struct mtk_clock_event_device *evt = to_mtk_clk(clk);
-+
-+	mtk_clkevt_time_stop(evt, GPT_CLK_EVT);
-+	mtk_clkevt_time_setup(evt, event, GPT_CLK_EVT);
-+	mtk_clkevt_time_start(evt, false, GPT_CLK_EVT);
-+
-+	return 0;
-+}
-+
-+static irqreturn_t mtk_timer_interrupt(int irq, void *dev_id)
-+{
-+	struct mtk_clock_event_device *evt = dev_id;
-+
-+	/* Acknowledge timer0 irq */
-+	writel(GPT_IRQ_ACK(GPT_CLK_EVT), evt->gpt_base + GPT_IRQ_ACK_REG);
-+	evt->dev.event_handler(&evt->dev);
++	/* Disarm the compare/match, signal the event. */
++	writel_relaxed(readl_relaxed(OIER) & ~OIER_E0, OIER);
++	writel_relaxed(OSSR_M0, OSSR);
++	c->event_handler(c);
 +
 +	return IRQ_HANDLED;
 +}
 +
-+static void mtk_timer_global_reset(struct mtk_clock_event_device *evt)
++static int
++pxa_osmr0_set_next_event(unsigned long delta, struct clock_event_device *dev)
 +{
-+	/* Disable all interrupts */
-+	writel(0x0, evt->gpt_base + GPT_IRQ_EN_REG);
-+	/* Acknowledge all interrupts */
-+	writel(0x3f, evt->gpt_base + GPT_IRQ_ACK_REG);
++	unsigned long next, oscr;
++
++	writel_relaxed(readl_relaxed(OIER) | OIER_E0, OIER);
++	next = readl_relaxed(OSCR) + delta;
++	writel_relaxed(next, OSMR0);
++	oscr = readl_relaxed(OSCR);
++
++	return (signed)(next - oscr) <= MIN_OSCR_DELTA ? -ETIME : 0;
 +}
 +
 +static void
-+mtk_timer_setup(struct mtk_clock_event_device *evt, u8 timer, u8 option)
++pxa_osmr0_set_mode(enum clock_event_mode mode, struct clock_event_device *dev)
 +{
-+	writel(TIMER_CTRL_CLEAR | TIMER_CTRL_DISABLE,
-+		evt->gpt_base + TIMER_CTRL_REG(timer));
++	switch (mode) {
++	case CLOCK_EVT_MODE_ONESHOT:
++		writel_relaxed(readl_relaxed(OIER) & ~OIER_E0, OIER);
++		writel_relaxed(OSSR_M0, OSSR);
++		break;
 +
-+	writel(TIMER_CLK_SRC(TIMER_CLK_SRC_SYS13M) | TIMER_CLK_DIV1,
-+			evt->gpt_base + TIMER_CLK_REG(timer));
++	case CLOCK_EVT_MODE_UNUSED:
++	case CLOCK_EVT_MODE_SHUTDOWN:
++		/* initializing, released, or preparing for suspend */
++		writel_relaxed(readl_relaxed(OIER) & ~OIER_E0, OIER);
++		writel_relaxed(OSSR_M0, OSSR);
++		break;
 +
-+	writel(0x0, evt->gpt_base + TIMER_CMP_REG(timer));
-+
-+	writel(TIMER_CTRL_OP(option) | TIMER_CTRL_ENABLE,
-+			evt->gpt_base + TIMER_CTRL_REG(timer));
++	case CLOCK_EVT_MODE_RESUME:
++	case CLOCK_EVT_MODE_PERIODIC:
++		break;
++	}
 +}
 +
-+static void mtk_timer_enable_irq(struct mtk_clock_event_device *evt, u8 timer)
-+{
-+	u32 val;
++#ifdef CONFIG_PM
++static unsigned long osmr[4], oier, oscr;
 +
-+	val = readl(evt->gpt_base + GPT_IRQ_EN_REG);
-+	writel(val | GPT_IRQ_ENABLE(timer),
-+			evt->gpt_base + GPT_IRQ_EN_REG);
++static void pxa_timer_suspend(struct clock_event_device *cedev)
++{
++	osmr[0] = readl_relaxed(OSMR0);
++	osmr[1] = readl_relaxed(OSMR1);
++	osmr[2] = readl_relaxed(OSMR2);
++	osmr[3] = readl_relaxed(OSMR3);
++	oier = readl_relaxed(OIER);
++	oscr = readl_relaxed(OSCR);
 +}
 +
-+static void __init mtk_timer_init(struct device_node *node)
++static void pxa_timer_resume(struct clock_event_device *cedev)
 +{
-+	struct mtk_clock_event_device *evt;
-+	struct resource res;
-+	unsigned long rate = 0;
-+	struct clk *clk;
++	/*
++	 * Ensure that we have at least MIN_OSCR_DELTA between match
++	 * register 0 and the OSCR, to guarantee that we will receive
++	 * the one-shot timer interrupt.  We adjust OSMR0 in preference
++	 * to OSCR to guarantee that OSCR is monotonically incrementing.
++	 */
++	if (osmr[0] - oscr < MIN_OSCR_DELTA)
++		osmr[0] += MIN_OSCR_DELTA;
 +
-+	evt = kzalloc(sizeof(*evt), GFP_KERNEL);
-+	if (!evt) {
-+		pr_warn("Can't allocate mtk clock event driver struct");
-+		return;
-+	}
-+
-+	evt->dev.name = "mtk_tick";
-+	evt->dev.rating = 300;
-+	evt->dev.features = CLOCK_EVT_FEAT_PERIODIC | CLOCK_EVT_FEAT_ONESHOT;
-+	evt->dev.set_mode = mtk_clkevt_mode;
-+	evt->dev.set_next_event = mtk_clkevt_next_event;
-+	evt->dev.cpumask = cpu_possible_mask;
-+
-+	evt->gpt_base = of_io_request_and_map(node, 0, "mtk-timer");
-+	if (IS_ERR(evt->gpt_base)) {
-+		pr_warn("Can't get resource\n");
-+		return;
-+	}
-+
-+	evt->dev.irq = irq_of_parse_and_map(node, 0);
-+	if (evt->dev.irq <= 0) {
-+		pr_warn("Can't parse IRQ");
-+		goto err_mem;
-+	}
-+
-+	clk = of_clk_get(node, 0);
-+	if (IS_ERR(clk)) {
-+		pr_warn("Can't get timer clock");
-+		goto err_irq;
-+	}
-+
-+	if (clk_prepare_enable(clk)) {
-+		pr_warn("Can't prepare clock");
-+		goto err_clk_put;
-+	}
-+	rate = clk_get_rate(clk);
-+
-+	if (request_irq(evt->dev.irq, mtk_timer_interrupt,
-+			IRQF_TIMER | IRQF_IRQPOLL, "mtk_timer", evt)) {
-+		pr_warn("failed to setup irq %d\n", evt->dev.irq);
-+		goto err_clk_disable;
-+	}
-+
-+	evt->ticks_per_jiffy = DIV_ROUND_UP(rate, HZ);
-+
-+	mtk_timer_global_reset(evt);
-+
-+	/* Configure clock source */
-+	mtk_timer_setup(evt, GPT_CLK_SRC, TIMER_CTRL_OP_FREERUN);
-+	clocksource_mmio_init(evt->gpt_base + TIMER_CNT_REG(GPT_CLK_SRC),
-+			node->name, rate, 300, 32, clocksource_mmio_readl_up);
-+
-+	/* Configure clock event */
-+	mtk_timer_setup(evt, GPT_CLK_EVT, TIMER_CTRL_OP_REPEAT);
-+	mtk_timer_enable_irq(evt, GPT_CLK_EVT);
-+
-+	clockevents_config_and_register(&evt->dev, rate, 0x3,
-+					0xffffffff);
-+	return;
-+
-+err_clk_disable:
-+	clk_disable_unprepare(clk);
-+err_clk_put:
-+	clk_put(clk);
-+err_irq:
-+	irq_dispose_mapping(evt->dev.irq);
-+err_mem:
-+	iounmap(evt->gpt_base);
-+	of_address_to_resource(node, 0, &res);
-+	release_mem_region(res.start, resource_size(&res));
++	writel_relaxed(osmr[0], OSMR0);
++	writel_relaxed(osmr[1], OSMR1);
++	writel_relaxed(osmr[2], OSMR2);
++	writel_relaxed(osmr[3], OSMR3);
++	writel_relaxed(oier, OIER);
++	writel_relaxed(oscr, OSCR);
 +}
-+CLOCKSOURCE_OF_DECLARE(mtk_mt6577, "mediatek,mt6577-timer", mtk_timer_init);
++#else
++#define pxa_timer_suspend NULL
++#define pxa_timer_resume NULL
++#endif
++
++static struct clock_event_device ckevt_pxa_osmr0 = {
++	.name		= "osmr0",
++	.features	= CLOCK_EVT_FEAT_ONESHOT,
++	.rating		= 200,
++	.set_next_event	= pxa_osmr0_set_next_event,
++	.set_mode	= pxa_osmr0_set_mode,
++	.suspend	= pxa_timer_suspend,
++	.resume		= pxa_timer_resume,
++};
++
++static struct irqaction pxa_ost0_irq = {
++	.name		= "ost0",
++	.flags		= IRQF_TIMER | IRQF_IRQPOLL,
++	.handler	= pxa_ost0_interrupt,
++	.dev_id		= &ckevt_pxa_osmr0,
++};
++
++void __init pxa_timer_init(void)
++{
++	unsigned long clock_tick_rate = get_clock_tick_rate();
++
++	writel_relaxed(0, OIER);
++	writel_relaxed(OSSR_M0 | OSSR_M1 | OSSR_M2 | OSSR_M3, OSSR);
++
++	sched_clock_register(pxa_read_sched_clock, 32, clock_tick_rate);
++
++	ckevt_pxa_osmr0.cpumask = cpumask_of(0);
++
++	setup_irq(IRQ_OST0, &pxa_ost0_irq);
++
++	clocksource_mmio_init(OSCR, "oscr0", clock_tick_rate, 200, 32,
++		clocksource_mmio_readl_up);
++	clockevents_config_and_register(&ckevt_pxa_osmr0, clock_tick_rate,
++		MIN_OSCR_DELTA * 2, 0x7fffffff);
++}
 -- 
 1.7.9.5
 
