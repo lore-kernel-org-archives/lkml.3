@@ -1,90 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753846AbaGWCBI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 22:01:08 -0400
-Received: from ozlabs.org ([103.22.144.67]:48736 "EHLO ozlabs.org"
+	id S1754716AbaGWCCG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 22:02:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12647 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751185AbaGWCBG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 22:01:06 -0400
-Date: Wed, 23 Jul 2014 12:00:54 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>,
-        "John W. Linville" <linville@tuxdriver.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
-        David Spinadel <david.spinadel@intel.com>
-Subject: linux-next: manual merge of the net-next tree with the wireless
- tree
-Message-ID: <20140723120054.7c0e08b3@canb.auug.org.au>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/J9S=tJ7N1qL3kZRoKJynCb7"; protocol="application/pgp-signature"
+	id S1753024AbaGWCCD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 22:02:03 -0400
+Message-ID: <1406080920.4463.46.camel@ul30vt.home>
+Subject: Re: [PATCH] PCI: Add device specific (non)reset for AMD GPUs
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Tue, 22 Jul 2014 20:02:00 -0600
+In-Reply-To: <20140723014956.GB29769@google.com>
+References: <20140716190955.4722.25453.stgit@gimli.home>
+	 <20140722195557.GD19181@google.com> <1406060607.4463.36.camel@ul30vt.home>
+	 <20140722215259.GE19181@google.com> <1406074923.4463.45.camel@ul30vt.home>
+	 <20140723014956.GB29769@google.com>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/J9S=tJ7N1qL3kZRoKJynCb7
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Tue, 2014-07-22 at 19:49 -0600, Bjorn Helgaas wrote:
+> On Tue, Jul 22, 2014 at 06:22:03PM -0600, Alex Williamson wrote:
+> > On Tue, 2014-07-22 at 15:52 -0600, Bjorn Helgaas wrote:
+> > > On Tue, Jul 22, 2014 at 02:23:27PM -0600, Alex Williamson wrote:
+> > > > On Tue, 2014-07-22 at 13:55 -0600, Bjorn Helgaas wrote:
+> > > > > On Wed, Jul 16, 2014 at 01:14:08PM -0600, Alex Williamson wrote:
+> > > > > > There are numerous ATI/AMD GPUs available that report that they
+> > > > > > support a PM reset (NoSoftRst-) but for which such a reset has no
+> > > > > > apparent effect on the device.  These devices continue to display the
+> > > > > > same framebuffer across PM reset and the fan speed remains constant,
+> > > > > > while a proper bus reset causes the display to lose sync and the fan
+> > > > > > to reset to high speed.  Create a device specific reset for ATI vendor
+> > > > > > devices that tries to catch these devices and report that
+> > > > > > pci_reset_function() is not supported.
+> > > > > > 
+> > > > > > Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+> > > > > > ---
+> > > > > > 
+> > > > > > This patch makes the series "vfio-pci: Reset improvements" far more
+> > > > > > useful for users with one of these GPUs.  If pci_reset_function()
+> > > > > > indicates that it's supported and successful, then I have no reason
+> > > > > > to resort to a bus/slot reset in the vfio-pci code.  Since it doesn't
+> > > > > > seem to do anything anyway, let's just forget that PM reset exists
+> > > > > > for these devices.
+> > > > > > 
+> > > > > >  drivers/pci/quirks.c |   53 ++++++++++++++++++++++++++++++++++++++++++++++++++
+> > > > > >  1 file changed, 53 insertions(+)
+> > > > > > 
+> > > > > > diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
+> > > > > > index 460c354..bed9c63 100644
+> > > > > > --- a/drivers/pci/quirks.c
+> > > > > > +++ b/drivers/pci/quirks.c
+> > > > > > @@ -3289,6 +3289,57 @@ static int reset_chelsio_generic_dev(struct pci_dev *dev, int probe)
+> > > > > >  	return 0;
+> > > > > >  }
+> > > > > >  
+> > > > > > +/*
+> > > > > > + * Numerous AMD/ATI GPUs report that they're capable of PM reset (NoSoftRst-)
+> > > > > > + * and pci_reset_function() reports the device as successfully reset, but
+> > > > > > + * there's no apparent effect from the reset.  Test for these, being sure to
+> > > > > > + * allow FLR should it ever exist, and use the device specific reset to
+> > > > > > + * disable any sort of function-local reset if only PM reset is available.
+> > > > > > + */
+> > > > > > +static int reset_ati_gpu(struct pci_dev *dev, int probe)
+> > > > > > +{
+> > > > > > +	u16 pm_csr;
+> > > > > > +	u32 devcap;
+> > > > > > +	int af_pos;
+> > > > > > +
+> > > > > > +	/*
+> > > > > > +	 * VGA class devices, not on the root bus, PCI function 0 of a
+> > > > > > +	 * multifunction device with PM capabilities
+> > > > > > +	 */
+> > > > > > +	if ((dev->class >> 8) != PCI_CLASS_DISPLAY_VGA ||
+> > > > > > +	    pci_is_root_bus(dev->bus) || PCI_FUNC(dev->devfn) ||
+> > > > > > +	    !dev->multifunction || !dev->pm_cap)
+> > > > > > +		return -ENOTTY;
+> > > > > > +
+> > > > > > +	/* PM reports NoSoftRst- */
+> > > > > > +	pci_read_config_word(dev, dev->pm_cap + PCI_PM_CTRL, &pm_csr);
+> > > > > > +	if (pm_csr & PCI_PM_CTRL_NO_SOFT_RESET)
+> > > > > > +		return -ENOTTY;
+> > > > > > +
+> > > > > > +	/* No PCIe FLR */
+> > > > > > +	pcie_capability_read_dword(dev, PCI_EXP_DEVCAP, &devcap);
+> > > > > > +	if (devcap & PCI_EXP_DEVCAP_FLR)
+> > > > > > +		return -ENOTTY;
+> > > > > > +
+> > > > > > +	/* No AF FLR */
+> > > > > > +	af_pos = pci_find_capability(dev, PCI_CAP_ID_AF);
+> > > > > > +	if (af_pos) {
+> > > > > > +		u8 af_cap;
+> > > > > > +
+> > > > > > +		pci_read_config_byte(dev, af_pos + PCI_AF_CAP, &af_cap);
+> > > > > > +		if ((af_cap && PCI_AF_CAP_TP) && (af_cap && PCI_AF_CAP_FLR))
+> > > > > > +			return -ENOTTY;
+> > > > > > +	}
+> > > > > > +
+> > > > > > +	/*
+> > > > > > +	 * We could attempt a singleton bus/slot reset here to override
+> > > > > > +	 * PM reset priority over these, but the devices we're interested
+> > > > > > +	 * in are multifunction GPU + audio devices in their known configs.
+> > > > > > +	 */
+> > > > > > +
+> > > > > > +	return -EINVAL;
+> > > > > > +}
+> > > > > > +
+> > > > > >  #define PCI_DEVICE_ID_INTEL_82599_SFP_VF   0x10ed
+> > > > > >  #define PCI_DEVICE_ID_INTEL_IVB_M_VGA      0x0156
+> > > > > >  #define PCI_DEVICE_ID_INTEL_IVB_M2_VGA     0x0166
+> > > > > > @@ -3304,6 +3355,8 @@ static const struct pci_dev_reset_methods pci_dev_reset_methods[] = {
+> > > > > >  		reset_intel_generic_dev },
+> > > > > >  	{ PCI_VENDOR_ID_CHELSIO, PCI_ANY_ID,
+> > > > > >  		reset_chelsio_generic_dev },
+> > > > > > +	{ PCI_VENDOR_ID_ATI, PCI_ANY_ID,
+> > > > > > +		reset_ati_gpu },
+> > > > > 
+> > > > > I'm a little confused, but maybe we just need a comment about what the
+> > > > > return values from pci_dev_specific_reset() mean.  Based on reading
+> > > > > __pci_dev_reset(), it looks like:
+> > > > > 
+> > > > >   0 means "I support this reset method" (if probe) or
+> > > > >   "I performed this reset" (if !probe),
+> > > > >   
+> > > > >   ENOTTY means "I don't support this reset method, try another one",
+> > > > > 
+> > > > >   anything else means "I don't support this reset method and don't try
+> > > > >   any others" (it'd be useful to know what this is good for).
+> > > > > 
+> > > > > But reset_ati_gpu() never returns 0, so it seems like your patch makes
+> > > > > it so we can never reset any ATI device at all.  So I must be missing
+> > > > > something.
+> > > > 
+> > > > Nope, you're not missing anything.  The return value behavior is exactly
+> > > > as you describe and the ATI GPUs that advertise NoSoftRst- don't appear
+> > > > to do any sort of reset when moving them back from D3, so I'm
+> > > > effectively trying to negate that as a viable reset option.  I think
+> > > > this is what the anything-else return value is meant for.  I only return
+> > > > "I don't support this reset method and don't try any others" after I
+> > > > verify there are no other options, so if they come out with FLR support,
+> > > > that would still get precedence.  It's a little awkward, but I don't
+> > > > know how to test whether a reset function was successful.  It seems like
+> > > > it would be device specific.  Anyone from AMD reading the list that can
+> > > > comment on what sort of reset happens on these GPUs for a D3->D0 reset?
+> > > 
+> > > I was expecting to see "return 0" for some of the cases, e.g., maybe
+> > > for non-GPU devices that support FLR or AF FLR.
+> > > 
+> > > You currently always return -ENOTTY or -EINVAL, which means we won't
+> > > support any kind of reset on any ATI device.  It looks like most ATI
+> > > devices are graphics, but there are a few IDE, USB, SMBus, SATA, etc.
+> > > devices that look like they'll be caught by this quirk.  That doesn't
+> > > sound like what you intend.
+> > 
+> > The goal of the function is to identify a GPU (VGA) device that only
+> > supports PM reset and return -EINVAL to indicate we can't do a function
+> > level reset.  Any other case returns -ENOTTY to indicate we don't handle
+> > the device, try something else.  This function therefore never returns 0
+> > because it doesn't provide a reset mechanism of its own.  It only blocks
+> > the known useless reset or defers to a standard reset.  Anything that's
+> > not a class VGA display drops out through the first -ENOTTY path.  I
+> > think it's doing what I intend, but maybe you're still spotting
+> > something wrong with my methodology.  Thanks,
+> 
+> Ah, the light finally dawned.  If pci_dev_specific_reset() returns -ENOTTY,
+> as it will if your new reset_ati_gpu() returns -ENOTTY, we'll try the next
+> generic method in the list (FLR, AF FLR, PM reset, etc.)
+> 
+> I was confused by the comments, e.g., "No PCIe FLR", but then the code
+> returns -ENOTTY if the device *does* have FLR.
+> 
+> If we could magically make PCI_PM_CTRL_NO_SOFT_RESET be set for these
+> devices, would the existing code work correctly?  It looks like
+> pci_pm_reset() checks that and returns -ENOTTY if set, which I think is
+> what you want to happen.
+> 
+> Could we add a bit to cache PCI_PM_CTRL_NO_SOFT_RESET in pci_dev and a
+> quirk to set it for these devices?  It seems like that would be simpler.
 
-Hi all,
+Oh, that seems like it could be a good idea.  I'll look into it when I'm
+back next week.  Thanks,
 
-Today's linux-next merge of the net-next tree got a conflict in
-drivers/net/wireless/iwlwifi/mvm/mac80211.c between commit c6a21ff31994
-("iwlwifi: mvm: fix merge damage") from the wireless tree and commit
-fb98be5e9419 ("iwlwifi: mvm: add unified LMAC scan API") from the
-net-next tree.
+Alex
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc drivers/net/wireless/iwlwifi/mvm/mac80211.c
-index 98556d03c1ed,2eb6ebee4467..000000000000
---- a/drivers/net/wireless/iwlwifi/mvm/mac80211.c
-+++ b/drivers/net/wireless/iwlwifi/mvm/mac80211.c
-@@@ -303,6 -321,16 +321,9 @@@ int iwl_mvm_mac_setup_register(struct i
-  		hw->uapsd_max_sp_len =3D IWL_UAPSD_MAX_SP;
-  	}
- =20
- -	if (mvm->fw->ucode_capa.flags & IWL_UCODE_TLV_FLAGS_UAPSD_SUPPORT &&
- -	    !iwlwifi_mod_params.uapsd_disable) {
- -		hw->flags |=3D IEEE80211_HW_SUPPORTS_UAPSD;
- -		hw->uapsd_queues =3D IWL_UAPSD_AC_INFO;
- -		hw->uapsd_max_sp_len =3D IWL_UAPSD_MAX_SP;
- -	}
- -
-+ 	if (mvm->fw->ucode_capa.api[0] & IWL_UCODE_TLV_API_LMAC_SCAN)
-+ 		hw->flags |=3D IEEE80211_SINGLE_HW_SCAN_ON_ALL_BANDS;
-+=20
-  	hw->sta_data_size =3D sizeof(struct iwl_mvm_sta);
-  	hw->vif_data_size =3D sizeof(struct iwl_mvm_vif);
-  	hw->chanctx_data_size =3D sizeof(u16);
-
---Sig_/J9S=tJ7N1qL3kZRoKJynCb7
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJTzxddAAoJEMDTa8Ir7ZwVeTMP/0zDAnFq4PJFpqhSbdTbiJaA
-d1PtX/4wujbmQhHdnJsyywrxojVx7h1zZbZURQvcO/ZhYCCmSCY4K1KeeiwOwnEx
-cu49s/fXjM2S9+8a7TL4SbkysQgF74yerhm9Kg3CRkgHb8oM2Zg8wyah1jXBKCCr
-3Nig5aamlrFsi8VAPCbrfmCzW9QnynSxEmZFPGS/S2bMiirK+Rdy6o/qkNtlC/a7
-aNUdPU5UlayGrhP7fiIdQ2KH3RG9xptGliGkUZT1zjFEKC4bzC90yjdCveNUhKYZ
-5ww1Z0wA5ZNcjNN9vLCdiBuwr7/LOPjVi7OQ/9PbMq2I3vLWpsMoZ28XlWx9eeed
-4MbhD9VoZMb3ZkZGW6rLZhL903ZfRTVpKT20XOAbsx8XZUHou9nP58pGJFXeTpsH
-NnSkpW/Z93GQeRLYny6rP55xh4kAuwyGL7IfqvyihyzdHjFQATs5ojKduiriO+5Z
-yHbP76kdSx0FaNjckIPLyXsBo4HZJwO3iyhsxLVxqu4qBcA2QKIqFs+zZPkkgnwF
-LC1azGjiqYpR/H7eOPGEolbXRuN0hq/H3j0sbMfh+ulrkavPpAyvMW8axewZKOB7
-GN2mlksU5yqtNbLYWesR8swtPoCzGjd8+H1W30dxQ9pvfdj2+P55tYZohppDr9If
-r2g9EcV5ildgdKBRXJp+
-=BRSD
------END PGP SIGNATURE-----
-
---Sig_/J9S=tJ7N1qL3kZRoKJynCb7--
