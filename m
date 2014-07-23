@@ -1,90 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757067AbaGWH64 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 03:58:56 -0400
-Received: from mx07-00178001.pphosted.com ([62.209.51.94]:60821 "EHLO
-	mx07-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755001AbaGWH6y (ORCPT
+	id S1757145AbaGWIB7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 04:01:59 -0400
+Received: from mail-ig0-f171.google.com ([209.85.213.171]:45043 "EHLO
+	mail-ig0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756744AbaGWIB5 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 03:58:54 -0400
-Message-ID: <53CF6B35.30707@st.com>
-Date: Wed, 23 Jul 2014 09:58:45 +0200
-From: Maxime Coquelin <maxime.coquelin@st.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Wed, 23 Jul 2014 04:01:57 -0400
 MIME-Version: 1.0
-To: Kishon Vijay Abraham I <kishon@ti.com>, Lee Jones <lee.jones@linaro.org>,
-        Kishon Vijay Abraham I <kishon@uda0393678>
-Cc: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infrared.org>,
-        <kernel@stlinux.com>
-Subject: Re: [STLinux Kernel] [PATCH v3 0/5] phy: miphy365x: Introduce support
- for MiPHY365x
-References: <1404906074-31992-1-git-send-email-lee.jones@linaro.org>	<20140721062805.GA8781@uda0393678> <20140721073959.GR30888@lee--X1> <53CE1154.4010002@ti.com>
-In-Reply-To: <53CE1154.4010002@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.201.23.80]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.14,0.0.0000
- definitions=2014-07-23_03:2014-07-22,2014-07-23,1970-01-01 signatures=0
+X-Originating-IP: [84.73.67.144]
+In-Reply-To: <53CF6622.6060803@amd.com>
+References: <20140709093124.11354.3774.stgit@patser>
+	<20140709122953.11354.46381.stgit@patser>
+	<CAPM=9tyD2ZbrcGDC3hfNb7qNdzsfnyD-ZwM7G-nOgxeu5YKuSg@mail.gmail.com>
+	<53CE2421.5040906@amd.com>
+	<20140722114607.GL15237@phenom.ffwll.local>
+	<20140722115737.GN15237@phenom.ffwll.local>
+	<53CE56ED.4040109@vodafone.de>
+	<20140722132652.GO15237@phenom.ffwll.local>
+	<53CE6AFA.1060807@vodafone.de>
+	<CAKMK7uG1d31zU_i__wc+Yq46A0x0tPeKnMBs+NHSmHS82uMsXQ@mail.gmail.com>
+	<53CE84AA.9030703@amd.com>
+	<CAKMK7uFa8vMBV9_JenbFGnFXtV_r9dk=WjbMkkCDWcauhrDdJg@mail.gmail.com>
+	<53CE8A57.2000803@vodafone.de>
+	<53CF58FB.8070609@canonical.com>
+	<53CF5B9F.1050800@amd.com>
+	<53CF5EFE.6070307@canonical.com>
+	<53CF63C2.7070407@vodafone.de>
+	<CAKMK7uGJj+UwcnnzA+fj_=uWPN3i0sneWkoD+wfPJ_8Q6Y-DQg@mail.gmail.com>
+	<53CF6622.6060803@amd.com>
+Date: Wed, 23 Jul 2014 10:01:56 +0200
+Message-ID: <CAKMK7uHVh+gUXzQ+eYeV5rzHDxbkZ_9E3C7_m6=VOUzXRpALXQ@mail.gmail.com>
+Subject: Re: [Nouveau] [PATCH 09/17] drm/radeon: use common fence
+ implementation for fences
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
+To: =?UTF-8?Q?Christian_K=C3=B6nig?= <christian.koenig@amd.com>
+Cc: =?UTF-8?Q?Christian_K=C3=B6nig?= <deathsimple@vodafone.de>,
+        Maarten Lankhorst <maarten.lankhorst@canonical.com>,
+        Thomas Hellstrom <thellstrom@vmware.com>,
+        nouveau <nouveau@lists.freedesktop.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        dri-devel <dri-devel@lists.freedesktop.org>,
+        Ben Skeggs <bskeggs@redhat.com>,
+        "Deucher, Alexander" <alexander.deucher@amd.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kishon,
-
-On 07/22/2014 09:23 AM, Kishon Vijay Abraham I wrote:
-> Hi,
-> 
-> On Monday 21 July 2014 01:09 PM, Lee Jones wrote:
->> Hi Kishon,
->>
->>>> This patchset is based on the two core patches you sent to the
->>>> list which facilitate creating PHYs residing on multi-channel
->>>> controllers.  The changes since the last submission centre
->>>> around dynamic PHY creation based solely on what is provided via
->>>> Device Tree, as requested.  The other review comments have also
->>>> been addressed in this set.
+On Wed, Jul 23, 2014 at 9:37 AM, Christian König
+<christian.koenig@amd.com> wrote:
+> Am 23.07.2014 09:31, schrieb Daniel Vetter:
+>> On Wed, Jul 23, 2014 at 9:26 AM, Christian König
+>> <deathsimple@vodafone.de> wrote:
 >>>
->>> Merged the first four patches of this series. (merged v3+1 for 1st patch).
->>> I'm not sure who would be merging the dt patch (5/5). But for now I've merged
->>> 2/5 in linux-phy tree since the phy patch seems to be dependent on it.
->>> So the dt patch can be merged only after -rc1. However if whoever merges
->>> dt wants to get it merged during the merge window, I can prepare a common
->>> branch which both of us can merge to. Either ways, dt Maintainer should
->>> let me know.
+>>> It's not a locking problem I'm talking about here. Radeons lockup
+>>> handling
+>>> kicks in when anything calls into the driver from the outside, if you
+>>> have a
+>>> fence wait function that's called from the outside but doesn't handle
+>>> lockups you essentially rely on somebody else calling another radeon
+>>> function for the lockup to be resolved.
 >>
->> Thanks for applying.  It would be really helpful if you could put just
->> patch 2/5 onto an immutable branch and provide a tag e that Maxime
->> could pull from.
-> 
-> Sure. Created tag
-> git://git.kernel.org/pub/scm/linux/kernel/git/kishon/linux-phy.git
-> miphy365x_dt_common_header (branch:miphy365x_dt_header). It is based on 3.16-rc5.
+>> So you don't have a timer in radeon that periodically checks whether
+>> progress is still being made? That's the approach we're using in i915,
+>> together with some tricks to kick any stuck waiters so that we can
+>> reliably step in and grab locks for the reset.
+>
+>
+> We tried this approach, but it didn't worked at all.
+>
+> I already considered trying it again because of the upcoming fence
+> implementation, but reconsidering that when a driver is forced to change
+> it's handling because of the fence implementation that's just another hint
+> that there is something wrong here.
 
-Merged into git://git.stlinux.com/devel/kernel/linux-sti.git sti-dt-for-v3.17-1
-
-Thanks!
-Maxime
-
-> 
-> Thanks
-> Kishon
->>
->> Kind regards,
->> Lee
->>
->>>>   .../devicetree/bindings/phy/phy-miphy365x.txt      |  76 +++
->>>>   arch/arm/boot/dts/stih416-b2020-revE.dts           |  10 +
->>>>   arch/arm/boot/dts/stih416-b2020.dts                |  12 +
->>>>   arch/arm/boot/dts/stih416.dtsi                     |  22 +
->>>>   drivers/phy/Kconfig                                |  10 +
->>>>   drivers/phy/Makefile                               |   1 +
->>>>   drivers/phy/phy-miphy365x.c                        | 636 +++++++++++++++++++++
->>>>   include/dt-bindings/phy/phy-miphy365x.h            |  14 +
->>>>   8 files changed, 781 insertions(+)
->>
-> 
-> _______________________________________________
-> Kernel mailing list
-> Kernel@stlinux.com
-> http://www.stlinux.com/mailman/listinfo/kernel
-> 
+Out of curiosity: What's the blocker for using a timer/scheduled work
+to reset radeon? Getting this right on i915 has been fairly tricky and
+we now have an elaborate multi-stage state machine to get the driver
+through a reset. So always interested in different solutions.
+-Daniel
+-- 
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
