@@ -1,72 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933462AbaGWT51 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 15:57:27 -0400
-Received: from mail-we0-f169.google.com ([74.125.82.169]:60127 "EHLO
-	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933098AbaGWT5Z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 15:57:25 -0400
+	id S933499AbaGWT5v (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 15:57:51 -0400
+Received: from mga01.intel.com ([192.55.52.88]:17702 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933098AbaGWT5q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jul 2014 15:57:46 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,719,1400050800"; 
+   d="scan'208";a="574390718"
+Date: Wed, 23 Jul 2014 15:57:44 -0400
+From: Matthew Wilcox <willy@linux.intel.com>
+To: Boaz Harrosh <openosd@gmail.com>
+Cc: Matthew Wilcox <matthew.r.wilcox@intel.com>, linux-fsdevel@vger.kernel.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v8 10/22] Replace the XIP page fault handler with the DAX
+ page fault handler
+Message-ID: <20140723195744.GG6754@linux.intel.com>
+References: <cover.1406058387.git.matthew.r.wilcox@intel.com>
+ <00ad731b459e32ce965af8530bcd611a141e41b6.1406058387.git.matthew.r.wilcox@intel.com>
+ <53CFE965.5020304@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <CAGXu5jK1hrwvPs7f+mSOer+81J9SBxwMrqb=6fFeZQ7hd-FMzA@mail.gmail.com>
-References: <1405657206-12060-1-git-send-email-ast@plumgrid.com>
-	<1405657206-12060-9-git-send-email-ast@plumgrid.com>
-	<CAGXu5jK1hrwvPs7f+mSOer+81J9SBxwMrqb=6fFeZQ7hd-FMzA@mail.gmail.com>
-Date: Wed, 23 Jul 2014 12:57:23 -0700
-Message-ID: <CAMEtUuyRUG6ZdRvL0JuakD0zPdYo3WoqQepK7_b_MW+r2aVzVA@mail.gmail.com>
-Subject: Re: [PATCH RFC v2 net-next 08/16] bpf: add hashtable type of BPF maps
-From: Alexei Starovoitov <ast@plumgrid.com>
-To: Kees Cook <keescook@chromium.org>
-Cc: "David S. Miller" <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Jiri Olsa <jolsa@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53CFE965.5020304@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 23, 2014 at 11:36 AM, Kees Cook <keescook@chromium.org> wrote:
->> +static struct bpf_map *htab_map_alloc(struct nlattr *attr[BPF_MAP_ATTR_MAX + 1])
->> +{
->> +       struct bpf_htab *htab;
->> +       int err, i;
->> +
->> +       htab = kmalloc(sizeof(*htab), GFP_USER);
->
-> I'd prefer kzalloc here.
+On Wed, Jul 23, 2014 at 07:57:09PM +0300, Boaz Harrosh wrote:
+> > +/*
+> > + * The user has performed a load from a hole in the file.  Allocating
+> > + * a new page in the file would cause excessive storage usage for
+> > + * workloads with sparse files.  We allocate a page cache page instead.
+> > + * We'll kick it out of the page cache if it's ever written to,
+> > + * otherwise it will simply fall out of the page cache under memory
+> > + * pressure without ever having been dirtied.
+> > + */
+> 
+> Do you like this ?? I understand that you cannot use the ZERO page or
+> such global page on a page cache since each instance needs its own
+> list_head/index/mapping and so on. But why use any page at all.
+> 
+> use a global ZERO page, either the system global, or static local to
+> this system. map it to the current application VMA in question, using it's
+> pfn (page_to_pfn) just like you do with real DAX-blocks from prd.
 
-in this case I agree. will change, since it's not in critical path and we
-can waste few cycles zeroing memory.
+I must admit to not understanding the MM particularly well.  There would
+seem to be problems with rmap when doing this kind of trick.  Also, this
+is how reading from holes on regular filesystems work (except for the
+part about kicking it out of page cache on a write).  A third reason is
+that there are some forms of PMem which are terribly slow to write to.
+I have a longer-term plan to support these memories by transparently
+caching them in DRAM and only writing back to the media on flush/sync.
 
->> +       err = -ENOMEM;
->> +       htab->buckets = kmalloc(htab->n_buckets * sizeof(struct hlist_head),
->> +                               GFP_USER);
->
-> I'd prefer kcalloc here, even though n_buckets can't currently trigger
-> an integer overflow.
+> Say app A reads an hole, then app B reads an hole. Both now point to the same
+> zero page pfn, now say app B writes to that hole, mkwrite will convert it to
+> a real dax-block pfn and will map the new pfn in the faulting vma. But what about
+> app A, will it read the old pfn? who loops on all VMA's that have some mapping
+> and invalidates those mapping.
 
-hmm, I would argue that kmalloc_array is a preferred way, but kcalloc ?
-Few lines below the whole array is inited with INIT_HLIST_HEAD...
+That's the call to unmap_mapping_range().
 
->> +       for (i = 0; i < htab->n_buckets; i++)
->> +               INIT_HLIST_HEAD(&htab->buckets[i]);
+> Same with truncate. App A mmap-read a block, app B does a read-mmap then a truncate.
+> who loops on all VMA mappings of these blocks to invalidate them. With page-cache and
+> pages we have a list of all VMA's that currently have mappings on a page, but with
+> dax-pfns (dax-blocks) we do *not* have page struct, who keeps the list of current
+> active vma-mappings?
 
->> +       htab->slab_name = kasprintf(GFP_USER, "bpf_htab_%p", htab);
->
-> This leaks a kernel heap memory pointer to userspace. If a unique name
-> needed, I think map_id should be used instead.
-
-it leaks, how? slabinfo is only available to root.
-The same code exists in conntrack:
-net/netfilter/nf_conntrack_core.c:1767
+Same solution ... there's a list in the address_space of all the VMAs who
+have it mapped.  See truncate_pagecache() in mm/truncate.c (filesystems
+usually call truncate_setsize()).
