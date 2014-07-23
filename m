@@ -1,55 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932260AbaGWG54 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 02:57:56 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:49777 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755730AbaGWG5y (ORCPT
+	id S932313AbaGWG6Y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 02:58:24 -0400
+Received: from mail-oi0-f53.google.com ([209.85.218.53]:56077 "EHLO
+	mail-oi0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932267AbaGWG6V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 02:57:54 -0400
-Date: Wed, 23 Jul 2014 08:57:36 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Mike Galbraith <umgwanakikbuti@gmail.com>
-Cc: Andi Kleen <andi@firstfloor.org>, Waiman Long <Waiman.Long@hp.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        Darren Hart <dvhart@linux.intel.com>,
-        Davidlohr Bueso <davidlohr@hp.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
-        linux-doc@vger.kernel.org, Jason Low <jason.low2@hp.com>,
-        Scott J Norton <scott.norton@hp.com>
-Subject: Re: [RFC PATCH 0/5] futex: introduce an optimistic spinning futex
-Message-ID: <20140723065736.GM3935@laptop>
-References: <1405956271-34339-1-git-send-email-Waiman.Long@hp.com>
- <8761iq3bp3.fsf@tassilo.jf.intel.com>
- <1406091303.5076.33.camel@marge.simpson.net>
+	Wed, 23 Jul 2014 02:58:21 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1406091303.5076.33.camel@marge.simpson.net>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <20140723065412.GA15759@ulmo.nvidia.com>
+References: <1405957142-19416-1-git-send-email-ttynkkynen@nvidia.com>
+	<1405957142-19416-15-git-send-email-ttynkkynen@nvidia.com>
+	<CAKohpomQthJ_XE-HhzW07Q4aVtxQVy97iaL0Vy6Q4Lhw22A=VA@mail.gmail.com>
+	<20140723065412.GA15759@ulmo.nvidia.com>
+Date: Wed, 23 Jul 2014 12:28:21 +0530
+Message-ID: <CAKohponmg24pvnX2Jhfg5LHKKHx3VEm-6a_JXTGhVXY-aj3EOw@mail.gmail.com>
+Subject: Re: [PATCH v2 14/16] cpufreq: Add cpufreq driver for Tegra124
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Thierry Reding <thierry.reding@gmail.com>
+Cc: Tuomas Tynkkynen <ttynkkynen@nvidia.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Paul Walmsley <pwalmsley@nvidia.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 23, 2014 at 06:55:03AM +0200, Mike Galbraith wrote:
-> On Mon, 2014-07-21 at 09:42 -0700, Andi Kleen wrote:
-> 
-> > FWIW the main problem is currently that switch-through-idle is so 
-> > slow. I think improving that would give a boost to far more
-> > situations.
-> 
-> Two high frequency idle enter/exit suckage spots:
-> 
-> 1) nohz (tick) - it's expensive to start/stop tick on every micro-idle,
-> throttle it or something.
+On 23 July 2014 12:24, Thierry Reding <thierry.reding@gmail.com> wrote:
+> On Wed, Jul 23, 2014 at 10:14:44AM +0530, Viresh Kumar wrote:
+>> On 21 July 2014 21:09, Tuomas Tynkkynen <ttynkkynen@nvidia.com> wrote:
+>>
+>> > diff --git a/drivers/cpufreq/Kconfig.arm b/drivers/cpufreq/Kconfig.arm
+>> > index 7364a53..df3c73e 100644
+>> > --- a/drivers/cpufreq/Kconfig.arm
+>> > +++ b/drivers/cpufreq/Kconfig.arm
+>> > @@ -244,6 +244,7 @@ config ARM_SPEAR_CPUFREQ
+>> >  config ARM_TEGRA_CPUFREQ
+>> >         bool "TEGRA CPUFreq support"
+>> >         depends on ARCH_TEGRA
+>> > +       depends on GENERIC_CPUFREQ_CPU0
+>>
+>> Wouldn't this also disturb the existing cpufreq driver for earlier
+>> tegra platforms? i.e. we don't need cpufreq-cpu0 for them
+>> atleast as of now.
+>
+> Perhaps this should be "select" rather than "depends on"?
 
-Yeah, so the idea was to use the cpuidle idle guestimator to control
-this, and now that we've moved it somewhat closer to the scheduler that
-might become possible.
+Don't know, its not optionaly for tegra124 and so a "depends on"
+might fit better ?
 
-> 2) ondemand governor - tweak silly default settings to reflect the
-> reality that we routinely schedule communicating threads cross core.
+>> > +static int tegra124_cpufreq_probe(struct platform_device *pdev)
+>> > +{
+>> > +       int ret;
+>> > +
+>> > +       cpu_dev = get_cpu_device(0);
+>> > +       if (!cpu_dev)
+>> > +               return -ENODEV;
+>> > +
+>>
+>> Shouldn't we do a of_node_get() here?
+>
+> I think this would need to be get_device() since it's the struct device
+> that's being used subsequently.
 
-Yeah, so the plan is to shoot cpufreq in the head and base the
-replacement on smp aware metrics ;-) Its on a todo list somewhere..
+Probably I didn't write it well..
+
+What I meant was after doing a get_cpu_device() we might also need
+to do  of_node_get(cpu_dev->of_node) as we would be using of_node
+in further code.
