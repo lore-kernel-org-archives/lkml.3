@@ -1,59 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757120AbaGWLkP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 07:40:15 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:38060 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755883AbaGWLkN convert rfc822-to-8bit (ORCPT
+	id S1756428AbaGWLnN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 07:43:13 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:55313 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751103AbaGWLnK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 07:40:13 -0400
-From: "Gupta, Pekon" <pekon@ti.com>
-To: Brian Norris <computersforpeace@gmail.com>, Bean Huo <beanhuo@outlook.com>
-CC: Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
-        Jingoo Han <jg1.han@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "christian.riesch@omicron.at" <christian.riesch@omicron.at>,
-        Huang Shijie <b32955@freescale.com>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        David Woodhouse <dwmw2@infradead.org>
-Subject: RE: [PATCH v6] mtd:nor:timeout:fix do_write_buffer() timeout error
-Thread-Topic: [PATCH v6] mtd:nor:timeout:fix do_write_buffer() timeout error
-Thread-Index: AQHPoRAYwudgCzYyPUygtO/zHQcG4ZuiomuAgAByhoCAAAZ2AIAKdq+A
-Date: Wed, 23 Jul 2014 11:39:24 +0000
-Message-ID: <20980858CB6D3A4BAE95CA194937D5E73EB06218@DBDE04.ent.ti.com>
-References: <BLU436-SMTP223B6F83933407357F0FF3BA6F70@phx.gbl>
- <20140716180423.GV7537@ld-irv-0074>
- <BLU185-W53748517956B27745D7033A6F40@phx.gbl>
- <20140717011724.GW7537@ld-irv-0074>
-In-Reply-To: <20140717011724.GW7537@ld-irv-0074>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.170.142]
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
+	Wed, 23 Jul 2014 07:43:10 -0400
+Message-ID: <53CF9FC4.1050404@gmail.com>
+Date: Wed, 23 Jul 2014 19:43:00 +0800
+From: Chen Gang <gang.chen.5i5j@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
+To: herbert@gondor.apana.org.au
+CC: davem@davemloft.net, linux-crypto@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Liqin Chen <liqin.linux@gmail.com>, Lennox Wu <lennox.wu@gmail.com>
+Subject: Re: [PATCH] drivers/crypto/Kconfig: Let 'DEV_QCE' depend on both
+ HAS_DMA and HAS_IOMEM
+References: <53C1F692.4000105@gmail.com> <53C3C92F.8010504@gmail.com>
+In-Reply-To: <53C3C92F.8010504@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From: Brian Norris
->>On Thu, Jul 17, 2014 at 12:54:17AM +0000, Bean Huo wrote:
->> > I have just fixed up your patch myself, to use max() and to improve some
->> > of the language. Let me know if the below works for you.
+Oh, sorry, this patch can still be alive, after a long discussion, we
+need keep current status no touch -- still let individual modules to
+depends on HAS_IOMEM and/or HAS_DMA, if they need them.
+
+So please help check the patch, when you have time.
+
+Thanks.
+
+On 07/14/2014 08:12 PM, Chen Gang wrote:
+> Hello all:
+> 
+> This patch is obsoleted according to the other discussion thread about
+> IOMEM and COMPILE_TEST.
+> 
+> I shall fix it, and maybe not need touch drivers/crypto again, so maybe
+> not need send patch v2 for it.
+> 
+> Thanks.
+> 
+> On 07/13/2014 11:01 AM, Chen Gang wrote:
+>> 'DEV_QCE' needs both HAS_DMA and HAS_IOMEM, so let it depend on them.
 >>
->> hi,Brian
->>  Thanks once again.I test and it works Ok.It can be accepted now?
->
->Yes. Pushed to l2-mtd.git.
->
-This works well with Spansion NOR device (S29GL512S10) present on
-J6-EVM, using http://patchwork.ozlabs.org/patch/372866/.
+>> The related error (with allmodconfig under score):
+>>
+>>     MODPOST 1365 modules
+>>   ERROR: "devm_ioremap_resource" [drivers/crypto/qce/qcrypto.ko] undefined!
+>>   ERROR: "dma_map_sg" [drivers/crypto/qce/qcrypto.ko] undefined!
+>>   ERROR: "dma_set_mask" [drivers/crypto/qce/qcrypto.ko] undefined!
+>>   ERROR: "dma_supported" [drivers/crypto/qce/qcrypto.ko] undefined!
+>>   ERROR: "dma_unmap_sg" [drivers/crypto/qce/qcrypto.ko] undefined!
+>>
+>> Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
+>> ---
+>>  drivers/crypto/Kconfig | 2 +-
+>>  1 file changed, 1 insertion(+), 1 deletion(-)
+>>
+>> diff --git a/drivers/crypto/Kconfig b/drivers/crypto/Kconfig
+>> index 5ef9ec9..2fb0fdf 100644
+>> --- a/drivers/crypto/Kconfig
+>> +++ b/drivers/crypto/Kconfig
+>> @@ -422,7 +422,7 @@ source "drivers/crypto/qat/Kconfig"
+>>  
+>>  config CRYPTO_DEV_QCE
+>>  	tristate "Qualcomm crypto engine accelerator"
+>> -	depends on ARCH_QCOM || COMPILE_TEST
+>> +	depends on (ARCH_QCOM || COMPILE_TEST) && HAS_DMA && HAS_IOMEM
+>>  	select CRYPTO_AES
+>>  	select CRYPTO_DES
+>>  	select CRYPTO_ECB
+>>
+> 
 
-Though it's already accepted in l2-mtd.git, but just for record.
-Tested-by: Pekon Gupta <pekon@ti.com>
+-- 
+Chen Gang
 
-
-with regards, pekon
+Open, share, and attitude like air, water, and life which God blessed
