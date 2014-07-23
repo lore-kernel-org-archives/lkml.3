@@ -1,214 +1,337 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933455AbaGWUqn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 16:46:43 -0400
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:42796 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932847AbaGWUqm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 16:46:42 -0400
-Message-ID: <53D01F2D.8090301@amacapital.net>
-Date: Wed, 23 Jul 2014 13:46:37 -0700
-From: Andy Lutomirski <luto@amacapital.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S933522AbaGWUsP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 16:48:15 -0400
+Received: from mail.kernel.org ([198.145.19.201]:34754 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932847AbaGWUsO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jul 2014 16:48:14 -0400
+Message-ID: <53D02019.5040801@kernel.org>
+Date: Wed, 23 Jul 2014 21:50:33 +0100
+From: Jonathan Cameron <jic23@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-To: Eric Paris <eparis@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org
-CC: Andrew Vagin <avagin@openvz.org>, "Andrew G. Morgan" <morgan@kernel.org>,
-        "Serge E. Hallyn" <serge.hallyn@canonical.com>,
-        Kees Cook <keescook@chromium.org>, Steve Grubb <sgrubb@redhat.com>,
-        Dan Walsh <dwalsh@redhat.com>, stable@vger.kernel.org
-Subject: Re: [PATCH] CAPABILITIES: remove undefined caps from all processes
-References: <1406144186-23002-1-git-send-email-eparis@redhat.com>
-In-Reply-To: <1406144186-23002-1-git-send-email-eparis@redhat.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
+To: Josef Gajdusek <atx@atalax.net>, linux-iio@vger.kernel.org
+CC: devel@driverdev.osuosl.org, gregkh@linuxfoundation.org,
+        linux-kernel@vger.kernel.org, pmeerw@pmeerw.net,
+        dan.carpenter@oracle.com, lars@metafoo.de
+Subject: Re: [PATCH v5 (staging-next) 1/5] staging:iio:hmc5843: Added regmap
+ support
+References: <20140722150009.GA7845@dashie> <20140722150043.GB7845@dashie>
+In-Reply-To: <20140722150043.GB7845@dashie>
+Content-Type: text/plain; charset=windows-1252; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/23/2014 12:36 PM, Eric Paris wrote:
-> This is effectively a revert of 7b9a7ec565505699f503b4fcf61500dceb36e744
-> plus fixing it a different way...
-
-You sent something like this a couple days ago.  What changed?
-
---Andy
-
-> 
-> We found, when trying to run an application from an application which
-> had dropped privs that the kernel does security checks on undefined
-> capability bits.  This was ESPECIALLY difficult to debug as those
-> undefined bits are hidden from /proc/$PID/status.
-> 
-> Consider a root application which drops all capabilities from ALL 4
-> capability sets.  We assume, since the application is going to set
-> eff/perm/inh from an array that it will clear not only the defined caps
-> less than CAP_LAST_CAP, but also the higher 28ish bits which are
-> undefined future capabilities.
-> 
-> The BSET gets cleared differently.  Instead it is cleared one bit at a
-> time.  The problem here is that in security/commoncap.c::cap_task_prctl()
-> we actually check the validity of a capability being read.  So any task
-> which attempts to 'read all things set in bset' followed by 'unset all
-> things set in bset' will not even attempt to unset the undefined bits
-> higher than CAP_LAST_CAP.
-> 
-> So the 'parent' will look something like:
-> CapInh:	0000000000000000
-> CapPrm:	0000000000000000
-> CapEff:	0000000000000000
-> CapBnd:	ffffffc000000000
-> 
-> All of this 'should' be fine.  Given that these are undefined bits that
-> aren't supposed to have anything to do with permissions.  But they do...
-> 
-> So lets now consider a task which cleared the eff/perm/inh completely
-> and cleared all of the valid caps in the bset (but not the invalid caps
-> it couldn't read out of the kernel).  We know that this is exactly what
-> the libcap-ng library does and what the go capabilities library does.
-> They both leave you in that above situation if you try to clear all of
-> you capapabilities from all 4 sets.  If that root task calls execve()
-> the child task will pick up all caps not blocked by the bset.  The bset
-> however does not block bits higher than CAP_LAST_CAP.  So now the child
-> task has bits in eff which are not in the parent.  These are
-> 'meaningless' undefined bits, but still bits which the parent doesn't
-> have.
-> 
-> The problem is now in cred_cap_issubset() (or any operation which does a
-> subset test) as the child, while a subset for valid cap bits, is not a
-> subset for invalid cap bits!  So now we set durring commit creds that
-> the child is not dumpable.  Given it is 'more priv' than its parent.  It
-> also means the parent cannot ptrace the child and other stupidity.
-> 
-> The solution here:
-> 1) stop hiding capability bits in status
-> 	This makes debugging easier!
-> 
-> 2) stop giving any task undefined capability bits.  it's simple, it you
-> don't put those invalid bits in CAP_FULL_SET you won't get them in init
-> and you won't get them in any other task either.
-> 	This fixes the cap_issubset() tests and resulting fallout (which
-> 	made the init task in a docker container untraceable among other
-> 	things)
-> 
-> 3) mask out undefined bits when sys_capset() is called as it might use
-> ~0, ~0 to denote 'all capabilities' for backward/forward compatibility.
-> 	This lets 'capsh --caps="all=eip" -- -c /bin/bash' run.
-> 
-> 4) mask out undefined bit when we read a file capability off of disk as
-> again likely all bits are set in the xattr for forward/backward
-> compatibility.
-> 	This lets 'setcap all+pe /bin/bash; /bin/bash' run
-> 
-> Signed-off-by: Eric Paris <eparis@redhat.com>
-> Cc: Andrew Vagin <avagin@openvz.org>
-> Cc: Andrew G. Morgan <morgan@kernel.org>
-> Cc: Serge E. Hallyn <serge.hallyn@canonical.com>
-> Cc: Kees Cook <keescook@chromium.org>
-> Cc: Steve Grubb <sgrubb@redhat.com>
-> Cc: Dan Walsh <dwalsh@redhat.com>
-> Cc: stable@vger.kernel.org
+On 22/07/14 16:00, Josef Gajdusek wrote:
+> This patch changes hmc5843.c to use regmap. This provides transparent caching
+> to the code as well as abstraction necessary to add support for SPI-based
+> hmc5983.
+>
+> Signed-off-by: Josef Gajdusek <atx@atx.name>
+Applied to the togreg branch of iio.git - initially pushed out as testing.
 > ---
->  fs/proc/array.c            | 11 +----------
->  include/linux/capability.h |  5 ++++-
->  kernel/audit.c             |  2 +-
->  kernel/capability.c        |  4 ++++
->  security/commoncap.c       |  3 +++
->  5 files changed, 13 insertions(+), 12 deletions(-)
-> 
-> diff --git a/fs/proc/array.c b/fs/proc/array.c
-> index 64db2bc..3e1290b 100644
-> --- a/fs/proc/array.c
-> +++ b/fs/proc/array.c
-> @@ -297,15 +297,11 @@ static void render_cap_t(struct seq_file *m, const char *header,
->  	seq_puts(m, header);
->  	CAP_FOR_EACH_U32(__capi) {
->  		seq_printf(m, "%08x",
-> -			   a->cap[(_KERNEL_CAPABILITY_U32S-1) - __capi]);
-> +			   a->cap[CAP_LAST_U32 - __capi]);
->  	}
->  	seq_putc(m, '\n');
->  }
->  
-> -/* Remove non-existent capabilities */
-> -#define NORM_CAPS(v) (v.cap[CAP_TO_INDEX(CAP_LAST_CAP)] &= \
-> -				CAP_TO_MASK(CAP_LAST_CAP + 1) - 1)
-> -
->  static inline void task_cap(struct seq_file *m, struct task_struct *p)
->  {
->  	const struct cred *cred;
-> @@ -319,11 +315,6 @@ static inline void task_cap(struct seq_file *m, struct task_struct *p)
->  	cap_bset	= cred->cap_bset;
->  	rcu_read_unlock();
->  
-> -	NORM_CAPS(cap_inheritable);
-> -	NORM_CAPS(cap_permitted);
-> -	NORM_CAPS(cap_effective);
-> -	NORM_CAPS(cap_bset);
-> -
->  	render_cap_t(m, "CapInh:\t", &cap_inheritable);
->  	render_cap_t(m, "CapPrm:\t", &cap_permitted);
->  	render_cap_t(m, "CapEff:\t", &cap_effective);
-> diff --git a/include/linux/capability.h b/include/linux/capability.h
-> index 84b13ad..aa93e5e 100644
-> --- a/include/linux/capability.h
-> +++ b/include/linux/capability.h
-> @@ -78,8 +78,11 @@ extern const kernel_cap_t __cap_init_eff_set;
->  # error Fix up hand-coded capability macro initializers
->  #else /* HAND-CODED capability initializers */
->  
-> +#define CAP_LAST_U32			((_KERNEL_CAPABILITY_U32S) - 1)
-> +#define CAP_LAST_U32_VALID_MASK		(CAP_TO_MASK(CAP_LAST_CAP + 1) -1)
+>   drivers/staging/iio/magnetometer/Kconfig   |   1 +
+>   drivers/staging/iio/magnetometer/hmc5843.c | 140 +++++++++++++++++++----------
+>   2 files changed, 96 insertions(+), 45 deletions(-)
+>
+> diff --git a/drivers/staging/iio/magnetometer/Kconfig b/drivers/staging/iio/magnetometer/Kconfig
+> index 34634da..ad88d61 100644
+> --- a/drivers/staging/iio/magnetometer/Kconfig
+> +++ b/drivers/staging/iio/magnetometer/Kconfig
+> @@ -8,6 +8,7 @@ config SENSORS_HMC5843
+>   	depends on I2C
+>   	select IIO_BUFFER
+>   	select IIO_TRIGGERED_BUFFER
+> +	select REGMAP_I2C
+>   	help
+>   	  Say Y here to add support for the Honeywell HMC5843, HMC5883 and
+>   	  HMC5883L 3-Axis Magnetometer (digital compass).
+> diff --git a/drivers/staging/iio/magnetometer/hmc5843.c b/drivers/staging/iio/magnetometer/hmc5843.c
+> index f595fdc..6f06f98 100644
+> --- a/drivers/staging/iio/magnetometer/hmc5843.c
+> +++ b/drivers/staging/iio/magnetometer/hmc5843.c
+> @@ -21,6 +21,7 @@
+>
+>   #include <linux/module.h>
+>   #include <linux/i2c.h>
+> +#include <linux/regmap.h>
+>   #include <linux/iio/iio.h>
+>   #include <linux/iio/sysfs.h>
+>   #include <linux/iio/trigger_consumer.h>
+> @@ -34,6 +35,7 @@
+>   #define HMC5843_DATA_OUT_MSB_REGS		0x03
+>   #define HMC5843_STATUS_REG			0x09
+>   #define HMC5843_ID_REG				0x0a
+> +#define HMC5843_ID_END				0x0c
+>
+>   enum hmc5843_ids {
+>   	HMC5843_ID,
+> @@ -49,6 +51,7 @@ enum hmc5843_ids {
+>   #define HMC5843_RANGE_GAIN_OFFSET		0x05
+>   #define HMC5843_RANGE_GAIN_DEFAULT		0x01
+>   #define HMC5843_RANGE_GAINS			8
+> +#define HMC5843_RANGE_GAIN_MASK		0xe0
+>
+>   /* Device status */
+>   #define HMC5843_DATA_READY			0x01
+> @@ -68,6 +71,7 @@ enum hmc5843_ids {
+>   #define HMC5843_RATE_OFFSET			0x02
+>   #define HMC5843_RATE_DEFAULT			0x04
+>   #define HMC5843_RATES				7
+> +#define HMC5843_RATE_MASK		0x1c
+>
+>   /* Device measurement configuration */
+>   #define HMC5843_MEAS_CONF_NORMAL		0x00
+> @@ -121,10 +125,7 @@ struct hmc5843_chip_info {
+>   struct hmc5843_data {
+>   	struct i2c_client *client;
+>   	struct mutex lock;
+> -	u8 rate;
+> -	u8 meas_conf;
+> -	u8 operating_mode;
+> -	u8 range;
+> +	struct regmap *regmap;
+>   	const struct hmc5843_chip_info *variant;
+>   	__be16 buffer[8]; /* 3x 16-bit channels + padding + 64-bit timestamp */
+>   };
+> @@ -135,10 +136,8 @@ static s32 hmc5843_set_mode(struct hmc5843_data *data, u8 operating_mode)
+>   	int ret;
+>
+>   	mutex_lock(&data->lock);
+> -	ret = i2c_smbus_write_byte_data(data->client, HMC5843_MODE_REG,
+> -					operating_mode & HMC5843_MODE_MASK);
+> -	if (ret >= 0)
+> -		data->operating_mode = operating_mode;
+> +	ret = regmap_update_bits(data->regmap, HMC5843_MODE_REG,
+> +			HMC5843_MODE_MASK, operating_mode);
+>   	mutex_unlock(&data->lock);
+>
+>   	return ret;
+> @@ -146,15 +145,15 @@ static s32 hmc5843_set_mode(struct hmc5843_data *data, u8 operating_mode)
+>
+>   static int hmc5843_wait_measurement(struct hmc5843_data *data)
+>   {
+> -	s32 result;
+>   	int tries = 150;
+> +	int val;
+> +	int ret;
+>
+>   	while (tries-- > 0) {
+> -		result = i2c_smbus_read_byte_data(data->client,
+> -			HMC5843_STATUS_REG);
+> -		if (result < 0)
+> -			return result;
+> -		if (result & HMC5843_DATA_READY)
+> +		ret = regmap_read(data->regmap, HMC5843_STATUS_REG, &val);
+> +		if (ret < 0)
+> +			return ret;
+> +		if (val & HMC5843_DATA_READY)
+>   			break;
+>   		msleep(20);
+>   	}
+> @@ -171,20 +170,20 @@ static int hmc5843_wait_measurement(struct hmc5843_data *data)
+>   static int hmc5843_read_measurement(struct hmc5843_data *data,
+>   				    int idx, int *val)
+>   {
+> -	s32 result;
+>   	__be16 values[3];
+> +	int ret;
+>
+>   	mutex_lock(&data->lock);
+> -	result = hmc5843_wait_measurement(data);
+> -	if (result < 0) {
+> +	ret = hmc5843_wait_measurement(data);
+> +	if (ret < 0) {
+>   		mutex_unlock(&data->lock);
+> -		return result;
+> +		return ret;
+>   	}
+> -	result = i2c_smbus_read_i2c_block_data(data->client,
+> -		HMC5843_DATA_OUT_MSB_REGS, sizeof(values), (u8 *) values);
+> +	ret = regmap_bulk_read(data->regmap, HMC5843_DATA_OUT_MSB_REGS,
+> +			values, sizeof(values));
+>   	mutex_unlock(&data->lock);
+> -	if (result < 0)
+> -		return -EINVAL;
+> +	if (ret < 0)
+> +		return ret;
+>
+>   	*val = sign_extend32(be16_to_cpu(values[idx]), 15);
+>   	return IIO_VAL_INT;
+> @@ -208,16 +207,13 @@ static int hmc5843_read_measurement(struct hmc5843_data *data,
+>    *     and BN.
+>    *
+>    */
+> -static s32 hmc5843_set_meas_conf(struct hmc5843_data *data, u8 meas_conf)
+> +static int hmc5843_set_meas_conf(struct hmc5843_data *data, u8 meas_conf)
+>   {
+>   	int ret;
+>
+>   	mutex_lock(&data->lock);
+> -	ret = i2c_smbus_write_byte_data(data->client, HMC5843_CONFIG_REG_A,
+> -		(meas_conf & HMC5843_MEAS_CONF_MASK) |
+> -		(data->rate << HMC5843_RATE_OFFSET));
+> -	if (ret >= 0)
+> -		data->meas_conf = meas_conf;
+> +	ret = regmap_update_bits(data->regmap, HMC5843_CONFIG_REG_A,
+> +			HMC5843_MEAS_CONF_MASK, meas_conf);
+>   	mutex_unlock(&data->lock);
+>
+>   	return ret;
+> @@ -228,7 +224,15 @@ static ssize_t hmc5843_show_measurement_configuration(struct device *dev,
+>   						char *buf)
+>   {
+>   	struct hmc5843_data *data = iio_priv(dev_to_iio_dev(dev));
+> -	return sprintf(buf, "%d\n", data->meas_conf);
+> +	int val;
+> +	int ret;
 > +
->  # define CAP_EMPTY_SET    ((kernel_cap_t){{ 0, 0 }})
-> -# define CAP_FULL_SET     ((kernel_cap_t){{ ~0, ~0 }})
-> +# define CAP_FULL_SET     ((kernel_cap_t){{ ~0, CAP_LAST_U32_VALID_MASK }})
->  # define CAP_FS_SET       ((kernel_cap_t){{ CAP_FS_MASK_B0 \
->  				    | CAP_TO_MASK(CAP_LINUX_IMMUTABLE), \
->  				    CAP_FS_MASK_B1 } })
-> diff --git a/kernel/audit.c b/kernel/audit.c
-> index 3ef2e0e..ba2ff5a 100644
-> --- a/kernel/audit.c
-> +++ b/kernel/audit.c
-> @@ -1677,7 +1677,7 @@ void audit_log_cap(struct audit_buffer *ab, char *prefix, kernel_cap_t *cap)
->  	audit_log_format(ab, " %s=", prefix);
->  	CAP_FOR_EACH_U32(i) {
->  		audit_log_format(ab, "%08x",
-> -				 cap->cap[(_KERNEL_CAPABILITY_U32S-1) - i]);
-> +				 cap->cap[CAP_LAST_U32 - i]);
->  	}
->  }
->  
-> diff --git a/kernel/capability.c b/kernel/capability.c
-> index a5cf13c..989f5bf 100644
-> --- a/kernel/capability.c
-> +++ b/kernel/capability.c
-> @@ -258,6 +258,10 @@ SYSCALL_DEFINE2(capset, cap_user_header_t, header, const cap_user_data_t, data)
->  		i++;
->  	}
->  
-> +	effective.cap[CAP_LAST_U32] &= CAP_LAST_U32_VALID_MASK;
-> +	permitted.cap[CAP_LAST_U32] &= CAP_LAST_U32_VALID_MASK;
-> +	inheritable.cap[CAP_LAST_U32] &= CAP_LAST_U32_VALID_MASK;
+> +	ret = regmap_read(data->regmap, HMC5843_CONFIG_REG_A, &val);
+> +	if (ret)
+> +		return ret;
+> +	val &= HMC5843_MEAS_CONF_MASK;
 > +
->  	new = prepare_creds();
->  	if (!new)
->  		return -ENOMEM;
-> diff --git a/security/commoncap.c b/security/commoncap.c
-> index b9d613e..963dc59 100644
-> --- a/security/commoncap.c
-> +++ b/security/commoncap.c
-> @@ -421,6 +421,9 @@ int get_vfs_caps_from_disk(const struct dentry *dentry, struct cpu_vfs_cap_data
->  		cpu_caps->inheritable.cap[i] = le32_to_cpu(caps.data[i].inheritable);
->  	}
->  
-> +	cpu_caps->permitted.cap[CAP_LAST_U32] &= CAP_LAST_U32_VALID_MASK;
-> +	cpu_caps->inheritable.cap[CAP_LAST_U32] &= CAP_LAST_U32_VALID_MASK;
+> +	return sprintf(buf, "%d\n", val);
+>   }
+>
+>   static ssize_t hmc5843_set_measurement_configuration(struct device *dev,
+> @@ -282,10 +286,8 @@ static int hmc5843_set_samp_freq(struct hmc5843_data *data, u8 rate)
+>   	int ret;
+>
+>   	mutex_lock(&data->lock);
+> -	ret = i2c_smbus_write_byte_data(data->client, HMC5843_CONFIG_REG_A,
+> -		data->meas_conf | (rate << HMC5843_RATE_OFFSET));
+> -	if (ret >= 0)
+> -		data->rate = rate;
+> +	ret = regmap_update_bits(data->regmap, HMC5843_CONFIG_REG_A,
+> +			HMC5843_RATE_MASK, rate << HMC5843_RATE_OFFSET);
+>   	mutex_unlock(&data->lock);
+>
+>   	return ret;
+> @@ -309,10 +311,9 @@ static int hmc5843_set_range_gain(struct hmc5843_data *data, u8 range)
+>   	int ret;
+>
+>   	mutex_lock(&data->lock);
+> -	ret = i2c_smbus_write_byte_data(data->client, HMC5843_CONFIG_REG_B,
+> -		range << HMC5843_RANGE_GAIN_OFFSET);
+> -	if (ret >= 0)
+> -		data->range = range;
+> +	ret = regmap_update_bits(data->regmap, HMC5843_CONFIG_REG_B,
+> +			HMC5843_RANGE_GAIN_MASK,
+> +			range << HMC5843_RANGE_GAIN_OFFSET);
+>   	mutex_unlock(&data->lock);
+>
+>   	return ret;
+> @@ -358,17 +359,27 @@ static int hmc5843_read_raw(struct iio_dev *indio_dev,
+>   			    int *val, int *val2, long mask)
+>   {
+>   	struct hmc5843_data *data = iio_priv(indio_dev);
+> +	int rval;
+> +	int ret;
+>
+>   	switch (mask) {
+>   	case IIO_CHAN_INFO_RAW:
+>   		return hmc5843_read_measurement(data, chan->scan_index, val);
+>   	case IIO_CHAN_INFO_SCALE:
+> +		ret = regmap_read(data->regmap, HMC5843_CONFIG_REG_B, &rval);
+> +		if (ret < 0)
+> +			return ret;
+> +		rval >>= HMC5843_RANGE_GAIN_OFFSET;
+>   		*val = 0;
+> -		*val2 = data->variant->regval_to_nanoscale[data->range];
+> +		*val2 = data->variant->regval_to_nanoscale[rval];
+>   		return IIO_VAL_INT_PLUS_NANO;
+>   	case IIO_CHAN_INFO_SAMP_FREQ:
+> -		*val = data->variant->regval_to_samp_freq[data->rate][0];
+> -		*val2 = data->variant->regval_to_samp_freq[data->rate][1];
+> +		ret = regmap_read(data->regmap, HMC5843_CONFIG_REG_A, &rval);
+> +		if (ret < 0)
+> +			return ret;
+> +		rval >>= HMC5843_RATE_OFFSET;
+> +		*val = data->variant->regval_to_samp_freq[rval][0];
+> +		*val2 = data->variant->regval_to_samp_freq[rval][1];
+>   		return IIO_VAL_INT_PLUS_MICRO;
+>   	}
+>   	return -EINVAL;
+> @@ -426,9 +437,9 @@ static irqreturn_t hmc5843_trigger_handler(int irq, void *p)
+>   		goto done;
+>   	}
+>
+> -	ret = i2c_smbus_read_i2c_block_data(data->client,
+> -		HMC5843_DATA_OUT_MSB_REGS, 3 * sizeof(__be16),
+> -			(u8 *) data->buffer);
+> +	ret = regmap_bulk_read(data->regmap, HMC5843_DATA_OUT_MSB_REGS,
+> +			data->buffer, 3 * sizeof(__be16));
 > +
->  	return 0;
->  }
->  
-> 
+>   	mutex_unlock(&data->lock);
+>   	if (ret < 0)
+>   		goto done;
+> @@ -508,8 +519,8 @@ static int hmc5843_init(struct hmc5843_data *data)
+>   	int ret;
+>   	u8 id[3];
+>
+> -	ret = i2c_smbus_read_i2c_block_data(data->client, HMC5843_ID_REG,
+> -		sizeof(id), id);
+> +	ret = regmap_bulk_read(data->regmap, HMC5843_ID_REG,
+> +			id, ARRAY_SIZE(id));
+>   	if (ret < 0)
+>   		return ret;
+>   	if (id[0] != 'H' || id[1] != '4' || id[2] != '3') {
+> @@ -539,6 +550,44 @@ static const struct iio_info hmc5843_info = {
+>
+>   static const unsigned long hmc5843_scan_masks[] = {0x7, 0};
+>
+> +static const struct regmap_range hmc5843_readable_ranges[] = {
+> +		regmap_reg_range(0, HMC5843_ID_END),
+> +};
+> +
+> +static struct regmap_access_table hmc5843_readable_table = {
+> +		.yes_ranges = hmc5843_readable_ranges,
+> +		.n_yes_ranges = ARRAY_SIZE(hmc5843_readable_ranges),
+> +};
+> +
+> +static const struct regmap_range hmc5843_writable_ranges[] = {
+> +		regmap_reg_range(0, HMC5843_MODE_REG),
+> +};
+> +
+> +static struct regmap_access_table hmc5843_writable_table = {
+> +		.yes_ranges = hmc5843_writable_ranges,
+> +		.n_yes_ranges = ARRAY_SIZE(hmc5843_writable_ranges),
+> +};
+> +
+> +static const struct regmap_range hmc5843_volatile_ranges[] = {
+> +		regmap_reg_range(HMC5843_DATA_OUT_MSB_REGS, HMC5843_STATUS_REG),
+> +};
+> +
+> +static struct regmap_access_table hmc5843_volatile_table = {
+> +		.yes_ranges = hmc5843_volatile_ranges,
+> +		.n_yes_ranges = ARRAY_SIZE(hmc5843_volatile_ranges),
+> +};
+> +
+> +static struct regmap_config hmc5843_regmap_config = {
+> +		.reg_bits = 8,
+> +		.val_bits = 8,
+> +
+> +		.rd_table = &hmc5843_readable_table,
+> +		.wr_table = &hmc5843_writable_table,
+> +		.volatile_table = &hmc5843_volatile_table,
+> +
+> +		.cache_type = REGCACHE_RBTREE,
+> +};
+> +
+>   static int hmc5843_probe(struct i2c_client *client,
+>   			 const struct i2c_device_id *id)
+>   {
+> @@ -554,6 +603,7 @@ static int hmc5843_probe(struct i2c_client *client,
+>   	data = iio_priv(indio_dev);
+>   	data->client = client;
+>   	data->variant = &hmc5843_chip_info_tbl[id->driver_data];
+> +	data->regmap = devm_regmap_init_i2c(client, &hmc5843_regmap_config);
+>   	mutex_init(&data->lock);
+>
+>   	i2c_set_clientdata(client, indio_dev);
+>
 
