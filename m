@@ -1,53 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756756AbaGWMdC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 08:33:02 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:64165 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751511AbaGWMdA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 08:33:00 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 96.249.243.124
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19InzHWoMKx4PvTYUV0tO+NENE69/v5eRs=
-X-DKIM: OpenDKIM Filter v2.0.1 titan CC5E55B3CD5
-Date: Wed, 23 Jul 2014 08:32:43 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: weiyj_lk@163.com
-Cc: Andrew Lunn <andrew@lunn.ch>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -next] ARM: mvebu: fix return value check in
- armada_xp_pmsu_cpufreq_init()
-Message-ID: <20140723123243.GE23220@titan.lakedaemon.net>
-References: <1406038688-26417-1-git-send-email-weiyj_lk@163.com>
+	id S1757390AbaGWMdW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 08:33:22 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:40154 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754315AbaGWMdU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jul 2014 08:33:20 -0400
+From: Stewart Smith <stewart@linux.vnet.ibm.com>
+To: Vasant Hegde <hegdevasant@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org
+Cc: linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH 2/2] powerpc/powernv: Interface to add opal dump region
+In-Reply-To: <20140723092525.5170.25926.stgit@hegdevasant.in.ibm.com>
+References: <20140723092506.5170.34633.stgit@hegdevasant.in.ibm.com> <20140723092525.5170.25926.stgit@hegdevasant.in.ibm.com>
+User-Agent: Notmuch/0.18+16~gec02089 (http://notmuchmail.org) Emacs/23.1.1 (x86_64-redhat-linux-gnu)
+Date: Wed, 23 Jul 2014 22:33:05 +1000
+Message-ID: <m3a980i7b2.fsf@oc8180480414.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1406038688-26417-1-git-send-email-weiyj_lk@163.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14072312-0320-0000-0000-0000000F3F3B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 22, 2014 at 10:18:08PM +0800, weiyj_lk@163.com wrote:
-> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-> 
-> In case of error, the function clk_get() returns ERR_PTR()
-> and never returns NULL. The NULL test in the return value
-> check should be replaced with IS_ERR().
-> 
-> Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-> ---
->  arch/arm/mach-mvebu/pmsu.c | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
+Vasant Hegde <hegdevasant@linux.vnet.ibm.com> writes:
+> PowerNV platform is capable of capturing host memory region when system
+> crashes (because of host/firmware). We have new OPAL API to register
+> memory region to be capture when system crashes.
+>
+> This patch adds support for new API and also registers kernel log
+> buffer.
 
-Applied to mvebu/soc.
+I think we do need a way to un-register regions, and I think this may be
+important around kexec - unless the log buffer is in exactly the same
+place, there's a window where we could dump some random memory contents
+as kernel log buffer, probably causing some poor support person to
+scratch their head for a good long while.
 
-thx,
+> +void __init opal_dump_region_init(void)
+> +{
+> +	void *addr;
+> +	uint64_t size;
+> +	int rc;
+> +
+> +	/* Register kernel log buffer */
+> +	addr = get_log_buf_addr();
+> +	size = get_log_buf_len();
+> +	rc = add_dump_region_entry(DUMP_REGION_LOG_BUF, addr, size);
+> +	if (rc)
+> +		pr_warn("DUMP: Failed to register kernel log buffer. "
+> +			"rc = %d\n", rc);
 
-Jason.
+This is what's going to be printed in kernel log when running on OPAL
+firmware that doesn't support that call. Does this include the first GA
+release on POWER8 systems? If so, we probably want a nicer log message
+pointing to the fact that firmware is too old to support that function.
+
