@@ -1,65 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758126AbaGWPHT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 11:07:19 -0400
-Received: from smtprelay0154.hostedemail.com ([216.40.44.154]:36747 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757804AbaGWPHP (ORCPT
+	id S1758135AbaGWPI2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 11:08:28 -0400
+Received: from mail-la0-f44.google.com ([209.85.215.44]:42748 "EHLO
+	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755815AbaGWPI1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 11:07:15 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:355:379:541:599:968:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1540:1593:1594:1711:1730:1747:1777:1792:2198:2199:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3867:3868:3870:3871:3872:4321:5007:6117:6119:7652:7903:10004:10400:10848:11658:11914:12296:12517:12519:12740:13069:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: shape70_4c77ecea424f
-X-Filterd-Recvd-Size: 1640
-Message-ID: <1406128031.2755.21.camel@joe-AO725>
-Subject: Re: [PATCH V2] SYSV: logging update
-From: Joe Perches <joe@perches.com>
-To: Fabian Frederick <fabf@skynet.be>
-Cc: linux-kernel@vger.kernel.org, hch@infradead.org
-Date: Wed, 23 Jul 2014 08:07:11 -0700
-In-Reply-To: <1406127018-15953-1-git-send-email-fabf@skynet.be>
-References: <1406127018-15953-1-git-send-email-fabf@skynet.be>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 23 Jul 2014 11:08:27 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140723141424.GT11241@linux.vnet.ibm.com>
+References: <1406092194-13004-1-git-send-email-bobby.prani@gmail.com>
+ <1406092194-13004-5-git-send-email-bobby.prani@gmail.com> <20140723120907.GG11241@linux.vnet.ibm.com>
+ <CAJhHMCAQ7+HzXfH7E3LNbUVG_zf-1edj6yPBHQ9wtbTrBAoa7A@mail.gmail.com>
+ <20140723134116.GP11241@linux.vnet.ibm.com> <CAJhHMCAgrnxPTqTJjQ+Yw8LFgQBM3VHm6yWNf_Ct0nvAw-CmoQ@mail.gmail.com>
+ <20140723141424.GT11241@linux.vnet.ibm.com>
+From: Pranith Kumar <bobby.prani@gmail.com>
+Date: Wed, 23 Jul 2014 11:07:55 -0400
+Message-ID: <CAJhHMCA-FbnXuxK9VT_ed2S_WPap_y+nnH5-a96ekPdyXRvtVQ@mail.gmail.com>
+Subject: Re: [PATCH 04/16] rcu: Remove redundant check for an online CPU
+To: Paul McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Josh Triplett <josh@joshtriplett.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        "open list:READ-COPY UPDATE..." <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-07-23 at 16:50 +0200, Fabian Frederick wrote:
-> -use current logging functions
-> -replace no level printk by pr_err
-> -add debug.c / sysv_err function to include sb->s_id
-> -standardize prefix: "sysv (sb id): " and remove sb id from various logging at different places.
-> -use __func__
-> -coalesce formats
+On Wed, Jul 23, 2014 at 10:14 AM, Paul E. McKenney
+<paulmck@linux.vnet.ibm.com> wrote:
+> On Wed, Jul 23, 2014 at 10:01:14AM -0400, Pranith Kumar wrote:
+>> On Wed, Jul 23, 2014 at 9:41 AM, Paul E. McKenney
+>> <paulmck@linux.vnet.ibm.com> wrote:
+>> > On Wed, Jul 23, 2014 at 09:23:47AM -0400, Pranith Kumar wrote:
+>> >> On Wed, Jul 23, 2014 at 8:09 AM, Paul E. McKenney
+>> >> <paulmck@linux.vnet.ibm.com> wrote:
+>> >> > On Wed, Jul 23, 2014 at 01:09:41AM -0400, Pranith Kumar wrote:
+>> >> >> rcu_prcess_callbacks() is the softirq handler for RCU which is raised from
+>> >> >> invoke_rcu_core() which is called from __call_rcu_core().
+>> >> >>
+>> >> >> Each of these three functions checks if the cpu is online. We can remove the
+>> >> >> redundant ones. This commit removes one of these redundant check.
+>> >> >>
+>> >> >> Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
+>> >> >
+>> >> > Sorry, but no.  There can be a long delay between raise_softirq() and
+>> >> > this function starting, particularly if ksoftirqd gets involved.  The
+>> >> > CPU could easily go offline in the meantime.
+>> >> >
+>> >>
+>> >> That makes sense. I guess one of the other two checks in
+>> >> __call_rcu_core() or invoke_rcu_core() can go then?
+>> >
+>> > What would have to be the case for this suggested change to be safe?
+>> > Does that condition in fact hold?
+>> >
+>>
+>> The only scenario which is unsafe is when this thread is preempted and
+>> scheduled on a dying CPU. In that case we should turn off interrupts.
+>>
+>> Actually, checking the code, I see that interrupts are turned off
+>> already before we call _call_rcu_core(). So I am not sure such a case
+>> will happen. On the other hand invoke_rcu_core() will be a one line
+>> function which might as well be in-lined to avoid the double cpu
+>> online check.
+>>
+>> What am I missing?
+>
+> I am not sure.  Perhaps the fact that __call_rcu_core() doesn't call
+> invoke_rcu_core() unless the condition holds (which means that you
+> cannnot remove the check from __call_rcu_core()) or maybe the fact that
+> invoke_rcu_core() is called from many other places, which means that
+> you might not be able to remove the check from invoke_rcu_core().
+>
 
-Seems fine but:
+OK, since invoke_rcu_core() is being called from multiple places, we
+cannot remove the check there.
 
-> diff --git a/fs/sysv/debug.c b/fs/sysv/debug.c
-[]
-> @@ -0,0 +1,15 @@
-> +#define pr_fmt(fmt) KBUILD_MODNAME " " fmt
+But we can remove the check from __call_rcu_core(). Since we are going
+to check again in invoke_rcu_core(), no? We will call
+invoke_rcu_core() but we will return if the check if false.
 
-Please use KBUILD_MODNAME ": " fmt
+The trade-off here is between a function call and an extra
+smp_processor_id(). The only reason I am trying to do this is because
+smp_processor_id() disables and enables interrupts which is costly and
+we can avoid one such check.
 
-> +
-> +#include "sysv.h"
-> +
-> +void sysv_err(struct super_block *sb, const char *fmt, ...)
-> +{
-> +	struct va_format vaf;
-> +	va_list args;
-> +
-> +	va_start(args, fmt);
-> +	vaf.fmt = fmt;
-> +	vaf.va = &args;
-> +	pr_err("(%s): %pV\n", sb->s_id, &vaf);
-
-This trailing \n is not necessary and causes
-blank lines in the log.
-
-All callers already use it.
-
-
+-- 
+Pranith
