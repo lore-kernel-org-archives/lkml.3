@@ -1,79 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757891AbaGWPzP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 11:55:15 -0400
-Received: from mta-out1.inet.fi ([62.71.2.202]:47810 "EHLO jenni2.inet.fi"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755382AbaGWPzN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 11:55:13 -0400
-Date: Wed, 23 Jul 2014 18:55:00 +0300
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Matthew Wilcox <willy@linux.intel.com>
-Cc: Matthew Wilcox <matthew.r.wilcox@intel.com>, linux-fsdevel@vger.kernel.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v8 05/22] Add vm_replace_mixed()
-Message-ID: <20140723155500.GA12790@node.dhcp.inet.fi>
-References: <cover.1406058387.git.matthew.r.wilcox@intel.com>
- <b1052af08b49965fd0e6b87b6733b89294c8cc1e.1406058387.git.matthew.r.wilcox@intel.com>
- <20140723114540.GD10317@node.dhcp.inet.fi>
- <20140723135221.GA6754@linux.intel.com>
- <20140723142048.GA11963@node.dhcp.inet.fi>
- <20140723142745.GD6754@linux.intel.com>
+	id S1758004AbaGWP56 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 11:57:58 -0400
+Received: from mail-wg0-f43.google.com ([74.125.82.43]:49853 "EHLO
+	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752155AbaGWP54 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jul 2014 11:57:56 -0400
+Date: Wed, 23 Jul 2014 17:57:44 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        josh@joshtriplett.org, tglx@linutronix.de, rostedt@goodmis.org,
+        dhowells@redhat.com, edumazet@google.com, dvhart@linux.intel.com,
+        oleg@redhat.com, bobby.prani@gmail.com
+Subject: Re: [PATCH tip/core/rcu] Do not keep timekeeping CPU tick running
+ for non-nohz_full= CPUs
+Message-ID: <20140723155742.GB23175@localhost.localdomain>
+References: <20140719165350.GA18411@linux.vnet.ibm.com>
+ <20140719180120.GA20887@localhost.localdomain>
+ <20140720114759.GO8690@linux.vnet.ibm.com>
+ <20140720203417.GV9918@twins.programming.kicks-ass.net>
+ <20140721155741.GW8690@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140723142745.GD6754@linux.intel.com>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+In-Reply-To: <20140721155741.GW8690@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 23, 2014 at 10:27:45AM -0400, Matthew Wilcox wrote:
-> On Wed, Jul 23, 2014 at 05:20:48PM +0300, Kirill A. Shutemov wrote:
-> > On Wed, Jul 23, 2014 at 09:52:22AM -0400, Matthew Wilcox wrote:
-> > > I'd love to use a lighter-weight weapon!  What would you recommend using,
-> > > zap_pte_range()?
+On Mon, Jul 21, 2014 at 08:57:41AM -0700, Paul E. McKenney wrote:
+> On Sun, Jul 20, 2014 at 10:34:17PM +0200, Peter Zijlstra wrote:
+> > On Sun, Jul 20, 2014 at 04:47:59AM -0700, Paul E. McKenney wrote:
+> > > So we really have to have -all- the CPUs be idle to turn off the timekeeper.
 > > 
-> > The most straight-forward way: extract body of pte cycle from
-> > zap_pte_range() to separate function -- zap_pte() -- and use it.
+> > That seems to be pretty unavoidable any which way around.
 > 
-> OK, I can do that.  What about the other parts of zap_page_range(),
-> do I need to call them?
+> Hmmm...  The exception would be the likely common case where none of
+> the CPUs are flagged as nohz_full= CPUs.  If we handled that case as
+> if CONFIG_NO_HZ_FULL=n, we would have handled almost all of
+> the problem.
+
+Exactly, like you said on a further post, tick_nohz_full_enabled() is
+the magic you need :)
+
 > 
->         lru_add_drain();
-
-No, I guess..
-
->         tlb_gather_mmu(&tlb, mm, address, end);
->         tlb_finish_mmu(&tlb, address, end);
-
-New zap_pte() should tolerate tlb == NULL and does flush_tlb_page() or
-pte_clear_*flush or something.
-
->         update_hiwater_rss(mm);
-
-No: you cannot end up with lower rss after replace, iiuc.
-
->         mmu_notifier_invalidate_range_start(mm, address, end);
->         mmu_notifier_invalidate_range_end(mm, address, end);
-
-mmu_notifier_invalidate_page() should be enough.
-
-> > > 	if ((fd = open(argv[1], O_CREAT|O_RDWR, 0666)) < 0) {
-> > > 		perror(argv[1]);
-> > > 		exit(1);
-> > > 	}
+> > > This won't make the battery-powered embedded guys happy...
 > > > 
-> > > 	if (ftruncate(fd, 4096) < 0) {
+> > > Other thoughts on this?  We really should not be setting
+> > > CONFIG_NO_HZ_FULL_SYSIDLE by default until this is solved.
 > > 
-> > Shouldn't this be ftruncate(fd, 0)? Otherwise the memcpy() below will
-> > fault in page from backing storage, not hole and write will not replace
-> > anything.
+> > What are those same guys doing with nohz_full to begin with?
 > 
-> Ah, it was starting with a new file, hence the O_CREAT up above.
+> If CONFIG_NO_HZ_FULL_SYSIDLE=y is the default, my main concern is for
+> people who didn't really want it, and who thus did not set the nohz_full=
+> boot parameter.  Hence my suggestion above that we treat that case as
+> if CONFIG_NO_HZ_FULL=n (and thus also as if CONFIG_NO_HZ_FULL_SYSIDLE=n).
+> 
+> There have been some people saying that they want only a subset of
+> their CPUs in nohz_full= state, and these guys seem to want to run a
+> mixed workload.  For example, they have HPC (or RT) workloads on the
+> nohz_full= CPUs, and also want normal high-throughput processing on the
+> remaining CPUs.  If software was trivial (and making other unlikely
+> assumptions about the perfection of the world and the invalidity of
+> Murphy's lawy), we would want the timekeeping CPU to be able to move
+> among the non-nohz_full= CPUs.
+> 
+> However, this should be a small fraction of the users, and many of
+> these guys would probably be open to making a few changes.  Thus, a
+> less-proactive approach should allow us to solve their actual problems, as
+> opposed to the problems that we speculate that they might encounter.  ;-)
 
-Do you mean you pointed to new file all the time? O_CREAT doesn't truncate
-file if it exists, iirc.
+Sounds pretty good way of doing things!
 
--- 
- Kirill A. Shutemov
+> 							Thanx, Paul
+> 
