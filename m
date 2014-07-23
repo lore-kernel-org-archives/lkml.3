@@ -1,63 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758185AbaGWPTm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 11:19:42 -0400
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:54149 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757732AbaGWPTk (ORCPT
+	id S1758188AbaGWPUH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 11:20:07 -0400
+Received: from g4t3426.houston.hp.com ([15.201.208.54]:21334 "EHLO
+	g4t3426.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754985AbaGWPUE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 11:19:40 -0400
-X-Sasl-enc: kUYsT6l/RpWFHVBR1Sjf2131dm/goMFO5lzqRtU9MaWL 1406128779
-Message-ID: <1406128778.26440.9.camel@localhost>
-Subject: Re: Reading large amounts from /dev/urandom broken
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
-To: "Theodore Ts'o" <tytso@mit.edu>
-Cc: Andrey Utkin <andrey.krieger.utkin@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Wed, 23 Jul 2014 17:19:38 +0200
-In-Reply-To: <20140723151459.GA6673@thunk.org>
-References: <CANZNk81nyws__swPUoxz912wi5PJ2CBXbiLpJ-Jc4oLcX+J8vw@mail.gmail.com>
-	 <20140723151459.GA6673@thunk.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+	Wed, 23 Jul 2014 11:20:04 -0400
+Date: Wed, 23 Jul 2014 10:19:11 -0500
+From: scameron@beardog.cce.hp.com
+To: Randy Dunlap <rdunlap@infradead.org>
+Cc: linux-kernel@vger.kernel.org, xerofoify@gmail.com, scott.benesh@hp.com,
+        iss_storagedev@hp.com, michael.miller@canonical.com,
+        scameron@beardog.cce.hp.com
+Subject: Re: cciss_scsi.c: Fix me
+Message-ID: <20140723151911.GM14599@beardog.cce.hp.com>
+References: <CAPDOMVhvixp4+3P8RPUhM0iT_Ovo2kgPTUBorxPny9t_Fo2UUw@mail.gmail.com> <E97154CC48E26246A93194D00057266054F11A3F@G9W0745.americas.hpqcorp.net> <20140723144148.GL14599@beardog.cce.hp.com> <53CFD0A5.7010609@infradead.org>
 Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53CFD0A5.7010609@infradead.org>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mi, 2014-07-23 at 11:14 -0400, Theodore Ts'o wrote:
-> On Wed, Jul 23, 2014 at 04:52:21PM +0300, Andrey Utkin wrote:
-> > Dear developers, please check bugzilla ticket
-> > https://bugzilla.kernel.org/show_bug.cgi?id=80981 (not the initial
-> > issue, but starting with comment#3.
+On Wed, Jul 23, 2014 at 08:11:33AM -0700, Randy Dunlap wrote:
+> On 07/23/2014 07:41 AM, scameron@beardog.cce.hp.com wrote:
+> > On Wed, Jul 23, 2014 at 02:15:29PM +0000, Benesh, Scott wrote:
+> >> From: Nick Krause [mailto:xerofoify@gmail.com] 
+> >> Sent: Saturday, July 19, 2014 11:51 PM
+> >> To: mike.miller@hp.com
+> >> Cc: ISS StorageDev; linux-kernel@vger.kernel.org
+> >> Subject: cciss_scsi.c: Fix me
+> >>
+> >> Hey Mike,
+> >> I seem to be hitting a fix me message in this file in function,cciss_scsi_queue_command_lck.
+> >> I am wondering what you want to do when C is Null?
+> >> Cheers Nick
 > > 
-> > Reading from /dev/urandom gives EOF after 33554431 bytes.  I believe
-> > it is introduced by commit 79a8468747c5f95ed3d5ce8376a3e82e0c5857fc,
-> > with the chunk
+> > Hi Nick,
 > > 
-> > nbytes = min_t(size_t, nbytes, INT_MAX >> (ENTROPY_SHIFT + 3));
+> > Mike's moved on from HP to Canonical now.
 > > 
-> > which is described in commit message as "additional paranoia check to
-> > prevent overly large count values to be passed into urandom_read()".
+> > It looks like you're running out of commands for tape drives,
+> > which shouldn't ever happen, since we set 
 > > 
-> > I don't know why people pull such large amounts of data from urandom,
-> > but given today there are two bugreports regarding problems doing
-> > that, i consider that this is practiced.
+> > 	sh->can_queue = cciss_tape_cmds;
+> > 
+> > and we allocate that many commands + 2....
+> > 
+> > scsi_cmd_stack_setup(ctlr_info_t *h, struct cciss_scsi_adapter_data_t *sa)
+> > {
+> >         int i;
+> >         struct cciss_scsi_cmd_stack_t *stk;
+> >         size_t size;
+> > 
+> >         stk = &sa->cmd_stack;
+> >         stk->nelems = cciss_tape_cmds + 2;
+> > 
+> > You're apparently hitting this:
+> > 
+> >         spin_lock_irqsave(&h->lock, flags);
+> >         c = scsi_cmd_alloc(h);
+> >         spin_unlock_irqrestore(&h->lock, flags);
+> >         if (c == NULL) {                        /* trouble... */
+> >                 dev_warn(&h->pdev->dev, "scsi_cmd_alloc returned NULL!\n");
+> >                 /* FIXME: next 3 lines are -> BAD! <- */
+> >                 cmd->result = DID_NO_CONNECT << 16;
+> >                 done(cmd);
+> >                 return 0;
+> >         }
+> > 
+> > which means that scsi_cmd_alloc returned NULL, which only happens
+> > if the thing has run out of commands.
+> > 
+> > It's not obvious to me how it can be that it runs out of commands.
+> > Maybe we're losing them somehow, but this has not previously been
+> > a problem that I'm aware of.
+> > 
+> > Are you able to reproduce the problem?
+> > 
+> > What's going on on the system when it happens?
+> > 
+> > putting in a dump_stack(); near that FIXME might give a clue.
+> > 
+> > Which kernel are you running?
+> > 
+> > -- steve
 > 
-> I've inquired on the bugzilla why the reporter is abusing urandom in
-> this way.  The other commenter on the bug replicated the problem, but
-> that's not a "second bug report" in my book.
+> Hi Steve,
 > 
-> At the very least, this will probably cause me to insert a warning
-> printk: "insane user of /dev/urandom: [current->comm] requested %d
-> bytes" whenever someone tries to request more than 4k.
+> You apparently have not been following the Nick saga.
+> 
+> Nick is using cscope to search for FIXMEs in the kernel source tree and
+> then trying to generate patches to remove or 'fix' them.
+> 
+> He is not hitting a kernel oops or panic or bug.
 
-Ok, I would be fine with that.
+Ah, ok, thanks.  That explains it, because I was pretty sure that
+code is a "this will never happen" case.
 
-The dd if=/dev/urandom of=random_file.dat seems reasonable to me to try
-to not break it. But, of course, there are other possibilities.
-
-Bye,
-Hannes
+-- steve
 
