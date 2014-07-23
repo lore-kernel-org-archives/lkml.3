@@ -1,44 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933448AbaGWTzO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 15:55:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51025 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932693AbaGWTyP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 15:54:15 -0400
-Date: Wed, 23 Jul 2014 21:34:44 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Namhyung Kim <namhyung@kernel.org>, Ingo Molnar <mingo@redhat.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 0/2] ftrace: kill the dead code in trace_sched_switch.c
-Message-ID: <20140723193444.GA30194@redhat.com>
+	id S933381AbaGWT4o (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 15:56:44 -0400
+Received: from mout.kundenserver.de ([212.227.17.10]:56897 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932693AbaGWT4n (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jul 2014 15:56:43 -0400
+From: Arnd Bergmann <arnd.bergmann@linaro.org>
+Organization: Linaro Limited 
+To: Daniel Thompson <daniel.thompson@linaro.org>
+Subject: Re: [PATCH CFT] arm: netx: Migrate DEBUG_LL macros to shared directory
+Date: Wed, 23 Jul 2014 21:56:38 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-35-generic; KDE/4.3.2; x86_64; ; )
+Cc: Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
+        patches@linaro.org, linaro-kernel@lists.linaro.org,
+        linux-arm-kernel@lists.infradead.org
+References: <1406108463-11726-1-git-send-email-daniel.thompson@linaro.org>
+In-Reply-To: <1406108463-11726-1-git-send-email-daniel.thompson@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201407232156.38708.arnd.bergmann@linaro.org>
+X-Provags-ID: V02:K0:/D9Oo19ig03HiP+4o/wQf6CnTJJEFr4z6McLlmNRNGu
+ 3jYjfqoZXB3F74Eq90WWbdZIalACq76SvizHt4ET25d6HU8Za8
+ 7tOcDw+CCNP+Cx/8+AqC+K43UfdwbKme2vGRuBMwv8pO1G0UJa
+ sBUgMX35QNAZXU0eW0yV6Pma15tSoc8Oq/Udk0DqrsJcKlIulo
+ QTFdF2WhDI3uL10RONyfoCZSaB5OeJJsi1lHv6lShqKOG7g0Sf
+ +U+lMEXByp1NzRRcCg0e5pxLhSdZnOa6cyNqJlGri32OLazS31
+ 0B4i7aIsmLm6+VNyiEvTTBCAzZvLNiP2PJMe5RGl/FU1YJgTZb
+ C1g+P0Fjx7T9h574MOMxZAwDgB163Q1Ex7l7+JG1g
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/23, Oleg Nesterov wrote:
->
-> This motivated me to try to find something else unused. And it seems that
-> almost all code in kernel/trace/trace_sched_switch.c is dead? Hmm, and
-> probably even event_context_switch... I'll recheck and send the patch.
+On Wednesday 23 July 2014, Daniel Thompson wrote:
+> As part of the migration we introduce DEBUG_UART_PHYS/DEBUG_UART_VIRT
+> which default to UART1 but allow a user to configure UART2 or UART3.
+> We also introduce symbolic names for the registers and flags.
+> 
+> Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
+> Cc: Russell King <linux@arm.linux.org.uk>
+> Cc: Arnd Bergmann <arnd.bergmann@linaro.org>
+> Cc: linux-arm-kernel@lists.infradead.org
 
-No, event_context_switch can't simply go away. But afaics the only user
-is tracing_sched_switch_trace(), and the only caller of this function is
-probe_wakeup_sched_switch(). Looks a bit strange.
+Looks good to me.
 
-After this patch we should probably move tracing_sched_switch_trace() and
-tracing_sched_wakeup_trace() from trace_sched_switch.c to trace_sched_wakeup.c
-and make them static. And perhaps we can also move the rest of this
-code somewhere else and rm this file...
-
-Oleg.
-
- kernel/trace/trace.h              |    3 -
- kernel/trace/trace_sched_switch.c |   88 -------------------------------------
- 2 files changed, 0 insertions(+), 91 deletions(-)
-
+Acked-by: Arnd Bergmann <arnd@arndb.de
