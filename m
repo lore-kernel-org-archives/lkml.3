@@ -1,94 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932519AbaGWRdo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 13:33:44 -0400
-Received: from canardo.mork.no ([148.122.252.1]:58933 "EHLO canardo.mork.no"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756793AbaGWRdn convert rfc822-to-8bit (ORCPT
+	id S932663AbaGWRgd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 13:36:33 -0400
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:56353 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932080AbaGWRgb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 13:33:43 -0400
-From: =?utf-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>
-To: Nick Krause <xerofoify@gmail.com>
-Cc: drbd-dev@lists.linbit.com, drbd-user@lists.linbit.com,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] drbd: Remove fix me statements
-Organization: m
-References: <1406053161-5048-1-git-send-email-xerofoify@gmail.com>
-	<8738dsi7l7.fsf@nemi.mork.no>
-	<CAPDOMVjwzfmHAKGBENfpxN2cswckq2T=QbQa56k3w0X+cDuJKg@mail.gmail.com>
-Date: Wed, 23 Jul 2014 19:33:30 +0200
-In-Reply-To: <CAPDOMVjwzfmHAKGBENfpxN2cswckq2T=QbQa56k3w0X+cDuJKg@mail.gmail.com>
-	(Nick Krause's message of "Wed, 23 Jul 2014 11:45:13 -0400")
-Message-ID: <87a980getx.fsf@nemi.mork.no>
-User-Agent: Gnus/5.130011 (Ma Gnus v0.11) Emacs/24.3 (gnu/linux)
+	Wed, 23 Jul 2014 13:36:31 -0400
+Date: Wed, 23 Jul 2014 10:36:27 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: linux-input@vger.kernel.org
+Cc: Alessandro GARDICH <gremlin@gremlin.it>,
+        Dmitry Artamonow <mad_soft@inbox.ru>,
+        Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org
+Subject: [PATCH] Input: ipaq-micro-ts - introduce open/close
+Message-ID: <20140723173625.GA38489@core.coreip.homeip.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Nick Krause <xerofoify@gmail.com> writes:
+Wire up open/close so we do not try to send events until someone uses them;
+this also allows us to remove micro_ts_remove() and rely fully on managed
+resources.
 
-> Bjorn,
-> Can we remove the double locking  as you are stating or do  we still need it
-> to protect against the list being accessed  as the list seems to be moving
-> to a spinlock protected list.
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+---
+ drivers/input/touchscreen/ipaq-micro-ts.c | 88 ++++++++++++++++++++-----------
+ 1 file changed, 56 insertions(+), 32 deletions(-)
 
-I wouldn't know.
+diff --git a/drivers/input/touchscreen/ipaq-micro-ts.c b/drivers/input/touchscreen/ipaq-micro-ts.c
+index 53fa5c3..62c8976 100644
+--- a/drivers/input/touchscreen/ipaq-micro-ts.c
++++ b/drivers/input/touchscreen/ipaq-micro-ts.c
+@@ -46,17 +46,50 @@ static void micro_ts_receive(void *data, int len, unsigned char *msg)
+ 	}
+ }
+ 
++static void micro_ts_toggle_receive(struct touchscreen_data *ts, bool enable)
++{
++	struct ipaq_micro *micro = ts->micro;
++
++	spin_lock_irq(&micro->lock);
++
++	if (enable) {
++		micro->ts = micro_ts_receive;
++		micro->ts_data = ts;
++	} else {
++		micro->ts = NULL;
++		micro->ts_data = NULL;
++	}
++
++	spin_unlock_irq(&ts->micro->lock);
++}
++
++static int micro_ts_open(struct input_dev *input)
++{
++	struct touchscreen_data *ts = input_get_drvdata(input);
++
++	micro_ts_toggle_receive(ts, true);
++
++	return 0;
++}
++
++static void micro_ts_close(struct input_dev *input)
++{
++	struct touchscreen_data *ts = input_get_drvdata(input);
++
++	micro_ts_toggle_receive(ts, false);
++}
++
+ static int micro_ts_probe(struct platform_device *pdev)
+ {
++	struct ipaq_micro *micro = dev_get_drvdata(pdev->dev.parent);
+ 	struct touchscreen_data *ts;
+-	int ret;
++	int error;
+ 
+ 	ts = devm_kzalloc(&pdev->dev, sizeof(*ts), GFP_KERNEL);
+ 	if (!ts)
+ 		return -ENOMEM;
+-	ts->micro = dev_get_drvdata(pdev->dev.parent);
+ 
+-	platform_set_drvdata(pdev, ts);
++	ts->micro = micro;
+ 
+ 	ts->input = devm_input_allocate_device(&pdev->dev);
+ 	if (!ts->input) {
+@@ -64,37 +97,27 @@ static int micro_ts_probe(struct platform_device *pdev)
+ 		return -ENOMEM;
+ 	}
+ 
++	ts->input->name = "ipaq micro ts";
++	ts->input->open = micro_ts_open;
++	ts->input->close = micro_ts_close;
++
++	input_set_drvdata(ts->input, ts);
++
+ 	input_set_capability(ts->input, EV_KEY, BTN_TOUCH);
+ 	input_set_capability(ts->input, EV_ABS, ABS_X);
+ 	input_set_capability(ts->input, EV_ABS, ABS_Y);
+ 	input_set_abs_params(ts->input, ABS_X, 0, 1023, 0, 0);
+ 	input_set_abs_params(ts->input, ABS_Y, 0, 1023, 0, 0);
+ 
+-	ts->input->name = "ipaq micro ts";
+-
+-	ret = input_register_device(ts->input);
+-	if (ret) {
++	error = input_register_device(ts->input);
++	if (error) {
+ 		dev_err(&pdev->dev, "error registering touch input\n");
+-		return ret;
++		return error;
+ 	}
+ 
+-	spin_lock_irq(&ts->micro->lock);
+-	ts->micro->ts = micro_ts_receive;
+-	ts->micro->ts_data = ts;
+-	spin_unlock_irq(&ts->micro->lock);
++	platform_set_drvdata(pdev, ts);
+ 
+ 	dev_info(&pdev->dev, "iPAQ micro touchscreen\n");
+-	return 0;
+-}
+-
+-static int micro_ts_remove(struct platform_device *pdev)
+-{
+-	struct touchscreen_data *ts = platform_get_drvdata(pdev);
+-
+-	spin_lock_irq(&ts->micro->lock);
+-	ts->micro->ts = NULL;
+-	ts->micro->ts_data = NULL;
+-	spin_unlock_irq(&ts->micro->lock);
+ 
+ 	return 0;
+ }
+@@ -104,21 +127,23 @@ static int micro_ts_suspend(struct device *dev)
+ {
+ 	struct touchscreen_data *ts = dev_get_drvdata(dev);
+ 
+-	spin_lock_irq(&ts->micro->lock);
+-	ts->micro->ts = NULL;
+-	ts->micro->ts_data = NULL;
+-	spin_unlock_irq(&ts->micro->lock);
++	micro_ts_toggle_receive(ts, false);
++
+ 	return 0;
+ }
+ 
+ static int micro_ts_resume(struct device *dev)
+ {
+ 	struct touchscreen_data *ts = dev_get_drvdata(dev);
++	struct input_dev *input = ts->input;
++
++	mutex_lock(&input->mutex);
++
++	if (input->users)
++		micro_ts_toggle_receive(ts, true);
++
++	mutex_unlock(&input->mutex);
+ 
+-	spin_lock_irq(&ts->micro->lock);
+-	ts->micro->ts = micro_ts_receive;
+-	ts->micro->ts_data = ts;
+-	spin_unlock_irq(&ts->micro->lock);
+ 	return 0;
+ }
+ #endif
+@@ -133,7 +158,6 @@ static struct platform_driver micro_ts_device_driver = {
+ 		.pm	= &micro_ts_dev_pm_ops,
+ 	},
+ 	.probe	= micro_ts_probe,
+-	.remove	= micro_ts_remove,
+ };
+ module_platform_driver(micro_ts_device_driver);
+ 
+-- 
+2.0.0.526.g5318336
 
-The only thing I know is that the original author of those lines, who we
-must assume has thorough knowlegde of this code, did not know how to fix
-that in a simple and straight forward way.
 
->From this we can deduce that there is more to it than just changing a
-couple of lines. If you don't alrady know this code in and out, then you
-would have to start by analyzing the current locking model and
-understanding that.  Then, assuming the current double locking is in
-fact necessary, you would need to redesign it so that you can make one
-of the locks go away.  Then you need to implement your new design.  Then
-test it _thoroughly_ to eliminate all the small bugs. Everyone adds bugs
-when writing non-trivial code.  (You seem to think that you can delegate
-all the bug squashing to others simply because you don't own the
-hardware.  That is not so.  If you don't have access to hardware for
-testing, then you should not add any bugs.  Yes, this implies that you
-cannot write non-trivial code for hardware you don't have). Then you must
-verify that the result is at least as efficient as the old code was. Or
-there would be no point, would there?
-
-When all this is done, and the testing shows it is a success, *then* you
-can remove the FIXME comment with a nice commit message explaining the
-new locking model and why it now is safe to drop one of the locks.
-
-There is a fat chance that this just isn't worth all the work.  Which is
-most likely why the FIXME was stuck there in the first place.
-
-You should understand that noone will add a FIXME for anything trivial.
-And if an author who knows the code well finds something non-trivial,
-then you should definitely not touch it without investing enough time to
-have a similar understanding of the code.
-
-Note again that I am writing all this as purely generic comments.  I
-don't know anything at all about the code in question, and I wouldn't
-dare touching it without spending a lot of time understanding it first.
-
-As Steven said: find an area to focus on.  Spend some time understanding
-a small part of the kernel instead of jumping all around.
-
-And: Being able to test code yourself is absolutely necessary in the
-beginning.  But you don't necessarily have to run out and buy some odd
-new hardware for that. I'm pretty sure many drivers and other parts of
-the kernel is in use on the hardware you already have at hand :-)
-Choose among those parts for your learning experience.
-
-Your USB hcd patch is a nice example of code that you most likely can
-test yourself.  And the pacth was fine too, except for the lack of a
-proper commit message explaining why it was OK.  But most of us will
-just look at the "Acked-by: Alan Stern" line and figure that the change
-definitely must be fine :-)
-
-
-Bjørn (who also has sumitted his share of buggy patches, creating
-unnecessary work for innoncent maintainers in the past.  Sorry about
-that Greg, Oliver, Alan, David, Mauro and all the others... I'm afraid I
-cannot even guarantee that it won't happen again, but I do try my best)
+-- 
+Dmitry
