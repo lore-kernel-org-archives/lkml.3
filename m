@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756515AbaGWCcK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jul 2014 22:32:10 -0400
-Received: from mga09.intel.com ([134.134.136.24]:33943 "EHLO mga09.intel.com"
+	id S1756551AbaGWCcO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jul 2014 22:32:14 -0400
+Received: from mga11.intel.com ([192.55.52.93]:10519 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756451AbaGWCcI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jul 2014 22:32:08 -0400
+	id S1756451AbaGWCcL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jul 2014 22:32:11 -0400
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,714,1400050800"; 
-   d="scan'208";a="547515768"
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="363778008"
 From: "Chen, Gong" <gong.chen@linux.intel.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@kernel.org, tglx@linutronix.de, paulus@samba.org,
@@ -21,9 +21,9 @@ Cc: mingo@kernel.org, tglx@linutronix.de, paulus@samba.org,
         rostedt@goodmis.org, rric@kernel.org, gregkh@linuxfoundation.org,
         mhocko@suse.cz, david@fromorbit.com,
         "Chen, Gong" <gong.chen@linux.intel.com>
-Subject: [RFC PATCH v1 08/70] x86, mce, therm_throt: _FROZEN Cleanup
-Date: Tue, 22 Jul 2014 21:58:44 -0400
-Message-Id: <1406080786-3938-9-git-send-email-gong.chen@linux.intel.com>
+Subject: [RFC PATCH v1 11/70] x86, vsyscall_64: _FROZEN Cleanup
+Date: Tue, 22 Jul 2014 21:58:47 -0400
+Message-Id: <1406080786-3938-12-git-send-email-gong.chen@linux.intel.com>
 X-Mailer: git-send-email 2.0.0.rc2
 In-Reply-To: <1406080786-3938-1-git-send-email-gong.chen@linux.intel.com>
 References: <1406080786-3938-1-git-send-email-gong.chen@linux.intel.com>
@@ -31,35 +31,26 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove XXX_FROZEN state from mce/therm_throt.
+Remove XXX_FROZEN state from x86/vsyscall_64.
 
 Signed-off-by: Chen, Gong <gong.chen@linux.intel.com>
 ---
- arch/x86/kernel/cpu/mcheck/therm_throt.c | 5 +----
- 1 file changed, 1 insertion(+), 4 deletions(-)
+ arch/x86/kernel/vsyscall_64.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/x86/kernel/cpu/mcheck/therm_throt.c b/arch/x86/kernel/cpu/mcheck/therm_throt.c
-index 36a1bb6..dd13686 100644
---- a/arch/x86/kernel/cpu/mcheck/therm_throt.c
-+++ b/arch/x86/kernel/cpu/mcheck/therm_throt.c
-@@ -283,16 +283,13 @@ thermal_throttle_cpu_callback(struct notifier_block *nfb,
+diff --git a/arch/x86/kernel/vsyscall_64.c b/arch/x86/kernel/vsyscall_64.c
+index ea5b570..72a1576 100644
+--- a/arch/x86/kernel/vsyscall_64.c
++++ b/arch/x86/kernel/vsyscall_64.c
+@@ -320,7 +320,7 @@ cpu_vsyscall_notifier(struct notifier_block *n, unsigned long action, void *arg)
+ {
+ 	long cpu = (long)arg;
  
- 	dev = get_cpu_device(cpu);
+-	if (action == CPU_ONLINE || action == CPU_ONLINE_FROZEN)
++	if ((action & ~CPU_TASKS_FROZEN) == CPU_ONLINE)
+ 		smp_call_function_single(cpu, cpu_vsyscall_init, NULL, 1);
  
--	switch (action) {
-+	switch (action & ~CPU_TASKS_FROZEN) {
- 	case CPU_UP_PREPARE:
--	case CPU_UP_PREPARE_FROZEN:
- 		err = thermal_throttle_add_dev(dev, cpu);
- 		WARN_ON(err);
- 		break;
- 	case CPU_UP_CANCELED:
--	case CPU_UP_CANCELED_FROZEN:
- 	case CPU_DEAD:
--	case CPU_DEAD_FROZEN:
- 		thermal_throttle_remove_dev(dev);
- 		break;
- 	}
+ 	return NOTIFY_DONE;
 -- 
 2.0.0.rc2
 
