@@ -1,78 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932783AbaGWRho (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 13:37:44 -0400
-Received: from mail-oi0-f49.google.com ([209.85.218.49]:60976 "EHLO
-	mail-oi0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932665AbaGWRhl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 13:37:41 -0400
+	id S932630AbaGWRnI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 13:43:08 -0400
+Received: from quartz.orcorp.ca ([184.70.90.242]:48298 "EHLO quartz.orcorp.ca"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932347AbaGWRnG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jul 2014 13:43:06 -0400
+Date: Wed, 23 Jul 2014 11:42:29 -0600
+From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Murali Karicheri <m-karicheri2@ti.com>, Richard Zhu <r65037@freescale.com>,
+        Marek Vasut <marex@denx.de>, Randy Dunlap <rdunlap@infradead.org>,
+        Russell King <linux@arm.linux.org.uk>, Pawel Moll <pawel.moll@arm.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        linux-pci@vger.kernel.org, Jingoo Han <jg1.han@samsung.com>,
+        linux-kernel@vger.kernel.org, Kishon Vijay Abraham I <kishon@ti.com>,
+        Rob Herring <robh+dt@kernel.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Mark Rutland <mark.rutland@arm.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v7 4/5] PCI: add PCI controller for keystone PCIe h/w
+Message-ID: <20140723174228.GB11270@obsidianresearch.com>
+References: <1405961925-27248-1-git-send-email-m-karicheri2@ti.com>
+ <1405961925-27248-5-git-send-email-m-karicheri2@ti.com>
+ <20140722223527.GA27965@google.com>
+ <53CEEB1C.9020202@ti.com>
+ <20140722235200.GC27965@google.com>
 MIME-Version: 1.0
-In-Reply-To: <1405657206-12060-3-git-send-email-ast@plumgrid.com>
-References: <1405657206-12060-1-git-send-email-ast@plumgrid.com>
-	<1405657206-12060-3-git-send-email-ast@plumgrid.com>
-Date: Wed, 23 Jul 2014 10:37:40 -0700
-X-Google-Sender-Auth: NWkpvTO-HL3Ygtl_vwJps-j2Px0
-Message-ID: <CAGXu5j+mGDEPx5rCdVXzAdxR9SwQQ4ERM-Brxt4TmmncdPjzzg@mail.gmail.com>
-Subject: Re: [PATCH RFC v2 net-next 02/16] bpf: update MAINTAINERS entry
-From: Kees Cook <keescook@chromium.org>
-To: Alexei Starovoitov <ast@plumgrid.com>
-Cc: "David S. Miller" <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Jiri Olsa <jolsa@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140722235200.GC27965@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.161
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 17, 2014 at 9:19 PM, Alexei Starovoitov <ast@plumgrid.com> wrote:
-> Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
-> ---
->  MAINTAINERS |    7 +++++++
->  1 file changed, 7 insertions(+)
->
-> diff --git a/MAINTAINERS b/MAINTAINERS
-> index ae8cd00215b2..32e24ff46da3 100644
-> --- a/MAINTAINERS
-> +++ b/MAINTAINERS
-> @@ -1912,6 +1912,13 @@ S:       Supported
->  F:     drivers/net/bonding/
->  F:     include/uapi/linux/if_bonding.h
->
-> +BPF (Safe dynamic programs and tools)
+On Tue, Jul 22, 2014 at 05:52:00PM -0600, Bjorn Helgaas wrote:
+> If there is a hardware defect, a PCI quirk is a reasonable way to work
+> around it, since that's the main purpose of quirks.  fixup_mpss_256()
+> is an example of something that sounds superficially similar.
 
-bikeshed: I feel like this shouldn't be an acronym. Maybe instead:
+It was my suggestion to engage the PCI-E tuning code. By my
+understanding the HW bug is that read response segmentation at the
+host bridge does not work - so all read requests from any downstream
+device must have responses that fit within a single packet.
 
-BERKELEY PACKET FILTER (BPF: Safe dynamic programs and tools)
+This is completely against how the spec envisions things working,
+segmentation is a mandatory function. As you point out there is no
+parameter bounding the maximum read request size that a completer will
+accept.
 
--Kees
+So, the only fix is that every downstream device must always have a
+MRSS set to less than the MPS of the host bridge.
 
-> +M:     Alexei Starovoitov <ast@kernel.org>
-> +L:     netdev@vger.kernel.org
-> +L:     linux-kernel@vger.kernel.org
-> +S:     Supported
-> +F:     kernel/bpf/
-> +
->  BROADCOM B44 10/100 ETHERNET DRIVER
->  M:     Gary Zambrano <zambrano@broadcom.com>
->  L:     netdev@vger.kernel.org
-> --
-> 1.7.9.5
->
+Which means the tuning code must be involved somehow, as that code
+controls the MRSS of unrelated devices...
 
-
-
--- 
-Kees Cook
-Chrome OS Security
+Regards,
+Jason
