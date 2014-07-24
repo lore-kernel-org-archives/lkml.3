@@ -1,278 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934003AbaGXRFJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 13:05:09 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:46403 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752666AbaGXRFH (ORCPT
+	id S933355AbaGXRMo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 13:12:44 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:57571 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750843AbaGXRMm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 13:05:07 -0400
-Date: Fri, 25 Jul 2014 01:03:56 +0800
-From: Wang YanQing <udknight@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: linus.walleij@linaro.org, jhovold@gmail.com, andi@lisas.de,
-        dforsi@gmail.com, gnomes@lxorguk.ukuu.org.uk,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v4] usb:serial:pl2303: add GPIOs interface on PL2303
-Message-ID: <20140724170356.GA1783@udknight>
-Mail-Followup-To: Wang YanQing <udknight@gmail.com>,
-	gregkh@linuxfoundation.org, linus.walleij@linaro.org,
-	jhovold@gmail.com, andi@lisas.de, dforsi@gmail.com,
-	gnomes@lxorguk.ukuu.org.uk, linux-usb@vger.kernel.org,
-	linux-kernel@vger.kernel.org
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 24 Jul 2014 13:12:42 -0400
+Message-ID: <1406221948.3612.51.camel@fourier>
+Subject: Re: [PATCH 3.8 107/116] hugetlb: fix copy_hugetlb_page_range() to
+ handle migration/hwpoisoned entry
+From: Kamal Mostafa <kamal@canonical.com>
+To: Hugh Dickins <hughd@google.com>
+Cc: Jiri Slaby <jslaby@suse.cz>, Luis Henriques <luis.henriques@canonical.com>,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Christoph Lameter <cl@linux.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 24 Jul 2014 10:12:28 -0700
+In-Reply-To: <alpine.LSU.2.11.1407231659330.2093@eggly.anvils>
+References: <1406067727-19683-1-git-send-email-kamal@canonical.com>
+	 <1406067727-19683-108-git-send-email-kamal@canonical.com>
+	 <alpine.LSU.2.11.1407221608040.3128@eggly.anvils>
+	 <1406149325.3612.33.camel@fourier>
+	 <alpine.LSU.2.11.1407231659330.2093@eggly.anvils>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-PL2303HX has two GPIOs, this patch add interface for it.
+On Wed, 2014-07-23 at 17:07 -0700, Hugh Dickins wrote:
+> 
+> commit 0253d634e0803a8376a0d88efee0bf523d8673f9
+> Author: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> Date:   Wed Jul 23 14:00:19 2014 -0700
+> mm: hugetlb: fix copy_hugetlb_page_range()
+> 
+> is now in Linus's tree: so the original patch is good to go into
+> your -stables, so long as you add 0253d634e080 on top.
+> 
+> Hugh
 
-Signed-off-by: Wang YanQing <udknight@gmail.com>
----
- Changes v3-v4:
- 1: fix missing static for gpio_dir_mask and gpio_value_mask
- 2: reduce unneeded compile macro defined suggested by gnomes@lxorguk.ukuu.org.uk
- 3: use true instead of 1 corrected by Linus Walleij
- 4: ignore return value of gpiochip_remove suggested by Linus Walleij
- 5: fix multi gpio_chips registered by pl2303 can't be distinguished in kernel space.
-    
-    Give different labels to different gpio_chips is good for diagnostic,
-    and we could identify per gpio_chip registered by pl2303 by try different
-    lable name then detect its parent device.
-    
+OK, I have queued both for the imminent 3.8-stable release:
+        
+        4a705fe hugetlb: fix copy_hugetlb_page_range() to handle migration/hwpoisoned entry
+        0253d63 mm: hugetlb: fix copy_hugetlb_page_range()
 
- drivers/usb/serial/Kconfig  |  10 +++
- drivers/usb/serial/pl2303.c | 163 ++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 173 insertions(+)
+The first patch was already released in the previous 3.13-stable cycle;
+I've now queued up the second for the next 3.13 cycle.
 
-diff --git a/drivers/usb/serial/Kconfig b/drivers/usb/serial/Kconfig
-index 3ce5c74..4bc0d0f 100644
---- a/drivers/usb/serial/Kconfig
-+++ b/drivers/usb/serial/Kconfig
-@@ -516,6 +516,16 @@ config USB_SERIAL_PL2303
- 	  To compile this driver as a module, choose M here: the
- 	  module will be called pl2303.
- 
-+config USB_SERIAL_PL2303_GPIO
-+	bool "USB Prolific 2303 Single Port GPIOs support"
-+	depends on USB_SERIAL_PL2303 && GPIOLIB
-+	---help---
-+	  Say Y here if you want to use the GPIOs on PL2303 USB Serial single port
-+	  adapter from Prolific.
-+
-+	  It support 2 GPIOs on PL2303HX currently,
-+	  if unsure, say N.
-+
- config USB_SERIAL_OTI6858
- 	tristate "USB Ours Technology Inc. OTi-6858 USB To RS232 Bridge Controller"
- 	help
-diff --git a/drivers/usb/serial/pl2303.c b/drivers/usb/serial/pl2303.c
-index b3d5a35..f5c0df6 100644
---- a/drivers/usb/serial/pl2303.c
-+++ b/drivers/usb/serial/pl2303.c
-@@ -28,6 +28,8 @@
- #include <linux/usb.h>
- #include <linux/usb/serial.h>
- #include <asm/unaligned.h>
-+#include <linux/gpio.h>
-+#include <linux/atomic.h>
- #include "pl2303.h"
- 
- 
-@@ -143,9 +145,25 @@ struct pl2303_type_data {
- 	unsigned long quirks;
- };
- 
-+struct pl2303_gpio {
-+	/*
-+	 * 0..3: unknown (zero)
-+	 * 4: gp0 output enable (1: gp0 pin is output, 0: gp0 pin is input)
-+	 * 5: gp1 output enable (1: gp1 pin is output, 0: gp1 pin is input)
-+	 * 6: gp0 pin value
-+	 * 7: gp1 pin value
-+	 */
-+	u8 index;
-+	struct usb_serial *serial;
-+	struct gpio_chip gpio_chip;
-+};
-+
- struct pl2303_serial_private {
- 	const struct pl2303_type_data *type;
- 	unsigned long quirks;
-+#ifdef CONFIG_USB_SERIAL_PL2303_GPIO
-+	struct pl2303_gpio *gpio;
-+#endif
- };
- 
- struct pl2303_private {
-@@ -213,6 +231,145 @@ static int pl2303_probe(struct usb_serial *serial,
- 	return 0;
- }
- 
-+#ifdef CONFIG_USB_SERIAL_PL2303_GPIO
-+#define GPIO_NUM (2)
-+static u8 gpio_dir_mask[GPIO_NUM] = {0x10, 0x20};
-+static u8 gpio_value_mask[GPIO_NUM] = {0x40, 0x80};
-+static atomic_t gpio_chip_index = ATOMIC_INIT(-1);
-+
-+static inline struct pl2303_gpio *to_pl2303_gpio(struct gpio_chip *chip)
-+{
-+	return container_of(chip, struct pl2303_gpio, gpio_chip);
-+}
-+
-+static int pl2303_gpio_direction_in(struct gpio_chip *chip, unsigned offset)
-+{
-+	struct pl2303_gpio *gpio = to_pl2303_gpio(chip);
-+
-+	if (offset >= chip->ngpio)
-+		return -EINVAL;
-+
-+	gpio->index &= ~gpio_dir_mask[offset];
-+	pl2303_vendor_write(gpio->serial, 1, gpio->index);
-+	return 0;
-+}
-+
-+static int pl2303_gpio_direction_out(struct gpio_chip *chip,
-+				unsigned offset, int value)
-+{
-+	struct pl2303_gpio *gpio = to_pl2303_gpio(chip);
-+
-+	if (offset >= chip->ngpio)
-+		return -EINVAL;
-+
-+	gpio->index |= gpio_dir_mask[offset];
-+	if (value)
-+		gpio->index |= gpio_value_mask[offset];
-+	else
-+		gpio->index &= ~gpio_value_mask[offset];
-+
-+	pl2303_vendor_write(gpio->serial, 1, gpio->index);
-+	return 0;
-+}
-+
-+static void pl2303_gpio_set(struct gpio_chip *chip, unsigned offset, int value)
-+{
-+	struct pl2303_gpio *gpio = to_pl2303_gpio(chip);
-+
-+	if (offset >= chip->ngpio)
-+		return;
-+
-+	if (value)
-+		gpio->index |= gpio_value_mask[offset];
-+	else
-+		gpio->index &= ~gpio_value_mask[offset];
-+
-+	pl2303_vendor_write(gpio->serial, 1, gpio->index);
-+}
-+
-+static int pl2303_gpio_get(struct gpio_chip *chip, unsigned offset)
-+{
-+	struct pl2303_gpio *gpio = to_pl2303_gpio(chip);
-+	unsigned char buf[1];
-+	int value = 0;
-+
-+	if (offset >= chip->ngpio)
-+		return -EINVAL;
-+
-+	if (pl2303_vendor_read(gpio->serial, 0x0081, buf))
-+		return -EIO;
-+
-+	value = buf[0] & gpio_value_mask[offset];
-+	return value;
-+}
-+
-+static const struct gpio_chip template_chip = {
-+	.owner                  = THIS_MODULE,
-+	.direction_input        = pl2303_gpio_direction_in,
-+	.get                    = pl2303_gpio_get,
-+	.direction_output       = pl2303_gpio_direction_out,
-+	.set                    = pl2303_gpio_set,
-+	.can_sleep              = true,
-+};
-+
-+static int pl2303_gpio_startup(struct usb_serial *serial)
-+{
-+	struct pl2303_serial_private *spriv = usb_get_serial_data(serial);
-+	char *label;
-+	int ret;
-+
-+	if (spriv->type != &pl2303_type_data[TYPE_HX])
-+		return 0;
-+
-+	spriv->gpio = kzalloc(sizeof(struct pl2303_gpio), GFP_KERNEL);
-+	if (spriv->gpio == NULL) {
-+		dev_err(&serial->interface->dev,
-+			"Failed to allocate pl2303_gpio\n");
-+		return -ENOMEM;
-+	}
-+
-+	spriv->gpio->index = 0x00;
-+	spriv->gpio->serial = serial;
-+
-+	label = kasprintf(GFP_KERNEL, "pl2303-gpio%d",
-+			  atomic_inc_return(&gpio_chip_index));
-+	if (label == NULL) {
-+		kfree(spriv->gpio);
-+		spriv->gpio = NULL;
-+		return -ENOMEM;
-+	}
-+	spriv->gpio->gpio_chip.label = label;
-+	spriv->gpio->gpio_chip = template_chip;
-+	spriv->gpio->gpio_chip.ngpio = GPIO_NUM;
-+	spriv->gpio->gpio_chip.base = -1;
-+	spriv->gpio->gpio_chip.dev = &serial->interface->dev;
-+	/* initialize GPIOs, input mode as default */
-+	pl2303_vendor_write(spriv->gpio->serial, 1, spriv->gpio->index);
-+
-+	ret = gpiochip_add(&spriv->gpio->gpio_chip);
-+	if (ret < 0) {
-+		dev_err(&serial->interface->dev,
-+			"Could not register gpiochip, %d\n", ret);
-+		kfree(spriv->gpio->gpio_chip.label);
-+		kfree(spriv->gpio);
-+		spriv->gpio = NULL;
-+	}
-+	return 0;
-+}
-+
-+static void pl2303_gpio_release(struct usb_serial *serial)
-+{
-+	struct pl2303_serial_private *spriv = usb_get_serial_data(serial);
-+
-+	if (spriv->gpio) {
-+		gpiochip_remove(&spriv->gpio->gpio_chip);
-+		kfree(spriv->gpio->gpio_chip.label);
-+		kfree(spriv->gpio);
-+		spriv->gpio = NULL;
-+	}
-+}
-+#endif
-+
- static int pl2303_startup(struct usb_serial *serial)
- {
- 	struct pl2303_serial_private *spriv;
-@@ -262,6 +419,9 @@ static int pl2303_startup(struct usb_serial *serial)
- 
- 	kfree(buf);
- 
-+#ifdef CONFIG_USB_SERIAL_PL2303_GPIO
-+	pl2303_gpio_startup(serial);
-+#endif
- 	return 0;
- }
- 
-@@ -269,6 +429,9 @@ static void pl2303_release(struct usb_serial *serial)
- {
- 	struct pl2303_serial_private *spriv = usb_get_serial_data(serial);
- 
-+#ifdef CONFIG_USB_SERIAL_PL2303_GPIO
-+	pl2303_gpio_release(serial);
-+#endif
- 	kfree(spriv);
- }
- 
--- 
-1.8.5.5.dirty
+Thanks again, Hugh and Naoya-san!
+
+ -Kamal
+
+
