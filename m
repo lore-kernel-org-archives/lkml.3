@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934829AbaGXJtO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 05:49:14 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:55167 "EHLO
+	id S934916AbaGXJtd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 05:49:33 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:55246 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934799AbaGXJtG (ORCPT
+	with ESMTP id S934900AbaGXJta (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 05:49:06 -0400
+	Thu, 24 Jul 2014 05:49:30 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jan Kardell <jan.kardell@telliq.com>, Jonathan Cameron <jic23@kernel.org>,
+Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Christoph Lameter <cl@linux.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 112/128] iio: ti_am335x_adc: Fix: Use same step id at FIFOs both ends
-Date: Thu, 24 Jul 2014 10:46:01 +0100
-Message-Id: <1406195177-8656-113-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 127/128] hugetlb: fix copy_hugetlb_page_range() to handle migration/hwpoisoned entry
+Date: Thu, 24 Jul 2014 10:46:16 +0100
+Message-Id: <1406195177-8656-128-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1406195177-8656-1-git-send-email-luis.henriques@canonical.com>
 References: <1406195177-8656-1-git-send-email-luis.henriques@canonical.com>
@@ -27,37 +30,126 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kardell <jan.kardell@telliq.com>
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 
-commit baa3c65298c089a9014b4e523a14ec2885cca1bc upstream.
+commit 4a705fef986231a3e7a6b1a6d3c37025f021f49f upstream.
 
-Since AI lines could be selected at will (linux-3.11) the sending
-and receiving ends of the FIFO does not agree about what step is used
-for a line. It only works if the last lines are used, like 5,6,7,
-and fails if ie 2,4,6 is selected in DT.
+There's a race between fork() and hugepage migration, as a result we try
+to "dereference" a swap entry as a normal pte, causing kernel panic.
+The cause of the problem is that copy_hugetlb_page_range() can't handle
+"swap entry" family (migration entry and hwpoisoned entry) so let's fix
+it.
 
-Signed-off-by: Jan Kardell <jan.kardell@telliq.com>
-Tested-by: Zubair Lutfullah <zubair.lutfullah@gmail.com>
-Signed-off-by: Jonathan Cameron <jic23@kernel.org>
-[ luis: backported to 3.11: adjusted context ]
+[akpm@linux-foundation.org: coding-style fixes]
+Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Acked-by: Hugh Dickins <hughd@google.com>
+Cc: Christoph Lameter <cl@linux.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+[ luis: backported to 3.11: based on hughd's backport to 3.10.48 ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/iio/adc/ti_am335x_adc.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ mm/hugetlb.c | 71 ++++++++++++++++++++++++++++++++++++------------------------
+ 1 file changed, 43 insertions(+), 28 deletions(-)
 
-diff --git a/drivers/iio/adc/ti_am335x_adc.c b/drivers/iio/adc/ti_am335x_adc.c
-index 3ceac3e91dde..9dd72d05abc3 100644
---- a/drivers/iio/adc/ti_am335x_adc.c
-+++ b/drivers/iio/adc/ti_am335x_adc.c
-@@ -155,7 +155,7 @@ static int tiadc_read_raw(struct iio_dev *indio_dev,
- 		if (time_after(jiffies, timeout))
- 			return -EAGAIN;
- 		}
--	map_val = chan->channel + TOTAL_CHANNELS;
-+	map_val = adc_dev->channel_step[chan->scan_index];
+diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+index f8e292add228..16c25a39939f 100644
+--- a/mm/hugetlb.c
++++ b/mm/hugetlb.c
+@@ -2321,6 +2321,31 @@ static void set_huge_ptep_writable(struct vm_area_struct *vma,
+ 		update_mmu_cache(vma, address, ptep);
+ }
  
- 	/*
- 	 * When the sub-system is first enabled,
++static int is_hugetlb_entry_migration(pte_t pte)
++{
++	swp_entry_t swp;
++
++	if (huge_pte_none(pte) || pte_present(pte))
++		return 0;
++	swp = pte_to_swp_entry(pte);
++	if (non_swap_entry(swp) && is_migration_entry(swp))
++		return 1;
++	else
++		return 0;
++}
++
++static int is_hugetlb_entry_hwpoisoned(pte_t pte)
++{
++	swp_entry_t swp;
++
++	if (huge_pte_none(pte) || pte_present(pte))
++		return 0;
++	swp = pte_to_swp_entry(pte);
++	if (non_swap_entry(swp) && is_hwpoison_entry(swp))
++		return 1;
++	else
++		return 0;
++}
+ 
+ int copy_hugetlb_page_range(struct mm_struct *dst, struct mm_struct *src,
+ 			    struct vm_area_struct *vma)
+@@ -2348,10 +2373,26 @@ int copy_hugetlb_page_range(struct mm_struct *dst, struct mm_struct *src,
+ 
+ 		spin_lock(&dst->page_table_lock);
+ 		spin_lock_nested(&src->page_table_lock, SINGLE_DEPTH_NESTING);
+-		if (!huge_pte_none(huge_ptep_get(src_pte))) {
++		entry = huge_ptep_get(src_pte);
++		if (huge_pte_none(entry)) { /* skip none entry */
++			;
++		} else if (unlikely(is_hugetlb_entry_migration(entry) ||
++				    is_hugetlb_entry_hwpoisoned(entry))) {
++			swp_entry_t swp_entry = pte_to_swp_entry(entry);
++
++			if (is_write_migration_entry(swp_entry) && cow) {
++				/*
++				 * COW mappings require pages in both
++				 * parent and child to be set to read.
++				 */
++				make_migration_entry_read(&swp_entry);
++				entry = swp_entry_to_pte(swp_entry);
++				set_huge_pte_at(src, addr, src_pte, entry);
++			}
++			set_huge_pte_at(dst, addr, dst_pte, entry);
++		} else {
+ 			if (cow)
+ 				huge_ptep_set_wrprotect(src, addr, src_pte);
+-			entry = huge_ptep_get(src_pte);
+ 			ptepage = pte_page(entry);
+ 			get_page(ptepage);
+ 			page_dup_rmap(ptepage);
+@@ -2366,32 +2407,6 @@ nomem:
+ 	return -ENOMEM;
+ }
+ 
+-static int is_hugetlb_entry_migration(pte_t pte)
+-{
+-	swp_entry_t swp;
+-
+-	if (huge_pte_none(pte) || pte_present(pte))
+-		return 0;
+-	swp = pte_to_swp_entry(pte);
+-	if (non_swap_entry(swp) && is_migration_entry(swp))
+-		return 1;
+-	else
+-		return 0;
+-}
+-
+-static int is_hugetlb_entry_hwpoisoned(pte_t pte)
+-{
+-	swp_entry_t swp;
+-
+-	if (huge_pte_none(pte) || pte_present(pte))
+-		return 0;
+-	swp = pte_to_swp_entry(pte);
+-	if (non_swap_entry(swp) && is_hwpoison_entry(swp))
+-		return 1;
+-	else
+-		return 0;
+-}
+-
+ void __unmap_hugepage_range(struct mmu_gather *tlb, struct vm_area_struct *vma,
+ 			    unsigned long start, unsigned long end,
+ 			    struct page *ref_page)
 -- 
 1.9.1
 
