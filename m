@@ -1,51 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934233AbaGXFBW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 01:01:22 -0400
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:54188 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751433AbaGXFBU (ORCPT
+	id S934169AbaGXFFB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 01:05:01 -0400
+Received: from mail-oi0-f43.google.com ([209.85.218.43]:39964 "EHLO
+	mail-oi0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934074AbaGXFE7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 01:01:20 -0400
+	Thu, 24 Jul 2014 01:04:59 -0400
 MIME-Version: 1.0
-Date: Wed, 23 Jul 2014 22:01:18 -0700
-Message-ID: <CAMEtUuzYD-WqxhDeq9tMhOKi+w9QCDdTbzpzaGgsnR83yEvz1A@mail.gmail.com>
-Subject: Re: [PATCH RFC v2 net-next 10/16] bpf: add eBPF verifier
-From: Alexei Starovoitov <ast@plumgrid.com>
-To: Kees Cook <keescook@chromium.org>
-Cc: "David S. Miller" <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Jiri Olsa <jolsa@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <53D07737.70904@codeaurora.org>
+References: <1404959850-11617-1-git-send-email-skannan@codeaurora.org>
+	<16164926.ZsJxe6UV3e@vostro.rjw.lan>
+	<53D07737.70904@codeaurora.org>
+Date: Thu, 24 Jul 2014 10:34:58 +0530
+Message-ID: <CAKohpokynnTttD7Wbq8uBB4SXK9xFEBdRJ2ozhMQscyvq69xRw@mail.gmail.com>
+Subject: Re: [PATCH] cpufreq: Don't destroy/realloc policy/sysfs on hotplug/suspend
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Saravana Kannan <skannan@codeaurora.org>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Todd Poynor <toddpoynor@google.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 23, 2014 at 5:48 PM, Alexei Starovoitov <ast@plumgrid.com> wrote:
-> check_reg_arg() is indeed incorrect here. Will fix. That was a good catch.
-> Thank you for review!
+On 24 July 2014 08:32, Saravana Kannan <skannan@codeaurora.org> wrote:
+> Ok, I think I've figured this out. But one question. Is it possible to
+> physically remove one CPU in a bunch of "related cpus" without also
+> unplugging the rest? Put another way, can you unplug one core from a
+> cluster?
 
-I fixed this missing check_reg_arg() check, addressed feedback for
-other patches, rebased it and pushed it:
-https://git.kernel.org/cgit/linux/kernel/git/ast/bpf.git/log/
+Are we talking about doing this here:
 
-Also replaced dump into syslog from verifier with print into user supplied
-buffer, so that user space can see why verifier rejected the program.
-The more I play with it the more I like fd-based user interface. Cannot
-thank enough Andy for suggesting it :)
-Currently map_id is still there as kernel internal id that programs are
-using to access maps. I'll try to replace it with direct pointer.
-That will save one idr_find() lookup in critical path. That's a good
-reason to add new 16-byte eBPF instruction. It will be
-"load 64-bit immediate" that we've discussed before.
+echo 0 > /sys/devices/system/cpu/cpuX/online      ??
+
+If yes, then what's the confusion all about? Yes we do it all the time.
