@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758244AbaGXJqn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 05:46:43 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54556 "EHLO
+	id S1757646AbaGXJq5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 05:46:57 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54651 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758056AbaGXJqg (ORCPT
+	with ESMTP id S1758773AbaGXJqx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 05:46:36 -0400
+	Thu, 24 Jul 2014 05:46:53 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: James Hogan <james.hogan@imgtec.com>, Paolo Bonzini <pbonzini@redhat.com>,
-        Gleb Natapov <gleb@kernel.org>, kvm@vger.kernel.org,
-        Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org,
-        Sanjay Lal <sanjayl@kymasys.com>,
+Cc: Marcin Kraglak <marcin.kraglak@tieto.com>,
+        Marcel Holtmann <marcel@holtmann.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 002/128] MIPS: KVM: Remove redundant NULL checks before kfree()
-Date: Thu, 24 Jul 2014 10:44:11 +0100
-Message-Id: <1406195177-8656-3-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 019/128] Bluetooth: Allow change security level on ATT_CID in slave role
+Date: Thu, 24 Jul 2014 10:44:28 +0100
+Message-Id: <1406195177-8656-20-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1406195177-8656-1-git-send-email-luis.henriques@canonical.com>
 References: <1406195177-8656-1-git-send-email-luis.henriques@canonical.com>
@@ -30,56 +28,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: James Hogan <james.hogan@imgtec.com>
+From: Marcin Kraglak <marcin.kraglak@tieto.com>
 
-commit c6c0a6637f9da54f9472144d44f71cf847f92e20 upstream.
+commit 92d1372e1a9fec00e146b74e8b9ad7a385b9b37f upstream.
 
-The kfree() function already NULL checks the parameter so remove the
-redundant NULL checks before kfree() calls in arch/mips/kvm/.
+Kernel supports SMP Security Request so don't block increasing security
+when we are slave.
 
-Signed-off-by: James Hogan <james.hogan@imgtec.com>
-Cc: Paolo Bonzini <pbonzini@redhat.com>
-Cc: Gleb Natapov <gleb@kernel.org>
-Cc: kvm@vger.kernel.org
-Cc: Ralf Baechle <ralf@linux-mips.org>
-Cc: linux-mips@linux-mips.org
-Cc: Sanjay Lal <sanjayl@kymasys.com>
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+Signed-off-by: Marcin Kraglak <marcin.kraglak@tieto.com>
+Acked-by: Johan Hedberg <johan.hedberg@intel.com>
+Signed-off-by: Marcel Holtmann <marcel@holtmann.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/mips/kvm/kvm_mips.c | 12 +++---------
- 1 file changed, 3 insertions(+), 9 deletions(-)
+ net/bluetooth/l2cap_sock.c | 5 -----
+ 1 file changed, 5 deletions(-)
 
-diff --git a/arch/mips/kvm/kvm_mips.c b/arch/mips/kvm/kvm_mips.c
-index 426345ac6f6e..7e78af0e57de 100644
---- a/arch/mips/kvm/kvm_mips.c
-+++ b/arch/mips/kvm/kvm_mips.c
-@@ -149,9 +149,7 @@ void kvm_mips_free_vcpus(struct kvm *kvm)
- 		if (kvm->arch.guest_pmap[i] != KVM_INVALID_PAGE)
- 			kvm_mips_release_pfn_clean(kvm->arch.guest_pmap[i]);
- 	}
+diff --git a/net/bluetooth/l2cap_sock.c b/net/bluetooth/l2cap_sock.c
+index 07c9aea21244..a3a81d96314b 100644
+--- a/net/bluetooth/l2cap_sock.c
++++ b/net/bluetooth/l2cap_sock.c
+@@ -631,11 +631,6 @@ static int l2cap_sock_setsockopt(struct socket *sock, int level, int optname,
+ 
+ 		/*change security for LE channels */
+ 		if (chan->scid == L2CAP_CID_ATT) {
+-			if (!conn->hcon->out) {
+-				err = -EINVAL;
+-				break;
+-			}
 -
--	if (kvm->arch.guest_pmap)
--		kfree(kvm->arch.guest_pmap);
-+	kfree(kvm->arch.guest_pmap);
- 
- 	kvm_for_each_vcpu(i, vcpu, kvm) {
- 		kvm_arch_vcpu_free(vcpu);
-@@ -384,12 +382,8 @@ void kvm_arch_vcpu_free(struct kvm_vcpu *vcpu)
- 
- 	kvm_mips_dump_stats(vcpu);
- 
--	if (vcpu->arch.guest_ebase)
--		kfree(vcpu->arch.guest_ebase);
--
--	if (vcpu->arch.kseg0_commpage)
--		kfree(vcpu->arch.kseg0_commpage);
--
-+	kfree(vcpu->arch.guest_ebase);
-+	kfree(vcpu->arch.kseg0_commpage);
- }
- 
- void kvm_arch_vcpu_destroy(struct kvm_vcpu *vcpu)
+ 			if (smp_conn_security(conn->hcon, sec.level))
+ 				break;
+ 			sk->sk_state = BT_CONFIG;
 -- 
 1.9.1
 
