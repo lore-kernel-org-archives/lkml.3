@@ -1,61 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759669AbaGXSuS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 14:50:18 -0400
-Received: from mail-la0-f54.google.com ([209.85.215.54]:51961 "EHLO
-	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759063AbaGXSuQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 14:50:16 -0400
-Date: Thu, 24 Jul 2014 22:50:13 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Kees Cook <keescook@chromium.org>
-Cc: Andrew Vagin <avagin@parallels.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Tejun Heo <tj@kernel.org>,
-        Andrew Vagin <avagin@openvz.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        Julien Tinnes <jln@google.com>
-Subject: Re: [RFC 2/2] prctl: PR_SET_MM -- Introduce PR_SET_MM_MAP operation
-Message-ID: <20140724185013.GB17876@moon>
-References: <20140708190849.GC17860@moon.sw.swsoft.com>
- <20140708143830.ea078ef01e1d7d31276edbcd@linux-foundation.org>
- <20140708221336.GL17860@moon.sw.swsoft.com>
- <20140709141318.GM17860@moon.sw.swsoft.com>
- <CAGXu5jKmTSb0YmNFDtr-jymrhy_s_PXUuvj3WKYffSU98gwyqg@mail.gmail.com>
- <20140709150604.GN17860@moon.sw.swsoft.com>
- <20140711173625.GD19702@moon>
- <CAGXu5jL3exT4j+8rjMv1O54uJWQ5UHL69Z-24b61rhXROqZamQ@mail.gmail.com>
- <20140724134828.GA3553@paralelels.com>
- <CAGXu5j+=i7hgyMjRRvvk8uuT_eyoD9wGNhcdZZQgQiwDoSoMXA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAGXu5j+=i7hgyMjRRvvk8uuT_eyoD9wGNhcdZZQgQiwDoSoMXA@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1759733AbaGXSvR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 14:51:17 -0400
+Received: from mga01.intel.com ([192.55.52.88]:17008 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759701AbaGXSvP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jul 2014 14:51:15 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,725,1400050800"; 
+   d="scan'208";a="574984936"
+Message-ID: <1406227874.2874.3.camel@rzwisler-mobl1.amr.corp.intel.com>
+Subject: Re: [PATCH v8 00/22] Support ext4 on NV-DIMMs
+From: Ross Zwisler <ross.zwisler@linux.intel.com>
+To: Matthew Wilcox <willy@linux.intel.com>
+Cc: Boaz Harrosh <openosd@gmail.com>,
+        Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Date: Thu, 24 Jul 2014 12:51:14 -0600
+In-Reply-To: <20140723195055.GF6754@linux.intel.com>
+References: <cover.1406058387.git.matthew.r.wilcox@intel.com>
+	 <53CFDBAE.4040601@gmail.com> <20140723195055.GF6754@linux.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 24, 2014 at 11:44:50AM -0700, Kees Cook wrote:
-...
-> >
-> > The file can have a suid bit, so after executing it we may lose ability
-> > to attach to it. To check that we can check that uid and gid is zero
-> > in a current userns (local root).
-> >
-> > What else do we need to check?
+On Wed, 2014-07-23 at 15:50 -0400, Matthew Wilcox wrote:
+> On Wed, Jul 23, 2014 at 06:58:38PM +0300, Boaz Harrosh wrote:
+> > Have you please pushed this tree to git hub. It used to be on the prd
+> > tree, if you could just add another branch there, it would be cool.
+> > (https://github.com/01org/prd)
 > 
-> Yeah, I think all the checks are sufficient, but I (and Julien) are
-> still trying to think about side-effects.
-> 
-> It would be nice if these checks (like the rlimit checks) were merged
-> into some common helper. That way if something changes in the exec
-> path, it won't go missed in the c/r path.
+> Ross handles the care & feeding of that tree ... he'll push that branch
+> out soon.
 
-For rlimit I've done a separate helper in new rfc series, please take a look.
+I've updated the master branch of PRD's GitHub repo
+(https://github.com/01org/prd) so that it is v3.16-rc6 + DAX v8 + PRD.
+
+- Ross
+
+
+
