@@ -1,93 +1,310 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934232AbaGXH0X (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 03:26:23 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:35267 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934045AbaGXH0V (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 03:26:21 -0400
-Date: Thu, 24 Jul 2014 09:26:09 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Morten Rasmussen <morten.rasmussen@arm.com>, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, mingo@kernel.org, vincent.guittot@linaro.org,
-        daniel.lezcano@linaro.org, preeti@linux.vnet.ibm.com,
-        Dietmar.Eggemann@arm.com, pjt@google.com
-Subject: Re: [RFCv2 PATCH 01/23] sched: Documentation for scheduler energy
- cost model
-Message-ID: <20140724072609.GI3935@laptop>
-References: <1404404770-323-1-git-send-email-morten.rasmussen@arm.com>
- <1404404770-323-2-git-send-email-morten.rasmussen@arm.com>
- <3288345.jvzVvqTJvD@vostro.rjw.lan>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <3288345.jvzVvqTJvD@vostro.rjw.lan>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	id S934250AbaGXHdU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 03:33:20 -0400
+Received: from mga11.intel.com ([192.55.52.93]:52923 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934061AbaGXHdT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jul 2014 03:33:19 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,722,1400050800"; 
+   d="scan'208";a="566462333"
+From: Adrian Hunter <adrian.hunter@intel.com>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH V2 52/52] perf tools: Add support for 32-bit compatibility VDSOs
+Date: Thu, 24 Jul 2014 10:31:55 +0300
+Message-Id: <1406187115-31090-1-git-send-email-adrian.hunter@intel.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <87mwbzk5rz.fsf@sejong.aot.lge.com>
+References: <87mwbzk5rz.fsf@sejong.aot.lge.com>
+Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki, Business Identity Code: 0357606 - 4, Domiciled in Helsinki
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 24, 2014 at 02:53:20AM +0200, Rafael J. Wysocki wrote:
-> I am used to slightly different terminology here.  Namely, there are voltage
-> domains (parts sharing a voltage rail or a voltage regulator, such that you
-> can only apply/remove/change voltage to all of them at the same time) and clock
-> domains (analogously, but for clocks).  A power domain (which in your description
-> above seems to correspond to a voltage domain) may be a voltage domain, a clock
-> domain or a combination thereof.
-> 
-> In addition to that, in a voltage domain it may be possible to apply many
-> different levels of voltage, which case doesn't seem to be covered at all by
-> the above (or I'm missing something).
-> 
-> Also a P-state is not just a frequency level, but a combination of frequency
-> and voltage that has to be applied for that frequency to be stable.  You may
-> regard them as Operation Performance Points of the CPU, but that very well may
-> go beyond frequencies and voltages.  Thus it actually is better not to talk
-> about P-states as "frequencies".
-> 
-> Now, P-states may or may not have to be coordinated between all CPUs in a
-> package (cluster), by hardware or software, such that all CPUs in a cluster
-> need to be kept in the same P-state.  That you can regard as a "P-state
-> domain", but it usually means a specific combination of voltage and frequency.
+'perf record' post-processes the event stream  to create
+a list of build-ids for object files for which sample
+events have been recorded.  That results in those object
+files being recorded in the build-id cache.
 
-I think Morton is aware of this, but for the sake of sanity dropped the
-whole lot into something simpler (while hoping reality would not ruin
-his life).
+In the case of VDSO, perf tools reads it from memory
+and copies it into a temporary file, which as decribed
+above, gets added to the build-id cache.
 
-> C-states in turn are states in which CPUs don't execute instructions.
-> That need not mean the removal of voltage or even frequency from them.
-> Of course, they do mean some sort of power draw reduction, but that may
-> be achieved in many different ways.  Some C-states require coordination
-> too (for example, a single C-state may apply to a whole package or cluster
-> at the same time) and you can think about "domains" here too, but there
-> need not be a direct mapping to physical parameters such as the frequency
-> or the voltage.
+Then when the perf.data file is processed by other
+tools, the build-id of VDSO is listed in the perf.data
+file and the VDSO can be read from the build-id cache.
+In that case the name of the map, the short name of the
+DSO, and the entry in the build-id cache are all
+"[vdso]".
 
-One thing that wasn't clear to me is if you allow for C-domain and
-P-domain to overlap or if they're always inclusive (where one is wholly
-contained in the other).
+However, in the 64-bit case, there also can be 32-bit
+compatibility VDSOs.
 
-> Moreover, P-states and C-states may overlap.  That is, a CPU may be in Px
-> and Cy at the same time, which means that after leaving Cy it will execute
-> instructions in Px.  Things like leakage may depend on x in that case and
-> the total power draw may depend on the combination of x and y.
+A previous patch added programs "perf-read-vdso32" and
+"perf read-vdsox32".  This patch uses those programs to
+read the correct VDSO for a thread and create a
+temporary file just as for the 64-bit VDSO.  The map
+name and the entry in the build-id cache are still
+"[vdso]" but the DSO short name becomes "[vdso32]"
+and "[vdsox32]" respectively.
 
-Right, and I suppose the domain thing makes it impossible to drop to the
-lowest P state on going idle. Tricky that.
+Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+---
 
-> The concern is that if a scaling governor is running in parallel with the above
-> algorithm and it has its own utilization goal (it usually does), it may change
-> the P-state under you to match that utilization goal and you'll end up with
-> something different from what you expected.
-> 
-> That may be addressed either by trying to predict what the scaling governor will
-> do (and good luck with that) or by taking care of P-states by yourself.  The
-> latter would require changes to the algorithm I think, though.
 
-The idea was that we'll do P states ourselves based on these utilization
-figures. If we find we cannot fit the 'new' task into the current set
-without either raising P or waking an idle cpu (if at all available), we
-compute the cost of either option and pick the cheapest.
+V2:
+	Fix copy-and-paste errors spotted by Namhyung (Thank you!)
+
+
+ tools/perf/util/vdso.c | 170 ++++++++++++++++++++++++++++++++++++++++++++++++-
+ tools/perf/util/vdso.h |   4 +-
+ 2 files changed, 172 insertions(+), 2 deletions(-)
+
+diff --git a/tools/perf/util/vdso.c b/tools/perf/util/vdso.c
+index adca693..25381cf 100644
+--- a/tools/perf/util/vdso.c
++++ b/tools/perf/util/vdso.c
+@@ -12,6 +12,7 @@
+ #include "util.h"
+ #include "symbol.h"
+ #include "machine.h"
++#include "thread.h"
+ #include "linux/string.h"
+ #include "debug.h"
+ 
+@@ -22,10 +23,15 @@ struct vdso_file {
+ 	bool error;
+ 	char temp_file_name[sizeof(VDSO__TEMP_FILE_NAME)];
+ 	const char *dso_name;
++	const char *read_prog;
+ };
+ 
+ struct vdso_info {
+ 	struct vdso_file vdso;
++#if BITS_PER_LONG == 64
++	struct vdso_file vdso32;
++	struct vdso_file vdsox32;
++#endif
+ };
+ 
+ static struct vdso_info *vdso_info__new(void)
+@@ -35,6 +41,18 @@ static struct vdso_info *vdso_info__new(void)
+ 			.temp_file_name = VDSO__TEMP_FILE_NAME,
+ 			.dso_name = DSO__NAME_VDSO,
+ 		},
++#if BITS_PER_LONG == 64
++		.vdso32  = {
++			.temp_file_name = VDSO__TEMP_FILE_NAME,
++			.dso_name = DSO__NAME_VDSO32,
++			.read_prog = "perf-read-vdso32",
++		},
++		.vdsox32  = {
++			.temp_file_name = VDSO__TEMP_FILE_NAME,
++			.dso_name = DSO__NAME_VDSOX32,
++			.read_prog = "perf-read-vdsox32",
++		},
++#endif
+ 	};
+ 
+ 	return memdup(&vdso_info_init, sizeof(vdso_info_init));
+@@ -117,6 +135,12 @@ void vdso__exit(struct machine *machine)
+ 
+ 	if (vdso_info->vdso.found)
+ 		unlink(vdso_info->vdso.temp_file_name);
++#if BITS_PER_LONG == 64
++	if (vdso_info->vdso32.found)
++		unlink(vdso_info->vdso32.temp_file_name);
++	if (vdso_info->vdsox32.found)
++		unlink(vdso_info->vdsox32.temp_file_name);
++#endif
+ 
+ 	zfree(&machine->vdso_info);
+ }
+@@ -135,6 +159,143 @@ static struct dso *vdso__new(struct machine *machine, const char *short_name,
+ 	return dso;
+ }
+ 
++#if BITS_PER_LONG == 64
++
++static enum dso_type machine__thread_dso_type(struct machine *machine,
++					      struct thread *thread)
++{
++	enum dso_type dso_type = DSO__TYPE_UNKNOWN;
++	struct map *map;
++	struct dso *dso;
++
++	map = map_groups__first(thread->mg, MAP__FUNCTION);
++	for (; map ; map = map_groups__next(map)) {
++		dso = map->dso;
++		if (!dso || dso->long_name[0] != '/')
++			continue;
++		dso_type = dso__type(dso, machine);
++		if (dso_type != DSO__TYPE_UNKNOWN)
++			break;
++	}
++
++	return dso_type;
++}
++
++static int vdso__do_copy_compat(FILE *f, int fd)
++{
++	char buf[4096];
++	size_t count;
++
++	while (1) {
++		count = fread(buf, 1, sizeof(buf), f);
++		if (ferror(f))
++			return -errno;
++		if (feof(f))
++			break;
++		if (count && writen(fd, buf, count) != (ssize_t)count)
++			return -errno;
++	}
++
++	return 0;
++}
++
++static int vdso__copy_compat(const char *prog, int fd)
++{
++	FILE *f;
++	int err;
++
++	f = popen(prog, "r");
++	if (!f)
++		return -errno;
++
++	err = vdso__do_copy_compat(f, fd);
++
++	if (pclose(f) == -1)
++		return -errno;
++
++	return err;
++}
++
++static int vdso__create_compat_file(const char *prog, char *temp_name)
++{
++	int fd, err;
++
++	fd = mkstemp(temp_name);
++	if (fd < 0)
++		return -errno;
++
++	err = vdso__copy_compat(prog, fd);
++
++	if (close(fd) == -1)
++		return -errno;
++
++	return err;
++}
++
++static const char *vdso__get_compat_file(struct vdso_file *vdso_file)
++{
++	int err;
++
++	if (vdso_file->found)
++		return vdso_file->temp_file_name;
++
++	if (vdso_file->error)
++		return NULL;
++
++	err = vdso__create_compat_file(vdso_file->read_prog,
++				       vdso_file->temp_file_name);
++	if (err) {
++		pr_err("%s failed, error %d\n", vdso_file->read_prog, err);
++		vdso_file->error = true;
++		return NULL;
++	}
++
++	vdso_file->found = true;
++
++	return vdso_file->temp_file_name;
++}
++
++static struct dso *vdso__findnew_compat(struct machine *machine,
++					struct vdso_file *vdso_file)
++{
++	const char *file_name;
++	struct dso *dso;
++
++	dso = dsos__find(&machine->user_dsos, vdso_file->dso_name, true);
++	if (dso)
++		return dso;
++
++	file_name = vdso__get_compat_file(vdso_file);
++	if (!file_name)
++		return NULL;
++
++	return vdso__new(machine, vdso_file->dso_name, file_name);
++}
++
++static int vdso__dso_findnew_compat(struct machine *machine,
++				    struct thread *thread,
++				    struct vdso_info *vdso_info,
++				    struct dso **dso)
++{
++	enum dso_type dso_type;
++
++	dso_type = machine__thread_dso_type(machine, thread);
++	switch (dso_type) {
++	case DSO__TYPE_32BIT:
++		*dso = vdso__findnew_compat(machine, &vdso_info->vdso32);
++		return 1;
++	case DSO__TYPE_X32BIT:
++		*dso = vdso__findnew_compat(machine, &vdso_info->vdsox32);
++		return 1;
++	case DSO__TYPE_UNKNOWN:
++	case DSO__TYPE_64BIT:
++	default:
++		return 0;
++	}
++}
++
++#endif
++
+ struct dso *vdso__dso_findnew(struct machine *machine,
+ 			      struct thread *thread __maybe_unused)
+ {
+@@ -148,6 +309,11 @@ struct dso *vdso__dso_findnew(struct machine *machine,
+ 	if (!vdso_info)
+ 		return NULL;
+ 
++#if BITS_PER_LONG == 64
++	if (vdso__dso_findnew_compat(machine, thread, vdso_info, &dso))
++		return dso;
++#endif
++
+ 	dso = dsos__find(&machine->user_dsos, DSO__NAME_VDSO, true);
+ 	if (!dso) {
+ 		char *file;
+@@ -164,5 +330,7 @@ struct dso *vdso__dso_findnew(struct machine *machine,
+ 
+ bool dso__is_vdso(struct dso *dso)
+ {
+-	return !strcmp(dso->short_name, DSO__NAME_VDSO);
++	return !strcmp(dso->short_name, DSO__NAME_VDSO) ||
++	       !strcmp(dso->short_name, DSO__NAME_VDSO32) ||
++	       !strcmp(dso->short_name, DSO__NAME_VDSOX32);
+ }
+diff --git a/tools/perf/util/vdso.h b/tools/perf/util/vdso.h
+index af9d692..d97da16 100644
+--- a/tools/perf/util/vdso.h
++++ b/tools/perf/util/vdso.h
+@@ -7,7 +7,9 @@
+ 
+ #define VDSO__MAP_NAME "[vdso]"
+ 
+-#define DSO__NAME_VDSO "[vdso]"
++#define DSO__NAME_VDSO    "[vdso]"
++#define DSO__NAME_VDSO32  "[vdso32]"
++#define DSO__NAME_VDSOX32 "[vdsox32]"
+ 
+ static inline bool is_vdso_map(const char *filename)
+ {
+-- 
+1.8.3.2
 
