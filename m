@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934937AbaGXJux (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 05:50:53 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:55232 "EHLO
+	id S934953AbaGXJvO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 05:51:14 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:55227 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934874AbaGXJtY (ORCPT
+	with ESMTP id S934868AbaGXJtX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 05:49:24 -0400
+	Thu, 24 Jul 2014 05:49:23 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Michal Hocko <mhocko@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Alex Elder <elder@linaro.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 126/128] Don't trigger congestion wait on dirty-but-not-writeout pages
-Date: Thu, 24 Jul 2014 10:46:15 +0100
-Message-Id: <1406195177-8656-127-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 125/128] rbd: use reference counts for image requests
+Date: Thu, 24 Jul 2014 10:46:14 +0100
+Message-Id: <1406195177-8656-126-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1406195177-8656-1-git-send-email-luis.henriques@canonical.com>
 References: <1406195177-8656-1-git-send-email-luis.henriques@canonical.com>
@@ -29,75 +27,105 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
+From: Alex Elder <elder@linaro.org>
 
-commit b738d764652dc5aab1c8939f637112981fce9e0e upstream.
+commit 0f2d5be792b0466b06797f637cfbb0f64dbb408c upstream.
 
-shrink_inactive_list() used to wait 0.1s to avoid congestion when all
-the pages that were isolated from the inactive list were dirty but not
-under active writeback.  That makes no real sense, and apparently causes
-major interactivity issues under some loads since 3.11.
+Each image request contains a reference count, but to date it has
+not actually been used.  (I think this was just an oversight.) A
+recent report involving rbd failing an assertion shed light on why
+and where we need to use these reference counts.
 
-The ostensible reason for it was to wait for kswapd to start writing
-pages, but that seems questionable as well, since the congestion wait
-code seems to trigger for kswapd itself as well.  Also, the logic behind
-delaying anything when we haven't actually started writeback is not
-clear - it only delays actually starting that writeback.
+Every OSD request associated with an object request uses
+rbd_osd_req_callback() as its callback function.  That function will
+call a helper function (dependent on the type of OSD request) that
+will set the object request's "done" flag if the object request if
+appropriate.  If that "done" flag is set, the object request is
+passed to rbd_obj_request_complete().
 
-We'll still trigger the congestion waiting if
+In rbd_obj_request_complete(), requests are processed in sequential
+order.  So if an object request completes before one of its
+predecessors in the image request, the completion is deferred.
+Otherwise, if it's a completing object's "turn" to be completed, it
+is passed to rbd_img_obj_end_request(), which records the result of
+the operation, accumulates transferred bytes, and so on.  Next, the
+successor to this request is checked and if it is marked "done",
+(deferred) completion processing is performed on that request, and
+so on.  If the last object request in an image request is completed,
+rbd_img_request_complete() is called, which (typically) destroys
+the image request.
 
- (a) the process is kswapd, and we hit pages flagged for immediate
-     reclaim
+There is a race here, however.  The instant an object request is
+marked "done" it can be provided (by a thread handling completion of
+one of its predecessor operations) to rbd_img_obj_end_request(),
+which (for the last request) can then lead to the image request
+getting torn down.  And this can happen *before* that object has
+itself entered rbd_img_obj_end_request().  As a result, once it
+*does* enter that function, the image request (and even the object
+request itself) may have been freed and become invalid.
 
- (b) the process is not kswapd, and the zone backing dev writeback is
-     actually congested.
+All that's necessary to avoid this is to properly count references
+to the image requests.  We tear down an image request's object
+requests all at once--only when the entire image request has
+completed.  So there's no need for an image request to count
+references for its object requests.  However, we don't want an
+image request to go away until the last of its object requests
+has passed through rbd_img_obj_callback().  In other words,
+we don't want rbd_img_request_complete() to necessarily
+result in the image request being destroyed, because it may
+get called before we've finished processing on all of its
+object requests.
 
-This probably needs to be revisited, but as it is this fixes a reported
-regression.
+So the fix is to add a reference to an image request for
+each of its object requests.  The reference can be viewed
+as representing an object request that has not yet finished
+its call to rbd_img_obj_callback().  That is emphasized by
+getting the reference right after assigning that as the image
+object's callback function.  The corresponding release of that
+reference is done at the end of rbd_img_obj_callback(), which
+every image object request passes through exactly once.
 
-[mhocko@suse.cz: backport to 3.12 stable tree]
-Fixes: e2be15f6c3ee ('mm: vmscan: stall page reclaim and writeback pages based on dirty/writepage pages encountered')
-Reported-by: Felipe Contreras <felipe.contreras@gmail.com>
-Pinpointed-by: Hillf Danton <dhillf@gmail.com>
-Cc: Michal Hocko <mhocko@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Mel Gorman <mgorman@suse.de>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Michal Hocko <mhocko@suse.cz>
+Signed-off-by: Alex Elder <elder@linaro.org>
+Reviewed-by: Ilya Dryomov <ilya.dryomov@inktank.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- mm/vmscan.c | 11 +++++------
- 1 file changed, 5 insertions(+), 6 deletions(-)
+ drivers/block/rbd.c | 9 +++++++++
+ 1 file changed, 9 insertions(+)
 
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index b4241b7d7f07..370c16d21fb2 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -1468,19 +1468,18 @@ shrink_inactive_list(unsigned long nr_to_scan, struct lruvec *lruvec,
- 		 * If dirty pages are scanned that are not queued for IO, it
- 		 * implies that flushers are not keeping up. In this case, flag
- 		 * the zone ZONE_TAIL_LRU_DIRTY and kswapd will start writing
--		 * pages from reclaim context. It will forcibly stall in the
--		 * next check.
-+		 * pages from reclaim context.
- 		 */
- 		if (nr_unqueued_dirty == nr_taken)
- 			zone_set_flag(zone, ZONE_TAIL_LRU_DIRTY);
+diff --git a/drivers/block/rbd.c b/drivers/block/rbd.c
+index cabe12e8390b..9568cacdd6a4 100644
+--- a/drivers/block/rbd.c
++++ b/drivers/block/rbd.c
+@@ -1399,6 +1399,13 @@ static void rbd_obj_request_put(struct rbd_obj_request *obj_request)
+ 	kref_put(&obj_request->kref, rbd_obj_request_destroy);
+ }
  
- 		/*
--		 * In addition, if kswapd scans pages marked marked for
--		 * immediate reclaim and under writeback (nr_immediate), it
--		 * implies that pages are cycling through the LRU faster than
-+		 * If kswapd scans pages marked marked for immediate
-+		 * reclaim and under writeback (nr_immediate), it implies
-+		 * that pages are cycling through the LRU faster than
- 		 * they are written so also forcibly stall.
- 		 */
--		if (nr_unqueued_dirty == nr_taken || nr_immediate)
-+		if (nr_immediate)
- 			congestion_wait(BLK_RW_ASYNC, HZ/10);
- 	}
++static void rbd_img_request_get(struct rbd_img_request *img_request)
++{
++	dout("%s: img %p (was %d)\n", __func__, img_request,
++	     atomic_read(&img_request->kref.refcount));
++	kref_get(&img_request->kref);
++}
++
+ static bool img_request_child_test(struct rbd_img_request *img_request);
+ static void rbd_parent_request_destroy(struct kref *kref);
+ static void rbd_img_request_destroy(struct kref *kref);
+@@ -2152,6 +2159,7 @@ static void rbd_img_obj_callback(struct rbd_obj_request *obj_request)
+ 	img_request->next_completion = which;
+ out:
+ 	spin_unlock_irq(&img_request->completion_lock);
++	rbd_img_request_put(img_request);
  
+ 	if (!more)
+ 		rbd_img_request_complete(img_request);
+@@ -2248,6 +2256,7 @@ static int rbd_img_request_fill(struct rbd_img_request *img_request,
+ 			goto out_partial;
+ 		obj_request->osd_req = osd_req;
+ 		obj_request->callback = rbd_img_obj_callback;
++		rbd_img_request_get(img_request);
+ 
+ 		osd_req_op_extent_init(osd_req, 0, opcode, offset, length,
+ 						0, 0);
 -- 
 1.9.1
 
