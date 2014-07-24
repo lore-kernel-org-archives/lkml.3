@@ -1,91 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935358AbaGXKU5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 06:20:57 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54725 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932427AbaGXJrN (ORCPT
+	id S935376AbaGXKVv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 06:21:51 -0400
+Received: from regular1.263xmail.com ([211.150.99.130]:35572 "EHLO
+	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932598AbaGXKVr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 05:47:13 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Alex Smith <alex.smith@imgtec.com>, linux-mips@linux-mips.org,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 033/128] recordmcount/MIPS: Fix possible incorrect mcount_loc table entries in modules
-Date: Thu, 24 Jul 2014 10:44:42 +0100
-Message-Id: <1406195177-8656-34-git-send-email-luis.henriques@canonical.com>
+	Thu, 24 Jul 2014 06:21:47 -0400
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 0
+X-MAIL-DELIVERY: 1
+X-ABS-CHECKED: 4
+X-KSVirus-check: 0
+X-RL-SENDER: wxt@rock-chips.com
+X-FST-TO: thierry.reding@gmail.com
+X-SENDER-IP: 58.22.7.114
+X-LOGIN-NAME: wxt@rock-chips.com
+X-UNIQUE-TAG: <e25f3cfcfbfb2fba02da8f60c6fad164>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 0
+From: Caesar Wang <caesar.wang@rock-chips.com>
+To: thierry.reding@gmail.com, heiko@sntech.de, b.galvani@gmail.com,
+        robh+dt@kernel.org, ijc+devicetree@hellion.org.uk,
+        rdunlap@infradead.org, galak@codeaurora.org
+Cc: cf@rock-chips.com, huangtao@rock-chips.com, xjq@rock-chips.com,
+        addy.ke@rock-chips.com, cjf@rock-chips.com, hj@rock-chips.com,
+        linux-arm-kernel@lists.infradead.org, linux-pwm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, Caesar Wang <caesar.wang@rock-chips.com>
+Subject: [PATCH v4 0/2] This series adds support for RK3288 SoC integrated PWM
+Date: Thu, 24 Jul 2014 18:21:33 +0800
+Message-Id: <1406197295-10604-1-git-send-email-caesar.wang@rock-chips.com>
 X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1406195177-8656-1-git-send-email-luis.henriques@canonical.com>
-References: <1406195177-8656-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.14 -stable review patch.  If anyone has any objections, please let me know.
+This patch will make applying on the top of Beniamino's submission,
+the Beniamino's submission come from [1].
 
-------------------
+[1]:
+    https://git.kernel.org/cgit/linux/kernel/git/thierry.reding/linux-pwm.git/log/?h=for-next
 
-From: Alex Smith <alex.smith@imgtec.com>
+    Beniamino's submission won't be used from genenation Rockchip SoCs.
+    So I have to add the new pwm for next genenation Rockchip SoCs.
 
-commit 91ad11d7cc6f4472ebf177a6252fbf0fd100d798 upstream.
+    Tested on RK3288 SDK board.
 
-On MIPS calls to _mcount in modules generate 2 instructions to load
-the _mcount address (and therefore 2 relocations). The mcount_loc
-table should only reference the first of these, so the second is
-filtered out by checking the relocation offset and ignoring ones that
-immediately follow the previous one seen.
+Changes in v4:
+    * address comments from Heiko Stübner:
+    - fix the copyright for ROCKCHIP, Inc. 
+    - remove rockchip_pwm_set_enable_vop,then it instead of rockchip_pwm_set_enable_v2.
+   
+Changes in v3:
+    * address comments from Thierry Reding:
+    - fix PWM document deccribes. 
+    - add a description for [PATCH v3 2/2].
+    - renamed the PWM registers
+    - Changed in rockchip_pwm_data struct
+    - remove the devm_ioremap(),fixed in lcdc driver.
 
-However if a module has an _mcount call at offset 0, the second
-relocation would not be filtered out due to old_r_offset == 0
-being taken to mean that the current relocation is the first one
-seen, and both would end up in the mcount_loc table.
+Changes in v2:
+    * address comments from Beniamino Galvani:
+    - remove #include <linux/of_address.h>. 
+    - of_iomap be removed,and devm_ioremap replace it.
+    - remove a line no be used.
 
-This results in ftrace_make_nop() patching both (adjacent)
-instructions to branches over the _mcount call sequence like so:
+Caesar Wang (2):
+  pwm: rockchip: document RK3288 SoC compatible
+  pwm: rockchip: Added to support for RK3288 SoC
 
-  0xffffffffc08a8000:  04 00 00 10     b       0xffffffffc08a8014
-  0xffffffffc08a8004:  04 00 00 10     b       0xffffffffc08a8018
-  0xffffffffc08a8008:  2d 08 e0 03     move    at,ra
-  ...
+ .../devicetree/bindings/pwm/pwm-rockchip.txt       |   5 +-
+ drivers/pwm/pwm-rockchip.c                         | 124 +++++++++++++++++----
+ 2 files changed, 109 insertions(+), 20 deletions(-)
 
-The second branch is in the delay slot of the first, which is
-defined to be unpredictable - on the platform on which this bug was
-encountered, it triggers a reserved instruction exception.
-
-Fix by initializing old_r_offset to ~0 and using that instead of 0
-to determine whether the current relocation is the first seen.
-
-Signed-off-by: Alex Smith <alex.smith@imgtec.com>
-Cc: linux-kernel@vger.kernel.org
-Cc: linux-mips@linux-mips.org
-Patchwork: https://patchwork.linux-mips.org/patch/7098/
-Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- scripts/recordmcount.h | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/scripts/recordmcount.h b/scripts/recordmcount.h
-index 9d1421e63ff8..49b582a225b0 100644
---- a/scripts/recordmcount.h
-+++ b/scripts/recordmcount.h
-@@ -163,11 +163,11 @@ static int mcount_adjust = 0;
- 
- static int MIPS_is_fake_mcount(Elf_Rel const *rp)
- {
--	static Elf_Addr old_r_offset;
-+	static Elf_Addr old_r_offset = ~(Elf_Addr)0;
- 	Elf_Addr current_r_offset = _w(rp->r_offset);
- 	int is_fake;
- 
--	is_fake = old_r_offset &&
-+	is_fake = (old_r_offset != ~(Elf_Addr)0) &&
- 		(current_r_offset - old_r_offset == MIPS_FAKEMCOUNT_OFFSET);
- 	old_r_offset = current_r_offset;
- 
 -- 
 1.9.1
+
 
