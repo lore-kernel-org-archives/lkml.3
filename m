@@ -1,82 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751382AbaGXEEG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 00:04:06 -0400
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:34136 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750771AbaGXEEE (ORCPT
+	id S1751915AbaGXEEI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 00:04:08 -0400
+Received: from mail-lb0-f179.google.com ([209.85.217.179]:33253 "EHLO
+	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751177AbaGXEEG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 00:04:04 -0400
-From: John Stultz <john.stultz@linaro.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Stephen Boyd <sboyd@codeaurora.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@kernel.org>, stable <stable@vger.kernel.org>,
-        John Stultz <john.stultz@linaro.org>
-Subject: [PATCH] sched_clock: Avoid corrupting hrtimer tree during suspend
-Date: Wed, 23 Jul 2014 21:03:50 -0700
-Message-Id: <1406174630-23458-1-git-send-email-john.stultz@linaro.org>
-X-Mailer: git-send-email 1.9.1
+	Thu, 24 Jul 2014 00:04:06 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140724034315.GJ11241@linux.vnet.ibm.com>
+References: <1406092194-13004-1-git-send-email-bobby.prani@gmail.com>
+ <1406092194-13004-12-git-send-email-bobby.prani@gmail.com>
+ <20140723122608.GL11241@linux.vnet.ibm.com> <CAJhHMCC7_GLmBroGhKWMJJKuWqhojQGf=9So1_x4nb2adQvqFg@mail.gmail.com>
+ <20140724034315.GJ11241@linux.vnet.ibm.com>
+From: Pranith Kumar <bobby.prani@gmail.com>
+Date: Thu, 24 Jul 2014 00:03:34 -0400
+Message-ID: <CAJhHMCDhwnKF5tiWvHyGrz3KhCab+QUnAfEmkzjsBrNn5O3gyQ@mail.gmail.com>
+Subject: Re: [PATCH 11/16] rcu: Check for spurious wakeup using return value
+To: Paul McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Josh Triplett <josh@joshtriplett.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        "open list:READ-COPY UPDATE..." <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Boyd <sboyd@codeaurora.org>
+On Wed, Jul 23, 2014 at 11:43 PM, Paul E. McKenney
+<paulmck@linux.vnet.ibm.com> wrote:
+> On Wed, Jul 23, 2014 at 10:36:19PM -0400, Pranith Kumar wrote:
+>> On Wed, Jul 23, 2014 at 8:26 AM, Paul E. McKenney
+>> <paulmck@linux.vnet.ibm.com> wrote:
+>> > On Wed, Jul 23, 2014 at 01:09:48AM -0400, Pranith Kumar wrote:
+>> >> When the gp_kthread wakes up from the wait event, it returns 0 if the wake up is
+>> >> due to the condition having been met. This commit checks this return value
+>> >> for a spurious wake up before calling rcu_gp_init().
+>> >>
+>> >> Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
+>> >
+>> > How does this added check help?  I don't see that it does.  If the flag
+>> > is set, we want to wake up.  If we get a spurious wakeup, but then the
+>> > flag gets set before we actually wake up, we still want to wake up.
+>>
+>> So I took a look at the docs again, and using the return value is the
+>> recommended way to check for spurious wakeups.
+>>
+>> The condition in wait_event_interruptible() is checked when the task
+>> is woken up (either due to stray signals or explicitly) and it returns
+>> true if condition evaluates to true.
 
-During suspend we call sched_clock_poll() to update the epoch and
-accumulated time and reprogram the sched_clock_timer to fire
-before the next wrap-around time. Unfortunately,
-sched_clock_poll() doesn't restart the timer, instead it relies
-on the hrtimer layer to do that and during suspend we aren't
-calling that function from the hrtimer layer. Instead, we're
-reprogramming the expires time while the hrtimer is enqueued,
-which can cause the hrtimer tree to be corrupted. Furthermore, we
-restart the timer during suspend but we update the epoch during
-resume which seems counter-intuitive.
+this should be returns '0' if the condition evaluates to true.
 
-Let's fix this by saving the accumulated state and canceling the
-timer during suspend. On resume we can update the epoch and
-restart the timer similar to what we would do if we were starting
-the clock for the first time.
+>>
+>> In the current scenario, if we get a spurious wakeup, we take the
+>> costly path of checking this condition again (with a barrier and lock)
+>> before going back to wait.
+>>
+>> The scenario of getting an actual wakeup after getting a spurious
+>> wakeup exists even today, this is the window after detecting a
+>> spurious wakeup and before going back to wait. I am not sure if using
+>> the return value enlarges that window as we are going back to sleep
+>> immediately.
+>>
+>> Thoughts?
+>
+> If the flag is set, why should we care whether or not the wakeup was
+> spurious?  If the flag is not set, why should we care whether or not
+> wait_event_interruptible() thought that the wakeup was not spurious?
+>
 
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: stable <stable@vger.kernel.org>
-Fixes: a08ca5d1089d "sched_clock: Use an hrtimer instead of timer"
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-Signed-off-by: John Stultz <john.stultz@linaro.org>
----
+A correction about the return value above: return will be 0 if the
+condition is true, in this case if the flag is set.
 
-Ingo/Thomas: Here's a fix for tip/timers/urgent for 3.16 and -stable.
-Let me know if you have any objections.
+If the flag is set, ret will be 0 and we will go ahead with
+rcu_gp_init(). (no change wrt current behavior)
 
-thanks
--john
+If the flag is not set, currently we go ahead and call rcu_gp_init()
+from where we check if the flag is set (after a lock+barrier) and
+return.
 
- kernel/time/sched_clock.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+If we care about what wait_event_interruptible() returns, we can go
+back and wait for an actual wakeup much earlier without the additional
+overhead of calling rcu_gp_init().
 
-diff --git a/kernel/time/sched_clock.c b/kernel/time/sched_clock.c
-index 445106d..01d2d15 100644
---- a/kernel/time/sched_clock.c
-+++ b/kernel/time/sched_clock.c
-@@ -191,7 +191,8 @@ void __init sched_clock_postinit(void)
- 
- static int sched_clock_suspend(void)
- {
--	sched_clock_poll(&sched_clock_timer);
-+	update_sched_clock();
-+	hrtimer_cancel(&sched_clock_timer);
- 	cd.suspended = true;
- 	return 0;
- }
-@@ -199,6 +200,7 @@ static int sched_clock_suspend(void)
- static void sched_clock_resume(void)
- {
- 	cd.epoch_cyc = read_sched_clock();
-+	hrtimer_start(&sched_clock_timer, cd.wrap_kt, HRTIMER_MODE_REL);
- 	cd.suspended = false;
- }
- 
 -- 
-1.9.1
-
+Pranith
