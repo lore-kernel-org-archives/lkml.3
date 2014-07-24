@@ -1,54 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934707AbaGXUbR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 16:31:17 -0400
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:48859 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934503AbaGXUbO (ORCPT
+	id S934619AbaGXUfG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 16:35:06 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:59923 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934176AbaGXUfE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 16:31:14 -0400
-Date: Thu, 24 Jul 2014 13:31:09 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Julian Squires <julian@cipht.net>, Hans de Goede <hdegoede@redhat.com>,
-        Benjamin Tissoires <benjamin.tissoires@redhat.com>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] Input: wacom_serial4 - prepare for wacom USB moving to HID
-Message-ID: <20140724203108.GA9191@core.coreip.homeip.net>
+	Thu, 24 Jul 2014 16:35:04 -0400
+Date: Thu, 24 Jul 2014 21:34:36 +0100
+From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+To: Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>
+Cc: linux-kernel@vger.kernel.org, linux@openrisc.net, jonas@southpole.se
+Subject: Re: [PATCH 1/6] openrisc: add Kconfig for l.lwa and l.swa atomic
+ instructions
+Message-ID: <20140724213436.511e08ad@alan.etchedpixels.co.uk>
+In-Reply-To: <20140724195237.GA12313@chokladfabriken.org>
+References: <1406150296-13308-1-git-send-email-stefan.kristiansson@saunalahti.fi>
+	<1406150296-13308-2-git-send-email-stefan.kristiansson@saunalahti.fi>
+	<20140723222601.51a8b788@alan.etchedpixels.co.uk>
+	<20140724195237.GA12313@chokladfabriken.org>
+Organization: Intel Corporation
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-wacom_wac.h will be moving to drivers/hid. Since we only need 3 definitions
-from it let's simply copy them over.
+> I wasn't familiar with the alternatives logic before, so I had
+> to look it up.
+> Correct me if I'm wrong, but from what I gathered, the approach
+> that takes is especially suitable to fixup instructions that
+> are similar to each others but have slightly different properties
+> (the lock prefix to cmpxchg being the canonical example).
 
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
----
- drivers/input/tablet/wacom_serial4.c | 5 +++++
- 1 file changed, 5 insertions(+)
+You need some similarity or in some cases it makes sense to swap the
+instruction with a call to a helper out of line, rather than taking the
+hit on the traps and emulation.
 
-diff --git a/drivers/input/tablet/wacom_serial4.c b/drivers/input/tablet/wacom_serial4.c
-index d3d251e..deef50e 100644
---- a/drivers/input/tablet/wacom_serial4.c
-+++ b/drivers/input/tablet/wacom_serial4.c
-@@ -149,6 +149,11 @@ MODULE_LICENSE("GPL");
- #define F_HAS_STYLUS2		0x02
- #define F_HAS_SCROLLWHEEL	0x04
- 
-+/* device IDs */
-+#define STYLUS_DEVICE_ID	0x02
-+#define CURSOR_DEVICE_ID	0x06
-+#define ERASER_DEVICE_ID	0x0A
-+
- enum { STYLUS = 1, ERASER, CURSOR };
- 
- static const struct {
--- 
-2.0.0.526.g5318336
+> I guess it'd be *possible* to still use this method to implement
+> alternatives that would work in the UP case by disabling
+> context-switch and perform normal loads and stores in place
+> of the l.lwa and l.swa instructions, but is it really a good approach?
 
+We actually did that on the 386 when it was still supported as 386
+lacked some of the more obscure atomic instructions. Some other platforms
+use constructs of the form
 
--- 
-Dmitry
+       do {
+	i = reschedule_count
+	do repeatable ops
+        }
+	while(reschedule_count != i)
+
+for non irq safe locking ops rather than irq off/on. Another approach is
+to use a section to gather all the out of line "atomic" operations - ie
+all the helpers - and not reschedule if the return address is in the
+"atomic" section.
+
+Most of the other architectures we ask these questions and generate code
+for "at least this feature set" but then also hide the detail, although I
+imagine most openrisc users are smarter than the average.
+
+Alan
