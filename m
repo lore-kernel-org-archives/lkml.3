@@ -1,49 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759328AbaGXOSP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 10:18:15 -0400
-Received: from mail-lb0-f177.google.com ([209.85.217.177]:33371 "EHLO
-	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758834AbaGXOSO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 10:18:14 -0400
+	id S1759216AbaGXOUK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 10:20:10 -0400
+Received: from mail.kernel.org ([198.145.19.201]:43644 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758957AbaGXOUI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jul 2014 10:20:08 -0400
+Date: Thu, 24 Jul 2014 11:19:58 -0300
+From: Arnaldo Carvalho de Melo <acme@kernel.org>
+To: David Ahern <dsahern@gmail.com>
+Cc: Adrian Hunter <adrian.hunter@intel.com>, Andi Kleen <andi@firstfloor.org>,
+        Jiri Olsa <jolsa@kernel.org>, linux-kernel@vger.kernel.org,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCHv3 00/19] perf tools: Factor ordered samples queue
+Message-ID: <20140724141958.GB7831@kernel.org>
+References: <1405893363-21967-1-git-send-email-jolsa@kernel.org>
+ <53CCB6AE.6020505@intel.com>
+ <20140721080219.GA4183@krava.redhat.com>
+ <53CCD3A7.5070002@intel.com>
+ <20140721095415.GB8865@krava.redhat.com>
+ <87d2cy3c7m.fsf@tassilo.jf.intel.com>
+ <53CD5AB5.3000307@intel.com>
+ <53CD5DC6.3030605@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <mvmr41aj2ob.fsf@hawking.suse.de>
-References: <mvmvbri4k06.fsf@hawking.suse.de>
-	<CAKv+Gu-NAVjMR-Jkw=W-8f7M5FSsQOSdzYN6A0kHDd1m0WA8EA@mail.gmail.com>
-	<mvmr4264i1p.fsf@hawking.suse.de>
-	<CAKv+Gu8SbM_Z=ymBFb2D4EWJeo-6dWuKqE2YNOkqJTKLDEJcYA@mail.gmail.com>
-	<mvm4my7j5xh.fsf@hawking.suse.de>
-	<CAKv+Gu-6rUxUnF+dRuroDJqy2K2B5F0r7_bm0X-vyiuQ-83W5w@mail.gmail.com>
-	<CAKv+Gu96k7GOVR85EXtro3Lt0jjiJqxyvT9cwJZ1qc6uzq97bw@mail.gmail.com>
-	<mvmvbqmj3b2.fsf@hawking.suse.de>
-	<CAKv+Gu_9HRwAxkJjT3KRvDbupp0yzstyq1dXsXkTu9M6swdCKQ@mail.gmail.com>
-	<mvmr41aj2ob.fsf@hawking.suse.de>
-Date: Thu, 24 Jul 2014 16:18:13 +0200
-Message-ID: <CAKv+Gu_z4VTssLDhiQxi8DRJNEUgzrM5bFzje8NXEmBiA2vqeg@mail.gmail.com>
-Subject: Re: [PATCH] arm64/crypto: fix makefile rule for aes-glue-%.o
-From: Ard Biesheuvel <ard.biesheuvel@linaro.org>
-To: Andreas Schwab <schwab@suse.de>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53CD5DC6.3030605@gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24 July 2014 15:40, Andreas Schwab <schwab@suse.de> wrote:
-> Ard Biesheuvel <ard.biesheuvel@linaro.org> writes:
->
->> On 24 July 2014 15:26, Andreas Schwab <schwab@suse.de> wrote:
->>> You are not using CONFIG_MODVERSIONS.
->>>
->>
->> I am
->
-> No, you aren't, since you say that your .cmd contains a command to
-> create aes-glue-ce.o, which with CONFIG_MODVERSIONS it doesn't.
->
+Em Mon, Jul 21, 2014 at 12:36:54PM -0600, David Ahern escreveu:
+> On 7/21/14, 12:23 PM, Adrian Hunter wrote:
+> >On 21/07/2014 7:31 p.m., Andi Kleen wrote:
+> >>Jiri Olsa <jolsa@redhat.com> writes:
+> >>>
+> >>>[jolsa@ibm-x3650m4-01 perf]$ sudo ./perf report --stdio
+> >>>Timestamp below last timeslice flush
+> >>>0x2276f58 [0x68]: failed to process type: 9
+> >>
+> >>FWIW we're seeing this frequently too.
+> >
+> >Jiri's example didn't work for me.  Do you have one?
+> 
+> $ perf sched record  -m 8192 -- perf bench sched all
+> # Running sched/messaging benchmark...
+> # 20 sender and receiver processes per group
+> # 10 groups == 400 processes run
+> 
+>      Total time: 0.087 [sec]
+> 
+> # Running sched/pipe benchmark...
+> # Executed 1000000 pipe operations between two processes
+> 
+>      Total time: 12.043 [sec]
+> 
+>       12.043779 usecs/op
+>           83030 ops/sec
+> 
+> [ perf record: Woken up 1 times to write data ]
+> [ perf record: Captured and wrote 289.549 MB perf.data (~12650569 samples) ]
+> 0x54b4828 [0]: failed to process type: 0
+> 
+> No overload condition, no dropped chunks message - yet can't process events.
 
-OK, you're right, it contains a command to create .tmp_aes-glue-ce.o.
-But I am still not seeing the error you are seeing, strangely enough.
+Appling just the patches 1 and 17 from this series I managed to:
+
+[root@zoo ~]# cat /proc/loadavg 
+52.13 13.06 5.04 132/977 29522
+[root@zoo ~]# perf sched record  -m 4096 -- perf bench sched all
+# Running sched/messaging benchmark...
+# 20 sender and receiver processes per group
+# 10 groups == 400 processes run
+
+     Total time: 0.692 [sec]
+
+# Running sched/pipe benchmark...
+# Executed 1000000 pipe operations between two processes
+
+     Total time: 13.007 [sec]
+
+      13.007582 usecs/op
+          76878 ops/sec
+
+[ perf record: Woken up 105 times to write data ]
+[ perf record: Captured and wrote 909.513 MB perf.data (~39737216 samples) ]
+[root@zoo ~]# cat /proc/loadavg 
+80.30 22.82 8.49 132/968 31755
+[root@zoo ~]# perf script | wc -l
+8308492
+[root@zoo ~]# perf cript | head -10
+ perf 9897 [01] 1.29678: sched:sched_stat_runtime: comm=perf pid=29897 runtime=916836 [ns] vruntime=1322281938410 [ns]
+ perf 9897 [01] 1.29683: sched:sched_wakeup: comm=perf pid=29919 prio=120 success=1 target_cpu=001
+ perf 9897 [01] 1.29688: sched:sched_switch: prev_comm=perf prev_pid=29897 prev_prio=120 prev_state=R ==> next_comm=perf next_pid=29919 next_prio=120
+ perf 9919 [01] 1.29748: sched:sched_stat_runtime: comm=perf pid=29919 runtime=70430 [ns] vruntime=1322273008840 [ns]
+  cc1 7110 [03] 1.29748: sched:sched_stat_runtime: comm=cc1 pid=27110 runtime=992012 [ns] vruntime=702438664528 [ns]
+  cc1 9278 [00] 1.29748: sched:sched_stat_runtime: comm=cc1 pid=29278 runtime=979081 [ns] vruntime=583946650623 [ns]
+  cc1 7781 [02] 1.29749: sched:sched_stat_runtime: comm=cc1 pid=27781 runtime=989627 [ns] vruntime=714050072391 [ns]
+  cc1 9278 [00] 1.29756: sched:sched_switch: prev_comm=cc1 prev_pid=29278 prev_prio=120 prev_state=R ==> next_comm=cc1 next_pid=29128 next_prio=120
+  cc1 7110 [03] 1.29757: sched:sched_switch: prev_comm=cc1 prev_pid=27110 prev_prio=120 prev_state=R ==> next_comm=cc1 next_pid=29586 next_prio=120
+ perf 9919 [01] 1.29914: sched:sched_wakeup: comm=migration/1 pid=12 prio=0 success=1 target_cpu=001
+[root@zoo ~]#
+
+While doing a make -j128 allmodconfig on a 4way machine.
+
+David, can I have your Acked-by for just those two while the rest is debated?
+
+Adrian, can I have yours as well?
+
+- Arnaldo
