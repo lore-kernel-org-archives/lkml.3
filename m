@@ -1,63 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935035AbaGXKOB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 06:14:01 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:13926 "EHLO mx1.redhat.com"
+	id S933543AbaGXKOK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 06:14:10 -0400
+Received: from smtp.ispras.ru ([83.149.199.79]:50861 "EHLO smtp.ispras.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934964AbaGXKNu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 06:13:50 -0400
-From: Andrew Jones <drjones@redhat.com>
-To: linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Cc: uobergfe@redhat.com, dzickus@redhat.com, pbonzini@redhat.com,
-        akpm@linux-foundation.org, mingo@redhat.com
-Subject: [PATCH 3/3] kvm: ensure hard lockup detection is disabled by default
-Date: Thu, 24 Jul 2014 12:13:31 +0200
-Message-Id: <1406196811-5384-4-git-send-email-drjones@redhat.com>
-In-Reply-To: <1406196811-5384-1-git-send-email-drjones@redhat.com>
-References: <1406196811-5384-1-git-send-email-drjones@redhat.com>
+	id S932943AbaGXKOH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jul 2014 06:14:07 -0400
+Message-ID: <53D0DC8C.7050406@ispras.ru>
+Date: Thu, 24 Jul 2014 14:14:36 +0400
+From: Andrey Tsyvarev <tsyvarev@ispras.ru>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Gu Zheng <guz.fnst@cn.fujitsu.com>, Chao Yu <chao2.yu@samsung.com>
+CC: "'Jaegeuk Kim'" <jaegeuk@kernel.org>,
+        "'linux-kernel'" <linux-kernel@vger.kernel.org>,
+        "'Alexey Khoroshilov'" <khoroshilov@ispras.ru>,
+        linux-f2fs-devel@lists.sourceforge.net
+Subject: Re: [f2fs-dev] f2fs: Possible use-after-free when umount filesystem
+References: <52F320FC.50803@ispras.ru> <534BC29B.3020408@ispras.ru> <53CCF1EC.30008@ispras.ru> <53CDC9AF.2050605@cn.fujitsu.com> <53CE3722.60307@ispras.ru> <000001cfa61b$c693b350$53bb19f0$@samsung.com> <53CF2E61.3000601@cn.fujitsu.com>
+In-Reply-To: <53CF2E61.3000601@cn.fujitsu.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ulrich Obergfell <uobergfe@redhat.com>
+Hi,
 
-Use watchdog_enable_hardlockup_detector() to set hard lockup detection's
-default value to false. It's risky to run this detection in a guest, as
-false positives are easy to trigger, especially if the host is
-overcommitted.
+With patch skipping invalidating pages for node_inode and meta_inode 
+use-after-free error disappears too.
 
-Signed-off-by: Ulrich Obergfell <uobergfe@redhat.com>
-Signed-off-by: Andrew Jones <drjones@redhat.com>
----
- arch/x86/kernel/kvm.c | 8 ++++++++
- 1 file changed, 8 insertions(+)
+23.07.2014 7:39, Gu Zheng пишет:
+> Hi,
+> On 07/23/2014 10:12 AM, Chao Yu wrote:
+>
+>> Hi Andrey Gu,
+>>
+>>> -----Original Message-----
+>>> From: Andrey Tsyvarev [mailto:tsyvarev@ispras.ru]
+>>> Sent: Tuesday, July 22, 2014 6:04 PM
+>>> To: Gu Zheng
+>>> Cc: Jaegeuk Kim; linux-kernel; Alexey Khoroshilov; linux-f2fs-devel@lists.sourceforge.net
+>>> Subject: Re: [f2fs-dev] f2fs: Possible use-after-free when umount filesystem
+>>>
+>>> Hi Gu,
+>>>
+>>>>> Investigation shows, that f2fs_evict_inode, when called for 'meta_inode', uses
+>>> invalidate_mapping_pages() for 'node_inode'.
+>>>>> But 'node_inode' is deleted before 'meta_inode' in f2fs_put_super via iput().
+>>>>>
+>>>>> It seems that in common usage scenario this use-after-free is benign, because 'node_inode'
+>>> remains partially valid data even after kmem_cache_free().
+>>>>> But things may change if, while 'meta_inode' is evicted in one f2fs filesystem, another (mounted)
+>>> f2fs filesystem requests inode from cache, and formely
+>>>>> 'node_inode' of the first filesystem is returned.
+>>>> The analysis seems reasonable. Have you tried to swap the reclaim order of node_inde
+>>>> and meta_inode?
+>>>>
+>>>> diff --git a/fs/f2fs/super.c b/fs/f2fs/super.c
+>>>> index 870fe19..e114418 100644
+>>>> --- a/fs/f2fs/super.c
+>>>> +++ b/fs/f2fs/super.c
+>>>> @@ -430,8 +430,8 @@ static void f2fs_put_super(struct super_block *sb)
+>>>>           if (sbi->s_dirty && get_pages(sbi, F2FS_DIRTY_NODES))
+>>>>                   write_checkpoint(sbi, true);
+>>>>
+>>>> -       iput(sbi->node_inode);
+>>>>           iput(sbi->meta_inode);
+>>>> +       iput(sbi->node_inode);
+>>>>
+>>>>           /* destroy f2fs internal modules */
+>>>>           destroy_node_manager(sbi);
+>>>>
+>>>> Thanks,
+>>>> Gu
+>>> With reclaim order of node_inode and meta_inode swapped, use-after-free
+>>> error disappears.
+>>>
+>>> But shouldn't initialization order of these inodes be swapped too?
+>>> As meta_inode uses node_inode, it seems logical that it should be
+>>> initialized after it.
+> The initialization order dose not affect anything, so swapping the order dose not
+> make more sense here.
+>
+>> IMO, it's not easy to exchange order of initialization between meta_inode and
+>> node_inode, because we should use meta_inode in get_valid_checkpoint for valid
+>> cp first for usual verification, then init node_inode.
+> Yeah, but I think just moving node_inode's initialization to the front of meta_inode
+> dose not break anything.
+>
+>> As I checked, nids for both meta_inode and node_inode are reservation, so it's not
+>> necessary for us to invalidate pages which will never alloced.
+>>
+>> How about skipping it as following?
+> It seems the right way to fix this issue.
+>
+> To Andrey:
+> Could you please try this one?
+>
+> Thanks,
+> Gu
+>
+>> diff --git a/fs/f2fs/inode.c b/fs/f2fs/inode.c
+>> index 2cf6962..cafba3c 100644
+>> --- a/fs/f2fs/inode.c
+>> +++ b/fs/f2fs/inode.c
+>> @@ -273,7 +273,7 @@ void f2fs_evict_inode(struct inode *inode)
+>>   
+>>   	if (inode->i_ino == F2FS_NODE_INO(sbi) ||
+>>   			inode->i_ino == F2FS_META_INO(sbi))
+>> -		goto no_delete;
+>> +		goto out_clear;
+>>   
+>>   	f2fs_bug_on(get_dirty_dents(inode));
+>>   	remove_dirty_dir_inode(inode);
+>> @@ -295,6 +295,7 @@ void f2fs_evict_inode(struct inode *inode)
+>>   
+>>   	sb_end_intwrite(inode->i_sb);
+>>   no_delete:
+>> -	clear_inode(inode);
+>>   	invalidate_mapping_pages(NODE_MAPPING(sbi), inode->i_ino, inode->i_ino);
+>> +out_clear:
+>> +	clear_inode(inode);
+>>   }
+>>
+>>> --
+>>> Best regards,
+>>>
+>>> Andrey Tsyvarev
+>>> Linux Verification Center, ISPRAS
+>>> web:http://linuxtesting.org
+>>>
+>>>
+>>> ------------------------------------------------------------------------------
+>>> Want fast and easy access to all the code in your enterprise? Index and
+>>> search up to 200,000 lines of code with a free copy of Black Duck
+>>> Code Sight - the same software that powers the world's largest code
+>>> search on Ohloh, the Black Duck Open Hub! Try it now.
+>>> http://p.sf.net/sfu/bds
+>>> _______________________________________________
+>>> Linux-f2fs-devel mailing list
+>>> Linux-f2fs-devel@lists.sourceforge.net
+>>> https://lists.sourceforge.net/lists/listinfo/linux-f2fs-devel
+>> .
+>>
+>
+>
 
-diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
-index 3dd8e2c4d74a9..95c3cb16af3e5 100644
---- a/arch/x86/kernel/kvm.c
-+++ b/arch/x86/kernel/kvm.c
-@@ -35,6 +35,7 @@
- #include <linux/slab.h>
- #include <linux/kprobes.h>
- #include <linux/debugfs.h>
-+#include <linux/nmi.h>
- #include <asm/timer.h>
- #include <asm/cpu.h>
- #include <asm/traps.h>
-@@ -499,6 +500,13 @@ void __init kvm_guest_init(void)
- #else
- 	kvm_guest_cpu_init();
- #endif
-+
-+	/*
-+	 * Hard lockup detection is enabled by default. Disable it, as guests
-+	 * can get false positives too easily, for example if the host is
-+	 * overcommitted.
-+	 */
-+	watchdog_enable_hardlockup_detector(false);
- }
- 
- static noinline uint32_t __kvm_cpuid_base(void)
 -- 
-1.9.3
+Best regards,
+
+Andrey Tsyvarev
+Linux Verification Center, ISPRAS
+web:http://linuxtesting.org
 
