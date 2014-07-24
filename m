@@ -1,91 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934187AbaGXGio (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 02:38:44 -0400
-Received: from ozlabs.org ([103.22.144.67]:43978 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751248AbaGXGin (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 02:38:43 -0400
-Date: Thu, 24 Jul 2014 16:38:34 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>, Kukjin Kim <kgene.kim@samsung.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Mateusz Krawczuk <mat.krawczuk@gmail.com>,
+	id S934222AbaGXGm0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 02:42:26 -0400
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:36741 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934148AbaGXGmZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jul 2014 02:42:25 -0400
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+X-AuditID: cbfec7f4-b7fac6d000006cfe-e0-53d0aacdd256
+Content-transfer-encoding: 8BIT
+Message-id: <1406184144.8807.4.camel@AMDC1943>
+Subject: Re: [PATCH v2 1/2] clk: samsung: exynos4: Enable ARMCLK down feature
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Mike Turquette <mturquette@linaro.org>
+Cc: Tomasz Figa <t.figa@samsung.com>, Kukjin Kim <kgene.kim@samsung.com>,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Kyungmin Park <kyungmin.park@samsung.com>,
         Marek Szyprowski <m.szyprowski@samsung.com>,
-        Kishon Vijay Abraham I <kishon@ti.com>
-Subject: linux-next: manual merge of the usb tree with the samsung tree
-Message-ID: <20140724163834.430cf674@canb.auug.org.au>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/c_w9TM9BXeaI+tfo4eparA4"; protocol="application/pgp-signature"
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Date: Thu, 24 Jul 2014 08:42:24 +0200
+In-reply-to: <20140724001853.6419.551@quantum>
+References: <1405694193-29643-1-git-send-email-k.kozlowski@samsung.com>
+ <20140724001853.6419.551@quantum>
+X-Mailer: Evolution 3.10.4-0ubuntu1
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrPLMWRmVeSWpSXmKPExsVy+t/xK7pnV10INnj9Qcpi44z1rBa9C66y
+	WZxtesNusenxNVaLy7vmsFnMOL+PyWLtkbvsFk8nXGSzWD/jNYsDp8eda3vYPDYvqffo27KK
+	0ePzJrkAligum5TUnMyy1CJ9uwSujNfH17AVbDaoOPv5DGMD41SlLkYODgkBE4mX7WpdjJxA
+	ppjEhXvr2boYuTiEBJYySlz9PYUJJMErICjxY/I9FpB6ZgF5iSOXskHCzALqEpPmLWKGqP/M
+	KHFr+1MWiHo9iRfHFrKC2MICvhKLvnxgB7HZBIwlNi9fwgZiiwhoSWw70Aq2jFngOJPEsXNb
+	wJaxCKhKNE7rYARZxgk0aHmbKEhYSCBbonHSLhaIQ5Ul5u0/xjSBUWAWkvNmIZw3C8l5CxiZ
+	VzGKppYmFxQnpeca6hUn5haX5qXrJefnbmKEBPqXHYyLj1kdYhTgYFTi4WV4eCpYiDWxrLgy
+	9xCjBAezkghvaemFYCHelMTKqtSi/Pii0pzU4kOMTBycUg2M8ziZ9ymsvlPCxl+pciqpmXvD
+	xzcms00n3Zki8PJy69sSzeRtftIvpiTsuZfJV6yot3wOo7FQwjV5ZT+pYxN8J9uueDpT75ZO
+	zvVSAZ476RNyj6x1ONbw/kOOko7vxmQD+wObi9nPrgpPfhS/1cGTKV2sZDLnj0U/hBdEt3mv
+	nW7BHaBcFr1LiaU4I9FQi7moOBEACxxPs1ICAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/c_w9TM9BXeaI+tfo4eparA4
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On śro, 2014-07-23 at 17:18 -0700, Mike Turquette wrote:
+> Quoting Krzysztof Kozlowski (2014-07-18 07:36:32)
+> > Enable ARMCLK down feature on all Exynos4 SoCs. The frequency of
+> > ARMCLK will be reduced upon entering idle mode (WFI or WFE).
+> > 
+> > The feature behaves like very fast cpufreq ondemand governor. In idle
+> > mode this reduces energy consumption on full frequency chosen by
+> > cpufreq governor by approximately:
+> >  - Trats2:  6.5% (153 mA -> 143 mA)
+> >  - Trats:  33.0% (180 mA -> 120 mA)
+> >  - Gear1:  27.0% (180 mA -> 130 mA)
+> 
+> Nice power savings! Just a quick question on this feature: the clock
+> frequency is changed in hardware as a result of WFI/WFE?
 
-Hi Greg,
+Yes. This feature makes changes in DIVCORE and DIVCORE2 clock dividers
+when given core enters WFI/WFE.
 
-Today's linux-next merge of the usb tree got a conflict in
-drivers/phy/phy-samsung-usb2.c between commit 949ccc3a9363 ("phy: Add
-support for S5PV210 to the Exynos USB 2.0 PHY driver") from the samsung
-tree and commit 016e0d3cb72c ("drivers: phy: exynos-usb2: add support
-for Exynos 3250") from the usb tree.
+> And this only
+> happens when all CPUs in a cluster (e.g. all 4 CPUs in Exynos 4412) are
+> in WFI/WFE state?
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+No, this is per-core. However measured energy savings above were in case
+where all cores entered idle (WFI).
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Best regards,
+Krzysztof
 
-diff --cc drivers/phy/phy-samsung-usb2.c
-index 29e4ab987645,ae30640a411d..000000000000
---- a/drivers/phy/phy-samsung-usb2.c
-+++ b/drivers/phy/phy-samsung-usb2.c
-@@@ -87,12 -87,12 +87,18 @@@ static struct phy *samsung_usb2_phy_xla
-  }
- =20
-  static const struct of_device_id samsung_usb2_phy_of_match[] =3D {
- +#ifdef CONFIG_PHY_S5PV210_USB2
- +	{
- +		.compatible =3D "samsung,s5pv210-usb2-phy",
- +		.data =3D &s5pv210_usb2_phy_config,
- +	},
- +#endif
-+ #ifdef CONFIG_PHY_EXYNOS4X12_USB2
-+ 	{
-+ 		.compatible =3D "samsung,exynos3250-usb2-phy",
-+ 		.data =3D &exynos3250_usb2_phy_config,
-+ 	},
-+ #endif
-  #ifdef CONFIG_PHY_EXYNOS4210_USB2
-  	{
-  		.compatible =3D "samsung,exynos4210-usb2-phy",
 
---Sig_/c_w9TM9BXeaI+tfo4eparA4
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+> 
+> Thanks,
+> Mike
+> 
+> > 
+> > The patch uses simillar settings as Exynos5250 (clk-exynos5250.c),
+> > except it disables clock up feature and on Exynos4412 ARMCLK down is
+> > enabled for all 4 cores.
+> > 
+> > Tested on Trats board (Exynos4210), Trats2 board (Exynos4412) and
+> > Samsung Gear 1 (Exynos4212).
+> > 
+> > Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+> > 
+> > ---
+> > 
+> > Changes since v1:
+> > 1. Add PWR_CTRL registers to the list of saved clk registers on
+> >    Exynos4x12. Suggested by Tomasz Figa.
+> > 2. Disable the clock up feature. (sug. Tomasz Figa)
+> > 3. Use macros for setting clock down ratio. (sug. Tomasz Figa)
+> > 4. Use num_possible_cpus() for exception on Exynos4x12. (sug. Tomasz
+> >    Figa)
+> > 5. Enable the clock down feature also on Exynos4210 Trats board.
+> > ---
+> >  drivers/clk/samsung/clk-exynos4.c | 46 +++++++++++++++++++++++++++++++++++++++
+> >  1 file changed, 46 insertions(+)
+> > 
+> > diff --git a/drivers/clk/samsung/clk-exynos4.c b/drivers/clk/samsung/clk-exynos4.c
+> > index 7f4a473a7ad7..86c7709dc6d6 100644
+> > --- a/drivers/clk/samsung/clk-exynos4.c
+> > +++ b/drivers/clk/samsung/clk-exynos4.c
+> > @@ -114,11 +114,27 @@
+> >  #define DIV_CPU1               0x14504
+> >  #define GATE_SCLK_CPU          0x14800
+> >  #define GATE_IP_CPU            0x14900
+> > +#define PWR_CTRL1              0x15020
+> > +#define E4X12_PWR_CTRL2                0x15024
+> >  #define E4X12_DIV_ISP0         0x18300
+> >  #define E4X12_DIV_ISP1         0x18304
+> >  #define E4X12_GATE_ISP0                0x18800
+> >  #define E4X12_GATE_ISP1                0x18804
+> >  
+> > +/* Below definitions are used for PWR_CTRL settings */
+> > +#define PWR_CTRL1_CORE2_DOWN_RATIO(x)          (((x) & 0x7) << 28)
+> > +#define PWR_CTRL1_CORE1_DOWN_RATIO(x)          (((x) & 0x7) << 16)
+> > +#define PWR_CTRL1_DIV2_DOWN_EN                 (1 << 9)
+> > +#define PWR_CTRL1_DIV1_DOWN_EN                 (1 << 8)
+> > +#define PWR_CTRL1_USE_CORE3_WFE                        (1 << 7)
+> > +#define PWR_CTRL1_USE_CORE2_WFE                        (1 << 6)
+> > +#define PWR_CTRL1_USE_CORE1_WFE                        (1 << 5)
+> > +#define PWR_CTRL1_USE_CORE0_WFE                        (1 << 4)
+> > +#define PWR_CTRL1_USE_CORE3_WFI                        (1 << 3)
+> > +#define PWR_CTRL1_USE_CORE2_WFI                        (1 << 2)
+> > +#define PWR_CTRL1_USE_CORE1_WFI                        (1 << 1)
+> > +#define PWR_CTRL1_USE_CORE0_WFI                        (1 << 0)
+> > +
+> >  /* the exynos4 soc type */
+> >  enum exynos4_soc {
+> >         EXYNOS4210,
+> > @@ -155,6 +171,7 @@ static unsigned long exynos4210_clk_save[] __initdata = {
+> >         E4210_GATE_IP_LCD1,
+> >         E4210_GATE_IP_PERIR,
+> >         E4210_MPLL_CON0,
+> > +       PWR_CTRL1,
+> >  };
+> >  
+> >  static unsigned long exynos4x12_clk_save[] __initdata = {
+> > @@ -164,6 +181,8 @@ static unsigned long exynos4x12_clk_save[] __initdata = {
+> >         E4X12_DIV_ISP,
+> >         E4X12_DIV_CAM1,
+> >         E4X12_MPLL_CON0,
+> > +       PWR_CTRL1,
+> > +       E4X12_PWR_CTRL2,
+> >  };
+> >  
+> >  static unsigned long exynos4_clk_pll_regs[] __initdata = {
+> > @@ -1164,6 +1183,32 @@ static struct samsung_pll_clock exynos4x12_plls[nr_plls] __initdata = {
+> >                         VPLL_LOCK, VPLL_CON0, NULL),
+> >  };
+> >  
+> > +static void __init exynos4_core_down_clock(enum exynos4_soc soc)
+> > +{
+> > +       unsigned int tmp;
+> > +
+> > +       /*
+> > +        * Enable arm clock down (in idle) and set arm divider
+> > +        * ratios in WFI/WFE state.
+> > +        */
+> > +       tmp = (PWR_CTRL1_CORE2_DOWN_RATIO(7) | PWR_CTRL1_CORE1_DOWN_RATIO(7) |
+> > +               PWR_CTRL1_DIV2_DOWN_EN | PWR_CTRL1_DIV1_DOWN_EN |
+> > +               PWR_CTRL1_USE_CORE1_WFE | PWR_CTRL1_USE_CORE0_WFE |
+> > +               PWR_CTRL1_USE_CORE1_WFI | PWR_CTRL1_USE_CORE0_WFI);
+> > +       /* On Exynos4412 enable it also on core 2 and 3 */
+> > +       if (num_possible_cpus() == 4)
+> > +               tmp |= PWR_CTRL1_USE_CORE3_WFE | PWR_CTRL1_USE_CORE2_WFE |
+> > +                      PWR_CTRL1_USE_CORE3_WFI | PWR_CTRL1_USE_CORE2_WFI;
+> > +       __raw_writel(tmp, reg_base + PWR_CTRL1);
+> > +
+> > +       /*
+> > +        * Disable the clock up feature on Exynos4x12, in case it was
+> > +        * enabled by bootloader.
+> > +        */
+> > +       if (exynos4_soc == EXYNOS4X12)
+> > +               __raw_writel(0x0, reg_base + E4X12_PWR_CTRL2);
+> > +}
+> > +
+> >  /* register exynos4 clocks */
+> >  static void __init exynos4_clk_init(struct device_node *np,
+> >                                     enum exynos4_soc soc)
+> > @@ -1250,6 +1295,7 @@ static void __init exynos4_clk_init(struct device_node *np,
+> >         samsung_clk_register_alias(ctx, exynos4_aliases,
+> >                         ARRAY_SIZE(exynos4_aliases));
+> >  
+> > +       exynos4_core_down_clock(soc);
+> >         exynos4_clk_sleep_init();
+> >  
+> >         pr_info("%s clocks: sclk_apll = %ld, sclk_mpll = %ld\n"
+> > -- 
+> > 1.9.1
+> > 
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJT0KnwAAoJEMDTa8Ir7ZwVKUcP/j/uNkcQlllF70lA3mvLlKPm
-1nqDjWKeAqzYsnnf1Mdd78Pe99pIEP5LdtW6BuoaCg7DhLHmSzhZbxtZshOAsS/b
-06kq6xBnP/jMRMJyFfKWn6T4znW89FQfTEAe/AzMBi5qrvHNuWmbb2LSF8fKp1YU
-fwI3uwlSaTdFT7lLo0WTaCxHmn1xgUTFTECeGyf+s1093WTFTsmcXM2Zb7EPMyzy
-vpkMBWaOFVRgMgIQbixL2mDlymQZOleEPekIZckrRj16yhau1gClR+Yi10TCwiSx
-PzZlldNUJ+qu0WVG778qiQ5+YNKlUlX056dc4MQBkSIDDWM6XgNPakJU2xVCobCO
-eB3TYho9ZyTXCwKWh7ZJIfqADFVyZvkSwPNFmxRcRfDF3d4rkMaR4L7pLNe8siTL
-uJr4/lw9CswO0eXD4i3Cd8L1WRawcHAq4HXTnWF7YPnrc6NqWjxUAd/ndNOkG8Zu
-uclVzZscQeExz8iP/HazpFkTPiwaG8BLSUaWNah6TD4AG6f6GZphYoisKa63tO6p
-t5AnHkvdcVLmpGAwS2S68NC6hmLLuxKREq4OTo58RYhANyb4vxw47VTuCrwdWNZy
-DYd+UG86P9++7s63VDKBQijdFFNMqnupj5xa6n9Lf1fLvXRnRjczmGCX5gOZezrk
-fWsFIBKwiKcGg6EgYWyb
-=Kkfh
------END PGP SIGNATURE-----
-
---Sig_/c_w9TM9BXeaI+tfo4eparA4--
