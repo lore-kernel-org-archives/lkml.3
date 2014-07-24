@@ -1,120 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759576AbaGXQYx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 12:24:53 -0400
-Received: from mail-qg0-f47.google.com ([209.85.192.47]:35698 "EHLO
-	mail-qg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759002AbaGXQYu (ORCPT
+	id S1759591AbaGXQ2E (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 12:28:04 -0400
+Received: from mout.kundenserver.de ([212.227.126.131]:60771 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759397AbaGXQ2A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 12:24:50 -0400
-Date: Thu, 24 Jul 2014 12:24:45 -0400
-From: Jeff Layton <jlayton@poochiereds.net>
-To: Joe Perches <joe@perches.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@ZenIV.linux.org.uk>,
-        David Teigland <teigland@redhat.com>,
-        Christine Caulfield <ccaulfie@redhat.com>,
-        "J. Bruce Fields" <bfields@fieldses.org>,
-        Trond Myklebust <trond.myklebust@primarydata.com>,
-        cluster-devel@redhat.com, linux-kernel@vger.kernel.org,
-        linux-nfs@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH 9/9] fs: dlm: lockd: Convert int result to unsigned char
- type
-Message-ID: <20140724122445.2ebd1b23@tlielax.poochiereds.net>
-In-Reply-To: <1406174039.2755.71.camel@joe-AO725>
-References: <cover.1405879494.git.joe@perches.com>
-	<65b9ba0dba9c79a938267d5bed7ed0a8211e89ed.1405879494.git.joe@perches.com>
-	<20140723141139.2cf90cb0@tlielax.poochiereds.net>
-	<1406174039.2755.71.camel@joe-AO725>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.22; x86_64-redhat-linux-gnu)
+	Thu, 24 Jul 2014 12:28:00 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Peter Griffin <peter.griffin@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
+        patrice.chotard@st.com, linux-kernel@vger.kernel.org,
+        Alan Stern <stern@rowland.harvard.edu>, srinivas.kandagatla@gmail.com,
+        lee.jones@linaro.org, maxime.coquelin@st.com
+Subject: Re: [PATCH v2 1/3] usb: host: st-hcd: Add USB HCD support for STi SoCs
+Date: Thu, 24 Jul 2014 18:26:48 +0200
+Message-ID: <5840432.YNRZREIYz5@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140724141412.GA21823@griffinp-ThinkPad-X1-Carbon-2nd>
+References: <1406199616-10533-1-git-send-email-peter.griffin@linaro.org> <5967609.vndF2bDyS1@wuerfel> <20140724141412.GA21823@griffinp-ThinkPad-X1-Carbon-2nd>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:2juFTmmwEvvEFbmSegm8mZKq6THnv/BTZEuY/r4rYlC
+ QWrTbYlLbAXdgJKFe56a67GhaKjgzoOvFmPL/wLIxXq3SiZTaQ
+ nTDlQ5woVbNIE03qRVTclpwQCVJXaFmNVA3aCsiY183vmnwwIm
+ G/2OvjBqdwvqV9v58vwTUoEUDuVzW9jEt7gyaQyylYKkwdGVsF
+ 0JtUGh9OWtnePOLKiWS9jCi9iLgK1WcHDR0Owz3uoO1p7mL8wG
+ LHSYJ1L7wrlErHTd2epCPCVuRFNZXlAnAtosdoxHBKdiMT3/ui
+ CC3kEADjOu5kZeJxk+gwWmyy6YhDZcky7kTHAF9UPzqDX1DBny
+ i37Oe34vaHvHJ0FctbkQ=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 23 Jul 2014 20:53:59 -0700
-Joe Perches <joe@perches.com> wrote:
+On Thursday 24 July 2014 15:14:12 Peter Griffin wrote:
 
-> On Wed, 2014-07-23 at 14:11 -0400, Jeff Layton wrote:
-> > On Sun, 20 Jul 2014 11:23:43 -0700 Joe Perches <joe@perches.com> wrote:
-> > > op->info.rv is an s32, but it's only used as a u8.
-> > I don't understand this patch. info.rv is s32 (and I assume that "rv"
-> > stands for "return value").
+> > > > Depending on what kind of special requirements the ST version has,
+> > > > this can be done either by using the generic ohci/ehci bindings
+> > > > with extensions where necessary, or by creating a new binding and
+> > > > new driver files that use 'ohci_init_driver'/'ehci_init_driver'
+> > > > to inherit from the common code.
+> > > > 
+> > > > The first of the two approaches is preferred.
+> > > 
+> > > We don't have anything particularly special, just a couple of reset lines,
+> > > clock, phy, etc.
+> > 
+> > Ok, good. Please see Documentation/devicetree/bindings/usb/usb-?hci.txt
+> > then. You might actually be able to just use the existing drivers
+> > without new code by just adding the proper DT nodes that follow these
+> > bindings.
 > 
-> In this case it's not a return value but an input.
-> 
+> The only issues I can see with the generic versions are: -
+> 1) We also have a powerdown line in addition to the reset line both of which are 
+> exposed via reset controller API, so I would need to add that into ehci-platform
+> and ohci-platform.
 
-Well, it's an input into the lm_grant callback, but it originally comes
-in the downcall from userland (AFAICT). In this case, I'm referring to
-the field in the downcall.
+Ok, adding this would not be too hard.
 
-> > What I don't get is why you think it's just
-> > used as a u8.
-> 
-> Because it's tested only in nlmsvc_grant_deferred
-> and nlmsvc_update_deferred_block against 0.
-> 
-> As far as I can tell, it's not possible to set it
-> to a negative value.
-> 
+> 2) We have a magic poke in st_ehci_configure_bus of the current driver to configure
+> the AHB to ST bus protocol convertor IP. I'm not quite sure where I could hook that
+> in (sorry... slightly pulling back on my "nothing special comment" a bit ;-).
 
-It's been a while since I've looked over the lockd code, but I believe
-it's just a flag that indicates whether there is still a conflict
-between the block and the lock on the file.
+Hmm, doing this would require adding some form of quirk, either by compatible
+string or using an extra DT property for detection.
 
-> > It seems to be used more like a bool than anything else,
-> > and I'm not sure that "type" is really a good description for it. Maybe
-> > it should be a "bool" and named "conflict",
-> 
-> Maybe.  But it seemed likely and possible to expand
-> it from a single bool to a value.
-> 
-> > given the comments in dlm_posix_get ?
-> 
-> Maybe, though I don't see how the comments relate to
-> this change.  The rv value returned from that call
-> is either -ENOMEM or 0 and is unchanged by this patch.
-> 
+> 3) We also set the rate of the ohci clock, which the generic driver doesn't do.
 
-I don't think that patch will break anything. I just don't see it as an
-improvement on what's already there.
+Hmm, I guess this is the reason why sometimes it's nice to have names associated
+with the clocks. The generic driver assumes that all clocks just need to be
+turned on, and we decided not to use any naming when that binding was introduced.
 
-The rationale for this is lost in antiquity, but I think the basic idea
-was that you're either granting or updating the block based on the
-_result_ from some check for a lock conflict. While "result" as a name
-is a little confusing, "type" is even more so, IMO.
+Each of these seems solvable, but the combination of these sounds like it
+would be better to create a new pair of drivers. I'd suggest you start by making
+a copy of ohci-platform and removing everything you don't need, then add support
+for the three things above. Give the clock a name, in case we want to merge the
+drivers again later.
 
-If you're hell-bent on changing this, then my suggestion would be
-to turn it into a bool and call it "conflict" or something similar. If
-you do decide to do that, adding some helpful kerneldoc comments would
-be a nice improvement too.
-
-> > > diff --git a/include/linux/fs.h b/include/linux/fs.h
-> []
-> > > @@ -842,7 +842,7 @@ struct lock_manager_operations {
-> > >  	int (*lm_compare_owner)(struct file_lock *fl1, struct file_lock *fl2);
-> > >  	unsigned long (*lm_owner_key)(struct file_lock *fl);
-> > >  	void (*lm_notify)(struct file_lock *fl);	/* unblock callback */
-> > > -	int (*lm_grant)(struct file_lock *fl, int result);
-> > > +	int (*lm_grant)(struct file_lock *fl, unsigned char type);
-> > >  	void (*lm_break)(struct file_lock *fl);
-> > >  	int (*lm_change)(struct file_lock **fl, int type);
-> > >  };
-> 
-> I used variable name "type" because that's what
-> lm_change uses.  No worries if you think a name
-> like conflict is better.
-> 
-> The only in-kernel setter of lm_grant is:
-> 
-> fs/lockd/svclock.c:     .lm_grant = nlmsvc_grant_deferred,
-> 
-> and for that, I think using a variable name of
-> "result" is misleading at best.
-> 
-
-
--- 
-Jeff Layton <jlayton@poochiereds.net>
+	Arnd
