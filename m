@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935458AbaGXKXY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 06:23:24 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54681 "EHLO
+	id S935441AbaGXKXW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 06:23:22 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54686 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758814AbaGXJrC (ORCPT
+	with ESMTP id S1758820AbaGXJrC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 24 Jul 2014 05:47:02 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Ilya Dryomov <ilya.dryomov@inktank.com>,
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 025/128] rbd: handle parent_overlap on writes correctly
-Date: Thu, 24 Jul 2014 10:44:34 +0100
-Message-Id: <1406195177-8656-26-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 026/128] lz4: ensure length does not wrap
+Date: Thu, 24 Jul 2014 10:44:35 +0100
+Message-Id: <1406195177-8656-27-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1406195177-8656-1-git-send-email-luis.henriques@canonical.com>
 References: <1406195177-8656-1-git-send-email-luis.henriques@canonical.com>
@@ -27,71 +27,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ilya Dryomov <ilya.dryomov@inktank.com>
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-commit 9638556a276125553549fdfe349c464481ec2f39 upstream.
+commit 206204a1162b995e2185275167b22468c00d6b36 upstream.
 
-The following check in rbd_img_obj_request_submit()
+Given some pathologically compressed data, lz4 could possibly decide to
+wrap a few internal variables, causing unknown things to happen.  Catch
+this before the wrapping happens and abort the decompression.
 
-    rbd_dev->parent_overlap <= obj_request->img_offset
-
-allows the fall through to the non-layered write case even if both
-parent_overlap and obj_request->img_offset belong to the same RADOS
-object.  This leads to data corruption, because the area to the left of
-parent_overlap ends up unconditionally zero-filled instead of being
-populated with parent data.  Suppose we want to write 1M to offset 6M
-of image bar, which is a clone of foo@snap; object_size is 4M,
-parent_overlap is 5M:
-
-    rbd_data.<id>.0000000000000001
-     ---------------------|----------------------|------------
-    | should be copyup'ed | should be zeroed out | write ...
-     ---------------------|----------------------|------------
-   4M                    5M                     6M
-                    parent_overlap    obj_request->img_offset
-
-4..5M should be copyup'ed from foo, yet it is zero-filled, just like
-5..6M is.
-
-Given that the only striping mode kernel client currently supports is
-chunking (i.e. stripe_unit == object_size, stripe_count == 1), round
-parent_overlap up to the next object boundary for the purposes of the
-overlap check.
-
-Signed-off-by: Ilya Dryomov <ilya.dryomov@inktank.com>
-Reviewed-by: Josh Durgin <josh.durgin@inktank.com>
+Reported-by: "Don A. Bailey" <donb@securitymouse.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/block/rbd.c | 10 +++++++++-
- 1 file changed, 9 insertions(+), 1 deletion(-)
+ lib/lz4/lz4_decompress.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/drivers/block/rbd.c b/drivers/block/rbd.c
-index eebf3d6ec8db..cabe12e8390b 100644
---- a/drivers/block/rbd.c
-+++ b/drivers/block/rbd.c
-@@ -1375,6 +1375,14 @@ static bool obj_request_exists_test(struct rbd_obj_request *obj_request)
- 	return test_bit(OBJ_REQ_EXISTS, &obj_request->flags) != 0;
- }
- 
-+static bool obj_request_overlaps_parent(struct rbd_obj_request *obj_request)
-+{
-+	struct rbd_device *rbd_dev = obj_request->img_request->rbd_dev;
-+
-+	return obj_request->img_offset <
-+	    round_up(rbd_dev->parent_overlap, rbd_obj_bytes(&rbd_dev->header));
-+}
-+
- static void rbd_obj_request_get(struct rbd_obj_request *obj_request)
- {
- 	dout("%s: obj %p (was %d)\n", __func__, obj_request,
-@@ -2662,7 +2670,7 @@ static int rbd_img_obj_request_submit(struct rbd_obj_request *obj_request)
- 	 */
- 	if (!img_request_write_test(img_request) ||
- 		!img_request_layered_test(img_request) ||
--		rbd_dev->parent_overlap <= obj_request->img_offset ||
-+		!obj_request_overlaps_parent(obj_request) ||
- 		((known = obj_request_known_test(obj_request)) &&
- 			obj_request_exists_test(obj_request))) {
+diff --git a/lib/lz4/lz4_decompress.c b/lib/lz4/lz4_decompress.c
+index 411be80ddb46..6423f018f907 100644
+--- a/lib/lz4/lz4_decompress.c
++++ b/lib/lz4/lz4_decompress.c
+@@ -72,6 +72,8 @@ static int lz4_uncompress(const char *source, char *dest, int osize)
+ 			len = *ip++;
+ 			for (; len == 255; length += 255)
+ 				len = *ip++;
++			if (unlikely(length > (size_t)(length + len)))
++				goto _output_error;
+ 			length += len;
+ 		}
  
 -- 
 1.9.1
