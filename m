@@ -1,88 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759726AbaGXP6z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 11:58:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20684 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759709AbaGXP6y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 11:58:54 -0400
-Date: Thu, 24 Jul 2014 17:58:44 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 4/6] perf report: Honor column width setting
-Message-ID: <20140724155843.GE25165@krava.brq.redhat.com>
-References: <1404883694-5342-1-git-send-email-namhyung@kernel.org>
- <1404883694-5342-5-git-send-email-namhyung@kernel.org>
- <20140724125751.GC7652@krava.brq.redhat.com>
- <20140724135747.GS20303@kernel.org>
- <20140724144906.GA25165@krava.brq.redhat.com>
- <CAM9d7cjnxBEsEmm2-QdXBNzxy402R-rbSHJ7bmi0njeTe0LW7g@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAM9d7cjnxBEsEmm2-QdXBNzxy402R-rbSHJ7bmi0njeTe0LW7g@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1759749AbaGXP7F (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 11:59:05 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:49743 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1759731AbaGXP7C convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jul 2014 11:59:02 -0400
+Date: Thu, 24 Jul 2014 17:58:48 +0200
+From: Boris BREZILLON <boris.brezillon@free-electrons.com>
+To: jiri.prchal@aksignal.cz
+Cc: Bo Shen <voice.shen@atmel.com>, nicolas.ferre@atmel.com,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org
+Subject: Re: [PATCH] ARM: at91: at91sam9x5: sets NPCS0 (PA14) back to GPIO
+Message-ID: <20140724175848.44f5da10@bbrezillon>
+In-Reply-To: <53D12103.3020103@aksignal.cz>
+References: <1405074175-22444-1-git-send-email-voice.shen@atmel.com>
+	<53D10C50.50305@aksignal.cz>
+	<20140724162645.4e19c26c@bbrezillon>
+	<53D12103.3020103@aksignal.cz>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 25, 2014 at 12:41:15AM +0900, Namhyung Kim wrote:
-> Hi guys,
-> 
-> On Thu, Jul 24, 2014 at 11:49 PM, Jiri Olsa <jolsa@redhat.com> wrote:
-> > On Thu, Jul 24, 2014 at 10:57:47AM -0300, Arnaldo Carvalho de Melo wrote:
-> >> Em Thu, Jul 24, 2014 at 02:57:51PM +0200, Jiri Olsa escreveu:
-> >> > On Wed, Jul 09, 2014 at 02:28:12PM +0900, Namhyung Kim wrote:
-> >> > > Set column width and do not change it if user gives -w/--column-widths
-> >> > > option.  It'll truncate longer symbols than the width if exists.
-> >> >
-> >> > SNIP
-> >> >
-> >> > > --- a/tools/perf/util/sort.c
-> >> > > +++ b/tools/perf/util/sort.c
-> >> > > @@ -70,7 +70,9 @@ static int hist_entry__thread_snprintf(struct hist_entry *he, char *bf,
-> >> > >                                  size_t size, unsigned int width)
-> >> > >  {
-> >> > >   const char *comm = thread__comm_str(he->thread);
-> >> > > - return repsep_snprintf(bf, size, "%-*s:%5d", width - 6,
-> >> > > +
-> >> > > + width = max(7U, width) - 6;
-> >> > > + return repsep_snprintf(bf, size, "%-*.*s:%5d", width, width,
-> >> > >                          comm ?: "", he->thread->tid);
-> >> > >  }
-> >> >
-> >> > also we now print out all sort headers left alligned, which is wrong for
-> >> > sort_thread header: "Command:  Pid' that mirrors value strings with ':'
-> >> > being aligned
-> >> >
-> >> > maybe something like in attached patch..?
-> >> >
-> >> > thanks,
-> >> > jirka
-> >> >
-> >> >
-> >> > ---
-> >> > diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
-> >> > index f89714329c0f..fbbe86b7f63c 100644
-> >> > --- a/tools/perf/util/sort.c
-> >> > +++ b/tools/perf/util/sort.c
-> >> > @@ -78,6 +78,7 @@ static int hist_entry__thread_snprintf(struct hist_entry *he, char *bf,
-> >> >
-> >> >  struct sort_entry sort_thread = {
-> >> >     .se_header      = "Command:  Pid",
-> >> > +   .se_header_right= true,
-> >>
-> >> Is this just for the header? Perhaps its more clearly named .se_right_justify?
-> >
-> > yep, it's just for header.. let's see Namhyung might have better
-> > idea how to handle this problem
-> 
-> I think it still needs to be left-aligned.  So I'd rather change the
-> order - i.e. "Pid: Command".  Is it okay for you?
+On Thu, 24 Jul 2014 17:06:43 +0200
+Jiří Prchal <jiri.prchal@aksignal.cz> wrote:
 
-yes, jirka
+> Hi,
+> 
+> Dne 24.7.2014 v 16:26 Boris BREZILLON napsal(a):
+> > Hello Jiří,
+> >
+> > First of all, please try to use git format-patch when submitting a
+> > patch to any kernel mailing list.
+> Sorry for that.
+> >
+> > On Thu, 24 Jul 2014 15:38:24 +0200
+> > Jiří Prchal <jiri.prchal@aksignal.cz> wrote:
+> >
+> >> After ROMBOOT tries boot from flash on SPI0 NPCS0, this NPCS0 (PA14) remains set to PERIPH_A.
+> >> Because of that, this pin is unusable to something else.
+> >> This patch sets it back to GPIO.
+> >
+> > The policy is to leave pins in an unknown state till some peripheral
+> > need them.
+> >
+> > What are you trying to use this pin for ?
+> For chip select, but #3. And when SPI communicate with cs0 (PA22), it goes down too (PA14), so 2 devices on bus were 
+> selected.
+
+Are you using a 9x5ek board or a custom one, in the latter case could
+you paste your spi0 node definition ?
+
+> > If you just want to use it as a chip select for an spi device, take a
+> > look at [1].
+> At [1] it's OK until as cs0 is for example PA22 and cs1 is PA14.
+
+If you want PA14 to control cs1 and PA22 to control cs0 (both
+configured as GPIOs), you'll have the following definition:
+
+cs-gpios = <&pioA 22 0>, <&pioA 14 0>, <0>, <0>;
+
+> >
+> > Here the gpio is requested by the spi core when defining the cs-gpios
+> > property. The gpio controller then request the listed pins to the pin
+> > controller (pinctrl driver).
+> GPIO is not set in driver as GPIO, at least I didn't find it.
+
+Take a look at [1], which is set as the gpio_request_enable callback,
+called by pinctrl core when a gpio is requested.
+
+
+[1]http://lxr.free-electrons.com/source/drivers/pinctrl/pinctrl-at91.c#L665
+
+
+-- 
+Boris Brezillon, Free Electrons
+Embedded Linux and Kernel engineering
+http://free-electrons.com
