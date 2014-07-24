@@ -1,53 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759594AbaGXQeM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 12:34:12 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:36489 "EHLO mail.skyhub.de"
+	id S1759547AbaGXQeK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 12:34:10 -0400
+Received: from unicorn.mansr.com ([81.2.72.234]:36063 "EHLO unicorn.mansr.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759037AbaGXQeI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1759002AbaGXQeI convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 24 Jul 2014 12:34:08 -0400
-Date: Thu, 24 Jul 2014 18:34:03 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Waiman Long <Waiman.Long@hp.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        USB list <linux-usb@vger.kernel.org>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>
-Subject: Re: Linux 3.16-rc6
-Message-ID: <20140724163403.GP19239@pd.tnic>
-References: <CA+55aFzJKxzw_as9iGgeM=MdQ6trUkQLDuoEr8nxj88sOqQnQA@mail.gmail.com>
- <20140723095327.GA23131@pd.tnic>
- <CA+55aFzPs4uF=eR7jCnpyBtgWNRkX-uDfXeo5u34VEvT8_yyzw@mail.gmail.com>
- <20140724064353.GW9918@twins.programming.kicks-ass.net>
- <20140724084126.GB19239@pd.tnic>
- <20140724122513.GM19239@pd.tnic>
- <20140724125814.GX6758@twins.programming.kicks-ass.net>
+From: =?iso-8859-1?Q?M=E5ns_Rullg=E5rd?= <mans@mansr.com>
+To: Nick Krause <xerofoify@gmail.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Greg KH <gregkh@linuxfoundation.org>,
+        John Stultz <john.stultz@linaro.org>, paul.gortmaker@windriver.com,
+        gang.chen.5i5j@gmail.com, yongjun_wei@trendmicro.com.cn,
+        Dan Carpenter <dan.carpenter@oracle.com>, tomas.winkler@intel.com,
+        "devel\@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] staging: Change kzalloc to kcalloc
+References: <1406156581-6052-1-git-send-email-xerofoify@gmail.com>
+	<20140724144725.GA32669@home.goodmis.org>
+	<20140724105132.3cf221c2@gandalf.local.home>
+	<yw1x38dqag24.fsf@unicorn.mansr.com>
+	<CAPDOMVgswyopjGxdRFW-bFRrTcpcNnkY=PqTCT9HbjjA=EZ1iw@mail.gmail.com>
+Date: Thu, 24 Jul 2014 17:34:05 +0100
+In-Reply-To: <CAPDOMVgswyopjGxdRFW-bFRrTcpcNnkY=PqTCT9HbjjA=EZ1iw@mail.gmail.com>
+	(Nick Krause's message of "Thu, 24 Jul 2014 12:31:05 -0400")
+Message-ID: <yw1xy4vi90n6.fsf@unicorn.mansr.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20140724125814.GX6758@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 24, 2014 at 02:58:14PM +0200, Peter Zijlstra wrote:
-> Of course we should have made the lockdep change before merging qrwlock,
-> and that's entirely my fail, but with qrwlock in these new semantics are
-> already a reality.
-> 
-> We could of course disable qrwlock until all such issues are cleared up
-> (its the safe option)...
+Nick Krause <xerofoify@gmail.com> writes:
 
-So we leave in the lockdep change and disable qrwlock ontop of
-tip/locking/core. Nothing's hurt yet as this whole pile is queued for
-3.17 anyway.
+> On Thu, Jul 24, 2014 at 12:15 PM, Måns Rullgård <mans@mansr.com> wrote:
+>> Steven Rostedt <rostedt@goodmis.org> writes:
+>>
+>>> On Thu, 24 Jul 2014 10:47:25 -0400
+>>> Steven Rostedt <rostedt@goodmis.org> wrote:
+>>>
+>>>> The three parameters are the number of elements, the size of each individual
+>>>> element, and then finally the flags used on how to allocate that memory.
+>>>> I have to say, you did get the flags part correct.
+>>>>
+>>>> Now lets look at what you did. For the size you had:
+>>>
+>>> That should have read "For the count you had:"
+>>>
+>>> Oh well, you get my point anyway.
+>>
+>> I have some doubts about the last bit.
+>
+> I am have this discussion with other kernel developers and just
+> because I send out one patch as a newbie like this doesn't mean I
+> don't known C.
+
+Now I no longer have doubts; I know for certain that the point didn't
+get across.
 
 -- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+Måns Rullgård
+mans@mansr.com
