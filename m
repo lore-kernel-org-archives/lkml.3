@@ -1,299 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932949AbaGXNEk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 09:04:40 -0400
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:58761 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932836AbaGXNEf (ORCPT
+	id S933165AbaGXNGI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 09:06:08 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:47312 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932836AbaGXNGE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 09:04:35 -0400
-From: Hanjun Guo <hanjun.guo@linaro.org>
-To: Catalin Marinas <catalin.marinas@arm.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Mark Rutland <mark.rutland@arm.com>
-Cc: Graeme Gregory <graeme.gregory@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
-        Grant Likely <grant.likely@linaro.org>,
-        Sudeep Holla <Sudeep.Holla@arm.com>, Will Deacon <will.deacon@arm.com>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Mark Brown <broonie@linaro.org>, Robert Richter <rric@kernel.org>,
-        Lv Zheng <lv.zheng@intel.com>, Robert Moore <robert.moore@intel.com>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Liviu Dudau <Liviu.Dudau@arm.com>,
-        Randy Dunlap <rdunlap@infradead.org>, Charles.Garcia-Tobin@arm.com,
-        linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linaro-acpi-private@linaro.org,
-        Hanjun Guo <hanjun.guo@linaro.org>
-Subject: [PATCH 19/19] Documentation: ACPI for ARM64
-Date: Thu, 24 Jul 2014 21:00:25 +0800
-Message-Id: <1406206825-15590-20-git-send-email-hanjun.guo@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1406206825-15590-1-git-send-email-hanjun.guo@linaro.org>
-References: <1406206825-15590-1-git-send-email-hanjun.guo@linaro.org>
+	Thu, 24 Jul 2014 09:06:04 -0400
+Message-ID: <53D104A6.4050402@oracle.com>
+Date: Thu, 24 Jul 2014 09:05:42 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>
+CC: Andi Kleen <ak@linux.intel.com>,
+        Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        Dave Hansen <dave.hansen@linux.intel.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Dave Chinner <david@fromorbit.com>, Ning Qu <quning@gmail.com>,
+        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Dave Jones <davej@redhat.com>,
+        Andrey Ryabinin <a.ryabinin@samsung.com>
+Subject: Re: [PATCHv3 1/2] mm: introduce vm_ops->map_pages()
+References: <1393530827-25450-1-git-send-email-kirill.shutemov@linux.intel.com> <1393530827-25450-2-git-send-email-kirill.shutemov@linux.intel.com> <53D07E96.5000006@oracle.com>
+In-Reply-To: <53D07E96.5000006@oracle.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Graeme Gregory <graeme.gregory@linaro.org>
+On 07/23/2014 11:33 PM, Sasha Levin wrote:
+> On 02/27/2014 02:53 PM, Kirill A. Shutemov wrote:
+>> > The patch introduces new vm_ops callback ->map_pages() and uses it for
+>> > mapping easy accessible pages around fault address.
+>> > 
+>> > On read page fault, if filesystem provides ->map_pages(), we try to map
+>> > up to FAULT_AROUND_PAGES pages around page fault address in hope to
+>> > reduce number of minor page faults.
+>> > 
+>> > We call ->map_pages first and use ->fault() as fallback if page by the
+>> > offset is not ready to be mapped (cold page cache or something).
+>> > 
+>> > Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+>> > ---
+> Hi all,
+> 
+> This patch triggers use-after-free when fuzzing using trinity and the KASAN
+> patchset.
 
-Add documentation for the guidelines of how to use ACPI
-on ARM64.
+FWIW, if it helps, here's another KASAN report with the conventional BUG following it:
 
-Signed-off-by: Graeme Gregory <graeme.gregory@linaro.org>
-Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
----
- Documentation/arm64/arm-acpi.txt |  240 ++++++++++++++++++++++++++++++++++++++
- 1 file changed, 240 insertions(+)
- create mode 100644 Documentation/arm64/arm-acpi.txt
+[  360.498001] ==================================================================
+[  360.500896] AddressSanitizer: use after free in do_read_fault.isra.40+0x3c2/0x510 at addr ffff880581ee3fd0
+[  360.504474] page:ffffea001607b8c0 count:0 mapcount:0 mapping:          (null) index:0x0
+[  360.507264] page flags: 0xefffff80000000()
+[  360.508655] page dumped because: kasan error
+[  360.509489] CPU: 8 PID: 9251 Comm: trinity-c159 Not tainted 3.16.0-rc6-next-20140723-sasha-00047-g289342b-dirty #929
+[  360.511717]  00000000000000ff 0000000000000000 ffffea001607b8c0 ffff8801ba8bbb98
+[  360.513272]  ffffffff8fe40903 ffff8801ba8bbc68 ffff8801ba8bbc58 ffffffff8b42acfc
+[  360.514729]  0000000000000001 ffff880592deaa48 ffff8801ba84b038 ffff8801ba8bbbd0
+[  360.516156] Call Trace:
+[  360.516622] dump_stack (lib/dump_stack.c:52)
+[  360.517566] kasan_report_error (mm/kasan/report.c:98 mm/kasan/report.c:166)
+[  360.518745] ? debug_smp_processor_id (lib/smp_processor_id.c:57)
+[  360.519923] ? preempt_count_sub (kernel/sched/core.c:2606)
+[  360.521124] ? put_lock_stats.isra.13 (./arch/x86/include/asm/preempt.h:98 kernel/locking/lockdep.c:254)
+[  360.522431] ? do_read_fault.isra.40 (mm/memory.c:2784 mm/memory.c:2849 mm/memory.c:2898)
+[  360.523651] __asan_load8 (mm/kasan/kasan.c:364)
+[  360.524625] ? do_read_fault.isra.40 (mm/memory.c:2864 mm/memory.c:2898)
+[  360.525887] do_read_fault.isra.40 (mm/memory.c:2864 mm/memory.c:2898)
+[  360.527156] ? __rcu_read_unlock (kernel/rcu/update.c:101)
+[  360.528251] handle_mm_fault (mm/memory.c:3092 mm/memory.c:3225 mm/memory.c:3345 mm/memory.c:3374)
+[  360.529308] ? vmacache_update (mm/vmacache.c:61)
+[  360.530505] ? find_vma (mm/mmap.c:2027)
+[  360.531453] __do_page_fault (arch/x86/mm/fault.c:1231)
+[  360.532503] ? context_tracking_user_exit (kernel/context_tracking.c:184)
+[  360.533744] ? __this_cpu_preempt_check (lib/smp_processor_id.c:63)
+[  360.535001] ? trace_hardirqs_off_caller (kernel/locking/lockdep.c:2639 (discriminator 8))
+[  360.536262] ? trace_hardirqs_off (kernel/locking/lockdep.c:2645)
+[  360.537360] trace_do_page_fault (arch/x86/mm/fault.c:1314 include/linux/jump_label.h:115 include/linux/context_tracking_state.h:27 include/linux/context_tracking.h:45 arch/x86/mm/fault.c:1315)
+[  360.538493] do_async_page_fault (arch/x86/kernel/kvm.c:279)
+[  360.539567] async_page_fault (arch/x86/kernel/entry_64.S:1321)
+[  360.540668] Read of size 8 by thread T9251:
+[  360.541485] Memory state around the buggy address:
+[  360.542463]  ffff880581ee3d00: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff
+[  360.543816]  ffff880581ee3d80: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff
+[  360.545116]  ffff880581ee3e00: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff
+[  360.546476]  ffff880581ee3e80: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff
+[  360.547806]  ffff880581ee3f00: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff
+[  360.549112] >ffff880581ee3f80: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff
+[  360.550507]                                                  ^
+[  360.551574]  ffff880581ee4000: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+[  360.552910]  ffff880581ee4080: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+[  360.554207]  ffff880581ee4100: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+[  360.555621]  ffff880581ee4180: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+[  360.557035]  ffff880581ee4200: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+[  360.558489] ==================================================================
+[  360.559804] BUG: unable to handle kernel paging request at ffff880581ee3fd0
+[  360.559817] IP: do_read_fault.isra.40 (mm/memory.c:2864 mm/memory.c:2898)
+[  360.559827] PGD 147b9067 PUD 70353d067 PMD 70352d067 PTE 8000000581ee3060
+[  360.559836] Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+[  360.559892] Dumping ftrace buffer:
+[  360.560117]    (ftrace buffer empty)
+[  360.560132] Modules linked in:
+[  360.560145] CPU: 8 PID: 9251 Comm: trinity-c159 Not tainted 3.16.0-rc6-next-20140723-sasha-00047-g289342b-dirty #929
+[  360.560154] task: ffff8801ba84b000 ti: ffff8801ba8b8000 task.ti: ffff8801ba8b8000
+[  360.560172] RIP: do_read_fault.isra.40 (mm/memory.c:2864 mm/memory.c:2898)
+[  360.560180] RSP: 0000:ffff8801ba8bbc98  EFLAGS: 00010296
+[  360.560186] RAX: 0000000000000000 RBX: ffff8801ba8d5a00 RCX: 0000000000000006
+[  360.560192] RDX: 0000000000000006 RSI: ffffffff912f5fd5 RDI: 0000000000000282
+[  360.560199] RBP: ffff8801ba8bbd58 R08: 0000000000000001 R09: 0000000000000000
+[  360.560206] R10: 0000000000000000 R11: 0000000000000000 R12: ffff8801ba8ad470
+[  360.560213] R13: 00007f2411bfa000 R14: 0000000000000000 R15: ffff880581ee3fd0
+[  360.560222] FS:  00007f2412de6700(0000) GS:ffff8801de000000(0000) knlGS:0000000000000000
+[  360.560228] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+[  360.560234] CR2: ffff880581ee3fd0 CR3: 00000001ba89b000 CR4: 00000000000006a0
+[  360.560255] DR0: 00000000006ec000 DR1: 0000000000000000 DR2: 0000000000000000
+[  360.560262] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 00000000000d0602
+[  360.560264] Stack:
+[  360.560278]  0000000000000001 0000000000000000 ffff880581ee4030 ffff880592deaa30
+[  360.560290]  0000000000000005 00007f2411c07000 ffff8801ba8d5a90 ffff880592deaa30
+[  360.560297]  0000000000000000 000000a8ba84b038 000000000000000c 00007f2411c06220
+[  360.560299] Call Trace:
+[  360.560317] ? __rcu_read_unlock (kernel/rcu/update.c:101)
+[  360.560332] handle_mm_fault (mm/memory.c:3092 mm/memory.c:3225 mm/memory.c:3345 mm/memory.c:3374)
+[  360.560345] ? vmacache_update (mm/vmacache.c:61)
+[  360.560358] ? find_vma (mm/mmap.c:2027)
+[  360.560370] __do_page_fault (arch/x86/mm/fault.c:1231)
+[  360.560386] ? context_tracking_user_exit (kernel/context_tracking.c:184)
+[  360.560400] ? __this_cpu_preempt_check (lib/smp_processor_id.c:63)
+[  360.560413] ? trace_hardirqs_off_caller (kernel/locking/lockdep.c:2639 (discriminator 8))
+[  360.560425] ? trace_hardirqs_off (kernel/locking/lockdep.c:2645)
+[  360.560432] trace_do_page_fault (arch/x86/mm/fault.c:1314 include/linux/jump_label.h:115 include/linux/context_tracking_state.h:27 include/linux/context_tracking.h:45 arch/x86/mm/fault.c:1315)
+[  360.560440] do_async_page_fault (arch/x86/kernel/kvm.c:279)
+[  360.560447] async_page_fault (arch/x86/kernel/entry_64.S:1321)
+[ 360.560458] Code: 47 f9 48 8b 8d 68 ff ff ff 48 29 f1 48 c1 e9 0c 49 8d 44 08 ff 48 39 c7 48 0f 46 c7 4c 89 ff 48 89 85 60 ff ff ff e8 3e 19 07 00 <49> 83 3f 00 0f 84 8f 00 00 00 49 83 c6 01 4c 39 b5 60 ff ff ff
+All code
+========
+   0:	47 f9                	rex.RXB stc
+   2:	48 8b 8d 68 ff ff ff 	mov    -0x98(%rbp),%rcx
+   9:	48 29 f1             	sub    %rsi,%rcx
+   c:	48 c1 e9 0c          	shr    $0xc,%rcx
+  10:	49 8d 44 08 ff       	lea    -0x1(%r8,%rcx,1),%rax
+  15:	48 39 c7             	cmp    %rax,%rdi
+  18:	48 0f 46 c7          	cmovbe %rdi,%rax
+  1c:	4c 89 ff             	mov    %r15,%rdi
+  1f:	48 89 85 60 ff ff ff 	mov    %rax,-0xa0(%rbp)
+  26:	e8 3e 19 07 00       	callq  0x71969
+  2b:*	49 83 3f 00          	cmpq   $0x0,(%r15)		<-- trapping instruction
+  2f:	0f 84 8f 00 00 00    	je     0xc4
+  35:	49 83 c6 01          	add    $0x1,%r14
+  39:	4c 39 b5 60 ff ff ff 	cmp    %r14,-0xa0(%rbp)
+	...
 
-diff --git a/Documentation/arm64/arm-acpi.txt b/Documentation/arm64/arm-acpi.txt
-new file mode 100644
-index 0000000..12cd550
---- /dev/null
-+++ b/Documentation/arm64/arm-acpi.txt
-@@ -0,0 +1,240 @@
-+ACPI on ARMv8 Servers
-+---------------------
-+
-+ACPI will be used for ARMv8 general purpose servers designed to follow
-+the SBSA specification (currently available to people with an ARM login at
-+http://silver.arm.com)
-+
-+The implemented ACPI version is 5.1 + errata as released by the UEFI Forum,
-+which is available at <http://www.uefi.org/acpi/specs>.
-+
-+If the machine does not meet these requirements then it is likely that Device
-+Tree (DT) is more suitable for the hardware.
-+
-+Relationship with Device Tree
-+-----------------------------
-+
-+ACPI support in drivers and subsystems for ARMv8 should never be mutually
-+exclusive with DT support at compile time.
-+
-+At boot time the kernel will only use one description method depending on
-+parameters passed from the bootloader.
-+
-+Regardless of whether DT or ACPI is used, the kernel must always be capable
-+of booting with either scheme.
-+
-+When booting using ACPI tables the /chosen node in DT will still be parsed
-+to extract the kernel command line and initrd path. No other section of
-+the DT will be used.
-+
-+Booting using ACPI tables
-+-------------------------
-+
-+Currently, the only defined method to pass ACPI tables to the kernel on ARMv8
-+is via the UEFI system configuration table.
-+
-+The UEFI implementation MUST set the ACPI_20_TABLE_GUID to point to the
-+RSDP table (the table with the ACPI signature "RSD PTR ").
-+
-+The pointer to the RSDP table will be retrieved from EFI by the ACPI core.
-+
-+Processing of ACPI tables may be disabled by passing acpi=off on the kernel
-+command line.
-+
-+DO use an XSDT, RSDTs are deprecated and should not be used on arm64. They
-+only allow for 32bit addresses.
-+
-+DO NOT use the 32-bit address fields in the FADT, they are deprecated, the
-+64-bit alternatives MUST be used.
-+
-+The minimum set of tables MUST include RSDP, XSDT, FACS, FADT, DSDT, MADT
-+and GTDT. If PCI is used the MCFG table MUST also be present.
-+
-+ACPI Detection
-+--------------
-+
-+Drivers should determine their probe() type by checking for ACPI_HANDLE,
-+or .of_node, or other information in the device structure. This is
-+detailed further in the "Driver Recomendations" section.
-+
-+If the presence of ACPI needs to be detected at runtime, then check the value
-+of acpi_disabled. If CONFIG_ACPI not being set acpi_disabled will always be 1.
-+
-+Device Enumeration
-+------------------
-+
-+Device descriptions in ACPI should use standard recognised ACPI interfaces.
-+These are far simpler than the information provided via Device Tree. Drivers
-+should take into account this simplicity and work with sensible defaults.
-+
-+On no account should a Device Tree attempt to be replicated in ASL using such
-+constructs as Name(KEY0, "Value1") type constructs. Additional driver specific
-+data should be passed in the appropriate _DSM (ACPI Section 9.14.1) method or
-+_DSD (ACPI Section 6.2.5). This data should be rare and not OS specific.
-+
-+Common _DSD bindings should be submitted to ASWG to be included in the
-+document :-
-+
-+http://www.uefi.org/sites/default/files/resources/_DSD-implementation-guide-toplevel.htm
-+
-+TODO: Clarification and examples from Juno implementation.
-+
-+Programmable Power Control Resources
-+------------------------------------
-+
-+Programmable power control resources include such resources as voltage/current
-+providers (regulators) and clock sources.
-+
-+For power control of these resources they should be represented with Power
-+Resource Objects (ACPI Section 7.1). The ACPI core will then handle correctly
-+enabling/disabling of resources as they are needed.
-+
-+There exists in the ACPI 5.1 specification no standard binding for these objects
-+to enable programmable levels or rates so this should be avoid if possible and
-+the resources set to appropriate level by the firmware. If this is not possible
-+then any manipulation should be abstracted in ASL.
-+
-+Each device in ACPI has D-states and these can be controlled through
-+the optional methods _PS0..._PS3 where _PS0 is full on and _PS3 is full off.
-+
-+If either _PS0 or _PS3 is implemented, then the other method must also be
-+implemented.
-+
-+If a device requires usage or setup of a power resource when on, the ASL
-+should organise that it is allocated/enabled using the _PS0 method.
-+
-+Resources allocated/enabled in the _PS0 method should be disabled/de-allocated
-+in the _PS3 method.
-+
-+Such code in _PS? methods will of course be very platform specific but
-+should allow the driver to operate the device without special non standard
-+values being read from ASL. Further, abstracting the use of these resources
-+allows hardware revisions without requiring updates to the kernel.
-+
-+TODO: Clarification and examples from Juno implementation.
-+
-+Clocks
-+------
-+
-+Like clocks that are part of the power resources there is no standard way
-+to represent a clock tree in ACPI 5.1 in a similar manner to how it is
-+described in DT.
-+
-+Devices affected by this include things like UARTs, SoC driven LCD displays,
-+etc.
-+
-+The firmware for example UEFI should initialise these clocks to fixed working
-+values before the kernel is executed. If a driver requires to know rates of
-+clocks set by firmware then they can be passed to kernel using _DSD.
-+
-+example :-
-+
-+Device (CLK0) {
-+	...
-+
-+	Name (_DSD, Package() {
-+		ToUUID("XXXXX"),
-+		Package() {
-+			Package(2) {"#clock-cells", 0},
-+			Package(2) {"clock-frequency", "10000"}
-+		}
-+	})
-+
-+	...
-+}
-+
-+Device (USR1) {
-+	...
-+
-+	Name (_DSD, Package() {
-+		ToUUID("XXXXX"),
-+		Package() {
-+			Package(2) {"clocks", Package() {1, ^CLK0}}},
-+		}
-+	})
-+
-+	...
-+}
-+			
-+Driver Recommendations
-+----------------------
-+
-+DO NOT remove any FDT handling when adding ACPI support for a driver, different
-+systems may use the same device.
-+
-+DO try and keep complex sections of ACPI and DT functionality seperate. This
-+may mean a patch to break out some complex DT to another function before
-+the patch to add ACPI. This may happen in other functions but is most likely
-+in probe function. This gives a clearer flow of data for reviewing driver
-+source.
-+
-+probe() :-
-+
-+TODO: replace this with a specific real example from Juno?
-+
-+static int device_probe_dt(struct platform_device *pdev)
-+{
-+	/* DT specific functionality */
-+	...
-+}
-+
-+static int device_probe_acpi(struct platform_device *pdev)
-+{
-+	/* ACPI specific functionality */
-+	...
-+}
-+
-+static int device_probe(stuct platform_device *pdev)
-+{
-+	...
-+	acpi_handle handle = ACPI_HANDLE(&pdev->dev);
-+	struct device_node node = pdev->dev.of_node;
-+	...
-+
-+	if (node)
-+		ret = device_probe_dt(pdev);
-+	else if (handle)
-+		ret = device_probe_acpi(pdev);
-+	else
-+		/* other initialisation */
-+		...
-+	/* Continue with any generic probe operations */
-+	...
-+}
-+
-+DO keep the MODULE_DEVICE_TABLE entries together in the driver to make it clear
-+the different names the driver is probed for, both from DT and from ACPI.
-+
-+module device tables :-
-+
-+static struct of_device_id virtio_mmio_match[] = {
-+        { .compatible = "virtio,mmio", },
-+        {},
-+};
-+MODULE_DEVICE_TABLE(of, virtio_mmio_match);
-+
-+static const struct acpi_device_id virtio_mmio_acpi_match[] = {
-+        { "LNRO0005", },
-+        { }
-+};
-+MODULE_DEVICE_TABLE(acpi, virtio_mmio_acpi_match);
-+
-+TODO: Add any other helpful rules that develop from Juno ACPI work.
-+
-+ASWG
-+----
-+
-+The following areas are not yet well defined for ARM in the current ACPI
-+specification and are expected to be worked through in the UEFI ACPI
-+Specification Working Group (ASWG) <http://www.uefi.org/workinggroups>.
-+Participation in this group is open to all UEFI members.
-+
-+	- ACPI based CPU topology
-+	- ACPI based Power management
-+	- CPU idle control based on PSCI
-+	- CPU performance control (CPPC)
-+
-+No code shall be accepted into the kernel unless it complies with the released
-+standards from UEFI ASWG. If there are features missing from ACPI to make it
-+function on a platform ECRs should be submitted to ASWG and go through the
-+approval process.
--- 
-1.7.9.5
+Code starting with the faulting instruction
+===========================================
+   0:	49 83 3f 00          	cmpq   $0x0,(%r15)
+   4:	0f 84 8f 00 00 00    	je     0x99
+   a:	49 83 c6 01          	add    $0x1,%r14
+   e:	4c 39 b5 60 ff ff ff 	cmp    %r14,-0xa0(%rbp)
+	...
+[  360.560458] RIP do_read_fault.isra.40 (mm/memory.c:2864 mm/memory.c:2898)
+[  360.560458]  RSP <ffff8801ba8bbc98>
+[  360.560458] CR2: ffff880581ee3fd0
+[  360.560458] ---[ end trace ccd7cee352be7945 ]---
 
+Thanks,
+Sasha
