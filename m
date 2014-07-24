@@ -1,163 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759229AbaGXOI0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 10:08:26 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:49001 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1758977AbaGXOIY convert rfc822-to-8bit (ORCPT
+	id S1759247AbaGXOJ1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 10:09:27 -0400
+Received: from mx2.parallels.com ([199.115.105.18]:42438 "EHLO
+	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758945AbaGXOJZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 10:08:24 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 96.249.243.124
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19sZqUo3A0pRknMqzkFn5aHEAQyx7vAZj8=
-X-DKIM: OpenDKIM Filter v2.0.1 titan EE7765B5078
-Date: Thu, 24 Jul 2014 10:07:57 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: Benoit Masson <benoitm@perenite.com>, Andrew Lunn <andrew@lunn.ch>,
-        Arnd Bergmann <arnd@arndb.de>
-Cc: Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Benoit Masson <yahoo@perenite.com>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Sebastian Hesselbarth <sebastian.hesselbarth@googlemail.com>
-Subject: Re: [PATCH 2/2] ARM: mvebu: Added dts defintion for Lenovo Iomega
- ix4-300d NAS
-Message-ID: <20140724140757.GW23220@titan.lakedaemon.net>
-References: <1406154923-13612-1-git-send-email-yahoo@perenite.com>
- <1406154923-13612-2-git-send-email-yahoo@perenite.com>
- <20140723224236.GC28485@lunn.ch>
- <94F87063-D717-435B-B7C5-EDAC9B26742C@perenite.com>
- <20140723225841.GD28485@lunn.ch>
- <10A7C530-7CD2-4ED0-889A-7FAC1922320F@perenite.com>
- <20140723231535.GK23220@titan.lakedaemon.net>
- <53D0FA2F.6050209@free-electrons.com>
- <20140724124520.GV23220@titan.lakedaemon.net>
- <C2E7C8C1-1198-4785-AB9C-C27B5E27A8D4@perenite.com>
+	Thu, 24 Jul 2014 10:09:25 -0400
+From: James Bottomley <jbottomley@parallels.com>
+To: "sitsofe@gmail.com" <sitsofe@gmail.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "hch@infradead.org" <hch@infradead.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "kys@microsoft.com" <kys@microsoft.com>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "ohering@suse.com" <ohering@suse.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "jasowang@redhat.com" <jasowang@redhat.com>
+Subject: Re: [PATCH 2/3] [SCSI] storvsc: Add Hyper-V logical block
+ provisioning tests
+Thread-Topic: [PATCH 2/3] [SCSI] storvsc: Add Hyper-V logical block
+ provisioning tests
+Thread-Index: AQHPp0jXiCsIZOfLBEqFRrhpisiOnQ==
+Date: Thu, 24 Jul 2014 14:09:11 +0000
+Message-ID: <1406210951.2040.5.camel@jarvis.lan>
+References: <1405983961-18782-1-git-send-email-kys@microsoft.com>
+	 <20140723141028.GA22724@sucs.org> <20140723141558.GA9705@infradead.org>
+	 <20140723201341.GA10292@sucs.org> <20140724074739.GA15127@sucs.org>
+	 <20140724075653.GC15127@sucs.org>
+In-Reply-To: <20140724075653.GC15127@sucs.org>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [50.46.103.107]
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <4C0405326331634AB54A917409251B18@sw.swsoft.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <C2E7C8C1-1198-4785-AB9C-C27B5E27A8D4@perenite.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s6OE9WEO025411
 
-Benoit,
+On Thu, 2014-07-24 at 08:56 +0100, Sitsofe Wheeler wrote:
+> Microsoft Hyper-V targets currently only claim SPC-2 compliance / no
+> compliance indicated even though they implement post SPC-2 features
+> which means those features are not tested for. Add a blacklist flag to
+> Hyper-V devices that forces said testing.
 
-Please try to avoid top-posting.  I've re-flowed it, below.
+This description is misleading: you don't force the test now, you force
+the driver to send unmap commands down to the device.
 
-Arnd, Andrew, question for both of you below.
-
-On Thu, Jul 24, 2014 at 03:40:42PM +0200, Benoit Masson wrote:
-> Le 24 juil. 2014 à 14:45, Jason Cooper <jason@lakedaemon.net> a écrit :
+> See https://lkml.org/lkml/2014/7/21/627 for the previous version of this
+> patch and https://lkml.org/lkml/2014/7/23/615 for example devices.
 > 
-> > On Thu, Jul 24, 2014 at 02:21:03PM +0200, Gregory CLEMENT wrote:
-> >> On 24/07/2014 01:15, Jason Cooper wrote:
-> >>> On Thu, Jul 24, 2014 at 01:11:12AM +0200, Benoit Masson wrote:
-> >>>> Le 24 juil. 2014 à 00:58, Andrew Lunn <andrew@lunn.ch> a écrit :
-> >>>> 
-> >>>>>> For the marvell,mv78230-a0-i2c unfortunately i've spend 3 hours
-> >>>>>> trying to understand this but it only works with this on the
-> >>>>>> ix4-300d :(. There was multiple patch around this and maybe one
-> >>>>>> broke the auto-detect part of this, I've tried compiling with some
-> >>>>>> 3.10 or lower kernel but no luck here I still have to put this a0
-> >>>>>> option.
-> >>>>> 
-> >>>>> Lets first confirm you have an a0 SoC.
-> >>>>> 
-> >>>>> At boot time, it should print:
-> >>>>> 
-> >>>>> pr_info("MVEBU SoC ID=0x%X, Rev=0x%X\n", soc_dev_id, soc_rev);
-> >>>>> 
-> >>>>> What revision do you have?
-> >>>>> 
-> >>>>> If the auto detect code really is broken, Gregory will likely take a
-> >>>>> look.
-> >>>> 
-> >>>> I sure do,
-> >>>> 
-> >>>> confirmed by u-boot  output below:
-> >>>> 
-> >>>> U-Boot 2009.08 (Mar 04 2013 - 11:13:04) Marvell version:  2.3.2 PQ
-> >>>> U-Boot Addressing:
-> >>>>       Code:..00600000:006BFFF0
-> >>>>       BSS:..00708EC0
-> >>>>       Stack:..0x5fff70
-> >>>>       PageTable:.0x8e0000
-> >>>>       Heap address:.0x900000:0xe00000
-> >>>> Board: DB-78230-BP rev 2.0 Wistron
-> >>>> SoC:   MV78230 A0
-> >>>> 
-> >>>> From kernel I get:
-> >>>> 
-> >>>> mvebu-soc-id: MVEBU SoC ID=0x7823, Rev=0x1
-> >>> 
-> >>> Well, isn't that a peach?  :)  Gregory?
-> >> 
-> >> A peach?? For me it is either a fruit or a princess, so I am puzzled!
-> > 
-> > Doc Holiday quote from the movie Tombstone.  The full quote was "Well,
-> > isn't that a peach of a hand?" while sitting at the poker table.
-> > 
-> >> Well about the issue, we patch the device tree for the i2c quirk only for
-> >> the openblock AX3.
-> > 
-> > Ahhh, that's right.  I need to slow down and dig a bit more. :(
+> Original-patch-by: K. Y. Srinivasan <kys@microsoft.com>
+> Signed-off-by: Sitsofe Wheeler <sitsofe@yahoo.com>
+> ---
+>  drivers/scsi/storvsc_drv.c | 10 +++-------
+>  1 file changed, 3 insertions(+), 7 deletions(-)
+> 
+> diff --git a/drivers/scsi/storvsc_drv.c b/drivers/scsi/storvsc_drv.c
+> index 5ad2810..88b7173 100644
+> --- a/drivers/scsi/storvsc_drv.c
+> +++ b/drivers/scsi/storvsc_drv.c
+> @@ -326,8 +326,6 @@ MODULE_PARM_DESC(storvsc_ringbuffer_size, "Ring buffer size (bytes)");
+>   */
+>  static int storvsc_timeout = 180;
+>  
+> -static int msft_blist_flags = BLIST_TRY_VPD_PAGES;
+> -
+>  #define STORVSC_MAX_IO_REQUESTS				200
+>  
+>  static void storvsc_on_channel_callback(void *context);
+> @@ -1444,12 +1442,10 @@ static int storvsc_device_configure(struct scsi_device *sdevice)
+>  	sdevice->no_write_same = 1;
+>  
+>  	/*
+> -	 * Add blist flags to permit the reading of the VPD pages even when
+> -	 * the target may claim SPC-2 compliance. MSFT targets currently
+> -	 * claim SPC-2 compliance while they implement post SPC-2 features.
+> -	 * With this patch we can correctly handle WRITE_SAME_16 issues.
+> +	 * Forcefully enable logical block provisioning testing.
+>  	 */
+> -	sdevice->sdev_bflags |= msft_blist_flags;
+> +	sdevice->sdev_bflags |= BLIST_TRY_LBP;
+> +	sdevice->try_lbp = 1;
 
-^^^^^ This is the important bit.
+Really no way to this one.  You're forcing unmap support on every
+hyper-v device; including spinning rust pass through ones which won't
+support it.  The hyper-v storage interface has proven to be somewhat
+fragile, so it may explode when the device tries to send illegal command
+sense back.
 
-> > 
-> >> If I remember well it was because the device tree was already written
-> >> for this board before we found there was an issue with the A0 version
-> >> of the CPU. 
-> > 
-> > No, it's because we didn't think any manufacturers would be silly enough
-> > to use the a0 in production.  That assumption worked out well. :-P
-> > 
-> >> The rule was that for new boards then they have to set the marvell,mv78230-a0-i2c
-> >> compatible string. I also didn't expect that we found "new" product using the A0 version.
-> >> 
-> >> We have 3 options now:
-> >> 
-> >> - remove the check on the openblock AX3 board and always try to apply the quirck for A0 version
-> >> - add a check for this new board in the mvebu_dt_init function
-> >> - let the compatible string marvell,mv78230-a0-i2c in this dts
-> >> 
-> >> I would prefer the option 1 but I fear that Arnd would prefer the 2 other options.
-> > 
-> > I like option 1 and 3.  Option 3 is a *correct* description of the
-> > hardware, and should be done.  Option 1 makes Linux user-friendly for boards
-> > that are exactly the same, but changed out SoC stepping mid-production.
-> > 
-> > Option 2 needs to be undone.  We shouldn't need to change compiled code
-> > for every new board that comes along.  Which was the whole point of DT,
-> > right?
-> > 
-> So I'm a bit puzzled now. First email from Jason mention that the
-> final patch was doe in 3.16rc3 and indeed I made my dts using 3.15,
-> now I'm on 3.16 mainline, but didn't tested since to remove the a0
-> compatible string. Should I give it a try or from Gregory's email
-> understand that the patch was only for ax3 board ?
+If you have a specific IDENTITY string for a faulty SSD that fails to
+report unmap support correctly, then we could quirk for that, but not
+everything attached to the hyper-v driver.
 
-Ignore what I said before about the patch.  It doesn't apply to your
-board.  We need to fix the quirk to trigger on SoC revision, not board
-compatible, as it currently does.
+James
 
-The only outstanding point (Arnd?), is that I think it's ok to have the
-i2c...a0 compatible string in the dts files, but Andrew seems to think
-otherwise.  Is that still true Andrew?
-
-> Feel free as long as the device is still opened, uart connected, to
-> send me your test as I'll soon have to turn into a production NAS ...
-
-Hopefully, we'll hear from one of them today, and we can merge your
-patch as-is with the minor comment reformatting.
-
-thx,
-
-Jason.
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
