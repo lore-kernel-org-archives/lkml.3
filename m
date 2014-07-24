@@ -1,99 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756450AbaGXJfI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 05:35:08 -0400
-Received: from mail-we0-f180.google.com ([74.125.82.180]:62155 "EHLO
-	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753005AbaGXJfF (ORCPT
+	id S1756913AbaGXJf0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 05:35:26 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:59002 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754151AbaGXJfX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 05:35:05 -0400
-Message-ID: <53D0D348.406@linaro.org>
-Date: Thu, 24 Jul 2014 11:35:04 +0200
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-pm@vger.kernel.org,
+	Thu, 24 Jul 2014 05:35:23 -0400
+Date: Thu, 24 Jul 2014 10:34:47 +0100
+From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Wang YanQing <udknight@gmail.com>, linus.walleij@linaro.org,
+        jhovold@gmail.com, linux-usb@vger.kernel.org,
         linux-kernel@vger.kernel.org
-CC: Colin Cross <ccross@android.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        stable@vger.kernel.org
-Subject: Re: [PATCH] cpuidle: coupled: Enable interrupts when early returning
- on invalid driver
-References: <1406193999-20300-1-git-send-email-k.kozlowski@samsung.com>
-In-Reply-To: <1406193999-20300-1-git-send-email-k.kozlowski@samsung.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Subject: Re: [PATCH v2] usb:serial:pl2303: add GPIOs interface on PL2303
+Message-ID: <20140724103447.047627ee@alan.etchedpixels.co.uk>
+In-Reply-To: <20140723162129.GB6871@kroah.com>
+References: <20140720063841.GA28059@udknight>
+	<20140723170314.23864779@alan.etchedpixels.co.uk>
+	<20140723162129.GB6871@kroah.com>
+Organization: Intel Corporation
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/24/2014 11:26 AM, Krzysztof Kozlowski wrote:
-> cpuidle_enter_state is expected to return with interrupts enabled.
-> However cpuidle_enter_state_coupled returned with interrupts disabled if
-> the cpuidle driver was registered without mask of coupled cpus.
+On Wed, 23 Jul 2014 09:21:29 -0700
+Greg KH <gregkh@linuxfoundation.org> wrote:
 
-Hi Krzysztof,
+> On Wed, Jul 23, 2014 at 05:03:14PM +0100, One Thousand Gnomes wrote:
+> > > +		if (gpiochip_remove(&spriv->gpio->gpio_chip))
+> > > +			dev_err(&serial->interface->dev, "unable to remove gpio_chip?\n");
+> > > +		kfree(spriv->gpio);
+> > > +	}
+> > > +#endif
+> > >  	kfree(spriv);
+> > 
+> > Only other question I have - if I have multiple PL2303HX adapters how
+> > will I work out which GPIO lines belong to which /dev/ttyUSB* interface ?
+> 
+> sysfs _should_ show you this, as it should point to the "parent" device,
+> which will be associated with the ttyUSB interface.  Well, both the tty
+> device and the gpio device will have the same parent, is that good
+> enough to determine this, or should the gpio device have the tty device
+> as its parent?
 
-may be your patch is right but I would like to clarify one thing. This 
-is the cpuidle driver for exynos. AFAICT, the coupled states shouldn't 
-be enabled for this driver, so how did you face this issue ?
+Good point - that's probably sufficient as is. The GPIO and tty lines are
+sometimes used together and sometimes not.
 
-
-> This could be observed as a warning:
-> [    1.613132] ------------[ cut here ]------------
-> [    1.613244] WARNING: CPU: 0 PID: 0 at kernel/sched/idle.c:175 cpu_idle_loop+0x2dc/0x6d0()
-> [    1.620268] Modules linked in:
-> [    1.623311] CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.16.0-rc4-00102-g7669ccdbf8af-dirty #81
-> [    1.623619] dwmmc_exynos 12510000.mshc: 1 slots initialized
-> [    1.624890] logger: created 256K log 'log_main'
-> [    1.625483] logger: created 256K log 'log_events'
-> [    1.626084] logger: created 256K log 'log_radio'
-> [    1.626699] logger: created 256K log 'log_system'
-> [    1.655960] [<c00167cc>] (unwind_backtrace) from [<c0012c28>] (show_stack+0x10/0x14)
-> [    1.663679] [<c0012c28>] (show_stack) from [<c050ab00>] (dump_stack+0x70/0xbc)
-> [    1.670883] [<c050ab00>] (dump_stack) from [<c0023ac8>] (warn_slowpath_common+0x68/0x8c)
-> [    1.678954] [<c0023ac8>] (warn_slowpath_common) from [<c0023b08>] (warn_slowpath_null+0x1c/0x24)
-> [    1.687720] [<c0023b08>] (warn_slowpath_null) from [<c006ddd4>] (cpu_idle_loop+0x2dc/0x6d0)
-> [    1.696052] [<c006ddd4>] (cpu_idle_loop) from [<c006e1d4>] (cpupri_find+0x0/0xd4)
-> [    1.703518] [<c006e1d4>] (cpupri_find) from [<c07cdd14>] (processor_id+0x0/0x2c)
-> [    1.710917] ---[ end trace a85327313857296e ]---
->
-> Enable the interrupts also when early returning from
-> cpuidle_enter_state_coupled due to invalid coupled configuration.
->
-> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> Fixes: 4126c0197bc8 ("cpuidle: add support for states that affect multiple cpus")
-> Cc: <stable@vger.kernel.org>
-> ---
->   drivers/cpuidle/coupled.c | 4 +++-
->   1 file changed, 3 insertions(+), 1 deletion(-)
->
-> diff --git a/drivers/cpuidle/coupled.c b/drivers/cpuidle/coupled.c
-> index 73fe2f8d7f96..2b57c267e855 100644
-> --- a/drivers/cpuidle/coupled.c
-> +++ b/drivers/cpuidle/coupled.c
-> @@ -463,8 +463,10 @@ int cpuidle_enter_state_coupled(struct cpuidle_device *dev,
->   	struct cpuidle_coupled *coupled = dev->coupled;
->   	int w;
->
-> -	if (!coupled)
-> +	if (!coupled) {
-> +		local_irq_enable();
->   		return -EINVAL;
-> +	}
->
->   	while (coupled->prevent) {
->   		cpuidle_coupled_clear_pokes(dev->cpu);
->
-
-
--- 
-  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
-
+Alan
