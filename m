@@ -1,83 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759570AbaGXQud (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 12:50:33 -0400
-Received: from mail-vc0-f175.google.com ([209.85.220.175]:54223 "EHLO
-	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758885AbaGXQuc convert rfc822-to-8bit (ORCPT
+	id S1759620AbaGXQu4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 12:50:56 -0400
+Received: from mail-lb0-f182.google.com ([209.85.217.182]:35289 "EHLO
+	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758885AbaGXQuy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 12:50:32 -0400
-MIME-Version: 1.0
-In-Reply-To: <yw1xtx669002.fsf@unicorn.mansr.com>
-References: <1406156581-6052-1-git-send-email-xerofoify@gmail.com>
-	<20140724144725.GA32669@home.goodmis.org>
-	<20140724105132.3cf221c2@gandalf.local.home>
-	<yw1x38dqag24.fsf@unicorn.mansr.com>
-	<CAPDOMVgswyopjGxdRFW-bFRrTcpcNnkY=PqTCT9HbjjA=EZ1iw@mail.gmail.com>
-	<yw1xy4vi90n6.fsf@unicorn.mansr.com>
-	<CAPDOMVia0OXydg_hRH0t63xUaxKEkVc6D20vAZiyugkMXAEsJQ@mail.gmail.com>
-	<yw1xtx669002.fsf@unicorn.mansr.com>
-Date: Thu, 24 Jul 2014 12:50:31 -0400
-Message-ID: <CAPDOMVgziyYTX41xZVB9FLHUKFRPPm19jo0A_WfbLqaaKbxPqg@mail.gmail.com>
-Subject: Re: [PATCH] staging: Change kzalloc to kcalloc
-From: Nick Krause <xerofoify@gmail.com>
-To: =?UTF-8?B?TcOlbnMgUnVsbGfDpXJk?= <mans@mansr.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>, Greg KH <gregkh@linuxfoundation.org>,
-        John Stultz <john.stultz@linaro.org>, paul.gortmaker@windriver.com,
-        gang.chen.5i5j@gmail.com, yongjun_wei@trendmicro.com.cn,
-        Dan Carpenter <dan.carpenter@oracle.com>, tomas.winkler@intel.com,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Thu, 24 Jul 2014 12:50:54 -0400
+Message-Id: <20140724165047.437075575@openvz.org>
+User-Agent: quilt/0.60-1
+Date: Thu, 24 Jul 2014 20:46:58 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Cc: gorcunov@openvz.org, keescook@chromium.org, tj@kernel.org,
+        akpm@linux-foundation.org, avagin@openvz.org, ebiederm@xmission.com,
+        hpa@zytor.com, serge.hallyn@canonical.com, xemul@parallels.com,
+        segoon@openwall.com, kamezawa.hiroyu@jp.fujitsu.com,
+        mtk.manpages@gmail.com, jln@google.com
+Subject: [rfc 1/4] mm: Introduce may_adjust_brk helper
+References: <20140724164657.452106845@openvz.org>
+Content-Disposition: inline; filename=prctl-add-may_adjust_brk
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 24, 2014 at 12:47 PM, Måns Rullgård <mans@mansr.com> wrote:
-> Nick Krause <xerofoify@gmail.com> writes:
->
->> On Thu, Jul 24, 2014 at 12:34 PM, Måns Rullgård <mans@mansr.com> wrote:
->>> Nick Krause <xerofoify@gmail.com> writes:
->>>
->>>> On Thu, Jul 24, 2014 at 12:15 PM, Måns Rullgård <mans@mansr.com> wrote:
->>>>> Steven Rostedt <rostedt@goodmis.org> writes:
->>>>>
->>>>>> On Thu, 24 Jul 2014 10:47:25 -0400
->>>>>> Steven Rostedt <rostedt@goodmis.org> wrote:
->>>>>>
->>>>>>> The three parameters are the number of elements, the size of each individual
->>>>>>> element, and then finally the flags used on how to allocate that memory.
->>>>>>> I have to say, you did get the flags part correct.
->>>>>>>
->>>>>>> Now lets look at what you did. For the size you had:
->>>>>>
->>>>>> That should have read "For the count you had:"
->>>>>>
->>>>>> Oh well, you get my point anyway.
->>>>>
->>>>> I have some doubts about the last bit.
->>>>
->>>> I am have this discussion with other kernel developers and just
->>>> because I send out one patch as a newbie like this doesn't mean I
->>>> don't known C.
->>>
->>> Now I no longer have doubts; I know for certain that the point didn't
->>> get across.
->>
->> I get your point try other things but I talked to other kernel
->> developers and most of them seemed to get this feedback to when they
->> started.
->
-> Most kernel devs most certainly did NOT get started by spamming lkml
-> with unnecessary and incorrect patches despite being repeatedly told to
-> go away and stop wasting everybody's time.
->
-> --
-> Måns Rullgård
-> mans@mansr.com
+To eliminate code duplication lets introduce may_adjust_brk
+helper which we will use in brk() and prctl() syscalls.
 
+Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: Kees Cook <keescook@chromium.org>
+Cc: Tejun Heo <tj@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Andrew Vagin <avagin@openvz.org>
+Cc: Eric W. Biederman <ebiederm@xmission.com>
+Cc: H. Peter Anvin <hpa@zytor.com>
+Cc: Serge Hallyn <serge.hallyn@canonical.com>
+Cc: Pavel Emelyanov <xemul@parallels.com>
+Cc: Vasiliy Kulikov <segoon@openwall.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Michael Kerrisk <mtk.manpages@gmail.com>
+Cc: Julien Tinnes <jln@google.com>
+---
+ include/linux/mm.h |   14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
 
+Index: linux-2.6.git/include/linux/mm.h
+===================================================================
+--- linux-2.6.git.orig/include/linux/mm.h
++++ linux-2.6.git/include/linux/mm.h
+@@ -18,6 +18,7 @@
+ #include <linux/pfn.h>
+ #include <linux/bit_spinlock.h>
+ #include <linux/shrinker.h>
++#include <linux/resource.h>
+ 
+ struct mempolicy;
+ struct anon_vma;
+@@ -1780,6 +1781,19 @@ extern struct vm_area_struct *copy_vma(s
+ 	bool *need_rmap_locks);
+ extern void exit_mmap(struct mm_struct *);
+ 
++static inline int may_adjust_brk(unsigned long rlim,
++				 unsigned long new_brk,
++				 unsigned long start_brk,
++				 unsigned long end_data,
++				 unsigned long start_data)
++{
++	if (rlim < RLIMIT_DATA) {
++		if (((new_brk - start_brk) + (end_data - start_data)) > rlim)
++			return -ENOSPC;
++	}
++	return 0;
++}
++
+ extern int mm_take_all_locks(struct mm_struct *mm);
+ extern void mm_drop_all_locks(struct mm_struct *mm);
+ 
 
-FIne , I give up. You want me to leave this then I wiil.
-Nick
