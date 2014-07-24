@@ -1,95 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751423AbaGXIxK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 04:53:10 -0400
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:33222 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750797AbaGXIxH (ORCPT
+	id S1752049AbaGXIzN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 04:55:13 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54221 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750787AbaGXIzK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 04:53:07 -0400
-From: Jean-Michel Hautbois <jean-michel.hautbois@vodalys.com>
-To: gregkh@linuxfoundation.org, arnd@arndb.de, sr@denx.de,
-        linux-kernel@vger.kernel.org
-Cc: Jean-Michel Hautbois <jean-michel.hautbois@vodalys.com>
-Subject: [PATCH v5] Lattice ECP3 FPGA: Correct endianness
-Date: Thu, 24 Jul 2014 10:53:00 +0200
-Message-Id: <1406191980-24283-1-git-send-email-jean-michel.hautbois@vodalys.com>
-X-Mailer: git-send-email 2.0.0
+	Thu, 24 Jul 2014 04:55:10 -0400
+Date: Thu, 24 Jul 2014 09:54:56 +0100
+From: Luis Henriques <luis.henriques@canonical.com>
+To: Hugh Dickins <hughd@google.com>
+Cc: Kamal Mostafa <kamal@canonical.com>, Jiri Slaby <jslaby@suse.cz>,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Christoph Lameter <cl@linux.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH 3.8 107/116] hugetlb: fix copy_hugetlb_page_range() to
+ handle migration/hwpoisoned entry
+Message-ID: <20140724085456.GA5733@hercules>
+References: <1406067727-19683-1-git-send-email-kamal@canonical.com>
+ <1406067727-19683-108-git-send-email-kamal@canonical.com>
+ <alpine.LSU.2.11.1407221608040.3128@eggly.anvils>
+ <1406149325.3612.33.camel@fourier>
+ <alpine.LSU.2.11.1407231659330.2093@eggly.anvils>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <alpine.LSU.2.11.1407231659330.2093@eggly.anvils>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This code corrects endianness and avoids a sparse error.
-Tested with Lattice ECP3-35 with Freescale i.MX6.
-It also sends uevent in order to load it.
+On Wed, Jul 23, 2014 at 05:07:16PM -0700, Hugh Dickins wrote:
+> On Wed, 23 Jul 2014, Kamal Mostafa wrote:
+> > On Tue, 2014-07-22 at 16:08 -0700, Hugh Dickins wrote:
+> > > On Tue, 22 Jul 2014, Kamal Mostafa wrote:
+> > > 
+> > > > 3.8.13.27 -stable review patch.  If anyone has any objections, please let me know.
+> > > > 
+> > > > ------------------
+> > > > 
+> > > > From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> > > > 
+> > > > commit 4a705fef986231a3e7a6b1a6d3c37025f021f49f upstream.
+> > > > 
+> > > > There's a race between fork() and hugepage migration, as a result we try
+> > > > [...]
+> > > 
+> > > Please drop this one for now: other -stables have carried it, but it
+> > > was found last week to contain a bug of its own, arguably worse than
+> > > what it's fixing.  Naoya-san has done the fix for that, it's in mmotm
+> > > and should make its way to Linus probably this week: so please hold
+> > > this back until that can join it - thanks.
+> > > 
+> > > Hugh
+> > 
+> > OK, I've dropped it from the 3.8-stable queue, and will watch for the
+> > fix to land.  Thanks very much, Hugh!
+> 
+> commit 0253d634e0803a8376a0d88efee0bf523d8673f9
+> Author: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> Date:   Wed Jul 23 14:00:19 2014 -0700
+> mm: hugetlb: fix copy_hugetlb_page_range()
+> 
+> is now in Linus's tree: so the original patch is good to go into
+> your -stables, so long as you add 0253d634e080 on top.
+> 
 
-Signed-off-by: Jean-Michel Hautbois <jean-michel.hautbois@vodalys.com>
----
- drivers/misc/lattice-ecp3-config.c | 16 +++++++++-------
- 1 file changed, 9 insertions(+), 7 deletions(-)
+Awesome, I'll queue both for the 3.11 kernel as well.  Thanks Hugh!
 
-diff --git a/drivers/misc/lattice-ecp3-config.c b/drivers/misc/lattice-ecp3-config.c
-index 61fbe6a..66b37bc 100644
---- a/drivers/misc/lattice-ecp3-config.c
-+++ b/drivers/misc/lattice-ecp3-config.c
-@@ -16,6 +16,7 @@
- #include <linux/spi/spi.h>
- #include <linux/platform_device.h>
- #include <linux/delay.h>
-+#include <asm/unaligned.h>
- 
- #define FIRMWARE_NAME	"lattice-ecp3.bit"
- 
-@@ -92,8 +93,8 @@ static void firmware_load(const struct firmware *fw, void *context)
- 	/* Trying to speak with the FPGA via SPI... */
- 	txbuf[0] = FPGA_CMD_READ_ID;
- 	ret = spi_write_then_read(spi, txbuf, 8, rxbuf, rx_len);
--	dev_dbg(&spi->dev, "FPGA JTAG ID=%08x\n", *(u32 *)&rxbuf[4]);
--	jedec_id = *(u32 *)&rxbuf[4];
-+	jedec_id = get_unaligned_be32(&rxbuf[4]);
-+	dev_dbg(&spi->dev, "FPGA JTAG ID=%08x\n", jedec_id);
- 
- 	for (i = 0; i < ARRAY_SIZE(ecp3_dev); i++) {
- 		if (jedec_id == ecp3_dev[i].jedec_id)
-@@ -110,7 +111,8 @@ static void firmware_load(const struct firmware *fw, void *context)
- 
- 	txbuf[0] = FPGA_CMD_READ_STATUS;
- 	ret = spi_write_then_read(spi, txbuf, 8, rxbuf, rx_len);
--	dev_dbg(&spi->dev, "FPGA Status=%08x\n", *(u32 *)&rxbuf[4]);
-+	status = get_unaligned_be32(&rxbuf[4]);
-+	dev_dbg(&spi->dev, "FPGA Status=%08x\n", status);
- 
- 	buffer = kzalloc(fw->size + 8, GFP_KERNEL);
- 	if (!buffer) {
-@@ -142,7 +144,7 @@ static void firmware_load(const struct firmware *fw, void *context)
- 	for (i = 0; i < FPGA_CLEAR_LOOP_COUNT; i++) {
- 		txbuf[0] = FPGA_CMD_READ_STATUS;
- 		ret = spi_write_then_read(spi, txbuf, 8, rxbuf, rx_len);
--		status = *(u32 *)&rxbuf[4];
-+		status = get_unaligned_be32(&rxbuf[4]);
- 		if (status == FPGA_STATUS_CLEARED)
- 			break;
- 
-@@ -165,8 +167,8 @@ static void firmware_load(const struct firmware *fw, void *context)
- 
- 	txbuf[0] = FPGA_CMD_READ_STATUS;
- 	ret = spi_write_then_read(spi, txbuf, 8, rxbuf, rx_len);
--	dev_dbg(&spi->dev, "FPGA Status=%08x\n", *(u32 *)&rxbuf[4]);
--	status = *(u32 *)&rxbuf[4];
-+	status = get_unaligned_be32(&rxbuf[4]);
-+	dev_dbg(&spi->dev, "FPGA Status=%08x\n", status);
- 
- 	/* Check result */
- 	if (status & FPGA_STATUS_DONE)
-@@ -197,7 +199,7 @@ static int lattice_ecp3_probe(struct spi_device *spi)
- 	spi_set_drvdata(spi, data);
- 
- 	init_completion(&data->fw_loaded);
--	err = request_firmware_nowait(THIS_MODULE, FW_ACTION_NOHOTPLUG,
-+	err = request_firmware_nowait(THIS_MODULE, FW_ACTION_HOTPLUG,
- 				      FIRMWARE_NAME, &spi->dev,
- 				      GFP_KERNEL, spi, firmware_load);
- 	if (err) {
--- 
-2.0.0
-
+Cheers,
+--
+Luís
