@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934728AbaGXKZp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 06:25:45 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54645 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758759AbaGXJqw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1758772AbaGXJqw (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 24 Jul 2014 05:46:52 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54620 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758085AbaGXJqq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jul 2014 05:46:46 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Johan Hedberg <johan.hedberg@intel.com>,
-        Marcel Holtmann <marcel@holtmann.org>,
+Cc: Chris Mason <clm@fb.com>, David Sterba <dsterba@suse.cz>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 018/128] Bluetooth: Fix locking of hdev when calling into SMP code
-Date: Thu, 24 Jul 2014 10:44:27 +0100
-Message-Id: <1406195177-8656-19-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 014/128] btrfs: fix use of uninit "ret" in end_extent_writepage()
+Date: Thu, 24 Jul 2014 10:44:23 +0100
+Message-Id: <1406195177-8656-15-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1406195177-8656-1-git-send-email-luis.henriques@canonical.com>
 References: <1406195177-8656-1-git-send-email-luis.henriques@canonical.com>
@@ -28,42 +27,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hedberg <johan.hedberg@intel.com>
+From: Eric Sandeen <sandeen@redhat.com>
 
-commit c73f94b8c093a615ce80eabbde0ac6eb9abfe31a upstream.
+commit 3e2426bd0eb980648449e7a2f5a23e3cd3c7725c upstream.
 
-The SMP code expects hdev to be unlocked since e.g. crypto functions
-will try to (re)lock it. Therefore, we need to release the lock before
-calling into smp.c from mgmt.c. Without this we risk a deadlock whenever
-the smp_user_confirm_reply() function is called.
+If this condition in end_extent_writepage() is false:
 
-Signed-off-by: Johan Hedberg <johan.hedberg@intel.com>
-Tested-by: Lukasz Rymanowski <lukasz.rymanowski@tieto.com>
-Signed-off-by: Marcel Holtmann <marcel@holtmann.org>
+	if (tree->ops && tree->ops->writepage_end_io_hook)
+
+we will then test an uninitialized "ret" at:
+
+	ret = ret < 0 ? ret : -EIO;
+
+The test for ret is for the case where ->writepage_end_io_hook
+failed, and we'd choose that ret as the error; but if
+there is no ->writepage_end_io_hook, nothing sets ret.
+
+Initializing ret to 0 should be sufficient; if
+writepage_end_io_hook wasn't set, (!uptodate) means
+non-zero err was passed in, so we choose -EIO in that case.
+
+Signed-of-by: Eric Sandeen <sandeen@redhat.com>
+
+Signed-off-by: Chris Mason <clm@fb.com>
+Cc: David Sterba <dsterba@suse.cz>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/bluetooth/mgmt.c | 7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ fs/btrfs/extent_io.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/net/bluetooth/mgmt.c b/net/bluetooth/mgmt.c
-index fedc5399d465..211fffb5dca8 100644
---- a/net/bluetooth/mgmt.c
-+++ b/net/bluetooth/mgmt.c
-@@ -2319,8 +2319,13 @@ static int user_pairing_resp(struct sock *sk, struct hci_dev *hdev,
- 	}
+diff --git a/fs/btrfs/extent_io.c b/fs/btrfs/extent_io.c
+index 479d5aecd708..4a96d26bc6fd 100644
+--- a/fs/btrfs/extent_io.c
++++ b/fs/btrfs/extent_io.c
+@@ -2387,7 +2387,7 @@ int end_extent_writepage(struct page *page, int err, u64 start, u64 end)
+ {
+ 	int uptodate = (err == 0);
+ 	struct extent_io_tree *tree;
+-	int ret;
++	int ret = 0;
  
- 	if (addr->type == BDADDR_LE_PUBLIC || addr->type == BDADDR_LE_RANDOM) {
--		/* Continue with pairing via SMP */
-+		/* Continue with pairing via SMP. The hdev lock must be
-+		 * released as SMP may try to recquire it for crypto
-+		 * purposes.
-+		 */
-+		hci_dev_unlock(hdev);
- 		err = smp_user_confirm_reply(conn, mgmt_op, passkey);
-+		hci_dev_lock(hdev);
+ 	tree = &BTRFS_I(page->mapping->host)->io_tree;
  
- 		if (!err)
- 			err = cmd_complete(sk, hdev->id, mgmt_op,
 -- 
 1.9.1
 
