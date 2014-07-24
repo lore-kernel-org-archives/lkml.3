@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934914AbaGXKEh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 06:04:37 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:55007 "EHLO
+	id S934933AbaGXKEf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 06:04:35 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:55006 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934605AbaGXJsZ (ORCPT
+	with ESMTP id S934589AbaGXJsZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 24 Jul 2014 05:48:25 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Mike Galbraith <umgwanakikbuti@gmail.com>,
+Cc: Anton Kolesov <Anton.Kolesov@synopsys.com>,
+        Vineet Gupta <vgupta@synopsys.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 083/128] rtmutex: Plug slow unlock race
-Date: Thu, 24 Jul 2014 10:45:32 +0100
-Message-Id: <1406195177-8656-84-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 084/128] ARC: Implement ptrace(PTRACE_GET_THREAD_AREA)
+Date: Thu, 24 Jul 2014 10:45:33 +0100
+Message-Id: <1406195177-8656-85-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1406195177-8656-1-git-send-email-luis.henriques@canonical.com>
 References: <1406195177-8656-1-git-send-email-luis.henriques@canonical.com>
@@ -29,240 +28,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Gleixner <tglx@linutronix.de>
+From: Anton Kolesov <Anton.Kolesov@synopsys.com>
 
-commit 27e35715df54cbc4f2d044f681802ae30479e7fb upstream.
+commit a4b6cb735b25aa84a462a1985e3e43bebaf5beb4 upstream.
 
-When the rtmutex fast path is enabled the slow unlock function can
-create the following situation:
+This patch adds implementation of GET_THREAD_AREA ptrace request type. This
+is required by GDB to debug NPTL applications.
 
-spin_lock(foo->m->wait_lock);
-foo->m->owner = NULL;
-	    			rt_mutex_lock(foo->m); <-- fast path
-				free = atomic_dec_and_test(foo->refcnt);
-				rt_mutex_unlock(foo->m); <-- fast path
-				if (free)
-				   kfree(foo);
-
-spin_unlock(foo->m->wait_lock); <--- Use after free.
-
-Plug the race by changing the slow unlock to the following scheme:
-
-     while (!rt_mutex_has_waiters(m)) {
-     	    /* Clear the waiters bit in m->owner */
-	    clear_rt_mutex_waiters(m);
-      	    owner = rt_mutex_owner(m);
-      	    spin_unlock(m->wait_lock);
-      	    if (cmpxchg(m->owner, owner, 0) == owner)
-      	       return;
-      	    spin_lock(m->wait_lock);
-     }
-
-So in case of a new waiter incoming while the owner tries the slow
-path unlock we have two situations:
-
- unlock(wait_lock);
-					lock(wait_lock);
- cmpxchg(p, owner, 0) == owner
- 	    	   			mark_rt_mutex_waiters(lock);
-	 				acquire(lock);
-
-Or:
-
- unlock(wait_lock);
-					lock(wait_lock);
-	 				mark_rt_mutex_waiters(lock);
- cmpxchg(p, owner, 0) != owner
-					enqueue_waiter();
-					unlock(wait_lock);
- lock(wait_lock);
- wakeup_next waiter();
- unlock(wait_lock);
-					lock(wait_lock);
-					acquire(lock);
-
-If the fast path is disabled, then the simple
-
-   m->owner = NULL;
-   unlock(m->wait_lock);
-
-is sufficient as all access to m->owner is serialized via
-m->wait_lock;
-
-Also document and clarify the wakeup_next_waiter function as suggested
-by Oleg Nesterov.
-
-Reported-by: Steven Rostedt <rostedt@goodmis.org>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Reviewed-by: Steven Rostedt <rostedt@goodmis.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/20140611183852.937945560@linutronix.de
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Mike Galbraith <umgwanakikbuti@gmail.com>
+Signed-off-by: Anton Kolesov <Anton.Kolesov@synopsys.com>
+Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- kernel/rtmutex.c | 115 ++++++++++++++++++++++++++++++++++++++++++++++++++++---
- 1 file changed, 109 insertions(+), 6 deletions(-)
+ arch/arc/include/uapi/asm/ptrace.h | 1 +
+ arch/arc/kernel/ptrace.c           | 4 ++++
+ 2 files changed, 5 insertions(+)
 
-diff --git a/kernel/rtmutex.c b/kernel/rtmutex.c
-index ff24a43f192f..51a83343df68 100644
---- a/kernel/rtmutex.c
-+++ b/kernel/rtmutex.c
-@@ -82,6 +82,47 @@ static inline void mark_rt_mutex_waiters(struct rt_mutex *lock)
- 		owner = *p;
- 	} while (cmpxchg(p, owner, owner | RT_MUTEX_HAS_WAITERS) != owner);
- }
-+
-+/*
-+ * Safe fastpath aware unlock:
-+ * 1) Clear the waiters bit
-+ * 2) Drop lock->wait_lock
-+ * 3) Try to unlock the lock with cmpxchg
-+ */
-+static inline bool unlock_rt_mutex_safe(struct rt_mutex *lock)
-+	__releases(lock->wait_lock)
-+{
-+	struct task_struct *owner = rt_mutex_owner(lock);
-+
-+	clear_rt_mutex_waiters(lock);
-+	raw_spin_unlock(&lock->wait_lock);
-+	/*
-+	 * If a new waiter comes in between the unlock and the cmpxchg
-+	 * we have two situations:
-+	 *
-+	 * unlock(wait_lock);
-+	 *					lock(wait_lock);
-+	 * cmpxchg(p, owner, 0) == owner
-+	 *					mark_rt_mutex_waiters(lock);
-+	 *					acquire(lock);
-+	 * or:
-+	 *
-+	 * unlock(wait_lock);
-+	 *					lock(wait_lock);
-+	 *					mark_rt_mutex_waiters(lock);
-+	 *
-+	 * cmpxchg(p, owner, 0) != owner
-+	 *					enqueue_waiter();
-+	 *					unlock(wait_lock);
-+	 * lock(wait_lock);
-+	 * wake waiter();
-+	 * unlock(wait_lock);
-+	 *					lock(wait_lock);
-+	 *					acquire(lock);
-+	 */
-+	return rt_mutex_cmpxchg(lock, owner, NULL);
-+}
-+
- #else
- # define rt_mutex_cmpxchg(l,c,n)	(0)
- static inline void mark_rt_mutex_waiters(struct rt_mutex *lock)
-@@ -89,6 +130,17 @@ static inline void mark_rt_mutex_waiters(struct rt_mutex *lock)
- 	lock->owner = (struct task_struct *)
- 			((unsigned long)lock->owner | RT_MUTEX_HAS_WAITERS);
- }
-+
-+/*
-+ * Simple slow path only version: lock->owner is protected by lock->wait_lock.
-+ */
-+static inline bool unlock_rt_mutex_safe(struct rt_mutex *lock)
-+	__releases(lock->wait_lock)
-+{
-+	lock->owner = NULL;
-+	raw_spin_unlock(&lock->wait_lock);
-+	return true;
-+}
- #endif
+diff --git a/arch/arc/include/uapi/asm/ptrace.h b/arch/arc/include/uapi/asm/ptrace.h
+index 2618cc13ba75..76a7739aab1c 100644
+--- a/arch/arc/include/uapi/asm/ptrace.h
++++ b/arch/arc/include/uapi/asm/ptrace.h
+@@ -11,6 +11,7 @@
+ #ifndef _UAPI__ASM_ARC_PTRACE_H
+ #define _UAPI__ASM_ARC_PTRACE_H
  
++#define PTRACE_GET_THREAD_AREA	25
+ 
+ #ifndef __ASSEMBLY__
  /*
-@@ -536,7 +588,8 @@ static int task_blocks_on_rt_mutex(struct rt_mutex *lock,
- /*
-  * Wake up the next waiter on the lock.
-  *
-- * Remove the top waiter from the current tasks waiter list and wake it up.
-+ * Remove the top waiter from the current tasks pi waiter list and
-+ * wake it up.
-  *
-  * Called with lock->wait_lock held.
-  */
-@@ -557,10 +610,23 @@ static void wakeup_next_waiter(struct rt_mutex *lock)
- 	 */
- 	plist_del(&waiter->pi_list_entry, &current->pi_waiters);
+diff --git a/arch/arc/kernel/ptrace.c b/arch/arc/kernel/ptrace.c
+index 5d76706139dd..13b3ffb27a38 100644
+--- a/arch/arc/kernel/ptrace.c
++++ b/arch/arc/kernel/ptrace.c
+@@ -146,6 +146,10 @@ long arch_ptrace(struct task_struct *child, long request,
+ 	pr_debug("REQ=%ld: ADDR =0x%lx, DATA=0x%lx)\n", request, addr, data);
  
--	rt_mutex_set_owner(lock, NULL);
-+	/*
-+	 * As we are waking up the top waiter, and the waiter stays
-+	 * queued on the lock until it gets the lock, this lock
-+	 * obviously has waiters. Just set the bit here and this has
-+	 * the added benefit of forcing all new tasks into the
-+	 * slow path making sure no task of lower priority than
-+	 * the top waiter can steal this lock.
-+	 */
-+	lock->owner = (void *) RT_MUTEX_HAS_WAITERS;
- 
- 	raw_spin_unlock_irqrestore(&current->pi_lock, flags);
- 
-+	/*
-+	 * It's safe to dereference waiter as it cannot go away as
-+	 * long as we hold lock->wait_lock. The waiter task needs to
-+	 * acquire it in order to dequeue the waiter.
-+	 */
- 	wake_up_process(waiter->task);
- }
- 
-@@ -813,12 +879,49 @@ rt_mutex_slowunlock(struct rt_mutex *lock)
- 
- 	rt_mutex_deadlock_account_unlock(current);
- 
--	if (!rt_mutex_has_waiters(lock)) {
--		lock->owner = NULL;
--		raw_spin_unlock(&lock->wait_lock);
--		return;
-+	/*
-+	 * We must be careful here if the fast path is enabled. If we
-+	 * have no waiters queued we cannot set owner to NULL here
-+	 * because of:
-+	 *
-+	 * foo->lock->owner = NULL;
-+	 *			rtmutex_lock(foo->lock);   <- fast path
-+	 *			free = atomic_dec_and_test(foo->refcnt);
-+	 *			rtmutex_unlock(foo->lock); <- fast path
-+	 *			if (free)
-+	 *				kfree(foo);
-+	 * raw_spin_unlock(foo->lock->wait_lock);
-+	 *
-+	 * So for the fastpath enabled kernel:
-+	 *
-+	 * Nothing can set the waiters bit as long as we hold
-+	 * lock->wait_lock. So we do the following sequence:
-+	 *
-+	 *	owner = rt_mutex_owner(lock);
-+	 *	clear_rt_mutex_waiters(lock);
-+	 *	raw_spin_unlock(&lock->wait_lock);
-+	 *	if (cmpxchg(&lock->owner, owner, 0) == owner)
-+	 *		return;
-+	 *	goto retry;
-+	 *
-+	 * The fastpath disabled variant is simple as all access to
-+	 * lock->owner is serialized by lock->wait_lock:
-+	 *
-+	 *	lock->owner = NULL;
-+	 *	raw_spin_unlock(&lock->wait_lock);
-+	 */
-+	while (!rt_mutex_has_waiters(lock)) {
-+		/* Drops lock->wait_lock ! */
-+		if (unlock_rt_mutex_safe(lock) == true)
-+			return;
-+		/* Relock the rtmutex and try again */
-+		raw_spin_lock(&lock->wait_lock);
- 	}
- 
-+	/*
-+	 * The wakeup next waiter path does not suffer from the above
-+	 * race. See the comments there.
-+	 */
- 	wakeup_next_waiter(lock);
- 
- 	raw_spin_unlock(&lock->wait_lock);
+ 	switch (request) {
++	case PTRACE_GET_THREAD_AREA:
++		ret = put_user(task_thread_info(child)->thr_ptr,
++			       (unsigned long __user *)data);
++		break;
+ 	default:
+ 		ret = ptrace_request(child, request, addr, data);
+ 		break;
 -- 
 1.9.1
 
