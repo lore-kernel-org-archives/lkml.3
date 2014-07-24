@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759866AbaGXXBO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 19:01:14 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:58236 "EHLO mx2.suse.de"
+	id S934854AbaGXXDD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 19:03:03 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:58244 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759274AbaGXXBM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 19:01:12 -0400
+	id S1759848AbaGXXBO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jul 2014 19:01:14 -0400
 From: =?UTF-8?q?Andreas=20F=C3=A4rber?= <afaerber@suse.de>
 To: Michal Simek <michal.simek@xilinx.com>
 Cc: Andreas Olofsson <andreas@adapteva.com>,
@@ -18,9 +18,9 @@ Cc: Andreas Olofsson <andreas@adapteva.com>,
         Ian Campbell <ijc+devicetree@hellion.org.uk>,
         Kumar Gala <galak@codeaurora.org>,
         Russell King <linux@arm.linux.org.uk>
-Subject: [PATCH v2 04/11] ARM: dts: zynq: Update deprecated xuartps clock names
-Date: Fri, 25 Jul 2014 01:00:13 +0200
-Message-Id: <1406242820-20140-5-git-send-email-afaerber@suse.de>
+Subject: [PATCH v2 05/11] ARM: dts: zynq: Add QSPI for Parallella
+Date: Fri, 25 Jul 2014 01:00:14 +0200
+Message-Id: <1406242820-20140-6-git-send-email-afaerber@suse.de>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1406242820-20140-1-git-send-email-afaerber@suse.de>
 References: <1406242820-20140-1-git-send-email-afaerber@suse.de>
@@ -31,37 +31,86 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Avoids deprecation warning messages.
+Prepare SPI0 and SPI1 while at it.
 
 Signed-off-by: Andreas Färber <afaerber@suse.de>
 ---
  v2: New
  
- arch/arm/boot/dts/zynq-7000.dtsi | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ arch/arm/boot/dts/zynq-7000.dtsi      | 37 +++++++++++++++++++++++++++++++++++
+ arch/arm/boot/dts/zynq-parallella.dts |  4 ++++
+ 2 files changed, 41 insertions(+)
 
 diff --git a/arch/arm/boot/dts/zynq-7000.dtsi b/arch/arm/boot/dts/zynq-7000.dtsi
-index 760bbc4..8fd826a 100644
+index 8fd826a..eed3df0 100644
 --- a/arch/arm/boot/dts/zynq-7000.dtsi
 +++ b/arch/arm/boot/dts/zynq-7000.dtsi
-@@ -108,7 +108,7 @@
- 			compatible = "xlnx,xuartps";
- 			status = "disabled";
- 			clocks = <&clkc 23>, <&clkc 40>;
--			clock-names = "ref_clk", "aper_clk";
-+			clock-names = "uart_clk", "pclk";
- 			reg = <0xE0000000 0x1000>;
- 			interrupts = <0 27 4>;
- 		};
-@@ -117,7 +117,7 @@
- 			compatible = "xlnx,xuartps";
- 			status = "disabled";
- 			clocks = <&clkc 24>, <&clkc 41>;
--			clock-names = "ref_clk", "aper_clk";
-+			clock-names = "uart_clk", "pclk";
- 			reg = <0xE0001000 0x1000>;
+@@ -122,6 +122,30 @@
  			interrupts = <0 50 4>;
  		};
+ 
++		spi0: spi@e0006000 {
++			compatible = "xlnx,zynq-spi-r1p6";
++			reg = <0xe0006000 0x1000>;
++			status = "disabled";
++			interrupt-parent = <&intc>;
++			interrupts = <0 26 4>;
++			clocks = <&clkc 25>, <&clkc 34>;
++			clock-names = "ref_clk", "pclk";
++			#address-cells = <1>;
++			#size-cells = <0>;
++		};
++
++		spi1: spi@e0007000 {
++			compatible = "xlnx,zynq-spi-r1p6";
++			reg = <0xe0007000 0x1000>;
++			status = "disabled";
++			interrupt-parent = <&intc>;
++			interrupts = <0 49 4>;
++			clocks = <&clkc 26>, <&clkc 35>;
++			clock-names = "ref_clk", "pclk";
++			#address-cells = <1>;
++			#size-cells = <0>;
++		};
++
+ 		gem0: ethernet@e000b000 {
+ 			compatible = "cdns,gem";
+ 			reg = <0xe000b000 0x4000>;
+@@ -140,6 +164,19 @@
+ 			clock-names = "pclk", "hclk", "tx_clk";
+ 		};
+ 
++		qspi: qspi@e000d000 {
++			compatible = "xlnx,zynq-spi-r1p6";
++			reg = <0xe000d000 0x1000>;
++			status = "disabled";
++			interrupt-parent = <&intc>;
++			interrupts = <0 19 4>;
++			clocks = <&clkc 10>, <&clkc 43>;
++			clock-names = "ref_clk", "pclk";
++			num-cs = <1>;
++			#address-cells = <1>;
++			#size-cells = <0>;
++		};
++
+ 		sdhci0: sdhci@e0100000 {
+ 			compatible = "arasan,sdhci-8.9a";
+ 			status = "disabled";
+diff --git a/arch/arm/boot/dts/zynq-parallella.dts b/arch/arm/boot/dts/zynq-parallella.dts
+index 41afd9d..56f68ea 100644
+--- a/arch/arm/boot/dts/zynq-parallella.dts
++++ b/arch/arm/boot/dts/zynq-parallella.dts
+@@ -55,6 +55,10 @@
+ 	status = "okay";
+ };
+ 
++&qspi {
++	status = "okay";
++};
++
+ &sdhci1 {
+ 	status = "okay";
+ };
 -- 
 1.9.3
 
