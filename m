@@ -1,186 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934336AbaGXSOy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 14:14:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:40395 "EHLO mx1.redhat.com"
+	id S934367AbaGXSOz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 14:14:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23734 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933705AbaGXSOv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 14:14:51 -0400
+	id S934294AbaGXSOw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jul 2014 14:14:52 -0400
 From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
 To: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
         Ping Cheng <pinglinux@gmail.com>, Jason Gerecke <killertofu@gmail.com>,
         Przemo Firszt <przemo@firszt.eu>
 Cc: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
-Subject: [PATCH v2 06/10] Input - wacom: prepare the driver to include BT devices
-Date: Thu, 24 Jul 2014 14:14:01 -0400
-Message-Id: <1406225645-32141-7-git-send-email-benjamin.tissoires@redhat.com>
+Subject: [PATCH v2 05/10] Input - wacom: register an ac power supply for wireless devices
+Date: Thu, 24 Jul 2014 14:14:00 -0400
+Message-Id: <1406225645-32141-6-git-send-email-benjamin.tissoires@redhat.com>
 In-Reply-To: <1406225645-32141-1-git-send-email-benjamin.tissoires@redhat.com>
 References: <1406225645-32141-1-git-send-email-benjamin.tissoires@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that wacom is a hid driver, there is no point in having a separate
-driver for bluetooth devices.
-This patch prepares the common paths of Bluetooth devices in the
-common wacom driver.
-It also adds the sysfs file "speed" used by Bluetooth devices.
+This is used by HID Bluetooth devices but also add some more information
+to the USB Wireless Receiver.
+We are just porting the bits from hid-wacom.c to the common driver here.
 
 Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
 ---
 
 new in v2
 
- drivers/hid/wacom_sys.c | 70 ++++++++++++++++++++++++++++++++++++++++++++++---
- drivers/hid/wacom_wac.h |  2 ++
- 2 files changed, 69 insertions(+), 3 deletions(-)
+ drivers/hid/wacom.h     |  1 +
+ drivers/hid/wacom_sys.c | 58 ++++++++++++++++++++++++++++++++++++++++++++-----
+ drivers/hid/wacom_wac.h |  1 +
+ 3 files changed, 55 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/hid/wacom_sys.c b/drivers/hid/wacom_sys.c
-index d0d06b8..add76ec 100644
---- a/drivers/hid/wacom_sys.c
-+++ b/drivers/hid/wacom_sys.c
-@@ -262,6 +262,12 @@ static int wacom_set_device_mode(struct hid_device *hdev, int report_id,
- 	return error < 0 ? error : 0;
- }
- 
-+static int wacom_bt_query_tablet_data(struct hid_device *hdev, u8 speed,
-+		struct wacom_features *features)
-+{
-+	return 0;
-+}
-+
- /*
-  * Switch the tablet into its most-capable mode. Wacom tablets are
-  * typically configured to power-up in a mode which sends mouse-like
-@@ -272,6 +278,9 @@ static int wacom_set_device_mode(struct hid_device *hdev, int report_id,
- static int wacom_query_tablet_data(struct hid_device *hdev,
- 		struct wacom_features *features)
- {
-+	if (hdev->bus == BUS_BLUETOOTH)
-+		return wacom_bt_query_tablet_data(hdev, 1, features);
-+
- 	if (features->device_type == BTN_TOOL_FINGER) {
- 		if (features->type > TABLETPC) {
- 			/* MT Tablet PC touch */
-@@ -890,6 +899,38 @@ static void wacom_destroy_battery(struct wacom *wacom)
- 	}
- }
- 
-+static ssize_t wacom_show_speed(struct device *dev,
-+				struct device_attribute
-+				*attr, char *buf)
-+{
-+	struct hid_device *hdev = container_of(dev, struct hid_device, dev);
-+	struct wacom *wacom = hid_get_drvdata(hdev);
-+
-+	return snprintf(buf, PAGE_SIZE, "%i\n", wacom->wacom_wac.bt_high_speed);
-+}
-+
-+static ssize_t wacom_store_speed(struct device *dev,
-+				struct device_attribute *attr,
-+				const char *buf, size_t count)
-+{
-+	struct hid_device *hdev = container_of(dev, struct hid_device, dev);
-+	struct wacom *wacom = hid_get_drvdata(hdev);
-+	int new_speed;
-+
-+	if (sscanf(buf, "%1d", &new_speed ) != 1)
-+		return -EINVAL;
-+
-+	if (new_speed == 0 || new_speed == 1) {
-+		wacom_bt_query_tablet_data(hdev, new_speed,
-+				&wacom->wacom_wac.features);
-+		return strnlen(buf, PAGE_SIZE);
-+	} else
-+		return -EINVAL;
-+}
-+
-+static DEVICE_ATTR(speed, S_IRUGO | S_IWUSR | S_IWGRP,
-+		wacom_show_speed, wacom_store_speed);
-+
- static struct input_dev *wacom_allocate_input(struct wacom *wacom)
- {
- 	struct input_dev *input_dev;
-@@ -1210,6 +1251,9 @@ static int wacom_probe(struct hid_device *hdev,
- 		features->y_max = 4096;
- 	}
- 
-+	if (hdev->bus == BUS_BLUETOOTH)
-+		features->quirks |= WACOM_QUIRK_BATTERY;
-+
- 	wacom_setup_device_quirks(features);
- 
- 	/* set unit to "100th of a mm" for devices not reported by HID */
-@@ -1241,10 +1285,25 @@ static int wacom_probe(struct hid_device *hdev,
- 	if (error)
- 		goto fail2;
- 
-+	if (!(features->quirks & WACOM_QUIRK_MONITOR) &&
-+	     (features->quirks & WACOM_QUIRK_BATTERY)) {
-+		error = wacom_initialize_battery(wacom);
-+		if (error)
-+			goto fail3;
-+	}
-+
- 	if (!(features->quirks & WACOM_QUIRK_NO_INPUT)) {
- 		error = wacom_register_inputs(wacom);
- 		if (error)
--			goto fail3;
-+			goto fail4;
-+	}
-+
-+	if (hdev->bus == BUS_BLUETOOTH) {
-+		error = device_create_file(&hdev->dev, &dev_attr_speed);
-+		if (error)
-+			hid_warn(hdev,
-+				 "can't create sysfs speed attribute err: %d\n",
-+				 error);
- 	}
- 
- 	/* Note that if query fails it is not a hard failure */
-@@ -1254,7 +1313,7 @@ static int wacom_probe(struct hid_device *hdev,
- 	error = hid_hw_start(hdev, HID_CONNECT_HIDRAW);
- 	if (error) {
- 		hid_err(hdev, "hw start failed\n");
--		goto fail4;
-+		goto fail5;
- 	}
- 
- 	if (features->quirks & WACOM_QUIRK_MONITOR)
-@@ -1267,7 +1326,10 @@ static int wacom_probe(struct hid_device *hdev,
- 
- 	return 0;
- 
-- fail4:	wacom_unregister_inputs(wacom);
-+ fail5:	if (hdev->bus == BUS_BLUETOOTH)
-+		device_remove_file(&hdev->dev, &dev_attr_speed);
-+	wacom_unregister_inputs(wacom);
-+ fail4:	wacom_destroy_battery(wacom);
-  fail3:	wacom_destroy_leds(wacom);
-  fail2:	wacom_remove_shared_data(wacom_wac);
-  fail1:	kfree(wacom);
-@@ -1283,6 +1345,8 @@ static void wacom_remove(struct hid_device *hdev)
- 
- 	cancel_work_sync(&wacom->work);
- 	wacom_unregister_inputs(wacom);
-+	if (hdev->bus == BUS_BLUETOOTH)
-+		device_remove_file(&hdev->dev, &dev_attr_speed);
- 	wacom_destroy_battery(wacom);
- 	wacom_destroy_leds(wacom);
- 	wacom_remove_shared_data(&wacom->wacom_wac);
-diff --git a/drivers/hid/wacom_wac.h b/drivers/hid/wacom_wac.h
-index 3433a0e..3aa55d9 100644
---- a/drivers/hid/wacom_wac.h
-+++ b/drivers/hid/wacom_wac.h
-@@ -169,6 +169,8 @@ struct wacom_wac {
- 	int num_contacts_left;
- 	int bat_charging;
- 	int ps_connected;
-+	__u8 bt_features;
-+	__u8 bt_high_speed;
+diff --git a/drivers/hid/wacom.h b/drivers/hid/wacom.h
+index 99516ba..2b5562b 100644
+--- a/drivers/hid/wacom.h
++++ b/drivers/hid/wacom.h
+@@ -120,6 +120,7 @@ struct wacom {
+ 	} led;
+ 	bool led_initialized;
+ 	struct power_supply battery;
++	struct power_supply ac;
  };
  
- #endif
+ static inline void wacom_schedule_work(struct wacom_wac *wacom_wac)
+diff --git a/drivers/hid/wacom_sys.c b/drivers/hid/wacom_sys.c
+index eb8705d..d0d06b8 100644
+--- a/drivers/hid/wacom_sys.c
++++ b/drivers/hid/wacom_sys.c
+@@ -774,6 +774,12 @@ static enum power_supply_property wacom_battery_props[] = {
+ 	POWER_SUPPLY_PROP_CAPACITY
+ };
+ 
++static enum power_supply_property wacom_ac_props[] = {
++	POWER_SUPPLY_PROP_PRESENT,
++	POWER_SUPPLY_PROP_ONLINE,
++	POWER_SUPPLY_PROP_SCOPE,
++};
++
+ static int wacom_battery_get_property(struct power_supply *psy,
+ 				      enum power_supply_property psp,
+ 				      union power_supply_propval *val)
+@@ -806,14 +812,38 @@ static int wacom_battery_get_property(struct power_supply *psy,
+ 	return ret;
+ }
+ 
++static int wacom_ac_get_property(struct power_supply *psy,
++				enum power_supply_property psp,
++				union power_supply_propval *val)
++{
++	struct wacom *wacom = container_of(psy, struct wacom, ac);
++	int ret = 0;
++
++	switch (psp) {
++	case POWER_SUPPLY_PROP_PRESENT:
++		/* fall through */
++	case POWER_SUPPLY_PROP_ONLINE:
++		val->intval = wacom->wacom_wac.ps_connected;
++		break;
++	case POWER_SUPPLY_PROP_SCOPE:
++		val->intval = POWER_SUPPLY_SCOPE_DEVICE;
++		break;
++	default:
++		ret = -EINVAL;
++		break;
++	}
++	return ret;
++}
++
+ static int wacom_initialize_battery(struct wacom *wacom)
+ {
+-	int error = 0;
+ 	static atomic_t battery_no = ATOMIC_INIT(0);
++	int error;
+ 	unsigned long n;
+ 
+ 	if (wacom->wacom_wac.features.quirks & WACOM_QUIRK_BATTERY) {
+ 		n = atomic_inc_return(&battery_no) - 1;
++
+ 		wacom->battery.properties = wacom_battery_props;
+ 		wacom->battery.num_properties = ARRAY_SIZE(wacom_battery_props);
+ 		wacom->battery.get_property = wacom_battery_get_property;
+@@ -822,15 +852,31 @@ static int wacom_initialize_battery(struct wacom *wacom)
+ 		wacom->battery.type = POWER_SUPPLY_TYPE_BATTERY;
+ 		wacom->battery.use_for_apm = 0;
+ 
++		wacom->ac.properties = wacom_ac_props;
++		wacom->ac.num_properties = ARRAY_SIZE(wacom_ac_props);
++		wacom->ac.get_property = wacom_ac_get_property;
++		sprintf(wacom->wacom_wac.ac_name, "wacom_ac_%ld", n);
++		wacom->ac.name = wacom->wacom_wac.ac_name;
++		wacom->ac.type = POWER_SUPPLY_TYPE_MAINS;
++		wacom->ac.use_for_apm = 0;
++
+ 		error = power_supply_register(&wacom->hdev->dev,
+ 					      &wacom->battery);
++		if (error)
++			return error;
++
++		power_supply_powers(&wacom->battery, &wacom->hdev->dev);
++
++		error = power_supply_register(&wacom->hdev->dev, &wacom->ac);
++		if (error) {
++			power_supply_unregister(&wacom->battery);
++			return error;
++		}
+ 
+-		if (!error)
+-			power_supply_powers(&wacom->battery,
+-					    &wacom->hdev->dev);
++		power_supply_powers(&wacom->ac, &wacom->hdev->dev);
+ 	}
+ 
+-	return error;
++	return 0;
+ }
+ 
+ static void wacom_destroy_battery(struct wacom *wacom)
+@@ -839,6 +885,8 @@ static void wacom_destroy_battery(struct wacom *wacom)
+ 	     wacom->battery.dev) {
+ 		power_supply_unregister(&wacom->battery);
+ 		wacom->battery.dev = NULL;
++		power_supply_unregister(&wacom->ac);
++		wacom->ac.dev = NULL;
+ 	}
+ }
+ 
+diff --git a/drivers/hid/wacom_wac.h b/drivers/hid/wacom_wac.h
+index 6cdf707..3433a0e 100644
+--- a/drivers/hid/wacom_wac.h
++++ b/drivers/hid/wacom_wac.h
+@@ -155,6 +155,7 @@ struct wacom_wac {
+ 	char name[WACOM_NAME_MAX];
+ 	char pad_name[WACOM_NAME_MAX];
+ 	char bat_name[WACOM_NAME_MAX];
++	char ac_name[WACOM_NAME_MAX];
+ 	unsigned char data[WACOM_PKGLEN_MAX];
+ 	int tool[2];
+ 	int id[2];
 -- 
 2.0.1
 
