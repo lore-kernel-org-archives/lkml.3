@@ -1,150 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759182AbaGXOmo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 10:42:44 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:60774 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1758976AbaGXOmm (ORCPT
+	id S1759304AbaGXOob (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 10:44:31 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:53061 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759007AbaGXOo3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 10:42:42 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, Linux PCI <linux-pci@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>
-Subject: Re: [PATCH] PCI / PM: Make PCIe PME interrupts wake up from "freeze" sleep state
-Date: Thu, 24 Jul 2014 17:01:02 +0200
-Message-ID: <2043223.I5LvKcR9SD@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20140724134241.GZ6758@twins.programming.kicks-ass.net>
-References: <12684812.i3F8JrYCl0@vostro.rjw.lan> <20140724134241.GZ6758@twins.programming.kicks-ass.net>
+	Thu, 24 Jul 2014 10:44:29 -0400
+Date: Thu, 24 Jul 2014 15:43:27 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Hanjun Guo <hanjun.guo@linaro.org>
+Cc: Catalin Marinas <catalin.marinas@arm.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Graeme Gregory <graeme.gregory@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, Grant Likely <grant.likely@linaro.org>,
+        Sudeep Holla <Sudeep.Holla@arm.com>, Will Deacon <will.deacon@arm.com>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Robert Richter <rric@kernel.org>, Lv Zheng <lv.zheng@intel.com>,
+        Robert Moore <robert.moore@intel.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Liviu Dudau <Liviu.Dudau@arm.com>,
+        Randy Dunlap <rdunlap@infradead.org>, Charles.Garcia-Tobin@arm.com,
+        linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linaro-acpi-private@linaro.org
+Message-ID: <20140724144327.GJ17528@sirena.org.uk>
+References: <1406206825-15590-1-git-send-email-hanjun.guo@linaro.org>
+ <1406206825-15590-5-git-send-email-hanjun.guo@linaro.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="nextPart3037520.4Vi3rT9msu"; micalg="pgp-sha256"; protocol="application/pgp-signature"
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="u1ypDpa0Zap8goqZ"
+Content-Disposition: inline
+In-Reply-To: <1406206825-15590-5-git-send-email-hanjun.guo@linaro.org>
+X-Cookie: 98% lean.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 04/19] ARM64 / ACPI: Introduce arch_fix_phys_package_id()
+ for cpu topology
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---nextPart3037520.4Vi3rT9msu
-Content-Transfer-Encoding: quoted-printable
-Content-Type: text/plain; charset="utf-8"
+--u1ypDpa0Zap8goqZ
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-On Thursday, July 24, 2014 03:42:41 PM Peter Zijlstra wrote:
-> On Wed, Jul 23, 2014 at 10:46:26PM +0200, Rafael J. Wysocki wrote:
-> > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> >=20
-> > The "freeze" sleep state, also known as suspend-to-idle, is entered=
+On Thu, Jul 24, 2014 at 09:00:10PM +0800, Hanjun Guo wrote:
 
-> > without taking nonboot CPUs offline, right after devices have been
-> > suspended.  It works by waiting for at least one wakeup source obje=
-ct
-> > to become "active" as a result of handling a hardware interrupt.
-> >=20
-> > Of course, interrupts supposed to be able to wake up the system fro=
-m
-> > suspend-to-idle cannot be disabled by suspend_device_irqs() and the=
-ir
-> > interrupt handlers must be able to cope with interrupts coming afte=
-r
-> > all devices have been suspended.  In that case, they only need to
-> > call __pm_wakeup_event() for a single wakeup source object without
-> > trying to access hardware (that will be resumed later as part of
-> > the subsequent system resume).
-> >=20
-> > Make PCIe PME interrupts work this way.
-> >=20
-> > Register an additional wakeup source object for each PCIe PME
-> > service device.  That object will be used to generate wakeups from
-> > suspend-to-idle.
-> >=20
-> > Add IRQF_NO_SUSPEND to PME interrupt flags.  This will make
-> > suspend_device_irqs() to ignore PME interrupts, but that's OK,
-> > because the PME interrupt handler is suspend-aware anyway and
-> > can cope with interrupts coming during system suspend-resume.
-> >=20
-> > For each PCIe port with PME service during the "prepare" phase of
-> > system suspend walk the bus below it and see if any devices on that=
+> +/*
+> + * Use the CPU slot number provided by ACPI to update the physical
+> + * package id when cpuid_topo->cluster_id is not available, then we
+> + * can get the right value in the "physical id" field of /proc/cpuinfo.
+> + */
+> +void arch_fix_phys_package_id(int num, u32 slot)
+> +{
+> +	struct cpu_topology *cpuid_topo = &cpu_topology[num];
+> +
+> +	if (cpuid_topo->cluster_id == -1)
+> +		cpuid_topo->cluster_id = slot;
+> +}
+> +EXPORT_SYMBOL_GPL(arch_fix_phys_package_id);
 
-> > bus are configured for wakeup.  If so, mark the port as one that ca=
-n
-> > be used for system wakeup signaling and handle it differenty going
-> > forward.
-> >=20
-> > Namely, while suspending its PME service, do not disable the PME
-> > interrupt, but only set a "suspended" flag for the PME service to
-> > make the interrupt handler behave in a special way, which is to cal=
-l
-> > __pm_wakeup_event() with the service's wakeup source object as the
-> > first argument whenever the interrupt is triggered.
-> >=20
-> > The "suspended" flag is cleared while resuming the PME service and
-> > the "wakeup" flag is cleared at the "complete" stage of system
-> > resume.
-> >=20
-> > This change allows Wake-on-LAN to be used for wakeup from
-> > suspend-to-idle on my MSI Wind tesbed netbook.
-> >=20
-> > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > ---
->=20
-> > -=09ret =3D request_irq(srv->irq, pcie_pme_irq, IRQF_SHARED, "PCIe =
-PME", srv);
-> > +=09ret =3D request_irq(srv->irq, pcie_pme_irq, IRQF_SHARED | IRQF_=
-NO_SUSPEND,
-> > +=09=09=09  "PCIe PME", srv);
->=20
-> So with this patch on:
->=20
->   http://marc.info/?l=3Dlinux-kernel&m=3D140620918218199
+As I said on the previous version of this patch are you sure this runs
+at a point between the cluster ID getting initialized to -1 and the slot
+being initialized (bear in mind that we now use MPIDR information if
+availabe).  I don't understand why we don't just unconditionally use the
+value given.
 
-ACK for this one (already sent in that thread).
-
-> This will not work on my machine, because aerdrv is requesting the sa=
-me
-> irq.
-
-AER is PCIe error reporting service.
-
-> Now I've not a f'cking clue what aerdrv is, and whether it too wants
-> NO_SUSPEND on or not.
->=20
-> But if I make it also request NO_SUSPEND it all starts working.
-
-I think we should make all PCIe port services (there may be hotplug too=
-)
-use IRQF_NO_SUSPEND which will solve this particular problem, but there=
-'s
-more to that (for example, ACPI SCI which in theory may be shared).
-
-I guess it's time to revisit that thing, but that's a separate issue, o=
-f
-course.
-
-=2D-=20
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
---nextPart3037520.4Vi3rT9msu
+--u1ypDpa0Zap8goqZ
 Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part.
-Content-Transfer-Encoding: 7Bit
+Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+Version: GnuPG v2
 
-iQIcBAABCAAGBQJT0R+0AAoJEILEb/54YlRxh1wP/RNgqYA/tpZkJacjOZkHulgH
-FfsNnC0Zd1S+3XciKvunlnGKJBT4B072kMjS9nmd1+sFbWfACleE9jDc8opRNOH3
-p/UVNbeUAoadB+qf146gYTZpLk1JPXqlkMLvTIthaenB4MFW90LckBPWcyMsCi3/
-+3jrOtATRXwL433md4co5nEptg6AMs+3/mZMdKUdrFyJ4y7Vb63f+HnuppSjZjap
-EQUFv/I2mMOSXx38G+pydOKtRlgPWTqUzrN5k9XV2rJHnIKjCcfb/hYopjto38a4
-KUq+6Dzp7/sTgXGtt3PPNLIxFdQNA6IB2AQK1VrJBim5sLOtsRtr25oh1Z0ci8Ed
-XHfbpqQfHjFnWEbWBPFEEvd18ZlgF+DkPaQweGK0i6YlHEDNYXL5CmPCRmUVrjYS
-qEY8UlWrwrzS5God8DV5w5RJF+ggnO/fByJEDf4GroyivR+vDPkf2Vge2XOdD+wm
-fCaXbPJfmUIqIsqiuVqpOVJoKvc0BIl81rqjegqf8tP4s4bno4B9YVPFbVNLW3cc
-wXNEQky+UWmOG7fzbAtEzaX9+RST31TONSMDtgVR2InB44QWcOt2RBl6W+Xdn/4m
-3MzFrivKZb3ZXY+vYDNqueiy0lVrEuZz2x5QmUn3jhAf/tiqyND+EKtc28KpWBWk
-mfFotye5QpBgYNo1IiBC
-=4ONd
+iQIcBAEBAgAGBQJT0RuMAAoJELSic+t+oim9h5cP+QHa9hzHL1neoprYDXds2eZ4
+9SWWzVO9PMGx1KqYRcssebSjmWvUyGDHdzycgK1QV9QNwkpt2G+JAkdKYZSv8bh9
+k4mLOdTDz415a5bLX5bO6tzwc9NJmlDcl+wuNTlfssqdmUNhOYd2oVQbPPbR9P0n
+/HLHStFBIs5/5YGvmjz5pqYe0WuGhrjNl/k4MXWjnrmELD9sTUBrvPEMff9NXz4B
+w6Z7ku3bF8YtfSRo7S38VhyV03Vp9v7jvrHSPbIajIG9+2svMi6y6/kHl+GgcQCK
+qDq/ydde5srTRohmWUtmVMj6+f1ofJWBcdEw9CByM6rYHtSE1fHDYneveDOXecF/
+JEmd79kaRSgYbYDSGd0KVuIshthniLOTq52sB8HDrIUqTMz53JBfeYDypgiwss0X
+ch2ukITAv7P0YsngYpOLsOkSQvWi0agxDEE8kc6EbGxnT9bWDB9ZNRbVmEM0A7eF
+8dCY1XClXW4O29whMkoNBmY2E/RXe8XaMgGvRpAKV4iT2aUkde25btcuLGhP9A5f
+m+xoRcOqrKLWn5+SnaoqWuuWLrAT19rDxZxxrG4QHhIETua2LgdKkWB2LILsNzLQ
+FEbmvAgc941lSiZ05O1i7l/CI8lZBEdH8+ygIyiUqDqNCrFBCkV9TJjgwYhk/uxP
+no1e52bzQkhoTzupg50a
+=bPHV
 -----END PGP SIGNATURE-----
 
---nextPart3037520.4Vi3rT9msu--
-
+--u1ypDpa0Zap8goqZ--
