@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934719AbaGXKMz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 06:12:55 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54846 "EHLO
+	id S1758898AbaGXKMy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 06:12:54 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54847 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934421AbaGXJrp (ORCPT
+	with ESMTP id S934488AbaGXJrp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 24 Jul 2014 05:47:45 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Arnd Bergmann <arnd@arndb.de>, Linus Walleij <linus.walleij@linaro.org>,
-        Felipe Balbi <balbi@ti.com>,
+Cc: Adam Thomson <Adam.Thomson.Opensource@diasemi.com>,
+        Jonathan Cameron <jic23@kernel.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 054/128] usb: musb: ux500: don't propagate the OF node
-Date: Thu, 24 Jul 2014 10:45:03 +0100
-Message-Id: <1406195177-8656-55-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 056/128] iio: of_iio_channel_get_by_name() returns non-null pointers for error legs
+Date: Thu, 24 Jul 2014 10:45:05 +0100
+Message-Id: <1406195177-8656-57-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1406195177-8656-1-git-send-email-luis.henriques@canonical.com>
 References: <1406195177-8656-1-git-send-email-luis.henriques@canonical.com>
@@ -28,58 +28,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Linus Walleij <linus.walleij@linaro.org>
+From: Adam Thomson <Adam.Thomson.Opensource@diasemi.com>
 
-commit 82363cf2eeafeea6ba88849f5e2febdc8a05943f upstream.
+commit a2c12493ed7e63a18cef33a71686d12ffcd6600e upstream.
 
-There is a regression in the upcoming v3.16-rc1, that is caused
-by a problem that has been around for a while but now finally
-hangs the system. The bootcrawl looks like this:
+Currently in the inkern.c code for IIO framework, the function
+of_iio_channel_get_by_name() will return a non-NULL pointer when
+it cannot find a channel using of_iio_channel_get() and when it
+tries to search for 'io-channel-ranges' property and fails. This
+is incorrect behaviour as the function which calls this expects
+a NULL pointer for failure. This patch rectifies the issue.
 
-pinctrl-nomadik soc:pinctrl: pin GPIO256_AF28 already
-requested by a03e0000.usb_per5; cannot claim for musb-hdrc.0.auto
-pinctrl-nomadik soc:pinctrl: pin-256 (musb-hdrc.0.auto) status -22
-pinctrl-nomadik soc:pinctrl: could not request pin 256
-(GPIO256_AF28) from group usb_a_1  on device pinctrl-nomadik
-musb-hdrc musb-hdrc.0.auto: Error applying setting, reverse
-things back
-HS USB OTG: no transceiver configured
-musb-hdrc musb-hdrc.0.auto: musb_init_controller failed
-with status -517
-platform musb-hdrc.0.auto: Driver musb-hdrc requests
-probe deferral
-(...)
-
-The ux500 MUSB driver propagates the OF node to the dynamically
-created musb-hdrc device, which is incorrect as it makes the OF
-core believe there are two devices spun from the very same
-DT node, which confuses other parts of the device core, notably
-the pin control subsystem, which will try to apply all the pin
-control settings also to the HDRC device as it gets
-instantiated. (The OMAP2430 for example, does not set the
-of_node member.)
-
-Cc: Arnd Bergmann <arnd@arndb.de>
-Acked-by: Lee Jones <lee.jones@linaro.org>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
+Signed-off-by: Adam Thomson <Adam.Thomson.Opensource@diasemi.com>
+Signed-off-by: Jonathan Cameron <jic23@kernel.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/usb/musb/ux500.c | 1 -
- 1 file changed, 1 deletion(-)
+ drivers/iio/inkern.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/usb/musb/ux500.c b/drivers/usb/musb/ux500.c
-index fce71b605936..027a35b003d9 100644
---- a/drivers/usb/musb/ux500.c
-+++ b/drivers/usb/musb/ux500.c
-@@ -275,7 +275,6 @@ static int ux500_probe(struct platform_device *pdev)
- 	musb->dev.parent		= &pdev->dev;
- 	musb->dev.dma_mask		= &pdev->dev.coherent_dma_mask;
- 	musb->dev.coherent_dma_mask	= pdev->dev.coherent_dma_mask;
--	musb->dev.of_node		= pdev->dev.of_node;
+diff --git a/drivers/iio/inkern.c b/drivers/iio/inkern.c
+index 0cf5f8e06cfc..1e8e94d4db7d 100644
+--- a/drivers/iio/inkern.c
++++ b/drivers/iio/inkern.c
+@@ -183,7 +183,7 @@ static struct iio_channel *of_iio_channel_get_by_name(struct device_node *np,
+ 		else if (name && index >= 0) {
+ 			pr_err("ERROR: could not get IIO channel %s:%s(%i)\n",
+ 				np->full_name, name ? name : "", index);
+-			return chan;
++			return NULL;
+ 		}
  
- 	glue->dev			= &pdev->dev;
- 	glue->musb			= musb;
+ 		/*
+@@ -193,8 +193,9 @@ static struct iio_channel *of_iio_channel_get_by_name(struct device_node *np,
+ 		 */
+ 		np = np->parent;
+ 		if (np && !of_get_property(np, "io-channel-ranges", NULL))
+-			break;
++			return NULL;
+ 	}
++
+ 	return chan;
+ }
+ 
+@@ -317,6 +318,7 @@ struct iio_channel *iio_channel_get(struct device *dev,
+ 		if (channel != NULL)
+ 			return channel;
+ 	}
++
+ 	return iio_channel_get_sys(name, channel_name);
+ }
+ EXPORT_SYMBOL_GPL(iio_channel_get);
 -- 
 1.9.1
 
