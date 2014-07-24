@@ -1,133 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756176AbaGXJch (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 05:32:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38247 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751570AbaGXJcf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 05:32:35 -0400
-Date: Thu, 24 Jul 2014 17:30:37 +0800
-From: Baoquan He <bhe@redhat.com>
-To: Atsushi Kumagai <kumagai-atsushi@mxc.nes.nec.co.jp>, ebiederm@xmission.com,
-        akpm@linux-foundation.org
-Cc: "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] kexec: Export free_huge_page to VMCOREINFO
-Message-ID: <20140724093037.GM11399@dhcp-16-105.nay.redhat.com>
-References: <0910DD04CBD6DE4193FCF86B9C00BE972400F3@BPXM01GP.gisp.nec.co.jp>
- <20140724090552.GL11399@dhcp-16-105.nay.redhat.com>
+	id S1756450AbaGXJfI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 05:35:08 -0400
+Received: from mail-we0-f180.google.com ([74.125.82.180]:62155 "EHLO
+	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753005AbaGXJfF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jul 2014 05:35:05 -0400
+Message-ID: <53D0D348.406@linaro.org>
+Date: Thu, 24 Jul 2014 11:35:04 +0200
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140724090552.GL11399@dhcp-16-105.nay.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+CC: Colin Cross <ccross@android.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        stable@vger.kernel.org
+Subject: Re: [PATCH] cpuidle: coupled: Enable interrupts when early returning
+ on invalid driver
+References: <1406193999-20300-1-git-send-email-k.kozlowski@samsung.com>
+In-Reply-To: <1406193999-20300-1-git-send-email-k.kozlowski@samsung.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To Eric and Andrew.
+On 07/24/2014 11:26 AM, Krzysztof Kozlowski wrote:
+> cpuidle_enter_state is expected to return with interrupts enabled.
+> However cpuidle_enter_state_coupled returned with interrupts disabled if
+> the cpuidle driver was registered without mask of coupled cpus.
 
-On 07/24/14 at 05:05pm, Baoquan He wrote:
-> On 07/11/14 at 10:34am, Atsushi Kumagai wrote:
-> > PG_head_mask was added into VMCOREINFO to filter huge pages in
-> > commit:b3acc56bfe1(kexec: save PG_head_mask in VMCOREINFO), but
-> > makedumpfile still need another symbol to filter *hugetlbfs* pages.
-> > 
-> > If a user hope to filter user pages, makedumpfile tries to exclude
-> > them by checking the condition whether the page is anonymous, but
-> > hugetlbfs pages aren't anonymous while they also be user pages.
-> > 
-> > We know it's possible to detect them in the same way as PageHuge(),
-> > so we need the start address of free_huge_page():
-> > 
-> >     int PageHuge(struct page *page)
-> >     {
-> >             if (!PageCompound(page))
-> >                     return 0;
-> > 
-> >             page = compound_head(page);
-> >             return get_compound_page_dtor(page) == free_huge_page;
-> >     }
-> 
-> Since makedumpfile need filter huge pages used for user pages.
-> Transparent huge pages can be recognised because it's marked as
-> anonymous page for now. However hugetlbfs huge pages and normal
-> huge pages can only be differentiated by compound_page_dtor,
-> hugetlbfs set free_huge_page as compound_page_dtor. So it makes
-> sense to export compound_page_dtor to VMCOREINFO.
-> 
-> Ack it.
-> 
-> Acked-by: Baoquan He <bhe@redhat.com>
-> 
-> Thanks
-> Baoquan
-> 
-> > 
-> > For that reason, this patch changes free_huge_page() into public
-> > to export it to VMCOREINFO.
-> > 
-> > Signed-off-by: Atsushi Kumagai <kumagai-atsushi@mxc.nes.nec.co.jp>
-> > ---
-> >  include/linux/hugetlb.h | 1 +
-> >  kernel/kexec.c          | 2 ++
-> >  mm/hugetlb.c            | 2 +-
-> >  3 files changed, 4 insertions(+), 1 deletion(-)
-> > 
-> > diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
-> > index 255cd5c..a23c096 100644
-> > --- a/include/linux/hugetlb.h
-> > +++ b/include/linux/hugetlb.h
-> > @@ -80,6 +80,7 @@ int dequeue_hwpoisoned_huge_page(struct page *page);
-> >  bool isolate_huge_page(struct page *page, struct list_head *list);
-> >  void putback_active_hugepage(struct page *page);
-> >  bool is_hugepage_active(struct page *page);
-> > +void free_huge_page(struct page *page);
-> >  
-> >  #ifdef CONFIG_ARCH_WANT_HUGE_PMD_SHARE
-> >  pte_t *huge_pmd_share(struct mm_struct *mm, unsigned long addr, pud_t *pud);
-> > diff --git a/kernel/kexec.c b/kernel/kexec.c
-> > index 369f41a..23a088f 100644
-> > --- a/kernel/kexec.c
-> > +++ b/kernel/kexec.c
-> > @@ -33,6 +33,7 @@
-> >  #include <linux/swap.h>
-> >  #include <linux/syscore_ops.h>
-> >  #include <linux/compiler.h>
-> > +#include <linux/hugetlb.h>
-> >  
-> >  #include <asm/page.h>
-> >  #include <asm/uaccess.h>
-> > @@ -1619,6 +1620,7 @@ static int __init crash_save_vmcoreinfo_init(void)
-> >  #endif
-> >  	VMCOREINFO_NUMBER(PG_head_mask);
-> >  	VMCOREINFO_NUMBER(PAGE_BUDDY_MAPCOUNT_VALUE);
-> > +	VMCOREINFO_SYMBOL(free_huge_page);
-> >  
-> >  	arch_crash_save_vmcoreinfo();
-> >  	update_vmcoreinfo_note();
-> > diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-> > index 2024bbd..d5437eb 100644
-> > --- a/mm/hugetlb.c
-> > +++ b/mm/hugetlb.c
-> > @@ -856,7 +856,7 @@ struct hstate *size_to_hstate(unsigned long size)
-> >  	return NULL;
-> >  }
-> >  
-> > -static void free_huge_page(struct page *page)
-> > +void free_huge_page(struct page *page)
-> >  {
-> >  	/*
-> >  	 * Can't pass hstate in here because it is called from the
-> > -- 
-> > 1.9.0
-> > 
-> > _______________________________________________
-> > kexec mailing list
-> > kexec@lists.infradead.org
-> > http://lists.infradead.org/mailman/listinfo/kexec
-> 
-> _______________________________________________
-> kexec mailing list
-> kexec@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/kexec
+Hi Krzysztof,
+
+may be your patch is right but I would like to clarify one thing. This 
+is the cpuidle driver for exynos. AFAICT, the coupled states shouldn't 
+be enabled for this driver, so how did you face this issue ?
+
+
+> This could be observed as a warning:
+> [    1.613132] ------------[ cut here ]------------
+> [    1.613244] WARNING: CPU: 0 PID: 0 at kernel/sched/idle.c:175 cpu_idle_loop+0x2dc/0x6d0()
+> [    1.620268] Modules linked in:
+> [    1.623311] CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.16.0-rc4-00102-g7669ccdbf8af-dirty #81
+> [    1.623619] dwmmc_exynos 12510000.mshc: 1 slots initialized
+> [    1.624890] logger: created 256K log 'log_main'
+> [    1.625483] logger: created 256K log 'log_events'
+> [    1.626084] logger: created 256K log 'log_radio'
+> [    1.626699] logger: created 256K log 'log_system'
+> [    1.655960] [<c00167cc>] (unwind_backtrace) from [<c0012c28>] (show_stack+0x10/0x14)
+> [    1.663679] [<c0012c28>] (show_stack) from [<c050ab00>] (dump_stack+0x70/0xbc)
+> [    1.670883] [<c050ab00>] (dump_stack) from [<c0023ac8>] (warn_slowpath_common+0x68/0x8c)
+> [    1.678954] [<c0023ac8>] (warn_slowpath_common) from [<c0023b08>] (warn_slowpath_null+0x1c/0x24)
+> [    1.687720] [<c0023b08>] (warn_slowpath_null) from [<c006ddd4>] (cpu_idle_loop+0x2dc/0x6d0)
+> [    1.696052] [<c006ddd4>] (cpu_idle_loop) from [<c006e1d4>] (cpupri_find+0x0/0xd4)
+> [    1.703518] [<c006e1d4>] (cpupri_find) from [<c07cdd14>] (processor_id+0x0/0x2c)
+> [    1.710917] ---[ end trace a85327313857296e ]---
+>
+> Enable the interrupts also when early returning from
+> cpuidle_enter_state_coupled due to invalid coupled configuration.
+>
+> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+> Fixes: 4126c0197bc8 ("cpuidle: add support for states that affect multiple cpus")
+> Cc: <stable@vger.kernel.org>
+> ---
+>   drivers/cpuidle/coupled.c | 4 +++-
+>   1 file changed, 3 insertions(+), 1 deletion(-)
+>
+> diff --git a/drivers/cpuidle/coupled.c b/drivers/cpuidle/coupled.c
+> index 73fe2f8d7f96..2b57c267e855 100644
+> --- a/drivers/cpuidle/coupled.c
+> +++ b/drivers/cpuidle/coupled.c
+> @@ -463,8 +463,10 @@ int cpuidle_enter_state_coupled(struct cpuidle_device *dev,
+>   	struct cpuidle_coupled *coupled = dev->coupled;
+>   	int w;
+>
+> -	if (!coupled)
+> +	if (!coupled) {
+> +		local_irq_enable();
+>   		return -EINVAL;
+> +	}
+>
+>   	while (coupled->prevent) {
+>   		cpuidle_coupled_clear_pokes(dev->cpu);
+>
+
+
+-- 
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
+
