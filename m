@@ -1,74 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934166AbaGXRtr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 13:49:47 -0400
-Received: from out2-smtp.messagingengine.com ([66.111.4.26]:55920 "EHLO
-	out2-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933922AbaGXRtp (ORCPT
+	id S934230AbaGXRwk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 13:52:40 -0400
+Received: from smtprelay0139.hostedemail.com ([216.40.44.139]:57934 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932857AbaGXRwi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 13:49:45 -0400
-X-Sasl-enc: s+YUV4r+bcVs/pIEAKNPYJhocmSYqbopKQetGiDFKFYT 1406224183
-Date: Thu, 24 Jul 2014 14:49:31 -0300
-From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-To: Borislav Petkov <bp@alien8.de>
-Cc: linux-kernel@vger.kernel.org, H Peter Anvin <hpa@zytor.com>
-Subject: Re: [PATCH 5/8] x86, microcode, intel: don't use fields from unknown
- format header
-Message-ID: <20140724174931.GC12180@khazad-dum.debian.net>
-References: <1406146251-8540-1-git-send-email-hmh@hmh.eng.br>
- <1406146251-8540-6-git-send-email-hmh@hmh.eng.br>
- <20140724113726.GL19239@pd.tnic>
- <20140724133059.GA32421@khazad-dum.debian.net>
- <20140724142802.GN19239@pd.tnic>
- <20140724150740.GD32421@khazad-dum.debian.net>
- <20140724162921.GO19239@pd.tnic>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140724162921.GO19239@pd.tnic>
-X-GPG-Fingerprint1: 4096R/39CB4807 C467 A717 507B BAFE D3C1  6092 0BD9 E811
- 39CB 4807
-X-GPG-Fingerprint2: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
- 1CDB 0FE3
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 24 Jul 2014 13:52:38 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::,RULES_HIT:41:355:379:541:599:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1540:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3867:3868:3870:3871:3872:4321:5007:7652:7807:10004:10400:10848:11026:11232:11473:11658:11914:12043:12296:12517:12519:12740:13069:13255:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: arm01_33dda04665951
+X-Filterd-Recvd-Size: 1848
+Message-ID: <1406224354.27221.53.camel@joe-AO725>
+Subject: Re: [PATCH 1/3] staging: dgng: Fix Macros with complex values
+ should be enclosed in parenthesis
+From: Joe Perches <joe@perches.com>
+To: Seunghun Lee <waydi1@gmail.com>
+Cc: gregkh@linuxfoundation.org, lidza.louina@gmail.com, markh@compro.net,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Date: Thu, 24 Jul 2014 10:52:34 -0700
+In-Reply-To: <1406215613-9314-1-git-send-email-waydi1@gmail.com>
+References: <1406215613-9314-1-git-send-email-waydi1@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 24 Jul 2014, Borislav Petkov wrote:
-> On Thu, Jul 24, 2014 at 12:07:40PM -0300, Henrique de Moraes Holschuh wrote:
-> > Suppose you have a box that takes ldrver 1 microcode, and Intel
-> > releases microcode for a new type of core that has a ldrver of 2, and
-> > it happens to not be the last one in the microcode collection sent by
-> > userspace (via the early initrd or /dev/cpu/microcode). We might well
-> > abort before we find the correct microcode update for that box.
-> 
-> And? The ldrver 2 header will enter microcode_sanity_check() and abort
-> there. A bit later. Same deal.
-> 
-> If you want to *skip* over ldrver 2 ucode headers but continue looping
-> over the ucode data, then you need to do more than that.
+On Fri, 2014-07-25 at 00:26 +0900, Seunghun Lee wrote:
+> This patch fixes a checkpatch errors
+> "Macros with complex values should be enclosed in parenthesis"
+[]
+> diff --git a/drivers/staging/dgnc/dgnc_driver.h b/drivers/staging/dgnc/dgnc_driver.h
 
-Now that I noticed that ldrver problem exists, I want to do that as well,
-but that was _not_ the purpose of this patch and it should be done as a
-separate change anyway.
+> @@ -111,32 +111,32 @@
+>  #endif
+>  
+>  #if defined TRC_TO_KMEM
+> -#define PRINTF_TO_KMEM(args) dgnc_tracef args
+> +#define PRINTF_TO_KMEM(args) do { dgnc_tracef args } while (0)
 
-> So what exactly are you trying to fix here?
+All this _TO_KMEM code is #if 0 in dgnc_trace.h
 
-I want to stop accessing fields inside an unknown format of microcode
-header.
+It'd be good to change the dgnc_tracef prototype to use
+__printf(1, 2)
 
-I didn't notice I could remove the test inside microcode_sanity_check(),
-just that it was in the wrong place.  However, even if I had noticed it was
-a duplicate, I would have not removed it: IMHO, moving it up a bit like
-this patch did makes that duplicate test useful as documentation, and it is
-true to the intent of the function.
+and this code in drivers/staging/dgnc/dgnc_driver.h:
 
-I will respin this patch using the helpers you proposed, and add a new one
-enhancing the way we deal with ldrver.
+#if defined TRC_TO_CONSOLE
+#define PRINTF_TO_CONSOLE(args) { printk(DRVSTR": "); printk args; }
+#else /* !defined TRACE_TO_CONSOLE */
+#define PRINTF_TO_CONSOLE(args)
+#endif
 
--- 
-  "One disk to rule them all, One disk to find them. One disk to bring
-  them all and in the darkness grind them. In the Land of Redmond
-  where the shadows lie." -- The Silicon Valley Tarot
-  Henrique Holschuh
+should really consolidate the printk to something like:
+
+#define PRINTF_TO_CONSOLE(fmt, ...)			\
+	printk(KERN_INFO DRVSTR ": " fmt, ##__VA_ARGS__)
+
+
