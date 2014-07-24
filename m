@@ -1,73 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759821AbaGXWyi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 18:54:38 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:45552 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755965AbaGXWyh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 18:54:37 -0400
-Date: Thu, 24 Jul 2014 15:54:31 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: "David S. Miller" <davem@davemloft.net>, courmisch@gmail.com,
-        LKML <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        Dave Jones <davej@redhat.com>
-Subject: Re: net, phonet, rcu: rcu hang within gprs_attach
-Message-ID: <20140724225431.GW11241@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <53D1865F.7040604@oracle.com>
+	id S1759843AbaGXXBK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 19:01:10 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:58201 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759274AbaGXXBH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jul 2014 19:01:07 -0400
+From: =?UTF-8?q?Andreas=20F=C3=A4rber?= <afaerber@suse.de>
+To: Michal Simek <michal.simek@xilinx.com>
+Cc: Andreas Olofsson <andreas@adapteva.com>,
+        Matteo Vit <matteo.vit@starwaredesign.com>,
+        Sean Rickerd <srickerd@suse.com>, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        =?UTF-8?q?Andreas=20F=C3=A4rber?= <afaerber@suse.de>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>
+Subject: [PATCH v2 01/11] Documentation: devicetree: Adapteva vendor prefix
+Date: Fri, 25 Jul 2014 01:00:10 +0200
+Message-Id: <1406242820-20140-2-git-send-email-afaerber@suse.de>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1406242820-20140-1-git-send-email-afaerber@suse.de>
+References: <1406242820-20140-1-git-send-email-afaerber@suse.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53D1865F.7040604@oracle.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14072422-7164-0000-0000-0000035D6850
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 24, 2014 at 06:19:11PM -0400, Sasha Levin wrote:
-> Hi all,
-> 
-> While fuzzing with trinity inside a KVM tools guest running the latest -next
-> kernel I've stumbled on the following stack trace (full log attached):
-> 
-> [  370.662014] INFO: task trinity-main:8727 blocked for more than 120 seconds.
-> [  370.662891]       Not tainted 3.16.0-rc6-next-20140724-sasha-00046-g7324c87-dirty #932
-> [  370.663655] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-> [  370.664562] trinity-main    D ffff88053cc80000 13064  8727   8714 0x00000000
-> [  370.665328]  ffff88053da6fc10 0000000000000002 ffff8805483e2dc8 ffff880541873000
-> [  370.666147]  000000276ed30787 ffff88053da6c010 ffff88053da6c000 ffff8805452a0000
-> [  370.667243]  ffff880541873000 0000000000000000 7fffffffffffffff ffffffffb3ec51d8
-> [  370.668788] Call Trace:
-> [  370.669118] schedule (kernel/sched/core.c:2847)
-> [  370.670538] schedule_timeout (kernel/time/timer.c:1476)
-> [  370.671524] ? mark_lock (kernel/locking/lockdep.c:2894)
-> [  370.672299] ? __this_cpu_preempt_check (lib/smp_processor_id.c:63)
-> [  370.673227] ? get_parent_ip (kernel/sched/core.c:2561)
-> [  370.674085] wait_for_completion (include/linux/spinlock.h:328 kernel/sched/completion.c:76 kernel/sched/completion.c:93 kernel/sched/completion.c:101 kernel/sched/completion.c:122)
-> [  370.674960] ? wake_up_state (kernel/sched/core.c:2942)
-> [  370.675576] _rcu_barrier (kernel/rcu/tree.c:3325 (discriminator 8))
-> [  370.676109] rcu_barrier (kernel/rcu/tree_plugin.h:920)
-> [  370.676627] netdev_run_todo (net/core/dev.c:6323)
-> [  370.677202] rtnl_unlock (net/core/rtnetlink.c:80)
-> [  370.677714] unregister_netdev (net/core/dev.c:6687)
-> [  370.678266] gprs_attach (net/phonet/pep-gprs.c:311)
-> [  370.679641] pep_setsockopt (net/phonet/pep.c:1016)
-> [  370.681082] sock_common_setsockopt (net/core/sock.c:2603)
-> [  370.682048] SyS_setsockopt (net/socket.c:1914 net/socket.c:1894)
-> [  370.682854] tracesys (arch/x86/kernel/entry_64.S:541)
-> [  370.683586] 1 lock held by trinity-main/8727:
-> [  370.684232] #0: (rcu_preempt_state.barrier_mutex){+.+...}, at: _rcu_barrier (kernel/rcu/tree.c:3233)
-> 
-> This has reproduced couple of times, and has always originated from gprs_attach. I don't see any obvious
-> issues with the code there, so I'm not sure if it's a fault of the phonet or the rcu code.
+Cc: Andreas Olofsson <andreas@adapteva.com>
+Signed-off-by: Andreas Färber <afaerber@suse.de>
+---
+ v2: New
+ 
+ Documentation/devicetree/bindings/vendor-prefixes.txt | 1 +
+ 1 file changed, 1 insertion(+)
 
-Can't tell much from this.  Any chance of a .config?
-
-							Thanx, Paul
+diff --git a/Documentation/devicetree/bindings/vendor-prefixes.txt b/Documentation/devicetree/bindings/vendor-prefixes.txt
+index 46a311e..a8708c7 100644
+--- a/Documentation/devicetree/bindings/vendor-prefixes.txt
++++ b/Documentation/devicetree/bindings/vendor-prefixes.txt
+@@ -6,6 +6,7 @@ using them to avoid name-space collisions.
+ abilis	Abilis Systems
+ active-semi	Active-Semi International Inc
+ ad	Avionic Design GmbH
++adapteva	Adapteva, Inc.
+ adi	Analog Devices, Inc.
+ aeroflexgaisler	Aeroflex Gaisler AB
+ ak	Asahi Kasei Corp.
+-- 
+1.9.3
 
