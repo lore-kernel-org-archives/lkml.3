@@ -1,244 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934219AbaGXGgy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 02:36:54 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:64610 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751589AbaGXGgw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 02:36:52 -0400
-X-Originating-IP: 108.223.40.66
-Message-ID: <53D0A983.9000900@roeck-us.net>
-Date: Wed, 23 Jul 2014 23:36:51 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S934187AbaGXGio (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 02:38:44 -0400
+Received: from ozlabs.org ([103.22.144.67]:43978 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751248AbaGXGin (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jul 2014 02:38:43 -0400
+Date: Thu, 24 Jul 2014 16:38:34 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>, Kukjin Kim <kgene.kim@samsung.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Mateusz Krawczuk <mat.krawczuk@gmail.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Kishon Vijay Abraham I <kishon@ti.com>
+Subject: linux-next: manual merge of the usb tree with the samsung tree
+Message-ID: <20140724163834.430cf674@canb.auug.org.au>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
 MIME-Version: 1.0
-To: jiri.prchal@aksignal.cz, Alexandre Courbot <gnurou@gmail.com>
-CC: "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Randy Dunlap <rdunlap@infradead.org>
-Subject: Re: [RFC PATCH] gpiolib: Provide and export gpiod_export_name
-References: <1406139132-5404-1-git-send-email-linux@roeck-us.net> <CAAVeFuKsJpSYo2DMyTdYE2J5Cu_ZD=b9o-=S0DLDccyNmwniNg@mail.gmail.com> <53D0A7E4.1040707@aksignal.cz>
-In-Reply-To: <53D0A7E4.1040707@aksignal.cz>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/c_w9TM9BXeaI+tfo4eparA4"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/23/2014 11:29 PM, Jiří Prchal wrote:
-> Hi,
-> just to append to this: is in plan some kind of exporting named GPIOs from device tree to /sys/* or /dev/*? It would be very useful not only for me. Because I thing what GPIO is used for what is hardware design dependent same as for example what SPI chips are used. And SPI chips are in DT.
->
+--Sig_/c_w9TM9BXeaI+tfo4eparA4
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Yes, for one of my use cases that is how I would probably configure it;
-alternatively it would be configured with platform data. It is
-somewhat questionable, however, if this approach would be acceptable
-for the Linux dt community, as it is a corner case between system
-(hardware) description and configuration.
+Hi Greg,
 
-Guenter
+Today's linux-next merge of the usb tree got a conflict in
+drivers/phy/phy-samsung-usb2.c between commit 949ccc3a9363 ("phy: Add
+support for S5PV210 to the Exynos USB 2.0 PHY driver") from the samsung
+tree and commit 016e0d3cb72c ("drivers: phy: exynos-usb2: add support
+for Exynos 3250") from the usb tree.
 
-> Dne 24.7.2014 v 07:44 Alexandre Courbot napsal(a):
->> On Thu, Jul 24, 2014 at 3:12 AM, Guenter Roeck <linux@roeck-us.net> wrote:
->>> gpiod_export_name is similar to gpiod_export, but lets the user
->>> determine the name used to export a gpio pin.
->>>
->>> Currently, the pin name is determined by the chip driver with
->>> the 'names' array in the gpio_chip data structure, or it is set
->>> to gpioX, where X is the pin number, if no name is provided by
->>> the chip driver.
->>
->> Oh, my. I did not even know about this 'names' array. This is pretty
->> bad - a GPIO provider should not decide what its GPIOs are used for.
->>
->> Luckily for you, this creates a precedent that makes this patch more
->> acceptable, in that it is not making the situation worse. Even though
->> I consider both solutions to be bad, I actually prefer your
->> gpiod_export_name() function to that 'names' array in gpio_chip...
->>
->>>
->>> It is, however, desirable to be able to provide the pin name when
->>> exporting the pin, for example from platform code. In other words,
->>> it would be useful to move the naming decision from the pin provider
->>> to the pin consumer. The gpio-pca953x driver provides this capability
->>> as part of its platform data. Other drivers could be enhanced in a
->>> similar way; however, this is not always possible or easy to accomplish.
->>> For example, mfd client drivers such as gpio-ich already use platform
->>> data to pass information from the mfd master driver to the client driver.
->>> Overloading this platform data to also provide an array of gpio pin names
->>> would be a challenge if not impossible.
->>>
->>> The alternative to use gpiod_export_link is also not always desirable,
->>> since it only creates a named link to a different directory, meaning
->>> the named gpio pin is not available in /sys/class/gpio but only
->>> in some platform specific directory and thus not as generic as possible
->>> and/or useful.
->>>
->>> A specific example for a use case is a gpio pin which reports AC power
->>> loss to user space. Depending on the platform and platform variant,
->>> the pin can be provided by various gpio chip drivers and pin numbers.
->>> It would be very desirable to have a well defined location such as
->>> /sys/class/gpio/ac_power_loss for this pin, so user space knows where
->>> to find the attribute without knowledge of the underlying platform
->>> variant or oher hardware details.
->>
->> As I explained on the other thread, I still encourage you to have
->> these GPIOs under device nodes that give a hint of who is provided the
->> GPIO (effectively exporting the (dev, function) tuple to user-space)
->> instead of having them popping out under /sys/class/gpio where nobody
->> knows where they come from and name collisions are much more likely.
->>
->> Your message sounds like you have no choice but have the named GPIO
->> link under the gpiochip's device node, but this is not the case -
->> gpio_export_link() let's you specify the device under which the link
->> should appear. Make that device be your "scu" device and you can have
->> a consistent sysfs path to access your GPIOs.
->>
->> Allowing GPIOs to pop up in the same directory with an arbitrary name
->> is just a recipe for a mess. But that's a recipe that is already
->> allowed thanks to that 'names' array. So I'm really confused about
->> what to do with this patch. If you can do with gpio_export_link() (and
->> I have not seen evidence of the contrary), please go that way instead.
->>
->>>
->>> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
->>> ---
->>> Applies to tip of linux-gpio/for-next.
->>>
->>>   Documentation/gpio/sysfs.txt  | 12 ++++++++----
->>>   drivers/gpio/gpiolib-sysfs.c  | 23 ++++++++++++++++-------
->>>   include/linux/gpio/consumer.h |  9 +++++++++
->>>   3 files changed, 33 insertions(+), 11 deletions(-)
->>>
->>> diff --git a/Documentation/gpio/sysfs.txt b/Documentation/gpio/sysfs.txt
->>> index c2c3a97..8e301b2 100644
->>> --- a/Documentation/gpio/sysfs.txt
->>> +++ b/Documentation/gpio/sysfs.txt
->>> @@ -125,7 +125,11 @@ requested using gpio_request():
->>>          /* export the GPIO to userspace */
->>>          int gpiod_export(struct gpio_desc *desc, bool direction_may_change);
->>>
->>> -       /* reverse gpio_export() */
->>> +       /* export named GPIO to userspace */
->>> +       int gpiod_export_name(struct gpio_desc *desc, const char *ioname,
->>> +                       bool direction_may_change);
->>> +
->>> +       /* reverse gpio_export() / gpiod_export_name() */
->>>          void gpiod_unexport(struct gpio_desc *desc);
->>>
->>>          /* create a sysfs link to an exported GPIO node */
->>> @@ -136,9 +140,9 @@ requested using gpio_request():
->>>          int gpiod_sysfs_set_active_low(struct gpio_desc *desc, int value);
->>>
->>>   After a kernel driver requests a GPIO, it may only be made available in
->>> -the sysfs interface by gpiod_export(). The driver can control whether the
->>> -signal direction may change. This helps drivers prevent userspace code
->>> -from accidentally clobbering important system state.
->>> +the sysfs interface by gpiod_export() or gpiod_export_name(). The driver
->>> +can control whether the signal direction may change. This helps drivers
->>> +prevent userspace code from accidentally clobbering important system state.
->>>
->>>   This explicit exporting can help with debugging (by making some kinds
->>>   of experiments easier), or can provide an always-there interface that's
->>> diff --git a/drivers/gpio/gpiolib-sysfs.c b/drivers/gpio/gpiolib-sysfs.c
->>> index be45a92..7d36230 100644
->>> --- a/drivers/gpio/gpiolib-sysfs.c
->>> +++ b/drivers/gpio/gpiolib-sysfs.c
->>> @@ -523,13 +523,12 @@ static struct class gpio_class = {
->>>    *
->>>    * Returns zero on success, else an error.
->>>    */
->>> -int gpiod_export(struct gpio_desc *desc, bool direction_may_change)
->>> +int gpiod_export_name(struct gpio_desc *desc, const char *ioname,
->>> +                     bool direction_may_change)
->>>   {
->>>          unsigned long           flags;
->>>          int                     status;
->>> -       const char              *ioname = NULL;
->>>          struct device           *dev;
->>> -       int                     offset;
->>>
->>>          /* can't export until sysfs is available ... */
->>>          if (!gpio_class.p) {
->>> @@ -560,10 +559,6 @@ int gpiod_export(struct gpio_desc *desc, bool direction_may_change)
->>>                  direction_may_change = false;
->>>          spin_unlock_irqrestore(&gpio_lock, flags);
->>>
->>> -       offset = gpio_chip_hwgpio(desc);
->>> -       if (desc->chip->names && desc->chip->names[offset])
->>> -               ioname = desc->chip->names[offset];
->>> -
->>>          dev = device_create(&gpio_class, desc->chip->dev, MKDEV(0, 0),
->>>                              desc, ioname ? ioname : "gpio%u",
->>>                              desc_to_gpio(desc));
->>> @@ -600,6 +595,20 @@ fail_unlock:
->>>          gpiod_dbg(desc, "%s: status %d\n", __func__, status);
->>>          return status;
->>>   }
->>> +EXPORT_SYMBOL_GPL(gpiod_export_name);
->>> +
->>> +int gpiod_export(struct gpio_desc *desc, bool direction_may_change)
->>> +{
->>> +       const char *ioname = NULL;
->>> +
->>> +       if (desc) {
->>> +               int offset = gpio_chip_hwgpio(desc);
->>> +
->>> +               if (desc->chip->names && desc->chip->names[offset])
->>> +                       ioname = desc->chip->names[offset];
->>
->> I'd add a
->>
->> else
->>      ioname = "gpio%u";
->>
->> so all the name-chosing code is grouped in the same place. Then you
->> can remove that same check from gpiod_export_name().
->>
->>> +       }
->>> +       return gpiod_export_name(desc, ioname, direction_may_change);
->>> +}
->>>   EXPORT_SYMBOL_GPL(gpiod_export);
->>>
->>>   static int match_export(struct device *dev, const void *data)
->>> diff --git a/include/linux/gpio/consumer.h b/include/linux/gpio/consumer.h
->>> index 05e53cc..986da3e 100644
->>> --- a/include/linux/gpio/consumer.h
->>> +++ b/include/linux/gpio/consumer.h
->>> @@ -260,6 +260,8 @@ static inline int desc_to_gpio(const struct gpio_desc *desc)
->>>   #if IS_ENABLED(CONFIG_GPIOLIB) && IS_ENABLED(CONFIG_GPIO_SYSFS)
->>>
->>>   int gpiod_export(struct gpio_desc *desc, bool direction_may_change);
->>> +int gpiod_export_name(struct gpio_desc *desc, const char *ioname,
->>> +                     bool direction_may_change);
->>>   int gpiod_export_link(struct device *dev, const char *name,
->>>                        struct gpio_desc *desc);
->>>   int gpiod_sysfs_set_active_low(struct gpio_desc *desc, int value);
->>> @@ -273,6 +275,13 @@ static inline int gpiod_export(struct gpio_desc *desc,
->>>          return -ENOSYS;
->>>   }
->>>
->>> +static inline int gpiod_export_name(struct gpio_desc *desc,
->>> +                                   const char *ioname,
->>> +                                   bool direction_may_change)
->>> +{
->>> +       return -ENOSYS;
->>> +}
->>> +
->>>   static inline int gpiod_export_link(struct device *dev, const char *name,
->>>                                      struct gpio_desc *desc)
->>>   {
->>> --
->>> 1.9.1
->>>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-gpio" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>
->
->
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc drivers/phy/phy-samsung-usb2.c
+index 29e4ab987645,ae30640a411d..000000000000
+--- a/drivers/phy/phy-samsung-usb2.c
++++ b/drivers/phy/phy-samsung-usb2.c
+@@@ -87,12 -87,12 +87,18 @@@ static struct phy *samsung_usb2_phy_xla
+  }
+ =20
+  static const struct of_device_id samsung_usb2_phy_of_match[] =3D {
+ +#ifdef CONFIG_PHY_S5PV210_USB2
+ +	{
+ +		.compatible =3D "samsung,s5pv210-usb2-phy",
+ +		.data =3D &s5pv210_usb2_phy_config,
+ +	},
+ +#endif
++ #ifdef CONFIG_PHY_EXYNOS4X12_USB2
++ 	{
++ 		.compatible =3D "samsung,exynos3250-usb2-phy",
++ 		.data =3D &exynos3250_usb2_phy_config,
++ 	},
++ #endif
+  #ifdef CONFIG_PHY_EXYNOS4210_USB2
+  	{
+  		.compatible =3D "samsung,exynos4210-usb2-phy",
+
+--Sig_/c_w9TM9BXeaI+tfo4eparA4
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJT0KnwAAoJEMDTa8Ir7ZwVKUcP/j/uNkcQlllF70lA3mvLlKPm
+1nqDjWKeAqzYsnnf1Mdd78Pe99pIEP5LdtW6BuoaCg7DhLHmSzhZbxtZshOAsS/b
+06kq6xBnP/jMRMJyFfKWn6T4znW89FQfTEAe/AzMBi5qrvHNuWmbb2LSF8fKp1YU
+fwI3uwlSaTdFT7lLo0WTaCxHmn1xgUTFTECeGyf+s1093WTFTsmcXM2Zb7EPMyzy
+vpkMBWaOFVRgMgIQbixL2mDlymQZOleEPekIZckrRj16yhau1gClR+Yi10TCwiSx
+PzZlldNUJ+qu0WVG778qiQ5+YNKlUlX056dc4MQBkSIDDWM6XgNPakJU2xVCobCO
+eB3TYho9ZyTXCwKWh7ZJIfqADFVyZvkSwPNFmxRcRfDF3d4rkMaR4L7pLNe8siTL
+uJr4/lw9CswO0eXD4i3Cd8L1WRawcHAq4HXTnWF7YPnrc6NqWjxUAd/ndNOkG8Zu
+uclVzZscQeExz8iP/HazpFkTPiwaG8BLSUaWNah6TD4AG6f6GZphYoisKa63tO6p
+t5AnHkvdcVLmpGAwS2S68NC6hmLLuxKREq4OTo58RYhANyb4vxw47VTuCrwdWNZy
+DYd+UG86P9++7s63VDKBQijdFFNMqnupj5xa6n9Lf1fLvXRnRjczmGCX5gOZezrk
+fWsFIBKwiKcGg6EgYWyb
+=Kkfh
+-----END PGP SIGNATURE-----
+
+--Sig_/c_w9TM9BXeaI+tfo4eparA4--
