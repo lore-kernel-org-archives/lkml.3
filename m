@@ -1,51 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758748AbaGXGAF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 02:00:05 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:16449 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750904AbaGXGAD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 02:00:03 -0400
-Message-ID: <53D0A0CC.9070506@parallels.com>
-Date: Thu, 24 Jul 2014 09:59:40 +0400
-From: Vasily Averin <vvs@parallels.com>
-Organization: Parallels
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	id S934133AbaGXGB4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 02:01:56 -0400
+Received: from helcar.apana.org.au ([209.40.204.226]:42355 "EHLO
+	helcar.apana.org.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750904AbaGXGBx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jul 2014 02:01:53 -0400
+Date: Thu, 24 Jul 2014 14:00:54 +0800
+From: Herbert Xu <herbert@gondor.apana.org.au>
+To: LABBE Corentin <clabbe.montjoie@gmail.com>
+Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        rdunlap@infradead.org, maxime.ripard@free-electrons.com,
+        linux@arm.linux.org.uk, davem@davemloft.net, grant.likely@linaro.org,
+        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org
+Subject: Re: [PATCH v4 3/3] crypto: Add Allwinner Security System crypto
+ accelerator
+Message-ID: <20140724060054.GA6545@gondor.apana.org.au>
+References: <1405169953-13695-1-git-send-email-clabbe.montjoie@gmail.com>
+ <1405169953-13695-4-git-send-email-clabbe.montjoie@gmail.com>
 MIME-Version: 1.0
-CC: Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Richard Weinberger <richard.weinberger@gmail.com>
-Subject: Re: [PATCH  v4] fs: umount on symlink leaks mnt count
-References: <CAFLxGvxf_bsLNKRtt05zgkdHy+7ALWMz29QUG=f9UwTcqXetfg@mail.gmail.com>  <cover.1405859651.git.vvs@openvz.org> <53CCCF9F.6090301@parallels.com> <1406095603.2509.11.camel@perseus.fritz.box>
-In-Reply-To: <1406095603.2509.11.camel@perseus.fritz.box>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1405169953-13695-4-git-send-email-clabbe.montjoie@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CVE-2014-5045 was assigned for this issue
+On Sat, Jul 12, 2014 at 02:59:13PM +0200, LABBE Corentin wrote:
+>
+> +/* sunxi_hash_init: initialize request context
+> + * Activate the SS, and configure it for MD5 or SHA1
+> + */
+> +int sunxi_hash_init(struct ahash_request *areq)
+> +{
+> +	const char *hash_type;
+> +	struct crypto_ahash *tfm = crypto_ahash_reqtfm(areq);
+> +	struct sunxi_req_ctx *op = crypto_ahash_ctx(tfm);
+> +
+> +	mutex_lock(&ss->lock);
+> +
+> +	hash_type = crypto_tfm_alg_name(areq->base.tfm);
+> +
+> +	op->byte_count = 0;
+> +	op->nbwait = 0;
+> +	op->waitbuf = 0;
+> +
+> +	/* Enable and configure SS for MD5 or SHA1 */
+> +	if (strcmp(hash_type, "sha1") == 0)
+> +		op->mode = SS_OP_SHA1;
+> +	else
+> +		op->mode = SS_OP_MD5;
+> +
+> +	writel(op->mode | SS_ENABLED, ss->base + SS_CTL);
+> +	return 0;
 
-On 07/23/2014 10:06 AM, Ian Kent wrote:
-> On Mon, 2014-07-21 at 12:30 +0400, Vasily Averin wrote:
->> Currently umount on symlink blocks following umount:
->>
->> /vz is separate mount
->>
->> # ls /vz/ -al | grep test
->> drwxr-xr-x.  2 root root       4096 Jul 19 01:14 testdir
->> lrwxrwxrwx.  1 root root         11 Jul 19 01:16 testlink -> /vz/testdir
->> # umount -l /vz/testlink
->> umount: /vz/testlink: not mounted (expected)
->>
->> # lsof /vz
->> # umount /vz
->> umount: /vz: device is busy. (unexpected)
->>
->> In this case mountpoint_last() gets an extra refcount on path->mnt
->>
->> Signed-off-by: Vasily Averin <vvs@openvz.org>
-> 
-> Acked-by: Ian Kent <raven@themaw.net>
+The hash driver is completely broken.  You are modifying tfm
+ctx data which is shared by all users of a single tfm.  So
+if two users conduct hashes in parallel they will step all
+over each other.
 
+Worse, the unpaired mutex_lock will quickly lead to dead locks.
+
+You cannot assume that final will be called.
+
+Cheers,
+-- 
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
