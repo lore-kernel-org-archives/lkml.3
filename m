@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757989AbaGXKBE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 06:01:04 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:55074 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934661AbaGXJsl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S934665AbaGXJsl (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 24 Jul 2014 05:48:41 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:55031 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934628AbaGXJsc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jul 2014 05:48:32 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Axel Lin <axel.lin@ingics.com>, Guenter Roeck <linux@roeck-us.net>,
+Cc: Florian Westphal <fw@strlen.de>, Pablo Neira Ayuso <pablo@netfilter.org>,
+        Chris J Arges <chris.j.arges@canonical.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 095/128] hwmon: (adm1021) Fix cache problem when writing temperature limits
-Date: Thu, 24 Jul 2014 10:45:44 +0100
-Message-Id: <1406195177-8656-96-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 088/128] netfilter: nf_nat: fix oops on netns removal
+Date: Thu, 24 Jul 2014 10:45:37 +0100
+Message-Id: <1406195177-8656-89-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1406195177-8656-1-git-send-email-luis.henriques@canonical.com>
 References: <1406195177-8656-1-git-send-email-luis.henriques@canonical.com>
@@ -27,73 +28,101 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Axel Lin <axel.lin@ingics.com>
+From: Florian Westphal <fw@strlen.de>
 
-commit c024044d4da2c9c3b32933b4235df1e409293b84 upstream.
+commit 945b2b2d259d1a4364a2799e80e8ff32f8c6ee6f upstream.
 
-The module test script for the adm1021 driver exposes a cache problem
-when writing temperature limits. temp_min and temp_max are expected
-to be stored in milli-degrees C but are stored in degrees C.
+Quoting Samu Kallio:
 
-Reported-by: Guenter Roeck <linux@roeck-us.net>
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-[ luis: backported to 3.11: adjusted context ]
+ Basically what's happening is, during netns cleanup,
+ nf_nat_net_exit gets called before ipv4_net_exit. As I understand
+ it, nf_nat_net_exit is supposed to kill any conntrack entries which
+ have NAT context (through nf_ct_iterate_cleanup), but for some
+ reason this doesn't happen (perhaps something else is still holding
+ refs to those entries?).
+
+ When ipv4_net_exit is called, conntrack entries (including those
+ with NAT context) are cleaned up, but the
+ nat_bysource hashtable is long gone - freed in nf_nat_net_exit. The
+ bug happens when attempting to free a conntrack entry whose NAT hash
+ 'prev' field points to a slot in the freed hash table (head for that
+ bin).
+
+We ignore conntracks with null nat bindings.  But this is wrong,
+as these are in bysource hash table as well.
+
+Restore nat-cleaning for the netns-is-being-removed case.
+
+bug:
+https://bugzilla.kernel.org/show_bug.cgi?id=65191
+
+Fixes: c2d421e1718 ('netfilter: nf_nat: fix race when unloading protocol modules')
+Reported-by: Samu Kallio <samu.kallio@aberdeencloud.com>
+Debugged-by: Samu Kallio <samu.kallio@aberdeencloud.com>
+Signed-off-by: Florian Westphal <fw@strlen.de>
+Tested-by: Samu Kallio <samu.kallio@aberdeencloud.com>
+Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
+Cc: Chris J Arges <chris.j.arges@canonical.com>
+[ luis: backported to 3.11:
+  - nf_ct_iterate_cleanup() have only 3 parameters ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/hwmon/adm1021.c | 14 ++++++++------
- 1 file changed, 8 insertions(+), 6 deletions(-)
+ net/netfilter/nf_nat_core.c | 35 ++++++++++++++++++++++++++++++++++-
+ 1 file changed, 34 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/hwmon/adm1021.c b/drivers/hwmon/adm1021.c
-index 29dd9f746dfa..233b374334ed 100644
---- a/drivers/hwmon/adm1021.c
-+++ b/drivers/hwmon/adm1021.c
-@@ -185,7 +185,7 @@ static ssize_t set_temp_max(struct device *dev,
- 	struct i2c_client *client = to_i2c_client(dev);
- 	struct adm1021_data *data = i2c_get_clientdata(client);
- 	long temp;
--	int err;
-+	int reg_val, err;
+diff --git a/net/netfilter/nf_nat_core.c b/net/netfilter/nf_nat_core.c
+index 038eee5c8f85..2bb801e3ee8c 100644
+--- a/net/netfilter/nf_nat_core.c
++++ b/net/netfilter/nf_nat_core.c
+@@ -487,6 +487,39 @@ static int nf_nat_proto_remove(struct nf_conn *i, void *data)
+ 	return i->status & IPS_NAT_MASK ? 1 : 0;
+ }
  
- 	err = kstrtol(buf, 10, &temp);
- 	if (err)
-@@ -193,10 +193,11 @@ static ssize_t set_temp_max(struct device *dev,
- 	temp /= 1000;
++static int nf_nat_proto_clean(struct nf_conn *ct, void *data)
++{
++	struct nf_conn_nat *nat = nfct_nat(ct);
++
++	if (nf_nat_proto_remove(ct, data))
++		return 1;
++
++	if (!nat || !nat->ct)
++		return 0;
++
++	/* This netns is being destroyed, and conntrack has nat null binding.
++	 * Remove it from bysource hash, as the table will be freed soon.
++	 *
++	 * Else, when the conntrack is destoyed, nf_nat_cleanup_conntrack()
++	 * will delete entry from already-freed table.
++	 */
++	if (!del_timer(&ct->timeout))
++		return 1;
++
++	spin_lock_bh(&nf_nat_lock);
++	hlist_del_rcu(&nat->bysource);
++	ct->status &= ~IPS_NAT_DONE_MASK;
++	nat->ct = NULL;
++	spin_unlock_bh(&nf_nat_lock);
++
++	add_timer(&ct->timeout);
++
++	/* don't delete conntrack.  Although that would make things a lot
++	 * simpler, we'd end up flushing all conntracks on nat rmmod.
++	 */
++	return 0;
++}
++
+ static void nf_nat_l4proto_clean(u8 l3proto, u8 l4proto)
+ {
+ 	struct nf_nat_proto_clean clean = {
+@@ -749,7 +782,7 @@ static void __net_exit nf_nat_net_exit(struct net *net)
+ {
+ 	struct nf_nat_proto_clean clean = {};
  
- 	mutex_lock(&data->update_lock);
--	data->temp_max[index] = clamp_val(temp, -128, 127);
-+	reg_val = clamp_val(temp, -128, 127);
-+	data->temp_max[index] = reg_val * 1000;
- 	if (!read_only)
- 		i2c_smbus_write_byte_data(client, ADM1021_REG_TOS_W(index),
--					  data->temp_max[index]);
-+					  reg_val);
- 	mutex_unlock(&data->update_lock);
- 
- 	return count;
-@@ -210,7 +211,7 @@ static ssize_t set_temp_min(struct device *dev,
- 	struct i2c_client *client = to_i2c_client(dev);
- 	struct adm1021_data *data = i2c_get_clientdata(client);
- 	long temp;
--	int err;
-+	int reg_val, err;
- 
- 	err = kstrtol(buf, 10, &temp);
- 	if (err)
-@@ -218,10 +219,11 @@ static ssize_t set_temp_min(struct device *dev,
- 	temp /= 1000;
- 
- 	mutex_lock(&data->update_lock);
--	data->temp_min[index] = clamp_val(temp, -128, 127);
-+	reg_val = clamp_val(temp, -128, 127);
-+	data->temp_min[index] = reg_val * 1000;
- 	if (!read_only)
- 		i2c_smbus_write_byte_data(client, ADM1021_REG_THYST_W(index),
--					  data->temp_min[index]);
-+					  reg_val);
- 	mutex_unlock(&data->update_lock);
- 
- 	return count;
+-	nf_ct_iterate_cleanup(net, &nf_nat_proto_remove, &clean);
++	nf_ct_iterate_cleanup(net, nf_nat_proto_clean, &clean);
+ 	synchronize_rcu();
+ 	nf_ct_free_hashtable(net->ct.nat_bysource, net->ct.nat_htable_size);
+ }
 -- 
 1.9.1
 
