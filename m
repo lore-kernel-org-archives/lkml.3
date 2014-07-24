@@ -1,102 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759073AbaGXNvG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 09:51:06 -0400
-Received: from e24smtp03.br.ibm.com ([32.104.18.24]:42424 "EHLO
-	e24smtp03.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758883AbaGXNvD (ORCPT
+	id S1759204AbaGXNww (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 09:52:52 -0400
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:35030 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757725AbaGXNwu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 09:51:03 -0400
-Date: Thu, 24 Jul 2014 10:50:59 -0300
-From: Leonidas Da Silva Barbosa <leosilva@linux.vnet.ibm.com>
-To: Herbert Xu <herbert@gondor.apana.org.au>,
-        "David S. Miller" <davem@davemloft.net>, linux-crypto@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: mhcerri@linux.vnet.ibm.com, fin@linux.vnet.ibm.com
-Subject: [PATCH 2/8] Replacing spinlocks by nx_copy_ctx on NX-AES-CBC
-Message-ID: <20140724135056.GA24330@bluepex.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14072413-9564-0000-0000-0000015B92B7
+	Thu, 24 Jul 2014 09:52:50 -0400
+From: pramod.gurav.etc@gmail.com
+X-Google-Original-From: pramod.gurav@smartplayin.com
+To: linux-kernel@vger.kernel.org
+Cc: Pramod Gurav <pramod.gurav@smartplayin.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>
+Subject: [PATCH] crypto: atmel-sha: Switch to managed version of kzalloc
+Date: Thu, 24 Jul 2014 19:26:20 +0530
+Message-Id: <1406210180-17313-1-git-send-email-pramod.gurav@smartplayin.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replaces spinlock usage by a simple copy of the crypto context, avoiding
-possible bottlenecks.
+From: Pramod Gurav <pramod.gurav@smartplayin.com>
 
-Signed-off-by: Leonidas Da Silva Barbosa <leosilva@linux.vnet.ibm.com>
+This patch switches data allocation from kzalloc to devm_kzalloc.
+It also removed some kfree() on data that was earlier allocated
+using devm_kzalloc().
+
+CC: Grant Likely <grant.likely@linaro.org>
+CC: Rob Herring <robh+dt@kernel.org>
+CC: Nicolas Ferre <nicolas.ferre@atmel.com>
+CC: Herbert Xu <herbert@gondor.apana.org.au>
+
+Signed-off-by: Pramod Gurav <pramod.gurav@smartplayin.com>
 ---
- drivers/crypto/nx/nx-aes-cbc.c |   20 ++++++++++++--------
- 1 files changed, 12 insertions(+), 8 deletions(-)
+ drivers/crypto/atmel-sha.c |    9 ++-------
+ 1 file changed, 2 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/crypto/nx/nx-aes-cbc.c b/drivers/crypto/nx/nx-aes-cbc.c
-index cc00b52..842f8ee 100644
---- a/drivers/crypto/nx/nx-aes-cbc.c
-+++ b/drivers/crypto/nx/nx-aes-cbc.c
-@@ -70,15 +70,19 @@ static int cbc_aes_nx_crypt(struct blkcipher_desc *desc,
- {
- 	struct nx_crypto_ctx *nx_ctx = crypto_blkcipher_ctx(desc->tfm);
- 	struct nx_csbcpb *csbcpb = nx_ctx->csbcpb;
--	unsigned long irq_flags;
- 	unsigned int processed = 0, to_process;
- 	u32 max_sg_len;
- 	int rc;
+diff --git a/drivers/crypto/atmel-sha.c b/drivers/crypto/atmel-sha.c
+index 0618be0..9a4f69e 100644
+--- a/drivers/crypto/atmel-sha.c
++++ b/drivers/crypto/atmel-sha.c
+@@ -1353,7 +1353,6 @@ static struct crypto_platform_data *atmel_sha_of_init(struct platform_device *pd
+ 					GFP_KERNEL);
+ 	if (!pdata->dma_slave) {
+ 		dev_err(&pdev->dev, "could not allocate memory for dma_slave\n");
+-		devm_kfree(&pdev->dev, pdata);
+ 		return ERR_PTR(-ENOMEM);
+ 	}
  
--	spin_lock_irqsave(&nx_ctx->lock, irq_flags);
-+	struct nx_crypto_ctx curr_nx_ctx;
-+
-+	if (nx_copy_ctx(&curr_nx_ctx, nx_ctx))
-+		return -ENOMEM;	
-+	
-+	csbcpb = curr_nx_ctx.csbcpb;	
+@@ -1375,7 +1374,8 @@ static int atmel_sha_probe(struct platform_device *pdev)
+ 	unsigned long sha_phys_size;
+ 	int err;
  
- 	max_sg_len = min_t(u32, nx_driver.of.max_sg_len/sizeof(struct nx_sg),
--			   nx_ctx->ap->sglen);
-+			   curr_nx_ctx.ap->sglen);
+-	sha_dd = kzalloc(sizeof(struct atmel_sha_dev), GFP_KERNEL);
++	sha_dd = devm_kzalloc(&pdev->dev, sizeof(struct atmel_sha_dev),
++				GFP_KERNEL);
+ 	if (sha_dd == NULL) {
+ 		dev_err(dev, "unable to alloc data struct.\n");
+ 		err = -ENOMEM;
+@@ -1490,8 +1490,6 @@ clk_err:
+ 	free_irq(sha_dd->irq, sha_dd);
+ res_err:
+ 	tasklet_kill(&sha_dd->done_task);
+-	kfree(sha_dd);
+-	sha_dd = NULL;
+ sha_dd_err:
+ 	dev_err(dev, "initialization failed.\n");
  
- 	if (enc)
- 		NX_CPB_FDM(csbcpb) |= NX_FDM_ENDE_ENCRYPT;
-@@ -87,22 +91,22 @@ static int cbc_aes_nx_crypt(struct blkcipher_desc *desc,
+@@ -1523,9 +1521,6 @@ static int atmel_sha_remove(struct platform_device *pdev)
+ 	if (sha_dd->irq >= 0)
+ 		free_irq(sha_dd->irq, sha_dd);
  
- 	do {
- 		to_process = min_t(u64, nbytes - processed,
--				   nx_ctx->ap->databytelen);
-+				   curr_nx_ctx.ap->databytelen);
- 		to_process = min_t(u64, to_process,
- 				   NX_PAGE_SIZE * (max_sg_len - 1));
- 		to_process = to_process & ~(AES_BLOCK_SIZE - 1);
- 
--		rc = nx_build_sg_lists(nx_ctx, desc, dst, src, to_process,
-+		rc = nx_build_sg_lists(&curr_nx_ctx, desc, dst, src, to_process,
- 				       processed, csbcpb->cpb.aes_cbc.iv);
- 		if (rc)
- 			goto out;
- 
--		if (!nx_ctx->op.inlen || !nx_ctx->op.outlen) {
-+		if (!curr_nx_ctx.op.inlen || !curr_nx_ctx.op.outlen) {
- 			rc = -EINVAL;
- 			goto out;
- 		}
- 
--		rc = nx_hcall_sync(nx_ctx, &nx_ctx->op,
-+		rc = nx_hcall_sync(&curr_nx_ctx, &curr_nx_ctx.op,
- 				   desc->flags & CRYPTO_TFM_REQ_MAY_SLEEP);
- 		if (rc)
- 			goto out;
-@@ -115,7 +119,7 @@ static int cbc_aes_nx_crypt(struct blkcipher_desc *desc,
- 		processed += to_process;
- 	} while (processed < nbytes);
- out:
--	spin_unlock_irqrestore(&nx_ctx->lock, irq_flags);
-+	kmem_cache_free(nx_driver.slab, curr_nx_ctx.kmem);
- 	return rc;
+-	kfree(sha_dd);
+-	sha_dd = NULL;
+-
+ 	return 0;
  }
  
 -- 
-1.7.1
+1.7.9.5
 
