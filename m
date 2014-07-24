@@ -1,87 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759301AbaGXNxI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 09:53:08 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:53619 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1759202AbaGXNxE (ORCPT
+	id S1759275AbaGXNyQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 09:54:16 -0400
+Received: from e24smtp01.br.ibm.com ([32.104.18.85]:34858 "EHLO
+	e24smtp01.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758957AbaGXNyM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 09:53:04 -0400
-Date: Thu, 24 Jul 2014 14:52:38 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Laura Abbott <lauraa@codeaurora.org>
-Cc: Will Deacon <Will.Deacon@arm.com>, David Riley <davidriley@chromium.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Ritesh Harjain <ritesh.harjani@gmail.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCHv4 3/5] common: dma-mapping: Introduce common remapping
- functions
-Message-ID: <20140724135238.GC13371@arm.com>
-References: <1406079308-5232-1-git-send-email-lauraa@codeaurora.org>
- <1406079308-5232-4-git-send-email-lauraa@codeaurora.org>
- <20140723104554.GB1366@localhost>
- <53D02F7B.5020309@codeaurora.org>
+	Thu, 24 Jul 2014 09:54:12 -0400
+Date: Thu, 24 Jul 2014 10:54:08 -0300
+From: Leonidas Da Silva Barbosa <leosilva@linux.vnet.ibm.com>
+To: Herbert Xu <herbert@gondor.apana.org.au>,
+        "David S. Miller" <davem@davemloft.net>, linux-crypto@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: mhcerri@linux.vnet.ibm.com, fin@linux.vnet.ibm.com
+Subject: [PATCH 3/8] Replacing spinlocks by nx_copy_ctx on NX-AES-CCM
+Message-ID: <20140724135405.GA24841@bluepex.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <53D02F7B.5020309@codeaurora.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14072413-1524-0000-0000-000000120E10
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 23, 2014 at 10:56:11PM +0100, Laura Abbott wrote:
-> On 7/23/2014 3:45 AM, Catalin Marinas wrote:
-> > On Wed, Jul 23, 2014 at 02:35:06AM +0100, Laura Abbott wrote:
-> >> --- a/drivers/base/dma-mapping.c
-> >> +++ b/drivers/base/dma-mapping.c
-> > [...]
-> >> +void *dma_common_contiguous_remap(struct page *page, size_t size,
-> >> +			unsigned long vm_flags,
-> >> +			pgprot_t prot, const void *caller)
-> >> +{
-> >> +	int i;
-> >> +	struct page **pages;
-> >> +	void *ptr;
-> >> +
-> >> +	pages = kmalloc(sizeof(struct page *) << get_order(size), GFP_KERNEL);
-> >> +	if (!pages)
-> >> +		return NULL;
-> >> +
-> >> +	for (i = 0; i < (size >> PAGE_SHIFT); i++)
-> >> +		pages[i] = page + i;
-> >> +
-> >> +	ptr = dma_common_pages_remap(pages, size, vm_flags, prot, caller);
-> >> +
-> >> +	kfree(pages);
-> >> +
-> >> +	return ptr;
-> >> +}
-> > 
-> > You could avoid the dma_common_page_remap() here (and kmalloc) and
-> > simply use ioremap_page_range(). We know that
-> > dma_common_contiguous_remap() is only called with contiguous physical
-> > range, so ioremap_page_range() is suitable. It also makes it a
-> > non-functional change for arch/arm.
-> 
-> My original thought with using map_vm_area vs. ioremap_page_range was
-> that ioremap_page_range is really intended for mapping io devices and
-> the like into the kernel virtual address space. map_vm_area is designed
-> to handle pages of kernel managed memory. Perhaps it's too nit-picky
-> a distinction though.
+Replaces spinlock usage by a simple copy of the crypto context, avoiding
+possible bottlenecks.
 
-I think you are right. We had a discussion in the past about using
-ioremap on valid RAM addresses and decided not to allow this. This would
-be similar with the ioremap_page_range() here.
+Signed-off-by: Leonidas Da Silva Barbosa <leosilva@linux.vnet.ibm.com>
+---
+ drivers/crypto/nx/nx-aes-ccm.c |   42 +++++++++++++++++++++++----------------
+ 1 files changed, 25 insertions(+), 17 deletions(-)
 
->From my perspective, you can leave the code as is (wouldn't be any
-functional change for arm64 since it was using vmap() already). But
-please add a comment in the commit log about this change.
-
+diff --git a/drivers/crypto/nx/nx-aes-ccm.c b/drivers/crypto/nx/nx-aes-ccm.c
+index 5ecd4c2..f1000ad 100644
+--- a/drivers/crypto/nx/nx-aes-ccm.c
++++ b/drivers/crypto/nx/nx-aes-ccm.c
+@@ -341,12 +341,16 @@ static int ccm_nx_decrypt(struct aead_request   *req,
+ 	unsigned int nbytes = req->cryptlen;
+ 	unsigned int authsize = crypto_aead_authsize(crypto_aead_reqtfm(req));
+ 	struct nx_ccm_priv *priv = &nx_ctx->priv.ccm;
+-	unsigned long irq_flags;
+ 	unsigned int processed = 0, to_process;
+ 	u32 max_sg_len;
+ 	int rc = -1;
+ 
+-	spin_lock_irqsave(&nx_ctx->lock, irq_flags);
++	struct nx_crypto_ctx curr_nx_ctx;
++
++	if (nx_copy_ctx(&curr_nx_ctx, nx_ctx))
++		return -ENOMEM;
++
++	csbcpb = curr_nx_ctx.csbcpb;	
+ 
+ 	nbytes -= authsize;
+ 
+@@ -355,14 +359,14 @@ static int ccm_nx_decrypt(struct aead_request   *req,
+ 				 req->src, nbytes, authsize,
+ 				 SCATTERWALK_FROM_SG);
+ 
+-	rc = generate_pat(desc->info, req, nx_ctx, authsize, nbytes,
++	rc = generate_pat(desc->info, req, &curr_nx_ctx, authsize, nbytes,
+ 			  csbcpb->cpb.aes_ccm.in_pat_or_b0);
+ 	if (rc)
+ 		goto out;
+ 
+ 	/* page_limit: number of sg entries that fit on one page */
+ 	max_sg_len = min_t(u32, nx_driver.of.max_sg_len/sizeof(struct nx_sg),
+-			   nx_ctx->ap->sglen);
++			   curr_nx_ctx.ap->sglen);
+ 
+ 	do {
+ 
+@@ -370,7 +374,7 @@ static int ccm_nx_decrypt(struct aead_request   *req,
+ 		 * update. This value is bound by sg list limits.
+ 		 */
+ 		to_process = min_t(u64, nbytes - processed,
+-				   nx_ctx->ap->databytelen);
++				   curr_nx_ctx.ap->databytelen);
+ 		to_process = min_t(u64, to_process,
+ 				   NX_PAGE_SIZE * (max_sg_len - 1));
+ 
+@@ -379,15 +383,15 @@ static int ccm_nx_decrypt(struct aead_request   *req,
+ 		else
+ 			NX_CPB_FDM(csbcpb) &= ~NX_FDM_INTERMEDIATE;
+ 
+-		NX_CPB_FDM(nx_ctx->csbcpb) &= ~NX_FDM_ENDE_ENCRYPT;
++		NX_CPB_FDM(curr_nx_ctx.csbcpb) &= ~NX_FDM_ENDE_ENCRYPT;
+ 
+-		rc = nx_build_sg_lists(nx_ctx, desc, req->dst, req->src,
++		rc = nx_build_sg_lists(&curr_nx_ctx, desc, req->dst, req->src,
+ 					to_process, processed,
+ 					csbcpb->cpb.aes_ccm.iv_or_ctr);
+ 		if (rc)
+ 			goto out;
+ 
+-		rc = nx_hcall_sync(nx_ctx, &nx_ctx->op,
++		rc = nx_hcall_sync(&curr_nx_ctx, &curr_nx_ctx.op,
+ 			   req->base.flags & CRYPTO_TFM_REQ_MAY_SLEEP);
+ 		if (rc)
+ 			goto out;
+@@ -414,7 +418,7 @@ static int ccm_nx_decrypt(struct aead_request   *req,
+ 	rc = memcmp(csbcpb->cpb.aes_ccm.out_pat_or_mac, priv->oauth_tag,
+ 		    authsize) ? -EBADMSG : 0;
+ out:
+-	spin_unlock_irqrestore(&nx_ctx->lock, irq_flags);
++	kmem_cache_free(nx_driver.slab, curr_nx_ctx.kmem);
+ 	return rc;
+ }
+ 
+@@ -425,28 +429,32 @@ static int ccm_nx_encrypt(struct aead_request   *req,
+ 	struct nx_csbcpb *csbcpb = nx_ctx->csbcpb;
+ 	unsigned int nbytes = req->cryptlen;
+ 	unsigned int authsize = crypto_aead_authsize(crypto_aead_reqtfm(req));
+-	unsigned long irq_flags;
+ 	unsigned int processed = 0, to_process;
+ 	u32 max_sg_len;
+ 	int rc = -1;
+ 
+-	spin_lock_irqsave(&nx_ctx->lock, irq_flags);
++	struct nx_crypto_ctx curr_nx_ctx;
++	
++	if (nx_copy_ctx(&curr_nx_ctx, nx_ctx))
++		return -ENOMEM;
+ 
+-	rc = generate_pat(desc->info, req, nx_ctx, authsize, nbytes,
++	csbcpb = curr_nx_ctx.csbcpb;
++
++	rc = generate_pat(desc->info, req, &curr_nx_ctx, authsize, nbytes,
+ 			  csbcpb->cpb.aes_ccm.in_pat_or_b0);
+ 	if (rc)
+ 		goto out;
+ 
+ 	/* page_limit: number of sg entries that fit on one page */
+ 	max_sg_len = min_t(u32, nx_driver.of.max_sg_len/sizeof(struct nx_sg),
+-			   nx_ctx->ap->sglen);
++			   curr_nx_ctx.ap->sglen);
+ 
+ 	do {
+ 		/* to process: the AES_BLOCK_SIZE data chunk to process in this
+ 		 * update. This value is bound by sg list limits.
+ 		 */
+ 		to_process = min_t(u64, nbytes - processed,
+-				   nx_ctx->ap->databytelen);
++				   curr_nx_ctx.ap->databytelen);
+ 		to_process = min_t(u64, to_process,
+ 				   NX_PAGE_SIZE * (max_sg_len - 1));
+ 
+@@ -457,13 +465,13 @@ static int ccm_nx_encrypt(struct aead_request   *req,
+ 
+ 		NX_CPB_FDM(csbcpb) |= NX_FDM_ENDE_ENCRYPT;
+ 
+-		rc = nx_build_sg_lists(nx_ctx, desc, req->dst, req->src,
++		rc = nx_build_sg_lists(&curr_nx_ctx, desc, req->dst, req->src,
+ 					to_process, processed,
+ 				       csbcpb->cpb.aes_ccm.iv_or_ctr);
+ 		if (rc)
+ 			goto out;
+ 
+-		rc = nx_hcall_sync(nx_ctx, &nx_ctx->op,
++		rc = nx_hcall_sync(&curr_nx_ctx, &curr_nx_ctx.op,
+ 				   req->base.flags & CRYPTO_TFM_REQ_MAY_SLEEP);
+ 		if (rc)
+ 			goto out;
+@@ -494,7 +502,7 @@ static int ccm_nx_encrypt(struct aead_request   *req,
+ 				 SCATTERWALK_TO_SG);
+ 
+ out:
+-	spin_unlock_irqrestore(&nx_ctx->lock, irq_flags);
++	kmem_cache_free(nx_driver.slab, curr_nx_ctx.kmem);
+ 	return rc;
+ }
+ 
 -- 
-Catalin
+1.7.1
+
