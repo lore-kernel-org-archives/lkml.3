@@ -1,85 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933905AbaGXRsz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 13:48:55 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.232]:56964 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752666AbaGXRsy (ORCPT
+	id S934166AbaGXRtr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 13:49:47 -0400
+Received: from out2-smtp.messagingengine.com ([66.111.4.26]:55920 "EHLO
+	out2-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933922AbaGXRtp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 13:48:54 -0400
-Date: Thu, 24 Jul 2014 13:48:49 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Harvey Harrison <harvey.harrison@gmail.com>
-Cc: Nick Krause <xerofoify@gmail.com>,
-        =?ISO-8859-1?B?TeVucyBSdWxsZ+VyZA==?= <mans@mansr.com>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        John Stultz <john.stultz@linaro.org>, paul.gortmaker@windriver.com,
-        gang.chen.5i5j@gmail.com, yongjun_wei@trendmicro.com.cn,
-        Dan Carpenter <dan.carpenter@oracle.com>, tomas.winkler@intel.com,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] staging: Change kzalloc to kcalloc
-Message-ID: <20140724134849.4d228f5f@gandalf.local.home>
-In-Reply-To: <CAHLZz12ammMZNAah_eyYePJWorw2AruDAujeNxJHvOF5+Mr7cA@mail.gmail.com>
-References: <1406156581-6052-1-git-send-email-xerofoify@gmail.com>
-	<20140724144725.GA32669@home.goodmis.org>
-	<20140724105132.3cf221c2@gandalf.local.home>
-	<yw1x38dqag24.fsf@unicorn.mansr.com>
-	<CAPDOMVgswyopjGxdRFW-bFRrTcpcNnkY=PqTCT9HbjjA=EZ1iw@mail.gmail.com>
-	<yw1xy4vi90n6.fsf@unicorn.mansr.com>
-	<CAPDOMVia0OXydg_hRH0t63xUaxKEkVc6D20vAZiyugkMXAEsJQ@mail.gmail.com>
-	<yw1xtx669002.fsf@unicorn.mansr.com>
-	<CAPDOMVgziyYTX41xZVB9FLHUKFRPPm19jo0A_WfbLqaaKbxPqg@mail.gmail.com>
-	<20140724131821.30c4519d@gandalf.local.home>
-	<CAHLZz12ammMZNAah_eyYePJWorw2AruDAujeNxJHvOF5+Mr7cA@mail.gmail.com>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
+	Thu, 24 Jul 2014 13:49:45 -0400
+X-Sasl-enc: s+YUV4r+bcVs/pIEAKNPYJhocmSYqbopKQetGiDFKFYT 1406224183
+Date: Thu, 24 Jul 2014 14:49:31 -0300
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: Borislav Petkov <bp@alien8.de>
+Cc: linux-kernel@vger.kernel.org, H Peter Anvin <hpa@zytor.com>
+Subject: Re: [PATCH 5/8] x86, microcode, intel: don't use fields from unknown
+ format header
+Message-ID: <20140724174931.GC12180@khazad-dum.debian.net>
+References: <1406146251-8540-1-git-send-email-hmh@hmh.eng.br>
+ <1406146251-8540-6-git-send-email-hmh@hmh.eng.br>
+ <20140724113726.GL19239@pd.tnic>
+ <20140724133059.GA32421@khazad-dum.debian.net>
+ <20140724142802.GN19239@pd.tnic>
+ <20140724150740.GD32421@khazad-dum.debian.net>
+ <20140724162921.GO19239@pd.tnic>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140724162921.GO19239@pd.tnic>
+X-GPG-Fingerprint1: 4096R/39CB4807 C467 A717 507B BAFE D3C1  6092 0BD9 E811
+ 39CB 4807
+X-GPG-Fingerprint2: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 24 Jul 2014 10:30:51 -0700
-Harvey Harrison <harvey.harrison@gmail.com> wrote:
-
-> On Thu, Jul 24, 2014 at 10:18 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> > On Thu, 24 Jul 2014 12:50:31 -0400
-> > Nick Krause <xerofoify@gmail.com> wrote:
+On Thu, 24 Jul 2014, Borislav Petkov wrote:
+> On Thu, Jul 24, 2014 at 12:07:40PM -0300, Henrique de Moraes Holschuh wrote:
+> > Suppose you have a box that takes ldrver 1 microcode, and Intel
+> > releases microcode for a new type of core that has a ldrver of 2, and
+> > it happens to not be the last one in the microcode collection sent by
+> > userspace (via the early initrd or /dev/cpu/microcode). We might well
+> > abort before we find the correct microcode update for that box.
 > 
-> >
-> >> I am have this discussion with other kernel developers and just
-> >> because I send out one patch as a newbie like this doesn't mean I
-> >> don't known C.
-> >
-> > It's not just one patch, and I didn't say you don't know C. I said you
-> > don't understand C enough for kernel development.
+> And? The ldrver 2 header will enter microcode_sanity_check() and abort
+> there. A bit later. Same deal.
 > 
-> And more importantly, stop guessing things are OK and selfishly asking
-> others to check
-> your work for you.
-> 
-> If you have not at least _built_ the kernel with your change, and not
-> _run_ it, and not made
-> sure that the changed code is being _run_...you are wasting other people's time.
-> 
+> If you want to *skip* over ldrver 2 ucode headers but continue looping
+> over the ucode data, then you need to do more than that.
 
-Nick,
+Now that I noticed that ldrver problem exists, I want to do that as well,
+but that was _not_ the purpose of this patch and it should be done as a
+separate change anyway.
 
-Just to bring Harvey's email here in perspective. I mentioned in my
-previous email that most of us are overworked. We don't have time to
-teach you if your patches are correct or not. By saying, "I'll just
-write the code and you tell me if it's correct, and test it for me" is
-like telling someone "Here's a lawn mower, now go mow my lawn".
+> So what exactly are you trying to fix here?
 
-We like it if people put effort into their work and are confident
-themselves that they have the right code or not. There's enough
-reviewing of patches to do from people that put that effort in, that
-there's no time to review patches from people that don't know if their
-work or not.
+I want to stop accessing fields inside an unknown format of microcode
+header.
 
-Cheers,
+I didn't notice I could remove the test inside microcode_sanity_check(),
+just that it was in the wrong place.  However, even if I had noticed it was
+a duplicate, I would have not removed it: IMHO, moving it up a bit like
+this patch did makes that duplicate test useful as documentation, and it is
+true to the intent of the function.
 
--- Steve
+I will respin this patch using the helpers you proposed, and add a new one
+enhancing the way we deal with ldrver.
+
+-- 
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
