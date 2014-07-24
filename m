@@ -1,72 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758822AbaGXMxw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 08:53:52 -0400
-Received: from mail-lb0-f178.google.com ([209.85.217.178]:38106 "EHLO
-	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758208AbaGXMxv (ORCPT
+	id S1758869AbaGXMzL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 08:55:11 -0400
+Received: from mail-we0-f179.google.com ([74.125.82.179]:45684 "EHLO
+	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758527AbaGXMzJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 08:53:51 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAKv+Gu-6rUxUnF+dRuroDJqy2K2B5F0r7_bm0X-vyiuQ-83W5w@mail.gmail.com>
-References: <mvmvbri4k06.fsf@hawking.suse.de>
-	<CAKv+Gu-NAVjMR-Jkw=W-8f7M5FSsQOSdzYN6A0kHDd1m0WA8EA@mail.gmail.com>
-	<mvmr4264i1p.fsf@hawking.suse.de>
-	<CAKv+Gu8SbM_Z=ymBFb2D4EWJeo-6dWuKqE2YNOkqJTKLDEJcYA@mail.gmail.com>
-	<mvm4my7j5xh.fsf@hawking.suse.de>
-	<CAKv+Gu-6rUxUnF+dRuroDJqy2K2B5F0r7_bm0X-vyiuQ-83W5w@mail.gmail.com>
-Date: Thu, 24 Jul 2014 14:53:49 +0200
-Message-ID: <CAKv+Gu96k7GOVR85EXtro3Lt0jjiJqxyvT9cwJZ1qc6uzq97bw@mail.gmail.com>
-Subject: Re: [PATCH] arm64/crypto: fix makefile rule for aes-glue-%.o
-From: Ard Biesheuvel <ard.biesheuvel@linaro.org>
-To: Andreas Schwab <schwab@suse.de>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 24 Jul 2014 08:55:09 -0400
+Message-ID: <1406206505.6621.4.camel@umadbro>
+Subject: Re: [PATCH v2] cfg80211: Try multiple bandwidths when checking
+ usable channels.
+From: Rostislav Lisovy <lisovy@gmail.com>
+To: Johannes Berg <johannes@sipsolutions.net>
+Cc: "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Michal Sojka <sojkam1@fel.cvut.cz>, s.sander@nordsys.de,
+        jan-niklas.meier@volkswagen.de,
+        Rostislav Lisovy <rostislav.lisovy@fel.cvut.cz>
+Date: Thu, 24 Jul 2014 14:55:05 +0200
+In-Reply-To: <1406205820-18152-1-git-send-email-rostislav.lisovy@fel.cvut.cz>
+References: <1406205820-18152-1-git-send-email-rostislav.lisovy@fel.cvut.cz>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24 July 2014 14:35, Ard Biesheuvel <ard.biesheuvel@linaro.org> wrote:
-> On 24 July 2014 14:29, Andreas Schwab <schwab@suse.de> wrote:
->> Ard Biesheuvel <ard.biesheuvel@linaro.org> writes:
->>
->>> On 30 June 2014 15:56, Andreas Schwab <schwab@suse.de> wrote:
->>>> Ard Biesheuvel <ard.biesheuvel@linaro.org> writes:
->>>>
->>>>> Out of curiosity, how did you trigger this failure? I have build this
->>>>> code numerous times (and so have others) and I have never seen this
->>>>> failure.
->>>>
->>>> Did you ever start with a clean tree?
->>>>
->>>
->>> Yep, building both in-tree and out-of-tree, no trouble at all.
->>
->> So you probably didn't configure them as modules.
->>
->
-> Yes, all the time, in fact. They have now been added as built-ins to
-> the defconfig, but I always build as modules, because it is far easier
-> when developing.
+On Thu, 2014-07-24 at 14:43 +0200, Rostislav Lisovy wrote:
+> diff --git a/include/net/cfg80211.h b/include/net/cfg80211.h
+> index e46c437..919f759 100644
+> --- a/include/net/cfg80211.h
+> +++ b/include/net/cfg80211.h
+> @@ -3679,6 +3679,8 @@ void wiphy_apply_custom_regulatory(struct wiphy *wiphy,
+>   * freq_reg_info - get regulatory information for the given frequency
+>   * @wiphy: the wiphy for which we want to process this rule for
+>   * @center_freq: Frequency in KHz for which we want regulatory information for
+> + * @desired_bw_khz: The bandwidth of the channel in KHz we want regulatory
+> + *                  information for
 
-Also, looking into this a bit more, in my case I do see
-arch/arm64/crypto/.aes-glue-ce.o.cmd containing the command line and
-the full set of include/config/... rules that are used to track
-dependencies on the configuration.
+Forgot to add this:
+... or 0 to use the default bandwidth (20MHz)
 
-So what strikes me as odd is this:
 
->   CC [M]  arch/arm64/crypto/aes-glue-ce.o
-> ld: cannot find arch/arm64/crypto/aes-glue-ce.o: No such file or directory
+Best regards;
+Rostislav Lisovy
 
-so it seems make is perfectly happy to create the aes-glue-ce.o file,
-but the subsequent ld that uses it as input cannot find it. Perhaps
-the dependencies are screwed up elsewehere?
-
-Are there any other circumstances of interest? How many threads are
-you building in parallel? Other steps to reproduce?
-
--- 
-Ard.
