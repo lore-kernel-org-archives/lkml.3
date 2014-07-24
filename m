@@ -1,99 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934475AbaGXToo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 15:44:44 -0400
-Received: from mail-lb0-f176.google.com ([209.85.217.176]:54244 "EHLO
-	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933784AbaGXTon (ORCPT
+	id S934507AbaGXTqz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 15:46:55 -0400
+Received: from mail-lb0-f181.google.com ([209.85.217.181]:35504 "EHLO
+	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934354AbaGXTqy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 15:44:43 -0400
-Date: Thu, 24 Jul 2014 23:44:38 +0400
+	Thu, 24 Jul 2014 15:46:54 -0400
+Date: Thu, 24 Jul 2014 23:46:51 +0400
 From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Kees Cook <keescook@chromium.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Andrew Vagin <avagin@openvz.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michael Kerrisk-manpages <mtk.manpages@gmail.com>,
-        Julien Tinnes <jln@google.com>
-Subject: Re: [rfc 4/4] prctl: PR_SET_MM -- Introduce PR_SET_MM_MAP operation,
- v3
-Message-ID: <20140724194438.GD17876@moon>
+To: Serge Hallyn <serge.hallyn@ubuntu.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, keescook@chromium.org,
+        tj@kernel.org, akpm@linux-foundation.org, avagin@openvz.org,
+        ebiederm@xmission.com, hpa@zytor.com, serge.hallyn@canonical.com,
+        xemul@parallels.com, segoon@openwall.com,
+        kamezawa.hiroyu@jp.fujitsu.com, mtk.manpages@gmail.com, jln@google.com
+Subject: Re: [rfc 1/4] mm: Introduce may_adjust_brk helper
+Message-ID: <20140724194651.GE17876@moon>
 References: <20140724164657.452106845@openvz.org>
- <20140724165047.683455139@openvz.org>
- <CAGXu5jL9xMQ3G-pgVneUFqx=v6C7L0-7SBTJ0_bC2B5H0BfeDQ@mail.gmail.com>
+ <20140724165047.437075575@openvz.org>
+ <20140724193225.GT26600@ubuntumail>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAGXu5jL9xMQ3G-pgVneUFqx=v6C7L0-7SBTJ0_bC2B5H0BfeDQ@mail.gmail.com>
+In-Reply-To: <20140724193225.GT26600@ubuntumail>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 24, 2014 at 12:31:54PM -0700, Kees Cook wrote:
-...
-> > +
-> > +#ifdef CONFIG_STACK_GROWSUP
-> > +       if (may_adjust_brk(rlimit(RLIMIT_STACK),
-> > +                          stack_vma->vm_end,
-> > +                          prctl_map->start_stack, 0, 0))
-> > +#else
-> > +       if (may_adjust_brk(rlimit(RLIMIT_STACK),
-> > +                          prctl_map->start_stack,
-> > +                          stack_vma->vm_start, 0, 0))
-> > +#endif
-> > +               goto out;
+On Thu, Jul 24, 2014 at 07:32:25PM +0000, Serge Hallyn wrote:
+> Quoting Cyrill Gorcunov (gorcunov@openvz.org):
+> > To eliminate code duplication lets introduce may_adjust_brk
+> > helper which we will use in brk() and prctl() syscalls.
+> > 
+> > Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+> > Cc: Kees Cook <keescook@chromium.org>
+> > Cc: Tejun Heo <tj@kernel.org>
+> > Cc: Andrew Morton <akpm@linux-foundation.org>
+> > Cc: Andrew Vagin <avagin@openvz.org>
+> > Cc: Eric W. Biederman <ebiederm@xmission.com>
+> > Cc: H. Peter Anvin <hpa@zytor.com>
+> > Cc: Serge Hallyn <serge.hallyn@canonical.com>
+> > Cc: Pavel Emelyanov <xemul@parallels.com>
+> > Cc: Vasiliy Kulikov <segoon@openwall.com>
+> > Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> > Cc: Michael Kerrisk <mtk.manpages@gmail.com>
+> > Cc: Julien Tinnes <jln@google.com>
+> > ---
+> >  include/linux/mm.h |   14 ++++++++++++++
+> >  1 file changed, 14 insertions(+)
+> > 
+> > Index: linux-2.6.git/include/linux/mm.h
+> > ===================================================================
+> > --- linux-2.6.git.orig/include/linux/mm.h
+> > +++ linux-2.6.git/include/linux/mm.h
+> > @@ -18,6 +18,7 @@
+> >  #include <linux/pfn.h>
+> >  #include <linux/bit_spinlock.h>
+> >  #include <linux/shrinker.h>
+> > +#include <linux/resource.h>
+> >  
+> >  struct mempolicy;
+> >  struct anon_vma;
+> > @@ -1780,6 +1781,19 @@ extern struct vm_area_struct *copy_vma(s
+> >  	bool *need_rmap_locks);
+> >  extern void exit_mmap(struct mm_struct *);
+> >  
+> > +static inline int may_adjust_brk(unsigned long rlim,
+> > +				 unsigned long new_brk,
+> > +				 unsigned long start_brk,
+> > +				 unsigned long end_data,
+> > +				 unsigned long start_data)
+> > +{
+> > +	if (rlim < RLIMIT_DATA) {
 > 
-> Ah! Sorry, I missed this use of may_adjust_brk here. Perhaps rename
-> it, since we're not checking brk here, and pass the RLIMIT_* value to
-> the function, which can look it up itself? "check_vma_rlimit" ?
+> In the code you're replacing, this was RLIM_INFINITY.  Did you really
+> mean for this to be RLIMIT_DATA, aka 2?
 
-Yeah, a name is a bit confusing, but I guess check_vma_rlimit() is not
-much better ;-) What we do inside -- we test if a sum of two intervals
-or arguments in this helper so that it won't care about the logical
-context it been called from, but then realized that this would be a way
-too much of unneeded complexity. So if noone else pop with better suggestion
-on name i'll update it to check_vma_rlimit (because it's more general
-in compare to may_adjust_brk :-).
-
-> > +
-> > +       /*
-> > +        * Finally, make sure the caller has the rights to
-> > +        * change /proc/pid/exe link: only local root should
-> > +        * be allowed to.
-> > +        */
-> > +       if (prctl_map->exe_fd != (u32)-1) {
-> > +               struct user_namespace *ns = current_user_ns();
-> > +               const struct cred *cred = current_cred();
-> > +
-> > +               if (!uid_eq(cred->uid, make_kuid(ns, 0)) ||
-> > +                   !gid_eq(cred->gid, make_kgid(ns, 0)))
-> > +                       goto out;
-> > +       }
-> 
-> I got tricked for a moment here. :) I see that even if we pass this
-> check, prctl_set_mm_exe_file will still do the additional checks too
-> during prctl_set_mm_map. Excellent!
-
-Yeah.
-
-> >
-> > +#ifdef CONFIG_CHECKPOINT_RESTORE
-> > +       if (opt == PR_SET_MM_MAP || opt == PR_SET_MM_MAP_SIZE)
-> > +               return prctl_set_mm_map(opt, (const void __user *)addr, arg4);
-> > +#endif
-> > +
-> >         if (!capable(CAP_SYS_RESOURCE))
-> >                 return -EPERM;
-> >
-> >
-> 
-> I think this is looking good. Thanks for the refactoring!
-
-Thanks a huge for comments!!!
+Good catch, thanks Serge! Better would be to pass the type of resource
+(as Kees suggested) here instead of @rlim itself and sure to compare
+with RLIM_INFINITY.
