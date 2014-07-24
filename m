@@ -1,125 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932915AbaGXOra (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 10:47:30 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.230]:45215 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932583AbaGXOr3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 10:47:29 -0400
-Date: Thu, 24 Jul 2014 10:47:25 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Nicholas Krause <xerofoify@gmail.com>
-Cc: gregkh@linuxfoundation.org, john.stultz@linaro.org,
-        paul.gortmaker@windriver.com, gang.chen.5i5j@gmail.com,
-        yongjun_wei@trendmicro.com.cn, dan.carpenter@oracle.com,
-        tomas.winkler@intel.com, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: Change kzalloc to kcalloc
-Message-ID: <20140724144725.GA32669@home.goodmis.org>
-References: <1406156581-6052-1-git-send-email-xerofoify@gmail.com>
+	id S933209AbaGXOtV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 10:49:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40735 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932975AbaGXOtT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jul 2014 10:49:19 -0400
+Date: Thu, 24 Jul 2014 16:49:06 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Namhyung Kim <namhyung@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 4/6] perf report: Honor column width setting
+Message-ID: <20140724144906.GA25165@krava.brq.redhat.com>
+References: <1404883694-5342-1-git-send-email-namhyung@kernel.org>
+ <1404883694-5342-5-git-send-email-namhyung@kernel.org>
+ <20140724125751.GC7652@krava.brq.redhat.com>
+ <20140724135747.GS20303@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1406156581-6052-1-git-send-email-xerofoify@gmail.com>
+In-Reply-To: <20140724135747.GS20303@kernel.org>
 User-Agent: Mutt/1.5.23 (2014-03-12)
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 23, 2014 at 07:03:01PM -0400, Nicholas Krause wrote:
-> This changes the call to kzalloc to kcalloc in ion_dummy_driver
-> for allocating the heap.
+On Thu, Jul 24, 2014 at 10:57:47AM -0300, Arnaldo Carvalho de Melo wrote:
+> Em Thu, Jul 24, 2014 at 02:57:51PM +0200, Jiri Olsa escreveu:
+> > On Wed, Jul 09, 2014 at 02:28:12PM +0900, Namhyung Kim wrote:
+> > > Set column width and do not change it if user gives -w/--column-widths
+> > > option.  It'll truncate longer symbols than the width if exists.
+> > 
+> > SNIP
+> > 
+> > > --- a/tools/perf/util/sort.c
+> > > +++ b/tools/perf/util/sort.c
+> > > @@ -70,7 +70,9 @@ static int hist_entry__thread_snprintf(struct hist_entry *he, char *bf,
+> > >  				       size_t size, unsigned int width)
+> > >  {
+> > >  	const char *comm = thread__comm_str(he->thread);
+> > > -	return repsep_snprintf(bf, size, "%-*s:%5d", width - 6,
+> > > +
+> > > +	width = max(7U, width) - 6;
+> > > +	return repsep_snprintf(bf, size, "%-*.*s:%5d", width, width,
+> > >  			       comm ?: "", he->thread->tid);
+> > >  }
+> > 
+> > also we now print out all sort headers left alligned, which is wrong for
+> > sort_thread header: "Command:  Pid' that mirrors value strings with ':'
+> > being aligned
+> > 
+> > maybe something like in attached patch..?
+> > 
+> > thanks,
+> > jirka
+> > 
+> > 
+> > ---
+> > diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
+> > index f89714329c0f..fbbe86b7f63c 100644
+> > --- a/tools/perf/util/sort.c
+> > +++ b/tools/perf/util/sort.c
+> > @@ -78,6 +78,7 @@ static int hist_entry__thread_snprintf(struct hist_entry *he, char *bf,
+> >  
+> >  struct sort_entry sort_thread = {
+> >  	.se_header	= "Command:  Pid",
+> > +	.se_header_right= true,
 > 
-> Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
-> ---
->  drivers/staging/android/ion/ion_dummy_driver.c | 5 ++---
->  1 file changed, 2 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/staging/android/ion/ion_dummy_driver.c b/drivers/staging/android/ion/ion_dummy_driver.c
-> index 3a45e79..8883432 100644
-> --- a/drivers/staging/android/ion/ion_dummy_driver.c
-> +++ b/drivers/staging/android/ion/ion_dummy_driver.c
-> @@ -67,9 +67,8 @@ static int __init ion_dummy_init(void)
->  {
->  	int i, err;
->  
-> 	idev = ion_device_create(NULL);
-> -	heaps = kzalloc(sizeof(struct ion_heap *) * dummy_ion_pdata.nr,
-> -			GFP_KERNEL);
-> +	heaps = kcalloc(*dummy_ion_pdata.nr , sizeof((struct ion_heap *) *dummy_ion_pdata.nr) , GFP_KERNEL);
->  	if (!heaps)
->  		return -ENOMEM;
->  
+> Is this just for the header? Perhaps its more clearly named .se_right_justify?
 
-Hi Nick,
+yep, it's just for header.. let's see Namhyung might have better
+idea how to handle this problem
 
-Look, I know you are really enthusiastic, and want to help out. I get it.
-But this patch is proof that you are not yet ready to work on a complex
-project such as the Linux kernel. Maybe you want to try something
-a bit easier. Like, say, systemd?
-
-First of all, there was really nothing wrong with this code in the first
-place. It is fine to use kzalloc. But lets just say you want to convert
-it to kcalloc. The proper answer would have been:
-
-	heaps = kcalloc(dummy_ion_pdata.nr, sizeof(struct ion_heap *), GFP_KERNEL);
-
-That's rather simple. Just look at the prototype of kcalloc():
-
-void *kcalloc(size_t n, size_t size, gfp_t flags)
-
-The three parameters are the number of elements, the size of each individual
-element, and then finally the flags used on how to allocate that memory.
-I have to say, you did get the flags part correct.
-
-Now lets look at what you did. For the size you had:
-
-  *dummy_ion_ptr.nr
-
-Do you have any idea of what that is? You just dereferenced the count.
-That is, you didn't use the count, but you used the memory that is at
-some location from address 0 + dummy_ion_ptr.nr. Now this probably wont
-compile. At least not on 64 bit boxes as that nr field is only 32 bits
-and a pointer would need to be 64 bits. It could possibly compile on
-32 bit boxes, but it would definitely give you a warning about that.
-
-Now lets look at the second parameter you used.
-
-  sizeof((struct ion_heap *) *dummy_ion_pdata.nr)
-
-This one takes a bit of thinking about. I'm actually confused at what
-you were even trying to do. What the compiler would try to do is to
-break it up. First you again dereference the dummy_ion_pdata.nr with
-
-   *dummy_ion_pdata.nr
-
-And then you convert the answer to that into the type "struct ion_heap *"
-
-   (struct ion_heap *) *dummy_ion_pdata.nr
-
-Finally, you take the sizeof of that answer. As you converted the type
-into "struct ion_heap *", I think it would give you the size of that
-pointer, that is, if it would compile in the first place.
-
-Congrats! that is actually what we want the second parameter to be!
-Although I doubt that you meant to do it that way. No one would mean
-to do it that way unless they had no idea of what they were doing.
-
-
-Basically what this patch tells me is that you do not have enough basic
-knowledge of the C language to be programming in the kernel. Maybe you
-want to be a BIOS programmer?
-
-My advice to you is to find another project (Gnome?) and work with them
-until you have a strong concept of C coding and then, and only then,
-come back to working on the kernel. Kernel development is no place for
-novice programmers. Sorry, but that's true. It will only give you a
-bad reputation, and nasty comments from the real kernel developers.
-
-Cheers!
-
--- Steve
-
+jirka
