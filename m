@@ -1,64 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759224AbaGXK3S (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 06:29:18 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54582 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756083AbaGXJqj (ORCPT
+	id S1759209AbaGXK3R (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 06:29:17 -0400
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:8814 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758076AbaGXJqj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 24 Jul 2014 05:46:39 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Liu Bo <bo.li.liu@oracle.com>, Chris Mason <clm@fb.com>,
-        David Sterba <dsterba@suse.cz>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 008/128] Btrfs: mark mapping with error flag to report errors to userspace
-Date: Thu, 24 Jul 2014 10:44:17 +0100
-Message-Id: <1406195177-8656-9-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1406195177-8656-1-git-send-email-luis.henriques@canonical.com>
-References: <1406195177-8656-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Thu, 24 Jul 2014 02:38:42 -0700
+Message-ID: <53D0D5B5.6010904@nvidia.com>
+Date: Thu, 24 Jul 2014 15:15:25 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: Mark Brown <broonie@kernel.org>,
+        Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+CC: "milo.kim@ti.com" <milo.kim@ti.com>,
+        "support.opensource@diasemi.com" <support.opensource@diasemi.com>,
+        "patches@opensource.wolfsonmicro.com" 
+	<patches@opensource.wolfsonmicro.com>,
+        "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] regulator: drivers: fix return value of get_mode callback
+References: <1405333997-28764-1-git-send-email-ldewangan@nvidia.com> <20140714115718.GA18724@opensource.wolfsonmicro.com> <20140714180114.GJ6800@sirena.org.uk>
+In-Reply-To: <20140714180114.GJ6800@sirena.org.uk>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.14 -stable review patch.  If anyone has any objections, please let me know.
+Hi Mark
+On Monday 14 July 2014 11:31 PM, Mark Brown wrote:
+> * PGP Signed by an unknown key
+>
+> On Mon, Jul 14, 2014 at 12:57:18PM +0100, Charles Keepax wrote:
+>> On Mon, Jul 14, 2014 at 04:03:17PM +0530, Laxman Dewangan wrote:
+> It's because it's returning something defined as a bitmask, though since
+> we don't even have enough modes for 8 bits that's not really a strong
+> reason and we should just be returning an error code as everyone is
+> clearly already assuming we do.
+>
+Just to confirm, do you want to change the return type of get_mode() to 
+"int" instead of
+unsigned int? And then return proper error type?
 
-------------------
-
-From: Liu Bo <bo.li.liu@oracle.com>
-
-commit 5dca6eea91653e9949ce6eb9e9acab6277e2f2c4 upstream.
-
-According to commit 865ffef3797da2cac85b3354b5b6050dc9660978
-(fs: fix fsync() error reporting),
-it's not stable to just check error pages because pages can be
-truncated or invalidated, we should also mark mapping with error
-flag so that a later fsync can catch the error.
-
-Signed-off-by: Liu Bo <bo.li.liu@oracle.com>
-Signed-off-by: Chris Mason <clm@fb.com>
-Cc: David Sterba <dsterba@suse.cz>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- fs/btrfs/extent_io.c | 2 ++
- 1 file changed, 2 insertions(+)
-
-diff --git a/fs/btrfs/extent_io.c b/fs/btrfs/extent_io.c
-index 6c80e0801e58..479d5aecd708 100644
---- a/fs/btrfs/extent_io.c
-+++ b/fs/btrfs/extent_io.c
-@@ -2401,6 +2401,8 @@ int end_extent_writepage(struct page *page, int err, u64 start, u64 end)
- 	if (!uptodate) {
- 		ClearPageUptodate(page);
- 		SetPageError(page);
-+		ret = ret < 0 ? ret : -EIO;
-+		mapping_set_error(page->mapping, ret);
- 	}
- 	return 0;
- }
--- 
-1.9.1
+In this case I think it should be single patch (core + driver).
 
