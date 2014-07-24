@@ -1,65 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934283AbaGXTCP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 15:02:15 -0400
-Received: from imap.thunk.org ([74.207.234.97]:55123 "EHLO imap.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759440AbaGXTCN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 15:02:13 -0400
-Date: Thu, 24 Jul 2014 15:02:06 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-        Linux Kernel Developers List <linux-kernel@vger.kernel.org>,
-        Linux API <linux-api@vger.kernel.org>, linux-crypto@vger.kernel.org
-Subject: Re: [PATCH -v5] random: introduce getrandom(2) system call
-Message-ID: <20140724190206.GL6673@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Andy Lutomirski <luto@amacapital.net>,
-	Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-	Linux Kernel Developers List <linux-kernel@vger.kernel.org>,
-	Linux API <linux-api@vger.kernel.org>, linux-crypto@vger.kernel.org
-References: <1406212287-9855-1-git-send-email-tytso@mit.edu>
- <20140724151814.GE32421@khazad-dum.debian.net>
- <CALCETrXAA=UzS-pRCo5tKSjSCOP9xfu66BG9QbRefVrovkavhQ@mail.gmail.com>
+	id S934324AbaGXTFz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 15:05:55 -0400
+Received: from mail-vc0-f179.google.com ([209.85.220.179]:41786 "EHLO
+	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932195AbaGXTFy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jul 2014 15:05:54 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALCETrXAA=UzS-pRCo5tKSjSCOP9xfu66BG9QbRefVrovkavhQ@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+In-Reply-To: <CAPDOMViVAY5cBuwe=nLjnFUHy4_FVUh_9LkChv+vso5w7WVeDA@mail.gmail.com>
+References: <1406156581-6052-1-git-send-email-xerofoify@gmail.com>
+	<20140724144725.GA32669@home.goodmis.org>
+	<20140724105132.3cf221c2@gandalf.local.home>
+	<yw1x38dqag24.fsf@unicorn.mansr.com>
+	<CAPDOMVgswyopjGxdRFW-bFRrTcpcNnkY=PqTCT9HbjjA=EZ1iw@mail.gmail.com>
+	<yw1xy4vi90n6.fsf@unicorn.mansr.com>
+	<CAPDOMVia0OXydg_hRH0t63xUaxKEkVc6D20vAZiyugkMXAEsJQ@mail.gmail.com>
+	<yw1xtx669002.fsf@unicorn.mansr.com>
+	<CAPDOMVgziyYTX41xZVB9FLHUKFRPPm19jo0A_WfbLqaaKbxPqg@mail.gmail.com>
+	<20140724131821.30c4519d@gandalf.local.home>
+	<CAHLZz12ammMZNAah_eyYePJWorw2AruDAujeNxJHvOF5+Mr7cA@mail.gmail.com>
+	<20140724134849.4d228f5f@gandalf.local.home>
+	<CAPDOMVi7cHUAn_1AxJ+tN1c67UqBdLHLC1sJNSA=HUK-WzZCTA@mail.gmail.com>
+	<CAFLxGvzA4HHL0aJaC0Ypf9_YeL5WW4_eYNToSVG7H43DD2unSg@mail.gmail.com>
+	<CAPDOMViVAY5cBuwe=nLjnFUHy4_FVUh_9LkChv+vso5w7WVeDA@mail.gmail.com>
+Date: Thu, 24 Jul 2014 15:05:53 -0400
+Message-ID: <CAPDOMVhNaV+Wertp+p361iYS8t-rZmN2nubn9coyrUcgZPcuGw@mail.gmail.com>
+Subject: Re: [PATCH] staging: Change kzalloc to kcalloc
+From: Nick Krause <xerofoify@gmail.com>
+To: Richard Weinberger <richard.weinberger@gmail.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Harvey Harrison <harvey.harrison@gmail.com>,
+        =?UTF-8?B?TcOlbnMgUnVsbGfDpXJk?= <mans@mansr.com>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Chen Gang <gang.chen.5i5j@gmail.com>,
+        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
+        Dan Carpenter <dan.carpenter@oracle.com>, tomas.winkler@intel.com,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 24, 2014 at 08:21:38AM -0700, Andy Lutomirski wrote:
-> >
-> > Should we add E<SOMETHING> to be able to deny access to GRND_RANDOM or some
-> > future extension ?
-> 
-> This might actually be needed sooner rather than later.  There are
-> programs that use containers and intentionally don't pass /dev/random
-> through into the container.  I know that Sandstorm does this, and I
-> wouldn't be surprised if other things (Docker?) do the same thing.
-
-I wouldn't add the error to the man page until we actually modify the
-kernel to add such a restriction.
-
-However, the thought crossed my mind a while back that perhaps the
-right answer is a cgroup controller which controls the rate at which a
-process is allowed to drain entropy from the /dev/random pool.  This
-could be set to 0, or it could be set to N bits per unit time T, and
-if the process exceeded the value, it would just block or return
-EAGAIN.  So instead of making it be just a binary "you have access" or
-"you don't", it would actually be a kernel resource that could be
-controlled just like disk bandwidth, networking bandwidth, memory, and
-CPU time.
-
-Then I decided that it was overkill, but for people who are trying to
-treat containers as a way to divide up OS resources between mutually
-suspicious customers in a fashion which is more efficient thatn using
-VM's, maybe it is something that someone will want to implement.
-
-      	       	  	    	 	    	- Ted
+On Thu, Jul 24, 2014 at 2:55 PM, Nick Krause <xerofoify@gmail.com> wrote:
+> On Thu, Jul 24, 2014 at 2:49 PM, Richard Weinberger
+> <richard.weinberger@gmail.com> wrote:
+>> On Thu, Jul 24, 2014 at 8:41 PM, Nick Krause <xerofoify@gmail.com> wrote:
+>>> Steve,
+>>> I have programming a lot in other areas just not the kernel.
+>>> You are right through I need to test my code better through.
+>>
+>> Nick,
+>>
+>> let's make a deal.
+>> Take the challenge at http://eudyptula-challenge.org. After you've solved all
+>> tasks we'll accept patches from you.
+>>
+>> --
+>> Thanks,
+>> //richard
+> That's fine,
+> So Sorry :(.
+> Nick
+I sent the challenge a email. Seems that there not replying.
+Nick
