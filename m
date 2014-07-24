@@ -1,68 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934159AbaGXDyJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 23:54:09 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:44192 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934119AbaGXDyE (ORCPT
+	id S934173AbaGXDzy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 23:55:54 -0400
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:36810 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934061AbaGXDzw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 23:54:04 -0400
-Message-ID: <53D08358.4020902@amacapital.net>
-Date: Wed, 23 Jul 2014 20:54:00 -0700
-From: Andy Lutomirski <luto@amacapital.net>
+	Wed, 23 Jul 2014 23:55:52 -0400
+Message-ID: <53D083C5.2000501@linaro.org>
+Date: Wed, 23 Jul 2014 20:55:49 -0700
+From: John Stultz <john.stultz@linaro.org>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: AKASHI Takahiro <takahiro.akashi@linaro.org>, wad@chromium.org,
-        catalin.marinas@arm.com, will.deacon@arm.com, keescook@chromium.org
-CC: dsaxena@linaro.org, linux-arm-kernel@lists.infradead.org,
-        linaro-kernel@lists.linaro.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v5 1/3] arm64: ptrace: reload a syscall number after ptrace
- operations
-References: <1406020499-5537-1-git-send-email-takahiro.akashi@linaro.org> <1406020499-5537-2-git-send-email-takahiro.akashi@linaro.org>
-In-Reply-To: <1406020499-5537-2-git-send-email-takahiro.akashi@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Soren Brinkmann <soren.brinkmann@xilinx.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Pavel Machek <pavel@ucw.cz>,
+        Len Brown <len.brown@intel.com>
+CC: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        Daniel Lezcano <daniel.lezcano@linaro.org>
+Subject: Re: [PATCH RFC] suspend/hibernation: Fix racing timers
+References: <1405964152-17865-1-git-send-email-soren.brinkmann@xilinx.com>
+In-Reply-To: <1405964152-17865-1-git-send-email-soren.brinkmann@xilinx.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/22/2014 02:14 AM, AKASHI Takahiro wrote:
-> Arm64 holds a syscall number in w8(x8) register. Ptrace tracer may change
-> its value either to:
->    * any valid syscall number to alter a system call, or
->    * -1 to skip a system call
+On 07/21/2014 10:35 AM, Soren Brinkmann wrote:
+> On platforms that do not power off during suspend, successfully entering
+> suspend races with timers.
 >
-> This patch implements this behavior by reloading that value into syscallno
-> in struct pt_regs after tracehook_report_syscall_entry() or
-> secure_computing(). In case of '-1', a return value of system call can also
-> be changed by the tracer setting the value to x0 register, and so
-> sys_ni_nosyscall() should not be called.
+> The race happening in a couple of location is:
 >
-> See also:
->      42309ab4, ARM: 8087/1: ptrace: reload syscall number after
-> 	      secure_computing() check
+>   1. disable IRQs 	(e.g. arch_suspend_disable_irqs())
+>      ...
+>   2. syscore_suspend()
+>         -> tick_suspend() 	(timers are turned off here)
+>      ...
+>   3. wfi		(wait for wake-IRQ here)
 >
-> Signed-off-by: AKASHI Takahiro <takahiro.akashi@linaro.org>
-> ---
->   arch/arm64/kernel/entry.S  |    2 ++
->   arch/arm64/kernel/ptrace.c |   13 +++++++++++++
->   2 files changed, 15 insertions(+)
+> Between steps 1 and 2 the timers can still generate interrupts that are
+> not handled and stay pending until step 3. That pending IRQ causes an
+> immediate - spurious - wake.
 >
-> diff --git a/arch/arm64/kernel/entry.S b/arch/arm64/kernel/entry.S
-> index 5141e79..de8bdbc 100644
-> --- a/arch/arm64/kernel/entry.S
-> +++ b/arch/arm64/kernel/entry.S
-> @@ -628,6 +628,8 @@ ENDPROC(el0_svc)
->   __sys_trace:
->   	mov	x0, sp
->   	bl	syscall_trace_enter
-> +	cmp	w0, #-1				// skip syscall?
-> +	b.eq	ret_to_user
+> The solution is to remove the timekeeping suspend/resume functions from
+> the syscore functions and explictly call them at the appropriate time in
+> the suspend/hibernation patchs. I.e. timers are suspend _before_ IRQs
+> get disabled. And accordingly in the resume path.
 
-Does this mean that skipped syscalls will cause exit tracing to be 
-skipped?  If so, then you risk (at least) introducing a nice 
-user-triggerable OOPS if audit is enabled.  This bug existed for *years* 
-on x86_32, and it amazes me that no one ever triggered it by accident. 
-(Grr, audit.)
+So.. I sort of follow this, though from the description disabling
+timekeeping to turn off timers seems a little indirect (I do see that
+suspending timekeeping calls clockevents_suspend() which is the key
+part). Maybe this could be clarified in a future version of the patch
+description?
 
---Andy
+I worry that moving timekeeping_suspend earlier in the suspend process
+might cause problems where things access time in the suspend path. I
+recall these orderings have been problematic in the past, and slightly
+tweaking them can often destabilize things badly.
+
+I wonder if it would be better just to move the clockevent_suspend()
+call to the earlier site, that way timers are halted but timekeeping
+continues until its normal suspend point.
+
+thanks
+-john
+
