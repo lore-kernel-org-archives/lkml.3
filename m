@@ -1,56 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934383AbaGXST7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 14:19:59 -0400
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:42625 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933391AbaGXST6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 14:19:58 -0400
-Message-ID: <53D14E48.3040202@twiddle.net>
-Date: Thu, 24 Jul 2014 08:19:52 -1000
-From: Richard Henderson <rth@twiddle.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S934434AbaGXSUX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 14:20:23 -0400
+Received: from mout.gmx.net ([212.227.15.19]:51204 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933391AbaGXSUU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jul 2014 14:20:20 -0400
+Message-ID: <53D14E60.1010105@gmx.de>
+Date: Thu, 24 Jul 2014 20:20:16 +0200
+From: =?UTF-8?B?VG9yYWxmIEbDtnJzdGVy?= <toralf.foerster@gmx.de>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: Michael Cree <mcree@orcon.net.nz>, linux-alpha@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: Bug: retry of clone() on Alpha can result in zeroed process thread
- pointer
-References: <20140723085244.GB4799@omega>
-In-Reply-To: <20140723085244.GB4799@omega>
-Content-Type: text/plain; charset=ISO-8859-1
+To: linux-ia64@vger.kernel.org, ceph-devel@vger.kernel.org
+CC: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: sizeof (struct tYpO *) : it is just a typo or rather a bug ?
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:9Y3UWQTGJBlQcpdF1JkO9gHuo5ElI8/fpKW5gvcWe/m2c/w8zan
+ TzKfahRR7ed5bOfhh2veuhLZqlQNGyjiaklIdKW6xrM9I69wSn9Lmex8yE5EqMbDqZ5LFF1
+ b8Qv7A0biCyQXYzwXz9ss8OYa5W+wxrSWaVo0b905bmsft1aX9/SpiNVpra60mncn2mg09G
+ Cdr8QWYIU5TFpuFrkfanA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/22/2014 10:52 PM, Michael Cree wrote:
-> Running strace on nptl/tst-eintr3 reveals that the clone() syscall
-> is retried by the kernel if an ERESTARTNOINTR error occurs.  At
-> $syscall_error in arch/alpha/kernel/entry.S the kernel handles the
-> error and in doing that it writes to 72(sp) which is where the value
-> of the a3 CPU register on entry to the kernel is stored.  Then the
-> kernel retries the clone() function.  But the alpha specific code
-> for copy_thread() in arch/alpha/kernel/process.c does not use the
-> passed a3 cpu register (the argument tls), instead it goes to the
-> saved stack to get the value of the a3 register, which on the
-> second call to clone() has been modified to no longer be the value
-> of the a3 cpu register on entry to the kernel.  And a latent bomb
-> is laid for userspace in the form of an incorrect process unique
-> value (which is the thread pointer) in the PCB.
-> 
-> Am I correct in my analysis and, if so, can we get a fix for this
-> please.
+Inspired by this "typo" fix 
+http://article.gmane.org/gmane.linux.kernel/1754640
+I grep'ed the current git tree of linus for similar issues.
 
-Well...  let me start with the assumption that we can't possibly restart unless
-the syscall fails with -ERESTART*.
+For these 4 places I'm wondering where the appropriate struct definition is located :
 
-Before we clobber 72($sp), $syscall_error saves the old value in $19.  This is
-the r19 parameter to do_work_pending, and is passed all the way down to
-syscall_restart where we do restore the original value of a3 for ERESTARTNOINTR.
+arch/ia64/sn/kernel/io_acpi_init.c:         sizeof(struct pci_devdev_info *)) {
+tools/perf/builtin-sched.c:     sched->tasks = realloc(sched->tasks, sched->nr_tasks * sizeof(struct task_task *));
+fs/ceph/xattr.c:                xattrs = kcalloc(numattr, sizeof(struct ceph_xattr *),
+fs/ceph/xattr.c:                memset(xattrs, 0, numattr*sizeof(struct ceph_xattr *));
 
-So if there's a path that leads to restart, but doesn't save a3 before
-clobbering, I don't see it.  Do you have an strace dump that shows this?
+Nevertheless I was told, that gcc doesn't complain about such things due to eventually evaluating it to "sizeof(null)". I'm however curious if at least a warning should be emitted in such a case, or?
 
+-- 
+Toralf
 
-r~
