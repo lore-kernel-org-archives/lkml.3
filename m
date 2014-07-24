@@ -1,138 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759348AbaGXO4s (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 10:56:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:45457 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759076AbaGXO4q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 10:56:46 -0400
-Date: Thu, 24 Jul 2014 16:56:11 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: David Ahern <dsahern@gmail.com>, Adrian Hunter <adrian.hunter@intel.com>,
-        Andi Kleen <andi@firstfloor.org>, Jiri Olsa <jolsa@kernel.org>,
-        linux-kernel@vger.kernel.org,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCHv3 00/19] perf tools: Factor ordered samples queue
-Message-ID: <20140724145611.GB25165@krava.brq.redhat.com>
-References: <1405893363-21967-1-git-send-email-jolsa@kernel.org>
- <53CCB6AE.6020505@intel.com>
- <20140721080219.GA4183@krava.redhat.com>
- <53CCD3A7.5070002@intel.com>
- <20140721095415.GB8865@krava.redhat.com>
- <87d2cy3c7m.fsf@tassilo.jf.intel.com>
- <53CD5AB5.3000307@intel.com>
- <53CD5DC6.3030605@gmail.com>
- <20140724141958.GB7831@kernel.org>
+	id S1759395AbaGXO6M (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 10:58:12 -0400
+Received: from mail-la0-f45.google.com ([209.85.215.45]:50279 "EHLO
+	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758976AbaGXO6J (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jul 2014 10:58:09 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140724141958.GB7831@kernel.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <53D096D0.2000708@linaro.org>
+References: <1406020499-5537-1-git-send-email-takahiro.akashi@linaro.org>
+ <1406020499-5537-3-git-send-email-takahiro.akashi@linaro.org>
+ <53D0802A.7070703@amacapital.net> <CAGXu5j+GuoxR5o8CZZFZAEwQA=rRwBmBM-ZDU+nFAfHoqf8z9Q@mail.gmail.com>
+ <53D096D0.2000708@linaro.org>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Thu, 24 Jul 2014 07:57:48 -0700
+Message-ID: <CALCETrV9zJ=0_kg7-zuPDUxf_uHmsf+avrd2-cypuLYhtEPt6g@mail.gmail.com>
+Subject: Re: [PATCH v5 2/3] asm-generic: Add generic seccomp.h for secure
+ computing mode 1
+To: AKASHI Takahiro <takahiro.akashi@linaro.org>
+Cc: Deepak Saxena <dsaxena@linaro.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        linaro-kernel@lists.linaro.org, LKML <linux-kernel@vger.kernel.org>,
+        Will Deacon <will.deacon@arm.com>, Will Drewry <wad@chromium.org>,
+        Kees Cook <keescook@chromium.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 24, 2014 at 11:19:58AM -0300, Arnaldo Carvalho de Melo wrote:
-> Em Mon, Jul 21, 2014 at 12:36:54PM -0600, David Ahern escreveu:
-> > On 7/21/14, 12:23 PM, Adrian Hunter wrote:
-> > >On 21/07/2014 7:31 p.m., Andi Kleen wrote:
-> > >>Jiri Olsa <jolsa@redhat.com> writes:
-> > >>>
-> > >>>[jolsa@ibm-x3650m4-01 perf]$ sudo ./perf report --stdio
-> > >>>Timestamp below last timeslice flush
-> > >>>0x2276f58 [0x68]: failed to process type: 9
-> > >>
-> > >>FWIW we're seeing this frequently too.
-> > >
-> > >Jiri's example didn't work for me.  Do you have one?
-> > 
-> > $ perf sched record  -m 8192 -- perf bench sched all
-> > # Running sched/messaging benchmark...
-> > # 20 sender and receiver processes per group
-> > # 10 groups == 400 processes run
-> > 
-> >      Total time: 0.087 [sec]
-> > 
-> > # Running sched/pipe benchmark...
-> > # Executed 1000000 pipe operations between two processes
-> > 
-> >      Total time: 12.043 [sec]
-> > 
-> >       12.043779 usecs/op
-> >           83030 ops/sec
-> > 
-> > [ perf record: Woken up 1 times to write data ]
-> > [ perf record: Captured and wrote 289.549 MB perf.data (~12650569 samples) ]
-> > 0x54b4828 [0]: failed to process type: 0
-> > 
-> > No overload condition, no dropped chunks message - yet can't process events.
-> 
-> Appling just the patches 1 and 17 from this series I managed to:
+On Jul 23, 2014 10:17 PM, "AKASHI Takahiro" <takahiro.akashi@linaro.org> wrote:
+>
+> On 07/24/2014 01:41 PM, Kees Cook wrote:
+>>
+>> On Wed, Jul 23, 2014 at 8:40 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+>>>
+>>> On 07/22/2014 02:14 AM, AKASHI Takahiro wrote:
+>>>>
+>>>>
+>>>> Those values (__NR_seccomp_*) are used solely in secure_computing()
+>>>> to identify mode 1 system calls. If compat system calls have different
+>>>> syscall numbers, asm/seccomp.h may override them.
+>>>>
+>>>> Acked-by: Arnd Bergmann <arnd@arndb.de>
+>>>> Signed-off-by: AKASHI Takahiro <takahiro.akashi@linaro.org>
+>>>> ---
+>>>>    include/asm-generic/seccomp.h |   28 ++++++++++++++++++++++++++++
+>>>>    1 file changed, 28 insertions(+)
+>>>>    create mode 100644 include/asm-generic/seccomp.h
+>>>>
+>>>> diff --git a/include/asm-generic/seccomp.h b/include/asm-generic/seccomp.h
+>>>> new file mode 100644
+>>>> index 0000000..5e97022
+>>>> --- /dev/null
+>>>> +++ b/include/asm-generic/seccomp.h
+>>>> @@ -0,0 +1,28 @@
+>>>> +/*
+>>>> + * include/asm-generic/seccomp.h
+>>>> + *
+>>>> + * Copyright (C) 2014 Linaro Limited
+>>>> + * Author: AKASHI Takahiro <takahiro.akashi@linaro.org>
+>>>> + *
+>>>> + * This program is free software; you can redistribute it and/or modify
+>>>> + * it under the terms of the GNU General Public License version 2 as
+>>>> + * published by the Free Software Foundation.
+>>>> + */
+>>>> +#ifndef _ASM_GENERIC_SECCOMP_H
+>>>> +#define _ASM_GENERIC_SECCOMP_H
+>>>> +
+>>>> +#include <asm-generic/unistd.h>
+>>>> +
+>>>> +#if defined(CONFIG_COMPAT) && !defined(__NR_seccomp_read_32)
+>>>> +#define __NR_seccomp_read_32           __NR_read
+>>>> +#define __NR_seccomp_write_32          __NR_write
+>>>> +#define __NR_seccomp_exit_32           __NR_exit
+>>>> +#define __NR_seccomp_sigreturn_32      __NR_rt_sigreturn
+>>>> +#endif /* CONFIG_COMPAT && ! already defined */
+>>>> +
+>>>> +#define __NR_seccomp_read              __NR_read
+>>>> +#define __NR_seccomp_write             __NR_write
+>>>> +#define __NR_seccomp_exit              __NR_exit
+>>>> +#define __NR_seccomp_sigreturn         __NR_rt_sigreturn
+>>>
+>>>
+>>>
+>>> I don't like these names.  __NR_seccomp_read sounds like the number of a
+>>> syscall called seccomp_read.
+>>>
+>>> Also, shouldn't something be including this header?  I'm confused.
+>>
+>>
+>> Ah! Good catch. These names are correct (see kernel/seccomp.c's
+>> mode1_syscalls and mode1_syscalls_32 arrays), but the location of this
+>> change was unexpected. I was expecting this file to live in
+>> arch/*/include/asm/seccomp.h, not in include/asm-generic/seccomp.h.
+>>
+>> However, since it's always the same list, it might make sense to
+>> consolidate them into a single place as a default to make arch porting
+>> easier.
+>
+>
+> Yeah, that is why I put this file under include/asm-generic.
 
-ok with me..
+It seems odd that the header would be added without any users.  I
+guess it's okay, since arm64 uses it in the followup patch.
 
-I plan to spin new version with better debug messages and without (Adrian):
-  perf tools: Limit the ordered events queue by default to 100MB
+>
+>> However, I think that should be a separate patch.
+>
+>
+> Do you mean that the code for all the existing archs should also be changed
+> to use this (common) header?
 
-Anyway, I think the rest without (and the one above):
-  perf tools: Add debug prints for ordered events queue
+If that works, yes.
 
-should be good to go..
+--Andy
 
-Namhyung pointed out performance implications for patch 17:
-  perf tools: Always force PERF_RECORD_FINISHED_ROUND event
-
-which you seem to test.. but I dont see comparison dow there.. ?
-
-thanks,
-jirka
-
-> 
-> [root@zoo ~]# cat /proc/loadavg 
-> 52.13 13.06 5.04 132/977 29522
-> [root@zoo ~]# perf sched record  -m 4096 -- perf bench sched all
-> # Running sched/messaging benchmark...
-> # 20 sender and receiver processes per group
-> # 10 groups == 400 processes run
-> 
->      Total time: 0.692 [sec]
-> 
-> # Running sched/pipe benchmark...
-> # Executed 1000000 pipe operations between two processes
-> 
->      Total time: 13.007 [sec]
-> 
->       13.007582 usecs/op
->           76878 ops/sec
-> 
-> [ perf record: Woken up 105 times to write data ]
-> [ perf record: Captured and wrote 909.513 MB perf.data (~39737216 samples) ]
-> [root@zoo ~]# cat /proc/loadavg 
-> 80.30 22.82 8.49 132/968 31755
-> [root@zoo ~]# perf script | wc -l
-> 8308492
-> [root@zoo ~]# perf cript | head -10
->  perf 9897 [01] 1.29678: sched:sched_stat_runtime: comm=perf pid=29897 runtime=916836 [ns] vruntime=1322281938410 [ns]
->  perf 9897 [01] 1.29683: sched:sched_wakeup: comm=perf pid=29919 prio=120 success=1 target_cpu=001
->  perf 9897 [01] 1.29688: sched:sched_switch: prev_comm=perf prev_pid=29897 prev_prio=120 prev_state=R ==> next_comm=perf next_pid=29919 next_prio=120
->  perf 9919 [01] 1.29748: sched:sched_stat_runtime: comm=perf pid=29919 runtime=70430 [ns] vruntime=1322273008840 [ns]
->   cc1 7110 [03] 1.29748: sched:sched_stat_runtime: comm=cc1 pid=27110 runtime=992012 [ns] vruntime=702438664528 [ns]
->   cc1 9278 [00] 1.29748: sched:sched_stat_runtime: comm=cc1 pid=29278 runtime=979081 [ns] vruntime=583946650623 [ns]
->   cc1 7781 [02] 1.29749: sched:sched_stat_runtime: comm=cc1 pid=27781 runtime=989627 [ns] vruntime=714050072391 [ns]
->   cc1 9278 [00] 1.29756: sched:sched_switch: prev_comm=cc1 prev_pid=29278 prev_prio=120 prev_state=R ==> next_comm=cc1 next_pid=29128 next_prio=120
->   cc1 7110 [03] 1.29757: sched:sched_switch: prev_comm=cc1 prev_pid=27110 prev_prio=120 prev_state=R ==> next_comm=cc1 next_pid=29586 next_prio=120
->  perf 9919 [01] 1.29914: sched:sched_wakeup: comm=migration/1 pid=12 prio=0 success=1 target_cpu=001
-> [root@zoo ~]#
-> 
-> While doing a make -j128 allmodconfig on a 4way machine.
-> 
-> David, can I have your Acked-by for just those two while the rest is debated?
-> 
-> Adrian, can I have yours as well?
-> 
-> - Arnaldo
+>
+> -Takahiro AKASHI
+>>
+>>
+>> -Kees
+>>
