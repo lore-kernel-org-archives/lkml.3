@@ -1,54 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934428AbaGXI0K (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 04:26:10 -0400
-Received: from mail-oa0-f52.google.com ([209.85.219.52]:59829 "EHLO
-	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934120AbaGXI0H (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 04:26:07 -0400
+	id S934378AbaGXI2y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 04:28:54 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:32983 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934120AbaGXI2v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jul 2014 04:28:51 -0400
+Date: Thu, 24 Jul 2014 10:28:47 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: "Chen, Gong" <gong.chen@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, tglx@linutronix.de,
+        paulus@samba.org, benh@kernel.crashing.org, tony.luck@intel.com,
+        hpa@zytor.com, jkosina@suse.cz, rafael.j.wysocki@intel.com,
+        linux@arm.linux.org.uk, ralf@linux-mips.org, schwidefsky@de.ibm.com,
+        davem@davemloft.net, viro@zeniv.linux.org.uk, fweisbec@gmail.com,
+        cl@linux.com, akpm@linux-foundation.org, axboe@kernel.dk,
+        JBottomley@parallels.com, neilb@suse.de, christoffer.dall@linaro.org,
+        rostedt@goodmis.org, rric@kernel.org, gregkh@linuxfoundation.org,
+        mhocko@suse.cz, david@fromorbit.com
+Subject: Re: [RFC PATCH v1 12/70] x86, pci, amd_bus: _FROZEN Cleanup
+Message-ID: <20140724082847.GA19239@pd.tnic>
+References: <1406080786-3938-1-git-send-email-gong.chen@linux.intel.com>
+ <1406080786-3938-13-git-send-email-gong.chen@linux.intel.com>
+ <20140723180718.GH21707@pd.tnic>
+ <20140724013130.GA2434@gchen.bj.intel.com>
 MIME-Version: 1.0
-In-Reply-To: <1406041261-5716-1-git-send-email-linux@roeck-us.net>
-References: <1406041261-5716-1-git-send-email-linux@roeck-us.net>
-Date: Thu, 24 Jul 2014 10:26:06 +0200
-Message-ID: <CACRpkdZP377kmVYAMWaEg2wJy_P4S67xs857v3pNhTZwvp3ThA@mail.gmail.com>
-Subject: Re: [PATCH v3] gpiolib: Export gpiochip_request_own_desc and gpiochip_free_own_desc
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20140724013130.GA2434@gchen.bj.intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 22, 2014 at 5:01 PM, Guenter Roeck <linux@roeck-us.net> wrote:
+On Wed, Jul 23, 2014 at 09:31:30PM -0400, Chen, Gong wrote:
+> But what if new action is added? We have to change it back. If you
+> prefer to use that style I can update in next version.
 
-> Both functions were introduced to let gpio drivers request their own
-> gpio pins. Without exporting the functions, this can however only be
-> used by gpio drivers built into the kernel.
->
-> Secondary impact is that the functions can not currently be used by
-> platform initialization code associated with the gpio-pca953x driver.
-> This code permits auto-export of gpio pins through platform data, but
-> if this functionality is used, the module can no longer be unloaded due
-> to the problem solved with the introduction of gpiochip_request_own_desc
-> and gpiochip_free_own_desc.
->
-> Export both function so they can be used from modules and from
-> platform initialization code.
->
-> Cc: Mika Westerberg <mika.westerberg@linux.intel.com>
-> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-> ---
-> v3: Add API documentation.
->     Use EXPORT_SYMBOL_GPL.
+Not likely. This functionality in amd_bus.c is not going to expand
+anyway but rather die with its last user, AFAICR.
 
-Patch applied with the nice review tags.
+-- 
+Regards/Gruss,
+    Boris.
 
-Yours,
-Linus Walleij
+Sent from a fat crate under my desk. Formatting is fine.
+--
