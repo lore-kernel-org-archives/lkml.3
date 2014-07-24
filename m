@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934953AbaGXJvO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 05:51:14 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:55227 "EHLO
+	id S934967AbaGXJve (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 05:51:34 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:55226 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934868AbaGXJtX (ORCPT
+	with ESMTP id S934834AbaGXJtW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 05:49:23 -0400
+	Thu, 24 Jul 2014 05:49:22 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alex Elder <elder@linaro.org>,
+Cc: Roland Dreier <roland@purestorage.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 125/128] rbd: use reference counts for image requests
-Date: Thu, 24 Jul 2014 10:46:14 +0100
-Message-Id: <1406195177-8656-126-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 124/128] x86, ioremap: Speed up check for RAM pages
+Date: Thu, 24 Jul 2014 10:46:13 +0100
+Message-Id: <1406195177-8656-125-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1406195177-8656-1-git-send-email-luis.henriques@canonical.com>
 References: <1406195177-8656-1-git-send-email-luis.henriques@canonical.com>
@@ -27,105 +28,78 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Elder <elder@linaro.org>
+From: Roland Dreier <roland@purestorage.com>
 
-commit 0f2d5be792b0466b06797f637cfbb0f64dbb408c upstream.
+commit c81c8a1eeede61e92a15103748c23d100880cc8a upstream.
 
-Each image request contains a reference count, but to date it has
-not actually been used.  (I think this was just an oversight.) A
-recent report involving rbd failing an assertion shed light on why
-and where we need to use these reference counts.
+In __ioremap_caller() (the guts of ioremap), we loop over the range of
+pfns being remapped and checks each one individually with page_is_ram().
+For large ioremaps, this can be very slow.  For example, we have a
+device with a 256 GiB PCI BAR, and ioremapping this BAR can take 20+
+seconds -- sometimes long enough to trigger the soft lockup detector!
 
-Every OSD request associated with an object request uses
-rbd_osd_req_callback() as its callback function.  That function will
-call a helper function (dependent on the type of OSD request) that
-will set the object request's "done" flag if the object request if
-appropriate.  If that "done" flag is set, the object request is
-passed to rbd_obj_request_complete().
+Internally, page_is_ram() calls walk_system_ram_range() on a single
+page.  Instead, we can make a single call to walk_system_ram_range()
+from __ioremap_caller(), and do our further checks only for any RAM
+pages that we find.  For the common case of MMIO, this saves an enormous
+amount of work, since the range being ioremapped doesn't intersect
+system RAM at all.
 
-In rbd_obj_request_complete(), requests are processed in sequential
-order.  So if an object request completes before one of its
-predecessors in the image request, the completion is deferred.
-Otherwise, if it's a completing object's "turn" to be completed, it
-is passed to rbd_img_obj_end_request(), which records the result of
-the operation, accumulates transferred bytes, and so on.  Next, the
-successor to this request is checked and if it is marked "done",
-(deferred) completion processing is performed on that request, and
-so on.  If the last object request in an image request is completed,
-rbd_img_request_complete() is called, which (typically) destroys
-the image request.
+With this change, ioremap on our 256 GiB BAR takes less than 1 second.
 
-There is a race here, however.  The instant an object request is
-marked "done" it can be provided (by a thread handling completion of
-one of its predecessor operations) to rbd_img_obj_end_request(),
-which (for the last request) can then lead to the image request
-getting torn down.  And this can happen *before* that object has
-itself entered rbd_img_obj_end_request().  As a result, once it
-*does* enter that function, the image request (and even the object
-request itself) may have been freed and become invalid.
-
-All that's necessary to avoid this is to properly count references
-to the image requests.  We tear down an image request's object
-requests all at once--only when the entire image request has
-completed.  So there's no need for an image request to count
-references for its object requests.  However, we don't want an
-image request to go away until the last of its object requests
-has passed through rbd_img_obj_callback().  In other words,
-we don't want rbd_img_request_complete() to necessarily
-result in the image request being destroyed, because it may
-get called before we've finished processing on all of its
-object requests.
-
-So the fix is to add a reference to an image request for
-each of its object requests.  The reference can be viewed
-as representing an object request that has not yet finished
-its call to rbd_img_obj_callback().  That is emphasized by
-getting the reference right after assigning that as the image
-object's callback function.  The corresponding release of that
-reference is done at the end of rbd_img_obj_callback(), which
-every image object request passes through exactly once.
-
-Signed-off-by: Alex Elder <elder@linaro.org>
-Reviewed-by: Ilya Dryomov <ilya.dryomov@inktank.com>
+Signed-off-by: Roland Dreier <roland@purestorage.com>
+Link: http://lkml.kernel.org/r/1399054721-1331-1-git-send-email-roland@kernel.org
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/block/rbd.c | 9 +++++++++
- 1 file changed, 9 insertions(+)
+ arch/x86/mm/ioremap.c | 26 +++++++++++++++++++-------
+ 1 file changed, 19 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/block/rbd.c b/drivers/block/rbd.c
-index cabe12e8390b..9568cacdd6a4 100644
---- a/drivers/block/rbd.c
-+++ b/drivers/block/rbd.c
-@@ -1399,6 +1399,13 @@ static void rbd_obj_request_put(struct rbd_obj_request *obj_request)
- 	kref_put(&obj_request->kref, rbd_obj_request_destroy);
+diff --git a/arch/x86/mm/ioremap.c b/arch/x86/mm/ioremap.c
+index 0215e2c563ef..6c0262a44524 100644
+--- a/arch/x86/mm/ioremap.c
++++ b/arch/x86/mm/ioremap.c
+@@ -50,6 +50,21 @@ int ioremap_change_attr(unsigned long vaddr, unsigned long size,
+ 	return err;
  }
  
-+static void rbd_img_request_get(struct rbd_img_request *img_request)
++static int __ioremap_check_ram(unsigned long start_pfn, unsigned long nr_pages,
++			       void *arg)
 +{
-+	dout("%s: img %p (was %d)\n", __func__, img_request,
-+	     atomic_read(&img_request->kref.refcount));
-+	kref_get(&img_request->kref);
++	unsigned long i;
++
++	for (i = 0; i < nr_pages; ++i)
++		if (pfn_valid(start_pfn + i) &&
++		    !PageReserved(pfn_to_page(start_pfn + i)))
++			return 1;
++
++	WARN_ONCE(1, "ioremap on RAM pfn 0x%lx\n", start_pfn);
++
++	return 0;
 +}
 +
- static bool img_request_child_test(struct rbd_img_request *img_request);
- static void rbd_parent_request_destroy(struct kref *kref);
- static void rbd_img_request_destroy(struct kref *kref);
-@@ -2152,6 +2159,7 @@ static void rbd_img_obj_callback(struct rbd_obj_request *obj_request)
- 	img_request->next_completion = which;
- out:
- 	spin_unlock_irq(&img_request->completion_lock);
-+	rbd_img_request_put(img_request);
+ /*
+  * Remap an arbitrary physical address space into the kernel virtual
+  * address space. Needed when the kernel wants to access high addresses
+@@ -93,14 +108,11 @@ static void __iomem *__ioremap_caller(resource_size_t phys_addr,
+ 	/*
+ 	 * Don't allow anybody to remap normal RAM that we're using..
+ 	 */
++	pfn      = phys_addr >> PAGE_SHIFT;
+ 	last_pfn = last_addr >> PAGE_SHIFT;
+-	for (pfn = phys_addr >> PAGE_SHIFT; pfn <= last_pfn; pfn++) {
+-		int is_ram = page_is_ram(pfn);
+-
+-		if (is_ram && pfn_valid(pfn) && !PageReserved(pfn_to_page(pfn)))
+-			return NULL;
+-		WARN_ON_ONCE(is_ram);
+-	}
++	if (walk_system_ram_range(pfn, last_pfn - pfn + 1, NULL,
++				  __ioremap_check_ram) == 1)
++		return NULL;
  
- 	if (!more)
- 		rbd_img_request_complete(img_request);
-@@ -2248,6 +2256,7 @@ static int rbd_img_request_fill(struct rbd_img_request *img_request,
- 			goto out_partial;
- 		obj_request->osd_req = osd_req;
- 		obj_request->callback = rbd_img_obj_callback;
-+		rbd_img_request_get(img_request);
- 
- 		osd_req_op_extent_init(osd_req, 0, opcode, offset, length,
- 						0, 0);
+ 	/*
+ 	 * Mappings have to be page-aligned
 -- 
 1.9.1
 
