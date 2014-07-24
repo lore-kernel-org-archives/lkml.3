@@ -1,116 +1,368 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759240AbaGXO3U (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 10:29:20 -0400
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:61243 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759005AbaGXO3T (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 10:29:19 -0400
-Date: Thu, 24 Jul 2014 16:29:14 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, josh@joshtriplett.org,
-        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-        dhowells@redhat.com, edumazet@google.com, dvhart@linux.intel.com,
-        oleg@redhat.com, bobby.prani@gmail.com
-Subject: Re: [PATCH RFC tip/core/rcu 1/2] Eliminate redundant
- rcu_sysidle_state variable
-Message-ID: <20140724142911.GA25788@localhost.localdomain>
-References: <20140723162851.GA17665@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140723162851.GA17665@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1759360AbaGXObo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 10:31:44 -0400
+Received: from imap.thunk.org ([74.207.234.97]:54640 "EHLO imap.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758830AbaGXObk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jul 2014 10:31:40 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Linux Kernel Developers List <linux-kernel@vger.kernel.org>
+Cc: linux-api@vger.kernel.org, linux-crypto@vger.kernel.org,
+        "Theodore Ts'o" <tytso@mit.edu>
+Subject: [PATCH -v5] random: introduce getrandom(2) system call
+Date: Thu, 24 Jul 2014 10:31:27 -0400
+Message-Id: <1406212287-9855-1-git-send-email-tytso@mit.edu>
+X-Mailer: git-send-email 2.0.0
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 23, 2014 at 09:28:52AM -0700, Paul E. McKenney wrote:
-> Now that we have rcu_state_p, which references rcu_preempt_state for
-> TREE_PREEMPT_RCU and rcu_sched_state for TREE_RCU, we don't need a
-> separate rcu_sysidle_state variable.  This commit therefore eliminates
-> rcu_preempt_state in favor of rcu_state_p.
-> 
-> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+The getrandom(2) system call was requested by the LibreSSL Portable
+developers.  It is analoguous to the getentropy(2) system call in
+OpenBSD.
 
-Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
+The rationale of this system call is to provide resiliance against
+file descriptor exhaustion attacks, where the attacker consumes all
+available file descriptors, forcing the use of the fallback code where
+/dev/[u]random is not available.  Since the fallback code is often not
+well-tested, it is better to eliminate this potential failure mode
+entirely.
 
-> 
-> diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
-> index 24f5bd54ca9b..e31fa71c4d3a 100644
-> --- a/kernel/rcu/tree_plugin.h
-> +++ b/kernel/rcu/tree_plugin.h
-> @@ -2662,16 +2662,6 @@ static void __maybe_unused rcu_kick_nohz_cpu(int cpu)
->  
->  #ifdef CONFIG_NO_HZ_FULL_SYSIDLE
->  
-> -/*
-> - * Define RCU flavor that holds sysidle state.  This needs to be the
-> - * most active flavor of RCU.
-> - */
-> -#ifdef CONFIG_PREEMPT_RCU
-> -static struct rcu_state *rcu_sysidle_state = &rcu_preempt_state;
-> -#else /* #ifdef CONFIG_PREEMPT_RCU */
-> -static struct rcu_state *rcu_sysidle_state = &rcu_sched_state;
-> -#endif /* #else #ifdef CONFIG_PREEMPT_RCU */
-> -
->  static int full_sysidle_state;		/* Current system-idle state. */
->  #define RCU_SYSIDLE_NOT		0	/* Some CPU is not idle. */
->  #define RCU_SYSIDLE_SHORT	1	/* All CPUs idle for brief period. */
-> @@ -2813,7 +2803,7 @@ static void rcu_sysidle_check_cpu(struct rcu_data *rdp, bool *isidle,
->  	 * not the flavor of RCU that tracks sysidle state, or if this
->  	 * is an offline or the timekeeping CPU, nothing to do.
->  	 */
-> -	if (!*isidle || rdp->rsp != rcu_sysidle_state ||
-> +	if (!*isidle || rdp->rsp != rcu_state_p ||
->  	    cpu_is_offline(rdp->cpu) || rdp->cpu == tick_do_timer_cpu)
->  		return;
->  	if (rcu_gp_in_progress(rdp->rsp))
-> @@ -2839,7 +2829,7 @@ static void rcu_sysidle_check_cpu(struct rcu_data *rdp, bool *isidle,
->   */
->  static bool is_sysidle_rcu_state(struct rcu_state *rsp)
->  {
-> -	return rsp == rcu_sysidle_state;
-> +	return rsp == rcu_state_p;
->  }
->  
->  /*
-> @@ -2917,7 +2907,7 @@ static void rcu_sysidle_cancel(void)
->  static void rcu_sysidle_report(struct rcu_state *rsp, int isidle,
->  			       unsigned long maxj, bool gpkt)
->  {
-> -	if (rsp != rcu_sysidle_state)
-> +	if (rsp != rcu_state_p)
->  		return;  /* Wrong flavor, ignore. */
->  	if (gpkt && nr_cpu_ids <= CONFIG_NO_HZ_FULL_SYSIDLE_SMALL)
->  		return;  /* Running state machine from timekeeping CPU. */
-> @@ -2986,13 +2976,12 @@ bool rcu_sys_is_idle(void)
->  
->  			/* Scan all the CPUs looking for nonidle CPUs. */
->  			for_each_possible_cpu(cpu) {
-> -				rdp = per_cpu_ptr(rcu_sysidle_state->rda, cpu);
-> +				rdp = per_cpu_ptr(rcu_state_p->rda, cpu);
->  				rcu_sysidle_check_cpu(rdp, &isidle, &maxj);
->  				if (!isidle)
->  					break;
->  			}
-> -			rcu_sysidle_report(rcu_sysidle_state,
-> -					   isidle, maxj, false);
-> +			rcu_sysidle_report(rcu_state_p, isidle, maxj, false);
->  			oldrss = rss;
->  			rss = ACCESS_ONCE(full_sysidle_state);
->  		}
-> @@ -3019,7 +3008,7 @@ bool rcu_sys_is_idle(void)
->  	 * provided by the memory allocator.
->  	 */
->  	if (nr_cpu_ids > CONFIG_NO_HZ_FULL_SYSIDLE_SMALL &&
-> -	    !rcu_gp_in_progress(rcu_sysidle_state) &&
-> +	    !rcu_gp_in_progress(rcu_state_p) &&
->  	    !rsh.inuse && xchg(&rsh.inuse, 1) == 0)
->  		call_rcu(&rsh.rh, rcu_sysidle_cb);
->  	return false;
-> 
+The other feature provided by this new system call is the ability to
+request randomness from the /dev/urandom entropy pool, but to block
+until at least 128 bits of entropy has been accumulated in the
+/dev/urandom entropy pool.  Historically, the emphasis in the
+/dev/urandom development has been to ensure that urandom pool is
+initialized as quickly as possible after system boot, and preferably
+before the init scripts start execution.
+
+This is because changing /dev/urandom reads to block represents an
+interface change that could potentially break userspace which is not
+acceptable.  In practice, on most x86 desktop and server systems, in
+general the entropy pool can be initialized before it is needed (and
+in modern kernels, we will printk a warning message if not).  However,
+on an embedded system, this may not be the case.  And so with this new
+interface, we can provide the functionality of blocking until the
+urandom pool has been initialized.  Any userspace program which uses
+this new functionality must take care to assure that if it is used
+during the boot process, that it will not cause the init scripts or
+other portions of the system startup to hang indefinitely.
+
+SYNOPSIS
+	#include <linux/random.h>
+
+	int getrandom(void *buf, size_t buflen, unsigned int flags);
+
+DESCRIPTION
+	The system call getrandom() fills the buffer pointed to by buf
+	with up to buflen random bytes which can be used to seed user
+	space random number generators (i.e., DRBG's) or for other
+	cryptographic uses.  It should not be used for Monte Carlo
+	simulations or other programs/algorithms which are doing
+	probabilistic sampling.
+
+	If the GRND_RANDOM flags bit is set, then draw from the
+	/dev/random pool instead of the /dev/urandom pool.  The
+	/dev/random pool is limited based on the entropy that can be
+	obtained from environmental noise, so if there is insufficient
+	entropy, the requested number of bytes may not be returned.
+	If there is no entropy available at all, getrandom(2) will
+	either block, or return an error with errno set to EAGAIN if
+	the GRND_NONBLOCK bit is set in flags.
+
+	If the GRND_RANDOM bit is not set, then the /dev/urandom pool
+	will be used.  Unlike using read(2) to fetch data from
+	/dev/urandom, if the urandom pool has not been sufficiently
+	initialized, getrandom(2) will block (or return -1 with the
+	errno set to EAGAIN if the GRND_NONBLOCK bit is set in flags).
+
+	The getentropy(2) system call in OpenBSD can be emulated using
+	the following function:
+
+            int getentropy(void *buf, size_t buflen)
+            {
+                    int     ret;
+
+                    if (buflen > 256)
+                            goto failure;
+                    ret = getrandom(buf, buflen, 0);
+                    if (ret < 0)
+                            return ret;
+                    if (ret == buflen)
+                            return 0;
+            failure:
+                    errno = EIO;
+                    return -1;
+            }
+
+RETURN VALUE
+       On success, the number of bytes that was filled in the buf is
+       returned.  This may not be all the bytes requested by the
+       caller via buflen if insufficient entropy was present in the
+       /dev/random pool, or if the system call was interrupted by a
+       signal.
+
+       On error, -1 is returned, and errno is set appropriately.
+
+ERRORS
+	EINVAL		An invalid flag was passed to getrandom(2)
+
+	EFAULT		buf is outside the accessible address space.
+
+	EAGAIN		The requested entropy was not available, and
+			getentropy(2) would have blocked if GRND_BLOCK flag
+			was set.
+
+	EINTR		While blocked waiting for entropy, the call was
+			interrupted by a signal handler; see the description
+			of how interrupted read(2) calls on "slow" devices
+			are handled with and without the SA_RESTART flag
+			in the signal(7) man page.
+
+NOTES
+	For small requests (buflen <= 256) getrandom(2) will not
+	return EINTR when reading from the urandom pool once the
+	entropy pool has been initialized, and it will return all of
+	the bytes that have been requested.  This is the recommended
+	way to use getrandom(2), and is designed for compatibility
+	with OpenBSD's getentropy() system call.
+
+	However, if you are using GRND_RANDOM, then getrandom(2) may
+	block until the entropy accounting determines that sufficient
+	environmental noise has been gathered such that getrandom(2)
+	will be operating as a NRBG instead of a DRBG for those people
+	who are working in the NIST SP 800-90 regime.  Since it may
+	block for a long time, these guarantees do *not* apply.  The
+	user may want to interrupt a hanging process using a signal,
+	so blocking until all of the requested bytes are returned
+	would be unfriendly.
+
+	For this reason, the user of getrandom(2) MUST always check
+	the return value, in case it returns some error, or if fewer
+	bytes than requested was returned.  In the case of
+	!GRND_RANDOM and small request, the latter should never
+	happen, but the careful userspace code (and all crypto code
+	should be careful) should check for this anyway!
+
+	Finally, unless you are doing long-term key generation (and
+	perhaps not even then), you probably shouldn't be using
+	GRND_RANDOM.  The cryptographic algorithms used for
+	/dev/urandom are quite conservative, and so should be
+	sufficient for all purposes.  The disadvantage of GRND_RANDOM
+	is that it can block, and the increased complexity required to
+	deal with partially fulfilled getrandom(2) requests.
+
+Signed-off-by: Theodore Ts'o <tytso@mit.edu>
+Reviewed-by: Zach Brown <zab@zabbo.net>
+---
+Changelog:
+
+v5: Change syscall numbers to avoid conflict with seccomp, and so that
+    people who are testing linux-next will (hopefully) won't see
+    different syscall numbers when things get merged mainline
+
+    More man page tweaks.
+
+v4: Use a wait queue and wait_event() instead of a completion handler
+
+    More fine tuning of the commit description and man page
+
+v3: Eliminate potential short reads and EINTR returns when requesting
+    small amounts of entropy from urandom (once the urandom pool is
+    initialized).   See the NOTES section in the suggested man page for
+    a more in-depth discussion of the issues involved.
+
+v2: Statically declare the completion structure
+
+    Check for and reject unknown flags
+
+
+ arch/x86/syscalls/syscall_32.tbl  |  1 +
+ arch/x86/syscalls/syscall_64.tbl  |  1 +
+ drivers/char/random.c             | 40 ++++++++++++++++++++++++++++++++++++---
+ include/linux/syscalls.h          |  3 +++
+ include/uapi/asm-generic/unistd.h |  4 +++-
+ include/uapi/linux/random.h       |  9 +++++++++
+ 6 files changed, 54 insertions(+), 4 deletions(-)
+
+diff --git a/arch/x86/syscalls/syscall_32.tbl b/arch/x86/syscalls/syscall_32.tbl
+index d6b8679..5b46a61 100644
+--- a/arch/x86/syscalls/syscall_32.tbl
++++ b/arch/x86/syscalls/syscall_32.tbl
+@@ -360,3 +360,4 @@
+ 351	i386	sched_setattr		sys_sched_setattr
+ 352	i386	sched_getattr		sys_sched_getattr
+ 353	i386	renameat2		sys_renameat2
++355	i386	getrandom		sys_getrandom
+diff --git a/arch/x86/syscalls/syscall_64.tbl b/arch/x86/syscalls/syscall_64.tbl
+index ec255a1..0dc4bf8 100644
+--- a/arch/x86/syscalls/syscall_64.tbl
++++ b/arch/x86/syscalls/syscall_64.tbl
+@@ -323,6 +323,7 @@
+ 314	common	sched_setattr		sys_sched_setattr
+ 315	common	sched_getattr		sys_sched_getattr
+ 316	common	renameat2		sys_renameat2
++318	common	getrandom		sys_getrandom
+ 
+ #
+ # x32-specific system call numbers start at 512 to avoid cache impact
+diff --git a/drivers/char/random.c b/drivers/char/random.c
+index aa22fe5..7d1682e 100644
+--- a/drivers/char/random.c
++++ b/drivers/char/random.c
+@@ -258,6 +258,8 @@
+ #include <linux/kmemcheck.h>
+ #include <linux/workqueue.h>
+ #include <linux/irq.h>
++#include <linux/syscalls.h>
++#include <linux/completion.h>
+ 
+ #include <asm/processor.h>
+ #include <asm/uaccess.h>
+@@ -404,6 +406,7 @@ static struct poolinfo {
+  */
+ static DECLARE_WAIT_QUEUE_HEAD(random_read_wait);
+ static DECLARE_WAIT_QUEUE_HEAD(random_write_wait);
++static DECLARE_WAIT_QUEUE_HEAD(urandom_init_wait);
+ static struct fasync_struct *fasync;
+ 
+ /**********************************************************************
+@@ -657,6 +660,7 @@ retry:
+ 		r->entropy_total = 0;
+ 		if (r == &nonblocking_pool) {
+ 			prandom_reseed_late();
++			wake_up_interruptible(&urandom_init_wait);
+ 			pr_notice("random: %s pool is initialized\n", r->name);
+ 		}
+ 	}
+@@ -1174,13 +1178,14 @@ static ssize_t extract_entropy_user(struct entropy_store *r, void __user *buf,
+ {
+ 	ssize_t ret = 0, i;
+ 	__u8 tmp[EXTRACT_SIZE];
++	int large_request = (nbytes > 256);
+ 
+ 	trace_extract_entropy_user(r->name, nbytes, ENTROPY_BITS(r), _RET_IP_);
+ 	xfer_secondary_pool(r, nbytes);
+ 	nbytes = account(r, nbytes, 0, 0);
+ 
+ 	while (nbytes) {
+-		if (need_resched()) {
++		if (large_request && need_resched()) {
+ 			if (signal_pending(current)) {
+ 				if (ret == 0)
+ 					ret = -ERESTARTSYS;
+@@ -1355,7 +1360,7 @@ static int arch_random_refill(void)
+ }
+ 
+ static ssize_t
+-random_read(struct file *file, char __user *buf, size_t nbytes, loff_t *ppos)
++_random_read(int nonblock, char __user *buf, size_t nbytes)
+ {
+ 	ssize_t n;
+ 
+@@ -1379,7 +1384,7 @@ random_read(struct file *file, char __user *buf, size_t nbytes, loff_t *ppos)
+ 		if (arch_random_refill())
+ 			continue;
+ 
+-		if (file->f_flags & O_NONBLOCK)
++		if (nonblock)
+ 			return -EAGAIN;
+ 
+ 		wait_event_interruptible(random_read_wait,
+@@ -1391,6 +1396,12 @@ random_read(struct file *file, char __user *buf, size_t nbytes, loff_t *ppos)
+ }
+ 
+ static ssize_t
++random_read(struct file *file, char __user *buf, size_t nbytes, loff_t *ppos)
++{
++	return _random_read(file->f_flags & O_NONBLOCK, buf, nbytes);
++}
++
++static ssize_t
+ urandom_read(struct file *file, char __user *buf, size_t nbytes, loff_t *ppos)
+ {
+ 	int ret;
+@@ -1533,6 +1544,29 @@ const struct file_operations urandom_fops = {
+ 	.llseek = noop_llseek,
+ };
+ 
++SYSCALL_DEFINE3(getrandom, char __user *, buf, size_t, count,
++		unsigned int, flags)
++{
++	if (flags & ~(GRND_NONBLOCK|GRND_RANDOM))
++		return -EINVAL;
++
++	if (count > INT_MAX)
++		count = INT_MAX;
++
++	if (flags & GRND_RANDOM)
++		return _random_read(flags & GRND_NONBLOCK, buf, count);
++
++	if (unlikely(nonblocking_pool.initialized == 0)) {
++		if (flags & GRND_NONBLOCK)
++			return -EAGAIN;
++		wait_event_interruptible(urandom_init_wait,
++					 nonblocking_pool.initialized);
++		if (signal_pending(current))
++			return -ERESTARTSYS;
++	}
++	return urandom_read(NULL, buf, count, NULL);
++}
++
+ /***************************************************************
+  * Random UUID interface
+  *
+diff --git a/include/linux/syscalls.h b/include/linux/syscalls.h
+index b0881a0..43324a8 100644
+--- a/include/linux/syscalls.h
++++ b/include/linux/syscalls.h
+@@ -866,4 +866,7 @@ asmlinkage long sys_process_vm_writev(pid_t pid,
+ asmlinkage long sys_kcmp(pid_t pid1, pid_t pid2, int type,
+ 			 unsigned long idx1, unsigned long idx2);
+ asmlinkage long sys_finit_module(int fd, const char __user *uargs, int flags);
++asmlinkage long sys_getrandom(char __user *buf, size_t count,
++			      unsigned int flags);
++
+ #endif
+diff --git a/include/uapi/asm-generic/unistd.h b/include/uapi/asm-generic/unistd.h
+index 3336406..1d104a2 100644
+--- a/include/uapi/asm-generic/unistd.h
++++ b/include/uapi/asm-generic/unistd.h
+@@ -699,9 +699,11 @@ __SYSCALL(__NR_sched_setattr, sys_sched_setattr)
+ __SYSCALL(__NR_sched_getattr, sys_sched_getattr)
+ #define __NR_renameat2 276
+ __SYSCALL(__NR_renameat2, sys_renameat2)
++#define __NR_getrandom 278
++__SYSCALL(__NR_getrandom, sys_getrandom)
+ 
+ #undef __NR_syscalls
+-#define __NR_syscalls 277
++#define __NR_syscalls 279
+ 
+ /*
+  * All syscalls below here should go away really,
+diff --git a/include/uapi/linux/random.h b/include/uapi/linux/random.h
+index fff3528..3f93d16 100644
+--- a/include/uapi/linux/random.h
++++ b/include/uapi/linux/random.h
+@@ -40,4 +40,13 @@ struct rand_pool_info {
+ 	__u32	buf[0];
+ };
+ 
++/*
++ * Flags for getrandom(2)
++ *
++ * GRND_NONBLOCK	Don't block and return EAGAIN instead
++ * GRND_RANDOM		Use the /dev/random pool instead of /dev/urandom
++ */
++#define GRND_NONBLOCK	0x0001
++#define GRND_RANDOM	0x0002
++
+ #endif /* _UAPI_LINUX_RANDOM_H */
+-- 
+2.0.0
+
