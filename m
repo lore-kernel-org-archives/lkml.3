@@ -1,123 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753103AbaGXJIJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 05:08:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42445 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750905AbaGXJIG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 05:08:06 -0400
-Date: Thu, 24 Jul 2014 17:05:52 +0800
-From: Baoquan He <bhe@redhat.com>
-To: Atsushi Kumagai <kumagai-atsushi@mxc.nes.nec.co.jp>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kexec@lists.infradead.org" <kexec@lists.infradead.org>
-Subject: Re: [PATCH] kexec: Export free_huge_page to VMCOREINFO
-Message-ID: <20140724090552.GL11399@dhcp-16-105.nay.redhat.com>
-References: <0910DD04CBD6DE4193FCF86B9C00BE972400F3@BPXM01GP.gisp.nec.co.jp>
+	id S1754275AbaGXJKO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 05:10:14 -0400
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:60329 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750882AbaGXJKJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jul 2014 05:10:09 -0400
+Date: Thu, 24 Jul 2014 11:10:04 +0200
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Tuomas Tynkkynen <ttynkkynen@nvidia.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Paul Walmsley <pwalmsley@nvidia.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH v2 14/16] cpufreq: Add cpufreq driver for Tegra124
+Message-ID: <20140724091002.GA3811@ulmo.nvidia.com>
+References: <1405957142-19416-1-git-send-email-ttynkkynen@nvidia.com>
+ <1405957142-19416-15-git-send-email-ttynkkynen@nvidia.com>
+ <CAKohpomQthJ_XE-HhzW07Q4aVtxQVy97iaL0Vy6Q4Lhw22A=VA@mail.gmail.com>
+ <53CFA33F.6030307@nvidia.com>
+ <CAKohponLh66Ubr6=wY2OZCCrK11KZDj=DmXXqXsGGTHSG45wpA@mail.gmail.com>
+ <53D00A47.7050203@nvidia.com>
+ <CAKohponsS8WJy4qBa=3em9AcxfpfLZR_mx4Ln8N3Q_gBaf52NA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="wRRV7LY7NUeQGEoC"
 Content-Disposition: inline
-In-Reply-To: <0910DD04CBD6DE4193FCF86B9C00BE972400F3@BPXM01GP.gisp.nec.co.jp>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAKohponsS8WJy4qBa=3em9AcxfpfLZR_mx4Ln8N3Q_gBaf52NA@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/11/14 at 10:34am, Atsushi Kumagai wrote:
-> PG_head_mask was added into VMCOREINFO to filter huge pages in
-> commit:b3acc56bfe1(kexec: save PG_head_mask in VMCOREINFO), but
-> makedumpfile still need another symbol to filter *hugetlbfs* pages.
-> 
-> If a user hope to filter user pages, makedumpfile tries to exclude
-> them by checking the condition whether the page is anonymous, but
-> hugetlbfs pages aren't anonymous while they also be user pages.
-> 
-> We know it's possible to detect them in the same way as PageHuge(),
-> so we need the start address of free_huge_page():
-> 
->     int PageHuge(struct page *page)
->     {
->             if (!PageCompound(page))
->                     return 0;
-> 
->             page = compound_head(page);
->             return get_compound_page_dtor(page) == free_huge_page;
->     }
 
-Since makedumpfile need filter huge pages used for user pages.
-Transparent huge pages can be recognised because it's marked as
-anonymous page for now. However hugetlbfs huge pages and normal
-huge pages can only be differentiated by compound_page_dtor,
-hugetlbfs set free_huge_page as compound_page_dtor. So it makes
-sense to export compound_page_dtor to VMCOREINFO.
+--wRRV7LY7NUeQGEoC
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Ack it.
+On Thu, Jul 24, 2014 at 05:43:40AM +0530, Viresh Kumar wrote:
+> On 24 July 2014 00:47, Tuomas Tynkkynen <ttynkkynen@nvidia.com> wrote:
+> > It's this:
+> >
+> > +static int tegra124_cpufreq_probe(struct platform_device *pdev)
+> > +{
+> > [...]
+> > +
+> > +       dfll_clk =3D of_clk_get_by_name(cpu_dev->of_node, "dfll");
+> > +       if (IS_ERR(dfll_clk)) {
+> > +               ret =3D PTR_ERR(dfll_clk);
+> > +               goto out_put_cpu_clk;
+> > +       }
+>=20
+> This would search for clocks passed via DT, right? Why would we
+> get EPROBE_DEFER for that? Sorry for the stupid question.
 
-Acked-by: Baoquan He <bhe@redhat.com>
+of_clk_get_by_name() can return -EPROBE_DEFER, which will happen if the
+clock provider hasn't been registered yet.
 
-Thanks
-Baoquan
+Thierry
 
-> 
-> For that reason, this patch changes free_huge_page() into public
-> to export it to VMCOREINFO.
-> 
-> Signed-off-by: Atsushi Kumagai <kumagai-atsushi@mxc.nes.nec.co.jp>
-> ---
->  include/linux/hugetlb.h | 1 +
->  kernel/kexec.c          | 2 ++
->  mm/hugetlb.c            | 2 +-
->  3 files changed, 4 insertions(+), 1 deletion(-)
-> 
-> diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
-> index 255cd5c..a23c096 100644
-> --- a/include/linux/hugetlb.h
-> +++ b/include/linux/hugetlb.h
-> @@ -80,6 +80,7 @@ int dequeue_hwpoisoned_huge_page(struct page *page);
->  bool isolate_huge_page(struct page *page, struct list_head *list);
->  void putback_active_hugepage(struct page *page);
->  bool is_hugepage_active(struct page *page);
-> +void free_huge_page(struct page *page);
->  
->  #ifdef CONFIG_ARCH_WANT_HUGE_PMD_SHARE
->  pte_t *huge_pmd_share(struct mm_struct *mm, unsigned long addr, pud_t *pud);
-> diff --git a/kernel/kexec.c b/kernel/kexec.c
-> index 369f41a..23a088f 100644
-> --- a/kernel/kexec.c
-> +++ b/kernel/kexec.c
-> @@ -33,6 +33,7 @@
->  #include <linux/swap.h>
->  #include <linux/syscore_ops.h>
->  #include <linux/compiler.h>
-> +#include <linux/hugetlb.h>
->  
->  #include <asm/page.h>
->  #include <asm/uaccess.h>
-> @@ -1619,6 +1620,7 @@ static int __init crash_save_vmcoreinfo_init(void)
->  #endif
->  	VMCOREINFO_NUMBER(PG_head_mask);
->  	VMCOREINFO_NUMBER(PAGE_BUDDY_MAPCOUNT_VALUE);
-> +	VMCOREINFO_SYMBOL(free_huge_page);
->  
->  	arch_crash_save_vmcoreinfo();
->  	update_vmcoreinfo_note();
-> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-> index 2024bbd..d5437eb 100644
-> --- a/mm/hugetlb.c
-> +++ b/mm/hugetlb.c
-> @@ -856,7 +856,7 @@ struct hstate *size_to_hstate(unsigned long size)
->  	return NULL;
->  }
->  
-> -static void free_huge_page(struct page *page)
-> +void free_huge_page(struct page *page)
->  {
->  	/*
->  	 * Can't pass hstate in here because it is called from the
-> -- 
-> 1.9.0
-> 
-> _______________________________________________
-> kexec mailing list
-> kexec@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/kexec
+--wRRV7LY7NUeQGEoC
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJT0M1qAAoJEN0jrNd/PrOh86YQAI3S6c9lir6DHUekyi7REuFx
+7joUQ8un74bTj+c6jDOxHq14qConR0AXcvb3tOT8N696hBddSYeWfLv87iMEsQsA
+xhZjd3dcgm/9jL1eHzjuCY9GrO7kMu6fGlKm854kTP2BPeWhp93X+aQzEtdw1qja
+KdlXfZKvx6kObrDacZIqq88Ru0jZ+ZebJiKCvpkJac0lQ5AFV3voFKtQXjWdLcnJ
+ebDZ4qhqixhernnpFzhWUxUoTZOFYevSlMI9T4XOubWEgcEn/lXjwI8N3KnGnpKe
+zejX8qBWOmYAfsAxvHjIoC2PPjZdW9U81sOTQUl0H1vDhsV/pki7qSTFVrGcO7Bh
+YoTg7YzUi81g5klG94dZ9nwEkLEzmJJWioHVvXx2cH52WPFqSRnL6NSc9huB2rZS
+B8qNYtLLGBxFItSe5VR4XnbofzNQkUcbMRxDmRK7740K5OcdByoPb4NsGYRH9zCJ
+yqI10am7VkO1+94sjBDUq0qcYeDCTjN5+3ujpyG6LnTFaEtpZa40dfB7tPwRCD3g
+AB5zuGhL83U9wTkfm+lSfYMRtn+tDjO5H4vJ7AQpMXAsQoWT3pWDCzFfX/nYviQZ
+GST6mlKYRcBVVBELwwYkgkmZTNEQXiW9uEvorIG3iENSMsZ4338RrTynztMdLg0h
+Ei2gFch/Zy8Nj2NkhXBQ
+=kWfZ
+-----END PGP SIGNATURE-----
+
+--wRRV7LY7NUeQGEoC--
