@@ -1,40 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759152AbaGXK22 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 06:28:28 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:50442 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759132AbaGXK2W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 06:28:22 -0400
-Date: Thu, 24 Jul 2014 12:28:18 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-Cc: linux-kernel@vger.kernel.org, H Peter Anvin <hpa@zytor.com>
-Subject: Re: [PATCH 2/8] x86, microcode, intel: fix missing static
- declarations
-Message-ID: <20140724102818.GH19239@pd.tnic>
-References: <1406146251-8540-1-git-send-email-hmh@hmh.eng.br>
- <1406146251-8540-3-git-send-email-hmh@hmh.eng.br>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1406146251-8540-3-git-send-email-hmh@hmh.eng.br>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1759189AbaGXK25 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 06:28:57 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54589 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758082AbaGXJqk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jul 2014 05:46:40 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Wang Shilong <wangsl.fnst@cn.fujitsu.com>, Chris Mason <clm@fb.com>,
+        David Sterba <dsterba@suse.cz>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 009/128] Btrfs: set right total device count for seeding support
+Date: Thu, 24 Jul 2014 10:44:18 +0100
+Message-Id: <1406195177-8656-10-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1406195177-8656-1-git-send-email-luis.henriques@canonical.com>
+References: <1406195177-8656-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 23, 2014 at 05:10:45PM -0300, Henrique de Moraes Holschuh wrote:
-> gcc reports that a few declarations are missing.
-> Fix two obvious ones.
-> 
-> Signed-off-by: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+3.11.10.14 -stable review patch.  If anyone has any objections, please let me know.
 
-Applied, thanks.
+------------------
 
+From: Wang Shilong <wangsl.fnst@cn.fujitsu.com>
+
+commit 298658414a2f0bea1f05a81876a45c1cd96aa2e0 upstream.
+
+Seeding device support allows us to create a new filesystem
+based on existed filesystem.
+
+However newly created filesystem's @total_devices should include seed
+devices. This patch fix the following problem:
+
+ # mkfs.btrfs -f /dev/sdb
+ # btrfstune -S 1 /dev/sdb
+ # mount /dev/sdb /mnt
+ # btrfs device add -f /dev/sdc /mnt --->fs_devices->total_devices = 1
+ # umount /mnt
+ # mount /dev/sdc /mnt               --->fs_devices->total_devices = 2
+
+This is because we record right @total_devices in superblock, but
+@fs_devices->total_devices is reset to be 0 in btrfs_prepare_sprout().
+
+Fix this problem by not resetting @fs_devices->total_devices.
+
+Signed-off-by: Wang Shilong <wangsl.fnst@cn.fujitsu.com>
+Signed-off-by: Chris Mason <clm@fb.com>
+Cc: David Sterba <dsterba@suse.cz>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ fs/btrfs/volumes.c | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/fs/btrfs/volumes.c b/fs/btrfs/volumes.c
+index f79b027fa0f1..ca9a51400035 100644
+--- a/fs/btrfs/volumes.c
++++ b/fs/btrfs/volumes.c
+@@ -1844,7 +1844,6 @@ static int btrfs_prepare_sprout(struct btrfs_root *root)
+ 	fs_devices->seeding = 0;
+ 	fs_devices->num_devices = 0;
+ 	fs_devices->open_devices = 0;
+-	fs_devices->total_devices = 0;
+ 	fs_devices->seed = seed_devices;
+ 
+ 	generate_random_uuid(fs_devices->fsid);
 -- 
-Regards/Gruss,
-    Boris.
+1.9.1
 
-Sent from a fat crate under my desk. Formatting is fine.
---
