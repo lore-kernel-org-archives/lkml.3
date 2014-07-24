@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935211AbaGXXLa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 19:11:30 -0400
-Received: from relay3-d.mail.gandi.net ([217.70.183.195]:44258 "EHLO
+	id S934772AbaGXXL3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 19:11:29 -0400
+Received: from relay3-d.mail.gandi.net ([217.70.183.195]:51682 "EHLO
 	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759777AbaGXXHG (ORCPT
+	with ESMTP id S1755965AbaGXXHG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 24 Jul 2014 19:07:06 -0400
 X-Originating-IP: 109.10.215.15
@@ -13,9 +13,9 @@ To: Forest Bond <forest@alittletooquiet.net>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         Guillaume Clement <gclement@baobob.org>
-Subject: [PATCH 02/14] staging: vt6655: Add missing blank lines after declarations
-Date: Fri, 25 Jul 2014 01:06:16 +0200
-Message-Id: <1406243188-13413-3-git-send-email-gclement@baobob.org>
+Subject: [PATCH 01/14] staging: vt6655: remove useless return statements
+Date: Fri, 25 Jul 2014 01:06:15 +0200
+Message-Id: <1406243188-13413-2-git-send-email-gclement@baobob.org>
 X-Mailer: git-send-email 1.8.5.5
 In-Reply-To: <1406243188-13413-1-git-send-email-gclement@baobob.org>
 References: <1406243188-13413-1-git-send-email-gclement@baobob.org>
@@ -23,507 +23,665 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes the missing blank lines after declarations in vt6655
-reported by checkpatch.
+Many return statements in void function were present at the end of
+functions, with no effect. They now are removed.
+
+This fixes a bunch of checkpatch warnings.
 
 Signed-off-by: Guillaume Clement <gclement@baobob.org>
 ---
- drivers/staging/vt6655/80211mgr.c    |  1 +
- drivers/staging/vt6655/baseband.c    |  1 +
- drivers/staging/vt6655/bssdb.c       |  7 +++++++
- drivers/staging/vt6655/card.c        |  1 +
- drivers/staging/vt6655/device.h      |  1 +
- drivers/staging/vt6655/device_main.c | 11 +++++++++++
- drivers/staging/vt6655/dpc.c         |  3 +++
- drivers/staging/vt6655/iwctl.c       |  8 ++++++++
- drivers/staging/vt6655/rc4.c         |  1 +
- drivers/staging/vt6655/rf.c          |  2 ++
- drivers/staging/vt6655/rxtx.c        |  8 ++++++++
- drivers/staging/vt6655/vntwifi.c     |  3 +++
- drivers/staging/vt6655/wcmd.c        |  1 +
- drivers/staging/vt6655/wmgr.c        |  2 ++
- drivers/staging/vt6655/wpa.c         |  1 +
- drivers/staging/vt6655/wpactl.c      |  1 +
- 16 files changed, 52 insertions(+)
+ drivers/staging/vt6655/80211mgr.c    | 36 -------------------------------
+ drivers/staging/vt6655/baseband.c    |  3 ---
+ drivers/staging/vt6655/bssdb.c       |  8 -------
+ drivers/staging/vt6655/card.c        |  4 ----
+ drivers/staging/vt6655/datarate.c    |  2 --
+ drivers/staging/vt6655/device_main.c |  2 --
+ drivers/staging/vt6655/hostap.c      |  2 --
+ drivers/staging/vt6655/key.c         |  1 -
+ drivers/staging/vt6655/power.c       |  4 ----
+ drivers/staging/vt6655/rxtx.c        |  4 ----
+ drivers/staging/vt6655/vntwifi.c     |  3 ---
+ drivers/staging/vt6655/wcmd.c        |  2 --
+ drivers/staging/vt6655/wmgr.c        | 41 ------------------------------------
+ 13 files changed, 112 deletions(-)
 
 diff --git a/drivers/staging/vt6655/80211mgr.c b/drivers/staging/vt6655/80211mgr.c
-index acdbbbd..96b0d61 100644
+index 9aa2e46..acdbbbd 100644
 --- a/drivers/staging/vt6655/80211mgr.c
 +++ b/drivers/staging/vt6655/80211mgr.c
-@@ -546,6 +546,7 @@ vMgrDecodeReassocRequest(
+@@ -102,8 +102,6 @@ vMgrEncodeBeacon(
+ 			     WLAN_BEACON_OFF_CAPINFO);
+ 
+ 	pFrame->len = WLAN_HDR_ADDR3_LEN + WLAN_BEACON_OFF_SSID;
+-
+-	return;
+ }
+ 
+ /*+
+@@ -228,8 +226,6 @@ vMgrDecodeBeacon(
+ 		}
+ 		pItem = (PWLAN_IE)(((unsigned char *)pItem) + 2 + pItem->len);
+ 	}
+-
+-	return;
+ }
+ 
+ /*+
+@@ -250,8 +246,6 @@ vMgrEncodeIBSSATIM(
+ {
+ 	pFrame->pHdr = (PUWLAN_80211HDR)pFrame->pBuf;
+ 	pFrame->len = WLAN_HDR_ADDR3_LEN;
+-
+-	return;
+ }
+ 
+ /*+
+@@ -271,8 +265,6 @@ vMgrDecodeIBSSATIM(
  )
  {
- 	PWLAN_IE   pItem;
-+
  	pFrame->pHdr = (PUWLAN_80211HDR)pFrame->pBuf;
+-
+-	return;
+ }
  
- 	/* Fixed Fields */
+ /*+
+@@ -299,8 +291,6 @@ vMgrEncodeDisassociation(
+ 			    WLAN_DISASSOC_OFF_REASON);
+ 	pFrame->len = WLAN_HDR_ADDR3_LEN + WLAN_DISASSOC_OFF_REASON +
+ 		      sizeof(*(pFrame->pwReason));
+-
+-	return;
+ }
+ 
+ /*+
+@@ -325,8 +315,6 @@ vMgrDecodeDisassociation(
+ 	pFrame->pwReason = (unsigned short *)
+ 			   (WLAN_HDR_A3_DATA_PTR(&(pFrame->pHdr->sA3)) +
+ 			    WLAN_DISASSOC_OFF_REASON);
+-
+-	return;
+ }
+ 
+ /*+
+@@ -355,7 +343,6 @@ vMgrEncodeAssocRequest(
+ 				    WLAN_ASSOCREQ_OFF_LISTEN_INT);
+ 	pFrame->len = WLAN_HDR_ADDR3_LEN + WLAN_ASSOCREQ_OFF_LISTEN_INT +
+ 		      sizeof(*(pFrame->pwListenInterval));
+-	return;
+ }
+ 
+ /*+
+@@ -426,7 +413,6 @@ vMgrDecodeAssocRequest(
+ 		}
+ 		pItem = (PWLAN_IE)(((unsigned char *)pItem) + 2 + pItem->len);
+ 	}
+-	return;
+ }
+ 
+ /*+
+@@ -459,8 +445,6 @@ vMgrEncodeAssocResponse(
+ 			 WLAN_ASSOCRESP_OFF_AID);
+ 	pFrame->len = WLAN_HDR_ADDR3_LEN + WLAN_ASSOCRESP_OFF_AID +
+ 		      sizeof(*(pFrame->pwAid));
+-
+-	return;
+ }
+ 
+ /*+
+@@ -511,7 +495,6 @@ vMgrDecodeAssocResponse(
+ 	} else {
+ 		pFrame->pExtSuppRates = NULL;
+ 	}
+-	return;
+ }
+ 
+ /*+
+@@ -544,8 +527,6 @@ vMgrEncodeReassocRequest(
+ 			       WLAN_REASSOCREQ_OFF_CURR_AP);
+ 	pFrame->len = WLAN_HDR_ADDR3_LEN + WLAN_REASSOCREQ_OFF_CURR_AP +
+ 		      sizeof(*(pFrame->pAddrCurrAP));
+-
+-	return;
+ }
+ 
+ /*+
+@@ -619,7 +600,6 @@ vMgrDecodeReassocRequest(
+ 		}
+ 		pItem = (PWLAN_IE)(((unsigned char *)pItem) + 2 + pItem->len);
+ 	}
+-	return;
+ }
+ 
+ /*+
+@@ -640,7 +620,6 @@ vMgrEncodeProbeRequest(
+ {
+ 	pFrame->pHdr = (PUWLAN_80211HDR)pFrame->pBuf;
+ 	pFrame->len = WLAN_HDR_ADDR3_LEN;
+-	return;
+ }
+ 
+ /*+
+@@ -694,7 +673,6 @@ vMgrDecodeProbeRequest(
+ 
+ 		pItem = (PWLAN_IE)(((unsigned char *)pItem) + 2 +  pItem->len);
+ 	}
+-	return;
+ }
+ 
+ /*+
+@@ -728,8 +706,6 @@ vMgrEncodeProbeResponse(
+ 
+ 	pFrame->len = WLAN_HDR_ADDR3_LEN + WLAN_PROBERESP_OFF_CAP_INFO +
+ 		      sizeof(*(pFrame->pwCapInfo));
+-
+-	return;
+ }
+ 
+ /*+
+@@ -850,7 +826,6 @@ vMgrDecodeProbeResponse(
+ 
+ 		pItem = (PWLAN_IE)(((unsigned char *)pItem) + 2 +  pItem->len);
+ 	}
+-	return;
+ }
+ 
+ /*+
+@@ -883,8 +858,6 @@ vMgrEncodeAuthen(
+ 			    WLAN_AUTHEN_OFF_STATUS);
+ 	pFrame->len = WLAN_HDR_ADDR3_LEN + WLAN_AUTHEN_OFF_STATUS +
+ 		      sizeof(*(pFrame->pwStatus));
+-
+-	return;
+ }
+ 
+ /*+
+@@ -925,8 +898,6 @@ vMgrDecodeAuthen(
+ 	if (((unsigned char *)pItem) < (pFrame->pBuf + pFrame->len) &&
+ 	    pItem->byElementID == WLAN_EID_CHALLENGE)
+ 		pFrame->pChallenge = (PWLAN_IE_CHALLENGE)pItem;
+-
+-	return;
+ }
+ 
+ /*+
+@@ -953,8 +924,6 @@ vMgrEncodeDeauthen(
+ 			    WLAN_DEAUTHEN_OFF_REASON);
+ 	pFrame->len = WLAN_HDR_ADDR3_LEN + WLAN_DEAUTHEN_OFF_REASON +
+ 		      sizeof(*(pFrame->pwReason));
+-
+-	return;
+ }
+ 
+ /*+
+@@ -979,8 +948,6 @@ vMgrDecodeDeauthen(
+ 	pFrame->pwReason = (unsigned short *)
+ 			   (WLAN_HDR_A3_DATA_PTR(&(pFrame->pHdr->sA3)) +
+ 			    WLAN_DEAUTHEN_OFF_REASON);
+-
+-	return;
+ }
+ 
+ /*+
+@@ -1014,8 +981,6 @@ vMgrEncodeReassocResponse(
+ 
+ 	pFrame->len = WLAN_HDR_ADDR3_LEN + WLAN_REASSOCRESP_OFF_AID +
+ 		      sizeof(*(pFrame->pwAid));
+-
+-	return;
+ }
+ 
+ /*+
+@@ -1061,5 +1026,4 @@ vMgrDecodeReassocResponse(
+ 	    (pItem->byElementID == WLAN_EID_EXTSUPP_RATES)) {
+ 		pFrame->pExtSuppRates = (PWLAN_IE_SUPP_RATES)pItem;
+ 	}
+-	return;
+ }
 diff --git a/drivers/staging/vt6655/baseband.c b/drivers/staging/vt6655/baseband.c
-index c96bc7a..f212b88 100644
+index 67bc3b4..c96bc7a 100644
 --- a/drivers/staging/vt6655/baseband.c
 +++ b/drivers/staging/vt6655/baseband.c
-@@ -2289,6 +2289,7 @@ void BBvReadAllRegs(void __iomem *dwIoBase, unsigned char *pbyBBRegs)
- {
- 	int  ii;
- 	unsigned char byBase = 1;
-+
- 	for (ii = 0; ii < BB_MAX_CONTEXT_SIZE; ii++) {
- 		BBbReadEmbedded(dwIoBase, (unsigned char)(ii*byBase), pbyBBRegs);
- 		pbyBBRegs += byBase;
+@@ -2814,7 +2814,6 @@ TimerSQ3CallBack(
+ 	add_timer(&pDevice->TimerSQ3Tmax2);
+ 
+ 	spin_unlock_irq(&pDevice->lock);
+-	return;
+ }
+ 
+ /*+
+@@ -2873,6 +2872,4 @@ TimerState1CallBack(
+ 	pDevice->byAntennaState = 0;
+ 	BBvClearAntDivSQ3Value(pDevice);
+ 	spin_unlock_irq(&pDevice->lock);
+-
+-	return;
+ }
 diff --git a/drivers/staging/vt6655/bssdb.c b/drivers/staging/vt6655/bssdb.c
-index 5f9fd2b..58f85e8 100644
+index eb3474d..5f9fd2b 100644
 --- a/drivers/staging/vt6655/bssdb.c
 +++ b/drivers/staging/vt6655/bssdb.c
-@@ -422,6 +422,7 @@ BSSbInsertToBSSList(
+@@ -262,8 +262,6 @@ BSSvClearBSSList(
+ 		memset(&pMgmt->sBSSList[ii], 0, sizeof(KnownBSS));
+ 	}
+ 	BSSvClearAnyBSSJoinRecord(pDevice);
+-
+-	return;
+ }
  
- 	if (pRSN != NULL) {
- 		unsigned int uLen = pRSN->len + 2;
-+
- 		if (uLen <= (uIELength - (unsigned int)((unsigned char *)pRSN - pbyIEs))) {
- 			pBSSList->wRSNLen = uLen;
- 			memcpy(pBSSList->byRSNIE, pRSN, uLen);
-@@ -598,6 +599,7 @@ BSSbUpdateToBSSList(
+ /*+
+@@ -1235,7 +1233,6 @@ start:
  
- 	if (pRSNWPA != NULL) {
- 		unsigned int uLen = pRSNWPA->len + 2;
-+
- 		if (uLen <= (uIELength - (unsigned int)((unsigned char *)pRSNWPA - pbyIEs))) {
- 			pBSSList->wWPALen = uLen;
- 			memcpy(pBSSList->byWPAIE, pRSNWPA, uLen);
-@@ -609,6 +611,7 @@ BSSbUpdateToBSSList(
+ 	pMgmt->sTimerSecondCallback.expires = RUN_AT(HZ);
+ 	add_timer(&pMgmt->sTimerSecondCallback);
+-	return;
+ }
  
- 	if (pRSN != NULL) {
- 		unsigned int uLen = pRSN->len + 2;
-+
- 		if (uLen <= (uIELength - (unsigned int)((unsigned char *)pRSN - pbyIEs))) {
- 			pBSSList->wRSNLen = uLen;
- 			memcpy(pBSSList->byRSNIE, pRSN, uLen);
-@@ -988,6 +991,7 @@ start:
- #ifdef WPA_SUPPLICANT_DRIVER_WEXT_SUPPORT
- 			{
- 				union iwreq_data  wrqu;
-+
- 				memset(&wrqu, 0, sizeof(wrqu));
- 				wrqu.ap_addr.sa_family = ARPHRD_ETHER;
- 				PRINT_K("wireless_send_event--->SIOCGIWAP(disassociated)\n");
-@@ -1167,6 +1171,7 @@ start:
- #ifdef WPA_SUPPLICANT_DRIVER_WEXT_SUPPORT
- 				{
- 					union iwreq_data  wrqu;
-+
- 					memset(&wrqu, 0, sizeof(wrqu));
- 					wrqu.ap_addr.sa_family = ARPHRD_ETHER;
- 					PRINT_K("wireless_send_event--->SIOCGIWAP(disassociated)\n");
-@@ -1267,6 +1272,7 @@ BSSvUpdateNodeTxCounter(
- 	unsigned short wFallBackRate = RATE_1M;
- 	unsigned char byFallBack;
- 	unsigned int ii;
-+
- 	pTxBufHead = (PSTxBufHead) pbyBuffer;
- 	if (pTxBufHead->wFIFOCtl & FIFOCTL_AUTO_FB_0)
- 		byFallBack = AUTO_FB_0;
-@@ -1451,6 +1457,7 @@ void s_vCheckSensitivity(
- 			/* Update BB Reg if RSSI is too strong */
- 			long    LocalldBmAverage = 0;
- 			long    uNumofdBm = 0;
-+
- 			for (ii = 0; ii < RSSI_STAT_COUNT; ii++) {
- 				if (pBSSList->ldBmAverage[ii] != 0) {
- 					uNumofdBm++;
-diff --git a/drivers/staging/vt6655/card.c b/drivers/staging/vt6655/card.c
-index f2674b4..fdeb805 100644
---- a/drivers/staging/vt6655/card.c
-+++ b/drivers/staging/vt6655/card.c
-@@ -1770,6 +1770,7 @@ void vUpdateIFS(void *pDeviceHandler)
- 	PSDevice pDevice = (PSDevice) pDeviceHandler;
+ /*+
+@@ -1385,8 +1382,6 @@ BSSvUpdateNodeTxCounter(
+ 			}
+ 		}
+ 	}
+-
+-	return;
+ }
  
- 	unsigned char byMaxMin = 0;
-+
- 	if (pDevice->byPacketType == PK_TYPE_11A) {//0000 0000 0000 0000,11a
- 		pDevice->uSlot = C_SLOT_SHORT;
- 		pDevice->uSIFS = C_SIFS_A;
-diff --git a/drivers/staging/vt6655/device.h b/drivers/staging/vt6655/device.h
-index 647e36fe..f33ecf0 100644
---- a/drivers/staging/vt6655/device.h
-+++ b/drivers/staging/vt6655/device.h
-@@ -786,6 +786,7 @@ inline  static	void   EnQueue(PSDevice pDevice, PSRxMgmtPacket  pRxMgmtPacket)
- inline  static  PSRxMgmtPacket DeQueue(PSDevice pDevice)
- {
- 	PSRxMgmtPacket  pRxMgmtPacket;
-+
- 	if (pDevice->rxManeQueue.tail == pDevice->rxManeQueue.head) {
- 		printk("Queue is Empty\n");
- 		return NULL;
-diff --git a/drivers/staging/vt6655/device_main.c b/drivers/staging/vt6655/device_main.c
-index f46e8d4..b3b2ee6 100644
---- a/drivers/staging/vt6655/device_main.c
-+++ b/drivers/staging/vt6655/device_main.c
-@@ -326,6 +326,7 @@ static int Config_FileGetParameter(unsigned char *string,
- static char *get_chip_name(int chip_id)
- {
- 	int i;
-+
- 	for (i = 0; chip_info_table[i].name != NULL; i++)
- 		if (chip_info_table[i].chip_id == chip_id)
- 			break;
-@@ -464,6 +465,7 @@ static void device_init_registers(PSDevice pDevice, DEVICE_INIT_TYPE InitType)
- 	unsigned char byOFDMPwrdBm = 0;
- 	int zonetype = 0;
- 	PSMgmtObject    pMgmt = &(pDevice->sMgmtObj);
-+
- 	MACbShutdown(pDevice->PortOffset);
- 	BBvSoftwareReset(pDevice->PortOffset);
+ /*+
+@@ -1494,7 +1489,6 @@ BSSvClearAnyBSSJoinRecord(
  
-@@ -1006,6 +1008,7 @@ static bool device_get_pci_info(PSDevice pDevice, struct pci_dev *pcid) {
- 	unsigned char value = 0x00;
- 	int		ii, j;
- 	u16	max_lat = 0x0000;
-+
- 	memset(pci_config, 0x00, 256);
+ 	for (ii = 0; ii < MAX_BSS_NUM; ii++)
+ 		pMgmt->sBSSList[ii].bSelected = false;
+-	return;
+ }
+ 
+ #ifdef Calcu_LinkQual
+@@ -1535,7 +1529,6 @@ void s_uCalculateLinkQual(
+ 	pDevice->scStatistic.TxFailCount = 0;
+ 	pDevice->scStatistic.TxNoRetryOkCount = 0;
+ 	pDevice->scStatistic.TxRetryOkCount = 0;
+-	return;
+ }
  #endif
  
-@@ -1342,6 +1345,7 @@ static void device_init_td1_ring(PSDevice pDevice) {
- 
- static void device_free_td0_ring(PSDevice pDevice) {
- 	int i;
-+
- 	for (i = 0; i < pDevice->sOpts.nTxDescs[0]; i++) {
- 		PSTxDesc        pDesc = &(pDevice->apTD0Rings[i]);
- 		PDEVICE_TD_INFO  pTDInfo = pDesc->pTDInfo;
-@@ -2262,6 +2266,7 @@ static int  device_xmit(struct sk_buff *skb, struct net_device *dev) {
- 		unsigned char Descriptor_type;
- 		unsigned short Key_info;
- 		bool bTxeapol_key = false;
-+
- 		Protocol_Version = skb->data[ETH_HLEN];
- 		Packet_Type = skb->data[ETH_HLEN+1];
- 		Descriptor_type = skb->data[ETH_HLEN+1+1+2];
-@@ -2560,6 +2565,7 @@ static inline u32 ether_crc(int length, unsigned char *data)
- 	while (--length >= 0) {
- 		unsigned char current_octet = *data++;
- 		int bit;
-+
- 		for (bit = 0; bit < 8; bit++, current_octet >>= 1) {
- 			crc = (crc << 1) ^
- 				((crc < 0) ^ (current_octet & 1) ? ethernet_polynomial : 0);
-@@ -2655,6 +2661,7 @@ static void device_set_multi(struct net_device *dev) {
- 		memset(mc_filter, 0, sizeof(mc_filter));
- 		netdev_for_each_mc_addr(ha, dev) {
- 			int bit_nr = ether_crc(ETH_ALEN, ha->addr) >> 26;
-+
- 			mc_filter[bit_nr >> 5] |= cpu_to_le32(1 << (bit_nr & 31));
- 		}
- 		MACvSelectPage1(pDevice->PortOffset);
-@@ -2718,6 +2725,7 @@ static int  device_ioctl(struct net_device *dev, struct ifreq *rq, int cmd) {
- 
- 	{
- 		char essid[IW_ESSID_MAX_SIZE+1];
-+
- 		if (wrq->u.essid.length > IW_ESSID_MAX_SIZE) {
- 			rc = -E2BIG;
- 			break;
-@@ -2737,6 +2745,7 @@ static int  device_ioctl(struct net_device *dev, struct ifreq *rq, int cmd) {
- 
- 	{
- 		char essid[IW_ESSID_MAX_SIZE+1];
-+
- 		if (wrq->u.essid.pointer)
- 			rc = iwctl_giwessid(dev, NULL,
- 					    &(wrq->u.essid), essid);
-@@ -3099,6 +3108,7 @@ static int ethtool_ioctl(struct net_device *dev, void __user *useraddr)
- 	switch (ethcmd) {
- 	case ETHTOOL_GDRVINFO: {
- 		struct ethtool_drvinfo info = {ETHTOOL_GDRVINFO};
-+
- 		strncpy(info.driver, DEVICE_NAME, sizeof(info.driver)-1);
- 		strncpy(info.version, DEVICE_VERSION, sizeof(info.version)-1);
- 		if (copy_to_user(useraddr, &info, sizeof(info)))
-@@ -3155,6 +3165,7 @@ static int
- device_notify_reboot(struct notifier_block *nb, unsigned long event, void *p)
- {
- 	struct pci_dev *pdev = NULL;
-+
- 	switch (event) {
- 	case SYS_DOWN:
- 	case SYS_HALT:
-diff --git a/drivers/staging/vt6655/dpc.c b/drivers/staging/vt6655/dpc.c
-index 696564b..5b2ace2 100644
---- a/drivers/staging/vt6655/dpc.c
-+++ b/drivers/staging/vt6655/dpc.c
-@@ -604,6 +604,7 @@ device_receive_frame(
- 			{
- 				unsigned char Protocol_Version;    //802.1x Authentication
- 				unsigned char Packet_Type;           //802.1x Authentication
-+
- 				if (bIsWEP)
- 					cbIVOffset = 8;
- 				else
-@@ -761,6 +762,7 @@ device_receive_frame(
- 					union iwreq_data wrqu;
- 					struct iw_michaelmicfailure ev;
- 					int keyidx = pbyFrame[cbHeaderSize+3] >> 6; //top two-bits
-+
- 					memset(&ev, 0, sizeof(ev));
- 					ev.flags = keyidx & IW_MICFAILURE_KEY_ID;
- 					if ((pMgmt->eCurrMode == WMAC_MODE_ESS_STA) &&
-@@ -1114,6 +1116,7 @@ static bool s_bHandleRxEncryption(
- 			// Software TKIP
- 			// 1. 3253 A
- 			PS802_11Header  pMACHeader = (PS802_11Header)(pbyFrame);
-+
- 			TKIPvMixKey(pKey->abyKey, pMACHeader->abyAddr2, *pwRxTSC15_0, *pdwRxTSC47_16, pDevice->abyPRNG);
- 			rc4_init(&pDevice->SBox, pDevice->abyPRNG, TKIP_KEY_LEN);
- 			rc4_encrypt(&pDevice->SBox, pbyIV+8, pbyIV+8, PayloadLen);
-diff --git a/drivers/staging/vt6655/iwctl.c b/drivers/staging/vt6655/iwctl.c
-index 747d723..d449fcb1 100644
---- a/drivers/staging/vt6655/iwctl.c
-+++ b/drivers/staging/vt6655/iwctl.c
-@@ -139,11 +139,13 @@ static int iwctl_siwscan(struct net_device *dev,
- 	struct iw_scan_req  *req = (struct iw_scan_req *)extra;
- 	unsigned char abyScanSSID[WLAN_IEHDR_LEN + WLAN_SSID_MAXLEN + 1];
- 	PWLAN_IE_SSID pItemSSID = NULL;
-+
- 	DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO " SIOCSIWSCAN \n");
- 
- 	if (pDevice->byReAssocCount > 0) {   //reject scan when re-associating!
- //send scan event to wpa_Supplicant
- 		union iwreq_data wrqu;
-+
- 		PRINT_K("wireless_send_event--->SIOCGIWSCAN(scan done)\n");
- 		memset(&wrqu, 0, sizeof(wrqu));
- 		wireless_send_event(pDevice->dev, SIOCGIWSCAN, &wrqu, NULL);
-@@ -255,6 +257,7 @@ static int iwctl_giwscan(struct net_device *dev,
- 			//2008-0409-04, <Add> by Einsn Liu
- 			{
- 				int f = (int)pBSS->uChannel - 1;
-+
- 				if (f < 0)f = 0;
- 				iwe.u.freq.m = frequency_list[f] * 100000;
- 				iwe.u.freq.e = 1;
-@@ -358,6 +361,7 @@ int iwctl_siwfreq(struct net_device *dev,
- 	    (wrq->m <= (int) 2.487e8)) {
- 		int f = wrq->m / 100000;
- 		int c = 0;
-+
- 		while ((c < 14) && (f != frequency_list[c]))
- 			c++;
- 		wrq->e = 0;
-@@ -368,6 +372,7 @@ int iwctl_siwfreq(struct net_device *dev,
- 		rc = -EOPNOTSUPP;
- 	else {
- 		int channel = wrq->m;
-+
- 		if ((channel < 1) || (channel > 14)) {
- 			DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "%s: New channel value of %d is invalid!\n", dev->name, wrq->m);
- 			rc = -EINVAL;
-@@ -404,6 +409,7 @@ int iwctl_giwfreq(struct net_device *dev,
- #else
- 	{
- 		int f = (int)pMgmt->uCurrChannel - 1;
-+
- 		if (f < 0)
- 			f = 0;
- 		wrq->m = frequency_list[f] * 100000;
-@@ -658,6 +664,7 @@ int iwctl_siwap(struct net_device *dev,
- 		//                  then ignore,because you don't known which one to be connect with??
- 		{
- 			unsigned int ii, uSameBssidNum = 0;
-+
- 			for (ii = 0; ii < MAX_BSS_NUM; ii++) {
- 				if (pMgmt->sBSSList[ii].bActive &&
- 				    ether_addr_equal(pMgmt->sBSSList[ii].abyBSSID,
-@@ -1059,6 +1066,7 @@ int iwctl_siwrts(struct net_device *dev,
- 
- 	{
- 		int rthr = wrq->value;
-+
- 		if (wrq->disabled)
- 			rthr = 2312;
- 
-diff --git a/drivers/staging/vt6655/rc4.c b/drivers/staging/vt6655/rc4.c
-index 343b815..b7819bc 100644
---- a/drivers/staging/vt6655/rc4.c
-+++ b/drivers/staging/vt6655/rc4.c
-@@ -82,6 +82,7 @@ void rc4_encrypt(PRC4Ext pRC4, unsigned char *pbyDest,
- 		 unsigned char *pbySrc, unsigned int cbData_len)
- {
- 	unsigned int ii;
-+
- 	for (ii = 0; ii < cbData_len; ii++)
- 		pbyDest[ii] = (unsigned char)(pbySrc[ii] ^ rc4_byte(pRC4));
+@@ -1553,5 +1546,4 @@ void s_vCheckPreEDThreshold(
+ 		if (pBSSList != NULL)
+ 			pDevice->byBBPreEDRSSI = (unsigned char) (~(pBSSList->ldBmAverRange) + 1);
+ 	}
+-	return;
  }
-diff --git a/drivers/staging/vt6655/rf.c b/drivers/staging/vt6655/rf.c
-index 33913e5..d2d7dff 100644
---- a/drivers/staging/vt6655/rf.c
-+++ b/drivers/staging/vt6655/rf.c
-@@ -750,6 +750,7 @@ bool RFbInit(
- )
- {
- 	bool bResult = true;
-+
- 	switch (pDevice->byRFType) {
- 	case RF_AIROHA:
- 	case RF_AL2230S:
-@@ -786,6 +787,7 @@ bool RFbInit(
- bool RFbSelectChannel(void __iomem *dwIoBase, unsigned char byRFType, unsigned char byChannel)
- {
- 	bool bResult = true;
-+
- 	switch (byRFType) {
- 	case RF_AIROHA:
- 	case RF_AL2230S:
+diff --git a/drivers/staging/vt6655/card.c b/drivers/staging/vt6655/card.c
+index e29dcd8..f2674b4 100644
+--- a/drivers/staging/vt6655/card.c
++++ b/drivers/staging/vt6655/card.c
+@@ -2065,8 +2065,6 @@ void CARDvSetFirstNextTBTT(void __iomem *dwIoBase, unsigned short wBeaconInterva
+ 	VNSvOutPortD(dwIoBase + MAC_REG_NEXTTBTT, LODWORD(qwNextTBTT));
+ 	VNSvOutPortD(dwIoBase + MAC_REG_NEXTTBTT + 4, HIDWORD(qwNextTBTT));
+ 	MACvRegBitsOn(dwIoBase, MAC_REG_TFTCTL, TFTCTL_TBTTSYNCEN);
+-
+-	return;
+ }
+ 
+ /*
+@@ -2093,6 +2091,4 @@ void CARDvUpdateNextTBTT(void __iomem *dwIoBase, QWORD qwTSF, unsigned short wBe
+ 	MACvRegBitsOn(dwIoBase, MAC_REG_TFTCTL, TFTCTL_TBTTSYNCEN);
+ 	DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "Card:Update Next TBTT[%8xh:%8xh] \n",
+ 		(unsigned int) HIDWORD(qwTSF), (unsigned int) LODWORD(qwTSF));
+-
+-	return;
+ }
+diff --git a/drivers/staging/vt6655/datarate.c b/drivers/staging/vt6655/datarate.c
+index 83ad74c..565028c 100644
+--- a/drivers/staging/vt6655/datarate.c
++++ b/drivers/staging/vt6655/datarate.c
+@@ -367,8 +367,6 @@ RATEvTxRateFallBack(
+ 	/* 2008-5-8 <add> by chester */
+ 	TxRate_iwconfig = psNodeDBTable->wTxDataRate;
+ 	s_vResetCounter(psNodeDBTable);
+-
+-	return;
+ }
+ 
+ /*+
+diff --git a/drivers/staging/vt6655/device_main.c b/drivers/staging/vt6655/device_main.c
+index fe9e13c..f46e8d4 100644
+--- a/drivers/staging/vt6655/device_main.c
++++ b/drivers/staging/vt6655/device_main.c
+@@ -756,8 +756,6 @@ static void device_init_diversity_timer(PSDevice pDevice) {
+ 	pDevice->TimerSQ3Tmax3.data = (unsigned long) pDevice;
+ 	pDevice->TimerSQ3Tmax3.function = (TimerFunction)TimerState1CallBack;
+ 	pDevice->TimerSQ3Tmax3.expires = RUN_AT(HZ);
+-
+-	return;
+ }
+ 
+ static bool device_release_WPADEV(PSDevice pDevice)
+diff --git a/drivers/staging/vt6655/hostap.c b/drivers/staging/vt6655/hostap.c
+index 317c2a8..4cf85f3 100644
+--- a/drivers/staging/vt6655/hostap.c
++++ b/drivers/staging/vt6655/hostap.c
+@@ -394,8 +394,6 @@ static void hostap_flush_sta(PSDevice pDevice)
+ 	// reserved node index =0 for multicast node.
+ 	BSSvClearNodeDBTable(pDevice, 1);
+ 	pDevice->uAssocCount = 0;
+-
+-	return;
+ }
+ 
+ /*
+diff --git a/drivers/staging/vt6655/key.c b/drivers/staging/vt6655/key.c
+index f5bc4a2..27f97bc 100644
+--- a/drivers/staging/vt6655/key.c
++++ b/drivers/staging/vt6655/key.c
+@@ -468,7 +468,6 @@ void KeyvRemoveWEPKey(
+ 		}
+ 		s_vCheckKeyTableValid(pTable, dwIoBase);
+ 	}
+-	return;
+ }
+ 
+ void KeyvRemoveAllWEPKey(
+diff --git a/drivers/staging/vt6655/power.c b/drivers/staging/vt6655/power.c
+index 5dfa911..a6e48c7 100644
+--- a/drivers/staging/vt6655/power.c
++++ b/drivers/staging/vt6655/power.c
+@@ -114,7 +114,6 @@ PSvEnablePowerSaving(
+ 
+ 	pDevice->bPWBitOn = true;
+ 	DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "PS:Power Saving Mode Enable... \n");
+-	return;
+ }
+ 
+ /*+
+@@ -149,7 +148,6 @@ PSvDisablePowerSaving(
+ 		PSbSendNullPacket(pDevice);
+ 
+ 	pDevice->bPWBitOn = false;
+-	return;
+ }
+ 
+ /*+
+@@ -253,8 +251,6 @@ PSvSendPSPOLL(
+ 	if (csMgmt_xmit(pDevice, pTxPacket) != CMD_STATUS_PENDING) {
+ 		DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "Send PS-Poll packet failed..\n");
+ 	}
+-
+-	return;
+ }
+ 
+ /*+
 diff --git a/drivers/staging/vt6655/rxtx.c b/drivers/staging/vt6655/rxtx.c
-index 52455cd..092b918 100644
+index 60fe6db..52455cd 100644
 --- a/drivers/staging/vt6655/rxtx.c
 +++ b/drivers/staging/vt6655/rxtx.c
-@@ -1084,6 +1084,7 @@ s_vGenerateTxParameter(
- 	unsigned char byFBOption = AUTO_FB_NONE;
+@@ -1958,8 +1958,6 @@ vGenerateFIFOHeader(PSDevice pDevice, unsigned char byPktType, unsigned char *pb
+ 	*pcbHeaderSize = s_cbFillTxBufHead(pDevice, byPktType, pbyTxBufferAddr, cbPayloadSize,
+ 					   uDMAIdx, pHeadTD, psEthHeader, pPacket, bNeedEncrypt,
+ 					   pTransmitKey, uNodeIndex, puMACfragNum);
+-
+-	return;
+ }
  
- 	PSTxBufHead pFifoHead = (PSTxBufHead)pTxBufHead;
-+
- 	pFifoHead->wReserved = wCurrentRate;
- 	wFifoCtl = pFifoHead->wFIFOCtl;
+ /*+
+@@ -2840,6 +2838,4 @@ vDMA0_tx_80211(PSDevice  pDevice, struct sk_buff *skb, unsigned char *pbMPDU, un
  
-@@ -1103,6 +1104,7 @@ s_vGenerateTxParameter(
- 			//Fill RsvTime
- 			if (pvRrvTime) {
- 				PSRrvTime_gRTS pBuf = (PSRrvTime_gRTS)pvRrvTime;
-+
- 				pBuf->wRTSTxRrvTime_aa = cpu_to_le16((unsigned short)s_uGetRTSCTSRsvTime(pDevice, 2, byPktType, cbFrameSize, wCurrentRate));//2:RTSTxRrvTime_aa, 1:2.4GHz
- 				pBuf->wRTSTxRrvTime_ba = cpu_to_le16((unsigned short)s_uGetRTSCTSRsvTime(pDevice, 1, byPktType, cbFrameSize, wCurrentRate));//1:RTSTxRrvTime_ba, 1:2.4GHz
- 				pBuf->wRTSTxRrvTime_bb = cpu_to_le16((unsigned short)s_uGetRTSCTSRsvTime(pDevice, 0, byPktType, cbFrameSize, wCurrentRate));//0:RTSTxRrvTime_bb, 1:2.4GHz
-@@ -1116,6 +1118,7 @@ s_vGenerateTxParameter(
- 			//Fill RsvTime
- 			if (pvRrvTime) {
- 				PSRrvTime_gCTS pBuf = (PSRrvTime_gCTS)pvRrvTime;
-+
- 				pBuf->wTxRrvTime_a = cpu_to_le16((unsigned short)s_uGetTxRsvTime(pDevice, byPktType, cbFrameSize, wCurrentRate, bNeedACK));//2.4G OFDM
- 				pBuf->wTxRrvTime_b = cpu_to_le16((unsigned short)s_uGetTxRsvTime(pDevice, PK_TYPE_11B, cbFrameSize, pDevice->byTopCCKBasicRate, bNeedACK));//1:CCK
- 				pBuf->wCTSTxRrvTime_ba = cpu_to_le16((unsigned short)s_uGetRTSCTSRsvTime(pDevice, 3, byPktType, cbFrameSize, wCurrentRate));//3:CTSTxRrvTime_Ba, 1:2.4GHz
-@@ -1129,6 +1132,7 @@ s_vGenerateTxParameter(
- 			//Fill RsvTime
- 			if (pvRrvTime) {
- 				PSRrvTime_ab pBuf = (PSRrvTime_ab)pvRrvTime;
-+
- 				pBuf->wRTSTxRrvTime = cpu_to_le16((unsigned short)s_uGetRTSCTSRsvTime(pDevice, 2, byPktType, cbFrameSize, wCurrentRate));//2:RTSTxRrvTime_aa, 0:5GHz
- 				pBuf->wTxRrvTime = cpu_to_le16((unsigned short)s_uGetTxRsvTime(pDevice, byPktType, cbFrameSize, wCurrentRate, bNeedACK));//0:OFDM
- 			}
-@@ -1138,6 +1142,7 @@ s_vGenerateTxParameter(
- 			//Fill RsvTime
- 			if (pvRrvTime) {
- 				PSRrvTime_ab pBuf = (PSRrvTime_ab)pvRrvTime;
-+
- 				pBuf->wTxRrvTime = cpu_to_le16((unsigned short)s_uGetTxRsvTime(pDevice, PK_TYPE_11A, cbFrameSize, wCurrentRate, bNeedACK)); //0:OFDM
- 			}
- 		}
-@@ -1146,6 +1151,7 @@ s_vGenerateTxParameter(
- 			//Fill RsvTime
- 			if (pvRrvTime) {
- 				PSRrvTime_ab pBuf = (PSRrvTime_ab)pvRrvTime;
-+
- 				pBuf->wRTSTxRrvTime = cpu_to_le16((unsigned short)s_uGetRTSCTSRsvTime(pDevice, 0, byPktType, cbFrameSize, wCurrentRate));//0:RTSTxRrvTime_bb, 1:2.4GHz
- 				pBuf->wTxRrvTime = cpu_to_le16((unsigned short)s_uGetTxRsvTime(pDevice, PK_TYPE_11B, cbFrameSize, wCurrentRate, bNeedACK));//1:CCK
- 			}
-@@ -1155,6 +1161,7 @@ s_vGenerateTxParameter(
- 			//Fill RsvTime
- 			if (pvRrvTime) {
- 				PSRrvTime_ab pBuf = (PSRrvTime_ab)pvRrvTime;
-+
- 				pBuf->wTxRrvTime = cpu_to_le16((unsigned short)s_uGetTxRsvTime(pDevice, PK_TYPE_11B, cbFrameSize, wCurrentRate, bNeedACK)); //1:CCK
- 			}
- 		}
-@@ -2025,6 +2032,7 @@ vGenerateMACHeader(
- 
- 	if (pDevice->bLongHeader) {
- 		PWLAN_80211HDR_A4 pMACA4Header  = (PWLAN_80211HDR_A4) pbyBufferAddr;
-+
- 		pMACHeader->wFrameCtl |= (FC_TODS | FC_FROMDS);
- 		memcpy(pMACA4Header->abyAddr4, pDevice->abyBSSID, WLAN_ADDR_LEN);
- 	}
+ 	// Poll Transmit the adapter
+ 	MACvTransmit0(pDevice->PortOffset);
+-
+-	return;
+ }
 diff --git a/drivers/staging/vt6655/vntwifi.c b/drivers/staging/vt6655/vntwifi.c
-index 8241e6b..0ee1e8a 100644
+index 085878e..8241e6b 100644
 --- a/drivers/staging/vt6655/vntwifi.c
 +++ b/drivers/staging/vt6655/vntwifi.c
-@@ -128,6 +128,7 @@ VNTWIFIpGetCurrentSSID(
- )
- {
- 	PSMgmtObject        pMgmt = (PSMgmtObject)pMgmtHandle;
-+
- 	return (PWLAN_IE_SSID) pMgmt->abyCurrSSID;
+@@ -500,8 +500,6 @@ VNTWIFIvUpdateNodeTxCounter(
+ 	pMgmt->sNodeDBTable[uNodeIndex].uTxRetry += pbyTxFailCount[MAX_RATE];
+ 	for (ii = 0; ii < MAX_RATE; ii++)
+ 		pMgmt->sNodeDBTable[uNodeIndex].uTxFail[ii] += pbyTxFailCount[ii];
+-
+-	return;
  }
  
-@@ -151,6 +152,7 @@ VNTWIFIpGetCurrentChannel(
- )
- {
- 	PSMgmtObject        pMgmt = (PSMgmtObject)pMgmtHandle;
-+
- 	if (pMgmtHandle != NULL)
- 		return pMgmt->uCurrChannel;
- 
-@@ -177,6 +179,7 @@ VNTWIFIwGetAssocID(
- )
- {
- 	PSMgmtObject        pMgmt = (PSMgmtObject)pMgmtHandle;
-+
- 	return pMgmt->wCurrAID;
+ void
+@@ -569,7 +567,6 @@ VNTWIFIvGetTxRate(
+ 	*pbyACKRate = byACKRate;
+ 	*pbyCCKBasicRate = byCCKBasicRate;
+ 	*pbyOFDMBasicRate = byOFDMBasicRate;
+-	return;
  }
  
+ unsigned char
 diff --git a/drivers/staging/vt6655/wcmd.c b/drivers/staging/vt6655/wcmd.c
-index fc605f22..8196321 100644
+index a379cec..fc605f22 100644
 --- a/drivers/staging/vt6655/wcmd.c
 +++ b/drivers/staging/vt6655/wcmd.c
-@@ -990,6 +990,7 @@ BSSvSecondTxData(
- {
- 	PSDevice        pDevice = (PSDevice)hDeviceContext;
- 	PSMgmtObject  pMgmt = &(pDevice->sMgmtObj);
-+
- 	pDevice->nTxDataTimeCout++;
+@@ -295,7 +295,6 @@ vCommandTimerWait(
+ 	// RUN_AT :1 msec ~= (HZ/1024)
+ 	pDevice->sTimerCommand.expires = (unsigned int)RUN_AT((MSecond * HZ) >> 10);
+ 	add_timer(&pDevice->sTimerCommand);
+-	return;
+ }
  
- 	if (pDevice->nTxDataTimeCout < 4)     //don't tx data if timer less than 40s
+ void
+@@ -796,7 +795,6 @@ vCommandTimer(
+ 
+ 	} //switch
+ 	spin_unlock_irq(&pDevice->lock);
+-	return;
+ }
+ 
+ static
 diff --git a/drivers/staging/vt6655/wmgr.c b/drivers/staging/vt6655/wmgr.c
-index 0b6f1e9..fa72915 100644
+index 9853a8f..0b6f1e9 100644
 --- a/drivers/staging/vt6655/wmgr.c
 +++ b/drivers/staging/vt6655/wmgr.c
-@@ -1649,6 +1649,7 @@ s_vMgrRxDeauthentication(
- #ifdef WPA_SUPPLICANT_DRIVER_WEXT_SUPPORT
- 			{
- 				union iwreq_data  wrqu;
-+
- 				memset(&wrqu, 0, sizeof(wrqu));
- 				wrqu.ap_addr.sa_family = ARPHRD_ETHER;
- 				PRINT_K("wireless_send_event--->SIOCGIWAP(disauthen)\n");
-@@ -2541,6 +2542,7 @@ vMgrJoinBSSBegin(
- 			// This should only works for WPA2 BSS, and WPA2 BSS check must be done before.
- 			if (pMgmt->eAuthenMode == WMAC_AUTH_WPA2) {
- 				bool bResult = bAdd_PMKID_Candidate((void *)pDevice, pMgmt->abyCurrBSSID, &pCurr->sRSNCapObj);
-+
- 				DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "bAdd_PMKID_Candidate: 1(%d)\n", bResult);
- 				if (!bResult) {
- 					vFlush_PMKID_Candidate((void *)pDevice);
-diff --git a/drivers/staging/vt6655/wpa.c b/drivers/staging/vt6655/wpa.c
-index 9be59c2..505c895 100644
---- a/drivers/staging/vt6655/wpa.c
-+++ b/drivers/staging/vt6655/wpa.c
-@@ -73,6 +73,7 @@ WPA_ClearRSN(
- )
- {
- 	int ii;
-+
- 	pBSSList->byGKType = WPA_TKIP;
- 	for (ii = 0; ii < 4; ii++)
- 		pBSSList->abyPKType[ii] = WPA_TKIP;
-diff --git a/drivers/staging/vt6655/wpactl.c b/drivers/staging/vt6655/wpactl.c
-index 0814bfd..fe45f2b 100644
---- a/drivers/staging/vt6655/wpactl.c
-+++ b/drivers/staging/vt6655/wpactl.c
-@@ -767,6 +767,7 @@ static int wpa_set_associate(PSDevice pDevice,
- /*******search if ap_scan=2 ,which is associating request in hidden ssid mode ****/
- 	{
- 		PKnownBSS       pCurr = NULL;
-+
- 		pCurr = BSSpSearchBSSList(pDevice,
- 					  pMgmt->abyDesireBSSID,
- 					  pMgmt->abyDesireSSID,
+@@ -358,8 +358,6 @@ vMgrObjectInit(
+ 	pMgmt->byCSSGK = KEY_CTL_NONE;
+ 	pMgmt->wIBSSBeaconPeriod = DEFAULT_IBSS_BI;
+ 	BSSvClearBSSList((void *)pDevice, false);
+-
+-	return;
+ }
+ 
+ /*+
+@@ -403,8 +401,6 @@ vMgrTimerInit(
+ 	pDevice->cbFreeCmdQueue = CMD_Q_SIZE;
+ 	pDevice->uCmdDequeueIdx = 0;
+ 	pDevice->uCmdEnqueueIdx = 0;
+-
+-	return;
+ }
+ 
+ /*+
+@@ -429,8 +425,6 @@ vMgrObjectReset(
+ 	pMgmt->eCurrState = WMAC_STATE_IDLE;
+ 	pDevice->bEnablePSMode = false;
+ 	// TODO: timer
+-
+-	return;
+ }
+ 
+ /*+
+@@ -498,8 +492,6 @@ vMgrAssocBeginSta(
+ 	} else {
+ 		*pStatus = CMD_STATUS_RESOURCES;
+ 	}
+-
+-	return;
+ }
+ 
+ /*+
+@@ -565,8 +557,6 @@ vMgrReAssocBeginSta(
+ 		else
+ 			DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "Mgt:Reassociation tx sending.\n");
+ 	}
+-
+-	return;
+ }
+ 
+ /*+
+@@ -625,8 +615,6 @@ vMgrDisassocBeginSta(
+ 		pMgmt->eCurrState = WMAC_STATE_IDLE;
+ 		*pStatus = CMD_STATUS_SUCCESS;
+ 	}
+-
+-	return;
+ }
+ 
+ /*+
+@@ -771,8 +759,6 @@ s_vMgrRxAssocRequest(
+ 		else
+ 			DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "Mgt:Assoc response tx sending..\n");
+ 	}
+-
+-	return;
+ }
+ 
+ /*+
+@@ -921,7 +907,6 @@ s_vMgrRxReAssocRequest(
+ 		else
+ 			DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "Mgt:ReAssoc response tx sending..\n");
+ 	}
+-	return;
+ }
+ 
+ /*+
+@@ -1070,7 +1055,6 @@ s_vMgrRxAssocResponse(
+ 
+ 	if (pMgmt->eCurrState == WMAC_STATE_ASSOC)
+ 		timer_expire(pDevice->sTimerCommand, 0);
+-	return;
+ }
+ 
+ /*+
+@@ -1125,8 +1109,6 @@ vMgrAuthenBeginSta(
+ 		pMgmt->eCurrState = WMAC_STATE_AUTHPENDING;
+ 		*pStatus = CMD_STATUS_SUCCESS;
+ 	}
+-
+-	return;
+ }
+ 
+ /*+
+@@ -1178,8 +1160,6 @@ vMgrDeAuthenBeginSta(
+ 	*pStatus = csMgmt_xmit(pDevice, pTxPacket);
+ 	if (*pStatus == CMD_STATUS_PENDING)
+ 		*pStatus = CMD_STATUS_SUCCESS;
+-
+-	return;
+ }
+ 
+ /*+
+@@ -1232,7 +1212,6 @@ s_vMgrRxAuthentication(
+ 			cpu_to_le16((*(sFrame.pwAuthSequence))));
+ 		break;
+ 	}
+-	return;
+ }
+ 
+ /*+
+@@ -1332,8 +1311,6 @@ s_vMgrRxAuthenSequence_1(
+ 	DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "Mgt:Authreq_reply sequence_1 tx.. \n");
+ 	if (csMgmt_xmit(pDevice, pTxPacket) != CMD_STATUS_PENDING)
+ 		DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "Mgt:Authreq_reply sequence_1 tx failed.\n");
+-
+-	return;
+ }
+ 
+ /*+
+@@ -1418,7 +1395,6 @@ s_vMgrRxAuthenSequence_2(
+ 		DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "Mgt: rx auth.seq = 2 unknown AuthAlgorithm=%d\n", cpu_to_le16((*(pFrame->pwAuthAlgorithm))));
+ 		break;
+ 	}
+-	return;
+ }
+ 
+ /*+
+@@ -1504,8 +1480,6 @@ reply:
+ 
+ 	if (csMgmt_xmit(pDevice, pTxPacket) != CMD_STATUS_PENDING)
+ 		DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "Mgt:Authreq_reply sequence_4 tx failed.\n");
+-
+-	return;
+ }
+ 
+ /*+
+@@ -1604,8 +1578,6 @@ s_vMgrRxDisassociation(
+ #endif
+ 	}
+ 	/* else, ignore it */
+-
+-	return;
+ }
+ 
+ /*+
+@@ -1688,7 +1660,6 @@ s_vMgrRxDeauthentication(
+ 		/* else, ignore it.  TODO: IBSS authentication service
+ 		   would be implemented here */
+ 	}
+-	return;
+ }
+ 
+ //2008-8-4 <add> by chester
+@@ -2197,8 +2168,6 @@ if (bUpdateTSF) {
+ 		CARDbGetCurrentTSF(pDevice->PortOffset, &qwCurrTSF);
+ 		CARDvUpdateNextTBTT(pDevice->PortOffset, qwTimestamp, pMgmt->wCurrBeaconPeriod);
+ 	}
+-
+-	return;
+ }
+ 
+ /*+
+@@ -2434,8 +2403,6 @@ vMgrCreateOwnIBSS(
+ 	// Prepare beacon to send
+ 	if (bMgrPrepareBeaconToSend((void *)pDevice, pMgmt))
+ 		*pStatus = CMD_STATUS_SUCCESS;
+-
+-	return;
+ }
+ 
+ /*+
+@@ -2656,7 +2623,6 @@ vMgrJoinBSSBegin(
+ 			pMgmt->eCurrState = WMAC_STATE_IDLE;
+ 		}
+ 	}
+-	return;
+ }
+ 
+ /*+
+@@ -2838,8 +2804,6 @@ static void  Encyption_Rebuild(
+ 			}
+ 		}
+ 	}
+-
+-	return;
+ }
+ 
+ /*+
+@@ -4079,7 +4043,6 @@ s_vMgrRxProbeResponse(
+ 				    (void *)pRxPacket
+ );
+ 	}
+-	return;
+ }
+ 
+ /*+
+@@ -4153,8 +4116,6 @@ s_vMgrRxProbeRequest(
+ 			}
+ 		}
+ 	}
+-
+-	return;
+ }
+ 
+ /*+
+@@ -4297,8 +4258,6 @@ vMgrRxManagePacket(
+ 	default:
+ 		DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "rx unknown mgmt\n");
+ 	}
+-
+-	return;
+ }
+ 
+ /*+
 -- 
 1.8.5.5
 
