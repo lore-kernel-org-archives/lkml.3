@@ -1,66 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934326AbaGXHrw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 03:47:52 -0400
-Received: from mail-we0-f179.google.com ([74.125.82.179]:63440 "EHLO
-	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934178AbaGXHrs (ORCPT
+	id S934342AbaGXHsR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 03:48:17 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:56757 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934309AbaGXHsP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 03:47:48 -0400
-Date: Thu, 24 Jul 2014 08:47:39 +0100
-From: Sitsofe Wheeler <sitsofe@gmail.com>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>, gregkh@linuxfoundation.org,
-        linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
-        ohering@suse.com, apw@canonical.com, jasowang@redhat.com,
-        jbottomley@parallels.com, linux-scsi@vger.kernel.org
-Subject: [PATCH 0/3] Enable discard on Hyper-V
-Message-ID: <20140724074739.GA15127@sucs.org>
-References: <1405983961-18782-1-git-send-email-kys@microsoft.com>
- <20140723141028.GA22724@sucs.org>
- <20140723141558.GA9705@infradead.org>
- <20140723201341.GA10292@sucs.org>
+	Thu, 24 Jul 2014 03:48:15 -0400
+Date: Thu, 24 Jul 2014 00:47:18 -0700
+From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+To: andi@firstfloor.org
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        Michael Ellerman <michaele@au1.ibm.com>, linux-kernel@vger.kernel.org
+Subject: [RFC PATCH 1/2] powerpc/perf: include util/util.h and remove
+ stringify macros
+Message-ID: <20140724074718.GB18829@us.ibm.com>
+References: <20140724074645.GA18829@us.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140723201341.GA10292@sucs.org>
+In-Reply-To: <20140724074645.GA18829@us.ibm.com>
+X-Operating-System: Linux 2.0.32 on an i486
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14072407-9332-0000-0000-0000017D21F8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 23, 2014 at 09:13:41PM +0100, Sitsofe Wheeler wrote:
-> On Wed, Jul 23, 2014 at 07:15:58AM -0700, Christoph Hellwig wrote:
-> > On Wed, Jul 23, 2014 at 03:10:28PM +0100, Sitsofe Wheeler wrote:
-> > > I'm not sure this alone will work - won't sdev_bflags/bflags have
-> > > already been built at this point?
-> > 
-> > They've been built up, but we can still or new values into it.  It looks
-> > fine to me from review, but if you can test it on an actualy hypverv
-> > setup that would be valueable feedback.
-> 
-> The previous patches didn't work for me with a Windows 2012 R2 host with a
-> 3.16.0-rc6.x86_64-00076-g2f7d2ec-dirty guest. After applying
-> 
-> > term project, this late in the 3.17 cycle I'd just like to merge
-> > something that gets discards on hyperv to work.
+[RFC PATCH 1/2] powerpc/perf: include util/util.h and remove stringify macros
 
-OK how about the following patches:
+The stringify macros are defined in tools/perf/util/util.h and
+don't need to be redfined specfiically for powerpc.
 
-Sitsofe Wheeler (3):
-  [SCSI] Add quirk for forcing logical block provisioning tests
-  [SCSI] storvsc: Add Hyper-V logical block provisioning quirk
-  [SCSI] Make LBP quirk skip lbpme checks
+Signed-off-by: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+---
+ tools/perf/arch/powerpc/util/header.c |    4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
- drivers/scsi/scsi_scan.c    |  4 +++-
- drivers/scsi/sd.c           | 12 ++++++++++--
- drivers/scsi/storvsc_drv.c  |  6 ++++++
- include/scsi/scsi_device.h  |  1 +
- include/scsi/scsi_devinfo.h |  2 ++
- 5 files changed, 22 insertions(+), 3 deletions(-)
-
+diff --git a/tools/perf/arch/powerpc/util/header.c b/tools/perf/arch/powerpc/util/header.c
+index 2f7073d..6c1b8a7 100644
+--- a/tools/perf/arch/powerpc/util/header.c
++++ b/tools/perf/arch/powerpc/util/header.c
+@@ -5,9 +5,7 @@
+ #include <string.h>
+ 
+ #include "../../util/header.h"
+-
+-#define __stringify_1(x)        #x
+-#define __stringify(x)          __stringify_1(x)
++#include "../../util/util.h"
+ 
+ #define mfspr(rn)       ({unsigned long rval; \
+ 			 asm volatile("mfspr %0," __stringify(rn) \
 -- 
-1.9.3
+1.7.9.5
 
--- 
-Sitsofe | http://sucs.org/~sits/
