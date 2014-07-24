@@ -1,23 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758849AbaGXKMA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 06:12:00 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54861 "EHLO
+	id S934950AbaGXKM4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 06:12:56 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54843 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934502AbaGXJrt (ORCPT
+	with ESMTP id S934483AbaGXJrp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 05:47:49 -0400
+	Thu, 24 Jul 2014 05:47:45 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Johan Hovold <johan@kernel.org>,
+Cc: Michal Nazarewicz <mina86@mina86.com>, Felipe Balbi <balbi@ti.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 059/128] USB: ftdi_sio: fix null deref at port probe
-Date: Thu, 24 Jul 2014 10:45:08 +0100
-Message-Id: <1406195177-8656-60-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 055/128] usb: gadget: f_fs: fix NULL pointer dereference when there are no strings
+Date: Thu, 24 Jul 2014 10:45:04 +0100
+Message-Id: <1406195177-8656-56-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1406195177-8656-1-git-send-email-luis.henriques@canonical.com>
 References: <1406195177-8656-1-git-send-email-luis.henriques@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,54 +30,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <johan@kernel.org>
+From: Michal Nazarewicz <mina86@mina86.com>
 
-commit aea1ae8760314e072bf1b773521e9de5d5dda10d upstream.
+commit f0688c8b81d2ea239c3fb0b848f623b579238d99 upstream.
 
-Fix NULL-pointer dereference when probing an interface with no
-endpoints.
+If the descriptors do not need any strings and user space sends empty
+set of strings, the ffs->stringtabs field remains NULL.  Thus
+*ffs->stringtabs in functionfs_bind leads to a NULL pointer
+dereferenece.
 
-These devices have two bulk endpoints per interface, but this avoids
-crashing the kernel if a user forces a non-FTDI device to be probed.
+The bug was introduced by commit [fd7c9a007f: “use usb_string_ids_n()”].
 
-Note that the iterator variable was made unsigned in order to avoid
-a maybe-uninitialized compiler warning for ep_desc after the loop.
+While at it, remove double initialisation of lang local variable in
+that function.
 
-Fixes: 895f28badce9 ("USB: ftdi_sio: fix hi-speed device packet size
-calculation")
+ffs->strings_count does not need to be checked in any way since in
+the above scenario it will remain zero and usb_string_ids_n() is
+a no-operation when colled with 0 argument.
 
-Reported-by: Mike Remski <mremski@mutualink.net>
-Tested-by: Mike Remski <mremski@mutualink.net>
-Signed-off-by: Johan Hovold <johan@kernel.org>
+Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/usb/serial/ftdi_sio.c | 7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ drivers/usb/gadget/f_fs.c | 12 +++++++-----
+ 1 file changed, 7 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/usb/serial/ftdi_sio.c b/drivers/usb/serial/ftdi_sio.c
-index b9e663ac9a35..3e315de9bbd4 100644
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -1577,14 +1577,17 @@ static void ftdi_set_max_packet_size(struct usb_serial_port *port)
- 	struct usb_device *udev = serial->dev;
+diff --git a/drivers/usb/gadget/f_fs.c b/drivers/usb/gadget/f_fs.c
+index b6e9d917221e..84219f656051 100644
+--- a/drivers/usb/gadget/f_fs.c
++++ b/drivers/usb/gadget/f_fs.c
+@@ -1389,11 +1389,13 @@ static int functionfs_bind(struct ffs_data *ffs, struct usb_composite_dev *cdev)
+ 	ffs->ep0req->context = ffs;
  
- 	struct usb_interface *interface = serial->interface;
--	struct usb_endpoint_descriptor *ep_desc = &interface->cur_altsetting->endpoint[1].desc;
-+	struct usb_endpoint_descriptor *ep_desc;
+ 	lang = ffs->stringtabs;
+-	for (lang = ffs->stringtabs; *lang; ++lang) {
+-		struct usb_string *str = (*lang)->strings;
+-		int id = first_id;
+-		for (; str->s; ++id, ++str)
+-			str->id = id;
++	if (lang) {
++		for (; *lang; ++lang) {
++			struct usb_string *str = (*lang)->strings;
++			int id = first_id;
++			for (; str->s; ++id, ++str)
++				str->id = id;
++		}
+ 	}
  
- 	unsigned num_endpoints;
--	int i;
-+	unsigned i;
- 
- 	num_endpoints = interface->cur_altsetting->desc.bNumEndpoints;
- 	dev_info(&udev->dev, "Number of endpoints %d\n", num_endpoints);
- 
-+	if (!num_endpoints)
-+		return;
-+
- 	/* NOTE: some customers have programmed FT232R/FT245R devices
- 	 * with an endpoint size of 0 - not good.  In this case, we
- 	 * want to override the endpoint descriptor setting and use a
+ 	ffs->gadget = cdev->gadget;
 -- 
 1.9.1
 
