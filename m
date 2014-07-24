@@ -1,88 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759085AbaGXNjf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 09:39:35 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:56610 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758924AbaGXNje (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 09:39:34 -0400
-Date: Thu, 24 Jul 2014 15:39:21 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: rjw@rjwysocki.net, linux-kernel@vger.kernel.org
-Subject: [PATCH] irq: Warn when shared interrupts do not match on NO_SUSPEND
-Message-ID: <20140724133921.GY6758@twins.programming.kicks-ass.net>
+	id S1759167AbaGXNkH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 09:40:07 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:49844 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759119AbaGXNkF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jul 2014 09:40:05 -0400
+From: Andreas Schwab <schwab@suse.de>
+To: Ard Biesheuvel <ard.biesheuvel@linaro.org>
+Cc: "linux-arm-kernel\@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] arm64/crypto: fix makefile rule for aes-glue-%.o
+References: <mvmvbri4k06.fsf@hawking.suse.de>
+	<CAKv+Gu-NAVjMR-Jkw=W-8f7M5FSsQOSdzYN6A0kHDd1m0WA8EA@mail.gmail.com>
+	<mvmr4264i1p.fsf@hawking.suse.de>
+	<CAKv+Gu8SbM_Z=ymBFb2D4EWJeo-6dWuKqE2YNOkqJTKLDEJcYA@mail.gmail.com>
+	<mvm4my7j5xh.fsf@hawking.suse.de>
+	<CAKv+Gu-6rUxUnF+dRuroDJqy2K2B5F0r7_bm0X-vyiuQ-83W5w@mail.gmail.com>
+	<CAKv+Gu96k7GOVR85EXtro3Lt0jjiJqxyvT9cwJZ1qc6uzq97bw@mail.gmail.com>
+	<mvmvbqmj3b2.fsf@hawking.suse.de>
+	<CAKv+Gu_9HRwAxkJjT3KRvDbupp0yzstyq1dXsXkTu9M6swdCKQ@mail.gmail.com>
+X-Yow: He is the MELBA-BEING...  the ANGEL CAKE...
+  XEROX him...  XEROX him --
+Date: Thu, 24 Jul 2014 15:40:04 +0200
+In-Reply-To: <CAKv+Gu_9HRwAxkJjT3KRvDbupp0yzstyq1dXsXkTu9M6swdCKQ@mail.gmail.com>
+	(Ard Biesheuvel's message of "Thu, 24 Jul 2014 15:29:57 +0200")
+Message-ID: <mvmr41aj2ob.fsf@hawking.suse.de>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="lZl9LXaXBWDq3P64"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Ard Biesheuvel <ard.biesheuvel@linaro.org> writes:
 
---lZl9LXaXBWDq3P64
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> On 24 July 2014 15:26, Andreas Schwab <schwab@suse.de> wrote:
+>> You are not using CONFIG_MODVERSIONS.
+>>
+>
+> I am
 
-Subject: irq: Warn when shared interrupts do not match on NO_SUSPEND
+No, you aren't, since you say that your .cmd contains a command to
+create aes-glue-ce.o, which with CONFIG_MODVERSIONS it doesn't.
 
-When suspend_device_irqs() iterates all descriptors, its pointless if
-one has NO_SUSPEND set while another has not.
+Andreas.
 
-Validate on request_irq() that NO_SUSPEND state maches for SHARED
-interrupts.
-
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
----
- kernel/irq/manage.c | 7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
-
-diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
-index 88657d7bc9dd..27a1fe028afb 100644
---- a/kernel/irq/manage.c
-+++ b/kernel/irq/manage.c
-@@ -1077,9 +1077,12 @@ __setup_irq(unsigned int irq, struct irq_desc *desc,=
- struct irqaction *new)
- 		 * set the trigger type must match. Also all must
- 		 * agree on ONESHOT.
- 		 */
-+
-+#define IRQF_MISMATCH \
-+	(IRQF_TRIGGER_MASK | IRQF_ONESHOT | IRQF_NO_SUSPEND)
-+
- 		if (!((old->flags & new->flags) & IRQF_SHARED) ||
--		    ((old->flags ^ new->flags) & IRQF_TRIGGER_MASK) ||
--		    ((old->flags ^ new->flags) & IRQF_ONESHOT))
-+		    ((old->flags ^ new->flags) & IRQF_MISMATCH))
- 			goto mismatch;
-=20
- 		/* All handlers must agree on per-cpuness */
-
---lZl9LXaXBWDq3P64
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJT0QyJAAoJEHZH4aRLwOS6dXAP/32Y1aTffDLRl97ei7y+ULx8
-I8p0IBt4qnt8Xbh0c32yoCnn3A5YPlP5TaEXBK5bPhjI504vPI/rGYsk/jrZTEED
-WQdn0sXbXXendJi0uu2qumR2ZeKz5Xl4onDGQyDdTFXimAyi1Ufd1du5e4Bb1pTs
-LN3hgE7mQt43PUZGa75XVMhCizImTLx5u1A/hFRfY2shys6mRmQJLnvCyVkYGnLA
-QI2oJiMq9z7SyauaBCO2RH1wU2imSa3iag/vrMZmRxe56+mHlif5qT82LqJ2DC80
-/4LEVwNjd3TpoJrBWBuNlFtz43fTfVKPb8GuV5pIS2AIY3uIaJaiqIpHGE4NRo7p
-8HE61f5/50mLqSjMhQ1D6wqV59JyCNu/CO4fdrE/DQlE1mLica1Yq2bA6au+LCTN
-diersYwUgGHXkdgt2qsvmWsiOPp0L/mohQ21zUqhfOUhWOjXldZ0l0i8QeBT88qe
-4I9mayCT6gcfRWrc+f/o6wmJ7f4EdCM9VeBFi2EwKV6bzcld/IzIao91rajz3x/b
-MC+QDItBjH07SAXhKdsI98IzyEgNTszXpFKrJgp+SVPoiZSSlbazdpwVRPU6Ekyr
-yvF2To95QXgRyAI8dV7mhF8jFjmR04/C3uCmgecja871kWqQtGfTkrT/Cf0WlIIV
-J3L/k/twCpTNagwGab1o
-=8nrh
------END PGP SIGNATURE-----
-
---lZl9LXaXBWDq3P64--
+-- 
+Andreas Schwab, SUSE Labs, schwab@suse.de
+GPG Key fingerprint = 0196 BAD8 1CE9 1970 F4BE  1748 E4D4 88E3 0EEA B9D7
+"And now for something completely different."
