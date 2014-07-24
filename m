@@ -1,45 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757704AbaGXJmy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 05:42:54 -0400
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:49697 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756727AbaGXJmv (ORCPT
+	id S1757877AbaGXJnj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 05:43:39 -0400
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:48645 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756732AbaGXJnh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 05:42:51 -0400
-From: "Raymond L. Rivera" <ray.l.rivera@gmail.com>
-To: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: "Raymond L. Rivera" <ray.l.rivera@gmail.com>
-Subject: [PATCH 2/2] linux/pagemap.h: Fixed a typo in a code comment.
-Date: Thu, 24 Jul 2014 02:39:45 -0700
-Message-Id: <1406194785-19596-3-git-send-email-ray.l.rivera@gmail.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1406194785-19596-1-git-send-email-ray.l.rivera@gmail.com>
-References: <1406194785-19596-1-git-send-email-ray.l.rivera@gmail.com>
+	Thu, 24 Jul 2014 05:43:37 -0400
+Date: Thu, 24 Jul 2014 12:43:33 +0300
+From: Eli Cohen <eli@dev.mellanox.co.il>
+To: Fabian Frederick <fabf@skynet.be>
+Cc: linux-kernel@vger.kernel.org, Eli Cohen <eli@mellanox.com>,
+        Roland Dreier <roland@kernel.org>, linux-rdma@vger.kernel.org
+Subject: Re: [PATCH 1/1] IB/mlx5: use ARRAY_SIZE instead of sizeof/sizeof[0]
+Message-ID: <20140724094333.GB23437@mtldesk30>
+References: <1404244724-24528-1-git-send-email-fabf@skynet.be>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1404244724-24528-1-git-send-email-fabf@skynet.be>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Corrected a minor typo in a code comment where 'be' was missing.
 
-Signed-off-by: Raymond L. Rivera <ray.l.rivera@gmail.com>
----
- include/linux/pagemap.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+On Tue, Jul 01, 2014 at 09:58:44PM +0200, Fabian Frederick wrote:
+> use macro definition
 
-diff --git a/include/linux/pagemap.h b/include/linux/pagemap.h
-index 0a97b58..bcabdbe 100644
---- a/include/linux/pagemap.h
-+++ b/include/linux/pagemap.h
-@@ -96,7 +96,7 @@ static inline void mapping_set_gfp_mask(struct address_space *m, gfp_t mask)
- }
- 
- /*
-- * The page cache can done in larger chunks than
-+ * The page cache can be done in larger chunks than
-  * one page, because it allows for more efficient
-  * throughput (it can then be mapped into user
-  * space in smaller chunks for same flexibility).
--- 
-1.9.1
+Acked-by: Eli Cohen <eli@mellanox.com>
 
