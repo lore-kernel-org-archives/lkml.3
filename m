@@ -1,27 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932279AbaGXJrK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 05:47:10 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54691 "EHLO
+	id S1758844AbaGXJr3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 05:47:29 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54738 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758829AbaGXJrE (ORCPT
+	with ESMTP id S932309AbaGXJrQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 05:47:04 -0400
+	Thu, 24 Jul 2014 05:47:16 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: =?UTF-8?q?Rafa=C5=82=20Mi=C5=82ecki?= <zajec5@gmail.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
+Cc: Zhaowei Yuan <zhaowei.yuan@samsung.com>, Dave Airlie <airlied@redhat.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 021/128] b43: fix frequency reported on G-PHY with /new/ firmware
-Date: Thu, 24 Jul 2014 10:44:30 +0100
-Message-Id: <1406195177-8656-22-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 030/128] drm: fix NULL pointer access by wrong ioctl
+Date: Thu, 24 Jul 2014 10:44:39 +0100
+Message-Id: <1406195177-8656-31-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1406195177-8656-1-git-send-email-luis.henriques@canonical.com>
 References: <1406195177-8656-1-git-send-email-luis.henriques@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,53 +27,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: =?UTF-8?q?Rafa=C5=82=20Mi=C5=82ecki?= <zajec5@gmail.com>
+From: Zhaowei Yuan <zhaowei.yuan@samsung.com>
 
-commit 2fc68eb122c7ea6cd5be1fe7d6650c0beb2f4f40 upstream.
+commit 1539fb9bd405ee32282ea0a38404f9e008ac5b7a upstream.
 
-Support for firmware rev 508+ was added years ago, but we never noticed
-it reports channel in a different way for G-PHY devices. Instead of
-offset from 2400 MHz it simply passes channel id (AKA hw_value).
+If user uses wrong ioctl command with _IOC_NONE and argument size
+greater than 0, it can cause NULL pointer access from memset of line
+463. If _IOC_NONE, don't memset to 0 for kdata.
 
-So far it was (most probably) affecting monitor mode users only, but
-the following recent commit made it noticeable for quite everybody:
-
-commit 3afc2167f60a327a2c1e1e2600ef209a3c2b75b7
-Author: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Date:   Tue Mar 4 16:50:13 2014 +0200
-
-    cfg80211/mac80211: ignore signal if the frame was heard on wrong channel
-
-Reported-by: Aaro Koskinen <aaro.koskinen@iki.fi>
-Signed-off-by: Rafał Miłecki <zajec5@gmail.com>
-Tested-by: Aaro Koskinen <aaro.koskinen@iki.fi>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Zhaowei Yuan <zhaowei.yuan@samsung.com>
+Reviewed-by: David Herrmann <dh.herrmann@gmail.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
+[ luis: backported to 3.11: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/wireless/b43/xmit.c | 10 +++++++---
- 1 file changed, 7 insertions(+), 3 deletions(-)
+ drivers/gpu/drm/drm_drv.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+ mode change 100644 => 100755 drivers/gpu/drm/drm_drv.c
 
-diff --git a/drivers/net/wireless/b43/xmit.c b/drivers/net/wireless/b43/xmit.c
-index e85d34b76039..ebcce00ce067 100644
---- a/drivers/net/wireless/b43/xmit.c
-+++ b/drivers/net/wireless/b43/xmit.c
-@@ -810,9 +810,13 @@ void b43_rx(struct b43_wldev *dev, struct sk_buff *skb, const void *_rxhdr)
- 		break;
- 	case B43_PHYTYPE_G:
- 		status.band = IEEE80211_BAND_2GHZ;
--		/* chanid is the radio channel cookie value as used
--		 * to tune the radio. */
--		status.freq = chanid + 2400;
-+		/* Somewhere between 478.104 and 508.1084 firmware for G-PHY
-+		 * has been modified to be compatible with N-PHY and others.
-+		 */
-+		if (dev->fw.rev >= 508)
-+			status.freq = ieee80211_channel_to_frequency(chanid, status.band);
-+		else
-+			status.freq = chanid + 2400;
- 		break;
- 	case B43_PHYTYPE_N:
- 	case B43_PHYTYPE_LP:
+diff --git a/drivers/gpu/drm/drm_drv.c b/drivers/gpu/drm/drm_drv.c
+old mode 100644
+new mode 100755
+index 6dd71735cab4..d71e1a46c4d4
+--- a/drivers/gpu/drm/drm_drv.c
++++ b/drivers/gpu/drm/drm_drv.c
+@@ -460,8 +460,9 @@ long drm_ioctl(struct file *filp,
+ 				retcode = -EFAULT;
+ 				goto err_i1;
+ 			}
+-		} else
++		} else if (cmd & IOC_OUT) {
+ 			memset(kdata, 0, usize);
++		}
+ 
+ 		if (ioctl->flags & DRM_UNLOCKED)
+ 			retcode = func(dev, kdata, file_priv);
 -- 
 1.9.1
 
