@@ -1,115 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934972AbaGXXSk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 19:18:40 -0400
-Received: from mail-bl2lp0207.outbound.protection.outlook.com ([207.46.163.207]:14133
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S934768AbaGXXSi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 19:18:38 -0400
-Date: Thu, 24 Jul 2014 16:18:29 -0700
-From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
-To: Andreas =?utf-8?Q?F=C3=A4rber?= <afaerber@suse.de>
-CC: Michal Simek <michal.simek@xilinx.com>,
-        Andreas Olofsson <andreas@adapteva.com>,
-        Matteo Vit <matteo.vit@starwaredesign.com>,
-        Sean Rickerd <srickerd@suse.com>, <devicetree@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>
-Subject: Re: [PATCH v2 05/11] ARM: dts: zynq: Add QSPI for Parallella
-References: <1406242820-20140-1-git-send-email-afaerber@suse.de>
- <1406242820-20140-6-git-send-email-afaerber@suse.de>
+	id S935055AbaGXXSq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 19:18:46 -0400
+Received: from ozlabs.org ([103.22.144.67]:38379 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934768AbaGXXSn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jul 2014 19:18:43 -0400
+Date: Fri, 25 Jul 2014 09:18:34 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Miklos Szeredi <miklos@szeredi.hu>
+Subject: Re: VFS tree for 3.17?
+Message-ID: <20140725091834.58c1f102@canb.auug.org.au>
+In-Reply-To: <20140724153057.GA1584@infradead.org>
+References: <20140716114136.GA25237@infradead.org>
+	<20140722162455.GA15053@infradead.org>
+	<20140724153057.GA1584@infradead.org>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1406242820-20140-6-git-send-email-afaerber@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-RCIS-Action: ALLOW
-Message-ID: <ddb38ce5-9e31-4c94-967c-7784c7fba75c@BN1BFFO11FD028.protection.gbl>
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:149.199.60.83;CTRY:US;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(438002)(377424004)(24454002)(51704005)(199002)(189002)(83506001)(70736001)(44976005)(77982001)(46102001)(50466002)(6806004)(83072002)(81342001)(85202003)(85182001)(64706001)(74316001)(50986999)(107046002)(19580395003)(83322001)(19580405001)(92566001)(86362001)(31696002)(85852003)(79102001)(92726001)(104016003)(110136001)(106466001)(31966008)(33646002)(76482001)(74662001)(54356999)(4396001)(81542001)(1496007)(99396002)(76176999)(87936001)(77096002)(80022001)(21056001)(102836001)(53416004)(85306003)(20776003)(74502001)(23676002)(95666004)(107986001);DIR:OUT;SFP:;SCL:1;SRVR:BN1BFFO11HUB026;H:xsj-pvapsmtpgw01;FPR:;MLV:sfv;PTR:unknown-60-83.xilinx.com;A:1;MX:1;LANG:en;
-X-OriginatorOrg: xilinx.onmicrosoft.com
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
-X-Forefront-PRVS: 028256169F
-Authentication-Results: spf=pass (sender IP is 149.199.60.83)
- smtp.mailfrom=soren.brinkmann@xilinx.com; 
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/IyIcU092gtO7M+RFjhzPN.y"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-07-25 at 01:00AM +0200, Andreas Färber wrote:
-> Prepare SPI0 and SPI1 while at it.
-> 
-> Signed-off-by: Andreas Färber <afaerber@suse.de>
-> ---
->  v2: New
->  
->  arch/arm/boot/dts/zynq-7000.dtsi      | 37 +++++++++++++++++++++++++++++++++++
->  arch/arm/boot/dts/zynq-parallella.dts |  4 ++++
->  2 files changed, 41 insertions(+)
-> 
-> diff --git a/arch/arm/boot/dts/zynq-7000.dtsi b/arch/arm/boot/dts/zynq-7000.dtsi
-> index 8fd826a..eed3df0 100644
-> --- a/arch/arm/boot/dts/zynq-7000.dtsi
-> +++ b/arch/arm/boot/dts/zynq-7000.dtsi
-> @@ -122,6 +122,30 @@
->  			interrupts = <0 50 4>;
->  		};
->  
-> +		spi0: spi@e0006000 {
-> +			compatible = "xlnx,zynq-spi-r1p6";
-> +			reg = <0xe0006000 0x1000>;
-> +			status = "disabled";
-> +			interrupt-parent = <&intc>;
-> +			interrupts = <0 26 4>;
-> +			clocks = <&clkc 25>, <&clkc 34>;
-> +			clock-names = "ref_clk", "pclk";
-> +			#address-cells = <1>;
-> +			#size-cells = <0>;
-> +		};
-> +
-> +		spi1: spi@e0007000 {
-> +			compatible = "xlnx,zynq-spi-r1p6";
-> +			reg = <0xe0007000 0x1000>;
-> +			status = "disabled";
-> +			interrupt-parent = <&intc>;
-> +			interrupts = <0 49 4>;
-> +			clocks = <&clkc 26>, <&clkc 35>;
-> +			clock-names = "ref_clk", "pclk";
-> +			#address-cells = <1>;
-> +			#size-cells = <0>;
-> +		};
-> +
-Until here things look good.
+--Sig_/IyIcU092gtO7M+RFjhzPN.y
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
->  		gem0: ethernet@e000b000 {
->  			compatible = "cdns,gem";
->  			reg = <0xe000b000 0x4000>;
-> @@ -140,6 +164,19 @@
->  			clock-names = "pclk", "hclk", "tx_clk";
->  		};
->  
-> +		qspi: qspi@e000d000 {
-> +			compatible = "xlnx,zynq-spi-r1p6";
-> +			reg = <0xe000d000 0x1000>;
-> +			status = "disabled";
-> +			interrupt-parent = <&intc>;
-> +			interrupts = <0 19 4>;
-> +			clocks = <&clkc 10>, <&clkc 43>;
-> +			clock-names = "ref_clk", "pclk";
-> +			num-cs = <1>;
-> +			#address-cells = <1>;
-> +			#size-cells = <0>;
-> +		};
-> +
-I'm not sure what the status of this driver is. I think QSPI is still
-under review on the mailing lists and I don't think we should add this
-yet.
+Hi Christoph,
 
-	Sören
+On Thu, 24 Jul 2014 08:30:57 -0700 Christoph Hellwig <hch@infradead.org> wr=
+ote:
+>
+> I've pushed out the current queue to:
+>=20
+> git://git.infradead.org/users/hch/vfs.git vfs-for-3.17
+>=20
+> Stephen, can you include this in linux-next for testing?  I plan to
+> send the first two patches to Linus on Saturday as they seems worth
+> to fix for this release still, between a user triggered refcount one off
+> and a fix for a just introduced warning.
 
+Added from today (called "hch-vfs").
+
+Thanks for adding your subsystem tree as a participant of linux-next.  As
+you may know, this is not a judgment of your code.  The purpose of
+linux-next is for integration testing and to lower the impact of
+conflicts between subsystems in the next merge window.=20
+
+You will need to ensure that the patches/commits in your tree/series have
+been:
+     * submitted under GPL v2 (or later) and include the Contributor's
+        Signed-off-by,
+     * posted to the relevant mailing list,
+     * reviewed by you (or another maintainer of your subsystem tree),
+     * successfully unit tested, and=20
+     * destined for the current or next Linux merge window.
+
+Basically, this should be just what you would send to Linus (or ask him
+to fetch).  It is allowed to be rebased if you deem it necessary.
+
+--=20
+Cheers,
+Stephen Rothwell=20
+sfr@canb.auug.org.au
+
+--Sig_/IyIcU092gtO7M+RFjhzPN.y
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJT0ZRQAAoJEMDTa8Ir7ZwV9rkQAICCz2UKUBD73mM7e9F2KxYE
+0bsqCfXWpl3qFZxIgxJOco/4w6jjuP8eugyRFMJx2Z/b+vhg8YASlzqE5JQqRZpD
+lo69xpoe1w+jxA5vVzMXWxUu0i/7dFfTsxx0NwXbIGYfio+vb0QraUpgIDTdRuow
+paIGIrs5jcCCE1frU8AJVYyUJEvQeiCI4WgRrnMbJIltXfjhGjORivmXXR7zA1a5
+rKwyejupQug2U7o9JY64mJXGD4dHGcWXSeMX+473d5A5okAS87xQezV4+wFyq13V
+r3S/SFFCZXECQD3aDhAXDogenXEwoXHwg62IHR76CE+SQXQNj+ojAJ+CenA1/0lA
+LBe0+A/WNXCnOqFInZMU0/G+KgcWfVqt+SEHaMs587YMXnqwKC521yHjWMQ+s6Sj
+K1baN4zCAaVinSnCcdLMhjsoaoaThD7UFfMNIzsKjQYTjVVXs6OUfD4i44HqH3BD
+h1XmHucXlp/ig+AGjzNFhJ3qq/GCRn2Rjfs86gorm5Bw2mfwOhh6zt60WRQ6qKvL
+y+nnRbGPUqamK4gCcIM/lfFV4y/wqb6K2x8IoENlw9nLvQOlRhmE+qRXHRfvRHEq
+av5xmewIeKrVsa5jseGf9+3IimJKsPcd1bk4rrJmlnkrzSDGWU1zSy1lk/jXYdfQ
+ocRX3rDQ/NbLbw6IjwW8
+=b563
+-----END PGP SIGNATURE-----
+
+--Sig_/IyIcU092gtO7M+RFjhzPN.y--
