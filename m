@@ -1,117 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759216AbaGXOUK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 10:20:10 -0400
-Received: from mail.kernel.org ([198.145.19.201]:43644 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758957AbaGXOUI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 10:20:08 -0400
-Date: Thu, 24 Jul 2014 11:19:58 -0300
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: David Ahern <dsahern@gmail.com>
-Cc: Adrian Hunter <adrian.hunter@intel.com>, Andi Kleen <andi@firstfloor.org>,
-        Jiri Olsa <jolsa@kernel.org>, linux-kernel@vger.kernel.org,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCHv3 00/19] perf tools: Factor ordered samples queue
-Message-ID: <20140724141958.GB7831@kernel.org>
-References: <1405893363-21967-1-git-send-email-jolsa@kernel.org>
- <53CCB6AE.6020505@intel.com>
- <20140721080219.GA4183@krava.redhat.com>
- <53CCD3A7.5070002@intel.com>
- <20140721095415.GB8865@krava.redhat.com>
- <87d2cy3c7m.fsf@tassilo.jf.intel.com>
- <53CD5AB5.3000307@intel.com>
- <53CD5DC6.3030605@gmail.com>
+	id S1759344AbaGXOU6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 10:20:58 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:60198 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1758886AbaGXOU5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jul 2014 10:20:57 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] irq: Warn when shared interrupts do not match on NO_SUSPEND
+Date: Thu, 24 Jul 2014 16:39:23 +0200
+Message-ID: <3893758.epUfayuv4Z@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140724141525.GK3935@laptop>
+References: <20140724133921.GY6758@twins.programming.kicks-ass.net> <alpine.DEB.2.10.1407241544500.23352@nanos> <20140724141525.GK3935@laptop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53CD5DC6.3030605@gmail.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Mon, Jul 21, 2014 at 12:36:54PM -0600, David Ahern escreveu:
-> On 7/21/14, 12:23 PM, Adrian Hunter wrote:
-> >On 21/07/2014 7:31 p.m., Andi Kleen wrote:
-> >>Jiri Olsa <jolsa@redhat.com> writes:
-> >>>
-> >>>[jolsa@ibm-x3650m4-01 perf]$ sudo ./perf report --stdio
-> >>>Timestamp below last timeslice flush
-> >>>0x2276f58 [0x68]: failed to process type: 9
-> >>
-> >>FWIW we're seeing this frequently too.
-> >
-> >Jiri's example didn't work for me.  Do you have one?
+On Thursday, July 24, 2014 04:15:25 PM Peter Zijlstra wrote:
+> On Thu, Jul 24, 2014 at 03:46:38PM +0200, Thomas Gleixner wrote:
+> > On Thu, 24 Jul 2014, Peter Zijlstra wrote:
+> > 
+> > > Subject: irq: Warn when shared interrupts do not match on NO_SUSPEND
+> > > 
+> > > When suspend_device_irqs() iterates all descriptors, its pointless if
+> > > one has NO_SUSPEND set while another has not.
+> > > 
+> > > Validate on request_irq() that NO_SUSPEND state maches for SHARED
+> > > interrupts.
+> > 
+> > I'm happy to take that patch, but you are aware that it is going to
+> > break a few things?
+> > 
+> >   25:  ....   PCI-MSI-edge      aerdrv, PCIe PME
 > 
-> $ perf sched record  -m 8192 -- perf bench sched all
-> # Running sched/messaging benchmark...
-> # 20 sender and receiver processes per group
-> # 10 groups == 400 processes run
-> 
->      Total time: 0.087 [sec]
-> 
-> # Running sched/pipe benchmark...
-> # Executed 1000000 pipe operations between two processes
-> 
->      Total time: 12.043 [sec]
-> 
->       12.043779 usecs/op
->           83030 ops/sec
-> 
-> [ perf record: Woken up 1 times to write data ]
-> [ perf record: Captured and wrote 289.549 MB perf.data (~12650569 samples) ]
-> 0x54b4828 [0]: failed to process type: 0
-> 
-> No overload condition, no dropped chunks message - yet can't process events.
+> Better an obvious splat than non obvious misbehaviour in my book.
 
-Appling just the patches 1 and 17 from this series I managed to:
+And it will only break things that are already broken.
 
-[root@zoo ~]# cat /proc/loadavg 
-52.13 13.06 5.04 132/977 29522
-[root@zoo ~]# perf sched record  -m 4096 -- perf bench sched all
-# Running sched/messaging benchmark...
-# 20 sender and receiver processes per group
-# 10 groups == 400 processes run
+ACK for the patch.
 
-     Total time: 0.692 [sec]
+Rafael
 
-# Running sched/pipe benchmark...
-# Executed 1000000 pipe operations between two processes
-
-     Total time: 13.007 [sec]
-
-      13.007582 usecs/op
-          76878 ops/sec
-
-[ perf record: Woken up 105 times to write data ]
-[ perf record: Captured and wrote 909.513 MB perf.data (~39737216 samples) ]
-[root@zoo ~]# cat /proc/loadavg 
-80.30 22.82 8.49 132/968 31755
-[root@zoo ~]# perf script | wc -l
-8308492
-[root@zoo ~]# perf cript | head -10
- perf 9897 [01] 1.29678: sched:sched_stat_runtime: comm=perf pid=29897 runtime=916836 [ns] vruntime=1322281938410 [ns]
- perf 9897 [01] 1.29683: sched:sched_wakeup: comm=perf pid=29919 prio=120 success=1 target_cpu=001
- perf 9897 [01] 1.29688: sched:sched_switch: prev_comm=perf prev_pid=29897 prev_prio=120 prev_state=R ==> next_comm=perf next_pid=29919 next_prio=120
- perf 9919 [01] 1.29748: sched:sched_stat_runtime: comm=perf pid=29919 runtime=70430 [ns] vruntime=1322273008840 [ns]
-  cc1 7110 [03] 1.29748: sched:sched_stat_runtime: comm=cc1 pid=27110 runtime=992012 [ns] vruntime=702438664528 [ns]
-  cc1 9278 [00] 1.29748: sched:sched_stat_runtime: comm=cc1 pid=29278 runtime=979081 [ns] vruntime=583946650623 [ns]
-  cc1 7781 [02] 1.29749: sched:sched_stat_runtime: comm=cc1 pid=27781 runtime=989627 [ns] vruntime=714050072391 [ns]
-  cc1 9278 [00] 1.29756: sched:sched_switch: prev_comm=cc1 prev_pid=29278 prev_prio=120 prev_state=R ==> next_comm=cc1 next_pid=29128 next_prio=120
-  cc1 7110 [03] 1.29757: sched:sched_switch: prev_comm=cc1 prev_pid=27110 prev_prio=120 prev_state=R ==> next_comm=cc1 next_pid=29586 next_prio=120
- perf 9919 [01] 1.29914: sched:sched_wakeup: comm=migration/1 pid=12 prio=0 success=1 target_cpu=001
-[root@zoo ~]#
-
-While doing a make -j128 allmodconfig on a 4way machine.
-
-David, can I have your Acked-by for just those two while the rest is debated?
-
-Adrian, can I have yours as well?
-
-- Arnaldo
