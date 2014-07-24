@@ -1,79 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751974AbaGXLo5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 07:44:57 -0400
-Received: from mx6-phx2.redhat.com ([209.132.183.39]:42103 "EHLO
-	mx6-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750771AbaGXLoz (ORCPT
+	id S1755644AbaGXLpK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 07:45:10 -0400
+Received: from mout.kundenserver.de ([212.227.17.24]:52412 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752203AbaGXLpG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 07:44:55 -0400
-Date: Thu, 24 Jul 2014 07:44:54 -0400 (EDT)
-From: Ulrich Obergfell <uobergfe@redhat.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: Andrew Jones <drjones@redhat.com>, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org, dzickus@redhat.com, akpm@linux-foundation.org,
-        mingo@redhat.com
-Message-ID: <146661093.17248776.1406202294303.JavaMail.zimbra@redhat.com>
-In-Reply-To: <53D0ED70.4070800@redhat.com>
-References: <1406196811-5384-1-git-send-email-drjones@redhat.com> <1406196811-5384-3-git-send-email-drjones@redhat.com> <53D0E3F3.6050206@redhat.com> <1140033921.17233579.1406200685037.JavaMail.zimbra@redhat.com> <53D0ED70.4070800@redhat.com>
-Subject: Re: [PATCH 2/3] watchdog: control hard lockup detection default
+	Thu, 24 Jul 2014 07:45:06 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Kweh Hock Leong <hock.leong.kweh@intel.com>,
+        Eric Miao <eric.y.miao@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Mark Brown <broonie@kernel.org>,
+        Chew Chiau Ee <chiau.ee.chew@intel.com>,
+        Darren Hart <dvhart@linux.intel.com>, chiauee85@gmail.com,
+        linux-kernel@vger.kernel.org, linux-spi@vger.kernel.org,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>
+Subject: Re: [PATCH] spi/pxa2xx-pci: Enable DMA binding through device name
+Date: Thu, 24 Jul 2014 13:42:10 +0200
+Message-ID: <10365151.12bEvS9Gvj@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1406196111-22861-1-git-send-email-hock.leong.kweh@intel.com>
+References: <1406196111-22861-1-git-send-email-hock.leong.kweh@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.5.82.7]
-X-Mailer: Zimbra 8.0.6_GA_5922 (ZimbraWebClient - FF22 (Linux)/8.0.6_GA_5922)
-Thread-Topic: watchdog: control hard lockup detection default
-Thread-Index: X194zU1Zj0h6tG4PDfMmgG8XzuqNJg==
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:LTcsXWsWUFFGZsO7TutejYSnwXv6LVhZHNuoIrPDHuc
+ S9hCcvtAJyANyloDmaMbVIO71RfVbu4t6k+PvJSyHbf+BajtA/
+ 0W/xpMvXBgjjZEPF9I9+cuxpfRQLlcWjhWQF+okmj5axTKwdM4
+ fZ2VriS2k5G75AxaRLlw8ActK9tMGFmFQGpFXaXvdRm0oqNdbZ
+ IL/SFOiy3lNBcTUmCYIO94llKyhP3VplyW+f+9N7Kp62Hp4CZk
+ HjjLzIUGxtqupEoz8LAqilaQK6ifkMTX+IPE4UQBA+F3a5Vnd2
+ WkWypD1i7OUEwjfGJ5BSVJl90N6D+EOEF27zZRO8n60XszYe4I
+ wNZUiDbVNoIwr6B5YnPo=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->----- Original Message -----
->From: "Paolo Bonzini" <pbonzini@redhat.com>
->To: "Ulrich Obergfell" <uobergfe@redhat.com>
->Cc: "Andrew Jones" <drjones@redhat.com>, linux-kernel@vger.kernel.org, kvm@vger.kernel.org, dzickus@redhat.com, akpm@linux-foundation.org, >mingo@redhat.com
->Sent: Thursday, July 24, 2014 1:26:40 PM
->Subject: Re: [PATCH 2/3] watchdog: control hard lockup detection default
->
->Il 24/07/2014 13:18, Ulrich Obergfell ha scritto:
->>>> >> The running kernel still has the ability to enable/disable at any
->>>> >> time with /proc/sys/kernel/nmi_watchdog us usual. However even
->>>> >> when the default has been overridden /proc/sys/kernel/nmi_watchdog
->>>> >> will initially show '1'. To truly turn it on one must disable/enable
->>>> >> it, i.e.
->>>> >>   echo 0 > /proc/sys/kernel/nmi_watchdog
->>>> >>   echo 1 > /proc/sys/kernel/nmi_watchdog
->>> >
->>> > Why is it hard to make this show the right value? :)
->>> >
->>> > Paolo
->> 'echo 1 > /proc/sys/kernel/nmi_watchdog' enables both - hard lockup and
->> soft lockup detection. watchdog_enable_all_cpus() starts a 'watchdog/N'
->> thread for each CPU. If the kernel runs on a bare metal system where the
->> processor does not have a PMU, or when perf_event_create_kernel_counter()
->> returns failure to watchdog_nmi_enable(), or when the kernel runs as a
->> guest on a hypervisor that does not emulate a PMU, then the 'watchdog/N'
->> threads are still active for soft lockup detection. Patch 2/3 essentially
->> makes watchdog_nmi_enable() behave in the same way as if -ENOENT would
->> have been returned by perf_event_create_kernel_counter(). This is then
->> reported via a console message.
->> 
->>   NMI watchdog: disabled (cpu0): hardware events not enabled
->> 
->> It's hard say what _is_ 'the right value' (because lockup detection is
->> then enabled 'partially'), regardless of whether patch 2/3 is applied
->> or not.
->
-> But this means that it is not possible to re-enable softlockup detection
-> only.  I think that should be the effect of echo 0 + echo 1, if
-> hardlockup detection was disabled by either the command line or patch 3.
->
-> Paolo
+On Thursday 24 July 2014 18:01:51 Kweh Hock Leong wrote:
+> From: "Chew, Chiau Ee" <chiau.ee.chew@intel.com>
+> 
+> Intel LPSS Baytrail supports two DMA controllers and SPI is only
+> using one of the DMA controller. During DMA channel request,
+> we need to ensure the requested Tx and Rx channels are from the correct
+> DMA controller. Thus, we add extra checking in filter callback funtion
+> by matching against the DMA controller device name.
+> 
+> Signed-off-by: Chew, Chiau Ee <chiau.ee.chew@intel.com>
+> Signed-off-by: Kweh, Hock Leong <hock.leong.kweh@intel.com>
 
-The idea was to give the user two options to override the effect of patch 3/3.
-Either via the kernel command line ('nmi_watchdog=') at boot time or via /proc
-('echo 0' + 'echo 1') when the system is up and running.
+I'm confused. Doesn't  Bay Trail use ACPI to do the DMA
+engine configuration? That should set find the right device/chan_id/slave_id
+combination without any interaction, through the use of dma_request_slave_channel.
 
-Regards,
+On a related note, there seems to be a bug in this driver, which
+attempts to set the slave_id through dmaengine_slave_config(), which
+is wrong in both cases, ACPI and filter functions.
 
-Uli
+	Arnd
