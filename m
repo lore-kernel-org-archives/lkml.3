@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758920AbaGXNAF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 09:00:05 -0400
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:47358 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758897AbaGXNAA (ORCPT
+	id S1758943AbaGXNAT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 09:00:19 -0400
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:45517 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758922AbaGXNAM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 09:00:00 -0400
+	Thu, 24 Jul 2014 09:00:12 -0400
 From: Hanjun Guo <hanjun.guo@linaro.org>
 To: Catalin Marinas <catalin.marinas@arm.com>,
         "Rafael J. Wysocki" <rjw@rjwysocki.net>,
@@ -25,11 +25,10 @@ Cc: Graeme Gregory <graeme.gregory@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
         Randy Dunlap <rdunlap@infradead.org>, Charles.Garcia-Tobin@arm.com,
         linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org, linaro-acpi-private@linaro.org,
-        Tomasz Nowicki <tomasz.nowicki@linaro.org>,
         Hanjun Guo <hanjun.guo@linaro.org>
-Subject: [PATCH 2/3] ACPI / ACPICA: Add new features for MADT which introduced by ACPI 5.1
-Date: Thu, 24 Jul 2014 20:59:16 +0800
-Message-Id: <1406206757-15512-3-git-send-email-hanjun.guo@linaro.org>
+Subject: [PATCH 3/3] ACPI / ACPICA: Add GTDT support updated by ACPI 5.1
+Date: Thu, 24 Jul 2014 20:59:17 +0800
+Message-Id: <1406206757-15512-4-git-send-email-hanjun.guo@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1406206757-15512-1-git-send-email-hanjun.guo@linaro.org>
 References: <1406206757-15512-1-git-send-email-hanjun.guo@linaro.org>
@@ -37,101 +36,139 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tomasz Nowicki <tomasz.nowicki@linaro.org>
+With ACPI 5.0, we got per-processor timer support in GTDT,
+and ACPI 5.1 introduced the support for platform (memory-mapped)
+timers: GT Block and SBSA watchdog timer, add the code needed
+for the spec change.
 
-Add new features for MADT which introduced by ACPI 5.1:
- -comment on the GIC ID field of the GIC structure which is replaced
-  by CPU Interface Number.
- -add new fields: Redistributor Base Address, GICV, GICH, and MPIDR.
- -add new structures for GIC MSI frame and GICR.
- -add flag definition for GICC flags.
-
-Signed-off-by: Tomasz Nowicki <tomasz.nowicki@linaro.org>
 Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
 ---
- include/acpi/actbl1.h |   40 +++++++++++++++++++++++++++++++++++-----
- 1 file changed, 35 insertions(+), 5 deletions(-)
+ include/acpi/actbl3.h |   99 ++++++++++++++++++++++++++++++++++++++++++-------
+ 1 file changed, 85 insertions(+), 14 deletions(-)
 
-diff --git a/include/acpi/actbl1.h b/include/acpi/actbl1.h
-index 9613e8e..8c91ad6 100644
---- a/include/acpi/actbl1.h
-+++ b/include/acpi/actbl1.h
-@@ -671,7 +671,9 @@ enum acpi_madt_type {
- 	ACPI_MADT_TYPE_LOCAL_X2APIC_NMI = 10,
- 	ACPI_MADT_TYPE_GENERIC_INTERRUPT = 11,
- 	ACPI_MADT_TYPE_GENERIC_DISTRIBUTOR = 12,
--	ACPI_MADT_TYPE_RESERVED = 13	/* 13 and greater are reserved */
-+	ACPI_MADT_TYPE_GIC_MSI_FRAME = 13,
-+	ACPI_MADT_TYPE_GIC_REDISTRIBUTOR = 14,
-+	ACPI_MADT_TYPE_RESERVED = 15	/* 15 and greater are reserved */
+diff --git a/include/acpi/actbl3.h b/include/acpi/actbl3.h
+index c2295cc..96c60cd 100644
+--- a/include/acpi/actbl3.h
++++ b/include/acpi/actbl3.h
+@@ -241,33 +241,104 @@ struct acpi_s3pt_suspend {
+ 
+ /*******************************************************************************
+  *
+- * GTDT - Generic Timer Description Table (ACPI 5.0)
+- *        Version 1
++ * GTDT - Generic Timer Description Table (ACPI 5.1)
++ *        Version 2
+  *
+  ******************************************************************************/
+ 
+ struct acpi_table_gtdt {
+ 	struct acpi_table_header header;	/* Common ACPI table header */
+-	u64 address;
+-	u32 flags;
+-	u32 secure_pl1_interrupt;
+-	u32 secure_pl1_flags;
+-	u32 non_secure_pl1_interrupt;
+-	u32 non_secure_pl1_flags;
++	u64 cnt_control_base_address;
++	u32 reserved;
++	u32 secure_el1_interrupt;
++	u32 secure_el1_flags;
++	u32 non_secure_el1_interrupt;
++	u32 non_secure_el1_flags;
+ 	u32 virtual_timer_interrupt;
+ 	u32 virtual_timer_flags;
+-	u32 non_secure_pl2_interrupt;
+-	u32 non_secure_pl2_flags;
++	u32 non_secure_el2_interrupt;
++	u32 non_secure_el2_flags;
++	u64 cnt_read_base_address;
++	u32 platform_timer_count;
++	u32 platform_timer_offset;
  };
  
- /*
-@@ -792,18 +794,23 @@ struct acpi_madt_local_x2apic_nmi {
- 	u8 reserved[3];		/* reserved - must be zero */
- };
+-/* Values for Flags field above */
+-
+-#define ACPI_GTDT_MAPPED_BLOCK_PRESENT      1
+-
+ /* Values for all "TimerFlags" fields above */
  
--/* 11: Generic Interrupt (ACPI 5.0) */
-+/* 11: Generic Interrupt (ACPI 5.1) */
- 
- struct acpi_madt_generic_interrupt {
- 	struct acpi_subtable_header header;
- 	u16 reserved;		/* reserved - must be zero */
--	u32 gic_id;
-+	u32 gic_id;		/* it was renamed to cpu interface number in ACPI 5.1 */
- 	u32 uid;
- 	u32 flags;
- 	u32 parking_version;
- 	u32 performance_interrupt;
- 	u64 parked_address;
- 	u64 base_address;
-+	u64 gicv_base_address;
-+	u64 gich_base_address;
-+	u32 vgic_maintenance_interrupt;
-+	u64 redist_base_address;
-+	u64 mpidr;
- };
- 
- /* 12: Generic Distributor (ACPI 5.0) */
-@@ -817,13 +824,36 @@ struct acpi_madt_generic_distributor {
- 	u32 reserved2;		/* reserved - must be zero */
- };
- 
-+/* 13: GIC MSI Frame (ACPI 5.1) */
+ #define ACPI_GTDT_INTERRUPT_MODE            1
+ #define ACPI_GTDT_INTERRUPT_POLARITY        2
++#define ACPI_GTDT_ALWAYS_ON		    4
 +
-+struct acpi_madt_gic_msi_frame {
-+	struct acpi_subtable_header header;
-+	u16 reserved;           /* reserved - must be zero */
-+	u32 gic_msi_frame_id;
-+	u64 base_address;
++/*
++ * GTDT Subtable header
++ */
++struct acpi_gtdt_header {
++	u8 type;
++	u16 length;
 +};
 +
-+/* 14: GIC Redistributor (ACPI 5.1) */
++/* Values for GTDT subtable type for GTDT subtables above */
 +
-+struct acpi_madt_gic_redistributor {
-+	struct acpi_subtable_header header;
-+	u16 reserved;           /* reserved - must be zero */
-+	u64 base_address;
-+	u32 region_size;
++enum acpi_gtdt_type {
++	ACPI_GTDT_TYPE_GT_BLOCK = 0,	/* memory-mapped generic timer */
++	ACPI_GTDT_TYPE_SBSA_GENERIC_WATCHDOG = 1,
++	ACPI_GTDT_TYPE_RESERVED = 2	/* 2 and greater are reserved */
 +};
 +
- /*
-  * Common flags fields for MADT subtables
-  */
- 
--/* MADT Local APIC flags (lapic_flags) and GIC flags */
-+/* MADT Local APIC flags (lapic_flags) and GICC flags */
++/*
++ * GTDT Subtables, correspond to Type in struct acpi_gtdt_header
++ */
 +
-+#define ACPI_MADT_ENABLED           (1)         /* 00: Processor is usable if set */
++/* 0: Generic Timer Block */
 +
-+/* MADT GICC flags only */
++struct acpi_gtdt_gt_block {
++	struct acpi_gtdt_header header;
++	u8 reserved;
++	u64 gt_block_address;
++	u32 gt_block_timer_count;	/* must be less than or equal to 8 */
++	u32 gt_block_timer_offset;
++};
++
++/* GT Block Timer Structure */
++
++struct acpi_gt_block_timer {
++	u8 gt_frame_number;
++	u8 reseved[3];
++	u64 cnt_base_address;
++	u64 cnt_el0_base_adress;
++	u32 physical_timer_interrupt;
++	u32 physical_timer_flags;
++	u32 vitual_timer_interrupt;
++	u32 vitual_timer_flags;
++	u32 timer_common_flags;
++};
++
++/* Flag Definitions: GT Block Physical Timers and Virtual timers */
++
++#define ACPI_GT_BLOCK_INTERRUPT_MODE		1
++#define ACPI_GT_BLOCK_INTERRUPT_POLARITY	2
++
++/* Flag Definitions: Common Flags */
++
++#define ACPI_GT_BLOCK_IS_SECURE_TIMER	1
++#define ACPI_GT_BLOCK_ALWAYS_ON		2
++
++/* 1: SBSA Generic Watchdog Structure */
++
++struct acpi_sbsa_generic_watchdog {
++	struct acpi_gtdt_header header;
++	u8 reserved;
++	u64 refresh_frame_address;
++	u64 control_frame_address;
++	u32 interrupt;
++	u32 flags;
++};
++
++/* Flag Definitions: SBSA Generic Watchdog */
++
++#define ACPI_SBSA_WATCHDOG_INTERRUPT_MODE	1
++#define ACPI_SBSA_WATCHDOG_INTERRUPT_POLARITY	2
++#define ACPI_SBSA_WATCHDOG_IS_SECURE_TIMER	4
  
--#define ACPI_MADT_ENABLED           (1)	/* 00: Processor is usable if set */
-+#define ACPI_MADT_PERF_INT_MODE     (1<<1)	/* 01: Performance Interrupt Mode */
-+#define ACPI_MADT_VGIC              (1<<2)	/* 02: VGIC Maintenance interrupt mode */
- 
- /* MADT MPS INTI flags (inti_flags) */
- 
+ /*******************************************************************************
+  *
 -- 
 1.7.9.5
 
