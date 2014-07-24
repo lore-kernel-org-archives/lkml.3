@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935112AbaGXKTW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 06:19:22 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54757 "EHLO
+	id S935329AbaGXKTz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 06:19:55 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54749 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934274AbaGXJrV (ORCPT
+	with ESMTP id S932597AbaGXJrS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 05:47:21 -0400
+	Thu, 24 Jul 2014 05:47:18 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Nicholas Bellinger <nab@linux-iscsi.org>,
+Cc: Andrew Zaborowski <andrew.zaborowski@intel.com>,
+        Matt Fleming <matt.fleming@intel.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 039/128] iscsi-target: Avoid rejecting incorrect ITT for Data-Out
-Date: Thu, 24 Jul 2014 10:44:48 +0100
-Message-Id: <1406195177-8656-40-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 037/128] efi-pstore: Fix an overflow on 32-bit builds
+Date: Thu, 24 Jul 2014 10:44:46 +0100
+Message-Id: <1406195177-8656-38-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1406195177-8656-1-git-send-email-luis.henriques@canonical.com>
 References: <1406195177-8656-1-git-send-email-luis.henriques@canonical.com>
@@ -27,40 +28,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+From: Andrzej Zaborowski <andrew.zaborowski@intel.com>
 
-commit 97c99b47ac58bacb7c09e1f47d5d184434f6b06a upstream.
+commit 783ee43118dc773bc8b0342c5b230e017d5a04d0 upstream.
 
-This patch changes iscsit_check_dataout_hdr() to dump the incoming
-Data-Out payload when the received ITT is not associated with a
-WRITE, instead of calling iscsit_reject_cmd() for the non WRITE
-ITT descriptor.
+In generic_id the long int timestamp is multiplied by 100000 and needs
+an explicit cast to u64.
 
-This addresses a bug where an initiator sending an Data-Out for
-an ITT associated with a READ would end up generating a reject
-for the READ, eventually resulting in list corruption.
+Without that the id in the resulting pstore filename is wrong and
+userspace may have problems parsing it, but more importantly files in
+pstore can never be deleted and may fill the EFI flash (brick device?).
+This happens because when generic pstore code wants to delete a file,
+it passes the id to the EFI backend which reinterpretes it and a wrong
+variable name is attempted to be deleted.  There's no error message but
+after remounting pstore, deleted files would reappear.
 
-Reported-by: Santosh Kulkarni <santosh.kulkarni@calsoftinc.com>
-Reported-by: Arshad Hussain <arshad.hussain@calsoftinc.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Signed-off-by: Andrew Zaborowski <andrew.zaborowski@intel.com>
+Acked-by: David Rientjes <rientjes@google.com>
+Signed-off-by: Matt Fleming <matt.fleming@intel.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/target/iscsi/iscsi_target.c | 2 +-
+ drivers/firmware/efi/efi-pstore.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/target/iscsi/iscsi_target.c b/drivers/target/iscsi/iscsi_target.c
-index a5825ea2488e..5283359ef299 100644
---- a/drivers/target/iscsi/iscsi_target.c
-+++ b/drivers/target/iscsi/iscsi_target.c
-@@ -1317,7 +1317,7 @@ iscsit_check_dataout_hdr(struct iscsi_conn *conn, unsigned char *buf,
- 	if (cmd->data_direction != DMA_TO_DEVICE) {
- 		pr_err("Command ITT: 0x%08x received DataOUT for a"
- 			" NON-WRITE command.\n", cmd->init_task_tag);
--		return iscsit_reject_cmd(cmd, ISCSI_REASON_PROTOCOL_ERROR, buf);
-+		return iscsit_dump_data_payload(conn, payload_length, 1);
- 	}
- 	se_cmd = &cmd->se_cmd;
- 	iscsit_mod_dataout_timer(cmd);
+diff --git a/drivers/firmware/efi/efi-pstore.c b/drivers/firmware/efi/efi-pstore.c
+index b438a3a4d0d8..14e83e955182 100644
+--- a/drivers/firmware/efi/efi-pstore.c
++++ b/drivers/firmware/efi/efi-pstore.c
+@@ -39,7 +39,7 @@ struct pstore_read_data {
+ static inline u64 generic_id(unsigned long timestamp,
+ 			     unsigned int part, int count)
+ {
+-	return (timestamp * 100 + part) * 1000 + count;
++	return ((u64) timestamp * 100 + part) * 1000 + count;
+ }
+ 
+ static int efi_pstore_read_func(struct efivar_entry *entry, void *data)
 -- 
 1.9.1
 
