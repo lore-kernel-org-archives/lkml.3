@@ -1,151 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934316AbaGXHwP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 03:52:15 -0400
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:57010 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934178AbaGXHwL (ORCPT
+	id S934339AbaGXHxF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 03:53:05 -0400
+Received: from mail-lb0-f180.google.com ([209.85.217.180]:61713 "EHLO
+	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934203AbaGXHxD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 03:52:11 -0400
-Date: Thu, 24 Jul 2014 08:52:07 +0100
-From: Sitsofe Wheeler <sitsofe@gmail.com>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>, gregkh@linuxfoundation.org,
-        linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
-        ohering@suse.com, apw@canonical.com, jasowang@redhat.com,
-        jbottomley@parallels.com, hch@infradead.org,
-        linux-scsi@vger.kernel.org
-Subject: [PATCH 1/3] [SCSI] Add quirk for forcing logical block provisioning
- tests
-Message-ID: <20140724075207.GB15127@sucs.org>
-References: <1405983961-18782-1-git-send-email-kys@microsoft.com>
- <20140723141028.GA22724@sucs.org>
- <20140723141558.GA9705@infradead.org>
- <20140723201341.GA10292@sucs.org>
- <20140724074739.GA15127@sucs.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140724074739.GA15127@sucs.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 24 Jul 2014 03:53:03 -0400
+From: Andrey Skvortsov <andrej.skvortzov@gmail.com>
+X-Google-Original-From: Andrey Skvortsov <Andrej.Skvortzov@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: bergwolf@gmail.com, sachin.kamat@linaro.org, andreas.dilger@intel.com,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v2] staging: lustre: obdclass: fix sparse warnings about static declaration
+Date: Thu, 24 Jul 2014 11:52:43 +0400
+Message-Id: <1406188363-17580-1-git-send-email-Andrej.Skvortzov@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <20140724070642.GA30889@crion89>
+References: <20140724070642.GA30889@crion89>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Despite supporting modern SCSI features (such an UNMAP) some storage
-devices continue to claim conformance to an older version of the SPC
-spec for compatibility with legacy operating systems.
-
-Linux by default will not attempt to read VPD pages on devices that
-claim SPC-2 or older.
-
-Introduce a blacklist flag that allows the forcing of the paths leading
-to logical block provisioning tests.
-
-See https://lkml.org/lkml/2014/7/13/59 for the previous version.
-
-Reported-by: K. Y. Srinivasan <kys@microsoft.com>
-Original-patch-by: Martin K. Petersen <martin.petersen@oracle.com>
-Signed-off-by: Sitsofe Wheeler <sitsofe@yahoo.com>
+Signed-off-by: Andrey Skvortsov <Andrej.Skvortzov@gmail.com>
 ---
- drivers/scsi/scsi_scan.c    |  4 +++-
- drivers/scsi/sd.c           |  8 ++++++++
- drivers/scsi/storvsc_drv.c  | 10 ++++++++++
- include/scsi/scsi_device.h  |  1 +
- include/scsi/scsi_devinfo.h |  2 ++
- 5 files changed, 24 insertions(+), 1 deletion(-)
+ changes since v1:
 
-diff --git a/drivers/scsi/scsi_scan.c b/drivers/scsi/scsi_scan.c
-index e02b3aa..02ca1c2 100644
---- a/drivers/scsi/scsi_scan.c
-+++ b/drivers/scsi/scsi_scan.c
-@@ -950,7 +950,9 @@ static int scsi_add_lun(struct scsi_device *sdev, unsigned char *inq_result,
+ removed from patch  static declarations for functions obd_sysctl_init and
+ obd_sysctl_clean to fix build issue.
  
- 	sdev->eh_timeout = SCSI_DEFAULT_EH_TIMEOUT;
+
+.../lustre/lustre/obdclass/linux/linux-sysctl.c    |   24 ++++++++++----------
+ 1 file changed, 12 insertions(+), 12 deletions(-)
+
+diff --git a/drivers/staging/lustre/lustre/obdclass/linux/linux-sysctl.c b/drivers/staging/lustre/lustre/obdclass/linux/linux-sysctl.c
+index a4cd46b..38a9b31 100644
+--- a/drivers/staging/lustre/lustre/obdclass/linux/linux-sysctl.c
++++ b/drivers/staging/lustre/lustre/obdclass/linux/linux-sysctl.c
+@@ -52,7 +52,7 @@
+ #include "../../include/lprocfs_status.h"
  
--	if (*bflags & BLIST_SKIP_VPD_PAGES)
-+	if (*bflags & BLIST_TRY_LBP)
-+		sdev->try_lbp = 1;
-+	else if (*bflags & BLIST_SKIP_VPD_PAGES)
- 		sdev->skip_vpd_pages = 1;
- 
- 	transport_configure_device(&sdev->sdev_gendev);
-diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
-index 6825eda..8249e51 100644
---- a/drivers/scsi/sd.c
-+++ b/drivers/scsi/sd.c
-@@ -2109,6 +2109,8 @@ static int sd_try_rc16_first(struct scsi_device *sdp)
- 		return 1;
- 	if (scsi_device_protection(sdp))
- 		return 1;
-+	if (sdp->try_lbp)
-+		return 1;
- 	return 0;
- }
- 
-@@ -2682,6 +2684,12 @@ static void sd_read_write_same(struct scsi_disk *sdkp, unsigned char *buffer)
- static int sd_try_extended_inquiry(struct scsi_device *sdp)
- {
- 	/*
-+	 * Attempt VPD inquiry if the device blacklist explicitly calls
-+	 * for it.
-+	 */
-+	if (sdp->try_lbp)
-+		return 1;
-+	/*
- 	 * Although VPD inquiries can go to SCSI-2 type devices,
- 	 * some USB ones crash on receiving them, and the pages
- 	 * we currently ask for are for SPC-3 and beyond
-diff --git a/drivers/scsi/storvsc_drv.c b/drivers/scsi/storvsc_drv.c
-index 9969fa1..5ad2810 100644
---- a/drivers/scsi/storvsc_drv.c
-+++ b/drivers/scsi/storvsc_drv.c
-@@ -326,6 +326,8 @@ MODULE_PARM_DESC(storvsc_ringbuffer_size, "Ring buffer size (bytes)");
-  */
- static int storvsc_timeout = 180;
- 
-+static int msft_blist_flags = BLIST_TRY_VPD_PAGES;
-+
- #define STORVSC_MAX_IO_REQUESTS				200
- 
- static void storvsc_on_channel_callback(void *context);
-@@ -1441,6 +1443,14 @@ static int storvsc_device_configure(struct scsi_device *sdevice)
- 
- 	sdevice->no_write_same = 1;
- 
-+	/*
-+	 * Add blist flags to permit the reading of the VPD pages even when
-+	 * the target may claim SPC-2 compliance. MSFT targets currently
-+	 * claim SPC-2 compliance while they implement post SPC-2 features.
-+	 * With this patch we can correctly handle WRITE_SAME_16 issues.
-+	 */
-+	sdevice->sdev_bflags |= msft_blist_flags;
-+
- 	return 0;
- }
- 
-diff --git a/include/scsi/scsi_device.h b/include/scsi/scsi_device.h
-index 27ab310..0a5c6fa 100644
---- a/include/scsi/scsi_device.h
-+++ b/include/scsi/scsi_device.h
-@@ -155,6 +155,7 @@ struct scsi_device {
- 	unsigned skip_ms_page_8:1;	/* do not use MODE SENSE page 0x08 */
- 	unsigned skip_ms_page_3f:1;	/* do not use MODE SENSE page 0x3f */
- 	unsigned skip_vpd_pages:1;	/* do not read VPD pages */
-+	unsigned try_lbp:1;		/* Try LBP tests */
- 	unsigned use_192_bytes_for_3f:1; /* ask for 192 bytes from page 0x3f */
- 	unsigned no_start_on_add:1;	/* do not issue start on add */
- 	unsigned allow_restart:1; /* issue START_UNIT in error handler */
-diff --git a/include/scsi/scsi_devinfo.h b/include/scsi/scsi_devinfo.h
-index 447d2d7..9d15d78 100644
---- a/include/scsi/scsi_devinfo.h
-+++ b/include/scsi/scsi_devinfo.h
-@@ -32,4 +32,6 @@
- #define BLIST_ATTACH_PQ3	0x1000000 /* Scan: Attach to PQ3 devices */
- #define BLIST_NO_DIF		0x2000000 /* Disable T10 PI (DIF) */
- #define BLIST_SKIP_VPD_PAGES	0x4000000 /* Ignore SBC-3 VPD pages */
-+#define BLIST_TRY_LBP		0x10000000 /* Check Logical Block Provisioning
-+					      even on < SPC-3 devices */
+ #ifdef CONFIG_SYSCTL
+-struct ctl_table_header *obd_table_header = NULL;
++static struct ctl_table_header *obd_table_header;
  #endif
+ 
+ 
+@@ -79,8 +79,8 @@ enum {
+ };
+ 
+ 
+-int proc_set_timeout(struct ctl_table *table, int write, void __user *buffer,
+-		     size_t *lenp, loff_t *ppos)
++static int proc_set_timeout(struct ctl_table *table, int write,
++			void __user *buffer, size_t *lenp, loff_t *ppos)
+ {
+ 	int rc;
+ 
+@@ -90,8 +90,8 @@ int proc_set_timeout(struct ctl_table *table, int write, void __user *buffer,
+ 	return rc;
+ }
+ 
+-int proc_memory_alloc(struct ctl_table *table, int write, void __user *buffer,
+-		      size_t *lenp, loff_t *ppos)
++static int proc_memory_alloc(struct ctl_table *table, int write,
++			void __user *buffer, size_t *lenp, loff_t *ppos)
+ {
+ 	char buf[22];
+ 	int len;
+@@ -114,8 +114,8 @@ int proc_memory_alloc(struct ctl_table *table, int write, void __user *buffer,
+ 	return 0;
+ }
+ 
+-int proc_pages_alloc(struct ctl_table *table, int write, void __user *buffer,
+-		     size_t *lenp, loff_t *ppos)
++static int proc_pages_alloc(struct ctl_table *table, int write,
++			void __user *buffer, size_t *lenp, loff_t *ppos)
+ {
+ 	char buf[22];
+ 	int len;
+@@ -138,7 +138,7 @@ int proc_pages_alloc(struct ctl_table *table, int write, void __user *buffer,
+ 	return 0;
+ }
+ 
+-int proc_mem_max(struct ctl_table *table, int write, void __user *buffer,
++static int proc_mem_max(struct ctl_table *table, int write, void __user *buffer,
+ 		 size_t *lenp, loff_t *ppos)
+ {
+ 	char buf[22];
+@@ -162,8 +162,8 @@ int proc_mem_max(struct ctl_table *table, int write, void __user *buffer,
+ 	return 0;
+ }
+ 
+-int proc_pages_max(struct ctl_table *table, int write, void __user *buffer,
+-		   size_t *lenp, loff_t *ppos)
++static int proc_pages_max(struct ctl_table *table, int write,
++			void __user *buffer, size_t *lenp, loff_t *ppos)
+ {
+ 	char buf[22];
+ 	int len;
+@@ -186,7 +186,7 @@ int proc_pages_max(struct ctl_table *table, int write, void __user *buffer,
+ 	return 0;
+ }
+ 
+-int proc_max_dirty_pages_in_mb(struct ctl_table *table, int write,
++static int proc_max_dirty_pages_in_mb(struct ctl_table *table, int write,
+ 			       void __user *buffer, size_t *lenp, loff_t *ppos)
+ {
+ 	int rc = 0;
+@@ -228,7 +228,7 @@ int proc_max_dirty_pages_in_mb(struct ctl_table *table, int write,
+ 	return rc;
+ }
+ 
+-int proc_alloc_fail_rate(struct ctl_table *table, int write,
++static int proc_alloc_fail_rate(struct ctl_table *table, int write,
+ 			 void __user *buffer, size_t *lenp, loff_t *ppos)
+ {
+ 	int rc	  = 0;
 -- 
-1.9.3
+1.7.10.4
+
