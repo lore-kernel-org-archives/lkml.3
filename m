@@ -1,66 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934619AbaGXUfG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 16:35:06 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:59923 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934176AbaGXUfE (ORCPT
+	id S934652AbaGXUie (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 16:38:34 -0400
+Received: from g2t2353.austin.hp.com ([15.217.128.52]:42724 "EHLO
+	g2t2353.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934176AbaGXUid (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 16:35:04 -0400
-Date: Thu, 24 Jul 2014 21:34:36 +0100
-From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-To: Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>
-Cc: linux-kernel@vger.kernel.org, linux@openrisc.net, jonas@southpole.se
-Subject: Re: [PATCH 1/6] openrisc: add Kconfig for l.lwa and l.swa atomic
- instructions
-Message-ID: <20140724213436.511e08ad@alan.etchedpixels.co.uk>
-In-Reply-To: <20140724195237.GA12313@chokladfabriken.org>
-References: <1406150296-13308-1-git-send-email-stefan.kristiansson@saunalahti.fi>
-	<1406150296-13308-2-git-send-email-stefan.kristiansson@saunalahti.fi>
-	<20140723222601.51a8b788@alan.etchedpixels.co.uk>
-	<20140724195237.GA12313@chokladfabriken.org>
-Organization: Intel Corporation
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	Thu, 24 Jul 2014 16:38:33 -0400
+Message-ID: <53D16EC4.1000801@hp.com>
+Date: Thu, 24 Jul 2014 16:38:28 -0400
+From: Waiman Long <waiman.long@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Borislav Petkov <bp@alien8.de>, Ingo Molnar <mingo@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        USB list <linux-usb@vger.kernel.org>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>
+Subject: Re: Linux 3.16-rc6
+References: <CA+55aFzJKxzw_as9iGgeM=MdQ6trUkQLDuoEr8nxj88sOqQnQA@mail.gmail.com> <20140723095327.GA23131@pd.tnic> <CA+55aFzPs4uF=eR7jCnpyBtgWNRkX-uDfXeo5u34VEvT8_yyzw@mail.gmail.com> <20140724064353.GW9918@twins.programming.kicks-ass.net> <20140724084126.GB19239@pd.tnic> <20140724122513.GM19239@pd.tnic> <20140724125814.GX6758@twins.programming.kicks-ass.net> <CA+55aFynW5xSRQvY6xO+mxmt6yh7mFkMjy-pgJXpXNy8qDMcPA@mail.gmail.com> <20140724183643.GM3935@laptop>
+In-Reply-To: <20140724183643.GM3935@laptop>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I wasn't familiar with the alternatives logic before, so I had
-> to look it up.
-> Correct me if I'm wrong, but from what I gathered, the approach
-> that takes is especially suitable to fixup instructions that
-> are similar to each others but have slightly different properties
-> (the lock prefix to cmpxchg being the canonical example).
+On 07/24/2014 02:36 PM, Peter Zijlstra wrote:
+> On Thu, Jul 24, 2014 at 11:18:16AM -0700, Linus Torvalds wrote:
+>> On Thu, Jul 24, 2014 at 5:58 AM, Peter Zijlstra<peterz@infradead.org>  wrote:
+>>> So going by the nifty picture rostedt made:
+>>>
+>>> [   61.454336]        CPU0                    CPU1
+>>> [   61.454336]        ----                    ----
+>>> [   61.454336]   lock(&(&p->alloc_lock)->rlock);
+>>> [   61.454336]                                local_irq_disable();
+>>> [   61.454336]                                lock(tasklist_lock);
+>>> [   61.454336]                                lock(&(&p->alloc_lock)->rlock);
+>>> [   61.454336]<Interrupt>
+>>> [   61.454336]     lock(tasklist_lock);
+>> So this *should* be fine. It always has been in the past, and it was
+>> certainly the *intention* that it should continue to work with
+>> qrwlock, even in the presense of pending writers on other cpu's.
+>>
+>> The qrwlock rules are that a read-lock in an interrupt is still going
+>> to be unfair and succeed if there are other readers.
+> Ah, indeed. Should have checked :/
+>
+>> So it sounds to me like the new lockdep rules in tip/master are too
+>> strict and are throwing a false positive.
+> Right. Waiman can you have a look?
 
-You need some similarity or in some cases it makes sense to swap the
-instruction with a call to a helper out of line, rather than taking the
-hit on the traps and emulation.
+Yes, I think I may have a solution for that.
 
-> I guess it'd be *possible* to still use this method to implement
-> alternatives that would work in the UP case by disabling
-> context-switch and perform normal loads and stores in place
-> of the l.lwa and l.swa instructions, but is it really a good approach?
+Borislav, can you apply the following patch on top of the lockdep patch 
+to see if it can fix the problem?
 
-We actually did that on the 386 when it was still supported as 386
-lacked some of the more obscure atomic instructions. Some other platforms
-use constructs of the form
+diff --git a/kernel/locking/lockdep.c b/kernel/locking/lockdep.c
+index d24e433..507a8ce 100644
+--- a/kernel/locking/lockdep.c
++++ b/kernel/locking/lockdep.c
+@@ -3595,6 +3595,12 @@ void lock_acquire(struct lockdep_map *lock, 
+unsigned int
+         raw_local_irq_save(flags);
+         check_flags(flags);
 
-       do {
-	i = reschedule_count
-	do repeatable ops
-        }
-	while(reschedule_count != i)
++       /*
++        * An interrupt recursive read in interrupt context can be 
+considered
++        * to be the same as a recursive read from checking perspective.
++        */
++       if ((read == 3) && in_interrupt())
++               read = 2;
+         current->lockdep_recursion = 1;
+         trace_lock_acquire(lock, subclass, trylock, read, check, 
+nest_lock, ip);
+         __lock_acquire(lock, subclass, trylock, read, check,
 
-for non irq safe locking ops rather than irq off/on. Another approach is
-to use a section to gather all the out of line "atomic" operations - ie
-all the helpers - and not reschedule if the return address is in the
-"atomic" section.
-
-Most of the other architectures we ask these questions and generate code
-for "at least this feature set" but then also hide the detail, although I
-imagine most openrisc users are smarter than the average.
-
-Alan
