@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934673AbaGXKKv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 06:10:51 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54894 "EHLO
+	id S934712AbaGXKLX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 06:11:23 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54877 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934520AbaGXJr6 (ORCPT
+	with ESMTP id S934522AbaGXJry (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 05:47:58 -0400
+	Thu, 24 Jul 2014 05:47:54 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Brian King <brking@linux.vnet.ibm.com>, Christoph Hellwig <hch@lst.de>,
+Cc: Lu Baolu <baolu.lu@linux.intel.com>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 064/128] ibmvscsi: Abort init sequence during error recovery
-Date: Thu, 24 Jul 2014 10:45:13 +0100
-Message-Id: <1406195177-8656-65-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 062/128] xhci: clear root port wake on bits if controller isn't wake-up capable
+Date: Thu, 24 Jul 2014 10:45:11 +0100
+Message-Id: <1406195177-8656-63-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1406195177-8656-1-git-send-email-luis.henriques@canonical.com>
 References: <1406195177-8656-1-git-send-email-luis.henriques@canonical.com>
@@ -27,38 +29,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Brian King <brking@linux.vnet.ibm.com>
+From: Lu Baolu <baolu.lu@linux.intel.com>
 
-commit 9ee755974bea2f9880e517ec985dc9dede1b3a36 upstream.
+commit ff8cbf250b448aac35589f6075082c3fcad8a8fe upstream.
 
-If a CRQ reset is triggered for some reason while in the middle
-of performing VSCSI adapter initialization, we don't want to
-call the done function for the initialization MAD commands as
-this will only result in two threads attempting initialization
-at the same time, resulting in failures.
+When xHCI PCI host is suspended, if do_wakeup is false in xhci_pci_suspend,
+xhci_bus_suspend needs to clear all root port wake on bits. Otherwise some Intel
+platforms may get a spurious wakeup, even if PCI PME# is disabled.
 
-Signed-off-by: Brian King <brking@linux.vnet.ibm.com>
-Acked-by: Nathan Fontenot <nfont@linux.vnet.ibm.com>
-Signed-off-by: Christoph Hellwig <hch@lst.de>
+This patch should be back-ported to kernels as old as 2.6.37, that
+contains the commit 9777e3ce907d4cb5a513902a87ecd03b52499569
+"USB: xHCI: bus power management implementation".
+
+Signed-off-by: Lu Baolu <baolu.lu@linux.intel.com>
+Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+[ luis: backported to 3.11: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/scsi/ibmvscsi/ibmvscsi.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/usb/host/xhci-hub.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/scsi/ibmvscsi/ibmvscsi.c b/drivers/scsi/ibmvscsi/ibmvscsi.c
-index d0fa4b6c551f..1e29efc8271a 100644
---- a/drivers/scsi/ibmvscsi/ibmvscsi.c
-+++ b/drivers/scsi/ibmvscsi/ibmvscsi.c
-@@ -794,7 +794,8 @@ static void purge_requests(struct ibmvscsi_host_data *hostdata, int error_code)
- 				       evt->hostdata->dev);
- 			if (evt->cmnd_done)
- 				evt->cmnd_done(evt->cmnd);
--		} else if (evt->done)
-+		} else if (evt->done && evt->crq.format != VIOSRP_MAD_FORMAT &&
-+			   evt->iu.srp.login_req.opcode != SRP_LOGIN_REQ)
- 			evt->done(evt);
- 		free_event_struct(&evt->hostdata->pool, evt);
- 		spin_lock_irqsave(hostdata->host->host_lock, flags);
+diff --git a/drivers/usb/host/xhci-hub.c b/drivers/usb/host/xhci-hub.c
+index 1f582d969f97..8786b9b5a631 100644
+--- a/drivers/usb/host/xhci-hub.c
++++ b/drivers/usb/host/xhci-hub.c
+@@ -21,6 +21,7 @@
+  */
+ 
+ #include <linux/gfp.h>
++#include <linux/device.h>
+ #include <asm/unaligned.h>
+ 
+ #include "xhci.h"
+@@ -1078,7 +1079,9 @@ int xhci_bus_suspend(struct usb_hcd *hcd)
+ 		 * including the USB 3.0 roothub, but only if CONFIG_PM_RUNTIME
+ 		 * is enabled, so also enable remote wake here.
+ 		 */
+-		if (hcd->self.root_hub->do_remote_wakeup) {
++		if (hcd->self.root_hub->do_remote_wakeup
++				&& device_may_wakeup(hcd->self.controller)) {
++
+ 			if (t1 & PORT_CONNECT) {
+ 				t2 |= PORT_WKOC_E | PORT_WKDISC_E;
+ 				t2 &= ~PORT_WKCONN_E;
 -- 
 1.9.1
 
