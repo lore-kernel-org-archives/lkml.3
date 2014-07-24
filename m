@@ -1,76 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759506AbaGXPiT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 11:38:19 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:58468 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759268AbaGXPiR (ORCPT
+	id S1759546AbaGXPjh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 11:39:37 -0400
+Received: from mail-vc0-f172.google.com ([209.85.220.172]:40256 "EHLO
+	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759405AbaGXPjf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 11:38:17 -0400
-Date: Thu, 24 Jul 2014 08:36:36 -0700
-From: tip-bot for Peter Zijlstra <tipbot@zytor.com>
-Message-ID: <tip-4fae4e7624653ef498d0e2a38f00620b9701ab04@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        peterz@infradead.org, rjw@rjwysocki.net, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        peterz@infradead.org, tglx@linutronix.de, rjw@rjwysocki.net
-In-Reply-To: <20140724133921.GY6758@twins.programming.kicks-ass.net>
-References: <20140724133921.GY6758@twins.programming.kicks-ass.net>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:irq/core] irq:
-  Warn when shared interrupts do not match on NO_SUSPEND
-Git-Commit-ID: 4fae4e7624653ef498d0e2a38f00620b9701ab04
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Thu, 24 Jul 2014 11:39:35 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
+X-Originating-IP: [172.19.1.49]
+In-Reply-To: <20140724163329.03002387@canb.auug.org.au>
+References: <20140724162811.5e12107a@canb.auug.org.au>
+	<20140724163329.03002387@canb.auug.org.au>
+Date: Thu, 24 Jul 2014 08:39:30 -0700
+Message-ID: <CAOesGMgZHHKLMeyGKq_ZfSxWsRcLL3a=ogbW8s=KTUrjf6L3qA@mail.gmail.com>
+Subject: Re: linux-next: manual merge of the usb tree with the arm-soc tree
+From: Olof Johansson <olof@lixom.net>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Greg KH <greg@kroah.com>, Arnd Bergmann <arnd@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Pratyush Anand <pratyush.anand@st.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Srinivas Kandagatla <srinivas.kandagatla@linaro.org>,
+        Kishon Vijay Abraham I <kishon@ti.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  4fae4e7624653ef498d0e2a38f00620b9701ab04
-Gitweb:     http://git.kernel.org/tip/4fae4e7624653ef498d0e2a38f00620b9701ab04
-Author:     Peter Zijlstra <peterz@infradead.org>
-AuthorDate: Thu, 24 Jul 2014 15:39:21 +0200
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Thu, 24 Jul 2014 17:32:56 +0200
+On Wed, Jul 23, 2014 at 11:33 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> Hi Greg,
+>
+> On Thu, 24 Jul 2014 16:28:11 +1000 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+>>
+>> Today's linux-next merge of the usb tree got a conflict in
+>> drivers/phy/Kconfig between commit 64562e99477f ("phy: Add drivers for
+>> PCIe and SATA phy on SPEAr13xx") from the arm-soc tree and commit
+>> 1de990d8a169 ("phy: qcom: Add driver for QCOM APQ8064 SATA PHY") from
+>> the usb tree.
+>>
+>> I fixed it up (see below) and can carry the fix as necessary (no action
+>> is required).
+>
+> Also drivers/phy/Makefile
+>
+> --
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
+>
+> diff --cc drivers/phy/Makefile
+> index 241c741e6e39,971ad0aac388..000000000000
+> --- a/drivers/phy/Makefile
+> +++ b/drivers/phy/Makefile
+> @@@ -18,8 -21,7 +21,10 @@@ phy-exynos-usb2-y                    += phy-samsung-usb2
+>   phy-exynos-usb2-$(CONFIG_PHY_EXYNOS4210_USB2) += phy-exynos4210-usb2.o
+>   phy-exynos-usb2-$(CONFIG_PHY_EXYNOS4X12_USB2) += phy-exynos4x12-usb2.o
+>   phy-exynos-usb2-$(CONFIG_PHY_EXYNOS5250_USB2) += phy-exynos5250-usb2.o
+>  +phy-exynos-usb2-$(CONFIG_PHY_S5PV210_USB2)    += phy-s5pv210-usb2.o
+>   obj-$(CONFIG_PHY_EXYNOS5_USBDRD)      += phy-exynos5-usbdrd.o
+>   obj-$(CONFIG_PHY_XGENE)                       += phy-xgene.o
+>  +obj-$(CONFIG_PHY_ST_SPEAR1310_MIPHY)  += phy-spear1310-miphy.o
+>  +obj-$(CONFIG_PHY_ST_SPEAR1340_MIPHY)  += phy-spear1340-miphy.o
+> + obj-$(CONFIG_PHY_QCOM_APQ8064_SATA)   += phy-qcom-apq8064-sata.o
+> + obj-$(CONFIG_PHY_QCOM_IPQ806X_SATA)   += phy-qcom-ipq806x-sata.o
 
-irq: Warn when shared interrupts do not match on NO_SUSPEND
 
-When suspend_device_irqs() iterates all descriptors, its pointless if
-one has NO_SUSPEND set while another has not.
+We've both been sinners here. New entries should be added in
+alphabetical order to avoid these conflicts, and neither of us caught
+it.
 
-Validate on request_irq() that NO_SUSPEND state maches for SHARED
-interrupts.
+Resolution looks OK though.
 
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Acked-by: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Link: http://lkml.kernel.org/r/20140724133921.GY6758@twins.programming.kicks-ass.net
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- kernel/irq/manage.c | 7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
 
-diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
-index 88657d7..27a1fe0 100644
---- a/kernel/irq/manage.c
-+++ b/kernel/irq/manage.c
-@@ -1077,9 +1077,12 @@ __setup_irq(unsigned int irq, struct irq_desc *desc, struct irqaction *new)
- 		 * set the trigger type must match. Also all must
- 		 * agree on ONESHOT.
- 		 */
-+
-+#define IRQF_MISMATCH \
-+	(IRQF_TRIGGER_MASK | IRQF_ONESHOT | IRQF_NO_SUSPEND)
-+
- 		if (!((old->flags & new->flags) & IRQF_SHARED) ||
--		    ((old->flags ^ new->flags) & IRQF_TRIGGER_MASK) ||
--		    ((old->flags ^ new->flags) & IRQF_ONESHOT))
-+		    ((old->flags ^ new->flags) & IRQF_MISMATCH))
- 			goto mismatch;
- 
- 		/* All handlers must agree on per-cpuness */
+-Olof
