@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758961AbaGXNAo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 09:00:44 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:52111 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758768AbaGXNAl (ORCPT
+	id S1758969AbaGXNAz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 09:00:55 -0400
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:58054 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758971AbaGXNAx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 09:00:41 -0400
+	Thu, 24 Jul 2014 09:00:53 -0400
 From: Hanjun Guo <hanjun.guo@linaro.org>
 To: Catalin Marinas <catalin.marinas@arm.com>,
         "Rafael J. Wysocki" <rjw@rjwysocki.net>,
@@ -25,138 +25,266 @@ Cc: Graeme Gregory <graeme.gregory@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
         Randy Dunlap <rdunlap@infradead.org>, Charles.Garcia-Tobin@arm.com,
         linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org, linaro-acpi-private@linaro.org,
+        Al Stone <al.stone@linaro.org>,
+        Tomasz Nowicki <tomasz.nowicki@linaro.org>,
         Hanjun Guo <hanjun.guo@linaro.org>
-Subject: [PATCH 00/19] Introduce ACPI for ARM64 based on ACPI 5.1
-Date: Thu, 24 Jul 2014 21:00:06 +0800
-Message-Id: <1406206825-15590-1-git-send-email-hanjun.guo@linaro.org>
+Subject: [PATCH 01/19] ARM64 / ACPI: Get RSDP and ACPI boot-time tables
+Date: Thu, 24 Jul 2014 21:00:07 +0800
+Message-Id: <1406206825-15590-2-git-send-email-hanjun.guo@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1406206825-15590-1-git-send-email-hanjun.guo@linaro.org>
+References: <1406206825-15590-1-git-send-email-hanjun.guo@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ACPI 5.1 was released [1] and it fixed some major gaps to run ACPI
-on ARM, this patch just follow the ACPI 5.1 spec and prepare the
-code to run ACPI on ARM64.
+From: Al Stone <al.stone@linaro.org>
 
-ACPI 5.1 has some major changes for the following tables and
-method which are essential for ARM platforms:
+As we want to get ACPI tables to parse and then use the information
+for system initialization, we should get the RSDP (Root System
+Description Pointer) first, it then locates Extended Root Description
+Table (XSDT) which contains all the 64-bit physical address that
+pointer to other boot-time tables.
 
-1) MADT table updates.
-New fields were introduced to cover MPIDR and virtualization in
-GICC, and introduce GICR and GIC MSI frame structure to cover
-GICv3 and GICv2m (this patch set only cover GICv2).
+Introduce acpi.c and its related head file in this patch to provide
+fundamental needs of extern variables and functions for ACPI core,
+and then get boot-time tables as needed.
+  - asm/cpu.h need for ACPI core and will be updated in the future to
+    add definitions for arch_(un)register_cpu which are required for
+    ACPI based physical CPU hotplug;
+  - asm/acenv.h for arch specific ACPICA environments and
+    implementation;
+  - asm/acpi.h for arch specific variables and functions needed by
+    ACPI driver core;
+  - acpi.c for ARM64 related ACPI implementation for ACPI driver
+    core;
 
-2) FADT updates for PSCI
-New fields were introduced to cover PSCI and ACPI can use psci
-to boot SMP and other PSCI related functions.
+acpi_boot_table_init() is introduced to get RSDP and boot-time tables,
+it will be called in setup_arch() before paging_init(), so we should
+use eary_memremap() mechanism here to get the RSDP and all the table
+pointers.
 
-3) GTDT
-GTDT was updated to support arch timer, memory-mapped tiemr,
-SBSA watchdog timer, in this patch, only arch timer tested on
-Juno board, so only arch timer init is available.
-
-4) _DSD
-_DSD (Device Specific Data) will provide some key values which
-presented by FDT before, it makes possible that some devices can
-be emumerated in ACPI way, please refer to the document provided
-in this patch set for detail.
-
-This patch set is the ARM64 ACPI core patches covered MADT, FADT
-and GTDT, _DSD is not covered in this patch set. We first introduce
-acpi.c and its related head file which are needed by ACPI core, and
-then get RSDP to extract all the ACPI boot-time tables.
-
-When all the boot-time tables (FADT, MADT, GTDT) are ready, then
-parse them to init the sytem when booted. Specifically, 
-a) we use FADT to init PSCI and use PSCI to boot SMP;
-b) Use MADT for GIC init and SMP init;
-c) GTDT for arch timer init.
-
-This patch set is based on the former ACPICA patches I sent, and I
-already compiled it OK with:
-a) each patch applied on ARM64 with CONFIG_ACPI=y;
-b) CONFIG_ACPI=n on ARM64;
-c) CONFIG_ACPI=y on x86.
-
-Also this patch set was tested by Graeme on ARM64 Juno platform, it
-boot successfully with ACPI only (no device tree).
-
-[1]
-You can download ACPI 5.1 from http://www.uefi.org/specifications
-
-Al Stone (3):
-  ARM64 / ACPI: Get RSDP and ACPI boot-time tables
-  ARM64 / ACPI: Introduce early_param for "acpi"
-  ARM64 / ACPI: Select ACPI_REDUCED_HARDWARE_ONLY if ACPI is enabled on
-    ARM64
-
-Ashwin Chaugule (1):
-  ACPI / table: Add new function to get table entries
-
-Graeme Gregory (4):
-  ARM64 / ACPI: Introduce lowlevel suspend function
-  ARM64 / ACPI: If we chose to boot from acpi then disable FDT
-  ARM64 / ACPI: Enable ARM64 in Kconfig
-  Documentation: ACPI for ARM64
-
-Hanjun Guo (10):
-  ARM64 / ACPI: Introduce arch_fix_phys_package_id() for cpu topology
-  ARM64 / ACPI: Make PCI optional for ACPI on ARM64
-  ARM64 / ACPI: Parse FADT table to get PSCI flags for PSCI init
-  ARM64 / ACPI: Parse MADT to map logical cpu to MPIDR and get
-    cpu_possible/present_map
-  ACPI / table: Print GIC information when MADT is parsed
-  ARM64 / ACPI: Move the initialization of cpu_logical_map(0) before
-    acpi_boot_init()
-  ARM64 / ACPI: Get the enable method for SMP initialization in ACPI
-    way
-  ACPI / processor: Make it possible to get CPU hardware ID via GICC
-  ARM64 / ACPI: Introduce ACPI_IRQ_MODEL_GIC and register device's gsi
-  ARM64 / ACPI: Parse GTDT to initialize arch timer
-
-Tomasz Nowicki (1):
-  ARM64 / ACPI: Add GICv2 specific ACPI boot support
-
- Documentation/arm64/arm-acpi.txt     |  240 ++++++++++++++++++++
- Documentation/kernel-parameters.txt  |    3 +-
- arch/arm64/Kconfig                   |    3 +
- arch/arm64/include/asm/acenv.h       |   18 ++
- arch/arm64/include/asm/acpi.h        |   90 ++++++++
- arch/arm64/include/asm/cpu.h         |   11 +
- arch/arm64/include/asm/cpu_ops.h     |    9 +-
- arch/arm64/include/asm/pci.h         |   11 +
- arch/arm64/include/asm/smp.h         |    2 +-
- arch/arm64/include/asm/topology.h    |    2 +
- arch/arm64/kernel/Makefile           |    1 +
- arch/arm64/kernel/acpi.c             |  403 ++++++++++++++++++++++++++++++++++
- arch/arm64/kernel/cpu_ops.c          |   52 ++++-
- arch/arm64/kernel/irq.c              |    5 +
- arch/arm64/kernel/psci.c             |   95 +++++---
- arch/arm64/kernel/setup.c            |   11 +-
- arch/arm64/kernel/smp.c              |   39 +++-
- arch/arm64/kernel/time.c             |    7 +
- arch/arm64/kernel/topology.c         |   14 ++
- drivers/acpi/Kconfig                 |    6 +-
- drivers/acpi/Makefile                |    2 +-
- drivers/acpi/bus.c                   |    3 +
- drivers/acpi/internal.h              |    5 +
- drivers/acpi/processor_core.c        |   36 +++
- drivers/acpi/tables.c                |  109 +++++++--
- drivers/clocksource/arm_arch_timer.c |  117 ++++++++--
- drivers/irqchip/irq-gic.c            |  114 ++++++++++
- include/linux/acpi.h                 |    5 +
- include/linux/clocksource.h          |    6 +
- include/linux/irqchip/arm-gic-acpi.h |   36 +++
- include/linux/pci.h                  |   37 +++-
- 31 files changed, 1397 insertions(+), 95 deletions(-)
- create mode 100644 Documentation/arm64/arm-acpi.txt
+Signed-off-by: Al Stone <al.stone@linaro.org>
+Signed-off-by: Graeme Gregory <graeme.gregory@linaro.org>
+Signed-off-by: Tomasz Nowicki <tomasz.nowicki@linaro.org>
+Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
+---
+ arch/arm64/include/asm/acenv.h |   18 ++++++++++
+ arch/arm64/include/asm/acpi.h  |   41 ++++++++++++++++++++++
+ arch/arm64/include/asm/cpu.h   |   11 ++++++
+ arch/arm64/kernel/Makefile     |    1 +
+ arch/arm64/kernel/acpi.c       |   76 ++++++++++++++++++++++++++++++++++++++++
+ arch/arm64/kernel/setup.c      |    4 +++
+ 6 files changed, 151 insertions(+)
  create mode 100644 arch/arm64/include/asm/acenv.h
  create mode 100644 arch/arm64/include/asm/acpi.h
  create mode 100644 arch/arm64/include/asm/cpu.h
- create mode 100644 arch/arm64/include/asm/pci.h
  create mode 100644 arch/arm64/kernel/acpi.c
- create mode 100644 include/linux/irqchip/arm-gic-acpi.h
 
+diff --git a/arch/arm64/include/asm/acenv.h b/arch/arm64/include/asm/acenv.h
+new file mode 100644
+index 0000000..3899ee6
+--- /dev/null
++++ b/arch/arm64/include/asm/acenv.h
+@@ -0,0 +1,18 @@
++/*
++ * ARM64 specific ACPICA environments and implementation
++ *
++ * Copyright (C) 2014, Linaro Ltd.
++ *   Author: Hanjun Guo <hanjun.guo@linaro.org>
++ *   Author: Graeme Gregory <graeme.gregory@linaro.org>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#ifndef _ASM_ACENV_H
++#define _ASM_ACENV_H
++
++#define ACPI_FLUSH_CPU_CACHE() WARN_ONCE(1, "Not currently supported on ARM64")
++
++#endif /* _ASM_ACENV_H */
+diff --git a/arch/arm64/include/asm/acpi.h b/arch/arm64/include/asm/acpi.h
+new file mode 100644
+index 0000000..e8581ea
+--- /dev/null
++++ b/arch/arm64/include/asm/acpi.h
+@@ -0,0 +1,41 @@
++/*
++ *  Copyright (C) 2013-2014, Linaro Ltd.
++ *	Author: Al Stone <al.stone@linaro.org>
++ *	Author: Graeme Gregory <graeme.gregory@linaro.org>
++ *	Author: Hanjun Guo <hanjun.guo@linaro.org>
++ *
++ *  This program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License version 2 as
++ *  published by the Free Software Foundation;
++ */
++
++#ifndef _ASM_ACPI_H
++#define _ASM_ACPI_H
++
++/* Basic configuration for ACPI */
++#ifdef	CONFIG_ACPI
++extern int acpi_disabled;
++extern int acpi_noirq;
++extern int acpi_pci_disabled;
++extern int acpi_strict;
++
++static inline void disable_acpi(void)
++{
++	acpi_disabled = 1;
++	acpi_pci_disabled = 1;
++	acpi_noirq = 1;
++}
++
++/*
++ * MADT must provide at least one GICC structure
++ * for GIC initialization, so CPU will be
++ * always available in MADT on ARM64
++ */
++static inline bool acpi_has_cpu_in_madt(void)
++{
++	return 1;
++}
++
++#endif /* CONFIG_ACPI */
++
++#endif /*_ASM_ACPI_H*/
+diff --git a/arch/arm64/include/asm/cpu.h b/arch/arm64/include/asm/cpu.h
+new file mode 100644
+index 0000000..cee7d3f
+--- /dev/null
++++ b/arch/arm64/include/asm/cpu.h
+@@ -0,0 +1,11 @@
++/*
++ *  Copyright (C) 2013-2014 ARM Ltd.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++#ifndef __ASM_CPU_H
++#define __ASM_CPU_H
++
++#endif
+diff --git a/arch/arm64/kernel/Makefile b/arch/arm64/kernel/Makefile
+index cdaedad..b568c26 100644
+--- a/arch/arm64/kernel/Makefile
++++ b/arch/arm64/kernel/Makefile
+@@ -29,6 +29,7 @@ arm64-obj-$(CONFIG_ARM64_CPU_SUSPEND)	+= sleep.o suspend.o
+ arm64-obj-$(CONFIG_JUMP_LABEL)		+= jump_label.o
+ arm64-obj-$(CONFIG_KGDB)		+= kgdb.o
+ arm64-obj-$(CONFIG_EFI)			+= efi.o efi-stub.o efi-entry.o
++arm64-obj-$(CONFIG_ACPI)		+= acpi.o
+ 
+ obj-y					+= $(arm64-obj-y) vdso/
+ obj-m					+= $(arm64-obj-m)
+diff --git a/arch/arm64/kernel/acpi.c b/arch/arm64/kernel/acpi.c
+new file mode 100644
+index 0000000..c62fce6
+--- /dev/null
++++ b/arch/arm64/kernel/acpi.c
+@@ -0,0 +1,76 @@
++/*
++ *  ARM64 Specific Low-Level ACPI Boot Support
++ *
++ *  Copyright (C) 2013-2014, Linaro Ltd.
++ *	Author: Al Stone <al.stone@linaro.org>
++ *	Author: Graeme Gregory <graeme.gregory@linaro.org>
++ *	Author: Hanjun Guo <hanjun.guo@linaro.org>
++ *
++ *  This program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License version 2 as
++ *  published by the Free Software Foundation.
++ */
++
++#include <linux/init.h>
++#include <linux/acpi.h>
++#include <linux/cpumask.h>
++#include <linux/memblock.h>
++#include <linux/irq.h>
++#include <linux/irqdomain.h>
++#include <linux/bootmem.h>
++#include <linux/smp.h>
++
++/*
++ * We never plan to use RSDT on arm/arm64 as its deprecated in spec but this
++ * variable is still required by the ACPI core
++ */
++u32 acpi_rsdt_forced;
++
++int acpi_noirq;			/* skip ACPI IRQ initialization */
++int acpi_strict;
++int acpi_disabled;
++EXPORT_SYMBOL(acpi_disabled);
++
++int acpi_pci_disabled;		/* skip ACPI PCI scan and IRQ initialization */
++EXPORT_SYMBOL(acpi_pci_disabled);
++
++/*
++ * __acpi_map_table() will be called before page_init(), so early_ioremap()
++ * or early_memremap() should be called here to for ACPI table mapping.
++ */
++char *__init __acpi_map_table(unsigned long phys, unsigned long size)
++{
++	if (!phys || !size)
++		return NULL;
++
++	return early_memremap(phys, size);
++}
++
++void __init __acpi_unmap_table(char *map, unsigned long size)
++{
++	if (!map || !size)
++		return;
++
++	early_iounmap(map, size);
++}
++
++/*
++ * acpi_boot_table_init() called from setup_arch(), always.
++ *	1. find RSDP and get its address, and then find XSDT
++ *	2. extract all tables and checksums them all
++ *
++ * We can parse ACPI boot-time tables such as FADT, MADT after
++ * this function is called.
++ */
++void __init acpi_boot_table_init(void)
++{
++	/* If acpi_disabled, bail out */
++	if (acpi_disabled)
++		return;
++
++	/* Initialize the ACPI boot-time table parser. */
++	if (acpi_table_init()) {
++		disable_acpi();
++		return;
++	}
++}
+diff --git a/arch/arm64/kernel/setup.c b/arch/arm64/kernel/setup.c
+index 46d1125..9dedb0b 100644
+--- a/arch/arm64/kernel/setup.c
++++ b/arch/arm64/kernel/setup.c
+@@ -43,6 +43,7 @@
+ #include <linux/of_fdt.h>
+ #include <linux/of_platform.h>
+ #include <linux/efi.h>
++#include <linux/acpi.h>
+ 
+ #include <asm/fixmap.h>
+ #include <asm/cputype.h>
+@@ -385,6 +386,9 @@ void __init setup_arch(char **cmdline_p)
+ 	efi_init();
+ 	arm64_memblock_init();
+ 
++	/* Parse the ACPI tables for possible boot-time configuration */
++	acpi_boot_table_init();
++
+ 	paging_init();
+ 	request_standard_resources();
+ 
 -- 
 1.7.9.5
 
