@@ -1,108 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933491AbaGXQRT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 12:17:19 -0400
-Received: from mail-vc0-f180.google.com ([209.85.220.180]:41414 "EHLO
-	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932207AbaGXQRR (ORCPT
+	id S933804AbaGXQSB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 12:18:01 -0400
+Received: from mail-wg0-f49.google.com ([74.125.82.49]:40531 "EHLO
+	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933693AbaGXQR7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 12:17:17 -0400
-MIME-Version: 1.0
-In-Reply-To: <53D1051D.4060204@suse.cz>
-References: <1405704880-10036-1-git-send-email-xerofoify@gmail.com>
-	<53C9D997.7000409@kernel.org>
-	<CAPDOMVj6ex8GgMz6id+fgnCLg9hTbNoYxG4pebxDvMmf9xKTcQ@mail.gmail.com>
-	<CAPDOMVg1Ga1wQserL=P9cmFgtPM+XLNFpY+t45QV0GvPLbTmwA@mail.gmail.com>
-	<53CF0550.2040309@kernel.org>
-	<CAPDOMVjezfw36YPaPKSDoFt7Ybmv_a1HFTA25uKh4S6J08wt5w@mail.gmail.com>
-	<53D1051D.4060204@suse.cz>
-Date: Thu, 24 Jul 2014 12:17:15 -0400
-Message-ID: <CAPDOMViazLUR0Vs=5g3La8PfMB=d=tF9yxdfw0v+b=V_+PwoiA@mail.gmail.com>
-Subject: Re: [PATCH] usb-core: Remove Fix mes in file hcd.c
-From: Nick Krause <xerofoify@gmail.com>
-To: Vlastimil Babka <vbabka@suse.cz>
-Cc: Sasha Levin <sashal@kernel.org>, Greg KH <gregkh@linuxfoundation.org>,
-        Alan Stern <stern@rowland.harvard.edu>, mail@beyermatthias.de,
-        hdegoede@redhat.com, dan.j.williams@intel.com,
-        valentine.barshak@cogentembedded.com,
-        Ming Lei <ming.lei@canonical.com>,
-        Michael Opdenacker <michael.opdenacker@free-electrons.com>,
-        linux-usb@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 24 Jul 2014 12:17:59 -0400
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Jingoo Han <jg1.han@samsung.com>, Bryan Wu <cooloney@gmail.com>,
+        Lee Jones <lee.jones@linaro.org>, linux-kernel@vger.kernel.org
+Cc: Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH v3] fb: backlight: add driver for iPAQ micro backlight
+Date: Thu, 24 Jul 2014 18:17:49 +0200
+Message-Id: <1406218669-2438-1-git-send-email-linus.walleij@linaro.org>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 24, 2014 at 9:07 AM, Vlastimil Babka <vbabka@suse.cz> wrote:
-> On 07/23/2014 05:24 AM, Nick Krause wrote:
->>
->> On Tue, Jul 22, 2014 at 8:44 PM, Sasha Levin <sashal@kernel.org> wrote:
->>>
->>> On 07/18/2014 10:52 PM, Nick Krause wrote:
->>>>>>
->>>>>> Please explain exactly why it's not needed, why it can never be NULL,
->>>>>> and
->>>>>> what prevents it from being NULL.
->>>>>>
->>>>>> "after dicussing" (do you run spellcheck on your mails?) won't mean
->>>>>> anything
->>>>>> to someone looking at this commit in a year.
->>>>>>
->>>>>> Your commit message also mentions usb_device which has nothing to do
->>>>>> with
->>>>>> your patch.
->>>>>>
->>>>>>
->>>>>> Thanks,
->>>>>> Sasha
->>>>
->>>>
->>>> Sasha ,
->>>> Greg seems to have signed it off.
->>>> Cheers Nick
->>>
->>>
->>> Greg?
->>>
->>> Even if the patch is correct (and I'm not saying it is) the commit
->>> message is way off.
->>>
->>>
->>> Thanks,
->>> Sasha
->>
->>
->>
->> Sasha,
->> The patch is in the  kernel now.
->
->
-> Greg's tree is not Linus' tree, so it's not set to stone in git commit
-> history yet.
->
->
->> I am not going through the trouble of removing
->>
->> it, if you want to fix the commit message go on ahead.
->> Nick
->
->
-> This kind of attitude might significantly lower your chances of future
-> patches being accepted.
->
-> Vlastimil
->
->
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
->>
->
+This adds a driver for the backlight controlled by the microcontroller
+on the Compaq iPAQ series of handheld computers: h3100, h3600
+and h3700.
 
-I thought Greg's tree get's directly into the mainline and after
-checking it seems to me in
- the mainline.
-Cheers Nick
+Acked-by: Jingoo Han <jg1.han@samsung.com>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+---
+ChangeLog v2->v3:
+- Order includes alphabetically
+- Use explicit GPL v2 license
+ChangeLog v1->v2:
+- Add a comment to clarify message format
+- Coding format and style fixes
+- Drop driver announce boilerplate
+- Drop empty remove() function
+---
+ drivers/video/backlight/Kconfig         |  9 ++++
+ drivers/video/backlight/Makefile        |  1 +
+ drivers/video/backlight/ipaq_micro_bl.c | 83 +++++++++++++++++++++++++++++++++
+ 3 files changed, 93 insertions(+)
+ create mode 100644 drivers/video/backlight/ipaq_micro_bl.c
+
+diff --git a/drivers/video/backlight/Kconfig b/drivers/video/backlight/Kconfig
+index 5d449059a556..cc153f55d9f9 100644
+--- a/drivers/video/backlight/Kconfig
++++ b/drivers/video/backlight/Kconfig
+@@ -207,6 +207,15 @@ config BACKLIGHT_GENERIC
+ 	  known as the Corgi backlight driver. If you have a Sharp Zaurus
+ 	  SL-C7xx, SL-Cxx00 or SL-6000x say y.
+ 
++config BACKLIGHT_IPAQ_MICRO
++	tristate "iPAQ microcontroller backlight driver"
++	depends on MFD_IPAQ_MICRO
++	default y
++	help
++	  Say y to enable the backlight driver for Compaq iPAQ handheld
++	  computers. Say yes if you have one of the h3100/h3600/h3700
++	  machines.
++
+ config BACKLIGHT_LM3533
+ 	tristate "Backlight Driver for LM3533"
+ 	depends on BACKLIGHT_CLASS_DEVICE
+diff --git a/drivers/video/backlight/Makefile b/drivers/video/backlight/Makefile
+index bb820024f346..a9ea34a39cad 100644
+--- a/drivers/video/backlight/Makefile
++++ b/drivers/video/backlight/Makefile
+@@ -36,6 +36,7 @@ obj-$(CONFIG_BACKLIGHT_GENERIC)		+= generic_bl.o
+ obj-$(CONFIG_BACKLIGHT_GPIO)		+= gpio_backlight.o
+ obj-$(CONFIG_BACKLIGHT_HP680)		+= hp680_bl.o
+ obj-$(CONFIG_BACKLIGHT_HP700)		+= jornada720_bl.o
++obj-$(CONFIG_BACKLIGHT_IPAQ_MICRO)	+= ipaq_micro_bl.o
+ obj-$(CONFIG_BACKLIGHT_LM3533)		+= lm3533_bl.o
+ obj-$(CONFIG_BACKLIGHT_LM3630A)		+= lm3630a_bl.o
+ obj-$(CONFIG_BACKLIGHT_LM3639)		+= lm3639_bl.o
+diff --git a/drivers/video/backlight/ipaq_micro_bl.c b/drivers/video/backlight/ipaq_micro_bl.c
+new file mode 100644
+index 000000000000..feab29c6b255
+--- /dev/null
++++ b/drivers/video/backlight/ipaq_micro_bl.c
+@@ -0,0 +1,83 @@
++/*
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * iPAQ microcontroller backlight support
++ * Author : Linus Walleij <linus.walleij@linaro.org>
++ */
++
++#include <linux/backlight.h>
++#include <linux/err.h>
++#include <linux/fb.h>
++#include <linux/init.h>
++#include <linux/mfd/ipaq-micro.h>
++#include <linux/module.h>
++#include <linux/platform_device.h>
++
++static int micro_bl_update_status(struct backlight_device *bd)
++{
++	struct ipaq_micro *micro = dev_get_drvdata(&bd->dev);
++	int intensity = bd->props.brightness;
++	struct ipaq_micro_msg msg = {
++		.id = MSG_BACKLIGHT,
++		.tx_len = 3,
++	};
++
++	if (bd->props.power != FB_BLANK_UNBLANK)
++		intensity = 0;
++	if (bd->props.state & (BL_CORE_FBBLANK | BL_CORE_SUSPENDED))
++		intensity = 0;
++
++	/*
++	 * Message format:
++	 * Byte 0: backlight instance (usually 1)
++	 * Byte 1: on/off
++	 * Byte 2: intensity, 0-255
++	 */
++	msg.tx_data[0] = 0x01;
++	msg.tx_data[1] = intensity > 0 ? 1 : 0;
++	msg.tx_data[2] = intensity;
++	return ipaq_micro_tx_msg_sync(micro, &msg);
++}
++
++static const struct backlight_ops micro_bl_ops = {
++	.options = BL_CORE_SUSPENDRESUME,
++	.update_status  = micro_bl_update_status,
++};
++
++static struct backlight_properties micro_bl_props = {
++	.type = BACKLIGHT_RAW,
++	.max_brightness = 255,
++	.power = FB_BLANK_UNBLANK,
++	.brightness = 64,
++};
++
++static int micro_backlight_probe(struct platform_device *pdev)
++{
++	struct backlight_device *bd;
++	struct ipaq_micro *micro = dev_get_drvdata(pdev->dev.parent);
++
++	bd = devm_backlight_device_register(&pdev->dev, "ipaq-micro-backlight",
++					    &pdev->dev, micro, &micro_bl_ops,
++					    &micro_bl_props);
++	if (IS_ERR(bd))
++		return PTR_ERR(bd);
++
++	platform_set_drvdata(pdev, bd);
++	backlight_update_status(bd);
++
++	return 0;
++}
++
++struct platform_driver micro_backlight_device_driver = {
++	.driver = {
++		.name    = "ipaq-micro-backlight",
++	},
++	.probe   = micro_backlight_probe,
++};
++module_platform_driver(micro_backlight_device_driver);
++
++MODULE_LICENSE("GPL v2");
++MODULE_DESCRIPTION("driver for iPAQ Atmel micro backlight");
++MODULE_ALIAS("platform:ipaq-micro-backlight");
+-- 
+1.9.3
+
