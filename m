@@ -1,54 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758613AbaGXCqb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 22:46:31 -0400
-Received: from e23smtp07.au.ibm.com ([202.81.31.140]:39737 "EHLO
-	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758371AbaGXCq3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 22:46:29 -0400
-Message-ID: <53D0737C.2030305@linux.vnet.ibm.com>
-Date: Thu, 24 Jul 2014 10:46:20 +0800
-From: Mike Qiu <qiudayu@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
+	id S1758654AbaGXCrN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 22:47:13 -0400
+Received: from ozlabs.org ([103.22.144.67]:47270 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758466AbaGXCrL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jul 2014 22:47:11 -0400
+Date: Thu, 24 Jul 2014 12:47:00 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>,
+        "John W. Linville" <linville@tuxdriver.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Felix Fietkau <nbd@openwrt.org>,
+        Johannes Berg <johannes.berg@intel.com>
+Subject: linux-next: manual merge of the net-next tree with the wireless
+ tree
+Message-ID: <20140724124700.602081e7@canb.auug.org.au>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
 MIME-Version: 1.0
-To: Li Zefan <lizefan@huawei.com>
-CC: Tejun Heo <tj@kernel.org>, cgroups@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: WARNING: at kernel/cpuset.c:1139
-References: <53CF22F5.6000206@linux.vnet.ibm.com> <20140723151220.GD7103@htj.dyndns.org> <53D052FC.3070409@huawei.com>
-In-Reply-To: <53D052FC.3070409@huawei.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14072402-0260-0000-0000-000005711D60
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/Qleug8pSeulOUMoaXBG9p.p"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/24/2014 08:27 AM, Li Zefan wrote:
-> On 2014/7/23 23:12, Tejun Heo wrote:
->> On Wed, Jul 23, 2014 at 10:50:29AM +0800, Mike Qiu wrote:
->>> commit 734d45130cb ("cpuset: update cs->effective_{cpus, mems} when config
->>> changes") introduce the below warning in my server.
->>>
->>> [   35.652137] ------------[ cut here ]------------
->>> [   35.652141] WARNING: at kernel/cpuset.c:1139
->> Hah, can you reproduce it?  If so, can you detail how?
->>
-> It's a typo.
->
-> WARN_ON(!cgroup_on_dfl(cp->css.cgroup) &&
-> 	nodes_equal(cp->mems_allowed, cp->effective_mems));
->
-> should be
->
-> WARN_ON(!cgroup_on_dfl(cp->css.cgroup) &&
-> 	!nodes_equal(cp->mems_allowed, cp->effective_mems));
+--Sig_/Qleug8pSeulOUMoaXBG9p.p
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Yes, it is. This warning disappeared after this patch.
+Hi all,
 
-Reported-and-Tested-by: Mike Qiu <qiudayu@linux.vnet.ibm.com>
->
+Today's linux-next merge of the net-next tree got a conflict in
+net/mac80211/cfg.c between commit fa8f136fe9a8 ("mac80211: fix crash on
+getting sta info with uninitialized rate control") from the wireless
+tree and commit b7ffbd7ef675 ("cfg80211: make ethtool the driver's
+responsibility") from the net-next tree.
 
+I fixed it up (the latter moved the code modified by the former, so I
+removed the code and added the following patch) and can carry the fix
+as necessary (no action is required).
+
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Thu, 24 Jul 2014 12:32:49 +1000
+Subject: [PATCH] mac80211: fix for code movement
+
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+---
+ net/mac80211/sta_info.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/net/mac80211/sta_info.c b/net/mac80211/sta_info.c
+index f41177f58b30..c6ee2139fbc5 100644
+--- a/net/mac80211/sta_info.c
++++ b/net/mac80211/sta_info.c
+@@ -1724,12 +1724,15 @@ void sta_set_sinfo(struct sta_info *sta, struct sta=
+tion_info *sinfo)
+ {
+ 	struct ieee80211_sub_if_data *sdata =3D sta->sdata;
+ 	struct ieee80211_local *local =3D sdata->local;
+-	struct rate_control_ref *ref =3D local->rate_ctrl;
++	struct rate_control_ref *ref =3D NULL;
+ 	struct timespec uptime;
+ 	u64 packets =3D 0;
+ 	u32 thr =3D 0;
+ 	int i, ac;
+=20
++	if (test_sta_flag(sta, WLAN_STA_RATE_CONTROL))
++		ref =3D local->rate_ctrl;
++
+ 	sinfo->generation =3D sdata->local->sta_generation;
+=20
+ 	sinfo->filled =3D STATION_INFO_INACTIVE_TIME |
+--=20
+2.0.1
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Sig_/Qleug8pSeulOUMoaXBG9p.p
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJT0HOqAAoJEMDTa8Ir7ZwVKawP/1Z1lSxXUEXS3R2tWygxbpQP
+4nuxdnZ976GOaDS1I306jPbYAFQ2NbA4/UwBxRBUKq5aH6r4Uyo8Xy4fUSwsvVY+
+dmgJ772N+7avIkPkWejXn1mk5A0MEvI2HPr5poqTjj48W050/OwJiAQtpQfYVExs
+zykm8uHlV0KwEWPzuytdpWrCEFlkqA+SxXu3AIPfvU1C1Wd6iFU5I79vWC4SUsR5
+WhHRkZPLSMi1f13sUkOezVvIlBpf8TWvRPK8C981I8bEvEtdovPZWvdu5oDnnHyp
+1YuJFwWe1o4hbKcyKoukCyf0nFcHqrN3qMA0hznGRMCZ4D3N0fgB2oK33L7eYZ8x
+amPRz5zCjBdwHfS8CmmVHqqrnu325sKE7xH2yCVBumu82n3UYvKCbhxLNTsKkNLl
+giXUMCl1EaI8fNU29B0gewktYGIt3P5WKAxJ8uZsnvXcCkcmY0+syD9DlJwVAFdI
+XYvrtrKPtgTblJo9k0o3xmfDNExZuWtcZ/nuLJZNDBrCjbQrireDuFyJTee4wKwn
+QYyfrfycE5JVgb1xbrj1rNX2UGpIPAlq4Suj4xDnr8nYLXR+Sf8g22Njk8LXITem
+6GHRDbanhk8KBBHvT764HE31JvPOI3cTiIGk4R8hnZXNREpoDM3Rssk/nCzqL8dO
+epG0yx9CwJziVkBmdt23
+=a2Cg
+-----END PGP SIGNATURE-----
+
+--Sig_/Qleug8pSeulOUMoaXBG9p.p--
