@@ -1,158 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935075AbaGXXbO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 19:31:14 -0400
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:40261 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934568AbaGXXbM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 19:31:12 -0400
-Message-ID: <53D1973A.9060907@samsung.com>
-Date: Fri, 25 Jul 2014 08:31:06 +0900
-From: Kukjin Kim <kgene.kim@samsung.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.16
+	id S934915AbaGXXco (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 19:32:44 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:39986 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934568AbaGXXcm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jul 2014 19:32:42 -0400
+Date: Thu, 24 Jul 2014 16:32:30 -0700
+From: Nishanth Aravamudan <nacc@linux.vnet.ibm.com>
+To: Jiang Liu <jiang.liu@linux.intel.com>
+Cc: Tony Luck <tony.luck@gmail.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, David Rientjes <rientjes@google.com>,
+        Mike Galbraith <umgwanakikbuti@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        linux-hotplug@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC Patch V1 00/30] Enable memoryless node on x86 platforms
+Message-ID: <20140724233230.GD24458@linux.vnet.ibm.com>
+References: <1405064267-11678-1-git-send-email-jiang.liu@linux.intel.com>
+ <20140721172331.GB4156@linux.vnet.ibm.com>
+ <CA+8MBbK+ZdisT_yXh_jkWSd4hWEMisG614s4s0EyNV3j-7YOow@mail.gmail.com>
+ <20140721175736.GG4156@linux.vnet.ibm.com>
+ <53CF7048.20302@linux.intel.com>
 MIME-Version: 1.0
-To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-CC: linux-samsung-soc@vger.kernel.org, Mark Rutland <mark.rutland@arm.com>,
-        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
-        Thomas Abraham <ta.omasab@gmail.com>, Tomasz Figa <t.figa@samsung.com>,
-        linux-kernel@vger.kernel.org, Kukjin Kim <kgene.kim@samsung.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: Re: [PATCH v2] ARM: dts: add CPU nodes for Exynos4 SoCs
-References: <1444042.RbiCcg7JnP@amdc1032>
-In-Reply-To: <1444042.RbiCcg7JnP@amdc1032>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53CF7048.20302@linux.intel.com>
+X-Operating-System: Linux 3.13.0-32-generic (x86_64)
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14072423-0320-0000-0000-00000013476B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/21/14 22:57, Bartlomiej Zolnierkiewicz wrote:
-> Recent patch by Tomasz Figa ("irqchip: gic: Fix core ID calculation
-> when topology is read from DT") fixed GIC driver to filter cluster ID
-> from values returned by cpu_logical_map() for SoCs having registers
-> mapped without per-CPU banking making it is possible to add CPU nodes
-> for Exynos4 SoCs.  In case of Exynos SoCs these CPU nodes are also
-> required by future changes adding initialization of cpuidle states in
-> Exynos cpuidle driver through DT.
->
-> Tested on Origen board (Exynos4210 SoC) and Trats2 (Exynos4412 SoC).
->
-> Signed-off-by: Bartlomiej Zolnierkiewicz<b.zolnierkie@samsung.com>
-> ---
-> Based on next-20140717 branch of linux-next tree +
-> - [PATCH 2/6] ARM: EXYNOS: Fix core ID used by platsmp and hotplug code
->    http://www.mail-archive.com/linux-samsung-soc@vger.kernel.org/msg32811.html
-> - [PATCH] irqchip: gic: Fix core ID calculation when topology is read from DT
->    http://www.mail-archive.com/linux-samsung-soc@vger.kernel.org/msg34277.html
->
-> v2:
-> - match the unit-address with the reg
->
->   arch/arm/boot/dts/exynos4210.dtsi | 17 +++++++++++++++++
->   arch/arm/boot/dts/exynos4212.dtsi | 17 +++++++++++++++++
->   arch/arm/boot/dts/exynos4412.dtsi | 29 +++++++++++++++++++++++++++++
->   3 files changed, 63 insertions(+)
->
-> diff --git a/arch/arm/boot/dts/exynos4210.dtsi b/arch/arm/boot/dts/exynos4210.dtsi
-> index ee3001f..bc2b444 100644
-> --- a/arch/arm/boot/dts/exynos4210.dtsi
-> +++ b/arch/arm/boot/dts/exynos4210.dtsi
-> @@ -31,6 +31,23 @@
->   		pinctrl2 =&pinctrl_2;
->   	};
->
-> +	cpus {
-> +		#address-cells =<1>;
-> +		#size-cells =<0>;
-> +
-> +		cpu@900 {
-> +			device_type = "cpu";
-> +			compatible = "arm,cortex-a9";
-> +			reg =<0x900>;
-> +		};
-> +
-> +		cpu@901 {
-> +			device_type = "cpu";
-> +			compatible = "arm,cortex-a9";
-> +			reg =<0x901>;
-> +		};
-> +	};
-> +
->   	sysram@02020000 {
->   		compatible = "mmio-sram";
->   		reg =<0x02020000 0x20000>;
-> diff --git a/arch/arm/boot/dts/exynos4212.dtsi b/arch/arm/boot/dts/exynos4212.dtsi
-> index 3c00e6e..dd0a43e 100644
-> --- a/arch/arm/boot/dts/exynos4212.dtsi
-> +++ b/arch/arm/boot/dts/exynos4212.dtsi
-> @@ -22,6 +22,23 @@
->   / {
->   	compatible = "samsung,exynos4212", "samsung,exynos4";
->
-> +	cpus {
-> +		#address-cells =<1>;
-> +		#size-cells =<0>;
-> +
-> +		cpu@A00 {
-> +			device_type = "cpu";
-> +			compatible = "arm,cortex-a9";
-> +			reg =<0xA00>;
-> +		};
-> +
-> +		cpu@A01 {
-> +			device_type = "cpu";
-> +			compatible = "arm,cortex-a9";
-> +			reg =<0xA01>;
-> +		};
-> +	};
-> +
->   	combiner: interrupt-controller@10440000 {
->   		samsung,combiner-nr =<18>;
->   	};
-> diff --git a/arch/arm/boot/dts/exynos4412.dtsi b/arch/arm/boot/dts/exynos4412.dtsi
-> index c42a3e1..435a722 100644
-> --- a/arch/arm/boot/dts/exynos4412.dtsi
-> +++ b/arch/arm/boot/dts/exynos4412.dtsi
-> @@ -22,6 +22,35 @@
->   / {
->   	compatible = "samsung,exynos4412", "samsung,exynos4";
->
-> +	cpus {
-> +		#address-cells =<1>;
-> +		#size-cells =<0>;
-> +
-> +		cpu@A00 {
-> +			device_type = "cpu";
-> +			compatible = "arm,cortex-a9";
-> +			reg =<0xA00>;
-> +		};
-> +
-> +		cpu@A01 {
-> +			device_type = "cpu";
-> +			compatible = "arm,cortex-a9";
-> +			reg =<0xA01>;
-> +		};
-> +
-> +		cpu@A02 {
-> +			device_type = "cpu";
-> +			compatible = "arm,cortex-a9";
-> +			reg =<0xA02>;
-> +		};
-> +
-> +		cpu@A03 {
-> +			device_type = "cpu";
-> +			compatible = "arm,cortex-a9";
-> +			reg =<0xA03>;
-> +		};
-> +	};
-> +
->   	combiner: interrupt-controller@10440000 {
->   		samsung,combiner-nr =<20>;
->   	};
+On 23.07.2014 [16:20:24 +0800], Jiang Liu wrote:
+> 
+> 
+> On 2014/7/22 1:57, Nishanth Aravamudan wrote:
+> > On 21.07.2014 [10:41:59 -0700], Tony Luck wrote:
+> >> On Mon, Jul 21, 2014 at 10:23 AM, Nishanth Aravamudan
+> >> <nacc@linux.vnet.ibm.com> wrote:
+> >>> It seems like the issue is the order of onlining of resources on a
+> >>> specific x86 platform?
+> >>
+> >> Yes. When we online a node the BIOS hits us with some ACPI hotplug events:
+> >>
+> >> First: Here are some new cpus
+> > 
+> > Ok, so during this period, you might get some remote allocations. Do you
+> > know the topology of these CPUs? That is they belong to a
+> > (soon-to-exist) NUMA node? Can you online that currently offline NUMA
+> > node at this point (so that NODE_DATA()) resolves, etc.)?
+> Hi Nishanth,
+> 	We have method to get the NUMA information about the CPU, and
+> patch "[RFC Patch V1 30/30] x86, NUMA: Online node earlier when doing
+> CPU hot-addition" tries to solve this issue by onlining NUMA node
+> as early as possible. Actually we are trying to enable memoryless node
+> as you have suggested.
 
-OK, I'm fine on this, will apply.
+Ok, it seems like you have two sets of patches then? One is to fix the
+NUMA information timing (30/30 only). The rest of the patches are
+general discussions about where cpu_to_mem() might be used instead of
+cpu_to_node(). However, based upon Tejun's feedback, it seems like
+rather than force all callers to use cpu_to_mem(), we should be looking
+at the core VM to ensure fallback is occuring appropriately when
+memoryless nodes are present. 
+
+Do you have a specific situation, once you've applied 30/30, where
+kmalloc_node() leads to an Oops?
 
 Thanks,
-Kukjin
+Nish
+
