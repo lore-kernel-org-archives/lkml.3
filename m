@@ -1,323 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934275AbaGXIEV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 04:04:21 -0400
-Received: from gloria.sntech.de ([95.129.55.99]:58844 "EHLO gloria.sntech.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934045AbaGXIER (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 04:04:17 -0400
-From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-To: caesar <caesar.wang@rock-chips.com>
-Cc: thierry.reding@gmail.com, b.galvani@gmail.com,
-        linux-arm-kernel@lists.infradead.org, linux-pwm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, cf@rock-chips.com,
-        huangtao@rock-chips.com, hj@rock-chips.com, xjq@rock-chips.com,
-        addy.ke@rock-chips.com
-Subject: Re: [PATCH v3 2/2] pwm: rockchip: Added to support for RK3288 SoC
-Date: Thu, 24 Jul 2014 10:05:42 +0200
-Message-ID: <1949437.1N5XrQ9a4Y@diego>
-User-Agent: KMail/4.11.5 (Linux/3.13-1-amd64; KDE/4.11.3; x86_64; ; )
-In-Reply-To: <53D06BE3.7010509@rock-chips.com>
-References: <1406097521-6457-1-git-send-email-caesar.wang@rock-chips.com> <1648580.P46ct6rREY@diego> <53D06BE3.7010509@rock-chips.com>
+	id S934306AbaGXIJO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 04:09:14 -0400
+Received: from mail-qg0-f47.google.com ([209.85.192.47]:43803 "EHLO
+	mail-qg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934120AbaGXIJI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jul 2014 04:09:08 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+In-Reply-To: <20140723214707.GA8100@himangi-Dell>
+References: <20140723214707.GA8100@himangi-Dell>
+Date: Thu, 24 Jul 2014 12:09:06 +0400
+Message-ID: <CALFYKtAA7W5XFjWF4upowZjX5Xhp3RgAUHtCJc7=vT0pqjxyUw@mail.gmail.com>
+Subject: Re: [PATCH] rbd: Use rbd_segment_name_free
+From: Ilya Dryomov <ilya.dryomov@inktank.com>
+To: Himangi Saraogi <himangi774@gmail.com>
+Cc: Yehuda Sadeh <yehuda@inktank.com>, Sage Weil <sage@inktank.com>,
+        Alex Elder <elder@kernel.org>,
+        Ceph Development <ceph-devel@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Julia Lawall <julia.lawall@lip6.fr>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi caesar.
+On Thu, Jul 24, 2014 at 1:47 AM, Himangi Saraogi <himangi774@gmail.com> wrote:
+> Free memory allocated using kmem_cache_zalloc using kmem_cache_free
+> rather than kfree. The helper rbd_segment_name_free does the job here.
+> Its position is shifted above the calling function.
+>
+> The Coccinelle semantic patch that detects this change is as follows:
+>
+> // <smpl>
+> @@
+> expression x,E,c;
+> @@
+>
+>  x = \(kmem_cache_alloc\|kmem_cache_zalloc\|kmem_cache_alloc_node\)(c,...)
+>  ... when != x = E
+>      when != &x
+> ?-kfree(x)
+> +kmem_cache_free(c,x)
+> // </smpl>
+>
+> Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
+> Acked-by: Julia Lawall <julia.lawall@lip6.fr>
 
-Am Donnerstag, 24. Juli 2014, 10:13:55 schrieb caesar:
-> >> +static void rockchip_pwm_set_enable_v1(struct pwm_chip *chip, bool
-> >> enable)
-> >> +{
-> >> +	struct rockchip_pwm_chip *pc = to_rockchip_pwm_chip(chip);
-> >> +	u32 val = 0;
-> >> +	u32 enable_conf = PWM_CTRL_OUTPUT_EN | PWM_CTRL_TIMER_EN;
-> >> +
-> >> +	val = readl_relaxed(pc->base + pc->data->regs.ctrl);
-> >> +
-> >> +	if (enable)
-> >> +		val |= enable_conf;
-> >> +	else
-> >> +		val &= ~enable_conf;
-> >> +
-> >> +	writel_relaxed(val, pc->base + pc->data->regs.ctrl);
-> >> +}
-> >> +
-> >> +static void rockchip_pwm_set_enable_v2(struct pwm_chip *chip, bool
-> >> enable)
-> >> +{
-> >> +	struct rockchip_pwm_chip *pc = to_rockchip_pwm_chip(chip);
-> >> +	u32 val = 0;
-> >> +	u32 enable_conf = PWM_OUTPUT_LEFT | PWM_LP_DISABLE | PWM_ENABLE |
-> >> +		PWM_CONTINUOUS | PWM_DUTY_POSITIVE | PWM_INACTIVE_NEGATIVE;
-> >> +
-> >> +	val = readl_relaxed(pc->base + pc->data->regs.ctrl);
-> >> +
-> >> +	if (enable)
-> >> +		val |= enable_conf;
-> >> +	else
-> >> +		val &= ~enable_conf;
-> >> +
-> >> +	writel_relaxed(val, pc->base + pc->data->regs.ctrl);
-> >> +}
-> >> +
-> >> +static void rockchip_pwm_set_enable_vop(struct pwm_chip *chip, bool
-> >> enable) +{
-> >> +	struct rockchip_pwm_chip *pc = to_rockchip_pwm_chip(chip);
-> >> +	u32 val = 0;
-> >> +	u32 enable_conf = PWM_OUTPUT_LEFT | PWM_LP_DISABLE | PWM_ENABLE |
-> >> +		PWM_CONTINUOUS | PWM_DUTY_POSITIVE | PWM_INACTIVE_NEGATIVE;
-> >> +
-> >> +	val = readl_relaxed(pc->base + pc->data->regs.ctrl);
-> >> +
-> >> +	if (enable)
-> >> +		val |= enable_conf;
-> >> +	else
-> >> +		val &= ~enable_conf;
-> >> +
-> >> +	writel_relaxed(val, pc->base + pc->data->regs.ctrl);
-> >> +}
-> > 
-> > not sure if I'm just blind ... do rockchip_pwm_set_enable_v2 and
-> > rockchip_pwm_set_enable_vop differ at all?
-> > 
-> > If they don't differ, I guess pwm_data_vop should just use
-> > rockchip_pwm_set_enable_v2 instead of duplicating it.
-> > 
-> 
-> Yes, the rockchip_pwm_set_enable_v1 & v2 & vop is similar.
-> 
-> So my v2 patch use "u32 enable_conf" instead of it .
-> +struct rockchip_pwm_data {
-> 
->  > + .........
->  > + u32 enable_conf;
->  > +};
-> 
-> The thierry has suggested it [1] in my v2 patch:
-> 
-> For this I think it would be more readable to provide function pointers
-> rather than a variable. That is:
-> 
-> 	struct rockchip_pwm_data {
-> 		...
-> 		int (*enable)(struct pwm_chip *chip, struct pwm_device *pwm);
-> 		int (*disable)(struct pwm_chip *chip, struct pwm_device *pwm);
-> 	};
-> Then you can implement these for each variant of the chip and call them
-> from the common rockchip_pwm_enable(), somewhat like this.
-> 
-> 
-> Perhaps,thierry's suggestion I got it wrong.
+Applied.
 
-Using the function pointers like Thierry suggested looks nice, so no I don't 
-think you got it wrong :-)
+Thanks,
 
-What I meant was to simply reuse the existing function 
-rockchip_pwm_set_enable_v2 when there is _no_ difference at all to 
-rockchip_pwm_set_enable_vop, like
-
-static const struct rockchip_pwm_data pwm_data_v2 = {
-	.regs.duty = PWM_LRC,
-	.regs.period = PWM_HRC,
-	.regs.cntr = PWM_CNTR,
-	.regs.ctrl = PWM_CTRL,
-	.prescaler = PRESCALER-1,
-	.set_enable = rockchip_pwm_set_enable_v2,
-};
-
-static const struct rockchip_pwm_data pwm_data_vop = {
-	.regs.duty = PWM_LRC,
-	.regs.period = PWM_HRC,
-	.regs.cntr = PWM_CTRL,
-	.regs.ctrl = PWM_CNTR,
-	.prescaler = PRESCALER-1,
-	.set_enable = rockchip_pwm_set_enable_v2,
-};
-
-
-Heiko
-
-> 
-> Hi thierry& Heiko :-)
-> Maybe,could you suggest solve it reasonable? thanks.
-> 
-> [1]: https://lkml.org/lkml/2014/7/21/113
-> 
-> >> +
-> >> 
-> >>   static int rockchip_pwm_config(struct pwm_chip *chip, struct pwm_device
-> >> 
-> >> *pwm, int duty_ns, int period_ns)
-> >> 
-> >>   {
-> >> 
-> >> @@ -52,20 +126,20 @@ static int rockchip_pwm_config(struct pwm_chip
-> >> *chip,
-> >> struct pwm_device *pwm, * default prescaler value for all practical clock
-> >> rate values.
-> >> 
-> >>   	 */
-> >>   	
-> >>   	div = clk_rate * period_ns;
-> >> 
-> >> -	do_div(div, PRESCALER * NSEC_PER_SEC);
-> >> +	do_div(div, pc->data->prescaler * NSEC_PER_SEC);
-> >> 
-> >>   	period = div;
-> >>   	
-> >>   	div = clk_rate * duty_ns;
-> >> 
-> >> -	do_div(div, PRESCALER * NSEC_PER_SEC);
-> >> +	do_div(div, pc->data->prescaler * NSEC_PER_SEC);
-> >> 
-> >>   	duty = div;
-> >>   	
-> >>   	ret = clk_enable(pc->clk);
-> >>   	if (ret)
-> >>   	
-> >>   		return ret;
-> >> 
-> >> -	writel(period, pc->base + PWM_LRC);
-> >> -	writel(duty, pc->base + PWM_HRC);
-> >> -	writel(0, pc->base + PWM_CNTR);
-> >> +	writel(period, pc->base + pc->data->regs.period);
-> >> +	writel(duty, pc->base + pc->data->regs.duty);
-> >> +	writel(0, pc->base + pc->data->regs.cntr);
-> >> 
-> >>   	clk_disable(pc->clk);
-> >> 
-> >> @@ -76,15 +150,12 @@ static int rockchip_pwm_enable(struct pwm_chip
-> >> *chip,
-> >> struct pwm_device *pwm) {
-> >> 
-> >>   	struct rockchip_pwm_chip *pc = to_rockchip_pwm_chip(chip);
-> >>   	int ret;
-> >> 
-> >> -	u32 val;
-> >> 
-> >>   	ret = clk_enable(pc->clk);
-> >>   	if (ret)
-> >>   	
-> >>   		return ret;
-> >> 
-> >> -	val = readl_relaxed(pc->base + PWM_CTRL);
-> >> -	val |= PWM_CTRL_OUTPUT_EN | PWM_CTRL_TIMER_EN;
-> >> -	writel_relaxed(val, pc->base + PWM_CTRL);
-> >> +	pc->data->set_enable(chip, true);
-> >> 
-> >>   	return 0;
-> >>   
-> >>   }
-> >> 
-> >> @@ -92,11 +163,8 @@ static int rockchip_pwm_enable(struct pwm_chip *chip,
-> >> struct pwm_device *pwm) static void rockchip_pwm_disable(struct pwm_chip
-> >> *chip, struct pwm_device *pwm) {
-> >> 
-> >>   	struct rockchip_pwm_chip *pc = to_rockchip_pwm_chip(chip);
-> >> 
-> >> -	u32 val;
-> >> 
-> >> -	val = readl_relaxed(pc->base + PWM_CTRL);
-> >> -	val &= ~(PWM_CTRL_OUTPUT_EN | PWM_CTRL_TIMER_EN);
-> >> -	writel_relaxed(val, pc->base + PWM_CTRL);
-> >> +	pc->data->set_enable(chip, false);
-> >> 
-> >>   	clk_disable(pc->clk);
-> >>   
-> >>   }
-> >> 
-> >> @@ -108,12 +176,52 @@ static const struct pwm_ops rockchip_pwm_ops = {
-> >> 
-> >>   	.owner = THIS_MODULE,
-> >>   
-> >>   };
-> >> 
-> >> +static const struct rockchip_pwm_data pwm_data_v1 = {
-> >> +	.regs.duty = PWM_HRC,
-> >> +	.regs.period = PWM_LRC,
-> >> +	.regs.cntr = PWM_CNTR,
-> >> +	.regs.ctrl = PWM_CTRL,
-> >> +	.prescaler = PRESCALER,
-> >> +	.set_enable = rockchip_pwm_set_enable_v1,
-> >> +};
-> >> +
-> >> +static const struct rockchip_pwm_data pwm_data_v2 = {
-> >> +	.regs.duty = PWM_LRC,
-> >> +	.regs.period = PWM_HRC,
-> >> +	.regs.cntr = PWM_CNTR,
-> >> +	.regs.ctrl = PWM_CTRL,
-> >> +	.prescaler = PRESCALER-1,
-> >> +	.set_enable = rockchip_pwm_set_enable_v2,
-> >> +};
-> >> +
-> >> +static const struct rockchip_pwm_data pwm_data_vop = {
-> >> +	.regs.duty = PWM_LRC,
-> >> +	.regs.period = PWM_HRC,
-> >> +	.regs.cntr = PWM_CTRL,
-> >> +	.regs.ctrl = PWM_CNTR,
-> >> +	.prescaler = PRESCALER-1,
-> >> +	.set_enable = rockchip_pwm_set_enable_vop,
-> >> +};
-> >> +
-> >> +static const struct of_device_id rockchip_pwm_dt_ids[] = {
-> >> +	{ .compatible = "rockchip,rk2928-pwm", .data = &pwm_data_v1},
-> >> +	{ .compatible = "rockchip,rk3288-pwm", .data = &pwm_data_v2},
-> >> +	{ .compatible = "rockchip,vop-pwm", .data = &pwm_data_vop},
-> >> +	{ /* sentinel */ }
-> >> +};
-> >> +MODULE_DEVICE_TABLE(of, rockchip_pwm_dt_ids);
-> >> +
-> >> 
-> >>   static int rockchip_pwm_probe(struct platform_device *pdev)
-> >>   {
-> >> 
-> >> +	const struct of_device_id *id;
-> >> 
-> >>   	struct rockchip_pwm_chip *pc;
-> >>   	struct resource *r;
-> >>   	int ret;
-> >> 
-> >> +	id = of_match_device(rockchip_pwm_dt_ids, &pdev->dev);
-> >> +	if (!id)
-> >> +		return -EINVAL;
-> >> +
-> >> 
-> >>   	pc = devm_kzalloc(&pdev->dev, sizeof(*pc), GFP_KERNEL);
-> >>   	if (!pc)
-> >>   	
-> >>   		return -ENOMEM;
-> >> 
-> >> @@ -133,6 +241,7 @@ static int rockchip_pwm_probe(struct platform_device
-> >> *pdev)
-> >> 
-> >>   	platform_set_drvdata(pdev, pc);
-> >> 
-> >> +	pc->data = id->data;
-> >> 
-> >>   	pc->chip.dev = &pdev->dev;
-> >>   	pc->chip.ops = &rockchip_pwm_ops;
-> >>   	pc->chip.base = -1;
-> >> 
-> >> @@ -156,12 +265,6 @@ static int rockchip_pwm_remove(struct
-> >> platform_device
-> >> *pdev) return pwmchip_remove(&pc->chip);
-> >> 
-> >>   }
-> >> 
-> >> -static const struct of_device_id rockchip_pwm_dt_ids[] = {
-> >> -	{ .compatible = "rockchip,rk2928-pwm" },
-> >> -	{ /* sentinel */ }
-> >> -};
-> >> -MODULE_DEVICE_TABLE(of, rockchip_pwm_dt_ids);
-> >> -
-> >> 
-> >>   static struct platform_driver rockchip_pwm_driver = {
-> >>   
-> >>   	.driver = {
-> >>   	
-> >>   		.name = "rockchip-pwm",
-
+                Ilya
