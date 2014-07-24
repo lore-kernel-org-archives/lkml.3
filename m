@@ -1,97 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934418AbaGXIYe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 04:24:34 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:41846 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934120AbaGXIYb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 04:24:31 -0400
-Date: Thu, 24 Jul 2014 10:24:27 +0200
-From: Jean Delvare <jdelvare@suse.de>
-To: Himangi Saraogi <himangi774@gmail.com>
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, Julia Lawall <julia.lawall@lip6.fr>
-Subject: Re: [PATCH v2] EEPROM: Introduce the use of devm_kzalloc
-Message-ID: <20140724102427.34c9e670@endymion.delvare>
-In-Reply-To: <20140723211311.GA4165@himangi-Dell>
-References: <20140723211311.GA4165@himangi-Dell>
-Organization: SUSE Linux
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
+	id S934428AbaGXI0K (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 04:26:10 -0400
+Received: from mail-oa0-f52.google.com ([209.85.219.52]:59829 "EHLO
+	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934120AbaGXI0H (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jul 2014 04:26:07 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1406041261-5716-1-git-send-email-linux@roeck-us.net>
+References: <1406041261-5716-1-git-send-email-linux@roeck-us.net>
+Date: Thu, 24 Jul 2014 10:26:06 +0200
+Message-ID: <CACRpkdZP377kmVYAMWaEg2wJy_P4S67xs857v3pNhTZwvp3ThA@mail.gmail.com>
+Subject: Re: [PATCH v3] gpiolib: Export gpiochip_request_own_desc and gpiochip_free_own_desc
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Himangi,
+On Tue, Jul 22, 2014 at 5:01 PM, Guenter Roeck <linux@roeck-us.net> wrote:
 
-On Thu, 24 Jul 2014 02:43:11 +0530, Himangi Saraogi wrote:
-> This patch introduces the use of devm_kzalloc and does away with the
-> kfrees in the probe and remove functions. Also, a label and the err
-> variable are removed.
-> 
-> Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
-> Acked-by: Julia Lawall <julia.lawall@lip6.fr>
+> Both functions were introduced to let gpio drivers request their own
+> gpio pins. Without exporting the functions, this can however only be
+> used by gpio drivers built into the kernel.
+>
+> Secondary impact is that the functions can not currently be used by
+> platform initialization code associated with the gpio-pca953x driver.
+> This code permits auto-export of gpio pins through platform data, but
+> if this functionality is used, the module can no longer be unloaded due
+> to the problem solved with the introduction of gpiochip_request_own_desc
+> and gpiochip_free_own_desc.
+>
+> Export both function so they can be used from modules and from
+> platform initialization code.
+>
+> Cc: Mika Westerberg <mika.westerberg@linux.intel.com>
+> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 > ---
-> v2: add missing semi-colon
->  drivers/misc/eeprom/eeprom.c | 21 +++++----------------
->  1 file changed, 5 insertions(+), 16 deletions(-)
-> 
-> diff --git a/drivers/misc/eeprom/eeprom.c b/drivers/misc/eeprom/eeprom.c
-> index 33f8673..f4aff20 100644
-> --- a/drivers/misc/eeprom/eeprom.c
-> +++ b/drivers/misc/eeprom/eeprom.c
-> @@ -159,12 +159,11 @@ static int eeprom_probe(struct i2c_client *client,
->  {
->  	struct i2c_adapter *adapter = client->adapter;
->  	struct eeprom_data *data;
-> -	int err;
->  
-> -	if (!(data = kzalloc(sizeof(struct eeprom_data), GFP_KERNEL))) {
-> -		err = -ENOMEM;
-> -		goto exit;
-> -	}
-> +	data = devm_kzalloc(&client->dev, sizeof(struct eeprom_data),
-> +			    GFP_KERNEL);
-> +	if (!data)
-> +		return -ENOMEM;
+> v3: Add API documentation.
+>     Use EXPORT_SYMBOL_GPL.
 
-devm_kzalloc is declared in <linux/device.h> which is not included.
-OTOH you still include <linux/slab.h> which is no longer needed.
+Patch applied with the nice review tags.
 
-Other than that (and the fact that you ignored my request to switch to
-my new e-mail address), this looks good, thanks for the cleanup.
-
->  
->  	memset(data->data, 0xff, EEPROM_SIZE);
->  	i2c_set_clientdata(client, data);
-> @@ -190,22 +189,12 @@ static int eeprom_probe(struct i2c_client *client,
->  	}
->  
->  	/* create the sysfs eeprom file */
-> -	err = sysfs_create_bin_file(&client->dev.kobj, &eeprom_attr);
-> -	if (err)
-> -		goto exit_kfree;
-> -
-> -	return 0;
-> -
-> -exit_kfree:
-> -	kfree(data);
-> -exit:
-> -	return err;
-> +	return sysfs_create_bin_file(&client->dev.kobj, &eeprom_attr);
->  }
->  
->  static int eeprom_remove(struct i2c_client *client)
->  {
->  	sysfs_remove_bin_file(&client->dev.kobj, &eeprom_attr);
-> -	kfree(i2c_get_clientdata(client));
->  
->  	return 0;
->  }
-
--- 
-Jean Delvare
-SUSE L3 Support
+Yours,
+Linus Walleij
