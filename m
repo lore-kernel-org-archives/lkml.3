@@ -1,43 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758385AbaGXKyv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 06:54:51 -0400
-Received: from s3.sipsolutions.net ([5.9.151.49]:32967 "EHLO sipsolutions.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751137AbaGXKyt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 06:54:49 -0400
-Message-ID: <1406199271.14675.10.camel@jlt4.sipsolutions.net>
-Subject: Re: [PATCH] mac80211_hwsim: fix compiler warning on MIPS
-From: Johannes Berg <johannes@sipsolutions.net>
-To: Andrew Bresticker <abrestic@chromium.org>
-Cc: "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Thu, 24 Jul 2014 12:54:31 +0200
-In-Reply-To: <1406065431-20813-1-git-send-email-abrestic@chromium.org> (sfid-20140722_234503_746857_0630E11C)
-References: <1406065431-20813-1-git-send-email-abrestic@chromium.org>
-	 (sfid-20140722_234503_746857_0630E11C)
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.2-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1755662AbaGXLAe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 07:00:34 -0400
+Received: from mail-we0-f178.google.com ([74.125.82.178]:64436 "EHLO
+	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751532AbaGXLAb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jul 2014 07:00:31 -0400
+From: Peter Griffin <peter.griffin@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        maxime.coquelin@st.com, patrice.chotard@st.com,
+        gregkh@linuxfoundation.org, srinivas.kandagatla@gmail.com,
+        linux-usb@vger.kernel.org, devicetree@vger.kernel.org
+Cc: peter.griffin@linaro.org, lee.jones@linaro.org
+Subject: [PATCH v2 0/3] Add USB HCD support for STi SoCs
+Date: Thu, 24 Jul 2014 12:00:13 +0100
+Message-Id: <1406199616-10533-1-git-send-email-peter.griffin@linaro.org>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-07-22 at 14:43 -0700, Andrew Bresticker wrote:
-> The dividend in do_div() is expected to be an unsigned 64-bit integer,
-> which leads to the following warning when building for 32-bit MIPS:
-> 
->   drivers/net/wireless/mac80211_hwsim.c: In function 'mac80211_hwsim_set_tsf':
->   drivers/net/wireless/mac80211_hwsim.c:664:98: warning: comparison of distinct pointer types lacks a cast [enabled by default]
->     data->bcn_delta = do_div(delta, bcn_int);
-> 
-> Since we care about the signedness of delta when adjusting tsf_offset
-> and bcm_delta, use the absolute value for the division and compare
-> the two timestamps to determine the sign.
+This driver adds support for the USB HCD controller present in STi
+SoC's from STMicroelectronics. It has been tested on the stih416-b2020
+board.
 
-Applied, thanks.
+The original author is no longer with the company and therefore emails
+to his address bounce, thus I have not added him to CC.
 
-johannes
+Changes since v1:
+ - Correct s/OCHI/OHCI/ spelling
+ - Improve kconfig help message
+ - Various formating / spelling nits identified by Lee Jones
+ - Make driver depend on OF & remove node checks in code
+ - Use devm_ioremap_resource
+ - Remove unnecessary header files
+
+Peter Griffin (3):
+  usb: host: st-hcd: Add USB HCD support for STi SoCs
+  usb: host: st-hcd: Add st-hcd devicetree bindings documentation.
+  MAINTAINERS: Add st-hcd to ARCH/STI architecture
+
+ Documentation/devicetree/bindings/usb/st-hcd.txt |  51 +++
+ MAINTAINERS                                      |   1 +
+ drivers/usb/host/Kconfig                         |  13 +
+ drivers/usb/host/Makefile                        |   1 +
+ drivers/usb/host/st-hcd.c                        | 471 +++++++++++++++++++++++
+ 5 files changed, 537 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/usb/st-hcd.txt
+ create mode 100644 drivers/usb/host/st-hcd.c
+
+-- 
+1.9.1
 
