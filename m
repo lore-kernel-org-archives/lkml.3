@@ -1,85 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759538AbaGXP12 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 11:27:28 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:34903 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759235AbaGXP1Y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 11:27:24 -0400
-Date: Thu, 24 Jul 2014 17:27:22 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: tytso@mit.edu, linux-kernel@vger.kernel.org, adilger.kernel@dilger.ca,
-        linux-ext4@vger.kernel.org, jack@suse.cz
-Subject: Is warn_on() right reply for i/o error?
-Message-ID: <20140724152721.GA4771@amd.pavel.ucw.cz>
+	id S1759556AbaGXP1e (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 11:27:34 -0400
+Received: from mga02.intel.com ([134.134.136.20]:39548 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759540AbaGXP1a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jul 2014 11:27:30 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,724,1400050800"; 
+   d="scan'208";a="548472030"
+Message-ID: <53D125D6.3020203@linux.intel.com>
+Date: Thu, 24 Jul 2014 23:27:18 +0800
+From: "Fu, Zhonghui" <zhonghui.fu@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Jaehoon Chung <jh80.chung@samsung.com>, Chris Ball <chris@printf.net>
+CC: ulf.hansson@linaro.org, tgih.jun@samsung.com, aaron.lu@intel.com,
+        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jackey.shen@amd.com, gregkh@linuxfoundation.org
+Subject: Re: One bug of SDHCI driver
+References: <53B249A4.2040404@linux.intel.com> <53B57B23.4020607@linux.intel.com> <53B61403.7040602@samsung.com> <53B968EB.60401@linux.intel.com> <53BC164E.4040900@linux.intel.com> <86zjgcjckz.fsf@void.printf.net> <53C497FD.2070000@linux.intel.com> <53C4AAB5.4070700@samsung.com> <53C4B0CA.1020504@samsung.com> <53CBD775.9000304@linux.intel.com>
+In-Reply-To: <53CBD775.9000304@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
 
-Just... I know, I should not be unscrewing hard drive cover while
-operating.
+Hi,
 
-But on the other hand... WARN_ON() does not sound like right reply for
-a disk failure... right?
+Any comments for this new patch?
 
-And on related note... automounting is evil. Oh well.
+Thanks,
+Zhonghui
+On 2014/7/20 22:51, Fu, Zhonghui wrote:
+> Hi,
+>
+> Chris' patch is not enough to fix this bug. I made a patch as follows and verified it can work.  Could you please give out some comments about this patch?
+>
+>
+> Thanks,
+> Zhonghui
+>
+> From 72d6f5b56fa04290fd3a055a3333de1d89e7c8d4 Mon Sep 17 00:00:00 2001
+> From: Fu Zhonghui <zhonghui.fu@linux.intel.com>
+> Date: Sun, 20 Jul 2014 22:29:53 +0800
+> Subject: [PATCH] mmc: core: sdio: Fix unconditional wake_up_process() on sdio thread
+>
+> 781e989cf59 ("mmc: sdhci: convert to new SDIO IRQ handling") and
+> bf3b5ec66bd ("mmc: sdio_irq: rework sdio irq handling") disabled
+> the use of our own custom threaded IRQ handler, but left in an
+> unconditional wake_up_process() on that handler at resume-time.
+>
+> Signed-off-by: Fu Zhonghui <zhonghui.fu@linux.intel.com>
+> ---
+>  drivers/mmc/core/sdio.c |   14 ++++++++++++--
+>  1 files changed, 12 insertions(+), 2 deletions(-)
+>
+> diff --git a/drivers/mmc/core/sdio.c b/drivers/mmc/core/sdio.c
+> index e636d9e..8369e56 100644
+> --- a/drivers/mmc/core/sdio.c
+> +++ b/drivers/mmc/core/sdio.c
+> @@ -992,8 +992,18 @@ static int mmc_sdio_resume(struct mmc_host *host)
+>  		}
+>  	}
+>  
+> -	if (!err && host->sdio_irqs)
+> -		wake_up_process(host->sdio_irq_thread);
+> +	if (!err && host->sdio_irqs) {
+> +		if (!(host->caps2 & MMC_CAP2_SDIO_IRQ_NOTHREAD)) {
+> +			wake_up_process(host->sdio_irq_thread);
+> +		} else {
+> +			mmc_release_host(host);
+> +			mmc_host_clk_hold(host);
+> +			host->ops->enable_sdio_irq(host, 1);
+> +			mmc_host_clk_release(host);
+> +			mmc_claim_host(host);
+> +		}
+> +	}
+> +
+>  	mmc_release_host(host);
+>  
+>  	host->pm_flags &= ~MMC_PM_KEEP_POWER;
+> -- 1.7.1
+>
+>
+>
+> On 2014/7/15 12:40, Jaehoon Chung wrote:
+>> From: Chris Ball <chris@printf.net>
+>> Subject: [PATCH] mmc: core: sdio: Fix unconditional wake_up_process() on sdio thread
+>>
+>> 781e989cf59 ("mmc: sdhci: convert to new SDIO IRQ handling") and
+>> bf3b5ec66bd ("mmc: sdio_irq: rework sdio irq handling") disabled
+>> the use of our own custom threaded IRQ handler, but left in an
+>> unconditional wake_up_process() on that handler at resume-time.
+>>
+>> Reported-by: Fu, Zhonghui <zhonghui.fu@linux.intel.com>
+>> [Patch suggested by Jaehoon Chung]
+>> Signed-off-by: Chris Ball <chris@printf.net>
+>> ---
+>>  drivers/mmc/core/sdio.c |    3 ++-
+>>  1 file changed, 2 insertions(+), 1 deletion(-)
+>>
+>> diff --git a/drivers/mmc/core/sdio.c b/drivers/mmc/core/sdio.c
+>> index e636d9e..11cc4e0 100644
+>> --- a/drivers/mmc/core/sdio.c
+>> +++ b/drivers/mmc/core/sdio.c
+>> @@ -992,7 +992,8 @@ static int mmc_sdio_resume(struct mmc_host *host)
+>>  		}
+>>  	}
+>>  
+>> -	if (!err && host->sdio_irqs)
+>> +	if (!err && host->sdio_irqs &&
+>> +			!(host->caps2 & MMC_CAP2_SDIO_IRQ_NOTHREAD))
+>>  		wake_up_process(host->sdio_irq_thread);
+>>  	mmc_release_host(host);
+>>  
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-								Pavel
-
-sd 6:0:0:0: [sdf] Unhandled error code
-sd 6:0:0:0: [sdf]  
-Result: hostbyte=0x01 driverbyte=0x00
-sd 6:0:0:0: [sdf] CDB: 
-cdb[0]=0x28: 28 00 00 05 4a 00 00 00 40 00
-end_request: I/O error, dev sdf, sector 346624
-Buffer I/O error on device sdf, logical block 43328
-Buffer I/O error on device sdf, logical block 43329
-------------[ cut here ]------------
-WARNING: CPU: 0 PID: 4710 at fs/fs-writeback.c:1199
-__mark_inode_dirty+0x1be/0x1d0()
-bdi-block not registered
-Modules linked in:
-CPU: 0 PID: 4710 Comm: umount Not tainted 3.16.0-rc5+ #381
-Hardware name:                  /DG41MJ, BIOS
-MJG4110H.86A.0006.2009.1223.1155 12/23/2009
- 000004af df661e18 c480956d c4a2bae0 df661e48 c403914a c4a2baf7
- df661e74
- 00001266 c4a2bae0 000004af c41154fe c41154fe d21ffa74 c6263dec
- d21ffc60
- df661e60 c40391ee 00000009 df661e58 c4a2baf7 df661e74 df661e88
- c41154fe
-Call Trace:
- [<c480956d>] dump_stack+0x41/0x52
- [<c403914a>] warn_slowpath_common+0x7a/0xa0
- [<c41154fe>] ? __mark_inode_dirty+0x1be/0x1d0
- [<c41154fe>] ? __mark_inode_dirty+0x1be/0x1d0
- [<c40391ee>] warn_slowpath_fmt+0x2e/0x30
- [<c41154fe>] __mark_inode_dirty+0x1be/0x1d0
- [<c411b806>] __set_page_dirty+0x66/0xb0
- [<c411b8a6>] mark_buffer_dirty+0x56/0x80
- [<c415bc1d>] ext3_put_super+0x20d/0x250
- [<c410a042>] ? evict_inodes+0xb2/0x110
- [<c40f4888>] generic_shutdown_super+0x68/0xe0
- [<c40f4925>] kill_block_super+0x25/0x70
- [<c40f4b88>] deactivate_locked_super+0x48/0x70
- [<c40f5161>] deactivate_super+0x51/0x70
- [<c410da6f>] mntput_no_expire+0x12f/0x1f0
- [<c410f1e7>] ? SyS_umount+0xa7/0x430
- [<c410f1e7>] SyS_umount+0xa7/0x430
- [<c480e41e>] ? syscall_call+0x7/0xb
- [<c40df3e1>] ? vm_munmap+0x41/0x50
- [<c480e41e>] syscall_call+0x7/0xb
----[ end trace 6642457659b6f1ae ]---
-EXT3-fs (sdf1): I/O error while writing superblock
-usb 1-1: new high-speed USB device number 8 using ehci-pci
-
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
