@@ -1,89 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935030AbaGXXi5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 19:38:57 -0400
-Received: from mail2.candelatech.com ([208.74.158.173]:53700 "EHLO
-	mail2.candelatech.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934843AbaGXXi4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 19:38:56 -0400
-Message-ID: <53D1990F.6040404@candelatech.com>
-Date: Thu, 24 Jul 2014 16:38:55 -0700
-From: Ben Greear <greearb@candelatech.com>
-Organization: Candela Technologies
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S935013AbaGXXlR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 19:41:17 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:44725 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934696AbaGXXlP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jul 2014 19:41:15 -0400
+Message-ID: <53D1998D.2050804@ti.com>
+Date: Thu, 24 Jul 2014 19:41:01 -0400
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Crashes in 3.14.13+ related to anon_vma_clone.
-References: <53D191E1.3080107@candelatech.com>
-In-Reply-To: <53D191E1.3080107@candelatech.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
+To: Suman Anna <s-anna@ti.com>, Jassi Brar <jaswinder.singh@linaro.org>
+CC: Linus Walleij <linus.walleij@linaro.org>,
+        Grygorii Strashko <grygorii.strashko@ti.com>,
+        Alexander Shiyan <shc_work@mail.ru>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        <ivan.khoronzhuk@ti.com>, Muralidharan Karicheri <m-karicheri2@ti.com>,
+        Rob Herring <robh+dt@kernel.org>, Kumar Gala <galak@codeaurora.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v1] gpio: keystone: add dsp gpio controller driver
+References: <1405507426-18992-1-git-send-email-grygorii.strashko@ti.com>	<CACRpkdYY_a_9G-VLBbv2a22Cg4j0t3Wv4W1h0n6-ccCXgVJXsA@mail.gmail.com>	<CAJe_ZhdnjyjvEsvK2u7SgS1hJ2fpsXh+=ViGhzakRd+c4ReBaw@mail.gmail.com>	<53D140EC.9020609@ti.com> <CAJe_ZhfCdrgaVEZ5h=+Ko7U3RW2M9QRd3T4=_JzYxKxv+brZFg@mail.gmail.com> <53D15603.5030001@ti.com>
+In-Reply-To: <53D15603.5030001@ti.com>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/24/2014 04:08 PM, Ben Greear wrote:
-> A few of our systems are repeatedly crashing when upgraded from
-> the 3.14.6+ to 3.14.13+ kernels.  Both kernels have a fair bit
-> of our out-of-tree patches, so could be our fault.
-
-Ahh, looks like a bad merge of a stable patch with a slightly different
-manually applied stable patch, causing double-free
-in the wifi stack...
-
-Sorry for the noise.
-
-Thanks,
-Ben
-
+On Thursday 24 July 2014 02:52 PM, Suman Anna wrote:
+> Hi,
 > 
-> But, in case this is a known problem...has anyone seen crashes like
-> this below?
+> On 07/24/2014 01:12 PM, Jassi Brar wrote:
+>> On 24 July 2014 22:52, Santosh Shilimkar <santosh.shilimkar@ti.com> wrote:
+>>> On Thursday 24 July 2014 01:19 PM, Jassi Brar wrote:
+>>>> On 23 July 2014 20:40, Linus Walleij <linus.walleij@linaro.org> wrote:
+>>>>> On Wed, Jul 16, 2014 at 12:43 PM, Grygorii Strashko
+>>>>> <grygorii.strashko@ti.com> wrote:
+>>>>>
+>>>>>> From: Murali Karicheri <m-karicheri2@ti.com>
+>>>>>>
+>>>>>> On Keystone SOCs, ARM host can send interrupts to DSP cores using the
+>>>>>> DSP GPIO controller IP. Each DSP GPIO controller provides 28 IRQ signals for
+>>>>>> each DSP core. This is one of the component used by the IPC mechanism used
+>>>>>> on Keystone SOCs.
+>>>>>>
+>>>>>> Keystone 2 DSP GPIO controller has specific features:
+>>>>>> - each GPIO can be configured only as output pin;
+>>>>>> - setting GPIO value to 1 causes IRQ generation on target DSP core;
+>>>>>> - reading pin value returns 0 - if IRQ was handled or 1 - IRQ is still
+>>>>>>   pending.
+>>>>>>
+>>>>>> Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
+>>>>>> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
+>>>>>
+>>>>> Pardon me. How is this GENERAL PURPOSE Input/Output?
+>>>>>
+>>>>> It seems very very much SPECIAL PURPOSE to me, it's like
+>>>>> you're just shoehorning some IPC mechanism into the GPIO
+>>>>> subsystem, and this may be because the datasheet calls it
+>>>>> GPIO when it's not.
+>>>>>
+>>>>> What other stuff than DSP is connected to these lines, and is it
+>>>>> really even external lines? Aren't these just polysilicon rails
+>>>>> pretty much hammered to be used by the DSP and nothing else.
+>>>>>
+>>>>> What is the difference between this and a mailbox IRQ line
+>>>>> and the kind of stuff handled by drivers/mailbox?
+>>>>>
+>>>>> I'd like Suman and Jassi to have a look at this to see if it's
+>>>>> actually a mailbox before we proceed.
+>>>>>
+>>>> The controller seems like most others, only incapable of reading
+>>>> signals (output only).
+>>>>  The userspace driving those signals to communicate with a DSP isn't
+>>>> enough to call it a mailbox usecase, because on a different board the
+>>>> userspace may drive those signals to control LEDs :)
+>>>>
+>>> Exactly !!
+>>> And that was my point. Thanks for echo.
+>>>
+>> Yeah but if the AP and DSP are within the same package (i.e, the
+>> 'pins' can't be used for any other purpose on any board), one might
+>> sell it as a mailbox. However, since the mailbox protocol driver would
+>> be in userspace, I think it is justified to expose that as GPIO
+>> otherwise we'll have to add another interface for userspace to control
+>> the DSP.
 > 
-> Test case is using some ath9k APs and stations, but not certain
-> that has much to do with the problem.
+> If all these pins or a group of pins are collectively being used to
+> denote a message to the DSP, then I can see the argument for this being
+> a mailbox platform driver. It then probably would need to be
+> supplemented by some other protocol driver to expose the necessary
+> functionality to userspace. Otherwise, I agree with Jassi in general.
+>
+Just 1 line is used as I mentioned to you off-list already.
+ 
+> That said, having two different drivers for different GPIO IP instances
+> within the same SoC doesn't make sense. There should be a single driver
+> for all the GPIO IPs in keystone, output/input only are properties of
+> the instance and the driver should handle that IMHO.
 > 
-> BUG: unable to handle kernel paging request at 0000003f9840b000
-> IP: [<ffffffff81169ae8>] anon_vma_clone+0x88/0xf5
-> PGD be580067 PUD bab85067 PMD babd5067 PTE 80000000bebbd065
-> Oops: 0003 [#1] PREEMPT SMP
-> Modules linked in: 8021q garp stp mrp llc fuse macvlan wanlink(O) pktgen ip6table_filter ip6_tables ebtable_nat ebtables coretemp hwmoo
-> CPU: 1 PID: 1777 Comm: btserver Tainted: G         C O 3.14.13+ #19
-> Hardware name: To be filled by O.E.M. To be filled by O.E.M./To be filled by O.E.M., BIOS 4.6.3 03/06/2012
-> task: ffff88020dcfb100 ti: ffff8800baa3e000 task.ti: ffff8800baa3e000
-> RIP: 0010:[<ffffffff81169ae8>]  [<ffffffff81169ae8>] anon_vma_clone+0x88/0xf5
-> RSP: 0018:ffff8800baa3fda0  EFLAGS: 00010246
-> RAX: ffff8800ba8b8380 RBX: 0000003f9840b000 RCX: 000000000142b101
-> RDX: 0000000000000000 RSI: ffff8800ba8b8380 RDI: ffff8800ba8b8388
-> RBP: ffff8800baa3fdd0 R08: 0000000000015d60 R09: 0000003f9840b000
-> R10: 000000000000000b R11: 0000000000016338 R12: 0000000000000000
-> R13: ffff8800bc609450 R14: ffff8802212db980 R15: ffff8800ba8b8380
-> FS:  00007f0b70511740(0000) GS:ffff88022bc80000(0000) knlGS:0000000000000000
-> CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-> CR2: 0000003f9840b000 CR3: 00000000bab8f000 CR4: 00000000000007e0
-> Stack:
->  ffff880221ba92a0 ffff88020dcfc980 ffff8800bc609450 ffff880221ba9228
->  ffff8800bc609450 ffff880221ba9228 ffff8800baa3fe08 ffffffff81169b7b
->  ffff88020dcfc980 ffff880211db5f80 ffff880221ba9228 ffff8800bc609450
-> Call Trace:
->  [<ffffffff81169b7b>] anon_vma_fork+0x26/0xec
->  [<ffffffff810c0070>] copy_process.part.28+0xf98/0x16ca
->  [<ffffffff810c091d>] do_fork+0xb4/0x211
->  [<ffffffff810cbe9b>] ? __set_task_blocked+0x5e/0x64
->  [<ffffffff815a1b9f>] ? _raw_spin_unlock_irq+0xc/0x1f
->  [<ffffffff810c0ae0>] SyS_clone+0x11/0x13
->  [<ffffffff815a6a59>] stub_clone+0x69/0x90
->  [<ffffffff815a66fd>] ? system_call_fastpath+0x1a/0x1f
-> Code: 48 8b 3d 64 f1 b0 00 be d0 00 00 00 e8 9b 5e 01 00 48 85 c0 48 89 c3 74 62 45 31 e4 4d 8b 7e 08 4c 89 e7 49 8b 37 e8 fa ec ff ff
-> RIP  [<ffffffff81169ae8>] anon_vma_clone+0x88/0xf5
->  RSP <ffff8800baa3fda0>
-> CR2: 0000003f9840b000
-> 
+I wish the hardware integration was the way you said. The one GPIO
+controller supports only 32 IO's and thats used for IO's. The IP
+block was carried over from Legacy SOCs. The $subject IP block 
+has sligtly different programming model, address space, clock domains
+etc so there is no question of handling that in 1 driver where the
+two hardware IPs are different. Hope its clear why they are in
+two separate drivers.
 
-
--- 
-Ben Greear <greearb@candelatech.com>
-Candela Technologies Inc  http://www.candelatech.com
+Regards,
+Santosh
 
