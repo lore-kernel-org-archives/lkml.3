@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935236AbaGXKI4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 06:08:56 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54928 "EHLO
+	id S935254AbaGXKJW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 06:09:22 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54921 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757335AbaGXJsF (ORCPT
+	with ESMTP id S934534AbaGXJsE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 05:48:05 -0400
+	Thu, 24 Jul 2014 05:48:04 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Michal Nazarewicz <mina86@mina86.com>, Felipe Balbi <balbi@ti.com>,
+Cc: "J. Bruce Fields" <bfields@redhat.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 070/128] tools: ffs-test: fix header values endianess
-Date: Thu, 24 Jul 2014 10:45:19 +0100
-Message-Id: <1406195177-8656-71-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 069/128] nfsd: fix rare symlink decoding bug
+Date: Thu, 24 Jul 2014 10:45:18 +0100
+Message-Id: <1406195177-8656-70-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1406195177-8656-1-git-send-email-luis.henriques@canonical.com>
 References: <1406195177-8656-1-git-send-email-luis.henriques@canonical.com>
@@ -27,37 +27,100 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michal Nazarewicz <mina86@mina86.com>
+From: "J. Bruce Fields" <bfields@redhat.com>
 
-commit f35f71244da6e51db4e1f2c7e318581f498ececf upstream.
+commit 76f47128f9b33af1e96819746550d789054c9664 upstream.
 
-It appears that no one ever run ffs-test on a big-endian machine,
-since it used cpu-endianess for fs_count and hs_count fields which
-should be in little-endian format.  Fix by wrapping the numbers in
-cpu_to_le32.
+An NFS operation that creates a new symlink includes the symlink data,
+which is xdr-encoded as a length followed by the data plus 0 to 3 bytes
+of zero-padding as required to reach a 4-byte boundary.
 
-Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
+The vfs, on the other hand, wants null-terminated data.
+
+The simple way to handle this would be by copying the data into a newly
+allocated buffer with space for the final null.
+
+The current nfsd_symlink code tries to be more clever by skipping that
+step in the (likely) case where the byte following the string is already
+0.
+
+But that assumes that the byte following the string is ours to look at.
+In fact, it might be the first byte of a page that we can't read, or of
+some object that another task might modify.
+
+Worse, the NFSv4 code tries to fix the problem by actually writing to
+that byte.
+
+In the NFSv2/v3 cases this actually appears to be safe:
+
+	- nfs3svc_decode_symlinkargs explicitly null-terminates the data
+	  (after first checking its length and copying it to a new
+	  page).
+	- NFSv2 limits symlinks to 1k.  The buffer holding the rpc
+	  request is always at least a page, and the link data (and
+	  previous fields) have maximum lengths that prevent the request
+	  from reaching the end of a page.
+
+In the NFSv4 case the CREATE op is potentially just one part of a long
+compound so can end up on the end of a page if you're unlucky.
+
+The minimal fix here is to copy and null-terminate in the NFSv4 case.
+The nfsd_symlink() interface here seems too fragile, though.  It should
+really either do the copy itself every time or just require a
+null-terminated string.
+
+Reported-by: Jeff Layton <jlayton@primarydata.com>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- tools/usb/ffs-test.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ fs/nfsd/nfs4proc.c |  9 ---------
+ fs/nfsd/nfs4xdr.c  | 13 ++++++++++++-
+ 2 files changed, 12 insertions(+), 10 deletions(-)
 
-diff --git a/tools/usb/ffs-test.c b/tools/usb/ffs-test.c
-index fe1e66b6ef40..a87e99f37c52 100644
---- a/tools/usb/ffs-test.c
-+++ b/tools/usb/ffs-test.c
-@@ -116,8 +116,8 @@ static const struct {
- 	.header = {
- 		.magic = cpu_to_le32(FUNCTIONFS_DESCRIPTORS_MAGIC),
- 		.length = cpu_to_le32(sizeof descriptors),
--		.fs_count = 3,
--		.hs_count = 3,
-+		.fs_count = cpu_to_le32(3),
-+		.hs_count = cpu_to_le32(3),
- 	},
- 	.fs_descs = {
- 		.intf = {
+diff --git a/fs/nfsd/nfs4proc.c b/fs/nfsd/nfs4proc.c
+index b9e784486729..08c8e023c157 100644
+--- a/fs/nfsd/nfs4proc.c
++++ b/fs/nfsd/nfs4proc.c
+@@ -610,15 +610,6 @@ nfsd4_create(struct svc_rqst *rqstp, struct nfsd4_compound_state *cstate,
+ 
+ 	switch (create->cr_type) {
+ 	case NF4LNK:
+-		/* ugh! we have to null-terminate the linktext, or
+-		 * vfs_symlink() will choke.  it is always safe to
+-		 * null-terminate by brute force, since at worst we
+-		 * will overwrite the first byte of the create namelen
+-		 * in the XDR buffer, which has already been extracted
+-		 * during XDR decode.
+-		 */
+-		create->cr_linkname[create->cr_linklen] = 0;
+-
+ 		status = nfsd_symlink(rqstp, &cstate->current_fh,
+ 				      create->cr_name, create->cr_namelen,
+ 				      create->cr_linkname, create->cr_linklen,
+diff --git a/fs/nfsd/nfs4xdr.c b/fs/nfsd/nfs4xdr.c
+index 9e250c229007..84d741b3dc3b 100644
+--- a/fs/nfsd/nfs4xdr.c
++++ b/fs/nfsd/nfs4xdr.c
+@@ -594,7 +594,18 @@ nfsd4_decode_create(struct nfsd4_compoundargs *argp, struct nfsd4_create *create
+ 		READ_BUF(4);
+ 		READ32(create->cr_linklen);
+ 		READ_BUF(create->cr_linklen);
+-		SAVEMEM(create->cr_linkname, create->cr_linklen);
++		/*
++		 * The VFS will want a null-terminated string, and
++		 * null-terminating in place isn't safe since this might
++		 * end on a page boundary:
++		 */
++		create->cr_linkname =
++				kmalloc(create->cr_linklen + 1, GFP_KERNEL);
++		if (!create->cr_linkname)
++			return nfserr_jukebox;
++		memcpy(create->cr_linkname, p, create->cr_linklen);
++		create->cr_linkname[create->cr_linklen] = '\0';
++		defer_free(argp, kfree, create->cr_linkname);
+ 		break;
+ 	case NF4BLK:
+ 	case NF4CHR:
 -- 
 1.9.1
 
