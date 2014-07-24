@@ -1,89 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934985AbaGXXqP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 19:46:15 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:59972 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752268AbaGXXqN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 19:46:13 -0400
-X-Mailer: exmh version 2.8.0 04/21/2012 with nmh-1.6+dev
-To: Alexei Starovoitov <ast@plumgrid.com>
-Cc: "David S. Miller" <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>, netdev@vger.kernel.org,
+	id S934935AbaGXXxw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 19:53:52 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:33570 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934753AbaGXXxv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jul 2014 19:53:51 -0400
+Date: Fri, 25 Jul 2014 00:53:48 +0100 (IST)
+From: Dave Airlie <airlied@linux.ie>
+X-X-Sender: airlied@skynet.skynet.ie
+To: torvalds@linux-foundation.org
+cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH net-next 1/2] net: filter: split filter.c into two files
-In-Reply-To: Your message of "Tue, 22 Jul 2014 23:01:58 -0700."
-             <1406095319-3627-2-git-send-email-ast@plumgrid.com>
-From: Valdis.Kletnieks@vt.edu
-References: <1406095319-3627-1-git-send-email-ast@plumgrid.com>
-            <1406095319-3627-2-git-send-email-ast@plumgrid.com>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1406245502_23260P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Thu, 24 Jul 2014 19:45:02 -0400
-Message-ID: <39107.1406245502@turing-police.cc.vt.edu>
+Subject: [git pull] drm fixes (make Linus grumpy)
+Message-ID: <alpine.DEB.2.00.1407250045580.2015@skynet.skynet.ie>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: MULTIPART/MIXED; BOUNDARY="29444707-440006584-1406246028=:2015"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1406245502_23260P
-Content-Type: text/plain; charset=us-ascii
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-On Tue, 22 Jul 2014 23:01:58 -0700, Alexei Starovoitov said:
-> BPF is used in several kernel components. This split creates logical boundary
-> between generic eBPF core and the rest
->
-> kernel/bpf/core.c: eBPF interpreter
->
-> net/core/filter.c: classic->eBPF converter, classic verifiers, socket filters
->
-> This patch only moves functions.
->
-> Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
-> ---
->  kernel/Makefile     |    1 +
->  kernel/bpf/Makefile |    1 +
->  kernel/bpf/core.c   |  536 +++++++++++++++++++++++++++++++++++++++++++++++++
-++
->  net/core/filter.c   |  511 ------------------------------------------------
->  4 files changed, 538 insertions(+), 511 deletions(-)
->  create mode 100644 kernel/bpf/Makefile
->  create mode 100644 kernel/bpf/core.c
->
-> diff --git a/kernel/Makefile b/kernel/Makefile
-> index f2a8b6246ce9..e7360b7c2c0e 100644
-> --- a/kernel/Makefile
-> +++ b/kernel/Makefile
-> @@ -87,6 +87,7 @@ obj-$(CONFIG_RING_BUFFER) += trace/
->  obj-$(CONFIG_TRACEPOINTS) += trace/
->  obj-$(CONFIG_IRQ_WORK) += irq_work.o
->  obj-$(CONFIG_CPU_PM) += cpu_pm.o
-> +obj-$(CONFIG_NET) += bpf/
+--29444707-440006584-1406246028=:2015
+Content-Type: TEXT/PLAIN; charset=ISO-8859-15
+Content-Transfer-Encoding: 8BIT
 
-I was expecting to see CONFIG_NETFILTER here.  Is CONFIG_NET intentional?
 
---==_Exmh_1406245502_23260P
-Content-Type: application/pgp-signature
+Hi Linus,
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-Comment: Exmh version 2.5 07/13/2001
+This is radeon and intel fixes, and is a small bit larger than I'm 
+guessing you'd like it to be,
 
-iQIVAwUBU9GafQdmEQWDXROgAQJlwg/8Dg5Sy72kB44khL+t/7LTkAmesCSLNJIi
-UnKDb5zfsR30dTOAwe6KleEwBK1JoBov4gHdka4D8LBUp8Pt3ixrv/2svXe8oM78
-A01nDp+gT8FNuNE1PvCufEdrw2UGCvWHo1/rOXbRbsCyJPEt9ZKxfw8lkVojS+Qc
-D7lfQ4cKkzcOFk0JUrSAFiCBpaOuv+IsTNtq006+hs0QPtxjntv9YbAH7KJ0yCEw
-89ScoK4yBfvY4sEYeC+t7ziuhwgggMVvweec1X41MuzNCnoxCYcqtZaWKemdP+U/
-xHLgwTKIHFznlmzddQ93mZgzdgdcVJ3zCPHAOuAgghVW85VnVTCzS/arr3iQaSHP
-kgRCddAcfWyFQxIK+VkT7A2+mzuKEO4ja7tABskY9D+vRD1oWgncvpIB8kPQfEDW
-+eCT32u7zmPfa+86bnHpxUtjHIQhTDsfGeId1QLF2GBtztTbOz2SqgbQ9+RUUI3m
-E4D4mmdf6Pn4kGtvlAoj+AZSFs3+A0osjqTwKECg7MctIDht87IZ9HAWBZBpDFWU
-fD1ZJKc4SGU4L/Furf2GntenoYALk376ZukFYroMgYoPpVwyZeYa3wAxor+GTCvB
-Pru0dHZEMMoG502xzE4H3Oh02qc0Xh7gNfe4TZ2rTieOHzBk72Lxati/b3t5kjec
-zIJe3qe/oQI=
-=k/IB
------END PGP SIGNATURE-----
+i915: fixes 32-bit highmem i915 blank screen, semaphore hang and runtime 
+pm fix
+radeon: gpuvm stability fix for hangs since 3.15, and hang/reboot 
+regression on TN/RL devices,
 
---==_Exmh_1406245502_23260P--
+The only slightly controversial one is the change to use GB forthe 
+vm_size, which I'm letting through as its a new interface we defined in
+this merge window, and I'd prefer to have the released kernel have the 
+final interface rather than changing it later.
+
+but push back if you really don't like anything!
+
+Dave.
+
+The following changes since commit 67dd8f35c2d8ed80f26c9654b474cffc11c6674d:
+
+  Merge branch 'v4l_for_linus' of git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-media (2014-07-21 11:44:34 -0700)
+
+are available in the git repository at:
+
+
+  git://people.freedesktop.org/~airlied/linux drm-fixes
+
+for you to fetch changes up to 1b2c4869d8247f9e202fa8a73777c34adc62d409:
+
+  drm/radeon: fix cut and paste issue for hawaii. (2014-07-25 09:17:35 +1000)
+
+----------------------------------------------------------------
+Alex Deucher (1):
+      drm/radeon/TN: only enable bapm on MSI systems
+
+Chris Wilson (2):
+      drm/i915: Reorder the semaphore deadlock check, again
+      drm/i915: Simplify i915_gem_release_all_mmaps()
+
+Christian König (5):
+      drm/radeon: let's use GB for vm_size (v2)
+      drm/radeon: fix handling of radeon_vm_bo_rmv v3
+      drm/radeon: fix VM IB handling
+      drm/radeon: fix error handling in radeon_vm_bo_set_addr
+      drm/radeon: fix irq ring buffer overflow handling
+
+Dave Airlie (3):
+      Merge branch 'drm-fixes-3.16' of git://people.freedesktop.org/~agd5f/linux into drm-fixes
+      Merge tag 'drm-intel-fixes-2014-07-24' of git://anongit.freedesktop.org/drm-intel into drm-fixes
+      Merge branch 'drm-fixes-3.16' of git://people.freedesktop.org/~agd5f/linux into drm-fixes
+
+Hugh Dickins (1):
+      drm/i915: fix freeze with blank screen booting highmem
+
+Jerome Glisse (1):
+      drm/radeon: fix cut and paste issue for hawaii.
+
+ drivers/gpu/drm/i915/i915_gem.c              | 25 +++-----
+ drivers/gpu/drm/i915/i915_gem_render_state.c |  4 +-
+ drivers/gpu/drm/i915/i915_irq.c              | 11 ++--
+ drivers/gpu/drm/radeon/cik.c                 |  2 +
+ drivers/gpu/drm/radeon/evergreen.c           |  1 +
+ drivers/gpu/drm/radeon/r600.c                |  1 +
+ drivers/gpu/drm/radeon/radeon.h              | 15 +++--
+ drivers/gpu/drm/radeon/radeon_cs.c           | 20 ++++++-
+ drivers/gpu/drm/radeon/radeon_device.c       | 22 +++----
+ drivers/gpu/drm/radeon/radeon_drv.c          |  4 +-
+ drivers/gpu/drm/radeon/radeon_kms.c          | 26 ++++-----
+ drivers/gpu/drm/radeon/radeon_vm.c           | 87 ++++++++++++++++++++--------
+ drivers/gpu/drm/radeon/si.c                  |  1 +
+ drivers/gpu/drm/radeon/trinity_dpm.c         | 15 ++---
+ 14 files changed, 146 insertions(+), 88 deletions(-)
+--29444707-440006584-1406246028=:2015--
