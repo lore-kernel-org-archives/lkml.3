@@ -1,121 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751910AbaGXJ0a (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 05:26:30 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:30174 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750987AbaGXJ01 (ORCPT
+	id S1754241AbaGXJ0v (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 05:26:51 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:32218 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752054AbaGXJ0t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 05:26:27 -0400
-X-AuditID: cbfee61b-f79f86d00000144c-e5-53d0d1419501
-From: Chao Yu <chao2.yu@samsung.com>
-To: tyhicks@canonical.com
-Cc: ecryptfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] ecryptfs: avoid to access NULL pointer when write metadata in
- xattr
-Date: Thu, 24 Jul 2014 17:25:42 +0800
-Message-id: <000001cfa721$57072880$05157980$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: Ac+mL/9EQJk/8q5fQ12YIoNDvVGWPg==
-Content-language: zh-cn
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrMLMWRmVeSWpSXmKPExsVy+t9jQV3HixeCDa5Pk7V4e3c5u8XlXXPY
-	LDbdbGFyYPaY1dDL5vF5k1wAUxSXTUpqTmZZapG+XQJXxuep2QVHpCs+//rE2sB4XbyLkZND
-	QsBEomXBGmYIW0ziwr31bF2MXBxCAtMZJSY8eAHl/GCUWDfnDCNIFZuAisTyjv9MILaIgKTE
-	0cfTWEBsZgErieO7V4NNEhYIk7j65RQ7iM0ioCrR8eQdmM0rYClxYOEJKFtQ4sfke1C9WhLr
-	dx5ngrDlJTaveQt1kYLEjrOvgfZyAO3Skzi8VAKiRFxi45FbLBMYBWYhmTQLyaRZSCbNQtKy
-	gJFlFaNoakFyQXFSeq6RXnFibnFpXrpecn7uJkZw0D6T3sG4qsHiEKMAB6MSD2/H3vPBQqyJ
-	ZcWVuYcYJTiYlUR4V266ECzEm5JYWZValB9fVJqTWnyIUZqDRUmc92CrdaCQQHpiSWp2ampB
-	ahFMlomDU6qB0fan2KTbqsFvTfcHLS+RqtM37Amaa+Yo9j1luv8ZfsbayUYX/4drFnVfWa73
-	uLzsVH7gyWUpvevE4yYHHRRe61p6sejZ+1dfZ+zeefdazflz7n99OXhOHD3d/yNgHUfD3cnW
-	ZjGV3+85rDsScWnm4W1VP7aqnZr2urCi8IWiR/mKjN23f81U5lZiKc5INNRiLipOBADHar/U
-	VgIAAA==
+	Thu, 24 Jul 2014 05:26:49 -0400
+X-AuditID: cbfec7f4-b7fac6d000006cfe-fd-53d0d15613a3
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Colin Cross <ccross@android.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>, stable@vger.kernel.org
+Subject: [PATCH] cpuidle: coupled: Enable interrupts when early returning on
+ invalid driver
+Date: Thu, 24 Jul 2014 11:26:39 +0200
+Message-id: <1406193999-20300-1-git-send-email-k.kozlowski@samsung.com>
+X-Mailer: git-send-email 1.9.1
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrDJMWRmVeSWpSXmKPExsVy+t/xy7phFy8EG6xtE7TYOGM9q8X2jd9Y
+	LeZ9lrV4/cLQ4mzTG3aLy7vmsFl87j3CaLH2yF12izOnL7FaLNj4iNGBy2Pb7m2sHneu7WHz
+	2HK1ncWjb8sqRo/Pm+QCWKO4bFJSczLLUov07RK4Mi4f+sBWcEao4k7XEqYGxhv8XYycHBIC
+	JhJP3p5mg7DFJC7cWw9kc3EICSxllPix5DczhNPHJPF6WgsLSBWbgLHE5uVLwKpEBCYzSlyY
+	N5sdxGEWaGSSmPq+AaiFg0NYIFZi3kdRkAYWAVWJI0tAajg5eAXcJdZO+sgKsU5O4uSxyawT
+	GLkXMDKsYhRNLU0uKE5KzzXUK07MLS7NS9dLzs/dxAgJoS87GBcfszrEKMDBqMTDy/DwVLAQ
+	a2JZcWXuIUYJDmYlEd6Vmy4EC/GmJFZWpRblxxeV5qQWH2Jk4uCUamAsVwvfqSirFWU5/eqk
+	ECa9jsmfVte852ZifqsTaaPdYX3A+eWU0t33Q1a+1bY5tjN+iWH3U86js7etunA0tPHWtR0c
+	9mF/85YKTNvh9qzJNr+hY7uIQLXxkfWGH/IZGzVX8sm3W83+xbmL+/zNn2GTbi6IjDZcIjHp
+	xS32Y7ltB+MYNl0unP5GiaU4I9FQi7moOBEAnxRDqf8BAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-https://bugzilla.kernel.org/show_bug.cgi?id=41692
+cpuidle_enter_state is expected to return with interrupts enabled.
+However cpuidle_enter_state_coupled returned with interrupts disabled if
+the cpuidle driver was registered without mask of coupled cpus.
 
-Christopher Head 2014-06-28 05:26:20 UTC described:
-"I tried to reproduce this on 3.12.21. Instead, when I do "echo hello > foo"
-in an ecryptfs mount with ecryptfs_xattr specified, I get a kernel crash:
+This could be observed as a warning:
+[    1.613132] ------------[ cut here ]------------
+[    1.613244] WARNING: CPU: 0 PID: 0 at kernel/sched/idle.c:175 cpu_idle_loop+0x2dc/0x6d0()
+[    1.620268] Modules linked in:
+[    1.623311] CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.16.0-rc4-00102-g7669ccdbf8af-dirty #81
+[    1.623619] dwmmc_exynos 12510000.mshc: 1 slots initialized
+[    1.624890] logger: created 256K log 'log_main'
+[    1.625483] logger: created 256K log 'log_events'
+[    1.626084] logger: created 256K log 'log_radio'
+[    1.626699] logger: created 256K log 'log_system'
+[    1.655960] [<c00167cc>] (unwind_backtrace) from [<c0012c28>] (show_stack+0x10/0x14)
+[    1.663679] [<c0012c28>] (show_stack) from [<c050ab00>] (dump_stack+0x70/0xbc)
+[    1.670883] [<c050ab00>] (dump_stack) from [<c0023ac8>] (warn_slowpath_common+0x68/0x8c)
+[    1.678954] [<c0023ac8>] (warn_slowpath_common) from [<c0023b08>] (warn_slowpath_null+0x1c/0x24)
+[    1.687720] [<c0023b08>] (warn_slowpath_null) from [<c006ddd4>] (cpu_idle_loop+0x2dc/0x6d0)
+[    1.696052] [<c006ddd4>] (cpu_idle_loop) from [<c006e1d4>] (cpupri_find+0x0/0xd4)
+[    1.703518] [<c006e1d4>] (cpupri_find) from [<c07cdd14>] (processor_id+0x0/0x2c)
+[    1.710917] ---[ end trace a85327313857296e ]---
 
-BUG: unable to handle kernel NULL pointer dereference at           (null)
-IP: [<ffffffff8110eb39>] fsstack_copy_attr_all+0x2/0x61
-PGD d7840067 PUD b2c3c067 PMD 0 
-Oops: 0002 [#1] SMP 
-Modules linked in: nvidia(PO)
-CPU: 3 PID: 3566 Comm: bash Tainted: P           O 3.12.21-gentoo-r1 #2
-Hardware name: ASUSTek Computer Inc. G60JX/G60JX, BIOS 206 03/15/2010
-task: ffff8801948944c0 ti: ffff8800bad70000 task.ti: ffff8800bad70000
-RIP: 0010:[<ffffffff8110eb39>]  [<ffffffff8110eb39>] fsstack_copy_attr_all+0x2/0x61
-RSP: 0018:ffff8800bad71c10  EFLAGS: 00010246
-RAX: 00000000000181a4 RBX: ffff880198648480 RCX: 0000000000000000
-RDX: 0000000000000004 RSI: ffff880172010450 RDI: 0000000000000000
-RBP: ffff880198490e40 R08: 0000000000000000 R09: 0000000000000000
-R10: ffff880172010450 R11: ffffea0002c51e80 R12: 0000000000002000
-R13: 000000000000001a R14: 0000000000000000 R15: ffff880198490e40
-FS:  00007ff224caa700(0000) GS:ffff88019fcc0000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-CR2: 0000000000000000 CR3: 00000000bb07f000 CR4: 00000000000007e0
-Stack:
-ffffffff811826e8 ffff8800a39d8000 0000000000000000 000000000000001a
-ffff8800a01d0000 ffff8800a39d8000 ffffffff81185fd5 ffffffff81082c2c
-00000001a39d8000 53d0abbc98490e40 0000000000000037 ffff8800a39d8220
-Call Trace:
-[<ffffffff811826e8>] ? ecryptfs_setxattr+0x40/0x52
-[<ffffffff81185fd5>] ? ecryptfs_write_metadata+0x1b3/0x223
-[<ffffffff81082c2c>] ? should_resched+0x5/0x23
-[<ffffffff8118322b>] ? ecryptfs_initialize_file+0xaf/0xd4
-[<ffffffff81183344>] ? ecryptfs_create+0xf4/0x142
-[<ffffffff810f8c0d>] ? vfs_create+0x48/0x71
-[<ffffffff810f9c86>] ? do_last.isra.68+0x559/0x952
-[<ffffffff810f7ce7>] ? link_path_walk+0xbd/0x458
-[<ffffffff810fa2a3>] ? path_openat+0x224/0x472
-[<ffffffff810fa7bd>] ? do_filp_open+0x2b/0x6f
-[<ffffffff81103606>] ? __alloc_fd+0xd6/0xe7
-[<ffffffff810ee6ab>] ? do_sys_open+0x65/0xe9
-[<ffffffff8157d022>] ? system_call_fastpath+0x16/0x1b
-RIP  [<ffffffff8110eb39>] fsstack_copy_attr_all+0x2/0x61
-RSP <ffff8800bad71c10>
-CR2: 0000000000000000
----[ end trace df9dba5f1ddb8565 ]---"
+Enable the interrupts also when early returning from
+cpuidle_enter_state_coupled due to invalid coupled configuration.
 
-If we create a file when we mount with ecryptfs_xattr_metadata option, we will
-encounter a crash in this path:
-->ecryptfs_create
-  ->ecryptfs_initialize_file
-    ->ecryptfs_write_metadata
-      ->ecryptfs_write_metadata_to_xattr
-        ->ecryptfs_setxattr
-          ->fsstack_copy_attr_all
-It's because our dentry->d_inode used in fsstack_copy_attr_all is NULL, and it
-will be initialized when ecryptfs_initialize_file finish.
-
-So we should skip copying attr from lower inode when the value of ->d_inode is
-invalid.
-
-Signed-off-by: Chao Yu <chao2.yu@samsung.com>
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Fixes: 4126c0197bc8 ("cpuidle: add support for states that affect multiple cpus")
+Cc: <stable@vger.kernel.org>
 ---
- fs/ecryptfs/inode.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/cpuidle/coupled.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/fs/ecryptfs/inode.c b/fs/ecryptfs/inode.c
-index e67f9f0..436b7d8 100644
---- a/fs/ecryptfs/inode.c
-+++ b/fs/ecryptfs/inode.c
-@@ -1037,7 +1037,7 @@ ecryptfs_setxattr(struct dentry *dentry, const char *name, const void *value,
- 	}
+diff --git a/drivers/cpuidle/coupled.c b/drivers/cpuidle/coupled.c
+index 73fe2f8d7f96..2b57c267e855 100644
+--- a/drivers/cpuidle/coupled.c
++++ b/drivers/cpuidle/coupled.c
+@@ -463,8 +463,10 @@ int cpuidle_enter_state_coupled(struct cpuidle_device *dev,
+ 	struct cpuidle_coupled *coupled = dev->coupled;
+ 	int w;
  
- 	rc = vfs_setxattr(lower_dentry, name, value, size, flags);
--	if (!rc)
-+	if (!rc && dentry->d_inode)
- 		fsstack_copy_attr_all(dentry->d_inode, lower_dentry->d_inode);
- out:
- 	return rc;
+-	if (!coupled)
++	if (!coupled) {
++		local_irq_enable();
+ 		return -EINVAL;
++	}
+ 
+ 	while (coupled->prevent) {
+ 		cpuidle_coupled_clear_pokes(dev->cpu);
 -- 
-2.0.1.474.g72c7794
-
+1.9.1
 
