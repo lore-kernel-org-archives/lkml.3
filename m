@@ -1,94 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759652AbaGXR6Z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 13:58:25 -0400
-Received: from mail-lb0-f181.google.com ([209.85.217.181]:58781 "EHLO
-	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759622AbaGXR6X (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 13:58:23 -0400
-From: matwey@sai.msu.ru
-To: airlied@linux.ie
-Cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        linux-omap@vger.kernel.org, matwey.kornilov@gmail.com,
-        "Matwey V. Kornilov" <matwey@sai.msu.ru>
-Subject: [PATCH] gpu: drm: omapdrm: Use %pad format for values of the dma_addr_t type
-Date: Thu, 24 Jul 2014 21:58:06 +0400
-Message-Id: <1406224686-4857-1-git-send-email-matwey@sai.msu.ru>
-X-Mailer: git-send-email 1.8.1.4
+	id S1759705AbaGXR7x (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 13:59:53 -0400
+Received: from mga02.intel.com ([134.134.136.20]:12745 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759681AbaGXR7w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jul 2014 13:59:52 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,725,1400050800"; 
+   d="scan'208";a="548555615"
+Message-ID: <53D14997.7090106@intel.com>
+Date: Thu, 24 Jul 2014 10:59:51 -0700
+From: Dave Hansen <dave.hansen@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Zhang Zhen <zhenzhang.zhang@huawei.com>, mingo@redhat.com,
+        Yinghai Lu <yinghai@kernel.org>, mgorman@suse.de,
+        akpm@linux-foundation.org, zhangyanfei@cn.fujitsu.com
+CC: wangnan0@huawei.com, Linux MM <linux-mm@kvack.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] memory-hotplug: add sysfs zone_index attribute
+References: <1406187138-27911-1-git-send-email-zhenzhang.zhang@huawei.com> <53D0B8B6.8040104@huawei.com>
+In-Reply-To: <53D0B8B6.8040104@huawei.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Matwey V. Kornilov" <matwey@sai.msu.ru>
+On 07/24/2014 12:41 AM, Zhang Zhen wrote:
+> Currently memory-hotplug has two limits:
+> 1. If the memory block is in ZONE_NORMAL, you can change it to
+> ZONE_MOVABLE, but this memory block must be adjacent to ZONE_MOVABLE.
+> 2. If the memory block is in ZONE_MOVABLE, you can change it to
+> ZONE_NORMAL, but this memory block must be adjacent to ZONE_NORMAL.
+> 
+> Without this patch, we don't know which zone a memory block is in.
+> So we don't know which memory block is adjacent to ZONE_MOVABLE or
+> ZONE_NORMAL.
+> 
+> On the other hand, with this patch, we can easy to know newly added
+> memory is added as ZONE_NORMAL (for powerpc, ZONE_DMA, for x86_32,
+> ZONE_HIGHMEM).
 
-The format change is to fix the following compilation issue:
+A section can contain more than one zone.  This interface will lie about
+such sections, which is quite unfortunate.
 
-../drivers/gpu/drm/omapdrm/omap_plane.c: In function 'omap_plane_pre_apply':
-../drivers/gpu/drm/omapdrm/omap_plane.c:145:2: error: format '%x' expects argument of type 'unsigned int', but argument 5 has type 'dma_addr_t' [-Werror=format=]
-  DBG("%d,%d %08x %08x", info->pos_x, info->pos_y,
-  ^
-../drivers/gpu/drm/omapdrm/omap_plane.c:145:2: error: format '%x' expects argument of type 'unsigned int', but argument 6 has type 'dma_addr_t' [-Werror=format=]
-cc1: all warnings being treated as errors
-../scripts/Makefile.build:273: recipe for target 'drivers/gpu/drm/omapdrm/omap_plane.o' failed
+I'd really much rather see an interface that has a section itself
+enumerate to which zones it may be changed.  The way you have it now,
+any user has to know the rules that you've laid out above.  If the
+kernel changed those restrictions, we'd have to teach every application
+about the change in restrictions.
 
-Signed-off-by: Matwey V. Kornilov <matwey@sai.msu.ru>
----
- drivers/gpu/drm/omapdrm/omap_gem.c   | 10 +++++-----
- drivers/gpu/drm/omapdrm/omap_plane.c |  4 ++--
- 2 files changed, 7 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/gpu/drm/omapdrm/omap_gem.c b/drivers/gpu/drm/omapdrm/omap_gem.c
-index 95dbce2..44305c6 100644
---- a/drivers/gpu/drm/omapdrm/omap_gem.c
-+++ b/drivers/gpu/drm/omapdrm/omap_gem.c
-@@ -791,7 +791,7 @@ int omap_gem_get_paddr(struct drm_gem_object *obj,
- 			omap_obj->paddr = tiler_ssptr(block);
- 			omap_obj->block = block;
- 
--			DBG("got paddr: %08x", omap_obj->paddr);
-+			DBG("got paddr: %pad", &(omap_obj->paddr));
- 		}
- 
- 		omap_obj->paddr_cnt++;
-@@ -985,9 +985,9 @@ void omap_gem_describe(struct drm_gem_object *obj, struct seq_file *m)
- 
- 	off = drm_vma_node_start(&obj->vma_node);
- 
--	seq_printf(m, "%08x: %2d (%2d) %08llx %08Zx (%2d) %p %4d",
-+	seq_printf(m, "%08x: %2d (%2d) %08llx %pad (%2d) %p %4d",
- 			omap_obj->flags, obj->name, obj->refcount.refcount.counter,
--			off, omap_obj->paddr, omap_obj->paddr_cnt,
-+			off, &(omap_obj->paddr), omap_obj->paddr_cnt,
- 			omap_obj->vaddr, omap_obj->roll);
- 
- 	if (omap_obj->flags & OMAP_BO_TILED) {
-@@ -1467,8 +1467,8 @@ void omap_gem_init(struct drm_device *dev)
- 			entry->paddr = tiler_ssptr(block);
- 			entry->block = block;
- 
--			DBG("%d:%d: %dx%d: paddr=%08x stride=%d", i, j, w, h,
--					entry->paddr,
-+			DBG("%d:%d: %dx%d: paddr=%pad stride=%d", i, j, w, h,
-+					&(entry->paddr),
- 					usergart[i].stride_pfn << PAGE_SHIFT);
- 		}
- 	}
-diff --git a/drivers/gpu/drm/omapdrm/omap_plane.c b/drivers/gpu/drm/omapdrm/omap_plane.c
-index 3cf31ee..aaa9a2c 100644
---- a/drivers/gpu/drm/omapdrm/omap_plane.c
-+++ b/drivers/gpu/drm/omapdrm/omap_plane.c
-@@ -142,8 +142,8 @@ static void omap_plane_pre_apply(struct omap_drm_apply *apply)
- 	DBG("%dx%d -> %dx%d (%d)", info->width, info->height,
- 			info->out_width, info->out_height,
- 			info->screen_width);
--	DBG("%d,%d %08x %08x", info->pos_x, info->pos_y,
--			info->paddr, info->p_uv_addr);
-+	DBG("%d,%d %pad %pad", info->pos_x, info->pos_y,
-+			&(info->paddr), &(info->p_uv_addr));
- 
- 	/* TODO: */
- 	ilace = false;
--- 
-1.8.1.4
 
