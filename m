@@ -1,170 +1,234 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934168AbaGXG20 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 02:28:26 -0400
-Received: from ozlabs.org ([103.22.144.67]:36949 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933521AbaGXG2Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 02:28:25 -0400
-Date: Thu, 24 Jul 2014 16:28:11 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>, Olof Johansson <olof@lixom.net>,
-        Arnd Bergmann <arnd@arndb.de>, <linux-arm-kernel@lists.infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Pratyush Anand <pratyush.anand@st.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Srinivas Kandagatla <srinivas.kandagatla@linaro.org>,
-        Kishon Vijay Abraham I <kishon@ti.com>
-Subject: linux-next: manual merge of the usb tree with the arm-soc tree
-Message-ID: <20140724162811.5e12107a@canb.auug.org.au>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
+	id S1758679AbaGXGaF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 02:30:05 -0400
+Received: from router.aksignal.cz ([188.175.113.102]:34827 "EHLO
+	router.aksignal.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751171AbaGXGaD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jul 2014 02:30:03 -0400
+Message-ID: <53D0A7E4.1040707@aksignal.cz>
+Date: Thu, 24 Jul 2014 08:29:56 +0200
+From: =?UTF-8?B?SmnFmcOtIFByY2hhbA==?= <jiri.prchal@aksignal.cz>
+Reply-To: jiri.prchal@aksignal.cz
+Organization: AK signal Brno
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/eLREgiIUz=fnk550RGhgrED"; protocol="application/pgp-signature"
+To: Alexandre Courbot <gnurou@gmail.com>, Guenter Roeck <linux@roeck-us.net>
+CC: "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Randy Dunlap <rdunlap@infradead.org>
+Subject: Re: [RFC PATCH] gpiolib: Provide and export gpiod_export_name
+References: <1406139132-5404-1-git-send-email-linux@roeck-us.net> <CAAVeFuKsJpSYo2DMyTdYE2J5Cu_ZD=b9o-=S0DLDccyNmwniNg@mail.gmail.com>
+In-Reply-To: <CAAVeFuKsJpSYo2DMyTdYE2J5Cu_ZD=b9o-=S0DLDccyNmwniNg@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/eLREgiIUz=fnk550RGhgrED
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+Hi,
+just to append to this: is in plan some kind of exporting named GPIOs from device tree to /sys/* or /dev/*? It would be 
+very useful not only for me. Because I thing what GPIO is used for what is hardware design dependent same as for example 
+what SPI chips are used. And SPI chips are in DT.
 
-Hi Greg,
-
-Today's linux-next merge of the usb tree got a conflict in
-drivers/phy/Kconfig between commit 64562e99477f ("phy: Add drivers for
-PCIe and SATA phy on SPEAr13xx") from the arm-soc tree and commit
-1de990d8a169 ("phy: qcom: Add driver for QCOM APQ8064 SATA PHY") from
-the usb tree.
-
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc drivers/phy/Kconfig
-index 86c22e26a243,cc97c897945a..000000000000
---- a/drivers/phy/Kconfig
-+++ b/drivers/phy/Kconfig
-@@@ -124,53 -149,30 +149,40 @@@ config PHY_SUN4I_US
-  config PHY_SAMSUNG_USB2
-  	tristate "Samsung USB 2.0 PHY driver"
-  	depends on HAS_IOMEM
-+ 	depends on USB_EHCI_EXYNOS || USB_OHCI_EXYNOS || USB_DWC2
-  	select GENERIC_PHY
-  	select MFD_SYSCON
-+ 	default ARCH_EXYNOS
-  	help
-  	  Enable this to support the Samsung USB 2.0 PHY driver for Samsung
-- 	  SoCs. This driver provides the interface for USB 2.0 PHY. Support for
-- 	  particular SoCs has to be enabled in addition to this driver. Number
-- 	  and type of supported phys depends on the SoC.
-+ 	  SoCs. This driver provides the interface for USB 2.0 PHY. Support
-+ 	  for particular PHYs will be enabled based on the SoC type in addition
-+ 	  to this driver.
- =20
- +config PHY_S5PV210_USB2
- +	bool "Support for S5PV210"
- +	depends on PHY_SAMSUNG_USB2
- +	depends on ARCH_S5PV210
- +	help
- +	  Enable USB PHY support for S5PV210. This option requires that Samsung
- +	  USB 2.0 PHY driver is enabled and means that support for this
- +	  particular SoC is compiled in the driver. In case of S5PV210 two phys
- +	  are available - device and host.
- +
-  config PHY_EXYNOS4210_USB2
-- 	bool "Support for Exynos 4210"
-+ 	bool
-  	depends on PHY_SAMSUNG_USB2
-- 	depends on CPU_EXYNOS4210
-- 	help
-- 	  Enable USB PHY support for Exynos 4210. This option requires that
-- 	  Samsung USB 2.0 PHY driver is enabled and means that support for this
-- 	  particular SoC is compiled in the driver. In case of Exynos 4210 four
-- 	  phys are available - device, host, HSIC0 and HSIC1.
-+ 	default CPU_EXYNOS4210
- =20
-  config PHY_EXYNOS4X12_USB2
-- 	bool "Support for Exynos 4x12"
-+ 	bool
-  	depends on PHY_SAMSUNG_USB2
-- 	depends on (SOC_EXYNOS4212 || SOC_EXYNOS4412)
-- 	help
-- 	  Enable USB PHY support for Exynos 4x12. This option requires that
-- 	  Samsung USB 2.0 PHY driver is enabled and means that support for this
-- 	  particular SoC is compiled in the driver. In case of Exynos 4x12 four
-- 	  phys are available - device, host, HSIC0 and HSIC1.
-+ 	default SOC_EXYNOS3250 || SOC_EXYNOS4212 || SOC_EXYNOS4412
- =20
-  config PHY_EXYNOS5250_USB2
-- 	bool "Support for Exynos 5250"
-+ 	bool
-  	depends on PHY_SAMSUNG_USB2
-- 	depends on SOC_EXYNOS5250
-- 	help
-- 	  Enable USB PHY support for Exynos 5250. This option requires that
-- 	  Samsung USB 2.0 PHY driver is enabled and means that support for this
-- 	  particular SoC is compiled in the driver. In case of Exynos 5250 four
-- 	  phys are available - device, host, HSIC0 and HSIC.
-+ 	default SOC_EXYNOS5250 || SOC_EXYNOS5420
- =20
-  config PHY_EXYNOS5_USBDRD
-  	tristate "Exynos5 SoC series USB DRD PHY driver"
-@@@ -190,16 -194,18 +204,30 @@@ config PHY_XGEN
-  	help
-  	  This option enables support for APM X-Gene SoC multi-purpose PHY.
- =20
- +config PHY_ST_SPEAR1310_MIPHY
- +	tristate "ST SPEAR1310-MIPHY driver"
- +	select GENERIC_PHY
- +	help
- +	  Support for ST SPEAr1310 MIPHY which can be used for PCIe and SATA.
- +
- +config PHY_ST_SPEAR1340_MIPHY
- +	tristate "ST SPEAR1340-MIPHY driver"
- +	select GENERIC_PHY
- +	help
- +	  Support for ST SPEAr1340 MIPHY which can be used for PCIe and SATA.
- +
-+ config PHY_QCOM_APQ8064_SATA
-+ 	tristate "Qualcomm APQ8064 SATA SerDes/PHY driver"
-+ 	depends on ARCH_QCOM
-+ 	depends on HAS_IOMEM
-+ 	depends on OF
-+ 	select GENERIC_PHY
-+=20
-+ config PHY_QCOM_IPQ806X_SATA
-+ 	tristate "Qualcomm IPQ806x SATA SerDes/PHY driver"
-+ 	depends on ARCH_QCOM
-+ 	depends on HAS_IOMEM
-+ 	depends on OF
-+ 	select GENERIC_PHY
-+=20
-  endmenu
-
---Sig_/eLREgiIUz=fnk550RGhgrED
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJT0KeGAAoJEMDTa8Ir7ZwVAq0P/0RQQYQ6UjwHa2h0FWVwy/BL
-gT0j2Ocpp2ykFd9CMco9JVFJgXxh+hE7K1QsrBktE4acfhMvLhicl7oylPyv9lXn
-2BoknCwBo7Z6bhoQ03i/8nSB2lK/LPVPHaWKdtKe1yXXlDb+aG8GZ/XTVSjaeNpm
-O3rm1Rp9Sr0YklSbwPyJ7fbvGbmyOaYYMJICoZQzS3YxOrd6V9fDXW4DgZPxP08A
-A5aVArK3TLNFdCqMnmG4WaDHcO70m/sR71DxqEKOhSi5mKZSDCX5GO3lgey3dq83
-+5PSysJ/ArnLN9Pg4Nuoz1lM6A/La0YeOzfUv7c00C6jIXdHTYDlW38q3u2q5HGl
-O4CdVdU/ivO8Z5KaXPKapTrbs7SthujVjmcnXSLJZeACrx8QCuygAMAr1xUi2VdJ
-KOTepwU81G4XwLfdg0fQ1nEA33i+pDAGj/sDf/9IBMZXwuoGkUqEfafUYYlxtNf0
-YirLyS4FaPNtx8nTYSly0bzfvazEE1U6Pc0HWgDAPak9XSgn0jbLkr6qFRsobOl+
-4UhszLDCc7lhVpQzRWwBteg5gDdl6rW0LWjclEV7kyk44svn4FIYc8tEZ/Oa02tC
-EQpVGF2eglkS+L0YyodRtUAMaDOnHAfhRhvmDfj2Di1buI6VKFfEqdMRP07h6HZ6
-pDsULRnOH+qPhIVSSnya
-=yi5d
------END PGP SIGNATURE-----
-
---Sig_/eLREgiIUz=fnk550RGhgrED--
+Dne 24.7.2014 v 07:44 Alexandre Courbot napsal(a):
+> On Thu, Jul 24, 2014 at 3:12 AM, Guenter Roeck <linux@roeck-us.net> wrote:
+>> gpiod_export_name is similar to gpiod_export, but lets the user
+>> determine the name used to export a gpio pin.
+>>
+>> Currently, the pin name is determined by the chip driver with
+>> the 'names' array in the gpio_chip data structure, or it is set
+>> to gpioX, where X is the pin number, if no name is provided by
+>> the chip driver.
+>
+> Oh, my. I did not even know about this 'names' array. This is pretty
+> bad - a GPIO provider should not decide what its GPIOs are used for.
+>
+> Luckily for you, this creates a precedent that makes this patch more
+> acceptable, in that it is not making the situation worse. Even though
+> I consider both solutions to be bad, I actually prefer your
+> gpiod_export_name() function to that 'names' array in gpio_chip...
+>
+>>
+>> It is, however, desirable to be able to provide the pin name when
+>> exporting the pin, for example from platform code. In other words,
+>> it would be useful to move the naming decision from the pin provider
+>> to the pin consumer. The gpio-pca953x driver provides this capability
+>> as part of its platform data. Other drivers could be enhanced in a
+>> similar way; however, this is not always possible or easy to accomplish.
+>> For example, mfd client drivers such as gpio-ich already use platform
+>> data to pass information from the mfd master driver to the client driver.
+>> Overloading this platform data to also provide an array of gpio pin names
+>> would be a challenge if not impossible.
+>>
+>> The alternative to use gpiod_export_link is also not always desirable,
+>> since it only creates a named link to a different directory, meaning
+>> the named gpio pin is not available in /sys/class/gpio but only
+>> in some platform specific directory and thus not as generic as possible
+>> and/or useful.
+>>
+>> A specific example for a use case is a gpio pin which reports AC power
+>> loss to user space. Depending on the platform and platform variant,
+>> the pin can be provided by various gpio chip drivers and pin numbers.
+>> It would be very desirable to have a well defined location such as
+>> /sys/class/gpio/ac_power_loss for this pin, so user space knows where
+>> to find the attribute without knowledge of the underlying platform
+>> variant or oher hardware details.
+>
+> As I explained on the other thread, I still encourage you to have
+> these GPIOs under device nodes that give a hint of who is provided the
+> GPIO (effectively exporting the (dev, function) tuple to user-space)
+> instead of having them popping out under /sys/class/gpio where nobody
+> knows where they come from and name collisions are much more likely.
+>
+> Your message sounds like you have no choice but have the named GPIO
+> link under the gpiochip's device node, but this is not the case -
+> gpio_export_link() let's you specify the device under which the link
+> should appear. Make that device be your "scu" device and you can have
+> a consistent sysfs path to access your GPIOs.
+>
+> Allowing GPIOs to pop up in the same directory with an arbitrary name
+> is just a recipe for a mess. But that's a recipe that is already
+> allowed thanks to that 'names' array. So I'm really confused about
+> what to do with this patch. If you can do with gpio_export_link() (and
+> I have not seen evidence of the contrary), please go that way instead.
+>
+>>
+>> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+>> ---
+>> Applies to tip of linux-gpio/for-next.
+>>
+>>   Documentation/gpio/sysfs.txt  | 12 ++++++++----
+>>   drivers/gpio/gpiolib-sysfs.c  | 23 ++++++++++++++++-------
+>>   include/linux/gpio/consumer.h |  9 +++++++++
+>>   3 files changed, 33 insertions(+), 11 deletions(-)
+>>
+>> diff --git a/Documentation/gpio/sysfs.txt b/Documentation/gpio/sysfs.txt
+>> index c2c3a97..8e301b2 100644
+>> --- a/Documentation/gpio/sysfs.txt
+>> +++ b/Documentation/gpio/sysfs.txt
+>> @@ -125,7 +125,11 @@ requested using gpio_request():
+>>          /* export the GPIO to userspace */
+>>          int gpiod_export(struct gpio_desc *desc, bool direction_may_change);
+>>
+>> -       /* reverse gpio_export() */
+>> +       /* export named GPIO to userspace */
+>> +       int gpiod_export_name(struct gpio_desc *desc, const char *ioname,
+>> +                       bool direction_may_change);
+>> +
+>> +       /* reverse gpio_export() / gpiod_export_name() */
+>>          void gpiod_unexport(struct gpio_desc *desc);
+>>
+>>          /* create a sysfs link to an exported GPIO node */
+>> @@ -136,9 +140,9 @@ requested using gpio_request():
+>>          int gpiod_sysfs_set_active_low(struct gpio_desc *desc, int value);
+>>
+>>   After a kernel driver requests a GPIO, it may only be made available in
+>> -the sysfs interface by gpiod_export(). The driver can control whether the
+>> -signal direction may change. This helps drivers prevent userspace code
+>> -from accidentally clobbering important system state.
+>> +the sysfs interface by gpiod_export() or gpiod_export_name(). The driver
+>> +can control whether the signal direction may change. This helps drivers
+>> +prevent userspace code from accidentally clobbering important system state.
+>>
+>>   This explicit exporting can help with debugging (by making some kinds
+>>   of experiments easier), or can provide an always-there interface that's
+>> diff --git a/drivers/gpio/gpiolib-sysfs.c b/drivers/gpio/gpiolib-sysfs.c
+>> index be45a92..7d36230 100644
+>> --- a/drivers/gpio/gpiolib-sysfs.c
+>> +++ b/drivers/gpio/gpiolib-sysfs.c
+>> @@ -523,13 +523,12 @@ static struct class gpio_class = {
+>>    *
+>>    * Returns zero on success, else an error.
+>>    */
+>> -int gpiod_export(struct gpio_desc *desc, bool direction_may_change)
+>> +int gpiod_export_name(struct gpio_desc *desc, const char *ioname,
+>> +                     bool direction_may_change)
+>>   {
+>>          unsigned long           flags;
+>>          int                     status;
+>> -       const char              *ioname = NULL;
+>>          struct device           *dev;
+>> -       int                     offset;
+>>
+>>          /* can't export until sysfs is available ... */
+>>          if (!gpio_class.p) {
+>> @@ -560,10 +559,6 @@ int gpiod_export(struct gpio_desc *desc, bool direction_may_change)
+>>                  direction_may_change = false;
+>>          spin_unlock_irqrestore(&gpio_lock, flags);
+>>
+>> -       offset = gpio_chip_hwgpio(desc);
+>> -       if (desc->chip->names && desc->chip->names[offset])
+>> -               ioname = desc->chip->names[offset];
+>> -
+>>          dev = device_create(&gpio_class, desc->chip->dev, MKDEV(0, 0),
+>>                              desc, ioname ? ioname : "gpio%u",
+>>                              desc_to_gpio(desc));
+>> @@ -600,6 +595,20 @@ fail_unlock:
+>>          gpiod_dbg(desc, "%s: status %d\n", __func__, status);
+>>          return status;
+>>   }
+>> +EXPORT_SYMBOL_GPL(gpiod_export_name);
+>> +
+>> +int gpiod_export(struct gpio_desc *desc, bool direction_may_change)
+>> +{
+>> +       const char *ioname = NULL;
+>> +
+>> +       if (desc) {
+>> +               int offset = gpio_chip_hwgpio(desc);
+>> +
+>> +               if (desc->chip->names && desc->chip->names[offset])
+>> +                       ioname = desc->chip->names[offset];
+>
+> I'd add a
+>
+> else
+>      ioname = "gpio%u";
+>
+> so all the name-chosing code is grouped in the same place. Then you
+> can remove that same check from gpiod_export_name().
+>
+>> +       }
+>> +       return gpiod_export_name(desc, ioname, direction_may_change);
+>> +}
+>>   EXPORT_SYMBOL_GPL(gpiod_export);
+>>
+>>   static int match_export(struct device *dev, const void *data)
+>> diff --git a/include/linux/gpio/consumer.h b/include/linux/gpio/consumer.h
+>> index 05e53cc..986da3e 100644
+>> --- a/include/linux/gpio/consumer.h
+>> +++ b/include/linux/gpio/consumer.h
+>> @@ -260,6 +260,8 @@ static inline int desc_to_gpio(const struct gpio_desc *desc)
+>>   #if IS_ENABLED(CONFIG_GPIOLIB) && IS_ENABLED(CONFIG_GPIO_SYSFS)
+>>
+>>   int gpiod_export(struct gpio_desc *desc, bool direction_may_change);
+>> +int gpiod_export_name(struct gpio_desc *desc, const char *ioname,
+>> +                     bool direction_may_change);
+>>   int gpiod_export_link(struct device *dev, const char *name,
+>>                        struct gpio_desc *desc);
+>>   int gpiod_sysfs_set_active_low(struct gpio_desc *desc, int value);
+>> @@ -273,6 +275,13 @@ static inline int gpiod_export(struct gpio_desc *desc,
+>>          return -ENOSYS;
+>>   }
+>>
+>> +static inline int gpiod_export_name(struct gpio_desc *desc,
+>> +                                   const char *ioname,
+>> +                                   bool direction_may_change)
+>> +{
+>> +       return -ENOSYS;
+>> +}
+>> +
+>>   static inline int gpiod_export_link(struct device *dev, const char *name,
+>>                                      struct gpio_desc *desc)
+>>   {
+>> --
+>> 1.9.1
+>>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-gpio" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
