@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934411AbaGXJre (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 05:47:34 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54780 "EHLO
+	id S935103AbaGXKRI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 06:17:08 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54796 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758837AbaGXJr2 (ORCPT
+	with ESMTP id S934395AbaGXJrd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 05:47:28 -0400
+	Thu, 24 Jul 2014 05:47:33 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Tejun Heo <tj@kernel.org>, Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Lennox Wu <lennox.wu@gmail.com>, Guenter Roeck <linux@roeck-us.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 043/128] ptrace,x86: force IRET path after a ptrace_stop()
-Date: Thu, 24 Jul 2014 10:44:52 +0100
-Message-Id: <1406195177-8656-44-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 047/128] Score: Implement the function csum_ipv6_magic
+Date: Thu, 24 Jul 2014 10:44:56 +0100
+Message-Id: <1406195177-8656-48-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1406195177-8656-1-git-send-email-luis.henriques@canonical.com>
 References: <1406195177-8656-1-git-send-email-luis.henriques@canonical.com>
@@ -27,79 +27,121 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tejun Heo <tj@kernel.org>
+From: Lennox Wu <lennox.wu@gmail.com>
 
-commit b9cd18de4db3c9ffa7e17b0dc0ca99ed5aa4d43a upstream.
+commit 1ed62ca648557b884d117a4a8bbcf2ae4e2d1153 upstream.
 
-The 'sysret' fastpath does not correctly restore even all regular
-registers, much less any segment registers or reflags values.  That is
-very much part of why it's faster than 'iret'.
-
-Normally that isn't a problem, because the normal ptrace() interface
-catches the process using the signal handler infrastructure, which
-always returns with an iret.
-
-However, some paths can get caught using ptrace_event() instead of the
-signal path, and for those we need to make sure that we aren't going to
-return to user space using 'sysret'.  Otherwise the modifications that
-may have been done to the register set by the tracer wouldn't
-necessarily take effect.
-
-Fix it by forcing IRET path by setting TIF_NOTIFY_RESUME from
-arch_ptrace_stop_needed() which is invoked from ptrace_stop().
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-by: Andy Lutomirski <luto@amacapital.net>
-Acked-by: Oleg Nesterov <oleg@redhat.com>
-Suggested-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Lennox Wu <lennox.wu@gmail.com>
+Cc: Guenter Roeck <linux@roeck-us.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/x86/include/asm/ptrace.h | 16 ++++++++++++++++
- include/linux/ptrace.h        |  3 +++
- 2 files changed, 19 insertions(+)
+ arch/score/include/asm/checksum.h | 93 +++++++++++++++++++++------------------
+ 1 file changed, 51 insertions(+), 42 deletions(-)
 
-diff --git a/arch/x86/include/asm/ptrace.h b/arch/x86/include/asm/ptrace.h
-index 942a08623a1a..68e9f007cd4a 100644
---- a/arch/x86/include/asm/ptrace.h
-+++ b/arch/x86/include/asm/ptrace.h
-@@ -232,6 +232,22 @@ static inline unsigned long regs_get_kernel_stack_nth(struct pt_regs *regs,
- 
- #define ARCH_HAS_USER_SINGLE_STEP_INFO
- 
-+/*
-+ * When hitting ptrace_stop(), we cannot return using SYSRET because
-+ * that does not restore the full CPU state, only a minimal set.  The
-+ * ptracer can change arbitrary register values, which is usually okay
-+ * because the usual ptrace stops run off the signal delivery path which
-+ * forces IRET; however, ptrace_event() stops happen in arbitrary places
-+ * in the kernel and don't force IRET path.
-+ *
-+ * So force IRET path after a ptrace stop.
-+ */
-+#define arch_ptrace_stop_needed(code, info)				\
-+({									\
-+	set_thread_flag(TIF_NOTIFY_RESUME);				\
-+	false;								\
-+})
-+
- struct user_desc;
- extern int do_get_thread_area(struct task_struct *p, int idx,
- 			      struct user_desc __user *info);
-diff --git a/include/linux/ptrace.h b/include/linux/ptrace.h
-index 077904c8b70d..cc79eff4a1ad 100644
---- a/include/linux/ptrace.h
-+++ b/include/linux/ptrace.h
-@@ -334,6 +334,9 @@ static inline void user_single_step_siginfo(struct task_struct *tsk,
-  * calling arch_ptrace_stop() when it would be superfluous.  For example,
-  * if the thread has not been back to user mode since the last stop, the
-  * thread state might indicate that nothing needs to be done.
-+ *
-+ * This is guaranteed to be invoked once before a task stops for ptrace and
-+ * may include arch-specific operations necessary prior to a ptrace stop.
-  */
- #define arch_ptrace_stop_needed(code, info)	(0)
- #endif
+diff --git a/arch/score/include/asm/checksum.h b/arch/score/include/asm/checksum.h
+index f909ac3144a4..961bd64015a8 100644
+--- a/arch/score/include/asm/checksum.h
++++ b/arch/score/include/asm/checksum.h
+@@ -184,48 +184,57 @@ static inline __sum16 csum_ipv6_magic(const struct in6_addr *saddr,
+ 				__wsum sum)
+ {
+ 	__asm__ __volatile__(
+-		".set\tnoreorder\t\t\t# csum_ipv6_magic\n\t"
+-		".set\tnoat\n\t"
+-		"addu\t%0, %5\t\t\t# proto (long in network byte order)\n\t"
+-		"sltu\t$1, %0, %5\n\t"
+-		"addu\t%0, $1\n\t"
+-		"addu\t%0, %6\t\t\t# csum\n\t"
+-		"sltu\t$1, %0, %6\n\t"
+-		"lw\t%1, 0(%2)\t\t\t# four words source address\n\t"
+-		"addu\t%0, $1\n\t"
+-		"addu\t%0, %1\n\t"
+-		"sltu\t$1, %0, %1\n\t"
+-		"lw\t%1, 4(%2)\n\t"
+-		"addu\t%0, $1\n\t"
+-		"addu\t%0, %1\n\t"
+-		"sltu\t$1, %0, %1\n\t"
+-		"lw\t%1, 8(%2)\n\t"
+-		"addu\t%0, $1\n\t"
+-		"addu\t%0, %1\n\t"
+-		"sltu\t$1, %0, %1\n\t"
+-		"lw\t%1, 12(%2)\n\t"
+-		"addu\t%0, $1\n\t"
+-		"addu\t%0, %1\n\t"
+-		"sltu\t$1, %0, %1\n\t"
+-		"lw\t%1, 0(%3)\n\t"
+-		"addu\t%0, $1\n\t"
+-		"addu\t%0, %1\n\t"
+-		"sltu\t$1, %0, %1\n\t"
+-		"lw\t%1, 4(%3)\n\t"
+-		"addu\t%0, $1\n\t"
+-		"addu\t%0, %1\n\t"
+-		"sltu\t$1, %0, %1\n\t"
+-		"lw\t%1, 8(%3)\n\t"
+-		"addu\t%0, $1\n\t"
+-		"addu\t%0, %1\n\t"
+-		"sltu\t$1, %0, %1\n\t"
+-		"lw\t%1, 12(%3)\n\t"
+-		"addu\t%0, $1\n\t"
+-		"addu\t%0, %1\n\t"
+-		"sltu\t$1, %0, %1\n\t"
+-		"addu\t%0, $1\t\t\t# Add final carry\n\t"
+-		".set\tnoat\n\t"
+-		".set\tnoreorder"
++		".set\tvolatile\t\t\t# csum_ipv6_magic\n\t"
++		"add\t%0, %0, %5\t\t\t# proto (long in network byte order)\n\t"
++		"cmp.c\t%5, %0\n\t"
++		"bleu 1f\n\t"
++		"addi\t%0, 0x1\n\t"
++		"1:add\t%0, %0, %6\t\t\t# csum\n\t"
++		"cmp.c\t%6, %0\n\t"
++		"lw\t%1, [%2, 0]\t\t\t# four words source address\n\t"
++		"bleu 1f\n\t"
++		"addi\t%0, 0x1\n\t"
++		"1:add\t%0, %0, %1\n\t"
++		"cmp.c\t%1, %0\n\t"
++		"1:lw\t%1, [%2, 4]\n\t"
++		"bleu 1f\n\t"
++		"addi\t%0, 0x1\n\t"
++		"1:add\t%0, %0, %1\n\t"
++		"cmp.c\t%1, %0\n\t"
++		"lw\t%1, [%2,8]\n\t"
++		"bleu 1f\n\t"
++		"addi\t%0, 0x1\n\t"
++		"1:add\t%0, %0, %1\n\t"
++		"cmp.c\t%1, %0\n\t"
++		"lw\t%1, [%2, 12]\n\t"
++		"bleu 1f\n\t"
++		"addi\t%0, 0x1\n\t"
++		"1:add\t%0, %0,%1\n\t"
++		"cmp.c\t%1, %0\n\t"
++		"lw\t%1, [%3, 0]\n\t"
++		"bleu 1f\n\t"
++		"addi\t%0, 0x1\n\t"
++		"1:add\t%0, %0, %1\n\t"
++		"cmp.c\t%1, %0\n\t"
++		"lw\t%1, [%3, 4]\n\t"
++		"bleu 1f\n\t"
++		"addi\t%0, 0x1\n\t"
++		"1:add\t%0, %0, %1\n\t"
++		"cmp.c\t%1, %0\n\t"
++		"lw\t%1, [%3, 8]\n\t"
++		"bleu 1f\n\t"
++		"addi\t%0, 0x1\n\t"
++		"1:add\t%0, %0, %1\n\t"
++		"cmp.c\t%1, %0\n\t"
++		"lw\t%1, [%3, 12]\n\t"
++		"bleu 1f\n\t"
++		"addi\t%0, 0x1\n\t"
++		"1:add\t%0, %0, %1\n\t"
++		"cmp.c\t%1, %0\n\t"
++		"bleu 1f\n\t"
++		"addi\t%0, 0x1\n\t"
++		"1:\n\t"
++		".set\toptimize"
+ 		: "=r" (sum), "=r" (proto)
+ 		: "r" (saddr), "r" (daddr),
+ 		  "0" (htonl(len)), "1" (htonl(proto)), "r" (sum));
 -- 
 1.9.1
 
