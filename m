@@ -1,49 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934504AbaGXJw6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 05:52:58 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:44424 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932557AbaGXJw4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 05:52:56 -0400
-Date: Thu, 24 Jul 2014 11:52:52 +0200
-From: Jean Delvare <jdelvare@suse.de>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Dmitry Tarnyagin <dmitry.tarnyagin@lockless.no>,
-        Ohad Ben-Cohen <ohad@wizery.com>
-Subject: Re: Run-time dependencies for STE Modem remoteproc driver
-Message-ID: <20140724115252.1847dbad@endymion.delvare>
-In-Reply-To: <CACRpkdZwoftk1bbmZYc5wSh8rzf137TURcjno5Am=CUUHVvEFw@mail.gmail.com>
-References: <20140721181507.5a6d3b2c@endymion.delvare>
-	<CACRpkdZwoftk1bbmZYc5wSh8rzf137TURcjno5Am=CUUHVvEFw@mail.gmail.com>
-Organization: SUSE Linux
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S934529AbaGXJxZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 05:53:25 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:55192 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934825AbaGXJtN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jul 2014 05:49:13 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Alexandre Demers <alexandre.f.demers@gmail.com>,
+        Alex Deucher <alexander.deucher@amd.com>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 118/128] drm/radeon/dpm: Reenabling SS on Cayman
+Date: Thu, 24 Jul 2014 10:46:07 +0100
+Message-Id: <1406195177-8656-119-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1406195177-8656-1-git-send-email-luis.henriques@canonical.com>
+References: <1406195177-8656-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+3.11.10.14 -stable review patch.  If anyone has any objections, please let me know.
 
-On Wed, 23 Jul 2014 17:21:17 +0200, Linus Walleij wrote:
-> On Mon, Jul 21, 2014 at 6:15 PM, Jean Delvare <jdelvare@suse.de> wrote:
-> 
-> > This brings the question: on which architectures / platforms is the STE
-> > Modem remoteproc driver needed?
-> 
-> NONE.
+------------------
 
-Hm, OK :D So I will disable this driver in all our kernels. Maybe this
-should be mentioned in the Kconfig help text?
+From: Alexandre Demers <alexandre.f.demers@gmail.com>
 
-Still, I suppose that the driver had an intended target, maybe we can
-use that as a run-time dependency? Or should we just make the driver
-depend on COMPILE_TEST?
+commit 41959341ac7e33dd360c7a881d13566f9eca37b2 upstream.
 
-Thanks,
+It reverts commit c745fe611ca42295c9d91d8e305d27983e9132ef now that
+Cayman is stable since VDDCI fix. Spread spectrum was not the culprit.
+
+This depends on b0880e87c1fd038b84498944f52e52c3e86ebe59
+(drm/radeon/dpm: fix vddci setup typo on cayman).
+
+Signed-off-by: Alexandre Demers <alexandre.f.demers@gmail.com>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ drivers/gpu/drm/radeon/rv770_dpm.c | 6 ------
+ 1 file changed, 6 deletions(-)
+
+diff --git a/drivers/gpu/drm/radeon/rv770_dpm.c b/drivers/gpu/drm/radeon/rv770_dpm.c
+index a923ba966a78..a4c4f25c93e6 100644
+--- a/drivers/gpu/drm/radeon/rv770_dpm.c
++++ b/drivers/gpu/drm/radeon/rv770_dpm.c
+@@ -2333,12 +2333,6 @@ void rv770_get_engine_memory_ss(struct radeon_device *rdev)
+ 	pi->mclk_ss = radeon_atombios_get_asic_ss_info(rdev, &ss,
+ 						       ASIC_INTERNAL_MEMORY_SS, 0);
+ 
+-	/* disable ss, causes hangs on some cayman boards */
+-	if (rdev->family == CHIP_CAYMAN) {
+-		pi->sclk_ss = false;
+-		pi->mclk_ss = false;
+-	}
+-
+ 	if (pi->sclk_ss || pi->mclk_ss)
+ 		pi->dynamic_ss = true;
+ 	else
 -- 
-Jean Delvare
-SUSE L3 Support
+1.9.1
+
