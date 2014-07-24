@@ -1,59 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758787AbaGXLxa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 07:53:30 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.243]:20855 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758148AbaGXLx3 (ORCPT
+	id S1758804AbaGXLyS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 07:54:18 -0400
+Received: from mailgw12.technion.ac.il ([132.68.225.12]:18211 "EHLO
+	mailgw12.technion.ac.il" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751347AbaGXLyR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 07:53:29 -0400
-From: Cyrille Pitchen <cyrille.pitchen@atmel.com>
-To: <nicolas.ferre@atmel.com>, <davem@davemloft.net>,
-        <linux-arm-kernel@lists.infradead.org>, <netdev@vger.kernel.org>,
-        <soren.brinkmann@xilinx.com>
-CC: <linux-kernel@vger.kernel.org>,
-        Cyrille Pitchen <cyrille.pitchen@atmel.com>
-Subject: [PATCH v2 6/6] net/macb: enable scatter-gather feature and set DMA burst length for sama5d4 gem
-Date: Thu, 24 Jul 2014 13:51:03 +0200
-Message-ID: <1918ae71a967c7c58ebd3e0a96fdc0aebde54e80.1406192657.git.cyrille.pitchen@atmel.com>
-X-Mailer: git-send-email 1.8.2.2
-In-Reply-To: <cover.1406192657.git.cyrille.pitchen@atmel.com>
-References: <cover.1406192657.git.cyrille.pitchen@atmel.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	Thu, 24 Jul 2014 07:54:17 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AlQCAIDy0FOERCABjGdsb2JhbABZhDfQbgGBDBYQAQEBJz2EBAEFJ1IQUVcZiEK5VYZXF45nZAcWhDAFimOoXWmBAw
+X-IPAS-Result: AlQCAIDy0FOERCABjGdsb2JhbABZhDfQbgGBDBYQAQEBJz2EBAEFJ1IQUVcZiEK5VYZXF45nZAcWhDAFimOoXWmBAw
+X-IronPort-AV: E=Sophos;i="5.01,723,1400014800"; 
+   d="scan'208";a="116773270"
+From: Nadav Amit <namit@cs.technion.ac.il>
+To: pbonzini@redhat.com
+Cc: gleb@kernel.org, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
+        x86@kernel.org, linux-kernel@vger.kernel.org, nadav.amit@gmail.com,
+        Nadav Amit <namit@cs.technion.ac.il>
+Subject: [PATCH 1/2] KVM: x86: Setting rflags.rf during rep-string emulation
+Date: Thu, 24 Jul 2014 14:51:23 +0300
+Message-Id: <1406202684-5226-2-git-send-email-namit@cs.technion.ac.il>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1406202684-5226-1-git-send-email-namit@cs.technion.ac.il>
+References: <53CD080A.1000400@redhat.com>
+ <1406202684-5226-1-git-send-email-namit@cs.technion.ac.il>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Cyrille Pitchen <cyrille.pitchen@atmel.com>
----
- drivers/net/ethernet/cadence/macb.c | 6 ++++++
- 1 file changed, 6 insertions(+)
+This patch updates RF for rep-string emulation.  The flag is set upon the first
+iteration, and cleared after the last (if emulated). It is intended to make
+sure that if a trap (in future data/io #DB emulation) or interrupt is delivered
+to the guest during the rep-string instruction, RF will be set correctly. RF
+affects whether instruction breakpoint in the guest is masked.
 
-diff --git a/drivers/net/ethernet/cadence/macb.c b/drivers/net/ethernet/cadence/macb.c
-index 6836f88..ca5d779 100644
---- a/drivers/net/ethernet/cadence/macb.c
-+++ b/drivers/net/ethernet/cadence/macb.c
-@@ -2005,6 +2005,11 @@ static struct macb_config sama5d3_config = {
- 	.dma_burst_length = 16,
- };
+Signed-off-by: Nadav Amit <namit@cs.technion.ac.il>
+---
+ arch/x86/kvm/emulate.c | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/arch/x86/kvm/emulate.c b/arch/x86/kvm/emulate.c
+index 8d41556..57743ed 100644
+--- a/arch/x86/kvm/emulate.c
++++ b/arch/x86/kvm/emulate.c
+@@ -4683,7 +4683,10 @@ special_insn:
+ 			goto done;
+ 	}
  
-+static struct macb_config sama5d4_config = {
-+	.caps = 0,
-+	.dma_burst_length = 4,
-+};
-+
- static const struct of_device_id macb_dt_ids[] = {
- 	{ .compatible = "cdns,at32ap7000-macb" },
- 	{ .compatible = "cdns,at91sam9260-macb" },
-@@ -2012,6 +2017,7 @@ static const struct of_device_id macb_dt_ids[] = {
- 	{ .compatible = "cdns,pc302-gem", .data = &pc302gem_config },
- 	{ .compatible = "cdns,gem", .data = &pc302gem_config },
- 	{ .compatible = "atmel,sama5d3-gem", .data = &sama5d3_config },
-+	{ .compatible = "atmel,sama5d4-gem", .data = &sama5d4_config },
- 	{ /* sentinel */ }
- };
- MODULE_DEVICE_TABLE(of, macb_dt_ids);
+-	ctxt->eflags &= ~EFLG_RF;
++	if (ctxt->rep_prefix && (ctxt->d & String))
++		ctxt->eflags |= EFLG_RF;
++	else
++		ctxt->eflags &= ~EFLG_RF;
+ 
+ 	if (ctxt->execute) {
+ 		if (ctxt->d & Fastop) {
+@@ -4824,6 +4827,7 @@ writeback:
+ 			}
+ 			goto done; /* skip rip writeback */
+ 		}
++		ctxt->eflags &= ~EFLG_RF;
+ 	}
+ 
+ 	ctxt->eip = ctxt->_eip;
 -- 
-1.8.2.2
+1.9.1
 
