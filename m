@@ -1,103 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758670AbaGXDIw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 23:08:52 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52724 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758463AbaGXDIv (ORCPT
+	id S1758658AbaGXDTf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 23:19:35 -0400
+Received: from mail-bn1blp0188.outbound.protection.outlook.com ([207.46.163.188]:22221
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1758500AbaGXDTa convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 23:08:51 -0400
+	Wed, 23 Jul 2014 23:19:30 -0400
+From: Yao Yuan <yao.yuan@freescale.com>
+To: Wolfram Sang <wsa@the-dreams.de>
+CC: Marek Vasut <marex@denx.de>, "mark.rutland@arm.com" <mark.rutland@arm.com>,
+        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>
+Subject: RE: [PATCH v4 1/2] i2c: add DMA support for freescale i2c driver
+Thread-Topic: [PATCH v4 1/2] i2c: add DMA support for freescale i2c driver
+Thread-Index: AQHPT7WKIG/+iHMwf0iZO9vAQDtI9JsBhP+AgAAE3p6AADCSgIBJO7GAgGRAmbA=
+Date: Thu, 24 Jul 2014 03:19:27 +0000
+Message-ID: <e97f086de6e9427f96ca5ac582031f86@BL2PR03MB338.namprd03.prod.outlook.com>
+References: <1396579272-19542-1-git-send-email-yao.yuan@freescale.com>
+ <1396579272-19542-2-git-send-email-yao.yuan@freescale.com>
+ <201404041628.55471.marex@denx.de>
+ <aab78696ac364d9c832993c08915bad3@BL2PR03MB338.namprd03.prod.outlook.com>
+ <20140404174011.GA8489@katana> <20140521080047.GC2708@katana>
+In-Reply-To: <20140521080047.GC2708@katana>
+Accept-Language: en-US, zh-CN
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [123.151.195.50]
+x-microsoft-antispam: BCL:0;PCL:0;RULEID:
+x-forefront-prvs: 028256169F
+x-forefront-antispam-report: SFV:NSPM;SFS:(6009001)(189002)(51704005)(199002)(24454002)(377454003)(74502001)(106116001)(74662001)(76576001)(79102001)(20776003)(54356999)(92566001)(101416001)(83072002)(99286002)(99396002)(4396001)(77982001)(66066001)(74316001)(105586002)(87936001)(31966008)(110136001)(81542001)(85306003)(76482001)(81342001)(2656002)(76176999)(95666004)(46102001)(107046002)(86362001)(85852003)(93886003)(50986999)(106356001)(21056001)(64706001)(83322001)(33646002)(80022001)(108616002)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:BL2PR03MB339;H:BL2PR03MB338.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <1406156130-15575-10-git-send-email-ming.lei@canonical.com>
-References: <1406156130-15575-1-git-send-email-ming.lei@canonical.com>
-	<1406156130-15575-10-git-send-email-ming.lei@canonical.com>
-Date: Thu, 24 Jul 2014 11:08:48 +0800
-Message-ID: <CACVXFVMW81TksDkM+cyQnbAcjJd=Vc2u4g0QNAeNbO6ZYQpy=w@mail.gmail.com>
-Subject: Re: [PATCH 9/9] block: loop: support to submit I/O via kernel aio based
-From: Ming Lei <ming.lei@canonical.com>
-To: Jens Axboe <axboe@kernel.dk>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Zach Brown <zab@zabbo.net>,
-        Dave Kleikamp <dave.kleikamp@oracle.com>,
-        Benjamin LaHaise <bcrl@kvack.org>, Ming Lei <ming.lei@canonical.com>
-Content-Type: text/plain; charset=UTF-8
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 24, 2014 at 6:55 AM, Ming Lei <ming.lei@canonical.com> wrote:
-> Part of the patch is based on Dave's previous post.
->
-> It is easy to observe that loop block device thoughput
-> can be increased by > 100% in single job randread,
-> libaio engine, direct I/O fio test.
->
-> Cc: Zach Brown <zab@zabbo.net>
-> Cc: Dave Kleikamp <dave.kleikamp@oracle.com>
-> Cc: Benjamin LaHaise <bcrl@kvack.org>
-> Signed-off-by: Ming Lei <ming.lei@canonical.com>
-> ---
->  drivers/block/loop.c      |  128 ++++++++++++++++++++++++++++++++++++++++++---
->  drivers/block/loop.h      |    1 +
->  include/uapi/linux/loop.h |    1 +
->  3 files changed, 122 insertions(+), 8 deletions(-)
->
-> diff --git a/drivers/block/loop.c b/drivers/block/loop.c
-> index 96a8913..2279d26 100644
-> --- a/drivers/block/loop.c
-> +++ b/drivers/block/loop.c
+On Fri, May 21, 2014 at 4:01 PM +0200, Wolfram Sang wrote:
+> 
+> Ping. Any updates? I think this was pretty close to inclusion?
 
-> +static int lo_rw_aio(struct loop_device *lo, struct loop_cmd *cmd,
-> +                    bool write, loff_t pos)
-> +{
-> +       struct file *file = lo->lo_backing_file;
-> +       struct request *rq = cmd->rq;
-> +       struct kiocb *iocb;
-> +       unsigned int op, i = 0;
-> +       struct iov_iter iter;
-> +       struct bio_vec *bvec, bv;
-> +       size_t nr_segs = 0;
-> +       struct req_iterator r_iter;
-> +       int ret = -EIO;
-> +
-> +       /* how many segments */
-> +       rq_for_each_segment(bv, rq, r_iter)
-> +               nr_segs++;
-> +
-> +       iocb = aio_kernel_alloc(GFP_NOIO, nr_segs * sizeof(*bvec));
-> +       if (!iocb) {
-> +               ret = -ENOMEM;
-> +               goto failed;
-> +       }
-> +
-> +       cmd->iocb = iocb;
-> +       bvec = (struct bio_vec *)(iocb + 1);
-> +       rq_for_each_segment(bv, rq, r_iter)
-> +               bvec[i++] = bv;
-> +
-> +       if (write)
-> +               op = IOCB_CMD_WRITE_ITER;
-> +       else
-> +               op = IOCB_CMD_READ_ITER;
-> +
-> +       iter.type = ITER_BVEC | (write ? WRITE : 0);
-> +       iter.bvec = bvec;
-> +       iter.nr_segs = nr_segs;
-> +       iter.count = blk_rq_bytes(rq);
-> +       iter.iov_offset = 0;
-> +
-> +       aio_kernel_init_rw(iocb, file, iov_iter_count(&iter), pos,
-> +                          lo_rw_aio_complete, (u64)(uintptr_t)cmd);
-> +       ret = aio_kernel_submit(iocb, op, &iter);
-> +
-> +       /*
-> +        * use same policy with userspace aio, req may have been
-> +        * completed already, so relase it by aio completion.
-> +        */
-> +       if (ret != -EIOCBQUEUED)
-> +               lo_rw_aio_complete((u64)cmd, ret);
+Hi, Wolfram
+	Thanks for your concern. Sorry for my reply so late. I had on a business trip for months.
+At that time I have no device to debug it. Now, I'm come back and I will try my best to finish it.
+I have sent the patch for V5. Thanks for your review.
 
-The above stuff should have been put inside aio_kernel_submit(),
-will do it in V1.
-
-Thanks,
+Best regards,
+Yuan Yao
