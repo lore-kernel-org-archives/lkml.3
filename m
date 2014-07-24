@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934438AbaGXXBT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 19:01:19 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:58255 "EHLO mx2.suse.de"
+	id S934830AbaGXXCb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 19:02:31 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:58269 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759274AbaGXXBQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 19:01:16 -0400
+	id S1756093AbaGXXBT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jul 2014 19:01:19 -0400
 From: =?UTF-8?q?Andreas=20F=C3=A4rber?= <afaerber@suse.de>
 To: Michal Simek <michal.simek@xilinx.com>
 Cc: Andreas Olofsson <andreas@adapteva.com>,
@@ -18,9 +18,9 @@ Cc: Andreas Olofsson <andreas@adapteva.com>,
         Ian Campbell <ijc+devicetree@hellion.org.uk>,
         Kumar Gala <galak@codeaurora.org>,
         Russell King <linux@arm.linux.org.uk>
-Subject: [PATCH v2 06/11] ARM: dts: zynq: Add DMAC for Parallella
-Date: Fri, 25 Jul 2014 01:00:15 +0200
-Message-Id: <1406242820-20140-7-git-send-email-afaerber@suse.de>
+Subject: [PATCH v2 08/11] ARM: dts: zynq: Add VDMA to Parallella
+Date: Fri, 25 Jul 2014 01:00:17 +0200
+Message-Id: <1406242820-20140-9-git-send-email-afaerber@suse.de>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1406242820-20140-1-git-send-email-afaerber@suse.de>
 References: <1406242820-20140-1-git-send-email-afaerber@suse.de>
@@ -35,53 +35,45 @@ Signed-off-by: Andreas Färber <afaerber@suse.de>
 ---
  v2: New
  
- arch/arm/boot/dts/zynq-7000.dtsi      | 17 +++++++++++++++++
- arch/arm/boot/dts/zynq-parallella.dts |  4 ++++
- 2 files changed, 21 insertions(+)
+ arch/arm/boot/dts/zynq-parallella.dts | 25 +++++++++++++++++++++++++
+ 1 file changed, 25 insertions(+)
 
-diff --git a/arch/arm/boot/dts/zynq-7000.dtsi b/arch/arm/boot/dts/zynq-7000.dtsi
-index eed3df0..1a70277 100644
---- a/arch/arm/boot/dts/zynq-7000.dtsi
-+++ b/arch/arm/boot/dts/zynq-7000.dtsi
-@@ -223,6 +223,23 @@
- 			};
- 		};
- 
-+		dmac_s: dmac@f8003000 {
-+			compatible = "arm,pl330", "arm,primecell";
-+			reg = <0xf8003000 0x1000>;
-+			status = "disabled";
-+			interrupt-parent = <&intc>;
-+			interrupts = <0 13 4>,
-+			             <0 14 4>, <0 15 4>,
-+			             <0 16 4>, <0 17 4>,
-+			             <0 40 4>, <0 41 4>,
-+			             <0 42 4>, <0 43 4>;
-+			#dma-cells = <1>;
-+			#dma-channels = <8>;
-+			#dma-requests = <4>;
-+			clocks = <&clkc 27>;
-+			clock-names = "apb_pclk";
-+		};
-+
- 		devcfg: devcfg@f8007000 {
- 			compatible = "xlnx,zynq-devcfg-1.0";
- 			reg = <0xf8007000 0x100>;
 diff --git a/arch/arm/boot/dts/zynq-parallella.dts b/arch/arm/boot/dts/zynq-parallella.dts
-index 56f68ea..e60a0a9 100644
+index e60a0a9..8beaacc 100644
 --- a/arch/arm/boot/dts/zynq-parallella.dts
 +++ b/arch/arm/boot/dts/zynq-parallella.dts
-@@ -34,6 +34,10 @@
+@@ -32,6 +32,31 @@
+ 		bootargs = "console=ttyPS0,115200 earlyprintk root=/dev/mmcblk0p2 rootfstype=ext4 rw rootwait";
+ 		linux,stdout-path = "/amba/serial@e0001000";
  	};
++
++	fpga {
++		compatible = "simple-bus";
++		#address-cells = <1>;
++		#size-cells = <1>;
++		ranges;
++
++		axi_vdma: axi-vdma@43000000 {
++			compatible = "xlnx,axi-vdma-1.00.a";
++			reg = <0x43000000 0x1000>;
++			#dma-cells = <1>;
++			xlnx,num-fstores = <3>;
++			xlnx,include-sg = <0>;
++			xlnx,flush-fsync = <2>;
++
++			dma-channel@43000000 {
++				compatible = "xlnx,axi-vdma-mm2s-channel";
++				interrupt-parent = <&intc>;
++				interrupts = <0 59 4>;
++				xlnx,datawidth = <64>;
++				xlnx,include-dre = <0>;
++				xlnx,genlock-mode = <0>;
++			};
++		};
++	};
  };
  
-+&dmac_s {
-+	status = "okay";
-+};
-+
- &gem0 {
- 	status = "okay";
- 	phy-mode = "rgmii-id";
+ &dmac_s {
 -- 
 1.9.3
 
