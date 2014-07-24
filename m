@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934842AbaGXKBh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 06:01:37 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:55067 "EHLO
+	id S934805AbaGXKBj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 06:01:39 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:55063 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934643AbaGXJsi (ORCPT
+	with ESMTP id S934641AbaGXJsi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 24 Jul 2014 05:48:38 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jussi Kivilinna <jussi.kivilinna@iki.fi>,
-        Herbert Xu <herbert@gondor.apana.org.au>,
+Cc: Axel Lin <axel.lin@ingics.com>, Guenter Roeck <linux@roeck-us.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 091/128] crypto: sha512_ssse3 - fix byte count to bit count conversion
-Date: Thu, 24 Jul 2014 10:45:40 +0100
-Message-Id: <1406195177-8656-92-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 093/128] hwmon: (amc6821) Fix permissions for temp2_input
+Date: Thu, 24 Jul 2014 10:45:42 +0100
+Message-Id: <1406195177-8656-94-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1406195177-8656-1-git-send-email-luis.henriques@canonical.com>
 References: <1406195177-8656-1-git-send-email-luis.henriques@canonical.com>
@@ -28,40 +27,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jussi Kivilinna <jussi.kivilinna@iki.fi>
+From: Axel Lin <axel.lin@ingics.com>
 
-commit cfe82d4f45c7cc39332a2be7c4c1d3bf279bbd3d upstream.
+commit df86754b746e9a0ff6f863f690b1c01d408e3cdc upstream.
 
-Byte-to-bit-count computation is only partly converted to big-endian and is
-mixing in CPU-endian values. Problem was noticed by sparce with warning:
+temp2_input should not be writable, fix it.
 
-  CHECK   arch/x86/crypto/sha512_ssse3_glue.c
-arch/x86/crypto/sha512_ssse3_glue.c:144:19: warning: restricted __be64 degrades to integer
-arch/x86/crypto/sha512_ssse3_glue.c:144:17: warning: incorrect type in assignment (different base types)
-arch/x86/crypto/sha512_ssse3_glue.c:144:17:    expected restricted __be64 <noident>
-arch/x86/crypto/sha512_ssse3_glue.c:144:17:    got unsigned long long
-
-Signed-off-by: Jussi Kivilinna <jussi.kivilinna@iki.fi>
-Acked-by: Tim Chen <tim.c.chen@linux.intel.com>
-Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+Reported-by: Guenter Roeck <linux@roeck-us.net>
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/x86/crypto/sha512_ssse3_glue.c | 2 +-
+ drivers/hwmon/amc6821.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/x86/crypto/sha512_ssse3_glue.c b/arch/x86/crypto/sha512_ssse3_glue.c
-index f30cd10293f0..8626b03e83b7 100644
---- a/arch/x86/crypto/sha512_ssse3_glue.c
-+++ b/arch/x86/crypto/sha512_ssse3_glue.c
-@@ -141,7 +141,7 @@ static int sha512_ssse3_final(struct shash_desc *desc, u8 *out)
- 
- 	/* save number of bits */
- 	bits[1] = cpu_to_be64(sctx->count[0] << 3);
--	bits[0] = cpu_to_be64(sctx->count[1] << 3) | sctx->count[0] >> 61;
-+	bits[0] = cpu_to_be64(sctx->count[1] << 3 | sctx->count[0] >> 61);
- 
- 	/* Pad out to 112 mod 128 and append length */
- 	index = sctx->count[0] & 0x7f;
+diff --git a/drivers/hwmon/amc6821.c b/drivers/hwmon/amc6821.c
+index 4fe49d2bfe1d..09d2d78d482b 100644
+--- a/drivers/hwmon/amc6821.c
++++ b/drivers/hwmon/amc6821.c
+@@ -707,7 +707,7 @@ static SENSOR_DEVICE_ATTR(temp1_max_alarm, S_IRUGO,
+ 	get_temp_alarm, NULL, IDX_TEMP1_MAX);
+ static SENSOR_DEVICE_ATTR(temp1_crit_alarm, S_IRUGO,
+ 	get_temp_alarm, NULL, IDX_TEMP1_CRIT);
+-static SENSOR_DEVICE_ATTR(temp2_input, S_IRUGO | S_IWUSR,
++static SENSOR_DEVICE_ATTR(temp2_input, S_IRUGO,
+ 	get_temp, NULL, IDX_TEMP2_INPUT);
+ static SENSOR_DEVICE_ATTR(temp2_min, S_IRUGO | S_IWUSR, get_temp,
+ 	set_temp, IDX_TEMP2_MIN);
 -- 
 1.9.1
 
