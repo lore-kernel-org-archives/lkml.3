@@ -1,24 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932548AbaGXJrO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 05:47:14 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54713 "EHLO
+	id S932279AbaGXJrK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 05:47:10 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54691 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932309AbaGXJrL (ORCPT
+	with ESMTP id S1758829AbaGXJrE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 05:47:11 -0400
+	Thu, 24 Jul 2014 05:47:04 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Maxime Ripard <maxime.ripard@free-electrons.com>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: =?UTF-8?q?Rafa=C5=82=20Mi=C5=82ecki?= <zajec5@gmail.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 031/128] net: allwinner: emac: Add missing free_irq
-Date: Thu, 24 Jul 2014 10:44:40 +0100
-Message-Id: <1406195177-8656-32-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 021/128] b43: fix frequency reported on G-PHY with /new/ firmware
+Date: Thu, 24 Jul 2014 10:44:30 +0100
+Message-Id: <1406195177-8656-22-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1406195177-8656-1-git-send-email-luis.henriques@canonical.com>
 References: <1406195177-8656-1-git-send-email-luis.henriques@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,34 +31,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
+From: =?UTF-8?q?Rafa=C5=82=20Mi=C5=82ecki?= <zajec5@gmail.com>
 
-commit b91113282bf44df46aba374a0b8f88a75bfd4b3f upstream.
+commit 2fc68eb122c7ea6cd5be1fe7d6650c0beb2f4f40 upstream.
 
-If the mdio probe function fails in emac_open, the interrupt we just requested
-isn't freed. If emac_open is called again, for example because we try to set up
-the interface again, the kernel will oops because the interrupt wasn't properly
-released.
+Support for firmware rev 508+ was added years ago, but we never noticed
+it reports channel in a different way for G-PHY devices. Instead of
+offset from 2400 MHz it simply passes channel id (AKA hw_value).
 
-Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+So far it was (most probably) affecting monitor mode users only, but
+the following recent commit made it noticeable for quite everybody:
+
+commit 3afc2167f60a327a2c1e1e2600ef209a3c2b75b7
+Author: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Date:   Tue Mar 4 16:50:13 2014 +0200
+
+    cfg80211/mac80211: ignore signal if the frame was heard on wrong channel
+
+Reported-by: Aaro Koskinen <aaro.koskinen@iki.fi>
+Signed-off-by: Rafał Miłecki <zajec5@gmail.com>
+Tested-by: Aaro Koskinen <aaro.koskinen@iki.fi>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/ethernet/allwinner/sun4i-emac.c | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/net/wireless/b43/xmit.c | 10 +++++++---
+ 1 file changed, 7 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/net/ethernet/allwinner/sun4i-emac.c b/drivers/net/ethernet/allwinner/sun4i-emac.c
-index 46dfb1378c17..81576c6c31e0 100644
---- a/drivers/net/ethernet/allwinner/sun4i-emac.c
-+++ b/drivers/net/ethernet/allwinner/sun4i-emac.c
-@@ -726,6 +726,7 @@ static int emac_open(struct net_device *dev)
- 
- 	ret = emac_mdio_probe(dev);
- 	if (ret < 0) {
-+		free_irq(dev->irq, dev);
- 		netdev_err(dev, "cannot probe MDIO bus\n");
- 		return ret;
- 	}
+diff --git a/drivers/net/wireless/b43/xmit.c b/drivers/net/wireless/b43/xmit.c
+index e85d34b76039..ebcce00ce067 100644
+--- a/drivers/net/wireless/b43/xmit.c
++++ b/drivers/net/wireless/b43/xmit.c
+@@ -810,9 +810,13 @@ void b43_rx(struct b43_wldev *dev, struct sk_buff *skb, const void *_rxhdr)
+ 		break;
+ 	case B43_PHYTYPE_G:
+ 		status.band = IEEE80211_BAND_2GHZ;
+-		/* chanid is the radio channel cookie value as used
+-		 * to tune the radio. */
+-		status.freq = chanid + 2400;
++		/* Somewhere between 478.104 and 508.1084 firmware for G-PHY
++		 * has been modified to be compatible with N-PHY and others.
++		 */
++		if (dev->fw.rev >= 508)
++			status.freq = ieee80211_channel_to_frequency(chanid, status.band);
++		else
++			status.freq = chanid + 2400;
+ 		break;
+ 	case B43_PHYTYPE_N:
+ 	case B43_PHYTYPE_LP:
 -- 
 1.9.1
 
