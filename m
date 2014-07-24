@@ -1,51 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759336AbaGXN5B (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 09:57:01 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:59952 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1759194AbaGXN47 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 09:56:59 -0400
-Date: Thu, 24 Jul 2014 14:56:40 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Laura Abbott <lauraa@codeaurora.org>
-Cc: Will Deacon <Will.Deacon@arm.com>, David Riley <davidriley@chromium.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Ritesh Harjain <ritesh.harjani@gmail.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCHv4 0/5] Atomic pool for arm64
-Message-ID: <20140724135640.GD13371@arm.com>
-References: <1406079308-5232-1-git-send-email-lauraa@codeaurora.org>
+	id S1759208AbaGXN5x (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 09:57:53 -0400
+Received: from mail.kernel.org ([198.145.19.201]:42815 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757725AbaGXN5w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jul 2014 09:57:52 -0400
+Date: Thu, 24 Jul 2014 10:57:47 -0300
+From: Arnaldo Carvalho de Melo <acme@kernel.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Namhyung Kim <namhyung@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 4/6] perf report: Honor column width setting
+Message-ID: <20140724135747.GS20303@kernel.org>
+References: <1404883694-5342-1-git-send-email-namhyung@kernel.org>
+ <1404883694-5342-5-git-send-email-namhyung@kernel.org>
+ <20140724125751.GC7652@krava.brq.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1406079308-5232-1-git-send-email-lauraa@codeaurora.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140724125751.GC7652@krava.brq.redhat.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 23, 2014 at 02:35:03AM +0100, Laura Abbott wrote:
-> Laura Abbott (5):
->   lib/genalloc.c: Add power aligned algorithm
->   lib/genalloc.c: Add genpool range check function
->   common: dma-mapping: Introduce common remapping functions
->   arm: use genalloc for the atomic pool
->   arm64: Add atomic pool for non-coherent and CMA allocations.
+Em Thu, Jul 24, 2014 at 02:57:51PM +0200, Jiri Olsa escreveu:
+> On Wed, Jul 09, 2014 at 02:28:12PM +0900, Namhyung Kim wrote:
+> > Set column width and do not change it if user gives -w/--column-widths
+> > option.  It'll truncate longer symbols than the width if exists.
+> 
+> SNIP
+> 
+> > --- a/tools/perf/util/sort.c
+> > +++ b/tools/perf/util/sort.c
+> > @@ -70,7 +70,9 @@ static int hist_entry__thread_snprintf(struct hist_entry *he, char *bf,
+> >  				       size_t size, unsigned int width)
+> >  {
+> >  	const char *comm = thread__comm_str(he->thread);
+> > -	return repsep_snprintf(bf, size, "%-*s:%5d", width - 6,
+> > +
+> > +	width = max(7U, width) - 6;
+> > +	return repsep_snprintf(bf, size, "%-*.*s:%5d", width, width,
+> >  			       comm ?: "", he->thread->tid);
+> >  }
+> 
+> also we now print out all sort headers left alligned, which is wrong for
+> sort_thread header: "Command:  Pid' that mirrors value strings with ':'
+> being aligned
+> 
+> maybe something like in attached patch..?
+> 
+> thanks,
+> jirka
+> 
+> 
+> ---
+> diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
+> index f89714329c0f..fbbe86b7f63c 100644
+> --- a/tools/perf/util/sort.c
+> +++ b/tools/perf/util/sort.c
+> @@ -78,6 +78,7 @@ static int hist_entry__thread_snprintf(struct hist_entry *he, char *bf,
+>  
+>  struct sort_entry sort_thread = {
+>  	.se_header	= "Command:  Pid",
+> +	.se_header_right= true,
 
-The only thing left is the removal of unmap_kernel_range() call in
-dma_common_free_remap() (vunmap is enough). Feel free to add my review
-to the whole series:
+Is this just for the header? Perhaps its more clearly named .se_right_justify?
 
-Reviewed-by: Catalin Marinas <catalin.marinas@arm.com>
-
-Thanks.
-
--- 
-Catalin
+>  	.se_cmp		= sort__thread_cmp,
+>  	.se_snprintf	= hist_entry__thread_snprintf,
+>  	.se_width_idx	= HISTC_THREAD,
+> @@ -1212,13 +1213,17 @@ static int __sort__hpp_header(struct perf_hpp_fmt *fmt, struct perf_hpp *hpp,
+>  {
+>  	struct hpp_sort_entry *hse;
+>  	size_t len = fmt->user_len;
+> +	const char *fmt_str = "%-*.*s";
+>  
+>  	hse = container_of(fmt, struct hpp_sort_entry, hpp);
+>  
+>  	if (!len)
+>  		len = hists__col_len(&evsel->hists, hse->se->se_width_idx);
+>  
+> -	return scnprintf(hpp->buf, hpp->size, "%-*.*s", len, len, hse->se->se_header);
+> +	if (hse->se->se_header_right)
+> +		fmt_str = "%*.*s";
+> +
+> +	return scnprintf(hpp->buf, hpp->size, fmt_str, len, len, hse->se->se_header);
+>  }
+>  
+>  static int __sort__hpp_width(struct perf_hpp_fmt *fmt,
+> diff --git a/tools/perf/util/sort.h b/tools/perf/util/sort.h
+> index 041f0c9cea2b..16a07b9b16c2 100644
+> --- a/tools/perf/util/sort.h
+> +++ b/tools/perf/util/sort.h
+> @@ -197,6 +197,7 @@ struct sort_entry {
+>  	struct list_head list;
+>  
+>  	const char *se_header;
+> +	bool se_header_right;
+>  
+>  	int64_t (*se_cmp)(struct hist_entry *, struct hist_entry *);
+>  	int64_t (*se_collapse)(struct hist_entry *, struct hist_entry *);
