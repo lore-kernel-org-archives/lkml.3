@@ -1,193 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758677AbaGXFvM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 01:51:12 -0400
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:18422 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750904AbaGXFvK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 01:51:10 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Wed, 23 Jul 2014 22:39:18 -0700
-From: Alexandre Courbot <acourbot@nvidia.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: <linux-gpio@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <gnurou@gmail.com>, Alexandre Courbot <acourbot@nvidia.com>
-Subject: [PATCH] gpio: remove gpio_ensure_requested()
-Date: Thu, 24 Jul 2014 14:51:02 +0900
-Message-ID: <1406181062-29596-1-git-send-email-acourbot@nvidia.com>
-X-Mailer: git-send-email 2.0.2
-X-NVConfidentiality: public
+	id S1758711AbaGXFyE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 01:54:04 -0400
+Received: from mga11.intel.com ([192.55.52.93]:64400 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751250AbaGXFyC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jul 2014 01:54:02 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,721,1400050800"; 
+   d="scan'208";a="566422853"
+Message-ID: <53D09F76.80801@linux.intel.com>
+Date: Thu, 24 Jul 2014 13:53:58 +0800
+From: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Mikulas Patocka <mpatocka@redhat.com>, Alasdair G Kergon <agk@redhat.com>
+CC: "xinhui.pan" <xinhuix.pan@intel.com>, linux-kernel@vger.kernel.org,
+        snitzer@redhat.com, dm-devel@redhat.com,
+        "Liu, ShuoX" <shuox.liu@intel.com>
+Subject: Re: [dm-devel] [PATCH] md/dm-ioctl.c: optimize memory allocation
+ in copy_params
+References: <53B68068.2060102@intel.com> <alpine.LRH.2.02.1407081831510.27831@file01.intranet.prod.int.rdu2.redhat.com> <53BCA278.5050205@linux.intel.com> <alpine.LRH.2.02.1407091032400.4545@file01.intranet.prod.int.rdu2.redhat.com> <53CDB81B.90509@linux.intel.com> <20140722012352.GD6822@agk-dp.fab.redhat.com> <53CF26B2.6060503@linux.intel.com> <alpine.LRH.2.02.1407230816000.29551@file01.intranet.prod.int.rdu2.redhat.com> <20140723125407.GG6822@agk-dp.fab.redhat.com> <alpine.LRH.2.02.1407231307200.4177@file01.intranet.prod.int.rdu2.redhat.com>
+In-Reply-To: <alpine.LRH.2.02.1407231307200.4177@file01.intranet.prod.int.rdu2.redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-gpio_ensure_requested() has been introduced in Feb. 2008 by commit
-d2876d08d86f2 to force users of the GPIO API to explicitly request GPIOs
-before using them.
+On 2014/7/24 1:14, Mikulas Patocka wrote:
+>
+> On Wed, 23 Jul 2014, Alasdair G Kergon wrote:
+>
+>> On Wed, Jul 23, 2014 at 08:16:58AM -0400, Mikulas Patocka wrote:
+>>> So, it means that you do not use device mapper at all. So, why are you
+>>> trying to change memory allocation in device mapper?
+>>   
+>> So the *test* they run is asking device-mapper to briefly reserve a 64KB
+>> buffer when there is no data to report:  The answer is not to run that
+>> pointless test:)
+>>
+>> And if a single 64KB allocation really is a big deal, then patch 'vold'
+>> in userspace so it doesn't ask for 64KB when it clearly doesn't need it!
+>>
+>> + int Devmapper::dumpState(SocketClient *c) {
+>> +    char *buffer = (char *) malloc(1024 * 64);
+>>
+>> The code has just
+>> #define DEVMAPPER_BUFFER_SIZE 4096
+>> for all the other dm ioctls it issues.
+>>
+>> Only use a larger value when it is needed i.e. if DM_BUFFER_FULL_FLAG gets set.
+>>
+>> Alasdair
+> Device mapper shouldn't depend on allocation on any contiguous memory - it
+> will fall back to vmalloc. I still can't believe that their suggested
+> patch makes any difference.
+>
+> This pattern is being repeated over and over in the kernel - for example:
+>
+>          if (PIDLIST_TOO_LARGE(count))
+>                  return vmalloc(count * sizeof(pid_t));
+>          else
+>                  return kmalloc(count * sizeof(pid_t), GFP_KERNEL);
+>
+>
+>          if (is_vmalloc_addr(p))
+>                  vfree(p);
+>          else
+>                  kfree(p);
+>
+> - I think we should make two functions that do this operation (for example
+> kvalloc and kvfree) and convert device mapper and other users to these
+> functions. Then, other kernel subsystems can start to use them to fix
+> memory fragmentation issues.
 
-Hopefully by now all GPIOs are correctly requested and this extra check
-can be omitted ; in any case the GPIO maintainers won't feel bad if
-machines start failing after 6 years of warnings.
+Thank Mikulas and Alasdair. Before sending out the patch, we know the result. :)
+It's hard to balance between performance and stability.
 
-This patch removes that function from the dark ages.
+Anyway, we would try to change seq_read.
 
-Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
----
- drivers/gpio/gpiolib-legacy.c | 106 ------------------------------------------
- include/asm-generic/gpio.h    |  15 ++++--
- 2 files changed, 12 insertions(+), 109 deletions(-)
-
-diff --git a/drivers/gpio/gpiolib-legacy.c b/drivers/gpio/gpiolib-legacy.c
-index 0f9429b2522a..078ae6c2df79 100644
---- a/drivers/gpio/gpiolib-legacy.c
-+++ b/drivers/gpio/gpiolib-legacy.c
-@@ -5,64 +5,6 @@
- 
- #include "gpiolib.h"
- 
--/* Warn when drivers omit gpio_request() calls -- legal but ill-advised
-- * when setting direction, and otherwise illegal.  Until board setup code
-- * and drivers use explicit requests everywhere (which won't happen when
-- * those calls have no teeth) we can't avoid autorequesting.  This nag
-- * message should motivate switching to explicit requests... so should
-- * the weaker cleanup after faults, compared to gpio_request().
-- *
-- * NOTE: the autorequest mechanism is going away; at this point it's
-- * only "legal" in the sense that (old) code using it won't break yet,
-- * but instead only triggers a WARN() stack dump.
-- */
--static int gpio_ensure_requested(struct gpio_desc *desc)
--{
--	struct gpio_chip *chip = desc->chip;
--	unsigned long flags;
--	bool request = false;
--	int err = 0;
--
--	spin_lock_irqsave(&gpio_lock, flags);
--
--	if (WARN(test_and_set_bit(FLAG_REQUESTED, &desc->flags) == 0,
--			"autorequest GPIO-%d\n", desc_to_gpio(desc))) {
--		if (!try_module_get(chip->owner)) {
--			gpiod_err(desc, "%s: module can't be gotten\n",
--					__func__);
--			clear_bit(FLAG_REQUESTED, &desc->flags);
--			/* lose */
--			err = -EIO;
--			goto end;
--		}
--		desc->label = "[auto]";
--		/* caller must chip->request() w/o spinlock */
--		if (chip->request)
--			request = true;
--	}
--
--end:
--	spin_unlock_irqrestore(&gpio_lock, flags);
--
--	if (request) {
--		might_sleep_if(chip->can_sleep);
--		err = chip->request(chip, gpio_chip_hwgpio(desc));
--
--		if (err < 0) {
--			gpiod_dbg(desc, "%s: chip request fail, %d\n",
--					__func__, err);
--			spin_lock_irqsave(&gpio_lock, flags);
--
--			desc->label = NULL;
--			clear_bit(FLAG_REQUESTED, &desc->flags);
--
--			spin_unlock_irqrestore(&gpio_lock, flags);
--		}
--	}
--
--	return err;
--}
--
- void gpio_free(unsigned gpio)
- {
- 	gpiod_free(gpio_to_desc(gpio));
-@@ -158,51 +100,3 @@ void gpio_free_array(const struct gpio *array, size_t num)
- 		gpio_free((array++)->gpio);
- }
- EXPORT_SYMBOL_GPL(gpio_free_array);
--
--int gpio_direction_input(unsigned gpio)
--{
--	struct gpio_desc *desc = gpio_to_desc(gpio);
--	int err;
--
--	if (!desc)
--		return -EINVAL;
--
--	err = gpio_ensure_requested(desc);
--	if (err < 0)
--		return err;
--
--	return gpiod_direction_input(desc);
--}
--EXPORT_SYMBOL_GPL(gpio_direction_input);
--
--int gpio_direction_output(unsigned gpio, int value)
--{
--	struct gpio_desc *desc = gpio_to_desc(gpio);
--	int err;
--
--	if (!desc)
--		return -EINVAL;
--
--	err = gpio_ensure_requested(desc);
--	if (err < 0)
--		return err;
--
--	return gpiod_direction_output_raw(desc, value);
--}
--EXPORT_SYMBOL_GPL(gpio_direction_output);
--
--int gpio_set_debounce(unsigned gpio, unsigned debounce)
--{
--	struct gpio_desc *desc = gpio_to_desc(gpio);
--	int err;
--
--	if (!desc)
--		return -EINVAL;
--
--	err = gpio_ensure_requested(desc);
--	if (err < 0)
--		return err;
--
--	return gpiod_set_debounce(desc, debounce);
--}
--EXPORT_SYMBOL_GPL(gpio_set_debounce);
-diff --git a/include/asm-generic/gpio.h b/include/asm-generic/gpio.h
-index 39a1d06950d9..c1d4105e1c1d 100644
---- a/include/asm-generic/gpio.h
-+++ b/include/asm-generic/gpio.h
-@@ -63,10 +63,19 @@ static inline struct gpio_chip *gpio_to_chip(unsigned gpio)
- extern int gpio_request(unsigned gpio, const char *label);
- extern void gpio_free(unsigned gpio);
- 
--extern int gpio_direction_input(unsigned gpio);
--extern int gpio_direction_output(unsigned gpio, int value);
-+static inline int gpio_direction_input(unsigned gpio)
-+{
-+	return gpiod_direction_input(gpio_to_desc(gpio));
-+}
-+static inline int gpio_direction_output(unsigned gpio, int value)
-+{
-+	return gpiod_direction_output_raw(gpio_to_desc(gpio), value);
-+}
- 
--extern int gpio_set_debounce(unsigned gpio, unsigned debounce);
-+static inline int gpio_set_debounce(unsigned gpio, unsigned debounce)
-+{
-+	return gpiod_set_debounce(gpio_to_desc(gpio), debounce);
-+}
- 
- static inline int gpio_get_value_cansleep(unsigned gpio)
- {
--- 
-2.0.2
+Yanmin
 
