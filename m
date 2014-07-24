@@ -1,46 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934999AbaGXJwS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 05:52:18 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:53699 "EHLO mail.skyhub.de"
+	id S934504AbaGXJw6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 05:52:58 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:44424 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932561AbaGXJwP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 05:52:15 -0400
-Date: Thu, 24 Jul 2014 11:52:10 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: "Chen, Gong" <gong.chen@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, tglx@linutronix.de,
-        paulus@samba.org, benh@kernel.crashing.org, tony.luck@intel.com,
-        hpa@zytor.com, jkosina@suse.cz, rafael.j.wysocki@intel.com,
-        linux@arm.linux.org.uk, ralf@linux-mips.org, schwidefsky@de.ibm.com,
-        davem@davemloft.net, viro@zeniv.linux.org.uk, fweisbec@gmail.com,
-        cl@linux.com, akpm@linux-foundation.org, axboe@kernel.dk,
-        JBottomley@parallels.com, neilb@suse.de, christoffer.dall@linaro.org,
-        rostedt@goodmis.org, rric@kernel.org, gregkh@linuxfoundation.org,
-        mhocko@suse.cz, david@fromorbit.com
-Subject: Re: [RFC PATCH v1 16/70] x86, kernel, msr: _FROZEN Cleanup
-Message-ID: <20140724095210.GF19239@pd.tnic>
-References: <1406080786-3938-1-git-send-email-gong.chen@linux.intel.com>
- <1406080786-3938-17-git-send-email-gong.chen@linux.intel.com>
+	id S932557AbaGXJw4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jul 2014 05:52:56 -0400
+Date: Thu, 24 Jul 2014 11:52:52 +0200
+From: Jean Delvare <jdelvare@suse.de>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Dmitry Tarnyagin <dmitry.tarnyagin@lockless.no>,
+        Ohad Ben-Cohen <ohad@wizery.com>
+Subject: Re: Run-time dependencies for STE Modem remoteproc driver
+Message-ID: <20140724115252.1847dbad@endymion.delvare>
+In-Reply-To: <CACRpkdZwoftk1bbmZYc5wSh8rzf137TURcjno5Am=CUUHVvEFw@mail.gmail.com>
+References: <20140721181507.5a6d3b2c@endymion.delvare>
+	<CACRpkdZwoftk1bbmZYc5wSh8rzf137TURcjno5Am=CUUHVvEFw@mail.gmail.com>
+Organization: SUSE Linux
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1406080786-3938-17-git-send-email-gong.chen@linux.intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 22, 2014 at 09:58:52PM -0400, Chen, Gong wrote:
-> Remove XXX_FROZEN state from x86/kernel/msr.
+Hi Linus,
+
+On Wed, 23 Jul 2014 17:21:17 +0200, Linus Walleij wrote:
+> On Mon, Jul 21, 2014 at 6:15 PM, Jean Delvare <jdelvare@suse.de> wrote:
 > 
-> Signed-off-by: Chen, Gong <gong.chen@linux.intel.com>
+> > This brings the question: on which architectures / platforms is the STE
+> > Modem remoteproc driver needed?
+> 
+> NONE.
 
-Acked-by: Borislav Petkov <bp@suse.de>
+Hm, OK :D So I will disable this driver in all our kernels. Maybe this
+should be mentioned in the Kconfig help text?
 
+Still, I suppose that the driver had an intended target, maybe we can
+use that as a run-time dependency? Or should we just make the driver
+depend on COMPILE_TEST?
+
+Thanks,
 -- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+Jean Delvare
+SUSE L3 Support
