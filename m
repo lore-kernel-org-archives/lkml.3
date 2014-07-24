@@ -1,58 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759456AbaGXQ4H (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 12:56:07 -0400
-Received: from mailout1.zih.tu-dresden.de ([141.30.67.72]:36304 "EHLO
-	mailout1.zih.tu-dresden.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751571AbaGXQ4F (ORCPT
+	id S1759561AbaGXQ4i (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 12:56:38 -0400
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:49131 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756598AbaGXQ4g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 12:56:05 -0400
-X-Greylist: delayed 1174 seconds by postgrey-1.27 at vger.kernel.org; Thu, 24 Jul 2014 12:56:05 EDT
-Message-ID: <53D135F9.1070104@tu-dresden.de>
-Date: Thu, 24 Jul 2014 18:36:09 +0200
-From: Thomas Ilsche <thomas.ilsche@tu-dresden.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Thu, 24 Jul 2014 12:56:36 -0400
+Date: Thu, 24 Jul 2014 09:56:33 -0700
+From: Brian Norris <computersforpeace@gmail.com>
+To: "Gupta, Pekon" <pekon@ti.com>
+Cc: bpqw <bpqw@micron.com>, "ron@debian.org" <ron@debian.org>,
+        "artem.bityutskiy@linux.intel.com" <artem.bityutskiy@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "b32955@freescale.com" <b32955@freescale.com>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        "ezequiel.garcia@free-electrons.com" 
+	<ezequiel.garcia@free-electrons.com>,
+        "u.kleine-koenig@pengutronix.de" <u.kleine-koenig@pengutronix.de>,
+        "dwmw2@infradead.org" <dwmw2@infradead.org>
+Subject: Re: Subject: [PATCH 1/1] mtd:nand:fix nand_lock/unlock() function
+Message-ID: <20140724165633.GF3711@ld-irv-0074>
+References: <CB9F11E856CFD04BB18EC1C68F2598931B1112@NTXXIAMBX01.xacn.micron.com>
+ <20140724012730.GA3711@ld-irv-0074>
+ <20980858CB6D3A4BAE95CA194937D5E73EB068AB@DBDE04.ent.ti.com>
 MIME-Version: 1.0
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>
-CC: linux-kernel@vger.kernel.org
-Subject: Perf: cannot overide PYTHON(_CONFIG)
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
-X-TUD-Virus-Scanned: mailout1.zih.tu-dresden.de
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20980858CB6D3A4BAE95CA194937D5E73EB068AB@DBDE04.ent.ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear perf maintainers,
+On Thu, Jul 24, 2014 at 07:54:41AM +0000, Pekon Gupta wrote:
+> >On Thu, Jul 24, 2014 at 01:00:01AM +0000, bpqw wrote:
+> >I don't see any in-tree users of nand_{un,}lock(). I recently caught a
+> >bug in nand_lock() via inspection (still need to send a fix), but I was
+> >considering dropping the functions entirely.
+> >
+> >I presume you have some out-of-tree driver that uses these functions,
+> >then?
+> >
+> Please don't drop nand_{unlock, lock} interfaces at-least for sometime.
+> I remember there were some users trying to use these for secure
+> applications. But due to lack of proper userland utility support they
+> probably dropped the idea.
 
-It is documented in Makefile.perf and the Python 3 error message to use
-make PYTHON=python2. However this does not work anymore since
-9734163b6ee1425c6fa4b65d7e6ce34c9079420d moved the libpython feature check.
+OK, I won't drop them yet.
 
-Further it would be more portable anyway to use "python2" as default
-instead of "python" as long as python3 is not supported. This follows
-the PEP 394 recommendation: https://www.python.org/dev/peps/pep-0394
+> Good to have this added as part of mtd-utils package, and then let it live
+> for some more time.
 
+As you note, there's no user-space support. There's actually no one
+using them even in the kernel, which is why I considered dropping them.
+If you want to use them, find a proper way to use them then! (I'm not
+sure: do they match with mtd_lock() / ioctl(MEMLOCK) interface?)
 
-I am not sure how to correctly fix the failure to respect
-PYTHON(_CONFIG). I would assume that early in perf/config/Makefile
-FEATURE_CHECK_[CFLAGS|LDFLAGS]-libpython(-version) needs to be set
-(before the feature checks are executed) and that the reconstruction of
-FLAGS_PYTHON_EMBED based on hardcoded python-config needs to be removed.
-
-Best Regards,
-Thomas
--- 
-Dipl. Inf. Thomas Ilsche
-Computer Scientist
-Highly Adaptive Energy-Efficient Computing
-CRC 912 HAEC: http://tu-dresden.de/sfb912
-Technische Universität Dresden
-Center for Information Services and High Performance Computing (ZIH)
-01062 Dresden, Germany
-
-Phone: +49 351 463-42168
-Fax: +49 351 463-3773
-E-Mail: thomas.ilsche@tu-dresden.de
+Brian
