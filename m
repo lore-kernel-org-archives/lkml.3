@@ -1,134 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934292AbaGXHIp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 03:08:45 -0400
-Received: from webbox1416.server-home.net ([77.236.96.61]:41681 "EHLO
-	webbox1416.server-home.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934061AbaGXHIn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 03:08:43 -0400
-From: Alexander Stein <alexander.stein@systec-electronic.com>
-To: Shawn Guo <shawn.guo@freescale.com>, Sascha Hauer <kernel@pengutronix.de>
-Cc: Alexander Stein <alexander.stein@systec-electronic.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] arm/mach-imx/iomux: Do not export symbol without public declaration
-Date: Thu, 24 Jul 2014 09:05:21 +0200
-Message-Id: <1406185521-30803-1-git-send-email-alexander.stein@systec-electronic.com>
-X-Mailer: git-send-email 1.8.5.5
+	id S934226AbaGXHS7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 03:18:59 -0400
+Received: from darkcity.gna.ch ([195.226.6.51]:50266 "EHLO mail.gna.ch"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S934045AbaGXHS6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jul 2014 03:18:58 -0400
+Message-ID: <53D0B358.5010400@daenzer.net>
+Date: Thu, 24 Jul 2014 16:18:48 +0900
+From: =?windows-1252?Q?Michel_D=E4nzer?= <michel@daenzer.net>
+User-Agent: Mozilla/5.0 (X11; Linux ppc; rv:31.0) Gecko/20100101 Icedove/31.0
+MIME-Version: 1.0
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Random panic in load_balance() with 3.16-rc
+References: <53C77BB8.6030804@daenzer.net> <20140717075820.GE19379@twins.programming.kicks-ass.net> <53C8E90F.1010306@daenzer.net> <53CE00EF.70108@daenzer.net> <53CF31AE.30403@daenzer.net> <CA+55aFwyURgG717kmuAXzKcHddN_63GirtwHZB4ePKH+8qVtJw@mail.gmail.com> <20140723064948.GK3935@laptop> <53CF6CC4.6090207@daenzer.net> <20140723082819.GR3935@laptop> <20140723092536.GO12054@laptop.lan> <53CF80EE.5050702@daenzer.net>
+In-Reply-To: <53CF80EE.5050702@daenzer.net>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The iomux function declarations are in headers only accessible in this
-directory. Thus those can't be used in any module. None of the
-objects in this directory is tristate. Neither can the header be included
-in out-of-tree modules.
+On 23.07.2014 18:31, Michel Dänzer wrote:
+> On 23.07.2014 18:25, Peter Zijlstra wrote:
+>> On Wed, Jul 23, 2014 at 10:28:19AM +0200, Peter Zijlstra wrote:
+>>
+>>> Of course, the other thing that patch did is clear sgp->power (now
+>>> sgc->capacity). 
+>>
+>> Hmm, re-reading the thread there isn't a clear confirmation its this
+>> patch at all. Could you perhaps bisect this to either verify it is
+>> indeed that patch we're talking about:
+>>
+>> caffcdd8d27b ("sched: Do not zero sg->cpumask and sg->sgp->power in build_sched_groups()")
+>>
+>> or find which patch is causing this.
+> 
+> It can take a long time for the problem to occur, so I need to run at
+> least for one or two days to be at least somewhat sure a given kernel is
+> not affected.
+> 
+> I'll try reproducing the problem with your previous suggestions first,
 
-Signed-off-by: Alexander Stein <alexander.stein@systec-electronic.com>
----
- arch/arm/mach-imx/iomux-imx31.c | 7 -------
- arch/arm/mach-imx/iomux-v1.c    | 2 --
- arch/arm/mach-imx/iomux-v3.c    | 2 --
- 3 files changed, 11 deletions(-)
+Just happened again, with your robustness patch and setting
+sg->sgc->capacity = 0.
 
-diff --git a/arch/arm/mach-imx/iomux-imx31.c b/arch/arm/mach-imx/iomux-imx31.c
-index 7c66805d2cc0..1657fe64cd0f 100644
---- a/arch/arm/mach-imx/iomux-imx31.c
-+++ b/arch/arm/mach-imx/iomux-imx31.c
-@@ -64,7 +64,6 @@ int mxc_iomux_mode(unsigned int pin_mode)
- 
- 	return ret;
- }
--EXPORT_SYMBOL(mxc_iomux_mode);
- 
- /*
-  * This function configures the pad value for a IOMUX pin.
-@@ -90,7 +89,6 @@ void mxc_iomux_set_pad(enum iomux_pins pin, u32 config)
- 
- 	spin_unlock(&gpio_mux_lock);
- }
--EXPORT_SYMBOL(mxc_iomux_set_pad);
- 
- /*
-  * allocs a single pin:
-@@ -116,7 +114,6 @@ int mxc_iomux_alloc_pin(unsigned int pin, const char *label)
- 
- 	return 0;
- }
--EXPORT_SYMBOL(mxc_iomux_alloc_pin);
- 
- int mxc_iomux_setup_multiple_pins(const unsigned int *pin_list, unsigned count,
- 		const char *label)
-@@ -137,7 +134,6 @@ setup_error:
- 	mxc_iomux_release_multiple_pins(pin_list, i);
- 	return ret;
- }
--EXPORT_SYMBOL(mxc_iomux_setup_multiple_pins);
- 
- void mxc_iomux_release_pin(unsigned int pin)
- {
-@@ -146,7 +142,6 @@ void mxc_iomux_release_pin(unsigned int pin)
- 	if (pad < (PIN_MAX + 1))
- 		clear_bit(pad, mxc_pin_alloc_map);
- }
--EXPORT_SYMBOL(mxc_iomux_release_pin);
- 
- void mxc_iomux_release_multiple_pins(const unsigned int *pin_list, int count)
- {
-@@ -158,7 +153,6 @@ void mxc_iomux_release_multiple_pins(const unsigned int *pin_list, int count)
- 		p++;
- 	}
- }
--EXPORT_SYMBOL(mxc_iomux_release_multiple_pins);
- 
- /*
-  * This function enables/disables the general purpose function for a particular
-@@ -178,4 +172,3 @@ void mxc_iomux_set_gpr(enum iomux_gp_func gp, bool en)
- 	__raw_writel(l, IOMUXGPR);
- 	spin_unlock(&gpio_mux_lock);
- }
--EXPORT_SYMBOL(mxc_iomux_set_gpr);
-diff --git a/arch/arm/mach-imx/iomux-v1.c b/arch/arm/mach-imx/iomux-v1.c
-index 2b156d1d9e21..ecd543664644 100644
---- a/arch/arm/mach-imx/iomux-v1.c
-+++ b/arch/arm/mach-imx/iomux-v1.c
-@@ -153,7 +153,6 @@ int mxc_gpio_mode(int gpio_mode)
- 
- 	return 0;
- }
--EXPORT_SYMBOL(mxc_gpio_mode);
- 
- static int imx_iomuxv1_setup_multiple(const int *list, unsigned count)
- {
-@@ -178,7 +177,6 @@ int mxc_gpio_setup_multiple_pins(const int *pin_list, unsigned count,
- 	ret = imx_iomuxv1_setup_multiple(pin_list, count);
- 	return ret;
- }
--EXPORT_SYMBOL(mxc_gpio_setup_multiple_pins);
- 
- int __init imx_iomuxv1_init(void __iomem *base, int numports)
- {
-diff --git a/arch/arm/mach-imx/iomux-v3.c b/arch/arm/mach-imx/iomux-v3.c
-index 9dae74bf47fc..d61f9606fc56 100644
---- a/arch/arm/mach-imx/iomux-v3.c
-+++ b/arch/arm/mach-imx/iomux-v3.c
-@@ -55,7 +55,6 @@ int mxc_iomux_v3_setup_pad(iomux_v3_cfg_t pad)
- 
- 	return 0;
- }
--EXPORT_SYMBOL(mxc_iomux_v3_setup_pad);
- 
- int mxc_iomux_v3_setup_multiple_pads(iomux_v3_cfg_t *pad_list, unsigned count)
- {
-@@ -71,7 +70,6 @@ int mxc_iomux_v3_setup_multiple_pads(iomux_v3_cfg_t *pad_list, unsigned count)
- 	}
- 	return 0;
- }
--EXPORT_SYMBOL(mxc_iomux_v3_setup_multiple_pads);
- 
- void mxc_iomux_v3_init(void __iomem *iomux_v3_base)
- {
+> but if I manage to do that, I guess there's no alternative to bisecting...
+
+I hope the assembly output I sent earlier helps, I'm afraid bisecting
+this could be painful.
+
+
 -- 
-1.8.5.5
-
+Earthling Michel Dänzer            |                  http://www.amd.com
+Libre software enthusiast          |                Mesa and X developer
