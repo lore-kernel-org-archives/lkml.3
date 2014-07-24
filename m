@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934807AbaGXJtH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 05:49:07 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:55156 "EHLO
+	id S934846AbaGXJtQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 05:49:16 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:55166 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934789AbaGXJtE (ORCPT
+	with ESMTP id S934797AbaGXJtG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 05:49:04 -0400
+	Thu, 24 Jul 2014 05:49:06 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Colin Cross <ccross@android.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
+Cc: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 111/128] arm64: implement TASK_SIZE_OF
-Date: Thu, 24 Jul 2014 10:46:00 +0100
-Message-Id: <1406195177-8656-112-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 113/128] cpufreq: Makefile: fix compilation for davinci platform
+Date: Thu, 24 Jul 2014 10:46:02 +0100
+Message-Id: <1406195177-8656-114-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1406195177-8656-1-git-send-email-luis.henriques@canonical.com>
 References: <1406195177-8656-1-git-send-email-luis.henriques@canonical.com>
@@ -28,41 +28,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Colin Cross <ccross@android.com>
+From: Prabhakar Lad <prabhakar.csengg@gmail.com>
 
-commit fa2ec3ea10bd377f9d55772b1dab65178425a1a2 upstream.
+commit 5a90af67c2126fe1d04ebccc1f8177e6ca70d3a9 upstream.
 
-include/linux/sched.h implements TASK_SIZE_OF as TASK_SIZE if it
-is not set by the architecture headers.  TASK_SIZE uses the
-current task to determine the size of the virtual address space.
-On a 64-bit kernel this will cause reading /proc/pid/pagemap of a
-64-bit process from a 32-bit process to return EOF when it reads
-past 0xffffffff.
+Since commtit 8a7b1227e303 (cpufreq: davinci: move cpufreq driver to
+drivers/cpufreq) this added dependancy only for CONFIG_ARCH_DAVINCI_DA850
+where as davinci_cpufreq_init() call is used by all davinci platform.
 
-Implement TASK_SIZE_OF exactly the same as TASK_SIZE with
-test_tsk_thread_flag instead of test_thread_flag.
+This patch fixes following build error:
 
-Signed-off-by: Colin Cross <ccross@android.com>
-Acked-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+arch/arm/mach-davinci/built-in.o: In function `davinci_init_late':
+:(.init.text+0x928): undefined reference to `davinci_cpufreq_init'
+make: *** [vmlinux] Error 1
+
+Fixes: 8a7b1227e303 (cpufreq: davinci: move cpufreq driver to drivers/cpufreq)
+Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/arm64/include/asm/memory.h | 2 ++
- 1 file changed, 2 insertions(+)
+ drivers/cpufreq/Makefile | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/arm64/include/asm/memory.h b/arch/arm64/include/asm/memory.h
-index 20925bcf4e2a..e1134d04e07e 100644
---- a/arch/arm64/include/asm/memory.h
-+++ b/arch/arm64/include/asm/memory.h
-@@ -51,6 +51,8 @@
- #define TASK_SIZE_32		UL(0x100000000)
- #define TASK_SIZE		(test_thread_flag(TIF_32BIT) ? \
- 				TASK_SIZE_32 : TASK_SIZE_64)
-+#define TASK_SIZE_OF(tsk)	(test_tsk_thread_flag(tsk, TIF_32BIT) ? \
-+				TASK_SIZE_32 : TASK_SIZE_64)
- #else
- #define TASK_SIZE		TASK_SIZE_64
- #endif /* CONFIG_COMPAT */
+diff --git a/drivers/cpufreq/Makefile b/drivers/cpufreq/Makefile
+index d345b5a7aa71..5a782e35c2e9 100644
+--- a/drivers/cpufreq/Makefile
++++ b/drivers/cpufreq/Makefile
+@@ -50,7 +50,7 @@ obj-$(CONFIG_ARM_BIG_LITTLE_CPUFREQ)	+= arm_big_little.o
+ # LITTLE drivers, so that it is probed last.
+ obj-$(CONFIG_ARM_DT_BL_CPUFREQ)		+= arm_big_little_dt.o
+ 
+-obj-$(CONFIG_ARCH_DAVINCI_DA850)	+= davinci-cpufreq.o
++obj-$(CONFIG_ARCH_DAVINCI)		+= davinci-cpufreq.o
+ obj-$(CONFIG_UX500_SOC_DB8500)		+= dbx500-cpufreq.o
+ obj-$(CONFIG_ARM_EXYNOS_CPUFREQ)	+= exynos-cpufreq.o
+ obj-$(CONFIG_ARM_EXYNOS4210_CPUFREQ)	+= exynos4210-cpufreq.o
 -- 
 1.9.1
 
