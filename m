@@ -1,81 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934460AbaGXTZG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 15:25:06 -0400
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:56481 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933705AbaGXTZE (ORCPT
+	id S934495AbaGXTZT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 15:25:19 -0400
+Received: from mail-lb0-f178.google.com ([209.85.217.178]:58383 "EHLO
+	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932195AbaGXTZP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 15:25:04 -0400
+	Thu, 24 Jul 2014 15:25:15 -0400
 MIME-Version: 1.0
-In-Reply-To: <CALCETrUt1yLXTt5pDZJd0s4s+4dhs0LB7tbJYd6p1+EbdNWw7w@mail.gmail.com>
-References: <1405657206-12060-1-git-send-email-ast@plumgrid.com>
-	<1405657206-12060-11-git-send-email-ast@plumgrid.com>
-	<CALCETrUt1yLXTt5pDZJd0s4s+4dhs0LB7tbJYd6p1+EbdNWw7w@mail.gmail.com>
-Date: Thu, 24 Jul 2014 12:25:02 -0700
-Message-ID: <CAMEtUuygJoH+PBNksTwRHyRObCZixoTDFzmnHroErZHZLaGNbg@mail.gmail.com>
-Subject: Re: [PATCH RFC v2 net-next 10/16] bpf: add eBPF verifier
-From: Alexei Starovoitov <ast@plumgrid.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: "David S. Miller" <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Jiri Olsa <jolsa@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
+In-Reply-To: <20140724161225.GA11204@ravnborg.org>
+References: <mvmr4264i1p.fsf@hawking.suse.de>
+	<CAKv+Gu8SbM_Z=ymBFb2D4EWJeo-6dWuKqE2YNOkqJTKLDEJcYA@mail.gmail.com>
+	<mvm4my7j5xh.fsf@hawking.suse.de>
+	<CAKv+Gu-6rUxUnF+dRuroDJqy2K2B5F0r7_bm0X-vyiuQ-83W5w@mail.gmail.com>
+	<CAKv+Gu96k7GOVR85EXtro3Lt0jjiJqxyvT9cwJZ1qc6uzq97bw@mail.gmail.com>
+	<mvmvbqmj3b2.fsf@hawking.suse.de>
+	<CAKv+Gu_9HRwAxkJjT3KRvDbupp0yzstyq1dXsXkTu9M6swdCKQ@mail.gmail.com>
+	<mvmr41aj2ob.fsf@hawking.suse.de>
+	<CAKv+Gu_z4VTssLDhiQxi8DRJNEUgzrM5bFzje8NXEmBiA2vqeg@mail.gmail.com>
+	<CAKv+Gu-B9_sgGgw9obrBGNUFSS1JcskN34s1X4PU8F5bauHT1Q@mail.gmail.com>
+	<20140724161225.GA11204@ravnborg.org>
+Date: Thu, 24 Jul 2014 21:25:13 +0200
+Message-ID: <CAKv+Gu8ikMGNVHeuujSf4eaK+LOFKMWxKF8i76VthnKYgvOcYQ@mail.gmail.com>
+Subject: Re: [PATCH] arm64/crypto: fix makefile rule for aes-glue-%.o
+From: Ard Biesheuvel <ard.biesheuvel@linaro.org>
+To: Sam Ravnborg <sam@ravnborg.org>
+Cc: Andreas Schwab <schwab@suse.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 24, 2014 at 11:25 AM, Andy Lutomirski <luto@amacapital.net> wrote:
-> On Thu, Jul 17, 2014 at 9:20 PM, Alexei Starovoitov <ast@plumgrid.com> wrote:
->> Safety of eBPF programs is statically determined by the verifier, which detects:
->> - loops
->> - out of range jumps
->> - unreachable instructions
->> - invalid instructions
->> - uninitialized register access
->> - uninitialized stack access
->> - misaligned stack access
->> - out of range stack access
->> - invalid calling convention
+On 24 July 2014 18:12, Sam Ravnborg <sam@ravnborg.org> wrote:
+> On Thu, Jul 24, 2014 at 04:24:48PM +0200, Ard Biesheuvel wrote:
+>> On 24 July 2014 16:18, Ard Biesheuvel <ard.biesheuvel@linaro.org> wrote:
+>> > On 24 July 2014 15:40, Andreas Schwab <schwab@suse.de> wrote:
+>> >> Ard Biesheuvel <ard.biesheuvel@linaro.org> writes:
+>> >>
+>> >>> On 24 July 2014 15:26, Andreas Schwab <schwab@suse.de> wrote:
+>> >>>> You are not using CONFIG_MODVERSIONS.
+>> >>>>
+>> >>>
+>> >>> I am
+>> >>
+>> >> No, you aren't, since you say that your .cmd contains a command to
+>> >> create aes-glue-ce.o, which with CONFIG_MODVERSIONS it doesn't.
+>> >>
+>> >
+>> > OK, you're right, it contains a command to create .tmp_aes-glue-ce.o.
+>> > But I am still not seeing the error you are seeing, strangely enough.
+>>
+>> OK, now I am seeing it.
+>>
+>> Acked-by: Ard Biesheuvel <ard.biesheuvel@linaro.org>
 >
-> Is there something that documents exactly what conditions an eBPF
-> program must satisfy in order to be considered valid?
+> Jumping in the end of the thread here - sorry for that.
+>
 
-I did a writeup in the past on things that verifiers checks and gave it
-to internal folks to review. Guys have said that now they understand very
-well how it works, but in reality it didn't help at all to write valid programs.
-What worked is 'verification trace' = the instruction by instruction dump
-of verifier state while it's analyzing the program.
-I gave few simple examples of it in
-'Understanding eBPF verifier messages' section:
-https://git.kernel.org/cgit/linux/kernel/git/ast/bpf.git/diff/Documentation/networking/filter.txt?id=b22459133b9f52d2176c8c0f8b5eb036478a40c9
-Every example there is what "program must satisfy to be valid"...
+No worries
 
-Therefore I'm addressing two things:
-1. how verifier works and what it checks for.
-  that is described in 'eBPF verifier' section of the doc and
-  in 200 lines of comments inside verifier.c
-2. how to write valid programs
- that's more important one, since it's a key to happy users.
- 'verification trace' is the first step. I'm planning to add debug info and
- user space tool that points out to line in C instead of assembler trace.
- In other words to bring errors to user as early as possible during
- compilation process.
- This is not a concern when programs are written in assembler,
- since the programs will be much shorter and thought through by
- the author. However I don't think there will be too many users
- willing to understand ebpf assembler.
+> Another way to solve this would be to create two
+> small wrapper files:
+> aes-glue-neon.c - which include aes-glue.c
+> aes-glue-ce.c that include aes-glue.c
+>
+> Then you could use standard kbuild support for building your module.
+> And we will not potentially break it when we change cc_o_c in the near future.
+>
 
-I suspect you're more concerned about #1 at this point whereas
-I'm concerned about #2.
+I see how that would fix this issue, but frankly, if we need to add .c
+files that only #include other .c files to support building multiple
+objects from a single .c file, I think the flaw is in the build
+system, and I would rather fix the build system instead.
+
+Cheers,
+Ard.
