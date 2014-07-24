@@ -1,87 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758715AbaGXF4m (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 01:56:42 -0400
-Received: from ozlabs.org ([103.22.144.67]:52871 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750904AbaGXF4l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 01:56:41 -0400
-Date: Thu, 24 Jul 2014 15:56:30 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>, Dave Airlie <airlied@linux.ie>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jingoo Han <jg1.han@samsung.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: linux-next: manual merge of the driver-core tree with the drm tree
-Message-ID: <20140724155630.2727ad65@canb.auug.org.au>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
+	id S1758738AbaGXF5V (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 01:57:21 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:44110 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750904AbaGXF5U (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jul 2014 01:57:20 -0400
+Message-ID: <53D0A037.2060308@linaro.org>
+Date: Thu, 24 Jul 2014 14:57:11 +0900
+From: AKASHI Takahiro <takahiro.akashi@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/5S4K/cFVN.atIrqQi.WIpm2"; protocol="application/pgp-signature"
+To: Andy Lutomirski <luto@amacapital.net>, wad@chromium.org,
+        catalin.marinas@arm.com, will.deacon@arm.com, keescook@chromium.org
+CC: dsaxena@linaro.org, linux-arm-kernel@lists.infradead.org,
+        linaro-kernel@lists.linaro.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v5 1/3] arm64: ptrace: reload a syscall number after ptrace
+ operations
+References: <1406020499-5537-1-git-send-email-takahiro.akashi@linaro.org> <1406020499-5537-2-git-send-email-takahiro.akashi@linaro.org> <53D08358.4020902@amacapital.net>
+In-Reply-To: <53D08358.4020902@amacapital.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/5S4K/cFVN.atIrqQi.WIpm2
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On 07/24/2014 12:54 PM, Andy Lutomirski wrote:
+> On 07/22/2014 02:14 AM, AKASHI Takahiro wrote:
+>> Arm64 holds a syscall number in w8(x8) register. Ptrace tracer may change
+>> its value either to:
+>>    * any valid syscall number to alter a system call, or
+>>    * -1 to skip a system call
+>>
+>> This patch implements this behavior by reloading that value into syscallno
+>> in struct pt_regs after tracehook_report_syscall_entry() or
+>> secure_computing(). In case of '-1', a return value of system call can also
+>> be changed by the tracer setting the value to x0 register, and so
+>> sys_ni_nosyscall() should not be called.
+>>
+>> See also:
+>>      42309ab4, ARM: 8087/1: ptrace: reload syscall number after
+>>           secure_computing() check
+>>
+>> Signed-off-by: AKASHI Takahiro <takahiro.akashi@linaro.org>
+>> ---
+>>   arch/arm64/kernel/entry.S  |    2 ++
+>>   arch/arm64/kernel/ptrace.c |   13 +++++++++++++
+>>   2 files changed, 15 insertions(+)
+>>
+>> diff --git a/arch/arm64/kernel/entry.S b/arch/arm64/kernel/entry.S
+>> index 5141e79..de8bdbc 100644
+>> --- a/arch/arm64/kernel/entry.S
+>> +++ b/arch/arm64/kernel/entry.S
+>> @@ -628,6 +628,8 @@ ENDPROC(el0_svc)
+>>   __sys_trace:
+>>       mov    x0, sp
+>>       bl    syscall_trace_enter
+>> +    cmp    w0, #-1                // skip syscall?
+>> +    b.eq    ret_to_user
+>
+> Does this mean that skipped syscalls will cause exit tracing to be skipped?
 
-Hi Greg,
+Yes. (and I guess yes on arm, too)
 
-Today's linux-next merge of the driver-core tree got a conflict in
-drivers/gpu/drm/armada/armada_crtc.c between commit d8c96083cf5e
-("drm/armada: permit CRTCs to be registered as separate devices") from
-the drm tree and commit c9d53c0f2d23 ("devres: remove
-devm_request_and_ioremap()") from the driver-core tree.
+ > If so, then you risk (at least) introducing
+> a nice user-triggerable OOPS if audit is enabled.
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+Can you please elaborate this?
+Since I didn't find any definition of audit's behavior when syscall is
+rewritten to -1, I thought it is reasonable to skip "exit tracing" of
+"skipped" syscall.
+(otherwise, "fake" seems to be more appropriate :)
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+-Takahiro AKASHI
 
-diff --cc drivers/gpu/drm/armada/armada_crtc.c
-index 3f620e21e06b,3aedf9e993e6..000000000000
---- a/drivers/gpu/drm/armada/armada_crtc.c
-+++ b/drivers/gpu/drm/armada/armada_crtc.c
-@@@ -1064,11 -1039,9 +1064,9 @@@ int armada_drm_crtc_create(struct drm_d
-  	if (ret)
-  		return ret;
- =20
-- 	base =3D devm_request_and_ioremap(dev, res);
-- 	if (!base) {
-- 		DRM_ERROR("failed to ioremap register\n");
-- 		return -ENOMEM;
-- 	}
- -	base =3D devm_ioremap_resource(dev->dev, res);
-++	base =3D devm_ioremap_resource(dev, res);
-+ 	if (IS_ERR(base))
-+ 		return PTR_ERR(base);
- =20
-  	dcrtc =3D kzalloc(sizeof(*dcrtc), GFP_KERNEL);
-  	if (!dcrtc) {
-
---Sig_/5S4K/cFVN.atIrqQi.WIpm2
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJT0KAWAAoJEMDTa8Ir7ZwVc/kQAIv6yh06PvzuUNglARTJudhZ
-4l+oWaHGBQw9kHnNGO2T/0qK2WEpJe/wJaaaZrTKEL4jarKzdim3DTc+qOWNUnDZ
-Pcxxxas8xhLcmLf9xI1/8P/R529UR3+7YgBZJDIKzgMzxU7yj6gx1wBhV/j4OCcw
-epCSeCMRdPN4dSJCcNwLRxfDJPxt1Sc1cdyM1GNBAv3WeDwP6yXRBgLJpe1nu6eN
-Dh1RM+S8v3R7RuLVGw86XHeogMOXc/rE6hldsSGifR8nrP6s/iTFF+Dnx1XeuO6w
-r6SkiYv7LTEGFsDEf04BS5tu2CDmVUwVb1VsJ7MPZRV41COsIeWo9BdEvt6auZGc
-ddJ5KL2Ol4Lx8PpQhCDO5J/EaZ0IHUSntYyyOwdAVWON4j6rdyQFkTo1Vktl/rkE
-TLMXl0+Zt2t5Tx4twx8RzoI2iNd5VXbSy1GkFOQIs64BVTRg/UXJLg6p6c7ZMTXH
-YBz2L2gOpjseBfV+F8w5njB7TvVDrujwQcdNu61xFO61UFqAcL2nCD3Z6HB4V/wD
-Rx7HzHBZQz3RFd6F8wyVkBuXscXalUMkpmiHJo8atoQmtUtmYA2+lQFdHgjJVGe3
-XsTFfBxOxjwnH/GGGLgq1hmv5PBRppmfdt4hZuJSf/2FxKNFsnx/XF/qu7ZhT+4r
-RAqp4odNVAK7IoVLqAxV
-=AQGr
------END PGP SIGNATURE-----
-
---Sig_/5S4K/cFVN.atIrqQi.WIpm2--
+> This bug existed for *years* on x86_32, and it amazes me that no one
+> ever triggered it by accident. (Grr, audit.)
+>
+> --Andy
