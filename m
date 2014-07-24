@@ -1,122 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935221AbaGXXZ0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 19:25:26 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:51638 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932131AbaGXXZY (ORCPT
+	id S935247AbaGXX0W (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 19:26:22 -0400
+Received: from e32.co.us.ibm.com ([32.97.110.150]:59697 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934651AbaGXX0T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 19:25:24 -0400
-Date: Fri, 25 Jul 2014 01:25:22 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: kernel list <linux-kernel@vger.kernel.org>, Greg KH <greg@kroah.com>
-Subject: sysfs-related WARN_ON() when experimenting with broken disk
-Message-ID: <20140724232522.GA6197@amd.pavel.ucw.cz>
+	Thu, 24 Jul 2014 19:26:19 -0400
+Date: Thu, 24 Jul 2014 16:26:05 -0700
+From: Nishanth Aravamudan <nacc@linux.vnet.ibm.com>
+To: Jiang Liu <jiang.liu@linux.intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        David Rientjes <rientjes@google.com>,
+        Mike Galbraith <umgwanakikbuti@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+        Toshi Kani <toshi.kani@hp.com>, Igor Mammedov <imammedo@redhat.com>,
+        Borislav Petkov <bp@alien8.de>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Tang Chen <tangchen@cn.fujitsu.com>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+        Lans Zhang <jia.zhang@windriver.com>, Tony Luck <tony.luck@intel.com>,
+        linux-mm@kvack.org, linux-hotplug@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        linux-pm@vger.kernel.org
+Subject: Re: [RFC Patch V1 29/30] mm, x86: Enable memoryless node support to
+ better support CPU/memory hotplug
+Message-ID: <20140724232605.GB24458@linux.vnet.ibm.com>
+References: <1405064267-11678-1-git-send-email-jiang.liu@linux.intel.com>
+ <1405064267-11678-30-git-send-email-jiang.liu@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1405064267-11678-30-git-send-email-jiang.liu@linux.intel.com>
+X-Operating-System: Linux 3.13.0-32-generic (x86_64)
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14072423-0928-0000-0000-000003A6139E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+On 11.07.2014 [15:37:46 +0800], Jiang Liu wrote:
+> With current implementation, all CPUs within a NUMA node will be
+> assocaited with another NUMA node if the node has no memory installed.
 
-I had some soft-lockups, and then...
+<snip>
 
-1 lock held by scsi_eh_4/1629:
- #0:  (&us_interface_key[i]){......}, at: [<c44f2c80>]
- device_reset+0x20/0x50
-usb 1-1: USB disconnect, device number 2
-sd 4:0:0:0: Device offlined - not ready after error recovery
-sd 4:0:0:0: [sdb] Unhandled error code
-sd 4:0:0:0: [sdb]  
-Result: hostbyte=0x01 driverbyte=0x00
-sd 4:0:0:0: [sdb] CDB: 
-cdb[0]=0x28: 28 00 00 c4 33 40 00 00 40 00
-end_request: I/O error, dev sdb, sector 12858176
-Buffer I/O error on device sdb, logical block 1607272
-Buffer I/O error on device sdb, logical block 1607273
-Buffer I/O error on device sdb, logical block 1607274
-Buffer I/O error on device sdb, logical block 1607275
-Buffer I/O error on device sdb, logical block 1607276
-Buffer I/O error on device sdb, logical block 1607277
-Buffer I/O error on device sdb, logical block 1607278
-Buffer I/O error on device sdb, logical block 1607279
-sd 4:0:0:0: [sdb] Unhandled error code
-sd 4:0:0:0: [sdb]  
-Result: hostbyte=0x01 driverbyte=0x00
-sd 4:0:0:0: [sdb] CDB: 
-cdb[0]=0x28: 28 00 00 c4 33 80 00 00 40 00
-end_request: I/O error, dev sdb, sector 12858240
-Buffer I/O error on device sdb, logical block 1607280
-Buffer I/O error on device sdb, logical block 1607281
-------------[ cut here ]------------
-WARNING: CPU: 0 PID: 3734 at fs/sysfs/group.c:216
-sysfs_remove_group+0x87/0x90()
-sysfs group c4b03810 not found for kobject 'target4:0:0'
-Modules linked in:
-CPU: 0 PID: 3734 Comm: dd_rescue Tainted: G        W    3.14.0 #336
-Hardware name:                  /DG41MJ, BIOS
-MJG4110H.86A.0006.2009.1223.1155 12/23/2009
- 000000d8 f3b83d68 c47dbe8b c49eb156 f3b83d98 c4037fba c49d9478
- f3b83dc4
- 00000e96 c49eb156 000000d8 c4145f87 c4145f87 00000000 c4b03810
- f13cec1c
- f3b83db0 c403805e 00000009 f3b83da8 c49d9478 f3b83dc4 f3b83dd8
- c4145f87
-Call Trace:
- [<c47dbe8b>] dump_stack+0x41/0x52
- [<c4037fba>] warn_slowpath_common+0x7a/0xa0
- [<c4145f87>] ? sysfs_remove_group+0x87/0x90
- [<c4145f87>] ? sysfs_remove_group+0x87/0x90
- [<c403805e>] warn_slowpath_fmt+0x2e/0x30
- [<c4145f87>] sysfs_remove_group+0x87/0x90
- [<c43dbc1d>] dpm_sysfs_remove+0x2d/0x30
- [<c43d4dec>] device_del+0x2c/0x170
- [<c43f87b7>] scsi_target_reap_usercontext+0x27/0x40
- [<c43f8790>] ? scsi_add_device+0x30/0x30
- [<c404f154>] execute_in_process_context+0x74/0x80
- [<c43f7a2c>] scsi_target_reap+0x9c/0xc0
- [<c43f9947>] scsi_device_dev_release_usercontext+0xc7/0xf0
- [<c43f9880>] ? scsi_device_dev_release+0x20/0x20
- [<c404f154>] execute_in_process_context+0x74/0x80
- [<c43f9873>] scsi_device_dev_release+0x13/0x20
- [<c43d4247>] device_release+0x27/0x90
- [<c426fcfa>] kobject_release+0x7a/0x1c0
- [<c426fd18>] ? kobject_release+0x98/0x1c0
- [<c426fe6f>] kobject_put+0x2f/0x70
- [<c426fe6f>] ? kobject_put+0x2f/0x70
- [<c43d39ff>] put_device+0xf/0x20
- [<c43ee233>] scsi_device_put+0x33/0x50
- [<c43fca3d>] scsi_disk_put+0x2d/0x50
- [<c43fdaef>] sd_release+0x2f/0x60
- [<c411c788>] __blkdev_put+0x138/0x170
- [<c411c807>] blkdev_put+0x47/0x130
- [<c411c90a>] blkdev_close+0x1a/0x20
- [<c40eddd4>] __fput+0x84/0x1e0
- [<c40edf98>] ____fput+0x8/0x10
- [<c4050419>] task_work_run+0x69/0xb0
- [<c4002332>] do_notify_resume+0x42/0x50
- [<c47e0b8a>] work_notifysig+0x24/0x2a
----[ end trace 8da1d66d9dea492b ]---
-usb 1-1: new high-speed USB device number 6 using ehci-pci
-usb 1-1: New USB device found, idVendor=05e3, idProduct=0702
-usb 1-1: New USB device strings: Mfr=2, Product=3, SerialNumber=4
-usb 1-1: Product: USB Mass Storage Device 
-usb 1-1: Manufacturer: Genesyslog���c
-usb 1-1: SerialNumber: 0000400330
-usb-storage 1-1:1.0: USB Mass Storage device detected
-usb-storage 1-1:1.0: Quirks match for vid 05e3 pid 0702: 520
-scsi6 : usb-storage 1-1:1.0
-scsi 6:0:0:0: Direct-Access     WDC WD20 0BB-00CXA0       0811 PQ: 0
-ANSI: 0
-sd 6:0:0:0: [sdb] 39102336 512-byte logical blocks: (20.0 GB/18.6 GiB)
+> ---
+>  arch/x86/Kconfig            |    3 +++
+>  arch/x86/kernel/acpi/boot.c |    5 ++++-
+>  arch/x86/kernel/smpboot.c   |    2 ++
+>  arch/x86/mm/numa.c          |   42 +++++++++++++++++++++++++++++++++++-------
+>  4 files changed, 44 insertions(+), 8 deletions(-)
+> 
+> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+> index a8f749ef0fdc..f35b25b88625 100644
+> --- a/arch/x86/Kconfig
+> +++ b/arch/x86/Kconfig
+> @@ -1887,6 +1887,9 @@ config USE_PERCPU_NUMA_NODE_ID
+>  	def_bool y
+>  	depends on NUMA
+> 
+> +config HAVE_MEMORYLESS_NODES
+> +	def_bool NUMA
+> +
+>  config ARCH_ENABLE_SPLIT_PMD_PTLOCK
+>  	def_bool y
+>  	depends on X86_64 || X86_PAE
+> diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
+> index 86281ffb96d6..3b5641703a49 100644
+> --- a/arch/x86/kernel/acpi/boot.c
+> +++ b/arch/x86/kernel/acpi/boot.c
+> @@ -612,6 +612,8 @@ static void acpi_map_cpu2node(acpi_handle handle, int cpu, int physid)
+>  	if (nid != -1) {
+>  		set_apicid_to_node(physid, nid);
+>  		numa_set_node(cpu, nid);
+> +		if (node_online(nid))
+> +			set_cpu_numa_mem(cpu, local_memory_node(nid));
 
-Any ideas? Worth debugging?
+How common is it for this method to be called for a CPU on an offline
+node? Aren't you fixing this in the next patch (so maybe the order
+should be changed?)?
 
-								Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+>  	}
+>  #endif
+>  }
+> @@ -644,9 +646,10 @@ int acpi_unmap_lsapic(int cpu)
+>  {
+>  #ifdef CONFIG_ACPI_NUMA
+>  	set_apicid_to_node(per_cpu(x86_cpu_to_apicid, cpu), NUMA_NO_NODE);
+> +	set_cpu_numa_mem(cpu, NUMA_NO_NODE);
+>  #endif
+> 
+> -	per_cpu(x86_cpu_to_apicid, cpu) = -1;
+> +	per_cpu(x86_cpu_to_apicid, cpu) = BAD_APICID;
+
+I think this is an unrelated change?
+
+>  	set_cpu_present(cpu, false);
+>  	num_processors--;
+> 
+> diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
+> index 5492798930ef..4a5437989ffe 100644
+> --- a/arch/x86/kernel/smpboot.c
+> +++ b/arch/x86/kernel/smpboot.c
+> @@ -162,6 +162,8 @@ static void smp_callin(void)
+>  		      __func__, cpuid);
+>  	}
+> 
+> +	set_numa_mem(local_memory_node(cpu_to_node(cpuid)));
+> +
+
+Note that you might hit the same issue I reported on powerpc, if
+smp_callin() is part of smp_init(). The waitqueue initialization code
+depends on cpu_to_node() [and eventually cpu_to_mem()] to be initialized
+quite early.
+
+Thanks,
+Nish
+
