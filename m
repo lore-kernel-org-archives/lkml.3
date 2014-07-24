@@ -1,87 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759399AbaGXODH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 10:03:07 -0400
-Received: from mail.kernel.org ([198.145.19.201]:43053 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759005AbaGXODF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 10:03:05 -0400
-Date: Thu, 24 Jul 2014 11:02:56 -0300
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Adrian Hunter <adrian.hunter@intel.com>,
-        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 13/52] perf tools: Add perf_pmu__scan_file()
-Message-ID: <20140724140256.GV20303@kernel.org>
-References: <1406035081-14301-1-git-send-email-adrian.hunter@intel.com>
- <1406035081-14301-14-git-send-email-adrian.hunter@intel.com>
- <20140722190901.GC29750@krava.redhat.com>
- <53CF5531.90709@intel.com>
- <20140723093638.GA1207@krava.brq.redhat.com>
- <20140723142525.GM20303@kernel.org>
- <20140724100606.GA1127@krava.brq.redhat.com>
+	id S1759340AbaGXOEM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 10:04:12 -0400
+Received: from mail-oa0-f43.google.com ([209.85.219.43]:37824 "EHLO
+	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758977AbaGXOEK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jul 2014 10:04:10 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140724100606.GA1127@krava.brq.redhat.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1406127413-10672-1-git-send-email-acourbot@nvidia.com>
+References: <1406127413-10672-1-git-send-email-acourbot@nvidia.com>
+Date: Thu, 24 Jul 2014 16:04:09 +0200
+Message-ID: <CACRpkdbUp3=FtFyCgVKDFHwG51STBW88=-aJbn9x3iHxnK-R_w@mail.gmail.com>
+Subject: Re: [PATCH] gpio: remove useless check in gpiolib_sysfs_init()
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Alexandre Courbot <acourbot@nvidia.com>
+Cc: "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, Jul 24, 2014 at 12:06:06PM +0200, Jiri Olsa escreveu:
-> On Wed, Jul 23, 2014 at 11:25:25AM -0300, Arnaldo Carvalho de Melo wrote:
-> > Em Wed, Jul 23, 2014 at 11:36:38AM +0200, Jiri Olsa escreveu:
-> > > On Wed, Jul 23, 2014 at 09:24:49AM +0300, Adrian Hunter wrote:
-> > > > On 07/22/2014 10:09 PM, Jiri Olsa wrote:
-> > > > > On Tue, Jul 22, 2014 at 04:17:22PM +0300, Adrian Hunter wrote:
-> > > > > 
-> > > > > SNIP
-> > > > > 
-> > > > >> +
-> > > > >> +static FILE *perf_pmu__open_file(struct perf_pmu *pmu, const char *name)
-> > > > >> +{
-> > > > >> +	struct stat st;
-> > > > >> +	char path[PATH_MAX];
-> > > > >> +	const char *sysfs;
-> > > > >> +
-> > > > >> +	sysfs = sysfs__mountpoint();
-> > > > >> +	if (!sysfs)
-> > > > >> +		return NULL;
-> > > > >> +
-> > > > >> +	snprintf(path, PATH_MAX,
-> > > > >> +		 "%s" EVENT_SOURCE_DEVICE_PATH "%s/%s", sysfs, pmu->name, name);
-> > > > >> +
-> > > > >> +	if (stat(path, &st) < 0)
-> > > > >> +		return NULL;
-> > > > >> +
-> > > > >> +	return fopen(path, "r");
-> > > > >> +}
-> > > > > 
-> > > > > looks like this function could be used in pmu_cpumask and pmu_type
-> > > > > and maybe others
-> > > > 
-> > > > There is existing code duplication between them.  Given the large number of
-> > > > patches I would say it is easier to deal with that separately.
-> > > 
-> > > ook, jirka
-> > 
-> > Is this an Acked-by: jirka?
-> 
-> well, while perf_pmu__open_file would be handy now, perf_pmu__scan_file
-> does now have any callers in the patchset..
-> 
-> I'm not sure whats our current policy one this ;-) as I've seen more
-> functions like this over this patchset, I think we should not introduce
-> new interface without caller
+On Wed, Jul 23, 2014 at 4:56 PM, Alexandre Courbot <acourbot@nvidia.com> wrote:
 
-Its a huge patchkit, with some bits non trivial, reducing it s size so
-that the most hairy bits can stand out seems like a good approach at
-this point. :-)
+> An iterator variable cannot be NULL in its loop.
+>
+> Reported-by: Julia Lawall <julia.lawall@lip6.fr>
+> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
 
-- Arnaldo
+Patch applied.
+
+Yours,
+Linus Walleij
