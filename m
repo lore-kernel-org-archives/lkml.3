@@ -1,71 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758700AbaGXLSI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 07:18:08 -0400
-Received: from mx6-phx2.redhat.com ([209.132.183.39]:41307 "EHLO
-	mx6-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752666AbaGXLSG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 07:18:06 -0400
-Date: Thu, 24 Jul 2014 07:18:05 -0400 (EDT)
-From: Ulrich Obergfell <uobergfe@redhat.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: Andrew Jones <drjones@redhat.com>, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org, dzickus@redhat.com, akpm@linux-foundation.org,
-        mingo@redhat.com
-Message-ID: <1140033921.17233579.1406200685037.JavaMail.zimbra@redhat.com>
-In-Reply-To: <53D0E3F3.6050206@redhat.com>
-References: <1406196811-5384-1-git-send-email-drjones@redhat.com> <1406196811-5384-3-git-send-email-drjones@redhat.com> <53D0E3F3.6050206@redhat.com>
-Subject: Re: [PATCH 2/3] watchdog: control hard lockup detection default
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+	id S1758706AbaGXLSq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 07:18:46 -0400
+Received: from mga09.intel.com ([134.134.136.24]:32664 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751058AbaGXLSp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jul 2014 07:18:45 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,723,1400050800"; 
+   d="scan'208";a="548340684"
+Message-ID: <1406200720.8530.4.camel@smile.fi.intel.com>
+Subject: Re: [PATCH] spi/pxa2xx-pci: Enable DMA binding through device name
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: Kweh Hock Leong <hock.leong.kweh@intel.com>
+Cc: Eric Miao <eric.y.miao@gmail.com>, Russell King <linux@arm.linux.org.uk>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Mark Brown <broonie@kernel.org>, linux-arm-kernel@lists.infradead.org,
+        linux-spi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Darren Hart <dvhart@linux.intel.com>,
+        Chew Chiau Ee <chiau.ee.chew@intel.com>, chiauee85@gmail.com
+Date: Thu, 24 Jul 2014 14:18:40 +0300
+In-Reply-To: <1406196111-22861-1-git-send-email-hock.leong.kweh@intel.com>
+References: <1406196111-22861-1-git-send-email-hock.leong.kweh@intel.com>
+Organization: Intel Finland Oy
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.2-1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.5.82.7]
-X-Mailer: Zimbra 8.0.6_GA_5922 (ZimbraWebClient - FF22 (Linux)/8.0.6_GA_5922)
-Thread-Topic: watchdog: control hard lockup detection default
-Thread-Index: HiZCwsNMPv2nFG98L0gT5mCO8QG/PA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> ----- Original Message -----
-> From: "Paolo Bonzini" <pbonzini@redhat.com>
-> To: "Andrew Jones" <drjones@redhat.com>, linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-> Cc: uobergfe@redhat.com, dzickus@redhat.com, akpm@linux-foundation.org, mingo@redhat.com
-> Sent: Thursday, July 24, 2014 12:46:11 PM
-> Subject: Re: [PATCH 2/3] watchdog: control hard lockup detection default
->
->Il 24/07/2014 12:13, Andrew Jones ha scritto:
->> 
->> The running kernel still has the ability to enable/disable at any
->> time with /proc/sys/kernel/nmi_watchdog us usual. However even
->> when the default has been overridden /proc/sys/kernel/nmi_watchdog
->> will initially show '1'. To truly turn it on one must disable/enable
->> it, i.e.
->>   echo 0 > /proc/sys/kernel/nmi_watchdog
->>   echo 1 > /proc/sys/kernel/nmi_watchdog
->
-> Why is it hard to make this show the right value? :)
->
-> Paolo
+On Thu, 2014-07-24 at 18:01 +0800, Kweh Hock Leong wrote:
+> From: "Chew, Chiau Ee" <chiau.ee.chew@intel.com>
+> 
+> Intel LPSS Baytrail supports two DMA controllers and SPI is only
+> using one of the DMA controller. During DMA channel request,
+> we need to ensure the requested Tx and Rx channels are from the correct
+> DMA controller. Thus, we add extra checking in filter callback funtion
+> by matching against the DMA controller device name.
 
-'echo 1 > /proc/sys/kernel/nmi_watchdog' enables both - hard lockup and
-soft lockup detection. watchdog_enable_all_cpus() starts a 'watchdog/N'
-thread for each CPU. If the kernel runs on a bare metal system where the
-processor does not have a PMU, or when perf_event_create_kernel_counter()
-returns failure to watchdog_nmi_enable(), or when the kernel runs as a
-guest on a hypervisor that does not emulate a PMU, then the 'watchdog/N'
-threads are still active for soft lockup detection. Patch 2/3 essentially
-makes watchdog_nmi_enable() behave in the same way as if -ENOENT would
-have been returned by perf_event_create_kernel_counter(). This is then
-reported via a console message.
+I think this is bot good approach.
 
-  NMI watchdog: disabled (cpu0): hardware events not enabled
+I already discussed with Mika how we could do this better for devices in
+PCI mode. (Seems you have the problem only in PCI, right?)
 
-It's hard say what _is_ 'the right value' (because lockup detection is
-then enabled 'partially'), regardless of whether patch 2/3 is applied
-or not.
+So, for PCI case you have to get the device with BDF = BD0, where BDF is
+Bus:Device:Function triplet for an SPI controller itself.
 
-Regards,
+I don't know if it's good to enable CONFIG_PCI_QUIRKS and tweak
+pci_dev_dma_source. In that case you just call pci_get_dma_source() and
+get a PCI device of the DMA.
 
-Uli
+> 
+> Signed-off-by: Chew, Chiau Ee <chiau.ee.chew@intel.com>
+> Signed-off-by: Kweh, Hock Leong <hock.leong.kweh@intel.com>
+> ---
+>  drivers/spi/spi-pxa2xx-dma.c   | 5 +++++
+>  drivers/spi/spi-pxa2xx-pci.c   | 3 +++
+>  include/linux/spi/pxa2xx_spi.h | 1 +
+>  3 files changed, 9 insertions(+)
+> 
+> diff --git a/drivers/spi/spi-pxa2xx-dma.c b/drivers/spi/spi-pxa2xx-dma.c
+> index c41ff14..4c4e918 100644
+> --- a/drivers/spi/spi-pxa2xx-dma.c
+> +++ b/drivers/spi/spi-pxa2xx-dma.c
+> @@ -214,6 +214,11 @@ static bool pxa2xx_spi_dma_filter(struct dma_chan *chan, void *param)
+>  {
+>  	const struct pxa2xx_spi_master *pdata = param;
+>  
+> +	if (pdata->dma_devname) {
+> +		if (strcmp(dev_name(chan->device->dev), pdata->dma_devname))
+> +			return false;
+> +	}
+> +
+>  	return chan->chan_id == pdata->tx_chan_id ||
+>  	       chan->chan_id == pdata->rx_chan_id;
+>  }
+> diff --git a/drivers/spi/spi-pxa2xx-pci.c b/drivers/spi/spi-pxa2xx-pci.c
+> index c1865c9..7a21bce 100644
+> --- a/drivers/spi/spi-pxa2xx-pci.c
+> +++ b/drivers/spi/spi-pxa2xx-pci.c
+> @@ -21,6 +21,7 @@ struct pxa_spi_info {
+>  	int tx_chan_id;
+>  	int rx_slave_id;
+>  	int rx_chan_id;
+> +	char *dma_devname;
+>  };
+>  
+>  static struct pxa_spi_info spi_info_configs[] = {
+> @@ -41,6 +42,7 @@ static struct pxa_spi_info spi_info_configs[] = {
+>  		.tx_chan_id = 0,
+>  		.rx_slave_id = 1,
+>  		.rx_chan_id = 1,
+> +		.dma_devname = "0000:00:1e.0"
+>  	},
+>  };
+>  
+> @@ -72,6 +74,7 @@ static int pxa2xx_spi_pci_probe(struct pci_dev *dev,
+>  	spi_pdata.rx_slave_id = c->rx_slave_id;
+>  	spi_pdata.rx_chan_id = c->rx_chan_id;
+>  	spi_pdata.enable_dma = c->rx_slave_id >= 0 && c->tx_slave_id >= 0;
+> +	spi_pdata.dma_devname = c->dma_devname;
+>  
+>  	ssp = &spi_pdata.ssp;
+>  	ssp->phys_base = pci_resource_start(dev, 0);
+> diff --git a/include/linux/spi/pxa2xx_spi.h b/include/linux/spi/pxa2xx_spi.h
+> index 82d5111..264c3cb 100644
+> --- a/include/linux/spi/pxa2xx_spi.h
+> +++ b/include/linux/spi/pxa2xx_spi.h
+> @@ -34,6 +34,7 @@ struct pxa2xx_spi_master {
+>  	int tx_chan_id;
+>  	int rx_slave_id;
+>  	int tx_slave_id;
+> +	char *dma_devname;
+>  
+>  	/* For non-PXA arches */
+>  	struct ssp_device ssp;
+
+
+-- 
+Andy Shevchenko <andriy.shevchenko@intel.com>
+Intel Finland Oy
+
