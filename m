@@ -1,68 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934811AbaGXKGi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 06:06:38 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54941 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757805AbaGXJsJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 05:48:09 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 073/128] tracing: Remove ftrace_stop/start() from reading the trace file
-Date: Thu, 24 Jul 2014 10:45:22 +0100
-Message-Id: <1406195177-8656-74-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1406195177-8656-1-git-send-email-luis.henriques@canonical.com>
-References: <1406195177-8656-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	id S935165AbaGXKGn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 06:06:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17760 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934908AbaGXKGk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jul 2014 06:06:40 -0400
+Date: Thu, 24 Jul 2014 12:06:06 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Adrian Hunter <adrian.hunter@intel.com>,
+        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 13/52] perf tools: Add perf_pmu__scan_file()
+Message-ID: <20140724100606.GA1127@krava.brq.redhat.com>
+References: <1406035081-14301-1-git-send-email-adrian.hunter@intel.com>
+ <1406035081-14301-14-git-send-email-adrian.hunter@intel.com>
+ <20140722190901.GC29750@krava.redhat.com>
+ <53CF5531.90709@intel.com>
+ <20140723093638.GA1207@krava.brq.redhat.com>
+ <20140723142525.GM20303@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140723142525.GM20303@kernel.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.14 -stable review patch.  If anyone has any objections, please let me know.
+On Wed, Jul 23, 2014 at 11:25:25AM -0300, Arnaldo Carvalho de Melo wrote:
+> Em Wed, Jul 23, 2014 at 11:36:38AM +0200, Jiri Olsa escreveu:
+> > On Wed, Jul 23, 2014 at 09:24:49AM +0300, Adrian Hunter wrote:
+> > > On 07/22/2014 10:09 PM, Jiri Olsa wrote:
+> > > > On Tue, Jul 22, 2014 at 04:17:22PM +0300, Adrian Hunter wrote:
+> > > > 
+> > > > SNIP
+> > > > 
+> > > >> +
+> > > >> +static FILE *perf_pmu__open_file(struct perf_pmu *pmu, const char *name)
+> > > >> +{
+> > > >> +	struct stat st;
+> > > >> +	char path[PATH_MAX];
+> > > >> +	const char *sysfs;
+> > > >> +
+> > > >> +	sysfs = sysfs__mountpoint();
+> > > >> +	if (!sysfs)
+> > > >> +		return NULL;
+> > > >> +
+> > > >> +	snprintf(path, PATH_MAX,
+> > > >> +		 "%s" EVENT_SOURCE_DEVICE_PATH "%s/%s", sysfs, pmu->name, name);
+> > > >> +
+> > > >> +	if (stat(path, &st) < 0)
+> > > >> +		return NULL;
+> > > >> +
+> > > >> +	return fopen(path, "r");
+> > > >> +}
+> > > > 
+> > > > looks like this function could be used in pmu_cpumask and pmu_type
+> > > > and maybe others
+> > > 
+> > > There is existing code duplication between them.  Given the large number of
+> > > patches I would say it is easier to deal with that separately.
+> > 
+> > ook, jirka
+> 
+> Is this an Acked-by: jirka?
 
-------------------
+well, while perf_pmu__open_file would be handy now, perf_pmu__scan_file
+does now have any callers in the patchset..
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+I'm not sure whats our current policy one this ;-) as I've seen more
+functions like this over this patchset, I think we should not introduce
+new interface without caller
 
-commit 099ed151675cd1d2dbeae1dac697975f6a68716d upstream.
-
-Disabling reading and writing to the trace file should not be able to
-disable all function tracing callbacks. There's other users today
-(like kprobes and perf). Reading a trace file should not stop those
-from happening.
-
-Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- kernel/trace/trace.c | 2 --
- 1 file changed, 2 deletions(-)
-
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index 5f22856fd02a..c8b8717afc23 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -1323,7 +1323,6 @@ void tracing_start(void)
- 
- 	arch_spin_unlock(&ftrace_max_lock);
- 
--	ftrace_start();
-  out:
- 	raw_spin_unlock_irqrestore(&global_trace.start_lock, flags);
- }
-@@ -1370,7 +1369,6 @@ void tracing_stop(void)
- 	struct ring_buffer *buffer;
- 	unsigned long flags;
- 
--	ftrace_stop();
- 	raw_spin_lock_irqsave(&global_trace.start_lock, flags);
- 	if (global_trace.stop_count++)
- 		goto out;
--- 
-1.9.1
-
+jirka
