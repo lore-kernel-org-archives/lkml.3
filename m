@@ -1,75 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934838AbaGXXNf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 19:13:35 -0400
-Received: from mail2.candelatech.com ([208.74.158.173]:53479 "EHLO
-	mail2.candelatech.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932130AbaGXXNe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 19:13:34 -0400
-X-Greylist: delayed 316 seconds by postgrey-1.27 at vger.kernel.org; Thu, 24 Jul 2014 19:13:34 EDT
-Message-ID: <53D191E1.3080107@candelatech.com>
-Date: Thu, 24 Jul 2014 16:08:17 -0700
-From: Ben Greear <greearb@candelatech.com>
-Organization: Candela Technologies
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S935108AbaGXXNm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 19:13:42 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:58457 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932130AbaGXXNk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jul 2014 19:13:40 -0400
+Message-ID: <53D1931C.7080409@suse.de>
+Date: Fri, 25 Jul 2014 01:13:32 +0200
+From: =?UTF-8?B?QW5kcmVhcyBGw6RyYmVy?= <afaerber@suse.de>
+Organization: SUSE LINUX Products GmbH
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Crashes in 3.14.13+ related to anon_vma_clone.
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+To: =?UTF-8?B?U8O2cmVuIEJyaW5rbWFubg==?= <soren.brinkmann@xilinx.com>
+CC: Michal Simek <michal.simek@xilinx.com>,
+        Andreas Olofsson <andreas@adapteva.com>,
+        Matteo Vit <matteo.vit@starwaredesign.com>,
+        Sean Rickerd <srickerd@suse.com>, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>
+Subject: Re: [PATCH v2 04/11] ARM: dts: zynq: Update deprecated xuartps clock
+ names
+References: <1406242820-20140-1-git-send-email-afaerber@suse.de> <1406242820-20140-5-git-send-email-afaerber@suse.de> <82ab6426-211e-451e-99c3-df40dbea817e@BN1AFFO11FD039.protection.gbl>
+In-Reply-To: <82ab6426-211e-451e-99c3-df40dbea817e@BN1AFFO11FD039.protection.gbl>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A few of our systems are repeatedly crashing when upgraded from
-the 3.14.6+ to 3.14.13+ kernels.  Both kernels have a fair bit
-of our out-of-tree patches, so could be our fault.
+Am 25.07.2014 01:09, schrieb Sören Brinkmann:
+> On Fri, 2014-07-25 at 01:00AM +0200, Andreas Färber wrote:
+>> Avoids deprecation warning messages.
+> 
+> A patch that updates those names is already in armsoc.
 
-But, in case this is a known problem...has anyone seen crashes like
-this below?
+Which tree/branch should I base this series on then? It seemed the
+Xilinx branches were all heavily outdated some days ago, so this is
+against vanilla v3.16-rc6.
 
-Test case is using some ath9k APs and stations, but not certain
-that has much to do with the problem.
-
-BUG: unable to handle kernel paging request at 0000003f9840b000
-IP: [<ffffffff81169ae8>] anon_vma_clone+0x88/0xf5
-PGD be580067 PUD bab85067 PMD babd5067 PTE 80000000bebbd065
-Oops: 0003 [#1] PREEMPT SMP
-Modules linked in: 8021q garp stp mrp llc fuse macvlan wanlink(O) pktgen ip6table_filter ip6_tables ebtable_nat ebtables coretemp hwmoo
-CPU: 1 PID: 1777 Comm: btserver Tainted: G         C O 3.14.13+ #19
-Hardware name: To be filled by O.E.M. To be filled by O.E.M./To be filled by O.E.M., BIOS 4.6.3 03/06/2012
-task: ffff88020dcfb100 ti: ffff8800baa3e000 task.ti: ffff8800baa3e000
-RIP: 0010:[<ffffffff81169ae8>]  [<ffffffff81169ae8>] anon_vma_clone+0x88/0xf5
-RSP: 0018:ffff8800baa3fda0  EFLAGS: 00010246
-RAX: ffff8800ba8b8380 RBX: 0000003f9840b000 RCX: 000000000142b101
-RDX: 0000000000000000 RSI: ffff8800ba8b8380 RDI: ffff8800ba8b8388
-RBP: ffff8800baa3fdd0 R08: 0000000000015d60 R09: 0000003f9840b000
-R10: 000000000000000b R11: 0000000000016338 R12: 0000000000000000
-R13: ffff8800bc609450 R14: ffff8802212db980 R15: ffff8800ba8b8380
-FS:  00007f0b70511740(0000) GS:ffff88022bc80000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-CR2: 0000003f9840b000 CR3: 00000000bab8f000 CR4: 00000000000007e0
-Stack:
- ffff880221ba92a0 ffff88020dcfc980 ffff8800bc609450 ffff880221ba9228
- ffff8800bc609450 ffff880221ba9228 ffff8800baa3fe08 ffffffff81169b7b
- ffff88020dcfc980 ffff880211db5f80 ffff880221ba9228 ffff8800bc609450
-Call Trace:
- [<ffffffff81169b7b>] anon_vma_fork+0x26/0xec
- [<ffffffff810c0070>] copy_process.part.28+0xf98/0x16ca
- [<ffffffff810c091d>] do_fork+0xb4/0x211
- [<ffffffff810cbe9b>] ? __set_task_blocked+0x5e/0x64
- [<ffffffff815a1b9f>] ? _raw_spin_unlock_irq+0xc/0x1f
- [<ffffffff810c0ae0>] SyS_clone+0x11/0x13
- [<ffffffff815a6a59>] stub_clone+0x69/0x90
- [<ffffffff815a66fd>] ? system_call_fastpath+0x1a/0x1f
-Code: 48 8b 3d 64 f1 b0 00 be d0 00 00 00 e8 9b 5e 01 00 48 85 c0 48 89 c3 74 62 45 31 e4 4d 8b 7e 08 4c 89 e7 49 8b 37 e8 fa ec ff ff
-RIP  [<ffffffff81169ae8>] anon_vma_clone+0x88/0xf5
- RSP <ffff8800baa3fda0>
-CR2: 0000003f9840b000
+Thanks,
+Andreas
 
 -- 
-Ben Greear <greearb@candelatech.com>
-Candela Technologies Inc  http://www.candelatech.com
-
+SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg, Germany
+GF: Jeff Hawn, Jennifer Guild, Felix Imendörffer; HRB 16746 AG Nürnberg
