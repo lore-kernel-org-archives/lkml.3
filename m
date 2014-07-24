@@ -1,89 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935017AbaGXJ4t (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 05:56:49 -0400
-Received: from mail.aswsp.com ([193.34.35.150]:31839 "EHLO mail.aswsp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932600AbaGXJ4q convert rfc822-to-8bit (ORCPT
+	id S934868AbaGXJ5e (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 05:57:34 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:55135 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934747AbaGXJs6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 05:56:46 -0400
-Date: Thu, 24 Jul 2014 11:56:50 +0200
-From: Matthieu CASTET <matthieu.castet@parrot.com>
-To: Boris BREZILLON <boris.brezillon@free-electrons.com>
-CC: David Woodhouse <dwmw2@infradead.org>,
-        Brian Norris <computersforpeace@gmail.com>,
-        <linux-mtd@lists.infradead.org>, Lee Jones <lee.jones@linaro.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] mtd: nand: define struct nand_timings
-Message-ID: <20140724115650.46cbb3cf@parrot.com>
-In-Reply-To: <20140722141219.7f2c2890@bbrezillon>
-References: <1405064982-11456-1-git-send-email-boris.brezillon@free-electrons.com>
- <1405064982-11456-2-git-send-email-boris.brezillon@free-electrons.com>
- <20140722120346.0f2d0e77@parrot.com>
- <20140722141219.7f2c2890@bbrezillon>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset="ISO-8859-15"
-Content-Transfer-Encoding: 8BIT
-X-Originating-IP: [46.218.109.88]
+	Thu, 24 Jul 2014 05:48:58 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Axel Lin <axel.lin@ingics.com>, Guenter Roeck <linux@roeck-us.net>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 107/128] hwmon: (adm1031) Fix writes to limit registers
+Date: Thu, 24 Jul 2014 10:45:56 +0100
+Message-Id: <1406195177-8656-108-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1406195177-8656-1-git-send-email-luis.henriques@canonical.com>
+References: <1406195177-8656-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Boris,
+3.11.10.14 -stable review patch.  If anyone has any objections, please let me know.
 
-Le Tue, 22 Jul 2014 14:12:19 +0200,
-Boris BREZILLON <boris.brezillon@free-electrons.com> a écrit :
+------------------
 
-> Hi Matthieu
-> 
-> On Tue, 22 Jul 2014 12:03:46 +0200
-> Matthieu CASTET <matthieu.castet@parrot.com> wrote:
-> 
-> > Hi,
-> > 
-> > 
+From: Guenter Roeck <linux@roeck-us.net>
 
-> > 
-> > I did a similar patch [1] (that wasn't merged :( ), and I used reduced
-> > timing info.
-> 
-> I'm sorry it didn't make it to mainline, do you know why ?
-For the omap part there was a gpmc code rewrite that conflict with the
-patch.
-For the mtd stuff, I don't know/remember (I think for was no reply).
+commit 145e74a4e5022225adb84f4e5d4fff7938475c35 upstream.
 
-> Could you point out where "reduced timing info" is defined in the ONFI
-> specification ?
-It is not defined on onfi.
-This was more a simplification of timings in order to simplify the
-driver side (avoid code duplication). Most controller allow to control
-nRE and nWE pulse and the setup time.
+Upper limit for write operations to temperature limit registers
+was clamped to a fractional value. However, limit registers do
+not support fractional values. As a result, upper limits of 127.5
+degrees C or higher resulted in a rounded limit of 128 degrees C.
+Since limit registers are signed, this was stored as -128 degrees C.
+Clamp limits to (-55, +127) degrees C to solve the problem.
 
-Do you have drivers that use onfi timings ?
-> 
-> > 
-> > I also have support for the omap driver
-> > (http://article.gmane.org/gmane.linux.ports.arm.omap/88606/match=) and
-> > a controller we use in our chip (not upstream).
-> 
-> It should be pretty easy to convert the full timings list into a
-> reduced one (actually, that's what your patch is doing), and you can
-> thus port your work on top of these patches.
-Yes I think an helper will be useful in order to help driver to use
-these timings.
-It can be a function that return the reduced version for a onfi mode
-and edo support.
+Value on writes to auto_temp[12]_min and auto_temp[12]_max were not
+clamped at all, but masked. As a result, out-of-range writes resulted
+in a more or less arbitrary limit. Clamp those attributes to (0, 127)
+degrees C for more predictable results.
 
-> 
-> Anyway, I'm not sure what you have in mind, but unless there is a strong
-> reason to drop full timings in favor of reduced ones I'd like to
-> keep them (even if this implies adding a new converter to get reduced
-> timings list).
-> 
-No problem. I have nothing special in mind. I hope this could give ideas
-how to use the onfi timings in mtd drivers (understanding how to use
-ONFI timings can be tricky).
+Cc: Axel Lin <axel.lin@ingics.com>
+Reviewed-by: Jean Delvare <jdelvare@suse.de>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ drivers/hwmon/adm1031.c | 8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
 
+diff --git a/drivers/hwmon/adm1031.c b/drivers/hwmon/adm1031.c
+index 253ea396106d..bdceca0d7e22 100644
+--- a/drivers/hwmon/adm1031.c
++++ b/drivers/hwmon/adm1031.c
+@@ -365,6 +365,7 @@ set_auto_temp_min(struct device *dev, struct device_attribute *attr,
+ 	if (ret)
+ 		return ret;
+ 
++	val = clamp_val(val, 0, 127000);
+ 	mutex_lock(&data->update_lock);
+ 	data->auto_temp[nr] = AUTO_TEMP_MIN_TO_REG(val, data->auto_temp[nr]);
+ 	adm1031_write_value(client, ADM1031_REG_AUTO_TEMP(nr),
+@@ -394,6 +395,7 @@ set_auto_temp_max(struct device *dev, struct device_attribute *attr,
+ 	if (ret)
+ 		return ret;
+ 
++	val = clamp_val(val, 0, 127000);
+ 	mutex_lock(&data->update_lock);
+ 	data->temp_max[nr] = AUTO_TEMP_MAX_TO_REG(val, data->auto_temp[nr],
+ 						  data->pwm[nr]);
+@@ -696,7 +698,7 @@ static ssize_t set_temp_min(struct device *dev, struct device_attribute *attr,
+ 	if (ret)
+ 		return ret;
+ 
+-	val = clamp_val(val, -55000, nr == 0 ? 127750 : 127875);
++	val = clamp_val(val, -55000, 127000);
+ 	mutex_lock(&data->update_lock);
+ 	data->temp_min[nr] = TEMP_TO_REG(val);
+ 	adm1031_write_value(client, ADM1031_REG_TEMP_MIN(nr),
+@@ -717,7 +719,7 @@ static ssize_t set_temp_max(struct device *dev, struct device_attribute *attr,
+ 	if (ret)
+ 		return ret;
+ 
+-	val = clamp_val(val, -55000, nr == 0 ? 127750 : 127875);
++	val = clamp_val(val, -55000, 127000);
+ 	mutex_lock(&data->update_lock);
+ 	data->temp_max[nr] = TEMP_TO_REG(val);
+ 	adm1031_write_value(client, ADM1031_REG_TEMP_MAX(nr),
+@@ -738,7 +740,7 @@ static ssize_t set_temp_crit(struct device *dev, struct device_attribute *attr,
+ 	if (ret)
+ 		return ret;
+ 
+-	val = clamp_val(val, -55000, nr == 0 ? 127750 : 127875);
++	val = clamp_val(val, -55000, 127000);
+ 	mutex_lock(&data->update_lock);
+ 	data->temp_crit[nr] = TEMP_TO_REG(val);
+ 	adm1031_write_value(client, ADM1031_REG_TEMP_CRIT(nr),
+-- 
+1.9.1
 
-Matthieu
