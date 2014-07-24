@@ -1,55 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934597AbaGXWSH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 18:18:07 -0400
-Received: from mail-pd0-f202.google.com ([209.85.192.202]:59604 "EHLO
-	mail-pd0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751638AbaGXWSE (ORCPT
+	id S934687AbaGXWSb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 18:18:31 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:35769 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756912AbaGXWSa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 18:18:04 -0400
-From: Doug Anderson <dianders@chromium.org>
-To: heiko@sntech.de
-Cc: linux-arm-kernel@lists.infradead.org, Sonny Rao <sonnyrao@chromium.org>,
-        Doug Anderson <dianders@chromium.org>, robh+dt@kernel.org,
-        pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        linux@arm.linux.org.uk, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] ARM: dts: Build dtbs for Rockchip boards
-Date: Thu, 24 Jul 2014 15:17:50 -0700
-Message-Id: <1406240270-13278-1-git-send-email-dianders@chromium.org>
-X-Mailer: git-send-email 2.0.0.526.g5318336
+	Thu, 24 Jul 2014 18:18:30 -0400
+Date: Thu, 24 Jul 2014 15:18:27 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Johannes Weiner <hannes@cmpxchg.org>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        Vladimir Davydov <vdavydov@parallels.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Christoph Lameter <cl@linux.com>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Pekka Enberg <penberg@kernel.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [patch 1/2] mm, slub: fix false-positive lockdep warning in
+ free_partial()
+In-Reply-To: <20140724122143.GI1725@cmpxchg.org>
+Message-ID: <alpine.DEB.2.02.1407241517440.19906@chino.kir.corp.google.com>
+References: <alpine.DEB.2.02.1407221550500.9885@chino.kir.corp.google.com> <alpine.DEB.2.02.1407221556330.9885@chino.kir.corp.google.com> <20140724122143.GI1725@cmpxchg.org>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This allows the "make dtbs" target to work.
+On Thu, 24 Jul 2014, Johannes Weiner wrote:
 
-Signed-off-by: Doug Anderson <dianders@chromium.org>
----
-This is built upon (ARM: dts: add rk3288 evaluation board) at
-<https://patchwork.kernel.org/patch/4579541/>, which won't actually
-build without the bindings that just landed in today's clk-next.
+> > diff --git a/mm/slub.c b/mm/slub.c
+> > --- a/mm/slub.c
+> > +++ b/mm/slub.c
+> > @@ -3195,12 +3195,13 @@ static void list_slab_objects(struct kmem_cache *s, struct page *page,
+> >  /*
+> >   * Attempt to free all partial slabs on a node.
+> >   * This is called from kmem_cache_close(). We must be the last thread
+> > - * using the cache and therefore we do not need to lock anymore.
+> > + * using the cache, but we still have to lock for lockdep's sake.
+> >   */
+> >  static void free_partial(struct kmem_cache *s, struct kmem_cache_node *n)
+> >  {
+> >  	struct page *page, *h;
+> >  
+> > +	spin_lock_irq(&n->list_lock);
+> >  	list_for_each_entry_safe(page, h, &n->partial, lru) {
+> >  		if (!page->inuse) {
+> >  			__remove_partial(n, page);
+> 
+> This already uses __remove_partial(), which does not have the lockdep
+> assertion.  You even acked the patch that made this change, why add
+> the spinlock now?
+> 
 
- arch/arm/boot/dts/Makefile | 5 +++++
- 1 file changed, 5 insertions(+)
-
-diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
-index 82f498b..026f61d 100644
---- a/arch/arm/boot/dts/Makefile
-+++ b/arch/arm/boot/dts/Makefile
-@@ -341,6 +341,11 @@ dtb-$(CONFIG_ARCH_QCOM) += \
- 	qcom-apq8084-mtp.dtb \
- 	qcom-msm8660-surf.dtb \
- 	qcom-msm8960-cdp.dtb
-+dtb-$(CONFIG_ARCH_ROCKCHIP) += \
-+	rk3066a-bqcurie2.dtb \
-+	rk3188-radxarock.dtb \
-+	rk3288-evb-act8846.dtb \
-+	rk3288-evb-rk808.dtb
- dtb-$(CONFIG_ARCH_S3C24XX) += s3c2416-smdk2416.dtb
- dtb-$(CONFIG_ARCH_S3C64XX) += s3c6410-mini6410.dtb \
- 	s3c6410-smdk6410.dtb
--- 
-2.0.0.526.g5318336
-
+Yup, thanks.  This was sitting in Pekka's slab/next branch but isn't 
+actually needed after commit 1e4dd9461fab ("slub: do not assert not 
+having lock in removing freed partial").  Good catch!
