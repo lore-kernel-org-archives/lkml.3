@@ -1,58 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758509AbaGXANo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 20:13:44 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:51174 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758362AbaGXANl (ORCPT
+	id S933863AbaGXARO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 20:17:14 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59860 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756000AbaGXARM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 20:13:41 -0400
-MIME-Version: 1.0
-In-Reply-To: <53D00A47.7050203@nvidia.com>
-References: <1405957142-19416-1-git-send-email-ttynkkynen@nvidia.com>
-	<1405957142-19416-15-git-send-email-ttynkkynen@nvidia.com>
-	<CAKohpomQthJ_XE-HhzW07Q4aVtxQVy97iaL0Vy6Q4Lhw22A=VA@mail.gmail.com>
-	<53CFA33F.6030307@nvidia.com>
-	<CAKohponLh66Ubr6=wY2OZCCrK11KZDj=DmXXqXsGGTHSG45wpA@mail.gmail.com>
-	<53D00A47.7050203@nvidia.com>
-Date: Thu, 24 Jul 2014 05:43:40 +0530
-Message-ID: <CAKohponsS8WJy4qBa=3em9AcxfpfLZR_mx4Ln8N3Q_gBaf52NA@mail.gmail.com>
-Subject: Re: [PATCH v2 14/16] cpufreq: Add cpufreq driver for Tegra124
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
-Cc: "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Paul Walmsley <pwalmsley@nvidia.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 23 Jul 2014 20:17:12 -0400
+Date: Wed, 23 Jul 2014 17:19:22 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Hyogi Gim <hyogi.gim@lge.com>, Alessandro Zummo <a.zummo@towertech.it>,
+        rtc-linux@googlegroups.com, linux-kernel@vger.kernel.org,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: [PATCH] driver/rtc/class.c: check the error after
+ rtc_read_time()
+Message-Id: <20140723171922.216f55bb.akpm@linux-foundation.org>
+In-Reply-To: <2138754.87hr75v6vM@vostro.rjw.lan>
+References: <1405412723-10062-1-git-send-email-hyogi.gim@lge.com>
+	<20140723145634.656752d0fe2fa124db48b4fc@linux-foundation.org>
+	<5828425.VYTqh3MBtu@vostro.rjw.lan>
+	<2138754.87hr75v6vM@vostro.rjw.lan>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24 July 2014 00:47, Tuomas Tynkkynen <ttynkkynen@nvidia.com> wrote:
-> It's this:
->
-> +static int tegra124_cpufreq_probe(struct platform_device *pdev)
-> +{
-> [...]
-> +
-> +       dfll_clk = of_clk_get_by_name(cpu_dev->of_node, "dfll");
-> +       if (IS_ERR(dfll_clk)) {
-> +               ret = PTR_ERR(dfll_clk);
-> +               goto out_put_cpu_clk;
-> +       }
+On Thu, 24 Jul 2014 01:49:44 +0200 "Rafael J. Wysocki" <rjw@rjwysocki.net> wrote:
 
-This would search for clocks passed via DT, right? Why would we
-get EPROBE_DEFER for that? Sorry for the stupid question.
+> On Thursday, July 24, 2014 01:47:57 AM Rafael J. Wysocki wrote:
+> > On Wednesday, July 23, 2014 02:56:34 PM Andrew Morton wrote:
+> > > On Tue, 15 Jul 2014 17:25:23 +0900 Hyogi Gim <hyogi.gim@lge.com> wrote:
+> > > 
+> > > > In rtc_suspend() and rtc_resume(), the error after rtc_read_time() is not
+> > > > checked. If rtc device fail to read time, we cannot guarantee the following
+> > > > process.
+> > > > 
+> > > > Add the verification code for returned rtc_read_time() error.
+> > > > 
+> > > > ...
+> > > >
+> > > > --- a/drivers/rtc/class.c
+> > > > +++ b/drivers/rtc/class.c
+> > > > @@ -53,6 +53,7 @@ static int rtc_suspend(struct device *dev)
+> > > >  	struct rtc_device	*rtc = to_rtc_device(dev);
+> > > >  	struct rtc_time		tm;
+> > > >  	struct timespec		delta, delta_delta;
+> > > > +	int err;
+> > > >  
+> > > >  	if (has_persistent_clock())
+> > > >  		return 0;
+> > > > @@ -61,7 +62,12 @@ static int rtc_suspend(struct device *dev)
+> > > >  		return 0;
+> > > >  
+> > > >  	/* snapshot the current RTC and system time at suspend*/
+> > > > -	rtc_read_time(rtc, &tm);
+> > > > +	err = rtc_read_time(rtc, &tm);
+> > > > +	if (err < 0) {
+> > > > +		pr_debug("%s:  fail to read rtc time\n", dev_name(&rtc->dev));
+> > > > +		return 0;
+> > > > +	}
+> > > 
+> > > OK, it makes no sense to go ahead and set the system time from a
+> > > garbage rtc_time.
+> > > 
+> > > But I'm wondering if we should propagate the error back to the
+> > > rtc_suspend() caller.  What does the PM core do if a particular
+> > > device's ->suspend or ->resume fails?
+> > 
+> > It aborts the suspend.
+> 
+> I mean, if ->suspend fails, the suspend is aborted.
 
---
-viresh
+So what should rtc do in this case?  At present it pretends the read
+succeeded.  Either way, this doesn't seem to be the place to be making
+such policy decisions..
+
+
