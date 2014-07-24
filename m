@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934215AbaGXE57 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 00:57:59 -0400
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:63793 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934165AbaGXE5r (ORCPT
+	id S934234AbaGXE6G (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 00:58:06 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:33423 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934217AbaGXE6C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 00:57:47 -0400
+	Thu, 24 Jul 2014 00:58:02 -0400
 From: Andy Lutomirski <luto@amacapital.net>
 To: kvm@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
         "Theodore Ts'o" <tytso@mit.edu>, linux-kernel@vger.kernel.org,
@@ -17,9 +17,9 @@ Cc: Daniel Borkmann <dborkman@redhat.com>,
         Gleb Natapov <gleb@kernel.org>, Paolo Bonzini <pbonzini@redhat.com>,
         bsd@redhat.com, Andrew Honig <ahonig@google.com>,
         Andy Lutomirski <luto@amacapital.net>
-Subject: [PATCH v5 2/5] random: Add and use arch_get_rng_seed
-Date: Wed, 23 Jul 2014 21:57:28 -0700
-Message-Id: <fe3cfe03047cc170bcde652175a00146d290bb20.1406177531.git.luto@amacapital.net>
+Subject: [PATCH v5 5/5] x86,kaslr: Use MSR_KVM_GET_RNG_SEED for KASLR if available
+Date: Wed, 23 Jul 2014 21:57:31 -0700
+Message-Id: <3aa0b464e9aba9609de4d4118e4be7526f6dbab9.1406177531.git.luto@amacapital.net>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <cover.1406177531.git.luto@amacapital.net>
 References: <cover.1406177531.git.luto@amacapital.net>
@@ -29,111 +29,107 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, init_std_data contains its own logic for using arch
-random sources.  This replaces that logic with a generic function
-arch_get_rng_seed that allows arch code to supply its own logic.
-The default implementation tries arch_get_random_seed_long and
-arch_get_random_long individually.
+It's considerably better than any of the alternatives on KVM.
 
-The only functional change here is that random_get_entropy() is used
-unconditionally instead of being used only when the arch sources
-fail.  This may add a tiny amount of security.
+Rather than reinventing all of the cpu feature query code, this fixes
+native_cpuid to work in PIC objects.
 
+I haven't combined it with boot/cpuflags.c's cpuid implementation:
+including asm/processor.h from boot/cpuflags.c results in a flood of
+unrelated errors, and fixing it might be messy.
+
+Reviewed-by: Kees Cook <keescook@chromium.org>
 Signed-off-by: Andy Lutomirski <luto@amacapital.net>
 ---
- drivers/char/random.c  | 14 +++++++++++---
- include/linux/random.h | 40 ++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 51 insertions(+), 3 deletions(-)
+ arch/x86/boot/compressed/aslr.c  | 27 +++++++++++++++++++++++++++
+ arch/x86/include/asm/processor.h | 21 ++++++++++++++++++---
+ 2 files changed, 45 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/char/random.c b/drivers/char/random.c
-index 0a7ac0a..be7a94e 100644
---- a/drivers/char/random.c
-+++ b/drivers/char/random.c
-@@ -1236,6 +1236,10 @@ void get_random_bytes_arch(void *buf, int nbytes)
- }
- EXPORT_SYMBOL(get_random_bytes_arch);
+diff --git a/arch/x86/boot/compressed/aslr.c b/arch/x86/boot/compressed/aslr.c
+index fc6091a..8583f0e 100644
+--- a/arch/x86/boot/compressed/aslr.c
++++ b/arch/x86/boot/compressed/aslr.c
+@@ -5,6 +5,8 @@
+ #include <asm/archrandom.h>
+ #include <asm/e820.h>
  
-+static void seed_entropy_store(void *ctx, u32 data)
++#include <uapi/asm/kvm_para.h>
++
+ #include <generated/compile.h>
+ #include <linux/module.h>
+ #include <linux/uts.h>
+@@ -15,6 +17,22 @@
+ static const char build_str[] = UTS_RELEASE " (" LINUX_COMPILE_BY "@"
+ 		LINUX_COMPILE_HOST ") (" LINUX_COMPILER ") " UTS_VERSION;
+ 
++static bool kvm_para_has_feature(unsigned int feature)
 +{
-+	mix_pool_bytes((struct entropy_store *)ctx, &data, sizeof(data), NULL);
++	u32 kvm_base;
++	u32 features;
++
++	if (!has_cpuflag(X86_FEATURE_HYPERVISOR))
++		return false;
++
++	kvm_base = hypervisor_cpuid_base("KVMKVMKVM\0\0\0", KVM_CPUID_FEATURES);
++	if (!kvm_base)
++		return false;
++
++	features = cpuid_eax(kvm_base | KVM_CPUID_FEATURES);
++	return features & (1UL << feature);
 +}
- 
- /*
-  * init_std_data - initialize pool with system data
-@@ -1251,15 +1255,19 @@ static void init_std_data(struct entropy_store *r)
- 	int i;
- 	ktime_t now = ktime_get_real();
- 	unsigned long rv;
-+	char log_prefix[128];
- 
- 	r->last_pulled = jiffies;
- 	mix_pool_bytes(r, &now, sizeof(now), NULL);
- 	for (i = r->poolinfo->poolbytes; i > 0; i -= sizeof(rv)) {
--		if (!arch_get_random_seed_long(&rv) &&
--		    !arch_get_random_long(&rv))
--			rv = random_get_entropy();
-+		rv = random_get_entropy();
- 		mix_pool_bytes(r, &rv, sizeof(rv), NULL);
++
+ #define I8254_PORT_CONTROL	0x43
+ #define I8254_PORT_COUNTER0	0x40
+ #define I8254_CMD_READBACK	0xC0
+@@ -81,6 +99,15 @@ static unsigned long get_random_long(void)
+ 		}
  	}
-+
-+	sprintf(log_prefix, "random: seeded %s pool", r->name);
-+	arch_get_rng_seed(r, seed_entropy_store, 8 * r->poolinfo->poolbytes,
-+			  log_prefix);
-+
- 	mix_pool_bytes(r, utsname(), sizeof(*(utsname())), NULL);
- }
  
-diff --git a/include/linux/random.h b/include/linux/random.h
-index 57fbbff..81a6145 100644
---- a/include/linux/random.h
-+++ b/include/linux/random.h
-@@ -106,6 +106,46 @@ static inline int arch_has_random_seed(void)
- }
- #endif
- 
-+#ifndef __HAVE_ARCH_GET_RNG_SEED
++	if (kvm_para_has_feature(KVM_FEATURE_GET_RNG_SEED)) {
++		u64 seed;
 +
-+/**
-+ * arch_get_rng_seed() - get architectural rng seed data
-+ * @ctx: context for the seed function
-+ * @seed: function to call for each u32 obtained
-+ * @bits_per_source: number of bits from each source to try to use
-+ * @log_prefix: beginning of log output (may be NULL)
-+ *
-+ * Synchronously load some architectural entropy or other best-effort
-+ * random seed data.  An arch-specific implementation should be no worse
-+ * than this generic implementation.  If the arch code does something
-+ * interesting, it may log something of the form "log_prefix with
-+ * 8 bits of stuff".
-+ *
-+ * No arch-specific implementation should be any worse than the generic
-+ * implementation.
-+ */
-+static inline void arch_get_rng_seed(void *ctx,
-+				     void (*seed)(void *ctx, u32 data),
-+				     int bits_per_source,
-+				     const char *log_prefix)
-+{
-+	int i;
-+
-+	for (i = 0; i < bits_per_source; i += 8 * sizeof(long)) {
-+		unsigned long rv;
-+
-+		if (arch_get_random_seed_long(&rv) ||
-+		    arch_get_random_long(&rv)) {
-+			seed(ctx, (u32)rv);
-+#if BITS_PER_LONG > 32
-+			seed(ctx, (u32)(rv >> 32));
-+#endif
-+		}
++		debug_putstr(" MSR_KVM_GET_RNG_SEED");
++		rdmsrl(MSR_KVM_GET_RNG_SEED, seed);
++		random ^= (unsigned long)seed;
++		use_i8254 = false;
 +	}
-+}
 +
-+#endif /* __HAVE_ARCH_GET_RNG_SEED */
-+
- /* Pseudo random number generator from numerical recipes. */
- static inline u32 next_pseudo_random32(u32 seed)
+ 	if (has_cpuflag(X86_FEATURE_TSC)) {
+ 		debug_putstr(" RDTSC");
+ 		rdtscll(raw);
+diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
+index a4ea023..6096f3c 100644
+--- a/arch/x86/include/asm/processor.h
++++ b/arch/x86/include/asm/processor.h
+@@ -189,10 +189,25 @@ static inline int have_cpuid_p(void)
+ static inline void native_cpuid(unsigned int *eax, unsigned int *ebx,
+ 				unsigned int *ecx, unsigned int *edx)
  {
+-	/* ecx is often an input as well as an output. */
+-	asm volatile("cpuid"
++	/*
++	 * This function can be used from the boot code, so it needs
++	 * to avoid using EBX in constraints in PIC mode.
++	 *
++	 * ecx is often an input as well as an output.
++	 */
++	asm volatile(".ifnc %%ebx,%1 ; .ifnc %%rbx,%1           \n\t"
++		     "movl  %%ebx,%1                            \n\t"
++		     ".endif ; .endif                           \n\t"
++		     "cpuid					\n\t"
++		     ".ifnc %%ebx,%1 ; .ifnc %%rbx,%1           \n\t"
++		     "xchgl %%ebx,%1                            \n\t"
++		     ".endif ; .endif"
+ 	    : "=a" (*eax),
+-	      "=b" (*ebx),
++#if defined(__i386__) && defined(__PIC__)
++	      "=r" (*ebx),	/* gcc won't let us use ebx */
++#else
++	      "=b" (*ebx),	/* ebx is okay */
++#endif
+ 	      "=c" (*ecx),
+ 	      "=d" (*edx)
+ 	    : "0" (*eax), "2" (*ecx)
 -- 
 1.9.3
 
