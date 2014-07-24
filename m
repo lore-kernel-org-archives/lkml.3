@@ -1,78 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758210AbaGXL1n (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 07:27:43 -0400
-Received: from cpsmtpb-ews07.kpnxchange.com ([213.75.39.10]:58128 "EHLO
-	cpsmtpb-ews07.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756908AbaGXL1m (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 07:27:42 -0400
-Message-ID: <1406201260.20036.28.camel@x220>
-Subject: Re: [PATCH 10/28] phy: add hix5hd2-sata-phy driver
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Kishon Vijay Abraham I <kishon@ti.com>
-Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org
-Date: Thu, 24 Jul 2014 13:27:40 +0200
-In-Reply-To: <1406026611-30493-11-git-send-email-kishon@ti.com>
-References: <1406026611-30493-1-git-send-email-kishon@ti.com>
-	 <1406026611-30493-11-git-send-email-kishon@ti.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
-Mime-Version: 1.0
+	id S1755975AbaGXLap (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 07:30:45 -0400
+Received: from mga01.intel.com ([192.55.52.88]:24191 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750771AbaGXLan (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jul 2014 07:30:43 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,723,1400050800"; 
+   d="scan'208";a="566551466"
+Message-ID: <53D0F145.4030503@linux.intel.com>
+Date: Thu, 24 Jul 2014 14:43:01 +0300
+From: Mathias Nyman <mathias.nyman@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Fabian Frederick <fabf@skynet.be>, linux-kernel@vger.kernel.org
+CC: joe@perches.com, gregkh@linuxfoundation.org,
+        Mathias Nyman <mathias.nyman@intel.com>, linux-usb@vger.kernel.org
+Subject: Re: [PATCH 06/10 linux-next] xhci: remove unnecessary break after
+ return
+References: <1406189939-6433-1-git-send-email-fabf@skynet.be> <1406189939-6433-7-git-send-email-fabf@skynet.be>
+In-Reply-To: <1406189939-6433-7-git-send-email-fabf@skynet.be>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 24 Jul 2014 11:27:40.0634 (UTC) FILETIME=[4778DBA0:01CFA732]
-X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-07-22 at 16:26 +0530, Kishon Vijay Abraham I wrote:
-> From: Jiancheng Xue <xuejiancheng@huawei.com>
-> 
-> Add hix5hd2-sata-phy driver on Hisilicon hix5hd2 soc.
-> 
-> Signed-off-by: Jiancheng Xue <xuejiancheng@huawei.com>
-> Signed-off-by: Zhangfei Gao <zhangfei.gao@linaro.org>
-> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+On 07/24/2014 11:18 AM, Fabian Frederick wrote:
+> Signed-off-by: Fabian Frederick <fabf@skynet.be>
 > ---
 
-This landed as commit e379413a346c in today's linux-next (ie,
-next-20140724). 
+Acked-by: Mathias Nyman <mathias.nyman@linux.intel.com>
 
->  drivers/phy/Kconfig            |    8 ++
->  drivers/phy/Makefile           |    1 +
->  drivers/phy/phy-hix5hd2-sata.c |  192 ++++++++++++++++++++++++++++++++++++++++
->  3 files changed, 201 insertions(+)
->  create mode 100644 drivers/phy/phy-hix5hd2-sata.c
-> 
-> diff --git a/drivers/phy/Kconfig b/drivers/phy/Kconfig
-> index 64b98d2..30c82fc 100644
-> --- a/drivers/phy/Kconfig
-> +++ b/drivers/phy/Kconfig
-> @@ -109,6 +109,14 @@ config PHY_EXYNOS5250_SATA
->  	  SATA 3.0 Gb/s, SATA 6.0 Gb/s speeds. It supports one SATA host
->  	  port to accept one SATA device.
->  
-> +config PHY_HIX5HD2_SATA
-> +	tristate "HIX5HD2 SATA PHY Driver"
-> +	depends on ARCH_HIX5HD2 && OF && HAS_IOMEM
-> +	select GENERIC_PHY
-> +	select MFD_SYSCON
-> +	help
-> +	  Support for SATA PHY on Hisilicon hix5hd2 Soc.
-> +
->  config PHY_SUN4I_USB
->  	tristate "Allwinner sunxi SoC USB PHY driver"
->  	depends on ARCH_SUNXI && HAS_IOMEM && OF
-
-Apparently the code to add ARCH_HIX5HD2 is still pending. (I already
-asked about that symbol in https://lkml.org/lkml/2014/6/19/99 .)
-
-So currently this driver won't get build testing through linux-next.
-Perhaps this entry could optionally depend on COMPILE_TEST, if build
-testing is wanted, that is. (I assume there are ate least build robots
-using COMPILE_TEST. Is that correct?)
-
-
-Paul Bolle
 
