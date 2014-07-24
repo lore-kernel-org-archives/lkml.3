@@ -1,52 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759175AbaGXNPh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 09:15:37 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:33501 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758743AbaGXNPf (ORCPT
+	id S1758859AbaGXNYV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 09:24:21 -0400
+Received: from mail-qa0-f54.google.com ([209.85.216.54]:53703 "EHLO
+	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756834AbaGXNYU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 09:15:35 -0400
-Message-ID: <53D106C9.8070803@oracle.com>
-Date: Thu, 24 Jul 2014 09:14:49 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Thu, 24 Jul 2014 09:24:20 -0400
+Date: Thu, 24 Jul 2014 10:24:06 -0300
+From: Lucas Tanure <tanure@linux.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, trivial@kernel.org,
+        kernelnewbies <kernelnewbies@kernelnewbies.org>
+Subject: [PATCH] powerpc: fix wrong defintion in boot/io.h
+Message-ID: <20140724132406.GA2159@ttmp-linux>
 MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: stern@rowland.harvard.edu, mail@beyermatthias.de, hdegoede@redhat.com,
-        sarah.a.sharp@linux.intel.com, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, rostedt@goodmis.org,
-        Sasha Levin <sashal@kernel.org>
-Subject: Re: [PATCH] usb-core: Revert "usb-core: Remove Fix mes in file hcd.c"
-References: <1406120170-22983-1-git-send-email-sasha.levin@oracle.com> <20140723164910.GA8319@kroah.com>
-In-Reply-To: <20140723164910.GA8319@kroah.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/23/2014 12:49 PM, Greg KH wrote:
-> On Wed, Jul 23, 2014 at 08:56:10AM -0400, Sasha Levin wrote:
->> > Revert since the commit message is incorrect and the original author refuses
->> > to fix/maintain it because "it's in the kernel already".
-> How can someone "fix" a commit message that is already in the tree?  You
-> can't.  The code part is correct, so why introduce the issue back?
+Fix wrong __IO_H definition in boot/io.h
 
-(I'm not trying to be aggressive, I just think that I misunderstand how this
-part of the process works exactly).
+Reported-by: Fernando Silveira <fsilveira@gmail.com>
+Signed-off-by: Lucas Tanure <tanure@linux.com>
+---
+ arch/powerpc/boot/io.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-I thought we can always edit -next trees? Why do we have to maintain fast forward
-on them?
+diff --git a/arch/powerpc/boot/io.h b/arch/powerpc/boot/io.h
+index 7c09f48..394da55 100644
+--- a/arch/powerpc/boot/io.h
++++ b/arch/powerpc/boot/io.h
+@@ -1,5 +1,5 @@
+ #ifndef _IO_H
+-#define __IO_H
++#define _IO_H
+ 
+ #include "types.h"
+ 
+-- 
+2.0.0
 
-What happens, if for example you take a patch that causes build breakage? Would you
-add a revert after that or just yank the commit out of the tree?
-
-If you add a revert and leave the original broken commit in, wouldn't it cause issues
-for anyone trying to bisect a build breakage?
-
-
-Thanks,
-Sasha
