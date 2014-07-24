@@ -1,64 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759366AbaGXOVk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 10:21:40 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:54279 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759097AbaGXOVi (ORCPT
+	id S1759159AbaGXOYv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 10:24:51 -0400
+Received: from mail-la0-f54.google.com ([209.85.215.54]:43171 "EHLO
+	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758834AbaGXOYu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 10:21:38 -0400
-Message-ID: <53D11667.8050807@ti.com>
-Date: Thu, 24 Jul 2014 10:21:27 -0400
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Thu, 24 Jul 2014 10:24:50 -0400
 MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: Grygorii Strashko <grygorii.strashko@ti.com>, Suman Anna <s-anna@ti.com>,
-        Jaswinder Singh <jaswinder.singh@linaro.org>,
-        Alexander Shiyan <shc_work@mail.ru>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        <ivan.khoronzhuk@ti.com>, Muralidharan Karicheri <m-karicheri2@ti.com>,
-        Rob Herring <robh+dt@kernel.org>, Kumar Gala <galak@codeaurora.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+In-Reply-To: <CAKv+Gu_z4VTssLDhiQxi8DRJNEUgzrM5bFzje8NXEmBiA2vqeg@mail.gmail.com>
+References: <mvmvbri4k06.fsf@hawking.suse.de>
+	<CAKv+Gu-NAVjMR-Jkw=W-8f7M5FSsQOSdzYN6A0kHDd1m0WA8EA@mail.gmail.com>
+	<mvmr4264i1p.fsf@hawking.suse.de>
+	<CAKv+Gu8SbM_Z=ymBFb2D4EWJeo-6dWuKqE2YNOkqJTKLDEJcYA@mail.gmail.com>
+	<mvm4my7j5xh.fsf@hawking.suse.de>
+	<CAKv+Gu-6rUxUnF+dRuroDJqy2K2B5F0r7_bm0X-vyiuQ-83W5w@mail.gmail.com>
+	<CAKv+Gu96k7GOVR85EXtro3Lt0jjiJqxyvT9cwJZ1qc6uzq97bw@mail.gmail.com>
+	<mvmvbqmj3b2.fsf@hawking.suse.de>
+	<CAKv+Gu_9HRwAxkJjT3KRvDbupp0yzstyq1dXsXkTu9M6swdCKQ@mail.gmail.com>
+	<mvmr41aj2ob.fsf@hawking.suse.de>
+	<CAKv+Gu_z4VTssLDhiQxi8DRJNEUgzrM5bFzje8NXEmBiA2vqeg@mail.gmail.com>
+Date: Thu, 24 Jul 2014 16:24:48 +0200
+Message-ID: <CAKv+Gu-B9_sgGgw9obrBGNUFSS1JcskN34s1X4PU8F5bauHT1Q@mail.gmail.com>
+Subject: Re: [PATCH] arm64/crypto: fix makefile rule for aes-glue-%.o
+From: Ard Biesheuvel <ard.biesheuvel@linaro.org>
+To: Andreas Schwab <schwab@suse.de>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v1] gpio: keystone: add dsp gpio controller driver
-References: <1405507426-18992-1-git-send-email-grygorii.strashko@ti.com>	<CACRpkdYY_a_9G-VLBbv2a22Cg4j0t3Wv4W1h0n6-ccCXgVJXsA@mail.gmail.com>	<53CFD404.7070704@ti.com> <CACRpkdYdUKmR+bZo374AqepDXfsZqBwJ88e4is90-UoUBWdJrA@mail.gmail.com>
-In-Reply-To: <CACRpkdYdUKmR+bZo374AqepDXfsZqBwJ88e4is90-UoUBWdJrA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 24 July 2014 10:12 AM, Linus Walleij wrote:
-> On Wed, Jul 23, 2014 at 5:25 PM, Santosh Shilimkar
-> <santosh.shilimkar@ti.com> wrote:
-> 
->> I will try to answer this. This IP is indeed a GPIO block
->> but the IO's are used just OUTPUT lines from Linux
->> HOST perspective. These IOs are connected to the DSPs
->> as input/IRQ lines.
-> 
-> So the DSP is another discrete IC, and could be something
-> different, so this is board-level information?
-> 
-> I'm really worrying whether this is general purpose or not :-/
-> 
-Am not sure I follow you. This IP is completely controlled
-by Linux OS to generate output signals. How does it matter
-whether its connected to a peripheral or a discrete IC. For
-example instead of DSP if I connected these lines to an
-external PMIC, which considers these as input lines to
-perform some actions. Isn't that GPIO usecase as per you ?
-Given that this IP only output functionality is used but
-that shouldn't matter. We have seen SOCs where GPIOs
-are just used as input to form a Matrix Keyboard.
+On 24 July 2014 16:18, Ard Biesheuvel <ard.biesheuvel@linaro.org> wrote:
+> On 24 July 2014 15:40, Andreas Schwab <schwab@suse.de> wrote:
+>> Ard Biesheuvel <ard.biesheuvel@linaro.org> writes:
+>>
+>>> On 24 July 2014 15:26, Andreas Schwab <schwab@suse.de> wrote:
+>>>> You are not using CONFIG_MODVERSIONS.
+>>>>
+>>>
+>>> I am
+>>
+>> No, you aren't, since you say that your .cmd contains a command to
+>> create aes-glue-ce.o, which with CONFIG_MODVERSIONS it doesn't.
+>>
+>
+> OK, you're right, it contains a command to create .tmp_aes-glue-ce.o.
+> But I am still not seeing the error you are seeing, strangely enough.
 
-May be I am missing your point.
+OK, now I am seeing it.
 
-Regards,
-Santosh
+Acked-by: Ard Biesheuvel <ard.biesheuvel@linaro.org>
 
+Thanks for your patience.
 
-
+-- 
+Ard.
