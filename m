@@ -1,92 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934143AbaGXDyH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 23:54:07 -0400
-Received: from smtprelay0217.hostedemail.com ([216.40.44.217]:43265 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S934118AbaGXDyE (ORCPT
+	id S934159AbaGXDyJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 23:54:09 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:44192 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934119AbaGXDyE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 23 Jul 2014 23:54:04 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::::,RULES_HIT:41:355:379:541:599:800:960:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2194:2199:2393:2553:2559:2562:2692:2828:3138:3139:3140:3141:3142:3354:3622:3865:3866:3867:3868:3870:3871:3872:3873:3874:4321:5007:6119:7652:7903:8660:9108:10004:10400:10848:10967:11026:11232:11658:11914:12296:12438:12517:12519:12663:12740:13069:13148:13161:13229:1323
-X-HE-Tag: love14_5fd0d760e942
-X-Filterd-Recvd-Size: 3201
-Message-ID: <1406174039.2755.71.camel@joe-AO725>
-Subject: Re: [PATCH 9/9] fs: dlm: lockd: Convert int result to unsigned char
- type
-From: Joe Perches <joe@perches.com>
-To: Jeff Layton <jlayton@poochiereds.net>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@ZenIV.linux.org.uk>,
-        David Teigland <teigland@redhat.com>,
-        Christine Caulfield <ccaulfie@redhat.com>,
-        "J. Bruce Fields" <bfields@fieldses.org>,
-        Trond Myklebust <trond.myklebust@primarydata.com>,
-        cluster-devel@redhat.com, linux-kernel@vger.kernel.org,
-        linux-nfs@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Date: Wed, 23 Jul 2014 20:53:59 -0700
-In-Reply-To: <20140723141139.2cf90cb0@tlielax.poochiereds.net>
-References: <cover.1405879494.git.joe@perches.com>
-	 <65b9ba0dba9c79a938267d5bed7ed0a8211e89ed.1405879494.git.joe@perches.com>
-	 <20140723141139.2cf90cb0@tlielax.poochiereds.net>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
+Message-ID: <53D08358.4020902@amacapital.net>
+Date: Wed, 23 Jul 2014 20:54:00 -0700
+From: Andy Lutomirski <luto@amacapital.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: AKASHI Takahiro <takahiro.akashi@linaro.org>, wad@chromium.org,
+        catalin.marinas@arm.com, will.deacon@arm.com, keescook@chromium.org
+CC: dsaxena@linaro.org, linux-arm-kernel@lists.infradead.org,
+        linaro-kernel@lists.linaro.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v5 1/3] arm64: ptrace: reload a syscall number after ptrace
+ operations
+References: <1406020499-5537-1-git-send-email-takahiro.akashi@linaro.org> <1406020499-5537-2-git-send-email-takahiro.akashi@linaro.org>
+In-Reply-To: <1406020499-5537-2-git-send-email-takahiro.akashi@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-07-23 at 14:11 -0400, Jeff Layton wrote:
-> On Sun, 20 Jul 2014 11:23:43 -0700 Joe Perches <joe@perches.com> wrote:
-> > op->info.rv is an s32, but it's only used as a u8.
-> I don't understand this patch. info.rv is s32 (and I assume that "rv"
-> stands for "return value").
+On 07/22/2014 02:14 AM, AKASHI Takahiro wrote:
+> Arm64 holds a syscall number in w8(x8) register. Ptrace tracer may change
+> its value either to:
+>    * any valid syscall number to alter a system call, or
+>    * -1 to skip a system call
+>
+> This patch implements this behavior by reloading that value into syscallno
+> in struct pt_regs after tracehook_report_syscall_entry() or
+> secure_computing(). In case of '-1', a return value of system call can also
+> be changed by the tracer setting the value to x0 register, and so
+> sys_ni_nosyscall() should not be called.
+>
+> See also:
+>      42309ab4, ARM: 8087/1: ptrace: reload syscall number after
+> 	      secure_computing() check
+>
+> Signed-off-by: AKASHI Takahiro <takahiro.akashi@linaro.org>
+> ---
+>   arch/arm64/kernel/entry.S  |    2 ++
+>   arch/arm64/kernel/ptrace.c |   13 +++++++++++++
+>   2 files changed, 15 insertions(+)
+>
+> diff --git a/arch/arm64/kernel/entry.S b/arch/arm64/kernel/entry.S
+> index 5141e79..de8bdbc 100644
+> --- a/arch/arm64/kernel/entry.S
+> +++ b/arch/arm64/kernel/entry.S
+> @@ -628,6 +628,8 @@ ENDPROC(el0_svc)
+>   __sys_trace:
+>   	mov	x0, sp
+>   	bl	syscall_trace_enter
+> +	cmp	w0, #-1				// skip syscall?
+> +	b.eq	ret_to_user
 
-In this case it's not a return value but an input.
+Does this mean that skipped syscalls will cause exit tracing to be 
+skipped?  If so, then you risk (at least) introducing a nice 
+user-triggerable OOPS if audit is enabled.  This bug existed for *years* 
+on x86_32, and it amazes me that no one ever triggered it by accident. 
+(Grr, audit.)
 
-> What I don't get is why you think it's just
-> used as a u8.
-
-Because it's tested only in nlmsvc_grant_deferred
-and nlmsvc_update_deferred_block against 0.
-
-As far as I can tell, it's not possible to set it
-to a negative value.
-
-> It seems to be used more like a bool than anything else,
-> and I'm not sure that "type" is really a good description for it. Maybe
-> it should be a "bool" and named "conflict",
-
-Maybe.  But it seemed likely and possible to expand
-it from a single bool to a value.
-
-> given the comments in dlm_posix_get ?
-
-Maybe, though I don't see how the comments relate to
-this change.  The rv value returned from that call
-is either -ENOMEM or 0 and is unchanged by this patch.
-
-> > diff --git a/include/linux/fs.h b/include/linux/fs.h
-[]
-> > @@ -842,7 +842,7 @@ struct lock_manager_operations {
-> >  	int (*lm_compare_owner)(struct file_lock *fl1, struct file_lock *fl2);
-> >  	unsigned long (*lm_owner_key)(struct file_lock *fl);
-> >  	void (*lm_notify)(struct file_lock *fl);	/* unblock callback */
-> > -	int (*lm_grant)(struct file_lock *fl, int result);
-> > +	int (*lm_grant)(struct file_lock *fl, unsigned char type);
-> >  	void (*lm_break)(struct file_lock *fl);
-> >  	int (*lm_change)(struct file_lock **fl, int type);
-> >  };
-
-I used variable name "type" because that's what
-lm_change uses.  No worries if you think a name
-like conflict is better.
-
-The only in-kernel setter of lm_grant is:
-
-fs/lockd/svclock.c:     .lm_grant = nlmsvc_grant_deferred,
-
-and for that, I think using a variable name of
-"result" is misleading at best.
-
+--Andy
