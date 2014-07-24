@@ -1,67 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758572AbaGWX6w (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 19:58:52 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59826 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758143AbaGWX6v (ORCPT
+	id S1758538AbaGXAGT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 20:06:19 -0400
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:50893 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758390AbaGXAGR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 19:58:51 -0400
-Date: Wed, 23 Jul 2014 16:58:50 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Jean-Michel Hautbois <jhautbois@gmail.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>, Arnd Bergmann <arnd@arndb.de>,
-        Stefan Roese <sr@denx.de>
-Subject: Re: [PATCH v4] Lattice ECP3 FPGA: Correct endianness
-Message-ID: <20140723235850.GA1241@kroah.com>
-References: <CAL8zT=g5aO1aNbADQ9Usv6J952D5t8_NvmDozTjvtczq-BGbrw@mail.gmail.com>
+	Wed, 23 Jul 2014 20:06:17 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAL8zT=g5aO1aNbADQ9Usv6J952D5t8_NvmDozTjvtczq-BGbrw@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <CAGXu5jJyw19h0+AwZEWSJt7hGnkRHAsf8fYim=XLzA-LH=svjw@mail.gmail.com>
+References: <1405657206-12060-1-git-send-email-ast@plumgrid.com>
+	<1405657206-12060-14-git-send-email-ast@plumgrid.com>
+	<CAGXu5jJyw19h0+AwZEWSJt7hGnkRHAsf8fYim=XLzA-LH=svjw@mail.gmail.com>
+Date: Wed, 23 Jul 2014 17:06:15 -0700
+Message-ID: <CAMEtUuy__c2Av1AtWNa5ksH5if3FmhYZ2AnzTYcaAVXrpc4J1A@mail.gmail.com>
+Subject: Re: [PATCH RFC v2 net-next 13/16] tracing: allow eBPF programs to be
+ attached to events
+From: Alexei Starovoitov <ast@plumgrid.com>
+To: Kees Cook <keescook@chromium.org>
+Cc: "David S. Miller" <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Jiri Olsa <jolsa@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 23, 2014 at 11:39:35AM +0200, Jean-Michel Hautbois wrote:
-> This code corrects endianness and avoids a sparse error.
-> Tested with Lattice ECP3-35 with Freescale i.MX6.
-> It also sends uevent in order to load it.
-> 
-> Signed-off-by: Jean-Michel Hautbois <jean-michel.hautbois@vodalys.com>
-> ---
->  drivers/misc/lattice-ecp3-config.c | 16 +++++++++-------
->  1 file changed, 9 insertions(+), 7 deletions(-)
-> 
-> diff --git a/drivers/misc/lattice-ecp3-config.c
-> b/drivers/misc/lattice-ecp3-config.c
-> index bb26f08..2c86319 100644
-> --- a/drivers/misc/lattice-ecp3-config.c
-> +++ b/drivers/misc/lattice-ecp3-config.c
-> @@ -16,6 +16,7 @@
->  #include <linux/spi/spi.h>
->  #include <linux/platform_device.h>
->  #include <linux/delay.h>
-> +#include <asm/unaligned.h>
-> 
->  #define FIRMWARE_NAME    "lattice-ecp3.bit"
-> 
-> @@ -92,8 +93,8 @@ static void firmware_load(const struct firmware *fw,
-> void *context)
->      /* Trying to speak with the FPGA via SPI... */
->      txbuf[0] = FPGA_CMD_READ_ID;
->      ret = spi_write_then_read(spi, txbuf, 8, rxbuf, rx_len);
-> -    dev_dbg(&spi->dev, "FPGA JTAG ID=%08x\n", *(u32 *)&rxbuf[4]);
-> -    jedec_id = *(u32 *)&rxbuf[4];
-> +    jedec_id = get_unaligned_be32(&rxbuf[4]);
-> +    dev_dbg(&spi->dev, "FPGA JTAG ID=%08x\n", jedec_id);
+On Wed, Jul 23, 2014 at 4:46 PM, Kees Cook <keescook@chromium.org> wrote:
+>>
+>> eBPF programs can call in-kernel helper functions to:
+>> - lookup/update/delete elements in maps
+>> - memcmp
+>> - trace_printk
+>> - load_pointer
+>> - dump_stack
+>
+> Ah, this must be the pointer leaking you mentioned. :)
+>
+>
+> Can the existing tracing mechanisms already expose kernel addresses? I
+> suspect "yes". So I guess existing limitations on tracing exposure
+> should already cover access control here? (I'm trying to figure out if
+> a separate CONFIG is needed -- I don't think so: nothing "new" is
+> exposed via eBPF, is that right?)
 
-Your email client ate all the tabs and spit out spaces and then
-line-wrapped the patch, making it impossible to apply :(
-
-Can you fix it up and resend it in a format we can use?
-
-thanks,
-
-greg k-h
+correct. through debugfs/tracing the whole kernel is already exposed.
+Idea of eBPF for tracing is to give kernel developers and performance
+engineers a tool to analyze what kernel is doing by writing programs
+in C and attaching them to kprobe/tracepoint events, so it's definitely
+for root only.
