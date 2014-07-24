@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758727AbaGXJqr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 05:46:47 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54575 "EHLO
+	id S1758955AbaGXK0b (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 06:26:31 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54632 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758069AbaGXJqi (ORCPT
+	with ESMTP id S1758069AbaGXJqs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 05:46:38 -0400
+	Thu, 24 Jul 2014 05:46:48 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Karel Zak <kzak@redhat.com>, Qu Wenruo <quwenruo@cn.fujitsu.com>,
-        Chris Mason <clm@fb.com>, David Sterba <dsterba@suse.cz>,
+Cc: Johan Hedberg <johan.hedberg@intel.com>,
+        Marcel Holtmann <marcel@holtmann.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 004/128] btrfs: Add ctime/mtime update for btrfs device add/remove.
-Date: Thu, 24 Jul 2014 10:44:13 +0100
-Message-Id: <1406195177-8656-5-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 016/128] Bluetooth: Fix SSP acceptor just-works confirmation without MITM
+Date: Thu, 24 Jul 2014 10:44:25 +0100
+Message-Id: <1406195177-8656-17-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1406195177-8656-1-git-send-email-luis.henriques@canonical.com>
 References: <1406195177-8656-1-git-send-email-luis.henriques@canonical.com>
@@ -28,79 +28,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Qu Wenruo <quwenruo@cn.fujitsu.com>
+From: Johan Hedberg <johan.hedberg@intel.com>
 
-commit 5a1972bd9fd4b2fb1bac8b7a0b636d633d8717e3 upstream.
+commit ba15a58b179ed76a7e887177f2b06de12c58ec8f upstream.
 
-Btrfs will send uevent to udev inform the device change,
-but ctime/mtime for the block device inode is not udpated, which cause
-libblkid used by btrfs-progs unable to detect device change and use old
-cache, causing 'btrfs dev scan; btrfs dev rmove; btrfs dev scan' give an
-error message.
+>From the Bluetooth Core Specification 4.1 page 1958:
 
-Reported-by: Tsutomu Itoh <t-itoh@jp.fujitsu.com>
-Cc: Karel Zak <kzak@redhat.com>
-Signed-off-by: Qu Wenruo <quwenruo@cn.fujitsu.com>
-Signed-off-by: Chris Mason <clm@fb.com>
-Cc: David Sterba <dsterba@suse.cz>
+"if both devices have set the Authentication_Requirements parameter to
+one of the MITM Protection Not Required options, authentication stage 1
+shall function as if both devices set their IO capabilities to
+DisplayOnly (e.g., Numeric comparison with automatic confirmation on
+both devices)"
+
+So far our implementation has done user confirmation for all just-works
+cases regardless of the MITM requirements, however following the
+specification to the word means that we should not be doing confirmation
+when neither side has the MITM flag set.
+
+Signed-off-by: Johan Hedberg <johan.hedberg@intel.com>
+Tested-by: Szymon Janc <szymon.janc@tieto.com>
+Signed-off-by: Marcel Holtmann <marcel@holtmann.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/btrfs/volumes.c | 26 ++++++++++++++++++++++++--
- 1 file changed, 24 insertions(+), 2 deletions(-)
+ net/bluetooth/hci_event.c | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
-diff --git a/fs/btrfs/volumes.c b/fs/btrfs/volumes.c
-index feb93fc9863d..cacdb3effa35 100644
---- a/fs/btrfs/volumes.c
-+++ b/fs/btrfs/volumes.c
-@@ -1403,6 +1403,22 @@ out:
- 	return ret;
- }
+diff --git a/net/bluetooth/hci_event.c b/net/bluetooth/hci_event.c
+index b767ed9969c4..c3b45bc3a7f4 100644
+--- a/net/bluetooth/hci_event.c
++++ b/net/bluetooth/hci_event.c
+@@ -3159,8 +3159,11 @@ static void hci_user_confirm_request_evt(struct hci_dev *hdev,
  
-+/*
-+ * Function to update ctime/mtime for a given device path.
-+ * Mainly used for ctime/mtime based probe like libblkid.
-+ */
-+static void update_dev_time(char *path_name)
-+{
-+	struct file *filp;
-+
-+	filp = filp_open(path_name, O_RDWR, 0);
-+	if (!filp)
-+		return;
-+	file_update_time(filp);
-+	filp_close(filp, NULL);
-+	return;
-+}
-+
- static int btrfs_rm_dev_item(struct btrfs_root *root,
- 			     struct btrfs_device *device)
- {
-@@ -1649,10 +1665,14 @@ int btrfs_rm_device(struct btrfs_root *root, char *device_path)
- 
- 	ret = 0;
- 
--	/* Notify udev that device has changed */
--	if (bdev)
-+	if (bdev) {
-+		/* Notify udev that device has changed */
- 		btrfs_kobject_uevent(bdev, KOBJ_CHANGE);
- 
-+		/* Update ctime/mtime for device path for libblkid */
-+		update_dev_time(device_path);
-+	}
-+
- error_brelse:
- 	brelse(bh);
- 	if (bdev)
-@@ -2096,6 +2116,8 @@ int btrfs_init_new_device(struct btrfs_root *root, char *device_path)
- 		ret = btrfs_commit_transaction(trans, root);
- 	}
- 
-+	/* Update ctime/mtime for libblkid */
-+	update_dev_time(device_path);
- 	return ret;
- 
- error_trans:
+ 		/* If we're not the initiators request authorization to
+ 		 * proceed from user space (mgmt_user_confirm with
+-		 * confirm_hint set to 1). */
+-		if (!test_bit(HCI_CONN_AUTH_PEND, &conn->flags)) {
++		 * confirm_hint set to 1). The exception is if neither
++		 * side had MITM in which case we do auto-accept.
++		 */
++		if (!test_bit(HCI_CONN_AUTH_PEND, &conn->flags) &&
++		    (loc_mitm || rem_mitm)) {
+ 			BT_DBG("Confirming auto-accept as acceptor");
+ 			confirm_hint = 1;
+ 			goto confirm;
 -- 
 1.9.1
 
