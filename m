@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934787AbaGXJtD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 05:49:03 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:55130 "EHLO
+	id S934887AbaGXJ4E (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 05:56:04 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:55151 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756831AbaGXJs4 (ORCPT
+	with ESMTP id S934783AbaGXJtD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 05:48:56 -0400
+	Thu, 24 Jul 2014 05:49:03 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Lan Tianyu <tianyu.lan@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+Cc: Sachin Kamat <sachin.kamat@linaro.org>,
+        Steve Glendinning <steve.glendinning@shawell.net>,
+        Guenter Roeck <linux@roeck-us.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 106/128] ACPI / battery: Retry to get battery information if failed during probing
-Date: Thu, 24 Jul 2014 10:45:55 +0100
-Message-Id: <1406195177-8656-107-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 109/128] hwmon: (emc2103) Fix return value
+Date: Thu, 24 Jul 2014 10:45:58 +0100
+Message-Id: <1406195177-8656-110-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1406195177-8656-1-git-send-email-luis.henriques@canonical.com>
 References: <1406195177-8656-1-git-send-email-luis.henriques@canonical.com>
@@ -28,81 +29,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lan Tianyu <tianyu.lan@intel.com>
+From: Sachin Kamat <sachin.kamat@linaro.org>
 
-commit 75646e758a0ecbed5024454507d5be5b9ea9dcbf upstream.
+commit 1a3abbd0b9a16e40fd4718f99896c437a193c0a1 upstream.
 
-Some machines (eg. Lenovo Z480) ECs are not stable during boot up
-and causes battery driver fails to be loaded due to failure of getting
-battery information from EC sometimes. After several retries, the
-operation will work. This patch is to retry to get battery information 5
-times if the first try fails.
+kstrtol() returns appropriate error values. Use those instead of
+hardcoding. Silences several sparse messages of following type:
+"why not propagate 'result' from kstrtol() instead of (-22)?"
 
-Link: https://bugzilla.kernel.org/show_bug.cgi?id=75581
-Reported-and-tested-by: naszar <naszar@ya.ru>
-Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-[ luis: backported to 3.11:
-  - acpi_battery_update() has only one parameter in 3.11 ]
+Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
+Cc: Steve Glendinning <steve.glendinning@shawell.net>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/acpi/battery.c | 27 ++++++++++++++++++++++++++-
- 1 file changed, 26 insertions(+), 1 deletion(-)
+ drivers/hwmon/emc2103.c | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/acpi/battery.c b/drivers/acpi/battery.c
-index cb2ba88fcac3..06523d5743b6 100644
---- a/drivers/acpi/battery.c
-+++ b/drivers/acpi/battery.c
-@@ -34,6 +34,7 @@
- #include <linux/dmi.h>
- #include <linux/slab.h>
- #include <linux/suspend.h>
-+#include <linux/delay.h>
- #include <asm/unaligned.h>
+diff --git a/drivers/hwmon/emc2103.c b/drivers/hwmon/emc2103.c
+index b07305622087..2c137b26acb4 100644
+--- a/drivers/hwmon/emc2103.c
++++ b/drivers/hwmon/emc2103.c
+@@ -248,7 +248,7 @@ static ssize_t set_temp_min(struct device *dev, struct device_attribute *da,
  
- #ifdef CONFIG_ACPI_PROCFS_POWER
-@@ -1081,6 +1082,28 @@ static struct dmi_system_id bat_dmi_table[] = {
- 	{},
- };
+ 	int result = kstrtol(buf, 10, &val);
+ 	if (result < 0)
+-		return -EINVAL;
++		return result;
  
-+/*
-+ * Some machines'(E,G Lenovo Z480) ECs are not stable
-+ * during boot up and this causes battery driver fails to be
-+ * probed due to failure of getting battery information
-+ * from EC sometimes. After several retries, the operation
-+ * may work. So add retry code here and 20ms sleep between
-+ * every retries.
-+ */
-+static int acpi_battery_update_retry(struct acpi_battery *battery)
-+{
-+	int retry, ret;
-+
-+	for (retry = 5; retry; retry--) {
-+		ret = acpi_battery_update(battery);
-+		if (!ret)
-+			break;
-+
-+		msleep(20);
-+	}
-+	return ret;
-+}
-+
- static int acpi_battery_add(struct acpi_device *device)
- {
- 	int result = 0;
-@@ -1100,9 +1123,11 @@ static int acpi_battery_add(struct acpi_device *device)
- 	if (ACPI_SUCCESS(acpi_get_handle(battery->device->handle,
- 			"_BIX", &handle)))
- 		set_bit(ACPI_BATTERY_XINFO_PRESENT, &battery->flags);
--	result = acpi_battery_update(battery);
-+
-+	result = acpi_battery_update_retry(battery);
- 	if (result)
- 		goto fail;
-+
- #ifdef CONFIG_ACPI_PROCFS_POWER
- 	result = acpi_battery_add_fs(device);
- #endif
+ 	val = DIV_ROUND_CLOSEST(val, 1000);
+ 	if ((val < -63) || (val > 127))
+@@ -272,7 +272,7 @@ static ssize_t set_temp_max(struct device *dev, struct device_attribute *da,
+ 
+ 	int result = kstrtol(buf, 10, &val);
+ 	if (result < 0)
+-		return -EINVAL;
++		return result;
+ 
+ 	val = DIV_ROUND_CLOSEST(val, 1000);
+ 	if ((val < -63) || (val > 127))
+@@ -320,7 +320,7 @@ static ssize_t set_fan_div(struct device *dev, struct device_attribute *da,
+ 
+ 	int status = kstrtol(buf, 10, &new_div);
+ 	if (status < 0)
+-		return -EINVAL;
++		return status;
+ 
+ 	if (new_div == old_div) /* No change */
+ 		return count;
+@@ -394,7 +394,7 @@ static ssize_t set_fan_target(struct device *dev, struct device_attribute *da,
+ 
+ 	int result = kstrtol(buf, 10, &rpm_target);
+ 	if (result < 0)
+-		return -EINVAL;
++		return result;
+ 
+ 	/* Datasheet states 16384 as maximum RPM target (table 3.2) */
+ 	if ((rpm_target < 0) || (rpm_target > 16384))
+@@ -440,7 +440,7 @@ static ssize_t set_pwm_enable(struct device *dev, struct device_attribute *da,
+ 
+ 	int result = kstrtol(buf, 10, &new_value);
+ 	if (result < 0)
+-		return -EINVAL;
++		return result;
+ 
+ 	mutex_lock(&data->update_lock);
+ 	switch (new_value) {
 -- 
 1.9.1
 
