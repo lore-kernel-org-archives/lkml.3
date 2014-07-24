@@ -1,44 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759457AbaGXPKs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 11:10:48 -0400
-Received: from kdh-gw.itdev.co.uk ([89.21.227.133]:22706 "EHLO
-	hermes.kdh.itdev.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1759387AbaGXPKr (ORCPT
+	id S1759479AbaGXPLG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 11:11:06 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56885 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759387AbaGXPLD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 11:10:47 -0400
-Message-ID: <53D121DE.8070401@itdev.co.uk>
-Date: Thu, 24 Jul 2014 16:10:22 +0100
-From: Nick Dyer <nick.dyer@itdev.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Thu, 24 Jul 2014 11:11:03 -0400
+Date: Thu, 24 Jul 2014 15:10:50 +0000
+From: Serge Hallyn <serge.hallyn@ubuntu.com>
+To: Aditya Kali <adityakali@google.com>
+Cc: tj@kernel.org, lizefan@huawei.com, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
+        mingo@redhat.com, containers@lists.linux-foundation.org
+Subject: Re: [PATCH 1/5] kernfs: Add API to get generate relative kernfs path
+Message-ID: <20140724151049.GK26600@ubuntumail>
+References: <adityakali-cgroupns>
+ <1405626731-12220-1-git-send-email-adityakali@google.com>
+ <1405626731-12220-2-git-send-email-adityakali@google.com>
 MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: Yufeng Shen <miletus@google.com>, Daniel Kurtz <djkurtz@chromium.org>,
-        Henrik Rydberg <rydberg@euromail.se>,
-        Joonyoung Shim <jy0922.shim@samsung.com>,
-        Alan Bowens <Alan.Bowens@atmel.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Peter Meerwald <pmeerw@pmeerw.net>,
-        Benson Leung <bleung@chromium.org>,
-        Olof Johansson <olofj@chromium.org>, Sekhar Nori <nsekhar@ti.com>,
-        Stephen Warren <swarren@nvidia.com>
-Subject: Re: [PATCH 04/15] Input: atmel_mxt_ts - implement device tree support
-References: <1404399697-26484-1-git-send-email-nick.dyer@itdev.co.uk> <1404399697-26484-5-git-send-email-nick.dyer@itdev.co.uk> <53D02AF8.5000100@wwwdotorg.org>
-In-Reply-To: <53D02AF8.5000100@wwwdotorg.org>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1405626731-12220-2-git-send-email-adityakali@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23/07/14 22:36, Stephen Warren wrote:
-> Hmm. It looks like the version of this patch that was actually applied
-> varies quite a bit from what was posted, in particular in the
-> implementation and call site of mxt_parse_dt(). It'd be nice if the
-> commit log had been adjusted to mention this, so it didn't look like *I*
-> caused all those compile errors and warnings that the 0-day builder just
-> found:-(
+Quoting Aditya Kali (adityakali@google.com):
+> The new function kernfs_path_from_node() generates and returns
+> kernfs path of a given kernfs_node relative to a given parent
+> kernfs_node.
+> 
+> Signed-off-by: Aditya Kali <adityakali@google.com>
+> ---
+>  fs/kernfs/dir.c        | 51 ++++++++++++++++++++++++++++++++++++++++----------
+>  include/linux/kernfs.h |  3 +++
+>  2 files changed, 44 insertions(+), 10 deletions(-)
+> 
+> diff --git a/fs/kernfs/dir.c b/fs/kernfs/dir.c
+> index a693f5b..2224f08 100644
+> --- a/fs/kernfs/dir.c
+> +++ b/fs/kernfs/dir.c
+> @@ -44,14 +44,22 @@ static int kernfs_name_locked(struct kernfs_node *kn, char *buf, size_t buflen)
+>  	return strlcpy(buf, kn->parent ? kn->name : "/", buflen);
+>  }
+>  
+> -static char * __must_check kernfs_path_locked(struct kernfs_node *kn, char *buf,
+> -					      size_t buflen)
+> +static char * __must_check kernfs_path_from_node_locked(
+> +	struct kernfs_node *kn_root,
+> +	struct kernfs_node *kn,
+> +	char *buf,
+> +	size_t buflen)
+>  {
+>  	char *p = buf + buflen;
+>  	int len;
+>  
+>  	*--p = '\0';
 
-Apologies for my part in this. It doesn't help that this patch went through
-several revisions. Is there a best practice for when to remove
-signed-off-by or change authorship documented anywhere?
+I realize this is currently couldn't happen (hm, well through the
+EXPORT_SYMBOL_GPL(kernfs_path) it actually could), and it's the same in the
+current code, but could you add a BUG_ON(!buflen) here?
+
+Otherwise looks good to me.
+
+Acked-by: Serge E. Hallyn <serge.hallyn@ubuntu.com>
+
+
+>  
+> +	if (kn == kn_root) {
+> +		*--p = '/';
+> +		return p;
+> +	}
+> +
+>  	do {
+>  		len = strlen(kn->name);
+>  		if (p - buf < len + 1) {
+> @@ -63,6 +71,8 @@ static char * __must_check kernfs_path_locked(struct kernfs_node *kn, char *buf,
+>  		memcpy(p, kn->name, len);
+>  		*--p = '/';
+>  		kn = kn->parent;
+> +		if (kn == kn_root)
+> +			break;
+>  	} while (kn && kn->parent);
+>  
+>  	return p;
+> @@ -92,26 +102,47 @@ int kernfs_name(struct kernfs_node *kn, char *buf, size_t buflen)
+>  }
+>  
+>  /**
+> - * kernfs_path - build full path of a given node
+> + * kernfs_path_from_node - build path of node @kn relative to @kn_root.
+> + * @kn_root: parent kernfs_node relative to which we need to build the path
+>   * @kn: kernfs_node of interest
+> - * @buf: buffer to copy @kn's name into
+> + * @buf: buffer to copy @kn's path into
+>   * @buflen: size of @buf
+>   *
+> - * Builds and returns the full path of @kn in @buf of @buflen bytes.  The
+> - * path is built from the end of @buf so the returned pointer usually
+> + * Builds and returns @kn's path relative to @kn_root. @kn_root is expected to
+> + * be parent of @kn at some level. If this is not true or if @kn_root is NULL,
+> + * then full path of @kn is returned.
+> + * The path is built from the end of @buf so the returned pointer usually
+>   * doesn't match @buf.  If @buf isn't long enough, @buf is nul terminated
+>   * and %NULL is returned.
+>   */
+> -char *kernfs_path(struct kernfs_node *kn, char *buf, size_t buflen)
+> +char *kernfs_path_from_node(struct kernfs_node *kn_root, struct kernfs_node *kn,
+> +			    char *buf, size_t buflen)
+>  {
+>  	unsigned long flags;
+>  	char *p;
+>  
+>  	spin_lock_irqsave(&kernfs_rename_lock, flags);
+> -	p = kernfs_path_locked(kn, buf, buflen);
+> +	p = kernfs_path_from_node_locked(kn_root, kn, buf, buflen);
+>  	spin_unlock_irqrestore(&kernfs_rename_lock, flags);
+>  	return p;
+>  }
+> +EXPORT_SYMBOL_GPL(kernfs_path_from_node);
+> +
+> +/**
+> + * kernfs_path - build full path of a given node
+> + * @kn: kernfs_node of interest
+> + * @buf: buffer to copy @kn's name into
+> + * @buflen: size of @buf
+> + *
+> + * Builds and returns the full path of @kn in @buf of @buflen bytes.  The
+> + * path is built from the end of @buf so the returned pointer usually
+> + * doesn't match @buf.  If @buf isn't long enough, @buf is nul terminated
+> + * and %NULL is returned.
+> + */
+> +char *kernfs_path(struct kernfs_node *kn, char *buf, size_t buflen)
+> +{
+> +	return kernfs_path_from_node(NULL, kn, buf, buflen);
+> +}
+>  EXPORT_SYMBOL_GPL(kernfs_path);
+>  
+>  /**
+> @@ -145,8 +176,8 @@ void pr_cont_kernfs_path(struct kernfs_node *kn)
+>  
+>  	spin_lock_irqsave(&kernfs_rename_lock, flags);
+>  
+> -	p = kernfs_path_locked(kn, kernfs_pr_cont_buf,
+> -			       sizeof(kernfs_pr_cont_buf));
+> +	p = kernfs_path_from_node_locked(NULL, kn, kernfs_pr_cont_buf,
+> +					 sizeof(kernfs_pr_cont_buf));
+>  	if (p)
+>  		pr_cont("%s", p);
+>  	else
+> diff --git a/include/linux/kernfs.h b/include/linux/kernfs.h
+> index 20f4935..1627341 100644
+> --- a/include/linux/kernfs.h
+> +++ b/include/linux/kernfs.h
+> @@ -257,6 +257,9 @@ static inline bool kernfs_ns_enabled(struct kernfs_node *kn)
+>  }
+>  
+>  int kernfs_name(struct kernfs_node *kn, char *buf, size_t buflen);
+> +char * __must_check kernfs_path_from_node(struct kernfs_node *root_kn,
+> +					  struct kernfs_node *kn, char *buf,
+> +					  size_t buflen);
+>  char * __must_check kernfs_path(struct kernfs_node *kn, char *buf,
+>  				size_t buflen);
+>  void pr_cont_kernfs_name(struct kernfs_node *kn);
+> -- 
+> 2.0.0.526.g5318336
+> 
+> _______________________________________________
+> Containers mailing list
+> Containers@lists.linux-foundation.org
+> https://lists.linuxfoundation.org/mailman/listinfo/containers
