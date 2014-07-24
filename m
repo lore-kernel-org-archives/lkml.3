@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758772AbaGXJqw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 05:46:52 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54620 "EHLO
+	id S1758756AbaGXJqu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 05:46:50 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54612 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758085AbaGXJqq (ORCPT
+	with ESMTP id S1758346AbaGXJqp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 05:46:46 -0400
+	Thu, 24 Jul 2014 05:46:45 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Chris Mason <clm@fb.com>, David Sterba <dsterba@suse.cz>,
+Cc: Liu Bo <bo.li.liu@oracle.com>, Chris Mason <clm@fb.com>,
+        David Sterba <dsterba@suse.cz>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 014/128] btrfs: fix use of uninit "ret" in end_extent_writepage()
-Date: Thu, 24 Jul 2014 10:44:23 +0100
-Message-Id: <1406195177-8656-15-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 012/128] Btrfs: use right type to get real comparison
+Date: Thu, 24 Jul 2014 10:44:21 +0100
+Message-Id: <1406195177-8656-13-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1406195177-8656-1-git-send-email-luis.henriques@canonical.com>
 References: <1406195177-8656-1-git-send-email-luis.henriques@canonical.com>
@@ -27,47 +28,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Sandeen <sandeen@redhat.com>
+From: Liu Bo <bo.li.liu@oracle.com>
 
-commit 3e2426bd0eb980648449e7a2f5a23e3cd3c7725c upstream.
+commit cd857dd6bc2ae9ecea14e75a34e8a8fdc158e307 upstream.
 
-If this condition in end_extent_writepage() is false:
+We want to make sure the point is still within the extent item, not to verify
+the memory it's pointing to.
 
-	if (tree->ops && tree->ops->writepage_end_io_hook)
-
-we will then test an uninitialized "ret" at:
-
-	ret = ret < 0 ? ret : -EIO;
-
-The test for ret is for the case where ->writepage_end_io_hook
-failed, and we'd choose that ret as the error; but if
-there is no ->writepage_end_io_hook, nothing sets ret.
-
-Initializing ret to 0 should be sufficient; if
-writepage_end_io_hook wasn't set, (!uptodate) means
-non-zero err was passed in, so we choose -EIO in that case.
-
-Signed-of-by: Eric Sandeen <sandeen@redhat.com>
-
+Signed-off-by: Liu Bo <bo.li.liu@oracle.com>
 Signed-off-by: Chris Mason <clm@fb.com>
 Cc: David Sterba <dsterba@suse.cz>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/btrfs/extent_io.c | 2 +-
+ fs/btrfs/backref.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/fs/btrfs/extent_io.c b/fs/btrfs/extent_io.c
-index 479d5aecd708..4a96d26bc6fd 100644
---- a/fs/btrfs/extent_io.c
-+++ b/fs/btrfs/extent_io.c
-@@ -2387,7 +2387,7 @@ int end_extent_writepage(struct page *page, int err, u64 start, u64 end)
- {
- 	int uptodate = (err == 0);
- 	struct extent_io_tree *tree;
--	int ret;
-+	int ret = 0;
- 
- 	tree = &BTRFS_I(page->mapping->host)->io_tree;
+diff --git a/fs/btrfs/backref.c b/fs/btrfs/backref.c
+index 8bc5e8ccb091..2b3d7ba4ad33 100644
+--- a/fs/btrfs/backref.c
++++ b/fs/btrfs/backref.c
+@@ -1388,7 +1388,7 @@ static int __get_extent_inline_ref(unsigned long *ptr, struct extent_buffer *eb,
+ 			*out_eiref = (struct btrfs_extent_inline_ref *)(ei + 1);
+ 		}
+ 		*ptr = (unsigned long)*out_eiref;
+-		if ((void *)*ptr >= (void *)ei + item_size)
++		if ((unsigned long)(*ptr) >= (unsigned long)ei + item_size)
+ 			return -ENOENT;
+ 	}
  
 -- 
 1.9.1
