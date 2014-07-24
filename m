@@ -1,102 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759290AbaGXN7g (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 09:59:36 -0400
-Received: from e24smtp02.br.ibm.com ([32.104.18.86]:55607 "EHLO
-	e24smtp02.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758883AbaGXN7f (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 09:59:35 -0400
-Date: Thu, 24 Jul 2014 10:59:31 -0300
-From: Leonidas Da Silva Barbosa <leosilva@linux.vnet.ibm.com>
-To: Herbert Xu <herbert@gondor.apana.org.au>,
-        "David S. Miller" <davem@davemloft.net>, linux-crypto@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: mhcerri@linux.vnet.ibm.com, fin@linux.vnet.ibm.com
-Subject: [PATCH 5/8] Replacing spinlocks by nx_copy_ctx on NX-AES-ECB
-Message-ID: <20140724135929.GA25842@bluepex.com>
+	id S1759351AbaGXN7s (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 09:59:48 -0400
+Received: from mail.kernel.org ([198.145.19.201]:42887 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759295AbaGXN7q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jul 2014 09:59:46 -0400
+Date: Thu, 24 Jul 2014 10:59:41 -0300
+From: Arnaldo Carvalho de Melo <acme@kernel.org>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
+        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>
+Subject: Re: [PATCHSET 0/6] perf tools: Honor column width setting
+Message-ID: <20140724135941.GT20303@kernel.org>
+References: <1404883694-5342-1-git-send-email-namhyung@kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14072413-2194-0000-0000-000000181FCA
+In-Reply-To: <1404883694-5342-1-git-send-email-namhyung@kernel.org>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replaces spinlock usage by a simple copy of the crypto context, avoiding
-possible bottlenecks.
+Em Wed, Jul 09, 2014 at 02:28:08PM +0900, Namhyung Kim escreveu:
+> Hello,
+> 
+> This patchset is to control perf report/top output column width by
+> -w/--column-widths option so that it can fit into the terminal size.
+> The -w option is there for perf report but it ignored by recent output
+> field changed due to some reason.  This patchset fixes it and supports
+> perf top also.
+> 
+> This is sometimes useful if your terminal is small and there's some
+> C++ applications which have amazingly long symbol names.  Without this
+> patchset user might not see those symbols on TUI, since it maps
+> left/right arrow keys to other functions.
+> 
+> The -w option sets column width starting from the first column
+> (overhead or optional overhead_children column unless -F option is
+> given).  It doesn't make sense to limit those overhead columns so it's
+> not a hard-limit for them.  But it *is* a hard-limit for other columns
+> such as comm, dso, symbol, and so on.  One can use 0 not to
+> limit/force a width for those columns.
 
-Signed-off-by: Leonidas Da Silva Barbosa <leosilva@linux.vnet.ibm.com>
----
- drivers/crypto/nx/nx-aes-ecb.c |   20 ++++++++++++--------
- 1 files changed, 12 insertions(+), 8 deletions(-)
+Due to the issues pointed out, will wait for a v2 patchset, ok?
 
-diff --git a/drivers/crypto/nx/nx-aes-ecb.c b/drivers/crypto/nx/nx-aes-ecb.c
-index 85a8d23..fcf190c 100644
---- a/drivers/crypto/nx/nx-aes-ecb.c
-+++ b/drivers/crypto/nx/nx-aes-ecb.c
-@@ -70,15 +70,19 @@ static int ecb_aes_nx_crypt(struct blkcipher_desc *desc,
- {
- 	struct nx_crypto_ctx *nx_ctx = crypto_blkcipher_ctx(desc->tfm);
- 	struct nx_csbcpb *csbcpb = nx_ctx->csbcpb;
--	unsigned long irq_flags;
- 	unsigned int processed = 0, to_process;
- 	u32 max_sg_len;
- 	int rc;
- 
--	spin_lock_irqsave(&nx_ctx->lock, irq_flags);
-+	struct nx_crypto_ctx curr_nx_ctx;
-+
-+	if (nx_copy_ctx(&curr_nx_ctx, nx_ctx))
-+		return -ENOMEM;
-+
-+	csbcpb = curr_nx_ctx.csbcpb;
- 
- 	max_sg_len = min_t(u32, nx_driver.of.max_sg_len/sizeof(struct nx_sg),
--			   nx_ctx->ap->sglen);
-+			   curr_nx_ctx.ap->sglen);
- 
- 	if (enc)
- 		NX_CPB_FDM(csbcpb) |= NX_FDM_ENDE_ENCRYPT;
-@@ -87,22 +91,22 @@ static int ecb_aes_nx_crypt(struct blkcipher_desc *desc,
- 
- 	do {
- 		to_process = min_t(u64, nbytes - processed,
--				   nx_ctx->ap->databytelen);
-+				   curr_nx_ctx.ap->databytelen);
- 		to_process = min_t(u64, to_process,
- 				   NX_PAGE_SIZE * (max_sg_len - 1));
- 		to_process = to_process & ~(AES_BLOCK_SIZE - 1);
- 
--		rc = nx_build_sg_lists(nx_ctx, desc, dst, src, to_process,
-+		rc = nx_build_sg_lists(&curr_nx_ctx, desc, dst, src, to_process,
- 				processed, NULL);
- 		if (rc)
- 			goto out;
- 
--		if (!nx_ctx->op.inlen || !nx_ctx->op.outlen) {
-+		if (!curr_nx_ctx.op.inlen || !curr_nx_ctx.op.outlen) {
- 			rc = -EINVAL;
- 			goto out;
- 		}
- 
--		rc = nx_hcall_sync(nx_ctx, &nx_ctx->op,
-+		rc = nx_hcall_sync(&curr_nx_ctx, &curr_nx_ctx.op,
- 				   desc->flags & CRYPTO_TFM_REQ_MAY_SLEEP);
- 		if (rc)
- 			goto out;
-@@ -115,7 +119,7 @@ static int ecb_aes_nx_crypt(struct blkcipher_desc *desc,
- 	} while (processed < nbytes);
- 
- out:
--	spin_unlock_irqrestore(&nx_ctx->lock, irq_flags);
-+	kmem_cache_free(nx_driver.slab, curr_nx_ctx.kmem);
- 	return rc;
- }
- 
--- 
-1.7.1
-
+- Arnaldo
