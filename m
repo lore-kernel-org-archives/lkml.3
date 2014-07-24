@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758619AbaGXLCc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 07:02:32 -0400
-Received: from mga01.intel.com ([192.55.52.88]:20193 "EHLO mga01.intel.com"
+	id S1758650AbaGXLDY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 07:03:24 -0400
+Received: from mga01.intel.com ([192.55.52.88]:20350 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758544AbaGXLCa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 07:02:30 -0400
+	id S1750828AbaGXLDX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jul 2014 07:03:23 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,723,1400050800"; 
-   d="scan'208";a="574741823"
-Message-ID: <53D0E79A.20201@intel.com>
-Date: Thu, 24 Jul 2014 19:01:46 +0800
+   d="scan'208";a="574742508"
+Message-ID: <53D0E7E9.5090608@intel.com>
+Date: Thu, 24 Jul 2014 19:03:05 +0800
 From: "xinhui.pan" <xinhuix.pan@intel.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
@@ -46,8 +46,12 @@ In theory it can go over 256 devices, In fact, it will waste more memories. :)
 We really need a policy manager that works well.
 FT guys may offer it one day. it's a little long time maybe. :(
 
-When I was a student, I heard you leave from kernel.
+When I was a student, I heard you left from kernel.
 Welcome back to kernel, I didn't know that you are back. So sorry.
+
+thanks,
+
+xinhui
 
 > Alan
 > 
