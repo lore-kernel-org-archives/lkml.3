@@ -1,106 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758280AbaGXMV3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 08:21:29 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:47896 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756831AbaGXMV1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 08:21:27 -0400
-Message-ID: <53D0FA2F.6050209@free-electrons.com>
-Date: Thu, 24 Jul 2014 14:21:03 +0200
-From: Gregory CLEMENT <gregory.clement@free-electrons.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1758649AbaGXMWJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 08:22:09 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:33262 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756220AbaGXMWH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jul 2014 08:22:07 -0400
+Date: Thu, 24 Jul 2014 08:21:43 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: David Rientjes <rientjes@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Vladimir Davydov <vdavydov@parallels.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Christoph Lameter <cl@linux.com>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Pekka Enberg <penberg@kernel.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [patch 1/2] mm, slub: fix false-positive lockdep warning in
+ free_partial()
+Message-ID: <20140724122143.GI1725@cmpxchg.org>
+References: <alpine.DEB.2.02.1407221550500.9885@chino.kir.corp.google.com>
+ <alpine.DEB.2.02.1407221556330.9885@chino.kir.corp.google.com>
 MIME-Version: 1.0
-To: Jason Cooper <jason@lakedaemon.net>, Benoit Masson <benoitm@perenite.com>
-CC: Andrew Lunn <andrew@lunn.ch>, Benoit Masson <yahoo@perenite.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Sebastian Hesselbarth <sebastian.hesselbarth@googlemail.com>
-Subject: Re: [PATCH 2/2] ARM: mvebu: Added dts defintion for Lenovo Iomega
- ix4-300d NAS
-References: <1406154923-13612-1-git-send-email-yahoo@perenite.com> <1406154923-13612-2-git-send-email-yahoo@perenite.com> <20140723224236.GC28485@lunn.ch> <94F87063-D717-435B-B7C5-EDAC9B26742C@perenite.com> <20140723225841.GD28485@lunn.ch> <10A7C530-7CD2-4ED0-889A-7FAC1922320F@perenite.com> <20140723231535.GK23220@titan.lakedaemon.net>
-In-Reply-To: <20140723231535.GK23220@titan.lakedaemon.net>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1407221556330.9885@chino.kir.corp.google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24/07/2014 01:15, Jason Cooper wrote:
-> On Thu, Jul 24, 2014 at 01:11:12AM +0200, Benoit Masson wrote:
->> Le 24 juil. 2014 à 00:58, Andrew Lunn <andrew@lunn.ch> a écrit :
->>
->>>> For the marvell,mv78230-a0-i2c unfortunately i've spend 3 hours
->>>> trying to understand this but it only works with this on the
->>>> ix4-300d :(. There was multiple patch around this and maybe one
->>>> broke the auto-detect part of this, I've tried compiling with some
->>>> 3.10 or lower kernel but no luck here I still have to put this a0
->>>> option.
->>>
->>> Lets first confirm you have an a0 SoC.
->>>
->>> At boot time, it should print:
->>>
->>> pr_info("MVEBU SoC ID=0x%X, Rev=0x%X\n", soc_dev_id, soc_rev);
->>>
->>> What revision do you have?
->>>
->>> If the auto detect code really is broken, Gregory will likely take a
->>> look.
->>
->> I sure do,
->>
->> confirmed by u-boot  output below:
->>
->> U-Boot 2009.08 (Mar 04 2013 - 11:13:04) Marvell version:  2.3.2 PQ
->> U-Boot Addressing:
->>        Code:..00600000:006BFFF0
->>        BSS:..00708EC0
->>        Stack:..0x5fff70
->>        PageTable:.0x8e0000
->>        Heap address:.0x900000:0xe00000
->> Board: DB-78230-BP rev 2.0 Wistron
->> SoC:   MV78230 A0
->>
->> From kernel I get:
->>
->> mvebu-soc-id: MVEBU SoC ID=0x7823, Rev=0x1
+On Tue, Jul 22, 2014 at 03:57:58PM -0700, David Rientjes wrote:
+> From: Vladimir Davydov <vdavydov@parallels.com>
 > 
-> Well, isn't that a peach?  :)  Gregory?
-
-A peach?? For me it is either a fruit or a princess, so I am puzzled!
-
-Well about the issue, we patch the device tree for the i2c quirk only for
-the openblock AX3. If I remember well it was because the device tree was already
-written for this board before we found there was an issue with the A0 version of the
-CPU. The rule was that for new boards then they have to set the marvell,mv78230-a0-i2c
-compatible string. I also didn't expect that we found "new" product using the A0 version.
-
-We have 3 options now:
-
-- remove the check on the openblock AX3 board and always try to apply the quirck for A0 version
-- add a check for this new board in the mvebu_dt_init function
-- let the compatible string marvell,mv78230-a0-i2c in this dts
-
-I would prefer the option 1 but I fear that Arnd would prefer the 2 other options.
-
-Gregory
-
-
+> Commit c65c1877bd68 ("slub: use lockdep_assert_held") requires
+> remove_partial() to be called with n->list_lock held, but free_partial()
+> called from kmem_cache_close() on cache destruction does not follow this
+> rule, leading to a warning:
 > 
-> thx,
+>   WARNING: CPU: 0 PID: 2787 at mm/slub.c:1536 __kmem_cache_shutdown+0x1b2/0x1f0()
+>   Modules linked in:
+>   CPU: 0 PID: 2787 Comm: modprobe Tainted: G        W    3.14.0-rc1-mm1+ #1
+>   Hardware name:
+>    0000000000000600 ffff88003ae1dde8 ffffffff816d9583 0000000000000600
+>    0000000000000000 ffff88003ae1de28 ffffffff8107c107 0000000000000000
+>    ffff880037ab2b00 ffff88007c240d30 ffffea0001ee5280 ffffea0001ee52a0
+>   Call Trace:
+>    [<ffffffff816d9583>] dump_stack+0x51/0x6e
+>    [<ffffffff8107c107>] warn_slowpath_common+0x87/0xb0
+>    [<ffffffff8107c145>] warn_slowpath_null+0x15/0x20
+>    [<ffffffff811c7fe2>] __kmem_cache_shutdown+0x1b2/0x1f0
+>    [<ffffffff811908d3>] kmem_cache_destroy+0x43/0xf0
+>    [<ffffffffa013a123>] xfs_destroy_zones+0x103/0x110 [xfs]
+>    [<ffffffffa0192b54>] exit_xfs_fs+0x38/0x4e4 [xfs]
+>    [<ffffffff811036fa>] SyS_delete_module+0x19a/0x1f0
+>    [<ffffffff816dfcd8>] ? retint_swapgs+0x13/0x1b
+>    [<ffffffff810d2125>] ? trace_hardirqs_on_caller+0x105/0x1d0
+>    [<ffffffff81359efe>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+>    [<ffffffff816e8539>] system_call_fastpath+0x16/0x1b
 > 
-> Jason.
+> Although this cannot actually result in a race, because on cache
+> destruction there should not be any concurrent frees or allocations from
+> the cache, let's add spin_lock/unlock to free_partial() just to keep
+> lockdep happy.
+
+Please never add needless locking just to please lockdep.
+
+> Acked-by: Christoph Lameter <cl@linux.com>
+> Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
+> Signed-off-by: Pekka Enberg <penberg@kernel.org>
+> Signed-off-by: David Rientjes <rientjes@google.com>
+> ---
+>  mm/slub.c | 4 +++-
+>  1 file changed, 3 insertions(+), 1 deletion(-)
 > 
+> diff --git a/mm/slub.c b/mm/slub.c
+> --- a/mm/slub.c
+> +++ b/mm/slub.c
+> @@ -3195,12 +3195,13 @@ static void list_slab_objects(struct kmem_cache *s, struct page *page,
+>  /*
+>   * Attempt to free all partial slabs on a node.
+>   * This is called from kmem_cache_close(). We must be the last thread
+> - * using the cache and therefore we do not need to lock anymore.
+> + * using the cache, but we still have to lock for lockdep's sake.
+>   */
+>  static void free_partial(struct kmem_cache *s, struct kmem_cache_node *n)
+>  {
+>  	struct page *page, *h;
+>  
+> +	spin_lock_irq(&n->list_lock);
+>  	list_for_each_entry_safe(page, h, &n->partial, lru) {
+>  		if (!page->inuse) {
+>  			__remove_partial(n, page);
 
+This already uses __remove_partial(), which does not have the lockdep
+assertion.  You even acked the patch that made this change, why add
+the spinlock now?
 
--- 
-Gregory Clement, Free Electrons
-Kernel, drivers, real-time and embedded Linux
-development, consulting, training and support.
-http://free-electrons.com
+commit 1e4dd9461fabfbc780cdfaf103cec790f3a53325
+Author: Steven Rostedt <rostedt@goodmis.org>
+Date:   Mon Feb 10 14:25:46 2014 -0800
+
+    slub: do not assert not having lock in removing freed partial
+    
+    Vladimir reported the following issue:
+    
+    Commit c65c1877bd68 ("slub: use lockdep_assert_held") requires
+    remove_partial() to be called with n->list_lock held, but free_partial()
+    called from kmem_cache_close() on cache destruction does not follow this
+    rule, leading to a warning:
+    
+      WARNING: CPU: 0 PID: 2787 at mm/slub.c:1536 __kmem_cache_shutdown+0x1b2/0x1f0()
+      Modules linked in:
+      CPU: 0 PID: 2787 Comm: modprobe Tainted: G        W    3.14.0-rc1-mm1+ #1
+      Hardware name:
+       0000000000000600 ffff88003ae1dde8 ffffffff816d9583 0000000000000600
+       0000000000000000 ffff88003ae1de28 ffffffff8107c107 0000000000000000
+       ffff880037ab2b00 ffff88007c240d30 ffffea0001ee5280 ffffea0001ee52a0
+      Call Trace:
+        __kmem_cache_shutdown+0x1b2/0x1f0
+        kmem_cache_destroy+0x43/0xf0
+        xfs_destroy_zones+0x103/0x110 [xfs]
+        exit_xfs_fs+0x38/0x4e4 [xfs]
+        SyS_delete_module+0x19a/0x1f0
+        system_call_fastpath+0x16/0x1b
+    
+    His solution was to add a spinlock in order to quiet lockdep.  Although
+    there would be no contention to adding the lock, that lock also requires
+    disabling of interrupts which will have a larger impact on the system.
+    
+    Instead of adding a spinlock to a location where it is not needed for
+    lockdep, make a __remove_partial() function that does not test if the
+    list_lock is held, as no one should have it due to it being freed.
+    
+    Also added a __add_partial() function that does not do the lock
+    validation either, as it is not needed for the creation of the cache.
+    
+    Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+    Reported-by: Vladimir Davydov <vdavydov@parallels.com>
+    Suggested-by: David Rientjes <rientjes@google.com>
+    Acked-by: David Rientjes <rientjes@google.com>
+    Acked-by: Vladimir Davydov <vdavydov@parallels.com>
+    Acked-by: Christoph Lameter <cl@linux.com>
+    Cc: Pekka Enberg <penberg@kernel.org>
+    Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+    Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
