@@ -1,75 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758667AbaGXIpP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 04:45:15 -0400
-Received: from mail-bn1blp0186.outbound.protection.outlook.com ([207.46.163.186]:49193
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751874AbaGXIpK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 04:45:10 -0400
-Date: Thu, 24 Jul 2014 16:25:46 +0800
-From: Nicolin Chen <Guangyu.Chen@freescale.com>
-To: Nicolin Chen <nicoleotsuka@gmail.com>
-CC: <broonie@kernel.org>, <vinod.koul@intel.com>, <s.hauer@pengutronix.de>,
-        <robh+dt@kernel.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
-        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
-        <rdunlap@infradead.org>, <lgirdwood@gmail.com>, <perex@perex.cz>,
-        <tiwai@suse.de>, <timur@tabi.org>, <grant.likely@linaro.org>,
-        <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <alsa-devel@alsa-project.org>,
-        <linuxppc-dev@lists.ozlabs.org>, <dan.j.williams@intel.com>,
-        <dmaengine@vger.kernel.org>, <b38343@freescale.com>,
-        <b02247@freescale.com>, <b42378@freescale.com>
-Subject: Re: [RFC][PATCH 0/2] Add ASRC Peripheral to Peripheral driver
-Message-ID: <20140724082545.GA27595@MrMyself>
-References: <cover.1402653667.git.nicoleotsuka@gmail.com>
+	id S1758719AbaGXIqx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 04:46:53 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:42302 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750787AbaGXIqt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jul 2014 04:46:49 -0400
+Date: Thu, 24 Jul 2014 10:46:44 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Miklos Szeredi <miklos@szeredi.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, Tejun Heo <tj@kernel.org>,
+        Vladimir Davydov <vdavydov@parallels.com>, linux-mm@kvack.org,
+        cgroups@vger.kernel.org,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [patch 13/13] mm: memcontrol: rewrite uncharge API
+Message-ID: <20140724084644.GA14578@dhcp22.suse.cz>
+References: <20140718071246.GA21565@dhcp22.suse.cz>
+ <20140718144554.GG29639@cmpxchg.org>
+ <CAJfpegt9k+YULet3vhmG3br7zSiHy-DRL+MiEE=HRzcs+mLzbw@mail.gmail.com>
+ <20140719173911.GA1725@cmpxchg.org>
+ <20140722150825.GA4517@dhcp22.suse.cz>
+ <CAJfpegscT-ptQzq__uUV2TOn7Uvs6x4FdWGTQb9Fe9MEJr2KjA@mail.gmail.com>
+ <20140723143847.GB16721@dhcp22.suse.cz>
+ <20140723150608.GF1725@cmpxchg.org>
+ <CAJfpegs-k5QC+42SzLKUSaHrdPxWBaT_dF+SOPqoDvg8h5p_Tw@mail.gmail.com>
+ <20140723210241.GH1725@cmpxchg.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <cover.1402653667.git.nicoleotsuka@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(189002)(199002)(24454002)(51704005)(110136001)(81342001)(64706001)(68736004)(85306003)(80022001)(76482001)(54356999)(102836001)(81542001)(26826002)(95666004)(83072002)(74662001)(77982001)(6806004)(84676001)(92566001)(4396001)(46102001)(83322001)(74502001)(83506001)(87936001)(47776003)(33656002)(81156004)(31966008)(50466002)(23726002)(76176999)(99396002)(97756001)(85852003)(92726001)(69596002)(86362001)(20776003)(79102001)(1411001)(19580395003)(104016003)(107046002)(106466001)(105606002)(44976005)(97736001)(50986999)(46406003)(21056001)(33716001);DIR:OUT;SFP:;SCL:1;SRVR:BLUPR03MB326;H:az84smr01.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;LANG:en;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
-X-Forefront-PRVS: 028256169F
-Authentication-Results: spf=fail (sender IP is 192.88.158.2)
- smtp.mailfrom=guangyu.chen@freescale.com; 
-X-OriginatorOrg: freescale.com
+In-Reply-To: <20140723210241.GH1725@cmpxchg.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 13, 2014 at 06:07:03PM +0800, Nicolin Chen wrote:
-> This series of patches have a direct dependency between them. So we might
-> need to push them into one branch. And sorry for this :(
+On Wed 23-07-14 17:02:41, Johannes Weiner wrote:
+[...]
+> From 2c3525cb556313936845a7c57f4c4adc655b6680 Mon Sep 17 00:00:00 2001
+> From: Johannes Weiner <hannes@cmpxchg.org>
+> Date: Wed, 23 Jul 2014 15:00:15 -0400
+> Subject: [patch] mm: memcontrol: rewrite uncharge API fix - page cache
+>  migration 2
 > 
-> Patch-1 adds device to device support in SDMA driver along with a secondary
-> request in struct imx_dma_data which's requred in the Patch-2 ASRC driver.
+> In case of fuse page cache replacement the target page in migration
+> can already be charged when splice steals it from page cache.  That
+> triggers the !PageCgrouUsed() assertion during commit:
+> 
+> [  755.141095] page:ffffea00031f9b00 count:2 mapcount:0 mapping:ffff8800c84d1858 index:0x0
+> [  755.141097] page flags: 0x3fffc000000029(locked|uptodate|lru)
+> [  755.141098] page dumped because: VM_BUG_ON_PAGE(PageCgroupUsed(pc))
+> [  755.141098] pc:ffff880215cfe6c0 pc->flags:7 pc->mem_cgroup:ffff880216c23000
+> [  755.141113] ------------[ cut here ]------------
+> [  755.141113] kernel BUG at /home/hannes/src/linux/linux/mm/memcontrol.c:2736!
+> [  755.141115] invalid opcode: 0000 [#1] SMP
+> [  755.141117] CPU: 0 PID: 342 Comm: lt-fusexmp_fh Not tainted 3.16.0-rc5-mm1-00502-g5e5b90c20054 #367
+> [  755.141117] Hardware name: To Be Filled By O.E.M. To Be Filled By O.E.M./H61M-DGS, BIOS P1.30 05/10/2012
+> [  755.141118] task: ffff880213104580 ti: ffff8800c9204000 task.ti: ffff8800c9204000
+> [  755.141121] RIP: 0010:[<ffffffff81188497>]  [<ffffffff81188497>] commit_charge+0xa7/0xb0
+> [  755.141122] RSP: 0018:ffff8800c9207c18  EFLAGS: 00010286
+> [  755.141123] RAX: 000000000000003f RBX: ffffea00031f9b00 RCX: 0000000000004c4b
+> [  755.141123] RDX: 0000000000000001 RSI: 0000000000000001 RDI: ffff880213104580
+> [  755.141124] RBP: ffff8800c9207c40 R08: 0000000000000001 R09: 0000000000000000
+> [  755.141124] R10: 0000000000000000 R11: 0000000000000000 R12: ffff880216c23000
+> [  755.141125] R13: 0000000000000001 R14: ffff8800c84d1858 R15: 0000000000000000
+> [  755.141125] FS:  00007fc15f7fe700(0000) GS:ffff88021f200000(0000) knlGS:0000000000000000
+> [  755.141126] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+> [  755.141127] CR2: 00007f693db3b6b0 CR3: 0000000211d54000 CR4: 00000000000407f0
+> [  755.141127] Stack:
+> [  755.141128]  ffffea00031f8480 ffffea00031f9b00 ffffea00031f8480 ffffea00031f9b00
+> [  755.141129]  0000000000000000 ffff8800c9207c78 ffffffff8118e283 00000001c9207c60
+> [  755.141130]  ffff880215cfe120 00000001c9207c78 ffffea00031f9b00 ffffea00031f8480
+> [  755.141131] Call Trace:
+> [  755.141133]  [<ffffffff8118e283>] mem_cgroup_migrate+0xe3/0x210
+> [  755.141135]  [<ffffffff8111a086>] replace_page_cache_page+0xf6/0x1c0
+> [  755.141137]  [<ffffffff8127aceb>] fuse_copy_page+0x1bb/0x5f0
+> [  755.141138]  [<ffffffff8127b20f>] fuse_copy_args+0xef/0x140
+> [  755.141140]  [<ffffffff8127caba>] fuse_dev_do_write+0x7ba/0xd30
+> [  755.141143]  [<ffffffff8109518d>] ? trace_hardirqs_on_caller+0x15d/0x200
+> [  755.141146]  [<ffffffff816a83ea>] ? __mutex_unlock_slowpath+0xaa/0x180
+> [  755.141147]  [<ffffffff8109518d>] ? trace_hardirqs_on_caller+0x15d/0x200
+> [  755.141148]  [<ffffffff8109523d>] ? trace_hardirqs_on+0xd/0x10
+> [  755.141150]  [<ffffffff8127d2b2>] fuse_dev_splice_write+0x282/0x360
+> [  755.141152]  [<ffffffff811c4ce1>] SyS_splice+0x351/0x800
+> [  755.141153]  [<ffffffff8109518d>] ? trace_hardirqs_on_caller+0x15d/0x200
+> [  755.141155]  [<ffffffff816ab192>] system_call_fastpath+0x16/0x1b
+> [  755.141166] Code: 07 48 89 10 8b 75 e4 e8 f8 fd ff ff 48 83 c4 10 5b 41 5c 41 5d 5d c3 0f 1f 44 00 00 48 c7 c6 68 0b 9c 81 48 89 df e8 e9 a2 f9 ff <0f> 0b 0f 1f 80 00 00 00 00 66 66 66 66 90 48 39 f7 74 26 48 85
+> [  755.141167] RIP  [<ffffffff81188497>] commit_charge+0xa7/0xb0
+> [  755.141167]  RSP <ffff8800c9207c18>
+> [  755.141665] ---[ end trace 2d0ea36c8e3ded5b ]---
+> 
+> If the target page is already charged, just leave it as is and abort
+> the charge migration attempt.
+> 
+> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
 
-I just sent a new version V2. So please disregard this version.
+We can reduce the lookup only to lruvec==true case, no?
 
-Thanks all,
-Nicolin
+Acked-by: Michal Hocko <mhocko@suse.cz>
 
+> ---
+>  mm/memcontrol.c | 6 ++++++
+>  1 file changed, 6 insertions(+)
 > 
-> Nicolin Chen (2):
->   dma: imx-sdma: Add device to device support
->   ASoC: fsl_asrc: Add ASRC ASoC CPU DAI and platform drivers
-> 
->  .../devicetree/bindings/sound/fsl,asrc.txt         |   62 ++
->  drivers/dma/imx-sdma.c                             |   40 +-
->  include/linux/platform_data/dma-imx.h              |    1 +
->  sound/soc/fsl/Kconfig                              |    9 +
->  sound/soc/fsl/Makefile                             |    2 +
->  sound/soc/fsl/fsl_asrc.c                           | 1031 ++++++++++++++++++++
->  sound/soc/fsl/fsl_asrc.h                           |  431 ++++++++
->  sound/soc/fsl/fsl_asrc_dma.c                       |  385 ++++++++
->  8 files changed, 1956 insertions(+), 5 deletions(-)
->  create mode 100644 Documentation/devicetree/bindings/sound/fsl,asrc.txt
->  create mode 100644 sound/soc/fsl/fsl_asrc.c
->  create mode 100644 sound/soc/fsl/fsl_asrc.h
->  create mode 100644 sound/soc/fsl/fsl_asrc_dma.c
-> 
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index b7c9a202dee9..3eaa6e83c168 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -6660,6 +6660,12 @@ void mem_cgroup_migrate(struct page *oldpage, struct page *newpage,
+>  	if (mem_cgroup_disabled())
+>  		return;
+>  
+> +	/* Page cache replacement: new page already charged? */
+> +	pc = lookup_page_cgroup(newpage);
+> +	if (PageCgroupUsed(pc))
+> +		return;
+> +
+> +	/* Re-entrant migration: old page already uncharged? */
+>  	pc = lookup_page_cgroup(oldpage);
+>  	if (!PageCgroupUsed(pc))
+>  		return;
 > -- 
-> 1.8.4
+> 2.0.0
 > 
+
+-- 
+Michal Hocko
+SUSE Labs
