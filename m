@@ -1,38 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758012AbaGXLiB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 07:38:01 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:46982 "EHLO mx2.suse.de"
+	id S1758238AbaGXLiI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 07:38:08 -0400
+Received: from tundra.namei.org ([65.99.196.166]:34038 "EHLO namei.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755276AbaGXLh7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 07:37:59 -0400
-Message-ID: <1406201840.729.4.camel@linux-fkkt.site>
-Subject: Re: [PATCH 00/10 linux-next] drivers/usb: remove unnecessary break
- after goto/return
-From: Oliver Neukum <oneukum@suse.de>
-To: Fabian Frederick <fabf@skynet.be>
-Cc: linux-kernel@vger.kernel.org, joe@perches.com, gregkh@linuxfoundation.org,
-        linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
-        usb-storage@lists.one-eyed-alien.net
-In-Reply-To: <1406189939-6433-1-git-send-email-fabf@skynet.be>
-References: <1406189939-6433-1-git-send-email-fabf@skynet.be>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 24 Jul 2014 13:37:20 +0200
-Mime-Version: 1.0
-X-Mailer: Evolution 3.10.2 
-Content-Transfer-Encoding: 7bit
+	id S1758075AbaGXLiE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jul 2014 07:38:04 -0400
+Date: Thu, 24 Jul 2014 21:37:51 +1000 (EST)
+From: James Morris <jmorris@namei.org>
+To: David Howells <dhowells@redhat.com>
+cc: Mimi Zohar <zohar@linux.vnet.ibm.com>, mimi.e.zohar@gmail.com,
+        Dmitry Kasatkin <d.kasatkin@samsung.com>, vgoyal@redhat.com,
+        keyrings@linux-nfs.org, linux-security-module@vger.kernel.org,
+        linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [GIT PULL] Keyrings and asymmetric keys patches for 3.17
+In-Reply-To: <25694.1406063229@warthog.procyon.org.uk>
+Message-ID: <alpine.LRH.2.11.1407242137280.13682@namei.org>
+References: <25694.1406063229@warthog.procyon.org.uk>
+User-Agent: Alpine 2.11 (LRH 23 2013-08-11)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-07-24 at 10:18 +0200, Fabian Frederick wrote:
-> Small patchset addressing break redundancy on drivers/usb branch
-> (suggested by Joe Perches).
+On Tue, 22 Jul 2014, David Howells wrote:
 
-Frankly, that is not a good idea. Somebody will remove a "goto"
-and forget to readd the "break"
+> I have a number of sets of patches for you to pull.  I've git-merged them
+> together into a single branch (keys-next) as there are some conflicts and
+> tagged the end.
 
-	Regards
-		Oliver
+Pulled, thanks.
 
+-- 
+James Morris
+<jmorris@namei.org>
 
