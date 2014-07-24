@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935322AbaGXKSP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 06:18:15 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54774 "EHLO
+	id S934365AbaGXJr0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 05:47:26 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54727 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757637AbaGXJr1 (ORCPT
+	with ESMTP id S932463AbaGXJrO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 05:47:27 -0400
+	Thu, 24 Jul 2014 05:47:14 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Paul Bolle <pebolle@tiscali.nl>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+Cc: Hugh Dickins <hughd@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 041/128] powerpc: fix typo 'CONFIG_PMAC'
-Date: Thu, 24 Jul 2014 10:44:50 +0100
-Message-Id: <1406195177-8656-42-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 028/128] mm: fix crashes from mbind() merging vmas
+Date: Thu, 24 Jul 2014 10:44:37 +0100
+Message-Id: <1406195177-8656-29-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1406195177-8656-1-git-send-email-luis.henriques@canonical.com>
 References: <1406195177-8656-1-git-send-email-luis.henriques@canonical.com>
@@ -28,35 +31,157 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paul Bolle <pebolle@tiscali.nl>
+From: Hugh Dickins <hughd@google.com>
 
-commit 6e0fdf9af216887e0032c19d276889aad41cad00 upstream.
+commit d05f0cdcbe6388723f1900c549b4850360545201 upstream.
 
-Commit b0d278b7d3ae ("powerpc/perf_event: Reduce latency of calling
-perf_event_do_pending") added a check for CONFIG_PMAC were a check for
-CONFIG_PPC_PMAC was clearly intended.
+In v2.6.34 commit 9d8cebd4bcd7 ("mm: fix mbind vma merge problem")
+introduced vma merging to mbind(), but it should have also changed the
+convention of passing start vma from queue_pages_range() (formerly
+check_range()) to new_vma_page(): vma merging may have already freed
+that structure, resulting in BUG at mm/mempolicy.c:1738 and probably
+worse crashes.
 
-Fixes: b0d278b7d3ae ("powerpc/perf_event: Reduce latency of calling perf_event_do_pending")
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Fixes: 9d8cebd4bcd7 ("mm: fix mbind vma merge problem")
+Reported-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Tested-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Signed-off-by: Hugh Dickins <hughd@google.com>
+Acked-by: Christoph Lameter <cl@linux.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Minchan Kim <minchan.kim@gmail.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+[ luis: backported to 3.11: used hughd's backport for 3.10 ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/powerpc/kernel/time.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ mm/mempolicy.c | 46 ++++++++++++++++++++--------------------------
+ 1 file changed, 20 insertions(+), 26 deletions(-)
 
-diff --git a/arch/powerpc/kernel/time.c b/arch/powerpc/kernel/time.c
-index d1f90d3d6f07..93ce00413e25 100644
---- a/arch/powerpc/kernel/time.c
-+++ b/arch/powerpc/kernel/time.c
-@@ -512,7 +512,7 @@ void timer_interrupt(struct pt_regs * regs)
+diff --git a/mm/mempolicy.c b/mm/mempolicy.c
+index bfb32380190b..9aec9ae2a99c 100644
+--- a/mm/mempolicy.c
++++ b/mm/mempolicy.c
+@@ -608,19 +608,18 @@ static unsigned long change_prot_numa(struct vm_area_struct *vma,
+  * If pagelist != NULL then isolate pages from the LRU and
+  * put them on the pagelist.
+  */
+-static struct vm_area_struct *
++static int
+ check_range(struct mm_struct *mm, unsigned long start, unsigned long end,
+ 		const nodemask_t *nodes, unsigned long flags, void *private)
+ {
+-	int err;
+-	struct vm_area_struct *first, *vma, *prev;
+-
++	int err = 0;
++	struct vm_area_struct *vma, *prev;
  
- 	__get_cpu_var(irq_stat).timer_irqs++;
+-	first = find_vma(mm, start);
+-	if (!first)
+-		return ERR_PTR(-EFAULT);
++	vma = find_vma(mm, start);
++	if (!vma)
++		return -EFAULT;
+ 	prev = NULL;
+-	for (vma = first; vma && vma->vm_start < end; vma = vma->vm_next) {
++	for (; vma && vma->vm_start < end; vma = vma->vm_next) {
+ 		unsigned long endvma = vma->vm_end;
  
--#if defined(CONFIG_PPC32) && defined(CONFIG_PMAC)
-+#if defined(CONFIG_PPC32) && defined(CONFIG_PPC_PMAC)
- 	if (atomic_read(&ppc_n_lost_interrupts) != 0)
- 		do_IRQ(regs);
- #endif
+ 		if (endvma > end)
+@@ -630,9 +629,9 @@ check_range(struct mm_struct *mm, unsigned long start, unsigned long end,
+ 
+ 		if (!(flags & MPOL_MF_DISCONTIG_OK)) {
+ 			if (!vma->vm_next && vma->vm_end < end)
+-				return ERR_PTR(-EFAULT);
++				return -EFAULT;
+ 			if (prev && prev->vm_end < vma->vm_start)
+-				return ERR_PTR(-EFAULT);
++				return -EFAULT;
+ 		}
+ 
+ 		if (is_vm_hugetlb_page(vma))
+@@ -649,15 +648,13 @@ check_range(struct mm_struct *mm, unsigned long start, unsigned long end,
+ 
+ 			err = check_pgd_range(vma, start, endvma, nodes,
+ 						flags, private);
+-			if (err) {
+-				first = ERR_PTR(err);
++			if (err)
+ 				break;
+-			}
+ 		}
+ next:
+ 		prev = vma;
+ 	}
+-	return first;
++	return err;
+ }
+ 
+ /*
+@@ -1138,16 +1135,17 @@ out:
+ 
+ /*
+  * Allocate a new page for page migration based on vma policy.
+- * Start assuming that page is mapped by vma pointed to by @private.
++ * Start by assuming the page is mapped by the same vma as contains @start.
+  * Search forward from there, if not.  N.B., this assumes that the
+  * list of pages handed to migrate_pages()--which is how we get here--
+  * is in virtual address order.
+  */
+-static struct page *new_vma_page(struct page *page, unsigned long private, int **x)
++static struct page *new_page(struct page *page, unsigned long start, int **x)
+ {
+-	struct vm_area_struct *vma = (struct vm_area_struct *)private;
++	struct vm_area_struct *vma;
+ 	unsigned long uninitialized_var(address);
+ 
++	vma = find_vma(current->mm, start);
+ 	while (vma) {
+ 		address = page_address_in_vma(page, vma);
+ 		if (address != -EFAULT)
+@@ -1173,7 +1171,7 @@ int do_migrate_pages(struct mm_struct *mm, const nodemask_t *from,
+ 	return -ENOSYS;
+ }
+ 
+-static struct page *new_vma_page(struct page *page, unsigned long private, int **x)
++static struct page *new_page(struct page *page, unsigned long start, int **x)
+ {
+ 	return NULL;
+ }
+@@ -1183,7 +1181,6 @@ static long do_mbind(unsigned long start, unsigned long len,
+ 		     unsigned short mode, unsigned short mode_flags,
+ 		     nodemask_t *nmask, unsigned long flags)
+ {
+-	struct vm_area_struct *vma;
+ 	struct mm_struct *mm = current->mm;
+ 	struct mempolicy *new;
+ 	unsigned long end;
+@@ -1249,11 +1246,9 @@ static long do_mbind(unsigned long start, unsigned long len,
+ 	if (err)
+ 		goto mpol_out;
+ 
+-	vma = check_range(mm, start, end, nmask,
++	err = check_range(mm, start, end, nmask,
+ 			  flags | MPOL_MF_INVERT, &pagelist);
+-
+-	err = PTR_ERR(vma);	/* maybe ... */
+-	if (!IS_ERR(vma))
++	if (!err)
+ 		err = mbind_range(mm, start, end, new);
+ 
+ 	if (!err) {
+@@ -1261,9 +1256,8 @@ static long do_mbind(unsigned long start, unsigned long len,
+ 
+ 		if (!list_empty(&pagelist)) {
+ 			WARN_ON_ONCE(flags & MPOL_MF_LAZY);
+-			nr_failed = migrate_pages(&pagelist, new_vma_page,
+-					(unsigned long)vma,
+-					MIGRATE_SYNC, MR_MEMPOLICY_MBIND);
++			nr_failed = migrate_pages(&pagelist, new_page,
++				start, MIGRATE_SYNC, MR_MEMPOLICY_MBIND);
+ 			if (nr_failed)
+ 				putback_lru_pages(&pagelist);
+ 		}
 -- 
 1.9.1
 
