@@ -1,53 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759634AbaGXP57 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 11:57:59 -0400
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:34433 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759588AbaGXP56 (ORCPT
+	id S1759660AbaGXP6O (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 11:58:14 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.242]:54956 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759390AbaGXP6M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 11:57:58 -0400
-Message-ID: <53D12B9D.9000309@gmail.com>
-Date: Thu, 24 Jul 2014 09:51:57 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Thu, 24 Jul 2014 11:58:12 -0400
+Message-ID: <53D12CF6.6070502@atmel.com>
+Date: Thu, 24 Jul 2014 17:57:42 +0200
+From: Cyrille Pitchen <cyrille.pitchen@atmel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-To: Arnaldo Carvalho de Melo <acme@kernel.org>, Jiri Olsa <jolsa@redhat.com>
-CC: Adrian Hunter <adrian.hunter@intel.com>, Andi Kleen <andi@firstfloor.org>,
-        Jiri Olsa <jolsa@kernel.org>, linux-kernel@vger.kernel.org,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCHv3 00/19] perf tools: Factor ordered samples queue
-References: <1405893363-21967-1-git-send-email-jolsa@kernel.org> <53CCB6AE.6020505@intel.com> <20140721080219.GA4183@krava.redhat.com> <53CCD3A7.5070002@intel.com> <20140721095415.GB8865@krava.redhat.com> <87d2cy3c7m.fsf@tassilo.jf.intel.com> <53CD5AB5.3000307@intel.com> <53CD5DC6.3030605@gmail.com> <20140724141958.GB7831@kernel.org> <20140724145611.GB25165@krava.brq.redhat.com> <20140724151009.GD7831@kernel.org>
-In-Reply-To: <20140724151009.GD7831@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+To: Mark Rutland <mark.rutland@arm.com>
+CC: "nicolas.ferre@atmel.com" <nicolas.ferre@atmel.com>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "soren.brinkmann@xilinx.com" <soren.brinkmann@xilinx.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 5/6] ARM: at91: change compatibility string for sama5d3x
+ gem
+References: <cover.1406192657.git.cyrille.pitchen@atmel.com> <b8cbfb4e8d5d156d477634164c21cfa6f509c4ea.1406192657.git.cyrille.pitchen@atmel.com> <20140724151529.GA26190@leverpostej>
+In-Reply-To: <20140724151529.GA26190@leverpostej>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7/24/14, 9:10 AM, Arnaldo Carvalho de Melo wrote:
+Le 24/07/2014 17:15, Mark Rutland a écrit :
+> On Thu, Jul 24, 2014 at 12:51:02PM +0100, Cyrille Pitchen wrote:
+>> this new compatibility string prevents macb/gem driver from using the
+>> scatter-gather and gso features on sama5d3x boards.
+> 
+> What will happen were the driver to attempt to use the features on this
+> board?
+> 
+> How will this affect existing DTBs?
+> 
+> Thanks,
+> Mark.
 >
-> I haven't seen this comment, just saw David, IIUC, having problems using
-> the whole patchkit, David?
+Hi Mark,
 
-The testing I did with the whole patchkit saw no behavior differences.
+patch 2 for then scatter-gather feature introducted a new compatible string
+"atmel,sama5d3-gem". Its associated config has the MACB_CAPS_SG_DISABLED flag
+so the feature is not available indeed.
 
->
-> My tests were more to counter what he said, i.e. that:
->
-> <quote David Ahern>
-> No overload condition, no dropped chunks message - yet can't process
-> events
-> </>
+patch 2 also set the very same flag for the config associated to the already 
+existing strings "cdns,pc302-gem" and "cdns,gem". Then if you don't update 
+your device tree, the scatter-gather feature won't be enabled for gem anyway. 
+However SG feature will be enabled for the old macb.
 
-Meaning I hit that problem with current code as well as Jiri's changes.
+The main idea is to do the change in two steps to avoid indroducing bugs. This
+series of patches is the first step. Later an additionnal patch may be 
+introduced to enable SG feature for gem on all platforms but sama5d3x. This 
+should be done by removing the MACB_CAPS_SG_DISABLED flag from pc302gem_config.
+Till then you don't need to update your device tree.
 
-Overall I am fine with the changes. Yes, you can add my Acked-by on all 
-of them.
+For now, the SG feature is known to be broken on sama5d3x and there is work in 
+progress with Cadence support to fix this issue. It seems to be specific to 
+sama5d3x gem. SG feature was successfully tested on sama5d3x macb and also on 
+sama5d4 gem.
 
-Thanks,
-David
+Regards,
+
+Cyrille
+
+>>
+>> Signed-off-by: Cyrille Pitchen <cyrille.pitchen@atmel.com>
+>> ---
+>>  arch/arm/boot/dts/sama5d3_gmac.dtsi | 2 +-
+>>  1 file changed, 1 insertion(+), 1 deletion(-)
+>>
+>> diff --git a/arch/arm/boot/dts/sama5d3_gmac.dtsi b/arch/arm/boot/dts/sama5d3_gmac.dtsi
+>> index a6cb050..de5ed59 100644
+>> --- a/arch/arm/boot/dts/sama5d3_gmac.dtsi
+>> +++ b/arch/arm/boot/dts/sama5d3_gmac.dtsi
+>> @@ -74,7 +74,7 @@
+>>  			};
+>>  
+>>  			macb0: ethernet@f0028000 {
+>> -				compatible = "cdns,pc302-gem", "cdns,gem";
+>> +				compatible = "atmel,sama5d3-gem";
+>>  				reg = <0xf0028000 0x100>;
+>>  				interrupts = <34 IRQ_TYPE_LEVEL_HIGH 3>;
+>>  				pinctrl-names = "default";
+>> -- 
+>> 1.8.2.2
+>>
+>>
+>> _______________________________________________
+>> linux-arm-kernel mailing list
+>> linux-arm-kernel@lists.infradead.org
+>> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+>>
+
