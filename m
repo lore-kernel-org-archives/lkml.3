@@ -1,96 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932557AbaGXOrJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 10:47:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52687 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758976AbaGXOrH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 10:47:07 -0400
-Date: Thu, 24 Jul 2014 16:46:37 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: linux-kernel@vger.kernel.org, lttng-dev@lists.lttng.org,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>, acme@kernel.org,
-        namhyung.kim@lge.com, tzanussi@gmail.com
-Subject: Re: [RFC] perf to ctf converter
-Message-ID: <20140724144637.GE7652@krava.brq.redhat.com>
-References: <20140603163640.GA16279@linutronix.de>
- <20140714141533.GD17761@krava.redhat.com>
- <20140721171151.GA12969@linutronix.de>
- <20140721183530.GA28673@krava.redhat.com>
- <53CE0B89.7030400@linutronix.de>
- <20140722112535.GA29750@krava.redhat.com>
- <53CE4BAF.2010906@linutronix.de>
- <53CE67B0.7020406@linutronix.de>
+	id S932915AbaGXOra (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 10:47:30 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.230]:45215 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932583AbaGXOr3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jul 2014 10:47:29 -0400
+Date: Thu, 24 Jul 2014 10:47:25 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Nicholas Krause <xerofoify@gmail.com>
+Cc: gregkh@linuxfoundation.org, john.stultz@linaro.org,
+        paul.gortmaker@windriver.com, gang.chen.5i5j@gmail.com,
+        yongjun_wei@trendmicro.com.cn, dan.carpenter@oracle.com,
+        tomas.winkler@intel.com, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging: Change kzalloc to kcalloc
+Message-ID: <20140724144725.GA32669@home.goodmis.org>
+References: <1406156581-6052-1-git-send-email-xerofoify@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <53CE67B0.7020406@linutronix.de>
+In-Reply-To: <1406156581-6052-1-git-send-email-xerofoify@gmail.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 22, 2014 at 03:31:28PM +0200, Sebastian Andrzej Siewior wrote:
-
-SNIP
-
+On Wed, Jul 23, 2014 at 07:03:01PM -0400, Nicholas Krause wrote:
+> This changes the call to kzalloc to kcalloc in ion_dummy_driver
+> for allocating the heap.
 > 
-> So the strings look good now. I also renamed "pid" to "common_pid" because
+> Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
+> ---
+>  drivers/staging/android/ion/ion_dummy_driver.c | 5 ++---
+>  1 file changed, 2 insertions(+), 3 deletions(-)
 > 
-> [06:37:09.885385418] (+0.017541187) sched:sched_wakeup: { cpu_id = 0 },
-> { common_pid = 179, common_tid = 179, common_comm = ":179", comm = "ls",
-> pid = 14068, prio = 120, success = 1, target_cpu = 5 }
-> 
-> that thing brings its own pid & comm.
-> 
-> And while looking at the data types and dropped that & LONG since it is
-> not set for 64bit data types as I assumed. I do now consider ->size and
-> the result is
-> 
-> [06:37:09.867838634] (+0.000253941) sched:sched_stat_runtime: { cpu_id =
-> 0 }, { common_pid = 14068, common_tid = 14068, common_comm = "ls", comm
-> = "ls", pid = 14068, runtime = 2020750, vruntime = 76395575003 }
-> 
-> that means vruntime is 64bit as it should and decimal might be nice.
-> \o/
-> 
-> Sebastian
+> diff --git a/drivers/staging/android/ion/ion_dummy_driver.c b/drivers/staging/android/ion/ion_dummy_driver.c
+> index 3a45e79..8883432 100644
+> --- a/drivers/staging/android/ion/ion_dummy_driver.c
+> +++ b/drivers/staging/android/ion/ion_dummy_driver.c
+> @@ -67,9 +67,8 @@ static int __init ion_dummy_init(void)
+>  {
+>  	int i, err;
+>  
+> 	idev = ion_device_create(NULL);
+> -	heaps = kzalloc(sizeof(struct ion_heap *) * dummy_ion_pdata.nr,
+> -			GFP_KERNEL);
+> +	heaps = kcalloc(*dummy_ion_pdata.nr , sizeof((struct ion_heap *) *dummy_ion_pdata.nr) , GFP_KERNEL);
+>  	if (!heaps)
+>  		return -ENOMEM;
+>  
 
-hi,
-I made some changes over your branch:
-  git://git.kernel.org/pub/scm/linux/kernel/git/jolsa/perf.git
-  perf/ctf_convert
+Hi Nick,
 
-following patches:
-(needs to be prettyfied, but hopefuly works and ilustrate the point)
-  perf tools: Iterate both common_fields and fields for tracepoit
-  perf tools: Use sample_type for generic fields
+Look, I know you are really enthusiastic, and want to help out. I get it.
+But this patch is proof that you are not yet ready to work on a complex
+project such as the Linux kernel. Maybe you want to try something
+a bit easier. Like, say, systemd?
 
-we now add all fields available in the perf.data (via perf_event_attr:sample_type)
-and then for tracepoints we add both common_types and types fields
+First of all, there was really nothing wrong with this code in the first
+place. It is fine to use kzalloc. But lets just say you want to convert
+it to kcalloc. The proper answer would have been:
 
-I'm not sure we want to store made up data like symbol information,
-which could be obtained from IP anyway - how does babeltrace or any
-other CTF viewer do that?
+	heaps = kcalloc(dummy_ion_pdata.nr, sizeof(struct ion_heap *), GFP_KERNEL);
+
+That's rather simple. Just look at the prototype of kcalloc():
+
+void *kcalloc(size_t n, size_t size, gfp_t flags)
+
+The three parameters are the number of elements, the size of each individual
+element, and then finally the flags used on how to allocate that memory.
+I have to say, you did get the flags part correct.
+
+Now lets look at what you did. For the size you had:
+
+  *dummy_ion_ptr.nr
+
+Do you have any idea of what that is? You just dereferenced the count.
+That is, you didn't use the count, but you used the memory that is at
+some location from address 0 + dummy_ion_ptr.nr. Now this probably wont
+compile. At least not on 64 bit boxes as that nr field is only 32 bits
+and a pointer would need to be 64 bits. It could possibly compile on
+32 bit boxes, but it would definitely give you a warning about that.
+
+Now lets look at the second parameter you used.
+
+  sizeof((struct ion_heap *) *dummy_ion_pdata.nr)
+
+This one takes a bit of thinking about. I'm actually confused at what
+you were even trying to do. What the compiler would try to do is to
+break it up. First you again dereference the dummy_ion_pdata.nr with
+
+   *dummy_ion_pdata.nr
+
+And then you convert the answer to that into the type "struct ion_heap *"
+
+   (struct ion_heap *) *dummy_ion_pdata.nr
+
+Finally, you take the sizeof of that answer. As you converted the type
+into "struct ion_heap *", I think it would give you the size of that
+pointer, that is, if it would compile in the first place.
+
+Congrats! that is actually what we want the second parameter to be!
+Although I doubt that you meant to do it that way. No one would mean
+to do it that way unless they had no idea of what they were doing.
 
 
----
-However I'm still not convinced 100% this is the way we want
-to go with this. What we do now is:
-  - read/parse perf.data events and convert them into ctf events
+Basically what this patch tells me is that you do not have enough basic
+knowledge of the C language to be programming in the kernel. Maybe you
+want to be a BIOS programmer?
 
-What I/we do originally wanted to do was to use CTF to describe
-perf event as is defined via perf interface, so we dont need to
-parse data stream, but just store it.
+My advice to you is to find another project (Gnome?) and work with them
+until you have a strong concept of C coding and then, and only then,
+come back to working on the kernel. Kernel development is no place for
+novice programmers. Sorry, but that's true. It will only give you a
+bad reputation, and nasty comments from the real kernel developers.
 
-This would be handy/needed for CTF record support, where we _want_
-to store raw data from kernel and not parse it before that.
+Cheers!
 
-I'll recheck and get back with issues I found with this approach.
+-- Steve
 
-Meanwhile I think we can continue with what we have now,
-I just wanted to share the other approach with you ;-)
-
-thanks,
-jirka
