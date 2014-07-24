@@ -1,69 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935120AbaGXXWu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 19:22:50 -0400
-Received: from mail-bl2lp0204.outbound.protection.outlook.com ([207.46.163.204]:17840
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S932131AbaGXXWs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 19:22:48 -0400
-Date: Thu, 24 Jul 2014 16:22:35 -0700
-From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
-To: Andreas =?utf-8?Q?F=C3=A4rber?= <afaerber@suse.de>
-CC: Michal Simek <michal.simek@xilinx.com>,
-        Andreas Olofsson <andreas@adapteva.com>,
-        Matteo Vit <matteo.vit@starwaredesign.com>,
-        Sean Rickerd <srickerd@suse.com>, <devicetree@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>
-Subject: Re: [PATCH v2 08/11] ARM: dts: zynq: Add VDMA to Parallella
-References: <1406242820-20140-1-git-send-email-afaerber@suse.de>
- <1406242820-20140-9-git-send-email-afaerber@suse.de>
+	id S935140AbaGXXYk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 19:24:40 -0400
+Received: from imap.thunk.org ([74.207.234.97]:55466 "EHLO imap.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932131AbaGXXYi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jul 2014 19:24:38 -0400
+Date: Thu, 24 Jul 2014 19:24:34 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+Cc: Andy Lutomirski <luto@amacapital.net>,
+        Linux Kernel Developers List <linux-kernel@vger.kernel.org>,
+        Linux API <linux-api@vger.kernel.org>, linux-crypto@vger.kernel.org
+Subject: Re: [PATCH -v5] random: introduce getrandom(2) system call
+Message-ID: <20140724232434.GN6673@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+	Andy Lutomirski <luto@amacapital.net>,
+	Linux Kernel Developers List <linux-kernel@vger.kernel.org>,
+	Linux API <linux-api@vger.kernel.org>, linux-crypto@vger.kernel.org
+References: <1406212287-9855-1-git-send-email-tytso@mit.edu>
+ <20140724151814.GE32421@khazad-dum.debian.net>
+ <CALCETrXAA=UzS-pRCo5tKSjSCOP9xfu66BG9QbRefVrovkavhQ@mail.gmail.com>
+ <20140724190206.GL6673@thunk.org>
+ <20140724203019.GA20737@khazad-dum.debian.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1406242820-20140-9-git-send-email-afaerber@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-RCIS-Action: ALLOW
-Message-ID: <b4c4e060-2efb-4b82-be12-32c00897ec93@BY2FFO11FD023.protection.gbl>
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:149.199.60.83;CTRY:US;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(438002)(24454002)(189002)(377424004)(51704005)(199002)(44976005)(46102001)(20776003)(74316001)(54356999)(85182001)(6806004)(31696002)(64706001)(1496007)(53416004)(87936001)(85202003)(21056001)(107046002)(110136001)(102836001)(85852003)(95666004)(76482001)(79102001)(76176999)(31966008)(19580395003)(50466002)(70736001)(83322001)(575784001)(50986999)(4396001)(85306003)(74662001)(92726001)(104016003)(81542001)(83072002)(86362001)(80022001)(106466001)(81342001)(77096002)(99396002)(74502001)(23676002)(77982001)(19580405001)(83506001)(92566001)(107986001);DIR:OUT;SFP:;SCL:1;SRVR:BY2FFO11HUB003;H:xsj-pvapsmtpgw01;FPR:;MLV:sfv;PTR:unknown-60-83.xilinx.com;MX:1;A:1;LANG:en;
-X-OriginatorOrg: xilinx.onmicrosoft.com
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
-X-Forefront-PRVS: 028256169F
-Authentication-Results: spf=pass (sender IP is 149.199.60.83)
- smtp.mailfrom=soren.brinkmann@xilinx.com; 
+In-Reply-To: <20140724203019.GA20737@khazad-dum.debian.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-07-25 at 01:00AM +0200, Andreas Färber wrote:
-> Signed-off-by: Andreas Färber <afaerber@suse.de>
-> ---
->  v2: New
->  
->  arch/arm/boot/dts/zynq-parallella.dts | 25 +++++++++++++++++++++++++
->  1 file changed, 25 insertions(+)
+On Thu, Jul 24, 2014 at 05:30:19PM -0300, Henrique de Moraes Holschuh wrote:
+> > I wouldn't add the error to the man page until we actually modify the
+> > kernel to add such a restriction.
 > 
-> diff --git a/arch/arm/boot/dts/zynq-parallella.dts b/arch/arm/boot/dts/zynq-parallella.dts
-> index e60a0a9..8beaacc 100644
-> --- a/arch/arm/boot/dts/zynq-parallella.dts
-> +++ b/arch/arm/boot/dts/zynq-parallella.dts
-> @@ -32,6 +32,31 @@
->  		bootargs = "console=ttyPS0,115200 earlyprintk root=/dev/mmcblk0p2 rootfstype=ext4 rw rootwait";
->  		linux,stdout-path = "/amba/serial@e0001000";
->  	};
-> +
-> +	fpga {
-Do you really want FPGA components in this DT?
-If somebody tries booting with this DT without programming with a
-corresponding bitstream, the whole system might hang.
-Just something to consider.
+> By then, it might be too late.  It would be really sad to find ourselves
+> forced to return ENOSYS to getrandom(GRND_RANDOM) when we actually wanted to
+> return EPERM/EACCES.
 
-	Sören
+I wouldn't worry about.  The reality is that anyone using GRND_RANDOM
+has to be checking for error codes anyway, and if they do something
+stupid because the system call returns EPERM/EACCESS when they weren't
+expecting it, again, they are much more likely to be making many other
+fatal mistakes anyway.
 
+In general, all system calls can return errno's other than the ones
+documented in the man page.  This is certainly true for open(2), and
+read(2) if you are using a network file system such as NFS.  Someone
+who assumes that the only errors that they have to handle is the list
+in the man page, and assumes that this list is an exhaustive listing
+of all possible errors, is going to be in a *world* of hurt.
+
+I don't think it's necessary to add a sentence that other errors can
+be returned in the future, and users much check for other errors, but
+if you really think people are that stupid that we need to say
+something which is true for every single system call in Linux, we can
+do that....
+
+						- Ted
