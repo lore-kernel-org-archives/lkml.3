@@ -1,49 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935270AbaGXX07 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 19:26:59 -0400
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:45016 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934961AbaGXX05 (ORCPT
+	id S935288AbaGXX2B (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 19:28:01 -0400
+Received: from mail-vc0-f178.google.com ([209.85.220.178]:51024 "EHLO
+	mail-vc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935045AbaGXX15 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 19:26:57 -0400
+	Thu, 24 Jul 2014 19:27:57 -0400
 MIME-Version: 1.0
-In-Reply-To: <53D194F1.6020603@redhat.com>
-References: <1406237179-3713-1-git-send-email-ast@plumgrid.com>
-	<53D194F1.6020603@redhat.com>
-Date: Thu, 24 Jul 2014 16:26:54 -0700
-Message-ID: <CAMEtUuxHp5QzWQ+DhMPiNWDH6LxWPjgincK=Sk8xeJjivieY0w@mail.gmail.com>
-Subject: Re: [PATCH net-next] net: filter: rename 'struct sock_filter_int'
- into 'struct bpf_insn'
-From: Alexei Starovoitov <ast@plumgrid.com>
-To: Daniel Borkmann <dborkman@redhat.com>
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Network Development <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <20140724232434.GN6673@thunk.org>
+References: <1406212287-9855-1-git-send-email-tytso@mit.edu>
+ <20140724151814.GE32421@khazad-dum.debian.net> <CALCETrXAA=UzS-pRCo5tKSjSCOP9xfu66BG9QbRefVrovkavhQ@mail.gmail.com>
+ <20140724190206.GL6673@thunk.org> <20140724203019.GA20737@khazad-dum.debian.net>
+ <20140724232434.GN6673@thunk.org>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Thu, 24 Jul 2014 16:27:36 -0700
+Message-ID: <CALCETrVgKMVnBuzE+bCXaUPRrqhVxwv4AXmJrUJSYws5rZxhJw@mail.gmail.com>
+Subject: Re: [PATCH -v5] random: introduce getrandom(2) system call
+To: "Theodore Ts'o" <tytso@mit.edu>,
+        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Linux Kernel Developers List <linux-kernel@vger.kernel.org>,
+        Linux API <linux-api@vger.kernel.org>, linux-crypto@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 24, 2014 at 4:21 PM, Daniel Borkmann <dborkman@redhat.com> wrote:
-> On 07/24/2014 11:26 PM, Alexei Starovoitov wrote:
+On Thu, Jul 24, 2014 at 4:24 PM, Theodore Ts'o <tytso@mit.edu> wrote:
+> On Thu, Jul 24, 2014 at 05:30:19PM -0300, Henrique de Moraes Holschuh wrote:
+>> > I wouldn't add the error to the man page until we actually modify the
+>> > kernel to add such a restriction.
 >>
->> eBPF is used by socket filtering, seccomp and soon by tracing and
->> exposed to userspace, therefore 'sock_filter_int' name is not accurate.
->> Rename it to 'bpf_insn'
->>
->> Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
->> ---
+>> By then, it might be too late.  It would be really sad to find ourselves
+>> forced to return ENOSYS to getrandom(GRND_RANDOM) when we actually wanted to
+>> return EPERM/EACCES.
 >
-> ...
+> I wouldn't worry about.  The reality is that anyone using GRND_RANDOM
+> has to be checking for error codes anyway, and if they do something
+> stupid because the system call returns EPERM/EACCESS when they weren't
+> expecting it, again, they are much more likely to be making many other
+> fatal mistakes anyway.
 >
->>   #define BPF_ALU64_REG(OP, DST, SRC)                           \
->> -       ((struct sock_filter_int) {                             \
->> +       ((struct bpf_insn) {                            \
+> In general, all system calls can return errno's other than the ones
+> documented in the man page.  This is certainly true for open(2), and
+> read(2) if you are using a network file system such as NFS.  Someone
+> who assumes that the only errors that they have to handle is the list
+> in the man page, and assumes that this list is an exhaustive listing
+> of all possible errors, is going to be in a *world* of hurt.
 >
->
->                              ^^^ Please also fix up whitespacing here
->                                  and all the other sections below.
+> I don't think it's necessary to add a sentence that other errors can
+> be returned in the future, and users much check for other errors, but
+> if you really think people are that stupid that we need to say
+> something which is true for every single system call in Linux, we can
+> do that....
 
-you mean to align last \ with other lines?
-sure. good point.
+I think that people might do:
+
+try getrandom(GRND_RANDOM)
+fall back to /dev/random
+fall back to something intensely stupid
+
+We want them to at least attempt the fallback from GRND_RANDOM to !GRND_RANDOM.
+
+--Andy
