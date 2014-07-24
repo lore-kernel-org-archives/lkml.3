@@ -1,141 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935070AbaGXXIR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 19:08:17 -0400
-Received: from relay3-d.mail.gandi.net ([217.70.183.195]:60038 "EHLO
+	id S935092AbaGXXIk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 19:08:40 -0400
+Received: from relay3-d.mail.gandi.net ([217.70.183.195]:57100 "EHLO
 	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934936AbaGXXIN (ORCPT
+	with ESMTP id S934927AbaGXXHK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 19:08:13 -0400
+	Thu, 24 Jul 2014 19:07:10 -0400
 X-Originating-IP: 109.10.215.15
 From: Guillaume Clement <gclement@baobob.org>
 To: Forest Bond <forest@alittletooquiet.net>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         Guillaume Clement <gclement@baobob.org>
-Subject: [PATCH] staging: vt6655: tag data as __user in struct tagSCmdRequest
-Date: Fri, 25 Jul 2014 01:07:40 +0200
-Message-Id: <1406243260-13490-1-git-send-email-gclement@baobob.org>
+Subject: [PATCH 12/14] staging: vt6655: fix braces at newline in if statements
+Date: Fri, 25 Jul 2014 01:06:26 +0200
+Message-Id: <1406243188-13413-13-git-send-email-gclement@baobob.org>
 X-Mailer: git-send-email 1.8.5.5
+In-Reply-To: <1406243188-13413-1-git-send-email-gclement@baobob.org>
+References: <1406243188-13413-1-git-send-email-gclement@baobob.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sparse reported that the data from tagSCmdRequest is given by
-userspace, so it should be tagged as such.
-
-Later, we were memcomparing and dereferencing it without first copying
-it, fix that as well.
+Braces should not be in a separate line for multi-line if
+statements. This fixes warnings reported by checkpatch.
 
 Signed-off-by: Guillaume Clement <gclement@baobob.org>
 ---
- drivers/staging/vt6655/iocmd.h |  2 +-
- drivers/staging/vt6655/iwctl.c | 22 +++++++++++++++-------
- drivers/staging/vt6655/iwctl.h |  6 +++---
- 3 files changed, 19 insertions(+), 11 deletions(-)
+ drivers/staging/vt6655/wcmd.c | 5 +++--
+ drivers/staging/vt6655/wpa.c  | 8 ++++----
+ 2 files changed, 7 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/staging/vt6655/iocmd.h b/drivers/staging/vt6655/iocmd.h
-index e499f1b..dd12498 100644
---- a/drivers/staging/vt6655/iocmd.h
-+++ b/drivers/staging/vt6655/iocmd.h
-@@ -100,7 +100,7 @@ typedef enum tagWZONETYPE {
- #pragma pack(1)
- typedef struct tagSCmdRequest {
- 	u8	    name[16];
--	void	*data;
-+	void __user *data;
- 	u16	    wResult;
- 	u16     wCmdCode;
- } SCmdRequest, *PSCmdRequest;
-diff --git a/drivers/staging/vt6655/iwctl.c b/drivers/staging/vt6655/iwctl.c
-index 501cd64..9291259 100644
---- a/drivers/staging/vt6655/iwctl.c
-+++ b/drivers/staging/vt6655/iwctl.c
-@@ -1621,14 +1621,17 @@ int iwctl_giwauth(struct net_device *dev,
- int iwctl_siwgenie(struct net_device *dev,
- 		   struct iw_request_info *info,
- 		   struct iw_point *wrq,
--		   char *extra)
-+		   char __user *extra)
- {
- 	PSDevice			pDevice = (PSDevice)netdev_priv(dev);
- 	PSMgmtObject	pMgmt = &(pDevice->sMgmtObj);
- 	int ret = 0;
-+	char length;
- 
- 	if (wrq->length) {
--		if ((wrq->length < 2) || (extra[1]+2 != wrq->length)) {
-+		if (get_user(length, extra + 1))
-+			return -EFAULT;
-+		if ((wrq->length < 2) || (length != wrq->length)) {
- 			ret = -EINVAL;
- 			goto out;
+diff --git a/drivers/staging/vt6655/wcmd.c b/drivers/staging/vt6655/wcmd.c
+index 0c38fcf..f12eef0 100644
+--- a/drivers/staging/vt6655/wcmd.c
++++ b/drivers/staging/vt6655/wcmd.c
+@@ -432,9 +432,10 @@ vCommandTimer(
+ 		vAdHocBeaconRestart(pDevice);
+ //2008-0409-07, <Add> by Einsn Liu
+ #ifdef WPA_SUPPLICANT_DRIVER_WEXT_SUPPORT
+-		if (pMgmt->eScanType == WMAC_SCAN_PASSIVE)
+-		{//send scan event to wpa_Supplicant
++		if (pMgmt->eScanType == WMAC_SCAN_PASSIVE) {
++			//send scan event to wpa_Supplicant
+ 			union iwreq_data wrqu;
++
+ 			memset(&wrqu, 0, sizeof(wrqu));
+ 			wireless_send_event(pDevice->dev, SIOCGIWSCAN, &wrqu, NULL);
  		}
-@@ -1654,7 +1657,7 @@ out://not completely ...not necessary in wpa_supplicant 0.5.8
- int iwctl_giwgenie(struct net_device *dev,
- 		   struct iw_request_info *info,
- 		   struct iw_point *wrq,
--		   char *extra)
-+		   char __user *extra)
- {
- 	PSDevice			pDevice = (PSDevice)netdev_priv(dev);
- 	PSMgmtObject	pMgmt = &(pDevice->sMgmtObj);
-@@ -1801,18 +1804,23 @@ int iwctl_giwencodeext(struct net_device *dev,
- int iwctl_siwmlme(struct net_device *dev,
- 		  struct iw_request_info *info,
- 		  struct iw_point *wrq,
--		  char *extra)
-+		  char __user *extra)
- {
- 	PSDevice			pDevice = (PSDevice)netdev_priv(dev);
- 	PSMgmtObject	pMgmt = &(pDevice->sMgmtObj);
--	struct iw_mlme *mlme = (struct iw_mlme *)extra;
-+	struct iw_mlme mime;
-+
- 	int ret = 0;
+diff --git a/drivers/staging/vt6655/wpa.c b/drivers/staging/vt6655/wpa.c
+index 2bd9e1f..7b1bab9 100644
+--- a/drivers/staging/vt6655/wpa.c
++++ b/drivers/staging/vt6655/wpa.c
+@@ -123,8 +123,8 @@ WPA_ParseRSN(
+ 	    && (pRSN->wVersion == 1)) {
+ 		DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "Legal RSN\n");
+ 		// update each variable if pRSN is long enough to contain the variable
+-		if (pRSN->len >= 10) //oui1(4)+ver(2)+GKSuite(4)
+-		{
++		if (pRSN->len >= 10) {
++			//OUI1(4)+ver(2)+GKSuite(4)
+ 			if (!memcmp(pRSN->abyMulticast, abyOUI01, 4))
+ 				pBSSList->byGKType = WPA_WEP40;
+ 			else if (!memcmp(pRSN->abyMulticast, abyOUI02, 4))
+@@ -142,8 +142,8 @@ WPA_ParseRSN(
+ 			DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "byGKType: %x\n", pBSSList->byGKType);
+ 		}
  
--	if (memcmp(pMgmt->abyCurrBSSID, mlme->addr.sa_data, ETH_ALEN)) {
-+	ret = copy_from_user(&mime, extra, sizeof(mime));
-+	if (ret)
-+		return -EFAULT;
-+
-+	if (memcmp(pMgmt->abyCurrBSSID, mime.addr.sa_data, ETH_ALEN)) {
- 		ret = -EINVAL;
- 		return ret;
- 	}
--	switch (mlme->cmd) {
-+	switch (mime.cmd) {
- 	case IW_MLME_DEAUTH:
- 		//this command seems to be not complete,please test it --einsnliu
- 		//bScheduleCommand((void *) pDevice, WLAN_CMD_DEAUTH, (unsigned char *)&reason);
-diff --git a/drivers/staging/vt6655/iwctl.h b/drivers/staging/vt6655/iwctl.h
-index de0a337..7dd6310 100644
---- a/drivers/staging/vt6655/iwctl.h
-+++ b/drivers/staging/vt6655/iwctl.h
-@@ -176,12 +176,12 @@ int iwctl_giwauth(struct net_device *dev,
- int iwctl_siwgenie(struct net_device *dev,
- 		   struct iw_request_info *info,
- 		   struct iw_point *wrq,
--		   char *extra);
-+		   char __user *extra);
- 
- int iwctl_giwgenie(struct net_device *dev,
- 		   struct iw_request_info *info,
- 		   struct iw_point *wrq,
--		   char *extra);
-+		   char __user *extra);
- 
- int iwctl_siwencodeext(struct net_device *dev,
- 		       struct iw_request_info *info,
-@@ -196,7 +196,7 @@ int iwctl_giwencodeext(struct net_device *dev,
- int iwctl_siwmlme(struct net_device *dev,
- 		  struct iw_request_info *info,
- 		  struct iw_point *wrq,
--		  char *extra);
-+		  char __user *extra);
- #endif // #ifdef WPA_SUPPLICANT_DRIVER_WEXT_SUPPORT
- //End Add -- //2008-0409-07, <Add> by Einsn Liu
- 
+-		if (pRSN->len >= 12) //oui1(4)+ver(2)+GKS(4)+PKSCnt(2)
+-		{
++		if (pRSN->len >= 12) {
++			//oui1(4)+ver(2)+GKS(4)+PKSCnt(2)
+ 			j = 0;
+ 			DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "wPKCount: %d, sizeof(pBSSList->abyPKType): %zu\n", pRSN->wPKCount, sizeof(pBSSList->abyPKType));
+ 			for (i = 0; (i < pRSN->wPKCount) && (j < ARRAY_SIZE(pBSSList->abyPKType)); i++) {
 -- 
 1.8.5.5
 
