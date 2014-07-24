@@ -1,59 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932744AbaGXPqq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 11:46:46 -0400
-Received: from mailsec108.isp.belgacom.be ([195.238.20.104]:64430 "EHLO
-	mailsec108.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759268AbaGXPqo convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 11:46:44 -0400
-X-Cloudmark-SP-Filtered: true
-X-Cloudmark-SP-Result: v=1.1 cv=UGN7JNw3bPEHpwjh5ACRRBK85/3fvewMg9DN/Z6sboU= c=1 sm=2
- a=B_PqQitLs8kA:10 a=IkcTkHD0fZMA:10 a=_nzHzCNtrw6siiUAFr4A:9
- a=QEXdDO2ut3YA:10 a=0kPLrQdw3YYA:10
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Aq0HAIsp0VPD7hTU/2dsb2JhbABYgw6BKYJ4rFEBAQEBAQEGoSgBgQ0Wd4QDAQEEASNWBQsFBAIOCgICGA4CAlcGExGIKQyMPpwuhn+QSxeBLIRPiVAHgniBTgWvdYIDgUc7Lw
-Date: Thu, 24 Jul 2014 17:46:42 +0200 (CEST)
-From: Fabian Frederick <fabf@skynet.be>
-Reply-To: Fabian Frederick <fabf@skynet.be>
-To: Oliver Neukum <oneukum@suse.de>
-Cc: usb-storage@lists.one-eyed-alien.net, joe@perches.com,
-        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org, linux-omap@vger.kernel.org
-Message-ID: <2081121229.1044862.1406216802363.open-xchange@webmail.nmp.skynet.be>
-In-Reply-To: <1406201840.729.4.camel@linux-fkkt.site>
-References: <1406189939-6433-1-git-send-email-fabf@skynet.be> <1406201840.729.4.camel@linux-fkkt.site>
-Subject: Re: [PATCH 00/10 linux-next] drivers/usb: remove unnecessary break
- after goto/return
+	id S933158AbaGXPq5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 11:46:57 -0400
+Received: from mail-oa0-f43.google.com ([209.85.219.43]:38424 "EHLO
+	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759456AbaGXPqp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jul 2014 11:46:45 -0400
 MIME-Version: 1.0
+In-Reply-To: <20140724121010.GA7652@krava.brq.redhat.com>
+References: <1404883694-5342-1-git-send-email-namhyung@kernel.org>
+ <1404883694-5342-4-git-send-email-namhyung@kernel.org> <20140724121010.GA7652@krava.brq.redhat.com>
+From: Namhyung Kim <namhyung@kernel.org>
+Date: Fri, 25 Jul 2014 00:46:25 +0900
+X-Google-Sender-Auth: 2K-GBAdafgaBg_ZRxnVLmai9QEs
+Message-ID: <CAM9d7cgpDGub2NubuBrSh1YVz=ahE6Sb4YJpk7+sXtQASS9qFQ@mail.gmail.com>
+Subject: Re: [PATCH 3/6] perf tools: Save column length in perf_hpp_fmt
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-Priority: 3
-Importance: Medium
-X-Mailer: Open-Xchange Mailer v7.2.2-Rev27
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Jul 24, 2014 at 9:10 PM, Jiri Olsa <jolsa@redhat.com> wrote:
+> On Wed, Jul 09, 2014 at 02:28:11PM +0900, Namhyung Kim wrote:
+>> Save column length in the hpp format and pass it to print functions.
+>> This is a preparation for users to control column width in the output.
+>
+> SNIP
+>
+>> +
+>> +void perf_hpp__reset_width(struct perf_hpp_fmt *fmt, struct hists *hists)
+>> +{
+>> +     int idx;
+>> +
+>> +     if (perf_hpp__is_sort_entry(fmt))
+>> +             return perf_hpp__reset_sort_width(fmt, hists);
+>> +
+>> +     for (idx = 0; idx < PERF_HPP__MAX_INDEX; idx++) {
+>> +             if (fmt == &perf_hpp__format[idx])
+>> +                     break;
+>> +     }
+>> +
+>> +     if (idx == PERF_HPP__MAX_INDEX)
+>> +             return;
+>> +
+>> +     switch (idx) {
+>> +     case PERF_HPP__OVERHEAD:
+>> +     case PERF_HPP__OVERHEAD_SYS:
+>> +     case PERF_HPP__OVERHEAD_US:
+>> +     case PERF_HPP__OVERHEAD_ACC:
+>> +             fmt->len = 8;
+>> +             break;
+>> +
+>> +     case PERF_HPP__OVERHEAD_GUEST_SYS:
+>> +     case PERF_HPP__OVERHEAD_GUEST_US:
+>> +             fmt->len = 9;
+>> +             break;
+>
+> just curious.. why is it 9 for guest %, while we use 8 for host?
+> I understand that was the current state
 
+It's the strlen of header - "guest sys". :)
 
-> On 24 July 2014 at 13:37 Oliver Neukum <oneukum@suse.de> wrote:
->
->
-> On Thu, 2014-07-24 at 10:18 +0200, Fabian Frederick wrote:
-> > Small patchset addressing break redundancy on drivers/usb branch
-> > (suggested by Joe Perches).
->
-> Frankly, that is not a good idea. Somebody will remove a "goto"
-> and forget to readd the "break"
-
-No problem ; checkpatch would give a warning anyway. See "Possible switch
-case/default not preceeded by break or fallthrough comment"
-
-Regards,
-Fabian
->
->       Regards
->               Oliver
->
->
+Thanks,
+Namhyung
