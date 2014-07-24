@@ -1,61 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758996AbaGXNia (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 09:38:30 -0400
-Received: from router.aksignal.cz ([188.175.113.102]:44496 "EHLO
-	router.aksignal.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758966AbaGXNi3 (ORCPT
+	id S1759040AbaGXNj2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 09:39:28 -0400
+Received: from helcar.apana.org.au ([209.40.204.226]:36218 "EHLO
+	helcar.apana.org.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758830AbaGXNj0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 09:38:29 -0400
-Message-ID: <53D10C50.50305@aksignal.cz>
-Date: Thu, 24 Jul 2014 15:38:24 +0200
-From: =?UTF-8?B?SmnFmcOtIFByY2hhbA==?= <jiri.prchal@aksignal.cz>
-Reply-To: jiri.prchal@aksignal.cz
-Organization: AK signal Brno
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Thu, 24 Jul 2014 09:39:26 -0400
+Date: Thu, 24 Jul 2014 21:38:23 +0800
+From: Herbert Xu <herbert@gondor.apana.org.au>
+To: Corentin LABBE <clabbe.montjoie@gmail.com>
+Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        rdunlap@infradead.org, maxime.ripard@free-electrons.com,
+        linux@arm.linux.org.uk, davem@davemloft.net, grant.likely@linaro.org,
+        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org
+Subject: Re: [PATCH v4 3/3] crypto: Add Allwinner Security System crypto
+ accelerator
+Message-ID: <20140724133823.GA9638@gondor.apana.org.au>
+References: <1405169953-13695-1-git-send-email-clabbe.montjoie@gmail.com>
+ <1405169953-13695-4-git-send-email-clabbe.montjoie@gmail.com>
+ <20140724060054.GA6545@gondor.apana.org.au>
+ <53D0E857.8000405@gmail.com>
 MIME-Version: 1.0
-To: Bo Shen <voice.shen@atmel.com>, nicolas.ferre@atmel.com,
-        boris.brezillon@free-electrons.com
-CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org
-Subject: [PATCH] ARM: at91: at91sam9x5: sets NPCS0 (PA14) back to GPIO
-References: <1405074175-22444-1-git-send-email-voice.shen@atmel.com>
-In-Reply-To: <1405074175-22444-1-git-send-email-voice.shen@atmel.com>
-Content-Type: multipart/mixed;
- boundary="------------050705080605090202000108"
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <53D0E857.8000405@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------050705080605090202000108
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
+On Thu, Jul 24, 2014 at 01:04:55PM +0200, Corentin LABBE wrote:
+> Le 24/07/2014 08:00, Herbert Xu a écrit :
+> > On Sat, Jul 12, 2014 at 02:59:13PM +0200, LABBE Corentin wrote:
+> >>
+> >> +/* sunxi_hash_init: initialize request context
+> >> + * Activate the SS, and configure it for MD5 or SHA1
+> >> + */
+> >> +int sunxi_hash_init(struct ahash_request *areq)
+> >> +{
+> >> +	const char *hash_type;
+> >> +	struct crypto_ahash *tfm = crypto_ahash_reqtfm(areq);
+> >> +	struct sunxi_req_ctx *op = crypto_ahash_ctx(tfm);
+> >> +
+> >> +	mutex_lock(&ss->lock);
+> >> +
+> >> +	hash_type = crypto_tfm_alg_name(areq->base.tfm);
+> >> +
+> >> +	op->byte_count = 0;
+> >> +	op->nbwait = 0;
+> >> +	op->waitbuf = 0;
+> >> +
+> >> +	/* Enable and configure SS for MD5 or SHA1 */
+> >> +	if (strcmp(hash_type, "sha1") == 0)
+> >> +		op->mode = SS_OP_SHA1;
+> >> +	else
+> >> +		op->mode = SS_OP_MD5;
+> >> +
+> >> +	writel(op->mode | SS_ENABLED, ss->base + SS_CTL);
+> >> +	return 0;
+> > 
+> > The hash driver is completely broken.  You are modifying tfm
+> > ctx data which is shared by all users of a single tfm.  So
+> > if two users conduct hashes in parallel they will step all
+> > over each other.
+> 
+> So where can I store data for each request ?
 
-After ROMBOOT tries boot from flash on SPI0 NPCS0, this NPCS0 (PA14) remains set to PERIPH_A.
-Because of that, this pin is unusable to something else.
-This patch sets it back to GPIO.
+Well, first of all you need to stop storing state in the hardware.
+After each operation the hardware may be used by some other user
+for a completely different hash request.  So leaving the hash state
+in the hardware is a no-no.
 
-Signed-off-by: Jiri Prchal <jiri.prchal@aksignal.cz>
+If your hardware supports exporting the hash state then you just
+have to export it after each operation and reimporting before the
+next one.
 
+If your hardware is incapable of exporting partial hash state then
+you will have to use a software fallback for init/update.  If your
+hardware is incapable of importing partial hash state then you will
+also have to do finup/final using a software fallback.
 
---------------050705080605090202000108
-Content-Type: text/plain; charset=UTF-8;
- name="patch"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment;
- filename="patch"
-
-LS0tIGEvbGludXgtMy4xNi1yYzYvYXJjaC9hcm0vYm9vdC9kdHMvYXQ5MXNhbTl4NS5kdHNp
-CisrKyBiL2xpbnV4LTMuMTYtcmM2L2FyY2gvYXJtL2Jvb3QvZHRzL2F0OTFzYW05eDUuZHRz
-aQpAQCAtNjI0LDcgKzYyNCw4IEBACiAJCQkJCQlhdG1lbCxwaW5zID0KIAkJCQkJCQk8QVQ5
-MV9QSU9BIDExIEFUOTFfUEVSSVBIX0EgQVQ5MV9QSU5DVFJMX05PTkUJLyogUEExMSBwZXJp
-cGggQSBTUEkwX01JU08gcGluICovCiAJCQkJCQkJIEFUOTFfUElPQSAxMiBBVDkxX1BFUklQ
-SF9BIEFUOTFfUElOQ1RSTF9OT05FCS8qIFBBMTIgcGVyaXBoIEEgU1BJMF9NT1NJIHBpbiAq
-LwotCQkJCQkJCSBBVDkxX1BJT0EgMTMgQVQ5MV9QRVJJUEhfQSBBVDkxX1BJTkNUUkxfTk9O
-RT47CS8qIFBBMTMgcGVyaXBoIEEgU1BJMF9TUENLIHBpbiAqLworCQkJCQkJCSBBVDkxX1BJ
-T0EgMTMgQVQ5MV9QRVJJUEhfQSBBVDkxX1BJTkNUUkxfTk9ORQkvKiBQQTEzIHBlcmlwaCBB
-IFNQSTBfU1BDSyBwaW4gKi8KKwkJCQkJCQkgQVQ5MV9QSU9BIDE0IEFUOTFfUEVSSVBIX0dQ
-SU8gQVQ5MV9QSU5DVFJMX05PTkU+OyAvKiBzZXQgZnJvbSBST01CT09UIHRvIHBlcmlwaCBB
-ICovCiAJCQkJCX07CiAJCQkJfTsKCg==
---------------050705080605090202000108--
+Cheers,
+-- 
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
