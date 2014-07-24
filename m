@@ -1,67 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933707AbaGXPwT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 11:52:19 -0400
-Received: from mail-oa0-f52.google.com ([209.85.219.52]:40259 "EHLO
-	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932207AbaGXPwR (ORCPT
+	id S1759462AbaGXPzP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 11:55:15 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:38668 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759405AbaGXPzM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 11:52:17 -0400
+	Thu, 24 Jul 2014 11:55:12 -0400
+To: Sitsofe Wheeler <sitsofe@gmail.com>
+Cc: "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        "K. Y. Srinivasan" <kys@microsoft.com>, gregkh@linuxfoundation.org,
+        linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
+        ohering@suse.com, apw@canonical.com, jasowang@redhat.com,
+        jbottomley@parallels.com, linux-scsi@vger.kernel.org
+Subject: Re: [PATCH v2 3/3] [SCSI] Make LBP quirk skip lbpme checks tests
+From: "Martin K. Petersen" <martin.petersen@oracle.com>
+Organization: Oracle Corporation
+References: <20140724122223.GA31798@sucs.org>
+	<yq1iommkgkv.fsf@sermon.lab.mkp.net> <20140724153612.GA23648@sucs.org>
+Date: Thu, 24 Jul 2014 11:54:20 -0400
+In-Reply-To: <20140724153612.GA23648@sucs.org> (Sitsofe Wheeler's message of
+	"Thu, 24 Jul 2014 16:36:12 +0100")
+Message-ID: <yq1egxakb0z.fsf@sermon.lab.mkp.net>
+User-Agent: Gnus/5.130012 (Ma Gnus v0.12) Emacs/24.2 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <20140724124748.GB7652@krava.brq.redhat.com>
-References: <1404883694-5342-1-git-send-email-namhyung@kernel.org>
- <1404883694-5342-5-git-send-email-namhyung@kernel.org> <20140724124748.GB7652@krava.brq.redhat.com>
-From: Namhyung Kim <namhyung@kernel.org>
-Date: Fri, 25 Jul 2014 00:51:56 +0900
-X-Google-Sender-Auth: 7FLEEo7l4E2n6j1JgXzshSxDFwc
-Message-ID: <CAM9d7ch56Otv0T-AxL9yyDhhvyHdHtAw+Q=ZwDLyH0kvjE5-Yw@mail.gmail.com>
-Subject: Re: [PATCH 4/6] perf report: Honor column width setting
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 24, 2014 at 9:47 PM, Jiri Olsa <jolsa@redhat.com> wrote:
-> On Wed, Jul 09, 2014 at 02:28:12PM +0900, Namhyung Kim wrote:
->> Set column width and do not change it if user gives -w/--column-widths
->> option.  It'll truncate longer symbols than the width if exists.
->
-> SNIP
->
->>
->>  static inline void advance_hpp(struct perf_hpp *hpp, int inc)
->>  {
->> diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
->> index 396b0094943d..f89714329c0f 100644
->> --- a/tools/perf/util/sort.c
->> +++ b/tools/perf/util/sort.c
->> @@ -70,7 +70,9 @@ static int hist_entry__thread_snprintf(struct hist_entry *he, char *bf,
->>                                      size_t size, unsigned int width)
->>  {
->>       const char *comm = thread__comm_str(he->thread);
->> -     return repsep_snprintf(bf, size, "%-*s:%5d", width - 6,
->> +
->> +     width = max(7U, width) - 6;
->> +     return repsep_snprintf(bf, size, "%-*.*s:%5d", width, width,
->>                              comm ?: "", he->thread->tid);
->
-> I couldn't found what your format string:
->   "%-*.*s:%5d", width, width
->
-> is supposed to do... it gives me the same result as for:
->   "%-*s:%5d", width
->
-> you use it on more places so I guess it's not a typo ;-)
+>>>>> "Sitsofe" == Sitsofe Wheeler <sitsofe@gmail.com> writes:
 
-Yep, it's NOT a typo.  The second * is necessary for limiting maximum
-length of printed string - without it we cannot control column
-alignment of long symbols.
+Sitsofe> So we can see it is really a SATA device that announces discard
+Sitsofe> correctly and supports discard through WRITE_SAME(16).
 
-Thanks,
-Namhyung
+No, that's the SATA device that announces support for DSM TRIM, and as a
+result the Linux SATL reports support for WRITE SAME(16) w. the UNMAP
+bit set and LBPME.
+
+Sitsofe> It is the act of passing it through Hyper-V that turned it into
+Sitsofe> a SCSI device that supports UNMAP (but not WRITE_SAME(16)),
+Sitsofe> doesn't announce its SCSI conformance number and doesn't
+Sitsofe> correctly announce which features it supports. Surely in this
+Sitsofe> case it's reasonable to quirk our way around the problem?
+
+No. That's an issue in Hyper-V that'll you'll have to take up with
+Microsoft. I don't know what their passthrough limitations are for
+SCSI-ATA translation. Maybe K. Y. has some insight into this?
+
+There must be a reason why the VPD page was added and yet the device not
+flagged as LBPME=1.
+
+Many vendors do not support UNMAP/WRITE SAME to DSM TRIM translation.
+Additionally, many vendors explicitly only whitelist drives that are
+known to be working correctly. Your drive is an ADATA and therefore very
+likely to be blacklisted by default by a vendor SATL.
+
+-- 
+Martin K. Petersen	Oracle Linux Engineering
