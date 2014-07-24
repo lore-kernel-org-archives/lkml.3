@@ -1,91 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759040AbaGXNj2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 09:39:28 -0400
-Received: from helcar.apana.org.au ([209.40.204.226]:36218 "EHLO
-	helcar.apana.org.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758830AbaGXNj0 (ORCPT
+	id S1759085AbaGXNjf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 09:39:35 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:56610 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758924AbaGXNje (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 09:39:26 -0400
-Date: Thu, 24 Jul 2014 21:38:23 +0800
-From: Herbert Xu <herbert@gondor.apana.org.au>
-To: Corentin LABBE <clabbe.montjoie@gmail.com>
-Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        rdunlap@infradead.org, maxime.ripard@free-electrons.com,
-        linux@arm.linux.org.uk, davem@davemloft.net, grant.likely@linaro.org,
-        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org
-Subject: Re: [PATCH v4 3/3] crypto: Add Allwinner Security System crypto
- accelerator
-Message-ID: <20140724133823.GA9638@gondor.apana.org.au>
-References: <1405169953-13695-1-git-send-email-clabbe.montjoie@gmail.com>
- <1405169953-13695-4-git-send-email-clabbe.montjoie@gmail.com>
- <20140724060054.GA6545@gondor.apana.org.au>
- <53D0E857.8000405@gmail.com>
+	Thu, 24 Jul 2014 09:39:34 -0400
+Date: Thu, 24 Jul 2014 15:39:21 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: rjw@rjwysocki.net, linux-kernel@vger.kernel.org
+Subject: [PATCH] irq: Warn when shared interrupts do not match on NO_SUSPEND
+Message-ID: <20140724133921.GY6758@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="lZl9LXaXBWDq3P64"
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <53D0E857.8000405@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 24, 2014 at 01:04:55PM +0200, Corentin LABBE wrote:
-> Le 24/07/2014 08:00, Herbert Xu a écrit :
-> > On Sat, Jul 12, 2014 at 02:59:13PM +0200, LABBE Corentin wrote:
-> >>
-> >> +/* sunxi_hash_init: initialize request context
-> >> + * Activate the SS, and configure it for MD5 or SHA1
-> >> + */
-> >> +int sunxi_hash_init(struct ahash_request *areq)
-> >> +{
-> >> +	const char *hash_type;
-> >> +	struct crypto_ahash *tfm = crypto_ahash_reqtfm(areq);
-> >> +	struct sunxi_req_ctx *op = crypto_ahash_ctx(tfm);
-> >> +
-> >> +	mutex_lock(&ss->lock);
-> >> +
-> >> +	hash_type = crypto_tfm_alg_name(areq->base.tfm);
-> >> +
-> >> +	op->byte_count = 0;
-> >> +	op->nbwait = 0;
-> >> +	op->waitbuf = 0;
-> >> +
-> >> +	/* Enable and configure SS for MD5 or SHA1 */
-> >> +	if (strcmp(hash_type, "sha1") == 0)
-> >> +		op->mode = SS_OP_SHA1;
-> >> +	else
-> >> +		op->mode = SS_OP_MD5;
-> >> +
-> >> +	writel(op->mode | SS_ENABLED, ss->base + SS_CTL);
-> >> +	return 0;
-> > 
-> > The hash driver is completely broken.  You are modifying tfm
-> > ctx data which is shared by all users of a single tfm.  So
-> > if two users conduct hashes in parallel they will step all
-> > over each other.
-> 
-> So where can I store data for each request ?
 
-Well, first of all you need to stop storing state in the hardware.
-After each operation the hardware may be used by some other user
-for a completely different hash request.  So leaving the hash state
-in the hardware is a no-no.
+--lZl9LXaXBWDq3P64
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-If your hardware supports exporting the hash state then you just
-have to export it after each operation and reimporting before the
-next one.
+Subject: irq: Warn when shared interrupts do not match on NO_SUSPEND
 
-If your hardware is incapable of exporting partial hash state then
-you will have to use a software fallback for init/update.  If your
-hardware is incapable of importing partial hash state then you will
-also have to do finup/final using a software fallback.
+When suspend_device_irqs() iterates all descriptors, its pointless if
+one has NO_SUSPEND set while another has not.
 
-Cheers,
--- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+Validate on request_irq() that NO_SUSPEND state maches for SHARED
+interrupts.
+
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+---
+ kernel/irq/manage.c | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
+
+diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
+index 88657d7bc9dd..27a1fe028afb 100644
+--- a/kernel/irq/manage.c
++++ b/kernel/irq/manage.c
+@@ -1077,9 +1077,12 @@ __setup_irq(unsigned int irq, struct irq_desc *desc,=
+ struct irqaction *new)
+ 		 * set the trigger type must match. Also all must
+ 		 * agree on ONESHOT.
+ 		 */
++
++#define IRQF_MISMATCH \
++	(IRQF_TRIGGER_MASK | IRQF_ONESHOT | IRQF_NO_SUSPEND)
++
+ 		if (!((old->flags & new->flags) & IRQF_SHARED) ||
+-		    ((old->flags ^ new->flags) & IRQF_TRIGGER_MASK) ||
+-		    ((old->flags ^ new->flags) & IRQF_ONESHOT))
++		    ((old->flags ^ new->flags) & IRQF_MISMATCH))
+ 			goto mismatch;
+=20
+ 		/* All handlers must agree on per-cpuness */
+
+--lZl9LXaXBWDq3P64
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJT0QyJAAoJEHZH4aRLwOS6dXAP/32Y1aTffDLRl97ei7y+ULx8
+I8p0IBt4qnt8Xbh0c32yoCnn3A5YPlP5TaEXBK5bPhjI504vPI/rGYsk/jrZTEED
+WQdn0sXbXXendJi0uu2qumR2ZeKz5Xl4onDGQyDdTFXimAyi1Ufd1du5e4Bb1pTs
+LN3hgE7mQt43PUZGa75XVMhCizImTLx5u1A/hFRfY2shys6mRmQJLnvCyVkYGnLA
+QI2oJiMq9z7SyauaBCO2RH1wU2imSa3iag/vrMZmRxe56+mHlif5qT82LqJ2DC80
+/4LEVwNjd3TpoJrBWBuNlFtz43fTfVKPb8GuV5pIS2AIY3uIaJaiqIpHGE4NRo7p
+8HE61f5/50mLqSjMhQ1D6wqV59JyCNu/CO4fdrE/DQlE1mLica1Yq2bA6au+LCTN
+diersYwUgGHXkdgt2qsvmWsiOPp0L/mohQ21zUqhfOUhWOjXldZ0l0i8QeBT88qe
+4I9mayCT6gcfRWrc+f/o6wmJ7f4EdCM9VeBFi2EwKV6bzcld/IzIao91rajz3x/b
+MC+QDItBjH07SAXhKdsI98IzyEgNTszXpFKrJgp+SVPoiZSSlbazdpwVRPU6Ekyr
+yvF2To95QXgRyAI8dV7mhF8jFjmR04/C3uCmgecja871kWqQtGfTkrT/Cf0WlIIV
+J3L/k/twCpTNagwGab1o
+=8nrh
+-----END PGP SIGNATURE-----
+
+--lZl9LXaXBWDq3P64--
