@@ -1,45 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759453AbaGXPC3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 11:02:29 -0400
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:56321 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759184AbaGXPC1 (ORCPT
+	id S1759465AbaGXPCu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 11:02:50 -0400
+Received: from mail-ie0-f178.google.com ([209.85.223.178]:46787 "EHLO
+	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759184AbaGXPCt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 11:02:27 -0400
-From: Mohammad Merajul Islam Molla <meraj.enigma@gmail.com>
-To: linux-pm@vger.kernel.org
-Cc: rjw@rjwysocki.net, daniel.lezcano@linaro.org, linux-kernel@vger.kernel.org,
-        trivial@kernel.org,
-        Mohammad Merajul Islam Molla <meraj.enigma@gmail.com>
-Subject: [PATCH] cpuidle: menu governor - remove unused macro STDDEV_THRESH
-Date: Thu, 24 Jul 2014 21:02:01 +0600
-Message-Id: <1406214121-9304-1-git-send-email-meraj.enigma@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	Thu, 24 Jul 2014 11:02:49 -0400
+Date: Thu, 24 Jul 2014 16:02:43 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Himangi Saraogi <himangi774@gmail.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
+        julia.lawall@lip6.fr
+Subject: Re: [PATCH] mfd: core: Use devm_kzalloc
+Message-ID: <20140724150243.GE7063@lee--X1>
+References: <20140719083010.GA2882@himangi-Dell>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140719083010.GA2882@himangi-Dell>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-STDDEV_THRESH was once defined and used in menu governor. But now its no longer
-used anywhere. So removing the define.
+On Sat, 19 Jul 2014, Himangi Saraogi wrote:
 
-Signed-off-by: Mohammad Merajul Islam Molla <meraj.enigma@gmail.com>
----
- drivers/cpuidle/governors/menu.c | 1 -
- 1 file changed, 1 deletion(-)
+> This patch introduces the use of devm_kzalloc instead of the
+> corresponding unmanaged version and does away with the kfrees in the
+> probe and remove functions. Also, a label is done away with.
+> 
+> Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
+> Acked-by: Julia Lawall <julia.lawall@lip6.fr>
+> ---
+>  drivers/mfd/tps6105x.c | 17 ++++-------------
+>  1 file changed, 4 insertions(+), 13 deletions(-)
 
-diff --git a/drivers/cpuidle/governors/menu.c b/drivers/cpuidle/governors/menu.c
-index c4f80c1..c3732fa 100644
---- a/drivers/cpuidle/governors/menu.c
-+++ b/drivers/cpuidle/governors/menu.c
-@@ -35,7 +35,6 @@
- #define RESOLUTION 1024
- #define DECAY 8
- #define MAX_INTERESTING 50000
--#define STDDEV_THRESH 400
- 
- 
- /*
+Applied, thanks.
+
 -- 
-1.9.1
-
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
