@@ -1,63 +1,228 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752580AbaGXEQm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 00:16:42 -0400
-Received: from mail-out.m-online.net ([212.18.0.10]:46935 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750856AbaGXEQl (ORCPT
+	id S1751888AbaGXEVO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 00:21:14 -0400
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:65131 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750822AbaGXEVM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 00:16:41 -0400
-X-Auth-Info: OQYtUkTyv085KSalzub2sO8Ip2tvgILAHCDZUPZjmPI=
-From: Marek Vasut <marex@denx.de>
-To: Yao Yuan <yao.yuan@freescale.com>
-Subject: Re: [PATCH v5 0/2] i2c: add DMA support for freescale i2c driver
-Date: Thu, 24 Jul 2014 06:16:40 +0200
-User-Agent: KMail/1.13.7 (Linux/3.13-trunk-amd64; KDE/4.13.1; x86_64; ; )
-Cc: "wsa@the-dreams.de" <wsa@the-dreams.de>,
-        "mark.rutland@arm.com" <mark.rutland@arm.com>,
-        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>
-References: <1406103883-3572-1-git-send-email-yao.yuan@freescale.com> <201407231428.01278.marex@denx.de> <e5547e015bf6447e9b4fc18e82ddce74@BL2PR03MB338.namprd03.prod.outlook.com>
-In-Reply-To: <e5547e015bf6447e9b4fc18e82ddce74@BL2PR03MB338.namprd03.prod.outlook.com>
+	Thu, 24 Jul 2014 00:21:12 -0400
+Date: Wed, 23 Jul 2014 21:19:32 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: David Herrmann <dh.herrmann@gmail.com>
+cc: linux-kernel@vger.kernel.org, Michael Kerrisk <mtk.manpages@gmail.com>,
+        Ryan Lortie <desrt@desrt.ca>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org, linux-api@vger.kernel.org,
+        Greg Kroah-Hartman <greg@kroah.com>, john.stultz@linaro.org,
+        Lennart Poettering <lennart@poettering.net>,
+        Daniel Mack <zonque@gmail.com>, Kay Sievers <kay@vrfy.org>,
+        Hugh Dickins <hughd@google.com>, Andy Lutomirski <luto@amacapital.net>,
+        Alexander Viro <viro@zeniv.linux.org.uk>
+Subject: Re: [PATCH v4 3/6] shm: add memfd_create() syscall
+In-Reply-To: <1405877680-999-4-git-send-email-dh.herrmann@gmail.com>
+Message-ID: <alpine.LSU.2.11.1407232112040.991@eggly.anvils>
+References: <1405877680-999-1-git-send-email-dh.herrmann@gmail.com> <1405877680-999-4-git-send-email-dh.herrmann@gmail.com>
+User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201407240616.40858.marex@denx.de>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, July 24, 2014 at 05:36:34 AM, Yao Yuan wrote:
-> Hi,
-> 
-> Marek Vasut wrote:
-> > On Wednesday, July 23, 2014 at 10:24:41 AM, Yuan Yao wrote:
-> > > Changed in v5:
-> > > - add "*chan_dev = dma->chan_using->device->dev" for reduce the call
-> > > time.
-> > 
-> > Did you check if the compiler generates different code ?
-> 
-> Sorry, I didn't compare the assembly code. It's a subtle change.
-> As you mentioned the "noodle" before.
-> 
-> Old:
-> dma_map_single(dma->chan_using->device->dev, ...);
-> dma_mapping_error(dma->chan_using->device->dev, ...);
-> dma_unmap_single(dma->chan_using->device->dev, ...);
-> 
-> New:
-> struct device *chan_dev = dma->chan_using->device->dev;
-> dma_map_single(chan_dev, ...);
-> dma_mapping_error(chan_dev, ...);
-> dma_unmap_single(chan_dev, ...);
+On Sun, 20 Jul 2014, David Herrmann wrote:
 
-You should not use optimization and code cleanup interchangably. Thanks for 
-clarifying what this is.
+> memfd_create() is similar to mmap(MAP_ANON), but returns a file-descriptor
+> that you can pass to mmap(). It can support sealing and avoids any
+> connection to user-visible mount-points. Thus, it's not subject to quotas
+> on mounted file-systems, but can be used like malloc()'ed memory, but
+> with a file-descriptor to it.
+> 
+> memfd_create() returns the raw shmem file, so calls like ftruncate() can
+> be used to modify the underlying inode. Also calls like fstat()
+> will return proper information and mark the file as regular file. If you
+> want sealing, you can specify MFD_ALLOW_SEALING. Otherwise, sealing is not
+> supported (like on all other regular files).
+> 
+> Compared to O_TMPFILE, it does not require a tmpfs mount-point and is not
+> subject to a filesystem size limit. It is still properly accounted to
+> memcg limits, though, and to the same overcommit or no-overcommit
+> accounting as all user memory.
+> 
+> Signed-off-by: David Herrmann <dh.herrmann@gmail.com>
 
-Best regards,
-Marek Vasut
+Acked-by: Hugh Dickins <hughd@google.com>
+
+It appears to be the new syscall season, and I'm afraid I've delayed
+you just long enough for two or three more to interpose themselves
+after sys_renameat2.  If he agrees, I think that messiness is best
+left to akpm, who I expect would adapt the patch according to what
+has actually reached Linus by the time he's ready to send this in.
+
+> ---
+>  arch/x86/syscalls/syscall_32.tbl |  1 +
+>  arch/x86/syscalls/syscall_64.tbl |  1 +
+>  include/linux/syscalls.h         |  1 +
+>  include/uapi/linux/memfd.h       |  8 +++++
+>  kernel/sys_ni.c                  |  1 +
+>  mm/shmem.c                       | 73 ++++++++++++++++++++++++++++++++++++++++
+>  6 files changed, 85 insertions(+)
+>  create mode 100644 include/uapi/linux/memfd.h
+> 
+> diff --git a/arch/x86/syscalls/syscall_32.tbl b/arch/x86/syscalls/syscall_32.tbl
+> index d6b8679..e7495b4 100644
+> --- a/arch/x86/syscalls/syscall_32.tbl
+> +++ b/arch/x86/syscalls/syscall_32.tbl
+> @@ -360,3 +360,4 @@
+>  351	i386	sched_setattr		sys_sched_setattr
+>  352	i386	sched_getattr		sys_sched_getattr
+>  353	i386	renameat2		sys_renameat2
+> +354	i386	memfd_create		sys_memfd_create
+> diff --git a/arch/x86/syscalls/syscall_64.tbl b/arch/x86/syscalls/syscall_64.tbl
+> index ec255a1..28be0e1 100644
+> --- a/arch/x86/syscalls/syscall_64.tbl
+> +++ b/arch/x86/syscalls/syscall_64.tbl
+> @@ -323,6 +323,7 @@
+>  314	common	sched_setattr		sys_sched_setattr
+>  315	common	sched_getattr		sys_sched_getattr
+>  316	common	renameat2		sys_renameat2
+> +317	common	memfd_create		sys_memfd_create
+>  
+>  #
+>  # x32-specific system call numbers start at 512 to avoid cache impact
+> diff --git a/include/linux/syscalls.h b/include/linux/syscalls.h
+> index b0881a0..de00585 100644
+> --- a/include/linux/syscalls.h
+> +++ b/include/linux/syscalls.h
+> @@ -802,6 +802,7 @@ asmlinkage long sys_timerfd_settime(int ufd, int flags,
+>  asmlinkage long sys_timerfd_gettime(int ufd, struct itimerspec __user *otmr);
+>  asmlinkage long sys_eventfd(unsigned int count);
+>  asmlinkage long sys_eventfd2(unsigned int count, int flags);
+> +asmlinkage long sys_memfd_create(const char __user *uname_ptr, unsigned int flags);
+>  asmlinkage long sys_fallocate(int fd, int mode, loff_t offset, loff_t len);
+>  asmlinkage long sys_old_readdir(unsigned int, struct old_linux_dirent __user *, unsigned int);
+>  asmlinkage long sys_pselect6(int, fd_set __user *, fd_set __user *,
+> diff --git a/include/uapi/linux/memfd.h b/include/uapi/linux/memfd.h
+> new file mode 100644
+> index 0000000..534e364
+> --- /dev/null
+> +++ b/include/uapi/linux/memfd.h
+> @@ -0,0 +1,8 @@
+> +#ifndef _UAPI_LINUX_MEMFD_H
+> +#define _UAPI_LINUX_MEMFD_H
+> +
+> +/* flags for memfd_create(2) (unsigned int) */
+> +#define MFD_CLOEXEC		0x0001U
+> +#define MFD_ALLOW_SEALING	0x0002U
+> +
+> +#endif /* _UAPI_LINUX_MEMFD_H */
+> diff --git a/kernel/sys_ni.c b/kernel/sys_ni.c
+> index 36441b5..489a4e6 100644
+> --- a/kernel/sys_ni.c
+> +++ b/kernel/sys_ni.c
+> @@ -197,6 +197,7 @@ cond_syscall(compat_sys_timerfd_settime);
+>  cond_syscall(compat_sys_timerfd_gettime);
+>  cond_syscall(sys_eventfd);
+>  cond_syscall(sys_eventfd2);
+> +cond_syscall(sys_memfd_create);
+>  
+>  /* performance counters: */
+>  cond_syscall(sys_perf_event_open);
+> diff --git a/mm/shmem.c b/mm/shmem.c
+> index 51dccd0..770e072 100644
+> --- a/mm/shmem.c
+> +++ b/mm/shmem.c
+> @@ -66,7 +66,9 @@ static struct vfsmount *shm_mnt;
+>  #include <linux/highmem.h>
+>  #include <linux/seq_file.h>
+>  #include <linux/magic.h>
+> +#include <linux/syscalls.h>
+>  #include <linux/fcntl.h>
+> +#include <uapi/linux/memfd.h>
+>  
+>  #include <asm/uaccess.h>
+>  #include <asm/pgtable.h>
+> @@ -2678,6 +2680,77 @@ static int shmem_show_options(struct seq_file *seq, struct dentry *root)
+>  	shmem_show_mpol(seq, sbinfo->mpol);
+>  	return 0;
+>  }
+> +
+> +#define MFD_NAME_PREFIX "memfd:"
+> +#define MFD_NAME_PREFIX_LEN (sizeof(MFD_NAME_PREFIX) - 1)
+> +#define MFD_NAME_MAX_LEN (NAME_MAX - MFD_NAME_PREFIX_LEN)
+> +
+> +#define MFD_ALL_FLAGS (MFD_CLOEXEC | MFD_ALLOW_SEALING)
+> +
+> +SYSCALL_DEFINE2(memfd_create,
+> +		const char __user *, uname,
+> +		unsigned int, flags)
+> +{
+> +	struct shmem_inode_info *info;
+> +	struct file *file;
+> +	int fd, error;
+> +	char *name;
+> +	long len;
+> +
+> +	if (flags & ~(unsigned int)MFD_ALL_FLAGS)
+> +		return -EINVAL;
+> +
+> +	/* length includes terminating zero */
+> +	len = strnlen_user(uname, MFD_NAME_MAX_LEN + 1);
+> +	if (len <= 0)
+> +		return -EFAULT;
+> +	if (len > MFD_NAME_MAX_LEN + 1)
+> +		return -EINVAL;
+> +
+> +	name = kmalloc(len + MFD_NAME_PREFIX_LEN, GFP_TEMPORARY);
+> +	if (!name)
+> +		return -ENOMEM;
+> +
+> +	strcpy(name, MFD_NAME_PREFIX);
+> +	if (copy_from_user(&name[MFD_NAME_PREFIX_LEN], uname, len)) {
+> +		error = -EFAULT;
+> +		goto err_name;
+> +	}
+> +
+> +	/* terminating-zero may have changed after strnlen_user() returned */
+> +	if (name[len + MFD_NAME_PREFIX_LEN - 1]) {
+> +		error = -EFAULT;
+> +		goto err_name;
+> +	}
+> +
+> +	fd = get_unused_fd_flags((flags & MFD_CLOEXEC) ? O_CLOEXEC : 0);
+> +	if (fd < 0) {
+> +		error = fd;
+> +		goto err_name;
+> +	}
+> +
+> +	file = shmem_file_setup(name, 0, VM_NORESERVE);
+> +	if (IS_ERR(file)) {
+> +		error = PTR_ERR(file);
+> +		goto err_fd;
+> +	}
+> +	info = SHMEM_I(file_inode(file));
+> +	file->f_mode |= FMODE_LSEEK | FMODE_PREAD | FMODE_PWRITE;
+> +	file->f_flags |= O_RDWR | O_LARGEFILE;
+> +	if (flags & MFD_ALLOW_SEALING)
+> +		info->seals &= ~F_SEAL_SEAL;
+> +
+> +	fd_install(fd, file);
+> +	kfree(name);
+> +	return fd;
+> +
+> +err_fd:
+> +	put_unused_fd(fd);
+> +err_name:
+> +	kfree(name);
+> +	return error;
+> +}
+> +
+>  #endif /* CONFIG_TMPFS */
+>  
+>  static void shmem_put_super(struct super_block *sb)
+> -- 
+> 2.0.2
+> 
+> 
