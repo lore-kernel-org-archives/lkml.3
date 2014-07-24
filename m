@@ -1,88 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934385AbaGXSl4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 14:41:56 -0400
-Received: from mail-we0-f178.google.com ([74.125.82.178]:51881 "EHLO
-	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933349AbaGXSly (ORCPT
+	id S934404AbaGXSox (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 14:44:53 -0400
+Received: from mail-oa0-f42.google.com ([209.85.219.42]:58445 "EHLO
+	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751250AbaGXSov (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 14:41:54 -0400
+	Thu, 24 Jul 2014 14:44:51 -0400
 MIME-Version: 1.0
-In-Reply-To: <20140724134849.4d228f5f@gandalf.local.home>
-References: <1406156581-6052-1-git-send-email-xerofoify@gmail.com>
-	<20140724144725.GA32669@home.goodmis.org>
-	<20140724105132.3cf221c2@gandalf.local.home>
-	<yw1x38dqag24.fsf@unicorn.mansr.com>
-	<CAPDOMVgswyopjGxdRFW-bFRrTcpcNnkY=PqTCT9HbjjA=EZ1iw@mail.gmail.com>
-	<yw1xy4vi90n6.fsf@unicorn.mansr.com>
-	<CAPDOMVia0OXydg_hRH0t63xUaxKEkVc6D20vAZiyugkMXAEsJQ@mail.gmail.com>
-	<yw1xtx669002.fsf@unicorn.mansr.com>
-	<CAPDOMVgziyYTX41xZVB9FLHUKFRPPm19jo0A_WfbLqaaKbxPqg@mail.gmail.com>
-	<20140724131821.30c4519d@gandalf.local.home>
-	<CAHLZz12ammMZNAah_eyYePJWorw2AruDAujeNxJHvOF5+Mr7cA@mail.gmail.com>
-	<20140724134849.4d228f5f@gandalf.local.home>
-Date: Thu, 24 Jul 2014 14:41:53 -0400
-Message-ID: <CAPDOMVi7cHUAn_1AxJ+tN1c67UqBdLHLC1sJNSA=HUK-WzZCTA@mail.gmail.com>
-Subject: Re: [PATCH] staging: Change kzalloc to kcalloc
-From: Nick Krause <xerofoify@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Harvey Harrison <harvey.harrison@gmail.com>,
-        =?UTF-8?B?TcOlbnMgUnVsbGfDpXJk?= <mans@mansr.com>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        John Stultz <john.stultz@linaro.org>, paul.gortmaker@windriver.com,
-        gang.chen.5i5j@gmail.com, yongjun_wei@trendmicro.com.cn,
-        Dan Carpenter <dan.carpenter@oracle.com>, tomas.winkler@intel.com,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <20140724134828.GA3553@paralelels.com>
+References: <20140703143318.568554771@openvz.org>
+	<20140703151102.842945837@openvz.org>
+	<20140708190849.GC17860@moon.sw.swsoft.com>
+	<20140708143830.ea078ef01e1d7d31276edbcd@linux-foundation.org>
+	<20140708221336.GL17860@moon.sw.swsoft.com>
+	<20140709141318.GM17860@moon.sw.swsoft.com>
+	<CAGXu5jKmTSb0YmNFDtr-jymrhy_s_PXUuvj3WKYffSU98gwyqg@mail.gmail.com>
+	<20140709150604.GN17860@moon.sw.swsoft.com>
+	<20140711173625.GD19702@moon>
+	<CAGXu5jL3exT4j+8rjMv1O54uJWQ5UHL69Z-24b61rhXROqZamQ@mail.gmail.com>
+	<20140724134828.GA3553@paralelels.com>
+Date: Thu, 24 Jul 2014 11:44:50 -0700
+X-Google-Sender-Auth: qCsX3uoCV1fUNnhkE3H3pbvX4CI
+Message-ID: <CAGXu5j+=i7hgyMjRRvvk8uuT_eyoD9wGNhcdZZQgQiwDoSoMXA@mail.gmail.com>
+Subject: Re: [RFC 2/2] prctl: PR_SET_MM -- Introduce PR_SET_MM_MAP operation
+From: Kees Cook <keescook@chromium.org>
+To: Andrew Vagin <avagin@parallels.com>
+Cc: Cyrill Gorcunov <gorcunov@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Tejun Heo <tj@kernel.org>,
+        Andrew Vagin <avagin@openvz.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Vasiliy Kulikov <segoon@openwall.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        Julien Tinnes <jln@google.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 24, 2014 at 1:48 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> On Thu, 24 Jul 2014 10:30:51 -0700
-> Harvey Harrison <harvey.harrison@gmail.com> wrote:
->
->> On Thu, Jul 24, 2014 at 10:18 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
->> > On Thu, 24 Jul 2014 12:50:31 -0400
->> > Nick Krause <xerofoify@gmail.com> wrote:
+On Thu, Jul 24, 2014 at 6:48 AM, Andrew Vagin <avagin@parallels.com> wrote:
+> On Tue, Jul 22, 2014 at 01:07:51PM -0700, Kees Cook wrote:
+>> >  - @exe_fd is referred from /proc/$pid/exe and when generating
+>> >    coredump. We uses prctl_set_mm_exe_file_locked helper to update
+>> >    this member, so exe-file link modification remains one-shot
+>> >    action.
 >>
->> >
->> >> I am have this discussion with other kernel developers and just
->> >> because I send out one patch as a newbie like this doesn't mean I
->> >> don't known C.
->> >
->> > It's not just one patch, and I didn't say you don't know C. I said you
->> > don't understand C enough for kernel development.
->>
->> And more importantly, stop guessing things are OK and selfishly asking
->> others to check
->> your work for you.
->>
->> If you have not at least _built_ the kernel with your change, and not
->> _run_ it, and not made
->> sure that the changed code is being _run_...you are wasting other people's time.
+>> Controlling exe_fd without privileges may turn out to be dangerous. At
+>> least things like tomoyo examine it for making policy decisions (see
+>> tomoyo_manager()).
 >>
 >
-> Nick,
+> We don't want to reduce security. How can we get a process with a
+> target exe link, which executes our code?
 >
-> Just to bring Harvey's email here in perspective. I mentioned in my
-> previous email that most of us are overworked. We don't have time to
-> teach you if your patches are correct or not. By saying, "I'll just
-> write the code and you tell me if it's correct, and test it for me" is
-> like telling someone "Here's a lawn mower, now go mow my lawn".
+> We can execute the target file and attach to it with ptrace. ptrace
+> allows to inject and execute any code.
 >
-> We like it if people put effort into their work and are confident
-> themselves that they have the right code or not. There's enough
-> reviewing of patches to do from people that put that effort in, that
-> there's no time to review patches from people that don't know if their
-> work or not.
+> So if we are sure that we are able to do a previous scenario, we can
+> safely change exe-link, can't we?
 >
-> Cheers,
+> prctl already has a check of permissions to execute the target file.
+> If we execute a file. What can prevent us to attach to the process with ptrace?
 >
-> -- Steve
+> The file can have a suid bit, so after executing it we may lose ability
+> to attach to it. To check that we can check that uid and gid is zero
+> in a current userns (local root).
+>
+> What else do we need to check?
 
-Steve,
-I have programming a lot in other areas just not the kernel.
-You are right through I need to test my code better through.
-Cheers Nick
+Yeah, I think all the checks are sufficient, but I (and Julien) are
+still trying to think about side-effects.
+
+It would be nice if these checks (like the rlimit checks) were merged
+into some common helper. That way if something changes in the exec
+path, it won't go missed in the c/r path.
+
+-Kees
+
+-- 
+Kees Cook
+Chrome OS Security
