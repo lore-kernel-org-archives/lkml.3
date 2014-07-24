@@ -1,102 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932312AbaGXNED (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 09:04:03 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32134 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759358AbaGXND7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 09:03:59 -0400
-Date: Thu, 24 Jul 2014 14:57:51 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 4/6] perf report: Honor column width setting
-Message-ID: <20140724125751.GC7652@krava.brq.redhat.com>
-References: <1404883694-5342-1-git-send-email-namhyung@kernel.org>
- <1404883694-5342-5-git-send-email-namhyung@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1404883694-5342-5-git-send-email-namhyung@kernel.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S932797AbaGXNE3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 09:04:29 -0400
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:54836 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932490AbaGXNEX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jul 2014 09:04:23 -0400
+From: Hanjun Guo <hanjun.guo@linaro.org>
+To: Catalin Marinas <catalin.marinas@arm.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Mark Rutland <mark.rutland@arm.com>
+Cc: Graeme Gregory <graeme.gregory@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
+        Grant Likely <grant.likely@linaro.org>,
+        Sudeep Holla <Sudeep.Holla@arm.com>, Will Deacon <will.deacon@arm.com>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Mark Brown <broonie@linaro.org>, Robert Richter <rric@kernel.org>,
+        Lv Zheng <lv.zheng@intel.com>, Robert Moore <robert.moore@intel.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Liviu Dudau <Liviu.Dudau@arm.com>,
+        Randy Dunlap <rdunlap@infradead.org>, Charles.Garcia-Tobin@arm.com,
+        linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linaro-acpi-private@linaro.org,
+        Al Stone <al.stone@linaro.org>, Hanjun Guo <hanjun.guo@linaro.org>
+Subject: [PATCH 18/19] ARM64 / ACPI: Enable ARM64 in Kconfig
+Date: Thu, 24 Jul 2014 21:00:24 +0800
+Message-Id: <1406206825-15590-19-git-send-email-hanjun.guo@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1406206825-15590-1-git-send-email-hanjun.guo@linaro.org>
+References: <1406206825-15590-1-git-send-email-hanjun.guo@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 09, 2014 at 02:28:12PM +0900, Namhyung Kim wrote:
-> Set column width and do not change it if user gives -w/--column-widths
-> option.  It'll truncate longer symbols than the width if exists.
+From: Graeme Gregory <graeme.gregory@linaro.org>
 
-SNIP
+Add Kconfigs to build ACPI on ARM64, and make ACPI available on ARM64.
 
-> --- a/tools/perf/util/sort.c
-> +++ b/tools/perf/util/sort.c
-> @@ -70,7 +70,9 @@ static int hist_entry__thread_snprintf(struct hist_entry *he, char *bf,
->  				       size_t size, unsigned int width)
->  {
->  	const char *comm = thread__comm_str(he->thread);
-> -	return repsep_snprintf(bf, size, "%-*s:%5d", width - 6,
-> +
-> +	width = max(7U, width) - 6;
-> +	return repsep_snprintf(bf, size, "%-*.*s:%5d", width, width,
->  			       comm ?: "", he->thread->tid);
->  }
+acpi_idle driver is x86/IA64 dependent now, so make CONFIG_ACPI_PROCESSOR
+depend on X86 || IA64, and implement it on ARM64 in the future.
 
-also we now print out all sort headers left alligned, which is wrong for
-sort_thread header: "Command:  Pid' that mirrors value strings with ':'
-being aligned
-
-maybe something like in attached patch..?
-
-thanks,
-jirka
-
-
+Reviewed-by: Grant Likely <grant.likely@linaro.org>
+Signed-off-by: Graeme Gregory <graeme.gregory@linaro.org>
+Signed-off-by: Al Stone <al.stone@linaro.org>
+Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
 ---
-diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
-index f89714329c0f..fbbe86b7f63c 100644
---- a/tools/perf/util/sort.c
-+++ b/tools/perf/util/sort.c
-@@ -78,6 +78,7 @@ static int hist_entry__thread_snprintf(struct hist_entry *he, char *bf,
+ arch/arm64/Kconfig   |    2 ++
+ drivers/acpi/Kconfig |    6 +++---
+ 2 files changed, 5 insertions(+), 3 deletions(-)
+
+diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
+index 95835bc..1e0ca19 100644
+--- a/arch/arm64/Kconfig
++++ b/arch/arm64/Kconfig
+@@ -362,6 +362,8 @@ source "drivers/Kconfig"
  
- struct sort_entry sort_thread = {
- 	.se_header	= "Command:  Pid",
-+	.se_header_right= true,
- 	.se_cmp		= sort__thread_cmp,
- 	.se_snprintf	= hist_entry__thread_snprintf,
- 	.se_width_idx	= HISTC_THREAD,
-@@ -1212,13 +1213,17 @@ static int __sort__hpp_header(struct perf_hpp_fmt *fmt, struct perf_hpp *hpp,
- {
- 	struct hpp_sort_entry *hse;
- 	size_t len = fmt->user_len;
-+	const char *fmt_str = "%-*.*s";
+ source "drivers/firmware/Kconfig"
  
- 	hse = container_of(fmt, struct hpp_sort_entry, hpp);
- 
- 	if (!len)
- 		len = hists__col_len(&evsel->hists, hse->se->se_width_idx);
- 
--	return scnprintf(hpp->buf, hpp->size, "%-*.*s", len, len, hse->se->se_header);
-+	if (hse->se->se_header_right)
-+		fmt_str = "%*.*s";
++source "drivers/acpi/Kconfig"
 +
-+	return scnprintf(hpp->buf, hpp->size, fmt_str, len, len, hse->se->se_header);
- }
+ source "fs/Kconfig"
  
- static int __sort__hpp_width(struct perf_hpp_fmt *fmt,
-diff --git a/tools/perf/util/sort.h b/tools/perf/util/sort.h
-index 041f0c9cea2b..16a07b9b16c2 100644
---- a/tools/perf/util/sort.h
-+++ b/tools/perf/util/sort.h
-@@ -197,6 +197,7 @@ struct sort_entry {
- 	struct list_head list;
+ source "arch/arm64/kvm/Kconfig"
+diff --git a/drivers/acpi/Kconfig b/drivers/acpi/Kconfig
+index 3f5f745..f6b6791 100644
+--- a/drivers/acpi/Kconfig
++++ b/drivers/acpi/Kconfig
+@@ -5,8 +5,7 @@
+ menuconfig ACPI
+ 	bool "ACPI (Advanced Configuration and Power Interface) Support"
+ 	depends on !IA64_HP_SIM
+-	depends on IA64 || X86
+-	depends on PCI
++	depends on ((IA64 || X86) && PCI) || ARM64
+ 	select PNP
+ 	default y
+ 	help
+@@ -163,6 +162,7 @@ config ACPI_PROCESSOR
+ 	tristate "Processor"
+ 	select THERMAL
+ 	select CPU_IDLE
++	depends on X86 || IA64
+ 	default y
+ 	help
+ 	  This driver installs ACPI as the idle handler for Linux and uses
+@@ -263,7 +263,7 @@ config ACPI_DEBUG
  
- 	const char *se_header;
-+	bool se_header_right;
- 
- 	int64_t (*se_cmp)(struct hist_entry *, struct hist_entry *);
- 	int64_t (*se_collapse)(struct hist_entry *, struct hist_entry *);
+ config ACPI_PCI_SLOT
+ 	bool "PCI slot detection driver"
+-	depends on SYSFS
++	depends on SYSFS && PCI
+ 	default n
+ 	help
+ 	  This driver creates entries in /sys/bus/pci/slots/ for all PCI
+-- 
+1.7.9.5
+
