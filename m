@@ -1,73 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759256AbaGXKal (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 06:30:41 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54538 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751754AbaGXJqc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 05:46:32 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Deng-Cheng Zhu <dengcheng.zhu@imgtec.com>,
-        Paolo Bonzini <pbonzini@redhat.com>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 003/128] MIPS: KVM: Fix memory leak on VCPU
-Date: Thu, 24 Jul 2014 10:44:12 +0100
-Message-Id: <1406195177-8656-4-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1406195177-8656-1-git-send-email-luis.henriques@canonical.com>
-References: <1406195177-8656-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	id S1758891AbaGXKdn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 06:33:43 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:56640 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757032AbaGXKdl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jul 2014 06:33:41 -0400
+Date: Thu, 24 Jul 2014 12:33:37 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+Cc: linux-kernel@vger.kernel.org, H Peter Anvin <hpa@zytor.com>
+Subject: Re: [PATCH 3/8] x86, microcode, intel: fix typos
+Message-ID: <20140724103337.GI19239@pd.tnic>
+References: <1406146251-8540-1-git-send-email-hmh@hmh.eng.br>
+ <1406146251-8540-4-git-send-email-hmh@hmh.eng.br>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1406146251-8540-4-git-send-email-hmh@hmh.eng.br>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.14 -stable review patch.  If anyone has any objections, please let me know.
+On Wed, Jul 23, 2014 at 05:10:46PM -0300, Henrique de Moraes Holschuh wrote:
+> Fix some typos.  One of them was in a struct name, fortunately harmless
+> because it happened on a "sizeof(struct foo*)" construction.
+> 
+> Signed-off-by: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
 
-------------------
+Damn, that's three different, *wrong*, spellings of "microcode" in one
+single file! My favourite one is "mirocode".
 
-From: Deng-Cheng Zhu <dengcheng.zhu@imgtec.com>
+:-)
 
-commit 8c9eb041cf76038eb3b62ee259607eec9b89f48d upstream.
+Applied, thanks.
 
-kvm_arch_vcpu_free() is called in 2 code paths:
-
-1) kvm_vm_ioctl()
-       kvm_vm_ioctl_create_vcpu()
-           kvm_arch_vcpu_destroy()
-               kvm_arch_vcpu_free()
-2) kvm_put_kvm()
-       kvm_destroy_vm()
-           kvm_arch_destroy_vm()
-               kvm_mips_free_vcpus()
-                   kvm_arch_vcpu_free()
-
-Neither of the paths handles VCPU free. We need to do it in
-kvm_arch_vcpu_free() corresponding to the memory allocation in
-kvm_arch_vcpu_create().
-
-Signed-off-by: Deng-Cheng Zhu <dengcheng.zhu@imgtec.com>
-Reviewed-by: James Hogan <james.hogan@imgtec.com>
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- arch/mips/kvm/kvm_mips.c | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/arch/mips/kvm/kvm_mips.c b/arch/mips/kvm/kvm_mips.c
-index 7e78af0e57de..2c7b3ade8ec0 100644
---- a/arch/mips/kvm/kvm_mips.c
-+++ b/arch/mips/kvm/kvm_mips.c
-@@ -384,6 +384,7 @@ void kvm_arch_vcpu_free(struct kvm_vcpu *vcpu)
- 
- 	kfree(vcpu->arch.guest_ebase);
- 	kfree(vcpu->arch.kseg0_commpage);
-+	kfree(vcpu);
- }
- 
- void kvm_arch_vcpu_destroy(struct kvm_vcpu *vcpu)
 -- 
-1.9.1
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
