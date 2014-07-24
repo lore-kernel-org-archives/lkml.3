@@ -1,53 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934741AbaGXVp5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 17:45:57 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:60413 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759583AbaGXVpz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 17:45:55 -0400
-Date: Thu, 24 Jul 2014 23:45:49 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Waiman Long <waiman.long@hp.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        USB list <linux-usb@vger.kernel.org>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>
-Subject: Re: Linux 3.16-rc6
-Message-ID: <20140724214549.GU19239@pd.tnic>
-References: <CA+55aFzJKxzw_as9iGgeM=MdQ6trUkQLDuoEr8nxj88sOqQnQA@mail.gmail.com>
- <20140723095327.GA23131@pd.tnic>
- <CA+55aFzPs4uF=eR7jCnpyBtgWNRkX-uDfXeo5u34VEvT8_yyzw@mail.gmail.com>
- <20140724064353.GW9918@twins.programming.kicks-ass.net>
- <20140724084126.GB19239@pd.tnic>
- <20140724122513.GM19239@pd.tnic>
- <20140724125814.GX6758@twins.programming.kicks-ass.net>
- <CA+55aFynW5xSRQvY6xO+mxmt6yh7mFkMjy-pgJXpXNy8qDMcPA@mail.gmail.com>
- <20140724183643.GM3935@laptop>
- <53D16EC4.1000801@hp.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <53D16EC4.1000801@hp.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S934763AbaGXVrv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 17:47:51 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43228 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759644AbaGXVrt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jul 2014 17:47:49 -0400
+Date: Thu, 24 Jul 2014 14:47:47 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: David Herrmann <dh.herrmann@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Michael Kerrisk <mtk.manpages@gmail.com>,
+        Ryan Lortie <desrt@desrt.ca>,
+        Linus Torvalds <torvalds@linux-foundation.org>, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org, linux-api@vger.kernel.org,
+        Greg Kroah-Hartman <greg@kroah.com>, john.stultz@linaro.org,
+        Lennart Poettering <lennart@poettering.net>,
+        Daniel Mack <zonque@gmail.com>, Kay Sievers <kay@vrfy.org>,
+        Hugh Dickins <hughd@google.com>, Andy Lutomirski <luto@amacapital.net>,
+        Alexander Viro <viro@zeniv.linux.org.uk>
+Subject: Re: [PATCH v4 0/6] File Sealing & memfd_create()
+Message-Id: <20140724144747.3041b208832bbdf9fbce5d96@linux-foundation.org>
+In-Reply-To: <1405877680-999-1-git-send-email-dh.herrmann@gmail.com>
+References: <1405877680-999-1-git-send-email-dh.herrmann@gmail.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 24, 2014 at 04:38:28PM -0400, Waiman Long wrote:
-> Borislav, can you apply the following patch on top of the lockdep
-> patch to see if it can fix the problem?
+On Sun, 20 Jul 2014 19:34:34 +0200 David Herrmann <dh.herrmann@gmail.com> wrote:
 
-It is too late here for me to test anything but the ingridients to
-reproduce are nothing special. Just grab a kvm guest and pick out the
-locking or so options out of the .config I sent previously. Then boot it
-a couple of times, it triggers pretty easy after a couple of tries.
+> This is v4 of the File-Sealing and memfd_create() patches. You can find v1 with
+> a longer introduction at gmane [1], there's also v2 [2] and v3 [3] available.
+> See also the article about sealing on LWN [4], and a high-level introduction on
+> the new API in my blog [5]. Last but not least, man-page proposals are
+> available in my private repository [6].
+>
+> ...
+>
+>
+> [1]    memfd v1: http://thread.gmane.org/gmane.comp.video.dri.devel/102241
+> [2]    memfd v2: http://thread.gmane.org/gmane.linux.kernel.mm/115713
+> [3]    memfd v3: http://thread.gmane.org/gmane.linux.kernel.mm/118721
+> [4] LWN article: https://lwn.net/Articles/593918/
+> [5]   API Intro: http://dvdhrm.wordpress.com/2014/06/10/memfd_create2/
+> [6]   Man-pages: http://cgit.freedesktop.org/~dvdhrm/man-pages/log/?h=memfd
+> [7]    Dev-repo: http://cgit.freedesktop.org/~dvdhrm/linux/log/?h=memfd
 
--- 
-Regards/Gruss,
-    Boris.
+This is unconventional and a little irritating.  I'm OK with running
+around chasing down web pages but we generally don't do that in
+changelogs.  I'm not sure why really, maybe partly because things
+bitrot, partly because that's where people expect to find things,
+partly because people like work down caves and on airplanes ;)
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+Another downside is that if a reviewer wants to comment on some piece
+of text, it isn't available for the usual reply-to-all quoting.
+
+
+So...  Could you please put together a plain old text/plain changelog
+which actually describes this patchset and send it along?  Everything
+which people need/want to know, all in one place?  That text should be
+maintained alongside the patches themselves, should there be future
+versions.
+
+Now excuse me, I have a bunch of web pages to go and read ;)
+
+<reads "[1]    memfd v1">
+
+OK, I immediately have questions and I see significant review feedback,
+so either that document is out of date or that review feedback was
+ignored.
+
+Help.  Where do I (and all future readers of these patches) go to get
+an up to date and complete description of this patchset??
