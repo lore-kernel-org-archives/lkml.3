@@ -1,73 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758746AbaGXDgj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 23:36:39 -0400
-Received: from mail-bl2lp0210.outbound.protection.outlook.com ([207.46.163.210]:12508
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1758526AbaGXDgh convert rfc822-to-8bit (ORCPT
+	id S934071AbaGXDkc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 23:40:32 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:44601 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758482AbaGXDkb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 23:36:37 -0400
-From: Yao Yuan <yao.yuan@freescale.com>
-To: Marek Vasut <marex@denx.de>
-CC: "wsa@the-dreams.de" <wsa@the-dreams.de>,
-        "mark.rutland@arm.com" <mark.rutland@arm.com>,
-        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>
-Subject: RE: [PATCH v5 0/2] i2c: add DMA support for freescale i2c driver
-Thread-Topic: [PATCH v5 0/2] i2c: add DMA support for freescale i2c driver
-Thread-Index: AQHPplZS12HOgaurWE6pPVifgTUu7ZutlmmAgADwPgA=
-Date: Thu, 24 Jul 2014 03:36:34 +0000
-Message-ID: <e5547e015bf6447e9b4fc18e82ddce74@BL2PR03MB338.namprd03.prod.outlook.com>
-References: <1406103883-3572-1-git-send-email-yao.yuan@freescale.com>
- <201407231428.01278.marex@denx.de>
-In-Reply-To: <201407231428.01278.marex@denx.de>
-Accept-Language: en-US, zh-CN
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [123.151.195.50]
-x-microsoft-antispam: BCL:0;PCL:0;RULEID:
-x-forefront-prvs: 028256169F
-x-forefront-antispam-report: SFV:NSPM;SFS:(6009001)(51704005)(24454002)(377454003)(199002)(189002)(74316001)(99396002)(21056001)(46102001)(79102001)(87936001)(64706001)(92566001)(83322001)(4396001)(85852003)(83072002)(2656002)(76576001)(85306003)(50986999)(101416001)(54356999)(105586002)(77982001)(107046002)(20776003)(81542001)(76482001)(80022001)(99286002)(66066001)(33646002)(81342001)(106116001)(74502001)(76176999)(31966008)(106356001)(95666004)(110136001)(86362001)(74662001)(108616002)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:BL2PR03MB338;H:BL2PR03MB338.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 23 Jul 2014 23:40:31 -0400
+Message-ID: <53D0802A.7070703@amacapital.net>
+Date: Wed, 23 Jul 2014 20:40:26 -0700
+From: Andy Lutomirski <luto@amacapital.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+To: AKASHI Takahiro <takahiro.akashi@linaro.org>, wad@chromium.org,
+        catalin.marinas@arm.com, will.deacon@arm.com, keescook@chromium.org
+CC: dsaxena@linaro.org, linux-arm-kernel@lists.infradead.org,
+        linaro-kernel@lists.linaro.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v5 2/3] asm-generic: Add generic seccomp.h for secure
+ computing mode 1
+References: <1406020499-5537-1-git-send-email-takahiro.akashi@linaro.org> <1406020499-5537-3-git-send-email-takahiro.akashi@linaro.org>
+In-Reply-To: <1406020499-5537-3-git-send-email-takahiro.akashi@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 07/22/2014 02:14 AM, AKASHI Takahiro wrote:
+> Those values (__NR_seccomp_*) are used solely in secure_computing()
+> to identify mode 1 system calls. If compat system calls have different
+> syscall numbers, asm/seccomp.h may override them.
+>
+> Acked-by: Arnd Bergmann <arnd@arndb.de>
+> Signed-off-by: AKASHI Takahiro <takahiro.akashi@linaro.org>
+> ---
+>   include/asm-generic/seccomp.h |   28 ++++++++++++++++++++++++++++
+>   1 file changed, 28 insertions(+)
+>   create mode 100644 include/asm-generic/seccomp.h
+>
+> diff --git a/include/asm-generic/seccomp.h b/include/asm-generic/seccomp.h
+> new file mode 100644
+> index 0000000..5e97022
+> --- /dev/null
+> +++ b/include/asm-generic/seccomp.h
+> @@ -0,0 +1,28 @@
+> +/*
+> + * include/asm-generic/seccomp.h
+> + *
+> + * Copyright (C) 2014 Linaro Limited
+> + * Author: AKASHI Takahiro <takahiro.akashi@linaro.org>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + */
+> +#ifndef _ASM_GENERIC_SECCOMP_H
+> +#define _ASM_GENERIC_SECCOMP_H
+> +
+> +#include <asm-generic/unistd.h>
+> +
+> +#if defined(CONFIG_COMPAT) && !defined(__NR_seccomp_read_32)
+> +#define __NR_seccomp_read_32		__NR_read
+> +#define __NR_seccomp_write_32		__NR_write
+> +#define __NR_seccomp_exit_32		__NR_exit
+> +#define __NR_seccomp_sigreturn_32	__NR_rt_sigreturn
+> +#endif /* CONFIG_COMPAT && ! already defined */
+> +
+> +#define __NR_seccomp_read		__NR_read
+> +#define __NR_seccomp_write		__NR_write
+> +#define __NR_seccomp_exit		__NR_exit
+> +#define __NR_seccomp_sigreturn		__NR_rt_sigreturn
 
-Marek Vasut wrote:
-> On Wednesday, July 23, 2014 at 10:24:41 AM, Yuan Yao wrote:
-> > Changed in v5:
-> > - add "*chan_dev = dma->chan_using->device->dev" for reduce the call time.
-> 
-> Did you check if the compiler generates different code ?
-> 
+I don't like these names.  __NR_seccomp_read sounds like the number of a 
+syscall called seccomp_read.
 
-Sorry, I didn't compare the assembly code. It's a subtle change. 
-As you mentioned the "noodle" before.
+Also, shouldn't something be including this header?  I'm confused.
 
-Old:
-dma_map_single(dma->chan_using->device->dev, ...);
-dma_mapping_error(dma->chan_using->device->dev, ...);
-dma_unmap_single(dma->chan_using->device->dev, ...);
-	
-New:
-struct device *chan_dev = dma->chan_using->device->dev;
-dma_map_single(chan_dev, ...);
-dma_mapping_error(chan_dev, ...);
-dma_unmap_single(chan_dev, ...);
-
-> > - add the test logs.
-> 
-> [...]
-> 
-> Best regards,
-> Marek Vasut
+--Andy
