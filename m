@@ -1,70 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934277AbaGXHwC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 03:52:02 -0400
-Received: from casper.infradead.org ([85.118.1.10]:40709 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934200AbaGXHwA (ORCPT
+	id S934316AbaGXHwP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 03:52:15 -0400
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:57010 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934178AbaGXHwL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 03:52:00 -0400
-Date: Thu, 24 Jul 2014 09:51:57 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Michel =?iso-8859-1?Q?D=E4nzer?= <michel@daenzer.net>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Random panic in load_balance() with 3.16-rc
-Message-ID: <20140724075157.GJ3935@laptop>
-References: <53C8E90F.1010306@daenzer.net>
- <53CE00EF.70108@daenzer.net>
- <53CF31AE.30403@daenzer.net>
- <CA+55aFwyURgG717kmuAXzKcHddN_63GirtwHZB4ePKH+8qVtJw@mail.gmail.com>
- <20140723064948.GK3935@laptop>
- <53CF6CC4.6090207@daenzer.net>
- <20140723082819.GR3935@laptop>
- <20140723092536.GO12054@laptop.lan>
- <53CF80EE.5050702@daenzer.net>
- <53D0B358.5010400@daenzer.net>
+	Thu, 24 Jul 2014 03:52:11 -0400
+Date: Thu, 24 Jul 2014 08:52:07 +0100
+From: Sitsofe Wheeler <sitsofe@gmail.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: "K. Y. Srinivasan" <kys@microsoft.com>, gregkh@linuxfoundation.org,
+        linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
+        ohering@suse.com, apw@canonical.com, jasowang@redhat.com,
+        jbottomley@parallels.com, hch@infradead.org,
+        linux-scsi@vger.kernel.org
+Subject: [PATCH 1/3] [SCSI] Add quirk for forcing logical block provisioning
+ tests
+Message-ID: <20140724075207.GB15127@sucs.org>
+References: <1405983961-18782-1-git-send-email-kys@microsoft.com>
+ <20140723141028.GA22724@sucs.org>
+ <20140723141558.GA9705@infradead.org>
+ <20140723201341.GA10292@sucs.org>
+ <20140724074739.GA15127@sucs.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <53D0B358.5010400@daenzer.net>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <20140724074739.GA15127@sucs.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 24, 2014 at 04:18:48PM +0900, Michel Dänzer wrote:
-> On 23.07.2014 18:31, Michel Dänzer wrote:
-> > On 23.07.2014 18:25, Peter Zijlstra wrote:
-> >> On Wed, Jul 23, 2014 at 10:28:19AM +0200, Peter Zijlstra wrote:
-> >>
-> >>> Of course, the other thing that patch did is clear sgp->power (now
-> >>> sgc->capacity). 
-> >>
-> >> Hmm, re-reading the thread there isn't a clear confirmation its this
-> >> patch at all. Could you perhaps bisect this to either verify it is
-> >> indeed that patch we're talking about:
-> >>
-> >> caffcdd8d27b ("sched: Do not zero sg->cpumask and sg->sgp->power in build_sched_groups()")
-> >>
-> >> or find which patch is causing this.
-> > 
-> > It can take a long time for the problem to occur, so I need to run at
-> > least for one or two days to be at least somewhat sure a given kernel is
-> > not affected.
-> > 
-> > I'll try reproducing the problem with your previous suggestions first,
-> 
-> Just happened again, with your robustness patch and setting
-> sg->sgc->capacity = 0.
+Despite supporting modern SCSI features (such an UNMAP) some storage
+devices continue to claim conformance to an older version of the SPC
+spec for compatibility with legacy operating systems.
 
-Yeah, that pretty much confirms its not that patch :/
+Linux by default will not attempt to read VPD pages on devices that
+claim SPC-2 or older.
 
-> > but if I manage to do that, I guess there's no alternative to bisecting...
-> 
-> I hope the assembly output I sent earlier helps, I'm afraid bisecting
-> this could be painful.
+Introduce a blacklist flag that allows the forcing of the paths leading
+to logical block provisioning tests.
 
-Yeah, lemme go have a look...
+See https://lkml.org/lkml/2014/7/13/59 for the previous version.
+
+Reported-by: K. Y. Srinivasan <kys@microsoft.com>
+Original-patch-by: Martin K. Petersen <martin.petersen@oracle.com>
+Signed-off-by: Sitsofe Wheeler <sitsofe@yahoo.com>
+---
+ drivers/scsi/scsi_scan.c    |  4 +++-
+ drivers/scsi/sd.c           |  8 ++++++++
+ drivers/scsi/storvsc_drv.c  | 10 ++++++++++
+ include/scsi/scsi_device.h  |  1 +
+ include/scsi/scsi_devinfo.h |  2 ++
+ 5 files changed, 24 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/scsi/scsi_scan.c b/drivers/scsi/scsi_scan.c
+index e02b3aa..02ca1c2 100644
+--- a/drivers/scsi/scsi_scan.c
++++ b/drivers/scsi/scsi_scan.c
+@@ -950,7 +950,9 @@ static int scsi_add_lun(struct scsi_device *sdev, unsigned char *inq_result,
+ 
+ 	sdev->eh_timeout = SCSI_DEFAULT_EH_TIMEOUT;
+ 
+-	if (*bflags & BLIST_SKIP_VPD_PAGES)
++	if (*bflags & BLIST_TRY_LBP)
++		sdev->try_lbp = 1;
++	else if (*bflags & BLIST_SKIP_VPD_PAGES)
+ 		sdev->skip_vpd_pages = 1;
+ 
+ 	transport_configure_device(&sdev->sdev_gendev);
+diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
+index 6825eda..8249e51 100644
+--- a/drivers/scsi/sd.c
++++ b/drivers/scsi/sd.c
+@@ -2109,6 +2109,8 @@ static int sd_try_rc16_first(struct scsi_device *sdp)
+ 		return 1;
+ 	if (scsi_device_protection(sdp))
+ 		return 1;
++	if (sdp->try_lbp)
++		return 1;
+ 	return 0;
+ }
+ 
+@@ -2682,6 +2684,12 @@ static void sd_read_write_same(struct scsi_disk *sdkp, unsigned char *buffer)
+ static int sd_try_extended_inquiry(struct scsi_device *sdp)
+ {
+ 	/*
++	 * Attempt VPD inquiry if the device blacklist explicitly calls
++	 * for it.
++	 */
++	if (sdp->try_lbp)
++		return 1;
++	/*
+ 	 * Although VPD inquiries can go to SCSI-2 type devices,
+ 	 * some USB ones crash on receiving them, and the pages
+ 	 * we currently ask for are for SPC-3 and beyond
+diff --git a/drivers/scsi/storvsc_drv.c b/drivers/scsi/storvsc_drv.c
+index 9969fa1..5ad2810 100644
+--- a/drivers/scsi/storvsc_drv.c
++++ b/drivers/scsi/storvsc_drv.c
+@@ -326,6 +326,8 @@ MODULE_PARM_DESC(storvsc_ringbuffer_size, "Ring buffer size (bytes)");
+  */
+ static int storvsc_timeout = 180;
+ 
++static int msft_blist_flags = BLIST_TRY_VPD_PAGES;
++
+ #define STORVSC_MAX_IO_REQUESTS				200
+ 
+ static void storvsc_on_channel_callback(void *context);
+@@ -1441,6 +1443,14 @@ static int storvsc_device_configure(struct scsi_device *sdevice)
+ 
+ 	sdevice->no_write_same = 1;
+ 
++	/*
++	 * Add blist flags to permit the reading of the VPD pages even when
++	 * the target may claim SPC-2 compliance. MSFT targets currently
++	 * claim SPC-2 compliance while they implement post SPC-2 features.
++	 * With this patch we can correctly handle WRITE_SAME_16 issues.
++	 */
++	sdevice->sdev_bflags |= msft_blist_flags;
++
+ 	return 0;
+ }
+ 
+diff --git a/include/scsi/scsi_device.h b/include/scsi/scsi_device.h
+index 27ab310..0a5c6fa 100644
+--- a/include/scsi/scsi_device.h
++++ b/include/scsi/scsi_device.h
+@@ -155,6 +155,7 @@ struct scsi_device {
+ 	unsigned skip_ms_page_8:1;	/* do not use MODE SENSE page 0x08 */
+ 	unsigned skip_ms_page_3f:1;	/* do not use MODE SENSE page 0x3f */
+ 	unsigned skip_vpd_pages:1;	/* do not read VPD pages */
++	unsigned try_lbp:1;		/* Try LBP tests */
+ 	unsigned use_192_bytes_for_3f:1; /* ask for 192 bytes from page 0x3f */
+ 	unsigned no_start_on_add:1;	/* do not issue start on add */
+ 	unsigned allow_restart:1; /* issue START_UNIT in error handler */
+diff --git a/include/scsi/scsi_devinfo.h b/include/scsi/scsi_devinfo.h
+index 447d2d7..9d15d78 100644
+--- a/include/scsi/scsi_devinfo.h
++++ b/include/scsi/scsi_devinfo.h
+@@ -32,4 +32,6 @@
+ #define BLIST_ATTACH_PQ3	0x1000000 /* Scan: Attach to PQ3 devices */
+ #define BLIST_NO_DIF		0x2000000 /* Disable T10 PI (DIF) */
+ #define BLIST_SKIP_VPD_PAGES	0x4000000 /* Ignore SBC-3 VPD pages */
++#define BLIST_TRY_LBP		0x10000000 /* Check Logical Block Provisioning
++					      even on < SPC-3 devices */
+ #endif
+-- 
+1.9.3
