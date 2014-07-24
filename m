@@ -1,62 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934150AbaGXEqc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 00:46:32 -0400
-Received: from mga02.intel.com ([134.134.136.20]:18943 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750904AbaGXEqb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 00:46:31 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,721,1400050800"; 
-   d="scan'208";a="548186620"
-Message-ID: <53D08FA4.4030700@intel.com>
-Date: Wed, 23 Jul 2014 21:46:28 -0700
-From: Dave Hansen <dave.hansen@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1751889AbaGXEtr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 00:49:47 -0400
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:52598 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751171AbaGXEto (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jul 2014 00:49:44 -0400
+Date: Wed, 23 Jul 2014 21:48:04 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: David Herrmann <dh.herrmann@gmail.com>, linux-kernel@vger.kernel.org,
+        Michael Kerrisk <mtk.manpages@gmail.com>, Ryan Lortie <desrt@desrt.ca>,
+        Linus Torvalds <torvalds@linux-foundation.org>, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org, linux-api@vger.kernel.org,
+        Greg Kroah-Hartman <greg@kroah.com>, john.stultz@linaro.org,
+        Lennart Poettering <lennart@poettering.net>,
+        Daniel Mack <zonque@gmail.com>, Kay Sievers <kay@vrfy.org>,
+        Hugh Dickins <hughd@google.com>, Andy Lutomirski <luto@amacapital.net>,
+        Alexander Viro <viro@zeniv.linux.org.uk>
+Subject: Re: [PATCH v4 0/6] File Sealing & memfd_create()
+In-Reply-To: <1405877680-999-1-git-send-email-dh.herrmann@gmail.com>
+Message-ID: <alpine.LSU.2.11.1407232132330.991@eggly.anvils>
+References: <1405877680-999-1-git-send-email-dh.herrmann@gmail.com>
+User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
 MIME-Version: 1.0
-To: "Ren, Qiaowei" <qiaowei.ren@intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>
-CC: "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: [PATCH v7 03/10] x86, mpx: add macro cpu_has_mpx
-References: <1405921124-4230-1-git-send-email-qiaowei.ren@intel.com> <1405921124-4230-4-git-send-email-qiaowei.ren@intel.com> <53CE8EEC.2090402@intel.com> <9E0BE1322F2F2246BD820DA9FC397ADE0170079E@shsmsx102.ccr.corp.intel.com> <53CFDC79.8040804@intel.com> <9E0BE1322F2F2246BD820DA9FC397ADE01703028@shsmsx102.ccr.corp.intel.com>
-In-Reply-To: <9E0BE1322F2F2246BD820DA9FC397ADE01703028@shsmsx102.ccr.corp.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/23/2014 05:56 PM, Ren, Qiaowei wrote:
-> On 2014-07-24, Hansen, Dave wrote:
->> On 07/22/2014 07:35 PM, Ren, Qiaowei wrote:
->>> The checking about MPX feature should be as follow:
->>>
->>>         if (pcntxt_mask & XSTATE_EAGER) {
->>>                 if (eagerfpu == DISABLE) {
->>>                         pr_err("eagerfpu not present, disabling some
->> xstate features: 0x%llx\n",
->>>                                         pcntxt_mask &
->> XSTATE_EAGER);
->>>                         pcntxt_mask &= ~XSTATE_EAGER; } else { eagerfpu
->>>                         = ENABLE;
->>>                 }
->>>         }
->>> This patch was merged into kernel the ending of last year
->>> (https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/com
->>> mi
->>> t/?id=e7d820a5e549b3eb6c3f9467507566565646a669 )
->>
->> Should we be doing a clear_cpu_cap(X86_FEATURE_MPX) in here?
->> 
->> This isn't major, but I can't _ever_ imagine a user being able to 
->> track down why MPX is not working from this message. Should we
->> spruce it up somehow?
+On Sun, 20 Jul 2014, David Herrmann wrote:
+
+> Hi
 > 
-> Maybe. If the error log "disabling some xstate features:" is changed
-> to "disabling MPX xstate features:", do you think it is OK?
+> This is v4 of the File-Sealing and memfd_create() patches. You can find v1 with
+> a longer introduction at gmane [1], there's also v2 [2] and v3 [3] available.
+> See also the article about sealing on LWN [4], and a high-level introduction on
+> the new API in my blog [5]. Last but not least, man-page proposals are
+> available in my private repository [6].
+> 
+> This series introduces two new APIs:
+>   memfd_create(): Think of this syscall as malloc() but it returns a
+>                   file-descriptor instead of a pointer. That file-descriptor is
+>                   backed by anon-memory and can be memory-mapped for access.
+>   sealing: The sealing API can be used to prevent a specific set of operations
+>            on a file-descriptor. You 'seal' the file and give thus the
+>            guarantee, that those operations will be rejected from now on.
+> 
+> This series adds the memfd_create(2) syscall only to x86 and x86-64. Patches for
+> most other architectures are available in my private repository [7]. Missing
+> architectures are:
+>     alpha, avr32, blackfin, cris, frv, m32r, microblaze, mn10300, sh, sparc,
+>     um, xtensa
+> These architectures lack several newer syscalls, so those should be added first
+> before adding memfd_create(2). I can provide patches for those, if required.
+> However, I think it should be kept separate from this series.
+> 
+> Changes in v4:
+>   - drop page-isolation in favor of shmem_wait_for_pins()
+>   - add unlikely(info->seals) to write_begin hot-path
+>   - return EPERM for F_ADD_SEALS if file is not writable
+>   - moved shmem_wait_for_pins() entirely into it's own commit
+>   - make O_LARGEFILE mandatory part of memfd_create() ABI
+>   - add lru_add_drain() to shmem_tag_pins() hot-path
+>   - minor coding-style changes
+> 
+> Thanks
+> David
+> 
+> 
+> [1]    memfd v1: http://thread.gmane.org/gmane.comp.video.dri.devel/102241
+> [2]    memfd v2: http://thread.gmane.org/gmane.linux.kernel.mm/115713
+> [3]    memfd v3: http://thread.gmane.org/gmane.linux.kernel.mm/118721
+> [4] LWN article: https://lwn.net/Articles/593918/
+> [5]   API Intro: http://dvdhrm.wordpress.com/2014/06/10/memfd_create2/
+> [6]   Man-pages: http://cgit.freedesktop.org/~dvdhrm/man-pages/log/?h=memfd
+> [7]    Dev-repo: http://cgit.freedesktop.org/~dvdhrm/linux/log/?h=memfd
+> 
+> 
+> David Herrmann (6):
+>   mm: allow drivers to prevent new writable mappings
+>   shm: add sealing API
+>   shm: add memfd_create() syscall
+>   selftests: add memfd_create() + sealing tests
+>   selftests: add memfd/sealing page-pinning tests
+>   shm: wait for pins to be released when sealing
 
-That's better.  Is it really disabling MPX, though?
+Andrew, I've now given my Ack to all of these, and think they are
+ready for inclusion in mmotm, if you agree with the addition of
+this sealing feature and the memfd_create() syscall.
 
-And shouldn't we clear the cpu feature bit too?
+Andy Lutomirsky and I agree that it's somewhat unsatisfactory that a
+sealed sparse file could be passed, and inflate to something OOMing
+when read by the recipient; but I think we can live with that as a
+limitation of the initial implementation (the suspicious recipient
+can verify non-sparseness with lseek SEEK_HOLE), and it's my job
+to work on fixing that aspect - though probably not for 3.17.
+
+Thanks,
+Hugh
+
+> 
+>  arch/x86/syscalls/syscall_32.tbl               |   1 +
+>  arch/x86/syscalls/syscall_64.tbl               |   1 +
+>  fs/fcntl.c                                     |   5 +
+>  fs/inode.c                                     |   1 +
+>  include/linux/fs.h                             |  29 +-
+>  include/linux/shmem_fs.h                       |  17 +
+>  include/linux/syscalls.h                       |   1 +
+>  include/uapi/linux/fcntl.h                     |  15 +
+>  include/uapi/linux/memfd.h                     |   8 +
+>  kernel/fork.c                                  |   2 +-
+>  kernel/sys_ni.c                                |   1 +
+>  mm/mmap.c                                      |  30 +-
+>  mm/shmem.c                                     | 324 +++++++++
+>  mm/swap_state.c                                |   1 +
+>  tools/testing/selftests/Makefile               |   1 +
+>  tools/testing/selftests/memfd/.gitignore       |   4 +
+>  tools/testing/selftests/memfd/Makefile         |  41 ++
+>  tools/testing/selftests/memfd/fuse_mnt.c       | 110 +++
+>  tools/testing/selftests/memfd/fuse_test.c      | 311 +++++++++
+>  tools/testing/selftests/memfd/memfd_test.c     | 913 +++++++++++++++++++++++++
+>  tools/testing/selftests/memfd/run_fuse_test.sh |  14 +
+>  21 files changed, 1821 insertions(+), 9 deletions(-)
+>  create mode 100644 include/uapi/linux/memfd.h
+>  create mode 100644 tools/testing/selftests/memfd/.gitignore
+>  create mode 100644 tools/testing/selftests/memfd/Makefile
+>  create mode 100755 tools/testing/selftests/memfd/fuse_mnt.c
+>  create mode 100644 tools/testing/selftests/memfd/fuse_test.c
+>  create mode 100644 tools/testing/selftests/memfd/memfd_test.c
+>  create mode 100755 tools/testing/selftests/memfd/run_fuse_test.sh
+> 
+> -- 
+> 2.0.2
