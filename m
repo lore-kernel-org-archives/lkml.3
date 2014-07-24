@@ -1,74 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758223AbaGXLBN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 07:01:13 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:59029 "EHLO mail.skyhub.de"
+	id S1758619AbaGXLCc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 07:02:32 -0400
+Received: from mga01.intel.com ([192.55.52.88]:20193 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757743AbaGXLBK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 07:01:10 -0400
-Date: Thu, 24 Jul 2014 13:01:06 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-Cc: linux-kernel@vger.kernel.org, H Peter Anvin <hpa@zytor.com>
-Subject: Re: [PATCH 4/8] x86, microcode, intel: fix missing declaration
-Message-ID: <20140724110106.GJ19239@pd.tnic>
-References: <1406146251-8540-1-git-send-email-hmh@hmh.eng.br>
- <1406146251-8540-5-git-send-email-hmh@hmh.eng.br>
+	id S1758544AbaGXLCa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jul 2014 07:02:30 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,723,1400050800"; 
+   d="scan'208";a="574741823"
+Message-ID: <53D0E79A.20201@intel.com>
+Date: Thu, 24 Jul 2014 19:01:46 +0800
+From: "xinhui.pan" <xinhuix.pan@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1406146251-8540-5-git-send-email-hmh@hmh.eng.br>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+CC: Peter Hurley <peter@hurleysoftware.com>,
+        Greg KH <gregkh@linuxfoundation.org>, mnipxh <mnipxh@gmail.com>,
+        jslaby@suse.cz, linux-kernel@vger.kernel.org,
+        yanmin_zhang@linux.intel.com
+Subject: Re: [PATCH] tty/tty_io.c: make a check before reuse cdev
+References: <53CD0BD4.4050007@gmail.com>	<20140721153840.GA6802@kroah.com>	<53CE5097.2000502@intel.com>	<53CE941B.1030102@hurleysoftware.com>	<53CF7EAC.8010201@intel.com> <20140723170753.5e2047c5@alan.etchedpixels.co.uk>
+In-Reply-To: <20140723170753.5e2047c5@alan.etchedpixels.co.uk>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 23, 2014 at 05:10:47PM -0300, Henrique de Moraes Holschuh wrote:
-> Rename apply_microcode() in microcode/intel.c to apply_microcode_intel(),
-> and declare it as extern in the asm/microcode_intel.h header.
+于 2014年07月24日 00:07, One Thousand Gnomes 写道:
+>> Very nice solution. We will check if this can cause any risk, both to kernel and user space.
+>> Using a new tty base to register with new cdevs may give us more chance to wait PROCESS quit/close.
+>> when total 256 tty used up, what we should do is still in discuss.
 > 
-> This is a cosmetic fix to silence a warning issued by sparse.  It brings
-> the microcode/intel.c driver in line with what microcode/amd.c is doing.
+> At that point you may want to look at how fuser works and create some
+> kind of policy manager needs to kill problem tasks owning a device.
 > 
-> Signed-off-by: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-> ---
->  arch/x86/include/asm/microcode_intel.h |    1 +
->  arch/x86/kernel/cpu/microcode/intel.c  |    4 ++--
->  2 files changed, 3 insertions(+), 2 deletions(-)
+> Or in theory there is no reason nowdays we can't go above 256 devices -
+> in theory 8)
 > 
-> diff --git a/arch/x86/include/asm/microcode_intel.h b/arch/x86/include/asm/microcode_intel.h
-> index 9067166..2bdbc6b 100644
-> --- a/arch/x86/include/asm/microcode_intel.h
-> +++ b/arch/x86/include/asm/microcode_intel.h
-> @@ -62,6 +62,7 @@ extern int microcode_sanity_check(void *mc, int print_err);
->  extern int get_matching_sig(unsigned int csig, int cpf, void *mc, int rev);
->  extern int
->  update_match_revision(struct microcode_header_intel *mc_header, int rev);
-> +extern int apply_microcode_intel(int cpu);
->  
->  #ifdef CONFIG_MICROCODE_INTEL_EARLY
->  extern void __init load_ucode_intel_bsp(void);
-> diff --git a/arch/x86/kernel/cpu/microcode/intel.c b/arch/x86/kernel/cpu/microcode/intel.c
-> index a276fa7..a51cb19 100644
-> --- a/arch/x86/kernel/cpu/microcode/intel.c
-> +++ b/arch/x86/kernel/cpu/microcode/intel.c
-> @@ -127,7 +127,7 @@ static int get_matching_mc(struct microcode_intel *mc_intel, int cpu)
->  	return get_matching_microcode(csig, cpf, mc_intel, crev);
->  }
->  
-> -int apply_microcode(int cpu)
-> +int apply_microcode_intel(int cpu)
 
-Actually, this function should be static. The AMD counterpart is used in
-amd_early.c too, that's why it is exported there, unlike here.
+hi, Alan
+	Thanks for your nice comments.
+In theory it can go over 256 devices, In fact, it will waste more memories. :)
+We really need a policy manager that works well.
+FT guys may offer it one day. it's a little long time maybe. :(
 
-The "_intel" suffix is ok.
+When I was a student, I heard you leave from kernel.
+Welcome back to kernel, I didn't know that you are back. So sorry.
 
-Thanks.
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+> Alan
+> 
+> 
