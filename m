@@ -1,42 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759481AbaGXQf2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 12:35:28 -0400
-Received: from mail-qa0-f54.google.com ([209.85.216.54]:63886 "EHLO
-	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757335AbaGXQfZ (ORCPT
+	id S1759633AbaGXQf4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 12:35:56 -0400
+Received: from mail-vc0-f172.google.com ([209.85.220.172]:39836 "EHLO
+	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758548AbaGXQfz convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 12:35:25 -0400
+	Thu, 24 Jul 2014 12:35:55 -0400
 MIME-Version: 1.0
-X-Originating-IP: [46.139.80.5]
-In-Reply-To: <20140724153057.GA1584@infradead.org>
-References: <20140716114136.GA25237@infradead.org>
-	<20140722162455.GA15053@infradead.org>
-	<20140724153057.GA1584@infradead.org>
-Date: Thu, 24 Jul 2014 18:35:24 +0200
-Message-ID: <CAJfpeguYamZTcdUCZ6+7E=MxQnapF5xE+biOTnhdTQ_V7J1yZw@mail.gmail.com>
-Subject: Re: VFS tree for 3.17?
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Al Viro <viro@zeniv.linux.org.uk>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-unionfs@vger.kernel.org
+In-Reply-To: <yw1xy4vi90n6.fsf@unicorn.mansr.com>
+References: <1406156581-6052-1-git-send-email-xerofoify@gmail.com>
+	<20140724144725.GA32669@home.goodmis.org>
+	<20140724105132.3cf221c2@gandalf.local.home>
+	<yw1x38dqag24.fsf@unicorn.mansr.com>
+	<CAPDOMVgswyopjGxdRFW-bFRrTcpcNnkY=PqTCT9HbjjA=EZ1iw@mail.gmail.com>
+	<yw1xy4vi90n6.fsf@unicorn.mansr.com>
+Date: Thu, 24 Jul 2014 12:35:54 -0400
+Message-ID: <CAPDOMVia0OXydg_hRH0t63xUaxKEkVc6D20vAZiyugkMXAEsJQ@mail.gmail.com>
+Subject: Re: [PATCH] staging: Change kzalloc to kcalloc
+From: Nick Krause <xerofoify@gmail.com>
+To: =?UTF-8?B?TcOlbnMgUnVsbGfDpXJk?= <mans@mansr.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Greg KH <gregkh@linuxfoundation.org>,
+        John Stultz <john.stultz@linaro.org>, paul.gortmaker@windriver.com,
+        gang.chen.5i5j@gmail.com, yongjun_wei@trendmicro.com.cn,
+        Dan Carpenter <dan.carpenter@oracle.com>, tomas.winkler@intel.com,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 24, 2014 at 5:30 PM, Christoph Hellwig <hch@infradead.org> wrote:
+On Thu, Jul 24, 2014 at 12:34 PM, Måns Rullgård <mans@mansr.com> wrote:
+> Nick Krause <xerofoify@gmail.com> writes:
+>
+>> On Thu, Jul 24, 2014 at 12:15 PM, Måns Rullgård <mans@mansr.com> wrote:
+>>> Steven Rostedt <rostedt@goodmis.org> writes:
+>>>
+>>>> On Thu, 24 Jul 2014 10:47:25 -0400
+>>>> Steven Rostedt <rostedt@goodmis.org> wrote:
+>>>>
+>>>>> The three parameters are the number of elements, the size of each individual
+>>>>> element, and then finally the flags used on how to allocate that memory.
+>>>>> I have to say, you did get the flags part correct.
+>>>>>
+>>>>> Now lets look at what you did. For the size you had:
+>>>>
+>>>> That should have read "For the count you had:"
+>>>>
+>>>> Oh well, you get my point anyway.
+>>>
+>>> I have some doubts about the last bit.
+>>
+>> I am have this discussion with other kernel developers and just
+>> because I send out one patch as a newbie like this doesn't mean I
+>> don't known C.
+>
+> Now I no longer have doubts; I know for certain that the point didn't
+> get across.
+>
+> --
+> Måns Rullgård
+> mans@mansr.com
 
-> If there's anything else for 3.17 please send it my way.
-
-(linux-unionfs CC-d)
-
-overlayfs?  I think it's mature enough, but I thought that a year ago,
-and there's been a format change since then...  So how do people feel?
-
-Thanks,
-Miklos
+I get your point try other things but I talked to other kernel developers and
+most of them seemed to get this feedback to when they started.
+Nick
