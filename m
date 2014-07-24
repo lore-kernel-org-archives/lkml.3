@@ -1,46 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753068AbaGXJLi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 05:11:38 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:39234 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750797AbaGXJLg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 05:11:36 -0400
-Date: Thu, 24 Jul 2014 11:11:32 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: "Chen, Gong" <gong.chen@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, tglx@linutronix.de,
-        paulus@samba.org, benh@kernel.crashing.org, tony.luck@intel.com,
-        hpa@zytor.com, jkosina@suse.cz, rafael.j.wysocki@intel.com,
-        linux@arm.linux.org.uk, ralf@linux-mips.org, schwidefsky@de.ibm.com,
-        davem@davemloft.net, viro@zeniv.linux.org.uk, fweisbec@gmail.com,
-        cl@linux.com, akpm@linux-foundation.org, axboe@kernel.dk,
-        JBottomley@parallels.com, neilb@suse.de, christoffer.dall@linaro.org,
-        rostedt@goodmis.org, rric@kernel.org, gregkh@linuxfoundation.org,
-        mhocko@suse.cz, david@fromorbit.com
-Subject: Re: [RFC PATCH v1 15/70] x86, kernel, cpuid: _FROZEN Cleanup
-Message-ID: <20140724091132.GE19239@pd.tnic>
-References: <1406080786-3938-1-git-send-email-gong.chen@linux.intel.com>
- <1406080786-3938-16-git-send-email-gong.chen@linux.intel.com>
+	id S1755846AbaGXJMU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 05:12:20 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:33619 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751509AbaGXJMO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jul 2014 05:12:14 -0400
+Message-ID: <ca2398ca40725bf3b1b258ab3707970e.squirrel@www.codeaurora.org>
+In-Reply-To: <CAKohpokynnTttD7Wbq8uBB4SXK9xFEBdRJ2ozhMQscyvq69xRw@mail.gmail.com>
+References: <1404959850-11617-1-git-send-email-skannan@codeaurora.org>
+    <16164926.ZsJxe6UV3e@vostro.rjw.lan> <53D07737.70904@codeaurora.org>
+    <CAKohpokynnTttD7Wbq8uBB4SXK9xFEBdRJ2ozhMQscyvq69xRw@mail.gmail.com>
+Date: Thu, 24 Jul 2014 09:12:13 -0000
+Subject: Re: [PATCH] cpufreq: Don't destroy/realloc policy/sysfs on
+ hotplug/suspend
+From: skannan@codeaurora.org
+To: "Viresh Kumar" <viresh.kumar@linaro.org>
+Cc: "Saravana Kannan" <skannan@codeaurora.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "Todd Poynor" <toddpoynor@google.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+User-Agent: SquirrelMail/1.4.22-4.el6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1406080786-3938-16-git-send-email-gong.chen@linux.intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 22, 2014 at 09:58:51PM -0400, Chen, Gong wrote:
-> Remove XXX_FROZEN state from x86/kernel/cpuid.
-> 
-> Signed-off-by: Chen, Gong <gong.chen@linux.intel.com>
 
-Acked-by: Borislav Petkov <bp@suse.de>
+Viresh Kumar wrote:
+> On 24 July 2014 08:32, Saravana Kannan <skannan@codeaurora.org> wrote:
+>> Ok, I think I've figured this out. But one question. Is it possible to
+>> physically remove one CPU in a bunch of "related cpus" without also
+>> unplugging the rest? Put another way, can you unplug one core from a
+>> cluster?
+>
+> Are we talking about doing this here:
+>
+> echo 0 > /sys/devices/system/cpu/cpuX/online      ??
+>
+> If yes, then what's the confusion all about? Yes we do it all the time.
+>
+
+No. That's why I said physically remove.
 
 -- 
-Regards/Gruss,
-    Boris.
+The Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
 
-Sent from a fat crate under my desk. Formatting is fine.
---
