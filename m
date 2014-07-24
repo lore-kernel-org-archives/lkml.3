@@ -1,49 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759527AbaGXP1L (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 11:27:11 -0400
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:55884 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759503AbaGXP1I (ORCPT
+	id S1759538AbaGXP12 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 11:27:28 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:34903 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759235AbaGXP1Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 11:27:08 -0400
-From: Seunghun Lee <waydi1@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: lidza.louina@gmail.com, markh@compro.net, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, Seunghun Lee <waydi1@gmail.com>
-Subject: [PATCH 3/3] staging: dgnc: Fix space required after that ','
-Date: Fri, 25 Jul 2014 00:26:53 +0900
-Message-Id: <1406215613-9314-3-git-send-email-waydi1@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1406215613-9314-1-git-send-email-waydi1@gmail.com>
-References: <1406215613-9314-1-git-send-email-waydi1@gmail.com>
+	Thu, 24 Jul 2014 11:27:24 -0400
+Date: Thu, 24 Jul 2014 17:27:22 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: tytso@mit.edu, linux-kernel@vger.kernel.org, adilger.kernel@dilger.ca,
+        linux-ext4@vger.kernel.org, jack@suse.cz
+Subject: Is warn_on() right reply for i/o error?
+Message-ID: <20140724152721.GA4771@amd.pavel.ucw.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes checkpatch errors:
-"space required after that ','"
+Hi!
 
-Signed-off-by: Seunghun Lee <waydi1@gmail.com>
----
- drivers/staging/dgnc/dgnc_driver.h |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+Just... I know, I should not be unscrewing hard drive cover while
+operating.
 
-diff --git a/drivers/staging/dgnc/dgnc_driver.h b/drivers/staging/dgnc/dgnc_driver.h
-index f7730a1..b68246a 100644
---- a/drivers/staging/dgnc/dgnc_driver.h
-+++ b/drivers/staging/dgnc/dgnc_driver.h
-@@ -219,8 +219,8 @@
-  * Makes spotting lock/unlock locations easier.
-  */
- # define DGNC_SPINLOCK_INIT(x)		spin_lock_init(&(x))
--# define DGNC_LOCK(x,y)			spin_lock_irqsave(&(x), y)
--# define DGNC_UNLOCK(x,y)		spin_unlock_irqrestore(&(x), y)
-+# define DGNC_LOCK(x, y)		spin_lock_irqsave(&(x), y)
-+# define DGNC_UNLOCK(x, y)		spin_unlock_irqrestore(&(x), y)
- 
- /*
-  * All the possible states the driver can be while being loaded.
+But on the other hand... WARN_ON() does not sound like right reply for
+a disk failure... right?
+
+And on related note... automounting is evil. Oh well.
+
+								Pavel
+
+sd 6:0:0:0: [sdf] Unhandled error code
+sd 6:0:0:0: [sdf]  
+Result: hostbyte=0x01 driverbyte=0x00
+sd 6:0:0:0: [sdf] CDB: 
+cdb[0]=0x28: 28 00 00 05 4a 00 00 00 40 00
+end_request: I/O error, dev sdf, sector 346624
+Buffer I/O error on device sdf, logical block 43328
+Buffer I/O error on device sdf, logical block 43329
+------------[ cut here ]------------
+WARNING: CPU: 0 PID: 4710 at fs/fs-writeback.c:1199
+__mark_inode_dirty+0x1be/0x1d0()
+bdi-block not registered
+Modules linked in:
+CPU: 0 PID: 4710 Comm: umount Not tainted 3.16.0-rc5+ #381
+Hardware name:                  /DG41MJ, BIOS
+MJG4110H.86A.0006.2009.1223.1155 12/23/2009
+ 000004af df661e18 c480956d c4a2bae0 df661e48 c403914a c4a2baf7
+ df661e74
+ 00001266 c4a2bae0 000004af c41154fe c41154fe d21ffa74 c6263dec
+ d21ffc60
+ df661e60 c40391ee 00000009 df661e58 c4a2baf7 df661e74 df661e88
+ c41154fe
+Call Trace:
+ [<c480956d>] dump_stack+0x41/0x52
+ [<c403914a>] warn_slowpath_common+0x7a/0xa0
+ [<c41154fe>] ? __mark_inode_dirty+0x1be/0x1d0
+ [<c41154fe>] ? __mark_inode_dirty+0x1be/0x1d0
+ [<c40391ee>] warn_slowpath_fmt+0x2e/0x30
+ [<c41154fe>] __mark_inode_dirty+0x1be/0x1d0
+ [<c411b806>] __set_page_dirty+0x66/0xb0
+ [<c411b8a6>] mark_buffer_dirty+0x56/0x80
+ [<c415bc1d>] ext3_put_super+0x20d/0x250
+ [<c410a042>] ? evict_inodes+0xb2/0x110
+ [<c40f4888>] generic_shutdown_super+0x68/0xe0
+ [<c40f4925>] kill_block_super+0x25/0x70
+ [<c40f4b88>] deactivate_locked_super+0x48/0x70
+ [<c40f5161>] deactivate_super+0x51/0x70
+ [<c410da6f>] mntput_no_expire+0x12f/0x1f0
+ [<c410f1e7>] ? SyS_umount+0xa7/0x430
+ [<c410f1e7>] SyS_umount+0xa7/0x430
+ [<c480e41e>] ? syscall_call+0x7/0xb
+ [<c40df3e1>] ? vm_munmap+0x41/0x50
+ [<c480e41e>] syscall_call+0x7/0xb
+---[ end trace 6642457659b6f1ae ]---
+EXT3-fs (sdf1): I/O error while writing superblock
+usb 1-1: new high-speed USB device number 8 using ehci-pci
+
 -- 
-1.7.9.5
-
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
