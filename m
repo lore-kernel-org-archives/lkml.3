@@ -1,101 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759660AbaGXP6O (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 11:58:14 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.242]:54956 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759390AbaGXP6M (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 11:58:12 -0400
-Message-ID: <53D12CF6.6070502@atmel.com>
-Date: Thu, 24 Jul 2014 17:57:42 +0200
-From: Cyrille Pitchen <cyrille.pitchen@atmel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1759688AbaGXP6b (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 11:58:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12532 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759668AbaGXP62 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jul 2014 11:58:28 -0400
+Date: Thu, 24 Jul 2014 17:58:14 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/6] perf tools: Save column length in perf_hpp_fmt
+Message-ID: <20140724155814.GD25165@krava.brq.redhat.com>
+References: <1404883694-5342-1-git-send-email-namhyung@kernel.org>
+ <1404883694-5342-4-git-send-email-namhyung@kernel.org>
+ <20140724121010.GA7652@krava.brq.redhat.com>
+ <CAM9d7cgpDGub2NubuBrSh1YVz=ahE6Sb4YJpk7+sXtQASS9qFQ@mail.gmail.com>
 MIME-Version: 1.0
-To: Mark Rutland <mark.rutland@arm.com>
-CC: "nicolas.ferre@atmel.com" <nicolas.ferre@atmel.com>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "soren.brinkmann@xilinx.com" <soren.brinkmann@xilinx.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 5/6] ARM: at91: change compatibility string for sama5d3x
- gem
-References: <cover.1406192657.git.cyrille.pitchen@atmel.com> <b8cbfb4e8d5d156d477634164c21cfa6f509c4ea.1406192657.git.cyrille.pitchen@atmel.com> <20140724151529.GA26190@leverpostej>
-In-Reply-To: <20140724151529.GA26190@leverpostej>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.161.30.18]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAM9d7cgpDGub2NubuBrSh1YVz=ahE6Sb4YJpk7+sXtQASS9qFQ@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le 24/07/2014 17:15, Mark Rutland a écrit :
-> On Thu, Jul 24, 2014 at 12:51:02PM +0100, Cyrille Pitchen wrote:
->> this new compatibility string prevents macb/gem driver from using the
->> scatter-gather and gso features on sama5d3x boards.
+On Fri, Jul 25, 2014 at 12:46:25AM +0900, Namhyung Kim wrote:
+> On Thu, Jul 24, 2014 at 9:10 PM, Jiri Olsa <jolsa@redhat.com> wrote:
+> > On Wed, Jul 09, 2014 at 02:28:11PM +0900, Namhyung Kim wrote:
+> >> Save column length in the hpp format and pass it to print functions.
+> >> This is a preparation for users to control column width in the output.
+> >
+> > SNIP
+> >
+> >> +
+> >> +void perf_hpp__reset_width(struct perf_hpp_fmt *fmt, struct hists *hists)
+> >> +{
+> >> +     int idx;
+> >> +
+> >> +     if (perf_hpp__is_sort_entry(fmt))
+> >> +             return perf_hpp__reset_sort_width(fmt, hists);
+> >> +
+> >> +     for (idx = 0; idx < PERF_HPP__MAX_INDEX; idx++) {
+> >> +             if (fmt == &perf_hpp__format[idx])
+> >> +                     break;
+> >> +     }
+> >> +
+> >> +     if (idx == PERF_HPP__MAX_INDEX)
+> >> +             return;
+> >> +
+> >> +     switch (idx) {
+> >> +     case PERF_HPP__OVERHEAD:
+> >> +     case PERF_HPP__OVERHEAD_SYS:
+> >> +     case PERF_HPP__OVERHEAD_US:
+> >> +     case PERF_HPP__OVERHEAD_ACC:
+> >> +             fmt->len = 8;
+> >> +             break;
+> >> +
+> >> +     case PERF_HPP__OVERHEAD_GUEST_SYS:
+> >> +     case PERF_HPP__OVERHEAD_GUEST_US:
+> >> +             fmt->len = 9;
+> >> +             break;
+> >
+> > just curious.. why is it 9 for guest %, while we use 8 for host?
+> > I understand that was the current state
 > 
-> What will happen were the driver to attempt to use the features on this
-> board?
-> 
-> How will this affect existing DTBs?
-> 
-> Thanks,
-> Mark.
->
-Hi Mark,
+> It's the strlen of header - "guest sys". :)
 
-patch 2 for then scatter-gather feature introducted a new compatible string
-"atmel,sama5d3-gem". Its associated config has the MACB_CAPS_SG_DISABLED flag
-so the feature is not available indeed.
+argh.. I did not think of header, just value ;-)
 
-patch 2 also set the very same flag for the config associated to the already 
-existing strings "cdns,pc302-gem" and "cdns,gem". Then if you don't update 
-your device tree, the scatter-gather feature won't be enabled for gem anyway. 
-However SG feature will be enabled for the old macb.
-
-The main idea is to do the change in two steps to avoid indroducing bugs. This
-series of patches is the first step. Later an additionnal patch may be 
-introduced to enable SG feature for gem on all platforms but sama5d3x. This 
-should be done by removing the MACB_CAPS_SG_DISABLED flag from pc302gem_config.
-Till then you don't need to update your device tree.
-
-For now, the SG feature is known to be broken on sama5d3x and there is work in 
-progress with Cadence support to fix this issue. It seems to be specific to 
-sama5d3x gem. SG feature was successfully tested on sama5d3x macb and also on 
-sama5d4 gem.
-
-Regards,
-
-Cyrille
-
->>
->> Signed-off-by: Cyrille Pitchen <cyrille.pitchen@atmel.com>
->> ---
->>  arch/arm/boot/dts/sama5d3_gmac.dtsi | 2 +-
->>  1 file changed, 1 insertion(+), 1 deletion(-)
->>
->> diff --git a/arch/arm/boot/dts/sama5d3_gmac.dtsi b/arch/arm/boot/dts/sama5d3_gmac.dtsi
->> index a6cb050..de5ed59 100644
->> --- a/arch/arm/boot/dts/sama5d3_gmac.dtsi
->> +++ b/arch/arm/boot/dts/sama5d3_gmac.dtsi
->> @@ -74,7 +74,7 @@
->>  			};
->>  
->>  			macb0: ethernet@f0028000 {
->> -				compatible = "cdns,pc302-gem", "cdns,gem";
->> +				compatible = "atmel,sama5d3-gem";
->>  				reg = <0xf0028000 0x100>;
->>  				interrupts = <34 IRQ_TYPE_LEVEL_HIGH 3>;
->>  				pinctrl-names = "default";
->> -- 
->> 1.8.2.2
->>
->>
->> _______________________________________________
->> linux-arm-kernel mailing list
->> linux-arm-kernel@lists.infradead.org
->> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
->>
-
+thanks,
+jirka
