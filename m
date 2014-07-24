@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934963AbaGXKAp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 06:00:45 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:55078 "EHLO
+	id S1757989AbaGXKBE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 06:01:04 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:55074 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934628AbaGXJsm (ORCPT
+	with ESMTP id S934661AbaGXJsl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 05:48:42 -0400
+	Thu, 24 Jul 2014 05:48:41 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "Theodore Ts'o" <tytso@mit.edu>,
+Cc: Axel Lin <axel.lin@ingics.com>, Guenter Roeck <linux@roeck-us.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 096/128] ext4: fix unjournalled bg descriptor while initializing inode bitmap
-Date: Thu, 24 Jul 2014 10:45:45 +0100
-Message-Id: <1406195177-8656-97-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 095/128] hwmon: (adm1021) Fix cache problem when writing temperature limits
+Date: Thu, 24 Jul 2014 10:45:44 +0100
+Message-Id: <1406195177-8656-96-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1406195177-8656-1-git-send-email-luis.henriques@canonical.com>
 References: <1406195177-8656-1-git-send-email-luis.henriques@canonical.com>
@@ -27,56 +27,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Theodore Ts'o <tytso@mit.edu>
+From: Axel Lin <axel.lin@ingics.com>
 
-commit 61c219f5814277ecb71d64cb30297028d6665979 upstream.
+commit c024044d4da2c9c3b32933b4235df1e409293b84 upstream.
 
-The first time that we allocate from an uninitialized inode allocation
-bitmap, if the block allocation bitmap is also uninitalized, we need
-to get write access to the block group descriptor before we start
-modifying the block group descriptor flags and updating the free block
-count, etc.  Otherwise, there is the potential of a bad journal
-checksum (if journal checksums are enabled), and of the file system
-becoming inconsistent if we crash at exactly the wrong time.
+The module test script for the adm1021 driver exposes a cache problem
+when writing temperature limits. temp_min and temp_max are expected
+to be stored in milli-degrees C but are stored in degrees C.
 
-Signed-off-by: Theodore Ts'o <tytso@mit.edu>
+Reported-by: Guenter Roeck <linux@roeck-us.net>
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+[ luis: backported to 3.11: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/ext4/ialloc.c | 14 +++++++-------
- 1 file changed, 7 insertions(+), 7 deletions(-)
+ drivers/hwmon/adm1021.c | 14 ++++++++------
+ 1 file changed, 8 insertions(+), 6 deletions(-)
 
-diff --git a/fs/ext4/ialloc.c b/fs/ext4/ialloc.c
-index 8bf5999875ee..0ecc14028477 100644
---- a/fs/ext4/ialloc.c
-+++ b/fs/ext4/ialloc.c
-@@ -781,6 +781,13 @@ got:
- 		goto out;
- 	}
+diff --git a/drivers/hwmon/adm1021.c b/drivers/hwmon/adm1021.c
+index 29dd9f746dfa..233b374334ed 100644
+--- a/drivers/hwmon/adm1021.c
++++ b/drivers/hwmon/adm1021.c
+@@ -185,7 +185,7 @@ static ssize_t set_temp_max(struct device *dev,
+ 	struct i2c_client *client = to_i2c_client(dev);
+ 	struct adm1021_data *data = i2c_get_clientdata(client);
+ 	long temp;
+-	int err;
++	int reg_val, err;
  
-+	BUFFER_TRACE(group_desc_bh, "get_write_access");
-+	err = ext4_journal_get_write_access(handle, group_desc_bh);
-+	if (err) {
-+		ext4_std_error(sb, err);
-+		goto out;
-+	}
-+
- 	/* We may have to initialize the block bitmap if it isn't already */
- 	if (ext4_has_group_desc_csum(sb) &&
- 	    gdp->bg_flags & cpu_to_le16(EXT4_BG_BLOCK_UNINIT)) {
-@@ -817,13 +824,6 @@ got:
- 		}
- 	}
+ 	err = kstrtol(buf, 10, &temp);
+ 	if (err)
+@@ -193,10 +193,11 @@ static ssize_t set_temp_max(struct device *dev,
+ 	temp /= 1000;
  
--	BUFFER_TRACE(group_desc_bh, "get_write_access");
--	err = ext4_journal_get_write_access(handle, group_desc_bh);
--	if (err) {
--		ext4_std_error(sb, err);
--		goto out;
--	}
--
- 	/* Update the relevant bg descriptor fields */
- 	if (ext4_has_group_desc_csum(sb)) {
- 		int free;
+ 	mutex_lock(&data->update_lock);
+-	data->temp_max[index] = clamp_val(temp, -128, 127);
++	reg_val = clamp_val(temp, -128, 127);
++	data->temp_max[index] = reg_val * 1000;
+ 	if (!read_only)
+ 		i2c_smbus_write_byte_data(client, ADM1021_REG_TOS_W(index),
+-					  data->temp_max[index]);
++					  reg_val);
+ 	mutex_unlock(&data->update_lock);
+ 
+ 	return count;
+@@ -210,7 +211,7 @@ static ssize_t set_temp_min(struct device *dev,
+ 	struct i2c_client *client = to_i2c_client(dev);
+ 	struct adm1021_data *data = i2c_get_clientdata(client);
+ 	long temp;
+-	int err;
++	int reg_val, err;
+ 
+ 	err = kstrtol(buf, 10, &temp);
+ 	if (err)
+@@ -218,10 +219,11 @@ static ssize_t set_temp_min(struct device *dev,
+ 	temp /= 1000;
+ 
+ 	mutex_lock(&data->update_lock);
+-	data->temp_min[index] = clamp_val(temp, -128, 127);
++	reg_val = clamp_val(temp, -128, 127);
++	data->temp_min[index] = reg_val * 1000;
+ 	if (!read_only)
+ 		i2c_smbus_write_byte_data(client, ADM1021_REG_THYST_W(index),
+-					  data->temp_min[index]);
++					  reg_val);
+ 	mutex_unlock(&data->update_lock);
+ 
+ 	return count;
 -- 
 1.9.1
 
