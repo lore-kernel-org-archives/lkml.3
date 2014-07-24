@@ -1,81 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934446AbaGXIm3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 04:42:29 -0400
-Received: from ozlabs.org ([103.22.144.67]:57311 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934229AbaGXIm0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 04:42:26 -0400
-Date: Thu, 24 Jul 2014 18:42:19 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Catalin Marinas <catalin.marinas@arm.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Laura Abbott <lauraa@codeaurora.org>, Mark Brown <broonie@linaro.org>
-Subject: linux-next: manual merge of the akpm-current tree with the arm64
- tree
-Message-ID: <20140724184219.58c15517@canb.auug.org.au>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
+	id S1758667AbaGXIpP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 04:45:15 -0400
+Received: from mail-bn1blp0186.outbound.protection.outlook.com ([207.46.163.186]:49193
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751874AbaGXIpK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jul 2014 04:45:10 -0400
+Date: Thu, 24 Jul 2014 16:25:46 +0800
+From: Nicolin Chen <Guangyu.Chen@freescale.com>
+To: Nicolin Chen <nicoleotsuka@gmail.com>
+CC: <broonie@kernel.org>, <vinod.koul@intel.com>, <s.hauer@pengutronix.de>,
+        <robh+dt@kernel.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
+        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
+        <rdunlap@infradead.org>, <lgirdwood@gmail.com>, <perex@perex.cz>,
+        <tiwai@suse.de>, <timur@tabi.org>, <grant.likely@linaro.org>,
+        <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <alsa-devel@alsa-project.org>,
+        <linuxppc-dev@lists.ozlabs.org>, <dan.j.williams@intel.com>,
+        <dmaengine@vger.kernel.org>, <b38343@freescale.com>,
+        <b02247@freescale.com>, <b42378@freescale.com>
+Subject: Re: [RFC][PATCH 0/2] Add ASRC Peripheral to Peripheral driver
+Message-ID: <20140724082545.GA27595@MrMyself>
+References: <cover.1402653667.git.nicoleotsuka@gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/LA8C=k9K0=ydF2CM.h_t+yV"; protocol="application/pgp-signature"
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <cover.1402653667.git.nicoleotsuka@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(189002)(199002)(24454002)(51704005)(110136001)(81342001)(64706001)(68736004)(85306003)(80022001)(76482001)(54356999)(102836001)(81542001)(26826002)(95666004)(83072002)(74662001)(77982001)(6806004)(84676001)(92566001)(4396001)(46102001)(83322001)(74502001)(83506001)(87936001)(47776003)(33656002)(81156004)(31966008)(50466002)(23726002)(76176999)(99396002)(97756001)(85852003)(92726001)(69596002)(86362001)(20776003)(79102001)(1411001)(19580395003)(104016003)(107046002)(106466001)(105606002)(44976005)(97736001)(50986999)(46406003)(21056001)(33716001);DIR:OUT;SFP:;SCL:1;SRVR:BLUPR03MB326;H:az84smr01.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;LANG:en;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
+X-Forefront-PRVS: 028256169F
+Authentication-Results: spf=fail (sender IP is 192.88.158.2)
+ smtp.mailfrom=guangyu.chen@freescale.com; 
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/LA8C=k9K0=ydF2CM.h_t+yV
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Fri, Jun 13, 2014 at 06:07:03PM +0800, Nicolin Chen wrote:
+> This series of patches have a direct dependency between them. So we might
+> need to push them into one branch. And sorry for this :(
+> 
+> Patch-1 adds device to device support in SDMA driver along with a secondary
+> request in struct imx_dma_data which's requred in the Patch-2 ASRC driver.
 
-Hi Andrew,
+I just sent a new version V2. So please disregard this version.
 
-Today's linux-next merge of the akpm-current tree got a conflict in
-arch/arm64/Kconfig between commit affeafbb8477 ("arm64: Remove stray
-ARCH_HAS_OPP reference") from the arm64 tree and commit 0941368c8dd9
-("lib/scatterlist: make ARCH_HAS_SG_CHAIN an actual Kconfig") from the
-akpm-current tree.
+Thanks all,
+Nicolin
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc arch/arm64/Kconfig
-index 555ad3cf3f0f,7bc7b7445774..000000000000
---- a/arch/arm64/Kconfig
-+++ b/arch/arm64/Kconfig
-@@@ -1,6 -1,8 +1,7 @@@
-  config ARM64
-  	def_bool y
-  	select ARCH_HAS_ATOMIC64_DEC_IF_POSITIVE
- -	select ARCH_HAS_OPP
-+ 	select ARCH_HAS_SG_CHAIN
-  	select ARCH_HAS_TICK_BROADCAST if GENERIC_CLOCKEVENTS_BROADCAST
-  	select ARCH_USE_CMPXCHG_LOCKREF
-  	select ARCH_SUPPORTS_ATOMIC_RMW
-
---Sig_/LA8C=k9K0=ydF2CM.h_t+yV
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJT0MbwAAoJEMDTa8Ir7ZwVO4IP/jWekQYUD5k+Lti6HxUevTBf
-ugfApCsB2UKld4IL/VLMStqb/9/HweogfHAW7sMW234dlDKeXkDqqokI6qIPiS16
-EanGI/h4cYc9IuBib0iyrYx19WK1QZQuPulGeVc4ehp3t5fEe+8F7UEgM+E4JhIl
-PcODwvFaGB4I6bs3ZAMnfX/Ynj50rke/4OydNttQ16+5LX8t5H+Xj/5LgD7TX7Hn
-elDACDxR3dlgV7LBywP8+Mjn5yqYSe8ekvhvOoP/uGgOujmvzbfYO9JuPOe7t4nc
-Wj4pc2wINbP1xStUbktihFDi3fGhr2myb1xAgidUryKoobGXLa7zwh7v0qodmLQ5
-2PDR8cprg/0BlOHwsu/e58d13OudJAYgmRJmTaWx6sSwpnKHybq6BiO7NQdMtoAd
-EDZx+TSRg7nRryJX3MpB9Tv+KZuMXVIBEKkZPbhhNabtDjrJuBjNrlVk965UJgs2
-zfLePvTADHgDgoDGE9BY2y8NU2YxUd3VKtPl19fonZE/kG6B/rHUHmJKUE9htwWT
-ao0AuOhcuBpmrsl83HwHGKH2dGNHx2htA8O3ZT3iP8MnQQXBpybiKuGUV2JqJB33
-shvELcgVuOsvtA8n8fxFR3VAZGe+AfBumgvx26XL5BzV1wBZ2GwVok4R+L5pbnWV
-CTv6kq9qmZGhaJG+bvRN
-=eamx
------END PGP SIGNATURE-----
-
---Sig_/LA8C=k9K0=ydF2CM.h_t+yV--
+> 
+> Nicolin Chen (2):
+>   dma: imx-sdma: Add device to device support
+>   ASoC: fsl_asrc: Add ASRC ASoC CPU DAI and platform drivers
+> 
+>  .../devicetree/bindings/sound/fsl,asrc.txt         |   62 ++
+>  drivers/dma/imx-sdma.c                             |   40 +-
+>  include/linux/platform_data/dma-imx.h              |    1 +
+>  sound/soc/fsl/Kconfig                              |    9 +
+>  sound/soc/fsl/Makefile                             |    2 +
+>  sound/soc/fsl/fsl_asrc.c                           | 1031 ++++++++++++++++++++
+>  sound/soc/fsl/fsl_asrc.h                           |  431 ++++++++
+>  sound/soc/fsl/fsl_asrc_dma.c                       |  385 ++++++++
+>  8 files changed, 1956 insertions(+), 5 deletions(-)
+>  create mode 100644 Documentation/devicetree/bindings/sound/fsl,asrc.txt
+>  create mode 100644 sound/soc/fsl/fsl_asrc.c
+>  create mode 100644 sound/soc/fsl/fsl_asrc.h
+>  create mode 100644 sound/soc/fsl/fsl_asrc_dma.c
+> 
+> -- 
+> 1.8.4
+> 
