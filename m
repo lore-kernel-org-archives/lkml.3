@@ -1,84 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934196AbaGXRXF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 13:23:05 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:51256 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752666AbaGXRXD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 13:23:03 -0400
-Message-ID: <53D140EC.9020609@ti.com>
-Date: Thu, 24 Jul 2014 13:22:52 -0400
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1759508AbaGXRaw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 13:30:52 -0400
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:62181 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757869AbaGXRav (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jul 2014 13:30:51 -0400
 MIME-Version: 1.0
-To: Jassi Brar <jaswinder.singh@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>
-CC: Grygorii Strashko <grygorii.strashko@ti.com>, Suman Anna <s-anna@ti.com>,
-        Alexander Shiyan <shc_work@mail.ru>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        <ivan.khoronzhuk@ti.com>, Muralidharan Karicheri <m-karicheri2@ti.com>,
-        Rob Herring <robh+dt@kernel.org>, Kumar Gala <galak@codeaurora.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+In-Reply-To: <20140724131821.30c4519d@gandalf.local.home>
+References: <1406156581-6052-1-git-send-email-xerofoify@gmail.com>
+	<20140724144725.GA32669@home.goodmis.org>
+	<20140724105132.3cf221c2@gandalf.local.home>
+	<yw1x38dqag24.fsf@unicorn.mansr.com>
+	<CAPDOMVgswyopjGxdRFW-bFRrTcpcNnkY=PqTCT9HbjjA=EZ1iw@mail.gmail.com>
+	<yw1xy4vi90n6.fsf@unicorn.mansr.com>
+	<CAPDOMVia0OXydg_hRH0t63xUaxKEkVc6D20vAZiyugkMXAEsJQ@mail.gmail.com>
+	<yw1xtx669002.fsf@unicorn.mansr.com>
+	<CAPDOMVgziyYTX41xZVB9FLHUKFRPPm19jo0A_WfbLqaaKbxPqg@mail.gmail.com>
+	<20140724131821.30c4519d@gandalf.local.home>
+Date: Thu, 24 Jul 2014 10:30:51 -0700
+Message-ID: <CAHLZz12ammMZNAah_eyYePJWorw2AruDAujeNxJHvOF5+Mr7cA@mail.gmail.com>
+Subject: Re: [PATCH] staging: Change kzalloc to kcalloc
+From: Harvey Harrison <harvey.harrison@gmail.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Nick Krause <xerofoify@gmail.com>,
+        =?UTF-8?B?TcOlbnMgUnVsbGfDpXJk?= <mans@mansr.com>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        John Stultz <john.stultz@linaro.org>, paul.gortmaker@windriver.com,
+        gang.chen.5i5j@gmail.com, yongjun_wei@trendmicro.com.cn,
+        Dan Carpenter <dan.carpenter@oracle.com>, tomas.winkler@intel.com,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v1] gpio: keystone: add dsp gpio controller driver
-References: <1405507426-18992-1-git-send-email-grygorii.strashko@ti.com>	<CACRpkdYY_a_9G-VLBbv2a22Cg4j0t3Wv4W1h0n6-ccCXgVJXsA@mail.gmail.com> <CAJe_ZhdnjyjvEsvK2u7SgS1hJ2fpsXh+=ViGhzakRd+c4ReBaw@mail.gmail.com>
-In-Reply-To: <CAJe_ZhdnjyjvEsvK2u7SgS1hJ2fpsXh+=ViGhzakRd+c4ReBaw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 24 July 2014 01:19 PM, Jassi Brar wrote:
-> On 23 July 2014 20:40, Linus Walleij <linus.walleij@linaro.org> wrote:
->> On Wed, Jul 16, 2014 at 12:43 PM, Grygorii Strashko
->> <grygorii.strashko@ti.com> wrote:
->>
->>> From: Murali Karicheri <m-karicheri2@ti.com>
->>>
->>> On Keystone SOCs, ARM host can send interrupts to DSP cores using the
->>> DSP GPIO controller IP. Each DSP GPIO controller provides 28 IRQ signals for
->>> each DSP core. This is one of the component used by the IPC mechanism used
->>> on Keystone SOCs.
->>>
->>> Keystone 2 DSP GPIO controller has specific features:
->>> - each GPIO can be configured only as output pin;
->>> - setting GPIO value to 1 causes IRQ generation on target DSP core;
->>> - reading pin value returns 0 - if IRQ was handled or 1 - IRQ is still
->>>   pending.
->>>
->>> Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
->>> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
->>
->> Pardon me. How is this GENERAL PURPOSE Input/Output?
->>
->> It seems very very much SPECIAL PURPOSE to me, it's like
->> you're just shoehorning some IPC mechanism into the GPIO
->> subsystem, and this may be because the datasheet calls it
->> GPIO when it's not.
->>
->> What other stuff than DSP is connected to these lines, and is it
->> really even external lines? Aren't these just polysilicon rails
->> pretty much hammered to be used by the DSP and nothing else.
->>
->> What is the difference between this and a mailbox IRQ line
->> and the kind of stuff handled by drivers/mailbox?
->>
->> I'd like Suman and Jassi to have a look at this to see if it's
->> actually a mailbox before we proceed.
->>
-> The controller seems like most others, only incapable of reading
-> signals (output only).
->  The userspace driving those signals to communicate with a DSP isn't
-> enough to call it a mailbox usecase, because on a different board the
-> userspace may drive those signals to control LEDs :)
-> 
-Exactly !!
-And that was my point. Thanks for echo.
+On Thu, Jul 24, 2014 at 10:18 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
+> On Thu, 24 Jul 2014 12:50:31 -0400
+> Nick Krause <xerofoify@gmail.com> wrote:
 
-Regards,
-Santosh
+>
+>> I am have this discussion with other kernel developers and just
+>> because I send out one patch as a newbie like this doesn't mean I
+>> don't known C.
+>
+> It's not just one patch, and I didn't say you don't know C. I said you
+> don't understand C enough for kernel development.
 
+And more importantly, stop guessing things are OK and selfishly asking
+others to check
+your work for you.
 
+If you have not at least _built_ the kernel with your change, and not
+_run_ it, and not made
+sure that the changed code is being _run_...you are wasting other people's time.
 
+Harvey
