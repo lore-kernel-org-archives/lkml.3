@@ -1,64 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759449AbaGXSLU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 14:11:20 -0400
-Received: from smtprelay0183.hostedemail.com ([216.40.44.183]:59782 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752666AbaGXSLT (ORCPT
+	id S1759642AbaGXSMa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 14:12:30 -0400
+Received: from e32.co.us.ibm.com ([32.97.110.150]:58463 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759574AbaGXSM3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 14:11:19 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::,RULES_HIT:41:355:379:541:599:800:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3867:3870:3871:3872:4321:5007:7652:10004:10400:10848:11026:11232:11657:11658:11914:12043:12296:12517:12519:12740:13069:13255:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: steam55_455bc2431cd35
-X-Filterd-Recvd-Size: 1957
-Message-ID: <1406225475.27221.59.camel@joe-AO725>
-Subject: Re: [PATCH] gpu: drm: omapdrm: Use %pad format for values of the
- dma_addr_t type
-From: Joe Perches <joe@perches.com>
-To: matwey@sai.msu.ru
-Cc: airlied@linux.ie, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org, linux-omap@vger.kernel.org,
-        matwey.kornilov@gmail.com
-Date: Thu, 24 Jul 2014 11:11:15 -0700
-In-Reply-To: <1406224686-4857-1-git-send-email-matwey@sai.msu.ru>
-References: <1406224686-4857-1-git-send-email-matwey@sai.msu.ru>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 24 Jul 2014 14:12:29 -0400
+Date: Thu, 24 Jul 2014 11:12:23 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Pranith Kumar <bobby.prani@gmail.com>
+Cc: Josh Triplett <josh@joshtriplett.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        "open list:READ-COPY UPDATE..." <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 11/16] rcu: Check for spurious wakeup using return value
+Message-ID: <20140724181223.GO11241@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1406092194-13004-1-git-send-email-bobby.prani@gmail.com>
+ <1406092194-13004-12-git-send-email-bobby.prani@gmail.com>
+ <20140723122608.GL11241@linux.vnet.ibm.com>
+ <CAJhHMCC7_GLmBroGhKWMJJKuWqhojQGf=9So1_x4nb2adQvqFg@mail.gmail.com>
+ <20140724034315.GJ11241@linux.vnet.ibm.com>
+ <CAJhHMCDhwnKF5tiWvHyGrz3KhCab+QUnAfEmkzjsBrNn5O3gyQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAJhHMCDhwnKF5tiWvHyGrz3KhCab+QUnAfEmkzjsBrNn5O3gyQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14072418-0928-0000-0000-000003A46B6F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-07-24 at 21:58 +0400, matwey@sai.msu.ru wrote:
-> The format change is to fix the following compilation issue:
+On Thu, Jul 24, 2014 at 12:03:34AM -0400, Pranith Kumar wrote:
+> On Wed, Jul 23, 2014 at 11:43 PM, Paul E. McKenney
+> <paulmck@linux.vnet.ibm.com> wrote:
+> > On Wed, Jul 23, 2014 at 10:36:19PM -0400, Pranith Kumar wrote:
+> >> On Wed, Jul 23, 2014 at 8:26 AM, Paul E. McKenney
+> >> <paulmck@linux.vnet.ibm.com> wrote:
+> >> > On Wed, Jul 23, 2014 at 01:09:48AM -0400, Pranith Kumar wrote:
+> >> >> When the gp_kthread wakes up from the wait event, it returns 0 if the wake up is
+> >> >> due to the condition having been met. This commit checks this return value
+> >> >> for a spurious wake up before calling rcu_gp_init().
+> >> >>
+> >> >> Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
+> >> >
+> >> > How does this added check help?  I don't see that it does.  If the flag
+> >> > is set, we want to wake up.  If we get a spurious wakeup, but then the
+> >> > flag gets set before we actually wake up, we still want to wake up.
+> >>
+> >> So I took a look at the docs again, and using the return value is the
+> >> recommended way to check for spurious wakeups.
+> >>
+> >> The condition in wait_event_interruptible() is checked when the task
+> >> is woken up (either due to stray signals or explicitly) and it returns
+> >> true if condition evaluates to true.
+> 
+> this should be returns '0' if the condition evaluates to true.
 
-Just a trivial note:
+Ah, but if the condition changes while wait_event_interruptible() is in
+the process of returning, it is quite possible that the answer will be
+different afterwards.  For example, consider this scenario:
 
-> diff --git a/drivers/gpu/drm/omapdrm/omap_gem.c b/drivers/gpu/drm/omapdrm/omap_gem.c
-[]
-> @@ -791,7 +791,7 @@ int omap_gem_get_paddr(struct drm_gem_object *obj,
->  			omap_obj->paddr = tiler_ssptr(block);
->  			omap_obj->block = block;
->  
-> -			DBG("got paddr: %08x", omap_obj->paddr);
-> +			DBG("got paddr: %pad", &(omap_obj->paddr));
+o	wait_event_interruptible() decides to return spuriously for
+	whatever reason, and thus returns a non-zero value.
 
-&foo->bar does not need parentheses.
+o	An invocation of (say) rcu_start_gp_advanced() sets ->gp_flags
+	to RCU_GP_FLAG_INIT, thus requesting that a new grace period
+	start.
 
-Most uses in the kernel do not have them.
-It seems to be ~25:1 without to with.
+o	At this point, the return value says that we should not start
+	a new grace period, but the ->gp_flags value says that we
+	should.
 
-> @@ -985,9 +985,9 @@ void omap_gem_describe(struct drm_gem_object *obj, struct seq_file *m)
->  
->  	off = drm_vma_node_start(&obj->vma_node);
->  
-> -	seq_printf(m, "%08x: %2d (%2d) %08llx %08Zx (%2d) %p %4d",
-> +	seq_printf(m, "%08x: %2d (%2d) %08llx %pad (%2d) %p %4d",
->  			omap_obj->flags, obj->name, obj->refcount.refcount.counter,
-> -			off, omap_obj->paddr, omap_obj->paddr_cnt,
-> +			off, &(omap_obj->paddr), omap_obj->paddr_cnt,
+Because it is the ->gp_flags value that really knows, the current code
+ignores wait_event_interruptible()'s return value and just checks
+the ->gp_flags value.
 
-etc...
+> >> In the current scenario, if we get a spurious wakeup, we take the
+> >> costly path of checking this condition again (with a barrier and lock)
+> >> before going back to wait.
+> >>
+> >> The scenario of getting an actual wakeup after getting a spurious
+> >> wakeup exists even today, this is the window after detecting a
+> >> spurious wakeup and before going back to wait. I am not sure if using
+> >> the return value enlarges that window as we are going back to sleep
+> >> immediately.
+> >>
+> >> Thoughts?
+> >
+> > If the flag is set, why should we care whether or not the wakeup was
+> > spurious?  If the flag is not set, why should we care whether or not
+> > wait_event_interruptible() thought that the wakeup was not spurious?
+> 
+> A correction about the return value above: return will be 0 if the
+> condition is true, in this case if the flag is set.
+> 
+> If the flag is set, ret will be 0 and we will go ahead with
+> rcu_gp_init(). (no change wrt current behavior)
 
+Sorry, this is not always correct.  RCU is highly concurrent, so you do
+need to start thinking in terms of concurrency.  Your reasoning above
+is a symptom of single-threaded thinking.  Please see my scenario above
+showing how the return can be non-zero even though ->gp_flags is set.
+
+> If the flag is not set, currently we go ahead and call rcu_gp_init()
+> from where we check if the flag is set (after a lock+barrier) and
+> return.
+
+True enough.  Is that really a problem?  If so, exactly why is it a
+problem?
+
+> If we care about what wait_event_interruptible() returns, we can go
+> back and wait for an actual wakeup much earlier without the additional
+> overhead of calling rcu_gp_init().
+
+The key phrase here is "If we care".  Should we care?  If so, why?
+
+I suggest running some random benchmark and counting how many times
+rcu_gp_init() is called and how many times rcu_gp_init() returns
+because ->gp_flags is not set.  If rcu_gp_init() returns because
+->gp_flags is not set a significant fraction of the time, then this
+-might- be worth worrying about.  (Extra credit: Under what conditions
+would it be worth worrying about, and how would you go about checking
+to see whether those conditions hold?)
+
+							Thanx, Paul
 
