@@ -1,94 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758828AbaGXMXB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 08:23:01 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:50384 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757834AbaGXMW7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 08:22:59 -0400
-Date: Thu, 24 Jul 2014 13:22:54 +0100
-From: Peter Griffin <peter.griffin@linaro.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        maxime.coquelin@st.com, patrice.chotard@st.com,
-        gregkh@linuxfoundation.org, srinivas.kandagatla@gmail.com,
-        linux-usb@vger.kernel.org, devicetree@vger.kernel.org,
-        lee.jones@linaro.org
-Subject: Re: [PATCH v2 1/3] usb: host: st-hcd: Add USB HCD support for STi
- SoCs
-Message-ID: <20140724122254.GA15266@griffinp-ThinkPad-X1-Carbon-2nd>
-References: <1406199616-10533-1-git-send-email-peter.griffin@linaro.org>
- <1406199616-10533-2-git-send-email-peter.griffin@linaro.org>
- <11018717.Ey5qEJxGNJ@wuerfel>
+	id S1758839AbaGXMZU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 08:25:20 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:40947 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756834AbaGXMZR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jul 2014 08:25:17 -0400
+Date: Thu, 24 Jul 2014 14:25:13 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Waiman Long <Waiman.Long@hp.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        USB list <linux-usb@vger.kernel.org>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>
+Subject: Re: Linux 3.16-rc6
+Message-ID: <20140724122513.GM19239@pd.tnic>
+References: <CA+55aFzJKxzw_as9iGgeM=MdQ6trUkQLDuoEr8nxj88sOqQnQA@mail.gmail.com>
+ <20140723095327.GA23131@pd.tnic>
+ <CA+55aFzPs4uF=eR7jCnpyBtgWNRkX-uDfXeo5u34VEvT8_yyzw@mail.gmail.com>
+ <20140724064353.GW9918@twins.programming.kicks-ass.net>
+ <20140724084126.GB19239@pd.tnic>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <11018717.Ey5qEJxGNJ@wuerfel>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140724084126.GB19239@pd.tnic>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnd,
+On Thu, Jul 24, 2014 at 10:41:27AM +0200, Borislav Petkov wrote:
+> you can easily reproduce by booting a kvm guest with rc6 + tip/master.
 
-Thanks for reviewing, see my comments below: -
+Right, so reverting
 
-> Unfortunately, this seems to be done in a rather strange way,
-> I suspect you'll have to start over, but I'll let Alan and Greg
-> weigh in.
-> 
-> > +
-> > +struct st_hcd_dev {
-> > +	int port_nr;
-> > +	struct platform_device *ehci_device;
-> > +	struct platform_device *ohci_device;
-> > +	struct clk *ic_clk;
-> > +	struct clk *ohci_clk;
-> > +	struct reset_control *pwr;
-> > +	struct reset_control *rst;
-> > +	struct phy *phy;
-> > +};
-> 
-> The way you do this apparently is to create a device that encapsulates
-> the OHCI and the EHCI and then goes on to create child devices that
-> are bound to the real drivers.
+586fefe5bbdc ("locking/selftest: Support queued rwlock")
+e0645a111cb4 ("locking/lockdep: Restrict the use of recursive read_lock() with qrwlock")
 
-Yes, although this isn't the first driver to take that approach USB_HCD_BCMA
-(bcma-hcd.c) and USB_HCD_SSB (ssb-hcd.c) do much the same thing.
+from the top of tip/locking/core seems to fix the issue, with the kvm
+guests at least.
 
-> 
-> The way it should be done however is to put the two host controllers
-> into DT directly and describe their resources (phy, clock, reset, ...)
-> using the DT bindings for those.
+-- 
+Regards/Gruss,
+    Boris.
 
-I'm of course happy to change it if required. I see looking through that a lot 
-of other platforms do it the way you describe with a
-
-ehci-<platname>.c and ohci-<platname>.c 
-> 
-> Depending on what kind of special requirements the ST version has,
-> this can be done either by using the generic ohci/ehci bindings
-> with extensions where necessary, or by creating a new binding and
-> new driver files that use 'ohci_init_driver'/'ehci_init_driver'
-> to inherit from the common code.
-> 
-> The first of the two approaches is preferred.
-
-We don't have anything particularly special, just a couple of reset lines,
-clock, phy, etc.
-> 
-> > +	pdev->dev.parent = &parent->dev;
-> > +	pdev->dev.dma_mask = &pdev->dev.coherent_dma_mask;
-> > +	pdev->dev.coherent_dma_mask = DMA_BIT_MASK(32);
-> 
-> This is something we shouldn't ever do these days, the DMA settings
-> should come directly from DT without driver interaction.
-
-Ok, I'll wait to hear the outcome of Greg/Alans views before either fixing
-it or starting over.
-
-regards,
-
-Peter.
+Sent from a fat crate under my desk. Formatting is fine.
+--
