@@ -1,85 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934654AbaGXU2A (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 16:28:00 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:45703 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934176AbaGXU17 (ORCPT
+	id S934683AbaGXU3e (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 16:29:34 -0400
+Received: from qmta01.emeryville.ca.mail.comcast.net ([76.96.30.16]:39510 "EHLO
+	qmta01.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S934565AbaGXU3c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 16:27:59 -0400
-Date: Thu, 24 Jul 2014 13:27:55 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Pranith Kumar <bobby.prani@gmail.com>
-Cc: Josh Triplett <josh@joshtriplett.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        "open list:READ-COPY UPDATE..." <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH 11/16] rcu: Check for spurious wakeup using return value
-Message-ID: <20140724202755.GU11241@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1406092194-13004-1-git-send-email-bobby.prani@gmail.com>
- <1406092194-13004-12-git-send-email-bobby.prani@gmail.com>
- <20140723122608.GL11241@linux.vnet.ibm.com>
- <CAJhHMCC7_GLmBroGhKWMJJKuWqhojQGf=9So1_x4nb2adQvqFg@mail.gmail.com>
- <20140724034315.GJ11241@linux.vnet.ibm.com>
- <CAJhHMCDhwnKF5tiWvHyGrz3KhCab+QUnAfEmkzjsBrNn5O3gyQ@mail.gmail.com>
- <20140724181223.GO11241@linux.vnet.ibm.com>
- <53D165A5.6010206@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53D165A5.6010206@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14072420-8236-0000-0000-0000041D0676
+	Thu, 24 Jul 2014 16:29:32 -0400
+From: Shuah Khan <shuah.kh@samsung.com>
+To: m.chehab@samsung.com, dheitmueller@kernellabs.com
+Cc: Shuah Khan <shuah.kh@samsung.com>, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] media: drx39xyj - use drxj_set_lna_state() and remove duplicate LNA code
+Date: Thu, 24 Jul 2014 14:29:28 -0600
+Message-Id: <1406233768-7976-1-git-send-email-shuah.kh@samsung.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 24, 2014 at 03:59:33PM -0400, Pranith Kumar wrote:
-> Adding peterz to CC as git blames him for wait_event code. :)
-> 
-> (original LKML link: https://lkml.org/lkml/2014/7/23/45)
-> 
-> On Thu, Jul 24, 2014 at 2:12 PM, Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
+drx39xxj_set_lna() and drx39xxj_set_frontend() set LNA. Instead of
+duplicating LNA configure code, change to use drxj_set_lna_state()
+which sets LNA to the caller requested state (on or off).
 
-[ . . . ]
+Signed-off-by: Shuah Khan <shuah.kh@samsung.com>
+---
 
-> >> If we care about what wait_event_interruptible() returns, we can go
-> >> back and wait for an actual wakeup much earlier without the additional
-> >> overhead of calling rcu_gp_init().
-> >
-> > The key phrase here is "If we care".  Should we care?  If so, why?
-> >
-> > I suggest running some random benchmark and counting how many times
-> > rcu_gp_init() is called and how many times rcu_gp_init() returns
-> > because ->gp_flags is not set.  If rcu_gp_init() returns because
-> > ->gp_flags is not set a significant fraction of the time, then this
-> > -might- be worth worrying about.  (Extra credit: Under what conditions
-> 
-> In the grand scheme of things, I agree that minor optimizations may not seem
-> to be worth much. But when the optimizationss are straight forward and 
-> are _actually_ improving things, even by a small margin, I think they are
-> worth considering.
-> 
-> Think of the billions of cycles we will save ;-)
+This patch depends on previous patch that added drxj_set_lna_state().
+https://lkml.org/lkml/2014/7/24/469
 
-If there are significant savings.  You have yet to demonstrate this.
-In fact, you have yet to demonstrate that your change doesn't make
-things worse.
+ drivers/media/dvb-frontends/drx39xyj/drxj.c |   29 ++-------------------------
+ 1 file changed, 2 insertions(+), 27 deletions(-)
 
-							Thanx, Paul
-
-> > -might- be worth worrying about.  (Extra credit: Under what conditions
-> > would it be worth worrying about, and how would you go about checking
-> > to see whether those conditions hold?)
-> >
-> 
-> 
-> -- 
-> Pranith
-> 
+diff --git a/drivers/media/dvb-frontends/drx39xyj/drxj.c b/drivers/media/dvb-frontends/drx39xyj/drxj.c
+index 31fee7b..d6d2930 100644
+--- a/drivers/media/dvb-frontends/drx39xyj/drxj.c
++++ b/drivers/media/dvb-frontends/drx39xyj/drxj.c
+@@ -12154,13 +12154,7 @@ static int drx39xxj_set_frontend(struct dvb_frontend *fe)
+ 		return -EINVAL;
+ 	}
+ 	/* Just for giggles, let's shut off the LNA again.... */
+-	uio_data.uio = DRX_UIO1;
+-	uio_data.value = false;
+-	result = ctrl_uio_write(demod, &uio_data);
+-	if (result != 0) {
+-		pr_err("Failed to disable LNA!\n");
+-		return 0;
+-	}
++	drxj_set_lna_state(demod, false);
+ 
+ 	/* After set_frontend, except for strength, stats aren't available */
+ 	p->strength.stat[0].scale = FE_SCALE_RELATIVE;
+@@ -12243,26 +12237,7 @@ static int drx39xxj_set_lna(struct dvb_frontend *fe)
+ 		}
+ 	}
+ 
+-	/* Turn off the LNA */
+-	uio_cfg.uio = DRX_UIO1;
+-	uio_cfg.mode = DRX_UIO_MODE_READWRITE;
+-	/* Configure user-I/O #3: enable read/write */
+-	result = ctrl_set_uio_cfg(demod, &uio_cfg);
+-	if (result) {
+-		pr_err("Failed to setup LNA GPIO!\n");
+-		return result;
+-	}
+-
+-	uio_data.uio = DRX_UIO1;
+-	uio_data.value = c->lna;
+-	result = ctrl_uio_write(demod, &uio_data);
+-	if (result != 0) {
+-		pr_err("Failed to %sable LNA!\n",
+-		       c->lna ? "en" : "dis");
+-		return result;
+-	}
+-
+-	return 0;
++	return drxj_set_lna_state(demod, c->lna);
+ }
+ 
+ static int drx39xxj_get_tune_settings(struct dvb_frontend *fe,
+-- 
+1.7.10.4
 
