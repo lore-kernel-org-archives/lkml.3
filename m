@@ -1,89 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752548AbaGXJDE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 05:03:04 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:42740 "EHLO mx2.suse.de"
+	id S1753926AbaGXJDM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 05:03:12 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:50893 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751521AbaGXJDA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 05:03:00 -0400
-Date: Thu, 24 Jul 2014 11:02:57 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Miklos Szeredi <miklos@szeredi.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>, Tejun Heo <tj@kernel.org>,
-        Vladimir Davydov <vdavydov@parallels.com>, linux-mm@kvack.org,
-        cgroups@vger.kernel.org,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [patch 13/13] mm: memcontrol: rewrite uncharge API
-Message-ID: <20140724090257.GB14578@dhcp22.suse.cz>
-References: <20140718144554.GG29639@cmpxchg.org>
- <CAJfpegt9k+YULet3vhmG3br7zSiHy-DRL+MiEE=HRzcs+mLzbw@mail.gmail.com>
- <20140719173911.GA1725@cmpxchg.org>
- <20140722150825.GA4517@dhcp22.suse.cz>
- <CAJfpegscT-ptQzq__uUV2TOn7Uvs6x4FdWGTQb9Fe9MEJr2KjA@mail.gmail.com>
- <20140723143847.GB16721@dhcp22.suse.cz>
- <20140723150608.GF1725@cmpxchg.org>
- <CAJfpegs-k5QC+42SzLKUSaHrdPxWBaT_dF+SOPqoDvg8h5p_Tw@mail.gmail.com>
- <20140723210241.GH1725@cmpxchg.org>
- <20140724084644.GA14578@dhcp22.suse.cz>
+	id S1751565AbaGXJDH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jul 2014 05:03:07 -0400
+Date: Thu, 24 Jul 2014 11:03:03 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: "Chen, Gong" <gong.chen@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, tglx@linutronix.de,
+        paulus@samba.org, benh@kernel.crashing.org, tony.luck@intel.com,
+        hpa@zytor.com, jkosina@suse.cz, rafael.j.wysocki@intel.com,
+        linux@arm.linux.org.uk, ralf@linux-mips.org, schwidefsky@de.ibm.com,
+        davem@davemloft.net, viro@zeniv.linux.org.uk, fweisbec@gmail.com,
+        cl@linux.com, akpm@linux-foundation.org, axboe@kernel.dk,
+        JBottomley@parallels.com, neilb@suse.de, christoffer.dall@linaro.org,
+        rostedt@goodmis.org, rric@kernel.org, gregkh@linuxfoundation.org,
+        mhocko@suse.cz, david@fromorbit.com
+Subject: Re: [RFC PATCH v1 14/70] x86, microcode, core: _FROZEN Cleanup
+Message-ID: <20140724090303.GC19239@pd.tnic>
+References: <1406080786-3938-1-git-send-email-gong.chen@linux.intel.com>
+ <1406080786-3938-15-git-send-email-gong.chen@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20140724084644.GA14578@dhcp22.suse.cz>
+In-Reply-To: <1406080786-3938-15-git-send-email-gong.chen@linux.intel.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 24-07-14 10:46:44, Michal Hocko wrote:
-> On Wed 23-07-14 17:02:41, Johannes Weiner wrote:
-[...]
-> We can reduce the lookup only to lruvec==true case, no?
-
-Dohh
-s@can@should@
-
-newpage shouldn't charged in all other cases and it would be bug.
-Or am I missing something?
-
-> Acked-by: Michal Hocko <mhocko@suse.cz>
+On Tue, Jul 22, 2014 at 09:58:50PM -0400, Chen, Gong wrote:
+> Remove XXX_FROZEN state from x86/microcode/core.
 > 
-> > ---
-> >  mm/memcontrol.c | 6 ++++++
-> >  1 file changed, 6 insertions(+)
-> > 
-> > diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> > index b7c9a202dee9..3eaa6e83c168 100644
-> > --- a/mm/memcontrol.c
-> > +++ b/mm/memcontrol.c
-> > @@ -6660,6 +6660,12 @@ void mem_cgroup_migrate(struct page *oldpage, struct page *newpage,
-> >  	if (mem_cgroup_disabled())
-> >  		return;
-> >  
-> > +	/* Page cache replacement: new page already charged? */
-> > +	pc = lookup_page_cgroup(newpage);
-> > +	if (PageCgroupUsed(pc))
-> > +		return;
-> > +
-> > +	/* Re-entrant migration: old page already uncharged? */
-> >  	pc = lookup_page_cgroup(oldpage);
-> >  	if (!PageCgroupUsed(pc))
-> >  		return;
-> > -- 
-> > 2.0.0
-> > 
+> Signed-off-by: Chen, Gong <gong.chen@linux.intel.com>
+> ---
+>  arch/x86/kernel/cpu/microcode/core.c | 8 ++++----
+>  1 file changed, 4 insertions(+), 4 deletions(-)
 > 
-> -- 
-> Michal Hocko
-> SUSE Labs
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> diff --git a/arch/x86/kernel/cpu/microcode/core.c b/arch/x86/kernel/cpu/microcode/core.c
+> index dd9d619..27e47be 100644
+> --- a/arch/x86/kernel/cpu/microcode/core.c
+> +++ b/arch/x86/kernel/cpu/microcode/core.c
+> @@ -499,6 +499,10 @@ mc_cpu_callback(struct notifier_block *nb, unsigned long action, void *hcpu)
+>  		pr_debug("CPU%d removed\n", cpu);
+>  		break;
+>  
+> +	case CPU_UP_CANCELED:
+> +		/* The CPU refused to come up during a system resume */
+> +		if (action & CPU_TASKS_FROZEN)
+> +			microcode_fini_cpu(cpu);
+
+Missing "break". We like to add those even if it doesn't matter in this
+case.
+
+Also, add the boilerplate
+
+"default:
+	break;"
+
+while you're at it, please.
 
 -- 
-Michal Hocko
-SUSE Labs
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
