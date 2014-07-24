@@ -1,93 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934893AbaGXJ4a (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 05:56:30 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:55149 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934780AbaGXJtC (ORCPT
+	id S935017AbaGXJ4t (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 05:56:49 -0400
+Received: from mail.aswsp.com ([193.34.35.150]:31839 "EHLO mail.aswsp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932600AbaGXJ4q convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 05:49:02 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Guenter Roeck <linux@roeck-us.net>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 110/128] hwmon: (emc2103) Clamp limits instead of bailing out
-Date: Thu, 24 Jul 2014 10:45:59 +0100
-Message-Id: <1406195177-8656-111-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1406195177-8656-1-git-send-email-luis.henriques@canonical.com>
-References: <1406195177-8656-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	Thu, 24 Jul 2014 05:56:46 -0400
+Date: Thu, 24 Jul 2014 11:56:50 +0200
+From: Matthieu CASTET <matthieu.castet@parrot.com>
+To: Boris BREZILLON <boris.brezillon@free-electrons.com>
+CC: David Woodhouse <dwmw2@infradead.org>,
+        Brian Norris <computersforpeace@gmail.com>,
+        <linux-mtd@lists.infradead.org>, Lee Jones <lee.jones@linaro.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] mtd: nand: define struct nand_timings
+Message-ID: <20140724115650.46cbb3cf@parrot.com>
+In-Reply-To: <20140722141219.7f2c2890@bbrezillon>
+References: <1405064982-11456-1-git-send-email-boris.brezillon@free-electrons.com>
+ <1405064982-11456-2-git-send-email-boris.brezillon@free-electrons.com>
+ <20140722120346.0f2d0e77@parrot.com>
+ <20140722141219.7f2c2890@bbrezillon>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset="ISO-8859-15"
+Content-Transfer-Encoding: 8BIT
+X-Originating-IP: [46.218.109.88]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.14 -stable review patch.  If anyone has any objections, please let me know.
+Hi Boris,
 
-------------------
+Le Tue, 22 Jul 2014 14:12:19 +0200,
+Boris BREZILLON <boris.brezillon@free-electrons.com> a écrit :
 
-From: Guenter Roeck <linux@roeck-us.net>
+> Hi Matthieu
+> 
+> On Tue, 22 Jul 2014 12:03:46 +0200
+> Matthieu CASTET <matthieu.castet@parrot.com> wrote:
+> 
+> > Hi,
+> > 
+> > 
 
-commit f6c2dd20108c35e30e2c1f3c6142d189451a626b upstream.
+> > 
+> > I did a similar patch [1] (that wasn't merged :( ), and I used reduced
+> > timing info.
+> 
+> I'm sorry it didn't make it to mainline, do you know why ?
+For the omap part there was a gpmc code rewrite that conflict with the
+patch.
+For the mtd stuff, I don't know/remember (I think for was no reply).
 
-It is customary to clamp limits instead of bailing out with an error
-if a configured limit is out of the range supported by the driver.
-This simplifies limit configuration, since the user will not typically
-know chip and/or driver specific limits.
+> Could you point out where "reduced timing info" is defined in the ONFI
+> specification ?
+It is not defined on onfi.
+This was more a simplification of timings in order to simplify the
+driver side (avoid code duplication). Most controller allow to control
+nRE and nWE pulse and the setup time.
 
-Reviewed-by: Jean Delvare <jdelvare@suse.de>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- drivers/hwmon/emc2103.c | 15 +++++----------
- 1 file changed, 5 insertions(+), 10 deletions(-)
+Do you have drivers that use onfi timings ?
+> 
+> > 
+> > I also have support for the omap driver
+> > (http://article.gmane.org/gmane.linux.ports.arm.omap/88606/match=) and
+> > a controller we use in our chip (not upstream).
+> 
+> It should be pretty easy to convert the full timings list into a
+> reduced one (actually, that's what your patch is doing), and you can
+> thus port your work on top of these patches.
+Yes I think an helper will be useful in order to help driver to use
+these timings.
+It can be a function that return the reduced version for a onfi mode
+and edo support.
 
-diff --git a/drivers/hwmon/emc2103.c b/drivers/hwmon/emc2103.c
-index 2c137b26acb4..5790246a7e1d 100644
---- a/drivers/hwmon/emc2103.c
-+++ b/drivers/hwmon/emc2103.c
-@@ -250,9 +250,7 @@ static ssize_t set_temp_min(struct device *dev, struct device_attribute *da,
- 	if (result < 0)
- 		return result;
- 
--	val = DIV_ROUND_CLOSEST(val, 1000);
--	if ((val < -63) || (val > 127))
--		return -EINVAL;
-+	val = clamp_val(DIV_ROUND_CLOSEST(val, 1000), -63, 127);
- 
- 	mutex_lock(&data->update_lock);
- 	data->temp_min[nr] = val;
-@@ -274,9 +272,7 @@ static ssize_t set_temp_max(struct device *dev, struct device_attribute *da,
- 	if (result < 0)
- 		return result;
- 
--	val = DIV_ROUND_CLOSEST(val, 1000);
--	if ((val < -63) || (val > 127))
--		return -EINVAL;
-+	val = clamp_val(DIV_ROUND_CLOSEST(val, 1000), -63, 127);
- 
- 	mutex_lock(&data->update_lock);
- 	data->temp_max[nr] = val;
-@@ -390,15 +386,14 @@ static ssize_t set_fan_target(struct device *dev, struct device_attribute *da,
- {
- 	struct emc2103_data *data = emc2103_update_device(dev);
- 	struct i2c_client *client = to_i2c_client(dev);
--	long rpm_target;
-+	unsigned long rpm_target;
- 
--	int result = kstrtol(buf, 10, &rpm_target);
-+	int result = kstrtoul(buf, 10, &rpm_target);
- 	if (result < 0)
- 		return result;
- 
- 	/* Datasheet states 16384 as maximum RPM target (table 3.2) */
--	if ((rpm_target < 0) || (rpm_target > 16384))
--		return -EINVAL;
-+	rpm_target = clamp_val(rpm_target, 0, 16384);
- 
- 	mutex_lock(&data->update_lock);
- 
--- 
-1.9.1
+> 
+> Anyway, I'm not sure what you have in mind, but unless there is a strong
+> reason to drop full timings in favor of reduced ones I'd like to
+> keep them (even if this implies adding a new converter to get reduced
+> timings list).
+> 
+No problem. I have nothing special in mind. I hope this could give ideas
+how to use the onfi timings in mtd drivers (understanding how to use
+ONFI timings can be tricky).
 
+
+Matthieu
