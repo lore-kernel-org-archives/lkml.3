@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934779AbaGXXBi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 19:01:38 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:58293 "EHLO mx2.suse.de"
+	id S934803AbaGXXCB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 19:02:01 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:58269 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934678AbaGXXBY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 19:01:24 -0400
+	id S933717AbaGXXBU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jul 2014 19:01:20 -0400
 From: =?UTF-8?q?Andreas=20F=C3=A4rber?= <afaerber@suse.de>
 To: Michal Simek <michal.simek@xilinx.com>
 Cc: Andreas Olofsson <andreas@adapteva.com>,
@@ -16,11 +16,10 @@ Cc: Andreas Olofsson <andreas@adapteva.com>,
         Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
         Mark Rutland <mark.rutland@arm.com>,
         Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>
-Subject: [PATCH v2 11/11] ARM: dts: zynq: Add AXI clkgen for Parallella
-Date: Fri, 25 Jul 2014 01:00:20 +0200
-Message-Id: <1406242820-20140-12-git-send-email-afaerber@suse.de>
+        Kumar Gala <galak@codeaurora.org>
+Subject: [PATCH v2 09/11] Documentation: devicetree: Fix ADI AXI SPDIF specification
+Date: Fri, 25 Jul 2014 01:00:18 +0200
+Message-Id: <1406242820-20140-10-git-send-email-afaerber@suse.de>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1406242820-20140-1-git-send-email-afaerber@suse.de>
 References: <1406242820-20140-1-git-send-email-afaerber@suse.de>
@@ -31,31 +30,30 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The specification requires compatible = "adi,axi-spdif-1.00.a" but
+driver and example and file name indicate "adi,axi-spdif-tx-1.00.a".
+Change the specification to match the implementation.
+
 Signed-off-by: Andreas Färber <afaerber@suse.de>
 ---
  v2: New
  
- arch/arm/boot/dts/zynq-parallella.dts | 7 +++++++
- 1 file changed, 7 insertions(+)
+ Documentation/devicetree/bindings/sound/adi,axi-spdif-tx.txt | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/arm/boot/dts/zynq-parallella.dts b/arch/arm/boot/dts/zynq-parallella.dts
-index 65fbd8b..d2eefad 100644
---- a/arch/arm/boot/dts/zynq-parallella.dts
-+++ b/arch/arm/boot/dts/zynq-parallella.dts
-@@ -57,6 +57,13 @@
- 			};
- 		};
+diff --git a/Documentation/devicetree/bindings/sound/adi,axi-spdif-tx.txt b/Documentation/devicetree/bindings/sound/adi,axi-spdif-tx.txt
+index 46f3449..4eb7997 100644
+--- a/Documentation/devicetree/bindings/sound/adi,axi-spdif-tx.txt
++++ b/Documentation/devicetree/bindings/sound/adi,axi-spdif-tx.txt
+@@ -1,7 +1,7 @@
+ ADI AXI-SPDIF controller
  
-+		axi_clkgen: axi-clkgen@66000000 {
-+			compatible = "adi,axi-clkgen-1.00.a";
-+			reg = <0x66000000 0x10000>;
-+			#clock-cells = <0>;
-+			clocks = <&clkc 17>;
-+		};
-+
- 		audio_clock: audio-clock {
- 			compatible = "fixed-clock";
- 			#clock-cells = <0>;
+ Required properties:
+- - compatible : Must be "adi,axi-spdif-1.00.a"
++ - compatible : Must be "adi,axi-spdif-tx-1.00.a"
+  - reg : Must contain SPDIF core's registers location and length
+  - clocks : Pairs of phandle and specifier referencing the controller's clocks.
+    The controller expects two clocks, the clock used for the AXI interface and
 -- 
 1.9.3
 
