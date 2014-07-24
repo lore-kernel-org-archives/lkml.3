@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758679AbaGXGaF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 02:30:05 -0400
-Received: from router.aksignal.cz ([188.175.113.102]:34827 "EHLO
-	router.aksignal.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751171AbaGXGaD (ORCPT
+	id S934155AbaGXGdc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 02:33:32 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:59010 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758695AbaGXGd3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 02:30:03 -0400
-Message-ID: <53D0A7E4.1040707@aksignal.cz>
-Date: Thu, 24 Jul 2014 08:29:56 +0200
-From: =?UTF-8?B?SmnFmcOtIFByY2hhbA==?= <jiri.prchal@aksignal.cz>
-Reply-To: jiri.prchal@aksignal.cz
-Organization: AK signal Brno
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Thu, 24 Jul 2014 02:33:29 -0400
+X-Originating-IP: 108.223.40.66
+Message-ID: <53D0A8B7.2010005@roeck-us.net>
+Date: Wed, 23 Jul 2014 23:33:27 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: Alexandre Courbot <gnurou@gmail.com>, Guenter Roeck <linux@roeck-us.net>
+To: Alexandre Courbot <gnurou@gmail.com>
 CC: "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
@@ -23,18 +22,13 @@ CC: "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
 Subject: Re: [RFC PATCH] gpiolib: Provide and export gpiod_export_name
 References: <1406139132-5404-1-git-send-email-linux@roeck-us.net> <CAAVeFuKsJpSYo2DMyTdYE2J5Cu_ZD=b9o-=S0DLDccyNmwniNg@mail.gmail.com>
 In-Reply-To: <CAAVeFuKsJpSYo2DMyTdYE2J5Cu_ZD=b9o-=S0DLDccyNmwniNg@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-just to append to this: is in plan some kind of exporting named GPIOs from device tree to /sys/* or /dev/*? It would be 
-very useful not only for me. Because I thing what GPIO is used for what is hardware design dependent same as for example 
-what SPI chips are used. And SPI chips are in DT.
-
-Dne 24.7.2014 v 07:44 Alexandre Courbot napsal(a):
+On 07/23/2014 10:44 PM, Alexandre Courbot wrote:
 > On Thu, Jul 24, 2014 at 3:12 AM, Guenter Roeck <linux@roeck-us.net> wrote:
 >> gpiod_export_name is similar to gpiod_export, but lets the user
 >> determine the name used to export a gpio pin.
@@ -90,12 +84,69 @@ Dne 24.7.2014 v 07:44 Alexandre Courbot napsal(a):
 > should appear. Make that device be your "scu" device and you can have
 > a consistent sysfs path to access your GPIOs.
 >
+Yes, I understand, but that is not acceptable for the users - see below.
+
 > Allowing GPIOs to pop up in the same directory with an arbitrary name
 > is just a recipe for a mess. But that's a recipe that is already
 > allowed thanks to that 'names' array. So I'm really confused about
 > what to do with this patch. If you can do with gpio_export_link() (and
 > I have not seen evidence of the contrary), please go that way instead.
 >
+
+I personally don't think it is that much of a mess. Sure, once has to be
+careful when selecting names, but I don't see a problem with that.
+
+I have two users for this. Interestingly the problem is pretty
+much the same, though the applications are completely different.
+
+One is the company using the scu.c file. They are currently using the
+pca953x driver approach (using the names array), but they also have
+a new version of their product which also uses gpio pins from gpio-ich.
+For consistency, they want all gpio pins in the same directory, meaning
+/sys/class/gpio.
+
+The currently implemented solution is to have a weak pointer to the names
+array in gpio-ch.c and override it with a pointer from scu.c.
+
+/* SCU specific gpio pin names. Only works if module is built into kernel. */
+static const char * const scu_ichx_gpiolib_names[128] = {
+         [0] = "switch_interrupt",       /* GPI0 */
+         [3] = "ac_loss_detect",         /* GPI3 */
+         [16] = "debug_out",             /* GPO0 */
+         [20] = "switch_reset",          /* GPO3 */
+};
+
+[ switch_interrupt and switch_reset will ultimately make it into the kernel,
+   to be used by a dsa driver, but that is besides the point. ]
+
+const char * const (* const ichx_gpiolib_names)[] = &scu_ichx_gpiolib_names;
+
+and ichx_gpiolib_names is declared as
+
+/* Allow overriding default gpio pin names */
+const char * const (* const __weak ichx_gpiolib_names)[];
+
+in gpio-ich.c. Pretty hackish, but at least it works. Slim chance though
+to get this accepted upstream. Since the ultimate idea is to submit all
+this code upstream, I would prefer to find a solution which is
+acceptable for both the user and for upstream integration.
+
+The second user is my employer. Same thing here, though even more complex
+as there are several different platforms to support with different platform
+drivers. Each platform exports a number of gpio pins to user space, often with
+the same functionality across platforms. The request here is to have all
+those pins in the same directory, for all platforms, which again suggests
+using /sys/class/gpio.
+
+Current approach is to use the "export" file to request pin exports,
+which has its own challenges such as having to search for the pin numbers.
+Well defined names and pins exported from the kernel would be much cleaner
+and be easier to handle.
+
+Of course, I could try to come up with a new class named "gpios" or similar,
+put everything there, and start selling that idea. Somehow that doesn't
+sound like a good idea to me.
+
 >>
 >> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 >> ---
@@ -191,44 +242,9 @@ Dne 24.7.2014 v 07:44 Alexandre Courbot napsal(a):
 > so all the name-chosing code is grouped in the same place. Then you
 > can remove that same check from gpiod_export_name().
 >
->> +       }
->> +       return gpiod_export_name(desc, ioname, direction_may_change);
->> +}
->>   EXPORT_SYMBOL_GPL(gpiod_export);
->>
->>   static int match_export(struct device *dev, const void *data)
->> diff --git a/include/linux/gpio/consumer.h b/include/linux/gpio/consumer.h
->> index 05e53cc..986da3e 100644
->> --- a/include/linux/gpio/consumer.h
->> +++ b/include/linux/gpio/consumer.h
->> @@ -260,6 +260,8 @@ static inline int desc_to_gpio(const struct gpio_desc *desc)
->>   #if IS_ENABLED(CONFIG_GPIOLIB) && IS_ENABLED(CONFIG_GPIO_SYSFS)
->>
->>   int gpiod_export(struct gpio_desc *desc, bool direction_may_change);
->> +int gpiod_export_name(struct gpio_desc *desc, const char *ioname,
->> +                     bool direction_may_change);
->>   int gpiod_export_link(struct device *dev, const char *name,
->>                        struct gpio_desc *desc);
->>   int gpiod_sysfs_set_active_low(struct gpio_desc *desc, int value);
->> @@ -273,6 +275,13 @@ static inline int gpiod_export(struct gpio_desc *desc,
->>          return -ENOSYS;
->>   }
->>
->> +static inline int gpiod_export_name(struct gpio_desc *desc,
->> +                                   const char *ioname,
->> +                                   bool direction_may_change)
->> +{
->> +       return -ENOSYS;
->> +}
->> +
->>   static inline int gpiod_export_link(struct device *dev, const char *name,
->>                                      struct gpio_desc *desc)
->>   {
->> --
->> 1.9.1
->>
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-gpio" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+Sure, no problem, though in that case I should probably add a check
+to gpiod_export_name to ensure that the passed ioname is not NULL
+and return -EINVAL if it is.
+
+Guenter
+
