@@ -1,68 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759380AbaGXPPv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 11:15:51 -0400
-Received: from mga02.intel.com ([134.134.136.20]:37235 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759184AbaGXPPt convert rfc822-to-8bit (ORCPT
+	id S1759419AbaGXPQT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 11:16:19 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:58376 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759076AbaGXPQS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 11:15:49 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,724,1400050800"; 
-   d="scan'208";a="548465114"
-From: "Zhang, Rui" <rui.zhang@intel.com>
-To: Laxman Dewangan <ldewangan@nvidia.com>,
-        "eduardo.valentin@gmail.com" <eduardo.valentin@gmail.com>
-CC: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+	Thu, 24 Jul 2014 11:16:18 -0400
+Date: Thu, 24 Jul 2014 16:15:29 +0100
+From: Mark Rutland <mark.rutland@arm.com>
+To: Cyrille Pitchen <cyrille.pitchen@atmel.com>
+Cc: "nicolas.ferre@atmel.com" <nicolas.ferre@atmel.com>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "soren.brinkmann@xilinx.com" <soren.brinkmann@xilinx.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] thermal: of: look for sensor driver parent node if
- device node missing
-Thread-Topic: [PATCH] thermal: of: look for sensor driver parent node if
- device node missing
-Thread-Index: AQHPn1Sn5O7ekVGZ60igMbnc9VG8rpuuhEAAgADgrFA=
-Date: Thu, 24 Jul 2014 15:15:00 +0000
-Message-ID: <744357E9AAD1214791ACBA4B0B90926301396F53@SHSMSX101.ccr.corp.intel.com>
-References: <1405336354-31310-1-git-send-email-ldewangan@nvidia.com>
- <53D0D694.9040101@nvidia.com>
-In-Reply-To: <53D0D694.9040101@nvidia.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+Subject: Re: [PATCH v2 5/6] ARM: at91: change compatibility string for
+ sama5d3x gem
+Message-ID: <20140724151529.GA26190@leverpostej>
+References: <cover.1406192657.git.cyrille.pitchen@atmel.com>
+ <b8cbfb4e8d5d156d477634164c21cfa6f509c4ea.1406192657.git.cyrille.pitchen@atmel.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <b8cbfb4e8d5d156d477634164c21cfa6f509c4ea.1406192657.git.cyrille.pitchen@atmel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Laxman,
+On Thu, Jul 24, 2014 at 12:51:02PM +0100, Cyrille Pitchen wrote:
+> this new compatibility string prevents macb/gem driver from using the
+> scatter-gather and gso features on sama5d3x boards.
 
-As Eduardo is the of thermal author and maintainer, I will take your patch only if you can get ACK from Eduardo.
+What will happen were the driver to attempt to use the features on this
+board?
 
-Eduardo,
-Do you have any comments on this?
+How will this affect existing DTBs?
 
 Thanks,
-rui
+Mark.
 
-> -----Original Message-----
-> From: Laxman Dewangan [mailto:ldewangan@nvidia.com]
-> Sent: Thursday, July 24, 2014 5:49 PM
-> To: Zhang, Rui; eduardo.valentin@ti.com
-> Cc: linux-pm@vger.kernel.org; linux-kernel@vger.kernel.org
-> Subject: Re: [PATCH] thermal: of: look for sensor driver parent node if
-> device node missing
-> Importance: High
 > 
-> On Monday 14 July 2014 04:42 PM, Laxman Dewangan wrote:
-> > There are some mfd devices which supports junction thermal interrupt
-> > like ams,AS3722. The DT binding of these devices are defined as the
-> > flat and drivers for sub module of such devices are registered as the
-> > mfd_add_devices. In this method, the sub devices registered as
-> > platform driver and these do not have the of_node pointer on their
-> > device structure. In this case, use the parent of_node pointer to get
-> > the required of_node pointer.
-> >
-> Any comment please?
+> Signed-off-by: Cyrille Pitchen <cyrille.pitchen@atmel.com>
+> ---
+>  arch/arm/boot/dts/sama5d3_gmac.dtsi | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/arch/arm/boot/dts/sama5d3_gmac.dtsi b/arch/arm/boot/dts/sama5d3_gmac.dtsi
+> index a6cb050..de5ed59 100644
+> --- a/arch/arm/boot/dts/sama5d3_gmac.dtsi
+> +++ b/arch/arm/boot/dts/sama5d3_gmac.dtsi
+> @@ -74,7 +74,7 @@
+>  			};
+>  
+>  			macb0: ethernet@f0028000 {
+> -				compatible = "cdns,pc302-gem", "cdns,gem";
+> +				compatible = "atmel,sama5d3-gem";
+>  				reg = <0xf0028000 0x100>;
+>  				interrupts = <34 IRQ_TYPE_LEVEL_HIGH 3>;
+>  				pinctrl-names = "default";
+> -- 
+> 1.8.2.2
+> 
+> 
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+> 
