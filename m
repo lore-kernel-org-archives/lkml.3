@@ -1,85 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759609AbaGXPlh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 11:41:37 -0400
-Received: from mail-oa0-f41.google.com ([209.85.219.41]:64383 "EHLO
-	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759114AbaGXPlf (ORCPT
+	id S1759613AbaGXPmZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 11:42:25 -0400
+Received: from mail-oa0-f43.google.com ([209.85.219.43]:37752 "EHLO
+	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759185AbaGXPmY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 11:41:35 -0400
+	Thu, 24 Jul 2014 11:42:24 -0400
 MIME-Version: 1.0
-In-Reply-To: <20140724144906.GA25165@krava.brq.redhat.com>
-References: <1404883694-5342-1-git-send-email-namhyung@kernel.org>
- <1404883694-5342-5-git-send-email-namhyung@kernel.org> <20140724125751.GC7652@krava.brq.redhat.com>
- <20140724135747.GS20303@kernel.org> <20140724144906.GA25165@krava.brq.redhat.com>
+In-Reply-To: <20140724135941.GT20303@kernel.org>
+References: <1404883694-5342-1-git-send-email-namhyung@kernel.org> <20140724135941.GT20303@kernel.org>
 From: Namhyung Kim <namhyung@kernel.org>
-Date: Fri, 25 Jul 2014 00:41:15 +0900
-X-Google-Sender-Auth: OgD_ZUeJtWWePyMzjkgupJq-goE
-Message-ID: <CAM9d7cjnxBEsEmm2-QdXBNzxy402R-rbSHJ7bmi0njeTe0LW7g@mail.gmail.com>
-Subject: Re: [PATCH 4/6] perf report: Honor column width setting
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>
+Date: Fri, 25 Jul 2014 00:42:04 +0900
+X-Google-Sender-Auth: 2iOpSu5zvKjEE1rFKBmqCbwjGp8
+Message-ID: <CAM9d7chNnavpxGgOFoZkzOgin+QOGZUgb7v2uRfVGxVNrPza2w@mail.gmail.com>
+Subject: Re: [PATCHSET 0/6] perf tools: Honor column width setting
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
+        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi guys,
-
-On Thu, Jul 24, 2014 at 11:49 PM, Jiri Olsa <jolsa@redhat.com> wrote:
-> On Thu, Jul 24, 2014 at 10:57:47AM -0300, Arnaldo Carvalho de Melo wrote:
->> Em Thu, Jul 24, 2014 at 02:57:51PM +0200, Jiri Olsa escreveu:
->> > On Wed, Jul 09, 2014 at 02:28:12PM +0900, Namhyung Kim wrote:
->> > > Set column width and do not change it if user gives -w/--column-widths
->> > > option.  It'll truncate longer symbols than the width if exists.
->> >
->> > SNIP
->> >
->> > > --- a/tools/perf/util/sort.c
->> > > +++ b/tools/perf/util/sort.c
->> > > @@ -70,7 +70,9 @@ static int hist_entry__thread_snprintf(struct hist_entry *he, char *bf,
->> > >                                  size_t size, unsigned int width)
->> > >  {
->> > >   const char *comm = thread__comm_str(he->thread);
->> > > - return repsep_snprintf(bf, size, "%-*s:%5d", width - 6,
->> > > +
->> > > + width = max(7U, width) - 6;
->> > > + return repsep_snprintf(bf, size, "%-*.*s:%5d", width, width,
->> > >                          comm ?: "", he->thread->tid);
->> > >  }
->> >
->> > also we now print out all sort headers left alligned, which is wrong for
->> > sort_thread header: "Command:  Pid' that mirrors value strings with ':'
->> > being aligned
->> >
->> > maybe something like in attached patch..?
->> >
->> > thanks,
->> > jirka
->> >
->> >
->> > ---
->> > diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
->> > index f89714329c0f..fbbe86b7f63c 100644
->> > --- a/tools/perf/util/sort.c
->> > +++ b/tools/perf/util/sort.c
->> > @@ -78,6 +78,7 @@ static int hist_entry__thread_snprintf(struct hist_entry *he, char *bf,
->> >
->> >  struct sort_entry sort_thread = {
->> >     .se_header      = "Command:  Pid",
->> > +   .se_header_right= true,
+On Thu, Jul 24, 2014 at 10:59 PM, Arnaldo Carvalho de Melo
+<acme@kernel.org> wrote:
+> Em Wed, Jul 09, 2014 at 02:28:08PM +0900, Namhyung Kim escreveu:
+>> Hello,
 >>
->> Is this just for the header? Perhaps its more clearly named .se_right_justify?
+>> This patchset is to control perf report/top output column width by
+>> -w/--column-widths option so that it can fit into the terminal size.
+>> The -w option is there for perf report but it ignored by recent output
+>> field changed due to some reason.  This patchset fixes it and supports
+>> perf top also.
+>>
+>> This is sometimes useful if your terminal is small and there's some
+>> C++ applications which have amazingly long symbol names.  Without this
+>> patchset user might not see those symbols on TUI, since it maps
+>> left/right arrow keys to other functions.
+>>
+>> The -w option sets column width starting from the first column
+>> (overhead or optional overhead_children column unless -F option is
+>> given).  It doesn't make sense to limit those overhead columns so it's
+>> not a hard-limit for them.  But it *is* a hard-limit for other columns
+>> such as comm, dso, symbol, and so on.  One can use 0 not to
+>> limit/force a width for those columns.
 >
-> yep, it's just for header.. let's see Namhyung might have better
-> idea how to handle this problem
+> Due to the issues pointed out, will wait for a v2 patchset, ok?
 
-I think it still needs to be left-aligned.  So I'd rather change the
-order - i.e. "Pid: Command".  Is it okay for you?
+Okay.  Will send v2 tomorrow.
 
 Thanks,
 Namhyung
