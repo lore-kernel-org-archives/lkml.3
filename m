@@ -1,96 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758104AbaGXLcy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 07:32:54 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:55291 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751314AbaGXLcx (ORCPT
+	id S1751753AbaGXLhO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 07:37:14 -0400
+Received: from mail-qg0-f51.google.com ([209.85.192.51]:56657 "EHLO
+	mail-qg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750772AbaGXLhM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 07:32:53 -0400
-Date: Thu, 24 Jul 2014 12:32:05 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Z Lim <zlim.lnx@gmail.com>
-Cc: Catalin Marinas <Catalin.Marinas@arm.com>,
-        Alexei Starovoitov <ast@plumgrid.com>, Jiang Liu <liuj97@gmail.com>,
-        AKASHI Takahiro <takahiro.akashi@linaro.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Chema Gonzalez <chema@google.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Subject: Re: [PATCH 00/14] arm64: eBPF JIT compiler
-Message-ID: <20140724113205.GL1994@arm.com>
-References: <1405708100-13604-1-git-send-email-zlim.lnx@gmail.com>
- <20140721091623.GA16122@arm.com>
- <CAMEtUuyC+MykPDO0ghTc=oex7KPLEy=BLRgWBdW+qJY7JXQmDQ@mail.gmail.com>
- <20140723103219.GA1366@localhost>
- <CABg9mcvU44W5AkPLtyswNWdDdF_nnqvLyKqv7RWhpuRRSWDW3A@mail.gmail.com>
+	Thu, 24 Jul 2014 07:37:12 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CABg9mcvU44W5AkPLtyswNWdDdF_nnqvLyKqv7RWhpuRRSWDW3A@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <4843763.ps2D25LEeM@wuerfel>
+References: <1405413956-2772-1-git-send-email-lftan@altera.com>
+	<1405413956-2772-14-git-send-email-lftan@altera.com>
+	<4843763.ps2D25LEeM@wuerfel>
+Date: Thu, 24 Jul 2014 19:37:11 +0800
+X-Google-Sender-Auth: JKeB5nhwDRpqvmkGKHjEeyc8N58
+Message-ID: <CAFiDJ582FiLAS=B13O3PV_d-FkR31j=5bN_LcXBSWkrGsHK_Gw@mail.gmail.com>
+Subject: Re: [PATCH v2 13/29] nios2: DMA mapping API
+From: Ley Foon Tan <lftan@altera.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Linux-Arch <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Chung-Lin Tang <cltang@codesourcery.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 24, 2014 at 05:55:36AM +0100, Z Lim wrote:
-> On Wed, Jul 23, 2014 at 3:32 AM, Catalin Marinas
-> <catalin.marinas@arm.com> wrote:
-> > On Mon, Jul 21, 2014 at 04:49:29PM +0100, Alexei Starovoitov wrote:
-> >> On Mon, Jul 21, 2014 at 2:16 AM, Will Deacon <will.deacon@arm.com> wrote:
-> >> > On Fri, Jul 18, 2014 at 07:28:06PM +0100, Zi Shen Lim wrote:
-> [...]
-> >> >> This series applies against net-next and is tested working
-> >> >> with lib/test_bpf on ARMv8 Foundation Model.
-> >> >
-> >> > Looks like it works on my Juno board too, so:
-> >> >
-> >> >   Acked-by: Will Deacon <will.deacon@arm.com>
-> >> >
-> >> > for the series.
-> >> >
-> >> > It's a bit late for 3.17 now, so I guess we'll queue this for 3.18 (which
-> >> > also means the dependency on -next isn't an issue). Perhaps you could repost
-> >> > around -rc3?
-> >>
-> >> Thanks for testing! Nice to see it working on real hw.
-> >> I'm not sure why you're proposing a 4+ week delay. The patches
-> >> will rot instead of getting used and tested. Imo it makes sense to
-> >> get them into net-next now for 3.17.
-> >> JIT is disabled by sysctl by default anyway.
-> >
-> > We normally like some patches (especially new functionality) to sit in
-> > linux-next for a while before the mering window (ideally starting with
-> > -rc4 or -rc5). We are at -rc6 already, so getting close to the 3.17
-> > merging window.
-> >
-> > Another aspect is that the arm64/bpf branch depends on the net tree, so
-> > it can't easily go in via the arm64 tree for 3.17 (3.18 would not be a
-> > problem).
-> 
-> Hi Catalin, I take it you prefer this series going through arm64 tree,
-> targeting 3.18, is that right?
+On Tue, Jul 15, 2014 at 5:38 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Tuesday 15 July 2014 16:45:40 Ley Foon Tan wrote:
+>
+>> +static inline void __dma_sync(void *vaddr, size_t size,
+>> +                           enum dma_data_direction direction)
+>> +{
+>> +     switch (direction) {
+>> +     case DMA_FROM_DEVICE:   /* invalidate cache */
+>> +             invalidate_dcache_range((unsigned long)vaddr,
+>> +                     (unsigned long)(vaddr + size));
+>> +             break;
+>> +     case DMA_TO_DEVICE:     /* flush and invalidate cache */
+>> +     case DMA_BIDIRECTIONAL:
+>> +             flush_dcache_range((unsigned long)vaddr,
+>> +                     (unsigned long)(vaddr + size));
+>> +             break;
+>> +     default:
+>> +             BUG();
+>> +     }
+>> +}
+>
+> This seems strange. More on that below.
+>
+>> +#define dma_alloc_noncoherent(d, s, h, f) dma_alloc_coherent(d, s, h, f)
+>> +#define dma_free_noncoherent(d, s, v, h) dma_free_coherent(d, s, v, h)
+>> +
+> ...
+>> +static inline void dma_cache_sync(struct device *dev, void *vaddr, size_t size,
+>> +                               enum dma_data_direction direction)
+>> +{
+>> +     __dma_sync(vaddr, size, direction);
+>> +}
+>
+> IIRC dma_cache_sync should be empty if you define dma_alloc_noncoherent
+> to be the same as dma_alloc_coherent: It's already coherent, so no sync
+> should be needed. What does the CPU do if you try to invalidate the cache
+> on a coherent mapping?
+Okay, I got what you mean here. I will leave this dma_cache_sync()
+function empty.
+The CPU just do nothing if we try to invalidate cache on a coherent region.
+BTW, I found many other architectures still provide dma_cache_sync()
+even they define dma_alloc_noncoherent
+same as dma_alloc_coherent. Eg: blackfin, x86 or xtense.
+>
+>> +void dma_sync_single_for_cpu(struct device *dev, dma_addr_t dma_handle,
+>> +                          size_t size, enum dma_data_direction direction)
+>> +{
+>> +     BUG_ON(!valid_dma_direction(direction));
+>> +
+>> +     __dma_sync(phys_to_virt(dma_handle), size, direction);
+>> +}
+>> +EXPORT_SYMBOL(dma_sync_single_for_cpu);
+>> +
+>> +void dma_sync_single_for_device(struct device *dev, dma_addr_t dma_handle,
+>> +                             size_t size, enum dma_data_direction direction)
+>> +{
+>> +     BUG_ON(!valid_dma_direction(direction));
+>> +
+>> +     __dma_sync(phys_to_virt(dma_handle), size, direction);
+>> +}
+>> +EXPORT_SYMBOL(dma_sync_single_for_device);
+>
+> More importantly: you do the same operation for both _for_cpu and _for_device.
+> I assume your CPU can never do speculative cache prefetches, so it's not
+> incorrect, but you do twice the number of invalidations and flushes that
+> you need.
+>
+> Why would you do anything for _for_cpu here?
+I am a bit confused for _for_cpu and _for_device here. I found some
+architectures like c6x and hexagon have same operation for both
+_for_cpu and _for_device as well.
+I have spent some times look at other architectures and below is what
+I found. Please correct me if I am wrong, especially
+for_device():DMA_FROM_DEVICE.
 
-Right.
+_for_cpu():
+case DMA_BIDIRECTIONAL:
+case DMA_FROM_DEVICE:
+     /* invalidate cache */
+break;
+case DMA_TO_DEVICE:
+   /* do nothing */
+break;
 
-> I understand your preference to have it sitting in linux-next for a
-> longer period for arm64 material, I'll repost this again after 3.17 so
-> it gets more exposure in linux-next.
+-------------------------
+_for_device():
+case DMA_BIDIRECTIONAL:
+case DMA_TO_DEVICE:
+     /* flush and invalidate cache */
+break;
+case DMA_FROM_DEVICE:
+ /* should we invalidate cache or do nothing? */
+break;
 
-Brill, thanks!
+Thanks for review.
 
-> BTW, are you open to this series going through net tree? I'm
-> (preemptively) asking because during development of this series, I've
-> had to rebase a couple times against net-next to handle dependencies.
-> Or is the general practice to handle conflicts in linux-next itself?
-
-We don't have a problem with it going via the -net tree if there's a reason
-for doing so (i.e. a new dependency that crops up after your rebase) but we
-should stick with the arm64 tree if we can.
-
-Cheers,
-
-Will
+Regards
+Ley Foon
