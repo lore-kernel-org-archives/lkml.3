@@ -1,375 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759374AbaGXOAq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 10:00:46 -0400
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:57354 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759178AbaGXOAo (ORCPT
+	id S1759263AbaGXOBv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 10:01:51 -0400
+Received: from e24smtp03.br.ibm.com ([32.104.18.24]:45241 "EHLO
+	e24smtp03.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758890AbaGXOBr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 10:00:44 -0400
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Sebastian Reichel <sre@kernel.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+	Thu, 24 Jul 2014 10:01:47 -0400
+Date: Thu, 24 Jul 2014 11:01:42 -0300
+From: Leonidas Da Silva Barbosa <leosilva@linux.vnet.ibm.com>
+To: Herbert Xu <herbert@gondor.apana.org.au>,
+        "David S. Miller" <davem@davemloft.net>, linux-crypto@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Cc: David Woodhouse <dwmw2@infradead.org>,
-        Dmitry Artamonow <mad_soft@inbox.ru>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH v2] power: add driver for battery reading on iPaq h3xxx
-Date: Thu, 24 Jul 2014 16:00:32 +0200
-Message-Id: <1406210432-24936-1-git-send-email-linus.walleij@linaro.org>
-X-Mailer: git-send-email 1.9.3
+Cc: mhcerri@linux.vnet.ibm.com, fin@linux.vnet.ibm.com
+Subject: [PATCH 7/8] Replacing spinlocks by nx_copy_ctx on NX-AES-XCBC
+Message-ID: <20140724140139.GA26292@bluepex.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14072414-9564-0000-0000-0000015B9A9F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dmitry Artamonow <mad_soft@inbox.ru>
+Replaces spinlock usage by a simple copy of the crypto context, avoiding
+possible bottlenecks.
 
-This adds a driver for reading the battery status of the
-battery connected to the Atmel microcontroller on the
-iPAQ h3xxx series.
-
-Based on a driver from handhelds.org 2.6.21 kernel, written
-by Alessandro GARDICH.
-
-Signed-off-by: Dmitry Artamonow <mad_soft@inbox.ru>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: Leonidas Da Silva Barbosa <leosilva@linux.vnet.ibm.com>
 ---
-ChangeLog v1->v2:
-- Clarify that 100000 ms is 100 seconds
-- rename doubly-named local, infix power supplies with "power"
----
- drivers/power/Kconfig              |   7 +
- drivers/power/Makefile             |   1 +
- drivers/power/ipaq_micro_battery.c | 290 +++++++++++++++++++++++++++++++++++++
- 3 files changed, 298 insertions(+)
- create mode 100644 drivers/power/ipaq_micro_battery.c
+ drivers/crypto/nx/nx-aes-xcbc.c |   51 ++++++++++++++++++++++----------------
+ 1 files changed, 29 insertions(+), 22 deletions(-)
 
-diff --git a/drivers/power/Kconfig b/drivers/power/Kconfig
-index ba6975123071..73cfcdf28a36 100644
---- a/drivers/power/Kconfig
-+++ b/drivers/power/Kconfig
-@@ -137,6 +137,13 @@ config BATTERY_COLLIE
- 	  Say Y to enable support for the battery on the Sharp Zaurus
- 	  SL-5500 (collie) models.
+diff --git a/drivers/crypto/nx/nx-aes-xcbc.c b/drivers/crypto/nx/nx-aes-xcbc.c
+index 03c4bf5..d8a5bdb 100644
+--- a/drivers/crypto/nx/nx-aes-xcbc.c
++++ b/drivers/crypto/nx/nx-aes-xcbc.c
+@@ -161,11 +161,14 @@ static int nx_xcbc_update(struct shash_desc *desc,
+ 	struct nx_sg *in_sg;
+ 	u32 to_process, leftover, total;
+ 	u32 max_sg_len;
+-	unsigned long irq_flags;
+ 	int rc = 0;
  
-+config BATTERY_IPAQ_MICRO
-+	tristate "iPAQ Atmel Micro ASIC battery driver"
-+	depends on MFD_IPAQ_MICRO
-+	help
-+	  Choose this option if you want to monitor battery status on
-+	  Compaq/HP iPAQ h3100 and h3600.
-+
- config BATTERY_WM97XX
- 	bool "WM97xx generic battery driver"
- 	depends on TOUCHSCREEN_WM97XX=y
-diff --git a/drivers/power/Makefile b/drivers/power/Makefile
-index ee54a3e4c90a..dfa894273926 100644
---- a/drivers/power/Makefile
-+++ b/drivers/power/Makefile
-@@ -25,6 +25,7 @@ obj-$(CONFIG_BATTERY_PMU)	+= pmu_battery.o
- obj-$(CONFIG_BATTERY_OLPC)	+= olpc_battery.o
- obj-$(CONFIG_BATTERY_TOSA)	+= tosa_battery.o
- obj-$(CONFIG_BATTERY_COLLIE)	+= collie_battery.o
-+obj-$(CONFIG_BATTERY_IPAQ_MICRO) += ipaq_micro_battery.o
- obj-$(CONFIG_BATTERY_WM97XX)	+= wm97xx_battery.o
- obj-$(CONFIG_BATTERY_SBS)	+= sbs-battery.o
- obj-$(CONFIG_BATTERY_BQ27x00)	+= bq27x00_battery.o
-diff --git a/drivers/power/ipaq_micro_battery.c b/drivers/power/ipaq_micro_battery.c
-new file mode 100644
-index 000000000000..54632eabf420
---- /dev/null
-+++ b/drivers/power/ipaq_micro_battery.c
-@@ -0,0 +1,290 @@
-+/*
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * h3xxx atmel micro companion support, battery subdevice
-+ * based on previous kernel 2.4 version
-+ * Author : Alessandro Gardich <gremlin@gremlin.it>
-+ * Author : Linus Walleij <linus.walleij@linaro.org>
-+ *
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/init.h>
-+#include <linux/platform_device.h>
-+#include <linux/mfd/ipaq-micro.h>
-+#include <linux/power_supply.h>
-+#include <linux/workqueue.h>
-+
-+#define BATT_PERIOD 100000 /* 100 seconds in milliseconds */
-+
-+#define MICRO_BATT_CHEM_ALKALINE	0x01
-+#define MICRO_BATT_CHEM_NICD		0x02
-+#define MICRO_BATT_CHEM_NIMH		0x03
-+#define MICRO_BATT_CHEM_LION		0x04
-+#define MICRO_BATT_CHEM_LIPOLY		0x05
-+#define MICRO_BATT_CHEM_NOT_INSTALLED	0x06
-+#define MICRO_BATT_CHEM_UNKNOWN		0xff
-+
-+#define MICRO_BATT_STATUS_HIGH		0x01
-+#define MICRO_BATT_STATUS_LOW		0x02
-+#define MICRO_BATT_STATUS_CRITICAL	0x04
-+#define MICRO_BATT_STATUS_CHARGING	0x08
-+#define MICRO_BATT_STATUS_CHARGEMAIN	0x10
-+#define MICRO_BATT_STATUS_DEAD		0x20 /* Battery will not charge */
-+#define MICRO_BATT_STATUS_NOTINSTALLED	0x20 /* For expansion pack batteries */
-+#define MICRO_BATT_STATUS_FULL		0x40 /* Battery fully charged */
-+#define MICRO_BATT_STATUS_NOBATTERY	0x80
-+#define MICRO_BATT_STATUS_UNKNOWN	0xff
-+
-+struct micro_battery {
-+	struct ipaq_micro *micro;
-+	struct workqueue_struct *wq;
-+	struct delayed_work update;
-+	u8 ac;
-+	u8 chemistry;
-+	unsigned int voltage;
-+	u16 temperature;
-+	u8 flag;
-+};
-+
-+static void micro_battery_work(struct work_struct *work)
-+{
-+	struct micro_battery *mb = container_of(work,
-+				struct micro_battery, update.work);
-+	struct ipaq_micro_msg msg_battery = {
-+		.id = MSG_BATTERY,
-+	};
-+	struct ipaq_micro_msg msg_sensor = {
-+		.id = MSG_THERMAL_SENSOR,
-+	};
-+
-+	/* First send battery message */
-+	ipaq_micro_tx_msg_sync(mb->micro, &msg_battery);
-+	if (msg_battery.rx_len < 4)
-+		pr_info("ERROR");
-+
-+	/*
-+	 * Returned message format:
-+	 * byte 0:   0x00 = Not plugged in
-+	 *           0x01 = AC adapter plugged in
-+	 * byte 1:   chemistry
-+	 * byte 2:   voltage LSB
-+	 * byte 3:   voltage MSB
-+	 * byte 4:   flags
-+	 * byte 5-9: same for battery 2
-+	 */
-+	mb->ac = msg_battery.rx_data[0];
-+	mb->chemistry = msg_battery.rx_data[1];
-+	mb->voltage = ((((unsigned short)msg_battery.rx_data[3] << 8) +
-+			msg_battery.rx_data[2]) * 5000L) * 1000 / 1024;
-+	mb->flag = msg_battery.rx_data[4];
-+
-+	if (msg_battery.rx_len == 9)
-+		pr_debug("second battery ignored\n");
-+
-+	/* Then read the sensor */
-+	ipaq_micro_tx_msg_sync(mb->micro, &msg_sensor);
-+	mb->temperature = msg_sensor.rx_data[1] << 8 | msg_sensor.rx_data[0];
-+
-+	queue_delayed_work(mb->wq, &mb->update, msecs_to_jiffies(BATT_PERIOD));
-+}
-+
-+static int get_capacity(struct power_supply *b)
-+{
-+	struct micro_battery *mb = dev_get_drvdata(b->dev->parent);
-+
-+	switch (mb->flag & 0x07) {
-+	case MICRO_BATT_STATUS_HIGH:
-+		return 100;
-+		break;
-+	case MICRO_BATT_STATUS_LOW:
-+		return 50;
-+		break;
-+	case MICRO_BATT_STATUS_CRITICAL:
-+		return 5;
-+		break;
-+	default:
-+		break;
-+	}
-+	return 0;
-+}
-+
-+static int get_status(struct power_supply *b)
-+{
-+	struct micro_battery *mb = dev_get_drvdata(b->dev->parent);
-+
-+	if (mb->flag == MICRO_BATT_STATUS_UNKNOWN)
-+		return POWER_SUPPLY_STATUS_UNKNOWN;
-+
-+	if (mb->flag & MICRO_BATT_STATUS_FULL)
-+		return POWER_SUPPLY_STATUS_FULL;
-+
-+	if ((mb->flag & MICRO_BATT_STATUS_CHARGING) ||
-+		(mb->flag & MICRO_BATT_STATUS_CHARGEMAIN))
-+		return POWER_SUPPLY_STATUS_CHARGING;
-+
-+	return POWER_SUPPLY_STATUS_DISCHARGING;
-+}
-+
-+static int micro_batt_get_property(struct power_supply *b,
-+					enum power_supply_property psp,
-+					union power_supply_propval *val)
-+{
-+	struct micro_battery *mb = dev_get_drvdata(b->dev->parent);
-+
-+	switch (psp) {
-+	case POWER_SUPPLY_PROP_TECHNOLOGY:
-+		switch (mb->chemistry) {
-+		case MICRO_BATT_CHEM_NICD:
-+			val->intval = POWER_SUPPLY_TECHNOLOGY_NiCd;
-+			break;
-+		case MICRO_BATT_CHEM_NIMH:
-+			val->intval = POWER_SUPPLY_TECHNOLOGY_NiMH;
-+			break;
-+		case MICRO_BATT_CHEM_LION:
-+			val->intval = POWER_SUPPLY_TECHNOLOGY_LION;
-+			break;
-+		case MICRO_BATT_CHEM_LIPOLY:
-+			val->intval = POWER_SUPPLY_TECHNOLOGY_LIPO;
-+			break;
-+		default:
-+			val->intval = POWER_SUPPLY_TECHNOLOGY_UNKNOWN;
-+			break;
-+		};
-+		break;
-+	case POWER_SUPPLY_PROP_STATUS:
-+		val->intval = get_status(b);
-+		break;
-+	case POWER_SUPPLY_PROP_VOLTAGE_MAX_DESIGN:
-+		val->intval = 4700000;
-+		break;
-+	case POWER_SUPPLY_PROP_CAPACITY:
-+		val->intval = get_capacity(b);
-+		break;
-+	case POWER_SUPPLY_PROP_TEMP:
-+		val->intval = mb->temperature;
-+		break;
-+	case POWER_SUPPLY_PROP_VOLTAGE_NOW:
-+		val->intval = mb->voltage;
-+		break;
-+	default:
-+		return -EINVAL;
-+	};
-+
-+	return 0;
-+}
-+
-+static int micro_ac_get_property(struct power_supply *b,
-+				 enum power_supply_property psp,
-+				 union power_supply_propval *val)
-+{
-+	struct micro_battery *mb = dev_get_drvdata(b->dev->parent);
-+
-+	switch (psp) {
-+	case POWER_SUPPLY_PROP_ONLINE:
-+		val->intval = mb->ac;
-+		break;
-+	default:
-+		return -EINVAL;
-+	};
-+
-+	return 0;
-+}
-+
-+static enum power_supply_property micro_batt_power_props[] = {
-+	POWER_SUPPLY_PROP_TECHNOLOGY,
-+	POWER_SUPPLY_PROP_STATUS,
-+	POWER_SUPPLY_PROP_VOLTAGE_MAX_DESIGN,
-+	POWER_SUPPLY_PROP_CAPACITY,
-+	POWER_SUPPLY_PROP_TEMP,
-+	POWER_SUPPLY_PROP_VOLTAGE_NOW,
-+};
-+
-+static struct power_supply micro_batt_power = {
-+	.name			= "main-battery",
-+	.type			= POWER_SUPPLY_TYPE_BATTERY,
-+	.properties		= micro_batt_power_props,
-+	.num_properties		= ARRAY_SIZE(micro_batt_power_props),
-+	.get_property		= micro_batt_get_property,
-+	.use_for_apm		= 1,
-+};
-+
-+static enum power_supply_property micro_ac_power_props[] = {
-+	POWER_SUPPLY_PROP_ONLINE,
-+};
-+
-+static struct power_supply micro_ac_power = {
-+	.name			= "ac",
-+	.type			= POWER_SUPPLY_TYPE_MAINS,
-+	.properties		= micro_ac_power_props,
-+	.num_properties		= ARRAY_SIZE(micro_ac_power_props),
-+	.get_property		= micro_ac_get_property,
-+};
-+
-+static int micro_batt_probe(struct platform_device *pdev)
-+{
-+	struct micro_battery *mb;
-+
-+	mb = devm_kzalloc(&pdev->dev, sizeof(*mb), GFP_KERNEL);
-+	if (!mb)
+-	spin_lock_irqsave(&nx_ctx->lock, irq_flags);
++	struct nx_crypto_ctx curr_nx_ctx;
+ 
++	if (nx_copy_ctx(&curr_nx_ctx, nx_ctx))
 +		return -ENOMEM;
 +
-+	mb->micro = dev_get_drvdata(pdev->dev.parent);
-+	mb->wq = create_singlethread_workqueue("ipaq-battery-wq");
-+	INIT_DELAYED_WORK(&mb->update, micro_battery_work);
-+	platform_set_drvdata(pdev, mb);
-+	queue_delayed_work(mb->wq, &mb->update, 1);
-+	power_supply_register(&pdev->dev, &micro_batt_power);
-+	power_supply_register(&pdev->dev, &micro_ac_power);
++	csbcpb = curr_nx_ctx.csbcpb;
+ 
+ 	total = sctx->count + len;
+ 
+@@ -179,15 +182,15 @@ static int nx_xcbc_update(struct shash_desc *desc,
+ 		goto out;
+ 	}
+ 
+-	in_sg = nx_ctx->in_sg;
++	in_sg = curr_nx_ctx.in_sg;
+ 	max_sg_len = min_t(u32, nx_driver.of.max_sg_len/sizeof(struct nx_sg),
+-				nx_ctx->ap->sglen);
++				curr_nx_ctx.ap->sglen);
+ 
+ 	do {
+ 
+ 		/* to_process: the AES_BLOCK_SIZE data chunk to process in this
+ 		 * update */
+-		to_process = min_t(u64, total, nx_ctx->ap->databytelen);
++		to_process = min_t(u64, total, curr_nx_ctx.ap->databytelen);
+ 		to_process = min_t(u64, to_process,
+ 					NX_PAGE_SIZE * (max_sg_len - 1));
+ 		to_process = to_process & ~(AES_BLOCK_SIZE - 1);
+@@ -204,7 +207,7 @@ static int nx_xcbc_update(struct shash_desc *desc,
+ 		}
+ 
+ 		if (sctx->count) {
+-			in_sg = nx_build_sg_list(nx_ctx->in_sg,
++			in_sg = nx_build_sg_list(curr_nx_ctx.in_sg,
+ 						(u8 *) sctx->buffer,
+ 						sctx->count,
+ 						max_sg_len);
+@@ -213,7 +216,7 @@ static int nx_xcbc_update(struct shash_desc *desc,
+ 					(u8 *) data,
+ 					to_process - sctx->count,
+ 					max_sg_len);
+-		nx_ctx->op.inlen = (nx_ctx->in_sg - in_sg) *
++		nx_ctx->op.inlen = (curr_nx_ctx.in_sg - in_sg) *
+ 					sizeof(struct nx_sg);
+ 
+ 		/* we've hit the nx chip previously and we're updating again,
+@@ -225,12 +228,12 @@ static int nx_xcbc_update(struct shash_desc *desc,
+ 		}
+ 
+ 		NX_CPB_FDM(csbcpb) |= NX_FDM_INTERMEDIATE;
+-		if (!nx_ctx->op.inlen || !nx_ctx->op.outlen) {
++		if (!curr_nx_ctx.op.inlen || !curr_nx_ctx.op.outlen) {
+ 			rc = -EINVAL;
+ 			goto out;
+ 		}
+ 
+-		rc = nx_hcall_sync(nx_ctx, &nx_ctx->op,
++		rc = nx_hcall_sync(&curr_nx_ctx, &curr_nx_ctx.op,
+ 			   desc->flags & CRYPTO_TFM_REQ_MAY_SLEEP);
+ 		if (rc)
+ 			goto out;
+@@ -243,7 +246,7 @@ static int nx_xcbc_update(struct shash_desc *desc,
+ 		total -= to_process;
+ 		data += to_process - sctx->count;
+ 		sctx->count = 0;
+-		in_sg = nx_ctx->in_sg;
++		in_sg = curr_nx_ctx.in_sg;
+ 	} while (leftover > AES_BLOCK_SIZE);
+ 
+ 	/* copy the leftover back into the state struct */
+@@ -251,7 +254,7 @@ static int nx_xcbc_update(struct shash_desc *desc,
+ 	sctx->count = leftover;
+ 
+ out:
+-	spin_unlock_irqrestore(&nx_ctx->lock, irq_flags);
++	kmem_cache_free(nx_driver.slab, curr_nx_ctx.kmem);
+ 	return rc;
+ }
+ 
+@@ -261,10 +264,14 @@ static int nx_xcbc_final(struct shash_desc *desc, u8 *out)
+ 	struct nx_crypto_ctx *nx_ctx = crypto_tfm_ctx(&desc->tfm->base);
+ 	struct nx_csbcpb *csbcpb = nx_ctx->csbcpb;
+ 	struct nx_sg *in_sg, *out_sg;
+-	unsigned long irq_flags;
+ 	int rc = 0;
+ 
+-	spin_lock_irqsave(&nx_ctx->lock, irq_flags);
++	struct nx_crypto_ctx curr_nx_ctx;
 +
-+	dev_info(&pdev->dev, "iPAQ micro battery driver\n");
-+	return 0;
-+}
++	if (nx_copy_ctx(&curr_nx_ctx, nx_ctx))
++		return -ENOMEM;
 +
-+static int micro_batt_remove(struct platform_device *pdev)
-+
-+{
-+	struct micro_battery *mb = platform_get_drvdata(pdev);
-+
-+	power_supply_unregister(&micro_ac_power);
-+	power_supply_unregister(&micro_batt_power);
-+	cancel_delayed_work_sync(&mb->update);
-+
-+	return 0;
-+}
-+
-+static int micro_batt_suspend(struct device *dev)
-+{
-+	struct micro_battery *mb = dev_get_drvdata(dev);
-+
-+	cancel_delayed_work_sync(&mb->update);
-+	return 0;
-+}
-+
-+static int micro_batt_resume(struct device *dev)
-+{
-+	struct micro_battery *mb = dev_get_drvdata(dev);
-+
-+	queue_delayed_work(mb->wq, &mb->update, msecs_to_jiffies(BATT_PERIOD));
-+	return 0;
-+}
-+
-+static const struct dev_pm_ops micro_batt_dev_pm_ops = {
-+	SET_SYSTEM_SLEEP_PM_OPS(micro_batt_suspend, micro_batt_resume)
-+};
-+
-+struct platform_driver micro_batt_device_driver = {
-+	.driver		= {
-+		.name	= "ipaq-micro-battery",
-+		.pm	= &micro_batt_dev_pm_ops,
-+	},
-+	.probe		= micro_batt_probe,
-+	.remove		= micro_batt_remove,
-+};
-+module_platform_driver(micro_batt_device_driver);
-+
-+MODULE_LICENSE("GPL");
-+MODULE_DESCRIPTION("driver for iPAQ Atmel micro battery");
-+MODULE_ALIAS("platform:battery-ipaq-micro");
++	csbcpb = curr_nx_ctx.csbcpb;
+ 
+ 	if (NX_CPB_FDM(csbcpb) & NX_FDM_CONTINUATION) {
+ 		/* we've hit the nx chip previously, now we're finalizing,
+@@ -285,20 +292,20 @@ static int nx_xcbc_final(struct shash_desc *desc, u8 *out)
+ 	 * this is not an intermediate operation */
+ 	NX_CPB_FDM(csbcpb) &= ~NX_FDM_INTERMEDIATE;
+ 
+-	in_sg = nx_build_sg_list(nx_ctx->in_sg, (u8 *)sctx->buffer,
+-				 sctx->count, nx_ctx->ap->sglen);
+-	out_sg = nx_build_sg_list(nx_ctx->out_sg, out, AES_BLOCK_SIZE,
+-				  nx_ctx->ap->sglen);
++	in_sg = nx_build_sg_list(curr_nx_ctx.in_sg, (u8 *)sctx->buffer,
++				 sctx->count, curr_nx_ctx.ap->sglen);
++	out_sg = nx_build_sg_list(curr_nx_ctx.out_sg, out, AES_BLOCK_SIZE,
++				  curr_nx_ctx.ap->sglen);
+ 
+-	nx_ctx->op.inlen = (nx_ctx->in_sg - in_sg) * sizeof(struct nx_sg);
+-	nx_ctx->op.outlen = (nx_ctx->out_sg - out_sg) * sizeof(struct nx_sg);
++	curr_nx_ctx.op.inlen = (curr_nx_ctx.in_sg - in_sg) * sizeof(struct nx_sg);
++	curr_nx_ctx.op.outlen = (curr_nx_ctx.out_sg - out_sg) * sizeof(struct nx_sg);
+ 
+-	if (!nx_ctx->op.outlen) {
++	if (!curr_nx_ctx.op.outlen) {
+ 		rc = -EINVAL;
+ 		goto out;
+ 	}
+ 
+-	rc = nx_hcall_sync(nx_ctx, &nx_ctx->op,
++	rc = nx_hcall_sync(&curr_nx_ctx, &curr_nx_ctx.op,
+ 			   desc->flags & CRYPTO_TFM_REQ_MAY_SLEEP);
+ 	if (rc)
+ 		goto out;
+@@ -307,7 +314,7 @@ static int nx_xcbc_final(struct shash_desc *desc, u8 *out)
+ 
+ 	memcpy(out, csbcpb->cpb.aes_xcbc.out_cv_mac, AES_BLOCK_SIZE);
+ out:
+-	spin_unlock_irqrestore(&nx_ctx->lock, irq_flags);
++	kmem_cache_free(nx_driver.slab, curr_nx_ctx.kmem);
+ 	return rc;
+ }
+ 
 -- 
-1.9.3
+1.7.1
 
