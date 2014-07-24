@@ -1,64 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935214AbaGXKIV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 06:08:21 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54933 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934571AbaGXJsG (ORCPT
+	id S935226AbaGXKIj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 06:08:39 -0400
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:60669 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934765AbaGXKIh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 05:48:06 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Alex Deucher <alexander.deucher@amd.com>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 071/128] drm/radeon/dpm: fix typo in vddci setup for eg/btc
-Date: Thu, 24 Jul 2014 10:45:20 +0100
-Message-Id: <1406195177-8656-72-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1406195177-8656-1-git-send-email-luis.henriques@canonical.com>
-References: <1406195177-8656-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	Thu, 24 Jul 2014 06:08:37 -0400
+MIME-Version: 1.0
+In-Reply-To: <1405476113-10127-1-git-send-email-huayi.li@csr.com>
+References: <1405476113-10127-1-git-send-email-huayi.li@csr.com>
+From: Barry Song <21cnbao@gmail.com>
+Date: Thu, 24 Jul 2014 18:08:16 +0800
+Message-ID: <CAGsJ_4y4fw4rfkhntMYG19USsaxBhsyCj41wDDeXDURvR3XEEg@mail.gmail.com>
+Subject: Re: [PATCH v5 2/4] pwm: sirf: add dt-binding document
+To: Huayi Li <huayi.li@csr.com>
+Cc: Thierry Reding <thierry.reding@gmail.com>, linux-pwm@vger.kernel.org,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Rongjun Ying <rongjun.ying@csr.com>, Barry Song <barry.song@csr.com>,
+        DL-SHA-WorkGroupLinux <workgroup.linux@csr.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.14 -stable review patch.  If anyone has any objections, please let me know.
+2014-07-16 10:01 GMT+08:00 Huayi Li <huayi.li@csr.com>:
+> This patch adds dt-binding document for pwm-sirf. here the controller clock
+> can't generate PWM signals, so we need seperate clock as signal source.
+>
+> Signed-off-by: Huayi Li <huayi.li@csr.com>
 
-------------------
+Reviewed-by: Barry Song <Baohua.Song@csr.com>
 
-From: Alex Deucher <alexander.deucher@amd.com>
+except that the commit log has not explained enough clearly that every
+pwm channel can choice one from five clock sources to generate PWM
+wave.
 
-commit e07929810f0a19ddd756558290c7d72827cbfcd9 upstream.
+> ---
+>  Documentation/devicetree/bindings/pwm/pwm-sirf.txt | 29 ++++++++++++++++++++++
+>  1 file changed, 29 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/pwm/pwm-sirf.txt
+>
+> diff --git a/Documentation/devicetree/bindings/pwm/pwm-sirf.txt b/Documentation/devicetree/bindings/pwm/pwm-sirf.txt
+> new file mode 100644
+> index 0000000..221e5d9
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/pwm/pwm-sirf.txt
+> @@ -0,0 +1,29 @@
+> +SiRF prima2 & atlas6 PWM drivers
+> +
+> +Required properties:
+> +- compatible: "sirf,prima2-pwm"
+> +- reg: physical base address and length of the controller's registers
+> +- #pwm-cells: should be 2. See pwm.txt in this directory for a description of
+> +  the cells format.
+> +- clocks: Must contain an entry for each entry in clock-names.
+> +  See ../clock/prima2-clock.txt for details.
+> +- clock-names: Must include the following entries:
+> +  of clock sources to generate PWM signal,
+> +  - pwmc: PWM controller clock
+> +  - sigsrc0: source clock 0 for PWM
+> +  - sigsrc1: source clock 1 for PWM
+> +  - sigsrc2: source clock 2 for PWM
+> +  - sigsrc3: source clock 3 for PWM
+> +  - sigsrc4: source clock 4 for PWM
+> +
+> +Example:
+> +
+> +pwm: pwm@b0130000 {
+> +       compatible = "sirf,prima2-pwm";
+> +       #pwm-cells = <2>;
+> +       reg = <0xb0130000 0x10000>;
+> +       clocks = <&clks 21>, <&clks 1>, <&clks 2>,
+> +              <&clks 3>, <&clks 0>, <&clks 4>;
+> +       clock-names = "pwmc", "sigsrc0", "sigsrc1",
+> +               "sigsrc2", "sigsrc3", "sigsrc4";
+> +};
+> --
+> 1.9.3
+>
 
-We were using the vddc mask rather than the vddci mask.
-
-Bug:
-https://bugzilla.kernel.org/show_bug.cgi?id=79071
-
-Possibly also fixes:
-https://bugzilla.kernel.org/show_bug.cgi?id=68571
-
-Noticed-by:  Jonathan Howard <jonathan@unbiased.name>
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- drivers/gpu/drm/radeon/cypress_dpm.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/gpu/drm/radeon/cypress_dpm.c b/drivers/gpu/drm/radeon/cypress_dpm.c
-index 7e5d0b570a30..06338db6d7f1 100644
---- a/drivers/gpu/drm/radeon/cypress_dpm.c
-+++ b/drivers/gpu/drm/radeon/cypress_dpm.c
-@@ -1549,7 +1549,7 @@ int cypress_populate_smc_voltage_tables(struct radeon_device *rdev,
- 
- 		table->voltageMaskTable.highMask[RV770_SMC_VOLTAGEMASK_VDDCI] = 0;
- 		table->voltageMaskTable.lowMask[RV770_SMC_VOLTAGEMASK_VDDCI] =
--			cpu_to_be32(eg_pi->vddc_voltage_table.mask_low);
-+			cpu_to_be32(eg_pi->vddci_voltage_table.mask_low);
- 	}
- 
- 	return 0;
--- 
-1.9.1
-
+-barry
