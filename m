@@ -1,174 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759479AbaGXPLG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 11:11:06 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56885 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759387AbaGXPLD (ORCPT
+	id S1759380AbaGXPPv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 11:15:51 -0400
+Received: from mga02.intel.com ([134.134.136.20]:37235 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759184AbaGXPPt convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 11:11:03 -0400
-Date: Thu, 24 Jul 2014 15:10:50 +0000
-From: Serge Hallyn <serge.hallyn@ubuntu.com>
-To: Aditya Kali <adityakali@google.com>
-Cc: tj@kernel.org, lizefan@huawei.com, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
-        mingo@redhat.com, containers@lists.linux-foundation.org
-Subject: Re: [PATCH 1/5] kernfs: Add API to get generate relative kernfs path
-Message-ID: <20140724151049.GK26600@ubuntumail>
-References: <adityakali-cgroupns>
- <1405626731-12220-1-git-send-email-adityakali@google.com>
- <1405626731-12220-2-git-send-email-adityakali@google.com>
+	Thu, 24 Jul 2014 11:15:49 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,724,1400050800"; 
+   d="scan'208";a="548465114"
+From: "Zhang, Rui" <rui.zhang@intel.com>
+To: Laxman Dewangan <ldewangan@nvidia.com>,
+        "eduardo.valentin@gmail.com" <eduardo.valentin@gmail.com>
+CC: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] thermal: of: look for sensor driver parent node if
+ device node missing
+Thread-Topic: [PATCH] thermal: of: look for sensor driver parent node if
+ device node missing
+Thread-Index: AQHPn1Sn5O7ekVGZ60igMbnc9VG8rpuuhEAAgADgrFA=
+Date: Thu, 24 Jul 2014 15:15:00 +0000
+Message-ID: <744357E9AAD1214791ACBA4B0B90926301396F53@SHSMSX101.ccr.corp.intel.com>
+References: <1405336354-31310-1-git-send-email-ldewangan@nvidia.com>
+ <53D0D694.9040101@nvidia.com>
+In-Reply-To: <53D0D694.9040101@nvidia.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1405626731-12220-2-git-send-email-adityakali@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Aditya Kali (adityakali@google.com):
-> The new function kernfs_path_from_node() generates and returns
-> kernfs path of a given kernfs_node relative to a given parent
-> kernfs_node.
+Hi, Laxman,
+
+As Eduardo is the of thermal author and maintainer, I will take your patch only if you can get ACK from Eduardo.
+
+Eduardo,
+Do you have any comments on this?
+
+Thanks,
+rui
+
+> -----Original Message-----
+> From: Laxman Dewangan [mailto:ldewangan@nvidia.com]
+> Sent: Thursday, July 24, 2014 5:49 PM
+> To: Zhang, Rui; eduardo.valentin@ti.com
+> Cc: linux-pm@vger.kernel.org; linux-kernel@vger.kernel.org
+> Subject: Re: [PATCH] thermal: of: look for sensor driver parent node if
+> device node missing
+> Importance: High
 > 
-> Signed-off-by: Aditya Kali <adityakali@google.com>
-> ---
->  fs/kernfs/dir.c        | 51 ++++++++++++++++++++++++++++++++++++++++----------
->  include/linux/kernfs.h |  3 +++
->  2 files changed, 44 insertions(+), 10 deletions(-)
-> 
-> diff --git a/fs/kernfs/dir.c b/fs/kernfs/dir.c
-> index a693f5b..2224f08 100644
-> --- a/fs/kernfs/dir.c
-> +++ b/fs/kernfs/dir.c
-> @@ -44,14 +44,22 @@ static int kernfs_name_locked(struct kernfs_node *kn, char *buf, size_t buflen)
->  	return strlcpy(buf, kn->parent ? kn->name : "/", buflen);
->  }
->  
-> -static char * __must_check kernfs_path_locked(struct kernfs_node *kn, char *buf,
-> -					      size_t buflen)
-> +static char * __must_check kernfs_path_from_node_locked(
-> +	struct kernfs_node *kn_root,
-> +	struct kernfs_node *kn,
-> +	char *buf,
-> +	size_t buflen)
->  {
->  	char *p = buf + buflen;
->  	int len;
->  
->  	*--p = '\0';
-
-I realize this is currently couldn't happen (hm, well through the
-EXPORT_SYMBOL_GPL(kernfs_path) it actually could), and it's the same in the
-current code, but could you add a BUG_ON(!buflen) here?
-
-Otherwise looks good to me.
-
-Acked-by: Serge E. Hallyn <serge.hallyn@ubuntu.com>
-
-
->  
-> +	if (kn == kn_root) {
-> +		*--p = '/';
-> +		return p;
-> +	}
-> +
->  	do {
->  		len = strlen(kn->name);
->  		if (p - buf < len + 1) {
-> @@ -63,6 +71,8 @@ static char * __must_check kernfs_path_locked(struct kernfs_node *kn, char *buf,
->  		memcpy(p, kn->name, len);
->  		*--p = '/';
->  		kn = kn->parent;
-> +		if (kn == kn_root)
-> +			break;
->  	} while (kn && kn->parent);
->  
->  	return p;
-> @@ -92,26 +102,47 @@ int kernfs_name(struct kernfs_node *kn, char *buf, size_t buflen)
->  }
->  
->  /**
-> - * kernfs_path - build full path of a given node
-> + * kernfs_path_from_node - build path of node @kn relative to @kn_root.
-> + * @kn_root: parent kernfs_node relative to which we need to build the path
->   * @kn: kernfs_node of interest
-> - * @buf: buffer to copy @kn's name into
-> + * @buf: buffer to copy @kn's path into
->   * @buflen: size of @buf
->   *
-> - * Builds and returns the full path of @kn in @buf of @buflen bytes.  The
-> - * path is built from the end of @buf so the returned pointer usually
-> + * Builds and returns @kn's path relative to @kn_root. @kn_root is expected to
-> + * be parent of @kn at some level. If this is not true or if @kn_root is NULL,
-> + * then full path of @kn is returned.
-> + * The path is built from the end of @buf so the returned pointer usually
->   * doesn't match @buf.  If @buf isn't long enough, @buf is nul terminated
->   * and %NULL is returned.
->   */
-> -char *kernfs_path(struct kernfs_node *kn, char *buf, size_t buflen)
-> +char *kernfs_path_from_node(struct kernfs_node *kn_root, struct kernfs_node *kn,
-> +			    char *buf, size_t buflen)
->  {
->  	unsigned long flags;
->  	char *p;
->  
->  	spin_lock_irqsave(&kernfs_rename_lock, flags);
-> -	p = kernfs_path_locked(kn, buf, buflen);
-> +	p = kernfs_path_from_node_locked(kn_root, kn, buf, buflen);
->  	spin_unlock_irqrestore(&kernfs_rename_lock, flags);
->  	return p;
->  }
-> +EXPORT_SYMBOL_GPL(kernfs_path_from_node);
-> +
-> +/**
-> + * kernfs_path - build full path of a given node
-> + * @kn: kernfs_node of interest
-> + * @buf: buffer to copy @kn's name into
-> + * @buflen: size of @buf
-> + *
-> + * Builds and returns the full path of @kn in @buf of @buflen bytes.  The
-> + * path is built from the end of @buf so the returned pointer usually
-> + * doesn't match @buf.  If @buf isn't long enough, @buf is nul terminated
-> + * and %NULL is returned.
-> + */
-> +char *kernfs_path(struct kernfs_node *kn, char *buf, size_t buflen)
-> +{
-> +	return kernfs_path_from_node(NULL, kn, buf, buflen);
-> +}
->  EXPORT_SYMBOL_GPL(kernfs_path);
->  
->  /**
-> @@ -145,8 +176,8 @@ void pr_cont_kernfs_path(struct kernfs_node *kn)
->  
->  	spin_lock_irqsave(&kernfs_rename_lock, flags);
->  
-> -	p = kernfs_path_locked(kn, kernfs_pr_cont_buf,
-> -			       sizeof(kernfs_pr_cont_buf));
-> +	p = kernfs_path_from_node_locked(NULL, kn, kernfs_pr_cont_buf,
-> +					 sizeof(kernfs_pr_cont_buf));
->  	if (p)
->  		pr_cont("%s", p);
->  	else
-> diff --git a/include/linux/kernfs.h b/include/linux/kernfs.h
-> index 20f4935..1627341 100644
-> --- a/include/linux/kernfs.h
-> +++ b/include/linux/kernfs.h
-> @@ -257,6 +257,9 @@ static inline bool kernfs_ns_enabled(struct kernfs_node *kn)
->  }
->  
->  int kernfs_name(struct kernfs_node *kn, char *buf, size_t buflen);
-> +char * __must_check kernfs_path_from_node(struct kernfs_node *root_kn,
-> +					  struct kernfs_node *kn, char *buf,
-> +					  size_t buflen);
->  char * __must_check kernfs_path(struct kernfs_node *kn, char *buf,
->  				size_t buflen);
->  void pr_cont_kernfs_name(struct kernfs_node *kn);
-> -- 
-> 2.0.0.526.g5318336
-> 
-> _______________________________________________
-> Containers mailing list
-> Containers@lists.linux-foundation.org
-> https://lists.linuxfoundation.org/mailman/listinfo/containers
+> On Monday 14 July 2014 04:42 PM, Laxman Dewangan wrote:
+> > There are some mfd devices which supports junction thermal interrupt
+> > like ams,AS3722. The DT binding of these devices are defined as the
+> > flat and drivers for sub module of such devices are registered as the
+> > mfd_add_devices. In this method, the sub devices registered as
+> > platform driver and these do not have the of_node pointer on their
+> > device structure. In this case, use the parent of_node pointer to get
+> > the required of_node pointer.
+> >
+> Any comment please?
