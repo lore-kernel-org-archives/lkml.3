@@ -1,86 +1,483 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934571AbaGXTan (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 15:30:43 -0400
-Received: from mail.orcon.net.nz ([219.88.242.56]:55215 "EHLO
-	mail.orcon.net.nz" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S933705AbaGXTam (ORCPT
+	id S934574AbaGXTb4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 15:31:56 -0400
+Received: from mail-oa0-f44.google.com ([209.85.219.44]:65321 "EHLO
+	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934157AbaGXTbz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 15:30:42 -0400
-Date: Fri, 25 Jul 2014 07:30:25 +1200
-From: Michael Cree <mcree@orcon.net.nz>
-To: Richard Henderson <rth@twiddle.net>
-Cc: linux-alpha@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: Bug: retry of clone() on Alpha can result in zeroed process
- thread pointer
-Message-ID: <20140724193025.GA2540@omega>
-Mail-Followup-To: Michael Cree <mcree@orcon.net.nz>,
-	Richard Henderson <rth@twiddle.net>, linux-alpha@vger.kernel.org,
-	linux-kernel@vger.kernel.org
-References: <20140723085244.GB4799@omega>
- <53D14E48.3040202@twiddle.net>
+	Thu, 24 Jul 2014 15:31:55 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53D14E48.3040202@twiddle.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Bayes-Prob: 0.0001 (Score 0: No Bayes scoring rules defined, tokens from: outbound)
-X-Spam-Score: -1.63 () [Hold at 3.00] FREEMAIL_FROM:0.001,FSL_HELO_NON_FQDN_1:0.001,HELO_NO_DOMAIN:0.001,PIPE_OBFUSCATION:1,RDNS_DYNAMIC:0.363,CC(NZ:-3)
-X-CanIt-Geo: ip=60.234.221.162; country=NZ; latitude=-41.0000; longitude=174.0000; http://maps.google.com/maps?q=-41.0000,174.0000&z=6
-X-CanItPRO-Stream: base:outbound
-X-Canit-Stats-ID: 01MujuvAt - 225f43fa560d - 20140725
+In-Reply-To: <20140724165047.683455139@openvz.org>
+References: <20140724164657.452106845@openvz.org>
+	<20140724165047.683455139@openvz.org>
+Date: Thu, 24 Jul 2014 12:31:54 -0700
+X-Google-Sender-Auth: nHOYEiF9jq9sJs1rQkrZptH9W0E
+Message-ID: <CAGXu5jL9xMQ3G-pgVneUFqx=v6C7L0-7SBTJ0_bC2B5H0BfeDQ@mail.gmail.com>
+Subject: Re: [rfc 4/4] prctl: PR_SET_MM -- Introduce PR_SET_MM_MAP operation, v3
+From: Kees Cook <keescook@chromium.org>
+To: Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
+        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Andrew Vagin <avagin@openvz.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Vasiliy Kulikov <segoon@openwall.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michael Kerrisk-manpages <mtk.manpages@gmail.com>,
+        Julien Tinnes <jln@google.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 24, 2014 at 08:19:52AM -1000, Richard Henderson wrote:
-> On 07/22/2014 10:52 PM, Michael Cree wrote:
-> > Running strace on nptl/tst-eintr3 reveals that the clone() syscall
-> > is retried by the kernel if an ERESTARTNOINTR error occurs.  At
-> > $syscall_error in arch/alpha/kernel/entry.S the kernel handles the
-> > error and in doing that it writes to 72(sp) which is where the value
-> > of the a3 CPU register on entry to the kernel is stored.  Then the
-> > kernel retries the clone() function.  But the alpha specific code
-> > for copy_thread() in arch/alpha/kernel/process.c does not use the
-> > passed a3 cpu register (the argument tls), instead it goes to the
-> > saved stack to get the value of the a3 register, which on the
-> > second call to clone() has been modified to no longer be the value
-> > of the a3 cpu register on entry to the kernel.  And a latent bomb
-> > is laid for userspace in the form of an incorrect process unique
-> > value (which is the thread pointer) in the PCB.
-> > 
-> > Am I correct in my analysis and, if so, can we get a fix for this
-> > please.
-> 
-> Well...  let me start with the assumption that we can't possibly restart unless
-> the syscall fails with -ERESTART*.
-> 
-> Before we clobber 72($sp), $syscall_error saves the old value in $19.  This is
-> the r19 parameter to do_work_pending, and is passed all the way down to
-> syscall_restart where we do restore the original value of a3 for ERESTARTNOINTR.
-> 
-> So if there's a path that leads to restart, but doesn't save a3 before
-> clobbering, I don't see it.  Do you have an strace dump that shows this?
+On Thu, Jul 24, 2014 at 9:47 AM, Cyrill Gorcunov <gorcunov@openvz.org> wrote:
+> During development of c/r we've noticed that in case if we need to
+> support user namespaces we face a problem with capabilities in
+> prctl(PR_SET_MM, ...) call, in particular once new user namespace
+> is created capable(CAP_SYS_RESOURCE) no longer passes.
+>
+> A approach is to eliminate CAP_SYS_RESOURCE check but pass all
+> new values in one bundle, which would allow the kernel to make
+> more intensive test for sanity of values and same time allow us to
+> support checkpoint/restore of user namespaces.
+>
+> Thus a new command PR_SET_MM_MAP introduced. It takes a pointer of
+> prctl_mm_map structure which carries all the members to be updated.
+>
+>         prctl(PR_SET_MM, PR_SET_MM_MAP, struct prctl_mm_map *, size)
+>
+>         struct prctl_mm_map {
+>                 __u64   start_code;
+>                 __u64   end_code;
+>                 __u64   start_data;
+>                 __u64   end_data;
+>                 __u64   start_brk;
+>                 __u64   brk;
+>                 __u64   start_stack;
+>                 __u64   arg_start;
+>                 __u64   arg_end;
+>                 __u64   env_start;
+>                 __u64   env_end;
+>                 __u64   *auxv;
+>                 __u32   auxv_size;
+>                 __u32   exe_fd;
+>         };
+>
+> All members except @exe_fd correspond ones of struct mm_struct.
+> To figure out which available values these members may take here
+> are meanings of the members.
+>
+>  - start_code, end_code: represent bounds of executable code area
+>  - start_data, end_data: represent bounds of data area
+>  - start_brk, brk: used to calculate bounds for brk() syscall
+>  - start_stack: used when accounting space needed for command
+>    line arguments, environment and shmat() syscall
+>  - arg_start, arg_end, env_start, env_end: represent memory area
+>    supplied for command line arguments and environment variables
+>  - auxv, auxv_size: carries auxiliary vector, Elf format specifics
+>  - exe_fd: file descriptor number for executable link (/proc/self/exe)
+>
+> Thus we apply the following requirements to the values
+>
+> 1) Any member except @auxv, @auxv_size, @exe_fd is rather an address
+>    in user space thus it must be laying inside [mmap_min_addr, mmap_max_addr)
+>    interval.
+>
+> 2) While @[start|end]_code and @[start|end]_data may point to an nonexisting
+>    VMAs (say a program maps own new .text and .data segments during execution)
+>    the rest of members should belong to VMA which must exist.
+>
+> 3) Addresses must be ordered, ie @start_ member must not be greater or
+>    equal to appropriate @end_ member.
+>
+> 4) As in regular Elf loading procedure we require that @start_brk and
+>    @brk be greater than @end_data.
+>
+> 5) If RLIMIT_DATA rlimit is set to non-infinity new values should not
+>    exceed existing limit. Same applies to RLIMIT_STACK.
+>
+> 6) Auxiliary vector size must not exceed existing one (which is
+>    predefined as AT_VECTOR_SIZE and depends on architecture).
+>
+> 7) File descriptor passed in @exe_file should be pointing
+>    to executable file (because we use existing prctl_set_mm_exe_file_locked
+>    helper it ensures that the file we are going to use as exe link has all
+>    required permission granted).
+>
+> Now about where these members are involved inside kernel code:
+>
+>  - @start_code and @end_code are used in /proc/$pid/[stat|statm] output;
+>
+>  - @start_data and @end_data are used in /proc/$pid/[stat|statm] output,
+>    also they are considered if there enough space for brk() syscall
+>    result if RLIMIT_DATA is set;
+>
+>  - @start_brk shown in /proc/$pid/stat output and accounted in brk()
+>    syscall if RLIMIT_DATA is set; also this member is tested to
+>    find a symbolic name of mmap event for perf system (we choose
+>    if event is generated for "heap" area); one more aplication is
+>    selinux -- we test if a process has PROCESS__EXECHEAP permission
+>    if trying to make heap area being executable with mprotect() syscall;
+>
+>  - @brk is a current value for brk() syscall which lays inside heap
+>    area, it's shown in /proc/$pid/stat. When syscall brk() succesfully
+>    provides new memory area to a user space upon brk() completion the
+>    mm::brk is updated to carry new value;
+>
+>    Both @start_brk and @brk are actively used in /proc/$pid/maps
+>    and /proc/$pid/smaps output to find a symbolic name "heap" for
+>    VMA being scanned;
+>
+>  - @start_stack is printed out in /proc/$pid/stat and used to
+>    find a symbolic name "stack" for task and threads in
+>    /proc/$pid/maps and /proc/$pid/smaps output, and as the same
+>    as with @start_brk -- perf system uses it for event naming.
+>    Also kernel treat this member as a start address of where
+>    to map vDSO pages and to check if there is enough space
+>    for shmat() syscall;
+>
+>  - @arg_start, @arg_end, @env_start and @env_end are printed out
+>    in /proc/$pid/stat. Another access to the data these members
+>    represent is to read /proc/$pid/environ or /proc/$pid/cmdline.
+>    Any attempt to read these areas kernel tests with access_process_vm
+>    helper so a user must have enough rights for this action;
+>
+>  - @auxv and @auxv_size may be read from /proc/$pid/auxv. Strictly
+>    speaking kernel doesn't care much about which exactly data is
+>    sitting there because it is solely for userspace;
+>
+>  - @exe_fd is referred from /proc/$pid/exe and when generating
+>    coredump. We uses prctl_set_mm_exe_file_locked helper to update
+>    this member, so exe-file link modification remains one-shot
+>    action.
+>
+> Still note that updating exe-file link now doesn't require sys-resource
+> capability anymore, after all there is no much profit in preventing setup
+> own file link (there are a number of ways to execute own code -- ptrace,
+> ld-preload, so that the only reliable way to find which exactly code
+> is executed is to inspect running program memory). Still we require
+> the caller to be at least user-namespace root user.
+>
+> I believe the old interface should be deprecated and ripped off
+> in a couple of kernel releases if no one against.
+>
+> To test if new interface is implemented in the kernel one
+> can pass PR_SET_MM_MAP_SIZE opcode and the kernel returns
+> the size of currently supported struct prctl_mm_map.
+>
+> v2:
+>  - compact macros (by keescook@)
+>  - wrap new code with CONFIG_ (by akpm@)
+>
+> v3 (by jln@):
+>  - use __prctl_check_order for brk and start_brk
+>  - use may_adjust_brk helper
+>  - make sure that only root can update @exe_fd link
+>
+> Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+> Cc: Kees Cook <keescook@chromium.org>
+> Cc: Tejun Heo <tj@kernel.org>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Andrew Vagin <avagin@openvz.org>
+> Cc: Eric W. Biederman <ebiederm@xmission.com>
+> Cc: H. Peter Anvin <hpa@zytor.com>
+> Cc: Serge Hallyn <serge.hallyn@canonical.com>
+> Cc: Pavel Emelyanov <xemul@parallels.com>
+> Cc: Vasiliy Kulikov <segoon@openwall.com>
+> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> Cc: Michael Kerrisk <mtk.manpages@gmail.com>
+> Cc: Julien Tinnes <jln@google.com>
+> ---
+>  include/uapi/linux/prctl.h |   25 +++++
+>  kernel/sys.c               |  211 ++++++++++++++++++++++++++++++++++++++++++++-
+>  2 files changed, 235 insertions(+), 1 deletion(-)
+>
+> Index: linux-2.6.git/include/uapi/linux/prctl.h
+> ===================================================================
+> --- linux-2.6.git.orig/include/uapi/linux/prctl.h
+> +++ linux-2.6.git/include/uapi/linux/prctl.h
+> @@ -119,6 +119,31 @@
+>  # define PR_SET_MM_ENV_END             11
+>  # define PR_SET_MM_AUXV                        12
+>  # define PR_SET_MM_EXE_FILE            13
+> +# define PR_SET_MM_MAP                 14
+> +# define PR_SET_MM_MAP_SIZE            15
+> +
+> +/*
+> + * This structure provides new memory descriptor
+> + * map which mostly modifies /proc/pid/stat[m]
+> + * output for a task. This mostly done in a
+> + * sake of checkpoint/restore functionality.
+> + */
+> +struct prctl_mm_map {
+> +       __u64   start_code;             /* code section bounds */
+> +       __u64   end_code;
+> +       __u64   start_data;             /* data section bounds */
+> +       __u64   end_data;
+> +       __u64   start_brk;              /* heap for brk() syscall */
+> +       __u64   brk;
+> +       __u64   start_stack;            /* stack starts at */
+> +       __u64   arg_start;              /* command line arguments bounds */
+> +       __u64   arg_end;
+> +       __u64   env_start;              /* environment variables bounds */
+> +       __u64   env_end;
+> +       __u64   *auxv;                  /* auxiliary vector */
+> +       __u32   auxv_size;              /* vector size */
+> +       __u32   exe_fd;                 /* /proc/$pid/exe link file */
+> +};
+>
+>  /*
+>   * Set specific pid that is allowed to ptrace the current task.
+> Index: linux-2.6.git/kernel/sys.c
+> ===================================================================
+> --- linux-2.6.git.orig/kernel/sys.c
+> +++ linux-2.6.git/kernel/sys.c
+> @@ -1687,6 +1687,208 @@ exit:
+>         return err;
+>  }
+>
+> +#ifdef CONFIG_CHECKPOINT_RESTORE
+> +/*
+> + * WARNING: we don't require any capability here so be very careful
+> + * in what is allowed for modification from userspace.
+> + */
+> +static int validate_prctl_map_locked(struct prctl_mm_map *prctl_map)
+> +{
+> +       unsigned long mmap_max_addr = TASK_SIZE;
+> +       struct mm_struct *mm = current->mm;
+> +       struct vm_area_struct *stack_vma;
+> +       int error = 0;
+> +
+> +       /*
+> +        * Make sure the members are not somewhere outside
+> +        * of allowed address space.
+> +        */
+> +#define __prctl_check_addr_space(__member)                                     \
+> +       ({                                                                      \
+> +               int __rc;                                                       \
+> +               if ((unsigned long)prctl_map->__member < mmap_max_addr &&       \
+> +                   (unsigned long)prctl_map->__member >= mmap_min_addr)        \
+> +                       __rc = 0;                                               \
+> +               else                                                            \
+> +                       __rc = -EINVAL;                                         \
+> +               __rc;                                                           \
+> +       })
+> +       error |= __prctl_check_addr_space(start_code);
+> +       error |= __prctl_check_addr_space(end_code);
+> +       error |= __prctl_check_addr_space(start_data);
+> +       error |= __prctl_check_addr_space(end_data);
+> +       error |= __prctl_check_addr_space(start_stack);
+> +       error |= __prctl_check_addr_space(start_brk);
+> +       error |= __prctl_check_addr_space(brk);
+> +       error |= __prctl_check_addr_space(arg_start);
+> +       error |= __prctl_check_addr_space(arg_end);
+> +       error |= __prctl_check_addr_space(env_start);
+> +       error |= __prctl_check_addr_space(env_end);
+> +       if (error)
+> +               goto out;
+> +#undef __prctl_check_addr_space
+> +
+> +       /*
+> +        * Stack, brk, command line arguments and environment must exist.
+> +        */
+> +       stack_vma = find_vma(mm, (unsigned long)prctl_map->start_stack);
+> +       if (!stack_vma) {
+> +               error = -EINVAL;
+> +               goto out;
+> +       }
+> +#define __prctl_check_vma(__member)                                            \
+> +       find_vma(mm, (unsigned long)prctl_map->__member) ? 0 : -EINVAL
+> +       error |= __prctl_check_vma(start_brk);
+> +       error |= __prctl_check_vma(brk);
+> +       error |= __prctl_check_vma(arg_start);
+> +       error |= __prctl_check_vma(arg_end);
+> +       error |= __prctl_check_vma(env_start);
+> +       error |= __prctl_check_vma(env_end);
+> +       if (error)
+> +               goto out;
+> +#undef __prctl_check_vma
+> +
+> +       /*
+> +        * Make sure the pairs are ordered.
+> +        */
+> +#define __prctl_check_order(__m1, __op, __m2)                                  \
+> +       ((unsigned long)prctl_map->__m1 __op                                    \
+> +        (unsigned long)prctl_map->__m2) ? 0 : -EINVAL
+> +       error |= __prctl_check_order(start_code, <, end_code);
+> +       error |= __prctl_check_order(start_data, <, end_data);
+> +       error |= __prctl_check_order(start_brk, <=, brk);
+> +       error |= __prctl_check_order(arg_start,  <, arg_end);
+> +       error |= __prctl_check_order(env_start,  <, env_end);
+> +       if (error)
+> +               goto out;
+> +#undef __prctl_check_order
+> +
+> +       error = -EINVAL;
+> +
+> +       /*
+> +        * @brk should be after @end_data in traditional maps.
+> +        */
+> +       if (prctl_map->start_brk <= prctl_map->end_data ||
+> +           prctl_map->brk <= prctl_map->end_data)
+> +               goto out;
+> +
+> +       /*
+> +        * Neither we should allow to override limits if they set.
+> +        */
+> +       if (may_adjust_brk(rlimit(RLIMIT_DATA), prctl_map->brk,
+> +                          prctl_map->start_brk, prctl_map->end_data,
+> +                          prctl_map->start_data))
+> +                       goto out;
+> +
+> +#ifdef CONFIG_STACK_GROWSUP
+> +       if (may_adjust_brk(rlimit(RLIMIT_STACK),
+> +                          stack_vma->vm_end,
+> +                          prctl_map->start_stack, 0, 0))
+> +#else
+> +       if (may_adjust_brk(rlimit(RLIMIT_STACK),
+> +                          prctl_map->start_stack,
+> +                          stack_vma->vm_start, 0, 0))
+> +#endif
+> +               goto out;
 
-Yes.  This is an example of a run of nptl/tst-eintr3 that fails after
-cutting off quite a bit of stuff at the start to get to the relevant
-section:
+Ah! Sorry, I missed this use of may_adjust_brk here. Perhaps rename
+it, since we're not checking brk here, and pass the RLIMIT_* value to
+the function, which can look it up itself? "check_vma_rlimit" ?
 
-clone(child_stack=0x2000121eae0, flags=CLONE_VM|CLONE_FS|CLONE_FILES|CLONE_SIGHAND|CLONE_THREAD|CLONE_SYSVSEM|CLONE_SETTLS|CLONE_PARENT_SETTID|CLONE_CHILD_CLEARTID, parent_tidptr=0x2000121f2c0, tls=0x2000121f8e0, child_tidptr=0x2000121f2c0) = ? ERESTARTNOINTR (To be restarted)
---- SIGUSR1 {si_signo=SIGUSR1, si_code=SI_TKILL, si_pid=20086, si_uid=1000} ---
-write(1, ".", 1.)                        = 1
-sigreturn() (mask [])                   = -1 ERRNO_312 (Unknown error 312)
-clone(child_stack=0x2000121eae0, flags=CLONE_VM|CLONE_FS|CLONE_FILES|CLONE_SIGHAND|CLONE_THREAD|CLONE_SYSVSEM|CLONE_SETTLS|CLONE_PARENT_SETTID|CLONE_CHILD_CLEARTID, parent_tidptr=0x2000121f2c0, tls=0, child_tidptr=0x2000121f2c0) = 20089
-+++ killed by SIGSEGV +++
+> +
+> +       /*
+> +        * Someone is trying to cheat the auxv vector.
+> +        */
+> +       if (prctl_map->auxv_size) {
+> +               if (!prctl_map->auxv ||
+> +                   prctl_map->auxv_size > sizeof(mm->saved_auxv))
+> +                       goto out;
+> +       }
+> +
+> +       /*
+> +        * Finally, make sure the caller has the rights to
+> +        * change /proc/pid/exe link: only local root should
+> +        * be allowed to.
+> +        */
+> +       if (prctl_map->exe_fd != (u32)-1) {
+> +               struct user_namespace *ns = current_user_ns();
+> +               const struct cred *cred = current_cred();
+> +
+> +               if (!uid_eq(cred->uid, make_kuid(ns, 0)) ||
+> +                   !gid_eq(cred->gid, make_kgid(ns, 0)))
+> +                       goto out;
+> +       }
 
+I got tricked for a moment here. :) I see that even if we pass this
+check, prctl_set_mm_exe_file will still do the additional checks too
+during prctl_set_mm_map. Excellent!
 
-Note that the retry of clone() has zero for the tls argument.
+> +
+> +       error = 0;
+> +out:
+> +       return error;
+> +}
+> +
+> +static int prctl_set_mm_map(int opt, const void __user *addr, unsigned long data_size)
+> +{
+> +       struct prctl_mm_map prctl_map = { .exe_fd = (u32)-1, };
+> +       unsigned long user_auxv[AT_VECTOR_SIZE];
+> +       struct mm_struct *mm = current->mm;
+> +       int error = -EINVAL;
+> +
+> +       BUILD_BUG_ON(sizeof(user_auxv) != sizeof(mm->saved_auxv));
+> +
+> +       if (opt == PR_SET_MM_MAP_SIZE)
+> +               return put_user((unsigned int)sizeof(prctl_map),
+> +                               (unsigned int __user *)addr);
+> +
+> +       if (data_size != sizeof(prctl_map))
+> +               return -EINVAL;
+> +
+> +       if (copy_from_user(&prctl_map, addr, sizeof(prctl_map)))
+> +               return -EFAULT;
+> +
+> +       down_read(&mm->mmap_sem);
+> +
+> +       if (validate_prctl_map_locked(&prctl_map))
+> +               goto out;
+> +
+> +       if (prctl_map.auxv_size) {
+> +               up_read(&mm->mmap_sem);
+> +               memset(user_auxv, 0, sizeof(user_auxv));
+> +               error = copy_from_user(user_auxv,
+> +                                      (const void __user *)prctl_map.auxv,
+> +                                      prctl_map.auxv_size);
+> +               down_read(&mm->mmap_sem);
+> +               if (error)
+> +                       goto out;
+> +       }
+> +
+> +       if (prctl_map.exe_fd != (u32)-1) {
+> +               error = prctl_set_mm_exe_file_locked(mm, prctl_map.exe_fd);
+> +               if (error)
+> +                       goto out;
+> +       }
+> +
+> +       if (prctl_map.auxv_size) {
+> +               /* Last entry always must be AT_NULL */
+> +               user_auxv[AT_VECTOR_SIZE - 2] = AT_NULL;
+> +               user_auxv[AT_VECTOR_SIZE - 1] = AT_NULL;
+> +
+> +               task_lock(current);
+> +               memcpy(mm->saved_auxv, user_auxv, sizeof(user_auxv));
+> +               task_unlock(current);
+> +       }
+> +
+> +       mm->start_code  = prctl_map.start_code;
+> +       mm->end_code    = prctl_map.end_code;
+> +       mm->start_data  = prctl_map.start_data;
+> +       mm->end_data    = prctl_map.end_data;
+> +       mm->start_brk   = prctl_map.start_brk;
+> +       mm->brk         = prctl_map.brk;
+> +       mm->start_stack = prctl_map.start_stack;
+> +       mm->arg_start   = prctl_map.arg_start;
+> +       mm->arg_end     = prctl_map.arg_end;
+> +       mm->env_start   = prctl_map.env_start;
+> +       mm->env_end     = prctl_map.env_end;
+> +
+> +       error = 0;
+> +out:
+> +       up_read(&mm->mmap_sem);
+> +       return error;
+> +}
+> +#endif /* CONFIG_CHECKPOINT_RESTORE */
+> +
+>  static int prctl_set_mm(int opt, unsigned long addr,
+>                         unsigned long arg4, unsigned long arg5)
+>  {
+> @@ -1695,9 +1897,16 @@ static int prctl_set_mm(int opt, unsigne
+>         struct vm_area_struct *vma;
+>         int error;
+>
+> -       if (arg5 || (arg4 && opt != PR_SET_MM_AUXV))
+> +       if (arg5 || (arg4 && (opt != PR_SET_MM_AUXV &&
+> +                             opt != PR_SET_MM_MAP &&
+> +                             opt != PR_SET_MM_MAP_SIZE)))
+>                 return -EINVAL;
+>
+> +#ifdef CONFIG_CHECKPOINT_RESTORE
+> +       if (opt == PR_SET_MM_MAP || opt == PR_SET_MM_MAP_SIZE)
+> +               return prctl_set_mm_map(opt, (const void __user *)addr, arg4);
+> +#endif
+> +
+>         if (!capable(CAP_SYS_RESOURCE))
+>                 return -EPERM;
+>
+>
 
-Examining the resultant core dump reveals that tst-eintr3 segfaulted
-when trying to access a thread local variable and that register v0,
-used in calculating the TLS location and set up by the rduniq PALcall,
-is zero.
+I think this is looking good. Thanks for the refactoring!
 
-Cheers
-Michael.
+-Kees
 
+-- 
+Kees Cook
+Chrome OS Security
