@@ -1,40 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758733AbaGXJuY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 05:50:24 -0400
-Received: from hqemgate15.nvidia.com ([216.228.121.64]:9196 "EHLO
-	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757793AbaGXJuU (ORCPT
+	id S934884AbaGXJt0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 05:49:26 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:55202 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934841AbaGXJtQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 05:50:20 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Thu, 24 Jul 2014 02:42:23 -0700
-Message-ID: <53D0D694.9040101@nvidia.com>
-Date: Thu, 24 Jul 2014 15:19:08 +0530
-From: Laxman Dewangan <ldewangan@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: "rui.zhang@intel.com" <rui.zhang@intel.com>,
-        "eduardo.valentin@ti.com" <eduardo.valentin@ti.com>
-CC: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] thermal: of: look for sensor driver parent node if device
- node missing
-References: <1405336354-31310-1-git-send-email-ldewangan@nvidia.com>
-In-Reply-To: <1405336354-31310-1-git-send-email-ldewangan@nvidia.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+	Thu, 24 Jul 2014 05:49:16 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Joel Stanley <joel@jms.id.au>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 120/128] powerpc/perf: Clear MMCR2 when enabling PMU
+Date: Thu, 24 Jul 2014 10:46:09 +0100
+Message-Id: <1406195177-8656-121-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1406195177-8656-1-git-send-email-luis.henriques@canonical.com>
+References: <1406195177-8656-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 14 July 2014 04:42 PM, Laxman Dewangan wrote:
-> There are some mfd devices which supports junction thermal interrupt
-> like ams,AS3722. The DT binding of these devices are defined as the
-> flat and drivers for sub module of such devices are registered as
-> the mfd_add_devices. In this method, the sub devices registered as
-> platform driver and these do not have the of_node pointer on their
-> device structure. In this case, use the parent of_node pointer to
-> get the required of_node pointer.
->
-Any comment please?
+3.11.10.14 -stable review patch.  If anyone has any objections, please let me know.
+
+------------------
+
+From: Joel Stanley <joel@jms.id.au>
+
+commit b50a6c584bb47b370f84bfd746770c0bbe7129b7 upstream.
+
+On POWER8 when switching to a KVM guest we set bits in MMCR2 to freeze
+the PMU counters. Aside from on boot they are then never reset,
+resulting in stuck perf counters for any user in the guest or host.
+
+We now set MMCR2 to 0 whenever enabling the PMU, which provides a sane
+state for perf to use the PMU counters under either the guest or the
+host.
+
+This was manifesting as a bug with ppc64_cpu --frequency:
+
+    $ sudo ppc64_cpu --frequency
+    WARNING: couldn't run on cpu 0
+    WARNING: couldn't run on cpu 8
+      ...
+    WARNING: couldn't run on cpu 144
+    WARNING: couldn't run on cpu 152
+    min:    18446744073.710 GHz (cpu -1)
+    max:    0.000 GHz (cpu -1)
+    avg:    0.000 GHz
+
+The command uses a perf counter to measure CPU cycles over a fixed
+amount of time, in order to approximate the frequency of the machine.
+The counters were returning zero once a guest was started, regardless of
+weather it was still running or had been shut down.
+
+By dumping the value of MMCR2, it was observed that once a guest is
+running MMCR2 is set to 1s - which stops counters from running:
+
+    $ sudo sh -c 'echo p > /proc/sysrq-trigger'
+    CPU: 0 PMU registers, ppmu = POWER8 n_counters = 6
+    PMC1:  5b635e38 PMC2: 00000000 PMC3: 00000000 PMC4: 00000000
+    PMC5:  1bf5a646 PMC6: 5793d378 PMC7: deadbeef PMC8: deadbeef
+    MMCR0: 0000000080000000 MMCR1: 000000001e000000 MMCRA: 0000040000000000
+    MMCR2: fffffffffffffc00 EBBHR: 0000000000000000
+    EBBRR: 0000000000000000 BESCR: 0000000000000000
+    SIAR:  00000000000a51cc SDAR:  c00000000fc40000 SIER:  0000000001000000
+
+This is done unconditionally in book3s_hv_interrupts.S upon entering the
+guest, and the original value is only save/restored if the host has
+indicated it was using the PMU. This is okay, however the user of the
+PMU needs to ensure that it is in a defined state when it starts using
+it.
+
+Fixes: e05b9b9e5c10 ("powerpc/perf: Power8 PMU support")
+Signed-off-by: Joel Stanley <joel@jms.id.au>
+Acked-by: Michael Ellerman <mpe@ellerman.id.au>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ arch/powerpc/perf/core-book3s.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/arch/powerpc/perf/core-book3s.c b/arch/powerpc/perf/core-book3s.c
+index fb91ed0db590..8b9b9ac6005d 100644
+--- a/arch/powerpc/perf/core-book3s.c
++++ b/arch/powerpc/perf/core-book3s.c
+@@ -1149,6 +1149,9 @@ static void power_pmu_enable(struct pmu *pmu)
+ 	mb();
+ 	write_mmcr0(cpuhw, mmcr0);
+ 
++	if (ppmu->flags & PPMU_ARCH_207S)
++		mtspr(SPRN_MMCR2, 0);
++
+ 	/*
+ 	 * Enable instruction sampling if necessary
+ 	 */
+-- 
+1.9.1
+
