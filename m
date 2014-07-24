@@ -1,253 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934239AbaGXRzI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 13:55:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63901 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752666AbaGXRzE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 13:55:04 -0400
-From: Prarit Bhargava <prarit@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Prarit Bhargava <prarit@redhat.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Lenny Szubowicz <lszubowi@redhat.com>, linux-pm@vger.kernel.org
-Subject: [PATCH] cpufreq, store_scaling_governor requires policy->rwsem to be held for duration of changing governors
-Date: Thu, 24 Jul 2014 13:54:51 -0400
-Message-Id: <1406224491-3599-1-git-send-email-prarit@redhat.com>
+	id S1759439AbaGXR5Z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 13:57:25 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:51332 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752185AbaGXR5X (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jul 2014 13:57:23 -0400
+Date: Thu, 24 Jul 2014 18:57:10 +0100
+From: Morten Rasmussen <morten.rasmussen@arm.com>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "vincent.guittot@linaro.org" <vincent.guittot@linaro.org>,
+        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>,
+        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
+        Dietmar Eggemann <Dietmar.Eggemann@arm.com>,
+        "pjt@google.com" <pjt@google.com>
+Subject: Re: [RFCv2 PATCH 01/23] sched: Documentation for scheduler energy
+ cost model
+Message-ID: <20140724175709.GA11501@e103034-lin>
+References: <1404404770-323-1-git-send-email-morten.rasmussen@arm.com>
+ <3288345.jvzVvqTJvD@vostro.rjw.lan>
+ <20140724072609.GI3935@laptop>
+ <14224056.9QdYi5f1q1@vostro.rjw.lan>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <14224056.9QdYi5f1q1@vostro.rjw.lan>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A while ago we added a test to mimic some of our users' userspace governor
-programs which monitor system behaviour and will switch governors on the
-fly.  The decision process for this includes looking at time of day,
-expected system load, etc.  For some time now we have had reports of
-system panics in the cpufreq code when using the userspace governor
-utility.
+On Thu, Jul 24, 2014 at 03:28:27PM +0100, Rafael J. Wysocki wrote:
+> On Thursday, July 24, 2014 09:26:09 AM Peter Zijlstra wrote:
+> > On Thu, Jul 24, 2014 at 02:53:20AM +0200, Rafael J. Wysocki wrote:
+> > > I am used to slightly different terminology here.  Namely, there are voltage
+> > > domains (parts sharing a voltage rail or a voltage regulator, such that you
+> > > can only apply/remove/change voltage to all of them at the same time) and clock
+> > > domains (analogously, but for clocks).  A power domain (which in your description
+> > > above seems to correspond to a voltage domain) may be a voltage domain, a clock
+> > > domain or a combination thereof.
 
-The userspace utility writes
-/sys/devices/system/cpu/cpuX/cpufreq/scaling_governor and sets the
-governor.  In some cases this can happen rapidly, and under heavy load
-there are occasions where the changes are delayed.  This can mean that
-several governor changes may occur within a short period of time.
+Your terminology is closer how the hardware actually operates, agreed. I
+was hoping to keep things a bit simpler if we can get away with it. In
+the simplified view a frequency domain is the combination of voltage and
+clock domain (using your terminology). Since clock and voltage usually
+scale together (DVFS) the assumption is that those domains are
+equivalent. Thus, the frequency domain defines the subset of cpus that
+scale P-state together.
 
-This has exposed a bug in the store_scaling_governor path.  When the sysfs
-file is written to,
+A power domain (in my terminology) defines a subset of cpus that share
+C-states (do-nothing-states at reduced power consumption). The actual
+technique applied for the C-state implementation is not considered. It
+may anything between just clock gating up to and including completely
+powering the domain off. So it isn't necessarily equivalent to the clock
+or voltage domain. For example on ARM is quite typical to have clock
+gating per cpu and sometimes also per core power gating, while the
+clock/voltage domain covers multiple cpus. It is worth noting that power
+gating if often hierarchical meaning that you can power gate larger
+subsets of cpus in one go as well to save more power as you can power
+down (some) shared resources as well. I think that is equivalent to
+package C-states in Intel terminology.
 
-store()
-	->down_write(&policy->rwsem);
-	->store_scaling_governor()
-		-> cpufreq_set_policy()
-			up_write(&policy->rwsem);
-			__cpufreq_governor(policy, CPUFREQ_GOV_POLICY_EXIT);
-			down_write(&policy->rwsem);
+> > > In addition to that, in a voltage domain it may be possible to apply many
+> > > different levels of voltage, which case doesn't seem to be covered at all by
+> > > the above (or I'm missing something).
 
-The release of the policy->rwsem results in a situation where another
-write to the scaling_governor file can now start and overwrite pointers
-and cause corruption.
+I don't include it explicitly, but it is factored into the capacity
+state data (which is really frequency states on SMP, but that is another
+story). Each capacity state is represented by a compute capacity
+(proportional to frequency on SMP) and the associated power consumption.
+The energy-efficiency (work/energy) for the capacity state is basically
+the ratio of the two. Hence the voltage is include in the power figure
+associated with the P-state. It is assumed that you don't scale voltage
+without scaling frequency. I hope that is a valid assumption for Intel
+systems as well?
 
-ex)
+> > > Also a P-state is not just a frequency level, but a combination of frequency
+> > > and voltage that has to be applied for that frequency to be stable.  You may
+> > > regard them as Operation Performance Points of the CPU, but that very well may
+> > > go beyond frequencies and voltages.  Thus it actually is better not to talk
+> > > about P-states as "frequencies".
 
- Oops: 0000 [#1] SMP
- Modules linked in: sg e1000e igb iTCO_wdt iTCO_vendor_support coretemp kvm_intel ptp kvm pps_core i7300_edac edac_core ses lpc_ich enclosure ioatdma mfd_core shpchp dca i2c_i801 serio_raw acpi_cpufreq pcspkr mperf nfsd auth_rpcgss nfs_acl lockd sunrpc xfs libcrc32c sr_mod cdrom sd_mod ata_generic crc_t10dif crct10dif_common pata_acpi radeon i2c_algo_bit drm_kms_helper ttm drm ata_piix libata i2c_core megaraid_sas dm_mirror dm_region_hash dm_log dm_mod
- CPU: 7 PID: 565 Comm: kworker/7:2 Not tainted 3.10.0-121.el7.x86_64 #1
- Hardware name: Intel MP Server/S7000FC4UR, BIOS SFC4UR.86B.01.00.0031.021820102042 02/18/2010
- Workqueue: events od_dbs_timer
- task: ffff88046544cfa0 ti: ffff880465438000 task.ti: ffff880465438000
- RIP: 0010:[<ffffffff81489bed>]  [<ffffffff81489bed>] od_dbs_timer+0x2d/0x160
- RSP: 0018:ffff880465439de0  EFLAGS: 00010282
- RAX: ffff88007f03d500 RBX: 0000000000010de0 RCX: 0000000000000006
- RDX: 0000000000000006 RSI: 7040000000000000 RDI: ffff88046f2f0e08
- e1000e 0000:06:00.0: irq 79 for MSI/MSI-X
- IPv6: ADDRCONF(NETDEV_UP): enp6s0f0: link is not ready
- RBP: ffff880465439e18 R08: ffff88046f2f0e10 R09: dfedcb48370f0e08
- R10: dfedcb48370f0e08 R11: 0000000000000000 R12: ffff880465a69200
- R13: 0000000000000000 R14: ffff88046f2f0e08 R15: 00000000000001c0
- e1000e 0000:06:00.1: irq 80 for MSI/MSI-X
- FS:  0000000000000000(0000) GS:ffff88046f2e0000(0000) knlGS:0000000000000000
- CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
- CR2: 0000000000000010 CR3: 0000000466be5000 CR4: 00000000000007e0
- DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
- DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
- Stack:
-  ffff88045ef8d140 ffff880468e1ad80 ffff88046f2f0e08 ffff880465a69200
-  ffff88046f2f3e00 ffff88046f2f7f00 00000000000001c0 ffff880465439e60
-  ffffffff8107e02b 000000006f2f3e18 0000000000000000 ffff88046f2f3e18
- Call Trace:
-  [<ffffffff8107e02b>] process_one_work+0x17b/0x460
-  [<ffffffff8107edfb>] worker_thread+0x11b/0x400
-  [<ffffffff8107ece0>] ? rescuer_thread+0x400/0x400
-  [<ffffffff81085aef>] kthread+0xcf/0xe0
-  [<ffffffff81085a20>] ? kthread_create_on_node+0x140/0x140
- e1000e 0000:06:00.1: irq 80 for MSI/MSI-X
- IPv6: ADDRCONF(NETDEV_UP): enp6s0f1: link is not ready
-  [<ffffffff815fc76c>] ret_from_fork+0x7c/0xb0
-  [<ffffffff81085a20>] ? kthread_create_on_node+0x140/0x140
- Code: 66 66 90 55 48 89 e5 41 57 41 56 49 89 fe 41 55 41 54 53 48 c7 c3 e0 0d 01 00 48 83 ec 10 48 8b 47 f8 8b 50 14 4c 8b 68 40 89 d1 <4d> 8b 7d 10 89 55 cc 48 03 1c cd 80 78 9e 81 48 8d 83 a8 00 00
- RIP  [<ffffffff81489bed>] od_dbs_timer+0x2d/0x160
-  RSP <ffff880465439de0>
- CR2: 0000000000000010
- BUG: unable to handle kernel  ---[ end trace c9a1ca82e01a4294 ]---
- Kernel panic - not syncing: Fatal exception
-NULL pointer dereference at 0000000000000014
- IP: [<ffffffff81489be4>] od_dbs_timer+0x24/0x160
- PGD 46661d067 PUD 465540067 PMD 0
- Oops: 0000 [#2] SMP
- Modules linked in: sg e1000e igb iTCO_wdt iTCO_vendor_support coretemp kvm_intel ptp kvm pps_core i7300_edac edac_core ses lpc_ich enclosure ioatdma mfd_core shpchp dca i2c_i801 serio_raw acpi_cpufreq pcspkr mperf nfsd auth_rpcgss nfs_acl lockd sunrpc xfs libcrc32c sr_mod cdrom sd_mod ata_generic crc_t10dif crct10dif_common pata_acpi radeon i2c_algo_bit drm_kms_helper ttm drm ata_piix libata i2c_core megaraid_sas dm_mirror dm_region_hash dm_log dm_mod
- CPU: 6 PID: 506 Comm: kworker/6:2 Tainted: G      D     --------------   3.10.0-121.el7.x86_64 #1
- Hardware name: Intel MP Server/S7000FC4UR, BIOS SFC4UR.86B.01.00.0031.021820102042 02/18/2010
- Workqueue: events od_dbs_timer
- task: ffff880465448b60 ti: ffff880463730000 task.ti: ffff880463730000
- RIP: 0010:[<ffffffff81489be4>]  [<ffffffff81489be4>] od_dbs_timer+0x24/0x160
- RSP: 0018:ffff880463731de0  EFLAGS: 00010282
- RAX: 0000000000000000 RBX: 0000000000010de0 RCX: dead000000200200
- RDX: 0000000000000001 RSI: 7040000000000000 RDI: ffff88046f2d0e08
- RBP: ffff880463731e18 R08: ffff88046f2d0e10 R09: dfedcb50370d0e08
- R10: dfedcb50370d0e08 R11: 0000000000000000 R12: ffff880465bd2b80
- R13: ffff88046f2d3e00 R14: ffff88046f2d0e08 R15: 0000000000000180
- FS:  0000000000000000(0000) GS:ffff88046f2c0000(0000) knlGS:0000000000000000
- CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
- CR2: 0000000000000014 CR3: 0000000466be5000 CR4: 00000000000007e0
- DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
- DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
- Stack:
-  ffff88045ef8d140 ffff880468dcf1c0 ffff88046f2d0e08 ffff880465bd2b80
-  ffff88046f2d3e00 ffff88046f2d7f00 0000000000000180 ffff880463731e60
-  ffffffff8107e02b 000000006f2d3e18 0000000000000000 ffff88046f2d3e18
- Call Trace:
-  [<ffffffff8107e02b>] process_one_work+0x17b/0x460
-  [<ffffffff8107edfb>] worker_thread+0x11b/0x400
-  [<ffffffff8107ece0>] ? rescuer_thread+0x400/0x400
-  [<ffffffff81085aef>] kthread+0xcf/0xe0
-  [<ffffffff81085a20>] ? kthread_create_on_node+0x140/0x140
-  [<ffffffff815fc76c>] ret_from_fork+0x7c/0xb0
-  [<ffffffff81085a20>] ? kthread_create_on_node+0x140/0x140
- Code: 1f 84 00 00 00 00 00 66 66 66 66 90 55 48 89 e5 41 57 41 56 49 89 fe 41 55 41 54 53 48 c7 c3 e0 0d 01 00 48 83 ec 10 48 8b 47 f8 <8b> 50 14 4c 8b 68 40 89 d1 4d 8b 7d 10 89 55 cc 48 03 1c cd 80
- RIP  [<ffffffff81489be4>] od_dbs_timer+0x24/0x160
-  RSP <ffff880463731de0>
- CR2: 0000000000000014
- drm_kms_helper: panic occurred, switching back to text console
+Agreed. In my world voltage and frequency are always linked, so I might
+have been a bit sloppy in my definitions. I will fix that to use P-state
+instead.
 
-There are other panics associated with this, including list corruption and
-various flavors of panics in the od_dbs_timer & work code.
+Capacity states are equal to P-states on SMP but not for big.LITTLE as
+we also have to factor in performance differences between different
+micro-architectures. Any objections to that? It is in line with the
+recent renaming of cpu_power to cpu_capacity in fair.c.
 
-As a test I introduced a separate mutex around the cpufreq_set_policy() call.
-After doing so system behaves as expected, and the panics no longer happen.
-I narrowed the mutex down to the "governor switch" code in
-cpufreq_set_policy() and saw that everything stabilized.
+> > > Now, P-states may or may not have to be coordinated between all CPUs in a
+> > > package (cluster), by hardware or software, such that all CPUs in a cluster
+> > > need to be kept in the same P-state.  That you can regard as a "P-state
+> > > domain", but it usually means a specific combination of voltage and frequency.
+> > 
+> > I think Morton is aware of this, but for the sake of sanity dropped the
+> > whole lot into something simpler (while hoping reality would not ruin
+> > his life).
 
-I then reverted commit 955ef4833574636819cd269cfbae12f79cbde63a, cpufreq: Drop
-rwsem lock around CPUFREQ_GOV_POLICY_EXIT, which added the dropping of the
-policy->rwsem and again, the panics no longer occurred.
+Spot on :-) (except for the spelling of my name ;-))
 
-The closer I looked at commit 955ef483, the more questions I have.  The first
-thing is that it appears that the stacktrace includes function calls that
-are not, and never have been, part of the linux.git tree, ie) the call trace
-shows
+> > 
+> > > C-states in turn are states in which CPUs don't execute instructions.
+> > > That need not mean the removal of voltage or even frequency from them.
+> > > Of course, they do mean some sort of power draw reduction, but that may
+> > > be achieved in many different ways.  Some C-states require coordination
+> > > too (for example, a single C-state may apply to a whole package or cluster
+> > > at the same time) and you can think about "domains" here too, but there
+> > > need not be a direct mapping to physical parameters such as the frequency
+> > > or the voltage.
 
-            [<c0055a79>] lock_acquire+0x61/0xbc
-            [<c00fabf1>] sysfs_addrm_finish+0xc1/0x128
-            [<c00f9819>] sysfs_hash_and_remove+0x35/0x64
-            [<c00fbe6f>] remove_files.isra.0+0x1b/0x24
-            [<c00fbea5>] sysfs_remove_group+0x2d/0xa8
-            [<c02f9a0b>] cpufreq_governor_interactive+0x13b/0x35c
-            [<c02f61df>] __cpufreq_governor+0x2b/0x8c
-            [<c02f6579>] __cpufreq_set_policy+0xa9/0xf8
-            [<c02f6b75>] store_scaling_governor+0x61/0x100
-            [<c02f6f4d>] store+0x39/0x60
-            [<c00f9b81>] sysfs_write_file+0xed/0x114
-            [<c00b3fd1>] vfs_write+0x65/0xd8
-            [<c00b424b>] sys_write+0x2f/0x50
-            [<c000cdc1>] ret_fast_syscall+0x1/0x52
+That is "power domains" in my simplified terminology as described above.
 
-and the top part of the stack from cpufreq_governor_interactive() appear to
-be for a driver that is not in the linux.git tree.  Google search does show
-that it exists in various android trees, however, my concern is that the "core"
-scaling governors are now broken because of an out tree driver.
+> > One thing that wasn't clear to me is if you allow for C-domain and
+> > P-domain to overlap or if they're always inclusive (where one is wholly
+> > contained in the other).
+> 
+> On the CPUs I worked with so far they were always inclusive.  Previously, the
+> whole package was a P-state domain.  Today some CPUs (Haswell server chips
+> for example) have per-core P-states.
 
-It seems like the patch fixed this problem incorrectly by breaking the existing
-locking.  IIUC the whole point of the policy->rwsem is to single thread updates
-to the policy struct; this is no longer the case after that commit as we
-are breaking the locking right in the middle of a policy->governor update.
-The fix should have been to the cpufreq_governor_interactive out-of-tree
-driver to determine why the driver is acquiring the policy->rwsem.  In any
-case, AFAICT, the latest version of the out-of-tree
-cpufreq_governor_interactive does not attempt to acquire the policy->rwsem
-anymore.
+I don't know of any design where they overlap. My assumption is that it
+won't happen ;-)
 
-In case anyone is interested in reproducing, the reproducer I used was
+> > > Moreover, P-states and C-states may overlap.  That is, a CPU may be in Px
+> > > and Cy at the same time, which means that after leaving Cy it will execute
+> > > instructions in Px.  Things like leakage may depend on x in that case and
+> > > the total power draw may depend on the combination of x and y.
 
-i=0
-while [ True ]; do
-        i=$((i+1))
-        echo "ondemand" > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor &
-        echo "performance" > /sys/devices/system/cpu/cpu1/cpufreq/scaling_governor &
-        echo "ondemand" > /sys/devices/system/cpu/cpu1/cpufreq/scaling_governor  &
-        echo "performance" > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor &
-        if [ $((i % 100)) = 0 ]; then
-                num_ps=$(ps aux | grep doit | wc -l)
-                echo "$i running, $num_ps outstanding"
-        fi
-done
+Right, I have ignored that aspect so far (along with a lot of other
+things) hoping that it wouldn't make too much difference. I haven't
+investigated it in detail yet. I guess that main difference would be in
+the shallowest C-states as you would be power gating in the deeper ones?
 
-and the system usually panics within 500 iterations.
+It could be factored in but it would mean providing platform data.
 
-This patch effectively reverts commit 955ef483.
+> > Right, and I suppose the domain thing makes it impossible to drop to the
+> > lowest P state on going idle. Tricky that.
+> 
+> That's the case for older chips.  I'm not sure about the newest lot entirely
+> to be honest, need to ask.
 
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Lenny Szubowicz <lszubowi@redhat.com>
-Cc: linux-pm@vger.kernel.org
-Signed-off-by: Prarit Bhargava <prarit@redhat.com>
----
- drivers/cpufreq/cpufreq.c |    8 +-------
- include/linux/cpufreq.h   |    4 ----
- 2 files changed, 1 insertion(+), 11 deletions(-)
+I think some ARM do the lowest P-state trick before entering idle. But
+yeah, it only makes sense if you are the last cpu in the P-state domain
+to go down.
 
-diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-index 6f02485..4869f0e 100644
---- a/drivers/cpufreq/cpufreq.c
-+++ b/drivers/cpufreq/cpufreq.c
-@@ -2198,12 +2198,8 @@ static int cpufreq_set_policy(struct cpufreq_policy *policy,
- 	/* save old, working values */
- 	old_gov = policy->governor;
- 	/* end old governor */
--	if (old_gov) {
--		__cpufreq_governor(policy, CPUFREQ_GOV_STOP);
--		up_write(&policy->rwsem);
-+	if (old_gov)
- 		__cpufreq_governor(policy, CPUFREQ_GOV_POLICY_EXIT);
--		down_write(&policy->rwsem);
--	}
- 
- 	/* start new governor */
- 	policy->governor = new_policy->governor;
-@@ -2211,9 +2207,7 @@ static int cpufreq_set_policy(struct cpufreq_policy *policy,
- 		if (!__cpufreq_governor(policy, CPUFREQ_GOV_START))
- 			goto out;
- 
--		up_write(&policy->rwsem);
- 		__cpufreq_governor(policy, CPUFREQ_GOV_POLICY_EXIT);
--		down_write(&policy->rwsem);
- 	}
- 
- 	/* new governor failed, so re-start old one */
-diff --git a/include/linux/cpufreq.h b/include/linux/cpufreq.h
-index 8f8ae95..b450c43 100644
---- a/include/linux/cpufreq.h
-+++ b/include/linux/cpufreq.h
-@@ -100,10 +100,6 @@ struct cpufreq_policy {
- 	 * - Any routine that will write to the policy structure and/or may take away
- 	 *   the policy altogether (eg. CPU hotplug), will hold this lock in write
- 	 *   mode before doing so.
--	 *
--	 * Additional rules:
--	 * - Lock should not be held across
--	 *     __cpufreq_governor(data, CPUFREQ_GOV_POLICY_EXIT);
- 	 */
- 	struct rw_semaphore	rwsem;
- 
--- 
-1.7.9.3
+> > > The concern is that if a scaling governor is running in parallel with the above
+> > > algorithm and it has its own utilization goal (it usually does), it may change
+> > > the P-state under you to match that utilization goal and you'll end up with
+> > > something different from what you expected.
+> > > 
+> > > That may be addressed either by trying to predict what the scaling governor will
+> > > do (and good luck with that) or by taking care of P-states by yourself.  The
+> > > latter would require changes to the algorithm I think, though.
+> > 
+> > The idea was that we'll do P states ourselves based on these utilization
+> > figures. If we find we cannot fit the 'new' task into the current set
+> > without either raising P or waking an idle cpu (if at all available), we
+> > compute the cost of either option and pick the cheapest.
+> 
+> Yeah.  One subtle thing is that ramping up P may affect the other guys
+> (if the whole chip is a P-domain, for example), but I guess that can be
+> taken into account.
 
+For now I have assumed that the P-state governor will provide select a
+P-state which is sufficient for handling the utilization. But, as Peter
+already said, the plan is to try at least guide the P-state selection
+based on the decisions made by the scheduler.
+
+Affected cpus are actually already take into account when trying to
+figure out whether to raise the P-state or waking an idle cpu.
+
+Morten
