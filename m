@@ -1,52 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755258AbaGXJhO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 05:37:14 -0400
-Received: from mail-wi0-f195.google.com ([209.85.212.195]:37904 "EHLO
-	mail-wi0-f195.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751660AbaGXJhM (ORCPT
+	id S1754151AbaGXJlU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 05:41:20 -0400
+Received: from eu1sys200aog122.obsmtp.com ([207.126.144.153]:59350 "EHLO
+	eu1sys200aog122.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751347AbaGXJlT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 05:37:12 -0400
+	Thu, 24 Jul 2014 05:41:19 -0400
+X-Greylist: delayed 334 seconds by postgrey-1.27 at vger.kernel.org; Thu, 24 Jul 2014 05:41:17 EDT
+From: Eli Cohen <eli@mellanox.com>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "mingo@kernel.org" <mingo@kernel.org>, "hpa@zytor.com" <hpa@zytor.com>,
+        "john.stultz@linaro.org" <john.stultz@linaro.org>,
+        Eli Cohen <eli@mellanox.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "linux-tip-commits@vger.kernel.org" 
+	<linux-tip-commits@vger.kernel.org>
+Subject: RE: [tip:timers/core] net: mlx5: Use ktime_get_ns()
+Thread-Topic: [tip:timers/core] net: mlx5: Use ktime_get_ns()
+Thread-Index: AQHPpsdqqRHtKeT2a0SDwyBoer9gVZuu9v8A
+Date: Thu, 24 Jul 2014 09:35:38 +0000
+Message-ID: <CFE9BFE80FFE4D4892AA5D31387E310FDC6B0D49@MTLDAG01.mtl.com>
+References: <tip-14a7004671246d1b799f545335995a9897de1268@git.kernel.org>
+In-Reply-To: <tip-14a7004671246d1b799f545335995a9897de1268@git.kernel.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.0.13.1]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Reply-To: harikunda2006@gmail.com
-Date: Thu, 24 Jul 2014 11:37:11 +0200
-Message-ID: <CAAD0JtWKsfH1NkRFnKsO9T0cOdek=+0XdAHE5vCynTE4XNFXhw@mail.gmail.com>
-Subject: I Am Mr. Hari A. Kunda
-From: Mr HARI KUNDA <rasqsma@gmail.com>
-To: undisclosed-recipients:;
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s6O9fP0n022547
 
-Dear Friend,
-I Am Mr. Hari A. Kunda
+>> net: mlx5: Use ktime_get_ns()
 
-However, It's Just my urgent need For foreign partner that made me to
-contact you for this transaction.I am currently holding the post Of
-manager foreign affairs the bank where I work (Bank of
-Africa,Ouagadougou. Burkina Faso.
-
-I got your contact when i was searching for an overseas partner to
-assist me through banker's seminar held recently in UK I have the
-opportunity of transferring the left over funds ($10.5million)
-abandoned in an account for years.
-
-Hence, i am inviting you for a business deal where this money can
-betransfer to a foreign account shared between us in the ratio of 50%
-for me,40% for you and 10% for any income expenses that will come
-during the transfer, if you agree to my business proposal. Further
-details of the transfer will be forwarded to you as soon as I receive
-your return mail.please reply me through this Email address
-(harikunda2006@gmail.com)
+I can't find this function in any of the header files under include directory of the kernel source tree. Can you tell where you find it?
 
 
-(1)your Full name ................,
-(2)your country ..................,
-(3)your Telephone ................,
-(4)your Occupation ...............,
-(5)your Status ...................,
-(6)your Age ......................,
-(7)your photo ....................,
-Best regards
-MR. HARI A. KUNDA.
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
