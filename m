@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935344AbaGXKUU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 06:20:20 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54739 "EHLO
+	id S935112AbaGXKTW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 06:19:22 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54757 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932560AbaGXJrQ (ORCPT
+	with ESMTP id S934274AbaGXJrV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 05:47:16 -0400
+	Thu, 24 Jul 2014 05:47:21 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
 Cc: Nicholas Bellinger <nab@linux-iscsi.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 035/128] target: Fix left-over se_lun->lun_sep pointer OOPs
-Date: Thu, 24 Jul 2014 10:44:44 +0100
-Message-Id: <1406195177-8656-36-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 039/128] iscsi-target: Avoid rejecting incorrect ITT for Data-Out
+Date: Thu, 24 Jul 2014 10:44:48 +0100
+Message-Id: <1406195177-8656-40-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1406195177-8656-1-git-send-email-luis.henriques@canonical.com>
 References: <1406195177-8656-1-git-send-email-luis.henriques@canonical.com>
@@ -29,36 +29,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-commit 83ff42fcce070801a3aa1cd6a3269d7426271a8d upstream.
+commit 97c99b47ac58bacb7c09e1f47d5d184434f6b06a upstream.
 
-This patch fixes a left-over se_lun->lun_sep pointer OOPs when one
-of the /sys/kernel/config/target/$FABRIC/$WWPN/$TPGT/lun/$LUN/alua*
-attributes is accessed after the $DEVICE symlink has been removed.
+This patch changes iscsit_check_dataout_hdr() to dump the incoming
+Data-Out payload when the received ITT is not associated with a
+WRITE, instead of calling iscsit_reject_cmd() for the non WRITE
+ITT descriptor.
 
-To address this bug, go ahead and clear se_lun->lun_sep memory in
-core_dev_unexport(), so that the existing checks for show/store
-ALUA attributes in target_core_fabric_configfs.c work as expected.
+This addresses a bug where an initiator sending an Data-Out for
+an ITT associated with a READ would end up generating a reject
+for the READ, eventually resulting in list corruption.
 
-Reported-by: Sebastian Herbszt <herbszt@gmx.de>
-Tested-by: Sebastian Herbszt <herbszt@gmx.de>
+Reported-by: Santosh Kulkarni <santosh.kulkarni@calsoftinc.com>
+Reported-by: Arshad Hussain <arshad.hussain@calsoftinc.com>
 Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/target/target_core_device.c | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/target/iscsi/iscsi_target.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/target/target_core_device.c b/drivers/target/target_core_device.c
-index 2640f2c65329..8a6b0e9f526a 100644
---- a/drivers/target/target_core_device.c
-+++ b/drivers/target/target_core_device.c
-@@ -614,6 +614,7 @@ void core_dev_unexport(
- 	dev->export_count--;
- 	spin_unlock(&hba->device_lock);
- 
-+	lun->lun_sep = NULL;
- 	lun->lun_se_dev = NULL;
- }
- 
+diff --git a/drivers/target/iscsi/iscsi_target.c b/drivers/target/iscsi/iscsi_target.c
+index a5825ea2488e..5283359ef299 100644
+--- a/drivers/target/iscsi/iscsi_target.c
++++ b/drivers/target/iscsi/iscsi_target.c
+@@ -1317,7 +1317,7 @@ iscsit_check_dataout_hdr(struct iscsi_conn *conn, unsigned char *buf,
+ 	if (cmd->data_direction != DMA_TO_DEVICE) {
+ 		pr_err("Command ITT: 0x%08x received DataOUT for a"
+ 			" NON-WRITE command.\n", cmd->init_task_tag);
+-		return iscsit_reject_cmd(cmd, ISCSI_REASON_PROTOCOL_ERROR, buf);
++		return iscsit_dump_data_payload(conn, payload_length, 1);
+ 	}
+ 	se_cmd = &cmd->se_cmd;
+ 	iscsit_mod_dataout_timer(cmd);
 -- 
 1.9.1
 
