@@ -1,145 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758649AbaGXMWJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 08:22:09 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:33262 "EHLO zene.cmpxchg.org"
+	id S1758758AbaGXMWc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 08:22:32 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:14113 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756220AbaGXMWH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 08:22:07 -0400
-Date: Thu, 24 Jul 2014 08:21:43 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: David Rientjes <rientjes@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Vladimir Davydov <vdavydov@parallels.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Christoph Lameter <cl@linux.com>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Pekka Enberg <penberg@kernel.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [patch 1/2] mm, slub: fix false-positive lockdep warning in
- free_partial()
-Message-ID: <20140724122143.GI1725@cmpxchg.org>
-References: <alpine.DEB.2.02.1407221550500.9885@chino.kir.corp.google.com>
- <alpine.DEB.2.02.1407221556330.9885@chino.kir.corp.google.com>
+	id S1758605AbaGXMWb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jul 2014 08:22:31 -0400
+Message-ID: <53D0FA78.2000609@redhat.com>
+Date: Thu, 24 Jul 2014 14:22:16 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1407221556330.9885@chino.kir.corp.google.com>
+To: Nadav Amit <namit@cs.technion.ac.il>
+CC: gleb@kernel.org, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
+        x86@kernel.org, linux-kernel@vger.kernel.org, nadav.amit@gmail.com
+Subject: Re: [PATCH] KVM: x86: Assertions to check no overrun in MSR lists
+References: <1406203616-5579-1-git-send-email-namit@cs.technion.ac.il>
+In-Reply-To: <1406203616-5579-1-git-send-email-namit@cs.technion.ac.il>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 22, 2014 at 03:57:58PM -0700, David Rientjes wrote:
-> From: Vladimir Davydov <vdavydov@parallels.com>
+Il 24/07/2014 14:06, Nadav Amit ha scritto:
+> Currently there is no check whether shared MSRs list overrun the allocated size
+> which can results in bugs. In addition there is no check that vmx->guest_msrs
+> has sufficient space to accommodate all the VMX msrs.  This patch adds the
+> assertions.
 > 
-> Commit c65c1877bd68 ("slub: use lockdep_assert_held") requires
-> remove_partial() to be called with n->list_lock held, but free_partial()
-> called from kmem_cache_close() on cache destruction does not follow this
-> rule, leading to a warning:
-> 
->   WARNING: CPU: 0 PID: 2787 at mm/slub.c:1536 __kmem_cache_shutdown+0x1b2/0x1f0()
->   Modules linked in:
->   CPU: 0 PID: 2787 Comm: modprobe Tainted: G        W    3.14.0-rc1-mm1+ #1
->   Hardware name:
->    0000000000000600 ffff88003ae1dde8 ffffffff816d9583 0000000000000600
->    0000000000000000 ffff88003ae1de28 ffffffff8107c107 0000000000000000
->    ffff880037ab2b00 ffff88007c240d30 ffffea0001ee5280 ffffea0001ee52a0
->   Call Trace:
->    [<ffffffff816d9583>] dump_stack+0x51/0x6e
->    [<ffffffff8107c107>] warn_slowpath_common+0x87/0xb0
->    [<ffffffff8107c145>] warn_slowpath_null+0x15/0x20
->    [<ffffffff811c7fe2>] __kmem_cache_shutdown+0x1b2/0x1f0
->    [<ffffffff811908d3>] kmem_cache_destroy+0x43/0xf0
->    [<ffffffffa013a123>] xfs_destroy_zones+0x103/0x110 [xfs]
->    [<ffffffffa0192b54>] exit_xfs_fs+0x38/0x4e4 [xfs]
->    [<ffffffff811036fa>] SyS_delete_module+0x19a/0x1f0
->    [<ffffffff816dfcd8>] ? retint_swapgs+0x13/0x1b
->    [<ffffffff810d2125>] ? trace_hardirqs_on_caller+0x105/0x1d0
->    [<ffffffff81359efe>] ? trace_hardirqs_on_thunk+0x3a/0x3f
->    [<ffffffff816e8539>] system_call_fastpath+0x16/0x1b
-> 
-> Although this cannot actually result in a race, because on cache
-> destruction there should not be any concurrent frees or allocations from
-> the cache, let's add spin_lock/unlock to free_partial() just to keep
-> lockdep happy.
-
-Please never add needless locking just to please lockdep.
-
-> Acked-by: Christoph Lameter <cl@linux.com>
-> Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
-> Signed-off-by: Pekka Enberg <penberg@kernel.org>
-> Signed-off-by: David Rientjes <rientjes@google.com>
+> Signed-off-by: Nadav Amit <namit@cs.technion.ac.il>
 > ---
->  mm/slub.c | 4 +++-
->  1 file changed, 3 insertions(+), 1 deletion(-)
+>  arch/x86/kvm/vmx.c | 2 ++
+>  arch/x86/kvm/x86.c | 1 +
+>  2 files changed, 3 insertions(+)
 > 
-> diff --git a/mm/slub.c b/mm/slub.c
-> --- a/mm/slub.c
-> +++ b/mm/slub.c
-> @@ -3195,12 +3195,13 @@ static void list_slab_objects(struct kmem_cache *s, struct page *page,
->  /*
->   * Attempt to free all partial slabs on a node.
->   * This is called from kmem_cache_close(). We must be the last thread
-> - * using the cache and therefore we do not need to lock anymore.
-> + * using the cache, but we still have to lock for lockdep's sake.
->   */
->  static void free_partial(struct kmem_cache *s, struct kmem_cache_node *n)
->  {
->  	struct page *page, *h;
+> diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+> index 7534a9f..286a931 100644
+> --- a/arch/x86/kvm/vmx.c
+> +++ b/arch/x86/kvm/vmx.c
+> @@ -7585,6 +7585,8 @@ static struct kvm_vcpu *vmx_create_vcpu(struct kvm *kvm, unsigned int id)
+>  		goto free_vcpu;
 >  
-> +	spin_lock_irq(&n->list_lock);
->  	list_for_each_entry_safe(page, h, &n->partial, lru) {
->  		if (!page->inuse) {
->  			__remove_partial(n, page);
+>  	vmx->guest_msrs = kmalloc(PAGE_SIZE, GFP_KERNEL);
+> +	BUILD_BUG_ON(PAGE_SIZE / sizeof(struct shared_msr_entry) < NR_VMX_MSR);
+> +
+>  	err = -ENOMEM;
+>  	if (!vmx->guest_msrs) {
+>  		goto uninit_vcpu;
+> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+> index f750b69..f5cd7876 100644
+> --- a/arch/x86/kvm/x86.c
+> +++ b/arch/x86/kvm/x86.c
+> @@ -212,6 +212,7 @@ static void shared_msr_update(unsigned slot, u32 msr)
+>  
+>  void kvm_define_shared_msr(unsigned slot, u32 msr)
+>  {
+> +	BUG_ON(slot >= KVM_NR_SHARED_MSRS);
+>  	if (slot >= shared_msrs_global.nr)
+>  		shared_msrs_global.nr = slot + 1;
+>  	shared_msrs_global.msrs[slot] = msr;
+> 
 
-This already uses __remove_partial(), which does not have the lockdep
-assertion.  You even acked the patch that made this change, why add
-the spinlock now?
+Thanks, both are good improvements.  I'm adding this patch on top.
 
-commit 1e4dd9461fabfbc780cdfaf103cec790f3a53325
-Author: Steven Rostedt <rostedt@goodmis.org>
-Date:   Mon Feb 10 14:25:46 2014 -0800
+-------------------- 8< ---------------------
+From: Paolo Bonzini <pbonzini@redhat.com>
+Subject: [PATCH] Replace NR_VMX_MSR with its definition
 
-    slub: do not assert not having lock in removing freed partial
-    
-    Vladimir reported the following issue:
-    
-    Commit c65c1877bd68 ("slub: use lockdep_assert_held") requires
-    remove_partial() to be called with n->list_lock held, but free_partial()
-    called from kmem_cache_close() on cache destruction does not follow this
-    rule, leading to a warning:
-    
-      WARNING: CPU: 0 PID: 2787 at mm/slub.c:1536 __kmem_cache_shutdown+0x1b2/0x1f0()
-      Modules linked in:
-      CPU: 0 PID: 2787 Comm: modprobe Tainted: G        W    3.14.0-rc1-mm1+ #1
-      Hardware name:
-       0000000000000600 ffff88003ae1dde8 ffffffff816d9583 0000000000000600
-       0000000000000000 ffff88003ae1de28 ffffffff8107c107 0000000000000000
-       ffff880037ab2b00 ffff88007c240d30 ffffea0001ee5280 ffffea0001ee52a0
-      Call Trace:
-        __kmem_cache_shutdown+0x1b2/0x1f0
-        kmem_cache_destroy+0x43/0xf0
-        xfs_destroy_zones+0x103/0x110 [xfs]
-        exit_xfs_fs+0x38/0x4e4 [xfs]
-        SyS_delete_module+0x19a/0x1f0
-        system_call_fastpath+0x16/0x1b
-    
-    His solution was to add a spinlock in order to quiet lockdep.  Although
-    there would be no contention to adding the lock, that lock also requires
-    disabling of interrupts which will have a larger impact on the system.
-    
-    Instead of adding a spinlock to a location where it is not needed for
-    lockdep, make a __remove_partial() function that does not test if the
-    list_lock is held, as no one should have it due to it being freed.
-    
-    Also added a __add_partial() function that does not do the lock
-    validation either, as it is not needed for the creation of the cache.
-    
-    Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-    Reported-by: Vladimir Davydov <vdavydov@parallels.com>
-    Suggested-by: David Rientjes <rientjes@google.com>
-    Acked-by: David Rientjes <rientjes@google.com>
-    Acked-by: Vladimir Davydov <vdavydov@parallels.com>
-    Acked-by: Christoph Lameter <cl@linux.com>
-    Cc: Pekka Enberg <penberg@kernel.org>
-    Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-    Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Using ARRAY_SIZE directly makes it easier to read the code.  While touching
+the code, replace the division by a multiplication in the recently added
+BUILD_BUG_ON.
+
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+
+diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+index 3397a88b7463..906f9e49d0e7 100644
+--- a/arch/x86/kvm/vmx.c
++++ b/arch/x86/kvm/vmx.c
+@@ -823,7 +823,6 @@ static const u32 vmx_msr_index[] = {
+ #endif
+ 	MSR_EFER, MSR_TSC_AUX, MSR_STAR,
+ };
+-#define NR_VMX_MSR ARRAY_SIZE(vmx_msr_index)
+ 
+ static inline bool is_page_fault(u32 intr_info)
+ {
+@@ -4441,7 +4440,7 @@ static int vmx_vcpu_setup(struct vcpu_vmx *vmx)
+ 		vmx->vcpu.arch.pat = host_pat;
+ 	}
+ 
+-	for (i = 0; i < NR_VMX_MSR; ++i) {
++	for (i = 0; i < ARRAY_SIZE(vmx_msr_index); ++i) {
+ 		u32 index = vmx_msr_index[i];
+ 		u32 data_low, data_high;
+ 		int j = vmx->nmsrs;
+@@ -7608,7 +7607,8 @@ static struct kvm_vcpu *vmx_create_vcpu(struct kvm *kvm, unsigned int id)
+ 		goto free_vcpu;
+ 
+ 	vmx->guest_msrs = kmalloc(PAGE_SIZE, GFP_KERNEL);
+-	BUILD_BUG_ON(PAGE_SIZE / sizeof(struct shared_msr_entry) < NR_VMX_MSR);
++	BUILD_BUG_ON(ARRAY_SIZE(vmx_msr_index) * sizeof(vmx->guest_msrs[0])
++		     > PAGE_SIZE);
+ 
+ 	err = -ENOMEM;
+ 	if (!vmx->guest_msrs) {
+@@ -8960,7 +8960,7 @@ static int __init vmx_init(void)
+ 
+ 	rdmsrl_safe(MSR_EFER, &host_efer);
+ 
+-	for (i = 0; i < NR_VMX_MSR; ++i)
++	for (i = 0; i < ARRAY_SIZE(vmx_msr_index); ++i)
+ 		kvm_define_shared_msr(i, vmx_msr_index[i]);
+ 
+ 	vmx_io_bitmap_a = (unsigned long *)__get_free_page(GFP_KERNEL);
+
