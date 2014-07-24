@@ -1,122 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757922AbaGXBhH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 21:37:07 -0400
-Received: from mga11.intel.com ([192.55.52.93]:62171 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755787AbaGXBhE convert rfc822-to-8bit (ORCPT
+	id S1758510AbaGXBlz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 21:41:55 -0400
+Received: from helcar.apana.org.au ([209.40.204.226]:37420 "EHLO
+	helcar.apana.org.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755787AbaGXBlx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 21:37:04 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,721,1400050800"; 
-   d="scan'208";a="574529662"
-From: "Zhang, Tianfei" <tianfei.zhang@intel.com>
-To: "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Matthew Wilcox <willy@linux.intel.com>
-CC: "Wilcox, Matthew R" <matthew.r.wilcox@intel.com>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH v8 05/22] Add vm_replace_mixed()
-Thread-Topic: [PATCH v8 05/22] Add vm_replace_mixed()
-Thread-Index: AQHPpmug9XRc5HMQEkqxOkS2M+gEOJutJ7MAgAAH8gCAAAHxgIAAGGEAgAEl3yA=
-Date: Thu, 24 Jul 2014 01:36:53 +0000
-Message-ID: <BA6F50564D52C24884F9840E07E32DEC17D6F8D8@CDSMSX102.ccr.corp.intel.com>
-References: <cover.1406058387.git.matthew.r.wilcox@intel.com>
- <b1052af08b49965fd0e6b87b6733b89294c8cc1e.1406058387.git.matthew.r.wilcox@intel.com>
- <20140723114540.GD10317@node.dhcp.inet.fi>
- <20140723135221.GA6754@linux.intel.com>
- <20140723142048.GA11963@node.dhcp.inet.fi>
- <20140723142745.GD6754@linux.intel.com>
- <20140723155500.GA12790@node.dhcp.inet.fi>
-In-Reply-To: <20140723155500.GA12790@node.dhcp.inet.fi>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.17.6.105]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 23 Jul 2014 21:41:53 -0400
+Date: Thu, 24 Jul 2014 09:40:57 +0800
+From: Herbert Xu <herbert@gondor.apana.org.au>
+To: Marek Vasut <marex@denx.de>
+Cc: Corentin LABBE <clabbe.montjoie@gmail.com>, robh+dt@kernel.org,
+        pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        rdunlap@infradead.org, maxime.ripard@free-electrons.com,
+        linux@arm.linux.org.uk, davem@davemloft.net, grant.likely@linaro.org,
+        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org
+Subject: Re: [PATCH 3/3] crypto: Add Allwinner Security System crypto
+ accelerator
+Message-ID: <20140724014057.GA2448@gondor.apana.org.au>
+References: <1400771396-9686-1-git-send-email-clabbe.montjoie@gmail.com>
+ <201407231751.02050.marex@denx.de>
+ <53D0045C.6090605@gmail.com>
+ <201407232138.35268.marex@denx.de>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <201407232138.35268.marex@denx.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It is double page_table_lock issue, should be free-and-realloc will be simple and readability?
+On Wed, Jul 23, 2014 at 09:38:35PM +0200, Marek Vasut wrote:
+> On Wednesday, July 23, 2014 at 08:52:12 PM, Corentin LABBE wrote:
+> > Le 23/07/2014 17:51, Marek Vasut a écrit :
+> > > On Wednesday, July 23, 2014 at 04:13:09 PM, Herbert Xu wrote:
+> > >> On Wed, Jul 23, 2014 at 04:07:20PM +0200, Marek Vasut wrote:
+> > >>> On Wednesday, July 23, 2014 at 03:57:35 PM, Herbert Xu wrote:
+> > >>>> On Sat, May 24, 2014 at 02:00:03PM +0200, Marek Vasut wrote:
+> > >>>>>> +	}
+> > >>>>>> +#endif
+> > >>>>>> +
+> > >>>>>> +#ifdef CONFIG_CRYPTO_DEV_SUNXI_SS_MD5
+> > >>>>>> +	err = crypto_register_shash(&sunxi_md5_alg);
+> > >>>>> 
+> > >>>>> Do not use shash for such device. This is clearly and ahash (and
+> > >>>>> async in general) device. The rule of a thumb here is that you use
+> > >>>>> sync algos only for devices which have dedicated instructions for
+> > >>>>> computing the transformation. For devices which are attached to some
+> > >>>>> kind of bus, you use async algos (ahash etc).
+> > >>>> 
+> > >>>> I'm sorry that I didn't catch this earlier but there is no such
+> > >>>> rule.
+> > >>>> 
+> > >>>> Unless you need the async interface you should stick to the sync
+> > >>>> interfaces for the sake of simplicity.
+> > >>>> 
+> > >>>> We have a number of existing drivers that are synchronous but
+> > >>>> using the async interface.  They should either be converted
+> > >>>> over to the sync interface or made interrupt-driven if possible.
+> > >>> 
+> > >>> Sure, but this device is interrupt driven and uses DMA to feed the
+> > >>> crypto engine, therefore async, right ?
+> > >> 
+> > >> If it's interrupt-driven, then yes it would certainly make sense to
+> > >> be async.  But all I see is polling in the latest posting, was the
+> > >> first version different?
+> > > 
+> > > I stand corrected then, sorry.
+> > > 
+> > > Is it possible to use DMA to feed the crypto accelerator, Corentin?
+> > > 
+> > > Best regards,
+> > > Marek Vasut
+> > 
+> > Yes, DMA is possible and will be implemented soon.
+> > So if I have well understood, I keep using async interface.
+> 
+> Yeah, in this case, using DMA and async interface combo is the way to go.
 
-+	if (!pte_none(*pte)) {
-+		if (!replace)
-+			goto out_unlock;
-+		VM_BUG_ON(!mutex_is_locked(&vma->vm_file->f_mapping->i_mmap_mutex));
-+      pte_unmap_unlock(pte, ptl);
-+		zap_page_range_single(vma, addr, PAGE_SIZE, NULL);
-+      pte = get_locked_pte(mm, addr, &ptl);
-+	}
-
-Best,
-Figo
-
-> -----Original Message-----
-> From: owner-linux-mm@kvack.org [mailto:owner-linux-mm@kvack.org] On
-> Behalf Of Kirill A. Shutemov
-> Sent: Wednesday, July 23, 2014 11:55 PM
-> To: Matthew Wilcox
-> Cc: Wilcox, Matthew R; linux-fsdevel@vger.kernel.org; linux-mm@kvack.org;
-> linux-kernel@vger.kernel.org
-> Subject: Re: [PATCH v8 05/22] Add vm_replace_mixed()
-> 
-> On Wed, Jul 23, 2014 at 10:27:45AM -0400, Matthew Wilcox wrote:
-> > On Wed, Jul 23, 2014 at 05:20:48PM +0300, Kirill A. Shutemov wrote:
-> > > On Wed, Jul 23, 2014 at 09:52:22AM -0400, Matthew Wilcox wrote:
-> > > > I'd love to use a lighter-weight weapon!  What would you recommend
-> > > > using, zap_pte_range()?
-> > >
-> > > The most straight-forward way: extract body of pte cycle from
-> > > zap_pte_range() to separate function -- zap_pte() -- and use it.
-> >
-> > OK, I can do that.  What about the other parts of zap_page_range(), do
-> > I need to call them?
-> >
-> >         lru_add_drain();
-> 
-> No, I guess..
-> 
-> >         tlb_gather_mmu(&tlb, mm, address, end);
-> >         tlb_finish_mmu(&tlb, address, end);
-> 
-> New zap_pte() should tolerate tlb == NULL and does flush_tlb_page() or
-> pte_clear_*flush or something.
-> 
-> >         update_hiwater_rss(mm);
-> 
-> No: you cannot end up with lower rss after replace, iiuc.
-> 
-> >         mmu_notifier_invalidate_range_start(mm, address, end);
-> >         mmu_notifier_invalidate_range_end(mm, address, end);
-> 
-> mmu_notifier_invalidate_page() should be enough.
-> 
-> > > > 	if ((fd = open(argv[1], O_CREAT|O_RDWR, 0666)) < 0) {
-> > > > 		perror(argv[1]);
-> > > > 		exit(1);
-> > > > 	}
-> > > >
-> > > > 	if (ftruncate(fd, 4096) < 0) {
-> > >
-> > > Shouldn't this be ftruncate(fd, 0)? Otherwise the memcpy() below
-> > > will fault in page from backing storage, not hole and write will not
-> > > replace anything.
-> >
-> > Ah, it was starting with a new file, hence the O_CREAT up above.
-> 
-> Do you mean you pointed to new file all the time? O_CREAT doesn't truncate
-> file if it exists, iirc.
-> 
-> --
->  Kirill A. Shutemov
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in the body to
-> majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+OK fair enough.
+-- 
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
