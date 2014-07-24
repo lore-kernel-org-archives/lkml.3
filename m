@@ -1,147 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755465AbaGXJGd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 05:06:33 -0400
-Received: from mga02.intel.com ([134.134.136.20]:4785 "EHLO mga02.intel.com"
+	id S1753103AbaGXJIJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 05:08:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42445 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750831AbaGXJGb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 05:06:31 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,722,1400050800"; 
-   d="scan'208";a="548292885"
-From: chiau.ee.chew@intel.com
-To: Eric Miao <eric.y.miao@gmail.com>, Russell King <linux@arm.linux.org.uk>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Mark Brown <broonie@kernel.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-spi@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Chew Chiau Ee <chiau.ee.chew@intel.com>,
-        Darren Hart <dvhart@linux.intel.com>,
-        Kweh Hock Leong <hock.leong.kweh@intel.com>, chiauee85@gmail.com
-Subject: [PATCH v2] spi/pxa2xx-pci: Add common clock framework support in PCI glue layer
-Date: Fri, 25 Jul 2014 01:10:54 +0800
-Message-Id: <1406221854-12828-1-git-send-email-chiau.ee.chew@intel.com>
-X-Mailer: git-send-email 1.7.4.4
+	id S1750905AbaGXJIG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jul 2014 05:08:06 -0400
+Date: Thu, 24 Jul 2014 17:05:52 +0800
+From: Baoquan He <bhe@redhat.com>
+To: Atsushi Kumagai <kumagai-atsushi@mxc.nes.nec.co.jp>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kexec@lists.infradead.org" <kexec@lists.infradead.org>
+Subject: Re: [PATCH] kexec: Export free_huge_page to VMCOREINFO
+Message-ID: <20140724090552.GL11399@dhcp-16-105.nay.redhat.com>
+References: <0910DD04CBD6DE4193FCF86B9C00BE972400F3@BPXM01GP.gisp.nec.co.jp>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <0910DD04CBD6DE4193FCF86B9C00BE972400F3@BPXM01GP.gisp.nec.co.jp>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Chew, Chiau Ee <chiau.ee.chew@intel.com>
+On 07/11/14 at 10:34am, Atsushi Kumagai wrote:
+> PG_head_mask was added into VMCOREINFO to filter huge pages in
+> commit:b3acc56bfe1(kexec: save PG_head_mask in VMCOREINFO), but
+> makedumpfile still need another symbol to filter *hugetlbfs* pages.
+> 
+> If a user hope to filter user pages, makedumpfile tries to exclude
+> them by checking the condition whether the page is anonymous, but
+> hugetlbfs pages aren't anonymous while they also be user pages.
+> 
+> We know it's possible to detect them in the same way as PageHuge(),
+> so we need the start address of free_huge_page():
+> 
+>     int PageHuge(struct page *page)
+>     {
+>             if (!PageCompound(page))
+>                     return 0;
+> 
+>             page = compound_head(page);
+>             return get_compound_page_dtor(page) == free_huge_page;
+>     }
 
-SPI PXA2XX core layer has dependency on common clock framework
-to obtain information on host supported clock rate. Thus, we
-setup the clock device in the PCI glue layer to enable PCI mode
-host pass in the clock rate information.
+Since makedumpfile need filter huge pages used for user pages.
+Transparent huge pages can be recognised because it's marked as
+anonymous page for now. However hugetlbfs huge pages and normal
+huge pages can only be differentiated by compound_page_dtor,
+hugetlbfs set free_huge_page as compound_page_dtor. So it makes
+sense to export compound_page_dtor to VMCOREINFO.
 
-Signed-off-by: Chew, Chiau Ee <chiau.ee.chew@intel.com>
-Acked-by: Kweh, Hock Leong <hock.leong.kweh@intel.com>
----
- changelog v2:
- i. add CONFIG_COMMON_CLK dependency for SPI_PXA2XX_PCI in Kconfig
- ii. add clk cleanup in remove()
+Ack it.
 
- drivers/spi/Kconfig          |    2 +-
- drivers/spi/spi-pxa2xx-pci.c |   21 ++++++++++++++++++++-
- 2 files changed, 21 insertions(+), 2 deletions(-)
+Acked-by: Baoquan He <bhe@redhat.com>
 
-diff --git a/drivers/spi/Kconfig b/drivers/spi/Kconfig
-index 62e2242..aa005cb 100644
---- a/drivers/spi/Kconfig
-+++ b/drivers/spi/Kconfig
-@@ -380,7 +380,7 @@ config SPI_PXA2XX
- 	  additional documentation can be found a Documentation/spi/pxa2xx.
- 
- config SPI_PXA2XX_PCI
--	def_tristate SPI_PXA2XX && PCI
-+	def_tristate SPI_PXA2XX && PCI && COMMON_CLK
- 
- config SPI_ROCKCHIP
- 	tristate "Rockchip SPI controller driver"
-diff --git a/drivers/spi/spi-pxa2xx-pci.c b/drivers/spi/spi-pxa2xx-pci.c
-index c1865c9..20ebbc7 100644
---- a/drivers/spi/spi-pxa2xx-pci.c
-+++ b/drivers/spi/spi-pxa2xx-pci.c
-@@ -7,6 +7,8 @@
- #include <linux/of_device.h>
- #include <linux/module.h>
- #include <linux/spi/pxa2xx_spi.h>
-+#include <linux/clk.h>
-+#include <linux/clk-provider.h>
- 
- enum {
- 	PORT_CE4100,
-@@ -21,6 +23,7 @@ struct pxa_spi_info {
- 	int tx_chan_id;
- 	int rx_slave_id;
- 	int rx_chan_id;
-+	unsigned long max_clk_rate;
- };
- 
- static struct pxa_spi_info spi_info_configs[] = {
-@@ -32,6 +35,7 @@ static struct pxa_spi_info spi_info_configs[] = {
- 		.tx_chan_id = -1,
- 		.rx_slave_id = -1,
- 		.rx_chan_id = -1,
-+		.max_clk_rate = 3686400,
- 	},
- 	[PORT_BYT] = {
- 		.type = LPSS_SSP,
-@@ -41,6 +45,7 @@ static struct pxa_spi_info spi_info_configs[] = {
- 		.tx_chan_id = 0,
- 		.rx_slave_id = 1,
- 		.rx_chan_id = 1,
-+		.max_clk_rate = 50000000,
- 	},
- };
- 
-@@ -53,6 +58,7 @@ static int pxa2xx_spi_pci_probe(struct pci_dev *dev,
- 	struct pxa2xx_spi_master spi_pdata;
- 	struct ssp_device *ssp;
- 	struct pxa_spi_info *c;
-+	char buf[40];
- 
- 	ret = pcim_enable_device(dev);
- 	if (ret)
-@@ -84,6 +90,12 @@ static int pxa2xx_spi_pci_probe(struct pci_dev *dev,
- 	ssp->port_id = (c->port_id >= 0) ? c->port_id : dev->devfn;
- 	ssp->type = c->type;
- 
-+	snprintf(buf, sizeof(buf), "pxa2xx-spi.%d", ssp->port_id);
-+	ssp->clk = clk_register_fixed_rate(&dev->dev, buf , NULL,
-+					CLK_IS_ROOT, c->max_clk_rate);
-+	 if (IS_ERR(ssp->clk))
-+		return PTR_ERR(ssp->clk);
-+
- 	memset(&pi, 0, sizeof(pi));
- 	pi.parent = &dev->dev;
- 	pi.name = "pxa2xx-spi";
-@@ -92,8 +104,10 @@ static int pxa2xx_spi_pci_probe(struct pci_dev *dev,
- 	pi.size_data = sizeof(spi_pdata);
- 
- 	pdev = platform_device_register_full(&pi);
--	if (IS_ERR(pdev))
-+	if (IS_ERR(pdev)) {
-+		clk_unregister(ssp->clk);
- 		return PTR_ERR(pdev);
-+	}
- 
- 	pci_set_drvdata(dev, pdev);
- 
-@@ -103,8 +117,13 @@ static int pxa2xx_spi_pci_probe(struct pci_dev *dev,
- static void pxa2xx_spi_pci_remove(struct pci_dev *dev)
- {
- 	struct platform_device *pdev = pci_get_drvdata(dev);
-+	struct pxa2xx_spi_master *spi_pdata;
-+
-+	spi_pdata = dev_get_platdata(&pdev->dev);
- 
- 	platform_device_unregister(pdev);
-+	clk_unregister(spi_pdata->ssp.clk);
-+	pci_set_drvdata(dev, NULL);
- }
- 
- static const struct pci_device_id pxa2xx_spi_pci_devices[] = {
--- 
-1.7.4.4
+Thanks
+Baoquan
 
+> 
+> For that reason, this patch changes free_huge_page() into public
+> to export it to VMCOREINFO.
+> 
+> Signed-off-by: Atsushi Kumagai <kumagai-atsushi@mxc.nes.nec.co.jp>
+> ---
+>  include/linux/hugetlb.h | 1 +
+>  kernel/kexec.c          | 2 ++
+>  mm/hugetlb.c            | 2 +-
+>  3 files changed, 4 insertions(+), 1 deletion(-)
+> 
+> diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
+> index 255cd5c..a23c096 100644
+> --- a/include/linux/hugetlb.h
+> +++ b/include/linux/hugetlb.h
+> @@ -80,6 +80,7 @@ int dequeue_hwpoisoned_huge_page(struct page *page);
+>  bool isolate_huge_page(struct page *page, struct list_head *list);
+>  void putback_active_hugepage(struct page *page);
+>  bool is_hugepage_active(struct page *page);
+> +void free_huge_page(struct page *page);
+>  
+>  #ifdef CONFIG_ARCH_WANT_HUGE_PMD_SHARE
+>  pte_t *huge_pmd_share(struct mm_struct *mm, unsigned long addr, pud_t *pud);
+> diff --git a/kernel/kexec.c b/kernel/kexec.c
+> index 369f41a..23a088f 100644
+> --- a/kernel/kexec.c
+> +++ b/kernel/kexec.c
+> @@ -33,6 +33,7 @@
+>  #include <linux/swap.h>
+>  #include <linux/syscore_ops.h>
+>  #include <linux/compiler.h>
+> +#include <linux/hugetlb.h>
+>  
+>  #include <asm/page.h>
+>  #include <asm/uaccess.h>
+> @@ -1619,6 +1620,7 @@ static int __init crash_save_vmcoreinfo_init(void)
+>  #endif
+>  	VMCOREINFO_NUMBER(PG_head_mask);
+>  	VMCOREINFO_NUMBER(PAGE_BUDDY_MAPCOUNT_VALUE);
+> +	VMCOREINFO_SYMBOL(free_huge_page);
+>  
+>  	arch_crash_save_vmcoreinfo();
+>  	update_vmcoreinfo_note();
+> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+> index 2024bbd..d5437eb 100644
+> --- a/mm/hugetlb.c
+> +++ b/mm/hugetlb.c
+> @@ -856,7 +856,7 @@ struct hstate *size_to_hstate(unsigned long size)
+>  	return NULL;
+>  }
+>  
+> -static void free_huge_page(struct page *page)
+> +void free_huge_page(struct page *page)
+>  {
+>  	/*
+>  	 * Can't pass hstate in here because it is called from the
+> -- 
+> 1.9.0
+> 
+> _______________________________________________
+> kexec mailing list
+> kexec@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/kexec
