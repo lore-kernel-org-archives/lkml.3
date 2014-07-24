@@ -1,257 +1,390 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934631AbaGXV01 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 17:26:27 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:50919 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759640AbaGXV00 (ORCPT
+	id S934699AbaGXV0l (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 17:26:41 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:37485 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934640AbaGXV0i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 17:26:26 -0400
-Date: Thu, 24 Jul 2014 23:26:20 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: rjw@rjwysocki.net, linux-kernel@vger.kernel.org
-Subject: [RFC][PATCH] irq: Rework IRQF_NO_SUSPENDED
-Message-ID: <20140724212620.GO3935@laptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Thu, 24 Jul 2014 17:26:38 -0400
+From: Alexei Starovoitov <ast@plumgrid.com>
+To: "David S. Miller" <davem@davemloft.net>
+Cc: Daniel Borkmann <dborkman@redhat.com>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH net-next] net: filter: rename 'struct sock_filter_int' into 'struct bpf_insn'
+Date: Thu, 24 Jul 2014 14:26:19 -0700
+Message-Id: <1406237179-3713-1-git-send-email-ast@plumgrid.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Subject: irq: Rework IRQF_NO_SUSPENDED
-From: Peter Zijlstra <peterz@infradead.org>
-Date: Thu Jul 24 22:34:50 CEST 2014
+eBPF is used by socket filtering, seccomp and soon by tracing and
+exposed to userspace, therefore 'sock_filter_int' name is not accurate.
+Rename it to 'bpf_insn'
 
-Typically when devices are suspended they're quiesced such that they
-will not generate any further interrupts.
-
-However some devices should still generate interrupts, even when
-suspended, typically used to wake the machine back up.
-
-Such logic should ideally be contained inside each driver, if it can
-generate interrupts when suspended, it knows about this and the
-interrupt handler can deal with it.
-
-Except of course for shared interrupts, when such a wakeup device is
-sharing an interrupt line with a device that does not expect
-interrupts while suspended things can go funny.
-
-This is where IRQF_NO_SUSPEND comes in, the idea is that drivers that
-have the capability to wake the machine set IRQF_NO_SUSPEND and their
-handler will still be called, even when the IRQ subsystem is formally
-suspended. Handlers without IRQF_NO_SUSPEND will not be called.
-
-This replaced the prior implementation of IRQF_NO_SUSPEND which had
-a number of fatal issues in that it didn't actually work for the
-shared case, exactly the case it should be helping.
-
-There is still enable_irq_wake()/IRQD_WAKEUP_STATE that tries to serve
-a similar purpose but is equially wrecked for shared interrupts,
-ideally this would be removed.
-
-Cc: rjw@rjwysocki.net
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
 ---
- kernel/irq/chip.c      |    4 +---
- kernel/irq/handle.c    |   24 +++++++++++++++++++++---
- kernel/irq/internals.h |    6 ++++--
- kernel/irq/manage.c    |   31 ++++++-------------------------
- kernel/irq/pm.c        |   17 +++++++++--------
- 5 files changed, 41 insertions(+), 41 deletions(-)
+ arch/x86/net/bpf_jit_comp.c |    2 +-
+ include/linux/filter.h      |   50 +++++++++++++++++++++----------------------
+ kernel/bpf/core.c           |    2 +-
+ kernel/seccomp.c            |    2 +-
+ lib/test_bpf.c              |    4 ++--
+ net/core/filter.c           |   18 ++++++++--------
+ 6 files changed, 39 insertions(+), 39 deletions(-)
 
---- a/kernel/irq/chip.c
-+++ b/kernel/irq/chip.c
-@@ -677,9 +677,7 @@ void handle_percpu_devid_irq(unsigned in
- 	if (chip->irq_ack)
- 		chip->irq_ack(&desc->irq_data);
- 
--	trace_irq_handler_entry(irq, action);
--	res = action->handler(irq, dev_id);
--	trace_irq_handler_exit(irq, action, res);
-+	res = do_irqaction(desc, action, irq, dev_id);
- 
- 	if (chip->irq_eoi)
- 		chip->irq_eoi(&desc->irq_data);
---- a/kernel/irq/handle.c
-+++ b/kernel/irq/handle.c
-@@ -131,6 +131,23 @@ void __irq_wake_thread(struct irq_desc *
- }
- 
- irqreturn_t
-+do_irqaction(struct irq_desc *desc, struct irqaction *action,
-+	     unsigned int irq, void *dev_id)
-+{
-+	irqreturn_t ret;
-+
-+	if (unlikely((desc->istate & IRQS_SUSPENDED) &&
-+		     !(action->flags & IRQF_NO_SUSPEND)))
-+		return IRQ_NONE;
-+
-+	trace_irq_handler_entry(irq, action);
-+	ret = action->handler(irq, dev_id);
-+	trace_irq_handler_exit(irq, action, ret);
-+
-+	return ret;
-+}
-+
-+irqreturn_t
- handle_irq_event_percpu(struct irq_desc *desc, struct irqaction *action)
+diff --git a/arch/x86/net/bpf_jit_comp.c b/arch/x86/net/bpf_jit_comp.c
+index 99bef86ed6df..71737a83f022 100644
+--- a/arch/x86/net/bpf_jit_comp.c
++++ b/arch/x86/net/bpf_jit_comp.c
+@@ -214,7 +214,7 @@ struct jit_context {
+ static int do_jit(struct sk_filter *bpf_prog, int *addrs, u8 *image,
+ 		  int oldproglen, struct jit_context *ctx)
  {
- 	irqreturn_t retval = IRQ_NONE;
-@@ -139,9 +156,7 @@ handle_irq_event_percpu(struct irq_desc
- 	do {
- 		irqreturn_t res;
+-	struct sock_filter_int *insn = bpf_prog->insnsi;
++	struct bpf_insn *insn = bpf_prog->insnsi;
+ 	int insn_cnt = bpf_prog->len;
+ 	u8 temp[64];
+ 	int i;
+diff --git a/include/linux/filter.h b/include/linux/filter.h
+index c43c8258e682..d443669671be 100644
+--- a/include/linux/filter.h
++++ b/include/linux/filter.h
+@@ -82,7 +82,7 @@ enum {
+ /* ALU ops on registers, bpf_add|sub|...: dst_reg += src_reg */
  
--		trace_irq_handler_entry(irq, action);
--		res = action->handler(irq, action->dev_id);
--		trace_irq_handler_exit(irq, action, res);
-+		res = do_irqaction(desc, action, irq, action->dev_id);
+ #define BPF_ALU64_REG(OP, DST, SRC)				\
+-	((struct sock_filter_int) {				\
++	((struct bpf_insn) {				\
+ 		.code  = BPF_ALU64 | BPF_OP(OP) | BPF_X,	\
+ 		.dst_reg = DST,					\
+ 		.src_reg = SRC,					\
+@@ -90,7 +90,7 @@ enum {
+ 		.imm   = 0 })
  
- 		if (WARN_ONCE(!irqs_disabled(),"irq %u handler %pF enabled interrupts\n",
- 			      irq, action->handler))
-@@ -175,6 +190,9 @@ handle_irq_event_percpu(struct irq_desc
+ #define BPF_ALU32_REG(OP, DST, SRC)				\
+-	((struct sock_filter_int) {				\
++	((struct bpf_insn) {				\
+ 		.code  = BPF_ALU | BPF_OP(OP) | BPF_X,		\
+ 		.dst_reg = DST,					\
+ 		.src_reg = SRC,					\
+@@ -100,7 +100,7 @@ enum {
+ /* ALU ops on immediates, bpf_add|sub|...: dst_reg += imm32 */
  
- 	add_interrupt_randomness(irq, flags);
+ #define BPF_ALU64_IMM(OP, DST, IMM)				\
+-	((struct sock_filter_int) {				\
++	((struct bpf_insn) {				\
+ 		.code  = BPF_ALU64 | BPF_OP(OP) | BPF_K,	\
+ 		.dst_reg = DST,					\
+ 		.src_reg = 0,					\
+@@ -108,7 +108,7 @@ enum {
+ 		.imm   = IMM })
  
-+	if (unlikely(desc->istate & IRQS_SUSPENDED) && retval == IRQ_NONE)
-+		retval = IRQ_HANDLED;
-+
- 	if (!noirqdebug)
- 		note_interrupt(irq, desc, retval);
- 	return retval;
---- a/kernel/irq/internals.h
-+++ b/kernel/irq/internals.h
-@@ -63,8 +63,10 @@ enum {
+ #define BPF_ALU32_IMM(OP, DST, IMM)				\
+-	((struct sock_filter_int) {				\
++	((struct bpf_insn) {				\
+ 		.code  = BPF_ALU | BPF_OP(OP) | BPF_K,		\
+ 		.dst_reg = DST,					\
+ 		.src_reg = 0,					\
+@@ -118,7 +118,7 @@ enum {
+ /* Endianess conversion, cpu_to_{l,b}e(), {l,b}e_to_cpu() */
  
- extern int __irq_set_trigger(struct irq_desc *desc, unsigned int irq,
- 		unsigned long flags);
--extern void __disable_irq(struct irq_desc *desc, unsigned int irq, bool susp);
--extern void __enable_irq(struct irq_desc *desc, unsigned int irq, bool resume);
-+
-+extern irqreturn_t
-+do_irqaction(struct irq_desc *desc, struct irqaction *action,
-+	     unsigned int irq, void *dev_id);
+ #define BPF_ENDIAN(TYPE, DST, LEN)				\
+-	((struct sock_filter_int) {				\
++	((struct bpf_insn) {				\
+ 		.code  = BPF_ALU | BPF_END | BPF_SRC(TYPE),	\
+ 		.dst_reg = DST,					\
+ 		.src_reg = 0,					\
+@@ -128,7 +128,7 @@ enum {
+ /* Short form of mov, dst_reg = src_reg */
  
- extern int irq_startup(struct irq_desc *desc, bool resend);
- extern void irq_shutdown(struct irq_desc *desc);
---- a/kernel/irq/manage.c
-+++ b/kernel/irq/manage.c
-@@ -382,15 +382,8 @@ setup_affinity(unsigned int irq, struct
- }
- #endif
+ #define BPF_MOV64_REG(DST, SRC)					\
+-	((struct sock_filter_int) {				\
++	((struct bpf_insn) {				\
+ 		.code  = BPF_ALU64 | BPF_MOV | BPF_X,		\
+ 		.dst_reg = DST,					\
+ 		.src_reg = SRC,					\
+@@ -136,7 +136,7 @@ enum {
+ 		.imm   = 0 })
  
--void __disable_irq(struct irq_desc *desc, unsigned int irq, bool suspend)
-+void __disable_irq(struct irq_desc *desc, unsigned int irq)
+ #define BPF_MOV32_REG(DST, SRC)					\
+-	((struct sock_filter_int) {				\
++	((struct bpf_insn) {				\
+ 		.code  = BPF_ALU | BPF_MOV | BPF_X,		\
+ 		.dst_reg = DST,					\
+ 		.src_reg = SRC,					\
+@@ -146,7 +146,7 @@ enum {
+ /* Short form of mov, dst_reg = imm32 */
+ 
+ #define BPF_MOV64_IMM(DST, IMM)					\
+-	((struct sock_filter_int) {				\
++	((struct bpf_insn) {				\
+ 		.code  = BPF_ALU64 | BPF_MOV | BPF_K,		\
+ 		.dst_reg = DST,					\
+ 		.src_reg = 0,					\
+@@ -154,7 +154,7 @@ enum {
+ 		.imm   = IMM })
+ 
+ #define BPF_MOV32_IMM(DST, IMM)					\
+-	((struct sock_filter_int) {				\
++	((struct bpf_insn) {				\
+ 		.code  = BPF_ALU | BPF_MOV | BPF_K,		\
+ 		.dst_reg = DST,					\
+ 		.src_reg = 0,					\
+@@ -164,7 +164,7 @@ enum {
+ /* Short form of mov based on type, BPF_X: dst_reg = src_reg, BPF_K: dst_reg = imm32 */
+ 
+ #define BPF_MOV64_RAW(TYPE, DST, SRC, IMM)			\
+-	((struct sock_filter_int) {				\
++	((struct bpf_insn) {				\
+ 		.code  = BPF_ALU64 | BPF_MOV | BPF_SRC(TYPE),	\
+ 		.dst_reg = DST,					\
+ 		.src_reg = SRC,					\
+@@ -172,7 +172,7 @@ enum {
+ 		.imm   = IMM })
+ 
+ #define BPF_MOV32_RAW(TYPE, DST, SRC, IMM)			\
+-	((struct sock_filter_int) {				\
++	((struct bpf_insn) {				\
+ 		.code  = BPF_ALU | BPF_MOV | BPF_SRC(TYPE),	\
+ 		.dst_reg = DST,					\
+ 		.src_reg = SRC,					\
+@@ -182,7 +182,7 @@ enum {
+ /* Direct packet access, R0 = *(uint *) (skb->data + imm32) */
+ 
+ #define BPF_LD_ABS(SIZE, IMM)					\
+-	((struct sock_filter_int) {				\
++	((struct bpf_insn) {				\
+ 		.code  = BPF_LD | BPF_SIZE(SIZE) | BPF_ABS,	\
+ 		.dst_reg = 0,					\
+ 		.src_reg = 0,					\
+@@ -192,7 +192,7 @@ enum {
+ /* Indirect packet access, R0 = *(uint *) (skb->data + src_reg + imm32) */
+ 
+ #define BPF_LD_IND(SIZE, SRC, IMM)				\
+-	((struct sock_filter_int) {				\
++	((struct bpf_insn) {				\
+ 		.code  = BPF_LD | BPF_SIZE(SIZE) | BPF_IND,	\
+ 		.dst_reg = 0,					\
+ 		.src_reg = SRC,					\
+@@ -202,7 +202,7 @@ enum {
+ /* Memory load, dst_reg = *(uint *) (src_reg + off16) */
+ 
+ #define BPF_LDX_MEM(SIZE, DST, SRC, OFF)			\
+-	((struct sock_filter_int) {				\
++	((struct bpf_insn) {				\
+ 		.code  = BPF_LDX | BPF_SIZE(SIZE) | BPF_MEM,	\
+ 		.dst_reg = DST,					\
+ 		.src_reg = SRC,					\
+@@ -212,7 +212,7 @@ enum {
+ /* Memory store, *(uint *) (dst_reg + off16) = src_reg */
+ 
+ #define BPF_STX_MEM(SIZE, DST, SRC, OFF)			\
+-	((struct sock_filter_int) {				\
++	((struct bpf_insn) {				\
+ 		.code  = BPF_STX | BPF_SIZE(SIZE) | BPF_MEM,	\
+ 		.dst_reg = DST,					\
+ 		.src_reg = SRC,					\
+@@ -222,7 +222,7 @@ enum {
+ /* Memory store, *(uint *) (dst_reg + off16) = imm32 */
+ 
+ #define BPF_ST_MEM(SIZE, DST, OFF, IMM)				\
+-	((struct sock_filter_int) {				\
++	((struct bpf_insn) {				\
+ 		.code  = BPF_ST | BPF_SIZE(SIZE) | BPF_MEM,	\
+ 		.dst_reg = DST,					\
+ 		.src_reg = 0,					\
+@@ -232,7 +232,7 @@ enum {
+ /* Conditional jumps against registers, if (dst_reg 'op' src_reg) goto pc + off16 */
+ 
+ #define BPF_JMP_REG(OP, DST, SRC, OFF)				\
+-	((struct sock_filter_int) {				\
++	((struct bpf_insn) {				\
+ 		.code  = BPF_JMP | BPF_OP(OP) | BPF_X,		\
+ 		.dst_reg = DST,					\
+ 		.src_reg = SRC,					\
+@@ -242,7 +242,7 @@ enum {
+ /* Conditional jumps against immediates, if (dst_reg 'op' imm32) goto pc + off16 */
+ 
+ #define BPF_JMP_IMM(OP, DST, IMM, OFF)				\
+-	((struct sock_filter_int) {				\
++	((struct bpf_insn) {				\
+ 		.code  = BPF_JMP | BPF_OP(OP) | BPF_K,		\
+ 		.dst_reg = DST,					\
+ 		.src_reg = 0,					\
+@@ -252,7 +252,7 @@ enum {
+ /* Function call */
+ 
+ #define BPF_EMIT_CALL(FUNC)					\
+-	((struct sock_filter_int) {				\
++	((struct bpf_insn) {				\
+ 		.code  = BPF_JMP | BPF_CALL,			\
+ 		.dst_reg = 0,					\
+ 		.src_reg = 0,					\
+@@ -262,7 +262,7 @@ enum {
+ /* Raw code statement block */
+ 
+ #define BPF_RAW_INSN(CODE, DST, SRC, OFF, IMM)			\
+-	((struct sock_filter_int) {				\
++	((struct bpf_insn) {				\
+ 		.code  = CODE,					\
+ 		.dst_reg = DST,					\
+ 		.src_reg = SRC,					\
+@@ -272,7 +272,7 @@ enum {
+ /* Program exit */
+ 
+ #define BPF_EXIT_INSN()						\
+-	((struct sock_filter_int) {				\
++	((struct bpf_insn) {				\
+ 		.code  = BPF_JMP | BPF_EXIT,			\
+ 		.dst_reg = 0,					\
+ 		.src_reg = 0,					\
+@@ -298,7 +298,7 @@ enum {
+ /* Macro to invoke filter function. */
+ #define SK_RUN_FILTER(filter, ctx)  (*filter->bpf_func)(ctx, filter->insnsi)
+ 
+-struct sock_filter_int {
++struct bpf_insn {
+ 	__u8	code;		/* opcode */
+ 	__u8	dst_reg:4;	/* dest register */
+ 	__u8	src_reg:4;	/* source register */
+@@ -330,10 +330,10 @@ struct sk_filter {
+ 	struct sock_fprog_kern	*orig_prog;	/* Original BPF program */
+ 	struct rcu_head		rcu;
+ 	unsigned int		(*bpf_func)(const struct sk_buff *skb,
+-					    const struct sock_filter_int *filter);
++					    const struct bpf_insn *filter);
+ 	union {
+ 		struct sock_filter	insns[0];
+-		struct sock_filter_int	insnsi[0];
++		struct bpf_insn		insnsi[0];
+ 		struct work_struct	work;
+ 	};
+ };
+@@ -353,7 +353,7 @@ void sk_filter_select_runtime(struct sk_filter *fp);
+ void sk_filter_free(struct sk_filter *fp);
+ 
+ int sk_convert_filter(struct sock_filter *prog, int len,
+-		      struct sock_filter_int *new_prog, int *new_len);
++		      struct bpf_insn *new_prog, int *new_len);
+ 
+ int sk_unattached_filter_create(struct sk_filter **pfp,
+ 				struct sock_fprog_kern *fprog);
+diff --git a/kernel/bpf/core.c b/kernel/bpf/core.c
+index 77a240a1ce11..265a02cc822d 100644
+--- a/kernel/bpf/core.c
++++ b/kernel/bpf/core.c
+@@ -81,7 +81,7 @@ noinline u64 __bpf_call_base(u64 r1, u64 r2, u64 r3, u64 r4, u64 r5)
+  * keep, 0 for none. @ctx is the data we are operating on, @insn is the
+  * array of filter instructions.
+  */
+-static unsigned int __sk_run_filter(void *ctx, const struct sock_filter_int *insn)
++static unsigned int __sk_run_filter(void *ctx, const struct bpf_insn *insn)
  {
--	if (suspend) {
--		if (!desc->action || (desc->action->flags & IRQF_NO_SUSPEND) ||
--		    irqd_has_set(&desc->irq_data, IRQD_WAKEUP_STATE))
--			return;
--		desc->istate |= IRQS_SUSPENDED;
--	}
--
- 	if (!desc->depth++)
- 		irq_disable(desc);
- }
-@@ -402,7 +395,7 @@ static int __disable_irq_nosync(unsigned
+ 	u64 stack[MAX_BPF_STACK / sizeof(u64)];
+ 	u64 regs[MAX_BPF_REG], tmp;
+diff --git a/kernel/seccomp.c b/kernel/seccomp.c
+index 301bbc24739c..565743db5384 100644
+--- a/kernel/seccomp.c
++++ b/kernel/seccomp.c
+@@ -248,7 +248,7 @@ static long seccomp_attach_filter(struct sock_fprog *fprog)
+ 	if (ret)
+ 		goto free_prog;
  
- 	if (!desc)
- 		return -EINVAL;
--	__disable_irq(desc, irq, false);
-+	__disable_irq(desc, irq);
- 	irq_put_desc_busunlock(desc, flags);
- 	return 0;
- }
-@@ -443,20 +436,8 @@ void disable_irq(unsigned int irq)
- }
- EXPORT_SYMBOL(disable_irq);
+-	/* Convert 'sock_filter' insns to 'sock_filter_int' insns */
++	/* Convert 'sock_filter' insns to 'bpf_insn' insns */
+ 	ret = sk_convert_filter(fp, fprog->len, NULL, &new_len);
+ 	if (ret)
+ 		goto free_prog;
+diff --git a/lib/test_bpf.c b/lib/test_bpf.c
+index c579e0f58818..5f48623ee1a7 100644
+--- a/lib/test_bpf.c
++++ b/lib/test_bpf.c
+@@ -66,7 +66,7 @@ struct bpf_test {
+ 	const char *descr;
+ 	union {
+ 		struct sock_filter insns[MAX_INSNS];
+-		struct sock_filter_int insns_int[MAX_INSNS];
++		struct bpf_insn insns_int[MAX_INSNS];
+ 	} u;
+ 	__u8 aux;
+ 	__u8 data[MAX_DATA];
+@@ -1807,7 +1807,7 @@ static struct sk_filter *generate_filter(int which, int *err)
  
--void __enable_irq(struct irq_desc *desc, unsigned int irq, bool resume)
-+void __enable_irq(struct irq_desc *desc, unsigned int irq)
+ 		fp->len = flen;
+ 		memcpy(fp->insnsi, tests[which].u.insns_int,
+-		       fp->len * sizeof(struct sock_filter_int));
++		       fp->len * sizeof(struct bpf_insn));
+ 
+ 		sk_filter_select_runtime(fp);
+ 		break;
+diff --git a/net/core/filter.c b/net/core/filter.c
+index 1d0e9492e4fa..f3b2d5e9fe5f 100644
+--- a/net/core/filter.c
++++ b/net/core/filter.c
+@@ -174,9 +174,9 @@ static u64 __get_random_u32(u64 ctx, u64 a, u64 x, u64 r4, u64 r5)
+ }
+ 
+ static bool convert_bpf_extensions(struct sock_filter *fp,
+-				   struct sock_filter_int **insnp)
++				   struct bpf_insn **insnp)
  {
--	if (resume) {
--		if (!(desc->istate & IRQS_SUSPENDED)) {
--			if (!desc->action)
--				return;
--			if (!(desc->action->flags & IRQF_FORCE_RESUME))
--				return;
--			/* Pretend that it got disabled ! */
--			desc->depth++;
--		}
--		desc->istate &= ~IRQS_SUSPENDED;
--	}
--
- 	switch (desc->depth) {
- 	case 0:
-  err_out:
-@@ -498,7 +479,7 @@ void enable_irq(unsigned int irq)
- 		 KERN_ERR "enable_irq before setup/request_irq: irq %u\n", irq))
- 		goto out;
+-	struct sock_filter_int *insn = *insnp;
++	struct bpf_insn *insn = *insnp;
  
--	__enable_irq(desc, irq, false);
-+	__enable_irq(desc, irq);
- out:
- 	irq_put_desc_busunlock(desc, flags);
- }
-@@ -1079,7 +1060,7 @@ __setup_irq(unsigned int irq, struct irq
- 		 */
+ 	switch (fp->k) {
+ 	case SKF_AD_OFF + SKF_AD_PROTOCOL:
+@@ -326,7 +326,7 @@ static bool convert_bpf_extensions(struct sock_filter *fp,
+  *
+  * 2) 2nd pass to remap in two passes: 1st pass finds new
+  *    jump offsets, 2nd pass remapping:
+- *   new_prog = kmalloc(sizeof(struct sock_filter_int) * new_len);
++ *   new_prog = kmalloc(sizeof(struct bpf_insn) * new_len);
+  *   sk_convert_filter(old_prog, old_len, new_prog, &new_len);
+  *
+  * User BPF's register A is mapped to our BPF register 6, user BPF
+@@ -336,10 +336,10 @@ static bool convert_bpf_extensions(struct sock_filter *fp,
+  * ctx == 'struct seccomp_data *'.
+  */
+ int sk_convert_filter(struct sock_filter *prog, int len,
+-		      struct sock_filter_int *new_prog, int *new_len)
++		      struct bpf_insn *new_prog, int *new_len)
+ {
+ 	int new_flen = 0, pass = 0, target, i;
+-	struct sock_filter_int *new_insn;
++	struct bpf_insn *new_insn;
+ 	struct sock_filter *fp;
+ 	int *addrs = NULL;
+ 	u8 bpf_src;
+@@ -365,8 +365,8 @@ do_pass:
+ 	new_insn++;
  
- #define IRQF_MISMATCH \
--	(IRQF_TRIGGER_MASK | IRQF_ONESHOT | IRQF_NO_SUSPEND)
-+	(IRQF_TRIGGER_MASK | IRQF_ONESHOT)
+ 	for (i = 0; i < len; fp++, i++) {
+-		struct sock_filter_int tmp_insns[6] = { };
+-		struct sock_filter_int *insn = tmp_insns;
++		struct bpf_insn tmp_insns[6] = { };
++		struct bpf_insn *insn = tmp_insns;
  
- 		if (!((old->flags & new->flags) & IRQF_SHARED) ||
- 		    ((old->flags ^ new->flags) & IRQF_MISMATCH))
-@@ -1232,7 +1213,7 @@ __setup_irq(unsigned int irq, struct irq
+ 		if (addrs)
+ 			addrs[i] = new_insn - new_prog;
+@@ -913,7 +913,7 @@ static struct sk_filter *__sk_migrate_filter(struct sk_filter *fp,
+ 	 * representation.
  	 */
- 	if (shared && (desc->istate & IRQS_SPURIOUS_DISABLED)) {
- 		desc->istate &= ~IRQS_SPURIOUS_DISABLED;
--		__enable_irq(desc, irq, false);
-+		__enable_irq(desc, irq);
- 	}
+ 	BUILD_BUG_ON(sizeof(struct sock_filter) !=
+-		     sizeof(struct sock_filter_int));
++		     sizeof(struct bpf_insn));
  
- 	raw_spin_unlock_irqrestore(&desc->lock, flags);
---- a/kernel/irq/pm.c
-+++ b/kernel/irq/pm.c
-@@ -29,14 +29,20 @@ void suspend_device_irqs(void)
- 	for_each_irq_desc(irq, desc) {
- 		unsigned long flags;
+ 	/* Conversion cannot happen on overlapping memory areas,
+ 	 * so we need to keep the user BPF around until the 2nd
+@@ -945,7 +945,7 @@ static struct sk_filter *__sk_migrate_filter(struct sk_filter *fp,
  
-+		/*
-+		 * Ideally this would be a global state, but we cannot
-+		 * for the trainwreck that is IRQD_WAKEUP_STATE.
-+		 */
- 		raw_spin_lock_irqsave(&desc->lock, flags);
--		__disable_irq(desc, irq, true);
-+		if (!irqd_has_set(&desc->irq_data, IRQD_WAKEUP_STATE))
-+			desc->istate |= IRQS_SUSPENDED;
- 		raw_spin_unlock_irqrestore(&desc->lock, flags);
- 	}
+ 	fp->len = new_len;
  
--	for_each_irq_desc(irq, desc)
-+	for_each_irq_desc(irq, desc) {
- 		if (desc->istate & IRQS_SUSPENDED)
- 			synchronize_irq(irq);
-+	}
- }
- EXPORT_SYMBOL_GPL(suspend_device_irqs);
- 
-@@ -47,14 +53,9 @@ static void resume_irqs(bool want_early)
- 
- 	for_each_irq_desc(irq, desc) {
- 		unsigned long flags;
--		bool is_early = desc->action &&
--			desc->action->flags & IRQF_EARLY_RESUME;
--
--		if (!is_early && want_early)
--			continue;
- 
- 		raw_spin_lock_irqsave(&desc->lock, flags);
--		__enable_irq(desc, irq, true);
-+		desc->istate &= ~IRQS_SUSPENDED;
- 		raw_spin_unlock_irqrestore(&desc->lock, flags);
- 	}
- }
+-	/* 2nd pass: remap sock_filter insns into sock_filter_int insns. */
++	/* 2nd pass: remap sock_filter insns into bpf_insn insns. */
+ 	err = sk_convert_filter(old_prog, old_len, fp->insnsi, &new_len);
+ 	if (err)
+ 		/* 2nd sk_convert_filter() can fail only if it fails
+-- 
+1.7.9.5
+
