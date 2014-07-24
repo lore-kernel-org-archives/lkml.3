@@ -1,354 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933122AbaGXP7k (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 11:59:40 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40482 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932207AbaGXP7i (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 11:59:38 -0400
-Date: Thu, 24 Jul 2014 08:59:12 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Rob Jones <rob.jones@codethink.co.uk>
-Cc: rdunlap@infradead.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-kernel@lists.codethink.co.uk,
-        ian.molton@codethink.co.uk, ben.dooks@codethink.co.uk
-Subject: Re: [PATCH 1/1] Managed Devices devres_debugfs file system
-Message-ID: <20140724155912.GA14956@kroah.com>
-References: <1406215081-15113-1-git-send-email-rob.jones@codethink.co.uk>
- <1406215081-15113-2-git-send-email-rob.jones@codethink.co.uk>
+	id S933598AbaGXQAB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 12:00:01 -0400
+Received: from mail-bn1blp0188.outbound.protection.outlook.com ([207.46.163.188]:36593
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S932207AbaGXP77 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jul 2014 11:59:59 -0400
+Date: Thu, 24 Jul 2014 08:59:55 -0700
+From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
+To: John Stultz <john.stultz@linaro.org>
+CC: Thomas Gleixner <tglx@linutronix.de>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Pavel Machek <pavel@ucw.cz>,
+        Len Brown <len.brown@intel.com>, <linux-kernel@vger.kernel.org>,
+        <linux-pm@vger.kernel.org>, Daniel Lezcano <daniel.lezcano@linaro.org>
+Subject: Re: [PATCH RFC] suspend/hibernation: Fix racing timers
+References: <1405964152-17865-1-git-send-email-soren.brinkmann@xilinx.com>
+ <53D083C5.2000501@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="utf-8"
 Content-Disposition: inline
-In-Reply-To: <1406215081-15113-2-git-send-email-rob.jones@codethink.co.uk>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <53D083C5.2000501@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-RCIS-Action: ALLOW
+Message-ID: <b125f213-6799-48bd-9e70-040287264948@BN1AFFO11FD033.protection.gbl>
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:149.199.60.83;CTRY:US;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(438002)(377424004)(51704005)(24454002)(377454003)(54094003)(479174003)(189002)(164054003)(199002)(81342001)(107046002)(81542001)(77096002)(85306003)(102836001)(53416004)(83322001)(106466001)(104016003)(85202003)(4396001)(6806004)(74502001)(95666004)(21056001)(44976005)(110136001)(70736001)(83506001)(77982001)(31966008)(50466002)(76482001)(20776003)(47776003)(50986999)(79102001)(80022001)(92726001)(86362001)(64706001)(85852003)(54356999)(83072002)(76176999)(92566001)(31696002)(46102001)(74316001)(74662001)(33646002)(1496007)(99396002)(85182001)(87936001)(23676002)(107986001)(23106004);DIR:OUT;SFP:;SCL:1;SRVR:BN1AFFO11HUB042;H:xsj-pvapsmtpgw01;FPR:;MLV:sfv;PTR:unknown-60-83.xilinx.com;MX:1;A:1;LANG:en;
+X-OriginatorOrg: xilinx.onmicrosoft.com
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
+X-Forefront-PRVS: 028256169F
+Authentication-Results: spf=pass (sender IP is 149.199.60.83)
+ smtp.mailfrom=soren.brinkmann@xilinx.com; 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 24, 2014 at 04:18:01PM +0100, Rob Jones wrote:
-> Reviewed-by: Ian Molton <ian.molton@codethink.co.uk>
-> Suggested-by: Ben Dooks <ben.dooks@codethink.co.uk>
-> Signed-off-by: Rob Jones <rob.jones@codethink.co.uk>
-> ---
->  Documentation/driver-model/devres-debugfs.txt |  140 +++++++++
->  drivers/base/Kconfig                          |   18 ++
->  drivers/base/devres.c                         |  387 +++++++++++++++++++++++++
->  3 files changed, 545 insertions(+)
->  create mode 100644 Documentation/driver-model/devres-debugfs.txt
+Hi John,
+
+On Wed, 2014-07-23 at 08:55PM -0700, John Stultz wrote:
+> On 07/21/2014 10:35 AM, Soren Brinkmann wrote:
+> > On platforms that do not power off during suspend, successfully entering
+> > suspend races with timers.
+> >
+> > The race happening in a couple of location is:
+> >
+> >   1. disable IRQs 	(e.g. arch_suspend_disable_irqs())
+> >      ...
+> >   2. syscore_suspend()
+> >         -> tick_suspend() 	(timers are turned off here)
+> >      ...
+> >   3. wfi		(wait for wake-IRQ here)
+> >
+> > Between steps 1 and 2 the timers can still generate interrupts that are
+> > not handled and stay pending until step 3. That pending IRQ causes an
+> > immediate - spurious - wake.
+> >
+> > The solution is to remove the timekeeping suspend/resume functions from
+> > the syscore functions and explictly call them at the appropriate time in
+> > the suspend/hibernation patchs. I.e. timers are suspend _before_ IRQs
+> > get disabled. And accordingly in the resume path.
 > 
-> diff --git a/Documentation/driver-model/devres-debugfs.txt b/Documentation/driver-model/devres-debugfs.txt
-> new file mode 100644
-> index 0000000..7004ebd
-> --- /dev/null
-> +++ b/Documentation/driver-model/devres-debugfs.txt
-> @@ -0,0 +1,140 @@
-> +
-> +Introduction
-> +============
-> +
-> +This document describes a file system that can be enabled to assist
-> +with the debugging of devices that use managed reources
-> +
-> +Outline of Operation
-> +====================
-> +
-> +Setting the flag DEVRES_DEBUGFS (depends on DEBUG_DEVRES) enables a
-> +debug facility for device managed resources. This takes the form of
-> +a directory in the debugfs file system which is a pseudo file system
-> +(typically mounted at /sys/kernel/debug) similar in concept to sysfs
-> +but with no restrictions on the format of the data read from a file.
-> +
-> +The directory (devres/) is created the first time a managed resource
-> +is allocated for any device.
-> +
-> +The first time a managed resource is allocated for a device, a file
-> +with the same name as the device is created in devres/.
-> +
-> +The file is read only and can be read by normal userspace utilities
-> +(such as cat).
-> +
-> +The data returned is in ASCII text format and has one header line for
-> +the device followed by one line per allocated resource.
-> +
-> +It is possible to seek to a given line within the file: position 0
-> +(zero) goes directly to the device line, position 1 goes to the first
-> +resource line and so on. Attempting to seek to a line that does not
-> +exist returns EOF.
-> +
-> +If opened and read sequentially, a file will initially give Line 0 (see
-> +below) and then each subsequent read will give a Resource Line until
-> +EOF. Note that the data may change on the fly (see Notes below).
-> +
-> +Data Format
-> +===========
-> +
-> +Device Line (Line 0)
-> +--------------------
-> +
-> +dev: <address> <name>
-> +
-> +There is a single space between each field.
-> +
-> +dev: = literal text identifying this as a device line.
-> +
-> +<address> = the address in kernel memory of the device data structure.
-> +The layout of "struct device" can be found in include/linux/device.h.
-> +This value is displayed in hexadecimal format using the "%p" format
-> +specifier and thus will vary in length depending on the word size of
-> +the kernel, e.g. 8 characters for a 32 bit kernel.
-> +
-> +<name> = the name of the device. This should be the same as the file
-> +name, it is included to facilitate identification when multiple
-> +devices are being listed. The length of this field can vary.
-> +
-> +Resource Line (Line 1 et seq.)
-> +------------------------------
-> +
-> +res: <address> <length> <data> <name>
-> +
-> +There is a single space between each field.
-> +
-> +res: = literal text identifying this as a resource line.
-> +
-> +<address> = the address in kernel memory of the resource data. The
-> +structure pointed to can vary depending on the type of resource.
-> +This field is encoded in hexadecimal format using the "%p" format
-> +specifier and thus will vary in length depending on the word size of
-> +the kernel, e.g. 8 characters for a 32 bit kernel.
-> +
-> +<length> = the length of the resource data. This field is encoded
-> +in decimal format, right justified, space filled and is always 9
-> +characters long.
-> +
-> +<data> = a hexadecimal display of the first 16 (or <length> if less)
-> +bytes of data starting for location <address>. If <length> is less
-> +than 16, this field is padded with spaces on the right to the full
-> +32 characters.
-> +
-> +<name> = a string indentifying the resource type. This is often a
-> +string containing the name of the function to be used to free the
-> +resource. Typical examples are "devm_kzalloc_release" which identifies
-> +a memory resource and "devm_gpio_release" which identifies a gpio
-> +resource. The length of this field can vary.
-> +
-> +Notes
-> +=====
-> +
-> +1. Once created, a file persists until the device is removed even
-> +   if all allocated resources are freed. This means that the existence
-> +   of the file is confirmation that at least one resource has been
-> +   allocated at some point, even if the device now has none allocated.
-> +
-> +2. Opening a file and holding it open will prevent the freeing up of
-> +   of the device - the final removal is held off until the file is
-> +   closed. Managed resources can still be freed if, say, a driver is
-> +   removed.
-> +
-> +3. Resources can, in principle, be allocated and freed on the fly so
-> +   it should not be assumed in general that seeking to a particular
-> +   resource line will always return the same resource. However, that is
-> +   a function of the device driver concerned and it may be a valid
-> +   assumption for some drivers, e.g. one that only allocates resources
-> +   during its .probe function.
-> +
-> +4. The device's list of resources is traversed from its base to the
-> +   requested item each time the file is read. During this scan resources
-> +   are spinlocked, which may have implications if resources can be
-> +   allocated during time critical code at the same time as a read is
-> +   taking place.
-> +
-> +5. A copy is taken of (up to) 16 bytes of resource data while the
-> +   spinlock (see note 4, above) is still in place and so can be relied
-> +   upon as an accurate snapshot at the time of the read but it must be
-> +   remembered that resources may change dynamically (see note 3, above)
-> +   so the memory may have changed subsequently.
-> +
-> +Sample Output
-> +=============
-> +
-> +root@arm:~# cat /sys/kernel/debug/devres/mmc0
-> +dev: ed980008 mmc0
-> +res: ed95a618        50 000000004884e8800001000039a695ed devm_kzalloc_release
-> +res: ed95cc58         4 02000000                         devm_gpio_release
-> +res: ed95cc98         8 a2000000000098ed                 devm_irq_release
-> +root@arm:~#
-> +
-> +This shows three managed resources allocated to device "mmc0".
-> +
-> +1. A block of memory 50 bytes long (the first 16 byte are displayed).
-> +2. A GPIO.
-> +3. An IRQ.
-> +
-> +If 16 bytes of data is insufficient, you can try using other debugging
-> +tools to examine the data.
+> So.. I sort of follow this, though from the description disabling
+> timekeeping to turn off timers seems a little indirect (I do see that
+> suspending timekeeping calls clockevents_suspend() which is the key
+> part). Maybe this could be clarified in a future version of the patch
+> description?
+> 
+> I worry that moving timekeeping_suspend earlier in the suspend process
+> might cause problems where things access time in the suspend path. I
+> recall these orderings have been problematic in the past, and slightly
+> tweaking them can often destabilize things badly.
 
-Why did you pick 16 bytes?  What can I do with that information?
+You're right. Just when I received this I started seeing some warning
+from the kernel due to ktime_get() called with timekeeping being
+suspended.
+Though, stability-wise it seems to work.
 
+> 
+> I wonder if it would be better just to move the clockevent_suspend()
+> call to the earlier site, that way timers are halted but timekeeping
+> continues until its normal suspend point.
 
-> diff --git a/drivers/base/Kconfig b/drivers/base/Kconfig
-> index 8fa8dea..6a2f125 100644
-> --- a/drivers/base/Kconfig
-> +++ b/drivers/base/Kconfig
-> @@ -177,6 +177,24 @@ config DEBUG_DEVRES
->  
->  	  If you are unsure about this, Say N here.
->  
-> +config DEVRES_DEBUGFS
-> +	bool "Managed device resources debugfs file system"
-> +	depends on DEBUG_DEVRES
-> +	help
-> +	  This option enables a debugfs file system related to Managed
-> +	  Resources. When a device allocates a managed resource, with
-> +	  this option enabled, a read-only file with the same name as
-> +	  the device is created in the file system. Reading this file
-> +	  provides some basic debug information about the managed
-> +	  resources allocated to the device.
-> +
-> +	  The overhead caused by enabling this option is quite small.
-> +	  Specifically, a small memory overhead for each device and a
-> +	  small time overhead at each resource allocation and
-> +	  de-allocation.
-> +
-> +	  If you are unsure about this, Say N here.
-> +
->  config SYS_HYPERVISOR
->  	bool
->  	default n
-> diff --git a/drivers/base/devres.c b/drivers/base/devres.c
-> index 5c88a27..41b6465 100644
-> --- a/drivers/base/devres.c
-> +++ b/drivers/base/devres.c
-> @@ -7,9 +7,13 @@
->   * This file is released under the GPLv2.
->   */
->  
-> +#include <linux/debugfs.h>
->  #include <linux/device.h>
->  #include <linux/module.h>
-> +#include <linux/seq_file.h>
->  #include <linux/slab.h>
-> +#include <linux/spinlock.h>
-> +#include <linux/uaccess.h>
+I'll look into this and send out a patch once I have something working.
 
-why not just make this a separate file, that would remove the #ifdef
-from this file, right?
-
-
-> +/**
-> + * devres_dbgfs_seq_show - seq file output routine for a devres debugfs file
-> + * @s: pointer to seq file structure
-> + * @v: pointer to private data set up by devres_dbgfs_seq_next().
-> + *
-> + * Static debug function called when the user reads from a device managed
-> + * resources debugfs file. It outputs to the user buffer using seq_file
-> + * function seq_printf();
-> + *
-> + * This function locks devres_lock in the device structure.
-> + */
-> +static int devres_dbgfs_seq_show(struct seq_file *s, void *v)
-> +{
-> +	struct devres_dbgfs_private *priv = v;
-> +	struct device *dev = priv->dev;
-> +	int size, i, pos = priv->pos;
-> +	struct devres *dr;
-> +	struct list_head *head;
-> +	struct list_head *item;
-> +	unsigned long flags;
-> +	char data[16];
-> +	char *dataptr;
-> +
-> +	if (pos == 0) {
-> +		seq_printf(s, "dev: %p %s\n", dev, dev_name(dev));
-
-%pK please for all kernel pointers.
-
-
-
-> +/**
-> + * devres_dbgfs_create_file - create debugfs file for a device
-> + * @dev: device
-> + *
-> + * Static debug function that will automatically create a debugfs file
-> + * with the same name as the supplied device IFF the said file has not
-> + * already been created.
-> + *
-> + * This function locks devres_dbgfs_lock.
-> + */
-> +static void devres_dbgfs_create_file(struct device *dev)
-> +{
-> +	struct dentry *debugfsfile = NULL;
-> +	struct devres_dbgfs_link *link;
-> +	struct dentry *debugfsdir;
-> +	unsigned long flags;
-> +
-> +	spin_lock_irqsave(&devres_dbgfs_lock, flags);
-> +
-> +	link = devres_dbgfs_find_filelink(dev);
-> +	if (link)
-> +		goto out_unlock;
-> +
-> +	debugfsdir = devres_dbgfs_get_dir();
-> +	if (debugfsdir)
-> +		/* Create file, n.b. dev goes into inode->i_private */
-> +		debugfsfile = debugfs_create_file(dev_name(dev), 0444,
-> +						  debugfsdir, dev,
-> +						  &devres_dbgfs_seq_fops);
-
-I worry about this, as there is no reason that devices have to have
-"unique" names in the system.  Odds are, there's lots of conflicts,
-which is why sysfs is a tree, not a flat heirachy.
-
-
-> +	if (!debugfsfile)
-> +		goto out_unlock;
-
-If debugfs is not enabled, this will not trigger, are you sure you want
-that?
-
-
-> +
-> +	/* Success: now create filelink entry in linked list */
-> +	link = kmalloc(sizeof(*link), GFP_KERNEL);
-> +	if (!link) {
-> +		debugfs_remove(debugfsfile);
-> +		goto out_unlock;
-> +	}
-> +
-> +	INIT_LIST_HEAD(&link->list);
-> +	link->dev = dev;
-> +	link->dp = debugfsfile;
-> +	if (devres_dbgfs_lastused)
-> +		list_add(&link->list, &devres_dbgfs_lastused->list);
-> +	devres_dbgfs_lastused = link;
-> +
-> +out_unlock:
-> +	spin_unlock_irqrestore(&devres_dbgfs_lock, flags);
-> +}
-> +#endif /* CONFIG_DEVRES_DEBUGFS */
-> +
->  /*
->   * Release functions for devres group.  These callbacks are used only
->   * for identification.
-> @@ -220,6 +601,9 @@ void devres_add(struct device *dev, void *res)
->  	spin_lock_irqsave(&dev->devres_lock, flags);
->  	add_dr(dev, &dr->node);
->  	spin_unlock_irqrestore(&dev->devres_lock, flags);
-> +#ifdef CONFIG_DEVRES_DEBUGFS
-> +	devres_dbgfs_create_file(dev);
-> +#endif /* CONFIG_DEVRES_DEBUGFS */
-
-ifdefs like this are strongly discouraged.
-
-Overall, I'm curious as to what this code is good for?  What use cases
-will benifit for seeing all of this information?  Why would a developer
-ever care about all of the resources that a specific device has created,
-what could I do with that information?
-
-It seems "neat", but not something I would ever actually care about, as
-there's nothing to do with that info.  A device will never allocate
-something it doesn't actually need, right?
-
-thanks,
-
-greg k-h
+	Thanks,
+	Sören
