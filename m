@@ -1,82 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758588AbaGXCbC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 22:31:02 -0400
-Received: from mga11.intel.com ([192.55.52.93]:61771 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757414AbaGXCbA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 22:31:00 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,721,1400050800"; 
-   d="scan'208";a="574547455"
-From: Jiang Liu <jiang.liu@linux.intel.com>
-To: Joerg Roedel <joro@8bytes.org>, David Woodhouse <dwmw2@infradead.org>,
-        Yinghai Lu <yinghai@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Vinod Koul <vinod.koul@intel.com>,
-        "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>
-Cc: Jiang Liu <jiang.liu@linux.intel.com>, Ashok Raj <ashok.raj@intel.com>,
-        Yijing Wang <wangyijing@huawei.com>, Tony Luck <tony.luck@intel.com>,
-        iommu@lists.linux-foundation.org, linux-pci@vger.kernel.org,
-        linux-hotplug@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dmaengine@vger.kernel.org
-Subject: iommu/vt-d: Fix build error caused by unknown definition of acpi_handle
-Date: Thu, 24 Jul 2014 10:33:27 +0800
-Message-Id: <1406169208-11097-1-git-send-email-jiang.liu@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <20140723153420.GC14017@8bytes.org>
-References: <20140723153420.GC14017@8bytes.org>
+	id S1758607AbaGXCgx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 22:36:53 -0400
+Received: from mail-la0-f41.google.com ([209.85.215.41]:52676 "EHLO
+	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757538AbaGXCgw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jul 2014 22:36:52 -0400
 MIME-Version: 1.0
+In-Reply-To: <20140723122608.GL11241@linux.vnet.ibm.com>
+References: <1406092194-13004-1-git-send-email-bobby.prani@gmail.com>
+ <1406092194-13004-12-git-send-email-bobby.prani@gmail.com> <20140723122608.GL11241@linux.vnet.ibm.com>
+From: Pranith Kumar <bobby.prani@gmail.com>
+Date: Wed, 23 Jul 2014 22:36:19 -0400
+Message-ID: <CAJhHMCC7_GLmBroGhKWMJJKuWqhojQGf=9So1_x4nb2adQvqFg@mail.gmail.com>
+Subject: Re: [PATCH 11/16] rcu: Check for spurious wakeup using return value
+To: Paul McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Josh Triplett <josh@joshtriplett.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        "open list:READ-COPY UPDATE..." <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When both CONFIG_ACPI and CONFIG_DMAR_TABLE are disabled, commit
-"Implement DMAR unit hotplug framework" causes build failure as below:
-  CC      arch/x86/kernel/pci-dma.o
-In file included from arch/x86/kernel/pci-dma.c:3:0:
-include/linux/dmar.h:168:35: error: unknown type name ‘acpi_handle’
- static inline int dmar_device_add(acpi_handle handle)
-                                   ^
-include/linux/dmar.h:173:38: error: unknown type name ‘acpi_handle’
- static inline int dmar_device_remove(acpi_handle handle)
-                                      ^
-make[2]: *** [arch/x86/kernel/pci-dma.o] Error 1
-make[1]: *** [arch/x86/kernel] Error 2
-make: *** [arch/x86] Error 2
+On Wed, Jul 23, 2014 at 8:26 AM, Paul E. McKenney
+<paulmck@linux.vnet.ibm.com> wrote:
+> On Wed, Jul 23, 2014 at 01:09:48AM -0400, Pranith Kumar wrote:
+>> When the gp_kthread wakes up from the wait event, it returns 0 if the wake up is
+>> due to the condition having been met. This commit checks this return value
+>> for a spurious wake up before calling rcu_gp_init().
+>>
+>> Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
+>
+> How does this added check help?  I don't see that it does.  If the flag
+> is set, we want to wake up.  If we get a spurious wakeup, but then the
+> flag gets set before we actually wake up, we still want to wake up.
+>
 
-Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
----
-Hi Joerg,
-	Could you please help to merge or fold this patch to fix the
-build error?
-Regards!
-Gerry
----
- include/linux/dmar.h |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+So I took a look at the docs again, and using the return value is the
+recommended way to check for spurious wakeups.
 
-diff --git a/include/linux/dmar.h b/include/linux/dmar.h
-index 9c06bb4b5b14..594d4ac79e75 100644
---- a/include/linux/dmar.h
-+++ b/include/linux/dmar.h
-@@ -165,12 +165,12 @@ static inline int dmar_ir_hotplug(struct dmar_drhd_unit *dmaru, bool insert)
- 
- #else /* CONFIG_DMAR_TABLE */
- 
--static inline int dmar_device_add(acpi_handle handle)
-+static inline int dmar_device_add(void *handle)
- {
- 	return 0;
- }
- 
--static inline int dmar_device_remove(acpi_handle handle)
-+static inline int dmar_device_remove(void *handle)
- {
- 	return 0;
- }
+The condition in wait_event_interruptible() is checked when the task
+is woken up (either due to stray signals or explicitly) and it returns
+true if condition evaluates to true.
+
+In the current scenario, if we get a spurious wakeup, we take the
+costly path of checking this condition again (with a barrier and lock)
+before going back to wait.
+
+The scenario of getting an actual wakeup after getting a spurious
+wakeup exists even today, this is the window after detecting a
+spurious wakeup and before going back to wait. I am not sure if using
+the return value enlarges that window as we are going back to sleep
+immediately.
+
+Thoughts?
+
 -- 
-1.7.10.4
-
+Pranith
