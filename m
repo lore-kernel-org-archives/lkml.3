@@ -1,223 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758853AbaGXMue (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 08:50:34 -0400
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:37395 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757778AbaGXMud (ORCPT
+	id S1758900AbaGXMvO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 08:51:14 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:39345 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758221AbaGXMvM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 08:50:33 -0400
-From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
-To: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org
-Cc: Sudip Mukherjee <sudipm.mukherjee@gmail.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH] staging:bcm:DDRinit.c:coding style:line over 80 char
-Date: Thu, 24 Jul 2014 18:19:46 +0530
-Message-Id: <1406206186-4661-1-git-send-email-sudipm.mukherjee@gmail.com>
-X-Mailer: git-send-email 1.8.1.2
+	Thu, 24 Jul 2014 08:51:12 -0400
+Message-ID: <53D100A2.3090404@oracle.com>
+Date: Thu, 24 Jul 2014 08:48:34 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: Andrey Ryabinin <a.ryabinin@samsung.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>
+CC: Andi Kleen <ak@linux.intel.com>,
+        Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        Dave Hansen <dave.hansen@linux.intel.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Dave Chinner <david@fromorbit.com>, Ning Qu <quning@gmail.com>,
+        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Dave Jones <davej@redhat.com>,
+        Konstantin Khlebnikov <koct9i@gmail.com>
+Subject: Re: [PATCHv3 1/2] mm: introduce vm_ops->map_pages()
+References: <1393530827-25450-1-git-send-email-kirill.shutemov@linux.intel.com> <1393530827-25450-2-git-send-email-kirill.shutemov@linux.intel.com> <53D07E96.5000006@oracle.com> <53D0AD7E.3050705@samsung.com>
+In-Reply-To: <53D0AD7E.3050705@samsung.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
----
- drivers/staging/bcm/DDRInit.c | 59 ++++++++++++++++++++++++++++---------------
- 1 file changed, 39 insertions(+), 20 deletions(-)
+On 07/24/2014 02:53 AM, Andrey Ryabinin wrote:
+> On 07/24/14 07:33, Sasha Levin wrote:
+>> > On 02/27/2014 02:53 PM, Kirill A. Shutemov wrote:
+>>> >> The patch introduces new vm_ops callback ->map_pages() and uses it for
+>>> >> mapping easy accessible pages around fault address.
+>>> >>
+>>> >> On read page fault, if filesystem provides ->map_pages(), we try to map
+>>> >> up to FAULT_AROUND_PAGES pages around page fault address in hope to
+>>> >> reduce number of minor page faults.
+>>> >>
+>>> >> We call ->map_pages first and use ->fault() as fallback if page by the
+>>> >> offset is not ready to be mapped (cold page cache or something).
+>>> >>
+>>> >> Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+>>> >> ---
+>> > 
+>> > Hi all,
+>> > 
+>> > This patch triggers use-after-free when fuzzing using trinity and the KASAN
+>> > patchset.
+>> > 
+> I think this should be fixed already by following patch:
+> 
+> From: Konstantin Khlebnikov <koct9i@gmail.com>
+> Subject: mm: do not call do_fault_around for non-linear fault
 
-diff --git a/drivers/staging/bcm/DDRInit.c b/drivers/staging/bcm/DDRInit.c
-index 4564f40..4226c93 100644
---- a/drivers/staging/bcm/DDRInit.c
-+++ b/drivers/staging/bcm/DDRInit.c
-@@ -7,7 +7,8 @@
- 
- /* DDR INIT-133Mhz */
- #define T3_SKIP_CLOCK_PROGRAM_DUMP_133MHZ 12  /* index for 0x0F007000 */
--static struct bcm_ddr_setting asT3_DDRSetting133MHz[] = {  /* DPLL Clock Setting */
-+static struct bcm_ddr_setting asT3_DDRSetting133MHz[] = {
-+	/* DPLL Clock Setting */
- 	{0x0F000800, 0x00007212},
- 	{0x0f000820, 0x07F13FFF},
- 	{0x0f000810, 0x00000F95},
-@@ -65,7 +66,8 @@ static struct bcm_ddr_setting asT3_DDRSetting133MHz[] = {  /* DPLL Clock Setting
- };
- /* 80Mhz */
- #define T3_SKIP_CLOCK_PROGRAM_DUMP_80MHZ 10  /* index for 0x0F007000 */
--static struct bcm_ddr_setting asT3_DDRSetting80MHz[] = {  /* DPLL Clock Setting */
-+static struct bcm_ddr_setting asT3_DDRSetting80MHz[] = {
-+      /* DPLL Clock Setting */
- 	{0x0f000810, 0x00000F95},
- 	{0x0f000820, 0x07f1ffff},
- 	{0x0f000860, 0x00000000},
-@@ -117,7 +119,8 @@ static struct bcm_ddr_setting asT3_DDRSetting80MHz[] = {  /* DPLL Clock Setting
- };
- /* 100Mhz */
- #define T3_SKIP_CLOCK_PROGRAM_DUMP_100MHZ 13  /* index for 0x0F007000 */
--static struct bcm_ddr_setting asT3_DDRSetting100MHz[] = {  /* DPLL Clock Setting */
-+static struct bcm_ddr_setting asT3_DDRSetting100MHz[] = {
-+      /* DPLL Clock Setting */
- 	{0x0F000800, 0x00007008},
- 	{0x0f000810, 0x00000F95},
- 	{0x0f000820, 0x07F13E3F},
-@@ -189,7 +192,8 @@ static struct bcm_ddr_setting asDPLL_266MHZ[] = {
- };
- 
- #define T3B_SKIP_CLOCK_PROGRAM_DUMP_133MHZ 11  /* index for 0x0F007000 */
--static struct bcm_ddr_setting asT3B_DDRSetting133MHz[] = {  /* DPLL Clock Setting */
-+static struct bcm_ddr_setting asT3B_DDRSetting133MHz[] = {
-+      /* DPLL Clock Setting */
- 	{0x0f000810, 0x00000F95},
- 	{0x0f000810, 0x00000F95},
- 	{0x0f000810, 0x00000F95},
-@@ -247,7 +251,8 @@ static struct bcm_ddr_setting asT3B_DDRSetting133MHz[] = {  /* DPLL Clock Settin
- 	};
- 
- #define T3B_SKIP_CLOCK_PROGRAM_DUMP_80MHZ 9  /* index for 0x0F007000 */
--static struct bcm_ddr_setting asT3B_DDRSetting80MHz[] = {  /* DPLL Clock Setting */
-+static struct bcm_ddr_setting asT3B_DDRSetting80MHz[] = {
-+      /* DPLL Clock Setting */
- 	{0x0f000810, 0x00000F95},
- 	{0x0f000820, 0x07F13FFF},
- 	{0x0f000840, 0x0FFF1F00},
-@@ -301,7 +306,8 @@ static struct bcm_ddr_setting asT3B_DDRSetting80MHz[] = {  /* DPLL Clock Setting
- 
- /* 100Mhz */
- #define T3B_SKIP_CLOCK_PROGRAM_DUMP_100MHZ 9  /* index for 0x0F007000 */
--static struct bcm_ddr_setting asT3B_DDRSetting100MHz[] = {  /* DPLL Clock Setting */
-+static struct bcm_ddr_setting asT3B_DDRSetting100MHz[] = {
-+      /* DPLL Clock Setting */
- 	{0x0f000810, 0x00000F95},
- 	{0x0f000820, 0x07F1369B},
- 	{0x0f000840, 0x0FFF0800},
-@@ -356,7 +362,8 @@ static struct bcm_ddr_setting asT3B_DDRSetting100MHz[] = {  /* DPLL Clock Settin
- 
- 
- #define T3LP_SKIP_CLOCK_PROGRAM_DUMP_133MHZ 9  /* index for 0x0F007000 */
--static struct bcm_ddr_setting asT3LP_DDRSetting133MHz[] = {  /* DPLL Clock Setting */
-+static struct bcm_ddr_setting asT3LP_DDRSetting133MHz[] = {
-+      /* DPLL Clock Setting */
- 	{0x0f000820, 0x03F1365B},
- 	{0x0f000810, 0x00002F95},
- 	{0x0f000880, 0x000003DD},
-@@ -416,7 +423,8 @@ static struct bcm_ddr_setting asT3LP_DDRSetting133MHz[] = {  /* DPLL Clock Setti
- };
- 
- #define T3LP_SKIP_CLOCK_PROGRAM_DUMP_100MHZ 11  /* index for 0x0F007000 */
--static struct bcm_ddr_setting asT3LP_DDRSetting100MHz[] = {  /* DPLL Clock Setting */
-+static struct bcm_ddr_setting asT3LP_DDRSetting100MHz[] = {
-+      /* DPLL Clock Setting */
- 	{0x0f000810, 0x00002F95},
- 	{0x0f000820, 0x03F1369B},
- 	{0x0f000840, 0x0fff0000},
-@@ -476,7 +484,8 @@ static struct bcm_ddr_setting asT3LP_DDRSetting100MHz[] = {  /* DPLL Clock Setti
- };
- 
- #define T3LP_SKIP_CLOCK_PROGRAM_DUMP_80MHZ 9  /* index for 0x0F007000 */
--static struct bcm_ddr_setting asT3LP_DDRSetting80MHz[] = {  /* DPLL Clock Setting */
-+static struct bcm_ddr_setting asT3LP_DDRSetting80MHz[] = {
-+      /* DPLL Clock Setting */
- 	{0x0f000820, 0x07F13FFF},
- 	{0x0f000810, 0x00002F95},
- 	{0x0f000860, 0x00000000},
-@@ -536,7 +545,8 @@ static struct bcm_ddr_setting asT3LP_DDRSetting80MHz[] = {  /* DPLL Clock Settin
- /* T3 LP-B (UMA-B) */
- 
- #define T3LPB_SKIP_CLOCK_PROGRAM_DUMP_160MHZ 7  /* index for 0x0F007000 */
--static struct bcm_ddr_setting asT3LPB_DDRSetting160MHz[] = {  /* DPLL Clock Setting */
-+static struct bcm_ddr_setting asT3LPB_DDRSetting160MHz[] = {
-+      /* DPLL Clock Setting */
- 	{0x0f000820, 0x03F137DB},
- 	{0x0f000810, 0x01842795},
- 	{0x0f000860, 0x00000000},
-@@ -544,7 +554,8 @@ static struct bcm_ddr_setting asT3LPB_DDRSetting160MHz[] = {  /* DPLL Clock Sett
- 	{0x0f000840, 0x0FFF0400},
- 	{0x0F00a044, 0x1fffffff},
- 	{0x0F00a040, 0x1f000000},
--	{0x0f003050, 0x00000021},  /* this is flash/eeprom clock divisor which set the flash clock to 20 MHz */
-+	{0x0f003050, 0x00000021},  /* this is flash/eeprom clock divisor which
-+				    * set the flash clock to 20 MHz */
- 	{0x0F00a084, 0x1Cffffff},  /* Now dump from her in internal memory */
- 	{0x0F00a080, 0x1C000000},
- 	{0x0F00A000, 0x00000016},
-@@ -593,7 +604,8 @@ static struct bcm_ddr_setting asT3LPB_DDRSetting160MHz[] = {  /* DPLL Clock Sett
- 
- 
- #define T3LPB_SKIP_CLOCK_PROGRAM_DUMP_133MHZ 7  /* index for 0x0F007000 */
--static struct bcm_ddr_setting asT3LPB_DDRSetting133MHz[] = {  /* DPLL Clock Setting */
-+static struct bcm_ddr_setting asT3LPB_DDRSetting133MHz[] = {
-+      /* DPLL Clock Setting */
- 	{0x0f000820, 0x03F1365B},
- 	{0x0f000810, 0x00002F95},
- 	{0x0f000880, 0x000003DD},
-@@ -602,7 +614,8 @@ static struct bcm_ddr_setting asT3LPB_DDRSetting133MHz[] = {  /* DPLL Clock Sett
- 	{0x0f000860, 0x00000000},
- 	{0x0F00a044, 0x1fffffff},
- 	{0x0F00a040, 0x1f000000},
--	{0x0f003050, 0x00000021},  /* flash/eeprom clock divisor which set the flash clock to 20 MHz */
-+	{0x0f003050, 0x00000021},  /* flash/eeprom clock divisor which
-+				    * set the flash clock to 20 MHz */
- 	{0x0F00a084, 0x1Cffffff},  /* dump from here in internal memory */
- 	{0x0F00a080, 0x1C000000},
- 	{0x0F00A000, 0x00000016},
-@@ -654,7 +667,8 @@ static struct bcm_ddr_setting asT3LPB_DDRSetting133MHz[] = {  /* DPLL Clock Sett
- };
- 
- #define T3LPB_SKIP_CLOCK_PROGRAM_DUMP_100MHZ 8  /* index for 0x0F007000 */
--static struct bcm_ddr_setting asT3LPB_DDRSetting100MHz[] = {  /* DPLL Clock Setting */
-+static struct bcm_ddr_setting asT3LPB_DDRSetting100MHz[] = {
-+      /* DPLL Clock Setting */
- 	{0x0f000810, 0x00002F95},
- 	{0x0f000820, 0x03F1369B},
- 	{0x0f000840, 0x0fff0000},
-@@ -664,7 +678,8 @@ static struct bcm_ddr_setting asT3LPB_DDRSetting100MHz[] = {  /* DPLL Clock Sett
- 	{0x0f000840, 0x0FFF0000},
- 	{0x0F00a044, 0x1fffffff},
- 	{0x0F00a040, 0x1f000000},
--	{0x0f003050, 0x00000021},  /* flash/eeprom clock divisor which set the flash clock to 20 MHz */
-+	{0x0f003050, 0x00000021},  /* flash/eeprom clock divisor which
-+				    * set the flash clock to 20 MHz */
- 	{0x0F00a084, 0x1Cffffff},  /* dump from here in internal memory */
- 	{0x0F00a080, 0x1C000000},
- 	/* Memcontroller Default values */
-@@ -715,7 +730,8 @@ static struct bcm_ddr_setting asT3LPB_DDRSetting100MHz[] = {  /* DPLL Clock Sett
- };
- 
- #define T3LPB_SKIP_CLOCK_PROGRAM_DUMP_80MHZ 7  /* index for 0x0F007000 */
--static struct bcm_ddr_setting asT3LPB_DDRSetting80MHz[] = {  /* DPLL Clock Setting */
-+static struct bcm_ddr_setting asT3LPB_DDRSetting80MHz[] = {
-+      /* DPLL Clock Setting */
- 	{0x0f000820, 0x07F13FFF},
- 	{0x0f000810, 0x00002F95},
- 	{0x0f000860, 0x00000000},
-@@ -723,7 +739,8 @@ static struct bcm_ddr_setting asT3LPB_DDRSetting80MHz[] = {  /* DPLL Clock Setti
- 	{0x0f000840, 0x0FFF1F00},
- 	{0x0F00a044, 0x1fffffff},
- 	{0x0F00a040, 0x1f000000},
--	{0x0f003050, 0x00000021},  /* flash/eeprom clock divisor which set the flash clock to 20 MHz */
-+	{0x0f003050, 0x00000021},  /* flash/eeprom clock divisor
-+				    * which set the flash clock to 20 MHz */
- 	{0x0F00a084, 0x1Cffffff},  /* dump from here in internal memory */
- 	{0x0F00a080, 0x1C000000},
- 	{0x0F00A000, 0x00000016},
-@@ -914,7 +931,8 @@ int ddr_init(struct bcm_mini_adapter *Adapter)
- 			break;
- 		case DDR_133_MHZ:
- 
--			if (Adapter->bDPLLConfig == PLL_266_MHZ) {  /* 266Mhz PLL selected. */
-+			/* 266Mhz PLL selected. */
-+			if (Adapter->bDPLLConfig == PLL_266_MHZ) {
- 				memcpy(asT3B_DDRSetting133MHz, asDPLL_266MHZ,
- 				       sizeof(asDPLL_266MHZ));
- 				psDDRSetting = asT3B_DDRSetting133MHz;
-@@ -1018,8 +1036,9 @@ int ddr_init(struct bcm_mini_adapter *Adapter)
- 		/* DC/DC standby change...
- 		 * This is to be done only for Hybrid PMU mode.
- 		 * with the current h/w there is no way to detect this.
--		 * and since we dont have internal PMU lets do it under UMA-B chip id.
--		 * we will change this when we will have internal PMU.
-+		 * and since we dont have internal PMU lets do it under
-+		 * UMA-B chip id. we will change this when we will have
-+		 * internal PMU.
- 		 */
- 		if (Adapter->PmuMode == HYBRID_MODE_7C) {
- 			retval = rdmalt(Adapter, (UINT)0x0f000c00,
--- 
-1.8.1.2
+I don't think so. It's supposed to deal with a different issue, and it was already
+in my -next tree which triggered the issue I've reported.
 
+
+Thanks,
+Sasha
