@@ -1,104 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934140AbaGXFRP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 01:17:15 -0400
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:42826 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934044AbaGXFRO (ORCPT
+	id S934151AbaGXFYA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 01:24:00 -0400
+Received: from mga03.intel.com ([143.182.124.21]:54333 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934044AbaGXFX6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 01:17:14 -0400
-Message-ID: <53D096D0.2000708@linaro.org>
-Date: Thu, 24 Jul 2014 14:17:04 +0900
-From: AKASHI Takahiro <takahiro.akashi@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Thu, 24 Jul 2014 01:23:58 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,721,1400050800"; 
+   d="scan'208";a="460728446"
+From: "Ren, Qiaowei" <qiaowei.ren@intel.com>
+To: "Hansen, Dave" <dave.hansen@intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>
+CC: "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: RE: [PATCH v7 03/10] x86, mpx: add macro cpu_has_mpx
+Thread-Topic: [PATCH v7 03/10] x86, mpx: add macro cpu_has_mpx
+Thread-Index: AQHPpKaZ7P+lz+nalUOxAx0M9XXWLpurwdcAgAEwxJCAAFzbgIABGsRg//+60gCAAI6pYA==
+Date: Thu, 24 Jul 2014 05:23:54 +0000
+Message-ID: <9E0BE1322F2F2246BD820DA9FC397ADE017042F5@shsmsx102.ccr.corp.intel.com>
+References: <1405921124-4230-1-git-send-email-qiaowei.ren@intel.com>
+ <1405921124-4230-4-git-send-email-qiaowei.ren@intel.com>
+ <53CE8EEC.2090402@intel.com>
+ <9E0BE1322F2F2246BD820DA9FC397ADE0170079E@shsmsx102.ccr.corp.intel.com>
+ <53CFDC79.8040804@intel.com>
+ <9E0BE1322F2F2246BD820DA9FC397ADE01703028@shsmsx102.ccr.corp.intel.com>
+ <53D08FA4.4030700@intel.com>
+In-Reply-To: <53D08FA4.4030700@intel.com>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Kees Cook <keescook@chromium.org>, Andy Lutomirski <luto@amacapital.net>
-CC: Will Drewry <wad@chromium.org>, Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>, dsaxena@linaro.org,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linaro-kernel@lists.linaro.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v5 2/3] asm-generic: Add generic seccomp.h for secure
- computing mode 1
-References: <1406020499-5537-1-git-send-email-takahiro.akashi@linaro.org>	<1406020499-5537-3-git-send-email-takahiro.akashi@linaro.org>	<53D0802A.7070703@amacapital.net> <CAGXu5j+GuoxR5o8CZZFZAEwQA=rRwBmBM-ZDU+nFAfHoqf8z9Q@mail.gmail.com>
-In-Reply-To: <CAGXu5j+GuoxR5o8CZZFZAEwQA=rRwBmBM-ZDU+nFAfHoqf8z9Q@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/24/2014 01:41 PM, Kees Cook wrote:
-> On Wed, Jul 23, 2014 at 8:40 PM, Andy Lutomirski <luto@amacapital.net> wrote:
->> On 07/22/2014 02:14 AM, AKASHI Takahiro wrote:
->>>
->>> Those values (__NR_seccomp_*) are used solely in secure_computing()
->>> to identify mode 1 system calls. If compat system calls have different
->>> syscall numbers, asm/seccomp.h may override them.
->>>
->>> Acked-by: Arnd Bergmann <arnd@arndb.de>
->>> Signed-off-by: AKASHI Takahiro <takahiro.akashi@linaro.org>
->>> ---
->>>    include/asm-generic/seccomp.h |   28 ++++++++++++++++++++++++++++
->>>    1 file changed, 28 insertions(+)
->>>    create mode 100644 include/asm-generic/seccomp.h
->>>
->>> diff --git a/include/asm-generic/seccomp.h b/include/asm-generic/seccomp.h
->>> new file mode 100644
->>> index 0000000..5e97022
->>> --- /dev/null
->>> +++ b/include/asm-generic/seccomp.h
->>> @@ -0,0 +1,28 @@
->>> +/*
->>> + * include/asm-generic/seccomp.h
->>> + *
->>> + * Copyright (C) 2014 Linaro Limited
->>> + * Author: AKASHI Takahiro <takahiro.akashi@linaro.org>
->>> + *
->>> + * This program is free software; you can redistribute it and/or modify
->>> + * it under the terms of the GNU General Public License version 2 as
->>> + * published by the Free Software Foundation.
->>> + */
->>> +#ifndef _ASM_GENERIC_SECCOMP_H
->>> +#define _ASM_GENERIC_SECCOMP_H
->>> +
->>> +#include <asm-generic/unistd.h>
->>> +
->>> +#if defined(CONFIG_COMPAT) && !defined(__NR_seccomp_read_32)
->>> +#define __NR_seccomp_read_32           __NR_read
->>> +#define __NR_seccomp_write_32          __NR_write
->>> +#define __NR_seccomp_exit_32           __NR_exit
->>> +#define __NR_seccomp_sigreturn_32      __NR_rt_sigreturn
->>> +#endif /* CONFIG_COMPAT && ! already defined */
->>> +
->>> +#define __NR_seccomp_read              __NR_read
->>> +#define __NR_seccomp_write             __NR_write
->>> +#define __NR_seccomp_exit              __NR_exit
->>> +#define __NR_seccomp_sigreturn         __NR_rt_sigreturn
->>
->>
->> I don't like these names.  __NR_seccomp_read sounds like the number of a
->> syscall called seccomp_read.
->>
->> Also, shouldn't something be including this header?  I'm confused.
->
-> Ah! Good catch. These names are correct (see kernel/seccomp.c's
-> mode1_syscalls and mode1_syscalls_32 arrays), but the location of this
-> change was unexpected. I was expecting this file to live in
-> arch/*/include/asm/seccomp.h, not in include/asm-generic/seccomp.h.
->
-> However, since it's always the same list, it might make sense to
-> consolidate them into a single place as a default to make arch porting
-> easier.
 
-Yeah, that is why I put this file under include/asm-generic.
 
-> However, I think that should be a separate patch.
+On 2014-07-24, Hansen, Dave wrote:
+> On 07/23/2014 05:56 PM, Ren, Qiaowei wrote:
+>> On 2014-07-24, Hansen, Dave wrote:
+>>> On 07/22/2014 07:35 PM, Ren, Qiaowei wrote:
+>>>> The checking about MPX feature should be as follow:
+>>>> 
+>>>>         if (pcntxt_mask & XSTATE_EAGER) {
+>>>>                 if (eagerfpu == DISABLE) {
+>>>>                         pr_err("eagerfpu not present, disabling
+> some
+>>> xstate features: 0x%llx\n",
+>>>>                                         pcntxt_mask &
+>>> XSTATE_EAGER);
+>>>>                         pcntxt_mask &= ~XSTATE_EAGER; } else {
+>>>>                         eagerfpu = ENABLE;
+>>>>                 }
+>>>>         }
+>>>> This patch was merged into kernel the ending of last year
+>>>> (https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/c
+>>>> om
+>>>> mi
+>>>> t/?id=e7d820a5e549b3eb6c3f9467507566565646a669 )
+>>> 
+>>> Should we be doing a clear_cpu_cap(X86_FEATURE_MPX) in here?
+>>> 
+>>> This isn't major, but I can't _ever_ imagine a user being able to
+>>> track down why MPX is not working from this message. Should we
+>>> spruce it up somehow?
+>> 
+>> Maybe. If the error log "disabling some xstate features:" is changed
+>> to "disabling MPX xstate features:", do you think it is OK?
+> 
+> That's better.  Is it really disabling MPX, though?
+> 
+> And shouldn't we clear the cpu feature bit too?
 
-Do you mean that the code for all the existing archs should also be changed
-to use this (common) header?
+I am not sure. I am suspecting whether this checking should be moved before xstate_enable().
 
--Takahiro AKASHI
->
-> -Kees
->
+Peter, what do you think of it?
+
+Thanks,
+Qiaowei
+
