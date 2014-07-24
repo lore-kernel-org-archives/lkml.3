@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934817AbaGXKFq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 06:05:46 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54961 "EHLO
+	id S934811AbaGXKGi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 06:06:38 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54941 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757804AbaGXJsP (ORCPT
+	with ESMTP id S1757805AbaGXJsJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 05:48:15 -0400
+	Thu, 24 Jul 2014 05:48:09 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Christopher Friedt <chrisfriedt@gmail.com>,
-        Thomas Hellstrom <thellstrom@vmware.com>,
+Cc: Steven Rostedt <rostedt@goodmis.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 077/128] drm/vmwgfx: Fix incorrect write to read-only register v2:
-Date: Thu, 24 Jul 2014 10:45:26 +0100
-Message-Id: <1406195177-8656-78-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 073/128] tracing: Remove ftrace_stop/start() from reading the trace file
+Date: Thu, 24 Jul 2014 10:45:22 +0100
+Message-Id: <1406195177-8656-74-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1406195177-8656-1-git-send-email-luis.henriques@canonical.com>
 References: <1406195177-8656-1-git-send-email-luis.henriques@canonical.com>
@@ -28,41 +27,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Hellstrom <thellstrom@vmware.com>
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-commit 4e578080ed3262ed2c3985868539bc66218d25c0 upstream.
+commit 099ed151675cd1d2dbeae1dac697975f6a68716d upstream.
 
-Commit "drm/vmwgfx: correct fb_fix_screeninfo.line_length", while fixing a
-vmwgfx fbdev bug, also writes the pitch to a supposedly read-only register:
-SVGA_REG_BYTES_PER_LINE, while it should be (and also in fact is) written to
-SVGA_REG_PITCHLOCK.
+Disabling reading and writing to the trace file should not be able to
+disable all function tracing callbacks. There's other users today
+(like kprobes and perf). Reading a trace file should not stop those
+from happening.
 
-This patch is Cc'd stable because of the unknown effects writing to this
-register might have, particularly on older device versions.
-
-v2: Updated log message.
-
-Cc: Christopher Friedt <chrisfriedt@gmail.com>
-Tested-by: Christopher Friedt <chrisfriedt@gmail.com>
-Signed-off-by: Thomas Hellstrom <thellstrom@vmware.com>
-Reviewed-by: Jakob Bornecrantz <jakob@vmware.com>
+Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/gpu/drm/vmwgfx/vmwgfx_fb.c | 1 -
- 1 file changed, 1 deletion(-)
+ kernel/trace/trace.c | 2 --
+ 1 file changed, 2 deletions(-)
 
-diff --git a/drivers/gpu/drm/vmwgfx/vmwgfx_fb.c b/drivers/gpu/drm/vmwgfx/vmwgfx_fb.c
-index 021b5227e783..1b0f34bd3a03 100644
---- a/drivers/gpu/drm/vmwgfx/vmwgfx_fb.c
-+++ b/drivers/gpu/drm/vmwgfx/vmwgfx_fb.c
-@@ -179,7 +179,6 @@ static int vmw_fb_set_par(struct fb_info *info)
- 		vmw_write(vmw_priv, SVGA_REG_DISPLAY_POSITION_Y, info->var.yoffset);
- 		vmw_write(vmw_priv, SVGA_REG_DISPLAY_WIDTH, info->var.xres);
- 		vmw_write(vmw_priv, SVGA_REG_DISPLAY_HEIGHT, info->var.yres);
--		vmw_write(vmw_priv, SVGA_REG_BYTES_PER_LINE, info->fix.line_length);
- 		vmw_write(vmw_priv, SVGA_REG_DISPLAY_ID, SVGA_ID_INVALID);
- 	}
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index 5f22856fd02a..c8b8717afc23 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -1323,7 +1323,6 @@ void tracing_start(void)
  
+ 	arch_spin_unlock(&ftrace_max_lock);
+ 
+-	ftrace_start();
+  out:
+ 	raw_spin_unlock_irqrestore(&global_trace.start_lock, flags);
+ }
+@@ -1370,7 +1369,6 @@ void tracing_stop(void)
+ 	struct ring_buffer *buffer;
+ 	unsigned long flags;
+ 
+-	ftrace_stop();
+ 	raw_spin_lock_irqsave(&global_trace.start_lock, flags);
+ 	if (global_trace.stop_count++)
+ 		goto out;
 -- 
 1.9.1
 
