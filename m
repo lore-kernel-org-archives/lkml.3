@@ -1,84 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934683AbaGXU3e (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 16:29:34 -0400
-Received: from qmta01.emeryville.ca.mail.comcast.net ([76.96.30.16]:39510 "EHLO
-	qmta01.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934565AbaGXU3c (ORCPT
+	id S934689AbaGXUan (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 16:30:43 -0400
+Received: from out2-smtp.messagingengine.com ([66.111.4.26]:44385 "EHLO
+	out2-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S934503AbaGXUal (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 16:29:32 -0400
-From: Shuah Khan <shuah.kh@samsung.com>
-To: m.chehab@samsung.com, dheitmueller@kernellabs.com
-Cc: Shuah Khan <shuah.kh@samsung.com>, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] media: drx39xyj - use drxj_set_lna_state() and remove duplicate LNA code
-Date: Thu, 24 Jul 2014 14:29:28 -0600
-Message-Id: <1406233768-7976-1-git-send-email-shuah.kh@samsung.com>
-X-Mailer: git-send-email 1.9.1
+	Thu, 24 Jul 2014 16:30:41 -0400
+X-Sasl-enc: +fRoTQWBqjns3bNEreAuA98WX7Sxn5+FVsIp9YOGGh1y 1406233830
+Date: Thu, 24 Jul 2014 17:30:19 -0300
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: "Theodore Ts'o" <tytso@mit.edu>, Andy Lutomirski <luto@amacapital.net>,
+        Linux Kernel Developers List <linux-kernel@vger.kernel.org>,
+        Linux API <linux-api@vger.kernel.org>, linux-crypto@vger.kernel.org
+Subject: Re: [PATCH -v5] random: introduce getrandom(2) system call
+Message-ID: <20140724203019.GA20737@khazad-dum.debian.net>
+References: <1406212287-9855-1-git-send-email-tytso@mit.edu>
+ <20140724151814.GE32421@khazad-dum.debian.net>
+ <CALCETrXAA=UzS-pRCo5tKSjSCOP9xfu66BG9QbRefVrovkavhQ@mail.gmail.com>
+ <20140724190206.GL6673@thunk.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140724190206.GL6673@thunk.org>
+X-GPG-Fingerprint1: 4096R/39CB4807 C467 A717 507B BAFE D3C1  6092 0BD9 E811
+ 39CB 4807
+X-GPG-Fingerprint2: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-drx39xxj_set_lna() and drx39xxj_set_frontend() set LNA. Instead of
-duplicating LNA configure code, change to use drxj_set_lna_state()
-which sets LNA to the caller requested state (on or off).
+On Thu, 24 Jul 2014, Theodore Ts'o wrote:
+> On Thu, Jul 24, 2014 at 08:21:38AM -0700, Andy Lutomirski wrote:
+> > > Should we add E<SOMETHING> to be able to deny access to GRND_RANDOM or some
+> > > future extension ?
+> > 
+> > This might actually be needed sooner rather than later.  There are
+> > programs that use containers and intentionally don't pass /dev/random
+> > through into the container.  I know that Sandstorm does this, and I
+> > wouldn't be surprised if other things (Docker?) do the same thing.
+> 
+> I wouldn't add the error to the man page until we actually modify the
+> kernel to add such a restriction.
 
-Signed-off-by: Shuah Khan <shuah.kh@samsung.com>
----
+By then, it might be too late.  It would be really sad to find ourselves
+forced to return ENOSYS to getrandom(GRND_RANDOM) when we actually wanted to
+return EPERM/EACCES.
 
-This patch depends on previous patch that added drxj_set_lna_state().
-https://lkml.org/lkml/2014/7/24/469
+Actually, we might not be able to do even that much: all it takes is for
+someone to have the bright idea of deploying userspace code that checks for
+ENOSYS only on a first "probe" getrandom() syscall without GRND_RANDOM, and
+does something idiotic when it gets ENOSYS later on a
+getrandom(GRND_RANDOM).  meh.  We can't even abuse the system ourselves :-)
 
- drivers/media/dvb-frontends/drx39xyj/drxj.c |   29 ++-------------------------
- 1 file changed, 2 insertions(+), 27 deletions(-)
+> However, the thought crossed my mind a while back that perhaps the
+> right answer is a cgroup controller which controls the rate at which a
+> process is allowed to drain entropy from the /dev/random pool.  This
+> could be set to 0, or it could be set to N bits per unit time T, and
+> if the process exceeded the value, it would just block or return
+> EAGAIN.  So instead of making it be just a binary "you have access" or
 
-diff --git a/drivers/media/dvb-frontends/drx39xyj/drxj.c b/drivers/media/dvb-frontends/drx39xyj/drxj.c
-index 31fee7b..d6d2930 100644
---- a/drivers/media/dvb-frontends/drx39xyj/drxj.c
-+++ b/drivers/media/dvb-frontends/drx39xyj/drxj.c
-@@ -12154,13 +12154,7 @@ static int drx39xxj_set_frontend(struct dvb_frontend *fe)
- 		return -EINVAL;
- 	}
- 	/* Just for giggles, let's shut off the LNA again.... */
--	uio_data.uio = DRX_UIO1;
--	uio_data.value = false;
--	result = ctrl_uio_write(demod, &uio_data);
--	if (result != 0) {
--		pr_err("Failed to disable LNA!\n");
--		return 0;
--	}
-+	drxj_set_lna_state(demod, false);
- 
- 	/* After set_frontend, except for strength, stats aren't available */
- 	p->strength.stat[0].scale = FE_SCALE_RELATIVE;
-@@ -12243,26 +12237,7 @@ static int drx39xxj_set_lna(struct dvb_frontend *fe)
- 		}
- 	}
- 
--	/* Turn off the LNA */
--	uio_cfg.uio = DRX_UIO1;
--	uio_cfg.mode = DRX_UIO_MODE_READWRITE;
--	/* Configure user-I/O #3: enable read/write */
--	result = ctrl_set_uio_cfg(demod, &uio_cfg);
--	if (result) {
--		pr_err("Failed to setup LNA GPIO!\n");
--		return result;
--	}
--
--	uio_data.uio = DRX_UIO1;
--	uio_data.value = c->lna;
--	result = ctrl_uio_write(demod, &uio_data);
--	if (result != 0) {
--		pr_err("Failed to %sable LNA!\n",
--		       c->lna ? "en" : "dis");
--		return result;
--	}
--
--	return 0;
-+	return drxj_set_lna_state(demod, c->lna);
- }
- 
- static int drx39xxj_get_tune_settings(struct dvb_frontend *fe,
+That will teach people to not have a SIGALRM on code that calls a blocking
+syscall, I suppose.  Still, there is a risk it could cause so much bad
+application behaviour to the point of being unusable.
+
+> Then I decided that it was overkill, but for people who are trying to
+
+Indeed :p
+
 -- 
-1.7.10.4
-
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
