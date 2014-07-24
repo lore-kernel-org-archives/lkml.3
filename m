@@ -1,108 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759208AbaGXN5x (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 09:57:53 -0400
-Received: from mail.kernel.org ([198.145.19.201]:42815 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757725AbaGXN5w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 09:57:52 -0400
-Date: Thu, 24 Jul 2014 10:57:47 -0300
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 4/6] perf report: Honor column width setting
-Message-ID: <20140724135747.GS20303@kernel.org>
-References: <1404883694-5342-1-git-send-email-namhyung@kernel.org>
- <1404883694-5342-5-git-send-email-namhyung@kernel.org>
- <20140724125751.GC7652@krava.brq.redhat.com>
+	id S1759273AbaGXN6k (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 09:58:40 -0400
+Received: from e24smtp02.br.ibm.com ([32.104.18.86]:55461 "EHLO
+	e24smtp02.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758778AbaGXN6j (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jul 2014 09:58:39 -0400
+Date: Thu, 24 Jul 2014 10:58:33 -0300
+From: Leonidas Da Silva Barbosa <leosilva@linux.vnet.ibm.com>
+To: Herbert Xu <herbert@gondor.apana.org.au>,
+        "David S. Miller" <davem@davemloft.net>, linux-crypto@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: mhcerri@linux.vnet.ibm.com, fin@linux.vnet.ibm.com
+Subject: [PATCH 4/8] Replacing spinlocks by nx_copy_ctx on NX-AES-CTR
+Message-ID: <20140724135830.GA25269@bluepex.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20140724125751.GC7652@krava.brq.redhat.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.23 (2014-03-12)
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14072413-2194-0000-0000-000000181F3F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, Jul 24, 2014 at 02:57:51PM +0200, Jiri Olsa escreveu:
-> On Wed, Jul 09, 2014 at 02:28:12PM +0900, Namhyung Kim wrote:
-> > Set column width and do not change it if user gives -w/--column-widths
-> > option.  It'll truncate longer symbols than the width if exists.
-> 
-> SNIP
-> 
-> > --- a/tools/perf/util/sort.c
-> > +++ b/tools/perf/util/sort.c
-> > @@ -70,7 +70,9 @@ static int hist_entry__thread_snprintf(struct hist_entry *he, char *bf,
-> >  				       size_t size, unsigned int width)
-> >  {
-> >  	const char *comm = thread__comm_str(he->thread);
-> > -	return repsep_snprintf(bf, size, "%-*s:%5d", width - 6,
-> > +
-> > +	width = max(7U, width) - 6;
-> > +	return repsep_snprintf(bf, size, "%-*.*s:%5d", width, width,
-> >  			       comm ?: "", he->thread->tid);
-> >  }
-> 
-> also we now print out all sort headers left alligned, which is wrong for
-> sort_thread header: "Command:  Pid' that mirrors value strings with ':'
-> being aligned
-> 
-> maybe something like in attached patch..?
-> 
-> thanks,
-> jirka
-> 
-> 
-> ---
-> diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
-> index f89714329c0f..fbbe86b7f63c 100644
-> --- a/tools/perf/util/sort.c
-> +++ b/tools/perf/util/sort.c
-> @@ -78,6 +78,7 @@ static int hist_entry__thread_snprintf(struct hist_entry *he, char *bf,
->  
->  struct sort_entry sort_thread = {
->  	.se_header	= "Command:  Pid",
-> +	.se_header_right= true,
+Replaces spinlock usage by a simple copy of the crypto context, avoiding
+possible bottlenecks.
 
-Is this just for the header? Perhaps its more clearly named .se_right_justify?
+Signed-off-by: Leonidas Da Silva Barbosa <leosilva@linux.vnet.ibm.com>
+---
+ drivers/crypto/nx/nx-aes-ctr.c |   20 ++++++++++++--------
+ 1 files changed, 12 insertions(+), 8 deletions(-)
 
->  	.se_cmp		= sort__thread_cmp,
->  	.se_snprintf	= hist_entry__thread_snprintf,
->  	.se_width_idx	= HISTC_THREAD,
-> @@ -1212,13 +1213,17 @@ static int __sort__hpp_header(struct perf_hpp_fmt *fmt, struct perf_hpp *hpp,
->  {
->  	struct hpp_sort_entry *hse;
->  	size_t len = fmt->user_len;
-> +	const char *fmt_str = "%-*.*s";
->  
->  	hse = container_of(fmt, struct hpp_sort_entry, hpp);
->  
->  	if (!len)
->  		len = hists__col_len(&evsel->hists, hse->se->se_width_idx);
->  
-> -	return scnprintf(hpp->buf, hpp->size, "%-*.*s", len, len, hse->se->se_header);
-> +	if (hse->se->se_header_right)
-> +		fmt_str = "%*.*s";
-> +
-> +	return scnprintf(hpp->buf, hpp->size, fmt_str, len, len, hse->se->se_header);
->  }
->  
->  static int __sort__hpp_width(struct perf_hpp_fmt *fmt,
-> diff --git a/tools/perf/util/sort.h b/tools/perf/util/sort.h
-> index 041f0c9cea2b..16a07b9b16c2 100644
-> --- a/tools/perf/util/sort.h
-> +++ b/tools/perf/util/sort.h
-> @@ -197,6 +197,7 @@ struct sort_entry {
->  	struct list_head list;
->  
->  	const char *se_header;
-> +	bool se_header_right;
->  
->  	int64_t (*se_cmp)(struct hist_entry *, struct hist_entry *);
->  	int64_t (*se_collapse)(struct hist_entry *, struct hist_entry *);
+diff --git a/drivers/crypto/nx/nx-aes-ctr.c b/drivers/crypto/nx/nx-aes-ctr.c
+index a37d009..4a8a196 100644
+--- a/drivers/crypto/nx/nx-aes-ctr.c
++++ b/drivers/crypto/nx/nx-aes-ctr.c
+@@ -88,34 +88,38 @@ static int ctr_aes_nx_crypt(struct blkcipher_desc *desc,
+ {
+ 	struct nx_crypto_ctx *nx_ctx = crypto_blkcipher_ctx(desc->tfm);
+ 	struct nx_csbcpb *csbcpb = nx_ctx->csbcpb;
+-	unsigned long irq_flags;
+ 	unsigned int processed = 0, to_process;
+ 	u32 max_sg_len;
+ 	int rc;
+ 
+-	spin_lock_irqsave(&nx_ctx->lock, irq_flags);
++	struct nx_crypto_ctx curr_nx_ctx;
++
++	if (nx_copy_ctx(&curr_nx_ctx, nx_ctx))
++		return -ENOMEM;
++
++	csbcpb = curr_nx_ctx.csbcpb;
+ 
+ 	max_sg_len = min_t(u32, nx_driver.of.max_sg_len/sizeof(struct nx_sg),
+-			   nx_ctx->ap->sglen);
++			   curr_nx_ctx.ap->sglen);
+ 
+ 	do {
+ 		to_process = min_t(u64, nbytes - processed,
+-				   nx_ctx->ap->databytelen);
++				   curr_nx_ctx.ap->databytelen);
+ 		to_process = min_t(u64, to_process,
+ 				   NX_PAGE_SIZE * (max_sg_len - 1));
+ 		to_process = to_process & ~(AES_BLOCK_SIZE - 1);
+ 
+-		rc = nx_build_sg_lists(nx_ctx, desc, dst, src, to_process,
++		rc = nx_build_sg_lists(&curr_nx_ctx, desc, dst, src, to_process,
+ 				       processed, csbcpb->cpb.aes_ctr.iv);
+ 		if (rc)
+ 			goto out;
+ 
+-		if (!nx_ctx->op.inlen || !nx_ctx->op.outlen) {
++		if (!curr_nx_ctx.op.inlen || !curr_nx_ctx.op.outlen) {
+ 			rc = -EINVAL;
+ 			goto out;
+ 		}
+ 
+-		rc = nx_hcall_sync(nx_ctx, &nx_ctx->op,
++		rc = nx_hcall_sync(&curr_nx_ctx, &curr_nx_ctx.op,
+ 				   desc->flags & CRYPTO_TFM_REQ_MAY_SLEEP);
+ 		if (rc)
+ 			goto out;
+@@ -129,7 +133,7 @@ static int ctr_aes_nx_crypt(struct blkcipher_desc *desc,
+ 		processed += to_process;
+ 	} while (processed < nbytes);
+ out:
+-	spin_unlock_irqrestore(&nx_ctx->lock, irq_flags);
++	kmem_cache_free(nx_driver.slab, curr_nx_ctx.kmem);
+ 	return rc;
+ }
+ 
+-- 
+1.7.1
+
