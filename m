@@ -1,89 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758541AbaGXB5V (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 21:57:21 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52428 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756502AbaGXB5T (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 21:57:19 -0400
+	id S1758582AbaGXCCz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 22:02:55 -0400
+Received: from mga01.intel.com ([192.55.52.88]:53749 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756771AbaGXCCx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jul 2014 22:02:53 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,721,1400050800"; 
+   d="scan'208";a="566351638"
+Message-ID: <53D068BD.6090701@intel.com>
+Date: Thu, 24 Jul 2014 10:00:29 +0800
+From: Lan Tianyu <tianyu.lan@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-In-Reply-To: <20140723231600.GE17798@lenny.home.zabbo.net>
-References: <1406156130-15575-1-git-send-email-ming.lei@canonical.com>
-	<1406156130-15575-8-git-send-email-ming.lei@canonical.com>
-	<20140723231600.GE17798@lenny.home.zabbo.net>
-Date: Thu, 24 Jul 2014 09:57:16 +0800
-Message-ID: <CACVXFVPXTQyipPLrQML6ONwD3b4g4nHWc=OVjkUMZOiv5daevg@mail.gmail.com>
-Subject: Re: [PATCH 7/9] aio: add aio_kernel_() interface
-From: Ming Lei <ming.lei@canonical.com>
-To: Zach Brown <zab@zabbo.net>
-Cc: Jens Axboe <axboe@kernel.dk>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dave Kleikamp <dave.kleikamp@oracle.com>,
-        Benjamin LaHaise <bcrl@kvack.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        "open list:AIO" <linux-aio@kvack.org>,
-        Kent Overstreet <kmo@daterainc.com>
+To: Pavel Machek <pavel@ucw.cz>
+CC: rjw@rjwysocki.net, len.brown@intel.com, peterz@infradead.org,
+        toshi.kani@hp.com, mingo@kernel.org, akpm@linux-foundation.org,
+        todd.e.brandt@linux.intel.com, fabf@skynet.be,
+        srivatsa.bhat@linux.vnet.ibm.com, ego@linux.vnet.ibm.com,
+        rafael.j.wysocki@intel.com, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org
+Subject: Re: [RFC PATCH] PM/CPU: Parallel enabling nonboot cpus with resume
+ devices
+References: <1406106694-3306-1-git-send-email-tianyu.lan@intel.com> <20140723105304.GA22675@amd.pavel.ucw.cz>
+In-Reply-To: <20140723105304.GA22675@amd.pavel.ucw.cz>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 24, 2014 at 7:16 AM, Zach Brown <zab@zabbo.net> wrote:
-> On Thu, Jul 24, 2014 at 06:55:28AM +0800, Ming Lei wrote:
->> From: Dave Kleikamp <dave.kleikamp@oracle.com>
+On 2014年07月23日 18:53, Pavel Machek wrote:
+> Hi!
+> 
+>> In the current world, all nonboot cpus are enabled serially during system
+>> resume. System resume sequence is that boot cpu enables nonboot cpu one by
+>> one and then resume devices. Before resuming devices, there are few tasks
+>> assigned to nonboot cpus after they are brought up. This waste cpu usage.
 >>
->> This adds an interface that lets kernel callers submit aio iocbs without
->> going through the user space syscalls.  This lets kernel callers avoid
->> the management limits and overhead of the context.  It will also let us
->> integrate aio operations with other kernel apis that the user space
->> interface doesn't have access to.
->>
->> This patch is based on Dave's posts in below links:
->>
->>       https://lkml.org/lkml/2013/10/16/365
->>       https://groups.google.com/forum/#!topic/linux.kernel/l7mogGJZoKQ
->
-> This was originally written a billion years ago when dinosaurs roamed
-> the earth.  Also, notably, before Kent and Ben reworked a bunch of the
+>> To accelerate S3, this patches adds a new kernel configure
+>> PM_PARALLEL_CPU_UP_FOR_SUSPEND to allow boot cpu to go forward to resume
+>> devices after bringing up one nonboot cpu. The nonboot cpu will be in charge
+>> of bringing up other cpus. This makes enabling cpu2~x parallel with resuming
+>> devices. From the test result on 4 logical core laptop, the time of resume
+>> device almost wasn't affected by enabling nonboot cpus lately while the start
+>> point is almost 30ms earlier than before.
+> 
+> Does this mean that userspace can now run seeing the "offlined" cpus
+> still in offline state?
 
-Not so far away, this patch is based on Dave's last version of V9, which
-was posted in Oct, 2013, :-)
+No, the PM event handler of cpu hotplug will reenable cpu hotplug via
+cpu_hotplug_enable() at the end of system resume. The function will wait
+for currently running cpu hotplug operations to complete.
 
-> aio core.  I'd want them to take a look at this patch to make sure that
-> it doesn't rely on any assumptions that have changed.
+> 
+> 									Pavel
+> 
 
-Looks I missed to Cc Ken, :-(
 
->
->> +/* opcode values not exposed to user space */
->> +enum {
->> +     IOCB_CMD_READ_ITER = 0x10000,
->> +     IOCB_CMD_WRITE_ITER = 0x10001,
->> +};
->
-> And I think the consensus was that this isn't good enough.  Find a way
-> to encode the kernel caller ops without polluting the uiocb cmd name
-> space.
-
-That is easy, since the two cmd names are only for kernel AIO, whatever
-should be OK, but looks I didn't see such comment.
-
->
-> (I've now come to think that this entire approach of having loop use aio
-> is misguided and that the way forward is to have dio consume what loop
-> naturally produces -- bios, blk-mq rqs, whatever -- but I'm on to other
-
-Yes, that is what these patches are doing, and actually AIO's
-model is a good match to driver's interface. Lots of drivers
-use the asynchronous model(submit, complete, ...).
-
-> things these days.)
-
-At least, loop can improve its throughput much by kernel AIO
-without big changes to fs/direct-io(attribute much to ITER_BVEC),
-and vhost-scsi should benefit from it too.
-
-Thanks,
+-- 
+Best regards
+Tianyu Lan
