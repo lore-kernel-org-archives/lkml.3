@@ -1,137 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751889AbaGXEtr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 00:49:47 -0400
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:52598 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751171AbaGXEto (ORCPT
+	id S934123AbaGXEzj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 00:55:39 -0400
+Received: from mail-qa0-f51.google.com ([209.85.216.51]:44708 "EHLO
+	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750904AbaGXEzh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 00:49:44 -0400
-Date: Wed, 23 Jul 2014 21:48:04 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: David Herrmann <dh.herrmann@gmail.com>, linux-kernel@vger.kernel.org,
-        Michael Kerrisk <mtk.manpages@gmail.com>, Ryan Lortie <desrt@desrt.ca>,
-        Linus Torvalds <torvalds@linux-foundation.org>, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org, linux-api@vger.kernel.org,
-        Greg Kroah-Hartman <greg@kroah.com>, john.stultz@linaro.org,
-        Lennart Poettering <lennart@poettering.net>,
-        Daniel Mack <zonque@gmail.com>, Kay Sievers <kay@vrfy.org>,
-        Hugh Dickins <hughd@google.com>, Andy Lutomirski <luto@amacapital.net>,
-        Alexander Viro <viro@zeniv.linux.org.uk>
-Subject: Re: [PATCH v4 0/6] File Sealing & memfd_create()
-In-Reply-To: <1405877680-999-1-git-send-email-dh.herrmann@gmail.com>
-Message-ID: <alpine.LSU.2.11.1407232132330.991@eggly.anvils>
-References: <1405877680-999-1-git-send-email-dh.herrmann@gmail.com>
-User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
+	Thu, 24 Jul 2014 00:55:37 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20140723103219.GA1366@localhost>
+References: <1405708100-13604-1-git-send-email-zlim.lnx@gmail.com>
+	<20140721091623.GA16122@arm.com>
+	<CAMEtUuyC+MykPDO0ghTc=oex7KPLEy=BLRgWBdW+qJY7JXQmDQ@mail.gmail.com>
+	<20140723103219.GA1366@localhost>
+Date: Wed, 23 Jul 2014 21:55:36 -0700
+Message-ID: <CABg9mcvU44W5AkPLtyswNWdDdF_nnqvLyKqv7RWhpuRRSWDW3A@mail.gmail.com>
+Subject: Re: [PATCH 00/14] arm64: eBPF JIT compiler
+From: Z Lim <zlim.lnx@gmail.com>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Alexei Starovoitov <ast@plumgrid.com>, Will Deacon <Will.Deacon@arm.com>,
+        Jiang Liu <liuj97@gmail.com>,
+        AKASHI Takahiro <takahiro.akashi@linaro.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Chema Gonzalez <chema@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 20 Jul 2014, David Herrmann wrote:
+On Wed, Jul 23, 2014 at 3:32 AM, Catalin Marinas
+<catalin.marinas@arm.com> wrote:
+> On Mon, Jul 21, 2014 at 04:49:29PM +0100, Alexei Starovoitov wrote:
+>> On Mon, Jul 21, 2014 at 2:16 AM, Will Deacon <will.deacon@arm.com> wrote:
+>> > On Fri, Jul 18, 2014 at 07:28:06PM +0100, Zi Shen Lim wrote:
+[...]
+>> >> This series applies against net-next and is tested working
+>> >> with lib/test_bpf on ARMv8 Foundation Model.
+>> >
+>> > Looks like it works on my Juno board too, so:
+>> >
+>> >   Acked-by: Will Deacon <will.deacon@arm.com>
+>> >
+>> > for the series.
+>> >
+>> > It's a bit late for 3.17 now, so I guess we'll queue this for 3.18 (which
+>> > also means the dependency on -next isn't an issue). Perhaps you could repost
+>> > around -rc3?
+>>
+>> Thanks for testing! Nice to see it working on real hw.
+>> I'm not sure why you're proposing a 4+ week delay. The patches
+>> will rot instead of getting used and tested. Imo it makes sense to
+>> get them into net-next now for 3.17.
+>> JIT is disabled by sysctl by default anyway.
+>
+> We normally like some patches (especially new functionality) to sit in
+> linux-next for a while before the mering window (ideally starting with
+> -rc4 or -rc5). We are at -rc6 already, so getting close to the 3.17
+> merging window.
+>
+> Another aspect is that the arm64/bpf branch depends on the net tree, so
+> it can't easily go in via the arm64 tree for 3.17 (3.18 would not be a
+> problem).
 
-> Hi
-> 
-> This is v4 of the File-Sealing and memfd_create() patches. You can find v1 with
-> a longer introduction at gmane [1], there's also v2 [2] and v3 [3] available.
-> See also the article about sealing on LWN [4], and a high-level introduction on
-> the new API in my blog [5]. Last but not least, man-page proposals are
-> available in my private repository [6].
-> 
-> This series introduces two new APIs:
->   memfd_create(): Think of this syscall as malloc() but it returns a
->                   file-descriptor instead of a pointer. That file-descriptor is
->                   backed by anon-memory and can be memory-mapped for access.
->   sealing: The sealing API can be used to prevent a specific set of operations
->            on a file-descriptor. You 'seal' the file and give thus the
->            guarantee, that those operations will be rejected from now on.
-> 
-> This series adds the memfd_create(2) syscall only to x86 and x86-64. Patches for
-> most other architectures are available in my private repository [7]. Missing
-> architectures are:
->     alpha, avr32, blackfin, cris, frv, m32r, microblaze, mn10300, sh, sparc,
->     um, xtensa
-> These architectures lack several newer syscalls, so those should be added first
-> before adding memfd_create(2). I can provide patches for those, if required.
-> However, I think it should be kept separate from this series.
-> 
-> Changes in v4:
->   - drop page-isolation in favor of shmem_wait_for_pins()
->   - add unlikely(info->seals) to write_begin hot-path
->   - return EPERM for F_ADD_SEALS if file is not writable
->   - moved shmem_wait_for_pins() entirely into it's own commit
->   - make O_LARGEFILE mandatory part of memfd_create() ABI
->   - add lru_add_drain() to shmem_tag_pins() hot-path
->   - minor coding-style changes
-> 
-> Thanks
-> David
-> 
-> 
-> [1]    memfd v1: http://thread.gmane.org/gmane.comp.video.dri.devel/102241
-> [2]    memfd v2: http://thread.gmane.org/gmane.linux.kernel.mm/115713
-> [3]    memfd v3: http://thread.gmane.org/gmane.linux.kernel.mm/118721
-> [4] LWN article: https://lwn.net/Articles/593918/
-> [5]   API Intro: http://dvdhrm.wordpress.com/2014/06/10/memfd_create2/
-> [6]   Man-pages: http://cgit.freedesktop.org/~dvdhrm/man-pages/log/?h=memfd
-> [7]    Dev-repo: http://cgit.freedesktop.org/~dvdhrm/linux/log/?h=memfd
-> 
-> 
-> David Herrmann (6):
->   mm: allow drivers to prevent new writable mappings
->   shm: add sealing API
->   shm: add memfd_create() syscall
->   selftests: add memfd_create() + sealing tests
->   selftests: add memfd/sealing page-pinning tests
->   shm: wait for pins to be released when sealing
+Hi Catalin, I take it you prefer this series going through arm64 tree,
+targeting 3.18, is that right?
 
-Andrew, I've now given my Ack to all of these, and think they are
-ready for inclusion in mmotm, if you agree with the addition of
-this sealing feature and the memfd_create() syscall.
+I understand your preference to have it sitting in linux-next for a
+longer period for arm64 material, I'll repost this again after 3.17 so
+it gets more exposure in linux-next.
 
-Andy Lutomirsky and I agree that it's somewhat unsatisfactory that a
-sealed sparse file could be passed, and inflate to something OOMing
-when read by the recipient; but I think we can live with that as a
-limitation of the initial implementation (the suspicious recipient
-can verify non-sparseness with lseek SEEK_HOLE), and it's my job
-to work on fixing that aspect - though probably not for 3.17.
+BTW, are you open to this series going through net tree? I'm
+(preemptively) asking because during development of this series, I've
+had to rebase a couple times against net-next to handle dependencies.
+Or is the general practice to handle conflicts in linux-next itself?
 
-Thanks,
-Hugh
-
-> 
->  arch/x86/syscalls/syscall_32.tbl               |   1 +
->  arch/x86/syscalls/syscall_64.tbl               |   1 +
->  fs/fcntl.c                                     |   5 +
->  fs/inode.c                                     |   1 +
->  include/linux/fs.h                             |  29 +-
->  include/linux/shmem_fs.h                       |  17 +
->  include/linux/syscalls.h                       |   1 +
->  include/uapi/linux/fcntl.h                     |  15 +
->  include/uapi/linux/memfd.h                     |   8 +
->  kernel/fork.c                                  |   2 +-
->  kernel/sys_ni.c                                |   1 +
->  mm/mmap.c                                      |  30 +-
->  mm/shmem.c                                     | 324 +++++++++
->  mm/swap_state.c                                |   1 +
->  tools/testing/selftests/Makefile               |   1 +
->  tools/testing/selftests/memfd/.gitignore       |   4 +
->  tools/testing/selftests/memfd/Makefile         |  41 ++
->  tools/testing/selftests/memfd/fuse_mnt.c       | 110 +++
->  tools/testing/selftests/memfd/fuse_test.c      | 311 +++++++++
->  tools/testing/selftests/memfd/memfd_test.c     | 913 +++++++++++++++++++++++++
->  tools/testing/selftests/memfd/run_fuse_test.sh |  14 +
->  21 files changed, 1821 insertions(+), 9 deletions(-)
->  create mode 100644 include/uapi/linux/memfd.h
->  create mode 100644 tools/testing/selftests/memfd/.gitignore
->  create mode 100644 tools/testing/selftests/memfd/Makefile
->  create mode 100755 tools/testing/selftests/memfd/fuse_mnt.c
->  create mode 100644 tools/testing/selftests/memfd/fuse_test.c
->  create mode 100644 tools/testing/selftests/memfd/memfd_test.c
->  create mode 100755 tools/testing/selftests/memfd/run_fuse_test.sh
-> 
-> -- 
-> 2.0.2
+>
+> --
+> Catalin
