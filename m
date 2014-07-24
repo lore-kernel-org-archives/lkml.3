@@ -1,55 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751583AbaGXJCB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 05:02:01 -0400
-Received: from rtits2.realtek.com ([60.250.210.242]:60002 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750787AbaGXJB6 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 05:01:58 -0400
-X-SpamFilter-By: BOX Solutions SpamTrap 5.39 with qID s6O91SA5018939, This message is accepted by code: ctloc85258
-From: Hayes Wang <hayeswang@realtek.com>
-To: Borislav Petkov <bp@alien8.de>, nic_swsd <nic_swsd@realtek.com>
-CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: RE: 3.16-rc6+: r8169 fresh new irq lock inversion
-Thread-Topic: 3.16-rc6+: r8169 fresh new irq lock inversion
-Thread-Index: AQHPpYWTfukIsSAVWEa5YPhOBYAmr5uu6wMg
-Date: Thu, 24 Jul 2014 09:01:27 +0000
-Message-ID: <0835B3720019904CB8F7AA43166CEEB2510016@RTITMBSV03.realtek.com.tw>
-References: <20140722081840.GA6462@pd.tnic>
-In-Reply-To: <20140722081840.GA6462@pd.tnic>
-Accept-Language: zh-TW, en-US
-Content-Language: zh-TW
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.21.71.143]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1752548AbaGXJDE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 05:03:04 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:42740 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751521AbaGXJDA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jul 2014 05:03:00 -0400
+Date: Thu, 24 Jul 2014 11:02:57 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Miklos Szeredi <miklos@szeredi.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, Tejun Heo <tj@kernel.org>,
+        Vladimir Davydov <vdavydov@parallels.com>, linux-mm@kvack.org,
+        cgroups@vger.kernel.org,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [patch 13/13] mm: memcontrol: rewrite uncharge API
+Message-ID: <20140724090257.GB14578@dhcp22.suse.cz>
+References: <20140718144554.GG29639@cmpxchg.org>
+ <CAJfpegt9k+YULet3vhmG3br7zSiHy-DRL+MiEE=HRzcs+mLzbw@mail.gmail.com>
+ <20140719173911.GA1725@cmpxchg.org>
+ <20140722150825.GA4517@dhcp22.suse.cz>
+ <CAJfpegscT-ptQzq__uUV2TOn7Uvs6x4FdWGTQb9Fe9MEJr2KjA@mail.gmail.com>
+ <20140723143847.GB16721@dhcp22.suse.cz>
+ <20140723150608.GF1725@cmpxchg.org>
+ <CAJfpegs-k5QC+42SzLKUSaHrdPxWBaT_dF+SOPqoDvg8h5p_Tw@mail.gmail.com>
+ <20140723210241.GH1725@cmpxchg.org>
+ <20140724084644.GA14578@dhcp22.suse.cz>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140724084644.GA14578@dhcp22.suse.cz>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- Borislav Petkov [mailto:bp@alien8.de] 
-> Sent: Tuesday, July 22, 2014 4:19 PM
-> To: nic_swsd
-> Cc: netdev@vger.kernel.org; lkml
-> Subject: 3.16-rc6+: r8169 fresh new irq lock inversion
-> 
-> Hi all,
-> 
-> I got this new lockdep splat after booting rc6 + tip/master this
-> morning. I haven't seen it before so it must be new in rc6 
-> which should
-> be easy to pinpoint... or maybe there's already a fix queued 
-> somewhere. :)
+On Thu 24-07-14 10:46:44, Michal Hocko wrote:
+> On Wed 23-07-14 17:02:41, Johannes Weiner wrote:
+[...]
+> We can reduce the lookup only to lruvec==true case, no?
 
-I have no idea about why you see the messages.  I don't think
-the patches which submitted previously for r8169.c  would cause
-the problem. Although I have submitted some patches about IPv6,
-the hw checksum should be off by default. That is, the behavior
-should be the same with the previous one.
- 
-Best Regards,
-Hayes
+Dohh
+s@can@should@
+
+newpage shouldn't charged in all other cases and it would be bug.
+Or am I missing something?
+
+> Acked-by: Michal Hocko <mhocko@suse.cz>
+> 
+> > ---
+> >  mm/memcontrol.c | 6 ++++++
+> >  1 file changed, 6 insertions(+)
+> > 
+> > diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> > index b7c9a202dee9..3eaa6e83c168 100644
+> > --- a/mm/memcontrol.c
+> > +++ b/mm/memcontrol.c
+> > @@ -6660,6 +6660,12 @@ void mem_cgroup_migrate(struct page *oldpage, struct page *newpage,
+> >  	if (mem_cgroup_disabled())
+> >  		return;
+> >  
+> > +	/* Page cache replacement: new page already charged? */
+> > +	pc = lookup_page_cgroup(newpage);
+> > +	if (PageCgroupUsed(pc))
+> > +		return;
+> > +
+> > +	/* Re-entrant migration: old page already uncharged? */
+> >  	pc = lookup_page_cgroup(oldpage);
+> >  	if (!PageCgroupUsed(pc))
+> >  		return;
+> > -- 
+> > 2.0.0
+> > 
+> 
+> -- 
+> Michal Hocko
+> SUSE Labs
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+
+-- 
+Michal Hocko
+SUSE Labs
