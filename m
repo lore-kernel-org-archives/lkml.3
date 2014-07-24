@@ -1,69 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934324AbaGXTFz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 15:05:55 -0400
-Received: from mail-vc0-f179.google.com ([209.85.220.179]:41786 "EHLO
-	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932195AbaGXTFy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 15:05:54 -0400
+	id S934417AbaGXTGD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 15:06:03 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8759 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934351AbaGXTGA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jul 2014 15:06:00 -0400
+Date: Thu, 24 Jul 2014 21:03:42 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>, Kirill Tkhai <ktkhai@parallels.com>
+Cc: linux-kernel@vger.kernel.org, Mike Galbraith <umgwanakikbuti@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Tim Chen <tim.c.chen@linux.intel.com>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Ingo Molnar <mingo@kernel.org>, Paul Turner <pjt@google.com>,
+        tkhai@yandex.ru
+Subject: Re: [PATCH 2/5] sched: Teach scheduler to understand
+	ONRQ_MIGRATING state
+Message-ID: <20140724190342.GA26611@redhat.com>
+References: <20140722102425.29682.24086.stgit@tkhai> <1406028616.3526.20.camel@tkhai> <20140722114542.GG20603@laptop.programming.kicks-ass.net>
 MIME-Version: 1.0
-In-Reply-To: <CAPDOMViVAY5cBuwe=nLjnFUHy4_FVUh_9LkChv+vso5w7WVeDA@mail.gmail.com>
-References: <1406156581-6052-1-git-send-email-xerofoify@gmail.com>
-	<20140724144725.GA32669@home.goodmis.org>
-	<20140724105132.3cf221c2@gandalf.local.home>
-	<yw1x38dqag24.fsf@unicorn.mansr.com>
-	<CAPDOMVgswyopjGxdRFW-bFRrTcpcNnkY=PqTCT9HbjjA=EZ1iw@mail.gmail.com>
-	<yw1xy4vi90n6.fsf@unicorn.mansr.com>
-	<CAPDOMVia0OXydg_hRH0t63xUaxKEkVc6D20vAZiyugkMXAEsJQ@mail.gmail.com>
-	<yw1xtx669002.fsf@unicorn.mansr.com>
-	<CAPDOMVgziyYTX41xZVB9FLHUKFRPPm19jo0A_WfbLqaaKbxPqg@mail.gmail.com>
-	<20140724131821.30c4519d@gandalf.local.home>
-	<CAHLZz12ammMZNAah_eyYePJWorw2AruDAujeNxJHvOF5+Mr7cA@mail.gmail.com>
-	<20140724134849.4d228f5f@gandalf.local.home>
-	<CAPDOMVi7cHUAn_1AxJ+tN1c67UqBdLHLC1sJNSA=HUK-WzZCTA@mail.gmail.com>
-	<CAFLxGvzA4HHL0aJaC0Ypf9_YeL5WW4_eYNToSVG7H43DD2unSg@mail.gmail.com>
-	<CAPDOMViVAY5cBuwe=nLjnFUHy4_FVUh_9LkChv+vso5w7WVeDA@mail.gmail.com>
-Date: Thu, 24 Jul 2014 15:05:53 -0400
-Message-ID: <CAPDOMVhNaV+Wertp+p361iYS8t-rZmN2nubn9coyrUcgZPcuGw@mail.gmail.com>
-Subject: Re: [PATCH] staging: Change kzalloc to kcalloc
-From: Nick Krause <xerofoify@gmail.com>
-To: Richard Weinberger <richard.weinberger@gmail.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Harvey Harrison <harvey.harrison@gmail.com>,
-        =?UTF-8?B?TcOlbnMgUnVsbGfDpXJk?= <mans@mansr.com>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Chen Gang <gang.chen.5i5j@gmail.com>,
-        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
-        Dan Carpenter <dan.carpenter@oracle.com>, tomas.winkler@intel.com,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140722114542.GG20603@laptop.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 24, 2014 at 2:55 PM, Nick Krause <xerofoify@gmail.com> wrote:
-> On Thu, Jul 24, 2014 at 2:49 PM, Richard Weinberger
-> <richard.weinberger@gmail.com> wrote:
->> On Thu, Jul 24, 2014 at 8:41 PM, Nick Krause <xerofoify@gmail.com> wrote:
->>> Steve,
->>> I have programming a lot in other areas just not the kernel.
->>> You are right through I need to test my code better through.
->>
->> Nick,
->>
->> let's make a deal.
->> Take the challenge at http://eudyptula-challenge.org. After you've solved all
->> tasks we'll accept patches from you.
->>
->> --
->> Thanks,
->> //richard
-> That's fine,
-> So Sorry :(.
-> Nick
-I sent the challenge a email. Seems that there not replying.
-Nick
+Oh, sorry for delay, I didn't even try to read most of my emails
+several days.
+
+On 07/22, Peter Zijlstra wrote:
+>
+> more details is better ;-) Also, I think Oleg enjoys these kind of
+> things, so I've added him to the CC.
+
+Thanks. Trust me, at least I like this much more than what I had to
+do this week ;)
+
+This change depends on the previous patches and I am too lazy to try
+to find/download the full series.
+
+Kirill, since you are going to send v2, could you cc me? No, it is not
+that I think I can help or even review (or may be even understand ;)
+But this looks interesting to me, I'd like to know about these changes.
+
+Oleg.
+
