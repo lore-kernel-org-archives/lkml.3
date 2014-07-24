@@ -1,165 +1,244 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934367AbaGXSOz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 14:14:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23734 "EHLO mx1.redhat.com"
+	id S934405AbaGXSPI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 14:15:08 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61442 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934294AbaGXSOw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 14:14:52 -0400
+	id S934381AbaGXSPE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jul 2014 14:15:04 -0400
 From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
 To: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
         Ping Cheng <pinglinux@gmail.com>, Jason Gerecke <killertofu@gmail.com>,
         Przemo Firszt <przemo@firszt.eu>
 Cc: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
-Subject: [PATCH v2 05/10] Input - wacom: register an ac power supply for wireless devices
-Date: Thu, 24 Jul 2014 14:14:00 -0400
-Message-Id: <1406225645-32141-6-git-send-email-benjamin.tissoires@redhat.com>
+Subject: [PATCH v2 08/10] Input - wacom: handle Intuos 4 BT in wacom.ko
+Date: Thu, 24 Jul 2014 14:14:03 -0400
+Message-Id: <1406225645-32141-9-git-send-email-benjamin.tissoires@redhat.com>
 In-Reply-To: <1406225645-32141-1-git-send-email-benjamin.tissoires@redhat.com>
 References: <1406225645-32141-1-git-send-email-benjamin.tissoires@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is used by HID Bluetooth devices but also add some more information
-to the USB Wireless Receiver.
-We are just porting the bits from hid-wacom.c to the common driver here.
+A good point of this change is that now, the Intuos4 bluetooth can handle
+the different tools (artpen, airbrush, mice), and we get a common interface
+between USB and BT for accessing the LEDs/OLEDs.
 
 Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
 ---
 
-new in v2
+no or little changes in v2
 
- drivers/hid/wacom.h     |  1 +
- drivers/hid/wacom_sys.c | 58 ++++++++++++++++++++++++++++++++++++++++++++-----
+ drivers/hid/hid-core.c  |  1 -
+ drivers/hid/hid-wacom.c |  1 -
+ drivers/hid/wacom_sys.c | 16 +++++++++++
+ drivers/hid/wacom_wac.c | 73 +++++++++++++++++++++++++++++++++++++++++++++++++
  drivers/hid/wacom_wac.h |  1 +
- 3 files changed, 55 insertions(+), 5 deletions(-)
+ 5 files changed, 90 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/hid/wacom.h b/drivers/hid/wacom.h
-index 99516ba..2b5562b 100644
---- a/drivers/hid/wacom.h
-+++ b/drivers/hid/wacom.h
-@@ -120,6 +120,7 @@ struct wacom {
- 	} led;
- 	bool led_initialized;
- 	struct power_supply battery;
-+	struct power_supply ac;
- };
+diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
+index 4db6804..1d35e6c 100644
+--- a/drivers/hid/hid-core.c
++++ b/drivers/hid/hid-core.c
+@@ -1920,7 +1920,6 @@ static const struct hid_device_id hid_have_special_driver[] = {
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_WISEGROUP_LTD, USB_DEVICE_ID_SUPER_JOY_BOX_3_PRO) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_WISEGROUP_LTD, USB_DEVICE_ID_SUPER_DUAL_BOX_PRO) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_WISEGROUP_LTD, USB_DEVICE_ID_SUPER_JOY_BOX_5_PRO) },
+-	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_WACOM, USB_DEVICE_ID_WACOM_INTUOS4_BLUETOOTH) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_WALTOP, USB_DEVICE_ID_WALTOP_SLIM_TABLET_5_8_INCH) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_WALTOP, USB_DEVICE_ID_WALTOP_SLIM_TABLET_12_1_INCH) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_WALTOP, USB_DEVICE_ID_WALTOP_Q_PAD) },
+diff --git a/drivers/hid/hid-wacom.c b/drivers/hid/hid-wacom.c
+index 967c457..db2d07d 100644
+--- a/drivers/hid/hid-wacom.c
++++ b/drivers/hid/hid-wacom.c
+@@ -952,7 +952,6 @@ static void wacom_remove(struct hid_device *hdev)
+ }
  
- static inline void wacom_schedule_work(struct wacom_wac *wacom_wac)
+ static const struct hid_device_id wacom_devices[] = {
+-	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_WACOM, USB_DEVICE_ID_WACOM_INTUOS4_BLUETOOTH) },
+ 
+ 	{ }
+ };
 diff --git a/drivers/hid/wacom_sys.c b/drivers/hid/wacom_sys.c
-index eb8705d..d0d06b8 100644
+index 8492177..8c4c76a 100644
 --- a/drivers/hid/wacom_sys.c
 +++ b/drivers/hid/wacom_sys.c
-@@ -774,6 +774,12 @@ static enum power_supply_property wacom_battery_props[] = {
- 	POWER_SUPPLY_PROP_CAPACITY
- };
- 
-+static enum power_supply_property wacom_ac_props[] = {
-+	POWER_SUPPLY_PROP_PRESENT,
-+	POWER_SUPPLY_PROP_ONLINE,
-+	POWER_SUPPLY_PROP_SCOPE,
-+};
+@@ -305,6 +305,20 @@ static int wacom_bt_query_tablet_data(struct hid_device *hdev, u8 speed,
+ 		hid_warn(hdev, "failed to poke device, command %d, err %d\n",
+ 			 rep_data[0], ret);
+ 		break;
++	case INTUOS4WL:
++		if (speed == 1)
++			wacom->wacom_wac.bt_features &= ~0x20;
++		else
++			wacom->wacom_wac.bt_features |= 0x20;
 +
- static int wacom_battery_get_property(struct power_supply *psy,
- 				      enum power_supply_property psp,
- 				      union power_supply_propval *val)
-@@ -806,14 +812,38 @@ static int wacom_battery_get_property(struct power_supply *psy,
- 	return ret;
++		rep_data[0] = 0x03;
++		rep_data[1] = wacom->wacom_wac.bt_features;
++
++		ret = hid_hw_raw_request(hdev, rep_data[0], rep_data, 2,
++				HID_FEATURE_REPORT, HID_REQ_SET_REPORT);
++		if (ret >= 0)
++			wacom->wacom_wac.bt_high_speed = speed;
++		break;
+ 	}
+ 
+ 	return 0;
+@@ -729,6 +743,7 @@ static int wacom_initialize_leds(struct wacom *wacom)
+ 	switch (wacom->wacom_wac.features.type) {
+ 	case INTUOS4S:
+ 	case INTUOS4:
++	case INTUOS4WL:
+ 	case INTUOS4L:
+ 		wacom->led.select[0] = 0;
+ 		wacom->led.select[1] = 0;
+@@ -795,6 +810,7 @@ static void wacom_destroy_leds(struct wacom *wacom)
+ 	switch (wacom->wacom_wac.features.type) {
+ 	case INTUOS4S:
+ 	case INTUOS4:
++	case INTUOS4WL:
+ 	case INTUOS4L:
+ 		sysfs_remove_group(&wacom->hdev->dev.kobj,
+ 				   &intuos4_led_attr_group);
+diff --git a/drivers/hid/wacom_wac.c b/drivers/hid/wacom_wac.c
+index 06bc600..1bcee15 100644
+--- a/drivers/hid/wacom_wac.c
++++ b/drivers/hid/wacom_wac.c
+@@ -34,6 +34,9 @@
+   8th value means AC online and show 100% capacity */
+ static unsigned short batcap_gr[8] = { 1, 15, 25, 35, 50, 70, 100, 100 };
+ 
++/*percent of battery capacity for Intuos4 WL, AC has a separate bit*/
++static unsigned short batcap_i4[8] = { 1, 15, 30, 45, 60, 70, 85, 100 };
++
+ static int wacom_penpartner_irq(struct wacom_wac *wacom)
+ {
+ 	unsigned char *data = wacom->data;
+@@ -953,6 +956,58 @@ static int int_dist(int x1, int y1, int x2, int y2)
+ 	return int_sqrt(x*x + y*y);
  }
  
-+static int wacom_ac_get_property(struct power_supply *psy,
-+				enum power_supply_property psp,
-+				union power_supply_propval *val)
++static void wacom_intuos_bt_process_data(struct wacom_wac *wacom,
++		unsigned char *data)
 +{
-+	struct wacom *wacom = container_of(psy, struct wacom, ac);
-+	int ret = 0;
++	memcpy(wacom->data, data, 10);
++	wacom_intuos_irq(wacom);
 +
-+	switch (psp) {
-+	case POWER_SUPPLY_PROP_PRESENT:
-+		/* fall through */
-+	case POWER_SUPPLY_PROP_ONLINE:
-+		val->intval = wacom->wacom_wac.ps_connected;
-+		break;
-+	case POWER_SUPPLY_PROP_SCOPE:
-+		val->intval = POWER_SUPPLY_SCOPE_DEVICE;
-+		break;
-+	default:
-+		ret = -EINVAL;
-+		break;
-+	}
-+	return ret;
++	input_sync(wacom->input);
++	if (wacom->pad_input)
++		input_sync(wacom->pad_input);
 +}
 +
- static int wacom_initialize_battery(struct wacom *wacom)
- {
--	int error = 0;
- 	static atomic_t battery_no = ATOMIC_INIT(0);
-+	int error;
- 	unsigned long n;
- 
- 	if (wacom->wacom_wac.features.quirks & WACOM_QUIRK_BATTERY) {
- 		n = atomic_inc_return(&battery_no) - 1;
++static int wacom_intuos_bt_irq(struct wacom_wac *wacom, size_t len)
++{
++	unsigned char data[WACOM_PKGLEN_MAX];
++	int i = 1;
++	unsigned power_raw, battery_capacity, bat_charging, ps_connected;
 +
- 		wacom->battery.properties = wacom_battery_props;
- 		wacom->battery.num_properties = ARRAY_SIZE(wacom_battery_props);
- 		wacom->battery.get_property = wacom_battery_get_property;
-@@ -822,15 +852,31 @@ static int wacom_initialize_battery(struct wacom *wacom)
- 		wacom->battery.type = POWER_SUPPLY_TYPE_BATTERY;
- 		wacom->battery.use_for_apm = 0;
- 
-+		wacom->ac.properties = wacom_ac_props;
-+		wacom->ac.num_properties = ARRAY_SIZE(wacom_ac_props);
-+		wacom->ac.get_property = wacom_ac_get_property;
-+		sprintf(wacom->wacom_wac.ac_name, "wacom_ac_%ld", n);
-+		wacom->ac.name = wacom->wacom_wac.ac_name;
-+		wacom->ac.type = POWER_SUPPLY_TYPE_MAINS;
-+		wacom->ac.use_for_apm = 0;
++	memcpy(data, wacom->data, len);
 +
- 		error = power_supply_register(&wacom->hdev->dev,
- 					      &wacom->battery);
-+		if (error)
-+			return error;
-+
-+		power_supply_powers(&wacom->battery, &wacom->hdev->dev);
-+
-+		error = power_supply_register(&wacom->hdev->dev, &wacom->ac);
-+		if (error) {
-+			power_supply_unregister(&wacom->battery);
-+			return error;
++	switch (data[0]) {
++	case 0x04:
++		wacom_intuos_bt_process_data(wacom, data + i);
++		i += 10;
++		/* fall through */
++	case 0x03:
++		wacom_intuos_bt_process_data(wacom, data + i);
++		i += 10;
++		wacom_intuos_bt_process_data(wacom, data + i);
++		i += 10;
++		power_raw = data[i];
++		bat_charging = (power_raw & 0x08) ? 1 : 0;
++		ps_connected = (power_raw & 0x10) ? 1 : 0;
++		battery_capacity = batcap_i4[power_raw & 0x07];
++		if ((wacom->battery_capacity != battery_capacity) ||
++		    (wacom->bat_charging != bat_charging) ||
++		    (wacom->ps_connected != ps_connected)) {
++			wacom->battery_capacity = battery_capacity;
++			wacom->bat_charging = bat_charging;
++			wacom->ps_connected = ps_connected;
++			wacom_notify_battery(wacom);
 +		}
- 
--		if (!error)
--			power_supply_powers(&wacom->battery,
--					    &wacom->hdev->dev);
-+		power_supply_powers(&wacom->ac, &wacom->hdev->dev);
- 	}
- 
--	return error;
++
++		break;
++	default:
++		dev_dbg(wacom->input->dev.parent,
++				"Unknown report: %d,%d size:%li\n",
++				data[0], data[1], len);
++		return 0;
++	}
 +	return 0;
- }
++}
++
+ static int wacom_24hdt_irq(struct wacom_wac *wacom)
+ {
+ 	struct input_dev *input = wacom->input;
+@@ -1512,6 +1567,10 @@ void wacom_wac_irq(struct wacom_wac *wacom_wac, size_t len)
+ 		sync = wacom_intuos_irq(wacom_wac);
+ 		break;
  
- static void wacom_destroy_battery(struct wacom *wacom)
-@@ -839,6 +885,8 @@ static void wacom_destroy_battery(struct wacom *wacom)
- 	     wacom->battery.dev) {
- 		power_supply_unregister(&wacom->battery);
- 		wacom->battery.dev = NULL;
-+		power_supply_unregister(&wacom->ac);
-+		wacom->ac.dev = NULL;
- 	}
- }
++	case INTUOS4WL:
++		sync = wacom_intuos_bt_irq(wacom_wac, len);
++		break;
++
+ 	case WACOM_24HDT:
+ 		sync = wacom_24hdt_irq(wacom_wac);
+ 		break;
+@@ -1803,6 +1862,7 @@ int wacom_setup_input_capabilities(struct input_dev *input_dev,
+ 		break;
  
+ 	case INTUOS4:
++	case INTUOS4WL:
+ 	case INTUOS4L:
+ 	case INTUOS4S:
+ 		input_set_abs_params(input_dev, ABS_Z, -900, 899, 0, 0);
+@@ -2051,6 +2111,15 @@ int wacom_setup_pad_input_capabilities(struct input_dev *input_dev,
+ 		input_set_abs_params(input_dev, ABS_WHEEL, 0, 71, 0, 0);
+ 		break;
+ 
++	case INTUOS4WL:
++		/*
++		 * For Bluetooth devices, the udev rule does not work correctly
++		 * for pads unless we add a stylus capability, which forces
++		 * ID_INPUT_TABLET to be set.
++		 */
++		__set_bit(BTN_STYLUS, input_dev->keybit);
++		/* fall through */
++
+ 	case INTUOS4:
+ 	case INTUOS4L:
+ 		__set_bit(BTN_7, input_dev->keybit);
+@@ -2265,6 +2334,9 @@ static const struct wacom_features wacom_features_0xBB =
+ static const struct wacom_features wacom_features_0xBC =
+ 	{ "Wacom Intuos4 WL", 40640, 25400, 2047, 63,
+ 	  INTUOS4, WACOM_INTUOS3_RES, WACOM_INTUOS3_RES };
++static const struct wacom_features wacom_features_0xBD =
++	{ "Wacom Intuos4 WL", 40640, 25400, 2047, 63,
++	  INTUOS4WL, WACOM_INTUOS3_RES, WACOM_INTUOS3_RES };
+ static const struct wacom_features wacom_features_0x26 =
+ 	{ "Wacom Intuos5 touch S", 31496, 19685, 2047, 63,
+ 	  INTUOS5S, WACOM_INTUOS3_RES, WACOM_INTUOS3_RES, .touch_max = 16 };
+@@ -2581,6 +2653,7 @@ const struct hid_device_id wacom_ids[] = {
+ 	{ USB_DEVICE_WACOM(0xBA) },
+ 	{ USB_DEVICE_WACOM(0xBB) },
+ 	{ USB_DEVICE_WACOM(0xBC) },
++	{ BT_DEVICE_WACOM(0xBD) },
+ 	{ USB_DEVICE_WACOM(0xC0) },
+ 	{ USB_DEVICE_WACOM(0xC2) },
+ 	{ USB_DEVICE_WACOM(0xC4) },
 diff --git a/drivers/hid/wacom_wac.h b/drivers/hid/wacom_wac.h
-index 6cdf707..3433a0e 100644
+index 0f3df34..5039357 100644
 --- a/drivers/hid/wacom_wac.h
 +++ b/drivers/hid/wacom_wac.h
-@@ -155,6 +155,7 @@ struct wacom_wac {
- 	char name[WACOM_NAME_MAX];
- 	char pad_name[WACOM_NAME_MAX];
- 	char bat_name[WACOM_NAME_MAX];
-+	char ac_name[WACOM_NAME_MAX];
- 	unsigned char data[WACOM_PKGLEN_MAX];
- 	int tool[2];
- 	int id[2];
+@@ -86,6 +86,7 @@ enum {
+ 	INTUOS3L,
+ 	INTUOS4S,
+ 	INTUOS4,
++	INTUOS4WL,
+ 	INTUOS4L,
+ 	INTUOS5S,
+ 	INTUOS5,
 -- 
 2.0.1
 
