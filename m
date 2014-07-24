@@ -1,197 +1,273 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934640AbaGXVe7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 17:34:59 -0400
-Received: from mail.kernel.org ([198.145.19.201]:57526 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751174AbaGXVe5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 17:34:57 -0400
-Date: Thu, 24 Jul 2014 18:34:51 -0300
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: Jiri Olsa <jolsa@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH 17/19] perf tools: Always force
- PERF_RECORD_FINISHED_ROUND event
-Message-ID: <20140724213451.GH7831@kernel.org>
-References: <1405893363-21967-1-git-send-email-jolsa@kernel.org>
- <1405893363-21967-18-git-send-email-jolsa@kernel.org>
+	id S934731AbaGXVoL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 17:44:11 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:56899 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S934176AbaGXVoJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jul 2014 17:44:09 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        Linux PM list <linux-pm@vger.kernel.org>
+Subject: Re: [RFC][PATCH] irq: Rework IRQF_NO_SUSPENDED
+Date: Fri, 25 Jul 2014 00:02:34 +0200
+Message-ID: <108195247.B5bmKnnP6H@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140724212620.GO3935@laptop>
+References: <20140724212620.GO3935@laptop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1405893363-21967-18-git-send-email-jolsa@kernel.org>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Sun, Jul 20, 2014 at 11:56:01PM +0200, Jiri Olsa escreveu:
-> The PERF_RECORD_FINISHED_ROUND governs queue flushing in
-> reporting, so it needs to be stored for any kind of event.
+On Thursday, July 24, 2014 11:26:20 PM Peter Zijlstra wrote:
+> Subject: irq: Rework IRQF_NO_SUSPENDED
+> From: Peter Zijlstra <peterz@infradead.org>
+> Date: Thu Jul 24 22:34:50 CEST 2014
 > 
-> Forcing the PERF_RECORD_FINISHED_ROUND event to be stored any
-> time we finish the round and wrote at least one event.
+> Typically when devices are suspended they're quiesced such that they
+> will not generate any further interrupts.
+> 
+> However some devices should still generate interrupts, even when
+> suspended, typically used to wake the machine back up.
+> 
+> Such logic should ideally be contained inside each driver, if it can
+> generate interrupts when suspended, it knows about this and the
+> interrupt handler can deal with it.
+> 
+> Except of course for shared interrupts, when such a wakeup device is
+> sharing an interrupt line with a device that does not expect
+> interrupts while suspended things can go funny.
+> 
+> This is where IRQF_NO_SUSPEND comes in, the idea is that drivers that
+> have the capability to wake the machine set IRQF_NO_SUSPEND and their
+> handler will still be called, even when the IRQ subsystem is formally
+> suspended. Handlers without IRQF_NO_SUSPEND will not be called.
+> 
+> This replaced the prior implementation of IRQF_NO_SUSPEND which had
+> a number of fatal issues in that it didn't actually work for the
+> shared case, exactly the case it should be helping.
+> 
+> There is still enable_irq_wake()/IRQD_WAKEUP_STATE that tries to serve
+> a similar purpose but is equially wrecked for shared interrupts,
+> ideally this would be removed.
+> 
+> Cc: rjw@rjwysocki.net
+> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
 
-This is not just one change, it does two things and it is not clearly
-detailed here.
+Acked-by: Rafael J. Wysocki <rjw@rjwysocki.net>
 
-The existing code would write a PERF_RECORD_FINISHED_ROUND per call to
-record__mmap_read() for tracepoints were present.
-
-I.e. if tracepoints and any other type of event type was present, then
-this syntetic PERF_RECORD_FINISHED_ROUND thing is inserted which will be
-handled at report time.
-
-Now you changed it to not check if tracepoints are present, i.e. it will
-always insert that after processing N events in
-PERF_RECORD_FINISHED_ROUND. (change #1)
-
-The thing is, before it didn't checked if N was zero, needlessly
-inserting PERF_RECORD_FINISHED_ROUND events in some corner cases.
-
-Now you, in addition to change #1 you also check that the number of
-bytes written before that event processing loop in record__mmap_read()
-is the same after the loop, i.e. if some events were written to the
-output perf.data file, only inserting the PERF_RECORD_FINISHED_ROUND
-events if so. (change #2)
-
-I think both changes are OK, but should be split in different patches,
-and while testing comparing having the patch applied versus patch
-applied + ignore the PERF_RECORD_FINISHED_ROUND events in the resulting
-perf.data file, I get:
-
-[root@zoo /]# perf stat -r 5 perf report --no-ordered-samples > /dev/null
-<SNIP symbol stuff>
- Performance counter stats for 'perf report --no-ordered-samples' (5 runs):
-
-      30263.033852      task-clock (msec)         #    1.000 CPUs utilized            ( +-  0.48% )
-               346      context-switches          #    0.011 K/sec                    ( +- 54.65% )
-               182      cpu-migrations            #    0.006 K/sec                    ( +- 29.94% )
-            89,951      page-faults               #    0.003 M/sec                    ( +-  0.05% )
-    92,342,939,311      cycles                    #    3.051 GHz                      ( +-  0.46% )
-    50,605,250,178      stalled-cycles-frontend   #   54.80% frontend cycles idle     ( +-  0.88% )
-   <not supported>      stalled-cycles-backend   
-   101,171,572,553      instructions              #    1.10  insns per cycle        
-                                                  #    0.50  stalled cycles per insn  ( +-  0.01% )
-    22,643,469,804      branches                  #  748.222 M/sec                    ( +-  0.01% )
-       284,395,273      branch-misses             #    1.26% of all branches          ( +-  0.45% )
-
-      30.249514999 seconds time elapsed                                          ( +-  0.48% )
-
-[root@zoo /]# perf stat -r 5 perf report --ordered-samples > /dev/null
-<SNIP symbol stuff>
- Performance counter stats for 'perf report --ordered-samples' (5 runs):
-
-      32665.828429      task-clock (msec)         #    1.001 CPUs utilized            ( +-  0.41% )
-               304      context-switches          #    0.009 K/sec                    ( +- 23.32% )
-               102      cpu-migrations            #    0.003 K/sec                    ( +- 21.70% )
-            79,405      page-faults               #    0.002 M/sec                    ( +-  0.02% )
-   101,761,091,322      cycles                    #    3.115 GHz                      ( +-  0.40% )
-    57,627,138,326      stalled-cycles-frontend   #   56.63% frontend cycles idle     ( +-  0.65% )
-   <not supported>      stalled-cycles-backend   
-   105,982,144,263      instructions              #    1.04  insns per cycle        
-                                                  #    0.54  stalled cycles per insn  ( +-  0.01% )
-    23,493,670,235      branches                  #  719.212 M/sec                    ( +-  0.01% )
-       319,060,575      branch-misses             #    1.36% of all branches          ( +-  0.19% )
-
-      32.636483981 seconds time elapsed                                          ( +-  0.41% )
-
-[root@zoo /]#
-
-The patch used to enable/disable processing of PERF_RECORD_FINISHED_ROUND is this one:
-
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index 21d830bafff3..8b5410313005 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -675,6 +675,8 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
- 	OPT_BOOLEAN(0, "demangle", &symbol_conf.demangle,
- 		    "Disable symbol demangling"),
- 	OPT_BOOLEAN(0, "mem-mode", &report.mem_mode, "mem access profile"),
-+	OPT_BOOLEAN(0, "ordered-samples", &report.tool.ordered_samples,
-+		    "Make sure samples are ordered by time"),
- 	OPT_CALLBACK(0, "percent-limit", &report, "percent",
- 		     "Don't show entries under that percent", parse_percent_limit),
- 	OPT_CALLBACK(0, "percentage", NULL, "relative|absolute",
-
----
-
-The workload:
-
-[root@zoo /]# perf report --header-only
-# ========
-# captured on: Thu Jul 24 17:10:16 2014
-# hostname : zoo.ghostprotocols.net
-# os release : 3.15.4-200.fc20.x86_64
-# perf version : 3.16.rc2.g2b5b8b
-# arch : x86_64
-# nrcpus online : 4
-# nrcpus avail : 4
-# cpudesc : Intel(R) Core(TM) i7-3667U CPU @ 2.00GHz
-# cpuid : GenuineIntel,6,58,9
-# total memory : 8081004 kB
-# cmdline : /home/acme/bin/perf record -F 7000 -a -e cache-misses,instructions,cycles sleep 5m 
-# event : name = cache-misses, type = 0, config = 0x3, config1 = 0x0, config2 = 0x0, excl_usr = 0, excl_kern = 0, excl_host = 0, excl_guest = 1, precise_ip = 0, attr_mmap2 = 0, attr_mmap  = 1, attr_mmap_data = 0
-# event : name = instructions, type = 0, config = 0x1, config1 = 0x0, config2 = 0x0, excl_usr = 0, excl_kern = 0, excl_host = 0, excl_guest = 1, precise_ip = 0, attr_mmap2 = 0, attr_mmap  = 0, attr_mmap_data = 0
-# event : name = cycles, type = 0, config = 0x0, config1 = 0x0, config2 = 0x0, excl_usr = 0, excl_kern = 0, excl_host = 0, excl_guest = 1, precise_ip = 0, attr_mmap2 = 0, attr_mmap  = 0, attr_mmap_data = 0, id =
-# HEADER_CPU_TOPOLOGY info available, use -I to display
-# HEADER_NUMA_TOPOLOGY info available, use -I to display
-# pmu mappings: cpu = 4, software = 1, power = 9, uncore_imc = 8, tracepoint = 2, uncore_cbox_0 = 6, uncore_cbox_1 = 7, breakpoint = 5
-# ========
-#
-
-[root@zoo /]# perf evlist -v
-cache-misses: sample_freq=7000, config: 3, size: 96, sample_type: IP|TID|TIME|ID|CPU|PERIOD, read_format: ID, disabled: 1, inherit: 1, mmap: 1, comm: 1, freq: 1, sample_id_all: 1, exclude_guest: 1
-instructions: sample_freq=7000, config: 1, size: 96, sample_type: IP|TID|TIME|ID|CPU|PERIOD, read_format: ID, disabled: 1, inherit: 1, freq: 1, sample_id_all: 1, exclude_guest: 1
-cycles: sample_freq=7000, size: 96, sample_type: IP|TID|TIME|ID|CPU|PERIOD, read_format: ID, disabled: 1, inherit: 1, freq: 1, sample_id_all: 1, exclude_guest: 1
-[root@zoo /]#
-
-- Arnaldo
-
-> Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
-> Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-> Cc: David Ahern <dsahern@gmail.com>
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Ingo Molnar <mingo@kernel.org>
-> Cc: Jean Pihet <jean.pihet@linaro.org>
-> Cc: Namhyung Kim <namhyung@kernel.org>
-> Cc: Paul Mackerras <paulus@samba.org>
-> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Signed-off-by: Jiri Olsa <jolsa@kernel.org>
 > ---
->  tools/perf/builtin-record.c | 7 ++++++-
->  1 file changed, 6 insertions(+), 1 deletion(-)
+>  kernel/irq/chip.c      |    4 +---
+>  kernel/irq/handle.c    |   24 +++++++++++++++++++++---
+>  kernel/irq/internals.h |    6 ++++--
+>  kernel/irq/manage.c    |   31 ++++++-------------------------
+>  kernel/irq/pm.c        |   17 +++++++++--------
+>  5 files changed, 41 insertions(+), 41 deletions(-)
 > 
-> diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-> index 378b85b731a7..4869050e7194 100644
-> --- a/tools/perf/builtin-record.c
-> +++ b/tools/perf/builtin-record.c
-> @@ -238,6 +238,7 @@ static struct perf_event_header finished_round_event = {
+> --- a/kernel/irq/chip.c
+> +++ b/kernel/irq/chip.c
+> @@ -677,9 +677,7 @@ void handle_percpu_devid_irq(unsigned in
+>  	if (chip->irq_ack)
+>  		chip->irq_ack(&desc->irq_data);
 >  
->  static int record__mmap_read_all(struct record *rec)
+> -	trace_irq_handler_entry(irq, action);
+> -	res = action->handler(irq, dev_id);
+> -	trace_irq_handler_exit(irq, action, res);
+> +	res = do_irqaction(desc, action, irq, dev_id);
+>  
+>  	if (chip->irq_eoi)
+>  		chip->irq_eoi(&desc->irq_data);
+> --- a/kernel/irq/handle.c
+> +++ b/kernel/irq/handle.c
+> @@ -131,6 +131,23 @@ void __irq_wake_thread(struct irq_desc *
+>  }
+>  
+>  irqreturn_t
+> +do_irqaction(struct irq_desc *desc, struct irqaction *action,
+> +	     unsigned int irq, void *dev_id)
+> +{
+> +	irqreturn_t ret;
+> +
+> +	if (unlikely((desc->istate & IRQS_SUSPENDED) &&
+> +		     !(action->flags & IRQF_NO_SUSPEND)))
+> +		return IRQ_NONE;
+> +
+> +	trace_irq_handler_entry(irq, action);
+> +	ret = action->handler(irq, dev_id);
+> +	trace_irq_handler_exit(irq, action, ret);
+> +
+> +	return ret;
+> +}
+> +
+> +irqreturn_t
+>  handle_irq_event_percpu(struct irq_desc *desc, struct irqaction *action)
 >  {
-> +	u64 bytes_written = rec->bytes_written;
->  	int i;
->  	int rc = 0;
+>  	irqreturn_t retval = IRQ_NONE;
+> @@ -139,9 +156,7 @@ handle_irq_event_percpu(struct irq_desc
+>  	do {
+>  		irqreturn_t res;
 >  
-> @@ -250,7 +251,11 @@ static int record__mmap_read_all(struct record *rec)
->  		}
+> -		trace_irq_handler_entry(irq, action);
+> -		res = action->handler(irq, action->dev_id);
+> -		trace_irq_handler_exit(irq, action, res);
+> +		res = do_irqaction(desc, action, irq, action->dev_id);
+>  
+>  		if (WARN_ONCE(!irqs_disabled(),"irq %u handler %pF enabled interrupts\n",
+>  			      irq, action->handler))
+> @@ -175,6 +190,9 @@ handle_irq_event_percpu(struct irq_desc
+>  
+>  	add_interrupt_randomness(irq, flags);
+>  
+> +	if (unlikely(desc->istate & IRQS_SUSPENDED) && retval == IRQ_NONE)
+> +		retval = IRQ_HANDLED;
+> +
+>  	if (!noirqdebug)
+>  		note_interrupt(irq, desc, retval);
+>  	return retval;
+> --- a/kernel/irq/internals.h
+> +++ b/kernel/irq/internals.h
+> @@ -63,8 +63,10 @@ enum {
+>  
+>  extern int __irq_set_trigger(struct irq_desc *desc, unsigned int irq,
+>  		unsigned long flags);
+> -extern void __disable_irq(struct irq_desc *desc, unsigned int irq, bool susp);
+> -extern void __enable_irq(struct irq_desc *desc, unsigned int irq, bool resume);
+> +
+> +extern irqreturn_t
+> +do_irqaction(struct irq_desc *desc, struct irqaction *action,
+> +	     unsigned int irq, void *dev_id);
+>  
+>  extern int irq_startup(struct irq_desc *desc, bool resend);
+>  extern void irq_shutdown(struct irq_desc *desc);
+> --- a/kernel/irq/manage.c
+> +++ b/kernel/irq/manage.c
+> @@ -382,15 +382,8 @@ setup_affinity(unsigned int irq, struct
+>  }
+>  #endif
+>  
+> -void __disable_irq(struct irq_desc *desc, unsigned int irq, bool suspend)
+> +void __disable_irq(struct irq_desc *desc, unsigned int irq)
+>  {
+> -	if (suspend) {
+> -		if (!desc->action || (desc->action->flags & IRQF_NO_SUSPEND) ||
+> -		    irqd_has_set(&desc->irq_data, IRQD_WAKEUP_STATE))
+> -			return;
+> -		desc->istate |= IRQS_SUSPENDED;
+> -	}
+> -
+>  	if (!desc->depth++)
+>  		irq_disable(desc);
+>  }
+> @@ -402,7 +395,7 @@ static int __disable_irq_nosync(unsigned
+>  
+>  	if (!desc)
+>  		return -EINVAL;
+> -	__disable_irq(desc, irq, false);
+> +	__disable_irq(desc, irq);
+>  	irq_put_desc_busunlock(desc, flags);
+>  	return 0;
+>  }
+> @@ -443,20 +436,8 @@ void disable_irq(unsigned int irq)
+>  }
+>  EXPORT_SYMBOL(disable_irq);
+>  
+> -void __enable_irq(struct irq_desc *desc, unsigned int irq, bool resume)
+> +void __enable_irq(struct irq_desc *desc, unsigned int irq)
+>  {
+> -	if (resume) {
+> -		if (!(desc->istate & IRQS_SUSPENDED)) {
+> -			if (!desc->action)
+> -				return;
+> -			if (!(desc->action->flags & IRQF_FORCE_RESUME))
+> -				return;
+> -			/* Pretend that it got disabled ! */
+> -			desc->depth++;
+> -		}
+> -		desc->istate &= ~IRQS_SUSPENDED;
+> -	}
+> -
+>  	switch (desc->depth) {
+>  	case 0:
+>   err_out:
+> @@ -498,7 +479,7 @@ void enable_irq(unsigned int irq)
+>  		 KERN_ERR "enable_irq before setup/request_irq: irq %u\n", irq))
+>  		goto out;
+>  
+> -	__enable_irq(desc, irq, false);
+> +	__enable_irq(desc, irq);
+>  out:
+>  	irq_put_desc_busunlock(desc, flags);
+>  }
+> @@ -1079,7 +1060,7 @@ __setup_irq(unsigned int irq, struct irq
+>  		 */
+>  
+>  #define IRQF_MISMATCH \
+> -	(IRQF_TRIGGER_MASK | IRQF_ONESHOT | IRQF_NO_SUSPEND)
+> +	(IRQF_TRIGGER_MASK | IRQF_ONESHOT)
+>  
+>  		if (!((old->flags & new->flags) & IRQF_SHARED) ||
+>  		    ((old->flags ^ new->flags) & IRQF_MISMATCH))
+> @@ -1232,7 +1213,7 @@ __setup_irq(unsigned int irq, struct irq
+>  	 */
+>  	if (shared && (desc->istate & IRQS_SPURIOUS_DISABLED)) {
+>  		desc->istate &= ~IRQS_SPURIOUS_DISABLED;
+> -		__enable_irq(desc, irq, false);
+> +		__enable_irq(desc, irq);
 >  	}
 >  
-> -	if (perf_header__has_feat(&rec->session->header, HEADER_TRACING_DATA))
-> +	/*
-> +	 * Mark the round finished in case we wrote
-> +	 * at least one event.
-> +	 */
-> +	if (bytes_written != rec->bytes_written)
->  		rc = record__write(rec, &finished_round_event, sizeof(finished_round_event));
+>  	raw_spin_unlock_irqrestore(&desc->lock, flags);
+> --- a/kernel/irq/pm.c
+> +++ b/kernel/irq/pm.c
+> @@ -29,14 +29,20 @@ void suspend_device_irqs(void)
+>  	for_each_irq_desc(irq, desc) {
+>  		unsigned long flags;
 >  
->  out:
-> -- 
-> 1.8.3.1
+> +		/*
+> +		 * Ideally this would be a global state, but we cannot
+> +		 * for the trainwreck that is IRQD_WAKEUP_STATE.
+> +		 */
+>  		raw_spin_lock_irqsave(&desc->lock, flags);
+> -		__disable_irq(desc, irq, true);
+> +		if (!irqd_has_set(&desc->irq_data, IRQD_WAKEUP_STATE))
+> +			desc->istate |= IRQS_SUSPENDED;
+>  		raw_spin_unlock_irqrestore(&desc->lock, flags);
+>  	}
+>  
+> -	for_each_irq_desc(irq, desc)
+> +	for_each_irq_desc(irq, desc) {
+>  		if (desc->istate & IRQS_SUSPENDED)
+>  			synchronize_irq(irq);
+> +	}
+>  }
+>  EXPORT_SYMBOL_GPL(suspend_device_irqs);
+>  
+> @@ -47,14 +53,9 @@ static void resume_irqs(bool want_early)
+>  
+>  	for_each_irq_desc(irq, desc) {
+>  		unsigned long flags;
+> -		bool is_early = desc->action &&
+> -			desc->action->flags & IRQF_EARLY_RESUME;
+> -
+> -		if (!is_early && want_early)
+> -			continue;
+>  
+>  		raw_spin_lock_irqsave(&desc->lock, flags);
+> -		__enable_irq(desc, irq, true);
+> +		desc->istate &= ~IRQS_SUSPENDED;
+>  		raw_spin_unlock_irqrestore(&desc->lock, flags);
+>  	}
+>  }
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
