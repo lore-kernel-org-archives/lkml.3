@@ -1,80 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934652AbaGXUie (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 16:38:34 -0400
-Received: from g2t2353.austin.hp.com ([15.217.128.52]:42724 "EHLO
-	g2t2353.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934176AbaGXUid (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 16:38:33 -0400
-Message-ID: <53D16EC4.1000801@hp.com>
-Date: Thu, 24 Jul 2014 16:38:28 -0400
-From: Waiman Long <waiman.long@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
-MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Borislav Petkov <bp@alien8.de>, Ingo Molnar <mingo@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        USB list <linux-usb@vger.kernel.org>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>
-Subject: Re: Linux 3.16-rc6
-References: <CA+55aFzJKxzw_as9iGgeM=MdQ6trUkQLDuoEr8nxj88sOqQnQA@mail.gmail.com> <20140723095327.GA23131@pd.tnic> <CA+55aFzPs4uF=eR7jCnpyBtgWNRkX-uDfXeo5u34VEvT8_yyzw@mail.gmail.com> <20140724064353.GW9918@twins.programming.kicks-ass.net> <20140724084126.GB19239@pd.tnic> <20140724122513.GM19239@pd.tnic> <20140724125814.GX6758@twins.programming.kicks-ass.net> <CA+55aFynW5xSRQvY6xO+mxmt6yh7mFkMjy-pgJXpXNy8qDMcPA@mail.gmail.com> <20140724183643.GM3935@laptop>
-In-Reply-To: <20140724183643.GM3935@laptop>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S934670AbaGXUjs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 16:39:48 -0400
+Received: from plane.gmane.org ([80.91.229.3]:56753 "EHLO plane.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934581AbaGXUjr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jul 2014 16:39:47 -0400
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: Alex Elsayed <eternaleye@gmail.com>
+Subject: Re: Reading large amounts from /dev/urandom broken
+Date: Thu, 24 Jul 2014 13:39:25 -0700
+Message-ID: <lqrqu0$5pv$1@ger.gmane.org>
+References: <CANZNk81nyws__swPUoxz912wi5PJ2CBXbiLpJ-Jc4oLcX+J8vw@mail.gmail.com> <20140723151459.GA6673@thunk.org> <1406128778.26440.9.camel@localhost>
+Mime-Version: 1.0
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7Bit
+X-Complaints-To: usenet@ger.gmane.org
+X-Gmane-NNTP-Posting-Host: 50.245.141.77
+User-Agent: KNode/4.13.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/24/2014 02:36 PM, Peter Zijlstra wrote:
-> On Thu, Jul 24, 2014 at 11:18:16AM -0700, Linus Torvalds wrote:
->> On Thu, Jul 24, 2014 at 5:58 AM, Peter Zijlstra<peterz@infradead.org>  wrote:
->>> So going by the nifty picture rostedt made:
->>>
->>> [   61.454336]        CPU0                    CPU1
->>> [   61.454336]        ----                    ----
->>> [   61.454336]   lock(&(&p->alloc_lock)->rlock);
->>> [   61.454336]                                local_irq_disable();
->>> [   61.454336]                                lock(tasklist_lock);
->>> [   61.454336]                                lock(&(&p->alloc_lock)->rlock);
->>> [   61.454336]<Interrupt>
->>> [   61.454336]     lock(tasklist_lock);
->> So this *should* be fine. It always has been in the past, and it was
->> certainly the *intention* that it should continue to work with
->> qrwlock, even in the presense of pending writers on other cpu's.
->>
->> The qrwlock rules are that a read-lock in an interrupt is still going
->> to be unfair and succeed if there are other readers.
-> Ah, indeed. Should have checked :/
->
->> So it sounds to me like the new lockdep rules in tip/master are too
->> strict and are throwing a false positive.
-> Right. Waiman can you have a look?
+Hannes Frederic Sowa wrote:
 
-Yes, I think I may have a solution for that.
+> On Mi, 2014-07-23 at 11:14 -0400, Theodore Ts'o wrote:
+>> On Wed, Jul 23, 2014 at 04:52:21PM +0300, Andrey Utkin wrote:
+>> > Dear developers, please check bugzilla ticket
+>> > https://bugzilla.kernel.org/show_bug.cgi?id=80981 (not the initial
+>> > issue, but starting with comment#3.
+>> > 
+>> > Reading from /dev/urandom gives EOF after 33554431 bytes.  I believe
+>> > it is introduced by commit 79a8468747c5f95ed3d5ce8376a3e82e0c5857fc,
+>> > with the chunk
+>> > 
+>> > nbytes = min_t(size_t, nbytes, INT_MAX >> (ENTROPY_SHIFT + 3));
+>> > 
+>> > which is described in commit message as "additional paranoia check to
+>> > prevent overly large count values to be passed into urandom_read()".
+>> > 
+>> > I don't know why people pull such large amounts of data from urandom,
+>> > but given today there are two bugreports regarding problems doing
+>> > that, i consider that this is practiced.
+>> 
+>> I've inquired on the bugzilla why the reporter is abusing urandom in
+>> this way.  The other commenter on the bug replicated the problem, but
+>> that's not a "second bug report" in my book.
+>> 
+>> At the very least, this will probably cause me to insert a warning
+>> printk: "insane user of /dev/urandom: [current->comm] requested %d
+>> bytes" whenever someone tries to request more than 4k.
+> 
+> Ok, I would be fine with that.
+> 
+> The dd if=/dev/urandom of=random_file.dat seems reasonable to me to try
+> to not break it. But, of course, there are other possibilities.
 
-Borislav, can you apply the following patch on top of the lockdep patch 
-to see if it can fix the problem?
-
-diff --git a/kernel/locking/lockdep.c b/kernel/locking/lockdep.c
-index d24e433..507a8ce 100644
---- a/kernel/locking/lockdep.c
-+++ b/kernel/locking/lockdep.c
-@@ -3595,6 +3595,12 @@ void lock_acquire(struct lockdep_map *lock, 
-unsigned int
-         raw_local_irq_save(flags);
-         check_flags(flags);
-
-+       /*
-+        * An interrupt recursive read in interrupt context can be 
-considered
-+        * to be the same as a recursive read from checking perspective.
-+        */
-+       if ((read == 3) && in_interrupt())
-+               read = 2;
-         current->lockdep_recursion = 1;
-         trace_lock_acquire(lock, subclass, trylock, read, check, 
-nest_lock, ip);
-         __lock_acquire(lock, subclass, trylock, read, check,
+Personally, I'd say that _is_ insane - reading from urandom still consumes 
+entropy (causing readers of /dev/random to block more often); when 
+alternatives (such as dd'ing to dm-crypt) both avoid the issue _and_ are 
+faster then it should very well be considered pathological.
 
