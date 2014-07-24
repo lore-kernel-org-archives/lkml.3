@@ -1,57 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934736AbaGXWVi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 18:21:38 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43585 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933498AbaGXWVf (ORCPT
+	id S934735AbaGXWZ3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 18:25:29 -0400
+Received: from mail-ig0-f173.google.com ([209.85.213.173]:38730 "EHLO
+	mail-ig0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751164AbaGXWZ1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 18:21:35 -0400
-Date: Thu, 24 Jul 2014 15:21:33 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Max Filippov <jcmvbkbc@gmail.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Linux-Arch <linux-arch@vger.kernel.org>,
-        "Linux/MIPS Mailing List" <linux-mips@linux-mips.org>,
-        "linux-xtensa@linux-xtensa.org" <linux-xtensa@linux-xtensa.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Leonid Yegoshin <Leonid.Yegoshin@imgtec.com>,
-        Chris Zankel <chris@zankel.net>, Marc Gauthier <marc@cadence.com>
-Subject: Re: [PATCH v2] mm/highmem: make kmap cache coloring aware
-Message-Id: <20140724152133.bd4556f632b9cbb506b168cf@linux-foundation.org>
-In-Reply-To: <CAMo8BfJ0zC16ssBDGUxsLNwmVOpgnyk1PjikunB9u-C7x9uaOA@mail.gmail.com>
-References: <1405616598-14798-1-git-send-email-jcmvbkbc@gmail.com>
-	<20140723141721.d6a58555f124a7024d010067@linux-foundation.org>
-	<CAMo8BfJ0zC16ssBDGUxsLNwmVOpgnyk1PjikunB9u-C7x9uaOA@mail.gmail.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Thu, 24 Jul 2014 18:25:27 -0400
+Message-ID: <53D18824.9000907@gmail.com>
+Date: Thu, 24 Jul 2014 18:26:44 -0400
+From: Woody Suwalski <terraluna977@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:29.0) Gecko/20100101 Firefox/29.0 SeaMonkey/2.26.1
+MIME-Version: 1.0
+To: Martin Kepplinger <martink@posteo.de>, Zhang Rui <rui.zhang@intel.com>
+CC: "rjw@rjwysocki.net" <rjw@rjwysocki.net>,
+        "lenb@kernel.org" <lenb@kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-media@vger.kernel.org
+Subject: Re: [BUG] rc1 rc2 rc3 not bootable - black screen after kernel loading
+References: <53A6E72A.9090000@posteo.de>	 <744357E9AAD1214791ACBA4B0B90926301379B97@SHSMSX101.ccr.corp.intel.com>	 <53A81BF7.3030207@posteo.de> <1403529246.4686.6.camel@rzhang1-toshiba>	 <53A83DC7.1010606@posteo.de> <1403882067.16305.124.camel@rzhang1-toshiba>	 <53ADB359.4010401@posteo.de> <53ADCB24.9030206@posteo.de>	 <53ADECDA.60600@posteo.de> <53B11749.3020902@posteo.de>	 <1404116299.8366.0.camel@rzhang1-toshiba> <1404116444.8366.1.camel@rzhang1-toshiba> <53B12723.4080902@posteo.de> <53B13E4B.2080603@posteo.de> <53D131E7.2090304@posteo.de>
+In-Reply-To: <53D131E7.2090304@posteo.de>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 24 Jul 2014 04:38:01 +0400 Max Filippov <jcmvbkbc@gmail.com> wrote:
+Martin Kepplinger wrote:
+> Am 2014-06-30 12:39, schrieb Martin Kepplinger:
+>> back to aaeb2554337217dfa4eac2fcc90da7be540b9a73 as the first bad
+>> commit. why is this not revertable exactly? how can I show a complete
+>> list of commits this merge introduces?
+>>
+> It seems that _nobody_ is running a simple 32 bit i915 (acer) laptop.
+> rc6 is still unusable. Black screen directly after kernel-loading. no
+> change since rc1.
+>
+> Seems like I won't be able to use 3.16. I'm happy to test patches and am
+> happy for any advice what to do, when time permits.
+>
+>                               martin
+>
+Martin, I am running happily a 32-bit kernel 3.16-rc*all on i915 (Asus 
+EeePC)
+However: from your postings I still have no idea what Intel video 
+chipset is in your Acer.
+Try to add "nomodeset=y" to your kernel's cmdline to verify that it can 
+boot. You have many kobject messages which are hiding what is 
+happening... And please submit at least full dmesg output and "lspci 
+-nn" ;-)
 
-> On Thu, Jul 24, 2014 at 1:17 AM, Andrew Morton
-> <akpm@linux-foundation.org> wrote:
-> > Fifthly, it would be very useful to publish the performance testing
-> > results for at least one architecture so that we can determine the
-> > patchset's desirability.  And perhaps to motivate other architectures
-> > to implement this.
-> 
-> What sort of performance numbers would be relevant?
-> For xtensa this patch enables highmem use for cores with aliasing cache,
-> that is access to a gigabyte of memory (typical on KC705 FPGA board) vs.
-> only 128MBytes of low memory, which is highly desirable. But performance
-> comparison of these two configurations seems to make little sense.
-> OTOH performance comparison of highmem variants with and without
-> cache aliasing would show the quality of our cache flushing code.
-
-I'd assumed the patch was making cache coloring available as a
-performance tweak.  But you appear to be saying that the (high) memory
-is simply unavailable for such cores without this change.  I think.
-
-Please ensure that v3's changelog explains the full reason for the
-patch.  Assume you're talking to all-the-worlds-an-x86 dummies, OK?
-
+Woody
