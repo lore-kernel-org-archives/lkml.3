@@ -1,53 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758631AbaGXCxc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 22:53:32 -0400
-Received: from mail-ie0-f172.google.com ([209.85.223.172]:48181 "EHLO
-	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758462AbaGXCxb (ORCPT
+	id S1758625AbaGXC7q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 22:59:46 -0400
+Received: from mail-ie0-f173.google.com ([209.85.223.173]:55042 "EHLO
+	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758371AbaGXC7p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 22:53:31 -0400
+	Wed, 23 Jul 2014 22:59:45 -0400
 From: Nicholas Krause <xerofoify@gmail.com>
 To: gregkh@linuxfoundation.org
-Cc: john.stultz@linaro.org, maarten.lankhorst@canonical.com, daniel@ffwll.ch,
-        waydi1@gmail.com, ydroneaud@opteya.com, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] staging: Add blank lines in sw_sync.c
-Date: Wed, 23 Jul 2014 22:53:23 -0400
-Message-Id: <1406170403-4506-1-git-send-email-xerofoify@gmail.com>
+Cc: john.stultz@linaro.org, waydi1@gmail.com, executerx@gmail.com,
+        alistair.strachan@imgtec.com, tanure@linux.com, ydroneaud@opteya.com,
+        maarten.lankhorst@canonical.com, pkamliya@codeaurora.org,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] staging: Add blank line in sync.c
+Date: Wed, 23 Jul 2014 22:59:40 -0400
+Message-Id: <1406170780-4825-1-git-send-email-xerofoify@gmail.com>
 X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds two blank lines as stated by checkpatch before lines,
-100 and 159 respectively.
+This patch adds a blank line after line 708 as declared when
+running checkpatch on this file.
 
 Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
 ---
- drivers/staging/android/sw_sync.c | 2 ++
- 1 file changed, 2 insertions(+)
+ drivers/staging/android/sync.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/staging/android/sw_sync.c b/drivers/staging/android/sw_sync.c
-index a76db3f..863d4b1 100644
---- a/drivers/staging/android/sw_sync.c
-+++ b/drivers/staging/android/sw_sync.c
-@@ -97,6 +97,7 @@ static void sw_sync_pt_value_str(struct sync_pt *sync_pt,
- 				       char *str, int size)
+diff --git a/drivers/staging/android/sync.c b/drivers/staging/android/sync.c
+index e7b2e02..0d37495 100644
+--- a/drivers/staging/android/sync.c
++++ b/drivers/staging/android/sync.c
+@@ -705,6 +705,7 @@ static long sync_fence_ioctl(struct file *file, unsigned int cmd,
+ 			     unsigned long arg)
  {
- 	struct sw_sync_pt *pt = (struct sw_sync_pt *)sync_pt;
+ 	struct sync_fence *fence = file->private_data;
 +
- 	snprintf(str, size, "%d", pt->value);
- }
- 
-@@ -156,6 +157,7 @@ static int sw_sync_open(struct inode *inode, struct file *file)
- static int sw_sync_release(struct inode *inode, struct file *file)
- {
- 	struct sw_sync_timeline *obj = file->private_data;
-+
- 	sync_timeline_destroy(&obj->obj);
- 	return 0;
- }
+ 	switch (cmd) {
+ 	case SYNC_IOC_WAIT:
+ 		return sync_fence_ioctl_wait(fence, arg);
 -- 
 1.9.1
 
