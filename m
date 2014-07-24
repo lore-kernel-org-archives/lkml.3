@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935149AbaGXKTm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 06:19:42 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54753 "EHLO
+	id S934325AbaGXJrX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 05:47:23 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54733 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932718AbaGXJrT (ORCPT
+	with ESMTP id S932511AbaGXJrO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 05:47:19 -0400
+	Thu, 24 Jul 2014 05:47:14 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Markos Chandras <markos.chandras@imgtec.com>, linux-mips@linux-mips.org,
+        Ralf Baechle <ralf@linux-mips.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 038/128] lz4: fix another possible overrun
-Date: Thu, 24 Jul 2014 10:44:47 +0100
-Message-Id: <1406195177-8656-39-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 034/128] MIPS: MSC: Prevent out-of-bounds writes to MIPS SC ioremap'd region
+Date: Thu, 24 Jul 2014 10:44:43 +0100
+Message-Id: <1406195177-8656-35-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1406195177-8656-1-git-send-email-luis.henriques@canonical.com>
 References: <1406195177-8656-1-git-send-email-luis.henriques@canonical.com>
@@ -27,50 +28,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+From: Markos Chandras <markos.chandras@imgtec.com>
 
-commit 4148c1f67abf823099b2d7db6851e4aea407f5ee upstream.
+commit ab6c15bc6620ebe220970cc040b29bcb2757f373 upstream.
 
-There is one other possible overrun in the lz4 code as implemented by
-Linux at this point in time (which differs from the upstream lz4
-codebase, but will get synced at in a future kernel release.)  As
-pointed out by Don, we also need to check the overflow in the data
-itself.
+Previously, the lower limit for the MIPS SC initialization loop was
+set incorrectly allowing one extra loop leading to writes
+beyond the MSC ioremap'd space. More precisely, the value of the 'imp'
+in the last loop increased beyond the msc_irqmap_t boundaries and
+as a result of which, the 'n' variable was loaded with an incorrect
+value. This value was used later on to calculate the offset in the
+MSC01_IC_SUP which led to random crashes like the following one:
 
-While we are at it, replace the odd error return value with just a
-"simple" -1 value as the return value is never used for anything other
-than a basic "did this work or not" check.
+CPU 0 Unable to handle kernel paging request at virtual address e75c0200,
+epc == 8058dba4, ra == 8058db90
+[...]
+Call Trace:
+[<8058dba4>] init_msc_irqs+0x104/0x154
+[<8058b5bc>] arch_init_irq+0xd8/0x154
+[<805897b0>] start_kernel+0x220/0x36c
 
-Reported-by: "Don A. Bailey" <donb@securitymouse.com>
-Reported-by: Willy Tarreau <w@1wt.eu>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Kernel panic - not syncing: Attempted to kill the idle task!
+
+This patch fixes the problem
+
+Signed-off-by: Markos Chandras <markos.chandras@imgtec.com>
+Reviewed-by: James Hogan <james.hogan@imgtec.com>
+Cc: linux-mips@linux-mips.org
+Patchwork: https://patchwork.linux-mips.org/patch/7118/
+Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- lib/lz4/lz4_decompress.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ arch/mips/kernel/irq-msc01.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/lib/lz4/lz4_decompress.c b/lib/lz4/lz4_decompress.c
-index 6423f018f907..8ee9333e87ae 100644
---- a/lib/lz4/lz4_decompress.c
-+++ b/lib/lz4/lz4_decompress.c
-@@ -108,6 +108,8 @@ static int lz4_uncompress(const char *source, char *dest, int osize)
- 		if (length == ML_MASK) {
- 			for (; *ip == 255; length += 255)
- 				ip++;
-+			if (unlikely(length > (size_t)(length + *ip)))
-+				goto _output_error;
- 			length += *ip++;
- 		}
+diff --git a/arch/mips/kernel/irq-msc01.c b/arch/mips/kernel/irq-msc01.c
+index fab40f7d2e03..ac9facc08694 100644
+--- a/arch/mips/kernel/irq-msc01.c
++++ b/arch/mips/kernel/irq-msc01.c
+@@ -131,7 +131,7 @@ void __init init_msc_irqs(unsigned long icubase, unsigned int irqbase, msc_irqma
  
-@@ -157,7 +159,7 @@ static int lz4_uncompress(const char *source, char *dest, int osize)
+ 	board_bind_eic_interrupt = &msc_bind_eic_interrupt;
  
- 	/* write overflow error detected */
- _output_error:
--	return (int) (-(((char *)ip) - source));
-+	return -1;
- }
+-	for (; nirq >= 0; nirq--, imp++) {
++	for (; nirq > 0; nirq--, imp++) {
+ 		int n = imp->im_irq;
  
- static int lz4_uncompress_unknownoutputsize(const char *source, char *dest,
+ 		switch (imp->im_type) {
 -- 
 1.9.1
 
