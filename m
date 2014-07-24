@@ -1,86 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935061AbaGXXdH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 19:33:07 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43920 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934568AbaGXXdF (ORCPT
+	id S934883AbaGXXhZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 19:37:25 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:34868 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932131AbaGXXhX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 19:33:05 -0400
-Date: Thu, 24 Jul 2014 16:33:03 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Joerg Roedel <joro@8bytes.org>
-Cc: Andrea Arcangeli <aarcange@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Rik van Riel <riel@redhat.com>, Hugh Dickins <hughd@google.com>,
-        Mel Gorman <mgorman@suse.de>, Johannes Weiner <jweiner@redhat.com>,
-        Jerome Glisse <jglisse@redhat.com>, jroedel@suse.de,
-        Jay.Cornwall@amd.com, Oded.Gabbay@amd.com, John.Bridgman@amd.com,
-        Suravee.Suthikulpanit@amd.com, ben.sander@amd.com,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, iommu@lists.linux-foundation.org
-Subject: Re: [PATCH 0/3] mmu_notifier: Allow to manage CPU external TLBs
-Message-Id: <20140724163303.df34065a3c3b26c0a4b3bab1@linux-foundation.org>
-In-Reply-To: <1406212541-25975-1-git-send-email-joro@8bytes.org>
-References: <1406212541-25975-1-git-send-email-joro@8bytes.org>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 24 Jul 2014 19:37:23 -0400
+Date: Thu, 24 Jul 2014 16:36:33 -0700
+From: tip-bot for Borislav Petkov <tipbot@zytor.com>
+Message-ID: <tip-51cbe7e7c400def749950ab6b2c120624dbe21a7@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        boris.ostrovsky@oracle.com, tglx@linutronix.de, bp@suse.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        boris.ostrovsky@oracle.com, tglx@linutronix.de, bp@suse.de
+In-Reply-To: <1403274493-1371-1-git-send-email-boris.ostrovsky@oracle.com>
+References: <1403274493-1371-1-git-send-email-boris.ostrovsky@oracle.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x86, MCE: Robustify mcheck_init_device
+Git-Commit-ID: 51cbe7e7c400def749950ab6b2c120624dbe21a7
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 24 Jul 2014 16:35:38 +0200 Joerg Roedel <joro@8bytes.org> wrote:
+Commit-ID:  51cbe7e7c400def749950ab6b2c120624dbe21a7
+Gitweb:     http://git.kernel.org/tip/51cbe7e7c400def749950ab6b2c120624dbe21a7
+Author:     Borislav Petkov <bp@suse.de>
+AuthorDate: Fri, 20 Jun 2014 23:16:45 +0200
+Committer:  Borislav Petkov <bp@suse.de>
+CommitDate: Mon, 21 Jul 2014 18:14:32 +0200
 
-> here is a patch-set to extend the mmu_notifiers in the Linux
-> kernel to allow managing CPU external TLBs. Those TLBs may
-> be implemented in IOMMUs or any other external device, e.g.
-> ATS/PRI capable PCI devices.
-> 
-> The problem with managing these TLBs are the semantics of
-> the invalidate_range_start/end call-backs currently
-> available. Currently the subsystem using mmu_notifiers has
-> to guarantee that no new TLB entries are established between
-> invalidate_range_start/end. Furthermore the
-> invalidate_range_start() function is called when all pages
-> are still mapped and invalidate_range_end() when the pages
-> are unmapped an already freed.
-> 
-> So both call-backs can't be used to safely flush any non-CPU
-> TLB because _start() is called too early and _end() too
-> late.
-> 
-> In the AMD IOMMUv2 driver this is currently implemented by
-> assigning an empty page-table to the external device between
-> _start() and _end(). But as tests have shown this doesn't
-> work as external devices don't re-fault infinitly but enter
-> a failure state after some time.
-> 
-> Next problem with this solution is that it causes an
-> interrupt storm for IO page faults to be handled when an
-> empty page-table is assigned.
-> 
-> To solve this situation I wrote a patch-set to introduce a
-> new notifier call-back: mmu_notifer_invalidate_range(). This
-> notifier lifts the strict requirements that no new
-> references are taken in the range between _start() and
-> _end(). When the subsystem can't guarantee that any new
-> references are taken is has to provide the
-> invalidate_range() call-back to clear any new references in
-> there.
-> 
-> It is called between invalidate_range_start() and _end()
-> every time the VMM has to wipe out any references to a
-> couple of pages. This are usually the places where the CPU
-> TLBs are flushed too and where its important that this
-> happens before invalidate_range_end() is called.
-> 
-> Any comments and review appreciated!
+x86, MCE: Robustify mcheck_init_device
 
-It looks pretty simple and harmless.
+BorisO reports that misc_register() fails often on xen. The current code
+unregisters the CPU hotplug notifier in that case. If then a CPU is
+offlined and onlined back again, we end up with a second timer running
+on that CPU, leading to soft lockups and system hangs.
 
-I assume the AMD IOMMUv2 driver actually uses this and it's all
-tested and good?  What is the status of that driver?
+So let's leave the hotcpu notifier always registered - even if
+mce_device_create failed for some cores and never unreg it so that we
+can deal with the timer handling accordingly.
 
+Reported-and-Tested-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+Link: http://lkml.kernel.org/r/1403274493-1371-1-git-send-email-boris.ostrovsky@oracle.com
+Signed-off-by: Borislav Petkov <bp@suse.de>
+---
+ arch/x86/kernel/cpu/mcheck/mce.c | 10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
+
+diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
+index bb92f38..9a79c8d 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce.c
++++ b/arch/x86/kernel/cpu/mcheck/mce.c
+@@ -2451,6 +2451,12 @@ static __init int mcheck_init_device(void)
+ 	for_each_online_cpu(i) {
+ 		err = mce_device_create(i);
+ 		if (err) {
++			/*
++			 * Register notifier anyway (and do not unreg it) so
++			 * that we don't leave undeleted timers, see notifier
++			 * callback above.
++			 */
++			__register_hotcpu_notifier(&mce_cpu_notifier);
+ 			cpu_notifier_register_done();
+ 			goto err_device_create;
+ 		}
+@@ -2471,10 +2477,6 @@ static __init int mcheck_init_device(void)
+ err_register:
+ 	unregister_syscore_ops(&mce_syscore_ops);
+ 
+-	cpu_notifier_register_begin();
+-	__unregister_hotcpu_notifier(&mce_cpu_notifier);
+-	cpu_notifier_register_done();
+-
+ err_device_create:
+ 	/*
+ 	 * We didn't keep track of which devices were created above, but
