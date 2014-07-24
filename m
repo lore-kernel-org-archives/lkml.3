@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935331AbaGXKUR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 06:20:17 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54744 "EHLO
+	id S935358AbaGXKU5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 06:20:57 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54725 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932564AbaGXJrR (ORCPT
+	with ESMTP id S932427AbaGXJrN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 05:47:17 -0400
+	Thu, 24 Jul 2014 05:47:13 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Nicholas Bellinger <nab@linux-iscsi.org>,
+Cc: Alex Smith <alex.smith@imgtec.com>, linux-mips@linux-mips.org,
+        Ralf Baechle <ralf@linux-mips.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 036/128] iscsi-target: Explicily clear login response PDU in exception path
-Date: Thu, 24 Jul 2014 10:44:45 +0100
-Message-Id: <1406195177-8656-37-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 033/128] recordmcount/MIPS: Fix possible incorrect mcount_loc table entries in modules
+Date: Thu, 24 Jul 2014 10:44:42 +0100
+Message-Id: <1406195177-8656-34-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1406195177-8656-1-git-send-email-luis.henriques@canonical.com>
 References: <1406195177-8656-1-git-send-email-luis.henriques@canonical.com>
@@ -27,39 +28,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+From: Alex Smith <alex.smith@imgtec.com>
 
-commit 683497566d48f86e04d026de1ee658dd74fc1077 upstream.
+commit 91ad11d7cc6f4472ebf177a6252fbf0fd100d798 upstream.
 
-This patch adds a explicit memset to the login response PDU
-exception path in iscsit_tx_login_rsp().
+On MIPS calls to _mcount in modules generate 2 instructions to load
+the _mcount address (and therefore 2 relocations). The mcount_loc
+table should only reference the first of these, so the second is
+filtered out by checking the relocation offset and ignoring ones that
+immediately follow the previous one seen.
 
-This addresses a regression bug introduced in commit baa4d64b
-where the initiator would end up not receiving the login
-response and associated status class + detail, before closing
-the login connection.
+However if a module has an _mcount call at offset 0, the second
+relocation would not be filtered out due to old_r_offset == 0
+being taken to mean that the current relocation is the first one
+seen, and both would end up in the mcount_loc table.
 
-Reported-by: Christophe Vu-Brugier <cvubrugier@yahoo.fr>
-Tested-by: Christophe Vu-Brugier <cvubrugier@yahoo.fr>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+This results in ftrace_make_nop() patching both (adjacent)
+instructions to branches over the _mcount call sequence like so:
+
+  0xffffffffc08a8000:  04 00 00 10     b       0xffffffffc08a8014
+  0xffffffffc08a8004:  04 00 00 10     b       0xffffffffc08a8018
+  0xffffffffc08a8008:  2d 08 e0 03     move    at,ra
+  ...
+
+The second branch is in the delay slot of the first, which is
+defined to be unpredictable - on the platform on which this bug was
+encountered, it triggers a reserved instruction exception.
+
+Fix by initializing old_r_offset to ~0 and using that instead of 0
+to determine whether the current relocation is the first seen.
+
+Signed-off-by: Alex Smith <alex.smith@imgtec.com>
+Cc: linux-kernel@vger.kernel.org
+Cc: linux-mips@linux-mips.org
+Patchwork: https://patchwork.linux-mips.org/patch/7098/
+Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/target/iscsi/iscsi_target_util.c | 2 ++
- 1 file changed, 2 insertions(+)
+ scripts/recordmcount.h | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/target/iscsi/iscsi_target_util.c b/drivers/target/iscsi/iscsi_target_util.c
-index d93bc6b1d001..5763073ebd48 100644
---- a/drivers/target/iscsi/iscsi_target_util.c
-+++ b/drivers/target/iscsi/iscsi_target_util.c
-@@ -1289,6 +1289,8 @@ int iscsit_tx_login_rsp(struct iscsi_conn *conn, u8 status_class, u8 status_deta
- 	login->login_failed = 1;
- 	iscsit_collect_login_stats(conn, status_class, status_detail);
+diff --git a/scripts/recordmcount.h b/scripts/recordmcount.h
+index 9d1421e63ff8..49b582a225b0 100644
+--- a/scripts/recordmcount.h
++++ b/scripts/recordmcount.h
+@@ -163,11 +163,11 @@ static int mcount_adjust = 0;
  
-+	memset(&login->rsp[0], 0, ISCSI_HDR_LEN);
-+
- 	hdr	= (struct iscsi_login_rsp *)&login->rsp[0];
- 	hdr->opcode		= ISCSI_OP_LOGIN_RSP;
- 	hdr->status_class	= status_class;
+ static int MIPS_is_fake_mcount(Elf_Rel const *rp)
+ {
+-	static Elf_Addr old_r_offset;
++	static Elf_Addr old_r_offset = ~(Elf_Addr)0;
+ 	Elf_Addr current_r_offset = _w(rp->r_offset);
+ 	int is_fake;
+ 
+-	is_fake = old_r_offset &&
++	is_fake = (old_r_offset != ~(Elf_Addr)0) &&
+ 		(current_r_offset - old_r_offset == MIPS_FAKEMCOUNT_OFFSET);
+ 	old_r_offset = current_r_offset;
+ 
 -- 
 1.9.1
 
