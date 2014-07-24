@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934868AbaGXJ5e (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 05:57:34 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:55135 "EHLO
+	id S1758864AbaGXJs4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 05:48:56 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:55122 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934747AbaGXJs6 (ORCPT
+	with ESMTP id S934734AbaGXJsy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 05:48:58 -0400
+	Thu, 24 Jul 2014 05:48:54 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Axel Lin <axel.lin@ingics.com>, Guenter Roeck <linux@roeck-us.net>,
+Cc: Lv Zheng <lv.zheng@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 107/128] hwmon: (adm1031) Fix writes to limit registers
-Date: Thu, 24 Jul 2014 10:45:56 +0100
-Message-Id: <1406195177-8656-108-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 104/128] ACPI / EC: Remove duplicated ec_wait_ibf0() waiter
+Date: Thu, 24 Jul 2014 10:45:53 +0100
+Message-Id: <1406195177-8656-105-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1406195177-8656-1-git-send-email-luis.henriques@canonical.com>
 References: <1406195177-8656-1-git-send-email-luis.henriques@canonical.com>
@@ -27,77 +28,96 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Guenter Roeck <linux@roeck-us.net>
+From: Lv Zheng <lv.zheng@intel.com>
 
-commit 145e74a4e5022225adb84f4e5d4fff7938475c35 upstream.
+commit 9b80f0f73ae1583c22325ede341c74195847618c upstream.
 
-Upper limit for write operations to temperature limit registers
-was clamped to a fractional value. However, limit registers do
-not support fractional values. As a result, upper limits of 127.5
-degrees C or higher resulted in a rounded limit of 128 degrees C.
-Since limit registers are signed, this was stored as -128 degrees C.
-Clamp limits to (-55, +127) degrees C to solve the problem.
+After we've added the first command byte write into advance_transaction(),
+the IBF=0 waiter is duplicated with the command completion waiter
+implemented in the ec_poll() because:
+   If IBF=1 blocked the first command byte write invoked in the task
+   context ec_poll(), it would be kicked off upon IBF=0 interrupt or timed
+   out and retried again in the task context.
 
-Value on writes to auto_temp[12]_min and auto_temp[12]_max were not
-clamped at all, but masked. As a result, out-of-range writes resulted
-in a more or less arbitrary limit. Clamp those attributes to (0, 127)
-degrees C for more predictable results.
+Remove this seperate and duplicate IBF=0 waiter.  By doing so we can
+reduce the overall number of times to access the EC_SC(R) status
+register.
 
-Cc: Axel Lin <axel.lin@ingics.com>
-Reviewed-by: Jean Delvare <jdelvare@suse.de>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Link: https://bugzilla.kernel.org/show_bug.cgi?id=70891
+Link: https://bugzilla.kernel.org/show_bug.cgi?id=63931
+Link: https://bugzilla.kernel.org/show_bug.cgi?id=59911
+Reported-and-tested-by: Gareth Williams <gareth@garethwilliams.me.uk>
+Reported-and-tested-by: Hans de Goede <jwrdegoede@fedoraproject.org>
+Reported-by: Barton Xu <tank.xuhan@gmail.com>
+Tested-by: Steffen Weber <steffen.weber@gmail.com>
+Tested-by: Arthur Chen <axchen@nvidia.com>
+Signed-off-by: Lv Zheng <lv.zheng@intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+[ luis: backported to 3.11: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/hwmon/adm1031.c | 8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+ drivers/acpi/ec.c | 27 +--------------------------
+ 1 file changed, 1 insertion(+), 26 deletions(-)
 
-diff --git a/drivers/hwmon/adm1031.c b/drivers/hwmon/adm1031.c
-index 253ea396106d..bdceca0d7e22 100644
---- a/drivers/hwmon/adm1031.c
-+++ b/drivers/hwmon/adm1031.c
-@@ -365,6 +365,7 @@ set_auto_temp_min(struct device *dev, struct device_attribute *attr,
- 	if (ret)
- 		return ret;
+diff --git a/drivers/acpi/ec.c b/drivers/acpi/ec.c
+index 02090c6095fe..59bf2d016fd1 100644
+--- a/drivers/acpi/ec.c
++++ b/drivers/acpi/ec.c
+@@ -288,23 +288,6 @@ static int acpi_ec_transaction_unlocked(struct acpi_ec *ec,
+ 	return ret;
+ }
  
-+	val = clamp_val(val, 0, 127000);
- 	mutex_lock(&data->update_lock);
- 	data->auto_temp[nr] = AUTO_TEMP_MIN_TO_REG(val, data->auto_temp[nr]);
- 	adm1031_write_value(client, ADM1031_REG_AUTO_TEMP(nr),
-@@ -394,6 +395,7 @@ set_auto_temp_max(struct device *dev, struct device_attribute *attr,
- 	if (ret)
- 		return ret;
- 
-+	val = clamp_val(val, 0, 127000);
- 	mutex_lock(&data->update_lock);
- 	data->temp_max[nr] = AUTO_TEMP_MAX_TO_REG(val, data->auto_temp[nr],
- 						  data->pwm[nr]);
-@@ -696,7 +698,7 @@ static ssize_t set_temp_min(struct device *dev, struct device_attribute *attr,
- 	if (ret)
- 		return ret;
- 
--	val = clamp_val(val, -55000, nr == 0 ? 127750 : 127875);
-+	val = clamp_val(val, -55000, 127000);
- 	mutex_lock(&data->update_lock);
- 	data->temp_min[nr] = TEMP_TO_REG(val);
- 	adm1031_write_value(client, ADM1031_REG_TEMP_MIN(nr),
-@@ -717,7 +719,7 @@ static ssize_t set_temp_max(struct device *dev, struct device_attribute *attr,
- 	if (ret)
- 		return ret;
- 
--	val = clamp_val(val, -55000, nr == 0 ? 127750 : 127875);
-+	val = clamp_val(val, -55000, 127000);
- 	mutex_lock(&data->update_lock);
- 	data->temp_max[nr] = TEMP_TO_REG(val);
- 	adm1031_write_value(client, ADM1031_REG_TEMP_MAX(nr),
-@@ -738,7 +740,7 @@ static ssize_t set_temp_crit(struct device *dev, struct device_attribute *attr,
- 	if (ret)
- 		return ret;
- 
--	val = clamp_val(val, -55000, nr == 0 ? 127750 : 127875);
-+	val = clamp_val(val, -55000, 127000);
- 	mutex_lock(&data->update_lock);
- 	data->temp_crit[nr] = TEMP_TO_REG(val);
- 	adm1031_write_value(client, ADM1031_REG_TEMP_CRIT(nr),
+-static int ec_check_ibf0(struct acpi_ec *ec)
+-{
+-	u8 status = acpi_ec_read_status(ec);
+-	return (status & ACPI_EC_FLAG_IBF) == 0;
+-}
+-
+-static int ec_wait_ibf0(struct acpi_ec *ec)
+-{
+-	unsigned long delay = jiffies + msecs_to_jiffies(ec_delay);
+-	/* interrupt wait manually if GPE mode is not active */
+-	while (time_before(jiffies, delay))
+-		if (wait_event_timeout(ec->wait, ec_check_ibf0(ec),
+-					msecs_to_jiffies(1)))
+-			return 0;
+-	return -ETIME;
+-}
+-
+ static int acpi_ec_transaction(struct acpi_ec *ec, struct transaction *t)
+ {
+ 	int status;
+@@ -325,12 +308,6 @@ static int acpi_ec_transaction(struct acpi_ec *ec, struct transaction *t)
+ 			goto unlock;
+ 		}
+ 	}
+-	if (ec_wait_ibf0(ec)) {
+-		pr_err(PREFIX "input buffer is not empty, "
+-				"aborting transaction\n");
+-		status = -ETIME;
+-		goto end;
+-	}
+ 	pr_debug(PREFIX "transaction start (cmd=0x%02x, addr=0x%02x)\n",
+ 			t->command, t->wdata ? t->wdata[0] : 0);
+ 	/* disable GPE during transaction if storm is detected */
+@@ -354,7 +331,6 @@ static int acpi_ec_transaction(struct acpi_ec *ec, struct transaction *t)
+ 		set_bit(EC_FLAGS_GPE_STORM, &ec->flags);
+ 	}
+ 	pr_debug(PREFIX "transaction end\n");
+-end:
+ 	if (ec->global_lock)
+ 		acpi_release_global_lock(glk);
+ unlock:
+@@ -680,8 +656,7 @@ static u32 acpi_ec_gpe_handler(acpi_handle gpe_device,
+ 	spin_lock_irqsave(&ec->lock, flags);
+ 	advance_transaction(ec);
+ 	spin_unlock_irqrestore(&ec->lock, flags);
+-	if (ec_transaction_completed(ec) &&
+-	    (acpi_ec_read_status(ec) & ACPI_EC_FLAG_IBF) == 0) {
++	if (ec_transaction_completed(ec)) {
+ 		wake_up(&ec->wait);
+ 		ec_check_sci(ec, acpi_ec_read_status(ec));
+ 	}
 -- 
 1.9.1
 
