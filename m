@@ -1,64 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758582AbaGXCCz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 22:02:55 -0400
-Received: from mga01.intel.com ([192.55.52.88]:53749 "EHLO mga01.intel.com"
+	id S1758620AbaGXCDE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 22:03:04 -0400
+Received: from mga09.intel.com ([134.134.136.24]:38390 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756771AbaGXCCx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 22:02:53 -0400
+	id S1758588AbaGXCDA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jul 2014 22:03:00 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,721,1400050800"; 
-   d="scan'208";a="566351638"
-Message-ID: <53D068BD.6090701@intel.com>
-Date: Thu, 24 Jul 2014 10:00:29 +0800
-From: Lan Tianyu <tianyu.lan@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+   d="asc'?scan'208";a="577988987"
+Date: Wed, 23 Jul 2014 21:31:30 -0400
+From: "Chen, Gong" <gong.chen@linux.intel.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, tglx@linutronix.de,
+        paulus@samba.org, benh@kernel.crashing.org, tony.luck@intel.com,
+        hpa@zytor.com, jkosina@suse.cz, rafael.j.wysocki@intel.com,
+        linux@arm.linux.org.uk, ralf@linux-mips.org, schwidefsky@de.ibm.com,
+        davem@davemloft.net, viro@zeniv.linux.org.uk, fweisbec@gmail.com,
+        cl@linux.com, akpm@linux-foundation.org, axboe@kernel.dk,
+        JBottomley@parallels.com, neilb@suse.de, christoffer.dall@linaro.org,
+        rostedt@goodmis.org, rric@kernel.org, gregkh@linuxfoundation.org,
+        mhocko@suse.cz, david@fromorbit.com
+Subject: Re: [RFC PATCH v1 12/70] x86, pci, amd_bus: _FROZEN Cleanup
+Message-ID: <20140724013130.GA2434@gchen.bj.intel.com>
+References: <1406080786-3938-1-git-send-email-gong.chen@linux.intel.com>
+ <1406080786-3938-13-git-send-email-gong.chen@linux.intel.com>
+ <20140723180718.GH21707@pd.tnic>
 MIME-Version: 1.0
-To: Pavel Machek <pavel@ucw.cz>
-CC: rjw@rjwysocki.net, len.brown@intel.com, peterz@infradead.org,
-        toshi.kani@hp.com, mingo@kernel.org, akpm@linux-foundation.org,
-        todd.e.brandt@linux.intel.com, fabf@skynet.be,
-        srivatsa.bhat@linux.vnet.ibm.com, ego@linux.vnet.ibm.com,
-        rafael.j.wysocki@intel.com, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org
-Subject: Re: [RFC PATCH] PM/CPU: Parallel enabling nonboot cpus with resume
- devices
-References: <1406106694-3306-1-git-send-email-tianyu.lan@intel.com> <20140723105304.GA22675@amd.pavel.ucw.cz>
-In-Reply-To: <20140723105304.GA22675@amd.pavel.ucw.cz>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="azLHFNyN32YCQGCU"
+Content-Disposition: inline
+In-Reply-To: <20140723180718.GH21707@pd.tnic>
+X-PGP-Key-ID: A43922C7
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014年07月23日 18:53, Pavel Machek wrote:
-> Hi!
-> 
->> In the current world, all nonboot cpus are enabled serially during system
->> resume. System resume sequence is that boot cpu enables nonboot cpu one by
->> one and then resume devices. Before resuming devices, there are few tasks
->> assigned to nonboot cpus after they are brought up. This waste cpu usage.
->>
->> To accelerate S3, this patches adds a new kernel configure
->> PM_PARALLEL_CPU_UP_FOR_SUSPEND to allow boot cpu to go forward to resume
->> devices after bringing up one nonboot cpu. The nonboot cpu will be in charge
->> of bringing up other cpus. This makes enabling cpu2~x parallel with resuming
->> devices. From the test result on 4 logical core laptop, the time of resume
->> device almost wasn't affected by enabling nonboot cpus lately while the start
->> point is almost 30ms earlier than before.
-> 
-> Does this mean that userspace can now run seeing the "offlined" cpus
-> still in offline state?
 
-No, the PM event handler of cpu hotplug will reenable cpu hotplug via
-cpu_hotplug_enable() at the end of system resume. The function will wait
-for currently running cpu hotplug operations to complete.
+--azLHFNyN32YCQGCU
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> 
-> 									Pavel
-> 
+On Wed, Jul 23, 2014 at 08:07:18PM +0200, Borislav Petkov wrote:
+> Date: Wed, 23 Jul 2014 20:07:18 +0200
+> From: Borislav Petkov <bp@alien8.de>
+> To: "Chen, Gong" <gong.chen@linux.intel.com>
+> Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, tglx@linutronix.de,
+>  paulus@samba.org, benh@kernel.crashing.org, tony.luck@intel.com,
+>  hpa@zytor.com, jkosina@suse.cz, rafael.j.wysocki@intel.com,
+>  linux@arm.linux.org.uk, ralf@linux-mips.org, schwidefsky@de.ibm.com,
+>  davem@davemloft.net, viro@zeniv.linux.org.uk, fweisbec@gmail.com,
+>  cl@linux.com, akpm@linux-foundation.org, axboe@kernel.dk,
+>  JBottomley@parallels.com, neilb@suse.de, christoffer.dall@linaro.org,
+>  rostedt@goodmis.org, rric@kernel.org, gregkh@linuxfoundation.org,
+>  mhocko@suse.cz, david@fromorbit.com
+> Subject: Re: [RFC PATCH v1 12/70] x86, pci, amd_bus: _FROZEN Cleanup
+> User-Agent: Mutt/1.5.23 (2014-03-12)
+>=20
+> On Tue, Jul 22, 2014 at 09:58:48PM -0400, Chen, Gong wrote:
+> > Remove XXX_FROZEN state from x86/pci/amd_bus.
+> >=20
+> > Signed-off-by: Chen, Gong <gong.chen@linux.intel.com>
+> > ---
+> >  arch/x86/pci/amd_bus.c | 3 +--
+> >  1 file changed, 1 insertion(+), 2 deletions(-)
+> >=20
+> > diff --git a/arch/x86/pci/amd_bus.c b/arch/x86/pci/amd_bus.c
+> > index c20d2cc..30f0fca9 100644
+> > --- a/arch/x86/pci/amd_bus.c
+> > +++ b/arch/x86/pci/amd_bus.c
+> > @@ -341,9 +341,8 @@ static int amd_cpu_notify(struct notifier_block *se=
+lf, unsigned long action,
+> >  			  void *hcpu)
+> >  {
+> >  	int cpu =3D (long)hcpu;
+> > -	switch (action) {
+> > +	switch (action & ~CPU_TASKS_FROZEN) {
+> >  	case CPU_ONLINE:
+> > -	case CPU_ONLINE_FROZEN:
+> >  		smp_call_function_single(cpu, enable_pci_io_ecs, NULL, 0);
+> >  		break;
+> >  	default:
+>=20
+> Or you can kill all the switch-case gunk and make it even more readable:
+>=20
+But what if new action is added? We have to change it back. If you prefer
+to use that style I can update in next version.
 
+--azLHFNyN32YCQGCU
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
--- 
-Best regards
-Tianyu Lan
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJT0GHyAAoJEI01n1+kOSLHKekP/3gl9cEIAJ2NpSrdFDG5tAT2
+wZ869UMg4Zn0A95PTxIR152xTz9FKHXVRNj0wxnZqQYNQotPHdKxetkFzVARK8Ox
+2YnMJXttNK89fcnmm0W70OdKLCT6PKUXFdM6vAvO61lrH0yXyzilBnEmKIe/4Woi
+jvfWzV7sRSCCPaEiZ9xMPwLZDIekwwQzwLO9ozMueAeLTMJWqfZGLkrIMtBc4MXv
+LVSim6OhtnP+pmNOjFTeVIUgC2VlFJXNHEmkxpIkpJMIcj/aOW62UCK92VbTtdY4
+8N5l5IK78+8r+DnVOhM8yNU6//0DiM1LGxgqc9/RywPjzQuVDqbNS3JSNd/P4ELK
+U5sjfGs2Ka1KzKVlR8BIsh3stbLMXEp10a7r/cg8c00PztAcJyRHQ+Qv6Ms/POkJ
+Z10yT6jQVOLTZ4/PQY/JqANKu7ZMp3XDiaVQDU50WE0qmq6/nTvZNzz2Zoq2CNiK
+tR80G2gzSoSZwQbdA5yE2sktEDnpzo6jhXFYpbh7IB19DHif8eRz1z8xW2HZjrK7
+x3ZGc1t1vQ4Hol+0Z1PMzyhi80Qa1z9Wt8DrS5ZzEoSxBt1kgWsGBV8+8UgIYRKb
+dUpTrhbKdpfTeObNMg+t+bZ3GiBr+jaJ9necZs/UT1Y77k0s07ryOSY0RbYPPIq3
+cr9NSP9rZFX2IQoM/qMi
+=OOfO
+-----END PGP SIGNATURE-----
+
+--azLHFNyN32YCQGCU--
