@@ -1,195 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758365AbaGXA7F (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jul 2014 20:59:05 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:33113 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751954AbaGXA7D (ORCPT
+	id S1757851AbaGXBBe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jul 2014 21:01:34 -0400
+Received: from mailout.micron.com ([137.201.242.129]:44497 "EHLO
+	mailout.micron.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752788AbaGXBBc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jul 2014 20:59:03 -0400
-Message-ID: <53D05A4F.5080905@gmail.com>
-Date: Thu, 24 Jul 2014 06:28:55 +0530
-From: Varka Bhadram <varkabhadram@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Wed, 23 Jul 2014 21:01:32 -0400
+From: bpqw <bpqw@micron.com>
+To: "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        "computersforpeace@gmail.com" <computersforpeace@gmail.com>
+CC: "b32955@freescale.com" <b32955@freescale.com>,
+        "artem.bityutskiy@linux.intel.com" <artem.bityutskiy@linux.intel.com>,
+        "ron@debian.org" <ron@debian.org>,
+        "u.kleine-koenig@pengutronix.de" <u.kleine-koenig@pengutronix.de>,
+        "ezequiel.garcia@free-electrons.com" 
+	<ezequiel.garcia@free-electrons.com>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Subject: [PATCH 1/1] mtd:nand:fix nand_lock/unlock() function
+Thread-Topic: Subject: [PATCH 1/1] mtd:nand:fix nand_lock/unlock() function
+Thread-Index: Ac+m2phuXcgmHPdERquTjlHUZ43DKQ==
+Date: Thu, 24 Jul 2014 01:00:01 +0000
+Message-ID: <CB9F11E856CFD04BB18EC1C68F2598931B1112@NTXXIAMBX01.xacn.micron.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.167.84.5]
+X-TM-AS-Product-Ver: SMEX-10.0.0.4152-7.000.1014-20836.003
+X-TM-AS-Result: No--2.246200-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
+x-mt-checkinternalsenderrule: True
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Grygorii Strashko <grygorii.strashko@ti.com>,
-        Thomas Gleixner <tglx@linutronix.de>, santosh.shilimkar@ti.com,
-        Jason Cooper <jason@lakedaemon.net>
-CC: Rob Herring <robh+dt@kernel.org>, Kumar Gala <galak@codeaurora.org>,
-        ivan.khoronzhuk@ti.com, m-karicheri2@ti.com,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] irqchip: add keystone irq controller ip driver
-References: <1406126430-9978-1-git-send-email-grygorii.strashko@ti.com> <53CFD581.5040908@gmail.com> <53CFF866.6060703@ti.com>
-In-Reply-To: <53CFF866.6060703@ti.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Do nand reset before write protect check
+If we want to check the WP# low or high through STATUS READ and check bit 7,
+we must reset the device, other operation (eg.erase/program a locked block) can
+also clear the bit 7 of status register.
 
-On Wednesday 23 July 2014 11:31 PM, Grygorii Strashko wrote:
-> Hi,
->
-> On 07/23/2014 06:32 PM, Varka Bhadram wrote:
->> On Wednesday 23 July 2014 08:10 PM, Grygorii Strashko wrote:
->>> On Keystone SOCs, DSP cores can send interrupts to ARM
->>> host using the IRQ controller IP. It provides 28 IRQ
->>> signals to ARM. The IRQ handler running on HOST OS can
->>> identify DSP signal source by analyzing SRCCx bits in
->>> IPCARx registers. This is one of the component used by
->>> the IPC mechanism used on Keystone SOCs.
->> (...)
->>
->>> +Required Properties:
->>> +- compatible: should be "ti,keystone-irq"
->>> +- ti,syscon-dev : phandle and offset pair. The phandle to syscon used to
->>> +            access device control registers and the offset inside
->>> +            device control registers range.
->>> +- interrupt-controller : Identifies the node as an interrupt controller
->>> +- #interrupt-cells : Specifies the number of cells needed to encode
->>> interrupt
->>> +                     source should be 1.
->>> +- interrupts: interrupt reference to primary interrupt controller
->> proper indentation for the properties
->>
->> - compatible        : Should be "ti,keystone-irq"
->> - ti,syscon-dev        : phandle and offset pair. The phandle to syscon
->> used to
->>                 access device control registers and the offset inside
->>                 device control registers range.
->>
->>> +
->>> +Please refer to interrupts.txt in this directory for details of the
->>> common
->>> +Interrupt Controllers bindings used by client devices.
->>> +
->> (...)
->>
->>> +#include <linux/irq.h>
->>> +#include <linux/bitops.h>
->>> +#include <linux/module.h>
->>> +#include <linux/moduleparam.h>
->>> +#include <linux/irqdomain.h>
->>> +#include <linux/irqchip/chained_irq.h>
->>> +#include <linux/of.h>
->>> +#include <linux/of_platform.h>
->>> +#include <linux/mfd/syscon.h>
->>> +#include <linux/regmap.h>
->> Includes in alphabetical order...
->>
->> Give one line gap before local includes..
->>
->> ...
->> #include <linux/regmap.h>
->>
->> #include "irqchip.h"
->>
->>> +#include "irqchip.h"
->>> +
->>> +
->>> +/* The source ID bits start from 4 to 31 (total 28 bits)*/
->>> +#define BIT_OFS            4
->>> +#define KEYSTONE_N_IRQ        (32 - BIT_OFS)
->>> +
->>> +struct keystone_irq_device {
->>> +    struct device        *dev;
->>> +    struct irq_chip         chip;
->>> +    u32             mask;
->>> +    u32             irq;
->>> +    struct irq_domain    *irqd;
->>> +    struct regmap        *devctrl_regs;
->>> +    u32            devctrl_offset;
->>> +};
->>> +
->>> +static inline u32 keystone_irq_readl(struct keystone_irq_device *kirq)
->>> +{
->>> +    int ret;
->>> +    u32 val = 0;
->>> +
->>> +    ret = regmap_read(kirq->devctrl_regs, kirq->devctrl_offset, &val);
->>> +    if (ret < 0)
->>> +        dev_dbg(kirq->dev, "irq read failed ret(%d)\n", ret);
->>> +    return val;
->>> +}
->>> +
->>> +static inline void
->>> +keystone_irq_writel(struct keystone_irq_device *kirq, u32 value)
->>> +{
->>> +    int ret;
->>> +
->>> +    ret = regmap_write(kirq->devctrl_regs, kirq->devctrl_offset, value);
->>> +    if (ret < 0)
->>> +        dev_dbg(kirq->dev, "irq write failed ret(%d)\n", ret);
->> It can be like
->>
->> if (!regmap_write(kirq->devctrl_regs, kirq->devctrl_offset, value))
->>       dev_dbg(kirq->dev, "irq write failed \n");
->>
->>> +}
->>> +
->>> +
-> Pls, Pay attention that I'd like to see ret code here in case of failure.
+Signed-off-by: White Ding <bpqw@micron.com>
+---
+ drivers/mtd/nand/nand_base.c |   18 ++++++++++++++++++
+ 1 file changed, 18 insertions(+)
 
-What we have to do with ret code... ?
-In case of failure only this debug message will be printed.
-
->> (...)
->>
->>> +}
->>> +
->>> +static int keystone_irq_map(struct irq_domain *h, unsigned int virq,
->>> +                irq_hw_number_t hw)
->> should match open parenthesis:
->>
->> static int keystone_irq_map(struct irq_domain *h, unsigned int virq,
->>                   irq_hw_number_t hw)
->>
->>> +{
->>> +    struct keystone_irq_device *kirq = h->host_data;
->>> +
->>> +    irq_set_chip_data(virq, kirq);
->>> +    irq_set_chip_and_handler(virq, &kirq->chip, handle_level_irq);
->>> +    set_irq_flags(virq, IRQF_VALID | IRQF_PROBE);
->>> +    return 0;
->>> +}
->>> +
->>> +static struct irq_domain_ops keystone_irq_ops = {
->>> +    .map    = keystone_irq_map,
->>> +    .xlate    = irq_domain_xlate_onecell,
->>> +};
->>> +
->>> +static int keystone_irq_probe(struct platform_device *pdev)
->>> +{
->>> +    struct device *dev = &pdev->dev;
->>> +    struct device_node *np = dev->of_node;
->>> +    struct keystone_irq_device *kirq;
->>> +    int ret;
->>> +
->>> +    if (np == NULL)
->>> +        return -EINVAL;
->> return -ENODEV??????
-> If probe is executed - the dev is present, but it was created in a wrong/unsupported way
-> or dev structure contains wrong data.
-
-Here we are trying to get the device tree node , but that is not present we may return the
-error code saying that NO DEVICE is present....
-
->> (...)
->>
->>> +static struct platform_driver keystone_irq_device_driver = {
->>> +    .probe        = keystone_irq_probe,
->>> +    .remove        = keystone_irq_remove,
->>> +    .driver        = {
->>> +        .name    = "keystone_irq",
->>> +        .owner    = THIS_MODULE,
->> No need to update it. Its done by module_platform_driver()..
->>
->>> +        .of_match_table    = of_match_ptr(keystone_irq_dt_ids),
->> This driver is always populate through the dts file. So no need to use
->> of_match_ptr....
->>
-
+diff --git a/drivers/mtd/nand/nand_base.c b/drivers/mtd/nand/nand_base.c
+index 41167e9..22dd3aa 100644
+--- a/drivers/mtd/nand/nand_base.c
++++ b/drivers/mtd/nand/nand_base.c
+@@ -965,6 +965,15 @@ int nand_unlock(struct mtd_info *mtd, loff_t ofs, uint64_t len)
+ 
+ 	chip->select_chip(mtd, chipnr);
+ 
++	/*
++	 * Reset the chip.
++	 * If we want to check the WP through READ STATUS and check the bit 7
++	 * we must reset the chip
++	 * some operation can also clear the bit 7 of status register
++	 * eg. erase/program a locked block
++	 */
++	chip->cmdfunc(mtd, NAND_CMD_RESET, -1, -1);
++
+ 	/* Check, if it is write protected */
+ 	if (nand_check_wp(mtd)) {
+ 		pr_debug("%s: device is write protected!\n",
+@@ -1015,6 +1024,15 @@ int nand_lock(struct mtd_info *mtd, loff_t ofs, uint64_t len)
+ 
+ 	chip->select_chip(mtd, chipnr);
+ 
++	/*
++	 * Reset the chip.
++	 * If we want to check the WP through READ STATUS and check the bit 7
++	 * we must reset the chip
++	 * some operation can also clear the bit 7 of status register
++	 * eg. erase/program a locked block
++	 */
++	chip->cmdfunc(mtd, NAND_CMD_RESET, -1, -1);
++
+ 	/* Check, if it is write protected */
+ 	if (nand_check_wp(mtd)) {
+ 		pr_debug("%s: device is write protected!\n",
 -- 
--Varka Bhadram
+1.7.9.5
+
+Br
+White Ding 
+____________________________
+EBU APAC Application Engineering
+Tel:86-21-38997078
+Mobile: 86-13761729112
+Address: No 601 Fasai Rd, Waigaoqiao Free Trade Zone Pudong, Shanghai, China
 
