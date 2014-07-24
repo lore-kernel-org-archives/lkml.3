@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934916AbaGXJtd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 05:49:33 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:55246 "EHLO
+	id S934899AbaGXJt3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 05:49:29 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:55217 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934900AbaGXJta (ORCPT
+	with ESMTP id S934856AbaGXJtU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 05:49:30 -0400
+	Thu, 24 Jul 2014 05:49:20 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Christoph Lameter <cl@linux.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Anton Blanchard <anton@samba.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 127/128] hugetlb: fix copy_hugetlb_page_range() to handle migration/hwpoisoned entry
-Date: Thu, 24 Jul 2014 10:46:16 +0100
-Message-Id: <1406195177-8656-128-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 121/128] powerpc/perf: Never program book3s PMCs with values >= 0x80000000
+Date: Thu, 24 Jul 2014 10:46:10 +0100
+Message-Id: <1406195177-8656-122-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1406195177-8656-1-git-send-email-luis.henriques@canonical.com>
 References: <1406195177-8656-1-git-send-email-luis.henriques@canonical.com>
@@ -30,126 +28,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+From: Anton Blanchard <anton@samba.org>
 
-commit 4a705fef986231a3e7a6b1a6d3c37025f021f49f upstream.
+commit f56029410a13cae3652d1f34788045c40a13ffc7 upstream.
 
-There's a race between fork() and hugepage migration, as a result we try
-to "dereference" a swap entry as a normal pte, causing kernel panic.
-The cause of the problem is that copy_hugetlb_page_range() can't handle
-"swap entry" family (migration entry and hwpoisoned entry) so let's fix
-it.
+We are seeing a lot of PMU warnings on POWER8:
 
-[akpm@linux-foundation.org: coding-style fixes]
-Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Acked-by: Hugh Dickins <hughd@google.com>
-Cc: Christoph Lameter <cl@linux.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-[ luis: backported to 3.11: based on hughd's backport to 3.10.48 ]
+    Can't find PMC that caused IRQ
+
+Looking closer, the active PMC is 0 at this point and we took a PMU
+exception on the transition from negative to 0. Some versions of POWER8
+have an issue where they edge detect and not level detect PMC overflows.
+
+A number of places program the PMC with (0x80000000 - period_left),
+where period_left can be negative. We can either fix all of these or
+just ensure that period_left is always >= 1.
+
+This patch takes the second option.
+
+Signed-off-by: Anton Blanchard <anton@samba.org>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- mm/hugetlb.c | 71 ++++++++++++++++++++++++++++++++++++------------------------
- 1 file changed, 43 insertions(+), 28 deletions(-)
+ arch/powerpc/perf/core-book3s.c | 17 ++++++++++++++++-
+ 1 file changed, 16 insertions(+), 1 deletion(-)
 
-diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-index f8e292add228..16c25a39939f 100644
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -2321,6 +2321,31 @@ static void set_huge_ptep_writable(struct vm_area_struct *vma,
- 		update_mmu_cache(vma, address, ptep);
+diff --git a/arch/powerpc/perf/core-book3s.c b/arch/powerpc/perf/core-book3s.c
+index 8b9b9ac6005d..c05f10e95a9e 100644
+--- a/arch/powerpc/perf/core-book3s.c
++++ b/arch/powerpc/perf/core-book3s.c
+@@ -851,7 +851,22 @@ static void power_pmu_read(struct perf_event *event)
+ 	} while (local64_cmpxchg(&event->hw.prev_count, prev, val) != prev);
+ 
+ 	local64_add(delta, &event->count);
+-	local64_sub(delta, &event->hw.period_left);
++
++	/*
++	 * A number of places program the PMC with (0x80000000 - period_left).
++	 * We never want period_left to be less than 1 because we will program
++	 * the PMC with a value >= 0x800000000 and an edge detected PMC will
++	 * roll around to 0 before taking an exception. We have seen this
++	 * on POWER8.
++	 *
++	 * To fix this, clamp the minimum value of period_left to 1.
++	 */
++	do {
++		prev = local64_read(&event->hw.period_left);
++		val = prev - delta;
++		if (val < 1)
++			val = 1;
++	} while (local64_cmpxchg(&event->hw.period_left, prev, val) != prev);
  }
  
-+static int is_hugetlb_entry_migration(pte_t pte)
-+{
-+	swp_entry_t swp;
-+
-+	if (huge_pte_none(pte) || pte_present(pte))
-+		return 0;
-+	swp = pte_to_swp_entry(pte);
-+	if (non_swap_entry(swp) && is_migration_entry(swp))
-+		return 1;
-+	else
-+		return 0;
-+}
-+
-+static int is_hugetlb_entry_hwpoisoned(pte_t pte)
-+{
-+	swp_entry_t swp;
-+
-+	if (huge_pte_none(pte) || pte_present(pte))
-+		return 0;
-+	swp = pte_to_swp_entry(pte);
-+	if (non_swap_entry(swp) && is_hwpoison_entry(swp))
-+		return 1;
-+	else
-+		return 0;
-+}
- 
- int copy_hugetlb_page_range(struct mm_struct *dst, struct mm_struct *src,
- 			    struct vm_area_struct *vma)
-@@ -2348,10 +2373,26 @@ int copy_hugetlb_page_range(struct mm_struct *dst, struct mm_struct *src,
- 
- 		spin_lock(&dst->page_table_lock);
- 		spin_lock_nested(&src->page_table_lock, SINGLE_DEPTH_NESTING);
--		if (!huge_pte_none(huge_ptep_get(src_pte))) {
-+		entry = huge_ptep_get(src_pte);
-+		if (huge_pte_none(entry)) { /* skip none entry */
-+			;
-+		} else if (unlikely(is_hugetlb_entry_migration(entry) ||
-+				    is_hugetlb_entry_hwpoisoned(entry))) {
-+			swp_entry_t swp_entry = pte_to_swp_entry(entry);
-+
-+			if (is_write_migration_entry(swp_entry) && cow) {
-+				/*
-+				 * COW mappings require pages in both
-+				 * parent and child to be set to read.
-+				 */
-+				make_migration_entry_read(&swp_entry);
-+				entry = swp_entry_to_pte(swp_entry);
-+				set_huge_pte_at(src, addr, src_pte, entry);
-+			}
-+			set_huge_pte_at(dst, addr, dst_pte, entry);
-+		} else {
- 			if (cow)
- 				huge_ptep_set_wrprotect(src, addr, src_pte);
--			entry = huge_ptep_get(src_pte);
- 			ptepage = pte_page(entry);
- 			get_page(ptepage);
- 			page_dup_rmap(ptepage);
-@@ -2366,32 +2407,6 @@ nomem:
- 	return -ENOMEM;
- }
- 
--static int is_hugetlb_entry_migration(pte_t pte)
--{
--	swp_entry_t swp;
--
--	if (huge_pte_none(pte) || pte_present(pte))
--		return 0;
--	swp = pte_to_swp_entry(pte);
--	if (non_swap_entry(swp) && is_migration_entry(swp))
--		return 1;
--	else
--		return 0;
--}
--
--static int is_hugetlb_entry_hwpoisoned(pte_t pte)
--{
--	swp_entry_t swp;
--
--	if (huge_pte_none(pte) || pte_present(pte))
--		return 0;
--	swp = pte_to_swp_entry(pte);
--	if (non_swap_entry(swp) && is_hwpoison_entry(swp))
--		return 1;
--	else
--		return 0;
--}
--
- void __unmap_hugepage_range(struct mmu_gather *tlb, struct vm_area_struct *vma,
- 			    unsigned long start, unsigned long end,
- 			    struct page *ref_page)
+ /*
 -- 
 1.9.1
 
