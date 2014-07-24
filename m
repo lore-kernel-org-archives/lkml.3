@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934559AbaGXJsB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 05:48:01 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54884 "EHLO
+	id S934591AbaGXJsL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 05:48:11 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54911 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934534AbaGXJr4 (ORCPT
+	with ESMTP id S934555AbaGXJsB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 05:47:56 -0400
+	Thu, 24 Jul 2014 05:48:01 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "Wang, Yu" <yu.y.wang@intel.com>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Paolo Bonzini <pbonzini@redhat.com>, Christoph Hellwig <hch@lst.de>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 063/128] xhci: Fix runtime suspended xhci from blocking system suspend.
-Date: Thu, 24 Jul 2014 10:45:12 +0100
-Message-Id: <1406195177-8656-64-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 067/128] virtio-scsi: fix various bad behavior on aborted requests
+Date: Thu, 24 Jul 2014 10:45:16 +0100
+Message-Id: <1406195177-8656-68-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1406195177-8656-1-git-send-email-luis.henriques@canonical.com>
 References: <1406195177-8656-1-git-send-email-luis.henriques@canonical.com>
@@ -29,89 +27,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Wang, Yu" <yu.y.wang@intel.com>
+From: Paolo Bonzini <pbonzini@redhat.com>
 
-commit d6236f6d1d885aa19d1cd7317346fe795227a3cc upstream.
+commit 8faeb529b2dabb9df691d614dda18910a43d05c9 upstream.
 
-The system suspend flow as following:
-1, Freeze all user processes and kenrel threads.
+Even though the virtio-scsi spec guarantees that all requests related
+to the TMF will have been completed by the time the TMF itself completes,
+the request queue's callback might not have run yet.  This causes requests
+to be completed more than once, and as a result triggers a variety of
+BUGs or oopses.
 
-2, Try to suspend all devices.
-
-2.1, If pci device is in RPM suspended state, then pci driver will try
-to resume it to RPM active state in the prepare stage.
-
-2.2, xhci_resume function calls usb_hcd_resume_root_hub to queue two
-workqueue items to resume usb2&usb3 roothub devices.
-
-2.3, Call suspend callbacks of devices.
-
-2.3.1, All suspend callbacks of all hcd's children, including
-roothub devices are called.
-
-2.3.2, Finally, hcd_pci_suspend callback is called.
-
-Due to workqueue threads were already frozen in step 1, the workqueue
-items can't be scheduled, and the roothub devices can't be resumed in
-this flow. The HCD_FLAG_WAKEUP_PENDING flag which is set in
-usb_hcd_resume_root_hub won't be cleared. Finally,
-hcd_pci_suspend will return -EBUSY, and system suspend fails.
-
-The reason why this issue doesn't show up very often is due to that
-choose_wakeup will be called in step 2.3.1. In step 2.3.1, if
-udev->do_remote_wakeup is not equal to device_may_wakeup(&udev->dev), then
-udev will resume to RPM active for changing the wakeup settings. This
-has been a lucky hit which hides this issue.
-
-For some special xHCI controllers which have no USB2 port, then roothub
-will not match hub driver due to probe failed. Then its
-do_remote_wakeup will be set to zero, and we won't be as lucky.
-
-xhci driver doesn't need to resume roothub devices everytime like in
-the above case. It's only needed when there are pending event TRBs.
-
-This patch should be back-ported to kernels as old as 3.2, that
-contains the commit f69e3120df82391a0ee8118e0a156239a06b2afb
-"USB: XHCI: resume root hubs when the controller resumes"
-
-Signed-off-by: Wang, Yu <yu.y.wang@intel.com>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
-[use readl() instead of removed xhci_readl(), reword commit message -Mathias]
-Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+Reviewed-by: Venkatesh Srinivas <venkateshs@google.com>
+Signed-off-by: Christoph Hellwig <hch@lst.de>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/usb/host/xhci.c | 10 +++++++---
- 1 file changed, 7 insertions(+), 3 deletions(-)
+ drivers/scsi/virtio_scsi.c | 22 ++++++++++++++++++++++
+ 1 file changed, 22 insertions(+)
 
-diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
-index 0411eb9ea64c..969a02993d97 100644
---- a/drivers/usb/host/xhci.c
-+++ b/drivers/usb/host/xhci.c
-@@ -973,7 +973,7 @@ int xhci_suspend(struct xhci_hcd *xhci)
-  */
- int xhci_resume(struct xhci_hcd *xhci, bool hibernated)
+diff --git a/drivers/scsi/virtio_scsi.c b/drivers/scsi/virtio_scsi.c
+index 57c39e1e6681..11f5326f449f 100644
+--- a/drivers/scsi/virtio_scsi.c
++++ b/drivers/scsi/virtio_scsi.c
+@@ -270,6 +270,16 @@ static void virtscsi_req_done(struct virtqueue *vq)
+ 	virtscsi_vq_done(vscsi, req_vq, virtscsi_complete_cmd);
+ };
+ 
++static void virtscsi_poll_requests(struct virtio_scsi *vscsi)
++{
++	int i, num_vqs;
++
++	num_vqs = vscsi->num_queues;
++	for (i = 0; i < num_vqs; i++)
++		virtscsi_vq_done(vscsi, &vscsi->req_vqs[i],
++				 virtscsi_complete_cmd);
++}
++
+ static void virtscsi_complete_free(struct virtio_scsi *vscsi, void *buf)
  {
--	u32			command, temp = 0;
-+	u32			command, temp = 0, status;
- 	struct usb_hcd		*hcd = xhci_to_hcd(xhci);
- 	struct usb_hcd		*secondary_hcd;
- 	int			retval = 0;
-@@ -1097,8 +1097,12 @@ int xhci_resume(struct xhci_hcd *xhci, bool hibernated)
+ 	struct virtio_scsi_cmd *cmd = buf;
+@@ -604,6 +614,18 @@ static int virtscsi_tmf(struct virtio_scsi *vscsi, struct virtio_scsi_cmd *cmd)
+ 	    cmd->resp.tmf.response == VIRTIO_SCSI_S_FUNCTION_SUCCEEDED)
+ 		ret = SUCCESS;
  
-  done:
- 	if (retval == 0) {
--		usb_hcd_resume_root_hub(hcd);
--		usb_hcd_resume_root_hub(xhci->shared_hcd);
-+		/* Resume root hubs only when have pending events. */
-+		status = readl(&xhci->op_regs->status);
-+		if (status & STS_EINT) {
-+			usb_hcd_resume_root_hub(hcd);
-+			usb_hcd_resume_root_hub(xhci->shared_hcd);
-+		}
- 	}
- 
- 	/*
++	/*
++	 * The spec guarantees that all requests related to the TMF have
++	 * been completed, but the callback might not have run yet if
++	 * we're using independent interrupts (e.g. MSI).  Poll the
++	 * virtqueues once.
++	 *
++	 * In the abort case, sc->scsi_done will do nothing, because
++	 * the block layer must have detected a timeout and as a result
++	 * REQ_ATOM_COMPLETE has been set.
++	 */
++	virtscsi_poll_requests(vscsi);
++
+ out:
+ 	mempool_free(cmd, virtscsi_cmd_pool);
+ 	return ret;
 -- 
 1.9.1
 
