@@ -1,82 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759591AbaGXQ2E (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 12:28:04 -0400
-Received: from mout.kundenserver.de ([212.227.126.131]:60771 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759397AbaGXQ2A (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 12:28:00 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Peter Griffin <peter.griffin@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
-        patrice.chotard@st.com, linux-kernel@vger.kernel.org,
-        Alan Stern <stern@rowland.harvard.edu>, srinivas.kandagatla@gmail.com,
-        lee.jones@linaro.org, maxime.coquelin@st.com
-Subject: Re: [PATCH v2 1/3] usb: host: st-hcd: Add USB HCD support for STi SoCs
-Date: Thu, 24 Jul 2014 18:26:48 +0200
-Message-ID: <5840432.YNRZREIYz5@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20140724141412.GA21823@griffinp-ThinkPad-X1-Carbon-2nd>
-References: <1406199616-10533-1-git-send-email-peter.griffin@linaro.org> <5967609.vndF2bDyS1@wuerfel> <20140724141412.GA21823@griffinp-ThinkPad-X1-Carbon-2nd>
+	id S1759595AbaGXQ31 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 12:29:27 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:59301 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759397AbaGXQ30 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jul 2014 12:29:26 -0400
+Date: Thu, 24 Jul 2014 18:29:21 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+Cc: linux-kernel@vger.kernel.org, H Peter Anvin <hpa@zytor.com>
+Subject: Re: [PATCH 5/8] x86, microcode, intel: don't use fields from unknown
+ format header
+Message-ID: <20140724162921.GO19239@pd.tnic>
+References: <1406146251-8540-1-git-send-email-hmh@hmh.eng.br>
+ <1406146251-8540-6-git-send-email-hmh@hmh.eng.br>
+ <20140724113726.GL19239@pd.tnic>
+ <20140724133059.GA32421@khazad-dum.debian.net>
+ <20140724142802.GN19239@pd.tnic>
+ <20140724150740.GD32421@khazad-dum.debian.net>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:2juFTmmwEvvEFbmSegm8mZKq6THnv/BTZEuY/r4rYlC
- QWrTbYlLbAXdgJKFe56a67GhaKjgzoOvFmPL/wLIxXq3SiZTaQ
- nTDlQ5woVbNIE03qRVTclpwQCVJXaFmNVA3aCsiY183vmnwwIm
- G/2OvjBqdwvqV9v58vwTUoEUDuVzW9jEt7gyaQyylYKkwdGVsF
- 0JtUGh9OWtnePOLKiWS9jCi9iLgK1WcHDR0Owz3uoO1p7mL8wG
- LHSYJ1L7wrlErHTd2epCPCVuRFNZXlAnAtosdoxHBKdiMT3/ui
- CC3kEADjOu5kZeJxk+gwWmyy6YhDZcky7kTHAF9UPzqDX1DBny
- i37Oe34vaHvHJ0FctbkQ=
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20140724150740.GD32421@khazad-dum.debian.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 24 July 2014 15:14:12 Peter Griffin wrote:
+On Thu, Jul 24, 2014 at 12:07:40PM -0300, Henrique de Moraes Holschuh wrote:
+> Suppose you have a box that takes ldrver 1 microcode, and Intel
+> releases microcode for a new type of core that has a ldrver of 2, and
+> it happens to not be the last one in the microcode collection sent by
+> userspace (via the early initrd or /dev/cpu/microcode). We might well
+> abort before we find the correct microcode update for that box.
 
-> > > > Depending on what kind of special requirements the ST version has,
-> > > > this can be done either by using the generic ohci/ehci bindings
-> > > > with extensions where necessary, or by creating a new binding and
-> > > > new driver files that use 'ohci_init_driver'/'ehci_init_driver'
-> > > > to inherit from the common code.
-> > > > 
-> > > > The first of the two approaches is preferred.
-> > > 
-> > > We don't have anything particularly special, just a couple of reset lines,
-> > > clock, phy, etc.
-> > 
-> > Ok, good. Please see Documentation/devicetree/bindings/usb/usb-?hci.txt
-> > then. You might actually be able to just use the existing drivers
-> > without new code by just adding the proper DT nodes that follow these
-> > bindings.
-> 
-> The only issues I can see with the generic versions are: -
-> 1) We also have a powerdown line in addition to the reset line both of which are 
-> exposed via reset controller API, so I would need to add that into ehci-platform
-> and ohci-platform.
+And? The ldrver 2 header will enter microcode_sanity_check() and abort
+there. A bit later. Same deal.
 
-Ok, adding this would not be too hard.
+If you want to *skip* over ldrver 2 ucode headers but continue looping
+over the ucode data, then you need to do more than that.
 
-> 2) We have a magic poke in st_ehci_configure_bus of the current driver to configure
-> the AHB to ST bus protocol convertor IP. I'm not quite sure where I could hook that
-> in (sorry... slightly pulling back on my "nothing special comment" a bit ;-).
+So what exactly are you trying to fix here?
 
-Hmm, doing this would require adding some form of quirk, either by compatible
-string or using an extra DT property for detection.
+-- 
+Regards/Gruss,
+    Boris.
 
-> 3) We also set the rate of the ohci clock, which the generic driver doesn't do.
-
-Hmm, I guess this is the reason why sometimes it's nice to have names associated
-with the clocks. The generic driver assumes that all clocks just need to be
-turned on, and we decided not to use any naming when that binding was introduced.
-
-Each of these seems solvable, but the combination of these sounds like it
-would be better to create a new pair of drivers. I'd suggest you start by making
-a copy of ohci-platform and removing everything you don't need, then add support
-for the three things above. Give the clock a name, in case we want to merge the
-drivers again later.
-
-	Arnd
+Sent from a fat crate under my desk. Formatting is fine.
+--
