@@ -1,50 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760137AbaGYLYD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 07:24:03 -0400
-Received: from mail-oa0-f52.google.com ([209.85.219.52]:45313 "EHLO
-	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751128AbaGYLYB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 07:24:01 -0400
+	id S1760192AbaGYLZU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 07:25:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54045 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759914AbaGYLZS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jul 2014 07:25:18 -0400
+Date: Fri, 25 Jul 2014 13:25:11 +0200
+From: Andrew Jones <drjones@redhat.com>
+To: Ulrich Obergfell <uobergfe@redhat.com>
+Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org, dzickus@redhat.com,
+        pbonzini@redhat.com, akpm@linux-foundation.org, mingo@redhat.com
+Subject: Re: [PATCH 2/3] watchdog: control hard lockup detection default
+Message-ID: <20140725112510.GA3456@hawk.usersys.redhat.com>
+References: <1406196811-5384-1-git-send-email-drjones@redhat.com>
+ <1406196811-5384-3-git-send-email-drjones@redhat.com>
+ <615371508.17867577.1406277175913.JavaMail.zimbra@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <20140724115252.1847dbad@endymion.delvare>
-References: <20140721181507.5a6d3b2c@endymion.delvare>
-	<CACRpkdZwoftk1bbmZYc5wSh8rzf137TURcjno5Am=CUUHVvEFw@mail.gmail.com>
-	<20140724115252.1847dbad@endymion.delvare>
-Date: Fri, 25 Jul 2014 13:24:00 +0200
-Message-ID: <CACRpkdau4eAETDXy-SQPYPRfN6ixhiypZ32UUb6PXb2QMdTNag@mail.gmail.com>
-Subject: Re: Run-time dependencies for STE Modem remoteproc driver
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Jean Delvare <jdelvare@suse.de>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Dmitry Tarnyagin <dmitry.tarnyagin@lockless.no>,
-        Ohad Ben-Cohen <ohad@wizery.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <615371508.17867577.1406277175913.JavaMail.zimbra@redhat.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 24, 2014 at 11:52 AM, Jean Delvare <jdelvare@suse.de> wrote:
-> Hi Linus,
->
-> On Wed, 23 Jul 2014 17:21:17 +0200, Linus Walleij wrote:
->> On Mon, Jul 21, 2014 at 6:15 PM, Jean Delvare <jdelvare@suse.de> wrote:
->>
->> > This brings the question: on which architectures / platforms is the STE
->> > Modem remoteproc driver needed?
->>
->> NONE.
->
-> Hm, OK :D So I will disable this driver in all our kernels. Maybe this
-> should be mentioned in the Kconfig help text?
->
-> Still, I suppose that the driver had an intended target, maybe we can
-> use that as a run-time dependency? Or should we just make the driver
-> depend on COMPILE_TEST?
+On Fri, Jul 25, 2014 at 04:32:55AM -0400, Ulrich Obergfell wrote:
+> > ----- Original Message -----
+> > From: "Andrew Jones" <drjones@redhat.com>
+> > To: linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+> > Cc: uobergfe@redhat.com, dzickus@redhat.com, pbonzini@redhat.com, akpm@linux-foundation.org, mingo@redhat.com
+> > Sent: Thursday, July 24, 2014 12:13:30 PM
+> > Subject: [PATCH 2/3] watchdog: control hard lockup detection default
+> 
+> [...]
+> 
+> > The running kernel still has the ability to enable/disable at any
+> > time with /proc/sys/kernel/nmi_watchdog us usual. However even
+> > when the default has been overridden /proc/sys/kernel/nmi_watchdog
+> > will initially show '1'. To truly turn it on one must disable/enable
+> > it, i.e.
+> >   echo 0 > /proc/sys/kernel/nmi_watchdog
+> >   echo 1 > /proc/sys/kernel/nmi_watchdog
+> 
+> [...]
+> 
+> > @@ -626,15 +665,17 @@ int proc_dowatchdog(struct ctl_table *table, int write,
+> >          * disabled. The 'watchdog_running' variable check in
+> >          * watchdog_*_all_cpus() function takes care of this.
+> >          */
+> > -        if (watchdog_user_enabled && watchdog_thresh)
+> > +        if (watchdog_user_enabled && watchdog_thresh) {
+> > +                watchdog_enable_hardlockup_detector(true);
+> >                  err = watchdog_enable_all_cpus(old_thresh != watchdog_thresh);
+> > -        else
+> > +        } else
+> 
+> [...]
+> 
+> 
+> I just realized a possible issue in the above part of the patch:
+> 
+> If we would want to give the user the option to override the effect of patch 3/3
+> via /proc, I think proc_dowatchdog() should enable hard lockup detection _only_
+> in case of a state transition from 'NOT watchdog_running' to 'watchdog_running'.
+>                                                           |
+>    if (watchdog_user_enabled && watchdog_thresh) {        | need to add this
+>        if (!watchdog_running) <---------------------------'
+>            watchdog_enable_hardlockup_detector(true);
+>        err = watchdog_enable_all_cpus(old_thresh != watchdog_thresh);
+>    } else
+>        ...
+> 
+> The additional 'if (!watchdog_running)' would _require_ the user to perform the
+> sequence of commands
+> 
+>    echo 0 > /proc/sys/kernel/nmi_watchdog
+>    echo 1 > /proc/sys/kernel/nmi_watchdog
+> 
+> to enable hard lockup detection explicitly.
+> 
+> I think changing the 'watchdog_thresh' while 'watchdog_running' is true should
+> _not_ enable hard lockup detection as a side-effect, because a user may have a
+> 'sysctl.conf' entry such as
+> 
+>    kernel.watchdog_thresh = ...
+> 
+> or may only want to change the 'watchdog_thresh' on the fly.
+> 
+> I think the following flow of execution could cause such undesired side-effect.
+> 
+>    proc_dowatchdog
+>      if (watchdog_user_enabled && watchdog_thresh) {
+> 
+>          watchdog_enable_hardlockup_detector
+>            hardlockup_detector_enabled = true
+> 
+>          watchdog_enable_all_cpus
+>            if (!watchdog_running) {
+>                ...
+>            } else if (sample_period_changed)
+>                       update_timers_all_cpus
+>                         for_each_online_cpu
+>                             update_timers
+>                               watchdog_nmi_disable
+>                               ...
+>                               watchdog_nmi_enable
+> 
+>                                 watchdog_hardlockup_detector_is_enabled
+>                                   return true
+> 
+>                                 enable perf counter for hard lockup detection
+> 
+> Regards,
+> 
+> Uli
 
-Yeah that sounds like a pretty good idea actually, as we shouldn't
-just delete it.
+Nice catch. Looks like this will need a v2. Paolo, do we have a
+consensus on the proc echoing? Or should that be revisited in the v2 as
+well?
 
-Yours,
-Linus Walleij
+drew
