@@ -1,48 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934821AbaGYRbj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 13:31:39 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:54940 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932839AbaGYRbh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 13:31:37 -0400
-From: Mark Brown <broonie@kernel.org>
-To: linux-kernel@vger.kernel.org
-Cc: linaro-kernel@lists.linaro.org, Mark Brown <broonie@linaro.org>
-Date: Fri, 25 Jul 2014 18:31:23 +0100
-Message-Id: <1406309483-29590-2-git-send-email-broonie@kernel.org>
-X-Mailer: git-send-email 2.0.1
-In-Reply-To: <1406309483-29590-1-git-send-email-broonie@kernel.org>
-References: <1406309483-29590-1-git-send-email-broonie@kernel.org>
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: [PATCH] regmap: Allow regmap_get_device() to be used by modules
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+	id S934840AbaGYReX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 13:34:23 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:33343 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932839AbaGYReV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jul 2014 13:34:21 -0400
+Date: Fri, 25 Jul 2014 13:34:06 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Miklos Szeredi <miklos@szeredi.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, Tejun Heo <tj@kernel.org>,
+        Vladimir Davydov <vdavydov@parallels.com>, linux-mm@kvack.org,
+        cgroups@vger.kernel.org,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [patch 13/13] mm: memcontrol: rewrite uncharge API
+Message-ID: <20140725173406.GL1725@cmpxchg.org>
+References: <20140722150825.GA4517@dhcp22.suse.cz>
+ <CAJfpegscT-ptQzq__uUV2TOn7Uvs6x4FdWGTQb9Fe9MEJr2KjA@mail.gmail.com>
+ <20140723143847.GB16721@dhcp22.suse.cz>
+ <20140723150608.GF1725@cmpxchg.org>
+ <CAJfpegs-k5QC+42SzLKUSaHrdPxWBaT_dF+SOPqoDvg8h5p_Tw@mail.gmail.com>
+ <20140723210241.GH1725@cmpxchg.org>
+ <20140724084644.GA14578@dhcp22.suse.cz>
+ <20140724090257.GB14578@dhcp22.suse.cz>
+ <20140725152654.GK1725@cmpxchg.org>
+ <20140725154320.GB18303@dhcp22.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140725154320.GB18303@dhcp22.suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mark Brown <broonie@linaro.org>
+On Fri, Jul 25, 2014 at 05:43:20PM +0200, Michal Hocko wrote:
+> On Fri 25-07-14 11:26:54, Johannes Weiner wrote:
+> > On Thu, Jul 24, 2014 at 11:02:57AM +0200, Michal Hocko wrote:
+> > > On Thu 24-07-14 10:46:44, Michal Hocko wrote:
+> > > > On Wed 23-07-14 17:02:41, Johannes Weiner wrote:
+> > > [...]
+> > > > We can reduce the lookup only to lruvec==true case, no?
+> > > 
+> > > Dohh
+> > > s@can@should@
+> > > 
+> > > newpage shouldn't charged in all other cases and it would be bug.
+> > > Or am I missing something?
+> > 
+> > Yeah, but I'd hate to put that assumption onto the @lrucare parameter,
+> > it just coincides.
+> 
+> Yes, you are right. Maybe replace_page_cache_page should have it's own
+> memcg variant which does all the trickery and then call
+> mem_cgroup_migrate when necessary...
 
-Signed-off-by: Mark Brown <broonie@linaro.org>
----
- drivers/base/regmap/regmap.c | 1 +
- 1 file changed, 1 insertion(+)
+The code flow doesn't really lend itself to nesting.  It's basically
+three steps: validate input, clear the old page, commit the new page.
 
-diff --git a/drivers/base/regmap/regmap.c b/drivers/base/regmap/regmap.c
-index 5ba0263fce21..78f43fb2fe84 100644
---- a/drivers/base/regmap/regmap.c
-+++ b/drivers/base/regmap/regmap.c
-@@ -1084,6 +1084,7 @@ struct device *regmap_get_device(struct regmap *map)
- {
- 	return map->dev;
- }
-+EXPORT_SYMBOL_GPL(regmap_get_device);
- 
- static int _regmap_select_page(struct regmap *map, unsigned int *reg,
- 			       struct regmap_range_node *range,
--- 
-2.0.1
+void mem_cgroup_migrate(struct page *oldpage, struct page *newpage)
+{
+	VM_BUG_ON_PAGE(!PageLocked(oldpage), oldpage);
+	VM_BUG_ON_PAGE(!PageLocked(newpage), newpage);
+	VM_BUG_ON_PAGE(PageLRU(oldpage), oldpage);
+	VM_BUG_ON_PAGE(PageLRU(newpage), newpage);
+	VM_BUG_ON_PAGE(PageAnon(oldpage) != PageAnon(newpage), newpage);
+	VM_BUG_ON_PAGE(PageTransHuge(oldpage) != PageTransHuge(newpage),
+		       newpage);
 
+	if (mem_cgroup_disabled())
+		return;
+
+	/* Re-entrant migration: old page already uncharged? */
+	pc = lookup_page_cgroup(oldpage);
+	if (!PageCgroupUsed(pc))
+		return;
+
+	VM_BUG_ON_PAGE(!(pc->flags & PCG_MEM), oldpage);
+	VM_BUG_ON_PAGE(do_swap_account && !(pc->flags & PCG_MEMSW), oldpage);
+
+	pc->flags = 0;
+	commit_charge(newpage, pc->mem_cgroup, false);
+}
+
+void mem_cgroup_replace_page_cache(struct page *oldpage, struct page *newpage)
+{
+	struct page_cgroup *pc;
+	int isolated;
+
+	VM_BUG_ON_PAGE(!PageLocked(oldpage), oldpage);
+	VM_BUG_ON_PAGE(!PageLocked(newpage), newpage);
+
+	if (mem_cgroup_disabled())
+		return;
+
+	/* New page already charged? */
+	pc = lookup_page_cgroup(newpage);
+	if (PageCgroupUsed(pc))
+		return;
+
+	pc = lookup_page_cgroup(oldpage);
+
+	VM_BUG_ON_PAGE(!(pc->flags & PCG_MEM), oldpage);
+	VM_BUG_ON_PAGE(do_swap_account && !(pc->flags & PCG_MEMSW), oldpage);
+
+	lock_page_lru(oldpage, &isolated);
+	pc->flags = 0;
+	unlock_page_lru(oldpage, isolated);
+
+	commit_charge(newpage, pc->mem_cgroup, true);
+}
+
+Only the call to commit_charge() is the same and there is a little bit
+of overlap in the VM_BUG_ON_PAGEs...  I'd rather have a single migrate
+function, because it's so small that the code is simpler than nesting
+and/or duplicating multiple functions.
