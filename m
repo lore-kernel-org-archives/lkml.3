@@ -1,87 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760935AbaGYPxq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 11:53:46 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:50993 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753938AbaGYPxp (ORCPT
+	id S1760608AbaGYP4K (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 11:56:10 -0400
+Received: from mout.kundenserver.de ([212.227.126.187]:53239 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752445AbaGYP4I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 11:53:45 -0400
-Date: Fri, 25 Jul 2014 17:53:32 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: "Yan, Zheng" <zheng.z.yan@intel.com>, linux-kernel@vger.kernel.org,
-        mingo@kernel.org, acme@infradead.org, eranian@google.com
-Subject: Re: [PATCH v3 6/9] perf, x86: handle multiple records in PEBS buffer
-Message-ID: <20140725155332.GC6758@twins.programming.kicks-ass.net>
-References: <1406016602-31845-1-git-send-email-zheng.z.yan@intel.com>
- <1406016602-31845-7-git-send-email-zheng.z.yan@intel.com>
- <20140725081033.GV3935@laptop>
- <20140725150445.GG18735@two.firstfloor.org>
+	Fri, 25 Jul 2014 11:56:08 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Kweh Hock Leong <hock.leong.kweh@intel.com>,
+        Eric Miao <eric.y.miao@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Mark Brown <broonie@kernel.org>,
+        Chew Chiau Ee <chiau.ee.chew@intel.com>,
+        Darren Hart <dvhart@linux.intel.com>, chiauee85@gmail.com,
+        linux-kernel@vger.kernel.org, linux-spi@vger.kernel.org
+Subject: Re: [PATCH] spi/pxa2xx-pci: Enable DMA binding through device name
+Date: Fri, 25 Jul 2014 17:55 +0200
+Message-ID: <5237362.DJsH7MtqlU@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1406285147.8530.13.camel@smile.fi.intel.com>
+References: <1406196111-22861-1-git-send-email-hock.leong.kweh@intel.com> <5426556.OzZIXLrofJ@wuerfel> <1406285147.8530.13.camel@smile.fi.intel.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="1wow/xSTdHOmT240"
-Content-Disposition: inline
-In-Reply-To: <20140725150445.GG18735@two.firstfloor.org>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:JugfA5WItu3gI40Yv0x6EVdpJJdVpkY/U4ooJUPvD5S
+ UPD8wSVdbxwBR34QIQdO1hpEzAje65vulBsleE6F5XksYhG/D+
+ 6vV29+7fWPT7m55QOnDpI/tgpjKEbrTqn68r0xwGUHqHFjoJGI
+ oXkTnmTk5Xwg+wTpXgB5PcFOHb+G9kkadjSgjiFAam9EwDbef0
+ Kq4Ka8JiUaMXbFNL0kzcSuk8XpdcPkM/QOjN8VIsU2UBbjhHyl
+ 6yRyKcM3B6kZE+27Mz9kYT2nfWv4Dui1HLPlAhti43Jteh8O5w
+ N4dI6CZrTaF8U8vfOtu7zwWrAkHI8Iajoz4WVYHvRvKw9eGV7c
+ dAmyClhI5SGaA1FXDROw=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Friday 25 July 2014 13:45:47 Andy Shevchenko wrote:
+> On Fri, 2014-07-25 at 12:19 +0200, Arnd Bergmann wrote:
+> > On Friday 25 July 2014 12:55:59 Mika Westerberg wrote:
+> > > On Fri, Jul 25, 2014 at 12:07:14PM +0300, Mika Westerberg wrote:
+> > > > On Fri, Jul 25, 2014 at 10:38:36AM +0200, Arnd Bergmann wrote:
+> > > > > On Friday 25 July 2014 11:22:49 Mika Westerberg wrote:
+> 
+> []
+> 
+> > > Something like this?
+> 
+> Arnd, this dependency to certain DMA driver looks really bad.
+> 
+> If we go that way, can we split that part to [another] module and make
+> it dependent to DW_DMAC?
 
---1wow/xSTdHOmT240
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+I don't see what you gain from that. The PCI ID will tell you which DMA
+engine is being used. The driver already hardcodes a slave_id based on
+the PCI ID today, and the 
 
-On Fri, Jul 25, 2014 at 05:04:45PM +0200, Andi Kleen wrote:
-> > You can't.. the events might have different security context.
-> >=20
-> > Remember, the overflow bit is set from the overflow until the PEBS
-> > event is generated, this is quite a long time. So if another PEBS event
-> > gets generated while the other is still pending it will have both bits
-> > set. Even though the second bit is for another (unrelated) counter.
->=20
-> When an event is not allowed by some policy it should be disabled
-> in global ctrl right? And disabling makes sure overflow is cleared,
-> and PEBS will not report it.
->=20
-> When it's not disabled it could happen any time and there
-> is no isolation.
->=20
-> Or is the concern that the PEBS buffer may not be flushed
-> on event switch/disable and you see something stale? I believe it is
-> flushed.
+> Or shall we introduce a dmaengine type field in the platform data and
+> dynamically choose proper filter-whatever-function to get the channel?
 
-Suppose two pebs events, one has exclude_kernel set. It overflows,
-before entering the kernel, the other event generates PEBS records from
-inside the kernel with both events marked in the overflow field.
+We already have an interface for this, in the form of
+dma_request_slave_channel(), which takes a string identifier that
+is used to look up all that information in either device tree or
+ACPI. It wouldn't be unreasonable to add a third path in there
+to handle hardcoded platform devices, but that's a lot of work.
+Note that you still need to encode a reference to the dma engine
+in some way to do this right. The current code (with or without Mika's
+patch) will break as soon as you have multiple DMA engine devices.
 
-And only once we leave the kernel can the exclude_kernel event tick
-again and trigger the assist, finalyl clearing the bit.
+The current plan I think is to convert all platforms to use DT
+or ACPI so they get the right data from tables passed by the
+platform. I'm a bit puzzled about why Intel wants to support the
+non-ACPI non-DT case again. If we have to support this case anyway,
+what good will ACPI do us on those platforms?
 
-If you were to report the records to both events, one would get a lot of
-kernel info he was not entitled to.
+> > > Hock Leong / Chiaue Ee, are you able to check if this works on your BYT
+> > > machines?
+> 
+> > What I think you got wrong here (by following my bad advice) is the master
+> > number. Looking at the code for dw_dma, I think src_master needs to be '1'
+> > for your driver.
+> 
+> On some SoCs we have up to 4 masters. It's blurry for me how the SPI
+> should choose those masters. Currently it works fine, but I suspect
+> there are [might be] performance issues.
 
---1wow/xSTdHOmT240
-Content-Type: application/pgp-signature
+I think it works because the dw-dma defaults to the values used by
+the specific implementation in your hardware.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+> What about AVR32 case? We have to fix drivers as well there.
 
-iQIcBAEBAgAGBQJT0n17AAoJEHZH4aRLwOS6vooP/02GvbWN5QeNsqQFlZR9y9Gr
-s+DGO/epaMlr4PtOeC3OzusILJFX2xblFVXLQrVf+25Ll06P2m6Pp6ULRFH4xqvq
-7Ql73hX0AN9QxviSYUVrWnf0KTPIsnQMO+X7XjjcAEjsJUiNYo7yDR5Xa4c/GS14
-iBovkrKr3LbDvNB9+ZMqvW8+yo9HSxjSFnr9PiMYH+lqtrL685vnWvjOynu12RqM
-BtvYX7pxcFQCdn7V+QdY16p06YERhgamTOlNGQIvMERELWnkukc0aut4rpmWazn0
-pxYH3YUiTpI+gW3FQDZmTSfumVlY6wOJ5vwiIrOL9q7NnLZN7Z7jFRV5bjsmE/Mc
-LYMs/aDz1sBB7M8f7MVwce8Emy26N+ZpGj8S6tORLhov5tr6Fj/nEiewmTI5Fxap
-4RTSR1gqmeoDPC6iz+RinlI2BBM7fYkE7E76vP78yf/nSyNV1uFDKFNv5PGLXD8M
-gNu7SneB4ZQXL55I1ImIlANrZZgsBM2+bfkL4ugVIrAf6syvRUH6gUyobnWKZP5Y
-GF2KghQFURR8PkZIFP37K7rovc9Aj9EissmOaw8VDHz9Ax06Xbcra91y8iJHSybv
-D+LTk1w8kD8+QnrhXw3t/REDZV39rE7jw0EAdvtzUBJR8V7VMEz3I0Sr41UJc5gr
-ntIcvEk3JkdLYDse0clo
-=Cy7Y
------END PGP SIGNATURE-----
+which ones?
 
---1wow/xSTdHOmT240--
+	Arnd
