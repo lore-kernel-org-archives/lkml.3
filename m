@@ -1,87 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760401AbaGYMbN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 08:31:13 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40017 "EHLO mx2.suse.de"
+	id S1760428AbaGYMbd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 08:31:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38923 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759259AbaGYMbK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 08:31:10 -0400
-Date: Fri, 25 Jul 2014 13:31:06 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Vlastimil Babka <vbabka@suse.cz>
-Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>, linux-kernel@vger.kernel.org,
-        Minchan Kim <minchan@kernel.org>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-Subject: Re: [PATCH V4 07/15] mm, compaction: khugepaged should not give up
- due to need_resched()
-Message-ID: <20140725123106.GB10819@suse.de>
-References: <1405518503-27687-1-git-send-email-vbabka@suse.cz>
- <1405518503-27687-8-git-send-email-vbabka@suse.cz>
+	id S1760092AbaGYMbJ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jul 2014 08:31:09 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+To: James Morris <jmorris@namei.org>, sfr@canb.auug.org.au
+cc: dhowells@redhat.com, Mimi Zohar <zohar@linux.vnet.ibm.com>,
+        mimi.e.zohar@gmail.com, Dmitry Kasatkin <d.kasatkin@samsung.com>,
+        vgoyal@redhat.com, keyrings@linux-nfs.org,
+        linux-security-module@vger.kernel.org, linux-crypto@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [GIT PULL] Keyrings: PKCS#7 fixup
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <1405518503-27687-8-git-send-email-vbabka@suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="us-ascii"
+Content-ID: <22573.1406291448.1@warthog.procyon.org.uk>
+Content-Transfer-Encoding: 8BIT
+Date: Fri, 25 Jul 2014 13:30:48 +0100
+Message-ID: <22574.1406291448@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 16, 2014 at 03:48:15PM +0200, Vlastimil Babka wrote:
-> Async compaction aborts when it detects zone lock contention or need_resched()
-> is true. David Rientjes has reported that in practice, most direct async
-> compactions for THP allocation abort due to need_resched(). This means that a
-> second direct compaction is never attempted, which might be OK for a page
-> fault, but khugepaged is intended to attempt a sync compaction in such case and
-> in these cases it won't.
-> 
-> This patch replaces "bool contended" in compact_control with an int that
-> distinguieshes between aborting due to need_resched() and aborting due to lock
-> contention. This allows propagating the abort through all compaction functions
-> as before, but passing the abort reason up to __alloc_pages_slowpath() which
-> decides when to continue with direct reclaim and another compaction attempt.
-> 
-> Another problem is that try_to_compact_pages() did not act upon the reported
-> contention (both need_resched() or lock contention) immediately and would
-> proceed with another zone from the zonelist. When need_resched() is true, that
-> means initializing another zone compaction, only to check again need_resched()
-> in isolate_migratepages() and aborting. For zone lock contention, the
-> unintended consequence is that the lock contended status reported back to the
-> allocator is detrmined from the last zone where compaction was attempted, which
-> is rather arbitrary.
-> 
-> This patch fixes the problem in the following way:
-> - async compaction of a zone aborting due to need_resched() or fatal signal
->   pending means that further zones should not be tried. We report
->   COMPACT_CONTENDED_SCHED to the allocator.
-> - aborting zone compaction due to lock contention means we can still try
->   another zone, since it has different set of locks. We report back
->   COMPACT_CONTENDED_LOCK only if *all* zones where compaction was attempted,
->   it was aborted due to lock contention.
-> 
-> As a result of these fixes, khugepaged will proceed with second sync compaction
-> as intended, when the preceding async compaction aborted due to need_resched().
-> Page fault compactions aborting due to need_resched() will spare some cycles
-> previously wasted by initializing another zone compaction only to abort again.
-> Lock contention will be reported only when compaction in all zones aborted due
-> to lock contention, and therefore it's not a good idea to try again after
-> reclaim.
-> 
-> Reported-by: David Rientjes <rientjes@google.com>
-> Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
-> Cc: Minchan Kim <minchan@kernel.org>
-> Cc: Mel Gorman <mgorman@suse.de>
-> Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-> Cc: Michal Nazarewicz <mina86@mina86.com>
-> Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> Cc: Christoph Lameter <cl@linux.com>
-> Cc: Rik van Riel <riel@redhat.com>
+Hi James,
 
-Acked-by: Mel Gorman <mgorman@suse.de>
+Here's a fixup for the problem that Stephen spotted.
 
--- 
-Mel Gorman
-SUSE Labs
+David
+---
+The following changes since commit 633706a2ee81637be37b6bc02c5336950cc163b5:
+
+  Merge branch 'keys-fixes' into keys-next (2014-07-22 21:55:45 +0100)
+
+are available in the git repository at:
+
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/dhowells/linux-fs.git tags/keys-next-20140725
+
+for you to fetch changes up to 8f3438ccea149647ad1849651d1e14c7b8b85e63:
+
+  PKCS#7: Missing inclusion of linux/err.h (2014-07-25 11:33:53 +0100)
+
+----------------------------------------------------------------
+(from the branch description for keys-next local branch)
+
+Keyrings for linux-next
+Keyrings patches
+
+----------------------------------------------------------------
+David Howells (1):
+      PKCS#7: Missing inclusion of linux/err.h
+
+ crypto/asymmetric_keys/pkcs7_key_type.c | 1 +
+ 1 file changed, 1 insertion(+)
