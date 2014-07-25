@@ -1,77 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760259AbaGYLyg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 07:54:36 -0400
-Received: from mail.us.es ([193.147.175.20]:43597 "EHLO mail.us.es"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760052AbaGYLye (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 07:54:34 -0400
-X-Qmail-Scanner-Diagnostics: from 127.0.0.1 by antivirus4 (envelope-from <pneira@us.es>, uid 501) with qmail-scanner-2.10 
- (clamdscan: 0.98.4/19221. spamassassin: 3.3.2.  
- Clear:RC:1(127.0.0.1):SA:0(-100.2/7.5):. 
- Processed in 1.886274 secs); 25 Jul 2014 11:54:30 -0000
-X-Spam-ASN: AS42863 89.214.0.0/16
-X-Envelope-From: pneira@us.es
-Date: Fri, 25 Jul 2014 13:54:37 +0200
-From: Pablo Neira Ayuso <pablo@netfilter.org>
-To: Daniel Borkmann <dborkman@redhat.com>
-Cc: Alexei Starovoitov <ast@plumgrid.com>,
-        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, willemb@google.com,
-        netfilter-devel@vger.kernel.org
-Subject: Re: [PATCH net-next] net: filter: rename 'struct sk_filter' to
- 'struct bpf_prog'
-Message-ID: <20140725115414.GA4770@salvia>
-References: <1406275499-7822-1-git-send-email-ast@plumgrid.com>
- <53D23EAF.4000001@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53D23EAF.4000001@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1760239AbaGYL4y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 07:56:54 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:42223 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752133AbaGYL4w (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jul 2014 07:56:52 -0400
+From: Kaushal Kumar <kaushalk@codeaurora.org>
+To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Michael Wang <wangyun@linux.vnet.ibm.com>,
+        Arun Bharadwaj <abharadw@codeaurora.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        Kaushal Kumar <kaushalk@codeaurora.org>
+Subject: [PATCH] sched: Remove synchronize rcu/sched calls from _cpu_down
+Date: Fri, 25 Jul 2014 17:26:08 +0530
+Message-Id: <1406289368-11332-1-git-send-email-kaushalk@codeaurora.org>
+X-Mailer: git-send-email 1.8.2.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 25, 2014 at 01:25:35PM +0200, Daniel Borkmann wrote:
-> [ also Cc'ing Willem, Pablo ]
-> 
-> On 07/25/2014 10:04 AM, Alexei Starovoitov wrote:
-> >'sk_filter' name is used as 'struct sk_filter', function sk_filter() and
-> >as variable 'sk_filter', which makes code hard to read.
-> >Also it's easily confused with 'struct sock_filter'
-> >Rename 'struct sk_filter' to 'struct bpf_prog' to clarify semantics and
-> >align the name with generic BPF use model.
-> 
-> Agreed, as we went for kernel/bpf/, renaming makes absolutely sense.
+synchronize_rcu calls fail hot-unplug latency tests since
+wait_rcu_gp can have very high latency, at times up to few
+hundred of millisecs.
 
-My nft socket filtering changes are accomodated into struct sk_filter,
-and will still be, so I still need some generic name there...
+These calls were earlier removed for the same reason by the
+commit 9ee349ad6d326df3633d43f54202427295999c47, but got added
+back as part of commit c4575f83b9fe87bb57b737bc8a667f746a20320a.
 
-Please, leave this as it is.
+Moreover there should be no need for sync_sched() in _cpu_down
+as stop_machine() provides that barrier implicitly.
 
-> >The only ugly place is uapi/linux/netfilter/xt_bpf.h which
-> >managed to expose kernel internal structure into uapi header.
-> >Though it shouldn't even compile in user space, preserve the mess by
-> >adding empty 'struct sk_filter;' there and type cast it to 'struct bpf_prog'
-> >inside kernel in net/netfilter/xt_bpf.c
-> >
-> >Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
-> >---
-> >
-> >alternative fix for xt_bpf.h could be to replace:
-> >         /* only used in the kernel */
-> >	struct sk_filter *filter __attribute__((aligned(8)));
-> >with
-> >         /* only used in the kernel */
-> >	void *filter __attribute__((aligned(8)));
-> >
-> >but this 'void *' approach may further break broken userspace,
-> >whereas the fix implemented here is more seamless.
-> 
-> Yep, that's not good, 'struct sk_filter' should never have been in a uapi
-> file actually.
+Signed-off-by: Kaushal Kumar <kaushalk@codeaurora.org>
+---
+ kernel/cpu.c | 20 --------------------
+ 1 file changed, 20 deletions(-)
 
-You can just send me a patch to change it to void. It's an internal
-kernel pointer as the comment states. There is **no** way that
-userspace can lurk with that from iptables at all.
+diff --git a/kernel/cpu.c b/kernel/cpu.c
+index 887eb32..93e526c 100644
+--- a/kernel/cpu.c
++++ b/kernel/cpu.c
+@@ -311,28 +311,8 @@ static int __ref _cpu_down(unsigned int cpu, int tasks_frozen)
+ 				__func__, cpu);
+ 		goto out_release;
+ 	}
+-
+-	/*
+-	 * By now we've cleared cpu_active_mask, wait for all preempt-disabled
+-	 * and RCU users of this state to go away such that all new such users
+-	 * will observe it.
+-	 *
+-	 * For CONFIG_PREEMPT we have preemptible RCU and its sync_rcu() might
+-	 * not imply sync_sched(), so explicitly call both.
+-	 *
+-	 * Do sync before park smpboot threads to take care the rcu boost case.
+-	 */
+-#ifdef CONFIG_PREEMPT
+-	synchronize_sched();
+-#endif
+-	synchronize_rcu();
+-
+ 	smpboot_park_threads(cpu);
+
+-	/*
+-	 * So now all preempt/rcu users must observe !cpu_active().
+-	 */
+-
+ 	err = __stop_machine(take_cpu_down, &tcd_param, cpumask_of(cpu));
+ 	if (err) {
+ 		/* CPU didn't die: tell everyone.  Can't complain. */
+--
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
+
