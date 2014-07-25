@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932873AbaGYO5I (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 10:57:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60366 "EHLO mx1.redhat.com"
+	id S934491AbaGYO6q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 10:58:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43586 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760736AbaGYO5G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 10:57:06 -0400
+	id S932508AbaGYO5I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jul 2014 10:57:08 -0400
 From: Jiri Olsa <jolsa@kernel.org>
 To: linux-kernel@vger.kernel.org
 Cc: Jiri Olsa <jolsa@kernel.org>, Arnaldo Carvalho de Melo <acme@kernel.org>,
@@ -15,18 +15,17 @@ Cc: Jiri Olsa <jolsa@kernel.org>, Arnaldo Carvalho de Melo <acme@kernel.org>,
         Ingo Molnar <mingo@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
         Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [PATCH 13/19] perf tools: Add ordered_events_free function
-Date: Fri, 25 Jul 2014 16:56:11 +0200
-Message-Id: <1406300177-31805-14-git-send-email-jolsa@kernel.org>
+Subject: [PATCH 14/19] perf tools: Add perf_config_u64 function
+Date: Fri, 25 Jul 2014 16:56:12 +0200
+Message-Id: <1406300177-31805-15-git-send-email-jolsa@kernel.org>
 In-Reply-To: <1406300177-31805-1-git-send-email-jolsa@kernel.org>
 References: <1406300177-31805-1-git-send-email-jolsa@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding ordered_events_free function to release all the
-struct ordered_events data. It's replacement for former
-perf_session_free_sample_buffers function.
+Adding perf_config_u64 function to be able to parse
+'llong' values out of config file.
 
 Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
 Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
@@ -39,82 +38,64 @@ Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Signed-off-by: Jiri Olsa <jolsa@kernel.org>
 ---
- tools/perf/util/ordered-events.c | 11 +++++++++++
- tools/perf/util/ordered-events.h |  1 +
- tools/perf/util/session.c        | 17 ++---------------
- 3 files changed, 14 insertions(+), 15 deletions(-)
+ tools/perf/util/cache.h  |  1 +
+ tools/perf/util/config.c | 24 ++++++++++++++++++++++++
+ 2 files changed, 25 insertions(+)
 
-diff --git a/tools/perf/util/ordered-events.c b/tools/perf/util/ordered-events.c
-index 42d63396600c..6c48dfe24dc4 100644
---- a/tools/perf/util/ordered-events.c
-+++ b/tools/perf/util/ordered-events.c
-@@ -202,3 +202,14 @@ void ordered_events_init(struct ordered_events *oe)
- 	oe->max_alloc_size = (u64) -1;
- 	oe->cur_alloc_size = 0;
+diff --git a/tools/perf/util/cache.h b/tools/perf/util/cache.h
+index 7b176dd02e1a..5cf9e1b5989d 100644
+--- a/tools/perf/util/cache.h
++++ b/tools/perf/util/cache.h
+@@ -22,6 +22,7 @@ typedef int (*config_fn_t)(const char *, const char *, void *);
+ extern int perf_default_config(const char *, const char *, void *);
+ extern int perf_config(config_fn_t fn, void *);
+ extern int perf_config_int(const char *, const char *);
++extern u64 perf_config_u64(const char *, const char *);
+ extern int perf_config_bool(const char *, const char *);
+ extern int config_error_nonbool(const char *);
+ extern const char *perf_config_dirname(const char *, const char *);
+diff --git a/tools/perf/util/config.c b/tools/perf/util/config.c
+index 1e5e2e5af6b1..9970b8b0190b 100644
+--- a/tools/perf/util/config.c
++++ b/tools/perf/util/config.c
+@@ -286,6 +286,21 @@ static int parse_unit_factor(const char *end, unsigned long *val)
+ 	return 0;
  }
-+
-+void ordered_events_free(struct ordered_events *oe)
+ 
++static int perf_parse_llong(const char *value, long long *ret)
 +{
-+	while (!list_empty(&oe->to_free)) {
-+		struct ordered_event *event;
++	if (value && *value) {
++		char *end;
++		long long val = strtoll(value, &end, 0);
++		unsigned long factor = 1;
 +
-+		event = list_entry(oe->to_free.next, struct ordered_event, list);
-+		list_del(&event->list);
-+		free(event);
++		if (!parse_unit_factor(end, &factor))
++			return 0;
++		*ret = val * factor;
++		return 1;
 +	}
++	return 0;
 +}
-diff --git a/tools/perf/util/ordered-events.h b/tools/perf/util/ordered-events.h
-index ce3f7f37b188..de40a8bb6466 100644
---- a/tools/perf/util/ordered-events.h
-+++ b/tools/perf/util/ordered-events.h
-@@ -39,4 +39,5 @@ void ordered_events_delete(struct ordered_events *oe, struct ordered_event *even
- int ordered_events_flush(struct perf_session *s, struct perf_tool *tool,
- 			 enum oe_flush how);
- void ordered_events_init(struct ordered_events *oe);
-+void ordered_events_free(struct ordered_events *oe);
- #endif /* __ORDERED_EVENTS_H */
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index 40956a3164e8..4e748142a13f 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -444,19 +444,6 @@ static perf_event__swap_op perf_event__swap_ops[] = {
- 	[PERF_RECORD_HEADER_MAX]	  = NULL,
- };
- 
--static void perf_session_free_sample_buffers(struct perf_session *session)
--{
--	struct ordered_events *oe = &session->ordered_events;
--
--	while (!list_empty(&oe->to_free)) {
--		struct ordered_event *event;
--
--		event = list_entry(oe->to_free.next, struct ordered_event, list);
--		list_del(&event->list);
--		free(event);
--	}
--}
--
- /*
-  * When perf record finishes a pass on every buffers, it records this pseudo
-  * event.
-@@ -1093,7 +1080,7 @@ done:
- out_err:
- 	free(buf);
- 	perf_session__warn_about_errors(session, tool);
--	perf_session_free_sample_buffers(session);
-+	ordered_events_free(&session->ordered_events);
- 	return err;
++
+ static int perf_parse_long(const char *value, long *ret)
+ {
+ 	if (value && *value) {
+@@ -307,6 +322,15 @@ static void die_bad_config(const char *name)
+ 	die("bad config value for '%s'", name);
  }
  
-@@ -1234,7 +1221,7 @@ out:
- out_err:
- 	ui_progress__finish();
- 	perf_session__warn_about_errors(session, tool);
--	perf_session_free_sample_buffers(session);
-+	ordered_events_free(&session->ordered_events);
- 	session->one_mmap = false;
- 	return err;
- }
++u64 perf_config_u64(const char *name, const char *value)
++{
++	long long ret = 0;
++
++	if (!perf_parse_llong(value, &ret))
++		die_bad_config(name);
++	return (u64) ret;
++}
++
+ int perf_config_int(const char *name, const char *value)
+ {
+ 	long ret = 0;
 -- 
 1.8.3.1
 
