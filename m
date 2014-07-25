@@ -1,134 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759887AbaGYItA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 04:49:00 -0400
-Received: from mail-la0-f45.google.com ([209.85.215.45]:33354 "EHLO
-	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755177AbaGYIs5 (ORCPT
+	id S932844AbaGYIuV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 04:50:21 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:54037 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751220AbaGYIuS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 04:48:57 -0400
+	Fri, 25 Jul 2014 04:50:18 -0400
+Date: Fri, 25 Jul 2014 10:50:14 +0200
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+To: Boris BREZILLON <boris.brezillon@free-electrons.com>
+Cc: =?utf-8?B?SmnFmcOt?= Prchal <jiri.prchal@aksignal.cz>,
+        devicetree@vger.kernel.org, nicolas.ferre@atmel.com,
+        linux-arm-kernel@lists.infradead.org, Bo Shen <voice.shen@atmel.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: at91: at91sam9x5: sets NPCS0 (PA14) back to GPIO
+Message-ID: <20140725085014.GE9532@piout.net>
+References: <1405074175-22444-1-git-send-email-voice.shen@atmel.com>
+ <53D10C50.50305@aksignal.cz>
+ <20140724162645.4e19c26c@bbrezillon>
+ <53D12103.3020103@aksignal.cz>
+ <20140724175848.44f5da10@bbrezillon>
+ <53D1F5D0.1080006@aksignal.cz>
+ <20140725083053.GD9532@piout.net>
+ <20140725103645.7fbf5b63@bbrezillon>
 MIME-Version: 1.0
-In-Reply-To: <CAK5sBcFMxKzB8KgSDTtfsGV173TV6Ji3VFNETVqgpGeHPS7LEg@mail.gmail.com>
-References: <1406272180-25101-1-git-send-email-pramod.gurav@smartplayin.com>
-	<CAK5sBcFMxKzB8KgSDTtfsGV173TV6Ji3VFNETVqgpGeHPS7LEg@mail.gmail.com>
-Date: Fri, 25 Jul 2014 14:18:55 +0530
-Message-ID: <CAMf-jSnT3F0JGhcHZp6=Auzc1QwYTg34hzS4vaJETW5G4WCd0Q@mail.gmail.com>
-Subject: Re: [PATCH] Input: soc_button_array: Remove kfree on data allocated
- with devm_zalloc
-From: pramod gurav <pramod.gurav.etc@gmail.com>
-To: Sachin Kamat <spk.linux@gmail.com>
-Cc: linux-input@vger.kernel.org, open list <linux-kernel@vger.kernel.org>,
-        Pramod Gurav <pramod.gurav@smartplayin.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Lejun Zhu <lejun.zhu@linux.intel.com>,
-        Sachin Kamat <sachin.kamat@linaro.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140725103645.7fbf5b63@bbrezillon>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks Sachin for the review. Will resend the patch addressing your
-review comments.
+On 25/07/2014 at 10:36:45 +0200, Boris Brezillon wrote :
+> Hi Alexandre,
+> 
+> On Fri, 25 Jul 2014 10:30:54 +0200
+> Alexandre Belloni <alexandre.belloni@free-electrons.com> wrote:
+> 
+> > Hi,
+> > 
+> > On 25/07/2014 at 08:14:40 +0200, Jiří Prchal wrote :
+> > > I'm using custom board. My spi node:
+> > > 			spi0: spi@f0000000 {
+> > 
+> > You should override the pinctrl here as you are using gpios for the cs.
+> > 				pinctrl-0 = <&pinctrl_spi0_custom>;
+> 
+> I guess you meant:
+> 			pinctrl-0 <&pinctrl_spi0 &pinctrl_spi0_custom>;
+> 
 
-On Fri, Jul 25, 2014 at 1:59 PM, Sachin Kamat <spk.linux@gmail.com> wrote:
-> On Fri, Jul 25, 2014 at 12:39 PM,  <pramod.gurav.etc@gmail.com> wrote:
->> From: Pramod Gurav <pramod.gurav@smartplayin.com>
->>
->> This patch does below:
->> - Removes kfree done on data allocated with devm_zalloc in probe
->>   path of the driver.
->> - Adds a check on return value from devm_kzalloc which was missing
->>   and renames a lable from err_free_mem to err_mem.
->> - Adds couple of dev_err on failure to allocate memory
->>
->> CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>
->> CC: Lejun Zhu <lejun.zhu@linux.intel.com>
->> CC: Sachin Kamat <sachin.kamat@linaro.org>
->>
->> Signed-off-by: Pramod Gurav <pramod.gurav@smartplayin.com>
->> ---
->>  drivers/input/misc/soc_button_array.c |   19 ++++++++++++++-----
->>  1 file changed, 14 insertions(+), 5 deletions(-)
->>
->> diff --git a/drivers/input/misc/soc_button_array.c b/drivers/input/misc/soc_button_array.c
->> index 5a6334b..ac82971 100644
->> --- a/drivers/input/misc/soc_button_array.c
->> +++ b/drivers/input/misc/soc_button_array.c
->> @@ -83,6 +83,13 @@ soc_button_device_create(struct pnp_dev *pdev,
->>                                        sizeof(*gpio_keys_pdata) +
->>                                         sizeof(*gpio_keys) * MAX_NBUTTONS,
->>                                        GFP_KERNEL);
->> +       if (!gpio_keys_pdata) {
->> +               dev_err(&pdev->dev,
->> +                       "Can't allocate memory for gpio_keys_platform_data\n");
->
-> OOM message is not needed as memory subsystem will take care of it.
->
->> +               error = -ENOMEM;
->> +               goto err_mem;
->
-> Return directly from here.
->
->> +       }
->> +
->>         gpio_keys = (void *)(gpio_keys_pdata + 1);
->>
->>         for (info = button_info; info->name; info++) {
->> @@ -104,7 +111,7 @@ soc_button_device_create(struct pnp_dev *pdev,
->>
->>         if (n_buttons == 0) {
->>                 error = -ENODEV;
->> -               goto err_free_mem;
->> +               goto err_mem;
->
-> ditto
->
->>         }
->>
->>         gpio_keys_pdata->buttons = gpio_keys;
->> @@ -114,7 +121,7 @@ soc_button_device_create(struct pnp_dev *pdev,
->>         pd = platform_device_alloc("gpio-keys", PLATFORM_DEVID_AUTO);
->>         if (!pd) {
->>                 error = -ENOMEM;
->> -               goto err_free_mem;
->> +               goto err_mem;
->
-> ditto
->
->>         }
->>
->>         error = platform_device_add_data(pd, gpio_keys_pdata,
->> @@ -130,8 +137,7 @@ soc_button_device_create(struct pnp_dev *pdev,
->>
->>  err_free_pdev:
->>         platform_device_put(pd);
->> -err_free_mem:
->> -       devm_kfree(&pdev->dev, gpio_keys_pdata);
->> +err_mem:
->
-> This label would not be required once returned directly from above.
->
->>         return ERR_PTR(error);
->>  }
->>
->> @@ -155,8 +161,11 @@ static int soc_button_pnp_probe(struct pnp_dev *pdev,
->>         int error;
->>
->>         priv = devm_kzalloc(&pdev->dev, sizeof(*priv), GFP_KERNEL);
->> -       if (!priv)
->> +       if (!priv) {
->> +               dev_err(&pdev->dev,
->> +                       "Can't allocate memory for soc_button_data\n");
->
-> OOM message is not needed as memory subsystem will take care of it.
->
->
-> --
-> Regards,
-> Sachin.
+Sure, you are right
 
-
+> I suggested the same thing, however I'm pretty sure this is not the
+> source of the problem. As I said, gpio_request already mux the
+> associated pin to GPIO function.
+> 
+> Best Regards,
+> 
+> Boris
+> 
+> 
+> -- 
+> Boris Brezillon, Free Electrons
+> Embedded Linux and Kernel engineering
+> http://free-electrons.com
 
 -- 
-Thanks and Regards
-Pramod
+Alexandre Belloni, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
