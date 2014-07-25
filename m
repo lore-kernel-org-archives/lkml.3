@@ -1,173 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752324AbaGYXKN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 19:10:13 -0400
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:53604 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750765AbaGYXKK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 19:10:10 -0400
-Message-ID: <53D2E3BD.1000208@gmail.com>
-Date: Sat, 26 Jul 2014 00:09:49 +0100
-From: Malcolm Priestley <tvboxspy@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1752483AbaGYXPd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 19:15:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31140 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750967AbaGYXPb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jul 2014 19:15:31 -0400
+Date: Fri, 25 Jul 2014 19:15:09 -0400
+From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+To: Przemo Firszt <przemo@firszt.eu>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
+        Ping Cheng <pinglinux@gmail.com>, Jason Gerecke <killertofu@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
+Subject: Re: [PATCH v2 00/10] Input - wacom: conversion to HID driver, series
+ 2
+Message-ID: <20140725231509.GA2279@mail.corp.redhat.com>
+References: <1406225645-32141-1-git-send-email-benjamin.tissoires@redhat.com>
+ <1406326412.4674.22.camel@fedora-lan>
 MIME-Version: 1.0
-Newsgroups: gmane.linux.drivers.driver-project.devel,gmane.linux.kernel
-To: Guillaume Clement <gclement@baobob.org>,
-        Forest Bond <forest@alittletooquiet.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Dan Carpenter <dan.carpenter@oracle.com>
-Subject: Re: [PATCH] staging: vt6655: fix direct dereferencing of user pointer
-References: <20140725123301.GZ13737@mwanda> <1406292443-11734-1-git-send-email-gclement@baobob.org>
-In-Reply-To: <1406292443-11734-1-git-send-email-gclement@baobob.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1406326412.4674.22.camel@fedora-lan>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Guillaume
 
-On 25/07/14 13:47, Guillaume Clement wrote:
-> Sparse reported that the data from tagSCmdRequest is given by
-> userspace, so it should be tagged as such.
-extra is not in user space
+Hi Przemo,
 
-All Wireless Extensions ioctl extra calls originate from 
-ioctl_standard_iw_point in wext-core.
+On Jul 25 2014 or thereabouts, Przemo Firszt wrote:
+> Dnia 2014-07-24, czw o godzinie 14:13 -0400, Benjamin Tissoires pisze:
+> [..]
+> Hi Benjamin,
+> I'm testing the whole series including the OLED patch that's not on the
+> list yet.
+> 
+> Hardware: 2 x Intuos4 Wireless tested on usb and bluetooth until noted
+> otherwise.
+> 
+> What works:
+> 1. Tablet in general, pressure, tilt, buttons etc.
+> 2. Battery reporting (including gnome). The double wireless tablet bug
+> is gone:
+> 
+> $ ls /sys/class/power_supply/
+> AC  BAT0  wacom_ac_2  wacom_ac_3  wacom_battery_2  wacom_battery_3
+> 
+> 3. Setting LED selector value
+> 4. Setting LED selector brightness (default and pressed)
+> 5. Rendering images to button displays works on usb ONLY.
+> 
+> $ i4oled -d /sys/bus/hid/drivers/wacom/0003\:056A\:00BC.0009/wacom_led/button0_rawimg -t Linux
+> 
+> On bluetooth writing image goes fine (no error), but there is nothing showing up,
+> so I suspect the brightness of OLED displays is not set properly.
+> 
+> That's the code before changes:
+> 
+>         led = wdata->led_selector | 0x04;
+>         buf = kzalloc(9, GFP_KERNEL);
+>         if (buf) {
+>                 buf[0] = WAC_CMD_LED_CONTROL;
+>                 buf[1] = led;
+>                 buf[2] = value >> 2;
+>                 buf[3] = value;
+>                 /* use fixed brightness for OLEDs */
+>                 buf[4] = 0x08;
+>                 hid_hw_raw_request(hdev, buf[0], buf, 9, HID_FEATURE_REPORT,
+>                                    HID_REQ_SET_REPORT);
+>                 kfree(buf);
+>         }
+> 
+> I don't remember for sure, but I think the range of brightness might be different
+> over usb and over bluetooth.
 
-Either through ioctl or iw_handler
+Maybe you can try setting the sysfs file "buttons_luminance" with the
+value 8 to check if this will solve the bug.
 
-All these functions should have been converted to iw_handler.
+The bug might also be linked to the slight difference while setting up
+the transfer of the image (WAC_CMD_ICON_START) with the value of buf[1]
+set to 1 in USB, while it was 0 on bluetooth.
 
-Regards
+The weird thing is that I remembered having set the OLED (though
+scrambled) with these patches applied. I guess the scrambling was due to
+the 4-bit vs 1-bit. But I definitively had some results.
 
+Anyway. Przemo, Dmitry, can we consider that this *will* be fixed by
+next week, and so we can apply the series for 3.17?
+I will have the hardware next week and be able to figure out the
+differences between the 2 communication modes.
 
-Malcolm
+> 
+> TL;DR: the only thing that needs to be fixed is image-over-bluetooth, probably caused by not
+> setting or incorrect setting of OLED brightness. 
 
->
-> Later, we were memcomparing and dereferencing it without first copying
-> it, fix that as well.
->
-> Signed-off-by: Guillaume Clement <gclement@baobob.org>
-> ---
->   drivers/staging/vt6655/iocmd.h |  2 +-
->   drivers/staging/vt6655/iwctl.c | 32 ++++++++++++++++++++++----------
->   drivers/staging/vt6655/iwctl.h |  6 +++---
->   3 files changed, 26 insertions(+), 14 deletions(-)
->
-> diff --git a/drivers/staging/vt6655/iocmd.h b/drivers/staging/vt6655/iocmd.h
-> index e499f1b..dd12498 100644
-> --- a/drivers/staging/vt6655/iocmd.h
-> +++ b/drivers/staging/vt6655/iocmd.h
-> @@ -100,7 +100,7 @@ typedef enum tagWZONETYPE {
->   #pragma pack(1)
->   typedef struct tagSCmdRequest {
->   	u8	    name[16];
-> -	void	*data;
-> +	void __user *data;
->   	u16	    wResult;
->   	u16     wCmdCode;
->   } SCmdRequest, *PSCmdRequest;
-> diff --git a/drivers/staging/vt6655/iwctl.c b/drivers/staging/vt6655/iwctl.c
-> index 501cd64..7ce23b5 100644
-> --- a/drivers/staging/vt6655/iwctl.c
-> +++ b/drivers/staging/vt6655/iwctl.c
-> @@ -1621,17 +1621,24 @@ int iwctl_giwauth(struct net_device *dev,
->   int iwctl_siwgenie(struct net_device *dev,
->   		   struct iw_request_info *info,
->   		   struct iw_point *wrq,
-> -		   char *extra)
-> +		   char __user *extra)
->   {
->   	PSDevice			pDevice = (PSDevice)netdev_priv(dev);
->   	PSMgmtObject	pMgmt = &(pDevice->sMgmtObj);
->   	int ret = 0;
-> +	char length;
->
->   	if (wrq->length) {
-> -		if ((wrq->length < 2) || (extra[1]+2 != wrq->length)) {
-> -			ret = -EINVAL;
-> -			goto out;
-> -		}
-> +		if (wrq->length < 2)
-> +			return -EINVAL;
-> +
-> +		ret = get_user(length, extra + 1);
-> +		if (ret)
-> +			return ret;
-> +
-> +		if (length + 2 != wrq->length)
-> +			return -EINVAL;
-> +
->   		if (wrq->length > MAX_WPA_IE_LEN) {
->   			ret = -ENOMEM;
->   			goto out;
-> @@ -1654,7 +1661,7 @@ out://not completely ...not necessary in wpa_supplicant 0.5.8
->   int iwctl_giwgenie(struct net_device *dev,
->   		   struct iw_request_info *info,
->   		   struct iw_point *wrq,
-> -		   char *extra)
-> +		   char __user *extra)
->   {
->   	PSDevice			pDevice = (PSDevice)netdev_priv(dev);
->   	PSMgmtObject	pMgmt = &(pDevice->sMgmtObj);
-> @@ -1801,18 +1808,23 @@ int iwctl_giwencodeext(struct net_device *dev,
->   int iwctl_siwmlme(struct net_device *dev,
->   		  struct iw_request_info *info,
->   		  struct iw_point *wrq,
-> -		  char *extra)
-> +		  char __user *extra)
->   {
->   	PSDevice			pDevice = (PSDevice)netdev_priv(dev);
->   	PSMgmtObject	pMgmt = &(pDevice->sMgmtObj);
-> -	struct iw_mlme *mlme = (struct iw_mlme *)extra;
-> +	struct iw_mlme mime;
-> +
->   	int ret = 0;
->
-> -	if (memcmp(pMgmt->abyCurrBSSID, mlme->addr.sa_data, ETH_ALEN)) {
-> +	ret = copy_from_user(&mime, extra, sizeof(mime));
-> +	if (ret)
-> +		return -EFAULT;
-> +
-> +	if (memcmp(pMgmt->abyCurrBSSID, mime.addr.sa_data, ETH_ALEN)) {
->   		ret = -EINVAL;
->   		return ret;
->   	}
-> -	switch (mlme->cmd) {
-> +	switch (mime.cmd) {
->   	case IW_MLME_DEAUTH:
->   		//this command seems to be not complete,please test it --einsnliu
->   		//bScheduleCommand((void *) pDevice, WLAN_CMD_DEAUTH, (unsigned char *)&reason);
-> diff --git a/drivers/staging/vt6655/iwctl.h b/drivers/staging/vt6655/iwctl.h
-> index de0a337..7dd6310 100644
-> --- a/drivers/staging/vt6655/iwctl.h
-> +++ b/drivers/staging/vt6655/iwctl.h
-> @@ -176,12 +176,12 @@ int iwctl_giwauth(struct net_device *dev,
->   int iwctl_siwgenie(struct net_device *dev,
->   		   struct iw_request_info *info,
->   		   struct iw_point *wrq,
-> -		   char *extra);
-> +		   char __user *extra);
->
->   int iwctl_giwgenie(struct net_device *dev,
->   		   struct iw_request_info *info,
->   		   struct iw_point *wrq,
-> -		   char *extra);
-> +		   char __user *extra);
->
->   int iwctl_siwencodeext(struct net_device *dev,
->   		       struct iw_request_info *info,
-> @@ -196,7 +196,7 @@ int iwctl_giwencodeext(struct net_device *dev,
->   int iwctl_siwmlme(struct net_device *dev,
->   		  struct iw_request_info *info,
->   		  struct iw_point *wrq,
-> -		  char *extra);
-> +		  char __user *extra);
->   #endif // #ifdef WPA_SUPPLICANT_DRIVER_WEXT_SUPPORT
->   //End Add -- //2008-0409-07, <Add> by Einsn Liu
->
->
+Thanks for the extensive testings. I'll send the "OLED patch that's not
+on the list yet" as a 11/10 so everybody can have a look.
 
+Cheers,
+Benjamin
