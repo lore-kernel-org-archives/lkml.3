@@ -1,152 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935244AbaGYRhn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 13:37:43 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33444 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935161AbaGYRhj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 13:37:39 -0400
-From: Abhi Das <adas@redhat.com>
-To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        cluster-devel@redhat.com
-Cc: Abhi Das <adas@redhat.com>
-Subject: [RFC PATCH 1/2] fs: Add dirreadahead syscall and VFS hooks
-Date: Fri, 25 Jul 2014 12:37:30 -0500
-Message-Id: <1406309851-10628-2-git-send-email-adas@redhat.com>
-In-Reply-To: <1406309851-10628-1-git-send-email-adas@redhat.com>
-References: <1406309851-10628-1-git-send-email-adas@redhat.com>
+	id S935272AbaGYRhx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 13:37:53 -0400
+Received: from mail-lb0-f175.google.com ([209.85.217.175]:35310 "EHLO
+	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934960AbaGYRhv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jul 2014 13:37:51 -0400
+From: "Matwey V. Kornilov" <matwey.kornilov@gmail.com>
+To: airlied@linux.ie
+Cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        linux-omap@vger.kernel.org, "Matwey V. Kornilov" <matwey@sai.msu.ru>
+Subject: [PATCHv2 1/2] gpu: drm: omapdrm: Use %pad format for values of the dma_addr_t type
+Date: Fri, 25 Jul 2014 21:37:36 +0400
+Message-Id: <1406309857-11141-1-git-send-email-matwey.kornilov@gmail.com>
+X-Mailer: git-send-email 1.8.1.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Also adds a void *opaque field to struct dir_context that can be
-used by filesystems to temporarily store any context as this
-struct gets passed around in the fs.
+From: "Matwey V. Kornilov" <matwey@sai.msu.ru>
 
-Signed-off-by: Abhi Das <adas@redhat.com>
+The format change is to fix the following compilation issue:
+
+../drivers/gpu/drm/omapdrm/omap_plane.c: In function 'omap_plane_pre_apply':
+../drivers/gpu/drm/omapdrm/omap_plane.c:145:2: error: format '%x' expects argument of type 'unsigned int', but argument 5 has type 'dma_addr_t' [-Werror=format=]
+  DBG("%d,%d %08x %08x", info->pos_x, info->pos_y,
+  ^
+../drivers/gpu/drm/omapdrm/omap_plane.c:145:2: error: format '%x' expects argument of type 'unsigned int', but argument 6 has type 'dma_addr_t' [-Werror=format=]
+cc1: all warnings being treated as errors
+../scripts/Makefile.build:273: recipe for target 'drivers/gpu/drm/omapdrm/omap_plane.o' failed
+
+Signed-off-by: Matwey V. Kornilov <matwey@sai.msu.ru>
 ---
- arch/x86/syscalls/syscall_32.tbl |  1 +
- arch/x86/syscalls/syscall_64.tbl |  1 +
- fs/readdir.c                     | 49 ++++++++++++++++++++++++++++++++++++++++
- include/linux/fs.h               |  3 +++
- 4 files changed, 54 insertions(+)
+ drivers/gpu/drm/omapdrm/omap_gem.c   | 10 +++++-----
+ drivers/gpu/drm/omapdrm/omap_plane.c |  4 ++--
+ 2 files changed, 7 insertions(+), 7 deletions(-)
 
-diff --git a/arch/x86/syscalls/syscall_32.tbl b/arch/x86/syscalls/syscall_32.tbl
-index d6b8679..3e0ef85 100644
---- a/arch/x86/syscalls/syscall_32.tbl
-+++ b/arch/x86/syscalls/syscall_32.tbl
-@@ -360,3 +360,4 @@
- 351	i386	sched_setattr		sys_sched_setattr
- 352	i386	sched_getattr		sys_sched_getattr
- 353	i386	renameat2		sys_renameat2
-+354	i386	dirreadahead		sys_dirreadahead
-diff --git a/arch/x86/syscalls/syscall_64.tbl b/arch/x86/syscalls/syscall_64.tbl
-index ec255a1..2ec0991 100644
---- a/arch/x86/syscalls/syscall_64.tbl
-+++ b/arch/x86/syscalls/syscall_64.tbl
-@@ -323,6 +323,7 @@
- 314	common	sched_setattr		sys_sched_setattr
- 315	common	sched_getattr		sys_sched_getattr
- 316	common	renameat2		sys_renameat2
-+317	common	dirreadahead		sys_dirreadahead
+diff --git a/drivers/gpu/drm/omapdrm/omap_gem.c b/drivers/gpu/drm/omapdrm/omap_gem.c
+index 95dbce2..d9f5e524 100644
+--- a/drivers/gpu/drm/omapdrm/omap_gem.c
++++ b/drivers/gpu/drm/omapdrm/omap_gem.c
+@@ -791,7 +791,7 @@ int omap_gem_get_paddr(struct drm_gem_object *obj,
+ 			omap_obj->paddr = tiler_ssptr(block);
+ 			omap_obj->block = block;
  
- #
- # x32-specific system call numbers start at 512 to avoid cache impact
-diff --git a/fs/readdir.c b/fs/readdir.c
-index 33fd922..d216db7 100644
---- a/fs/readdir.c
-+++ b/fs/readdir.c
-@@ -198,6 +198,7 @@ SYSCALL_DEFINE3(getdents, unsigned int, fd,
- 	struct linux_dirent __user * lastdirent;
- 	struct getdents_callback buf = {
- 		.ctx.actor = filldir,
-+		.ctx.opaque = NULL,
- 		.count = count,
- 		.current_dir = dirent
- 	};
-@@ -278,6 +279,7 @@ SYSCALL_DEFINE3(getdents64, unsigned int, fd,
- 	struct linux_dirent64 __user * lastdirent;
- 	struct getdents_callback64 buf = {
- 		.ctx.actor = filldir64,
-+		.ctx.opaque = NULL,
- 		.count = count,
- 		.current_dir = dirent
- 	};
-@@ -304,3 +306,50 @@ SYSCALL_DEFINE3(getdents64, unsigned int, fd,
- 	fdput(f);
- 	return error;
- }
-+
-+SYSCALL_DEFINE3(dirreadahead, unsigned int, fd,
-+		loff_t __user *, offset, unsigned int, count)
-+{
-+	struct fd f;
-+	struct inode *inode;
-+	int error = -ENOTDIR;
-+	loff_t off = 0;
-+	struct dir_context ctx = {.actor = NULL, .opaque = NULL};
-+
-+	if (!count)
-+		return -EINVAL;
-+
-+	f = fdget(fd);
-+	if (!f.file)
-+		return -EBADF;
-+
-+	inode = f.file->f_path.dentry->d_inode;
-+
-+	error = -ENOTSUPP;
-+	if (!f.file->f_op || !f.file->f_op->dir_readahead)
-+		goto out;
-+
-+	error = security_file_permission(f.file, MAY_READ);
-+	if (error)
-+		goto out;
-+
-+	error = -EFAULT;
-+	if (__get_user(ctx.pos, offset))
-+		goto out;
-+
-+	error = mutex_lock_killable(&inode->i_mutex);
-+	if (error)
-+		goto out;
-+
-+	error = -ENOENT;
-+	if (!IS_DEADDIR(inode)) {
-+		error = f.file->f_op->dir_readahead(f.file, &ctx, count);
-+		if (__put_user(ctx.pos, offset))
-+			error = -EFAULT;
-+		file_accessed(f.file);
-+	}
-+	mutex_unlock(&inode->i_mutex);
-+out:
-+	fdput(f);
-+	return error;
-+}
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 338e6f7..fae4a6e 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -1438,9 +1438,11 @@ int fiemap_check_flags(struct fiemap_extent_info *fieinfo, u32 fs_flags);
-  * to have different dirent layouts depending on the binary type.
-  */
- typedef int (*filldir_t)(void *, const char *, int, loff_t, u64, unsigned);
-+
- struct dir_context {
- 	const filldir_t actor;
- 	loff_t pos;
-+	void *opaque;
- };
+-			DBG("got paddr: %08x", omap_obj->paddr);
++			DBG("got paddr: %pad", &omap_obj->paddr);
+ 		}
  
- struct block_device_operations;
-@@ -1463,6 +1465,7 @@ struct file_operations {
- 	ssize_t (*read_iter) (struct kiocb *, struct iov_iter *);
- 	ssize_t (*write_iter) (struct kiocb *, struct iov_iter *);
- 	int (*iterate) (struct file *, struct dir_context *);
-+	int (*dir_readahead) (struct file *, struct dir_context *, unsigned int);
- 	unsigned int (*poll) (struct file *, struct poll_table_struct *);
- 	long (*unlocked_ioctl) (struct file *, unsigned int, unsigned long);
- 	long (*compat_ioctl) (struct file *, unsigned int, unsigned long);
+ 		omap_obj->paddr_cnt++;
+@@ -985,9 +985,9 @@ void omap_gem_describe(struct drm_gem_object *obj, struct seq_file *m)
+ 
+ 	off = drm_vma_node_start(&obj->vma_node);
+ 
+-	seq_printf(m, "%08x: %2d (%2d) %08llx %08Zx (%2d) %p %4d",
++	seq_printf(m, "%08x: %2d (%2d) %08llx %pad (%2d) %p %4d",
+ 			omap_obj->flags, obj->name, obj->refcount.refcount.counter,
+-			off, omap_obj->paddr, omap_obj->paddr_cnt,
++			off, &omap_obj->paddr, omap_obj->paddr_cnt,
+ 			omap_obj->vaddr, omap_obj->roll);
+ 
+ 	if (omap_obj->flags & OMAP_BO_TILED) {
+@@ -1467,8 +1467,8 @@ void omap_gem_init(struct drm_device *dev)
+ 			entry->paddr = tiler_ssptr(block);
+ 			entry->block = block;
+ 
+-			DBG("%d:%d: %dx%d: paddr=%08x stride=%d", i, j, w, h,
+-					entry->paddr,
++			DBG("%d:%d: %dx%d: paddr=%pad stride=%d", i, j, w, h,
++					&entry->paddr,
+ 					usergart[i].stride_pfn << PAGE_SHIFT);
+ 		}
+ 	}
+diff --git a/drivers/gpu/drm/omapdrm/omap_plane.c b/drivers/gpu/drm/omapdrm/omap_plane.c
+index 3cf31ee..6af3398 100644
+--- a/drivers/gpu/drm/omapdrm/omap_plane.c
++++ b/drivers/gpu/drm/omapdrm/omap_plane.c
+@@ -142,8 +142,8 @@ static void omap_plane_pre_apply(struct omap_drm_apply *apply)
+ 	DBG("%dx%d -> %dx%d (%d)", info->width, info->height,
+ 			info->out_width, info->out_height,
+ 			info->screen_width);
+-	DBG("%d,%d %08x %08x", info->pos_x, info->pos_y,
+-			info->paddr, info->p_uv_addr);
++	DBG("%d,%d %pad %pad", info->pos_x, info->pos_y,
++			&info->paddr, &info->p_uv_addr);
+ 
+ 	/* TODO: */
+ 	ilace = false;
 -- 
 1.8.1.4
 
