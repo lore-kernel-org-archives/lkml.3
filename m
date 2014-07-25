@@ -1,157 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760655AbaGYOtO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 10:49:14 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:52186 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754156AbaGYOtM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 10:49:12 -0400
-From: Chintan Pandya <cpandya@codeaurora.org>
-To: tglx@linutronix.de, john.stultz@linaro.org, peterz@infradead.org,
-        mingo@redhat.com, hughd@google.com, akpm@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Chintan Pandya <cpandya@codeaurora.org>
-Subject: [PATCH v2 2/2] ksm: Provide support to use deferrable timers for scanner thread
-Date: Fri, 25 Jul 2014 20:18:18 +0530
-Message-Id: <1406299698-6357-2-git-send-email-cpandya@codeaurora.org>
-X-Mailer: git-send-email 1.8.2.1
-In-Reply-To: <1406299698-6357-1-git-send-email-cpandya@codeaurora.org>
-References: <1406299698-6357-1-git-send-email-cpandya@codeaurora.org>
+	id S1760535AbaGYOuB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 10:50:01 -0400
+Received: from mail-bn1lp0140.outbound.protection.outlook.com ([207.46.163.140]:5179
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753105AbaGYOt7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jul 2014 10:49:59 -0400
+Date: Fri, 25 Jul 2014 07:49:47 -0700
+From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
+To: Andreas =?utf-8?Q?F=C3=A4rber?= <afaerber@suse.de>
+CC: Michal Simek <michal.simek@xilinx.com>,
+        Andreas Olofsson <andreas@adapteva.com>,
+        Matteo Vit <matteo.vit@starwaredesign.com>,
+        Sean Rickerd <srickerd@suse.com>, <devicetree@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>
+Subject: Re: [PATCH v2 08/11] ARM: dts: zynq: Add VDMA to Parallella
+References: <1406242820-20140-1-git-send-email-afaerber@suse.de>
+ <1406242820-20140-9-git-send-email-afaerber@suse.de>
+ <b4c4e060-2efb-4b82-be12-32c00897ec93@BY2FFO11FD023.protection.gbl>
+ <53D22799.8050903@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <53D22799.8050903@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-RCIS-Action: ALLOW
+Message-ID: <f0a06d6e-e10a-48c1-91a3-fc99f4a772b4@BN1AFFO11FD044.protection.gbl>
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:149.199.60.83;CTRY:US;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(438002)(377424004)(51704005)(199002)(189002)(83072002)(104016003)(76176999)(102836001)(85202003)(20776003)(64706001)(92726001)(79102001)(74316001)(47776003)(50986999)(31696002)(54356999)(85852003)(575784001)(76482001)(53416004)(80022001)(95666004)(33646002)(77096002)(81342001)(19580405001)(74502001)(46102001)(81542001)(77982001)(4396001)(99396002)(83506001)(92566001)(1496007)(15975445006)(107046002)(31966008)(106466001)(50466002)(83322001)(74662001)(19580395003)(44976005)(86362001)(15202345003)(87936001)(85306003)(110136001)(23676002)(21056001)(85182001)(70736001)(93886003)(6806004)(107986001)(23106004);DIR:OUT;SFP:;SCL:1;SRVR:BN1AFFO11HUB025;H:xsj-pvapsmtpgw01;FPR:;MLV:sfv;PTR:unknown-60-83.xilinx.com;A:1;MX:1;LANG:en;
+X-OriginatorOrg: xilinx.onmicrosoft.com
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
+X-Forefront-PRVS: 02830F0362
+Authentication-Results: spf=pass (sender IP is 149.199.60.83)
+ smtp.mailfrom=soren.brinkmann@xilinx.com; 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-KSM thread to scan pages is scheduled on definite timeout. That wakes
-up CPU from idle state and hence may affect the power consumption.
-Provide an optional support to use deferrable timer which suites
-low-power use-cases.
+On Fri, 2014-07-25 at 11:47AM +0200, Andreas Färber wrote:
+> Hi Sören,
+> 
+> Am 25.07.2014 01:22, schrieb Sören Brinkmann:
+> > On Fri, 2014-07-25 at 01:00AM +0200, Andreas Färber wrote:
+> >> Signed-off-by: Andreas Färber <afaerber@suse.de>
+> >> ---
+> >>  v2: New
+> >>  
+> >>  arch/arm/boot/dts/zynq-parallella.dts | 25 +++++++++++++++++++++++++
+> >>  1 file changed, 25 insertions(+)
+> >>
+> >> diff --git a/arch/arm/boot/dts/zynq-parallella.dts b/arch/arm/boot/dts/zynq-parallella.dts
+> >> index e60a0a9..8beaacc 100644
+> >> --- a/arch/arm/boot/dts/zynq-parallella.dts
+> >> +++ b/arch/arm/boot/dts/zynq-parallella.dts
+> >> @@ -32,6 +32,31 @@
+> >>  		bootargs = "console=ttyPS0,115200 earlyprintk root=/dev/mmcblk0p2 rootfstype=ext4 rw rootwait";
+> >>  		linux,stdout-path = "/amba/serial@e0001000";
+> >>  	};
+> >> +
+> >> +	fpga {
+> > Do you really want FPGA components in this DT?
+> > If somebody tries booting with this DT without programming with a
+> > corresponding bitstream, the whole system might hang.
+> > Just something to consider.
+> 
+> Well, that's related to a question that remained unanswered on v1:
+> whether we may need to turn this into a .dtsi to cope with variations.
+> 
+> The Parallella has an on-board µHDMI connector, and two bitstreams are
+> delivered - one for HDMI and one for headless usage. In my testing I am
+> using the original HDMI bitstream but serial console for lack of
+> upstream HDMI drivers. Do you think we need to provide
+> zynq-parallella-hdmi.dts and zynq-parallella-headless.dts? (It gets
+> worse if at some point we need to handle variations of the on-board
+> Epiphany chip plus the bitstreams - at least the Z7010 vs. Z7020 doesn't
+> affect DT AFAICT.)
+> 
+> Since, as noted in the cover letter, these FPGA patches are not yet
+> fully testable, I wouldn't mind deferring them, but wanted to get them
+> out for review early.
+> 
+> http://www.parallella.org/2014/07/14/new-parallella-product-offerings/
+> indicates there will be a new variation in gen2 without USB/HDMI. Would
+> it be valid to #include a .dts (rather than .dtsi) to override status
+> and keep number of Parallella files low?
 
-Typically, on our setup we observed, 10% less power consumption with
-some use-cases in which CPU goes to power collapse frequently. For
-example, playing audio while typically CPU remains idle.
+For these FPGA devices, it would be nice if it was possible to include
+a dts file. I think there were problems with that, but don't know what
+the current status of that is. Then it would be possible to have the SOC
+dtsi a board dts and systems with FPGA components can include the board
+dts.
+I also heard that some people are getting upset with all the includes
+going on in the dts files.
 
-To enable deferrable timers,
-$ echo 1 > /sys/kernel/mm/ksm/deferrable_timer
+And the next question would be: How many dts files do you really want
+in the upstream kernel tree? Since we deal with FPGAs, there is
+virtually and infinite number of different systems that you could
+create relatively easily.
 
-Signed-off-by: Chintan Pandya <cpandya@codeaurora.org>
----
- Changes from patch v1 to patch v2:
- - allowing only valid values to be updated as use_deferrable_timer
- - using only 'deferrable' and not 'deferred'
- - moved out schedule_timeout code for deferrable timer into timer.c
-
- Documentation/vm/ksm.txt |  7 +++++++
- mm/ksm.c                 | 40 ++++++++++++++++++++++++++++++++++++++--
- 2 files changed, 45 insertions(+), 2 deletions(-)
-
-diff --git a/Documentation/vm/ksm.txt b/Documentation/vm/ksm.txt
-index f34a8ee..0481235 100644
---- a/Documentation/vm/ksm.txt
-+++ b/Documentation/vm/ksm.txt
-@@ -87,6 +87,13 @@ pages_sharing    - how many more sites are sharing them i.e. how much saved
- pages_unshared   - how many pages unique but repeatedly checked for merging
- pages_volatile   - how many pages changing too fast to be placed in a tree
- full_scans       - how many times all mergeable areas have been scanned
-+deferrable_timer - whether to use deferrable timers or not
-+                 e.g. "echo 1 > /sys/kernel/mm/ksm/deferrable_timer"
-+                 Default: 0 (means, we are not using deferrable timers. Users
-+		 might want to set deferrable_timer option if they donot want
-+		 ksm thread to wakeup CPU to carryout ksm activities thus
-+		 gaining on battery while compromising slightly on memory
-+		 that could have been saved.)
- 
- A high ratio of pages_sharing to pages_shared indicates good sharing, but
- a high ratio of pages_unshared to pages_sharing indicates wasted effort.
-diff --git a/mm/ksm.c b/mm/ksm.c
-index fb75902..2c5d206 100644
---- a/mm/ksm.c
-+++ b/mm/ksm.c
-@@ -223,6 +223,9 @@ static unsigned int ksm_thread_pages_to_scan = 100;
- /* Milliseconds ksmd should sleep between batches */
- static unsigned int ksm_thread_sleep_millisecs = 20;
- 
-+/* Boolean to indicate whether to use deferrable timer or not */
-+static bool use_deferrable_timer;
-+
- #ifdef CONFIG_NUMA
- /* Zeroed when merging across nodes is not allowed */
- static unsigned int ksm_merge_across_nodes = 1;
-@@ -1705,6 +1708,11 @@ static void ksm_do_scan(unsigned int scan_npages)
- 	}
- }
- 
-+static void process_timeout(unsigned long __data)
-+{
-+	wake_up_process((struct task_struct *)__data);
-+}
-+
- static int ksmd_should_run(void)
- {
- 	return (ksm_run & KSM_RUN_MERGE) && !list_empty(&ksm_mm_head.mm_list);
-@@ -1712,6 +1720,8 @@ static int ksmd_should_run(void)
- 
- static int ksm_scan_thread(void *nothing)
- {
-+	signed long to;
-+
- 	set_freezable();
- 	set_user_nice(current, 5);
- 
-@@ -1725,8 +1735,11 @@ static int ksm_scan_thread(void *nothing)
- 		try_to_freeze();
- 
- 		if (ksmd_should_run()) {
--			schedule_timeout_interruptible(
--				msecs_to_jiffies(ksm_thread_sleep_millisecs));
-+			timeout = msecs_to_jiffies(ksm_thread_sleep_millisecs);
-+			if (use_deferrable_timer)
-+				schedule_timeout_deferrable_interruptible(to);
-+			else
-+				schedule_timeout_interruptible(to);
- 		} else {
- 			wait_event_freezable(ksm_thread_wait,
- 				ksmd_should_run() || kthread_should_stop());
-@@ -2175,6 +2188,28 @@ static ssize_t run_store(struct kobject *kobj, struct kobj_attribute *attr,
- }
- KSM_ATTR(run);
- 
-+static ssize_t deferrable_timer_show(struct kobject *kobj,
-+				    struct kobj_attribute *attr, char *buf)
-+{
-+	return snprintf(buf, 8, "%d\n", use_deferrable_timer);
-+}
-+
-+static ssize_t deferrable_timer_store(struct kobject *kobj,
-+				     struct kobj_attribute *attr,
-+				     const char *buf, size_t count)
-+{
-+	unsigned long enable;
-+	int err;
-+
-+	err = kstrtoul(buf, 10, &enable);
-+
-+	if (enable == 0 || enable == 1)
-+		use_deferrable_timer = enable;
-+
-+	return count;
-+}
-+KSM_ATTR(deferrable_timer);
-+
- #ifdef CONFIG_NUMA
- static ssize_t merge_across_nodes_show(struct kobject *kobj,
- 				struct kobj_attribute *attr, char *buf)
-@@ -2287,6 +2322,7 @@ static struct attribute *ksm_attrs[] = {
- 	&pages_unshared_attr.attr,
- 	&pages_volatile_attr.attr,
- 	&full_scans_attr.attr,
-+	&deferrable_timer_attr.attr,
- #ifdef CONFIG_NUMA
- 	&merge_across_nodes_attr.attr,
- #endif
--- 
-Chintan Pandya
-
-QUALCOMM INDIA, on behalf of Qualcomm Innovation Center, Inc. is a
-member of the Code Aurora Forum, hosted by The Linux Foundation
+	Sören
 
