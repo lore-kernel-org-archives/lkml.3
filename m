@@ -1,75 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758837AbaGYGR5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 02:17:57 -0400
-Received: from mga03.intel.com ([143.182.124.21]:23756 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750979AbaGYGR4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 02:17:56 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,729,1400050800"; 
-   d="scan'208";a="461213402"
-Date: Fri, 25 Jul 2014 11:41:30 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Dan Williams <dan.j.williams@intel.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-sunxi@googlegroups.com,
-        kevin.z.m.zh@gmail.com, sunny@allwinnertech.com,
-        shuge@allwinnertech.com, zhuzhenhua@allwinnertech.com,
-        Arnd Bergmann <arnd@arndb.de>, andriy.shevchenko@intel.com,
-        dmaengine@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH v11 0/2] Add support for the Allwinner A31 DMA
- Controller
-Message-ID: <20140725061130.GF8181@intel.com>
-References: <1405626376-471-1-git-send-email-maxime.ripard@free-electrons.com>
- <20140724121315.GV20328@lukather>
- <20140724164420.d7c58c9b5f6bf3e06137494f@linux-foundation.org>
+	id S1758892AbaGYGTK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 02:19:10 -0400
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:63429 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751283AbaGYGTI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jul 2014 02:19:08 -0400
+Message-ID: <53D1F686.30600@gmail.com>
+Date: Fri, 25 Jul 2014 11:47:42 +0530
+From: Varka Bhadram <varkabhadram@gmail.com>
+Organization: CDAC-HYD
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140724164420.d7c58c9b5f6bf3e06137494f@linux-foundation.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Nicolin Chen <Guangyu.Chen@freescale.com>
+CC: Nicolin Chen <nicoleotsuka@gmail.com>, broonie@kernel.org,
+        robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        rdunlap@infradead.org, lgirdwood@gmail.com, perex@perex.cz,
+        tiwai@suse.de, timur@tabi.org, grant.likely@linaro.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        alsa-devel@alsa-project.org, linuxppc-dev@lists.ozlabs.org,
+        shawn.guo@linaro.org, b02247@freescale.com, b42378@freescale.com,
+        tklauser@distanz.ch
+Subject: Re: [PATCH v3 2/2] ASoC: fsl_asrc: Add ASRC ASoC CPU DAI and platform
+ drivers
+References: <cover.1406259578.git.nicoleotsuka@gmail.com> <f4ff79269a1680f9ce128e0e98fea926d3a41834.1406259578.git.nicoleotsuka@gmail.com> <53D1DC0B.1000905@gmail.com> <20140725055447.GC29136@MrMyself>
+In-Reply-To: <20140725055447.GC29136@MrMyself>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 24, 2014 at 04:44:20PM -0700, Andrew Morton wrote:
-> On Thu, 24 Jul 2014 14:13:15 +0200 Maxime Ripard <maxime.ripard@free-electrons.com> wrote:
-> 
-> > On Thu, Jul 17, 2014 at 09:46:14PM +0200, Maxime Ripard wrote:
-> > > Hi,
-> > > 
-> > > This patchset adds support for the DMA controller found in the
-> > > Allwinner A31 and A23 SoCs.
-> > > 
-> > > This has been tested using the newly introduced SPI driver on an A31
-> > > EVK. Support for DMA-driven SPI transfers will be the subject of
-> > > another patch serie.
-> > > 
-> > > This has been around for around 5 monthes now, and didn't get any
-> > > review but nitpicks for three versions, so I feel like it could be
-> > > merged quite quickly.
-> > 
-> > Ok, so, who should I bribe to get this merged?
-> 
-> Turns out I'm easily bribed.  The code looks pretty clean and simple
-> and is refreshingly free of comments, which only confuse people anyway.
-Sorry for the delay, I will get this done today and merge to slave-dmaengine
-next
+Hi Nicolin,
 
-> I think we could do this as a single patch - is there any benefit to
-> splitting it apart like this?
-Typically DT bindings are sent as aseprate patch and review independent of
-teh driver. Though not many from DT-list have looked up slowing down patches
+On 07/25/2014 11:24 AM, Nicolin Chen wrote:
+> Hi Varka,
+>
+>     Regarding a point you suggested.
+>
+> On Fri, Jul 25, 2014 at 09:54:43AM +0530, Varka Bhadram wrote:
+>> On 07/25/2014 09:33 AM, Nicolin Chen wrote:
+>> (...)
+>>
+>>> +
+>>> +static const struct platform_device_id fsl_asrc_devtype[] = {
+>>> +	{
+>>> +		.name = "imx35-asrc",
+>>> +		.driver_data = IMX35_ASRC,
+>>> +	}, {
+>>> +		.name = "imx53-asrc",
+>>> +		.driver_data = IMX53_ASRC,
+>>> +	}, {
+>>> +		/* sentinel */
+>>> +	}
+>>> +};
+>>> +MODULE_DEVICE_TABLE(platform, fsl_asrc_devtype);
+>>> +
+>>> +static const struct of_device_id fsl_asrc_ids[] = {
+>>> +	{
+>>> +		.compatible = "fsl,imx35-asrc",
+>>> +		.data = &fsl_asrc_devtype[IMX35_ASRC],
+>>> +	}, {
+>>> +		.compatible = "fsl,imx53-asrc",
+>>> +		.data = &fsl_asrc_devtype[IMX53_ASRC],
+>>> +	}, {
+>>> +		/* sentinel */
+>>> +	}
+>>> +};
+>>> +MODULE_DEVICE_TABLE(of, fsl_asrc_ids);
+>>> +
+>> move these ids after probe/remove... every driver follows same thing...
+> Hmm.. fsl_asrc_ids is called in probe(), so it's probably not a good choice
+> to put them after probe/remove. And actually not every driver does so.
+> For example drivers/i2c/busses/i2c-s3c2410.c
+>
+> I think it should be okay to put here if it contains data.
 
-> The combinations of spin_lock()/spin_lock_irq() and spin_lock_irqsave()
-> are a bit scary - it's easy to get these optimisations wrong.  Has it
-> been thoroughly tested with lockdep enabled?
-Since the dma is handled in the irq, iut is actaully essential to have
-irqsave versions for dmaenegine driver
+You are using these ids in the probe .Tt should be above the probe() so
+we can see of_match_device() directly...
+and also one more thing that the interrupt handler also would be immediately
+above the probe()
 
-Thanks
+ex:
+static irqreturn_t fsl_asrc_isr(int irq, void *dev_id)
+{
+...
+}
+
+device ids..
+
+your_probe()
+{
+...
+}
+
+your_remove()
+{
+...
+}
+
+Now every driver that is coming following this style...
+
+If your not using device ids in probe then it would be like
+
+static irqreturn_t fsl_asrc_isr(int irq, void *dev_id)
+{
+...
+}
+
+your_probe()
+{
+...
+}
+
+your_remove()
+{
+...
+}
+
+device ids..
+
+Thanks...
+
 -- 
-~Vinod
+Regards,
+Varka Bhadram.
+
