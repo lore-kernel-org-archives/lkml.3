@@ -1,58 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932732AbaGYPEv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 11:04:51 -0400
-Received: from one.firstfloor.org ([193.170.194.197]:58938 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752695AbaGYPEu (ORCPT
+	id S1753628AbaGYPIb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 11:08:31 -0400
+Received: from mail-vc0-f173.google.com ([209.85.220.173]:64269 "EHLO
+	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751779AbaGYPI3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 11:04:50 -0400
-Date: Fri, 25 Jul 2014 17:04:45 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: "Yan, Zheng" <zheng.z.yan@intel.com>, linux-kernel@vger.kernel.org,
-        mingo@kernel.org, acme@infradead.org, eranian@google.com,
-        andi@firstfloor.org
-Subject: Re: [PATCH v3 6/9] perf, x86: handle multiple records in PEBS
- buffer
-Message-ID: <20140725150445.GG18735@two.firstfloor.org>
-References: <1406016602-31845-1-git-send-email-zheng.z.yan@intel.com>
- <1406016602-31845-7-git-send-email-zheng.z.yan@intel.com>
- <20140725081033.GV3935@laptop>
+	Fri, 25 Jul 2014 11:08:29 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140725081033.GV3935@laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <08fe01cfa7c9$341cc700$9c565500$@samsung.com>
+References: <1405704009-8430-1-git-send-email-afaerber@suse.de>
+	<1405704009-8430-2-git-send-email-afaerber@suse.de>
+	<08fe01cfa7c9$341cc700$9c565500$@samsung.com>
+Date: Fri, 25 Jul 2014 08:08:27 -0700
+X-Google-Sender-Auth: pK5xi1BXf5dpBEGpsbIWYop0QvE
+Message-ID: <CAD=FV=VUkU7HWjwCKO=WOrKosUtmv3YE_8pxc5uoQg0cHr-AKQ@mail.gmail.com>
+Subject: Re: [PATCH v2 1/4] ARM: dts: exynos5250: max77686 is Snow only
+From: Doug Anderson <dianders@chromium.org>
+To: Kukjin Kim <kgene.kim@samsung.com>,
+        =?UTF-8?Q?Andreas_F=C3=A4rber?= <afaerber@suse.de>
+Cc: linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        Stephan van Schaik <stephan@synkhronix.com>,
+        Vincent Palatin <vpalatin@chromium.org>,
+        Ben Dooks <ben-linux@fluff.org>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        "moderated list:ARM/SAMSUNG ARM A..." 
+	<linux-arm-kernel@lists.infradead.org>,
+        "open list:OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> You can't.. the events might have different security context.
-> 
-> Remember, the overflow bit is set from the overflow until the PEBS
-> event is generated, this is quite a long time. So if another PEBS event
-> gets generated while the other is still pending it will have both bits
-> set. Even though the second bit is for another (unrelated) counter.
+Hi,
 
-When an event is not allowed by some policy it should be disabled
-in global ctrl right? And disabling makes sure overflow is cleared,
-and PEBS will not report it.
+On Thu, Jul 24, 2014 at 10:28 PM, Kukjin Kim <kgene.kim@samsung.com> wrote:
+> Andreas Färber wrote:
+>>
+>> Move it from exynos5250-cros-common.dtsi to exynos5250-snow.dts.
+>> Spring does not need it, it uses an s5m8767 instead.
+>>
+>> Signed-off-by: Andreas Färber <afaerber@suse.de>
+>> ---
+>
+> Hi Andreas,
+>
+> I think this should be reviewed by chrome guys.
+>
+>
+> Doug, can you have a look this series for exynos5250-chromebook?
+> I'm not sure exynos5250-cros-common is still useful for exynos5250-spring...
 
-When it's not disabled it could happen any time and there
-is no isolation.
+Sorry, I've been on vacation and am now playing catchup.
 
-Or is the concern that the PEBS buffer may not be flushed
-on event switch/disable and you see something stale? I believe it is
-flushed.
+Right.  The current suggestion is to rework to just duplicate things
+and don't use exynos5250-cros-common.  I would structure the series
+as:
 
-> I think you can unwind and fully correct this trainwreck. But simply
-> delivering an even with multiple bits set to all relevant events is
-> wrong and might leak sensitive information.
+1. Fold the current exynos5250-cros-common directly into the snow
+device tree file.
 
-In theory could double check that the event is enabled,
-but I don't think it's really needed.
+2. If desired, cleanup the snow device tree file.
 
--Andi
--- 
-ak@linux.intel.com -- Speaking for myself only.
+3. Create the spring device tree file based on snow.  There will be
+duplication, but so be it.  Please try to minimize diffs between the
+snow ad spring device tree files.
+
+4. If possible, identify "fragments" like "cros-ec-keyboard.dtsi" and
+factor them out of both spring and snow device tree files.
+
+
+You could certainly reorder some of the above steps if you wish (you
+could split out fragments before creating the spring device tree, for
+instance).
+
+
+Please make sure to CC Javier (now on CC) since he's helping with
+Chromebook upstreaming and he may have a lower latency in responding
+than I do.
+
+-Doug
