@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758633AbaGYBIs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 21:08:48 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:34436 "EHLO
+	id S1758423AbaGYBIr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 21:08:47 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:34427 "EHLO
 	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752054AbaGYBHo (ORCPT
+	with ESMTP id S1752185AbaGYBHo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 24 Jul 2014 21:07:44 -0400
 From: Saravana Kannan <skannan@codeaurora.org>
@@ -16,9 +16,9 @@ Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         "Saravana Kannan" <skannan@codeaurora.org>,
         Stephen Boyd <sboyd@codeaurora.org>
-Subject: [PATCH v4 3/5] cpufreq: Don't destroy/realloc policy/sysfs on hotplug/suspend
-Date: Thu, 24 Jul 2014 18:07:26 -0700
-Message-Id: <1406250448-470-4-git-send-email-skannan@codeaurora.org>
+Subject: [PATCH v4 4/5] cpufreq: Properly handle physical CPU hot-add/hot-remove
+Date: Thu, 24 Jul 2014 18:07:27 -0700
+Message-Id: <1406250448-470-5-git-send-email-skannan@codeaurora.org>
 X-Mailer: git-send-email 1.8.2.1
 In-Reply-To: <1406250448-470-1-git-send-email-skannan@codeaurora.org>
 References: <1406250448-470-1-git-send-email-skannan@codeaurora.org>
@@ -26,214 +26,134 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch simplifies a lot of the hotplug/suspend code by not
-adding/removing/moving the policy/sysfs/kobj during hotplug and just leaves
-the cpufreq directory and policy in place irrespective of whether the CPUs
-are ONLINE/OFFLINE.
-
-Leaving the policy, sysfs and kobject in place also brings these additional
-benefits:
-* Faster suspend/resume
-* Faster hotplug
-* Sysfs file permissions maintained across hotplug
-* Policy settings and governor tunables maintained across hotplug
-* Cpufreq stats would be maintained across hotplug for all CPUs and can be
-  queried even after CPU goes OFFLINE
+When CPUs are physically added/removed, its cpuX sysfs directory is
+dynamically added/removed. To handle this correctly, the cpufreq sysfs
+nodes also need to be added/removed dynamically.
 
 Signed-off-by: Saravana Kannan <skannan@codeaurora.org>
 ---
- drivers/cpufreq/cpufreq.c | 83 ++++++++++++++++-------------------------------
- 1 file changed, 28 insertions(+), 55 deletions(-)
+ drivers/cpufreq/cpufreq.c | 46 +++++++++++++++++++++++++++++++++-------------
+ 1 file changed, 33 insertions(+), 13 deletions(-)
 
 diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-index af4f291..d9fc6e5 100644
+index d9fc6e5..97edf05 100644
 --- a/drivers/cpufreq/cpufreq.c
 +++ b/drivers/cpufreq/cpufreq.c
-@@ -865,7 +865,7 @@ static int cpufreq_add_dev_symlink(struct cpufreq_policy *policy)
+@@ -41,6 +41,7 @@ static DEFINE_PER_CPU(struct cpufreq_policy *, cpufreq_cpu_data_fallback);
+ static DEFINE_RWLOCK(cpufreq_driver_lock);
+ DEFINE_MUTEX(cpufreq_governor_lock);
+ static LIST_HEAD(cpufreq_policy_list);
++static cpumask_t has_symlink;
+ 
+ /* This one keeps track of the previously set governor of a removed CPU */
+ static DEFINE_PER_CPU(char[CPUFREQ_NAME_LEN], cpufreq_cpu_governor);
+@@ -865,7 +866,10 @@ static int cpufreq_add_dev_symlink(struct cpufreq_policy *policy)
  	unsigned int j;
  	int ret = 0;
  
--	for_each_cpu(j, policy->cpus) {
-+	for_each_cpu(j, policy->related_cpus) {
+-	for_each_cpu(j, policy->related_cpus) {
++	/* Only some of the related CPUs might be present. So, create
++	 * symlinks only for those.
++	 */
++	for_each_cpu_and(j, policy->related_cpus, cpu_present_mask) {
  		struct device *cpu_dev;
  
  		if (j == policy->kobj_cpu)
-@@ -968,7 +968,7 @@ static int cpufreq_add_policy_cpu(struct cpufreq_policy *policy,
- 	int ret = 0;
- 	unsigned long flags;
- 
--	if (has_target()) {
-+	if (cpumask_weight(policy->cpus) && has_target()) {
- 		ret = __cpufreq_governor(policy, CPUFREQ_GOV_STOP);
- 		if (ret) {
- 			pr_err("%s: Failed to stop governor\n", __func__);
-@@ -997,7 +997,7 @@ static int cpufreq_add_policy_cpu(struct cpufreq_policy *policy,
- 		}
+@@ -877,6 +881,7 @@ static int cpufreq_add_dev_symlink(struct cpufreq_policy *policy)
+ 					"cpufreq");
+ 		if (ret)
+ 			break;
++		cpumask_set_cpu(j, &has_symlink);
  	}
- 
--	return sysfs_create_link(&dev->kobj, &policy->kobj, "cpufreq");
-+	return 0;
+ 	return ret;
  }
- #endif
- 
-@@ -1100,9 +1100,6 @@ static int __cpufreq_add_dev(struct device *dev, struct subsys_interface *sif)
- 	struct cpufreq_policy *policy;
+@@ -1101,9 +1106,6 @@ static int __cpufreq_add_dev(struct device *dev, struct subsys_interface *sif)
  	unsigned long flags;
  	bool recover_policy = cpufreq_suspended;
--#ifdef CONFIG_HOTPLUG_CPU
--	struct cpufreq_policy *tpolicy;
--#endif
  
- 	if (cpu_is_offline(cpu))
- 		return 0;
-@@ -1113,28 +1110,22 @@ static int __cpufreq_add_dev(struct device *dev, struct subsys_interface *sif)
- 	/* check whether a different CPU already registered this
+-	if (cpu_is_offline(cpu))
+-		return 0;
+-
+ 	pr_debug("adding CPU %u\n", cpu);
+ 
+ #ifdef CONFIG_SMP
+@@ -1111,7 +1113,19 @@ static int __cpufreq_add_dev(struct device *dev, struct subsys_interface *sif)
  	 * CPU because it is in the same boat. */
  	policy = cpufreq_cpu_get(cpu);
--	if (unlikely(policy)) {
-+	if (policy) {
-+		if (!cpumask_test_cpu(cpu, policy->cpus))
-+			ret = cpufreq_add_policy_cpu(policy, cpu, dev);
-+		else
-+			ret = 0;
- 		cpufreq_cpu_put(policy);
--		return 0;
-+		return ret;
+ 	if (policy) {
+-		if (!cpumask_test_cpu(cpu, policy->cpus))
++		/* If a CPU gets physically plugged in after one or more of
++		 * its related CPUs are ONLINE, we need to create a symlink
++		 * for it since it wouldn't have been created when the policy
++		 * was initialized. Do this as soon as it's plugged in.
++		 */
++		if (sif && !cpumask_test_cpu(cpu, &has_symlink)) {
++			ret = sysfs_create_link(&dev->kobj, &policy->kobj,
++						"cpufreq");
++			if (!ret)
++				cpumask_set_cpu(cpu, &has_symlink);
++		}
++
++		if (!cpumask_test_cpu(cpu, policy->cpus) && cpu_online(cpu))
+ 			ret = cpufreq_add_policy_cpu(policy, cpu, dev);
+ 		else
+ 			ret = 0;
+@@ -1120,6 +1134,9 @@ static int __cpufreq_add_dev(struct device *dev, struct subsys_interface *sif)
  	}
  #endif
  
++	if (cpu_is_offline(cpu))
++		return 0;
++
  	if (!down_read_trylock(&cpufreq_rwsem))
  		return 0;
  
--#ifdef CONFIG_HOTPLUG_CPU
--	/* Check if this cpu was hot-unplugged earlier and has siblings */
--	read_lock_irqsave(&cpufreq_driver_lock, flags);
--	list_for_each_entry(tpolicy, &cpufreq_policy_list, policy_list) {
--		if (cpumask_test_cpu(cpu, tpolicy->related_cpus)) {
--			read_unlock_irqrestore(&cpufreq_driver_lock, flags);
--			ret = cpufreq_add_policy_cpu(tpolicy, cpu, dev);
--			up_read(&cpufreq_rwsem);
--			return ret;
--		}
--	}
--	read_unlock_irqrestore(&cpufreq_driver_lock, flags);
--#endif
-+	/* If we get this far, this is the first time we are adding the
-+	 * policy */
-+	recover_policy = false;
- 
- 	/*
- 	 * Restore the saved policy when doing light-weight init and fall back
-@@ -1189,7 +1180,7 @@ static int __cpufreq_add_dev(struct device *dev, struct subsys_interface *sif)
- 
- 	down_write(&policy->rwsem);
- 	write_lock_irqsave(&cpufreq_driver_lock, flags);
--	for_each_cpu(j, policy->cpus)
-+	for_each_cpu(j, policy->related_cpus)
- 		per_cpu(cpufreq_cpu_data, j) = policy;
- 	write_unlock_irqrestore(&cpufreq_driver_lock, flags);
- 
-@@ -1274,7 +1265,7 @@ static int __cpufreq_add_dev(struct device *dev, struct subsys_interface *sif)
- err_out_unregister:
- err_get_freq:
- 	write_lock_irqsave(&cpufreq_driver_lock, flags);
--	for_each_cpu(j, policy->cpus)
-+	for_each_cpu(j, policy->related_cpus)
- 		per_cpu(cpufreq_cpu_data, j) = NULL;
- 	write_unlock_irqrestore(&cpufreq_driver_lock, flags);
- 
-@@ -1340,21 +1331,15 @@ static int __cpufreq_remove_dev_prepare(struct device *dev,
- 					struct subsys_interface *sif)
+@@ -1303,25 +1320,24 @@ static int cpufreq_nominate_new_policy_cpu(struct cpufreq_policy *policy,
+ 					   unsigned int old_cpu)
  {
- 	unsigned int cpu = dev->id, cpus;
--	int new_cpu, ret;
-+	int new_cpu, ret = 0;
- 	unsigned long flags;
- 	struct cpufreq_policy *policy;
+ 	struct device *cpu_dev;
++	unsigned int new_cpu;
+ 	int ret;
  
- 	pr_debug("%s: unregistering CPU %u\n", __func__, cpu);
+ 	/* first sibling now owns the new sysfs dir */
+-	cpu_dev = get_cpu_device(cpumask_any_but(policy->cpus, old_cpu));
++	for_each_cpu_and(new_cpu, policy->related_cpus, cpu_present_mask)
++		if (new_cpu != old_cpu)
++			break;
++	cpu_dev = get_cpu_device(new_cpu);
  
--	write_lock_irqsave(&cpufreq_driver_lock, flags);
+ 	sysfs_remove_link(&cpu_dev->kobj, "cpufreq");
+ 	ret = kobject_move(&policy->kobj, &cpu_dev->kobj);
+ 	if (ret) {
+ 		pr_err("%s: Failed to move kobj: %d\n", __func__, ret);
 -
-+	read_lock_irqsave(&cpufreq_driver_lock, flags);
- 	policy = per_cpu(cpufreq_cpu_data, cpu);
+-		down_write(&policy->rwsem);
+-		cpumask_set_cpu(old_cpu, policy->cpus);
+-		up_write(&policy->rwsem);
 -
--	/* Save the policy somewhere when doing a light-weight tear-down */
--	if (cpufreq_suspended)
--		per_cpu(cpufreq_cpu_data_fallback, cpu) = policy;
+ 		ret = sysfs_create_link(&cpu_dev->kobj, &policy->kobj,
+ 					"cpufreq");
 -
--	write_unlock_irqrestore(&cpufreq_driver_lock, flags);
-+	read_unlock_irqrestore(&cpufreq_driver_lock, flags);
- 
- 	if (!policy) {
- 		pr_debug("%s: No cpu_data found\n", __func__);
-@@ -1369,24 +1354,15 @@ static int __cpufreq_remove_dev_prepare(struct device *dev,
- 		}
+ 		return -EINVAL;
  	}
++	cpumask_clear_cpu(new_cpu, &has_symlink);
+ 	policy->kobj_cpu = cpu_dev->id;
  
--	if (!cpufreq_driver->setpolicy)
--		strncpy(per_cpu(cpufreq_cpu_governor, cpu),
--			policy->governor->name, CPUFREQ_NAME_LEN);
--
- 	down_read(&policy->rwsem);
+ 	return cpu_dev->id;
+@@ -1407,8 +1423,12 @@ static int __cpufreq_remove_dev_finish(struct device *dev,
  	cpus = cpumask_weight(policy->cpus);
  	up_read(&policy->rwsem);
  
--	if (cpu != policy->cpu) {
--		sysfs_remove_link(&dev->kobj, "cpufreq");
--	} else if (cpus > 1) {
--		new_cpu = cpufreq_nominate_new_policy_cpu(policy, cpu);
--		if (new_cpu >= 0) {
--			update_policy_cpu(policy, new_cpu);
--
--			if (!cpufreq_suspended)
--				pr_debug("%s: policy Kobject moved to cpu: %d from: %d\n",
--					 __func__, new_cpu, cpu);
-+	if (cpus > 1) {
-+		if (cpu == policy->cpu) {
-+			new_cpu = cpumask_any_but(policy->cpus, cpu);
-+			if (new_cpu >= 0)
-+				update_policy_cpu(policy, new_cpu);
- 		}
- 	} else if (cpufreq_driver->stop_cpu && cpufreq_driver->setpolicy) {
- 		cpufreq_driver->stop_cpu(policy);
-@@ -1431,6 +1407,9 @@ static int __cpufreq_remove_dev_finish(struct device *dev,
- 	cpus = cpumask_weight(policy->cpus);
- 	up_read(&policy->rwsem);
+-	if (cpu != policy->kobj_cpu)
++	if (cpu != policy->kobj_cpu) {
+ 		sysfs_remove_link(&dev->kobj, "cpufreq");
++		cpumask_clear_cpu(cpu, &has_symlink);
++	} else {
++		cpufreq_nominate_new_policy_cpu(policy, cpu);
++	}
  
-+	if (cpu != policy->kobj_cpu)
-+		sysfs_remove_link(&dev->kobj, "cpufreq");
-+
  	/* If cpu is last user of policy, free policy */
  	if (cpus == 0) {
- 		if (has_target()) {
-@@ -1475,12 +1454,10 @@ static int __cpufreq_remove_dev_finish(struct device *dev,
- static int cpufreq_remove_dev(struct device *dev, struct subsys_interface *sif)
- {
- 	unsigned int cpu = dev->id;
--	int ret;
--
--	if (cpu_is_offline(cpu))
--		return 0;
-+	int ret = 0;
- 
--	ret = __cpufreq_remove_dev_prepare(dev, sif);
-+	if (cpu_online(cpu))
-+		ret = __cpufreq_remove_dev_prepare(dev, sif);
- 
- 	if (!ret)
- 		ret = __cpufreq_remove_dev_finish(dev, sif);
-@@ -2307,10 +2284,6 @@ static int cpufreq_cpu_callback(struct notifier_block *nfb,
- 			__cpufreq_remove_dev_prepare(dev, NULL);
- 			break;
- 
--		case CPU_POST_DEAD:
--			__cpufreq_remove_dev_finish(dev, NULL);
--			break;
--
- 		case CPU_DOWN_FAILED:
- 			__cpufreq_add_dev(dev, NULL);
- 			break;
 -- 
 1.8.2.1
 
