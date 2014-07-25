@@ -1,153 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752612AbaGYMtY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 08:49:24 -0400
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:40510 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751642AbaGYMtX (ORCPT
+	id S1752533AbaGYMxM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 08:53:12 -0400
+Received: from out4-smtp.messagingengine.com ([66.111.4.28]:50531 "EHLO
+	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752142AbaGYMxJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 08:49:23 -0400
-X-Originating-IP: 78.210.48.61
-From: Guillaume Clement <gclement@baobob.org>
-To: Forest Bond <forest@alittletooquiet.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: devel@driverdev.osuosl.org, Dan Carpenter <dan.carpenter@oracle.com>,
-        linux-kernel@vger.kernel.org, Guillaume Clement <gclement@baobob.org>
-Subject: [PATCH] staging: vt6655: fix direct dereferencing of user pointer
-Date: Fri, 25 Jul 2014 14:47:23 +0200
-Message-Id: <1406292443-11734-1-git-send-email-gclement@baobob.org>
-X-Mailer: git-send-email 1.8.5.5
-In-Reply-To: <20140725123301.GZ13737@mwanda>
-References: <20140725123301.GZ13737@mwanda>
+	Fri, 25 Jul 2014 08:53:09 -0400
+X-Sasl-enc: +b3vJb4MHlrFkiYHdlMs4ok+NNk5MkbLwp247CUd+uRG 1406292373
+Date: Fri, 25 Jul 2014 09:46:01 -0300
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: "Theodore Ts'o" <tytso@mit.edu>, Andy Lutomirski <luto@amacapital.net>,
+        Linux Kernel Developers List <linux-kernel@vger.kernel.org>,
+        Linux API <linux-api@vger.kernel.org>, linux-crypto@vger.kernel.org
+Subject: Re: [PATCH -v5] random: introduce getrandom(2) system call
+Message-ID: <20140725124601.GB401@khazad-dum.debian.net>
+References: <1406212287-9855-1-git-send-email-tytso@mit.edu>
+ <20140724151814.GE32421@khazad-dum.debian.net>
+ <CALCETrXAA=UzS-pRCo5tKSjSCOP9xfu66BG9QbRefVrovkavhQ@mail.gmail.com>
+ <20140724190206.GL6673@thunk.org>
+ <20140724203019.GA20737@khazad-dum.debian.net>
+ <20140724232434.GN6673@thunk.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140724232434.GN6673@thunk.org>
+X-GPG-Fingerprint1: 4096R/39CB4807 C467 A717 507B BAFE D3C1  6092 0BD9 E811
+ 39CB 4807
+X-GPG-Fingerprint2: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sparse reported that the data from tagSCmdRequest is given by
-userspace, so it should be tagged as such.
+On Thu, 24 Jul 2014, Theodore Ts'o wrote:
+> On Thu, Jul 24, 2014 at 05:30:19PM -0300, Henrique de Moraes Holschuh wrote:
+> > > I wouldn't add the error to the man page until we actually modify the
+> > > kernel to add such a restriction.
+> > 
+> > By then, it might be too late.  It would be really sad to find ourselves
+> > forced to return ENOSYS to getrandom(GRND_RANDOM) when we actually wanted to
+> > return EPERM/EACCES.
+> 
+> I wouldn't worry about.  The reality is that anyone using GRND_RANDOM
+> has to be checking for error codes anyway, and if they do something
 
-Later, we were memcomparing and dereferencing it without first copying
-it, fix that as well.
+...
 
-Signed-off-by: Guillaume Clement <gclement@baobob.org>
----
- drivers/staging/vt6655/iocmd.h |  2 +-
- drivers/staging/vt6655/iwctl.c | 32 ++++++++++++++++++++++----------
- drivers/staging/vt6655/iwctl.h |  6 +++---
- 3 files changed, 26 insertions(+), 14 deletions(-)
+> In general, all system calls can return errno's other than the ones
+> documented in the man page.  This is certainly true for open(2), and
+> read(2) if you are using a network file system such as NFS.  Someone
 
-diff --git a/drivers/staging/vt6655/iocmd.h b/drivers/staging/vt6655/iocmd.h
-index e499f1b..dd12498 100644
---- a/drivers/staging/vt6655/iocmd.h
-+++ b/drivers/staging/vt6655/iocmd.h
-@@ -100,7 +100,7 @@ typedef enum tagWZONETYPE {
- #pragma pack(1)
- typedef struct tagSCmdRequest {
- 	u8	    name[16];
--	void	*data;
-+	void __user *data;
- 	u16	    wResult;
- 	u16     wCmdCode;
- } SCmdRequest, *PSCmdRequest;
-diff --git a/drivers/staging/vt6655/iwctl.c b/drivers/staging/vt6655/iwctl.c
-index 501cd64..7ce23b5 100644
---- a/drivers/staging/vt6655/iwctl.c
-+++ b/drivers/staging/vt6655/iwctl.c
-@@ -1621,17 +1621,24 @@ int iwctl_giwauth(struct net_device *dev,
- int iwctl_siwgenie(struct net_device *dev,
- 		   struct iw_request_info *info,
- 		   struct iw_point *wrq,
--		   char *extra)
-+		   char __user *extra)
- {
- 	PSDevice			pDevice = (PSDevice)netdev_priv(dev);
- 	PSMgmtObject	pMgmt = &(pDevice->sMgmtObj);
- 	int ret = 0;
-+	char length;
- 
- 	if (wrq->length) {
--		if ((wrq->length < 2) || (extra[1]+2 != wrq->length)) {
--			ret = -EINVAL;
--			goto out;
--		}
-+		if (wrq->length < 2)
-+			return -EINVAL;
-+
-+		ret = get_user(length, extra + 1);
-+		if (ret)
-+			return ret;
-+
-+		if (length + 2 != wrq->length)
-+			return -EINVAL;
-+
- 		if (wrq->length > MAX_WPA_IE_LEN) {
- 			ret = -ENOMEM;
- 			goto out;
-@@ -1654,7 +1661,7 @@ out://not completely ...not necessary in wpa_supplicant 0.5.8
- int iwctl_giwgenie(struct net_device *dev,
- 		   struct iw_request_info *info,
- 		   struct iw_point *wrq,
--		   char *extra)
-+		   char __user *extra)
- {
- 	PSDevice			pDevice = (PSDevice)netdev_priv(dev);
- 	PSMgmtObject	pMgmt = &(pDevice->sMgmtObj);
-@@ -1801,18 +1808,23 @@ int iwctl_giwencodeext(struct net_device *dev,
- int iwctl_siwmlme(struct net_device *dev,
- 		  struct iw_request_info *info,
- 		  struct iw_point *wrq,
--		  char *extra)
-+		  char __user *extra)
- {
- 	PSDevice			pDevice = (PSDevice)netdev_priv(dev);
- 	PSMgmtObject	pMgmt = &(pDevice->sMgmtObj);
--	struct iw_mlme *mlme = (struct iw_mlme *)extra;
-+	struct iw_mlme mime;
-+
- 	int ret = 0;
- 
--	if (memcmp(pMgmt->abyCurrBSSID, mlme->addr.sa_data, ETH_ALEN)) {
-+	ret = copy_from_user(&mime, extra, sizeof(mime));
-+	if (ret)
-+		return -EFAULT;
-+
-+	if (memcmp(pMgmt->abyCurrBSSID, mime.addr.sa_data, ETH_ALEN)) {
- 		ret = -EINVAL;
- 		return ret;
- 	}
--	switch (mlme->cmd) {
-+	switch (mime.cmd) {
- 	case IW_MLME_DEAUTH:
- 		//this command seems to be not complete,please test it --einsnliu
- 		//bScheduleCommand((void *) pDevice, WLAN_CMD_DEAUTH, (unsigned char *)&reason);
-diff --git a/drivers/staging/vt6655/iwctl.h b/drivers/staging/vt6655/iwctl.h
-index de0a337..7dd6310 100644
---- a/drivers/staging/vt6655/iwctl.h
-+++ b/drivers/staging/vt6655/iwctl.h
-@@ -176,12 +176,12 @@ int iwctl_giwauth(struct net_device *dev,
- int iwctl_siwgenie(struct net_device *dev,
- 		   struct iw_request_info *info,
- 		   struct iw_point *wrq,
--		   char *extra);
-+		   char __user *extra);
- 
- int iwctl_giwgenie(struct net_device *dev,
- 		   struct iw_request_info *info,
- 		   struct iw_point *wrq,
--		   char *extra);
-+		   char __user *extra);
- 
- int iwctl_siwencodeext(struct net_device *dev,
- 		       struct iw_request_info *info,
-@@ -196,7 +196,7 @@ int iwctl_giwencodeext(struct net_device *dev,
- int iwctl_siwmlme(struct net_device *dev,
- 		  struct iw_request_info *info,
- 		  struct iw_point *wrq,
--		  char *extra);
-+		  char __user *extra);
- #endif // #ifdef WPA_SUPPLICANT_DRIVER_WEXT_SUPPORT
- //End Add -- //2008-0409-07, <Add> by Einsn Liu
- 
+A few manpages might actually have warnings to that effect, but it is not
+the rule.  Amusingly enough, the one for read(2) does, while open(2) does
+not.
+
+IMHO the getrandom(2) case is slightly different: we already know to a high
+degree of confidence that we will want to convey a "permission denied"
+condition to userspace for getrandom(GRND_RANDOM) sooner or later.
+
+I'd be fine with text that mentions that GRND_RANDOM access by a process
+may be restricted/rejected by system policy in the future, so code should
+not assume any error return code from getrandom(GRND_RANDOM) would also
+apply to getrandom() without GRND_RANDOM, and must degrade gracefully and
+safely in that case.
+
+> I don't think it's necessary to add a sentence that other errors can
+> be returned in the future, and users much check for other errors, but
+> if you really think people are that stupid that we need to say
+> something which is true for every single system call in Linux, we can
+> do that....
+
+Well, I feel we could go a bit further than usual for getrandom(2), but
+I've already stated my case.
+
 -- 
-1.8.5.5
-
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
