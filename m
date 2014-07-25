@@ -1,119 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759995AbaGYKSJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 06:18:09 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:54660 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751395AbaGYKSH convert rfc822-to-8bit (ORCPT
+	id S1760088AbaGYKS5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 06:18:57 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:54346 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751664AbaGYKSz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 06:18:07 -0400
-Date: Fri, 25 Jul 2014 12:18:04 +0200
-From: Boris BREZILLON <boris.brezillon@free-electrons.com>
-To: jiri.prchal@aksignal.cz
-Cc: Bo Shen <voice.shen@atmel.com>, nicolas.ferre@atmel.com,
+	Fri, 25 Jul 2014 06:18:55 -0400
+Date: Fri, 25 Jul 2014 11:18:15 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Michal Simek <monstr@monstr.eu>
+Cc: Lars-Peter Clausen <lars@metafoo.de>,
+        Andreas =?iso-8859-1?Q?F=E4rber?= <afaerber@suse.de>,
+        Michal Simek <michal.simek@xilinx.com>,
+        Andreas Olofsson <andreas@adapteva.com>,
+        Matteo Vit <matteo.vit@starwaredesign.com>,
+        Sean Rickerd <srickerd@suse.com>, devicetree@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org
-Subject: Re: [PATCH] ARM: at91: at91sam9x5: sets NPCS0 (PA14) back to GPIO
-Message-ID: <20140725121804.18b05a5d@bbrezillon>
-In-Reply-To: <53D22C26.4030208@aksignal.cz>
-References: <1405074175-22444-1-git-send-email-voice.shen@atmel.com>
-	<53D10C50.50305@aksignal.cz>
-	<20140724162645.4e19c26c@bbrezillon>
-	<53D12103.3020103@aksignal.cz>
-	<20140724175848.44f5da10@bbrezillon>
-	<53D1F5D0.1080006@aksignal.cz>
-	<20140725095319.16a8465c@bbrezillon>
-	<53D214E1.4050105@aksignal.cz>
-	<20140725104553.403921b1@bbrezillon>
-	<53D21B3F.7060006@aksignal.cz>
-	<20140725110124.3f0dce6c@bbrezillon>
-	<53D21FCF.7010402@aksignal.cz>
-	<20140725113110.70c4aa41@bbrezillon>
-	<53D22C26.4030208@aksignal.cz>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>
+Message-ID: <20140725101815.GO17528@sirena.org.uk>
+References: <1406242820-20140-1-git-send-email-afaerber@suse.de>
+ <1406242820-20140-10-git-send-email-afaerber@suse.de>
+ <53D20A61.1050506@metafoo.de>
+ <53D21066.8000905@monstr.eu>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="XgWkusiZDs53F1ax"
+Content-Disposition: inline
+In-Reply-To: <53D21066.8000905@monstr.eu>
+X-Cookie: 98% lean.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v2 09/11] Documentation: devicetree: Fix ADI AXI SPDIF
+ specification
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 25 Jul 2014 12:06:30 +0200
-Jiří Prchal <jiri.prchal@aksignal.cz> wrote:
 
-> 
-> 
-> Dne 25.7.2014 v 11:31 Boris BREZILLON napsal(a):
-> > On Fri, 25 Jul 2014 11:13:51 +0200
-> > Jiří Prchal <jiri.prchal@aksignal.cz> wrote:
-> >
-> >
-> >>>
-> >>> Every thing seems in place.
-> >>> Could you enable CONFIG_DEBUG_PINCTRL and grep on "enable pin" ?
-> >> / # dmesg | grep "enable pin"
-> >> [    0.968750] pinctrl-at91 ahb:apb:pinctrl@fffff400: enable pin 101 as GPIO
-> >> [    0.968750] pinctrl-at91 ahb:apb:pinctrl@fffff400: enable pin 101 as PIOD5 0x20
-> >> [    0.968750] pinctrl-at91 ahb:apb:pinctrl@fffff400: enable pin 100 as GPIO
-> >> [    0.968750] pinctrl-at91 ahb:apb:pinctrl@fffff400: enable pin 100 as PIOD4 0x10
-> >> [    1.238281] pinctrl-at91 ahb:apb:pinctrl@fffff400: enable pin 23 as GPIO
-> >> [    1.238281] pinctrl-at91 ahb:apb:pinctrl@fffff400: enable pin 23 as PIOA23 0x800000
-> >> [    1.238281] pinctrl-at91 ahb:apb:pinctrl@fffff400: enable pin 22 as GPIO
-> >> [    1.238281] pinctrl-at91 ahb:apb:pinctrl@fffff400: enable pin 22 as PIOA22 0x400000
-> >> [    1.242187] pinctrl-at91 ahb:apb:pinctrl@fffff400: enable pin 93 as GPIO
-> >> [    1.242187] pinctrl-at91 ahb:apb:pinctrl@fffff400: enable pin 93 as PIOC29 0x20000000
-> >> [    1.246093] pinctrl-at91 ahb:apb:pinctrl@fffff400: enable pin 14 as GPIO
-> >> [    1.246093] pinctrl-at91 ahb:apb:pinctrl@fffff400: enable pin 14 as PIOA14 0x4000
-> >
-> >
-> > Okay, this cleary shows that PA14 pin is muxed as a GPIO (or at least
-> > the driver think it is).
-> >
-> >
-> > Could you launch these commands (you'll need the devmem tool) and
-> > paste the results ?
-> >
-> > #devmem 0xfffff408
-> > #devmem 0xfffff418
-> > #devmem 0xfffff438
-> > #devmem 0xfffff43c
-> > #devmem 0xfffff458
-> > #devmem 0xfffff468
-> > #devmem 0xfffff470
-> > #devmem 0xfffff474
-> > #devmem 0xfffff498
-> >
-> / # devmem 0xfffff408
-> 0xF0E04018
-> / # devmem 0xfffff418
-> 0xE0C04000
-> / # devmem 0xfffff438
-> 0x00C04000
-> / # devmem 0xfffff43c
-> 0x13FFD7FB
-> / # devmem 0xfffff458
-> 0x00000000
-> / # devmem 0xfffff468
-> 0xFF223B4E
-> / # devmem 0xfffff470
-> 0x0F000000
-> / # devmem 0xfffff474
-> 0x00000000
-> / # devmem 0xfffff498
-> 0xFFFFFFFF
-> 
-> I get thought if is possible that in time of probe fm25 (it's first) is not configured PA14 (it 's last)?
+--XgWkusiZDs53F1ax
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Oh, nice catch!
-I think you've found the origin of this bug.
-Indeed each device is instantiated sequentially and thus when the first
-device is probed (CS0) the last one has not requested it's cs_gpio yet
-(and PA14 is still assigned to periph A).
+On Fri, Jul 25, 2014 at 10:08:06AM +0200, Michal Simek wrote:
 
-Declaring cs-pins and referencing them in pinctrl-0 solves the issue
-because in this case all CS pins are requested during controller probe.
+> All these patches have been added through your tree that's why I think
+> you should take this fix through his tree.
 
--- 
-Boris Brezillon, Free Electrons
-Embedded Linux and Kernel engineering
-http://free-electrons.com
+If someone could send me patches I'll take a look at them.
+
+--XgWkusiZDs53F1ax
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJT0i7kAAoJELSic+t+oim9Vg8P/jssSes7qvXYuLx6KaEy7v75
+RWXTm9EsaEUIZUvP9GBMSjx6yg7zItAVNjWxdQYTuM10ioUXa1E4zpHRBwZitqvx
+YmRX1gJjMiSidgYOxoeu86KgVIXKzPqZGdK97GrmTRwbMQhRQQpuLxRzEX3DkDn6
+DlljmWJ+xyKDPM6wtUnm6kGryFAYUGoLrGg/IAPd+WrcYOXTDziTcKaBXSkcFrcR
+no7CAAhfRqi+DoP557+o8w9nNDwe0smY9FWROQ5kBC9PtOEnqtoB2kqDZlJUIDHK
+gBRKKWTEZSgQTqaOLbTIwCrfMGlKaZrNIiGMPqO+NvOtVzzzyRzCY8iqF6RUoVXp
++61HaWhpARNEtMsC2dZioMuTnT+AAijT3SYPcD6MuZSK+Tcq95tblHvtWgCl5V8j
+5uZVTFB6mo4fulytayKShKniyZBWdd002BUoPPhheEFdp3TUN+I3hwNEuukgZtr2
+nhxg7BRA3wG5plqqqsJ91RIr6LaJ01C94csEGIPtO4TuyL513FltZfG5AaL0DpBq
+q3pbWcyv/gfbZKyn+CrrHcUDNORZbuu2pb/UxJT8PojN6VNXdyfDUtOen73TstRx
+S8Q8bZoftEBiEqFdyo99MO0vDYwerZ1hE5uKgiqDZlZ2rHOFo2TeFokRc2MJeiiP
+Dtvf78DCQQLZiiQmT5HX
+=TiQH
+-----END PGP SIGNATURE-----
+
+--XgWkusiZDs53F1ax--
