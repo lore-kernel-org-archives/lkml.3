@@ -1,18 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934725AbaGYRbe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 13:31:34 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:54937 "EHLO
+	id S934821AbaGYRbj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 13:31:39 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:54940 "EHLO
 	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932839AbaGYRbd (ORCPT
+	with ESMTP id S932839AbaGYRbh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 13:31:33 -0400
+	Fri, 25 Jul 2014 13:31:37 -0400
 From: Mark Brown <broonie@kernel.org>
 To: linux-kernel@vger.kernel.org
 Cc: linaro-kernel@lists.linaro.org, Mark Brown <broonie@linaro.org>
-Date: Fri, 25 Jul 2014 18:31:22 +0100
-Message-Id: <1406309483-29590-1-git-send-email-broonie@kernel.org>
+Date: Fri, 25 Jul 2014 18:31:23 +0100
+Message-Id: <1406309483-29590-2-git-send-email-broonie@kernel.org>
 X-Mailer: git-send-email 2.0.1
+In-Reply-To: <1406309483-29590-1-git-send-email-broonie@kernel.org>
+References: <1406309483-29590-1-git-send-email-broonie@kernel.org>
 X-SA-Exim-Connect-IP: 94.175.94.161
 X-SA-Exim-Mail-From: broonie@sirena.org.uk
 Subject: [PATCH] regmap: Allow regmap_get_device() to be used by modules
