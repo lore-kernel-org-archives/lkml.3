@@ -1,80 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760821AbaGYQXf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 12:23:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56943 "EHLO mx1.redhat.com"
+	id S1760850AbaGYQZY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 12:25:24 -0400
+Received: from mga02.intel.com ([134.134.136.20]:64967 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752638AbaGYQXd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 12:23:33 -0400
-Message-ID: <53D28457.202@redhat.com>
-Date: Fri, 25 Jul 2014 12:22:47 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
+	id S1752988AbaGYQZX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jul 2014 12:25:23 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,732,1400050800"; 
+   d="scan'208";a="549051957"
+Subject: Re: [PATCH v5 2/7] crypto: SHA1 multibuffer crypto hash
+ infrastructure
+From: Tim Chen <tim.c.chen@linux.intel.com>
 To: Peter Zijlstra <peterz@infradead.org>
-CC: linux-kernel@vger.kernel.org, mikey@neuling.org, mingo@kernel.org,
-        pjt@google.com, jhladky@redhat.com, ktkhai@parallels.com,
-        tim.c.chen@linux.intel.com, nicolas.pitre@linaro.org,
-        Vincent Guittot <vincent.guittot@linaro.org>
-Subject: Re: [PATCH] sched: make update_sd_pick_busiest return true on a busier
- sd
-References: <20140722144559.382c5243@annuminas.surriel.com> <20140725152728.GB6758@twins.programming.kicks-ass.net> <53D27B7E.8090404@redhat.com> <20140725160549.GD6758@twins.programming.kicks-ass.net>
-In-Reply-To: <20140725160549.GD6758@twins.programming.kicks-ass.net>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
+Cc: Herbert Xu <herbert@gondor.apana.org.au>, "H. Peter Anvin" <hpa@zytor.com>,
+        "David S.Miller" <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
+        Chandramouli Narayanan <mouli@linux.intel.com>,
+        Vinodh Gopal <vinodh.gopal@intel.com>,
+        James Guilford <james.guilford@intel.com>,
+        Wajdi Feghali <wajdi.k.feghali@intel.com>,
+        Jussi Kivilinna <jussi.kivilinna@iki.fi>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Tadeusz Struk <tadeusz.struk@intel.com>, tkhai@yandex.ru,
+        linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <20140725070800.GS3935@laptop>
+References: <cover.1406033477.git.tim.c.chen@linux.intel.com>
+	 <1406066972.2970.804.camel@schen9-DESK>  <20140725070800.GS3935@laptop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 25 Jul 2014 09:25:21 -0700
+Message-ID: <1406305521.2970.851.camel@schen9-DESK>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
-
-On 07/25/2014 12:05 PM, Peter Zijlstra wrote:
-> On Fri, Jul 25, 2014 at 11:45:02AM -0400, Rik van Riel wrote:
->>> So for !ASYM the code is effectively:
->>> 
->>> return sgs->avg_load > sds->busiest_stat.avg_load;
->>> 
->>> I'd like to at least add a clause that makes overloaded groups
->>>  prioritized over !overloaded groups.
->>> 
->>> Also, like we found earlier, calculate_imbalance() relies on
->>> the sum_nr_running > group_capacity_factor thing, which you've
->>> just 'wrecked', so we'd need an update to that part too.
->> 
->> I guess that would mean update_sd_pick_busiest would look like 
->> this for the !ASYM case:
->> 
->> 1) remembering whether busiest is overloaded
->> 
->> 2) if (sgs->busiest_stat.overloaded && !sgs->overloaded) return
->> false;
->> 
->> 3) if (sgs->avg_load > sds->busiest_stat.avg_load) return true;
+On Fri, 2014-07-25 at 09:08 +0200, Peter Zijlstra wrote:
+> On Tue, Jul 22, 2014 at 03:09:32PM -0700, Tim Chen wrote:
+> > +/* Called in workqueue context, do one real cryption work (via
+> > + * req->complete) and reschedule itself if there are more work to
+> > + * do. */
 > 
-> Right. So the situation I was worried about is where we have say 8
-> +nice tasks in one group and 2 -nice in another. So the group with
-> 2 tasks can actually be 'heavier' but not fully utilized. In that
-> case we want to pull tasks from the lighter but overloaded group.
+> You seem to manage the 'normal' comment style in other places, this one
+> 'special' for a reason?
 
-I can certainly create a new patch that makes update_sd_pick_busiest
-do just that.
+Yes, I'll need to correct it.
 
-Vincent, any objections to me fixing update_sd_pick_busiest now, or
-will that conflict with your code cleanups?
+> 
+> > +static void mcryptd_queue_worker(struct work_struct *work)
+> > +{
+> > +	struct mcryptd_cpu_queue *cpu_queue;
+> > +	struct crypto_async_request *req, *backlog;
+> > +	int i;
+> > +
+> > +	/*
+> > +	 * Need to loop through more than once for multi-buffer to
+> > +	 * be effective.
+> > +	 */
+> > +
+> > +	cpu_queue = container_of(work, struct mcryptd_cpu_queue, work);
+> > +	i = 0;
+> > +	while (i < MCRYPTD_BATCH || single_task_running()) {
+> > +		/*
+> > +		 * preempt_disable/enable is used to prevent
+> > +		 * being preempted by mcryptd_enqueue_request()
+> > +		 */
+> > +		local_bh_disable();
+> > +		preempt_disable();
+> > +		backlog = crypto_get_backlog(&cpu_queue->queue);
+> > +		req = crypto_dequeue_request(&cpu_queue->queue);
+> > +		preempt_enable();
+> > +		local_bh_enable();
+> > +
+> > +		if (!req)
+> > +			return;
+> > +
+> > +		if (backlog)
+> > +			backlog->complete(backlog, -EINPROGRESS);
+> > +		req->complete(req, 0);
+> > +		if (!cpu_queue->queue.qlen)
+> > +			return;
+> > +		++i;
+> > +	}
+> > +	if (cpu_queue->queue.qlen)
+> > +		queue_work(kcrypto_wq, &cpu_queue->work);
+> > +}
+> 
+> Right, so I don't think you need that single_task_running() thing for
+> this. Also its a rather inconclusive test, a task can come in while
+> processing the request, preempt the processing, complete and by the time
+> we're back to check if we want to continue the loop its only us again.
+> 
+> So its actually misleading..
+> 
+> You could do that, but then you have to keep preemption disabled across
+> the entire thing, and break out on need_resched(), that would entirely
+> obviate the need for single_task_running(), but would increase the
+> preemption latency by however long the req processing takes, so that's
+> bad too.
+> 
+> But you can get similar 'fuzzy' semantics as above by using something
+> like:
+> 
+> static inline bool did_context_switch(unsigned long *nivcs)
+> {
+> 	if (*nivcs != current->nivcs) {
+> 		*nivcs = current->nivcs;
+> 		return true;
+> 	}
+> 	return false;
+> }
+> 
+> static void mcryptd_queue_worker()
+> {
+> 	...
+> 	unsigned long nivcs = current->nivcs;
+> 
+> 	...
+> 
+> 	while (!did_context_switch(&nivcs) || i < MCRYPTD_BATCH)
 
-- -- 
-All rights reversed
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+Won't I need something like 
 
-iQEcBAEBAgAGBQJT0oRWAAoJEM553pKExN6DRdoH/2VsMEbeRdr9o99CYV3hK2bj
-OT4O5xlz47aBq+/J3Sp35DZKtQ8PpYICNoNzddyF5Blr7ZcXB2OQj5Cv5Lj3Dtcs
-q/AnJAN+6mDNq4B3aVfTb3BMDcrSz8LNdpNwVM80gfvbcZkcWIYWF2FigShIggMZ
-bKz4cC5hVphtYR/WH6gnb5dXwgXBGYatwYsDXnVw6SLRbXcwYrB646SmZYXDVcER
-bOj5IAjdfAlFkLbeow6OaX1arBrd6lyKfVI4Mzr848dqLBrJvmPvx/R4Z8EzPN2H
-Gv4kqU7s9CAk1QOZLHWAOCDjG7PdMZfkS7WEZnQinMIutBK/jYJ4IXY8NNeS96I=
-=OcR0
------END PGP SIGNATURE-----
+while ((!did_context_switch(&nivcs) && single_task_running()) 
+	|| i < MCRYPTD_BATCH)
+
+in case I got some new task in my run queue but I did not get
+pre-empted?  I should not continue to run in that case.
+
+> 
+> 	...
+> }
+> 
+> It'll terminate earlier I suppose, its the inverse test. But I think you
+> want to terminate early if there's any activity.
+
+I have some doubts here.
+If I'm still the only task running, why not continue, even if I've been
+pre-empted?  Since there's nothing else to run, why not take
+advantage of the cpu?
+
+Thanks.
+
+Tim
+
