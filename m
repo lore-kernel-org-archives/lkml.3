@@ -1,155 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760815AbaGYPAM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 11:00:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3932 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760690AbaGYO4w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 10:56:52 -0400
-From: Jiri Olsa <jolsa@kernel.org>
-To: linux-kernel@vger.kernel.org
-Cc: Jiri Olsa <jolsa@kernel.org>, Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [PATCH 08/19] perf tools: Flush ordered events in case of allocation failure
-Date: Fri, 25 Jul 2014 16:56:06 +0200
-Message-Id: <1406300177-31805-9-git-send-email-jolsa@kernel.org>
-In-Reply-To: <1406300177-31805-1-git-send-email-jolsa@kernel.org>
-References: <1406300177-31805-1-git-send-email-jolsa@kernel.org>
+	id S1760829AbaGYPAh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 11:00:37 -0400
+Received: from mail-by2lp0240.outbound.protection.outlook.com ([207.46.163.240]:37628
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753914AbaGYPAb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jul 2014 11:00:31 -0400
+Date: Fri, 25 Jul 2014 08:00:17 -0700
+From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
+To: Michal Simek <michal.simek@xilinx.com>
+CC: <linux-arm-kernel@lists.infradead.org>,
+        Appana Durga Kedareswara Rao <appanad@xilinx.com>, <monstr@monstr.eu>,
+        Josh Cartwright <josh.cartwright@ni.com>,
+        Steffen Trumtrar <s.trumtrar@pengutronix.de>,
+        Rob Herring <robherring2@gmail.com>,
+        Peter Crosthwaite <peter.crosthwaite@xilinx.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>, <devicetree@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] ARM: zynq: DT: Add CAN node
+References: <56bf20294d106e0fc9c23a70cd991a50b441d0aa.1406271138.git.michal.simek@xilinx.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <56bf20294d106e0fc9c23a70cd991a50b441d0aa.1406271138.git.michal.simek@xilinx.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-RCIS-Action: ALLOW
+Message-ID: <bed4104c-c177-4c6d-bffe-3535b9c0d354@BN1AFFO11FD029.protection.gbl>
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:149.199.60.83;CTRY:US;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(438002)(377424004)(199002)(189002)(51704005)(6806004)(31966008)(85306003)(87936001)(104016003)(107046002)(76482001)(21056001)(50466002)(64706001)(33646002)(83506001)(31696002)(83322001)(47776003)(4396001)(74316001)(85182001)(85202003)(70736001)(92566001)(99396002)(19580395003)(76176999)(46102001)(86362001)(92726001)(106466001)(79102001)(50986999)(54356999)(77982001)(83072002)(44976005)(80022001)(1496007)(74502001)(20776003)(81542001)(74662001)(95666004)(102836001)(53416004)(110136001)(19580405001)(85852003)(23676002)(77096002)(81342001)(107986001)(23106004);DIR:OUT;SFP:;SCL:1;SRVR:BN1AFFO11HUB065;H:xsj-pvapsmtpgw01;FPR:;MLV:sfv;PTR:unknown-60-83.xilinx.com;A:1;MX:1;LANG:en;
+X-OriginatorOrg: xilinx.onmicrosoft.com
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
+X-Forefront-PRVS: 02830F0362
+Authentication-Results: spf=pass (sender IP is 149.199.60.83)
+ smtp.mailfrom=soren.brinkmann@xilinx.com; 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In previous patches we added a limit for ordered events
-queue allocation size. If we reach this size we need to
-flush (part of) the queue to get some free buffers.
+On Fri, 2014-07-25 at 08:52AM +0200, Michal Simek wrote:
+> Add node describing Zynq's CAN controller.
+> 
+> Signed-off-by: Michal Simek <michal.simek@xilinx.com>
+> ---
+> 
+> Changes in v2:
+> - Add can1
+> - Enable can0 for zc702
+> - Use status property
+> 
+>  arch/arm/boot/dts/zynq-7000.dtsi | 26 +++++++++++++++++++++++++-
+>  arch/arm/boot/dts/zynq-zc702.dts |  4 ++++
+>  2 files changed, 29 insertions(+), 1 deletion(-)
+> 
+> diff --git a/arch/arm/boot/dts/zynq-7000.dtsi b/arch/arm/boot/dts/zynq-7000.dtsi
+> index 366ca6434f54..983148111e3a 100644
+> --- a/arch/arm/boot/dts/zynq-7000.dtsi
+> +++ b/arch/arm/boot/dts/zynq-7000.dtsi
+> @@ -71,7 +71,31 @@
+>  			interrupts = <0 7 4>;
+>  			interrupt-parent = <&intc>;
+>  			clocks = <&clkc 12>;
+> -		};
+> +		};
+> +
+> +		can0: can@e0008000 {
+> +			compatible = "xlnx,zynq-can-1.0";
+> +			status = "disabled";
+> +			clocks = <&clkc 19>, <&clkc 36>;
+> +			clock-names = "can_clk", "pclk";
+> +			reg = <0xe0008000 0x1000>;
+> +			interrupts = <0 28 4>;
+> +			interrupt-parent = <&intc>;
+> +			tx-fifo-depth = <0x40>;
+> +			rx-fifo-depth = <0x40>;
+> +		};
+> +
+> +		can1: can@e0009000 {
+> +			compatible = "xlnx,zynq-can-1.0";
+> +			status = "disabled";
+> +			clocks = <&clkc 19>, <&clkc 36>;
+The clocks for CAN1 must be outputs 20 and 37 of the clkc.
 
-The current functionality is not affected, because the
-limit is hard coded to (u64) -1. The configuration code
-for size will come in following patches.
-
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jean Pihet <jean.pihet@linaro.org>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Signed-off-by: Jiri Olsa <jolsa@kernel.org>
----
- tools/perf/builtin-kvm.c  |  2 +-
- tools/perf/util/session.c | 29 +++++++++++++++++++++++++++--
- tools/perf/util/session.h |  3 ++-
- 3 files changed, 30 insertions(+), 4 deletions(-)
-
-diff --git a/tools/perf/builtin-kvm.c b/tools/perf/builtin-kvm.c
-index f8a561643753..f687228850d2 100644
---- a/tools/perf/builtin-kvm.c
-+++ b/tools/perf/builtin-kvm.c
-@@ -732,7 +732,7 @@ static s64 perf_kvm__mmap_read_idx(struct perf_kvm_stat *kvm, int idx,
- 			return -1;
- 		}
- 
--		err = perf_session_queue_event(kvm->session, event, &sample, 0);
-+		err = perf_session_queue_event(kvm->session, event, &kvm->tool, &sample, 0);
- 		/*
- 		 * FIXME: Here we can't consume the event, as perf_session_queue_event will
- 		 *        point to it, and it'll get possibly overwritten by the kernel.
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index ebb87318c073..64c58e6f0923 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -15,6 +15,7 @@
- #include "cpumap.h"
- #include "perf_regs.h"
- #include "vdso.h"
-+#include "asm/bug.h"
- 
- static int perf_session__open(struct perf_session *session)
- {
-@@ -458,6 +459,7 @@ struct ordered_event {
- enum oe_flush {
- 	OE_FLUSH__FINAL,
- 	OE_FLUSH__ROUND,
-+	OE_FLUSH__HALF,
- };
- 
- static void perf_session_free_sample_buffers(struct perf_session *session)
-@@ -639,6 +641,23 @@ static int ordered_events_flush(struct perf_session *s, struct perf_tool *tool,
- 		oe->next_flush = ULLONG_MAX;
- 		break;
- 
-+	case OE_FLUSH__HALF:
-+	{
-+		struct ordered_event *first, *last;
-+		struct list_head *head = &oe->events;
-+
-+		first = list_entry(head->next, struct ordered_event, list);
-+		last = oe->last;
-+
-+		/* Warn if we are called before any event got allocated. */
-+		if (WARN_ONCE(!last || list_empty(head), "empty queue"))
-+			return 0;
-+
-+		oe->next_flush  = first->timestamp;
-+		oe->next_flush += (last->timestamp - first->timestamp) / 2;
-+		break;
-+	}
-+
- 	case OE_FLUSH__ROUND:
- 	default:
- 		break;
-@@ -701,7 +720,8 @@ static int process_finished_round(struct perf_tool *tool,
- }
- 
- int perf_session_queue_event(struct perf_session *s, union perf_event *event,
--				    struct perf_sample *sample, u64 file_offset)
-+			     struct perf_tool *tool, struct perf_sample *sample,
-+			     u64 file_offset)
- {
- 	struct ordered_events *oe = &s->ordered_events;
- 	u64 timestamp = sample->time;
-@@ -716,6 +736,11 @@ int perf_session_queue_event(struct perf_session *s, union perf_event *event,
- 	}
- 
- 	new = ordered_events_new(oe, timestamp);
-+	if (!new) {
-+		ordered_events_flush(s, tool, OE_FLUSH__HALF);
-+		new = ordered_events_new(oe, timestamp);
-+	}
-+
- 	if (!new)
- 		return -ENOMEM;
- 
-@@ -1121,7 +1146,7 @@ static int perf_session__process_event(struct perf_session *session,
- 		return ret;
- 
- 	if (tool->ordered_events) {
--		ret = perf_session_queue_event(session, event, &sample,
-+		ret = perf_session_queue_event(session, event, tool, &sample,
- 					       file_offset);
- 		if (ret != -ETIME)
- 			return ret;
-diff --git a/tools/perf/util/session.h b/tools/perf/util/session.h
-index e2fbaf2567e1..a09e3c8d825a 100644
---- a/tools/perf/util/session.h
-+++ b/tools/perf/util/session.h
-@@ -67,7 +67,8 @@ int perf_session__process_events(struct perf_session *session,
- 				 struct perf_tool *tool);
- 
- int perf_session_queue_event(struct perf_session *s, union perf_event *event,
--			     struct perf_sample *sample, u64 file_offset);
-+			     struct perf_tool *tool, struct perf_sample *sample,
-+			     u64 file_offset);
- 
- void perf_tool__fill_defaults(struct perf_tool *tool);
- 
--- 
-1.8.3.1
+	Sören
 
