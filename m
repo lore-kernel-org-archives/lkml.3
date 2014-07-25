@@ -1,51 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760947AbaGYULh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 16:11:37 -0400
-Received: from mout.gmx.net ([212.227.17.21]:50562 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753010AbaGYULg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 16:11:36 -0400
-Date: Fri, 25 Jul 2014 22:11:26 +0200
-From: Helge Deller <deller@gmx.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-parisc@vger.kernel.org,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        John David Anglin <dave.anglin@bell.net>
-Subject: [GIT PULL] parisc fixes for v3.16
-Message-ID: <20140725201126.GA1381@p100.box>
+	id S934781AbaGYUM6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 16:12:58 -0400
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:50350 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932508AbaGYUM5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jul 2014 16:12:57 -0400
+Message-ID: <53D2BA45.8030502@amacapital.net>
+Date: Fri, 25 Jul 2014 13:12:53 -0700
+From: Andy Lutomirski <luto@amacapital.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V03:K0:M8IYG4NJK8J9rl8XLMx5ogkTVOnEV8aP7VEQtTlQxSJNKnzKTNj
- q4OOhQnAtf3v/MHvIOdE8I72N9TbTxjc3XSGT71zvRIXx6eAVWkVqc+D0Kv7LPGP8nHZg+1
- BzqIrEG6AGMaPO2UGGvWu2EseNUta33h5vyn/CedN87Ue+4f0/ow61Ka+YLgcGh3SXHmU4P
- Z746TTVfU4bLi/ta+mNpg==
+To: Sergey Oboguev <oboguev.public@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RFC] sched: deferred set priority (dprio)
+References: <CA+80gGYVjprinWEJWbVq4VxjOLjQri8EvGAJ+sx+ihcOxdstCA@mail.gmail.com>
+In-Reply-To: <CA+80gGYVjprinWEJWbVq4VxjOLjQri8EvGAJ+sx+ihcOxdstCA@mail.gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On 07/25/2014 12:45 PM, Sergey Oboguev wrote:
+> [This is a repost of the message from few day ago, with patch file
+> inline instead of being pointed by the URL.]
+> 
+> This patch is intended to improve the support for fine-grain parallel
+> applications that may sometimes need to change the priority of their threads at
+> a very high rate, hundreds or even thousands of times per scheduling timeslice.
 
-please pull the latest parisc architecture fixes for kernel 3.16 from 
-  git://git.kernel.org/pub/scm/linux/kernel/git/deller/parisc-linux.git parisc-3.16-6
+What is the authlist stuff for?  It looks complicated and it seems like
+it should be unnecessary.
 
-We have two trivial patches in here. One removes the SA_RESTORER #define since
-on parisc we don't have the sa_restorer field in struct sigaction, the other
-patch removes an unnecessary memset(). The SA_RESTORER removal patch is
-scheduled for stable trees, since without it some userspace apps don't build.
- 
-Thanks,
-Helge
+What's with the save/restore code?  What's it saving and restoring?
 
-----------------------------------------------------------------
-HIMANGI SARAOGI (1):
-      parisc: Eliminate memset after alloc_bootmem_pages
-
-John David Anglin (1):
-      parisc: Remove SA_RESTORER define
-
- arch/parisc/include/uapi/asm/signal.h | 2 --
- arch/parisc/mm/init.c                 | 1 -
- 2 files changed, 3 deletions(-)
+--Andy
