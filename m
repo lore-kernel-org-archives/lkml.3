@@ -1,86 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760174AbaGYJI6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 05:08:58 -0400
-Received: from mail.mev.co.uk ([62.49.15.74]:41152 "EHLO mail.mev.co.uk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760009AbaGYJFT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 05:05:19 -0400
-From: Ian Abbott <abbotti@mev.co.uk>
-To: driverdev-devel@linuxdriverproject.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ian Abbott <abbotti@mev.co.uk>,
-        H Hartley Sweeten <hartleys@visionengravers.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 06/12] staging: comedi: amplc_pc236: absorb pc236_pci_common_attach()
-Date: Fri, 25 Jul 2014 10:04:52 +0100
-Message-Id: <1406279098-8498-7-git-send-email-abbotti@mev.co.uk>
-X-Mailer: git-send-email 2.0.0
-In-Reply-To: <1406279098-8498-1-git-send-email-abbotti@mev.co.uk>
-References: <1406279098-8498-1-git-send-email-abbotti@mev.co.uk>
+	id S1760189AbaGYJJG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 05:09:06 -0400
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:61470 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760009AbaGYJJC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jul 2014 05:09:02 -0400
+From: pramod.gurav.etc@gmail.com
+X-Google-Original-From: pramod.gurav@smartplayin.com
+To: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Pramod Gurav <pramod.gurav@smartplayin.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Lejun Zhu <lejun.zhu@linux.intel.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>
+Subject: [PATCH v2] Input: soc_button_array: Remove kfree on data allocated with devm_zalloc
+Date: Fri, 25 Jul 2014 14:42:37 +0530
+Message-Id: <1406279557-26754-1-git-send-email-pramod.gurav@smartplayin.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Absorb `pc236_pci_common_attach()` into `pc236_auto_attach()` since
-that's the only place it is called from.
+From: Pramod Gurav <pramod.gurav@smartplayin.com>
 
-Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
+This patch does below:
+- Removes kfree done on data allocated with devm_zalloc in probe
+  path of the driver.
+- Adds a check on return value from devm_kzalloc which was missing
+- Removes the error lables and instead releases resources and returns
+  after failures
+
+CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: Lejun Zhu <lejun.zhu@linux.intel.com>
+CC: Sachin Kamat <sachin.kamat@linaro.org>
+
+Signed-off-by: Pramod Gurav <pramod.gurav@smartplayin.com>
 ---
- drivers/staging/comedi/drivers/amplc_pc236.c | 26 +++++++++-----------------
- 1 file changed, 9 insertions(+), 17 deletions(-)
 
-diff --git a/drivers/staging/comedi/drivers/amplc_pc236.c b/drivers/staging/comedi/drivers/amplc_pc236.c
-index f99c7f1..22d3b6f 100644
---- a/drivers/staging/comedi/drivers/amplc_pc236.c
-+++ b/drivers/staging/comedi/drivers/amplc_pc236.c
-@@ -351,22 +351,6 @@ static int pc236_common_attach(struct comedi_device *dev, unsigned long iobase,
- 	return 0;
- }
- 
--static int pc236_pci_common_attach(struct comedi_device *dev,
--				   struct pci_dev *pci_dev)
--{
--	struct pc236_private *devpriv = dev->private;
--	unsigned long iobase;
--	int ret;
--
--	ret = comedi_pci_enable(dev);
--	if (ret)
--		return ret;
--
--	devpriv->lcr_iobase = pci_resource_start(pci_dev, 1);
--	iobase = pci_resource_start(pci_dev, 2);
--	return pc236_common_attach(dev, iobase, pci_dev->irq, IRQF_SHARED);
--}
--
- static int pc236_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- {
- 	const struct pc236_board *thisboard = comedi_board(dev);
-@@ -400,6 +384,8 @@ static int pc236_auto_attach(struct comedi_device *dev,
- {
- 	struct pci_dev *pci_dev = comedi_to_pci_dev(dev);
- 	struct pc236_private *devpriv;
-+	unsigned long iobase;
-+	int ret;
- 
- 	if (!DO_PCI)
- 		return -EINVAL;
-@@ -415,7 +401,13 @@ static int pc236_auto_attach(struct comedi_device *dev,
- 		dev_err(dev->class_dev, "BUG! cannot determine board type!\n");
- 		return -EINVAL;
- 	}
--	return pc236_pci_common_attach(dev, pci_dev);
-+	ret = comedi_pci_enable(dev);
-+	if (ret)
-+		return ret;
+Changes since v1:
+- Removes de_err logs on OOM cases which is not needed.
+
+ drivers/input/misc/soc_button_array.c |   27 +++++++++++++++------------
+ 1 file changed, 15 insertions(+), 12 deletions(-)
+
+diff --git a/drivers/input/misc/soc_button_array.c b/drivers/input/misc/soc_button_array.c
+index 5a6334b..f421cf4 100644
+--- a/drivers/input/misc/soc_button_array.c
++++ b/drivers/input/misc/soc_button_array.c
+@@ -83,6 +83,11 @@ soc_button_device_create(struct pnp_dev *pdev,
+ 				       sizeof(*gpio_keys_pdata) +
+ 					sizeof(*gpio_keys) * MAX_NBUTTONS,
+ 				       GFP_KERNEL);
++	if (!gpio_keys_pdata) {
++		error = -ENOMEM;
++		return ERR_PTR(error);
++	}
 +
-+	devpriv->lcr_iobase = pci_resource_start(pci_dev, 1);
-+	iobase = pci_resource_start(pci_dev, 2);
-+	return pc236_common_attach(dev, iobase, pci_dev->irq, IRQF_SHARED);
+ 	gpio_keys = (void *)(gpio_keys_pdata + 1);
+ 
+ 	for (info = button_info; info->name; info++) {
+@@ -104,7 +109,7 @@ soc_button_device_create(struct pnp_dev *pdev,
+ 
+ 	if (n_buttons == 0) {
+ 		error = -ENODEV;
+-		goto err_free_mem;
++		return ERR_PTR(error);
+ 	}
+ 
+ 	gpio_keys_pdata->buttons = gpio_keys;
+@@ -114,25 +119,23 @@ soc_button_device_create(struct pnp_dev *pdev,
+ 	pd = platform_device_alloc("gpio-keys", PLATFORM_DEVID_AUTO);
+ 	if (!pd) {
+ 		error = -ENOMEM;
+-		goto err_free_mem;
++		return ERR_PTR(error);
+ 	}
+ 
+ 	error = platform_device_add_data(pd, gpio_keys_pdata,
+ 					 sizeof(*gpio_keys_pdata));
+-	if (error)
+-		goto err_free_pdev;
++	if (error) {
++		platform_device_put(pd);
++		return ERR_PTR(error);
++	}
+ 
+ 	error = platform_device_add(pd);
+-	if (error)
+-		goto err_free_pdev;
++	if (error) {
++		platform_device_put(pd);
++		return ERR_PTR(error);
++	}
+ 
+ 	return pd;
+-
+-err_free_pdev:
+-	platform_device_put(pd);
+-err_free_mem:
+-	devm_kfree(&pdev->dev, gpio_keys_pdata);
+-	return ERR_PTR(error);
  }
  
- static void pc236_detach(struct comedi_device *dev)
+ static void soc_button_remove(struct pnp_dev *pdev)
 -- 
-2.0.0
+1.7.9.5
 
