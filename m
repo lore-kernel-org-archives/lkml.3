@@ -1,87 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752607AbaGYWNl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 18:13:41 -0400
-Received: from si-002-i51.relay.mailchannels.net ([184.154.112.225]:10920 "EHLO
-	relay.mailchannels.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751953AbaGYWNk (ORCPT
+	id S1761048AbaGYWPP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 18:15:15 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:44779 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752059AbaGYWPM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 18:13:40 -0400
-X-Sender-Id: arvixe|x-authuser|przemo@firszt.eu
-X-Sender-Id: arvixe|x-authuser|przemo@firszt.eu
-X-MC-Relay: Good
-X-MailChannels-SenderId: arvixe|x-authuser|przemo@firszt.eu
-X-MailChannels-Auth-Id: arvixe
-Message-ID: <1406326412.4674.22.camel@fedora-lan>
-Subject: Re: [PATCH v2 00/10] Input - wacom: conversion to HID driver,
- series 2
-From: Przemo Firszt <przemo@firszt.eu>
-To: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
-        Ping Cheng <pinglinux@gmail.com>, Jason Gerecke <killertofu@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
-Date: Fri, 25 Jul 2014 23:13:32 +0100
-In-Reply-To: <1406225645-32141-1-git-send-email-benjamin.tissoires@redhat.com>
-References: <1406225645-32141-1-git-send-email-benjamin.tissoires@redhat.com>
+	Fri, 25 Jul 2014 18:15:12 -0400
+X-Sasl-enc: AHA3Gi02cwpdLHRxxc0n4FGuHsEki1+gerF7pwb54S+a 1406326510
+Message-ID: <1406326508.13203.10.camel@localhost>
+Subject: Re: net: socket: NULL ptr deref in sendmsg
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+To: Andrey Ryabinin <a.ryabinin@samsung.com>
+Cc: Sasha Levin <sasha.levin@oracle.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>,
+        Eric Dumazet <edumazet@google.com>
+Date: Sat, 26 Jul 2014 00:15:08 +0200
+In-Reply-To: <53D2768E.2040902@samsung.com>
+References: <53C2FF3D.4030201@oracle.com> <53D2768E.2040902@samsung.com>
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-AuthUser: przemo@firszt.eu
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dnia 2014-07-24, czw o godzinie 14:13 -0400, Benjamin Tissoires pisze:
-[..]
-Hi Benjamin,
-I'm testing the whole series including the OLED patch that's not on the
-list yet.
+On Fr, 2014-07-25 at 19:23 +0400, Andrey Ryabinin wrote:
+> On 07/14/14 01:50, Sasha Levin wrote:
+> 
+> > 
+> > I've tried debugging it, but I don't see a code path that could lead to that.
+> > 
+> 
+> I finally found some time to take look at this and I've found where the problem is.
+> 
+> Sasha, I suppose there was no usual "Unable to handle NULL pointer deference" after KASAN's report, right?
+> 
+> This gave me a clue that address 0 is actually mapped and contains valid socket address structure in it.
+> I've managed to write a simple code (in attachment), which could easily reproduce this bug.
+> 
+> I've fixed it with the following patch, please take a look.
+> 
+> 
+> From: Andrey Ryabinin <a.ryabinin@samsung.com>
+> Subject: [PATCH] net: sendmsg: fix NULL pointer dereference
+> 
+> Sasha's report:
+> 	> While fuzzing with trinity inside a KVM tools guest running the latest -next
+> 	> kernel with the KASAN patchset, I've stumbled on the following spew:
+> 	>
+> 	> [ 4448.949424] ==================================================================
+> 	> [ 4448.951737] AddressSanitizer: user-memory-access on address 0
+> 	> [ 4448.952988] Read of size 2 by thread T19638:
+> 	> [ 4448.954510] CPU: 28 PID: 19638 Comm: trinity-c76 Not tainted 3.16.0-rc4-next-20140711-sasha-00046-g07d3099-dirty #813
+> 	> [ 4448.956823]  ffff88046d86ca40 0000000000000000 ffff880082f37e78 ffff880082f37a40
+> 	> [ 4448.958233]  ffffffffb6e47068 ffff880082f37a68 ffff880082f37a58 ffffffffb242708d
+> 	> [ 4448.959552]  0000000000000000 ffff880082f37a88 ffffffffb24255b1 0000000000000000
+> 	> [ 4448.961266] Call Trace:
+> 	> [ 4448.963158] dump_stack (lib/dump_stack.c:52)
+> 	> [ 4448.964244] kasan_report_user_access (mm/kasan/report.c:184)
+> 	> [ 4448.965507] __asan_load2 (mm/kasan/kasan.c:352)
+> 	> [ 4448.966482] ? netlink_sendmsg (net/netlink/af_netlink.c:2339)
+> 	> [ 4448.967541] netlink_sendmsg (net/netlink/af_netlink.c:2339)
+> 	> [ 4448.968537] ? get_parent_ip (kernel/sched/core.c:2555)
+> 	> [ 4448.970103] sock_sendmsg (net/socket.c:654)
+> 	> [ 4448.971584] ? might_fault (mm/memory.c:3741)
+> 	> [ 4448.972526] ? might_fault (./arch/x86/include/asm/current.h:14 mm/memory.c:3740)
+> 	> [ 4448.973596] ? verify_iovec (net/core/iovec.c:64)
+> 	> [ 4448.974522] ___sys_sendmsg (net/socket.c:2096)
+> 	> [ 4448.975797] ? put_lock_stats.isra.13 (./arch/x86/include/asm/preempt.h:98 kernel/locking/lockdep.c:254)
+> 	> [ 4448.977030] ? lock_release_holdtime (kernel/locking/lockdep.c:273)
+> 	> [ 4448.978197] ? lock_release_non_nested (kernel/locking/lockdep.c:3434 (discriminator 1))
+> 	> [ 4448.979346] ? check_chain_key (kernel/locking/lockdep.c:2188)
+> 	> [ 4448.980535] __sys_sendmmsg (net/socket.c:2181)
+> 	> [ 4448.981592] ? trace_hardirqs_on_caller (kernel/locking/lockdep.c:2600)
+> 	> [ 4448.982773] ? trace_hardirqs_on (kernel/locking/lockdep.c:2607)
+> 	> [ 4448.984458] ? syscall_trace_enter (arch/x86/kernel/ptrace.c:1500 (discriminator 2))
+> 	> [ 4448.985621] ? trace_hardirqs_on_caller (kernel/locking/lockdep.c:2600)
+> 	> [ 4448.986754] SyS_sendmmsg (net/socket.c:2201)
+> 	> [ 4448.987708] tracesys (arch/x86/kernel/entry_64.S:542)
+> 	> [ 4448.988929] ==================================================================
+> 
+> This reports means that we've come to netlink_sendmsg() with msg->msg_name == NULL and msg->msg_namelen > 0.
+> 
+> After this report there was no usual "Unable to handle kernel NULL pointer dereference"
+> and this gave me a clue that address 0 is mapped and contains valid socket address structure in it.
+> 
+> This bug was introduced in f3d3342602f8bcbf37d7c46641cb9bca7618eb1c
+> (net: rework recvmsg handler msg_name and msg_namelen logic).
+> Commit message states that:
+> 	"Set msg->msg_name = NULL if user specified a NULL in msg_name but had a
+> 	 non-null msg_namelen in verify_iovec/verify_compat_iovec. This doesn't
+> 	 affect sendto as it would bail out earlier while trying to copy-in the
+> 	 address."
+> But in fact this affects sendto when address 0 is mapped and contains
+> socket address structure in it. In such case copy-in address will succeed,
+> verify_iovec() function will successfully exit with msg->msg_namelen > 0
+> and msg->msg_name == NULL.
+> 
+> This patch fixes it by assigning m->msg_name to address if move_addr_to_kernel()
+> was successful.
+> 
+> Cc: Hannes Frederic Sowa <hannes@stressinduktion.org>
+> Cc: Eric Dumazet <edumazet@google.com>
+> Cc: <stable@vger.kernel.org>
+> Reported-by: Sasha Levin <sasha.levin@oracle.com>
+> Signed-off-by: Andrey Ryabinin <a.ryabinin@samsung.com>
+> ---
+>  net/compat.c     | 6 ++++--
+>  net/core/iovec.c | 6 ++++--
+>  2 files changed, 8 insertions(+), 4 deletions(-)
+> 
+> diff --git a/net/compat.c b/net/compat.c
+> index 9a76eaf..eefd989 100644
+> --- a/net/compat.c
+> +++ b/net/compat.c
+> @@ -92,9 +92,11 @@ int verify_compat_iovec(struct msghdr *kern_msg, struct iovec *kern_iov,
+>  						      kern_address);
+>  			if (err < 0)
+>  				return err;
+> -		}
+> -		if (kern_msg->msg_name)
+> +
+>  			kern_msg->msg_name = kern_address;
+> +		} else
+> +			if (kern_msg->msg_name)
+> +				kern_msg->msg_name = kern_address;
+>  	} else
+>  		kern_msg->msg_name = NULL;
+> 
 
-Hardware: 2 x Intuos4 Wireless tested on usb and bluetooth until noted
-otherwise.
+Thanks for looking at this! I certainly have overlooked this case.
 
-What works:
-1. Tablet in general, pressure, tilt, buttons etc.
-2. Battery reporting (including gnome). The double wireless tablet bug
-is gone:
+I wonder, if we allow sendto with valid NULL pointer and positive
+msg_namelen to work, why don't we do the same for recvmsg, as in
+replacing the VERIFY_WRITE case non-null check with an
+access_ok(VERIFY_WRITE, ...) check? We can even get rid of the check
+because recvmsg will do it nonetheless when copying the sockaddrs to
+user space. So kern_msg->msg_name can always be set to kern_address.
 
-$ ls /sys/class/power_supply/
-AC  BAT0  wacom_ac_2  wacom_ac_3  wacom_battery_2  wacom_battery_3
+Otherwise I would just set msg_namelen = 0, too, and just not handle
+passed in NULL pointers to sockaddrs.
 
-3. Setting LED selector value
-4. Setting LED selector brightness (default and pressed)
-5. Rendering images to button displays works on usb ONLY.
-
-$ i4oled -d /sys/bus/hid/drivers/wacom/0003\:056A\:00BC.0009/wacom_led/button0_rawimg -t Linux
-
-On bluetooth writing image goes fine (no error), but there is nothing showing up,
-so I suspect the brightness of OLED displays is not set properly.
-
-That's the code before changes:
-
-        led = wdata->led_selector | 0x04;
-        buf = kzalloc(9, GFP_KERNEL);
-        if (buf) {
-                buf[0] = WAC_CMD_LED_CONTROL;
-                buf[1] = led;
-                buf[2] = value >> 2;
-                buf[3] = value;
-                /* use fixed brightness for OLEDs */
-                buf[4] = 0x08;
-                hid_hw_raw_request(hdev, buf[0], buf, 9, HID_FEATURE_REPORT,
-                                   HID_REQ_SET_REPORT);
-                kfree(buf);
-        }
-
-I don't remember for sure, but I think the range of brightness might be different
-over usb and over bluetooth.
-
-TL;DR: the only thing that needs to be fixed is image-over-bluetooth, probably caused by not
-setting or incorrect setting of OLED brightness. 
-
--- 
-Kind regards,
-Przemo Firszt
+Thanks,
+Hannes
 
 
