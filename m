@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760716AbaGYO4y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 10:56:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56027 "EHLO mx1.redhat.com"
+	id S1760698AbaGYO4w (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 10:56:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59489 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760602AbaGYO4u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753225AbaGYO4u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 25 Jul 2014 10:56:50 -0400
 From: Jiri Olsa <jolsa@kernel.org>
 To: linux-kernel@vger.kernel.org
@@ -15,20 +15,17 @@ Cc: Jiri Olsa <jolsa@kernel.org>, Arnaldo Carvalho de Melo <acme@kernel.org>,
         Ingo Molnar <mingo@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
         Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [PATCH 07/19] perf tools: Limit ordered events queue size
-Date: Fri, 25 Jul 2014 16:56:05 +0200
-Message-Id: <1406300177-31805-8-git-send-email-jolsa@kernel.org>
+Subject: [PATCH 06/19] perf tools: Factor ordered_events_flush to be more generic
+Date: Fri, 25 Jul 2014 16:56:04 +0200
+Message-Id: <1406300177-31805-7-git-send-email-jolsa@kernel.org>
 In-Reply-To: <1406300177-31805-1-git-send-email-jolsa@kernel.org>
 References: <1406300177-31805-1-git-send-email-jolsa@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add limit to the ordered events queue allocation. This way
-we will be able to control the size of the queue buffers.
-
-There's no limit at the moment (it's set to (u64) -1). The config
-code will come in following patches.
+Centralizing the next_flush calculation under the
+ordered_events_flush function.
 
 Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
 Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
@@ -41,62 +38,102 @@ Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Signed-off-by: Jiri Olsa <jolsa@kernel.org>
 ---
- tools/perf/util/session.c | 12 +++++++++---
- tools/perf/util/session.h |  2 ++
- 2 files changed, 11 insertions(+), 3 deletions(-)
+ tools/perf/util/session.c | 47 ++++++++++++++++++++++++++++++++++++-----------
+ 1 file changed, 36 insertions(+), 11 deletions(-)
 
 diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index f94ec7e55749..ebb87318c073 100644
+index 12b72bc90125..f94ec7e55749 100644
 --- a/tools/perf/util/session.c
 +++ b/tools/perf/util/session.c
-@@ -79,6 +79,8 @@ struct perf_session *perf_session__new(struct perf_data_file *file,
- 	INIT_LIST_HEAD(&session->ordered_events.events);
- 	INIT_LIST_HEAD(&session->ordered_events.cache);
- 	INIT_LIST_HEAD(&session->ordered_events.to_free);
-+	session->ordered_events.max_alloc_size = (u64) -1;
-+	session->ordered_events.cur_alloc_size = 0;
- 	machines__init(&session->machines);
+@@ -453,6 +453,11 @@ struct ordered_event {
+ 	struct list_head	list;
+ };
  
- 	if (file) {
-@@ -520,7 +522,7 @@ static void queue_event(struct ordered_events *oe, struct ordered_event *new)
- static struct ordered_event *alloc_event(struct ordered_events *oe)
++enum oe_flush {
++	OE_FLUSH__FINAL,
++	OE_FLUSH__ROUND,
++};
++
+ static void perf_session_free_sample_buffers(struct perf_session *session)
  {
- 	struct list_head *cache = &oe->cache;
--	struct ordered_event *new;
-+	struct ordered_event *new = NULL;
+ 	struct ordered_events *oe = &session->ordered_events;
+@@ -566,8 +571,8 @@ static int perf_session_deliver_event(struct perf_session *session,
+ 				      struct perf_tool *tool,
+ 				      u64 file_offset);
  
- 	if (!list_empty(cache)) {
- 		new = list_entry(cache->next, struct ordered_event, list);
-@@ -529,10 +531,14 @@ static struct ordered_event *alloc_event(struct ordered_events *oe)
- 		new = oe->buffer + oe->buffer_idx;
- 		if (++oe->buffer_idx == MAX_SAMPLE_BUFFER)
- 			oe->buffer = NULL;
--	} else {
--		oe->buffer = malloc(MAX_SAMPLE_BUFFER * sizeof(*new));
-+	} else if (oe->cur_alloc_size < oe->max_alloc_size) {
-+		size_t size = MAX_SAMPLE_BUFFER * sizeof(*new);
-+
-+		oe->buffer = malloc(size);
- 		if (!oe->buffer)
- 			return NULL;
-+
-+		oe->cur_alloc_size += size;
- 		list_add(&oe->buffer->list, &oe->to_free);
+-static int ordered_events_flush(struct perf_session *s,
+-		       struct perf_tool *tool)
++static int __ordered_events_flush(struct perf_session *s,
++				  struct perf_tool *tool)
+ {
+ 	struct ordered_events *oe = &s->ordered_events;
+ 	struct list_head *head = &oe->events;
+@@ -617,6 +622,32 @@ static int ordered_events_flush(struct perf_session *s,
+ 	return 0;
+ }
  
- 		/* First entry is abused to maintain the to_free list. */
-diff --git a/tools/perf/util/session.h b/tools/perf/util/session.h
-index 419eb50e1cd3..e2fbaf2567e1 100644
---- a/tools/perf/util/session.h
-+++ b/tools/perf/util/session.h
-@@ -20,6 +20,8 @@ struct ordered_events {
- 	u64			last_flush;
- 	u64			next_flush;
- 	u64			max_timestamp;
-+	u64			max_alloc_size;
-+	u64			cur_alloc_size;
- 	struct list_head	events;
- 	struct list_head	cache;
- 	struct list_head	to_free;
++static int ordered_events_flush(struct perf_session *s, struct perf_tool *tool,
++				enum oe_flush how)
++{
++	struct ordered_events *oe = &s->ordered_events;
++	int err;
++
++	switch (how) {
++	case OE_FLUSH__FINAL:
++		oe->next_flush = ULLONG_MAX;
++		break;
++
++	case OE_FLUSH__ROUND:
++	default:
++		break;
++	};
++
++	err = __ordered_events_flush(s, tool);
++
++	if (!err) {
++		if (how == OE_FLUSH__ROUND)
++			oe->next_flush = oe->max_timestamp;
++	}
++
++	return err;
++}
++
+ /*
+  * When perf record finishes a pass on every buffers, it records this pseudo
+  * event.
+@@ -660,11 +691,7 @@ static int process_finished_round(struct perf_tool *tool,
+ 				  union perf_event *event __maybe_unused,
+ 				  struct perf_session *session)
+ {
+-	int ret = ordered_events_flush(session, tool);
+-	if (!ret)
+-		session->ordered_events.next_flush = session->ordered_events.max_timestamp;
+-
+-	return ret;
++	return ordered_events_flush(session, tool, OE_FLUSH__ROUND);
+ }
+ 
+ int perf_session_queue_event(struct perf_session *s, union perf_event *event,
+@@ -1247,8 +1274,7 @@ more:
+ 		goto more;
+ done:
+ 	/* do the final flush for ordered samples */
+-	session->ordered_events.next_flush = ULLONG_MAX;
+-	err = ordered_events_flush(session, tool);
++	err = ordered_events_flush(session, tool, OE_FLUSH__FINAL);
+ out_err:
+ 	free(buf);
+ 	perf_session__warn_about_errors(session, tool);
+@@ -1389,8 +1415,7 @@ more:
+ 
+ out:
+ 	/* do the final flush for ordered samples */
+-	session->ordered_events.next_flush = ULLONG_MAX;
+-	err = ordered_events_flush(session, tool);
++	err = ordered_events_flush(session, tool, OE_FLUSH__FINAL);
+ out_err:
+ 	ui_progress__finish();
+ 	perf_session__warn_about_errors(session, tool);
 -- 
 1.8.3.1
 
