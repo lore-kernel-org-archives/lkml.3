@@ -1,101 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760023AbaGYKYM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 06:24:12 -0400
-Received: from lgeamrelo04.lge.com ([156.147.1.127]:63458 "EHLO
-	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759874AbaGYKYK (ORCPT
+	id S1760021AbaGYK3I (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 06:29:08 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:54274 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751422AbaGYK3G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 06:24:10 -0400
-X-Original-SENDERIP: 10.177.220.181
-X-Original-MAILFROM: namhyung@gmail.com
-From: Namhyung Kim <namhyung@kernel.org>
-To: Thomas Ilsche <thomas.ilsche@tu-dresden.de>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>
-Subject: Re: [PATCH 2/2] perf tools: Default to python version 2
-References: <53D135F9.1070104@tu-dresden.de>
-	<1406258045-25726-1-git-send-email-namhyung@kernel.org>
-	<1406258045-25726-2-git-send-email-namhyung@kernel.org>
-	<53D22357.9010005@tu-dresden.de>
-Date: Fri, 25 Jul 2014 19:24:08 +0900
-In-Reply-To: <53D22357.9010005@tu-dresden.de> (Thomas Ilsche's message of
-	"Fri, 25 Jul 2014 11:28:55 +0200")
-Message-ID: <87wqb1ivnb.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+	Fri, 25 Jul 2014 06:29:06 -0400
+From: Michael Olbrich <m.olbrich@pengutronix.de>
+To: Thierry Reding <thierry.reding@gmail.com>, Bryan Wu <cooloney@gmail.com>,
+        Lee Jones <lee.jones@linaro.org>,
+        Alexandre Courbot <acourbot@nvidia.com>
+Cc: linux-pwm@vger.kernel.org, linux-fbdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel@pengutronix.de,
+        Michael Olbrich <m.olbrich@pengutronix.de>
+Subject: [PATCH] pwm-backlight: fix probing from device-tree without enable-gpios
+Date: Fri, 25 Jul 2014 12:28:35 +0200
+Message-Id: <1406284115-489-1-git-send-email-m.olbrich@pengutronix.de>
+X-Mailer: git-send-email 2.0.1
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:a236:9fff:fe00:814
+X-SA-Exim-Mail-From: mol@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Thomas,
+Since 257462dbf3ed ("pwm-backlight: switch to gpiod interface")
+enable_gpio is no longer set and remains 0 when probing from
+device-tree. This is a valid gpio number. With no enable-gpios
+specified in the device-tree this is used and probing fails
+with:
 
-On Fri, 25 Jul 2014 11:28:55 +0200, Thomas Ilsche wrote:
-> Hi Kim,
->
-> On 2014-07-25 05:14, Namhyung Kim wrote:
->> According to PEP 394 recommendation [1], it's more portable to use
->> python2 rather than plain python to refer python binary version 2.
->
-> I tried to find out how backwards-compatible this is. python2(-config)
-> was first available in Python 2.7.3 (April 2012), but it is still not
-> available in 2.6.9 (Oct. 2013). So it might be better to use python2
-> as default but fall back to python if python2 is not available.
->
-> Best,
-> Thomas
->
-> Signed-off-by: Thomas Ilsche <thomas.ilsche@tu-dresden.de>
-> ---
-> diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-> index f4f7f58..1b1bc9c 100644
-> --- a/tools/perf/config/Makefile
-> +++ b/tools/perf/config/Makefile
-> @@ -117,8 +117,8 @@ ifdef PARSER_DEBUG
->  endif
->
->  ifndef NO_LIBPYTHON
-> -  override PYTHON := \
-> -    $(call get-executable-or-default,PYTHON,python)
-> +  PYTHON2 := $(call get-executable-or-default,PYTHON,python2)
+pwm-backlight lcd-backlight.3: failed to request GPIO#0: -16
 
-But wouldn't it set PYTHON2 to python2 even if the system doesn't have
-python2 actually?
+Fix this by setting enable_gpio to -1 which is not a valid gpio
+number.
 
+Signed-off-by: Michael Olbrich <m.olbrich@pengutronix.de>
+---
+ drivers/video/backlight/pwm_bl.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-> +  override PYTHON := $(if $(PYTHON2),$(PYTHON2),$(call get-executable,python))
-
-And then it'll set PYTHON to python2, no?
-
-
->    override PYTHON_CONFIG := \
->      $(call get-executable-or-default,PYTHON_CONFIG,$(PYTHON)-config)
-
-
-I'm thinking about something like below.. but sadly it doesn't work for
-me.. hmm.
-
-Thanks,
-Namhyung
-
-
-
-diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-index 0f4b7fbc4852..60177278a357 100644
---- a/tools/perf/config/Makefile
-+++ b/tools/perf/config/Makefile
-@@ -121,8 +121,8 @@ ifdef PARSER_DEBUG
- endif
+diff --git a/drivers/video/backlight/pwm_bl.c b/drivers/video/backlight/pwm_bl.c
+index 38ca88b..5213d13 100644
+--- a/drivers/video/backlight/pwm_bl.c
++++ b/drivers/video/backlight/pwm_bl.c
+@@ -211,6 +211,7 @@ static int pwm_backlight_probe(struct platform_device *pdev)
+ 			dev_err(&pdev->dev, "failed to find platform data\n");
+ 			return ret;
+ 		}
++		devdata.enable_gpio = -1;
  
- ifndef NO_LIBPYTHON
--  override PYTHON := \
--    $(call get-executable-or-default,PYTHON,python2)
-+  PYTHON2 := $(if $(call get-executable,python2),python2,python)
-+  override PYTHON := $(call get-executable-or-default,PYTHON,$(PYTHON2))
-   override PYTHON_CONFIG := \
-     $(call get-executable-or-default,PYTHON_CONFIG,$(PYTHON)-config)
- 
+ 		data = &defdata;
+ 	}
+-- 
+2.0.1
+
