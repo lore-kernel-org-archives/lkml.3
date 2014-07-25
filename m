@@ -1,95 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760421AbaGYNgY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 09:36:24 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:57795 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760365AbaGYNgV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 09:36:21 -0400
-X-AuditID: cbfee61a-f79e46d00000134f-2c-53d25d537494
-From: Robert Baldyga <r.baldyga@samsung.com>
-To: balbi@ti.com
-Cc: gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, mina86@mina86.com,
-        m.szyprowski@samsung.com, andrzej.p@samsung.com,
-        Robert Baldyga <r.baldyga@samsung.com>
-Subject: [PATCH v2 2/3] usb: gadget: f_fs: add ioctl returning ep descriptor
-Date: Fri, 25 Jul 2014 15:36:02 +0200
-Message-id: <1406295363-26998-3-git-send-email-r.baldyga@samsung.com>
-X-Mailer: git-send-email 1.9.1
-In-reply-to: <1406295363-26998-1-git-send-email-r.baldyga@samsung.com>
-References: <1406295363-26998-1-git-send-email-r.baldyga@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprOLMWRmVeSWpSXmKPExsVy+t9jQd3g2EvBBpdbhSxmvWxnsTh4v96i
-	efF6NovLu+awWSxa1spssfbIXXaLBcdbWC0eHN7J7sDhsX/uGnaPdX9eMXn0bVnF6HH8xnYm
-	j8+b5AJYo7hsUlJzMstSi/TtErgylt3/z1JwlrfiyNe/rA2MjdxdjJwcEgImEvvX7WeBsMUk
-	Ltxbz9bFyMUhJDCdUWLes6nsEE47k8SLha1gVWwCOhJbvk9gBLFFBAQk1r+4BFbELHCcUWLm
-	py9MXYwcHMICPhJTGsVAalgEVCVWrvrNCmLzCrhKTFs+jRFim5zEyWOTweKcAm4SDet2g7UK
-	AdV0nbabwMi7gJFhFaNoakFyQXFSeq6hXnFibnFpXrpecn7uJkZwcD2T2sG4ssHiEKMAB6MS
-	D29H/cVgIdbEsuLK3EOMEhzMSiK8tVGXgoV4UxIrq1KL8uOLSnNSiw8xSnOwKInzHmi1DhQS
-	SE8sSc1OTS1ILYLJMnFwSjUwzpTvOONb/Gi+t81drucmKs51rpeS47XdNDZ/9JmfzaC419He
-	Z0q51IuiqhXlBZ/eZe/4xp3/PuZj5KQFHO9fca9eEcYR8Z6jc7FbUcOd5J4VfGs+flJhzLFI
-	/xl08UjpvK3OD63NT59Z0i+lomz5e9anmonMGnvzWQys6rd6Lrdmj+vIVfBUYinOSDTUYi4q
-	TgQA9AQMQCoCAAA=
+	id S1760318AbaGYNei (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 09:34:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22245 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752295AbaGYNeh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jul 2014 09:34:37 -0400
+Message-ID: <53D25CC4.1010306@redhat.com>
+Date: Fri, 25 Jul 2014 09:33:56 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Vincent Guittot <vincent.guittot@linaro.org>
+CC: linux-kernel <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Michael Neuling <mikey@neuling.org>, Ingo Molnar <mingo@kernel.org>,
+        Paul Turner <pjt@google.com>, jhladky@redhat.com, ktkhai@parallels.com,
+        tim.c.chen@linux.intel.com, Nicolas Pitre <nicolas.pitre@linaro.org>
+Subject: Re: [PATCH] sched: make update_sd_pick_busiest return true on a busier
+ sd
+References: <20140722144559.382c5243@annuminas.surriel.com> <CAKfTPtDdAzZcMA5bJvhyrdH9J1F69jMy5q3w5xc4t+PSKPQ0eA@mail.gmail.com>
+In-Reply-To: <CAKfTPtDdAzZcMA5bJvhyrdH9J1F69jMy5q3w5xc4t+PSKPQ0eA@mail.gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch introduces ioctl named FUNCTIONFS_ENDPOINT_DESC, which
-returns endpoint descriptor to userspace. It works only if function
-is active.
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
-Signed-off-by: Robert Baldyga <r.baldyga@samsung.com>
----
- drivers/usb/gadget/f_fs.c           | 17 +++++++++++++++++
- include/uapi/linux/usb/functionfs.h |  6 ++++++
- 2 files changed, 23 insertions(+)
+On 07/23/2014 03:41 AM, Vincent Guittot wrote:
+> On 22 July 2014 20:45, Rik van Riel <riel@redhat.com> wrote:
+>> Currently update_sd_pick_busiest only returns true when an sd is
+>> overloaded, or for SD_ASYM_PACKING when a domain is busier than
+>> average and a higher numbered domain than the target.
+>> 
+>> This breaks load balancing between domains that are not
+>> overloaded, in the !SD_ASYM_PACKING case. This patch makes
+>> update_sd_pick_busiest return true when the busiest sd yet is
+>> encountered.
+>> 
+>> On a 4 node system, this seems to result in the load balancer
+>> finally putting 1 thread of a 4 thread test run of "perf bench
+>> numa mem" on each node, where before the load was generally not
+>> spread across all nodes.
+>> 
+>> Behaviour for SD_ASYM_PACKING does not seem to match the
+>> comment, in that groups with below average load average are
+>> ignored, but I have no hardware to test that so I have left the
+>> behaviour of that code unchanged.
+>> 
+>> Cc: mikey@neuling.org Cc: peterz@infradead.org Signed-off-by: Rik
+>> van Riel <riel@redhat.com> --- kernel/sched/fair.c | 18
+>> +++++++++++------- 1 file changed, 11 insertions(+), 7
+>> deletions(-)
+>> 
+>> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c index
+>> fea7d33..ff4ddba 100644 --- a/kernel/sched/fair.c +++
+>> b/kernel/sched/fair.c @@ -5942,16 +5942,20 @@ static bool
+>> update_sd_pick_busiest(struct lb_env *env, * numbered CPUs in the
+>> group, therefore mark all groups * higher than ourself as busy. 
+>> */ -       if ((env->sd->flags & SD_ASYM_PACKING) &&
+>> sgs->sum_nr_running && -           env->dst_cpu <
+>> group_first_cpu(sg)) { -               if (!sds->busiest) -
+>> return true; +       if (env->sd->flags & SD_ASYM_PACKING) { +
+>> if (sgs->sum_nr_running && env->dst_cpu < group_first_cpu(sg)) { 
+>> +                       if (!sds->busiest) +
+>> return true;
+>> 
+>> -               if (group_first_cpu(sds->busiest) >
+>> group_first_cpu(sg)) -                       return true; +
+>> if (group_first_cpu(sds->busiest) > group_first_cpu(sg)) +
+>> return true; +               } + +               return false; }
+>> 
+>> -       return false; +       /* See above: sgs->avg_load >
+>> sds->busiest_stat.avg_load */ +       return true;
+> 
+> Hi Rik,
+> 
+> I can see one issue with a default return set to true.  You
+> increase the number of time where we will not effectively migrate a
+> task because we don't ensure that we will take the overloaded group
+> if there is one. We can be in a situation where a group is
+> overloaded but the load_balance will select a not overloaded group
+> with an average load higher than sched_domain average value just
+> because it is checked after.
 
-diff --git a/drivers/usb/gadget/f_fs.c b/drivers/usb/gadget/f_fs.c
-index 490b30f..a2e18cc 100644
---- a/drivers/usb/gadget/f_fs.c
-+++ b/drivers/usb/gadget/f_fs.c
-@@ -1031,6 +1031,23 @@ static long ffs_epfile_ioctl(struct file *file, unsigned code,
- 		case FUNCTIONFS_ENDPOINT_REVMAP:
- 			ret = epfile->ep->num;
- 			break;
-+		case FUNCTIONFS_ENDPOINT_DESC:
-+		{
-+			int desc_idx;
-+			struct usb_endpoint_descriptor *desc;
-+
-+			if (epfile->ffs->gadget->speed == USB_SPEED_SUPER)
-+				desc_idx = 2;
-+			else if (epfile->ffs->gadget->speed == USB_SPEED_HIGH)
-+				desc_idx = 1;
-+			else
-+				desc_idx = 0;
-+			desc = epfile->ep->descs[desc_idx];
-+			ret = copy_to_user((void *)value, desc, sizeof(*desc));
-+			if (ret)
-+				ret = -EFAULT;
-+			break;
-+		}
- 		default:
- 			ret = -ENOTTY;
- 		}
-diff --git a/include/uapi/linux/usb/functionfs.h b/include/uapi/linux/usb/functionfs.h
-index 1dc473a..1ab6f06 100644
---- a/include/uapi/linux/usb/functionfs.h
-+++ b/include/uapi/linux/usb/functionfs.h
-@@ -197,6 +197,12 @@ struct usb_functionfs_event {
-  */
- #define	FUNCTIONFS_ENDPOINT_REVMAP	_IO('g', 129)
- 
-+/*
-+ * Returns endpoint descriptor. In funciton is not active returns -ENODEV.
-+ */
-+#define	FUNCTIONFS_ENDPOINT_DESC	_IOR('g', 130, \
-+					     struct usb_endpoint_descriptor)
-+
- 
- 
- #endif /* _UAPI__LINUX_FUNCTIONFS_H__ */
--- 
-1.9.1
+Look at the first line of update_sd_pick_busiest()
 
+static bool update_sd_pick_busiest(struct lb_env *env,
+                                   struct sd_lb_stats *sds,
+                                   struct sched_group *sg,
+                                   struct sg_lb_stats *sgs)
+{
+        if (sgs->avg_load <= sds->busiest_stat.avg_load)
+                return false;
+
+If the group load is less than the busiest, we have already
+returned false, and will not get to the code that I changed.
+
+> Regarding your issue with "perf bench numa mem" that is not spread
+> on all nodes, SD_PREFER_SIBLING flag (of DIE level) should do the
+> job by reducing the capacity of  "not local DIE" group at NUMA
+> level to 1 task during the load balance computation. So you should
+> have 1 task per sched_group at NUMA level.
+
+That did not actually happen in my tests. I almost always
+ended up having only 0 tasks on one node.
+
+- -- 
+All rights reversed
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iQEcBAEBAgAGBQJT0lzDAAoJEM553pKExN6D/8oH/3TmBwlIpj/H7pbs4ucvfigx
+WBgjkA0U/snXA8D/oRicIpX2+N42wwnmME/E20mhVjqUAvrDLbfaWoJC3UJ6Qx08
+GUeKxOBxbf1FypOmLyfKuQrMOojO585TX76n43MZnsfxzCJUIL6x6MQOE+Tbutx9
+6Y0VCz1uw9BdwnEuP0fObMrExMOlmb2JSiWiCuf8uAorWiArv8TZvBxt5W093ONO
+bRDywJ8sMFVwgQ0TZLPEBFsRAcGuPhHx/FJZuOb/F/NWopaaZD3tt4gM3VDaq4ir
+z+Qvhboql2EdydoYZV+O4VBWI7gFtT2+vLpUteaYmFR3Zx5VtneSwyCwtk6yk0c=
+=tZ6L
+-----END PGP SIGNATURE-----
