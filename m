@@ -1,62 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760274AbaGYMYF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 08:24:05 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39852 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751916AbaGYMYD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 08:24:03 -0400
-Date: Fri, 25 Jul 2014 13:23:58 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Vlastimil Babka <vbabka@suse.cz>
-Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>, linux-kernel@vger.kernel.org,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
-        Minchan Kim <minchan@kernel.org>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-Subject: Re: [PATCH V4 04/15] mm, compaction: do not recheck
- suitable_migration_target under lock
-Message-ID: <20140725122358.GY10819@suse.de>
-References: <1405518503-27687-1-git-send-email-vbabka@suse.cz>
- <1405518503-27687-5-git-send-email-vbabka@suse.cz>
+	id S1760199AbaGYMZc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 08:25:32 -0400
+Received: from relay5-d.mail.gandi.net ([217.70.183.197]:45434 "EHLO
+	relay5-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751966AbaGYMZb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jul 2014 08:25:31 -0400
+X-Originating-IP: 78.210.48.61
+Date: Fri, 25 Jul 2014 14:25:06 +0200
+From: Guillaume =?iso-8859-1?Q?CL=C9MENT?= <gclement@baobob.org>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Guillaume Clement <gclement@baobob.org>,
+        Forest Bond <forest@alittletooquiet.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging: vt6655: tag data as __user in struct
+ tagSCmdRequest
+Message-ID: <20140725122504.GA10945@pleinair.baobob.org>
+References: <1406243260-13490-1-git-send-email-gclement@baobob.org>
+ <20140725115234.GZ25880@mwanda>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1405518503-27687-5-git-send-email-vbabka@suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140725115234.GZ25880@mwanda>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 16, 2014 at 03:48:12PM +0200, Vlastimil Babka wrote:
-> isolate_freepages_block() rechecks if the pageblock is suitable to be a target
-> for migration after it has taken the zone->lock. However, the check has been
-> optimized to occur only once per pageblock, and compact_checklock_irqsave()
-> might be dropping and reacquiring lock, which means somebody else might have
-> changed the pageblock's migratetype meanwhile.
-> 
-> Furthermore, nothing prevents the migratetype to change right after
-> isolate_freepages_block() has finished isolating. Given how imperfect this is,
-> it's simpler to just rely on the check done in isolate_freepages() without
-> lock, and not pretend that the recheck under lock guarantees anything. It is
-> just a heuristic after all.
-> 
-> Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
-> Reviewed-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-> Acked-by: Minchan Kim <minchan@kernel.org>
-> Cc: Mel Gorman <mgorman@suse.de>
-> Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-> Cc: Michal Nazarewicz <mina86@mina86.com>
-> Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> Cc: Christoph Lameter <cl@linux.com>
-> Cc: Rik van Riel <riel@redhat.com>
-> Acked-by: David Rientjes <rientjes@google.com>
+On Fri, Jul 25, 2014 at 02:52:34PM +0300, Dan Carpenter wrote:
+> On Fri, Jul 25, 2014 at 01:07:40AM +0200, Guillaume Clement wrote:
+> > diff --git a/drivers/staging/vt6655/iwctl.c b/drivers/staging/vt6655/iwctl.c
+> > index 501cd64..9291259 100644
+> > --- a/drivers/staging/vt6655/iwctl.c
+> > +++ b/drivers/staging/vt6655/iwctl.c
+> > @@ -1621,14 +1621,17 @@ int iwctl_giwauth(struct net_device *dev,
+> >  int iwctl_siwgenie(struct net_device *dev,
+> >  		   struct iw_request_info *info,
+> >  		   struct iw_point *wrq,
+> > -		   char *extra)
+> > +		   char __user *extra)
+> >  {
+> >  	PSDevice			pDevice = (PSDevice)netdev_priv(dev);
+> >  	PSMgmtObject	pMgmt = &(pDevice->sMgmtObj);
+> >  	int ret = 0;
+> > +	char length;
+> >
+> >  	if (wrq->length) {
+> > -		if ((wrq->length < 2) || (extra[1]+2 != wrq->length)) {
+> > +		if (get_user(length, extra + 1))
+> > +			return -EFAULT;
+> > +		if ((wrq->length < 2) || (length != wrq->length)) {
+> >  			ret = -EINVAL;
+> >  			goto out;
+> >  		}
+>
+> Wow, this is confusing code.  The patch description isn't clear enough
+> that this is a bugfix patch and not just a "tag data" patch.
+>
+> I don't think this is correct.  We need to check the length of the input
+> buffer before we call get_user().  Can we return directly or do we
+> *need* to go to the mysteriously named "out"?  Also the + 2 is lost,
+> this would break everything if the current code works (not necessarily a
+> valid assumption).  Delete all my comments in the final code.
 
-Acked-by: Mel Gorman <mgorman@suse.de>
+In this case, the "out" label just does "return ret;". But I agree this
+is better practice to jump to out, in case this changes at a later time,
+and to keep the code consistent.
 
--- 
-Mel Gorman
-SUSE Labs
+About the missing + 2, and modifying the order of sorry about that, I
+sent the patch too fast.
+
+Thank you for your review, I will be submitting an updated patch with
+your remarks.
