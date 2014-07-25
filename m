@@ -1,110 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759274AbaGYD1S (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 23:27:18 -0400
-Received: from [207.46.163.142] ([207.46.163.142]:59369 "EHLO
-	na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752544AbaGYD1R convert rfc822-to-8bit (ORCPT
+	id S1759211AbaGYDa7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 23:30:59 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:59918 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757312AbaGYDa5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 23:27:17 -0400
-X-WSS-ID: 0N98ZHE-08-LJ2-02
-X-M-MSG: 
-From: "Sander, Ben" <ben.sander@amd.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Joerg Roedel <joro@8bytes.org>, Andrea Arcangeli <aarcange@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Rik van Riel <riel@redhat.com>, "Hugh Dickins" <hughd@google.com>,
-        Mel Gorman <mgorman@suse.de>, Johannes Weiner <jweiner@redhat.com>,
-        Jerome Glisse <jglisse@redhat.com>,
-        "jroedel@suse.de" <jroedel@suse.de>,
-        "Cornwall, Jay" <Jay.Cornwall@amd.com>,
-        "Gabbay, Oded" <Oded.Gabbay@amd.com>,
-        "Bridgman, John" <John.Bridgman@amd.com>,
-        "Suthikulpanit, Suravee" <Suravee.Suthikulpanit@amd.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        David Woodhouse <dwmw2@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>
-Subject: Re: [PATCH 0/3] mmu_notifier: Allow to manage CPU external TLBs
-Thread-Topic: [PATCH 0/3] mmu_notifier: Allow to manage CPU external TLBs
-Thread-Index: AQHPp0yeauRiu03ozUKi9x6pH88Q7puwI66A///5sr8=
-Date: Fri, 25 Jul 2014 03:10:28 +0000
-Message-ID: <D7B2CBFE-6D70-4999-AC45-48773872FA08@amd.com>
-References: <1406212541-25975-1-git-send-email-joro@8bytes.org>,<20140724163303.df34065a3c3b26c0a4b3bab1@linux-foundation.org>
-In-Reply-To: <20140724163303.df34065a3c3b26c0a4b3bab1@linux-foundation.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 24 Jul 2014 23:30:57 -0400
 MIME-Version: 1.0
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:165.204.84.222;CTRY:US;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(428002)(51704005)(377454003)(24454002)(199002)(189002)(33656002)(53416004)(83072002)(106466001)(81542001)(20776003)(68736004)(64706001)(107046002)(4396001)(23726002)(83716003)(86362001)(85852003)(80022001)(106116001)(95666004)(46406003)(110136001)(105586002)(85306003)(82746002)(92566001)(77096002)(92726001)(81342001)(77982001)(84676001)(50986999)(44976005)(97756001)(97736001)(99396002)(2656002)(46102001)(83322001)(19580395003)(31966008)(74502001)(76482001)(50466002)(36756003)(47776003)(76176999)(74662001)(19580405001)(21056001)(79102001)(101416001)(54356999)(87936001)(104396001);DIR:OUT;SFP:;SCL:1;SRVR:CO1PR02MB045;H:atltwp02.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;LANG:en;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
-X-Forefront-PRVS: 02830F0362
-Authentication-Results: spf=none (sender IP is 165.204.84.222)
- smtp.mailfrom=ben.sander@amd.com; 
-X-OriginatorOrg: amd4.onmicrosoft.com
+In-Reply-To: <53D1CD4C.90507@gmail.com>
+References: <1406156581-6052-1-git-send-email-xerofoify@gmail.com>
+	<CAPDOMVia0OXydg_hRH0t63xUaxKEkVc6D20vAZiyugkMXAEsJQ@mail.gmail.com>
+	<yw1xtx669002.fsf@unicorn.mansr.com>
+	<CAPDOMVgziyYTX41xZVB9FLHUKFRPPm19jo0A_WfbLqaaKbxPqg@mail.gmail.com>
+	<20140724131821.30c4519d@gandalf.local.home>
+	<CAHLZz12ammMZNAah_eyYePJWorw2AruDAujeNxJHvOF5+Mr7cA@mail.gmail.com>
+	<20140724134849.4d228f5f@gandalf.local.home>
+	<CAPDOMVi7cHUAn_1AxJ+tN1c67UqBdLHLC1sJNSA=HUK-WzZCTA@mail.gmail.com>
+	<CAFLxGvzA4HHL0aJaC0Ypf9_YeL5WW4_eYNToSVG7H43DD2unSg@mail.gmail.com>
+	<CAPDOMViVAY5cBuwe=nLjnFUHy4_FVUh_9LkChv+vso5w7WVeDA@mail.gmail.com>
+	<CAPDOMVhNaV+Wertp+p361iYS8t-rZmN2nubn9coyrUcgZPcuGw@mail.gmail.com>
+	<53D15A6B.6030806@nod.at>
+	<53D1BDCC.5030202@gmail.com>
+	<CAPDOMVhuiSwBs_d6b5qFN2jLwsLAu+_CtaSJH+oG0MxGXmtKOw@mail.gmail.com>
+	<53D1C526.9040307@gmail.com>
+	<CAPDOMVhZNVOjCFYa4oJCL2rSRjXPjEgcQC42w_LGXHubYmDyYA@mail.gmail.com>
+	<53D1CA70.60301@gmail.com>
+	<CAPDOMVjCmjM2QeXCx+TK8wk3LXiCq+NKK7ami6n2HP0gO0YGBg@mail.gmail.com>
+	<53D1CD4C.90507@gmail.com>
+Date: Thu, 24 Jul 2014 23:30:56 -0400
+Message-ID: <CAPDOMViMDiWONkk=TMu-U6ugKr4uiPk_km=-z-dO_0MwxYJ03w@mail.gmail.com>
+Subject: Re: [PATCH] staging: Change kzalloc to kcalloc
+From: Nick Krause <xerofoify@gmail.com>
+To: Chen Gang <gang.chen.5i5j@gmail.com>
+Cc: Richard Weinberger <richard@nod.at>,
+        Richard Weinberger <richard.weinberger@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Harvey Harrison <harvey.harrison@gmail.com>,
+        =?UTF-8?B?TcOlbnMgUnVsbGfDpXJk?= <mans@mansr.com>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
+        Dan Carpenter <dan.carpenter@oracle.com>, tomas.winkler@intel.com,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Yes. AMD has tested this with the iommuv2 driver and verified it works correctly.  There is a corresponding change in the iommuv2 driver to use the new API. 
+On Thu, Jul 24, 2014 at 11:21 PM, Chen Gang <gang.chen.5i5j@gmail.com> wrote:
+>
+>
+> On 07/25/2014 11:13 AM, Nick Krause wrote:
+>> On Thu, Jul 24, 2014 at 11:09 PM, Chen Gang <gang.chen.5i5j@gmail.com> wrote:
+>>>
+>>>
+>>> On 07/25/2014 10:53 AM, Nick Krause wrote:
+>>>> On Thu, Jul 24, 2014 at 10:47 PM, Chen Gang <gang.chen.5i5j@gmail.com> wrote:
+>>>>>
+>>>>>
+>>>>> On 07/25/2014 10:20 AM, Nick Krause wrote:
+>>>>>> On Thu, Jul 24, 2014 at 10:15 PM, Chen Gang <gang.chen.5i5j@gmail.com> wrote:
+>>>>>>>
+>>>>>>> Excuse me, I did not see the patch details, but I guess it is about
+>>>>>>> whether welcome a new member to upstream kernel. For me, I have 3 ideas
+>>>>>>> about it if I am a newbie or a normal kernel developer:
+>>>>>>>
+>>>>>>>  - Do I have enough basic skills for it?
+>>>>>>>
+>>>>>>>     - Do I developed one or more another real world projects with C?
+>>>>>>>       (they are successful projects -- at least, not failure projects)
+>>>>>>>
+>>>>>>>     - Can I construct related develop environments to support what I do?
+>>>>>>>       (e.g. building and testing for upstream kernel)
+>>>>>>>
+>>>>>>>     - Am I familiar the basic working flow about kernel mailing list.
+>>>>>>>       (e.g. format-patch, sending patch, email client configuration...).
+>>>>>>>
+>>>>>>>  - Do I have a correct attitude on it?
+>>>>>>>
+>>>>>>>     - Am I careful enough?
+>>>>>>>       (e.g. if find some details may doubt, try to check and clear them)
+>>>>>>>       (it is always neccessary for all patches)
+>>>>>>>
+>>>>>>>     - Am I try my best for it?
+>>>>>>>       (e.g. when finish coding, try what I can do: build, run and test).
+>>>>>>>       (it is neccessary for most cases)
+>>>>>>>
+>>>>>>>     - Do I have negative effect with others?
+>>>>>>>       (e.g. discourage the newbies, or send spam to other members ...).
+>>>>>>>       (need always try to avoid)
+>>>>>>>
+>>>>>>>  - Do I really love programming, also love open source kernel?
+>>>>>>>
+>>>>>>>     - Do I love it, or I have to do it for another reason?
+>>>>>>>       (I guess, most of gmail members in open source, love programming).
+>>>>>>>
+>>>>>>>     - Do I still love programming if I am discouraged by any members?
+>>>>>>>
+>>>>>>>     - Do I still love open source kernel if discouraged by any members?
+>>>>>>>
+>>>>>>>
+>>>>>> I have most of these skills other then developing real projects in C with other
+>>>>>> developers as other then the kernel I don't have must interest in C outside
+>>>>>> of embedded programming.
+>>>>>
+>>>>> OK, thanks. If what you said is true, for me, if you will, please still
+>>>>> continue for open source kernel, but really need be more careful about
+>>>>> the patch you made before send to open mailing list.
+>>>>>
+>>>>>
+>>>>> Thanks.
+>>>>> --
+>>>>> Chen Gang
+>>>>>
+>>>>> Open, share, and attitude like air, water, and life which God blessed
+>>>>
+>>>> Chen ,
+>>>> Thanks for helping me out here :). The true through is I don't known how to
+>>>> build test correctly as a newb and thought it was better just to avoid it(stupid
+>>>> me). I would like to known how to do this and if there is any way I can help you
+>>>> guys out , please let me known :). I don't want to be avoided I am honestly here
+>>>> to help make your life easier.
+>>>
+>>> Excuse me, my English is not quite well, I do not understand what you
+>>> said, I guess your meaning is "not familiar with how to build and test
+>>> upstream kernel" If what I guess is incorrect, please let me know.
+>>>
+>>> There are some books or some related web links for building and test
+>>> kernel, they are not quite difficult to get (please google search).
+>>>
+>>> I guess, it is necessary to reference these information and construct
+>>> related develop environments to support what you want to do next.
+>>>
+>>>
+>>> By the way, excuse me, today I have to do some other things firstly, so
+>>> maybe my next email reply will be late (may tomorrow, or the day after
+>>> tomorrow).
+>>>
+>>>
+>>> Thanks.
+>>> --
+>>> Chen Gang
+>>>
+>>> Open, share, and attitude like air, water, and life which God blessed
+>>
+>> That's what I meant. If you can sent me a link to how to do build testing
+>> that would be great :).
+>
+> Please read README at the root directory of kernel source, also
+> "./Documents" contents many valuable information. And try google search
+> for additional information.
+>
+> Try to accomplish them by yourself, that will let yourself improved with
+> efficiency.
+>
+> Thanks.
+> --
+> Chen Gang
+>
+> Open, share, and attitude like air, water, and life which God blessed
 
-> On Jul 24, 2014, at 6:33 PM, "Andrew Morton" <akpm@linux-foundation.org> wrote:
-> 
->> On Thu, 24 Jul 2014 16:35:38 +0200 Joerg Roedel <joro@8bytes.org> wrote:
->> 
->> here is a patch-set to extend the mmu_notifiers in the Linux
->> kernel to allow managing CPU external TLBs. Those TLBs may
->> be implemented in IOMMUs or any other external device, e.g.
->> ATS/PRI capable PCI devices.
->> 
->> The problem with managing these TLBs are the semantics of
->> the invalidate_range_start/end call-backs currently
->> available. Currently the subsystem using mmu_notifiers has
->> to guarantee that no new TLB entries are established between
->> invalidate_range_start/end. Furthermore the
->> invalidate_range_start() function is called when all pages
->> are still mapped and invalidate_range_end() when the pages
->> are unmapped an already freed.
->> 
->> So both call-backs can't be used to safely flush any non-CPU
->> TLB because _start() is called too early and _end() too
->> late.
->> 
->> In the AMD IOMMUv2 driver this is currently implemented by
->> assigning an empty page-table to the external device between
->> _start() and _end(). But as tests have shown this doesn't
->> work as external devices don't re-fault infinitly but enter
->> a failure state after some time.
->> 
->> Next problem with this solution is that it causes an
->> interrupt storm for IO page faults to be handled when an
->> empty page-table is assigned.
->> 
->> To solve this situation I wrote a patch-set to introduce a
->> new notifier call-back: mmu_notifer_invalidate_range(). This
->> notifier lifts the strict requirements that no new
->> references are taken in the range between _start() and
->> _end(). When the subsystem can't guarantee that any new
->> references are taken is has to provide the
->> invalidate_range() call-back to clear any new references in
->> there.
->> 
->> It is called between invalidate_range_start() and _end()
->> every time the VMM has to wipe out any references to a
->> couple of pages. This are usually the places where the CPU
->> TLBs are flushed too and where its important that this
->> happens before invalidate_range_end() is called.
->> 
->> Any comments and review appreciated!
-> 
-> It looks pretty simple and harmless.
-> 
-> I assume the AMD IOMMUv2 driver actually uses this and it's all
-> tested and good?  What is the status of that driver?
-> 
+That seems to be the issue with my programming here.
+Nick
