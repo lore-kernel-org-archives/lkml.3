@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760564AbaGYNsl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 09:48:41 -0400
-Received: from mail-wi0-f202.google.com ([209.85.212.202]:47550 "EHLO
+	id S1760536AbaGYNsi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 09:48:38 -0400
+Received: from mail-wi0-f202.google.com ([209.85.212.202]:35286 "EHLO
 	mail-wi0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760496AbaGYNsb (ORCPT
+	with ESMTP id S1760475AbaGYNsc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 09:48:31 -0400
+	Fri, 25 Jul 2014 09:48:32 -0400
 From: David Drysdale <drysdale@google.com>
 To: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>
@@ -18,9 +18,9 @@ Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
         Paolo Bonzini <pbonzini@redhat.com>, Paul Moore <paul@paul-moore.com>,
         Christoph Hellwig <hch@infradead.org>, linux-api@vger.kernel.org,
         David Drysdale <drysdale@google.com>
-Subject: [PATCH 4/6] cap_rights_limit.2: limit FD rights for Capsicum
-Date: Fri, 25 Jul 2014 14:47:11 +0100
-Message-Id: <1406296033-32693-16-git-send-email-drysdale@google.com>
+Subject: [PATCH 5/6] cap_rights_get.2: retrieve Capsicum fd rights
+Date: Fri, 25 Jul 2014 14:47:12 +0100
+Message-Id: <1406296033-32693-17-git-send-email-drysdale@google.com>
 X-Mailer: git-send-email 2.0.0.526.g5318336
 In-Reply-To: <1406296033-32693-1-git-send-email-drysdale@google.com>
 References: <1406296033-32693-1-git-send-email-drysdale@google.com>
@@ -30,16 +30,16 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: David Drysdale <drysdale@google.com>
 ---
- man2/cap_rights_limit.2 | 241 ++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 241 insertions(+)
- create mode 100644 man2/cap_rights_limit.2
+ man2/cap_rights_get.2 | 134 ++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 134 insertions(+)
+ create mode 100644 man2/cap_rights_get.2
 
-diff --git a/man2/cap_rights_limit.2 b/man2/cap_rights_limit.2
+diff --git a/man2/cap_rights_get.2 b/man2/cap_rights_get.2
 new file mode 100644
-index 000000000000..450bbdc6f86d
+index 000000000000..d6aa5b88c6af
 --- /dev/null
-+++ b/man2/cap_rights_limit.2
-@@ -0,0 +1,241 @@
++++ b/man2/cap_rights_get.2
+@@ -0,0 +1,134 @@
 +.\"
 +.\" Copyright (c) 2008-2010 Robert N. M. Watson
 +.\" Copyright (c) 2012-2013 The FreeBSD Foundation
@@ -69,191 +69,91 @@ index 000000000000..450bbdc6f86d
 +.\" SUCH DAMAGE.
 +.\" %%%LICENSE_END
 +.\"
-+.TH CAP_RIGHTS_LIMIT 2 2014-05-07 "Linux" "Linux Programmer's Manual"
++.TH CAP_RIGHTS_GET 2 2014-05-07 "Linux" "Linux Programmer's Manual"
 +.SH NAME
-+cap_rights_limit \- limit Capsicum capability rights
++cap_rights_get \- retrieve Capsicum capability rights
 +.SH SYNOPSIS
 +.nf
 +.B #include <sys/capsicum.h>
 +.sp
-+.BI "int cap_rights_limit(int " fd ", const struct cap_rights *" rights ,
-+.BI "                     unsigned int " fcntls ,
-+.BI "                     int " nioctls ", unsigned int *" ioctls );
++.BI "int cap_rights_get(int " fd ", struct cap_rights *" rights ,
++.BI "                   unsigned int *" fcntls ,
++.BI "                   int *" nioctls ", unsigned int *" ioctls );
 +.SH DESCRIPTION
-+When a file descriptor is created by a function such as
-+.BR accept (2),
-+.BR accept4 (2),
-+.BR creat (2),
-+.BR epoll_create (2),
-+.BR eventfd (2),
-+.BR mq_open (2),
-+.BR open (2),
-+.BR openat (2),
-+.BR pdfork (2),
-+.BR pipe (2),
-+.BR pipe2 (2),
-+.BR signalfd (2),
-+.BR socket (2),
-+.BR socketpair (2)
-+or
-+.BR timerfd_create (2),
-+it implicitly has all Capsicum capability rights.
-+Those rights can be reduced (but never expanded) by using the
-+.BR cap_rights_limit ()
-+system call.
-+Once Capsicum capability rights are reduced, operations on the file descriptor
-+.I fd
-+will be limited to those permitted by the remainder of the arguments.
++Obtain the current Capsicum capability rights for a file descriptor.
 +.PP
-+The
++The function will fill the
 +.I rights
-+argument describes the primary rights for the file descriptor, as a
++argument (if non-NULL) with the primary capability rights of the
++.I fd
++descriptor. The
++.I rights
++field is a
 +.I cap_rights
-+structure:
-+.in +4n
-+.nf
-+
-+#define CAP_RIGHTS_VERSION_00	0
-+#define CAP_RIGHTS_VERSION_01	1
-+#define CAP_RIGHTS_VERSION_02	2
-+#define CAP_RIGHTS_VERSION_03	3
-+#define CAP_RIGHTS_VERSION	CAP_RIGHTS_VERSION_00
-+struct cap_rights {
-+    __u64    cr_rights[CAP_RIGHTS_VERSION + 2];
-+};
-+.fi
-+.in
-+.PP
-+The contents of the
-+.I cr_rights
-+array are encoded as follows.
-+.IP \(bu
-+The top 2 bits of
-+.I cr_rights[0]
-+hold the array size minus 2, allowing for an array size between 2 and 5 inclusive.
-+.IP \(bu
-+The top 2 bits of the other
-+.I cr_rights
-+entries are zero.
-+.IP \(bu
-+The following 5 bits of each array entry indicate its position in the array,
-+from 0b00001 for entry [0], 0b00010 for entry [1], up to 0b10000 for entry [4].
-+.IP \(bu
-+The remaining 57 bits of each array entry identify a particular primary
-+right.
-+.PP
-+This encoding allows for future expansion in the number of distinct rights;
-+for example, a
-+.I cap_rights
-+structure holding the
-+.B CAP_READ
-+and
-+.B CAP_BINDAT
-+rights would have contents of
-+.in +4n
-+.nf
-+0x0200000000000001 0x0400000000001000
-+.fi
-+.in
-+as a version 0 array, but would be encoded in a larger version 1 array as
-+.in +4n
-+.nf
-+0x4200000000000001 0x0400000000001000 0x0800000000000000.
-+.fi
-+.in
-+.PP
-+User programs should prepare the contents of the
-+.I cap_rights
-+structure with the
-+.BR cap_rights_init (3)
-+family of functions.
-+The complete list of primary rights can be found in the
++structure, as described in
++.BR cap_rights_limit (2),
++and can be examined with the
++.BR cap_rights_is_set (3)
++family of functions.  The complete list of primary rights can be found in the
 +.BR rights (7)
 +manual page.
 +.PP
-+If a file descriptor is granted the
++If the
++.I fcntls
++argument is non-NULL, it will be filled in with a bitmask of allowed
++.BR fcntl (2)
++commands; see
++.BR cap_rights_limit (2)
++for values.  If the file descriptor does not have the
 +.B CAP_FCNTL
-+primary capability right, some specific
-+.BR fcntl (2)
-+commands can be selectively disallowed with the
++primary right, the returned
 +.I fcntls
-+argument.  The following flags may be specified in the
-+.I fcntls
-+argument for this:
-+.TP
-+.B CAP_FCNTL_GETFL
-+Permit
-+.B F_GETFL
-+command.
-+.TP
-+.B CAP_FCNTL_SETFL
-+Permit
-+.B F_SETFL
-+command.
-+.TP
-+.B CAP_FCNTL_GETOWN
-+Permit
-+.B F_GETOWN
-+command.
-+.TP
-+.B CAP_FCNTL_SETOWN
-+Permit
-+.B F_SETOWN
-+command.
-+.PP
-+A value of
-+.B CAP_FCNTL_ALL
-+for the
-+.I fcntls
-+argument leaves the set of allowed
-+.BR fcntl (2)
-+commands unchanged.
-+.PP
-+However, note that
-+.BR fcntl (2)
-+commands that are analogous to other system calls
-+(such as
-+.B F_DUPFD
-+or
-+.BR F_GETPIPE_SZ )
-+are not controlled by the
-+.B CAP_FCNTL
-+right and so do not have corresponding values in the
-+.I fcntls
-+argument.
-+.PP
-+If a file descriptor is granted the
-+.B CAP_IOCTL
-+capability right, the list of allowed
-+.BR ioctl (2)
-+commands can be selectively reduced (but never expanded) using the
-+.I nioctls
-+and
-+.I ioctls
-+arguments.
-+The
-+.I ioctls
-+argument is an array of
-+.BR ioctl (2)
-+command values and the
-+.I nioctls
-+argument specifies the number of elements in the array.
++value will be zero.
 +.PP
 +If the
 +.I nioctls
-+argument is -1 or 0, the
-+.I ioctls
-+argument is ignored, and either all
++argument is non-NULL, it will be filled in with the number of allowed
 +.BR ioctl (2)
-+operations or no
++commands, or with the value CAP_IOCTLS_ALL to indicate that all
 +.BR ioctl (2)
-+operations (respectively) will be allowed.
++commands are allowed.  If the file descriptor does not have the
++.B CAP_IOCTL
++primary right, the returned
++.I nioctls
++value will be zero.
 +.PP
-+Capsicum capability rights assigned to a file descriptor can be obtained with the
-+.BR cap_rights_get (2)
++If the
++.I ioctls
++argument is non-NULL, the caller should specify the size of the
++provided buffer as the initial value of the
++.I nioctls
++argument (as a count of the number of
++.BR ioctl (2)
++command values the buffer can hold).
++On successful completion of the system call, the
++.I ioctls
++buffer is filled with the
++.BR ioctl (2)
++command values, up to maximum of the initial value of
++.BR nioctls .
++.PP
++If all
++.BR ioctl (2)
++commands are allowed (the
++.B CAP_IOCTL
++primary capability right is assigned to the file descriptor and the
++set of allowed
++.BR ioctl (2)
++commands was never limited for this file descriptor), the
++system call will not modify the buffer pointed to by the
++.I ioctls
++argument.
++.PP
++Capsicum capability rights assigned to a file descriptor can be reduced with the
++.BR cap_rights_limit (2)
 +system call.
 +.SH RETURN VALUE
-+.BR cap_rights_limit ()
++.BR cap_rights_get ()
 +returns zero on success. On error, -1 is returned and
 +.I errno
 +is set appropriately.
@@ -263,24 +163,17 @@ index 000000000000..450bbdc6f86d
 +.I fd
 +isn't a valid open file descriptor.
 +.TP
-+.B EINVAL
-+An invalid set of rights has been requested in
-+.IR rights .
-+.TP
-+.B ENOMEM
-+Out of memory.
-+.TP
-+.B ENOTCAPABLE
-+The arguments contain capability rights not present for the given file descriptor (Capsicum
-+capability rights list can only be reduced, never expanded).
++.B EFAULT
++Invalid pointer argument.
 +.SH VERSION
 +Capsicum support was added to the kernel in version 3.???.
 +.SH SEE ALSO
 +.BR cap_enter (2),
-+.BR cap_rights_get (2),
++.BR cap_rights_limit (2),
 +.BR cap_rights_init (3),
 +.BR capsicum (7),
 +.BR rights (7)
++
 --
 2.0.0.526.g5318336
 
