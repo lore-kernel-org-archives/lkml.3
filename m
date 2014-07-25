@@ -1,89 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760848AbaGYQiA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 12:38:00 -0400
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:64422 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752683AbaGYQh7 (ORCPT
+	id S1760880AbaGYQiQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 12:38:16 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:56985 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752890AbaGYQiA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 12:37:59 -0400
-From: Igor Bezukh <igbzkh@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: devel@driverdev.osuosl.org, forest@alittletooquiet.net,
-        linux-kernel@vger.kernel.org, igbzkh@gmail.com
-Subject: [PATCH] Staging: vt6655: removed redundant comments from key.h
-Date: Fri, 25 Jul 2014 19:37:45 +0300
-Message-Id: <1406306265-32611-1-git-send-email-igbzkh@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Fri, 25 Jul 2014 12:38:00 -0400
+Date: Fri, 25 Jul 2014 18:37:46 +0200
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Vinod Koul <vinod.koul@intel.com>
+Cc: Dan Williams <dan.j.williams@intel.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-sunxi@googlegroups.com,
+        kevin.z.m.zh@gmail.com, sunny@allwinnertech.com,
+        shuge@allwinnertech.com, zhuzhenhua@allwinnertech.com,
+        Arnd Bergmann <arnd@arndb.de>, andriy.shevchenko@intel.com,
+        dmaengine@vger.kernel.org
+Subject: Re: [PATCH v11 0/2] Add support for the Allwinner A31 DMA Controller
+Message-ID: <20140725163746.GC20328@lukather>
+References: <1405626376-471-1-git-send-email-maxime.ripard@free-electrons.com>
+ <20140725131217.GS8181@intel.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="snImcH6YoPvXmXT+"
+Content-Disposition: inline
+In-Reply-To: <20140725131217.GS8181@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Removed redundant comments from key.h header file.
 
-Signed-off-by: Igor Bezukh <igbzkh@gmail.com>
----
- drivers/staging/vt6655/key.h |   26 +++++++-------------------
- 1 file changed, 7 insertions(+), 19 deletions(-)
+--snImcH6YoPvXmXT+
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-diff --git a/drivers/staging/vt6655/key.h b/drivers/staging/vt6655/key.h
-index 4b8b4b6..f0cbd75 100644
---- a/drivers/staging/vt6655/key.h
-+++ b/drivers/staging/vt6655/key.h
-@@ -34,7 +34,6 @@
- #include "tether.h"
- #include "80211mgr.h"
- 
--/*---------------------  Export Definitions -------------------------*/
- #define MAX_GROUP_KEY       4
- #define MAX_KEY_TABLE       11
- #define MAX_KEY_LEN         32
-@@ -65,38 +64,27 @@ typedef struct tagSKeyItem
- 	unsigned char byReserved0;
- 	unsigned long dwKeyIndex;
- 	void *pvKeyTable;
--} SKeyItem, *PSKeyItem; //64
-+} SKeyItem, *PSKeyItem;
- 
- typedef struct tagSKeyTable
- {
--	unsigned char abyBSSID[ETH_ALEN];  //6
--	unsigned char byReserved0[2];              //8
-+	unsigned char abyBSSID[ETH_ALEN];
-+	unsigned char byReserved0[2];
- 	SKeyItem    PairwiseKey;
--	SKeyItem    GroupKey[MAX_GROUP_KEY]; //64*5 = 320, 320+8=328
--	unsigned long dwGTKeyIndex;            // GroupTransmitKey Index
-+	SKeyItem    GroupKey[MAX_GROUP_KEY];
-+	unsigned long dwGTKeyIndex;
- 	bool bInUse;
--	//2006-1116-01,<Modify> by NomadZhao
- 	bool bSoftWEP;
--	unsigned short wKeyCtl;      // for address of wKeyCtl at align 4
-+	unsigned short wKeyCtl;
- 
- 	unsigned char byReserved1[6];
--} SKeyTable, *PSKeyTable; //348
-+} SKeyTable, *PSKeyTable;
- 
- typedef struct tagSKeyManagement
- {
- 	SKeyTable   KeyTable[MAX_KEY_TABLE];
- } SKeyManagement, *PSKeyManagement;
- 
--/*---------------------  Export Types  ------------------------------*/
--
--/*---------------------  Export Macros ------------------------------*/
--
--/*---------------------  Export Classes  ----------------------------*/
--
--/*---------------------  Export Variables  --------------------------*/
--
--/*---------------------  Export Functions  --------------------------*/
--
- void KeyvInitTable(PSKeyManagement pTable, unsigned long dwIoBase);
- 
- bool KeybGetKey(
--- 
-1.7.9.5
+Hi Vinod,
 
+On Fri, Jul 25, 2014 at 06:42:17PM +0530, Vinod Koul wrote:
+> On Thu, Jul 17, 2014 at 09:46:14PM +0200, Maxime Ripard wrote:
+> > Hi,
+> >=20
+> > This patchset adds support for the DMA controller found in the
+> > Allwinner A31 and A23 SoCs.
+> >=20
+> > This has been tested using the newly introduced SPI driver on an A31
+> > EVK. Support for DMA-driven SPI transfers will be the subject of
+> > another patch serie.
+> >=20
+> > This has been around for around 5 monthes now, and didn't get any
+> > review but nitpicks for three versions, so I feel like it could be
+> > merged quite quickly.
+> I have applied this now.
+
+Thanks.
+
+> Can you please send follow patches for these:
+> - don't recall if I pointed earlier, but can we use direct conversion for
+>   calculating convert_burst() and convert_buswidth(), latter one at least
+>   seem doable
+
+Ok. Do you still want the error reporting for the invalid width and
+burst size?
+
+> - don't use devm_request_irq(). You have irq enabled and you have killed
+>   tasklet. This is too racy. You need to ensure no irqs can be generated =
+before killing
+>   tasklets.
+
+Ok, would calling disable_irq before killing the tasklet an option for
+you ? that would allow to keep the devm_request_irq.
+
+> - use synchronize_irq() before killing tasklet
+
+Actually, I already do it, like you suggested previously. See
+sun6i_kill_tasklet.
+
+I'll also send patches for the various breakages and warnings spotted
+by the autobuilders.
+
+Thanks!
+Maxime
+
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
+
+--snImcH6YoPvXmXT+
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJT0ofaAAoJEBx+YmzsjxAgskEP/0CGF+AlaGcDJ728nANIkKyP
+a2iVc0UIbTR8bDvtr4ZyUw5dwfpYpcVJP3oPTm0uQApAVesrTVPKzga/RdgnBSt3
+SjHMN1w1gmzPRc/r+wDPqS/b+jze1t5xaFswnR6hfmhYGnPNwRezRrF8ZRW+TNQ4
+Ea5I4IdqMfuLnF3FpRSSTKYi3bGX/mbvrKvqqi263PvlqQaRWu78Z7g8YwHRD+en
+R32sIRWWgcfMX0jCCpGmvh4zvpHsj2W2jUU412dFee0BjIrtZyePdr7d//lMLCsc
+uk+ZOE0Mb3PNWbbmDAuhIr0A5JQiAebhVN1mafh5Hd2polxxBGri6m6VG7me19Ws
+PLJzp/jwitZ6AHJPL7mI7F8RwYqeYvXP0u0rcOvO9SuHShmL+OMGwnqKEutLym9F
+8y+18xDcMhIcabPBzNduWbPFypQaFrcn7kqMzZMxbpKYZ2723JOS6Ze3iVIUGIBs
+p8tMpM6GDtrBeFUS2+PANG6fC8yIdsl3/LZsZcQrcNA9YNk8e3nCoU3DvD8Uwnv1
+5QGpjgSsZeFXqWFZWDAZnAYMatquhxCTUNFYcjLY2vtVlTE08cwpzWEQPx7SJJsL
++mPi9AdKiN5bG6tA9ZdZkesWrdblEGYYf5i6pgULrGpqpOw5noIT2njm81TX3guF
+7AmRmGf0zZ/cVuojlnPt
+=8HtB
+-----END PGP SIGNATURE-----
+
+--snImcH6YoPvXmXT+--
