@@ -1,81 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756127AbaGYSXM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 14:23:12 -0400
-Received: from p3plex2out02.prod.phx3.secureserver.net ([184.168.131.14]:36705
-	"EHLO p3plex2out02.prod.phx3.secureserver.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751497AbaGYSXL convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 14:23:11 -0400
-From: Hartley Sweeten <HartleyS@visionengravers.com>
-To: Ian Abbott <abbotti@mev.co.uk>,
-        "driverdev-devel@linuxdriverproject.org" 
-	<driverdev-devel@linuxdriverproject.org>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 1/3] staging: comedi: amplc_dio200_common: prevent extra
- free_irq()
-Thread-Topic: [PATCH 1/3] staging: comedi: amplc_dio200_common: prevent
- extra free_irq()
-Thread-Index: AQHPqCrr8EkYQfITLUWKJ+HRxzaKZ5uxGTdA
-Date: Fri, 25 Jul 2014 18:23:10 +0000
-Message-ID: <DC148C5AA1CEBA4E87973D432B1C2D8825F1E378@P3PWEX4MB008.ex4.secureserver.net>
-References: <1406308029-15712-1-git-send-email-abbotti@mev.co.uk>
- <1406308029-15712-2-git-send-email-abbotti@mev.co.uk>
-In-Reply-To: <1406308029-15712-2-git-send-email-abbotti@mev.co.uk>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [184.183.19.121]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1755762AbaGYSYz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 14:24:55 -0400
+Received: from mail-vc0-f178.google.com ([209.85.220.178]:56694 "EHLO
+	mail-vc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753401AbaGYSYw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jul 2014 14:24:52 -0400
 MIME-Version: 1.0
+In-Reply-To: <CAGXu5jLPrKA5LR-9=M6jAfPXYoztGzXPiaSiXgEcUE=+na73GA@mail.gmail.com>
+References: <1406296033-32693-1-git-send-email-drysdale@google.com>
+	<1406296033-32693-12-git-send-email-drysdale@google.com>
+	<CALCETrVJX4+-6vkRaDj4kV_bXiYL5fj_PtO53g9fRf=i4X2Tww@mail.gmail.com>
+	<CAGXu5jJZ7mhmq1BrdTP5Ww15+C2iLQKjLy1Xh0=9qZvVK5E9Cw@mail.gmail.com>
+	<CALCETrVChObsQpL6dt-ByiCjbPrtpXAXQgy_apBY-OpGQHaPjg@mail.gmail.com>
+	<CAGXu5jLPrKA5LR-9=M6jAfPXYoztGzXPiaSiXgEcUE=+na73GA@mail.gmail.com>
+Date: Fri, 25 Jul 2014 11:24:51 -0700
+Message-ID: <CAKyRK=gTVV+isc8=MpQ=x9xXj+wVsd7WtHzxHknZ=9WxT+c01g@mail.gmail.com>
+Subject: Re: [PATCH 11/11] seccomp: Add tgid and tid into seccomp_data
+From: Julien Tinnes <jln@google.com>
+To: Kees Cook <keescook@chromium.org>
+Cc: Andy Lutomirski <luto@amacapital.net>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        David Drysdale <drysdale@google.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, Paolo Bonzini <pbonzini@redhat.com>,
+        LSM List <linux-security-module@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Paul Moore <paul@paul-moore.com>,
+        James Morris <james.l.morris@oracle.com>,
+        Linux API <linux-api@vger.kernel.org>,
+        Meredydd Luff <meredydd@senatehouse.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, July 25, 2014 10:07 AM, Ian Abbott wrote:
-> `dio200_detach()` in "amplc_dio200.c" calls
-> `amplc_dio200_common_detach()` in "amplc_dio200_common.c", followed by
-> `comedi_legacy_detach()` in "../drivers.c".  Both of those functions
-> call `free_irq()` if `dev->irq` is non-zero.  The second call produces a
-> warning message because the handler has already been freed.  Prevent
-> that by setting `dev->irq = 0` in `amplc_dio200_common_detach()`.
+On Fri, Jul 25, 2014 at 10:38 AM, Kees Cook <keescook@chromium.org> wrote:
+> On Fri, Jul 25, 2014 at 10:18 AM, Andy Lutomirski <luto@amacapital.net> wrote:
+>> [cc: Eric Biederman]
+>>
+>> On Fri, Jul 25, 2014 at 10:10 AM, Kees Cook <keescook@chromium.org> wrote:
+
+>>> Julien had been wanting something like this too (though he'd suggested
+>>> it via prctl): limit the signal functions to "self" only. I wonder if
+>>> adding a prctl like done for O_BENEATH could work for signal sending?
+>>>
+>>
+>>
+>> Can we do one better and add a flag to prevent any non-self pid
+>> lookups?  This might actually be easy on top of the pid namespace work
+>> (e.g. we could change the way that find_task_by_vpid works).
 >
-> Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
-> ---
->  drivers/staging/comedi/drivers/amplc_dio200_common.c | 4 +++-
->  1 file changed, 3 insertions(+), 1 deletion(-)
+> Ooh, that would be extremely interesting, yes. Kind of an extreme form
+> of pid namespace without actually being a namespace.
 >
-> diff --git a/drivers/staging/comedi/drivers/amplc_dio200_common.c b/drivers/staging/comedi/drivers/amplc_dio200_common.c
-> index 78700e8..3592e58 100644
-> --- a/drivers/staging/comedi/drivers/amplc_dio200_common.c
-> +++ b/drivers/staging/comedi/drivers/amplc_dio200_common.c
-> @@ -1202,8 +1202,10 @@ void amplc_dio200_common_detach(struct comedi_device *dev)
->  
->  	if (!thisboard || !devpriv)
->  		return;
-> -	if (dev->irq)
-> +	if (dev->irq) {
->  		free_irq(dev->irq, dev);
-> +		dev->irq = 0;
-> +	}
->  }
->  EXPORT_SYMBOL_GPL(amplc_dio200_common_detach);
- 
-Ian,
+>> It's far from just being signals.  There's access_process_vm, ptrace,
+>> all the signal functions, clock_gettime (see CPUCLOCK_PID -- yes, this
+>> is ridiculous), and probably some others that I've forgotten about or
+>> never noticed in the first place.
+>
+> Yeah, that would be very interesting.
 
-I have already gave a Reviewed-by signoff for this series.
+Yes, this would be incredibly useful.
 
-After looking over the code I think a cleaner solution would be to:
+1. For Chromium [1], I dislike relying on seccomp purely for
+"access-control" (to other processes or files). Because it's really
+hard to think about everything (things like CPUCLOCK_PID bite,
+seehttps://crbug.com/374479).
+Se we have a first layer of sandboxing (using PID + NET namespaces and
+chroot) for "access-control" and a second layer for kernel attack
+surface reduction and a few other things using seccomp-bpf.
 
-1) Use comedi_legacy_detach() directly for the (*detach) in the
-   legacy ISA driver.
-2) Move the code from amplc_dio200_common_detach() into the
-   (*detach) function for the PCI driver.
-3) Remove the exported function amplc_dio200_common_detach().
+The first layer isn't currently very good; it's heavyweight and
+complex (you need an init(1) per namespace and that init cannot be
+multi-purposed as a useful process because pid = 1 can never receive
+signals). One PID namespace per process isn't something that scales
+well. (Also before USER_NS it required a setuid root program).
 
-Regards,
-Hartley
+2. Even with a safe pure seccomp-bpf sandbox that prevents sending
+signals to other process / ptrace() et al and that restrict
+clock_gettime(2) properly, things become quickly very tedious because
+as far as the kernel is concerned, the process under this BPF program
+can still pass ptrace_may_access() to other processes. This means for
+instance that no matter what you do, a model where open() is allowed
+can't work if /proc is available. We need a mode that says
+"ptrace_may_access()" will never pass.
 
+So yes, I really would like:
+- a prctl that says: "I'm dropping privileges and I now can't interact
+with other thread groups (via signals, ptrace, etc..)".
+- Something to drop access to the file system. It could be an
+unprivileged way to chroot() to an empty directory (unprivileged
+namespaces work for that, - except if you're already in a chroot -).
+This is a little tricky without allowing chroot escapes, so I suspect
+we would want to express it in terms of mount namespace, or something
+else, rather than chroot.
+
+Then we have the primitives  we need to build sandboxes in a simple
+way and we can add seccomp-bpf on top to do things such as open()
+hooking (via SECCOMP_RET_TRAP) and to restrict the kernel attack
+surface.
+
+Julien
+
+[1] https://code.google.com/p/chromium/wiki/LinuxSandboxing
