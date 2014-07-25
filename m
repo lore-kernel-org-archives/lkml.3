@@ -1,74 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934843AbaGYRDe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 13:03:34 -0400
-Received: from mail.kernel.org ([198.145.19.201]:39016 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932508AbaGYRDd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 13:03:33 -0400
-Date: Fri, 25 Jul 2014 19:03:27 +0200
-From: Sebastian Reichel <sre@kernel.org>
-To: =?iso-8859-1?Q?R=E9mi?= Denis-Courmont <remi@remlab.net>
-Cc: Sasha Levin <sasha.levin@oracle.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        LKML <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org,
-        Dave Jones <davej@redhat.com>
-Subject: Re: net, phonet, rcu: rcu hang within gprs_attach
-Message-ID: <20140725170327.GA4024@earth.universe>
-References: <53D1865F.7040604@oracle.com>
- <8427f661d1aa5707ee18596e812fd3c5@roundcube.remlab.net>
+	id S934881AbaGYRDx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 13:03:53 -0400
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:33337 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932508AbaGYRDw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jul 2014 13:03:52 -0400
+Date: Fri, 25 Jul 2014 10:03:19 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: torvalds@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org
+Subject: [GIT PULL] hwmon fix for 3.16-rc7
+Message-ID: <20140725170319.GB21458@roeck-us.net>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha512;
-	protocol="application/pgp-signature"; boundary="gBBFr7Ir9EOA20Yy"
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="wac7ysb48OaltWcw"
 Content-Disposition: inline
-In-Reply-To: <8427f661d1aa5707ee18596e812fd3c5@roundcube.remlab.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---gBBFr7Ir9EOA20Yy
-Content-Type: text/plain; charset=iso-8859-1
+--wac7ysb48OaltWcw
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-Hi,
+Hi Linus,
 
-On Fri, Jul 25, 2014 at 10:43:46AM +0300, R=E9mi Denis-Courmont wrote:
-> Maybe Phonet should be dropped though. As much as I like to have my name =
-in
-> MAINTAINERS, I have not heard of any remaining users for up-to-date kernel
-> versions. And with Broadcom shutting down what was Nokia Wireless Modems,=
- I
-> doubt we will see new users ever.
+Please pull a hwmon fix for Linux 3.16-rc7 from signed tag:
 
-The Nokia N900 modem uses phonet and is supported in the mainline
-kernel since 3.16. See drivers/hsi/clients/ssi_protocol.c
+    git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git hwmon-for-linus
 
--- Sebastian
+Fat finger, this time signed and with Cc:. Sorry for the noise.
 
---gBBFr7Ir9EOA20Yy
+Thanks,
+Guenter
+------
+
+The following changes since commit 9a3c4145af32125c5ee39c0272662b47307a8323:
+
+  Linux 3.16-rc6 (2014-07-20 21:04:16 -0700)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git tags/hwmon-for-linus
+
+for you to fetch changes up to 043572d5444116b9d9ad8ae763cf069e7accbc30:
+
+  hwmon: (smsc47m192) Fix temperature limit and vrm write operations (2014-07-24 06:25:25 -0700)
+
+----------------------------------------------------------------
+Fixes to temperature limit and vrm write operations in smsc47m192 driver.
+
+----------------------------------------------------------------
+Guenter Roeck (1):
+      hwmon: (smsc47m192) Fix temperature limit and vrm write operations
+
+ drivers/hwmon/smsc47m192.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+--wac7ysb48OaltWcw
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1
 
-iQIcBAEBCgAGBQJT0o3fAAoJENju1/PIO/qasG8QAIDapWz/6Ws51JmNEqKe3iND
-an7X/hzcUDUKvVvVtKAUM042iJ/euFkeisdc1QcI2MtvurF+tJlRh0zc3tIG3mmQ
-xcjsxWepO17DvjbB499/+a/lYSfYXae7/wPsXDQuGipLfI79Zg5MUPEUvzuGlBnK
-ASMVNc5C5BIRHfQ2w5LSiLnvwgB0xFhOvVCb1YUofcNui8JNFI3Fd1J0FfSdG0RQ
-fFADTde4vn7lTPCNj1ltEPEM177hZW1HLpMENugi/sLF7wTixEtusVOrT15n4yVL
-oNb3SzaL1dW2+kFQBsfDygsEJR8DHb9n+3Rx8aIGcbKvi2yXJL14Pr+capQUC3K0
-71jlcQSE4nne6vVucPQtNjynRRcyyU192kkMkiT+NbEtXMdE6ZN0kCffENcrrJ08
-K3Uhi0iyqSjzUj/LuHzh4/kp9MiGpiLAWP7m8Kc/47aovFVZAYMxsMKQpxaX4ooY
-f0j0Qzgpp4yHx4ACc0BLZZwkEKp9hmwKEZBgNYSV8g9gU7GUXP6j5CmcNBTYiQOj
-+Lp9p71dFQ6VEtGotrtg5hb0rk6x99kkYEWeT22ntI1fnyFzTRjm8l6dC1bBnj9j
-f0zGvpa2v9dXPsxxTkjoHFfDte7lRfwhigA70HQ69Aeyu8zusBf3le5TSnByL5Eg
-X5RoJ5qKxc+FYelhrT1S
-=Il4e
+iQIcBAEBAgAGBQJT0o3XAAoJEMsfJm/On5mBAVgP/jg7wn/pqSMBE1Iwm9ml4Mk1
+wk6v0r0pSIMjKmj5T2+CRQMR2KPcEvlArGZn2bsAqPMwxLxvVWFSTc8zj0c3NJgY
+09t5SoKFnG2bg6QqFUuXNGpTtPQv4aA/v+1DxB1QFYrigS9XSt7oGSG/mxq8cxDj
+jOYRcs5aeH+r7WKdPQUTj+yljG1TCd/znlcN0XIVwO3E839mWgkP75gkPSASwWVj
+MnYl/Ynzjf6waanUFLHl26UOOTQpoMWq/8WwhX226yrXXaFV5bpax0OWzygk/m4z
+z4U7IkF3AKM/wTCpxSgmEPijynQqExmWJriPUJ1Ih3v77jypeEc16/P3M5ROaeuJ
+hv56s60F9DFpi3QniAa96jer40/j48SDpcmXGi2spU5WJzztVTPrxs1L9VRmjS+x
+S2GuYAa3Nsp8165ge9cSe72DNC8dYllVci4NDfGQxS6ZIvVvgpRntM++Ydwz4lz7
+w+xbKOmaPJRMZCuRdvocqX0LLySiJkmwcHYlwqQdbV29sJ995HgdiE3H7n9Wtblb
+xvzkEN2fMUDSJ5kDEo1lUwWPnQ59NJEiqk02zYljJ0KyWsh2300/G/S/wj6qbtn4
+cz3+J8Zua2MTbgsxP5GLziXv+s2L3QcihPDHUta/p0D4QCBGCntMnH05ir0dPcJ9
+U14lvuGq6Ua5/ykC+Shz
+=4McE
 -----END PGP SIGNATURE-----
 
---gBBFr7Ir9EOA20Yy--
+--wac7ysb48OaltWcw--
