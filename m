@@ -1,81 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933047AbaGYJbQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 05:31:16 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:54431 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751439AbaGYJbN convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 05:31:13 -0400
-Date: Fri, 25 Jul 2014 11:31:10 +0200
-From: Boris BREZILLON <boris.brezillon@free-electrons.com>
-To: jiri.prchal@aksignal.cz
-Cc: Bo Shen <voice.shen@atmel.com>, nicolas.ferre@atmel.com,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org
-Subject: Re: [PATCH] ARM: at91: at91sam9x5: sets NPCS0 (PA14) back to GPIO
-Message-ID: <20140725113110.70c4aa41@bbrezillon>
-In-Reply-To: <53D21FCF.7010402@aksignal.cz>
-References: <1405074175-22444-1-git-send-email-voice.shen@atmel.com>
-	<53D10C50.50305@aksignal.cz>
-	<20140724162645.4e19c26c@bbrezillon>
-	<53D12103.3020103@aksignal.cz>
-	<20140724175848.44f5da10@bbrezillon>
-	<53D1F5D0.1080006@aksignal.cz>
-	<20140725095319.16a8465c@bbrezillon>
-	<53D214E1.4050105@aksignal.cz>
-	<20140725104553.403921b1@bbrezillon>
-	<53D21B3F.7060006@aksignal.cz>
-	<20140725110124.3f0dce6c@bbrezillon>
-	<53D21FCF.7010402@aksignal.cz>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1759667AbaGYJhQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 05:37:16 -0400
+Received: from numascale.com ([213.162.240.84]:45472 "EHLO numascale.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750699AbaGYJhO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jul 2014 05:37:14 -0400
+Message-ID: <53D22533.9030401@numascale.com>
+Date: Fri, 25 Jul 2014 17:36:51 +0800
+From: Daniel J Blueman <daniel@numascale.com>
+Organization: Numascale AS
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: Oleg Nesterov <oleg@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Hillf Danton <dhillf@gmail.com>, Borislav Petkov <bp@amd64.org>,
+        Ingo Molnar <mingo@redhat.com>, Igor Mammedov <imammedo@redhat.com>,
+        Steffen Persvold <sp@numascale.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [3.14] core onlining/hotplug regression
+References: <53D20C2E.3070902@numascale.com> <alpine.DEB.2.10.1407251059130.23352@nanos>
+In-Reply-To: <alpine.DEB.2.10.1407251059130.23352@nanos>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-OutGoing-Spam-Status: No, score=-2.9
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - cpanel21.proisp.no
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - numascale.com
+X-Get-Message-Sender-Via: cpanel21.proisp.no: authenticated_id: daniel@numascale.com
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 25 Jul 2014 11:13:51 +0200
-Jiří Prchal <jiri.prchal@aksignal.cz> wrote:
+On 07/25/2014 05:05 PM, Thomas Gleixner wrote:
+> On Fri, 25 Jul 2014, Daniel J Blueman wrote:
+>> On a larger x86 system with 1728 cores, 3.15(.6) asserts on
+>> smpboot_thread_fn's td->cpu != smp_processor_id() consistently after ~1500
+>> cores are online.
+>>
+>> Reverting the only directly related changes I could find [1,2] doesn't help.
+>> Debugging indicates there is a race where the created thread is quickly
+>> migrated to core 0 when this occurs, since smp_processor_id returns 0 in these
+>> cases. Thomas introduced a thread parked state to fix related issues a year
+>> back. Linux 3.14(.13) boots just nice.
+>
+> Weird. Commits [1,2] are definitely not the culprits.
+>
+>> Full boot output is at:
+>> https://resources.numascale.com/linux-315-thread-mig.txt
+>
+> Not really helpful, as we don't see what causes it. We just see the
+> wreckage.
+>
+>> Any theories so far? I'll start bisecting when I have full access to the
+>> system again in a week and I'll do some more debugging with intermittent
+>> access before then.
+>
+> One thing you could try is enabling tracing.
+>
+>      "ftrace=function ftrace_dump_on_oops"
+>
+> It'll take a looooong time to spill out the traces, but that should
+> give us the root cause precisely.
 
+Good trick. I'll get this early next week and we'll see what's up.
 
-> >
-> > Every thing seems in place.
-> > Could you enable CONFIG_DEBUG_PINCTRL and grep on "enable pin" ?
-> / # dmesg | grep "enable pin"
-> [    0.968750] pinctrl-at91 ahb:apb:pinctrl@fffff400: enable pin 101 as GPIO
-> [    0.968750] pinctrl-at91 ahb:apb:pinctrl@fffff400: enable pin 101 as PIOD5 0x20
-> [    0.968750] pinctrl-at91 ahb:apb:pinctrl@fffff400: enable pin 100 as GPIO
-> [    0.968750] pinctrl-at91 ahb:apb:pinctrl@fffff400: enable pin 100 as PIOD4 0x10
-> [    1.238281] pinctrl-at91 ahb:apb:pinctrl@fffff400: enable pin 23 as GPIO
-> [    1.238281] pinctrl-at91 ahb:apb:pinctrl@fffff400: enable pin 23 as PIOA23 0x800000
-> [    1.238281] pinctrl-at91 ahb:apb:pinctrl@fffff400: enable pin 22 as GPIO
-> [    1.238281] pinctrl-at91 ahb:apb:pinctrl@fffff400: enable pin 22 as PIOA22 0x400000
-> [    1.242187] pinctrl-at91 ahb:apb:pinctrl@fffff400: enable pin 93 as GPIO
-> [    1.242187] pinctrl-at91 ahb:apb:pinctrl@fffff400: enable pin 93 as PIOC29 0x20000000
-> [    1.246093] pinctrl-at91 ahb:apb:pinctrl@fffff400: enable pin 14 as GPIO
-> [    1.246093] pinctrl-at91 ahb:apb:pinctrl@fffff400: enable pin 14 as PIOA14 0x4000
-
-
-Okay, this cleary shows that PA14 pin is muxed as a GPIO (or at least
-the driver think it is).
-
-
-Could you launch these commands (you'll need the devmem tool) and
-paste the results ?
-
-#devmem 0xfffff408
-#devmem 0xfffff418
-#devmem 0xfffff438
-#devmem 0xfffff43c
-#devmem 0xfffff458
-#devmem 0xfffff468
-#devmem 0xfffff470
-#devmem 0xfffff474
-#devmem 0xfffff498
-
+Thanks,
+   Daniel
 -- 
-Boris Brezillon, Free Electrons
-Embedded Linux and Kernel engineering
-http://free-electrons.com
+Daniel J Blueman
+Principal Software Engineer, Numascale
