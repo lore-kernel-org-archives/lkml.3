@@ -1,101 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760072AbaGYJHe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 05:07:34 -0400
-Received: from mail.mev.co.uk ([62.49.15.74]:41156 "EHLO mail.mev.co.uk"
+	id S1760139AbaGYJHv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 05:07:51 -0400
+Received: from mga02.intel.com ([134.134.136.20]:36528 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759796AbaGYJFV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 05:05:21 -0400
-From: Ian Abbott <abbotti@mev.co.uk>
-To: driverdev-devel@linuxdriverproject.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ian Abbott <abbotti@mev.co.uk>,
-        H Hartley Sweeten <hartleys@visionengravers.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 08/12] staging: comedi: amplc_pc236: split pc236_boards[] into ISA & PCI
-Date: Fri, 25 Jul 2014 10:04:54 +0100
-Message-Id: <1406279098-8498-9-git-send-email-abbotti@mev.co.uk>
-X-Mailer: git-send-email 2.0.0
-In-Reply-To: <1406279098-8498-1-git-send-email-abbotti@mev.co.uk>
-References: <1406279098-8498-1-git-send-email-abbotti@mev.co.uk>
+	id S1751282AbaGYJHs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jul 2014 05:07:48 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,729,1400050800"; 
+   d="scan'208";a="578819681"
+Date: Fri, 25 Jul 2014 12:07:14 +0300
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org,
+        Kweh Hock Leong <hock.leong.kweh@intel.com>,
+        Eric Miao <eric.y.miao@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Mark Brown <broonie@kernel.org>,
+        Chew Chiau Ee <chiau.ee.chew@intel.com>,
+        Darren Hart <dvhart@linux.intel.com>, chiauee85@gmail.com,
+        linux-kernel@vger.kernel.org, linux-spi@vger.kernel.org,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Subject: Re: [PATCH] spi/pxa2xx-pci: Enable DMA binding through device name
+Message-ID: <20140725090714.GY1857@lahna.fi.intel.com>
+References: <1406196111-22861-1-git-send-email-hock.leong.kweh@intel.com>
+ <5574058.fMy2hcvT92@wuerfel>
+ <20140725082249.GX1857@lahna.fi.intel.com>
+ <7309109.iKHmHOxjzD@wuerfel>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <7309109.iKHmHOxjzD@wuerfel>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Split `pc236_boards[]` into `pc236_isa_boards[]` for ISA cards and
-`pc236_pci_boards[]` for PCI cards (there is only one of each).  Only
-initialize the board name look-up members of `struct comedi_driver
-amplc_pc236_driver` if the ISA part of the driver is enabled in the
-kernel config (`CONFIG_COMEDI_AMPLC_PC236_ISA`) using the array of ISA
-boards (`pc236_isa_boards[]`).  The driver doesn't allow manual
-configuration of PCI devices, so there is no point having the comedi
-core match the names of the PCI boards before it calls our driver's
-legacy attach routine (`pc236_attach()`).
+On Fri, Jul 25, 2014 at 10:38:36AM +0200, Arnd Bergmann wrote:
+> On Friday 25 July 2014 11:22:49 Mika Westerberg wrote:
+> > > All you need to do is change your filter function to take the
+> > > slave id from pxa_spi_info and stick it in there, e.g.
+> > > 
+> > > static bool pxa2xx_spi_dw_dma_filter(struct dma_chan *chan, void *param)
+> > > {       
+> > >         const struct pxa2xx_spi_master *pdata = param;
+> > >         struct dw_dma_chan *dwc = to_dw_dma_chan(chan);
+> > >         
+> > >         dwc->request_line = fargs->req;
+> > >         dwc->src_master = 0;
+> > >         dwc->dst_master = 0;
+> > >         
+> > >         return 1;
+> > > }           
+> > 
+> > Oh man. That makes pxa2xx_spi dependent on a certain specific DMA engine
+> > driver.
+> 
+> I think you can improve this by putting the filter function (and a pointer
+> to it) into the pxa2xx_spi_master data provided by the PCI driver.
 
-Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
----
- drivers/staging/comedi/drivers/amplc_pc236.c | 24 +++++++++++++-----------
- 1 file changed, 13 insertions(+), 11 deletions(-)
+Indeed, that looks better. It still makes the PCI part of the driver
+dependent on a particular DMA engine driver but is certainly better than
+the core pxa2xx_spi driver.
 
-diff --git a/drivers/staging/comedi/drivers/amplc_pc236.c b/drivers/staging/comedi/drivers/amplc_pc236.c
-index 129578f..0a5ba10 100644
---- a/drivers/staging/comedi/drivers/amplc_pc236.c
-+++ b/drivers/staging/comedi/drivers/amplc_pc236.c
-@@ -88,20 +88,20 @@ struct pc236_board {
- 	unsigned short devid;
- 	enum pc236_bustype bustype;
- };
--static const struct pc236_board pc236_boards[] = {
--#if DO_ISA
-+
-+static const struct pc236_board pc236_isa_boards[] = {
- 	{
- 		.name = "pc36at",
- 		.bustype = isa_bustype,
- 	},
--#endif
--#if DO_PCI
-+};
-+
-+static const struct pc236_board pc236_pci_boards[] = {
- 	{
- 		.name = "pci236",
- 		.devid = PCI_DEVICE_ID_AMPLICON_PCI236,
- 		.bustype = pci_bustype,
- 	},
--#endif
- };
- 
- struct pc236_private {
-@@ -128,10 +128,10 @@ static const struct pc236_board *pc236_find_pci_board(struct pci_dev *pci_dev)
- {
- 	unsigned int i;
- 
--	for (i = 0; i < ARRAY_SIZE(pc236_boards); i++)
--		if (is_pci_board(&pc236_boards[i]) &&
--		    pci_dev->device == pc236_boards[i].devid)
--			return &pc236_boards[i];
-+	for (i = 0; i < ARRAY_SIZE(pc236_pci_boards); i++)
-+		if (is_pci_board(&pc236_pci_boards[i]) &&
-+		    pci_dev->device == pc236_pci_boards[i].devid)
-+			return &pc236_pci_boards[i];
- 	return NULL;
- }
- 
-@@ -429,9 +429,11 @@ static struct comedi_driver amplc_pc236_driver = {
- 	.attach = pc236_attach,
- 	.auto_attach = pc236_auto_attach,
- 	.detach = pc236_detach,
--	.board_name = &pc236_boards[0].name,
-+#if DO_ISA
-+	.board_name = &pc236_isa_boards[0].name,
- 	.offset = sizeof(struct pc236_board),
--	.num_names = ARRAY_SIZE(pc236_boards),
-+	.num_names = ARRAY_SIZE(pc236_isa_boards),
-+#endif
- };
- 
- #if DO_PCI
--- 
-2.0.0
+> On ARM, we usually provide those pointers through platform_data from
+> the board file.
+> 
+> > > Note that the filter function by definition is specific to the dma
+> > > controller, not the dma slave (that's why most people define it in
+> > > the dmaengine driver), and the pxa2xx_spi_dma_filter() function used
+> > > in spi-pxa2xx-dma.c looks like it was written for another dma engine:
+> > 
+> > I wonder what's the rationale that passing slave_id with
+> > dma_slave_config is wrong? The current code works fine with that and is
+> > is independent of the DMA engine driver (even though we know that it is
+> > going to be dw-dma).
+> > 
+> > The dw-dma handles slave_id in its implementation of
+> > dmaengine_slave_config().
+> 
+> The main point is that a single 'slave_id' is not actually enough to
+> identify what a slave needs. In case of dw_dma, the dma engine actually
+> requires three numbers (request line, source master, destination master)
+> to identify it, and there is no good way to put all that information into
+> a single integer. Other dma engines require a different set of data.
+> 
+> There are only two drivers left that actually use slave_id in this way,
+> and only for the legacy (no DT or ACPI) case, every other driver uses
+> either DT or a filter function. I believe the shmobile part will soon
+> be done with, after shmobile has been converted to DT, and after that
+> we should remove the slave_id field from the dma_slave_config interface.
 
+OK, thanks for the explanation.
