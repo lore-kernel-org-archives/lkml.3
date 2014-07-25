@@ -1,57 +1,239 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760645AbaGYV1a (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 17:27:30 -0400
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:49686 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751018AbaGYV1R (ORCPT
+	id S1760514AbaGYVbu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 17:31:50 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:46224 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750982AbaGYVbs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 17:27:17 -0400
-Date: Fri, 25 Jul 2014 23:27:07 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Subject: Re: [PATCH 06/10] nohz: Define meaningful symbol for nohz full
- timekeeper
-Message-ID: <20140725212705.GB16182@localhost.localdomain>
-References: <1405730661-9355-1-git-send-email-fweisbec@gmail.com>
- <1405730661-9355-7-git-send-email-fweisbec@gmail.com>
- <20140721181255.GH8690@linux.vnet.ibm.com>
+	Fri, 25 Jul 2014 17:31:48 -0400
+Date: Fri, 25 Jul 2014 14:31:26 -0700
+From: "tip-bot for Li, Aubrey" <tipbot@zytor.com>
+Message-ID: <tip-93e5eadd1f6e7f45c31aa327c42ac52e4df5ff6f@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        tglx@linutronix.de, hpa@linux.intel.com, lejun.zhu@linux.intel.com,
+        aubrey.li@linux.intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, hpa@linux.intel.com, aubrey.li@linux.intel.com,
+        lejun.zhu@linux.intel.com
+In-Reply-To: <53B0FEEA.3010805@linux.intel.com>
+References: <53B0FEEA.3010805@linux.intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/platform] x86/platform:
+  New Intel Atom SOC power management controller driver
+Git-Commit-ID: 93e5eadd1f6e7f45c31aa327c42ac52e4df5ff6f
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <20140721181255.GH8690@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 21, 2014 at 11:12:55AM -0700, Paul E. McKenney wrote:
-> On Sat, Jul 19, 2014 at 02:44:17AM +0200, Frederic Weisbecker wrote:
-> > The nohz full timekeeper is always CPU 0. Lets add it to the list of
-> > special tick_do_timer_cpu symbols for more self explanatory code.
-> > 
-> > Cc: Ingo Molnar <mingo@kernel.org>
-> > Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > Cc: Peter Zijlstra <peterz@infradead.org>
-> > Cc: Steven Rostedt <rostedt@goodmis.org>
-> > Cc: Thomas Gleixner <tglx@linutronix.de>
-> > Cc: Viresh Kumar <viresh.kumar@linaro.org>
-> > Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-> 
-> Sounds like Nicolas Pitre would like to be able to specify the default,
-> perhaps at build time, but aside from that requested enhancement:
+Commit-ID:  93e5eadd1f6e7f45c31aa327c42ac52e4df5ff6f
+Gitweb:     http://git.kernel.org/tip/93e5eadd1f6e7f45c31aa327c42ac52e4df5ff6f
+Author:     Li, Aubrey <aubrey.li@linux.intel.com>
+AuthorDate: Mon, 30 Jun 2014 14:08:42 +0800
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Fri, 25 Jul 2014 14:11:29 -0700
 
-Ok. That's outside the scope of this patchset though as it doesn't change much things
-in this regard: CPU 0 has been the timekeeper since the early days of nohz full.
-And we still need a default timekeeper in any case, whether we can override it or not
-in the future. So we still need that patch.
+x86/platform: New Intel Atom SOC power management controller driver
 
-Then if big.LITTLE people are really interested in nohz full, we can still enhance
-that in the future.
+The Power Management Controller (PMC) controls many of the power
+management features present in the Atom SoC. This driver provides
+a native power off function via PMC PCI IO port.
 
-Thanks!
+On some ACPI hardware-reduced platforms(e.g. ASUS-T100), ACPI sleep
+registers are not valid so that (*pm_power_off)() is not hooked by
+acpi_power_off(). The power off function in this driver is installed
+only when pm_power_off is NULL.
+
+Signed-off-by: Aubrey Li <aubrey.li@linux.intel.com>
+Link: http://lkml.kernel.org/r/53B0FEEA.3010805@linux.intel.com
+Signed-off-by: Lejun Zhu <lejun.zhu@linux.intel.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ arch/x86/Kconfig                |   4 ++
+ arch/x86/include/asm/pmc_atom.h |  31 ++++++++++++
+ arch/x86/kernel/Makefile        |   1 +
+ arch/x86/kernel/pmc_atom.c      | 104 ++++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 140 insertions(+)
+
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index a8f749e..6295a21 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -2403,6 +2403,10 @@ config IOSF_MBI
+ 	default m
+ 	depends on PCI
+ 
++config PMC_ATOM
++	def_bool y
++        depends on PCI
++
+ source "net/Kconfig"
+ 
+ source "drivers/Kconfig"
+diff --git a/arch/x86/include/asm/pmc_atom.h b/arch/x86/include/asm/pmc_atom.h
+new file mode 100644
+index 0000000..03a2769
+--- /dev/null
++++ b/arch/x86/include/asm/pmc_atom.h
+@@ -0,0 +1,31 @@
++/*
++ * Intel Atom SOC Power Management Controller Header File
++ * Copyright (c) 2014, Intel Corporation.
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms and conditions of the GNU General Public License,
++ * version 2, as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ *
++ */
++
++#ifndef PMC_ATOM_H
++#define PMC_ATOM_H
++
++/* ValleyView Power Control Unit PCI Device ID */
++#define	PCI_DEVICE_ID_VLV_PMC	0x0F1C
++
++/* PMC I/O Registers */
++#define	ACPI_BASE_ADDR_OFFSET	0x40
++#define	ACPI_BASE_ADDR_MASK	0xFFFFFE00
++#define	ACPI_MMIO_REG_LEN	0x100
++
++#define	PM1_CNT			0x4
++#define	SLEEP_TYPE_MASK		0xFFFFECFF
++#define	SLEEP_TYPE_S5		0x1C00
++#define	SLEEP_ENABLE		0x2000
++#endif /* PMC_ATOM_H */
+diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
+index 047f9ff..bde3993 100644
+--- a/arch/x86/kernel/Makefile
++++ b/arch/x86/kernel/Makefile
+@@ -106,6 +106,7 @@ obj-$(CONFIG_EFI)			+= sysfb_efi.o
+ obj-$(CONFIG_PERF_EVENTS)		+= perf_regs.o
+ obj-$(CONFIG_TRACING)			+= tracepoint.o
+ obj-$(CONFIG_IOSF_MBI)			+= iosf_mbi.o
++obj-$(CONFIG_PMC_ATOM)			+= pmc_atom.o
+ 
+ ###
+ # 64 bit specific files
+diff --git a/arch/x86/kernel/pmc_atom.c b/arch/x86/kernel/pmc_atom.c
+new file mode 100644
+index 0000000..9eb79f6
+--- /dev/null
++++ b/arch/x86/kernel/pmc_atom.c
+@@ -0,0 +1,104 @@
++/*
++ * Intel Atom SOC Power Management Controller Driver
++ * Copyright (c) 2014, Intel Corporation.
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms and conditions of the GNU General Public License,
++ * version 2, as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ *
++ */
++
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++
++#include <linux/module.h>
++#include <linux/init.h>
++#include <linux/pci.h>
++#include <linux/device.h>
++#include <linux/io.h>
++
++#include <asm/pmc_atom.h>
++
++static u32 acpi_base_addr;
++
++static void pmc_power_off(void)
++{
++	u16	pm1_cnt_port;
++	u32	pm1_cnt_value;
++
++	pr_info("Preparing to enter system sleep state S5\n");
++
++	pm1_cnt_port = acpi_base_addr + PM1_CNT;
++
++	pm1_cnt_value = inl(pm1_cnt_port);
++	pm1_cnt_value &= SLEEP_TYPE_MASK;
++	pm1_cnt_value |= SLEEP_TYPE_S5;
++	pm1_cnt_value |= SLEEP_ENABLE;
++
++	outl(pm1_cnt_value, pm1_cnt_port);
++}
++
++static int pmc_setup_dev(struct pci_dev *pdev)
++{
++	/* Obtain ACPI base address */
++	pci_read_config_dword(pdev, ACPI_BASE_ADDR_OFFSET, &acpi_base_addr);
++	acpi_base_addr &= ACPI_BASE_ADDR_MASK;
++
++	/* Install power off function */
++	if (acpi_base_addr != 0 && pm_power_off == NULL)
++		pm_power_off = pmc_power_off;
++
++	return 0;
++}
++
++/*
++ * Data for PCI driver interface
++ *
++ * This data only exists for exporting the supported
++ * PCI ids via MODULE_DEVICE_TABLE.  We do not actually
++ * register a pci_driver, because lpc_ich will register
++ * a driver on the same PCI id.
++ */
++static const struct pci_device_id pmc_pci_ids[] = {
++	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_VLV_PMC) },
++	{ 0, },
++};
++
++MODULE_DEVICE_TABLE(pci, pmc_pci_ids);
++
++static int __init pmc_atom_init(void)
++{
++	int err = -ENODEV;
++	struct pci_dev *pdev = NULL;
++	const struct pci_device_id *ent;
++
++	/* We look for our device - PCU PMC
++	 * we assume that there is max. one device.
++	 *
++	 * We can't use plain pci_driver mechanism,
++	 * as the device is really a multiple function device,
++	 * main driver that binds to the pci_device is lpc_ich
++	 * and have to find & bind to the device this way.
++	 */
++	for_each_pci_dev(pdev) {
++		ent = pci_match_id(pmc_pci_ids, pdev);
++		if (ent) {
++			err = pmc_setup_dev(pdev);
++			goto out;
++		}
++	}
++	/* Device not found. */
++out:
++	return err;
++}
++
++module_init(pmc_atom_init);
++/* no module_exit, this driver shouldn't be unloaded */
++
++MODULE_AUTHOR("Aubrey Li <aubrey.li@linux.intel.com>");
++MODULE_DESCRIPTION("Intel Atom SOC Power Management Controller Interface");
++MODULE_LICENSE("GPL v2");
