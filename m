@@ -1,85 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760794AbaGYQXG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 12:23:06 -0400
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:37430 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752638AbaGYQXE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 12:23:04 -0400
-Date: Fri, 25 Jul 2014 09:22:58 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: pramod.gurav.etc@gmail.com
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Pramod Gurav <pramod.gurav@smartplayin.com>,
-        Lejun Zhu <lejun.zhu@linux.intel.com>,
-        Sachin Kamat <sachin.kamat@linaro.org>
-Subject: Re: [PATCH v2] Input: soc_button_array: Remove kfree on data
- allocated with devm_zalloc
-Message-ID: <20140725162258.GA12254@core.coreip.homeip.net>
-References: <1406288074-28725-1-git-send-email-pramod.gurav@smartplayin.com>
+	id S1760821AbaGYQXf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 12:23:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56943 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752638AbaGYQXd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jul 2014 12:23:33 -0400
+Message-ID: <53D28457.202@redhat.com>
+Date: Fri, 25 Jul 2014 12:22:47 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1406288074-28725-1-git-send-email-pramod.gurav@smartplayin.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Peter Zijlstra <peterz@infradead.org>
+CC: linux-kernel@vger.kernel.org, mikey@neuling.org, mingo@kernel.org,
+        pjt@google.com, jhladky@redhat.com, ktkhai@parallels.com,
+        tim.c.chen@linux.intel.com, nicolas.pitre@linaro.org,
+        Vincent Guittot <vincent.guittot@linaro.org>
+Subject: Re: [PATCH] sched: make update_sd_pick_busiest return true on a busier
+ sd
+References: <20140722144559.382c5243@annuminas.surriel.com> <20140725152728.GB6758@twins.programming.kicks-ass.net> <53D27B7E.8090404@redhat.com> <20140725160549.GD6758@twins.programming.kicks-ass.net>
+In-Reply-To: <20140725160549.GD6758@twins.programming.kicks-ass.net>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Pramod,
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
-On Fri, Jul 25, 2014 at 05:04:34PM +0530, pramod.gurav.etc@gmail.com wrote:
-> From: Pramod Gurav <pramod.gurav@smartplayin.com>
+On 07/25/2014 12:05 PM, Peter Zijlstra wrote:
+> On Fri, Jul 25, 2014 at 11:45:02AM -0400, Rik van Riel wrote:
+>>> So for !ASYM the code is effectively:
+>>> 
+>>> return sgs->avg_load > sds->busiest_stat.avg_load;
+>>> 
+>>> I'd like to at least add a clause that makes overloaded groups
+>>>  prioritized over !overloaded groups.
+>>> 
+>>> Also, like we found earlier, calculate_imbalance() relies on
+>>> the sum_nr_running > group_capacity_factor thing, which you've
+>>> just 'wrecked', so we'd need an update to that part too.
+>> 
+>> I guess that would mean update_sd_pick_busiest would look like 
+>> this for the !ASYM case:
+>> 
+>> 1) remembering whether busiest is overloaded
+>> 
+>> 2) if (sgs->busiest_stat.overloaded && !sgs->overloaded) return
+>> false;
+>> 
+>> 3) if (sgs->avg_load > sds->busiest_stat.avg_load) return true;
 > 
-> This patch does below:
-> - Removes kfree done on data allocated with devm_zalloc in probe
->   path of the driver.
-> - Adds a check on return value from devm_kzalloc which was missing
-> 
-> CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-> CC: Lejun Zhu <lejun.zhu@linux.intel.com>
-> CC: Sachin Kamat <sachin.kamat@linaro.org>
-> 
-> Signed-off-by: Pramod Gurav <pramod.gurav@smartplayin.com>
-> ---
->  drivers/input/misc/soc_button_array.c |   17 +++++++----------
->  1 file changed, 7 insertions(+), 10 deletions(-)
-> 
-> diff --git a/drivers/input/misc/soc_button_array.c b/drivers/input/misc/soc_button_array.c
-> index 5a6334b..fc64ec6 100644
-> --- a/drivers/input/misc/soc_button_array.c
-> +++ b/drivers/input/misc/soc_button_array.c
-> @@ -83,6 +83,9 @@ soc_button_device_create(struct pnp_dev *pdev,
->  				       sizeof(*gpio_keys_pdata) +
->  					sizeof(*gpio_keys) * MAX_NBUTTONS,
->  				       GFP_KERNEL);
-> +	if (!gpio_keys_pdata)
-> +		return ERR_PTR(-ENOMEM);
+> Right. So the situation I was worried about is where we have say 8
+> +nice tasks in one group and 2 -nice in another. So the group with
+> 2 tasks can actually be 'heavier' but not fully utilized. In that
+> case we want to pull tasks from the lighter but overloaded group.
 
-OK, that makes sense.
+I can certainly create a new patch that makes update_sd_pick_busiest
+do just that.
 
-> +
->  	gpio_keys = (void *)(gpio_keys_pdata + 1);
->  
->  	for (info = button_info; info->name; info++) {
-> @@ -102,20 +105,16 @@ soc_button_device_create(struct pnp_dev *pdev,
->  		n_buttons++;
->  	}
->  
-> -	if (n_buttons == 0) {
-> -		error = -ENODEV;
-> -		goto err_free_mem;
-> -	}
-> +	if (n_buttons == 0)
-> +		return ERR_PTR(-ENODEV);
+Vincent, any objections to me fixing update_sd_pick_busiest now, or
+will that conflict with your code cleanups?
 
-But that one and the rest don't, because failure in
-soc_button_device_create() does not necessarily mean that binding for
-the whole device will fail. In this case we do not want unused memory
-hang around.
+- -- 
+All rights reversed
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
 
-Thanks.
-
--- 
-Dmitry
+iQEcBAEBAgAGBQJT0oRWAAoJEM553pKExN6DRdoH/2VsMEbeRdr9o99CYV3hK2bj
+OT4O5xlz47aBq+/J3Sp35DZKtQ8PpYICNoNzddyF5Blr7ZcXB2OQj5Cv5Lj3Dtcs
+q/AnJAN+6mDNq4B3aVfTb3BMDcrSz8LNdpNwVM80gfvbcZkcWIYWF2FigShIggMZ
+bKz4cC5hVphtYR/WH6gnb5dXwgXBGYatwYsDXnVw6SLRbXcwYrB646SmZYXDVcER
+bOj5IAjdfAlFkLbeow6OaX1arBrd6lyKfVI4Mzr848dqLBrJvmPvx/R4Z8EzPN2H
+Gv4kqU7s9CAk1QOZLHWAOCDjG7PdMZfkS7WEZnQinMIutBK/jYJ4IXY8NNeS96I=
+=OcR0
+-----END PGP SIGNATURE-----
