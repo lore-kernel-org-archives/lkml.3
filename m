@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760416AbaGYOYU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 10:24:20 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:53798 "EHLO
+	id S1760604AbaGYOYh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 10:24:37 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:54116 "EHLO
 	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752994AbaGYOYS (ORCPT
+	by vger.kernel.org with ESMTP id S1752994AbaGYOYV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 10:24:18 -0400
+	Fri, 25 Jul 2014 10:24:21 -0400
 From: Pawel Moll <pawel.moll@arm.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: Olof Johansson <olof@lixom.net>, Stephen Warren <swarren@wwwdotorg.org>,
@@ -14,13 +14,10 @@ Cc: Olof Johansson <olof@lixom.net>, Stephen Warren <swarren@wwwdotorg.org>,
         Arnd Bergmann <arnd@arndb.de>,
         Peter De Schrijver <pdeschrijver@nvidia.com>, arm@kernel.org,
         linux-tegra@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Pawel Moll <pawel.moll@arm.com>,
-        Chris Ball <chris@printf.net>, Anton Vorontsov <anton@enomsg.org>,
-        Ulf Hansson <ulf.hansson@linaro.org>, linux-mmc@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org
-Subject: [PATCH 3/5] mmc: sdhci-pltfm: Do not use parent as the host's device
-Date: Fri, 25 Jul 2014 15:23:51 +0100
-Message-Id: <1406298233-27876-3-git-send-email-pawel.moll@arm.com>
+        linux-kernel@vger.kernel.org, Pawel Moll <pawel.moll@arm.com>
+Subject: [PATCH 5/5] platform: Make platform_bus device a platform device
+Date: Fri, 25 Jul 2014 15:23:53 +0100
+Message-Id: <1406298233-27876-5-git-send-email-pawel.moll@arm.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1406298233-27876-1-git-send-email-pawel.moll@arm.com>
 References: <1406298233-27876-1-git-send-email-pawel.moll@arm.com>
@@ -28,59 +25,76 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The code selecting a device for the sdhci host has been
-continuously tweaked (4b711cb13843f5082e82970dd1e8031383134a65
-"mmc: sdhci-pltfm: Add structure for host-specific data" and
-a4d2177f00a5252d825236c5124bc1e9918bdb41 "mmc: sdhci-pltfm: dt
-device does not pass parent to sdhci_alloc_host") while there
-does not seem to be any reason to use platform device's parent
-in the first place.
+... describing the root of the device tree, so one can write
+a platform driver initializing the platform.
 
-The comment saying "Some PCI-based MFD need the parent here"
-seem to refer to Timberdale FPGA driver (the only MFD driver
-registering SDHCI cell, drivers/mfd/timberdale.c) but again,
-the only situation when parent device matter is runtime PM,
-which is not implemented for Timberdale.
-
-Cc: Chris Ball <chris@printf.net>
-Cc: Anton Vorontsov <anton@enomsg.org>
-Cc: Ulf Hansson <ulf.hansson@linaro.org>
-Cc: linux-mmc@vger.kernel.org
-Cc: linuxppc-dev@lists.ozlabs.org
 Signed-off-by: Pawel Moll <pawel.moll@arm.com>
 ---
+ drivers/base/platform.c         | 20 ++++++++++++++------
+ include/linux/platform_device.h |  2 +-
+ 2 files changed, 15 insertions(+), 7 deletions(-)
 
-This patch is a part of effort to remove references to platform_bus
-and make it static.
-
-Chris, Anton, Ulf - could you please advise if the assumptions
-above are correct or if I'm completely wrong? Do you know what
-where the real reasons to use parent originally? The PCI comment
-seems like a red herring to me...
-
- drivers/mmc/host/sdhci-pltfm.c | 9 ++-------
- 1 file changed, 2 insertions(+), 7 deletions(-)
-
-diff --git a/drivers/mmc/host/sdhci-pltfm.c b/drivers/mmc/host/sdhci-pltfm.c
-index 7e834fb..4996112 100644
---- a/drivers/mmc/host/sdhci-pltfm.c
-+++ b/drivers/mmc/host/sdhci-pltfm.c
-@@ -136,13 +136,8 @@ struct sdhci_host *sdhci_pltfm_init(struct platform_device *pdev,
- 	if (resource_size(iomem) < 0x100)
- 		dev_err(&pdev->dev, "Invalid iomem size!\n");
+diff --git a/drivers/base/platform.c b/drivers/base/platform.c
+index eee48c4..9caffa7 100644
+--- a/drivers/base/platform.c
++++ b/drivers/base/platform.c
+@@ -30,8 +30,8 @@
+ /* For automatically allocated device IDs */
+ static DEFINE_IDA(platform_devid_ida);
  
--	/* Some PCI-based MFD need the parent here */
--	if (pdev->dev.parent != &platform_bus && !np)
--		host = sdhci_alloc_host(pdev->dev.parent,
--			sizeof(struct sdhci_pltfm_host) + priv_size);
--	else
--		host = sdhci_alloc_host(&pdev->dev,
--			sizeof(struct sdhci_pltfm_host) + priv_size);
-+	host = sdhci_alloc_host(&pdev->dev,
-+		sizeof(struct sdhci_pltfm_host) + priv_size);
+-struct device platform_bus = {
+-	.init_name	= "platform",
++struct platform_device platform_bus = {
++	.name	= "platform",
+ };
+ EXPORT_SYMBOL_GPL(platform_bus);
  
- 	if (IS_ERR(host)) {
- 		ret = PTR_ERR(host);
+@@ -300,7 +300,7 @@ int platform_device_add(struct platform_device *pdev)
+ 		return -EINVAL;
+ 
+ 	if (!pdev->dev.parent)
+-		pdev->dev.parent = &platform_bus;
++		pdev->dev.parent = &platform_bus.dev;
+ 
+ 	pdev->dev.bus = &platform_bus_type;
+ 
+@@ -946,12 +946,20 @@ int __init platform_bus_init(void)
+ 
+ 	early_platform_cleanup();
+ 
+-	error = device_register(&platform_bus);
++	dev_set_name(&platform_bus.dev, "%s", platform_bus.name);
++	error = device_register(&platform_bus.dev);
+ 	if (error)
+ 		return error;
+ 	error =  bus_register(&platform_bus_type);
+-	if (error)
+-		device_unregister(&platform_bus);
++	if (!error) {
++#ifdef CONFIG_OF
++		platform_bus.dev.of_node = of_allnodes;
++#endif
++		platform_bus.dev.bus = &platform_bus_type;
++		bus_add_device(&platform_bus.dev);
++	} else {
++		device_unregister(&platform_bus.dev);
++	}
+ 	return error;
+ }
+ 
+diff --git a/include/linux/platform_device.h b/include/linux/platform_device.h
+index 16f6654..a99032a 100644
+--- a/include/linux/platform_device.h
++++ b/include/linux/platform_device.h
+@@ -44,7 +44,7 @@ extern int platform_device_register(struct platform_device *);
+ extern void platform_device_unregister(struct platform_device *);
+ 
+ extern struct bus_type platform_bus_type;
+-extern struct device platform_bus;
++extern struct platform_device platform_bus;
+ 
+ extern void arch_setup_pdev_archdata(struct platform_device *);
+ extern struct resource *platform_get_resource(struct platform_device *,
 -- 
 1.9.1
 
