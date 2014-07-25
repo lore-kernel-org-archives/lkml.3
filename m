@@ -1,99 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760875AbaGYSKW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 14:10:22 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:58528 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753401AbaGYSKU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 14:10:20 -0400
-Message-ID: <53D29D87.4060708@austin.ibm.com>
-Date: Fri, 25 Jul 2014 13:10:15 -0500
-From: Nathan Fontenot <nfont@austin.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1752233AbaGYSOr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 14:14:47 -0400
+Received: from p3plex2out04.prod.phx3.secureserver.net ([184.168.131.18]:55349
+	"EHLO p3plex2out04.prod.phx3.secureserver.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750952AbaGYSOp convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jul 2014 14:14:45 -0400
+From: Hartley Sweeten <HartleyS@visionengravers.com>
+To: Ian Abbott <abbotti@mev.co.uk>,
+        "driverdev-devel@linuxdriverproject.org" 
+	<driverdev-devel@linuxdriverproject.org>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 0/3] staging: comedi: amplc_dio200 detach cleanups
+Thread-Topic: [PATCH 0/3] staging: comedi: amplc_dio200 detach cleanups
+Thread-Index: AQHPqCrrTqZFHvbQdki+SyyApbpJ55uxGDEQ
+Date: Fri, 25 Jul 2014 18:14:44 +0000
+Message-ID: <DC148C5AA1CEBA4E87973D432B1C2D8825F1E2F9@P3PWEX4MB008.ex4.secureserver.net>
+References: <1406308029-15712-1-git-send-email-abbotti@mev.co.uk>
+In-Reply-To: <1406308029-15712-1-git-send-email-abbotti@mev.co.uk>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [184.183.19.121]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Grant Likely <grant.likely@linaro.org>, linux-kernel@vger.kernel.org,
-        Tyrel Datwyler <turtle.in.the.kernel@gmail.com>,
-        Pantelis Antoniou <pantelis.antoniou@konsulko.com>,
-        devicetree@vger.kernel.org
-Subject: Re: [PATCH 00/10] of: Core devicetree changeset support
-References: <1406159064-21366-1-git-send-email-grant.likely@linaro.org>
-In-Reply-To: <1406159064-21366-1-git-send-email-grant.likely@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14072518-7164-0000-0000-00000361E50C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/23/2014 06:44 PM, Grant Likely wrote:
-> Hi all,
-> 
-> This is a rollup of all the patches that I queued up today for
-> linux-next for the devicetree changeset and overlay work. I'm reposting
-> these patches because some have been significantly changed since their
-> first posting. None of the code is actually live yet, but the test cases
-> are there.
-> 
-> There is one significant functional change which may affect pseries. The
-> OF_DYNAMIC code has been changed to emit notifiers after applying a
-> change to the tree instead of before. I think I've got all they users
-> taken care of correctly, but I'd like to see some testing. I don't have
-> access to pseries (and I can't get the QEMU pseries model to boot reliably)
-> 
-> Nathan/Tyrel, can you give it a spin? The changes can be found in my git tree:
+On Friday, July 25, 2014 10:07 AM, Ian Abbott wrote:
+> Fix a double free_irq() and do a bit more cleaning up of the "detach"
+> routines.
+>
+> 1) staging: comedi: amplc_dio200_common: prevent extra free_irq()
+> 2) staging: comedi: amplc_dio200_common: remove some tests from
+>    amplc_dio200_common_detach()
+> 3) staging: comedi: amplc_dio200_pci: no need to test board pointer in
+>    dio200_pci_detach()
+>
+>  drivers/staging/comedi/drivers/amplc_dio200_common.c | 9 +++------
+>  drivers/staging/comedi/drivers/amplc_dio200_pci.c    | 5 +----
+>  2 files changed, 4 insertions(+), 10 deletions(-)
 
-Grant,
-
-I was able to do some sniff testing by adding/removing memory, cpus, and pci
-devices and it appears that all device tree nodes and properties were updated
-properly.
-
-I would still like to try doing live partition migration where we can update
-many pieces of the device tree. I'll be out next week, will try to get
-on that when I return.
-
--Nathan
-
-> 
->   git://git.secretlab.ca/git/linux devicetree/next
-> 
-> Grant Likely (8):
->       of/platform: Fix of_platform_device_destroy iteration of devices
->       of: Move CONFIG_OF_DYNAMIC code into a separate file
->       of: Make devicetree sysfs update functions consistent.
->       of: Make sure attached nodes don't carry along extra children
->       of: Move dynamic node fixups out of powerpc and into common code
->       of: Reorder device tree changes and notifiers
->       of: Add todo tasklist for Devicetree
->       Merge branch 'devicetree/next-overlay' into devicetree/next
-> 
-> Pantelis Antoniou (4):
->       of: rename of_aliases_mutex to just of_mutex
->       OF: Utility helper functions for dynamic nodes
->       of: Create unlocked versions of node and property add/remove functions
->       of: Transactional DT support.
-> 
->  Documentation/devicetree/changesets.txt         |  40 ++
->  Documentation/devicetree/todo.txt               |  11 +
->  arch/powerpc/kernel/prom.c                      |  70 ---
->  arch/powerpc/platforms/pseries/hotplug-memory.c |   2 +-
->  drivers/crypto/nx/nx-842.c                      |  30 +-
->  drivers/of/Makefile                             |   1 +
->  drivers/of/base.c                               | 423 ++++-----------
->  drivers/of/device.c                             |   4 +-
->  drivers/of/dynamic.c                            | 660 ++++++++++++++++++++++++
->  drivers/of/of_private.h                         |  59 ++-
->  drivers/of/platform.c                           |  32 +-
->  drivers/of/selftest.c                           |  79 +++
->  drivers/of/testcase-data/testcases.dtsi         |  10 +
->  include/linux/of.h                              |  80 ++-
->  include/linux/of_platform.h                     |   7 +-
->  15 files changed, 1065 insertions(+), 443 deletions(-)
->  create mode 100644 Documentation/devicetree/changesets.txt
->  create mode 100644 Documentation/devicetree/todo.txt
->  create mode 100644 drivers/of/dynamic.c
-> 
+Reviewed-by: H Hartley Sweeten <hsweeten@visionengravers.com>
 
