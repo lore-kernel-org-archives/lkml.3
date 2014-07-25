@@ -1,64 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760243AbaGYMUr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 08:20:47 -0400
-Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:7698 "EHLO
-	mx0b-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1760134AbaGYMUp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 08:20:45 -0400
-From: Jisheng Zhang <jszhang@marvell.com>
-To: <thierry.reding@gmail.com>, <bhelgaas@google.com>, <swarren@wwwdotorg.org>
-CC: <linux-tegra@vger.kernel.org>, <linux-pci@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Jisheng Zhang <jszhang@marvell.com>
-Subject: [PATCH] PCI: tegra: add missing cleanup in error path and teardown_irq
-Date: Fri, 25 Jul 2014 20:18:23 +0800
-Message-ID: <1406290703-2175-1-git-send-email-jszhang@marvell.com>
-X-Mailer: git-send-email 2.0.1
+	id S1760096AbaGYMWz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 08:22:55 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39835 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752069AbaGYMWy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jul 2014 08:22:54 -0400
+Date: Fri, 25 Jul 2014 13:22:49 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Vlastimil Babka <vbabka@suse.cz>
+Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>, linux-kernel@vger.kernel.org,
+        Minchan Kim <minchan@kernel.org>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+Subject: Re: [PATCH V4 03/15] mm, compaction: do not count compact_stall if
+ all zones skipped compaction
+Message-ID: <20140725122249.GX10819@suse.de>
+References: <1405518503-27687-1-git-send-email-vbabka@suse.cz>
+ <1405518503-27687-4-git-send-email-vbabka@suse.cz>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.14,0.0.0000
- definitions=2014-07-25_04:2014-07-25,2014-07-25,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=2
- phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
- scancount=1 engine=7.0.1-1402240000 definitions=main-1407250143
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <1405518503-27687-4-git-send-email-vbabka@suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We should call tegra_msi_free() to free the msi bit if
-irq_create_mapping() fails. And we need to dispose the irq mapping
-during irq teardown.
+On Wed, Jul 16, 2014 at 03:48:11PM +0200, Vlastimil Babka wrote:
+> The compact_stall vmstat counter counts the number of allocations stalled by
+> direct compaction. It does not count when all attempted zones had deferred
+> compaction, but it does count when all zones skipped compaction. The skipping
+> is decided based on very early check of compaction_suitable(), based on
+> watermarks and memory fragmentation. Therefore it makes sense not to count
+> skipped compactions as stalls. Moreover, compact_success or compact_fail is
+> also already not being counted when compaction was skipped, so this patch
+> changes the compact_stall counting to match the other two.
+> 
+> Additionally, restructure __alloc_pages_direct_compact() code for better
+> readability.
+> 
+> Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
+> Cc: Minchan Kim <minchan@kernel.org>
+> Cc: Mel Gorman <mgorman@suse.de>
+> Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+> Cc: Michal Nazarewicz <mina86@mina86.com>
+> Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> Cc: Christoph Lameter <cl@linux.com>
+> Cc: Rik van Riel <riel@redhat.com>
+> Cc: David Rientjes <rientjes@google.com>
 
-Signed-off-by: Jisheng Zhang <jszhang@marvell.com>
----
- drivers/pci/host/pci-tegra.c | 5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+Acked-by: Mel Gorman <mgorman@suse.de>
 
-diff --git a/drivers/pci/host/pci-tegra.c b/drivers/pci/host/pci-tegra.c
-index 083cf37..695e7b9 100644
---- a/drivers/pci/host/pci-tegra.c
-+++ b/drivers/pci/host/pci-tegra.c
-@@ -1203,8 +1203,10 @@ static int tegra_msi_setup_irq(struct msi_chip *chip, struct pci_dev *pdev,
- 		return hwirq;
- 
- 	irq = irq_create_mapping(msi->domain, hwirq);
--	if (!irq)
-+	if (!irq) {
-+		tegra_msi_free(msi, hwirq);
- 		return -EINVAL;
-+	}
- 
- 	irq_set_msi_desc(irq, desc);
- 
-@@ -1223,6 +1225,7 @@ static void tegra_msi_teardown_irq(struct msi_chip *chip, unsigned int irq)
- 	struct tegra_msi *msi = to_tegra_msi(chip);
- 	struct irq_data *d = irq_get_irq_data(irq);
- 
-+	irq_dispose_mapping(irq);
- 	tegra_msi_free(msi, d->hwirq);
- }
- 
 -- 
-2.0.1
-
+Mel Gorman
+SUSE Labs
