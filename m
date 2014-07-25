@@ -1,64 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757806AbaGYGLL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 02:11:11 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:65374 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751248AbaGYGLK (ORCPT
+	id S1756727AbaGYGOu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 02:14:50 -0400
+Received: from router.aksignal.cz ([188.175.113.102]:51985 "EHLO
+	router.aksignal.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750828AbaGYGOs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 02:11:10 -0400
-X-IronPort-AV: E=Sophos;i="5.00,959,1396972800"; 
-   d="scan'208";a="33765743"
-Message-ID: <53D1F21F.1010507@cn.fujitsu.com>
-Date: Fri, 25 Jul 2014 13:58:55 +0800
-From: Gu Zheng <guz.fnst@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
+	Fri, 25 Jul 2014 02:14:48 -0400
+Message-ID: <53D1F5D0.1080006@aksignal.cz>
+Date: Fri, 25 Jul 2014 08:14:40 +0200
+From: =?UTF-8?B?SmnFmcOtIFByY2hhbA==?= <jiri.prchal@aksignal.cz>
+Reply-To: jiri.prchal@aksignal.cz
+Organization: AK signal Brno
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-To: Chao Yu <chao2.yu@samsung.com>
-CC: Jaegeuk Kim <jaegeuk@kernel.org>, Changman Lee <cm224.lee@samsung.com>,
-        <linux-f2fs-devel@lists.sourceforge.net>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [f2fs-dev][PATCH 2/2] f2fs: fix to put root inode in error path
- of fill_super
-References: <003b01cfa7c4$b7408040$25c180c0$@samsung.com>
-In-Reply-To: <003b01cfa7c4$b7408040$25c180c0$@samsung.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.167.226.100]
+To: Boris BREZILLON <boris.brezillon@free-electrons.com>
+CC: Bo Shen <voice.shen@atmel.com>, nicolas.ferre@atmel.com,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org
+Subject: Re: [PATCH] ARM: at91: at91sam9x5: sets NPCS0 (PA14) back to GPIO
+References: <1405074175-22444-1-git-send-email-voice.shen@atmel.com>	<53D10C50.50305@aksignal.cz>	<20140724162645.4e19c26c@bbrezillon>	<53D12103.3020103@aksignal.cz> <20140724175848.44f5da10@bbrezillon>
+In-Reply-To: <20140724175848.44f5da10@bbrezillon>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/25/2014 12:55 PM, Chao Yu wrote:
-
-> We should put root inode correctly in error path of fill_super, otherwise we
-> may encounter a leak case of inode resource.
-
-Good catch, and it also fixed the incorrect 'goto'.
-
-> 
-> Signed-off-by: Chao Yu <chao2.yu@samsung.com>
-
-Reviewed-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
-
-> ---
->  fs/f2fs/super.c | 3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
-> 
-> diff --git a/fs/f2fs/super.c b/fs/f2fs/super.c
-> index 870fe19..34649aa 100644
-> --- a/fs/f2fs/super.c
-> +++ b/fs/f2fs/super.c
-> @@ -1033,8 +1033,9 @@ static int f2fs_fill_super(struct super_block *sb, void *data, int silent)
->  		goto free_node_inode;
->  	}
->  	if (!S_ISDIR(root->i_mode) || !root->i_blocks || !root->i_size) {
-> +		iput(root);
->  		err = -EINVAL;
-> -		goto free_root_inode;
-> +		goto free_node_inode;
->  	}
->  
->  	sb->s_root = d_make_root(root); /* allocate root dentry */
 
 
+Dne 24.7.2014 v 17:58 Boris BREZILLON napsal(a):
+> On Thu, 24 Jul 2014 17:06:43 +0200
+> Jiří Prchal <jiri.prchal@aksignal.cz> wrote:
+>
+>> Hi,
+>>
+>> Dne 24.7.2014 v 16:26 Boris BREZILLON napsal(a):
+>>> Hello Jiří,
+>>>
+>>> First of all, please try to use git format-patch when submitting a
+>>> patch to any kernel mailing list.
+>> Sorry for that.
+>>>
+>>> On Thu, 24 Jul 2014 15:38:24 +0200
+>>> Jiří Prchal <jiri.prchal@aksignal.cz> wrote:
+>>>
+>>>> After ROMBOOT tries boot from flash on SPI0 NPCS0, this NPCS0 (PA14) remains set to PERIPH_A.
+>>>> Because of that, this pin is unusable to something else.
+>>>> This patch sets it back to GPIO.
+>>>
+>>> The policy is to leave pins in an unknown state till some peripheral
+>>> need them.
+>>>
+>>> What are you trying to use this pin for ?
+>> For chip select, but #3. And when SPI communicate with cs0 (PA22), it goes down too (PA14), so 2 devices on bus were
+>> selected.
+>
+> Are you using a 9x5ek board or a custom one, in the latter case could
+> you paste your spi0 node definition ?
+I'm using custom board. My spi node:
+			spi0: spi@f0000000 {
+				status = "okay";
+				cs-gpios = <&pioA 23 0
+					    &pioA 22 0
+					    &pioC 29 0
+					    &pioA 14 0>;
+
+				fm25@0 {
+					compatible = "cypress,fm25";
+					spi-max-frequency = <40000000>;
+					reg = <0>;
+					pagesize = <256>;
+					size = <131072>;
+					address-width = <24>;
+				};
+				/* ADC */
+				spidev@1 {
+					compatible = "spidev";
+					reg = <1>;
+					spi-max-frequency = <1000000>;
+				};
+				/* IO expander for busaddr */
+				spidev@2 {
+					compatible = "spidev";
+					reg = <2>;
+					label = "busaddr";
+					spi-max-frequency = <10000000>;
+				};
+				/* audio codec */
+				codec: codec@3 {
+					compatible = "ti,tlv320aic3x";
+					spi-max-frequency = <1000000>;
+					reg = <3>;
+				};
+			};
+
+This does not work without patch, because of 2 chips selected at one time because of PA14 is periph_a. Probably ROMBOOT 
+changes that.
+>
+>>> If you just want to use it as a chip select for an spi device, take a
+>>> look at [1].
+>> At [1] it's OK until as cs0 is for example PA22 and cs1 is PA14.
+>
+> If you want PA14 to control cs1 and PA22 to control cs0 (both
+> configured as GPIOs), you'll have the following definition:
+>
+> cs-gpios = <&pioA 22 0>, <&pioA 14 0>, <0>, <0>;
+See my node.
+>
+>>>
+>>> Here the gpio is requested by the spi core when defining the cs-gpios
+>>> property. The gpio controller then request the listed pins to the pin
+>>> controller (pinctrl driver).
+>> GPIO is not set in driver as GPIO, at least I didn't find it.
+>
+> Take a look at [1], which is set as the gpio_request_enable callback,
+> called by pinctrl core when a gpio is requested.
+But is this called from spi driver when requesting gpios as cs?
+>
+>
+> [1]http://lxr.free-electrons.com/source/drivers/pinctrl/pinctrl-at91.c#L665
+>
+>
