@@ -1,106 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760869AbaGYRKM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 13:10:12 -0400
-Received: from mx2.parallels.com ([199.115.105.18]:35232 "EHLO
-	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752979AbaGYRKK (ORCPT
+	id S1760917AbaGYRKk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 13:10:40 -0400
+Received: from mail-oi0-f46.google.com ([209.85.218.46]:54056 "EHLO
+	mail-oi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760875AbaGYRKg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 13:10:10 -0400
-From: James Bottomley <jbottomley@parallels.com>
-To: "kys@microsoft.com" <kys@microsoft.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "hch@infradead.org" <hch@infradead.org>,
-        "sitsofe@gmail.com" <sitsofe@gmail.com>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "apw@canonical.com" <apw@canonical.com>,
-        "martin.petersen@oracle.com" <martin.petersen@oracle.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "ohering@suse.com" <ohering@suse.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "jasowang@redhat.com" <jasowang@redhat.com>
-Subject: Re: [PATCH v2 3/3] [SCSI] Make LBP quirk skip lbpme checks tests
-Thread-Topic: [PATCH v2 3/3] [SCSI] Make LBP quirk skip lbpme checks tests
-Thread-Index: AQHPqCtGp+U0fDLpgkuG3wZHEO62sw==
-Date: Fri, 25 Jul 2014 17:10:04 +0000
-Message-ID: <1406308203.1789.33.camel@jarvis.lan>
-References: <20140724122223.GA31798@sucs.org>
-	 <yq1iommkgkv.fsf@sermon.lab.mkp.net> <20140724153612.GA23648@sucs.org>
-	 <yq1egxakb0z.fsf@sermon.lab.mkp.net>
-	 <16fea5bb87ba47019527cee788e07a72@BY2PR0301MB0711.namprd03.prod.outlook.com>
-In-Reply-To: <16fea5bb87ba47019527cee788e07a72@BY2PR0301MB0711.namprd03.prod.outlook.com>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [50.46.103.107]
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <D6F42418DE840D43B584C251FED5755A@sw.swsoft.com>
+	Fri, 25 Jul 2014 13:10:36 -0400
 MIME-Version: 1.0
+In-Reply-To: <CALCETrVJX4+-6vkRaDj4kV_bXiYL5fj_PtO53g9fRf=i4X2Tww@mail.gmail.com>
+References: <1406296033-32693-1-git-send-email-drysdale@google.com>
+	<1406296033-32693-12-git-send-email-drysdale@google.com>
+	<CALCETrVJX4+-6vkRaDj4kV_bXiYL5fj_PtO53g9fRf=i4X2Tww@mail.gmail.com>
+Date: Fri, 25 Jul 2014 10:10:35 -0700
+X-Google-Sender-Auth: awDpb3NRrVQVouRGiq_Yncp-oog
+Message-ID: <CAGXu5jJZ7mhmq1BrdTP5Ww15+C2iLQKjLy1Xh0=9qZvVK5E9Cw@mail.gmail.com>
+Subject: Re: [PATCH 11/11] seccomp: Add tgid and tid into seccomp_data
+From: Kees Cook <keescook@chromium.org>
+To: Andy Lutomirski <luto@amacapital.net>, Julien Tinnes <jln@google.com>
+Cc: David Drysdale <drysdale@google.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Paolo Bonzini <pbonzini@redhat.com>,
+        LSM List <linux-security-module@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Paul Moore <paul@paul-moore.com>,
+        James Morris <james.l.morris@oracle.com>,
+        Linux API <linux-api@vger.kernel.org>,
+        Meredydd Luff <meredydd@senatehouse.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s6PHAImn001993
 
-On Fri, 2014-07-25 at 16:47 +0000, KY Srinivasan wrote:
-> 
-> > -----Original Message-----
-> > From: Martin K. Petersen [mailto:martin.petersen@oracle.com]
-> > Sent: Thursday, July 24, 2014 8:54 AM
-> > To: Sitsofe Wheeler
-> > Cc: Martin K. Petersen; Christoph Hellwig; KY Srinivasan;
-> > gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
-> > devel@linuxdriverproject.org; ohering@suse.com; apw@canonical.com;
-> > jasowang@redhat.com; jbottomley@parallels.com; linux-
-> > scsi@vger.kernel.org
-> > Subject: Re: [PATCH v2 3/3] [SCSI] Make LBP quirk skip lbpme checks tests
-> > 
-> > >>>>> "Sitsofe" == Sitsofe Wheeler <sitsofe@gmail.com> writes:
-> > 
-> > Sitsofe> So we can see it is really a SATA device that announces discard
-> > Sitsofe> correctly and supports discard through WRITE_SAME(16).
-> > 
-> > No, that's the SATA device that announces support for DSM TRIM, and as a
-> > result the Linux SATL reports support for WRITE SAME(16) w. the UNMAP bit
-> > set and LBPME.
-> > 
-> > Sitsofe> It is the act of passing it through Hyper-V that turned it into
-> > Sitsofe> a SCSI device that supports UNMAP (but not WRITE_SAME(16)),
-> > Sitsofe> doesn't announce its SCSI conformance number and doesn't
-> > Sitsofe> correctly announce which features it supports. Surely in this
-> > Sitsofe> case it's reasonable to quirk our way around the problem?
-> > 
-> > No. That's an issue in Hyper-V that'll you'll have to take up with Microsoft. I
-> > don't know what their passthrough limitations are for SCSI-ATA translation.
-> > Maybe K. Y. has some insight into this?
-> 
-> For the pass through case, the host validates the request and passes
-> the request to the device.
-> However, not all scsi commands are passed through even though the
-> device it is being passed through
-> may support the command. WRITE_SAME is one such command. Consequently,
-> in the EVPD page,
-> we will set state indicating that WRITE_SAME is not supported (even if
-> the device supports it).
+On Fri, Jul 25, 2014 at 8:59 AM, Andy Lutomirski <luto@amacapital.net> wrote:
+> On Jul 25, 2014 6:48 AM, "David Drysdale" <drysdale@google.com> wrote:
+>>
+>> Add the current thread and thread group IDs into the data
+>> available for seccomp-bpf programs to work on.  This allows
+>> installation of filters that police syscalls based on thread
+>> or process ID, e.g. tgkill(2)/kill(2)/prctl(2).
+>>
+>> Signed-off-by: David Drysdale <drysdale@google.com>
+>> ---
+>>  include/uapi/linux/seccomp.h | 10 ++++++++++
+>>  kernel/seccomp.c             |  2 ++
+>>  2 files changed, 12 insertions(+)
+>>
+>> diff --git a/include/uapi/linux/seccomp.h b/include/uapi/linux/seccomp.h
+>> index ac2dc9f72973..b88370d6f6ca 100644
+>> --- a/include/uapi/linux/seccomp.h
+>> +++ b/include/uapi/linux/seccomp.h
+>> @@ -36,12 +36,22 @@
+>>   * @instruction_pointer: at the time of the system call.
+>>   * @args: up to 6 system call arguments always stored as 64-bit values
+>>   *        regardless of the architecture.
+>> + * @tgid: thread group ID of the thread executing the BPF program.
+>> + * @tid: thread ID of the thread executing the BPF program.
+>> + * The SECCOMP_DATA_TID_PRESENT macro indicates the presence of the
+>> + * tgid and tid fields; user programs may use this macro to conditionally
+>> + * compile code against older versions of the kernel.  Note also that
+>> + * BPF programs should cope with the absence of these fields by testing
+>> + * the length of data available.
+>>   */
+>>  struct seccomp_data {
+>>         int nr;
+>>         __u32 arch;
+>>         __u64 instruction_pointer;
+>>         __u64 args[6];
+>> +       __u32 tgid;
+>> +       __u32 tid;
+>>  };
+>> +#define SECCOMP_DATA_TID_PRESENT       1
+>>
+>>  #endif /* _UAPI_LINUX_SECCOMP_H */
+>> diff --git a/kernel/seccomp.c b/kernel/seccomp.c
+>> index 301bbc24739c..dd5146f15d6d 100644
+>> --- a/kernel/seccomp.c
+>> +++ b/kernel/seccomp.c
+>> @@ -80,6 +80,8 @@ static void populate_seccomp_data(struct seccomp_data *sd)
+>>         sd->args[4] = args[4];
+>>         sd->args[5] = args[5];
+>>         sd->instruction_pointer = KSTK_EIP(task);
+>> +       sd->tgid = task_tgid_vnr(current);
+>> +       sd->tid = task_pid_vnr(current);
+>>  }
+>
+> This is, IMO, problematic.  These should probably be relative to the
+> filter creator, not the filtered task.  This will also hurt
+> performance.
 
-I think you haven't appreciated the problem: He's passing a SATA SSD via
-the SCSI hyper-v interface.  That means that the windows host is doing
-SCSI<->ATA translation.  The problem is that the Windows translation
-layer (SATL) looks to be incomplete and it's not correctly translating
-the IDENTIFY bit that corresponds to TRIM to the correct VPD pages so
-consequently, Linux  won't send UNMAP commands to the device (to be
-translated back to TRIM).
+Yeah, we can't change the seccomp_data structure without a lot of
+care, and tgid/tid really should be encoded in the filter. However, it
+is tricky in the forking case.
 
-We already know this is a bug in the Windows SATL which needs fixing (if
-you could report it and get a fix, that would be great) and that we're
-not going to be able to work around this automatically in Linux because
-the proposed patch would have us unconditionally try UNMAP for all
-Hyper-V devices.  The current proposed fix is to enable UNMAP manually
-via sysfs in the guest boot scripts, but obviously that means that
-Hyper-V guests with direct pass through of SSDs need operator
-intervention to turn on TRIM.
+>
+> What's the use case?  Can it be better achieved with a new eBPF function?
 
-James
+Julien had been wanting something like this too (though he'd suggested
+it via prctl): limit the signal functions to "self" only. I wonder if
+adding a prctl like done for O_BENEATH could work for signal sending?
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+-Kees
+
+-- 
+Kees Cook
+Chrome OS Security
