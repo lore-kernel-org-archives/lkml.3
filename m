@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760514AbaGYVbu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 17:31:50 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:46224 "EHLO
+	id S1761034AbaGYVcA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 17:32:00 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:46232 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750982AbaGYVbs (ORCPT
+	with ESMTP id S1760931AbaGYVb6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 17:31:48 -0400
-Date: Fri, 25 Jul 2014 14:31:26 -0700
+	Fri, 25 Jul 2014 17:31:58 -0400
+Date: Fri, 25 Jul 2014 14:31:39 -0700
 From: "tip-bot for Li, Aubrey" <tipbot@zytor.com>
-Message-ID: <tip-93e5eadd1f6e7f45c31aa327c42ac52e4df5ff6f@git.kernel.org>
+Message-ID: <tip-b00055cade45379fb6a51798b70ef520d7555c5f@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        tglx@linutronix.de, hpa@linux.intel.com, lejun.zhu@linux.intel.com,
+        olivier.leveque@intel.com, tglx@linutronix.de, hpa@linux.intel.com,
         aubrey.li@linux.intel.com
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, hpa@linux.intel.com, aubrey.li@linux.intel.com,
-        lejun.zhu@linux.intel.com
-In-Reply-To: <53B0FEEA.3010805@linux.intel.com>
-References: <53B0FEEA.3010805@linux.intel.com>
+        olivier.leveque@intel.com, tglx@linutronix.de, hpa@linux.intel.com,
+        aubrey.li@linux.intel.com
+In-Reply-To: <53B0FF22.5080403@linux.intel.com>
+References: <53B0FF22.5080403@linux.intel.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/platform] x86/platform:
-  New Intel Atom SOC power management controller driver
-Git-Commit-ID: 93e5eadd1f6e7f45c31aa327c42ac52e4df5ff6f
+Subject: [tip:x86/platform] x86/pmc_atom:
+  Eisable a few S0ix wake up events for S0ix residency
+Git-Commit-ID: b00055cade45379fb6a51798b70ef520d7555c5f
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -34,206 +34,131 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  93e5eadd1f6e7f45c31aa327c42ac52e4df5ff6f
-Gitweb:     http://git.kernel.org/tip/93e5eadd1f6e7f45c31aa327c42ac52e4df5ff6f
+Commit-ID:  b00055cade45379fb6a51798b70ef520d7555c5f
+Gitweb:     http://git.kernel.org/tip/b00055cade45379fb6a51798b70ef520d7555c5f
 Author:     Li, Aubrey <aubrey.li@linux.intel.com>
-AuthorDate: Mon, 30 Jun 2014 14:08:42 +0800
+AuthorDate: Mon, 30 Jun 2014 14:09:38 +0800
 Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Fri, 25 Jul 2014 14:11:29 -0700
+CommitDate: Fri, 25 Jul 2014 14:11:58 -0700
 
-x86/platform: New Intel Atom SOC power management controller driver
+x86/pmc_atom: Eisable a few S0ix wake up events for S0ix residency
 
-The Power Management Controller (PMC) controls many of the power
-management features present in the Atom SoC. This driver provides
-a native power off function via PMC PCI IO port.
-
-On some ACPI hardware-reduced platforms(e.g. ASUS-T100), ACPI sleep
-registers are not valid so that (*pm_power_off)() is not hooked by
-acpi_power_off(). The power off function in this driver is installed
-only when pm_power_off is NULL.
+Disable PMC S0IX_WAKE_EN events coming from LPC block(unused) and
+also from GPIO_SUS ored dedicated IRQs (must be disabled as per PMC
+programming rule), GPIOSCORE ored dedicated IRQs (must be disabled
+as per PMC programming rule), GPIO_SUS shared IRQ (not necessary
+since the IOAPIC_DS wake event will still work), GPIO_SCORE shared
+IRQ (not necessary since the IOAPIC_DS wake event will still work).
 
 Signed-off-by: Aubrey Li <aubrey.li@linux.intel.com>
-Link: http://lkml.kernel.org/r/53B0FEEA.3010805@linux.intel.com
-Signed-off-by: Lejun Zhu <lejun.zhu@linux.intel.com>
+Link: http://lkml.kernel.org/r/53B0FF22.5080403@linux.intel.com
+Signed-off-by: Olivier Leveque <olivier.leveque@intel.com>
 Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 ---
- arch/x86/Kconfig                |   4 ++
- arch/x86/include/asm/pmc_atom.h |  31 ++++++++++++
- arch/x86/kernel/Makefile        |   1 +
- arch/x86/kernel/pmc_atom.c      | 104 ++++++++++++++++++++++++++++++++++++++++
- 4 files changed, 140 insertions(+)
+ arch/x86/include/asm/pmc_atom.h | 21 +++++++++++++++++++++
+ arch/x86/kernel/pmc_atom.c      | 42 +++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 63 insertions(+)
 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index a8f749e..6295a21 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -2403,6 +2403,10 @@ config IOSF_MBI
- 	default m
- 	depends on PCI
- 
-+config PMC_ATOM
-+	def_bool y
-+        depends on PCI
-+
- source "net/Kconfig"
- 
- source "drivers/Kconfig"
 diff --git a/arch/x86/include/asm/pmc_atom.h b/arch/x86/include/asm/pmc_atom.h
-new file mode 100644
-index 0000000..03a2769
---- /dev/null
+index 03a2769..8e47e5d 100644
+--- a/arch/x86/include/asm/pmc_atom.h
 +++ b/arch/x86/include/asm/pmc_atom.h
-@@ -0,0 +1,31 @@
-+/*
-+ * Intel Atom SOC Power Management Controller Header File
-+ * Copyright (c) 2014, Intel Corporation.
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms and conditions of the GNU General Public License,
-+ * version 2, as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
-+ *
-+ */
-+
-+#ifndef PMC_ATOM_H
-+#define PMC_ATOM_H
-+
-+/* ValleyView Power Control Unit PCI Device ID */
-+#define	PCI_DEVICE_ID_VLV_PMC	0x0F1C
-+
-+/* PMC I/O Registers */
-+#define	ACPI_BASE_ADDR_OFFSET	0x40
-+#define	ACPI_BASE_ADDR_MASK	0xFFFFFE00
-+#define	ACPI_MMIO_REG_LEN	0x100
-+
-+#define	PM1_CNT			0x4
-+#define	SLEEP_TYPE_MASK		0xFFFFECFF
-+#define	SLEEP_TYPE_S5		0x1C00
-+#define	SLEEP_ENABLE		0x2000
-+#endif /* PMC_ATOM_H */
-diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
-index 047f9ff..bde3993 100644
---- a/arch/x86/kernel/Makefile
-+++ b/arch/x86/kernel/Makefile
-@@ -106,6 +106,7 @@ obj-$(CONFIG_EFI)			+= sysfb_efi.o
- obj-$(CONFIG_PERF_EVENTS)		+= perf_regs.o
- obj-$(CONFIG_TRACING)			+= tracepoint.o
- obj-$(CONFIG_IOSF_MBI)			+= iosf_mbi.o
-+obj-$(CONFIG_PMC_ATOM)			+= pmc_atom.o
+@@ -19,6 +19,27 @@
+ /* ValleyView Power Control Unit PCI Device ID */
+ #define	PCI_DEVICE_ID_VLV_PMC	0x0F1C
  
- ###
- # 64 bit specific files
++/* PMC Memory mapped IO registers */
++#define	PMC_BASE_ADDR_OFFSET	0x44
++#define	PMC_BASE_ADDR_MASK	0xFFFFFE00
++#define	PMC_MMIO_REG_LEN	0x100
++#define	PMC_REG_BIT_WIDTH	32
++
++/* S0ix wake event control */
++#define	PMC_S0IX_WAKE_EN	0x3C
++
++#define	BIT_LPC_CLOCK_RUN		BIT(4)
++#define	BIT_SHARED_IRQ_GPSC		BIT(5)
++#define	BIT_ORED_DEDICATED_IRQ_GPSS	BIT(18)
++#define	BIT_ORED_DEDICATED_IRQ_GPSC	BIT(19)
++#define	BIT_SHARED_IRQ_GPSS		BIT(20)
++
++#define	PMC_WAKE_EN_SETTING	~(BIT_LPC_CLOCK_RUN | \
++				BIT_SHARED_IRQ_GPSC | \
++				BIT_ORED_DEDICATED_IRQ_GPSS | \
++				BIT_ORED_DEDICATED_IRQ_GPSC | \
++				BIT_SHARED_IRQ_GPSS)
++
+ /* PMC I/O Registers */
+ #define	ACPI_BASE_ADDR_OFFSET	0x40
+ #define	ACPI_BASE_ADDR_MASK	0xFFFFFE00
 diff --git a/arch/x86/kernel/pmc_atom.c b/arch/x86/kernel/pmc_atom.c
-new file mode 100644
-index 0000000..9eb79f6
---- /dev/null
+index 9eb79f6..d6cc0e9 100644
+--- a/arch/x86/kernel/pmc_atom.c
 +++ b/arch/x86/kernel/pmc_atom.c
-@@ -0,0 +1,104 @@
-+/*
-+ * Intel Atom SOC Power Management Controller Driver
-+ * Copyright (c) 2014, Intel Corporation.
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms and conditions of the GNU General Public License,
-+ * version 2, as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
-+ *
-+ */
-+
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-+
-+#include <linux/module.h>
-+#include <linux/init.h>
-+#include <linux/pci.h>
-+#include <linux/device.h>
-+#include <linux/io.h>
-+
-+#include <asm/pmc_atom.h>
-+
-+static u32 acpi_base_addr;
-+
-+static void pmc_power_off(void)
-+{
-+	u16	pm1_cnt_port;
-+	u32	pm1_cnt_value;
-+
-+	pr_info("Preparing to enter system sleep state S5\n");
-+
-+	pm1_cnt_port = acpi_base_addr + PM1_CNT;
-+
-+	pm1_cnt_value = inl(pm1_cnt_port);
-+	pm1_cnt_value &= SLEEP_TYPE_MASK;
-+	pm1_cnt_value |= SLEEP_TYPE_S5;
-+	pm1_cnt_value |= SLEEP_ENABLE;
-+
-+	outl(pm1_cnt_value, pm1_cnt_port);
-+}
-+
-+static int pmc_setup_dev(struct pci_dev *pdev)
-+{
-+	/* Obtain ACPI base address */
-+	pci_read_config_dword(pdev, ACPI_BASE_ADDR_OFFSET, &acpi_base_addr);
-+	acpi_base_addr &= ACPI_BASE_ADDR_MASK;
-+
-+	/* Install power off function */
-+	if (acpi_base_addr != 0 && pm_power_off == NULL)
-+		pm_power_off = pmc_power_off;
-+
-+	return 0;
-+}
-+
-+/*
-+ * Data for PCI driver interface
-+ *
-+ * This data only exists for exporting the supported
-+ * PCI ids via MODULE_DEVICE_TABLE.  We do not actually
-+ * register a pci_driver, because lpc_ich will register
-+ * a driver on the same PCI id.
-+ */
-+static const struct pci_device_id pmc_pci_ids[] = {
-+	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_VLV_PMC) },
-+	{ 0, },
+@@ -23,8 +23,24 @@
+ 
+ #include <asm/pmc_atom.h>
+ 
++struct pmc_dev {
++	u32 base_addr;
++	void __iomem *regmap;
 +};
 +
-+MODULE_DEVICE_TABLE(pci, pmc_pci_ids);
-+
-+static int __init pmc_atom_init(void)
++static struct pmc_dev pmc_device;
+ static u32 acpi_base_addr;
+ 
++static inline u32 pmc_reg_read(struct pmc_dev *pmc, int reg_offset)
 +{
-+	int err = -ENODEV;
-+	struct pci_dev *pdev = NULL;
-+	const struct pci_device_id *ent;
-+
-+	/* We look for our device - PCU PMC
-+	 * we assume that there is max. one device.
-+	 *
-+	 * We can't use plain pci_driver mechanism,
-+	 * as the device is really a multiple function device,
-+	 * main driver that binds to the pci_device is lpc_ich
-+	 * and have to find & bind to the device this way.
-+	 */
-+	for_each_pci_dev(pdev) {
-+		ent = pci_match_id(pmc_pci_ids, pdev);
-+		if (ent) {
-+			err = pmc_setup_dev(pdev);
-+			goto out;
-+		}
-+	}
-+	/* Device not found. */
-+out:
-+	return err;
++	return readl(pmc->regmap + reg_offset);
 +}
 +
-+module_init(pmc_atom_init);
-+/* no module_exit, this driver shouldn't be unloaded */
++static inline void pmc_reg_write(struct pmc_dev *pmc, int reg_offset, u32 val)
++{
++	writel(val, pmc->regmap + reg_offset);
++}
 +
-+MODULE_AUTHOR("Aubrey Li <aubrey.li@linux.intel.com>");
-+MODULE_DESCRIPTION("Intel Atom SOC Power Management Controller Interface");
-+MODULE_LICENSE("GPL v2");
+ static void pmc_power_off(void)
+ {
+ 	u16	pm1_cnt_port;
+@@ -42,8 +58,23 @@ static void pmc_power_off(void)
+ 	outl(pm1_cnt_value, pm1_cnt_port);
+ }
+ 
++static void pmc_hw_reg_setup(struct pmc_dev *pmc)
++{
++	/*
++	 * Disable PMC S0IX_WAKE_EN events coming from:
++	 * - LPC clock run
++	 * - GPIO_SUS ored dedicated IRQs
++	 * - GPIO_SCORE ored dedicated IRQs
++	 * - GPIO_SUS shared IRQ
++	 * - GPIO_SCORE shared IRQ
++	 */
++	pmc_reg_write(pmc, PMC_S0IX_WAKE_EN, (u32)PMC_WAKE_EN_SETTING);
++}
++
+ static int pmc_setup_dev(struct pci_dev *pdev)
+ {
++	struct pmc_dev *pmc = &pmc_device;
++
+ 	/* Obtain ACPI base address */
+ 	pci_read_config_dword(pdev, ACPI_BASE_ADDR_OFFSET, &acpi_base_addr);
+ 	acpi_base_addr &= ACPI_BASE_ADDR_MASK;
+@@ -52,6 +83,17 @@ static int pmc_setup_dev(struct pci_dev *pdev)
+ 	if (acpi_base_addr != 0 && pm_power_off == NULL)
+ 		pm_power_off = pmc_power_off;
+ 
++	pci_read_config_dword(pdev, PMC_BASE_ADDR_OFFSET, &pmc->base_addr);
++	pmc->base_addr &= PMC_BASE_ADDR_MASK;
++
++	pmc->regmap = ioremap_nocache(pmc->base_addr, PMC_MMIO_REG_LEN);
++	if (!pmc->regmap) {
++		dev_err(&pdev->dev, "error: ioremap failed\n");
++		return -ENOMEM;
++	}
++
++	/* PMC hardware registers setup */
++	pmc_hw_reg_setup(pmc);
+ 	return 0;
+ }
+ 
