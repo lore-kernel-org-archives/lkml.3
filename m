@@ -1,108 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760877AbaGYPCe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 11:02:34 -0400
-Received: from mail-oa0-f48.google.com ([209.85.219.48]:37463 "EHLO
-	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752615AbaGYPCd (ORCPT
+	id S1760888AbaGYPDD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 11:03:03 -0400
+Received: from e33.co.us.ibm.com ([32.97.110.151]:49025 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752615AbaGYPDA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 11:02:33 -0400
+	Fri, 25 Jul 2014 11:03:00 -0400
+Date: Fri, 25 Jul 2014 08:02:50 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Pranith Kumar <bobby.prani@gmail.com>
+Cc: Josh Triplett <josh@joshtriplett.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        "open list:READ-COPY UPDATE..." <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH 1/1] rcu: Use rcu_gp_kthread_wake() to wake up
+ kthreads
+Message-ID: <20140725150248.GZ11241@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1406264818-2296-1-git-send-email-bobby.prani@gmail.com>
+ <CAJhHMCDQe5tSs7576uy8fRBW0txXoyUa6RiQdpg48UJs5TPsog@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <53D26383.60707@redhat.com>
-References: <20140722144559.382c5243@annuminas.surriel.com>
- <CAKfTPtDdAzZcMA5bJvhyrdH9J1F69jMy5q3w5xc4t+PSKPQ0eA@mail.gmail.com> <53D26383.60707@redhat.com>
-From: Vincent Guittot <vincent.guittot@linaro.org>
-Date: Fri, 25 Jul 2014 17:02:12 +0200
-Message-ID: <CAKfTPtCjw9LTh_LYT=rRs=Q1gS2mVcz9Ef6E7KHLqFhdm8Y8pA@mail.gmail.com>
-Subject: Re: [PATCH] sched: make update_sd_pick_busiest return true on a
- busier sd
-To: Rik van Riel <riel@redhat.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Michael Neuling <mikey@neuling.org>, Ingo Molnar <mingo@kernel.org>,
-        Paul Turner <pjt@google.com>, jhladky@redhat.com, ktkhai@parallels.com,
-        tim.c.chen@linux.intel.com, Nicolas Pitre <nicolas.pitre@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAJhHMCDQe5tSs7576uy8fRBW0txXoyUa6RiQdpg48UJs5TPsog@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14072515-0928-0000-0000-000003A05B44
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25 July 2014 16:02, Rik van Riel <riel@redhat.com> wrote:
-> -----BEGIN PGP SIGNED MESSAGE-----
-> Hash: SHA1
->
-> On 07/23/2014 03:41 AM, Vincent Guittot wrote:
->
->> Regarding your issue with "perf bench numa mem" that is not spread
->> on all nodes, SD_PREFER_SIBLING flag (of DIE level) should do the
->> job by reducing the capacity of  "not local DIE" group at NUMA
->> level to 1 task during the load balance computation. So you should
->> have 1 task per sched_group at NUMA level.
->
-> Looking at the code some more, it is clear why this does not
-> happen. If sd->flags & SD_NUMA, then SD_PREFER_SIBLING will
-> never be set.
+On Fri, Jul 25, 2014 at 02:24:34AM -0400, Pranith Kumar wrote:
+> On Fri, Jul 25, 2014 at 1:06 AM, Pranith Kumar <bobby.prani@gmail.com> wrote:
+> 
+> >
+> > In rcu_report_qs_rsp(), I added a pr_info() call testing if any of the above
+> > conditions is true, in which case we can avoid calling wake_up(). It turns out
+> > that quite a few actually are. Most of the cases where we can avoid is condition 2
+> > above and condition 1 also occurs quite often. Condition 3 never happens.
+> >
+> 
+> A little more data. On an idle system there are about 2000 unnecessary
+> wake_up() calls every 5 minutes with the most common trace being the
+> follows:
+> 
+> [Fri Jul 25 02:05:49 2014]  [<ffffffff8109f7c5>] rcu_report_qs_rnp+0x285/0x2c0
+> [Fri Jul 25 02:05:49 2014]  [<ffffffff81838c09>] ? schedule_timeout+0x159/0x270
+> [Fri Jul 25 02:05:49 2014]  [<ffffffff8109fa21>] force_qs_rnp+0x111/0x190
+> [Fri Jul 25 02:05:49 2014]  [<ffffffff810a02c0>] ? synchronize_rcu_bh+0x50/0x50
+> [Fri Jul 25 02:05:49 2014]  [<ffffffff810a2e5f>] rcu_gp_kthread+0x85f/0xa70
+> [Fri Jul 25 02:05:49 2014]  [<ffffffff81086060>] ? __wake_up_sync+0x20/0x20
+> [Fri Jul 25 02:05:49 2014]  [<ffffffff810a2600>] ? rcu_barrier+0x20/0x20
+> [Fri Jul 25 02:05:49 2014]  [<ffffffff8106b4fb>] kthread+0xdb/0x100
+>                   [<ffffffff8106b420>]?kthread_create_on_node+0x180/0x180
+> [Fri Jul 25 02:05:49 2014]  [<ffffffff81839dac>] ret_from_fork+0x7c/0xb0
+>                   [<ffffffff8106b420>] ?kthread_create_on_node+0x180/0x180
+> 
+> With rcutorture, there are about 2000 unnecessary wake_ups() every 3
+> minutes with the most common trace being:
+> 
+> [Fri Jul 25 02:18:30 2014]  [<ffffffff8109f7c5>] rcu_report_qs_rnp+0x285/0x2c0
+> [Fri Jul 25 02:18:30 2014]  [<ffffffff81078b15>] ? __update_cpu_load+0xe5/0x140
+>                  [<ffffffffa09dc230>] ?rcu_read_delay+0x50/0x80 [rcutorture]
+>                  [<ffffffff810a3728>]rcu_process_callbacks+0x6b8/0x7e0
 
-I don't have a lot of experience on NUMA system and how their
-sched_domain topology is described but IIUC, you don't have other
-sched_domain level than NUMA ones ? otherwise the flag should be
-present in one of the non NUMA level (SMT, MC or DIE)
+Good to see the numbers!!!
 
->
->
-> On a related note, that part of the load balancing code probably
-> needs to be rewritten to deal with unequal group_capacity_factors
-> anyway.
->
-> Say that one group has a group_capacity_factor twice that of
-> another group.
->
-> The group with the smaller group_capacity_factor is overloaded
-> by a factor 1.3. The larger group is loaded by a factor 0.8.
-> This means the larger group has a higher load than the first
-> group, and the current code in update_sd_pick_busiest will
-> not select the overloaded group as the busiest one, due to not
-> scaling load with the capacity...
->
+But to evaluate this analytically, we should compare the overhead of the
+wake_up() with the overhead of the extra checks in rcu_gp_kthread_wake(),
+and then compare the number of unnecessary wake_up()s to the number of
+calls to rcu_gp_kthread_wake() added by this patch.  This means that we
+need more numbers.
 
-AFAICT, sgs->avg_load is weighted by the capacity in update_sg_lb_stats
+For example, suppose that the extra checks cost 10ns on average, and that
+a unnecessary wake_up() costs 1us on average, to that each wake_up()
+is on average 100 times more expensive than the extra checks.  Then it
+makes sense to ask whether the saved wake_up() save more time than the
+extra tests cost.  Turning the arithmetic crank says that if more than 1%
+of the wake_up()s are unnecessary, we should add the checks.
 
-> static bool update_sd_pick_busiest(struct lb_env *env,
->                                    struct sd_lb_stats *sds,
->                                    struct sched_group *sg,
->                                    struct sg_lb_stats *sgs)
-> {
->         if (sgs->avg_load <= sds->busiest_stat.avg_load)
->                 return false;
->
-> I believe we may need to factor the group_capacity_factor
-> into this calculation, in order to properly identify which
-> group is busiest.
->
-> However, if we do that we may need to get rid of the
-> SD_PREFER_SIBLING hack that forces group_capacity_factor
-> to 1 on domains that have SD_PREFER_SIBLING set.
+This means that if there are fewer than 200,000 grace periods in each
+of the time periods, then your patch really would provide performance
+benefits.  I bet that there are -way- fewer than 200,000 grace periods in
+each of the time periods, but why don't you build with RCU_TRACE and look
+at the "rcugp" file in RCU's debugfs hierarchy?  Or just periodically
+print out the rcu_state ->completed field?
 
-I'm working on a patchset that get ride of capacity_factor (as
-mentioned by Peter) and directly uses capacity instead. I should send
-the v4 next week.
+							Thanx, Paul
 
-Vincent
->
-> I suspect that should be ok though, if we make sure
-> update_sd_pick_busiest does the right thing...
->
-> - --
-> All rights reversed
-> -----BEGIN PGP SIGNATURE-----
-> Version: GnuPG v1
-> Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
->
-> iQEcBAEBAgAGBQJT0mOCAAoJEM553pKExN6DHq4H/2THfH33d+JYvfOq95OpGLaD
-> HATAp8Dv0kTiGjnbZrHPp8TqqgLLXuM6HhLvsvURuhoJw6F/nOX6qOQWEtjcMyYp
-> omShkDSLnPjs/0Iwf9vNocT7K7Sn3Gk0hOj6+ICW7wchyug8JYtuiHunP8pYrpzW
-> G6l2qHMRqRs5mSENY/uWwH9qh6Z6jcfDoDDDKRTNBe0z67FzwMnX1IYCUA6XOBsZ
-> iRdXe8E0CIgio+ek8HVzRm5sUlkRyfJpTXJj+pemVJhTrNCCbMGTHxzADU4Ngc8S
-> +JQ+G6bsHz9R4pffsuzYFbL0avK0mm5SrjCIatE7MX171dQJ1cKpju+fAmnwuNg=
-> =EAzG
-> -----END PGP SIGNATURE-----
