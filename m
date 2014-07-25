@@ -1,69 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757917AbaGYHmj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 03:42:39 -0400
-Received: from smtp-out-064.synserver.de ([212.40.185.64]:1048 "EHLO
-	smtp-out-064.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751961AbaGYHmh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 03:42:37 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 11350
-Message-ID: <53D20A61.1050506@metafoo.de>
-Date: Fri, 25 Jul 2014 09:42:25 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.6.0
+	id S1759626AbaGYHrU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 03:47:20 -0400
+Received: from 8bytes.org ([81.169.241.247]:59022 "EHLO theia.8bytes.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759002AbaGYHrS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jul 2014 03:47:18 -0400
+Date: Fri, 25 Jul 2014 09:47:16 +0200
+From: Joerg Roedel <joro@8bytes.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Andrea Arcangeli <aarcange@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Rik van Riel <riel@redhat.com>, Hugh Dickins <hughd@google.com>,
+        Mel Gorman <mgorman@suse.de>, Johannes Weiner <jweiner@redhat.com>,
+        Jerome Glisse <jglisse@redhat.com>, jroedel@suse.de,
+        Jay.Cornwall@amd.com, Oded.Gabbay@amd.com, John.Bridgman@amd.com,
+        Suravee.Suthikulpanit@amd.com, ben.sander@amd.com,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, iommu@lists.linux-foundation.org
+Subject: Re: [PATCH 0/3] mmu_notifier: Allow to manage CPU external TLBs
+Message-ID: <20140725074716.GK14017@8bytes.org>
+References: <1406212541-25975-1-git-send-email-joro@8bytes.org>
+ <20140724163303.df34065a3c3b26c0a4b3bab1@linux-foundation.org>
 MIME-Version: 1.0
-To: =?UTF-8?B?QW5kcmVhcyBGw6RyYmVy?= <afaerber@suse.de>,
-        Michal Simek <michal.simek@xilinx.com>
-CC: Andreas Olofsson <andreas@adapteva.com>,
-        Matteo Vit <matteo.vit@starwaredesign.com>,
-        Sean Rickerd <srickerd@suse.com>, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>
-Subject: Re: [PATCH v2 09/11] Documentation: devicetree: Fix ADI AXI SPDIF
- specification
-References: <1406242820-20140-1-git-send-email-afaerber@suse.de> <1406242820-20140-10-git-send-email-afaerber@suse.de>
-In-Reply-To: <1406242820-20140-10-git-send-email-afaerber@suse.de>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140724163303.df34065a3c3b26c0a4b3bab1@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/25/2014 01:00 AM, Andreas Färber wrote:
-> The specification requires compatible = "adi,axi-spdif-1.00.a" but
-> driver and example and file name indicate "adi,axi-spdif-tx-1.00.a".
-> Change the specification to match the implementation.
->
-> Signed-off-by: Andreas Färber <afaerber@suse.de>
+Hi Andrew,
 
-Acked-by: Lars-Peter Clausen <lars@metafoo.de>
+On Thu, Jul 24, 2014 at 04:33:03PM -0700, Andrew Morton wrote:
+> On Thu, 24 Jul 2014 16:35:38 +0200 Joerg Roedel <joro@8bytes.org> wrote:
+> > 
+> > Any comments and review appreciated!
+> 
+> It looks pretty simple and harmless.
+> 
+> I assume the AMD IOMMUv2 driver actually uses this and it's all
+> tested and good?  What is the status of that driver?
 
-Thanks.
+Yes, the AMD IOMMUv2 driver will use this once it is upstream, the
+changes to be made there are pretty simple.
 
-> ---
->   v2: New
->
->   Documentation/devicetree/bindings/sound/adi,axi-spdif-tx.txt | 2 +-
->   1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/Documentation/devicetree/bindings/sound/adi,axi-spdif-tx.txt b/Documentation/devicetree/bindings/sound/adi,axi-spdif-tx.txt
-> index 46f3449..4eb7997 100644
-> --- a/Documentation/devicetree/bindings/sound/adi,axi-spdif-tx.txt
-> +++ b/Documentation/devicetree/bindings/sound/adi,axi-spdif-tx.txt
-> @@ -1,7 +1,7 @@
->   ADI AXI-SPDIF controller
->
->   Required properties:
-> - - compatible : Must be "adi,axi-spdif-1.00.a"
-> + - compatible : Must be "adi,axi-spdif-tx-1.00.a"
->    - reg : Must contain SPDIF core's registers location and length
->    - clocks : Pairs of phandle and specifier referencing the controller's clocks.
->      The controller expects two clocks, the clock used for the AXI interface and
->
+The driver itself will get its first user soon with the AMD KFD driver
+currently under review.
+
+
+	Joerg
 
