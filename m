@@ -1,69 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759940AbaGYJal (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 05:30:41 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:57407 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758404AbaGYJak convert rfc822-to-8bit (ORCPT
+	id S933047AbaGYJbQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 05:31:16 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:54431 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751439AbaGYJbN convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 05:30:40 -0400
-From: "Javi Merino" <javi.merino@arm.com>
-Date: Fri, 25 Jul 2014 10:30:36 +0100
-To: Laxman Dewangan <ldewangan@nvidia.com>
-Cc: "rui.zhang@intel.com" <rui.zhang@intel.com>,
-        Eduardo Valentin <edubezval@gmail.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH-REPOST] thermal: of: look for sensor driver parent node
- if device node missing
-Message-ID: <20140725093036.GB2865@e104805>
-References: <1406279971-14957-1-git-send-email-ldewangan@nvidia.com>
-MIME-Version: 1.0
-In-Reply-To: <1406279971-14957-1-git-send-email-ldewangan@nvidia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginalArrivalTime: 25 Jul 2014 09:30:36.0754 (UTC) FILETIME=[17539320:01CFA7EB]
-X-MC-Unique: 114072510303800201
+	Fri, 25 Jul 2014 05:31:13 -0400
+Date: Fri, 25 Jul 2014 11:31:10 +0200
+From: Boris BREZILLON <boris.brezillon@free-electrons.com>
+To: jiri.prchal@aksignal.cz
+Cc: Bo Shen <voice.shen@atmel.com>, nicolas.ferre@atmel.com,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org
+Subject: Re: [PATCH] ARM: at91: at91sam9x5: sets NPCS0 (PA14) back to GPIO
+Message-ID: <20140725113110.70c4aa41@bbrezillon>
+In-Reply-To: <53D21FCF.7010402@aksignal.cz>
+References: <1405074175-22444-1-git-send-email-voice.shen@atmel.com>
+	<53D10C50.50305@aksignal.cz>
+	<20140724162645.4e19c26c@bbrezillon>
+	<53D12103.3020103@aksignal.cz>
+	<20140724175848.44f5da10@bbrezillon>
+	<53D1F5D0.1080006@aksignal.cz>
+	<20140725095319.16a8465c@bbrezillon>
+	<53D214E1.4050105@aksignal.cz>
+	<20140725104553.403921b1@bbrezillon>
+	<53D21B3F.7060006@aksignal.cz>
+	<20140725110124.3f0dce6c@bbrezillon>
+	<53D21FCF.7010402@aksignal.cz>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Fixed Eduardo's email *again*]
+On Fri, 25 Jul 2014 11:13:51 +0200
+Jiří Prchal <jiri.prchal@aksignal.cz> wrote:
 
-On Fri, Jul 25, 2014 at 10:19:31AM +0100, Laxman Dewangan wrote:
-> There are some mfd devices which supports junction thermal interrupt
-> like ams,AS3722. The DT binding of these devices are defined as the
-> flat and drivers for sub module of such devices are registered as
-> the mfd_add_devices. In this method, the sub devices registered as
-> platform driver and these do not have the of_node pointer on their
-> device structure. In this case, use the parent of_node pointer to
-> get the required of_node pointer.
-> 
-> Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
-> ---
-> I typed differnet email ID for Eduardo and so it did not reach to him.
-> Resending the patch with correct ID.
-> 
->  drivers/thermal/of-thermal.c | 2 ++
->  1 file changed, 2 insertions(+)
-> 
-> diff --git a/drivers/thermal/of-thermal.c b/drivers/thermal/of-thermal.c
-> index 04b1be7..85a7d71 100644
-> --- a/drivers/thermal/of-thermal.c
-> +++ b/drivers/thermal/of-thermal.c
-> @@ -396,6 +396,8 @@ thermal_zone_of_sensor_register(struct device *dev, int sensor_id,
->  		return ERR_PTR(-EINVAL);
->  
->  	sensor_np = dev->of_node;
-> +	if (!sensor_np && dev->parent)
-> +		sensor_np = dev->parent->of_node;
->  
->  	for_each_child_of_node(np, child) {
->  		struct of_phandle_args sensor_specs;
-> -- 
-> 1.8.1.5
-> 
-> 
 
+> >
+> > Every thing seems in place.
+> > Could you enable CONFIG_DEBUG_PINCTRL and grep on "enable pin" ?
+> / # dmesg | grep "enable pin"
+> [    0.968750] pinctrl-at91 ahb:apb:pinctrl@fffff400: enable pin 101 as GPIO
+> [    0.968750] pinctrl-at91 ahb:apb:pinctrl@fffff400: enable pin 101 as PIOD5 0x20
+> [    0.968750] pinctrl-at91 ahb:apb:pinctrl@fffff400: enable pin 100 as GPIO
+> [    0.968750] pinctrl-at91 ahb:apb:pinctrl@fffff400: enable pin 100 as PIOD4 0x10
+> [    1.238281] pinctrl-at91 ahb:apb:pinctrl@fffff400: enable pin 23 as GPIO
+> [    1.238281] pinctrl-at91 ahb:apb:pinctrl@fffff400: enable pin 23 as PIOA23 0x800000
+> [    1.238281] pinctrl-at91 ahb:apb:pinctrl@fffff400: enable pin 22 as GPIO
+> [    1.238281] pinctrl-at91 ahb:apb:pinctrl@fffff400: enable pin 22 as PIOA22 0x400000
+> [    1.242187] pinctrl-at91 ahb:apb:pinctrl@fffff400: enable pin 93 as GPIO
+> [    1.242187] pinctrl-at91 ahb:apb:pinctrl@fffff400: enable pin 93 as PIOC29 0x20000000
+> [    1.246093] pinctrl-at91 ahb:apb:pinctrl@fffff400: enable pin 14 as GPIO
+> [    1.246093] pinctrl-at91 ahb:apb:pinctrl@fffff400: enable pin 14 as PIOA14 0x4000
+
+
+Okay, this cleary shows that PA14 pin is muxed as a GPIO (or at least
+the driver think it is).
+
+
+Could you launch these commands (you'll need the devmem tool) and
+paste the results ?
+
+#devmem 0xfffff408
+#devmem 0xfffff418
+#devmem 0xfffff438
+#devmem 0xfffff43c
+#devmem 0xfffff458
+#devmem 0xfffff468
+#devmem 0xfffff470
+#devmem 0xfffff474
+#devmem 0xfffff498
+
+-- 
+Boris Brezillon, Free Electrons
+Embedded Linux and Kernel engineering
+http://free-electrons.com
