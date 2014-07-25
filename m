@@ -1,89 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752371AbaGYMHf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 08:07:35 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39422 "EHLO mx2.suse.de"
+	id S1752470AbaGYMSZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 08:18:25 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39579 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750699AbaGYMHd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 08:07:33 -0400
-Date: Fri, 25 Jul 2014 14:07:28 +0200
-From: Jean Delvare <jdelvare@suse.de>
-To: Jisheng Zhang <jszhang@marvell.com>
-Cc: <wsa@the-dreams.de>, <laurent.pinchart@ideasonboard.com>,
-        <paul.gortmaker@windriver.com>, <linux-i2c@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v2] i2c: pca954x: put the mux to disconnected state
- after resume
-Message-ID: <20140725140728.23d876bd@endymion.delvare>
-In-Reply-To: <1406289466-936-1-git-send-email-jszhang@marvell.com>
-References: <1406289466-936-1-git-send-email-jszhang@marvell.com>
-Organization: SUSE Linux
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
+	id S1751966AbaGYMSY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jul 2014 08:18:24 -0400
+Date: Fri, 25 Jul 2014 13:18:15 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Vlastimil Babka <vbabka@suse.cz>
+Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>, linux-kernel@vger.kernel.org,
+        Minchan Kim <minchan@kernel.org>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+Subject: Re: [PATCH V4 01/15] mm, THP: don't hold mmap_sem in khugepaged when
+ allocating THP
+Message-ID: <20140725121815.GV10819@suse.de>
+References: <1405518503-27687-1-git-send-email-vbabka@suse.cz>
+ <1405518503-27687-2-git-send-email-vbabka@suse.cz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <1405518503-27687-2-git-send-email-vbabka@suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 25 Jul 2014 19:57:46 +0800, Jisheng Zhang wrote:
-> pca954x may be power lost during suspend, so after resume we also suffer
-> the issue fixed by commit cd823db8b1161ef0d756514d280715a576d65cc3,
+On Wed, Jul 16, 2014 at 03:48:09PM +0200, Vlastimil Babka wrote:
+> When allocating huge page for collapsing, khugepaged currently holds mmap_sem
+> for reading on the mm where collapsing occurs. Afterwards the read lock is
+> dropped before write lock is taken on the same mmap_sem.
 > 
->  "pca954x power-on default is channel 0 connected. If multiple pca954x
->  muxes are connected to the same physical I2C bus, the parent bus will
->  see channel 0 devices behind both muxes by default."
+> Holding mmap_sem during whole huge page allocation is therefore useless, the
+> vma needs to be rechecked after taking the write lock anyway. Furthemore, huge
+> page allocation might involve a rather long sync compaction, and thus block
+> any mmap_sem writers and i.e. affect workloads that perform frequent m(un)map
+> or mprotect oterations.
 > 
-> What's more, when resume bootloader may also operate the mux, so the
-> the channel connected after that may not be the one driver thought.
+> This patch simply releases the read lock before allocating a huge page. It
+> also deletes an outdated comment that assumed vma must be stable, as it was
+> using alloc_hugepage_vma(). This is no longer true since commit 9f1b868a13
+> ("mm: thp: khugepaged: add policy for finding target node").
 > 
-> We fix this problem by putting the mux to disconnected state and
-> clearing last_chan in the resume hook.
-> 
-> Signed-off-by: Jisheng Zhang <jszhang@marvell.com>
-> ---
->  drivers/i2c/muxes/i2c-mux-pca954x.c | 15 +++++++++++++++
->  1 file changed, 15 insertions(+)
-> 
-> diff --git a/drivers/i2c/muxes/i2c-mux-pca954x.c b/drivers/i2c/muxes/i2c-mux-pca954x.c
-> index 9bd4212..ec11b40 100644
-> --- a/drivers/i2c/muxes/i2c-mux-pca954x.c
-> +++ b/drivers/i2c/muxes/i2c-mux-pca954x.c
-> @@ -41,6 +41,7 @@
->  #include <linux/i2c-mux.h>
->  #include <linux/i2c/pca954x.h>
->  #include <linux/module.h>
-> +#include <linux/pm.h>
->  #include <linux/slab.h>
->  
->  #define PCA954X_MAX_NCHANS 8
-> @@ -273,9 +274,23 @@ static int pca954x_remove(struct i2c_client *client)
->  	return 0;
->  }
->  
-> +#ifdef CONFIG_PM_SLEEP
-> +static int pca954x_resume(struct device *dev)
-> +{
-> +	struct i2c_client *client = to_i2c_client(dev);
-> +	struct pca954x *data = i2c_get_clientdata(client);
-> +
-> +	data->last_chan = 0;
-> +	return i2c_smbus_write_byte(client, 0);
-> +}
-> +#endif
-> +
-> +static SIMPLE_DEV_PM_OPS(pca954x_pm, NULL, pca954x_resume);
-> +
->  static struct i2c_driver pca954x_driver = {
->  	.driver		= {
->  		.name	= "pca954x",
-> +		.pm	= &pca954x_pm,
->  		.owner	= THIS_MODULE,
->  	},
->  	.probe		= pca954x_probe,
+> Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
 
-Reviewed-by: Jean Delvare <jdelvare@suse.de>
+Acked-by: Mel Gorman <mgorman@suse.de>
 
 -- 
-Jean Delvare
-SUSE L3 Support
+Mel Gorman
+SUSE Labs
