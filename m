@@ -1,183 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752185AbaGYDjM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 23:39:12 -0400
-Received: from mail-vc0-f171.google.com ([209.85.220.171]:43994 "EHLO
-	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750795AbaGYDjK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 23:39:10 -0400
+	id S1752203AbaGYDzd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 23:55:33 -0400
+Received: from mail.kernel.org ([198.145.19.201]:38217 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751111AbaGYDzc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jul 2014 23:55:32 -0400
+Date: Thu, 24 Jul 2014 20:55:28 -0700
+From: Alexei Starovoitov <ast@kernel.org>
+To: Michel =?iso-8859-1?Q?D=E4nzer?= <michel@daenzer.net>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Jakub Jelinek <jakub@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Debian GCC Maintainers <debian-gcc@lists.debian.org>,
+        Debian Kernel Team <debian-kernel@lists.debian.org>
+Subject: Re: Random panic in load_balance() with 3.16-rc
+Message-ID: <20140725035527.GA30108@pg-vmw-gw1>
+References: <CA+55aFzDWritxv5RiqwcZ1qCKJQKK-Lw6StYFF7qx5YWgiCUTQ@mail.gmail.com>
+ <20140723182518.GD3935@laptop>
+ <CA+55aFyFT9n5wUNifEHY6+t2bEcD91kL7+dqXuBMSMJvLeDDJQ@mail.gmail.com>
+ <20140723184111.GG3935@laptop>
+ <CA+55aFwQfwfAP6U77_nD_mSvoygj=cZ09N644hKRtzgLnEqhZQ@mail.gmail.com>
+ <20140723190230.GH3935@laptop>
+ <CA+55aFyM1wqTLK0m4GQJ28f=z0iZE87=xk+1z-vm+PH1_d8nKw@mail.gmail.com>
+ <53D064C7.5050807@daenzer.net>
+ <CA+55aFyJhqiPv0kQ+51=Ei-zaAO+0JszxtnEyx-Gbto3SE00xw@mail.gmail.com>
+ <53D1B1EF.7030603@daenzer.net>
 MIME-Version: 1.0
-In-Reply-To: <53D1D050.6030508@gmail.com>
-References: <1406156581-6052-1-git-send-email-xerofoify@gmail.com>
-	<CAPDOMVgziyYTX41xZVB9FLHUKFRPPm19jo0A_WfbLqaaKbxPqg@mail.gmail.com>
-	<20140724131821.30c4519d@gandalf.local.home>
-	<CAHLZz12ammMZNAah_eyYePJWorw2AruDAujeNxJHvOF5+Mr7cA@mail.gmail.com>
-	<20140724134849.4d228f5f@gandalf.local.home>
-	<CAPDOMVi7cHUAn_1AxJ+tN1c67UqBdLHLC1sJNSA=HUK-WzZCTA@mail.gmail.com>
-	<CAFLxGvzA4HHL0aJaC0Ypf9_YeL5WW4_eYNToSVG7H43DD2unSg@mail.gmail.com>
-	<CAPDOMViVAY5cBuwe=nLjnFUHy4_FVUh_9LkChv+vso5w7WVeDA@mail.gmail.com>
-	<CAPDOMVhNaV+Wertp+p361iYS8t-rZmN2nubn9coyrUcgZPcuGw@mail.gmail.com>
-	<53D15A6B.6030806@nod.at>
-	<53D1BDCC.5030202@gmail.com>
-	<CAPDOMVhuiSwBs_d6b5qFN2jLwsLAu+_CtaSJH+oG0MxGXmtKOw@mail.gmail.com>
-	<53D1C526.9040307@gmail.com>
-	<CAPDOMVhZNVOjCFYa4oJCL2rSRjXPjEgcQC42w_LGXHubYmDyYA@mail.gmail.com>
-	<53D1CA70.60301@gmail.com>
-	<CAPDOMVjCmjM2QeXCx+TK8wk3LXiCq+NKK7ami6n2HP0gO0YGBg@mail.gmail.com>
-	<53D1CD4C.90507@gmail.com>
-	<CAPDOMViMDiWONkk=TMu-U6ugKr4uiPk_km=-z-dO_0MwxYJ03w@mail.gmail.com>
-	<53D1D050.6030508@gmail.com>
-Date: Thu, 24 Jul 2014 23:39:09 -0400
-Message-ID: <CAPDOMVjnW-v+LepEyY=9k0UYEgu9q51WUjpd+v=anrYtsE14pQ@mail.gmail.com>
-Subject: Re: [PATCH] staging: Change kzalloc to kcalloc
-From: Nick Krause <xerofoify@gmail.com>
-To: Chen Gang <gang.chen.5i5j@gmail.com>
-Cc: Richard Weinberger <richard@nod.at>,
-        Richard Weinberger <richard.weinberger@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Harvey Harrison <harvey.harrison@gmail.com>,
-        =?UTF-8?B?TcOlbnMgUnVsbGfDpXJk?= <mans@mansr.com>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
-        Dan Carpenter <dan.carpenter@oracle.com>, tomas.winkler@intel.com,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <53D1B1EF.7030603@daenzer.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 24, 2014 at 11:34 PM, Chen Gang <gang.chen.5i5j@gmail.com> wrote:
->
->
-> On 07/25/2014 11:30 AM, Nick Krause wrote:
->> On Thu, Jul 24, 2014 at 11:21 PM, Chen Gang <gang.chen.5i5j@gmail.com> wrote:
->>>
->>>
->>> On 07/25/2014 11:13 AM, Nick Krause wrote:
->>>> On Thu, Jul 24, 2014 at 11:09 PM, Chen Gang <gang.chen.5i5j@gmail.com> wrote:
->>>>>
->>>>>
->>>>> On 07/25/2014 10:53 AM, Nick Krause wrote:
->>>>>> On Thu, Jul 24, 2014 at 10:47 PM, Chen Gang <gang.chen.5i5j@gmail.com> wrote:
->>>>>>>
->>>>>>>
->>>>>>> On 07/25/2014 10:20 AM, Nick Krause wrote:
->>>>>>>> On Thu, Jul 24, 2014 at 10:15 PM, Chen Gang <gang.chen.5i5j@gmail.com> wrote:
->>>>>>>>>
->>>>>>>>> Excuse me, I did not see the patch details, but I guess it is about
->>>>>>>>> whether welcome a new member to upstream kernel. For me, I have 3 ideas
->>>>>>>>> about it if I am a newbie or a normal kernel developer:
->>>>>>>>>
->>>>>>>>>  - Do I have enough basic skills for it?
->>>>>>>>>
->>>>>>>>>     - Do I developed one or more another real world projects with C?
->>>>>>>>>       (they are successful projects -- at least, not failure projects)
->>>>>>>>>
->>>>>>>>>     - Can I construct related develop environments to support what I do?
->>>>>>>>>       (e.g. building and testing for upstream kernel)
->>>>>>>>>
->>>>>>>>>     - Am I familiar the basic working flow about kernel mailing list.
->>>>>>>>>       (e.g. format-patch, sending patch, email client configuration...).
->>>>>>>>>
->>>>>>>>>  - Do I have a correct attitude on it?
->>>>>>>>>
->>>>>>>>>     - Am I careful enough?
->>>>>>>>>       (e.g. if find some details may doubt, try to check and clear them)
->>>>>>>>>       (it is always neccessary for all patches)
->>>>>>>>>
->>>>>>>>>     - Am I try my best for it?
->>>>>>>>>       (e.g. when finish coding, try what I can do: build, run and test).
->>>>>>>>>       (it is neccessary for most cases)
->>>>>>>>>
->>>>>>>>>     - Do I have negative effect with others?
->>>>>>>>>       (e.g. discourage the newbies, or send spam to other members ...).
->>>>>>>>>       (need always try to avoid)
->>>>>>>>>
->>>>>>>>>  - Do I really love programming, also love open source kernel?
->>>>>>>>>
->>>>>>>>>     - Do I love it, or I have to do it for another reason?
->>>>>>>>>       (I guess, most of gmail members in open source, love programming).
->>>>>>>>>
->>>>>>>>>     - Do I still love programming if I am discouraged by any members?
->>>>>>>>>
->>>>>>>>>     - Do I still love open source kernel if discouraged by any members?
->>>>>>>>>
->>>>>>>>>
->>>>>>>> I have most of these skills other then developing real projects in C with other
->>>>>>>> developers as other then the kernel I don't have must interest in C outside
->>>>>>>> of embedded programming.
->>>>>>>
->>>>>>> OK, thanks. If what you said is true, for me, if you will, please still
->>>>>>> continue for open source kernel, but really need be more careful about
->>>>>>> the patch you made before send to open mailing list.
->>>>>>>
->>>>>>>
->>>>>>> Thanks.
->>>>>>> --
->>>>>>> Chen Gang
->>>>>>>
->>>>>>> Open, share, and attitude like air, water, and life which God blessed
->>>>>>
->>>>>> Chen ,
->>>>>> Thanks for helping me out here :). The true through is I don't known how to
->>>>>> build test correctly as a newb and thought it was better just to avoid it(stupid
->>>>>> me). I would like to known how to do this and if there is any way I can help you
->>>>>> guys out , please let me known :). I don't want to be avoided I am honestly here
->>>>>> to help make your life easier.
->>>>>
->>>>> Excuse me, my English is not quite well, I do not understand what you
->>>>> said, I guess your meaning is "not familiar with how to build and test
->>>>> upstream kernel" If what I guess is incorrect, please let me know.
->>>>>
->>>>> There are some books or some related web links for building and test
->>>>> kernel, they are not quite difficult to get (please google search).
->>>>>
->>>>> I guess, it is necessary to reference these information and construct
->>>>> related develop environments to support what you want to do next.
->>>>>
->>>>>
->>>>> By the way, excuse me, today I have to do some other things firstly, so
->>>>> maybe my next email reply will be late (may tomorrow, or the day after
->>>>> tomorrow).
->>>>>
->>>>>
->>>>> Thanks.
->>>>> --
->>>>> Chen Gang
->>>>>
->>>>> Open, share, and attitude like air, water, and life which God blessed
->>>>
->>>> That's what I meant. If you can sent me a link to how to do build testing
->>>> that would be great :).
->>>
->>> Please read README at the root directory of kernel source, also
->>> "./Documents" contents many valuable information. And try google search
->>> for additional information.
->>>
->>> Try to accomplish them by yourself, that will let yourself improved with
->>> efficiency.
->>>
->>> Thanks.
->>> --
->>> Chen Gang
->>>
->>> Open, share, and attitude like air, water, and life which God blessed
->>
->> That seems to be the issue with my programming here.
->
-> For me, constructing related environments is necessary for developers,
-> especially for senior developers.
->
->
-> Thanks.
-> --
-> Chen Gang
->
-> Open, share, and attitude like air, water, and life which God blessed
-Thanks Chen,
-Seems I don't need any more advice.
-Nick
+On Fri, Jul 25, 2014 at 10:25:03AM +0900, Michel Dänzer wrote:
+> [ Adding the Debian kernel and gcc teams to Cc ]
+> 
+> >         movq    $load_balance_mask, -136(%rbp)  #, %sfp
+> >         subq    $184, %rsp      #,
+> > 
+> > Anyway, this is not a kernel bug. This is your compiler creating
+> > completely broken code. We may need to add a warning to make sure
+> > nobody compiles with gcc-4.9.0, and the Debian people should probably
+> > downgrate their shiny new compiler.
+> 
+> Attached is fair.s from Debian gcc 4.8.3-5. Does that look better? I'm
+> going to try reproducing the problem with a kernel built by that now.
+
+4.8 and 4.7 don't hit the problem on this test.
+4.9 with -O2 compiles this file ok. 4.9 with -Os triggers it.
+
+-mno-red-zone only affected prologue emition in gcc. This part didn't
+change between the releases. So the bug is quite deep.
+What seems to be happening is that 2nd pass of instruction scheduler
+(after emit prologue and reg alloc) is ignoring barrier properties
+of 'subq $184, %rsp' and moving 'movq $.., -136(%rbp)' instruction
+ahead of it. afaik rtl sched was never aware of 'red-zone'.
+As an ex-compiler guy, I'm worried that this bug exists in earlier
+releases. rtl backend guys need to take a serious look at it.
+imo this is very serious bug, since broken red-zone is extremelly
+hard to debug.
+There are two weak test in gcc testsuite related to -mno-red-zone,
+but not a single test that actually check that it is doing
+the right thing. It is scary. I hope I'm wrong with this analysis.
+
