@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760956AbaGYPh7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 11:37:59 -0400
-Received: from mail.kernel.org ([198.145.19.201]:34981 "EHLO mail.kernel.org"
+	id S1760985AbaGYPiO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 11:38:14 -0400
+Received: from mail.kernel.org ([198.145.19.201]:35044 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752615AbaGYPh4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 11:37:56 -0400
+	id S1752615AbaGYPiI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jul 2014 11:38:08 -0400
 From: Arnaldo Carvalho de Melo <acme@kernel.org>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
@@ -15,9 +15,9 @@ Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 09/27] perf machine: Add ability to record the current tid for each cpu
-Date: Fri, 25 Jul 2014 12:36:51 -0300
-Message-Id: <1406302629-11790-10-git-send-email-acme@kernel.org>
+Subject: [PATCH 12/27] perf tools: Pass machine to vdso__dso_findnew()
+Date: Fri, 25 Jul 2014 12:36:54 -0300
+Message-Id: <1406302629-11790-13-git-send-email-acme@kernel.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1406302629-11790-1-git-send-email-acme@kernel.org>
 References: <1406302629-11790-1-git-send-email-acme@kernel.org>
@@ -27,14 +27,10 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Adrian Hunter <adrian.hunter@intel.com>
 
-Add an array to struct machine to store the current tid running on each
-cpu.
+This is preparation for removing the global variables used in vdso.c and
+thereby fixing the lifetime of the VDSO temporary file.
 
-Add machine functions to get / set the tid for a cpu.
-
-This will be used to determine the tid when decoding a per-cpu
-Instruction Trace.
-
+Reviewed-by: Jiri Olsa <jolsa@redhat.com>
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
@@ -43,102 +39,132 @@ Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1406035081-14301-17-git-send-email-adrian.hunter@intel.com
+Link: http://lkml.kernel.org/r/1406035081-14301-45-git-send-email-adrian.hunter@intel.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/machine.c | 46 ++++++++++++++++++++++++++++++++++++++++++++++
- tools/perf/util/machine.h |  5 +++++
- 2 files changed, 51 insertions(+)
+ tools/perf/util/machine.c | 4 ++--
+ tools/perf/util/map.c     | 7 ++++---
+ tools/perf/util/map.h     | 2 +-
+ tools/perf/util/vdso.c    | 7 ++++---
+ tools/perf/util/vdso.h    | 4 +++-
+ 5 files changed, 14 insertions(+), 10 deletions(-)
 
 diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
-index 93c8b6fbc799..cfc691000f13 100644
+index cfc691000f13..a25f3ee1b5b3 100644
 --- a/tools/perf/util/machine.c
 +++ b/tools/perf/util/machine.c
-@@ -45,6 +45,8 @@ int machine__init(struct machine *machine, const char *root_dir, pid_t pid)
- 		thread__set_comm(thread, comm, 0);
+@@ -1095,7 +1095,7 @@ int machine__process_mmap2_event(struct machine *machine,
+ 	else
+ 		type = MAP__FUNCTION;
+ 
+-	map = map__new(&machine->user_dsos, event->mmap2.start,
++	map = map__new(machine, event->mmap2.start,
+ 			event->mmap2.len, event->mmap2.pgoff,
+ 			event->mmap2.pid, event->mmap2.maj,
+ 			event->mmap2.min, event->mmap2.ino,
+@@ -1145,7 +1145,7 @@ int machine__process_mmap_event(struct machine *machine, union perf_event *event
+ 	else
+ 		type = MAP__FUNCTION;
+ 
+-	map = map__new(&machine->user_dsos, event->mmap.start,
++	map = map__new(machine, event->mmap.start,
+ 			event->mmap.len, event->mmap.pgoff,
+ 			event->mmap.pid, 0, 0, 0, 0, 0, 0,
+ 			event->mmap.filename,
+diff --git a/tools/perf/util/map.c b/tools/perf/util/map.c
+index 845f627e45f4..dffc8dce6046 100644
+--- a/tools/perf/util/map.c
++++ b/tools/perf/util/map.c
+@@ -13,6 +13,7 @@
+ #include "build-id.h"
+ #include "util.h"
+ #include "debug.h"
++#include "machine.h"
+ #include <linux/string.h>
+ 
+ const char *map_type__name[MAP__NR_TYPES] = {
+@@ -137,7 +138,7 @@ void map__init(struct map *map, enum map_type type,
+ 	map->erange_warned = false;
+ }
+ 
+-struct map *map__new(struct list_head *dsos__list, u64 start, u64 len,
++struct map *map__new(struct machine *machine, u64 start, u64 len,
+ 		     u64 pgoff, u32 pid, u32 d_maj, u32 d_min, u64 ino,
+ 		     u64 ino_gen, u32 prot, u32 flags, char *filename,
+ 		     enum map_type type)
+@@ -173,9 +174,9 @@ struct map *map__new(struct list_head *dsos__list, u64 start, u64 len,
+ 
+ 		if (vdso) {
+ 			pgoff = 0;
+-			dso = vdso__dso_findnew(dsos__list);
++			dso = vdso__dso_findnew(machine);
+ 		} else
+-			dso = __dsos__findnew(dsos__list, filename);
++			dso = __dsos__findnew(&machine->user_dsos, filename);
+ 
+ 		if (dso == NULL)
+ 			goto out_delete;
+diff --git a/tools/perf/util/map.h b/tools/perf/util/map.h
+index 22d13a219590..a95e677f16e9 100644
+--- a/tools/perf/util/map.h
++++ b/tools/perf/util/map.h
+@@ -119,7 +119,7 @@ typedef int (*symbol_filter_t)(struct map *map, struct symbol *sym);
+ 
+ void map__init(struct map *map, enum map_type type,
+ 	       u64 start, u64 end, u64 pgoff, struct dso *dso);
+-struct map *map__new(struct list_head *dsos__list, u64 start, u64 len,
++struct map *map__new(struct machine *machine, u64 start, u64 len,
+ 		     u64 pgoff, u32 pid, u32 d_maj, u32 d_min, u64 ino,
+ 		     u64 ino_gen, u32 prot, u32 flags,
+ 		     char *filename, enum map_type type);
+diff --git a/tools/perf/util/vdso.c b/tools/perf/util/vdso.c
+index 290582452da3..da5ba4da2bd2 100644
+--- a/tools/perf/util/vdso.c
++++ b/tools/perf/util/vdso.c
+@@ -11,6 +11,7 @@
+ #include "vdso.h"
+ #include "util.h"
+ #include "symbol.h"
++#include "machine.h"
+ #include "linux/string.h"
+ #include "debug.h"
+ 
+@@ -90,9 +91,9 @@ void vdso__exit(void)
+ 		unlink(vdso_file);
+ }
+ 
+-struct dso *vdso__dso_findnew(struct list_head *head)
++struct dso *vdso__dso_findnew(struct machine *machine)
+ {
+-	struct dso *dso = dsos__find(head, VDSO__MAP_NAME, true);
++	struct dso *dso = dsos__find(&machine->user_dsos, VDSO__MAP_NAME, true);
+ 
+ 	if (!dso) {
+ 		char *file;
+@@ -103,7 +104,7 @@ struct dso *vdso__dso_findnew(struct list_head *head)
+ 
+ 		dso = dso__new(VDSO__MAP_NAME);
+ 		if (dso != NULL) {
+-			dsos__add(head, dso);
++			dsos__add(&machine->user_dsos, dso);
+ 			dso__set_long_name(dso, file, false);
+ 		}
  	}
- 
-+	machine->current_tid = NULL;
-+
- 	return 0;
+diff --git a/tools/perf/util/vdso.h b/tools/perf/util/vdso.h
+index 0f76e7caf6f8..9ab0738b6752 100644
+--- a/tools/perf/util/vdso.h
++++ b/tools/perf/util/vdso.h
+@@ -12,7 +12,9 @@ static inline bool is_vdso_map(const char *filename)
+ 	return !strcmp(filename, VDSO__MAP_NAME);
  }
  
-@@ -104,6 +106,7 @@ void machine__exit(struct machine *machine)
- 	dsos__delete(&machine->user_dsos);
- 	dsos__delete(&machine->kernel_dsos);
- 	zfree(&machine->root_dir);
-+	zfree(&machine->current_tid);
- }
+-struct dso *vdso__dso_findnew(struct list_head *head);
++struct machine;
++
++struct dso *vdso__dso_findnew(struct machine *machine);
+ void vdso__exit(void);
  
- void machine__delete(struct machine *machine)
-@@ -1481,3 +1484,46 @@ int __machine__synthesize_threads(struct machine *machine, struct perf_tool *too
- 	/* command specified */
- 	return 0;
- }
-+
-+pid_t machine__get_current_tid(struct machine *machine, int cpu)
-+{
-+	if (cpu < 0 || cpu >= MAX_NR_CPUS || !machine->current_tid)
-+		return -1;
-+
-+	return machine->current_tid[cpu];
-+}
-+
-+int machine__set_current_tid(struct machine *machine, int cpu, pid_t pid,
-+			     pid_t tid)
-+{
-+	struct thread *thread;
-+
-+	if (cpu < 0)
-+		return -EINVAL;
-+
-+	if (!machine->current_tid) {
-+		int i;
-+
-+		machine->current_tid = calloc(MAX_NR_CPUS, sizeof(pid_t));
-+		if (!machine->current_tid)
-+			return -ENOMEM;
-+		for (i = 0; i < MAX_NR_CPUS; i++)
-+			machine->current_tid[i] = -1;
-+	}
-+
-+	if (cpu >= MAX_NR_CPUS) {
-+		pr_err("Requested CPU %d too large. ", cpu);
-+		pr_err("Consider raising MAX_NR_CPUS\n");
-+		return -EINVAL;
-+	}
-+
-+	machine->current_tid[cpu] = tid;
-+
-+	thread = machine__findnew_thread(machine, pid, tid);
-+	if (!thread)
-+		return -ENOMEM;
-+
-+	thread->cpu = cpu;
-+
-+	return 0;
-+}
-diff --git a/tools/perf/util/machine.h b/tools/perf/util/machine.h
-index c8c74a119398..8771d0cbe9cb 100644
---- a/tools/perf/util/machine.h
-+++ b/tools/perf/util/machine.h
-@@ -33,6 +33,7 @@ struct machine {
- 	struct map_groups kmaps;
- 	struct map	  *vmlinux_maps[MAP__NR_TYPES];
- 	symbol_filter_t	  symbol_filter;
-+	pid_t		  *current_tid;
- };
- 
- static inline
-@@ -191,4 +192,8 @@ int machine__synthesize_threads(struct machine *machine, struct target *target,
- 					     perf_event__process, data_mmap);
- }
- 
-+pid_t machine__get_current_tid(struct machine *machine, int cpu);
-+int machine__set_current_tid(struct machine *machine, int cpu, pid_t pid,
-+			     pid_t tid);
-+
- #endif /* __PERF_MACHINE_H */
+ #endif /* __PERF_VDSO__ */
 -- 
 1.9.3
 
