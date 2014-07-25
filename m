@@ -1,135 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758979AbaGYDOJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 23:14:09 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:48686 "EHLO
-	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758890AbaGYDOI (ORCPT
+	id S1758508AbaGYDV6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 23:21:58 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:51423 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752163AbaGYDV4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 23:14:08 -0400
-X-Original-SENDERIP: 10.177.220.181
-X-Original-MAILFROM: namhyung@kernel.org
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Thomas Ilsche <thomas.ilsche@tu-dresden.de>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
-        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 1/2] perf tools: Fix make PYTHON override
-Date: Fri, 25 Jul 2014 12:14:04 +0900
-Message-Id: <1406258045-25726-1-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 2.0.0
-In-Reply-To: <53D135F9.1070104@tu-dresden.de>
-References: <53D135F9.1070104@tu-dresden.de>
+	Thu, 24 Jul 2014 23:21:56 -0400
+Message-ID: <53D1CD4C.90507@gmail.com>
+Date: Fri, 25 Jul 2014 11:21:48 +0800
+From: Chen Gang <gang.chen.5i5j@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Nick Krause <xerofoify@gmail.com>
+CC: Richard Weinberger <richard@nod.at>,
+        Richard Weinberger <richard.weinberger@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Harvey Harrison <harvey.harrison@gmail.com>,
+        =?UTF-8?B?TcOlbnMgUnVsbGfDpXJk?= <mans@mansr.com>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
+        Dan Carpenter <dan.carpenter@oracle.com>, tomas.winkler@intel.com,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] staging: Change kzalloc to kcalloc
+References: <1406156581-6052-1-git-send-email-xerofoify@gmail.com>	<CAPDOMVia0OXydg_hRH0t63xUaxKEkVc6D20vAZiyugkMXAEsJQ@mail.gmail.com>	<yw1xtx669002.fsf@unicorn.mansr.com>	<CAPDOMVgziyYTX41xZVB9FLHUKFRPPm19jo0A_WfbLqaaKbxPqg@mail.gmail.com>	<20140724131821.30c4519d@gandalf.local.home>	<CAHLZz12ammMZNAah_eyYePJWorw2AruDAujeNxJHvOF5+Mr7cA@mail.gmail.com>	<20140724134849.4d228f5f@gandalf.local.home>	<CAPDOMVi7cHUAn_1AxJ+tN1c67UqBdLHLC1sJNSA=HUK-WzZCTA@mail.gmail.com>	<CAFLxGvzA4HHL0aJaC0Ypf9_YeL5WW4_eYNToSVG7H43DD2unSg@mail.gmail.com>	<CAPDOMViVAY5cBuwe=nLjnFUHy4_FVUh_9LkChv+vso5w7WVeDA@mail.gmail.com>	<CAPDOMVhNaV+Wertp+p361iYS8t-rZmN2nubn9coyrUcgZPcuGw@mail.gmail.com>	<53D15A6B.6030806@nod.at>	<53D1BDCC.5030202@gmail.com>	<CAPDOMVhuiSwBs_d6b5qFN2jLwsLAu+_CtaSJH+oG0MxGXmtKOw@mail.gmail.com>	<53D1C526.9040307@gmail.com>	<CAPDOMVhZNVOjCFYa4oJCL2rSRjXPjEgcQC42w_LGXHubYmDyYA@mail.gmail.com>	<53D1CA70.60301@gmail.com> <CAPDOMVjCmjM2QeXCx+TK8wk3LXiCq+NKK7ami6n2HP0gO0YGBg@mail.gmail.com>
+In-Reply-To: <CAPDOMVjCmjM2QeXCx+TK8wk3LXiCq+NKK7ami6n2HP0gO0YGBg@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thomas reported that make PYTHON=python2 is not work on some systems.
-I can reproduce it on my ArchLinux box too.
 
-This is because it's overridden by config/feature-checks/Makefile
-regardless of PYTHON setting.  I guess it's a bug slipped into during
-the feature checking change.
 
-Actually, we don't need to check python-config in the feature-checks.
-We can just pass appropriate FEATURE_CHECK_*FLAGS.
+On 07/25/2014 11:13 AM, Nick Krause wrote:
+> On Thu, Jul 24, 2014 at 11:09 PM, Chen Gang <gang.chen.5i5j@gmail.com> wrote:
+>>
+>>
+>> On 07/25/2014 10:53 AM, Nick Krause wrote:
+>>> On Thu, Jul 24, 2014 at 10:47 PM, Chen Gang <gang.chen.5i5j@gmail.com> wrote:
+>>>>
+>>>>
+>>>> On 07/25/2014 10:20 AM, Nick Krause wrote:
+>>>>> On Thu, Jul 24, 2014 at 10:15 PM, Chen Gang <gang.chen.5i5j@gmail.com> wrote:
+>>>>>>
+>>>>>> Excuse me, I did not see the patch details, but I guess it is about
+>>>>>> whether welcome a new member to upstream kernel. For me, I have 3 ideas
+>>>>>> about it if I am a newbie or a normal kernel developer:
+>>>>>>
+>>>>>>  - Do I have enough basic skills for it?
+>>>>>>
+>>>>>>     - Do I developed one or more another real world projects with C?
+>>>>>>       (they are successful projects -- at least, not failure projects)
+>>>>>>
+>>>>>>     - Can I construct related develop environments to support what I do?
+>>>>>>       (e.g. building and testing for upstream kernel)
+>>>>>>
+>>>>>>     - Am I familiar the basic working flow about kernel mailing list.
+>>>>>>       (e.g. format-patch, sending patch, email client configuration...).
+>>>>>>
+>>>>>>  - Do I have a correct attitude on it?
+>>>>>>
+>>>>>>     - Am I careful enough?
+>>>>>>       (e.g. if find some details may doubt, try to check and clear them)
+>>>>>>       (it is always neccessary for all patches)
+>>>>>>
+>>>>>>     - Am I try my best for it?
+>>>>>>       (e.g. when finish coding, try what I can do: build, run and test).
+>>>>>>       (it is neccessary for most cases)
+>>>>>>
+>>>>>>     - Do I have negative effect with others?
+>>>>>>       (e.g. discourage the newbies, or send spam to other members ...).
+>>>>>>       (need always try to avoid)
+>>>>>>
+>>>>>>  - Do I really love programming, also love open source kernel?
+>>>>>>
+>>>>>>     - Do I love it, or I have to do it for another reason?
+>>>>>>       (I guess, most of gmail members in open source, love programming).
+>>>>>>
+>>>>>>     - Do I still love programming if I am discouraged by any members?
+>>>>>>
+>>>>>>     - Do I still love open source kernel if discouraged by any members?
+>>>>>>
+>>>>>>
+>>>>> I have most of these skills other then developing real projects in C with other
+>>>>> developers as other then the kernel I don't have must interest in C outside
+>>>>> of embedded programming.
+>>>>
+>>>> OK, thanks. If what you said is true, for me, if you will, please still
+>>>> continue for open source kernel, but really need be more careful about
+>>>> the patch you made before send to open mailing list.
+>>>>
+>>>>
+>>>> Thanks.
+>>>> --
+>>>> Chen Gang
+>>>>
+>>>> Open, share, and attitude like air, water, and life which God blessed
+>>>
+>>> Chen ,
+>>> Thanks for helping me out here :). The true through is I don't known how to
+>>> build test correctly as a newb and thought it was better just to avoid it(stupid
+>>> me). I would like to known how to do this and if there is any way I can help you
+>>> guys out , please let me known :). I don't want to be avoided I am honestly here
+>>> to help make your life easier.
+>>
+>> Excuse me, my English is not quite well, I do not understand what you
+>> said, I guess your meaning is "not familiar with how to build and test
+>> upstream kernel" If what I guess is incorrect, please let me know.
+>>
+>> There are some books or some related web links for building and test
+>> kernel, they are not quite difficult to get (please google search).
+>>
+>> I guess, it is necessary to reference these information and construct
+>> related develop environments to support what you want to do next.
+>>
+>>
+>> By the way, excuse me, today I have to do some other things firstly, so
+>> maybe my next email reply will be late (may tomorrow, or the day after
+>> tomorrow).
+>>
+>>
+>> Thanks.
+>> --
+>> Chen Gang
+>>
+>> Open, share, and attitude like air, water, and life which God blessed
+> 
+> That's what I meant. If you can sent me a link to how to do build testing
+> that would be great :).
 
-Reported-by: Thomas Ilsche <thomas.ilsche@tu-dresden.de>
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
- tools/perf/config/Makefile                | 34 ++++++++++++++++++++-----------
- tools/perf/config/feature-checks/Makefile | 18 ++--------------
- 2 files changed, 24 insertions(+), 28 deletions(-)
+Please read README at the root directory of kernel source, also
+"./Documents" contents many valuable information. And try google search
+for additional information.
 
-diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-index 1f67aa02d240..e05d8f99424d 100644
---- a/tools/perf/config/Makefile
-+++ b/tools/perf/config/Makefile
-@@ -120,6 +120,23 @@ ifdef PARSER_DEBUG
-   CFLAGS             += -DPARSER_DEBUG
- endif
- 
-+ifndef NO_LIBPYTHON
-+  override PYTHON := \
-+    $(call get-executable-or-default,PYTHON,python)
-+  override PYTHON_CONFIG := \
-+    $(call get-executable-or-default,PYTHON_CONFIG,$(PYTHON)-config)
-+
-+  PYTHON_CONFIG_SQ := $(call shell-sq,$(PYTHON_CONFIG))
-+
-+  PYTHON_EMBED_LDOPTS := $(shell $(PYTHON_CONFIG_SQ) --ldflags 2>/dev/null)
-+  PYTHON_EMBED_CCOPTS := $(shell $(PYTHON_CONFIG_SQ) --cflags 2>/dev/null)
-+
-+  FEATURE_CHECK_CFLAGS-libpython := $(PYTHON_EMBED_CCOPTS)
-+  FEATURE_CHECK_LDFLAGS-libpython := $(PYTHON_EMBED_LDOPTS)
-+  FEATURE_CHECK_CFLAGS-libpython-version := $(PYTHON_EMBED_CCOPTS)
-+  FEATURE_CHECK_LDFLAGS-libpython-version := $(PYTHON_EMBED_LDOPTS)
-+endif
-+
- CFLAGS += -fno-omit-frame-pointer
- CFLAGS += -ggdb3
- CFLAGS += -funwind-tables
-@@ -482,21 +499,14 @@ define disable-python_code
-   NO_LIBPYTHON := 1
- endef
- 
--override PYTHON := \
--  $(call get-executable-or-default,PYTHON,python)
--
--ifndef PYTHON
--  $(call disable-python,python interpreter)
-+ifdef NO_LIBPYTHON
-+  $(call disable-python)
- else
- 
--  PYTHON_WORD := $(call shell-wordify,$(PYTHON))
--
--  ifdef NO_LIBPYTHON
--    $(call disable-python)
-+  ifndef PYTHON
-+    $(call disable-python,python interpreter)
-   else
--
--    override PYTHON_CONFIG := \
--      $(call get-executable-or-default,PYTHON_CONFIG,$(PYTHON)-config)
-+    PYTHON_WORD := $(call shell-wordify,$(PYTHON))
- 
-     ifndef PYTHON_CONFIG
-       $(call disable-python,python-config tool)
-diff --git a/tools/perf/config/feature-checks/Makefile b/tools/perf/config/feature-checks/Makefile
-index 6088f8d8a434..72ab2984718e 100644
---- a/tools/perf/config/feature-checks/Makefile
-+++ b/tools/perf/config/feature-checks/Makefile
-@@ -101,25 +101,11 @@ FLAGS_PERL_EMBED=$(PERL_EMBED_CCOPTS) $(PERL_EMBED_LDOPTS)
- test-libperl.bin:
- 	$(BUILD) $(FLAGS_PERL_EMBED)
- 
--override PYTHON := python
--override PYTHON_CONFIG := python-config
--
--escape-for-shell-sq =  $(subst ','\'',$(1))
--shell-sq = '$(escape-for-shell-sq)'
--
--PYTHON_CONFIG_SQ = $(call shell-sq,$(PYTHON_CONFIG))
--
--PYTHON_EMBED_LDOPTS = $(shell $(PYTHON_CONFIG_SQ) --ldflags 2>/dev/null)
--PYTHON_EMBED_LDFLAGS = $(call strip-libs,$(PYTHON_EMBED_LDOPTS))
--PYTHON_EMBED_LIBADD = $(call grep-libs,$(PYTHON_EMBED_LDOPTS))
--PYTHON_EMBED_CCOPTS = $(shell $(PYTHON_CONFIG_SQ) --cflags 2>/dev/null)
--FLAGS_PYTHON_EMBED = $(PYTHON_EMBED_CCOPTS) $(PYTHON_EMBED_LDOPTS)
--
- test-libpython.bin:
--	$(BUILD) $(FLAGS_PYTHON_EMBED)
-+	$(BUILD)
- 
- test-libpython-version.bin:
--	$(BUILD) $(FLAGS_PYTHON_EMBED)
-+	$(BUILD)
- 
- test-libbfd.bin:
- 	$(BUILD) -DPACKAGE='"perf"' -lbfd -lz -liberty -ldl
+Try to accomplish them by yourself, that will let yourself improved with
+efficiency.
+
+Thanks.
 -- 
-2.0.0
+Chen Gang
 
+Open, share, and attitude like air, water, and life which God blessed
