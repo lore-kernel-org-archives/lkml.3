@@ -1,74 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758446AbaGYS2V (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 14:28:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:41476 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751990AbaGYS2U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 14:28:20 -0400
-Date: Fri, 25 Jul 2014 11:28:17 -0700
-From: Zach Brown <zab@redhat.com>
-To: Steven Whitehouse <swhiteho@redhat.com>
-Cc: Abhijith Das <adas@redhat.com>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        cluster-devel <cluster-devel@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [Cluster-devel] [RFC] readdirplus implementations: xgetdents vs
- dirreadahead syscalls
-Message-ID: <20140725182817.GL17798@lenny.home.zabbo.net>
-References: <1106785262.13440918.1406308542921.JavaMail.zimbra@redhat.com>
- <1717400531.13456321.1406309839199.JavaMail.zimbra@redhat.com>
- <20140725175257.GK17798@lenny.home.zabbo.net>
- <53D29D0C.2040606@redhat.com>
+	id S1759842AbaGYS3K (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 14:29:10 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:63863 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751931AbaGYS3I (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jul 2014 14:29:08 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53D29D0C.2040606@redhat.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140725140237.GB32669@home.goodmis.org>
+References: <20140723182518.GD3935@laptop>
+	<CA+55aFyFT9n5wUNifEHY6+t2bEcD91kL7+dqXuBMSMJvLeDDJQ@mail.gmail.com>
+	<20140723184111.GG3935@laptop>
+	<CA+55aFwQfwfAP6U77_nD_mSvoygj=cZ09N644hKRtzgLnEqhZQ@mail.gmail.com>
+	<20140723190230.GH3935@laptop>
+	<CA+55aFyM1wqTLK0m4GQJ28f=z0iZE87=xk+1z-vm+PH1_d8nKw@mail.gmail.com>
+	<53D064C7.5050807@daenzer.net>
+	<CA+55aFyJhqiPv0kQ+51=Ei-zaAO+0JszxtnEyx-Gbto3SE00xw@mail.gmail.com>
+	<53D1B1EF.7030603@daenzer.net>
+	<20140725035527.GA30108@pg-vmw-gw1>
+	<20140725140237.GB32669@home.goodmis.org>
+Date: Fri, 25 Jul 2014 11:29:06 -0700
+X-Google-Sender-Auth: uUQQOdZczZqeN99DozWVBJ0QbfU
+Message-ID: <CA+55aFzOoJzqJ=4RVPEBfscA8oRdr5Nv7fKx9aXYw2+frkuhwA@mail.gmail.com>
+Subject: Re: Random panic in load_balance() with 3.16-rc
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Alexei Starovoitov <ast@kernel.org>,
+        =?UTF-8?Q?Michel_D=C3=A4nzer?= <michel@daenzer.net>,
+        Jakub Jelinek <jakub@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Debian GCC Maintainers <debian-gcc@lists.debian.org>,
+        Debian Kernel Team <debian-kernel@lists.debian.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 25, 2014 at 07:08:12PM +0100, Steven Whitehouse wrote:
-> Hi,
-> 
-> On 25/07/14 18:52, Zach Brown wrote:
-> >On Fri, Jul 25, 2014 at 01:37:19PM -0400, Abhijith Das wrote:
-> >>Hi all,
-> >>
-> >>The topic of a readdirplus-like syscall had come up for discussion at last year's
-> >>LSF/MM collab summit. I wrote a couple of syscalls with their GFS2 implementations
-> >>to get at a directory's entries as well as stat() info on the individual inodes.
-> >>I'm presenting these patches and some early test results on a single-node GFS2
-> >>filesystem.
-> >>
-> >>1. dirreadahead() - This patchset is very simple compared to the xgetdents() system
-> >>call below and scales very well for large directories in GFS2. dirreadahead() is
-> >>designed to be called prior to getdents+stat operations.
-> >Hmm.  Have you tried plumbing these read-ahead calls in under the normal
-> >getdents() syscalls?
-> >
-> >We don't have a filereadahead() syscall and yet we somehow manage to
-> >implement buffered file data read-ahead :).
-> >
-> >- z
-> >
-> Well I'm not sure thats entirely true... we have readahead() and we also
-> have fadvise(FADV_WILLNEED) for that.
+On Fri, Jul 25, 2014 at 7:02 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
+>
+> But wouldn't it be rather trivial to run a static analyzer on the final
+> vmlinux to make sure there are no red zones? I mean, you would only need
+> to read each function and check to make sure that the offset of rbp is
+> within the change of rsp, wouldn't you?
+>
+> Almost seems like an objdump -rd into a perl script could do this.
 
-Sure, fair enough.  It would have been more precise to say that buffered
-file data readers see read-ahead without *having* to use a syscall.
+I'm sure it's possible, but it sounds potentially complicated. It's
+not like the function prologue is fixed, and gcc will create code
+(including conditional branches etc) before the whole frame setup if
+there are simple things that can be done purely with the
+callee-clobbered registers etc.
 
-> doubt, but how would we tell getdents64() when we were going to read the
-> inodes, rather than just the file names?
+Some simple pattern to make sure that the "sub $frame-size,%rsp" comes
+before any accesses to (%rbp) (when frame pointers are enabled)
+*might* work, but it might also end up missing things.
 
-How does transparent file read-ahead know how far to read-ahead, if at
-all?
+You want to try?
 
-How do the file systems that implement directory read-ahead today deal
-with this?
-
-Just playing devil's advocate here:  It's not at all obvious that adding
-more interfaces is necessary to get directory read-ahead working, given
-our existing read-ahead implementations.
-
-- z
+             Linus
