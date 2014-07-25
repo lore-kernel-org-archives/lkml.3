@@ -1,87 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759325AbaGYSmu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 14:42:50 -0400
-Received: from mx4-phx2.redhat.com ([209.132.183.25]:55618 "EHLO
-	mx4-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751565AbaGYSmt (ORCPT
+	id S1760861AbaGYSnJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 14:43:09 -0400
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:33600 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759699AbaGYSnG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 14:42:49 -0400
-Date: Fri, 25 Jul 2014 14:42:49 -0400 (EDT)
-From: Bob Peterson <rpeterso@redhat.com>
-To: Abhi Das <adas@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        cluster-devel@redhat.com
-Message-ID: <742068374.13487420.1406313769169.JavaMail.zimbra@redhat.com>
-In-Reply-To: <1406309888-10749-4-git-send-email-adas@redhat.com>
-References: <1406309888-10749-1-git-send-email-adas@redhat.com> <1406309888-10749-4-git-send-email-adas@redhat.com>
-Subject: Re: [Cluster-devel] [RFC PATCH 3/5] gfs2: Add a dynamic buffer
- backed	by a vector of pages
+	Fri, 25 Jul 2014 14:43:06 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.5.82.6]
-X-Mailer: Zimbra 8.0.6_GA_5922 (ZimbraWebClient - FF30 (Linux)/8.0.6_GA_5922)
-Thread-Topic: gfs2: Add a dynamic buffer backed by a vector of pages
-Thread-Index: RCwgqhpbeBve+wZOJBjX2oH8m4BA3A==
+In-Reply-To: <CA+FuTSeKpu7u=KyGeiWpEDLWgxkPDRUtSc9fixR93jxsTCkc0g@mail.gmail.com>
+References: <1406275499-7822-1-git-send-email-ast@plumgrid.com>
+	<53D23EAF.4000001@redhat.com>
+	<20140725115414.GA4770@salvia>
+	<CA+FuTScUJ-oJKAZ-MO_t9Rmah3U6G4sjHXLJSMrXVK5+fN0zyg@mail.gmail.com>
+	<CAMEtUuxjvR-3cBq=x0d_7qYtF+TP3NdjPxsYP6pn4iE7gzLhpg@mail.gmail.com>
+	<CA+FuTSeKpu7u=KyGeiWpEDLWgxkPDRUtSc9fixR93jxsTCkc0g@mail.gmail.com>
+Date: Fri, 25 Jul 2014 11:43:05 -0700
+Message-ID: <CAMEtUux8c2OdLTFOYY9af1O6LK6zaYhZ1rm3RZxiMOLpTE6P6A@mail.gmail.com>
+Subject: Re: [PATCH net-next] net: filter: rename 'struct sk_filter' to
+ 'struct bpf_prog'
+From: Alexei Starovoitov <ast@plumgrid.com>
+To: Willem de Bruijn <willemb@google.com>
+Cc: Pablo Neira Ayuso <pablo@netfilter.org>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Network Development <netdev@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        netfilter-devel <netfilter-devel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------ Original Message -----
-> +static int vp_alloc_pages(struct vp_ctx *vpx, int start, int end)
-> +{
-> +	int i;
-> +
-> +	for (i = start; i < end; i++) {
-> +		vpx->vp_pages[i] = alloc_page(GFP_KERNEL | GFP_NOFS);
-> +		if (vpx->vp_pages[i] == NULL)
-> +			goto free;
-> +	}
-> +	return 0;
-> +free:
-> +	for (i = start; i < end; i++)
-> +		if (vpx->vp_pages[i]) {
-> +			__free_page(vpx->vp_pages[i]);
-> +			vpx->vp_pages[i] = NULL;
-> +		}
-> +	return -ENOMEM;
-> +}
+On Fri, Jul 25, 2014 at 11:32 AM, Willem de Bruijn <willemb@google.com> wrote:
+>>> This follows a convention in include/uapi/linux/netfilter/*.h that
+>>> likely predates the introduction of uapi. A search for "Used
+>>> internally by the kernel" shows many more examples. I should not have
+>>> included filter.h, however. The common behavior when using pointers
+>>> to kernel-internal structures is to have a forward declaration. I suggest
+>>> making that change, instead of changing to void *. This avoids having
+>>> to add casts where xt_bpf_info is used in net/netfilter/xt_bpf.c:
+>>
+>> that will not avoid typecast.
+>> Either 'void *' approach or extra 'struct sk_filter;' approach, both need
+>> type casts to 'struct bpf_prog' in xt_bpf.c
+>> (because of SK_RUN_FILTER macro)
+>> Therefore I prefer extra 'struct sk_filter;' approach.
+>
+> I hadn't noticed that your patch makes the same change that I
+> proposed. Nothing in userspace should touch that pointer, so it is
+> fine to change its type to struct bpf_prog* at the same time. No need
+> for typecasts.
 
-I'm concerned that if we have a value for vpx->vp_pages[i] that is
-nonzero (uninitialized) _after_ an element in which we couldn't
-allocate a page, we could try to free the nonzero value. For that
-reason, I always prefer to do something like this instead:
-
-free:
-     while (i > start) {
-          i--;
-          __free_page(vpx->vp_pages[i]);
-          vpx->vp_pages[i] = NULL;
-     }
-     return -ENOMEM;
-
-(snip)
-> +struct vp_ctx* vp_get_vpx(struct vbuf *vb)
-> +{
-> +	struct vp_ctx *vpx = NULL;
-> +
-> +	if (!vb || !vb->v_opaque)
-> +		goto out;
-> +
-> +	vpx = vb->v_opaque;
-> +	if (vpx->vp_magic != VP_MAGIC) {
-> +		vpx = NULL;
-> +		goto out;
-
-This goto is unnecessary, and if you eliminate it, you don't need the brackets.
-
-> +	}
-> +out:
-> +	return vpx;
-> +}
-
-Regards,
-
-Bob Peterson
-Red Hat File Systems
+really? I don't think it's a good idea to expose kernel struct type
+to user space. How is it even going to compile?
+#include <linux/filter.h> brings different files in kernel and in user space.
+struct bpf_prog is undefined in user space and compiler will complain.
+Adding 'struct bpf_prog;' will be ugly.
+imo the lesser evil is adding 'struct sk_filter;' and doing type casts
+in kernel.
