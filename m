@@ -1,85 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934794AbaGYPpZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 11:45:25 -0400
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:41591 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934629AbaGYPpV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 11:45:21 -0400
-Date: Fri, 25 Jul 2014 17:45:15 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Jiri Olsa <jolsa@redhat.com>, Jiri Olsa <jolsa@kernel.org>,
-        linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        Jean Pihet <jean.pihet@linaro.org>, Namhyung Kim <namhyung@kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH 17/19] perf tools: Always force
- PERF_RECORD_FINISHED_ROUND event
-Message-ID: <20140725154512.GA16182@localhost.localdomain>
-References: <1405893363-21967-1-git-send-email-jolsa@kernel.org>
- <1405893363-21967-18-git-send-email-jolsa@kernel.org>
- <20140724213451.GH7831@kernel.org>
- <20140725113426.GC1214@krava.brq.redhat.com>
- <20140725141413.GK7831@kernel.org>
+	id S934956AbaGYPpv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 11:45:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:11933 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933581AbaGYPps (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jul 2014 11:45:48 -0400
+Message-ID: <53D27B7E.8090404@redhat.com>
+Date: Fri, 25 Jul 2014 11:45:02 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140725141413.GK7831@kernel.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Peter Zijlstra <peterz@infradead.org>
+CC: linux-kernel@vger.kernel.org, mikey@neuling.org, mingo@kernel.org,
+        pjt@google.com, jhladky@redhat.com, ktkhai@parallels.com,
+        tim.c.chen@linux.intel.com, nicolas.pitre@linaro.org
+Subject: Re: [PATCH] sched: make update_sd_pick_busiest return true on a busier
+ sd
+References: <20140722144559.382c5243@annuminas.surriel.com> <20140725152728.GB6758@twins.programming.kicks-ass.net>
+In-Reply-To: <20140725152728.GB6758@twins.programming.kicks-ass.net>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 25, 2014 at 11:14:13AM -0300, Arnaldo Carvalho de Melo wrote:
-> Em Fri, Jul 25, 2014 at 01:34:26PM +0200, Jiri Olsa escreveu:
-> > On Thu, Jul 24, 2014 at 06:34:51PM -0300, Arnaldo Carvalho de Melo wrote:
-> > > I think both changes are OK, but should be split in different patches,
->  
-> > right, I'll split it
-> 
-> Thanks!
->  
-> > > [root@zoo /]# perf stat -r 5 perf report --no-ordered-samples > /dev/null
-> > >    101,171,572,553      instructions              #    1.10  insns per cycle        
-> > >       30.249514999 seconds time elapsed                                          ( +-  0.48% )
-> 
-> > > [root@zoo /]# perf stat -r 5 perf report --ordered-samples > /dev/null
-> > >    105,982,144,263      instructions              #    1.04  insns per cycle        
-> > >       32.636483981 seconds time elapsed                                          ( +-  0.41% )
-> 
-> > so those 2 extra seconds is the ordering time, right? sounds ok
-> 
-> Yeah, but I think its worth investigating if using it is a strict
-> requirement in all cases, i.e. is it possible to receive out of order
-> events when sampling on a single CPU? Or a single CPU socket with a
-> coherent time source? etc.
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
-It's theoretically possible to have out of order events if perf_event_output()
-is interrupted between perf_prepare_sample() and perf_output_begin() and the irq
-generates an event too.
-
-So the first event saves its timestamp "t1" from perf_prepare_sample(), gets interrupted
-before perf_output_begin() so it hasn't reserved room in the ring buffer yet. The
-irq generates an event with a timestamp t2 that can be t2 > t1 if the clock has a
-high enough resolution (tsc works there).
-
-The IRQ write the event in the buffer, returns to the interrupted event which
-record after the irq event.
-
-One possibility to solve this is to fetch perf_clock() only from perf_output_sample().
-At that time the event has reserved the buffer space so any irq event is guaranteed
-to be written _after_ the interrupted event and thus guarantees some monotonicity.
-
+On 07/25/2014 11:27 AM, Peter Zijlstra wrote:
+> On Tue, Jul 22, 2014 at 02:45:59PM -0400, Rik van Riel wrote:
+>> Currently update_sd_pick_busiest only returns true when an sd is
+>> overloaded, or for SD_ASYM_PACKING when a domain is busier than
+>> average and a higher numbered domain than the target.
+>> 
+>> This breaks load balancing between domains that are not
+>> overloaded, in the !SD_ASYM_PACKING case. This patch makes
+>> update_sd_pick_busiest return true when the busiest sd yet is
+>> encountered.
+>> 
+>> On a 4 node system, this seems to result in the load balancer
+>> finally putting 1 thread of a 4 thread test run of "perf bench
+>> numa mem" on each node, where before the load was generally not
+>> spread across all nodes.
 > 
-> Providing a way to disable this ordering to be used in corner cases
-> where it is not a strict requirement and the volume of samples is so
-> high that reducing processing time like shown above seems to be a
-> sensible thing to do.
+> So for !ASYM the code is effectively:
 > 
-> We're in the business of optimizing stuff, huh? :-)
->  
-> - Arnaldo
+> return sgs->avg_load > sds->busiest_stat.avg_load;
+> 
+> I'd like to at least add a clause that makes overloaded groups 
+> prioritized over !overloaded groups.
+> 
+> Also, like we found earlier, calculate_imbalance() relies on the 
+> sum_nr_running > group_capacity_factor thing, which you've just 
+> 'wrecked', so we'd need an update to that part too.
+
+I guess that would mean update_sd_pick_busiest would look like
+this for the !ASYM case:
+
+1) remembering whether busiest is overloaded
+
+2) if (sgs->busiest_stat.overloaded && !sgs->overloaded)
+            return false;
+
+3) if (sgs->avg_load > sds->busiest_stat.avg_load)
+            return true;
+
+>> Behaviour for SD_ASYM_PACKING does not seem to match the
+>> comment, in that groups with below average load average are
+>> ignored, but I have no hardware to test that so I have left the
+>> behaviour of that code unchanged.
+> 
+> Mikey, does that stuff work as expected?
+
+I suspect it does not, due to the checks above the SD_ASYM_PACKAGING
+code occasionally overriding the SD_ASYM_PACKAGING code.
+
+Also, the ASYM code may rely on CPU numbers not being interleaved
+between groups, the "env->dst_cpu < group_first_cpu(sg)" check would
+probably fail to pull all load onto group 0 if CPU numbers were
+distributed like this:
+
+group 0: 0 2 4 6
+group 1: 1 3 5 7
+
+- -- 
+All rights reversed
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iQEcBAEBAgAGBQJT0nt9AAoJEM553pKExN6DdiYH/jnO9c8f9VNIPD6ibsuG0JXO
+HgMJVhYY4YA/kP3wvdOOjLNwAohivCqd41ZMe7jw5K25aJ6/PIT9BN4iImSnPbgw
+JPLzUyvMF+hl6/rfmKJnpYSpTOqxbZllmbJPEXJMc0biizftA1u7aoO88ufHsZbq
+vZOZLHieHaiMSJ5J5sHpGaWWLw3hS4Ba0HJmUSlV+sbqSX6yZmcDFoQlvYlzfybK
+Q2HFVU3WGtYcOIxgJB1NVcn+axok8+O8kI8lQpWSzpewZN6fRKqZMVnmIvEKK15C
+stE3U8zXz6eYrlko5J0YyRcL5OPCE/tr4V5CRPonIvsLXmAmrMra5Ev4Dc/4Rr4=
+=hZqS
+-----END PGP SIGNATURE-----
