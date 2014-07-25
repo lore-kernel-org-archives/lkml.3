@@ -1,79 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760320AbaGYMnM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 08:43:12 -0400
-Received: from si-002-i54.relay.mailchannels.net ([184.154.112.228]:8128 "EHLO
-	relay.mailchannels.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751642AbaGYMmz (ORCPT
+	id S1760266AbaGYMpF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 08:45:05 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:49615 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751648AbaGYMpC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 08:42:55 -0400
-X-Sender-Id: arvixe|x-authuser|przemo@firszt.eu
-X-Sender-Id: arvixe|x-authuser|przemo@firszt.eu
-X-MC-Relay: Good
-X-MailChannels-SenderId: arvixe|x-authuser|przemo@firszt.eu
-X-MailChannels-Auth-Id: arvixe
-Message-ID: <1406292140.2664.17.camel@fedora-lan>
-Subject: Re: [PATCH v2 00/10] Input - wacom: conversion to HID driver,
- series 2
-From: Przemo Firszt <przemo@firszt.eu>
-To: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
-        Ping Cheng <pinglinux@gmail.com>, Jason Gerecke <killertofu@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
-Date: Fri, 25 Jul 2014 13:42:20 +0100
-In-Reply-To: <1406225645-32141-1-git-send-email-benjamin.tissoires@redhat.com>
-References: <1406225645-32141-1-git-send-email-benjamin.tissoires@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-AuthUser: przemo@firszt.eu
+	Fri, 25 Jul 2014 08:45:02 -0400
+Date: Fri, 25 Jul 2014 14:44:59 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Kaushal Kumar <kaushalk@codeaurora.org>
+Cc: Ingo Molnar <mingo@kernel.org>, Michael Wang <wangyun@linux.vnet.ibm.com>,
+        Arun Bharadwaj <abharadw@codeaurora.org>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org
+Subject: Re: [PATCH] sched: Remove synchronize rcu/sched calls from _cpu_down
+Message-ID: <20140725124459.GM20603@laptop.programming.kicks-ass.net>
+References: <1406289368-11332-1-git-send-email-kaushalk@codeaurora.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1406289368-11332-1-git-send-email-kaushalk@codeaurora.org>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dnia 2014-07-24, czw o godzinie 14:13 -0400, Benjamin Tissoires pisze:
-[..]
-> Hi Przemo,
-Hi Benjamin,
-> Normally, this series contains all the bits of hid-wacom (except the custom
-> LED/OLED API). Please tell me if I am missing anything and if you like the
-> change.
+On Fri, Jul 25, 2014 at 05:26:08PM +0530, Kaushal Kumar wrote:
+> synchronize_rcu calls fail hot-unplug latency tests since
+> wait_rcu_gp can have very high latency, at times up to few
+> hundred of millisecs.
 
-I can't cleanly apply your set yet to test it, so:
+So bloody what?
 
-Acked-by: Przemo Firszt <przemo@firszt.eu>
+> These calls were earlier removed for the same reason by the
+> commit 9ee349ad6d326df3633d43f54202427295999c47, but got added
+> back as part of commit c4575f83b9fe87bb57b737bc8a667f746a20320a.
 
-What's your plan about LED/OLED API? 
+fatal: bad object c4575f83b9fe87bb57b737bc8a667f746a20320
 
-> Benjamin Tissoires (9):
->   Input - wacom: put a flag when the led are initialized
->   Input - wacom: enhance Wireless Receiver battery reporting
->   Input - wacom: use a uniq name for the battery device
->   Input - wacom: register an ac power supply for wireless devices
->   Input - wacom: prepare the driver to include BT devices
->   Input - wacom: handle Graphire BT tablets in wacom.ko
->   Input - wacom: handle Intuos 4 BT in wacom.ko
->   Input - wacom: add copyright note and bump version to 2.0
->   HID: remove hid-wacom Bluetooth driver
-> 
-> Jason Gerecke (1):
->   Input - wacom: Support up to 2048 pressure levels with ISDv4
-> 
->  drivers/hid/Kconfig     |  10 +-
->  drivers/hid/Makefile    |   3 +-
->  drivers/hid/hid-core.c  |   2 -
->  drivers/hid/hid-wacom.c | 973 ------------------------------------------------
->  drivers/hid/wacom.h     |  11 +
->  drivers/hid/wacom_sys.c | 217 ++++++++++-
->  drivers/hid/wacom_wac.c | 195 +++++++++-
->  drivers/hid/wacom_wac.h |  10 +
->  8 files changed, 415 insertions(+), 1006 deletions(-)
->  delete mode 100644 drivers/hid/hid-wacom.c
-> 
+> Moreover there should be no need for sync_sched() in _cpu_down
+> as stop_machine() provides that barrier implicitly.
 
--- 
-Kind regards,
-Przemo Firszt
+We should not rely on that, but also you've removed synchronize_rcu()
+and this is not at all provided by stop_machine().
 
-
+So NAK.
