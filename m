@@ -1,114 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760148AbaGYNP2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 09:15:28 -0400
-Received: from mail.kernel.org ([198.145.19.201]:56389 "EHLO mail.kernel.org"
+	id S1759960AbaGYNSu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 09:18:50 -0400
+Received: from mga11.intel.com ([192.55.52.93]:27009 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752404AbaGYNP1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 09:15:27 -0400
-Date: Fri, 25 Jul 2014 10:15:21 -0300
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
-        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        David Ahern <dsahern@gmail.com>, Minchan Kim <minchan@kernel.org>
-Subject: Re: [PATCH 1/2] perf tools: Ensure --symfs ends with '/'
-Message-ID: <20140725131521.GI7831@kernel.org>
-References: <1406251908-8195-1-git-send-email-namhyung@kernel.org>
+	id S1751773AbaGYNSs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jul 2014 09:18:48 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,731,1400050800"; 
+   d="scan'208";a="567170518"
+Date: Fri, 25 Jul 2014 18:42:17 +0530
+From: Vinod Koul <vinod.koul@intel.com>
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+Cc: Dan Williams <dan.j.williams@intel.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-sunxi@googlegroups.com,
+        kevin.z.m.zh@gmail.com, sunny@allwinnertech.com,
+        shuge@allwinnertech.com, zhuzhenhua@allwinnertech.com,
+        Arnd Bergmann <arnd@arndb.de>, andriy.shevchenko@intel.com,
+        dmaengine@vger.kernel.org
+Subject: Re: [PATCH v11 0/2] Add support for the Allwinner A31 DMA
+ Controller
+Message-ID: <20140725131217.GS8181@intel.com>
+References: <1405626376-471-1-git-send-email-maxime.ripard@free-electrons.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1406251908-8195-1-git-send-email-namhyung@kernel.org>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1405626376-471-1-git-send-email-maxime.ripard@free-electrons.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Fri, Jul 25, 2014 at 10:31:47AM +0900, Namhyung Kim escreveu:
-> Minchan reported that perf failed to load vmlinux if --symfs argument
-> doesn't end with '/' character.  So make sure that the symfs always
-> ends with the '/'.
-
-I don't think this is the right way of doing this, users of
-symbol_conf.symfs should instead make sure that they do what they expect
-to, i.e. if they want it to be a base directory, make sure that a path
-separator is added between it and the relative path following it, if
-not, do as they please.
-
-- Arnaldo
- 
-> Reported-by: Minchan Kim <minchan@kernel.org>
-> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-> ---
->  tools/perf/util/symbol.c | 41 +++++++++++++++++++++++++++++------------
->  1 file changed, 29 insertions(+), 12 deletions(-)
+On Thu, Jul 17, 2014 at 09:46:14PM +0200, Maxime Ripard wrote:
+> Hi,
 > 
-> diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-> index eb06746b06b2..90723a12e947 100644
-> --- a/tools/perf/util/symbol.c
-> +++ b/tools/perf/util/symbol.c
-> @@ -1829,7 +1829,7 @@ static bool symbol__read_kptr_restrict(void)
->  
->  int symbol__init(void)
->  {
-> -	const char *symfs;
-> +	char *symfs;
->  
->  	if (symbol_conf.initialized)
->  		return 0;
-> @@ -1862,23 +1862,40 @@ int symbol__init(void)
->  		       symbol_conf.sym_list_str, "symbol") < 0)
->  		goto out_free_comm_list;
->  
-> -	/*
-> -	 * A path to symbols of "/" is identical to ""
-> -	 * reset here for simplicity.
-> -	 */
-> -	symfs = realpath(symbol_conf.symfs, NULL);
-> -	if (symfs == NULL)
-> -		symfs = symbol_conf.symfs;
-> -	if (strcmp(symfs, "/") == 0)
-> -		symbol_conf.symfs = "";
-> -	if (symfs != symbol_conf.symfs)
-> -		free((void *)symfs);
-> +	if (*symbol_conf.symfs) {
-> +		symfs = realpath(symbol_conf.symfs, NULL);
-> +		if (symfs == NULL)
-> +			symfs = (char *)symbol_conf.symfs;
-> +
-> +		/*
-> +		 * A path to symbols of "/" is identical to ""
-> +		 * reset here for simplicity.
-> +		 */
-> +		if (strcmp(symfs, "/") == 0)
-> +			symbol_conf.symfs = "";
-> +
-> +		/* ensure symfs ends with '/' */
-> +		if (symfs[strlen(symfs)-1] != '/') {
-> +			char *tmp = realloc(symfs, strlen(symfs) + 2);
-> +			if (tmp == NULL)
-> +				goto out_free;
-> +
-> +			tmp[strlen(tmp)+1] = '\0';
-> +			tmp[strlen(tmp)] = '/';
-> +
-> +			symbol_conf.symfs = tmp;
-> +		} else {
-> +			free(symfs);
-> +		}
-> +	}
->  
->  	symbol_conf.kptr_restrict = symbol__read_kptr_restrict();
->  
->  	symbol_conf.initialized = true;
->  	return 0;
->  
-> +out_free:
-> +	free(symfs);
->  out_free_comm_list:
->  	strlist__delete(symbol_conf.comm_list);
->  out_free_dso_list:
-> -- 
-> 2.0.0
+> This patchset adds support for the DMA controller found in the
+> Allwinner A31 and A23 SoCs.
+> 
+> This has been tested using the newly introduced SPI driver on an A31
+> EVK. Support for DMA-driven SPI transfers will be the subject of
+> another patch serie.
+> 
+> This has been around for around 5 monthes now, and didn't get any
+> review but nitpicks for three versions, so I feel like it could be
+> merged quite quickly.
+I have applied this now.
+
+Can you please send follow patches for these:
+- don't recall if I pointed earlier, but can we use direct conversion for
+  calculating convert_burst() and convert_buswidth(), latter one at least
+  seem doable
+- don't use devm_request_irq(). You have irq enabled and you have killed
+  tasklet. This is too racy. You need to ensure no irqs can be generated before killing
+  tasklets.
+- use synchronize_irq() before killing tasklet
+
+Thanks
+
+-- 
