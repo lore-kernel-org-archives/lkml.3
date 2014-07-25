@@ -1,177 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935102AbaGYAry (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 20:47:54 -0400
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:41085 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934900AbaGYArw (ORCPT
+	id S935192AbaGYAtd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 20:49:33 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:37315 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934900AbaGYAtc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 20:47:52 -0400
-Message-ID: <53D1A8EF.60807@linaro.org>
-Date: Fri, 25 Jul 2014 08:46:39 +0800
-From: Hanjun Guo <hanjun.guo@linaro.org>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Catalin Marinas <catalin.marinas@arm.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Mark Rutland <mark.rutland@arm.com>
-CC: Graeme Gregory <graeme.gregory@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
-        Grant Likely <grant.likely@linaro.org>,
-        Sudeep Holla <Sudeep.Holla@arm.com>, Will Deacon <will.deacon@arm.com>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Mark Brown <broonie@linaro.org>, Robert Richter <rric@kernel.org>,
-        Lv Zheng <lv.zheng@intel.com>, Robert Moore <robert.moore@intel.com>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Liviu Dudau <Liviu.Dudau@arm.com>,
-        Randy Dunlap <rdunlap@infradead.org>, Charles.Garcia-Tobin@arm.com,
-        linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linaro-acpi-private@linaro.org
-Subject: Re: [PATCH 00/19] Introduce ACPI for ARM64 based on ACPI 5.1
-References: <1406206825-15590-1-git-send-email-hanjun.guo@linaro.org>
-In-Reply-To: <1406206825-15590-1-git-send-email-hanjun.guo@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 24 Jul 2014 20:49:32 -0400
+X-Mailer: exmh version 2.8.0 04/21/2012 with nmh-1.6+dev
+To: Alexei Starovoitov <ast@plumgrid.com>
+Cc: "David S. Miller" <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Network Development <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH net-next 1/2] net: filter: split filter.c into two files
+In-Reply-To: Your message of "Thu, 24 Jul 2014 16:58:23 -0700."
+             <CAMEtUuyw0PJXF_EWfs+PVzGago_waFXCbndT4B2HGJ0HYiXh2A@mail.gmail.com>
+From: Valdis.Kletnieks@vt.edu
+References: <1406095319-3627-1-git-send-email-ast@plumgrid.com> <1406095319-3627-2-git-send-email-ast@plumgrid.com> <39107.1406245502@turing-police.cc.vt.edu>
+            <CAMEtUuyw0PJXF_EWfs+PVzGago_waFXCbndT4B2HGJ0HYiXh2A@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1406249300_23260P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
 Content-Transfer-Encoding: 7bit
+Date: Thu, 24 Jul 2014 20:48:20 -0400
+Message-ID: <42190.1406249300@turing-police.cc.vt.edu>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi folks,
+--==_Exmh_1406249300_23260P
+Content-Type: text/plain; charset=us-ascii
 
-I included the linaro-acpi-private mail list wrongly when I was sending them
-out, it will cause Delivery Status Notification (Failure) when you are not
-in that mail list, sorry for the messed up, it was a little bit late for me
-last night, and little bit dottiness for me too, I must be tired :(
+On Thu, 24 Jul 2014 16:58:23 -0700, Alexei Starovoitov said:
+> On Thu, Jul 24, 2014 at 4:45 PM,  <Valdis.Kletnieks@vt.edu> wrote:
+> > On Tue, 22 Jul 2014 23:01:58 -0700, Alexei Starovoitov said:
 
-please remove the linaro-acpi-private mail list when you replied, Thanks.
+> >> +obj-$(CONFIG_NET) += bpf/
+> >
+> > I was expecting to see CONFIG_NETFILTER here.  Is CONFIG_NET intentional?
+>
+> yes. it is config_net for now, until eBPF is completely separate from net.
+> Then it will gain its own config_bpf, so it can be used in net-less setups
+> or disabled in net-full setups by folks who care about last byte of .text size.
 
-Best Regards
-Hanjun
+OH, OK. That works for me. :)
 
-On 2014-7-24 21:00, Hanjun Guo wrote:
-> ACPI 5.1 was released [1] and it fixed some major gaps to run ACPI
-> on ARM, this patch just follow the ACPI 5.1 spec and prepare the
-> code to run ACPI on ARM64.
-> 
-> ACPI 5.1 has some major changes for the following tables and
-> method which are essential for ARM platforms:
-> 
-> 1) MADT table updates.
-> New fields were introduced to cover MPIDR and virtualization in
-> GICC, and introduce GICR and GIC MSI frame structure to cover
-> GICv3 and GICv2m (this patch set only cover GICv2).
-> 
-> 2) FADT updates for PSCI
-> New fields were introduced to cover PSCI and ACPI can use psci
-> to boot SMP and other PSCI related functions.
-> 
-> 3) GTDT
-> GTDT was updated to support arch timer, memory-mapped tiemr,
-> SBSA watchdog timer, in this patch, only arch timer tested on
-> Juno board, so only arch timer init is available.
-> 
-> 4) _DSD
-> _DSD (Device Specific Data) will provide some key values which
-> presented by FDT before, it makes possible that some devices can
-> be emumerated in ACPI way, please refer to the document provided
-> in this patch set for detail.
-> 
-> This patch set is the ARM64 ACPI core patches covered MADT, FADT
-> and GTDT, _DSD is not covered in this patch set. We first introduce
-> acpi.c and its related head file which are needed by ACPI core, and
-> then get RSDP to extract all the ACPI boot-time tables.
-> 
-> When all the boot-time tables (FADT, MADT, GTDT) are ready, then
-> parse them to init the sytem when booted. Specifically, 
-> a) we use FADT to init PSCI and use PSCI to boot SMP;
-> b) Use MADT for GIC init and SMP init;
-> c) GTDT for arch timer init.
-> 
-> This patch set is based on the former ACPICA patches I sent, and I
-> already compiled it OK with:
-> a) each patch applied on ARM64 with CONFIG_ACPI=y;
-> b) CONFIG_ACPI=n on ARM64;
-> c) CONFIG_ACPI=y on x86.
-> 
-> Also this patch set was tested by Graeme on ARM64 Juno platform, it
-> boot successfully with ACPI only (no device tree).
-> 
-> [1]
-> You can download ACPI 5.1 from http://www.uefi.org/specifications
-> 
-> Al Stone (3):
->   ARM64 / ACPI: Get RSDP and ACPI boot-time tables
->   ARM64 / ACPI: Introduce early_param for "acpi"
->   ARM64 / ACPI: Select ACPI_REDUCED_HARDWARE_ONLY if ACPI is enabled on
->     ARM64
-> 
-> Ashwin Chaugule (1):
->   ACPI / table: Add new function to get table entries
-> 
-> Graeme Gregory (4):
->   ARM64 / ACPI: Introduce lowlevel suspend function
->   ARM64 / ACPI: If we chose to boot from acpi then disable FDT
->   ARM64 / ACPI: Enable ARM64 in Kconfig
->   Documentation: ACPI for ARM64
-> 
-> Hanjun Guo (10):
->   ARM64 / ACPI: Introduce arch_fix_phys_package_id() for cpu topology
->   ARM64 / ACPI: Make PCI optional for ACPI on ARM64
->   ARM64 / ACPI: Parse FADT table to get PSCI flags for PSCI init
->   ARM64 / ACPI: Parse MADT to map logical cpu to MPIDR and get
->     cpu_possible/present_map
->   ACPI / table: Print GIC information when MADT is parsed
->   ARM64 / ACPI: Move the initialization of cpu_logical_map(0) before
->     acpi_boot_init()
->   ARM64 / ACPI: Get the enable method for SMP initialization in ACPI
->     way
->   ACPI / processor: Make it possible to get CPU hardware ID via GICC
->   ARM64 / ACPI: Introduce ACPI_IRQ_MODEL_GIC and register device's gsi
->   ARM64 / ACPI: Parse GTDT to initialize arch timer
-> 
-> Tomasz Nowicki (1):
->   ARM64 / ACPI: Add GICv2 specific ACPI boot support
-> 
->  Documentation/arm64/arm-acpi.txt     |  240 ++++++++++++++++++++
->  Documentation/kernel-parameters.txt  |    3 +-
->  arch/arm64/Kconfig                   |    3 +
->  arch/arm64/include/asm/acenv.h       |   18 ++
->  arch/arm64/include/asm/acpi.h        |   90 ++++++++
->  arch/arm64/include/asm/cpu.h         |   11 +
->  arch/arm64/include/asm/cpu_ops.h     |    9 +-
->  arch/arm64/include/asm/pci.h         |   11 +
->  arch/arm64/include/asm/smp.h         |    2 +-
->  arch/arm64/include/asm/topology.h    |    2 +
->  arch/arm64/kernel/Makefile           |    1 +
->  arch/arm64/kernel/acpi.c             |  403 ++++++++++++++++++++++++++++++++++
->  arch/arm64/kernel/cpu_ops.c          |   52 ++++-
->  arch/arm64/kernel/irq.c              |    5 +
->  arch/arm64/kernel/psci.c             |   95 +++++---
->  arch/arm64/kernel/setup.c            |   11 +-
->  arch/arm64/kernel/smp.c              |   39 +++-
->  arch/arm64/kernel/time.c             |    7 +
->  arch/arm64/kernel/topology.c         |   14 ++
->  drivers/acpi/Kconfig                 |    6 +-
->  drivers/acpi/Makefile                |    2 +-
->  drivers/acpi/bus.c                   |    3 +
->  drivers/acpi/internal.h              |    5 +
->  drivers/acpi/processor_core.c        |   36 +++
->  drivers/acpi/tables.c                |  109 +++++++--
->  drivers/clocksource/arm_arch_timer.c |  117 ++++++++--
->  drivers/irqchip/irq-gic.c            |  114 ++++++++++
->  include/linux/acpi.h                 |    5 +
->  include/linux/clocksource.h          |    6 +
->  include/linux/irqchip/arm-gic-acpi.h |   36 +++
->  include/linux/pci.h                  |   37 +++-
->  31 files changed, 1397 insertions(+), 95 deletions(-)
->  create mode 100644 Documentation/arm64/arm-acpi.txt
->  create mode 100644 arch/arm64/include/asm/acenv.h
->  create mode 100644 arch/arm64/include/asm/acpi.h
->  create mode 100644 arch/arm64/include/asm/cpu.h
->  create mode 100644 arch/arm64/include/asm/pci.h
->  create mode 100644 arch/arm64/kernel/acpi.c
->  create mode 100644 include/linux/irqchip/arm-gic-acpi.h
-> 
+--==_Exmh_1406249300_23260P
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+Comment: Exmh version 2.5 07/13/2001
+
+iQIVAwUBU9GpVAdmEQWDXROgAQKSEw/+N+VkAVJm4CSfKPJaMCQaiHERnZiMioW4
+GG2rIavZEGPC+d+vPnMycr/PN+izgmPxfuuHBGVHa5gfsf9VuRanOy9BLoTTxijF
+fXbpC0Q1C8imsZZFny6m1yaNV/3V0+tkS8RTz+gbZrKMdB69WyPycrfkJQEgRrNY
+Xs+p2OQJv4gJQCyJGMVludh3AiA8wPDVPYxEsFUx0xsR3LX8mh2y4dKEvUjw+4ue
+QEcc9vZGU4F5nfKBaqx0o2Rgq0vleI36kc7dwH5xBYPPWhjEMEPRirjxNvXtO5Xk
+qq45jNiLNm8OVCXLatHhSbDK51bpgRO4qU0eL3EqyBKu84l6Oe76qktCBX1teWXS
+c3HxEpaF/CewTpdalDarqRgV7H5SICaaz2JA/tGJIiAScgwOEnXYhkZSVoqYtOy+
+fjkYqGpJnHA1I2vWZNV/hfNTzp8ZjaW0wZyQ5YJXGuViV1AxKedT7P3Nm3dHQ1nk
+QOvRKeP6U9dFG1vjXNpOif1qfeB0p8M9DQTQJg5ZP9gzQ+NEFQyvKgI5Wn0+WHO6
+RRUzo8qMDtpTLtH49aVelf9jWFX2AF+78V9Zh6Z/ENfrpGfZL3zYtTJILo5zGjdX
+cKJJ3ruQKDRJMUbvn7Vyh5SIAGlYGIB9o3ySJ48c/W/zX5uzC6kIdN0zqz1gB22b
+wmXw0I41PZU=
+=pwMw
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1406249300_23260P--
