@@ -1,158 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760179AbaGYKob (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 06:44:31 -0400
-Received: from mail-la0-f44.google.com ([209.85.215.44]:44003 "EHLO
-	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751220AbaGYKo3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 06:44:29 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAK5sBcH6hunJZxnhLGdbAzbRCdgWr9+L=JcrhXc2zSLFAbRRdQ@mail.gmail.com>
-References: <1406279557-26754-1-git-send-email-pramod.gurav@smartplayin.com>
-	<CAK5sBcH6hunJZxnhLGdbAzbRCdgWr9+L=JcrhXc2zSLFAbRRdQ@mail.gmail.com>
-Date: Fri, 25 Jul 2014 16:14:27 +0530
-Message-ID: <CAMf-jSk_q89AJsWywXPKFMMEv9j3Fv1sUxvyyB779Miks_yBRQ@mail.gmail.com>
-Subject: Re: [PATCH v2] Input: soc_button_array: Remove kfree on data
- allocated with devm_zalloc
-From: pramod gurav <pramod.gurav.etc@gmail.com>
-To: Sachin Kamat <spk.linux@gmail.com>
-Cc: linux-input@vger.kernel.org, open list <linux-kernel@vger.kernel.org>,
-        Pramod Gurav <pramod.gurav@smartplayin.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Lejun Zhu <lejun.zhu@linux.intel.com>,
-        Sachin Kamat <sachin.kamat@linaro.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1760202AbaGYKpy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 06:45:54 -0400
+Received: from mga02.intel.com ([134.134.136.20]:5329 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760101AbaGYKpw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jul 2014 06:45:52 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,730,1400050800"; 
+   d="scan'208";a="548916533"
+Message-ID: <1406285147.8530.13.camel@smile.fi.intel.com>
+Subject: Re: [PATCH] spi/pxa2xx-pci: Enable DMA binding through device name
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Kweh Hock Leong <hock.leong.kweh@intel.com>,
+        Eric Miao <eric.y.miao@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Mark Brown <broonie@kernel.org>,
+        Chew Chiau Ee <chiau.ee.chew@intel.com>,
+        Darren Hart <dvhart@linux.intel.com>, chiauee85@gmail.com,
+        linux-kernel@vger.kernel.org, linux-spi@vger.kernel.org
+Date: Fri, 25 Jul 2014 13:45:47 +0300
+In-Reply-To: <5426556.OzZIXLrofJ@wuerfel>
+References: <1406196111-22861-1-git-send-email-hock.leong.kweh@intel.com>
+	 <20140725090714.GY1857@lahna.fi.intel.com>
+	 <20140725095559.GA1857@lahna.fi.intel.com> <5426556.OzZIXLrofJ@wuerfel>
+Organization: Intel Finland Oy
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.2-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 25, 2014 at 3:59 PM, Sachin Kamat <spk.linux@gmail.com> wrote:
-> Hi Pramod,
->
->
-> On Fri, Jul 25, 2014 at 2:42 PM,  <pramod.gurav.etc@gmail.com> wrote:
->> From: Pramod Gurav <pramod.gurav@smartplayin.com>
->>
->> This patch does below:
->> - Removes kfree done on data allocated with devm_zalloc in probe
->>   path of the driver.
->> - Adds a check on return value from devm_kzalloc which was missing
->> - Removes the error lables and instead releases resources and returns
->>   after failures
->>
->> CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>
->> CC: Lejun Zhu <lejun.zhu@linux.intel.com>
->> CC: Sachin Kamat <sachin.kamat@linaro.org>
->>
->> Signed-off-by: Pramod Gurav <pramod.gurav@smartplayin.com>
->> ---
->>
->> Changes since v1:
->> - Removes de_err logs on OOM cases which is not needed.
->>
->>  drivers/input/misc/soc_button_array.c |   27 +++++++++++++++------------
->>  1 file changed, 15 insertions(+), 12 deletions(-)
->>
->> diff --git a/drivers/input/misc/soc_button_array.c b/drivers/input/misc/soc_button_array.c
->> index 5a6334b..f421cf4 100644
->> --- a/drivers/input/misc/soc_button_array.c
->> +++ b/drivers/input/misc/soc_button_array.c
->> @@ -83,6 +83,11 @@ soc_button_device_create(struct pnp_dev *pdev,
->>                                        sizeof(*gpio_keys_pdata) +
->>                                         sizeof(*gpio_keys) * MAX_NBUTTONS,
->>                                        GFP_KERNEL);
->> +       if (!gpio_keys_pdata) {
->> +               error = -ENOMEM;
->> +               return ERR_PTR(error);
->
-> You don't need a variable here. You could directly do:
-I tried to retain the original code as it is. I was not sure if am
-supposed to do that. Wil do it now.
+On Fri, 2014-07-25 at 12:19 +0200, Arnd Bergmann wrote:
+> On Friday 25 July 2014 12:55:59 Mika Westerberg wrote:
+> > On Fri, Jul 25, 2014 at 12:07:14PM +0300, Mika Westerberg wrote:
+> > > On Fri, Jul 25, 2014 at 10:38:36AM +0200, Arnd Bergmann wrote:
+> > > > On Friday 25 July 2014 11:22:49 Mika Westerberg wrote:
 
->                    return ERR_PTR(-ENOMEM);
->
->> +       }
->> +
->>         gpio_keys = (void *)(gpio_keys_pdata + 1);
->>
->>         for (info = button_info; info->name; info++) {
->> @@ -104,7 +109,7 @@ soc_button_device_create(struct pnp_dev *pdev,
->>
->>         if (n_buttons == 0) {
->>                 error = -ENODEV;
->> -               goto err_free_mem;
->> +               return ERR_PTR(error);
->
-> ditto
->
->>         }
->>
->>         gpio_keys_pdata->buttons = gpio_keys;
->> @@ -114,25 +119,23 @@ soc_button_device_create(struct pnp_dev *pdev,
->>         pd = platform_device_alloc("gpio-keys", PLATFORM_DEVID_AUTO);
->>         if (!pd) {
->>                 error = -ENOMEM;
->> -               goto err_free_mem;
->> +               return ERR_PTR(error);
->
-> ditto
->
->>         }
->>
->>         error = platform_device_add_data(pd, gpio_keys_pdata,
->>                                          sizeof(*gpio_keys_pdata));
->> -       if (error)
->> -               goto err_free_pdev;
->
-> This goto could be retained to avoid code duplication.
-If I keep this here, I have to handle the following returns in this
-lable, which is what my previous patch was doing. So lable would look
-something like this:
+[]
 
-+err_free_pdev:
-+      platform_device_put(pd);
-+      return ERR_PTR(error);
+> > Something like this?
 
->
->> +       if (error) {
->> +               platform_device_put(pd);
->> +               return ERR_PTR(error);
->> +       }
->>
->>         error = platform_device_add(pd);
->> -       if (error)
->> -               goto err_free_pdev;
->
-> ditto
->
->> +       if (error) {
->> +               platform_device_put(pd);
->> +               return ERR_PTR(error);
->> +       }
->>
->>         return pd;
->> -
->> -err_free_pdev:
->> -       platform_device_put(pd);
->> -err_free_mem:
->> -       devm_kfree(&pdev->dev, gpio_keys_pdata);
->> -       return ERR_PTR(error);
->>  }
->>
->>  static void soc_button_remove(struct pnp_dev *pdev)
->> --
->> 1.7.9.5
->>
->
->
->
-> --
-> Regards,
-> Sachin.
+Arnd, this dependency to certain DMA driver looks really bad.
 
+If we go that way, can we split that part to [another] module and make
+it dependent to DW_DMAC?
 
+Or shall we introduce a dmaengine type field in the platform data and
+dynamically choose proper filter-whatever-function to get the channel?
+
+> > Hock Leong / Chiaue Ee, are you able to check if this works on your BYT
+> > machines?
+
+> What I think you got wrong here (by following my bad advice) is the master
+> number. Looking at the code for dw_dma, I think src_master needs to be '1'
+> for your driver.
+
+On some SoCs we have up to 4 masters. It's blurry for me how the SPI
+should choose those masters. Currently it works fine, but I suspect
+there are [might be] performance issues.
+
+What about AVR32 case? We have to fix drivers as well there.
+
+> the dw_dma driver can be simplified a little by removing the special
+> case for the request line setting.
+
+Yes, this part I like.
 
 -- 
-Thanks and Regards
-Pramod
+Andy Shevchenko <andriy.shevchenko@intel.com>
+Intel Finland Oy
+
