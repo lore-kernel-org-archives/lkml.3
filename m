@@ -1,125 +1,221 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753457AbaGYEFU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 00:05:20 -0400
-Received: from mail-bl2lp0211.outbound.protection.outlook.com ([207.46.163.211]:49166
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750749AbaGYEFR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 00:05:17 -0400
-From: Punnaiah Choudary Kalluri <punnaiah.choudary.kalluri@xilinx.com>
-To: =?utf-8?B?QW5kcmVhcyBGw6RyYmVy?= <afaerber@suse.de>,
-        Michal Simek <michals@xilinx.com>
-CC: Andreas Olofsson <andreas@adapteva.com>,
-        Matteo Vit <matteo.vit@starwaredesign.com>,
-        Sean Rickerd <srickerd@suse.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Lars-Peter Clausen <lars@metafoo.de>
-Subject: RE: [PATCH v2 00/11] ARM: dts: zynq: Prepare Parallella
-Thread-Topic: [PATCH v2 00/11] ARM: dts: zynq: Prepare Parallella
-Thread-Index: AQHPp5MqOd6KcMpZNUqgzX0gRVD/6puwJmFA
-Date: Fri, 25 Jul 2014 03:49:23 +0000
-References: <1406242820-20140-1-git-send-email-afaerber@suse.de>
-In-Reply-To: <1406242820-20140-1-git-send-email-afaerber@suse.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.23.92.172]
-Content-Type: text/plain; charset="utf-8"
+	id S1751393AbaGYEHl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 00:07:41 -0400
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:38255 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750809AbaGYEHi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jul 2014 00:07:38 -0400
+Message-ID: <53D1D801.6030802@linaro.org>
+Date: Fri, 25 Jul 2014 05:07:29 +0100
+From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-X-RCIS-Action: ALLOW
-Message-ID: <dc23839c-7a69-4674-9d92-80a1d68e9b23@BY2FFO11FD003.protection.gbl>
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:149.199.60.83;CTRY:US;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(438002)(13464003)(51704005)(377454003)(199002)(189002)(76176999)(85306003)(83322001)(31696002)(6806004)(64706001)(106116001)(92726001)(4396001)(74662001)(85852003)(54356999)(19580405001)(31966008)(46102001)(47776003)(83072002)(20776003)(50986999)(95666004)(44976005)(77982001)(77096002)(53416004)(50466002)(104016003)(81342001)(80022001)(106466001)(74316001)(74502001)(107046002)(70736001)(15975445006)(21056001)(23676002)(2656002)(19580395003)(81542001)(79102001)(76482001)(92566001)(99396002)(86362001)(1496007)(15202345003)(87936001)(107986001);DIR:OUT;SFP:;SCL:1;SRVR:BY2FFO11HUB027;H:xsj-pvapsmtpgw01;FPR:;MLV:sfv;PTR:unknown-60-83.xilinx.com;A:1;MX:1;LANG:en;
-X-OriginatorOrg: xilinx.onmicrosoft.com
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
-X-Forefront-PRVS: 02830F0362
-Authentication-Results: spf=pass (sender IP is 149.199.60.83)
- smtp.mailfrom=punnaiah.choudary.kalluri@xilinx.com; 
+To: Stephen Boyd <sboyd@codeaurora.org>
+CC: linux-mmc@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
+        Chris Ball <chris@printf.net>, Ulf Hansson <ulf.hansson@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
+        agross@codeaurora.org, linux-arm-msm@vger.kernel.org
+Subject: Re: [PATCH v2] mmc: mmci: Add qcom dml support to the driver.
+References: <1405625780-13503-1-git-send-email-srinivas.kandagatla@linaro.org> <1405716797-28122-1-git-send-email-srinivas.kandagatla@linaro.org> <53D03E23.1000801@codeaurora.org>
+In-Reply-To: <53D03E23.1000801@codeaurora.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s6P45PXo029776
 
-Hi Andreas,
 
->-----Original Message-----
->From: Andreas FÃ¤rber [mailto:afaerber@suse.de]
->Sent: Friday, July 25, 2014 4:30 AM
->To: Michal Simek
->Cc: Andreas Olofsson; Matteo Vit; Sean Rickerd; devicetree@vger.kernel.org;
->linux-arm-kernel@lists.infradead.org; linux-kernel@vger.kernel.org; Andreas
->FÃ¤rber; Punnaiah Choudary Kalluri; Lars-Peter Clausen
->Subject: [PATCH v2 00/11] ARM: dts: zynq: Prepare Parallella
->
->Hello,
->
->This patch series adds an initial device tree for the Parallella board.
->UART, SD card, Ethernet are enabled.
->Not yet enabled are HDMI, QSPI flash and 2x USB.
->
->v2 adds some SPI and FPGA pieces and tidies the device tree with a
->compatible string and matching documentation.
->
->Not having all pieces for testing all of this (most notably I'm missing
->ADI ADV7513 and AXI-HDMI support for VDMA and axi-clkgen, as well as
->the 25Q128A flash chip for QSPI), I've kept new things in separate patches
->so that we can make progress on the basic version and possibly squash
->further cherry-picked pieces.
->
->Punnaiah Choudary Kalluri had recently proposed to extend the Chipidea
->USB driver for Zynq; it kept complaining about the PHY though, and I
->haven't spotted a revised version based on the generic driver yet.
->https://patchwork.kernel.org/patch/4434681/
 
-The plan is, go with generic chip idea driver which is currently under review. 
-http://www.spinics.net/lists/linux-usb/msg109576.html
+On 23/07/14 23:58, Stephen Boyd wrote:
+> On 07/18/14 13:53, Srinivas Kandagatla wrote:
+>>
+>> @@ -468,6 +473,11 @@ static void mmci_dma_setup(struct mmci_host *host)
+>>   		if (max_seg_size < host->mmc->max_seg_size)
+>>   			host->mmc->max_seg_size = max_seg_size;
+>>   	}
+>> +
+>> +	if (variant->qcom_dml && host->dma_rx_channel && host->dma_tx_channel) {
+>> +		if (dml_hw_init(host, host->mmc->parent->of_node))
+>> +			variant->qcom_dml = false;
+>> +	}
+>
+> Style nit: Braces aren't needed.
+Will fix it in next spin.
+>
+>> +
+>> +void dml_start_xfer(struct mmci_host *host, struct mmc_data *data)
+>> +{
+>> +	u32 config;
+>> +	void __iomem *base = host->base + DML_OFFSET;
+>> +
+>> +	if (data->flags & MMC_DATA_READ) {
+>> +		/* Read operation: configure DML for producer operation */
+>> +		/* Set producer CRCI-x and disable consumer CRCI */
+>> +		config = readl_relaxed(base + DML_CONFIG);
+>> +		config = (config & ~PRODUCER_CRCI_MSK) | PRODUCER_CRCI_X_SEL;
+>> +		config = (config & ~CONSUMER_CRCI_MSK) | CONSUMER_CRCI_DISABLE;
+>> +		writel_relaxed(config, base + DML_CONFIG);
+>> +
+>> +		/* Set the Producer BAM block size */
+>> +		writel_relaxed(data->blksz, base + DML_PRODUCER_BAM_BLOCK_SIZE);
+>> +
+>> +		/* Set Producer BAM Transaction size */
+>> +		writel_relaxed(data->blocks * data->blksz,
+>> +			       base + DML_PRODUCER_BAM_TRANS_SIZE);
+>> +		/* Set Producer Transaction End bit */
+>> +		config = readl_relaxed(base + DML_CONFIG);
+>> +		config |= PRODUCER_TRANS_END_EN;
+>> +		writel_relaxed(config, base + DML_CONFIG);
+>> +		/* Trigger producer */
+>> +		writel_relaxed(1, base + DML_PRODUCER_START);
+>> +	} else {
+>> +		/* Write operation: configure DML for consumer operation */
+>> +		/* Set consumer CRCI-x and disable producer CRCI*/
+>> +		config = readl_relaxed(base + DML_CONFIG);
+>> +		config = (config & ~CONSUMER_CRCI_MSK) | CONSUMER_CRCI_X_SEL;
+>> +		config = (config & ~PRODUCER_CRCI_MSK) | PRODUCER_CRCI_DISABLE;
+>> +		writel_relaxed(config, base + DML_CONFIG);
+>> +		/* Clear Producer Transaction End bit */
+>> +		config = readl_relaxed(base + DML_CONFIG);
+>> +		config &= ~PRODUCER_TRANS_END_EN;
+>> +		writel_relaxed(config, base + DML_CONFIG);
+>> +		/* Trigger consumer */
+>> +		writel_relaxed(1, base + DML_CONSUMER_START);
+>> +	}
+>
+> I think we need a memory barrier here. Does the DML need to be enabled
+> before the mmci driver sets MCI_DPSM_DMAENABLE? My understanding is that
+> relaxed accesses to different devices aren't ordered with respect to one
+> another.  So not having a memory barrier here could cause the
+> consumer/producer to be enabled after MCI_DPSM_DMAENABLE is set in the
+> mmci hardware. Downstream I see that we have an mb(), but I think we
+> could just a wmb() because we're just ordering with the mmci hardware right?
+yes, I think wmb should work. I will fix this.
 
-So, please wait some more time for extending the Chip idea driver support
- to zynq.
+>
+> Is there any ordering required between bam and dml? I think enabling bam
+> could happen after enabling the consumer unless we had a wmb() after we
+> kick off bam and before we write a 1 to DML_CONSUMER_START.
+>
+Am not sure if there is any strict ordering requirement between bam and 
+dml. But I can see a wmb in bam_start_dma().
 
-Punnaiah
+>> +}
+>> +
+>> +static int of_get_dml_pipe_index(struct device_node *np, const char *name)
 >
->My rebasing work branch is here:
->https://github.com/afaerber/linux/commits/parallella-next
+> return type of u32?
 >
->Regards,
->Andreas
->
->Cc: Punnaiah Choudary Kalluri <punnaia@xilinx.com> (USB)
->Cc: Lars-Peter Clausen <lars@metafoo.de> (HDMI)
->
->Andreas FÃ¤rber (11):
->  Documentation: devicetree: Adapteva vendor prefix
->  Documentation: devicetree: Adapteva boards
->  ARM: dts: zynq: Add Parallella device tree
->  ARM: dts: zynq: Update deprecated xuartps clock names
->  ARM: dts: zynq: Add QSPI for Parallella
->  ARM: dts: zynq: Add DMAC for Parallella
->  Documentation: devicetree: Fix Xilinx VDMA specification
->  ARM: dts: zynq: Add VDMA to Parallella
->  Documentation: devicetree: Fix ADI AXI SPDIF specification
->  ARM: dts: zynq: Add SPDIF for Parallella
->  ARM: dts: zynq: Add AXI clkgen for Parallella
->
-> Documentation/devicetree/bindings/arm/adapteva.txt |   7 ++
-> .../devicetree/bindings/dma/xilinx/xilinx_vdma.txt |   2 +-
-> .../devicetree/bindings/sound/adi,axi-spdif-tx.txt |   2 +-
-> .../devicetree/bindings/vendor-prefixes.txt        |   1 +
-> arch/arm/boot/dts/Makefile                         |   4 +-
-> arch/arm/boot/dts/zynq-7000.dtsi                   |  58 +++++++++-
-> arch/arm/boot/dts/zynq-parallella.dts              | 119
->+++++++++++++++++++++
-> 7 files changed, 188 insertions(+), 5 deletions(-)
-> create mode 100644 Documentation/devicetree/bindings/arm/adapteva.txt
-> create mode 100644 arch/arm/boot/dts/zynq-parallella.dts
->
->--
->1.9.3
+This function is expected to return negative error codes. I think I 
+should change u32 to int in dml_hw_init().
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+>> +{
+>> +	int index;
+>> +	struct of_phandle_args	dma_spec;
+>> +
+>> +	index = of_property_match_string(np, "dma-names", name);
+>> +
+>> +	if (index < 0)
+>> +		return -ENODEV;
+>> +
+>> +	if (of_parse_phandle_with_args(np, "dmas", "#dma-cells", index,
+>> +				       &dma_spec))
+>> +		return -ENODEV;
+>> +
+>> +	if (dma_spec.args_count)
+>> +		return dma_spec.args[0];
+>> +
+>> +	return -ENODEV;
+>> +}
+>
+> Much cleaner!
+>
+>> +
+>> +/* Initialize the dml hardware connected to SD Card controller */
+>> +int dml_hw_init(struct mmci_host *host, struct device_node *np)
+>> +{
+>> +	u32 config;
+>> +	void __iomem *base;
+>> +	u32 consumer_id, producer_id;
+>> +
+>> +	consumer_id = of_get_dml_pipe_index(np, "tx");
+>> +	producer_id = of_get_dml_pipe_index(np, "rx");
+>> +
+>> +	if (producer_id < 0 || consumer_id < 0)
+>> +		return -ENODEV;
+>> +
+>> +	base = host->base + DML_OFFSET;
+>> +
+>> +	/* Reset the DML block */
+>> +	writel_relaxed(1, base + DML_SW_RESET);
+>> +
+>> +	/* Disable the producer and consumer CRCI */
+>> +	config = (PRODUCER_CRCI_DISABLE | CONSUMER_CRCI_DISABLE);
+>> +	/*
+>> +	 * Disable the bypass mode. Bypass mode will only be used
+>> +	 * if data transfer is to happen in PIO mode and don't
+>> +	 * want the BAM interface to connect with SDCC-DML.
+>> +	 */
+>> +	config &= ~BYPASS;
+>> +	/*
+>> +	 * Disable direct mode as we don't DML to MASTER the AHB bus.
+>> +	 * BAM connected with DML should MASTER the AHB bus.
+>> +	 */
+>> +	config &= ~DIRECT_MODE;
+>> +	/*
+>> +	 * Disable infinite mode transfer as we won't be doing any
+>> +	 * infinite size data transfers. All data transfer will be
+>> +	 * of finite data size.
+>> +	 */
+>> +	config &= ~INFINITE_CONS_TRANS;
+>> +	writel_relaxed(config, base + DML_CONFIG);
+>> +
+>> +	/*
+>> +	 * Initialize the logical BAM pipe size for producer
+>> +	 * and consumer.
+>> +	 */
+>> +	writel_relaxed(PRODUCER_PIPE_LOGICAL_SIZE,
+>> +		       base + DML_PRODUCER_PIPE_LOGICAL_SIZE);
+>> +	writel_relaxed(CONSUMER_PIPE_LOGICAL_SIZE,
+>> +		       base + DML_CONSUMER_PIPE_LOGICAL_SIZE);
+>> +
+>> +	/* Initialize Producer/consumer pipe id */
+>> +	writel_relaxed(producer_id | (consumer_id << CONSUMER_PIPE_ID_SHFT),
+>> +		       base + DML_PIPE_ID);
+>> +
+>
+> We have an mb() here too. Not sure why though. There's lots of comments
+> downstream but not where it actually would help!
+I will add mb here and try to add some comments here.
+
+
+>
+>> +	return 0;
+>> +}
+>> diff --git a/drivers/mmc/host/mmci_qcom_dml.h b/drivers/mmc/host/mmci_qcom_dml.h
+>> new file mode 100644
+>> index 0000000..412e9a3
+>> --- /dev/null
+>> +++ b/drivers/mmc/host/mmci_qcom_dml.h
+>> @@ -0,0 +1,31 @@
+>> +/*
+>> + *
+>> + * Copyright (c) 2014, Code Aurora Forum. All rights reserved.
+>
+> Hmm I see:
+>
+> Copyright (c) 2011, The Linux Foundation. All rights reserved.
+>
+> in these files. Can you use that?
+https://git.linaro.org/landing-teams/working/qualcomm/kernel.git/blob/refs/heads/inforce/ifc6410/v1.5:/drivers/mmc/host/msm_sdcc_dml.c
+in 3.4 kernel has:
+
+Copyright (c) 2011, Code Aurora Forum. All rights reserved.
+
+Do you still want to add Linux Foundation copyright in it.
+
+thanks,
+srini
+>
