@@ -1,32 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758632AbaGYSlk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 14:41:40 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:46136 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753310AbaGYSlh (ORCPT
+	id S1759325AbaGYSmu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 14:42:50 -0400
+Received: from mx4-phx2.redhat.com ([209.132.183.25]:55618 "EHLO
+	mx4-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751565AbaGYSmt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 14:41:37 -0400
-Message-ID: <53D2A4DE.7010301@wwwdotorg.org>
-Date: Fri, 25 Jul 2014 12:41:34 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Fri, 25 Jul 2014 14:42:49 -0400
+Date: Fri, 25 Jul 2014 14:42:49 -0400 (EDT)
+From: Bob Peterson <rpeterso@redhat.com>
+To: Abhi Das <adas@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        cluster-devel@redhat.com
+Message-ID: <742068374.13487420.1406313769169.JavaMail.zimbra@redhat.com>
+In-Reply-To: <1406309888-10749-4-git-send-email-adas@redhat.com>
+References: <1406309888-10749-1-git-send-email-adas@redhat.com> <1406309888-10749-4-git-send-email-adas@redhat.com>
+Subject: Re: [Cluster-devel] [RFC PATCH 3/5] gfs2: Add a dynamic buffer
+ backed	by a vector of pages
 MIME-Version: 1.0
-To: Marcel Ziswiler <marcel@ziswiler.com>, thierry.reding@gmail.com
-CC: linux@arm.linux.org.uk, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-tegra@vger.kernel.org, stefan@agner.ch
-Subject: Re: [PATCH] ARM: tegra: apalis t30: fix device tree compatible node
-References: <aa2cbaac07707c3d64599d3841b9d6f77567a91f.1406081870.git.marcel@ziswiler.com>
-In-Reply-To: <aa2cbaac07707c3d64599d3841b9d6f77567a91f.1406081870.git.marcel@ziswiler.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.5.82.6]
+X-Mailer: Zimbra 8.0.6_GA_5922 (ZimbraWebClient - FF30 (Linux)/8.0.6_GA_5922)
+Thread-Topic: gfs2: Add a dynamic buffer backed by a vector of pages
+Thread-Index: RCwgqhpbeBve+wZOJBjX2oH8m4BA3A==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/22/2014 08:23 PM, Marcel Ziswiler wrote:
-> Working on sound support I noticed the Apalis T30 Evaluation board
-> device tree missing the more generic Apalis T30 compatible string.
+----- Original Message -----
+> +static int vp_alloc_pages(struct vp_ctx *vpx, int start, int end)
+> +{
+> +	int i;
+> +
+> +	for (i = start; i < end; i++) {
+> +		vpx->vp_pages[i] = alloc_page(GFP_KERNEL | GFP_NOFS);
+> +		if (vpx->vp_pages[i] == NULL)
+> +			goto free;
+> +	}
+> +	return 0;
+> +free:
+> +	for (i = start; i < end; i++)
+> +		if (vpx->vp_pages[i]) {
+> +			__free_page(vpx->vp_pages[i]);
+> +			vpx->vp_pages[i] = NULL;
+> +		}
+> +	return -ENOMEM;
+> +}
 
-I've forwarded this patch to the arm-soc maintainers to apply directly.
+I'm concerned that if we have a value for vpx->vp_pages[i] that is
+nonzero (uninitialized) _after_ an element in which we couldn't
+allocate a page, we could try to free the nonzero value. For that
+reason, I always prefer to do something like this instead:
+
+free:
+     while (i > start) {
+          i--;
+          __free_page(vpx->vp_pages[i]);
+          vpx->vp_pages[i] = NULL;
+     }
+     return -ENOMEM;
+
+(snip)
+> +struct vp_ctx* vp_get_vpx(struct vbuf *vb)
+> +{
+> +	struct vp_ctx *vpx = NULL;
+> +
+> +	if (!vb || !vb->v_opaque)
+> +		goto out;
+> +
+> +	vpx = vb->v_opaque;
+> +	if (vpx->vp_magic != VP_MAGIC) {
+> +		vpx = NULL;
+> +		goto out;
+
+This goto is unnecessary, and if you eliminate it, you don't need the brackets.
+
+> +	}
+> +out:
+> +	return vpx;
+> +}
+
+Regards,
+
+Bob Peterson
+Red Hat File Systems
