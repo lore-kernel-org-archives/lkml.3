@@ -1,663 +1,2392 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934207AbaGYTpV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 15:45:21 -0400
-Received: from mga11.intel.com ([192.55.52.93]:57140 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761147AbaGYTpS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 15:45:18 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,732,1400050800"; 
-   d="c'?scan'208,223";a="575531957"
-Date: Fri, 25 Jul 2014 15:44:50 -0400
-From: Matthew Wilcox <willy@linux.intel.com>
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-Cc: Matthew Wilcox <matthew.r.wilcox@intel.com>, linux-fsdevel@vger.kernel.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v8 05/22] Add vm_replace_mixed()
-Message-ID: <20140725194450.GJ6754@linux.intel.com>
-References: <cover.1406058387.git.matthew.r.wilcox@intel.com>
- <b1052af08b49965fd0e6b87b6733b89294c8cc1e.1406058387.git.matthew.r.wilcox@intel.com>
- <20140723114540.GD10317@node.dhcp.inet.fi>
- <20140723135221.GA6754@linux.intel.com>
- <20140723142048.GA11963@node.dhcp.inet.fi>
- <20140723142745.GD6754@linux.intel.com>
- <20140723155500.GA12790@node.dhcp.inet.fi>
+	id S934604AbaGYTpb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 15:45:31 -0400
+Received: from mail-qa0-f68.google.com ([209.85.216.68]:37499 "EHLO
+	mail-qa0-f68.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934274AbaGYTpX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jul 2014 15:45:23 -0400
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="NU0Ex4SbNnrxsi6C"
-Content-Disposition: inline
-In-Reply-To: <20140723155500.GA12790@node.dhcp.inet.fi>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Date: Fri, 25 Jul 2014 12:45:21 -0700
+Message-ID: <CA+80gGYVjprinWEJWbVq4VxjOLjQri8EvGAJ+sx+ihcOxdstCA@mail.gmail.com>
+Subject: [PATCH RFC] sched: deferred set priority (dprio)
+From: Sergey Oboguev <oboguev.public@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+[This is a repost of the message from few day ago, with patch file
+inline instead of being pointed by the URL.]
 
---NU0Ex4SbNnrxsi6C
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+This patch is intended to improve the support for fine-grain parallel
+applications that may sometimes need to change the priority of their threads at
+a very high rate, hundreds or even thousands of times per scheduling timeslice.
 
-On Wed, Jul 23, 2014 at 06:55:00PM +0300, Kirill A. Shutemov wrote:
-> >         update_hiwater_rss(mm);
-> 
-> No: you cannot end up with lower rss after replace, iiuc.
+These are typically applications that have to execute short or very short
+lock-holding critical or otherwise time-urgent sections of code at a very high
+frequency and need to protect these sections with "set priority" system calls,
+one "set priority" call to elevate current thread priority before entering the
+critical or time-urgent section, followed by another call to downgrade thread
+priority at the completion of the section. Due to the high frequency of
+entering and leaving critical or time-urgent sections, the cost of these "set
+priority" system calls may raise to a noticeable part of an application's
+overall expended CPU time. Proposed "deferred set priority" facility allows to
+largely eliminate the cost of these system calls.
 
-Actually, you can ... when we replace a real page with a PFN, our rss
-decreases.
+Instead of executing a system call to elevate its thread priority, an
+application simply writes its desired priority level to a designated memory
+location in the userspace. When the kernel attempts to preempt the thread, it
+first checks the content of this location, and if the application's stated
+request to change its priority has been posted in the designated memory area,
+the kernel will execute this request and alter the priority of the thread being
+preempted before performing a rescheduling, and then make a scheduling decision
+based on the new thread priority level thus implementing the priority
+protection of the critical or time-urgent section desired by the application.
+In a predominant number of cases however, an application will complete the
+critical section before the end of the current timeslice and cancel or alter
+the request held in the userspace area. Thus a vast majority of an
+application's change priority requests will be handled and mutually cancelled
+or coalesced within the userspace, at a very low overhead and without incurring
+the cost of a system call, while maintaining safe preemption control. The cost
+of an actual kernel-level "set priority" operation is incurred only if an
+application is actually being preempted while inside the critical section, i.e.
+typically at most once per scheduling timeslice instead of hundreds or
+thousands "set priority" system calls in the same timeslice.
 
-> Do you mean you pointed to new file all the time? O_CREAT doesn't truncate
-> file if it exists, iirc.
+One of the intended purposes of this facility (but its not sole purpose) is to
+render a lightweight mechanism for priority protection of lock-holding critical
+sections that would be an adequate match for lightweight locking primitives
+such as futex, with both featuring a fast path completing within the userspace.
 
-It was pointing to a new file.  Still not sure why that one failed to trigger
-the problem.  The slightly modified version attached triggered the problem
-*just fine* :-)
+More detailed description can be found in:
+https://raw.githubusercontent.com/oboguev/dprio/master/dprio.txt
 
-I've attached all the patches in my tree so far.  For the v9 patch kit,
-I'll keep patch 3 as a separate patch, but roll patches 1, 2 and 4 into
-other patches.
+The patch is currently based on linux-3.15.2.
 
-I am seeing something odd though.  When I run double-map with debugging
-printks inserted in strategic spots in the kernel, I see four calls to
-do_dax_fault().  The first two, as expected, are the loads from the two
-mapped addresses.  The third is via mkwrite, but then the fourth time
-I get a regular page fault for write, and I don't understand why I get it.
+User-level library implementing userspace-side boilerplate code:
+https://github.com/oboguev/dprio/tree/master/src/userlib
 
-Any ideas?
+Test set:
+https://github.com/oboguev/dprio/tree/master/src/test
 
+The patch is enabled with CONFIG_DEFERRED_SETPRIO.
+There is also a few other config settings: a setting for dprio debug code,
+a setting that controls the initial value for the authorization list restricting
+the use of the facility based on user or group ids, and a setting to improve
+the determinism in the rescheduling latency when dprio request is pending
+under low-memory conditions. Please see dprio.txt for details.
 
-[  880.966632] do_dax_fault: fault a8 page =           (null) bh state 0 written
- 0 addr 7ff598835000
-[  880.966637] dax_load_hole: page = ffffea0002784730
-[  882.114387] do_dax_fault: fault a8 page = ffffea0002784730 bh state 0 written 0 addr 7ff598834000
-[  882.114389] dax_load_hole: page = ffffea0002784730
-[  882.780013] do_dax_fault: fault 5 page = ffffea0002784730 bh state 0 written 0 addr 7ff598835000
-[  882.780095] insert_pfn: pte = 8000000108200225
-[  882.780096] do_dax_fault: page = ffffea0002784730 pfn = 108200 error = 0
-[  882.780098] CPU: 1 PID: 1511 Comm: double-map Not tainted 3.16.0-rc6+ #89
-[  882.780099] Hardware name: Gigabyte Technology Co., Ltd. To be filled by O.E.M./Q87M-D2H, BIOS F6 08/03/2013
-[  882.780100]  0000000000000000 ffff8800b41e3ba0 ffffffff815c6e73 ffffea0002784730
-[  882.780102]  ffff8800b41e3c88 ffffffff8124c319 00007ff598835000 ffff8800b2436ac0
-[  882.780104]  0000000000000005 ffffffffa01e3020 0000000000000004 ffff880000000005
-[  882.780106] Call Trace:
-[  882.780110]  [<ffffffff815c6e73>] dump_stack+0x4d/0x66
-[  882.780114]  [<ffffffff8124c319>] do_dax_fault+0x569/0x6f0
-[  882.780133]  [<ffffffff8124c4df>] dax_fault+0x3f/0x90
-[  882.780136]  [<ffffffff81023b2e>] ? native_sched_clock+0x2e/0xb0
-[  882.780137]  [<ffffffff8124c53e>] dax_mkwrite+0xe/0x10
-[  882.780143]  [<ffffffffa01db955>] ext4_dax_mkwrite+0x15/0x20 [ext4]
-[  882.780146]  [<ffffffff811ab627>] do_page_mkwrite+0x47/0xb0
-[  882.780148]  [<ffffffff811ad7f2>] do_wp_page+0x6e2/0x990
-[  882.780150]  [<ffffffff811aff1b>] handle_mm_fault+0x6ab/0xf70
-[  882.780154]  [<ffffffff81062d2c>] __do_page_fault+0x1ec/0x5b0
-[  882.780163]  [<ffffffff81063112>] do_page_fault+0x22/0x30
-[  882.780165]  [<ffffffff815d1b78>] page_fault+0x28/0x30
-[  882.780204] do_dax_fault: fault a9 page =           (null) bh state 20 written 1 addr 7ff598835000
-[  882.780206] insert_pfn: pte = 8000000108200225
-[  882.780207] do_dax_fault: page =           (null) pfn = 108200 error = 0
-[  882.780208] CPU: 1 PID: 1511 Comm: double-map Not tainted 3.16.0-rc6+ #89
-[  882.780208] Hardware name: Gigabyte Technology Co., Ltd. To be filled by O.E.M./Q87M-D2H, BIOS F6 08/03/2013
-[  882.780209]  0000000000000000 ffff8800b41e3bc0 ffffffff815c6e73 0000000000000000
-[  882.780211]  ffff8800b41e3ca8 ffffffff8124c319 00007ff598835000 ffff8800b41e3c08
-[  882.780213]  ffff8800a2a60608 ffffffffa01e3020 0000000000000000 ffff8800000000a9
-[  882.780214] Call Trace:
-[  882.780216]  [<ffffffff815c6e73>] dump_stack+0x4d/0x66
-[  882.780218]  [<ffffffff8124c319>] do_dax_fault+0x569/0x6f0
-[  882.780232]  [<ffffffff8124c4df>] dax_fault+0x3f/0x90
-[  882.780238]  [<ffffffffa01db975>] ext4_dax_fault+0x15/0x20 [ext4]
-[  882.780240]  [<ffffffff811ab6d1>] __do_fault+0x41/0xd0
-[  882.780241]  [<ffffffff811ae8a5>] do_shared_fault.isra.56+0x35/0x220
-[  882.780243]  [<ffffffff811afb73>] handle_mm_fault+0x303/0xf70
-[  882.780246]  [<ffffffff81062d2c>] __do_page_fault+0x1ec/0x5b0
-[  882.780254]  [<ffffffff81063112>] do_page_fault+0x22/0x30
-[  882.780255]  [<ffffffff815d1b78>] page_fault+0x28/0x30
+Comments would be appreciated.
 
+Thanks,
+Sergey
 
-diff --git a/fs/dax.c b/fs/dax.c
-index b4fdfd9..4b0f928 100644
---- a/fs/dax.c
-+++ b/fs/dax.c
-@@ -257,6 +257,7 @@ static int dax_load_hole(struct address_space *mapping, struct page *page,
- 	if (!page)
- 		page = find_or_create_page(mapping, vmf->pgoff,
- 						GFP_KERNEL | __GFP_ZERO);
-+printk("%s: page = %p\n", __func__, page);
- 	if (!page)
- 		return VM_FAULT_OOM;
- 	/* Recheck i_size under page lock to avoid truncate race */
-@@ -332,6 +333,7 @@ static int do_dax_fault(struct vm_area_struct *vma, struct vm_fault *vmf,
- 	if (error || bh.b_size < PAGE_SIZE)
- 		goto sigbus;
- 
-+printk("%s: fault %x page = %p bh state %lx written %d addr %lx\n", __func__, vmf->flags, page, bh.b_state, buffer_written(&bh), vaddr);
- 	if (!buffer_written(&bh) && !vmf->cow_page) {
- 		if (vmf->flags & FAULT_FLAG_WRITE) {
- 			error = get_block(inode, block, &bh, 1);
-@@ -372,6 +374,8 @@ static int do_dax_fault(struct vm_area_struct *vma, struct vm_fault *vmf,
- 	error = dax_get_pfn(&bh, &pfn, blkbits);
- 	if (error > 0)
- 		error = vm_replace_mixed(vma, vaddr, pfn);
-+printk("%s: page = %p pfn = %lx error = %d\n", __func__, page, pfn, error);
-+if ((vmf->flags & FAULT_FLAG_WRITE) || !(vmf->flags & FAULT_FLAG_USER)) dump_stack();
- 
- 	if (!page) {
- 		mutex_unlock(&mapping->i_mmap_mutex);
-diff --git a/mm/memory.c b/mm/memory.c
-index a8e17ce..189716c 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -1614,6 +1614,7 @@ static int insert_pfn(struct vm_area_struct *vma, unsigned long addr,
- 	/* Ok, finally just insert the thing.. */
- 	entry = pte_mkspecial(pfn_pte(pfn, prot));
- 	set_pte_at(mm, addr, pte, entry);
-+printk("%s: pte = %llx\n", __func__, pte_val(entry));
- 	update_mmu_cache(vma, addr, pte); /* XXX: why not for insert_page? */
- 
- 	retval = 0;
-
---NU0Ex4SbNnrxsi6C
-Content-Type: text/x-diff; charset=us-ascii
-Content-Disposition: attachment; filename="0001-dax-Only-unlock-the-i_mmap_mutex-if-we-locked-it.patch"
-
->From 9f68c0a856b86dbd109be3b95427cd69bec8330d Mon Sep 17 00:00:00 2001
-From: Matthew Wilcox <willy@linux.intel.com>
-Date: Fri, 25 Jul 2014 09:43:15 -0400
-Subject: [PATCH 1/4] dax: Only unlock the i_mmap_mutex if we locked it
-
-The second time we faulted on a hole, we would try to unlock the
-i_mmap_mutex, even though we weren't holding it.  Oops.
+Signed-off-by: Sergey Oboguev <oboguev@yahoo.com>
 ---
- fs/dax.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ fs/exec.c                  |    8 +
+ fs/proc/Makefile           |    1 +
+ fs/proc/authlist.c         |  493 +++++++++++++++++++++++++++++
+ include/linux/authlist.h   |  114 +++++++
+ include/linux/dprio.h      |  130 ++++++++
+ include/linux/init_task.h  |   17 +
+ include/linux/sched.h      |   15 +
+ include/uapi/linux/prctl.h |    2 +
+ init/Kconfig               |    2 +
+ kernel/Kconfig.dprio       |   81 +++++
+ kernel/exit.c              |    6 +
+ kernel/fork.c              |   87 +++++-
+ kernel/sched/Makefile      |    1 +
+ kernel/sched/core.c        |  200 +++++++++++-
+ kernel/sched/dprio.c       |  734 ++++++++++++++++++++++++++++++++++++++++++++
+ kernel/sys.c               |    6 +
+ kernel/sysctl.c            |   11 +
+ 17 files changed, 1897 insertions(+), 11 deletions(-)
 
-diff --git a/fs/dax.c b/fs/dax.c
-index 39b95b1..a65a0f9 100644
---- a/fs/dax.c
-+++ b/fs/dax.c
-@@ -341,7 +341,8 @@ static int do_dax_fault(struct vm_area_struct *vma, struct vm_fault *vmf,
- 			if (error || bh.b_size < PAGE_SIZE)
- 				goto sigbus;
- 		} else {
--			mutex_unlock(&mapping->i_mmap_mutex);
-+			if (!page)
-+				mutex_unlock(&mapping->i_mmap_mutex);
- 			return dax_load_hole(mapping, page, vmf);
- 		}
- 	}
--- 
-2.0.1
+diff --git a/fs/exec.c b/fs/exec.c
+index 238b7aa..9f5b649 100644
+--- a/fs/exec.c
++++ b/fs/exec.c
+@@ -56,6 +56,7 @@
+ #include <linux/pipe_fs_i.h>
+ #include <linux/oom.h>
+ #include <linux/compat.h>
++#include <linux/dprio.h>
 
+ #include <asm/uaccess.h>
+ #include <asm/mmu_context.h>
+@@ -1433,6 +1434,7 @@ static int do_execve_common(struct filename *filename,
+        struct file *file;
+        struct files_struct *displaced;
+        int retval;
++       struct dprio_saved_context dprio_context;
 
---NU0Ex4SbNnrxsi6C
-Content-Type: text/x-diff; charset=us-ascii
-Content-Disposition: attachment; filename="0002-dax-Call-delete_from_page_cache-after-unmap_mapping_.patch"
+        if (IS_ERR(filename))
+                return PTR_ERR(filename);
+@@ -1483,6 +1485,9 @@ static int do_execve_common(struct filename *filename,
+        if (retval)
+                goto out_unmark;
 
->From 4c68125c7557a2a61ba83167ee6a9ff44fdeee89 Mon Sep 17 00:00:00 2001
-From: Matthew Wilcox <willy@linux.intel.com>
-Date: Fri, 25 Jul 2014 09:44:32 -0400
-Subject: [PATCH 2/4] dax: Call delete_from_page_cache() after
- unmap_mapping_range()
-
-delete_from_page_cache() checks that the page is already unmapped
-from everywhere, so we should unmap it from everywhere before we
-delete it.  This matches the call sequence in mm/truncate.c.
----
- fs/dax.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/fs/dax.c b/fs/dax.c
-index a65a0f9..b4fdfd9 100644
---- a/fs/dax.c
-+++ b/fs/dax.c
-@@ -383,9 +383,9 @@ static int do_dax_fault(struct vm_area_struct *vma, struct vm_fault *vmf,
- 	}
- 
- 	if (page) {
--		delete_from_page_cache(page);
- 		unmap_mapping_range(mapping, vmf->pgoff << PAGE_SHIFT,
- 							PAGE_CACHE_SIZE, 0);
-+		delete_from_page_cache(page);
- 		unlock_page(page);
- 		page_cache_release(page);
- 	}
--- 
-2.0.1
-
-
---NU0Ex4SbNnrxsi6C
-Content-Type: text/x-diff; charset=us-ascii
-Content-Disposition: attachment; filename="0003-Factor-zap_pte-out-of-zap_pte_range.patch"
-
->From 60a90d68474bca2afc7e93517169769f4e028962 Mon Sep 17 00:00:00 2001
-From: Matthew Wilcox <willy@linux.intel.com>
-Date: Fri, 25 Jul 2014 09:46:01 -0400
-Subject: [PATCH 3/4] Factor zap_pte() out of zap_pte_range()
-
-zap_pte() can be called while holding the PTE lock, which is important for
-a follow-on patch.  This patch should *only* move code into a separate
-function; other changes to make zap_pte() usable are in subsequent
-patches.
----
- mm/memory.c | 190 ++++++++++++++++++++++++++++++++----------------------------
- 1 file changed, 101 insertions(+), 89 deletions(-)
-
-diff --git a/mm/memory.c b/mm/memory.c
-index cf06c97..6a35f98 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -1071,6 +1071,105 @@ int copy_page_range(struct mm_struct *dst_mm, struct mm_struct *src_mm,
- 	return ret;
- }
- 
-+/* Returns true to break out of the loop */
-+static bool zap_pte(struct mmu_gather *tlb, struct vm_area_struct *vma,
-+				pte_t *pte, unsigned long addr,
-+				struct zap_details *details, int *rss,
-+				int *force_flush)
-+{
-+	struct mm_struct *mm = tlb->mm;
-+	pte_t ptent = *pte;
++       dprio_handle_request();
++       dprio_save_reset_context(&dprio_context);
 +
-+	if (pte_none(ptent))
-+		return false;
-+
-+	if (pte_present(ptent)) {
-+		struct page *page;
-+
-+		page = vm_normal_page(vma, addr, ptent);
-+		if (unlikely(details) && page) {
-+			/*
-+			 * unmap_shared_mapping_pages() wants to
-+			 * invalidate cache without truncating:
-+			 * unmap shared but keep private pages.
-+			 */
-+			if (details->check_mapping &&
-+			    details->check_mapping != page->mapping)
-+				return false;
-+			/*
-+			 * Each page->index must be checked when
-+			 * invalidating or truncating nonlinear.
-+			 */
-+			if (details->nonlinear_vma &&
-+			    (page->index < details->first_index ||
-+			     page->index > details->last_index))
-+				return false;
-+		}
-+		ptent = ptep_get_and_clear_full(mm, addr, pte,
-+						tlb->fullmm);
-+		tlb_remove_tlb_entry(tlb, pte, addr);
-+		if (unlikely(!page))
-+			return false;
-+		if (unlikely(details) && details->nonlinear_vma
-+		    && linear_page_index(details->nonlinear_vma,
-+					addr) != page->index) {
-+			pte_t ptfile = pgoff_to_pte(page->index);
-+			if (pte_soft_dirty(ptent))
-+				pte_file_mksoft_dirty(ptfile);
-+			set_pte_at(mm, addr, pte, ptfile);
-+		}
-+		if (PageAnon(page))
-+			rss[MM_ANONPAGES]--;
-+		else {
-+			if (pte_dirty(ptent)) {
-+				*force_flush = 1;
-+				set_page_dirty(page);
-+			}
-+			if (pte_young(ptent) &&
-+			    likely(!(vma->vm_flags & VM_SEQ_READ)))
-+				mark_page_accessed(page);
-+			rss[MM_FILEPAGES]--;
-+		}
-+		page_remove_rmap(page);
-+		if (unlikely(page_mapcount(page) < 0))
-+			print_bad_pte(vma, addr, ptent, page);
-+		if (unlikely(!__tlb_remove_page(tlb, page))) {
-+			*force_flush = 1;
-+			return true;
-+		}
-+		return false;
-+	}
-+	/*
-+	 * If details->check_mapping, we leave swap entries;
-+	 * if details->nonlinear_vma, we leave file entries.
-+	 */
-+	if (unlikely(details))
-+		return false;
-+	if (pte_file(ptent)) {
-+		if (unlikely(!(vma->vm_flags & VM_NONLINEAR)))
-+			print_bad_pte(vma, addr, ptent, NULL);
-+	} else {
-+		swp_entry_t entry = pte_to_swp_entry(ptent);
-+
-+		if (!non_swap_entry(entry))
-+			rss[MM_SWAPENTS]--;
-+		else if (is_migration_entry(entry)) {
-+			struct page *page;
-+
-+			page = migration_entry_to_page(entry);
-+
-+			if (PageAnon(page))
-+				rss[MM_ANONPAGES]--;
-+			else
-+				rss[MM_FILEPAGES]--;
-+		}
-+		if (unlikely(!free_swap_and_cache(entry)))
-+			print_bad_pte(vma, addr, ptent, NULL);
-+	}
-+	pte_clear_not_present_full(mm, addr, pte, tlb->fullmm);
-+	return false;
-+}
-+
- static unsigned long zap_pte_range(struct mmu_gather *tlb,
- 				struct vm_area_struct *vma, pmd_t *pmd,
- 				unsigned long addr, unsigned long end,
-@@ -1089,95 +1188,8 @@ again:
- 	pte = start_pte;
- 	arch_enter_lazy_mmu_mode();
- 	do {
--		pte_t ptent = *pte;
--		if (pte_none(ptent)) {
--			continue;
--		}
--
--		if (pte_present(ptent)) {
--			struct page *page;
--
--			page = vm_normal_page(vma, addr, ptent);
--			if (unlikely(details) && page) {
--				/*
--				 * unmap_shared_mapping_pages() wants to
--				 * invalidate cache without truncating:
--				 * unmap shared but keep private pages.
--				 */
--				if (details->check_mapping &&
--				    details->check_mapping != page->mapping)
--					continue;
--				/*
--				 * Each page->index must be checked when
--				 * invalidating or truncating nonlinear.
--				 */
--				if (details->nonlinear_vma &&
--				    (page->index < details->first_index ||
--				     page->index > details->last_index))
--					continue;
--			}
--			ptent = ptep_get_and_clear_full(mm, addr, pte,
--							tlb->fullmm);
--			tlb_remove_tlb_entry(tlb, pte, addr);
--			if (unlikely(!page))
--				continue;
--			if (unlikely(details) && details->nonlinear_vma
--			    && linear_page_index(details->nonlinear_vma,
--						addr) != page->index) {
--				pte_t ptfile = pgoff_to_pte(page->index);
--				if (pte_soft_dirty(ptent))
--					pte_file_mksoft_dirty(ptfile);
--				set_pte_at(mm, addr, pte, ptfile);
--			}
--			if (PageAnon(page))
--				rss[MM_ANONPAGES]--;
--			else {
--				if (pte_dirty(ptent)) {
--					force_flush = 1;
--					set_page_dirty(page);
--				}
--				if (pte_young(ptent) &&
--				    likely(!(vma->vm_flags & VM_SEQ_READ)))
--					mark_page_accessed(page);
--				rss[MM_FILEPAGES]--;
--			}
--			page_remove_rmap(page);
--			if (unlikely(page_mapcount(page) < 0))
--				print_bad_pte(vma, addr, ptent, page);
--			if (unlikely(!__tlb_remove_page(tlb, page))) {
--				force_flush = 1;
--				break;
--			}
--			continue;
--		}
--		/*
--		 * If details->check_mapping, we leave swap entries;
--		 * if details->nonlinear_vma, we leave file entries.
--		 */
--		if (unlikely(details))
--			continue;
--		if (pte_file(ptent)) {
--			if (unlikely(!(vma->vm_flags & VM_NONLINEAR)))
--				print_bad_pte(vma, addr, ptent, NULL);
--		} else {
--			swp_entry_t entry = pte_to_swp_entry(ptent);
--
--			if (!non_swap_entry(entry))
--				rss[MM_SWAPENTS]--;
--			else if (is_migration_entry(entry)) {
--				struct page *page;
--
--				page = migration_entry_to_page(entry);
--
--				if (PageAnon(page))
--					rss[MM_ANONPAGES]--;
--				else
--					rss[MM_FILEPAGES]--;
--			}
--			if (unlikely(!free_swap_and_cache(entry)))
--				print_bad_pte(vma, addr, ptent, NULL);
--		}
--		pte_clear_not_present_full(mm, addr, pte, tlb->fullmm);
-+		if (zap_pte(tlb, vma, pte, addr, details, rss, &force_flush))
-+			break;
- 	} while (pte++, addr += PAGE_SIZE, addr != end);
- 
- 	add_mm_rss_vec(mm, rss);
--- 
-2.0.1
+        bprm->argc = count(argv, MAX_ARG_STRINGS);
+        if ((retval = bprm->argc) < 0)
+                goto out;
+@@ -1521,6 +1526,7 @@ static int do_execve_common(struct filename *filename,
+        putname(filename);
+        if (displaced)
+                put_files_struct(displaced);
++       dprio_free_context(&dprio_context);
+        return retval;
 
-
---NU0Ex4SbNnrxsi6C
-Content-Type: text/x-diff; charset=us-ascii
-Content-Disposition: attachment; filename="0004-mm-Introduce-zap_pte_single.patch"
-
->From 50c81e697f68aba7362dbf77b9017f8bba666e17 Mon Sep 17 00:00:00 2001
-From: Matthew Wilcox <willy@linux.intel.com>
-Date: Fri, 25 Jul 2014 15:10:12 -0400
-Subject: [PATCH 4/4] mm: Introduce zap_pte_single()
-
-zap_pte_single() is a new wrapper around zap_pte() that does all the
-necessary setup for insert_pte() and insert_page().
----
- mm/memory.c | 44 ++++++++++++++++++++++++++++++++++----------
- 1 file changed, 34 insertions(+), 10 deletions(-)
-
-diff --git a/mm/memory.c b/mm/memory.c
-index 6a35f98..a8e17ce 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -1077,7 +1077,8 @@ static bool zap_pte(struct mmu_gather *tlb, struct vm_area_struct *vma,
- 				struct zap_details *details, int *rss,
- 				int *force_flush)
- {
--	struct mm_struct *mm = tlb->mm;
-+	struct mm_struct *mm = tlb ? tlb->mm : vma->vm_mm;
-+	bool fullmm = tlb ? tlb->fullmm : false;
- 	pte_t ptent = *pte;
- 
- 	if (pte_none(ptent))
-@@ -1105,9 +1106,9 @@ static bool zap_pte(struct mmu_gather *tlb, struct vm_area_struct *vma,
- 			     page->index > details->last_index))
- 				return false;
- 		}
--		ptent = ptep_get_and_clear_full(mm, addr, pte,
--						tlb->fullmm);
--		tlb_remove_tlb_entry(tlb, pte, addr);
-+		ptent = ptep_get_and_clear_full(mm, addr, pte, fullmm);
-+		if (tlb)
-+			tlb_remove_tlb_entry(tlb, pte, addr);
- 		if (unlikely(!page))
- 			return false;
- 		if (unlikely(details) && details->nonlinear_vma
-@@ -1133,7 +1134,7 @@ static bool zap_pte(struct mmu_gather *tlb, struct vm_area_struct *vma,
- 		page_remove_rmap(page);
- 		if (unlikely(page_mapcount(page) < 0))
- 			print_bad_pte(vma, addr, ptent, page);
--		if (unlikely(!__tlb_remove_page(tlb, page))) {
-+		if (unlikely(tlb && !__tlb_remove_page(tlb, page))) {
- 			*force_flush = 1;
- 			return true;
- 		}
-@@ -1166,10 +1167,27 @@ static bool zap_pte(struct mmu_gather *tlb, struct vm_area_struct *vma,
- 		if (unlikely(!free_swap_and_cache(entry)))
- 			print_bad_pte(vma, addr, ptent, NULL);
- 	}
--	pte_clear_not_present_full(mm, addr, pte, tlb->fullmm);
-+	pte_clear_not_present_full(mm, addr, pte, fullmm);
- 	return false;
- }
- 
-+static void zap_pte_single(struct vm_area_struct *vma, pte_t *pte,
-+				unsigned long addr)
-+{
-+	struct mm_struct *mm = vma->vm_mm;
-+	int force_flush = 0;
-+	int rss[NR_MM_COUNTERS];
-+
-+	VM_BUG_ON(!mutex_is_locked(&vma->vm_file->f_mapping->i_mmap_mutex));
-+
-+	init_rss_vec(rss);
-+	update_hiwater_rss(mm);
-+	flush_cache_page(vma, addr, pte_pfn(*pte));
-+	zap_pte(NULL, vma, pte, addr, NULL, rss, &force_flush);
-+	flush_tlb_page(vma, addr);
-+	add_mm_rss_vec(mm, rss);
-+}
-+
- static unsigned long zap_pte_range(struct mmu_gather *tlb,
- 				struct vm_area_struct *vma, pmd_t *pmd,
- 				unsigned long addr, unsigned long end,
-@@ -1494,6 +1512,7 @@ static int insert_page(struct vm_area_struct *vma, unsigned long addr,
- 	int retval;
- 	pte_t *pte;
- 	spinlock_t *ptl;
-+	bool replaced = false;
- 
- 	retval = -EINVAL;
- 	if (PageAnon(page))
-@@ -1507,8 +1526,8 @@ static int insert_page(struct vm_area_struct *vma, unsigned long addr,
- 	if (!pte_none(*pte)) {
- 		if (!replace)
- 			goto out_unlock;
--		VM_BUG_ON(!mutex_is_locked(&vma->vm_file->f_mapping->i_mmap_mutex));
--		zap_page_range_single(vma, addr, PAGE_SIZE, NULL);
-+		zap_pte_single(vma, pte, addr);
-+		replaced = true;
- 	}
- 
- 	/* Ok, finally just insert the thing.. */
-@@ -1519,6 +1538,8 @@ static int insert_page(struct vm_area_struct *vma, unsigned long addr,
- 
- 	retval = 0;
- 	pte_unmap_unlock(pte, ptl);
-+	if (replaced)
-+		mmu_notifier_invalidate_page(mm, addr);
- 	return retval;
- out_unlock:
- 	pte_unmap_unlock(pte, ptl);
-@@ -1576,6 +1597,7 @@ static int insert_pfn(struct vm_area_struct *vma, unsigned long addr,
- 	int retval;
- 	pte_t *pte, entry;
- 	spinlock_t *ptl;
-+	bool replaced = false;
- 
- 	retval = -ENOMEM;
- 	pte = get_locked_pte(mm, addr, &ptl);
-@@ -1585,8 +1607,8 @@ static int insert_pfn(struct vm_area_struct *vma, unsigned long addr,
- 	if (!pte_none(*pte)) {
- 		if (!replace)
- 			goto out_unlock;
--		VM_BUG_ON(!mutex_is_locked(&vma->vm_file->f_mapping->i_mmap_mutex));
--		zap_page_range_single(vma, addr, PAGE_SIZE, NULL);
-+		zap_pte_single(vma, pte, addr);
-+		replaced = true;
- 	}
- 
- 	/* Ok, finally just insert the thing.. */
-@@ -1597,6 +1619,8 @@ static int insert_pfn(struct vm_area_struct *vma, unsigned long addr,
- 	retval = 0;
- out_unlock:
- 	pte_unmap_unlock(pte, ptl);
-+	if (replaced)
-+		mmu_notifier_invalidate_page(mm, addr);
  out:
- 	return retval;
+@@ -1529,6 +1535,8 @@ out:
+                mmput(bprm->mm);
+        }
+
++       dprio_restore_context(&dprio_context);
++
+ out_unmark:
+        current->fs->in_exec = 0;
+        current->in_execve = 0;
+diff --git a/fs/proc/Makefile b/fs/proc/Makefile
+index 239493e..7d55986 100644
+--- a/fs/proc/Makefile
++++ b/fs/proc/Makefile
+@@ -29,3 +29,4 @@ proc-$(CONFIG_PROC_KCORE)     += kcore.o
+ proc-$(CONFIG_PROC_VMCORE)     += vmcore.o
+ proc-$(CONFIG_PRINTK)  += kmsg.o
+ proc-$(CONFIG_PROC_PAGE_MONITOR)       += page.o
++proc-$(CONFIG_DEFERRED_SETPRIO) += authlist.o
+diff --git a/fs/proc/authlist.c b/fs/proc/authlist.c
+new file mode 100644
+index 0000000..b6f1fbe
+--- /dev/null
++++ b/fs/proc/authlist.c
+@@ -0,0 +1,493 @@
++/*
++ * fs/proc/authlist.c
++ *
++ * Authorization list.
++ *
++ * Started by (C) 2014 Sergey Oboguev <oboguev@yahoo.com>
++ *
++ * This code is licenced under the GPL version 2 or later.
++ * For details see linux-kernel-base/COPYING.
++ */
++
++#include <linux/types.h>
++#include <linux/ctype.h>
++#include <linux/unistd.h>
++#include <linux/stddef.h>
++#include <linux/errno.h>
++#include <linux/kernel.h>
++#include <linux/sched.h>
++#include <linux/slab.h>
++#include <linux/compiler.h>
++#include <linux/uaccess.h>
++#include <linux/capability.h>
++#include <linux/cred.h>
++#include <linux/sysctl.h>
++#include <linux/authlist.h>
++
++#define error_out(rc)  do { error = (rc);  goto out; } while (0)
++
++static const char tag_uid[] = "uid";
++static const char tag_nouid[] = "nouid";
++static const char tag_gid[] = "gid";
++static const char tag_nogid[] = "nogid";
++static const char tag_everybody[] = "everybody";
++static const char tag_nobody[] = "nobody";
++
++static inline bool is_ws(char c)
++{
++       return c == ' ' || c == '\t' || c == '\r' || c == '\n';
++}
++
++static inline bool is_ws_eos(char c)
++{
++       return is_ws(c) || c == '\0';
++}
++
++/* count whitespace-separated entries in the descriptor string */
++static int count_entries(const char *desc)
++{
++       const char *p = desc;
++       int nentries = 0;
++
++       for (;;) {
++               /* skip leading whitespace */
++               while (is_ws(*p))
++                       p++;
++
++               /* reached the end of the string? */
++               if (*p == '\0')
++                       break;
++
++               /* detected non-ws section */
++               nentries++;
++
++               /* skip non-ws section */
++               while (!is_ws_eos(*p))
++                       p++;
++       }
++
++       return nentries;
++}
++
++static inline bool istag(const char **ep, const char *tag)
++{
++       int len = strlen(tag);
++       const char *p = *ep;
++
++       if (0 == strncmp(p, tag, len)) {
++               if (is_ws_eos(p[len])) {
++                       *ep += len;
++                       return true;
++               }
++       }
++
++       return false;
++}
++
++static inline bool istag_col(const char **ep, const char *tag)
++{
++       int len = strlen(tag);
++       const char *p = *ep;
++
++       if (0 == strncmp(p, tag, len) && p[len] == ':') {
++               *ep += len + 1;
++               return true;
++       }
++
++       return false;
++}
++
++static int parse_id(const char **ep, struct authlist_entry *entry,
++                   enum authlist_kind kind)
++{
++       struct user_namespace *ns = current_user_ns();
++       /* decimal representation of 32-bit number fits in 10 chars */
++       char sval[11];
++       const char *p = *ep;
++       char *xp = sval;
++       int error;
++       uid_t uid;
++       gid_t gid;
++
++       while (isdigit(*p)) {
++               if (xp - sval >= sizeof(sval) - 1)
++                       return -EINVAL;
++               *xp++ = *p++;
++       }
++       *xp = '\0';
++       if (!sval[0] || !is_ws_eos(*p))
++               return -EINVAL;
++
++       switch (kind) {
++       case AUTHLIST_KIND_UID:
++       case AUTHLIST_KIND_NOUID:
++               error = kstrtouint(sval, 10, &uid);
++               if (error)
++                       return error;
++               entry->kuid = make_kuid(ns, uid);
++               if (!uid_valid(entry->kuid))
++                       return -EINVAL;
++               break;
++
++       case AUTHLIST_KIND_GID:
++       case AUTHLIST_KIND_NOGID:
++               error = kstrtouint(sval, 10, &gid);
++               if (error)
++                       return error;
++               entry->kgid = make_kgid(ns, gid);
++               if (!gid_valid(entry->kgid))
++                       return -EINVAL;
++               break;
++
++       default:
++               return -EINVAL;
++       }
++
++       entry->kind = kind;
++       *ep = p;
++
++       return 0;
++}
++
++static int parse_entry(const char **ep, struct authlist_entry *entry)
++{
++       if (istag(ep, tag_everybody))
++               entry->kind = AUTHLIST_KIND_EVERYBODY;
++       else if (istag(ep, tag_nobody))
++               entry->kind = AUTHLIST_KIND_NOBODY;
++       else if (istag_col(ep, tag_uid))
++               return parse_id(ep, entry, AUTHLIST_KIND_UID);
++       else if (istag_col(ep, tag_nouid))
++               return parse_id(ep, entry, AUTHLIST_KIND_NOUID);
++       else if (istag_col(ep, tag_gid))
++               return parse_id(ep, entry, AUTHLIST_KIND_GID);
++       else if (istag_col(ep, tag_nogid))
++               return parse_id(ep, entry, AUTHLIST_KIND_NOGID);
++       else
++               return -EINVAL;
++
++       return 0;
++}
++
++/*
++ * Import authlist from the userspace
++ */
++static int write_authlist(struct authlist *authlist, void __user *buffer,
++                         size_t *lenp, loff_t *ppos)
++{
++       struct authlist_entry *entries = NULL, *old_entries;
++       char *memblk = NULL;
++       int error = 0;
++       int nentries;
++       int ne;
++       int terminal = -1;
++       const char *p;
++
++       /* ensure atomic transfer */
++       if (*ppos != 0)
++               return -EINVAL;
++
++       if (*lenp > AUTHLIST_LENGTH_LIMIT)
++               return -EINVAL;
++
++       memblk = kmalloc(*lenp + 1, GFP_KERNEL);
++       if (memblk == NULL)
++               return -ENOMEM;
++
++       if (copy_from_user(memblk, buffer, *lenp))
++               error_out(-EFAULT);
++
++       memblk[*lenp] = '\0';
++
++       nentries = count_entries(memblk);
++       if (nentries == 0)
++               error_out(-EINVAL);
++
++       entries = kmalloc(sizeof(struct authlist_entry) * nentries, GFP_KERNEL);
++       if (entries == NULL)
++               error_out(-ENOMEM);
++
++       for (p = memblk, ne = 0;; ne++) {
++               /* skip leading whitespace */
++               while (is_ws(*p))
++                       p++;
++
++               /* reached the end of the string? */
++               if (*p == '\0')
++                       break;
++
++               error = parse_entry(&p, entries + ne);
++               if (error)
++                       goto out;
++
++               switch (entries[ne].kind) {
++               case AUTHLIST_KIND_EVERYBODY:
++               case AUTHLIST_KIND_NOBODY:
++                       if (terminal != -1)
++                               error_out(-EINVAL);
++                       terminal = ne;
++                       break;
++
++               default:
++                       break;
++               }
++       }
++
++       /*
++        * Last entry must be everybody/nobody.
++        * Intermediate entry cannot be everybody/nobody.
++        */
++       if (terminal != nentries - 1)
++               error_out(-EINVAL);
++
++       down_write(&authlist->rws);
++       old_entries = authlist->entries;
++       authlist->nentries = nentries;
++       authlist->entries = entries;
++       up_write(&authlist->rws);
++
++       kfree(old_entries);
++       entries = NULL;
++
++       *ppos += *lenp;
++
++out:
++
++       kfree(memblk);
++       kfree(entries);
++
++       return error;
++}
++
++/*
++ * Export authlist to the userspace
++ */
++static int read_authlist(struct authlist *authlist,
++                        void __user *buffer,
++                        size_t *lenp, loff_t *ppos)
++{
++       struct user_namespace *ns = current_user_ns();
++       char *memblk = NULL;
++       char *vp = NULL;
++       int error = 0;
++       int len;
++       uid_t uid;
++       gid_t gid;
++
++       down_read(&authlist->rws);
++
++       if (authlist->nentries == 0) {
++               switch (authlist->initial_value) {
++               case AUTHLIST_KIND_EVERYBODY:
++                       vp = (char *) tag_everybody;
++                       break;
++
++               case AUTHLIST_KIND_NOBODY:
++               default:
++                       vp = (char *) tag_nobody;
++                       break;
++               }
++       } else {
++               struct authlist_entry *entry;
++               /* <space>noguid:4294967295 */
++               size_t maxentrysize = 1 + 6 + 1 + 10;
++               size_t alloc_size = maxentrysize * authlist->nentries + 1;
++               int ne;
++
++               memblk = kmalloc(alloc_size, GFP_KERNEL);
++               if (memblk == NULL) {
++                       up_read(&authlist->rws);
++                       return -ENOMEM;
++               }
++
++               vp = memblk;
++               *vp = '\0';
++               entry = authlist->entries;
++               for (ne = 0;  ne < authlist->nentries;  ne++, entry++) {
++                       vp += strlen(vp);
++                       if (ne != 0)
++                               *vp++ = ' ';
++                       switch (entry->kind) {
++                       case AUTHLIST_KIND_UID:
++                               uid = from_kuid(ns, entry->kuid);
++                               if (uid == (uid_t) -1) {
++                                       error = EIDRM;
++                                       break;
++                               }
++                               sprintf(vp, "%s:%u", tag_uid, (unsigned) uid);
++                               break;
++
++                       case AUTHLIST_KIND_NOUID:
++                               uid = from_kuid(ns, entry->kuid);
++                               if (uid == (uid_t) -1) {
++                                       error = EIDRM;
++                                       break;
++                               }
++                               sprintf(vp, "%s:%u", tag_nouid, (unsigned) uid);
++                               break;
++
++                       case AUTHLIST_KIND_GID:
++                               gid = from_kgid(ns, entry->kgid);
++                               if (gid == (gid_t) -1) {
++                                       error = EIDRM;
++                                       break;
++                               }
++                               sprintf(vp, "%s:%u", tag_gid, (unsigned) gid);
++                               break;
++
++                       case AUTHLIST_KIND_NOGID:
++                               gid = from_kgid(ns, entry->kgid);
++                               if (gid == (gid_t) -1) {
++                                       error = EIDRM;
++                                       break;
++                               }
++                               sprintf(vp, "%s:%u", tag_nogid, (unsigned) gid);
++                               break;
++
++                       case AUTHLIST_KIND_EVERYBODY:
++                               strcpy(vp, tag_everybody);
++                               break;
++
++                       case AUTHLIST_KIND_NOBODY:
++                               strcpy(vp, tag_nobody);
++                               break;
++                       }
++
++                       if (unlikely(error != 0)) {
++                               up_read(&authlist->rws);
++                               kfree(memblk);
++                               return error;
++                       }
++               }
++
++               vp = memblk;
++       }
++
++       up_read(&authlist->rws);
++
++       len = strlen(vp);
++
++       /* ensure atomic transfer */
++       if (*ppos != 0) {
++               if (*ppos == len + 1) {
++                       *lenp = 0;
++                       goto out;
++               }
++               error_out(-EINVAL);
++       }
++
++       if (len + 2 > *lenp)
++               error_out(-ETOOSMALL);
++
++       if (likely(len) && copy_to_user(buffer, vp, len))
++               error_out(-EFAULT);
++
++       if (copy_to_user(buffer + len, "\n", 2))
++               error_out(-EFAULT);
++
++       *lenp = len + 1;
++       *ppos += len + 1;
++
++out:
++
++       kfree(memblk);
++
++       return error;
++}
++
++/*
++ * proc_doauthlist - read or write authorization list
++ * @table: the sysctl table
++ * @write: true if this is a write to the sysctl file
++ * @buffer: the user buffer
++ * @lenp: the size of the user buffer
++ * @ppos: file position
++ *
++ * Reads/writes an authorization list as a string from/to the user buffer.
++ *
++ * On struct authlist -> userspace string read, if the user buffer provided
++ * is not large enough to hold the string atomically, an error will be
++ * returned. The copied string will include '\n' and is NUL-terminated.
++ *
++ * On userspace string -> struct authlist write, if the user buffer does not
++ * contain a valid string-from authorization list atomically, or if the
++ * descriptor is malformatted, an error will be returned.
++ *
++ * Returns 0 on success.
++ */
++int proc_doauthlist(struct ctl_table *table, int write,
++                   void __user *buffer, size_t *lenp, loff_t *ppos)
++{
++       struct authlist *authlist = (struct authlist *) table->data;
++
++       if (write)
++               return write_authlist(authlist, buffer, lenp, ppos);
++       else
++               return read_authlist(authlist, buffer, lenp, ppos);
++}
++
++static bool in_egroup(const struct cred *cred, kgid_t kgid)
++{
++       if (gid_eq(cred->egid, kgid))
++               return true;
++
++       return groups_search(cred->group_info, kgid);
++}
++
++/*
++ * Check if @authlist permits the called with @cred credentials to perform the
++ * operation guarded by the @authlist.
++ */
++int authlist_check_permission(struct authlist *authlist,
++                             const struct cred *cred)
++{
++       struct authlist_entry *entry;
++       int ne, error = 0;
++
++       down_read(&authlist->rws);
++
++       if (authlist->nentries == 0) {
++               if (authlist->initial_value == AUTHLIST_KIND_EVERYBODY)
++                       error_out(0);
++               error_out(-EPERM);
++       }
++
++       entry = authlist->entries;
++
++       for (ne = 0;  ne < authlist->nentries;  ne++, entry++) {
++               switch (entry->kind) {
++               case AUTHLIST_KIND_UID:
++                       if (uid_eq(entry->kuid, cred->euid))
++                               error_out(0);
++                       break;
++
++               case AUTHLIST_KIND_NOUID:
++                       if (uid_eq(entry->kuid, cred->euid))
++                               error_out(-EPERM);
++                       break;
++
++               case AUTHLIST_KIND_GID:
++                       if (in_egroup(cred, entry->kgid))
++                               error_out(0);
++                       break;
++
++               case AUTHLIST_KIND_NOGID:
++                       if (in_egroup(cred, entry->kgid))
++                               error_out(-EPERM);
++                       break;
++
++               case AUTHLIST_KIND_EVERYBODY:
++                       error_out(0);
++
++               case AUTHLIST_KIND_NOBODY:
++                       error_out(-EPERM);
++               }
++       }
++
++out:
++
++       up_read(&authlist->rws);
++
++       return error;
++}
++
+diff --git a/include/linux/authlist.h b/include/linux/authlist.h
+new file mode 100644
+index 0000000..f270644
+--- /dev/null
++++ b/include/linux/authlist.h
+@@ -0,0 +1,114 @@
++/*
++ * include/linux/authlist.h
++ *
++ * Authorization list.
++ *
++ * Started by (C) 2014 Sergey Oboguev <oboguev@yahoo.com>
++ *
++ * This code is licenced under the GPL version 2 or later.
++ * For details see linux-kernel-base/COPYING.
++ */
++
++#ifndef _LINUX_AUTHLIST_H
++#define _LINUX_AUTHLIST_H
++
++#include <linux/uidgid.h>
++#include <linux/rwsem.h>
++
++/*
++ * String representation of authorization list is a sequence of
++ * whitespace-separated entries in the format
++ *
++ *     uid:<numeric-uid>
++ *     gid:<numeric-gid>
++ *     nouid:<numeric-uid>
++ *     nogid:<numeric-gid>
++ *     everybody
++ *     nobody
++ *
++ * For instance:
++ *
++ *     uid:47  uid:100  gid:12  nobody
++ * or
++ *
++ *     nogid:300  everybody
++ *
++ * Terminal entry must be either "nobody" or "everybody".
++ */
++
++/*
++ * Define types of entries in the list.
++ *
++ * AUTHLIST_KIND_EVERYBODY or AUTHLIST_KIND_NOBODY must be the
++ * terminal entry.
++ */
++enum authlist_kind {
++       AUTHLIST_KIND_UID = 0,          /* allow UID */
++       AUTHLIST_KIND_GID,              /* allow GID */
++       AUTHLIST_KIND_NOUID,            /* disallow UID */
++       AUTHLIST_KIND_NOGID,            /* disallow GID */
++       AUTHLIST_KIND_EVERYBODY,        /* allow everybody */
++       AUTHLIST_KIND_NOBODY            /* disallow everybody */
++};
++
++struct authlist_entry {
++       enum authlist_kind kind;
++       union {
++               kuid_t  kuid;
++               kgid_t  kgid;
++       };
++};
++
++/*
++ * @rws                        rw semaphore to synchronize access to
+the structure
++ *
++ * @initial_value      used only if @nentries is 0, can be either
++ *                     AUTHLIST_KIND_EVERYBODY or AUTHLIST_KIND_NOBODY
++ *
++ * @nentries           count of entries, 0 means use @initial_value
++ *
++ * @entries            array of authlist_entry structures,
++ *                     size of the array is given by @nentries
++ */
++struct authlist {
++       struct rw_semaphore rws;
++       enum authlist_kind initial_value;
++       int nentries;
++       struct authlist_entry *entries;
++};
++
++
++#define AUTHLIST_INITIALIZER(name, _initial_value)     \
++{                                                      \
++       .rws = __RWSEM_INITIALIZER(name.rws),           \
++       .initial_value = (_initial_value),              \
++       .nentries = 0,                                  \
++       .entries = NULL                                 \
++}
++
++/*
++ * Maximum authlist string length limit.
++ *
++ * Imposed to prevent malicious attempts to cause exessive memory allocation
++ * by using insanely long authlist strings.
++ */
++#define AUTHLIST_LENGTH_LIMIT  (1024 * 32)
++
++
++/*
++ * sysctl routine to read-in the authlist from the userspace
++ * and write it out to the userspace
++ */
++int proc_doauthlist(struct ctl_table *table, int write,
++                   void __user *buffer, size_t *lenp, loff_t *ppos);
++
++
++/*
++ * Check if @authlist permits the caller with credentials @cred to perform
++ * the operation guarded by the @authlist.
++ */
++int authlist_check_permission(struct authlist *authlist,
++                             const struct cred *cred);
++
++#endif /* _LINUX_AUTHLIST_H */
++
+diff --git a/include/linux/dprio.h b/include/linux/dprio.h
+new file mode 100644
+index 0000000..1118fdf
+--- /dev/null
++++ b/include/linux/dprio.h
+@@ -0,0 +1,130 @@
++/*
++ * include/linux/dprio.h
++ *
++ * Deferred set priority.
++ *
++ * Started by (C) 2014 Sergey Oboguev <oboguev@yahoo.com>
++ *
++ * This code is licenced under the GPL version 2 or later.
++ * For details see linux-kernel-base/COPYING.
++ */
++
++#ifndef _LINUX_DPRIO_H
++#define _LINUX_DPRIO_H
++
++#include <linux/sched.h>
++#include <linux/slab.h>
++#include <linux/authlist.h>
++
++#ifdef CONFIG_DEFERRED_SETPRIO
++
++/*
++ * @mask contains bit-flags indicating which policies have been pre-approved.
++ * Other fields are valid only if the corresponding bit is set in the @mask.
++ */
++static __always_inline void __dprio_info_assumptions(void)
++{
++       /* SCHED_xxx is used as a bit index in @mask */
++       BUILD_BUG_ON(SCHED_NORMAL > 31);
++       BUILD_BUG_ON(SCHED_FIFO > 31);
++       BUILD_BUG_ON(SCHED_RR > 31);
++       BUILD_BUG_ON(SCHED_BATCH > 31);
++       BUILD_BUG_ON(SCHED_IDLE > 31);
++}
++struct dprio_info {
++       unsigned mask;
++       s32 normal_sched_nice;
++       s32 batch_sched_nice;
++       u32 fifo_sched_priority;
++       u32 rr_sched_priority;
++       bool capable_sys_nice;
++};
++
++/*
++ * Called by dup_task_struct to reset non-inherited fields
++ */
++static __always_inline void set_task_in_dprio(struct task_struct *tsk,
++                                             bool in_dprio)
++{
++#ifdef CONFIG_DEBUG_DEFERRED_SETPRIO
++       tsk->in_dprio = in_dprio;
++#endif
++}
++
++static inline void dprio_dup_task_struct(struct task_struct *tsk)
++{
++       /* reset deferred setprio fields not inherited from the parent */
++       tsk->dprio_ku_area_pp = NULL;
++       tsk->dprio_info = NULL;
++       set_task_in_dprio(tsk, false);
++}
++
++void dprio_detach(struct task_struct *tsk);
++void dprio_handle_request(void);
++bool dprio_check_for_request(struct task_struct *prev);
++long dprio_prctl(int option, unsigned long a2, unsigned long a3,
++                unsigned long a4, unsigned long a5);
++
++struct dprio_saved_context {
++       struct dprio_ku_area __user * __user *dprio_ku_area_pp;
++       struct dprio_info *dprio_info;
++};
++
++static inline void dprio_save_reset_context(struct dprio_saved_context *saved)
++{
++       saved->dprio_ku_area_pp = current->dprio_ku_area_pp;
++       saved->dprio_info = current->dprio_info;
++
++       if (unlikely(saved->dprio_ku_area_pp)) {
++               preempt_disable();
++               current->dprio_ku_area_pp = NULL;
++               current->dprio_info = NULL;
++               preempt_enable();
++       }
++}
++
++static inline void dprio_restore_context(struct dprio_saved_context *saved)
++{
++       if (unlikely(saved->dprio_ku_area_pp)) {
++               preempt_disable();
++               current->dprio_ku_area_pp = saved->dprio_ku_area_pp;
++               current->dprio_info = saved->dprio_info;
++               preempt_enable();
++       }
++}
++
++static inline void dprio_free_context(struct dprio_saved_context *saved)
++{
++       if (unlikely(saved->dprio_info))
++               kfree(saved->dprio_info);
++}
++
++#ifdef CONFIG_DEFERRED_SETPRIO_ALLOW_EVERYBODY
++  #define DPRIO_AUTHLIST_INITIAL_VALUE  AUTHLIST_KIND_EVERYBODY
++#else
++  #define DPRIO_AUTHLIST_INITIAL_VALUE  AUTHLIST_KIND_NOBODY
++#endif
++
++extern struct authlist dprio_authlist;
++
++int dprio_check_permission(void);
++
++#else /* ndef CONFIG_DEFERRED_SETPRIO */
++
++static inline void set_task_in_dprio(struct task_struct *tsk, bool in_dprio) {}
++static inline void dprio_dup_task_struct(struct task_struct *tsk) {}
++static inline void dprio_detach(struct task_struct *tsk) {}
++static inline void dprio_handle_request(void) {}
++
++struct dprio_saved_context {
++       char dummy[0];          /* suppress compiler warning */
++};
++
++static inline void dprio_save_reset_context(struct
+dprio_saved_context *saved) {}
++static inline void dprio_restore_context(struct dprio_saved_context *saved) {}
++static inline void dprio_free_context(struct dprio_saved_context *saved) {}
++
++#endif /* CONFIG_DEFERRED_SETPRIO */
++
++#endif /* _LINUX_DPRIO_H */
++
+diff --git a/include/linux/init_task.h b/include/linux/init_task.h
+index 6df7f9f..bdc6767 100644
+--- a/include/linux/init_task.h
++++ b/include/linux/init_task.h
+@@ -164,6 +164,22 @@ extern struct task_group root_task_group;
+ # define INIT_RT_MUTEXES(tsk)
+ #endif
+
++#ifdef CONFIG_DEBUG_DEFERRED_SETPRIO
++# define INIT_DEFERRED_SETPRIO_DEBUG                                   \
++       .in_dprio = false,
++#else
++# define INIT_DEFERRED_SETPRIO_DEBUG
++#endif
++
++#ifdef CONFIG_DEFERRED_SETPRIO
++# define INIT_DEFERRED_SETPRIO                                         \
++       .dprio_ku_area_pp = NULL,                                       \
++       .dprio_info = NULL,                                             \
++       INIT_DEFERRED_SETPRIO_DEBUG
++#else
++# define INIT_DEFERRED_SETPRIO
++#endif
++
+ /*
+  *  INIT_TASK is used to set up the first task table, touch at
+  * your own risk!. Base=0, limit=0x1fffff (=2MB)
+@@ -234,6 +250,7 @@ extern struct task_group root_task_group;
+        INIT_CPUSET_SEQ(tsk)                                            \
+        INIT_RT_MUTEXES(tsk)                                            \
+        INIT_VTIME(tsk)                                                 \
++       INIT_DEFERRED_SETPRIO                                           \
  }
--- 
-2.0.1
 
 
---NU0Ex4SbNnrxsi6C
-Content-Type: text/x-csrc; charset=us-ascii
-Content-Disposition: attachment; filename="double-map.c"
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 221b2bd..eacf48f 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1610,6 +1610,16 @@ struct task_struct {
+        unsigned int    sequential_io;
+        unsigned int    sequential_io_avg;
+ #endif
++#ifdef CONFIG_DEFERRED_SETPRIO
++       struct dprio_ku_area __user * __user *dprio_ku_area_pp;
++       struct dprio_info *dprio_info;
++#endif
++#ifdef CONFIG_PUT_TASK_TIMEBOUND
++       struct work_struct put_task_work;
++#endif
++#ifdef CONFIG_DEBUG_DEFERRED_SETPRIO
++       bool in_dprio;
++#endif
+ };
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/types.h>
-#include <sys/mman.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <errno.h>
+ /* Future-safe accessor for struct task_struct's cpus_allowed. */
+@@ -2150,6 +2160,11 @@ extern int sched_setscheduler_nocheck(struct
+task_struct *, int,
+                                      const struct sched_param *);
+ extern int sched_setattr(struct task_struct *,
+                         const struct sched_attr *);
++extern int sched_setattr_precheck(struct task_struct *p,
++                                 const struct sched_attr *attr);
++extern int sched_setattr_prechecked(struct task_struct *p,
++                                   const struct sched_attr *attr,
++                                   bool merge_reset_on_fork);
+ extern struct task_struct *idle_task(int cpu);
+ /**
+  * is_idle_task - is the specified task an idle task?
+diff --git a/include/uapi/linux/prctl.h b/include/uapi/linux/prctl.h
+index 58afc04..3513db5 100644
+--- a/include/uapi/linux/prctl.h
++++ b/include/uapi/linux/prctl.h
+@@ -152,4 +152,6 @@
+ #define PR_SET_THP_DISABLE     41
+ #define PR_GET_THP_DISABLE     42
 
-int
-main(int argc, char *argv[])
-{
-	int fd;
-	void *addr, *addr2;
-	char buf[4096];
++#define PR_SET_DEFERRED_SETPRIO        43
++
+ #endif /* _LINUX_PRCTL_H */
+diff --git a/init/Kconfig b/init/Kconfig
+index 9d3585b..fe20a45 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -1886,3 +1886,5 @@ config ASN1
+          functions to call on what tags.
 
-	if (argc != 2) {
-		fprintf(stderr, "usage: %s filename\n", argv[0]);
-		exit(1);
-	}
+ source "kernel/Kconfig.locks"
++source "kernel/Kconfig.dprio"
++
+diff --git a/kernel/Kconfig.dprio b/kernel/Kconfig.dprio
+new file mode 100644
+index 0000000..2c83cf0
+--- /dev/null
++++ b/kernel/Kconfig.dprio
+@@ -0,0 +1,81 @@
++menuconfig DEFERRED_SETPRIO
++       bool "Enable deferred setting of task priority"
++       default n
++       help
++         Enabling this option allows authorized applications to use
++         PR_SET_DEFERRED_SETPRIO request in prctl system call.
++
++         Applications that change task priority with very high frequency can
++         benefit from using this facility as long as they are specifically
++         implemented to use prctl(PR_SET_DEFERRED_SETPRIO). If the system does
++         not intend to run such applications there is no benefit to using
++         this option.
++
++         The downside of selecting this option is slightly increased latency
++         in task switching only in the case when a deferred set
+priority request
++         by a previous task is pending at task switch time. Added delay in task
++         context switch in this case is in the order of 1 usec
+(typical time for
++         executing deferred sched_setattr system call), which normally is not
++         significant, but may be a consideration in a system intended for hard
++         real-time use.
++
++         If unsure, say N.
++
++if DEFERRED_SETPRIO
++
++config PUT_TASK_TIMEBOUND
++       bool "Deterministic task switch latency when deferred set task
+priority is used"
++       depends on DEFERRED_SETPRIO && RT_MUTEXES
++       default n
++       help
++         Enabling this option ensures deterministic time-bound task switch
++         latency when a deferred set priority request is pending on a task
++         rescheduling and switch and the processing of this request causes
++         an adjustment of priority inheritance chain under very low memory
++         conditions (depleted atomic pool).
++
++         Select Y if building the kernel for hard real-time system requiring
++         the determinism in task switch latency. Select N for general-purpose
++         desktop or server system.
++
++         This option has memory cost of about 20-40 bytes per each running task
++         in the system.
++
++config DEBUG_DEFERRED_SETPRIO
++       bool "Enable debugging code for deferred task priority setting"
++       depends on DEFERRED_SETPRIO
++       default n
++       help
++         Enable debugging code for DEFERRED_SETPRIO.
++
++         If unsure, say N.
++
++choice
++       prompt "Default authorization for deferred set priority"
++       depends on DEFERRED_SETPRIO
++       default DEFERRED_SETPRIO_ALLOW_NOBODY
++       help
++         Select whether users on the system are allowed by default to use the
++         deferred set priority facility. This setting defines the initial
++         value for the authorization list (as "everybody" or "nobody") that
++         can be altered dynamically via /proc/sys/kernel/dprio_authlist.
++
++config DEFERRED_SETPRIO_ALLOW_EVERYBODY
++       bool "Allow everybody to use the deferred set priority by default"
++       help
++         Allow by default every user on the system to use the deferred set
++         priority facility. Authorization list is initialized to "everybody"
++         at system startup time but can be altered later dynamically via
++         /proc/sys/kernel/dprio_authlist.
++
++config DEFERRED_SETPRIO_ALLOW_NOBODY
++       bool "Do not allow anybody to use the deferred set priority by default"
++       help
++         Disallow by default every user on the system except superuser to use
++         the deferred set priority facility. Authorization list is initialized
++         to "nobody" at system startup time but can be altered later
+dynamically
++         via /proc/sys/kernel/dprio_authlist.
++
++endchoice
++
++endif # DEFERRED_SETPRIO
+diff --git a/kernel/exit.c b/kernel/exit.c
+index 6ed6a1d..ae9191f 100644
+--- a/kernel/exit.c
++++ b/kernel/exit.c
+@@ -53,6 +53,7 @@
+ #include <linux/oom.h>
+ #include <linux/writeback.h>
+ #include <linux/shm.h>
++#include <linux/dprio.h>
 
-	if ((fd = open(argv[1], O_CREAT|O_RDWR, 0666)) < 0) {
-		perror(argv[1]);
-		exit(1);
-	}
+ #include <asm/uaccess.h>
+ #include <asm/unistd.h>
+@@ -719,6 +720,11 @@ void do_exit(long code)
 
-	if (ftruncate(fd, 4096) < 0) {
-		perror("ftruncate");
-		exit(1);
-	}
+        ptrace_event(PTRACE_EVENT_EXIT, code);
 
-	if ((addr = mmap(NULL, 4096, PROT_READ|PROT_WRITE, MAP_SHARED,
-					fd, 0)) == MAP_FAILED) {
-		perror("mmap");
-		exit(1);
-	}
++       /*
++        * No more deferred priority changes applied in __schedule for this task
++        */
++       dprio_detach(tsk);
++
+        validate_creds_for_do_exit(tsk);
 
-	if ((addr2 = mmap(NULL, 4096, PROT_READ|PROT_WRITE, MAP_SHARED,
-					fd, 0)) == MAP_FAILED) {
-		perror("mmap");
-		exit(1);
-	}
+        /*
+diff --git a/kernel/fork.c b/kernel/fork.c
+index 54a8d26..28a2d61 100644
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -74,6 +74,7 @@
+ #include <linux/uprobes.h>
+ #include <linux/aio.h>
+ #include <linux/compiler.h>
++#include <linux/dprio.h>
 
-printf("addr = %p addr2 = %p\n", addr, addr2);
+ #include <asm/pgtable.h>
+ #include <asm/pgalloc.h>
+@@ -234,7 +235,7 @@ static inline void put_signal_struct(struct
+signal_struct *sig)
+                free_signal_struct(sig);
+ }
 
-	close(fd);
+-void __put_task_struct(struct task_struct *tsk)
++static inline void __do_put_task_struct(struct task_struct *tsk)
+ {
+        WARN_ON(!tsk->exit_state);
+        WARN_ON(atomic_read(&tsk->usage));
+@@ -249,6 +250,83 @@ void __put_task_struct(struct task_struct *tsk)
+        if (!profile_handoff_task(tsk))
+                free_task(tsk);
+ }
++
++#ifdef CONFIG_PUT_TASK_TIMEBOUND
++/*
++ * If timebound, use preallocated struct work_struct always guaranteed
++ * to be available, even if atomic kmalloc pool is depleted.
++ */
++static inline struct work_struct *alloc_put_task_work(struct task_struct *tsk)
++{
++       return &tsk->put_task_work;
++}
++
++static inline void free_put_task_work(struct work_struct *work)
++{
++}
++
++static inline struct task_struct *put_task_work_tsk(struct work_struct *work)
++{
++       return container_of(work, struct task_struct, put_task_work);
++}
++#else
++struct put_task_work {
++       struct work_struct work;
++       struct task_struct *tsk;
++};
++
++static inline struct work_struct *alloc_put_task_work(struct task_struct *tsk)
++{
++       struct put_task_work *dwork =
++               kmalloc(sizeof(*dwork), GFP_NOWAIT | __GFP_NOWARN);
++       if (unlikely(!dwork))
++               return NULL;
++       dwork->tsk = tsk;
++       return &dwork->work;
++}
++
++static inline void free_put_task_work(struct work_struct *work)
++{
++       struct put_task_work *dwork =
++               container_of(work, struct put_task_work, work);
++       kfree(dwork);
++}
++
++static inline struct task_struct *put_task_work_tsk(struct work_struct *work)
++{
++       struct put_task_work *dwork =
++               container_of(work, struct put_task_work, work);
++       return dwork->tsk;
++}
++#endif
++
++#ifdef CONFIG_DEFERRED_SETPRIO
++static void __put_task_struct_work(struct work_struct *work)
++{
++       __do_put_task_struct(put_task_work_tsk(work));
++       free_put_task_work(work);
++}
++#endif
++
++void __put_task_struct(struct task_struct *tsk)
++{
++#ifdef CONFIG_DEFERRED_SETPRIO
++       /*
++        * When called from inside of __schedule(), try to defer processing
++        * to a worker thread, in order to mininize the scheduling latency
++        * and make it deterministic.
++        */
++       if (unlikely(preempt_count() & PREEMPT_ACTIVE)) {
++               struct work_struct *work = alloc_put_task_work(tsk);
++               if (likely(work)) {
++                       INIT_WORK(work, __put_task_struct_work);
++                       schedule_work(work);
++                       return;
++               }
++       }
++#endif
++       __do_put_task_struct(tsk);
++}
+ EXPORT_SYMBOL_GPL(__put_task_struct);
 
-	/* first read */
-	memcpy(buf, addr, 2048);
+ void __init __weak arch_task_cache_init(void) { }
+@@ -314,6 +392,8 @@ static struct task_struct *dup_task_struct(struct
+task_struct *orig)
+        if (err)
+                goto free_ti;
 
-getc(stdin);
++       dprio_dup_task_struct(tsk);
++
+        tsk->stack = ti;
 
-	/* second read */
-	memcpy(buf + 2048, addr2, 2048);
+        setup_thread_stack(tsk, orig);
+@@ -1581,6 +1661,11 @@ long do_fork(unsigned long clone_flags,
+        long nr;
 
-getc(stdin);
+        /*
++        * Process pending "deferred set priority" request.
++        */
++       dprio_handle_request();
++
++       /*
+         * Determine whether and which event to report to ptracer.  When
+         * called from kernel_thread or CLONE_UNTRACED is explicitly
+         * requested, no event is reported; otherwise, report if the event
+diff --git a/kernel/sched/Makefile b/kernel/sched/Makefile
+index ab32b7b..a93d07c 100644
+--- a/kernel/sched/Makefile
++++ b/kernel/sched/Makefile
+@@ -19,3 +19,4 @@ obj-$(CONFIG_SCHED_AUTOGROUP) += auto_group.o
+ obj-$(CONFIG_SCHEDSTATS) += stats.o
+ obj-$(CONFIG_SCHED_DEBUG) += debug.o
+ obj-$(CONFIG_CGROUP_CPUACCT) += cpuacct.o
++obj-$(CONFIG_DEFERRED_SETPRIO) += dprio.o
+\ No newline at end of file
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 084d17f..f4c0d3c 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -74,6 +74,7 @@
+ #include <linux/binfmts.h>
+ #include <linux/context_tracking.h>
+ #include <linux/compiler.h>
++#include <linux/dprio.h>
 
-	/* now write a bit */
-	memcpy(addr, buf, 8);
+ #include <asm/switch_to.h>
+ #include <asm/tlb.h>
+@@ -2615,6 +2616,111 @@ again:
+        BUG(); /* the idle class will always have a runnable task */
+ }
 
-	printf("%s: test passed.\n", argv[0]);
-	exit(0);
-}
++#ifdef CONFIG_DEFERRED_SETPRIO
++
++/*
++ * __schedule should never be reentered recursively while it is handling
++ * deferred change priority request in dprio_set_schedattr, i.e. when
++ * @prev->in_dprio is true.
++ *
++ * To prevent reenterancy, dprio_handle_request(...) keeps preemption
++ * disable counter non-zero and also sets PREEMPT_ACTIVE flag.
++ */
++static __always_inline bool dprio_sched_recursion(struct task_struct *prev)
++{
++#ifdef CONFIG_DEBUG_DEFERRED_SETPRIO
++       if (unlikely(prev->in_dprio)) {
++               WARN_ONCE(1, KERN_ERR "BUG: dprio recursion in __schedule\n");
++
++               prev->state = TASK_RUNNING;
++               clear_tsk_need_resched(prev);
++               clear_preempt_need_resched();
++               sched_preempt_enable_no_resched();
++
++               return true;
++       }
++#endif /* CONFIG_DEBUG_DEFERRED_SETPRIO */
++
++       return false;
++}
++
++/*
++ * Check if deferred change priority request from the userland is pending
++ * and if so, handle it.
++ *
++ *     Academically speaking, it would be desirable (instead of calling
++ *     dprio_set_schedattr *before* pick_next_task) to call it *after*
++ *     pick_next_task and only if (next != prev). However in practice this
++ *     would save at most one sched_setattr call per task scheduling interval
++ *     (only for the tasks that use dprio), and then only sometimes, only when
++ *     both dprio request is pending at rescheduling time and the task gets
++ *     actually preempted by another task. At typical values of Linux
+scheduling
++ *     parameters and the cost of sched_setattr call this translates to an
++ *     additional possible saving for dprio tasks that is well under 0.1%,
++ *     and probably much lower.
++ *
++ *     Nevertheless if dprio_set_schedattr were ever to be moved after the call
++ *     to pick_next_task, existing class schedulers would need to be revised
++ *     to support, in addition to call sequence
++ *
++ *       [pick_next_task] [context_switch]
++ *
++ *     also the sequence
++ *
++ *       [pick_next_task] [unlock rq] [...] [lock rq]
+[pick_next_task] [context_switch]
++ *
++ *     where [...] may include a bunch of intervening class scheduler method
++ *     calls local CPU and other CPUs, since we'd be giving up the rq lock.
++ *     This would require splitting pick_next_task into "prepare" and
++ *     "commit/abort" phases.
++ */
++static __always_inline void dprio_sched_handle_request(struct
+task_struct *prev)
++{
++       if (unlikely(prev->dprio_ku_area_pp != NULL) &&
++           unlikely(dprio_check_for_request(prev))) {
++               int sv_pc;
++
++               /*
++                * Do not attempt to process "deferred set priority" request for
++                * TASK_DEAD, STOPPED, TRACED and other states where it won't be
++                * appropriate.
++                */
++               switch (prev->state) {
++               case TASK_RUNNING:
++               case TASK_INTERRUPTIBLE:
++               case TASK_UNINTERRUPTIBLE:
++                       break;
++               default:
++                       return;
++               }
++
++               sv_pc = preempt_count();
++               if (!(sv_pc & PREEMPT_ACTIVE))
++                       __preempt_count_add(PREEMPT_ACTIVE);
++               set_task_in_dprio(prev, true);
++               /*
++                * Keep preemption disabled to avoid __schedule() recursion.
++                * In addition PREEMPT_ACTIVE notifies dprio_handle_request()
++                * and routines that may be called from inside of it, such as
++                * __put_task_struct(), of the calling context.
++                */
++               dprio_handle_request();
++
++               set_task_in_dprio(prev, false);
++               if (!(sv_pc & PREEMPT_ACTIVE))
++                       __preempt_count_sub(PREEMPT_ACTIVE);
++       }
++}
++#else  /* !defined CONFIG_DEFERRED_SETPRIO */
++
++static __always_inline bool dprio_sched_recursion(struct task_struct *prev)
++       { return false; }
++
++static __always_inline void dprio_sched_handle_request(struct
+task_struct *prev)
++       {}
++
++#endif  /* CONFIG_DEFERRED_SETPRIO */
++
+ /*
+  * __schedule() is the main scheduler function.
+  *
+@@ -2668,6 +2774,10 @@ need_resched:
 
---NU0Ex4SbNnrxsi6C--
+        schedule_debug(prev);
+
++       if (dprio_sched_recursion(prev))
++               return;
++       dprio_sched_handle_request(prev);
++
+        if (sched_feat(HRTICK))
+                hrtick_clear(rq);
+
+@@ -3247,9 +3357,31 @@ static bool check_same_owner(struct task_struct *p)
+        return match;
+ }
+
++/*
++ * Flags for _sched_setscheduler and __sched_setscheduler:
++ *
++ *     SCHEDOP_KERNEL          on behalf of the kernel
++ *     SCHEDOP_USER            on behalf of the userspace
++ *
++ *     SCHEDOP_PRECHECK_ONLY   precheck security only, do not
++ *                             actually change priority
++ *     SCHEDOP_PRECHECKED      security has been prechecked
++ *
++ *     SCHEDOP_MERGE_RESET_ON_FORK  use logical "or" of
++ *                             attr->sched_flags & SCHED_FLAG_RESET_ON_FORK
++ *                             and p->sched_reset_on_fork
++ *
++ * SCHEDOP_KERNEL and SCHEDOP_USER are mutually exclusive.
++ */
++#define SCHEDOP_KERNEL                 (1 << 0)
++#define SCHEDOP_USER                   (1 << 1)
++#define SCHEDOP_PRECHECK_ONLY          (1 << 2)
++#define SCHEDOP_PRECHECKED             (1 << 3)
++#define SCHEDOP_MERGE_RESET_ON_FORK    (1 << 4)
++
+ static int __sched_setscheduler(struct task_struct *p,
+                                const struct sched_attr *attr,
+-                               bool user)
++                               int opflags)
+ {
+        int newprio = dl_policy(attr->sched_policy) ? MAX_DL_PRIO - 1 :
+                      MAX_RT_PRIO - 1 - attr->sched_priority;
+@@ -3259,16 +3391,28 @@ static int __sched_setscheduler(struct task_struct *p,
+        const struct sched_class *prev_class;
+        struct rq *rq;
+        int reset_on_fork;
++       bool check_security;
+
+        /* may grab non-irq protected spin_locks */
+        BUG_ON(in_interrupt());
++
++       check_security = (opflags & SCHEDOP_USER) && !(opflags &
+SCHEDOP_PRECHECKED);
++
+ recheck:
+        /* double check policy once rq lock held */
+        if (policy < 0) {
++               /*
++                * TODO:  Appears to be the bug in original 15.3.2 code here.
++                *
++                * (a) Does not check if user supplied attr->sched_policy = -1.
++                * (b) Will lose SCHED_FLAG_RESET_ON_FORK on the locked pass.
++                */
+                reset_on_fork = p->sched_reset_on_fork;
+                policy = oldpolicy = p->policy;
+        } else {
+                reset_on_fork = !!(attr->sched_flags &
+SCHED_FLAG_RESET_ON_FORK);
++               if (opflags & SCHEDOP_MERGE_RESET_ON_FORK)
++                       reset_on_fork |= p->sched_reset_on_fork;
+
+                if (policy != SCHED_DEADLINE &&
+                                policy != SCHED_FIFO && policy != SCHED_RR &&
+@@ -3295,7 +3439,7 @@ recheck:
+        /*
+         * Allow unprivileged RT tasks to decrease priority:
+         */
+-       if (user && !capable(CAP_SYS_NICE)) {
++       if (check_security && !capable(CAP_SYS_NICE)) {
+                if (fair_policy(policy)) {
+                        if (attr->sched_nice < task_nice(p) &&
+                            !can_nice(p, attr->sched_nice))
+@@ -3343,7 +3487,7 @@ recheck:
+                        return -EPERM;
+        }
+
+-       if (user) {
++       if (check_security) {
+                retval = security_task_setscheduler(p);
+                if (retval)
+                        return retval;
+@@ -3378,13 +3522,17 @@ recheck:
+                if (dl_policy(policy))
+                        goto change;
+
+-               p->sched_reset_on_fork = reset_on_fork;
++               if (!(opflags & SCHEDOP_PRECHECK_ONLY)) {
++                       if (opflags & SCHEDOP_MERGE_RESET_ON_FORK)
++                               reset_on_fork |= p->sched_reset_on_fork;
++                       p->sched_reset_on_fork = reset_on_fork;
++               }
+                task_rq_unlock(rq, p, &flags);
+                return 0;
+        }
+ change:
+
+-       if (user) {
++       if (opflags & SCHEDOP_USER) {
+ #ifdef CONFIG_RT_GROUP_SCHED
+                /*
+                 * Do not allow realtime tasks into groups that have no runtime
+@@ -3432,6 +3580,13 @@ change:
+                return -EBUSY;
+        }
+
++       if (opflags & SCHEDOP_PRECHECK_ONLY) {
++               task_rq_unlock(rq, p, &flags);
++               return 0;
++       }
++
++       if (opflags & SCHEDOP_MERGE_RESET_ON_FORK)
++               reset_on_fork |= p->sched_reset_on_fork;
+        p->sched_reset_on_fork = reset_on_fork;
+        oldprio = p->prio;
+
+@@ -3479,7 +3634,7 @@ change:
+ }
+
+ static int _sched_setscheduler(struct task_struct *p, int policy,
+-                              const struct sched_param *param, bool check)
++                              const struct sched_param *param, int opflags)
+ {
+        struct sched_attr attr = {
+                .sched_policy   = policy,
+@@ -3496,7 +3651,7 @@ static int _sched_setscheduler(struct
+task_struct *p, int policy,
+                attr.sched_policy = policy;
+        }
+
+-       return __sched_setscheduler(p, &attr, check);
++       return __sched_setscheduler(p, &attr, opflags);
+ }
+ /**
+  * sched_setscheduler - change the scheduling policy and/or RT
+priority of a thread.
+@@ -3511,16 +3666,41 @@ static int _sched_setscheduler(struct
+task_struct *p, int policy,
+ int sched_setscheduler(struct task_struct *p, int policy,
+                       const struct sched_param *param)
+ {
+-       return _sched_setscheduler(p, policy, param, true);
++       return _sched_setscheduler(p, policy, param, SCHEDOP_USER);
+ }
+ EXPORT_SYMBOL_GPL(sched_setscheduler);
+
+ int sched_setattr(struct task_struct *p, const struct sched_attr *attr)
+ {
+-       return __sched_setscheduler(p, attr, true);
++       return __sched_setscheduler(p, attr, SCHEDOP_USER);
+ }
+ EXPORT_SYMBOL_GPL(sched_setattr);
+
++/*
++ * Check for security context required to execute sched_setattr,
++ * but do not execute actual task scheduler properties setting.
++ */
++int sched_setattr_precheck(struct task_struct *p, const struct
+sched_attr *attr)
++{
++       return __sched_setscheduler(p, attr, SCHEDOP_USER |
++                                            SCHEDOP_PRECHECK_ONLY);
++}
++EXPORT_SYMBOL_GPL(sched_setattr_precheck);
++
++/*
++ * Execute sched_setattr bypassing security checks.
++ */
++int sched_setattr_prechecked(struct task_struct *p,
++                            const struct sched_attr *attr,
++                            bool merge_reset_on_fork)
++{
++       int exflags = merge_reset_on_fork ? SCHEDOP_MERGE_RESET_ON_FORK : 0;
++       return __sched_setscheduler(p, attr, SCHEDOP_USER |
++                                            SCHEDOP_PRECHECKED |
++                                            exflags);
++}
++EXPORT_SYMBOL_GPL(sched_setattr_prechecked);
++
+ /**
+  * sched_setscheduler_nocheck - change the scheduling policy and/or
+RT priority of a thread from kernelspace.
+  * @p: the task in question.
+@@ -3537,7 +3717,7 @@ EXPORT_SYMBOL_GPL(sched_setattr);
+ int sched_setscheduler_nocheck(struct task_struct *p, int policy,
+                               const struct sched_param *param)
+ {
+-       return _sched_setscheduler(p, policy, param, false);
++       return _sched_setscheduler(p, policy, param, SCHEDOP_KERNEL);
+ }
+
+ static int
+diff --git a/kernel/sched/dprio.c b/kernel/sched/dprio.c
+new file mode 100644
+index 0000000..31c6b37
+--- /dev/null
++++ b/kernel/sched/dprio.c
+@@ -0,0 +1,734 @@
++/*
++ * kernel/sched/dprio.c
++ *
++ * Deferred set priority.
++ *
++ * Started by (C) 2014 Sergey Oboguev <oboguev@yahoo.com>
++ *
++ * This code is licenced under the GPL version 2 or later.
++ * For details see linux-kernel-base/COPYING.
++ */
++
++#include <linux/types.h>
++#include <linux/unistd.h>
++#include <linux/stddef.h>
++#include <linux/errno.h>
++#include <linux/kernel.h>
++#include <linux/sched.h>
++#include <linux/dprio.h>
++#include <linux/slab.h>
++#include <linux/compiler.h>
++#include <linux/uaccess.h>
++#include <linux/capability.h>
++#include <linux/prctl.h>
++#include <linux/init.h>
++
++struct authlist dprio_authlist =
++       AUTHLIST_INITIALIZER(dprio_authlist, DPRIO_AUTHLIST_INITIAL_VALUE);
++
++/*
++ * Userspace-kernel dprio protocol is as follows:
++ *
++ * Userspace:
++ *
++ *     Select and fill-in dprio_ku_area:
++ *         Set @resp = DPRIO_RESP_NONE.
++ *         Set @sched_attr.
++ *
++ *     Set @cmd to point dprio_ku_area.
++ *
++ *     @cmd is u64 variable previously designated in the call
++ *     prctl(PR_SET_DEFERRED_SETPRIO, & @cmd, ...)
++ *
++ * Kernel:
++ *
++ *     1) On task preemption attempt or at other processing point,
++ *        such as fork or exec, read @cmd.
++ *        If cannot (e.g. @cmd inaccessible incl. page swapped out), quit.
++ *        Note: will reattempt again on next preemption cycle.
++ *
++ *     2) If read-in value of @cmd is 0, do nothing. Quit.
++ *
++ *     3) Set @resp = DPRIO_RESP_UNKNOWN.
++ *        If cannot (e.g. inaccessible), quit.
++ *
++ *     4) Set @cmd = NULL.
++ *        If cannot (e.g. inaccessible), quit.
++ *        Note that in this case request handling will be reattempted on next
++ *        thread preemption cycle. Thus @resp value of DPRIO_RESP_UNKNOWN may
++ *        be transient and overwritten with DPRIO_RESP_OK or DPRIO_RESP_ERROR
++ *        if @cmd is not reset to 0 by the kernel (or to 0 or to the address
++ *        of another dprio_ku_area by the userspace).
++ *
++ *     5) Read @sched_attr.
++ *        If cannot (e.g. inaccessible), quit.
++ *
++ *     6) Try to change task scheduling attributes in accordance with read-in
++ *        value of @sched_attr.
++ *
++ *     7) If successful, set @resp = DPRIO_RESP_OK and Quit.
++ *
++ *     8) If unsuccessful, set @error = appopriate errno-style value.
++ *        If cannot (e.g. @error inaccessible), quit.
++ *        Set @resp = DPRIO_RESP_ERROR.
++ *        If cannot (e.g. @resp inaccessible), quit.
++ *
++ * Explanation of possible @resp codes:
++ *
++ * DPRIO_RESP_NONE
++ *
++ *     Request has not been processed yet.
++ *
++ * DPRIO_RESP_OK
++ *
++ *     Request has been successfully processed.
++ *
++ * DPRIO_RESP_ERROR
++ *
++ *     Request has failed, @error has errno-style error code.
++ *
++ * DPRIO_RESP_UNKNOWN
++ *
++ *     Request processing has been attempted, but the outcome is unknown.
++ *     Request might have been successful or failed.
++ *     Current os-level thread priority becomes unknown.
++ *
++ *     @error field may be invalid.
++ *
++ *     This code is written to @resp at the start of request processing,
++ *     then @resp is changed to OK or ERR at the end of request processing
++ *     if dprio_ku_area and @cmd stay accessible for write.
++ *
++ *     This status code is never left visible to the userspace code in the
++ *     current thread if dprio_ku_area and @cmd are locked in memory and remain
++ *     properly accessible for read and write during request processing.
++ *
++ *     This status code might happen (i.e. stay visible to userspace code
++ *     in the current thread) if access to dprio_ku_area or @cmd is lost
++ *     during request processing, for example the page that contains the area
++ *     gets swapped out or the area is otherwise not fully accessible for
++ *     reading and writing.
++ *
++ *     If @error has value of DPRIO_RESP_UNKNOWN and @cmd is still pointing
++ *     to dprio_ku_area containing @error, it is possible for the request to
++ *     be reprocessed again at the next context switch and @error change to
++ *     DPRIO_RESP_OK or DPRIO_RESP_ERROR. To ensure @error does not change
++ *     under your feet, change @cmd to either NULL or address of another
++ *     dprio_ku_area distinct from one containing this @error.
++ */
++enum {
++       DPRIO_RESP_NONE     = 0,
++       DPRIO_RESP_OK       = 1,
++       DPRIO_RESP_ERROR    = 2,
++       DPRIO_RESP_UNKNOWN  = 3
++};
++
++struct dprio_ku_area {
++       /*
++        * Size of struct sched_attr may change in future definitions
++        * of the structure, therefore @sched_attr should come after
++        * @resp and @error in order to maintain the compatibility
++        * between userland and kernel built with different versions
++        * of struct sched_attr definition.
++        *
++        * Userland code should use volatile and/or compiler barriers
++        * to ensure the protocol.
++        */
++       /*volatile*/ u32 resp;          /* DPRIO_RESP_xxx */
++       /*volatile*/ u32 error;         /* one of errno values */
++       /*volatile*/ struct sched_attr sched_attr;
++};
++
++/*
++ * Returns 0 on success.
++ */
++static inline int __copyin(void *dst, const void __user *src,
++                          unsigned size, bool atomic)
++{
++       int ret;
++
++       /* Use barrier() to sequence userspace-kernel dprio protocol */
++       barrier();
++       if (atomic) {
++               pagefault_disable();
++               ret = __copy_from_user_inatomic(dst, src, size);
++               pagefault_enable();
++       } else {
++               ret = copy_from_user(dst, src, size);
++       }
++       barrier();
++
++       return ret;
++}
++
++/*
++ * Returns 0 on success.
++ */
++static inline int __copyout(void __user *dst, const void *src,
++                           unsigned size, bool atomic)
++{
++       int ret;
++
++       /* Use barrier() to sequence userspace-kernel dprio protocol */
++       barrier();
++       if (atomic) {
++               pagefault_disable();
++               ret = __copy_to_user_inatomic(dst, src, size);
++               pagefault_enable();
++       } else {
++               ret = copy_to_user(dst, src, size);
++       }
++       barrier();
++
++       return ret;
++}
++
++#define __copyin_var(x, uptr, atomic)  \
++       __copyin(&(x), (uptr), sizeof(x), (atomic))
++
++#define __copyout_var(x, uptr, atomic) \
++       __copyout((uptr), &(x), sizeof(x), (atomic))
++
++
++/*
++ * Mimics sched_copy_attr()
++ */
++#define CHUNK_SIZE 32u
++static int dprio_copyin_sched_attr(struct sched_attr __user *uattr,
++                                  struct sched_attr *attr,
++                                  bool atomic)
++{
++       u32 size;
++
++       if (!access_ok(VERIFY_READ, uattr, SCHED_ATTR_SIZE_VER0))
++               return -EFAULT;
++
++       /*
++        * zero the full structure, so that a short copy will be nice.
++        */
++       memset(attr, 0, sizeof(*attr));
++
++       if (__copyin_var(size, &uattr->size, atomic))
++               return -EFAULT;
++
++       if (size > PAGE_SIZE)   /* silly large */
++               return -E2BIG;
++
++       if (!size)              /* abi compat */
++               size = SCHED_ATTR_SIZE_VER0;
++
++       if (size < SCHED_ATTR_SIZE_VER0)
++               return -E2BIG;
++
++       /*
++        * If we're handed a bigger struct than we know of,
++        * ensure all the unknown bits are 0 - i.e. new
++        * user-space does not rely on any kernel feature
++        * extensions we dont know about yet.
++        */
++       if (size > sizeof(*attr)) {
++               unsigned char __user *addr;
++               unsigned char __user *end;
++               unsigned char val[CHUNK_SIZE];
++               unsigned k, chunk_size;
++
++               addr = (char __user *)uattr + sizeof(*attr);
++               end  = (char __user *)uattr + size;
++
++               for (; addr < end; addr += chunk_size) {
++                       chunk_size = min((unsigned) (end - addr), CHUNK_SIZE);
++                       if (__copyin(val, addr, chunk_size, atomic))
++                               return -EFAULT;
++                       for (k = 0;  k < chunk_size; k++) {
++                               if (val[k])
++                                       return -E2BIG;
++                       }
++               }
++               size = sizeof(*attr);
++       }
++
++       if (__copyin(attr, uattr, size, atomic))
++               return -EFAULT;
++
++       attr->size = size;
++
++       /*
++        * XXX: do we want to be lenient like existing syscalls; or do we want
++        * to be strict and return an error on out-of-bounds values?
++        * See also other uses of clamp(..., MIN_NICE, MAX_NICE) below.
++        */
++       attr->sched_nice = clamp(attr->sched_nice, MIN_NICE, MAX_NICE);
++
++       return 0;
++}
++
++
++/*
++ * Detach the task from userland deferred setprio request area and deallocate
++ * all resources for the connection. Called from:
++ *
++ *   - prctl(PR_SET_DEFERRED_SETPRIO) with area argument passed as NULL
++ *     to terminate previous connection
++ *
++ *   - prctl(PR_SET_DEFERRED_SETPRIO) with new non-NULL area argument
++ *     setting new connection. Previous connection is terminated before
++ *     establishing a new one
++ *
++ *   - when the task is terminated in do_exit()
++ */
++void dprio_detach(struct task_struct *tsk)
++{
++       preempt_disable();
++
++       tsk->dprio_ku_area_pp = NULL;
++
++       if (unlikely(tsk->dprio_info)) {
++               kfree(tsk->dprio_info);
++               tsk->dprio_info = NULL;
++       }
++
++       preempt_enable();
++}
++
++/*
++ * Pre-process sched_attr just read from the userspace, whether during precheck
++ * or during dprio request execution, to impose uniform interpretation of
++ * structure format and values.
++ */
++static void uniform_attr(struct sched_attr *attr)
++{
++       /* accommodate legacy hack */
++       if (attr->sched_policy & SCHED_RESET_ON_FORK) {
++               attr->sched_flags |= SCHED_FLAG_RESET_ON_FORK;
++               attr->sched_policy &= ~SCHED_RESET_ON_FORK;
++       }
++
++       if (attr->sched_policy == SCHED_IDLE)
++               attr->sched_nice = MAX_NICE;
++}
++
++/*
++ * Precheck whether current process is authorized to set its scheduling
++ * properties to @uattr. If yes, make record in @info and return 0.
++ * If not, return error.
++ */
++static int precheck(struct dprio_info *info, struct sched_attr __user *uattr)
++{
++       struct sched_attr attr;
++       u32 policy;
++       unsigned mask;
++       int error;
++
++       error = dprio_copyin_sched_attr(uattr, &attr, false);
++       if (error)
++               return error;
++
++       uniform_attr(&attr);
++
++       policy = attr.sched_policy;
++       mask = 1 << policy;
++
++       switch (policy) {
++       case SCHED_NORMAL:
++               attr.sched_nice = clamp(attr.sched_nice, MIN_NICE, MAX_NICE);
++               if ((info->mask & mask) &&
++                   attr.sched_nice >= info->normal_sched_nice)
++                       break;
++               error = sched_setattr_precheck(current, &attr);
++               if (error == 0) {
++                       info->normal_sched_nice = attr.sched_nice;
++                       info->mask |= mask;
++               }
++               break;
++
++       case SCHED_BATCH:
++               attr.sched_nice = clamp(attr.sched_nice, MIN_NICE, MAX_NICE);
++               if ((info->mask & mask) &&
++                   attr.sched_nice >= info->batch_sched_nice)
++                       break;
++               error = sched_setattr_precheck(current, &attr);
++               if (error == 0) {
++                       info->batch_sched_nice = attr.sched_nice;
++                       info->mask |= mask;
++               }
++               break;
++
++       case SCHED_FIFO:
++               if ((info->mask & mask) &&
++                   attr.sched_priority <= info->fifo_sched_priority)
++                       break;
++               error = sched_setattr_precheck(current, &attr);
++               if (error == 0) {
++                       info->fifo_sched_priority = attr.sched_priority;
++                       info->mask |= mask;
++               }
++               break;
++
++       case SCHED_RR:
++               if ((info->mask & mask) &&
++                   attr.sched_priority <= info->rr_sched_priority)
++                       break;
++               error = sched_setattr_precheck(current, &attr);
++               if (error == 0) {
++                       info->rr_sched_priority = attr.sched_priority;
++                       info->mask |= mask;
++               }
++               break;
++
++       case SCHED_IDLE:
++               if (info->mask & mask)
++                       break;
++               error = sched_setattr_precheck(current, &attr);
++               if (error == 0)
++                       info->mask |= mask;
++               break;
++
++       case SCHED_DEADLINE:
++               /*
++                * DL is not a meaningful policy for deferred set
++                * priority
++                */
++       default:
++               error = -EINVAL;
++               break;
++       }
++
++       return error;
++}
++
++/*
++ * Implements prctl(PR_SET_DEFERRED_SETPRIO).
++ *
++ * To set PR_SET_DEFERRED_SETPRIO:
++ *
++ *     a2 = address of u64 variable in the userspace that holds the pointer
++ *          to dprio_ku_area or NULL
++ *
++ *     a3 = address of userspace array of pointers to sched_attr entries
++ *          to preapprove for subsequent pre-checked use by deferred set
++ *          priority requests
++ *
++ *     a4 = count of entries in a3 or 0
++ *
++ *     a5 = 0
++ *
++ * To reset PR_SET_DEFERRED_SETPRIO:
++ *
++ *     a2 = 0
++ *     a3 = 0
++ *     a4 = 0
++ *     a5 = 0
++ *
++ * Thus valid calls are:
++ *
++ *     struct sched_attr **sched_attrs_pp;
++ *     prctl(PR_SET_DEFERRED_SETPRIO, dprio_ku_area_pp,
++ *           sched_attrs_pp, nattrs, 0)
++ *
++ *     prctl(PR_SET_DEFERRED_SETPRIO, NULL, NULL, 0, 0)
++ *
++ */
++long dprio_prctl(int option, unsigned long a2, unsigned long a3,
++                unsigned long a4, unsigned long a5)
++{
++       struct dprio_ku_area __user * __user *ku_area_pp;
++       struct dprio_ku_area __user *ku_area_p;
++       struct dprio_info *info = NULL;
++       unsigned long ne, nentries;
++       struct sched_attr __user * __user *uattr_pp;
++       struct sched_attr __user *uattr_p;
++       bool atomic = false;
++       long error = 0;
++
++       if (option != PR_SET_DEFERRED_SETPRIO)
++               return -EINVAL;
++
++       ku_area_pp = (struct dprio_ku_area __user * __user *) a2;
++
++       /*
++       * Handle reset operation for PR_SET_DEFERRED_SETPRIO
++        */
++       if (ku_area_pp == NULL) {
++               if (a3 | a4 | a5)
++                       return -EINVAL;
++               dprio_handle_request();
++               dprio_detach(current);
++               return 0;
++       }
++
++       /*
++        * Handle set operation for PR_SET_DEFERRED_SETPRIO
++        */
++       uattr_pp = (struct sched_attr __user * __user *) a3;
++       nentries = a4;
++       if (a5)
++               return -EINVAL;
++
++       /* sanity check to avoid long spinning in the kernel */
++       if (nentries > 4096) {
++               error = -EINVAL;
++               goto out;
++       }
++
++       /* Check alignment */
++       if ((unsigned long) ku_area_pp % sizeof(u64))
++               return  -EINVAL;
++
++       /* check *ku_area_pp is readable and writeable */
++       if (__copyin_var(ku_area_p, ku_area_pp, atomic) ||
++           __copyout_var(ku_area_p, ku_area_pp, atomic))
++               return  -EFAULT;
++
++       error = dprio_check_permission();
++       if (error)
++               return error;
++
++       info = kmalloc(sizeof(*info), GFP_KERNEL);
++       if (info == NULL)
++               return -ENOMEM;
++       info->mask = 0;
++       /*
++        * XXX:
++        *
++        * We may trigger a false recording of PF_SUPERPRIV here by requesting
++        * CAP_SYS_NICE capability we may not actually use later, however
++        * since we cannot modify current->flags during dprio_handle_request()
++        * when called from __schedule(), the alternatives would be either
++        * possibly missing the recording of PF_SUPERPRIV, or (better) splitting
++        * PF_SUPERPRIV from current->flags and moving it to a variable with
++        * atomic access protocol.
++        */
++       info->capable_sys_nice = capable(CAP_SYS_NICE);
++
++       /*
++        * We prevalidate maximum requested priority levels at the time of
++        * prctl set-up instead of validating priority change requests during
++        * their actual processing in __schedule and do_fork in order to:
++        *
++        *    - reduce latency during request processing in __schedule()
++        *
++        *    - avoid blocking in the secirity code when setprio processing
++        *      is performed in _schedule()
++        *
++        *    - avoid EINTR or ERESTARTSYS etc. that may be returned by
++        *      the security code during setprio request processing
++        */
++       for (ne = 0;  ne < nentries;  ne++) {
++               cond_resched();
++               if (__copyin_var(uattr_p, uattr_pp + ne, atomic)) {
++                       error = -EFAULT;
++                       goto out;
++               }
++               error = precheck(info, uattr_p);
++               if (error)
++                       goto out;
++       }
++
++       /*
++        * If there was a previous active dprio ku area, try to process
++        * any pending request in it and detach from it.
++        */
++       dprio_handle_request();
++       dprio_detach(current);
++
++       preempt_disable();
++       current->dprio_ku_area_pp = ku_area_pp;
++       current->dprio_info = info;
++       preempt_enable();
++
++out:
++       if (error && info)
++               kfree(info);
++
++       return error;
++}
++
++/*
++ * Check if "deferred set priority" request from the userland is pending.
++ * Returns @true if request has been detected, @false if not.
++ *
++ * If page pointed by dprio_ku_area_pp is not currently accessible (e.g. not
++ * valid or paged out), return @false.
++ */
++bool dprio_check_for_request(struct task_struct *prev)
++{
++       struct dprio_ku_area __user *ku_area_p;
++       bool atomic = true;
++
++#ifdef CONFIG_DEBUG_DEFERRED_SETPRIO
++       /*
++        * We are only called if prev->dprio_ku_area_pp != NULL,
++        * thus prev cannot be a kernel thread
++        */
++       if (unlikely(prev->active_mm != prev->mm)) {
++               WARN_ONCE(1, KERN_ERR "BUG: dprio: address space not mapped\n");
++               return false;
++       }
++#endif /* CONFIG_DEBUG_DEFERRED_SETPRIO */
++
++       if (__copyin_var(ku_area_p, prev->dprio_ku_area_pp, atomic))
++               return false;
++
++       return ku_area_p != NULL;
++}
++
++/*
++ * Handle pending "deferred set priority" request from the userland.
++ */
++void dprio_handle_request(void)
++{
++       struct dprio_ku_area __user *ku;
++       struct dprio_ku_area __user *ku_null;
++       struct sched_attr attr;
++       bool atomic;
++       u32 resp, error;
++       int ierror = 0;
++       unsigned long rlim_rtprio;
++       long rlim_nice;
++       struct dprio_info *info;
++
++       /* attached to ku area? */
++       if (current->dprio_ku_area_pp == NULL)
++               return;
++
++       /* called from __schedule? */
++       atomic = preempt_count() != 0;
++
++       /* fetch ku request area address from the userspace */
++       if (__copyin_var(ku, current->dprio_ku_area_pp, atomic))
++               return;
++
++       /* check if request is pending */
++       if (unlikely(ku == NULL))
++               return;
++
++       /* remark to the userspace:
++          request processing has been started/attempted */
++       resp = DPRIO_RESP_UNKNOWN;
++       if (__copyout_var(resp, &ku->resp, atomic))
++               return;
++
++       /* reset pending request */
++       ku_null = NULL;
++       if (__copyout_var(ku_null, current->dprio_ku_area_pp, atomic))
++               return;
++
++       /* fetch request parameters from the userspace */
++       if (dprio_copyin_sched_attr(&ku->sched_attr, &attr, atomic))
++               return;
++
++       /* impose uniform interpretation of sched_attr */
++       uniform_attr(&attr);
++
++       if (attr.sched_flags & ~SCHED_FLAG_RESET_ON_FORK) {
++               ierror = -EINVAL;
++               goto out;
++       }
++
++       /*
++        * check if request has been pre-authorized
++        */
++       info = current->dprio_info;
++       switch (attr.sched_policy) {
++       case SCHED_NORMAL:
++               if (!(info->mask & (1 << SCHED_NORMAL)) ||
++                   attr.sched_nice < info->normal_sched_nice)
++                       ierror = -EPERM;
++               /*
++                * check whether RLIMIT_NICE has been reduced
++                * by setrlimit or prlimit
++                */
++               if (ierror == 0 && !info->capable_sys_nice) {
++                       rlim_nice = 20 - task_rlimit(current, RLIMIT_NICE);
++                       if (attr.sched_nice < rlim_nice)
++                               ierror = -EPERM;
++               }
++               break;
++
++       case SCHED_BATCH:
++               if (!(info->mask & (1 << SCHED_BATCH)) ||
++                   attr.sched_nice < info->batch_sched_nice)
++                       ierror = -EPERM;
++               /*
++                * check whether RLIMIT_NICE has been reduced
++                * by setrlimit or prlimit
++                */
++               if (ierror == 0 && !info->capable_sys_nice) {
++                       rlim_nice = 20 - task_rlimit(current, RLIMIT_NICE);
++                       if (attr.sched_nice < rlim_nice)
++                               ierror = -EPERM;
++               }
++               break;
++
++       case SCHED_FIFO:
++               if (!(info->mask & (1 << SCHED_FIFO)) ||
++                   attr.sched_priority > info->fifo_sched_priority)
++                       ierror = -EPERM;
++               /*
++                * check whether RLIMIT_RTPRIO has been reduced
++                * by setrlimit or prlimit
++                */
++               if (ierror == 0 && !info->capable_sys_nice) {
++                       rlim_rtprio = task_rlimit(current, RLIMIT_RTPRIO);
++                       if (rlim_rtprio == 0 || attr.sched_priority >
+rlim_rtprio)
++                               ierror = -EPERM;
++               }
++               break;
++
++       case SCHED_RR:
++               if (!(info->mask & (1 << SCHED_RR)) ||
++                   attr.sched_priority > info->rr_sched_priority)
++                       ierror = -EPERM;
++               /*
++                * check whether RLIMIT_RTPRIO has been reduced
++                * by setrlimit or prlimit
++                */
++               if (ierror == 0 && !info->capable_sys_nice) {
++                       rlim_rtprio = task_rlimit(current, RLIMIT_RTPRIO);
++                       if (rlim_rtprio == 0 || attr.sched_priority >
+rlim_rtprio)
++                               ierror = -EPERM;
++               }
++               break;
++
++       case SCHED_IDLE:
++               if (!(info->mask & (1 << SCHED_IDLE)))
++                       ierror = -EPERM;
++               break;
++
++       default:
++               ierror = -EINVAL;
++               break;
++       }
++
++       /* execute the request */
++       if (ierror == 0)
++               ierror = sched_setattr_prechecked(current, &attr, true);
++
++out:
++       if (ierror) {
++               error = (u32) -ierror;
++               resp = DPRIO_RESP_ERROR;
++               if (0 == __copyout_var(error, &ku->error, atomic))
++                       __copyout_var(resp, &ku->resp, atomic);
++       } else {
++               resp = DPRIO_RESP_OK;
++               __copyout_var(resp, &ku->resp, atomic);
++       }
++}
++
++/*
++ * Verify if the current task is authorized to use
+prctl(PR_SET_DEFERRED_SETPRIO).
++ */
++int dprio_check_permission(void)
++{
++       const struct cred *cred = current_cred();
++       int error = authlist_check_permission(&dprio_authlist, cred);
++
++       if (error != 0 && uid_eq(cred->euid, GLOBAL_ROOT_UID)) {
++               current->flags |= PF_SUPERPRIV;
++               error = 0;
++       }
++
++       return error;
++}
++
+diff --git a/kernel/sys.c b/kernel/sys.c
+index fba0f29..5b2ccc1 100644
+--- a/kernel/sys.c
++++ b/kernel/sys.c
+@@ -52,6 +52,7 @@
+ #include <linux/rcupdate.h>
+ #include <linux/uidgid.h>
+ #include <linux/cred.h>
++#include <linux/dprio.h>
+
+ #include <linux/kmsg_dump.h>
+ /* Move somewhere else to avoid recompiling? */
+@@ -2011,6 +2012,11 @@ SYSCALL_DEFINE5(prctl, int, option, unsigned
+long, arg2, unsigned long, arg3,
+                        me->mm->def_flags &= ~VM_NOHUGEPAGE;
+                up_write(&me->mm->mmap_sem);
+                break;
++#ifdef CONFIG_DEFERRED_SETPRIO
++       case PR_SET_DEFERRED_SETPRIO:
++               error = dprio_prctl(option, arg2, arg3, arg4, arg5);
++               break;
++#endif
+        default:
+                error = -EINVAL;
+                break;
+diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+index 74f5b58..03bcc36 100644
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -63,6 +63,8 @@
+ #include <linux/binfmts.h>
+ #include <linux/sched/sysctl.h>
+ #include <linux/kexec.h>
++#include <linux/authlist.h>
++#include <linux/dprio.h>
+
+ #include <asm/uaccess.h>
+ #include <asm/processor.h>
+@@ -430,6 +432,15 @@ static struct ctl_table kern_table[] = {
+                .extra2         = &one,
+        },
+ #endif
++#ifdef CONFIG_DEFERRED_SETPRIO
++       {
++               .procname       = "dprio_authlist",
++               .data           = &dprio_authlist,
++               .maxlen         = 0,
++               .mode           = 0600,
++               .proc_handler   = proc_doauthlist,
++       },
++#endif
+ #ifdef CONFIG_CFS_BANDWIDTH
+        {
+                .procname       = "sched_cfs_bandwidth_slice_us",
+--
