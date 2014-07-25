@@ -1,72 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935327AbaGYUIs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 16:08:48 -0400
-Received: from relais.videotron.ca ([24.201.245.36]:13726 "EHLO
-	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932686AbaGYUHf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 16:07:35 -0400
-Content-transfer-encoding: 7BIT
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-To: Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>
-Cc: Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linaro-kernel@lists.linaro.org
-Subject: [PATCH v2 1/5] tracing: Do not do anything special with
- tracepoint_string when tracing is disabled
-Date: Fri, 25 Jul 2014 16:05:29 -0400
-Message-id: <1406318733-26754-2-git-send-email-nicolas.pitre@linaro.org>
-X-Mailer: git-send-email 1.8.4.108.g55ea5f6
-In-reply-to: <1406318733-26754-1-git-send-email-nicolas.pitre@linaro.org>
-References: <1406318733-26754-1-git-send-email-nicolas.pitre@linaro.org>
+	id S1760947AbaGYULh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 16:11:37 -0400
+Received: from mout.gmx.net ([212.227.17.21]:50562 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753010AbaGYULg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jul 2014 16:11:36 -0400
+Date: Fri, 25 Jul 2014 22:11:26 +0200
+From: Helge Deller <deller@gmx.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-parisc@vger.kernel.org,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        John David Anglin <dave.anglin@bell.net>
+Subject: [GIT PULL] parisc fixes for v3.16
+Message-ID: <20140725201126.GA1381@p100.box>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V03:K0:M8IYG4NJK8J9rl8XLMx5ogkTVOnEV8aP7VEQtTlQxSJNKnzKTNj
+ q4OOhQnAtf3v/MHvIOdE8I72N9TbTxjc3XSGT71zvRIXx6eAVWkVqc+D0Kv7LPGP8nHZg+1
+ BzqIrEG6AGMaPO2UGGvWu2EseNUta33h5vyn/CedN87Ue+4f0/ow61Ka+YLgcGh3SXHmU4P
+ Z746TTVfU4bLi/ta+mNpg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Steven Rostedt <rostedt@goodmis.org>
+Hi Linus,
 
-When CONFIG_TRACING is not enabled, there's no reason to save the trace
-strings either by the linker or as a static variable that can be
-referenced later. Simply pass back the string that is given to
-tracepoint_string().
+please pull the latest parisc architecture fixes for kernel 3.16 from 
+  git://git.kernel.org/pub/scm/linux/kernel/git/deller/parisc-linux.git parisc-3.16-6
 
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-Signed-off-by: Nicolas Pitre <nico@linaro.org>
----
- include/linux/ftrace_event.h | 10 ++++++++++
- 1 file changed, 10 insertions(+)
-
-diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
-index cff3106ffe..b29636327d 100644
---- a/include/linux/ftrace_event.h
-+++ b/include/linux/ftrace_event.h
-@@ -574,6 +574,7 @@ do {									\
- 		__trace_printk(ip, fmt, ##args);			\
- } while (0)
+We have two trivial patches in here. One removes the SA_RESTORER #define since
+on parisc we don't have the sa_restorer field in struct sigaction, the other
+patch removes an unnecessary memset(). The SA_RESTORER removal patch is
+scheduled for stable trees, since without it some userspace apps don't build.
  
-+#ifdef CONFIG_TRACING
- /**
-  * tracepoint_string - register constant persistent string to trace system
-  * @str - a constant persistent string that will be referenced in tracepoints
-@@ -607,6 +608,15 @@ do {									\
- 		___tp_str;						\
- 	})
- #define __tracepoint_string	__attribute__((section("__tracepoint_str")))
-+#else
-+/*
-+ * tracepoint_string() is used to save the string address for userspace
-+ * tracing tools. When tracing isn't configured, there's no need to save
-+ * anything.
-+ */
-+# define tracepoint_string(str) str
-+# define __tracepoint_string
-+#endif
- 
- #ifdef CONFIG_PERF_EVENTS
- struct perf_event;
--- 
-1.8.4.108.g55ea5f6
+Thanks,
+Helge
 
+----------------------------------------------------------------
+HIMANGI SARAOGI (1):
+      parisc: Eliminate memset after alloc_bootmem_pages
+
+John David Anglin (1):
+      parisc: Remove SA_RESTORER define
+
+ arch/parisc/include/uapi/asm/signal.h | 2 --
+ arch/parisc/mm/init.c                 | 1 -
+ 2 files changed, 3 deletions(-)
