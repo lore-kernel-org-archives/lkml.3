@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758208AbaGYBn1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 21:43:27 -0400
-Received: from mga09.intel.com ([134.134.136.24]:28970 "EHLO mga09.intel.com"
+	id S1758584AbaGYBov (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 21:44:51 -0400
+Received: from mga02.intel.com ([134.134.136.20]:48786 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754443AbaGYBnZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 21:43:25 -0400
+	id S1752677AbaGYBot (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jul 2014 21:44:49 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,727,1400050800"; 
-   d="scan'208";a="548744066"
-Message-ID: <53D1B634.4080902@linux.intel.com>
-Date: Fri, 25 Jul 2014 09:43:16 +0800
+   d="scan'208";a="548744338"
+Message-ID: <53D1B684.1010900@linux.intel.com>
+Date: Fri, 25 Jul 2014 09:44:36 +0800
 From: Jiang Liu <jiang.liu@linux.intel.com>
 Organization: Intel
 User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
@@ -105,8 +105,6 @@ On 2014/7/25 7:30, Nishanth Aravamudan wrote:
 > 
 > try_online_node() seems like it can fail? I assume it's a pretty rare
 > case, but should the return code be checked?
-Good suggestion, I should split out this patch to fix the crash.
-
 > 
 > If it does fail, it seems like there are pretty serious problems and we
 > shouldn't be onlining this CPU, etc.?
@@ -117,7 +115,7 @@ Good suggestion, I should split out this patch to fix the crash.
 > 
 > Which means you can remove this check presuming try_online_node()
 > returned 0.
-Yes, that's true.
+Good suggestion, will try to enhance the error handling path.
 
 > 
 > Thanks,
