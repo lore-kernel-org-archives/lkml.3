@@ -1,101 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760064AbaGYKQg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 06:16:36 -0400
-Received: from mx02.posteo.de ([89.146.194.165]:43049 "EHLO posteo.de"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751730AbaGYKQf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 06:16:35 -0400
-Message-ID: <53D22E4D.2060600@posteo.de>
-Date: Fri, 25 Jul 2014 12:15:41 +0200
-From: Martin Kepplinger <martink@posteo.de>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Icedove/24.6.0
-MIME-Version: 1.0
-To: Hugh Dickins <hughd@google.com>
-CC: daniel.vetter@ffwll.ch, Zhang Rui <rui.zhang@intel.com>,
-        "rjw@rjwysocki.net" <rjw@rjwysocki.net>,
-        "lenb@kernel.org" <lenb@kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [BUG] rc1 rc2 rc3 not bootable - black screen after kernel loading
-References: <53A6E72A.9090000@posteo.de>  <744357E9AAD1214791ACBA4B0B90926301379B97@SHSMSX101.ccr.corp.intel.com>  <53A81BF7.3030207@posteo.de> <1403529246.4686.6.camel@rzhang1-toshiba>  <53A83DC7.1010606@posteo.de> <1403882067.16305.124.camel@rzhang1-toshiba>  <53ADB359.4010401@posteo.de> <53ADCB24.9030206@posteo.de>  <53ADECDA.60600@posteo.de> <53B11749.3020902@posteo.de>  <1404116299.8366.0.camel@rzhang1-toshiba> <1404116444.8366.1.camel@rzhang1-toshiba> <53B12723.4080902@posteo.de> <53B13E4B.2080603@posteo.de> <53D131E7.2090304@posteo.de> <alpine.LSU.2.11.1407241610320.3733@eggly.anvils>
-In-Reply-To: <alpine.LSU.2.11.1407241610320.3733@eggly.anvils>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1759995AbaGYKSJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 06:18:09 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:54660 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751395AbaGYKSH convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jul 2014 06:18:07 -0400
+Date: Fri, 25 Jul 2014 12:18:04 +0200
+From: Boris BREZILLON <boris.brezillon@free-electrons.com>
+To: jiri.prchal@aksignal.cz
+Cc: Bo Shen <voice.shen@atmel.com>, nicolas.ferre@atmel.com,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org
+Subject: Re: [PATCH] ARM: at91: at91sam9x5: sets NPCS0 (PA14) back to GPIO
+Message-ID: <20140725121804.18b05a5d@bbrezillon>
+In-Reply-To: <53D22C26.4030208@aksignal.cz>
+References: <1405074175-22444-1-git-send-email-voice.shen@atmel.com>
+	<53D10C50.50305@aksignal.cz>
+	<20140724162645.4e19c26c@bbrezillon>
+	<53D12103.3020103@aksignal.cz>
+	<20140724175848.44f5da10@bbrezillon>
+	<53D1F5D0.1080006@aksignal.cz>
+	<20140725095319.16a8465c@bbrezillon>
+	<53D214E1.4050105@aksignal.cz>
+	<20140725104553.403921b1@bbrezillon>
+	<53D21B3F.7060006@aksignal.cz>
+	<20140725110124.3f0dce6c@bbrezillon>
+	<53D21FCF.7010402@aksignal.cz>
+	<20140725113110.70c4aa41@bbrezillon>
+	<53D22C26.4030208@aksignal.cz>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 2014-07-25 01:20, schrieb Hugh Dickins:
-> On Thu, 24 Jul 2014, Martin Kepplinger wrote:
->> Am 2014-06-30 12:39, schrieb Martin Kepplinger:
->>> back to aaeb2554337217dfa4eac2fcc90da7be540b9a73 as the first bad
->>> commit. why is this not revertable exactly? how can I show a complete
->>> list of commits this merge introduces?
->>>
->>
->> It seems that _nobody_ is running a simple 32 bit i915 (acer) laptop.
->> rc6 is still unusable. Black screen directly after kernel-loading. no
->> change since rc1.
->>
->> Seems like I won't be able to use 3.16. I'm happy to test patches and am
->> happy for any advice what to do, when time permits.
-> 
-> Martin, I know nothing about aaeb25543372 and why it should be relevant,
-> but if you're having rc1..rc6 32-bit i915 black screens, please try this
-> patch that Daniel Vetter put in his fixes queue on Monday, which I'm
-> hoping will reach Linus for -rc7.
-> 
-> Hugh
-> 
-> [PATCH] drm/i915: fix freeze with blank screen booting highmem
-> 
-> x86_64 boots and displays fine, but booting x86_32 with CONFIG_HIGHMEM
-> has frozen with a blank screen throughout 3.16-rc on this ThinkPad T420s,
-> with i915 generation 6 graphics.
-> 
-> Fix 9d0a6fa6c5e6 ("drm/i915: add render state initialization"): kunmap()
-> takes struct page * argument, not virtual address.  Which the compiler
-> kindly points out, if you use the appropriate u32 *batch, instead of
-> silencing it with a void *.
-> 
-> Why did bisection lead decisively to nearby 229b0489aa75 ("drm/i915:
-> add null render states for gen6, gen7 and gen8")?  Because the u32
-> deposited at that virtual address by the previous stub failed the
-> PageHighMem test, and so caused no harm.
-> 
-> Signed-off-by: Hugh Dickins <hughd@google.com>
-> ---
-> 
->  drivers/gpu/drm/i915/i915_gem_render_state.c |    4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> --- 3.16-rc/drivers/gpu/drm/i915/i915_gem_render_state.c	2014-06-16 00:28:52.384076465 -0700
-> +++ linux/drivers/gpu/drm/i915/i915_gem_render_state.c	2014-07-21 20:10:03.824481521 -0700
-> @@ -31,7 +31,7 @@
->  struct i915_render_state {
->  	struct drm_i915_gem_object *obj;
->  	unsigned long ggtt_offset;
-> -	void *batch;
-> +	u32 *batch;
->  	u32 size;
->  	u32 len;
->  };
-> @@ -80,7 +80,7 @@ free:
->  
->  static void render_state_free(struct i915_render_state *so)
->  {
-> -	kunmap(so->batch);
-> +	kunmap(kmap_to_page(so->batch));
->  	i915_gem_object_ggtt_unpin(so->obj);
->  	drm_gem_object_unreference(&so->obj->base);
->  	kfree(so);
-> 
+On Fri, 25 Jul 2014 12:06:30 +0200
+Jiří Prchal <jiri.prchal@aksignal.cz> wrote:
 
-yes! thanks Hugh. On top of linus' current tree, that finally fixes my
-problem! I hope it'll be included soon!
+> 
+> 
+> Dne 25.7.2014 v 11:31 Boris BREZILLON napsal(a):
+> > On Fri, 25 Jul 2014 11:13:51 +0200
+> > Jiří Prchal <jiri.prchal@aksignal.cz> wrote:
+> >
+> >
+> >>>
+> >>> Every thing seems in place.
+> >>> Could you enable CONFIG_DEBUG_PINCTRL and grep on "enable pin" ?
+> >> / # dmesg | grep "enable pin"
+> >> [    0.968750] pinctrl-at91 ahb:apb:pinctrl@fffff400: enable pin 101 as GPIO
+> >> [    0.968750] pinctrl-at91 ahb:apb:pinctrl@fffff400: enable pin 101 as PIOD5 0x20
+> >> [    0.968750] pinctrl-at91 ahb:apb:pinctrl@fffff400: enable pin 100 as GPIO
+> >> [    0.968750] pinctrl-at91 ahb:apb:pinctrl@fffff400: enable pin 100 as PIOD4 0x10
+> >> [    1.238281] pinctrl-at91 ahb:apb:pinctrl@fffff400: enable pin 23 as GPIO
+> >> [    1.238281] pinctrl-at91 ahb:apb:pinctrl@fffff400: enable pin 23 as PIOA23 0x800000
+> >> [    1.238281] pinctrl-at91 ahb:apb:pinctrl@fffff400: enable pin 22 as GPIO
+> >> [    1.238281] pinctrl-at91 ahb:apb:pinctrl@fffff400: enable pin 22 as PIOA22 0x400000
+> >> [    1.242187] pinctrl-at91 ahb:apb:pinctrl@fffff400: enable pin 93 as GPIO
+> >> [    1.242187] pinctrl-at91 ahb:apb:pinctrl@fffff400: enable pin 93 as PIOC29 0x20000000
+> >> [    1.246093] pinctrl-at91 ahb:apb:pinctrl@fffff400: enable pin 14 as GPIO
+> >> [    1.246093] pinctrl-at91 ahb:apb:pinctrl@fffff400: enable pin 14 as PIOA14 0x4000
+> >
+> >
+> > Okay, this cleary shows that PA14 pin is muxed as a GPIO (or at least
+> > the driver think it is).
+> >
+> >
+> > Could you launch these commands (you'll need the devmem tool) and
+> > paste the results ?
+> >
+> > #devmem 0xfffff408
+> > #devmem 0xfffff418
+> > #devmem 0xfffff438
+> > #devmem 0xfffff43c
+> > #devmem 0xfffff458
+> > #devmem 0xfffff468
+> > #devmem 0xfffff470
+> > #devmem 0xfffff474
+> > #devmem 0xfffff498
+> >
+> / # devmem 0xfffff408
+> 0xF0E04018
+> / # devmem 0xfffff418
+> 0xE0C04000
+> / # devmem 0xfffff438
+> 0x00C04000
+> / # devmem 0xfffff43c
+> 0x13FFD7FB
+> / # devmem 0xfffff458
+> 0x00000000
+> / # devmem 0xfffff468
+> 0xFF223B4E
+> / # devmem 0xfffff470
+> 0x0F000000
+> / # devmem 0xfffff474
+> 0x00000000
+> / # devmem 0xfffff498
+> 0xFFFFFFFF
+> 
+> I get thought if is possible that in time of probe fm25 (it's first) is not configured PA14 (it 's last)?
 
-                              martin
+Oh, nice catch!
+I think you've found the origin of this bug.
+Indeed each device is instantiated sequentially and thus when the first
+device is probed (CS0) the last one has not requested it's cs_gpio yet
+(and PA14 is still assigned to periph A).
 
-p.s. linux-media removed from thread
+Declaring cs-pins and referencing them in pinctrl-0 solves the issue
+because in this case all CS pins are requested during controller probe.
+
+-- 
+Boris Brezillon, Free Electrons
+Embedded Linux and Kernel engineering
+http://free-electrons.com
