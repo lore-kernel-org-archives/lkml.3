@@ -1,98 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760090AbaGYPN7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 11:13:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54307 "EHLO mx1.redhat.com"
+	id S1760554AbaGYPPx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 11:15:53 -0400
+Received: from ns.mm-sol.com ([37.157.136.199]:52990 "EHLO extserv.mm-sol.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753543AbaGYPN6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 11:13:58 -0400
-Message-ID: <53D2740D.9040609@redhat.com>
-Date: Fri, 25 Jul 2014 11:13:17 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Vincent Guittot <vincent.guittot@linaro.org>
-CC: linux-kernel <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Michael Neuling <mikey@neuling.org>, Ingo Molnar <mingo@kernel.org>,
-        Paul Turner <pjt@google.com>, jhladky@redhat.com, ktkhai@parallels.com,
-        tim.c.chen@linux.intel.com, Nicolas Pitre <nicolas.pitre@linaro.org>
-Subject: Re: [PATCH] sched: make update_sd_pick_busiest return true on a busier
- sd
-References: <20140722144559.382c5243@annuminas.surriel.com> <CAKfTPtDdAzZcMA5bJvhyrdH9J1F69jMy5q3w5xc4t+PSKPQ0eA@mail.gmail.com> <53D26383.60707@redhat.com> <CAKfTPtCjw9LTh_LYT=rRs=Q1gS2mVcz9Ef6E7KHLqFhdm8Y8pA@mail.gmail.com>
-In-Reply-To: <CAKfTPtCjw9LTh_LYT=rRs=Q1gS2mVcz9Ef6E7KHLqFhdm8Y8pA@mail.gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
+	id S1753382AbaGYPPu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jul 2014 11:15:50 -0400
+Message-ID: <1406301329.2475.25.camel@iivanov-dev>
+Subject: Re: [PATCH RESEND v2 1/4] pinctrl: Update Qualcomm pm8xxx GPIO
+ parameters definitions
+From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Mark Brown <broonie@kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
+Date: Fri, 25 Jul 2014 18:15:29 +0300
+In-Reply-To: <53D1A371.1000108@codeaurora.org>
+References: <1405610748-7583-5-git-send-email-iivanov@mm-sol.com>
+	 <1405626085-14069-1-git-send-email-iivanov@mm-sol.com>
+	 <20140722214643.GH19700@sonymobile.com> <53D04996.2030902@codeaurora.org>
+	 <CACRpkdbNqNO8Hy5XndWs4gLBGWR+2_VaQveBUaeREUeVXv27dQ@mail.gmail.com>
+	 <53D1A371.1000108@codeaurora.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.1-2ubuntu2~saucy1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
-
-On 07/25/2014 11:02 AM, Vincent Guittot wrote:
-> On 25 July 2014 16:02, Rik van Riel <riel@redhat.com> wrote: On
-> 07/23/2014 03:41 AM, Vincent Guittot wrote:
+On Thu, 2014-07-24 at 17:23 -0700, Stephen Boyd wrote:
+> On 07/24/14 08:40, Linus Walleij wrote:
+> > On Thu, Jul 24, 2014 at 1:47 AM, Stephen Boyd <sboyd@codeaurora.org> wrote:
+> >
+> >>> Please add these constants to the table of valid power-source values and use
+> >>> something like I did to translate them to register values - it makes the DT
+> >>> much more readable.
+> >> The DT could be similarly readable if we had a bunch of #defines for the
+> >> different VIN settings that resolved to the final register value for
+> >> that pmic. Something like PM8921_GPIO1_14_VPH, PM8921_GPIO19_36_VPH,
+> >> etc. There would be a lot of them, but then the driver could be really
+> >> simple and just jam whatever value is in the DT into the register
+> >> without having to bounce through a mapping table in software to figure
+> >> out the register value. If we did this for the functions also then I
+> >> believe we achieve readability without requiring a bunch of drivers for
+> >> each and every single pmic?
+> > Not sure but it sounds like you want to make the device tree a jam table,
+> > (know about individual register offsets, sequences etc). That has been
+> > throrougly NACKed in the past, because DT is not Open Firmware.
+> >
+> > The exception is pinctrl-single which is restricted to single register
+> > per pin use cases and is still a point of contention...
+> >
 > 
->>>> Regarding your issue with "perf bench numa mem" that is not
->>>> spread on all nodes, SD_PREFER_SIBLING flag (of DIE level)
->>>> should do the job by reducing the capacity of  "not local
->>>> DIE" group at NUMA level to 1 task during the load balance
->>>> computation. So you should have 1 task per sched_group at
->>>> NUMA level.
->> 
->> Looking at the code some more, it is clear why this does not 
->> happen. If sd->flags & SD_NUMA, then SD_PREFER_SIBLING will never
->> be set.
+> I'm not proposing a jam table. I'm proposing that we make the
+> function/source property convenient to the driver by having the actual
+> function field value encoded there instead of some string that has to be
+> translated through a table in a driver. There's still going to be
+> shifting and masking of bits in the driver to put the value in the right
+> place in the register, but we avoid needing N number of drivers for each
+> pmic just to translate strings into integers (for functions) and
+> integers into other integers (for the power source). 
+
+This sounds good to me. Drawback is that we will have custom 
+function parsing code, but I will try and see what that looks like.
+
+Thanks,
+Ivan
+
+
+> From what I can
+> tell there isn't any benefit to having the function property be a string
+> vs. a #define number besides having a human readable string in pinctrl
+> debugfs. Is there some other benefit?
 > 
-> I don't have a lot of experience on NUMA system and how their 
-> sched_domain topology is described but IIUC, you don't have other 
-> sched_domain level than NUMA ones ? otherwise the flag should be 
-> present in one of the non NUMA level (SMT, MC or DIE)
 
-The system I am testing on has 3 or 4 sched_domain levels,
-one for each HT sibling(?), one for each core, one for
-each node/socket, and one parent domain for the whole system.
 
-SD_PREFER_SIBLING should be set at the HT sibling level
-and at the core level.
-
-However, it is not set at the levels above that.
-
-That means the SD_PREFER_SIBLING flag does its thing within
-each CPU core and between cores on a socket, but not between
-NUMA nodes...
-
->> On a related note, that part of the load balancing code probably 
->> needs to be rewritten to deal with unequal
->> group_capacity_factors anyway.
-
-> AFAICT, sgs->avg_load is weighted by the capacity in
-> update_sg_lb_stats
-
-Indeed, I dug into that code after sending the email, and found
-that piece of the code just before I read Peter's email pointing
-it out to me.
-
-> I'm working on a patchset that get ride of capacity_factor (as 
-> mentioned by Peter) and directly uses capacity instead. I should
-> send the v4 next week.
-
-I am looking forward to anything that will make this code easier
-to follow :)
-
-- -- 
-All rights reversed
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iQEcBAEBAgAGBQJT0nQMAAoJEM553pKExN6DeFAIAK7KHHRl+lfWIxiZGRyarYHL
-SHJydCA4a9Lkd2D60dULGWY/8ylB8+IMfwv69/jXHZzbxlg7Nu1+da7ZUF3Lx35k
-AYxpOhC94eTJvp9KQX2W0nGiDZ0Di7YnWAWdoLsd1kZZDZjd82gtLVh63ossWZlF
-hn+YH6E4n0iAe6CZ2PO4QMz7dDYVGzUnKuuQVZKl3DBJWSe6ZvcBhDS4xDT+uUe1
-IheA5aQcY8XmAkcXbLs736iBiOCKH6Jts6trJUPaVxw3jkD8lI/CMuMss2dk7RPH
-xl3Y8CKridywdtvGN6WrOwzUxVBxaEN1da/VuN7nF4OnoipYApSWwKTBe9wd7rQ=
-=AsCN
------END PGP SIGNATURE-----
