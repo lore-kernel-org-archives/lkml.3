@@ -1,64 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933335AbaGYNyW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 09:54:22 -0400
-Received: from mail-vc0-f173.google.com ([209.85.220.173]:53446 "EHLO
-	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932866AbaGYNyT (ORCPT
+	id S933717AbaGYNzL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 09:55:11 -0400
+Received: from www.linutronix.de ([62.245.132.108]:57181 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932866AbaGYNzI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 09:54:19 -0400
+	Fri, 25 Jul 2014 09:55:08 -0400
+Date: Fri, 25 Jul 2014 15:55:02 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Dmitry Torokhov <dtor@google.com>
+Subject: Re: [RFC][PATCH] irq: Rework IRQF_NO_SUSPENDED
+In-Reply-To: <2634160.AMXQm5EuML@vostro.rjw.lan>
+Message-ID: <alpine.DEB.2.10.1407251552160.23352@nanos>
+References: <20140724212620.GO3935@laptop> <13290270.IfKaUSRMLR@vostro.rjw.lan> <alpine.DEB.2.10.1407251109390.23352@nanos> <2634160.AMXQm5EuML@vostro.rjw.lan>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <20140725115414.GA4770@salvia>
-References: <1406275499-7822-1-git-send-email-ast@plumgrid.com>
- <53D23EAF.4000001@redhat.com> <20140725115414.GA4770@salvia>
-From: Willem de Bruijn <willemb@google.com>
-Date: Fri, 25 Jul 2014 09:53:48 -0400
-Message-ID: <CA+FuTScUJ-oJKAZ-MO_t9Rmah3U6G4sjHXLJSMrXVK5+fN0zyg@mail.gmail.com>
-Subject: Re: [PATCH net-next] net: filter: rename 'struct sk_filter' to
- 'struct bpf_prog'
-To: Pablo Neira Ayuso <pablo@netfilter.org>
-Cc: Daniel Borkmann <dborkman@redhat.com>,
-        Alexei Starovoitov <ast@plumgrid.com>,
-        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        netfilter-devel <netfilter-devel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> >alternative fix for xt_bpf.h could be to replace:
->> >         /* only used in the kernel */
->> >     struct sk_filter *filter __attribute__((aligned(8)));
->> >with
->> >         /* only used in the kernel */
->> >     void *filter __attribute__((aligned(8)));
->> >
->> >but this 'void *' approach may further break broken userspace,
->> >whereas the fix implemented here is more seamless.
->>
->> Yep, that's not good, 'struct sk_filter' should never have been in a uapi
->> file actually.
+On Fri, 25 Jul 2014, Rafael J. Wysocki wrote:
+> If the face of your remark about the level-triggered interrupts that's all moot.
 
-This follows a convention in include/uapi/linux/netfilter/*.h that
-likely predates the introduction of uapi. A search for "Used
-internally by the kernel" shows many more examples. I should not have
-included filter.h, however. The common behavior when using pointers
-to kernel-internal structures is to have a forward declaration. I suggest
-making that change, instead of changing to void *. This avoids having
-to add casts where xt_bpf_info is used in net/netfilter/xt_bpf.c:
+It's not only level. That you notice right away.
 
--#include <linux/filter.h>
- #include <linux/types.h>
+But for edge you lose the edge and some devices will wait forever that
+their irq is handled. Not fun to debug :)
 
- #define XT_BPF_MAX_NUM_INSTR   64
+Thanks,
 
-+struct sk_filter;
-+
- struct xt_bpf_info {
-
-I can send this as a separate patch to net-next, if that helps.
-
-> You can just send me a patch to change it to void. It's an internal
-> kernel pointer as the comment states. There is **no** way that
-> userspace can lurk with that from iptables at all.
+	tglx
