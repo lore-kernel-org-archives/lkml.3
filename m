@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760134AbaGYNrw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 09:47:52 -0400
-Received: from mail-wg0-f74.google.com ([74.125.82.74]:33166 "EHLO
-	mail-wg0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759908AbaGYNrr (ORCPT
+	id S932660AbaGYNx4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 09:53:56 -0400
+Received: from mail-we0-f202.google.com ([74.125.82.202]:46837 "EHLO
+	mail-we0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752279AbaGYNxy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 09:47:47 -0400
+	Fri, 25 Jul 2014 09:53:54 -0400
 From: David Drysdale <drysdale@google.com>
 To: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>
@@ -18,378 +18,820 @@ Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
         Paolo Bonzini <pbonzini@redhat.com>, Paul Moore <paul@paul-moore.com>,
         Christoph Hellwig <hch@infradead.org>, linux-api@vger.kernel.org,
         David Drysdale <drysdale@google.com>
-Subject: [RFC PATCHv2 00/11] Adding FreeBSD's Capsicum security framework
-Date: Fri, 25 Jul 2014 14:46:56 +0100
-Message-Id: <1406296033-32693-1-git-send-email-drysdale@google.com>
+Subject: [PATCH 03/11] capsicum: rights values and structure definitions
+Date: Fri, 25 Jul 2014 14:46:59 +0100
+Message-Id: <1406296033-32693-4-git-send-email-drysdale@google.com>
 X-Mailer: git-send-email 2.0.0.526.g5318336
+In-Reply-To: <1406296033-32693-1-git-send-email-drysdale@google.com>
+References: <1406296033-32693-1-git-send-email-drysdale@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The last couple of versions of FreeBSD (9.x/10.x) have included the
-Capsicum security framework [1], which allows security-aware
-applications to sandbox themselves in a very fine-grained way.  For
-example, OpenSSH now (>= 6.5) uses Capsicum in its FreeBSD version to
-restrict sshd's credentials checking process, to reduce the chances of
-credential leakage.
+Define (in include/uapi/linux/capsicum.h) values for primary
+rights associated with Capsicum capability file descriptors.
 
-It would be good to have equivalent functionality in Linux, so I've been
-working on getting the Capsicum framework running in the kernel, and I'd
-appreciate some feedback/opinions on the general approach.
+Also define the structure that primary rights reside in (struct
+cap_rights), and the complete compound rights structure (struct
+capsicum_rights).
 
-I'm attaching a corresponding draft patchset for reference, but
-hopefully this cover email can cover the significant features to save
-everyone having to look through the code details.  (It does mean this is
-a long email though -- apologies for that.)
+ - Primary rights describe the main operations that can be
+   performed on a file.
+ - Secondary rights allow for specific fcntl() and ioctl()
+   operations to be policed.
 
+Add functions to manipulate these rights structures.
 
-1) Capsicum Capabilities
-------------------------
+This change is adapted from the FreeBSD 10.x implementation of
+Capsicum, with the aim of preserving compatibility between the
+two implementations as closely as possible.
 
-The most significant aspect of Capsicum is associating *rights* with
-(some) file descriptors, so that the kernel only allows operations on an
-FD if the rights permit it.  This allows userspace applications to
-sandbox themselves by tightly constraining what's allowed with both
-input and outputs; for example, tcpdump might restrict itself so it can
-only read from the network FD, and only write to stdout.
-
-The kernel thus needs to police the rights checks for these file
-descriptors (referred to as 'Capsicum capabilities', completely
-different than POSIX.1e capabilities), and the best place to do this is
-at the points where a file descriptor from userspace is converted to a
-struct file * within the kernel.
-
-  [Policing the rights checks anywhere else, for example at the system
-  call boundary, isn't a good idea because it opens up the possibility
-  of time-of-check/time-of-use (TOCTOU) attacks [2] where FDs are
-  changed (as openat/close/dup2 are allowed in capability mode) between
-  the 'check' at syscall entry and the 'use' at fget() invocation.]
-
-However, this does lead to quite an invasive change to the kernel --
-every invocation of fget() or similar functions (fdget(),
-sockfd_lookup(), user_path_at(),...) needs to be annotated with the
-rights associated with the specific operations that will be performed on
-the struct file.  There are ~100 such invocations that need annotation.
-
-My current implementation approach is to use varargs variants of the
-fget() functions that include the required rights, varargs-macroed so
-that the only impact in a non-Capsicum build is the need to cope with an
-ERR_PTR on failure rather than just NULL:
-
-  #ifdef CONFIG_SECURITY_CAPSICUM
-  #define fgetr(fd, ...)	_fgetr((fd), __VA_ARGS__, CAP_LIST_END)
-  /* + Other variants... */
-  #else
-  #define fgetr(fd, ...)	(fget(fd) ?: ERR_PTR(-EBADF))
-  /* + Other variants... */
-  #endif
-
-For example, an existing chunk of code like:
-
-  SYSCALL_DEFINE1(fchdir, unsigned int, fd)
-  {
-  	struct fd f = fdget_raw(fd);
-  	struct inode *inode;
-  	int error = -EBADF;
-
-  	error = -EBADF;
-  	if (!f.file)
-  		goto out;
-  ...
-
-might become:
-
-  SYSCALL_DEFINE1(fchdir, unsigned int, fd)
-  {
-  	struct fd f = fdgetr_raw(fd, CAP_FCHDIR);
-  	struct inode *inode;
-  	int error = -EBADF;
-
-  	if (IS_ERR(f.file)) {
-  		error = PTR_ERR(f.file);
-  		goto out;
-  	}
-  ...
-
-In a Capsicum build the fdgetr_raw() function performs rights checks
-(and potentially returns a new errno as ERR_PTR(-ENOTCAPABLE)), whereas
-in a non-Capsicum build the only change is that fdget_raw() returns
-ERR_PTR(-EBADF) rather than just NULL.
-
-
-2) Capsicum Capabilities Data Structure
----------------------------------------
-
-Internally, the rights associated with a Capsicum capability FD are
-stored in a special struct file wrapper.  For a normal file, the rights
-check inside fget() falls through, but for a capability wrapper the
-rights in the wrapper are checked and (if capable) the underlying
-wrapped struct file is returned.
-
-  [This is approximately the implementation that was present in FreeBSD
-  9.x.  For FreeBSD 10.x, the wrapper file was removed and the rights
-  associated with a file descriptor are now stored in the fdtable. As
-  that impacts memory use for all processes, whether Capsicum users or
-  not, I've stuck with the FreeBSD 9.x approach.]
-
-
-3) Allowing Capability Mode
----------------------------
-
-Capsicum also includes 'capability mode', which locks down the available
-syscalls so the rights restrictions can't just be bypassed by opening
-new file descriptors.  More precisely, capability mode prevents access
-to syscalls that access global namespaces, such as the filesystem or the
-IP:port space.
-
-The existing seccomp-bpf functionality of the kernel is a good mechanism
-for implementing capability mode, but there are a few additional details
-that also need to be addressed.
-
- a) The capability mode filter program needs to apply process-wide, not
-    just to the current thread.
-
- b) In capability mode, new files can still be opened with openat(2) but
-    only if they are beneath an existing directory file descriptor.
-
- c) In capability mode it should still be possible for a process to send
-    signals to itself with kill(2)/tgkill(2).
-
-This v2 patchset copes with these as follows:
-
- a) Kees Cook's incoming seccomp(2) patchset covers thread
-    synchronization of filters.
-
- b) A new prctl(PR_SET_OPENAT_BENEATH) operation implicitly sets the
-    O_BENEATH flag (see below) for all file-open operations for all
-    threads of the current process, by adding a new openat_beneath
-    flag in task_struct.
-
- c) An extension to the seccomp_data structure that includes the current
-    task's tid and tgid values allows for BPF programs that check a
-    kill(2)/tgkill(2) argument against the current thread, in a manner
-    that is robust against fork(2)/clone(2).
-
-The combination of these features with the existing seccomp-bpf
-functionality gives the tools needed to implement capability mode.
-
-
-4) New System Calls
--------------------
-
-To allow userspace applications to access the Capsicum capability
-functionality, I'm proposing two new system calls: cap_rights_limit(2)
-and cap_rights_get(2).  I guess these could potentially be implemented
-elsewhere (e.g. as fcntl(2) operations?) but the changes seem
-significant enough that new syscalls are warranted.
-
-  [FreeBSD 10.x actually includes six new syscalls for manipulating the
-  rights associated with a Capsicum capability -- the capability rights
-  can police that only specific fcntl(2) or ioctl(2) commands are
-  allowed, and FreeBSD sets these with distinct syscalls.]
-
-
-5) New openat(2) O_BENEATH Flag
--------------------------------
-
-For Capsicum capabilities that are directory file descriptors, the
-Capsicum framework only allows openat(cap_dfd, path, ...) operations to
-work for files that are beneath the specified directory (and even that
-only when the directory FD has the CAP_LOOKUP right), rejecting paths
-that start with "/" or include "..".  The same restriction applies
-process-wide for a process in capability mode.
-
-As this seemed like functionality that might be more generally useful,
-I've implemented it independently as a new O_BENEATH flag for openat(2).
-The Capsicum code then always triggers the use of that flag when the dfd
-is a Capsicum capability, or when the prctl(2) command described above
-is in play.
-
-  [FreeBSD has the openat(2) relative-only behaviour for capability DFDs
-  and processes in capability mode, but does not include the O_BENEATH
-  flag.]
-
-
-6) Patchset Notes
------------------
-
-I've appended the draft patchset (against v3.16-rc5) for the
-implementation of Capsicum capabilities, in case anyone wants to dive
-into the details.
-
-However, I should point out that it might include some code that hasn't
-been compiled -- I attempted to change every fget() invocation I could
-find, even if it was for a build that I can't perform (but I have built
-allyesconfig on x86 & ARM).
-
-Also, I've left a gap in the syscall and prctl(2) command numbering, to
-allow this to be merged on top of Kees Cook's seccomp(2) changes.
-
-Regards,
-
-David Drysdale
-
-
-[1] http://www.cl.cam.ac.uk/research/security/capsicum/papers/2010usenix-security-capsicum-website.pdf
-[2] http://www.watson.org/~robert/2007woot/
-
-
-Changes since v1:
- - removed gratuitous LSM hooks [Andy Lutomirski, Paul Moore]
- - renamed O_BENEATH_ONLY to O_BENEATH [Christoph Hellwig]
- - updated syscall numbers to allow for seccomp(2)
- - added prctl(PR_SET_OPENAT_BENEATH) [Paolo Bonzini]
- - added tid/tgid info to seccomp_data [Paolo Bonzini]
- - update spacing for current checkpatch.pl
- - [manpages] describe struct cap_rights [Andy Lutomirski]
- - [manpages] clarify nioctl use [Andy Lutomirski]
- - [manpages] clarify CAP_FCNTL use [Andy Lutomirski]
-
-
-David Drysdale (11):
-  fs: add O_BENEATH flag to openat(2)
-  selftests: Add test of O_BENEATH & openat(2)
-  capsicum: rights values and structure definitions
-  capsicum: implement fgetr() and friends
-  capsicum: convert callers to use fgetr() etc
-  capsicum: implement sockfd_lookupr()
-  capsicum: convert callers to use sockfd_lookupr() etc
-  capsicum: invoke Capsicum on FD/file conversion
-  capsicum: add syscalls to limit FD rights
-  capsicum: prctl(2) to force use of O_BENEATH
-  seccomp: Add tgid and tid into seccomp_data
-
- Documentation/security/capsicum.txt             | 102 +++++++
- arch/alpha/include/uapi/asm/fcntl.h             |   1 +
- arch/alpha/kernel/osf_sys.c                     |   6 +-
- arch/ia64/kernel/perfmon.c                      |  54 ++--
- arch/parisc/hpux/fs.c                           |   6 +-
- arch/parisc/include/uapi/asm/fcntl.h            |   1 +
- arch/powerpc/kvm/powerpc.c                      |   4 +-
- arch/powerpc/platforms/cell/spu_syscalls.c      |  15 +-
- arch/powerpc/platforms/cell/spufs/coredump.c    |   2 +
- arch/sparc/include/uapi/asm/fcntl.h             |   1 +
- arch/x86/syscalls/syscall_64.tbl                |   2 +
- drivers/base/dma-buf.c                          |   6 +-
- drivers/block/loop.c                            |  14 +-
- drivers/block/nbd.c                             |   5 +-
- drivers/infiniband/core/ucma.c                  |   4 +-
- drivers/infiniband/core/uverbs_cmd.c            |   6 +-
- drivers/infiniband/core/uverbs_main.c           |   4 +-
- drivers/infiniband/hw/usnic/usnic_transport.c   |   2 +-
- drivers/md/md.c                                 |   8 +-
- drivers/scsi/iscsi_tcp.c                        |   2 +-
- drivers/staging/android/sync.c                  |   2 +-
- drivers/staging/lustre/lustre/llite/file.c      |   6 +-
- drivers/staging/lustre/lustre/lmv/lmv_obd.c     |   7 +-
- drivers/staging/lustre/lustre/mdc/lproc_mdc.c   |   8 +-
- drivers/staging/lustre/lustre/mdc/mdc_request.c |   4 +-
- drivers/staging/usbip/stub_dev.c                |   2 +-
- drivers/staging/usbip/vhci_sysfs.c              |   2 +-
- drivers/vfio/pci/vfio_pci.c                     |   6 +-
- drivers/vfio/pci/vfio_pci_intrs.c               |   6 +-
- drivers/vfio/vfio.c                             |   6 +-
- drivers/vhost/net.c                             |   8 +-
- drivers/video/fbdev/msm/mdp.c                   |   4 +-
- fs/aio.c                                        |  37 ++-
- fs/autofs4/dev-ioctl.c                          |  16 +-
- fs/autofs4/inode.c                              |   4 +-
- fs/btrfs/ioctl.c                                |  20 +-
- fs/btrfs/send.c                                 |   7 +-
- fs/cifs/ioctl.c                                 |   6 +-
- fs/coda/inode.c                                 |   4 +-
- fs/coda/psdev.c                                 |   2 +-
- fs/compat.c                                     |  18 +-
- fs/compat_ioctl.c                               |  14 +-
- fs/eventfd.c                                    |  17 +-
- fs/eventpoll.c                                  |  19 +-
- fs/ext4/ioctl.c                                 |   6 +-
- fs/fcntl.c                                      | 106 ++++++-
- fs/fhandle.c                                    |   6 +-
- fs/file.c                                       | 130 ++++++++
- fs/fuse/inode.c                                 |  10 +-
- fs/ioctl.c                                      |  13 +-
- fs/locks.c                                      |  11 +-
- fs/namei.c                                      | 310 ++++++++++++++-----
- fs/ncpfs/inode.c                                |   5 +-
- fs/notify/dnotify/dnotify.c                     |   2 +
- fs/notify/fanotify/fanotify_user.c              |  16 +-
- fs/notify/inotify/inotify_user.c                |  12 +-
- fs/ocfs2/cluster/heartbeat.c                    |   8 +-
- fs/open.c                                       |  46 +--
- fs/proc/fd.c                                    |  17 +-
- fs/proc/namespaces.c                            |   6 +-
- fs/read_write.c                                 | 113 ++++---
- fs/readdir.c                                    |  18 +-
- fs/select.c                                     |  11 +-
- fs/signalfd.c                                   |   6 +-
- fs/splice.c                                     |  34 ++-
- fs/stat.c                                       |  10 +-
- fs/statfs.c                                     |   8 +-
- fs/sync.c                                       |  21 +-
- fs/timerfd.c                                    |  40 ++-
- fs/utimes.c                                     |  10 +-
- fs/xattr.c                                      |  26 +-
- fs/xfs/xfs_ioctl.c                              |  14 +-
- include/linux/capsicum.h                        |  72 +++++
- include/linux/file.h                            | 136 +++++++++
- include/linux/namei.h                           |  10 +
- include/linux/net.h                             |  16 +
- include/linux/sched.h                           |   3 +
- include/linux/syscalls.h                        |  12 +
- include/uapi/asm-generic/errno.h                |   3 +
- include/uapi/asm-generic/fcntl.h                |   4 +
- include/uapi/linux/Kbuild                       |   1 +
- include/uapi/linux/capsicum.h                   | 343 +++++++++++++++++++++
- include/uapi/linux/prctl.h                      |  14 +
- include/uapi/linux/seccomp.h                    |  10 +
- ipc/mqueue.c                                    |  30 +-
- kernel/events/core.c                            |  14 +-
- kernel/module.c                                 |  10 +-
- kernel/seccomp.c                                |   2 +
- kernel/sys.c                                    |  33 +-
- kernel/sys_ni.c                                 |   4 +
- kernel/taskstats.c                              |   4 +-
- kernel/time/posix-clock.c                       |  27 +-
- mm/fadvise.c                                    |   7 +-
- mm/internal.h                                   |  19 ++
- mm/memcontrol.c                                 |  12 +-
- mm/mmap.c                                       |   7 +-
- mm/nommu.c                                      |   9 +-
- mm/readahead.c                                  |   6 +-
- net/9p/trans_fd.c                               |  10 +-
- net/bluetooth/bnep/sock.c                       |   2 +-
- net/bluetooth/cmtp/sock.c                       |   2 +-
- net/bluetooth/hidp/sock.c                       |   4 +-
- net/compat.c                                    |   4 +-
- net/l2tp/l2tp_core.c                            |  11 +-
- net/l2tp/l2tp_core.h                            |   2 +
- net/sched/sch_atm.c                             |   2 +-
- net/socket.c                                    | 207 ++++++++++---
- net/sunrpc/svcsock.c                            |   4 +-
- security/Kconfig                                |  15 +
- security/Makefile                               |   2 +-
- security/capsicum-rights.c                      | 201 +++++++++++++
- security/capsicum-rights.h                      |  10 +
- security/capsicum.c                             | 380 ++++++++++++++++++++++++
- sound/core/pcm_native.c                         |  10 +-
- tools/testing/selftests/Makefile                |   1 +
- tools/testing/selftests/openat/.gitignore       |   3 +
- tools/testing/selftests/openat/Makefile         |  24 ++
- tools/testing/selftests/openat/openat.c         | 146 +++++++++
- virt/kvm/eventfd.c                              |   6 +-
- virt/kvm/vfio.c                                 |  12 +-
- 120 files changed, 2818 insertions(+), 533 deletions(-)
+Signed-off-by: David Drysdale <drysdale@google.com>
+---
+ Documentation/security/capsicum.txt |  80 +++++++++
+ include/linux/capsicum.h            |  50 ++++++
+ include/uapi/linux/Kbuild           |   1 +
+ include/uapi/linux/capsicum.h       | 343 ++++++++++++++++++++++++++++++++++++
+ security/Kconfig                    |  15 ++
+ security/Makefile                   |   2 +-
+ security/capsicum-rights.c          | 205 +++++++++++++++++++++
+ security/capsicum-rights.h          |  10 ++
+ 8 files changed, 705 insertions(+), 1 deletion(-)
  create mode 100644 Documentation/security/capsicum.txt
  create mode 100644 include/linux/capsicum.h
  create mode 100644 include/uapi/linux/capsicum.h
  create mode 100644 security/capsicum-rights.c
  create mode 100644 security/capsicum-rights.h
- create mode 100644 security/capsicum.c
- create mode 100644 tools/testing/selftests/openat/.gitignore
- create mode 100644 tools/testing/selftests/openat/Makefile
- create mode 100644 tools/testing/selftests/openat/openat.c
 
---
+diff --git a/Documentation/security/capsicum.txt b/Documentation/security/capsicum.txt
+new file mode 100644
+index 000000000000..73636cc5134f
+--- /dev/null
++++ b/Documentation/security/capsicum.txt
+@@ -0,0 +1,80 @@
++Capsicum Object Capabilities
++============================
++
++Capsicum is a lightweight OS capability and sandbox framework, which allows
++security-aware userspace applications to sandbox parts of their own code in a
++highly granular way, reducing the attack surface in the event of subversion.
++
++Originally developed at the University of Cambridge Computer Laboratory, and
++initially implemented in FreeBSD 9.x, Capsicum extends the POSIX API, providing
++several new OS primitives to support object-capability security on UNIX-like
++operating systems.
++
++Note that Capsicum capability file descriptors are radically different to the
++POSIX.1e capabilities that are already available in Linux:
++ - POSIX.1e capabilities subdivide the root user's authority into different
++   areas of functionality.
++ - Capsicum capabilities restrict individual file descriptors so that
++   only operations permitted by that particular FD's rights are allowed.
++
++
++Overview
++--------
++
++Capability-based security is a security model where objects can only be
++accessed via capabilities, which are unforgeable tokens of authority that only
++give rights to perform certain operations.
++
++Capsicum is a pragmatic blend of capability-based security with standard
++UNIX/POSIX system semantics.  A Capsicum capability is a file descriptor that
++has an associated rights bitmask, and the kernel polices operations using that
++file descriptor, failing operations with insufficient rights.
++
++
++Capability Data Structure
++-------------------------
++
++Internally, a capability is a particular kind of struct file that wraps an
++underlying normal file.   The private data for the wrapper indicates the
++wrapped file, and holds the rights information for the capability.
++
++
++FD to File Conversion
++---------------------
++
++The primary policing of Capsicum capabilities occurs when a user-provided file
++descriptor is converted to a struct file object, normally using one of the
++fgetr() family of functions.
++
++All such operations in the kernel are annotated with information about the
++operations that are going to be performed on the retrieved struct file.  For
++example, a file that is retrieved for a read operation has its fgetr() call
++annotated with CAP_READ, indicating that any capability FD that reaches this
++point needs to include the CAP_READ right to progress further.  If the
++appropriate right is not available, -ENOTCAPABLE is returned.
++
++This change is the most significant change to the kernel, as it affects all
++FD-to-file conversions.  However, for a non-Capsicum build of the kernel the
++impact is minimal as the additional rights parameters to fgetr*() are macroed
++out.
++
++
++Path Traversal
++--------------
++
++Capsicum does allow new files to be accessed beneath a directory for which the
++application has a suitable capability FD (one including the CAP_LOOKUP right),
++using the openat(2) system call.  To prevent escape from the directory, path
++traversals are policed for "/" and ".." components by implicitly setting the
++O_BENEATH flag for file-open operations.
++
++
++New System Calls
++----------------
++
++Capsicum implements the following new system calls:
++ - cap_rights_limit: restrict the rights associated with file descriptor, thus
++   turning it into a capability FD; internally this is implemented by wrapping
++   the original struct file with a capability file (security/capsicum.c)
++ - cap_rights_get: return the rights associated with a capability FD
++   (security/capsicum.c)
+diff --git a/include/linux/capsicum.h b/include/linux/capsicum.h
+new file mode 100644
+index 000000000000..74f79756097a
+--- /dev/null
++++ b/include/linux/capsicum.h
+@@ -0,0 +1,50 @@
++#ifndef _LINUX_CAPSICUM_H
++#define _LINUX_CAPSICUM_H
++
++#include <stdarg.h>
++#include <uapi/linux/capsicum.h>
++
++struct file;
++/* Complete rights structure (primary and subrights). */
++struct capsicum_rights {
++	struct cap_rights primary;
++	unsigned int fcntls;  /* Only valid if CAP_FCNTL set in primary. */
++	int nioctls;  /* -1=>all; only valid if CAP_IOCTL set in primary */
++	unsigned int *ioctls;
++};
++
++#define CAP_LIST_END	0ULL
++
++#ifdef CONFIG_SECURITY_CAPSICUM
++/* Rights manipulation functions */
++#define cap_rights_init(rights, ...) \
++	_cap_rights_init((rights), __VA_ARGS__, CAP_LIST_END)
++#define cap_rights_set(rights, ...) \
++	_cap_rights_set((rights), __VA_ARGS__, CAP_LIST_END)
++struct capsicum_rights *_cap_rights_init(struct capsicum_rights *rights, ...);
++struct capsicum_rights *_cap_rights_set(struct capsicum_rights *rights, ...);
++struct capsicum_rights *cap_rights_vinit(struct capsicum_rights *rights,
++					 va_list ap);
++struct capsicum_rights *cap_rights_vset(struct capsicum_rights *rights,
++					va_list ap);
++struct capsicum_rights *cap_rights_set_all(struct capsicum_rights *rights);
++bool cap_rights_is_all(const struct capsicum_rights *rights);
++
++#else
++
++#define cap_rights_init(rights, ...) _cap_rights_noop(rights)
++#define cap_rights_set(rights, ...) _cap_rights_noop(rights)
++#define cap_rights_set_all(rights) _cap_rights_noop(rights)
++static inline struct capsicum_rights *
++_cap_rights_noop(struct capsicum_rights *rights)
++{
++	return rights;
++}
++static inline bool cap_rights_is_all(const struct capsicum_rights *rights)
++{
++	return true;
++}
++
++#endif
++
++#endif /* _LINUX_CAPSICUM_H */
+diff --git a/include/uapi/linux/Kbuild b/include/uapi/linux/Kbuild
+index 24e9033f8b3f..99e5d0fef529 100644
+--- a/include/uapi/linux/Kbuild
++++ b/include/uapi/linux/Kbuild
+@@ -73,6 +73,7 @@ header-y += btrfs.h
+ header-y += can.h
+ header-y += capability.h
+ header-y += capi.h
++header-y += capsicum.h
+ header-y += cciss_defs.h
+ header-y += cciss_ioctl.h
+ header-y += cdrom.h
+diff --git a/include/uapi/linux/capsicum.h b/include/uapi/linux/capsicum.h
+new file mode 100644
+index 000000000000..a39ac86fa183
+--- /dev/null
++++ b/include/uapi/linux/capsicum.h
+@@ -0,0 +1,343 @@
++#ifndef _UAPI_LINUX_CAPSICUM_H
++#define _UAPI_LINUX_CAPSICUM_H
++
++/*-
++ * Copyright (c) 2008-2010 Robert N. M. Watson
++ * Copyright (c) 2012 FreeBSD Foundation
++ * All rights reserved.
++ *
++ * This software was developed at the University of Cambridge Computer
++ * Laboratory with support from a grant from Google, Inc.
++ *
++ * Portions of this software were developed by Pawel Jakub Dawidek under
++ * sponsorship from the FreeBSD Foundation.
++ *
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions
++ * are met:
++ * 1. Redistributions of source code must retain the above copyright
++ *    notice, this list of conditions and the following disclaimer.
++ * 2. Redistributions in binary form must reproduce the above copyright
++ *    notice, this list of conditions and the following disclaimer in the
++ *    documentation and/or other materials provided with the distribution.
++ *
++ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
++ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
++ * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
++ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
++ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
++ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
++ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
++ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
++ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
++ * SUCH DAMAGE.
++ */
++
++/*
++ * Definitions for Capsicum capabilities facility.
++ */
++#include <linux/types.h>
++
++/*
++ * The top two bits in the first element of the cr_rights[] array contain
++ * total number of elements in the array - 2. This means if those two bits are
++ * equal to 0, we have 2 array elements.
++ * The top two bits in all remaining array elements should be 0.
++ * The next five bits contain array index. Only one bit is used and bit position
++ * in this five-bits range defines array index. This means there can be at most
++ * five array elements.
++ */
++#define CAP_RIGHTS_VERSION_00	0
++/*
++#define CAP_RIGHTS_VERSION_01	1
++#define CAP_RIGHTS_VERSION_02	2
++#define CAP_RIGHTS_VERSION_03	3
++*/
++#define CAP_RIGHTS_VERSION	CAP_RIGHTS_VERSION_00
++
++/* Primary rights */
++struct cap_rights {
++	__u64	cr_rights[CAP_RIGHTS_VERSION + 2];
++};
++
++#define CAPRIGHT(idx, bit)	((1ULL << (57 + (idx))) | (bit))
++
++/*
++ * Possible rights on capabilities.
++ *
++ * Notes:
++ * Some system calls don't require a capability in order to perform an
++ * operation on an fd.  These include: close, dup, dup2.
++ *
++ * sendfile is authorized using CAP_READ on the file and CAP_WRITE on the
++ * socket.
++ *
++ * mmap() and aio*() system calls will need special attention as they may
++ * involve reads or writes depending a great deal on context.
++ */
++
++/* INDEX 0 */
++
++/*
++ * General file I/O.
++ */
++/* Allows for openat(O_RDONLY), read(2), readv(2). */
++#define CAP_READ		CAPRIGHT(0, 0x0000000000000001ULL)
++/* Allows for openat(O_WRONLY | O_APPEND), write(2), writev(2). */
++#define CAP_WRITE		CAPRIGHT(0, 0x0000000000000002ULL)
++/* Allows for lseek(fd, 0, SEEK_CUR). */
++#define CAP_SEEK_TELL		CAPRIGHT(0, 0x0000000000000004ULL)
++/* Allows for lseek(2). */
++#define CAP_SEEK		(CAP_SEEK_TELL | 0x0000000000000008ULL)
++/* Allows for aio_read(2), pread(2), preadv(2). */
++#define CAP_PREAD		(CAP_SEEK | CAP_READ)
++/*
++ * Allows for aio_write(2), openat(O_WRONLY) (without O_APPEND), pwrite(2),
++ * pwritev(2).
++ */
++#define CAP_PWRITE		(CAP_SEEK | CAP_WRITE)
++/* Allows for mmap(PROT_NONE). */
++#define CAP_MMAP		CAPRIGHT(0, 0x0000000000000010ULL)
++/* Allows for mmap(PROT_READ). */
++#define CAP_MMAP_R		(CAP_MMAP | CAP_SEEK | CAP_READ)
++/* Allows for mmap(PROT_WRITE). */
++#define CAP_MMAP_W		(CAP_MMAP | CAP_SEEK | CAP_WRITE)
++/* Allows for mmap(PROT_EXEC). */
++#define CAP_MMAP_X		(CAP_MMAP | CAP_SEEK | 0x0000000000000020ULL)
++/* Allows for mmap(PROT_READ | PROT_WRITE). */
++#define CAP_MMAP_RW		(CAP_MMAP_R | CAP_MMAP_W)
++/* Allows for mmap(PROT_READ | PROT_EXEC). */
++#define CAP_MMAP_RX		(CAP_MMAP_R | CAP_MMAP_X)
++/* Allows for mmap(PROT_WRITE | PROT_EXEC). */
++#define CAP_MMAP_WX		(CAP_MMAP_W | CAP_MMAP_X)
++/* Allows for mmap(PROT_READ | PROT_WRITE | PROT_EXEC). */
++#define CAP_MMAP_RWX		(CAP_MMAP_R | CAP_MMAP_W | CAP_MMAP_X)
++/* Allows for openat(O_CREAT). */
++#define CAP_CREATE		CAPRIGHT(0, 0x0000000000000040ULL)
++/* Allows for openat(O_EXEC) and fexecve(2) in turn. */
++#define CAP_FEXECVE		CAPRIGHT(0, 0x0000000000000080ULL)
++/* Allows for openat(O_SYNC), openat(O_FSYNC), fsync(2), aio_fsync(2). */
++#define CAP_FSYNC		CAPRIGHT(0, 0x0000000000000100ULL)
++/* Allows for openat(O_TRUNC), ftruncate(2). */
++#define CAP_FTRUNCATE		CAPRIGHT(0, 0x0000000000000200ULL)
++
++/* Lookups - used to constrain *at() calls. */
++#define CAP_LOOKUP		CAPRIGHT(0, 0x0000000000000400ULL)
++
++/* VFS methods. */
++/* Allows for fchdir(2). */
++#define CAP_FCHDIR		CAPRIGHT(0, 0x0000000000000800ULL)
++/* Allows for fchflags(2). */
++#define CAP_FCHFLAGS		CAPRIGHT(0, 0x0000000000001000ULL)
++/* Allows for fchflags(2) and chflagsat(2). */
++#define CAP_CHFLAGSAT		(CAP_FCHFLAGS | CAP_LOOKUP)
++/* Allows for fchmod(2). */
++#define CAP_FCHMOD		CAPRIGHT(0, 0x0000000000002000ULL)
++/* Allows for fchmod(2) and fchmodat(2). */
++#define CAP_FCHMODAT		(CAP_FCHMOD | CAP_LOOKUP)
++/* Allows for fchown(2). */
++#define CAP_FCHOWN		CAPRIGHT(0, 0x0000000000004000ULL)
++/* Allows for fchown(2) and fchownat(2). */
++#define CAP_FCHOWNAT		(CAP_FCHOWN | CAP_LOOKUP)
++/* Allows for fcntl(2). */
++#define CAP_FCNTL		CAPRIGHT(0, 0x0000000000008000ULL)
++/*
++ * Allows for flock(2), openat(O_SHLOCK), openat(O_EXLOCK),
++ * fcntl(F_SETLK_REMOTE), fcntl(F_SETLKW), fcntl(F_SETLK), fcntl(F_GETLK).
++ */
++#define CAP_FLOCK		CAPRIGHT(0, 0x0000000000010000ULL)
++/* Allows for fpathconf(2). */
++#define CAP_FPATHCONF		CAPRIGHT(0, 0x0000000000020000ULL)
++/* Allows for UFS background-fsck operations. */
++#define CAP_FSCK		CAPRIGHT(0, 0x0000000000040000ULL)
++/* Allows for fstat(2). */
++#define CAP_FSTAT		CAPRIGHT(0, 0x0000000000080000ULL)
++/* Allows for fstat(2), fstatat(2) and faccessat(2). */
++#define CAP_FSTATAT		(CAP_FSTAT | CAP_LOOKUP)
++/* Allows for fstatfs(2). */
++#define CAP_FSTATFS		CAPRIGHT(0, 0x0000000000100000ULL)
++/* Allows for futimes(2). */
++#define CAP_FUTIMES		CAPRIGHT(0, 0x0000000000200000ULL)
++/* Allows for futimes(2) and futimesat(2). */
++#define CAP_FUTIMESAT		(CAP_FUTIMES | CAP_LOOKUP)
++/* Allows for linkat(2) and renameat(2) (destination directory descriptor). */
++#define CAP_LINKAT		(CAP_LOOKUP | 0x0000000000400000ULL)
++/* Allows for mkdirat(2). */
++#define CAP_MKDIRAT		(CAP_LOOKUP | 0x0000000000800000ULL)
++/* Allows for mkfifoat(2). */
++#define CAP_MKFIFOAT		(CAP_LOOKUP | 0x0000000001000000ULL)
++/* Allows for mknodat(2). */
++#define CAP_MKNODAT		(CAP_LOOKUP | 0x0000000002000000ULL)
++/* Allows for renameat(2). */
++#define CAP_RENAMEAT		(CAP_LOOKUP | 0x0000000004000000ULL)
++/* Allows for symlinkat(2). */
++#define CAP_SYMLINKAT		(CAP_LOOKUP | 0x0000000008000000ULL)
++/*
++ * Allows for unlinkat(2) and renameat(2) if destination object exists and
++ * will be removed.
++ */
++#define CAP_UNLINKAT		(CAP_LOOKUP | 0x0000000010000000ULL)
++
++/* Socket operations. */
++/* Allows for accept(2) and accept4(2). */
++#define CAP_ACCEPT		CAPRIGHT(0, 0x0000000020000000ULL)
++/* Allows for bind(2). */
++#define CAP_BIND		CAPRIGHT(0, 0x0000000040000000ULL)
++/* Allows for connect(2). */
++#define CAP_CONNECT		CAPRIGHT(0, 0x0000000080000000ULL)
++/* Allows for getpeername(2). */
++#define CAP_GETPEERNAME	CAPRIGHT(0, 0x0000000100000000ULL)
++/* Allows for getsockname(2). */
++#define CAP_GETSOCKNAME	CAPRIGHT(0, 0x0000000200000000ULL)
++/* Allows for getsockopt(2). */
++#define CAP_GETSOCKOPT		CAPRIGHT(0, 0x0000000400000000ULL)
++/* Allows for listen(2). */
++#define CAP_LISTEN		CAPRIGHT(0, 0x0000000800000000ULL)
++/* Allows for sctp_peeloff(2). */
++#define CAP_PEELOFF		CAPRIGHT(0, 0x0000001000000000ULL)
++#define CAP_RECV		CAP_READ
++#define CAP_SEND		CAP_WRITE
++/* Allows for setsockopt(2). */
++#define CAP_SETSOCKOPT		CAPRIGHT(0, 0x0000002000000000ULL)
++/* Allows for shutdown(2). */
++#define CAP_SHUTDOWN		CAPRIGHT(0, 0x0000004000000000ULL)
++
++/* Allows for bindat(2) on a directory descriptor. */
++#define CAP_BINDAT		(CAP_LOOKUP | 0x0000008000000000ULL)
++/* Allows for connectat(2) on a directory descriptor. */
++#define CAP_CONNECTAT		(CAP_LOOKUP | 0x0000010000000000ULL)
++
++#define CAP_SOCK_CLIENT \
++	(CAP_CONNECT | CAP_GETPEERNAME | CAP_GETSOCKNAME | CAP_GETSOCKOPT | \
++	 CAP_PEELOFF | CAP_RECV | CAP_SEND | CAP_SETSOCKOPT | CAP_SHUTDOWN)
++#define CAP_SOCK_SERVER \
++	(CAP_ACCEPT | CAP_BIND | CAP_GETPEERNAME | CAP_GETSOCKNAME | \
++	 CAP_GETSOCKOPT | CAP_LISTEN | CAP_PEELOFF | CAP_RECV | CAP_SEND | \
++	 CAP_SETSOCKOPT | CAP_SHUTDOWN)
++
++/* All used bits for index 0. */
++#define CAP_ALL0		CAPRIGHT(0, 0x0000007FFFFFFFFFULL)
++
++/* Available bits for index 0. */
++#define CAP_UNUSED0_40		CAPRIGHT(0, 0x0000008000000000ULL)
++/* ... */
++#define CAP_UNUSED0_57		CAPRIGHT(0, 0x0100000000000000ULL)
++
++/* INDEX 1 */
++
++/* Mandatory Access Control. */
++/* Allows for mac_get_fd(3). */
++#define CAP_MAC_GET		CAPRIGHT(1, 0x0000000000000001ULL)
++/* Allows for mac_set_fd(3). */
++#define CAP_MAC_SET		CAPRIGHT(1, 0x0000000000000002ULL)
++
++/* Methods on semaphores. */
++#define CAP_SEM_GETVALUE	CAPRIGHT(1, 0x0000000000000004ULL)
++#define CAP_SEM_POST		CAPRIGHT(1, 0x0000000000000008ULL)
++#define CAP_SEM_WAIT		CAPRIGHT(1, 0x0000000000000010ULL)
++
++/* Allows select(2) and poll(2) on descriptor. */
++#define CAP_EVENT		CAPRIGHT(1, 0x0000000000000020ULL)
++/* Allows for kevent(2) on kqueue descriptor with eventlist != NULL. */
++#define CAP_KQUEUE_EVENT	CAPRIGHT(1, 0x0000000000000040ULL)
++
++/* Strange and powerful rights that should not be given lightly. */
++/* Allows for ioctl(2). */
++#define CAP_IOCTL		CAPRIGHT(1, 0x0000000000000080ULL)
++#define CAP_TTYHOOK		CAPRIGHT(1, 0x0000000000000100ULL)
++
++/* Process management via process descriptors. */
++/* Allows for pdgetpid(2). */
++#define CAP_PDGETPID		CAPRIGHT(1, 0x0000000000000200ULL)
++/* Allows for pdwait4(2). */
++#define CAP_PDWAIT		CAPRIGHT(1, 0x0000000000000400ULL)
++/* Allows for pdkill(2). */
++#define CAP_PDKILL		CAPRIGHT(1, 0x0000000000000800ULL)
++
++/* Extended attributes. */
++/* Allows for extattr_delete_fd(2). */
++#define CAP_EXTATTR_DELETE	CAPRIGHT(1, 0x0000000000001000ULL)
++/* Allows for extattr_get_fd(2). */
++#define CAP_EXTATTR_GET	CAPRIGHT(1, 0x0000000000002000ULL)
++/* Allows for extattr_list_fd(2). */
++#define CAP_EXTATTR_LIST	CAPRIGHT(1, 0x0000000000004000ULL)
++/* Allows for extattr_set_fd(2). */
++#define CAP_EXTATTR_SET	CAPRIGHT(1, 0x0000000000008000ULL)
++
++/* Access Control Lists. */
++/* Allows for acl_valid_fd_np(3). */
++#define CAP_ACL_CHECK		CAPRIGHT(1, 0x0000000000010000ULL)
++/* Allows for acl_delete_fd_np(3). */
++#define CAP_ACL_DELETE		CAPRIGHT(1, 0x0000000000020000ULL)
++/* Allows for acl_get_fd(3) and acl_get_fd_np(3). */
++#define CAP_ACL_GET		CAPRIGHT(1, 0x0000000000040000ULL)
++/* Allows for acl_set_fd(3) and acl_set_fd_np(3). */
++#define CAP_ACL_SET		CAPRIGHT(1, 0x0000000000080000ULL)
++
++/* Allows for kevent(2) on kqueue descriptor with changelist != NULL. */
++#define CAP_KQUEUE_CHANGE	CAPRIGHT(1, 0x0000000000100000ULL)
++
++#define CAP_KQUEUE		(CAP_KQUEUE_EVENT | CAP_KQUEUE_CHANGE)
++
++/* Modify signalfd signal mask. */
++#define CAP_FSIGNAL             CAPRIGHT(1, 0x0000000000200000ULL)
++
++/* Modify epollfd set of FDs/events */
++#define CAP_EPOLL_CTL           CAPRIGHT(1, 0x0000000000400000ULL)
++
++/* Modify things monitored by inotify/fanotify FD */
++#define CAP_NOTIFY              CAPRIGHT(1, 0x0000000000800000ULL)
++
++/* Allow entry to a namespace associated with a file descriptor */
++#define CAP_SETNS               CAPRIGHT(1, 0x0000000001000000ULL)
++
++/* Allow performance monitoring operations */
++#define CAP_PERFMON             CAPRIGHT(1, 0x0000000002000000ULL)
++
++/* All used bits for index 1. */
++#define CAP_ALL1		CAPRIGHT(1, 0x0000000003FFFFFFULL)
++
++/* Available bits for index 1. */
++#define CAP_UNUSED1_27		CAPRIGHT(1, 0x0000000004000000ULL)
++/* ... */
++#define CAP_UNUSED1_57		CAPRIGHT(1, 0x0100000000000000ULL)
++
++/* Backward compatibility. */
++#define CAP_POLL_EVENT		CAP_EVENT
++
++#define CAP_SET_ALL(rights)		do {				\
++	(rights)->cr_rights[0] =					\
++	    ((__u64)CAP_RIGHTS_VERSION << 62) | CAP_ALL0;		\
++	(rights)->cr_rights[1] = CAP_ALL1;				\
++} while (0)
++
++#define CAP_SET_NONE(rights)	do {					\
++	(rights)->cr_rights[0] =					\
++	    ((__u64)CAP_RIGHTS_VERSION << 62) | CAPRIGHT(0, 0ULL);	\
++	(rights)->cr_rights[1] = CAPRIGHT(1, 0ULL);			\
++} while (0)
++
++#define CAP_IS_ALL(rights)						\
++	(((rights)->cr_rights[0] ==					\
++	  (((__u64)CAP_RIGHTS_VERSION << 62) | CAP_ALL0)) &&	\
++	 ((rights)->cr_rights[1] == CAP_ALL1))
++
++#define CAPRVER(right)		((int)((right) >> 62))
++#define CAPVER(rights)		CAPRVER((rights)->cr_rights[0])
++#define CAPARSIZE(rights)	(CAPVER(rights) + 2)
++#define CAPIDXBIT(right)	((int)(((right) >> 57) & 0x1F))
++
++/*
++ * Allowed fcntl(2) commands.
++ */
++#define CAP_FCNTL_GETFL	(1 << F_GETFL)
++#define CAP_FCNTL_SETFL	(1 << F_SETFL)
++#define CAP_FCNTL_GETOWN	(1 << F_GETOWN)
++#define CAP_FCNTL_SETOWN	(1 << F_SETOWN)
++#define CAP_FCNTL_ALL		(CAP_FCNTL_GETFL | CAP_FCNTL_SETFL | \
++				 CAP_FCNTL_GETOWN | CAP_FCNTL_SETOWN)
++
++#define CAP_IOCTLS_ALL		SSIZE_MAX
++
++#endif /* _UAPI_LINUX_CAPSICUM_H */
+diff --git a/security/Kconfig b/security/Kconfig
+index beb86b500adf..006020864612 100644
+--- a/security/Kconfig
++++ b/security/Kconfig
+@@ -117,6 +117,21 @@ config LSM_MMAP_MIN_ADDR
+ 	  this low address space will need the permission specific to the
+ 	  systems running LSM.
+ 
++config SECURITY_CAPSICUM
++	bool "Capsicum capabilities"
++	default y
++	depends on SECURITY
++	depends on SECURITY_PATH
++	depends on SECCOMP
++	help
++	  Enable the Capsicum capability framework, which implements security
++	  primitives that support fine-grained capabilities on file
++	  descriptors; see Documentation/security/capsicum.txt for more
++	  details.
++
++	  If you are unsure as to whether this is required, answer N.
++
++
+ source security/selinux/Kconfig
+ source security/smack/Kconfig
+ source security/tomoyo/Kconfig
+diff --git a/security/Makefile b/security/Makefile
+index 05f1c934d74b..c5e1363ae136 100644
+--- a/security/Makefile
++++ b/security/Makefile
+@@ -14,7 +14,7 @@ obj-y					+= commoncap.o
+ obj-$(CONFIG_MMU)			+= min_addr.o
+ 
+ # Object file lists
+-obj-$(CONFIG_SECURITY)			+= security.o capability.o
++obj-$(CONFIG_SECURITY)			+= security.o capability.o capsicum-rights.o
+ obj-$(CONFIG_SECURITYFS)		+= inode.o
+ obj-$(CONFIG_SECURITY_SELINUX)		+= selinux/
+ obj-$(CONFIG_SECURITY_SMACK)		+= smack/
+diff --git a/security/capsicum-rights.c b/security/capsicum-rights.c
+new file mode 100644
+index 000000000000..5ce18a684848
+--- /dev/null
++++ b/security/capsicum-rights.c
+@@ -0,0 +1,205 @@
++/*-
++ * Copyright (c) 2013 FreeBSD Foundation
++ * All rights reserved.
++ *
++ * This software was developed by Pawel Jakub Dawidek under sponsorship from
++ * the FreeBSD Foundation.
++ *
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions
++ * are met:
++ * 1. Redistributions of source code must retain the above copyright
++ *    notice, this list of conditions and the following disclaimer.
++ * 2. Redistributions in binary form must reproduce the above copyright
++ *    notice, this list of conditions and the following disclaimer in the
++ *    documentation and/or other materials provided with the distribution.
++ *
++ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
++ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
++ * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
++ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
++ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
++ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
++ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
++ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
++ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
++ * SUCH DAMAGE.
++ */
++
++#include <stdarg.h>
++#include <linux/capsicum.h>
++#include <linux/slab.h>
++#include <linux/fcntl.h>
++#include <linux/bug.h>
++
++#include "capsicum-rights.h"
++
++#ifdef CONFIG_SECURITY_CAPSICUM
++#define CAPARSIZE_MIN	(CAP_RIGHTS_VERSION_00 + 2)
++#define CAPARSIZE_MAX	(CAP_RIGHTS_VERSION + 2)
++
++/*
++ * -1 indicates invalid index value, otherwise log2(v), ie.:
++ * 0x001 -> 0, 0x002 -> 1, 0x004 -> 2, 0x008 -> 3, 0x010 -> 4, rest -> -1
++ */
++static const int bit2idx[] = {
++	-1, 0, 1, -1, 2, -1, -1, -1, 3, -1, -1, -1, -1, -1, -1, -1,
++	4, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1
++};
++
++static inline int right_to_index(__u64 right)
++{
++	return bit2idx[CAPIDXBIT(right)];
++}
++
++static inline bool has_right(const struct capsicum_rights *rights, u64 right)
++{
++	int idx = right_to_index(right);
++
++	return (rights->primary.cr_rights[idx] & right) == right;
++}
++
++struct capsicum_rights *
++cap_rights_vset(struct capsicum_rights *rights, va_list ap)
++{
++	u64 right;
++	int i, n;
++
++	n = CAPARSIZE(&rights->primary);
++	BUG_ON(n < CAPARSIZE_MIN || n > CAPARSIZE_MAX);
++
++	while (true) {
++		right = va_arg(ap, u64);
++		if (right == 0)
++			break;
++		BUG_ON(CAPRVER(right) != 0);
++		i = right_to_index(right);
++		BUG_ON(i < 0 || i >= n);
++		BUG_ON(CAPIDXBIT(rights->primary.cr_rights[i]) !=
++		       CAPIDXBIT(right));
++		rights->primary.cr_rights[i] |= right;
++	}
++	return rights;
++}
++EXPORT_SYMBOL(cap_rights_vset);
++
++struct capsicum_rights *
++cap_rights_vinit(struct capsicum_rights *rights, va_list ap)
++{
++	CAP_SET_NONE(&rights->primary);
++	rights->nioctls = 0;
++	rights->ioctls = NULL;
++	rights->fcntls = 0;
++	cap_rights_vset(rights, ap);
++	return rights;
++}
++EXPORT_SYMBOL(cap_rights_vinit);
++
++bool cap_rights_regularize(struct capsicum_rights *rights)
++{
++	bool changed = false;
++
++	if (!has_right(rights, CAP_FCNTL) && rights->fcntls != 0x00) {
++		changed = true;
++		rights->fcntls = 0x00;
++	}
++	if (!has_right(rights, CAP_IOCTL) && (rights->nioctls != 0)) {
++		changed = true;
++		kfree(rights->ioctls);
++		rights->nioctls = 0;
++		rights->ioctls = NULL;
++	}
++	return changed;
++}
++
++struct capsicum_rights *_cap_rights_init(struct capsicum_rights *rights, ...)
++{
++	va_list ap;
++
++	va_start(ap, rights);
++	cap_rights_vinit(rights, ap);
++	va_end(ap);
++	return rights;
++}
++EXPORT_SYMBOL(_cap_rights_init);
++
++struct capsicum_rights *_cap_rights_set(struct capsicum_rights *rights, ...)
++{
++	va_list ap;
++
++	va_start(ap, rights);
++	cap_rights_vset(rights, ap);
++	va_end(ap);
++	return rights;
++}
++EXPORT_SYMBOL(_cap_rights_set);
++
++struct capsicum_rights *cap_rights_set_all(struct capsicum_rights *rights)
++{
++	CAP_SET_ALL(&rights->primary);
++	rights->nioctls = -1;
++	rights->ioctls = NULL;
++	rights->fcntls = CAP_FCNTL_ALL;
++	return rights;
++}
++EXPORT_SYMBOL(cap_rights_set_all);
++
++static bool cap_rights_ioctls_contains(const struct capsicum_rights *big,
++				       const struct capsicum_rights *little)
++{
++	int i, j;
++
++	if (big->nioctls == -1)
++		return true;
++	if (big->nioctls < little->nioctls)
++		return false;
++	for (i = 0; i < little->nioctls; i++) {
++		for (j = 0; j < big->nioctls; j++) {
++			if (little->ioctls[i] == big->ioctls[j])
++				break;
++		}
++		if (j == big->nioctls)
++			return false;
++	}
++	return true;
++}
++
++static bool cap_rights_primary_contains(const struct cap_rights *big,
++					const struct cap_rights *little)
++{
++	unsigned int i, n;
++
++	BUG_ON(CAPVER(big) != CAP_RIGHTS_VERSION_00);
++	BUG_ON(CAPVER(little) != CAP_RIGHTS_VERSION_00);
++
++	n = CAPARSIZE(big);
++	BUG_ON(n < CAPARSIZE_MIN || n > CAPARSIZE_MAX);
++
++	for (i = 0; i < n; i++) {
++		if ((big->cr_rights[i] & little->cr_rights[i]) !=
++		    little->cr_rights[i]) {
++			return false;
++		}
++	}
++	return true;
++}
++
++bool cap_rights_contains(const struct capsicum_rights *big,
++			const struct capsicum_rights *little)
++{
++	return cap_rights_primary_contains(&big->primary,
++					   &little->primary) &&
++	       ((big->fcntls & little->fcntls) == little->fcntls) &&
++	       cap_rights_ioctls_contains(big, little);
++}
++
++bool cap_rights_is_all(const struct capsicum_rights *rights)
++{
++	return CAP_IS_ALL(&rights->primary) &&
++	       rights->fcntls == CAP_FCNTL_ALL &&
++	       rights->nioctls == -1;
++}
++EXPORT_SYMBOL(cap_rights_is_all);
++
++#endif  /* CONFIG_SECURITY_CAPSICUM */
+diff --git a/security/capsicum-rights.h b/security/capsicum-rights.h
+new file mode 100644
+index 000000000000..b7143e3d65b7
+--- /dev/null
++++ b/security/capsicum-rights.h
+@@ -0,0 +1,10 @@
++#ifndef _CAPSICUM_RIGHTS_H
++#define _CAPSICUM_RIGHTS_H
++
++#ifdef CONFIG_SECURITY_CAPSICUM
++bool cap_rights_regularize(struct capsicum_rights *rights);
++bool cap_rights_contains(const struct capsicum_rights *big,
++			 const struct capsicum_rights *little);
++#endif
++
++#endif /* _CAPSICUM_RIGHTS_H */
+-- 
 2.0.0.526.g5318336
 
