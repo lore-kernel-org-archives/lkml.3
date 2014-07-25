@@ -1,49 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934748AbaGYSDD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 14:03:03 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:55039 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753270AbaGYSDB (ORCPT
+	id S934792AbaGYSGk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 14:06:40 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:52318 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753559AbaGYSGi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 14:03:01 -0400
-From: Mark Brown <broonie@kernel.org>
-To: linux-kernel@vger.kernel.org
-Cc: linaro-kernel@lists.linaro.org, Mark Brown <broonie@linaro.org>
-Date: Fri, 25 Jul 2014 19:02:47 +0100
-Message-Id: <1406311367-606-1-git-send-email-broonie@kernel.org>
-X-Mailer: git-send-email 2.0.1
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: [PATCH] regmap: Fix return code for stub regmap_get_device()
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+	Fri, 25 Jul 2014 14:06:38 -0400
+Date: Fri, 25 Jul 2014 11:06:32 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Pranith Kumar <bobby.prani@gmail.com>
+Cc: Josh Triplett <josh@joshtriplett.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        "open list:READ-COPY UPDATE..." <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 2/2] rcu: Check the return value of rcu_nocb_mask
+ cpumask allocation
+Message-ID: <20140725180632.GA6230@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1406248652-17416-1-git-send-email-bobby.prani@gmail.com>
+ <1406248652-17416-2-git-send-email-bobby.prani@gmail.com>
+ <20140725152551.GC11241@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140725152551.GC11241@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14072518-6688-0000-0000-0000038ED5F1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mark Brown <broonie@linaro.org>
+On Fri, Jul 25, 2014 at 08:25:51AM -0700, Paul E. McKenney wrote:
+> On Thu, Jul 24, 2014 at 08:37:32PM -0400, Pranith Kumar wrote:
+> > This commit checks the return value of the zalloc_cpumask_var() used for
+> > allocating cpumask for rcu_nocb_mask.
+> > 
+> > Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
+> 
+> Hmmm...  I saw the check in the previous patch, but didn't see removal
+> of the later have_rcu_nocb_mask check.  Please see below.
 
-We return a pointer, not an int.
+And events overtook this one.  Turns out that commit b58cc46c5f6b
+(rcu: Don't offload callbacks unless specifically requested) was not
+one of my best efforts.
 
-Signed-off-by: Mark Brown <broonie@linaro.org>
----
- include/linux/regmap.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+I will adapt your patch 2/2 in this series and apply it with your
+Signed-off-by.  Patch 1/2 is obsoleted by the current fix for
+commit b58cc46c5f6b.
 
-diff --git a/include/linux/regmap.h b/include/linux/regmap.h
-index cd480fd59795..c5ed83f49c4e 100644
---- a/include/linux/regmap.h
-+++ b/include/linux/regmap.h
-@@ -733,7 +733,7 @@ static inline struct regmap *dev_get_regmap(struct device *dev,
- static inline struct device *regmap_get_device(struct regmap *map)
- {
- 	WARN_ONCE(1, "regmap API is disabled");
--	return -EINVAL;
-+	return NULL;
- }
- 
- #endif
--- 
-2.0.1
+							Thanx, Paul
+
+> > ---
+> > v2: no change from v1
+> > 
+> >  kernel/rcu/tree_plugin.h | 23 ++++++++++++-----------
+> >  1 file changed, 12 insertions(+), 11 deletions(-)
+> > 
+> > diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
+> > index 520538a..9c9a01c 100644
+> > --- a/kernel/rcu/tree_plugin.h
+> > +++ b/kernel/rcu/tree_plugin.h
+> > @@ -54,7 +54,10 @@ static void __init rcu_bootup_announce_oddness_nocb(void)
+> >  {
+> >  #ifndef CONFIG_RCU_NOCB_CPU_NONE
+> >  	if (!have_rcu_nocb_mask) {
+> > -		zalloc_cpumask_var(&rcu_nocb_mask, GFP_KERNEL);
+> > +		if (!zalloc_cpumask_var(&rcu_nocb_mask, GFP_KERNEL)) {
+> > +			pr_info("rcu_nocb_mask allocation failed\n");
+> > +			return;
+> > +		}
+> >  		have_rcu_nocb_mask = true;
+> >  	}
+> >  #ifdef CONFIG_RCU_NOCB_CPU_ZERO
+> > @@ -66,17 +69,15 @@ static void __init rcu_bootup_announce_oddness_nocb(void)
+> >  	cpumask_copy(rcu_nocb_mask, cpu_possible_mask);
+> >  #endif /* #ifdef CONFIG_RCU_NOCB_CPU_ALL */
+> >  #endif /* #ifndef CONFIG_RCU_NOCB_CPU_NONE */
+> > -	if (have_rcu_nocb_mask) {
+> > -		if (!cpumask_subset(rcu_nocb_mask, cpu_possible_mask)) {
+> > -			pr_info("\tNote: kernel parameter 'rcu_nocbs=' contains nonexistent CPUs.\n");
+> > -			cpumask_and(rcu_nocb_mask, cpu_possible_mask,
+> > -				    rcu_nocb_mask);
+> > -		}
+> > -		cpulist_scnprintf(nocb_buf, sizeof(nocb_buf), rcu_nocb_mask);
+> > -		pr_info("\tOffload RCU callbacks from CPUs: %s.\n", nocb_buf);
+> > -		if (rcu_nocb_poll)
+> > -			pr_info("\tPoll for callbacks from no-CBs CPUs.\n");
+> > +	if (!cpumask_subset(rcu_nocb_mask, cpu_possible_mask)) {
+> 
+> What happens if CONFIG_RCU_NOCB_CPU_NONE=y and the rcu_nocbs= boot
+> parameter is not specified and we get here?
+> 
+> In order to get visible failures when testing, build with
+> CONFIG_CPUMASK_OFFSTACK=y.
+> 
+> > +		pr_info("\tNote: kernel parameter 'rcu_nocbs=' contains nonexistent CPUs.\n");
+> > +		cpumask_and(rcu_nocb_mask, cpu_possible_mask,
+> > +				rcu_nocb_mask);
+> >  	}
+> > +	cpulist_scnprintf(nocb_buf, sizeof(nocb_buf), rcu_nocb_mask);
+> > +	pr_info("\tOffload RCU callbacks from CPUs: %s.\n", nocb_buf);
+> > +	if (rcu_nocb_poll)
+> > +		pr_info("\tPoll for callbacks from no-CBs CPUs.\n");
+> >  }
+> > 
+> >  /*
+> > -- 
+> > 2.0.1
+> > 
 
