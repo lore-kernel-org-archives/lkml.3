@@ -1,54 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760245AbaGYLNz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 07:13:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37638 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750926AbaGYLNx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 07:13:53 -0400
-Date: Fri, 25 Jul 2014 13:13:02 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 4/7] perf report: Honor column width setting
-Message-ID: <20140725111302.GB1214@krava.brq.redhat.com>
-References: <1406251138-6574-1-git-send-email-namhyung@kernel.org>
- <1406251138-6574-5-git-send-email-namhyung@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1406251138-6574-5-git-send-email-namhyung@kernel.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1760262AbaGYLOJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 07:14:09 -0400
+Received: from mail-lb0-f177.google.com ([209.85.217.177]:64786 "EHLO
+	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751478AbaGYLOH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jul 2014 07:14:07 -0400
+From: Jan Kardell <jan.kardell@telliq.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Jonathan Cameron <jic23@kernel.org>,
+        Luis Henriques <luis.henriques@canonical.com>,
+        Jiri Slaby <jslaby@suse.cz>, Jan Kardell <jan.kardell@telliq.com>
+Subject: [PATCH] iio: ti_am335x_adc: Fix prerequisite for stepid patch
+Date: Fri, 25 Jul 2014 13:13:46 +0200
+Message-Id: <1406286826-30834-1-git-send-email-jan.kardell@telliq.com>
+X-Mailer: git-send-email 1.8.4.5
+In-Reply-To: <1406195177-8656-113-git-send-email-luis.henriques@canonical.com>
+References: <1406195177-8656-113-git-send-email-luis.henriques@canonical.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 25, 2014 at 10:18:55AM +0900, Namhyung Kim wrote:
-> Set column width and do not change it if user gives -w/--column-widths
-> option.  It'll truncate longer symbols than the width if exists.
-> 
-> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-> ---
+Kernel series 3.11 and 3.12 does not initialize scan_index in the
+iio_chan_spec structure as 3.13 and newer does. This is necessary
+for the stepid patch to work, otherwise it even breaks the cases
+that worked before the stepid patch.
 
-SNIP
+Unfortunately the stepid patch seems to already be in 3.12.25,
+must have missed that inclusion.
 
->  
->  __HPP_COLOR_PERCENT_FN(overhead, period)
-> @@ -797,8 +798,11 @@ static int hist_browser__show_entry(struct hist_browser *browser,
->  			if (fmt->color) {
->  				width -= fmt->color(fmt, &hpp, entry);
->  			} else {
-> -				width -= fmt->entry(fmt, &hpp, entry);
-> +				int ret = fmt->entry(fmt, &hpp, entry);
-> +				s[ret] = '\0';
->  				slsmg_printf("%s", s);
+Signed-off-by: Jan Kardell <jan.kardell@telliq.com>
+---
+ drivers/iio/adc/ti_am335x_adc.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-from quick check it seems like all entry callback functions
-use some sort of snprint which should already handle the string
-length properly.. if not, we should fix that instead, no?
+diff --git a/drivers/iio/adc/ti_am335x_adc.c b/drivers/iio/adc/ti_am335x_adc.c
+index 3ceac3e..6c56418 100644
+--- a/drivers/iio/adc/ti_am335x_adc.c
++++ b/drivers/iio/adc/ti_am335x_adc.c
+@@ -120,6 +120,7 @@ static int tiadc_channel_init(struct iio_dev *indio_dev, int channels)
+ 		chan->channel = adc_dev->channel_line[i];
+ 		chan->info_mask_separate = BIT(IIO_CHAN_INFO_RAW);
+ 		chan->datasheet_name = chan_name_ain[chan->channel];
++		chan->scan_index = i;
+ 		chan->scan_type.sign = 'u';
+ 		chan->scan_type.realbits = 12;
+ 		chan->scan_type.storagebits = 32;
+-- 
+1.8.4.5
 
-jirka
