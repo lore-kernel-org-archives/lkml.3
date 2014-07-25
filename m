@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760610AbaGYNte (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 09:49:34 -0400
-Received: from mail-lb0-f202.google.com ([209.85.217.202]:50252 "EHLO
-	mail-lb0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760477AbaGYNs1 (ORCPT
+	id S1760633AbaGYNty (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 09:49:54 -0400
+Received: from mail-wi0-f202.google.com ([209.85.212.202]:34527 "EHLO
+	mail-wi0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760397AbaGYNsV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 09:48:27 -0400
+	Fri, 25 Jul 2014 09:48:21 -0400
 From: David Drysdale <drysdale@google.com>
 To: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>
@@ -18,9 +18,9 @@ Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
         Paolo Bonzini <pbonzini@redhat.com>, Paul Moore <paul@paul-moore.com>,
         Christoph Hellwig <hch@infradead.org>, linux-api@vger.kernel.org,
         David Drysdale <drysdale@google.com>
-Subject: [PATCH 3/6] rights.7: Describe Capsicum primary rights
-Date: Fri, 25 Jul 2014 14:47:10 +0100
-Message-Id: <1406296033-32693-15-git-send-email-drysdale@google.com>
+Subject: [PATCH 1/6] open.2: describe O_BENEATH flag
+Date: Fri, 25 Jul 2014 14:47:08 +0100
+Message-Id: <1406296033-32693-13-git-send-email-drysdale@google.com>
 X-Mailer: git-send-email 2.0.0.526.g5318336
 In-Reply-To: <1406296033-32693-1-git-send-email-drysdale@google.com>
 References: <1406296033-32693-1-git-send-email-drysdale@google.com>
@@ -30,541 +30,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: David Drysdale <drysdale@google.com>
 ---
- man7/rights.7 | 525 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 525 insertions(+)
- create mode 100644 man7/rights.7
+ man2/open.2 | 33 +++++++++++++++++++++++++++++++--
+ 1 file changed, 31 insertions(+), 2 deletions(-)
 
-diff --git a/man7/rights.7 b/man7/rights.7
-new file mode 100644
-index 000000000000..33bb8e48d12f
---- /dev/null
-+++ b/man7/rights.7
-@@ -0,0 +1,525 @@
-+.\"
-+.\" Copyright (c) 2014 Google, Inc.
-+.\" Copyright (c) 2012-2013 The FreeBSD Foundation
-+.\" Copyright (c) 2008-2010 Robert N. M. Watson
-+.\" All rights reserved.
-+.\"
-+.\" This software was developed at the University of Cambridge Computer
-+.\" Laboratory with support from a grant from Google, Inc.
-+.\"
-+.\" %%%LICENSE_START(BSD_2_CLAUSE)
-+.\" Portions of this documentation were written by Pawel Jakub Dawidek
-+.\" under sponsorship from the FreeBSD Foundation.
-+.\"
-+.\" Redistribution and use in source and binary forms, with or without
-+.\" modification, are permitted provided that the following conditions
-+.\" are met:
-+.\" 1. Redistributions of source code must retain the above copyright
-+.\"    notice, this list of conditions and the following disclaimer.
-+.\" 2. Redistributions in binary form must reproduce the above copyright
-+.\"    notice, this list of conditions and the following disclaimer in the
-+.\"    documentation and/or other materials provided with the distribution.
-+.\"
-+.\" THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
-+.\" ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-+.\" IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-+.\" ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
-+.\" FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
-+.\" DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
-+.\" OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
-+.\" HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-+.\" LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
-+.\" OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
-+.\" SUCH DAMAGE.
-+.\" %%%LICENSE_END
-+.\"
-+.TH RIGHTS 7 2014-05-07 "Linux" "Linux Programmer's Manual"
-+.SH NAME
-+Capsicum capability rights for file descriptors
-+.SH SYNOPSIS
-+.B #include <linux/capsicum.h>
-+.SH DESCRIPTION
-+When a file descriptor is created by a function such as
-+.BR accept (2),
-+.BR accept4 (2),
-+.BR creat (2),
-+.BR epoll_create (2),
-+.BR eventfd (2),
-+.BR mq_open (2),
-+.BR open (2),
-+.BR openat (2),
-+.BR pdfork (2),
-+.BR pipe (2),
-+.BR pipe2 (2),
-+.BR signalfd (2),
-+.BR socket (2),
-+.BR socketpair (2)
-+or
-+.BR timerfd_create (2),
-+it implicitly has all Capsicum capability rights.
-+Those rights can be reduced (but never expanded) by using the
-+.BR cap_rights_limit (2)
-+system call.
-+Once capability rights are reduced, operations on the file descriptor will be
-+limited to those permitted by the associated rights.
-+.Pp
-+The list of primary capability rights is provided below. In addition,
-+.BR ioctl (2)
-+and
-+.BR fcntl (2)
-+can also be restricted to only allow specific commands.
-+.PP
-+The
-+.I "struct cap_rights"
-+type is used to store a list of primary capability rights; the
-+.BR cap_rights_init (3)
-+family of functions should be used to manage the structure.
-+.SH RIGHTS
-+The following rights may be specified in a rights mask:
+diff --git a/man2/open.2 b/man2/open.2
+index 475d9e405908..c3d080fb3bea 100644
+--- a/man2/open.2
++++ b/man2/open.2
+@@ -705,7 +705,7 @@ in a fully formed state (using
+ as described above).
+ .RE
+ .IP
+-.B O_TMPFILE
++.B O_TMPFILE " (since Linux 3.??)"
+ requires support by the underlying filesystem;
+ only a subset of Linux filesystems provide that support.
+ In the initial implementation, support was provided in
+@@ -715,6 +715,31 @@ XFS support was added
+ .\" commit ab29743117f9f4c22ac44c13c1647fb24fb2bafe
+ in Linux 3.15.
+ .TP
++.B O_BENEATH
++Ensure that the
++.I pathname
++is beneath the current working directory (for
++.BR open (2))
++or the
++.I dirfd
++(for
++.BR openat (2)).
++If the
++.I pathname
++is absolute or contains a path component of "..", the
++.BR open ()
++fails with the error
++.BR EACCES.
++This occurs even if ".." path component would not actually
++escape the original directory; for example, a
++.I pathname
++of "subdir/../filename" would be rejected.
++Path components that are symbolic links to absolute paths, or that are
++relative paths containing a ".." component, will also cause the
++.BR open ()
++operation to fail with the error
++.BR EACCES.
 +.TP
-+.B CAP_ACCEPT
-+Permit
-+.BR accept (2)
-+and
-+.BR accept4 (2).
-+.TP
-+.B CAP_BIND
-+Permit
-+.BR bind (2).
-+Note that sockets can also become bound implicitly as a result of
-+.BR connect (2)
-+or
-+.BR send (2),
-+and that socket options set with
-+.BR setsockopt (2)
-+may also affect binding behavior.
-+.TP
-+.B CAP_CONNECT
-+Permit
-+.BR connect (2);
-+also required for
-+.BR sendto (2)
-+with a non-NULL destination address.
-+.TP
-+.B CAP_CREATE
-+Permit
-+.BR openat (2)
-+with the
-+.B O_CREAT
-+flag.
-+.TP
-+.B CAP_EVENT
-+Permit
-+.BR select (2),
-+.BR poll (2),
-+and
-+.BR epoll (7)
-+to be used in monitoring the file descriptor for events.
-+.TP
-+.B CAP_EXTATTR_DELETE
-+Permit
-+.BR fremovexattr (2).
-+.TP
-+.B CAP_EXTATTR_GET
-+Permit
-+.BR fgetxattr (2).
-+.TP
-+.B CAP_EXTATTR_LIST
-+Permit
-+.BR flistxattr (2).
-+.TP
-+.B CAP_EXTATTR_SET
-+Permit
-+.BR fsetxattr (2).
-+.TP
-+.B CAP_FCHDIR
-+Permit
-+.BR fchdir (2).
-+.TP
-+.B CAP_FCHMOD
-+Permit
-+.BR fchmod (2)
-+and
-+.BR fchmodat (2)
-+if the
-+.B CAP_LOOKUP
-+right is also present.
-+.TP
-+.B CAP_FCHMODAT
-+An alias to
-+.B CAP_FCHMOD
-+and
-+.BR CAP_LOOKUP .
-+.TP
-+.B CAP_FCHOWN
-+Permit
-+.BR fchown (2)
-+and
-+.BR fchownat (2)
-+if the
-+.B CAP_LOOKUP
-+right is also present.
-+.TP
-+.B CAP_FCHOWNAT
-+An alias to
-+.B CAP_FCHOWN
-+and
-+.BR CAP_LOOKUP .
-+.TP
-+.B CAP_FCNTL
-+Permit
-+.BR fcntl (2).
-+Note that only the
-+.BR F_GETFL ,
-+.BR F_SETFL ,
-+.B F_GETOWN ,
-+.B F_SETOWN ,
-+.B F_GETOWN_EX
-+and
-+.B F_SETOWN_EX
-+commands require this capability right.
-+Also note that the list of permitted commands can be further limited with the
-+.BR cap_rights_limit (2)
-+system call.
-+.TP
-+.B CAP_FEXECVE
-+Permit
-+.BR execveat (2)
-+and
-+.BR openat (2)
-+with the
-+.B O_EXEC
-+flag;
-+.B CAP_READ
-+is also required.
-+.TP
-+.B CAP_FLOCK
-+Permit
-+.BR flock (2)
-+and
-+.BR fcntl (2)
-+(with
-+.BR F_GETLK ,
-+.BR F_SETLK
-+or
-+.B F_SETLKW
-+flag).
-+.TP
-+.B CAP_FSTAT
-+Permit
-+.BR fstat (2).
-+.TP
-+.B CAP_FSTATFS
-+Permit
-+.BR fstatfs (2).
-+.TP
-+.B CAP_FSYNC
-+Permit
-+.BR fsync (2)
-+and
-+.BR openat (2)
-+with the
-+.B O_SYNC
-+flag.
-+.TP
-+.B CAP_FTRUNCATE
-+Permit
-+.BR ftruncate (2)
-+and
-+.BR openat (2)
-+with the
-+.B O_TRUNC
-+flag.
-+.TP
-+.B CAP_FUTIMES
-+Permit
-+.BR futimesat (2)
-+if the
-+.B CAP_LOOKUP
-+right is also present.
-+.TP
-+.B CAP_FUTIMESAT
-+An alias to
-+.B CAP_FUTIMES
-+and
-+.BR CAP_LOOKUP .
-+.TP
-+.B CAP_GETPEERNAME
-+Permit
-+.BR getpeername (2).
-+.TP
-+.B CAP_GETSOCKNAME
-+Permit
-+.BR getsockname (2).
-+.TP
-+.B CAP_GETSOCKOPT
-+Permit
-+.BR getsockopt (2).
-+.TP
-+.B CAP_IOCTL
-+Permit
-+.BR ioctl (2).
-+Be aware that this system call has enormous scope, including potentially
-+global scope for some objects.
-+The list of permitted ioctl commands can be further limited with the
-+.BR cap_rights_limit (2)
-+system call.
-+.TP
-+.B CAP_LINKAT
-+Permit
-+.BR linkat (2)
-+and
-+.BR renameat (2)
-+on the destination directory descriptor.
-+This right includes the
-+.B CAP_LOOKUP
-+right.
-+.TP
-+.B CAP_LISTEN
-+Permit
-+.BR listen (2);
-+not much use (generally) without
-+.BR CAP_BIND .
-+.TP
-+.B CAP_LOOKUP
-+Permit the file descriptor to be used as a starting directory for calls such as
-+.BR linkat (2),
-+.BR openat (2),
-+and
-+.BR unlinkat (2).
-+.TP
-+.B CAP_MKDIRAT
-+Permit
-+.BR mkdirat (2).
-+This right includes the
-+.B CAP_LOOKUP
-+right.
-+.TP
-+.B CAP_MKFIFOAT
-+Permit
-+.BR mkfifoat (2).
-+This right includes the
-+.B CAP_LOOKUP
-+right.
-+.TP
-+.B CAP_MKNODAT
-+Permit
-+.BR mknodat (2).
-+This right includes the
-+.B CAP_LOOKUP
-+right.
-+.TP
-+.B CAP_MMAP
-+Permit
-+.BR mmap (2)
-+with the
-+.B PROT_NONE
-+protection.
-+.TP
-+.B CAP_MMAP_R
-+Permit
-+.BR mmap (2)
-+with the
-+.B PROT_READ
-+protection.
-+This right includes the
-+.B CAP_READ
-+and
-+.B CAP_SEEK
-+rights.
-+.TP
-+.B CAP_MMAP_RW
-+An alias to
-+.B CAP_MMAP_R
-+and
-+.BR CAP_MMAP_W .
-+.TP
-+.B CAP_MMAP_RWX
-+An alias to
-+.BR CAP_MMAP_R ,
-+.B CAP_MMAP_W
-+and
-+.BR CAP_MMAP_X .
-+.TP
-+.B CAP_MMAP_RX
-+An alias to
-+.B CAP_MMAP_R
-+and
-+.BR CAP_MMAP_X .
-+.TP
-+.B CAP_MMAP_W
-+Permit
-+.BR mmap (2)
-+with the
-+.B PROT_WRITE
-+protection.
-+This right includes the
-+.B CAP_WRITE
-+and
-+.B CAP_SEEK
-+rights.
-+.TP
-+.B CAP_MMAP_WX
-+An alias to
-+.B CAP_MMAP_W
-+and
-+.BR CAP_MMAP_X .
-+.TP
-+.B CAP_MMAP_X
-+Permit
-+.BR mmap (2)
-+with the
-+.B PROT_EXEC
-+protection.
-+This right includes the
-+.B CAP_SEEK
-+right.
-+.TP
-+.B CAP_PDGETPID
-+Permit
-+.BR pdgetpid (2).
-+.TP
-+.B CAP_PDKILL
-+Permit
-+.BR pdkill (2).
-+.TP
-+.B CAP_PDWAIT
-+Permit
-+.BR pdwait4 (2).
-+.TP
-+.B CAP_PEELOFF
-+Permit
-+.BR sctp_peeloff (3).
-+.TP
-+.B CAP_PREAD
-+An alias to
-+.B CAP_READ
-+and
-+.BR CAP_SEEK .
-+.TP
-+.B CAP_PWRITE
-+An alias to
-+.B CAP_SEEK
-+and
-+.BR CAP_WRITE .
-+.TP
-+.B CAP_READ
-+Permit
-+.BR openat (2)
-+with the
-+.BR O_RDONLY flag,
-+.BR read (2),
-+.BR readv (2),
-+.BR recv (2),
-+.BR recvfrom (2),
-+.BR recvmsg (2),
-+.BR pread (2)
-+(
-+.B CAP_SEEK
-+is also required),
-+.BR preadv (2)
-+(
-+.B CAP_SEEK
-+is also required) and related system calls.
-+.TP
-+.B CAP_RECV
-+An alias to
-+.BR CAP_READ .
-+.TP
-+.B CAP_RENAMEAT
-+Permit
-+.BR renameat (2).
-+This right is required on the source directory descriptor.
-+This right includes the
-+.B CAP_LOOKUP
-+right.
-+.TP
-+.B CAP_SEEK
-+Permit operations that seek on the file descriptor, such as
-+.BR lseek (2),
-+but also required for I/O system calls that can read or write at any position
-+in the file, such as
-+.BR pread (2)
-+and
-+.BR pwrite (2).
-+.TP
-+.B CAP_SEND
-+An alias to
-+.BR CAP_WRITE .
-+.TP
-+.B CAP_SETSOCKOPT
-+Permit
-+.BR setsockopt (2);
-+this controls various aspects of socket behavior and may affect binding,
-+connecting, and other behaviors with global scope.
-+.TP
-+.B CAP_SHUTDOWN
-+Permit explicit
-+.BR shutdown (2);
-+closing the socket will also generally shut down any connections on it.
-+.TP
-+.B CAP_SYMLINKAT
-+Permit
-+.BR symlinkat (2).
-+This right includes the
-+.B CAP_LOOKUP
-+right.
-+.TP
-+.B CAP_UNLINKAT
-+Permit
-+.BR unlinkat (2)
-+and
-+.BR renameat (2).
-+This right is only required for
-+.BR renameat (2)
-+on the destination directory descriptor if the destination object already
-+exists and will be removed by the rename.
-+This right includes the
-+.B CAP_LOOKUP
-+right.
-+.TP
-+.B CAP_WRITE
-+Allow
-+.BR openat (2)
-+with
-+.B O_WRONLY
-+and
-+.B O_APPEND
-+flags set,
-+.BR send (2),
-+.BR sendmsg (2),
-+.BR sendto (2),
-+.BR write (2),
-+.BR writev (2),
-+.BR pwrite (2),
-+.BR pwritev (2)
-+and related system calls.
-+For
-+.BR sendto (2)
-+with a non-NULL connection address,
-+.B CAP_CONNECT
-+is also required.
-+For
-+.BR openat (2)
-+with the
-+.B O_WRONLY
-+flag, but without the
-+.B O_APPEND
-+flag,
-+.B CAP_SEEK
-+is also required.
-+For
-+.BR pwrite (2)
-+and
-+.BR pwritev (2)
-+.B CAP_SEEK
-+is also required.
-+.SH VERSIONS
-+Capsicum support was originally added to the kernel in version 3.???.
-+.SH SEE ALSO
-+.BR cap_enter (3),
-+.BR cap_fcntls_limit (3),
-+.BR cap_ioctls_limit (3),
-+.BR cap_rights_limit (2),
-+.BR cap_rights_limit (3),
-+.BR capsicum (7)
+ .B O_TRUNC
+ If the file already exists and is a regular file and the access mode allows
+ writing (i.e., is
+@@ -791,7 +816,11 @@ The requested access to the file is not allowed, or search permission
+ is denied for one of the directories in the path prefix of
+ .IR pathname ,
+ or the file did not exist yet and write access to the parent directory
+-is not allowed.
++is not allowed, or the
++.B O_BENEATH
++flag was specified and the
++.I pathname
++was not beneath the relevant directory.
+ (See also
+ .BR path_resolution (7).)
+ .TP
 --
 2.0.0.526.g5318336
 
