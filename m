@@ -1,140 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759424AbaGYCg5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 22:36:57 -0400
-Received: from mail-vc0-f179.google.com ([209.85.220.179]:63898 "EHLO
-	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759196AbaGYCg4 convert rfc822-to-8bit (ORCPT
+	id S1759062AbaGYCjx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 22:39:53 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:34545 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757984AbaGYCjw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 22:36:56 -0400
+	Thu, 24 Jul 2014 22:39:52 -0400
+Message-ID: <53D1C363.7010802@huawei.com>
+Date: Fri, 25 Jul 2014 10:39:31 +0800
+From: Zhang Zhen <zhenzhang.zhang@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
 MIME-Version: 1.0
-In-Reply-To: <53D1B1EF.7030603@daenzer.net>
-References: <CA+55aFwZ7kAqqhaE4g89CJLkpJOwGxcN4u+cc0ODfqjQ0rVMiA@mail.gmail.com>
-	<20140723155526.GW3935@laptop>
-	<CA+55aFzSU5u8MiGqRZ6BVojQPnxbd1hxmFY_BA=UuCAygxR8WQ@mail.gmail.com>
-	<20140723170324.GZ3935@laptop>
-	<CA+55aFwQSmBAs=QH9jAZz5JY7YFrDeuPH1RjFH+YKVr2NQM38g@mail.gmail.com>
-	<CA+55aFzDWritxv5RiqwcZ1qCKJQKK-Lw6StYFF7qx5YWgiCUTQ@mail.gmail.com>
-	<20140723182518.GD3935@laptop>
-	<CA+55aFyFT9n5wUNifEHY6+t2bEcD91kL7+dqXuBMSMJvLeDDJQ@mail.gmail.com>
-	<20140723184111.GG3935@laptop>
-	<CA+55aFwQfwfAP6U77_nD_mSvoygj=cZ09N644hKRtzgLnEqhZQ@mail.gmail.com>
-	<20140723190230.GH3935@laptop>
-	<CA+55aFyM1wqTLK0m4GQJ28f=z0iZE87=xk+1z-vm+PH1_d8nKw@mail.gmail.com>
-	<53D064C7.5050807@daenzer.net>
-	<CA+55aFyJhqiPv0kQ+51=Ei-zaAO+0JszxtnEyx-Gbto3SE00xw@mail.gmail.com>
-	<53D1B1EF.7030603@daenzer.net>
-Date: Thu, 24 Jul 2014 22:36:54 -0400
-Message-ID: <CAPDOMVhVBr7EoyvH+14QQO5S9Ch7o80QOwhM2HPLSG+5BTGnZA@mail.gmail.com>
-Subject: Re: Random panic in load_balance() with 3.16-rc
-From: Nick Krause <xerofoify@gmail.com>
-To: =?UTF-8?Q?Michel_D=C3=A4nzer?= <michel@daenzer.net>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Jakub Jelinek <jakub@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Debian GCC Maintainers <debian-gcc@lists.debian.org>,
-        Debian Kernel Team <debian-kernel@lists.debian.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Dave Hansen <dave.hansen@intel.com>
+CC: <mingo@redhat.com>, Yinghai Lu <yinghai@kernel.org>, <mgorman@suse.de>,
+        <akpm@linux-foundation.org>, <zhangyanfei@cn.fujitsu.com>,
+        <wangnan0@huawei.com>, Linux MM <linux-mm@kvack.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] memory-hotplug: add sysfs zone_index attribute
+References: <1406187138-27911-1-git-send-email-zhenzhang.zhang@huawei.com> <53D0B8B6.8040104@huawei.com> <53D14997.7090106@intel.com>
+In-Reply-To: <53D14997.7090106@intel.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.111.69.77]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 24, 2014 at 9:25 PM, Michel Dänzer <michel@daenzer.net> wrote:
-> [ Adding the Debian kernel and gcc teams to Cc ]
->
-> On 25.07.2014 03:47, Linus Torvalds wrote:
->> On Wed, Jul 23, 2014 at 6:43 PM, Michel Dänzer <michel@daenzer.net> wrote:
->>>>
->>>> Michel, mind doing
->>>>
->>>>     make kernel/sched/fair.s
->>>>
->>>> and sending us the resulting file?
->>>
->>> Here it is, gzipped, hope that's okay.
->>>
->>> Note that my tree is now based on 3.16-rc6.
+On 2014/7/25 1:59, Dave Hansen wrote:
+> On 07/24/2014 12:41 AM, Zhang Zhen wrote:
+>> Currently memory-hotplug has two limits:
+>> 1. If the memory block is in ZONE_NORMAL, you can change it to
+>> ZONE_MOVABLE, but this memory block must be adjacent to ZONE_MOVABLE.
+>> 2. If the memory block is in ZONE_MOVABLE, you can change it to
+>> ZONE_NORMAL, but this memory block must be adjacent to ZONE_NORMAL.
 >>
->> Ok, so I'm looking at the code generation and your compiler is pure
->> and utter *shit*.
+>> Without this patch, we don't know which zone a memory block is in.
+>> So we don't know which memory block is adjacent to ZONE_MOVABLE or
+>> ZONE_NORMAL.
 >>
->> Adding Jakub to the cc, because gcc-4.9.0 seems to be terminally broken.
->>
->> Lookie here, your compiler does some absolutely insane things with the
->> spilling, including spilling a *constant*. For chrissake, that
->> compiler shouldn't have been allowed to graduate from kindergarten.
->> We're talking "sloth that was dropped on the head as a baby" level
->> retardation levels here:
->>
->>         ...
->>         movq    $load_balance_mask, -136(%rbp)  #, %sfp
->>         subq    $184, %rsp      #,
->>         movq    (%rdx), %rax    # sd_22(D)->parent, sd_parent
->>         movl    %edi, -144(%rbp)        # this_cpu, %sfp
->>         movl    %ecx, -140(%rbp)        # idle, %sfp
->>         movq    %r8, -200(%rbp) # continue_balancing, %sfp
->>         movq    %rax, -184(%rbp)        # sd_parent, %sfp
->>         movq    -136(%rbp), %rax        # %sfp, tcp_ptr__
->> #APP
->>         add %gs:this_cpu_off, %rax      # this_cpu_off, tcp_ptr__
->> #NO_APP
->>         ...
->>
->> Note the contents of -136(%rbp). Seriously. That's an
->> _immediate_constant_ that the compiler is spilling.
->>
->> Somebody needs to raise that as a gcc bug. Because it damn well is
->> some seriously crazy shit.
->>
->> However, that constant spilling part just counts as "too stupid to
->> live". The real bug is this:
->>
->>         movq    $load_balance_mask, -136(%rbp)  #, %sfp
->>         subq    $184, %rsp      #,
->>
->> where gcc creates the stack frame *after* having already used it to
->> save that constant *deep* below the stack frame.
->>
->> The x86-64 ABI specifies a 128-byte red-zone under the stack pointer,
->> and this is ok by that limit. It looks like it's illegal (136 > 128),
->> but the fact is, we've had four "pushq"s to update %rsp since loading
->> the frame pointer, so it's just *barely* legal with the red-zoning.
->>
->> But we build the kernel with -mno-red-zone. We do *not* follow the
->> x86-64 ABI wrt redzoning, because we *cannot*: interrupts while in
->> kernel mode *will* use the stack without a redzone. So that
->> "-mno-red-zone" is not some "optional guideline". It's a hard and
->> harsh requirement for the kernel, and gcc-4.9 is a buggy piece of shit
->> for ignoring it. And your bug happens becuase you happen to hit an
->> interrupt _just_ in that single instruction window (or perhaps hit
->> some other similar case and corrupted kernel data structures earlier).
->>
->> Now, I suspect that this redzoning bug might actually be related to
->> the fact that gcc is stupid in spilling a constant. I would not be
->> surprised if there is some liveness analysis going on to decide *when*
->> to insert the stack decrement, and constants are being ignored because
->> clearly liveness isn't an issue for a constant value. So the two bugs
->> ("stupid constant spilling" and "invalid use or red zone stack") go
->> hand in hand. But who knows.
->>
->> Anyway, this is not a kernel bug. This is your compiler creating
->> completely broken code. We may need to add a warning to make sure
->> nobody compiles with gcc-4.9.0, and the Debian people should probably
->> downgrate their shiny new compiler.
->
-> Attached is fair.s from Debian gcc 4.8.3-5. Does that look better? I'm
-> going to try reproducing the problem with a kernel built by that now.
->
->
-> --
-> Earthling Michel Dänzer                           http://www.amd.com
-> Libre software enthusiast                      Mesa and X developer
+>> On the other hand, with this patch, we can easy to know newly added
+>> memory is added as ZONE_NORMAL (for powerpc, ZONE_DMA, for x86_32,
+>> ZONE_HIGHMEM).
+> 
+> A section can contain more than one zone.  This interface will lie about
+> such sections, which is quite unfortunate.
+> 
+1. In arch_add_memory(), x86_64 add the new pages of the new memory block default to
+ZONE_NORMAL (for powerpc, ZONE_DMA, for x86_32, ZONE_HIGHMEM).
 
-Hey guys,
-I am new so please bear with me here but I can build test this on
-Ubuntu 14.04 with gcc 4.8.1.
-I am wondering through after only speed reading these messages , if
-you can just give me
-a one line summary of what I need to be looking for :).
-Nick
+2. In __offline_pages(), test_pages_in_a_zone() guaranteed the pages of a memory block
+we try to offline are in the same zone. If a section contains more than one zone,
+the memory block can not be offlined.
+
+Based on the above two points, i think the pages of a memory block are in one zone, and the sections
+of a memory block are in one zone.
+
+Could you please explain in detail what is the case a section can contain more than one zone ?
+
+Thanks for your comments!
+
+> I'd really much rather see an interface that has a section itself
+> enumerate to which zones it may be changed.  The way you have it now,
+> any user has to know the rules that you've laid out above.  If the
+> kernel changed those restrictions, we'd have to teach every application
+> about the change in restrictions.
+> 
+
+This interface is designed to show which zone a memory block is in. If the kernel changed those
+restrictions, this interface doesn't need to change.
+For a x86_64 machine booted with "mem=400M" and with 2GiB memory installed.
+Sample output of the sysfs files:
+# cat block_size_bytes
+8000000
+# cat memory0/zone_index
+DMA
+# cat memory1/zone_index
+DMA32
+# cat memory2/zone_index
+DMA32
+# cat memory3/zone_index
+DMA32
+# echo 0x20000000 > probe
+# cat memory4/zone_index
+Normal
+# echo online > memory4/state
+# cat memory4/zone_index
+Normal
+
+# echo offline > memory4/state
+# echo online_movable > memory4/state
+# cat memory4/zone_index
+Movable
+
+Thanks!
+
+Best regards!
+> 
+> 
+> 
+> .
+> 
+
+
