@@ -1,230 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751164AbaGYE0K (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 00:26:10 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:57618 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750714AbaGYE0I (ORCPT
+	id S1751968AbaGYE1Y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 00:27:24 -0400
+Received: from mail-oi0-f53.google.com ([209.85.218.53]:59989 "EHLO
+	mail-oi0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751216AbaGYE1X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 00:26:08 -0400
-Message-ID: <53D1DC0B.1000905@gmail.com>
-Date: Fri, 25 Jul 2014 09:54:43 +0530
-From: Varka Bhadram <varkabhadram@gmail.com>
-Organization: CDAC-HYD
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Fri, 25 Jul 2014 00:27:23 -0400
 MIME-Version: 1.0
-To: Nicolin Chen <nicoleotsuka@gmail.com>, broonie@kernel.org
-CC: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        rdunlap@infradead.org, lgirdwood@gmail.com, perex@perex.cz,
-        tiwai@suse.de, timur@tabi.org, grant.likely@linaro.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        alsa-devel@alsa-project.org, linuxppc-dev@lists.ozlabs.org,
-        shawn.guo@linaro.org, b02247@freescale.com, b42378@freescale.com,
-        tklauser@distanz.ch
-Subject: Re: [PATCH v3 2/2] ASoC: fsl_asrc: Add ASRC ASoC CPU DAI and platform
- drivers
-References: <cover.1406259578.git.nicoleotsuka@gmail.com> <f4ff79269a1680f9ce128e0e98fea926d3a41834.1406259578.git.nicoleotsuka@gmail.com>
-In-Reply-To: <f4ff79269a1680f9ce128e0e98fea926d3a41834.1406259578.git.nicoleotsuka@gmail.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1406224491-3599-1-git-send-email-prarit@redhat.com>
+References: <1406224491-3599-1-git-send-email-prarit@redhat.com>
+Date: Fri, 25 Jul 2014 09:57:22 +0530
+Message-ID: <CAKohpomHj17A4e6Sh8JSz1HPbq9r8gXUJeZ20PQ=Mhu59Vt7ZQ@mail.gmail.com>
+Subject: Re: [PATCH] cpufreq, store_scaling_governor requires policy->rwsem to
+ be held for duration of changing governors
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Prarit Bhargava <prarit@redhat.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Lenny Szubowicz <lszubowi@redhat.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/25/2014 09:33 AM, Nicolin Chen wrote:
-> The Asynchronous Sample Rate Converter (ASRC) converts the sampling rate of a
-> signal associated with an input clock into a signal associated with a different
-> output clock. The driver currently works as a Front End of DPCM with other Back
-> Ends DAI links such as ESAI<->CS42888 and SSI<->WM8962 and SAI. It converts the
-> original sample rate to a common rate supported by Back Ends for playback while
-> converts the common rate of Back Ends to a desired rate for capture. It has 3
-> pairs to support three different substreams within totally 10 channels.
+On 24 July 2014 23:24, Prarit Bhargava <prarit@redhat.com> wrote:
+> The closer I looked at commit 955ef483, the more questions I have.  The first
+> thing is that it appears that the stacktrace includes function calls that
+> are not, and never have been, part of the linux.git tree, ie) the call trace
+> shows
 >
-(...)
+>             [<c0055a79>] lock_acquire+0x61/0xbc
+>             [<c00fabf1>] sysfs_addrm_finish+0xc1/0x128
+>             [<c00f9819>] sysfs_hash_and_remove+0x35/0x64
+>             [<c00fbe6f>] remove_files.isra.0+0x1b/0x24
+>             [<c00fbea5>] sysfs_remove_group+0x2d/0xa8
+>             [<c02f9a0b>] cpufreq_governor_interactive+0x13b/0x35c
+>             [<c02f61df>] __cpufreq_governor+0x2b/0x8c
+>             [<c02f6579>] __cpufreq_set_policy+0xa9/0xf8
+>             [<c02f6b75>] store_scaling_governor+0x61/0x100
+>             [<c02f6f4d>] store+0x39/0x60
+>             [<c00f9b81>] sysfs_write_file+0xed/0x114
+>             [<c00b3fd1>] vfs_write+0x65/0xd8
+>             [<c00b424b>] sys_write+0x2f/0x50
+>             [<c000cdc1>] ret_fast_syscall+0x1/0x52
+>
+> and the top part of the stack from cpufreq_governor_interactive() appear to
+> be for a driver that is not in the linux.git tree.  Google search does show
+> that it exists in various android trees, however, my concern is that the "core"
+> scaling governors are now broken because of an out tree driver.
 
-> +Required properties:
-> +
-> +  - compatible : Compatible list, must contain "fsl,imx35-asrc" or
-> +    "fsl,imx53-asrc".
-> +
-> +  - reg : Offset and length of the register set for the device.
-> +
-> +  - interrupts : Contains the spdif interrupt.
-> +
-> +  - dmas : Generic dma devicetree binding as described in
-> +	   Documentation/devicetree/bindings/dma/dma.txt.
-> +
-> +  - dma-names : Six dmas have to be defined: "rxa", "rxb", "rxc", "txa", "txb",
-> +		and "txc".
-> +
-> +  - clocks : Contains an entry for each entry in clock-names.
-> +
-> +  - clock-names : Includes the following entries:
-> +	"mem"		Peripheral access clock to access registers.
-> +	"ipg"		Peripheral clock to driver module.
-> +	"asrck_<0-f>"	Clock sources for input and output clock.
-> +
-> +   - big-endian : If this property is absent, the native endian mode will
-> +		  be in use as default, or the big endian mode will be in use
-> +		  for all the device registers.
-> +
-> +   - fsl,asrc-rate : Defines a mutual sample rate used by Back End DAI link.
-> +
-> +   - fsl,asrc-width : Defines a mutual sample width used by Back End DAI link.
-> +
+Actually the problem did occur with ondemand/conservative as well. And
+the problem was, we accessed something from cpufreq sysfs and then were
+trying to remove that only and so some recursive locking stuff..
 
-indentation for the properties....
+And so nothing interactive governor specific.
 
-- compatible		: Should be "fsl,imx35-asrc" or "fsl,imx53-asrc".
-- reg			: Offset and length of the register set for the device.
-....
+The problem looks similar to what's reported here:
+http://comments.gmane.org/gmane.linux.power-management.general/47397
 
-(...)
+And that's how I replied to it:
 
-> +
-> +static const struct platform_device_id fsl_asrc_devtype[] = {
-> +	{
-> +		.name = "imx35-asrc",
-> +		.driver_data = IMX35_ASRC,
-> +	}, {
-> +		.name = "imx53-asrc",
-> +		.driver_data = IMX53_ASRC,
-> +	}, {
-> +		/* sentinel */
-> +	}
-> +};
-> +MODULE_DEVICE_TABLE(platform, fsl_asrc_devtype);
-> +
-> +static const struct of_device_id fsl_asrc_ids[] = {
-> +	{
-> +		.compatible = "fsl,imx35-asrc",
-> +		.data = &fsl_asrc_devtype[IMX35_ASRC],
-> +	}, {
-> +		.compatible = "fsl,imx53-asrc",
-> +		.data = &fsl_asrc_devtype[IMX53_ASRC],
-> +	}, {
-> +		/* sentinel */
-> +	}
-> +};
-> +MODULE_DEVICE_TABLE(of, fsl_asrc_ids);
-> +
+I have pushed a fix earlier for similar issues:
+19c7630 cpufreq: serialize calls to __cpufreq_governor()
 
-move these ids after probe/remove... every driver follows same thing...
+but was later reverted by Srivatsa:
+56d07db cpufreq: Remove temporary fix for race between CPU hotplug and
+sysfs-writes
 
-> +static irqreturn_t fsl_asrc_isr(int irq, void *dev_id)
-> +{
-> +	struct fsl_asrc *asrc_priv = (struct fsl_asrc *)dev_id;
-> +	struct device *dev = &asrc_priv->pdev->dev;
-> +	enum asrc_pair_index index;
-> +	u32 status;
-> +
-> +	regmap_read(asrc_priv->regmap, REG_ASRSTR, &status);
-> +
-> +	/* Clean overload error */
-> +	regmap_write(asrc_priv->regmap, REG_ASRSTR, ASRSTR_AOLE);
-> +
-> +	/*
-> +	 * We here use dev_dbg() for all exceptions because ASRC itself does
-> +	 * not care if FIFO overflowed or underrun while a warning in the
-> +	 * interrupt would result a ridged conversion.
-> +	 */
-> +	for (index = ASRC_PAIR_A; index < ASRC_PAIR_MAX_NUM; index++) {
-> +		if (!asrc_priv->pair[index])
-> +			continue;
-> +
-> +		if (status & ASRSTR_ATQOL) {
-> +			asrc_priv->pair[index]->error |= ASRC_TASK_Q_OVERLOAD;
-> +			dev_dbg(dev, "ASRC Task Queue FIFO overload");
+because we didn't thought about this usecase.
 
-missed terminating new line (\n)...
+I propose we get that back. I have tested a revert of 56d07db on
+my setup and didn't see any crash..
 
-> +		}
-> +
-> +		if (status & ASRSTR_AOOL(index)) {
-> +			asrc_priv->pair[index]->error |= ASRC_OUTPUT_TASK_OVERLOAD;
-> +			pair_dbg("Output Task Overload");
+Please see if that works for you as well..
 
-same
-
-> +		}
-> +
-> +		if (status & ASRSTR_AIOL(index)) {
-> +			asrc_priv->pair[index]->error |= ASRC_INPUT_TASK_OVERLOAD;
-> +			pair_dbg("Input Task Overload");
-
-same
-
-> +		}
-> +
-> +		if (status & ASRSTR_AODO(index)) {
-> +			asrc_priv->pair[index]->error |= ASRC_OUTPUT_BUFFER_OVERFLOW;
-> +			pair_dbg("Output Data Buffer has overflowed");
-
-same
-
-> +		}
-> +
-> +		if (status & ASRSTR_AIDU(index)) {
-> +			asrc_priv->pair[index]->error |= ASRC_INPUT_BUFFER_UNDERRUN;
-> +			pair_dbg("Input Data Buffer has underflowed");
-
-same..
-
-> +		}
-> +	}
-> +
-> +	return IRQ_HANDLED;
-> +}
-> +
-
-(...)
-
-> +/**
-> + * Configure input and output thresholds
-> + */
-> +static int fsl_asrc_set_watermarks(struct fsl_asrc_pair *pair, u32 in, u32 out)
-> +{
-
-static void for function..?
-
-> +	struct fsl_asrc *asrc_priv = pair->asrc_priv;
-> +	enum asrc_pair_index index = pair->index;
-> +
-> +	regmap_update_bits(asrc_priv->regmap, REG_ASRMCR(index),
-> +			   ASRMCRi_EXTTHRSHi_MASK |
-> +			   ASRMCRi_INFIFO_THRESHOLD_MASK |
-> +			   ASRMCRi_OUTFIFO_THRESHOLD_MASK,
-> +			   ASRMCRi_EXTTHRSHi |
-> +			   ASRMCRi_INFIFO_THRESHOLD(in) |
-> +			   ASRMCRi_OUTFIFO_THRESHOLD(out));
-> +
-> +	return 0;
-> +}
-
-(...)
-
-> +static const struct dev_pm_ops fsl_asrc_pm = {
-> +	SET_RUNTIME_PM_OPS(fsl_asrc_runtime_suspend, fsl_asrc_runtime_resume, NULL)
-> +	SET_SYSTEM_SLEEP_PM_OPS(fsl_asrc_suspend, fsl_asrc_resume)
-> +};
-> +
-
-move device ids to here...
-
-> +static struct platform_driver fsl_asrc_driver = {
-> +	.probe = fsl_asrc_probe,
-> +	.driver = {
-> +		.name = "fsl-asrc",
-> +		.of_match_table = fsl_asrc_ids,
-> +		.pm = &fsl_asrc_pm,
-> +	},
-> +};
-> +module_platform_driver(fsl_asrc_driver);
-
-Thanks...
-
--- 
-Regards,
-Varka Bhadram.
-
+--
+viresh
