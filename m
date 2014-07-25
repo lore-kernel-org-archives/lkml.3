@@ -1,81 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760788AbaGYPaj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 11:30:39 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:43500 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753817AbaGYPaR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 11:30:17 -0400
-Message-ID: <53D27804.40601@suse.de>
-Date: Fri, 25 Jul 2014 17:30:12 +0200
-From: =?UTF-8?B?QW5kcmVhcyBGw6RyYmVy?= <afaerber@suse.de>
-Organization: SUSE LINUX Products GmbH
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1760541AbaGYPcW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 11:32:22 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:34578 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752615AbaGYPcU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jul 2014 11:32:20 -0400
+Message-ID: <53D27882.8020605@gmail.com>
+Date: Fri, 25 Jul 2014 09:32:18 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: Doug Anderson <dianders@chromium.org>
-CC: Kukjin Kim <kgene.kim@samsung.com>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        Stephan van Schaik <stephan@synkhronix.com>,
-        Vincent Palatin <vpalatin@chromium.org>,
-        Ben Dooks <ben-linux@fluff.org>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        "ARM/SAMSUNG ARM A..." <linux-arm-kernel@lists.infradead.org>,
-        "OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Subject: Re: [PATCH v2 1/4] ARM: dts: exynos5250: max77686 is Snow only
-References: <1405704009-8430-1-git-send-email-afaerber@suse.de>	<1405704009-8430-2-git-send-email-afaerber@suse.de>	<08fe01cfa7c9$341cc700$9c565500$@samsung.com>	<CAD=FV=VUkU7HWjwCKO=WOrKosUtmv3YE_8pxc5uoQg0cHr-AKQ@mail.gmail.com> <CAD=FV=VeBP=1CiKesp738anZzSJNZCGkg68RBUUCyJ5U6_Y75w@mail.gmail.com>
-In-Reply-To: <CAD=FV=VeBP=1CiKesp738anZzSJNZCGkg68RBUUCyJ5U6_Y75w@mail.gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Adrian Hunter <adrian.hunter@intel.com>
+CC: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 28/52] perf script: Allow callchains if any event samples
+ them
+References: <1406035081-14301-1-git-send-email-adrian.hunter@intel.com> <1406035081-14301-29-git-send-email-adrian.hunter@intel.com> <20140725132705.GJ7831@kernel.org>
+In-Reply-To: <20140725132705.GJ7831@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Doug,
+On 7/25/14, 7:27 AM, Arnaldo Carvalho de Melo wrote:
+> Em Tue, Jul 22, 2014 at 04:17:37PM +0300, Adrian Hunter escreveu:
+>> perf script was not displaying callchains if any selected
+>> event did not have PERF_SAMPLE_CALLCHAIN.  Change this to
+>> disable callchains only if all selected events do not have
+>> PERF_SAMPLE_CALLCHAIN.
+>
+> I wonder if some other tool gets this wrong as well, report maybe?
+>
 
-Am 25.07.2014 17:13, schrieb Doug Anderson:
-> On Fri, Jul 25, 2014 at 8:08 AM, Doug Anderson <dianders@chromium.org> wrote:
->> On Thu, Jul 24, 2014 at 10:28 PM, Kukjin Kim <kgene.kim@samsung.com> wrote:
->>> Andreas Färber wrote:
->>>>
->>>> Move it from exynos5250-cros-common.dtsi to exynos5250-snow.dts.
->>>> Spring does not need it, it uses an s5m8767 instead.
->>>>
->>>> Signed-off-by: Andreas Färber <afaerber@suse.de>
->>>> ---
->>>
->>> Doug, can you have a look this series for exynos5250-chromebook?
->>> I'm not sure exynos5250-cros-common is still useful for exynos5250-spring...
->>
->> Right.  The current suggestion is to rework to just duplicate things
->> and don't use exynos5250-cros-common.
-> 
-> Oh, it actually looks like your patch series ends up there, but the
-> first patch confused me.
+perf only handles 1 sample_type so if callchains are enabled for 1 event 
+they are enabled for all.
 
-NP, guess you just started reading in the middle. ;)
+Perhaps Adrian's patch set changes that -- prior patch sets attempted 
+to. I have not had time to go through the list.
 
->  Why move just the maxim PMIC first?
+David
 
-Review of the movements surely is easier this way, and it did not yet
-seem a done deal that we would drop -cros-common. The merge patch nicely
-shows which common parts need to be copied into spring.
-
->  Move
-> everything at once and be done with the common file, then do
-> cleanup...
-
-If everyone agrees that we want to proceed that way, we can easily
-squash patches 1+2. Separating is always harder.
-
-Cheers,
-Andreas
-
--- 
-SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg, Germany
-GF: Jeff Hawn, Jennifer Guild, Felix Imendörffer; HRB 16746 AG Nürnberg
