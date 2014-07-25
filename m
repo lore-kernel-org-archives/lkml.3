@@ -1,116 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932772AbaGYIrH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 04:47:07 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:35182 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758605AbaGYIrD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 04:47:03 -0400
-Message-ID: <53D21983.8060901@suse.de>
-Date: Fri, 25 Jul 2014 10:46:59 +0200
-From: =?UTF-8?B?QW5kcmVhcyBGw6RyYmVy?= <afaerber@suse.de>
-Organization: SUSE LINUX Products GmbH
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1759887AbaGYItA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 04:49:00 -0400
+Received: from mail-la0-f45.google.com ([209.85.215.45]:33354 "EHLO
+	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755177AbaGYIs5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jul 2014 04:48:57 -0400
 MIME-Version: 1.0
-To: monstr@monstr.eu
-CC: Vinod Koul <vinod.koul@intel.com>, Michal Simek <michal.simek@xilinx.com>,
-        Andreas Olofsson <andreas@adapteva.com>,
-        Matteo Vit <matteo.vit@starwaredesign.com>,
-        Sean Rickerd <srickerd@suse.com>, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Srikanth T <sthokal@xilinx.com>
-Subject: Re: [PATCH v2 07/11] Documentation: devicetree: Fix Xilinx VDMA specification
-References: <1406242820-20140-1-git-send-email-afaerber@suse.de> <1406242820-20140-8-git-send-email-afaerber@suse.de> <53D20C19.5000306@monstr.eu>
-In-Reply-To: <53D20C19.5000306@monstr.eu>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="feq67VvpRNvSenTcKrhaAtPSDUwdA1OCj"
+In-Reply-To: <CAK5sBcFMxKzB8KgSDTtfsGV173TV6Ji3VFNETVqgpGeHPS7LEg@mail.gmail.com>
+References: <1406272180-25101-1-git-send-email-pramod.gurav@smartplayin.com>
+	<CAK5sBcFMxKzB8KgSDTtfsGV173TV6Ji3VFNETVqgpGeHPS7LEg@mail.gmail.com>
+Date: Fri, 25 Jul 2014 14:18:55 +0530
+Message-ID: <CAMf-jSnT3F0JGhcHZp6=Auzc1QwYTg34hzS4vaJETW5G4WCd0Q@mail.gmail.com>
+Subject: Re: [PATCH] Input: soc_button_array: Remove kfree on data allocated
+ with devm_zalloc
+From: pramod gurav <pramod.gurav.etc@gmail.com>
+To: Sachin Kamat <spk.linux@gmail.com>
+Cc: linux-input@vger.kernel.org, open list <linux-kernel@vger.kernel.org>,
+        Pramod Gurav <pramod.gurav@smartplayin.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Lejun Zhu <lejun.zhu@linux.intel.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---feq67VvpRNvSenTcKrhaAtPSDUwdA1OCj
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+Thanks Sachin for the review. Will resend the patch addressing your
+review comments.
 
-Hi Michal,
-
-Am 25.07.2014 09:49, schrieb Michal Simek:
-> On 07/25/2014 01:00 AM, Andreas F=C3=A4rber wrote:
->> The specification requires xlnx,data-width, but example and driver use=
-
->> xlnx,datawidth. Change the specification to match the implementation.
+On Fri, Jul 25, 2014 at 1:59 PM, Sachin Kamat <spk.linux@gmail.com> wrote:
+> On Fri, Jul 25, 2014 at 12:39 PM,  <pramod.gurav.etc@gmail.com> wrote:
+>> From: Pramod Gurav <pramod.gurav@smartplayin.com>
 >>
->> Signed-off-by: Andreas F=C3=A4rber <afaerber@suse.de>
+>> This patch does below:
+>> - Removes kfree done on data allocated with devm_zalloc in probe
+>>   path of the driver.
+>> - Adds a check on return value from devm_kzalloc which was missing
+>>   and renames a lable from err_free_mem to err_mem.
+>> - Adds couple of dev_err on failure to allocate memory
+>>
+>> CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+>> CC: Lejun Zhu <lejun.zhu@linux.intel.com>
+>> CC: Sachin Kamat <sachin.kamat@linaro.org>
+>>
+>> Signed-off-by: Pramod Gurav <pramod.gurav@smartplayin.com>
 >> ---
->>  v2: New
->> =20
->>  Documentation/devicetree/bindings/dma/xilinx/xilinx_vdma.txt | 2 +-
->>  1 file changed, 1 insertion(+), 1 deletion(-)
+>>  drivers/input/misc/soc_button_array.c |   19 ++++++++++++++-----
+>>  1 file changed, 14 insertions(+), 5 deletions(-)
 >>
->> diff --git a/Documentation/devicetree/bindings/dma/xilinx/xilinx_vdma.=
-txt b/Documentation/devicetree/bindings/dma/xilinx/xilinx_vdma.txt
->> index 1405ed0..e4c4d47 100644
->> --- a/Documentation/devicetree/bindings/dma/xilinx/xilinx_vdma.txt
->> +++ b/Documentation/devicetree/bindings/dma/xilinx/xilinx_vdma.txt
->> @@ -25,7 +25,7 @@ Required child node properties:
->>  - compatible: It should be either "xlnx,axi-vdma-mm2s-channel" or
->>  	"xlnx,axi-vdma-s2mm-channel".
->>  - interrupts: Should contain per channel VDMA interrupts.
->> -- xlnx,data-width: Should contain the stream data width, take values
->> +- xlnx,datawidth: Should contain the stream data width, take values
->>  	{32,64...1024}.
-
-BTW I just notice that this values specification is ambiguous as to
-whether 96 is a valid value or only powers of 2 like 128. Maybe you want
-to clarify that in a follow-up patch?
-
-Cheers,
-Andreas
-
->> =20
->>  Optional child node properties:
+>> diff --git a/drivers/input/misc/soc_button_array.c b/drivers/input/misc/soc_button_array.c
+>> index 5a6334b..ac82971 100644
+>> --- a/drivers/input/misc/soc_button_array.c
+>> +++ b/drivers/input/misc/soc_button_array.c
+>> @@ -83,6 +83,13 @@ soc_button_device_create(struct pnp_dev *pdev,
+>>                                        sizeof(*gpio_keys_pdata) +
+>>                                         sizeof(*gpio_keys) * MAX_NBUTTONS,
+>>                                        GFP_KERNEL);
+>> +       if (!gpio_keys_pdata) {
+>> +               dev_err(&pdev->dev,
+>> +                       "Can't allocate memory for gpio_keys_platform_data\n");
+>
+> OOM message is not needed as memory subsystem will take care of it.
+>
+>> +               error = -ENOMEM;
+>> +               goto err_mem;
+>
+> Return directly from here.
+>
+>> +       }
+>> +
+>>         gpio_keys = (void *)(gpio_keys_pdata + 1);
 >>
->=20
-> Can you please take this patch through your tree?
->=20
-> Reviewed-by: Michal Simek <michal.simek@xilinx.com>
->=20
-> Thanks,
-> Michal
+>>         for (info = button_info; info->name; info++) {
+>> @@ -104,7 +111,7 @@ soc_button_device_create(struct pnp_dev *pdev,
+>>
+>>         if (n_buttons == 0) {
+>>                 error = -ENODEV;
+>> -               goto err_free_mem;
+>> +               goto err_mem;
+>
+> ditto
+>
+>>         }
+>>
+>>         gpio_keys_pdata->buttons = gpio_keys;
+>> @@ -114,7 +121,7 @@ soc_button_device_create(struct pnp_dev *pdev,
+>>         pd = platform_device_alloc("gpio-keys", PLATFORM_DEVID_AUTO);
+>>         if (!pd) {
+>>                 error = -ENOMEM;
+>> -               goto err_free_mem;
+>> +               goto err_mem;
+>
+> ditto
+>
+>>         }
+>>
+>>         error = platform_device_add_data(pd, gpio_keys_pdata,
+>> @@ -130,8 +137,7 @@ soc_button_device_create(struct pnp_dev *pdev,
+>>
+>>  err_free_pdev:
+>>         platform_device_put(pd);
+>> -err_free_mem:
+>> -       devm_kfree(&pdev->dev, gpio_keys_pdata);
+>> +err_mem:
+>
+> This label would not be required once returned directly from above.
+>
+>>         return ERR_PTR(error);
+>>  }
+>>
+>> @@ -155,8 +161,11 @@ static int soc_button_pnp_probe(struct pnp_dev *pdev,
+>>         int error;
+>>
+>>         priv = devm_kzalloc(&pdev->dev, sizeof(*priv), GFP_KERNEL);
+>> -       if (!priv)
+>> +       if (!priv) {
+>> +               dev_err(&pdev->dev,
+>> +                       "Can't allocate memory for soc_button_data\n");
+>
+> OOM message is not needed as memory subsystem will take care of it.
+>
+>
+> --
+> Regards,
+> Sachin.
 
---=20
-SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 N=C3=BCrnberg, Germany
-GF: Jeff Hawn, Jennifer Guild, Felix Imend=C3=B6rffer; HRB 16746 AG N=C3=BC=
-rnberg
 
 
---feq67VvpRNvSenTcKrhaAtPSDUwdA1OCj
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJT0hmDAAoJEPou0S0+fgE/bl8QAJDptLkGwPNIxUuVhQNtCEAN
-a6jgzZ8AMqBrYHTaqtWzvE+qs3N/IofSBYWRGcHFiT3xZVDXqyEIO1+Z26pV3BtL
-PQiJNAubMuouP0HpmzQomlG4RGUcu09784092hdC9UVBmWdPcvCIYb04wpeco9R1
-SKAUR8Ub1MKE9o0kv8rkcUE1Se3SNI/eyR0zS479cyDsHXPpmfFkVu3awexETTrV
-Ebm3wfLMXHofbTp2+batTyVnz2VgNZb3prjjfBer2uKVN12S8o1azLjRLx4s/OYh
-1MwyDsEaCvoLEVn/uS20oY0mqcKdgUyAgNnFmjPZNkELJQStsYmrM3/QJh4cWdmY
-hLCxRSAl28jE4J/gwjWMwx0pKCAHN36NAW8lpSakLr7XOSfRW3XWOKr45JlBmz8n
-ZpuqPTEbDAtMR7Uv0tgHFWcYOLED5yBbSJjrTmxwdXg+WZ0rFfnMHd7Eo+LqTL0R
-qvfwZWzWNtPr1WenTVS1ZnNajM+HgqhRr+KZy8ZrPApf8Odqh/VXXecm+EUKcmM5
-yiKVwf8phdarBqbeh2/lmnd58a51aj030dseMinJ3o5xaRDipQZ9mGztKcvcL9Es
-H3/p5ZuGgNFKCCnPZBduNJz+5rwn375S/Fw78oNgxGIC54Gl16mcdemM1JywTj7f
-iCQtGiboG3hXcHaDQDN1
-=Iz7W
------END PGP SIGNATURE-----
-
---feq67VvpRNvSenTcKrhaAtPSDUwdA1OCj--
+-- 
+Thanks and Regards
+Pramod
