@@ -1,147 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758616AbaGYDNP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 23:13:15 -0400
-Received: from mail-vc0-f170.google.com ([209.85.220.170]:54230 "EHLO
-	mail-vc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750846AbaGYDNN (ORCPT
+	id S1758857AbaGYDNU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 23:13:20 -0400
+Received: from mail-vc0-f172.google.com ([209.85.220.172]:52402 "EHLO
+	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758698AbaGYDNR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 23:13:13 -0400
+	Thu, 24 Jul 2014 23:13:17 -0400
 MIME-Version: 1.0
-In-Reply-To: <53D1CA70.60301@gmail.com>
-References: <1406156581-6052-1-git-send-email-xerofoify@gmail.com>
-	<yw1xy4vi90n6.fsf@unicorn.mansr.com>
-	<CAPDOMVia0OXydg_hRH0t63xUaxKEkVc6D20vAZiyugkMXAEsJQ@mail.gmail.com>
-	<yw1xtx669002.fsf@unicorn.mansr.com>
-	<CAPDOMVgziyYTX41xZVB9FLHUKFRPPm19jo0A_WfbLqaaKbxPqg@mail.gmail.com>
-	<20140724131821.30c4519d@gandalf.local.home>
-	<CAHLZz12ammMZNAah_eyYePJWorw2AruDAujeNxJHvOF5+Mr7cA@mail.gmail.com>
-	<20140724134849.4d228f5f@gandalf.local.home>
-	<CAPDOMVi7cHUAn_1AxJ+tN1c67UqBdLHLC1sJNSA=HUK-WzZCTA@mail.gmail.com>
-	<CAFLxGvzA4HHL0aJaC0Ypf9_YeL5WW4_eYNToSVG7H43DD2unSg@mail.gmail.com>
-	<CAPDOMViVAY5cBuwe=nLjnFUHy4_FVUh_9LkChv+vso5w7WVeDA@mail.gmail.com>
-	<CAPDOMVhNaV+Wertp+p361iYS8t-rZmN2nubn9coyrUcgZPcuGw@mail.gmail.com>
-	<53D15A6B.6030806@nod.at>
-	<53D1BDCC.5030202@gmail.com>
-	<CAPDOMVhuiSwBs_d6b5qFN2jLwsLAu+_CtaSJH+oG0MxGXmtKOw@mail.gmail.com>
-	<53D1C526.9040307@gmail.com>
-	<CAPDOMVhZNVOjCFYa4oJCL2rSRjXPjEgcQC42w_LGXHubYmDyYA@mail.gmail.com>
-	<53D1CA70.60301@gmail.com>
-Date: Thu, 24 Jul 2014 23:13:12 -0400
-Message-ID: <CAPDOMVjCmjM2QeXCx+TK8wk3LXiCq+NKK7ami6n2HP0gO0YGBg@mail.gmail.com>
-Subject: Re: [PATCH] staging: Change kzalloc to kcalloc
-From: Nick Krause <xerofoify@gmail.com>
-To: Chen Gang <gang.chen.5i5j@gmail.com>
-Cc: Richard Weinberger <richard@nod.at>,
-        Richard Weinberger <richard.weinberger@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Harvey Harrison <harvey.harrison@gmail.com>,
-        =?UTF-8?B?TcOlbnMgUnVsbGfDpXJk?= <mans@mansr.com>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
-        Dan Carpenter <dan.carpenter@oracle.com>, tomas.winkler@intel.com,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <x49vbqp7b3p.fsf@segfault.boston.devel.redhat.com>
+References: <1405996804-8262-1-git-send-email-guz.fnst@cn.fujitsu.com>
+	<1405996804-8262-2-git-send-email-guz.fnst@cn.fujitsu.com>
+	<x49vbqp7b3p.fsf@segfault.boston.devel.redhat.com>
+Date: Fri, 25 Jul 2014 11:13:16 +0800
+Message-ID: <CACVXFVOv1TShu=s40KvVLMTfk4b2ktZ0xmDUPyiO+7=BqOcSrw@mail.gmail.com>
+Subject: Re: [PATCH 2/4] aio: use the macro rather than the inline magic number
+From: Ming Lei <tom.leiming@gmail.com>
+To: Jeff Moyer <jmoyer@redhat.com>
+Cc: Gu Zheng <guz.fnst@cn.fujitsu.com>, Benjamin LaHaise <bcrl@kvack.org>,
+        Jens Axboe <axboe@kernel.dk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "open list:AIO" <linux-aio@kvack.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 24, 2014 at 11:09 PM, Chen Gang <gang.chen.5i5j@gmail.com> wrote:
+On Tue, Jul 22, 2014 at 9:54 PM, Jeff Moyer <jmoyer@redhat.com> wrote:
+> Gu Zheng <guz.fnst@cn.fujitsu.com> writes:
 >
+>> Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
 >
-> On 07/25/2014 10:53 AM, Nick Krause wrote:
->> On Thu, Jul 24, 2014 at 10:47 PM, Chen Gang <gang.chen.5i5j@gmail.com> wrote:
->>>
->>>
->>> On 07/25/2014 10:20 AM, Nick Krause wrote:
->>>> On Thu, Jul 24, 2014 at 10:15 PM, Chen Gang <gang.chen.5i5j@gmail.com> wrote:
->>>>>
->>>>> Excuse me, I did not see the patch details, but I guess it is about
->>>>> whether welcome a new member to upstream kernel. For me, I have 3 ideas
->>>>> about it if I am a newbie or a normal kernel developer:
->>>>>
->>>>>  - Do I have enough basic skills for it?
->>>>>
->>>>>     - Do I developed one or more another real world projects with C?
->>>>>       (they are successful projects -- at least, not failure projects)
->>>>>
->>>>>     - Can I construct related develop environments to support what I do?
->>>>>       (e.g. building and testing for upstream kernel)
->>>>>
->>>>>     - Am I familiar the basic working flow about kernel mailing list.
->>>>>       (e.g. format-patch, sending patch, email client configuration...).
->>>>>
->>>>>  - Do I have a correct attitude on it?
->>>>>
->>>>>     - Am I careful enough?
->>>>>       (e.g. if find some details may doubt, try to check and clear them)
->>>>>       (it is always neccessary for all patches)
->>>>>
->>>>>     - Am I try my best for it?
->>>>>       (e.g. when finish coding, try what I can do: build, run and test).
->>>>>       (it is neccessary for most cases)
->>>>>
->>>>>     - Do I have negative effect with others?
->>>>>       (e.g. discourage the newbies, or send spam to other members ...).
->>>>>       (need always try to avoid)
->>>>>
->>>>>  - Do I really love programming, also love open source kernel?
->>>>>
->>>>>     - Do I love it, or I have to do it for another reason?
->>>>>       (I guess, most of gmail members in open source, love programming).
->>>>>
->>>>>     - Do I still love programming if I am discouraged by any members?
->>>>>
->>>>>     - Do I still love open source kernel if discouraged by any members?
->>>>>
->>>>>
->>>> I have most of these skills other then developing real projects in C with other
->>>> developers as other then the kernel I don't have must interest in C outside
->>>> of embedded programming.
->>>
->>> OK, thanks. If what you said is true, for me, if you will, please still
->>> continue for open source kernel, but really need be more careful about
->>> the patch you made before send to open mailing list.
->>>
->>>
->>> Thanks.
->>> --
->>> Chen Gang
->>>
->>> Open, share, and attitude like air, water, and life which God blessed
+> Reviewed-by: Jeff Moyer <jmoyer@redhat.com>
+>
+>> ---
+>>  fs/aio.c |    2 +-
+>>  1 files changed, 1 insertions(+), 1 deletions(-)
 >>
->> Chen ,
->> Thanks for helping me out here :). The true through is I don't known how to
->> build test correctly as a newb and thought it was better just to avoid it(stupid
->> me). I would like to known how to do this and if there is any way I can help you
->> guys out , please let me known :). I don't want to be avoided I am honestly here
->> to help make your life easier.
->
-> Excuse me, my English is not quite well, I do not understand what you
-> said, I guess your meaning is "not familiar with how to build and test
-> upstream kernel" If what I guess is incorrect, please let me know.
->
-> There are some books or some related web links for building and test
-> kernel, they are not quite difficult to get (please google search).
->
-> I guess, it is necessary to reference these information and construct
-> related develop environments to support what you want to do next.
->
->
-> By the way, excuse me, today I have to do some other things firstly, so
-> maybe my next email reply will be late (may tomorrow, or the day after
-> tomorrow).
->
->
-> Thanks.
-> --
-> Chen Gang
->
-> Open, share, and attitude like air, water, and life which God blessed
+>> diff --git a/fs/aio.c b/fs/aio.c
+>> index ad35876..1dc6158 100644
+>> --- a/fs/aio.c
+>> +++ b/fs/aio.c
+>> @@ -201,7 +201,7 @@ static struct dentry *aio_mount(struct file_system_type *fs_type,
+>>       static const struct dentry_operations ops = {
+>>               .d_dname        = simple_dname,
+>>       };
+>> -     return mount_pseudo(fs_type, "aio:", NULL, &ops, 0xa10a10a1);
+>> +     return mount_pseudo(fs_type, "aio:", NULL, &ops, AIO_RING_MAGIC);
 
-That's what I meant. If you can sent me a link to how to do build testing
-that would be great :).
-Nick
+IMO, it might be better to use a new macro like AIO_FS_MAGIC
+with same number here because the same magic number
+0xa10a10a1 serves for two purposes.
+
+Thanks,
