@@ -1,57 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935296AbaGYRiA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 13:38:00 -0400
-Received: from mail-lb0-f179.google.com ([209.85.217.179]:35912 "EHLO
-	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934792AbaGYRh4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 13:37:56 -0400
-From: "Matwey V. Kornilov" <matwey.kornilov@gmail.com>
-To: airlied@linux.ie
-Cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        linux-omap@vger.kernel.org, "Matwey V. Kornilov" <matwey@sai.msu.ru>
-Subject: [PATCHv2 2/2] gpu: drm: omapdrm: Change struct pat data_pa type to dma_addr_t
-Date: Fri, 25 Jul 2014 21:37:37 +0400
-Message-Id: <1406309857-11141-2-git-send-email-matwey.kornilov@gmail.com>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1406309857-11141-1-git-send-email-matwey.kornilov@gmail.com>
-References: <1406309857-11141-1-git-send-email-matwey.kornilov@gmail.com>
+	id S935320AbaGYRiP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 13:38:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:47023 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934278AbaGYRiM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jul 2014 13:38:12 -0400
+From: Abhi Das <adas@redhat.com>
+To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        cluster-devel@redhat.com
+Cc: Abhi Das <adas@redhat.com>
+Subject: [RFC PATCH 0/5] xgetdents system call
+Date: Fri, 25 Jul 2014 12:38:03 -0500
+Message-Id: <1406309888-10749-1-git-send-email-adas@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Matwey V. Kornilov" <matwey@sai.msu.ru>
+This system call takes 5 arguments:
+fd    - file descriptor of the directory
+flags - flags used by xstat
+mask  - field mask used to request stat/xattr info
+buf   - user buf to return collected info
+count - size of user buffer in bytes
 
-The single one use-case for data_pa member of the struct pat is to carry a value of dma_addr_t type.
-This patch solves the following compilation error:
+xgetdents() should read the directory entries, collect stat
+and xattr information for each entry as requested and return
+all the data back to the user in a container structure
+(linux_xdirent) as part of the supplied user buffer.
 
-../drivers/gpu/drm/omapdrm/omap_dmm_tiler.c: In function 'dmm_txn_append':
-../drivers/gpu/drm/omapdrm/omap_dmm_tiler.c:226:2: error: passing argument 3 of 'alloc_dma' from incompatible pointer type [-Werror]
-  data = alloc_dma(txn, 4*i, &pat->data_pa);
-  ^
-../drivers/gpu/drm/omapdrm/omap_dmm_tiler.c:77:14: note: expected 'dma_addr_t *' but argument is of type 'uint32_t *'
- static void *alloc_dma(struct dmm_txn *txn, size_t sz, dma_addr_t *pa)
-              ^
+Abhi Das (5):
+  fs: xstat system call VFS bits
+  fs: Add xgetdents system call and xreaddir file operation
+  gfs2: Add a dynamic buffer backed by a vector of pages
+  gfs2: Add sort functionality with extra parameter
+  gfs2: Add xreaddir file operation and supporting functions
 
-Signed-off-by: Matwey V. Kornilov <matwey@sai.msu.ru>
----
- drivers/gpu/drm/omapdrm/omap_dmm_priv.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/x86/syscalls/syscall_32.tbl |    3 +
+ arch/x86/syscalls/syscall_64.tbl |    3 +
+ fs/gfs2/Makefile                 |    3 +-
+ fs/gfs2/dir.c                    |   80 +--
+ fs/gfs2/dir.h                    |   13 +-
+ fs/gfs2/export.c                 |    2 +-
+ fs/gfs2/file.c                   |   17 +-
+ fs/gfs2/incore.h                 |    6 +
+ fs/gfs2/inode.c                  |    3 +-
+ fs/gfs2/inode.h                  |    5 +
+ fs/gfs2/ops_fstype.c             |    4 +
+ fs/gfs2/sys.c                    |   26 +-
+ fs/gfs2/util.c                   |  363 ++++++++++++++
+ fs/gfs2/util.h                   |   47 ++
+ fs/gfs2/xattr.c                  |   27 +-
+ fs/gfs2/xattr.h                  |   23 +
+ fs/gfs2/xreaddir.c               | 1024 ++++++++++++++++++++++++++++++++++++++
+ fs/gfs2/xreaddir.h               |   84 ++++
+ fs/readdir.c                     |   42 ++
+ fs/stat.c                        |  340 ++++++++++++-
+ include/linux/fs.h               |    5 +
+ include/linux/stat.h             |   16 +-
+ include/linux/syscalls.h         |    5 +
+ include/uapi/linux/fcntl.h       |    1 +
+ include/uapi/linux/stat.h        |  143 ++++++
+ 25 files changed, 2196 insertions(+), 89 deletions(-)
+ create mode 100644 fs/gfs2/xreaddir.c
+ create mode 100644 fs/gfs2/xreaddir.h
 
-diff --git a/drivers/gpu/drm/omapdrm/omap_dmm_priv.h b/drivers/gpu/drm/omapdrm/omap_dmm_priv.h
-index 58bcd6a..4142525 100644
---- a/drivers/gpu/drm/omapdrm/omap_dmm_priv.h
-+++ b/drivers/gpu/drm/omapdrm/omap_dmm_priv.h
-@@ -105,7 +105,7 @@ struct pat {
- 	uint32_t next_pa;
- 	struct pat_area area;
- 	struct pat_ctrl ctrl;
--	uint32_t data_pa;
-+	dma_addr_t data_pa;
- };
- 
- #define DMM_FIXED_RETRY_COUNT 1000
 -- 
 1.8.1.4
 
