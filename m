@@ -1,90 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932309AbaGYJ1c (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 05:27:32 -0400
-Received: from www.linutronix.de ([62.245.132.108]:55520 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750818AbaGYJ1a (ORCPT
+	id S1759865AbaGYJ2N (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 05:28:13 -0400
+Received: from ud10.udmedia.de ([194.117.254.50]:44169 "EHLO
+	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750818AbaGYJ2L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 05:27:30 -0400
-Date: Fri, 25 Jul 2014 11:27:25 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Dmitry Torokhov <dtor@google.com>
-Subject: Re: [RFC][PATCH] irq: Rework IRQF_NO_SUSPENDED
-In-Reply-To: <13290270.IfKaUSRMLR@vostro.rjw.lan>
-Message-ID: <alpine.DEB.2.10.1407251109390.23352@nanos>
-References: <20140724212620.GO3935@laptop> <13290270.IfKaUSRMLR@vostro.rjw.lan>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	Fri, 25 Jul 2014 05:28:11 -0400
+X-Greylist: delayed 396 seconds by postgrey-1.27 at vger.kernel.org; Fri, 25 Jul 2014 05:28:11 EDT
+Date: Fri, 25 Jul 2014 11:21:27 +0200
+From: Markus Trippelsdorf <markus@trippelsdorf.de>
+To: Michel =?iso-8859-1?Q?D=E4nzer?= <michel@daenzer.net>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Jakub Jelinek <jakub@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Dietmar Eggemann <dietmar.eggemann@arm.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Random panic in load_balance() with 3.16-rc
+Message-ID: <20140725092127.GA295@x4>
+References: <CA+55aFyFT9n5wUNifEHY6+t2bEcD91kL7+dqXuBMSMJvLeDDJQ@mail.gmail.com>
+ <20140723184111.GG3935@laptop>
+ <CA+55aFwQfwfAP6U77_nD_mSvoygj=cZ09N644hKRtzgLnEqhZQ@mail.gmail.com>
+ <20140723190230.GH3935@laptop>
+ <CA+55aFyM1wqTLK0m4GQJ28f=z0iZE87=xk+1z-vm+PH1_d8nKw@mail.gmail.com>
+ <53D064C7.5050807@daenzer.net>
+ <CA+55aFyJhqiPv0kQ+51=Ei-zaAO+0JszxtnEyx-Gbto3SE00xw@mail.gmail.com>
+ <20140725064836.GE2397@laptop.redhat.com>
+ <CA+55aFyrNZ1EHyjfi6VCLHtERCqqL2b=CwZ542nR_xBYouvmfw@mail.gmail.com>
+ <53D21D6C.2050406@daenzer.net>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <53D21D6C.2050406@daenzer.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 25 Jul 2014, Rafael J. Wysocki wrote:
-> On Thursday, July 24, 2014 11:26:20 PM Peter Zijlstra wrote:
-> > Subject: irq: Rework IRQF_NO_SUSPENDED
-> > From: Peter Zijlstra <peterz@infradead.org>
-> > Date: Thu Jul 24 22:34:50 CEST 2014
+On 2014.07.25 at 18:03 +0900, Michel Dänzer wrote:
+> On 25.07.2014 17:15, Linus Torvalds wrote:
+> > On Thu, Jul 24, 2014 at 11:48 PM, Jakub Jelinek <jakub@redhat.com> wrote:
+> >>
+> >> Can I ask anyone involved in this for preprocessed source and all gcc command
+> >> line options to reproduce it, best in the form of a http://gcc.gnu.org/bugzilla/
+> >> bugreport?
 > > 
-> > Typically when devices are suspended they're quiesced such that they
-> > will not generate any further interrupts.
+> > I've created bug 61904 for this:
 > > 
-> > However some devices should still generate interrupts, even when
-> > suspended, typically used to wake the machine back up.
+> >   https://gcc.gnu.org/bugzilla/show_bug.cgi?id=61904
 > > 
-> > Such logic should ideally be contained inside each driver, if it can
-> > generate interrupts when suspended, it knows about this and the
-> > interrupt handler can deal with it.
-> > 
-> > Except of course for shared interrupts, when such a wakeup device is
-> > sharing an interrupt line with a device that does not expect
-> > interrupts while suspended things can go funny.
-> > 
-> > This is where IRQF_NO_SUSPEND comes in, the idea is that drivers that
-> > have the capability to wake the machine set IRQF_NO_SUSPEND and their
-> > handler will still be called, even when the IRQ subsystem is formally
-> > suspended. Handlers without IRQF_NO_SUSPEND will not be called.
-> > 
-> > This replaced the prior implementation of IRQF_NO_SUSPEND which had
-> > a number of fatal issues in that it didn't actually work for the
-> > shared case, exactly the case it should be helping.
-> > 
-> > There is still enable_irq_wake()/IRQD_WAKEUP_STATE that tries to serve
-> > a similar purpose but is equially wrecked for shared interrupts,
-> > ideally this would be removed.
+> > Note that I don't personally have a reproducer (my machine has
+> > gcc-4.8.3, and I don't see the same behavior), but I included the
+> > incorrect fair.s file that Michel sent me (which has all the command
+> > line options in it), and a pre-processed "fair.i" source file that I
+> > generated and that *should* match the configuration that was the
+> > source for that result. So there might be some version/configuration
+> > skew there between the two files, but I think they match.
 > 
-> Let me comment about this particular thing.
+> Thank you Linus for tracking down the problem and filing the bug report!
+> I would have done the latter as well, but I could only have channeled
+> your analysis anyway. :)
 > 
-> I had a discussion with Dmitry about that and his argument was that
-> enable_irq_wake() should imply IRQF_NO_SUSPEND, because drivers that
-> set up interrupts for system wakeup should expect those interrupts to
-> trigger at any time, including system suspend.  Hence the patch that
-> added the IRQD_WAKEUP_STATE check to __disable_irq().
 > 
-> However, in the face of the problem that is being addressed here I'm
-> not really sure that this argument is valid, because if the driver
-> calling enable_irq_wake() is sharing the IRQ with another one, the
-> other driver may not actually know that the IRQ will be a wakeup one
-> and still may not expect interrupts to come to it during system
-> suspend/resume.
+> > Holler if you cannot reproduce the problem based on that.
 > 
-> Yes, drivers using enable_irq_wake() will likely want IRQF_NO_SUSPEND to
-> be set for their irqactions, but that should not imply "no suspend" for
-> all irqactions sharing the same desc.  So I guess it may be better to go
-> forth and use a global "interrupts suspended" state variable instead of the
-> IRQS_SUSPENDED flag for each desc and throw away the IRQD_WAKEUP_STATE
-> check from suspend_device_irqs() entirely.
+> Likewise. I can create a GCC bugzilla account and add myself to the CC
+> list if that helps.
+> 
+> FWIW though, the fair.i file you attached is basically identical to what
+> I'm getting, the only difference being a handful of file path strings.
 
-How should that global state work?
+Unfortunately I cannot reproduce the issue. Please post your complete
+compiler invocation while also adding -v to the options.
 
-Thanks,
-
-	tglx
+-- 
+Markus
