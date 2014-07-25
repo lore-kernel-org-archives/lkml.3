@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760723AbaGYNvT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 09:51:19 -0400
-Received: from mail-wi0-f202.google.com ([209.85.212.202]:60947 "EHLO
-	mail-wi0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760389AbaGYNsM (ORCPT
+	id S1760703AbaGYNvL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 09:51:11 -0400
+Received: from mail-la0-f74.google.com ([209.85.215.74]:62658 "EHLO
+	mail-la0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760392AbaGYNsN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 09:48:12 -0400
+	Fri, 25 Jul 2014 09:48:13 -0400
 From: David Drysdale <drysdale@google.com>
 To: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>
@@ -18,9 +18,9 @@ Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
         Paolo Bonzini <pbonzini@redhat.com>, Paul Moore <paul@paul-moore.com>,
         Christoph Hellwig <hch@infradead.org>, linux-api@vger.kernel.org,
         David Drysdale <drysdale@google.com>
-Subject: [PATCH 07/11] capsicum: convert callers to use sockfd_lookupr() etc
-Date: Fri, 25 Jul 2014 14:47:03 +0100
-Message-Id: <1406296033-32693-8-git-send-email-drysdale@google.com>
+Subject: [PATCH 09/11] capsicum: add syscalls to limit FD rights
+Date: Fri, 25 Jul 2014 14:47:05 +0100
+Message-Id: <1406296033-32693-10-git-send-email-drysdale@google.com>
 X-Mailer: git-send-email 2.0.0.526.g5318336
 In-Reply-To: <1406296033-32693-1-git-send-email-drysdale@google.com>
 References: <1406296033-32693-1-git-send-email-drysdale@google.com>
@@ -28,573 +28,250 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Convert places that use sockfd_lookup() functions to use the
-equivalent sockfd_lookupr() variant instead.
+Add the cap_rights_get(2) and cap_rights_set(2) syscalls to
+allow retrieval and modification of the rights associated with
+a file descriptor.
 
-Annotate each such call with an indication of what operations will
-be performed on the retrieved socket, to allow future policing
-of rights associated with file descriptors.
+When a normal file descriptor has its rights restricted in any
+way, it becomes a Capsicum capability file descriptor.  This is
+a wrapper struct file that is installed in the fdtable in place
+of the original file.  From this point on, when the FD is converted
+to a struct file by fget() (or equivalent), the wrapper is checked
+for the appropriate rights and the wrapped inner normal file is
+returned.
+
+When a Capsicum capability file descriptor has its rights restricted
+further (they cannot be expanded), a new wrapper is created with
+the restricted rights, also wrapping the same inner normal file.
+In other words, the .underlying field in a struct capsicum_capability
+is always a normal file, never another Capsicum capability file.
+
+These syscalls specify the different components of the compound
+rights structure separately, allowing components to be unspecified
+for no change.
+
+Note that in FreeBSD 10.x the function of this pair of syscalls
+is implemented as 3 distinct pairs of syscalls, one pair for each
+component of the compound rights (primary/fcntl/ioctl).
 
 Signed-off-by: David Drysdale <drysdale@google.com>
 ---
- drivers/block/nbd.c                |   3 +-
- drivers/scsi/iscsi_tcp.c           |   2 +-
- drivers/staging/usbip/stub_dev.c   |   2 +-
- drivers/staging/usbip/vhci_sysfs.c |   2 +-
- drivers/vhost/net.c                |   2 +-
- fs/ncpfs/inode.c                   |   5 +-
- net/bluetooth/bnep/sock.c          |   2 +-
- net/bluetooth/cmtp/sock.c          |   2 +-
- net/bluetooth/hidp/sock.c          |   4 +-
- net/compat.c                       |   4 +-
- net/l2tp/l2tp_core.c               |  11 ++--
- net/l2tp/l2tp_core.h               |   2 +
- net/sched/sch_atm.c                |   2 +-
- net/socket.c                       | 119 +++++++++++++++++++++++--------------
- net/sunrpc/svcsock.c               |   4 +-
- 15 files changed, 100 insertions(+), 66 deletions(-)
+ arch/x86/syscalls/syscall_64.tbl |   2 +
+ include/linux/syscalls.h         |  12 ++++
+ kernel/sys_ni.c                  |   4 ++
+ security/capsicum.c              | 146 +++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 164 insertions(+)
 
-diff --git a/drivers/block/nbd.c b/drivers/block/nbd.c
-index 08381e2049b6..b5344c8cbb14 100644
---- a/drivers/block/nbd.c
-+++ b/drivers/block/nbd.c
-@@ -643,7 +643,8 @@ static int __nbd_ioctl(struct block_device *bdev, struct nbd_device *nbd,
- 		int err;
- 		if (nbd->sock)
- 			return -EBUSY;
--		sock = sockfd_lookup(arg, &err);
-+		sock = sockfd_lookupr(arg, &err,
-+				      CAP_READ, CAP_WRITE, CAP_SHUTDOWN);
- 		if (sock) {
- 			nbd->sock = sock;
- 			if (max_part > 0)
-diff --git a/drivers/scsi/iscsi_tcp.c b/drivers/scsi/iscsi_tcp.c
-index a669f2d11c31..f112bbd32278 100644
---- a/drivers/scsi/iscsi_tcp.c
-+++ b/drivers/scsi/iscsi_tcp.c
-@@ -652,7 +652,7 @@ iscsi_sw_tcp_conn_bind(struct iscsi_cls_session *cls_session,
- 	int err;
+diff --git a/arch/x86/syscalls/syscall_64.tbl b/arch/x86/syscalls/syscall_64.tbl
+index ec255a1646d2..d980d2b8bfad 100644
+--- a/arch/x86/syscalls/syscall_64.tbl
++++ b/arch/x86/syscalls/syscall_64.tbl
+@@ -323,6 +323,8 @@
+ 314	common	sched_setattr		sys_sched_setattr
+ 315	common	sched_getattr		sys_sched_getattr
+ 316	common	renameat2		sys_renameat2
++318	common	cap_rights_limit	sys_cap_rights_limit
++319	common	cap_rights_get		sys_cap_rights_get
  
- 	/* lookup for existing socket */
--	sock = sockfd_lookup((int)transport_eph, &err);
-+	sock = sockfd_lookupr((int)transport_eph, &err, CAP_SOCK_SERVER);
- 	if (!sock) {
- 		iscsi_conn_printk(KERN_ERR, conn,
- 				  "sockfd_lookup failed %d\n", err);
-diff --git a/drivers/staging/usbip/stub_dev.c b/drivers/staging/usbip/stub_dev.c
-index 51d0c7188738..9654d9f871c9 100644
---- a/drivers/staging/usbip/stub_dev.c
-+++ b/drivers/staging/usbip/stub_dev.c
-@@ -109,7 +109,7 @@ static ssize_t store_sockfd(struct device *dev, struct device_attribute *attr,
- 			goto err;
- 		}
+ #
+ # x32-specific system call numbers start at 512 to avoid cache impact
+diff --git a/include/linux/syscalls.h b/include/linux/syscalls.h
+index b0881a0ed322..d754f0846037 100644
+--- a/include/linux/syscalls.h
++++ b/include/linux/syscalls.h
+@@ -65,6 +65,7 @@ struct old_linux_dirent;
+ struct perf_event_attr;
+ struct file_handle;
+ struct sigaltstack;
++struct cap_rights;
  
--		socket = sockfd_lookup(sockfd, &err);
-+		socket = sockfd_lookupr(sockfd, &err, CAP_LIST_END);
- 		if (!socket)
- 			goto err;
- 
-diff --git a/drivers/staging/usbip/vhci_sysfs.c b/drivers/staging/usbip/vhci_sysfs.c
-index 211f43f67ea2..efe9d7625433 100644
---- a/drivers/staging/usbip/vhci_sysfs.c
-+++ b/drivers/staging/usbip/vhci_sysfs.c
-@@ -195,7 +195,7 @@ static ssize_t store_attach(struct device *dev, struct device_attribute *attr,
- 		return -EINVAL;
- 
- 	/* Extract socket from fd. */
--	socket = sockfd_lookup(sockfd, &err);
-+	socket = sockfd_lookupr(sockfd, &err, CAP_LIST_END);
- 	if (!socket)
- 		return -EINVAL;
- 
-diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
-index 8f552d2b637e..2d670e409972 100644
---- a/drivers/vhost/net.c
-+++ b/drivers/vhost/net.c
-@@ -843,7 +843,7 @@ static struct socket *get_raw_socket(int fd)
- 		char  buf[MAX_ADDR_LEN];
- 	} uaddr;
- 	int uaddr_len = sizeof uaddr, r;
--	struct socket *sock = sockfd_lookup(fd, &r);
-+	struct socket *sock = sockfd_lookupr(fd, &r, CAP_READ, CAP_WRITE);
- 
- 	if (!sock)
- 		return ERR_PTR(-ENOTSOCK);
-diff --git a/fs/ncpfs/inode.c b/fs/ncpfs/inode.c
-index e31e589369a4..580024e60d20 100644
---- a/fs/ncpfs/inode.c
-+++ b/fs/ncpfs/inode.c
-@@ -539,7 +539,7 @@ static int ncp_fill_super(struct super_block *sb, void *raw_data, int silent)
- 	if (!uid_valid(data.mounted_uid) || !uid_valid(data.uid) ||
- 	    !gid_valid(data.gid))
- 		goto out;
--	sock = sockfd_lookup(data.ncp_fd, &error);
-+	sock = sockfd_lookupr(data.ncp_fd, &error, CAP_WRITE, CAP_FSTAT);
- 	if (!sock)
- 		goto out;
- 
-@@ -567,7 +567,8 @@ static int ncp_fill_super(struct super_block *sb, void *raw_data, int silent)
- 	server->ncp_sock = sock;
- 	
- 	if (data.info_fd != -1) {
--		struct socket *info_sock = sockfd_lookup(data.info_fd, &error);
-+		struct socket *info_sock = sockfd_lookupr(data.info_fd, &error,
-+							  CAP_WRITE, CAP_FSTAT);
- 		if (!info_sock)
- 			goto out_bdi;
- 		server->info_sock = info_sock;
-diff --git a/net/bluetooth/bnep/sock.c b/net/bluetooth/bnep/sock.c
-index 5f051290daba..1a69b6b05d2e 100644
---- a/net/bluetooth/bnep/sock.c
-+++ b/net/bluetooth/bnep/sock.c
-@@ -69,7 +69,7 @@ static int bnep_sock_ioctl(struct socket *sock, unsigned int cmd, unsigned long
- 		if (copy_from_user(&ca, argp, sizeof(ca)))
- 			return -EFAULT;
- 
--		nsock = sockfd_lookup(ca.sock, &err);
-+		nsock = sockfd_lookupr(ca.sock, &err, CAP_READ, CAP_WRITE);
- 		if (!nsock)
- 			return err;
- 
-diff --git a/net/bluetooth/cmtp/sock.c b/net/bluetooth/cmtp/sock.c
-index d82787d417bd..4033b771e6ca 100644
---- a/net/bluetooth/cmtp/sock.c
-+++ b/net/bluetooth/cmtp/sock.c
-@@ -83,7 +83,7 @@ static int cmtp_sock_ioctl(struct socket *sock, unsigned int cmd, unsigned long
- 		if (copy_from_user(&ca, argp, sizeof(ca)))
- 			return -EFAULT;
- 
--		nsock = sockfd_lookup(ca.sock, &err);
-+		nsock = sockfd_lookupr(ca.sock, &err, CAP_READ, CAP_WRITE);
- 		if (!nsock)
- 			return err;
- 
-diff --git a/net/bluetooth/hidp/sock.c b/net/bluetooth/hidp/sock.c
-index cb3fdde1968a..85afd39595f3 100644
---- a/net/bluetooth/hidp/sock.c
-+++ b/net/bluetooth/hidp/sock.c
-@@ -67,11 +67,11 @@ static int hidp_sock_ioctl(struct socket *sock, unsigned int cmd, unsigned long
- 		if (copy_from_user(&ca, argp, sizeof(ca)))
- 			return -EFAULT;
- 
--		csock = sockfd_lookup(ca.ctrl_sock, &err);
-+		csock = sockfd_lookupr(ca.ctrl_sock, &err, CAP_READ, CAP_WRITE);
- 		if (!csock)
- 			return err;
- 
--		isock = sockfd_lookup(ca.intr_sock, &err);
-+		isock = sockfd_lookupr(ca.intr_sock, &err, CAP_READ, CAP_WRITE);
- 		if (!isock) {
- 			sockfd_put(csock);
- 			return err;
-diff --git a/net/compat.c b/net/compat.c
-index 9a76eaf63184..06655190173e 100644
---- a/net/compat.c
-+++ b/net/compat.c
-@@ -388,7 +388,7 @@ COMPAT_SYSCALL_DEFINE5(setsockopt, int, fd, int, level, int, optname,
- 		       char __user *, optval, unsigned int, optlen)
- {
- 	int err;
--	struct socket *sock = sockfd_lookup(fd, &err);
-+	struct socket *sock = sockfd_lookupr(fd, &err, CAP_SETSOCKOPT);
- 
- 	if (sock) {
- 		err = security_socket_setsockopt(sock, level, optname);
-@@ -508,7 +508,7 @@ COMPAT_SYSCALL_DEFINE5(getsockopt, int, fd, int, level, int, optname,
- 		       char __user *, optval, int __user *, optlen)
- {
- 	int err;
--	struct socket *sock = sockfd_lookup(fd, &err);
-+	struct socket *sock = sockfd_lookupr(fd, &err, CAP_GETSOCKOPT);
- 
- 	if (sock) {
- 		err = security_socket_getsockopt(sock, level, optname);
-diff --git a/net/l2tp/l2tp_core.c b/net/l2tp/l2tp_core.c
-index bea259043205..03fd2c626cef 100644
---- a/net/l2tp/l2tp_core.c
-+++ b/net/l2tp/l2tp_core.c
-@@ -175,7 +175,8 @@ l2tp_session_id_hash_2(struct l2tp_net *pn, u32 session_id)
-  * owned by userspace.  A struct sock returned from this function must be
-  * released using l2tp_tunnel_sock_put once you're done with it.
-  */
--static struct sock *l2tp_tunnel_sock_lookup(struct l2tp_tunnel *tunnel)
-+static struct sock *l2tp_tunnel_sock_lookup(struct l2tp_tunnel *tunnel,
-+					    struct capsicum_rights *rights)
- {
- 	int err = 0;
- 	struct socket *sock = NULL;
-@@ -189,7 +190,7 @@ static struct sock *l2tp_tunnel_sock_lookup(struct l2tp_tunnel *tunnel)
- 		 * of closing it.  Look the socket up using the fd to ensure
- 		 * consistency.
- 		 */
--		sock = sockfd_lookup(tunnel->fd, &err);
-+		sock = sockfd_lookup_rights(tunnel->fd, &err, rights);
- 		if (sock)
- 			sk = sock->sk;
- 	} else {
-@@ -1314,9 +1315,11 @@ static void l2tp_tunnel_del_work(struct work_struct *work)
- 	struct l2tp_tunnel *tunnel = NULL;
- 	struct socket *sock = NULL;
- 	struct sock *sk = NULL;
-+	struct capsicum_rights rights;
- 
- 	tunnel = container_of(work, struct l2tp_tunnel, del_work);
--	sk = l2tp_tunnel_sock_lookup(tunnel);
-+	sk = l2tp_tunnel_sock_lookup(tunnel,
-+				     cap_rights_init(&rights, CAP_SHUTDOWN));
- 	if (!sk)
- 		return;
- 
-@@ -1522,7 +1525,7 @@ int l2tp_tunnel_create(struct net *net, int fd, int version, u32 tunnel_id, u32
- 		if (err < 0)
- 			goto err;
- 	} else {
--		sock = sockfd_lookup(fd, &err);
-+		sock = sockfd_lookupr(fd, &err, CAP_READ, CAP_WRITE);
- 		if (!sock) {
- 			pr_err("tunl %u: sockfd_lookup(fd=%d) returned %d\n",
- 			       tunnel_id, fd, err);
-diff --git a/net/l2tp/l2tp_core.h b/net/l2tp/l2tp_core.h
-index 68aa9ffd4ae4..4082366d7b74 100644
---- a/net/l2tp/l2tp_core.h
-+++ b/net/l2tp/l2tp_core.h
-@@ -11,6 +11,8 @@
- #ifndef _L2TP_CORE_H_
- #define _L2TP_CORE_H_
- 
-+#include <linux/capsicum.h>
+ #include <linux/types.h>
+ #include <linux/aio_abi.h>
+@@ -866,4 +867,15 @@ asmlinkage long sys_process_vm_writev(pid_t pid,
+ asmlinkage long sys_kcmp(pid_t pid1, pid_t pid2, int type,
+ 			 unsigned long idx1, unsigned long idx2);
+ asmlinkage long sys_finit_module(int fd, const char __user *uargs, int flags);
++asmlinkage long sys_cap_rights_limit(unsigned int orig_fd,
++				     const struct cap_rights __user *new_rights,
++				     unsigned int fcntls,
++				     int nioctls,
++				     unsigned int __user *ioctls);
++asmlinkage long sys_cap_rights_get(unsigned int fd,
++				   struct cap_rights __user *rightsp,
++				   unsigned int __user *fcntls,
++				   int __user *nioctls,
++				   unsigned int __user *ioctls);
 +
- /* Just some random numbers */
- #define L2TP_TUNNEL_MAGIC	0x42114DDA
- #define L2TP_SESSION_MAGIC	0x0C04EB7D
-diff --git a/net/sched/sch_atm.c b/net/sched/sch_atm.c
-index 8449b337f9e3..8131efa6d164 100644
---- a/net/sched/sch_atm.c
-+++ b/net/sched/sch_atm.c
-@@ -238,7 +238,7 @@ static int atm_tc_change(struct Qdisc *sch, u32 classid, u32 parent,
- 	}
- 	pr_debug("atm_tc_change: type %d, payload %d, hdr_len %d\n",
- 		 opt->nla_type, nla_len(opt), hdr_len);
--	sock = sockfd_lookup(fd, &error);
-+	sock = sockfd_lookupr(fd, &error, CAP_GETSOCKNAME);
- 	if (!sock)
- 		return error;	/* f_count++ */
- 	pr_debug("atm_tc_change: f_count %ld\n", file_count(sock->file));
-diff --git a/net/socket.c b/net/socket.c
-index cc2e59576b3c..2240c2e52927 100644
---- a/net/socket.c
-+++ b/net/socket.c
-@@ -419,23 +419,6 @@ struct socket *sock_from_file(struct file *file, int *err)
+ #endif
+diff --git a/kernel/sys_ni.c b/kernel/sys_ni.c
+index 36441b51b5df..ef634cb1bc6c 100644
+--- a/kernel/sys_ni.c
++++ b/kernel/sys_ni.c
+@@ -213,3 +213,7 @@ cond_syscall(compat_sys_open_by_handle_at);
+ 
+ /* compare kernel pointers */
+ cond_syscall(sys_kcmp);
++
++/* capsicum object capabilities */
++cond_syscall(sys_cap_rights_get);
++cond_syscall(sys_cap_rights_limit);
+diff --git a/security/capsicum.c b/security/capsicum.c
+index 4a004829b9c8..42c14bab4b64 100644
+--- a/security/capsicum.c
++++ b/security/capsicum.c
+@@ -125,6 +125,152 @@ out_err:
+ 	return ERR_PTR(err);
  }
- EXPORT_SYMBOL(sock_from_file);
  
--static struct socket *sockfd_lookup_light(int fd, int *err, int *fput_needed)
--{
--	struct fd f = fdget(fd);
--	struct socket *sock;
--
--	*err = -EBADF;
--	if (f.file) {
--		sock = sock_from_file(f.file, err);
--		if (likely(sock)) {
--			*fput_needed = f.flags;
--			return sock;
--		}
--		fdput(f);
--	}
--	return NULL;
--}
--
- #ifdef CONFIG_SECURITY_CAPSICUM
- struct socket *sockfd_lookup_rights(int fd, int *err,
- 				    struct capsicum_rights *rights)
-@@ -508,6 +491,23 @@ struct socket *_sockfd_lookupr_light(int fd, int *err, int *fput_needed, ...)
- 
- #else
- 
-+static struct socket *sockfd_lookup_light(int fd, int *err, int *fput_needed)
++/* Takes ownership of rights->ioctls */
++static int capsicum_rights_limit(unsigned int fd,
++				 struct capsicum_rights *rights)
 +{
-+	struct fd f = fdget(fd);
-+	struct socket *sock;
++	int rc = -EBADF;
++	struct capsicum_capability *cap;
++	struct file *capf = NULL;
++	struct file *file;  /* current file for fd */
++	struct file *underlying; /* base file for capability */
++	struct files_struct *files = current->files;
++	struct fdtable *fdt;
 +
-+	*err = -EBADF;
-+	if (f.file) {
-+		sock = sock_from_file(f.file, err);
-+		if (likely(sock)) {
-+			*fput_needed = f.flags;
-+			return sock;
++	/* Allocate capability before taking files->file_lock */
++	capf = capsicum_cap_alloc(rights, true);
++	rights->ioctls = NULL;  /* capsicum_cap_alloc took ownership */
++	if (IS_ERR(capf))
++		return PTR_ERR(capf);
++	cap = capf->private_data;
++
++	spin_lock(&files->file_lock);
++	fdt = files_fdtable(files);
++	if (fd >= fdt->max_fds)
++		goto out_err;
++	file = fdt->fd[fd];
++	if (!file)
++		goto out_err;
++
++	/* If we're limiting an existing Capsicum capability object, ensure
++	 * we wrap its underlying normal file. */
++	if (capsicum_is_cap(file)) {
++		struct capsicum_capability *old_cap = file->private_data;
++		/* Reject attempts to widen existing rights */
++		if (!cap_rights_contains(&old_cap->rights, &cap->rights)) {
++			rc = -ENOTCAPABLE;
++			goto out_err;
 +		}
-+		fdput(f);
++		underlying = old_cap->underlying;
++	} else {
++		underlying = file;
 +	}
-+	return NULL;
++	if (!atomic_long_inc_not_zero(&underlying->f_count)) {
++		rc = -EBADF;
++		goto out_err;
++	}
++	cap->underlying = underlying;
++
++	fput(file);
++	rcu_assign_pointer(fdt->fd[fd], capf);
++	spin_unlock(&files->file_lock);
++	return 0;
++out_err:
++	spin_unlock(&files->file_lock);
++	fput(capf);
++	return rc;
 +}
 +
- static inline struct socket *
- sockfd_lookup_light_rights(int fd, int *err, int *fput_needed,
- 			   const struct capsicum_rights **actual_rights,
-@@ -1610,7 +1610,7 @@ SYSCALL_DEFINE3(bind, int, fd, struct sockaddr __user *, umyaddr, int, addrlen)
- 	struct sockaddr_storage address;
- 	int err, fput_needed;
- 
--	sock = sockfd_lookup_light(fd, &err, &fput_needed);
-+	sock = sockfd_lookupr_light(fd, &err, &fput_needed, CAP_BIND);
- 	if (sock) {
- 		err = move_addr_to_kernel(umyaddr, addrlen, &address);
- 		if (err >= 0) {
-@@ -1639,7 +1639,7 @@ SYSCALL_DEFINE2(listen, int, fd, int, backlog)
- 	int err, fput_needed;
- 	int somaxconn;
- 
--	sock = sockfd_lookup_light(fd, &err, &fput_needed);
-+	sock = sockfd_lookupr_light(fd, &err, &fput_needed, CAP_LISTEN);
- 	if (sock) {
- 		somaxconn = sock_net(sock->sk)->core.sysctl_somaxconn;
- 		if ((unsigned int)backlog > somaxconn)
-@@ -1673,6 +1673,8 @@ SYSCALL_DEFINE4(accept4, int, fd, struct sockaddr __user *, upeer_sockaddr,
- 	struct file *newfile;
- 	int err, len, newfd, fput_needed;
- 	struct sockaddr_storage address;
++SYSCALL_DEFINE5(cap_rights_limit,
++		unsigned int, fd,
++		const struct cap_rights __user *, new_rights,
++		unsigned int, new_fcntls,
++		int, nioctls,
++		unsigned int __user *, new_ioctls)
++{
 +	struct capsicum_rights rights;
-+	const struct capsicum_rights *listen_rights = NULL;
- 
- 	if (flags & ~(SOCK_CLOEXEC | SOCK_NONBLOCK))
- 		return -EINVAL;
-@@ -1680,7 +1682,9 @@ SYSCALL_DEFINE4(accept4, int, fd, struct sockaddr __user *, upeer_sockaddr,
- 	if (SOCK_NONBLOCK != O_NONBLOCK && (flags & SOCK_NONBLOCK))
- 		flags = (flags & ~SOCK_NONBLOCK) | O_NONBLOCK;
- 
--	sock = sockfd_lookup_light(fd, &err, &fput_needed);
-+	sock = sockfd_lookup_light_rights(fd, &err, &fput_needed,
-+					  &listen_rights,
-+					  cap_rights_init(&rights, CAP_ACCEPT));
- 	if (!sock)
- 		goto out;
- 
-@@ -1772,7 +1776,7 @@ SYSCALL_DEFINE3(connect, int, fd, struct sockaddr __user *, uservaddr,
- 	struct sockaddr_storage address;
- 	int err, fput_needed;
- 
--	sock = sockfd_lookup_light(fd, &err, &fput_needed);
-+	sock = sockfd_lookupr_light(fd, &err, &fput_needed, CAP_CONNECT);
- 	if (!sock)
- 		goto out;
- 	err = move_addr_to_kernel(uservaddr, addrlen, &address);
-@@ -1804,7 +1808,7 @@ SYSCALL_DEFINE3(getsockname, int, fd, struct sockaddr __user *, usockaddr,
- 	struct sockaddr_storage address;
- 	int len, err, fput_needed;
- 
--	sock = sockfd_lookup_light(fd, &err, &fput_needed);
-+	sock = sockfd_lookupr_light(fd, &err, &fput_needed, CAP_GETSOCKNAME);
- 	if (!sock)
- 		goto out;
- 
-@@ -1835,7 +1839,7 @@ SYSCALL_DEFINE3(getpeername, int, fd, struct sockaddr __user *, usockaddr,
- 	struct sockaddr_storage address;
- 	int len, err, fput_needed;
- 
--	sock = sockfd_lookup_light(fd, &err, &fput_needed);
-+	sock = sockfd_lookupr_light(fd, &err, &fput_needed, CAP_GETPEERNAME);
- 	if (sock != NULL) {
- 		err = security_socket_getpeername(sock);
- 		if (err) {
-@@ -1873,7 +1877,8 @@ SYSCALL_DEFINE6(sendto, int, fd, void __user *, buff, size_t, len,
- 
- 	if (len > INT_MAX)
- 		len = INT_MAX;
--	sock = sockfd_lookup_light(fd, &err, &fput_needed);
-+	sock = sockfd_lookupr_light(fd, &err, &fput_needed,
-+				    CAP_WRITE, addr ? CAP_CONNECT : 0ULL);
- 	if (!sock)
- 		goto out;
- 
-@@ -1932,7 +1937,7 @@ SYSCALL_DEFINE6(recvfrom, int, fd, void __user *, ubuf, size_t, size,
- 
- 	if (size > INT_MAX)
- 		size = INT_MAX;
--	sock = sockfd_lookup_light(fd, &err, &fput_needed);
-+	sock = sockfd_lookupr_light(fd, &err, &fput_needed, CAP_READ);
- 	if (!sock)
- 		goto out;
- 
-@@ -1986,7 +1991,7 @@ SYSCALL_DEFINE5(setsockopt, int, fd, int, level, int, optname,
- 	if (optlen < 0)
- 		return -EINVAL;
- 
--	sock = sockfd_lookup_light(fd, &err, &fput_needed);
-+	sock = sockfd_lookupr_light(fd, &err, &fput_needed, CAP_SETSOCKOPT);
- 	if (sock != NULL) {
- 		err = security_socket_setsockopt(sock, level, optname);
- 		if (err)
-@@ -2017,7 +2022,10 @@ SYSCALL_DEFINE5(getsockopt, int, fd, int, level, int, optname,
- 	int err, fput_needed;
- 	struct socket *sock;
- 
--	sock = sockfd_lookup_light(fd, &err, &fput_needed);
-+	sock = sockfd_lookupr_light(fd, &err, &fput_needed, CAP_GETSOCKOPT,
-+				    (level == SOL_SCTP &&
-+				     optname == SCTP_SOCKOPT_PEELOFF)
-+				    ? CAP_PEELOFF : 0ULL);
- 	if (sock != NULL) {
- 		err = security_socket_getsockopt(sock, level, optname);
- 		if (err)
-@@ -2046,7 +2054,7 @@ SYSCALL_DEFINE2(shutdown, int, fd, int, how)
- 	int err, fput_needed;
- 	struct socket *sock;
- 
--	sock = sockfd_lookup_light(fd, &err, &fput_needed);
-+	sock = sockfd_lookupr_light(fd, &err, &fput_needed, CAP_SHUTDOWN);
- 	if (sock != NULL) {
- 		err = security_socket_shutdown(sock, how);
- 		if (!err)
-@@ -2082,10 +2090,12 @@ static int copy_msghdr_from_user(struct msghdr *kmsg,
- 	return 0;
- }
- 
--static int ___sys_sendmsg(struct socket *sock, struct msghdr __user *msg,
--			 struct msghdr *msg_sys, unsigned int flags,
--			 struct used_address *used_address)
-+static int ___sys_sendmsg(struct socket *sock_noaddr, struct socket *sock_addr,
-+			  struct msghdr __user *msg,
-+			  struct msghdr *msg_sys, unsigned int flags,
-+			  struct used_address *used_address)
- {
-+	struct socket *sock;
- 	struct compat_msghdr __user *msg_compat =
- 	    (struct compat_msghdr __user *)msg;
- 	struct sockaddr_storage address;
-@@ -2105,6 +2115,9 @@ static int ___sys_sendmsg(struct socket *sock, struct msghdr __user *msg,
- 		if (err)
- 			return err;
- 	}
-+	sock = (msg_sys->msg_name ? sock_addr : sock_noaddr);
-+	if (!sock)
-+		return -EBADF;
- 
- 	if (msg_sys->msg_iovlen > UIO_FASTIOV) {
- 		err = -EMSGSIZE;
-@@ -2204,15 +2217,22 @@ long __sys_sendmsg(int fd, struct msghdr __user *msg, unsigned flags)
- {
- 	int fput_needed, err;
- 	struct msghdr msg_sys;
--	struct socket *sock;
--
--	sock = sockfd_lookup_light(fd, &err, &fput_needed);
--	if (!sock)
-+	struct socket *sock_addr;
-+	struct socket *sock_noaddr;
 +
-+	sock_addr = sockfd_lookupr_light(fd, &err, &fput_needed,
-+					 CAP_WRITE, CAP_CONNECT);
-+	sock_noaddr = sock_addr;
-+	if (!sock_noaddr)
-+		sock_noaddr = sockfd_lookupr_light(fd, &err, &fput_needed,
-+						   CAP_WRITE);
-+	if (!sock_noaddr)
- 		goto out;
- 
--	err = ___sys_sendmsg(sock, msg, &msg_sys, flags, NULL);
-+	err = ___sys_sendmsg(sock_noaddr, sock_addr, msg, &msg_sys, flags,
-+			     NULL);
- 
--	fput_light(sock->file, fput_needed);
-+	fput_light(sock_noaddr->file, fput_needed);
- out:
- 	return err;
- }
-@@ -2232,7 +2252,8 @@ int __sys_sendmmsg(int fd, struct mmsghdr __user *mmsg, unsigned int vlen,
- 		   unsigned int flags)
- {
- 	int fput_needed, err, datagrams;
--	struct socket *sock;
-+	struct socket *sock_addr;
-+	struct socket *sock_noaddr;
- 	struct mmsghdr __user *entry;
- 	struct compat_mmsghdr __user *compat_entry;
- 	struct msghdr msg_sys;
-@@ -2243,8 +2264,13 @@ int __sys_sendmmsg(int fd, struct mmsghdr __user *mmsg, unsigned int vlen,
- 
- 	datagrams = 0;
- 
--	sock = sockfd_lookup_light(fd, &err, &fput_needed);
--	if (!sock)
-+	sock_addr = sockfd_lookupr_light(fd, &err, &fput_needed,
-+					 CAP_WRITE, CAP_CONNECT);
-+	sock_noaddr = sock_addr;
-+	if (!sock_noaddr)
-+		sock_noaddr = sockfd_lookupr_light(fd, &err, &fput_needed,
-+						   CAP_WRITE);
-+	if (!sock_noaddr)
- 		return err;
- 
- 	used_address.name_len = UINT_MAX;
-@@ -2254,14 +2280,15 @@ int __sys_sendmmsg(int fd, struct mmsghdr __user *mmsg, unsigned int vlen,
- 
- 	while (datagrams < vlen) {
- 		if (MSG_CMSG_COMPAT & flags) {
--			err = ___sys_sendmsg(sock, (struct msghdr __user *)compat_entry,
--					     &msg_sys, flags, &used_address);
-+			err = ___sys_sendmsg(sock_noaddr, sock_addr,
-+					(struct msghdr __user *)compat_entry,
-+					&msg_sys, flags, &used_address);
- 			if (err < 0)
- 				break;
- 			err = __put_user(err, &compat_entry->msg_len);
- 			++compat_entry;
- 		} else {
--			err = ___sys_sendmsg(sock,
-+			err = ___sys_sendmsg(sock_noaddr, sock_addr,
- 					     (struct msghdr __user *)entry,
- 					     &msg_sys, flags, &used_address);
- 			if (err < 0)
-@@ -2275,7 +2302,7 @@ int __sys_sendmmsg(int fd, struct mmsghdr __user *mmsg, unsigned int vlen,
- 		++datagrams;
- 	}
- 
--	fput_light(sock->file, fput_needed);
-+	fput_light(sock_noaddr->file, fput_needed);
- 
- 	/* We only return an error if no datagrams were able to be sent */
- 	if (datagrams != 0)
-@@ -2394,7 +2421,7 @@ long __sys_recvmsg(int fd, struct msghdr __user *msg, unsigned flags)
- 	struct msghdr msg_sys;
- 	struct socket *sock;
- 
--	sock = sockfd_lookup_light(fd, &err, &fput_needed);
-+	sock = sockfd_lookupr_light(fd, &err, &fput_needed, CAP_READ);
- 	if (!sock)
- 		goto out;
- 
-@@ -2434,7 +2461,7 @@ int __sys_recvmmsg(int fd, struct mmsghdr __user *mmsg, unsigned int vlen,
- 
- 	datagrams = 0;
- 
--	sock = sockfd_lookup_light(fd, &err, &fput_needed);
-+	sock = sockfd_lookupr_light(fd, &err, &fput_needed, CAP_READ);
- 	if (!sock)
- 		return err;
- 
-diff --git a/net/sunrpc/svcsock.c b/net/sunrpc/svcsock.c
-index b507cd327d9b..3d535e881e7b 100644
---- a/net/sunrpc/svcsock.c
-+++ b/net/sunrpc/svcsock.c
-@@ -1413,7 +1413,7 @@ static struct svc_sock *svc_setup_socket(struct svc_serv *serv,
- bool svc_alien_sock(struct net *net, int fd)
- {
- 	int err;
--	struct socket *sock = sockfd_lookup(fd, &err);
-+	struct socket *sock = sockfd_lookupr(fd, &err, CAP_LIST_END);
- 	bool ret = false;
- 
- 	if (!sock)
-@@ -1441,7 +1441,7 @@ int svc_addsock(struct svc_serv *serv, const int fd, char *name_return,
- 		const size_t len)
- {
- 	int err = 0;
--	struct socket *so = sockfd_lookup(fd, &err);
-+	struct socket *so = sockfd_lookupr(fd, &err, CAP_LISTEN);
- 	struct svc_sock *svsk = NULL;
- 	struct sockaddr_storage addr;
- 	struct sockaddr *sin = (struct sockaddr *)&addr;
++	if (!new_rights)
++		return -EFAULT;
++	if (nioctls < 0 && nioctls != -1)
++		return -EINVAL;
++	if (copy_from_user(&rights.primary, new_rights,
++			   sizeof(struct cap_rights)))
++		return -EFAULT;
++	rights.fcntls = new_fcntls;
++	rights.nioctls = nioctls;
++	if (rights.nioctls > 0) {
++		size_t size;
++
++		if (!new_ioctls)
++			return -EINVAL;
++		size = rights.nioctls * sizeof(unsigned int);
++		rights.ioctls = kmalloc(size, GFP_KERNEL);
++		if (!rights.ioctls)
++			return -ENOMEM;
++		if (copy_from_user(rights.ioctls, new_ioctls, size)) {
++			kfree(rights.ioctls);
++			return -EFAULT;
++		}
++	} else {
++		rights.ioctls = NULL;
++	}
++	if (cap_rights_regularize(&rights))
++		return -ENOTCAPABLE;
++
++	return capsicum_rights_limit(fd, &rights);
++}
++
++SYSCALL_DEFINE5(cap_rights_get,
++		unsigned int, fd,
++		struct cap_rights __user *, rightsp,
++		unsigned int __user *, fcntls,
++		int __user *, nioctls,
++		unsigned int __user *, ioctls)
++{
++	int result = -EFAULT;
++	struct file *file;
++	struct capsicum_rights *rights = &all_rights;
++	int ioctls_to_copy = -1;
++
++	file = fget_raw(fd);
++	if (file == NULL)
++		return -EBADF;
++	if (capsicum_is_cap(file)) {
++		struct capsicum_capability *cap = file->private_data;
++
++		rights = &cap->rights;
++	}
++
++	if (rightsp) {
++		if (copy_to_user(rightsp, &rights->primary,
++				 sizeof(struct cap_rights)))
++			goto out;
++	}
++	if (fcntls) {
++		if (put_user(rights->fcntls, fcntls))
++			goto out;
++	}
++	if (nioctls) {
++		int n;
++
++		if (get_user(n, nioctls))
++			goto out;
++		if (put_user(rights->nioctls, nioctls))
++			goto out;
++		ioctls_to_copy = min(rights->nioctls, n);
++	}
++	if (ioctls && ioctls_to_copy > 0) {
++		if (copy_to_user(ioctls, rights->ioctls,
++				 ioctls_to_copy * sizeof(unsigned int)))
++			goto out;
++	}
++	result = 0;
++out:
++	fput(file);
++	return result;
++}
++
+ /*
+  * File operations functions.
+  */
 -- 
 2.0.0.526.g5318336
 
