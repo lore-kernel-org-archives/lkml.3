@@ -1,75 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760223AbaGYLZs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 07:25:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:24800 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759914AbaGYLZr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 07:25:47 -0400
-Message-ID: <53D23EAF.4000001@redhat.com>
-Date: Fri, 25 Jul 2014 13:25:35 +0200
-From: Daniel Borkmann <dborkman@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S932278AbaGYL0e (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 07:26:34 -0400
+Received: from us01smtprelay-2.synopsys.com ([198.182.60.111]:47653 "EHLO
+	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759914AbaGYL0c (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jul 2014 07:26:32 -0400
+Message-ID: <53D23ED6.9010502@synopsys.com>
+Date: Fri, 25 Jul 2014 16:56:14 +0530
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: Alexei Starovoitov <ast@plumgrid.com>
-CC: "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, willemb@google.com, pablo@netfilter.org
-Subject: Re: [PATCH net-next] net: filter: rename 'struct sk_filter' to 'struct
- bpf_prog'
-References: <1406275499-7822-1-git-send-email-ast@plumgrid.com>
-In-Reply-To: <1406275499-7822-1-git-send-email-ast@plumgrid.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Newsgroups: gmane.linux.kernel.next,gmane.linux.kernel,gmane.linux.serial,gmane.linux.drivers.devicetree
+To: Grant Likely <grant.likely@secretlab.ca>
+CC: linux-next <linux-next@vger.kernel.org>,
+        Rob Herring <robherring2@gmail.com>,
+        Anton Kolesov <Anton.Kolesov@synopsys.com>,
+        lkml <linux-kernel@vger.kernel.org>,
+        greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: ARC fails to boot on linux-next of 20140711
+References: <C2D7FE5348E1B147BCA15975FBA230753C4B67CF@IN01WEMBXA.internal.synopsys.com>
+In-Reply-To: <C2D7FE5348E1B147BCA15975FBA230753C4B67CF@IN01WEMBXA.internal.synopsys.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.12.196.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[ also Cc'ing Willem, Pablo ]
+On Friday 25 July 2014 04:32 PM, Vineet Gupta wrote:
+> 2014-03-27 a9296cf2d0b6 of: Create of_console_check() for selecting a console
+> specified in /chosen 
+> 2014-03-27 cfa9cacc5dd3 of: Enable console on serial ports specified by
+> /chosen/stdout-path 
+> 
+> Is there a specific reason for dropping these patches (or perhaps a merge to be
+> merged). I cherry-picked both but still doesn't work.
 
-On 07/25/2014 10:04 AM, Alexei Starovoitov wrote:
-> 'sk_filter' name is used as 'struct sk_filter', function sk_filter() and
-> as variable 'sk_filter', which makes code hard to read.
-> Also it's easily confused with 'struct sock_filter'
-> Rename 'struct sk_filter' to 'struct bpf_prog' to clarify semantics and
-> align the name with generic BPF use model.
+Correction - with these two, ARC boots again.
 
-Agreed, as we went for kernel/bpf/, renaming makes absolutely sense.
-
-> The only ugly place is uapi/linux/netfilter/xt_bpf.h which
-> managed to expose kernel internal structure into uapi header.
-> Though it shouldn't even compile in user space, preserve the mess by
-> adding empty 'struct sk_filter;' there and type cast it to 'struct bpf_prog'
-> inside kernel in net/netfilter/xt_bpf.c
->
-> Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
-> ---
->
-> alternative fix for xt_bpf.h could be to replace:
->          /* only used in the kernel */
-> 	struct sk_filter *filter __attribute__((aligned(8)));
-> with
->          /* only used in the kernel */
-> 	void *filter __attribute__((aligned(8)));
->
-> but this 'void *' approach may further break broken userspace,
-> whereas the fix implemented here is more seamless.
-
-Yep, that's not good, 'struct sk_filter' should never have been in a uapi
-file actually.
-
-I think your current approach here, as you say, is more seamless, but as
-the struct itself is *only* hidden inside kernel space, and there's no way
-anyone can mess around with it, we might as well go for the more correct
-void pointer, imho, it won't change anything in the structure size at least.
-
-I guess the alignment in xt_bpf_info is for 32bit user space w/ 64bit kernel
-space? I haven't looked so far into how exactly x_tables transfers that back
-to user space, but are we effectively _leaking_ a kernel address after we
-called sk_unattached_filter_create(&info->filter, ...) when dumping back to
-user space? I guess for a possible leak in the _padding_ of the structure,
-we might be copying gargabe from user space to kernel and back, that might
-be less problematic, I think.
-
-> Tested on x64, arm, sparc
-
-[ Rest of the patch looks good, thanks. ]
+Thx,
+-Vineet
