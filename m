@@ -1,109 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760253AbaGYLcI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 07:32:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:30716 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751966AbaGYLcF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 07:32:05 -0400
-Message-ID: <53D24030.1010302@redhat.com>
-Date: Fri, 25 Jul 2014 07:32:00 -0400
-From: Prarit Bhargava <prarit@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131028 Thunderbird/17.0.10
-MIME-Version: 1.0
-To: Viresh Kumar <viresh.kumar@linaro.org>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Lenny Szubowicz <lszubowi@redhat.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
-Subject: Re: [PATCH] cpufreq, store_scaling_governor requires policy->rwsem
- to be held for duration of changing governors
-References: <1406224491-3599-1-git-send-email-prarit@redhat.com> <CAKohpomHj17A4e6Sh8JSz1HPbq9r8gXUJeZ20PQ=Mhu59Vt7ZQ@mail.gmail.com>
-In-Reply-To: <CAKohpomHj17A4e6Sh8JSz1HPbq9r8gXUJeZ20PQ=Mhu59Vt7ZQ@mail.gmail.com>
+	id S1760191AbaGYLec (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 07:34:32 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:55246 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751478AbaGYLea convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jul 2014 07:34:30 -0400
+Date: Fri, 25 Jul 2014 13:34:26 +0200
+From: Boris BREZILLON <boris.brezillon@free-electrons.com>
+To: jiri.prchal@aksignal.cz
+Cc: Bo Shen <voice.shen@atmel.com>, nicolas.ferre@atmel.com,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org
+Subject: Re: [PATCH] ARM: at91: at91sam9x5: sets NPCS0 (PA14) back to GPIO
+Message-ID: <20140725133426.57f5cf6e@bbrezillon>
+In-Reply-To: <53D23246.1010300@aksignal.cz>
+References: <1405074175-22444-1-git-send-email-voice.shen@atmel.com>
+	<53D10C50.50305@aksignal.cz>
+	<20140724162645.4e19c26c@bbrezillon>
+	<53D12103.3020103@aksignal.cz>
+	<20140724175848.44f5da10@bbrezillon>
+	<53D1F5D0.1080006@aksignal.cz>
+	<20140725095319.16a8465c@bbrezillon>
+	<53D214E1.4050105@aksignal.cz>
+	<20140725104553.403921b1@bbrezillon>
+	<53D21B3F.7060006@aksignal.cz>
+	<20140725110124.3f0dce6c@bbrezillon>
+	<53D21FCF.7010402@aksignal.cz>
+	<20140725113110.70c4aa41@bbrezillon>
+	<53D22C26.4030208@aksignal.cz>
+	<20140725121804.18b05a5d@bbrezillon>
+	<53D23246.1010300@aksignal.cz>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 25 Jul 2014 12:32:38 +0200
+Jiří Prchal <jiri.prchal@aksignal.cz> wrote:
 
-
-On 07/25/2014 12:27 AM, Viresh Kumar wrote:
-> On 24 July 2014 23:24, Prarit Bhargava <prarit@redhat.com> wrote:
->> The closer I looked at commit 955ef483, the more questions I have.  The first
->> thing is that it appears that the stacktrace includes function calls that
->> are not, and never have been, part of the linux.git tree, ie) the call trace
->> shows
->>
->>             [<c0055a79>] lock_acquire+0x61/0xbc
->>             [<c00fabf1>] sysfs_addrm_finish+0xc1/0x128
->>             [<c00f9819>] sysfs_hash_and_remove+0x35/0x64
->>             [<c00fbe6f>] remove_files.isra.0+0x1b/0x24
->>             [<c00fbea5>] sysfs_remove_group+0x2d/0xa8
->>             [<c02f9a0b>] cpufreq_governor_interactive+0x13b/0x35c
->>             [<c02f61df>] __cpufreq_governor+0x2b/0x8c
->>             [<c02f6579>] __cpufreq_set_policy+0xa9/0xf8
->>             [<c02f6b75>] store_scaling_governor+0x61/0x100
->>             [<c02f6f4d>] store+0x39/0x60
->>             [<c00f9b81>] sysfs_write_file+0xed/0x114
->>             [<c00b3fd1>] vfs_write+0x65/0xd8
->>             [<c00b424b>] sys_write+0x2f/0x50
->>             [<c000cdc1>] ret_fast_syscall+0x1/0x52
->>
->> and the top part of the stack from cpufreq_governor_interactive() appear to
->> be for a driver that is not in the linux.git tree.  Google search does show
->> that it exists in various android trees, however, my concern is that the "core"
->> scaling governors are now broken because of an out tree driver.
 > 
-> Actually the problem did occur with ondemand/conservative as well. And
-> the problem was, we accessed something from cpufreq sysfs and then were
-> trying to remove that only and so some recursive locking stuff..
 > 
+> Dne 25.7.2014 v 12:18 Boris BREZILLON napsal(a):
+> >> / # devmem 0xfffff408
+> >> 0xF0E04018
+> >> / # devmem 0xfffff418
+> >> 0xE0C04000
+> >> / # devmem 0xfffff438
+> >> 0x00C04000
+> >> / # devmem 0xfffff43c
+> >> 0x13FFD7FB
+> >> / # devmem 0xfffff458
+> >> 0x00000000
+> >> / # devmem 0xfffff468
+> >> 0xFF223B4E
+> >> / # devmem 0xfffff470
+> >> 0x0F000000
+> >> / # devmem 0xfffff474
+> >> 0x00000000
+> >> / # devmem 0xfffff498
+> >> 0xFFFFFFFF
+> >>
+> >> I get thought if is possible that in time of probe fm25 (it's first) is not configured PA14 (it 's last)?
+> >
+> > Oh, nice catch!
+> > I think you've found the origin of this bug.
+> > Indeed each device is instantiated sequentially and thus when the first
+> > device is probed (CS0) the last one has not requested it's cs_gpio yet
+> > (and PA14 is still assigned to periph A).
+> >
+> > Declaring cs-pins and referencing them in pinctrl-0 solves the issue
+> > because in this case all CS pins are requested during controller probe.
+> >
+> So, what would be the right fix up? I my patch it's not good idea since some other driver can request pin for other 
+> peripheral earlier than spi. In board dts it could be new investigating for someone else who don't know this issue. I 
+> think the best way would be request all cs in early spi init since cs depends on each other and must be all of them in 
+> right state before any communication on bus. They are part of bus, like miso, mosi, clk, not part of chips. Also they 
+> are defined in parent spi node, not in child chip node.
+> Am I right?
 
-Do you recall if there was a reproducer for it?  FWIW, I was able to run ~50K
-events without an issue (I eventually stopped the test when I applied my patch.
- I compiled two kernels, one with LOCKDEP on and one with LOCKDEP off and
-neither showed a problem.
+Yes, you can take a look at [1] as an example.
 
-> And so nothing interactive governor specific.
-> 
-> The problem looks similar to what's reported here:
-> http://comments.gmane.org/gmane.linux.power-management.general/47397
-> 
-> And that's how I replied to it:
-> 
-> I have pushed a fix earlier for similar issues:
-> 19c7630 cpufreq: serialize calls to __cpufreq_governor()
+[1]http://lxr.free-electrons.com/source/drivers/spi/spi-efm32.c#L361
 
-This is very similar to what I did by adding in a new mutex and serializing the
-"governor switch" portion of the code, but that still won't work (see below).
-> 
-> but was later reverted by Srivatsa:
-> 56d07db cpufreq: Remove temporary fix for race between CPU hotplug and
-> sysfs-writes
-> 
-> because we didn't thought about this usecase.
-> 
-> I propose we get that back. I have tested a revert of 56d07db on
-> my setup and didn't see any crash..
 
-I'm not convinced that keeping the dropping of the rwsem is the right thing to
-do.  As I said in my original email, the whole purpose behind that semaphore is
-to single thread writing and the code in question clearly breaks that purpose.
-
-What if the following happens
-
-thread 1: changes max_scaling_freq
-thread 2: changes cpufreq governor
-
-when we drop the rwsem?  Who knows what we end up with?  If we're going to start
-to serialize operations, then why not serialize the entirety of the
-cpufreq_set_policy function.  Maybe then we can drop the rwsem in its entirety.
-
-A different approach is necessary here to fix the locking (that is, if we want
-to keep the locking in it's current form).  The locking is clearly broken at
-this point.
-
-I'll try to dig in further to see if I can reproduce the above lock inversion.
-
-P.
+-- 
+Boris Brezillon, Free Electrons
+Embedded Linux and Kernel engineering
+http://free-electrons.com
