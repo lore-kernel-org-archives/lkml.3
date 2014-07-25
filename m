@@ -1,10 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760787AbaGYRrF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 13:47:05 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:54825 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753217AbaGYRq7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S934880AbaGYRrC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 13:47:02 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:57628 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753938AbaGYRq7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 25 Jul 2014 13:46:59 -0400
 From: Grygorii Strashko <grygorii.strashko@ti.com>
 To: <santosh.shilimkar@ti.com>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
@@ -13,10 +14,11 @@ To: <santosh.shilimkar@ti.com>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
 CC: <ben.dooks@codethink.co.uk>, <laurent.pinchart@ideasonboard.com>,
         <grant.likely@secretlab.ca>, <ulf.hansson@linaro.org>,
         <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <linux-sh@vger.kernel.org>
-Subject: [RFC PATCH 1/3] PM / clock_ops: Add pm_clk_add_clk()
-Date: Fri, 25 Jul 2014 21:31:34 +0300
-Message-ID: <1406313096-29761-2-git-send-email-grygorii.strashko@ti.com>
+        <linux-sh@vger.kernel.org>,
+        Grygorii Strashko <grygorii.strashko@ti.com>
+Subject: [RFC PATCH 3/3] ARM: keystone: pm_domain: setup clk pm domain clocks from DT
+Date: Fri, 25 Jul 2014 21:31:36 +0300
+Message-ID: <1406313096-29761-4-git-send-email-grygorii.strashko@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1406313096-29761-1-git-send-email-grygorii.strashko@ti.com>
 References: <1406313096-29761-1-git-send-email-grygorii.strashko@ti.com>
@@ -26,112 +28,82 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Geert Uytterhoeven <geert+renesas@glider.be>
+This patch implements custom pm_clk_notifier callback for Keystone 2
+CLK PM domain which fills list of clocks for Device with all
+clocks assigned to this Device in DT.
 
-The existing pm_clk_add() allows to pass a clock by con_id. However,
-when referring to a specific clock from DT, no con_id is available.
+After this patch .con_ids field in pm_clk_notifier_block is not
+used and there are no limitation for clocks names in DT any more.
 
-Add pm_clk_add_clk(), which allows to specify the struct clk * directly.
-
-Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
+Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
 ---
- drivers/base/power/clock_ops.c |   40 ++++++++++++++++++++++++++++++----------
- include/linux/pm_clock.h       |    3 +++
- 2 files changed, 33 insertions(+), 10 deletions(-)
+ arch/arm/mach-keystone/pm_domain.c |   46 ++++++++++++++++++++++++++++++++++++
+ 1 file changed, 46 insertions(+)
 
-diff --git a/drivers/base/power/clock_ops.c b/drivers/base/power/clock_ops.c
-index b99e6c0..2d5c9c1 100644
---- a/drivers/base/power/clock_ops.c
-+++ b/drivers/base/power/clock_ops.c
-@@ -53,7 +53,8 @@ static inline int __pm_clk_enable(struct device *dev, struct clk *clk)
-  */
- static void pm_clk_acquire(struct device *dev, struct pm_clock_entry *ce)
- {
--	ce->clk = clk_get(dev, ce->con_id);
-+	if (!ce->clk)
-+		ce->clk = clk_get(dev, ce->con_id);
- 	if (IS_ERR(ce->clk)) {
- 		ce->status = PCE_STATUS_ERROR;
- 	} else {
-@@ -63,15 +64,8 @@ static void pm_clk_acquire(struct device *dev, struct pm_clock_entry *ce)
- 	}
- }
+diff --git a/arch/arm/mach-keystone/pm_domain.c b/arch/arm/mach-keystone/pm_domain.c
+index ca79dda..56542d2 100644
+--- a/arch/arm/mach-keystone/pm_domain.c
++++ b/arch/arm/mach-keystone/pm_domain.c
+@@ -47,6 +47,51 @@ static int keystone_pm_runtime_resume(struct device *dev)
  
--/**
-- * pm_clk_add - Start using a device clock for power management.
-- * @dev: Device whose clock is going to be used for power management.
-- * @con_id: Connection ID of the clock.
-- *
-- * Add the clock represented by @con_id to the list of clocks used for
-- * the power management of @dev.
-- */
--int pm_clk_add(struct device *dev, const char *con_id)
-+static int __pm_clk_add(struct device *dev, const char *con_id,
-+			struct clk *clk)
- {
- 	struct pm_subsys_data *psd = dev_to_psd(dev);
- 	struct pm_clock_entry *ce;
-@@ -93,6 +87,8 @@ int pm_clk_add(struct device *dev, const char *con_id)
- 			kfree(ce);
- 			return -ENOMEM;
- 		}
-+	} else {
-+		ce->clk = clk;
- 	}
- 
- 	pm_clk_acquire(dev, ce);
-@@ -102,6 +98,30 @@ int pm_clk_add(struct device *dev, const char *con_id)
- 	spin_unlock_irq(&psd->lock);
- 	return 0;
+ 	return pm_generic_runtime_resume(dev);
  }
-+/**
-+ * pm_clk_add - Start using a device clock for power management.
-+ * @dev: Device whose clock is going to be used for power management.
-+ * @con_id: Connection ID of the clock.
-+ *
-+ * Add the clock represented by @con_id to the list of clocks used for
-+ * the power management of @dev.
-+ */
-+int pm_clk_add(struct device *dev, const char *con_id)
-+{
-+	return __pm_clk_add(dev, con_id, NULL);
-+}
 +
-+/**
-+ * pm_clk_add_clk - Start using a device clock for power management.
-+ * @dev: Device whose clock is going to be used for power management.
-+ * @clk: Clock pointer
-+ *
-+ * Add the clock to the list of clocks used for the power management of @dev.
-+ */
-+int pm_clk_add_clk(struct device *dev, struct clk *clk)
++static int keystone_pm_clk_notify(struct notifier_block *nb,
++				  unsigned long action, void *data)
 +{
-+	return __pm_clk_add(dev, NULL, clk);
++	struct pm_clk_notifier_block *clknb;
++	struct device *dev = data;
++	int error;
++	unsigned int i;
++	struct clk *clk;
++	struct device_node *np = dev->of_node;
++
++	dev_dbg(dev, "%s() %ld\n", __func__, action);
++
++	clknb = container_of(nb, struct pm_clk_notifier_block, nb);
++
++	switch (action) {
++	case BUS_NOTIFY_BIND_DRIVER:
++		if (dev->pm_domain)
++			break;
++
++		error = pm_clk_create(dev);
++		if (error)
++			break;
++
++		dev->pm_domain = clknb->pm_domain;
++
++		for (i = 0; (clk = of_clk_get(np, i)) && !IS_ERR(clk); i++) {
++			if (pm_clk_add_clk(dev, clk))
++				clk_put(clk);
++		}
++
++		break;
++	case BUS_NOTIFY_UNBOUND_DRIVER:
++		if (dev->pm_domain != clknb->pm_domain)
++			break;
++
++		dev->pm_domain = NULL;
++		pm_clk_destroy(dev);
++		break;
++	}
++
++	return 0;
 +}
++#else
++
+ #endif
  
- /**
-  * __pm_clk_remove - Destroy PM clock entry.
-diff --git a/include/linux/pm_clock.h b/include/linux/pm_clock.h
-index 8348866..6981aa2 100644
---- a/include/linux/pm_clock.h
-+++ b/include/linux/pm_clock.h
-@@ -18,6 +18,8 @@ struct pm_clk_notifier_block {
- 	char *con_ids[];
+ static struct dev_pm_domain keystone_pm_domain = {
+@@ -59,6 +104,7 @@ static struct dev_pm_domain keystone_pm_domain = {
+ 
+ static struct pm_clk_notifier_block platform_domain_notifier = {
+ 	.pm_domain = &keystone_pm_domain,
++	.nb = { .notifier_call = keystone_pm_clk_notify, },
  };
  
-+struct clk;
-+
- #ifdef CONFIG_PM_CLK
- static inline bool pm_clk_no_clocks(struct device *dev)
- {
-@@ -29,6 +31,7 @@ extern void pm_clk_init(struct device *dev);
- extern int pm_clk_create(struct device *dev);
- extern void pm_clk_destroy(struct device *dev);
- extern int pm_clk_add(struct device *dev, const char *con_id);
-+extern int pm_clk_add_clk(struct device *dev, struct clk *clk);
- extern void pm_clk_remove(struct device *dev, const char *con_id);
- extern int pm_clk_suspend(struct device *dev);
- extern int pm_clk_resume(struct device *dev);
+ static struct of_device_id of_keystone_table[] = {
 -- 
 1.7.9.5
 
