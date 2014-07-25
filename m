@@ -1,74 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758948AbaGYHGF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 03:06:05 -0400
-Received: from relay.parallels.com ([195.214.232.42]:54273 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750976AbaGYHGD (ORCPT
+	id S1758027AbaGYHGE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 03:06:04 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:44572 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750828AbaGYHGC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 03:06:03 -0400
-Message-ID: <1406271955.3526.91.camel@tkhai>
-Subject: Re: [PATCH 4/5] sched/fair: Remove double_lock_balance() from
- active_load_balance_cpu_stop()
-From: Kirill Tkhai <ktkhai@parallels.com>
-To: Tim Chen <tim.c.chen@linux.intel.com>
-CC: <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Mike Galbraith <umgwanakikbuti@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        "Ingo Molnar" <mingo@kernel.org>, Paul Turner <pjt@google.com>,
-        <tkhai@yandex.ru>
-Date: Fri, 25 Jul 2014 11:05:55 +0400
-In-Reply-To: <1406246651.2970.841.camel@schen9-DESK>
-References: <20140722102425.29682.24086.stgit@tkhai>
-	 <1406028628.3526.22.camel@tkhai> <1406246651.2970.841.camel@schen9-DESK>
-Organization: Parallels
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5-2+b3 
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.30.26.172]
+	Fri, 25 Jul 2014 03:06:02 -0400
+From: pramod.gurav.etc@gmail.com
+X-Google-Original-From: pramod.gurav@smartplayin.com
+To: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Pramod Gurav <pramod.gurav@smartplayin.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Lejun Zhu <lejun.zhu@linux.intel.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>
+Subject: [PATCH] Input: soc_button_array: Remove kfree on data allocated with devm_zalloc
+Date: Fri, 25 Jul 2014 12:39:40 +0530
+Message-Id: <1406272180-25101-1-git-send-email-pramod.gurav@smartplayin.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-В Чт, 24/07/2014 в 17:04 -0700, Tim Chen пишет:
-> On Tue, 2014-07-22 at 15:30 +0400, Kirill Tkhai wrote:
-> > Bad situation:
-> > 
-> > double_lock_balance() drops busiest_rq lock. The busiest_rq is *busiest*,
-> > and a lot of tasks and context switches there. We are dropping the lock
-> > and waiting for it again.
-> > 
-> > Let's just detach the task and once finally unlock it!
-> > 
-> > Warning: this admits unlocked using of can_migrate_task(), throttled_lb_pair(),
-> > and task_hot(). I added comments about that.
-> > 
-> 
-> Wonder if we should also consider removing double_lock_balance usage
-> from rt.c and deadline.c? Then those two schedulers will also not
-> lock both the source and destination queues at the same time
-> for load balancing.
+From: Pramod Gurav <pramod.gurav@smartplayin.com>
 
-rt.c and deadline.c are similar, so we are able to discuss about one of them.
+This patch does below:
+- Removes kfree done on data allocated with devm_zalloc in probe
+  path of the driver.
+- Adds a check on return value from devm_kzalloc which was missing
+  and renames a lable from err_free_mem to err_mem.
+- Adds couple of dev_err on failure to allocate memory
 
-There are two places with double_lock_balance() in rt.c:
+CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: Lejun Zhu <lejun.zhu@linux.intel.com>
+CC: Sachin Kamat <sachin.kamat@linaro.org>
 
-1)push_rt_task()->find_lock_lowest_rq()
+Signed-off-by: Pramod Gurav <pramod.gurav@smartplayin.com>
+---
+ drivers/input/misc/soc_button_array.c |   19 ++++++++++++++-----
+ 1 file changed, 14 insertions(+), 5 deletions(-)
 
-We can't detach a task before we are locked lowest_rq. It's unknown whether
-it will still be suitable to be attached to lowest_rq after we are locked it,
-because the highest prioriry of lowest_rq may change. We have the race there.
-
-2)pull_rt_task()
-
-The same with here. The situation may change. We must keep both locks locked
-to be sure the priorities won't change. For example, somebody may wake a high
-priority task on src_rq, or somebody can pull a task there.
-
-RT balancing is stricter than fair's..
-
-Regards,
-	Kirill
+diff --git a/drivers/input/misc/soc_button_array.c b/drivers/input/misc/soc_button_array.c
+index 5a6334b..ac82971 100644
+--- a/drivers/input/misc/soc_button_array.c
++++ b/drivers/input/misc/soc_button_array.c
+@@ -83,6 +83,13 @@ soc_button_device_create(struct pnp_dev *pdev,
+ 				       sizeof(*gpio_keys_pdata) +
+ 					sizeof(*gpio_keys) * MAX_NBUTTONS,
+ 				       GFP_KERNEL);
++	if (!gpio_keys_pdata) {
++		dev_err(&pdev->dev,
++			"Can't allocate memory for gpio_keys_platform_data\n");
++		error = -ENOMEM;
++		goto err_mem;
++	}
++
+ 	gpio_keys = (void *)(gpio_keys_pdata + 1);
+ 
+ 	for (info = button_info; info->name; info++) {
+@@ -104,7 +111,7 @@ soc_button_device_create(struct pnp_dev *pdev,
+ 
+ 	if (n_buttons == 0) {
+ 		error = -ENODEV;
+-		goto err_free_mem;
++		goto err_mem;
+ 	}
+ 
+ 	gpio_keys_pdata->buttons = gpio_keys;
+@@ -114,7 +121,7 @@ soc_button_device_create(struct pnp_dev *pdev,
+ 	pd = platform_device_alloc("gpio-keys", PLATFORM_DEVID_AUTO);
+ 	if (!pd) {
+ 		error = -ENOMEM;
+-		goto err_free_mem;
++		goto err_mem;
+ 	}
+ 
+ 	error = platform_device_add_data(pd, gpio_keys_pdata,
+@@ -130,8 +137,7 @@ soc_button_device_create(struct pnp_dev *pdev,
+ 
+ err_free_pdev:
+ 	platform_device_put(pd);
+-err_free_mem:
+-	devm_kfree(&pdev->dev, gpio_keys_pdata);
++err_mem:
+ 	return ERR_PTR(error);
+ }
+ 
+@@ -155,8 +161,11 @@ static int soc_button_pnp_probe(struct pnp_dev *pdev,
+ 	int error;
+ 
+ 	priv = devm_kzalloc(&pdev->dev, sizeof(*priv), GFP_KERNEL);
+-	if (!priv)
++	if (!priv) {
++		dev_err(&pdev->dev,
++			"Can't allocate memory for soc_button_data\n");
+ 		return -ENOMEM;
++	}
+ 
+ 	pnp_set_drvdata(pdev, priv);
+ 
+-- 
+1.7.9.5
 
