@@ -1,83 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760240AbaGYLw6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 07:52:58 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:22751 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751860AbaGYLw5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 07:52:57 -0400
-Date: Fri, 25 Jul 2014 14:52:34 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Guillaume Clement <gclement@baobob.org>
-Cc: Forest Bond <forest@alittletooquiet.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: vt6655: tag data as __user in struct
- tagSCmdRequest
-Message-ID: <20140725115234.GZ25880@mwanda>
-References: <1406243260-13490-1-git-send-email-gclement@baobob.org>
+	id S1760259AbaGYLyg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 07:54:36 -0400
+Received: from mail.us.es ([193.147.175.20]:43597 "EHLO mail.us.es"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760052AbaGYLye (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jul 2014 07:54:34 -0400
+X-Qmail-Scanner-Diagnostics: from 127.0.0.1 by antivirus4 (envelope-from <pneira@us.es>, uid 501) with qmail-scanner-2.10 
+ (clamdscan: 0.98.4/19221. spamassassin: 3.3.2.  
+ Clear:RC:1(127.0.0.1):SA:0(-100.2/7.5):. 
+ Processed in 1.886274 secs); 25 Jul 2014 11:54:30 -0000
+X-Spam-ASN: AS42863 89.214.0.0/16
+X-Envelope-From: pneira@us.es
+Date: Fri, 25 Jul 2014 13:54:37 +0200
+From: Pablo Neira Ayuso <pablo@netfilter.org>
+To: Daniel Borkmann <dborkman@redhat.com>
+Cc: Alexei Starovoitov <ast@plumgrid.com>,
+        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, willemb@google.com,
+        netfilter-devel@vger.kernel.org
+Subject: Re: [PATCH net-next] net: filter: rename 'struct sk_filter' to
+ 'struct bpf_prog'
+Message-ID: <20140725115414.GA4770@salvia>
+References: <1406275499-7822-1-git-send-email-ast@plumgrid.com>
+ <53D23EAF.4000001@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1406243260-13490-1-git-send-email-gclement@baobob.org>
+In-Reply-To: <53D23EAF.4000001@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 25, 2014 at 01:07:40AM +0200, Guillaume Clement wrote:
-> diff --git a/drivers/staging/vt6655/iwctl.c b/drivers/staging/vt6655/iwctl.c
-> index 501cd64..9291259 100644
-> --- a/drivers/staging/vt6655/iwctl.c
-> +++ b/drivers/staging/vt6655/iwctl.c
-> @@ -1621,14 +1621,17 @@ int iwctl_giwauth(struct net_device *dev,
->  int iwctl_siwgenie(struct net_device *dev,
->  		   struct iw_request_info *info,
->  		   struct iw_point *wrq,
-> -		   char *extra)
-> +		   char __user *extra)
->  {
->  	PSDevice			pDevice = (PSDevice)netdev_priv(dev);
->  	PSMgmtObject	pMgmt = &(pDevice->sMgmtObj);
->  	int ret = 0;
-> +	char length;
->  
->  	if (wrq->length) {
-> -		if ((wrq->length < 2) || (extra[1]+2 != wrq->length)) {
-> +		if (get_user(length, extra + 1))
-> +			return -EFAULT;
-> +		if ((wrq->length < 2) || (length != wrq->length)) {
->  			ret = -EINVAL;
->  			goto out;
->  		}
+On Fri, Jul 25, 2014 at 01:25:35PM +0200, Daniel Borkmann wrote:
+> [ also Cc'ing Willem, Pablo ]
+> 
+> On 07/25/2014 10:04 AM, Alexei Starovoitov wrote:
+> >'sk_filter' name is used as 'struct sk_filter', function sk_filter() and
+> >as variable 'sk_filter', which makes code hard to read.
+> >Also it's easily confused with 'struct sock_filter'
+> >Rename 'struct sk_filter' to 'struct bpf_prog' to clarify semantics and
+> >align the name with generic BPF use model.
+> 
+> Agreed, as we went for kernel/bpf/, renaming makes absolutely sense.
 
-Wow, this is confusing code.  The patch description isn't clear enough
-that this is a bugfix patch and not just a "tag data" patch.
+My nft socket filtering changes are accomodated into struct sk_filter,
+and will still be, so I still need some generic name there...
 
-I don't think this is correct.  We need to check the length of the input
-buffer before we call get_user().  Can we return directly or do we
-*need* to go to the mysteriously named "out"?  Also the + 2 is lost,
-this would break everything if the current code works (not necessarily a
-valid assumption).  Delete all my comments in the final code.
+Please, leave this as it is.
 
-	/* 2 because we skip the first byte and read length from the
-	   second byte */
-	if (wrq->length < 2) {
-		ret = -EINVAL;
-		goto out;
-	}
+> >The only ugly place is uapi/linux/netfilter/xt_bpf.h which
+> >managed to expose kernel internal structure into uapi header.
+> >Though it shouldn't even compile in user space, preserve the mess by
+> >adding empty 'struct sk_filter;' there and type cast it to 'struct bpf_prog'
+> >inside kernel in net/netfilter/xt_bpf.c
+> >
+> >Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
+> >---
+> >
+> >alternative fix for xt_bpf.h could be to replace:
+> >         /* only used in the kernel */
+> >	struct sk_filter *filter __attribute__((aligned(8)));
+> >with
+> >         /* only used in the kernel */
+> >	void *filter __attribute__((aligned(8)));
+> >
+> >but this 'void *' approach may further break broken userspace,
+> >whereas the fix implemented here is more seamless.
+> 
+> Yep, that's not good, 'struct sk_filter' should never have been in a uapi
+> file actually.
 
-	ret = get_user(length, extra + 1);
-	if (ret)
-		goto out;
-
-	if (length + 2 != wrq->length) {
-		ret = -EINVAL;
-		goto out;
-	}
-
-regards,
-dan carpenter
-
+You can just send me a patch to change it to void. It's an internal
+kernel pointer as the comment states. There is **no** way that
+userspace can lurk with that from iptables at all.
