@@ -1,64 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760400AbaGYVAT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 17:00:19 -0400
-Received: from www.linutronix.de ([62.245.132.108]:59845 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752073AbaGYVAR (ORCPT
+	id S1760526AbaGYVCp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 17:02:45 -0400
+Received: from mail-we0-f172.google.com ([74.125.82.172]:54115 "EHLO
+	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752073AbaGYVCo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 17:00:17 -0400
-Date: Fri, 25 Jul 2014 23:00:12 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        Linux PM list <linux-pm@vger.kernel.org>
-Subject: Re: [RFC][PATCH] irq: Rework IRQF_NO_SUSPENDED
-In-Reply-To: <2870044.iEzUSaptji@vostro.rjw.lan>
-Message-ID: <alpine.DEB.2.10.1407252217350.23352@nanos>
-References: <20140724212620.GO3935@laptop> <20140725124037.GL20603@laptop.programming.kicks-ass.net> <20140725132541.GT12054@laptop.lan> <2870044.iEzUSaptji@vostro.rjw.lan>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	Fri, 25 Jul 2014 17:02:44 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+In-Reply-To: <53D2B587.7080506@linux.intel.com>
+References: <1406316745-3351-1-git-send-email-reyad.attiyat@gmail.com> <53D2B587.7080506@linux.intel.com>
+From: Reyad Attiyat <reyad.attiyat@gmail.com>
+Date: Fri, 25 Jul 2014 16:02:22 -0500
+Message-ID: <CA+BWVUQVpXZ50XMFhRBooff2573EnHn22E2ebofbKfEjch7gqw@mail.gmail.com>
+Subject: Re: [PATCH] iio: hid-sensor-magn-3d: Fix build warning
+To: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
+Cc: Jonathan Cameron <jic23@kernel.org>, linux-iio@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 25 Jul 2014, Rafael J. Wysocki wrote:
-> On Friday, July 25, 2014 03:25:41 PM Peter Zijlstra wrote:
-> > OK, so Rafael said there's devices that keep on raising their interrupt
-> > until they get attention. Ideally this won't happen because the device
-> > is suspended etc.. But I'm sure there's some broken piece of hardware
-> > out there that'll make it go boom.
-> 
-> So here's an idea.
-> 
-> What about returning IRQ_NONE rather than IRQ_HANDLED for "suspended"
-> interrupts (after all, that's what a sane driver would do for a
-> suspended device I suppose)?
-> 
-> If the line is really shared and the interrupt is taken care of by
-> the other guy sharing the line, we'll be all fine.
-> 
-> If that is not the case, on the other hand, and something's really
-> broken, we'll end up disabling the interrupt and marking it as
-> IRQS_SPURIOUS_DISABLED (if I understand things correctly).
+Whoops looks like I typed an extra character, sorry should have caught this.
+Thanks Sirinivas will resend.
 
-We should not wait 100k unhandled interrupts in that case. We know
-already at the first unhandled interrupt that the shit hit the fan.
-
-I'll have a deeper look how we can sanitize the whole wake/no_suspend
-logic vs. shared interrupts. Need to look at the usage sites first.
-
-Thanks,
-
-	tglx
-
-
-
-
-
-
-
+On Fri, Jul 25, 2014 at 2:52 PM, Srinivas Pandruvada
+<srinivas.pandruvada@linux.intel.com> wrote:
+> On 07/25/2014 12:32 PM, Reyad Attiyat wrote:
+>>
+>> Fix build warning, sizeof() called on dynamically
+>> sized pointer, by removing the call and the dependent
+>> function parameter. It is not needed or used in this
+>> driver, when pushing values to an iio buffer.
+>>
+>> Signed-off-by: Reyad Attiyat <reyad.attiyat@gmail.com>
+>> ---
+>>   drivers/iio/magnetometer/hid-sensor-magn-3d.c | 7 ++-----
+>>   1 file changed, 2 insertions(+), 5 deletions(-)
+>>
+>> diff --git a/drivers/iio/magnetometer/hid-sensor-magn-3d.c
+>> b/drivers/iio/magnetometer/hid-sensor-magn-3d.c
+>> index 3ec777a..915ffb9 100644
+>> --- a/drivers/iio/magnetometer/hid-sensor-magn-3d.c
+>> +++ b/drivers/iio/magnetometer/hid-sensor-magn-3d.c
+>> @@ -246,8 +246,7 @@ static const struct iio_info magn_3d_info = {
+>>   };
+>>
+>>   /* Function to push data to buffer */
+>> -static void hid_sensor_push_data(struct iio_dev *indio_dev, const void
+>> *data,
+>> -       int len)
+>> +static void hid_sensor_push_data(struct iio_dev *indio_dev, const void
+>> *data)
+>>   {
+>>         dev_dbg(&indio_dev->dev, "hid_sensor_push_data\n");
+>>         iio_push_to_buffers(indio_dev, data);
+>> @@ -263,9 +262,7 @@ static int magn_3d_proc_event(struct
+>> hid_sensor_hub_device *hsdev,
+>>
+>>         dev_dbg(&indio_dev->dev, "magn_3d_proc_event\n");
+>>         if (atomic_read(&magn_state->common_attributes.data_ready))
+>> -               hid_sensor_push_data(indio_dev,
+>> -                               magn_state->iio_vals,
+>> -                               sizeof(magn_state->iio_vals));
+>> +               hid_sensor_push_data(indio_devm, magn_state->iio_vals);
+>
+> Is it indio_devm,  not indio_dev?
+>
+> Thanks,
+> Srinivas
+>>
+>>
+>>         return 0;
+>>   }
+>>
+>
