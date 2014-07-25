@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760968AbaGYPiH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 11:38:07 -0400
-Received: from mail.kernel.org ([198.145.19.201]:35003 "EHLO mail.kernel.org"
+	id S1761008AbaGYPiV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 11:38:21 -0400
+Received: from mail.kernel.org ([198.145.19.201]:35084 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752615AbaGYPiA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 11:38:00 -0400
+	id S1760987AbaGYPiR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jul 2014 11:38:17 -0400
 From: Arnaldo Carvalho de Melo <acme@kernel.org>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
@@ -15,9 +15,9 @@ Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 10/27] perf tools: Move rdtsc() function
-Date: Fri, 25 Jul 2014 12:36:52 -0300
-Message-Id: <1406302629-11790-11-git-send-email-acme@kernel.org>
+Subject: [PATCH 14/27] perf session: Add ability to skip 4GiB or more
+Date: Fri, 25 Jul 2014 12:36:56 -0300
+Message-Id: <1406302629-11790-15-git-send-email-acme@kernel.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1406302629-11790-1-git-send-email-acme@kernel.org>
 References: <1406302629-11790-1-git-send-email-acme@kernel.org>
@@ -27,7 +27,8 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Adrian Hunter <adrian.hunter@intel.com>
 
-Move the rdtsc() function so it can be reusued.
+A session can be made to skip portions of the input file.  Do not limit
+that size to 32-bits.
 
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 Cc: David Ahern <dsahern@gmail.com>
@@ -37,76 +38,64 @@ Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1406035081-14301-24-git-send-email-adrian.hunter@intel.com
+Link: http://lkml.kernel.org/r/1406143198-20732-2-git-send-email-adrian.hunter@intel.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/arch/x86/util/tsc.c      | 9 +++++++++
- tools/perf/tests/perf-time-to-tsc.c | 9 ---------
- tools/perf/util/tsc.c               | 5 +++++
- tools/perf/util/tsc.h               | 1 +
- 4 files changed, 15 insertions(+), 9 deletions(-)
+ tools/perf/util/session.c | 15 ++++++++-------
+ 1 file changed, 8 insertions(+), 7 deletions(-)
 
-diff --git a/tools/perf/arch/x86/util/tsc.c b/tools/perf/arch/x86/util/tsc.c
-index 3655f24c3170..fd2868490d00 100644
---- a/tools/perf/arch/x86/util/tsc.c
-+++ b/tools/perf/arch/x86/util/tsc.c
-@@ -37,3 +37,12 @@ int perf_read_tsc_conversion(const struct perf_event_mmap_page *pc,
- 
- 	return 0;
- }
-+
-+u64 rdtsc(void)
-+{
-+	unsigned int low, high;
-+
-+	asm volatile("rdtsc" : "=a" (low), "=d" (high));
-+
-+	return low | ((u64)high) << 32;
-+}
-diff --git a/tools/perf/tests/perf-time-to-tsc.c b/tools/perf/tests/perf-time-to-tsc.c
-index 0372f6edca20..f238442b238a 100644
---- a/tools/perf/tests/perf-time-to-tsc.c
-+++ b/tools/perf/tests/perf-time-to-tsc.c
-@@ -25,15 +25,6 @@
- 	}					\
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index f4399b2087c4..d3da1055239f 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -994,8 +994,10 @@ static int perf_session_deliver_event(struct perf_session *session,
+ 	}
  }
  
--static u64 rdtsc(void)
--{
--	unsigned int low, high;
--
--	asm volatile("rdtsc" : "=a" (low), "=d" (high));
--
--	return low | ((u64)high) << 32;
--}
--
- /**
-  * test__perf_time_to_tsc - test converting perf time to TSC.
-  *
-diff --git a/tools/perf/util/tsc.c b/tools/perf/util/tsc.c
-index ef4749836ce9..4d4210d4e13d 100644
---- a/tools/perf/util/tsc.c
-+++ b/tools/perf/util/tsc.c
-@@ -23,3 +23,8 @@ u64 tsc_to_perf_time(u64 cyc, struct perf_tsc_conversion *tc)
- 	return tc->time_zero + quot * tc->time_mult +
- 	       ((rem * tc->time_mult) >> tc->time_shift);
+-static int perf_session__process_user_event(struct perf_session *session, union perf_event *event,
+-					    struct perf_tool *tool, u64 file_offset)
++static s64 perf_session__process_user_event(struct perf_session *session,
++					    union perf_event *event,
++					    struct perf_tool *tool,
++					    u64 file_offset)
+ {
+ 	int fd = perf_data_file__fd(session->file);
+ 	int err;
+@@ -1037,7 +1039,7 @@ static void event_swap(union perf_event *event, bool sample_id_all)
+ 		swap(event, sample_id_all);
  }
-+
-+u64 __weak rdtsc(void)
-+{
-+	return 0;
-+}
-diff --git a/tools/perf/util/tsc.h b/tools/perf/util/tsc.h
-index 4eca84887c8a..a8b78f1b3243 100644
---- a/tools/perf/util/tsc.h
-+++ b/tools/perf/util/tsc.h
-@@ -7,5 +7,6 @@
  
- u64 perf_time_to_tsc(u64 ns, struct perf_tsc_conversion *tc);
- u64 tsc_to_perf_time(u64 cyc, struct perf_tsc_conversion *tc);
-+u64 rdtsc(void);
+-static int perf_session__process_event(struct perf_session *session,
++static s64 perf_session__process_event(struct perf_session *session,
+ 				       union perf_event *event,
+ 				       struct perf_tool *tool,
+ 				       u64 file_offset)
+@@ -1148,7 +1150,7 @@ static int __perf_session__process_pipe_events(struct perf_session *session,
+ 	union perf_event *event;
+ 	uint32_t size, cur_size = 0;
+ 	void *buf = NULL;
+-	int skip = 0;
++	s64 skip = 0;
+ 	u64 head;
+ 	ssize_t err;
+ 	void *p;
+@@ -1277,14 +1279,13 @@ int __perf_session__process_events(struct perf_session *session,
+ 				   u64 file_size, struct perf_tool *tool)
+ {
+ 	int fd = perf_data_file__fd(session->file);
+-	u64 head, page_offset, file_offset, file_pos;
++	u64 head, page_offset, file_offset, file_pos, size;
+ 	int err, mmap_prot, mmap_flags, map_idx = 0;
+ 	size_t	mmap_size;
+ 	char *buf, *mmaps[NUM_MMAPS];
+ 	union perf_event *event;
+-	uint32_t size;
+ 	struct ui_progress prog;
+-	int skip;
++	s64 skip;
  
- #endif
+ 	perf_tool__fill_defaults(tool);
+ 
 -- 
 1.9.3
 
