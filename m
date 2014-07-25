@@ -1,98 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760960AbaGYTT0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 15:19:26 -0400
-Received: from mail-oi0-f47.google.com ([209.85.218.47]:48787 "EHLO
-	mail-oi0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758776AbaGYTTY convert rfc822-to-8bit (ORCPT
+	id S1760973AbaGYT00 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 15:26:26 -0400
+Received: from aso-006-i450.relay.mailchannels.net ([23.91.64.131]:10451 "EHLO
+	relay.mailchannels.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1760793AbaGYT0Y convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 15:19:24 -0400
-MIME-Version: 1.0
-Date: Fri, 25 Jul 2014 12:13:38 -0700
-Message-ID: <CAK3+h2wRJj8xs10JwQ6=7-oQDVC9WM_qGuW52Otd9s2rxDf5QA@mail.gmail.com>
-Subject: Build perf statically with all libunwind+dwaf for profiling userland
- process on constrained Linux box
-From: Vincent Li <vincent.mc.li@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: "Michael S. Tsirkin" <mst@redhat.com>, Ingo Molnar <mingo@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 25 Jul 2014 15:26:24 -0400
+X-Sender-Id: arvixe|x-authuser|przemo@firszt.eu
+X-Sender-Id: arvixe|x-authuser|przemo@firszt.eu
+X-MC-Relay: Good
+X-MailChannels-SenderId: arvixe|x-authuser|przemo@firszt.eu
+X-MailChannels-Auth-Id: arvixe
+Message-ID: <1406316376.12682.18.camel@fedora-lan>
+Subject: Re: [PATCH v2 00/10] Input - wacom: conversion to HID driver,
+ series 2
+From: Przemo Firszt <przemo@firszt.eu>
+To: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
+        Ping Cheng <pinglinux@gmail.com>, Jason Gerecke <killertofu@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
+Date: Fri, 25 Jul 2014 20:26:16 +0100
+In-Reply-To: <20140725145400.GB12268@mail.corp.redhat.com>
+References: <1406225645-32141-1-git-send-email-benjamin.tissoires@redhat.com>
+	 <1406292140.2664.17.camel@fedora-lan>
+	 <20140725125820.GA12268@mail.corp.redhat.com>
+	 <1406295035.2664.43.camel@fedora-lan>
+	 <20140725145400.GB12268@mail.corp.redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
+X-AuthUser: przemo@firszt.eu
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Dnia 2014-07-25, pią o godzinie 10:54 -0400, Benjamin Tissoires pisze:
+> [..]
+Hi Benjamin,
+>  
+> > If I understand you correctly we cannot have the same entry point in
+> > sysfs for OLEDs unless we can tell userspace somehow if the tablet is
+> > conected over USB or over bluetooth. The hardware of Intuos4 Wireless
+> > over bluetooth allows only 1-bit images. The same hardware over USB
+> > allows 4-bit images. Formatting of the images is also completely
+> 
+> Holy crap! I missed that. I did not noticed the 1-bit vs 4-bits
+> difference :(
+> 
+> > different and it's not "plain". Check [1] for usb and exisitng
+> > hid-wacom.c/wacom_scramble function for bluetooth.
+> 
+> Maybe I overlooked it, but I thought that in case of USB, the scrambling
+> is done in user space, and in case of BT, the same scrambling made in the
+> kernel. They looks very similar so I thought the user-space scramble for
+> USB would have fit. However, the 4-bits/1-bits kills that assumption.
 
-I am on Fedora 20 and trying to build a static perf with  needed
-library support, but it failed to detect the needed library, here is
-the output
+You're correct - USB requires scrambling in the user space, but
+scrambling for USB is different than for BT. Example of USB scramble is
+here: https://github.com/PrzemoF/i4oled/blob/master/src/i4oled.c#L401
 
-1, build dynamically detected the library ok
+> > 
+> > If we want to make it consistent single entry on kernel level we
+> > probably have to implement image conversion in the kernel. The user land
+> > would always use 4-bit, plain formatted images and kernel driver would
+> > convert them to 4-bit, wacom usb format or 1-bit wacom bluetooth format
+> > depending on how the tablet is connected.
+> > 
+> > The downside of this approach is that the user land wouldn't have 100%
+> > control over 1-bit images for bluetooth as kernel would have to create
+> > them from 4-bit images.
+> 
+> The USB interface is *very* simple:
+> - if incoming data != 1024 -> reject
+> - forward everything to the device without in kernel treatment*
+> 
+> How about just changing the expected size to 256 in case of a BT tablet,
+> and let the user-space scramble in both cases and forward proper raw
+> data?
+> 
+> This way, user space will still have control over 1-bit vs 4-bits, and
+> the changes required in the kernel will be small enough.
+Sounds good to me. Bit more coding in gnome, but it's a small thing.
 
- [vincent@localhost perf]$ make
-  BUILD:   Doing 'make -j4' parallel build
-config/Makefile:422: GTK2 not found, disables GTK2 support. Please
-install gtk2-devel or libgtk2.0-dev
-config/Makefile:586: No numa.h found, disables 'perf bench numa mem'
-benchmark, please install numactl-devel/libnuma-devel/libnuma-dev
+> My concern is that I'd like to have this series in 3.17 and I will not
+> have access to the hardware until next week :/
+> Having all of the user-spaces breakages in the same kernel release will
+> I think simplify the user space work.
+I agree.
 
-Auto-detecting system features:
-...                         dwarf: [ on  ]
-...                         glibc: [ on  ]
-...                          gtk2: [ OFF ]
-...                      libaudit: [ on  ]
-...                        libbfd: [ on  ]
-...                        libelf: [ on  ]
-...                       libnuma: [ OFF ]
-...                       libperl: [ on  ]
-...                     libpython: [ on  ]
-...                      libslang: [ on  ]
-...                     libunwind: [ on  ]
-...            libdw-dwarf-unwind: [ on  ]
-...     DWARF post unwind library: libunwind
+P.S. Could you send me that set of 23 patches using git-send-email that
+I should apply on top of linux-next? I got it from lkml, but there is
+still something messed (fails on patch 09/23). Of course, if it's not a
+problem for you :-)
 
-2, build statically failed to detect the library
+-- 
+Kind regards,
+Przemo Firszt
 
-[vincent@localhost perf]$ make LDFLAGS=-static
-  BUILD:   Doing 'make -j4' parallel build
-config/Makefile:294: No libelf found, disables 'probe' tool, please
-install elfutils-libelf-devel/libelf-dev
-config/Makefile:357: Disabling post unwind, no support found.
-config/Makefile:395: No libaudit.h found, disables 'trace' tool,
-please install audit-libs-devel or libaudit-dev
-config/Makefile:409: slang not found, disables TUI support. Please
-install slang-devel or libslang-dev
-config/Makefile:422: GTK2 not found, disables GTK2 support. Please
-install gtk2-devel or libgtk2.0-dev
-config/Makefile:499: No Python.h (for Python 2.x) was found
-config/Makefile:499: Python support will not be built
-config/Makefile:586: No numa.h found, disables 'perf bench numa mem'
-benchmark, please install numactl-devel/libnuma-devel/libnuma-dev
 
-Auto-detecting system features:
-...                         dwarf: [ OFF ]
-...                         glibc: [ on  ]
-...                          gtk2: [ OFF ]
-...                      libaudit: [ OFF ]
-...                        libbfd: [ OFF ]
-...                        libelf: [ OFF ]
-...                       libnuma: [ OFF ]
-...                       libperl: [ OFF ]
-...                     libpython: [ OFF ]
-...                      libslang: [ OFF ]
-...                     libunwind: [ OFF ]
-...            libdw-dwarf-unwind: [ OFF ]
-
-I have a constrained centos-like Linux system (not centos)  that I
-need to profile the userland process that is not compiled with GCC
-option “-fno-omit-frame-pointer –ggdb”
-https://bugzilla.redhat.com/show_bug.cgi?id=1025603.
-
-it would be nice to be able to compile perf statically with needed
-library support, could anyone share an idea how to resolve this?
-
-sorry if this is not the right place to ask
-
-Regards,
-
-Vincent
