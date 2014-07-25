@@ -1,287 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760870AbaGYQFu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 12:05:50 -0400
-Received: from mail-we0-f171.google.com ([74.125.82.171]:51964 "EHLO
-	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752938AbaGYQFs (ORCPT
+	id S1760885AbaGYQGG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 12:06:06 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:60681 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752938AbaGYQGD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 12:05:48 -0400
-From: Igor Bezukh <igbzkh@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: devel@driverdev.osuosl.org, forest@alittletooquiet.net,
-        linux-kernel@vger.kernel.org, igbzkh@gmail.com
-Subject: [PATCH] Staging: vt6655: removed redundant comments from desc.h
-Date: Fri, 25 Jul 2014 19:05:31 +0300
-Message-Id: <1406304331-31463-1-git-send-email-igbzkh@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Fri, 25 Jul 2014 12:06:03 -0400
+Date: Fri, 25 Jul 2014 18:05:49 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Rik van Riel <riel@redhat.com>
+Cc: linux-kernel@vger.kernel.org, mikey@neuling.org, mingo@kernel.org,
+        pjt@google.com, jhladky@redhat.com, ktkhai@parallels.com,
+        tim.c.chen@linux.intel.com, nicolas.pitre@linaro.org
+Subject: Re: [PATCH] sched: make update_sd_pick_busiest return true on a
+ busier sd
+Message-ID: <20140725160549.GD6758@twins.programming.kicks-ass.net>
+References: <20140722144559.382c5243@annuminas.surriel.com>
+ <20140725152728.GB6758@twins.programming.kicks-ass.net>
+ <53D27B7E.8090404@redhat.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="qi9i1S6E/JzMSUse"
+Content-Disposition: inline
+In-Reply-To: <53D27B7E.8090404@redhat.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Removed redundant comments from desc.h header file.
 
-Signed-off-by: Igor Bezukh <igbzkh@gmail.com>
-C99 style comments will be fixed in further patches.
----
- drivers/staging/vt6655/desc.h |  185 +++++++++++++++++++----------------------
- 1 file changed, 87 insertions(+), 98 deletions(-)
+--qi9i1S6E/JzMSUse
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-diff --git a/drivers/staging/vt6655/desc.h b/drivers/staging/vt6655/desc.h
-index c620cbfb..05efa4e 100644
---- a/drivers/staging/vt6655/desc.h
-+++ b/drivers/staging/vt6655/desc.h
-@@ -36,79 +36,77 @@
- #include "ttype.h"
- #include "tether.h"
- 
--/*---------------------  Export Definitions -------------------------*/
--
--#define B_OWNED_BY_CHIP     1           //
--#define B_OWNED_BY_HOST     0           //
-+#define B_OWNED_BY_CHIP     1
-+#define B_OWNED_BY_HOST     0
- 
- //
- // Bits in the RSR register
- //
--#define RSR_ADDRBROAD       0x80        // 1000 0000
--#define RSR_ADDRMULTI       0x40        // 0100 0000
--#define RSR_ADDRUNI         0x00        // 0000 0000
--#define RSR_IVLDTYP         0x20        // 0010 0000 , invalid packet type
--#define RSR_IVLDLEN         0x10        // 0001 0000 , invalid len (> 2312 byte)
--#define RSR_BSSIDOK         0x08        // 0000 1000
--#define RSR_CRCOK           0x04        // 0000 0100
--#define RSR_BCNSSIDOK       0x02        // 0000 0010
--#define RSR_ADDROK          0x01        // 0000 0001
-+#define RSR_ADDRBROAD       0x80
-+#define RSR_ADDRMULTI       0x40
-+#define RSR_ADDRUNI         0x00
-+#define RSR_IVLDTYP         0x20
-+#define RSR_IVLDLEN         0x10        // invalid len (> 2312 byte)
-+#define RSR_BSSIDOK         0x08
-+#define RSR_CRCOK           0x04
-+#define RSR_BCNSSIDOK       0x02
-+#define RSR_ADDROK          0x01
- 
- //
- // Bits in the new RSR register
- //
--#define NEWRSR_DECRYPTOK    0x10        // 0001 0000
--#define NEWRSR_CFPIND       0x08        // 0000 1000
--#define NEWRSR_HWUTSF       0x04        // 0000 0100
--#define NEWRSR_BCNHITAID    0x02        // 0000 0010
--#define NEWRSR_BCNHITAID0   0x01        // 0000 0001
-+#define NEWRSR_DECRYPTOK    0x10
-+#define NEWRSR_CFPIND       0x08
-+#define NEWRSR_HWUTSF       0x04
-+#define NEWRSR_BCNHITAID    0x02
-+#define NEWRSR_BCNHITAID0   0x01
- 
- //
- // Bits in the TSR0 register
- //
--#define TSR0_PWRSTS1_2      0xC0        // 1100 0000
--#define TSR0_PWRSTS7        0x20        // 0010 0000
--#define TSR0_NCR            0x1F        // 0001 1111
-+#define TSR0_PWRSTS1_2      0xC0
-+#define TSR0_PWRSTS7        0x20
-+#define TSR0_NCR            0x1F
- 
- //
- // Bits in the TSR1 register
- //
--#define TSR1_TERR           0x80        // 1000 0000
--#define TSR1_PWRSTS4_6      0x70        // 0111 0000
--#define TSR1_RETRYTMO       0x08        // 0000 1000
--#define TSR1_TMO            0x04        // 0000 0100
--#define TSR1_PWRSTS3        0x02        // 0000 0010
--#define ACK_DATA            0x01        // 0000 0000
-+#define TSR1_TERR           0x80
-+#define TSR1_PWRSTS4_6      0x70
-+#define TSR1_RETRYTMO       0x08
-+#define TSR1_TMO            0x04
-+#define TSR1_PWRSTS3        0x02
-+#define ACK_DATA            0x01
- 
- //
- // Bits in the TCR register
- //
--#define EDMSDU              0x04        // 0000 0100 end of sdu
--#define TCR_EDP             0x02        // 0000 0010 end of packet
--#define TCR_STP             0x01        // 0000 0001 start of packet
-+#define EDMSDU              0x04        // end of sdu
-+#define TCR_EDP             0x02        // end of packet
-+#define TCR_STP             0x01        // start of packet
- 
- // max transmit or receive buffer size
--#define CB_MAX_BUF_SIZE     2900U       // max buffer size
-+#define CB_MAX_BUF_SIZE     2900U
- 					// NOTE: must be multiple of 4
--#define CB_MAX_TX_BUF_SIZE          CB_MAX_BUF_SIZE // max Tx buffer size
--#define CB_MAX_RX_BUF_SIZE_NORMAL   CB_MAX_BUF_SIZE // max Rx buffer size when not use Multi-RD
-+#define CB_MAX_TX_BUF_SIZE          CB_MAX_BUF_SIZE
-+#define CB_MAX_RX_BUF_SIZE_NORMAL   CB_MAX_BUF_SIZE
- 
--#define CB_BEACON_BUF_SIZE  512U        // default beacon buffer size
-+#define CB_BEACON_BUF_SIZE  512U
- 
--#define CB_MAX_RX_DESC      128         // max # of descriptor
--#define CB_MIN_RX_DESC      16          // min # of rx descriptor
--#define CB_MAX_TX_DESC      64          // max # of descriptor
--#define CB_MIN_TX_DESC      16          // min # of tx descriptor
-+#define CB_MAX_RX_DESC      128
-+#define CB_MIN_RX_DESC      16
-+#define CB_MAX_TX_DESC      64
-+#define CB_MIN_TX_DESC      16
- 
--#define CB_MAX_RECEIVED_PACKETS     16  // max # of received packets at one time
-+#define CB_MAX_RECEIVED_PACKETS     16
- 					// limit our receive routine to indicating
- 					// this many at a time for 2 reasons:
- 					// 1. driver flow control to protocol layer
- 					// 2. limit the time used in ISR routine
- 
--#define CB_EXTRA_RD_NUM     32          // default # of Extra RD
--#define CB_RD_NUM           32          // default # of RD
--#define CB_TD_NUM           32          // default # of TD
-+#define CB_EXTRA_RD_NUM     32
-+#define CB_RD_NUM           32
-+#define CB_TD_NUM           32
- 
- // max number of physical segments
- // in a single NDIS packet. Above this threshold, the packet
-@@ -128,61 +126,61 @@
- #ifdef __BIG_ENDIAN
- 
- // WMAC definition FIFO Control
--#define FIFOCTL_AUTO_FB_1   0x0010 // 0001 0000 0000 0000
--#define FIFOCTL_AUTO_FB_0   0x0008 // 0000 1000 0000 0000
--#define FIFOCTL_GRPACK      0x0004 // 0000 0100 0000 0000
--#define FIFOCTL_11GA        0x0003 // 0000 0011 0000 0000
--#define FIFOCTL_11GB        0x0002 // 0000 0010 0000 0000
--#define FIFOCTL_11B         0x0001 // 0000 0001 0000 0000
--#define FIFOCTL_11A         0x0000 // 0000 0000 0000 0000
--#define FIFOCTL_RTS         0x8000 // 0000 0000 1000 0000
--#define FIFOCTL_ISDMA0      0x4000 // 0000 0000 0100 0000
--#define FIFOCTL_GENINT      0x2000 // 0000 0000 0010 0000
--#define FIFOCTL_TMOEN       0x1000 // 0000 0000 0001 0000
--#define FIFOCTL_LRETRY      0x0800 // 0000 0000 0000 1000
--#define FIFOCTL_CRCDIS      0x0400 // 0000 0000 0000 0100
--#define FIFOCTL_NEEDACK     0x0200 // 0000 0000 0000 0010
--#define FIFOCTL_LHEAD       0x0100 // 0000 0000 0000 0001
-+#define FIFOCTL_AUTO_FB_1   0x0010
-+#define FIFOCTL_AUTO_FB_0   0x0008
-+#define FIFOCTL_GRPACK      0x0004
-+#define FIFOCTL_11GA        0x0003
-+#define FIFOCTL_11GB        0x0002
-+#define FIFOCTL_11B         0x0001
-+#define FIFOCTL_11A         0x0000
-+#define FIFOCTL_RTS         0x8000
-+#define FIFOCTL_ISDMA0      0x4000
-+#define FIFOCTL_GENINT      0x2000
-+#define FIFOCTL_TMOEN       0x1000
-+#define FIFOCTL_LRETRY      0x0800
-+#define FIFOCTL_CRCDIS      0x0400
-+#define FIFOCTL_NEEDACK     0x0200
-+#define FIFOCTL_LHEAD       0x0100
- 
- //WMAC definition Frag Control
--#define FRAGCTL_AES         0x0003 // 0000 0011 0000 0000
--#define FRAGCTL_TKIP        0x0002 // 0000 0010 0000 0000
--#define FRAGCTL_LEGACY      0x0001 // 0000 0001 0000 0000
--#define FRAGCTL_NONENCRYPT  0x0000 // 0000 0000 0000 0000
--#define FRAGCTL_ENDFRAG     0x0300 // 0000 0000 0000 0011
--#define FRAGCTL_MIDFRAG     0x0200 // 0000 0000 0000 0010
--#define FRAGCTL_STAFRAG     0x0100 // 0000 0000 0000 0001
--#define FRAGCTL_NONFRAG     0x0000 // 0000 0000 0000 0000
-+#define FRAGCTL_AES         0x0003
-+#define FRAGCTL_TKIP        0x0002
-+#define FRAGCTL_LEGACY      0x0001
-+#define FRAGCTL_NONENCRYPT  0x0000
-+#define FRAGCTL_ENDFRAG     0x0300
-+#define FRAGCTL_MIDFRAG     0x0200
-+#define FRAGCTL_STAFRAG     0x0100
-+#define FRAGCTL_NONFRAG     0x0000
- 
- #else
- 
--#define FIFOCTL_AUTO_FB_1   0x1000 // 0001 0000 0000 0000
--#define FIFOCTL_AUTO_FB_0   0x0800 // 0000 1000 0000 0000
--#define FIFOCTL_GRPACK      0x0400 // 0000 0100 0000 0000
--#define FIFOCTL_11GA        0x0300 // 0000 0011 0000 0000
--#define FIFOCTL_11GB        0x0200 // 0000 0010 0000 0000
--#define FIFOCTL_11B         0x0100 // 0000 0001 0000 0000
--#define FIFOCTL_11A         0x0000 // 0000 0000 0000 0000
--#define FIFOCTL_RTS         0x0080 // 0000 0000 1000 0000
--#define FIFOCTL_ISDMA0      0x0040 // 0000 0000 0100 0000
--#define FIFOCTL_GENINT      0x0020 // 0000 0000 0010 0000
--#define FIFOCTL_TMOEN       0x0010 // 0000 0000 0001 0000
--#define FIFOCTL_LRETRY      0x0008 // 0000 0000 0000 1000
--#define FIFOCTL_CRCDIS      0x0004 // 0000 0000 0000 0100
--#define FIFOCTL_NEEDACK     0x0002 // 0000 0000 0000 0010
--#define FIFOCTL_LHEAD       0x0001 // 0000 0000 0000 0001
-+#define FIFOCTL_AUTO_FB_1   0x1000
-+#define FIFOCTL_AUTO_FB_0   0x0800
-+#define FIFOCTL_GRPACK      0x0400
-+#define FIFOCTL_11GA        0x0300
-+#define FIFOCTL_11GB        0x0200
-+#define FIFOCTL_11B         0x0100
-+#define FIFOCTL_11A         0x0000
-+#define FIFOCTL_RTS         0x0080
-+#define FIFOCTL_ISDMA0      0x0040
-+#define FIFOCTL_GENINT      0x0020
-+#define FIFOCTL_TMOEN       0x0010
-+#define FIFOCTL_LRETRY      0x0008
-+#define FIFOCTL_CRCDIS      0x0004
-+#define FIFOCTL_NEEDACK     0x0002
-+#define FIFOCTL_LHEAD       0x0001
- 
- //WMAC definition Frag Control
--#define FRAGCTL_AES         0x0300 // 0000 0011 0000 0000
--#define FRAGCTL_TKIP        0x0200 // 0000 0010 0000 0000
--#define FRAGCTL_LEGACY      0x0100 // 0000 0001 0000 0000
--#define FRAGCTL_NONENCRYPT  0x0000 // 0000 0000 0000 0000
--#define FRAGCTL_ENDFRAG     0x0003 // 0000 0000 0000 0011
--#define FRAGCTL_MIDFRAG     0x0002 // 0000 0000 0000 0010
--#define FRAGCTL_STAFRAG     0x0001 // 0000 0000 0000 0001
--#define FRAGCTL_NONFRAG     0x0000 // 0000 0000 0000 0000
-+#define FRAGCTL_AES         0x0300
-+#define FRAGCTL_TKIP        0x0200
-+#define FRAGCTL_LEGACY      0x0100
-+#define FRAGCTL_NONENCRYPT  0x0000
-+#define FRAGCTL_ENDFRAG     0x0003
-+#define FRAGCTL_MIDFRAG     0x0002
-+#define FRAGCTL_STAFRAG     0x0001
-+#define FRAGCTL_NONFRAG     0x0000
- 
--#endif // #ifdef __BIG_ENDIAN
-+#endif
- 
- #define TYPE_TXDMA0     0
- #define TYPE_AC0DMA     1
-@@ -201,8 +199,6 @@
- #define TD_FLAGS_PRIV_SKB                0x02       // check if called from private skb(hostap)
- #define TD_FLAGS_PS_RETRY                0x04       // check if PS STA frame re-transmit
- 
--/*---------------------  Export Types  ------------------------------*/
--
- // ref_sk_buff is used for mapping the skb structure between pre-built driver-obj & running kernel.
- // Since different kernel version (2.4x) may change skb structure, i.e. pre-built driver-obj
- // may link to older skb that leads error.
-@@ -590,12 +586,5 @@ typedef struct tagSKeyEntry {
- 	u32 dwKey4[4];
- } __attribute__ ((__packed__))
- SKeyEntry;
--/*---------------------  Export Macros ------------------------------*/
--
--/*---------------------  Export Classes  ----------------------------*/
--
--/*---------------------  Export Variables  --------------------------*/
--
--/*---------------------  Export Functions  --------------------------*/
- 
- #endif // __DESC_H__
--- 
-1.7.9.5
+On Fri, Jul 25, 2014 at 11:45:02AM -0400, Rik van Riel wrote:
+> > So for !ASYM the code is effectively:
+> >=20
+> > return sgs->avg_load > sds->busiest_stat.avg_load;
+> >=20
+> > I'd like to at least add a clause that makes overloaded groups=20
+> > prioritized over !overloaded groups.
+> >=20
+> > Also, like we found earlier, calculate_imbalance() relies on the=20
+> > sum_nr_running > group_capacity_factor thing, which you've just=20
+> > 'wrecked', so we'd need an update to that part too.
+>=20
+> I guess that would mean update_sd_pick_busiest would look like
+> this for the !ASYM case:
+>=20
+> 1) remembering whether busiest is overloaded
+>=20
+> 2) if (sgs->busiest_stat.overloaded && !sgs->overloaded)
+>             return false;
+>=20
+> 3) if (sgs->avg_load > sds->busiest_stat.avg_load)
+>             return true;
 
+Right. So the situation I was worried about is where we have say 8 +nice
+tasks in one group and 2 -nice in another. So the group with 2 tasks can
+actually be 'heavier' but not fully utilized. In that case we want to
+pull tasks from the lighter but overloaded group.
+
+--qi9i1S6E/JzMSUse
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJT0oBdAAoJEHZH4aRLwOS6KXUP/0ZKT/ABJYMAD1WCxl0bkxE8
+N+STBZtj4Pfcp3OJbwYfbnhLCRELFPQnY0HGwI1dzw7VEHJbpBb8JcMqbzj1dAg3
+Nn2wImXW4AAXsEtrZ/cy0Zp3UYpC6Lkhx3xo8Ya392byVoPoAO6Eoxun4CnlyLbe
+Mf+e2oqSCMYJVghwngX9aiDGk0dj/eyIY4QSXZSC8mdkEMaD7NYTpNiATNP5fvjV
+3dolaLM+PGrOA86NcUprpElb1kikZJ+jLPfBBCQ3oS2dyK9ZXKaZvtJbmr7dp9Wg
+hVMCz9wgRjtZps6jcuTia7tZj5j4EVF88RPaolMNMN83h/6KXgO9VonM6zKmnlZS
+0R2IWe4Ekhck5Ec59NxOZzYTd4vYBVLDfToPhiKTN1TmUt5mKMTGmA/kdGZK30KR
++jtbpBkZX/wjDwsSsdBuZhNQeZ2mHrhJO8REXgqnElNSdIYxnmwsJh8NL4+vrtJ7
+8e1WYuOIKYmRL9tVC+NxIR/1UonlKJ6oDD3Wth6mZ88monztRYile+LE57I+eO+2
+g+8QqM5FewhmcquyZmSxzRhfZUjO/Qp1DjXcipz44TUfMxS8ea8OpQcE9DgA5wrG
+TV/Wkvih7o/a8s14swnsxlmSvWR59cztJ3rHYF6synr9mIlP6fGRDVvQMPFwTjPE
+GClhbWeFQGN9WXx8lB8U
+=d+pI
+-----END PGP SIGNATURE-----
+
+--qi9i1S6E/JzMSUse--
