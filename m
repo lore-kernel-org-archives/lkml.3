@@ -1,45 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760511AbaGYNB3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 09:01:29 -0400
-Received: from mail.us.es ([193.147.175.20]:58806 "EHLO mail.us.es"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760493AbaGYNB1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 09:01:27 -0400
-X-Qmail-Scanner-Diagnostics: from 127.0.0.1 by antivirus1 (envelope-from <pneira@us.es>, uid 501) with qmail-scanner-2.10 
- (clamdscan: 0.98.4/19221. spamassassin: 3.3.2.  
- Clear:RC:1(127.0.0.1):SA:0(-100.2/7.5):. 
- Processed in 5.758061 secs); 25 Jul 2014 13:01:26 -0000
-X-Spam-ASN: AS42863 89.214.0.0/16
-X-Envelope-From: pneira@us.es
-Date: Fri, 25 Jul 2014 15:01:34 +0200
-From: Pablo Neira Ayuso <pablo@netfilter.org>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: "David S. Miller" <davem@davemloft.net>, Patrick McHardy <kaber@trash.net>,
-        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
-        Stephen Hemminger <stephen@networkplumber.org>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>, netdev@vger.kernel.org,
-        netfilter-devel@vger.kernel.org, coreteam@netfilter.org,
-        bridge@lists.linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] [linux-next] netfilter: kill remnants of ulog targets
-Message-ID: <20140725130134.GC13940@salvia>
-References: <1406107694.12441.8.camel@x220>
- <20140723093949.GA3754@salvia>
- <1406291131.8231.20.camel@x220>
+	id S1759259AbaGYNGW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 09:06:22 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:35271 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752109AbaGYNGV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jul 2014 09:06:21 -0400
+Message-ID: <53D2563B.1090703@pengutronix.de>
+Date: Fri, 25 Jul 2014 15:06:03 +0200
+From: Marc Kleine-Budde <mkl@pengutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1406291131.8231.20.camel@x220>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Wolfram Sang <wsa@sang-engineering.com>,
+        Mugunthan V N <mugunthanvnm@ti.com>
+CC: Wolfgang Grandegger <wg@grandegger.com>, Pavel Machek <pavel@denx.de>,
+        Thor Thayer <tthayer@altera.com>,
+        Prabhakar Lad <prabhakar.csengg@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Chen Gang <gang.chen@asianux.com>,
+        George Cherian <george.cherian@ti.com>, linux-can@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [can-next PATCH 1/1] net: can: c_can_platform: Use devm_ioremap
+ instead of devm_ioremap_resource.
+References: <1406269181-4092-1-git-send-email-mugunthanvnm@ti.com> <4a97162dedd6ab064e83c52757f2ce42@mail.zeus03.de>
+In-Reply-To: <4a97162dedd6ab064e83c52757f2ce42@mail.zeus03.de>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="duembwfNjUBjNsAK8or8Qhho4rhcAMHTq"
+X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
+X-SA-Exim-Mail-From: mkl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 25, 2014 at 02:25:31PM +0200, Paul Bolle wrote:
-> The ulog targets were recently killed. A few references to the Kconfig
-> macros CONFIG_IP_NF_TARGET_ULOG and CONFIG_BRIDGE_EBT_ULOG were left
-> untouched. Kill these too.
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--duembwfNjUBjNsAK8or8Qhho4rhcAMHTq
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-Those were my fault, applied, thanks Paul.
+On 07/25/2014 12:49 PM, Wolfram Sang wrote:
+> Am 25-07-2014 08:19, schrieb Mugunthan V N:
+>> From: George Cherian <george.cherian@ti.com>
+>>
+>> The raminit register is shared register for both can0 and can1.
+>> Using devm_ioremap_resource fails the mapping for can1 interface
+>> leading to a non functional can interface.
+>>
+>> Signed-off-by: George Cherian <george.cherian@ti.com>
+>> Signed-off-by: Mugunthan V N <mugunthanvnm@ti.com>
+>=20
+> The patch is a hack, or? It simply works because we drop all sanity
+> checking on the resource.
+
+Well, thinking about it, yes, a bit.
+
+> I am on holiday and can't really check, yet I believe the AM335x has
+> devicetree support for accessing single bits in SYSCONF. This is what
+> needs to be applied here, too, AFAICT.
+
+I cannot find any generic driver for the sysconf, USB and Ethernet have
+an extra driver for their shared register space. I think the d_can can
+access the raminit register via a syscon driver.
+
+Enjoy your holiday :)
+Marc
+
+--=20
+Pengutronix e.K.                  | Marc Kleine-Budde           |
+Industrial Linux Solutions        | Phone: +49-231-2826-924     |
+Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
+Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
+
+
+--duembwfNjUBjNsAK8or8Qhho4rhcAMHTq
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+Comment: Using GnuPG with Icedove - http://www.enigmail.net/
+
+iEYEARECAAYFAlPSVjsACgkQjTAFq1RaXHMPMACfUlhII5nD4DcN1u5YEoXtVeUZ
+hP8Ani5sxhhe6a6WfzL48KqolRBU1Bt+
+=sQbT
+-----END PGP SIGNATURE-----
+
+--duembwfNjUBjNsAK8or8Qhho4rhcAMHTq--
