@@ -1,66 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935089AbaGYRxC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 13:53:02 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:55001 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752833AbaGYRw7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S934960AbaGYRxA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 13:53:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53132 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753394AbaGYRw7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 25 Jul 2014 13:52:59 -0400
-Date: Fri, 25 Jul 2014 18:52:53 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Nicolin Chen <nicoleotsuka@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        alsa-devel@alsa-project.org, timur@tabi.org, Li.Xiubo@freescale.com,
-        b42378@freescale.com, b02247@freescale.com
-Message-ID: <20140725175253.GE17528@sirena.org.uk>
-References: <cover.1406113865.git.nicoleotsuka@gmail.com>
+Date: Fri, 25 Jul 2014 10:52:57 -0700
+From: Zach Brown <zab@redhat.com>
+To: Abhijith Das <adas@redhat.com>
+Cc: linux-kernel@vger.kernel.org,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        cluster-devel <cluster-devel@redhat.com>
+Subject: Re: [RFC] readdirplus implementations: xgetdents vs dirreadahead
+ syscalls
+Message-ID: <20140725175257.GK17798@lenny.home.zabbo.net>
+References: <1106785262.13440918.1406308542921.JavaMail.zimbra@redhat.com>
+ <1717400531.13456321.1406309839199.JavaMail.zimbra@redhat.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="c3iVMYArYos8XHMA"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <cover.1406113865.git.nicoleotsuka@gmail.com>
-X-Cookie: 98% lean.
+In-Reply-To: <1717400531.13456321.1406309839199.JavaMail.zimbra@redhat.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 0/3] ASoC: fsl_sai: Fix some issues in fsl_sai_trigger()
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Jul 25, 2014 at 01:37:19PM -0400, Abhijith Das wrote:
+> Hi all,
+> 
+> The topic of a readdirplus-like syscall had come up for discussion at last year's
+> LSF/MM collab summit. I wrote a couple of syscalls with their GFS2 implementations
+> to get at a directory's entries as well as stat() info on the individual inodes.
+> I'm presenting these patches and some early test results on a single-node GFS2
+> filesystem.
+> 
+> 1. dirreadahead() - This patchset is very simple compared to the xgetdents() system
+> call below and scales very well for large directories in GFS2. dirreadahead() is
+> designed to be called prior to getdents+stat operations.
 
---c3iVMYArYos8XHMA
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Hmm.  Have you tried plumbing these read-ahead calls in under the normal
+getdents() syscalls?
 
-On Wed, Jul 23, 2014 at 07:23:37PM +0800, Nicolin Chen wrote:
-> The series of patches focus on issue fix inside fsl_sai_trigger().
+We don't have a filereadahead() syscall and yet we somehow manage to
+implement buffered file data read-ahead :).
 
-Applied all, thanks.
-
---c3iVMYArYos8XHMA
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJT0plyAAoJELSic+t+oim9KhwP/iJUWnRWzAWt1e1ucmBqe+8f
-rLLA6Zes9+GPBZCwg6UCV+z3eGeLv6Hx59ncrIkU9Gwll1DyZCbb1yZ5bJkQHLH5
-Ji3/W39Zrw/wo/6VhJigpQ9CSLjXv4R7biDo8swb0paaFSufdoGfn5gaMv+s3b7z
-xdRInW56bwv2Zs1K1xwyzN5zx99uejppLKXcRc87aaV+SkvTsxsI0xFRqGUUfZyC
-zfXyMOIofkpxQUOGTrudJdFSLI4pRf/f+jlweOc4t8TUa/Ji03IUmkfZeKB3hvrS
-Zxt1DXjAlk90MT7H9I3SoYVHeXCUHy+X9kqxvkPK+8ybMJN+h3ttFJf5JcmftiOt
-tx4INRvklFIiKkbvWopnj2ET6qQCLxyx73hI/lmHgPT4EkOXGbp28TagCU1K/oVE
-4sX4ENkgb2N/ctrAzbF0ZLnBcmWW6dpNcEbeKQyZa3GnJMBT1Egli4XIvGGSdsK6
-djLOWDTNCoq8nX5C9Ihu0J1VltyJUqjaaykbpEt/40oz3J0LzgyBQuLyQNyyCPJo
-YmaToSoDMZbw3W/YTaEjKl/CO1Rc8BfclAAqq9OU3qbnCJOzeh7DBo39yHThcdwD
-Qwvz6Rg7B1Ihx21zNN9Oxw1yc/WTO7CTnxAqsacXsAuXQdVzZyHzQiRfuga1F/1d
-O/QrdayyF+TZrqEPmXhV
-=yDHp
------END PGP SIGNATURE-----
-
---c3iVMYArYos8XHMA--
+- z
