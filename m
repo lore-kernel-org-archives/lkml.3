@@ -1,124 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758883AbaGYGws (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 02:52:48 -0400
-Received: from mail-we0-f177.google.com ([74.125.82.177]:50520 "EHLO
-	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755177AbaGYGwq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 02:52:46 -0400
-From: Michal Simek <michal.simek@xilinx.com>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Appana Durga Kedareswara Rao <appanad@xilinx.com>, monstr@monstr.eu,
-        Josh Cartwright <josh.cartwright@ni.com>,
-        Steffen Trumtrar <s.trumtrar@pengutronix.de>,
-        Rob Herring <robherring2@gmail.com>,
-        Peter Crosthwaite <peter.crosthwaite@xilinx.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2] ARM: zynq: DT: Add CAN node
-Date: Fri, 25 Jul 2014 08:52:36 +0200
-Message-Id: <56bf20294d106e0fc9c23a70cd991a50b441d0aa.1406271138.git.michal.simek@xilinx.com>
-X-Mailer: git-send-email 1.8.2.3
-Content-Type: multipart/signed;
-    boundary="=_mimegpg-monstr-desktop-7974-1406271156-0001";
-    micalg=pgp-sha1; protocol="application/pgp-signature"
+	id S1759200AbaGYGyz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 02:54:55 -0400
+Received: from mga03.intel.com ([143.182.124.21]:29274 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750976AbaGYGyx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jul 2014 02:54:53 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,729,1400050800"; 
+   d="scan'208";a="461221464"
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Alexandre Courbot <gnurou@gmail.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Zhu Lejun <lejun.zhu@linux.intel.com>, Yang Bin <bin.yang@intel.com>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        linux-gpio@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 3/3] gpio / ACPI: Move event handling registration to gpiolib irqchip helpers
+Date: Fri, 25 Jul 2014 09:54:48 +0300
+Message-Id: <1406271288-15995-4-git-send-email-mika.westerberg@linux.intel.com>
+X-Mailer: git-send-email 2.0.1
+In-Reply-To: <1406271288-15995-1-git-send-email-mika.westerberg@linux.intel.com>
+References: <1406271288-15995-1-git-send-email-mika.westerberg@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a MIME GnuPG-signed message.  If you see this text, it means that
-your E-mail or Usenet software does not support MIME signed messages.
-The Internet standard for MIME PGP messages, RFC 2015, was published in 1996.
-To open this message correctly you will need to install E-mail or Usenet
-software that supports modern Internet standards.
+Since now we have irqchip helpers that the GPIO chip drivers are supposed
+to use if possible, we can move the registration of ACPI events to happen
+in these helpers. This seems to be more natural place and might encourage
+GPIO chip driver writers to take advantage of the irqchip helpers.
 
---=_mimegpg-monstr-desktop-7974-1406271156-0001
+We make the functions available to GPIO chip drivers via private gpiolib.h,
+just in case generic irqchip helpers are not suitable.
 
-Add node describing Zynq's CAN controller.
-
-Signed-off-by: Michal Simek <michal.simek@xilinx.com>
+Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
 ---
+ drivers/gpio/gpiolib-acpi.c | 38 ++++++++++++++++++++++++++++----------
+ drivers/gpio/gpiolib.c      |  4 ++++
+ drivers/gpio/gpiolib.h      |  9 +++++++++
+ 3 files changed, 41 insertions(+), 10 deletions(-)
 
-Changes in v2:
-- Add can1
-- Enable can0 for zc702
-- Use status property
-
- arch/arm/boot/dts/zynq-7000.dtsi | 26 +++++++++++++++++++++++++-
- arch/arm/boot/dts/zynq-zc702.dts |  4 ++++
- 2 files changed, 29 insertions(+), 1 deletion(-)
-
-diff --git a/arch/arm/boot/dts/zynq-7000.dtsi b/arch/arm/boot/dts/zynq-7000.dtsi
-index 366ca6434f54..983148111e3a 100644
---- a/arch/arm/boot/dts/zynq-7000.dtsi
-+++ b/arch/arm/boot/dts/zynq-7000.dtsi
-@@ -71,7 +71,31 @@
- 			interrupts = <0 7 4>;
- 			interrupt-parent = <&intc>;
- 			clocks = <&clkc 12>;
--		};
-+		};
+diff --git a/drivers/gpio/gpiolib-acpi.c b/drivers/gpio/gpiolib-acpi.c
+index 4a987917c186..f3edaeaf3b64 100644
+--- a/drivers/gpio/gpiolib-acpi.c
++++ b/drivers/gpio/gpiolib-acpi.c
+@@ -221,7 +221,7 @@ fail_free_desc:
+ 
+ /**
+  * acpi_gpiochip_request_interrupts() - Register isr for gpio chip ACPI events
+- * @acpi_gpio:      ACPI GPIO chip
++ * @chip:      GPIO chip
+  *
+  * ACPI5 platforms can use GPIO signaled ACPI events. These GPIO interrupts are
+  * handled by ACPI event methods which need to be called from the GPIO
+@@ -229,11 +229,21 @@ fail_free_desc:
+  * gpio pins have acpi event methods and assigns interrupt handlers that calls
+  * the acpi event methods for those pins.
+  */
+-static void acpi_gpiochip_request_interrupts(struct acpi_gpio_chip *acpi_gpio)
++void acpi_gpiochip_request_interrupts(struct gpio_chip *chip)
+ {
+-	struct gpio_chip *chip = acpi_gpio->chip;
++	struct acpi_gpio_chip *acpi_gpio;
++	acpi_handle handle;
++	acpi_status status;
 +
-+		can0: can@e0008000 {
-+			compatible = "xlnx,zynq-can-1.0";
-+			status = "disabled";
-+			clocks = <&clkc 19>, <&clkc 36>;
-+			clock-names = "can_clk", "pclk";
-+			reg = <0xe0008000 0x1000>;
-+			interrupts = <0 28 4>;
-+			interrupt-parent = <&intc>;
-+			tx-fifo-depth = <0x40>;
-+			rx-fifo-depth = <0x40>;
-+		};
++	if (!chip->dev || !chip->to_irq)
++		return;
+ 
+-	if (!chip->to_irq)
++	handle = ACPI_HANDLE(chip->dev);
++	if (!handle)
++		return;
 +
-+		can1: can@e0009000 {
-+			compatible = "xlnx,zynq-can-1.0";
-+			status = "disabled";
-+			clocks = <&clkc 19>, <&clkc 36>;
-+			clock-names = "can_clk", "pclk";
-+			reg = <0xe0009000 0x1000>;
-+			interrupts = <0 51 4>;
-+			interrupt-parent = <&intc>;
-+			tx-fifo-depth = <0x40>;
-+			rx-fifo-depth = <0x40>;
-+		};
-
- 		gpio0: gpio@e000a000 {
- 			compatible = "xlnx,zynq-gpio-1.0";
-diff --git a/arch/arm/boot/dts/zynq-zc702.dts b/arch/arm/boot/dts/zynq-zc702.dts
-index 5e09cee33d42..835c3089c61c 100644
---- a/arch/arm/boot/dts/zynq-zc702.dts
-+++ b/arch/arm/boot/dts/zynq-zc702.dts
-@@ -29,6 +29,10 @@
-
- };
-
-+&can0 {
-+	status = "okay";
-+};
++	status = acpi_get_data(handle, acpi_gpio_chip_dh, (void **)&acpi_gpio);
++	if (ACPI_FAILURE(status))
+ 		return;
+ 
+ 	INIT_LIST_HEAD(&acpi_gpio->events);
+@@ -243,17 +253,27 @@ static void acpi_gpiochip_request_interrupts(struct acpi_gpio_chip *acpi_gpio)
+ 
+ /**
+  * acpi_gpiochip_free_interrupts() - Free GPIO ACPI event interrupts.
+- * @acpi_gpio:      ACPI GPIO chip
++ * @chip:      GPIO chip
+  *
+  * Free interrupts associated with GPIO ACPI event method for the given
+  * GPIO chip.
+  */
+-static void acpi_gpiochip_free_interrupts(struct acpi_gpio_chip *acpi_gpio)
++void acpi_gpiochip_free_interrupts(struct gpio_chip *chip)
+ {
++	struct acpi_gpio_chip *acpi_gpio;
+ 	struct acpi_gpio_event *event, *ep;
+-	struct gpio_chip *chip = acpi_gpio->chip;
++	acpi_handle handle;
++	acpi_status status;
 +
- &gem0 {
- 	status = "okay";
- 	phy-mode = "rgmii";
---
-1.8.2.3
++	if (!chip->dev || !chip->to_irq)
++		return;
+ 
+-	if (!chip->to_irq)
++	handle = ACPI_HANDLE(chip->dev);
++	if (!handle)
++		return;
++
++	status = acpi_get_data(handle, acpi_gpio_chip_dh, (void **)&acpi_gpio);
++	if (ACPI_FAILURE(status))
+ 		return;
+ 
+ 	list_for_each_entry_safe_reverse(event, ep, &acpi_gpio->events, node) {
+@@ -525,7 +545,6 @@ void acpi_gpiochip_add(struct gpio_chip *chip)
+ 		return;
+ 	}
+ 
+-	acpi_gpiochip_request_interrupts(acpi_gpio);
+ 	acpi_gpiochip_request_regions(acpi_gpio);
+ }
+ 
+@@ -549,7 +568,6 @@ void acpi_gpiochip_remove(struct gpio_chip *chip)
+ 	}
+ 
+ 	acpi_gpiochip_free_regions(acpi_gpio);
+-	acpi_gpiochip_free_interrupts(acpi_gpio);
+ 
+ 	acpi_detach_data(handle, acpi_gpio_chip_dh);
+ 	kfree(acpi_gpio);
+diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
+index 2ebc9071e354..5a543969ad40 100644
+--- a/drivers/gpio/gpiolib.c
++++ b/drivers/gpio/gpiolib.c
+@@ -1474,6 +1474,8 @@ static void gpiochip_irqchip_remove(struct gpio_chip *gpiochip)
+ {
+ 	unsigned int offset;
+ 
++	acpi_gpiochip_free_interrupts(gpiochip);
++
+ 	/* Remove all IRQ mappings and delete the domain */
+ 	if (gpiochip->irqdomain) {
+ 		for (offset = 0; offset < gpiochip->ngpio; offset++)
+@@ -1567,6 +1569,8 @@ int gpiochip_irqchip_add(struct gpio_chip *gpiochip,
+ 			gpiochip->irq_base = irq_base;
+ 	}
+ 
++	acpi_gpiochip_request_interrupts(gpiochip);
++
+ 	return 0;
+ }
+ EXPORT_SYMBOL_GPL(gpiochip_irqchip_add);
+diff --git a/drivers/gpio/gpiolib.h b/drivers/gpio/gpiolib.h
+index 1a4103dd38df..6c45cef6620c 100644
+--- a/drivers/gpio/gpiolib.h
++++ b/drivers/gpio/gpiolib.h
+@@ -31,12 +31,21 @@ struct acpi_gpio_info {
+ void acpi_gpiochip_add(struct gpio_chip *chip);
+ void acpi_gpiochip_remove(struct gpio_chip *chip);
+ 
++void acpi_gpiochip_request_interrupts(struct gpio_chip *chip);
++void acpi_gpiochip_free_interrupts(struct gpio_chip *chip);
++
+ struct gpio_desc *acpi_get_gpiod_by_index(struct device *dev, int index,
+ 					  struct acpi_gpio_info *info);
+ #else
+ static inline void acpi_gpiochip_add(struct gpio_chip *chip) { }
+ static inline void acpi_gpiochip_remove(struct gpio_chip *chip) { }
+ 
++static inline void
++acpi_gpiochip_request_interrupts(struct gpio_chip *chip) { }
++
++static inline void
++acpi_gpiochip_free_interrupts(struct gpio_chip *chip) { }
++
+ static inline struct gpio_desc *
+ acpi_get_gpiod_by_index(struct device *dev, int index,
+ 			struct acpi_gpio_info *info)
+-- 
+2.0.1
 
-
---=_mimegpg-monstr-desktop-7974-1406271156-0001
-Content-Type: application/pgp-signature
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEABECAAYFAlPR/rQACgkQykllyylKDCGRtACdE/dKfw8wL0OHWM6nz3FaqM+o
-wPQAnineIwS5v6b207C4R6Acyd8ZIudG
-=gl9I
------END PGP SIGNATURE-----
-
---=_mimegpg-monstr-desktop-7974-1406271156-0001--
