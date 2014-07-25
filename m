@@ -1,131 +1,323 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760232AbaGYNdb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 09:33:31 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:52955 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752232AbaGYNd3 (ORCPT
+	id S1760285AbaGYNrz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 09:47:55 -0400
+Received: from mail-wg0-f74.google.com ([74.125.82.74]:48861 "EHLO
+	mail-wg0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759994AbaGYNrw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 09:33:29 -0400
-Message-ID: <53D25C9D.5080803@pengutronix.de>
-Date: Fri, 25 Jul 2014 15:33:17 +0200
-From: Marc Kleine-Budde <mkl@pengutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
-MIME-Version: 1.0
-To: Stefan Agner <stefan@agner.ch>
-CC: shawn.guo@freescale.com, kernel@pengutronix.de,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 4/4] can: flexcan: add vf610 support for FlexCAN
-References: <cover.1405428166.git.stefan@agner.ch> <ff2ea1726b13dc2ffa3519ce9244f3633cf1420d.1405428166.git.stefan@agner.ch> <53C5398F.2000005@pengutronix.de> <1b8a8ca03b4a160027a79b722f697e25@agner.ch> <601adb6fe47279c115c1cc607365a00e@agner.ch>
-In-Reply-To: <601adb6fe47279c115c1cc607365a00e@agner.ch>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="pPnjE0bDvFk6fpRfxPEFe7RcU9PNtW3RO"
-X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
-X-SA-Exim-Mail-From: mkl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Fri, 25 Jul 2014 09:47:52 -0400
+From: David Drysdale <drysdale@google.com>
+To: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
+        Meredydd Luff <meredydd@senatehouse.org>,
+        Kees Cook <keescook@chromium.org>,
+        James Morris <james.l.morris@oracle.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Paolo Bonzini <pbonzini@redhat.com>, Paul Moore <paul@paul-moore.com>,
+        Christoph Hellwig <hch@infradead.org>, linux-api@vger.kernel.org,
+        David Drysdale <drysdale@google.com>
+Subject: [PATCH 01/11] fs: add O_BENEATH flag to openat(2)
+Date: Fri, 25 Jul 2014 14:46:57 +0100
+Message-Id: <1406296033-32693-2-git-send-email-drysdale@google.com>
+X-Mailer: git-send-email 2.0.0.526.g5318336
+In-Reply-To: <1406296033-32693-1-git-send-email-drysdale@google.com>
+References: <1406296033-32693-1-git-send-email-drysdale@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---pPnjE0bDvFk6fpRfxPEFe7RcU9PNtW3RO
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+Add a new O_BENEATH flag for openat(2) which restricts the
+provided path, rejecting (with -EACCES) paths that are not beneath
+the provided dfd.  In particular, reject:
+ - paths that contain .. components
+ - paths that begin with /
+ - symlinks that have paths as above.
 
-On 07/25/2014 12:50 PM, Stefan Agner wrote:
-> Am 2014-07-16 08:43, schrieb Stefan Agner:
->> Am 2014-07-15 16:24, schrieb Marc Kleine-Budde:
->> <snip>
->>>> @@ -150,18 +171,20 @@
->>>>   * FLEXCAN hardware feature flags
->>>>   *
->>>>   * Below is some version info we got:
->>>> - *    SOC   Version   IP-Version  Glitch-  [TR]WRN_INT
->>>> - *                                Filter?   connected?
->>>> - *   MX25  FlexCAN2  03.00.00.00     no         no
->>>> - *   MX28  FlexCAN2  03.00.04.00    yes        yes
->>>> - *   MX35  FlexCAN2  03.00.00.00     no         no
->>>> - *   MX53  FlexCAN2  03.00.00.00    yes         no
->>>> - *   MX6s  FlexCAN3  10.00.12.00    yes        yes
->>>> + *    SOC   Version   IP-Version  Glitch-  [TR]WRN_INT  Memory err
->>>> + *                                Filter?   connected?  detection
->>>> + *   MX25  FlexCAN2  03.00.00.00     no         no         no
->>>> + *   MX28  FlexCAN2  03.00.04.00    yes        yes         no
->>>> + *   MX35  FlexCAN2  03.00.00.00     no         no         no
->>>> + *   MX53  FlexCAN2  03.00.00.00    yes         no         no
->>>> + *   MX6s  FlexCAN3  10.00.12.00    yes        yes         no
->>>> + *   VF610 FlexCAN3  ?               no         no        yes
->>>                                         ^^         ^^
->>>
->>> Can you check the datasheet if the flexcan core has a "Glitch Filter
->>> Width Register (FLEXCANx_GFWR)"
->>
->>
->> There is no such register called GFWR/Glitch Filter or similar.
->>
->>> Can you check if the core generates a warning interrupt with the curr=
-ent
->>> setup, if you don't switch on bus error reporting? This means interna=
-lly
->>> the [TR]WRN_INT is connected and works as specified.
->>
->> Ok, so I disabled TWRNMSK (Bit 11) in the control register and printed=
+Signed-off-by: David Drysdale <drysdale@google.com>
+---
+ arch/alpha/include/uapi/asm/fcntl.h  |  1 +
+ arch/parisc/include/uapi/asm/fcntl.h |  1 +
+ arch/sparc/include/uapi/asm/fcntl.h  |  1 +
+ fs/fcntl.c                           |  5 +++--
+ fs/namei.c                           | 43 ++++++++++++++++++++++++------------
+ fs/open.c                            |  4 +++-
+ include/linux/namei.h                |  1 +
+ include/uapi/asm-generic/fcntl.h     |  4 ++++
+ 8 files changed, 43 insertions(+), 17 deletions(-)
 
->> out the error and status register (ESR1), this is what I get:
->> [  191.285295] flexcan_irq, esr=3D00040080
->> [  191.288996] flexcan_irq, ctrl=3D17092051
->>
->> Bit 17 (TWRNINT) is not set while TWRNMSK is disabled. Hence [TR]WRN_I=
-NT
->> is not connected?
->=20
-> Ping. Anything open/to do from my side?
+diff --git a/arch/alpha/include/uapi/asm/fcntl.h b/arch/alpha/include/uapi/asm/fcntl.h
+index 09f49a6b87d1..76a87038d2c1 100644
+--- a/arch/alpha/include/uapi/asm/fcntl.h
++++ b/arch/alpha/include/uapi/asm/fcntl.h
+@@ -33,6 +33,7 @@
+ 
+ #define O_PATH		040000000
+ #define __O_TMPFILE	0100000000
++#define O_BENEATH	0200000000	/* no / or .. in openat path */
+ 
+ #define F_GETLK		7
+ #define F_SETLK		8
+diff --git a/arch/parisc/include/uapi/asm/fcntl.h b/arch/parisc/include/uapi/asm/fcntl.h
+index 34a46cbc76ed..3adadf72f929 100644
+--- a/arch/parisc/include/uapi/asm/fcntl.h
++++ b/arch/parisc/include/uapi/asm/fcntl.h
+@@ -21,6 +21,7 @@
+ 
+ #define O_PATH		020000000
+ #define __O_TMPFILE	040000000
++#define O_BENEATH	080000000	/* no / or .. in openat path */
+ 
+ #define F_GETLK64	8
+ #define F_SETLK64	9
+diff --git a/arch/sparc/include/uapi/asm/fcntl.h b/arch/sparc/include/uapi/asm/fcntl.h
+index 7e8ace5bf760..ea38f0bd6cec 100644
+--- a/arch/sparc/include/uapi/asm/fcntl.h
++++ b/arch/sparc/include/uapi/asm/fcntl.h
+@@ -36,6 +36,7 @@
+ 
+ #define O_PATH		0x1000000
+ #define __O_TMPFILE	0x2000000
++#define O_BENEATH	0x4000000	/* no / or .. in openat path */
+ 
+ #define F_GETOWN	5	/*  for sockets. */
+ #define F_SETOWN	6	/*  for sockets. */
+diff --git a/fs/fcntl.c b/fs/fcntl.c
+index 72c82f69b01b..abf82e05d7b3 100644
+--- a/fs/fcntl.c
++++ b/fs/fcntl.c
+@@ -742,14 +742,15 @@ static int __init fcntl_init(void)
+ 	 * Exceptions: O_NONBLOCK is a two bit define on parisc; O_NDELAY
+ 	 * is defined as O_NONBLOCK on some platforms and not on others.
+ 	 */
+-	BUILD_BUG_ON(20 - 1 /* for O_RDONLY being 0 */ != HWEIGHT32(
++	BUILD_BUG_ON(21 - 1 /* for O_RDONLY being 0 */ != HWEIGHT32(
+ 		O_RDONLY	| O_WRONLY	| O_RDWR	|
+ 		O_CREAT		| O_EXCL	| O_NOCTTY	|
+ 		O_TRUNC		| O_APPEND	| /* O_NONBLOCK	| */
+ 		__O_SYNC	| O_DSYNC	| FASYNC	|
+ 		O_DIRECT	| O_LARGEFILE	| O_DIRECTORY	|
+ 		O_NOFOLLOW	| O_NOATIME	| O_CLOEXEC	|
+-		__FMODE_EXEC	| O_PATH	| __O_TMPFILE
++		__FMODE_EXEC	| O_PATH	| __O_TMPFILE	|
++		O_BENEATH
+ 		));
+ 
+ 	fasync_cache = kmem_cache_create("fasync_cache",
+diff --git a/fs/namei.c b/fs/namei.c
+index 985c6f368485..165ebb1209d4 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -647,7 +647,7 @@ static __always_inline void set_root(struct nameidata *nd)
+ 		get_fs_root(current->fs, &nd->root);
+ }
+ 
+-static int link_path_walk(const char *, struct nameidata *);
++static int link_path_walk(const char *, struct nameidata *, unsigned int);
+ 
+ static __always_inline void set_root_rcu(struct nameidata *nd)
+ {
+@@ -820,7 +820,8 @@ static int may_linkat(struct path *link)
+ }
+ 
+ static __always_inline int
+-follow_link(struct path *link, struct nameidata *nd, void **p)
++follow_link(struct path *link, struct nameidata *nd, unsigned int flags,
++	    void **p)
+ {
+ 	struct dentry *dentry = link->dentry;
+ 	int error;
+@@ -867,7 +868,7 @@ follow_link(struct path *link, struct nameidata *nd, void **p)
+ 			nd->flags |= LOOKUP_JUMPED;
+ 		}
+ 		nd->inode = nd->path.dentry->d_inode;
+-		error = link_path_walk(s, nd);
++		error = link_path_walk(s, nd, flags);
+ 		if (unlikely(error))
+ 			put_link(nd, link, *p);
+ 	}
+@@ -1574,7 +1575,8 @@ out_err:
+  * Without that kind of total limit, nasty chains of consecutive
+  * symlinks can cause almost arbitrarily long lookups.
+  */
+-static inline int nested_symlink(struct path *path, struct nameidata *nd)
++static inline int nested_symlink(struct path *path, struct nameidata *nd,
++				 unsigned int flags)
+ {
+ 	int res;
+ 
+@@ -1592,7 +1594,7 @@ static inline int nested_symlink(struct path *path, struct nameidata *nd)
+ 		struct path link = *path;
+ 		void *cookie;
+ 
+-		res = follow_link(&link, nd, &cookie);
++		res = follow_link(&link, nd, flags, &cookie);
+ 		if (res)
+ 			break;
+ 		res = walk_component(nd, path, LOOKUP_FOLLOW);
+@@ -1731,13 +1733,19 @@ static inline unsigned long hash_name(const char *name, unsigned int *hashp)
+  * Returns 0 and nd will have valid dentry and mnt on success.
+  * Returns error and drops reference to input namei data on failure.
+  */
+-static int link_path_walk(const char *name, struct nameidata *nd)
++static int link_path_walk(const char *name, struct nameidata *nd,
++			  unsigned int flags)
+ {
+ 	struct path next;
+ 	int err;
+ 	
+-	while (*name=='/')
++	while (*name == '/') {
++		if (flags & LOOKUP_BENEATH) {
++			err = -EACCES;
++			goto exit;
++		}
+ 		name++;
++	}
+ 	if (!*name)
+ 		return 0;
+ 
+@@ -1759,6 +1767,10 @@ static int link_path_walk(const char *name, struct nameidata *nd)
+ 		if (name[0] == '.') switch (len) {
+ 			case 2:
+ 				if (name[1] == '.') {
++					if (flags & LOOKUP_BENEATH) {
++						err = -EACCES;
++						goto exit;
++					}
+ 					type = LAST_DOTDOT;
+ 					nd->flags |= LOOKUP_JUMPED;
+ 				}
+@@ -1798,7 +1810,7 @@ static int link_path_walk(const char *name, struct nameidata *nd)
+ 			return err;
+ 
+ 		if (err) {
+-			err = nested_symlink(&next, nd);
++			err = nested_symlink(&next, nd, flags);
+ 			if (err)
+ 				return err;
+ 		}
+@@ -1807,6 +1819,7 @@ static int link_path_walk(const char *name, struct nameidata *nd)
+ 			break;
+ 		}
+ 	}
++exit:
+ 	terminate_walk(nd);
+ 	return err;
+ }
+@@ -1845,6 +1858,8 @@ static int path_init(int dfd, const char *name, unsigned int flags,
+ 
+ 	nd->m_seq = read_seqbegin(&mount_lock);
+ 	if (*name=='/') {
++		if (flags & LOOKUP_BENEATH)
++			return -EACCES;
+ 		if (flags & LOOKUP_RCU) {
+ 			rcu_read_lock();
+ 			set_root_rcu(nd);
+@@ -1938,7 +1953,7 @@ static int path_lookupat(int dfd, const char *name,
+ 		return err;
+ 
+ 	current->total_link_count = 0;
+-	err = link_path_walk(name, nd);
++	err = link_path_walk(name, nd, flags);
+ 
+ 	if (!err && !(flags & LOOKUP_PARENT)) {
+ 		err = lookup_last(nd, &path);
+@@ -1949,7 +1964,7 @@ static int path_lookupat(int dfd, const char *name,
+ 			if (unlikely(err))
+ 				break;
+ 			nd->flags |= LOOKUP_PARENT;
+-			err = follow_link(&link, nd, &cookie);
++			err = follow_link(&link, nd, flags, &cookie);
+ 			if (err)
+ 				break;
+ 			err = lookup_last(nd, &path);
+@@ -2288,7 +2303,7 @@ path_mountpoint(int dfd, const char *name, struct path *path, unsigned int flags
+ 		return err;
+ 
+ 	current->total_link_count = 0;
+-	err = link_path_walk(name, &nd);
++	err = link_path_walk(name, &nd, flags);
+ 	if (err)
+ 		goto out;
+ 
+@@ -2300,7 +2315,7 @@ path_mountpoint(int dfd, const char *name, struct path *path, unsigned int flags
+ 		if (unlikely(err))
+ 			break;
+ 		nd.flags |= LOOKUP_PARENT;
+-		err = follow_link(&link, &nd, &cookie);
++		err = follow_link(&link, &nd, flags, &cookie);
+ 		if (err)
+ 			break;
+ 		err = mountpoint_last(&nd, path);
+@@ -3186,7 +3201,7 @@ static struct file *path_openat(int dfd, struct filename *pathname,
+ 		goto out;
+ 
+ 	current->total_link_count = 0;
+-	error = link_path_walk(pathname->name, nd);
++	error = link_path_walk(pathname->name, nd, flags);
+ 	if (unlikely(error))
+ 		goto out;
+ 
+@@ -3205,7 +3220,7 @@ static struct file *path_openat(int dfd, struct filename *pathname,
+ 			break;
+ 		nd->flags |= LOOKUP_PARENT;
+ 		nd->flags &= ~(LOOKUP_OPEN|LOOKUP_CREATE|LOOKUP_EXCL);
+-		error = follow_link(&link, nd, &cookie);
++		error = follow_link(&link, nd, flags, &cookie);
+ 		if (unlikely(error))
+ 			break;
+ 		error = do_last(nd, &path, file, op, &opened, pathname);
+diff --git a/fs/open.c b/fs/open.c
+index 36662d036237..ee16be3a7291 100644
+--- a/fs/open.c
++++ b/fs/open.c
+@@ -875,7 +875,7 @@ static inline int build_open_flags(int flags, umode_t mode, struct open_flags *o
+ 		 * If we have O_PATH in the open flag. Then we
+ 		 * cannot have anything other than the below set of flags
+ 		 */
+-		flags &= O_DIRECTORY | O_NOFOLLOW | O_PATH;
++		flags &= O_DIRECTORY | O_NOFOLLOW | O_PATH | O_BENEATH;
+ 		acc_mode = 0;
+ 	} else {
+ 		acc_mode = MAY_OPEN | ACC_MODE(flags);
+@@ -906,6 +906,8 @@ static inline int build_open_flags(int flags, umode_t mode, struct open_flags *o
+ 		lookup_flags |= LOOKUP_DIRECTORY;
+ 	if (!(flags & O_NOFOLLOW))
+ 		lookup_flags |= LOOKUP_FOLLOW;
++	if (flags & O_BENEATH)
++		lookup_flags |= LOOKUP_BENEATH;
+ 	op->lookup_flags = lookup_flags;
+ 	return 0;
+ }
+diff --git a/include/linux/namei.h b/include/linux/namei.h
+index 492de72560fa..bd0615d1143b 100644
+--- a/include/linux/namei.h
++++ b/include/linux/namei.h
+@@ -39,6 +39,7 @@ enum {LAST_NORM, LAST_ROOT, LAST_DOT, LAST_DOTDOT, LAST_BIND};
+ #define LOOKUP_FOLLOW		0x0001
+ #define LOOKUP_DIRECTORY	0x0002
+ #define LOOKUP_AUTOMOUNT	0x0004
++#define LOOKUP_BENEATH		0x0008
+ 
+ #define LOOKUP_PARENT		0x0010
+ #define LOOKUP_REVAL		0x0020
+diff --git a/include/uapi/asm-generic/fcntl.h b/include/uapi/asm-generic/fcntl.h
+index 7543b3e51331..f63aa749a4fb 100644
+--- a/include/uapi/asm-generic/fcntl.h
++++ b/include/uapi/asm-generic/fcntl.h
+@@ -92,6 +92,10 @@
+ #define O_TMPFILE (__O_TMPFILE | O_DIRECTORY)
+ #define O_TMPFILE_MASK (__O_TMPFILE | O_DIRECTORY | O_CREAT)      
+ 
++#ifndef O_BENEATH
++#define O_BENEATH	040000000	/* no / or .. in openat path */
++#endif
++
+ #ifndef O_NDELAY
+ #define O_NDELAY	O_NONBLOCK
+ #endif
+-- 
+2.0.0.526.g5318336
 
-Please keep the printing of esr and ctrl in the interrupt handler, add a
-#define DEBUG in the driver, but do not change anything else. Then:
-
-start the driver as usual:
-- configure bitrate
-- ifconfig can0 up
-- _do_not_ enable bit error reporint
-- start candump from gitorious with:
-  candump -e any,0:0,#FFFFFFFF
-- short circuit CAN-High and CAN-Low
-- send a CAN frame
-
-Another test is to setup a proper CAN bus, but configure the a second
-CAN node with a different bitrate. Start the can0 on vf610 as usual,
-then candump -e any,0:0,#FFFFFFFF, but do not send any CAN frames on the
-vf610. Then on the other system keep sending CAN frames, you might have
-to restart the CAN on the second system....
-
-Please send the outputs of candump and demsg to the list. It should
-generate a warning, error passive and finally a busoff message.
-
-Marc
-
---=20
-Pengutronix e.K.                  | Marc Kleine-Budde           |
-Industrial Linux Solutions        | Phone: +49-231-2826-924     |
-Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
-Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
-
-
---pPnjE0bDvFk6fpRfxPEFe7RcU9PNtW3RO
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-Comment: Using GnuPG with Icedove - http://www.enigmail.net/
-
-iEYEARECAAYFAlPSXJ0ACgkQjTAFq1RaXHMUvACaAmVhIrTeaKFmIo1HBgticZZa
-OIsAn1V3oBXR1eICI5zrteuR+mb4QrXg
-=V+o+
------END PGP SIGNATURE-----
-
---pPnjE0bDvFk6fpRfxPEFe7RcU9PNtW3RO--
