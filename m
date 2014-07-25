@@ -1,53 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760262AbaGYLOJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 07:14:09 -0400
-Received: from mail-lb0-f177.google.com ([209.85.217.177]:64786 "EHLO
-	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751478AbaGYLOH (ORCPT
+	id S1760126AbaGYLUu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 07:20:50 -0400
+Received: from out2-smtp.messagingengine.com ([66.111.4.26]:34754 "EHLO
+	out2-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752040AbaGYLUq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 07:14:07 -0400
-From: Jan Kardell <jan.kardell@telliq.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Jonathan Cameron <jic23@kernel.org>,
-        Luis Henriques <luis.henriques@canonical.com>,
-        Jiri Slaby <jslaby@suse.cz>, Jan Kardell <jan.kardell@telliq.com>
-Subject: [PATCH] iio: ti_am335x_adc: Fix prerequisite for stepid patch
-Date: Fri, 25 Jul 2014 13:13:46 +0200
-Message-Id: <1406286826-30834-1-git-send-email-jan.kardell@telliq.com>
-X-Mailer: git-send-email 1.8.4.5
-In-Reply-To: <1406195177-8656-113-git-send-email-luis.henriques@canonical.com>
-References: <1406195177-8656-113-git-send-email-luis.henriques@canonical.com>
+	Fri, 25 Jul 2014 07:20:46 -0400
+X-Sasl-enc: eaCBMKc6YQteyP/dfwQtkwqyLQY1Z2Li2v7QeGYf9nQh 1406287245
+Date: Fri, 25 Jul 2014 08:20:39 -0300
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: Toralf =?iso-8859-1?Q?F=F6rster?= <toralf.foerster@gmx.de>
+Cc: linux-ia64@vger.kernel.org, ceph-devel@vger.kernel.org,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: sizeof (struct tYpO *) : it is just a typo or rather a bug ?
+Message-ID: <20140725112038.GA401@khazad-dum.debian.net>
+References: <53D14E60.1010105@gmx.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <53D14E60.1010105@gmx.de>
+X-GPG-Fingerprint1: 4096R/39CB4807 C467 A717 507B BAFE D3C1  6092 0BD9 E811
+ 39CB 4807
+X-GPG-Fingerprint2: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kernel series 3.11 and 3.12 does not initialize scan_index in the
-iio_chan_spec structure as 3.13 and newer does. This is necessary
-for the stepid patch to work, otherwise it even breaks the cases
-that worked before the stepid patch.
+On Thu, 24 Jul 2014, Toralf Förster wrote:
+> Inspired by this "typo" fix 
+> http://article.gmane.org/gmane.linux.kernel/1754640
+> I grep'ed the current git tree of linus for similar issues.
 
-Unfortunately the stepid patch seems to already be in 3.12.25,
-must have missed that inclusion.
+I wonder if we couldn't use Coccinelle to do that?  I would say it would be
+not as cool as deep grep magick, but Coccinelle is cool by definition and
+therefore immune from any such comparisons :-)
 
-Signed-off-by: Jan Kardell <jan.kardell@telliq.com>
----
- drivers/iio/adc/ti_am335x_adc.c | 1 +
- 1 file changed, 1 insertion(+)
+> Nevertheless I was told, that gcc doesn't complain about such things due
+> to eventually evaluating it to "sizeof(null)". I'm however curious if at
+> least a warning should be emitted in such a case, or?
 
-diff --git a/drivers/iio/adc/ti_am335x_adc.c b/drivers/iio/adc/ti_am335x_adc.c
-index 3ceac3e..6c56418 100644
---- a/drivers/iio/adc/ti_am335x_adc.c
-+++ b/drivers/iio/adc/ti_am335x_adc.c
-@@ -120,6 +120,7 @@ static int tiadc_channel_init(struct iio_dev *indio_dev, int channels)
- 		chan->channel = adc_dev->channel_line[i];
- 		chan->info_mask_separate = BIT(IIO_CHAN_INFO_RAW);
- 		chan->datasheet_name = chan_name_ain[chan->channel];
-+		chan->scan_index = i;
- 		chan->scan_type.sign = 'u';
- 		chan->scan_type.realbits = 12;
- 		chan->scan_type.storagebits = 32;
+Well, it cannot become a real bug because the moment the code changes to
+actually access/derreference such a typo, it will cause the compiler to
+abort with an error.  If gcc will have to waste a measurable amount of time
+to issue such a warning, it is not worth it.
+
+OTOH, such typos could confuse someone reading the code into thinking
+they're dealing with a different structure or something, and it _is_
+incorrect code no matter how harmless, so it makes sense to fix all such
+typos eventually.
+
 -- 
-1.8.4.5
-
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
