@@ -1,154 +1,228 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760005AbaGYId3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 04:33:29 -0400
-Received: from router.aksignal.cz ([188.175.113.102]:55466 "EHLO
-	router.aksignal.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756912AbaGYId1 (ORCPT
+	id S1760025AbaGYIdi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 04:33:38 -0400
+Received: from mail-bn1lp0145.outbound.protection.outlook.com ([207.46.163.145]:14962
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1756912AbaGYIdc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 04:33:27 -0400
-Message-ID: <53D21652.7050808@aksignal.cz>
-Date: Fri, 25 Jul 2014 10:33:22 +0200
-From: =?UTF-8?B?SmnFmcOtIFByY2hhbA==?= <jiri.prchal@aksignal.cz>
-Reply-To: jiri.prchal@aksignal.cz
-Organization: AK signal Brno
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Fri, 25 Jul 2014 04:33:32 -0400
+From: Peter Chen <Peter.Chen@freescale.com>
+To: =?iso-8859-1?Q?Antoine_T=E9nart?= 
+	<antoine.tenart@free-electrons.com>
+CC: "balbi@ti.com" <balbi@ti.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "kishon@ti.com" <kishon@ti.com>,
+        "stern@rowland.harvard.edu" <stern@rowland.harvard.edu>,
+        "sergei.shtylyov@cogentembedded.com" 
+	<sergei.shtylyov@cogentembedded.com>,
+        "yoshihiro.shimoda.uh@renesas.com" <yoshihiro.shimoda.uh@renesas.com>,
+        "alexandre.belloni@free-electrons.com" 
+	<alexandre.belloni@free-electrons.com>,
+        "thomas.petazzoni@free-electrons.com" 
+	<thomas.petazzoni@free-electrons.com>,
+        "zmxu@marvell.com" <zmxu@marvell.com>,
+        "jszhang@marvell.com" <jszhang@marvell.com>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH v2 8/8] usb: chipidea: add support to the generic PHY
+ framework in ChipIdea
+Thread-Topic: [PATCH v2 8/8] usb: chipidea: add support to the generic PHY
+ framework in ChipIdea
+Thread-Index: AQHPoDqYz1sPbv1cX0qBxRYCBd3s2ZuvrZCA//+G0YCAAMQ40IAAh6uAgAAEyMA=
+Date: Fri, 25 Jul 2014 08:33:28 +0000
+Message-ID: <2ca1959dbb8c44659e6ec4e0c9426e24@BN1PR0301MB0772.namprd03.prod.outlook.com>
+References: <1405435156-27297-1-git-send-email-antoine.tenart@free-electrons.com>
+ <1405435156-27297-9-git-send-email-antoine.tenart@free-electrons.com>
+ <20140724113941.GB26984@shlinux1.ap.freescale.net>
+ <20140724122557.GB21062@kwain>
+ <76c0b6bc5b7f477998462d8b48d96272@BN1PR0301MB0772.namprd03.prod.outlook.com>
+ <20140725081349.GB9756@kwain>
+In-Reply-To: <20140725081349.GB9756@kwain>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [123.151.195.50]
+x-microsoft-antispam: BCL:0;PCL:0;RULEID:
+x-forefront-prvs: 02830F0362
+x-forefront-antispam-report: SFV:NSPM;SFS:(6009001)(51704005)(199002)(189002)(76576001)(93886003)(46102001)(77982001)(50986999)(54356999)(87936001)(106356001)(79102001)(105586002)(99286002)(74316001)(19580405001)(95666004)(83322001)(106116001)(2656002)(4396001)(19580395003)(64706001)(80022001)(31966008)(74662001)(20776003)(81542001)(81342001)(21056001)(107046002)(86362001)(85306003)(85852003)(110136001)(76176999)(76482001)(74502001)(33646002)(66066001)(77096002)(92566001)(101416001)(83072002)(99396002)(108616002)(41533002)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:BN1PR0301MB0769;H:BN1PR0301MB0772.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;LANG:en;
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-To: Boris BREZILLON <boris.brezillon@free-electrons.com>
-CC: Bo Shen <voice.shen@atmel.com>, nicolas.ferre@atmel.com,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org
-Subject: Re: [PATCH] ARM: at91: at91sam9x5: sets NPCS0 (PA14) back to GPIO
-References: <1405074175-22444-1-git-send-email-voice.shen@atmel.com>	<53D10C50.50305@aksignal.cz>	<20140724162645.4e19c26c@bbrezillon>	<53D12103.3020103@aksignal.cz>	<20140724175848.44f5da10@bbrezillon>	<53D1F5D0.1080006@aksignal.cz> <20140725095319.16a8465c@bbrezillon>
-In-Reply-To: <20140725095319.16a8465c@bbrezillon>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 8bit
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I changed manually .config,
-now it's there:
-[    1.195312] spi spi0.0: gpio_request: 23
-[    1.195312] spi spi0.1: gpio_request: 22
-[    1.199218] spi spi0.2: gpio_request: 93
-[    1.203125] spi spi0.3: gpio_request: 14
+ 
+> > >
+> >
+> > Just add OTG member into ci_hdrc structure, see below patch
+> >
+> > diff --git a/drivers/usb/chipidea/ci.h b/drivers/usb/chipidea/ci.h
+> > index 9563cb5..186fb3f 100644
+> > --- a/drivers/usb/chipidea/ci.h
+> > +++ b/drivers/usb/chipidea/ci.h
+> > @@ -207,6 +207,7 @@ struct ci_hdrc {
+> >         bool                            id_event;
+> >         bool                            b_sess_valid_event;
+> >         bool                            imx28_write_fix;
+> > +       struct usb_otg                  otg;
+> >  };
+> >
+> >  static inline struct ci_role_driver *ci_role(struct ci_hdrc *ci) diff
+> > --git a/drivers/usb/chipidea/host.c b/drivers/usb/chipidea/host.c
+> > index a93d950..70d7fe2 100644
+> > --- a/drivers/usb/chipidea/host.c
+> > +++ b/drivers/usb/chipidea/host.c
+> > @@ -85,7 +85,7 @@ static int host_start(struct ci_hdrc *ci)
+> >         if (ret) {
+> >                 goto disable_reg;
+> >         } else {
+> > -               struct usb_otg *otg = ci->transceiver->otg;
+> > +               struct usb_otg *otg = &ci->otg;
+> >
+> >                 ci->hcd = hcd;
+> >                 if (otg) {
+> > diff --git a/drivers/usb/chipidea/otg_fsm.c
+> > b/drivers/usb/chipidea/otg_fsm.c index 8cb2508..fc8847e 100644
+> > --- a/drivers/usb/chipidea/otg_fsm.c
+> > +++ b/drivers/usb/chipidea/otg_fsm.c
+> > @@ -778,20 +778,8 @@ void ci_hdrc_otg_fsm_start(struct ci_hdrc *ci)
+> > int ci_hdrc_otg_fsm_init(struct ci_hdrc *ci)  {
+> >         int retval = 0;
+> > -       struct usb_otg *otg;
+> >
+> > -       otg = devm_kzalloc(ci->dev,
+> > -                       sizeof(struct usb_otg), GFP_KERNEL);
+> > -       if (!otg) {
+> > -               dev_err(ci->dev,
+> > -               "Failed to allocate usb_otg structure for ci hdrc
+> otg!\n");
+> > -               return -ENOMEM;
+> > -       }
+> > -
+> > -       otg->phy = ci->transceiver;
+> > -       otg->gadget = &ci->gadget;
+> > -       ci->fsm.otg = otg;
+> > -       ci->transceiver->otg = ci->fsm.otg;
+> > +       ci->fsm.otg = &ci->otg;
+> >         ci->fsm.power_up = 1;
+> >         ci->fsm.id = hw_read_otgsc(ci, OTGSC_ID) ? 1 : 0;
+> >         ci->fsm.otg->state = OTG_STATE_UNDEFINED; diff --git
+> > a/include/linux/usb/otg.h b/include/linux/usb/otg.h index
+> > 33d3480..b2f7587 100644
+> > --- a/include/linux/usb/otg.h
+> > +++ b/include/linux/usb/otg.h
+> > @@ -14,7 +14,6 @@
+> >  struct usb_otg {
+> >         u8                      default_a;
+> >
+> > -       struct usb_phy          *phy;
+> >         struct usb_bus          *host;
+> >         struct usb_gadget       *gadget;
+> >
+> > diff --git a/include/linux/usb/phy.h b/include/linux/usb/phy.h index
+> > ac7d791..b732541 100644
+> > --- a/include/linux/usb/phy.h
+> > +++ b/include/linux/usb/phy.h
+> > @@ -79,8 +79,6 @@ struct usb_phy {
+> >         enum usb_phy_type       type;
+> >         enum usb_phy_events     last_event;
+> >
+> > -       struct usb_otg          *otg;
+> > -
+> >         struct device           *io_dev;
+> >         struct usb_phy_io_ops   *io_ops;
+> >         void __iomem            *io_priv;
+> > b29397@shlinux1:~/work/projects/upstream/usb/usb$ git diff > a.diff
+> > b29397@shlinux1:~/work/projects/upstream/usb/usb$ cat a.diff diff
+> > --git a/drivers/usb/chipidea/ci.h b/drivers/usb/chipidea/ci.h index
+> > 9563cb5..186fb3f 100644
+> > --- a/drivers/usb/chipidea/ci.h
+> > +++ b/drivers/usb/chipidea/ci.h
+> > @@ -207,6 +207,7 @@ struct ci_hdrc {
+> >  	bool				id_event;
+> >  	bool				b_sess_valid_event;
+> >  	bool				imx28_write_fix;
+> > +	struct usb_otg			otg;
+> >  };
+> >
+> >  static inline struct ci_role_driver *ci_role(struct ci_hdrc *ci) diff
+> > --git a/drivers/usb/chipidea/host.c b/drivers/usb/chipidea/host.c
+> > index a93d950..70d7fe2 100644
+> > --- a/drivers/usb/chipidea/host.c
+> > +++ b/drivers/usb/chipidea/host.c
+> > @@ -85,7 +85,7 @@ static int host_start(struct ci_hdrc *ci)
+> >  	if (ret) {
+> >  		goto disable_reg;
+> >  	} else {
+> > -		struct usb_otg *otg = ci->transceiver->otg;
+> > +		struct usb_otg *otg = &ci->otg;
+> >
+> >  		ci->hcd = hcd;
+> >  		if (otg) {
+> > diff --git a/drivers/usb/chipidea/otg_fsm.c
+> > b/drivers/usb/chipidea/otg_fsm.c index 8cb2508..fc8847e 100644
+> > --- a/drivers/usb/chipidea/otg_fsm.c
+> > +++ b/drivers/usb/chipidea/otg_fsm.c
+> > @@ -778,20 +778,8 @@ void ci_hdrc_otg_fsm_start(struct ci_hdrc *ci)
+> > int ci_hdrc_otg_fsm_init(struct ci_hdrc *ci)  {
+> >  	int retval = 0;
+> > -	struct usb_otg *otg;
+> >
+> > -	otg = devm_kzalloc(ci->dev,
+> > -			sizeof(struct usb_otg), GFP_KERNEL);
+> > -	if (!otg) {
+> > -		dev_err(ci->dev,
+> > -		"Failed to allocate usb_otg structure for ci hdrc otg!\n");
+> > -		return -ENOMEM;
+> > -	}
+> > -
+> > -	otg->phy = ci->transceiver;
+> > -	otg->gadget = &ci->gadget;
+> > -	ci->fsm.otg = otg;
+> > -	ci->transceiver->otg = ci->fsm.otg;
+> > +	ci->fsm.otg = &ci->otg;
+> >  	ci->fsm.power_up = 1;
+> >  	ci->fsm.id = hw_read_otgsc(ci, OTGSC_ID) ? 1 : 0;
+> >  	ci->fsm.otg->state = OTG_STATE_UNDEFINED; diff --git
+> > a/include/linux/usb/otg.h b/include/linux/usb/otg.h index
+> > 33d3480..b2f7587 100644
+> > --- a/include/linux/usb/otg.h
+> > +++ b/include/linux/usb/otg.h
+> > @@ -14,7 +14,6 @@
+> >  struct usb_otg {
+> >  	u8			default_a;
+> >
+> > -	struct usb_phy		*phy;
+> >  	struct usb_bus		*host;
+> >  	struct usb_gadget	*gadget;
+> >
+> > diff --git a/include/linux/usb/phy.h b/include/linux/usb/phy.h index
+> > ac7d791..b732541 100644
+> > --- a/include/linux/usb/phy.h
+> > +++ b/include/linux/usb/phy.h
+> > @@ -79,8 +79,6 @@ struct usb_phy {
+> >  	enum usb_phy_type	type;
+> >  	enum usb_phy_events	last_event;
+> >
+> > -	struct usb_otg		*otg;
+> > -
+> >  	struct device		*io_dev;
+> >  	struct usb_phy_io_ops	*io_ops;
+> >  	void __iomem		*io_priv;
+> 
+> Where does the ci->otg setup occurs? It seems to me it's never filled.
+> 
 
-But still not working.
+Currently, only two fields at struct usb_otg are needed for chipidea, they are:
+struct usb_bus          *host;
+enum usb_otg_state      state;
 
-Dne 25.7.2014 v 09:53 Boris BREZILLON napsal(a):
-> On Fri, 25 Jul 2014 08:14:40 +0200
-> Jiří Prchal <jiri.prchal@aksignal.cz> wrote:
->
->>
->>
->> Dne 24.7.2014 v 17:58 Boris BREZILLON napsal(a):
->>> On Thu, 24 Jul 2014 17:06:43 +0200
->>> Jiří Prchal <jiri.prchal@aksignal.cz> wrote:
->>>
->>>> Hi,
->>>>
->>>> Dne 24.7.2014 v 16:26 Boris BREZILLON napsal(a):
->>>>> Hello Jiří,
->>>>>
->>>>> First of all, please try to use git format-patch when submitting a
->>>>> patch to any kernel mailing list.
->>>> Sorry for that.
->>>>>
->>>>> On Thu, 24 Jul 2014 15:38:24 +0200
->>>>> Jiří Prchal <jiri.prchal@aksignal.cz> wrote:
->>>>>
->>>>>> After ROMBOOT tries boot from flash on SPI0 NPCS0, this NPCS0 (PA14) remains set to PERIPH_A.
->>>>>> Because of that, this pin is unusable to something else.
->>>>>> This patch sets it back to GPIO.
->>>>>
->>>>> The policy is to leave pins in an unknown state till some peripheral
->>>>> need them.
->>>>>
->>>>> What are you trying to use this pin for ?
->>>> For chip select, but #3. And when SPI communicate with cs0 (PA22), it goes down too (PA14), so 2 devices on bus were
->>>> selected.
->>>
->>> Are you using a 9x5ek board or a custom one, in the latter case could
->>> you paste your spi0 node definition ?
->> I'm using custom board. My spi node:
->> 			spi0: spi@f0000000 {
->> 				status = "okay";
->> 				cs-gpios = <&pioA 23 0
->> 					    &pioA 22 0
->> 					    &pioC 29 0
->> 					    &pioA 14 0>;
->>
->> 				fm25@0 {
->> 					compatible = "cypress,fm25";
->> 					spi-max-frequency = <40000000>;
->> 					reg = <0>;
->> 					pagesize = <256>;
->> 					size = <131072>;
->> 					address-width = <24>;
->> 				};
->> 				/* ADC */
->> 				spidev@1 {
->> 					compatible = "spidev";
->> 					reg = <1>;
->> 					spi-max-frequency = <1000000>;
->> 				};
->> 				/* IO expander for busaddr */
->> 				spidev@2 {
->> 					compatible = "spidev";
->> 					reg = <2>;
->> 					label = "busaddr";
->> 					spi-max-frequency = <10000000>;
->> 				};
->> 				/* audio codec */
->> 				codec: codec@3 {
->> 					compatible = "ti,tlv320aic3x";
->> 					spi-max-frequency = <1000000>;
->> 					reg = <3>;
->> 				};
->> 			};
->>
->> This does not work without patch, because of 2 chips selected at one time because of PA14 is periph_a. Probably ROMBOOT
->> changes that.
->
-> Yes, boot code stored in ROM probably mux PA14 to periph A function,
-> but with your definition PA 14 should be set GPIO mode when the codec
-> device is created.
->
-> I don't see any obvious error in your definition, could you add a trace
-> there [1] to see if the gpio is successfully requested ?
-> Could you also paste the content of /sys/kernel/debug/gpio ?
->
->>>
->>>>> If you just want to use it as a chip select for an spi device, take a
->>>>> look at [1].
->>>> At [1] it's OK until as cs0 is for example PA22 and cs1 is PA14.
->>>
->>> If you want PA14 to control cs1 and PA22 to control cs0 (both
->>> configured as GPIOs), you'll have the following definition:
->>>
->>> cs-gpios = <&pioA 22 0>, <&pioA 14 0>, <0>, <0>;
->> See my node.
->>>
->>>>>
->>>>> Here the gpio is requested by the spi core when defining the cs-gpios
->>>>> property. The gpio controller then request the listed pins to the pin
->>>>> controller (pinctrl driver).
->>>> GPIO is not set in driver as GPIO, at least I didn't find it.
->>>
->>> Take a look at [1], which is set as the gpio_request_enable callback,
->>> called by pinctrl core when a gpio is requested.
->> But is this called from spi driver when requesting gpios as cs?
->
-> Yes, it's part of the gpio_request process:
-> gpio_request calls request method on at91 gpio_chip which in turn
-> calls pinctrl_request_gpio which then calls the gpio_request_enable
-> method I previously mentioned.
->
->
-> Best Regards,
->
-> Boris
->
-> [1]http://lxr.free-electrons.com/source/drivers/spi/spi-atmel.c#L1031
->
+They are initialized at:
+ci_hdrc_otg_fsm_init and host_start.
+
+Peter
