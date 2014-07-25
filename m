@@ -1,121 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760121AbaGYJOE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 05:14:04 -0400
-Received: from router.aksignal.cz ([188.175.113.102]:56374 "EHLO
-	router.aksignal.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751282AbaGYJN7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 05:13:59 -0400
-Message-ID: <53D21FCF.7010402@aksignal.cz>
-Date: Fri, 25 Jul 2014 11:13:51 +0200
-From: =?UTF-8?B?SmnFmcOtIFByY2hhbA==?= <jiri.prchal@aksignal.cz>
-Reply-To: jiri.prchal@aksignal.cz
-Organization: AK signal Brno
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1759970AbaGYJPH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 05:15:07 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:35776 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750699AbaGYJPD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jul 2014 05:15:03 -0400
+Date: Fri, 25 Jul 2014 11:14:56 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: David Rientjes <rientjes@google.com>
+Cc: Alex Thorlton <athorlton@sgi.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>, kirill.shutemov@linux.intel.com,
+        Ingo Molnar <mingo@kernel.org>, Hugh Dickins <hughd@google.com>,
+        lliubbo@gmail.com, Johannes Weiner <hannes@cmpxchg.org>,
+        srivatsa.bhat@linux.vnet.ibm.com,
+        Dave Hansen <dave.hansen@linux.intel.com>, dfults@sgi.com,
+        hedi@sgi.com
+Subject: Re: [patch] mm, thp: do not allow thp faults to avoid cpuset
+ restrictions
+Message-ID: <20140725091456.GA4844@dhcp22.suse.cz>
+References: <20140723220538.GT8578@sgi.com>
+ <alpine.DEB.2.02.1407231516570.23495@chino.kir.corp.google.com>
+ <alpine.DEB.2.02.1407231545520.1389@chino.kir.corp.google.com>
 MIME-Version: 1.0
-To: Boris BREZILLON <boris.brezillon@free-electrons.com>
-CC: Bo Shen <voice.shen@atmel.com>, nicolas.ferre@atmel.com,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org
-Subject: Re: [PATCH] ARM: at91: at91sam9x5: sets NPCS0 (PA14) back to GPIO
-References: <1405074175-22444-1-git-send-email-voice.shen@atmel.com>	<53D10C50.50305@aksignal.cz>	<20140724162645.4e19c26c@bbrezillon>	<53D12103.3020103@aksignal.cz>	<20140724175848.44f5da10@bbrezillon>	<53D1F5D0.1080006@aksignal.cz>	<20140725095319.16a8465c@bbrezillon>	<53D214E1.4050105@aksignal.cz>	<20140725104553.403921b1@bbrezillon>	<53D21B3F.7060006@aksignal.cz> <20140725110124.3f0dce6c@bbrezillon>
-In-Reply-To: <20140725110124.3f0dce6c@bbrezillon>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1407231545520.1389@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed 23-07-14 15:50:09, David Rientjes wrote:
+> The page allocator relies on __GFP_WAIT to determine if ALLOC_CPUSET 
+> should be set in allocflags.  ALLOC_CPUSET controls if a page allocation 
+> should be restricted only to the set of allowed cpuset mems.
+> 
+> Transparent hugepages clears __GFP_WAIT when defrag is disabled to prevent 
+> the fault path from using memory compaction or direct reclaim.  Thus, it 
+> is unfairly able to allocate outside of its cpuset mems restriction as a 
+> side-effect.
+> 
+> This patch ensures that ALLOC_CPUSET is only cleared when the gfp mask is 
+> truly GFP_ATOMIC by verifying it is also not a thp allocation.
+> 
+> Reported-by: Alex Thorlton <athorlton@sgi.com>
+> Cc: stable@vger.kernel.org
+> Signed-off-by: David Rientjes <rientjes@google.com>
 
+This is an abuse of __GFP_NO_KSWAPD but it also looks like a new gfp
+flag would need to be added to do it in other way. No other users seem to
+clear GFP_WAIT while using __GFP_NO_KSWAPD AFAICS so this should really
+affect only THP allocations.
 
-Dne 25.7.2014 v 11:01 Boris BREZILLON napsal(a):
-> On Fri, 25 Jul 2014 10:54:23 +0200
-> Jiří Prchal <jiri.prchal@aksignal.cz> wrote:
->
->> Here it is:
->> cat /sys/kernel/debug/gpio
->> GPIOs 0-31, platform/fffff400.gpio, fffff400.gpio:
->> [in20] GPIOfffff400.gpio3: [gpio] set
->> [spi0.3] GPIOfffff400.gpio14: [gpio] set
->> [in19] GPIOfffff400.gpio21: [gpio] set
->> [spi0.1] GPIOfffff400.gpio22: [gpio] set
->> [spi0.0] GPIOfffff400.gpio23: [gpio] set
->> [in18] GPIOfffff400.gpio28: [gpio] set
->> [out20] GPIOfffff400.gpio29: [gpio] clear
->> [out18] GPIOfffff400.gpio30: [gpio] clear
->> [out19] GPIOfffff400.gpio31: [gpio] clear
->>
->> GPIOs 32-50, platform/fffff600.gpio, fffff600.gpio:
->> [blue] GPIOfffff600.gpio12: [gpio] set
->> [gsm_on] GPIOfffff600.gpio13: [gpio] clear
->> [yellow] GPIOfffff600.gpio14: [gpio] clear
->> [gsm_rst] GPIOfffff600.gpio15: [gpio] clear
->> [green] GPIOfffff600.gpio16: [gpio] clear
->> [red] GPIOfffff600.gpio18: [gpio] clear
->>
->> GPIOs 64-95, platform/fffff800.gpio, fffff800.gpio:
->> [in17] GPIOfffff800.gpio16: [gpio] set
->> [in13] GPIOfffff800.gpio18: [gpio] set
->> [in14] GPIOfffff800.gpio20: [gpio] set
->> [por] GPIOfffff800.gpio25: [gpio] clear
->> [out16] GPIOfffff800.gpio26: [gpio] clear
->> [out15] GPIOfffff800.gpio28: [gpio] clear
->> [spi0.2] GPIOfffff800.gpio29: [gpio] set
->> [out17] GPIOfffff800.gpio30: [gpio] clear
->>
->> GPIOs 96-117, platform/fffffa00.gpio, fffffa00.gpio:
->> [nand_enable] GPIOfffffa00.gpio4: [gpio] set
->> [nand_rdy] GPIOfffffa00.gpio5: [gpio] set
->> [atmel_usba_udc] GPIOfffffa00.gpio21: [gpio] clear
->>
->
-> Every thing seems in place.
-> Could you enable CONFIG_DEBUG_PINCTRL and grep on "enable pin" ?
-/ # dmesg | grep "enable pin"
-[    0.968750] pinctrl-at91 ahb:apb:pinctrl@fffff400: enable pin 101 as GPIO
-[    0.968750] pinctrl-at91 ahb:apb:pinctrl@fffff400: enable pin 101 as PIOD5 0x20
-[    0.968750] pinctrl-at91 ahb:apb:pinctrl@fffff400: enable pin 100 as GPIO
-[    0.968750] pinctrl-at91 ahb:apb:pinctrl@fffff400: enable pin 100 as PIOD4 0x10
-[    1.238281] pinctrl-at91 ahb:apb:pinctrl@fffff400: enable pin 23 as GPIO
-[    1.238281] pinctrl-at91 ahb:apb:pinctrl@fffff400: enable pin 23 as PIOA23 0x800000
-[    1.238281] pinctrl-at91 ahb:apb:pinctrl@fffff400: enable pin 22 as GPIO
-[    1.238281] pinctrl-at91 ahb:apb:pinctrl@fffff400: enable pin 22 as PIOA22 0x400000
-[    1.242187] pinctrl-at91 ahb:apb:pinctrl@fffff400: enable pin 93 as GPIO
-[    1.242187] pinctrl-at91 ahb:apb:pinctrl@fffff400: enable pin 93 as PIOC29 0x20000000
-[    1.246093] pinctrl-at91 ahb:apb:pinctrl@fffff400: enable pin 14 as GPIO
-[    1.246093] pinctrl-at91 ahb:apb:pinctrl@fffff400: enable pin 14 as PIOA14 0x4000
-[    1.652343] pinctrl-at91 ahb:apb:pinctrl@fffff400: enable pin 117 as GPIO
-[    1.652343] pinctrl-at91 ahb:apb:pinctrl@fffff400: enable pin 117 as PIOD21 0x200000
-[    1.742187] pinctrl-at91 ahb:apb:pinctrl@fffff400: enable pin 50 as GPIO
-[    1.742187] pinctrl-at91 ahb:apb:pinctrl@fffff400: enable pin 50 as PIOB18 0x40000
-[    1.742187] pinctrl-at91 ahb:apb:pinctrl@fffff400: enable pin 48 as GPIO
-[    1.742187] pinctrl-at91 ahb:apb:pinctrl@fffff400: enable pin 48 as PIOB16 0x10000
-[    1.746093] pinctrl-at91 ahb:apb:pinctrl@fffff400: enable pin 46 as GPIO
-[    1.746093] pinctrl-at91 ahb:apb:pinctrl@fffff400: enable pin 46 as PIOB14 0x4000
-[    1.746093] pinctrl-at91 ahb:apb:pinctrl@fffff400: enable pin 44 as GPIO
-[    1.746093] pinctrl-at91 ahb:apb:pinctrl@fffff400: enable pin 44 as PIOB12 0x1000
+Reviewed-by: Michal Hocko <mhocko@suse.cz>
 
->
->>
->> Dne 25.7.2014 v 10:45 Boris BREZILLON napsal(a):
->>> On Fri, 25 Jul 2014 10:27:13 +0200
->>> Jiří Prchal <jiri.prchal@aksignal.cz> wrote:
->>>
->>> [...]
->>>>
->>>>
->>>>> Could you also paste the content of /sys/kernel/debug/gpio ?
->>>> The /sys/kernel/debug/ is empty.
->>>
->>> You have to enable CONFIG_DEBUG_FS in your config and then mount the
->>> debug file system:
->>>
->>> #mount -t debugfs dbg /sys/kernel/debug
->>>
->>>
->>>
->>>
->
->
->
+> ---
+>  mm/page_alloc.c | 16 ++++++++--------
+>  1 file changed, 8 insertions(+), 8 deletions(-)
+> 
+> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> --- a/mm/page_alloc.c
+> +++ b/mm/page_alloc.c
+> @@ -2447,7 +2447,7 @@ static inline int
+>  gfp_to_alloc_flags(gfp_t gfp_mask)
+>  {
+>  	int alloc_flags = ALLOC_WMARK_MIN | ALLOC_CPUSET;
+> -	const gfp_t wait = gfp_mask & __GFP_WAIT;
+> +	const bool atomic = !(gfp_mask & (__GFP_WAIT | __GFP_NO_KSWAPD));
+>  
+>  	/* __GFP_HIGH is assumed to be the same as ALLOC_HIGH to save a branch. */
+>  	BUILD_BUG_ON(__GFP_HIGH != (__force gfp_t) ALLOC_HIGH);
+> @@ -2456,20 +2456,20 @@ gfp_to_alloc_flags(gfp_t gfp_mask)
+>  	 * The caller may dip into page reserves a bit more if the caller
+>  	 * cannot run direct reclaim, or if the caller has realtime scheduling
+>  	 * policy or is asking for __GFP_HIGH memory.  GFP_ATOMIC requests will
+> -	 * set both ALLOC_HARDER (!wait) and ALLOC_HIGH (__GFP_HIGH).
+> +	 * set both ALLOC_HARDER (atomic == true) and ALLOC_HIGH (__GFP_HIGH).
+>  	 */
+>  	alloc_flags |= (__force int) (gfp_mask & __GFP_HIGH);
+>  
+> -	if (!wait) {
+> +	if (atomic) {
+>  		/*
+> -		 * Not worth trying to allocate harder for
+> -		 * __GFP_NOMEMALLOC even if it can't schedule.
+> +		 * Not worth trying to allocate harder for __GFP_NOMEMALLOC even
+> +		 * if it can't schedule.
+>  		 */
+> -		if  (!(gfp_mask & __GFP_NOMEMALLOC))
+> +		if (!(gfp_mask & __GFP_NOMEMALLOC))
+>  			alloc_flags |= ALLOC_HARDER;
+>  		/*
+> -		 * Ignore cpuset if GFP_ATOMIC (!wait) rather than fail alloc.
+> -		 * See also cpuset_zone_allowed() comment in kernel/cpuset.c.
+> +		 * Ignore cpuset mems for GFP_ATOMIC rather than fail, see the
+> +		 * comment for __cpuset_node_allowed_softwall().
+>  		 */
+>  		alloc_flags &= ~ALLOC_CPUSET;
+>  	} else if (unlikely(rt_task(current)) && !in_interrupt())
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+
+-- 
+Michal Hocko
+SUSE Labs
