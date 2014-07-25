@@ -1,51 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760893AbaGYTQn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 15:16:43 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:41386 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752893AbaGYTQm (ORCPT
+	id S1760960AbaGYTT0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 15:19:26 -0400
+Received: from mail-oi0-f47.google.com ([209.85.218.47]:48787 "EHLO
+	mail-oi0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758776AbaGYTTY convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 15:16:42 -0400
-To: Christoph Hellwig <hch@lst.de>
-Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
-        linux-scsi@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
-        Bart Van Assche <bvanassche@fusionio.com>,
-        Mike Christie <michaelc@cs.wisc.edu>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Robert Elliott <Elliott@hp.com>, Webb Scales <webbnh@hp.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 12/14] scatterlist: allow chaining to preallocated chunks
-From: "Martin K. Petersen" <martin.petersen@oracle.com>
-Organization: Oracle Corporation
-References: <1405678393-11497-1-git-send-email-hch@lst.de>
-	<1405678393-11497-13-git-send-email-hch@lst.de>
-Date: Fri, 25 Jul 2014 15:15:04 -0400
-In-Reply-To: <1405678393-11497-13-git-send-email-hch@lst.de> (Christoph
-	Hellwig's message of "Fri, 18 Jul 2014 12:13:11 +0200")
-Message-ID: <yq1fvhpgshz.fsf@sermon.lab.mkp.net>
-User-Agent: Gnus/5.130012 (Ma Gnus v0.12) Emacs/24.2 (gnu/linux)
+	Fri, 25 Jul 2014 15:19:24 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+Date: Fri, 25 Jul 2014 12:13:38 -0700
+Message-ID: <CAK3+h2wRJj8xs10JwQ6=7-oQDVC9WM_qGuW52Otd9s2rxDf5QA@mail.gmail.com>
+Subject: Build perf statically with all libunwind+dwaf for profiling userland
+ process on constrained Linux box
+From: Vincent Li <vincent.mc.li@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: "Michael S. Tsirkin" <mst@redhat.com>, Ingo Molnar <mingo@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "Christoph" == Christoph Hellwig <hch@lst.de> writes:
+Hi,
 
-Christoph> Blk-mq drivers usually preallocate their S/G list as part of
-Christoph> the request, but if we want to support the very large S/G
-Christoph> lists currently supported by the SCSI code that would tie up
-Christoph> a lot of memory in the preallocated request pool.  Add
-Christoph> support to the scatterlist code so that it can initialize a
-Christoph> S/G list that uses a preallocated first chunks and
-Christoph> dynamically allocated additional chunks.  That way the
-Christoph> scsi-mq code can preallocate a first page worth of S/G
-Christoph> entries as part of the request, and dynamically extend the
-Christoph> S/G list when needed.
+I am on Fedora 20 and trying to build a static perf with  needed
+library support, but it failed to detect the needed library, here is
+the output
 
-Reviewed-by: Martin K. Petersen <martin.petersen@oracle.com>
+1, build dynamically detected the library ok
 
--- 
-Martin K. Petersen	Oracle Linux Engineering
+ [vincent@localhost perf]$ make
+  BUILD:   Doing 'make -j4' parallel build
+config/Makefile:422: GTK2 not found, disables GTK2 support. Please
+install gtk2-devel or libgtk2.0-dev
+config/Makefile:586: No numa.h found, disables 'perf bench numa mem'
+benchmark, please install numactl-devel/libnuma-devel/libnuma-dev
+
+Auto-detecting system features:
+...                         dwarf: [ on  ]
+...                         glibc: [ on  ]
+...                          gtk2: [ OFF ]
+...                      libaudit: [ on  ]
+...                        libbfd: [ on  ]
+...                        libelf: [ on  ]
+...                       libnuma: [ OFF ]
+...                       libperl: [ on  ]
+...                     libpython: [ on  ]
+...                      libslang: [ on  ]
+...                     libunwind: [ on  ]
+...            libdw-dwarf-unwind: [ on  ]
+...     DWARF post unwind library: libunwind
+
+2, build statically failed to detect the library
+
+[vincent@localhost perf]$ make LDFLAGS=-static
+  BUILD:   Doing 'make -j4' parallel build
+config/Makefile:294: No libelf found, disables 'probe' tool, please
+install elfutils-libelf-devel/libelf-dev
+config/Makefile:357: Disabling post unwind, no support found.
+config/Makefile:395: No libaudit.h found, disables 'trace' tool,
+please install audit-libs-devel or libaudit-dev
+config/Makefile:409: slang not found, disables TUI support. Please
+install slang-devel or libslang-dev
+config/Makefile:422: GTK2 not found, disables GTK2 support. Please
+install gtk2-devel or libgtk2.0-dev
+config/Makefile:499: No Python.h (for Python 2.x) was found
+config/Makefile:499: Python support will not be built
+config/Makefile:586: No numa.h found, disables 'perf bench numa mem'
+benchmark, please install numactl-devel/libnuma-devel/libnuma-dev
+
+Auto-detecting system features:
+...                         dwarf: [ OFF ]
+...                         glibc: [ on  ]
+...                          gtk2: [ OFF ]
+...                      libaudit: [ OFF ]
+...                        libbfd: [ OFF ]
+...                        libelf: [ OFF ]
+...                       libnuma: [ OFF ]
+...                       libperl: [ OFF ]
+...                     libpython: [ OFF ]
+...                      libslang: [ OFF ]
+...                     libunwind: [ OFF ]
+...            libdw-dwarf-unwind: [ OFF ]
+
+I have a constrained centos-like Linux system (not centos)  that I
+need to profile the userland process that is not compiled with GCC
+option “-fno-omit-frame-pointer –ggdb”
+https://bugzilla.redhat.com/show_bug.cgi?id=1025603.
+
+it would be nice to be able to compile perf statically with needed
+library support, could anyone share an idea how to resolve this?
+
+sorry if this is not the right place to ask
+
+Regards,
+
+Vincent
