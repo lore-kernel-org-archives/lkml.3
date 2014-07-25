@@ -1,50 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753406AbaGYXZA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 19:25:00 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:47821 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751137AbaGYXY6 (ORCPT
+	id S1752988AbaGYX1R (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 19:27:17 -0400
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:62578 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753130AbaGYX1Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 19:24:58 -0400
-Message-Id: <1406330697.989.145785925.1CA960AF@webmail.messagingengine.com>
-X-Sasl-Enc: N7oNolSxhCuGgTx+pFHsG0xSfIL89RlD5SHgdBr8wC0A 1406330697
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
-To: Jun Zhao <mypopydev@gmail.com>, "David S. Miller" <davem@davemloft.net>,
-        Cong Wang <cwang@twopensource.com>,
-        Pravin B Shelar <pshelar@nicira.com>,
-        Nicolas Dichtel <nicolas.dichtel@6wind.com>,
-        stephen hemminger <stephen@networkplumber.org>,
-        Tom Herbert <therbert@google.com>, netdev@vger.kernel.org,
-        Francesco Fusco <ffusco@redhat.com>,
-        Veaceslav Falico <vfalico@redhat.com>,
-        Duan Jiong <duanj.fnst@cn.fujitsu.com>, Jiri Pirko <jiri@resnulli.us>,
-        David Stevens <dlstevens@us.ibm.com>,
-        Or Gerlitz <ogerlitz@mellanox.com>,
-        Daniel Borkmann <dborkman@redhat.com>
-Cc: linux-kernel@vger.kernel.org
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain
-X-Mailer: MessagingEngine.com Webmail Interface - ajax-36a9b403
-In-Reply-To: <1406306339-16151-1-git-send-email-mypopydev@gmail.com>
-References: <1406306339-16151-1-git-send-email-mypopydev@gmail.com>
-Subject: Re: [PATCH 1/1] neighbour : fix ndm_type type error issue
-Date: Sat, 26 Jul 2014 01:24:57 +0200
+	Fri, 25 Jul 2014 19:27:16 -0400
+From: Andy Lutomirski <luto@amacapital.net>
+To: hpa@zytor.com, x86@kernel.org, linux-kernel@vger.kernel.org
+Cc: Andy Lutomirski <luto@amacapital.net>
+Subject: [PATCH] x86,vdso: Set VM_MAYREAD for the vvar vma
+Date: Fri, 25 Jul 2014 16:27:01 -0700
+Message-Id: <e4c8bf4bc2725bda22c4a4b7d0c82adcd8f8d9b8.1406330779.git.luto@amacapital.net>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 25, 2014, at 18:38, Jun Zhao wrote:
-> ndm_type means L3 address type, in neighbour proxy and vxlan, it's
-> RTN_UNICAST.
-> NDA_DST is for netlink TLV type, hence it's not right value in this
-> context.
+AFAIK this has no effect whatsoever unless x86 suddenly turns into a
+nommu architecture.  Nonetheless, not setting it is suspicious.
 
-The value of NDA_DST == RTN_UNICAST, otherwise we couldn't do this
-change as it would alter e.g. arpd behavior.
+Reported-by: Nathan Lynch <Nathan_Lynch@mentor.com>
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+---
+ arch/x86/vdso/vma.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+diff --git a/arch/x86/vdso/vma.c b/arch/x86/vdso/vma.c
+index dbef622..970463b 100644
+--- a/arch/x86/vdso/vma.c
++++ b/arch/x86/vdso/vma.c
+@@ -138,7 +138,7 @@ static int map_vdso(const struct vdso_image *image, bool calculate_addr)
+ 	vma = _install_special_mapping(mm,
+ 				       addr,
+ 				       -image->sym_vvar_start,
+-				       VM_READ,
++				       VM_READ|VM_MAYREAD,
+ 				       &vvar_mapping);
+ 
+ 	if (IS_ERR(vma)) {
+-- 
+1.9.3
 
-Thanks,
-Hannes
