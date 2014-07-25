@@ -1,69 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759284AbaGYCX0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 22:23:26 -0400
-Received: from ozlabs.org ([103.22.144.67]:39062 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757022AbaGYCXZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 22:23:25 -0400
-Date: Fri, 25 Jul 2014 12:23:17 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Mauro Carvalho Chehab <mchehab@infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        David =?UTF-8?B?SMOkcmRlbWFu?= <david@hardeman.nu>
-Subject: linux-next: build failure after merge of the v4l-dvb tree
-Message-ID: <20140725122317.4f96c131@canb.auug.org.au>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/fmNidk6n=By4cXhtBMYjdoO"; protocol="application/pgp-signature"
+	id S1759296AbaGYCZ4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 22:25:56 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:21740 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758109AbaGYCZy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jul 2014 22:25:54 -0400
+X-AuditID: cbfee61b-f79f86d00000144c-3e-53d1c03190c5
+From: Chao Yu <chao2.yu@samsung.com>
+To: anton@tuxera.com
+Cc: linux-ntfs-dev@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: [PATCH] ntfs: avoid incorrectly release for root inode in fill_super
+Date: Fri, 25 Jul 2014 10:25:10 +0800
+Message-id: <002901cfa7af$c2024dc0$4606e940$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: Ac+nr5C8RjVjMtA/R/uBZCN+mMfx0g==
+Content-language: zh-cn
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrJLMWRmVeSWpSXmKPExsVy+t9jAV3DAxeDDZ73cFns3LSF1eLyrjls
+	Fu0dcxgdmD12L/jM5LFi5Xsmj8+b5AKYo7hsUlJzMstSi/TtErgyeuc+Zi3Yylbx+nInSwNj
+	P2sXIyeHhICJxMSJ35ggbDGJC/fWs3UxcnEICSxilDhwdiMjhPODUWL28ZlgVWwCKhLLO/6D
+	2SICIhLz9j5jA7GZBdwkHh0AaeDkEBbwlTjSf4MdxGYRUJVY/ugWWJxXwFKiad1bFghbUOLH
+	5HssEL1aEut3HmeCsOUlNq95ywxxkYLEjrOvgXo5gHbpSVxemgFRIi6x8cgtlgmMArOQTJqF
+	ZNIsJJNmIWlZwMiyilE0tSC5oDgpPddIrzgxt7g0L10vOT93EyM4gJ9J72Bc1WBxiFGAg1GJ
+	h7ej/mKwEGtiWXFl7iFGCQ5mJRFet7lAId6UxMqq1KL8+KLSnNTiQ4zSHCxK4rwHW60DhQTS
+	E0tSs1NTC1KLYLJMHJxSDYxG+2Ll2GxS+S7z/tvZL+Xkr36y+MPDug3r3M0Cj65sFr2+NeVg
+	1ZSoLPYbvzeeO1Ig6mT1wWSddX/EiZ4sNbY0s/v9wd233wQtt7t+23/h77gfnq8+NPyYc+BI
+	gtKWae+n/ws4kt7acuDsq6Vf65/dTdn1NuiWkEbkk+znVismMl7Jurxw2uNeJZbijERDLeai
+	4kQAjKRyFVwCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/fmNidk6n=By4cXhtBMYjdoO
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+In d_make_root, when we fail to allocate dentry for root inode, we will iput
+root inode in this function.
+So we do not need to release this inode again at d_make_root's caller.
 
-Hi Mauro,
+Signed-off-by: Chao Yu <chao2.yu@samsung.com>
+---
+ fs/ntfs/super.c | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
-After merging the v4l-dvb tree, today's linux-next build (x86_64 allmodconf=
-ig)
-failed like this:
+diff --git a/fs/ntfs/super.c b/fs/ntfs/super.c
+index 6c3296e..99c5cc6 100644
+--- a/fs/ntfs/super.c
++++ b/fs/ntfs/super.c
+@@ -2975,7 +2975,11 @@ static int ntfs_fill_super(struct super_block *sb, void *opt, const int silent)
+ 			vol->secure_ino = NULL;
+ 		}
+ 	}
+-	iput(vol->root_ino);
++
++	/*
++	 * Just set NULL value here because we have already iput root_ino
++	 * in d_make_root.
++	 */
+ 	vol->root_ino = NULL;
+ 	iput(vol->lcnbmp_ino);
+ 	vol->lcnbmp_ino = NULL;
+-- 
+2.0.1.474.g72c7794
 
-drivers/hid/hid-picolcd_cir.c: In function 'picolcd_init_cir':
-drivers/hid/hid-picolcd_cir.c:117:6: error: 'struct rc_dev' has no member n=
-amed 'allowed_protos'
-  rdev->allowed_protos   =3D RC_BIT_ALL;
-      ^
 
-Caused by commit 0dd0e92836cc ("[media] rc-core: remove protocol arrays").
-
-I have used the v4l-dvb tree from next-20410724 for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Sig_/fmNidk6n=By4cXhtBMYjdoO
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJT0b+aAAoJEMDTa8Ir7ZwVxcUQAI5ZlB/lcf55VdRdFyqFtRWZ
-EvBwbCF4CdTXdA1BrU7uoli+FB+c29gbVkPqAIXbgD8143WOt+tIe2B3/bBlrnVz
-Dhu3Gsmmx+KIbsHaClhATFDz7dg6ZrkUi9mkUmOeTgZpIWlWI5yqAOshxR0Fd3XY
-T8Jk7oh1OSagdUY/M+KrD/dyQTFqUGGRRSEnt7puruHSsbUKi8v/JRxr1ug0ar9G
-y/39bSQldQHebhSpTWgylcz+QRfMSrz3Qv5lUs0GuF8DoOxhosaxED5bX5sjDFfX
-FEZ4mormihHITKK4WZQjyXKoUDxeZ4wRxicKQCoL2Uzml1ET7Ls9VJw11TB7OXot
-FrcUABPRA1OgGH0cY/TPlEvOuJiAgEihMT8LiVBLQ8gLM5EL5l4WNWP7zjDKwuvw
-WxO2bA4ksFAwAEg0iBmt7b7Dhn+U7G1JFK7kG1W63UmolhDWXyVzPHbF3GbjdSEt
-gint4x4mfnIDsmK8hSsRTdwuSBeLi6SRg7jt3JM6xPpBkvBLI07qSKW6UNAp/FxE
-UhV6BsEy4hAcKTqq+CBbFEEYe74X9B4apMtml902yH+db4QAlSWR8H4f04MWT5nU
-qOHSD3DgKgQtqVKM8TaVXxXnm4JQv5gRpYAmMxVG2BxQNlb7cknByt9cqZERRFNo
-y1H9d9eav7LFrw8vhZvO
-=/x6h
------END PGP SIGNATURE-----
-
---Sig_/fmNidk6n=By4cXhtBMYjdoO--
