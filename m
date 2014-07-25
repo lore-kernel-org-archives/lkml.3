@@ -1,209 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752783AbaGYXPo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 19:15:44 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:59034 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752619AbaGYXPl (ORCPT
+	id S1753042AbaGYXP7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 19:15:59 -0400
+Received: from mail-qg0-f46.google.com ([209.85.192.46]:42452 "EHLO
+	mail-qg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752833AbaGYXP4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 19:15:41 -0400
-Date: Fri, 25 Jul 2014 16:15:35 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Pranith Kumar <bobby.prani@gmail.com>
-Cc: Josh Triplett <josh@joshtriplett.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        "open list:READ-COPY UPDATE..." <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH 1/1] rcu: Use rcu_gp_kthread_wake() to wake up
- kthreads
-Message-ID: <20140725231535.GH11241@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1406264818-2296-1-git-send-email-bobby.prani@gmail.com>
- <CAJhHMCDQe5tSs7576uy8fRBW0txXoyUa6RiQdpg48UJs5TPsog@mail.gmail.com>
- <20140725150248.GZ11241@linux.vnet.ibm.com>
- <CAJhHMCDEFgwNVcd_ZaZ_1Eohv_eH9tCnjedxeQg122ACNdX2cQ@mail.gmail.com>
+	Fri, 25 Jul 2014 19:15:56 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAJhHMCDEFgwNVcd_ZaZ_1Eohv_eH9tCnjedxeQg122ACNdX2cQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14072523-0928-0000-0000-000003ABDAEE
+In-Reply-To: <1524296.Cxrf5UDWlv@vostro.rjw.lan>
+References: <5386F2C7.8080400@redhat.com>
+	<1524296.Cxrf5UDWlv@vostro.rjw.lan>
+Date: Fri, 25 Jul 2014 16:15:55 -0700
+Message-ID: <CAHTgTXXUcDNvPD0g82q1HFCy+EZZdF8hwyAzRu8cijs5dy9mBQ@mail.gmail.com>
+Subject: Re: WARNING: CPU: 0 PID: 2623 at drivers/pnp/pnpacpi/core.c:96 pnpacpi_set_resource
+From: Vinson Lee <vlee@twopensource.com>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Zdenek Kabelac <zkabelac@redhat.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 25, 2014 at 06:23:41PM -0400, Pranith Kumar wrote:
-> On Fri, Jul 25, 2014 at 11:02 AM, Paul E. McKenney
-> <paulmck@linux.vnet.ibm.com> wrote:
-> > On Fri, Jul 25, 2014 at 02:24:34AM -0400, Pranith Kumar wrote:
-> >> On Fri, Jul 25, 2014 at 1:06 AM, Pranith Kumar <bobby.prani@gmail.com> wrote:
-> >>
-> >> >
-> >> > In rcu_report_qs_rsp(), I added a pr_info() call testing if any of the above
-> >> > conditions is true, in which case we can avoid calling wake_up(). It turns out
-> >> > that quite a few actually are. Most of the cases where we can avoid is condition 2
-> >> > above and condition 1 also occurs quite often. Condition 3 never happens.
-> >> >
-> >>
-> >> A little more data. On an idle system there are about 2000 unnecessary
-> >> wake_up() calls every 5 minutes with the most common trace being the
-> >> follows:
-> >>
-> >> [Fri Jul 25 02:05:49 2014]  [<ffffffff8109f7c5>] rcu_report_qs_rnp+0x285/0x2c0
-> >> [Fri Jul 25 02:05:49 2014]  [<ffffffff81838c09>] ? schedule_timeout+0x159/0x270
-> >> [Fri Jul 25 02:05:49 2014]  [<ffffffff8109fa21>] force_qs_rnp+0x111/0x190
-> >> [Fri Jul 25 02:05:49 2014]  [<ffffffff810a02c0>] ? synchronize_rcu_bh+0x50/0x50
-> >> [Fri Jul 25 02:05:49 2014]  [<ffffffff810a2e5f>] rcu_gp_kthread+0x85f/0xa70
-> >> [Fri Jul 25 02:05:49 2014]  [<ffffffff81086060>] ? __wake_up_sync+0x20/0x20
-> >> [Fri Jul 25 02:05:49 2014]  [<ffffffff810a2600>] ? rcu_barrier+0x20/0x20
-> >> [Fri Jul 25 02:05:49 2014]  [<ffffffff8106b4fb>] kthread+0xdb/0x100
-> >>                   [<ffffffff8106b420>]?kthread_create_on_node+0x180/0x180
-> >> [Fri Jul 25 02:05:49 2014]  [<ffffffff81839dac>] ret_from_fork+0x7c/0xb0
-> >>                   [<ffffffff8106b420>] ?kthread_create_on_node+0x180/0x180
-> >>
-> >> With rcutorture, there are about 2000 unnecessary wake_ups() every 3
-> >> minutes with the most common trace being:
-> >>
-> >> [Fri Jul 25 02:18:30 2014]  [<ffffffff8109f7c5>] rcu_report_qs_rnp+0x285/0x2c0
-> >> [Fri Jul 25 02:18:30 2014]  [<ffffffff81078b15>] ? __update_cpu_load+0xe5/0x140
-> >>                  [<ffffffffa09dc230>] ?rcu_read_delay+0x50/0x80 [rcutorture]
-> >>                  [<ffffffff810a3728>]rcu_process_callbacks+0x6b8/0x7e0
-> >
-> > Good to see the numbers!!!
-> >
-> > But to evaluate this analytically, we should compare the overhead of the
-> > wake_up() with the overhead of the extra checks in rcu_gp_kthread_wake(),
-> > and then compare the number of unnecessary wake_up()s to the number of
-> > calls to rcu_gp_kthread_wake() added by this patch.  This means that we
-> > need more numbers.
-> >
-> > For example, suppose that the extra checks cost 10ns on average, and that
-> > a unnecessary wake_up() costs 1us on average, to that each wake_up()
-> > is on average 100 times more expensive than the extra checks.  Then it
-> > makes sense to ask whether the saved wake_up() save more time than the
-> > extra tests cost.  Turning the arithmetic crank says that if more than 1%
-> > of the wake_up()s are unnecessary, we should add the checks.
-> >
-> > This means that if there are fewer than 200,000 grace periods in each
-> > of the time periods, then your patch really would provide performance
-> > benefits.  I bet that there are -way- fewer than 200,000 grace periods in
-> > each of the time periods, but why don't you build with RCU_TRACE and look
-> > at the "rcugp" file in RCU's debugfs hierarchy?  Or just periodically
-> > print out the rcu_state ->completed field?
-> >
-> 
-> I put some debugging code to see how many unnecessary wake ups were
-> being generated in rcu_report_qs_rsp(). I ran both with and without
-> rcutorture running. Here are the results
-> 
-> Without rcutorture:
-> 
-> [   14.839214] Total:2000, unnecessary:2000, case1:1741, case2:2000, case3:0
-> [  224.284633] Total:4000, unnecessary:4000, case1:3652, case2:4000, case3:0
-> [  244.159021] Total:6000, unnecessary:6000, case1:5539, case2:6000, case3:0
-> [  260.522175] Total:8000, unnecessary:8000, case1:7447, case2:8000, case3:0
-> [  268.293058] Total:10000, unnecessary:10000, case1:9317, case2:10000, case3:0
-> [  275.962033] Total:12000, unnecessary:12000, case1:11159, case2:12000, case3:0
-> [  287.411032] Total:14000, unnecessary:14000, case1:13008, case2:14000, case3:0
-> [  304.868334] Total:16000, unnecessary:16000, case1:14885, case2:16000, case3:0
-> [  318.090930] Total:18000, unnecessary:18000, case1:16747, case2:18000, case3:0
-> [  333.423876] Total:20000, unnecessary:20000, case1:18631, case2:20000, case3:0
-> [  346.775399] Total:22000, unnecessary:22000, case1:20502, case2:22000, case3:0
-> [  362.867751] Total:24000, unnecessary:24000, case1:22386, case2:24000, case3:0
-> [  376.777817] Total:26000, unnecessary:26000, case1:24251, case2:26000, case3:0
-> [  391.839994] Total:28000, unnecessary:28000, case1:26118, case2:28000, case3:0
-> [  406.559406] Total:30000, unnecessary:30000, case1:27983, case2:30000, case3:0
-> [  419.973867] Total:32000, unnecessary:32000, case1:29855, case2:32000, case3:0
-> [  435.080002] Total:34000, unnecessary:34000, case1:31740, case2:34000, case3:0
-> [  449.077018] Total:36000, unnecessary:36000, case1:33588, case2:36000, case3:0
-> [  464.418942] Total:38000, unnecessary:38000, case1:35460, case2:38000, case3:0
-> [  478.654755] Total:40000, unnecessary:40000, case1:37326, case2:40000, case3:0
-> [  494.650198] Total:42000, unnecessary:42000, case1:39232, case2:42000, case3:0
-> [  508.594240] Total:44000, unnecessary:44000, case1:41134, case2:44000, case3:0
-> [  524.273907] Total:46000, unnecessary:46000, case1:43039, case2:46000, case3:0
-> [  537.227731] Total:48000, unnecessary:48000, case1:44916, case2:48000, case3:0
-> [  552.963362] Total:50000, unnecessary:50000, case1:46805, case2:50000, case3:0
-> [  567.333075] Total:52000, unnecessary:52000, case1:48662, case2:52000, case3:0
-> [  581.811693] Total:54000, unnecessary:54000, case1:50550, case2:54000, case3:0
-> [  596.404233] Total:56000, unnecessary:56000, case1:52417, case2:56000, case3:0
-> [  610.249344] Total:58000, unnecessary:58000, case1:54309, case2:58000, case3:0
-> [  625.682220] Total:60000, unnecessary:60000, case1:56190, case2:60000, case3:0
-> [  640.784361] Total:62000, unnecessary:62000, case1:58069, case2:62000, case3:0
-> [  656.142299] Total:64000, unnecessary:64000, case1:59953, case2:64000, case3:0
-> [  670.026376] Total:66000, unnecessary:66000, case1:61827, case2:66000, case3:0
-> [  685.972862] Total:68000, unnecessary:68000, case1:63696, case2:68000, case3:0
-> 
-> 
-> 
-> With rcutorture, the last lines(time makes the line wrap, so removed it):
-> 
-> Total:182000, unnecessary:182000, case1:171241, case2:182000, case3:0
-> Total:184000, unnecessary:184000, case1:173127, case2:184000, case3:0
-> Total:186000, unnecessary:186000, case1:174992, case2:186000, case3:0
-> Total:188000, unnecessary:188000, case1:176870, case2:188000, case3:0
-> Total:190000, unnecessary:190000, case1:178721, case2:190000, case3:0
-> Total:192000, unnecessary:192000, case1:180606, case2:192000, case3:0
-> Total:194000, unnecessary:194000, case1:182466, case2:194000, case3:0
-> Total:196000, unnecessary:196000, case1:184330, case2:196000, case3:0
-> Total:198000, unnecessary:198000, case1:186195, case2:198000, case3:0
-> Total:200000, unnecessary:200000, case1:188056, case2:200000, case3:0
-> Total:202000, unnecessary:202000, case1:189938, case2:202000, case3:0
-> Total:204000, unnecessary:204000, case1:190740, case2:204000, case3:0
-> Total:206000, unnecessary:206000, case1:190755, case2:206000, case3:0
-> Total:208000, unnecessary:208000, case1:190768, case2:208000, case3:0
-> Total:210000, unnecessary:210000, case1:190782, case2:210000, case3:0
-> Total:212000, unnecessary:212000, case1:190796, case2:212000, case3:0
-> Total:214000, unnecessary:214000, case1:190812, case2:214000, case3:0
-> Total:216000, unnecessary:216000, case1:190827, case2:216000, case3:0
-> Total:218000, unnecessary:218000, case1:190850, case2:218000, case3:0
-> Total:220000, unnecessary:220000, case1:190862, case2:220000, case3:0
-> Total:222000, unnecessary:222000, case1:190878, case2:222000, case3:0
-> Total:224000, unnecessary:224000, case1:190893, case2:224000, case3:0
-> Total:226000, unnecessary:226000, case1:190906, case2:226000, case3:0
-> Total:228000, unnecessary:228000, case1:190918, case2:228000, case3:0
-> Total:230000, unnecessary:230000, case1:190930, case2:230000, case3:0
-> Total:232000, unnecessary:232000, case1:190940, case2:232000, case3:0
-> Total:234000, unnecessary:234000, case1:190953, case2:234000, case3:0
-> Total:236000, unnecessary:236000, case1:190965, case2:236000, case3:0
-> Total:238000, unnecessary:238000, case1:190975, case2:238000, case3:0
-> Total:240000, unnecessary:240000, case1:190989, case2:240000, case3:0
-> Total:242000, unnecessary:242000, case1:191008, case2:242000, case3:0
-> Total:244000, unnecessary:244000, case1:191019, case2:244000, case3:0
-> Total:246000, unnecessary:246000, case1:192344, case2:246000, case3:0
-> Total:248000, unnecessary:248000, case1:194221, case2:248000, case3:0
-> Total:250000, unnecessary:250000, case1:196099, case2:250000, case3:0
-> Total:252000, unnecessary:252000, case1:198015, case2:252000, case3:0
-> Total:254000, unnecessary:254000, case1:199913, case2:254000, case3:0
-> Total:256000, unnecessary:256000, case1:201784, case2:256000, case3:0
-> 
-> 
-> Here total is the total number of times we enter th function rcu_report_qs_rsp()
-> and unnecessary is the times we call wake_up() unnecessarily.
-> case1, 2, 3 are the cases I listed above.
-> 
-> Note that the frequency has gone way up than before, I am not sure why that is.
-> 
-> *ALL* the wakeups seem to be unnecessary from that location. And the
-> main reason is that gp_flags is 0.
-> 
-> My rcugp file has the following:
-> 
-> completed=257515  gpnum=257516  age=1  max=1684
-> 
-> Thoughts?
+On Thu, May 29, 2014 at 4:14 AM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
+> On Thursday, May 29, 2014 10:41:43 AM Zdenek Kabelac wrote:
+>> Hi
+>>
+>>
+>> I've noticed this message in my dmesg:
+>> (Possibly related to this commit?:
+>> a8d22396302b7e4e5f0a594c1c1594388c29edaf)
+>
+> Well, does reverting that commit make the warning go away?
+>
+> Rafael
+>
+>
+>> (My vanilla git commit number for my kernel:
+>> cd79bde29f00a346eec3fe17c1c5073c37ed95e7)
+>>
+>> Zdenek
+>>
+>>
+>> [ 2174.058615] ata5: port disabled--ignoring
+>> [ 2174.059460] sd 0:0:0:0: [sda] Starting disk
+>> [ 2174.076342] ------------[ cut here ]------------
+>> [ 2174.076350] WARNING: CPU: 0 PID: 2623 at drivers/pnp/pnpacpi/core.c:96
+>> pnpacpi_set_resources+0x14f/0x160()
+>> [ 2174.076412] Modules linked in: dm_raid raid456 async_raid6_recov
+>> async_memcpy async_pq async_xor async_tx raid1 raid10 dm_mod md_mod xor
+>> raid6_pq i915 i2c_algo_bit drm_kms_helper drm xt_CHECKSUM iptable_mangle
+>> ipt_MASQUERADE iptable_nat nf_nat_ipv4 nf_nat nf_conntrack_ipv4 nf_defrag_ipv4
+>> xt_conntrack nf_conntrack ipt_REJECT xt_tcpudp iptable_filter ip_tables
+>> x_tables tun bridge stp llc ipv6 hid_generic usbhid hid snd_hda_codec_analog
+>> snd_hda_codec_generic iTCO_wdt iTCO_vendor_support coretemp kvm_intel kvm
+>> microcode psmouse serio_raw i2c_i801 i2c_core arc4 lpc_ich mfd_core r852
+>> iwl3945 sm_common nand r592 nand_ecc nand_ids iwlegacy mtd memstick mac80211
+>> sdhci_pci pcmcia sdhci snd_hda_intel mmc_core snd_hda_controller snd_hda_codec
+>> snd_hwdep snd_seq snd_seq_device snd_pcm cfg80211 e1000e ptp snd_timer
+>> [ 2174.076433]  pps_core wmi thinkpad_acpi nvram snd soundcore evdev nfsd
+>> auth_rpcgss oid_registry nfs_acl lockd binfmt_misc loop sunrpc uhci_hcd sr_mod
+>> cdrom yenta_socket ehci_pci ehci_hcd usbcore usb_common video backlight autofs4
+>> [ 2174.076436] CPU: 0 PID: 2623 Comm: systemd-sleep Not tainted
+>> 3.15.0-rc7-00044-g887210a #209
+>> [ 2174.076437] Hardware name: LENOVO 6464CTO/6464CTO, BIOS 7LETC9WW (2.29 )
+>> 03/18/2011
+>> [ 2174.076440]  0000000000000009 ffff880095d55c40 ffffffff815db694
+>> 0000000000000000
+>> [ 2174.076444]  ffff880095d55c78 ffffffff8104e78d 0000000000000000
+>> ffff880136c3cd98
+>> [ 2174.076447]  ffff8800bac2b000 ffffffff8180cb5a 0000000000000000
+>> ffff880095d55c88
+>> [ 2174.076448] Call Trace:
+>> [ 2174.076453]  [<ffffffff815db694>] dump_stack+0x4e/0x7a
+>> [ 2174.076643]  [<ffffffff8104e78d>] warn_slowpath_common+0x7d/0xa0
+>> [ 2174.076646]  [<ffffffff8104e86a>] warn_slowpath_null+0x1a/0x20
+>> [ 2174.076648]  [<ffffffff814046cf>] pnpacpi_set_resources+0x14f/0x160
+>> [ 2174.076651]  [<ffffffff81401db2>] pnp_start_dev+0x42/0x80
+>> [ 2174.076655]  [<ffffffff81400858>] pnp_bus_resume+0x88/0xa0
+>> [ 2174.076658]  [<ffffffff814007d0>] ? pnp_bus_suspend+0x20/0x20
+>> [ 2174.076662]  [<ffffffff8145e919>] dpm_run_callback+0x49/0xa0
+>> [ 2174.076664]  [<ffffffff8145ec18>] device_resume+0xc8/0x1f0
+>> [ 2174.076667]  [<ffffffff81460639>] dpm_resume+0x119/0x250
+>> [ 2174.076670]  [<ffffffff814609b1>] dpm_resume_end+0x11/0x20
+>> [ 2174.076673]  [<ffffffff810b4b0f>] suspend_devices_and_enter+0xff/0x680
+>> [ 2174.076676]  [<ffffffff810b5277>] pm_suspend+0x1e7/0x2a0
+>> [ 2174.076678]  [<ffffffff810b3c2c>] state_store+0x7c/0xf0
+>> [ 2174.076683]  [<ffffffff81359f2f>] kobj_attr_store+0xf/0x20
+>> [ 2174.076686]  [<ffffffff8124b1b5>] sysfs_kf_write+0x45/0x60
+>> [ 2174.076690]  [<ffffffff8124a4d9>] kernfs_fop_write+0xf9/0x180
+>> [ 2174.076694]  [<ffffffff811c66bd>] vfs_write+0xbd/0x1e0
+>> [ 2174.076696]  [<ffffffff811c7249>] SyS_write+0x49/0xb0
+>> [ 2174.076700]  [<ffffffff815ecbd6>] system_call_fastpath+0x1a/0x1f
+>> [ 2174.081587] ---[ end trace 32ffe1e61f685f01 ]---
+>> [ 2174.082221] serial 00:09: activated
+>> [ 2174.233290] thinkpad_acpi: ACPI backlight control delay disabled
+>> [ 2174.323685] ata4.00: ACPI cmd ef/03:42:00:00:00:a0 (SET FEATURES) filtered out
+>> [ 2174.323688] ata4.00: ACPI cmd ef/03:0c:00:00:00:a0 (SET FEATURES) filtered out
+>> [ 2174.324671] ata4.00: ACPI cmd e3/00:79:00:00:00:a0 (IDLE) succeeded
+>> [ 2174.325651] ata4.00: ACPI cmd e3/00:01:00:00:00:a0 (IDLE) succeeded
+>> [ 2174.345266] ata4.00: configured for UDMA/33
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+>
+> --
+> I speak only for myself.
+> Rafael J. Wysocki, Intel Open Source Technology Center.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-Hard to believe in the rcutorture case.  My guess was that rcutorture was
-doing about 9000 wakeups, 2000 of which were unnecessary.  Which would
-of course still tilt things very much in favor of your patch.
 
-I am not surprised in the mostly-idle case, as the RCU grace-period
-kthread would most likely be the one ending the grace period, which
-would therefore almost always be a self-wakeup.
+Hi.
 
-Any chance of a peek at your debugging code?
+I hit a similar stack trace with 3.14.8.
 
-							Thanx, Paul
+------------[ cut here ]------------
+ WARNING: CPU: 23 PID: 1 at drivers/pnp/pnpacpi/core.c:96
+pnpacpi_set_resources+0x9a/0x134()
+ Modules linked in:
+ CPU: 23 PID: 1 Comm: swapper/0 Not tainted 3.14.8 #1
+  0000000000000000 ffff881fd29f5c78 ffffffff814e27e5 0000000000000000
+  ffff881fd29f5cb0 ffffffff8105c4b1 ffffffff812f32f3 0000000000000000
+  ffff883fd1f0a800 ffff881fff047348 0000000000000000 ffff881fd29f5cc0
+ Call Trace:
+  [<ffffffff814e27e5>] dump_stack+0x45/0x56
+  [<ffffffff8105c4b1>] warn_slowpath_common+0x7f/0x98
+  [<ffffffff812f32f3>] ? pnpacpi_set_resources+0x9a/0x134
+  [<ffffffff8105c578>] warn_slowpath_null+0x1a/0x1c
+  [<ffffffff812f32f3>] pnpacpi_set_resources+0x9a/0x134
+  [<ffffffff812f1264>] pnp_start_dev+0x3d/0x76
+  [<ffffffff812f189d>] pnp_activate_dev+0x29/0x44
+  [<ffffffff812f0406>] pnp_device_probe+0x47/0xa6
+  [<ffffffff81333e20>] driver_probe_device+0x120/0x2f2
+  [<ffffffff8133408c>] __driver_attach+0x5d/0x7f
+  [<ffffffff8133402f>] ? __device_attach+0x3d/0x3d
+  [<ffffffff81332248>] bus_for_each_dev+0x7b/0x85
+  [<ffffffff81333852>] driver_attach+0x1e/0x20
+  [<ffffffff813334a6>] bus_add_driver+0x12f/0x1f9
+  [<ffffffff81334614>] driver_register+0x8e/0xca
+  [<ffffffff812f0299>] pnp_register_driver+0x21/0x23
+  [<ffffffff813169b6>] serial8250_pnp_init+0x15/0x17
+  [<ffffffff81b39d3c>] serial8250_init+0x60/0x143
+  [<ffffffff81b39cdc>] ? serial8250_console_init+0x19/0x19
+  [<ffffffff810002d2>] do_one_initcall+0xa4/0x12a
+  [<ffffffff810758b1>] ? parse_args+0x258/0x331
+  [<ffffffff81afcea2>] kernel_init_freeable+0x16f/0x1f4
+  [<ffffffff81afc719>] ? do_early_param+0x88/0x88
+  [<ffffffff814d47b5>] ? rest_init+0x79/0x79
+  [<ffffffff814d47c3>] kernel_init+0xe/0xdf
+  [<ffffffff814ee0ec>] ret_from_fork+0x7c/0xb0
+  [<ffffffff814d47b5>] ? rest_init+0x79/0x79
+ ---[ end trace 9cf08771a70bd5a1 ]—
 
+
+Cheers,
+Vinson
