@@ -1,104 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758027AbaGYHGE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 03:06:04 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:44572 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750828AbaGYHGC (ORCPT
+	id S1759341AbaGYHIL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 03:08:11 -0400
+Received: from casper.infradead.org ([85.118.1.10]:46191 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758877AbaGYHIJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 03:06:02 -0400
-From: pramod.gurav.etc@gmail.com
-X-Google-Original-From: pramod.gurav@smartplayin.com
-To: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Pramod Gurav <pramod.gurav@smartplayin.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Lejun Zhu <lejun.zhu@linux.intel.com>,
-        Sachin Kamat <sachin.kamat@linaro.org>
-Subject: [PATCH] Input: soc_button_array: Remove kfree on data allocated with devm_zalloc
-Date: Fri, 25 Jul 2014 12:39:40 +0530
-Message-Id: <1406272180-25101-1-git-send-email-pramod.gurav@smartplayin.com>
-X-Mailer: git-send-email 1.7.9.5
+	Fri, 25 Jul 2014 03:08:09 -0400
+Date: Fri, 25 Jul 2014 09:08:00 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Tim Chen <tim.c.chen@linux.intel.com>
+Cc: Herbert Xu <herbert@gondor.apana.org.au>, "H. Peter Anvin" <hpa@zytor.com>,
+        "David S.Miller" <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
+        Chandramouli Narayanan <mouli@linux.intel.com>,
+        Vinodh Gopal <vinodh.gopal@intel.com>,
+        James Guilford <james.guilford@intel.com>,
+        Wajdi Feghali <wajdi.k.feghali@intel.com>,
+        Jussi Kivilinna <jussi.kivilinna@iki.fi>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Tadeusz Struk <tadeusz.struk@intel.com>, tkhai@yandex.ru,
+        linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v5 2/7] crypto: SHA1 multibuffer crypto hash
+ infrastructure
+Message-ID: <20140725070800.GS3935@laptop>
+References: <cover.1406033477.git.tim.c.chen@linux.intel.com>
+ <1406066972.2970.804.camel@schen9-DESK>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1406066972.2970.804.camel@schen9-DESK>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Pramod Gurav <pramod.gurav@smartplayin.com>
+On Tue, Jul 22, 2014 at 03:09:32PM -0700, Tim Chen wrote:
+> +/* Called in workqueue context, do one real cryption work (via
+> + * req->complete) and reschedule itself if there are more work to
+> + * do. */
 
-This patch does below:
-- Removes kfree done on data allocated with devm_zalloc in probe
-  path of the driver.
-- Adds a check on return value from devm_kzalloc which was missing
-  and renames a lable from err_free_mem to err_mem.
-- Adds couple of dev_err on failure to allocate memory
+You seem to manage the 'normal' comment style in other places, this one
+'special' for a reason?
 
-CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: Lejun Zhu <lejun.zhu@linux.intel.com>
-CC: Sachin Kamat <sachin.kamat@linaro.org>
+> +static void mcryptd_queue_worker(struct work_struct *work)
+> +{
+> +	struct mcryptd_cpu_queue *cpu_queue;
+> +	struct crypto_async_request *req, *backlog;
+> +	int i;
+> +
+> +	/*
+> +	 * Need to loop through more than once for multi-buffer to
+> +	 * be effective.
+> +	 */
+> +
+> +	cpu_queue = container_of(work, struct mcryptd_cpu_queue, work);
+> +	i = 0;
+> +	while (i < MCRYPTD_BATCH || single_task_running()) {
+> +		/*
+> +		 * preempt_disable/enable is used to prevent
+> +		 * being preempted by mcryptd_enqueue_request()
+> +		 */
+> +		local_bh_disable();
+> +		preempt_disable();
+> +		backlog = crypto_get_backlog(&cpu_queue->queue);
+> +		req = crypto_dequeue_request(&cpu_queue->queue);
+> +		preempt_enable();
+> +		local_bh_enable();
+> +
+> +		if (!req)
+> +			return;
+> +
+> +		if (backlog)
+> +			backlog->complete(backlog, -EINPROGRESS);
+> +		req->complete(req, 0);
+> +		if (!cpu_queue->queue.qlen)
+> +			return;
+> +		++i;
+> +	}
+> +	if (cpu_queue->queue.qlen)
+> +		queue_work(kcrypto_wq, &cpu_queue->work);
+> +}
 
-Signed-off-by: Pramod Gurav <pramod.gurav@smartplayin.com>
----
- drivers/input/misc/soc_button_array.c |   19 ++++++++++++++-----
- 1 file changed, 14 insertions(+), 5 deletions(-)
+Right, so I don't think you need that single_task_running() thing for
+this. Also its a rather inconclusive test, a task can come in while
+processing the request, preempt the processing, complete and by the time
+we're back to check if we want to continue the loop its only us again.
 
-diff --git a/drivers/input/misc/soc_button_array.c b/drivers/input/misc/soc_button_array.c
-index 5a6334b..ac82971 100644
---- a/drivers/input/misc/soc_button_array.c
-+++ b/drivers/input/misc/soc_button_array.c
-@@ -83,6 +83,13 @@ soc_button_device_create(struct pnp_dev *pdev,
- 				       sizeof(*gpio_keys_pdata) +
- 					sizeof(*gpio_keys) * MAX_NBUTTONS,
- 				       GFP_KERNEL);
-+	if (!gpio_keys_pdata) {
-+		dev_err(&pdev->dev,
-+			"Can't allocate memory for gpio_keys_platform_data\n");
-+		error = -ENOMEM;
-+		goto err_mem;
-+	}
-+
- 	gpio_keys = (void *)(gpio_keys_pdata + 1);
- 
- 	for (info = button_info; info->name; info++) {
-@@ -104,7 +111,7 @@ soc_button_device_create(struct pnp_dev *pdev,
- 
- 	if (n_buttons == 0) {
- 		error = -ENODEV;
--		goto err_free_mem;
-+		goto err_mem;
- 	}
- 
- 	gpio_keys_pdata->buttons = gpio_keys;
-@@ -114,7 +121,7 @@ soc_button_device_create(struct pnp_dev *pdev,
- 	pd = platform_device_alloc("gpio-keys", PLATFORM_DEVID_AUTO);
- 	if (!pd) {
- 		error = -ENOMEM;
--		goto err_free_mem;
-+		goto err_mem;
- 	}
- 
- 	error = platform_device_add_data(pd, gpio_keys_pdata,
-@@ -130,8 +137,7 @@ soc_button_device_create(struct pnp_dev *pdev,
- 
- err_free_pdev:
- 	platform_device_put(pd);
--err_free_mem:
--	devm_kfree(&pdev->dev, gpio_keys_pdata);
-+err_mem:
- 	return ERR_PTR(error);
- }
- 
-@@ -155,8 +161,11 @@ static int soc_button_pnp_probe(struct pnp_dev *pdev,
- 	int error;
- 
- 	priv = devm_kzalloc(&pdev->dev, sizeof(*priv), GFP_KERNEL);
--	if (!priv)
-+	if (!priv) {
-+		dev_err(&pdev->dev,
-+			"Can't allocate memory for soc_button_data\n");
- 		return -ENOMEM;
-+	}
- 
- 	pnp_set_drvdata(pdev, priv);
- 
--- 
-1.7.9.5
+So its actually misleading..
 
+You could do that, but then you have to keep preemption disabled across
+the entire thing, and break out on need_resched(), that would entirely
+obviate the need for single_task_running(), but would increase the
+preemption latency by however long the req processing takes, so that's
+bad too.
+
+But you can get similar 'fuzzy' semantics as above by using something
+like:
+
+static inline bool did_context_switch(unsigned long *nivcs)
+{
+	if (*nivcs != current->nivcs) {
+		*nivcs = current->nivcs;
+		return true;
+	}
+	return false;
+}
+
+static void mcryptd_queue_worker()
+{
+	...
+	unsigned long nivcs = current->nivcs;
+
+	...
+
+	while (!did_context_switch(&nivcs) || i < MCRYPTD_BATCH)
+
+	...
+}
+
+It'll terminate earlier I suppose, its the inverse test. But I think you
+want to terminate early if there's any activity.
