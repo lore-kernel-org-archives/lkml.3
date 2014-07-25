@@ -1,173 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760338AbaGYM63 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 08:58:29 -0400
-Received: from smtp206.alice.it ([82.57.200.102]:10057 "EHLO smtp206.alice.it"
+	id S1760380AbaGYM6p (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 08:58:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32334 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752233AbaGYM62 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 08:58:28 -0400
-Date: Fri, 25 Jul 2014 14:58:11 +0200
-From: Antonio Ospite <ao2@ao2.it>
-To: Jamie Lentin <jm@lentin.co.uk>
-Cc: Jiri Kosina <jkosina@suse.cz>, Hans de Goede <hdegoede@redhat.com>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v5 2/4] HID: lenovo: Prepare support for adding other
- devices
-Message-Id: <20140725145811.8fdbbced3de25c9f9e4ede00@ao2.it>
-In-Reply-To: <1406154648-14000-3-git-send-email-jm@lentin.co.uk>
-References: <1406154648-14000-1-git-send-email-jm@lentin.co.uk>
-	<1406154648-14000-3-git-send-email-jm@lentin.co.uk>
-X-Mailer: Sylpheed 3.5.0beta1 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
-X-Face: z*RaLf`X<@C75u6Ig9}{oW$H;1_\2t5)({*|jhM<pyWR#k60!#=#>/Vb;]yA5<GWI5`6u&+
- ;6b'@y|8w"wB;4/e!7wYYrcqdJFY,~%Gk_4]cq$Ei/7<j&N3ah(m`ku?pX.&+~:_/wC~dwn^)MizBG !pE^+iDQQ1yC6^,)YDKkxDd!T>\I~93>J<_`<4)A{':UrE
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1760232AbaGYM6n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jul 2014 08:58:43 -0400
+Date: Fri, 25 Jul 2014 08:58:20 -0400
+From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+To: Przemo Firszt <przemo@firszt.eu>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
+        Ping Cheng <pinglinux@gmail.com>, Jason Gerecke <killertofu@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
+Subject: Re: [PATCH v2 00/10] Input - wacom: conversion to HID driver, series
+ 2
+Message-ID: <20140725125820.GA12268@mail.corp.redhat.com>
+References: <1406225645-32141-1-git-send-email-benjamin.tissoires@redhat.com>
+ <1406292140.2664.17.camel@fedora-lan>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1406292140.2664.17.camel@fedora-lan>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 23 Jul 2014 23:30:46 +0100
-Jamie Lentin <jm@lentin.co.uk> wrote:
+Hi Przemo,
 
-> Ensure all tpkbd specifics are within a postfixed function, the
-> main functions for the driver should just switch to the appropriate
-> function depending on product ID. Given this, we can add extra devices
-> by including extra postfixed functions.
+On Jul 25 2014 or thereabouts, Przemo Firszt wrote:
+> Dnia 2014-07-24, czw o godzinie 14:13 -0400, Benjamin Tissoires pisze:
+> [..]
+> > Hi Przemo,
+> Hi Benjamin,
+> > Normally, this series contains all the bits of hid-wacom (except the custom
+> > LED/OLED API). Please tell me if I am missing anything and if you like the
+> > change.
 > 
-> Signed-off-by: Jamie Lentin <jm@lentin.co.uk>
->
+> I can't cleanly apply your set yet to test it, so:
 
-Reviewed-by: Antonio Ospite <ao2@ao2.it>
+Hmm, you need to apply the first series I sent on July 15th, on top of
+Dmitry's next branch.
 
-> ---
->  drivers/hid/hid-lenovo.c | 53 ++++++++++++++++++++++++++++++++++++++++--------
->  1 file changed, 45 insertions(+), 8 deletions(-)
+http://www.spinics.net/lists/linux-input/msg32385.html
+
 > 
-> diff --git a/drivers/hid/hid-lenovo.c b/drivers/hid/hid-lenovo.c
-> index 0320b96..a56b9e7 100644
-> --- a/drivers/hid/hid-lenovo.c
-> +++ b/drivers/hid/hid-lenovo.c
-> @@ -1,5 +1,6 @@
->  /*
-> - *  HID driver for Lenovo ThinkPad USB Keyboard with TrackPoint
-> + *  HID driver for Lenovo:
-> + *  - ThinkPad USB Keyboard with TrackPoint (tpkbd)
->   *
->   *  Copyright (c) 2012 Bernhard Seibold
->   */
-> @@ -39,7 +40,7 @@ static int lenovo_input_mapping_tpkbd(struct hid_device *hdev,
->  		struct hid_usage *usage, unsigned long **bit, int *max)
->  {
->  	if (usage->hid == (HID_UP_BUTTON | 0x0010)) {
-> -		/* mark the device as pointer */
-> +		/* This sub-device contains trackpoint, mark it */
->  		hid_set_drvdata(hdev, (void *)1);
->  		map_key_clear(KEY_MICMUTE);
->  		return 1;
-> @@ -47,6 +48,19 @@ static int lenovo_input_mapping_tpkbd(struct hid_device *hdev,
->  	return 0;
->  }
->  
-> +static int lenovo_input_mapping(struct hid_device *hdev,
-> +		struct hid_input *hi, struct hid_field *field,
-> +		struct hid_usage *usage, unsigned long **bit, int *max)
-> +{
-> +	switch (hdev->product) {
-> +	case USB_DEVICE_ID_LENOVO_TPKBD:
-> +		return lenovo_input_mapping_tpkbd(hdev, hi, field,
-> +							usage, bit, max);
-> +	default:
-> +		return 0;
-> +	}
-> +}
-> +
->  #undef map_key_clear
->  
->  static int lenovo_features_set_tpkbd(struct hid_device *hdev)
-> @@ -337,6 +351,15 @@ static int lenovo_probe_tpkbd(struct hid_device *hdev)
->  	char *name_mute, *name_micmute;
->  	int i;
->  
-> +	/*
-> +	 * Only register extra settings against subdevice where input_mapping
-> +	 * set drvdata to 1, i.e. the trackpoint.
-> +	 */
-> +	if (!hid_get_drvdata(hdev))
-> +		return 0;
-> +
-> +	hid_set_drvdata(hdev, NULL);
-> +
->  	/* Validate required reports. */
->  	for (i = 0; i < 4; i++) {
->  		if (!hid_validate_values(hdev, HID_FEATURE_REPORT, 4, i, 1))
-> @@ -409,12 +432,16 @@ static int lenovo_probe(struct hid_device *hdev,
->  		goto err;
->  	}
->  
-> -	if (hid_get_drvdata(hdev)) {
-> -		hid_set_drvdata(hdev, NULL);
-> +	switch (hdev->product) {
-> +	case USB_DEVICE_ID_LENOVO_TPKBD:
->  		ret = lenovo_probe_tpkbd(hdev);
-> -		if (ret)
-> -			goto err_hid;
-> +		break;
-> +	default:
-> +		ret = 0;
-> +		break;
->  	}
-> +	if (ret)
-> +		goto err_hid;
->  
->  	return 0;
->  err_hid:
-> @@ -427,6 +454,13 @@ static void lenovo_remove_tpkbd(struct hid_device *hdev)
->  {
->  	struct lenovo_drvdata_tpkbd *data_pointer = hid_get_drvdata(hdev);
->  
-> +	/*
-> +	 * Only the trackpoint half of the keyboard has drvdata and stuff that
-> +	 * needs unregistering.
-> +	 */
-> +	if (data_pointer == NULL)
-> +		return;
-> +
->  	sysfs_remove_group(&hdev->dev.kobj,
->  			&lenovo_attr_group_tpkbd);
->  
-> @@ -438,8 +472,11 @@ static void lenovo_remove_tpkbd(struct hid_device *hdev)
->  
->  static void lenovo_remove(struct hid_device *hdev)
->  {
-> -	if (hid_get_drvdata(hdev))
-> +	switch (hdev->product) {
-> +	case USB_DEVICE_ID_LENOVO_TPKBD:
->  		lenovo_remove_tpkbd(hdev);
-> +		break;
-> +	}
->  
->  	hid_hw_stop(hdev);
->  }
-> @@ -454,7 +491,7 @@ MODULE_DEVICE_TABLE(hid, lenovo_devices);
->  static struct hid_driver lenovo_driver = {
->  	.name = "lenovo",
->  	.id_table = lenovo_devices,
-> -	.input_mapping = lenovo_input_mapping_tpkbd,
-> +	.input_mapping = lenovo_input_mapping,
->  	.probe = lenovo_probe,
->  	.remove = lenovo_remove,
->  };
+> Acked-by: Przemo Firszt <przemo@firszt.eu>
+
+Thanks!
+
+> 
+> What's your plan about LED/OLED API? 
+
+I thought I would only preserve the current, wider used, LED/OLED API and
+just drop the one in hid-wacom. This way, g-s-d will access both
+bluetooth and USB the same way.
+
+My decision was mostly guided because the support of BT in g-s-d was
+only added recently (3.12 and backported to gnome 3.10 IIRC). And as
+soon as these patches hit Dmitry's tree, I'll send the g-s-d patches to
+fix all that.
+
+Cheers,
+Benjamin
+
+> 
+> > Benjamin Tissoires (9):
+> >   Input - wacom: put a flag when the led are initialized
+> >   Input - wacom: enhance Wireless Receiver battery reporting
+> >   Input - wacom: use a uniq name for the battery device
+> >   Input - wacom: register an ac power supply for wireless devices
+> >   Input - wacom: prepare the driver to include BT devices
+> >   Input - wacom: handle Graphire BT tablets in wacom.ko
+> >   Input - wacom: handle Intuos 4 BT in wacom.ko
+> >   Input - wacom: add copyright note and bump version to 2.0
+> >   HID: remove hid-wacom Bluetooth driver
+> > 
+> > Jason Gerecke (1):
+> >   Input - wacom: Support up to 2048 pressure levels with ISDv4
+> > 
+> >  drivers/hid/Kconfig     |  10 +-
+> >  drivers/hid/Makefile    |   3 +-
+> >  drivers/hid/hid-core.c  |   2 -
+> >  drivers/hid/hid-wacom.c | 973 ------------------------------------------------
+> >  drivers/hid/wacom.h     |  11 +
+> >  drivers/hid/wacom_sys.c | 217 ++++++++++-
+> >  drivers/hid/wacom_wac.c | 195 +++++++++-
+> >  drivers/hid/wacom_wac.h |  10 +
+> >  8 files changed, 415 insertions(+), 1006 deletions(-)
+> >  delete mode 100644 drivers/hid/hid-wacom.c
+> > 
+> 
 > -- 
-> 2.0.0
+> Kind regards,
+> Przemo Firszt
 > 
 > 
-
-
--- 
-Antonio Ospite
-http://ao2.it
-
-A: Because it messes up the order in which people normally read text.
-   See http://en.wikipedia.org/wiki/Posting_style
-Q: Why is top-posting such a bad thing?
