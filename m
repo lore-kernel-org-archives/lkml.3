@@ -1,169 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760439AbaGYOdt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 10:33:49 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:42735 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752713AbaGYOds (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 10:33:48 -0400
-Date: Fri, 25 Jul 2014 16:33:44 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Hugh Dickins <hughd@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Sasha Levin <sasha.levin@oracle.com>, Vlastimil Babka <vbabka@suse.cz>,
-        Konstantin Khlebnikov <koct9i@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Michel Lespinasse <walken@google.com>,
-        Lukas Czerner <lczerner@redhat.com>, Dave Jones <davej@redhat.com>,
-        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] shmem: fix splicing from a hole while it's punched
-Message-ID: <20140725143344.GC4844@dhcp22.suse.cz>
-References: <alpine.LSU.2.11.1407150247540.2584@eggly.anvils>
- <alpine.LSU.2.11.1407150331170.2584@eggly.anvils>
+	id S1760557AbaGYOeU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 10:34:20 -0400
+Received: from mail-oa0-f44.google.com ([209.85.219.44]:36120 "EHLO
+	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752332AbaGYOeR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jul 2014 10:34:17 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LSU.2.11.1407150331170.2584@eggly.anvils>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <CAL_JsqKqCeU0zs+rS1vxsOeh=Kuw_-gaVHtGU76Lb6TchCTytw@mail.gmail.com>
+References: <cover.1404231535.git.viresh.kumar@linaro.org>
+	<20140717093518.486ac244@free-electrons.com>
+	<CAKohpokZXUzXKRWBje7QF_jrvOd5dmfmWQ2Csf3xiMuvT_vPYA@mail.gmail.com>
+	<2399813.Puj1SZWhCh@vostro.rjw.lan>
+	<CAKohpomKzK8pMJs1gv+uXxhd17HtCQyfjSnVYw9KpGz6FwbgDA@mail.gmail.com>
+	<CAKohpo=HKUkGRK4NX7E59z5QthcKbZKETB-DuP10xj3x+vdHaQ@mail.gmail.com>
+	<CAL_JsqKqCeU0zs+rS1vxsOeh=Kuw_-gaVHtGU76Lb6TchCTytw@mail.gmail.com>
+Date: Fri, 25 Jul 2014 20:04:17 +0530
+Message-ID: <CAKohpomDGc9Y8yn0SuT9PYRQqx+0Ln10g9V-ZXd=itgXpGqP6g@mail.gmail.com>
+Subject: Re: [PATCH 00/14] cpufreq: cpu0: Extend support beyond CPU0, V2
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Rob Herring <robherring2@gmail.com>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Rob Herring <rob.herring@linaro.org>,
+        Mike Turquette <mturquette@linaro.org>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Nishanth Menon <nm@ti.com>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        Tomasz Figa <t.figa@samsung.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Michal Simek <michal.simek@xilinx.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Simon Horman <horms@verge.net.au>,
+        Thomas P Abraham <thomas.ab@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Arvind Chauhan <arvind.chauhan@arm.com>,
+        Sachin Kamat <spk.linux@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 15-07-14 03:33:02, Hugh Dickins wrote:
-> shmem_fault() is the actual culprit in trinity's hole-punch starvation,
-> and the most significant cause of such problems: since a page faulted is
-> one that then appears page_mapped(), needing unmap_mapping_range() and
-> i_mmap_mutex to be unmapped again.
-> 
-> But it is not the only way in which a page can be brought into a hole in
-> the radix_tree while that hole is being punched; and Vlastimil's testing
-> implies that if enough other processors are busy filling in the hole,
-> then shmem_undo_range() can be kept from completing indefinitely.
-> 
-> shmem_file_splice_read() is the main other user of SGP_CACHE, which
-> can instantiate shmem pagecache pages in the read-only case (without
-> holding i_mutex, so perhaps concurrently with a hole-punch).  Probably
-> it's silly not to use SGP_READ already (using the ZERO_PAGE for holes):
-> which ought to be safe, but might bring surprises - not a change to be
-> rushed.
-> 
-> shmem_read_mapping_page_gfp() is an internal interface used by
-> drivers/gpu/drm GEM (and next by uprobes): it should be okay.  And
-> shmem_file_read_iter() uses the SGP_DIRTY variant of SGP_CACHE, when
-> called internally by the kernel (perhaps for a stacking filesystem,
-> which might rely on holes to be reserved): it's unclear whether it
-> could be provoked to keep hole-punch busy or not.
-> 
-> We could apply the same umbrella as now used in shmem_fault() to
-> shmem_file_splice_read() and the others; but it looks ugly, and use
-> over a range raises questions - should it actually be per page?  can
-> these get starved themselves?
-> 
-> The origin of this part of the problem is my v3.1 commit d0823576bf4b
-> ("mm: pincer in truncate_inode_pages_range"), once it was duplicated
-> into shmem.c.  It seemed like a nice idea at the time, to ensure
-> (barring RCU lookup fuzziness) that there's an instant when the entire
-> hole is empty; but the indefinitely repeated scans to ensure that make
-> it vulnerable.
-> 
-> Revert that "enhancement" to hole-punch from shmem_undo_range(), but
-> retain the unproblematic rescanning when it's truncating; add a couple
-> of comments there.
-> 
-> Remove the "indices[0] >= end" test: that is now handled satisfactorily
-> by the inner loop, and mem_cgroup_uncharge_start()/end() are too light
-> to be worth avoiding here.
-> 
-> But if we do not always loop indefinitely, we do need to handle the case
-> of swap swizzled back to page before shmem_free_swap() gets it: add a
-> retry for that case, as suggested by Konstantin Khlebnikov; and for the
-> case of page swizzled back to swap, as suggested by Johannes Weiner.
-> 
-> Signed-off-by: Hugh Dickins <hughd@google.com>
-> Reported-by: Sasha Levin <sasha.levin@oracle.com>
-> Suggested-by: Vlastimil Babka <vbabka@suse.cz>
-> Cc: Konstantin Khlebnikov <koct9i@gmail.com>
-> Cc: Johannes Weiner <hannes@cmpxchg.org>
-> Cc: Lukas Czerner <lczerner@redhat.com>
-> Cc: Dave Jones <davej@redhat.com>
-> Cc: <stable@vger.kernel.org>	[3.1+]
+On 25 July 2014 19:59, Rob Herring <robherring2@gmail.com> wrote:
+> A temporary solution would have to be NOT in DT because once you add
+> something into DT you are stuck with it for some time. You could
 
-Reviewed-by: Michal Hocko <mhocko@suse.cz>
+I agree..
 
-> ---
-> Please replace mmotm's
-> shmem-fix-faulting-into-a-hole-while-its-punched-take-2.patch
-> by this patch: which is substantially the same as that, but with
-> updated commit comment, and a page retry as indicated by Hannes.
-> 
->  mm/shmem.c |   24 +++++++++++++++---------
->  1 file changed, 15 insertions(+), 9 deletions(-)
-> 
-> --- 3.16-rc5+/mm/shmem.c	2014-07-14 20:34:28.196153828 -0700
-> +++ 3.16-rc5++/mm/shmem.c	2014-07-14 20:35:14.156154916 -0700
-> @@ -468,23 +468,20 @@ static void shmem_undo_range(struct inod
->  		return;
->  
->  	index = start;
-> -	for ( ; ; ) {
-> +	while (index < end) {
->  		cond_resched();
->  
->  		pvec.nr = find_get_entries(mapping, index,
->  				min(end - index, (pgoff_t)PAGEVEC_SIZE),
->  				pvec.pages, indices);
->  		if (!pvec.nr) {
-> -			if (index == start || unfalloc)
-> +			/* If all gone or hole-punch or unfalloc, we're done */
-> +			if (index == start || end != -1)
->  				break;
-> +			/* But if truncating, restart to make sure all gone */
->  			index = start;
->  			continue;
->  		}
-> -		if ((index == start || unfalloc) && indices[0] >= end) {
-> -			pagevec_remove_exceptionals(&pvec);
-> -			pagevec_release(&pvec);
-> -			break;
-> -		}
->  		mem_cgroup_uncharge_start();
->  		for (i = 0; i < pagevec_count(&pvec); i++) {
->  			struct page *page = pvec.pages[i];
-> @@ -496,8 +493,12 @@ static void shmem_undo_range(struct inod
->  			if (radix_tree_exceptional_entry(page)) {
->  				if (unfalloc)
->  					continue;
-> -				nr_swaps_freed += !shmem_free_swap(mapping,
-> -								index, page);
-> +				if (shmem_free_swap(mapping, index, page)) {
-> +					/* Swap was replaced by page: retry */
-> +					index--;
-> +					break;
-> +				}
-> +				nr_swaps_freed++;
->  				continue;
->  			}
->  
-> @@ -506,6 +507,11 @@ static void shmem_undo_range(struct inod
->  				if (page->mapping == mapping) {
->  					VM_BUG_ON_PAGE(PageWriteback(page), page);
->  					truncate_inode_page(mapping, page);
-> +				} else {
-> +					/* Page was replaced by swap: retry */
-> +					unlock_page(page);
-> +					index--;
-> +					break;
->  				}
->  			}
->  			unlock_page(page);
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> simply support independent clocks by looking at the platform type, but
+> that is still risky since you may want to define the OPP in DT
+> differently for the 2 cases.
 
--- 
-Michal Hocko
-SUSE Labs
+Or because we are going to create platform devices for now, lets have
+some platform data for cpufreq-cpu0 ?
+
+> The other problem with temporary solutions is once they are accepted,
+> people loose motivation to create the permanent solution. "Can you
+> take this now and I'll fix the issues later" is a red flag to
+> maintainers.
+
+I completely agree, but there are few points here which might make the red
+flag yellow if not green :)
+- I co-maintain this framework and so I do care about it :)
+- Even with the temporary stuff the solution wouldn't be complete for platforms
+with multiple clusters having separate clock lines.
