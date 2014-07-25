@@ -1,102 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935158AbaGYRhY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 13:37:24 -0400
-Received: from mx4-phx2.redhat.com ([209.132.183.25]:52978 "EHLO
-	mx4-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935053AbaGYRhT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 13:37:19 -0400
-Date: Fri, 25 Jul 2014 13:37:19 -0400 (EDT)
-From: Abhijith Das <adas@redhat.com>
-To: linux-kernel@vger.kernel.org,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        cluster-devel <cluster-devel@redhat.com>
-Message-ID: <1717400531.13456321.1406309839199.JavaMail.zimbra@redhat.com>
-In-Reply-To: <1106785262.13440918.1406308542921.JavaMail.zimbra@redhat.com>
-Subject: [RFC] readdirplus implementations: xgetdents vs dirreadahead
- syscalls
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.5.82.6]
-X-Mailer: Zimbra 8.0.6_GA_5922 (ZimbraWebClient - GC36 (Linux)/8.0.6_GA_5922)
-Thread-Topic: readdirplus implementations: xgetdents vs dirreadahead syscalls
-Thread-Index: Ij9KLOPKGNTymO4OtMCyOnVUdGfO5A==
+	id S935244AbaGYRhn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 13:37:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:33444 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S935161AbaGYRhj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jul 2014 13:37:39 -0400
+From: Abhi Das <adas@redhat.com>
+To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        cluster-devel@redhat.com
+Cc: Abhi Das <adas@redhat.com>
+Subject: [RFC PATCH 1/2] fs: Add dirreadahead syscall and VFS hooks
+Date: Fri, 25 Jul 2014 12:37:30 -0500
+Message-Id: <1406309851-10628-2-git-send-email-adas@redhat.com>
+In-Reply-To: <1406309851-10628-1-git-send-email-adas@redhat.com>
+References: <1406309851-10628-1-git-send-email-adas@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+Also adds a void *opaque field to struct dir_context that can be
+used by filesystems to temporarily store any context as this
+struct gets passed around in the fs.
 
-The topic of a readdirplus-like syscall had come up for discussion at last year's
-LSF/MM collab summit. I wrote a couple of syscalls with their GFS2 implementations
-to get at a directory's entries as well as stat() info on the individual inodes.
-I'm presenting these patches and some early test results on a single-node GFS2
-filesystem.
+Signed-off-by: Abhi Das <adas@redhat.com>
+---
+ arch/x86/syscalls/syscall_32.tbl |  1 +
+ arch/x86/syscalls/syscall_64.tbl |  1 +
+ fs/readdir.c                     | 49 ++++++++++++++++++++++++++++++++++++++++
+ include/linux/fs.h               |  3 +++
+ 4 files changed, 54 insertions(+)
 
-1. dirreadahead() - This patchset is very simple compared to the xgetdents() system
-call below and scales very well for large directories in GFS2. dirreadahead() is
-designed to be called prior to getdents+stat operations. In it's current form, it
-only speeds up stat() operations by caching the relevant inodes. Support can be
-added in the future to cache extended attribute blocks as well. This works by first
-collecting all the inode numbers of the directory's entries (subject to a numeric
-or memory cap). This list is sorted by inode disk block order and passed on to
-workqueues to perform lookups on the inodes asynchronously to bring them into the
-cache.
+diff --git a/arch/x86/syscalls/syscall_32.tbl b/arch/x86/syscalls/syscall_32.tbl
+index d6b8679..3e0ef85 100644
+--- a/arch/x86/syscalls/syscall_32.tbl
++++ b/arch/x86/syscalls/syscall_32.tbl
+@@ -360,3 +360,4 @@
+ 351	i386	sched_setattr		sys_sched_setattr
+ 352	i386	sched_getattr		sys_sched_getattr
+ 353	i386	renameat2		sys_renameat2
++354	i386	dirreadahead		sys_dirreadahead
+diff --git a/arch/x86/syscalls/syscall_64.tbl b/arch/x86/syscalls/syscall_64.tbl
+index ec255a1..2ec0991 100644
+--- a/arch/x86/syscalls/syscall_64.tbl
++++ b/arch/x86/syscalls/syscall_64.tbl
+@@ -323,6 +323,7 @@
+ 314	common	sched_setattr		sys_sched_setattr
+ 315	common	sched_getattr		sys_sched_getattr
+ 316	common	renameat2		sys_renameat2
++317	common	dirreadahead		sys_dirreadahead
+ 
+ #
+ # x32-specific system call numbers start at 512 to avoid cache impact
+diff --git a/fs/readdir.c b/fs/readdir.c
+index 33fd922..d216db7 100644
+--- a/fs/readdir.c
++++ b/fs/readdir.c
+@@ -198,6 +198,7 @@ SYSCALL_DEFINE3(getdents, unsigned int, fd,
+ 	struct linux_dirent __user * lastdirent;
+ 	struct getdents_callback buf = {
+ 		.ctx.actor = filldir,
++		.ctx.opaque = NULL,
+ 		.count = count,
+ 		.current_dir = dirent
+ 	};
+@@ -278,6 +279,7 @@ SYSCALL_DEFINE3(getdents64, unsigned int, fd,
+ 	struct linux_dirent64 __user * lastdirent;
+ 	struct getdents_callback64 buf = {
+ 		.ctx.actor = filldir64,
++		.ctx.opaque = NULL,
+ 		.count = count,
+ 		.current_dir = dirent
+ 	};
+@@ -304,3 +306,50 @@ SYSCALL_DEFINE3(getdents64, unsigned int, fd,
+ 	fdput(f);
+ 	return error;
+ }
++
++SYSCALL_DEFINE3(dirreadahead, unsigned int, fd,
++		loff_t __user *, offset, unsigned int, count)
++{
++	struct fd f;
++	struct inode *inode;
++	int error = -ENOTDIR;
++	loff_t off = 0;
++	struct dir_context ctx = {.actor = NULL, .opaque = NULL};
++
++	if (!count)
++		return -EINVAL;
++
++	f = fdget(fd);
++	if (!f.file)
++		return -EBADF;
++
++	inode = f.file->f_path.dentry->d_inode;
++
++	error = -ENOTSUPP;
++	if (!f.file->f_op || !f.file->f_op->dir_readahead)
++		goto out;
++
++	error = security_file_permission(f.file, MAY_READ);
++	if (error)
++		goto out;
++
++	error = -EFAULT;
++	if (__get_user(ctx.pos, offset))
++		goto out;
++
++	error = mutex_lock_killable(&inode->i_mutex);
++	if (error)
++		goto out;
++
++	error = -ENOENT;
++	if (!IS_DEADDIR(inode)) {
++		error = f.file->f_op->dir_readahead(f.file, &ctx, count);
++		if (__put_user(ctx.pos, offset))
++			error = -EFAULT;
++		file_accessed(f.file);
++	}
++	mutex_unlock(&inode->i_mutex);
++out:
++	fdput(f);
++	return error;
++}
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 338e6f7..fae4a6e 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -1438,9 +1438,11 @@ int fiemap_check_flags(struct fiemap_extent_info *fieinfo, u32 fs_flags);
+  * to have different dirent layouts depending on the binary type.
+  */
+ typedef int (*filldir_t)(void *, const char *, int, loff_t, u64, unsigned);
++
+ struct dir_context {
+ 	const filldir_t actor;
+ 	loff_t pos;
++	void *opaque;
+ };
+ 
+ struct block_device_operations;
+@@ -1463,6 +1465,7 @@ struct file_operations {
+ 	ssize_t (*read_iter) (struct kiocb *, struct iov_iter *);
+ 	ssize_t (*write_iter) (struct kiocb *, struct iov_iter *);
+ 	int (*iterate) (struct file *, struct dir_context *);
++	int (*dir_readahead) (struct file *, struct dir_context *, unsigned int);
+ 	unsigned int (*poll) (struct file *, struct poll_table_struct *);
+ 	long (*unlocked_ioctl) (struct file *, unsigned int, unsigned long);
+ 	long (*compat_ioctl) (struct file *, unsigned int, unsigned long);
+-- 
+1.8.1.4
 
-2. xgetdents() - I had posted a version of this patchset some time last year and
-it is largely unchanged - I just ported it to the latest upstream kernel. It
-allows the user to request a combination of entries, stat and xattrs (keys/values)
-for a directory. The stat portion is based on David Howells' xstat patchset he
-had posted last year as well. I've included the relevant vfs bits in my patchset.
-xgetdents() in GFS2 works in two phases. In the first phase, it collects all the
-dirents by reading the directory in question. In phase two, it reads in inode
-blocks and xattr blocks (if requested) for each entry after sorting the disk
-accesses in block order. All of the intermediate data is stored in a buffer backed
-by a vector of pages and is eventually transferred to the user supplied buffer.
-
-Both syscalls perform significantly better than a simple getdents+stat with a cold
-cache. The main advantage lies in being able to sort disk accesses for a bunch of
-inodes in advance compared to seeking all over the disk for inodes one entry at a
-time.
-
-This graph (https://www.dropbox.com/s/fwi1ovu7mzlrwuq/speed-graph.png) shows the
-time taken to get directory entries and their respective stat info by 3 different
-sets of syscalls:
-
-1) getdents+stat ('ls -l', basically) - Solid blue line
-2) xgetdents with various buffer size and num_entries limits - Dotted lines
-   Eg: v16384 d10000 means a limit of 16384 pages for the scratch buffer and
-   a maximum of 10000 entries to collect at a time.
-3) dirreadahead+getdents+stat with various num_entries limits - Dash-dot lines
-   Eg: d10000 implies that it would fire off a max of 10000 inode lookups during
-   each syscall.
-
-numfiles:                      10000     50000     100000    500000
---------------------------------------------------------------------
-getdents+stat                   1.4s      220s       514s     2441s
-xgetdents                       1.2s       43s        75s     1710s
-dirreadahead+getdents+stat      1.1s        5s        68s      391s
-
-Here is a seekwatcher graph from a test run on a directory of 50000 files. 
-(https://www.dropbox.com/s/fma8d4jzh7365lh/50000-combined.png) The comparison is
-between getdents+stat and xgetdents. The first set of plots is of getdents+stat,
-followed by xgetdents() with steadily increasing buffer sizes (256 to 262144) and
-num_entries (100 to 1000000) limits. One can see the effect of ordering the disk
-reads in the Disk IO portion of the graphs and the corresponding effect on seeks,
-throughput and overall time taken.
-
-This second seekwatcher graph similarly shows the dirreadahead()+getdents()+stat()
-syscall-combo for a 500000-file directory with increasing num_entries (100 to
-1000000) limits versus getdents+stat.
-(https://www.dropbox.com/s/rrhvamu99th3eae/500000-ra_combined_new.png)
-The corresponding getdents+stat baseline for this run is at the top of the series
-of graphs.
-
-I'm posting these two patchsets shortly for comments.
-
-Cheers!
---Abhi
-
-Red Hat Filesystems
