@@ -1,38 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759507AbaGYGtP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 02:49:15 -0400
-Received: from mga14.intel.com ([192.55.52.115]:35249 "EHLO mga14.intel.com"
+	id S1759627AbaGYGtW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 02:49:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34591 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756912AbaGYGtO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 02:49:14 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,729,1400050800"; 
-   d="scan'208";a="567041930"
-Message-ID: <53D1FDE0.4020905@intel.com>
-Date: Fri, 25 Jul 2014 14:49:04 +0800
-From: Aaron Lu <aaron.lu@intel.com>
+	id S1759535AbaGYGtU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jul 2014 02:49:20 -0400
+Date: Fri, 25 Jul 2014 08:48:37 +0200
+From: Jakub Jelinek <jakub@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Michel =?iso-8859-1?Q?D=E4nzer?= <michel@daenzer.net>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Dietmar Eggemann <dietmar.eggemann@arm.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Random panic in load_balance() with 3.16-rc
+Message-ID: <20140725064836.GE2397@laptop.redhat.com>
+Reply-To: Jakub Jelinek <jakub@redhat.com>
+References: <CA+55aFwQSmBAs=QH9jAZz5JY7YFrDeuPH1RjFH+YKVr2NQM38g@mail.gmail.com>
+ <CA+55aFzDWritxv5RiqwcZ1qCKJQKK-Lw6StYFF7qx5YWgiCUTQ@mail.gmail.com>
+ <20140723182518.GD3935@laptop>
+ <CA+55aFyFT9n5wUNifEHY6+t2bEcD91kL7+dqXuBMSMJvLeDDJQ@mail.gmail.com>
+ <20140723184111.GG3935@laptop>
+ <CA+55aFwQfwfAP6U77_nD_mSvoygj=cZ09N644hKRtzgLnEqhZQ@mail.gmail.com>
+ <20140723190230.GH3935@laptop>
+ <CA+55aFyM1wqTLK0m4GQJ28f=z0iZE87=xk+1z-vm+PH1_d8nKw@mail.gmail.com>
+ <53D064C7.5050807@daenzer.net>
+ <CA+55aFyJhqiPv0kQ+51=Ei-zaAO+0JszxtnEyx-Gbto3SE00xw@mail.gmail.com>
 MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>, therbert@google.com
-CC: linux-kernel@vger.kernel.org, lkp@01.org
-Subject: Re: [LKP] [net] 11ef7a8996d: +27.3% netperf.Throughput_Mbps
-References: <53d1f50b.CEZoGFBjN5Kgc+zm%fengguang.wu@intel.com>	<53D1F9B5.8050500@intel.com>	<CA+mtBx-26J=r_aH0Y72ghRhDpUCbEzRxkrA1Xmtame_msHKnUQ@mail.gmail.com> <20140724.234818.2188537379553418401.davem@davemloft.net>
-In-Reply-To: <20140724.234818.2188537379553418401.davem@davemloft.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFyJhqiPv0kQ+51=Ei-zaAO+0JszxtnEyx-Gbto3SE00xw@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/25/2014 02:48 PM, David Miller wrote:
-> From: Tom Herbert <therbert@google.com>
-> Date: Thu, 24 Jul 2014 23:37:07 -0700
-> 
->> Are you pointing out a regressions in this?
-> 
-> I think he's letting you know that performance has improved, in fact :)
+On Thu, Jul 24, 2014 at 11:47:17AM -0700, Linus Torvalds wrote:
+> Adding Jakub to the cc, because gcc-4.9.0 seems to be terminally broken.
+...
+> Jakub, any ideas?
 
-Yes, exactly :-)
+Can I ask anyone involved in this for preprocessed source and all gcc command
+line options to reproduce it, best in the form of a http://gcc.gnu.org/bugzilla/
+bugreport?
 
--Aaron
+Thanks.
 
+	Jakub
