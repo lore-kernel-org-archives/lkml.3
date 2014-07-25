@@ -1,138 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760624AbaGYOrj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 10:47:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51827 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760590AbaGYOri (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 10:47:38 -0400
-Message-ID: <53D26DDF.5070001@redhat.com>
-Date: Fri, 25 Jul 2014 10:46:55 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Vincent Guittot <vincent.guittot@linaro.org>
-CC: linux-kernel <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Michael Neuling <mikey@neuling.org>, Ingo Molnar <mingo@kernel.org>,
-        Paul Turner <pjt@google.com>, jhladky@redhat.com, ktkhai@parallels.com,
-        tim.c.chen@linux.intel.com, Nicolas Pitre <nicolas.pitre@linaro.org>
-Subject: Re: [PATCH] sched: make update_sd_pick_busiest return true on a busier
- sd
-References: <20140722144559.382c5243@annuminas.surriel.com> <CAKfTPtDdAzZcMA5bJvhyrdH9J1F69jMy5q3w5xc4t+PSKPQ0eA@mail.gmail.com> <53D25CC4.1010306@redhat.com> <CAKfTPtB-okCg5dei3xDQbpWaCVb0oLZ6Ud5iFt8iN2yVR4HTpg@mail.gmail.com>
-In-Reply-To: <CAKfTPtB-okCg5dei3xDQbpWaCVb0oLZ6Ud5iFt8iN2yVR4HTpg@mail.gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1754045AbaGYOst (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 10:48:49 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:52151 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752325AbaGYOss (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jul 2014 10:48:48 -0400
+From: Chintan Pandya <cpandya@codeaurora.org>
+To: tglx@linutronix.de, john.stultz@linaro.org, peterz@infradead.org,
+        mingo@redhat.com, hughd@google.com, akpm@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Chintan Pandya <cpandya@codeaurora.org>
+Subject: [PATCH v2 1/2] timer: provide an api for deferrable timeout
+Date: Fri, 25 Jul 2014 20:18:17 +0530
+Message-Id: <1406299698-6357-1-git-send-email-cpandya@codeaurora.org>
+X-Mailer: git-send-email 1.8.2.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
+schedule_timeout wakes up the CPU from IDLE state. For some
+use cases it is not desirable, hence introduce a convenient
+API (schedule_timeout_deferrable_interruptible) on similar
+pattern which uses a deferrable timer.
 
-On 07/25/2014 10:29 AM, Vincent Guittot wrote:
-> On 25 July 2014 15:33, Rik van Riel <riel@redhat.com> wrote: On
-> 07/23/2014 03:41 AM, Vincent Guittot wrote:
->>>> On 22 July 2014 20:45, Rik van Riel <riel@redhat.com> wrote:
->>>>> Currently update_sd_pick_busiest only returns true when an
->>>>> sd is overloaded, or for SD_ASYM_PACKING when a domain is
->>>>> busier than average and a higher numbered domain than the
->>>>> target.
->>>>> 
->>>>> This breaks load balancing between domains that are not 
->>>>> overloaded, in the !SD_ASYM_PACKING case. This patch makes 
->>>>> update_sd_pick_busiest return true when the busiest sd yet
->>>>> is encountered.
->>>>> 
->>>>> On a 4 node system, this seems to result in the load
->>>>> balancer finally putting 1 thread of a 4 thread test run of
->>>>> "perf bench numa mem" on each node, where before the load
->>>>> was generally not spread across all nodes.
->>>>> 
->>>>> Behaviour for SD_ASYM_PACKING does not seem to match the 
->>>>> comment, in that groups with below average load average
->>>>> are ignored, but I have no hardware to test that so I have
->>>>> left the behaviour of that code unchanged.
->>>>> 
->>>>> Cc: mikey@neuling.org Cc: peterz@infradead.org
->>>>> Signed-off-by: Rik van Riel <riel@redhat.com> ---
->>>>> kernel/sched/fair.c | 18 +++++++++++------- 1 file changed,
->>>>> 11 insertions(+), 7 deletions(-)
->>>>> 
->>>>> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
->>>>> index fea7d33..ff4ddba 100644 --- a/kernel/sched/fair.c
->>>>> +++ b/kernel/sched/fair.c @@ -5942,16 +5942,20 @@ static
->>>>> bool update_sd_pick_busiest(struct lb_env *env, * numbered
->>>>> CPUs in the group, therefore mark all groups * higher than
->>>>> ourself as busy. */ -       if ((env->sd->flags &
->>>>> SD_ASYM_PACKING) && sgs->sum_nr_running && -
->>>>> env->dst_cpu < group_first_cpu(sg)) { -               if
->>>>> (!sds->busiest) - return true; +       if (env->sd->flags &
->>>>> SD_ASYM_PACKING) { + if (sgs->sum_nr_running &&
->>>>> env->dst_cpu < group_first_cpu(sg)) { +
->>>>> if (!sds->busiest) + return true;
->>>>> 
->>>>> -               if (group_first_cpu(sds->busiest) > 
->>>>> group_first_cpu(sg)) -                       return true;
->>>>> + if (group_first_cpu(sds->busiest) > group_first_cpu(sg))
->>>>> + return true; +               } + +               return
->>>>> false; }
->>>>> 
->>>>> -       return false; +       /* See above: sgs->avg_load
->>>>> > sds->busiest_stat.avg_load */ +       return true;
->>>> 
->>>> Hi Rik,
->>>> 
->>>> I can see one issue with a default return set to true.  You 
->>>> increase the number of time where we will not effectively
->>>> migrate a task because we don't ensure that we will take the
->>>> overloaded group if there is one. We can be in a situation
->>>> where a group is overloaded but the load_balance will select
->>>> a not overloaded group with an average load higher than
->>>> sched_domain average value just because it is checked after.
-> 
-> Look at the first line of update_sd_pick_busiest()
-> 
-> static bool update_sd_pick_busiest(struct lb_env *env, struct
-> sd_lb_stats *sds, struct sched_group *sg, struct sg_lb_stats *sgs) 
-> { if (sgs->avg_load <= sds->busiest_stat.avg_load) return false;
-> 
-> If the group load is less than the busiest, we have already 
-> returned false, and will not get to the code that I changed.
-> 
-> 
->> My point was that if a sched_group A with 1 task has got a
->> higher avg_load than a sched_group with 2 tasks, we will select
->> sched_group A whereas we should select the other group
+Signed-off-by: Chintan Pandya <cpandya@codeaurora.org>
+---
 
-The code already does that, with or without my patch.
+ This patch has been newly introduced in patch v2
 
-If it runs into group A first, that "return false" above will
-be hit for group B.
+ include/linux/sched.h |  2 ++
+ kernel/time/timer.c   | 27 ++++++++++++++++++++++++---
+ 2 files changed, 26 insertions(+), 3 deletions(-)
 
->> Furthermore, update_sd_lb_stats will always return a busiest
->> group even an idle one. This will increase the number of failed
->> load balance and the time spent in the it.
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 89f531e..10b154e 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -377,6 +377,8 @@ extern int in_sched_functions(unsigned long addr);
+ #define	MAX_SCHEDULE_TIMEOUT	LONG_MAX
+ extern signed long schedule_timeout(signed long timeout);
+ extern signed long schedule_timeout_interruptible(signed long timeout);
++extern signed long
++schedule_timeout_deferrable_interruptible(signed long timeout);
+ extern signed long schedule_timeout_killable(signed long timeout);
+ extern signed long schedule_timeout_uninterruptible(signed long timeout);
+ asmlinkage void schedule(void);
+diff --git a/kernel/time/timer.c b/kernel/time/timer.c
+index aca5dfe..e81a301 100644
+--- a/kernel/time/timer.c
++++ b/kernel/time/timer.c
+@@ -1432,7 +1432,7 @@ static void process_timeout(unsigned long __data)
+ }
+ 
+ /**
+- * schedule_timeout - sleep until timeout
++ * __schedule_timeout - sleep until timeout
+  * @timeout: timeout value in jiffies
+  *
+  * Make the current task sleep until @timeout jiffies have
+@@ -1457,7 +1457,8 @@ static void process_timeout(unsigned long __data)
+  *
+  * In all cases the return value is guaranteed to be non-negative.
+  */
+-signed long __sched schedule_timeout(signed long timeout)
++static signed long
++__sched __schedule_timeout(signed long timeout, unsigned long flag)
+ {
+ 	struct timer_list timer;
+ 	unsigned long expire;
+@@ -1493,7 +1494,13 @@ signed long __sched schedule_timeout(signed long timeout)
+ 
+ 	expire = timeout + jiffies;
+ 
+-	setup_timer_on_stack(&timer, process_timeout, (unsigned long)current);
++	if (flag & TIMER_DEFERRABLE)
++		setup_deferrable_timer_on_stack(&timer, process_timeout,
++						(unsigned long)current);
++	else
++		setup_timer_on_stack(&timer, process_timeout,
++				     (unsigned long)current);
++
+ 	__mod_timer(&timer, expire, false, TIMER_NOT_PINNED);
+ 	schedule();
+ 	del_singleshot_timer_sync(&timer);
+@@ -1506,12 +1513,26 @@ signed long __sched schedule_timeout(signed long timeout)
+  out:
+ 	return timeout < 0 ? 0 : timeout;
+ }
++
++signed long __sched schedule_timeout(signed long timeout)
++{
++	return __schedule_timeout(timeout, 0);
++}
+ EXPORT_SYMBOL(schedule_timeout);
+ 
+ /*
+  * We can use __set_current_state() here because schedule_timeout() calls
+  * schedule() unconditionally.
+  */
++
++signed long
++__sched schedule_timeout_deferrable_interruptible(signed long timeout)
++{
++	__set_current_state(TASK_INTERRUPTIBLE);
++	return __schedule_timeout(timeout, TIMER_DEFERRABLE);
++}
++EXPORT_SYMBOL(schedule_timeout_deferrable_interruptible);
++
+ signed long __sched schedule_timeout_interruptible(signed long timeout)
+ {
+ 	__set_current_state(TASK_INTERRUPTIBLE);
+-- 
+Chintan Pandya
 
-If the busiest group found is idle, surely find_busiest_group
-will see that and goto out_balanced ?
+QUALCOMM INDIA, on behalf of Qualcomm Innovation Center, Inc. is a
+member of the Code Aurora Forum, hosted by The Linux Foundation
 
-There are several safety checks in find_busiest_group to make
-sure NULL is returned when the imbalance found is too small to
-bother doing anything about.
-
-- -- 
-All rights reversed
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iQEcBAEBAgAGBQJT0m3fAAoJEM553pKExN6D1xMH/3BOTeD9aiu/nVCWnfJIdRUB
-2owogPLFDlcbUekzGkjIxc4lYWj/ANVk5jOibcOLutckSJXphDc1KhqYYXaNM6rm
-NfoFM0//HGxJgIWMKGWYWJosPdFdrvLxNRwn8+yBnZh9el15GQSBvhKjrCeolNo2
-Yy6AqicqvoMXMnzcONcAxyxwH0b6CRFuGHIOAvzjXGUvSKTU7fs1zPRAVxfORbbp
-HfiOybqNJW+EnH7xhJU+GSZi+X+agnRS4/axfc48FZH01/P+k21cYougC7kMxxHA
-MGP1YtnNYGFBqCX5QwGgw5NkMgHYNCCREh+uLwsgGCN/bkmuHJm+JcbQOQlRoRY=
-=v9O8
------END PGP SIGNATURE-----
