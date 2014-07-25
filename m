@@ -1,138 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760115AbaGYKnQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 06:43:16 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:37751 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751838AbaGYKnO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 06:43:14 -0400
-Message-ID: <53D234BD.2040005@suse.de>
-Date: Fri, 25 Jul 2014 12:43:09 +0200
-From: =?UTF-8?B?QW5kcmVhcyBGw6RyYmVy?= <afaerber@suse.de>
-Organization: SUSE LINUX Products GmbH
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1760179AbaGYKob (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 06:44:31 -0400
+Received: from mail-la0-f44.google.com ([209.85.215.44]:44003 "EHLO
+	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751220AbaGYKo3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jul 2014 06:44:29 -0400
 MIME-Version: 1.0
-To: Harini Katakam <harini.katakam@xilinx.com>
-CC: Michal Simek <michals@xilinx.com>, "monstr@monstr.eu" <monstr@monstr.eu>,
-        Soren Brinkmann <sorenb@xilinx.com>,
-        Andreas Olofsson <andreas@adapteva.com>,
-        Matteo Vit <matteo.vit@starwaredesign.com>,
-        Sean Rickerd <srickerd@suse.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>
-Subject: Re: [PATCH v2 05/11] ARM: dts: zynq: Add QSPI for Parallella
-References: <1406242820-20140-1-git-send-email-afaerber@suse.de> <1406242820-20140-6-git-send-email-afaerber@suse.de> <ddb38ce5-9e31-4c94-967c-7784c7fba75c@BN1BFFO11FD028.protection.gbl> <53D20E5B.9070501@monstr.eu> <53D21887.2020305@suse.de> <53D2258B.9000609@xilinx.com> <7aabd35a-0b4a-4d03-9976-ef3926929ddc@BL2FFO11FD027.protection.gbl>
-In-Reply-To: <7aabd35a-0b4a-4d03-9976-ef3926929ddc@BL2FFO11FD027.protection.gbl>
-X-Enigmail-Version: 1.6
+In-Reply-To: <CAK5sBcH6hunJZxnhLGdbAzbRCdgWr9+L=JcrhXc2zSLFAbRRdQ@mail.gmail.com>
+References: <1406279557-26754-1-git-send-email-pramod.gurav@smartplayin.com>
+	<CAK5sBcH6hunJZxnhLGdbAzbRCdgWr9+L=JcrhXc2zSLFAbRRdQ@mail.gmail.com>
+Date: Fri, 25 Jul 2014 16:14:27 +0530
+Message-ID: <CAMf-jSk_q89AJsWywXPKFMMEv9j3Fv1sUxvyyB779Miks_yBRQ@mail.gmail.com>
+Subject: Re: [PATCH v2] Input: soc_button_array: Remove kfree on data
+ allocated with devm_zalloc
+From: pramod gurav <pramod.gurav.etc@gmail.com>
+To: Sachin Kamat <spk.linux@gmail.com>
+Cc: linux-input@vger.kernel.org, open list <linux-kernel@vger.kernel.org>,
+        Pramod Gurav <pramod.gurav@smartplayin.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Lejun Zhu <lejun.zhu@linux.intel.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Harini,
-
-Am 25.07.2014 12:31, schrieb Harini Katakam:
->> -----Original Message-----
->> From: Michal Simek [mailto:michal.simek@xilinx.com]
->> Sent: Friday, July 25, 2014 3:08 PM
->> To: Andreas Färber; monstr@monstr.eu; Soren Brinkmann
->> Cc: Harini Katakam; Michal Simek; Andreas Olofsson; Matteo Vit; Sean
->> Rickerd; devicetree@vger.kernel.org; linux-arm-kernel@lists.infradead.org;
->> linux-kernel@vger.kernel.org; Rob Herring; Pawel Moll; Mark Rutland; Ian
->> Campbell; Kumar Gala; Russell King
->> Subject: Re: [PATCH v2 05/11] ARM: dts: zynq: Add QSPI for Parallella
+On Fri, Jul 25, 2014 at 3:59 PM, Sachin Kamat <spk.linux@gmail.com> wrote:
+> Hi Pramod,
+>
+>
+> On Fri, Jul 25, 2014 at 2:42 PM,  <pramod.gurav.etc@gmail.com> wrote:
+>> From: Pramod Gurav <pramod.gurav@smartplayin.com>
 >>
->> On 07/25/2014 10:42 AM, Andreas Färber wrote:
->>> Am 25.07.2014 09:59, schrieb Michal Simek:
->>>> On 07/25/2014 01:18 AM, Sören Brinkmann wrote:
->>>>> On Fri, 2014-07-25 at 01:00AM +0200, Andreas Färber wrote:
->>>>>> Prepare SPI0 and SPI1 while at it.
->>>
->>>> Patch subject is incorrect. You are adding SPI and QSPI.
->>>
->>> Yes, it originally added only QSPI, but I considered it a good deed to
->>> add SPI as well while already reading that part of the TRM. :)
->>>
->>>>>>
->>>>>> Signed-off-by: Andreas Färber <afaerber@suse.de> --- v2: New
->>>>>>
->>>>>> arch/arm/boot/dts/zynq-7000.dtsi      | 37
->>>>>> +++++++++++++++++++++++++++++++++++
->>>>>> arch/arm/boot/dts/zynq-parallella.dts |  4 ++++ 2 files
->>>>>> changed, 41 insertions(+)
->>>>>>
->>>>>> diff --git a/arch/arm/boot/dts/zynq-7000.dtsi
->>>>>> b/arch/arm/boot/dts/zynq-7000.dtsi index 8fd826a..eed3df0
->>>>>> 100644 --- a/arch/arm/boot/dts/zynq-7000.dtsi +++
->>>>>> b/arch/arm/boot/dts/zynq-7000.dtsi @@ -122,6 +122,30 @@
->>>>>> interrupts = <0 50 4>; };
->>>>>>
->>>>>> +		spi0: spi@e0006000 { +			compatible =
->> "xlnx,zynq-spi-r1p6";
->>>>>> +			reg = <0xe0006000 0x1000>; +			status
->> = "disabled"; +
->>>>>> interrupt-parent = <&intc>; +			interrupts = <0 26 4>;
+>> This patch does below:
+>> - Removes kfree done on data allocated with devm_zalloc in probe
+>>   path of the driver.
+>> - Adds a check on return value from devm_kzalloc which was missing
+>> - Removes the error lables and instead releases resources and returns
+>>   after failures
+>>
+>> CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+>> CC: Lejun Zhu <lejun.zhu@linux.intel.com>
+>> CC: Sachin Kamat <sachin.kamat@linaro.org>
+>>
+>> Signed-off-by: Pramod Gurav <pramod.gurav@smartplayin.com>
+>> ---
+>>
+>> Changes since v1:
+>> - Removes de_err logs on OOM cases which is not needed.
+>>
+>>  drivers/input/misc/soc_button_array.c |   27 +++++++++++++++------------
+>>  1 file changed, 15 insertions(+), 12 deletions(-)
+>>
+>> diff --git a/drivers/input/misc/soc_button_array.c b/drivers/input/misc/soc_button_array.c
+>> index 5a6334b..f421cf4 100644
+>> --- a/drivers/input/misc/soc_button_array.c
+>> +++ b/drivers/input/misc/soc_button_array.c
+>> @@ -83,6 +83,11 @@ soc_button_device_create(struct pnp_dev *pdev,
+>>                                        sizeof(*gpio_keys_pdata) +
+>>                                         sizeof(*gpio_keys) * MAX_NBUTTONS,
+>>                                        GFP_KERNEL);
+>> +       if (!gpio_keys_pdata) {
+>> +               error = -ENOMEM;
+>> +               return ERR_PTR(error);
+>
+> You don't need a variable here. You could directly do:
+I tried to retain the original code as it is. I was not sure if am
+supposed to do that. Wil do it now.
+
+>                    return ERR_PTR(-ENOMEM);
+>
+>> +       }
 >> +
->>>>>> clocks = <&clkc 25>, <&clkc 34>; +			clock-names =
->> "ref_clk",
->>>>>> "pclk"; +			#address-cells = <1>; +			#size-
->> cells = <0>; +		};
->>>>>> + +		spi1: spi@e0007000 { +			compatible =
->>>>>> "xlnx,zynq-spi-r1p6"; +			reg = <0xe0007000 0x1000>; +
->> 			status
->>>>>> = "disabled"; +			interrupt-parent = <&intc>; +
->> 		interrupts =
->>>>>> <0 49 4>; +			clocks = <&clkc 26>, <&clkc 35>; +
->> 		clock-names
->>>>>> = "ref_clk", "pclk"; +			#address-cells = <1>; +
->> 		#size-cells
->>>>>> = <0>; +		}; +
->>>>> Until here things look good.
->>>>>
->>>>>> gem0: ethernet@e000b000 { compatible = "cdns,gem"; reg =
->>>>>> <0xe000b000 0x4000>; @@ -140,6 +164,19 @@ clock-names = "pclk",
->>>>>> "hclk", "tx_clk"; };
->>>>>>
->>>>>> +		qspi: qspi@e000d000 { +			compatible =
->>>>>> "xlnx,zynq-spi-r1p6"; +			reg = <0xe000d000 0x1000>; +
->> 			status
->>>>>> = "disabled"; +			interrupt-parent = <&intc>; +
->> 		interrupts =
->>>>>> <0 19 4>; +			clocks = <&clkc 10>, <&clkc 43>; +
->> 		clock-names
->>>>>> = "ref_clk", "pclk"; +			num-cs = <1>; +
->> 	#address-cells =
->>>>>> <1>; +			#size-cells = <0>; +		}; +
->>>>> I'm not sure what the status of this driver is. I think QSPI is
->>>>> still under review on the mailing lists and I don't think we
->>>>> should add this yet.
->>>
->>>> Driver for qspi is not in the mainline yet but it doesn't mean that
->>>> this fragment won't work. Harini: Can you please correct me if I am
->>>> wrong?
->>>
-> 
-> It can be added but it will have to be disabled as there is no qspi driver
-> at the moment in mainline.
+>>         gpio_keys = (void *)(gpio_keys_pdata + 1);
+>>
+>>         for (info = button_info; info->name; info++) {
+>> @@ -104,7 +109,7 @@ soc_button_device_create(struct pnp_dev *pdev,
+>>
+>>         if (n_buttons == 0) {
+>>                 error = -ENODEV;
+>> -               goto err_free_mem;
+>> +               return ERR_PTR(error);
+>
+> ditto
+>
+>>         }
+>>
+>>         gpio_keys_pdata->buttons = gpio_keys;
+>> @@ -114,25 +119,23 @@ soc_button_device_create(struct pnp_dev *pdev,
+>>         pd = platform_device_alloc("gpio-keys", PLATFORM_DEVID_AUTO);
+>>         if (!pd) {
+>>                 error = -ENOMEM;
+>> -               goto err_free_mem;
+>> +               return ERR_PTR(error);
+>
+> ditto
+>
+>>         }
+>>
+>>         error = platform_device_add_data(pd, gpio_keys_pdata,
+>>                                          sizeof(*gpio_keys_pdata));
+>> -       if (error)
+>> -               goto err_free_pdev;
+>
+> This goto could be retained to avoid code duplication.
+If I keep this here, I have to handle the following returns in this
+lable, which is what my previous patch was doing. So lable would look
+something like this:
 
-Did you read the actual patch? It's using the upstream SPI driver for
-now, and it's disabled for anything but the new board I'm adding.
++err_free_pdev:
++      platform_device_put(pd);
++      return ERR_PTR(error);
 
-https://patchwork.kernel.org/patch/4620201/
+>
+>> +       if (error) {
+>> +               platform_device_put(pd);
+>> +               return ERR_PTR(error);
+>> +       }
+>>
+>>         error = platform_device_add(pd);
+>> -       if (error)
+>> -               goto err_free_pdev;
+>
+> ditto
+>
+>> +       if (error) {
+>> +               platform_device_put(pd);
+>> +               return ERR_PTR(error);
+>> +       }
+>>
+>>         return pd;
+>> -
+>> -err_free_pdev:
+>> -       platform_device_put(pd);
+>> -err_free_mem:
+>> -       devm_kfree(&pdev->dev, gpio_keys_pdata);
+>> -       return ERR_PTR(error);
+>>  }
+>>
+>>  static void soc_button_remove(struct pnp_dev *pdev)
+>> --
+>> 1.7.9.5
+>>
+>
+>
+>
+> --
+> Regards,
+> Sachin.
 
-Wouldn't a dedicated QSPI driver only result in a compatible string
-being prepended before the SPI compatible string?
 
-Andreas
 
 -- 
-SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg, Germany
-GF: Jeff Hawn, Jennifer Guild, Felix Imendörffer; HRB 16746 AG Nürnberg
+Thanks and Regards
+Pramod
