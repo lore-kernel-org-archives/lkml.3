@@ -1,51 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753517AbaGYSU6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 14:20:58 -0400
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:57645 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751244AbaGYSU4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 14:20:56 -0400
-Date: Fri, 25 Jul 2014 11:20:53 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: cheng wei Lin <dusonlin@emc.com.tw>
-Cc: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
-        bleung@chromium.org, agnescheng@chromium.org,
-        =?utf-8?B?IlNSRDEgJiM2NTUzMzvonazouJAmIzY1NTMzOyYjNjU1MzM7P+mDvSYjNjU1?=
-	 =?utf-8?Q?33=3B&#65533=3B&#65533=3B&#65533=3B=22?= 
-	<phoenix@emc.com.tw>,
-        jeff.chuang@emc.com.tw
-Subject: Re: [PATCH v2] Input: add i2c/smbus driver for elan touchpad
-Message-ID: <20140725182053.GA23356@core.coreip.homeip.net>
-References: <1389064083-11018-1-git-send-email-dusonlin@emc.com.tw>
- <20140724180516.GA26752@core.coreip.homeip.net>
- <73E9FA09-55D6-409D-A902-29CC3F414CBF@emc.com.tw>
+	id S1756127AbaGYSXM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 14:23:12 -0400
+Received: from p3plex2out02.prod.phx3.secureserver.net ([184.168.131.14]:36705
+	"EHLO p3plex2out02.prod.phx3.secureserver.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751497AbaGYSXL convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jul 2014 14:23:11 -0400
+From: Hartley Sweeten <HartleyS@visionengravers.com>
+To: Ian Abbott <abbotti@mev.co.uk>,
+        "driverdev-devel@linuxdriverproject.org" 
+	<driverdev-devel@linuxdriverproject.org>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 1/3] staging: comedi: amplc_dio200_common: prevent extra
+ free_irq()
+Thread-Topic: [PATCH 1/3] staging: comedi: amplc_dio200_common: prevent
+ extra free_irq()
+Thread-Index: AQHPqCrr8EkYQfITLUWKJ+HRxzaKZ5uxGTdA
+Date: Fri, 25 Jul 2014 18:23:10 +0000
+Message-ID: <DC148C5AA1CEBA4E87973D432B1C2D8825F1E378@P3PWEX4MB008.ex4.secureserver.net>
+References: <1406308029-15712-1-git-send-email-abbotti@mev.co.uk>
+ <1406308029-15712-2-git-send-email-abbotti@mev.co.uk>
+In-Reply-To: <1406308029-15712-2-git-send-email-abbotti@mev.co.uk>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [184.183.19.121]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <73E9FA09-55D6-409D-A902-29CC3F414CBF@emc.com.tw>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Duson,
+On Friday, July 25, 2014 10:07 AM, Ian Abbott wrote:
+> `dio200_detach()` in "amplc_dio200.c" calls
+> `amplc_dio200_common_detach()` in "amplc_dio200_common.c", followed by
+> `comedi_legacy_detach()` in "../drivers.c".  Both of those functions
+> call `free_irq()` if `dev->irq` is non-zero.  The second call produces a
+> warning message because the handler has already been freed.  Prevent
+> that by setting `dev->irq = 0` in `amplc_dio200_common_detach()`.
+>
+> Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
+> ---
+>  drivers/staging/comedi/drivers/amplc_dio200_common.c | 4 +++-
+>  1 file changed, 3 insertions(+), 1 deletion(-)
+>
+> diff --git a/drivers/staging/comedi/drivers/amplc_dio200_common.c b/drivers/staging/comedi/drivers/amplc_dio200_common.c
+> index 78700e8..3592e58 100644
+> --- a/drivers/staging/comedi/drivers/amplc_dio200_common.c
+> +++ b/drivers/staging/comedi/drivers/amplc_dio200_common.c
+> @@ -1202,8 +1202,10 @@ void amplc_dio200_common_detach(struct comedi_device *dev)
+>  
+>  	if (!thisboard || !devpriv)
+>  		return;
+> -	if (dev->irq)
+> +	if (dev->irq) {
+>  		free_irq(dev->irq, dev);
+> +		dev->irq = 0;
+> +	}
+>  }
+>  EXPORT_SYMBOL_GPL(amplc_dio200_common_detach);
+ 
+Ian,
 
-On Sat, Jul 26, 2014 at 02:05:02AM +0800, cheng wei Lin wrote:
-> Hi Dmitry,
-> 
-> Sorry for late to reply you and thanks for your command
-> 
-> Yes, I also agree, it looks great than my original code.
+I have already gave a Reviewed-by signoff for this series.
 
-Thank you for confirming.
+After looking over the code I think a cleaner solution would be to:
 
-> So, should I modify this and upstream v3 patch for you?
+1) Use comedi_legacy_detach() directly for the (*detach) in the
+   legacy ISA driver.
+2) Move the code from amplc_dio200_common_detach() into the
+   (*detach) function for the PCI driver.
+3) Remove the exported function amplc_dio200_common_detach().
 
-No, that is fine, I'll fix it up on my end.
+Regards,
+Hartley
 
-Thanks.
-
--- 
-Dmitry
