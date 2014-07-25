@@ -1,79 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759954AbaGYIF6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 04:05:58 -0400
-Received: from mga01.intel.com ([192.55.52.88]:8141 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759878AbaGYIFy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 04:05:54 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,729,1400050800"; 
-   d="scan'208";a="567065622"
-Message-ID: <53D20FD0.90204@intel.com>
-Date: Fri, 25 Jul 2014 16:05:36 +0800
-From: Aaron Lu <aaron.lu@intel.com>
+	id S1759422AbaGYIHr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 04:07:47 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:53632 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750818AbaGYIHm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jul 2014 04:07:42 -0400
+Date: Fri, 25 Jul 2014 10:07:38 +0200
+From: Antoine =?iso-8859-1?Q?T=E9nart?= 
+	<antoine.tenart@free-electrons.com>
+To: Peter Chen <peter.chen@freescale.com>
+Cc: Antoine =?iso-8859-1?Q?T=E9nart?= 
+	<antoine.tenart@free-electrons.com>,
+        sebastian.hesselbarth@gmail.com, balbi@ti.com, p.zabel@pengutronix.de,
+        alexandre.belloni@free-electrons.com,
+        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
+        jszhang@marvell.com, linux-arm-kernel@lists.infradead.org,
+        linux-usb@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 07/12] usb: chipidea: add a usb2 driver for ci13xxx
+Message-ID: <20140725080738.GA9756@kwain>
+References: <1405499166-6726-1-git-send-email-antoine.tenart@free-electrons.com>
+ <1405499166-6726-8-git-send-email-antoine.tenart@free-electrons.com>
+ <20140725021853.GA11052@shlinux1.ap.freescale.net>
 MIME-Version: 1.0
-To: Mike Galbraith <umgwanakikbuti@gmail.com>
-CC: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Jet Chen <jet.chen@intel.com>, LKML <linux-kernel@vger.kernel.org>,
-        lkp@01.org, Fengguang Wu <fengguang.wu@intel.com>
-Subject: Re: [LKP] [rcu] c0f489d2c6f: -1.5% netperf.Throughput_tps
-References: <53d1f486.t70cWJ/Ilm6Y3o5/%fengguang.wu@intel.com>	 <53D1FD0E.4080406@intel.com> <1406273721.5162.9.camel@marge.simpson.net>
-In-Reply-To: <1406273721.5162.9.camel@marge.simpson.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140725021853.GA11052@shlinux1.ap.freescale.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/25/2014 03:35 PM, Mike Galbraith wrote:
-> On Fri, 2014-07-25 at 14:45 +0800, Aaron Lu wrote: 
->> FYI, we noticed the below changes on
->>
->> git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git master
->> commit c0f489d2c6fec8994c642c2ec925eb858727dc7b ("rcu: Bind grace-period kthreads to non-NO_HZ_FULL CPUs")
->>
->> abaa93d9e1de2c2  c0f489d2c6fec8994c642c2ec  
->> ---------------  -------------------------  
->>      12654 ~ 0%      -1.5%      12470 ~ 0%  ivb43/netperf/300s-25%-TCP_CRR
->>      12654 ~ 0%      -1.5%      12470 ~ 0%  TOTAL netperf.Throughput_tps
+Hi Peter,
+
+On Fri, Jul 25, 2014 at 10:18:54AM +0800, Peter Chen wrote:
+> On Wed, Jul 16, 2014 at 10:26:01AM +0200, Antoine Ténart wrote:
+> > Add a USB2 ChipIdea driver for ci13xxx, with optional PHY, clock
+> > and DMA mask, to support USB2 ChipIdea controllers that don't need
+> > specific functions.
 > 
-> Out of curiosity, what parameters do you use for this test?  In my
+> You may need to indicate it is a generic usb2 glue layer driver at both
+> subject and context.
 
-The cmdline for this test is:
-netperf -t TCP_CRR -c -C -l 300
+"USB2 ChipIdea driver for ci13xxx" seemed quite generic to me.
 
-> piddling around with high frequency switching loads, they tend to have
-> too much build to build and boot to boot variance to track 1.5%.
+> > 
+> > Needed for the Marvell Berlin SoCs USB controllers.
+> 
+> You can say it is tested at Marvell Berlin SoCs USB controllers.
 
-The actual results are not 100% stable, here is the values of the 5
-runs:
+Ok, I'll explicitly say it.
 
-$ cat [0-4]/netperf.json 
-{
-  "netperf.Throughput_tps": [
-    12674.061666666668
-  ]
-}{
-  "netperf.Throughput_tps": [
-    12705.6325
-  ]
-}{
-  "netperf.Throughput_tps": [
-    12621.97333333333
-  ]
-}{
-  "netperf.Throughput_tps": [
-    12604.785000000002
-  ]
-}{
-  "netperf.Throughput_tps": [
-    12664.158333333333
-  ]
+> > +
+> > +static int ci_hdrc_usb2_dt_probe(struct device *dev,
+> > +				    struct ci_hdrc_platform_data *ci_pdata,
+> > +				    struct ci_hdrc_usb2_priv *priv)
+> > +{
+> > +	u32 mask;
+> > +	int ret;
+> > +
+> > +	priv->clk = devm_clk_get(dev, NULL);
+> > +	if (!IS_ERR(priv->clk)) {
+> > +		ret = clk_prepare_enable(priv->clk);
+> > +		if (ret) {
+> > +			dev_err(dev, "failed to enable the clock: %d\n", ret);
+> > +			return ret;
+> > +		}
+> > +	}
+> 
+> The clk API may be needed for both DT and non-DT cases.
 
-I suppose the way the stddev% is calculated by first calculating the
-average and then compare the individual value with the average.
-Fengguang, is this correct?
+Yes sure, I'll move this to the ci_hdrc_usb2_probe().
 
-Thanks,
-Aaron
+> 
+> > +
+> > +	ci_pdata->phy = of_phy_get(dev->of_node, 0);
+> > +	if (IS_ERR(ci_pdata->phy)) {
+> > +		if (PTR_ERR(ci_pdata->phy) == -EPROBE_DEFER)
+> > +			return -EPROBE_DEFER;
+> > +
+> > +		/* PHY is optional */
+> > +		ci_pdata->phy = NULL;
+> > +	}
+> > +
+> > +	if (of_property_read_u32(dev->of_node, "dma-mask", &mask))
+> > +		priv->dma_mask = mask;
+> > +
+> According to discussion, you may not need dma_mask in driver any more,
+> and use below API for both DT and non-DT case.
+> 
+>         err = dma_set_mask_and_coherent(&pdev->dev, DMA_BIT_MASK(32));
+>         if (err)
+>         	                handle error;
+
+This would only be needed in non-dt cases, as the DMA mask is configured
+in drivers/of/platform.c otherwise.
+
+Thanks!
+
+Antoine
+
+-- 
+Antoine Ténart, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
