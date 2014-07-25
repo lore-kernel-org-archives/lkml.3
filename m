@@ -1,96 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759005AbaGYCUW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 22:20:22 -0400
-Received: from mail-vc0-f177.google.com ([209.85.220.177]:36065 "EHLO
-	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758753AbaGYCUU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 22:20:20 -0400
+	id S1759174AbaGYCVX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 22:21:23 -0400
+Received: from [207.46.163.205] ([207.46.163.205]:45741 "EHLO
+	na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1759079AbaGYCVW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jul 2014 22:21:22 -0400
+Date: Fri, 25 Jul 2014 10:05:22 +0800
+From: Nicolin Chen <Guangyu.Chen@freescale.com>
+To: Tobias Klauser <tklauser@distanz.ch>
+CC: Nicolin Chen <nicoleotsuka@gmail.com>, <broonie@kernel.org>,
+        <shawn.guo@linaro.org>, <robh+dt@kernel.org>, <pawel.moll@arm.com>,
+        <mark.rutland@arm.com>, <ijc+devicetree@hellion.org.uk>,
+        <galak@codeaurora.org>, <rdunlap@infradead.org>, <lgirdwood@gmail.com>,
+        <perex@perex.cz>, <tiwai@suse.de>, <timur@tabi.org>,
+        <grant.likely@linaro.org>, <devicetree@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <alsa-devel@alsa-project.org>,
+        <linuxppc-dev@lists.ozlabs.org>, <b02247@freescale.com>,
+        <b42378@freescale.com>
+Subject: Re: [PATCH v2 2/2] ASoC: fsl_asrc: Add ASRC ASoC CPU DAI and
+ platform drivers
+Message-ID: <20140725020520.GA29136@MrMyself>
+References: <cover.1406189745.git.nicoleotsuka@gmail.com>
+ <2c74a11776ffcc017c80dc31be4a8313755be8f5.1406189745.git.nicoleotsuka@gmail.com>
+ <20140724152045.GA3384@distanz.ch>
 MIME-Version: 1.0
-In-Reply-To: <53D1BDCC.5030202@gmail.com>
-References: <1406156581-6052-1-git-send-email-xerofoify@gmail.com>
-	<20140724144725.GA32669@home.goodmis.org>
-	<20140724105132.3cf221c2@gandalf.local.home>
-	<yw1x38dqag24.fsf@unicorn.mansr.com>
-	<CAPDOMVgswyopjGxdRFW-bFRrTcpcNnkY=PqTCT9HbjjA=EZ1iw@mail.gmail.com>
-	<yw1xy4vi90n6.fsf@unicorn.mansr.com>
-	<CAPDOMVia0OXydg_hRH0t63xUaxKEkVc6D20vAZiyugkMXAEsJQ@mail.gmail.com>
-	<yw1xtx669002.fsf@unicorn.mansr.com>
-	<CAPDOMVgziyYTX41xZVB9FLHUKFRPPm19jo0A_WfbLqaaKbxPqg@mail.gmail.com>
-	<20140724131821.30c4519d@gandalf.local.home>
-	<CAHLZz12ammMZNAah_eyYePJWorw2AruDAujeNxJHvOF5+Mr7cA@mail.gmail.com>
-	<20140724134849.4d228f5f@gandalf.local.home>
-	<CAPDOMVi7cHUAn_1AxJ+tN1c67UqBdLHLC1sJNSA=HUK-WzZCTA@mail.gmail.com>
-	<CAFLxGvzA4HHL0aJaC0Ypf9_YeL5WW4_eYNToSVG7H43DD2unSg@mail.gmail.com>
-	<CAPDOMViVAY5cBuwe=nLjnFUHy4_FVUh_9LkChv+vso5w7WVeDA@mail.gmail.com>
-	<CAPDOMVhNaV+Wertp+p361iYS8t-rZmN2nubn9coyrUcgZPcuGw@mail.gmail.com>
-	<53D15A6B.6030806@nod.at>
-	<53D1BDCC.5030202@gmail.com>
-Date: Thu, 24 Jul 2014 22:20:18 -0400
-Message-ID: <CAPDOMVhuiSwBs_d6b5qFN2jLwsLAu+_CtaSJH+oG0MxGXmtKOw@mail.gmail.com>
-Subject: Re: [PATCH] staging: Change kzalloc to kcalloc
-From: Nick Krause <xerofoify@gmail.com>
-To: Chen Gang <gang.chen.5i5j@gmail.com>
-Cc: Richard Weinberger <richard@nod.at>,
-        Richard Weinberger <richard.weinberger@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Harvey Harrison <harvey.harrison@gmail.com>,
-        =?UTF-8?B?TcOlbnMgUnVsbGfDpXJk?= <mans@mansr.com>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
-        Dan Carpenter <dan.carpenter@oracle.com>, tomas.winkler@intel.com,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20140724152045.GA3384@distanz.ch>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(199002)(24454002)(51704005)(189002)(377424004)(92566001)(85852003)(77982001)(105606002)(79102001)(50986999)(92726001)(97736001)(4396001)(46406003)(81342001)(69596002)(31966008)(83072002)(64706001)(102836001)(74662001)(81156004)(97756001)(80022001)(104016003)(20776003)(84676001)(83322001)(50466002)(19580395003)(46102001)(54356999)(106466001)(87936001)(81542001)(99396002)(85306003)(19580405001)(83506001)(33656002)(76482001)(21056001)(74502001)(6806004)(23726002)(95666004)(110136001)(44976005)(86362001)(68736004)(33716001)(76176999)(26826002)(47776003)(107046002)(217873001);DIR:OUT;SFP:;SCL:1;SRVR:BLUPR03MB328;H:az84smr01.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;LANG:en;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
+X-Forefront-PRVS: 02830F0362
+Authentication-Results: spf=fail (sender IP is 192.88.158.2)
+ smtp.mailfrom=guangyu.chen@freescale.com; 
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 24, 2014 at 10:15 PM, Chen Gang <gang.chen.5i5j@gmail.com> wrote:
->
-> Excuse me, I did not see the patch details, but I guess it is about
-> whether welcome a new member to upstream kernel. For me, I have 3 ideas
-> about it if I am a newbie or a normal kernel developer:
->
->  - Do I have enough basic skills for it?
->
->     - Do I developed one or more another real world projects with C?
->       (they are successful projects -- at least, not failure projects)
->
->     - Can I construct related develop environments to support what I do?
->       (e.g. building and testing for upstream kernel)
->
->     - Am I familiar the basic working flow about kernel mailing list.
->       (e.g. format-patch, sending patch, email client configuration...).
->
->  - Do I have a correct attitude on it?
->
->     - Am I careful enough?
->       (e.g. if find some details may doubt, try to check and clear them)
->       (it is always neccessary for all patches)
->
->     - Am I try my best for it?
->       (e.g. when finish coding, try what I can do: build, run and test).
->       (it is neccessary for most cases)
->
->     - Do I have negative effect with others?
->       (e.g. discourage the newbies, or send spam to other members ...).
->       (need always try to avoid)
->
->  - Do I really love programming, also love open source kernel?
->
->     - Do I love it, or I have to do it for another reason?
->       (I guess, most of gmail members in open source, love programming).
->
->     - Do I still love programming if I am discouraged by any members?
->
->     - Do I still love open source kernel if discouraged by any members?
->
->
-I have most of these skills other then developing real projects in C with other
-developers as other then the kernel I don't have must interest in C outside
-of embedded programming.
-Cheers Nick
+Hi Tobias,
+
+On Thu, Jul 24, 2014 at 05:20:45PM +0200, Tobias Klauser wrote:
+> On 2014-07-24 at 10:35:29 +0200, Nicolin Chen <nicoleotsuka@gmail.com> wrote:
+> > The Asynchronous Sample Rate Converter (ASRC) converts the sampling rate of a
+> > signal associated with an input clock into a signal associated with a different
+> > output clock. The driver currently works as a Front End of DPCM with other Back
+> > Ends DAI links such as ESAI<->CS42888 and SSI<->WM8962 and SAI. It converts the
+> > original sample rate to a common rate supported by Back Ends for playback while
+> > converts the common rate of Back Ends to a desired rate for capture. It has 3
+> > pairs to support three different substreams within totally 10 channels.
+> > 
+> > Signed-off-by: Nicolin Chen <nicoleotsuka@gmail.com>
+> > ---
+> 
+> [...]
+> 
+> > --- /dev/null
+> > +++ b/sound/soc/fsl/fsl_asrc.c
+> > @@ -0,0 +1,1031 @@
+> 
+> [...]
+> 
+> > +static struct platform_driver fsl_asrc_driver = {
+> > +	.probe = fsl_asrc_probe,
+> > +	.driver = {
+> > +		.name = "fsl-asrc",
+> > +		.owner = THIS_MODULE,
+> 
+> Not necessary, this will be set by module_platform_driver (or
+> the expansion of platform_driver_register, respectively).
+> 
+> > +		.of_match_table = fsl_asrc_ids,
+> > +		.pm = &fsl_asrc_pm,
+> > +	},
+> > +};
+> > +module_platform_driver(fsl_asrc_driver);
+> 
+> [...]
+> 
+> > --- /dev/null
+> > +++ b/sound/soc/fsl/fsl_asrc_dma.c
+> > @@ -0,0 +1,384 @@
+> 
+> [...]
+> 
+> > +static int fsl_asrc_dma_pcm_new(struct snd_soc_pcm_runtime *rtd)
+> > +{
+> > +	struct snd_card *card = rtd->card->snd_card;
+> > +	struct snd_pcm_substream *substream;
+> > +	struct snd_pcm *pcm = rtd->pcm;
+> > +	u64 dma_mask = DMA_BIT_MASK(32);
+> > +	int ret, i;
+> > +
+> > +	if (!card->dev->dma_mask)
+> > +		card->dev->dma_mask = &dma_mask;
+> 
+> dma_mask will go out of scope after fsl_asrc_dma_pcm_new returns,
+> resulting in a stray pointer in card->dev->dma_mask.
+
+Will fix them in v3.
+
+Thank you
+Nicolin
