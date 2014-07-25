@@ -1,69 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934824AbaGYRYK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 13:24:10 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:54896 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934542AbaGYRYJ (ORCPT
+	id S934903AbaGYRYc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 13:24:32 -0400
+Received: from mail-we0-f180.google.com ([74.125.82.180]:45800 "EHLO
+	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934832AbaGYRYa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 13:24:09 -0400
-Date: Fri, 25 Jul 2014 18:23:48 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Axel Lin <axel.lin@ingics.com>
-Cc: Liam Girdwood <lgirdwood@gmail.com>,
-        James Ban <James.Ban.opensource@diasemi.com>,
-        Support Opensource <support.opensource@diasemi.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Message-ID: <20140725172348.GU17528@sirena.org.uk>
-References: <1405855175.27371.1.camel@phoenix>
+	Fri, 25 Jul 2014 13:24:30 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="y52ms2kKCoiSthOi"
-Content-Disposition: inline
-In-Reply-To: <1405855175.27371.1.camel@phoenix>
-X-Cookie: 98% lean.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] regulator: da9211: Remove unnecessary
- devm_regulator_unregister() calls
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+In-Reply-To: <53D254D9.9030905@redhat.com>
+References: <1406275499-7822-1-git-send-email-ast@plumgrid.com>
+	<53D23EAF.4000001@redhat.com>
+	<20140725115414.GA4770@salvia>
+	<53D254D9.9030905@redhat.com>
+Date: Fri, 25 Jul 2014 10:24:29 -0700
+Message-ID: <CAMEtUux+dw_GoafXE3ukvmOK2JmZWWf-y0VMobe60TSTfZeNmw@mail.gmail.com>
+Subject: Re: [PATCH net-next] net: filter: rename 'struct sk_filter' to
+ 'struct bpf_prog'
+From: Alexei Starovoitov <ast@plumgrid.com>
+To: Daniel Borkmann <dborkman@redhat.com>
+Cc: Pablo Neira Ayuso <pablo@netfilter.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Network Development <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, willemb@google.com,
+        netfilter-devel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Jul 25, 2014 at 6:00 AM, Daniel Borkmann <dborkman@redhat.com> wrote:
+> On 07/25/2014 01:54 PM, Pablo Neira Ayuso wrote:
+>>
+>> On Fri, Jul 25, 2014 at 01:25:35PM +0200, Daniel Borkmann wrote:
+>>>
+>>> [ also Cc'ing Willem, Pablo ]
+>>>
+>>> On 07/25/2014 10:04 AM, Alexei Starovoitov wrote:
+>>>>
+>>>> 'sk_filter' name is used as 'struct sk_filter', function sk_filter() and
+>>>> as variable 'sk_filter', which makes code hard to read.
+>>>> Also it's easily confused with 'struct sock_filter'
+>>>> Rename 'struct sk_filter' to 'struct bpf_prog' to clarify semantics and
+>>>> align the name with generic BPF use model.
+>>>
+>>>
+>>> Agreed, as we went for kernel/bpf/, renaming makes absolutely sense.
+>>
+>>
+>> My nft socket filtering changes are accomodated into struct sk_filter,
+>> and will still be, so I still need some generic name there...
+>
+>
+> All the parts from filter.c which is BPF's core engine have been moved
+> into kernel/bpf/ to get it ready for tracing et al, since there is not
+> always a socket context anymore. The *whole* infrastructure around struct
+> sk_filter is [e]BPF and used in non-net related contexts as well, whereas
+> nft socket filtering is *only* for sockets. Due to the socket-only specific
+> use case why doesn't it make more sense to have a union in struct sock
+> around sk_filter (or however we name it) and only allow one of the two
+> being loaded on a socket?
 
---y52ms2kKCoiSthOi
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-
-On Sun, Jul 20, 2014 at 07:19:35PM +0800, Axel Lin wrote:
-> Current code uses devm_regulator_register(), so the resource management code
-> will ensure that the resource is freed.
-
-Applied, thanks.
-
---y52ms2kKCoiSthOi
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJT0pKhAAoJELSic+t+oim9oncP/3wGq+3qF9ZkZiSHaslBYPuc
-ZJVo4Y9iXkC+xYeFLbFGmovf/JILZwMjY5wAVBLX9bV8QQgPWE2hcsuPx1iEdh/d
-OKdg3sF0AxvWy1U7XQbDTeQ4VkJnQ2nfkyfWjRPriJO21PIN4WBkxseRbc7dq6cP
-Zpus8cJCWJ4/CqMHfENJ0AsJ8uM4BKGXkAQevi5Y+fHoNSwzYFfdMJk3txZqvHTU
-+43w7XldiKJsyFpFFt1B1perkVZTJHi0r0LOpg1jgtWX9TrzP8QdgpnN6adnynUD
-Sb5ymZrhdaI/TgPRsjNQuneWEb1h14gCaRE55MIsph+4V7iM7B7UfUZlpK02mHvF
-jWgllUL/QrYYcv4LAkR3u/9GoO+DdZt/o6GaWTkukfhQcIh2mZablx7Nml+x8/7r
-1C9tpU109qdQaID+v7TSO7u7jW7fOJxRsTDN5lxRWsr9WxOm+ZilpHyyFjxMKben
-/2Ki0aTtuDD409tXVmNVn+wk7uKcWEakjskwOUkHMac/OmB1dXCbxEsJX4Pk9Xpg
-6Yj+WfarijkYXSmavropwQfapuYrAwea0/7NORuhW5ZKh8uky0p8yB2EZrVegGDz
-T5i0bzRc3t/5Kv69mJiVwQ+qW+GAprXx0+aZau53iE3Ccc1oXgXW2MaIDy04mNCV
-9JnSDtvZ4ZE7QVn44CEE
-=aT7y
------END PGP SIGNATURE-----
-
---y52ms2kKCoiSthOi--
+yep.
+Adding nft specific things to struct sk_filter/bpf_prog is not correct,
+since this struct is already part of seccomp and will be used
+in net-less configurations. SK_RUN_FILTER() macro will also be
+renamed into something like RUN_BPF_RPOG(). It's one and only
+way to invoke eBPF programs. Adding nft selector cannot work,
+since eBPF is used with generic context whereas nft is skb specific.
+If you want to add nft filtering capabilities to sockets, you'd need
+to add union around 'struct bpf_prog' inside 'struct sock', which will be
+much cleaner way.
