@@ -1,62 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935208AbaGYVuQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 17:50:16 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:42156 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760273AbaGYVuO convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 17:50:14 -0400
-Date: Fri, 25 Jul 2014 18:50:05 -0300
-From: Mauro Carvalho Chehab <mchehab@infradead.org>
-To: David =?UTF-8?B?SMOkcmRlbWFu?= <david@hardeman.nu>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the v4l-dvb tree
-Message-ID: <20140725185005.6b5230f9@recife.lan>
-In-Reply-To: <9f4bd671-cbe0-4e11-997e-e369c52589f9@email.android.com>
-References: <20140725122317.4f96c131@canb.auug.org.au>
-	<9f4bd671-cbe0-4e11-997e-e369c52589f9@email.android.com>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.22; x86_64-redhat-linux-gnu)
+	id S1760525AbaGYV5X (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 17:57:23 -0400
+Received: from 8bytes.org ([81.169.241.247]:34612 "EHLO theia.8bytes.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751106AbaGYV5W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jul 2014 17:57:22 -0400
+Date: Fri, 25 Jul 2014 23:57:18 +0200
+From: Joerg Roedel <joro@8bytes.org>
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Rik van Riel <riel@redhat.com>, Hugh Dickins <hughd@google.com>,
+        Mel Gorman <mgorman@suse.de>, Johannes Weiner <jweiner@redhat.com>,
+        Jerome Glisse <jglisse@redhat.com>, jroedel@suse.de,
+        Jay.Cornwall@amd.com, Oded.Gabbay@amd.com, John.Bridgman@amd.com,
+        Suravee.Suthikulpanit@amd.com, ben.sander@amd.com,
+        David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, iommu@lists.linux-foundation.org
+Subject: Re: [PATCH 1/3] mmu_notifier: Add mmu_notifier_invalidate_range()
+Message-ID: <20140725215718.GO14017@8bytes.org>
+References: <1406212541-25975-1-git-send-email-joro@8bytes.org>
+ <1406212541-25975-2-git-send-email-joro@8bytes.org>
+ <20140725131639.698f18ff@jbarnes-desktop>
+ <20140725213806.GN14017@8bytes.org>
+ <20140725144213.773474e4@jbarnes-desktop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-SRS-Rewrite: SMTP reverse-path rewritten from <mchehab@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140725144213.773474e4@jbarnes-desktop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Fri, 25 Jul 2014 07:25:05 +0200
-David Härdeman <david@hardeman.nu> escreveu:
-
-> Mauro,
+On Fri, Jul 25, 2014 at 02:42:13PM -0700, Jesse Barnes wrote:
+> On Fri, 25 Jul 2014 23:38:06 +0200
+> Joerg Roedel <joro@8bytes.org> wrote:
+> > I though about removing the need for invalidate_range_end too when
+> > writing the patches, and possible solutions are
+> > 
+> > 	1) Add mmu_notifier_invalidate_range() to all places where
+> > 	   start/end is called too. This might add some unnecessary
+> > 	   overhead.
+> > 
+> > 	2) Call the invalidate_range() call-back from the
+> > 	   mmu_notifier_invalidate_range_end too.
+> > 
+> > 	3) Just let the user register the same function for
+> > 	   invalidate_range and invalidate_range_end
+> > 
+> > I though that option 1) adds overhead that is not needed (but it might
+> > not be too bad, the overhead is an additional iteration over the
+> > mmu_notifer list when there are no call-backs registered).
+> > 
+> > Option 2) might also be overhead if a user registers different functions
+> > for invalidate_range() and invalidate_range_end(). In the end I came to
+> > the conclusion that option 3) is the best one from an overhead POV.
+> > 
+> > But probably targeting better usability with one of the other options is
+> > a better choice? I am open for thoughts and suggestions on that.
 > 
-> On July 25, 2014 4:23:17 AM CEST, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> >Hi Mauro,
-> >
-> >After merging the v4l-dvb tree, today's linux-next build (x86_64
-> >allmodconfig)
-> >failed like this:
-> >
-> >drivers/hid/hid-picolcd_cir.c: In function 'picolcd_init_cir':
-> >drivers/hid/hid-picolcd_cir.c:117:6: error: 'struct rc_dev' has no
-> >member named 'allowed_protos'
-> >  rdev->allowed_protos   = RC_BIT_ALL;
-> >      ^
+> Making the _end callback just do another TLB flush is fine too, but it
+> would be nice to have the consistency of (1).  I can live with either
+> though, as long as the callbacks are well documented.
 
-Sorry for not noticing. I generally don't do full builds, as doing it
-for all archs would require a bigger compilation system than what I
-have here. I generally do only partial builds for (almost) all archs
-before pushing at linux-next, because it is very hare that a change
-on media would break anything outside it.
+You are right, having this consistency would be good. The more I think
+about it, the more it makes sense to go with option 2). Option 1) would
+mean that invalidate_range is explicitly called right before
+invalidate_range_end at some places. Doing this implicitly like in
+option 2) is cleaner and less error-prone. And the list of mmu_notifiers
+needs only be traversed once in invalidate_range_end(), so additional
+overhead is minimal. I'll update patch 3 for this, unless there are
+other opinions.
 
-> I'll have time to look at it on Monday/Tuesday unless you beat me to it.
-> 
 
-Well, I can beat you on that ;) it should be allowed_protocols. I'll
-fix it here and do a full build to see if you made this mistake on
-some other file, as this is the second file where you typed it wrong ;)
+	Joerg
 
-Regards,
-Mauro
