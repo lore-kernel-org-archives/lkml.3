@@ -1,73 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760031AbaGYJCN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 05:02:13 -0400
-Received: from mail-ig0-f181.google.com ([209.85.213.181]:55017 "EHLO
-	mail-ig0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759312AbaGYJCK (ORCPT
+	id S1760083AbaGYJC2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 05:02:28 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:54139 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751221AbaGYJCW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 05:02:10 -0400
-Date: Fri, 25 Jul 2014 02:02:07 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Sachin Kamat <spk.linux@gmail.com>
-cc: pramod.gurav.etc@gmail.com, linux-input@vger.kernel.org,
-        open list <linux-kernel@vger.kernel.org>,
-        Pramod Gurav <pramod.gurav@smartplayin.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Lejun Zhu <lejun.zhu@linux.intel.com>,
-        Sachin Kamat <sachin.kamat@linaro.org>
-Subject: Re: [PATCH] Input: soc_button_array: Remove kfree on data allocated
- with devm_zalloc
-In-Reply-To: <CAK5sBcFMxKzB8KgSDTtfsGV173TV6Ji3VFNETVqgpGeHPS7LEg@mail.gmail.com>
-Message-ID: <alpine.DEB.2.02.1407250155450.17833@chino.kir.corp.google.com>
-References: <1406272180-25101-1-git-send-email-pramod.gurav@smartplayin.com> <CAK5sBcFMxKzB8KgSDTtfsGV173TV6Ji3VFNETVqgpGeHPS7LEg@mail.gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Fri, 25 Jul 2014 05:02:22 -0400
+Date: Fri, 25 Jul 2014 11:02:06 +0200
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+To: =?utf-8?B?SmnFmcOt?= Prchal <jiri.prchal@aksignal.cz>
+Cc: Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        devicetree@vger.kernel.org, nicolas.ferre@atmel.com,
+        linux-arm-kernel@lists.infradead.org, Bo Shen <voice.shen@atmel.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: at91: at91sam9x5: sets NPCS0 (PA14) back to GPIO
+Message-ID: <20140725090206.GG9532@piout.net>
+References: <1405074175-22444-1-git-send-email-voice.shen@atmel.com>
+ <53D10C50.50305@aksignal.cz>
+ <20140724162645.4e19c26c@bbrezillon>
+ <53D12103.3020103@aksignal.cz>
+ <20140724175848.44f5da10@bbrezillon>
+ <53D1F5D0.1080006@aksignal.cz>
+ <20140725083053.GD9532@piout.net>
+ <53D2174B.4020403@aksignal.cz>
+ <20140725085436.GF9532@piout.net>
+ <53D21C57.3010805@aksignal.cz>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <53D21C57.3010805@aksignal.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 25 Jul 2014, Sachin Kamat wrote:
+On 25/07/2014 at 10:59:03 +0200, Jiří Prchal wrote :
+> >>Of course, it's the way, but in all other drivers, for example LEDS,
+> >>it's not needed. And in other way, if I will not use PA14 at all,
+> >>the pin will goes down every spi transfer.
+> >
+> >You must not assumed that the pins are muxed to their default state
+> >which is gpio and you should set the pinctrl accordingly for each
+> >device.
+> >
+> >If you don't use PA14 at all, then you don't really care about its
+> >state...
+> Yes and no, what about on board is populated some chip on PA14, but
+> for some reason at this time I don't need it and not defined in DT?
+> >
 
-> On Fri, Jul 25, 2014 at 12:39 PM,  <pramod.gurav.etc@gmail.com> wrote:
-> > From: Pramod Gurav <pramod.gurav@smartplayin.com>
-> >
-> > This patch does below:
-> > - Removes kfree done on data allocated with devm_zalloc in probe
-> >   path of the driver.
-> > - Adds a check on return value from devm_kzalloc which was missing
-> >   and renames a lable from err_free_mem to err_mem.
-> > - Adds couple of dev_err on failure to allocate memory
-> >
-> > CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-> > CC: Lejun Zhu <lejun.zhu@linux.intel.com>
-> > CC: Sachin Kamat <sachin.kamat@linaro.org>
-> >
-> > Signed-off-by: Pramod Gurav <pramod.gurav@smartplayin.com>
-> > ---
-> >  drivers/input/misc/soc_button_array.c |   19 ++++++++++++++-----
-> >  1 file changed, 14 insertions(+), 5 deletions(-)
-> >
-> > diff --git a/drivers/input/misc/soc_button_array.c b/drivers/input/misc/soc_button_array.c
-> > index 5a6334b..ac82971 100644
-> > --- a/drivers/input/misc/soc_button_array.c
-> > +++ b/drivers/input/misc/soc_button_array.c
-> > @@ -83,6 +83,13 @@ soc_button_device_create(struct pnp_dev *pdev,
-> >                                        sizeof(*gpio_keys_pdata) +
-> >                                         sizeof(*gpio_keys) * MAX_NBUTTONS,
-> >                                        GFP_KERNEL);
-> > +       if (!gpio_keys_pdata) {
-> > +               dev_err(&pdev->dev,
-> > +                       "Can't allocate memory for gpio_keys_platform_data\n");
-> 
-> OOM message is not needed as memory subsystem will take care of it.
-> 
+If this is really an issue for that chip, I would think that you will
+change the bootloader to not mux PA14 to periph A and stop it from
+trying to read it like an spi flash ?
 
-In the worst case, the memory subsystem will print that a process was 
-killed for this allocation to succeed so it's never actually going to 
-fail.  However, it is indeed frowed upon to print your own oom message so 
-you're right that it should be removed.
-
-Same comment about soc_button_pnp_probe().
+-- 
+Alexandre Belloni, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
