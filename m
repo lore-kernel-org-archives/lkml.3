@@ -1,41 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758966AbaGYGiL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 02:38:11 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:58878 "EHLO
+	id S1758992AbaGYGk2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 02:40:28 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:58888 "EHLO
 	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752744AbaGYGiJ (ORCPT
+	with ESMTP id S1750809AbaGYGk1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 02:38:09 -0400
-Date: Thu, 24 Jul 2014 23:38:07 -0700 (PDT)
-Message-Id: <20140724.233807.867041649917385199.davem@davemloft.net>
-To: hayeswang@realtek.com
-Cc: netdev@vger.kernel.org, nic_swsd@realtek.com, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org, andrey.krieger.utkin@gmail.com
-Subject: Re: [PATCH net] r8152: fix the checking of the usb speed
+	Fri, 25 Jul 2014 02:40:27 -0400
+Date: Thu, 24 Jul 2014 23:40:26 -0700 (PDT)
+Message-Id: <20140724.234026.1408822707562402333.davem@davemloft.net>
+To: cyrille.pitchen@atmel.com
+Cc: nicolas.ferre@atmel.com, linux-arm-kernel@lists.infradead.org,
+        netdev@vger.kernel.org, soren.brinkmann@xilinx.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 0/6] net/macb: add HW features to macb driver
 From: David Miller <davem@davemloft.net>
-In-Reply-To: <1394712342-15778-15-Taiwan-albertk@realtek.com>
-References: <1394712342-15778-15-Taiwan-albertk@realtek.com>
+In-Reply-To: <cover.1406192657.git.cyrille.pitchen@atmel.com>
+References: <cover.1406192657.git.cyrille.pitchen@atmel.com>
 X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
 Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Thu, 24 Jul 2014 23:38:09 -0700 (PDT)
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Thu, 24 Jul 2014 23:40:27 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hayes Wang <hayeswang@realtek.com>
-Date: Thu, 24 Jul 2014 16:37:43 +0800
+From: Cyrille Pitchen <cyrille.pitchen@atmel.com>
+Date: Thu, 24 Jul 2014 13:50:57 +0200
 
-> When the usb speed of the RTL8152 is not high speed, the USB_DEV_STAT[2:1]
-> should be equal to [0 1]. That is, the STAT_SPEED_FULL should be equal
-> to 2.
+> this series of patches adds new hardware features to macb driver. These
+> features can be enabled/disabled at runtime using ethtool. Depending on
+> hardware and design configuration, some are enabled by default whereas other
+> are disabled.
 > 
-> There is a easy way to check the usb speed by the speed field of the
-> struct usb_device. Use it to replace the original metheod.
+> For instance, checksum offload features are enabled by default for gem designed
+> for packet buffer mode but disabled for fifo mode design or for old macb.
 > 
-> Signed-off-by: Hayes Wang <hayeswang@realtek.com>
-> Spotted-by: Andrey Utkin <andrey.krieger.utkin@gmail.com>
+> Besides, the scatter-gather feature is enabled and tested on macb but disabled
+> on sama5d3x gem. When testing this feature on sama5d3x gem, TX lockups occured
+> frequently.
+> 
+> Also, the RX checksum offload feature is enabled at GEM level only when both
+> IFF_PROMISC bit is clear in dev->flags and NETIF_F_RXCSUM bit is set in
+> dev->features.
+> 
+> These patches were made for net-next.git repository.
 
-Applied, thanks.
+Series applied, thanks.
