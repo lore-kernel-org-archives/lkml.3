@@ -1,145 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935181AbaGYUEj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 16:04:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:4619 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932508AbaGYUEh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 16:04:37 -0400
-Message-ID: <1406318421.27055.29.camel@deneb.redhat.com>
-Subject: [PATCH v2] rtc: ia64: allow other architectures to use EFI RTC
-From: Mark Salter <msalter@redhat.com>
-To: Alessandro Zummo <a.zummo@towertech.it>, Tony Luck <tony.luck@intel.com>,
-        Fenghua Yu <fenghua.yu@intel.com>
-Cc: linux-ia64@vger.kernel.org, rtc-linux@googlegroups.com,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Date: Fri, 25 Jul 2014 16:00:21 -0400
-In-Reply-To: <1402685430-32591-1-git-send-email-msalter@redhat.com>
-References: <1402685430-32591-1-git-send-email-msalter@redhat.com>
-Organization: Red Hat, Inc
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
+	id S934497AbaGYUGs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 16:06:48 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:33784 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755261AbaGYUGq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jul 2014 16:06:46 -0400
+Message-ID: <53D2B8D0.5090000@wwwdotorg.org>
+Date: Fri, 25 Jul 2014 14:06:40 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+MIME-Version: 1.0
+To: Nick Dyer <nick.dyer@itdev.co.uk>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        benson Leung <bleung@chromium.org>, Yufeng Shen <miletus@chromium.org>,
+        Daniel Kurtz <djkurtz@chromium.org>
+CC: Yufeng Shen <miletus@google.com>, Daniel Kurtz <djkurtz@chromium.org>,
+        Henrik Rydberg <rydberg@euromail.se>,
+        Joonyoung Shim <jy0922.shim@samsung.com>,
+        Alan Bowens <Alan.Bowens@atmel.com>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Peter Meerwald <pmeerw@pmeerw.net>,
+        Benson Leung <bleung@chromium.org>,
+        Olof Johansson <olofj@chromium.org>, Sekhar Nori <nsekhar@ti.com>
+Subject: Re: [PATCH 00/15] atmel_mxt_ts - device tree, bootloader, etc
+References: <1404399697-26484-1-git-send-email-nick.dyer@itdev.co.uk> <53CECAEC.8080905@wwwdotorg.org> <53CFD50C.4040509@itdev.co.uk> <53CFEF6E.2060905@wwwdotorg.org> <53D10E78.4010908@itdev.co.uk> <53D17845.4020507@wwwdotorg.org> <53D26572.3030404@itdev.co.uk>
+In-Reply-To: <53D26572.3030404@itdev.co.uk>
+Content-Type: text/plain; charset=windows-1252; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, the rtc-efi driver is restricted to ia64 only.  Newer
-architectures with EFI support may want to also use that driver. This
-patch moves the platform device setup from ia64 into drivers/rtc and allow
-any architecture with CONFIG_EFI=y to use the rtc-efi driver.
+On 07/25/2014 08:10 AM, Nick Dyer wrote:
+> On 24/07/14 22:19, Stephen Warren wrote:
+...
+>> I've uploaded 2 logs to:
+>>
+>> http://avon.wwwdotorg.org/downloads/mxt-logs/
+>> (note there's no directory indexing, so manually add the filenames below to
+>> the URL)
+>>
+>> mxt-save-no-movement.xml
+>>
+>> This is with the whole series applied. Neither mouse movement nor clicks
+>> works. I tried mxt-app --reset and it made no difference to the dump results.
+>>
+>> mxt-save-move-ok-no-clicking.xml
+>>
+>> This is with "Input: atmel_mxt_ts - use deep sleep mode when stopped"
+>> reverted; mouse movement works, but clicking doesn't.
+>
+> Great, this has identified the issue with mouse movement (touch).
+>
+> The config programmed into the NVRAM on your touch controller has the first
+> byte of the T9 touchscreen object set to zero. This is the CTRL byte which
+> enables/disables the touch object and what it reports. It is relying on
+> this to enable the touchscreen on resume:
+>
+> https://github.com/dtor/input/blob/9d8dc3e529/drivers/input/touchscreen/atmel_mxt_ts.c#L2005-L2006
+>
+> My "use deep sleep mode when stopped" patch stops the driver writing to the
+> T9.CTRL byte, so whatever config you have in NVRAM for that byte will be
+> used (ie zero, disabled). Going forward, deep sleep is more generic.
+> Indeed, newer chips do not have T9 at all, or they might be using other
+> touch objects. The deep sleep mode is a lower power state to be in, and is
+> what Atmel recommends.
+>
+> However, it does mean changing the maxtouch cfg - you can write the 0x83 to
+> the first byte of T9 and save it to NVRAM, by doing:
+>
+> mxt-app [device] -W -T9 83
+> mxt-app [device] --backup
 
-This is v2 of the patch to fix a boot problem with kernels building in
-rtc-efi but not being booted via EFI. In that case, runtime services are
-not available so there is no point in registering the platform device.
+If I do that, then both mouse movement and "touch" clicks work:-)
 
-Signed-off-by: Mark Salter <msalter@redhat.com>
-Cc: Alessandro Zummo <a.zummo@towertech.it>
-Cc: Tony Luck <tony.luck@intel.com>
-Cc: Fenghua Yu <fenghua.yu@intel.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
----
- arch/ia64/kernel/time.c        | 15 ---------------
- drivers/rtc/Kconfig            |  2 +-
- drivers/rtc/Makefile           |  4 ++++
- drivers/rtc/rtc-efi-platform.c | 31 +++++++++++++++++++++++++++++++
- 4 files changed, 36 insertions(+), 16 deletions(-)
- create mode 100644 drivers/rtc/rtc-efi-platform.c
+(Dmitry, I guess that means it's fine to go ahead and apply "Input: 
+atmel_mxt_ts - use deep sleep mode when stopped".)
 
-diff --git a/arch/ia64/kernel/time.c b/arch/ia64/kernel/time.c
-index 71c52bc..a149c67 100644
---- a/arch/ia64/kernel/time.c
-+++ b/arch/ia64/kernel/time.c
-@@ -384,21 +384,6 @@ static struct irqaction timer_irqaction = {
- 	.name =		"timer"
- };
- 
--static struct platform_device rtc_efi_dev = {
--	.name = "rtc-efi",
--	.id = -1,
--};
--
--static int __init rtc_init(void)
--{
--	if (platform_device_register(&rtc_efi_dev) < 0)
--		printk(KERN_ERR "unable to register rtc device...\n");
--
--	/* not necessarily an error */
--	return 0;
--}
--module_init(rtc_init);
--
- void read_persistent_clock(struct timespec *ts)
- {
- 	efi_gettimeofday(ts);
-diff --git a/drivers/rtc/Kconfig b/drivers/rtc/Kconfig
-index 0754f5c..4478a59 100644
---- a/drivers/rtc/Kconfig
-+++ b/drivers/rtc/Kconfig
-@@ -789,7 +789,7 @@ config RTC_DRV_DA9063
- 
- config RTC_DRV_EFI
- 	tristate "EFI RTC"
--	depends on IA64
-+	depends on EFI
- 	help
- 	  If you say yes here you will get support for the EFI
- 	  Real Time Clock.
-diff --git a/drivers/rtc/Makefile b/drivers/rtc/Makefile
-index 70347d0..f1dfc36 100644
---- a/drivers/rtc/Makefile
-+++ b/drivers/rtc/Makefile
-@@ -10,6 +10,10 @@ obj-$(CONFIG_RTC_SYSTOHC)	+= systohc.o
- obj-$(CONFIG_RTC_CLASS)		+= rtc-core.o
- rtc-core-y			:= class.o interface.o
- 
-+ifdef CONFIG_RTC_DRV_EFI
-+rtc-core-y			+= rtc-efi-platform.o
-+endif
-+
- rtc-core-$(CONFIG_RTC_INTF_DEV)	+= rtc-dev.o
- rtc-core-$(CONFIG_RTC_INTF_PROC) += rtc-proc.o
- rtc-core-$(CONFIG_RTC_INTF_SYSFS) += rtc-sysfs.o
-diff --git a/drivers/rtc/rtc-efi-platform.c b/drivers/rtc/rtc-efi-platform.c
-new file mode 100644
-index 0000000..b40fbe3
---- /dev/null
-+++ b/drivers/rtc/rtc-efi-platform.c
-@@ -0,0 +1,31 @@
-+/*
-+ * Moved from arch/ia64/kernel/time.c
-+ *
-+ * Copyright (C) 1998-2003 Hewlett-Packard Co
-+ *	Stephane Eranian <eranian@hpl.hp.com>
-+ *	David Mosberger <davidm@hpl.hp.com>
-+ * Copyright (C) 1999 Don Dugger <don.dugger@intel.com>
-+ * Copyright (C) 1999-2000 VA Linux Systems
-+ * Copyright (C) 1999-2000 Walt Drummond <drummond@valinux.com>
-+ */
-+#include <linux/init.h>
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/efi.h>
-+#include <linux/platform_device.h>
-+
-+static struct platform_device rtc_efi_dev = {
-+	.name = "rtc-efi",
-+	.id = -1,
-+};
-+
-+static int __init rtc_init(void)
-+{
-+	if (efi_enabled(EFI_RUNTIME_SERVICES))
-+		if (platform_device_register(&rtc_efi_dev) < 0)
-+			pr_err("unable to register rtc device...\n");
-+
-+	/* not necessarily an error */
-+	return 0;
-+}
-+module_init(rtc_init);
--- 
-1.8.3.1
+I wonder why the configuration NVRAM in my device was incorrect though? 
+I'm CCing a few ChromeOS people to try and find out any relevant history 
+for the touchpad NVRAM settings on Venice2. Perhaps this is simply 
+something that wasn't noticed because the driver used to initialize this 
+configuration bit, so nobody realized the config in NVRAM was wrong.
 
+...
+> About the clicking - what does getevent -lp show? It should show the
+> BTN_LEFT key. If that is working correctly, then the driver isn't parsing
+> the messages correctly, it would be useful if you could add a
+> mxt_dump_message() call to mxt_input_button() and capture some dmesg output
+> of pressing the button.
 
+I'm not sure what getevent is, but I think I tracked down the issue anyway.
 
+With the NVRAM config fix you mentioned, "touch" clicks work OK. 
+However, as such as I do a "physical" click (push the touchpad down), 
+all kinds of click stop working. I think the answer lies in evtest logs:
+
+First "touch" click (with touch pressure/position events removed):
+
+> Event: time 1406318070.891773, type 1 (EV_KEY), code 330 (BTN_TOUCH), value 1
+> Event: time 1406318070.891773, type 1 (EV_KEY), code 325 (BTN_TOOL_FINGER), value 1
+...
+> Event: time 1406318070.941752, type 1 (EV_KEY), code 330 (BTN_TOUCH), value 0
+> Event: time 1406318070.941752, type 1 (EV_KEY), code 325 (BTN_TOOL_FINGER), value 0
+
+The second "touch" click generates the same events. Note how all the 
+events are correctly mirrored between down/up events.
+
+Now, the first "physical" click:
+
+> Event: time 1406318085.303424, type 1 (EV_KEY), code 272 (BTN_LEFT), value 1
+...
+> Event: time 1406318085.319818, type 1 (EV_KEY), code 330 (BTN_TOUCH), value 1
+> Event: time 1406318085.319818, type 1 (EV_KEY), code 325 (BTN_TOOL_FINGER), value 1
+...
+> Event: time 1406318085.515763, type 1 (EV_KEY), code 330 (BTN_TOUCH), value 0
+> Event: time 1406318085.515763, type 1 (EV_KEY), code 325 (BTN_TOOL_FINGER), value 0
+
+Note the extra BTN_LEFT down event, which has no corresponding "up" 
+event. After this, subsequent "physical" clicks don't generate any more 
+BTN_LEFT events (down or up) at all, and a USB mouse's BTN_LEFT events 
+are ignored, I suppose since the system still thinks the touchpad's left 
+button is being held down.
+
+Is this a driver bug (not generating the correct BTN_LEFT events), or 
+some other touchpad HW/NVRAM configuration problem?
