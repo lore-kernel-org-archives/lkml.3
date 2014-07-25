@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760433AbaGYNsS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 09:48:18 -0400
-Received: from mail-la0-f73.google.com ([209.85.215.73]:44613 "EHLO
-	mail-la0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760348AbaGYNsI (ORCPT
+	id S1760658AbaGYNu1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 09:50:27 -0400
+Received: from mail-wi0-f201.google.com ([209.85.212.201]:40799 "EHLO
+	mail-wi0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760418AbaGYNsR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 09:48:08 -0400
+	Fri, 25 Jul 2014 09:48:17 -0400
 From: David Drysdale <drysdale@google.com>
 To: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>
@@ -18,9 +18,9 @@ Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
         Paolo Bonzini <pbonzini@redhat.com>, Paul Moore <paul@paul-moore.com>,
         Christoph Hellwig <hch@infradead.org>, linux-api@vger.kernel.org,
         David Drysdale <drysdale@google.com>
-Subject: [PATCH 06/11] capsicum: implement sockfd_lookupr()
-Date: Fri, 25 Jul 2014 14:47:02 +0100
-Message-Id: <1406296033-32693-7-git-send-email-drysdale@google.com>
+Subject: [PATCH 11/11] seccomp: Add tgid and tid into seccomp_data
+Date: Fri, 25 Jul 2014 14:47:07 +0100
+Message-Id: <1406296033-32693-12-git-send-email-drysdale@google.com>
 X-Mailer: git-send-email 2.0.0.526.g5318336
 In-Reply-To: <1406296033-32693-1-git-send-email-drysdale@google.com>
 References: <1406296033-32693-1-git-send-email-drysdale@google.com>
@@ -28,201 +28,57 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add variants of sockfd_lookup() and related functions where the caller
-indicates the operations that will be performed on the socket.
-
-If CONFIG_SECURITY_CAPSICUM is defined, these variants use the
-fgetr()-style functions to retrieve the struct file from the file
-descriptor.
-
-If CONFIG_SECURITY_CAPSICUM is not defined, these variants use the
-normal fget() functions.
+Add the current thread and thread group IDs into the data
+available for seccomp-bpf programs to work on.  This allows
+installation of filters that police syscalls based on thread
+or process ID, e.g. tgkill(2)/kill(2)/prctl(2).
 
 Signed-off-by: David Drysdale <drysdale@google.com>
 ---
- include/linux/net.h |  16 +++++++
- net/socket.c        | 120 ++++++++++++++++++++++++++++++++++++++++++++--------
- 2 files changed, 119 insertions(+), 17 deletions(-)
+ include/uapi/linux/seccomp.h | 10 ++++++++++
+ kernel/seccomp.c             |  2 ++
+ 2 files changed, 12 insertions(+)
 
-diff --git a/include/linux/net.h b/include/linux/net.h
-index 17d83393afcc..05429ce3b730 100644
---- a/include/linux/net.h
-+++ b/include/linux/net.h
-@@ -24,6 +24,7 @@
- #include <linux/fcntl.h>	/* For O_CLOEXEC and O_NONBLOCK */
- #include <linux/kmemcheck.h>
- #include <linux/rcupdate.h>
-+#include <linux/capsicum.h>
- #include <linux/jump_label.h>
- #include <uapi/linux/net.h>
+diff --git a/include/uapi/linux/seccomp.h b/include/uapi/linux/seccomp.h
+index ac2dc9f72973..b88370d6f6ca 100644
+--- a/include/uapi/linux/seccomp.h
++++ b/include/uapi/linux/seccomp.h
+@@ -36,12 +36,22 @@
+  * @instruction_pointer: at the time of the system call.
+  * @args: up to 6 system call arguments always stored as 64-bit values
+  *        regardless of the architecture.
++ * @tgid: thread group ID of the thread executing the BPF program.
++ * @tid: thread ID of the thread executing the BPF program.
++ * The SECCOMP_DATA_TID_PRESENT macro indicates the presence of the
++ * tgid and tid fields; user programs may use this macro to conditionally
++ * compile code against older versions of the kernel.  Note also that
++ * BPF programs should cope with the absence of these fields by testing
++ * the length of data available.
+  */
+ struct seccomp_data {
+ 	int nr;
+ 	__u32 arch;
+ 	__u64 instruction_pointer;
+ 	__u64 args[6];
++	__u32 tgid;
++	__u32 tid;
+ };
++#define SECCOMP_DATA_TID_PRESENT	1
  
-@@ -222,6 +223,21 @@ struct socket *sock_from_file(struct file *file, int *err);
- #define		     sockfd_put(sock) fput(sock->file)
- int net_ratelimit(void);
- 
-+#ifdef CONFIG_SECURITY_CAPSICUM
-+struct socket *sockfd_lookup_rights(int fd, int *err,
-+				    struct capsicum_rights *rights);
-+struct socket *_sockfd_lookupr(int fd, int *err, ...);
-+#define sockfd_lookupr(fd, err, ...) \
-+	_sockfd_lookupr((fd), (err), __VA_ARGS__, 0ULL)
-+#else
-+static inline struct socket *
-+sockfd_lookup_rights(int fd, int *err, struct capsicum_rights *rights)
-+{
-+	return sockfd_lookup(fd, err);
-+}
-+#define sockfd_lookupr(fd, err, ...)	sockfd_lookup((fd), (err))
-+#endif
-+
- #define net_ratelimited_function(function, ...)			\
- do {								\
- 	if (net_ratelimit())					\
-diff --git a/net/socket.c b/net/socket.c
-index abf56b2a14f9..cc2e59576b3c 100644
---- a/net/socket.c
-+++ b/net/socket.c
-@@ -96,6 +96,7 @@
- #include <net/compat.h>
- #include <net/wext.h>
- #include <net/cls_cgroup.h>
-+#include <net/sctp/sctp.h>
- 
- #include <net/sock.h>
- #include <linux/netfilter.h>
-@@ -418,6 +419,108 @@ struct socket *sock_from_file(struct file *file, int *err)
+ #endif /* _UAPI_LINUX_SECCOMP_H */
+diff --git a/kernel/seccomp.c b/kernel/seccomp.c
+index 301bbc24739c..dd5146f15d6d 100644
+--- a/kernel/seccomp.c
++++ b/kernel/seccomp.c
+@@ -80,6 +80,8 @@ static void populate_seccomp_data(struct seccomp_data *sd)
+ 	sd->args[4] = args[4];
+ 	sd->args[5] = args[5];
+ 	sd->instruction_pointer = KSTK_EIP(task);
++	sd->tgid = task_tgid_vnr(current);
++	sd->tid = task_pid_vnr(current);
  }
- EXPORT_SYMBOL(sock_from_file);
  
-+static struct socket *sockfd_lookup_light(int fd, int *err, int *fput_needed)
-+{
-+	struct fd f = fdget(fd);
-+	struct socket *sock;
-+
-+	*err = -EBADF;
-+	if (f.file) {
-+		sock = sock_from_file(f.file, err);
-+		if (likely(sock)) {
-+			*fput_needed = f.flags;
-+			return sock;
-+		}
-+		fdput(f);
-+	}
-+	return NULL;
-+}
-+
-+#ifdef CONFIG_SECURITY_CAPSICUM
-+struct socket *sockfd_lookup_rights(int fd, int *err,
-+				    struct capsicum_rights *rights)
-+{
-+	struct file *file;
-+	struct socket *sock;
-+
-+	file = fget_rights(fd, rights);
-+	if (IS_ERR(file)) {
-+		*err = PTR_ERR(file);
-+		return NULL;
-+	}
-+
-+	sock = sock_from_file(file, err);
-+	if (!sock)
-+		fput(file);
-+	return sock;
-+}
-+EXPORT_SYMBOL(sockfd_lookup_rights);
-+
-+static struct socket *
-+sockfd_lookup_light_rights(int fd, int *err, int *fput_needed,
-+			   const struct capsicum_rights **actual_rights,
-+			   const struct capsicum_rights *required_rights)
-+{
-+	struct fd f = fdget_raw_rights(fd, actual_rights, required_rights);
-+	struct socket *sock;
-+
-+	*err = -EBADF;
-+	if (!IS_ERR(f.file)) {
-+		sock = sock_from_file(f.file, err);
-+		if (likely(sock)) {
-+			*fput_needed = f.flags;
-+			return sock;
-+		}
-+		fdput(f);
-+	} else {
-+		*err = PTR_ERR(f.file);
-+	}
-+	return NULL;
-+}
-+
-+struct socket *_sockfd_lookupr(int fd, int *err, ...)
-+{
-+	struct capsicum_rights rights;
-+	struct socket *sock;
-+	va_list ap;
-+
-+	va_start(ap, err);
-+	sock = sockfd_lookup_rights(fd, err, cap_rights_vinit(&rights, ap));
-+	va_end(ap);
-+	return sock;
-+}
-+EXPORT_SYMBOL(_sockfd_lookupr);
-+
-+struct socket *_sockfd_lookupr_light(int fd, int *err, int *fput_needed, ...)
-+{
-+	struct capsicum_rights rights;
-+	struct socket *sock;
-+	va_list ap;
-+
-+	va_start(ap, fput_needed);
-+	sock = sockfd_lookup_light_rights(fd, err, fput_needed,
-+					  NULL, cap_rights_vinit(&rights, ap));
-+	va_end(ap);
-+	return sock;
-+}
-+#define sockfd_lookupr_light(fd, err, fpn, ...) \
-+	_sockfd_lookupr_light((fd), (err), (fpn), __VA_ARGS__, 0ULL)
-+
-+#else
-+
-+static inline struct socket *
-+sockfd_lookup_light_rights(int fd, int *err, int *fput_needed,
-+			   const struct capsicum_rights **actual_rights,
-+			   const struct capsicum_rights *required_rights)
-+{
-+	return sockfd_lookup_light(fd, err, fput_needed);
-+}
-+
-+#define sockfd_lookupr_light(f, e, p, ...) \
-+	sockfd_lookup_light((f), (e), (p))
-+
-+#endif
-+
  /**
-  *	sockfd_lookup - Go from a file number to its socket slot
-  *	@fd: file handle
-@@ -449,23 +552,6 @@ struct socket *sockfd_lookup(int fd, int *err)
- }
- EXPORT_SYMBOL(sockfd_lookup);
- 
--static struct socket *sockfd_lookup_light(int fd, int *err, int *fput_needed)
--{
--	struct fd f = fdget(fd);
--	struct socket *sock;
--
--	*err = -EBADF;
--	if (f.file) {
--		sock = sock_from_file(f.file, err);
--		if (likely(sock)) {
--			*fput_needed = f.flags;
--			return sock;
--		}
--		fdput(f);
--	}
--	return NULL;
--}
--
- #define XATTR_SOCKPROTONAME_SUFFIX "sockprotoname"
- #define XATTR_NAME_SOCKPROTONAME (XATTR_SYSTEM_PREFIX XATTR_SOCKPROTONAME_SUFFIX)
- #define XATTR_NAME_SOCKPROTONAME_LEN (sizeof(XATTR_NAME_SOCKPROTONAME)-1)
 -- 
 2.0.0.526.g5318336
 
