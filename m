@@ -1,126 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753355AbaGYOyf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 10:54:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25703 "EHLO mx1.redhat.com"
+	id S1759961AbaGYO4h (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 10:56:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51460 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752325AbaGYOyd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 10:54:33 -0400
-Date: Fri, 25 Jul 2014 10:54:00 -0400
-From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-To: Przemo Firszt <przemo@firszt.eu>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
-        Ping Cheng <pinglinux@gmail.com>, Jason Gerecke <killertofu@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
-Subject: Re: [PATCH v2 00/10] Input - wacom: conversion to HID driver, series
- 2
-Message-ID: <20140725145400.GB12268@mail.corp.redhat.com>
-References: <1406225645-32141-1-git-send-email-benjamin.tissoires@redhat.com>
- <1406292140.2664.17.camel@fedora-lan>
- <20140725125820.GA12268@mail.corp.redhat.com>
- <1406295035.2664.43.camel@fedora-lan>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1406295035.2664.43.camel@fedora-lan>
+	id S1752623AbaGYO4f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jul 2014 10:56:35 -0400
+From: Jiri Olsa <jolsa@kernel.org>
+To: linux-kernel@vger.kernel.org
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Jiri Olsa <jolsa@kernel.org>
+Subject: [PATCHv4 00/19] perf tools: Factor ordered samples queue
+Date: Fri, 25 Jul 2014 16:55:58 +0200
+Message-Id: <1406300177-31805-1-git-send-email-jolsa@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Jul 25 2014 or thereabouts, Przemo Firszt wrote:
-> Dnia 2014-07-25, pią o godzinie 08:58 -0400, Benjamin Tissoires pisze:
-> > Hi Przemo,
-> Hi Benjamin,
-> > On Jul 25 2014 or thereabouts, Przemo Firszt wrote:
-> > > Dnia 2014-07-24, czw o godzinie 14:13 -0400, Benjamin Tissoires pisze:
-> > > [..]
-> > > > Hi Przemo,
-> > > Hi Benjamin,
-> > > > Normally, this series contains all the bits of hid-wacom (except the custom
-> > > > LED/OLED API). Please tell me if I am missing anything and if you like the
-> > > > change.
-> > > 
-> > > I can't cleanly apply your set yet to test it, so:
-> > 
-> > Hmm, you need to apply the first series I sent on July 15th, on top of
-> > Dmitry's next branch.
-> > 
-> > http://www.spinics.net/lists/linux-input/msg32385.html
-> > 
-> OK, thnaks!
-> > > Acked-by: Przemo Firszt <przemo@firszt.eu>
-> > 
-> > Thanks!
-> > 
-> > > 
-> > > What's your plan about LED/OLED API? 
-> > 
-> > I thought I would only preserve the current, wider used, LED/OLED API and
-> > just drop the one in hid-wacom. This way, g-s-d will access both
-> > bluetooth and USB the same way.
-> > 
-> > My decision was mostly guided because the support of BT in g-s-d was
-> > only added recently (3.12 and backported to gnome 3.10 IIRC). And as
-> > soon as these patches hit Dmitry's tree, I'll send the g-s-d patches to
-> > fix all that.
-> 
-> If I understand you correctly we cannot have the same entry point in
-> sysfs for OLEDs unless we can tell userspace somehow if the tablet is
-> conected over USB or over bluetooth. The hardware of Intuos4 Wireless
-> over bluetooth allows only 1-bit images. The same hardware over USB
-> allows 4-bit images. Formatting of the images is also completely
+hi,
+this patchset factors session's ordered samples queue,
+and allows to limit the size of this queue.
 
-Holy crap! I missed that. I did not noticed the 1-bit vs 4-bits
-difference :(
+v4 changes:
+  - split patch 17 into 2 patches (17/18 now) (Arnaldo)
+  - omitted patch 18 which set default queue value to 100MB (Adrian)
+  - factor patch 16 to display better debug messages (Adrian)
 
-> different and it's not "plain". Check [1] for usb and exisitng
-> hid-wacom.c/wacom_scramble function for bluetooth.
+v3 changes:
+  - rebased to latest tip/perf/core
+  - add comment for WARN in patch 8 (David)
+  - added ordered-events debug variable (David)
+  - renamed ordered_events_(get|put) to ordered_events_(new|delete)
+  - renamed struct ordered_events_queue to struct ordered_events
 
-Maybe I overlooked it, but I thought that in case of USB, the scrambling
-is done in user space, and in case of BT, the same scrambling made in the
-kernel. They looks very similar so I thought the user-space scramble for
-USB would have fit. However, the 4-bits/1-bits kills that assumption.
+v2 changes:
+  - several small changes for review comments (Namhyung)
 
-> 
-> If we want to make it consistent single entry on kernel level we
-> probably have to implement image conversion in the kernel. The user land
-> would always use 4-bit, plain formatted images and kernel driver would
-> convert them to 4-bit, wacom usb format or 1-bit wacom bluetooth format
-> depending on how the tablet is connected.
-> 
-> The downside of this approach is that the user land wouldn't have 100%
-> control over 1-bit images for bluetooth as kernel would have to create
-> them from 4-bit images.
 
-The USB interface is *very* simple:
-- if incoming data != 1024 -> reject
-- forward everything to the device without in kernel treatment*
+The report command queues events till any of following
+conditions is reached:
+  - PERF_RECORD_FINISHED_ROUND event is processed
+  - end of the file is reached
 
-How about just changing the expected size to 256 in case of a BT tablet,
-and let the user-space scramble in both cases and forward proper raw
-data?
+Any of above conditions will force the queue to flush some
+events while keeping all allocated memory for next events.
 
-This way, user space will still have control over 1-bit vs 4-bits, and
-the changes required in the kernel will be small enough.
+If PERF_RECORD_FINISHED_ROUND is missing the queue will
+allocate memory for every single event in the perf.data.
+This could lead to enormous memory consuption and speed
+degradation of report command for huge perf.data files.
 
-My concern is that I'd like to have this series in 3.17 and I will not
-have access to the hardware until next week :/
-Having all of the user-spaces breakages in the same kernel release will
-I think simplify the user space work.
+With the quue allocation limit of 100 MB, I've got around
+15% speedup on reporting of ~10GB perf.data file.
 
-Cheers,
-Benjamin
+current code:
+ Performance counter stats for './perf.old report --stdio -i perf-test.data' (3 runs):
 
-* speaking about that: I just noticed that hid-wacom sent the
-  WAC_CMD_ICON_START_STOP message twice with 0 as the second parameter.
-  However, the USB spec tells that you have to use 1 for 'start' and 0
-  for 'stop'. Rather weird that this is working with both 0 in BT mode.
+   621,685,704,665      cycles                    ( +-  0.52% )
+   873,397,467,969      instructions              ( +-  0.00% )
 
-> 
-> [1] https://lkml.org/lkml/2012/9/9/80
-> -- 
-> Kind regards,
-> Przemo Firszt
-> 
-> 
+     286.133268732 seconds time elapsed           ( +-  1.13% )
+
+with patches:
+ Performance counter stats for './perf report --stdio -i perf-test.data' (3 runs):
+
+   603,933,987,185      cycles                    ( +-  0.45% )
+   869,139,445,070      instructions              ( +-  0.00% )
+
+     245.337510637 seconds time elapsed           ( +-  0.49% )
+
+
+The speed up seems to be mainly in less cycles spent in servicing
+page faults:
+
+current code:
+     4.44%     0.01%  perf.old  [kernel.kallsyms]   [k] page_fault                                   
+
+with patches:
+     1.45%     0.00%      perf  [kernel.kallsyms]   [k] page_fault                                   
+
+current code (faults event):
+         6,643,807      faults                    ( +-  0.36% )
+
+with patches (faults event):
+         2,214,756      faults                    ( +-  3.03% )
+
+
+Also now we have one of our big memory spender under control
+and the ordered events queue code is put in separated object
+with clear interface ready to be used by another command
+like script.
+
+Also reachable in here:
+  git://git.kernel.org/pub/scm/linux/kernel/git/jolsa/perf.git
+  perf/core_ordered_events
+
+thanks,
+jirka
+
+
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Jean Pihet <jean.pihet@linaro.org>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Signed-off-by: Jiri Olsa <jolsa@kernel.org>
+---
+Jiri Olsa (19):
+      perf tools: Fix accounting of ordered samples queue
+      perf tools: Rename ordered_samples bool to ordered_events
+      perf tools: Rename ordered_samples struct to ordered_events
+      perf tools: Rename ordered_events members
+      perf tools: Add ordered_events_(new|delete) interface
+      perf tools: Factor ordered_events_flush to be more generic
+      perf tools: Limit ordered events queue size
+      perf tools: Flush ordered events in case of allocation failure
+      perf tools: Make perf_session_deliver_event global
+      perf tools: Create ordered-events object
+      perf tools: Use list_move in ordered_events_delete function
+      perf tools: Add ordered_events_init function
+      perf tools: Add ordered_events_free function
+      perf tools: Add perf_config_u64 function
+      perf tools: Add report.queue-size config file option
+      perf tools: Add debug prints for ordered events queue
+      perf tools: Always force PERF_RECORD_FINISHED_ROUND event
+      perf tools: Store PERF_RECORD_FINISHED_ROUND only for nonempty rounds
+      perf tools: Allow out of order messages in forced flush
+
+ tools/perf/Makefile.perf         |   2 +
+ tools/perf/builtin-annotate.c    |   2 +-
+ tools/perf/builtin-diff.c        |   2 +-
+ tools/perf/builtin-inject.c      |   2 +-
+ tools/perf/builtin-kmem.c        |   2 +-
+ tools/perf/builtin-kvm.c         |   8 ++--
+ tools/perf/builtin-lock.c        |   2 +-
+ tools/perf/builtin-mem.c         |   2 +-
+ tools/perf/builtin-record.c      |   7 ++-
+ tools/perf/builtin-report.c      |  15 +++++-
+ tools/perf/builtin-sched.c       |   2 +-
+ tools/perf/builtin-script.c      |   2 +-
+ tools/perf/builtin-timechart.c   |   2 +-
+ tools/perf/builtin-trace.c       |   2 +-
+ tools/perf/util/cache.h          |   1 +
+ tools/perf/util/config.c         |  24 ++++++++++
+ tools/perf/util/debug.c          |  36 ++++++++++++++-
+ tools/perf/util/debug.h          |   8 ++++
+ tools/perf/util/ordered-events.c | 245 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ tools/perf/util/ordered-events.h |  51 +++++++++++++++++++++
+ tools/perf/util/session.c        | 217 ++++++++++++++++----------------------------------------------------------------------
+ tools/perf/util/session.h        |  26 ++++-------
+ tools/perf/util/tool.h           |   2 +-
+ 23 files changed, 448 insertions(+), 214 deletions(-)
+ create mode 100644 tools/perf/util/ordered-events.c
+ create mode 100644 tools/perf/util/ordered-events.h
