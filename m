@@ -1,91 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760290AbaGYMZh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 08:25:37 -0400
-Received: from cpsmtpb-ews03.kpnxchange.com ([213.75.39.6]:49731 "EHLO
-	cpsmtpb-ews03.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1760177AbaGYMZe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 08:25:34 -0400
-Message-ID: <1406291131.8231.20.camel@x220>
-Subject: [PATCH] [linux-next] netfilter: kill remnants of ulog targets
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Pablo Neira Ayuso <pablo@netfilter.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Patrick McHardy <kaber@trash.net>,
-        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
-        Stephen Hemminger <stephen@networkplumber.org>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>
-Cc: netdev@vger.kernel.org, netfilter-devel@vger.kernel.org,
-        coreteam@netfilter.org, bridge@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Date: Fri, 25 Jul 2014 14:25:31 +0200
-In-Reply-To: <20140723093949.GA3754@salvia>
-References: <1406107694.12441.8.camel@x220> <20140723093949.GA3754@salvia>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 25 Jul 2014 12:25:31.0919 (UTC) FILETIME=[86EEA9F0:01CFA803]
-X-RcptDomain: vger.kernel.org
+	id S1760292AbaGYM2I (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 08:28:08 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39935 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751916AbaGYM2G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jul 2014 08:28:06 -0400
+Date: Fri, 25 Jul 2014 13:28:01 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Vlastimil Babka <vbabka@suse.cz>
+Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>, linux-kernel@vger.kernel.org,
+        Minchan Kim <minchan@kernel.org>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+Subject: Re: [PATCH V4 05/15] mm, compaction: move pageblock checks up from
+ isolate_migratepages_range()
+Message-ID: <20140725122801.GZ10819@suse.de>
+References: <1405518503-27687-1-git-send-email-vbabka@suse.cz>
+ <1405518503-27687-6-git-send-email-vbabka@suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <1405518503-27687-6-git-send-email-vbabka@suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The ulog targets were recently killed. A few references to the Kconfig
-macros CONFIG_IP_NF_TARGET_ULOG and CONFIG_BRIDGE_EBT_ULOG were left
-untouched. Kill these too.
+On Wed, Jul 16, 2014 at 03:48:13PM +0200, Vlastimil Babka wrote:
+> isolate_migratepages_range() is the main function of the compaction scanner,
+> called either on a single pageblock by isolate_migratepages() during regular
+> compaction, or on an arbitrary range by CMA's __alloc_contig_migrate_range().
+> It currently perfoms two pageblock-wide compaction suitability checks, and
+> because of the CMA callpath, it tracks if it crossed a pageblock boundary in
+> order to repeat those checks.
+> 
+> However, closer inspection shows that those checks are always true for CMA:
+> - isolation_suitable() is true because CMA sets cc->ignore_skip_hint to true
+> - migrate_async_suitable() check is skipped because CMA uses sync compaction
+> 
+> We can therefore move the compaction-specific checks to isolate_migratepages()
+> and simplify isolate_migratepages_range(). Furthermore, we can mimic the
+> freepage scanner family of functions, which has isolate_freepages_block()
+> function called both by compaction from isolate_freepages() and by CMA from
+> isolate_freepages_range(), where each use-case adds own specific glue code.
+> This allows further code simplification.
+> 
+> Therefore, we rename isolate_migratepages_range() to isolate_freepages_block()
+> and limit its functionality to a single pageblock (or its subset). For CMA,
+> a new different isolate_migratepages_range() is created as a CMA-specific
+> wrapper for the _block() function. The checks specific to compaction are moved
+> to isolate_migratepages(). As part of the unification of these two families of
+> functions, we remove the redundant zone parameter where applicable, since zone
+> pointer is already passed in cc->zone.
+> 
+> Furthermore, going back to compact_zone() and compact_finished() when pageblock
+> is found unsuitable (now by isolate_migratepages()) is wasteful - the checks
+> are meant to skip pageblocks quickly. The patch therefore also introduces a
+> simple loop into isolate_migratepages() so that it does not return immediately
+> on failed pageblock checks, but keeps going until isolate_migratepages_range()
+> gets called once. Similarily to isolate_freepages(), the function periodically
+> checks if it needs to reschedule or abort async compaction.
+> 
+> Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
+> Cc: Minchan Kim <minchan@kernel.org>
+> Cc: Mel Gorman <mgorman@suse.de>
+> Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+> Cc: Michal Nazarewicz <mina86@mina86.com>
+> Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> Cc: Christoph Lameter <cl@linux.com>
+> Cc: Rik van Riel <riel@redhat.com>
+> Cc: David Rientjes <rientjes@google.com>
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
-Note that ulog_warn_deprecated and ebt_ulog_warn_deprecated do not exist
-anymore. Neither do */ebt_ulog.c and */ipt_ULOG.c.
+Acked-by: Mel Gorman <mgorman@suse.de>
 
- include/net/netns/x_tables.h  | 6 ------
- net/bridge/netfilter/Makefile | 1 -
- net/ipv4/netfilter/Makefile   | 1 -
- 3 files changed, 8 deletions(-)
-
-diff --git a/include/net/netns/x_tables.h b/include/net/netns/x_tables.h
-index 02fe40f8c8fd..c24060ee411e 100644
---- a/include/net/netns/x_tables.h
-+++ b/include/net/netns/x_tables.h
-@@ -15,11 +15,5 @@ struct netns_xt {
- 	struct ebt_table *frame_filter;
- 	struct ebt_table *frame_nat;
- #endif
--#if IS_ENABLED(CONFIG_IP_NF_TARGET_ULOG)
--	bool ulog_warn_deprecated;
--#endif
--#if IS_ENABLED(CONFIG_BRIDGE_EBT_ULOG)
--	bool ebt_ulog_warn_deprecated;
--#endif
- };
- #endif
-diff --git a/net/bridge/netfilter/Makefile b/net/bridge/netfilter/Makefile
-index 1f78ea0d90e4..e0560a60cad4 100644
---- a/net/bridge/netfilter/Makefile
-+++ b/net/bridge/netfilter/Makefile
-@@ -36,5 +36,4 @@ obj-$(CONFIG_BRIDGE_EBT_SNAT) += ebt_snat.o
- 
- # watchers
- obj-$(CONFIG_BRIDGE_EBT_LOG) += ebt_log.o
--obj-$(CONFIG_BRIDGE_EBT_ULOG) += ebt_ulog.o
- obj-$(CONFIG_BRIDGE_EBT_NFLOG) += ebt_nflog.o
-diff --git a/net/ipv4/netfilter/Makefile b/net/ipv4/netfilter/Makefile
-index 245db9df3337..33001621465b 100644
---- a/net/ipv4/netfilter/Makefile
-+++ b/net/ipv4/netfilter/Makefile
-@@ -57,7 +57,6 @@ obj-$(CONFIG_IP_NF_TARGET_ECN) += ipt_ECN.o
- obj-$(CONFIG_IP_NF_TARGET_MASQUERADE) += ipt_MASQUERADE.o
- obj-$(CONFIG_IP_NF_TARGET_REJECT) += ipt_REJECT.o
- obj-$(CONFIG_IP_NF_TARGET_SYNPROXY) += ipt_SYNPROXY.o
--obj-$(CONFIG_IP_NF_TARGET_ULOG) += ipt_ULOG.o
- 
- # generic ARP tables
- obj-$(CONFIG_IP_NF_ARPTABLES) += arp_tables.o
 -- 
-1.9.3
-
+Mel Gorman
+SUSE Labs
