@@ -1,77 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759977AbaGYI1j (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 04:27:39 -0400
-Received: from numascale.com ([213.162.240.84]:33770 "EHLO numascale.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759958AbaGYI1f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 04:27:35 -0400
-X-Greylist: delayed 2231 seconds by postgrey-1.27 at vger.kernel.org; Fri, 25 Jul 2014 04:27:34 EDT
-Message-ID: <53D20C2E.3070902@numascale.com>
-Date: Fri, 25 Jul 2014 15:50:06 +0800
-From: Daniel J Blueman <daniel@numascale.com>
-Organization: Numascale AS
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1759915AbaGYI3l (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 04:29:41 -0400
+Received: from mail-la0-f45.google.com ([209.85.215.45]:45993 "EHLO
+	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750818AbaGYI3j (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jul 2014 04:29:39 -0400
 MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>, Hillf Danton <dhillf@gmail.com>
-CC: Borislav Petkov <bp@amd64.org>, Ingo Molnar <mingo@redhat.com>,
-        Igor Mammedov <imammedo@redhat.com>,
-        Steffen Persvold <sp@numascale.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [3.14] core onlining/hotplug regression
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-OutGoing-Spam-Status: No, score=-2.9
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - cpanel21.proisp.no
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - numascale.com
-X-Get-Message-Sender-Via: cpanel21.proisp.no: authenticated_id: daniel@numascale.com
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+In-Reply-To: <1406272180-25101-1-git-send-email-pramod.gurav@smartplayin.com>
+References: <1406272180-25101-1-git-send-email-pramod.gurav@smartplayin.com>
+Date: Fri, 25 Jul 2014 13:59:37 +0530
+Message-ID: <CAK5sBcFMxKzB8KgSDTtfsGV173TV6Ji3VFNETVqgpGeHPS7LEg@mail.gmail.com>
+Subject: Re: [PATCH] Input: soc_button_array: Remove kfree on data allocated
+ with devm_zalloc
+From: Sachin Kamat <spk.linux@gmail.com>
+To: pramod.gurav.etc@gmail.com
+Cc: linux-input@vger.kernel.org, open list <linux-kernel@vger.kernel.org>,
+        Pramod Gurav <pramod.gurav@smartplayin.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Lejun Zhu <lejun.zhu@linux.intel.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Thomas et al,
+On Fri, Jul 25, 2014 at 12:39 PM,  <pramod.gurav.etc@gmail.com> wrote:
+> From: Pramod Gurav <pramod.gurav@smartplayin.com>
+>
+> This patch does below:
+> - Removes kfree done on data allocated with devm_zalloc in probe
+>   path of the driver.
+> - Adds a check on return value from devm_kzalloc which was missing
+>   and renames a lable from err_free_mem to err_mem.
+> - Adds couple of dev_err on failure to allocate memory
+>
+> CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+> CC: Lejun Zhu <lejun.zhu@linux.intel.com>
+> CC: Sachin Kamat <sachin.kamat@linaro.org>
+>
+> Signed-off-by: Pramod Gurav <pramod.gurav@smartplayin.com>
+> ---
+>  drivers/input/misc/soc_button_array.c |   19 ++++++++++++++-----
+>  1 file changed, 14 insertions(+), 5 deletions(-)
+>
+> diff --git a/drivers/input/misc/soc_button_array.c b/drivers/input/misc/soc_button_array.c
+> index 5a6334b..ac82971 100644
+> --- a/drivers/input/misc/soc_button_array.c
+> +++ b/drivers/input/misc/soc_button_array.c
+> @@ -83,6 +83,13 @@ soc_button_device_create(struct pnp_dev *pdev,
+>                                        sizeof(*gpio_keys_pdata) +
+>                                         sizeof(*gpio_keys) * MAX_NBUTTONS,
+>                                        GFP_KERNEL);
+> +       if (!gpio_keys_pdata) {
+> +               dev_err(&pdev->dev,
+> +                       "Can't allocate memory for gpio_keys_platform_data\n");
 
-On a larger x86 system with 1728 cores, 3.15(.6) asserts on 
-smpboot_thread_fn's td->cpu != smp_processor_id() consistently after 
-~1500 cores are online.
+OOM message is not needed as memory subsystem will take care of it.
 
-Reverting the only directly related changes I could find [1,2] doesn't 
-help. Debugging indicates there is a race where the created thread is 
-quickly migrated to core 0 when this occurs, since smp_processor_id 
-returns 0 in these cases. Thomas introduced a thread parked state to fix 
-related issues a year back. Linux 3.14(.13) boots just nice.
+> +               error = -ENOMEM;
+> +               goto err_mem;
 
-Full boot output is at:
-https://resources.numascale.com/linux-315-thread-mig.txt
+Return directly from here.
 
-Any theories so far? I'll start bisecting when I have full access to the 
-system again in a week and I'll do some more debugging with intermittent 
-access before then.
+> +       }
+> +
+>         gpio_keys = (void *)(gpio_keys_pdata + 1);
+>
+>         for (info = button_info; info->name; info++) {
+> @@ -104,7 +111,7 @@ soc_button_device_create(struct pnp_dev *pdev,
+>
+>         if (n_buttons == 0) {
+>                 error = -ENODEV;
+> -               goto err_free_mem;
+> +               goto err_mem;
 
-Thanks,
-   Daniel
+ditto
 
--- [1]
+>         }
+>
+>         gpio_keys_pdata->buttons = gpio_keys;
+> @@ -114,7 +121,7 @@ soc_button_device_create(struct pnp_dev *pdev,
+>         pd = platform_device_alloc("gpio-keys", PLATFORM_DEVID_AUTO);
+>         if (!pd) {
+>                 error = -ENOMEM;
+> -               goto err_free_mem;
+> +               goto err_mem;
 
-commit 81c98869faa5f3a9457c93efef908ef476326b31
-Author: Nishanth Aravamudan <nacc@linux.vnet.ibm.com>
-Date:   Thu Apr 3 14:46:25 2014 -0700
-kthread: ensure locality of task_struct allocations
+ditto
 
--- [2]
+>         }
+>
+>         error = platform_device_add_data(pd, gpio_keys_pdata,
+> @@ -130,8 +137,7 @@ soc_button_device_create(struct pnp_dev *pdev,
+>
+>  err_free_pdev:
+>         platform_device_put(pd);
+> -err_free_mem:
+> -       devm_kfree(&pdev->dev, gpio_keys_pdata);
+> +err_mem:
 
-commit 89f898c1e195fa6235c869bb457e500b7b3ac49d
-Author: Igor Mammedov <imammedo@redhat.com>
-Date:   Thu Jun 5 15:42:43 2014 +0200
+This label would not be required once returned directly from above.
 
-     x86: Fix list/memory corruption on CPU hotplug
+>         return ERR_PTR(error);
+>  }
+>
+> @@ -155,8 +161,11 @@ static int soc_button_pnp_probe(struct pnp_dev *pdev,
+>         int error;
+>
+>         priv = devm_kzalloc(&pdev->dev, sizeof(*priv), GFP_KERNEL);
+> -       if (!priv)
+> +       if (!priv) {
+> +               dev_err(&pdev->dev,
+> +                       "Can't allocate memory for soc_button_data\n");
+
+OOM message is not needed as memory subsystem will take care of it.
+
+
 -- 
-Daniel J Blueman
-Principal Software Engineer, Numascale
+Regards,
+Sachin.
