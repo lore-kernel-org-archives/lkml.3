@@ -1,86 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753518AbaGYPY7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 11:24:59 -0400
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:34756 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753009AbaGYPY6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 11:24:58 -0400
-Message-ID: <53D276BE.20901@gmail.com>
-Date: Fri, 25 Jul 2014 23:24:46 +0800
-From: xinhui <mnipxh@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1754174AbaGYPZI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 11:25:08 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:49131 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753066AbaGYPZC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jul 2014 11:25:02 -0400
+Message-ID: <53D276A0.3070800@ti.com>
+Date: Fri, 25 Jul 2014 20:54:16 +0530
+From: Lokesh Vutla <lokeshvutla@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
 MIME-Version: 1.0
-To: Peter Hurley <peter@hurleysoftware.com>,
-        "xinhui.pan" <xinhuix.pan@intel.com>
-CC: Greg KH <gregkh@linuxfoundation.org>, jslaby@suse.cz,
-        linux-kernel@vger.kernel.org, yanmin_zhang@linux.intel.com
-Subject: Re: [PATCH] tty/tty_io.c: make a check before reuse cdev
-References: <53CD0BD4.4050007@gmail.com> <20140721153840.GA6802@kroah.com> <53CE5097.2000502@intel.com> <53CE941B.1030102@hurleysoftware.com> <53CF7EAC.8010201@intel.com> <53CFDD05.4010104@hurleysoftware.com>
-In-Reply-To: <53CFDD05.4010104@hurleysoftware.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: Nishanth Menon <nm@ti.com>
+CC: <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, <tony@atomide.com>, <paul@pwsan.com>,
+        <linux@arm.linux.org.uk>, <nsekhar@ti.com>, <j-keerthy@ti.com>,
+        <rogerq@ti.com>
+Subject: Re: [PATCH 2/2] ARM: DRA7: hwmod: Add dra74x and dra72x specific
+ ocp interface lists
+References: <1405499774-19770-1-git-send-email-lokeshvutla@ti.com> <1405499774-19770-3-git-send-email-lokeshvutla@ti.com> <53CE9652.4080304@ti.com>
+In-Reply-To: <53CE9652.4080304@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hi, Peter
-
-On 2014年07月24日 00:04, Peter Hurley wrote:
-> Hi Xinhui,
-> 
-> On 07/23/2014 05:21 AM, xinhui.pan wrote:
->> 于 2014年07月23日 00:40, Peter Hurley 写道:
->>> On 07/22/2014 07:52 AM, xinhui.pan wrote:
->>>> 于 2014年07月21日 23:38, Greg KH 写道:
->>>>> On Mon, Jul 21, 2014 at 08:47:16PM +0800, pp wrote:
-> 
->>>>>> tty driver register its device and (D)init the cdevs again.
->>>>>
->>>>> What driver does this with an "old" device, it should have created a new
->>>>> one, otherwise, as you have pointed out, it's a bug.
->>>>>
->>>>
->>>> I can't agree more with you. we should not use "old" device.
->>>
->>> This is a gsm driver problem. The GSM driver is reusing device indexes
->>> for still-open ttys.
->>>
->>> The GSM driver uses a global table, gsm_mux[], to allocate device indexes
->>> but prematurely clears the table entry in gsm_mux_cleanup(). If instead,
->>> clearing the gsm_mux table entry were deferred to gsm_mux_free(), then
->>> device indexes would not be getting reused until after the last tty
->>> associated with the last gsm attach was closed.
->>>
+Hi Nishanth,
+On Tuesday 22 July 2014 10:20 PM, Nishanth Menon wrote:
+> On 07/16/2014 03:36 AM, Lokesh Vutla wrote:
+>> From: Rajendra Nayak <rnayak@ti.com>
 >>
->> Very nice solution. We will check if this can cause any risk, both to kernel and user space.
->> Using a new tty base to register with new cdevs may give us more chance to wait PROCESS quit/close.
->> when total 256 tty used up, what we should do is still in discuss.
+>> To deal with IPs which are specific to dra74x and dra72x, maintain seperate
+>> ocp interface lists, while keeping the common list for all common IPs.
+>>
+>> Move USB OTG SS4 to dra74x only list since its unavailable in
+>> dra72x and is giving an abort during boot. The dra72x only list
+>> is empty for now and a placeholder for future hwmod additions which
+>> are specific to dra72x.
+>>
+>> Fixes: d904b38 ARM: DRA7: hwmod: Add SYSCONFIG for usb_otg_ss
 > 
-> I saw your patch for the use of gsm->num before gsm_activate_mux() has
-> allocated the table entry; thanks for fixing that.
+> please use a format as following:
+> Fixes: d904b38df0db13 ("ARM: DRA7: hwmod: Add SYSCONFIG for usb_otg_ss")
 > 
-> As for what to do if all the gsm_mux table entries are used: if the error
-> is infrequent, I suggest simply returning an error which is what the
-> driver does currently. Otherwise, a more dynamic allocation scheme may be required.
+>> Reported-by: Keerthy <j-keerthy@ti.com>
+>> Signed-off-by: Rajendra Nayak <rnayak@ti.com>
+>> Signed-off-by: Lokesh Vutla <lokeshvutla@ti.com>
+>> ---
+>>  arch/arm/mach-omap2/omap_hwmod.c          |    3 +++
+>>  arch/arm/mach-omap2/omap_hwmod_7xx_data.c |   22 ++++++++++++++++++++--
+>>  2 files changed, 23 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/arch/arm/mach-omap2/omap_hwmod.c b/arch/arm/mach-omap2/omap_hwmod.c
+>> index 6c074f3..14f8370 100644
+>> --- a/arch/arm/mach-omap2/omap_hwmod.c
+>> +++ b/arch/arm/mach-omap2/omap_hwmod.c
+>> @@ -3345,6 +3345,9 @@ int __init omap_hwmod_register_links(struct omap_hwmod_ocp_if **ois)
+>>  	if (!ois)
+>>  		return 0;
+>>  
+>> +	if (ois[0] == NULL) /*empty list*/
+> /* Empty list */ ?
+>> +		return 0;
+>> +
 > 
-> I did notice while reviewing the error handling that gsmld_open() will
-> leak the entire composite ldisc data allocated by gsm_alloc_mux() if
-> gsmld_attach_gsm() fails.
+> This change looks like a different patch?
+> 
+>>  	if (!linkspace) {
+>>  		if (_alloc_linkspace(ois)) {
+>>  			pr_err("omap_hwmod: could not allocate link space\n");
+>> diff --git a/arch/arm/mach-omap2/omap_hwmod_7xx_data.c b/arch/arm/mach-omap2/omap_hwmod_7xx_data.c
+>> index 284324f..c95033c 100644
+>> --- a/arch/arm/mach-omap2/omap_hwmod_7xx_data.c
+>> +++ b/arch/arm/mach-omap2/omap_hwmod_7xx_data.c
+>> @@ -35,6 +35,7 @@
+>>  #include "i2c.h"
+>>  #include "mmc.h"
+>>  #include "wd_timer.h"
+>> +#include "soc.h"
+>>  
+>>  /* Base offset for all DRA7XX interrupts external to MPUSS */
+>>  #define DRA7XX_IRQ_GIC_START	32
+>> @@ -2705,7 +2706,6 @@ static struct omap_hwmod_ocp_if *dra7xx_hwmod_ocp_ifs[] __initdata = {
+>>  	&dra7xx_l4_per3__usb_otg_ss1,
+>>  	&dra7xx_l4_per3__usb_otg_ss2,
+>>  	&dra7xx_l4_per3__usb_otg_ss3,
+>> -	&dra7xx_l4_per3__usb_otg_ss4,
+>>  	&dra7xx_l3_main_1__vcp1,
+>>  	&dra7xx_l4_per2__vcp1,
+>>  	&dra7xx_l3_main_1__vcp2,
+>> @@ -2714,8 +2714,26 @@ static struct omap_hwmod_ocp_if *dra7xx_hwmod_ocp_ifs[] __initdata = {
+>>  	NULL,
+>>  };
+>>  
+>> +static struct omap_hwmod_ocp_if *dra74x_hwmod_ocp_ifs[] __initdata = {
+>> +	&dra7xx_l4_per3__usb_otg_ss4,
+>> +	NULL,
+>> +};
+>> +
+>> +static struct omap_hwmod_ocp_if *dra72x_hwmod_ocp_ifs[] __initdata = {
+>> +	NULL,
+>> +};
+>> +
+>>  int __init dra7xx_hwmod_init(void)
+>>  {
+>> +	int ret;
+>> +
+>>  	omap_hwmod_init();
+>> -	return omap_hwmod_register_links(dra7xx_hwmod_ocp_ifs);
+>> +	ret = omap_hwmod_register_links(dra7xx_hwmod_ocp_ifs);
+> if (ret)
+> 	goto out;
+>> +
+>> +	if (!ret && soc_is_dra74x())
+> no need of !ret
+>> +		return omap_hwmod_register_links(dra74x_hwmod_ocp_ifs);
+> ret = omap_hwmod_register_links(dra74x_hwmod_ocp_ifs);
+>> +	else if (!ret && soc_is_dra72x())
+> no need of else and !ret
+>> +		return omap_hwmod_register_links(dra72x_hwmod_ocp_ifs);
+> ret = omap_hwmod_register_links(dra72x_hwmod_ocp_ifs);
+>> +
+> 
+> out:
+>> +	return ret;
+After looking closely into it, I realized that currently its the same logic of what you are
+suggesting.  If there is no error from registering common lists then only go for registering the
+Soc specific lists.
+Do you still want me to go ahead and make this change?
+
+Thanks and regards,
+Lokesh
+>>  }
+>>
+> 
 > 
 
-As for memory leak, I suggest move the codes that changing the index of gsm_mux[] into gsm_alloc_mux/gsm_free_mux.
-That makes things much easier to understand. And everything should be OK, including base = gsm->num << 6 :)
-
-I think gsm_mux[] holds the gsms whcih we are able to use, not we are using. *able to use* includes *using*.
-
-If you have any different opinions, could you point out my mistake?
-
-thanks,
-
-xinhui
-
-> Regards,
-> Peter Hurley
-> 
