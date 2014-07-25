@@ -1,53 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760392AbaGYV1R (ORCPT <rfc822;w@1wt.eu>);
+	id S1760645AbaGYV1a (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 17:27:30 -0400
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:49686 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751018AbaGYV1R (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 25 Jul 2014 17:27:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:19867 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750732AbaGYV1Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 17:27:16 -0400
-Date: Fri, 25 Jul 2014 23:25:55 +0200
-From: Jakub Jelinek <jakub@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>, Alexei Starovoitov <ast@kernel.org>,
-        Michel =?iso-8859-1?Q?D=E4nzer?= <michel@daenzer.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Debian GCC Maintainers <debian-gcc@lists.debian.org>,
-        Debian Kernel Team <debian-kernel@lists.debian.org>
-Subject: Re: Random panic in load_balance() with 3.16-rc
-Message-ID: <20140725212555.GG2397@laptop.redhat.com>
-Reply-To: Jakub Jelinek <jakub@redhat.com>
-References: <CA+55aFwQfwfAP6U77_nD_mSvoygj=cZ09N644hKRtzgLnEqhZQ@mail.gmail.com>
- <20140723190230.GH3935@laptop>
- <CA+55aFyM1wqTLK0m4GQJ28f=z0iZE87=xk+1z-vm+PH1_d8nKw@mail.gmail.com>
- <53D064C7.5050807@daenzer.net>
- <CA+55aFyJhqiPv0kQ+51=Ei-zaAO+0JszxtnEyx-Gbto3SE00xw@mail.gmail.com>
- <53D1B1EF.7030603@daenzer.net>
- <20140725035527.GA30108@pg-vmw-gw1>
- <20140725140237.GB32669@home.goodmis.org>
- <CA+55aFzOoJzqJ=4RVPEBfscA8oRdr5Nv7fKx9aXYw2+frkuhwA@mail.gmail.com>
- <CA+55aFxbWfYPuzCZvhy24zVfWwhN=DcxrCDguZ74cfsOz9U7PQ@mail.gmail.com>
+Date: Fri, 25 Jul 2014 23:27:07 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Subject: Re: [PATCH 06/10] nohz: Define meaningful symbol for nohz full
+ timekeeper
+Message-ID: <20140725212705.GB16182@localhost.localdomain>
+References: <1405730661-9355-1-git-send-email-fweisbec@gmail.com>
+ <1405730661-9355-7-git-send-email-fweisbec@gmail.com>
+ <20140721181255.GH8690@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+55aFxbWfYPuzCZvhy24zVfWwhN=DcxrCDguZ74cfsOz9U7PQ@mail.gmail.com>
+In-Reply-To: <20140721181255.GH8690@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 25, 2014 at 01:01:11PM -0700, Linus Torvalds wrote:
-> For example, gcc will not create a small stack frame with "sub
-> $8,%rsp". No, what gcc does is to use a random "push" instruction.
-> Fair enough, but that really makes things much harder to see. Here's
-> an example:
+On Mon, Jul 21, 2014 at 11:12:55AM -0700, Paul E. McKenney wrote:
+> On Sat, Jul 19, 2014 at 02:44:17AM +0200, Frederic Weisbecker wrote:
+> > The nohz full timekeeper is always CPU 0. Lets add it to the list of
+> > special tick_do_timer_cpu symbols for more self explanatory code.
+> > 
+> > Cc: Ingo Molnar <mingo@kernel.org>
+> > Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > Cc: Peter Zijlstra <peterz@infradead.org>
+> > Cc: Steven Rostedt <rostedt@goodmis.org>
+> > Cc: Thomas Gleixner <tglx@linutronix.de>
+> > Cc: Viresh Kumar <viresh.kumar@linaro.org>
+> > Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+> 
+> Sounds like Nicolas Pitre would like to be able to specify the default,
+> perhaps at build time, but aside from that requested enhancement:
 
-That is because for -Os, push is certainly shorter than sub $8,%rsp.
+Ok. That's outside the scope of this patchset though as it doesn't change much things
+in this regard: CPU 0 has been the timekeeper since the early days of nohz full.
+And we still need a default timekeeper in any case, whether we can override it or not
+in the future. So we still need that patch.
 
-If you want to test for this gcc bug in the kernel, supposedly one should
-just take the short testcase from the GCC PR, try to compile it and see if
-you e.g. get a -fcompare-debug -Os failure with the testcase.
-In that case, you could instead of giving up completely just
--fno-var-tracking-assignments.
+Then if big.LITTLE people are really interested in nohz full, we can still enhance
+that in the future.
 
-	Jakub
+Thanks!
