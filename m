@@ -1,115 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934792AbaGYSGk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 14:06:40 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:52318 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753559AbaGYSGi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 14:06:38 -0400
-Date: Fri, 25 Jul 2014 11:06:32 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Pranith Kumar <bobby.prani@gmail.com>
-Cc: Josh Triplett <josh@joshtriplett.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        "open list:READ-COPY UPDATE..." <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 2/2] rcu: Check the return value of rcu_nocb_mask
- cpumask allocation
-Message-ID: <20140725180632.GA6230@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1406248652-17416-1-git-send-email-bobby.prani@gmail.com>
- <1406248652-17416-2-git-send-email-bobby.prani@gmail.com>
- <20140725152551.GC11241@linux.vnet.ibm.com>
+	id S1760769AbaGYSIX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 14:08:23 -0400
+Received: from p3plex2out01.prod.phx3.secureserver.net ([184.168.131.12]:58175
+	"EHLO p3plex2out01.prod.phx3.secureserver.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753270AbaGYSIW convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jul 2014 14:08:22 -0400
+From: Hartley Sweeten <HartleyS@visionengravers.com>
+To: Hartley Sweeten <HartleyS@visionengravers.com>,
+        Ian Abbott <abbotti@mev.co.uk>,
+        "driverdev-devel@linuxdriverproject.org" 
+	<driverdev-devel@linuxdriverproject.org>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 00/12] staging: comedi: amplc_pc236: remove legacy PCI
+ attach and tidy up
+Thread-Topic: [PATCH 00/12] staging: comedi: amplc_pc236: remove legacy PCI
+ attach and tidy up
+Thread-Index: AQHPp+eR78LK/F6+QkKq8znELomRypuxDf7AgAAIocA=
+Date: Fri, 25 Jul 2014 18:08:21 +0000
+Message-ID: <DC148C5AA1CEBA4E87973D432B1C2D8825F1E2D0@P3PWEX4MB008.ex4.secureserver.net>
+References: <1406279098-8498-1-git-send-email-abbotti@mev.co.uk>
+ <DC148C5AA1CEBA4E87973D432B1C2D8825F1E16B@P3PWEX4MB008.ex4.secureserver.net>
+In-Reply-To: <DC148C5AA1CEBA4E87973D432B1C2D8825F1E16B@P3PWEX4MB008.ex4.secureserver.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [184.183.19.121]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140725152551.GC11241@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14072518-6688-0000-0000-0000038ED5F1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 25, 2014 at 08:25:51AM -0700, Paul E. McKenney wrote:
-> On Thu, Jul 24, 2014 at 08:37:32PM -0400, Pranith Kumar wrote:
-> > This commit checks the return value of the zalloc_cpumask_var() used for
-> > allocating cpumask for rcu_nocb_mask.
-> > 
-> > Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
-> 
-> Hmmm...  I saw the check in the previous patch, but didn't see removal
-> of the later have_rcu_nocb_mask check.  Please see below.
+On Friday, July 25, 2014 10:37 AM, Hartley Sweeten wrote:
+> On Friday, July 25, 2014 2:05 AM, Ian Abbott wrote:
+>> The "amplc_pc236" driver supports both ISA cards (Amplicon PC36AT) and PCI
+>> cards (PCI236).  I plan to split it into separate drivers with a module for
+>> common code, but let's reorganise it a bit first.
+>>
+>> The driver still supports manual attachment of PCI devices via the
+>> `COMEDI_DEVCONFIG` ioctl and the comedi driver `attach` hook.  That can go,
+>> though the attach hook is still needed for ISA devices.
+>>
+>> 01) staging: comedi: amplc_pc236: reformat header comments
+>> 02) staging: comedi: amplc_pc236: remove some boilerplate comments
+>> 03) staging: comedi: amplc_pc236: remove manual configuration of PCI boards
+>> 04) staging: comedi: amplc_pc236: no need to manipulate PCI ref count
+>> 05) staging: comedi: amplc_pc236: no need to set hw_dev
+>> 06) staging: comedi: amplc_pc236: absorb pc236_pci_common_attach()
+>> 07) staging: comedi: amplc_pc236: remove 'model' member
+>> 08) staging: comedi: amplc_pc236: split pc236_boards[] into ISA & PCI
+>> 09) staging: comedi: amplc_pc236: don't check bus type in attach
+>> 10) staging: comedi: amplc_pc236: Simplify PCI board look-up
+>> 11) staging: comedi: amplc_pc236: remove PCI device ID macros
+>> 12) staging: comedi: amplc_pc236: set board_name before common attach
+>>
+>>  drivers/staging/comedi/drivers/amplc_pc236.c | 282 +++++++--------------------
+>>  1 file changed, 74 insertions(+), 208 deletions(-)
+>
+> Ian,
+>
+> I'm not sure what happened but this entire series appears to be corrupt.
+>
+> Can you check it and repost?
 
-And events overtook this one.  Turns out that commit b58cc46c5f6b
-(rcu: Don't offload callbacks unless specifically requested) was not
-one of my best efforts.
+Ignore that... The problem was on my end.
 
-I will adapt your patch 2/2 in this series and apply it with your
-Signed-off-by.  Patch 1/2 is obsoleted by the current fix for
-commit b58cc46c5f6b.
-
-							Thanx, Paul
-
-> > ---
-> > v2: no change from v1
-> > 
-> >  kernel/rcu/tree_plugin.h | 23 ++++++++++++-----------
-> >  1 file changed, 12 insertions(+), 11 deletions(-)
-> > 
-> > diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
-> > index 520538a..9c9a01c 100644
-> > --- a/kernel/rcu/tree_plugin.h
-> > +++ b/kernel/rcu/tree_plugin.h
-> > @@ -54,7 +54,10 @@ static void __init rcu_bootup_announce_oddness_nocb(void)
-> >  {
-> >  #ifndef CONFIG_RCU_NOCB_CPU_NONE
-> >  	if (!have_rcu_nocb_mask) {
-> > -		zalloc_cpumask_var(&rcu_nocb_mask, GFP_KERNEL);
-> > +		if (!zalloc_cpumask_var(&rcu_nocb_mask, GFP_KERNEL)) {
-> > +			pr_info("rcu_nocb_mask allocation failed\n");
-> > +			return;
-> > +		}
-> >  		have_rcu_nocb_mask = true;
-> >  	}
-> >  #ifdef CONFIG_RCU_NOCB_CPU_ZERO
-> > @@ -66,17 +69,15 @@ static void __init rcu_bootup_announce_oddness_nocb(void)
-> >  	cpumask_copy(rcu_nocb_mask, cpu_possible_mask);
-> >  #endif /* #ifdef CONFIG_RCU_NOCB_CPU_ALL */
-> >  #endif /* #ifndef CONFIG_RCU_NOCB_CPU_NONE */
-> > -	if (have_rcu_nocb_mask) {
-> > -		if (!cpumask_subset(rcu_nocb_mask, cpu_possible_mask)) {
-> > -			pr_info("\tNote: kernel parameter 'rcu_nocbs=' contains nonexistent CPUs.\n");
-> > -			cpumask_and(rcu_nocb_mask, cpu_possible_mask,
-> > -				    rcu_nocb_mask);
-> > -		}
-> > -		cpulist_scnprintf(nocb_buf, sizeof(nocb_buf), rcu_nocb_mask);
-> > -		pr_info("\tOffload RCU callbacks from CPUs: %s.\n", nocb_buf);
-> > -		if (rcu_nocb_poll)
-> > -			pr_info("\tPoll for callbacks from no-CBs CPUs.\n");
-> > +	if (!cpumask_subset(rcu_nocb_mask, cpu_possible_mask)) {
-> 
-> What happens if CONFIG_RCU_NOCB_CPU_NONE=y and the rcu_nocbs= boot
-> parameter is not specified and we get here?
-> 
-> In order to get visible failures when testing, build with
-> CONFIG_CPUMASK_OFFSTACK=y.
-> 
-> > +		pr_info("\tNote: kernel parameter 'rcu_nocbs=' contains nonexistent CPUs.\n");
-> > +		cpumask_and(rcu_nocb_mask, cpu_possible_mask,
-> > +				rcu_nocb_mask);
-> >  	}
-> > +	cpulist_scnprintf(nocb_buf, sizeof(nocb_buf), rcu_nocb_mask);
-> > +	pr_info("\tOffload RCU callbacks from CPUs: %s.\n", nocb_buf);
-> > +	if (rcu_nocb_poll)
-> > +		pr_info("\tPoll for callbacks from no-CBs CPUs.\n");
-> >  }
-> > 
-> >  /*
-> > -- 
-> > 2.0.1
-> > 
+Reviewed-by: H Hartley Sweeten <hsweeten@visionengravers.com>
 
