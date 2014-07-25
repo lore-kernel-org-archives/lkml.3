@@ -1,269 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758067AbaGYHrQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 03:47:16 -0400
-Received: from router.aksignal.cz ([188.175.113.102]:54389 "EHLO
-	router.aksignal.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750818AbaGYHrO (ORCPT
+	id S1759777AbaGYHtv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 03:49:51 -0400
+Received: from mail-wg0-f48.google.com ([74.125.82.48]:60041 "EHLO
+	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752265AbaGYHtu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 03:47:14 -0400
-Message-ID: <53D20B6E.9010808@aksignal.cz>
-Date: Fri, 25 Jul 2014 09:46:54 +0200
-From: =?UTF-8?B?SmnFmcOtIFByY2hhbA==?= <jiri.prchal@aksignal.cz>
-Reply-To: jiri.prchal@aksignal.cz
-Organization: AK signal Brno
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Fri, 25 Jul 2014 03:49:50 -0400
+Message-ID: <53D20C19.5000306@monstr.eu>
+Date: Fri, 25 Jul 2014 09:49:45 +0200
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: Guenter Roeck <linux@roeck-us.net>, Alexandre Courbot <gnurou@gmail.com>
-CC: "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Randy Dunlap <rdunlap@infradead.org>
-Subject: Re: [RFC PATCH] gpiolib: Provide and export gpiod_export_name
-References: <1406139132-5404-1-git-send-email-linux@roeck-us.net> <CAAVeFuKsJpSYo2DMyTdYE2J5Cu_ZD=b9o-=S0DLDccyNmwniNg@mail.gmail.com> <53D0A7E4.1040707@aksignal.cz> <53D0A983.9000900@roeck-us.net>
-In-Reply-To: <53D0A983.9000900@roeck-us.net>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 8bit
+To: Vinod Koul <vinod.koul@intel.com>
+CC: =?UTF-8?B?QW5kcmVhcyBGw6RyYmVy?= <afaerber@suse.de>,
+        Michal Simek <michal.simek@xilinx.com>,
+        Andreas Olofsson <andreas@adapteva.com>,
+        Matteo Vit <matteo.vit@starwaredesign.com>,
+        Sean Rickerd <srickerd@suse.com>, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Srikanth T <sthokal@xilinx.com>
+Subject: Re: [PATCH v2 07/11] Documentation: devicetree: Fix Xilinx VDMA specification
+References: <1406242820-20140-1-git-send-email-afaerber@suse.de> <1406242820-20140-8-git-send-email-afaerber@suse.de>
+In-Reply-To: <1406242820-20140-8-git-send-email-afaerber@suse.de>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="6FkixWKDXrk6lh5imelucmhDsnrqsFdTe"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-What about this modification? If is defined label, use it prioritlly, at second use name in chip description.
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--6FkixWKDXrk6lh5imelucmhDsnrqsFdTe
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-@@ -842,7 +842,9 @@ int gpiod_export(struct gpio_desc *desc, bool direction_may_change)
-  	spin_unlock_irqrestore(&gpio_lock, flags);
+Hi Vinod,
 
-  	offset = gpio_chip_hwgpio(desc);
--	if (desc->chip->names && desc->chip->names[offset])
-+	if (desc->label)
-+		ioname = desc->label;
-+	else if (desc->chip->names && desc->chip->names[offset])
-  		ioname = desc->chip->names[offset];
+On 07/25/2014 01:00 AM, Andreas F=C3=A4rber wrote:
+> The specification requires xlnx,data-width, but example and driver use
+> xlnx,datawidth. Change the specification to match the implementation.
+>=20
+> Signed-off-by: Andreas F=C3=A4rber <afaerber@suse.de>
+> ---
+>  v2: New
+> =20
+>  Documentation/devicetree/bindings/dma/xilinx/xilinx_vdma.txt | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>=20
+> diff --git a/Documentation/devicetree/bindings/dma/xilinx/xilinx_vdma.t=
+xt b/Documentation/devicetree/bindings/dma/xilinx/xilinx_vdma.txt
+> index 1405ed0..e4c4d47 100644
+> --- a/Documentation/devicetree/bindings/dma/xilinx/xilinx_vdma.txt
+> +++ b/Documentation/devicetree/bindings/dma/xilinx/xilinx_vdma.txt
+> @@ -25,7 +25,7 @@ Required child node properties:
+>  - compatible: It should be either "xlnx,axi-vdma-mm2s-channel" or
+>  	"xlnx,axi-vdma-s2mm-channel".
+>  - interrupts: Should contain per channel VDMA interrupts.
+> -- xlnx,data-width: Should contain the stream data width, take values
+> +- xlnx,datawidth: Should contain the stream data width, take values
+>  	{32,64...1024}.
+> =20
+>  Optional child node properties:
+>=20
 
-  	dev = device_create(&gpio_class, desc->chip->dev, MKDEV(0, 0),
+Can you please take this patch through your tree?
+
+Reviewed-by: Michal Simek <michal.simek@xilinx.com>
+
+Thanks,
+Michal
+
+--=20
+Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
+Maintainer of Linux kernel - Xilinx Zynq ARM architecture
+Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
 
 
 
-Dne 24.7.2014 v 08:36 Guenter Roeck napsal(a):
-> On 07/23/2014 11:29 PM, Jiří Prchal wrote:
->> Hi,
->> just to append to this: is in plan some kind of exporting named GPIOs from device tree to /sys/* or /dev/*? It would
->> be very useful not only for me. Because I thing what GPIO is used for what is hardware design dependent same as for
->> example what SPI chips are used. And SPI chips are in DT.
->>
->
-> Yes, for one of my use cases that is how I would probably configure it;
-> alternatively it would be configured with platform data. It is
-> somewhat questionable, however, if this approach would be acceptable
-> for the Linux dt community, as it is a corner case between system
-> (hardware) description and configuration.
->
-> Guenter
->
->> Dne 24.7.2014 v 07:44 Alexandre Courbot napsal(a):
->>> On Thu, Jul 24, 2014 at 3:12 AM, Guenter Roeck <linux@roeck-us.net> wrote:
->>>> gpiod_export_name is similar to gpiod_export, but lets the user
->>>> determine the name used to export a gpio pin.
->>>>
->>>> Currently, the pin name is determined by the chip driver with
->>>> the 'names' array in the gpio_chip data structure, or it is set
->>>> to gpioX, where X is the pin number, if no name is provided by
->>>> the chip driver.
->>>
->>> Oh, my. I did not even know about this 'names' array. This is pretty
->>> bad - a GPIO provider should not decide what its GPIOs are used for.
->>>
->>> Luckily for you, this creates a precedent that makes this patch more
->>> acceptable, in that it is not making the situation worse. Even though
->>> I consider both solutions to be bad, I actually prefer your
->>> gpiod_export_name() function to that 'names' array in gpio_chip...
->>>
->>>>
->>>> It is, however, desirable to be able to provide the pin name when
->>>> exporting the pin, for example from platform code. In other words,
->>>> it would be useful to move the naming decision from the pin provider
->>>> to the pin consumer. The gpio-pca953x driver provides this capability
->>>> as part of its platform data. Other drivers could be enhanced in a
->>>> similar way; however, this is not always possible or easy to accomplish.
->>>> For example, mfd client drivers such as gpio-ich already use platform
->>>> data to pass information from the mfd master driver to the client driver.
->>>> Overloading this platform data to also provide an array of gpio pin names
->>>> would be a challenge if not impossible.
->>>>
->>>> The alternative to use gpiod_export_link is also not always desirable,
->>>> since it only creates a named link to a different directory, meaning
->>>> the named gpio pin is not available in /sys/class/gpio but only
->>>> in some platform specific directory and thus not as generic as possible
->>>> and/or useful.
->>>>
->>>> A specific example for a use case is a gpio pin which reports AC power
->>>> loss to user space. Depending on the platform and platform variant,
->>>> the pin can be provided by various gpio chip drivers and pin numbers.
->>>> It would be very desirable to have a well defined location such as
->>>> /sys/class/gpio/ac_power_loss for this pin, so user space knows where
->>>> to find the attribute without knowledge of the underlying platform
->>>> variant or oher hardware details.
->>>
->>> As I explained on the other thread, I still encourage you to have
->>> these GPIOs under device nodes that give a hint of who is provided the
->>> GPIO (effectively exporting the (dev, function) tuple to user-space)
->>> instead of having them popping out under /sys/class/gpio where nobody
->>> knows where they come from and name collisions are much more likely.
->>>
->>> Your message sounds like you have no choice but have the named GPIO
->>> link under the gpiochip's device node, but this is not the case -
->>> gpio_export_link() let's you specify the device under which the link
->>> should appear. Make that device be your "scu" device and you can have
->>> a consistent sysfs path to access your GPIOs.
->>>
->>> Allowing GPIOs to pop up in the same directory with an arbitrary name
->>> is just a recipe for a mess. But that's a recipe that is already
->>> allowed thanks to that 'names' array. So I'm really confused about
->>> what to do with this patch. If you can do with gpio_export_link() (and
->>> I have not seen evidence of the contrary), please go that way instead.
->>>
->>>>
->>>> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
->>>> ---
->>>> Applies to tip of linux-gpio/for-next.
->>>>
->>>>   Documentation/gpio/sysfs.txt  | 12 ++++++++----
->>>>   drivers/gpio/gpiolib-sysfs.c  | 23 ++++++++++++++++-------
->>>>   include/linux/gpio/consumer.h |  9 +++++++++
->>>>   3 files changed, 33 insertions(+), 11 deletions(-)
->>>>
->>>> diff --git a/Documentation/gpio/sysfs.txt b/Documentation/gpio/sysfs.txt
->>>> index c2c3a97..8e301b2 100644
->>>> --- a/Documentation/gpio/sysfs.txt
->>>> +++ b/Documentation/gpio/sysfs.txt
->>>> @@ -125,7 +125,11 @@ requested using gpio_request():
->>>>          /* export the GPIO to userspace */
->>>>          int gpiod_export(struct gpio_desc *desc, bool direction_may_change);
->>>>
->>>> -       /* reverse gpio_export() */
->>>> +       /* export named GPIO to userspace */
->>>> +       int gpiod_export_name(struct gpio_desc *desc, const char *ioname,
->>>> +                       bool direction_may_change);
->>>> +
->>>> +       /* reverse gpio_export() / gpiod_export_name() */
->>>>          void gpiod_unexport(struct gpio_desc *desc);
->>>>
->>>>          /* create a sysfs link to an exported GPIO node */
->>>> @@ -136,9 +140,9 @@ requested using gpio_request():
->>>>          int gpiod_sysfs_set_active_low(struct gpio_desc *desc, int value);
->>>>
->>>>   After a kernel driver requests a GPIO, it may only be made available in
->>>> -the sysfs interface by gpiod_export(). The driver can control whether the
->>>> -signal direction may change. This helps drivers prevent userspace code
->>>> -from accidentally clobbering important system state.
->>>> +the sysfs interface by gpiod_export() or gpiod_export_name(). The driver
->>>> +can control whether the signal direction may change. This helps drivers
->>>> +prevent userspace code from accidentally clobbering important system state.
->>>>
->>>>   This explicit exporting can help with debugging (by making some kinds
->>>>   of experiments easier), or can provide an always-there interface that's
->>>> diff --git a/drivers/gpio/gpiolib-sysfs.c b/drivers/gpio/gpiolib-sysfs.c
->>>> index be45a92..7d36230 100644
->>>> --- a/drivers/gpio/gpiolib-sysfs.c
->>>> +++ b/drivers/gpio/gpiolib-sysfs.c
->>>> @@ -523,13 +523,12 @@ static struct class gpio_class = {
->>>>    *
->>>>    * Returns zero on success, else an error.
->>>>    */
->>>> -int gpiod_export(struct gpio_desc *desc, bool direction_may_change)
->>>> +int gpiod_export_name(struct gpio_desc *desc, const char *ioname,
->>>> +                     bool direction_may_change)
->>>>   {
->>>>          unsigned long           flags;
->>>>          int                     status;
->>>> -       const char              *ioname = NULL;
->>>>          struct device           *dev;
->>>> -       int                     offset;
->>>>
->>>>          /* can't export until sysfs is available ... */
->>>>          if (!gpio_class.p) {
->>>> @@ -560,10 +559,6 @@ int gpiod_export(struct gpio_desc *desc, bool direction_may_change)
->>>>                  direction_may_change = false;
->>>>          spin_unlock_irqrestore(&gpio_lock, flags);
->>>>
->>>> -       offset = gpio_chip_hwgpio(desc);
->>>> -       if (desc->chip->names && desc->chip->names[offset])
->>>> -               ioname = desc->chip->names[offset];
->>>> -
->>>>          dev = device_create(&gpio_class, desc->chip->dev, MKDEV(0, 0),
->>>>                              desc, ioname ? ioname : "gpio%u",
->>>>                              desc_to_gpio(desc));
->>>> @@ -600,6 +595,20 @@ fail_unlock:
->>>>          gpiod_dbg(desc, "%s: status %d\n", __func__, status);
->>>>          return status;
->>>>   }
->>>> +EXPORT_SYMBOL_GPL(gpiod_export_name);
->>>> +
->>>> +int gpiod_export(struct gpio_desc *desc, bool direction_may_change)
->>>> +{
->>>> +       const char *ioname = NULL;
->>>> +
->>>> +       if (desc) {
->>>> +               int offset = gpio_chip_hwgpio(desc);
->>>> +
->>>> +               if (desc->chip->names && desc->chip->names[offset])
->>>> +                       ioname = desc->chip->names[offset];
->>>
->>> I'd add a
->>>
->>> else
->>>      ioname = "gpio%u";
->>>
->>> so all the name-chosing code is grouped in the same place. Then you
->>> can remove that same check from gpiod_export_name().
->>>
->>>> +       }
->>>> +       return gpiod_export_name(desc, ioname, direction_may_change);
->>>> +}
->>>>   EXPORT_SYMBOL_GPL(gpiod_export);
->>>>
->>>>   static int match_export(struct device *dev, const void *data)
->>>> diff --git a/include/linux/gpio/consumer.h b/include/linux/gpio/consumer.h
->>>> index 05e53cc..986da3e 100644
->>>> --- a/include/linux/gpio/consumer.h
->>>> +++ b/include/linux/gpio/consumer.h
->>>> @@ -260,6 +260,8 @@ static inline int desc_to_gpio(const struct gpio_desc *desc)
->>>>   #if IS_ENABLED(CONFIG_GPIOLIB) && IS_ENABLED(CONFIG_GPIO_SYSFS)
->>>>
->>>>   int gpiod_export(struct gpio_desc *desc, bool direction_may_change);
->>>> +int gpiod_export_name(struct gpio_desc *desc, const char *ioname,
->>>> +                     bool direction_may_change);
->>>>   int gpiod_export_link(struct device *dev, const char *name,
->>>>                        struct gpio_desc *desc);
->>>>   int gpiod_sysfs_set_active_low(struct gpio_desc *desc, int value);
->>>> @@ -273,6 +275,13 @@ static inline int gpiod_export(struct gpio_desc *desc,
->>>>          return -ENOSYS;
->>>>   }
->>>>
->>>> +static inline int gpiod_export_name(struct gpio_desc *desc,
->>>> +                                   const char *ioname,
->>>> +                                   bool direction_may_change)
->>>> +{
->>>> +       return -ENOSYS;
->>>> +}
->>>> +
->>>>   static inline int gpiod_export_link(struct device *dev, const char *name,
->>>>                                      struct gpio_desc *desc)
->>>>   {
->>>> --
->>>> 1.9.1
->>>>
->>> --
->>> To unsubscribe from this list: send the line "unsubscribe linux-gpio" in
->>> the body of a message to majordomo@vger.kernel.org
->>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>>
->>
->>
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-gpio" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+--6FkixWKDXrk6lh5imelucmhDsnrqsFdTe
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iEYEARECAAYFAlPSDBkACgkQykllyylKDCGhOgCdH9m+jxhGj6jgOD0pSeMl0G0x
+C/MAmwfpKpnZ7UldJlhohfjgJ4Mil976
+=Kfag
+-----END PGP SIGNATURE-----
+
+--6FkixWKDXrk6lh5imelucmhDsnrqsFdTe--
