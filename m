@@ -1,81 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752096AbaGYXG5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 19:06:57 -0400
-Received: from mail-we0-f172.google.com ([74.125.82.172]:52235 "EHLO
-	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751384AbaGYXGz (ORCPT
+	id S1752324AbaGYXKN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 19:10:13 -0400
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:53604 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750765AbaGYXKK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 19:06:55 -0400
+	Fri, 25 Jul 2014 19:10:10 -0400
+Message-ID: <53D2E3BD.1000208@gmail.com>
+Date: Sat, 26 Jul 2014 00:09:49 +0100
+From: Malcolm Priestley <tvboxspy@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-In-Reply-To: <CAMf-jS=pCKtOK6ZG=LWLGSJT9xCzCkiuARVskut4Wz+pARSsyw@mail.gmail.com>
-References: <1405319337-11368-1-git-send-email-xerofoify@gmail.com>
-	<CAKohpo=R4sjEGUFDt2yubfTQ+r1FO5RtFBYg8XROH-SYu90Zew@mail.gmail.com>
-	<CAMf-jS=pCKtOK6ZG=LWLGSJT9xCzCkiuARVskut4Wz+pARSsyw@mail.gmail.com>
-Date: Fri, 25 Jul 2014 19:06:54 -0400
-Message-ID: <CAPDOMVi7bXziheE6LaCHjjGg-aPov5_8kSN-xGxedPzV=PRAEQ@mail.gmail.com>
-Subject: Re: [PATCH] cpufreq: Fix latency for cpufreq_info
-From: Nick Krause <xerofoify@gmail.com>
-To: pramod gurav <pramod.gurav.etc@gmail.com>
-Cc: Viresh Kumar <viresh.kumar@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Newsgroups: gmane.linux.drivers.driver-project.devel,gmane.linux.kernel
+To: Guillaume Clement <gclement@baobob.org>,
+        Forest Bond <forest@alittletooquiet.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Dan Carpenter <dan.carpenter@oracle.com>
+Subject: Re: [PATCH] staging: vt6655: fix direct dereferencing of user pointer
+References: <20140725123301.GZ13737@mwanda> <1406292443-11734-1-git-send-email-gclement@baobob.org>
+In-Reply-To: <1406292443-11734-1-git-send-email-gclement@baobob.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 25, 2014 at 1:36 AM, pramod gurav
-<pramod.gurav.etc@gmail.com> wrote:
-> Viresh,
-> Be careful when you ACK Nick's patches. He has confessed he has no
-> idea how to build test a kernel. His patches are NOT AT ALL build
-> tested. And some of his patches are being reverted for causing
-> problems in build and all. He looks for FIXME and removes/edits the
-> code as per the comments. Just be careful.
->
-> On Mon, Jul 14, 2014 at 12:00 PM, Viresh Kumar <viresh.kumar@linaro.org> wrote:
->> On 14 July 2014 11:58, Nicholas Krause <xerofoify@gmail.com> wrote:
->>> This fixes the latency for the cpufreq policy to 1 million nanoseconds
->>> that calls the function pxa_cpu_init for the member of the structure
->>> called cpuinfo.transition_latency.
->>>
->>> Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
->>> ---
->>>  drivers/cpufreq/pxa2xx-cpufreq.c | 2 +-
->>>  1 file changed, 1 insertion(+), 1 deletion(-)
->>>
->>> diff --git a/drivers/cpufreq/pxa2xx-cpufreq.c b/drivers/cpufreq/pxa2xx-cpufreq.c
->>> index e24269a..e08bb98 100644
->>> --- a/drivers/cpufreq/pxa2xx-cpufreq.c
->>> +++ b/drivers/cpufreq/pxa2xx-cpufreq.c
->>> @@ -372,7 +372,7 @@ static int pxa_cpufreq_init(struct cpufreq_policy *policy)
->>>         init_sdram_rows();
->>>
->>>         /* set default policy and cpuinfo */
->>> -       policy->cpuinfo.transition_latency = 1000; /* FIXME: 1 ms, assumed */
->>> +       policy->cpuinfo.transition_latency = 1000000;
->>>
->>>         /* Generate pxa25x the run cpufreq_frequency_table struct */
->>>         for (i = 0; i < NUM_PXA25x_RUN_FREQS; i++) {
->>
->> Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
->
->
->
-> --
-> Thanks and Regards
-> Pramod
+Hi Guillaume
+
+On 25/07/14 13:47, Guillaume Clement wrote:
+> Sparse reported that the data from tagSCmdRequest is given by
+> userspace, so it should be tagged as such.
+extra is not in user space
+
+All Wireless Extensions ioctl extra calls originate from 
+ioctl_standard_iw_point in wext-core.
+
+Either through ioctl or iw_handler
+
+All these functions should have been converted to iw_handler.
+
+Regards
 
 
-Pramod,
-I learned how to do it today and Viresh checked this and it didn't build
-so I sent him another fixed patch :). I am learning fast now and known
-how to properly test my patches now.
-Nick
+Malcolm
+
+>
+> Later, we were memcomparing and dereferencing it without first copying
+> it, fix that as well.
+>
+> Signed-off-by: Guillaume Clement <gclement@baobob.org>
+> ---
+>   drivers/staging/vt6655/iocmd.h |  2 +-
+>   drivers/staging/vt6655/iwctl.c | 32 ++++++++++++++++++++++----------
+>   drivers/staging/vt6655/iwctl.h |  6 +++---
+>   3 files changed, 26 insertions(+), 14 deletions(-)
+>
+> diff --git a/drivers/staging/vt6655/iocmd.h b/drivers/staging/vt6655/iocmd.h
+> index e499f1b..dd12498 100644
+> --- a/drivers/staging/vt6655/iocmd.h
+> +++ b/drivers/staging/vt6655/iocmd.h
+> @@ -100,7 +100,7 @@ typedef enum tagWZONETYPE {
+>   #pragma pack(1)
+>   typedef struct tagSCmdRequest {
+>   	u8	    name[16];
+> -	void	*data;
+> +	void __user *data;
+>   	u16	    wResult;
+>   	u16     wCmdCode;
+>   } SCmdRequest, *PSCmdRequest;
+> diff --git a/drivers/staging/vt6655/iwctl.c b/drivers/staging/vt6655/iwctl.c
+> index 501cd64..7ce23b5 100644
+> --- a/drivers/staging/vt6655/iwctl.c
+> +++ b/drivers/staging/vt6655/iwctl.c
+> @@ -1621,17 +1621,24 @@ int iwctl_giwauth(struct net_device *dev,
+>   int iwctl_siwgenie(struct net_device *dev,
+>   		   struct iw_request_info *info,
+>   		   struct iw_point *wrq,
+> -		   char *extra)
+> +		   char __user *extra)
+>   {
+>   	PSDevice			pDevice = (PSDevice)netdev_priv(dev);
+>   	PSMgmtObject	pMgmt = &(pDevice->sMgmtObj);
+>   	int ret = 0;
+> +	char length;
+>
+>   	if (wrq->length) {
+> -		if ((wrq->length < 2) || (extra[1]+2 != wrq->length)) {
+> -			ret = -EINVAL;
+> -			goto out;
+> -		}
+> +		if (wrq->length < 2)
+> +			return -EINVAL;
+> +
+> +		ret = get_user(length, extra + 1);
+> +		if (ret)
+> +			return ret;
+> +
+> +		if (length + 2 != wrq->length)
+> +			return -EINVAL;
+> +
+>   		if (wrq->length > MAX_WPA_IE_LEN) {
+>   			ret = -ENOMEM;
+>   			goto out;
+> @@ -1654,7 +1661,7 @@ out://not completely ...not necessary in wpa_supplicant 0.5.8
+>   int iwctl_giwgenie(struct net_device *dev,
+>   		   struct iw_request_info *info,
+>   		   struct iw_point *wrq,
+> -		   char *extra)
+> +		   char __user *extra)
+>   {
+>   	PSDevice			pDevice = (PSDevice)netdev_priv(dev);
+>   	PSMgmtObject	pMgmt = &(pDevice->sMgmtObj);
+> @@ -1801,18 +1808,23 @@ int iwctl_giwencodeext(struct net_device *dev,
+>   int iwctl_siwmlme(struct net_device *dev,
+>   		  struct iw_request_info *info,
+>   		  struct iw_point *wrq,
+> -		  char *extra)
+> +		  char __user *extra)
+>   {
+>   	PSDevice			pDevice = (PSDevice)netdev_priv(dev);
+>   	PSMgmtObject	pMgmt = &(pDevice->sMgmtObj);
+> -	struct iw_mlme *mlme = (struct iw_mlme *)extra;
+> +	struct iw_mlme mime;
+> +
+>   	int ret = 0;
+>
+> -	if (memcmp(pMgmt->abyCurrBSSID, mlme->addr.sa_data, ETH_ALEN)) {
+> +	ret = copy_from_user(&mime, extra, sizeof(mime));
+> +	if (ret)
+> +		return -EFAULT;
+> +
+> +	if (memcmp(pMgmt->abyCurrBSSID, mime.addr.sa_data, ETH_ALEN)) {
+>   		ret = -EINVAL;
+>   		return ret;
+>   	}
+> -	switch (mlme->cmd) {
+> +	switch (mime.cmd) {
+>   	case IW_MLME_DEAUTH:
+>   		//this command seems to be not complete,please test it --einsnliu
+>   		//bScheduleCommand((void *) pDevice, WLAN_CMD_DEAUTH, (unsigned char *)&reason);
+> diff --git a/drivers/staging/vt6655/iwctl.h b/drivers/staging/vt6655/iwctl.h
+> index de0a337..7dd6310 100644
+> --- a/drivers/staging/vt6655/iwctl.h
+> +++ b/drivers/staging/vt6655/iwctl.h
+> @@ -176,12 +176,12 @@ int iwctl_giwauth(struct net_device *dev,
+>   int iwctl_siwgenie(struct net_device *dev,
+>   		   struct iw_request_info *info,
+>   		   struct iw_point *wrq,
+> -		   char *extra);
+> +		   char __user *extra);
+>
+>   int iwctl_giwgenie(struct net_device *dev,
+>   		   struct iw_request_info *info,
+>   		   struct iw_point *wrq,
+> -		   char *extra);
+> +		   char __user *extra);
+>
+>   int iwctl_siwencodeext(struct net_device *dev,
+>   		       struct iw_request_info *info,
+> @@ -196,7 +196,7 @@ int iwctl_giwencodeext(struct net_device *dev,
+>   int iwctl_siwmlme(struct net_device *dev,
+>   		  struct iw_request_info *info,
+>   		  struct iw_point *wrq,
+> -		  char *extra);
+> +		  char __user *extra);
+>   #endif // #ifdef WPA_SUPPLICANT_DRIVER_WEXT_SUPPORT
+>   //End Add -- //2008-0409-07, <Add> by Einsn Liu
+>
+>
+
