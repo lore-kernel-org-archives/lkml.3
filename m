@@ -1,106 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761113AbaGYTdW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 15:33:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20953 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755604AbaGYTdU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 15:33:20 -0400
-Date: Fri, 25 Jul 2014 15:32:59 -0400
-From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-To: Przemo Firszt <przemo@firszt.eu>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
-        Ping Cheng <pinglinux@gmail.com>, Jason Gerecke <killertofu@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
-Subject: Re: [PATCH v2 00/10] Input - wacom: conversion to HID driver, series
- 2
-Message-ID: <20140725193259.GC12268@mail.corp.redhat.com>
-References: <1406225645-32141-1-git-send-email-benjamin.tissoires@redhat.com>
- <1406292140.2664.17.camel@fedora-lan>
- <20140725125820.GA12268@mail.corp.redhat.com>
- <1406295035.2664.43.camel@fedora-lan>
- <20140725145400.GB12268@mail.corp.redhat.com>
- <1406316376.12682.18.camel@fedora-lan>
+	id S1761133AbaGYTeV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 15:34:21 -0400
+Received: from mail-lb0-f178.google.com ([209.85.217.178]:55444 "EHLO
+	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753235AbaGYTeT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jul 2014 15:34:19 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1406316376.12682.18.camel@fedora-lan>
+In-Reply-To: <20140725180632.GA6230@linux.vnet.ibm.com>
+References: <1406248652-17416-1-git-send-email-bobby.prani@gmail.com>
+ <1406248652-17416-2-git-send-email-bobby.prani@gmail.com> <20140725152551.GC11241@linux.vnet.ibm.com>
+ <20140725180632.GA6230@linux.vnet.ibm.com>
+From: Pranith Kumar <bobby.prani@gmail.com>
+Date: Fri, 25 Jul 2014 15:33:48 -0400
+Message-ID: <CAJhHMCDVwn52YoZaGWpJ0X6N-2c63EJw9H6Br3dzts9cQUPo0w@mail.gmail.com>
+Subject: Re: [PATCH v2 2/2] rcu: Check the return value of rcu_nocb_mask
+ cpumask allocation
+To: Paul McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Josh Triplett <josh@joshtriplett.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        "open list:READ-COPY UPDATE..." <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Jul 25 2014 or thereabouts, Przemo Firszt wrote:
-> Dnia 2014-07-25, pią o godzinie 10:54 -0400, Benjamin Tissoires pisze:
-> > [..]
-> Hi Benjamin,
-> >  
-> > > If I understand you correctly we cannot have the same entry point in
-> > > sysfs for OLEDs unless we can tell userspace somehow if the tablet is
-> > > conected over USB or over bluetooth. The hardware of Intuos4 Wireless
-> > > over bluetooth allows only 1-bit images. The same hardware over USB
-> > > allows 4-bit images. Formatting of the images is also completely
-> > 
-> > Holy crap! I missed that. I did not noticed the 1-bit vs 4-bits
-> > difference :(
-> > 
-> > > different and it's not "plain". Check [1] for usb and exisitng
-> > > hid-wacom.c/wacom_scramble function for bluetooth.
-> > 
-> > Maybe I overlooked it, but I thought that in case of USB, the scrambling
-> > is done in user space, and in case of BT, the same scrambling made in the
-> > kernel. They looks very similar so I thought the user-space scramble for
-> > USB would have fit. However, the 4-bits/1-bits kills that assumption.
-> 
-> You're correct - USB requires scrambling in the user space, but
-> scrambling for USB is different than for BT. Example of USB scramble is
-> here: https://github.com/PrzemoF/i4oled/blob/master/src/i4oled.c#L401
-> 
-> > > 
-> > > If we want to make it consistent single entry on kernel level we
-> > > probably have to implement image conversion in the kernel. The user land
-> > > would always use 4-bit, plain formatted images and kernel driver would
-> > > convert them to 4-bit, wacom usb format or 1-bit wacom bluetooth format
-> > > depending on how the tablet is connected.
-> > > 
-> > > The downside of this approach is that the user land wouldn't have 100%
-> > > control over 1-bit images for bluetooth as kernel would have to create
-> > > them from 4-bit images.
-> > 
-> > The USB interface is *very* simple:
-> > - if incoming data != 1024 -> reject
-> > - forward everything to the device without in kernel treatment*
-> > 
-> > How about just changing the expected size to 256 in case of a BT tablet,
-> > and let the user-space scramble in both cases and forward proper raw
-> > data?
-> > 
-> > This way, user space will still have control over 1-bit vs 4-bits, and
-> > the changes required in the kernel will be small enough.
-> Sounds good to me. Bit more coding in gnome, but it's a small thing.
+On Fri, Jul 25, 2014 at 2:06 PM, Paul E. McKenney
+<paulmck@linux.vnet.ibm.com> wrote:
+> On Fri, Jul 25, 2014 at 08:25:51AM -0700, Paul E. McKenney wrote:
+>> On Thu, Jul 24, 2014 at 08:37:32PM -0400, Pranith Kumar wrote:
+>> > This commit checks the return value of the zalloc_cpumask_var() used for
+>> > allocating cpumask for rcu_nocb_mask.
+>> >
+>> > Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
+>>
+>> Hmmm...  I saw the check in the previous patch, but didn't see removal
+>> of the later have_rcu_nocb_mask check.  Please see below.
+>
+> And events overtook this one.  Turns out that commit b58cc46c5f6b
+> (rcu: Don't offload callbacks unless specifically requested) was not
+> one of my best efforts.
+>
+> I will adapt your patch 2/2 in this series and apply it with your
+> Signed-off-by.  Patch 1/2 is obsoleted by the current fix for
+> commit b58cc46c5f6b.
+>
 
-yeah, gnome already scramble for USB, let's have it scramble for BT too
-:)
+OK. I am curious to see what problem you found in that commit.
+I look forward to see your updated patch.
 
-> 
-> > My concern is that I'd like to have this series in 3.17 and I will not
-> > have access to the hardware until next week :/
-> > Having all of the user-spaces breakages in the same kernel release will
-> > I think simplify the user space work.
-> I agree.
+>> > ---
+>> > v2: no change from v1
+>> >
+>> >  kernel/rcu/tree_plugin.h | 23 ++++++++++++-----------
+>> >  1 file changed, 12 insertions(+), 11 deletions(-)
+>> >
+>> > diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
+>> > index 520538a..9c9a01c 100644
+>> > --- a/kernel/rcu/tree_plugin.h
+>> > +++ b/kernel/rcu/tree_plugin.h
+>> > @@ -54,7 +54,10 @@ static void __init rcu_bootup_announce_oddness_nocb(void)
+>> >  {
+>> >  #ifndef CONFIG_RCU_NOCB_CPU_NONE
+>> >     if (!have_rcu_nocb_mask) {
+>> > -           zalloc_cpumask_var(&rcu_nocb_mask, GFP_KERNEL);
+>> > +           if (!zalloc_cpumask_var(&rcu_nocb_mask, GFP_KERNEL)) {
+>> > +                   pr_info("rcu_nocb_mask allocation failed\n");
+>> > +                   return;
+>> > +           }
+>> >             have_rcu_nocb_mask = true;
+>> >     }
+>> >  #ifdef CONFIG_RCU_NOCB_CPU_ZERO
+>> > @@ -66,17 +69,15 @@ static void __init rcu_bootup_announce_oddness_nocb(void)
+>> >     cpumask_copy(rcu_nocb_mask, cpu_possible_mask);
+>> >  #endif /* #ifdef CONFIG_RCU_NOCB_CPU_ALL */
+>> >  #endif /* #ifndef CONFIG_RCU_NOCB_CPU_NONE */
+>> > -   if (have_rcu_nocb_mask) {
+>> > -           if (!cpumask_subset(rcu_nocb_mask, cpu_possible_mask)) {
+>> > -                   pr_info("\tNote: kernel parameter 'rcu_nocbs=' contains nonexistent CPUs.\n");
+>> > -                   cpumask_and(rcu_nocb_mask, cpu_possible_mask,
+>> > -                               rcu_nocb_mask);
+>> > -           }
+>> > -           cpulist_scnprintf(nocb_buf, sizeof(nocb_buf), rcu_nocb_mask);
+>> > -           pr_info("\tOffload RCU callbacks from CPUs: %s.\n", nocb_buf);
+>> > -           if (rcu_nocb_poll)
+>> > -                   pr_info("\tPoll for callbacks from no-CBs CPUs.\n");
+>> > +   if (!cpumask_subset(rcu_nocb_mask, cpu_possible_mask)) {
+>>
+>> What happens if CONFIG_RCU_NOCB_CPU_NONE=y and the rcu_nocbs= boot
+>> parameter is not specified and we get here?
+>>
+>> In order to get visible failures when testing, build with
+>> CONFIG_CPUMASK_OFFSTACK=y.
+>>
+>> > +           pr_info("\tNote: kernel parameter 'rcu_nocbs=' contains nonexistent CPUs.\n");
+>> > +           cpumask_and(rcu_nocb_mask, cpu_possible_mask,
+>> > +                           rcu_nocb_mask);
+>> >     }
+>> > +   cpulist_scnprintf(nocb_buf, sizeof(nocb_buf), rcu_nocb_mask);
+>> > +   pr_info("\tOffload RCU callbacks from CPUs: %s.\n", nocb_buf);
+>> > +   if (rcu_nocb_poll)
+>> > +           pr_info("\tPoll for callbacks from no-CBs CPUs.\n");
+>> >  }
+>> >
+>> >  /*
+>> > --
+>> > 2.0.1
+>> >
+>
 
-OK.
 
-> 
-> P.S. Could you send me that set of 23 patches using git-send-email that
-> I should apply on top of linux-next? I got it from lkml, but there is
-> still something messed (fails on patch 09/23). Of course, if it's not a
-> problem for you :-)
 
-Sure, I can definitively do that. I also made a small patch to check for
-1024 or 256 bits in OLEDs, so if you could give a try, that would be
-great.
-
-Cheers,
-Benjamin
-
+-- 
+Pranith
