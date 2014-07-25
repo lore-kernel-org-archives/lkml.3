@@ -1,102 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760521AbaGYOpF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 10:45:05 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:34115 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760427AbaGYOpD (ORCPT
+	id S1753200AbaGYOrG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 10:47:06 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:49791 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751618AbaGYOrD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 10:45:03 -0400
-Date: Fri, 25 Jul 2014 07:44:58 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Pranith Kumar <bobby.prani@gmail.com>
-Cc: Josh Triplett <josh@joshtriplett.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        "open list:READ-COPY UPDATE..." <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH 1/1] rcu: Use rcu_gp_kthread_wake() to wake up
- kthreads
-Message-ID: <20140725144458.GY11241@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1406264818-2296-1-git-send-email-bobby.prani@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1406264818-2296-1-git-send-email-bobby.prani@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14072514-0928-0000-0000-000003A95876
+	Fri, 25 Jul 2014 10:47:03 -0400
+Message-ID: <1406299616.1789.13.camel@jarvis.lan>
+Subject: Re: [PATCH 4/5] [SCSI] Do not use platform_bus as a parent
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Pawel Moll <pawel.moll@arm.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Olof Johansson <olof@lixom.net>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>, paul@pwsan.com,
+        Arnd Bergmann <arnd@arndb.de>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>, arm@kernel.org,
+        linux-tegra@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
+Date: Fri, 25 Jul 2014 07:46:56 -0700
+In-Reply-To: <1406298233-27876-4-git-send-email-pawel.moll@arm.com>
+References: <1406298233-27876-1-git-send-email-pawel.moll@arm.com>
+	 <1406298233-27876-4-git-send-email-pawel.moll@arm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 25, 2014 at 01:06:58AM -0400, Pranith Kumar wrote:
-> The rcu_gp_kthread_wake() function checks for three conditions before waking up
-> grace period kthreads:
+On Fri, 2014-07-25 at 15:23 +0100, Pawel Moll wrote:
+> The host devices without a parent were "forcefully adopted"
+> by platform bus. This patch removes this assignment. In
+> effect the dev_dev may be NULL now, which means ISA.
 > 
-> *  Is the thread we are trying to wake up the current thread?
-> *  Are the gp_flags zero? (all threads wait on non-zero gp_flags condition)
-> *  Is there no thread created for this flavour, hence nothing to wake up?
-> 
-> If any one of these condition is true, we do not call wake_up(). 
-> 
-> In rcu_report_qs_rsp(), I added a pr_info() call testing if any of the above
-> conditions is true, in which case we can avoid calling wake_up(). It turns out
-> that quite a few actually are. Most of the cases where we can avoid is condition 2
-> above and condition 1 also occurs quite often. Condition 3 never happens.
-> 
-> I could not test the wake_up() in force_quiescent_state() as that is not
-> triggered trivially, but I am assuming we can replace wake_up() there too.
-> 
-> Hence this commit tries to avoid calling wake_up() whenever we can by using
-> rcu_gp_kthread_wake() function.
-
-This one does sound much more plausible than the earlier one.  I have
-a few more questions that I will ask in your follow-up message.
-
-> One concern is the comment which states that we need a memory barrier at that
-> location which is being implied by the wake_up(). Should we put an smp_mb() and
-> just not rely on the barrier provided by wake_up()? Thoughts?
-
-Let's see...  The memory barriers are unnecessary for your case 1
-and case 3.  That leaves your case 2, which is all about ->gp_flags.
-It is quite possible that this case is now fully covered by locking,
-so that the comment is obsolete.  But why don't you check?
-
-							Thanx, Paul
-
-> Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
+> Cc: James E.J. Bottomley <JBottomley@parallels.com>
+> Cc: linux-scsi@vger.kernel.org
+> Signed-off-by: Pawel Moll <pawel.moll@arm.com>
 > ---
->  kernel/rcu/tree.c | 6 ++++--
->  1 file changed, 4 insertions(+), 2 deletions(-)
 > 
-> diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
-> index 72e0b1f..d0e0d6e 100644
-> --- a/kernel/rcu/tree.c
-> +++ b/kernel/rcu/tree.c
-> @@ -1938,7 +1938,8 @@ static void rcu_report_qs_rsp(struct rcu_state *rsp, unsigned long flags)
->  {
->  	WARN_ON_ONCE(!rcu_gp_in_progress(rsp));
->  	raw_spin_unlock_irqrestore(&rcu_get_root(rsp)->lock, flags);
-> -	wake_up(&rsp->gp_wq);  /* Memory barrier implied by wake_up() path. */
-> +	/* Memory barrier implied by wake_up() path. */
-> +	rcu_gp_kthread_wake(rsp);
->  }
+> This patch is a part of effort to remove references to platform_bus
+> and make it static.
 > 
->  /*
-> @@ -2516,7 +2517,8 @@ static void force_quiescent_state(struct rcu_state *rsp)
->  	ACCESS_ONCE(rsp->gp_flags) =
->  		ACCESS_ONCE(rsp->gp_flags) | RCU_GP_FLAG_FQS;
->  	raw_spin_unlock_irqrestore(&rnp_old->lock, flags);
-> -	wake_up(&rsp->gp_wq);  /* Memory barrier implied by wake_up() path. */
-> +	/* Memory barrier implied by wake_up() path. */
-> +	rcu_gp_kthread_wake(rsp);
->  }
-> 
->  /*
-> -- 
-> 2.0.1
-> 
+> James, could you please have a look and advice if the change is
+> correct? Would you happen to know the "real reasons" behind
+> using the root platform_bus device a parent?
+
+Yes, for DMA purposes, the parent cannot now be NULL; we'll get a panic
+in the DMA transfers if it is.  A lot of the legacy ISA device on x86
+and I thought some ARM SOC devices don't pass in the parent device, so
+we hang them off a known parent.
+
+You can grep for it; these are the devices that will begin to panic if
+you apply this patch:
+
+arch/ia64/hp/sim/simscsi.c:     error = scsi_add_host(host, NULL);
+drivers/scsi/a2091.c:   error = scsi_add_host(instance, NULL);
+drivers/scsi/a3000.c:   error = scsi_add_host(instance, NULL);
+drivers/scsi/aha152x.c: if( scsi_add_host(shpnt, NULL) ) {
+drivers/scsi/gdth.c:    error = scsi_add_host(shp, NULL);
+drivers/scsi/gdth.c:    error = scsi_add_host(shp, NULL);
+drivers/scsi/gvp11.c:   error = scsi_add_host(instance, NULL);
+drivers/scsi/imm.c:     err = scsi_add_host(host, NULL);
+drivers/scsi/pcmcia/fdomain_stub.c:    if (scsi_add_host(host, NULL))
+drivers/scsi/pcmcia/nsp_cs.c:   ret = scsi_add_host (host, NULL);
+drivers/scsi/pcmcia/qlogic_stub.c:      if (scsi_add_host(shost, NULL))
+drivers/scsi/pcmcia/sym53c500_cs.c:     if (scsi_add_host(host, NULL))
+drivers/scsi/ppa.c:     err = scsi_add_host(host, NULL);
+drivers/scsi/qlogicfas.c:       if (scsi_add_host(hreg, NULL))
+drivers/scsi/scsi_module.c:             error = scsi_add_host(shost, NULL);
+drivers/scsi/sgiwd93.c: err = scsi_add_host(host, NULL);
+
+Note I've picked up scsi_module, so anything that uses the SCSI module
+interface also has this problem.
+
+James
+
 
