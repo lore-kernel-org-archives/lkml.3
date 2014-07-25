@@ -1,333 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753015AbaGYEEo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 00:04:44 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:12085 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750714AbaGYEEl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 00:04:41 -0400
-X-AuditID: cbfee68f-b7fef6d000003970-ee-53d1d7576379
-From: Kukjin Kim <kgene.kim@samsung.com>
-To: "'Pankaj Dubey'" <pankaj.dubey@samsung.com>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: linux@arm.linux.org.uk, t.figa@samsung.com, vikas.sajjan@samsung.com,
-        joshi@samsung.com, naushad@samsung.com, thomas.ab@samsung.com,
-        chow.kim@samsung.com
-References: <1404878455-31518-1-git-send-email-pankaj.dubey@samsung.com>
- <1404878455-31518-4-git-send-email-pankaj.dubey@samsung.com>
-In-reply-to: <1404878455-31518-4-git-send-email-pankaj.dubey@samsung.com>
-Subject: RE: [PATCH v7 3/4] ARM: EXYNOS: Add platform driver support for Exynos
- PMU
-Date: Fri, 25 Jul 2014 13:04:39 +0900
-Message-id: <067501cfa7bd$8e6cb460$ab461d20$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: AQC8Xg2wTqZTg6oaD/ugBpVTcwknCgI5HA+5ncT16gA=
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrEIsWRmVeSWpSXmKPExsVy+t8zA93w6xeDDX7OMbdYNukum8X3XV/Y
-	LTY9vsZqcXnXHDaLGef3MVncvsxr8enof1aLRVuBkutnvGax6FjGaHHz2XYmB26PluYeNo/N
-	S+o9+rasYvT4vEkugCWKyyYlNSezLLVI3y6BK+PlvBPsBTudK96e/czUwPjDrIuRk0NCwETi
-	/vMdzBC2mMSFe+vZuhi5OIQEljFKzOm+yg5TtGH/NSaIxHRGiR+LZjJCOH8ZJXbNegnWziag
-	IXH4/TN2kISIwAxGickfnrCCOMwCCxklnt09ywLR0s4ocWbrZzaQFk4BT4m991eCLREWCJWY
-	tfMcE4jNIqAq8bbnE9hYXgFLiYPzJjFC2IISPybfYwGxmQW0JNbvPM4EYctLbF7zFuoLBYkd
-	Z1+D1YsIWEmc3r2JEaJGRGLfi3dgd0sINHJIvJ3SCbVMQOLb5ENAQzmAErISmw5AzZGUOLji
-	BssERolZSFbPQrJ6FpLVs5CsWMDIsopRNLUguaA4Kb3IWK84Mbe4NC9dLzk/dxMjJL77dzDe
-	PWB9iDEZaP1EZinR5HxgesgriTc0NjOyMDUxNTYytzQjTVhJnPf+w6QgIYH0xJLU7NTUgtSi
-	+KLSnNTiQ4xMHJxSDYyLinZktbW9T958UrOkZvMa7a8J/ovM9Oy379vr8/JVq5HN04TTH7Jz
-	p4mlmV9mWrVph2ae4GVrFZnvZW4WgpxKIqF5xoe92ZffyBFsPl4etv3igak79KPF+ifcuqOm
-	Z76tasXbFB57LaPNLAc2tFXxX477NfNw599Wz8LzH4S+Wzw1WfXM31uJpTgj0VCLuag4EQCP
-	rTxkBQMAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrIKsWRmVeSWpSXmKPExsVy+t9jQd3w6xeDDf43G1ksm3SXzeL7ri/s
-	FpseX2O1uLxrDpvFjPP7mCxuX+a1+HT0P6vFoq1AyfUzXrNYdCxjtLj5bDuTA7dHS3MPm8fm
-	JfUefVtWMXp83iQXwBLVwGiTkZqYklqkkJqXnJ+SmZduq+QdHO8cb2pmYKhraGlhrqSQl5ib
-	aqvk4hOg65aZA3STkkJZYk4pUCggsbhYSd8O04TQEDddC5jGCF3fkCC4HiMDNJCwjjHj5bwT
-	7AU7nSvenv3M1MD4w6yLkZNDQsBEYsP+a0wQtpjEhXvr2boYuTiEBKYzSvxYNJMRwvnLKLFr
-	1ktmkCo2AQ2Jw++fsYMkRARmMEpM/vCEFcRhFljIKPHs7lkWiJZ2RokzWz+zgbRwCnhK7L2/
-	kh3EFhYIlZi18xzYQhYBVYm3PZ/AxvIKWEocnDeJEcIWlPgx+R4LiM0soCWxfudxJghbXmLz
-	mrfMEMcqSOw4+xqsXkTASuL07k2MEDUiEvtevGOcwCg0C8moWUhGzUIyahaSlgWMLKsYRVML
-	kguKk9JzDfWKE3OLS/PS9ZLzczcxgpPHM6kdjCsbLA4xCnAwKvHwdtRfDBZiTSwrrsw9xCjB
-	wawkwnvrMFCINyWxsiq1KD++qDQntfgQoynQpxOZpUST84GJLa8k3tDYxMzI0sjMwsjE3FxJ
-	nPdAq3WgkEB6YklqdmpqQWoRTB8TB6dUA6PZxjdyLtobDKe92JvI0CT4pDCkxl4k8/wC6we3
-	El1bxV7NyFL7obyk9qjSK/G5N1MzXvPdbpjidK/WZvGpybZm01+3bvFcdTu8evfl0zfWxjS/
-	Vfu5V33OjAD78jnRC3denXplyVrPR1vEN52fqbHK9a2u2uxPoXxevDW/b5xKStx790RGgXOM
-	EktxRqKhFnNRcSIAr6VdxDQDAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S1753457AbaGYEFU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 00:05:20 -0400
+Received: from mail-bl2lp0211.outbound.protection.outlook.com ([207.46.163.211]:49166
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750749AbaGYEFR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jul 2014 00:05:17 -0400
+From: Punnaiah Choudary Kalluri <punnaiah.choudary.kalluri@xilinx.com>
+To: =?utf-8?B?QW5kcmVhcyBGw6RyYmVy?= <afaerber@suse.de>,
+        Michal Simek <michals@xilinx.com>
+CC: Andreas Olofsson <andreas@adapteva.com>,
+        Matteo Vit <matteo.vit@starwaredesign.com>,
+        Sean Rickerd <srickerd@suse.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Lars-Peter Clausen <lars@metafoo.de>
+Subject: RE: [PATCH v2 00/11] ARM: dts: zynq: Prepare Parallella
+Thread-Topic: [PATCH v2 00/11] ARM: dts: zynq: Prepare Parallella
+Thread-Index: AQHPp5MqOd6KcMpZNUqgzX0gRVD/6puwJmFA
+Date: Fri, 25 Jul 2014 03:49:23 +0000
+References: <1406242820-20140-1-git-send-email-afaerber@suse.de>
+In-Reply-To: <1406242820-20140-1-git-send-email-afaerber@suse.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.23.92.172]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+X-RCIS-Action: ALLOW
+Message-ID: <dc23839c-7a69-4674-9d92-80a1d68e9b23@BY2FFO11FD003.protection.gbl>
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:149.199.60.83;CTRY:US;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(438002)(13464003)(51704005)(377454003)(199002)(189002)(76176999)(85306003)(83322001)(31696002)(6806004)(64706001)(106116001)(92726001)(4396001)(74662001)(85852003)(54356999)(19580405001)(31966008)(46102001)(47776003)(83072002)(20776003)(50986999)(95666004)(44976005)(77982001)(77096002)(53416004)(50466002)(104016003)(81342001)(80022001)(106466001)(74316001)(74502001)(107046002)(70736001)(15975445006)(21056001)(23676002)(2656002)(19580395003)(81542001)(79102001)(76482001)(92566001)(99396002)(86362001)(1496007)(15202345003)(87936001)(107986001);DIR:OUT;SFP:;SCL:1;SRVR:BY2FFO11HUB027;H:xsj-pvapsmtpgw01;FPR:;MLV:sfv;PTR:unknown-60-83.xilinx.com;A:1;MX:1;LANG:en;
+X-OriginatorOrg: xilinx.onmicrosoft.com
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
+X-Forefront-PRVS: 02830F0362
+Authentication-Results: spf=pass (sender IP is 149.199.60.83)
+ smtp.mailfrom=punnaiah.choudary.kalluri@xilinx.com; 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s6P45PXo029776
 
-Pankaj Dubey wrote:
-> 
-> This patch modifies Exynos Power Management Unit (PMU) initialization
-> implementation in following way:
-> 
-> - Added platform driver support and probe function where Exynos PMU
->   driver will register itself as syscon provider with syscon framework.
-> - Added platform struct exynos_pmu_data to hold platform specific data.
-> - For each SoC's PMU support now we can add platform data and statically
->   bind PMU configuration and SoC specific initialization function.
-> - Separate each SoC's PMU initialization function and make it as part of
->   platform data.
-> - It also removes uses of soc_is_exynosXYZ().
-> 
-> Signed-off-by: Pankaj Dubey <pankaj.dubey@samsung.com>
-> Reviewed-by: Tomasz Figa <t.figa@samsung.com>
-> ---
->  arch/arm/mach-exynos/Kconfig |    1 +
->  arch/arm/mach-exynos/pmu.c   |  185 +++++++++++++++++++++++++++++++++---------
->  2 files changed, 146 insertions(+), 40 deletions(-)
-> 
-Looks good to me, will apply this and 4/4.
+Hi Andreas,
 
-Thanks,
-Kukjin
+>-----Original Message-----
+>From: Andreas F√§rber [mailto:afaerber@suse.de]
+>Sent: Friday, July 25, 2014 4:30 AM
+>To: Michal Simek
+>Cc: Andreas Olofsson; Matteo Vit; Sean Rickerd; devicetree@vger.kernel.org;
+>linux-arm-kernel@lists.infradead.org; linux-kernel@vger.kernel.org; Andreas
+>F√§rber; Punnaiah Choudary Kalluri; Lars-Peter Clausen
+>Subject: [PATCH v2 00/11] ARM: dts: zynq: Prepare Parallella
+>
+>Hello,
+>
+>This patch series adds an initial device tree for the Parallella board.
+>UART, SD card, Ethernet are enabled.
+>Not yet enabled are HDMI, QSPI flash and 2x USB.
+>
+>v2 adds some SPI and FPGA pieces and tidies the device tree with a
+>compatible string and matching documentation.
+>
+>Not having all pieces for testing all of this (most notably I'm missing
+>ADI ADV7513 and AXI-HDMI support for VDMA and axi-clkgen, as well as
+>the 25Q128A flash chip for QSPI), I've kept new things in separate patches
+>so that we can make progress on the basic version and possibly squash
+>further cherry-picked pieces.
+>
+>Punnaiah Choudary Kalluri had recently proposed to extend the Chipidea
+>USB driver for Zynq; it kept complaining about the PHY though, and I
+>haven't spotted a revised version based on the generic driver yet.
+>https://patchwork.kernel.org/patch/4434681/
 
-> diff --git a/arch/arm/mach-exynos/Kconfig b/arch/arm/mach-exynos/Kconfig
-> index 8f9b66c..a2944ac 100644
-> --- a/arch/arm/mach-exynos/Kconfig
-> +++ b/arch/arm/mach-exynos/Kconfig
-> @@ -24,6 +24,7 @@ menuconfig ARCH_EXYNOS
->  	select PM_GENERIC_DOMAINS if PM_RUNTIME
->  	select S5P_DEV_MFC
->  	select SRAM
-> +	select MFD_SYSCON
->  	help
->  	  Support for SAMSUNG EXYNOS SoCs (EXYNOS4/5)
-> 
-> diff --git a/arch/arm/mach-exynos/pmu.c b/arch/arm/mach-exynos/pmu.c
-> index ff9d23f..5b76728 100644
-> --- a/arch/arm/mach-exynos/pmu.c
-> +++ b/arch/arm/mach-exynos/pmu.c
-> @@ -1,5 +1,5 @@
->  /*
-> - * Copyright (c) 2011-2012 Samsung Electronics Co., Ltd.
-> + * Copyright (c) 2011-2014 Samsung Electronics Co., Ltd.
->   *		http://www.samsung.com/
->   *
->   * EXYNOS - CPU PMU(Power Management Unit) support
-> @@ -10,12 +10,28 @@
->   */
-> 
->  #include <linux/io.h>
-> -#include <linux/kernel.h>
-> +#include <linux/of.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/regmap.h>
-> +#include <linux/mfd/syscon.h>
-> 
->  #include "common.h"
->  #include "regs-pmu.h"
-> 
-> -static const struct exynos_pmu_conf *exynos_pmu_config;
-> +struct exynos_pmu_data {
-> +	const struct exynos_pmu_conf *pmu_config;
-> +	const struct exynos_pmu_conf *pmu_config_extra;
-> +
-> +	void (*pmu_init)(void);
-> +	void (*powerdown_conf)(enum sys_powerdown);
-> +};
-> +
-> +struct exynos_pmu_context {
-> +	struct device *dev;
-> +	const struct exynos_pmu_data *pmu_data;
-> +};
-> +
-> +static struct exynos_pmu_context *pmu_context;
-> 
->  static const struct exynos_pmu_conf exynos4210_pmu_config[] = {
->  	/* { .offset = offset, .val = { AFTR, LPA, SLEEP } */
-> @@ -335,7 +351,7 @@ static unsigned int const exynos5_list_diable_wfi_wfe[] = {
->  	EXYNOS5_ISP_ARM_OPTION,
->  };
-> 
-> -static void exynos5_init_pmu(void)
-> +static void exynos5_powerdown_conf(enum sys_powerdown mode)
->  {
->  	unsigned int i;
->  	unsigned int tmp;
-> @@ -372,51 +388,140 @@ void exynos_sys_powerdown_conf(enum sys_powerdown mode)
->  {
->  	unsigned int i;
-> 
-> -	if (soc_is_exynos5250())
-> -		exynos5_init_pmu();
-> +	const struct exynos_pmu_data *pmu_data = pmu_context->pmu_data;
-> 
-> -	for (i = 0; (exynos_pmu_config[i].offset != PMU_TABLE_END) ; i++)
-> -		pmu_raw_writel(exynos_pmu_config[i].val[mode],
-> -				exynos_pmu_config[i].offset);
-> +	if (pmu_data->powerdown_conf)
-> +		pmu_data->powerdown_conf(mode);
-> 
-> -	if (soc_is_exynos4412()) {
-> -		for (i = 0; exynos4412_pmu_config[i].offset != PMU_TABLE_END ; i++)
-> -			pmu_raw_writel(exynos4412_pmu_config[i].val[mode],
-> -					exynos4412_pmu_config[i].offset);
-> +	if (pmu_data->pmu_config) {
-> +		for (i = 0; (pmu_data->pmu_config[i].offset != PMU_TABLE_END) ; i++)
-> +			pmu_raw_writel(pmu_data->pmu_config[i].val[mode],
-> +					pmu_data->pmu_config[i].offset);
-> +	}
-> +
-> +	if (pmu_data->pmu_config_extra) {
-> +		for (i = 0; pmu_data->pmu_config_extra[i].offset != PMU_TABLE_END; i++)
-> +			pmu_raw_writel(pmu_data->pmu_config_extra[i].val[mode],
-> +					pmu_data->pmu_config_extra[i].offset);
->  	}
->  }
-> 
-> -static int __init exynos_pmu_init(void)
-> +static void exynos5250_pmu_init(void)
->  {
->  	unsigned int value;
-> +	/*
-> +	 * When SYS_WDTRESET is set, watchdog timer reset request
-> +	 * is ignored by power management unit.
-> +	 */
-> +	value = pmu_raw_readl(EXYNOS5_AUTO_WDTRESET_DISABLE);
-> +	value &= ~EXYNOS5_SYS_WDTRESET;
-> +	pmu_raw_writel(value, EXYNOS5_AUTO_WDTRESET_DISABLE);
-> +
-> +	value = pmu_raw_readl(EXYNOS5_MASK_WDTRESET_REQUEST);
-> +	value &= ~EXYNOS5_SYS_WDTRESET;
-> +	pmu_raw_writel(value, EXYNOS5_MASK_WDTRESET_REQUEST);
-> +}
-> +
-> +static const struct exynos_pmu_data exynos4210_pmu_data = {
-> +	.pmu_config	= exynos4210_pmu_config,
-> +};
-> +
-> +static const struct exynos_pmu_data exynos4212_pmu_data = {
-> +	.pmu_config	= exynos4x12_pmu_config,
-> +};
-> +
-> +static const struct exynos_pmu_data exynos4412_pmu_data = {
-> +	.pmu_config		= exynos4x12_pmu_config,
-> +	.pmu_config_extra	= exynos4412_pmu_config,
-> +};
-> +
-> +static const struct exynos_pmu_data exynos5250_pmu_data = {
-> +	.pmu_config	= exynos5250_pmu_config,
-> +	.pmu_init	= exynos5250_pmu_init,
-> +	.powerdown_conf	= exynos5_powerdown_conf,
-> +};
-> +
-> +static const struct regmap_config pmu_regmap_config = {
-> +	.reg_bits = 32,
-> +	.val_bits = 32,
-> +	.reg_stride = 4,
-> +};
-> 
-> -	exynos_pmu_config = exynos4210_pmu_config;
-> -
-> -	if (soc_is_exynos4210()) {
-> -		exynos_pmu_config = exynos4210_pmu_config;
-> -		pr_info("EXYNOS4210 PMU Initialize\n");
-> -	} else if (soc_is_exynos4212() || soc_is_exynos4412()) {
-> -		exynos_pmu_config = exynos4x12_pmu_config;
-> -		pr_info("EXYNOS4x12 PMU Initialize\n");
-> -	} else if (soc_is_exynos5250()) {
-> -		/*
-> -		 * When SYS_WDTRESET is set, watchdog timer reset request
-> -		 * is ignored by power management unit.
-> -		 */
-> -		value = pmu_raw_readl(EXYNOS5_AUTO_WDTRESET_DISABLE);
-> -		value &= ~EXYNOS5_SYS_WDTRESET;
-> -		pmu_raw_writel(value, EXYNOS5_AUTO_WDTRESET_DISABLE);
-> -
-> -		value = pmu_raw_readl(EXYNOS5_MASK_WDTRESET_REQUEST);
-> -		value &= ~EXYNOS5_SYS_WDTRESET;
-> -		pmu_raw_writel(value, EXYNOS5_MASK_WDTRESET_REQUEST);
-> -
-> -		exynos_pmu_config = exynos5250_pmu_config;
-> -		pr_info("EXYNOS5250 PMU Initialize\n");
-> -	} else {
-> -		pr_info("EXYNOS: PMU not supported\n");
-> +/*
-> + * PMU platform driver and devicetree bindings.
-> + */
-> +static const struct of_device_id exynos_pmu_of_device_ids[] = {
-> +	{
-> +		.compatible = "samsung,exynos4210-pmu",
-> +		.data = &exynos4210_pmu_data,
-> +	}, {
-> +		.compatible = "samsung,exynos4212-pmu",
-> +		.data = &exynos4212_pmu_data,
-> +	}, {
-> +		.compatible = "samsung,exynos4412-pmu",
-> +		.data = &exynos4412_pmu_data,
-> +	}, {
-> +		.compatible = "samsung,exynos5250-pmu",
-> +		.data = &exynos5250_pmu_data,
-> +	},
-> +	{ /*sentinel*/ },
-> +};
-> +
-> +static int exynos_pmu_probe(struct platform_device *pdev)
-> +{
-> +	const struct of_device_id *match;
-> +	struct device *dev = &pdev->dev;
-> +	struct regmap *regmap;
-> +	struct resource *res;
-> +
-> +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> +	pmu_base_addr = devm_ioremap_resource(dev, res);
-> +	if (IS_ERR(pmu_base_addr))
-> +		return PTR_ERR(pmu_base_addr);
-> +
-> +	pmu_context = devm_kzalloc(&pdev->dev,
-> +			sizeof(struct exynos_pmu_context),
-> +			GFP_KERNEL);
-> +	if (!pmu_context) {
-> +		dev_err(dev, "Cannot allocate memory.\n");
-> +		return -ENOMEM;
-> +	}
-> +	pmu_context->dev = dev;
-> +
-> +	regmap = devm_regmap_init_mmio(dev, pmu_base_addr,
-> +					&pmu_regmap_config);
-> +	if (IS_ERR(regmap)) {
-> +		dev_err(dev, "regmap init failed\n");
-> +		return PTR_ERR(regmap);
->  	}
-> 
-> +	devm_syscon_register(dev, regmap);
-> +
-> +	match = of_match_node(exynos_pmu_of_device_ids, pdev->dev.of_node);
-> +
-> +	pmu_context->pmu_data = match->data;
-> +
-> +	if (pmu_context->pmu_data->pmu_init)
-> +		pmu_context->pmu_data->pmu_init();
-> +
-> +	platform_set_drvdata(pdev, pmu_context);
-> +
-> +	dev_dbg(dev, "Exynos PMU Driver probe done\n");
->  	return 0;
->  }
-> -arch_initcall(exynos_pmu_init);
-> +
-> +static struct platform_driver exynos_pmu_driver = {
-> +	.driver  = {
-> +		.name   = "exynos-pmu",
-> +		.owner	= THIS_MODULE,
-> +		.of_match_table = exynos_pmu_of_device_ids,
-> +	},
-> +	.probe = exynos_pmu_probe,
-> +};
-> +
-> +static int __init exynos_pmu_init(void)
-> +{
-> +	return platform_driver_register(&exynos_pmu_driver);
-> +
-> +}
-> +postcore_initcall(exynos_pmu_init);
-> --
-> 1.7.9.5
+The plan is, go with generic chip idea driver which is currently under review. 
+http://www.spinics.net/lists/linux-usb/msg109576.html
 
+So, please wait some more time for extending the Chip idea driver support
+ to zynq.
+
+Punnaiah
+>
+>My rebasing work branch is here:
+>https://github.com/afaerber/linux/commits/parallella-next
+>
+>Regards,
+>Andreas
+>
+>Cc: Punnaiah Choudary Kalluri <punnaia@xilinx.com> (USB)
+>Cc: Lars-Peter Clausen <lars@metafoo.de> (HDMI)
+>
+>Andreas F√§rber (11):
+>  Documentation: devicetree: Adapteva vendor prefix
+>  Documentation: devicetree: Adapteva boards
+>  ARM: dts: zynq: Add Parallella device tree
+>  ARM: dts: zynq: Update deprecated xuartps clock names
+>  ARM: dts: zynq: Add QSPI for Parallella
+>  ARM: dts: zynq: Add DMAC for Parallella
+>  Documentation: devicetree: Fix Xilinx VDMA specification
+>  ARM: dts: zynq: Add VDMA to Parallella
+>  Documentation: devicetree: Fix ADI AXI SPDIF specification
+>  ARM: dts: zynq: Add SPDIF for Parallella
+>  ARM: dts: zynq: Add AXI clkgen for Parallella
+>
+> Documentation/devicetree/bindings/arm/adapteva.txt |   7 ++
+> .../devicetree/bindings/dma/xilinx/xilinx_vdma.txt |   2 +-
+> .../devicetree/bindings/sound/adi,axi-spdif-tx.txt |   2 +-
+> .../devicetree/bindings/vendor-prefixes.txt        |   1 +
+> arch/arm/boot/dts/Makefile                         |   4 +-
+> arch/arm/boot/dts/zynq-7000.dtsi                   |  58 +++++++++-
+> arch/arm/boot/dts/zynq-parallella.dts              | 119
+>+++++++++++++++++++++
+> 7 files changed, 188 insertions(+), 5 deletions(-)
+> create mode 100644 Documentation/devicetree/bindings/arm/adapteva.txt
+> create mode 100644 arch/arm/boot/dts/zynq-parallella.dts
+>
+>--
+>1.9.3
+
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
