@@ -1,84 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759877AbaGYIPc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 04:15:32 -0400
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:48879 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750818AbaGYIP3 (ORCPT
+	id S1759902AbaGYIPi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 04:15:38 -0400
+Received: from mail-la0-f44.google.com ([209.85.215.44]:36925 "EHLO
+	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759680AbaGYIPd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 04:15:29 -0400
-From: Michal Simek <michal.simek@xilinx.com>
-To: linux-arm-kernel@lists.infradead.org
-Cc: monstr@monstr.eu, Josh Cartwright <josh.cartwright@ni.com>,
-        Steffen Trumtrar <s.trumtrar@pengutronix.de>,
-        Rob Herring <robherring2@gmail.com>,
-        Peter Crosthwaite <peter.crosthwaite@xilinx.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] ARM: zynq: DT: Clarify Xilinx Zynq platform
-Date: Fri, 25 Jul 2014 10:15:18 +0200
-Message-Id: <7153c8eded88751e7637f08f2bfe9cb6a65036e7.1406275971.git.michal.simek@xilinx.com>
-X-Mailer: git-send-email 1.8.2.3
-Content-Type: multipart/signed;
-    boundary="=_mimegpg-monstr-desktop-17748-1406276118-0001";
-    micalg=pgp-sha1; protocol="application/pgp-signature"
+	Fri, 25 Jul 2014 04:15:33 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140725064836.GE2397@laptop.redhat.com>
+References: <CA+55aFwQSmBAs=QH9jAZz5JY7YFrDeuPH1RjFH+YKVr2NQM38g@mail.gmail.com>
+	<CA+55aFzDWritxv5RiqwcZ1qCKJQKK-Lw6StYFF7qx5YWgiCUTQ@mail.gmail.com>
+	<20140723182518.GD3935@laptop>
+	<CA+55aFyFT9n5wUNifEHY6+t2bEcD91kL7+dqXuBMSMJvLeDDJQ@mail.gmail.com>
+	<20140723184111.GG3935@laptop>
+	<CA+55aFwQfwfAP6U77_nD_mSvoygj=cZ09N644hKRtzgLnEqhZQ@mail.gmail.com>
+	<20140723190230.GH3935@laptop>
+	<CA+55aFyM1wqTLK0m4GQJ28f=z0iZE87=xk+1z-vm+PH1_d8nKw@mail.gmail.com>
+	<53D064C7.5050807@daenzer.net>
+	<CA+55aFyJhqiPv0kQ+51=Ei-zaAO+0JszxtnEyx-Gbto3SE00xw@mail.gmail.com>
+	<20140725064836.GE2397@laptop.redhat.com>
+Date: Fri, 25 Jul 2014 01:15:31 -0700
+X-Google-Sender-Auth: 2yqrxPEy3C53vd5TopV5kyKFfOg
+Message-ID: <CA+55aFyrNZ1EHyjfi6VCLHtERCqqL2b=CwZ542nR_xBYouvmfw@mail.gmail.com>
+Subject: Re: Random panic in load_balance() with 3.16-rc
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Jakub Jelinek <jakub@redhat.com>
+Cc: =?UTF-8?Q?Michel_D=C3=A4nzer?= <michel@daenzer.net>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Dietmar Eggemann <dietmar.eggemann@arm.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a MIME GnuPG-signed message.  If you see this text, it means that
-your E-mail or Usenet software does not support MIME signed messages.
-The Internet standard for MIME PGP messages, RFC 2015, was published in 1996.
-To open this message correctly you will need to install E-mail or Usenet
-software that supports modern Internet standards.
+On Thu, Jul 24, 2014 at 11:48 PM, Jakub Jelinek <jakub@redhat.com> wrote:
+>
+> Can I ask anyone involved in this for preprocessed source and all gcc command
+> line options to reproduce it, best in the form of a http://gcc.gnu.org/bugzilla/
+> bugreport?
 
---=_mimegpg-monstr-desktop-17748-1406276118-0001
+I've created bug 61904 for this:
 
-ep107 was emulation platform and compatible string
-have been changed long time ago.
+  https://gcc.gnu.org/bugzilla/show_bug.cgi?id=61904
 
-"ARM: zynq: dts: split up device tree"
-(sha1: e06f1a9ed7ebff170ba05d2606d079fb36c6a52d)
+Note that I don't personally have a reproducer (my machine has
+gcc-4.8.3, and I don't see the same behavior), but I included the
+incorrect fair.s file that Michel sent me (which has all the command
+line options in it), and a pre-processed "fair.i" source file that I
+generated and that *should* match the configuration that was the
+source for that result. So there might be some version/configuration
+skew there between the two files, but I think they match.
 
-Signed-off-by: Michal Simek <michal.simek@xilinx.com>
----
+Holler if you cannot reproduce the problem based on that.
 
- Documentation/devicetree/bindings/arm/xilinx.txt | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
-
-diff --git a/Documentation/devicetree/bindings/arm/xilinx.txt b/Documentation/devicetree/bindings/arm/xilinx.txt
-index 6f1ed830b4f7..1f7995357888 100644
---- a/Documentation/devicetree/bindings/arm/xilinx.txt
-+++ b/Documentation/devicetree/bindings/arm/xilinx.txt
-@@ -1,7 +1,7 @@
--Xilinx Zynq EP107 Emulation Platform board
-+Xilinx Zynq Platforms Device Tree Bindings
-
--This board is an emulation platform for the Zynq product which is
--based on an ARM Cortex A9 processor.
-+Boards with Zynq-7000 SOC based on an ARM Cortex A9 processor
-+shall have the following properties.
-
- Required root node properties:
--    - compatible = "xlnx,zynq-ep107";
-+    - compatible = "xlnx,zynq-7000";
---
-1.8.2.3
-
-
---=_mimegpg-monstr-desktop-17748-1406276118-0001
-Content-Type: application/pgp-signature
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEABECAAYFAlPSEhYACgkQykllyylKDCEtPwCfZ/gYyLnKoTWv6fVrUQ2R8zkk
-NnEAn0zHHK8ptHZkSvFhb9/MbIOPmST6
-=gqx3
------END PGP SIGNATURE-----
-
---=_mimegpg-monstr-desktop-17748-1406276118-0001--
+            Linus
