@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933395AbaGYO5L (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 10:57:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:44975 "EHLO mx1.redhat.com"
+	id S934312AbaGYO5T (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 10:57:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:10981 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760750AbaGYO5D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 10:57:03 -0400
+	id S933324AbaGYO5L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jul 2014 10:57:11 -0400
 From: Jiri Olsa <jolsa@kernel.org>
 To: linux-kernel@vger.kernel.org
 Cc: Jiri Olsa <jolsa@kernel.org>, Arnaldo Carvalho de Melo <acme@kernel.org>,
@@ -15,17 +15,18 @@ Cc: Jiri Olsa <jolsa@kernel.org>, Arnaldo Carvalho de Melo <acme@kernel.org>,
         Ingo Molnar <mingo@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
         Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [PATCH 12/19] perf tools: Add ordered_events_init function
-Date: Fri, 25 Jul 2014 16:56:10 +0200
-Message-Id: <1406300177-31805-13-git-send-email-jolsa@kernel.org>
+Subject: [PATCH 15/19] perf tools: Add report.queue-size config file option
+Date: Fri, 25 Jul 2014 16:56:13 +0200
+Message-Id: <1406300177-31805-16-git-send-email-jolsa@kernel.org>
 In-Reply-To: <1406300177-31805-1-git-send-email-jolsa@kernel.org>
 References: <1406300177-31805-1-git-send-email-jolsa@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding ordered_events_init function for struct
-ordered_events struct initialization.
+Adding report.queue-size config file option to setup
+the maximum allocation size for session's struct
+ordered_events_queue object.
 
 Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
 Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
@@ -38,55 +39,73 @@ Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Signed-off-by: Jiri Olsa <jolsa@kernel.org>
 ---
- tools/perf/util/ordered-events.c | 9 +++++++++
- tools/perf/util/ordered-events.h | 1 +
- tools/perf/util/session.c        | 6 +-----
- 3 files changed, 11 insertions(+), 5 deletions(-)
+ tools/perf/builtin-report.c      | 13 ++++++++++++-
+ tools/perf/util/ordered-events.h |  6 ++++++
+ 2 files changed, 18 insertions(+), 1 deletion(-)
 
-diff --git a/tools/perf/util/ordered-events.c b/tools/perf/util/ordered-events.c
-index ecdc9012cadd..42d63396600c 100644
---- a/tools/perf/util/ordered-events.c
-+++ b/tools/perf/util/ordered-events.c
-@@ -193,3 +193,12 @@ int ordered_events_flush(struct perf_session *s, struct perf_tool *tool,
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index c72cc5a12144..ff6ab6184745 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -58,17 +58,19 @@ struct report {
+ 	const char		*symbol_filter_str;
+ 	float			min_percent;
+ 	u64			nr_entries;
++	u64			queue_size;
+ 	DECLARE_BITMAP(cpu_bitmap, MAX_NR_CPUS);
+ };
  
- 	return err;
- }
+ static int report__config(const char *var, const char *value, void *cb)
+ {
++	struct report *rep = cb;
 +
-+void ordered_events_init(struct ordered_events *oe)
-+{
-+	INIT_LIST_HEAD(&oe->events);
-+	INIT_LIST_HEAD(&oe->cache);
-+	INIT_LIST_HEAD(&oe->to_free);
-+	oe->max_alloc_size = (u64) -1;
-+	oe->cur_alloc_size = 0;
-+}
+ 	if (!strcmp(var, "report.group")) {
+ 		symbol_conf.event_group = perf_config_bool(var, value);
+ 		return 0;
+ 	}
+ 	if (!strcmp(var, "report.percent-limit")) {
+-		struct report *rep = cb;
+ 		rep->min_percent = strtof(value, NULL);
+ 		return 0;
+ 	}
+@@ -76,6 +78,10 @@ static int report__config(const char *var, const char *value, void *cb)
+ 		symbol_conf.cumulate_callchain = perf_config_bool(var, value);
+ 		return 0;
+ 	}
++	if (!strcmp(var, "report.queue-size")) {
++		rep->queue_size = perf_config_u64(var, value);
++		return 0;
++	}
+ 
+ 	return perf_default_config(var, value, cb);
+ }
+@@ -714,6 +720,11 @@ repeat:
+ 	if (session == NULL)
+ 		return -ENOMEM;
+ 
++	if (report.queue_size) {
++		ordered_events_alloc_size(&session->ordered_events,
++					  report.queue_size);
++	}
++
+ 	report.session = session;
+ 
+ 	has_br_stack = perf_header__has_feat(&session->header,
 diff --git a/tools/perf/util/ordered-events.h b/tools/perf/util/ordered-events.h
-index 30e39aa825ef..ce3f7f37b188 100644
+index de40a8bb6466..a4fc435f0fc6 100644
 --- a/tools/perf/util/ordered-events.h
 +++ b/tools/perf/util/ordered-events.h
-@@ -38,4 +38,5 @@ struct ordered_event *ordered_events_new(struct ordered_events *oe, u64 timestam
- void ordered_events_delete(struct ordered_events *oe, struct ordered_event *event);
- int ordered_events_flush(struct perf_session *s, struct perf_tool *tool,
+@@ -40,4 +40,10 @@ int ordered_events_flush(struct perf_session *s, struct perf_tool *tool,
  			 enum oe_flush how);
-+void ordered_events_init(struct ordered_events *oe);
+ void ordered_events_init(struct ordered_events *oe);
+ void ordered_events_free(struct ordered_events *oe);
++
++static inline void
++ordered_events_alloc_size(struct ordered_events *oe, u64 size)
++{
++	oe->max_alloc_size = size;
++}
  #endif /* __ORDERED_EVENTS_H */
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index b67ea4b78478..40956a3164e8 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -76,11 +76,7 @@ struct perf_session *perf_session__new(struct perf_data_file *file,
- 		goto out;
- 
- 	session->repipe = repipe;
--	INIT_LIST_HEAD(&session->ordered_events.events);
--	INIT_LIST_HEAD(&session->ordered_events.cache);
--	INIT_LIST_HEAD(&session->ordered_events.to_free);
--	session->ordered_events.max_alloc_size = (u64) -1;
--	session->ordered_events.cur_alloc_size = 0;
-+	ordered_events_init(&session->ordered_events);
- 	machines__init(&session->machines);
- 
- 	if (file) {
 -- 
 1.8.3.1
 
