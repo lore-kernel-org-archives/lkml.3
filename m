@@ -1,73 +1,230 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751437AbaGYERA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 00:17:00 -0400
-Received: from mail-by2lp0243.outbound.protection.outlook.com ([207.46.163.243]:11535
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750859AbaGYEQ6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 00:16:58 -0400
-From: Nicolin Chen <nicoleotsuka@gmail.com>
-To: <broonie@kernel.org>
-CC: <robh+dt@kernel.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
-        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
-        <rdunlap@infradead.org>, <lgirdwood@gmail.com>, <perex@perex.cz>,
-        <tiwai@suse.de>, <timur@tabi.org>, <grant.likely@linaro.org>,
-        <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <alsa-devel@alsa-project.org>, <linuxppc-dev@lists.ozlabs.org>,
-        <shawn.guo@linaro.org>, <b02247@freescale.com>, <b42378@freescale.com>,
-        <tklauser@distanz.ch>
-Subject: [PATCH v3 1/2] ARM: imx: Add the secondary request into the structure for imx-sdma
-Date: Fri, 25 Jul 2014 12:03:58 +0800
-Message-ID: <a2ded5bde6f54756b5a6a6abf27baa46c4a9c038.1406259578.git.nicoleotsuka@gmail.com>
-X-Mailer: git-send-email 1.8.4
-In-Reply-To: <cover.1406259578.git.nicoleotsuka@gmail.com>
-References: <cover.1406259578.git.nicoleotsuka@gmail.com>
-X-EOPAttributedMessage: 0
-X-Matching-Connectors: 130507345046617152;(91ab9b29-cfa4-454e-5278-08d120cd25b8);()
-X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(189002)(199002)(97736001)(26826002)(55446002)(92566001)(92726001)(89996001)(87936001)(105596002)(85852003)(83072002)(229853001)(107046002)(110136001)(104016003)(88136002)(2351001)(33646002)(73392001)(68736004)(102836001)(575784001)(86362001)(93916002)(19580395003)(104166001)(46102001)(19580405001)(77156001)(50466002)(82202001)(76176999)(50986999)(62966002)(21056001)(81342001)(61266001)(47776003)(81442001)(36756003)(4396001)(50226001)(73972005)(80022001)(64706001)(81542001)(48376002)(20776003)(99396002)(77982001)(87572001)(95666004)(85306003)(6806004)(44976005)(106466001)(87286001)(84676001)(79102001)(74502001)(74662001)(31966008);DIR:OUT;SFP:;SCL:1;SRVR:BLUPR03MB360;H:tx30smr01.am.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;LANG:en;
+	id S1751164AbaGYE0K (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 00:26:10 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:57618 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750714AbaGYE0I (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jul 2014 00:26:08 -0400
+Message-ID: <53D1DC0B.1000905@gmail.com>
+Date: Fri, 25 Jul 2014 09:54:43 +0530
+From: Varka Bhadram <varkabhadram@gmail.com>
+Organization: CDAC-HYD
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
-X-Forefront-PRVS: 02830F0362
-Authentication-Results: spf=softfail (sender IP is 192.88.168.50)
- smtp.mailfrom=nicoleotsuka@gmail.com; 
+To: Nicolin Chen <nicoleotsuka@gmail.com>, broonie@kernel.org
+CC: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        rdunlap@infradead.org, lgirdwood@gmail.com, perex@perex.cz,
+        tiwai@suse.de, timur@tabi.org, grant.likely@linaro.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        alsa-devel@alsa-project.org, linuxppc-dev@lists.ozlabs.org,
+        shawn.guo@linaro.org, b02247@freescale.com, b42378@freescale.com,
+        tklauser@distanz.ch
+Subject: Re: [PATCH v3 2/2] ASoC: fsl_asrc: Add ASRC ASoC CPU DAI and platform
+ drivers
+References: <cover.1406259578.git.nicoleotsuka@gmail.com> <f4ff79269a1680f9ce128e0e98fea926d3a41834.1406259578.git.nicoleotsuka@gmail.com>
+In-Reply-To: <f4ff79269a1680f9ce128e0e98fea926d3a41834.1406259578.git.nicoleotsuka@gmail.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-SDMA supports device to device (per_2_per) scripts to handle DMA transfering
-between two peripheral devices. The per_2_per script, however, needs two dma
-requests from two sides while the current structure only defined one request.
+On 07/25/2014 09:33 AM, Nicolin Chen wrote:
+> The Asynchronous Sample Rate Converter (ASRC) converts the sampling rate of a
+> signal associated with an input clock into a signal associated with a different
+> output clock. The driver currently works as a Front End of DPCM with other Back
+> Ends DAI links such as ESAI<->CS42888 and SSI<->WM8962 and SAI. It converts the
+> original sample rate to a common rate supported by Back Ends for playback while
+> converts the common rate of Back Ends to a desired rate for capture. It has 3
+> pairs to support three different substreams within totally 10 channels.
+>
+(...)
 
-So this patch just simply adds the secondary request so as to let SDMA and
-its user to add its implementation later.
+> +Required properties:
+> +
+> +  - compatible : Compatible list, must contain "fsl,imx35-asrc" or
+> +    "fsl,imx53-asrc".
+> +
+> +  - reg : Offset and length of the register set for the device.
+> +
+> +  - interrupts : Contains the spdif interrupt.
+> +
+> +  - dmas : Generic dma devicetree binding as described in
+> +	   Documentation/devicetree/bindings/dma/dma.txt.
+> +
+> +  - dma-names : Six dmas have to be defined: "rxa", "rxb", "rxc", "txa", "txb",
+> +		and "txc".
+> +
+> +  - clocks : Contains an entry for each entry in clock-names.
+> +
+> +  - clock-names : Includes the following entries:
+> +	"mem"		Peripheral access clock to access registers.
+> +	"ipg"		Peripheral clock to driver module.
+> +	"asrck_<0-f>"	Clock sources for input and output clock.
+> +
+> +   - big-endian : If this property is absent, the native endian mode will
+> +		  be in use as default, or the big endian mode will be in use
+> +		  for all the device registers.
+> +
+> +   - fsl,asrc-rate : Defines a mutual sample rate used by Back End DAI link.
+> +
+> +   - fsl,asrc-width : Defines a mutual sample width used by Back End DAI link.
+> +
 
-[ Both change in the SDMA driver and its users like Freescale ASRC ASoC driver
-  should be taken along with this change in order to truly support per_2_per
-  sciprts. However, we here make an expediency by adding this first so that
-  we can add either side later since this patch won't break any function and
-  meanwhile it can make merge window more smoothly: we don't need to apply the
-  change inside dmaengine branch via ASoC tree any more. -- Nicolin ]
+indentation for the properties....
 
-Signed-off-by: Nicolin Chen <nicoleotsuka@gmail.com>
-Acked-by: Shawn Guo <shawn.guo@linaro.org>
----
- include/linux/platform_data/dma-imx.h | 1 +
- 1 file changed, 1 insertion(+)
+- compatible		: Should be "fsl,imx35-asrc" or "fsl,imx53-asrc".
+- reg			: Offset and length of the register set for the device.
+....
 
-diff --git a/include/linux/platform_data/dma-imx.h b/include/linux/platform_data/dma-imx.h
-index 7aa0e89..6a1357d 100644
---- a/include/linux/platform_data/dma-imx.h
-+++ b/include/linux/platform_data/dma-imx.h
-@@ -51,6 +51,7 @@ enum imx_dma_prio {
- 
- struct imx_dma_data {
- 	int dma_request; /* DMA request line */
-+	int dma_request2; /* secondary DMA request line */
- 	enum sdma_peripheral_type peripheral_type;
- 	int priority;
- };
+(...)
+
+> +
+> +static const struct platform_device_id fsl_asrc_devtype[] = {
+> +	{
+> +		.name = "imx35-asrc",
+> +		.driver_data = IMX35_ASRC,
+> +	}, {
+> +		.name = "imx53-asrc",
+> +		.driver_data = IMX53_ASRC,
+> +	}, {
+> +		/* sentinel */
+> +	}
+> +};
+> +MODULE_DEVICE_TABLE(platform, fsl_asrc_devtype);
+> +
+> +static const struct of_device_id fsl_asrc_ids[] = {
+> +	{
+> +		.compatible = "fsl,imx35-asrc",
+> +		.data = &fsl_asrc_devtype[IMX35_ASRC],
+> +	}, {
+> +		.compatible = "fsl,imx53-asrc",
+> +		.data = &fsl_asrc_devtype[IMX53_ASRC],
+> +	}, {
+> +		/* sentinel */
+> +	}
+> +};
+> +MODULE_DEVICE_TABLE(of, fsl_asrc_ids);
+> +
+
+move these ids after probe/remove... every driver follows same thing...
+
+> +static irqreturn_t fsl_asrc_isr(int irq, void *dev_id)
+> +{
+> +	struct fsl_asrc *asrc_priv = (struct fsl_asrc *)dev_id;
+> +	struct device *dev = &asrc_priv->pdev->dev;
+> +	enum asrc_pair_index index;
+> +	u32 status;
+> +
+> +	regmap_read(asrc_priv->regmap, REG_ASRSTR, &status);
+> +
+> +	/* Clean overload error */
+> +	regmap_write(asrc_priv->regmap, REG_ASRSTR, ASRSTR_AOLE);
+> +
+> +	/*
+> +	 * We here use dev_dbg() for all exceptions because ASRC itself does
+> +	 * not care if FIFO overflowed or underrun while a warning in the
+> +	 * interrupt would result a ridged conversion.
+> +	 */
+> +	for (index = ASRC_PAIR_A; index < ASRC_PAIR_MAX_NUM; index++) {
+> +		if (!asrc_priv->pair[index])
+> +			continue;
+> +
+> +		if (status & ASRSTR_ATQOL) {
+> +			asrc_priv->pair[index]->error |= ASRC_TASK_Q_OVERLOAD;
+> +			dev_dbg(dev, "ASRC Task Queue FIFO overload");
+
+missed terminating new line (\n)...
+
+> +		}
+> +
+> +		if (status & ASRSTR_AOOL(index)) {
+> +			asrc_priv->pair[index]->error |= ASRC_OUTPUT_TASK_OVERLOAD;
+> +			pair_dbg("Output Task Overload");
+
+same
+
+> +		}
+> +
+> +		if (status & ASRSTR_AIOL(index)) {
+> +			asrc_priv->pair[index]->error |= ASRC_INPUT_TASK_OVERLOAD;
+> +			pair_dbg("Input Task Overload");
+
+same
+
+> +		}
+> +
+> +		if (status & ASRSTR_AODO(index)) {
+> +			asrc_priv->pair[index]->error |= ASRC_OUTPUT_BUFFER_OVERFLOW;
+> +			pair_dbg("Output Data Buffer has overflowed");
+
+same
+
+> +		}
+> +
+> +		if (status & ASRSTR_AIDU(index)) {
+> +			asrc_priv->pair[index]->error |= ASRC_INPUT_BUFFER_UNDERRUN;
+> +			pair_dbg("Input Data Buffer has underflowed");
+
+same..
+
+> +		}
+> +	}
+> +
+> +	return IRQ_HANDLED;
+> +}
+> +
+
+(...)
+
+> +/**
+> + * Configure input and output thresholds
+> + */
+> +static int fsl_asrc_set_watermarks(struct fsl_asrc_pair *pair, u32 in, u32 out)
+> +{
+
+static void for function..?
+
+> +	struct fsl_asrc *asrc_priv = pair->asrc_priv;
+> +	enum asrc_pair_index index = pair->index;
+> +
+> +	regmap_update_bits(asrc_priv->regmap, REG_ASRMCR(index),
+> +			   ASRMCRi_EXTTHRSHi_MASK |
+> +			   ASRMCRi_INFIFO_THRESHOLD_MASK |
+> +			   ASRMCRi_OUTFIFO_THRESHOLD_MASK,
+> +			   ASRMCRi_EXTTHRSHi |
+> +			   ASRMCRi_INFIFO_THRESHOLD(in) |
+> +			   ASRMCRi_OUTFIFO_THRESHOLD(out));
+> +
+> +	return 0;
+> +}
+
+(...)
+
+> +static const struct dev_pm_ops fsl_asrc_pm = {
+> +	SET_RUNTIME_PM_OPS(fsl_asrc_runtime_suspend, fsl_asrc_runtime_resume, NULL)
+> +	SET_SYSTEM_SLEEP_PM_OPS(fsl_asrc_suspend, fsl_asrc_resume)
+> +};
+> +
+
+move device ids to here...
+
+> +static struct platform_driver fsl_asrc_driver = {
+> +	.probe = fsl_asrc_probe,
+> +	.driver = {
+> +		.name = "fsl-asrc",
+> +		.of_match_table = fsl_asrc_ids,
+> +		.pm = &fsl_asrc_pm,
+> +	},
+> +};
+> +module_platform_driver(fsl_asrc_driver);
+
+Thanks...
+
 -- 
-1.8.4
+Regards,
+Varka Bhadram.
 
