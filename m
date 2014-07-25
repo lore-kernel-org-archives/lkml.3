@@ -1,70 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935320AbaGYRiP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 13:38:15 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47023 "EHLO mx1.redhat.com"
+	id S964822AbaGYRiY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 13:38:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:44922 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934278AbaGYRiM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 13:38:12 -0400
+	id S935313AbaGYRiO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jul 2014 13:38:14 -0400
 From: Abhi Das <adas@redhat.com>
 To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
         cluster-devel@redhat.com
 Cc: Abhi Das <adas@redhat.com>
-Subject: [RFC PATCH 0/5] xgetdents system call
-Date: Fri, 25 Jul 2014 12:38:03 -0500
-Message-Id: <1406309888-10749-1-git-send-email-adas@redhat.com>
+Subject: [RFC PATCH 4/5] gfs2: Add sort functionality with extra parameter
+Date: Fri, 25 Jul 2014 12:38:07 -0500
+Message-Id: <1406309888-10749-5-git-send-email-adas@redhat.com>
+In-Reply-To: <1406309888-10749-1-git-send-email-adas@redhat.com>
+References: <1406309888-10749-1-git-send-email-adas@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This system call takes 5 arguments:
-fd    - file descriptor of the directory
-flags - flags used by xstat
-mask  - field mask used to request stat/xattr info
-buf   - user buf to return collected info
-count - size of user buffer in bytes
+This is essentially a copy of the sort function and its helpers
+from lib/sort.c with the exception of an additional 'void *opaque'
+parameter added here.
+custom cmp_func and swap_func functions can make use of the opaque
+field for relevant context
 
-xgetdents() should read the directory entries, collect stat
-and xattr information for each entry as requested and return
-all the data back to the user in a container structure
-(linux_xdirent) as part of the supplied user buffer.
+Signed-off-by: Abhi Das <adas@redhat.com>
+---
+ fs/gfs2/util.c | 55 +++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ fs/gfs2/util.h |  4 ++++
+ 2 files changed, 59 insertions(+)
 
-Abhi Das (5):
-  fs: xstat system call VFS bits
-  fs: Add xgetdents system call and xreaddir file operation
-  gfs2: Add a dynamic buffer backed by a vector of pages
-  gfs2: Add sort functionality with extra parameter
-  gfs2: Add xreaddir file operation and supporting functions
-
- arch/x86/syscalls/syscall_32.tbl |    3 +
- arch/x86/syscalls/syscall_64.tbl |    3 +
- fs/gfs2/Makefile                 |    3 +-
- fs/gfs2/dir.c                    |   80 +--
- fs/gfs2/dir.h                    |   13 +-
- fs/gfs2/export.c                 |    2 +-
- fs/gfs2/file.c                   |   17 +-
- fs/gfs2/incore.h                 |    6 +
- fs/gfs2/inode.c                  |    3 +-
- fs/gfs2/inode.h                  |    5 +
- fs/gfs2/ops_fstype.c             |    4 +
- fs/gfs2/sys.c                    |   26 +-
- fs/gfs2/util.c                   |  363 ++++++++++++++
- fs/gfs2/util.h                   |   47 ++
- fs/gfs2/xattr.c                  |   27 +-
- fs/gfs2/xattr.h                  |   23 +
- fs/gfs2/xreaddir.c               | 1024 ++++++++++++++++++++++++++++++++++++++
- fs/gfs2/xreaddir.h               |   84 ++++
- fs/readdir.c                     |   42 ++
- fs/stat.c                        |  340 ++++++++++++-
- include/linux/fs.h               |    5 +
- include/linux/stat.h             |   16 +-
- include/linux/syscalls.h         |    5 +
- include/uapi/linux/fcntl.h       |    1 +
- include/uapi/linux/stat.h        |  143 ++++++
- 25 files changed, 2196 insertions(+), 89 deletions(-)
- create mode 100644 fs/gfs2/xreaddir.c
- create mode 100644 fs/gfs2/xreaddir.h
-
+diff --git a/fs/gfs2/util.c b/fs/gfs2/util.c
+index 7345489..2c1aee3 100644
+--- a/fs/gfs2/util.c
++++ b/fs/gfs2/util.c
+@@ -562,3 +562,58 @@ void vp_reset(struct vbuf *vb)
+ 	if (vpx)
+ 		vpx->vp_top = vpx->vp_baseptr;
+ }
++
++/* heap sort that takes an opaque context - directly copied from lib/sort.c */
++static void u32_swap(void *opaque, void *a, void *b, int size)
++{
++	u32 t = *(u32 *)a;
++	*(u32 *)a = *(u32 *)b;
++	*(u32 *)b = t;
++}
++
++static void generic_swap(void *opaque, void *a, void *b, int size)
++{
++	char t;
++	do {
++		t = *(char *)a;
++		*(char *)a++ = *(char *)b;
++		*(char *)b++ = t;
++	} while (--size > 0);
++}
++
++void ctx_sort(void *opaque, void *base, size_t num, size_t size,
++	      int (*cmp_func)(void *, const void *, const void *),
++	      void (*swap_func)(void *, void *, void *, int size))
++{
++	int i = (num/2 - 1) * size, n = num * size, c, r;
++
++	if (!swap_func)
++		swap_func = (size == 4 ? u32_swap : generic_swap);
++
++	/* heapify */
++	for ( ; i >= 0; i -= size) {
++		for (r = i; r * 2 + size < n; r  = c) {
++			c = r * 2 + size;
++			if (c < n - size &&
++			    cmp_func(opaque, base + c, base + c + size) < 0)
++				c += size;
++			if (cmp_func(opaque, base + r, base + c) >= 0)
++				break;
++			swap_func(opaque, base + r, base + c, size);
++		}
++	}
++
++	/* sort */
++	for (i = n - size; i > 0; i -= size) {
++		swap_func(opaque, base, base + i, size);
++		for (r = 0; r * 2 + size < i; r = c) {
++			c = r * 2 + size;
++			if (c < i - size &&
++			    cmp_func(opaque, base + c, base + c + size) < 0)
++				c += size;
++			if (cmp_func(opaque, base + r, base + c) >= 0)
++				break;
++			swap_func(opaque, base + r, base + c, size);
++		}
++	}
++}
+diff --git a/fs/gfs2/util.h b/fs/gfs2/util.h
+index 40fb692..3e10d72 100644
+--- a/fs/gfs2/util.h
++++ b/fs/gfs2/util.h
+@@ -210,5 +210,9 @@ int vp_read(struct vbuf *vb, void *to, const void *from, size_t count);
+ int vp_write(struct vbuf *vb, void *to, const void *from, size_t count);
+ int vp_append(struct vbuf *vb, const void *from, size_t count);
+ int vp_memset(struct vbuf *vb, void *to, int c, size_t count);
++
++void ctx_sort(void *opaque, void *base, size_t num, size_t size,
++	      int (*cmp_func)(void *, const void *, const void *),
++	      void (*swap_func)(void *, void *, void *, int size));
+  
+ #endif /* __UTIL_DOT_H__ */
 -- 
 1.8.1.4
 
