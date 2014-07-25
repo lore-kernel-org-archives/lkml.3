@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934294AbaGYPig (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 11:38:36 -0400
-Received: from mail.kernel.org ([198.145.19.201]:35145 "EHLO mail.kernel.org"
+	id S934479AbaGYPip (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 11:38:45 -0400
+Received: from mail.kernel.org ([198.145.19.201]:35176 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933281AbaGYPic (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 11:38:32 -0400
+	id S934221AbaGYPil (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jul 2014 11:38:41 -0400
 From: Arnaldo Carvalho de Melo <acme@kernel.org>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
@@ -15,9 +15,9 @@ Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 18/27] perf tools: Separate the VDSO map name from the VDSO dso name
-Date: Fri, 25 Jul 2014 12:37:00 -0300
-Message-Id: <1406302629-11790-19-git-send-email-acme@kernel.org>
+Subject: [PATCH 20/27] perf tools: Add thread parameter to vdso__dso_findnew()
+Date: Fri, 25 Jul 2014 12:37:02 -0300
+Message-Id: <1406302629-11790-21-git-send-email-acme@kernel.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1406302629-11790-1-git-send-email-acme@kernel.org>
 References: <1406302629-11790-1-git-send-email-acme@kernel.org>
@@ -27,7 +27,7 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Adrian Hunter <adrian.hunter@intel.com>
 
-This is in preparation for supporting 32-bit compatibility VDSOs.
+The thread will be needed to determine the VDSO type.
 
 Reviewed-by: Jiri Olsa <jolsa@redhat.com>
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
@@ -38,122 +38,110 @@ Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1406035081-14301-49-git-send-email-adrian.hunter@intel.com
+Link: http://lkml.kernel.org/r/1406035081-14301-52-git-send-email-adrian.hunter@intel.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/header.c     | 10 +++++-----
- tools/perf/util/symbol-elf.c |  2 +-
- tools/perf/util/vdso.c       | 11 ++++++++---
- tools/perf/util/vdso.h       |  6 ++++++
- 4 files changed, 20 insertions(+), 9 deletions(-)
+ tools/perf/util/machine.c | 4 ++--
+ tools/perf/util/map.c     | 4 ++--
+ tools/perf/util/map.h     | 3 ++-
+ tools/perf/util/vdso.c    | 3 ++-
+ tools/perf/util/vdso.h    | 3 ++-
+ 5 files changed, 10 insertions(+), 7 deletions(-)
 
-diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-index a588a3eb5753..158c787ce0c4 100644
---- a/tools/perf/util/header.c
-+++ b/tools/perf/util/header.c
-@@ -256,9 +256,9 @@ static int __dsos__write_buildid_table(struct list_head *head,
- 		if (!pos->hit)
- 			continue;
+diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
+index 65269b8ac186..16bba9fff2c8 100644
+--- a/tools/perf/util/machine.c
++++ b/tools/perf/util/machine.c
+@@ -1106,7 +1106,7 @@ int machine__process_mmap2_event(struct machine *machine,
+ 			event->mmap2.ino_generation,
+ 			event->mmap2.prot,
+ 			event->mmap2.flags,
+-			event->mmap2.filename, type);
++			event->mmap2.filename, type, thread);
  
--		if (is_vdso_map(pos->short_name)) {
--			name = (char *) VDSO__MAP_NAME;
--			name_len = sizeof(VDSO__MAP_NAME) + 1;
-+		if (dso__is_vdso(pos)) {
-+			name = pos->short_name;
-+			name_len = pos->short_name_len + 1;
- 		} else if (dso__is_kcore(pos)) {
- 			machine__mmap_name(machine, nm, sizeof(nm));
- 			name = nm;
-@@ -339,7 +339,7 @@ int build_id_cache__add_s(const char *sbuild_id, const char *debugdir,
+ 	if (map == NULL)
+ 		goto out_problem;
+@@ -1153,7 +1153,7 @@ int machine__process_mmap_event(struct machine *machine, union perf_event *event
+ 			event->mmap.len, event->mmap.pgoff,
+ 			event->mmap.pid, 0, 0, 0, 0, 0, 0,
+ 			event->mmap.filename,
+-			type);
++			type, thread);
  
- 	len = scnprintf(filename, size, "%s%s%s",
- 		       debugdir, slash ? "/" : "",
--		       is_vdso ? VDSO__MAP_NAME : realname);
-+		       is_vdso ? DSO__NAME_VDSO : realname);
- 	if (mkdir_p(filename, 0755))
- 		goto out_free;
- 
-@@ -427,7 +427,7 @@ static int dso__cache_build_id(struct dso *dso, struct machine *machine,
- 			       const char *debugdir)
+ 	if (map == NULL)
+ 		goto out_problem;
+diff --git a/tools/perf/util/map.c b/tools/perf/util/map.c
+index dffc8dce6046..31b8905dd863 100644
+--- a/tools/perf/util/map.c
++++ b/tools/perf/util/map.c
+@@ -141,7 +141,7 @@ void map__init(struct map *map, enum map_type type,
+ struct map *map__new(struct machine *machine, u64 start, u64 len,
+ 		     u64 pgoff, u32 pid, u32 d_maj, u32 d_min, u64 ino,
+ 		     u64 ino_gen, u32 prot, u32 flags, char *filename,
+-		     enum map_type type)
++		     enum map_type type, struct thread *thread)
  {
- 	bool is_kallsyms = dso->kernel && dso->long_name[0] != '/';
--	bool is_vdso = is_vdso_map(dso->short_name);
-+	bool is_vdso = dso__is_vdso(dso);
- 	const char *name = dso->long_name;
- 	char nm[PATH_MAX];
+ 	struct map *map = malloc(sizeof(*map));
  
-diff --git a/tools/perf/util/symbol-elf.c b/tools/perf/util/symbol-elf.c
-index cef8f426356e..61b9cd456310 100644
---- a/tools/perf/util/symbol-elf.c
-+++ b/tools/perf/util/symbol-elf.c
-@@ -622,7 +622,7 @@ int symsrc__init(struct symsrc *ss, struct dso *dso, const char *name,
- 		GElf_Shdr shdr;
- 		ss->adjust_symbols = (ehdr.e_type == ET_EXEC ||
- 				ehdr.e_type == ET_REL ||
--				is_vdso_map(dso->short_name) ||
-+				dso__is_vdso(dso) ||
- 				elf_section_by_name(elf, &ehdr, &shdr,
- 						     ".gnu.prelink_undo",
- 						     NULL) != NULL);
+@@ -174,7 +174,7 @@ struct map *map__new(struct machine *machine, u64 start, u64 len,
+ 
+ 		if (vdso) {
+ 			pgoff = 0;
+-			dso = vdso__dso_findnew(machine);
++			dso = vdso__dso_findnew(machine, thread);
+ 		} else
+ 			dso = __dsos__findnew(&machine->user_dsos, filename);
+ 
+diff --git a/tools/perf/util/map.h b/tools/perf/util/map.h
+index a95e677f16e9..2f83954af050 100644
+--- a/tools/perf/util/map.h
++++ b/tools/perf/util/map.h
+@@ -104,6 +104,7 @@ u64 map__rip_2objdump(struct map *map, u64 rip);
+ u64 map__objdump_2mem(struct map *map, u64 ip);
+ 
+ struct symbol;
++struct thread;
+ 
+ /* map__for_each_symbol - iterate over the symbols in the given map
+  *
+@@ -122,7 +123,7 @@ void map__init(struct map *map, enum map_type type,
+ struct map *map__new(struct machine *machine, u64 start, u64 len,
+ 		     u64 pgoff, u32 pid, u32 d_maj, u32 d_min, u64 ino,
+ 		     u64 ino_gen, u32 prot, u32 flags,
+-		     char *filename, enum map_type type);
++		     char *filename, enum map_type type, struct thread *thread);
+ struct map *map__new2(u64 start, struct dso *dso, enum map_type type);
+ void map__delete(struct map *map);
+ struct map *map__clone(struct map *map);
 diff --git a/tools/perf/util/vdso.c b/tools/perf/util/vdso.c
-index 946d927765c6..a9300f83654b 100644
+index a9300f83654b..adca69384fcc 100644
 --- a/tools/perf/util/vdso.c
 +++ b/tools/perf/util/vdso.c
-@@ -33,7 +33,7 @@ static struct vdso_info *vdso_info__new(void)
- 	static const struct vdso_info vdso_info_init = {
- 		.vdso    = {
- 			.temp_file_name = VDSO__TEMP_FILE_NAME,
--			.dso_name = VDSO__MAP_NAME,
-+			.dso_name = DSO__NAME_VDSO,
- 		},
- 	};
- 
-@@ -147,7 +147,7 @@ struct dso *vdso__dso_findnew(struct machine *machine)
- 	if (!vdso_info)
- 		return NULL;
- 
--	dso = dsos__find(&machine->user_dsos, VDSO__MAP_NAME, true);
-+	dso = dsos__find(&machine->user_dsos, DSO__NAME_VDSO, true);
- 	if (!dso) {
- 		char *file;
- 
-@@ -155,8 +155,13 @@ struct dso *vdso__dso_findnew(struct machine *machine)
- 		if (!file)
- 			return NULL;
- 
--		dso = vdso__new(machine, VDSO__MAP_NAME, file);
-+		dso = vdso__new(machine, DSO__NAME_VDSO, file);
- 	}
- 
+@@ -135,7 +135,8 @@ static struct dso *vdso__new(struct machine *machine, const char *short_name,
  	return dso;
  }
-+
-+bool dso__is_vdso(struct dso *dso)
-+{
-+	return !strcmp(dso->short_name, DSO__NAME_VDSO);
-+}
+ 
+-struct dso *vdso__dso_findnew(struct machine *machine)
++struct dso *vdso__dso_findnew(struct machine *machine,
++			      struct thread *thread __maybe_unused)
+ {
+ 	struct vdso_info *vdso_info;
+ 	struct dso *dso;
 diff --git a/tools/perf/util/vdso.h b/tools/perf/util/vdso.h
-index 7cf1576863a4..be3eb4324c1e 100644
+index be3eb4324c1e..af9d6929a215 100644
 --- a/tools/perf/util/vdso.h
 +++ b/tools/perf/util/vdso.h
-@@ -7,11 +7,17 @@
+@@ -19,8 +19,9 @@ struct dso;
+ bool dso__is_vdso(struct dso *dso);
  
- #define VDSO__MAP_NAME "[vdso]"
- 
-+#define DSO__NAME_VDSO "[vdso]"
-+
- static inline bool is_vdso_map(const char *filename)
- {
- 	return !strcmp(filename, VDSO__MAP_NAME);
- }
- 
-+struct dso;
-+
-+bool dso__is_vdso(struct dso *dso);
-+
  struct machine;
++struct thread;
  
- struct dso *vdso__dso_findnew(struct machine *machine);
+-struct dso *vdso__dso_findnew(struct machine *machine);
++struct dso *vdso__dso_findnew(struct machine *machine, struct thread *thread);
+ void vdso__exit(struct machine *machine);
+ 
+ #endif /* __PERF_VDSO__ */
 -- 
 1.9.3
 
