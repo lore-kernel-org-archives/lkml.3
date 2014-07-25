@@ -1,112 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758740AbaGYCQL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jul 2014 22:16:11 -0400
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:64347 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752186AbaGYCQJ (ORCPT
+	id S1758967AbaGYCTJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jul 2014 22:19:09 -0400
+Received: from mx0a-0016f401.pphosted.com ([67.231.148.174]:24494 "EHLO
+	mx0a-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756814AbaGYCTH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jul 2014 22:16:09 -0400
-Message-ID: <53D1BDCC.5030202@gmail.com>
-Date: Fri, 25 Jul 2014 10:15:40 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Thu, 24 Jul 2014 22:19:07 -0400
+From: Jisheng Zhang <jszhang@marvell.com>
+To: <wsa@the-dreams.de>, <laurent.pinchart@ideasonboard.com>,
+        <khali@linux-fr.org>, <paul.gortmaker@windriver.com>
+CC: <linux-i2c@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>,
+        Jisheng Zhang <jszhang@marvell.com>
+Subject: [PATCH] i2c: pca954x: put the mux to disconnected state after resume
+Date: Fri, 25 Jul 2014 10:15:59 +0800
+Message-ID: <1406254559-5615-1-git-send-email-jszhang@marvell.com>
+X-Mailer: git-send-email 2.0.1
 MIME-Version: 1.0
-To: Richard Weinberger <richard@nod.at>, Nick Krause <xerofoify@gmail.com>,
-        Richard Weinberger <richard.weinberger@gmail.com>
-CC: Steven Rostedt <rostedt@goodmis.org>,
-        Harvey Harrison <harvey.harrison@gmail.com>,
-        =?UTF-8?B?TcOlbnMgUnVsbGfDpXJk?= <mans@mansr.com>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
-        Dan Carpenter <dan.carpenter@oracle.com>, tomas.winkler@intel.com,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] staging: Change kzalloc to kcalloc
-References: <1406156581-6052-1-git-send-email-xerofoify@gmail.com>	<20140724144725.GA32669@home.goodmis.org>	<20140724105132.3cf221c2@gandalf.local.home>	<yw1x38dqag24.fsf@unicorn.mansr.com>	<CAPDOMVgswyopjGxdRFW-bFRrTcpcNnkY=PqTCT9HbjjA=EZ1iw@mail.gmail.com>	<yw1xy4vi90n6.fsf@unicorn.mansr.com>	<CAPDOMVia0OXydg_hRH0t63xUaxKEkVc6D20vAZiyugkMXAEsJQ@mail.gmail.com>	<yw1xtx669002.fsf@unicorn.mansr.com>	<CAPDOMVgziyYTX41xZVB9FLHUKFRPPm19jo0A_WfbLqaaKbxPqg@mail.gmail.com>	<20140724131821.30c4519d@gandalf.local.home>	<CAHLZz12ammMZNAah_eyYePJWorw2AruDAujeNxJHvOF5+Mr7cA@mail.gmail.com>	<20140724134849.4d228f5f@gandalf.local.home>	<CAPDOMVi7cHUAn_1AxJ+tN1c67UqBdLHLC1sJNSA=HUK-WzZCTA@mail.gmail.com>	<CAFLxGvzA4HHL0aJaC0Ypf9_YeL5WW4_eYNToSVG7H43DD2unSg@mail.gmail.com>	<CAPDOMViVAY5cBuwe=nLjnFUHy4_FVUh_9LkChv+vso5w7WVeDA@mail.gmail.com> <CAPDOMVhNaV+Wertp+p361iYS8t-rZmN2nubn9coyrUcgZPcuGw@mail.gmail.com> <53D15A6B.6030806@nod.at>
-In-Reply-To: <53D15A6B.6030806@nod.at>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.14,0.0.0000
+ definitions=2014-07-25_01:2014-07-24,2014-07-25,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
+ phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=7.0.1-1402240000 definitions=main-1407250025
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+pca954x may be power lost during suspend, so after resume we also suffer
+the issue fixed by commit cd823db8b1161ef0d756514d280715a576d65cc3,
 
-Excuse me, I did not see the patch details, but I guess it is about
-whether welcome a new member to upstream kernel. For me, I have 3 ideas
-about it if I am a newbie or a normal kernel developer:
+ "pca954x power-on default is channel 0 connected. If multiple pca954x
+ muxes are connected to the same physical I2C bus, the parent bus will
+ see channel 0 devices behind both muxes by default."
 
- - Do I have enough basic skills for it?
+What's more, when resume bootloader may also operate the mux, so the
+the channel connected after that may not be the one driver thought.
 
-    - Do I developed one or more another real world projects with C?
-      (they are successful projects -- at least, not failure projects)
+We fix this problem by putting the mux to disconnected state and
+clearing last_chan in the resume hook.
 
-    - Can I construct related develop environments to support what I do?
-      (e.g. building and testing for upstream kernel)
+Signed-off-by: Jisheng Zhang <jszhang@marvell.com>
+---
+ drivers/i2c/muxes/i2c-mux-pca954x.c | 14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
 
-    - Am I familiar the basic working flow about kernel mailing list.
-      (e.g. format-patch, sending patch, email client configuration...).
-
- - Do I have a correct attitude on it?
-
-    - Am I careful enough?
-      (e.g. if find some details may doubt, try to check and clear them)
-      (it is always neccessary for all patches)
-
-    - Am I try my best for it?
-      (e.g. when finish coding, try what I can do: build, run and test).
-      (it is neccessary for most cases)
-
-    - Do I have negative effect with others?
-      (e.g. discourage the newbies, or send spam to other members ...).
-      (need always try to avoid)
-
- - Do I really love programming, also love open source kernel?
-
-    - Do I love it, or I have to do it for another reason?
-      (I guess, most of gmail members in open source, love programming).
-
-    - Do I still love programming if I am discouraged by any members?
-
-    - Do I still love open source kernel if discouraged by any members?
-
-
-Thanks.
-
-
-On 07/25/2014 03:11 AM, Richard Weinberger wrote:
-> Am 24.07.2014 21:05, schrieb Nick Krause:
->> On Thu, Jul 24, 2014 at 2:55 PM, Nick Krause <xerofoify@gmail.com> wrote:
->>> On Thu, Jul 24, 2014 at 2:49 PM, Richard Weinberger
->>> <richard.weinberger@gmail.com> wrote:
->>>> On Thu, Jul 24, 2014 at 8:41 PM, Nick Krause <xerofoify@gmail.com> wrote:
->>>>> Steve,
->>>>> I have programming a lot in other areas just not the kernel.
->>>>> You are right through I need to test my code better through.
->>>>
->>>> Nick,
->>>>
->>>> let's make a deal.
->>>> Take the challenge at http://eudyptula-challenge.org. After you've solved all
->>>> tasks we'll accept patches from you.
->>>>
->>>> --
->>>> Thanks,
->>>> //richard
->>> That's fine,
->>> So Sorry :(.
->>> Nick
->> I sent the challenge a email. Seems that there not replying.
-> 
-> Patience is a virtue.
-> 
-> Thanks,
-> //richard
-> 
-
+diff --git a/drivers/i2c/muxes/i2c-mux-pca954x.c b/drivers/i2c/muxes/i2c-mux-pca954x.c
+index 9bd4212..c8c3d58 100644
+--- a/drivers/i2c/muxes/i2c-mux-pca954x.c
++++ b/drivers/i2c/muxes/i2c-mux-pca954x.c
+@@ -273,9 +273,23 @@ static int pca954x_remove(struct i2c_client *client)
+ 	return 0;
+ }
+ 
++#ifdef CONFIG_PM_SLEEP
++static int pca954x_resume(struct device *dev)
++{
++	struct i2c_client *client = to_i2c_client(dev);
++	struct pca954x *data = i2c_get_clientdata(client);
++
++	data->last_chan = 0;
++	return i2c_smbus_write_byte(client, 0);
++}
++#endif
++
++static SIMPLE_DEV_PM_OPS(pca954x_pm, NULL, pca954x_resume);
++
+ static struct i2c_driver pca954x_driver = {
+ 	.driver		= {
+ 		.name	= "pca954x",
++		.pm	= &pca954x_pm,
+ 		.owner	= THIS_MODULE,
+ 	},
+ 	.probe		= pca954x_probe,
 -- 
-Chen Gang
+2.0.1
 
-Open, share, and attitude like air, water, and life which God blessed
