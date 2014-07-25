@@ -1,92 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934762AbaGYQpZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 12:45:25 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:52949 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S934611AbaGYQpV (ORCPT
+	id S1760814AbaGYQpk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 12:45:40 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:52689 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752683AbaGYQpi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 12:45:21 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-kernel@vger.kernel.org, Linux PM list <linux-pm@vger.kernel.org>
-Subject: Re: [RFC][PATCH] irq: Rework IRQF_NO_SUSPENDED
-Date: Fri, 25 Jul 2014 19:03:38 +0200
-Message-ID: <2870044.iEzUSaptji@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20140725132541.GT12054@laptop.lan>
-References: <20140724212620.GO3935@laptop> <20140725124037.GL20603@laptop.programming.kicks-ass.net> <20140725132541.GT12054@laptop.lan>
+	Fri, 25 Jul 2014 12:45:38 -0400
+Date: Fri, 25 Jul 2014 17:45:19 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+Cc: Vinod Koul <vinod.koul@intel.com>, andriy.shevchenko@intel.com,
+        Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
+        zhuzhenhua@allwinnertech.com, dmaengine@vger.kernel.org,
+        linux-sunxi@googlegroups.com, kevin.z.m.zh@gmail.com,
+        sunny@allwinnertech.com, shuge@allwinnertech.com,
+        Dan Williams <dan.j.williams@intel.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v11 0/2] Add support for the Allwinner A31 DMA
+	Controller
+Message-ID: <20140725164518.GQ21766@n2100.arm.linux.org.uk>
+References: <1405626376-471-1-git-send-email-maxime.ripard@free-electrons.com> <20140725131217.GS8181@intel.com> <20140725163746.GC20328@lukather>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140725163746.GC20328@lukather>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, July 25, 2014 03:25:41 PM Peter Zijlstra wrote:
-> On Fri, Jul 25, 2014 at 02:40:37PM +0200, Peter Zijlstra wrote:
-> > On Fri, Jul 25, 2014 at 11:40:48AM +0200, Thomas Gleixner wrote:
-> > > On Thu, 24 Jul 2014, Peter Zijlstra wrote:
-> > > > @@ -29,14 +29,20 @@ void suspend_device_irqs(void)
-> > > >  	for_each_irq_desc(irq, desc) {
-> > > >  		unsigned long flags;
-> > > >  
-> > > > +		/*
-> > > > +		 * Ideally this would be a global state, but we cannot
-> > > > +		 * for the trainwreck that is IRQD_WAKEUP_STATE.
-> > > > +		 */
-> > > >  		raw_spin_lock_irqsave(&desc->lock, flags);
-> > > > -		__disable_irq(desc, irq, true);
-> > > > +		if (!irqd_has_set(&desc->irq_data, IRQD_WAKEUP_STATE))
-> > > > +			desc->istate |= IRQS_SUSPENDED;
-> > > >  		raw_spin_unlock_irqrestore(&desc->lock, flags);
-> > > >  	}
-> > > >  
-> > > > -	for_each_irq_desc(irq, desc)
-> > > > +	for_each_irq_desc(irq, desc) {
-> > > >  		if (desc->istate & IRQS_SUSPENDED)
-> > > >  			synchronize_irq(irq);
-> > > > +	}
-> > > >  }
-> > > 
-> > > So, instead of disabling the interrupt you just mark it
-> > > suspended. Good luck with level triggered interrupt lines then.
-> > > 
-> > > Assume the interrupt fires after you marked it suspended. Then the
-> > > flow handler will call handle_irq_event() which will do nothing and
-> > > return handled. So the flow handler will reenable the interrupt line,
-> > > which will cause the interrupt to fire immediately again after the
-> > > RETI. Guess how much progress the system is going to make when that
-> > > happens.
-> > 
-> > Urgh, right. I knew it was too easy. Can we have do_irqhandler() ACK the
-> > interrupt and not call the handler?
+On Fri, Jul 25, 2014 at 06:37:46PM +0200, Maxime Ripard wrote:
+> Hi Vinod,
 > 
-> OK, so Rafael said there's devices that keep on raising their interrupt
-> until they get attention. Ideally this won't happen because the device
-> is suspended etc.. But I'm sure there's some broken piece of hardware
-> out there that'll make it go boom.
+> On Fri, Jul 25, 2014 at 06:42:17PM +0530, Vinod Koul wrote:
+> > - don't use devm_request_irq(). You have irq enabled and you have killed
+> >   tasklet. This is too racy. You need to ensure no irqs can be generated before killing
+> >   tasklets.
+> 
+> Ok, would calling disable_irq before killing the tasklet an option for
+> you ? that would allow to keep the devm_request_irq.
 
-So here's an idea.
+That's not really an acceptable approach if you can use shared interrupts.
+A better alternative would be devm_free_irq() to give a definite point
+that the interrupt is unregistered in the driver remove sequence.  That
+allows you to keep the advantage of devm_request_irq() to clean up during
+the initialisation side.
 
-What about returning IRQ_NONE rather than IRQ_HANDLED for "suspended"
-interrupts (after all, that's what a sane driver would do for a
-suspended device I suppose)?
+An alternative approach would be to ensure that the hardware is quiesced,
+and interrupts are disabled.  Then call synchronize_irq() on it, and at
+that point, you should be certain that your interrupt handler should not
+process any further interrupts for your device (though, in a shared
+interrupt environment, it would still be called should a different device
+on the shared line raise its interrupt.)
 
-If the line is really shared and the interrupt is taken care of by
-the other guy sharing the line, we'll be all fine.
-
-If that is not the case, on the other hand, and something's really
-broken, we'll end up disabling the interrupt and marking it as
-IRQS_SPURIOUS_DISABLED (if I understand things correctly).
-
-But then, we can re-enable it and clear the IRQS_SPURIOUS_DISABLED
-flag at the resume_device_irqs() time so the driver can use it again.
-And we'll have a trace of the breakage in dmesg, so possibly we can
-go forth and fix the bad guy.
-
-Would that make sense?
-
-Rafael
-
+-- 
+FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
+according to speedtest.net.
