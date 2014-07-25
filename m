@@ -1,80 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760088AbaGYKS5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 06:18:57 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:54346 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751664AbaGYKSz (ORCPT
+	id S1760105AbaGYKTY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 06:19:24 -0400
+Received: from mout.kundenserver.de ([212.227.17.24]:62062 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751664AbaGYKTW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 06:18:55 -0400
-Date: Fri, 25 Jul 2014 11:18:15 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Michal Simek <monstr@monstr.eu>
-Cc: Lars-Peter Clausen <lars@metafoo.de>,
-        Andreas =?iso-8859-1?Q?F=E4rber?= <afaerber@suse.de>,
-        Michal Simek <michal.simek@xilinx.com>,
-        Andreas Olofsson <andreas@adapteva.com>,
-        Matteo Vit <matteo.vit@starwaredesign.com>,
-        Sean Rickerd <srickerd@suse.com>, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>
-Message-ID: <20140725101815.GO17528@sirena.org.uk>
-References: <1406242820-20140-1-git-send-email-afaerber@suse.de>
- <1406242820-20140-10-git-send-email-afaerber@suse.de>
- <53D20A61.1050506@metafoo.de>
- <53D21066.8000905@monstr.eu>
+	Fri, 25 Jul 2014 06:19:22 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: linux-arm-kernel@lists.infradead.org,
+        Kweh Hock Leong <hock.leong.kweh@intel.com>,
+        Eric Miao <eric.y.miao@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Mark Brown <broonie@kernel.org>,
+        Chew Chiau Ee <chiau.ee.chew@intel.com>,
+        Darren Hart <dvhart@linux.intel.com>, chiauee85@gmail.com,
+        linux-kernel@vger.kernel.org, linux-spi@vger.kernel.org,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Subject: Re: [PATCH] spi/pxa2xx-pci: Enable DMA binding through device name
+Date: Fri, 25 Jul 2014 12:19:02 +0200
+Message-ID: <5426556.OzZIXLrofJ@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140725095559.GA1857@lahna.fi.intel.com>
+References: <1406196111-22861-1-git-send-email-hock.leong.kweh@intel.com> <20140725090714.GY1857@lahna.fi.intel.com> <20140725095559.GA1857@lahna.fi.intel.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="XgWkusiZDs53F1ax"
-Content-Disposition: inline
-In-Reply-To: <53D21066.8000905@monstr.eu>
-X-Cookie: 98% lean.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v2 09/11] Documentation: devicetree: Fix ADI AXI SPDIF
- specification
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:QvCLloZeAsRoeh29UTAG1qlzHrFKMtrq8+6tnkH76sf
+ Ig/gR9SgxVOhzV4QT2n4DTTHycN0f8hpl22OMQxs1pkkkOX7oa
+ 0SCqvClNycYXrUHPAyhbZYXtDxyDEC2kj+g3HVHKX34eCDkQ7g
+ SkkLOKQ+t3zdloZrMxeQTzrqr2cXmWTFRnXVN8j1INylK8k3lF
+ s4BK84xgf6Pv7RK72GHFzJacBU9lBP9jgYpb5qtUfxprvGQ8ng
+ iRh3KVGjrKsH4CrNB8/82he3Bv9HwjJEeLdmQnxkT7GPxUDMH6
+ zkj3agP730We+mZDP0o3V46HGgxy5mwmdZpBkMRyZ7o4SIKHcY
+ OmLFKjGf/rKyLlVZcbrc=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Friday 25 July 2014 12:55:59 Mika Westerberg wrote:
+> On Fri, Jul 25, 2014 at 12:07:14PM +0300, Mika Westerberg wrote:
+> > On Fri, Jul 25, 2014 at 10:38:36AM +0200, Arnd Bergmann wrote:
+> > > On Friday 25 July 2014 11:22:49 Mika Westerberg wrote:
+> > > > > All you need to do is change your filter function to take the
+> > > > > slave id from pxa_spi_info and stick it in there, e.g.
+> > > > > 
+> > > > > static bool pxa2xx_spi_dw_dma_filter(struct dma_chan *chan, void *param)
+> > > > > {       
+> > > > >         const struct pxa2xx_spi_master *pdata = param;
+> > > > >         struct dw_dma_chan *dwc = to_dw_dma_chan(chan);
+> > > > >         
+> > > > >         dwc->request_line = fargs->req;
+> > > > >         dwc->src_master = 0;
+> > > > >         dwc->dst_master = 0;
+> > > > >         
+> > > > >         return 1;
+> > > > > }           
+> > > > 
+> > > > Oh man. That makes pxa2xx_spi dependent on a certain specific DMA engine
+> > > > driver.
+> > > 
+> > > I think you can improve this by putting the filter function (and a pointer
+> > > to it) into the pxa2xx_spi_master data provided by the PCI driver.
+> > 
+> > Indeed, that looks better. It still makes the PCI part of the driver
+> > dependent on a particular DMA engine driver but is certainly better than
+> > the core pxa2xx_spi driver.
+> 
+> Something like this?
+> 
+> Hock Leong / Chiaue Ee, are you able to check if this works on your BYT
+> machines?
 
---XgWkusiZDs53F1ax
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+I think I found a small bug, and one detail that could be improved.
 
-On Fri, Jul 25, 2014 at 10:08:06AM +0200, Michal Simek wrote:
+> @@ -321,12 +310,14 @@ int pxa2xx_spi_dma_setup(struct driver_data *drv_data)
+>  		return -ENOMEM;
+>  
+>  	drv_data->tx_chan = dma_request_slave_channel_compat(mask,
+> -				pxa2xx_spi_dma_filter, pdata, dev, "tx");
+> +				pdata->dma_filter, pdata->dma_filter_param,
+> +				dev, "tx");
+>  	if (!drv_data->tx_chan)
+>  		return -ENODEV;
 
-> All these patches have been added through your tree that's why I think
-> you should take this fix through his tree.
+If you change this part to pass '(void *)info->tx_slave_id' rather than
+pdata->dma_filter_param, you can simplify the next code:
 
-If someone could send me patches I'll take a look at them.
+> +static bool pxa2xx_spi_pci_dma_filter(struct dma_chan *chan, void *param)
+> +{
+> +	struct dw_dma_chan *dwc = to_dw_dma_chan(chan);
+> +	const struct pxa_spi_info *info = param;
+> +
+> +	if (chan->chan_id == info->tx_chan_id)
+> +		dwc->request_line = info->tx_slave_id;
+> +	else if (chan->chan_id == info->rx_chan_id)
+> +		dwc->request_line = info->rx_slave_id;
+> +	else
+> +		return false;
+> +
+> +	dwc->src_master = 0;
+> +	dwc->dst_master = 0;
+> +
+> +	return true;
+> +}
 
---XgWkusiZDs53F1ax
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+to disregard the tx_chan_id, which is really arbitrary as far as I can tell.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+What I think you got wrong here (by following my bad advice) is the master
+number. Looking at the code for dw_dma, I think src_master needs to be '1'
+for your driver.
 
-iQIcBAEBAgAGBQJT0i7kAAoJELSic+t+oim9Vg8P/jssSes7qvXYuLx6KaEy7v75
-RWXTm9EsaEUIZUvP9GBMSjx6yg7zItAVNjWxdQYTuM10ioUXa1E4zpHRBwZitqvx
-YmRX1gJjMiSidgYOxoeu86KgVIXKzPqZGdK97GrmTRwbMQhRQQpuLxRzEX3DkDn6
-DlljmWJ+xyKDPM6wtUnm6kGryFAYUGoLrGg/IAPd+WrcYOXTDziTcKaBXSkcFrcR
-no7CAAhfRqi+DoP557+o8w9nNDwe0smY9FWROQ5kBC9PtOEnqtoB2kqDZlJUIDHK
-gBRKKWTEZSgQTqaOLbTIwCrfMGlKaZrNIiGMPqO+NvOtVzzzyRzCY8iqF6RUoVXp
-+61HaWhpARNEtMsC2dZioMuTnT+AAijT3SYPcD6MuZSK+Tcq95tblHvtWgCl5V8j
-5uZVTFB6mo4fulytayKShKniyZBWdd002BUoPPhheEFdp3TUN+I3hwNEuukgZtr2
-nhxg7BRA3wG5plqqqsJ91RIr6LaJ01C94csEGIPtO4TuyL513FltZfG5AaL0DpBq
-q3pbWcyv/gfbZKyn+CrrHcUDNORZbuu2pb/UxJT8PojN6VNXdyfDUtOen73TstRx
-S8Q8bZoftEBiEqFdyo99MO0vDYwerZ1hE5uKgiqDZlZ2rHOFo2TeFokRc2MJeiiP
-Dtvf78DCQQLZiiQmT5HX
-=TiQH
------END PGP SIGNATURE-----
+If we do the same change in the drivers/tty/serial/8250/8250_pci.c driver,
+the dw_dma driver can be simplified a little by removing the special
+case for the request line setting.
 
---XgWkusiZDs53F1ax--
+diff --git a/drivers/dma/dw/core.c b/drivers/dma/dw/core.c
+index 1af731b83b3f..674f69fe6662 100644
+--- a/drivers/dma/dw/core.c
++++ b/drivers/dma/dw/core.c
+@@ -37,24 +37,6 @@
+  * support descriptor writeback.
+  */
+ 
+-static inline bool is_request_line_unset(struct dw_dma_chan *dwc)
+-{
+-	return dwc->request_line == (typeof(dwc->request_line))~0;
+-}
+-
+-static inline void dwc_set_masters(struct dw_dma_chan *dwc)
+-{
+-	struct dw_dma *dw = to_dw_dma(dwc->chan.device);
+-	struct dw_dma_slave *dws = dwc->chan.private;
+-	unsigned char mmax = dw->nr_masters - 1;
+-
+-	if (!is_request_line_unset(dwc))
+-		return;
+-
+-	dwc->src_master = min_t(unsigned char, mmax, dwc_get_sms(dws));
+-	dwc->dst_master = min_t(unsigned char, mmax, dwc_get_dms(dws));
+-}
+-
+ #define DWC_DEFAULT_CTLLO(_chan) ({				\
+ 		struct dw_dma_chan *_dwc = to_dw_dma_chan(_chan);	\
+ 		struct dma_slave_config	*_sconfig = &_dwc->dma_sconfig;	\
+@@ -967,10 +949,6 @@ set_runtime_config(struct dma_chan *chan, struct dma_slave_config *sconfig)
+ 	memcpy(&dwc->dma_sconfig, sconfig, sizeof(*sconfig));
+ 	dwc->direction = sconfig->direction;
+ 
+-	/* Take the request line from slave_id member */
+-	if (is_request_line_unset(dwc))
+-		dwc->request_line = sconfig->slave_id;
+-
+ 	convert_burst(&dwc->dma_sconfig.src_maxburst);
+ 	convert_burst(&dwc->dma_sconfig.dst_maxburst);
+ 
+@@ -1123,8 +1101,6 @@ static int dwc_alloc_chan_resources(struct dma_chan *chan)
+ 	 * doesn't mean what you think it means), and status writeback.
+ 	 */
+ 
+-	dwc_set_masters(dwc);
+-
+ 	spin_lock_irqsave(&dwc->lock, flags);
+ 	i = dwc->descs_allocated;
+ 	while (dwc->descs_allocated < NR_DESCS_PER_CHANNEL) {
+
+	Arnd
