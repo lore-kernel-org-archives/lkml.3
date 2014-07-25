@@ -1,60 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759960AbaGYNSu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 09:18:50 -0400
-Received: from mga11.intel.com ([192.55.52.93]:27009 "EHLO mga11.intel.com"
+	id S1760098AbaGYNWa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 09:22:30 -0400
+Received: from imap.thunk.org ([74.207.234.97]:56408 "EHLO imap.thunk.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751773AbaGYNSs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 09:18:48 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,731,1400050800"; 
-   d="scan'208";a="567170518"
-Date: Fri, 25 Jul 2014 18:42:17 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-Cc: Dan Williams <dan.j.williams@intel.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-sunxi@googlegroups.com,
-        kevin.z.m.zh@gmail.com, sunny@allwinnertech.com,
-        shuge@allwinnertech.com, zhuzhenhua@allwinnertech.com,
-        Arnd Bergmann <arnd@arndb.de>, andriy.shevchenko@intel.com,
-        dmaengine@vger.kernel.org
-Subject: Re: [PATCH v11 0/2] Add support for the Allwinner A31 DMA
- Controller
-Message-ID: <20140725131217.GS8181@intel.com>
-References: <1405626376-471-1-git-send-email-maxime.ripard@free-electrons.com>
+	id S1752336AbaGYNW2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jul 2014 09:22:28 -0400
+Date: Fri, 25 Jul 2014 09:22:25 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        Linux Kernel Developers List <linux-kernel@vger.kernel.org>,
+        Linux API <linux-api@vger.kernel.org>, linux-crypto@vger.kernel.org
+Subject: Re: [PATCH -v5] random: introduce getrandom(2) system call
+Message-ID: <20140725132225.GQ1865@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Andy Lutomirski <luto@amacapital.net>,
+	Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+	Linux Kernel Developers List <linux-kernel@vger.kernel.org>,
+	Linux API <linux-api@vger.kernel.org>, linux-crypto@vger.kernel.org
+References: <1406212287-9855-1-git-send-email-tytso@mit.edu>
+ <20140724151814.GE32421@khazad-dum.debian.net>
+ <CALCETrXAA=UzS-pRCo5tKSjSCOP9xfu66BG9QbRefVrovkavhQ@mail.gmail.com>
+ <20140724190206.GL6673@thunk.org>
+ <20140724203019.GA20737@khazad-dum.debian.net>
+ <20140724232434.GN6673@thunk.org>
+ <CALCETrVgKMVnBuzE+bCXaUPRrqhVxwv4AXmJrUJSYws5rZxhJw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1405626376-471-1-git-send-email-maxime.ripard@free-electrons.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <CALCETrVgKMVnBuzE+bCXaUPRrqhVxwv4AXmJrUJSYws5rZxhJw@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 17, 2014 at 09:46:14PM +0200, Maxime Ripard wrote:
-> Hi,
+On Thu, Jul 24, 2014 at 04:27:36PM -0700, Andy Lutomirski wrote:
 > 
-> This patchset adds support for the DMA controller found in the
-> Allwinner A31 and A23 SoCs.
+> I think that people might do:
 > 
-> This has been tested using the newly introduced SPI driver on an A31
-> EVK. Support for DMA-driven SPI transfers will be the subject of
-> another patch serie.
+> try getrandom(GRND_RANDOM)
+> fall back to /dev/random
+> fall back to something intensely stupid
 > 
-> This has been around for around 5 monthes now, and didn't get any
-> review but nitpicks for three versions, so I feel like it could be
-> merged quite quickly.
-I have applied this now.
+> We want them to at least attempt the fallback from GRND_RANDOM to !GRND_RANDOM.
 
-Can you please send follow patches for these:
-- don't recall if I pointed earlier, but can we use direct conversion for
-  calculating convert_burst() and convert_buswidth(), latter one at least
-  seem doable
-- don't use devm_request_irq(). You have irq enabled and you have killed
-  tasklet. This is too racy. You need to ensure no irqs can be generated before killing
-  tasklets.
-- use synchronize_irq() before killing tasklet
+We can't legislate against stupidity.  Seriously, the best way to do
+this is to write a good userspace library and encourage application
+writers to use it.
 
-Thanks
+Regards,
 
--- 
+						- Ted
