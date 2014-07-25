@@ -1,59 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759902AbaGYIPi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 04:15:38 -0400
-Received: from mail-la0-f44.google.com ([209.85.215.44]:36925 "EHLO
-	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759680AbaGYIPd (ORCPT
+	id S1759543AbaGYIWs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 04:22:48 -0400
+Received: from mail-by2lp0241.outbound.protection.outlook.com ([207.46.163.241]:6517
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750818AbaGYIWo convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 04:15:33 -0400
+	Fri, 25 Jul 2014 04:22:44 -0400
+From: Peter Chen <Peter.Chen@freescale.com>
+To: =?iso-8859-1?Q?Antoine_T=E9nart?= 
+	<antoine.tenart@free-electrons.com>
+CC: "sebastian.hesselbarth@gmail.com" <sebastian.hesselbarth@gmail.com>,
+        "balbi@ti.com" <balbi@ti.com>,
+        "p.zabel@pengutronix.de" <p.zabel@pengutronix.de>,
+        "alexandre.belloni@free-electrons.com" 
+	<alexandre.belloni@free-electrons.com>,
+        "thomas.petazzoni@free-electrons.com" 
+	<thomas.petazzoni@free-electrons.com>,
+        "zmxu@marvell.com" <zmxu@marvell.com>,
+        "jszhang@marvell.com" <jszhang@marvell.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH v3 07/12] usb: chipidea: add a usb2 driver for ci13xxx
+Thread-Topic: [PATCH v3 07/12] usb: chipidea: add a usb2 driver for ci13xxx
+Thread-Index: AQHPoM+g9rJqVrp5SkK+NRByw9cq15uwoguA///bVQCAAAP18A==
+Date: Fri, 25 Jul 2014 08:22:40 +0000
+Message-ID: <055ba866a1ac4d9385360bf51ab73f80@BN1PR0301MB0772.namprd03.prod.outlook.com>
+References: <1405499166-6726-1-git-send-email-antoine.tenart@free-electrons.com>
+ <1405499166-6726-8-git-send-email-antoine.tenart@free-electrons.com>
+ <20140725021853.GA11052@shlinux1.ap.freescale.net>
+ <20140725080738.GA9756@kwain>
+In-Reply-To: <20140725080738.GA9756@kwain>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [123.151.195.50]
+x-microsoft-antispam: BCL:0;PCL:0;RULEID:
+x-forefront-prvs: 02830F0362
+x-forefront-antispam-report: SFV:NSPM;SFS:(6009001)(199002)(189002)(51704005)(24454002)(107046002)(86362001)(85306003)(20776003)(74662001)(81542001)(31966008)(81342001)(21056001)(101416001)(77096002)(92566001)(99396002)(83072002)(110136001)(85852003)(33646002)(74502001)(66066001)(76176999)(76482001)(54356999)(50986999)(106356001)(87936001)(46102001)(93886003)(76576001)(77982001)(4396001)(80022001)(64706001)(74316001)(99286002)(79102001)(105586002)(2656002)(95666004)(106116001)(83322001)(108616002)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:BN1PR0301MB0769;H:BN1PR0301MB0772.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;LANG:en;
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <20140725064836.GE2397@laptop.redhat.com>
-References: <CA+55aFwQSmBAs=QH9jAZz5JY7YFrDeuPH1RjFH+YKVr2NQM38g@mail.gmail.com>
-	<CA+55aFzDWritxv5RiqwcZ1qCKJQKK-Lw6StYFF7qx5YWgiCUTQ@mail.gmail.com>
-	<20140723182518.GD3935@laptop>
-	<CA+55aFyFT9n5wUNifEHY6+t2bEcD91kL7+dqXuBMSMJvLeDDJQ@mail.gmail.com>
-	<20140723184111.GG3935@laptop>
-	<CA+55aFwQfwfAP6U77_nD_mSvoygj=cZ09N644hKRtzgLnEqhZQ@mail.gmail.com>
-	<20140723190230.GH3935@laptop>
-	<CA+55aFyM1wqTLK0m4GQJ28f=z0iZE87=xk+1z-vm+PH1_d8nKw@mail.gmail.com>
-	<53D064C7.5050807@daenzer.net>
-	<CA+55aFyJhqiPv0kQ+51=Ei-zaAO+0JszxtnEyx-Gbto3SE00xw@mail.gmail.com>
-	<20140725064836.GE2397@laptop.redhat.com>
-Date: Fri, 25 Jul 2014 01:15:31 -0700
-X-Google-Sender-Auth: 2yqrxPEy3C53vd5TopV5kyKFfOg
-Message-ID: <CA+55aFyrNZ1EHyjfi6VCLHtERCqqL2b=CwZ542nR_xBYouvmfw@mail.gmail.com>
-Subject: Re: Random panic in load_balance() with 3.16-rc
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Jakub Jelinek <jakub@redhat.com>
-Cc: =?UTF-8?Q?Michel_D=C3=A4nzer?= <michel@daenzer.net>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Dietmar Eggemann <dietmar.eggemann@arm.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 24, 2014 at 11:48 PM, Jakub Jelinek <jakub@redhat.com> wrote:
->
-> Can I ask anyone involved in this for preprocessed source and all gcc command
-> line options to reproduce it, best in the form of a http://gcc.gnu.org/bugzilla/
-> bugreport?
+ 
+> 
+> On Fri, Jul 25, 2014 at 10:18:54AM +0800, Peter Chen wrote:
+> > On Wed, Jul 16, 2014 at 10:26:01AM +0200, Antoine Ténart wrote:
+> > > Add a USB2 ChipIdea driver for ci13xxx, with optional PHY, clock and
+> > > DMA mask, to support USB2 ChipIdea controllers that don't need
+> > > specific functions.
+> >
+> > You may need to indicate it is a generic usb2 glue layer driver at
+> > both subject and context.
+> 
+> "USB2 ChipIdea driver for ci13xxx" seemed quite generic to me.
+> 
 
-I've created bug 61904 for this:
+ok
 
-  https://gcc.gnu.org/bugzilla/show_bug.cgi?id=61904
+> > >
+> > > Needed for the Marvell Berlin SoCs USB controllers.
+> >
+> > You can say it is tested at Marvell Berlin SoCs USB controllers.
+> 
+> Ok, I'll explicitly say it.
+> 
+> > > +
+> > > +static int ci_hdrc_usb2_dt_probe(struct device *dev,
+> > > +				    struct ci_hdrc_platform_data *ci_pdata,
+> > > +				    struct ci_hdrc_usb2_priv *priv) {
+> > > +	u32 mask;
+> > > +	int ret;
+> > > +
+> > > +	priv->clk = devm_clk_get(dev, NULL);
+> > > +	if (!IS_ERR(priv->clk)) {
+> > > +		ret = clk_prepare_enable(priv->clk);
+> > > +		if (ret) {
+> > > +			dev_err(dev, "failed to enable the clock: %d\n", ret);
+> > > +			return ret;
+> > > +		}
+> > > +	}
+> >
+> > The clk API may be needed for both DT and non-DT cases.
+> 
+> Yes sure, I'll move this to the ci_hdrc_usb2_probe().
+> 
+ 
+> > > +
+> > > +	if (of_property_read_u32(dev->of_node, "dma-mask", &mask))
+> > > +		priv->dma_mask = mask;
+> > > +
+> > According to discussion, you may not need dma_mask in driver any more,
+> > and use below API for both DT and non-DT case.
+> >
+> >         err = dma_set_mask_and_coherent(&pdev->dev, DMA_BIT_MASK(32));
+> >         if (err)
+> >         	                handle error;
+> 
+> This would only be needed in non-dt cases, as the DMA mask is configured
+> in drivers/of/platform.c otherwise.
+> 
+ 
+Get it, thanks.
 
-Note that I don't personally have a reproducer (my machine has
-gcc-4.8.3, and I don't see the same behavior), but I included the
-incorrect fair.s file that Michel sent me (which has all the command
-line options in it), and a pre-processed "fair.i" source file that I
-generated and that *should* match the configuration that was the
-source for that result. So there might be some version/configuration
-skew there between the two files, but I think they match.
-
-Holler if you cannot reproduce the problem based on that.
-
-            Linus
+Peter
