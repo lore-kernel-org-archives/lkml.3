@@ -1,173 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755448AbaGYS1j (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 14:27:39 -0400
-Received: from mail-we0-f175.google.com ([74.125.82.175]:35037 "EHLO
-	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753043AbaGYS1h (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 14:27:37 -0400
-Message-ID: <1406312846.3363.97.camel@edumazet-glaptop2.roam.corp.google.com>
-Subject: Re: net: socket: NULL ptr deref in sendmsg
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Andrey Ryabinin <a.ryabinin@samsung.com>
-Cc: Sasha Levin <sasha.levin@oracle.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        Eric Dumazet <edumazet@google.com>
-Date: Fri, 25 Jul 2014 20:27:26 +0200
-In-Reply-To: <53D2768E.2040902@samsung.com>
-References: <53C2FF3D.4030201@oracle.com> <53D2768E.2040902@samsung.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1758446AbaGYS2V (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 14:28:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41476 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751990AbaGYS2U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jul 2014 14:28:20 -0400
+Date: Fri, 25 Jul 2014 11:28:17 -0700
+From: Zach Brown <zab@redhat.com>
+To: Steven Whitehouse <swhiteho@redhat.com>
+Cc: Abhijith Das <adas@redhat.com>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        cluster-devel <cluster-devel@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [Cluster-devel] [RFC] readdirplus implementations: xgetdents vs
+ dirreadahead syscalls
+Message-ID: <20140725182817.GL17798@lenny.home.zabbo.net>
+References: <1106785262.13440918.1406308542921.JavaMail.zimbra@redhat.com>
+ <1717400531.13456321.1406309839199.JavaMail.zimbra@redhat.com>
+ <20140725175257.GK17798@lenny.home.zabbo.net>
+ <53D29D0C.2040606@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53D29D0C.2040606@redhat.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-07-25 at 19:23 +0400, Andrey Ryabinin wrote:
-> On 07/14/14 01:50, Sasha Levin wrote:
+On Fri, Jul 25, 2014 at 07:08:12PM +0100, Steven Whitehouse wrote:
+> Hi,
 > 
-> > 
-> > I've tried debugging it, but I don't see a code path that could lead to that.
-> > 
-> 
-> I finally found some time to take look at this and I've found where the problem is.
-> 
-> Sasha, I suppose there was no usual "Unable to handle NULL pointer deference" after KASAN's report, right?
-> 
-> This gave me a clue that address 0 is actually mapped and contains valid socket address structure in it.
-> I've managed to write a simple code (in attachment), which could easily reproduce this bug.
-> 
-> I've fixed it with the following patch, please take a look.
-> 
-> 
-> From: Andrey Ryabinin <a.ryabinin@samsung.com>
-> Subject: [PATCH] net: sendmsg: fix NULL pointer dereference
-> 
-> Sasha's report:
-> 	> While fuzzing with trinity inside a KVM tools guest running the latest -next
-> 	> kernel with the KASAN patchset, I've stumbled on the following spew:
-> 	>
-> 	> [ 4448.949424] ==================================================================
-> 	> [ 4448.951737] AddressSanitizer: user-memory-access on address 0
-> 	> [ 4448.952988] Read of size 2 by thread T19638:
-> 	> [ 4448.954510] CPU: 28 PID: 19638 Comm: trinity-c76 Not tainted 3.16.0-rc4-next-20140711-sasha-00046-g07d3099-dirty #813
-> 	> [ 4448.956823]  ffff88046d86ca40 0000000000000000 ffff880082f37e78 ffff880082f37a40
-> 	> [ 4448.958233]  ffffffffb6e47068 ffff880082f37a68 ffff880082f37a58 ffffffffb242708d
-> 	> [ 4448.959552]  0000000000000000 ffff880082f37a88 ffffffffb24255b1 0000000000000000
-> 	> [ 4448.961266] Call Trace:
-> 	> [ 4448.963158] dump_stack (lib/dump_stack.c:52)
-> 	> [ 4448.964244] kasan_report_user_access (mm/kasan/report.c:184)
-> 	> [ 4448.965507] __asan_load2 (mm/kasan/kasan.c:352)
-> 	> [ 4448.966482] ? netlink_sendmsg (net/netlink/af_netlink.c:2339)
-> 	> [ 4448.967541] netlink_sendmsg (net/netlink/af_netlink.c:2339)
-> 	> [ 4448.968537] ? get_parent_ip (kernel/sched/core.c:2555)
-> 	> [ 4448.970103] sock_sendmsg (net/socket.c:654)
-> 	> [ 4448.971584] ? might_fault (mm/memory.c:3741)
-> 	> [ 4448.972526] ? might_fault (./arch/x86/include/asm/current.h:14 mm/memory.c:3740)
-> 	> [ 4448.973596] ? verify_iovec (net/core/iovec.c:64)
-> 	> [ 4448.974522] ___sys_sendmsg (net/socket.c:2096)
-> 	> [ 4448.975797] ? put_lock_stats.isra.13 (./arch/x86/include/asm/preempt.h:98 kernel/locking/lockdep.c:254)
-> 	> [ 4448.977030] ? lock_release_holdtime (kernel/locking/lockdep.c:273)
-> 	> [ 4448.978197] ? lock_release_non_nested (kernel/locking/lockdep.c:3434 (discriminator 1))
-> 	> [ 4448.979346] ? check_chain_key (kernel/locking/lockdep.c:2188)
-> 	> [ 4448.980535] __sys_sendmmsg (net/socket.c:2181)
-> 	> [ 4448.981592] ? trace_hardirqs_on_caller (kernel/locking/lockdep.c:2600)
-> 	> [ 4448.982773] ? trace_hardirqs_on (kernel/locking/lockdep.c:2607)
-> 	> [ 4448.984458] ? syscall_trace_enter (arch/x86/kernel/ptrace.c:1500 (discriminator 2))
-> 	> [ 4448.985621] ? trace_hardirqs_on_caller (kernel/locking/lockdep.c:2600)
-> 	> [ 4448.986754] SyS_sendmmsg (net/socket.c:2201)
-> 	> [ 4448.987708] tracesys (arch/x86/kernel/entry_64.S:542)
-> 	> [ 4448.988929] ==================================================================
-> 
-> This reports means that we've come to netlink_sendmsg() with msg->msg_name == NULL and msg->msg_namelen > 0.
-> 
-> After this report there was no usual "Unable to handle kernel NULL pointer dereference"
-> and this gave me a clue that address 0 is mapped and contains valid socket address structure in it.
-> 
-> This bug was introduced in f3d3342602f8bcbf37d7c46641cb9bca7618eb1c
-> (net: rework recvmsg handler msg_name and msg_namelen logic).
-> Commit message states that:
-> 	"Set msg->msg_name = NULL if user specified a NULL in msg_name but had a
-> 	 non-null msg_namelen in verify_iovec/verify_compat_iovec. This doesn't
-> 	 affect sendto as it would bail out earlier while trying to copy-in the
-> 	 address."
-> But in fact this affects sendto when address 0 is mapped and contains
-> socket address structure in it. In such case copy-in address will succeed,
-> verify_iovec() function will successfully exit with msg->msg_namelen > 0
-> and msg->msg_name == NULL.
-> 
-> This patch fixes it by assigning m->msg_name to address if move_addr_to_kernel()
-> was successful.
-> 
-> Cc: Hannes Frederic Sowa <hannes@stressinduktion.org>
-> Cc: Eric Dumazet <edumazet@google.com>
-> Cc: <stable@vger.kernel.org>
-> Reported-by: Sasha Levin <sasha.levin@oracle.com>
-> Signed-off-by: Andrey Ryabinin <a.ryabinin@samsung.com>
-> ---
->  net/compat.c     | 6 ++++--
->  net/core/iovec.c | 6 ++++--
->  2 files changed, 8 insertions(+), 4 deletions(-)
-> 
-> diff --git a/net/compat.c b/net/compat.c
-> index 9a76eaf..eefd989 100644
-> --- a/net/compat.c
-> +++ b/net/compat.c
-> @@ -92,9 +92,11 @@ int verify_compat_iovec(struct msghdr *kern_msg, struct iovec *kern_iov,
->  						      kern_address);
->  			if (err < 0)
->  				return err;
-> -		}
-> -		if (kern_msg->msg_name)
-> +
->  			kern_msg->msg_name = kern_address;
-> +		} else
-> +			if (kern_msg->msg_name)
-> +				kern_msg->msg_name = kern_address;
+> On 25/07/14 18:52, Zach Brown wrote:
+> >On Fri, Jul 25, 2014 at 01:37:19PM -0400, Abhijith Das wrote:
+> >>Hi all,
+> >>
+> >>The topic of a readdirplus-like syscall had come up for discussion at last year's
+> >>LSF/MM collab summit. I wrote a couple of syscalls with their GFS2 implementations
+> >>to get at a directory's entries as well as stat() info on the individual inodes.
+> >>I'm presenting these patches and some early test results on a single-node GFS2
+> >>filesystem.
+> >>
+> >>1. dirreadahead() - This patchset is very simple compared to the xgetdents() system
+> >>call below and scales very well for large directories in GFS2. dirreadahead() is
+> >>designed to be called prior to getdents+stat operations.
+> >Hmm.  Have you tried plumbing these read-ahead calls in under the normal
+> >getdents() syscalls?
+> >
+> >We don't have a filereadahead() syscall and yet we somehow manage to
+> >implement buffered file data read-ahead :).
+> >
+> >- z
+> >
+> Well I'm not sure thats entirely true... we have readahead() and we also
+> have fadvise(FADV_WILLNEED) for that.
 
+Sure, fair enough.  It would have been more precise to say that buffered
+file data readers see read-ahead without *having* to use a syscall.
 
-I agree with your fix, but could you add {} to the else clause.
-		
-		if {
-			multi
-			line
-			body
-		} else {
-			if (kern_msg->msg_name)
-				kern_msg->msg_name = kern_address;
-		}
+> doubt, but how would we tell getdents64() when we were going to read the
+> inodes, rather than just the file names?
 
+How does transparent file read-ahead know how far to read-ahead, if at
+all?
 
+How do the file systems that implement directory read-ahead today deal
+with this?
 
+Just playing devil's advocate here:  It's not at all obvious that adding
+more interfaces is necessary to get directory read-ahead working, given
+our existing read-ahead implementations.
 
->  	} else
->  		kern_msg->msg_name = NULL;
-> 
-> diff --git a/net/core/iovec.c b/net/core/iovec.c
-> index 827dd6b..16bd954 100644
-> --- a/net/core/iovec.c
-> +++ b/net/core/iovec.c
-> @@ -47,9 +47,11 @@ int verify_iovec(struct msghdr *m, struct iovec *iov, struct sockaddr_storage *a
->  						  address);
->  			if (err < 0)
->  				return err;
-> -		}
-> -		if (m->msg_name)
-> +
->  			m->msg_name = address;
-> +		} else
-> +			if (m->msg_name)
-> +				m->msg_name = address;
-
-same here.
-
->  	} else {
->  		m->msg_name = NULL;
->  	}
-
-
+- z
