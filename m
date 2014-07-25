@@ -1,82 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752533AbaGYMxM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 08:53:12 -0400
-Received: from out4-smtp.messagingengine.com ([66.111.4.28]:50531 "EHLO
-	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752142AbaGYMxJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 08:53:09 -0400
-X-Sasl-enc: +b3vJb4MHlrFkiYHdlMs4ok+NNk5MkbLwp247CUd+uRG 1406292373
-Date: Fri, 25 Jul 2014 09:46:01 -0300
-From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-To: "Theodore Ts'o" <tytso@mit.edu>, Andy Lutomirski <luto@amacapital.net>,
-        Linux Kernel Developers List <linux-kernel@vger.kernel.org>,
-        Linux API <linux-api@vger.kernel.org>, linux-crypto@vger.kernel.org
-Subject: Re: [PATCH -v5] random: introduce getrandom(2) system call
-Message-ID: <20140725124601.GB401@khazad-dum.debian.net>
-References: <1406212287-9855-1-git-send-email-tytso@mit.edu>
- <20140724151814.GE32421@khazad-dum.debian.net>
- <CALCETrXAA=UzS-pRCo5tKSjSCOP9xfu66BG9QbRefVrovkavhQ@mail.gmail.com>
- <20140724190206.GL6673@thunk.org>
- <20140724203019.GA20737@khazad-dum.debian.net>
- <20140724232434.GN6673@thunk.org>
+	id S1760250AbaGYMxl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 08:53:41 -0400
+Received: from [207.46.163.212] ([207.46.163.212]:43480 "EHLO
+	na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1759892AbaGYMxj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jul 2014 08:53:39 -0400
+From: Srikanth Thokala <srikanth.thokala@xilinx.com>
+To: Michal Simek <michals@xilinx.com>,
+        =?utf-8?B?QW5kcmVhcyBGw6RyYmVy?= <afaerber@suse.de>,
+        "monstr@monstr.eu" <monstr@monstr.eu>
+CC: Vinod Koul <vinod.koul@intel.com>, Michal Simek <michals@xilinx.com>,
+        Andreas Olofsson <andreas@adapteva.com>,
+        Matteo Vit <matteo.vit@starwaredesign.com>,
+        Sean Rickerd <srickerd@suse.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>
+Subject: RE: [PATCH v2 07/11] Documentation: devicetree: Fix Xilinx VDMA
+ specification
+Thread-Topic: [PATCH v2 07/11] Documentation: devicetree: Fix Xilinx VDMA
+ specification
+Thread-Index: AQHPp90HFwMNoTsoEk2N7w3yWlvvbpuv9CeAgAAO0wCAALfckA==
+Date: Fri, 25 Jul 2014 12:51:41 +0000
+References: <1406242820-20140-1-git-send-email-afaerber@suse.de>
+ <1406242820-20140-8-git-send-email-afaerber@suse.de>
+ <53D20C19.5000306@monstr.eu> <53D21983.8060901@suse.de>
+ <53D225F2.4070504@xilinx.com>
+In-Reply-To: <53D225F2.4070504@xilinx.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.23.17.39]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140724232434.GN6673@thunk.org>
-X-GPG-Fingerprint1: 4096R/39CB4807 C467 A717 507B BAFE D3C1  6092 0BD9 E811
- 39CB 4807
-X-GPG-Fingerprint2: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
- 1CDB 0FE3
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-RCIS-Action: ALLOW
+Message-ID: <32b0ee01-c15a-47eb-94c5-a60ca5016b85@BY2FFO11FD024.protection.gbl>
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:149.199.60.83;CTRY:US;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(438002)(13464003)(377454003)(189002)(164054003)(51704005)(479174003)(24454002)(199002)(92566001)(76482001)(81542001)(107046002)(21056001)(23676002)(92726001)(31966008)(77096002)(81342001)(50986999)(85306003)(74502001)(53416004)(54356999)(76176999)(31696002)(50466002)(80022001)(46102001)(79102001)(104016003)(106466001)(95666004)(74316001)(70736001)(86362001)(87936001)(83322001)(20776003)(64706001)(1496007)(85852003)(77982001)(6806004)(19580395003)(4396001)(2656002)(93886003)(74662001)(99396002)(44976005)(47776003)(19580405001)(83072002)(106116001)(107986001);DIR:OUT;SFP:;SCL:1;SRVR:BY2FFO11HUB044;H:xsj-pvapsmtpgw01;FPR:;MLV:sfv;PTR:unknown-60-83.xilinx.com;MX:1;A:1;LANG:en;
+X-OriginatorOrg: xilinx.onmicrosoft.com
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
+X-Forefront-PRVS: 02830F0362
+Authentication-Results: spf=pass (sender IP is 149.199.60.83)
+ smtp.mailfrom=srikanth.thokala@xilinx.com; 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s6PCrkF6032629
 
-On Thu, 24 Jul 2014, Theodore Ts'o wrote:
-> On Thu, Jul 24, 2014 at 05:30:19PM -0300, Henrique de Moraes Holschuh wrote:
-> > > I wouldn't add the error to the man page until we actually modify the
-> > > kernel to add such a restriction.
-> > 
-> > By then, it might be too late.  It would be really sad to find ourselves
-> > forced to return ENOSYS to getrandom(GRND_RANDOM) when we actually wanted to
-> > return EPERM/EACCES.
-> 
-> I wouldn't worry about.  The reality is that anyone using GRND_RANDOM
-> has to be checking for error codes anyway, and if they do something
+Hi Andreas,
 
-...
+> -----Original Message-----
+> From: Michal Simek [mailto:michal.simek@xilinx.com]
+> Sent: Friday, July 25, 2014 3:10 PM
+> To: Andreas F√§rber; monstr@monstr.eu; Srikanth Thokala
+> Cc: Vinod Koul; Michal Simek; Andreas Olofsson; Matteo Vit; Sean Rickerd;
+> devicetree@vger.kernel.org; linux-arm-kernel@lists.infradead.org; linux-
+> kernel@vger.kernel.org; Rob Herring; Pawel Moll; Mark Rutland; Ian Campbell;
+> Kumar Gala
+> Subject: Re: [PATCH v2 07/11] Documentation: devicetree: Fix Xilinx VDMA
+> specification
+>
+> Hi Andreas,
+>
+> On 07/25/2014 10:46 AM, Andreas F√§rber wrote:
+> > Hi Michal,
+> >
+> > Am 25.07.2014 09:49, schrieb Michal Simek:
+> >> On 07/25/2014 01:00 AM, Andreas F√§rber wrote:
+> >>> The specification requires xlnx,data-width, but example and driver
+> >>> use xlnx,datawidth. Change the specification to match the implementation.
+> >>>
+> >>> Signed-off-by: Andreas F√§rber <afaerber@suse.de>
+> >>> ---
+> >>>  v2: New
+> >>>
+> >>>  Documentation/devicetree/bindings/dma/xilinx/xilinx_vdma.txt | 2 +-
+> >>>  1 file changed, 1 insertion(+), 1 deletion(-)
+> >>>
+> >>> diff --git
+> >>> a/Documentation/devicetree/bindings/dma/xilinx/xilinx_vdma.txt
+> >>> b/Documentation/devicetree/bindings/dma/xilinx/xilinx_vdma.txt
+> >>> index 1405ed0..e4c4d47 100644
+> >>> --- a/Documentation/devicetree/bindings/dma/xilinx/xilinx_vdma.txt
+> >>> +++ b/Documentation/devicetree/bindings/dma/xilinx/xilinx_vdma.txt
+> >>> @@ -25,7 +25,7 @@ Required child node properties:
+> >>>  - compatible: It should be either "xlnx,axi-vdma-mm2s-channel" or
+> >>>   "xlnx,axi-vdma-s2mm-channel".
+> >>>  - interrupts: Should contain per channel VDMA interrupts.
+> >>> -- xlnx,data-width: Should contain the stream data width, take
+> >>> values
+> >>> +- xlnx,datawidth: Should contain the stream data width, take values
+> >>>   {32,64...1024}.
+> >
+> > BTW I just notice that this values specification is ambiguous as to
+> > whether 96 is a valid value or only powers of 2 like 128. Maybe you
+> > want to clarify that in a follow-up patch?
+>
+> really appreciate your help for improving this.
+> Srikanth T: Can you please look at it?
 
-> In general, all system calls can return errno's other than the ones
-> documented in the man page.  This is certainly true for open(2), and
-> read(2) if you are using a network file system such as NFS.  Someone
+It should be only power of 2.  I could send a patch, but it is design-specific and
+the design will not allow to take the intermediate values and so the device-tree
+script.  So, I feel it should be fine to keep this way.
 
-A few manpages might actually have warnings to that effect, but it is not
-the rule.  Amusingly enough, the one for read(2) does, while open(2) does
-not.
+Thanks for this patch.
 
-IMHO the getrandom(2) case is slightly different: we already know to a high
-degree of confidence that we will want to convey a "permission denied"
-condition to userspace for getrandom(GRND_RANDOM) sooner or later.
+Srikanth
 
-I'd be fine with text that mentions that GRND_RANDOM access by a process
-may be restricted/rejected by system policy in the future, so code should
-not assume any error return code from getrandom(GRND_RANDOM) would also
-apply to getrandom() without GRND_RANDOM, and must degrade gracefully and
-safely in that case.
+>
+> Thanks,
+> Michal
+>
+>
 
-> I don't think it's necessary to add a sentence that other errors can
-> be returned in the future, and users much check for other errors, but
-> if you really think people are that stupid that we need to say
-> something which is true for every single system call in Linux, we can
-> do that....
 
-Well, I feel we could go a bit further than usual for getrandom(2), but
-I've already stated my case.
 
--- 
-  "One disk to rule them all, One disk to find them. One disk to bring
-  them all and in the darkness grind them. In the Land of Redmond
-  where the shadows lie." -- The Silicon Valley Tarot
-  Henrique Holschuh
+This email and any attachments are intended for the sole use of the named recipient(s) and contain(s) confidential information that may be proprietary, privileged or copyrighted under applicable law. If you are not the intended recipient, do not read, copy, or forward this email message or any attachments. Delete this email message and any attachments immediately.
+
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
