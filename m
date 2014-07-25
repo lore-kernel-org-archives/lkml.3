@@ -1,80 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751968AbaGYE1Y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 00:27:24 -0400
-Received: from mail-oi0-f53.google.com ([209.85.218.53]:59989 "EHLO
-	mail-oi0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751216AbaGYE1X (ORCPT
+	id S1752328AbaGYEeK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 00:34:10 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:37413 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750799AbaGYEeI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 00:27:23 -0400
+	Fri, 25 Jul 2014 00:34:08 -0400
+Message-ID: <53D1DE37.1020603@gmail.com>
+Date: Fri, 25 Jul 2014 12:33:59 +0800
+From: Chen Gang <gang.chen.5i5j@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-In-Reply-To: <1406224491-3599-1-git-send-email-prarit@redhat.com>
-References: <1406224491-3599-1-git-send-email-prarit@redhat.com>
-Date: Fri, 25 Jul 2014 09:57:22 +0530
-Message-ID: <CAKohpomHj17A4e6Sh8JSz1HPbq9r8gXUJeZ20PQ=Mhu59Vt7ZQ@mail.gmail.com>
-Subject: Re: [PATCH] cpufreq, store_scaling_governor requires policy->rwsem to
- be held for duration of changing governors
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Prarit Bhargava <prarit@redhat.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Lenny Szubowicz <lszubowi@redhat.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
+To: Nick Krause <xerofoify@gmail.com>
+CC: Richard Weinberger <richard@nod.at>,
+        Richard Weinberger <richard.weinberger@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Harvey Harrison <harvey.harrison@gmail.com>,
+        =?UTF-8?B?TcOlbnMgUnVsbGfDpXJk?= <mans@mansr.com>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
+        Dan Carpenter <dan.carpenter@oracle.com>, tomas.winkler@intel.com,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] staging: Change kzalloc to kcalloc
+References: <1406156581-6052-1-git-send-email-xerofoify@gmail.com>	<CAHLZz12ammMZNAah_eyYePJWorw2AruDAujeNxJHvOF5+Mr7cA@mail.gmail.com>	<20140724134849.4d228f5f@gandalf.local.home>	<CAPDOMVi7cHUAn_1AxJ+tN1c67UqBdLHLC1sJNSA=HUK-WzZCTA@mail.gmail.com>	<CAFLxGvzA4HHL0aJaC0Ypf9_YeL5WW4_eYNToSVG7H43DD2unSg@mail.gmail.com>	<CAPDOMViVAY5cBuwe=nLjnFUHy4_FVUh_9LkChv+vso5w7WVeDA@mail.gmail.com>	<CAPDOMVhNaV+Wertp+p361iYS8t-rZmN2nubn9coyrUcgZPcuGw@mail.gmail.com>	<53D15A6B.6030806@nod.at>	<53D1BDCC.5030202@gmail.com>	<CAPDOMVhuiSwBs_d6b5qFN2jLwsLAu+_CtaSJH+oG0MxGXmtKOw@mail.gmail.com>	<53D1C526.9040307@gmail.com>	<CAPDOMVhZNVOjCFYa4oJCL2rSRjXPjEgcQC42w_LGXHubYmDyYA@mail.gmail.com>	<53D1CA70.60301@gmail.com>	<CAPDOMVjCmjM2QeXCx+TK8wk3LXiCq+NKK7ami6n2HP0gO0YGBg@mail.gmail.com>	<53D1CD4C.90507@gmail.com>	<CAPDOMViMDiWONkk=TMu-U6ugKr4uiPk_km=-z-dO_0MwxYJ03w@mail.gmail.com>	<53D1D050.6030508@gmail.com> <CAPDOMVjnW-v+LepEyY=9k0UYEgu9q51WUjpd+v=anrYtsE14pQ@mail.gmail.com>
+In-Reply-To: <CAPDOMVjnW-v+LepEyY=9k0UYEgu9q51WUjpd+v=anrYtsE14pQ@mail.gmail.com>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24 July 2014 23:24, Prarit Bhargava <prarit@redhat.com> wrote:
-> The closer I looked at commit 955ef483, the more questions I have.  The first
-> thing is that it appears that the stacktrace includes function calls that
-> are not, and never have been, part of the linux.git tree, ie) the call trace
-> shows
->
->             [<c0055a79>] lock_acquire+0x61/0xbc
->             [<c00fabf1>] sysfs_addrm_finish+0xc1/0x128
->             [<c00f9819>] sysfs_hash_and_remove+0x35/0x64
->             [<c00fbe6f>] remove_files.isra.0+0x1b/0x24
->             [<c00fbea5>] sysfs_remove_group+0x2d/0xa8
->             [<c02f9a0b>] cpufreq_governor_interactive+0x13b/0x35c
->             [<c02f61df>] __cpufreq_governor+0x2b/0x8c
->             [<c02f6579>] __cpufreq_set_policy+0xa9/0xf8
->             [<c02f6b75>] store_scaling_governor+0x61/0x100
->             [<c02f6f4d>] store+0x39/0x60
->             [<c00f9b81>] sysfs_write_file+0xed/0x114
->             [<c00b3fd1>] vfs_write+0x65/0xd8
->             [<c00b424b>] sys_write+0x2f/0x50
->             [<c000cdc1>] ret_fast_syscall+0x1/0x52
->
-> and the top part of the stack from cpufreq_governor_interactive() appear to
-> be for a driver that is not in the linux.git tree.  Google search does show
-> that it exists in various android trees, however, my concern is that the "core"
-> scaling governors are now broken because of an out tree driver.
 
-Actually the problem did occur with ondemand/conservative as well. And
-the problem was, we accessed something from cpufreq sysfs and then were
-trying to remove that only and so some recursive locking stuff..
 
-And so nothing interactive governor specific.
+On 07/25/2014 11:39 AM, Nick Krause wrote:
+> On Thu, Jul 24, 2014 at 11:34 PM, Chen Gang <gang.chen.5i5j@gmail.com> wrote:
+>>
+>>
+>> On 07/25/2014 11:30 AM, Nick Krause wrote:
+>>> On Thu, Jul 24, 2014 at 11:21 PM, Chen Gang <gang.chen.5i5j@gmail.com> wrote:
+>>>>
+>>>>
+>>>> On 07/25/2014 11:13 AM, Nick Krause wrote:
+>>>>> On Thu, Jul 24, 2014 at 11:09 PM, Chen Gang <gang.chen.5i5j@gmail.com> wrote:
+>>>>>>
+>>>>>>
+>>>>>> On 07/25/2014 10:53 AM, Nick Krause wrote:
+>>>>>>> On Thu, Jul 24, 2014 at 10:47 PM, Chen Gang <gang.chen.5i5j@gmail.com> wrote:
+>>>>>>>>
+>>>>>>>>
+>>>>>>>> On 07/25/2014 10:20 AM, Nick Krause wrote:
+>>>>>>>>> On Thu, Jul 24, 2014 at 10:15 PM, Chen Gang <gang.chen.5i5j@gmail.com> wrote:
+>>>>>>>>>>
+>>>>>>>>>> Excuse me, I did not see the patch details, but I guess it is about
+>>>>>>>>>> whether welcome a new member to upstream kernel. For me, I have 3 ideas
+>>>>>>>>>> about it if I am a newbie or a normal kernel developer:
+>>>>>>>>>>
+>>>>>>>>>>  - Do I have enough basic skills for it?
+>>>>>>>>>>
+>>>>>>>>>>     - Do I developed one or more another real world projects with C?
+>>>>>>>>>>       (they are successful projects -- at least, not failure projects)
+>>>>>>>>>>
+>>>>>>>>>>     - Can I construct related develop environments to support what I do?
+>>>>>>>>>>       (e.g. building and testing for upstream kernel)
+>>>>>>>>>>
+>>>>>>>>>>     - Am I familiar the basic working flow about kernel mailing list.
+>>>>>>>>>>       (e.g. format-patch, sending patch, email client configuration...).
+>>>>>>>>>>
+>>>>>>>>>>  - Do I have a correct attitude on it?
+>>>>>>>>>>
+>>>>>>>>>>     - Am I careful enough?
+>>>>>>>>>>       (e.g. if find some details may doubt, try to check and clear them)
+>>>>>>>>>>       (it is always neccessary for all patches)
+>>>>>>>>>>
+>>>>>>>>>>     - Am I try my best for it?
+>>>>>>>>>>       (e.g. when finish coding, try what I can do: build, run and test).
+>>>>>>>>>>       (it is neccessary for most cases)
+>>>>>>>>>>
+>>>>>>>>>>     - Do I have negative effect with others?
+>>>>>>>>>>       (e.g. discourage the newbies, or send spam to other members ...).
+>>>>>>>>>>       (need always try to avoid)
+>>>>>>>>>>
+>>>>>>>>>>  - Do I really love programming, also love open source kernel?
+>>>>>>>>>>
+>>>>>>>>>>     - Do I love it, or I have to do it for another reason?
+>>>>>>>>>>       (I guess, most of gmail members in open source, love programming).
+>>>>>>>>>>
+>>>>>>>>>>     - Do I still love programming if I am discouraged by any members?
+>>>>>>>>>>
+>>>>>>>>>>     - Do I still love open source kernel if discouraged by any members?
+>>>>>>>>>>
+>>>>>>>>>>
+>>>>>>>>> I have most of these skills other then developing real projects in C with other
+>>>>>>>>> developers as other then the kernel I don't have must interest in C outside
+>>>>>>>>> of embedded programming.
+>>>>>>>>
+>>>>>>>> OK, thanks. If what you said is true, for me, if you will, please still
+>>>>>>>> continue for open source kernel, but really need be more careful about
+>>>>>>>> the patch you made before send to open mailing list.
+>>>>>>>>
+>>>>>>>>
+>>>>>>>> Thanks.
+>>>>>>>> --
+>>>>>>>> Chen Gang
+>>>>>>>>
+>>>>>>>> Open, share, and attitude like air, water, and life which God blessed
+>>>>>>>
+>>>>>>> Chen ,
+>>>>>>> Thanks for helping me out here :). The true through is I don't known how to
+>>>>>>> build test correctly as a newb and thought it was better just to avoid it(stupid
+>>>>>>> me). I would like to known how to do this and if there is any way I can help you
+>>>>>>> guys out , please let me known :). I don't want to be avoided I am honestly here
+>>>>>>> to help make your life easier.
+>>>>>>
+>>>>>> Excuse me, my English is not quite well, I do not understand what you
+>>>>>> said, I guess your meaning is "not familiar with how to build and test
+>>>>>> upstream kernel" If what I guess is incorrect, please let me know.
+>>>>>>
+>>>>>> There are some books or some related web links for building and test
+>>>>>> kernel, they are not quite difficult to get (please google search).
+>>>>>>
+>>>>>> I guess, it is necessary to reference these information and construct
+>>>>>> related develop environments to support what you want to do next.
+>>>>>>
+>>>>>>
+>>>>>> By the way, excuse me, today I have to do some other things firstly, so
+>>>>>> maybe my next email reply will be late (may tomorrow, or the day after
+>>>>>> tomorrow).
+>>>>>>
+>>>>>>
+>>>>>> Thanks.
+>>>>>> --
+>>>>>> Chen Gang
+>>>>>>
+>>>>>> Open, share, and attitude like air, water, and life which God blessed
+>>>>>
+>>>>> That's what I meant. If you can sent me a link to how to do build testing
+>>>>> that would be great :).
+>>>>
+>>>> Please read README at the root directory of kernel source, also
+>>>> "./Documents" contents many valuable information. And try google search
+>>>> for additional information.
+>>>>
+>>>> Try to accomplish them by yourself, that will let yourself improved with
+>>>> efficiency.
+>>>>
+>>>> Thanks.
+>>>> --
+>>>> Chen Gang
+>>>>
+>>>> Open, share, and attitude like air, water, and life which God blessed
+>>>
+>>> That seems to be the issue with my programming here.
+>>
+>> For me, constructing related environments is necessary for developers,
+>> especially for senior developers.
+>>
+>>
+>> Thanks.
+>> --
+>> Chen Gang
+>>
+>> Open, share, and attitude like air, water, and life which God blessed
+> Thanks Chen,
+> Seems I don't need any more advice.
 
-The problem looks similar to what's reported here:
-http://comments.gmane.org/gmane.linux.power-management.general/47397
+That's all right.
 
-And that's how I replied to it:
+All these are only my ideas for it in open mailing list. So for me,
+still welcome any other members' ideas or suggestions in open mailing list.
 
-I have pushed a fix earlier for similar issues:
-19c7630 cpufreq: serialize calls to __cpufreq_governor()
 
-but was later reverted by Srivatsa:
-56d07db cpufreq: Remove temporary fix for race between CPU hotplug and
-sysfs-writes
+Thanks.
+-- 
+Chen Gang
 
-because we didn't thought about this usecase.
-
-I propose we get that back. I have tested a revert of 56d07db on
-my setup and didn't see any crash..
-
-Please see if that works for you as well..
-
---
-viresh
+Open, share, and attitude like air, water, and life which God blessed
