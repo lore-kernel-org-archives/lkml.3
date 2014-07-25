@@ -1,63 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760896AbaGYTGg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 15:06:36 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61815 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758923AbaGYTGe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 15:06:34 -0400
-Message-ID: <53D2AAB4.1090109@redhat.com>
-Date: Fri, 25 Jul 2014 21:06:28 +0200
-From: Hans de Goede <hdegoede@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	id S1760949AbaGYTG4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 15:06:56 -0400
+Received: from mail-wi0-f176.google.com ([209.85.212.176]:62357 "EHLO
+	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760913AbaGYTGz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jul 2014 15:06:55 -0400
 MIME-Version: 1.0
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Julian Squires <julian@cipht.net>,
-        Benjamin Tissoires <benjamin.tissoires@redhat.com>
-CC: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Input: wacom_serial4 - prepare for wacom USB moving to
- HID
-References: <20140724203108.GA9191@core.coreip.homeip.net>
-In-Reply-To: <20140724203108.GA9191@core.coreip.homeip.net>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1406265181-4009-1-git-send-email-reyad.attiyat@gmail.com>
+References: <1406265181-4009-1-git-send-email-reyad.attiyat@gmail.com>
+From: Reyad Attiyat <reyad.attiyat@gmail.com>
+Date: Fri, 25 Jul 2014 14:06:32 -0500
+Message-ID: <CA+BWVUSiQak2Sc-H3hAEjgyVwZFVGbGv+3B1z8B3k3vdWm40VA@mail.gmail.com>
+Subject: Re: [PATCH] hid: usbhid: Use flag HID_DISCONNECTED when a usb device
+ is removed
+To: linux-input <linux-input@vger.kernel.org>, Jiri Kosina <jkosina@suse.cz>,
+        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
+        linux-kernel@vger.kernel.org
+Cc: Reyad Attiyat <reyad.attiyat@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+The kernel panic happened when the iio sensor hid usb device was
+removed. It tries to set the power state by calling hid_hw_request().
+This was on kernel 3.16-rc6
+https://gist.github.com/soda0289/2ff543d9cfff6f92c360#file-kernel-panic-when-iio-sensor-usb-device-is-removed
 
-On 07/24/2014 10:31 PM, Dmitry Torokhov wrote:
-> wacom_wac.h will be moving to drivers/hid. Since we only need 3 definitions
-> from it let's simply copy them over.
-> 
-> Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-
-Ack, but you will want to drop the #include of wacom_wac.h yoo.
-
-Regards,
-
-Hans
-
+On Fri, Jul 25, 2014 at 12:13 AM, Reyad Attiyat <reyad.attiyat@gmail.com> wrote:
+> Set disconnected flag in struct usbhid when a usb device
+> is removed. Check for disconnected flag before sending urb
+> requests. This prevents a kernel panic when a hid driver calls
+> hid_hw_request() after removing a usb device.
+>
+> Signed-off-by: Reyad Attiyat <reyad.attiyat@gmail.com>
 > ---
->  drivers/input/tablet/wacom_serial4.c | 5 +++++
->  1 file changed, 5 insertions(+)
-> 
-> diff --git a/drivers/input/tablet/wacom_serial4.c b/drivers/input/tablet/wacom_serial4.c
-> index d3d251e..deef50e 100644
-> --- a/drivers/input/tablet/wacom_serial4.c
-> +++ b/drivers/input/tablet/wacom_serial4.c
-> @@ -149,6 +149,11 @@ MODULE_LICENSE("GPL");
->  #define F_HAS_STYLUS2		0x02
->  #define F_HAS_SCROLLWHEEL	0x04
->  
-> +/* device IDs */
-> +#define STYLUS_DEVICE_ID	0x02
-> +#define CURSOR_DEVICE_ID	0x06
-> +#define ERASER_DEVICE_ID	0x0A
-> +
->  enum { STYLUS = 1, ERASER, CURSOR };
->  
->  static const struct {
-> 
+>  drivers/hid/usbhid/hid-core.c | 6 +++++-
+>  1 file changed, 5 insertions(+), 1 deletion(-)
+>
+> diff --git a/drivers/hid/usbhid/hid-core.c b/drivers/hid/usbhid/hid-core.c
+> index 7b88f4c..c8fa957 100644
+> --- a/drivers/hid/usbhid/hid-core.c
+> +++ b/drivers/hid/usbhid/hid-core.c
+> @@ -536,7 +536,8 @@ static void __usbhid_submit_report(struct hid_device *hid, struct hid_report *re
+>         int head;
+>         struct usbhid_device *usbhid = hid->driver_data;
+>
+> -       if ((hid->quirks & HID_QUIRK_NOGET) && dir == USB_DIR_IN)
+> +       if (((hid->quirks & HID_QUIRK_NOGET) && dir == USB_DIR_IN) ||
+> +               test_bit(HID_DISCONNECTED, &usbhid->iofl))
+>                 return;
+>
+>         if (usbhid->urbout && dir == USB_DIR_OUT && report->type == HID_OUTPUT_REPORT) {
+> @@ -1366,6 +1367,9 @@ static void usbhid_disconnect(struct usb_interface *intf)
+>                 return;
+>
+>         usbhid = hid->driver_data;
+> +       spin_lock_irq(&usbhid->lock);   /* Sync with error and led handlers */
+> +       set_bit(HID_DISCONNECTED, &usbhid->iofl);
+> +       spin_unlock_irq(&usbhid->lock);
+>         hid_destroy_device(hid);
+>         kfree(usbhid);
+>  }
+> --
+> 1.9.3
+>
