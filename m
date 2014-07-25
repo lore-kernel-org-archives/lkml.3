@@ -1,61 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761062AbaGYPn3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 11:43:29 -0400
-Received: from mail-we0-f169.google.com ([74.125.82.169]:39123 "EHLO
-	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753052AbaGYPn1 (ORCPT
+	id S1761090AbaGYPnm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 11:43:42 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:57538 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760690AbaGYPnj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 11:43:27 -0400
-Date: Fri, 25 Jul 2014 17:43:20 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Miklos Szeredi <miklos@szeredi.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>, Tejun Heo <tj@kernel.org>,
-        Vladimir Davydov <vdavydov@parallels.com>, linux-mm@kvack.org,
-        cgroups@vger.kernel.org,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [patch 13/13] mm: memcontrol: rewrite uncharge API
-Message-ID: <20140725154320.GB18303@dhcp22.suse.cz>
-References: <20140719173911.GA1725@cmpxchg.org>
- <20140722150825.GA4517@dhcp22.suse.cz>
- <CAJfpegscT-ptQzq__uUV2TOn7Uvs6x4FdWGTQb9Fe9MEJr2KjA@mail.gmail.com>
- <20140723143847.GB16721@dhcp22.suse.cz>
- <20140723150608.GF1725@cmpxchg.org>
- <CAJfpegs-k5QC+42SzLKUSaHrdPxWBaT_dF+SOPqoDvg8h5p_Tw@mail.gmail.com>
- <20140723210241.GH1725@cmpxchg.org>
- <20140724084644.GA14578@dhcp22.suse.cz>
- <20140724090257.GB14578@dhcp22.suse.cz>
- <20140725152654.GK1725@cmpxchg.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140725152654.GK1725@cmpxchg.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Fri, 25 Jul 2014 11:43:39 -0400
+From: Igor Bezukh <igbzkh@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: devel@driverdev.osuosl.org, forest@alittletooquiet.net,
+        linux-kernel@vger.kernel.org, igbzkh@gmail.com
+Subject: [PATCH] Staging: vt6655: removed redundant comments from country.h
+Date: Fri, 25 Jul 2014 18:43:22 +0300
+Message-Id: <1406303002-31132-1-git-send-email-igbzkh@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 25-07-14 11:26:54, Johannes Weiner wrote:
-> On Thu, Jul 24, 2014 at 11:02:57AM +0200, Michal Hocko wrote:
-> > On Thu 24-07-14 10:46:44, Michal Hocko wrote:
-> > > On Wed 23-07-14 17:02:41, Johannes Weiner wrote:
-> > [...]
-> > > We can reduce the lookup only to lruvec==true case, no?
-> > 
-> > Dohh
-> > s@can@should@
-> > 
-> > newpage shouldn't charged in all other cases and it would be bug.
-> > Or am I missing something?
-> 
-> Yeah, but I'd hate to put that assumption onto the @lrucare parameter,
-> it just coincides.
+Removed redundant comments from country.h header file
 
-Yes, you are right. Maybe replace_page_cache_page should have it's own
-memcg variant which does all the trickery and then call
-mem_cgroup_migrate when necessary...
+Signed-off-by: Igor Bezukh <igbzkh@gmail.com>
+---
+ drivers/staging/vt6655/country.h |    1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/drivers/staging/vt6655/country.h b/drivers/staging/vt6655/country.h
+index 415e767..2365fb1 100644
+--- a/drivers/staging/vt6655/country.h
++++ b/drivers/staging/vt6655/country.h
+@@ -32,7 +32,6 @@
+ 
+ #include "ttype.h"
+ 
+-/*---------------------  Export Definitions -------------------------*/
+ /************************************************************************
+  * The definition here should be complied with the INF country order
+  * Please check with VNWL.inf/VNWL64.inf/VNWL*.inf
 -- 
-Michal Hocko
-SUSE Labs
+1.7.9.5
+
