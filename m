@@ -1,59 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760759AbaGYQdT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 12:33:19 -0400
-Received: from mail-wi0-f181.google.com ([209.85.212.181]:58833 "EHLO
-	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753239AbaGYQdS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 12:33:18 -0400
-From: Igor Bezukh <igbzkh@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: devel@driverdev.osuosl.org, forest@alittletooquiet.net,
-        linux-kernel@vger.kernel.org, igbzkh@gmail.com
-Subject: [PATCH] Staging: vt6655: removed redundant comments from iowpa.h
-Date: Fri, 25 Jul 2014 19:33:04 +0300
-Message-Id: <1406305984-32436-1-git-send-email-igbzkh@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1760775AbaGYQfY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 12:35:24 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:51999 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753044AbaGYQfW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jul 2014 12:35:22 -0400
+Date: Fri, 25 Jul 2014 18:23:33 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+Cc: linux-kernel@vger.kernel.org, H Peter Anvin <hpa@zytor.com>
+Subject: Re: [PATCH v2 4/8] x86, microcode, intel: rename apply_microcode and
+ declare it static
+Message-ID: <20140725162333.GD4421@pd.tnic>
+References: <1406146251-8540-5-git-send-email-hmh@hmh.eng.br>
+ <1406226201-18820-1-git-send-email-hmh@hmh.eng.br>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1406226201-18820-1-git-send-email-hmh@hmh.eng.br>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Removed redundant comments from iowpa.h header file.
+On Thu, Jul 24, 2014 at 03:23:21PM -0300, Henrique de Moraes Holschuh wrote:
+> Rename apply_microcode() in microcode/intel.c to apply_microcode_intel(),
+> and declare it as static.
+> 
+> This is a cosmetic fix to silence a warning issued by sparse.  It brings
+> the microcode/intel.c driver in line with what microcode/amd.c is doing.
+> 
+> Signed-off-by: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+> ---
+>  v2: declare as static instead of extern, and changed patch title
 
-Signed-off-by: Igor Bezukh <igbzkh@gmail.com>
----
- drivers/staging/vt6655/iowpa.h |   10 ----------
- 1 file changed, 10 deletions(-)
+Applied, thanks.
 
-diff --git a/drivers/staging/vt6655/iowpa.h b/drivers/staging/vt6655/iowpa.h
-index b7bd190..772bc4c 100644
---- a/drivers/staging/vt6655/iowpa.h
-+++ b/drivers/staging/vt6655/iowpa.h
-@@ -29,8 +29,6 @@
- #ifndef __IOWPA_H__
- #define __IOWPA_H__
- 
--/*---------------------  Export Definitions -------------------------*/
--
- #define WPA_IE_LEN 64
- 
- //WPA related
-@@ -127,14 +125,6 @@ struct viawget_scan_result {
- 	int maxrate;
- };
- 
--//2006-1116-01,<Add> by NomadZhao
- #pragma pack()
--/*---------------------  Export Classes  ----------------------------*/
--
--/*---------------------  Export Variables  --------------------------*/
--
--/*---------------------  Export Types  ------------------------------*/
--
--/*---------------------  Export Functions  --------------------------*/
- 
- #endif //__IOWPA_H__
 -- 
-1.7.9.5
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
