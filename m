@@ -1,69 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760151AbaGYJI3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 05:08:29 -0400
-Received: from mail.mev.co.uk ([62.49.15.74]:41155 "EHLO mail.mev.co.uk"
+	id S1760079AbaGYJFT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 05:05:19 -0400
+Received: from mail.mev.co.uk ([62.49.15.74]:41124 "EHLO mail.mev.co.uk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759260AbaGYJFU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 05:05:20 -0400
+	id S1759796AbaGYJFQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jul 2014 05:05:16 -0400
 From: Ian Abbott <abbotti@mev.co.uk>
 To: driverdev-devel@linuxdriverproject.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Ian Abbott <abbotti@mev.co.uk>,
         H Hartley Sweeten <hartleys@visionengravers.com>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 07/12] staging: comedi: amplc_pc236: remove 'model' member
-Date: Fri, 25 Jul 2014 10:04:53 +0100
-Message-Id: <1406279098-8498-8-git-send-email-abbotti@mev.co.uk>
+Subject: [PATCH 00/12] staging: comedi: amplc_pc236: remove legacy PCI attach and tidy up
+Date: Fri, 25 Jul 2014 10:04:46 +0100
+Message-Id: <1406279098-8498-1-git-send-email-abbotti@mev.co.uk>
 X-Mailer: git-send-email 2.0.0
-In-Reply-To: <1406279098-8498-1-git-send-email-abbotti@mev.co.uk>
-References: <1406279098-8498-1-git-send-email-abbotti@mev.co.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The `model` member of `struct pc236_board` is no longer used since the
-code to remove manual configuration of PCI devices was removed.  Get rid
-of it.
+The "amplc_pc236" driver supports both ISA cards (Amplicon PC36AT) and PCI
+cards (PCI236).  I plan to split it into separate drivers with a module for
+common code, but let's reorganise it a bit first.
 
-Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
----
- drivers/staging/comedi/drivers/amplc_pc236.c | 4 ----
- 1 file changed, 4 deletions(-)
+The driver still supports manual attachment of PCI devices via the
+`COMEDI_DEVCONFIG` ioctl and the comedi driver `attach` hook.  That can go,
+though the attach hook is still needed for ISA devices.
 
-diff --git a/drivers/staging/comedi/drivers/amplc_pc236.c b/drivers/staging/comedi/drivers/amplc_pc236.c
-index 22d3b6f..129578f 100644
---- a/drivers/staging/comedi/drivers/amplc_pc236.c
-+++ b/drivers/staging/comedi/drivers/amplc_pc236.c
-@@ -82,20 +82,17 @@
-  */
- 
- enum pc236_bustype { isa_bustype, pci_bustype };
--enum pc236_model { pc36at_model, pci236_model };
- 
- struct pc236_board {
- 	const char *name;
- 	unsigned short devid;
- 	enum pc236_bustype bustype;
--	enum pc236_model model;
- };
- static const struct pc236_board pc236_boards[] = {
- #if DO_ISA
- 	{
- 		.name = "pc36at",
- 		.bustype = isa_bustype,
--		.model = pc36at_model,
- 	},
- #endif
- #if DO_PCI
-@@ -103,7 +100,6 @@ static const struct pc236_board pc236_boards[] = {
- 		.name = "pci236",
- 		.devid = PCI_DEVICE_ID_AMPLICON_PCI236,
- 		.bustype = pci_bustype,
--		.model = pci236_model,
- 	},
- #endif
- };
--- 
-2.0.0
+01) staging: comedi: amplc_pc236: reformat header comments
+02) staging: comedi: amplc_pc236: remove some boilerplate comments
+03) staging: comedi: amplc_pc236: remove manual configuration of PCI boards
+04) staging: comedi: amplc_pc236: no need to manipulate PCI ref count
+05) staging: comedi: amplc_pc236: no need to set hw_dev
+06) staging: comedi: amplc_pc236: absorb pc236_pci_common_attach()
+07) staging: comedi: amplc_pc236: remove 'model' member
+08) staging: comedi: amplc_pc236: split pc236_boards[] into ISA & PCI
+09) staging: comedi: amplc_pc236: don't check bus type in attach
+10) staging: comedi: amplc_pc236: Simplify PCI board look-up
+11) staging: comedi: amplc_pc236: remove PCI device ID macros
+12) staging: comedi: amplc_pc236: set board_name before common attach
 
+ drivers/staging/comedi/drivers/amplc_pc236.c | 282 +++++++--------------------
+ 1 file changed, 74 insertions(+), 208 deletions(-)
