@@ -1,90 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760143AbaGYKjh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 06:39:37 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:54388 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751773AbaGYKjf (ORCPT
+	id S1760153AbaGYKkX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 06:40:23 -0400
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:45062 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759914AbaGYKkV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 06:39:35 -0400
-Date: Fri, 25 Jul 2014 11:39:05 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Andreas =?iso-8859-1?Q?F=E4rber?= <afaerber@suse.de>
-Cc: Michal Simek <monstr@monstr.eu>, Lars-Peter Clausen <lars@metafoo.de>,
-        Michal Simek <michal.simek@xilinx.com>,
-        Andreas Olofsson <andreas@adapteva.com>,
-        Matteo Vit <matteo.vit@starwaredesign.com>,
-        Sean Rickerd <srickerd@suse.com>, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>
-Message-ID: <20140725103905.GP17528@sirena.org.uk>
-References: <1406242820-20140-1-git-send-email-afaerber@suse.de>
- <1406242820-20140-10-git-send-email-afaerber@suse.de>
- <53D20A61.1050506@metafoo.de>
- <53D21066.8000905@monstr.eu>
- <20140725101815.GO17528@sirena.org.uk>
- <53D2324B.4070602@suse.de>
+	Fri, 25 Jul 2014 06:40:21 -0400
+Message-ID: <53D233CC.1070006@linaro.org>
+Date: Fri, 25 Jul 2014 18:39:08 +0800
+From: Hanjun Guo <hanjun.guo@linaro.org>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="XqFDY9bHNWRmuMQr"
-Content-Disposition: inline
-In-Reply-To: <53D2324B.4070602@suse.de>
-X-Cookie: 98% lean.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v2 09/11] Documentation: devicetree: Fix ADI AXI SPDIF
- specification
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+To: Mark Rutland <mark.rutland@arm.com>
+CC: Catalin Marinas <Catalin.Marinas@arm.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        Sudeep Holla <Sudeep.Holla@arm.com>, Will Deacon <Will.Deacon@arm.com>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Mark Brown <broonie@linaro.org>, Robert Richter <rric@kernel.org>,
+        Lv Zheng <lv.zheng@intel.com>, Robert Moore <robert.moore@intel.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Liviu Dudau <Liviu.Dudau@arm.com>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 09/19] ARM64 / ACPI: Move the initialization of cpu_logical_map(0)
+ before acpi_boot_init()
+References: <1406206825-15590-1-git-send-email-hanjun.guo@linaro.org> <1406206825-15590-10-git-send-email-hanjun.guo@linaro.org> <20140724152103.GB26190@leverpostej>
+In-Reply-To: <20140724152103.GB26190@leverpostej>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 2014-7-24 23:21, Mark Rutland wrote:
+> On Thu, Jul 24, 2014 at 02:00:15PM +0100, Hanjun Guo wrote:
+>> Move the initialization of cpu_logical_map(0) before acpi_boot_init()
+>> to remove the duplicated initialization of cpu_logical_map(0).
+> 
+> It always make sense to initialise CPU0's logical map entry from the
+> hardware values, so you could do this earlier in the series, before you
+> introduce any ACPI code. Then you don't have the churn in acpi.c
 
---XqFDY9bHNWRmuMQr
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+ok, I will prepare a separate patch to do this before ACPI code, does it
+make sense to you?
 
-On Fri, Jul 25, 2014 at 12:32:43PM +0200, Andreas F=E4rber wrote:
+> 
+>>
+>> Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
+>> ---
+>>  arch/arm64/kernel/acpi.c  |    3 ---
+>>  arch/arm64/kernel/setup.c |    3 ++-
+>>  2 files changed, 2 insertions(+), 4 deletions(-)
+>>
+>> diff --git a/arch/arm64/kernel/acpi.c b/arch/arm64/kernel/acpi.c
+>> index 801e268..ff0f6a0 100644
+>> --- a/arch/arm64/kernel/acpi.c
+>> +++ b/arch/arm64/kernel/acpi.c
+>> @@ -244,9 +244,6 @@ int __init acpi_boot_init(void)
+>>  	if (err)
+>>  		pr_err("Can't find FADT\n");
+>>  
+>> -	/* Get the boot CPU's MPIDR before MADT parsing */
+>> -	cpu_logical_map(0) = read_cpuid_mpidr() & MPIDR_HWID_BITMASK;
+>> -
+>>  	err = acpi_parse_madt_gic_cpu_interface_entries();
+>>  
+>>  	return err;
+>> diff --git a/arch/arm64/kernel/setup.c b/arch/arm64/kernel/setup.c
+>> index e00d40c..17ab98e 100644
+>> --- a/arch/arm64/kernel/setup.c
+>> +++ b/arch/arm64/kernel/setup.c
+>> @@ -394,13 +394,14 @@ void __init setup_arch(char **cmdline_p)
+>>  
+>>  	efi_idmap_init();
+>>  
+>> +	/* Get the boot CPU's MPIDR before cpu logical map is built */
+> 
+> That comment's a bit useless; I think it can just be dropped.
+> 
+> All you need to do is move the initialisation of cpu_logical_map(0)
+> before unflatten_device_tree(). When you introduce acpi_boot_init(),
+> place it after the initialisation.
 
-> I used scripts/get_maintainer.pl --nogit-fallback. If you were not
-> CC'ed and need to be, please submit a MAINTAINERS patch. :)
+ok, I agree with you, will update it.
 
-You need to think about what you're doing when you use get_maintainer,
-it gives both false positives and false negatives.
+Thanks
+Hanjun
 
-> Maybe this works for you?
-> https://patchwork.kernel.org/patch/4620191/
-
-> Otherwise I can resend with Ab/Rb.
-
-Documentation/SubmittingPatches.
-
---XqFDY9bHNWRmuMQr
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJT0jPFAAoJELSic+t+oim91qcP/isi2MsxkEcpE869c2mD6n5M
-0159BsrMF65Qy93w1RH4mO+8nmIuImgiqfU+8yrIk6oX1BtLNCYPlhxGi8SOfOuA
-BJD9AQnWiZvrOUuwdBDNnc9hcpbbd2EpRfKAqdRvLlPogLJr67tI5bggkB4DggME
-rhOna7CkF6WwG13YZOeVe/FaLfpvdbgm485f5MuWqLDv845veVdEGMGYQ9IwPkbH
-JnTdT007jOFccrxHtXwdKMti+659cfzsu5WxCtBeR+Dd2adVTCyjqkVIhuZfLvhQ
-9M0yWAw5OzwBD3n3Tr4vVxonqabeKk5Tk2iIYx3rUCslUa28BdGmERJ+AhRwKF94
-k8VO0ZHs2aOdznw8qP91ESMr8FoW1l3wBhN+zHx+cqOvCg/GkLuf5BIUl23+w9xl
-SaM2OcR951tzhONHKrxJo8lm40aMGnDcl1nHVUiJqeKYKSEw2fqhxnlY6BXZ6vve
-kVY26noB+YUmNkjdljmayuDVUmZjFUkwpNyb21gJop3WurRRCmXmGH/8PEijFUcw
-R62plRupmEZ002SDj+aL7GeZb13PYHtooYP1Np1NhEt6avv5CZj39XzHeXylzWVp
-OfjanWt4b3R4MlW5/xmDkX7sOZMh3NwGeeDK2gXIr9U7Pq/rixy/b4kXBvtDY4Ut
-PMtwQqXm8KlDiBvJVofE
-=8NFN
------END PGP SIGNATURE-----
-
---XqFDY9bHNWRmuMQr--
