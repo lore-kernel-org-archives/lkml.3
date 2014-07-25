@@ -1,110 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934189AbaGYUBN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 16:01:13 -0400
-Received: from mail-vc0-f177.google.com ([209.85.220.177]:38437 "EHLO
-	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753317AbaGYUBM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 16:01:12 -0400
+	id S935136AbaGYUCq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 16:02:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:25286 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933621AbaGYUCp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jul 2014 16:02:45 -0400
+Message-ID: <53D2B7E2.5060200@redhat.com>
+Date: Fri, 25 Jul 2014 21:02:42 +0100
+From: Steven Whitehouse <swhiteho@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFzOoJzqJ=4RVPEBfscA8oRdr5Nv7fKx9aXYw2+frkuhwA@mail.gmail.com>
-References: <20140723182518.GD3935@laptop>
-	<CA+55aFyFT9n5wUNifEHY6+t2bEcD91kL7+dqXuBMSMJvLeDDJQ@mail.gmail.com>
-	<20140723184111.GG3935@laptop>
-	<CA+55aFwQfwfAP6U77_nD_mSvoygj=cZ09N644hKRtzgLnEqhZQ@mail.gmail.com>
-	<20140723190230.GH3935@laptop>
-	<CA+55aFyM1wqTLK0m4GQJ28f=z0iZE87=xk+1z-vm+PH1_d8nKw@mail.gmail.com>
-	<53D064C7.5050807@daenzer.net>
-	<CA+55aFyJhqiPv0kQ+51=Ei-zaAO+0JszxtnEyx-Gbto3SE00xw@mail.gmail.com>
-	<53D1B1EF.7030603@daenzer.net>
-	<20140725035527.GA30108@pg-vmw-gw1>
-	<20140725140237.GB32669@home.goodmis.org>
-	<CA+55aFzOoJzqJ=4RVPEBfscA8oRdr5Nv7fKx9aXYw2+frkuhwA@mail.gmail.com>
-Date: Fri, 25 Jul 2014 13:01:11 -0700
-X-Google-Sender-Auth: 4z0C0Enbt3AxbbdPZgJ_iTeemuM
-Message-ID: <CA+55aFxbWfYPuzCZvhy24zVfWwhN=DcxrCDguZ74cfsOz9U7PQ@mail.gmail.com>
-Subject: Re: Random panic in load_balance() with 3.16-rc
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Alexei Starovoitov <ast@kernel.org>,
-        =?UTF-8?Q?Michel_D=C3=A4nzer?= <michel@daenzer.net>,
-        Jakub Jelinek <jakub@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Debian GCC Maintainers <debian-gcc@lists.debian.org>,
-        Debian Kernel Team <debian-kernel@lists.debian.org>
-Content-Type: text/plain; charset=UTF-8
+To: Zach Brown <zab@redhat.com>
+CC: Abhijith Das <adas@redhat.com>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        cluster-devel <cluster-devel@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [Cluster-devel] [RFC] readdirplus implementations: xgetdents
+ vs dirreadahead syscalls
+References: <1106785262.13440918.1406308542921.JavaMail.zimbra@redhat.com> <1717400531.13456321.1406309839199.JavaMail.zimbra@redhat.com> <20140725175257.GK17798@lenny.home.zabbo.net> <53D29D0C.2040606@redhat.com> <20140725182817.GL17798@lenny.home.zabbo.net>
+In-Reply-To: <20140725182817.GL17798@lenny.home.zabbo.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 25, 2014 at 11:29 AM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
+Hi,
+
+On 25/07/14 19:28, Zach Brown wrote:
+> On Fri, Jul 25, 2014 at 07:08:12PM +0100, Steven Whitehouse wrote:
+>> Hi,
+>>
+>> On 25/07/14 18:52, Zach Brown wrote:
+[snip]
+>>> Hmm.  Have you tried plumbing these read-ahead calls in under the normal
+>>> getdents() syscalls?
+>>>
+>>> We don't have a filereadahead() syscall and yet we somehow manage to
+>>> implement buffered file data read-ahead :).
+>>>
+>>> - z
+>>>
+>> Well I'm not sure thats entirely true... we have readahead() and we also
+>> have fadvise(FADV_WILLNEED) for that.
+> Sure, fair enough.  It would have been more precise to say that buffered
+> file data readers see read-ahead without *having* to use a syscall.
 >
-> Some simple pattern to make sure that the "sub $frame-size,%rsp" comes
-> before any accesses to (%rbp) (when frame pointers are enabled)
-> *might* work, but it might also end up missing things.
+>> doubt, but how would we tell getdents64() when we were going to read the
+>> inodes, rather than just the file names?
+> How does transparent file read-ahead know how far to read-ahead, if at
+> all?
+In the file readahead case it has some context, and thats stored in the 
+struct file. Thats where the problem lies in this case, the struct file 
+relates to the directory, and when we then call open, or stat or 
+whatever on some file within that directory, we don't pass the 
+directory's fd to that open call, so we don't have a context to use. We 
+could possibly look through the open fds relating to the process that 
+called open to see if the parent dir of the inode we are opening is in 
+there, in order to find the context to figure out whether to do 
+readahead or not, but...... its not very nice to say the least.
 
-You're going to have a hard time doing that pattern. Just for fun, I
-did something really quick in awk:
+I'm very much in agreement that doing this automatically is best, but 
+that only works when its possible to get a very good estimate of whether 
+the readahead is needed or not. That is much easier for file data than 
+it is for inodes in a directory. If someone can figure out how to get 
+around this problem though, then that is certainly something we'd like 
+to look at.
 
-    />:/ { state = 0 }
-    /%rsp,%rbp/ { state = 1 }
-    /\$.*rsp/ { state = 2 }
-    /lea/ { next }
-    /\(%rbp\)/ { if (state == 1) print "Error: " $0; state = 2; }
+The problem gets even more tricky in case the user only wants, say, half 
+of the inodes in the directory... how does the kernel know which half?
 
-which is incomprehensible line noise, but it's a trivial state machine
-where "beginning of function" starts state 0, "mov %rsp,%rbp" starts
-state 1 ("have frame pointer in function"), sub/add constant of %rsp
-starts state 2 ("created frame"), and then we ignore "lea" (because we
-don't follow address calculations off %rbp) and error out if we see an
-access through %rbp in a function with a frame pointer but without a
-frame created.
+The idea here is really to give some idea of the kind of performance 
+gains that we might see with the readahead vs xgetdents approaches, and 
+by the sizes of the patches, the relative complexity of the implementations.
 
-That thing is excessively stupid, in other words, but hey, it's good
-to see "ok, what does that tell us".
+I think overall, the readahead approach is the more flexible... if I had 
+a directory full of files I wanted to truncate for example, it would be 
+possible to use the same readahead to pull in the inodes quickly and 
+then issue the truncates to the pre-cached inodes. That is something 
+that would not be possible using xgetdents. Whether thats useful for 
+real world applications or not remains to be seen, but it does show that 
+it can handle more potential use cases than xgetdents. Also the ability 
+to only readahead an application specific subset of inodes is a useful 
+feature.
 
-And what it tells me is that gcc does some crazy things.
+There is certainly a discussion to be had about how to specify the 
+inodes that are wanted. Using the directory position is a relatively 
+easy way to do it, and works well when most of the inodes in a directory 
+are wanted. Specifying the file names would work better when fewer 
+inodes are wanted, but then if very few are required, is readahead 
+likely to give much of a gain anyway?... so thats why we chose the 
+approach that we did.
 
-For example, gcc will not create a small stack frame with "sub
-$8,%rsp". No, what gcc does is to use a random "push" instruction.
-Fair enough, but that really makes things much harder to see. Here's
-an example:
+> How do the file systems that implement directory read-ahead today deal
+> with this?
+I don't know of one that does - or at least readahead of the directory 
+info itself is one thing (which is relatively easy, and done by many 
+file systems) its reading ahead the inodes within the directory which is 
+more complex, and what we are talking about here.
 
-  ffffffff813143a3 <dock_notify>:
-  ffffffff813143a3:       55                      push   %rbp
-  ffffffff813143a4:       48 89 e5                mov    %rsp,%rbp
-  ffffffff813143a7:       41 57                   push   %r15
-  ffffffff813143a9:       41 56                   push   %r14
-  ffffffff813143ab:       49 89 fe                mov    %rdi,%r14
-  ffffffff813143ae:       41 55                   push   %r13
-  ffffffff813143b0:       41 89 f5                mov    %esi,%r13d
-  ffffffff813143b3:       41 54                   push   %r12
-  ffffffff813143b5:       53                      push   %rbx
-  ffffffff813143b6:       51                      push   %rcx
-  ...
-  ffffffff81314501:       48 8b 7e 08             mov    0x8(%rsi),%rdi
-  ffffffff81314505:       48 89 75 d0             mov    %rsi,-0x30(%rbp)
-  ffffffff81314509:       e8 5f d1 ff ff          callq
-ffffffff8131166d <acpi_bus_scan>
-  ffffffff8131450e:       85 c0                   test   %eax,%eax
-  ...
-  ffffffff813145d6:       5a                      pop    %rdx
-  ffffffff813145d7:       5b                      pop    %rbx
-  ffffffff813145d8:       44 89 e0                mov    %r12d,%eax
-  ffffffff813145db:       41 5c                   pop    %r12
-  ffffffff813145dd:       41 5d                   pop    %r13
-  ffffffff813145df:       41 5e                   pop    %r14
-  ffffffff813145e1:       41 5f                   pop    %r15
-  ffffffff813145e3:       5d                      pop    %rbp
-  ffffffff813145e4:       c3                      retq
+> Just playing devil's advocate here:  It's not at all obvious that adding
+> more interfaces is necessary to get directory read-ahead working, given
+> our existing read-ahead implementations.
+>
+> - z
+Thats perfectly ok - we hoped to generate some discussion and they are 
+good questions,
 
-note the use (deep down in the function) of -0x30(%rbp), and note how
-it does "pop %rdx" twice to undo the "push %rcx". It was just to
-allocate space.
+Steve.
 
-So you definitely have to track the actual stack pointer updates, not
-just the patterns of add/sub to %rsp.
-
-                Linus
