@@ -1,90 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759982AbaGYKDb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 06:03:31 -0400
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:4305 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751627AbaGYKD3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 06:03:29 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Fri, 25 Jul 2014 02:51:29 -0700
-From: Laxman Dewangan <ldewangan@nvidia.com>
-To: <rui.zhang@intel.com>, <edubezval@gmail.com>, <eduardo.valentin@gmail.com>
-CC: <linux-pm@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <javi.merino@arm.com>, Laxman Dewangan <ldewangan@nvidia.com>
-Subject: [PATCH] thermal: add support to disable thermal zone from DTS
-Date: Fri, 25 Jul 2014 15:31:58 +0530
-Message-ID: <1406282518-31266-1-git-send-email-ldewangan@nvidia.com>
-X-Mailer: git-send-email 1.8.1.5
+	id S1760012AbaGYKFP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 06:05:15 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:37117 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751627AbaGYKFN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jul 2014 06:05:13 -0400
+Message-ID: <53D22BCB.9060500@suse.de>
+Date: Fri, 25 Jul 2014 12:04:59 +0200
+From: =?UTF-8?B?QW5kcmVhcyBGw6RyYmVy?= <afaerber@suse.de>
+Organization: SUSE LINUX Products GmbH
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Punnaiah Choudary Kalluri <punnaiah.choudary.kalluri@xilinx.com>
+CC: Michal Simek <michals@xilinx.com>, Andreas Olofsson <andreas@adapteva.com>,
+        Matteo Vit <matteo.vit@starwaredesign.com>,
+        Sean Rickerd <srickerd@suse.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Lars-Peter Clausen <lars@metafoo.de>
+Subject: Re: [PATCH v2 00/11] ARM: dts: zynq: Prepare Parallella
+References: <1406242820-20140-1-git-send-email-afaerber@suse.de> <dc23839c-7a69-4674-9d92-80a1d68e9b23@BY2FFO11FD003.protection.gbl>
+In-Reply-To: <dc23839c-7a69-4674-9d92-80a1d68e9b23@BY2FFO11FD003.protection.gbl>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support to check status of the thermal zone before registering the
-zone. This will help on disabling some non-existing thermal zone from
-the top level DTS file out of common dtsi thermalzone file.
+Hi Punnaiah,
 
-For example,
-we have 3 platforms almost same but thermal zones on this platform are
-little bit different. Platform 1 and 2 have three thermal zones and
-platform 3 has two thermal zones. To avoid duplication of the thermal
-zones entries on each DTS file of platforms,we created one common
-dtsi file for thermal zone and included this dtsi file from these
-3 platform's top level dts file.
+Am 25.07.2014 05:49, schrieb Punnaiah Choudary Kalluri:
+>> Punnaiah Choudary Kalluri had recently proposed to extend the Chipidea
+>> USB driver for Zynq; it kept complaining about the PHY though, and I
+>> haven't spotted a revised version based on the generic driver yet.
+>> https://patchwork.kernel.org/patch/4434681/
+> 
+> The plan is, go with generic chip idea driver which is currently under review. 
+> http://www.spinics.net/lists/linux-usb/msg109576.html
+> 
+> So, please wait some more time for extending the Chip idea driver support
+>  to zynq.
 
-On common thermal zone com dtsi file, all thermal zone are enabled and
-need to disable one of thermal zone on platform 3 dts file. For this, we
-just added entry status = "disabled" for that thermal zone on platform 3
-dts file and along with this change to make it work.
+Thanks, I did understand that from the Patchwork link. I was however
+wondering whether you already have some work branch based on Antoine
+Ténart's series that you could share?
 
-This way, we reuse the common file and control the enable/disable of the
-thermal zone from top level dts file.
+When we get HDMI working, a USB keyboard will come very handy. ;)
 
-Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
----
- drivers/thermal/of-thermal.c | 12 ++++++++++++
- 1 file changed, 12 insertions(+)
+Otherwise, could you please take a look at my branch and let me know
+whether I'm doing something fundamentally wrong in wiring your old
+driver up in my DT? I did not see any .dts example doing so.
 
-diff --git a/drivers/thermal/of-thermal.c b/drivers/thermal/of-thermal.c
-index 4b2b999..f8eb625 100644
---- a/drivers/thermal/of-thermal.c
-+++ b/drivers/thermal/of-thermal.c
-@@ -401,6 +401,10 @@ thermal_zone_of_sensor_register(struct device *dev, int sensor_id,
- 		struct of_phandle_args sensor_specs;
- 		int ret, id;
- 
-+		/* Check whether child is enabled or not */
-+		if (!of_device_is_available(child))
-+			continue;
-+
- 		/* For now, thermal framework supports only 1 sensor per zone */
- 		ret = of_parse_phandle_with_args(child, "thermal-sensors",
- 						 "#thermal-sensor-cells",
-@@ -771,6 +775,10 @@ int __init of_parse_thermal_zones(void)
- 		struct thermal_zone_device *zone;
- 		struct thermal_zone_params *tzp;
- 
-+		/* Check whether child is enabled or not */
-+		if (!of_device_is_available(child))
-+			continue;
-+
- 		tz = thermal_of_build_thermal_zone(child);
- 		if (IS_ERR(tz)) {
- 			pr_err("failed to build thermal zone %s: %ld\n",
-@@ -838,6 +846,10 @@ void of_thermal_destroy_zones(void)
- 	for_each_child_of_node(np, child) {
- 		struct thermal_zone_device *zone;
- 
-+		/* Check whether child is enabled or not */
-+		if (!of_device_is_available(child))
-+			continue;
-+
- 		zone = thermal_zone_get_zone_by_name(child->name);
- 		if (IS_ERR(zone))
- 			continue;
+Cheers,
+Andreas
+
 -- 
-1.8.1.5
-
+SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg, Germany
+GF: Jeff Hawn, Jennifer Guild, Felix Imendörffer; HRB 16746 AG Nürnberg
