@@ -1,70 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760882AbaGYQk1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 12:40:27 -0400
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:62765 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753004AbaGYQkZ (ORCPT
+	id S1760902AbaGYQkq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 12:40:46 -0400
+Received: from one.firstfloor.org ([193.170.194.197]:59129 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760823AbaGYQkp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 12:40:25 -0400
-From: Jun Zhao <mypopydev@gmail.com>
-To: "David S. Miller" <davem@davemloft.net>,
-        Cong Wang <cwang@twopensource.com>,
-        Pravin B Shelar <pshelar@nicira.com>,
-        Nicolas Dichtel <nicolas.dichtel@6wind.com>,
-        stephen hemminger <stephen@networkplumber.org>,
-        Tom Herbert <therbert@google.com>, netdev@vger.kernel.org,
-        Francesco Fusco <ffusco@redhat.com>,
-        Veaceslav Falico <vfalico@redhat.com>,
-        Duan Jiong <duanj.fnst@cn.fujitsu.com>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        Jiri Pirko <jiri@resnulli.us>, David Stevens <dlstevens@us.ibm.com>,
-        Or Gerlitz <ogerlitz@mellanox.com>,
-        Daniel Borkmann <dborkman@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Jun Zhao <mypopydev@gmail.com>
-Subject: [PATCH 1/1] neighbour : fix ndm_type type error issue
-Date: Sat, 26 Jul 2014 00:38:59 +0800
-Message-Id: <1406306339-16151-1-git-send-email-mypopydev@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	Fri, 25 Jul 2014 12:40:45 -0400
+Date: Fri, 25 Jul 2014 18:40:41 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Andi Kleen <andi@firstfloor.org>, "Yan, Zheng" <zheng.z.yan@intel.com>,
+        linux-kernel@vger.kernel.org, mingo@kernel.org, acme@infradead.org,
+        eranian@google.com
+Subject: Re: [PATCH v3 6/9] perf, x86: handle multiple records in PEBS
+ buffer
+Message-ID: <20140725164041.GH18735@two.firstfloor.org>
+References: <1406016602-31845-1-git-send-email-zheng.z.yan@intel.com>
+ <1406016602-31845-7-git-send-email-zheng.z.yan@intel.com>
+ <20140725081033.GV3935@laptop>
+ <20140725150445.GG18735@two.firstfloor.org>
+ <20140725155332.GC6758@twins.programming.kicks-ass.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140725155332.GC6758@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ndm_type means L3 address type, in neighbour proxy and vxlan, it's RTN_UNICAST.
-NDA_DST is for netlink TLV type, hence it's not right value in this context.
+> Suppose two pebs events, one has exclude_kernel set. It overflows,
+> before entering the kernel, the other event generates PEBS records from
+> inside the kernel with both events marked in the overflow field.
+> 
+> And only once we leave the kernel can the exclude_kernel event tick
+> again and trigger the assist, finalyl clearing the bit.
+> 
+> If you were to report the records to both events, one would get a lot of
+> kernel info he was not entitled to.
 
-Signed-off-by: Jun Zhao <mypopydev@gmail.com>
----
- drivers/net/vxlan.c  |    2 +-
- net/core/neighbour.c |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+Ok that case can be filtered in software. Shouldn't be too difficult.
+Perhaps just using ip
 
-diff --git a/drivers/net/vxlan.c b/drivers/net/vxlan.c
-index d3f3e5d..1fb7b37 100644
---- a/drivers/net/vxlan.c
-+++ b/drivers/net/vxlan.c
-@@ -340,7 +340,7 @@ static int vxlan_fdb_info(struct sk_buff *skb, struct vxlan_dev *vxlan,
- 	ndm->ndm_state = fdb->state;
- 	ndm->ndm_ifindex = vxlan->dev->ifindex;
- 	ndm->ndm_flags = fdb->flags;
--	ndm->ndm_type = NDA_DST;
-+	ndm->ndm_type = RTN_UNICAST;
- 
- 	if (send_eth && nla_put(skb, NDA_LLADDR, ETH_ALEN, &fdb->eth_addr))
- 		goto nla_put_failure;
-diff --git a/net/core/neighbour.c b/net/core/neighbour.c
-index 559890b..ef31fef 100644
---- a/net/core/neighbour.c
-+++ b/net/core/neighbour.c
-@@ -2249,7 +2249,7 @@ static int pneigh_fill_info(struct sk_buff *skb, struct pneigh_entry *pn,
- 	ndm->ndm_pad1    = 0;
- 	ndm->ndm_pad2    = 0;
- 	ndm->ndm_flags	 = pn->flags | NTF_PROXY;
--	ndm->ndm_type	 = NDA_DST;
-+	ndm->ndm_type	 = RTN_UNICAST;
- 	ndm->ndm_ifindex = pn->dev->ifindex;
- 	ndm->ndm_state	 = NUD_NONE;
- 
+	if (event->attr.exclude_kernel && pebs->ip >= __PAGE_OFFSET)
+	    skip;
+	if (event->attr.exclude_user && pebs->ip < __PAGE_OFFSET)
+	    skip;
+
+This would also help with the existing skid.
+
+Any other concerns?
+
+-Andi
+
 -- 
-1.7.10.4
-
+ak@linux.intel.com -- Speaking for myself only.
