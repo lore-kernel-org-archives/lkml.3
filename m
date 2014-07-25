@@ -1,90 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760807AbaGYR6K (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 13:58:10 -0400
-Received: from mail-oa0-f50.google.com ([209.85.219.50]:54042 "EHLO
-	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753394AbaGYR6I (ORCPT
+	id S934748AbaGYSDD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 14:03:03 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:55039 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753270AbaGYSDB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 13:58:08 -0400
-MIME-Version: 1.0
-In-Reply-To: <53D28457.202@redhat.com>
-References: <20140722144559.382c5243@annuminas.surriel.com>
- <20140725152728.GB6758@twins.programming.kicks-ass.net> <53D27B7E.8090404@redhat.com>
- <20140725160549.GD6758@twins.programming.kicks-ass.net> <53D28457.202@redhat.com>
-From: Vincent Guittot <vincent.guittot@linaro.org>
-Date: Fri, 25 Jul 2014 19:57:47 +0200
-Message-ID: <CAKfTPtBVTgTYmgRKbuhKNZZRuCRK126YVvsG1+a-hjfKao08=g@mail.gmail.com>
-Subject: Re: [PATCH] sched: make update_sd_pick_busiest return true on a
- busier sd
-To: Rik van Riel <riel@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Michael Neuling <mikey@neuling.org>, Ingo Molnar <mingo@kernel.org>,
-        Paul Turner <pjt@google.com>, jhladky@redhat.com, ktkhai@parallels.com,
-        tim.c.chen@linux.intel.com, Nicolas Pitre <nicolas.pitre@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 25 Jul 2014 14:03:01 -0400
+From: Mark Brown <broonie@kernel.org>
+To: linux-kernel@vger.kernel.org
+Cc: linaro-kernel@lists.linaro.org, Mark Brown <broonie@linaro.org>
+Date: Fri, 25 Jul 2014 19:02:47 +0100
+Message-Id: <1406311367-606-1-git-send-email-broonie@kernel.org>
+X-Mailer: git-send-email 2.0.1
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: [PATCH] regmap: Fix return code for stub regmap_get_device()
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25 July 2014 18:22, Rik van Riel <riel@redhat.com> wrote:
-> -----BEGIN PGP SIGNED MESSAGE-----
-> Hash: SHA1
->
-> On 07/25/2014 12:05 PM, Peter Zijlstra wrote:
->> On Fri, Jul 25, 2014 at 11:45:02AM -0400, Rik van Riel wrote:
->>>> So for !ASYM the code is effectively:
->>>>
->>>> return sgs->avg_load > sds->busiest_stat.avg_load;
->>>>
->>>> I'd like to at least add a clause that makes overloaded groups
->>>>  prioritized over !overloaded groups.
->>>>
->>>> Also, like we found earlier, calculate_imbalance() relies on
->>>> the sum_nr_running > group_capacity_factor thing, which you've
->>>> just 'wrecked', so we'd need an update to that part too.
->>>
->>> I guess that would mean update_sd_pick_busiest would look like
->>> this for the !ASYM case:
->>>
->>> 1) remembering whether busiest is overloaded
->>>
->>> 2) if (sgs->busiest_stat.overloaded && !sgs->overloaded) return
->>> false;
->>>
->>> 3) if (sgs->avg_load > sds->busiest_stat.avg_load) return true;
->>
->> Right. So the situation I was worried about is where we have say 8
->> +nice tasks in one group and 2 -nice in another. So the group with
->> 2 tasks can actually be 'heavier' but not fully utilized. In that
->> case we want to pull tasks from the lighter but overloaded group.
->
-> I can certainly create a new patch that makes update_sd_pick_busiest
-> do just that.
->
-> Vincent, any objections to me fixing update_sd_pick_busiest now, or
-> will that conflict with your code cleanups?
+From: Mark Brown <broonie@linaro.org>
 
-It will probably conflict with my patchset which also modify
-update_sd_pick_busiest but we should be able to manage the conflict.
-So feel free to send a patch that fix the description above and we
-will see how to handle the conflict when it will occur
+We return a pointer, not an int.
 
-Vincent
+Signed-off-by: Mark Brown <broonie@linaro.org>
+---
+ include/linux/regmap.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
->
-> - --
-> All rights reversed
-> -----BEGIN PGP SIGNATURE-----
-> Version: GnuPG v1
-> Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
->
-> iQEcBAEBAgAGBQJT0oRWAAoJEM553pKExN6DRdoH/2VsMEbeRdr9o99CYV3hK2bj
-> OT4O5xlz47aBq+/J3Sp35DZKtQ8PpYICNoNzddyF5Blr7ZcXB2OQj5Cv5Lj3Dtcs
-> q/AnJAN+6mDNq4B3aVfTb3BMDcrSz8LNdpNwVM80gfvbcZkcWIYWF2FigShIggMZ
-> bKz4cC5hVphtYR/WH6gnb5dXwgXBGYatwYsDXnVw6SLRbXcwYrB646SmZYXDVcER
-> bOj5IAjdfAlFkLbeow6OaX1arBrd6lyKfVI4Mzr848dqLBrJvmPvx/R4Z8EzPN2H
-> Gv4kqU7s9CAk1QOZLHWAOCDjG7PdMZfkS7WEZnQinMIutBK/jYJ4IXY8NNeS96I=
-> =OcR0
-> -----END PGP SIGNATURE-----
+diff --git a/include/linux/regmap.h b/include/linux/regmap.h
+index cd480fd59795..c5ed83f49c4e 100644
+--- a/include/linux/regmap.h
++++ b/include/linux/regmap.h
+@@ -733,7 +733,7 @@ static inline struct regmap *dev_get_regmap(struct device *dev,
+ static inline struct device *regmap_get_device(struct regmap *map)
+ {
+ 	WARN_ONCE(1, "regmap API is disabled");
+-	return -EINVAL;
++	return NULL;
+ }
+ 
+ #endif
+-- 
+2.0.1
+
