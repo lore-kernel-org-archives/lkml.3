@@ -1,129 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760250AbaGYMxl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 08:53:41 -0400
-Received: from [207.46.163.212] ([207.46.163.212]:43480 "EHLO
-	na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1759892AbaGYMxj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 08:53:39 -0400
-From: Srikanth Thokala <srikanth.thokala@xilinx.com>
-To: Michal Simek <michals@xilinx.com>,
-        =?utf-8?B?QW5kcmVhcyBGw6RyYmVy?= <afaerber@suse.de>,
-        "monstr@monstr.eu" <monstr@monstr.eu>
-CC: Vinod Koul <vinod.koul@intel.com>, Michal Simek <michals@xilinx.com>,
-        Andreas Olofsson <andreas@adapteva.com>,
-        Matteo Vit <matteo.vit@starwaredesign.com>,
-        Sean Rickerd <srickerd@suse.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>
-Subject: RE: [PATCH v2 07/11] Documentation: devicetree: Fix Xilinx VDMA
- specification
-Thread-Topic: [PATCH v2 07/11] Documentation: devicetree: Fix Xilinx VDMA
- specification
-Thread-Index: AQHPp90HFwMNoTsoEk2N7w3yWlvvbpuv9CeAgAAO0wCAALfckA==
-Date: Fri, 25 Jul 2014 12:51:41 +0000
-References: <1406242820-20140-1-git-send-email-afaerber@suse.de>
- <1406242820-20140-8-git-send-email-afaerber@suse.de>
- <53D20C19.5000306@monstr.eu> <53D21983.8060901@suse.de>
- <53D225F2.4070504@xilinx.com>
-In-Reply-To: <53D225F2.4070504@xilinx.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.23.17.39]
-Content-Type: text/plain; charset="utf-8"
+	id S1760286AbaGYM4Q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 08:56:16 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:40602 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752286AbaGYM4P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jul 2014 08:56:15 -0400
+Date: Fri, 25 Jul 2014 13:56:08 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Vlastimil Babka <vbabka@suse.cz>
+Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>, linux-kernel@vger.kernel.org,
+        Minchan Kim <minchan@kernel.org>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+Subject: Re: [PATCH V4 14/15] mm, compaction: try to capture the just-created
+ high-order freepage
+Message-ID: <20140725125608.GI10819@suse.de>
+References: <1405518503-27687-1-git-send-email-vbabka@suse.cz>
+ <1405518503-27687-15-git-send-email-vbabka@suse.cz>
 MIME-Version: 1.0
-X-RCIS-Action: ALLOW
-Message-ID: <32b0ee01-c15a-47eb-94c5-a60ca5016b85@BY2FFO11FD024.protection.gbl>
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:149.199.60.83;CTRY:US;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(438002)(13464003)(377454003)(189002)(164054003)(51704005)(479174003)(24454002)(199002)(92566001)(76482001)(81542001)(107046002)(21056001)(23676002)(92726001)(31966008)(77096002)(81342001)(50986999)(85306003)(74502001)(53416004)(54356999)(76176999)(31696002)(50466002)(80022001)(46102001)(79102001)(104016003)(106466001)(95666004)(74316001)(70736001)(86362001)(87936001)(83322001)(20776003)(64706001)(1496007)(85852003)(77982001)(6806004)(19580395003)(4396001)(2656002)(93886003)(74662001)(99396002)(44976005)(47776003)(19580405001)(83072002)(106116001)(107986001);DIR:OUT;SFP:;SCL:1;SRVR:BY2FFO11HUB044;H:xsj-pvapsmtpgw01;FPR:;MLV:sfv;PTR:unknown-60-83.xilinx.com;MX:1;A:1;LANG:en;
-X-OriginatorOrg: xilinx.onmicrosoft.com
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
-X-Forefront-PRVS: 02830F0362
-Authentication-Results: spf=pass (sender IP is 149.199.60.83)
- smtp.mailfrom=srikanth.thokala@xilinx.com; 
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <1405518503-27687-15-git-send-email-vbabka@suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s6PCrkF6032629
 
-Hi Andreas,
+On Wed, Jul 16, 2014 at 03:48:22PM +0200, Vlastimil Babka wrote:
+> Compaction uses watermark checking to determine if it succeeded in creating
+> a high-order free page. My testing has shown that this is quite racy and it
+> can happen that watermark checking in compaction succeeds, and moments later
+> the watermark checking in page allocation fails, even though the number of
+> free pages has increased meanwhile.
+> 
+> It should be more reliable if direct compaction captured the high-order free
+> page as soon as it detects it, and pass it back to allocation. This would
+> also reduce the window for somebody else to allocate the free page.
+> 
+> Capture has been implemented before by 1fb3f8ca0e92 ("mm: compaction: capture
+> a suitable high-order page immediately when it is made available"), but later
+> reverted by 8fb74b9f ("mm: compaction: partially revert capture of suitable
+> high-order page") due to a bug.
+> 
+> This patch differs from the previous attempt in two aspects:
+> 
+> 1) The previous patch scanned free lists to capture the page. In this patch,
+>    only the cc->order aligned block that the migration scanner just finished
+>    is considered, but only if pages were actually isolated for migration in
+>    that block. Tracking cc->order aligned blocks also has benefits for the
+>    following patch that skips blocks where non-migratable pages were found.
+> 
+> 2) The operations done in buffered_rmqueue() and get_page_from_freelist() are
+>    closely followed so that page capture mimics normal page allocation as much
+>    as possible. This includes operations such as prep_new_page() and
+>    page->pfmemalloc setting (that was missing in the previous attempt), zone
+>    statistics are updated etc. Due to subtleties with IRQ disabling and
+>    enabling this cannot be simply factored out from the normal allocation
+>    functions without affecting the fastpath.
+> 
+> This patch has tripled compaction success rates (as recorded in vmstat) in
+> stress-highalloc mmtests benchmark, although allocation success rates increased
+> only by a few percent. Closer inspection shows that due to the racy watermark
+> checking and lack of lru_add_drain(), the allocations that resulted in direct
+> compactions were often failing, but later allocations succeeeded in the fast
+> path. So the benefit of the patch to allocation success rates may be limited,
+> but it improves the fairness in the sense that whoever spent the time
+> compacting has a higher change of benefitting from it, and also can stop
+> compacting sooner, as page availability is detected immediately. With better
+> success detection, the contribution of compaction to high-order allocation
+> success success rates is also no longer understated by the vmstats.
+> 
+> Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
+> Cc: Minchan Kim <minchan@kernel.org>
+> Cc: Mel Gorman <mgorman@suse.de>
+> Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+> Cc: Michal Nazarewicz <mina86@mina86.com>
+> Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> Cc: Christoph Lameter <cl@linux.com>
+> Cc: Rik van Riel <riel@redhat.com>
+> Cc: David Rientjes <rientjes@google.com>
+> <SNIP>
+> @@ -2279,14 +2307,43 @@ __alloc_pages_direct_compact(gfp_t gfp_mask, unsigned int order,
+>  	 */
+>  	count_vm_event(COMPACTSTALL);
+>  
+> -	/* Page migration frees to the PCP lists but we want merging */
+> -	drain_pages(get_cpu());
+> -	put_cpu();
+> +	/* Did we capture a page? */
+> +	if (page) {
+> +		struct zone *zone;
+> +		unsigned long flags;
+> +		/*
+> +		 * Mimic what buffered_rmqueue() does and capture_new_page()
+> +		 * has not yet done.
+> +		 */
+> +		zone = page_zone(page);
+> +
+> +		local_irq_save(flags);
+> +		zone_statistics(preferred_zone, zone, gfp_mask);
+> +		local_irq_restore(flags);
+>  
+> -	page = get_page_from_freelist(gfp_mask, nodemask,
+> -			order, zonelist, high_zoneidx,
+> -			alloc_flags & ~ALLOC_NO_WATERMARKS,
+> -			preferred_zone, classzone_idx, migratetype);
+> +		VM_BUG_ON_PAGE(bad_range(zone, page), page);
+> +		if (!prep_new_page(page, order, gfp_mask))
+> +			/* This is normally done in get_page_from_freelist() */
+> +			page->pfmemalloc = !!(alloc_flags &
+> +					ALLOC_NO_WATERMARKS);
+> +		else
+> +			page = NULL;
+> +	}
+> +
+> +	/* No capture but let's try allocating anyway */
+> +	if (!page) {
+> +		/*
+> +		 * Page migration frees to the PCP lists but we want
+> +		 * merging
+> +		 */
+> +		drain_pages(get_cpu());
+> +		put_cpu();
+> +
 
-> -----Original Message-----
-> From: Michal Simek [mailto:michal.simek@xilinx.com]
-> Sent: Friday, July 25, 2014 3:10 PM
-> To: Andreas F√§rber; monstr@monstr.eu; Srikanth Thokala
-> Cc: Vinod Koul; Michal Simek; Andreas Olofsson; Matteo Vit; Sean Rickerd;
-> devicetree@vger.kernel.org; linux-arm-kernel@lists.infradead.org; linux-
-> kernel@vger.kernel.org; Rob Herring; Pawel Moll; Mark Rutland; Ian Campbell;
-> Kumar Gala
-> Subject: Re: [PATCH v2 07/11] Documentation: devicetree: Fix Xilinx VDMA
-> specification
->
-> Hi Andreas,
->
-> On 07/25/2014 10:46 AM, Andreas F√§rber wrote:
-> > Hi Michal,
-> >
-> > Am 25.07.2014 09:49, schrieb Michal Simek:
-> >> On 07/25/2014 01:00 AM, Andreas F√§rber wrote:
-> >>> The specification requires xlnx,data-width, but example and driver
-> >>> use xlnx,datawidth. Change the specification to match the implementation.
-> >>>
-> >>> Signed-off-by: Andreas F√§rber <afaerber@suse.de>
-> >>> ---
-> >>>  v2: New
-> >>>
-> >>>  Documentation/devicetree/bindings/dma/xilinx/xilinx_vdma.txt | 2 +-
-> >>>  1 file changed, 1 insertion(+), 1 deletion(-)
-> >>>
-> >>> diff --git
-> >>> a/Documentation/devicetree/bindings/dma/xilinx/xilinx_vdma.txt
-> >>> b/Documentation/devicetree/bindings/dma/xilinx/xilinx_vdma.txt
-> >>> index 1405ed0..e4c4d47 100644
-> >>> --- a/Documentation/devicetree/bindings/dma/xilinx/xilinx_vdma.txt
-> >>> +++ b/Documentation/devicetree/bindings/dma/xilinx/xilinx_vdma.txt
-> >>> @@ -25,7 +25,7 @@ Required child node properties:
-> >>>  - compatible: It should be either "xlnx,axi-vdma-mm2s-channel" or
-> >>>   "xlnx,axi-vdma-s2mm-channel".
-> >>>  - interrupts: Should contain per channel VDMA interrupts.
-> >>> -- xlnx,data-width: Should contain the stream data width, take
-> >>> values
-> >>> +- xlnx,datawidth: Should contain the stream data width, take values
-> >>>   {32,64...1024}.
-> >
-> > BTW I just notice that this values specification is ambiguous as to
-> > whether 96 is a valid value or only powers of 2 like 128. Maybe you
-> > want to clarify that in a follow-up patch?
->
-> really appreciate your help for improving this.
-> Srikanth T: Can you please look at it?
+Would the attempted capture not drained already? Not a big deal so
 
-It should be only power of 2.  I could send a patch, but it is design-specific and
-the design will not allow to take the intermediate values and so the device-tree
-script.  So, I feel it should be fine to keep this way.
-
-Thanks for this patch.
-
-Srikanth
-
->
-> Thanks,
-> Michal
->
->
+Acked-by: Mel Gorman <mgorman@suse.de>
 
 
-
-This email and any attachments are intended for the sole use of the named recipient(s) and contain(s) confidential information that may be proprietary, privileged or copyrighted under applicable law. If you are not the intended recipient, do not read, copy, or forward this email message or any attachments. Delete this email message and any attachments immediately.
-
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+-- 
+Mel Gorman
+SUSE Labs
