@@ -1,98 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761036AbaGYPnI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 11:43:08 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:41179 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1760814AbaGYPnD (ORCPT
+	id S1761062AbaGYPn3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 11:43:29 -0400
+Received: from mail-we0-f169.google.com ([74.125.82.169]:39123 "EHLO
+	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753052AbaGYPn1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 11:43:03 -0400
-Date: Fri, 25 Jul 2014 16:42:42 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Liviu Dudau <Liviu.Dudau@arm.com>, linux-pci <linux-pci@vger.kernel.org>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Tanmay Inamdar <tinamdar@apm.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Sinan Kaya <okaya@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Device Tree ML <devicetree@vger.kernel.org>,
-        LAKML <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v8 6/9] pci: Introduce a domain number for
- pci_host_bridge.
-Message-ID: <20140725154242.GN24268@arm.com>
-References: <CAErSpo75ovmGoeSHKJN0nckGDy-0gpn8kLPfHQ79CtcXxhPydw@mail.gmail.com>
- <20140708224847.GC4980@e106497-lin.cambridge.arm.com>
- <CAErSpo5rBt0iF2HGeDD-UH6_sPCoC647VCw0Q1v_0Rdpvcir-w@mail.gmail.com>
- <20140710094758.GA6501@e106497-lin.cambridge.arm.com>
- <CAErSpo5ZNCY31NztT0cLFbRVsBZqMsZ0LbTFNOTQCZUU3F7qJA@mail.gmail.com>
- <20140711141115.GB16321@arm.com>
- <CAErSpo7C8qzmdp+XgVi2ysXj_NcgvVY7RVfBZ2PHimLzrzANMQ@mail.gmail.com>
- <20140711180151.GH16321@arm.com>
- <20140714163922.GH1112@arm.com>
- <CAErSpo65RBeTgzrVefWBfjnZqTPzyz__HnC4bn8riGGDC0GkHg@mail.gmail.com>
+	Fri, 25 Jul 2014 11:43:27 -0400
+Date: Fri, 25 Jul 2014 17:43:20 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Miklos Szeredi <miklos@szeredi.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, Tejun Heo <tj@kernel.org>,
+        Vladimir Davydov <vdavydov@parallels.com>, linux-mm@kvack.org,
+        cgroups@vger.kernel.org,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [patch 13/13] mm: memcontrol: rewrite uncharge API
+Message-ID: <20140725154320.GB18303@dhcp22.suse.cz>
+References: <20140719173911.GA1725@cmpxchg.org>
+ <20140722150825.GA4517@dhcp22.suse.cz>
+ <CAJfpegscT-ptQzq__uUV2TOn7Uvs6x4FdWGTQb9Fe9MEJr2KjA@mail.gmail.com>
+ <20140723143847.GB16721@dhcp22.suse.cz>
+ <20140723150608.GF1725@cmpxchg.org>
+ <CAJfpegs-k5QC+42SzLKUSaHrdPxWBaT_dF+SOPqoDvg8h5p_Tw@mail.gmail.com>
+ <20140723210241.GH1725@cmpxchg.org>
+ <20140724084644.GA14578@dhcp22.suse.cz>
+ <20140724090257.GB14578@dhcp22.suse.cz>
+ <20140725152654.GK1725@cmpxchg.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAErSpo65RBeTgzrVefWBfjnZqTPzyz__HnC4bn8riGGDC0GkHg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140725152654.GK1725@cmpxchg.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 22, 2014 at 04:15:58AM +0100, Bjorn Helgaas wrote:
-> On Mon, Jul 14, 2014 at 10:39 AM, Catalin Marinas
-> <catalin.marinas@arm.com> wrote:
-> > From b32606aa3997fc8a45014a64f99e921eef4872b0 Mon Sep 17 00:00:00 2001
-> > From: Catalin Marinas <catalin.marinas@arm.com>
-> > Date: Mon, 14 Jul 2014 17:20:01 +0100
-> > Subject: [PATCH] pci: Add support for generic domain_nr in pci_bus
-> >
-> > This patch adds domain_nr in struct pci_bus if
-> > CONFIG_PCI_DOMAINS_GENERIC is enabled. The default implementation for
-> > pci_domain_nr() simply returns bus->domain_nr. For the root bus, the
-> > core PCI code calls pci_set_domain_nr(bus, parent_device) while the
-> > child buses inherit the domain nr of the parent bus.
-> >
-> > This patch also adds an of_pci_set_domain_nr() implementation which
-> > parses the device tree for the "pci-domain" property or sets domain_nr
-> > to the next available value (this function could also be implemented
-> > entirely in arm64).
-> >
-> > Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+On Fri 25-07-14 11:26:54, Johannes Weiner wrote:
+> On Thu, Jul 24, 2014 at 11:02:57AM +0200, Michal Hocko wrote:
+> > On Thu 24-07-14 10:46:44, Michal Hocko wrote:
+> > > On Wed 23-07-14 17:02:41, Johannes Weiner wrote:
+> > [...]
+> > > We can reduce the lookup only to lruvec==true case, no?
+> > 
+> > Dohh
+> > s@can@should@
+> > 
+> > newpage shouldn't charged in all other cases and it would be bug.
+> > Or am I missing something?
 > 
-> I like this.  It seems like a reasonable step forward.  I don't really
-> like the pci_set_domain_nr() interface because the domain conceptually
-> exists before the root bus in the domain, but we can deal with that
-> later.
+> Yeah, but I'd hate to put that assumption onto the @lrucare parameter,
+> it just coincides.
 
-That's just the name I came up with. Maybe something like
-pci_assign_domain_to_bus()?
-
-> I'd really like to see all this stuff in v3.17, but I'm going to be on
-> vacation for the next three weeks and won't be able to do much until
-> Aug 11, which is probably going to be in the middle of the merge
-> window.  But maybe the series can be integrated in -next via an ARM
-> tree or something.  If it helps, you can add my
-> 
-> Acked-by: Bjorn Helgaas <bhelgaas@google.com>
-> 
-> for this piece.  I don't remember how many other PCI changes are
-> involved; maybe my ack on this will be enough?  Even if we can't get
-> it in for the merge window, I'm open to trying to merge it after
-> v3.17-rc1 if it's isolated enough.
-
-Thanks for the Ack but I think Liviu needs to address a few more things
-with the OF part of his PCIe patches and it's unlikely that they are
-ready for 3.17. My "deadline" is for 3.18 to get the generic (and arm64)
-PCIe support in.
-
-(I'm off for two weeks starting now as well).
-
+Yes, you are right. Maybe replace_page_cache_page should have it's own
+memcg variant which does all the trickery and then call
+mem_cgroup_migrate when necessary...
 -- 
-Catalin
+Michal Hocko
+SUSE Labs
