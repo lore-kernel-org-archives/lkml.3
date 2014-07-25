@@ -1,60 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760126AbaGYLUu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 07:20:50 -0400
-Received: from out2-smtp.messagingengine.com ([66.111.4.26]:34754 "EHLO
-	out2-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752040AbaGYLUq (ORCPT
+	id S1760137AbaGYLYD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 07:24:03 -0400
+Received: from mail-oa0-f52.google.com ([209.85.219.52]:45313 "EHLO
+	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751128AbaGYLYB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 07:20:46 -0400
-X-Sasl-enc: eaCBMKc6YQteyP/dfwQtkwqyLQY1Z2Li2v7QeGYf9nQh 1406287245
-Date: Fri, 25 Jul 2014 08:20:39 -0300
-From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-To: Toralf =?iso-8859-1?Q?F=F6rster?= <toralf.foerster@gmx.de>
-Cc: linux-ia64@vger.kernel.org, ceph-devel@vger.kernel.org,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: sizeof (struct tYpO *) : it is just a typo or rather a bug ?
-Message-ID: <20140725112038.GA401@khazad-dum.debian.net>
-References: <53D14E60.1010105@gmx.de>
+	Fri, 25 Jul 2014 07:24:01 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <53D14E60.1010105@gmx.de>
-X-GPG-Fingerprint1: 4096R/39CB4807 C467 A717 507B BAFE D3C1  6092 0BD9 E811
- 39CB 4807
-X-GPG-Fingerprint2: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
- 1CDB 0FE3
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140724115252.1847dbad@endymion.delvare>
+References: <20140721181507.5a6d3b2c@endymion.delvare>
+	<CACRpkdZwoftk1bbmZYc5wSh8rzf137TURcjno5Am=CUUHVvEFw@mail.gmail.com>
+	<20140724115252.1847dbad@endymion.delvare>
+Date: Fri, 25 Jul 2014 13:24:00 +0200
+Message-ID: <CACRpkdau4eAETDXy-SQPYPRfN6ixhiypZ32UUb6PXb2QMdTNag@mail.gmail.com>
+Subject: Re: Run-time dependencies for STE Modem remoteproc driver
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Jean Delvare <jdelvare@suse.de>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Dmitry Tarnyagin <dmitry.tarnyagin@lockless.no>,
+        Ohad Ben-Cohen <ohad@wizery.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 24 Jul 2014, Toralf Förster wrote:
-> Inspired by this "typo" fix 
-> http://article.gmane.org/gmane.linux.kernel/1754640
-> I grep'ed the current git tree of linus for similar issues.
+On Thu, Jul 24, 2014 at 11:52 AM, Jean Delvare <jdelvare@suse.de> wrote:
+> Hi Linus,
+>
+> On Wed, 23 Jul 2014 17:21:17 +0200, Linus Walleij wrote:
+>> On Mon, Jul 21, 2014 at 6:15 PM, Jean Delvare <jdelvare@suse.de> wrote:
+>>
+>> > This brings the question: on which architectures / platforms is the STE
+>> > Modem remoteproc driver needed?
+>>
+>> NONE.
+>
+> Hm, OK :D So I will disable this driver in all our kernels. Maybe this
+> should be mentioned in the Kconfig help text?
+>
+> Still, I suppose that the driver had an intended target, maybe we can
+> use that as a run-time dependency? Or should we just make the driver
+> depend on COMPILE_TEST?
 
-I wonder if we couldn't use Coccinelle to do that?  I would say it would be
-not as cool as deep grep magick, but Coccinelle is cool by definition and
-therefore immune from any such comparisons :-)
+Yeah that sounds like a pretty good idea actually, as we shouldn't
+just delete it.
 
-> Nevertheless I was told, that gcc doesn't complain about such things due
-> to eventually evaluating it to "sizeof(null)". I'm however curious if at
-> least a warning should be emitted in such a case, or?
-
-Well, it cannot become a real bug because the moment the code changes to
-actually access/derreference such a typo, it will cause the compiler to
-abort with an error.  If gcc will have to waste a measurable amount of time
-to issue such a warning, it is not worth it.
-
-OTOH, such typos could confuse someone reading the code into thinking
-they're dealing with a different structure or something, and it _is_
-incorrect code no matter how harmless, so it makes sense to fix all such
-typos eventually.
-
--- 
-  "One disk to rule them all, One disk to find them. One disk to bring
-  them all and in the darkness grind them. In the Land of Redmond
-  where the shadows lie." -- The Silicon Valley Tarot
-  Henrique Holschuh
+Yours,
+Linus Walleij
