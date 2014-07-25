@@ -1,113 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964822AbaGYRiY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 13:38:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:44922 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935313AbaGYRiO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 13:38:14 -0400
-From: Abhi Das <adas@redhat.com>
-To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        cluster-devel@redhat.com
-Cc: Abhi Das <adas@redhat.com>
-Subject: [RFC PATCH 4/5] gfs2: Add sort functionality with extra parameter
-Date: Fri, 25 Jul 2014 12:38:07 -0500
-Message-Id: <1406309888-10749-5-git-send-email-adas@redhat.com>
-In-Reply-To: <1406309888-10749-1-git-send-email-adas@redhat.com>
-References: <1406309888-10749-1-git-send-email-adas@redhat.com>
+	id S964807AbaGYRiV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 13:38:21 -0400
+Received: from mail-oi0-f46.google.com ([209.85.218.46]:57438 "EHLO
+	mail-oi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935319AbaGYRiP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jul 2014 13:38:15 -0400
+MIME-Version: 1.0
+In-Reply-To: <CALCETrVChObsQpL6dt-ByiCjbPrtpXAXQgy_apBY-OpGQHaPjg@mail.gmail.com>
+References: <1406296033-32693-1-git-send-email-drysdale@google.com>
+	<1406296033-32693-12-git-send-email-drysdale@google.com>
+	<CALCETrVJX4+-6vkRaDj4kV_bXiYL5fj_PtO53g9fRf=i4X2Tww@mail.gmail.com>
+	<CAGXu5jJZ7mhmq1BrdTP5Ww15+C2iLQKjLy1Xh0=9qZvVK5E9Cw@mail.gmail.com>
+	<CALCETrVChObsQpL6dt-ByiCjbPrtpXAXQgy_apBY-OpGQHaPjg@mail.gmail.com>
+Date: Fri, 25 Jul 2014 10:38:14 -0700
+X-Google-Sender-Auth: hBMYHeYh7Be-hwLoSZrle7wSAbE
+Message-ID: <CAGXu5jLPrKA5LR-9=M6jAfPXYoztGzXPiaSiXgEcUE=+na73GA@mail.gmail.com>
+Subject: Re: [PATCH 11/11] seccomp: Add tgid and tid into seccomp_data
+From: Kees Cook <keescook@chromium.org>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Julien Tinnes <jln@google.com>, David Drysdale <drysdale@google.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, Paolo Bonzini <pbonzini@redhat.com>,
+        LSM List <linux-security-module@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Paul Moore <paul@paul-moore.com>,
+        James Morris <james.l.morris@oracle.com>,
+        Linux API <linux-api@vger.kernel.org>,
+        Meredydd Luff <meredydd@senatehouse.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is essentially a copy of the sort function and its helpers
-from lib/sort.c with the exception of an additional 'void *opaque'
-parameter added here.
-custom cmp_func and swap_func functions can make use of the opaque
-field for relevant context
+On Fri, Jul 25, 2014 at 10:18 AM, Andy Lutomirski <luto@amacapital.net> wrote:
+> [cc: Eric Biederman]
+>
+> On Fri, Jul 25, 2014 at 10:10 AM, Kees Cook <keescook@chromium.org> wrote:
+>> On Fri, Jul 25, 2014 at 8:59 AM, Andy Lutomirski <luto@amacapital.net> wrote:
+>>> On Jul 25, 2014 6:48 AM, "David Drysdale" <drysdale@google.com> wrote:
+>>>>
+>>>> Add the current thread and thread group IDs into the data
+>>>> available for seccomp-bpf programs to work on.  This allows
+>>>> installation of filters that police syscalls based on thread
+>>>> or process ID, e.g. tgkill(2)/kill(2)/prctl(2).
+>>>>
+>>>> Signed-off-by: David Drysdale <drysdale@google.com>
+>>>> ---
+>>>>  include/uapi/linux/seccomp.h | 10 ++++++++++
+>>>>  kernel/seccomp.c             |  2 ++
+>>>>  2 files changed, 12 insertions(+)
+>>>>
+>>>> diff --git a/include/uapi/linux/seccomp.h b/include/uapi/linux/seccomp.h
+>>>> index ac2dc9f72973..b88370d6f6ca 100644
+>>>> --- a/include/uapi/linux/seccomp.h
+>>>> +++ b/include/uapi/linux/seccomp.h
+>>>> @@ -36,12 +36,22 @@
+>>>>   * @instruction_pointer: at the time of the system call.
+>>>>   * @args: up to 6 system call arguments always stored as 64-bit values
+>>>>   *        regardless of the architecture.
+>>>> + * @tgid: thread group ID of the thread executing the BPF program.
+>>>> + * @tid: thread ID of the thread executing the BPF program.
+>>>> + * The SECCOMP_DATA_TID_PRESENT macro indicates the presence of the
+>>>> + * tgid and tid fields; user programs may use this macro to conditionally
+>>>> + * compile code against older versions of the kernel.  Note also that
+>>>> + * BPF programs should cope with the absence of these fields by testing
+>>>> + * the length of data available.
+>>>>   */
+>>>>  struct seccomp_data {
+>>>>         int nr;
+>>>>         __u32 arch;
+>>>>         __u64 instruction_pointer;
+>>>>         __u64 args[6];
+>>>> +       __u32 tgid;
+>>>> +       __u32 tid;
+>>>>  };
+>>>> +#define SECCOMP_DATA_TID_PRESENT       1
+>>>>
+>>>>  #endif /* _UAPI_LINUX_SECCOMP_H */
+>>>> diff --git a/kernel/seccomp.c b/kernel/seccomp.c
+>>>> index 301bbc24739c..dd5146f15d6d 100644
+>>>> --- a/kernel/seccomp.c
+>>>> +++ b/kernel/seccomp.c
+>>>> @@ -80,6 +80,8 @@ static void populate_seccomp_data(struct seccomp_data *sd)
+>>>>         sd->args[4] = args[4];
+>>>>         sd->args[5] = args[5];
+>>>>         sd->instruction_pointer = KSTK_EIP(task);
+>>>> +       sd->tgid = task_tgid_vnr(current);
+>>>> +       sd->tid = task_pid_vnr(current);
+>>>>  }
+>>>
+>>> This is, IMO, problematic.  These should probably be relative to the
+>>> filter creator, not the filtered task.  This will also hurt
+>>> performance.
+>>
+>> Yeah, we can't change the seccomp_data structure without a lot of
+>> care, and tgid/tid really should be encoded in the filter. However, it
+>> is tricky in the forking case.
+>>
+>>>
+>>> What's the use case?  Can it be better achieved with a new eBPF function?
+>>
+>> Julien had been wanting something like this too (though he'd suggested
+>> it via prctl): limit the signal functions to "self" only. I wonder if
+>> adding a prctl like done for O_BENEATH could work for signal sending?
+>>
+>
+>
+> Can we do one better and add a flag to prevent any non-self pid
+> lookups?  This might actually be easy on top of the pid namespace work
+> (e.g. we could change the way that find_task_by_vpid works).
 
-Signed-off-by: Abhi Das <adas@redhat.com>
----
- fs/gfs2/util.c | 55 +++++++++++++++++++++++++++++++++++++++++++++++++++++++
- fs/gfs2/util.h |  4 ++++
- 2 files changed, 59 insertions(+)
+Ooh, that would be extremely interesting, yes. Kind of an extreme form
+of pid namespace without actually being a namespace.
 
-diff --git a/fs/gfs2/util.c b/fs/gfs2/util.c
-index 7345489..2c1aee3 100644
---- a/fs/gfs2/util.c
-+++ b/fs/gfs2/util.c
-@@ -562,3 +562,58 @@ void vp_reset(struct vbuf *vb)
- 	if (vpx)
- 		vpx->vp_top = vpx->vp_baseptr;
- }
-+
-+/* heap sort that takes an opaque context - directly copied from lib/sort.c */
-+static void u32_swap(void *opaque, void *a, void *b, int size)
-+{
-+	u32 t = *(u32 *)a;
-+	*(u32 *)a = *(u32 *)b;
-+	*(u32 *)b = t;
-+}
-+
-+static void generic_swap(void *opaque, void *a, void *b, int size)
-+{
-+	char t;
-+	do {
-+		t = *(char *)a;
-+		*(char *)a++ = *(char *)b;
-+		*(char *)b++ = t;
-+	} while (--size > 0);
-+}
-+
-+void ctx_sort(void *opaque, void *base, size_t num, size_t size,
-+	      int (*cmp_func)(void *, const void *, const void *),
-+	      void (*swap_func)(void *, void *, void *, int size))
-+{
-+	int i = (num/2 - 1) * size, n = num * size, c, r;
-+
-+	if (!swap_func)
-+		swap_func = (size == 4 ? u32_swap : generic_swap);
-+
-+	/* heapify */
-+	for ( ; i >= 0; i -= size) {
-+		for (r = i; r * 2 + size < n; r  = c) {
-+			c = r * 2 + size;
-+			if (c < n - size &&
-+			    cmp_func(opaque, base + c, base + c + size) < 0)
-+				c += size;
-+			if (cmp_func(opaque, base + r, base + c) >= 0)
-+				break;
-+			swap_func(opaque, base + r, base + c, size);
-+		}
-+	}
-+
-+	/* sort */
-+	for (i = n - size; i > 0; i -= size) {
-+		swap_func(opaque, base, base + i, size);
-+		for (r = 0; r * 2 + size < i; r = c) {
-+			c = r * 2 + size;
-+			if (c < i - size &&
-+			    cmp_func(opaque, base + c, base + c + size) < 0)
-+				c += size;
-+			if (cmp_func(opaque, base + r, base + c) >= 0)
-+				break;
-+			swap_func(opaque, base + r, base + c, size);
-+		}
-+	}
-+}
-diff --git a/fs/gfs2/util.h b/fs/gfs2/util.h
-index 40fb692..3e10d72 100644
---- a/fs/gfs2/util.h
-+++ b/fs/gfs2/util.h
-@@ -210,5 +210,9 @@ int vp_read(struct vbuf *vb, void *to, const void *from, size_t count);
- int vp_write(struct vbuf *vb, void *to, const void *from, size_t count);
- int vp_append(struct vbuf *vb, const void *from, size_t count);
- int vp_memset(struct vbuf *vb, void *to, int c, size_t count);
-+
-+void ctx_sort(void *opaque, void *base, size_t num, size_t size,
-+	      int (*cmp_func)(void *, const void *, const void *),
-+	      void (*swap_func)(void *, void *, void *, int size));
-  
- #endif /* __UTIL_DOT_H__ */
+> It's far from just being signals.  There's access_process_vm, ptrace,
+> all the signal functions, clock_gettime (see CPUCLOCK_PID -- yes, this
+> is ridiculous), and probably some others that I've forgotten about or
+> never noticed in the first place.
+
+Yeah, that would be very interesting.
+
+-Kees
+
 -- 
-1.8.1.4
-
+Kees Cook
+Chrome OS Security
