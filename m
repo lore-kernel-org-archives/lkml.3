@@ -1,115 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760166AbaGYKdZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 06:33:25 -0400
-Received: from mga02.intel.com ([134.134.136.20]:19616 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751318AbaGYKdX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 06:33:23 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,730,1400050800"; 
-   d="scan'208";a="578849422"
-Date: Fri, 25 Jul 2014 15:57:05 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Geert Uytterhoeven <geert+renesas@glider.be>
-Cc: Dan Williams <dan.j.williams@intel.com>, dmaengine@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 1/6] dmaengine: Update documentation for inline
- wrappers
-Message-ID: <20140725102705.GR8181@intel.com>
-References: <1405095208-14642-1-git-send-email-geert+renesas@glider.be>
+	id S1760185AbaGYKda (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 06:33:30 -0400
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:65115 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751318AbaGYKd0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jul 2014 06:33:26 -0400
+Message-ID: <53D2322E.9010802@linaro.org>
+Date: Fri, 25 Jul 2014 18:32:14 +0800
+From: Hanjun Guo <hanjun.guo@linaro.org>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1405095208-14642-1-git-send-email-geert+renesas@glider.be>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Mark Brown <broonie@kernel.org>
+CC: Catalin Marinas <catalin.marinas@arm.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Graeme Gregory <graeme.gregory@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, Grant Likely <grant.likely@linaro.org>,
+        Sudeep Holla <Sudeep.Holla@arm.com>, Will Deacon <will.deacon@arm.com>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Robert Richter <rric@kernel.org>, Lv Zheng <lv.zheng@intel.com>,
+        Robert Moore <robert.moore@intel.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Liviu Dudau <Liviu.Dudau@arm.com>,
+        Randy Dunlap <rdunlap@infradead.org>, Charles.Garcia-Tobin@arm.com,
+        linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linaro-acpi-private@linaro.org
+Subject: Re: [PATCH 04/19] ARM64 / ACPI: Introduce arch_fix_phys_package_id()
+ for cpu topology
+References: <1406206825-15590-1-git-send-email-hanjun.guo@linaro.org> <1406206825-15590-5-git-send-email-hanjun.guo@linaro.org> <20140724144327.GJ17528@sirena.org.uk>
+In-Reply-To: <20140724144327.GJ17528@sirena.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 11, 2014 at 06:13:23PM +0200, Geert Uytterhoeven wrote:
-> During the last few years, several inline wrappers for DMA operations have
-> been introduced:
->   - commit 16052827d98fbc13c31ebad560af4bd53e2b4dd5 ("dmaengine/dma_slave:
->     introduce inline wrappers"),
->   - commit a14acb4ac2a1486f6633c55eb7f7ded07f3ec9fc ("DMAEngine: add
->     dmaengine_prep_interleaved_dma wrapper for interleaved api"),
->   - commit 6e3ecaf0ad49de0bed829d409a164e7107c02993 ("dmaengine: add
->     wrapper functions for device control functions").
+On 2014-7-24 22:43, Mark Brown wrote:
+> On Thu, Jul 24, 2014 at 09:00:10PM +0800, Hanjun Guo wrote:
 > 
-> Update the documentation to use the wrappers.
+>> +/*
+>> + * Use the CPU slot number provided by ACPI to update the physical
+>> + * package id when cpuid_topo->cluster_id is not available, then we
+>> + * can get the right value in the "physical id" field of /proc/cpuinfo.
+>> + */
+>> +void arch_fix_phys_package_id(int num, u32 slot)
+>> +{
+>> +	struct cpu_topology *cpuid_topo = &cpu_topology[num];
+>> +
+>> +	if (cpuid_topo->cluster_id == -1)
+>> +		cpuid_topo->cluster_id = slot;
+>> +}
+>> +EXPORT_SYMBOL_GPL(arch_fix_phys_package_id);
 > 
-> Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
-> ---
-> v2:
->   - Added one more conversion in the textual explanation.
+> As I said on the previous version of this patch are you sure this runs
+> at a point between the cluster ID getting initialized to -1 and the slot
+> being initialized (bear in mind that we now use MPIDR information if
+> availabe).  I don't understand why we don't just unconditionally use the
+> value given.
 
-I have already applied v1, can you please send the update on added ones
+Ah, sorry, it should be unconditionally used as you said, and I remember
+the comments in last version, but the patch shows not, must be something
+wrong, will update it in next version.
 
 Thanks
--- 
-~Vinod
+Hanjun
 
-> ---
->  Documentation/dmaengine.txt | 15 +++++++--------
->  1 file changed, 7 insertions(+), 8 deletions(-)
-> 
-> diff --git a/Documentation/dmaengine.txt b/Documentation/dmaengine.txt
-> index 87d3f192e160..11fb87ff6cd0 100644
-> --- a/Documentation/dmaengine.txt
-> +++ b/Documentation/dmaengine.txt
-> @@ -84,21 +84,21 @@ The slave DMA usage consists of following steps:
->     the given transaction.
->  
->     Interface:
-> -	struct dma_async_tx_descriptor *(*chan->device->device_prep_slave_sg)(
-> +	struct dma_async_tx_descriptor *dmaengine_prep_slave_sg(
->  		struct dma_chan *chan, struct scatterlist *sgl,
->  		unsigned int sg_len, enum dma_data_direction direction,
->  		unsigned long flags);
->  
-> -	struct dma_async_tx_descriptor *(*chan->device->device_prep_dma_cyclic)(
-> +	struct dma_async_tx_descriptor *dmaengine_prep_dma_cyclic(
->  		struct dma_chan *chan, dma_addr_t buf_addr, size_t buf_len,
->  		size_t period_len, enum dma_data_direction direction);
->  
-> -	struct dma_async_tx_descriptor *(*device_prep_interleaved_dma)(
-> +	struct dma_async_tx_descriptor *dmaengine_prep_interleaved_dma(
->  		struct dma_chan *chan, struct dma_interleaved_template *xt,
->  		unsigned long flags);
->  
->     The peripheral driver is expected to have mapped the scatterlist for
-> -   the DMA operation prior to calling device_prep_slave_sg, and must
-> +   the DMA operation prior to calling dmaengine_prep_slave_sg(), and must
->     keep the scatterlist mapped until the DMA operation has completed.
->     The scatterlist must be mapped using the DMA struct device.
->     If a mapping needs to be synchronized later, dma_sync_*_for_*() must be
-> @@ -109,8 +109,7 @@ The slave DMA usage consists of following steps:
->  	if (nr_sg == 0)
->  		/* error */
->  
-> -	desc = chan->device->device_prep_slave_sg(chan, sgl, nr_sg,
-> -			direction, flags);
-> +	desc = dmaengine_prep_slave_sg(chan, sgl, nr_sg, direction, flags);
->  
->     Once a descriptor has been obtained, the callback information can be
->     added and the descriptor must then be submitted.  Some DMA engine
-> @@ -190,11 +189,11 @@ Further APIs:
->     description of this API.
->  
->     This can be used in conjunction with dma_async_is_complete() and
-> -   the cookie returned from 'descriptor->submit()' to check for
-> +   the cookie returned from dmaengine_submit() to check for
->     completion of a specific DMA transaction.
->  
->     Note:
->  	Not all DMA engine drivers can return reliable information for
->  	a running DMA channel.  It is recommended that DMA engine users
-> -	pause or stop (via dmaengine_terminate_all) the channel before
-> +	pause or stop (via dmaengine_terminate_all()) the channel before
->  	using this API.
-> -- 
-> 1.9.1
-> 
-
--- 
