@@ -1,47 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760989AbaGYTbt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 15:31:49 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:32153 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753423AbaGYTbr (ORCPT
+	id S1761025AbaGYTcr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 15:32:47 -0400
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:53721 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758877AbaGYTcp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 15:31:47 -0400
-To: Christoph Hellwig <hch@lst.de>
-Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
-        linux-scsi@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
-        Bart Van Assche <bvanassche@fusionio.com>,
-        Mike Christie <michaelc@cs.wisc.edu>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Robert Elliott <Elliott@hp.com>, Webb Scales <webbnh@hp.com>,
-        linux-kernel@vger.kernel.org, Hiral Patel <hiralpat@cisco.com>,
-        Suma Ramars <sramars@cisco.com>, Brian Uchino <buchino@cisco.com>
-Subject: Re: [PATCH 14/14] fnic: reject device resets without assigned tags for the blk-mq case
-From: "Martin K. Petersen" <martin.petersen@oracle.com>
-Organization: Oracle Corporation
-References: <1405678393-11497-1-git-send-email-hch@lst.de>
-	<1405678393-11497-15-git-send-email-hch@lst.de>
-Date: Fri, 25 Jul 2014 15:31:11 -0400
-In-Reply-To: <1405678393-11497-15-git-send-email-hch@lst.de> (Christoph
-	Hellwig's message of "Fri, 18 Jul 2014 12:13:13 +0200")
-Message-ID: <yq17g31grr4.fsf@sermon.lab.mkp.net>
-User-Agent: Gnus/5.130012 (Ma Gnus v0.12) Emacs/24.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+	Fri, 25 Jul 2014 15:32:45 -0400
+From: Reyad Attiyat <reyad.attiyat@gmail.com>
+To: jic23@kernel.org, srinivas.pandruvada@linux.intel.com,
+        linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Reyad Attiyat <reyad.attiyat@gmail.com>
+Subject: [PATCH] iio: hid-sensor-magn-3d: Fix build warning
+Date: Fri, 25 Jul 2014 14:32:25 -0500
+Message-Id: <1406316745-3351-1-git-send-email-reyad.attiyat@gmail.com>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "Christoph" == Christoph Hellwig <hch@lst.de> writes:
+Fix build warning, sizeof() called on dynamically
+sized pointer, by removing the call and the dependent
+function parameter. It is not needed or used in this
+driver, when pushing values to an iio buffer.
 
-Christoph> Either someone who can actually test the hardware will have
-Christoph> to come up with a similar hack for the blk-mq case, or we'll
-Christoph> have to bite the bullet and fix the way the EH ioctls work
-Christoph> for real, but until that happens we fail these explicit
-Christoph> requests here.
+Signed-off-by: Reyad Attiyat <reyad.attiyat@gmail.com>
+---
+ drivers/iio/magnetometer/hid-sensor-magn-3d.c | 7 ++-----
+ 1 file changed, 2 insertions(+), 5 deletions(-)
 
-Reviewed-by: Martin K. Petersen <martin.petersen@oracle.com>
-
+diff --git a/drivers/iio/magnetometer/hid-sensor-magn-3d.c b/drivers/iio/magnetometer/hid-sensor-magn-3d.c
+index 3ec777a..915ffb9 100644
+--- a/drivers/iio/magnetometer/hid-sensor-magn-3d.c
++++ b/drivers/iio/magnetometer/hid-sensor-magn-3d.c
+@@ -246,8 +246,7 @@ static const struct iio_info magn_3d_info = {
+ };
+ 
+ /* Function to push data to buffer */
+-static void hid_sensor_push_data(struct iio_dev *indio_dev, const void *data,
+-	int len)
++static void hid_sensor_push_data(struct iio_dev *indio_dev, const void *data)
+ {
+ 	dev_dbg(&indio_dev->dev, "hid_sensor_push_data\n");
+ 	iio_push_to_buffers(indio_dev, data);
+@@ -263,9 +262,7 @@ static int magn_3d_proc_event(struct hid_sensor_hub_device *hsdev,
+ 
+ 	dev_dbg(&indio_dev->dev, "magn_3d_proc_event\n");
+ 	if (atomic_read(&magn_state->common_attributes.data_ready))
+-		hid_sensor_push_data(indio_dev,
+-				magn_state->iio_vals,
+-				sizeof(magn_state->iio_vals));
++		hid_sensor_push_data(indio_devm, magn_state->iio_vals);
+ 
+ 	return 0;
+ }
 -- 
-Martin K. Petersen	Oracle Linux Engineering
+1.9.3
+
