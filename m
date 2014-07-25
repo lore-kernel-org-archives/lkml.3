@@ -1,92 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760384AbaGYMbJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 08:31:09 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:64137 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1759259AbaGYMbH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 08:31:07 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Dmitry Torokhov <dtor@google.com>
-Subject: Re: [RFC][PATCH] irq: Rework IRQF_NO_SUSPENDED
-Date: Fri, 25 Jul 2014 14:49:34 +0200
-Message-ID: <2634160.AMXQm5EuML@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <alpine.DEB.2.10.1407251109390.23352@nanos>
-References: <20140724212620.GO3935@laptop> <13290270.IfKaUSRMLR@vostro.rjw.lan> <alpine.DEB.2.10.1407251109390.23352@nanos>
+	id S1760401AbaGYMbN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 08:31:13 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:40017 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759259AbaGYMbK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jul 2014 08:31:10 -0400
+Date: Fri, 25 Jul 2014 13:31:06 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Vlastimil Babka <vbabka@suse.cz>
+Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>, linux-kernel@vger.kernel.org,
+        Minchan Kim <minchan@kernel.org>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+Subject: Re: [PATCH V4 07/15] mm, compaction: khugepaged should not give up
+ due to need_resched()
+Message-ID: <20140725123106.GB10819@suse.de>
+References: <1405518503-27687-1-git-send-email-vbabka@suse.cz>
+ <1405518503-27687-8-git-send-email-vbabka@suse.cz>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <1405518503-27687-8-git-send-email-vbabka@suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, July 25, 2014 11:27:25 AM Thomas Gleixner wrote:
-> On Fri, 25 Jul 2014, Rafael J. Wysocki wrote:
-> > On Thursday, July 24, 2014 11:26:20 PM Peter Zijlstra wrote:
-> > > Subject: irq: Rework IRQF_NO_SUSPENDED
-> > > From: Peter Zijlstra <peterz@infradead.org>
-> > > Date: Thu Jul 24 22:34:50 CEST 2014
-> > > 
-> > > Typically when devices are suspended they're quiesced such that they
-> > > will not generate any further interrupts.
-> > > 
-> > > However some devices should still generate interrupts, even when
-> > > suspended, typically used to wake the machine back up.
-> > > 
-> > > Such logic should ideally be contained inside each driver, if it can
-> > > generate interrupts when suspended, it knows about this and the
-> > > interrupt handler can deal with it.
-> > > 
-> > > Except of course for shared interrupts, when such a wakeup device is
-> > > sharing an interrupt line with a device that does not expect
-> > > interrupts while suspended things can go funny.
-> > > 
-> > > This is where IRQF_NO_SUSPEND comes in, the idea is that drivers that
-> > > have the capability to wake the machine set IRQF_NO_SUSPEND and their
-> > > handler will still be called, even when the IRQ subsystem is formally
-> > > suspended. Handlers without IRQF_NO_SUSPEND will not be called.
-> > > 
-> > > This replaced the prior implementation of IRQF_NO_SUSPEND which had
-> > > a number of fatal issues in that it didn't actually work for the
-> > > shared case, exactly the case it should be helping.
-> > > 
-> > > There is still enable_irq_wake()/IRQD_WAKEUP_STATE that tries to serve
-> > > a similar purpose but is equially wrecked for shared interrupts,
-> > > ideally this would be removed.
-> > 
-> > Let me comment about this particular thing.
-> > 
-> > I had a discussion with Dmitry about that and his argument was that
-> > enable_irq_wake() should imply IRQF_NO_SUSPEND, because drivers that
-> > set up interrupts for system wakeup should expect those interrupts to
-> > trigger at any time, including system suspend.  Hence the patch that
-> > added the IRQD_WAKEUP_STATE check to __disable_irq().
-> > 
-> > However, in the face of the problem that is being addressed here I'm
-> > not really sure that this argument is valid, because if the driver
-> > calling enable_irq_wake() is sharing the IRQ with another one, the
-> > other driver may not actually know that the IRQ will be a wakeup one
-> > and still may not expect interrupts to come to it during system
-> > suspend/resume.
-> > 
-> > Yes, drivers using enable_irq_wake() will likely want IRQF_NO_SUSPEND to
-> > be set for their irqactions, but that should not imply "no suspend" for
-> > all irqactions sharing the same desc.  So I guess it may be better to go
-> > forth and use a global "interrupts suspended" state variable instead of the
-> > IRQS_SUSPENDED flag for each desc and throw away the IRQD_WAKEUP_STATE
-> > check from suspend_device_irqs() entirely.
+On Wed, Jul 16, 2014 at 03:48:15PM +0200, Vlastimil Babka wrote:
+> Async compaction aborts when it detects zone lock contention or need_resched()
+> is true. David Rientjes has reported that in practice, most direct async
+> compactions for THP allocation abort due to need_resched(). This means that a
+> second direct compaction is never attempted, which might be OK for a page
+> fault, but khugepaged is intended to attempt a sync compaction in such case and
+> in these cases it won't.
 > 
-> How should that global state work?
+> This patch replaces "bool contended" in compact_control with an int that
+> distinguieshes between aborting due to need_resched() and aborting due to lock
+> contention. This allows propagating the abort through all compaction functions
+> as before, but passing the abort reason up to __alloc_pages_slowpath() which
+> decides when to continue with direct reclaim and another compaction attempt.
+> 
+> Another problem is that try_to_compact_pages() did not act upon the reported
+> contention (both need_resched() or lock contention) immediately and would
+> proceed with another zone from the zonelist. When need_resched() is true, that
+> means initializing another zone compaction, only to check again need_resched()
+> in isolate_migratepages() and aborting. For zone lock contention, the
+> unintended consequence is that the lock contended status reported back to the
+> allocator is detrmined from the last zone where compaction was attempted, which
+> is rather arbitrary.
+> 
+> This patch fixes the problem in the following way:
+> - async compaction of a zone aborting due to need_resched() or fatal signal
+>   pending means that further zones should not be tried. We report
+>   COMPACT_CONTENDED_SCHED to the allocator.
+> - aborting zone compaction due to lock contention means we can still try
+>   another zone, since it has different set of locks. We report back
+>   COMPACT_CONTENDED_LOCK only if *all* zones where compaction was attempted,
+>   it was aborted due to lock contention.
+> 
+> As a result of these fixes, khugepaged will proceed with second sync compaction
+> as intended, when the preceding async compaction aborted due to need_resched().
+> Page fault compactions aborting due to need_resched() will spare some cycles
+> previously wasted by initializing another zone compaction only to abort again.
+> Lock contention will be reported only when compaction in all zones aborted due
+> to lock contention, and therefore it's not a good idea to try again after
+> reclaim.
+> 
+> Reported-by: David Rientjes <rientjes@google.com>
+> Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
+> Cc: Minchan Kim <minchan@kernel.org>
+> Cc: Mel Gorman <mgorman@suse.de>
+> Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+> Cc: Michal Nazarewicz <mina86@mina86.com>
+> Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> Cc: Christoph Lameter <cl@linux.com>
+> Cc: Rik van Riel <riel@redhat.com>
 
-Well, never mind.
+Acked-by: Mel Gorman <mgorman@suse.de>
 
-If the face of your remark about the level-triggered interrupts that's all moot.
-
-Rafael
-
+-- 
+Mel Gorman
+SUSE Labs
