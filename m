@@ -1,12 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934880AbaGYRrC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 13:47:02 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:57628 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753938AbaGYRq7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 13:46:59 -0400
+	id S935044AbaGYRrs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 13:47:48 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:48340 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753254AbaGYRq4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jul 2014 13:46:56 -0400
 From: Grygorii Strashko <grygorii.strashko@ti.com>
 To: <santosh.shilimkar@ti.com>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
         <khilman@linaro.org>, Geert Uytterhoeven <geert+renesas@glider.be>,
@@ -16,94 +15,82 @@ CC: <ben.dooks@codethink.co.uk>, <laurent.pinchart@ideasonboard.com>,
         <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
         <linux-sh@vger.kernel.org>,
         Grygorii Strashko <grygorii.strashko@ti.com>
-Subject: [RFC PATCH 3/3] ARM: keystone: pm_domain: setup clk pm domain clocks from DT
-Date: Fri, 25 Jul 2014 21:31:36 +0300
-Message-ID: <1406313096-29761-4-git-send-email-grygorii.strashko@ti.com>
+Subject: [RFC PATCH 0/3] PM / clock_ops: allow to specify custom pm_clk_notifier callback
+Date: Fri, 25 Jul 2014 21:31:33 +0300
+Message-ID: <1406313096-29761-1-git-send-email-grygorii.strashko@ti.com>
 X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1406313096-29761-1-git-send-email-grygorii.strashko@ti.com>
-References: <1406313096-29761-1-git-send-email-grygorii.strashko@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch implements custom pm_clk_notifier callback for Keystone 2
-CLK PM domain which fills list of clocks for Device with all
-clocks assigned to this Device in DT.
+Hi,
 
-After this patch .con_ids field in pm_clk_notifier_block is not
-used and there are no limitation for clocks names in DT any more.
+The CLK PM domain (clock_ops.c) assumes that platform code should always provide
+list of Connection IDs of the clock (con_id) in pm_clk_notifier_block structure.
+Then CLK PM domain uses these con_ids to setup list of clocks per device.
 
-Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
----
+Such approach is inconvenient when devices can have different number
+of clocks. For example, if maximum number of clocks used by
+devices is 4 the pm_clk_notifier_block structure will look like:
+
+static struct pm_clk_notifier_block platform_domain_notifier = {
+	.pm_domain = &keystone_pm_domain,
+	.con_ids = { "fck", "opt1", "opt2", "opt3", NULL },
+};
+
+More over, clocks in DT have to be named using only above con_ids:
+	clocks = <&paclk13>, <&clkcpgmac>, <&chipclk12>;
+	clock-names = "fck", "opt1", "opt2";
+
+It makes hard to enable/support Runtime PM in case when some HW modules are used
+by different SoCs or there are few version of the same SoC, because clock trees
+can be changed significantly in all such cases.
+
+This patch set allows to specify custom pm_clk_notifier callback from
+platform code and in such way makes CLK PM domain initialization
+more flexible. Also, It updates Keystone 2 platform code to provide custom
+callback which fills list of clocks for Device with all clocks assigned to this
+Device in DT.
+More over, It's safe for Keystone 2 to perform CLK PM domain initialization
+at device's binding time instead of device's creation time.
+
+I've posted these patches because I need fully enable Runtime PM on Keystone 2
+where all HW modules are controlled using clocks only. That's why CLK PM domain 
+fits our needs perfectly. Also, on Keystone 2 clocks are initialized early and
+they are available at device creation time. The main problems from my side are:
+ - every time when support for new HW modules is added the ".con_ids" array 
+   need to be checked and updated;
+ - restriction for clock's names in DT - to be named using only above con_ids
+   It's ugly.
+
+I hope, this approach to be accepted at least as temporal solution until 
+the generic solution is not found.
+
+Thanks for your comments!
+
+PS: patch 1 was reused from [1].
+
+Regards,
+-grygorii
+
+[1] Previously, same problem was discussed in, but no final solution was accepted:
+ "[PATCH/RFC 0/4] of: Register clocks for Runtime PM with PM core"
+ https://lkml.org/lkml/2014/4/24/1118
+
+Geert Uytterhoeven (1):
+  PM / clock_ops: Add pm_clk_add_clk()
+
+Grygorii Strashko (2):
+  PM / clock_ops: allow to specify custom pm_clk_notifier callback
+  ARM: keystone: pm_domain: setup clk pm domain clocks from DT
+
  arch/arm/mach-keystone/pm_domain.c |   46 ++++++++++++++++++++++++++++++++++++
- 1 file changed, 46 insertions(+)
+ drivers/base/power/clock_ops.c     |   43 ++++++++++++++++++++++++---------
+ include/linux/pm_clock.h           |    3 +++
+ 3 files changed, 81 insertions(+), 11 deletions(-)
 
-diff --git a/arch/arm/mach-keystone/pm_domain.c b/arch/arm/mach-keystone/pm_domain.c
-index ca79dda..56542d2 100644
---- a/arch/arm/mach-keystone/pm_domain.c
-+++ b/arch/arm/mach-keystone/pm_domain.c
-@@ -47,6 +47,51 @@ static int keystone_pm_runtime_resume(struct device *dev)
- 
- 	return pm_generic_runtime_resume(dev);
- }
-+
-+static int keystone_pm_clk_notify(struct notifier_block *nb,
-+				  unsigned long action, void *data)
-+{
-+	struct pm_clk_notifier_block *clknb;
-+	struct device *dev = data;
-+	int error;
-+	unsigned int i;
-+	struct clk *clk;
-+	struct device_node *np = dev->of_node;
-+
-+	dev_dbg(dev, "%s() %ld\n", __func__, action);
-+
-+	clknb = container_of(nb, struct pm_clk_notifier_block, nb);
-+
-+	switch (action) {
-+	case BUS_NOTIFY_BIND_DRIVER:
-+		if (dev->pm_domain)
-+			break;
-+
-+		error = pm_clk_create(dev);
-+		if (error)
-+			break;
-+
-+		dev->pm_domain = clknb->pm_domain;
-+
-+		for (i = 0; (clk = of_clk_get(np, i)) && !IS_ERR(clk); i++) {
-+			if (pm_clk_add_clk(dev, clk))
-+				clk_put(clk);
-+		}
-+
-+		break;
-+	case BUS_NOTIFY_UNBOUND_DRIVER:
-+		if (dev->pm_domain != clknb->pm_domain)
-+			break;
-+
-+		dev->pm_domain = NULL;
-+		pm_clk_destroy(dev);
-+		break;
-+	}
-+
-+	return 0;
-+}
-+#else
-+
- #endif
- 
- static struct dev_pm_domain keystone_pm_domain = {
-@@ -59,6 +104,7 @@ static struct dev_pm_domain keystone_pm_domain = {
- 
- static struct pm_clk_notifier_block platform_domain_notifier = {
- 	.pm_domain = &keystone_pm_domain,
-+	.nb = { .notifier_call = keystone_pm_clk_notify, },
- };
- 
- static struct of_device_id of_keystone_table[] = {
 -- 
 1.7.9.5
 
