@@ -1,90 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760995AbaGYUnY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 16:43:24 -0400
-Received: from mail-qa0-f47.google.com ([209.85.216.47]:51978 "EHLO
-	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753729AbaGYUnW (ORCPT
+	id S1760301AbaGYU6A (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 16:58:00 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:31371 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752279AbaGYU56 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 16:43:22 -0400
-Date: Fri, 25 Jul 2014 16:43:15 -0400
-From: Jerome Glisse <j.glisse@gmail.com>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: Joerg Roedel <joro@8bytes.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Rik van Riel <riel@redhat.com>, Hugh Dickins <hughd@google.com>,
-        Mel Gorman <mgorman@suse.de>, Johannes Weiner <jweiner@redhat.com>,
-        Jerome Glisse <jglisse@redhat.com>, jroedel@suse.de,
-        Jay.Cornwall@amd.com, Oded.Gabbay@amd.com, John.Bridgman@amd.com,
-        Suravee.Suthikulpanit@amd.com, ben.sander@amd.com,
-        David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, iommu@lists.linux-foundation.org
-Subject: Re: [PATCH 1/3] mmu_notifier: Add mmu_notifier_invalidate_range()
-Message-ID: <20140725204314.GA5478@gmail.com>
-References: <1406212541-25975-1-git-send-email-joro@8bytes.org>
- <1406212541-25975-2-git-send-email-joro@8bytes.org>
- <20140725131639.698f18ff@jbarnes-desktop>
+	Fri, 25 Jul 2014 16:57:58 -0400
+Message-ID: <53D2C38A.70601@oracle.com>
+Date: Fri, 25 Jul 2014 16:52:26 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140725131639.698f18ff@jbarnes-desktop>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Andrey Ryabinin <a.ryabinin@samsung.com>,
+        "David S. Miller" <davem@davemloft.net>
+CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Eric Dumazet <edumazet@google.com>
+Subject: Re: net: socket: NULL ptr deref in sendmsg
+References: <53C2FF3D.4030201@oracle.com> <53D2768E.2040902@samsung.com>
+In-Reply-To: <53D2768E.2040902@samsung.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 25, 2014 at 01:16:39PM -0700, Jesse Barnes wrote:
-> On Thu, 24 Jul 2014 16:35:39 +0200
-> Joerg Roedel <joro@8bytes.org> wrote:
-> 
-> > From: Joerg Roedel <jroedel@suse.de>
-> > 
-> > This notifier closes an important gap with the current
-> > invalidate_range_start()/end() notifiers. The _start() part
-> > is called when all pages are still mapped while the _end()
-> > notifier is called when all pages are potentially unmapped
-> > and already freed.
-> > 
-> > This does not allow to manage external (non-CPU) hardware
-> > TLBs with MMU-notifiers because there is no way to prevent
-> > that hardware will establish new TLB entries between the
-> > calls of these two functions. But this is a requirement to
-> > the subsytem that implements these existing notifiers.
-> > 
-> > To allow managing external TLBs the MMU-notifiers need to
-> > catch the moment when pages are unmapped but not yet freed.
-> > This new notifier catches that moment and notifies the
-> > interested subsytem when pages that were unmapped are about
-> > to be freed. The new notifier will only be called between
-> > invalidate_range_start()/end().
-> 
-> So if we were actually sharing page tables, we should be able to make
-> start/end no-ops and just use this new callback, assuming we didn't
-> need to do any other serialization or debug stuff, right?
-> 
-> Seems like a good addition, and saves us a bunch of trouble...
+On 07/25/2014 11:23 AM, Andrey Ryabinin wrote:
+> After this report there was no usual "Unable to handle kernel NULL pointer dereference"
+> and this gave me a clue that address 0 is mapped and contains valid socket address structure in it.
 
-Pondering on that i think there is a missing call to mmu_notifier_invalidate_range
-inside move_huge_pmd which is call by move_page_tables. 
+Interesting. Does it mean that all network protocols that check it for being NULL instead of checking
+the length are incorrect?
 
-But otherwise yes, you should not need to register range_start/end() callback. It
-should be enought to only register the invalidate_range callback.
+(such as:)
 
-Note that on my side i will remain an user of range_start/end() but other listener
-like kvm or xen or sgi might want to revisit there code with this new callback.
+        if (msg->msg_name) {
+                DECLARE_SOCKADDR(struct sockaddr_can *, addr, msg->msg_name);
 
-Cheers,
-Jérôme
+                [...]
 
-> 
-> Thanks,
-> -- 
-> Jesse Barnes, Intel Open Source Technology Center
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+
+Thanks,
+Sasha
