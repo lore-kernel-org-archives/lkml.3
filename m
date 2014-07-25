@@ -1,64 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760305AbaGYM2z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 08:28:55 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:35631 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751713AbaGYM2y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 08:28:54 -0400
-From: Mugunthan V N <mugunthanvnm@ti.com>
-To: <netdev@vger.kernel.org>
-CC: <davem@davemloft.net>, <ben@decadent.org.uk>, <linux-api@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Mugunthan V N <mugunthanvnm@ti.com>
-Subject: [RFC PATCH 1/1] ethtool: adding support for multiple slave port configuration
-Date: Fri, 25 Jul 2014 17:58:25 +0530
-Message-ID: <1406291305-22286-1-git-send-email-mugunthanvnm@ti.com>
-X-Mailer: git-send-email 2.0.2.673.g9ab0882
+	id S1760323AbaGYM3D (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 08:29:03 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:50715 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1760148AbaGYM3A (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jul 2014 08:29:00 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        Linux PM list <linux-pm@vger.kernel.org>
+Subject: Re: [RFC][PATCH] irq: Rework IRQF_NO_SUSPENDED
+Date: Fri, 25 Jul 2014 14:47:25 +0200
+Message-ID: <1805200.1exkRoNuC2@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <alpine.DEB.2.10.1407251135590.23352@nanos>
+References: <20140724212620.GO3935@laptop> <alpine.DEB.2.10.1407251135590.23352@nanos>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some Ethernet Swtich controllers like CPSW in AM335x, TI814x, DRA7x and
-AM43xx SoCs, Network Coprocessor in AM5K2E0x, Realtek Switch controllers
-etc has to capability of conneting multiple networks using L2 switching
-and has multiple phys. With the existing code, ethtool can communicate
-only to one phy.
+On Friday, July 25, 2014 11:40:48 AM Thomas Gleixner wrote:
+> On Thu, 24 Jul 2014, Peter Zijlstra wrote:
+> > @@ -29,14 +29,20 @@ void suspend_device_irqs(void)
+> >  	for_each_irq_desc(irq, desc) {
+> >  		unsigned long flags;
+> >  
+> > +		/*
+> > +		 * Ideally this would be a global state, but we cannot
+> > +		 * for the trainwreck that is IRQD_WAKEUP_STATE.
+> > +		 */
+> >  		raw_spin_lock_irqsave(&desc->lock, flags);
+> > -		__disable_irq(desc, irq, true);
+> > +		if (!irqd_has_set(&desc->irq_data, IRQD_WAKEUP_STATE))
+> > +			desc->istate |= IRQS_SUSPENDED;
+> >  		raw_spin_unlock_irqrestore(&desc->lock, flags);
+> >  	}
+> >  
+> > -	for_each_irq_desc(irq, desc)
+> > +	for_each_irq_desc(irq, desc) {
+> >  		if (desc->istate & IRQS_SUSPENDED)
+> >  			synchronize_irq(irq);
+> > +	}
+> >  }
+> 
+> So, instead of disabling the interrupt you just mark it
+> suspended. Good luck with level triggered interrupt lines then.
+> 
+> Assume the interrupt fires after you marked it suspended. Then the
+> flow handler will call handle_irq_event() which will do nothing and
+> return handled. So the flow handler will reenable the interrupt line,
+> which will cause the interrupt to fire immediately again after the
+> RETI. Guess how much progress the system is going to make when that
+> happens.
 
-To enable user to communicate multiple phy connected to single Ethernet
-Switch controller, intoducing a optional new parameter in Ethtool interface
-to pass which slave to set/get the phy configuration.
+Good point.
 
-Signed-off-by: Mugunthan V N <mugunthanvnm@ti.com>
+So it looks like we really need the "suspend" thing to either disable
+the interrupt entirely (in which case all handlers for all actions
+will not be invoked after it's been suspended) or leave it enabled
+(causing all handlers to be invoked all the time).
+
+I'm not sure if we can do much beyond what's already in your tree
+about that, then.
+
+Well, perhaps the patch failing the irq request in case of the
+IRQF_NO_SUSPEND mismatch is a bit too drastic.  Instead, we could
+just print a warning in __setup_irq() in that case and then check
+IRQF_NO_SUSPEND for all actions in __disable_irq().
+
+What about this?
+
 ---
- include/uapi/linux/ethtool.h | 6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ kernel/irq/manage.c |   22 +++++++++++++++++++---
+ 1 file changed, 19 insertions(+), 3 deletions(-)
 
-diff --git a/include/uapi/linux/ethtool.h b/include/uapi/linux/ethtool.h
-index 96ade34..3011427 100644
---- a/include/uapi/linux/ethtool.h
-+++ b/include/uapi/linux/ethtool.h
-@@ -60,6 +60,9 @@
-  *	and other link features that the link partner advertised
-  *	through autonegotiation; 0 if unknown or not applicable.
-  *	Read-only.
-+ * @slave_port: Specify which slave port to be used to set/get
-+ *	parmeters, for example which slave port phy to be used for
-+ *	set/get phy capabilities
-  *
-  * The link speed in Mbps is split between @speed and @speed_hi.  Use
-  * the ethtool_cmd_speed() and ethtool_cmd_speed_set() functions to
-@@ -107,7 +110,8 @@ struct ethtool_cmd {
- 	__u8	eth_tp_mdix;
- 	__u8	eth_tp_mdix_ctrl;
- 	__u32	lp_advertising;
--	__u32	reserved[2];
-+	__u32	slave_port;
-+	__u32	reserved;
- };
+Index: linux-pm/kernel/irq/manage.c
+===================================================================
+--- linux-pm.orig/kernel/irq/manage.c
++++ linux-pm/kernel/irq/manage.c
+@@ -385,8 +385,17 @@ setup_affinity(unsigned int irq, struct
+ void __disable_irq(struct irq_desc *desc, unsigned int irq, bool suspend)
+ {
+ 	if (suspend) {
+-		if (!desc->action || (desc->action->flags & IRQF_NO_SUSPEND)
+-		    || irqd_has_set(&desc->irq_data, IRQD_WAKEUP_STATE))
++		struct irqaction *action = desc->action;
++		unsigned int flags;
++
++		if (!action || irqd_has_set(&desc->irq_data, IRQD_WAKEUP_STATE))
++			return;
++		flags = IRQF_NO_SUSPEND;
++		do {
++			flags &= action->flags;
++			action = action->next;
++		} while (action);
++		if (flags)
+ 			return;
+ 		desc->istate |= IRQS_SUSPENDED;
+ 	}
+@@ -1079,7 +1088,7 @@ __setup_irq(unsigned int irq, struct irq
+ 		 */
  
- static inline void ethtool_cmd_speed_set(struct ethtool_cmd *ep,
--- 
-2.0.2.673.g9ab0882
+ #define IRQF_MISMATCH \
+-	(IRQF_TRIGGER_MASK | IRQF_ONESHOT | IRQF_NO_SUSPEND)
++	(IRQF_TRIGGER_MASK | IRQF_ONESHOT)
+ 
+ 		if (!((old->flags & new->flags) & IRQF_SHARED) ||
+ 		    ((old->flags ^ new->flags) & IRQF_MISMATCH))
+@@ -1090,6 +1099,13 @@ __setup_irq(unsigned int irq, struct irq
+ 		    (new->flags & IRQF_PERCPU))
+ 			goto mismatch;
+ 
++		if ((old->flags & IRQF_NO_SUSPEND) !=
++		    (new->flags & IRQF_NO_SUSPEND)) {
++			pr_err("irq %d: IRQF_NO_SUSPEND mismatch %08x (%s) vs. %08x (%s)\n",
++			       irq, new->flags, new->name, old->flags, old->name);
++			pr_err("irq %d: IRQF_NO_SUSPEND will be ignored\n");
++		}
++
+ 		/* add new interrupt at end of irq queue */
+ 		do {
+ 			/*
 
