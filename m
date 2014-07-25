@@ -1,79 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760168AbaGYLMo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 07:12:44 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:38335 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751848AbaGYLMm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 07:12:42 -0400
-From: =?UTF-8?q?Andreas=20F=C3=A4rber?= <afaerber@suse.de>
-To: Michal Simek <michal.simek@xilinx.com>
-Cc: Andreas Olofsson <andreas@adapteva.com>,
-        Matteo Vit <matteo.vit@starwaredesign.com>,
-        Sean Rickerd <srickerd@suse.com>, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        harini.katakam@xilinx.com, soren.brinkmann@xilinx.com,
-        =?UTF-8?q?Andreas=20F=C3=A4rber?= <afaerber@suse.de>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>
-Subject: [PATCH v3] ARM: dts: zynq: Add SPI
-Date: Fri, 25 Jul 2014 13:12:31 +0200
-Message-Id: <1406286752-8905-1-git-send-email-afaerber@suse.de>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1cf9126b-c5e4-4ae7-a294-071584857d6c@BN1AFFO11FD052.protection.gbl>
-References: <1cf9126b-c5e4-4ae7-a294-071584857d6c@BN1AFFO11FD052.protection.gbl>
+	id S1760215AbaGYLMv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 07:12:51 -0400
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:55208 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751848AbaGYLMr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jul 2014 07:12:47 -0400
+Message-ID: <53D23B65.6070708@linaro.org>
+Date: Fri, 25 Jul 2014 19:11:33 +0800
+From: Hanjun Guo <hanjun.guo@linaro.org>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
+To: Naresh Bhat <naresh.bhat@linaro.org>
+CC: Catalin Marinas <catalin.marinas@arm.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Graeme Gregory <graeme.gregory@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, Grant Likely <grant.likely@linaro.org>,
+        Sudeep Holla <Sudeep.Holla@arm.com>, Will Deacon <will.deacon@arm.com>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Mark Brown <broonie@kernel.org>, Robert Richter <rric@kernel.org>,
+        Lv Zheng <lv.zheng@intel.com>, Robert Moore <robert.moore@intel.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Liviu Dudau <Liviu.Dudau@arm.com>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
+        linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org,
+        Tomasz Nowicki <tomasz.nowicki@linaro.org>
+Subject: Re: [PATCH 07/19] ARM64 / ACPI: Parse MADT to map logical cpu to
+ MPIDR and get cpu_possible/present_map
+References: <1406206825-15590-1-git-send-email-hanjun.guo@linaro.org>	<1406206825-15590-8-git-send-email-hanjun.guo@linaro.org> <CAFoFrHYSYhv3cM_zSFA5Xg+Xfr8BszzRVFhd0GODFpduRPBrbQ@mail.gmail.com>
+In-Reply-To: <CAFoFrHYSYhv3cM_zSFA5Xg+Xfr8BszzRVFhd0GODFpduRPBrbQ@mail.gmail.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Andreas Färber <afaerber@suse.de>
----
- v3: Split off from QSPI (Michal Simek).
- 
- arch/arm/boot/dts/zynq-7000.dtsi | 24 ++++++++++++++++++++++++
- 1 file changed, 24 insertions(+)
+Hi Naresh,
 
-diff --git a/arch/arm/boot/dts/zynq-7000.dtsi b/arch/arm/boot/dts/zynq-7000.dtsi
-index cf0f3e4..ef11dab 100644
---- a/arch/arm/boot/dts/zynq-7000.dtsi
-+++ b/arch/arm/boot/dts/zynq-7000.dtsi
-@@ -140,6 +140,30 @@
- 			interrupts = <0 50 4>;
- 		};
- 
-+		spi0: spi@e0006000 {
-+			compatible = "xlnx,zynq-spi-r1p6";
-+			reg = <0xe0006000 0x1000>;
-+			status = "disabled";
-+			interrupt-parent = <&intc>;
-+			interrupts = <0 26 4>;
-+			clocks = <&clkc 25>, <&clkc 34>;
-+			clock-names = "ref_clk", "pclk";
-+			#address-cells = <1>;
-+			#size-cells = <0>;
-+		};
-+
-+		spi1: spi@e0007000 {
-+			compatible = "xlnx,zynq-spi-r1p6";
-+			reg = <0xe0007000 0x1000>;
-+			status = "disabled";
-+			interrupt-parent = <&intc>;
-+			interrupts = <0 49 4>;
-+			clocks = <&clkc 26>, <&clkc 35>;
-+			clock-names = "ref_clk", "pclk";
-+			#address-cells = <1>;
-+			#size-cells = <0>;
-+		};
-+
- 		gem0: ethernet@e000b000 {
- 			compatible = "cdns,gem";
- 			reg = <0xe000b000 0x4000>;
--- 
-1.9.3
+On 2014-7-25 7:06, Naresh Bhat wrote:
+> On 24 July 2014 18:30, Hanjun Guo <hanjun.guo@linaro.org> wrote:
+>> MADT contains the information for MPIDR which is essential for
+>> SMP initialization, parse the GIC cpu interface structures to
+>> get the MPIDR value and map it to cpu_logical_map(), and add
+>> enabled cpu with valid MPIDR into cpu_possible_map and
+>> cpu_present_map.
+[...]
+>> +/**
+>> + * acpi_register_gic_cpu_interface - register a gic cpu interface and
+>> + * generates a logic cpu number
+> 
+> logic - logical
 
+Thanks for all the typos you got, will fix them.
+
+Best Regards
+Hanjun
