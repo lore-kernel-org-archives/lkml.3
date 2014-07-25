@@ -1,79 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760035AbaGYIeC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 04:34:02 -0400
-Received: from mga11.intel.com ([192.55.52.93]:57585 "EHLO mga11.intel.com"
+	id S1759913AbaGYIeu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 04:34:50 -0400
+Received: from mga11.intel.com ([192.55.52.93]:43114 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760008AbaGYIdc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 04:33:32 -0400
+	id S1750818AbaGYIes (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jul 2014 04:34:48 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,729,1400050800"; 
-   d="scan'208";a="575283430"
-Message-ID: <53D215D3.50608@intel.com>
-Date: Fri, 25 Jul 2014 16:31:15 +0800
-From: Jike Song <jike.song@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+   d="scan'208";a="567074161"
+Message-ID: <53D216A4.3090600@intel.com>
+Date: Fri, 25 Jul 2014 16:34:44 +0800
+From: "Yan, Zheng" <zheng.z.yan@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: xen-devel@lists.xen.org, intel-gfx@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org
-CC: "White, Michael L" <michael.l.white@intel.com>,
-        "Dong, Eddie" <eddie.dong@intel.com>, "Li, Susie" <susie.li@intel.com>,
-        "Cowperthwaite, David J" <david.j.cowperthwaite@intel.com>,
-        "Haron, Sandra" <sandra.haron@intel.com>
-Subject: [Intel-gfx] [Announcement] Updates to XenGT - a Mediated Graphics
- Passthrough Solution from Intel
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Peter Zijlstra <peterz@infradead.org>
+CC: linux-kernel@vger.kernel.org, mingo@kernel.org, acme@infradead.org,
+        eranian@google.com, andi@firstfloor.org
+Subject: Re: [PATCH v3 6/9] perf, x86: handle multiple records in PEBS buffer
+References: <1406016602-31845-1-git-send-email-zheng.z.yan@intel.com> <1406016602-31845-7-git-send-email-zheng.z.yan@intel.com> <20140725081033.GV3935@laptop>
+In-Reply-To: <20140725081033.GV3935@laptop>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+On 07/25/2014 04:10 PM, Peter Zijlstra wrote:
+> On Tue, Jul 22, 2014 at 04:09:59PM +0800, Yan, Zheng wrote:
+>> One corner case needs to mention is that the PEBS hardware doesn't
+>> deal well with collisions, when PEBS events happen near to each
+>> other. The records for the events can be collapsed into a single
+>> one. However in practice collisions are extremely rare, as long as
+>> different events are used. The periods are typically very large,
+>> so any collision is unlikely. When collision happens, we can either
+>> drop the PEBS record or use the record to serve multiple events.
+>> This patch chooses the later approach.
+> 
+> You can't.. the events might have different security context.
+> 
+> Remember, the overflow bit is set from the overflow until the PEBS
+> event is generated, this is quite a long time. So if another PEBS event
+> gets generated while the other is still pending it will have both bits
+> set. Even though the second bit is for another (unrelated) counter.
+> 
+> The unrelated counter might not have privilege to observe the data of
+> the generated event.
+> 
+> I think you can unwind and fully correct this trainwreck.
 
-We're pleased to announce an update to Intel Graphics Virtualization Technology (Intel GVT-g, formerly known as XenGT). Intel GVT-g is a complete vGPU solution with mediated pass-through, supported today on 4th generation Intel Core(TM) processors with Intel Graphics processors. A virtual GPU instance is maintained for each VM, with part of performance critical resources directly assigned. The capability of running native graphics driver inside a VM, without hypervisor intervention in performance critical paths, achieves a good balance among performance, feature, and sharing capability. Though we only support Xen on Intel Processor Graphics so far, the core logic can be easily ported to other hypervisors.
+could you give more information how to do this.
 
-The news of this update:
+Regards
+Yan, Zheng
 
-	- Project code name is "XenGT", now official name is Intel Graphics Virtualization Technology (Intel GVT-g)
-	- Currently Intel GVT-g supports Intel Processor Graphics built into 4th generation Intel Core processors - Haswell platform
-	- Moving forward, XenGT will change to quarterly release cadence. Next update will be around early October, 2014.
+> But simply
+> delivering an even with multiple bits set to all relevant events is
+> wrong and might leak sensitive information.
+> 
 
-This update consists of:
-
-	- Stability fixes, e.g. stable DP support
-	- Display enhancements, e.g. virtual monitor support. Users can define a virtual monitor type with customized EDID for virtual machines, not necessarily the same as physical monitors.
-	- Improved support for GPU recovery
-	- Experimental Windows HVM support. To download the experimental version, see setup guide for details
-	- Experimental Hardware Media Acceleration for decoding.
-
-
-Please refer to the new setup guide, which provides step-to-step details about building/configuring/running Intel GVT-g:
-
-	https://github.com/01org/XenGT-Preview-kernel/blob/master/XenGT_Setup_Guide.pdf
-
-
-The new source codes are available at the updated github repos:
-
-	Linux: https://github.com/01org/XenGT-Preview-kernel.git
-	Xen: https://github.com/01org/XenGT-Preview-xen.git
-	Qemu: https://github.com/01org/XenGT-Preview-qemu.git
-
-
-More information about Intel GVT-g background, architecture, etc can be found at:
-
-	https://www.usenix.org/conference/atc14/technical-sessions/presentation/tian
-	http://events.linuxfoundation.org/sites/events/files/slides/XenGT-Xen%20Summit-v7_0.pdf
-	https://01.org/xen/blogs/srclarkx/2013/graphics-virtualization-xengt
-
-The previous update can be found here:
-
-	http://lists.xen.org/archives/html/xen-devel/2014-02/msg01848.html
-
-Appreciate your comments!
-
-
-
-
---
-Thanks,
-Jike
