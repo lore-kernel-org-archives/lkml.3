@@ -1,84 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753170AbaGYXg6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 19:36:58 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:47162 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752779AbaGYXg4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 19:36:56 -0400
-Date: Fri, 25 Jul 2014 16:36:44 -0700
-From: tip-bot for Andy Lutomirski <tipbot@zytor.com>
-Message-ID: <tip-53b884ac3745353de220d92ef792515c3ae692f0@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, luto@amacapital.net, hpa@zytor.com,
-        mingo@kernel.org, tglx@linutronix.de, hpa@linux.intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, luto@amacapital.net,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de, hpa@linux.intel.com
-In-Reply-To: <03eac1f24110bbe496ecc12a4df467e0d88466d4.1406330947.git.luto@amacapital.net>
-References: <03eac1f24110bbe496ecc12a4df467e0d88466d4.1406330947.git.luto@amacapital.net>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/vdso] x86_64/vsyscall: Fix warn_bad_vsyscall log output
-Git-Commit-ID: 53b884ac3745353de220d92ef792515c3ae692f0
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S1751712AbaGYXoN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 19:44:13 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:47224 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750967AbaGYXoL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jul 2014 19:44:11 -0400
+Message-ID: <53D2EB98.3090802@zytor.com>
+Date: Fri, 25 Jul 2014 16:43:20 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
+To: Andy Lutomirski <luto@amacapital.net>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Julien Tinnes <jln@google.com>, David Drysdale <drysdale@google.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, Paolo Bonzini <pbonzini@redhat.com>,
+        LSM List <linux-security-module@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Paul Moore <paul@paul-moore.com>,
+        James Morris <james.l.morris@oracle.com>,
+        Linux API <linux-api@vger.kernel.org>,
+        Meredydd Luff <meredydd@senatehouse.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Kees Cook <keescook@chromium.org>, "Theodore Ts'o" <tytso@mit.edu>,
+        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        linux-crypto@vger.kernel.org
+Subject: Re: General flags to turn things off (getrandom, pid lookup, etc)
+References: <CALCETrWGvBfrX1W5XaFgJZhKHLf+oac9YrwPR3ppK=deQtu5hA@mail.gmail.com>
+In-Reply-To: <CALCETrWGvBfrX1W5XaFgJZhKHLf+oac9YrwPR3ppK=deQtu5hA@mail.gmail.com>
+X-Enigmail-Version: 1.6
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  53b884ac3745353de220d92ef792515c3ae692f0
-Gitweb:     http://git.kernel.org/tip/53b884ac3745353de220d92ef792515c3ae692f0
-Author:     Andy Lutomirski <luto@amacapital.net>
-AuthorDate: Fri, 25 Jul 2014 16:30:27 -0700
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Fri, 25 Jul 2014 16:34:15 -0700
+On 07/25/2014 11:30 AM, Andy Lutomirski wrote:
+>     - 32-bit GDT code segments [huge attack surface]
+>     - 64-bit GDT code segments [probably pointless]
 
-x86_64/vsyscall: Fix warn_bad_vsyscall log output
+I presume you mean s/GDT/LDT/.
 
-This commit in Linux 3.6:
+We already don't allow 64-bit LDT code segments.  Also, it is unclear to
+me how 32-bit LDT segments have a huge attack surface, given that there
+will realistically always be a 32-bit *GDT* segment present.
 
-    commit c767a54ba0657e52e6edaa97cbe0b0a8bf1c1655
-    Author: Joe Perches <joe@perches.com>
-    Date:   Mon May 21 19:50:07 2012 -0700
+	-hpa
 
-        x86/debug: Add KERN_<LEVEL> to bare printks, convert printks to pr_<level>
 
-caused warn_bad_vsyscall to output garbage in the middle of the
-line.  Revert the bad part of it.
-
-The printk in question isn't actually bare; the level is "%s".
-
-The bug this fixes is purely cosmetic; backports are optional.
-
-Cc: <stable@vger.kernel.org> # v3.6+
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-Link: http://lkml.kernel.org/r/03eac1f24110bbe496ecc12a4df467e0d88466d4.1406330947.git.luto@amacapital.net
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- arch/x86/kernel/vsyscall_64.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
-
-diff --git a/arch/x86/kernel/vsyscall_64.c b/arch/x86/kernel/vsyscall_64.c
-index ea5b570..e1e1e80 100644
---- a/arch/x86/kernel/vsyscall_64.c
-+++ b/arch/x86/kernel/vsyscall_64.c
-@@ -81,10 +81,10 @@ static void warn_bad_vsyscall(const char *level, struct pt_regs *regs,
- 	if (!show_unhandled_signals)
- 		return;
- 
--	pr_notice_ratelimited("%s%s[%d] %s ip:%lx cs:%lx sp:%lx ax:%lx si:%lx di:%lx\n",
--			      level, current->comm, task_pid_nr(current),
--			      message, regs->ip, regs->cs,
--			      regs->sp, regs->ax, regs->si, regs->di);
-+	printk_ratelimited("%s%s[%d] %s ip:%lx cs:%lx sp:%lx ax:%lx si:%lx di:%lx\n",
-+			   level, current->comm, task_pid_nr(current),
-+			   message, regs->ip, regs->cs,
-+			   regs->sp, regs->ax, regs->si, regs->di);
- }
- 
- static int addr_to_vsyscall_nr(unsigned long addr)
