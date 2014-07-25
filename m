@@ -1,111 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759012AbaGYH7L (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 03:59:11 -0400
-Received: from dns-bn1lp0143.outbound.protection.outlook.com ([207.46.163.143]:21801
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750828AbaGYH7J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 03:59:09 -0400
-Date: Fri, 25 Jul 2014 15:57:56 +0800
-From: Nicolin Chen <Guangyu.Chen@freescale.com>
-To: Varka Bhadram <varkabhadram@gmail.com>
-CC: Nicolin Chen <nicoleotsuka@gmail.com>, <broonie@kernel.org>,
-        <robh+dt@kernel.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
-        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
-        <rdunlap@infradead.org>, <lgirdwood@gmail.com>, <perex@perex.cz>,
-        <tiwai@suse.de>, <timur@tabi.org>, <grant.likely@linaro.org>,
-        <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <alsa-devel@alsa-project.org>, <linuxppc-dev@lists.ozlabs.org>,
-        <shawn.guo@linaro.org>, <b02247@freescale.com>, <b42378@freescale.com>,
-        <tklauser@distanz.ch>
-Subject: Re: [PATCH v4 2/2] ASoC: fsl_asrc: Add ASRC ASoC CPU DAI and
- platform drivers
-Message-ID: <20140725075755.GA29564@MrMyself>
-References: <cover.1406271541.git.nicoleotsuka@gmail.com>
- <69b75ae4b0335cd3c9bedad67f57aaba13c0048c.1406271541.git.nicoleotsuka@gmail.com>
- <53D208A9.3040903@gmail.com>
+	id S1759702AbaGYH70 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 03:59:26 -0400
+Received: from mout.kundenserver.de ([212.227.17.24]:60024 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759421AbaGYH7Y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jul 2014 03:59:24 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: linux-arm-kernel@lists.infradead.org,
+        Kweh Hock Leong <hock.leong.kweh@intel.com>,
+        Eric Miao <eric.y.miao@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Mark Brown <broonie@kernel.org>,
+        Chew Chiau Ee <chiau.ee.chew@intel.com>,
+        Darren Hart <dvhart@linux.intel.com>, chiauee85@gmail.com,
+        linux-kernel@vger.kernel.org, linux-spi@vger.kernel.org,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Subject: Re: [PATCH] spi/pxa2xx-pci: Enable DMA binding through device name
+Date: Fri, 25 Jul 2014 09:58:42 +0200
+Message-ID: <5574058.fMy2hcvT92@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140725071138.GU1857@lahna.fi.intel.com>
+References: <1406196111-22861-1-git-send-email-hock.leong.kweh@intel.com> <20140724140620.GP1857@lahna.fi.intel.com> <20140725071138.GU1857@lahna.fi.intel.com>
 MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <53D208A9.3040903@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(24454002)(479174003)(189002)(377454003)(51704005)(199002)(50466002)(83072002)(64706001)(1411001)(97756001)(99396002)(26826002)(31966008)(107046002)(106466001)(95666004)(46406003)(6806004)(33656002)(47776003)(87936001)(81156004)(81542001)(33716001)(110136001)(79102001)(83506001)(50986999)(68736004)(46102001)(44976005)(76482001)(105606002)(20776003)(21056001)(81342001)(85306003)(84676001)(97736001)(76176999)(80022001)(74662001)(4396001)(54356999)(92566001)(86362001)(102836001)(74502001)(104016003)(92726001)(77982001)(69596002)(23726002)(83322001)(85852003)(217873001);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR03MB329;H:az84smr01.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;LANG:en;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
-X-Forefront-PRVS: 02830F0362
-Authentication-Results: spf=fail (sender IP is 192.88.158.2)
- smtp.mailfrom=guangyu.chen@freescale.com; 
-X-OriginatorOrg: freescale.com
+X-Provags-ID: V02:K0:2IEAKWL5JKRT/w2TGIroj8aeyAsc41Zs0kDAbE+4Pwz
+ PZs3uhlYbOlpQUJRcK1vFy683JMGLOeS5z/QwUYitCbl2BmciI
+ 3Dul1UFAYuEGz8g8Kg/f63QCfOCVeBTu6KP72VHt2L+widfFhL
+ ARHOrMSYmdUmwrir6wLfXzU2GL5GX+0NGQVctq4QWEA9v+kcQj
+ heanOPHHFIh+AcPbxnXJl+crf9mzQW1hRKjs2Qf+SjTtis/Est
+ 4QbZgFSBzB64ms8t8eD/yqzlRD/fcO/GaOJ9fFwSEJWRGuuHQl
+ vjiMY0N4F54jbB7pBI2UZ50mA4mSWjd/cSDMnbaMrUU94WQ+bm
+ zJLvIkARvvV+ClnuF05c=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Varka,
-
-Thank you for the comments!
-
-On Fri, Jul 25, 2014 at 01:05:05PM +0530, Varka Bhadram wrote:
-> On 07/25/2014 12:49 PM, Nicolin Chen wrote:
-> (...)
+On Friday 25 July 2014 10:11:38 Mika Westerberg wrote:
+> On Thu, Jul 24, 2014 at 05:06:20PM +0300, Mika Westerberg wrote:
+> > > On a related note, there seems to be a bug in this driver, which
+> > > attempts to set the slave_id through dmaengine_slave_config(), which
+> > > is wrong in both cases, ACPI and filter functions.
+> > 
+> > Good point. We will fix this, thanks.
 > 
-> >+static const struct platform_device_id fsl_asrc_devtype[] = {
-> >+	{
-> >+		.name = "imx35-asrc",
-> >+		.driver_data = IMX35_ASRC,
-> >+	}, {
-> >+		.name = "imx53-asrc",
-> >+		.driver_data = IMX53_ASRC,
-> >+	}, {
-> >+		/* sentinel */
-> >+	}
-> >+};
-> >+MODULE_DEVICE_TABLE(platform, fsl_asrc_devtype);
-> >+
-> 
-> where are you using fsl_asrc_devtype,,,?
-> 
-> >+static const struct of_device_id fsl_asrc_ids[] = {
-> >+	{
-> >+		.compatible = "fsl,imx35-asrc",
-> >+		.data = &fsl_asrc_devtype[IMX35_ASRC],
-> 
-> Ya here ... but what is the use...?
+> I take that back. How we are supposed to set the slave_id if we don't
+> have request line information available (from ACPI or DT)?
 
-I got your point. I will drop all these and move ids behind probe/remove()
-as you suggested at the first place and then use of_device_is_compatible()
-inside the probe() instead.
+If you don't have the request line information, you are screwed and you
+can't set it from either the filter function or slave_config.
 
-> >+	asrc_priv->regmap = devm_regmap_init_mmio_clk(&pdev->dev,
-> >+			"mem", regs, &fsl_asrc_regmap_config);
-> 
-> devm_regmap_init_mmio_clk(&pdev->dev,
-> 			  "mem", regs,
-> 			  &fsl_asrc_regmap_config);
+However, it looks like you do have it, at least this is what the
+code tells me:
 
-I'll refine to
+static struct pxa_spi_info spi_info_configs[] = {
+        [PORT_CE4100] = {
+		...
+        },
+        [PORT_BYT] = {
+                .type = LPSS_SSP,
+                .port_id = 0,
+                .num_chipselect = 1,
+                .tx_slave_id = 0,
+                .tx_chan_id = 0,
+                .rx_slave_id = 1,
+                .rx_chan_id = 1,
+        },
+};
 
- devm_regmap_init_mmio_clk(&pdev->dev, "mem", regs,
-                           &fsl_asrc_regmap_config);
+All you need to do is change your filter function to take the
+slave id from pxa_spi_info and stick it in there, e.g.
 
-> 
-> >+	if (IS_ERR(asrc_priv->regmap)) {
-> >+		dev_err(&pdev->dev, "failed to init regmap\n");
-> >+		return PTR_ERR(asrc_priv->regmap);
-> >+	}
-> >+
-> >+	irq = platform_get_irq(pdev, 0);
-> >+	if (irq < 0) {
-> >+		dev_err(&pdev->dev, "no irq for node %s\n", np->full_name);
-> >+		return irq;
-> >+	}
-> >+
-> >+	ret = devm_request_irq(&pdev->dev, irq, fsl_asrc_isr, 0,
-> >+			       asrc_priv->name, asrc_priv);
->
-> same...
+static bool pxa2xx_spi_dw_dma_filter(struct dma_chan *chan, void *param)
+{       
+        const struct pxa2xx_spi_master *pdata = param;
+        struct dw_dma_chan *dwc = to_dw_dma_chan(chan);
+        
+        dwc->request_line = fargs->req;
+        dwc->src_master = 0;
+        dwc->dst_master = 0;
+        
+        return 1;
+}           
 
-Sorry I don't see any problem with this devm_request_irq()...
+Note that the filter function by definition is specific to the dma
+controller, not the dma slave (that's why most people define it in
+the dmaengine driver), and the pxa2xx_spi_dma_filter() function used
+in spi-pxa2xx-dma.c looks like it was written for another dma engine:
 
-Thank you,
-Nicolin
+The dw-dma driver doesn't care at all about the channel number, so
+matching it with the platform data is pointless, but it does need
+the master and request numbers to be set in the filter function,
+as dw_dma_of_filter() and dw_dma_acpi_filter() do.
+
+It also really needs a check to see if the dma engine is the right
+one for the device, as the current filter function will just take
+a channel (with the right number) from any dma engine, and that
+breaks as soon as you register a second dma controller in the system.
+
+I agree that this is very ugly, but that's exactly why we came up
+with the dma_request_slave_channel interface to replace the need
+for filter functions that everybody gets wrong.
+
+	Arnd
