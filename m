@@ -1,118 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759989AbaGYIc7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 04:32:59 -0400
-Received: from mx6-phx2.redhat.com ([209.132.183.39]:37689 "EHLO
-	mx6-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756912AbaGYIc5 (ORCPT
+	id S1760005AbaGYId3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 04:33:29 -0400
+Received: from router.aksignal.cz ([188.175.113.102]:55466 "EHLO
+	router.aksignal.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756912AbaGYId1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 04:32:57 -0400
-Date: Fri, 25 Jul 2014 04:32:55 -0400 (EDT)
-From: Ulrich Obergfell <uobergfe@redhat.com>
-To: Andrew Jones <drjones@redhat.com>
-Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org, dzickus@redhat.com,
-        pbonzini@redhat.com, akpm@linux-foundation.org, mingo@redhat.com
-Message-ID: <615371508.17867577.1406277175913.JavaMail.zimbra@redhat.com>
-In-Reply-To: <1406196811-5384-3-git-send-email-drjones@redhat.com>
-References: <1406196811-5384-1-git-send-email-drjones@redhat.com> <1406196811-5384-3-git-send-email-drjones@redhat.com>
-Subject: Re: [PATCH 2/3] watchdog: control hard lockup detection default
+	Fri, 25 Jul 2014 04:33:27 -0400
+Message-ID: <53D21652.7050808@aksignal.cz>
+Date: Fri, 25 Jul 2014 10:33:22 +0200
+From: =?UTF-8?B?SmnFmcOtIFByY2hhbA==?= <jiri.prchal@aksignal.cz>
+Reply-To: jiri.prchal@aksignal.cz
+Organization: AK signal Brno
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.5.82.6]
-X-Mailer: Zimbra 8.0.6_GA_5922 (ZimbraWebClient - FF22 (Linux)/8.0.6_GA_5922)
-Thread-Topic: watchdog: control hard lockup detection default
-Thread-Index: hTUQI6rttOPP3UePAETJtlpDtd5W8w==
+To: Boris BREZILLON <boris.brezillon@free-electrons.com>
+CC: Bo Shen <voice.shen@atmel.com>, nicolas.ferre@atmel.com,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org
+Subject: Re: [PATCH] ARM: at91: at91sam9x5: sets NPCS0 (PA14) back to GPIO
+References: <1405074175-22444-1-git-send-email-voice.shen@atmel.com>	<53D10C50.50305@aksignal.cz>	<20140724162645.4e19c26c@bbrezillon>	<53D12103.3020103@aksignal.cz>	<20140724175848.44f5da10@bbrezillon>	<53D1F5D0.1080006@aksignal.cz> <20140725095319.16a8465c@bbrezillon>
+In-Reply-To: <20140725095319.16a8465c@bbrezillon>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> ----- Original Message -----
-> From: "Andrew Jones" <drjones@redhat.com>
-> To: linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-> Cc: uobergfe@redhat.com, dzickus@redhat.com, pbonzini@redhat.com, akpm@linux-foundation.org, mingo@redhat.com
-> Sent: Thursday, July 24, 2014 12:13:30 PM
-> Subject: [PATCH 2/3] watchdog: control hard lockup detection default
+I changed manually .config,
+now it's there:
+[    1.195312] spi spi0.0: gpio_request: 23
+[    1.195312] spi spi0.1: gpio_request: 22
+[    1.199218] spi spi0.2: gpio_request: 93
+[    1.203125] spi spi0.3: gpio_request: 14
 
-[...]
+But still not working.
 
-> The running kernel still has the ability to enable/disable at any
-> time with /proc/sys/kernel/nmi_watchdog us usual. However even
-> when the default has been overridden /proc/sys/kernel/nmi_watchdog
-> will initially show '1'. To truly turn it on one must disable/enable
-> it, i.e.
->   echo 0 > /proc/sys/kernel/nmi_watchdog
->   echo 1 > /proc/sys/kernel/nmi_watchdog
-
-[...]
-
-> @@ -626,15 +665,17 @@ int proc_dowatchdog(struct ctl_table *table, int write,
->          * disabled. The 'watchdog_running' variable check in
->          * watchdog_*_all_cpus() function takes care of this.
->          */
-> -        if (watchdog_user_enabled && watchdog_thresh)
-> +        if (watchdog_user_enabled && watchdog_thresh) {
-> +                watchdog_enable_hardlockup_detector(true);
->                  err = watchdog_enable_all_cpus(old_thresh != watchdog_thresh);
-> -        else
-> +        } else
-
-[...]
-
-
-I just realized a possible issue in the above part of the patch:
-
-If we would want to give the user the option to override the effect of patch 3/3
-via /proc, I think proc_dowatchdog() should enable hard lockup detection _only_
-in case of a state transition from 'NOT watchdog_running' to 'watchdog_running'.
-                                                          |
-   if (watchdog_user_enabled && watchdog_thresh) {        | need to add this
-       if (!watchdog_running) <---------------------------'
-           watchdog_enable_hardlockup_detector(true);
-       err = watchdog_enable_all_cpus(old_thresh != watchdog_thresh);
-   } else
-       ...
-
-The additional 'if (!watchdog_running)' would _require_ the user to perform the
-sequence of commands
-
-   echo 0 > /proc/sys/kernel/nmi_watchdog
-   echo 1 > /proc/sys/kernel/nmi_watchdog
-
-to enable hard lockup detection explicitly.
-
-I think changing the 'watchdog_thresh' while 'watchdog_running' is true should
-_not_ enable hard lockup detection as a side-effect, because a user may have a
-'sysctl.conf' entry such as
-
-   kernel.watchdog_thresh = ...
-
-or may only want to change the 'watchdog_thresh' on the fly.
-
-I think the following flow of execution could cause such undesired side-effect.
-
-   proc_dowatchdog
-     if (watchdog_user_enabled && watchdog_thresh) {
-
-         watchdog_enable_hardlockup_detector
-           hardlockup_detector_enabled = true
-
-         watchdog_enable_all_cpus
-           if (!watchdog_running) {
-               ...
-           } else if (sample_period_changed)
-                      update_timers_all_cpus
-                        for_each_online_cpu
-                            update_timers
-                              watchdog_nmi_disable
-                              ...
-                              watchdog_nmi_enable
-
-                                watchdog_hardlockup_detector_is_enabled
-                                  return true
-
-                                enable perf counter for hard lockup detection
-
-Regards,
-
-Uli
+Dne 25.7.2014 v 09:53 Boris BREZILLON napsal(a):
+> On Fri, 25 Jul 2014 08:14:40 +0200
+> Jiří Prchal <jiri.prchal@aksignal.cz> wrote:
+>
+>>
+>>
+>> Dne 24.7.2014 v 17:58 Boris BREZILLON napsal(a):
+>>> On Thu, 24 Jul 2014 17:06:43 +0200
+>>> Jiří Prchal <jiri.prchal@aksignal.cz> wrote:
+>>>
+>>>> Hi,
+>>>>
+>>>> Dne 24.7.2014 v 16:26 Boris BREZILLON napsal(a):
+>>>>> Hello Jiří,
+>>>>>
+>>>>> First of all, please try to use git format-patch when submitting a
+>>>>> patch to any kernel mailing list.
+>>>> Sorry for that.
+>>>>>
+>>>>> On Thu, 24 Jul 2014 15:38:24 +0200
+>>>>> Jiří Prchal <jiri.prchal@aksignal.cz> wrote:
+>>>>>
+>>>>>> After ROMBOOT tries boot from flash on SPI0 NPCS0, this NPCS0 (PA14) remains set to PERIPH_A.
+>>>>>> Because of that, this pin is unusable to something else.
+>>>>>> This patch sets it back to GPIO.
+>>>>>
+>>>>> The policy is to leave pins in an unknown state till some peripheral
+>>>>> need them.
+>>>>>
+>>>>> What are you trying to use this pin for ?
+>>>> For chip select, but #3. And when SPI communicate with cs0 (PA22), it goes down too (PA14), so 2 devices on bus were
+>>>> selected.
+>>>
+>>> Are you using a 9x5ek board or a custom one, in the latter case could
+>>> you paste your spi0 node definition ?
+>> I'm using custom board. My spi node:
+>> 			spi0: spi@f0000000 {
+>> 				status = "okay";
+>> 				cs-gpios = <&pioA 23 0
+>> 					    &pioA 22 0
+>> 					    &pioC 29 0
+>> 					    &pioA 14 0>;
+>>
+>> 				fm25@0 {
+>> 					compatible = "cypress,fm25";
+>> 					spi-max-frequency = <40000000>;
+>> 					reg = <0>;
+>> 					pagesize = <256>;
+>> 					size = <131072>;
+>> 					address-width = <24>;
+>> 				};
+>> 				/* ADC */
+>> 				spidev@1 {
+>> 					compatible = "spidev";
+>> 					reg = <1>;
+>> 					spi-max-frequency = <1000000>;
+>> 				};
+>> 				/* IO expander for busaddr */
+>> 				spidev@2 {
+>> 					compatible = "spidev";
+>> 					reg = <2>;
+>> 					label = "busaddr";
+>> 					spi-max-frequency = <10000000>;
+>> 				};
+>> 				/* audio codec */
+>> 				codec: codec@3 {
+>> 					compatible = "ti,tlv320aic3x";
+>> 					spi-max-frequency = <1000000>;
+>> 					reg = <3>;
+>> 				};
+>> 			};
+>>
+>> This does not work without patch, because of 2 chips selected at one time because of PA14 is periph_a. Probably ROMBOOT
+>> changes that.
+>
+> Yes, boot code stored in ROM probably mux PA14 to periph A function,
+> but with your definition PA 14 should be set GPIO mode when the codec
+> device is created.
+>
+> I don't see any obvious error in your definition, could you add a trace
+> there [1] to see if the gpio is successfully requested ?
+> Could you also paste the content of /sys/kernel/debug/gpio ?
+>
+>>>
+>>>>> If you just want to use it as a chip select for an spi device, take a
+>>>>> look at [1].
+>>>> At [1] it's OK until as cs0 is for example PA22 and cs1 is PA14.
+>>>
+>>> If you want PA14 to control cs1 and PA22 to control cs0 (both
+>>> configured as GPIOs), you'll have the following definition:
+>>>
+>>> cs-gpios = <&pioA 22 0>, <&pioA 14 0>, <0>, <0>;
+>> See my node.
+>>>
+>>>>>
+>>>>> Here the gpio is requested by the spi core when defining the cs-gpios
+>>>>> property. The gpio controller then request the listed pins to the pin
+>>>>> controller (pinctrl driver).
+>>>> GPIO is not set in driver as GPIO, at least I didn't find it.
+>>>
+>>> Take a look at [1], which is set as the gpio_request_enable callback,
+>>> called by pinctrl core when a gpio is requested.
+>> But is this called from spi driver when requesting gpios as cs?
+>
+> Yes, it's part of the gpio_request process:
+> gpio_request calls request method on at91 gpio_chip which in turn
+> calls pinctrl_request_gpio which then calls the gpio_request_enable
+> method I previously mentioned.
+>
+>
+> Best Regards,
+>
+> Boris
+>
+> [1]http://lxr.free-electrons.com/source/drivers/spi/spi-atmel.c#L1031
+>
