@@ -1,64 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760055AbaGYIgu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 04:36:50 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:53869 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1759876AbaGYIgs convert rfc822-to-8bit (ORCPT
+	id S1760060AbaGYIha (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 04:37:30 -0400
+Received: from www.linutronix.de ([62.245.132.108]:54936 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759584AbaGYIh1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 04:36:48 -0400
-Date: Fri, 25 Jul 2014 10:36:45 +0200
-From: Boris BREZILLON <boris.brezillon@free-electrons.com>
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Cc: =?UTF-8?B?SmnFmcOt?= Prchal <jiri.prchal@aksignal.cz>,
-        devicetree@vger.kernel.org, nicolas.ferre@atmel.com,
-        linux-arm-kernel@lists.infradead.org, Bo Shen <voice.shen@atmel.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ARM: at91: at91sam9x5: sets NPCS0 (PA14) back to GPIO
-Message-ID: <20140725103645.7fbf5b63@bbrezillon>
-In-Reply-To: <20140725083053.GD9532@piout.net>
-References: <1405074175-22444-1-git-send-email-voice.shen@atmel.com>
-	<53D10C50.50305@aksignal.cz>
-	<20140724162645.4e19c26c@bbrezillon>
-	<53D12103.3020103@aksignal.cz>
-	<20140724175848.44f5da10@bbrezillon>
-	<53D1F5D0.1080006@aksignal.cz>
-	<20140725083053.GD9532@piout.net>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Fri, 25 Jul 2014 04:37:27 -0400
+Message-ID: <53D2173C.7090603@linutronix.de>
+Date: Fri, 25 Jul 2014 10:37:16 +0200
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
+MIME-Version: 1.0
+To: Jiri Olsa <jolsa@redhat.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+CC: linux-kernel@vger.kernel.org, lttng-dev@lists.lttng.org, acme@kernel.org,
+        namhyung.kim@lge.com, tzanussi@gmail.com
+Subject: Re: [RFC] perf to ctf converter
+References: <20140603163640.GA16279@linutronix.de> <20140714141533.GD17761@krava.redhat.com> <20140721171151.GA12969@linutronix.de> <20140721183530.GA28673@krava.redhat.com> <53CE0B89.7030400@linutronix.de> <20140722112535.GA29750@krava.redhat.com> <53CE4BAF.2010906@linutronix.de> <53CE67B0.7020406@linutronix.de> <20140724144637.GE7652@krava.brq.redhat.com>
+In-Reply-To: <20140724144637.GE7652@krava.brq.redhat.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alexandre,
+On 07/24/2014 04:46 PM, Jiri Olsa wrote:
+> hi,
 
-On Fri, 25 Jul 2014 10:30:54 +0200
-Alexandre Belloni <alexandre.belloni@free-electrons.com> wrote:
+Hi,
 
-> Hi,
+> I made some changes over your branch:
+>   git://git.kernel.org/pub/scm/linux/kernel/git/jolsa/perf.git
+>   perf/ctf_convert
 > 
-> On 25/07/2014 at 08:14:40 +0200, Jiří Prchal wrote :
-> > I'm using custom board. My spi node:
-> > 			spi0: spi@f0000000 {
+> following patches:
+> (needs to be prettyfied, but hopefuly works and ilustrate the point)
+>   perf tools: Iterate both common_fields and fields for tracepoit
+>   perf tools: Use sample_type for generic fields
 > 
-> You should override the pinctrl here as you are using gpios for the cs.
-> 				pinctrl-0 = <&pinctrl_spi0_custom>;
+> we now add all fields available in the perf.data (via perf_event_attr:sample_type)
+> and then for tracepoints we add both common_types and types fields
+> 
+> I'm not sure we want to store made up data like symbol information,
+> which could be obtained from IP anyway - how does babeltrace or any
+> other CTF viewer do that?
 
-I guess you meant:
-			pinctrl-0 <&pinctrl_spi0 &pinctrl_spi0_custom>;
+This is probably for Mathieu best to answer. I *think* that it records
+pointers and does not resolve symbols if possible.
 
-I suggested the same thing, however I'm pretty sure this is not the
-source of the problem. As I said, gpio_request already mux the
-associated pin to GPIO function.
+I assumed it to be a good thing to do because you don't get the symbols
+anymore once the library/binary is upgraded unless you look for the old
+files. But then the very same problem you have perf since it does not
+record the symbol.
+So we could drop the symbol resolution but then we would have to teach
+babeltrace and friends to resolve it.
 
-Best Regards,
+> ---
+> However I'm still not convinced 100% this is the way we want
+> to go with this. What we do now is:
+>   - read/parse perf.data events and convert them into ctf events
+> 
+> What I/we do originally wanted to do was to use CTF to describe
+> perf event as is defined via perf interface, so we dont need to
+> parse data stream, but just store it.
+> 
+> This would be handy/needed for CTF record support, where we _want_
+> to store raw data from kernel and not parse it before that.
+> 
+> I'll recheck and get back with issues I found with this approach.
 
-Boris
+Okay.
 
+> Meanwhile I think we can continue with what we have now,
 
--- 
-Boris Brezillon, Free Electrons
-Embedded Linux and Kernel engineering
-http://free-electrons.com
+Good :)
+
+> I just wanted to share the other approach with you ;-)
+> 
+> thanks,
+> jirka
+
+Sebastian
