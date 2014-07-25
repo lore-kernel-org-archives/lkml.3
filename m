@@ -1,59 +1,251 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760730AbaGYP1q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 11:27:46 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:36734 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760616AbaGYP1o (ORCPT
+	id S1760742AbaGYP3q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 11:29:46 -0400
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:11456 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753170AbaGYP3o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 11:27:44 -0400
-Date: Fri, 25 Jul 2014 17:27:28 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Rik van Riel <riel@redhat.com>
-Cc: linux-kernel@vger.kernel.org, mikey@neuling.org, mingo@kernel.org,
-        pjt@google.com, jhladky@redhat.com, ktkhai@parallels.com,
-        tim.c.chen@linux.intel.com, nicolas.pitre@linaro.org
-Subject: Re: [PATCH] sched: make update_sd_pick_busiest return true on a
- busier sd
-Message-ID: <20140725152728.GB6758@twins.programming.kicks-ass.net>
-References: <20140722144559.382c5243@annuminas.surriel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140722144559.382c5243@annuminas.surriel.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Fri, 25 Jul 2014 11:29:44 -0400
+X-AuditID: cbfec7f4-b7fac6d000006cfe-2b-53d277e4e842
+Message-id: <53D2768E.2040902@samsung.com>
+Date: Fri, 25 Jul 2014 19:23:58 +0400
+From: Andrey Ryabinin <a.ryabinin@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.6.0
+MIME-version: 1.0
+To: Sasha Levin <sasha.levin@oracle.com>,
+        "David S. Miller" <davem@davemloft.net>
+Cc: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Eric Dumazet <edumazet@google.com>
+Subject: Re: net: socket: NULL ptr deref in sendmsg
+References: <53C2FF3D.4030201@oracle.com>
+In-reply-to: <53C2FF3D.4030201@oracle.com>
+Content-type: multipart/mixed; boundary=------------060401010001020104050602
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrPLMWRmVeSWpSXmKPExsVy+t/xK7pPyi8FG3xba2yx5XoTk8Wc8y0s
+	Fk+PPWK32DzZ2eLyrjlsFscWiFksPnKb2YHdY8vKm0weCzaVenx8eovF4/2+q2weLy6eYvH4
+	vEkugC2KyyYlNSezLLVI3y6BK+Nk0zTGgsOWFZ+XnmVpYHyk38XIySEhYCKxeW8bO4QtJnHh
+	3nq2LkYuDiGBpYwSF2Z3QjnNTBJrn61g7WLk4OAV0JI4ttoQpIFFQFVizsQ7rCA2m4CexL9Z
+	29lAbFGBCIkDfc/A4rwCghI/Jt9jAbFFBIIlzh5/yQIyk1ngGqPExY5/YEXCAsYSF9Z2MYHM
+	FxLQlFjc7wkS5gRatb/hKyOIzSzgI/GmdxfzBEb+WUjGzkKSgrB1JN71PYCy5SW2v50DZRtI
+	NHecZ8MUt5I49fAB2wJG9lWMoqmlyQXFSem5hnrFibnFpXnpesn5uZsYIRHzZQfj4mNWhxgF
+	OBiVeHgZHp4KFmJNLCuuzD3EqAI059GG1RcYpVjy8vNSlUR4A3MvBQvxpiRWVqUW5ccXleak
+	Fh9iZOLglGpgDIyslnl66IAta91dq3ouZuEsK33trSxLa8PyLoZP5i0KWNgldO7wXRVxbkvm
+	I0GZBwtY9sWqGQX3qq1J8HrT89i3o/qkpPuh21uc5m8MtHPRjRawmfjX6GC6pdbDLk3h50k1
+	K80Ygx1ltlmuXbY7v8NqV7enyde0BxEPD08Jm3+BoW2t1GMlluKMREMt5qLiRADAMAkwggIA	AA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 22, 2014 at 02:45:59PM -0400, Rik van Riel wrote:
-> Currently update_sd_pick_busiest only returns true when an sd
-> is overloaded, or for SD_ASYM_PACKING when a domain is busier
-> than average and a higher numbered domain than the target.
+This is a multi-part message in MIME format.
+--------------060401010001020104050602
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+
+On 07/14/14 01:50, Sasha Levin wrote:
+
 > 
-> This breaks load balancing between domains that are not overloaded,
-> in the !SD_ASYM_PACKING case. This patch makes update_sd_pick_busiest
-> return true when the busiest sd yet is encountered.
+> I've tried debugging it, but I don't see a code path that could lead to that.
 > 
-> On a 4 node system, this seems to result in the load balancer finally
-> putting 1 thread of a 4 thread test run of "perf bench numa mem" on
-> each node, where before the load was generally not spread across all
-> nodes.
 
-So for !ASYM the code is effectively:
+I finally found some time to take look at this and I've found where the problem is.
 
-	return sgs->avg_load > sds->busiest_stat.avg_load;
+Sasha, I suppose there was no usual "Unable to handle NULL pointer deference" after KASAN's report, right?
 
-I'd like to at least add a clause that makes overloaded groups
-prioritized over !overloaded groups.
+This gave me a clue that address 0 is actually mapped and contains valid socket address structure in it.
+I've managed to write a simple code (in attachment), which could easily reproduce this bug.
 
-Also, like we found earlier, calculate_imbalance() relies on the
-sum_nr_running > group_capacity_factor thing, which you've just
-'wrecked', so we'd need an update to that part too.
+I've fixed it with the following patch, please take a look.
 
-> Behaviour for SD_ASYM_PACKING does not seem to match the comment,
-> in that groups with below average load average are ignored, but I
-> have no hardware to test that so I have left the behaviour of that
-> code unchanged.
 
-Mikey, does that stuff work as expected?
+From: Andrey Ryabinin <a.ryabinin@samsung.com>
+Subject: [PATCH] net: sendmsg: fix NULL pointer dereference
+
+Sasha's report:
+	> While fuzzing with trinity inside a KVM tools guest running the latest -next
+	> kernel with the KASAN patchset, I've stumbled on the following spew:
+	>
+	> [ 4448.949424] ==================================================================
+	> [ 4448.951737] AddressSanitizer: user-memory-access on address 0
+	> [ 4448.952988] Read of size 2 by thread T19638:
+	> [ 4448.954510] CPU: 28 PID: 19638 Comm: trinity-c76 Not tainted 3.16.0-rc4-next-20140711-sasha-00046-g07d3099-dirty #813
+	> [ 4448.956823]  ffff88046d86ca40 0000000000000000 ffff880082f37e78 ffff880082f37a40
+	> [ 4448.958233]  ffffffffb6e47068 ffff880082f37a68 ffff880082f37a58 ffffffffb242708d
+	> [ 4448.959552]  0000000000000000 ffff880082f37a88 ffffffffb24255b1 0000000000000000
+	> [ 4448.961266] Call Trace:
+	> [ 4448.963158] dump_stack (lib/dump_stack.c:52)
+	> [ 4448.964244] kasan_report_user_access (mm/kasan/report.c:184)
+	> [ 4448.965507] __asan_load2 (mm/kasan/kasan.c:352)
+	> [ 4448.966482] ? netlink_sendmsg (net/netlink/af_netlink.c:2339)
+	> [ 4448.967541] netlink_sendmsg (net/netlink/af_netlink.c:2339)
+	> [ 4448.968537] ? get_parent_ip (kernel/sched/core.c:2555)
+	> [ 4448.970103] sock_sendmsg (net/socket.c:654)
+	> [ 4448.971584] ? might_fault (mm/memory.c:3741)
+	> [ 4448.972526] ? might_fault (./arch/x86/include/asm/current.h:14 mm/memory.c:3740)
+	> [ 4448.973596] ? verify_iovec (net/core/iovec.c:64)
+	> [ 4448.974522] ___sys_sendmsg (net/socket.c:2096)
+	> [ 4448.975797] ? put_lock_stats.isra.13 (./arch/x86/include/asm/preempt.h:98 kernel/locking/lockdep.c:254)
+	> [ 4448.977030] ? lock_release_holdtime (kernel/locking/lockdep.c:273)
+	> [ 4448.978197] ? lock_release_non_nested (kernel/locking/lockdep.c:3434 (discriminator 1))
+	> [ 4448.979346] ? check_chain_key (kernel/locking/lockdep.c:2188)
+	> [ 4448.980535] __sys_sendmmsg (net/socket.c:2181)
+	> [ 4448.981592] ? trace_hardirqs_on_caller (kernel/locking/lockdep.c:2600)
+	> [ 4448.982773] ? trace_hardirqs_on (kernel/locking/lockdep.c:2607)
+	> [ 4448.984458] ? syscall_trace_enter (arch/x86/kernel/ptrace.c:1500 (discriminator 2))
+	> [ 4448.985621] ? trace_hardirqs_on_caller (kernel/locking/lockdep.c:2600)
+	> [ 4448.986754] SyS_sendmmsg (net/socket.c:2201)
+	> [ 4448.987708] tracesys (arch/x86/kernel/entry_64.S:542)
+	> [ 4448.988929] ==================================================================
+
+This reports means that we've come to netlink_sendmsg() with msg->msg_name == NULL and msg->msg_namelen > 0.
+
+After this report there was no usual "Unable to handle kernel NULL pointer dereference"
+and this gave me a clue that address 0 is mapped and contains valid socket address structure in it.
+
+This bug was introduced in f3d3342602f8bcbf37d7c46641cb9bca7618eb1c
+(net: rework recvmsg handler msg_name and msg_namelen logic).
+Commit message states that:
+	"Set msg->msg_name = NULL if user specified a NULL in msg_name but had a
+	 non-null msg_namelen in verify_iovec/verify_compat_iovec. This doesn't
+	 affect sendto as it would bail out earlier while trying to copy-in the
+	 address."
+But in fact this affects sendto when address 0 is mapped and contains
+socket address structure in it. In such case copy-in address will succeed,
+verify_iovec() function will successfully exit with msg->msg_namelen > 0
+and msg->msg_name == NULL.
+
+This patch fixes it by assigning m->msg_name to address if move_addr_to_kernel()
+was successful.
+
+Cc: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Cc: Eric Dumazet <edumazet@google.com>
+Cc: <stable@vger.kernel.org>
+Reported-by: Sasha Levin <sasha.levin@oracle.com>
+Signed-off-by: Andrey Ryabinin <a.ryabinin@samsung.com>
+---
+ net/compat.c     | 6 ++++--
+ net/core/iovec.c | 6 ++++--
+ 2 files changed, 8 insertions(+), 4 deletions(-)
+
+diff --git a/net/compat.c b/net/compat.c
+index 9a76eaf..eefd989 100644
+--- a/net/compat.c
++++ b/net/compat.c
+@@ -92,9 +92,11 @@ int verify_compat_iovec(struct msghdr *kern_msg, struct iovec *kern_iov,
+ 						      kern_address);
+ 			if (err < 0)
+ 				return err;
+-		}
+-		if (kern_msg->msg_name)
++
+ 			kern_msg->msg_name = kern_address;
++		} else
++			if (kern_msg->msg_name)
++				kern_msg->msg_name = kern_address;
+ 	} else
+ 		kern_msg->msg_name = NULL;
+
+diff --git a/net/core/iovec.c b/net/core/iovec.c
+index 827dd6b..16bd954 100644
+--- a/net/core/iovec.c
++++ b/net/core/iovec.c
+@@ -47,9 +47,11 @@ int verify_iovec(struct msghdr *m, struct iovec *iov, struct sockaddr_storage *a
+ 						  address);
+ 			if (err < 0)
+ 				return err;
+-		}
+-		if (m->msg_name)
++
+ 			m->msg_name = address;
++		} else
++			if (m->msg_name)
++				m->msg_name = address;
+ 	} else {
+ 		m->msg_name = NULL;
+ 	}
+-- 
+1.8.5.5
+
+
+
+
+--------------060401010001020104050602
+Content-Type: text/x-csrc;
+ name="sendmsg_nl.c"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="sendmsg_nl.c"
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <memory.h>
+#include <sys/mman.h>
+#include <sys/socket.h>
+#include <linux/netlink.h>
+
+#define PAYLOAD 1024
+
+int main(void)
+{
+	struct sockaddr_nl src_addr;
+	struct sockaddr_nl *dest_addr;
+	struct nlmsghdr *nlh = NULL;
+	struct iovec iov;
+	struct msghdr msg;
+	int fd;
+
+	memset(&msg, 0, sizeof(msg));
+
+	fd = socket(PF_NETLINK, SOCK_RAW, NETLINK_ROUTE);
+	if (fd < 0) {
+		perror("socket:");
+		return -1;
+	}
+
+	dest_addr = mmap(0, sizeof(*dest_addr), PROT_READ|PROT_WRITE,
+			MAP_FIXED|MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
+	if (dest_addr == MAP_FAILED) {
+		perror("mmap:");
+		close(fd);
+		return -1;
+	}
+
+	memset(&src_addr, 0, sizeof(src_addr));
+	src_addr.nl_family = AF_NETLINK;
+	src_addr.nl_pid = getpid();
+
+	bind(fd, (struct sockaddr*)&src_addr, sizeof(src_addr));
+
+	memset(dest_addr, 0, sizeof(*dest_addr));
+	dest_addr->nl_family = AF_NETLINK;
+	dest_addr->nl_pid = 0;
+	dest_addr->nl_groups = 0;
+
+	nlh = (struct nlmsghdr *)malloc(NLMSG_SPACE(PAYLOAD));
+	memset(nlh, 0, NLMSG_SPACE(PAYLOAD));
+	nlh->nlmsg_len = NLMSG_SPACE(PAYLOAD);
+	nlh->nlmsg_pid = getpid();
+	nlh->nlmsg_flags = 0;
+
+	strcpy(NLMSG_DATA(nlh), "Die kernel! Die!");
+
+	iov.iov_base = (void *)nlh;
+	iov.iov_len = nlh->nlmsg_len;
+	msg.msg_name = dest_addr;
+	msg.msg_namelen = sizeof(*dest_addr);
+	msg.msg_iov = &iov;
+	msg.msg_iovlen = 1;
+
+	if (sendmsg(fd, &msg, 0) < 0) {
+		perror("sendmsg:");
+		close(fd);
+		return -1;
+	}
+
+	close(fd);
+	return 0;
+}
+
+--------------060401010001020104050602--
