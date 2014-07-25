@@ -1,255 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932342AbaGYIp1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 04:45:27 -0400
-Received: from mail1.bemta14.messagelabs.com ([193.109.254.108]:17296 "EHLO
-	mail1.bemta14.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752640AbaGYIpU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 04:45:20 -0400
-X-Env-Sender: Andreas.Werner@men.de
-X-Msg-Ref: server-3.tower-194.messagelabs.com!1406277916!26556229!1
-X-Originating-IP: [80.255.6.145]
-X-StarScan-Received: 
-X-StarScan-Version: 6.11.3; banners=-,-,-
-X-VirusChecked: Checked
-X-PGP-Universal: processed;
-	by keys.men.de on Fri, 25 Jul 2014 10:45:16 +0200
-Date: Fri, 25 Jul 2014 11:37:29 +0200
-From: Andreas Werner <andreas.werner@men.de>
-To: Bryan Wu <cooloney@gmail.com>
-CC: Andreas Werner <andreas.werner@men.de>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        "rpurdie@rpsys.net" <rpurdie@rpsys.net>,
-        Linux LED Subsystem <linux-leds@vger.kernel.org>, <wim@iguana.be>,
-        <linux-watchdog@vger.kernel.org>
-Subject: Re: [PATCH v3 3/3] drivers/leds/leds-menf21bmc: introduce MEN
- 14F021P00 BMC LED driver
-Message-ID: <20140725093728.GA1371@awelinux>
-References: <cover.1405602280.git.andreas.werner@men.de>
- <fec81db0dd6e08e1e07d3b7c00cb933b2ab63ab3.1405602280.git.andreas.werner@men.de>
- <CAK5ve-KG=dBgrBLQ2ejZ3XZip-gk2_5PfmpdKi6d6=B9hMDH1g@mail.gmail.com>
+	id S1760118AbaGYIpn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 04:45:43 -0400
+Received: from mga01.intel.com ([192.55.52.88]:13248 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759963AbaGYIph (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jul 2014 04:45:37 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,729,1400050800"; 
+   d="scan'208";a="575286689"
+Date: Fri, 25 Jul 2014 14:09:12 +0530
+From: Vinod Koul <vinod.koul@intel.com>
+To: Nicolin Chen <nicoleotsuka@gmail.com>
+Cc: s.hauer@pengutronix.de, robh+dt@kernel.org, pawel.moll@arm.com,
+        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
+        galak@codeaurora.org, rdunlap@infradead.org, dan.j.williams@intel.com,
+        shawn.guo@linaro.org, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dmaengine@vger.kernel.org
+Subject: Re: [PATCH] dma: imx-sdma: Add a new DMATYPE for Shared Peripheral
+ ASRC
+Message-ID: <20140725083912.GK8181@intel.com>
+References: <1402889465-23797-1-git-send-email-nicoleotsuka@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAK5ve-KG=dBgrBLQ2ejZ3XZip-gk2_5PfmpdKi6d6=B9hMDH1g@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Originating-IP: [192.1.1.171]
+In-Reply-To: <1402889465-23797-1-git-send-email-nicoleotsuka@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-aOn Thu, Jul 24, 2014 at 03:00:09PM -0700, Bryan Wu wrote:
-> On Thu, Jul 17, 2014 at 6:18 AM, Andreas Werner <andreas.werner@men.de> wrote:
-> > Added driver to support the 14F021P00 BMC LEDs.
-> > The BMC is a Board Management Controll include four LEDs which
-> > can be switched on and off.
-> >
-> > This driver use the I2C interface to the BMC using the menf21bmc MFD Core driver.
-> >
-> > Signed-off-by: Andreas Werner <andreas.werner@men.de>
-> > ---
-> >  drivers/leds/Kconfig          |   6 ++
-> >  drivers/leds/Makefile         |   1 +
-> >  drivers/leds/leds-menf21bmc.c | 134 ++++++++++++++++++++++++++++++++++++++++++
-> >  3 files changed, 141 insertions(+)
-> >  create mode 100644 drivers/leds/leds-menf21bmc.c
-> >
-> > diff --git a/drivers/leds/Kconfig b/drivers/leds/Kconfig
-> > index 27cf0cd..d38ff3f 100644
-> > --- a/drivers/leds/Kconfig
-> > +++ b/drivers/leds/Kconfig
-> > @@ -458,6 +458,12 @@ config LEDS_OT200
-> >           This option enables support for the LEDs on the Bachmann OT200.
-> >           Say Y to enable LEDs on the Bachmann OT200.
-> >
-> > +config LEDS_MENF21BMC
-> > +       tristate "LED support for the MEN 14F021P00 BMC"
-> > +       depends on LEDS_CLASS && MFD_MENF21BMC
-> 
-> I think it also depends on I2C.
+On Mon, Jun 16, 2014 at 11:31:05AM +0800, Nicolin Chen wrote:
+> Shared Peripheral ASRC, running on SPBA, needs to use shp sciprts for
+> DMA transfer. So this patch just adds a new DMATYPE for it.
 
-Yes you are right.
+Applied, thanks
 
+-- 
+~Vinod
 > 
-> > +       help
-> > +         Say Y here to include support for the MEN 14F021P00 BMC LEDs.
-> > +
-> >  comment "LED driver for blink(1) USB RGB LED is under Special HID drivers (HID_THINGM)"
-> >
-> >  config LEDS_BLINKM
-> > diff --git a/drivers/leds/Makefile b/drivers/leds/Makefile
-> > index 3c03666..cadc433 100644
-> > --- a/drivers/leds/Makefile
-> > +++ b/drivers/leds/Makefile
-> > @@ -53,6 +53,7 @@ obj-$(CONFIG_LEDS_MAX8997)            += leds-max8997.o
-> >  obj-$(CONFIG_LEDS_LM355x)              += leds-lm355x.o
-> >  obj-$(CONFIG_LEDS_BLINKM)              += leds-blinkm.o
-> >  obj-$(CONFIG_LEDS_VERSATILE)           += leds-versatile.o
-> > +obj-$(CONFIG_LEDS_MENF21BMC)           += leds-menf21bmc.o
-> >
-> >  # LED SPI Drivers
-> >  obj-$(CONFIG_LEDS_DAC124S085)          += leds-dac124s085.o
-> > diff --git a/drivers/leds/leds-menf21bmc.c b/drivers/leds/leds-menf21bmc.c
-> > new file mode 100644
-> > index 0000000..5eaa119
-> > --- /dev/null
-> > +++ b/drivers/leds/leds-menf21bmc.c
-> > @@ -0,0 +1,134 @@
-> > +/*
-> > + *  MEN 14F021P00 Board Management Controller (BMC) LEDs Driver.
-> > + *
-> > + *  This is the core LED driver of the MEN 14F021P00 BMC.
-> > + *  There are four LEDs available which can be switched on and off.
-> > + *  STATUS LED, HOT SWAP LED, USER LED 1, USER LED 2
-> > + *
-> > + *  Copyright (C) 2014 MEN Mikro Elektronik Nuernberg GmbH
-> > + *  Author: Andreas Werner <andreas.werner@men.de>
-> > + *  All rights reserved.
-> > + *
-> > + *  This program is free software; you can redistribute  it and/or modify it
-> > + *  under  the terms of  the GNU General  Public License as published by the
-> > + *  Free Software Foundation;  either version 2 of the  License, or (at your
-> > + *  option) any later version.
-> > + *
-> > + */
-> > +
-> > +#include <linux/module.h>
-> > +#include <linux/kernel.h>
-> > +#include <linux/platform_device.h>
-> > +#include <linux/leds.h>
-> > +#include <linux/i2c.h>
-> > +
-> > +#define BMC_CMD_LED_GET_SET    0xA0
-> > +#define BMC_BIT_LED_STATUS     BIT(0)
-> > +#define BMC_BIT_LED_HOTSWAP    BIT(1)
-> > +#define BMC_BIT_LED_USER1      BIT(2)
-> > +#define BMC_BIT_LED_USER2      BIT(3)
-> > +
-> > +struct menf21bmc_led {
-> > +       struct led_classdev cdev;
-> > +       u8 led_bit;
-> > +       const char *name;
-> > +       struct i2c_client *i2c_client;
-> > +};
-> > +
-> > +static struct menf21bmc_led leds[] = {
-> > +       {
-> > +               .name = "menf21bmc:led_status",
-> > +               .led_bit = BMC_BIT_LED_STATUS,
-> > +       },
-> > +       {
-> > +               .name = "menf21bmc:led_hotswap",
-> > +               .led_bit = BMC_BIT_LED_HOTSWAP,
-> > +       },
-> > +       {
-> > +               .name = "menf21bmc:led_user1",
-> > +               .led_bit = BMC_BIT_LED_USER1,
-> > +       },
-> > +       {
-> > +               .name = "menf21bmc:led_user2",
-> > +               .led_bit = BMC_BIT_LED_USER2,
-> > +       }
-> > +};
-> > +
-> > +static DEFINE_MUTEX(led_lock);
-> > +
-> > +static void
-> > +menf21bmc_led_set(struct led_classdev *led_cdev, enum led_brightness value)
-> > +{
-> > +       int led_val;
-> > +       struct menf21bmc_led *led = container_of(led_cdev,
-> > +                                       struct menf21bmc_led, cdev);
-> > +
-> > +       mutex_lock(&led_lock);
-> > +       led_val = i2c_smbus_read_byte_data(led->i2c_client,
-> > +                                               BMC_CMD_LED_GET_SET);
-> > +       if (led_val < 0)
-> > +               goto err_out;
-> > +
-> > +       if (value == LED_OFF)
-> > +               led_val &= ~led->led_bit;
-> > +       else
-> > +               led_val |= led->led_bit;
-> > +
-> > +       i2c_smbus_write_byte_data(led->i2c_client,
-> > +                                       BMC_CMD_LED_GET_SET, led_val);
-> > +err_out:
-> > +       mutex_unlock(&led_lock);
-> > +}
-> > +
-> > +static int menf21bmc_led_probe(struct platform_device *pdev)
-> > +{
-> > +       int i;
-> > +       int ret;
-> > +       struct i2c_client *i2c_client = to_i2c_client(pdev->dev.parent);
-> > +
-> > +       for (i = 0; i < ARRAY_SIZE(leds); i++) {
-> > +               leds[i].cdev.name = leds[i].name;
-> > +               leds[i].cdev.brightness_set = menf21bmc_led_set;
-> > +               leds[i].i2c_client = i2c_client;
-> > +               ret = led_classdev_register(&pdev->dev, &leds[i].cdev);
-> > +               if (ret < 0)
-> > +                       goto err_free_leds;
-> > +       }
-> > +       dev_info(&pdev->dev, "MEN 140F21P00 BMC LED device enabled\n");
-> > +
-> > +       return 0;
-> > +
-> > +err_free_leds:
-> > +       dev_err(&pdev->dev, "failed to register LED device\n");
-> > +
-> > +       for (i = i - 1; i >= 0; i--)
-> > +               led_classdev_unregister(&leds[i].cdev);
-> > +
-> > +       return ret;
-> > +}
-> > +
-> > +static int menf21bmc_led_remove(struct platform_device *pdev)
-> > +{
-> > +       int i;
-> > +
-> > +       for (i = 0; i < ARRAY_SIZE(leds); i++)
-> > +               led_classdev_unregister(&leds[i].cdev);
-> > +
-> > +       return 0;
-> > +}
-> > +
-> > +static struct platform_driver menf21bmc_led = {
-> > +       .probe          = menf21bmc_led_probe,
-> > +       .remove         = menf21bmc_led_remove,
-> > +       .driver         = {
-> > +               .name           = "menf21bmc_led",
-> > +               .owner          = THIS_MODULE,
-> > +       },
-> > +};
-> > +
+> Signed-off-by: Nicolin Chen <nicoleotsuka@gmail.com>
+> ---
+>  Documentation/devicetree/bindings/dma/fsl-imx-sdma.txt | 1 +
+>  drivers/dma/imx-sdma.c                                 | 5 +++++
+>  include/linux/platform_data/dma-imx.h                  | 1 +
+>  3 files changed, 7 insertions(+)
 > 
-> This is not a normal platform driver, it should be a I2C driver.
+> diff --git a/Documentation/devicetree/bindings/dma/fsl-imx-sdma.txt b/Documentation/devicetree/bindings/dma/fsl-imx-sdma.txt
+> index ee9be99..d2e91f1 100644
+> --- a/Documentation/devicetree/bindings/dma/fsl-imx-sdma.txt
+> +++ b/Documentation/devicetree/bindings/dma/fsl-imx-sdma.txt
+> @@ -47,6 +47,7 @@ The full ID of peripheral types can be found below.
+>  	20	ASRC
+>  	21	ESAI
+>  	22	SSI Dual FIFO	(needs firmware ver >= 2)
+> +	23	Shared ASRC
+>  
+>  The third cell specifies the transfer priority as below.
+>  
+> diff --git a/drivers/dma/imx-sdma.c b/drivers/dma/imx-sdma.c
+> index fc04add..85561dc 100644
+> --- a/drivers/dma/imx-sdma.c
+> +++ b/drivers/dma/imx-sdma.c
+> @@ -745,6 +745,11 @@ static void sdma_get_pc(struct sdma_channel *sdmac,
+>  		emi_2_per = sdma->script_addrs->asrc_2_mcu_addr;
+>  		per_2_per = sdma->script_addrs->per_2_per_addr;
+>  		break;
+> +	case IMX_DMATYPE_ASRC_SP:
+> +		per_2_emi = sdma->script_addrs->shp_2_mcu_addr;
+> +		emi_2_per = sdma->script_addrs->mcu_2_shp_addr;
+> +		per_2_per = sdma->script_addrs->per_2_per_addr;
+> +		break;
+>  	case IMX_DMATYPE_MSHC:
+>  		per_2_emi = sdma->script_addrs->mshc_2_mcu_addr;
+>  		emi_2_per = sdma->script_addrs->mcu_2_mshc_addr;
+> diff --git a/include/linux/platform_data/dma-imx.h b/include/linux/platform_data/dma-imx.h
+> index bcbc6c3..7aa0e89 100644
+> --- a/include/linux/platform_data/dma-imx.h
+> +++ b/include/linux/platform_data/dma-imx.h
+> @@ -40,6 +40,7 @@ enum sdma_peripheral_type {
+>  	IMX_DMATYPE_ASRC,	/* ASRC */
+>  	IMX_DMATYPE_ESAI,	/* ESAI */
+>  	IMX_DMATYPE_SSI_DUAL,	/* SSI Dual FIFO */
+> +	IMX_DMATYPE_ASRC_SP,	/* Shared ASRC */
+>  };
+>  
+>  enum imx_dma_prio {
+> -- 
+> 1.8.4
 > 
-> > +module_platform_driver(menf21bmc_led);
-> 
-> So please move to use module_i2c_driver.
 
-Ok, but then I have to change that in the watchdog driver too, which
-is quite the same as here.
-
-Lee, Guenther what do you think regarding the watchdog driver?
-
-> 
-> Thanks,
-> -Bryan
-> 
-> > +
-> > +MODULE_AUTHOR("Andreas Werner <andreas.werner@men.de>");
-> > +MODULE_DESCRIPTION("MEN 14F021P00 BMC led driver");
-> > +MODULE_LICENSE("GPL");
-> > +MODULE_ALIAS("platform:menf21bmc_led");
-> > --
-> > 2.0.1
-> >
-
-Thanks for review.
-
-Andy
+-- 
