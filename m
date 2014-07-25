@@ -1,125 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761213AbaGYWRO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 18:17:14 -0400
-Received: from mail.us.es ([193.147.175.20]:48463 "EHLO mail.us.es"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761072AbaGYWRM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 18:17:12 -0400
-X-Qmail-Scanner-Diagnostics: from 127.0.0.1 by antivirus3 (envelope-from <pneira@us.es>, uid 501) with qmail-scanner-2.10 
- (clamdscan: 0.98.4/19225. spamassassin: 3.3.2.  
- Clear:RC:1(127.0.0.1):SA:0(-100.2/7.5):. 
- Processed in 2.030784 secs); 25 Jul 2014 22:17:10 -0000
-X-Spam-ASN: AS42863 89.214.0.0/16
-X-Envelope-From: pneira@us.es
-Date: Sat, 26 Jul 2014 00:17:16 +0200
-From: Pablo Neira Ayuso <pablo@netfilter.org>
-To: Alexei Starovoitov <ast@plumgrid.com>
-Cc: Daniel Borkmann <dborkman@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Network Development <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, willemb@google.com,
-        netfilter-devel@vger.kernel.org
-Subject: Re: [PATCH net-next] net: filter: rename 'struct sk_filter' to
- 'struct bpf_prog'
-Message-ID: <20140725221512.GA3729@salvia>
-References: <1406275499-7822-1-git-send-email-ast@plumgrid.com>
- <53D23EAF.4000001@redhat.com>
- <20140725115414.GA4770@salvia>
- <53D254D9.9030905@redhat.com>
- <CAMEtUux+dw_GoafXE3ukvmOK2JmZWWf-y0VMobe60TSTfZeNmw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAMEtUux+dw_GoafXE3ukvmOK2JmZWWf-y0VMobe60TSTfZeNmw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1761233AbaGYWTX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 18:19:23 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:50884 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751661AbaGYWTW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jul 2014 18:19:22 -0400
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: "Theodore Ts'o" <tytso@mit.edu>
+Cc: linux-kernel@vger.kernel.org, Matt Mackall <mpm@selenic.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>,
+        "H . Peter Anvin" <hpa@zytor.com>, Torsten Duwe <duwe@suse.de>
+Subject: [PATCH] hwrng: Pass entropy to add_hwgenerator_randomness() in bits, not bytes
+Date: Fri, 25 Jul 2014 15:19:18 -0700
+Message-Id: <1406326758-4516-1-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 1.9.0.1.gd5ccf8c
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 25, 2014 at 10:24:29AM -0700, Alexei Starovoitov wrote:
-> On Fri, Jul 25, 2014 at 6:00 AM, Daniel Borkmann <dborkman@redhat.com> wrote:
-> > On 07/25/2014 01:54 PM, Pablo Neira Ayuso wrote:
-> >>
-> >> On Fri, Jul 25, 2014 at 01:25:35PM +0200, Daniel Borkmann wrote:
-> >>>
-> >>> [ also Cc'ing Willem, Pablo ]
-> >>>
-> >>> On 07/25/2014 10:04 AM, Alexei Starovoitov wrote:
-> >>>>
-> >>>> 'sk_filter' name is used as 'struct sk_filter', function sk_filter() and
-> >>>> as variable 'sk_filter', which makes code hard to read.
-> >>>> Also it's easily confused with 'struct sock_filter'
-> >>>> Rename 'struct sk_filter' to 'struct bpf_prog' to clarify semantics and
-> >>>> align the name with generic BPF use model.
-> >>>
-> >>>
-> >>> Agreed, as we went for kernel/bpf/, renaming makes absolutely sense.
-> >>
-> >>
-> >> My nft socket filtering changes are accomodated into struct sk_filter,
-> >> and will still be, so I still need some generic name there...
-> >
-> >
-> > All the parts from filter.c which is BPF's core engine have been moved
-> > into kernel/bpf/ to get it ready for tracing et al, since there is not
-> > always a socket context anymore. The *whole* infrastructure around struct
-> > sk_filter is [e]BPF and used in non-net related contexts as well, whereas
-> > nft socket filtering is *only* for sockets. Due to the socket-only specific
-> > use case why doesn't it make more sense to have a union in struct sock
-> > around sk_filter (or however we name it) and only allow one of the two
-> > being loaded on a socket?
-> 
-> yep.
-> Adding nft specific things to struct sk_filter/bpf_prog is not correct,
-> since this struct is already part of seccomp and will be used
-> in net-less configurations. SK_RUN_FILTER() macro will also be
-> renamed into something like RUN_BPF_RPOG(). It's one and only
-> way to invoke eBPF programs. Adding nft selector cannot work,
-> since eBPF is used with generic context whereas nft is skb specific.
-> If you want to add nft filtering capabilities to sockets, you'd need
-> to add union around 'struct bpf_prog' inside 'struct sock', which will be
-> much cleaner way.
+rng_get_data() returns the number of bytes read from the hardware.
+The entropy argument to add_hwgenerator_randomness() is passed
+directly to credit_entropy_bits() so we should be passing the
+number of bits, not bytes here.
 
-The struct sk_filter is almost providing the generic framework, it
-just needs to be generalized, a quick layout for it:
+Fixes: be4000bc464 "hwrng: create filler thread"
+Cc: Torsten Duwe <duwe@suse.de>
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+---
+ drivers/char/hw_random/core.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-struct sk_filter {
-        struct sk_filter_cb     *cb;
-        atomic_t                refcnt;
-        struct rcu_head         head;
-        char                    data[0]; /* here, you specific struct bpf_prog */
-};
+diff --git a/drivers/char/hw_random/core.c b/drivers/char/hw_random/core.c
+index dc80cdab733d..6e02ec103cc7 100644
+--- a/drivers/char/hw_random/core.c
++++ b/drivers/char/hw_random/core.c
+@@ -362,7 +362,7 @@ static int hwrng_fillfn(void *unused)
+ 			continue;
+ 		}
+ 		add_hwgenerator_randomness((void *)rng_fillbuf, rc,
+-					   (rc*current_quality)>>10);
++					   rc * current_quality * 8 >> 10);
+ 	}
+ 	hwrng_fill = NULL;
+ 	return 0;
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
 
-The refcnt is required sk_filter_{charge,uncharge,release}. The struct
-rcu_head is also need from sk_filter_release().
-
-struct sk_filter_cb {
-        int type;
-        struct module *me;
-        void (*charge)(struct sock *sk, struct sk_filter *fp);
-        void (*uncharge)(struct sock *sk, struct sk_filter *fp);
-        unsigned int (*run_filter)(struct sk_filter *fp, struct sk_buff *skb);
-};
-
-We have to provide the register/unregister functions for the specific
-callbacks depending on the socket filtering approach. But I'll have to
-introduce this myself when I come up with the nft patches again.
-
-So meanwhile, you should just encapsulate what really belongs to
-struct bpf_prog, ie. size, bytecode, jitted, etc. and leave struct
-sk_filter in place.
-
-struct sk_filter {
-        atomic_t                refcnt;
-        struct rcu_head         head;
-        u32                     len;
-        struct bpf_prog         bpf_prog;
-};
-
-The len will go into struct bpf_prog once the generic infrastructure
-above is introduced since the semantics (number of blocks) is
-different from nft.
-
-If you straight forward rename the entire structure, you'll take
-things that are not specific from bpf such as refcnt and rcu_head.
