@@ -1,157 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934350AbaGYPtz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 11:49:55 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:43868 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932564AbaGYPty (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 11:49:54 -0400
-Message-ID: <53D27C9E.8090406@suse.cz>
-Date: Fri, 25 Jul 2014 17:49:50 +0200
-From: Vlastimil Babka <vbabka@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1760935AbaGYPxq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 11:53:46 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:50993 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753938AbaGYPxp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jul 2014 11:53:45 -0400
+Date: Fri, 25 Jul 2014 17:53:32 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: "Yan, Zheng" <zheng.z.yan@intel.com>, linux-kernel@vger.kernel.org,
+        mingo@kernel.org, acme@infradead.org, eranian@google.com
+Subject: Re: [PATCH v3 6/9] perf, x86: handle multiple records in PEBS buffer
+Message-ID: <20140725155332.GC6758@twins.programming.kicks-ass.net>
+References: <1406016602-31845-1-git-send-email-zheng.z.yan@intel.com>
+ <1406016602-31845-7-git-send-email-zheng.z.yan@intel.com>
+ <20140725081033.GV3935@laptop>
+ <20140725150445.GG18735@two.firstfloor.org>
 MIME-Version: 1.0
-To: Mel Gorman <mgorman@suse.de>
-CC: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>, linux-kernel@vger.kernel.org,
-        Minchan Kim <minchan@kernel.org>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-Subject: Re: [PATCH V4 14/15] mm, compaction: try to capture the just-created
- high-order freepage
-References: <1405518503-27687-1-git-send-email-vbabka@suse.cz> <1405518503-27687-15-git-send-email-vbabka@suse.cz> <20140725125608.GI10819@suse.de>
-In-Reply-To: <20140725125608.GI10819@suse.de>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="1wow/xSTdHOmT240"
+Content-Disposition: inline
+In-Reply-To: <20140725150445.GG18735@two.firstfloor.org>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/25/2014 02:56 PM, Mel Gorman wrote:
-> On Wed, Jul 16, 2014 at 03:48:22PM +0200, Vlastimil Babka wrote:
->> Compaction uses watermark checking to determine if it succeeded in creating
->> a high-order free page. My testing has shown that this is quite racy and it
->> can happen that watermark checking in compaction succeeds, and moments later
->> the watermark checking in page allocation fails, even though the number of
->> free pages has increased meanwhile.
->>
->> It should be more reliable if direct compaction captured the high-order free
->> page as soon as it detects it, and pass it back to allocation. This would
->> also reduce the window for somebody else to allocate the free page.
->>
->> Capture has been implemented before by 1fb3f8ca0e92 ("mm: compaction: capture
->> a suitable high-order page immediately when it is made available"), but later
->> reverted by 8fb74b9f ("mm: compaction: partially revert capture of suitable
->> high-order page") due to a bug.
->>
->> This patch differs from the previous attempt in two aspects:
->>
->> 1) The previous patch scanned free lists to capture the page. In this patch,
->>     only the cc->order aligned block that the migration scanner just finished
->>     is considered, but only if pages were actually isolated for migration in
->>     that block. Tracking cc->order aligned blocks also has benefits for the
->>     following patch that skips blocks where non-migratable pages were found.
->>
->> 2) The operations done in buffered_rmqueue() and get_page_from_freelist() are
->>     closely followed so that page capture mimics normal page allocation as much
->>     as possible. This includes operations such as prep_new_page() and
->>     page->pfmemalloc setting (that was missing in the previous attempt), zone
->>     statistics are updated etc. Due to subtleties with IRQ disabling and
->>     enabling this cannot be simply factored out from the normal allocation
->>     functions without affecting the fastpath.
->>
->> This patch has tripled compaction success rates (as recorded in vmstat) in
->> stress-highalloc mmtests benchmark, although allocation success rates increased
->> only by a few percent. Closer inspection shows that due to the racy watermark
->> checking and lack of lru_add_drain(), the allocations that resulted in direct
->> compactions were often failing, but later allocations succeeeded in the fast
->> path. So the benefit of the patch to allocation success rates may be limited,
->> but it improves the fairness in the sense that whoever spent the time
->> compacting has a higher change of benefitting from it, and also can stop
->> compacting sooner, as page availability is detected immediately. With better
->> success detection, the contribution of compaction to high-order allocation
->> success success rates is also no longer understated by the vmstats.
->>
->> Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
->> Cc: Minchan Kim <minchan@kernel.org>
->> Cc: Mel Gorman <mgorman@suse.de>
->> Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
->> Cc: Michal Nazarewicz <mina86@mina86.com>
->> Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
->> Cc: Christoph Lameter <cl@linux.com>
->> Cc: Rik van Riel <riel@redhat.com>
->> Cc: David Rientjes <rientjes@google.com>
->> <SNIP>
->> @@ -2279,14 +2307,43 @@ __alloc_pages_direct_compact(gfp_t gfp_mask, unsigned int order,
->>   	 */
->>   	count_vm_event(COMPACTSTALL);
->>
->> -	/* Page migration frees to the PCP lists but we want merging */
->> -	drain_pages(get_cpu());
->> -	put_cpu();
->> +	/* Did we capture a page? */
->> +	if (page) {
->> +		struct zone *zone;
->> +		unsigned long flags;
->> +		/*
->> +		 * Mimic what buffered_rmqueue() does and capture_new_page()
->> +		 * has not yet done.
->> +		 */
->> +		zone = page_zone(page);
->> +
->> +		local_irq_save(flags);
->> +		zone_statistics(preferred_zone, zone, gfp_mask);
->> +		local_irq_restore(flags);
->>
->> -	page = get_page_from_freelist(gfp_mask, nodemask,
->> -			order, zonelist, high_zoneidx,
->> -			alloc_flags & ~ALLOC_NO_WATERMARKS,
->> -			preferred_zone, classzone_idx, migratetype);
->> +		VM_BUG_ON_PAGE(bad_range(zone, page), page);
->> +		if (!prep_new_page(page, order, gfp_mask))
->> +			/* This is normally done in get_page_from_freelist() */
->> +			page->pfmemalloc = !!(alloc_flags &
->> +					ALLOC_NO_WATERMARKS);
->> +		else
->> +			page = NULL;
->> +	}
->> +
->> +	/* No capture but let's try allocating anyway */
->> +	if (!page) {
->> +		/*
->> +		 * Page migration frees to the PCP lists but we want
->> +		 * merging
->> +		 */
->> +		drain_pages(get_cpu());
->> +		put_cpu();
->> +
->
-> Would the attempted capture not drained already? Not a big deal so
 
-Well, the compaction might have returned without capture, just because 
-e.g. the watermarks became OK in the meanwhile. Although that should 
-mean that drain is not needed. So it might be redundant, but really not 
-hurt.
+--1wow/xSTdHOmT240
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I've also realized that this pcp draining (also in capture) could be 
-done for a single zone and it's useless to flush all zones. Memory 
-isolation could perhaps also benefit from that. But I'll add that to a 
-future series.
+On Fri, Jul 25, 2014 at 05:04:45PM +0200, Andi Kleen wrote:
+> > You can't.. the events might have different security context.
+> >=20
+> > Remember, the overflow bit is set from the overflow until the PEBS
+> > event is generated, this is quite a long time. So if another PEBS event
+> > gets generated while the other is still pending it will have both bits
+> > set. Even though the second bit is for another (unrelated) counter.
+>=20
+> When an event is not allowed by some policy it should be disabled
+> in global ctrl right? And disabling makes sure overflow is cleared,
+> and PEBS will not report it.
+>=20
+> When it's not disabled it could happen any time and there
+> is no isolation.
+>=20
+> Or is the concern that the PEBS buffer may not be flushed
+> on event switch/disable and you see something stale? I believe it is
+> flushed.
 
-> Acked-by: Mel Gorman <mgorman@suse.de>
+Suppose two pebs events, one has exclude_kernel set. It overflows,
+before entering the kernel, the other event generates PEBS records from
+inside the kernel with both events marked in the overflow field.
 
-Thanks for all the acks. I personally believe 1-14 are ready. Patch 15 
-could be deferred, the series can do without it just fine. Patch 15 does 
-work in most cases and the RFC was only to make sure it's an improvement 
-without subtle regressions. But it seems to affect fragmentation and 
-needs more testing and perhaps tuning. I also hoped for some external 
-testing, e.g. by DavidR who originally sent his version of the patch. So 
-Patch 15 could be fine in -mm but not in mainline yet.
+And only once we leave the kernel can the exclude_kernel event tick
+again and trigger the assist, finalyl clearing the bit.
 
-Vlastimil
+If you were to report the records to both events, one would get a lot of
+kernel info he was not entitled to.
 
->
->
+--1wow/xSTdHOmT240
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJT0n17AAoJEHZH4aRLwOS6vooP/02GvbWN5QeNsqQFlZR9y9Gr
+s+DGO/epaMlr4PtOeC3OzusILJFX2xblFVXLQrVf+25Ll06P2m6Pp6ULRFH4xqvq
+7Ql73hX0AN9QxviSYUVrWnf0KTPIsnQMO+X7XjjcAEjsJUiNYo7yDR5Xa4c/GS14
+iBovkrKr3LbDvNB9+ZMqvW8+yo9HSxjSFnr9PiMYH+lqtrL685vnWvjOynu12RqM
+BtvYX7pxcFQCdn7V+QdY16p06YERhgamTOlNGQIvMERELWnkukc0aut4rpmWazn0
+pxYH3YUiTpI+gW3FQDZmTSfumVlY6wOJ5vwiIrOL9q7NnLZN7Z7jFRV5bjsmE/Mc
+LYMs/aDz1sBB7M8f7MVwce8Emy26N+ZpGj8S6tORLhov5tr6Fj/nEiewmTI5Fxap
+4RTSR1gqmeoDPC6iz+RinlI2BBM7fYkE7E76vP78yf/nSyNV1uFDKFNv5PGLXD8M
+gNu7SneB4ZQXL55I1ImIlANrZZgsBM2+bfkL4ugVIrAf6syvRUH6gUyobnWKZP5Y
+GF2KghQFURR8PkZIFP37K7rovc9Aj9EissmOaw8VDHz9Ax06Xbcra91y8iJHSybv
+D+LTk1w8kD8+QnrhXw3t/REDZV39rE7jw0EAdvtzUBJR8V7VMEz3I0Sr41UJc5gr
+ntIcvEk3JkdLYDse0clo
+=Cy7Y
+-----END PGP SIGNATURE-----
+
+--1wow/xSTdHOmT240--
