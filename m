@@ -1,102 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759777AbaGYHtv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 03:49:51 -0400
-Received: from mail-wg0-f48.google.com ([74.125.82.48]:60041 "EHLO
-	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752265AbaGYHtu (ORCPT
+	id S1759548AbaGYHwN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 03:52:13 -0400
+Received: from ns207790.ip-94-23-215.eu ([94.23.215.26]:50714 "EHLO
+	ns207790.ip-94-23-215.eu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756912AbaGYHwM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 03:49:50 -0400
-Message-ID: <53D20C19.5000306@monstr.eu>
-Date: Fri, 25 Jul 2014 09:49:45 +0200
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Fri, 25 Jul 2014 03:52:12 -0400
+X-Greylist: delayed 504 seconds by postgrey-1.27 at vger.kernel.org; Fri, 25 Jul 2014 03:52:12 EDT
 MIME-Version: 1.0
-To: Vinod Koul <vinod.koul@intel.com>
-CC: =?UTF-8?B?QW5kcmVhcyBGw6RyYmVy?= <afaerber@suse.de>,
-        Michal Simek <michal.simek@xilinx.com>,
-        Andreas Olofsson <andreas@adapteva.com>,
-        Matteo Vit <matteo.vit@starwaredesign.com>,
-        Sean Rickerd <srickerd@suse.com>, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Srikanth T <sthokal@xilinx.com>
-Subject: Re: [PATCH v2 07/11] Documentation: devicetree: Fix Xilinx VDMA specification
-References: <1406242820-20140-1-git-send-email-afaerber@suse.de> <1406242820-20140-8-git-send-email-afaerber@suse.de>
-In-Reply-To: <1406242820-20140-8-git-send-email-afaerber@suse.de>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="6FkixWKDXrk6lh5imelucmhDsnrqsFdTe"
+Content-Type: text/plain; charset=UTF-8;
+ format=flowed
+Content-Transfer-Encoding: 8bit
+Date: Fri, 25 Jul 2014 10:43:46 +0300
+From: =?UTF-8?Q?R=C3=A9mi_Denis-Courmont?= <remi@remlab.net>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        LKML <linux-kernel@vger.kernel.org>, <netdev@vger.kernel.org>,
+        Dave Jones <davej@redhat.com>
+Subject: Re: net, phonet, rcu: rcu hang within =?UTF-8?Q?gprs=5Fattach?=
+In-Reply-To: <53D1865F.7040604@oracle.com>
+References: <53D1865F.7040604@oracle.com>
+Message-ID: <8427f661d1aa5707ee18596e812fd3c5@roundcube.remlab.net>
+User-Agent: Roundcube Webmail/0.7.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---6FkixWKDXrk6lh5imelucmhDsnrqsFdTe
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+    Hello,
 
-Hi Vinod,
+Le 2014-07-25 01:19, Sasha Levin a écrit :
+> This has reproduced couple of times, and has always originated from
+> gprs_attach. I don't see any obvious
+> issues with the code there, so I'm not sure if it's a fault of the
+> phonet or the rcu code.
 
-On 07/25/2014 01:00 AM, Andreas F=C3=A4rber wrote:
-> The specification requires xlnx,data-width, but example and driver use
-> xlnx,datawidth. Change the specification to match the implementation.
->=20
-> Signed-off-by: Andreas F=C3=A4rber <afaerber@suse.de>
-> ---
->  v2: New
-> =20
->  Documentation/devicetree/bindings/dma/xilinx/xilinx_vdma.txt | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->=20
-> diff --git a/Documentation/devicetree/bindings/dma/xilinx/xilinx_vdma.t=
-xt b/Documentation/devicetree/bindings/dma/xilinx/xilinx_vdma.txt
-> index 1405ed0..e4c4d47 100644
-> --- a/Documentation/devicetree/bindings/dma/xilinx/xilinx_vdma.txt
-> +++ b/Documentation/devicetree/bindings/dma/xilinx/xilinx_vdma.txt
-> @@ -25,7 +25,7 @@ Required child node properties:
->  - compatible: It should be either "xlnx,axi-vdma-mm2s-channel" or
->  	"xlnx,axi-vdma-s2mm-channel".
->  - interrupts: Should contain per channel VDMA interrupts.
-> -- xlnx,data-width: Should contain the stream data width, take values
-> +- xlnx,datawidth: Should contain the stream data width, take values
->  	{32,64...1024}.
-> =20
->  Optional child node properties:
->=20
+Beats me :-( Is it systematic or pseudo-random?
 
-Can you please take this patch through your tree?
+To be honest, I do not remember how well we tested that error path way 
+back when. Nevertheless gprs_detach() does basically the same thing, in 
+the non-error case, and it definitely worked well as far as I could 
+tell.
 
-Reviewed-by: Michal Simek <michal.simek@xilinx.com>
+Maybe Phonet should be dropped though. As much as I like to have my 
+name in MAINTAINERS, I have not heard of any remaining users for 
+up-to-date kernel versions. And with Broadcom shutting down what was 
+Nokia Wireless Modems, I doubt we will see new users ever.
 
-Thanks,
-Michal
-
---=20
-Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
-Maintainer of Linux kernel - Xilinx Zynq ARM architecture
-Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
-
-
-
---6FkixWKDXrk6lh5imelucmhDsnrqsFdTe
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iEYEARECAAYFAlPSDBkACgkQykllyylKDCGhOgCdH9m+jxhGj6jgOD0pSeMl0G0x
-C/MAmwfpKpnZ7UldJlhohfjgJ4Mil976
-=Kfag
------END PGP SIGNATURE-----
-
---6FkixWKDXrk6lh5imelucmhDsnrqsFdTe--
+-- 
+Rémi Denis-Courmont
