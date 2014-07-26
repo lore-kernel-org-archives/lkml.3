@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754555AbaGZTSU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 15:18:20 -0400
+	id S1754251AbaGZTN0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 15:13:26 -0400
 Received: from mail.linuxfoundation.org ([140.211.169.12]:34123 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753099AbaGZTN1 (ORCPT
+	with ESMTP id S1754131AbaGZTNV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 15:13:27 -0400
+	Sat, 26 Jul 2014 15:13:21 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Florian Westphal <fwestpha@redhat.com>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Neil Horman <nhorman@tuxdriver.com>,
-        Vlad Yasevich <vyasevich@gmail.com>,
+        Todd Fujinaka <todd.fujinaka@intel.com>,
+        Aaron Brown <aaron.f.brown@intel.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.15 040/109] net: sctp: check proc_dointvec result in proc_sctp_do_auth
-Date: Sat, 26 Jul 2014 12:02:02 -0700
-Message-Id: <20140726190225.052175334@linuxfoundation.org>
+Subject: [PATCH 3.15 024/109] igb: Workaround for i210 Errata 25: Slow System Clock
+Date: Sat, 26 Jul 2014 12:01:46 -0700
+Message-Id: <20140726190224.561385045@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.2
 In-Reply-To: <20140726190223.834037485@linuxfoundation.org>
 References: <20140726190223.834037485@linuxfoundation.org>
@@ -32,44 +31,221 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Borkmann <dborkman@redhat.com>
+From: Todd Fujinaka <todd.fujinaka@intel.com>
 
-[ Upstream commit 24599e61b7552673dd85971cf5a35369cd8c119e ]
+commit 948264879b6894dc389a44b99fae4f0b72932619 upstream.
 
-When writing to the sysctl field net.sctp.auth_enable, it can well
-be that the user buffer we handed over to proc_dointvec() via
-proc_sctp_do_auth() handler contains something other than integers.
+On some devices, the internal PLL circuit occasionally provides the
+wrong clock frequency after power up. The probability of failure is less
+than one failure per 1000 power cycles. When the failure occurs, the
+internal clock frequency is around 1/20 of the correct frequency.
 
-In that case, we would set an uninitialized 4-byte value from the
-stack to net->sctp.auth_enable that can be leaked back when reading
-the sysctl variable, and it can unintentionally turn auth_enable
-on/off based on the stack content since auth_enable is interpreted
-as a boolean.
-
-Fix it up by making sure proc_dointvec() returned sucessfully.
-
-Fixes: b14878ccb7fa ("net: sctp: cache auth_enable per endpoint")
-Reported-by: Florian Westphal <fwestpha@redhat.com>
-Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
-Acked-by: Neil Horman <nhorman@tuxdriver.com>
-Acked-by: Vlad Yasevich <vyasevich@gmail.com>
+Signed-off-by: Todd Fujinaka <todd.fujinaka@intel.com>
+Tested-by: Aaron Brown <aaron.f.brown@intel.com>
+Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/sctp/sysctl.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/net/sctp/sysctl.c
-+++ b/net/sctp/sysctl.c
-@@ -423,8 +423,7 @@ static int proc_sctp_do_auth(struct ctl_
- 		tbl.data = &net->sctp.auth_enable;
+---
+ drivers/net/ethernet/intel/igb/e1000_82575.c   |    7 ++
+ drivers/net/ethernet/intel/igb/e1000_defines.h |   18 +++---
+ drivers/net/ethernet/intel/igb/e1000_hw.h      |    3 +
+ drivers/net/ethernet/intel/igb/e1000_i210.c    |   66 +++++++++++++++++++++++++
+ drivers/net/ethernet/intel/igb/e1000_i210.h    |   12 ++++
+ drivers/net/ethernet/intel/igb/e1000_regs.h    |    1 
+ drivers/net/ethernet/intel/igb/igb_main.c      |   14 +++++
+ 7 files changed, 113 insertions(+), 8 deletions(-)
+
+--- a/drivers/net/ethernet/intel/igb/e1000_82575.c
++++ b/drivers/net/ethernet/intel/igb/e1000_82575.c
+@@ -1489,6 +1489,13 @@ static s32 igb_init_hw_82575(struct e100
+ 	s32 ret_val;
+ 	u16 i, rar_count = mac->rar_entry_count;
  
- 	ret = proc_dointvec(&tbl, write, buffer, lenp, ppos);
--
--	if (write) {
-+	if (write && ret == 0) {
- 		struct sock *sk = net->sctp.ctl_sock;
++	if ((hw->mac.type >= e1000_i210) &&
++	    !(igb_get_flash_presence_i210(hw))) {
++		ret_val = igb_pll_workaround_i210(hw);
++		if (ret_val)
++			return ret_val;
++	}
++
+ 	/* Initialize identification LED */
+ 	ret_val = igb_id_led_init(hw);
+ 	if (ret_val) {
+--- a/drivers/net/ethernet/intel/igb/e1000_defines.h
++++ b/drivers/net/ethernet/intel/igb/e1000_defines.h
+@@ -49,14 +49,15 @@
+ #define E1000_CTRL_EXT_SDP3_DIR  0x00000800 /* SDP3 Data direction */
  
- 		net->sctp.auth_enable = new_value;
+ /* Physical Func Reset Done Indication */
+-#define E1000_CTRL_EXT_PFRSTD    0x00004000
+-#define E1000_CTRL_EXT_LINK_MODE_MASK 0x00C00000
+-#define E1000_CTRL_EXT_LINK_MODE_PCIE_SERDES  0x00C00000
+-#define E1000_CTRL_EXT_LINK_MODE_1000BASE_KX  0x00400000
+-#define E1000_CTRL_EXT_LINK_MODE_SGMII   0x00800000
+-#define E1000_CTRL_EXT_LINK_MODE_GMII   0x00000000
+-#define E1000_CTRL_EXT_EIAME          0x01000000
+-#define E1000_CTRL_EXT_IRCA           0x00000001
++#define E1000_CTRL_EXT_PFRSTD	0x00004000
++#define E1000_CTRL_EXT_SDLPE	0X00040000  /* SerDes Low Power Enable */
++#define E1000_CTRL_EXT_LINK_MODE_MASK	0x00C00000
++#define E1000_CTRL_EXT_LINK_MODE_PCIE_SERDES	0x00C00000
++#define E1000_CTRL_EXT_LINK_MODE_1000BASE_KX	0x00400000
++#define E1000_CTRL_EXT_LINK_MODE_SGMII	0x00800000
++#define E1000_CTRL_EXT_LINK_MODE_GMII	0x00000000
++#define E1000_CTRL_EXT_EIAME	0x01000000
++#define E1000_CTRL_EXT_IRCA		0x00000001
+ /* Interrupt delay cancellation */
+ /* Driver loaded bit for FW */
+ #define E1000_CTRL_EXT_DRV_LOAD       0x10000000
+@@ -65,6 +66,7 @@
+ /* packet buffer parity error detection enabled */
+ /* descriptor FIFO parity error detection enable */
+ #define E1000_CTRL_EXT_PBA_CLR		0x80000000 /* PBA Clear */
++#define E1000_CTRL_EXT_PHYPDEN		0x00100000
+ #define E1000_I2CCMD_REG_ADDR_SHIFT	16
+ #define E1000_I2CCMD_PHY_ADDR_SHIFT	24
+ #define E1000_I2CCMD_OPCODE_READ	0x08000000
+--- a/drivers/net/ethernet/intel/igb/e1000_hw.h
++++ b/drivers/net/ethernet/intel/igb/e1000_hw.h
+@@ -571,4 +571,7 @@ struct net_device *igb_get_hw_dev(struct
+ /* These functions must be implemented by drivers */
+ s32 igb_read_pcie_cap_reg(struct e1000_hw *hw, u32 reg, u16 *value);
+ s32 igb_write_pcie_cap_reg(struct e1000_hw *hw, u32 reg, u16 *value);
++
++void igb_read_pci_cfg(struct e1000_hw *hw, u32 reg, u16 *value);
++void igb_write_pci_cfg(struct e1000_hw *hw, u32 reg, u16 *value);
+ #endif /* _E1000_HW_H_ */
+--- a/drivers/net/ethernet/intel/igb/e1000_i210.c
++++ b/drivers/net/ethernet/intel/igb/e1000_i210.c
+@@ -836,3 +836,69 @@ s32 igb_init_nvm_params_i210(struct e100
+ 	}
+ 	return ret_val;
+ }
++
++/**
++ * igb_pll_workaround_i210
++ * @hw: pointer to the HW structure
++ *
++ * Works around an errata in the PLL circuit where it occasionally
++ * provides the wrong clock frequency after power up.
++ **/
++s32 igb_pll_workaround_i210(struct e1000_hw *hw)
++{
++	s32 ret_val;
++	u32 wuc, mdicnfg, ctrl, ctrl_ext, reg_val;
++	u16 nvm_word, phy_word, pci_word, tmp_nvm;
++	int i;
++
++	/* Get and set needed register values */
++	wuc = rd32(E1000_WUC);
++	mdicnfg = rd32(E1000_MDICNFG);
++	reg_val = mdicnfg & ~E1000_MDICNFG_EXT_MDIO;
++	wr32(E1000_MDICNFG, reg_val);
++
++	/* Get data from NVM, or set default */
++	ret_val = igb_read_invm_word_i210(hw, E1000_INVM_AUTOLOAD,
++					  &nvm_word);
++	if (ret_val)
++		nvm_word = E1000_INVM_DEFAULT_AL;
++	tmp_nvm = nvm_word | E1000_INVM_PLL_WO_VAL;
++	for (i = 0; i < E1000_MAX_PLL_TRIES; i++) {
++		/* check current state directly from internal PHY */
++		igb_read_phy_reg_gs40g(hw, (E1000_PHY_PLL_FREQ_PAGE |
++					 E1000_PHY_PLL_FREQ_REG), &phy_word);
++		if ((phy_word & E1000_PHY_PLL_UNCONF)
++		    != E1000_PHY_PLL_UNCONF) {
++			ret_val = 0;
++			break;
++		} else {
++			ret_val = -E1000_ERR_PHY;
++		}
++		/* directly reset the internal PHY */
++		ctrl = rd32(E1000_CTRL);
++		wr32(E1000_CTRL, ctrl|E1000_CTRL_PHY_RST);
++
++		ctrl_ext = rd32(E1000_CTRL_EXT);
++		ctrl_ext |= (E1000_CTRL_EXT_PHYPDEN | E1000_CTRL_EXT_SDLPE);
++		wr32(E1000_CTRL_EXT, ctrl_ext);
++
++		wr32(E1000_WUC, 0);
++		reg_val = (E1000_INVM_AUTOLOAD << 4) | (tmp_nvm << 16);
++		wr32(E1000_EEARBC_I210, reg_val);
++
++		igb_read_pci_cfg(hw, E1000_PCI_PMCSR, &pci_word);
++		pci_word |= E1000_PCI_PMCSR_D3;
++		igb_write_pci_cfg(hw, E1000_PCI_PMCSR, &pci_word);
++		usleep_range(1000, 2000);
++		pci_word &= ~E1000_PCI_PMCSR_D3;
++		igb_write_pci_cfg(hw, E1000_PCI_PMCSR, &pci_word);
++		reg_val = (E1000_INVM_AUTOLOAD << 4) | (nvm_word << 16);
++		wr32(E1000_EEARBC_I210, reg_val);
++
++		/* restore WUC register */
++		wr32(E1000_WUC, wuc);
++	}
++	/* restore MDICNFG setting */
++	wr32(E1000_MDICNFG, mdicnfg);
++	return ret_val;
++}
+--- a/drivers/net/ethernet/intel/igb/e1000_i210.h
++++ b/drivers/net/ethernet/intel/igb/e1000_i210.h
+@@ -36,6 +36,7 @@ s32 igb_read_xmdio_reg(struct e1000_hw *
+ s32 igb_write_xmdio_reg(struct e1000_hw *hw, u16 addr, u8 dev_addr, u16 data);
+ s32 igb_init_nvm_params_i210(struct e1000_hw *hw);
+ bool igb_get_flash_presence_i210(struct e1000_hw *hw);
++s32 igb_pll_workaround_i210(struct e1000_hw *hw);
+ 
+ #define E1000_STM_OPCODE		0xDB00
+ #define E1000_EEPROM_FLASH_SIZE_WORD	0x11
+@@ -81,4 +82,15 @@ enum E1000_INVM_STRUCTURE_TYPE {
+ #define NVM_LED_1_CFG_DEFAULT_I211	0x0184
+ #define NVM_LED_0_2_CFG_DEFAULT_I211	0x200C
+ 
++/* PLL Defines */
++#define E1000_PCI_PMCSR			0x44
++#define E1000_PCI_PMCSR_D3		0x03
++#define E1000_MAX_PLL_TRIES		5
++#define E1000_PHY_PLL_UNCONF		0xFF
++#define E1000_PHY_PLL_FREQ_PAGE		0xFC0000
++#define E1000_PHY_PLL_FREQ_REG		0x000E
++#define E1000_INVM_DEFAULT_AL		0x202F
++#define E1000_INVM_AUTOLOAD		0x0A
++#define E1000_INVM_PLL_WO_VAL		0x0010
++
+ #endif
+--- a/drivers/net/ethernet/intel/igb/e1000_regs.h
++++ b/drivers/net/ethernet/intel/igb/e1000_regs.h
+@@ -69,6 +69,7 @@
+ #define E1000_PBA      0x01000  /* Packet Buffer Allocation - RW */
+ #define E1000_PBS      0x01008  /* Packet Buffer Size */
+ #define E1000_EEMNGCTL 0x01010  /* MNG EEprom Control */
++#define E1000_EEARBC_I210 0x12024  /* EEPROM Auto Read Bus Control */
+ #define E1000_EEWR     0x0102C  /* EEPROM Write Register - RW */
+ #define E1000_I2CCMD   0x01028  /* SFPI2C Command Register - RW */
+ #define E1000_FRTIMER  0x01048  /* Free Running Timer - RW */
+--- a/drivers/net/ethernet/intel/igb/igb_main.c
++++ b/drivers/net/ethernet/intel/igb/igb_main.c
+@@ -7204,6 +7204,20 @@ static int igb_ioctl(struct net_device *
+ 	}
+ }
+ 
++void igb_read_pci_cfg(struct e1000_hw *hw, u32 reg, u16 *value)
++{
++	struct igb_adapter *adapter = hw->back;
++
++	pci_read_config_word(adapter->pdev, reg, value);
++}
++
++void igb_write_pci_cfg(struct e1000_hw *hw, u32 reg, u16 *value)
++{
++	struct igb_adapter *adapter = hw->back;
++
++	pci_write_config_word(adapter->pdev, reg, *value);
++}
++
+ s32 igb_read_pcie_cap_reg(struct e1000_hw *hw, u32 reg, u16 *value)
+ {
+ 	struct igb_adapter *adapter = hw->back;
 
 
