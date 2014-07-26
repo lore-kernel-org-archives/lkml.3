@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755056AbaGZTY5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 15:24:57 -0400
+	id S1755133AbaGZTZZ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 15:25:25 -0400
 Received: from mail.linuxfoundation.org ([140.211.169.12]:34641 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754930AbaGZTXX (ORCPT
+	with ESMTP id S1754916AbaGZTXW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 15:23:23 -0400
+	Sat, 26 Jul 2014 15:23:22 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Saravana Kannan <skannan@codeaurora.org>,
-        "Srivatsa S. Bhat" <srivatsa@mit.edu>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [PATCH 3.15 093/109] cpufreq: move policy kobj to policy->cpu at resume
-Date: Sat, 26 Jul 2014 12:02:55 -0700
-Message-Id: <20140726190226.655268502@linuxfoundation.org>
+        Dave Airlie <airlied@redhat.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [PATCH 3.15 089/109] Revert "drm/i915: reverse dp link param selection, prefer fast over wide again"
+Date: Sat, 26 Jul 2014 12:02:51 -0700
+Message-Id: <20140726190226.538130544@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.2
 In-Reply-To: <20140726190223.834037485@linuxfoundation.org>
 References: <20140726190223.834037485@linuxfoundation.org>
@@ -31,61 +29,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Viresh Kumar <viresh.kumar@linaro.org>
+From: Dave Airlie <airlied@redhat.com>
 
-commit 92c14bd9477a20a83144f08c0ca25b0308bf0730 upstream.
+commit c6930992948adf0f8fc1f6ff1da51c5002a2cf95 upstream.
 
-This is only relevant to implementations with multiple clusters, where clusters
-have separate clock lines but all CPUs within a cluster share it.
+This reverts commit 38aecea0ccbb909d635619cba22f1891e589b434.
 
-Consider a dual cluster platform with 2 cores per cluster. During suspend we
-start hot unplugging CPUs in order 1 to 3. When CPU2 is removed, policy->kobj
-would be moved to CPU3 and when CPU3 goes down we wouldn't free policy or its
-kobj as we want to retain permissions/values/etc.
+This breaks Haswell Thinkpad + Lenovo dock in SST mode with a HDMI monitor attached.
 
-Now on resume, we will get CPU2 before CPU3 and will call __cpufreq_add_dev().
-We will recover the old policy and update policy->cpu from 3 to 2 from
-update_policy_cpu().
+Before this we can 1920x1200 mode, after this we only ever get 1024x768, and
+a lot of deferring.
 
-But the kobj is still tied to CPU3 and isn't moved to CPU2. We wouldn't create a
-link for CPU2, but would try that for CPU3 while bringing it online. Which will
-report errors as CPU3 already has kobj assigned to it.
+This didn't revert clean, but this should be fine.
 
-This bug got introduced with commit 42f921a, which overlooked this scenario.
-
-To fix this, lets move kobj to the new policy->cpu while bringing first CPU of a
-cluster back. Also do a WARN_ON() if kobject_move failed, as we would reach here
-only for the first CPU of a non-boot cluster. And we can't recover from this
-situation, if kobject_move() fails.
-
-Fixes: 42f921a6f10c (cpufreq: remove sysfs files for CPUs which failed to come back after resume)
-Reported-and-tested-by: Bu Yitian <ybu@qti.qualcomm.com>
-Reported-by: Saravana Kannan <skannan@codeaurora.org>
-Reviewed-by: Srivatsa S. Bhat <srivatsa@mit.edu>
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+bugzilla: https://bugzilla.redhat.com/show_bug.cgi?id=1117008
+Signed-off-by: Dave Airlie <airlied@redhat.com>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/cpufreq/cpufreq.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ drivers/gpu/drm/i915/intel_dp.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/cpufreq/cpufreq.c
-+++ b/drivers/cpufreq/cpufreq.c
-@@ -1139,10 +1139,12 @@ static int __cpufreq_add_dev(struct devi
- 	 * the creation of a brand new one. So we need to perform this update
- 	 * by invoking update_policy_cpu().
- 	 */
--	if (recover_policy && cpu != policy->cpu)
-+	if (recover_policy && cpu != policy->cpu) {
- 		update_policy_cpu(policy, cpu);
--	else
-+		WARN_ON(kobject_move(&policy->kobj, &dev->kobj));
-+	} else {
- 		policy->cpu = cpu;
-+	}
+--- a/drivers/gpu/drm/i915/intel_dp.c
++++ b/drivers/gpu/drm/i915/intel_dp.c
+@@ -833,8 +833,8 @@ intel_dp_compute_config(struct intel_enc
+ 		mode_rate = intel_dp_link_required(adjusted_mode->crtc_clock,
+ 						   bpp);
  
- 	cpumask_copy(policy->cpus, cpumask_of(cpu));
- 
+-		for (lane_count = min_lane_count; lane_count <= max_lane_count; lane_count <<= 1) {
+-			for (clock = min_clock; clock <= max_clock; clock++) {
++		for (clock = min_clock; clock <= max_clock; clock++) {
++			for (lane_count = min_lane_count; lane_count <= max_lane_count; lane_count <<= 1) {
+ 				link_clock = drm_dp_bw_code_to_link_rate(bws[clock]);
+ 				link_avail = intel_dp_max_data_rate(link_clock,
+ 								    lane_count);
 
 
