@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754541AbaGZTRD (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 15:17:03 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34493 "EHLO
+	id S1754307AbaGZTRg (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 15:17:36 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34338 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754307AbaGZTNb (ORCPT
+	with ESMTP id S1754282AbaGZTNa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 15:13:31 -0400
+	Sat, 26 Jul 2014 15:13:30 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Loic Prylli <loicp@google.com>,
+        Edward Allcutt <edward.allcutt@openmarket.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.15 054/109] net: Fix NETDEV_CHANGE notifier usage causing spurious arp flush
-Date: Sat, 26 Jul 2014 12:02:16 -0700
-Message-Id: <20140726190225.498273405@linuxfoundation.org>
+Subject: [PATCH 3.15 051/109] ipv4: icmp: Fix pMTU handling for rare case
+Date: Sat, 26 Jul 2014 12:02:13 -0700
+Message-Id: <20140726190225.411783244@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.2
 In-Reply-To: <20140726190223.834037485@linuxfoundation.org>
 References: <20140726190223.834037485@linuxfoundation.org>
@@ -29,54 +29,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Loic Prylli <loicp@google.com>
+From: Edward Allcutt <edward.allcutt@openmarket.com>
 
-[ Upstream commit 54951194656e4853e441266fd095f880bc0398f3 ]
+[ Upstream commit 68b7107b62983f2cff0948292429d5f5999df096 ]
 
-A bug was introduced in NETDEV_CHANGE notifier sequence causing the
-arp table to be sometimes spuriously cleared (including manual arp
-entries marked permanent), upon network link carrier changes.
+Some older router implementations still send Fragmentation Needed
+errors with the Next-Hop MTU field set to zero. This is explicitly
+described as an eventuality that hosts must deal with by the
+standard (RFC 1191) since older standards specified that those
+bits must be zero.
 
-The changed argument for the notifier was applied only to a single
-caller of NETDEV_CHANGE, missing among others netdev_state_change().
-So upon net_carrier events induced by the network, which are
-triggering a call to netdev_state_change(), arp_netdev_event() would
-decide whether to clear or not arp cache based on random/junk stack
-values (a kind of read buffer overflow).
+Linux had a generic (for all of IPv4) implementation of the algorithm
+described in the RFC for searching a list of MTU plateaus for a good
+value. Commit 46517008e116 ("ipv4: Kill ip_rt_frag_needed().")
+removed this as part of the changes to remove the routing cache.
+Subsequently any Fragmentation Needed packet with a zero Next-Hop
+MTU has been discarded without being passed to the per-protocol
+handlers or notifying userspace for raw sockets.
 
-Fixes: be9efd365328 ("net: pass changed flags along with NETDEV_CHANGE event")
-Fixes: 6c8b4e3ff81b ("arp: flush arp cache on IFF_NOARP change")
-Signed-off-by: Loic Prylli <loicp@google.com>
+When there is a router which does not implement RFC 1191 on an
+MTU limited path then this results in stalled connections since
+large packets are discarded and the local protocols are not
+notified so they never attempt to lower the pMTU.
+
+One example I have seen is an OpenBSD router terminating IPSec
+tunnels. It's worth pointing out that this case is distinct from
+the BSD 4.2 bug which incorrectly calculated the Next-Hop MTU
+since the commit in question dismissed that as a valid concern.
+
+All of the per-protocols handlers implement the simple approach from
+RFC 1191 of immediately falling back to the minimum value. Although
+this is sub-optimal it is vastly preferable to connections hanging
+indefinitely.
+
+Remove the Next-Hop MTU != 0 check and allow such packets
+to follow the normal path.
+
+Fixes: 46517008e116 ("ipv4: Kill ip_rt_frag_needed().")
+Signed-off-by: Edward Allcutt <edward.allcutt@openmarket.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/core/dev.c |    9 ++++++++-
- 1 file changed, 8 insertions(+), 1 deletion(-)
+ net/ipv4/icmp.c |    2 --
+ 1 file changed, 2 deletions(-)
 
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -148,6 +148,9 @@ struct list_head ptype_all __read_mostly
- static struct list_head offload_base __read_mostly;
- 
- static int netif_rx_internal(struct sk_buff *skb);
-+static int call_netdevice_notifiers_info(unsigned long val,
-+					 struct net_device *dev,
-+					 struct netdev_notifier_info *info);
- 
- /*
-  * The @dev_base_head list is protected by @dev_base_lock and the rtnl
-@@ -1207,7 +1210,11 @@ EXPORT_SYMBOL(netdev_features_change);
- void netdev_state_change(struct net_device *dev)
- {
- 	if (dev->flags & IFF_UP) {
--		call_netdevice_notifiers(NETDEV_CHANGE, dev);
-+		struct netdev_notifier_change_info change_info;
-+
-+		change_info.flags_changed = 0;
-+		call_netdevice_notifiers_info(NETDEV_CHANGE, dev,
-+					      &change_info.info);
- 		rtmsg_ifinfo(RTM_NEWLINK, dev, 0, GFP_KERNEL);
- 	}
- }
+--- a/net/ipv4/icmp.c
++++ b/net/ipv4/icmp.c
+@@ -732,8 +732,6 @@ static void icmp_unreach(struct sk_buff
+ 				/* fall through */
+ 			case 0:
+ 				info = ntohs(icmph->un.frag.mtu);
+-				if (!info)
+-					goto out;
+ 			}
+ 			break;
+ 		case ICMP_SR_FAILED:
 
 
