@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754347AbaGZTNd (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 15:13:33 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34338 "EHLO
+	id S1754490AbaGZTPw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 15:15:52 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34511 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752417AbaGZTN2 (ORCPT
+	with ESMTP id S1753441AbaGZTNc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 15:13:28 -0400
+	Sat, 26 Jul 2014 15:13:32 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Marcel Holtmann <marcel@holtmann.org>,
-        Alexander Holler <holler@ahsoftware.de>
-Subject: [PATCH 3.15 008/109] Revert "Bluetooth: Add a new PID/VID 0cf3/e005 for AR3012."
-Date: Sat, 26 Jul 2014 12:01:30 -0700
-Message-Id: <20140726190224.079047564@linuxfoundation.org>
+        Maggie Mae Roxas <maggie.mae.roxas@gmail.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.15 058/109] net: mvneta: fix operation in 10 Mbit/s mode
+Date: Sat, 26 Jul 2014 12:02:20 -0700
+Message-Id: <20140726190225.613724283@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.2
 In-Reply-To: <20140726190223.834037485@linuxfoundation.org>
 References: <20140726190223.834037485@linuxfoundation.org>
@@ -29,58 +30,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Marcel Holtmann <marcel@holtmann.org>
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
 
-commit a2b23bacb315d3873ed90029fd2b68c95de734c0 upstream.
+[ Upstream commit 4d12bc63ab5e48c1d78fa13883cf6fefcea3afb1 ]
 
-This reverts commit ca58e594da2486c1d28e7ad547d82266604ec4ce.
+As reported by Maggie Mae Roxas, the mvneta driver doesn't behave
+properly in 10 Mbit/s mode. This is due to a misconfiguration of the
+MVNETA_GMAC_AUTONEG_CONFIG register: bit MVNETA_GMAC_CONFIG_MII_SPEED
+must be set for a 100 Mbit/s speed, but cleared for a 10 Mbit/s speed,
+which the driver was not properly doing. This commit adjusts that by
+setting the MVNETA_GMAC_CONFIG_MII_SPEED bit only in 100 Mbit/s mode,
+and relying on the fact that all the speed related bits of this
+register are cleared at the beginning of the mvneta_adjust_link()
+function.
 
-For some unclear reason this patch tries to add suport for the
-product ID 0xe005, but it ends up adding product ID 0x3005 to
-all the tables. This is obviously wrong and causing multiple
-issues.
+This problem exists since c5aff18204da0 ("net: mvneta: driver for
+Marvell Armada 370/XP network unit") which is the commit that
+introduced the mvneta driver in the kernel.
 
-The original patch seemed to be fine, but what ended up in 3.15
-is not what the patch intended. The commit 0a3658cccdf53 is
-already present and adds support for this hardware. This means
-only revert of this broken commit is requird.
-
-Signed-off-by: Marcel Holtmann <marcel@holtmann.org>
-Reported-by: Alexander Holler <holler@ahsoftware.de>
+Cc: <stable@vger.kernel.org> # v3.8+
+Fixes: c5aff18204da0 ("net: mvneta: driver for Marvell Armada 370/XP network unit")
+Reported-by: Maggie Mae Roxas <maggie.mae.roxas@gmail.com>
+Cc: Maggie Mae Roxas <maggie.mae.roxas@gmail.com>
+Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/bluetooth/ath3k.c |    2 --
- drivers/bluetooth/btusb.c |    1 -
- 2 files changed, 3 deletions(-)
+ drivers/net/ethernet/marvell/mvneta.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/bluetooth/ath3k.c
-+++ b/drivers/bluetooth/ath3k.c
-@@ -90,7 +90,6 @@ static const struct usb_device_id ath3k_
- 	{ USB_DEVICE(0x0b05, 0x17d0) },
- 	{ USB_DEVICE(0x0CF3, 0x0036) },
- 	{ USB_DEVICE(0x0CF3, 0x3004) },
--	{ USB_DEVICE(0x0CF3, 0x3005) },
- 	{ USB_DEVICE(0x0CF3, 0x3008) },
- 	{ USB_DEVICE(0x0CF3, 0x311D) },
- 	{ USB_DEVICE(0x0CF3, 0x311E) },
-@@ -140,7 +139,6 @@ static const struct usb_device_id ath3k_
- 	{ USB_DEVICE(0x0b05, 0x17d0), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x0CF3, 0x0036), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x0cf3, 0x3004), .driver_info = BTUSB_ATH3012 },
--	{ USB_DEVICE(0x0cf3, 0x3005), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x0cf3, 0x3008), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x0cf3, 0x311D), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x0cf3, 0x311E), .driver_info = BTUSB_ATH3012 },
---- a/drivers/bluetooth/btusb.c
-+++ b/drivers/bluetooth/btusb.c
-@@ -160,7 +160,6 @@ static const struct usb_device_id blackl
- 	{ USB_DEVICE(0x0b05, 0x17d0), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x0cf3, 0x0036), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x0cf3, 0x3004), .driver_info = BTUSB_ATH3012 },
--	{ USB_DEVICE(0x0cf3, 0x3005), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x0cf3, 0x3008), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x0cf3, 0x311d), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x0cf3, 0x311e), .driver_info = BTUSB_ATH3012 },
+--- a/drivers/net/ethernet/marvell/mvneta.c
++++ b/drivers/net/ethernet/marvell/mvneta.c
+@@ -2365,7 +2365,7 @@ static void mvneta_adjust_link(struct ne
+ 
+ 			if (phydev->speed == SPEED_1000)
+ 				val |= MVNETA_GMAC_CONFIG_GMII_SPEED;
+-			else
++			else if (phydev->speed == SPEED_100)
+ 				val |= MVNETA_GMAC_CONFIG_MII_SPEED;
+ 
+ 			mvreg_write(pp, MVNETA_GMAC_AUTONEG_CONFIG, val);
 
 
