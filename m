@@ -1,55 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756604AbaGZUGs (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 16:06:48 -0400
-Received: from mail-lb0-f177.google.com ([209.85.217.177]:47604 "EHLO
-	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752659AbaGZUGq (ORCPT
+	id S1756672AbaGZUHS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 16:07:18 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33711 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752651AbaGZTC7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 16:06:46 -0400
-Message-ID: <53D40A60.2060100@cogentembedded.com>
-Date: Sun, 27 Jul 2014 00:06:56 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Organization: Cogent Embedded
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Sat, 26 Jul 2014 15:02:59 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Michel Lespinasse <walken@google.com>,
+        Eric Dumazet <edumazet@google.com>,
+        Ariel Elior <ariel.elior@qlogic.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.10 23/56] bnx2x: fix possible panic under memory stress
+Date: Sat, 26 Jul 2014 12:02:16 -0700
+Message-Id: <20140726190200.795896964@linuxfoundation.org>
+X-Mailer: git-send-email 2.0.2
+In-Reply-To: <20140726190200.061512159@linuxfoundation.org>
+References: <20140726190200.061512159@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
-CC: Boris Brezillon <boris.brezillon@free-electrons.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] ARM: at91/dt: sam9x5: fix ADC compatible string
-References: <1406038067-14697-1-git-send-email-alexandre.belloni@free-electrons.com>
-In-Reply-To: <1406038067-14697-1-git-send-email-alexandre.belloni@free-electrons.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-On 07/22/2014 06:07 PM, Alexandre Belloni wrote:
+------------------
 
-> Use the correct compatible string for the ADC of the at91sam9x5 family of SoCs.
+From: Eric Dumazet <edumazet@google.com>
 
-> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-> ---
->   arch/arm/boot/dts/at91sam9x5.dtsi | 2 +-
->   1 file changed, 1 insertion(+), 1 deletion(-)
+[ Upstream commit 07b0f00964def8af9321cfd6c4a7e84f6362f728 ]
 
-> diff --git a/arch/arm/boot/dts/at91sam9x5.dtsi b/arch/arm/boot/dts/at91sam9x5.dtsi
-> index 2c0d6ea3ab41..5d7cf394f537 100644
-> --- a/arch/arm/boot/dts/at91sam9x5.dtsi
-> +++ b/arch/arm/boot/dts/at91sam9x5.dtsi
-> @@ -964,7 +964,7 @@
->   			adc0: adc@f804c000 {
->   				#address-cells = <1>;
->   				#size-cells = <0>;
-> -				compatible = "atmel,at91sam9260-adc";
-> +				compatible = "atmel,at91sam9x5-adc";
+While it is legal to kfree(NULL), it is not wise to use :
+put_page(virt_to_head_page(NULL))
 
-    Actually, wildcards are not allowed in the "compatible" prop.
+ BUG: unable to handle kernel paging request at ffffeba400000000
+ IP: [<ffffffffc01f5928>] virt_to_head_page+0x36/0x44 [bnx2x]
 
-WBR, Sergei
+Reported-by: Michel Lespinasse <walken@google.com>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Cc: Ariel Elior <ariel.elior@qlogic.com>
+Fixes: d46d132cc021 ("bnx2x: use netdev_alloc_frag()")
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+--- a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c
++++ b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c
+@@ -745,7 +745,8 @@ static void bnx2x_tpa_stop(struct bnx2x
+ 
+ 		return;
+ 	}
+-	bnx2x_frag_free(fp, new_data);
++	if (new_data)
++		bnx2x_frag_free(fp, new_data);
+ drop:
+ 	/* drop the packet and keep the buffer in the bin */
+ 	DP(NETIF_MSG_RX_STATUS,
+
 
