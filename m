@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753265AbaGZTTc (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 15:19:32 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34338 "EHLO
+	id S1753802AbaGZTTu (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 15:19:50 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34376 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754239AbaGZTN0 (ORCPT
+	with ESMTP id S1754223AbaGZTNZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 15:13:26 -0400
+	Sat, 26 Jul 2014 15:13:25 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Daniel Borkmann <dborkman@redhat.com>,
+        Tyler Hall <tylerwhall@gmail.com>,
+        Oliver Hartkopp <socketcan@hartkopp.net>,
+        Andre Naujoks <nautsch2@gmail.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.15 037/109] net: sctp: propagate sysctl errors from proc_do* properly
-Date: Sat, 26 Jul 2014 12:01:59 -0700
-Message-Id: <20140726190224.957440754@linuxfoundation.org>
+Subject: [PATCH 3.15 036/109] slcan: Port write_wakeup deadlock fix from slip
+Date: Sat, 26 Jul 2014 12:01:58 -0700
+Message-Id: <20140726190224.918628639@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.2
 In-Reply-To: <20140726190223.834037485@linuxfoundation.org>
 References: <20140726190223.834037485@linuxfoundation.org>
@@ -29,150 +31,120 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Borkmann <dborkman@redhat.com>
+From: Tyler Hall <tylerwhall@gmail.com>
 
-[ Upstream commit ff5e92c1affe7166b3f6e7073e648ed65a6e2e59 ]
+[ Upstream commit a8e83b17536aad603fbeae4c460f2da0ee9fe6ed ]
 
-sysctl handler proc_sctp_do_hmac_alg(), proc_sctp_do_rto_min() and
-proc_sctp_do_rto_max() do not properly reflect some error cases
-when writing values via sysctl from internal proc functions such
-as proc_dointvec() and proc_dostring().
+The commit "slip: Fix deadlock in write_wakeup" fixes a deadlock caused
+by a change made in both slcan and slip. This is a direct port of that
+fix.
 
-In all these cases we pass the test for write != 0 and partially
-do additional work just to notice that additional sanity checks
-fail and we return with hard-coded -EINVAL while proc_do*
-functions might also return different errors. So fix this up by
-simply testing a successful return of proc_do* right after
-calling it.
-
-This also allows to propagate its return value onwards to the user.
-While touching this, also fix up some minor style issues.
-
-Fixes: 4f3fdf3bc59c ("sctp: add check rto_min and rto_max in sysctl")
-Fixes: 3c68198e7511 ("sctp: Make hmac algorithm selection for cookie generation dynamic")
-Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
+Signed-off-by: Tyler Hall <tylerwhall@gmail.com>
+Cc: Oliver Hartkopp <socketcan@hartkopp.net>
+Cc: Andre Naujoks <nautsch2@gmail.com>
+Cc: David S. Miller <davem@davemloft.net>
+Cc: linux-kernel@vger.kernel.org
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/sctp/sysctl.c |   43 +++++++++++++++++++++++--------------------
- 1 file changed, 23 insertions(+), 20 deletions(-)
+ drivers/net/can/slcan.c |   37 +++++++++++++++++++++++++++----------
+ 1 file changed, 27 insertions(+), 10 deletions(-)
 
---- a/net/sctp/sysctl.c
-+++ b/net/sctp/sysctl.c
-@@ -307,41 +307,40 @@ static int proc_sctp_do_hmac_alg(struct
- 				loff_t *ppos)
- {
- 	struct net *net = current->nsproxy->net_ns;
--	char tmp[8];
- 	struct ctl_table tbl;
--	int ret;
--	int changed = 0;
-+	bool changed = false;
- 	char *none = "none";
-+	char tmp[8];
-+	int ret;
+--- a/drivers/net/can/slcan.c
++++ b/drivers/net/can/slcan.c
+@@ -52,6 +52,7 @@
+ #include <linux/delay.h>
+ #include <linux/init.h>
+ #include <linux/kernel.h>
++#include <linux/workqueue.h>
+ #include <linux/can.h>
+ #include <linux/can/skb.h>
  
- 	memset(&tbl, 0, sizeof(struct ctl_table));
+@@ -85,6 +86,7 @@ struct slcan {
+ 	struct tty_struct	*tty;		/* ptr to TTY structure	     */
+ 	struct net_device	*dev;		/* easy for intr handling    */
+ 	spinlock_t		lock;
++	struct work_struct	tx_work;	/* Flushes transmit buffer   */
  
- 	if (write) {
- 		tbl.data = tmp;
--		tbl.maxlen = 8;
-+		tbl.maxlen = sizeof(tmp);
- 	} else {
- 		tbl.data = net->sctp.sctp_hmac_alg ? : none;
- 		tbl.maxlen = strlen(tbl.data);
- 	}
--		ret = proc_dostring(&tbl, write, buffer, lenp, ppos);
- 
--	if (write) {
-+	ret = proc_dostring(&tbl, write, buffer, lenp, ppos);
-+	if (write && ret == 0) {
- #ifdef CONFIG_CRYPTO_MD5
- 		if (!strncmp(tmp, "md5", 3)) {
- 			net->sctp.sctp_hmac_alg = "md5";
--			changed = 1;
-+			changed = true;
- 		}
- #endif
- #ifdef CONFIG_CRYPTO_SHA1
- 		if (!strncmp(tmp, "sha1", 4)) {
- 			net->sctp.sctp_hmac_alg = "sha1";
--			changed = 1;
-+			changed = true;
- 		}
- #endif
- 		if (!strncmp(tmp, "none", 4)) {
- 			net->sctp.sctp_hmac_alg = NULL;
--			changed = 1;
-+			changed = true;
- 		}
--
- 		if (!changed)
- 			ret = -EINVAL;
- 	}
-@@ -354,11 +353,10 @@ static int proc_sctp_do_rto_min(struct c
- 				loff_t *ppos)
- {
- 	struct net *net = current->nsproxy->net_ns;
--	int new_value;
--	struct ctl_table tbl;
- 	unsigned int min = *(unsigned int *) ctl->extra1;
- 	unsigned int max = *(unsigned int *) ctl->extra2;
--	int ret;
-+	struct ctl_table tbl;
-+	int ret, new_value;
- 
- 	memset(&tbl, 0, sizeof(struct ctl_table));
- 	tbl.maxlen = sizeof(unsigned int);
-@@ -367,12 +365,15 @@ static int proc_sctp_do_rto_min(struct c
- 		tbl.data = &new_value;
- 	else
- 		tbl.data = &net->sctp.rto_min;
-+
- 	ret = proc_dointvec(&tbl, write, buffer, lenp, ppos);
--	if (write) {
--		if (ret || new_value > max || new_value < min)
-+	if (write && ret == 0) {
-+		if (new_value > max || new_value < min)
- 			return -EINVAL;
-+
- 		net->sctp.rto_min = new_value;
- 	}
-+
- 	return ret;
+ 	/* These are pointers to the malloc()ed frame buffers. */
+ 	unsigned char		rbuff[SLC_MTU];	/* receiver buffer	     */
+@@ -309,36 +311,46 @@ static void slc_encaps(struct slcan *sl,
+ 	sl->dev->stats.tx_bytes += cf->can_dlc;
  }
  
-@@ -381,11 +382,10 @@ static int proc_sctp_do_rto_max(struct c
- 				loff_t *ppos)
+-/*
+- * Called by the driver when there's room for more data.  If we have
+- * more packets to send, we send them here.
+- */
+-static void slcan_write_wakeup(struct tty_struct *tty)
++/* Write out any remaining transmit buffer. Scheduled when tty is writable */
++static void slcan_transmit(struct work_struct *work)
  {
- 	struct net *net = current->nsproxy->net_ns;
--	int new_value;
--	struct ctl_table tbl;
- 	unsigned int min = *(unsigned int *) ctl->extra1;
- 	unsigned int max = *(unsigned int *) ctl->extra2;
--	int ret;
-+	struct ctl_table tbl;
-+	int ret, new_value;
++	struct slcan *sl = container_of(work, struct slcan, tx_work);
+ 	int actual;
+-	struct slcan *sl = (struct slcan *) tty->disc_data;
  
- 	memset(&tbl, 0, sizeof(struct ctl_table));
- 	tbl.maxlen = sizeof(unsigned int);
-@@ -394,12 +394,15 @@ static int proc_sctp_do_rto_max(struct c
- 		tbl.data = &new_value;
- 	else
- 		tbl.data = &net->sctp.rto_max;
-+
- 	ret = proc_dointvec(&tbl, write, buffer, lenp, ppos);
--	if (write) {
--		if (ret || new_value > max || new_value < min)
-+	if (write && ret == 0) {
-+		if (new_value > max || new_value < min)
- 			return -EINVAL;
-+
- 		net->sctp.rto_max = new_value;
++	spin_lock_bh(&sl->lock);
+ 	/* First make sure we're connected. */
+-	if (!sl || sl->magic != SLCAN_MAGIC || !netif_running(sl->dev))
++	if (!sl->tty || sl->magic != SLCAN_MAGIC || !netif_running(sl->dev)) {
++		spin_unlock_bh(&sl->lock);
+ 		return;
++	}
+ 
+-	spin_lock_bh(&sl->lock);
+ 	if (sl->xleft <= 0)  {
+ 		/* Now serial buffer is almost free & we can start
+ 		 * transmission of another packet */
+ 		sl->dev->stats.tx_packets++;
+-		clear_bit(TTY_DO_WRITE_WAKEUP, &tty->flags);
++		clear_bit(TTY_DO_WRITE_WAKEUP, &sl->tty->flags);
+ 		spin_unlock_bh(&sl->lock);
+ 		netif_wake_queue(sl->dev);
+ 		return;
  	}
-+
- 	return ret;
+ 
+-	actual = tty->ops->write(tty, sl->xhead, sl->xleft);
++	actual = sl->tty->ops->write(sl->tty, sl->xhead, sl->xleft);
+ 	sl->xleft -= actual;
+ 	sl->xhead += actual;
+ 	spin_unlock_bh(&sl->lock);
  }
  
++/*
++ * Called by the driver when there's room for more data.
++ * Schedule the transmit.
++ */
++static void slcan_write_wakeup(struct tty_struct *tty)
++{
++	struct slcan *sl = tty->disc_data;
++
++	schedule_work(&sl->tx_work);
++}
++
+ /* Send a can_frame to a TTY queue. */
+ static netdev_tx_t slc_xmit(struct sk_buff *skb, struct net_device *dev)
+ {
+@@ -528,6 +540,7 @@ static struct slcan *slc_alloc(dev_t lin
+ 	sl->magic = SLCAN_MAGIC;
+ 	sl->dev	= dev;
+ 	spin_lock_init(&sl->lock);
++	INIT_WORK(&sl->tx_work, slcan_transmit);
+ 	slcan_devs[i] = dev;
+ 
+ 	return sl;
+@@ -626,8 +639,12 @@ static void slcan_close(struct tty_struc
+ 	if (!sl || sl->magic != SLCAN_MAGIC || sl->tty != tty)
+ 		return;
+ 
++	spin_lock_bh(&sl->lock);
+ 	tty->disc_data = NULL;
+ 	sl->tty = NULL;
++	spin_unlock_bh(&sl->lock);
++
++	flush_work(&sl->tx_work);
+ 
+ 	/* Flush network side */
+ 	unregister_netdev(sl->dev);
 
 
