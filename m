@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753914AbaGZTNF (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 15:13:05 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34106 "EHLO
+	id S1756202AbaGZTtj (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 15:49:39 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34123 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752929AbaGZTM7 (ORCPT
+	with ESMTP id S1753916AbaGZTNG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 15:12:59 -0400
+	Sat, 26 Jul 2014 15:13:06 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Yuchung Cheng <ycheng@google.com>,
-        Neal Cardwell <ncardwell@google.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 49/87] tcp: fix false undo corner cases
-Date: Sat, 26 Jul 2014 12:02:23 -0700
-Message-Id: <20140726190216.194697200@linuxfoundation.org>
+        Chris Mason <clm@fb.com>, Martin Lau <kafai@fb.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [PATCH 3.14 68/87] ring-buffer: Fix polling on trace_pipe
+Date: Sat, 26 Jul 2014 12:02:42 -0700
+Message-Id: <20140726190216.828755701@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.2
 In-Reply-To: <20140726190214.530473925@linuxfoundation.org>
 References: <20140726190214.530473925@linuxfoundation.org>
@@ -30,98 +29,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Yuchung Cheng <ycheng@google.com>
+From: Martin Lau <kafai@fb.com>
 
-[ Upstream commit 6e08d5e3c8236e7484229e46fdf92006e1dd4c49 ]
+commit 97b8ee845393701edc06e27ccec2876ff9596019 upstream.
 
-The undo code assumes that, upon entering loss recovery, TCP
-1) always retransmit something
-2) the retransmission never fails locally (e.g., qdisc drop)
+ring_buffer_poll_wait() should always put the poll_table to its wait_queue
+even there is immediate data available.  Otherwise, the following epoll and
+read sequence will eventually hang forever:
 
-so undo_marker is set in tcp_enter_recovery() and undo_retrans is
-incremented only when tcp_retransmit_skb() is successful.
+1. Put some data to make the trace_pipe ring_buffer read ready first
+2. epoll_ctl(efd, EPOLL_CTL_ADD, trace_pipe_fd, ee)
+3. epoll_wait()
+4. read(trace_pipe_fd) till EAGAIN
+5. Add some more data to the trace_pipe ring_buffer
+6. epoll_wait() -> this epoll_wait() will block forever
 
-When the assumption is broken because TCP's cwnd is too small to
-retransmit or the retransmit fails locally. The next (DUP)ACK
-would incorrectly revert the cwnd and the congestion state in
-tcp_try_undo_dsack() or tcp_may_undo(). Subsequent (DUP)ACKs
-may enter the recovery state. The sender repeatedly enter and
-(incorrectly) exit recovery states if the retransmits continue to
-fail locally while receiving (DUP)ACKs.
+~ During the epoll_ctl(efd, EPOLL_CTL_ADD,...) call in step 2,
+  ring_buffer_poll_wait() returns immediately without adding poll_table,
+  which has poll_table->_qproc pointing to ep_poll_callback(), to its
+  wait_queue.
+~ During the epoll_wait() call in step 3 and step 6,
+  ring_buffer_poll_wait() cannot add ep_poll_callback() to its wait_queue
+  because the poll_table->_qproc is NULL and it is how epoll works.
+~ When there is new data available in step 6, ring_buffer does not know
+  it has to call ep_poll_callback() because it is not in its wait queue.
+  Hence, block forever.
 
-The fix is to initialize undo_retrans to -1 and start counting on
-the first retransmission. Always increment undo_retrans even if the
-retransmissions fail locally because they couldn't cause DSACKs to
-undo the cwnd reduction.
+Other poll implementation seems to call poll_wait() unconditionally as the very
+first thing to do.  For example, tcp_poll() in tcp.c.
 
-Signed-off-by: Yuchung Cheng <ycheng@google.com>
-Signed-off-by: Neal Cardwell <ncardwell@google.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Link: http://lkml.kernel.org/p/20140610060637.GA14045@devbig242.prn2.facebook.com
+
+Fixes: 2a2cc8f7c4d0 "ftrace: allow the event pipe to be polled"
+Reviewed-by: Chris Mason <clm@fb.com>
+Signed-off-by: Martin Lau <kafai@fb.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/ipv4/tcp_input.c  |    8 ++++----
- net/ipv4/tcp_output.c |    6 ++++--
- 2 files changed, 8 insertions(+), 6 deletions(-)
 
---- a/net/ipv4/tcp_input.c
-+++ b/net/ipv4/tcp_input.c
-@@ -1113,7 +1113,7 @@ static bool tcp_check_dsack(struct sock
- 	}
+---
+ kernel/trace/ring_buffer.c |    4 ----
+ 1 file changed, 4 deletions(-)
+
+--- a/kernel/trace/ring_buffer.c
++++ b/kernel/trace/ring_buffer.c
+@@ -616,10 +616,6 @@ int ring_buffer_poll_wait(struct ring_bu
+ 	struct ring_buffer_per_cpu *cpu_buffer;
+ 	struct rb_irq_work *work;
  
- 	/* D-SACK for already forgotten data... Do dumb counting. */
--	if (dup_sack && tp->undo_marker && tp->undo_retrans &&
-+	if (dup_sack && tp->undo_marker && tp->undo_retrans > 0 &&
- 	    !after(end_seq_0, prior_snd_una) &&
- 	    after(end_seq_0, tp->undo_marker))
- 		tp->undo_retrans--;
-@@ -1193,7 +1193,7 @@ static u8 tcp_sacktag_one(struct sock *s
- 
- 	/* Account D-SACK for retransmitted packet. */
- 	if (dup_sack && (sacked & TCPCB_RETRANS)) {
--		if (tp->undo_marker && tp->undo_retrans &&
-+		if (tp->undo_marker && tp->undo_retrans > 0 &&
- 		    after(end_seq, tp->undo_marker))
- 			tp->undo_retrans--;
- 		if (sacked & TCPCB_SACKED_ACKED)
-@@ -1894,7 +1894,7 @@ static void tcp_clear_retrans_partial(st
- 	tp->lost_out = 0;
- 
- 	tp->undo_marker = 0;
--	tp->undo_retrans = 0;
-+	tp->undo_retrans = -1;
- }
- 
- void tcp_clear_retrans(struct tcp_sock *tp)
-@@ -2663,7 +2663,7 @@ static void tcp_enter_recovery(struct so
- 
- 	tp->prior_ssthresh = 0;
- 	tp->undo_marker = tp->snd_una;
--	tp->undo_retrans = tp->retrans_out;
-+	tp->undo_retrans = tp->retrans_out ? : -1;
- 
- 	if (inet_csk(sk)->icsk_ca_state < TCP_CA_CWR) {
- 		if (!ece_ack)
---- a/net/ipv4/tcp_output.c
-+++ b/net/ipv4/tcp_output.c
-@@ -2448,8 +2448,6 @@ int tcp_retransmit_skb(struct sock *sk,
- 		if (!tp->retrans_stamp)
- 			tp->retrans_stamp = TCP_SKB_CB(skb)->when;
- 
--		tp->undo_retrans += tcp_skb_pcount(skb);
+-	if ((cpu == RING_BUFFER_ALL_CPUS && !ring_buffer_empty(buffer)) ||
+-	    (cpu != RING_BUFFER_ALL_CPUS && !ring_buffer_empty_cpu(buffer, cpu)))
+-		return POLLIN | POLLRDNORM;
 -
- 		/* snd_nxt is stored to detect loss of retransmitted segment,
- 		 * see tcp_input.c tcp_sacktag_write_queue().
- 		 */
-@@ -2457,6 +2455,10 @@ int tcp_retransmit_skb(struct sock *sk,
- 	} else {
- 		NET_INC_STATS_BH(sock_net(sk), LINUX_MIB_TCPRETRANSFAIL);
- 	}
-+
-+	if (tp->undo_retrans < 0)
-+		tp->undo_retrans = 0;
-+	tp->undo_retrans += tcp_skb_pcount(skb);
- 	return err;
- }
- 
+ 	if (cpu == RING_BUFFER_ALL_CPUS)
+ 		work = &buffer->irq_work;
+ 	else {
 
 
