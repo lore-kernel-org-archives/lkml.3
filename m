@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755929AbaGZT6k (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 15:58:40 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33752 "EHLO
+	id S1755829AbaGZT6i (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 15:58:38 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33860 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752781AbaGZTDK (ORCPT
+	with ESMTP id S1752682AbaGZTDK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 26 Jul 2014 15:03:10 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Suresh Reddy <Suresh.Reddy@emulex.com>,
-        Sathya Perla <sathya.perla@emulex.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 34/56] be2net: set EQ DB clear-intr bit in be_open()
-Date: Sat, 26 Jul 2014 12:02:27 -0700
-Message-Id: <20140726190201.174904251@linuxfoundation.org>
+        Gavin Guo <gavin.guo@canonical.com>,
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: [PATCH 3.14 01/87] usb: Check if port status is equal to RxDetect
+Date: Sat, 26 Jul 2014 12:01:35 -0700
+Message-Id: <20140726190214.577352208@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.2
-In-Reply-To: <20140726190200.061512159@linuxfoundation.org>
-References: <20140726190200.061512159@linuxfoundation.org>
+In-Reply-To: <20140726190214.530473925@linuxfoundation.org>
+References: <20140726190214.530473925@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -26,38 +25,62 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Suresh Reddy <Suresh.Reddy@emulex.com>
+From: Gavin Guo <gavin.guo@canonical.com>
 
-[ Upstream commit 4cad9f3b61c7268fa89ab8096e23202300399b5d ]
+commit bb86cf569bbd7ad4dce581a37c7fbd748057e9dc upstream.
 
-On BE3, if the clear-interrupt bit of the EQ doorbell is not set the first
-time it is armed, ocassionally we have observed that the EQ doesn't raise
-anymore interrupts even if it is in armed state.
-This patch fixes this by setting the clear-interrupt bit when EQs are
-armed for the first time in be_open().
+When using USB 3.0 pen drive with the [AMD] FCH USB XHCI Controller
+[1022:7814], the second hotplugging will experience the USB 3.0 pen
+drive is recognized as high-speed device. After bisecting the kernel,
+I found the commit number 41e7e056cdc662f704fa9262e5c6e213b4ab45dd
+(USB: Allow USB 3.0 ports to be disabled.) causes the bug. After doing
+some experiments, the bug can be fixed by avoiding executing the function
+hub_usb3_port_disable(). Because the port status with [AMD] FCH USB
+XHCI Controlleris [1022:7814] is already in RxDetect
+(I tried printing out the port status before setting to Disabled state),
+it's reasonable to check the port status before really executing
+hub_usb3_port_disable().
 
-Signed-off-by: Suresh Reddy <Suresh.Reddy@emulex.com>
-Signed-off-by: Sathya Perla <sathya.perla@emulex.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Fixes: 41e7e056cdc6 (USB: Allow USB 3.0 ports to be disabled.)
+Signed-off-by: Gavin Guo <gavin.guo@canonical.com>
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/net/ethernet/emulex/benet/be_main.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/ethernet/emulex/benet/be_main.c
-+++ b/drivers/net/ethernet/emulex/benet/be_main.c
-@@ -2663,7 +2663,7 @@ static int be_open(struct net_device *ne
+---
+ drivers/usb/core/hub.c |   19 +++++++++++++++++++
+ 1 file changed, 19 insertions(+)
+
+--- a/drivers/usb/core/hub.c
++++ b/drivers/usb/core/hub.c
+@@ -884,6 +884,25 @@ static int hub_usb3_port_disable(struct
+ 	if (!hub_is_superspeed(hub->hdev))
+ 		return -EINVAL;
  
- 	for_all_evt_queues(adapter, eqo, i) {
- 		napi_enable(&eqo->napi);
--		be_eq_notify(adapter, eqo->q.id, true, false, 0);
-+		be_eq_notify(adapter, eqo->q.id, true, true, 0);
- 	}
- 	adapter->flags |= BE_FLAGS_NAPI_ENABLED;
- 
++	ret = hub_port_status(hub, port1, &portstatus, &portchange);
++	if (ret < 0)
++		return ret;
++
++	/*
++	 * USB controller Advanced Micro Devices, Inc. [AMD] FCH USB XHCI
++	 * Controller [1022:7814] will have spurious result making the following
++	 * usb 3.0 device hotplugging route to the 2.0 root hub and recognized
++	 * as high-speed device if we set the usb 3.0 port link state to
++	 * Disabled. Since it's already in USB_SS_PORT_LS_RX_DETECT state, we
++	 * check the state here to avoid the bug.
++	 */
++	if ((portstatus & USB_PORT_STAT_LINK_STATE) ==
++				USB_SS_PORT_LS_RX_DETECT) {
++		dev_dbg(&hub->ports[port1 - 1]->dev,
++			 "Not disabling port; link state is RxDetect\n");
++		return ret;
++	}
++
+ 	ret = hub_set_port_link_state(hub, port1, USB_SS_PORT_LS_SS_DISABLED);
+ 	if (ret)
+ 		return ret;
 
 
