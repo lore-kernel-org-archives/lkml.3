@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755507AbaGZTks (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 15:40:48 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34338 "EHLO
+	id S1755287AbaGZTkq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 15:40:46 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34358 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754090AbaGZTNS (ORCPT
+	with ESMTP id S1753050AbaGZTNT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 15:13:18 -0400
+	Sat, 26 Jul 2014 15:13:19 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
         Steven Rostedt <rostedt@goodmis.org>
-Subject: [PATCH 3.15 017/109] tracing: Add ftrace_trace_stack into __trace_puts/__trace_bputs
-Date: Sat, 26 Jul 2014 12:01:39 -0700
-Message-Id: <20140726190224.352508836@linuxfoundation.org>
+Subject: [PATCH 3.15 018/109] tracing: Add TRACE_ITER_PRINTK flag check in __trace_puts/__trace_bputs
+Date: Sat, 26 Jul 2014 12:01:40 -0700
+Message-Id: <20140726190224.383106328@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.2
 In-Reply-To: <20140726190223.834037485@linuxfoundation.org>
 References: <20140726190223.834037485@linuxfoundation.org>
@@ -31,82 +31,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
 
-commit 8abfb8727f4a724d31f9ccfd8013fbd16d539445 upstream.
+commit f0160a5a2912267c02cfe692eac955c360de5fdf upstream.
 
-Currently trace option stacktrace is not applicable for
-trace_printk with constant string argument, the reason is
-in __trace_puts/__trace_bputs ftrace_trace_stack is missing.
+The TRACE_ITER_PRINTK check in __trace_puts/__trace_bputs is missing,
+so add it, to be consistent with __trace_printk/__trace_bprintk.
+Those functions are all called by the same function: trace_printk().
 
-In contrast, when using trace_printk with non constant string
-argument(will call into __trace_printk/__trace_bprintk), then
-trace option stacktrace is workable, this inconstant result
-will confuses users a lot.
-
-Link: http://lkml.kernel.org/p/51E7A7C9.9040401@huawei.com
+Link: http://lkml.kernel.org/p/51E7A7D6.8090900@huawei.com
 
 Signed-off-by: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/trace/trace.c |   12 ++++++++++--
- 1 file changed, 10 insertions(+), 2 deletions(-)
+ kernel/trace/trace.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
 --- a/kernel/trace/trace.c
 +++ b/kernel/trace/trace.c
-@@ -466,6 +466,9 @@ int __trace_puts(unsigned long ip, const
- 	struct print_entry *entry;
- 	unsigned long irq_flags;
+@@ -468,6 +468,9 @@ int __trace_puts(unsigned long ip, const
  	int alloc;
-+	int pc;
+ 	int pc;
+ 
++	if (!(trace_flags & TRACE_ITER_PRINTK))
++		return 0;
 +
-+	pc = preempt_count();
+ 	pc = preempt_count();
  
  	if (unlikely(tracing_selftest_running || tracing_disabled))
- 		return 0;
-@@ -475,7 +478,7 @@ int __trace_puts(unsigned long ip, const
- 	local_save_flags(irq_flags);
- 	buffer = global_trace.trace_buffer.buffer;
- 	event = trace_buffer_lock_reserve(buffer, TRACE_PRINT, alloc, 
--					  irq_flags, preempt_count());
-+					  irq_flags, pc);
- 	if (!event)
- 		return 0;
- 
-@@ -492,6 +495,7 @@ int __trace_puts(unsigned long ip, const
- 		entry->buf[size] = '\0';
- 
- 	__buffer_unlock_commit(buffer, event);
-+	ftrace_trace_stack(buffer, irq_flags, 4, pc);
- 
- 	return size;
- }
-@@ -509,6 +513,9 @@ int __trace_bputs(unsigned long ip, cons
- 	struct bputs_entry *entry;
- 	unsigned long irq_flags;
+@@ -515,6 +518,9 @@ int __trace_bputs(unsigned long ip, cons
  	int size = sizeof(struct bputs_entry);
-+	int pc;
+ 	int pc;
+ 
++	if (!(trace_flags & TRACE_ITER_PRINTK))
++		return 0;
 +
-+	pc = preempt_count();
+ 	pc = preempt_count();
  
  	if (unlikely(tracing_selftest_running || tracing_disabled))
- 		return 0;
-@@ -516,7 +523,7 @@ int __trace_bputs(unsigned long ip, cons
- 	local_save_flags(irq_flags);
- 	buffer = global_trace.trace_buffer.buffer;
- 	event = trace_buffer_lock_reserve(buffer, TRACE_BPUTS, size,
--					  irq_flags, preempt_count());
-+					  irq_flags, pc);
- 	if (!event)
- 		return 0;
- 
-@@ -525,6 +532,7 @@ int __trace_bputs(unsigned long ip, cons
- 	entry->str			= str;
- 
- 	__buffer_unlock_commit(buffer, event);
-+	ftrace_trace_stack(buffer, irq_flags, 4, pc);
- 
- 	return 1;
- }
 
 
