@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754482AbaGZTq2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 15:46:28 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34138 "EHLO
+	id S1755403AbaGZTqr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 15:46:47 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34123 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753988AbaGZTNM (ORCPT
+	with ESMTP id S1753978AbaGZTNM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 26 Jul 2014 15:13:12 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Edward Allcutt <edward.allcutt@openmarket.com>,
+        Andrew Vagin <avagin@openvz.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Christoph Paasch <christoph.paasch@uclouvain.be>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 44/87] ipv4: icmp: Fix pMTU handling for rare case
-Date: Sat, 26 Jul 2014 12:02:18 -0700
-Message-Id: <20140726190215.959752130@linuxfoundation.org>
+Subject: [PATCH 3.14 43/87] tcp: Fix divide by zero when pushing during tcp-repair
+Date: Sat, 26 Jul 2014 12:02:17 -0700
+Message-Id: <20140726190215.926687082@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.2
 In-Reply-To: <20140726190214.530473925@linuxfoundation.org>
 References: <20140726190214.530473925@linuxfoundation.org>
@@ -29,60 +31,130 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Edward Allcutt <edward.allcutt@openmarket.com>
+From: Christoph Paasch <christoph.paasch@uclouvain.be>
 
-[ Upstream commit 68b7107b62983f2cff0948292429d5f5999df096 ]
+[ Upstream commit 5924f17a8a30c2ae18d034a86ee7581b34accef6 ]
 
-Some older router implementations still send Fragmentation Needed
-errors with the Next-Hop MTU field set to zero. This is explicitly
-described as an eventuality that hosts must deal with by the
-standard (RFC 1191) since older standards specified that those
-bits must be zero.
+When in repair-mode and TCP_RECV_QUEUE is set, we end up calling
+tcp_push with mss_now being 0. If data is in the send-queue and
+tcp_set_skb_tso_segs gets called, we crash because it will divide by
+mss_now:
 
-Linux had a generic (for all of IPv4) implementation of the algorithm
-described in the RFC for searching a list of MTU plateaus for a good
-value. Commit 46517008e116 ("ipv4: Kill ip_rt_frag_needed().")
-removed this as part of the changes to remove the routing cache.
-Subsequently any Fragmentation Needed packet with a zero Next-Hop
-MTU has been discarded without being passed to the per-protocol
-handlers or notifying userspace for raw sockets.
+[  347.151939] divide error: 0000 [#1] SMP
+[  347.152907] Modules linked in:
+[  347.152907] CPU: 1 PID: 1123 Comm: packetdrill Not tainted 3.16.0-rc2 #4
+[  347.152907] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2007
+[  347.152907] task: f5b88540 ti: f3c82000 task.ti: f3c82000
+[  347.152907] EIP: 0060:[<c1601359>] EFLAGS: 00210246 CPU: 1
+[  347.152907] EIP is at tcp_set_skb_tso_segs+0x49/0xa0
+[  347.152907] EAX: 00000b67 EBX: f5acd080 ECX: 00000000 EDX: 00000000
+[  347.152907] ESI: f5a28f40 EDI: f3c88f00 EBP: f3c83d10 ESP: f3c83d00
+[  347.152907]  DS: 007b ES: 007b FS: 00d8 GS: 0033 SS: 0068
+[  347.152907] CR0: 80050033 CR2: 083158b0 CR3: 35146000 CR4: 000006b0
+[  347.152907] Stack:
+[  347.152907]  c167f9d9 f5acd080 000005b4 00000002 f3c83d20 c16013e6 f3c88f00 f5acd080
+[  347.152907]  f3c83da0 c1603b5a f3c83d38 c10a0188 00000000 00000000 f3c83d84 c10acc85
+[  347.152907]  c1ad5ec0 00000000 00000000 c1ad679c 010003e0 00000000 00000000 f3c88fc8
+[  347.152907] Call Trace:
+[  347.152907]  [<c167f9d9>] ? apic_timer_interrupt+0x2d/0x34
+[  347.152907]  [<c16013e6>] tcp_init_tso_segs+0x36/0x50
+[  347.152907]  [<c1603b5a>] tcp_write_xmit+0x7a/0xbf0
+[  347.152907]  [<c10a0188>] ? up+0x28/0x40
+[  347.152907]  [<c10acc85>] ? console_unlock+0x295/0x480
+[  347.152907]  [<c10ad24f>] ? vprintk_emit+0x1ef/0x4b0
+[  347.152907]  [<c1605716>] __tcp_push_pending_frames+0x36/0xd0
+[  347.152907]  [<c15f4860>] tcp_push+0xf0/0x120
+[  347.152907]  [<c15f7641>] tcp_sendmsg+0xf1/0xbf0
+[  347.152907]  [<c116d920>] ? kmem_cache_free+0xf0/0x120
+[  347.152907]  [<c106a682>] ? __sigqueue_free+0x32/0x40
+[  347.152907]  [<c106a682>] ? __sigqueue_free+0x32/0x40
+[  347.152907]  [<c114f0f0>] ? do_wp_page+0x3e0/0x850
+[  347.152907]  [<c161c36a>] inet_sendmsg+0x4a/0xb0
+[  347.152907]  [<c1150269>] ? handle_mm_fault+0x709/0xfb0
+[  347.152907]  [<c15a006b>] sock_aio_write+0xbb/0xd0
+[  347.152907]  [<c1180b79>] do_sync_write+0x69/0xa0
+[  347.152907]  [<c1181023>] vfs_write+0x123/0x160
+[  347.152907]  [<c1181d55>] SyS_write+0x55/0xb0
+[  347.152907]  [<c167f0d8>] sysenter_do_call+0x12/0x28
 
-When there is a router which does not implement RFC 1191 on an
-MTU limited path then this results in stalled connections since
-large packets are discarded and the local protocols are not
-notified so they never attempt to lower the pMTU.
+This can easily be reproduced with the following packetdrill-script (the
+"magic" with netem, sk_pacing and limit_output_bytes is done to prevent
+the kernel from pushing all segments, because hitting the limit without
+doing this is not so easy with packetdrill):
 
-One example I have seen is an OpenBSD router terminating IPSec
-tunnels. It's worth pointing out that this case is distinct from
-the BSD 4.2 bug which incorrectly calculated the Next-Hop MTU
-since the commit in question dismissed that as a valid concern.
+0   socket(..., SOCK_STREAM, IPPROTO_TCP) = 3
++0  setsockopt(3, SOL_SOCKET, SO_REUSEADDR, [1], 4) = 0
 
-All of the per-protocols handlers implement the simple approach from
-RFC 1191 of immediately falling back to the minimum value. Although
-this is sub-optimal it is vastly preferable to connections hanging
-indefinitely.
++0  bind(3, ..., ...) = 0
++0  listen(3, 1) = 0
 
-Remove the Next-Hop MTU != 0 check and allow such packets
-to follow the normal path.
++0  < S 0:0(0) win 32792 <mss 1460>
++0  > S. 0:0(0) ack 1 <mss 1460>
++0.1  < . 1:1(0) ack 1 win 65000
 
-Fixes: 46517008e116 ("ipv4: Kill ip_rt_frag_needed().")
-Signed-off-by: Edward Allcutt <edward.allcutt@openmarket.com>
++0  accept(3, ..., ...) = 4
+
+// This forces that not all segments of the snd-queue will be pushed
++0 `tc qdisc add dev tun0 root netem delay 10ms`
++0 `sysctl -w net.ipv4.tcp_limit_output_bytes=2`
++0 setsockopt(4, SOL_SOCKET, 47, [2], 4) = 0
+
++0 write(4,...,10000) = 10000
++0 write(4,...,10000) = 10000
+
+// Set tcp-repair stuff, particularly TCP_RECV_QUEUE
++0 setsockopt(4, SOL_TCP, 19, [1], 4) = 0
++0 setsockopt(4, SOL_TCP, 20, [1], 4) = 0
+
+// This now will make the write push the remaining segments
++0 setsockopt(4, SOL_SOCKET, 47, [20000], 4) = 0
++0 `sysctl -w net.ipv4.tcp_limit_output_bytes=130000`
+
+// Now we will crash
++0 write(4,...,1000) = 1000
+
+This happens since ec3423257508 (tcp: fix retransmission in repair
+mode). Prior to that, the call to tcp_push was prevented by a check for
+tp->repair.
+
+The patch fixes it, by adding the new goto-label out_nopush. When exiting
+tcp_sendmsg and a push is not required, which is the case for tp->repair,
+we go to this label.
+
+When repairing and calling send() with TCP_RECV_QUEUE, the data is
+actually put in the receive-queue. So, no push is required because no
+data has been added to the send-queue.
+
+Cc: Andrew Vagin <avagin@openvz.org>
+Cc: Pavel Emelyanov <xemul@parallels.com>
+Fixes: ec3423257508 (tcp: fix retransmission in repair mode)
+Signed-off-by: Christoph Paasch <christoph.paasch@uclouvain.be>
+Acked-by: Andrew Vagin <avagin@openvz.org>
+Acked-by: Pavel Emelyanov <xemul@parallels.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv4/icmp.c |    2 --
- 1 file changed, 2 deletions(-)
+ net/ipv4/tcp.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/net/ipv4/icmp.c
-+++ b/net/ipv4/icmp.c
-@@ -732,8 +732,6 @@ static void icmp_unreach(struct sk_buff
- 				/* fall through */
- 			case 0:
- 				info = ntohs(icmph->un.frag.mtu);
--				if (!info)
--					goto out;
- 			}
- 			break;
- 		case ICMP_SR_FAILED:
+--- a/net/ipv4/tcp.c
++++ b/net/ipv4/tcp.c
+@@ -1108,7 +1108,7 @@ int tcp_sendmsg(struct kiocb *iocb, stru
+ 	if (unlikely(tp->repair)) {
+ 		if (tp->repair_queue == TCP_RECV_QUEUE) {
+ 			copied = tcp_send_rcvq(sk, msg, size);
+-			goto out;
++			goto out_nopush;
+ 		}
+ 
+ 		err = -EINVAL;
+@@ -1282,6 +1282,7 @@ wait_for_memory:
+ out:
+ 	if (copied)
+ 		tcp_push(sk, flags, mss_now, tp->nonagle, size_goal);
++out_nopush:
+ 	release_sock(sk);
+ 	return copied + copied_syn;
+ 
 
 
