@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754852AbaGZTXR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 15:23:17 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34641 "EHLO
+	id S1754615AbaGZTa2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 15:30:28 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34635 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753167AbaGZTXO (ORCPT
+	with ESMTP id S1754845AbaGZTXR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 15:23:14 -0400
+	Sat, 26 Jul 2014 15:23:17 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Tomasz Figa <t.figa@samsung.com>, Jason Cooper <jason@lakedaemon.net>
-Subject: [PATCH 3.15 085/109] irqchip: gic: Fix core ID calculation when topology is read from DT
-Date: Sat, 26 Jul 2014 12:02:47 -0700
-Message-Id: <20140726190226.423070904@linuxfoundation.org>
+        Mike Snitzer <snitzer@redhat.com>, Joe Thornber <ejt@redhat.com>
+Subject: [PATCH 3.15 097/109] dm cache metadata: do not allow the data block size to change
+Date: Sat, 26 Jul 2014 12:02:59 -0700
+Message-Id: <20140726190226.770893340@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.2
 In-Reply-To: <20140726190223.834037485@linuxfoundation.org>
 References: <20140726190223.834037485@linuxfoundation.org>
@@ -30,58 +28,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tomasz Figa <t.figa@samsung.com>
+From: Mike Snitzer <snitzer@redhat.com>
 
-commit 29e697b11853d3f83b1864ae385abdad4aa2c361 upstream.
+commit 048e5a07f282c57815b3901d4a68a77fa131ce0a upstream.
 
-Certain GIC implementation, namely those found on earlier, single
-cluster, Exynos SoCs, have registers mapped without per-CPU banking,
-which means that the driver needs to use different offset for each CPU.
+The block size for the dm-cache's data device must remained fixed for
+the life of the cache.  Disallow any attempt to change the cache's data
+block size.
 
-Currently the driver calculates the offset by multiplying value returned
-by cpu_logical_map() by CPU offset parsed from DT. This is correct when
-CPU topology is not specified in DT and aforementioned function returns
-core ID alone. However when DT contains CPU topology, the function
-changes to return cluster ID as well, which is non-zero on mentioned
-SoCs and so breaks the calculation in GIC driver.
-
-This patch fixes this by masking out cluster ID in CPU offset
-calculation so that only core ID is considered. Multi-cluster Exynos
-SoCs already have banked GIC implementations, so this simple fix should
-be enough.
-
-Reported-by: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-Reported-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Signed-off-by: Tomasz Figa <t.figa@samsung.com>
-Fixes: db0d4db22a78d ("ARM: gic: allow GIC to support non-banked setups")
-Link: https://lkml.kernel.org/r/1405610624-18722-1-git-send-email-t.figa@samsung.com
-Signed-off-by: Jason Cooper <jason@lakedaemon.net>
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+Acked-by: Joe Thornber <ejt@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/irqchip/irq-gic.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ drivers/md/dm-cache-metadata.c |    9 +++++++++
+ 1 file changed, 9 insertions(+)
 
---- a/drivers/irqchip/irq-gic.c
-+++ b/drivers/irqchip/irq-gic.c
-@@ -42,6 +42,7 @@
- #include <linux/irqchip/chained_irq.h>
- #include <linux/irqchip/arm-gic.h>
+--- a/drivers/md/dm-cache-metadata.c
++++ b/drivers/md/dm-cache-metadata.c
+@@ -425,6 +425,15 @@ static int __open_metadata(struct dm_cac
  
-+#include <asm/cputype.h>
- #include <asm/irq.h>
- #include <asm/exception.h>
- #include <asm/smp_plat.h>
-@@ -954,7 +955,9 @@ void __init gic_init_bases(unsigned int
- 		}
+ 	disk_super = dm_block_data(sblock);
  
- 		for_each_possible_cpu(cpu) {
--			unsigned long offset = percpu_offset * cpu_logical_map(cpu);
-+			u32 mpidr = cpu_logical_map(cpu);
-+			u32 core_id = MPIDR_AFFINITY_LEVEL(mpidr, 0);
-+			unsigned long offset = percpu_offset * core_id;
- 			*per_cpu_ptr(gic->dist_base.percpu_base, cpu) = dist_base + offset;
- 			*per_cpu_ptr(gic->cpu_base.percpu_base, cpu) = cpu_base + offset;
- 		}
++	/* Verify the data block size hasn't changed */
++	if (le32_to_cpu(disk_super->data_block_size) != cmd->data_block_size) {
++		DMERR("changing the data block size (from %u to %llu) is not supported",
++		      le32_to_cpu(disk_super->data_block_size),
++		      (unsigned long long)cmd->data_block_size);
++		r = -EINVAL;
++		goto bad;
++	}
++
+ 	r = __check_incompat_features(disk_super, cmd);
+ 	if (r < 0)
+ 		goto bad;
 
 
