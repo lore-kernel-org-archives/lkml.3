@@ -1,83 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752215AbaGZRRY (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 13:17:24 -0400
-Received: from mail-bn1lp0142.outbound.protection.outlook.com ([207.46.163.142]:10447
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751532AbaGZRRW convert rfc822-to-8bit (ORCPT
+	id S1752147AbaGZRZA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 13:25:00 -0400
+Received: from mail-lb0-f170.google.com ([209.85.217.170]:48642 "EHLO
+	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751820AbaGZRY6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 13:17:22 -0400
-From: KY Srinivasan <kys@microsoft.com>
-To: "Martin K. Petersen" <martin.petersen@oracle.com>
-CC: Sitsofe Wheeler <sitsofe@gmail.com>, Christoph Hellwig <hch@infradead.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "ohering@suse.com" <ohering@suse.com>,
-        "apw@canonical.com" <apw@canonical.com>,
-        "jasowang@redhat.com" <jasowang@redhat.com>,
-        "jbottomley@parallels.com" <jbottomley@parallels.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
-Subject: RE: [PATCH v2 3/3] [SCSI] Make LBP quirk skip lbpme checks tests
-Thread-Topic: [PATCH v2 3/3] [SCSI] Make LBP quirk skip lbpme checks tests
-Thread-Index: AQHPqPJOfmLHK0GnrkSEOCNbbvYH8Zuyl+Mw
-Date: Sat, 26 Jul 2014 17:17:17 +0000
-Message-ID: <cc4a3fd5451242739929d266b88fa8fa@BY2PR0301MB0711.namprd03.prod.outlook.com>
-References: <20140724122223.GA31798@sucs.org>
-	<yq1iommkgkv.fsf@sermon.lab.mkp.net> <20140724153612.GA23648@sucs.org>
-	<yq1egxakb0z.fsf@sermon.lab.mkp.net>
-	<16fea5bb87ba47019527cee788e07a72@BY2PR0301MB0711.namprd03.prod.outlook.com>
-	<yq1wqb1gyw1.fsf@sermon.lab.mkp.net>
-	<e931486ef33b4e45bfebf2ab1b1b3037@BY2PR0301MB0711.namprd03.prod.outlook.com>
- <yq17g30dprc.fsf@sermon.lab.mkp.net>
-In-Reply-To: <yq17g30dprc.fsf@sermon.lab.mkp.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [50.135.110.52]
-x-microsoft-antispam: BCL:0;PCL:0;RULEID:
-x-forefront-prvs: 02843AA9E0
-x-forefront-antispam-report: SFV:NSPM;SFS:(6009001)(13464003)(199002)(377454003)(189002)(51704005)(107046002)(76482001)(95666004)(106116001)(99286002)(110136001)(76576001)(4396001)(50986999)(33646002)(76176999)(46102001)(105586002)(54356999)(92566001)(85852003)(19580405001)(20776003)(66066001)(81542001)(31966008)(86362001)(81342001)(80022001)(74502001)(77982001)(93886003)(77096002)(101416001)(19580395003)(85306003)(86612001)(83322001)(83072002)(74662001)(21056001)(79102001)(2656002)(74316001)(106356001)(99396002)(87936001)(108616002)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR0301MB0712;H:BY2PR0301MB0711.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
-X-OriginatorOrg: microsoft.onmicrosoft.com
+	Sat, 26 Jul 2014 13:24:58 -0400
+From: Andrey Ryabinin <ryabinin.a.a@gmail.com>
+X-Google-Original-From: Andrey Ryabinin <a.ryabinin@samsung.com>
+To: "David S. Miller" <davem@davemloft.net>
+Cc: Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Eric Dumazet <edumazet@google.com>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Sasha Levin <sasha.levin@oracle.com>,
+        Andrey Ryabinin <a.ryabinin@samsung.com>, <stable@vger.kernel.org>
+Subject: [PATCH] net: sendmsg: fix NULL pointer dereference
+Date: Sat, 26 Jul 2014 21:26:58 +0400
+Message-Id: <1406395618-4697-1-git-send-email-a.ryabinin@samsung.com>
+X-Mailer: git-send-email 1.8.5.5
+In-Reply-To: <1406390080.22881.75.camel@localhost>
+References: <1406390080.22881.75.camel@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Sasha's report:
+	> While fuzzing with trinity inside a KVM tools guest running the latest -next
+	> kernel with the KASAN patchset, I've stumbled on the following spew:
+	>
+	> [ 4448.949424] ==================================================================
+	> [ 4448.951737] AddressSanitizer: user-memory-access on address 0
+	> [ 4448.952988] Read of size 2 by thread T19638:
+	> [ 4448.954510] CPU: 28 PID: 19638 Comm: trinity-c76 Not tainted 3.16.0-rc4-next-20140711-sasha-00046-g07d3099-dirty #813
+	> [ 4448.956823]  ffff88046d86ca40 0000000000000000 ffff880082f37e78 ffff880082f37a40
+	> [ 4448.958233]  ffffffffb6e47068 ffff880082f37a68 ffff880082f37a58 ffffffffb242708d
+	> [ 4448.959552]  0000000000000000 ffff880082f37a88 ffffffffb24255b1 0000000000000000
+	> [ 4448.961266] Call Trace:
+	> [ 4448.963158] dump_stack (lib/dump_stack.c:52)
+	> [ 4448.964244] kasan_report_user_access (mm/kasan/report.c:184)
+	> [ 4448.965507] __asan_load2 (mm/kasan/kasan.c:352)
+	> [ 4448.966482] ? netlink_sendmsg (net/netlink/af_netlink.c:2339)
+	> [ 4448.967541] netlink_sendmsg (net/netlink/af_netlink.c:2339)
+	> [ 4448.968537] ? get_parent_ip (kernel/sched/core.c:2555)
+	> [ 4448.970103] sock_sendmsg (net/socket.c:654)
+	> [ 4448.971584] ? might_fault (mm/memory.c:3741)
+	> [ 4448.972526] ? might_fault (./arch/x86/include/asm/current.h:14 mm/memory.c:3740)
+	> [ 4448.973596] ? verify_iovec (net/core/iovec.c:64)
+	> [ 4448.974522] ___sys_sendmsg (net/socket.c:2096)
+	> [ 4448.975797] ? put_lock_stats.isra.13 (./arch/x86/include/asm/preempt.h:98 kernel/locking/lockdep.c:254)
+	> [ 4448.977030] ? lock_release_holdtime (kernel/locking/lockdep.c:273)
+	> [ 4448.978197] ? lock_release_non_nested (kernel/locking/lockdep.c:3434 (discriminator 1))
+	> [ 4448.979346] ? check_chain_key (kernel/locking/lockdep.c:2188)
+	> [ 4448.980535] __sys_sendmmsg (net/socket.c:2181)
+	> [ 4448.981592] ? trace_hardirqs_on_caller (kernel/locking/lockdep.c:2600)
+	> [ 4448.982773] ? trace_hardirqs_on (kernel/locking/lockdep.c:2607)
+	> [ 4448.984458] ? syscall_trace_enter (arch/x86/kernel/ptrace.c:1500 (discriminator 2))
+	> [ 4448.985621] ? trace_hardirqs_on_caller (kernel/locking/lockdep.c:2600)
+	> [ 4448.986754] SyS_sendmmsg (net/socket.c:2201)
+	> [ 4448.987708] tracesys (arch/x86/kernel/entry_64.S:542)
+	> [ 4448.988929] ==================================================================
 
+This reports means that we've come to netlink_sendmsg() with msg->msg_name == NULL and msg->msg_namelen > 0.
 
-> -----Original Message-----
-> From: Martin K. Petersen [mailto:martin.petersen@oracle.com]
-> Sent: Saturday, July 26, 2014 9:55 AM
-> To: KY Srinivasan
-> Cc: Martin K. Petersen; Sitsofe Wheeler; Christoph Hellwig;
-> gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
-> devel@linuxdriverproject.org; ohering@suse.com; apw@canonical.com;
-> jasowang@redhat.com; jbottomley@parallels.com; linux-
-> scsi@vger.kernel.org
-> Subject: Re: [PATCH v2 3/3] [SCSI] Make LBP quirk skip lbpme checks tests
-> 
-> >>>>> "KY" == KY Srinivasan <kys@microsoft.com> writes:
-> 
-> >> The LBP VPD page flags UNMAP as being supported. Do you actually
-> >> support UNMAP to DSM TRIM SCSI-ATA translation?
-> 
-> KY> I have been told by the Windows folks that this is done. I am trying
-> KY> to get additional details.
-> 
-> Great! I'd just like to have a reasonable level of confidence in what's
-> happening down the stack before I entertain turning something on that's not
-> being properly advertised.
+After this report there was no usual "Unable to handle kernel NULL pointer dereference"
+and this gave me a clue that address 0 is mapped and contains valid socket address structure in it.
 
-As I look at the output of inquiry between Linux on Hyper-V and native Linux, is not specifying
-conformance level the main issue?
+This bug was introduced in f3d3342602f8bcbf37d7c46641cb9bca7618eb1c
+(net: rework recvmsg handler msg_name and msg_namelen logic).
+Commit message states that:
+	"Set msg->msg_name = NULL if user specified a NULL in msg_name but had a
+	 non-null msg_namelen in verify_iovec/verify_compat_iovec. This doesn't
+	 affect sendto as it would bail out earlier while trying to copy-in the
+	 address."
+But in fact this affects sendto when address 0 is mapped and contains
+socket address structure in it. In such case copy-in address will succeed,
+verify_iovec() function will successfully exit with msg->msg_namelen > 0
+and msg->msg_name == NULL.
 
-K. Y
-> 
-> --
-> Martin K. Petersen	Oracle Linux Engineering
+This patch fixes it by setting msg_namelen to 0 if msg_name == NULL.
+
+Cc: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Cc: Eric Dumazet <edumazet@google.com>
+Cc: <stable@vger.kernel.org>
+Reported-by: Sasha Levin <sasha.levin@oracle.com>
+Signed-off-by: Andrey Ryabinin <a.ryabinin@samsung.com>
+---
+ net/compat.c     | 9 +++++----
+ net/core/iovec.c | 6 +++---
+ 2 files changed, 8 insertions(+), 7 deletions(-)
+
+diff --git a/net/compat.c b/net/compat.c
+index 9a76eaf..bc8aeef 100644
+--- a/net/compat.c
++++ b/net/compat.c
+@@ -85,7 +85,7 @@ int verify_compat_iovec(struct msghdr *kern_msg, struct iovec *kern_iov,
+ {
+ 	int tot_len;
+ 
+-	if (kern_msg->msg_namelen) {
++	if (kern_msg->msg_name && kern_msg->msg_namelen) {
+ 		if (mode == VERIFY_READ) {
+ 			int err = move_addr_to_kernel(kern_msg->msg_name,
+ 						      kern_msg->msg_namelen,
+@@ -93,10 +93,11 @@ int verify_compat_iovec(struct msghdr *kern_msg, struct iovec *kern_iov,
+ 			if (err < 0)
+ 				return err;
+ 		}
+-		if (kern_msg->msg_name)
+-			kern_msg->msg_name = kern_address;
+-	} else
++		kern_msg->msg_name = kern_address;
++	} else {
+ 		kern_msg->msg_name = NULL;
++		kern_msg->msg_namelen = 0;
++	}
+ 
+ 	tot_len = iov_from_user_compat_to_kern(kern_iov,
+ 					  (struct compat_iovec __user *)kern_msg->msg_iov,
+diff --git a/net/core/iovec.c b/net/core/iovec.c
+index 827dd6b..e1ec45a 100644
+--- a/net/core/iovec.c
++++ b/net/core/iovec.c
+@@ -39,7 +39,7 @@ int verify_iovec(struct msghdr *m, struct iovec *iov, struct sockaddr_storage *a
+ {
+ 	int size, ct, err;
+ 
+-	if (m->msg_namelen) {
++	if (m->msg_name && m->msg_namelen) {
+ 		if (mode == VERIFY_READ) {
+ 			void __user *namep;
+ 			namep = (void __user __force *) m->msg_name;
+@@ -48,10 +48,10 @@ int verify_iovec(struct msghdr *m, struct iovec *iov, struct sockaddr_storage *a
+ 			if (err < 0)
+ 				return err;
+ 		}
+-		if (m->msg_name)
+-			m->msg_name = address;
++		m->msg_name = address;
+ 	} else {
+ 		m->msg_name = NULL;
++		m->msg_namelen = 0;
+ 	}
+ 
+ 	size = m->msg_iovlen * sizeof(struct iovec);
+-- 
+1.8.5.5
+
