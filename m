@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755253AbaGZTjl (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 15:39:41 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34338 "EHLO
+	id S1755277AbaGZTj7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 15:39:59 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34123 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754101AbaGZTNT (ORCPT
+	with ESMTP id S1754093AbaGZTNT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 26 Jul 2014 15:13:19 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Vrabel <david.vrabel@citrix.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>
-Subject: [PATCH 3.15 020/109] xen/manage: fix potential deadlock when resuming the console
-Date: Sat, 26 Jul 2014 12:01:42 -0700
-Message-Id: <20140726190224.447218240@linuxfoundation.org>
+        Abbas Raza <Abbas_Raza@mentor.com>,
+        Peter Chen <peter.chen@freescale.com>
+Subject: [PATCH 3.15 002/109] usb: chipidea: udc: Disable auto ZLP generation on ep0
+Date: Sat, 26 Jul 2014 12:01:24 -0700
+Message-Id: <20140726190223.907960637@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.2
 In-Reply-To: <20140726190223.834037485@linuxfoundation.org>
 References: <20140726190223.834037485@linuxfoundation.org>
@@ -29,47 +29,93 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Vrabel <david.vrabel@citrix.com>
+From: Abbas Raza <Abbas_Raza@mentor.com>
 
-commit 1b6478231c6f5f844185acb32045cf195028cfce upstream.
+commit 953c66469735aed8d2ada639a72b150f01dae605 upstream.
 
-Calling xen_console_resume() in xen_suspend() causes a warning because
-it locks irq_mapping_update_lock (a mutex) and this may sleep.  If a
-userspace process is using the evtchn device then this mutex may be
-locked at the point of the stop_machine() call and
-xen_console_resume() would then deadlock.
+There are 2 methods for ZLP (zero-length packet) generation:
+1) In software
+2) Automatic generation by device controller
 
-Resuming the console after stop_machine() returns avoids this
-deadlock.
+1) is implemented in UDC driver and it attaches ZLP to IN packet if
+   descriptor->size < wLength
+2) can be enabled/disabled by setting ZLT bit in the QH
 
-Signed-off-by: David Vrabel <david.vrabel@citrix.com>
-Reviewed-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+When gadget ffs is connected to ubuntu host, the host sends
+get descriptor request and wLength in setup packet is 255 while the
+size of descriptor which will be sent by gadget in IN packet is
+64 byte. So the composite driver sets req->zero = 1.
+In UDC driver following code will be executed then
+
+        if (hwreq->req.zero && hwreq->req.length
+            && (hwreq->req.length % hwep->ep.maxpacket == 0))
+                add_td_to_list(hwep, hwreq, 0);
+
+Case-A:
+So in case of ubuntu host, UDC driver will attach a ZLP to the IN packet.
+ubuntu host will request 255 byte in IN request, gadget will send 64 byte
+with ZLP and host will come to know that there is no more data.
+But hold on, by default ZLT=0 for endpoint 0 so hardware also tries to
+automatically generate the ZLP which blocks enumeration for ~6 seconds due
+to endpoint 0 STALL, NAKs are sent to host for any requests (OUT/PING)
+
+Case-B:
+In case when gadget ffs is connected to Apple device, Apple device sends
+setup packet with wLength=64. So descriptor->size = 64 and wLength=64
+therefore req->zero = 0 and UDC driver will not attach any ZLP to the
+IN packet. Apple device requests 64 bytes, gets 64 bytes and doesn't
+further request for IN data. But ZLT=0 by default for endpoint 0 so
+hardware tries to automatically generate the ZLP which blocks enumeration
+for ~6 seconds due to endpoint 0 STALL, NAKs are sent to host for any
+requests (OUT/PING)
+
+According to USB2.0 specs:
+
+    8.5.3.2 Variable-length Data Stage
+    A control pipe may have a variable-length data phase in which the
+    host requests more data than is contained in the specified data
+    structure. When all of the data structure is returned to the host,
+    the function should indicate that the Data stage is ended by
+    returning a packet that is shorter than the MaxPacketSize for the
+    pipe. If the data structure is an exact multiple of wMaxPacketSize
+    for the pipe, the function will return a zero-length packet to indicate
+    the end of the Data stage.
+
+In Case-A mentioned above:
+If we disable software ZLP generation & ZLT=0 for endpoint 0 OR if software
+ZLP generation is not disabled but we set ZLT=1 for endpoint 0 then
+enumeration doesn't block for 6 seconds.
+
+In Case-B mentioned above:
+If we disable software ZLP generation & ZLT=0 for endpoint then enumeration
+still blocks due to ZLP automatically generated by hardware and host not needing
+it. But if we keep software ZLP generation enabled but we set ZLT=1 for
+endpoint 0 then enumeration doesn't block for 6 seconds.
+
+So the proper solution for this issue seems to disable automatic ZLP generation
+by hardware (i.e by setting ZLT=1 for endpoint 0) and let software (UDC driver)
+handle the ZLP generation based on req->zero field.
+
+Signed-off-by: Abbas Raza <Abbas_Raza@mentor.com>
+Signed-off-by: Peter Chen <peter.chen@freescale.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/xen/manage.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ drivers/usb/chipidea/udc.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/xen/manage.c
-+++ b/drivers/xen/manage.c
-@@ -109,7 +109,6 @@ static int xen_suspend(void *data)
+--- a/drivers/usb/chipidea/udc.c
++++ b/drivers/usb/chipidea/udc.c
+@@ -1176,8 +1176,8 @@ static int ep_enable(struct usb_ep *ep,
  
- 	if (!si->cancelled) {
- 		xen_irq_resume();
--		xen_console_resume();
- 		xen_timer_resume();
- 	}
- 
-@@ -166,6 +165,10 @@ static void do_suspend(void)
- 
- 	err = stop_machine(xen_suspend, &si, cpumask_of(0));
- 
-+	/* Resume console as early as possible. */
-+	if (!si.cancelled)
-+		xen_console_resume();
+ 	if (hwep->type == USB_ENDPOINT_XFER_CONTROL)
+ 		cap |= QH_IOS;
+-	if (hwep->num)
+-		cap |= QH_ZLT;
 +
- 	raw_notifier_call_chain(&xen_resume_notifier, 0, NULL);
- 
- 	dpm_resume_start(si.cancelled ? PMSG_THAW : PMSG_RESTORE);
++	cap |= QH_ZLT;
+ 	cap |= (hwep->ep.maxpacket << __ffs(QH_MAX_PKT)) & QH_MAX_PKT;
+ 	/*
+ 	 * For ISO-TX, we set mult at QH as the largest value, and use
 
 
