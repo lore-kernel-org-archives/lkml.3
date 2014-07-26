@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756575AbaGZUFz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 16:05:55 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33752 "EHLO
+	id S1754469AbaGZUGS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 16:06:18 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33769 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752698AbaGZTDF (ORCPT
+	with ESMTP id S1752683AbaGZTDE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 15:03:05 -0400
+	Sat, 26 Jul 2014 15:03:04 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Gerd Hoffmann <kraxel@redhat.com>, Jason Wang <jasowang@redhat.com>,
-        Dave Airlie <airlied@redhat.com>
-Subject: [PATCH 3.10 48/56] drm/qxl: return IRQ_NONE if it was not our irq
-Date: Sat, 26 Jul 2014 12:02:41 -0700
-Message-Id: <20140726190201.645473915@linuxfoundation.org>
+        Matthias Brugger <matthias.bgg@gmail.com>,
+        Jason Cooper <jason@lakedaemon.net>
+Subject: [PATCH 3.10 45/56] irqchip: gic: Add support for cortex a7 compatible string
+Date: Sat, 26 Jul 2014 12:02:38 -0700
+Message-Id: <20140726190201.531834620@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.2
 In-Reply-To: <20140726190200.061512159@linuxfoundation.org>
 References: <20140726190200.061512159@linuxfoundation.org>
@@ -29,37 +29,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jason Wang <jasowang@redhat.com>
+From: Matthias Brugger <matthias.bgg@gmail.com>
 
-commit fbb60fe35ad579b511de8604b06a30b43846473b upstream.
+commit a97e8027b1d28eafe6bafe062556c1ec926a49c6 upstream.
 
-Return IRQ_NONE if it was not our irq. This is necessary for the case
-when qxl is sharing irq line with a device A in a crash kernel. If qxl
-is initialized before A and A's irq was raised during this gap,
-returning IRQ_HANDLED in this case will cause this irq to be raised
-again after EOI since kernel think it was handled but in fact it was
-not.
+Patch 0a68214b "ARM: DT: Add binding for GIC virtualization extentions (VGIC)" added
+the "arm,cortex-a7-gic" compatible string, but the corresponding IRQCHIP_DECLARE
+was never added to the gic driver.
 
-Cc: Gerd Hoffmann <kraxel@redhat.com>
-Signed-off-by: Jason Wang <jasowang@redhat.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+To let real Cortex-A7 SoCs use it, add the necessary declaration to the device driver.
+
+Signed-off-by: Matthias Brugger <matthias.bgg@gmail.com>
+Link: https://lkml.kernel.org/r/1404388732-28890-1-git-send-email-matthias.bgg@gmail.com
+Fixes: 0a68214b76ca ("ARM: DT: Add binding for GIC virtualization extentions (VGIC)")
+Signed-off-by: Jason Cooper <jason@lakedaemon.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/qxl/qxl_irq.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/irqchip/irq-gic.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/gpu/drm/qxl/qxl_irq.c
-+++ b/drivers/gpu/drm/qxl/qxl_irq.c
-@@ -33,6 +33,9 @@ irqreturn_t qxl_irq_handler(DRM_IRQ_ARGS
+--- a/drivers/irqchip/irq-gic.c
++++ b/drivers/irqchip/irq-gic.c
+@@ -858,6 +858,7 @@ int __init gic_of_init(struct device_nod
+ }
+ IRQCHIP_DECLARE(cortex_a15_gic, "arm,cortex-a15-gic", gic_of_init);
+ IRQCHIP_DECLARE(cortex_a9_gic, "arm,cortex-a9-gic", gic_of_init);
++IRQCHIP_DECLARE(cortex_a7_gic, "arm,cortex-a7-gic", gic_of_init);
+ IRQCHIP_DECLARE(msm_8660_qgic, "qcom,msm-8660-qgic", gic_of_init);
+ IRQCHIP_DECLARE(msm_qgic2, "qcom,msm-qgic2", gic_of_init);
  
- 	pending = xchg(&qdev->ram_header->int_pending, 0);
- 
-+	if (!pending)
-+		return IRQ_NONE;
-+
- 	atomic_inc(&qdev->irq_received);
- 
- 	if (pending & QXL_INTERRUPT_DISPLAY) {
 
 
