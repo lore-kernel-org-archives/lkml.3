@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754183AbaGZTNX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 15:13:23 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34143 "EHLO
+	id S1755017AbaGZThG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 15:37:06 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34376 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753953AbaGZTNI (ORCPT
+	with ESMTP id S1754162AbaGZTNW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 15:13:08 -0400
+	Sat, 26 Jul 2014 15:13:22 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [PATCH 3.14 74/87] drm/radeon: avoid leaking edid data
-Date: Sat, 26 Jul 2014 12:02:48 -0700
-Message-Id: <20140726190217.014440954@linuxfoundation.org>
+        Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Subject: [PATCH 3.15 028/109] iwlwifi: dvm: dont enable CTS to self
+Date: Sat, 26 Jul 2014 12:01:50 -0700
+Message-Id: <20140726190224.676132096@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.2
-In-Reply-To: <20140726190214.530473925@linuxfoundation.org>
-References: <20140726190214.530473925@linuxfoundation.org>
+In-Reply-To: <20140726190223.834037485@linuxfoundation.org>
+References: <20140726190223.834037485@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -24,46 +24,53 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.15-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 
-commit 0ac66effe7fcdee55bda6d5d10d3372c95a41920 upstream.
+commit 43d826ca5979927131685cc2092c7ce862cb91cd upstream.
 
-In some cases we fetch the edid in the detect() callback
-in order to determine what sort of monitor is connected.
-If that happens, don't fetch the edid again in the get_modes()
-callback or we will leak the edid.
+We should always prefer to use full RTS protection. Using
+CTS to self gives a meaningless improvement, but this flow
+is much harder for the firmware which is likely to have
+issues with it.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/radeon_display.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ drivers/net/wireless/iwlwifi/dvm/rxon.c |   12 ------------
+ 1 file changed, 12 deletions(-)
 
---- a/drivers/gpu/drm/radeon/radeon_display.c
-+++ b/drivers/gpu/drm/radeon/radeon_display.c
-@@ -755,6 +755,10 @@ int radeon_ddc_get_modes(struct radeon_c
- 	struct radeon_device *rdev = dev->dev_private;
- 	int ret = 0;
+--- a/drivers/net/wireless/iwlwifi/dvm/rxon.c
++++ b/drivers/net/wireless/iwlwifi/dvm/rxon.c
+@@ -1068,13 +1068,6 @@ int iwlagn_commit_rxon(struct iwl_priv *
+ 	/* recalculate basic rates */
+ 	iwl_calc_basic_rates(priv, ctx);
  
-+	/* don't leak the edid if we already fetched it in detect() */
-+	if (radeon_connector->edid)
-+		goto got_edid;
-+
- 	/* on hw with routers, select right port */
- 	if (radeon_connector->router.ddc_valid)
- 		radeon_router_select_ddc_port(radeon_connector);
-@@ -794,6 +798,7 @@ int radeon_ddc_get_modes(struct radeon_c
- 			radeon_connector->edid = radeon_bios_get_hardcoded_edid(rdev);
- 	}
- 	if (radeon_connector->edid) {
-+got_edid:
- 		drm_mode_connector_update_edid_property(&radeon_connector->base, radeon_connector->edid);
- 		ret = drm_add_edid_modes(&radeon_connector->base, radeon_connector->edid);
- 		drm_edid_to_eld(&radeon_connector->base, radeon_connector->edid);
+-	/*
+-	 * force CTS-to-self frames protection if RTS-CTS is not preferred
+-	 * one aggregation protection method
+-	 */
+-	if (!priv->hw_params.use_rts_for_aggregation)
+-		ctx->staging.flags |= RXON_FLG_SELF_CTS_EN;
+-
+ 	if ((ctx->vif && ctx->vif->bss_conf.use_short_slot) ||
+ 	    !(ctx->staging.flags & RXON_FLG_BAND_24G_MSK))
+ 		ctx->staging.flags |= RXON_FLG_SHORT_SLOT_MSK;
+@@ -1480,11 +1473,6 @@ void iwlagn_bss_info_changed(struct ieee
+ 	else
+ 		ctx->staging.flags &= ~RXON_FLG_TGG_PROTECT_MSK;
+ 
+-	if (bss_conf->use_cts_prot)
+-		ctx->staging.flags |= RXON_FLG_SELF_CTS_EN;
+-	else
+-		ctx->staging.flags &= ~RXON_FLG_SELF_CTS_EN;
+-
+ 	memcpy(ctx->staging.bssid_addr, bss_conf->bssid, ETH_ALEN);
+ 
+ 	if (vif->type == NL80211_IFTYPE_AP ||
 
 
