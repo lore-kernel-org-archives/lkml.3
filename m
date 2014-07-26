@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753367AbaGZTGh (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 15:06:37 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33914 "EHLO
+	id S1753392AbaGZTGx (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 15:06:53 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33752 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752677AbaGZTDQ (ORCPT
+	with ESMTP id S1752897AbaGZTDP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 15:03:16 -0400
+	Sat, 26 Jul 2014 15:03:15 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Oren Givon <oren.givon@intel.com>,
-        Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Subject: [PATCH 3.14 23/87] iwlwifi: update the 7265 series HW IDs
-Date: Sat, 26 Jul 2014 12:01:57 -0700
-Message-Id: <20140726190215.279638193@linuxfoundation.org>
+        Niu Yawei <yawei.niu@intel.com>, Jan Kara <jack@suse.cz>
+Subject: [PATCH 3.14 22/87] quota: missing lock in dqcache_shrink_scan()
+Date: Sat, 26 Jul 2014 12:01:56 -0700
+Message-Id: <20140726190215.244074536@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.2
 In-Reply-To: <20140726190214.530473925@linuxfoundation.org>
 References: <20140726190214.530473925@linuxfoundation.org>
@@ -29,39 +28,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oren Givon <oren.givon@intel.com>
+From: Niu Yawei <yawei.niu@gmail.com>
 
-commit b3c063ae7279981f7161e63b44f214c62f122b32 upstream.
+commit d68aab6b8f572406aa93b45ef6483934dd3b54a6 upstream.
 
-Add one more 7265 series HW ID.
-Edit one existing 7265 series HW ID.
+Commit 1ab6c4997e04 (fs: convert fs shrinkers to new scan/count API)
+accidentally removed locking from quota shrinker. Fix it -
+dqcache_shrink_scan() should use dq_list_lock to protect the
+scan on free_dquots list.
 
-Signed-off-by: Oren Givon <oren.givon@intel.com>
-Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Fixes: 1ab6c4997e04a00c50c6d786c2f046adc0d1f5de
+Signed-off-by: Niu Yawei <yawei.niu@intel.com>
+Signed-off-by: Jan Kara <jack@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/iwlwifi/pcie/drv.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ fs/quota/dquot.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/net/wireless/iwlwifi/pcie/drv.c
-+++ b/drivers/net/wireless/iwlwifi/pcie/drv.c
-@@ -366,6 +366,7 @@ static DEFINE_PCI_DEVICE_TABLE(iwl_hw_ca
- 	{IWL_PCI_DEVICE(0x095A, 0x5012, iwl7265_2ac_cfg)},
- 	{IWL_PCI_DEVICE(0x095A, 0x5412, iwl7265_2ac_cfg)},
- 	{IWL_PCI_DEVICE(0x095A, 0x5410, iwl7265_2ac_cfg)},
-+	{IWL_PCI_DEVICE(0x095A, 0x5510, iwl7265_2ac_cfg)},
- 	{IWL_PCI_DEVICE(0x095A, 0x5400, iwl7265_2ac_cfg)},
- 	{IWL_PCI_DEVICE(0x095A, 0x1010, iwl7265_2ac_cfg)},
- 	{IWL_PCI_DEVICE(0x095A, 0x5000, iwl7265_2n_cfg)},
-@@ -379,7 +380,7 @@ static DEFINE_PCI_DEVICE_TABLE(iwl_hw_ca
- 	{IWL_PCI_DEVICE(0x095A, 0x9110, iwl7265_2ac_cfg)},
- 	{IWL_PCI_DEVICE(0x095A, 0x9112, iwl7265_2ac_cfg)},
- 	{IWL_PCI_DEVICE(0x095A, 0x9210, iwl7265_2ac_cfg)},
--	{IWL_PCI_DEVICE(0x095A, 0x9200, iwl7265_2ac_cfg)},
-+	{IWL_PCI_DEVICE(0x095B, 0x9200, iwl7265_2ac_cfg)},
- 	{IWL_PCI_DEVICE(0x095A, 0x9510, iwl7265_2ac_cfg)},
- 	{IWL_PCI_DEVICE(0x095A, 0x9310, iwl7265_2ac_cfg)},
- 	{IWL_PCI_DEVICE(0x095A, 0x9410, iwl7265_2ac_cfg)},
+--- a/fs/quota/dquot.c
++++ b/fs/quota/dquot.c
+@@ -702,6 +702,7 @@ dqcache_shrink_scan(struct shrinker *shr
+ 	struct dquot *dquot;
+ 	unsigned long freed = 0;
+ 
++	spin_lock(&dq_list_lock);
+ 	head = free_dquots.prev;
+ 	while (head != &free_dquots && sc->nr_to_scan) {
+ 		dquot = list_entry(head, struct dquot, dq_free);
+@@ -713,6 +714,7 @@ dqcache_shrink_scan(struct shrinker *shr
+ 		freed++;
+ 		head = free_dquots.prev;
+ 	}
++	spin_unlock(&dq_list_lock);
+ 	return freed;
+ }
+ 
 
 
