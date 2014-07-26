@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751598AbaGZOEu (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 10:04:50 -0400
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:53585 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750969AbaGZOEs (ORCPT
+	id S1751580AbaGZOGX (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 10:06:23 -0400
+Received: from mail-wi0-f176.google.com ([209.85.212.176]:63350 "EHLO
+	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751244AbaGZOGU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 10:04:48 -0400
+	Sat, 26 Jul 2014 10:06:20 -0400
 From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>
+To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Jens Axboe <axboe@kernel.dk>
 Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] arch: x86: ia32: sys_ia32.c:  Cleaning up missing null-terminate in conjunction with strncpy
-Date: Sat, 26 Jul 2014 16:06:14 +0200
-Message-Id: <1406383574-1589-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] block: bsg.c:  Cleaning up missing null-terminate in conjunction with strncpy
+Date: Sat, 26 Jul 2014 16:07:45 +0200
+Message-Id: <1406383665-1670-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
 X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,22 +24,22 @@ Replacing strncpy with strlcpy to avoid strings that lacks null terminate.
 
 Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 ---
- arch/x86/ia32/sys_ia32.c |    2 +-
+ block/bsg.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/x86/ia32/sys_ia32.c b/arch/x86/ia32/sys_ia32.c
-index 8e0ceec..d0675ed 100644
---- a/arch/x86/ia32/sys_ia32.c
-+++ b/arch/x86/ia32/sys_ia32.c
-@@ -210,7 +210,7 @@ long sys32_vm86_warning(void)
- 		compat_printk(KERN_INFO
- 			      "%s: vm86 mode not supported on 64 bit kernel\n",
- 			      me->comm);
--		strncpy(lastcomm, me->comm, sizeof(lastcomm));
-+		strlcpy(lastcomm, me->comm, sizeof(lastcomm));
- 	}
- 	return -ENOSYS;
- }
+diff --git a/block/bsg.c b/block/bsg.c
+index ff46add..b2688c5 100644
+--- a/block/bsg.c
++++ b/block/bsg.c
+@@ -790,7 +790,7 @@ static struct bsg_device *bsg_add_device(struct inode *inode,
+ 	mutex_lock(&bsg_mutex);
+ 	hlist_add_head(&bd->dev_list, bsg_dev_idx_hash(iminor(inode)));
+ 
+-	strncpy(bd->name, dev_name(rq->bsg_dev.class_dev), sizeof(bd->name) - 1);
++	strlcpy(bd->name, dev_name(rq->bsg_dev.class_dev), sizeof(bd->name));
+ 	dprintk("bound to <%s>, max queue %d\n",
+ 		format_dev_t(buf, inode->i_rdev), bd->max_queue);
+ 
 -- 
 1.7.10.4
 
