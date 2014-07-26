@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753456AbaGZTIa (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 15:08:30 -0400
+	id S1753184AbaGZTI0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 15:08:26 -0400
 Received: from mail.linuxfoundation.org ([140.211.169.12]:33879 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752838AbaGZTDN (ORCPT
+	with ESMTP id S1752014AbaGZTDO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 15:03:13 -0400
+	Sat, 26 Jul 2014 15:03:14 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Vrabel <david.vrabel@citrix.com>,
-        Marek Marczykowski <marmarek@invisiblethingslab.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: [PATCH 3.14 16/87] xen/balloon: set ballooned out pages as invalid in p2m
-Date: Sat, 26 Jul 2014 12:01:50 -0700
-Message-Id: <20140726190215.055999244@linuxfoundation.org>
+        Guenter Roeck <linux@roeck-us.net>, Axel Lin <axel.lin@ingics.com>
+Subject: [PATCH 3.14 19/87] hwmon: (adt7470) Fix writes to temperature limit registers
+Date: Sat, 26 Jul 2014 12:01:53 -0700
+Message-Id: <20140726190215.154201670@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.2
 In-Reply-To: <20140726190214.530473925@linuxfoundation.org>
 References: <20140726190214.530473925@linuxfoundation.org>
@@ -30,62 +28,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Vrabel <david.vrabel@citrix.com>
+From: Guenter Roeck <linux@roeck-us.net>
 
-commit fb9a0c443691ceaab3daba966bbbd9f5ff3aa26f upstream.
+commit de12d6f4b10b21854441f5242dcb29ea96181e58 upstream.
 
-Since cd9151e26d31048b2b5e00fd02e110e07d2200c9 (xen/balloon: set a
-mapping for ballooned out pages), a ballooned out page had its entry
-in the p2m set to the MFN of one of the scratch pages.  This means
-that the p2m will contain many entries pointing to the same MFN.
+Temperature limit registers are signed. Limits therefore need
+to be clamped to (-128, 127) degrees C and not to (0, 255)
+degrees C.
 
-During a domain save, these many-to-one entries are not identified as
-such and the scratch page is saved multiple times. On restore the
-ballooned pages are populated with new frames and the domain may use
-up its allocation before all pages can be restored.
+Without this fix, writing a limit of 128 degrees C sets the
+actual limit to -128 degrees C.
 
-Since the original fix only needed to keep a mapping for the ballooned
-page it is safe to set ballooned out pages as INVALID_P2M_ENTRY in the
-p2m (as they were before). Thus preventing them from being saved and
-re-populated on restore.
-
-Signed-off-by: David Vrabel <david.vrabel@citrix.com>
-Reported-by: Marek Marczykowski <marmarek@invisiblethingslab.com>
-Tested-by: Marek Marczykowski <marmarek@invisiblethingslab.com>
-Acked-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Reviewed-by: Axel Lin <axel.lin@ingics.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/xen/balloon.c |   12 +++++-------
- 1 file changed, 5 insertions(+), 7 deletions(-)
+ drivers/hwmon/adt7470.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/drivers/xen/balloon.c
-+++ b/drivers/xen/balloon.c
-@@ -426,20 +426,18 @@ static enum bp_state decrease_reservatio
- 		 * p2m are consistent.
- 		 */
- 		if (!xen_feature(XENFEAT_auto_translated_physmap)) {
--			unsigned long p;
--			struct page   *scratch_page = get_balloon_scratch_page();
--
- 			if (!PageHighMem(page)) {
-+				struct page *scratch_page = get_balloon_scratch_page();
-+
- 				ret = HYPERVISOR_update_va_mapping(
- 						(unsigned long)__va(pfn << PAGE_SHIFT),
- 						pfn_pte(page_to_pfn(scratch_page),
- 							PAGE_KERNEL_RO), 0);
- 				BUG_ON(ret);
--			}
--			p = page_to_pfn(scratch_page);
--			__set_phys_to_machine(pfn, pfn_to_mfn(p));
+--- a/drivers/hwmon/adt7470.c
++++ b/drivers/hwmon/adt7470.c
+@@ -515,7 +515,7 @@ static ssize_t set_temp_min(struct devic
+ 		return -EINVAL;
  
--			put_balloon_scratch_page();
-+				put_balloon_scratch_page();
-+			}
-+			__set_phys_to_machine(pfn, INVALID_P2M_ENTRY);
- 		}
- #endif
+ 	temp = DIV_ROUND_CLOSEST(temp, 1000);
+-	temp = clamp_val(temp, 0, 255);
++	temp = clamp_val(temp, -128, 127);
  
+ 	mutex_lock(&data->lock);
+ 	data->temp_min[attr->index] = temp;
+@@ -549,7 +549,7 @@ static ssize_t set_temp_max(struct devic
+ 		return -EINVAL;
+ 
+ 	temp = DIV_ROUND_CLOSEST(temp, 1000);
+-	temp = clamp_val(temp, 0, 255);
++	temp = clamp_val(temp, -128, 127);
+ 
+ 	mutex_lock(&data->lock);
+ 	data->temp_max[attr->index] = temp;
+@@ -826,7 +826,7 @@ static ssize_t set_pwm_tmin(struct devic
+ 		return -EINVAL;
+ 
+ 	temp = DIV_ROUND_CLOSEST(temp, 1000);
+-	temp = clamp_val(temp, 0, 255);
++	temp = clamp_val(temp, -128, 127);
+ 
+ 	mutex_lock(&data->lock);
+ 	data->pwm_tmin[attr->index] = temp;
 
 
