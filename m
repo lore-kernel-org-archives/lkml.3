@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754741AbaGZTbP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 15:31:15 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34641 "EHLO
+	id S1755359AbaGZTbd (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 15:31:33 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34671 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754832AbaGZTXQ (ORCPT
+	with ESMTP id S1754830AbaGZTXQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 26 Jul 2014 15:23:16 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Gerd Hoffmann <kraxel@redhat.com>, Jason Wang <jasowang@redhat.com>,
-        Dave Airlie <airlied@redhat.com>
-Subject: [PATCH 3.15 087/109] drm/qxl: return IRQ_NONE if it was not our irq
-Date: Sat, 26 Jul 2014 12:02:49 -0700
-Message-Id: <20140726190226.480936253@linuxfoundation.org>
+        Li RongQing <roy.qing.li@gmail.com>,
+        Eric Dumazet <edumazet@google.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.15 041/109] 8021q: fix a potential memory leak
+Date: Sat, 26 Jul 2014 12:02:03 -0700
+Message-Id: <20140726190225.087190444@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.2
 In-Reply-To: <20140726190223.834037485@linuxfoundation.org>
 References: <20140726190223.834037485@linuxfoundation.org>
@@ -29,37 +30,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jason Wang <jasowang@redhat.com>
+From: Li RongQing <roy.qing.li@gmail.com>
 
-commit fbb60fe35ad579b511de8604b06a30b43846473b upstream.
+[ Upstream commit 916c1689a09bc1ca81f2d7a34876f8d35aadd11b ]
 
-Return IRQ_NONE if it was not our irq. This is necessary for the case
-when qxl is sharing irq line with a device A in a crash kernel. If qxl
-is initialized before A and A's irq was raised during this gap,
-returning IRQ_HANDLED in this case will cause this irq to be raised
-again after EOI since kernel think it was handled but in fact it was
-not.
+skb_cow called in vlan_reorder_header does not free the skb when it failed,
+and vlan_reorder_header returns NULL to reset original skb when it is called
+in vlan_untag, lead to a memory leak.
 
-Cc: Gerd Hoffmann <kraxel@redhat.com>
-Signed-off-by: Jason Wang <jasowang@redhat.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+Signed-off-by: Li RongQing <roy.qing.li@gmail.com>
+Acked-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/gpu/drm/qxl/qxl_irq.c |    3 +++
- 1 file changed, 3 insertions(+)
+ net/8021q/vlan_core.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/qxl/qxl_irq.c
-+++ b/drivers/gpu/drm/qxl/qxl_irq.c
-@@ -33,6 +33,9 @@ irqreturn_t qxl_irq_handler(int irq, voi
+--- a/net/8021q/vlan_core.c
++++ b/net/8021q/vlan_core.c
+@@ -114,8 +114,11 @@ EXPORT_SYMBOL(vlan_dev_vlan_proto);
  
- 	pending = xchg(&qdev->ram_header->int_pending, 0);
- 
-+	if (!pending)
-+		return IRQ_NONE;
+ static struct sk_buff *vlan_reorder_header(struct sk_buff *skb)
+ {
+-	if (skb_cow(skb, skb_headroom(skb)) < 0)
++	if (skb_cow(skb, skb_headroom(skb)) < 0) {
++		kfree_skb(skb);
+ 		return NULL;
++	}
 +
- 	atomic_inc(&qdev->irq_received);
- 
- 	if (pending & QXL_INTERRUPT_DISPLAY) {
+ 	memmove(skb->data - ETH_HLEN, skb->data - VLAN_ETH_HLEN, 2 * ETH_ALEN);
+ 	skb->mac_header += VLAN_HLEN;
+ 	return skb;
 
 
