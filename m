@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755292AbaGZT13 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 15:27:29 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34671 "EHLO
+	id S1755268AbaGZT11 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 15:27:27 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34641 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754815AbaGZTXU (ORCPT
+	with ESMTP id S1754892AbaGZTXU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 26 Jul 2014 15:23:20 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [PATCH 3.15 088/109] drm/radeon: avoid leaking edid data
-Date: Sat, 26 Jul 2014 12:02:50 -0700
-Message-Id: <20140726190226.509939993@linuxfoundation.org>
+        Marek Vasut <marex@denx.de>, Shawn Guo <shawn.guo@linaro.org>
+Subject: [PATCH 3.15 106/109] ARM: dts: imx: Add alias for ethernet controller
+Date: Sat, 26 Jul 2014 12:03:08 -0700
+Message-Id: <20140726190227.040647041@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.2
 In-Reply-To: <20140726190223.834037485@linuxfoundation.org>
 References: <20140726190223.834037485@linuxfoundation.org>
@@ -28,42 +28,107 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Marek Vasut <marex@denx.de>
 
-commit 0ac66effe7fcdee55bda6d5d10d3372c95a41920 upstream.
+commit 22970070e027cbbb9b2878f8f7c31d0d7f29e94d upstream.
 
-In some cases we fetch the edid in the detect() callback
-in order to determine what sort of monitor is connected.
-If that happens, don't fetch the edid again in the get_modes()
-callback or we will leak the edid.
+Add alias for FEC ethernet on i.MX to allow bootloaders (like U-Boot)
+patch-in the MAC address for FEC using this alias.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Marek Vasut <marex@denx.de>
+Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/radeon_display.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ arch/arm/boot/dts/imx25.dtsi   |    1 +
+ arch/arm/boot/dts/imx27.dtsi   |    1 +
+ arch/arm/boot/dts/imx35.dtsi   |    1 +
+ arch/arm/boot/dts/imx50.dtsi   |    1 +
+ arch/arm/boot/dts/imx51.dtsi   |    1 +
+ arch/arm/boot/dts/imx53.dtsi   |    1 +
+ arch/arm/boot/dts/imx6qdl.dtsi |    1 +
+ arch/arm/boot/dts/imx6sl.dtsi  |    1 +
+ 8 files changed, 8 insertions(+)
 
---- a/drivers/gpu/drm/radeon/radeon_display.c
-+++ b/drivers/gpu/drm/radeon/radeon_display.c
-@@ -757,6 +757,10 @@ int radeon_ddc_get_modes(struct radeon_c
- 	struct radeon_device *rdev = dev->dev_private;
- 	int ret = 0;
+--- a/arch/arm/boot/dts/imx25.dtsi
++++ b/arch/arm/boot/dts/imx25.dtsi
+@@ -14,6 +14,7 @@
  
-+	/* don't leak the edid if we already fetched it in detect() */
-+	if (radeon_connector->edid)
-+		goto got_edid;
-+
- 	/* on hw with routers, select right port */
- 	if (radeon_connector->router.ddc_valid)
- 		radeon_router_select_ddc_port(radeon_connector);
-@@ -795,6 +799,7 @@ int radeon_ddc_get_modes(struct radeon_c
- 			radeon_connector->edid = radeon_bios_get_hardcoded_edid(rdev);
- 	}
- 	if (radeon_connector->edid) {
-+got_edid:
- 		drm_mode_connector_update_edid_property(&radeon_connector->base, radeon_connector->edid);
- 		ret = drm_add_edid_modes(&radeon_connector->base, radeon_connector->edid);
- 		drm_edid_to_eld(&radeon_connector->base, radeon_connector->edid);
+ / {
+ 	aliases {
++		ethernet0 = &fec;
+ 		gpio0 = &gpio1;
+ 		gpio1 = &gpio2;
+ 		gpio2 = &gpio3;
+--- a/arch/arm/boot/dts/imx27.dtsi
++++ b/arch/arm/boot/dts/imx27.dtsi
+@@ -16,6 +16,7 @@
+ 
+ / {
+ 	aliases {
++		ethernet0 = &fec;
+ 		gpio0 = &gpio1;
+ 		gpio1 = &gpio2;
+ 		gpio2 = &gpio3;
+--- a/arch/arm/boot/dts/imx35.dtsi
++++ b/arch/arm/boot/dts/imx35.dtsi
+@@ -13,6 +13,7 @@
+ 
+ / {
+ 	aliases {
++		ethernet0 = &fec;
+ 		gpio0 = &gpio1;
+ 		gpio1 = &gpio2;
+ 		gpio2 = &gpio3;
+--- a/arch/arm/boot/dts/imx50.dtsi
++++ b/arch/arm/boot/dts/imx50.dtsi
+@@ -17,6 +17,7 @@
+ 
+ / {
+ 	aliases {
++		ethernet0 = &fec;
+ 		gpio0 = &gpio1;
+ 		gpio1 = &gpio2;
+ 		gpio2 = &gpio3;
+--- a/arch/arm/boot/dts/imx51.dtsi
++++ b/arch/arm/boot/dts/imx51.dtsi
+@@ -19,6 +19,7 @@
+ 
+ / {
+ 	aliases {
++		ethernet0 = &fec;
+ 		gpio0 = &gpio1;
+ 		gpio1 = &gpio2;
+ 		gpio2 = &gpio3;
+--- a/arch/arm/boot/dts/imx53.dtsi
++++ b/arch/arm/boot/dts/imx53.dtsi
+@@ -18,6 +18,7 @@
+ 
+ / {
+ 	aliases {
++		ethernet0 = &fec;
+ 		gpio0 = &gpio1;
+ 		gpio1 = &gpio2;
+ 		gpio2 = &gpio3;
+--- a/arch/arm/boot/dts/imx6qdl.dtsi
++++ b/arch/arm/boot/dts/imx6qdl.dtsi
+@@ -16,6 +16,7 @@
+ 
+ / {
+ 	aliases {
++		ethernet0 = &fec;
+ 		can0 = &can1;
+ 		can1 = &can2;
+ 		gpio0 = &gpio1;
+--- a/arch/arm/boot/dts/imx6sl.dtsi
++++ b/arch/arm/boot/dts/imx6sl.dtsi
+@@ -14,6 +14,7 @@
+ 
+ / {
+ 	aliases {
++		ethernet0 = &fec;
+ 		gpio0 = &gpio1;
+ 		gpio1 = &gpio2;
+ 		gpio2 = &gpio3;
 
 
