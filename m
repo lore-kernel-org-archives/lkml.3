@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754615AbaGZTa2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 15:30:28 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34635 "EHLO
+	id S1754637AbaGZTax (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 15:30:53 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34647 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754845AbaGZTXR (ORCPT
+	with ESMTP id S1754446AbaGZTXQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 15:23:17 -0400
+	Sat, 26 Jul 2014 15:23:16 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Mike Snitzer <snitzer@redhat.com>, Joe Thornber <ejt@redhat.com>
-Subject: [PATCH 3.15 097/109] dm cache metadata: do not allow the data block size to change
-Date: Sat, 26 Jul 2014 12:02:59 -0700
-Message-Id: <20140726190226.770893340@linuxfoundation.org>
+Subject: [PATCH 3.15 096/109] dm thin metadata: do not allow the data block size to change
+Date: Sat, 26 Jul 2014 12:02:58 -0700
+Message-Id: <20140726190226.742312740@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.2
 In-Reply-To: <20140726190223.834037485@linuxfoundation.org>
 References: <20140726190223.834037485@linuxfoundation.org>
@@ -30,37 +30,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Mike Snitzer <snitzer@redhat.com>
 
-commit 048e5a07f282c57815b3901d4a68a77fa131ce0a upstream.
+commit 9aec8629ec829fc9403788cd959e05dd87988bd1 upstream.
 
-The block size for the dm-cache's data device must remained fixed for
-the life of the cache.  Disallow any attempt to change the cache's data
-block size.
+The block size for the thin-pool's data device must remained fixed for
+the life of the thin-pool.  Disallow any attempt to change the
+thin-pool's data block size.
+
+It should be noted that attempting to change the data block size via
+thin-pool table reload will be ignored as a side-effect of the thin-pool
+handover that the thin-pool target does during thin-pool table reload.
+
+Here is an example outcome of attempting to load a thin-pool table that
+reduced the thin-pool's data block size from 1024K to 512K.
+
+Before:
+kernel: device-mapper: thin: 253:4: growing the data device from 204800 to 409600 blocks
+
+After:
+kernel: device-mapper: thin metadata: changing the data block size (from 2048 to 1024) is not supported
+kernel: device-mapper: table: 253:4: thin-pool: Error creating metadata object
+kernel: device-mapper: ioctl: error adding target to table
 
 Signed-off-by: Mike Snitzer <snitzer@redhat.com>
 Acked-by: Joe Thornber <ejt@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/dm-cache-metadata.c |    9 +++++++++
+ drivers/md/dm-thin-metadata.c |    9 +++++++++
  1 file changed, 9 insertions(+)
 
---- a/drivers/md/dm-cache-metadata.c
-+++ b/drivers/md/dm-cache-metadata.c
-@@ -425,6 +425,15 @@ static int __open_metadata(struct dm_cac
+--- a/drivers/md/dm-thin-metadata.c
++++ b/drivers/md/dm-thin-metadata.c
+@@ -613,6 +613,15 @@ static int __open_metadata(struct dm_poo
  
  	disk_super = dm_block_data(sblock);
  
 +	/* Verify the data block size hasn't changed */
-+	if (le32_to_cpu(disk_super->data_block_size) != cmd->data_block_size) {
++	if (le32_to_cpu(disk_super->data_block_size) != pmd->data_block_size) {
 +		DMERR("changing the data block size (from %u to %llu) is not supported",
 +		      le32_to_cpu(disk_super->data_block_size),
-+		      (unsigned long long)cmd->data_block_size);
++		      (unsigned long long)pmd->data_block_size);
 +		r = -EINVAL;
-+		goto bad;
++		goto bad_unlock_sblock;
 +	}
 +
- 	r = __check_incompat_features(disk_super, cmd);
+ 	r = __check_incompat_features(disk_super, pmd);
  	if (r < 0)
- 		goto bad;
+ 		goto bad_unlock_sblock;
 
 
