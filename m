@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754707AbaGZTpd (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 15:45:33 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34123 "EHLO
+	id S1755384AbaGZTpy (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 15:45:54 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34281 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754016AbaGZTNN (ORCPT
+	with ESMTP id S1754010AbaGZTNN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 26 Jul 2014 15:13:13 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Robert Elliot <Elliott@hp.com>, Benjamin LaHaise <bcrl@kvack.org>,
-        Jens Axboe <axboe@kernel.dk>, Christoph Hellwig <hch@infradead.org>
-Subject: [PATCH 3.14 83/87] aio: protect reqs_available updates from changes in interrupt handlers
-Date: Sat, 26 Jul 2014 12:02:57 -0700
-Message-Id: <20140726190217.303194667@linuxfoundation.org>
+        Mateusz Guzik <mguzik@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: [PATCH 3.14 82/87] sched: Fix possible divide by zero in avg_atom() calculation
+Date: Sat, 26 Jul 2014 12:02:56 -0700
+Message-Id: <20140726190217.268553070@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.2
 In-Reply-To: <20140726190214.530473925@linuxfoundation.org>
 References: <20140726190214.530473925@linuxfoundation.org>
@@ -29,72 +31,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Benjamin LaHaise <bcrl@kvack.org>
+From: Mateusz Guzik <mguzik@redhat.com>
 
-commit 263782c1c95bbddbb022dc092fd89a36bb8d5577 upstream.
+commit b0ab99e7736af88b8ac1b7ae50ea287fffa2badc upstream.
 
-As of commit f8567a3845ac05bb28f3c1b478ef752762bd39ef it is now possible to
-have put_reqs_available() called from irq context.  While put_reqs_available()
-is per cpu, it did not protect itself from interrupts on the same CPU.  This
-lead to aio_complete() corrupting the available io requests count when run
-under a heavy O_DIRECT workloads as reported by Robert Elliott.  Fix this by
-disabling irq updates around the per cpu batch updates of reqs_available.
+proc_sched_show_task() does:
 
-Many thanks to Robert and folks for testing and tracking this down.
+  if (nr_switches)
+	do_div(avg_atom, nr_switches);
 
-Reported-by: Robert Elliot <Elliott@hp.com>
-Tested-by: Robert Elliot <Elliott@hp.com>
-Signed-off-by: Benjamin LaHaise <bcrl@kvack.org>
-Cc: Jens Axboe <axboe@kernel.dk>, Christoph Hellwig <hch@infradead.org>
+nr_switches is unsigned long and do_div truncates it to 32 bits, which
+means it can test non-zero on e.g. x86-64 and be truncated to zero for
+division.
+
+Fix the problem by using div64_ul() instead.
+
+As a side effect calculations of avg_atom for big nr_switches are now correct.
+
+Signed-off-by: Mateusz Guzik <mguzik@redhat.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Link: http://lkml.kernel.org/r/1402750809-31991-1-git-send-email-mguzik@redhat.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/aio.c |    7 +++++++
- 1 file changed, 7 insertions(+)
+ kernel/sched/debug.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/aio.c
-+++ b/fs/aio.c
-@@ -830,16 +830,20 @@ void exit_aio(struct mm_struct *mm)
- static void put_reqs_available(struct kioctx *ctx, unsigned nr)
- {
- 	struct kioctx_cpu *kcpu;
-+	unsigned long flags;
+--- a/kernel/sched/debug.c
++++ b/kernel/sched/debug.c
+@@ -608,7 +608,7 @@ void proc_sched_show_task(struct task_st
  
- 	preempt_disable();
- 	kcpu = this_cpu_ptr(ctx->cpu);
+ 		avg_atom = p->se.sum_exec_runtime;
+ 		if (nr_switches)
+-			do_div(avg_atom, nr_switches);
++			avg_atom = div64_ul(avg_atom, nr_switches);
+ 		else
+ 			avg_atom = -1LL;
  
-+	local_irq_save(flags);
- 	kcpu->reqs_available += nr;
-+
- 	while (kcpu->reqs_available >= ctx->req_batch * 2) {
- 		kcpu->reqs_available -= ctx->req_batch;
- 		atomic_add(ctx->req_batch, &ctx->reqs_available);
- 	}
- 
-+	local_irq_restore(flags);
- 	preempt_enable();
- }
- 
-@@ -847,10 +851,12 @@ static bool get_reqs_available(struct ki
- {
- 	struct kioctx_cpu *kcpu;
- 	bool ret = false;
-+	unsigned long flags;
- 
- 	preempt_disable();
- 	kcpu = this_cpu_ptr(ctx->cpu);
- 
-+	local_irq_save(flags);
- 	if (!kcpu->reqs_available) {
- 		int old, avail = atomic_read(&ctx->reqs_available);
- 
-@@ -869,6 +875,7 @@ static bool get_reqs_available(struct ki
- 	ret = true;
- 	kcpu->reqs_available--;
- out:
-+	local_irq_restore(flags);
- 	preempt_enable();
- 	return ret;
- }
 
 
