@@ -1,40 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755931AbaGZTni (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 15:43:38 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34311 "EHLO
+	id S1755904AbaGZTng (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 15:43:36 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34325 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754050AbaGZTNP (ORCPT
+	with ESMTP id S1754051AbaGZTNQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 15:13:15 -0400
+	Sat, 26 Jul 2014 15:13:16 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Peter Zijlstra <peterz@infradead.org>,
-        Mikulas Patocka <mpatocka@redhat.com>,
-        David Miller <davem@davemloft.net>,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        Vineet Gupta <vgupta@synopsys.com>, Jason Low <jason.low2@hp.com>,
-        Waiman Long <waiman.long@hp.com>,
-        "James E.J. Bottomley" <jejb@parisc-linux.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        John David Anglin <dave.anglin@bell.net>,
-        James Hogan <james.hogan@imgtec.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Davidlohr Bueso <davidlohr@hp.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Will Deacon <will.deacon@arm.com>,
-        linux-arm-kernel@lists.infradead.org, linuxppc-dev@lists.ozlabs.org,
-        sparclinux@vger.kernel.org, Ingo Molnar <mingo@kernel.org>
-Subject: [PATCH 3.14 81/87] locking/mutex: Disable optimistic spinning on some architectures
-Date: Sat, 26 Jul 2014 12:02:55 -0700
-Message-Id: <20140726190217.233358653@linuxfoundation.org>
+        Gavin Guo <gavin.guo@canonical.com>,
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: [PATCH 3.15 001/109] usb: Check if port status is equal to RxDetect
+Date: Sat, 26 Jul 2014 12:01:23 -0700
+Message-Id: <20140726190223.879340351@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.2
-In-Reply-To: <20140726190214.530473925@linuxfoundation.org>
-References: <20140726190214.530473925@linuxfoundation.org>
+In-Reply-To: <20140726190223.834037485@linuxfoundation.org>
+References: <20140726190223.834037485@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -42,120 +25,62 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.15-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Peter Zijlstra <peterz@infradead.org>
+From: Gavin Guo <gavin.guo@canonical.com>
 
-commit 4badad352a6bb202ec68afa7a574c0bb961e5ebc upstream.
+commit bb86cf569bbd7ad4dce581a37c7fbd748057e9dc upstream.
 
-The optimistic spin code assumes regular stores and cmpxchg() play nice;
-this is found to not be true for at least: parisc, sparc32, tile32,
-metag-lock1, arc-!llsc and hexagon.
+When using USB 3.0 pen drive with the [AMD] FCH USB XHCI Controller
+[1022:7814], the second hotplugging will experience the USB 3.0 pen
+drive is recognized as high-speed device. After bisecting the kernel,
+I found the commit number 41e7e056cdc662f704fa9262e5c6e213b4ab45dd
+(USB: Allow USB 3.0 ports to be disabled.) causes the bug. After doing
+some experiments, the bug can be fixed by avoiding executing the function
+hub_usb3_port_disable(). Because the port status with [AMD] FCH USB
+XHCI Controlleris [1022:7814] is already in RxDetect
+(I tried printing out the port status before setting to Disabled state),
+it's reasonable to check the port status before really executing
+hub_usb3_port_disable().
 
-There is further wreckage, but this in particular seemed easy to
-trigger, so blacklist this.
-
-Opt in for known good archs.
-
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Reported-by: Mikulas Patocka <mpatocka@redhat.com>
-Cc: David Miller <davem@davemloft.net>
-Cc: Chris Metcalf <cmetcalf@tilera.com>
-Cc: James Bottomley <James.Bottomley@hansenpartnership.com>
-Cc: Vineet Gupta <vgupta@synopsys.com>
-Cc: Jason Low <jason.low2@hp.com>
-Cc: Waiman Long <waiman.long@hp.com>
-Cc: "James E.J. Bottomley" <jejb@parisc-linux.org>
-Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>
-Cc: John David Anglin <dave.anglin@bell.net>
-Cc: James Hogan <james.hogan@imgtec.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Davidlohr Bueso <davidlohr@hp.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Will Deacon <will.deacon@arm.com>
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org
-Cc: linuxppc-dev@lists.ozlabs.org
-Cc: sparclinux@vger.kernel.org
-Link: http://lkml.kernel.org/r/20140606175316.GV13930@laptop.programming.kicks-ass.net
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Fixes: 41e7e056cdc6 (USB: Allow USB 3.0 ports to be disabled.)
+Signed-off-by: Gavin Guo <gavin.guo@canonical.com>
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/Kconfig     |    1 +
- arch/arm64/Kconfig   |    1 +
- arch/powerpc/Kconfig |    1 +
- arch/sparc/Kconfig   |    1 +
- arch/x86/Kconfig     |    1 +
- kernel/Kconfig.locks |    5 ++++-
- 6 files changed, 9 insertions(+), 1 deletion(-)
+ drivers/usb/core/hub.c |   19 +++++++++++++++++++
+ 1 file changed, 19 insertions(+)
 
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -6,6 +6,7 @@ config ARM
- 	select ARCH_HAS_TICK_BROADCAST if GENERIC_CLOCKEVENTS_BROADCAST
- 	select ARCH_HAVE_CUSTOM_GPIO_H
- 	select ARCH_MIGHT_HAVE_PC_PARPORT
-+	select ARCH_SUPPORTS_ATOMIC_RMW
- 	select ARCH_USE_BUILTIN_BSWAP
- 	select ARCH_USE_CMPXCHG_LOCKREF
- 	select ARCH_WANT_IPC_PARSE_VERSION
---- a/arch/arm64/Kconfig
-+++ b/arch/arm64/Kconfig
-@@ -2,6 +2,7 @@ config ARM64
- 	def_bool y
- 	select ARCH_HAS_ATOMIC64_DEC_IF_POSITIVE
- 	select ARCH_USE_CMPXCHG_LOCKREF
-+	select ARCH_SUPPORTS_ATOMIC_RMW
- 	select ARCH_HAS_TICK_BROADCAST if GENERIC_CLOCKEVENTS_BROADCAST
- 	select ARCH_WANT_OPTIONAL_GPIOLIB
- 	select ARCH_WANT_COMPAT_IPC_PARSE_VERSION
---- a/arch/powerpc/Kconfig
-+++ b/arch/powerpc/Kconfig
-@@ -141,6 +141,7 @@ config PPC
- 	select HAVE_DEBUG_STACKOVERFLOW
- 	select HAVE_IRQ_EXIT_ON_IRQ_STACK
- 	select ARCH_USE_CMPXCHG_LOCKREF if PPC64
-+	select ARCH_SUPPORTS_ATOMIC_RMW
+--- a/drivers/usb/core/hub.c
++++ b/drivers/usb/core/hub.c
+@@ -893,6 +893,25 @@ static int hub_usb3_port_disable(struct
+ 	if (!hub_is_superspeed(hub->hdev))
+ 		return -EINVAL;
  
- config GENERIC_CSUM
- 	def_bool CPU_LITTLE_ENDIAN
---- a/arch/sparc/Kconfig
-+++ b/arch/sparc/Kconfig
-@@ -77,6 +77,7 @@ config SPARC64
- 	select ARCH_HAVE_NMI_SAFE_CMPXCHG
- 	select HAVE_C_RECORDMCOUNT
- 	select NO_BOOTMEM
-+	select ARCH_SUPPORTS_ATOMIC_RMW
- 
- config ARCH_DEFCONFIG
- 	string
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -127,6 +127,7 @@ config X86
- 	select HAVE_DEBUG_STACKOVERFLOW
- 	select HAVE_IRQ_EXIT_ON_IRQ_STACK if X86_64
- 	select HAVE_CC_STACKPROTECTOR
-+	select ARCH_SUPPORTS_ATOMIC_RMW
- 
- config INSTRUCTION_DECODER
- 	def_bool y
---- a/kernel/Kconfig.locks
-+++ b/kernel/Kconfig.locks
-@@ -220,6 +220,9 @@ config INLINE_WRITE_UNLOCK_IRQRESTORE
- 
- endif
- 
-+config ARCH_SUPPORTS_ATOMIC_RMW
-+	bool
++	ret = hub_port_status(hub, port1, &portstatus, &portchange);
++	if (ret < 0)
++		return ret;
 +
- config MUTEX_SPIN_ON_OWNER
- 	def_bool y
--	depends on SMP && !DEBUG_MUTEXES
-+	depends on SMP && !DEBUG_MUTEXES && ARCH_SUPPORTS_ATOMIC_RMW
++	/*
++	 * USB controller Advanced Micro Devices, Inc. [AMD] FCH USB XHCI
++	 * Controller [1022:7814] will have spurious result making the following
++	 * usb 3.0 device hotplugging route to the 2.0 root hub and recognized
++	 * as high-speed device if we set the usb 3.0 port link state to
++	 * Disabled. Since it's already in USB_SS_PORT_LS_RX_DETECT state, we
++	 * check the state here to avoid the bug.
++	 */
++	if ((portstatus & USB_PORT_STAT_LINK_STATE) ==
++				USB_SS_PORT_LS_RX_DETECT) {
++		dev_dbg(&hub->ports[port1 - 1]->dev,
++			 "Not disabling port; link state is RxDetect\n");
++		return ret;
++	}
++
+ 	ret = hub_set_port_link_state(hub, port1, USB_SS_PORT_LS_SS_DISABLED);
+ 	if (ret)
+ 		return ret;
 
 
