@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751292AbaGZXrk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 19:47:40 -0400
-Received: from mail-wg0-f48.google.com ([74.125.82.48]:34288 "EHLO
+	id S1751412AbaGZXsR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 19:48:17 -0400
+Received: from mail-wg0-f48.google.com ([74.125.82.48]:42855 "EHLO
 	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750967AbaGZXrh (ORCPT
+	with ESMTP id S1750837AbaGZXsP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 19:47:37 -0400
+	Sat, 26 Jul 2014 19:48:15 -0400
 From: Benoit Masson <yahoo@perenite.com>
 To: benoitm@perenite.com, Rob Herring <robh+dt@kernel.org>,
         Pawel Moll <pawel.moll@arm.com>,
@@ -17,9 +17,9 @@ To: benoitm@perenite.com, Rob Herring <robh+dt@kernel.org>,
 Cc: jason@lakedaemon.net, andrew@lunn.ch, gregory.clement@free-electrons.com,
         sebastian.hesselbarth@googlemail.com,
         Benoit Masson <yahoo@perenite.com>
-Subject: [PATCH 2/2] ARM: mvebu: Added dts defintion for Lenovo Iomega ix4-300d NAS
-Date: Sat, 26 Jul 2014 16:47:16 -0700
-Message-Id: <1406418436-61452-1-git-send-email-yahoo@perenite.com>
+Subject: [PATCH 2/2] V3 ARM: mvebu: Added dts defintion for Lenovo Iomega ix4-300d NAS
+Date: Sat, 26 Jul 2014 16:48:10 -0700
+Message-Id: <1406418490-61502-1-git-send-email-yahoo@perenite.com>
 X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,12 +29,11 @@ The Lenovo Iomega ix4-300d is a 4-Bay sata NAS with dual Gb,
  USB2.0 & 3.0, powered by a Marvell Armada XP MV78230 dual core CPU.
 
 http://shop.lenovo.com/us/en/servers/network-storage/lenovoemc/ix4-300d/
-
 Signed-off-by: Benoit Masson <yahoo@perenite.com>
 ---
  arch/arm/boot/dts/Makefile                      |   3 +-
- arch/arm/boot/dts/armada-xp-lenovo-ix4-300d.dts | 286 ++++++++++++++++++++++++
- 2 files changed, 288 insertions(+), 1 deletion(-)
+ arch/arm/boot/dts/armada-xp-lenovo-ix4-300d.dts | 285 ++++++++++++++++++++++++
+ 2 files changed, 287 insertions(+), 1 deletion(-)
  create mode 100644 arch/arm/boot/dts/armada-xp-lenovo-ix4-300d.dts
 
 diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
@@ -54,10 +53,10 @@ index adb5ed9..4429495 100644
  	dove-cubox.dtb \
 diff --git a/arch/arm/boot/dts/armada-xp-lenovo-ix4-300d.dts b/arch/arm/boot/dts/armada-xp-lenovo-ix4-300d.dts
 new file mode 100644
-index 0000000..cee0ef4
+index 0000000..c82a8e3
 --- /dev/null
 +++ b/arch/arm/boot/dts/armada-xp-lenovo-ix4-300d.dts
-@@ -0,0 +1,286 @@
+@@ -0,0 +1,285 @@
 +/*
 + * Device Tree file for Lenovo Iomega ix4-300d
 + *
@@ -177,8 +176,7 @@ index 0000000..cee0ef4
 +			};
 +
 +			i2c@11000 {
-+				compatible = "marvell,mv78230-a0-i2c",
-+					"marvell,mv64xxx-i2c";
++				compatible = "marvell,mv64xxx-i2c";
 +				clock-frequency = <400000>;
 +				status = "okay";
 +
