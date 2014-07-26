@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754750AbaGZTVG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 15:21:06 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34558 "EHLO
+	id S1754404AbaGZTVR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 15:21:17 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34552 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753411AbaGZTVD (ORCPT
+	with ESMTP id S1754735AbaGZTVF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 15:21:03 -0400
+	Sat, 26 Jul 2014 15:21:05 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Eric Dumazet <edumazet@google.com>,
+        Eric Dumazet <edumazet@google.com>, Dormando <dormando@rydia.net>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.15 074/109] ipv4: fix buffer overflow in ip_options_compile()
-Date: Sat, 26 Jul 2014 12:02:36 -0700
-Message-Id: <20140726190226.102539478@linuxfoundation.org>
+Subject: [PATCH 3.15 045/109] ipv4: fix dst race in sk_dst_get()
+Date: Sat, 26 Jul 2014 12:02:07 -0700
+Message-Id: <20140726190225.225014517@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.2
 In-Reply-To: <20140726190223.834037485@linuxfoundation.org>
 References: <20140726190223.834037485@linuxfoundation.org>
@@ -31,80 +31,112 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commit 10ec9472f05b45c94db3c854d22581a20b97db41 ]
+[ Upstream commit f88649721268999bdff09777847080a52004f691 ]
 
-There is a benign buffer overflow in ip_options_compile spotted by
-AddressSanitizer[1] :
+When IP route cache had been removed in linux-3.6, we broke assumption
+that dst entries were all freed after rcu grace period. DST_NOCACHE
+dst were supposed to be freed from dst_release(). But it appears
+we want to keep such dst around, either in UDP sockets or tunnels.
 
-Its benign because we always can access one extra byte in skb->head
-(because header is followed by struct skb_shared_info), and in this case
-this byte is not even used.
+In sk_dst_get() we need to make sure dst refcount is not 0
+before incrementing it, or else we might end up freeing a dst
+twice.
 
-[28504.910798] ==================================================================
-[28504.912046] AddressSanitizer: heap-buffer-overflow in ip_options_compile
-[28504.913170] Read of size 1 by thread T15843:
-[28504.914026]  [<ffffffff81802f91>] ip_options_compile+0x121/0x9c0
-[28504.915394]  [<ffffffff81804a0d>] ip_options_get_from_user+0xad/0x120
-[28504.916843]  [<ffffffff8180dedf>] do_ip_setsockopt.isra.15+0x8df/0x1630
-[28504.918175]  [<ffffffff8180ec60>] ip_setsockopt+0x30/0xa0
-[28504.919490]  [<ffffffff8181e59b>] tcp_setsockopt+0x5b/0x90
-[28504.920835]  [<ffffffff8177462f>] sock_common_setsockopt+0x5f/0x70
-[28504.922208]  [<ffffffff817729c2>] SyS_setsockopt+0xa2/0x140
-[28504.923459]  [<ffffffff818cfb69>] system_call_fastpath+0x16/0x1b
-[28504.924722]
-[28504.925106] Allocated by thread T15843:
-[28504.925815]  [<ffffffff81804995>] ip_options_get_from_user+0x35/0x120
-[28504.926884]  [<ffffffff8180dedf>] do_ip_setsockopt.isra.15+0x8df/0x1630
-[28504.927975]  [<ffffffff8180ec60>] ip_setsockopt+0x30/0xa0
-[28504.929175]  [<ffffffff8181e59b>] tcp_setsockopt+0x5b/0x90
-[28504.930400]  [<ffffffff8177462f>] sock_common_setsockopt+0x5f/0x70
-[28504.931677]  [<ffffffff817729c2>] SyS_setsockopt+0xa2/0x140
-[28504.932851]  [<ffffffff818cfb69>] system_call_fastpath+0x16/0x1b
-[28504.934018]
-[28504.934377] The buggy address ffff880026382828 is located 0 bytes to the right
-[28504.934377]  of 40-byte region [ffff880026382800, ffff880026382828)
-[28504.937144]
-[28504.937474] Memory state around the buggy address:
-[28504.938430]  ffff880026382300: ........ rrrrrrrr rrrrrrrr rrrrrrrr
-[28504.939884]  ffff880026382400: ffffffff rrrrrrrr rrrrrrrr rrrrrrrr
-[28504.941294]  ffff880026382500: .....rrr rrrrrrrr rrrrrrrr rrrrrrrr
-[28504.942504]  ffff880026382600: ffffffff rrrrrrrr rrrrrrrr rrrrrrrr
-[28504.943483]  ffff880026382700: ffffffff rrrrrrrr rrrrrrrr rrrrrrrr
-[28504.944511] >ffff880026382800: .....rrr rrrrrrrr rrrrrrrr rrrrrrrr
-[28504.945573]                         ^
-[28504.946277]  ffff880026382900: ffffffff rrrrrrrr rrrrrrrr rrrrrrrr
-[28505.094949]  ffff880026382a00: ffffffff rrrrrrrr rrrrrrrr rrrrrrrr
-[28505.096114]  ffff880026382b00: ffffffff rrrrrrrr rrrrrrrr rrrrrrrr
-[28505.097116]  ffff880026382c00: ffffffff rrrrrrrr rrrrrrrr rrrrrrrr
-[28505.098472]  ffff880026382d00: ffffffff rrrrrrrr rrrrrrrr rrrrrrrr
-[28505.099804] Legend:
-[28505.100269]  f - 8 freed bytes
-[28505.100884]  r - 8 redzone bytes
-[28505.101649]  . - 8 allocated bytes
-[28505.102406]  x=1..7 - x allocated bytes + (8-x) redzone bytes
-[28505.103637] ==================================================================
+DST_NOCACHE set on a dst does not mean this dst can not be attached
+to a socket or a tunnel.
 
-[1] https://code.google.com/p/address-sanitizer/wiki/AddressSanitizerForKernel
+Then, before actual freeing, we need to observe a rcu grace period
+to make sure all other cpus can catch the fact the dst is no longer
+usable.
 
 Signed-off-by: Eric Dumazet <edumazet@google.com>
+Reported-by: Dormando <dormando@rydia.net>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv4/ip_options.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ include/net/sock.h   |    4 ++--
+ net/core/dst.c       |   16 +++++++++++-----
+ net/ipv4/ip_tunnel.c |   14 +++++---------
+ 3 files changed, 18 insertions(+), 16 deletions(-)
 
---- a/net/ipv4/ip_options.c
-+++ b/net/ipv4/ip_options.c
-@@ -288,6 +288,10 @@ int ip_options_compile(struct net *net,
- 			optptr++;
- 			continue;
+--- a/include/net/sock.h
++++ b/include/net/sock.h
+@@ -1728,8 +1728,8 @@ sk_dst_get(struct sock *sk)
+ 
+ 	rcu_read_lock();
+ 	dst = rcu_dereference(sk->sk_dst_cache);
+-	if (dst)
+-		dst_hold(dst);
++	if (dst && !atomic_inc_not_zero(&dst->__refcnt))
++		dst = NULL;
+ 	rcu_read_unlock();
+ 	return dst;
+ }
+--- a/net/core/dst.c
++++ b/net/core/dst.c
+@@ -269,6 +269,15 @@ again:
+ }
+ EXPORT_SYMBOL(dst_destroy);
+ 
++static void dst_destroy_rcu(struct rcu_head *head)
++{
++	struct dst_entry *dst = container_of(head, struct dst_entry, rcu_head);
++
++	dst = dst_destroy(dst);
++	if (dst)
++		__dst_free(dst);
++}
++
+ void dst_release(struct dst_entry *dst)
+ {
+ 	if (dst) {
+@@ -276,11 +285,8 @@ void dst_release(struct dst_entry *dst)
+ 
+ 		newrefcnt = atomic_dec_return(&dst->__refcnt);
+ 		WARN_ON(newrefcnt < 0);
+-		if (unlikely(dst->flags & DST_NOCACHE) && !newrefcnt) {
+-			dst = dst_destroy(dst);
+-			if (dst)
+-				__dst_free(dst);
+-		}
++		if (unlikely(dst->flags & DST_NOCACHE) && !newrefcnt)
++			call_rcu(&dst->rcu_head, dst_destroy_rcu);
+ 	}
+ }
+ EXPORT_SYMBOL(dst_release);
+--- a/net/ipv4/ip_tunnel.c
++++ b/net/ipv4/ip_tunnel.c
+@@ -73,12 +73,7 @@ static void __tunnel_dst_set(struct ip_t
+ {
+ 	struct dst_entry *old_dst;
+ 
+-	if (dst) {
+-		if (dst->flags & DST_NOCACHE)
+-			dst = NULL;
+-		else
+-			dst_clone(dst);
+-	}
++	dst_clone(dst);
+ 	old_dst = xchg((__force struct dst_entry **)&idst->dst, dst);
+ 	dst_release(old_dst);
+ }
+@@ -108,13 +103,14 @@ static struct rtable *tunnel_rtable_get(
+ 
+ 	rcu_read_lock();
+ 	dst = rcu_dereference(this_cpu_ptr(t->dst_cache)->dst);
++	if (dst && !atomic_inc_not_zero(&dst->__refcnt))
++		dst = NULL;
+ 	if (dst) {
+ 		if (dst->obsolete && dst->ops->check(dst, cookie) == NULL) {
+-			rcu_read_unlock();
+ 			tunnel_dst_reset(t);
+-			return NULL;
++			dst_release(dst);
++			dst = NULL;
  		}
-+		if (unlikely(l < 2)) {
-+			pp_ptr = optptr;
-+			goto error;
-+		}
- 		optlen = optptr[1];
- 		if (optlen < 2 || optlen > l) {
- 			pp_ptr = optptr;
+-		dst_hold(dst);
+ 	}
+ 	rcu_read_unlock();
+ 	return (struct rtable *)dst;
 
 
