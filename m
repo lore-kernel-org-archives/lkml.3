@@ -1,23 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752960AbaGZTDS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 15:03:18 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33725 "EHLO
+	id S1753259AbaGZTEr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 15:04:47 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33914 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752670AbaGZTDA (ORCPT
+	with ESMTP id S1752935AbaGZTDR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 15:03:00 -0400
+	Sat, 26 Jul 2014 15:03:17 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jon Maloy <jon.maloy@ericsson.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 35/56] tipc: clear next-pointer of message fragments before reassembly
-Date: Sat, 26 Jul 2014 12:02:28 -0700
-Message-Id: <20140726190201.205047241@linuxfoundation.org>
+        John Greene <jogreene@redhat.com>,
+        Dave Ertman <davidx.m.ertman@intel.com>,
+        Aaron Brown <aaron.f.brown@intel.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        "Alexander Y. Fomichev" <aleksandr.fomichev@x5.ru>
+Subject: [PATCH 3.14 28/87] e1000e: Fix SHRA register access for 82579
+Date: Sat, 26 Jul 2014 12:02:02 -0700
+Message-Id: <20140726190215.440192469@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.2
-In-Reply-To: <20140726190200.061512159@linuxfoundation.org>
-References: <20140726190200.061512159@linuxfoundation.org>
+In-Reply-To: <20140726190214.530473925@linuxfoundation.org>
+References: <20140726190214.530473925@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -25,45 +28,60 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Jon Paul Maloy <jon.maloy@ericsson.com>
+From: David Ertman <davidx.m.ertman@intel.com>
 
-[ Upstream commit 999417549c16dd0e3a382aa9f6ae61688db03181 ]
+commit 96dee024ca4799d6d21588951240035c21ba1c67 upstream.
 
-If the 'next' pointer of the last fragment buffer in a message is not
-zeroed before reassembly, we risk ending up with a corrupt message,
-since the reassembly function itself isn't doing this.
+Previous commit c3a0dce35af0 fixed an overrun for the RAR on i218 devices.
+This commit also attempted to homogenize the RAR/SHRA access for all parts
+accessed by the e1000e driver.  This change introduced an error for
+assigning MAC addresses to guest OS's for 82579 devices.
 
-Currently, when a buffer is retrieved from the deferred queue of the
-broadcast link, the next pointer is not cleared, with the result as
-described above.
+Only RAR[0] is accessible to the driver for 82579 parts, and additional
+addresses must be placed into the SHRA[L|H] registers.  The rar_entry_count
+was changed in the previous commit to an inaccurate value that accounted
+for all RAR and SHRA registers, not just the ones usable by the driver.
 
-This commit corrects this, and thereby fixes a bug that may occur when
-long broadcast messages are transmitted across dual interfaces. The bug
-has been present since 40ba3cdf542a469aaa9083fa041656e59b109b90 ("tipc:
-message reassembly using fragment chain")
+This patch fixes the count to the correct value and adjusts the
+e1000_rar_set_pch2lan() function to user the correct index.
 
-This commit should be applied to both net and net-next.
-
-Signed-off-by: Jon Maloy <jon.maloy@ericsson.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Cc: John Greene <jogreene@redhat.com>
+Signed-off-by: Dave Ertman <davidx.m.ertman@intel.com>
+Tested-by: Aaron Brown <aaron.f.brown@intel.com>
+Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Cc: "Alexander Y. Fomichev" <aleksandr.fomichev@x5.ru>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/tipc/bcast.c |    1 +
- 1 file changed, 1 insertion(+)
 
---- a/net/tipc/bcast.c
-+++ b/net/tipc/bcast.c
-@@ -531,6 +531,7 @@ receive:
+---
+ drivers/net/ethernet/intel/e1000e/ich8lan.c |    2 +-
+ drivers/net/ethernet/intel/e1000e/ich8lan.h |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+--- a/drivers/net/ethernet/intel/e1000e/ich8lan.c
++++ b/drivers/net/ethernet/intel/e1000e/ich8lan.c
+@@ -1374,7 +1374,7 @@ static void e1000_rar_set_pch2lan(struct
+ 	/* RAR[1-6] are owned by manageability.  Skip those and program the
+ 	 * next address into the SHRA register array.
+ 	 */
+-	if (index < (u32)(hw->mac.rar_entry_count - 6)) {
++	if (index < (u32)(hw->mac.rar_entry_count)) {
+ 		s32 ret_val;
  
- 		buf = node->bclink.deferred_head;
- 		node->bclink.deferred_head = buf->next;
-+		buf->next = NULL;
- 		node->bclink.deferred_size--;
- 		goto receive;
- 	}
+ 		ret_val = e1000_acquire_swflag_ich8lan(hw);
+--- a/drivers/net/ethernet/intel/e1000e/ich8lan.h
++++ b/drivers/net/ethernet/intel/e1000e/ich8lan.h
+@@ -98,7 +98,7 @@
+ #define PCIE_ICH8_SNOOP_ALL	PCIE_NO_SNOOP_ALL
+ 
+ #define E1000_ICH_RAR_ENTRIES	7
+-#define E1000_PCH2_RAR_ENTRIES	11      /* RAR[0-6], SHRA[0-3] */
++#define E1000_PCH2_RAR_ENTRIES	5	/* RAR[0], SHRA[0-3] */
+ #define E1000_PCH_LPT_RAR_ENTRIES	12	/* RAR[0], SHRA[0-10] */
+ 
+ #define PHY_PAGE_SHIFT		5
 
 
