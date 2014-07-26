@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753249AbaGZTMj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 15:12:39 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34074 "EHLO
+	id S1753842AbaGZTM5 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 15:12:57 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34070 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753573AbaGZTKt (ORCPT
+	with ESMTP id S1752684AbaGZTKs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 15:10:49 -0400
+	Sat, 26 Jul 2014 15:10:48 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "K. Y. Srinivasan" <kys@microsoft.com>
-Subject: [PATCH 3.14 06/87] Drivers: hv: util: Fix a bug in the KVP code
-Date: Sat, 26 Jul 2014 12:01:40 -0700
-Message-Id: <20140726190214.739748327@linuxfoundation.org>
+        Mengdong Lin <mengdong.lin@intel.com>, Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH 3.14 05/87] ALSA: hda - initialize audio InfoFrame to be all zero
+Date: Sat, 26 Jul 2014 12:01:39 -0700
+Message-Id: <20140726190214.704707871@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.2
 In-Reply-To: <20140726190214.530473925@linuxfoundation.org>
 References: <20140726190214.530473925@linuxfoundation.org>
@@ -28,76 +28,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "K. Y. Srinivasan" <kys@microsoft.com>
+From: Mengdong Lin <mengdong.lin@intel.com>
 
-commit 9bd2d0dfe4714dd5d7c09a93a5c9ea9e14ceb3fc upstream.
+commit caaf5ef9493f72390905f1e97b310b8906d32dac upstream.
 
-Add code to poll the channel since we process only one message
-at a time and the host may not interrupt us. Also increase the
-receive buffer size since some KVP messages are close to 8K bytes in size.
+This patch initialized the local audio InfoFrame variable 'ai' to be all zero,
+thus the data bytes will indicate "Refer to Stream Header" by default.
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Signed-off-by: Mengdong Lin <mengdong.lin@intel.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hv/hv_kvp.c  |   14 ++++++++++++--
- drivers/hv/hv_util.c |    2 +-
- 2 files changed, 13 insertions(+), 3 deletions(-)
+ sound/pci/hda/patch_hdmi.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/hv/hv_kvp.c
-+++ b/drivers/hv/hv_kvp.c
-@@ -127,6 +127,15 @@ kvp_work_func(struct work_struct *dummy)
- 	kvp_respond_to_host(NULL, HV_E_FAIL);
- }
- 
-+static void poll_channel(struct vmbus_channel *channel)
-+{
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&channel->inbound_lock, flags);
-+	hv_kvp_onchannelcallback(channel);
-+	spin_unlock_irqrestore(&channel->inbound_lock, flags);
-+}
-+
- static int kvp_handle_handshake(struct hv_kvp_msg *msg)
+--- a/sound/pci/hda/patch_hdmi.c
++++ b/sound/pci/hda/patch_hdmi.c
+@@ -1062,6 +1062,7 @@ static void hdmi_pin_setup_infoframe(str
  {
- 	int ret = 1;
-@@ -155,7 +164,7 @@ static int kvp_handle_handshake(struct h
- 		kvp_register(dm_reg_value);
- 		kvp_transaction.active = false;
- 		if (kvp_transaction.kvp_context)
--			hv_kvp_onchannelcallback(kvp_transaction.kvp_context);
-+			poll_channel(kvp_transaction.kvp_context);
- 	}
- 	return ret;
- }
-@@ -568,6 +577,7 @@ response_done:
+ 	union audio_infoframe ai;
  
- 	vmbus_sendpacket(channel, recv_buffer, buf_len, req_id,
- 				VM_PKT_DATA_INBAND, 0);
-+	poll_channel(channel);
++	memset(&ai, 0, sizeof(ai));
+ 	if (conn_type == 0) { /* HDMI */
+ 		struct hdmi_audio_infoframe *hdmi_ai = &ai.hdmi;
  
- }
- 
-@@ -603,7 +613,7 @@ void hv_kvp_onchannelcallback(void *cont
- 		return;
- 	}
- 
--	vmbus_recvpacket(channel, recv_buffer, PAGE_SIZE * 2, &recvlen,
-+	vmbus_recvpacket(channel, recv_buffer, PAGE_SIZE * 4, &recvlen,
- 			 &requestid);
- 
- 	if (recvlen > 0) {
---- a/drivers/hv/hv_util.c
-+++ b/drivers/hv/hv_util.c
-@@ -312,7 +312,7 @@ static int util_probe(struct hv_device *
- 		(struct hv_util_service *)dev_id->driver_data;
- 	int ret;
- 
--	srv->recv_buffer = kmalloc(PAGE_SIZE * 2, GFP_KERNEL);
-+	srv->recv_buffer = kmalloc(PAGE_SIZE * 4, GFP_KERNEL);
- 	if (!srv->recv_buffer)
- 		return -ENOMEM;
- 	if (srv->util_init) {
 
 
