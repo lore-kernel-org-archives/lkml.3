@@ -1,109 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752042AbaGZPyp (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 11:54:45 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:33367 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751858AbaGZPyo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 11:54:44 -0400
-X-Sasl-enc: KzKBTaF1EUto5FmhaKsrvQ35GKOIJoWT2n2apnKGX+Lk 1406390082
-Message-ID: <1406390080.22881.75.camel@localhost>
-Subject: Re: net: socket: NULL ptr deref in sendmsg
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
-To: Andrey Ryabinin <ryabinin.a.a@gmail.com>
-Cc: Andrey Ryabinin <a.ryabinin@samsung.com>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>,
-        Eric Dumazet <edumazet@google.com>
-Date: Sat, 26 Jul 2014 17:54:40 +0200
-In-Reply-To: <CAPAsAGwc7B2rB+3wTHkL97B5eDchbcuhfkKef56ARCy2CxCGuQ@mail.gmail.com>
-References: <53C2FF3D.4030201@oracle.com> <53D2768E.2040902@samsung.com>
-	 <1406326508.13203.10.camel@localhost>
-	 <CAPAsAGwc7B2rB+3wTHkL97B5eDchbcuhfkKef56ARCy2CxCGuQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752084AbaGZP4U (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 11:56:20 -0400
+Received: from mga03.intel.com ([143.182.124.21]:44607 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751866AbaGZP4S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 Jul 2014 11:56:18 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,735,1400050800"; 
+   d="scan'208";a="461729749"
+Date: Sat, 26 Jul 2014 21:19:30 +0530
+From: Vinod Koul <vinod.koul@intel.com>
+To: Randy Dunlap <rdunlap@infradead.org>, Simon Horman <horms@verge.net.au>
+Cc: "dmaengine@vger.kernel.org" <dmaengine@vger.kernel.org>,
+        Dan Williams <dan.j.williams@intel.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Subject: Re: [PATCH -next] dma/sh: fix rcar-dma.c printk format warnings
+Message-ID: <20140726154930.GX8181@intel.com>
+References: <53D28DAF.9090506@infradead.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53D28DAF.9090506@infradead.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sa, 2014-07-26 at 19:48 +0400, Andrey Ryabinin wrote:
-> 2014-07-26 2:15 GMT+04:00 Hannes Frederic Sowa <hannes@stressinduktion.org>:
-> > Otherwise I would just set msg_namelen = 0, too, and just not handle
-> > passed in NULL pointers to sockaddrs.
-> >
+On Fri, Jul 25, 2014 at 10:02:39AM -0700, Randy Dunlap wrote:
+> From: Randy Dunlap <rdunlap@infradead.org>
 > 
-> I like that, how about such chage:
+> Fix printk format warnings by using size_t modifiers ('z'):
 > 
-> diff --git a/net/compat.c b/net/compat.c
-> index 9a76eaf..bc8aeef 100644
-> --- a/net/compat.c
-> +++ b/net/compat.c
-> @@ -85,7 +85,7 @@ int verify_compat_iovec(struct msghdr *kern_msg,
-> struct iovec *kern_iov,
->  {
->         int tot_len;
+> ../drivers/dma/sh/rcar-dmac.c:759:4: warning: format '%u' expects argument of type 'unsigned int', but argument 9 has type 'size_t' [-Wformat=]
+> ../drivers/dma/sh/rcar-dmac.c:759:4: warning: format '%u' expects argument of type 'unsigned int', but argument 10 has type 'size_t' [-Wformat=]
 > 
-> -       if (kern_msg->msg_namelen) {
-> +       if (kern_msg->msg_name && kern_msg->msg_namelen) {
->                 if (mode == VERIFY_READ) {
->                         int err = move_addr_to_kernel(kern_msg->msg_name,
->                                                       kern_msg->msg_namelen,
-> @@ -93,10 +93,11 @@ int verify_compat_iovec(struct msghdr *kern_msg,
-> struct iovec *kern_iov,
->                         if (err < 0)
->                                 return err;
->                 }
-> -               if (kern_msg->msg_name)
-> -                       kern_msg->msg_name = kern_address;
-> -       } else
-> +               kern_msg->msg_name = kern_address;
-> +       } else {
->                 kern_msg->msg_name = NULL;
-> +               kern_msg->msg_namelen = 0;
-> +       }
-> 
->         tot_len = iov_from_user_compat_to_kern(kern_iov,
->                                           (struct compat_iovec __user
-> *)kern_msg->msg_iov,
-> diff --git a/net/core/iovec.c b/net/core/iovec.c
-> index 827dd6b..e1ec45a 100644
-> --- a/net/core/iovec.c
-> +++ b/net/core/iovec.c
-> @@ -39,7 +39,7 @@ int verify_iovec(struct msghdr *m, struct iovec
-> *iov, struct sockaddr_storage *a
->  {
->         int size, ct, err;
-> 
-> -       if (m->msg_namelen) {
-> +       if (m->msg_name && m->msg_namelen) {
->                 if (mode == VERIFY_READ) {
->                         void __user *namep;
->                         namep = (void __user __force *) m->msg_name;
-> @@ -48,10 +48,10 @@ int verify_iovec(struct msghdr *m, struct iovec
-> *iov, struct sockaddr_storage *a
->                         if (err < 0)
->                                 return err;
->                 }
-> -               if (m->msg_name)
-> -                       m->msg_name = address;
-> +               m->msg_name = address;
->         } else {
->                 m->msg_name = NULL;
-> +               m->msg_namelen = 0;
->         }
-> 
->         size = m->msg_iovlen * sizeof(struct iovec);
-> 
-> 
+This is not present in dmaengine trees. Simon is this in your tree?
 
-LGTM! Can you send a patch?
-
-Thanks,
-Hannes
+-- 
+~Vinod
 
 
+> Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
+> Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+> Cc: Dan Williams <dan.j.williams@intel.com>
+> Cc: dmaengine@vger.kernel.org
+> ---
+>  drivers/dma/sh/rcar-dmac.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> Index: linux-next-20140725/drivers/dma/sh/rcar-dmac.c
+> ===================================================================
+> --- linux-next-20140725.orig/drivers/dma/sh/rcar-dmac.c
+> +++ linux-next-20140725/drivers/dma/sh/rcar-dmac.c
+> @@ -757,7 +757,7 @@ rcar_dmac_chan_prep_sg(struct rcar_dmac_
+>  			hwdesc->size = size;
+>  
+>  			dev_dbg(chan->chan.device->dev,
+> -				"chan%u: hwdesc %p/%p sgl %u@%p, %u/%u %pad -> %pad\n",
+> +				"chan%u: hwdesc %p/%p sgl %u@%p, %zu/%zu %pad -> %pad\n",
+>  				chan->index, hwdesc, desc, i, sg, size, len,
+>  				&hwdesc->src_addr, &hwdesc->dst_addr);
+>  
+> --
+> To unsubscribe from this list: send the line "unsubscribe dmaengine" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+-- 
