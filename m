@@ -1,66 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755147AbaGZTzW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 15:55:22 -0400
-Received: from imap.thunk.org ([74.207.234.97]:58572 "EHLO imap.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754156AbaGZTzR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 15:55:17 -0400
-Date: Sat, 26 Jul 2014 15:55:03 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Markus Trippelsdorf <markus@trippelsdorf.de>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Alexei Starovoitov <ast@kernel.org>,
-        Michel =?iso-8859-1?Q?D=E4nzer?= <michel@daenzer.net>,
-        Jakub Jelinek <jakub@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Debian GCC Maintainers <debian-gcc@lists.debian.org>,
-        Debian Kernel Team <debian-kernel@lists.debian.org>
-Subject: Re: Random panic in load_balance() with 3.16-rc
-Message-ID: <20140726195503.GJ6725@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Markus Trippelsdorf <markus@trippelsdorf.de>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Steven Rostedt <rostedt@goodmis.org>,
-	Alexei Starovoitov <ast@kernel.org>,
-	Michel =?iso-8859-1?Q?D=E4nzer?= <michel@daenzer.net>,
-	Jakub Jelinek <jakub@redhat.com>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	Debian GCC Maintainers <debian-gcc@lists.debian.org>,
-	Debian Kernel Team <debian-kernel@lists.debian.org>
-References: <CA+55aFyM1wqTLK0m4GQJ28f=z0iZE87=xk+1z-vm+PH1_d8nKw@mail.gmail.com>
- <53D064C7.5050807@daenzer.net>
- <CA+55aFyJhqiPv0kQ+51=Ei-zaAO+0JszxtnEyx-Gbto3SE00xw@mail.gmail.com>
- <53D1B1EF.7030603@daenzer.net>
- <20140725035527.GA30108@pg-vmw-gw1>
- <20140725140237.GB32669@home.goodmis.org>
- <CA+55aFzOoJzqJ=4RVPEBfscA8oRdr5Nv7fKx9aXYw2+frkuhwA@mail.gmail.com>
- <CA+55aFyHU4Gwk6ASTuOgh3eFPshkgy1s5zc4p7f01DwrYddFOw@mail.gmail.com>
- <CA+55aFxaXPqyDJv-SNu6Giy3eKCu_SY1wof1NaNnPTbtF9RbXQ@mail.gmail.com>
- <20140726193557.GA21842@x4>
+	id S1755503AbaGZTzs (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 15:55:48 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34067 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753544AbaGZTKr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 Jul 2014 15:10:47 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH 3.14 04/87] ALSA: hda - Fix broken PM due to incomplete i915 initialization
+Date: Sat, 26 Jul 2014 12:01:38 -0700
+Message-Id: <20140726190214.672175574@linuxfoundation.org>
+X-Mailer: git-send-email 2.0.2
+In-Reply-To: <20140726190214.530473925@linuxfoundation.org>
+References: <20140726190214.530473925@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140726193557.GA21842@x4>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 26, 2014 at 09:35:57PM +0200, Markus Trippelsdorf wrote:
-> 
-> But fortunately the workaround for the new inode.c bug is the same as
-> for the original bug: -fno-var-tracking-assignments. 
-> 
-> It would make sense to enabled it unconditionally for all debug
-> configurations for now.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
-What's the downside of enabling this unconditionally on a compiler
-with the bug fixed?  I assume a certain amount of optimization will
-lost, but is it significant/measurable?
+------------------
 
-					- Ted
+From: Takashi Iwai <tiwai@suse.de>
+
+commit 4da63c6fc426023d1a20e45508c47d7d68c6a53d upstream.
+
+When the initialization of Intel HDMI controller fails due to missing
+i915 kernel symbols (e.g. HD-audio is built in while i915 is module),
+the driver discontinues the probe.  However, since the probe was done
+asynchronously, the driver object still remains, thus the relevant PM
+ops are still called at suspend/resume. This results in the bad access
+to the incomplete audio card object, eventually leads to Oops or stall
+at PM.
+
+This patch adds the missing checks of chip->init_failed flag at each
+PM callback in order to fix the problem above.
+
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=79561
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ sound/pci/hda/hda_intel.c |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
+
+--- a/sound/pci/hda/hda_intel.c
++++ b/sound/pci/hda/hda_intel.c
+@@ -2930,7 +2930,7 @@ static int azx_suspend(struct device *de
+ 	struct azx *chip = card->private_data;
+ 	struct azx_pcm *p;
+ 
+-	if (chip->disabled)
++	if (chip->disabled || chip->init_failed)
+ 		return 0;
+ 
+ 	snd_power_change_state(card, SNDRV_CTL_POWER_D3hot);
+@@ -2961,7 +2961,7 @@ static int azx_resume(struct device *dev
+ 	struct snd_card *card = dev_get_drvdata(dev);
+ 	struct azx *chip = card->private_data;
+ 
+-	if (chip->disabled)
++	if (chip->disabled || chip->init_failed)
+ 		return 0;
+ 
+ 	if (chip->driver_caps & AZX_DCAPS_I915_POWERWELL)
+@@ -2996,7 +2996,7 @@ static int azx_runtime_suspend(struct de
+ 	struct snd_card *card = dev_get_drvdata(dev);
+ 	struct azx *chip = card->private_data;
+ 
+-	if (chip->disabled)
++	if (chip->disabled || chip->init_failed)
+ 		return 0;
+ 
+ 	if (!(chip->driver_caps & AZX_DCAPS_PM_RUNTIME))
+@@ -3022,7 +3022,7 @@ static int azx_runtime_resume(struct dev
+ 	struct hda_codec *codec;
+ 	int status;
+ 
+-	if (chip->disabled)
++	if (chip->disabled || chip->init_failed)
+ 		return 0;
+ 
+ 	if (!(chip->driver_caps & AZX_DCAPS_PM_RUNTIME))
+@@ -3057,7 +3057,7 @@ static int azx_runtime_idle(struct devic
+ 	struct snd_card *card = dev_get_drvdata(dev);
+ 	struct azx *chip = card->private_data;
+ 
+-	if (chip->disabled)
++	if (chip->disabled || chip->init_failed)
+ 		return 0;
+ 
+ 	if (!power_save_controller ||
+
+
