@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753392AbaGZTGx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 15:06:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33752 "EHLO
+	id S1753420AbaGZTGy (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 15:06:54 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33879 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752897AbaGZTDP (ORCPT
+	with ESMTP id S1752886AbaGZTDP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 26 Jul 2014 15:03:15 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Niu Yawei <yawei.niu@intel.com>, Jan Kara <jack@suse.cz>
-Subject: [PATCH 3.14 22/87] quota: missing lock in dqcache_shrink_scan()
-Date: Sat, 26 Jul 2014 12:01:56 -0700
-Message-Id: <20140726190215.244074536@linuxfoundation.org>
+        Stefan Assmann <sassmann@kpanic.de>,
+        Aaron Brown <aaron.f.brown@intel.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.14 21/87] igb: do a reset on SR-IOV re-init if device is down
+Date: Sat, 26 Jul 2014 12:01:55 -0700
+Message-Id: <20140726190215.214381877@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.2
 In-Reply-To: <20140726190214.530473925@linuxfoundation.org>
 References: <20140726190214.530473925@linuxfoundation.org>
@@ -28,41 +31,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Niu Yawei <yawei.niu@gmail.com>
+From: Stefan Assmann <sassmann@kpanic.de>
 
-commit d68aab6b8f572406aa93b45ef6483934dd3b54a6 upstream.
+commit 76252723e88681628a3dbb9c09c963e095476f73 upstream.
 
-Commit 1ab6c4997e04 (fs: convert fs shrinkers to new scan/count API)
-accidentally removed locking from quota shrinker. Fix it -
-dqcache_shrink_scan() should use dq_list_lock to protect the
-scan on free_dquots list.
+To properly re-initialize SR-IOV it is necessary to reset the device
+even if it is already down. Not doing this may result in Tx unit hangs.
 
-Fixes: 1ab6c4997e04a00c50c6d786c2f046adc0d1f5de
-Signed-off-by: Niu Yawei <yawei.niu@intel.com>
-Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Stefan Assmann <sassmann@kpanic.de>
+Tested-by: Aaron Brown <aaron.f.brown@intel.com>
+Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/quota/dquot.c |    2 ++
+ drivers/net/ethernet/intel/igb/igb_main.c |    2 ++
  1 file changed, 2 insertions(+)
 
---- a/fs/quota/dquot.c
-+++ b/fs/quota/dquot.c
-@@ -702,6 +702,7 @@ dqcache_shrink_scan(struct shrinker *shr
- 	struct dquot *dquot;
- 	unsigned long freed = 0;
+--- a/drivers/net/ethernet/intel/igb/igb_main.c
++++ b/drivers/net/ethernet/intel/igb/igb_main.c
+@@ -7505,6 +7505,8 @@ static int igb_sriov_reinit(struct pci_d
  
-+	spin_lock(&dq_list_lock);
- 	head = free_dquots.prev;
- 	while (head != &free_dquots && sc->nr_to_scan) {
- 		dquot = list_entry(head, struct dquot, dq_free);
-@@ -713,6 +714,7 @@ dqcache_shrink_scan(struct shrinker *shr
- 		freed++;
- 		head = free_dquots.prev;
- 	}
-+	spin_unlock(&dq_list_lock);
- 	return freed;
- }
+ 	if (netif_running(netdev))
+ 		igb_close(netdev);
++	else
++		igb_reset(adapter);
+ 
+ 	igb_clear_interrupt_scheme(adapter);
  
 
 
