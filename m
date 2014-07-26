@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755411AbaGZTcD (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 15:32:03 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34647 "EHLO
+	id S1754961AbaGZTdK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 15:33:10 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34552 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754821AbaGZTXP (ORCPT
+	with ESMTP id S1753166AbaGZTVC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 15:23:15 -0400
+	Sat, 26 Jul 2014 15:21:02 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Michel Lespinasse <walken@google.com>,
-        Eric Dumazet <edumazet@google.com>,
-        Ariel Elior <ariel.elior@qlogic.com>,
+        Christoph Schulz <develop@kristov.de>,
+        Daniel Borkmann <dborkman@redhat.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.15 049/109] bnx2x: fix possible panic under memory stress
-Date: Sat, 26 Jul 2014 12:02:11 -0700
-Message-Id: <20140726190225.351882882@linuxfoundation.org>
+Subject: [PATCH 3.15 071/109] net: ppp: dont call sk_chk_filter twice
+Date: Sat, 26 Jul 2014 12:02:33 -0700
+Message-Id: <20140726190226.014888929@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.2
 In-Reply-To: <20140726190223.834037485@linuxfoundation.org>
 References: <20140726190223.834037485@linuxfoundation.org>
@@ -31,37 +30,93 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <edumazet@google.com>
+From: Christoph Schulz <develop@kristov.de>
 
-[ Upstream commit 07b0f00964def8af9321cfd6c4a7e84f6362f728 ]
+[ Upstream commit 3916a3192793fd3c11f69d623ef0cdbdbf9ea10a ]
 
-While it is legal to kfree(NULL), it is not wise to use :
-put_page(virt_to_head_page(NULL))
+Commit 568f194e8bd16c353ad50f9ab95d98b20578a39d ("net: ppp: use
+sk_unattached_filter api") causes sk_chk_filter() to be called twice when
+setting a PPP pass or active filter. This applies to both the generic PPP
+subsystem implemented by drivers/net/ppp/ppp_generic.c and the ISDN PPP
+subsystem implemented by drivers/isdn/i4l/isdn_ppp.c. The first call is from
+within get_filter(). The second one is through the call chain
 
- BUG: unable to handle kernel paging request at ffffeba400000000
- IP: [<ffffffffc01f5928>] virt_to_head_page+0x36/0x44 [bnx2x]
+  ppp_ioctl() or isdn_ppp_ioctl()
+  --> sk_unattached_filter_create()
+      --> __sk_prepare_filter()
+          --> sk_chk_filter()
 
-Reported-by: Michel Lespinasse <walken@google.com>
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Cc: Ariel Elior <ariel.elior@qlogic.com>
-Fixes: d46d132cc021 ("bnx2x: use netdev_alloc_frag()")
+The first call from within get_filter() should be deleted as get_filter() is
+called just before calling sk_unattached_filter_create() later on, which
+eventually calls sk_chk_filter() anyway.
+
+For 3.15.x, this proposed change is a bugfix rather than a pure optimization as
+in that branch, sk_chk_filter() may replace filter codes by other codes which
+are not recognized when executing sk_chk_filter() a second time. So with
+3.15.x, if sk_chk_filter() is called twice, the second invocation may yield
+EINVAL (this depends on the filter codes found in the filter to be set, but
+because the replacement is done for frequently used codes, this is almost
+always the case). The net effect is that setting pass and/or active PPP filters
+does not work anymore, since sk_unattached_filter_create() always returns
+EINVAL due to the second call to sk_chk_filter(), regardless whether the filter
+was originally sane or not.
+
+Signed-off-by: Christoph Schulz <develop@kristov.de>
+Acked-by: Daniel Borkmann <dborkman@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/isdn/i4l/isdn_ppp.c   |    8 +-------
+ drivers/net/ppp/ppp_generic.c |    8 +-------
+ 2 files changed, 2 insertions(+), 14 deletions(-)
 
---- a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c
-+++ b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c
-@@ -797,7 +797,8 @@ static void bnx2x_tpa_stop(struct bnx2x
+--- a/drivers/isdn/i4l/isdn_ppp.c
++++ b/drivers/isdn/i4l/isdn_ppp.c
+@@ -442,7 +442,7 @@ static int get_filter(void __user *arg,
+ {
+ 	struct sock_fprog uprog;
+ 	struct sock_filter *code = NULL;
+-	int len, err;
++	int len;
  
- 		return;
- 	}
--	bnx2x_frag_free(fp, new_data);
-+	if (new_data)
-+		bnx2x_frag_free(fp, new_data);
- drop:
- 	/* drop the packet and keep the buffer in the bin */
- 	DP(NETIF_MSG_RX_STATUS,
+ 	if (copy_from_user(&uprog, arg, sizeof(uprog)))
+ 		return -EFAULT;
+@@ -458,12 +458,6 @@ static int get_filter(void __user *arg,
+ 	if (IS_ERR(code))
+ 		return PTR_ERR(code);
+ 
+-	err = sk_chk_filter(code, uprog.len);
+-	if (err) {
+-		kfree(code);
+-		return err;
+-	}
+-
+ 	*p = code;
+ 	return uprog.len;
+ }
+--- a/drivers/net/ppp/ppp_generic.c
++++ b/drivers/net/ppp/ppp_generic.c
+@@ -539,7 +539,7 @@ static int get_filter(void __user *arg,
+ {
+ 	struct sock_fprog uprog;
+ 	struct sock_filter *code = NULL;
+-	int len, err;
++	int len;
+ 
+ 	if (copy_from_user(&uprog, arg, sizeof(uprog)))
+ 		return -EFAULT;
+@@ -554,12 +554,6 @@ static int get_filter(void __user *arg,
+ 	if (IS_ERR(code))
+ 		return PTR_ERR(code);
+ 
+-	err = sk_chk_filter(code, uprog.len);
+-	if (err) {
+-		kfree(code);
+-		return err;
+-	}
+-
+ 	*p = code;
+ 	return uprog.len;
+ }
 
 
