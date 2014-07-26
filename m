@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754581AbaGZTRz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 15:17:55 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34376 "EHLO
+	id S1754654AbaGZTSZ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 15:18:25 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34123 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754254AbaGZTN1 (ORCPT
+	with ESMTP id S1754250AbaGZTN0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 15:13:27 -0400
+	Sat, 26 Jul 2014 15:13:26 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.15 005/109] ALSA: hda - Fix broken PM due to incomplete i915 initialization
-Date: Sat, 26 Jul 2014 12:01:27 -0700
-Message-Id: <20140726190223.993700260@linuxfoundation.org>
+        Kees Cook <keescook@chromium.org>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Alexei Starovoitov <ast@plumgrid.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.15 038/109] net: filter: fix upper BPF instruction limit
+Date: Sat, 26 Jul 2014 12:02:00 -0700
+Message-Id: <20140726190224.984769091@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.2
 In-Reply-To: <20140726190223.834037485@linuxfoundation.org>
 References: <20140726190223.834037485@linuxfoundation.org>
@@ -28,75 +31,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Kees Cook <keescook@chromium.org>
 
-commit 4da63c6fc426023d1a20e45508c47d7d68c6a53d upstream.
+[ Upstream commit 6f9a093b66ce7cacc110d8737c03686e80ecfda6 ]
 
-When the initialization of Intel HDMI controller fails due to missing
-i915 kernel symbols (e.g. HD-audio is built in while i915 is module),
-the driver discontinues the probe.  However, since the probe was done
-asynchronously, the driver object still remains, thus the relevant PM
-ops are still called at suspend/resume. This results in the bad access
-to the incomplete audio card object, eventually leads to Oops or stall
-at PM.
+The original checks (via sk_chk_filter) for instruction count uses ">",
+not ">=", so changing this in sk_convert_filter has the potential to break
+existing seccomp filters that used exactly BPF_MAXINSNS many instructions.
 
-This patch adds the missing checks of chip->init_failed flag at each
-PM callback in order to fix the problem above.
-
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=79561
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Fixes: bd4cf0ed331a ("net: filter: rework/optimize internal BPF interpreter's instruction set")
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Cc: stable@vger.kernel.org # v3.15+
+Acked-by: Daniel Borkmann <dborkman@redhat.com>
+Acked-by: Alexei Starovoitov <ast@plumgrid.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- sound/pci/hda/hda_intel.c |   10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+ net/core/filter.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/sound/pci/hda/hda_intel.c
-+++ b/sound/pci/hda/hda_intel.c
-@@ -590,7 +590,7 @@ static int azx_suspend(struct device *de
- 	struct azx *chip = card->private_data;
- 	struct azx_pcm *p;
+--- a/net/core/filter.c
++++ b/net/core/filter.c
+@@ -872,7 +872,7 @@ int sk_convert_filter(struct sock_filter
+ 	BUILD_BUG_ON(BPF_MEMWORDS * sizeof(u32) > MAX_BPF_STACK);
+ 	BUILD_BUG_ON(FP_REG + 1 != MAX_BPF_REG);
  
--	if (chip->disabled)
-+	if (chip->disabled || chip->init_failed)
- 		return 0;
+-	if (len <= 0 || len >= BPF_MAXINSNS)
++	if (len <= 0 || len > BPF_MAXINSNS)
+ 		return -EINVAL;
  
- 	snd_power_change_state(card, SNDRV_CTL_POWER_D3hot);
-@@ -622,7 +622,7 @@ static int azx_resume(struct device *dev
- 	struct snd_card *card = dev_get_drvdata(dev);
- 	struct azx *chip = card->private_data;
- 
--	if (chip->disabled)
-+	if (chip->disabled || chip->init_failed)
- 		return 0;
- 
- 	if (chip->driver_caps & AZX_DCAPS_I915_POWERWELL) {
-@@ -659,7 +659,7 @@ static int azx_runtime_suspend(struct de
- 	struct snd_card *card = dev_get_drvdata(dev);
- 	struct azx *chip = card->private_data;
- 
--	if (chip->disabled)
-+	if (chip->disabled || chip->init_failed)
- 		return 0;
- 
- 	if (!(chip->driver_caps & AZX_DCAPS_PM_RUNTIME))
-@@ -686,7 +686,7 @@ static int azx_runtime_resume(struct dev
- 	struct hda_codec *codec;
- 	int status;
- 
--	if (chip->disabled)
-+	if (chip->disabled || chip->init_failed)
- 		return 0;
- 
- 	if (!(chip->driver_caps & AZX_DCAPS_PM_RUNTIME))
-@@ -723,7 +723,7 @@ static int azx_runtime_idle(struct devic
- 	struct snd_card *card = dev_get_drvdata(dev);
- 	struct azx *chip = card->private_data;
- 
--	if (chip->disabled)
-+	if (chip->disabled || chip->init_failed)
- 		return 0;
- 
- 	if (!power_save_controller ||
+ 	if (new_prog) {
 
 
