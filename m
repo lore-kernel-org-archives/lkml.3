@@ -1,160 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756067AbaGZUGj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 16:06:39 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33715 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752659AbaGZTC7 (ORCPT
+	id S1756604AbaGZUGs (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 16:06:48 -0400
+Received: from mail-lb0-f177.google.com ([209.85.217.177]:47604 "EHLO
+	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752659AbaGZUGq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 15:02:59 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andrew Vagin <avagin@openvz.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Christoph Paasch <christoph.paasch@uclouvain.be>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 24/56] tcp: Fix divide by zero when pushing during tcp-repair
-Date: Sat, 26 Jul 2014 12:02:17 -0700
-Message-Id: <20140726190200.825241164@linuxfoundation.org>
-X-Mailer: git-send-email 2.0.2
-In-Reply-To: <20140726190200.061512159@linuxfoundation.org>
-References: <20140726190200.061512159@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	Sat, 26 Jul 2014 16:06:46 -0400
+Message-ID: <53D40A60.2060100@cogentembedded.com>
+Date: Sun, 27 Jul 2014 00:06:56 +0400
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Organization: Cogent Embedded
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+To: Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+CC: Boris Brezillon <boris.brezillon@free-electrons.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] ARM: at91/dt: sam9x5: fix ADC compatible string
+References: <1406038067-14697-1-git-send-email-alexandre.belloni@free-electrons.com>
+In-Reply-To: <1406038067-14697-1-git-send-email-alexandre.belloni@free-electrons.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+Hello.
 
-------------------
+On 07/22/2014 06:07 PM, Alexandre Belloni wrote:
 
-From: Christoph Paasch <christoph.paasch@uclouvain.be>
+> Use the correct compatible string for the ADC of the at91sam9x5 family of SoCs.
 
-[ Upstream commit 5924f17a8a30c2ae18d034a86ee7581b34accef6 ]
+> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+> ---
+>   arch/arm/boot/dts/at91sam9x5.dtsi | 2 +-
+>   1 file changed, 1 insertion(+), 1 deletion(-)
 
-When in repair-mode and TCP_RECV_QUEUE is set, we end up calling
-tcp_push with mss_now being 0. If data is in the send-queue and
-tcp_set_skb_tso_segs gets called, we crash because it will divide by
-mss_now:
+> diff --git a/arch/arm/boot/dts/at91sam9x5.dtsi b/arch/arm/boot/dts/at91sam9x5.dtsi
+> index 2c0d6ea3ab41..5d7cf394f537 100644
+> --- a/arch/arm/boot/dts/at91sam9x5.dtsi
+> +++ b/arch/arm/boot/dts/at91sam9x5.dtsi
+> @@ -964,7 +964,7 @@
+>   			adc0: adc@f804c000 {
+>   				#address-cells = <1>;
+>   				#size-cells = <0>;
+> -				compatible = "atmel,at91sam9260-adc";
+> +				compatible = "atmel,at91sam9x5-adc";
 
-[  347.151939] divide error: 0000 [#1] SMP
-[  347.152907] Modules linked in:
-[  347.152907] CPU: 1 PID: 1123 Comm: packetdrill Not tainted 3.16.0-rc2 #4
-[  347.152907] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2007
-[  347.152907] task: f5b88540 ti: f3c82000 task.ti: f3c82000
-[  347.152907] EIP: 0060:[<c1601359>] EFLAGS: 00210246 CPU: 1
-[  347.152907] EIP is at tcp_set_skb_tso_segs+0x49/0xa0
-[  347.152907] EAX: 00000b67 EBX: f5acd080 ECX: 00000000 EDX: 00000000
-[  347.152907] ESI: f5a28f40 EDI: f3c88f00 EBP: f3c83d10 ESP: f3c83d00
-[  347.152907]  DS: 007b ES: 007b FS: 00d8 GS: 0033 SS: 0068
-[  347.152907] CR0: 80050033 CR2: 083158b0 CR3: 35146000 CR4: 000006b0
-[  347.152907] Stack:
-[  347.152907]  c167f9d9 f5acd080 000005b4 00000002 f3c83d20 c16013e6 f3c88f00 f5acd080
-[  347.152907]  f3c83da0 c1603b5a f3c83d38 c10a0188 00000000 00000000 f3c83d84 c10acc85
-[  347.152907]  c1ad5ec0 00000000 00000000 c1ad679c 010003e0 00000000 00000000 f3c88fc8
-[  347.152907] Call Trace:
-[  347.152907]  [<c167f9d9>] ? apic_timer_interrupt+0x2d/0x34
-[  347.152907]  [<c16013e6>] tcp_init_tso_segs+0x36/0x50
-[  347.152907]  [<c1603b5a>] tcp_write_xmit+0x7a/0xbf0
-[  347.152907]  [<c10a0188>] ? up+0x28/0x40
-[  347.152907]  [<c10acc85>] ? console_unlock+0x295/0x480
-[  347.152907]  [<c10ad24f>] ? vprintk_emit+0x1ef/0x4b0
-[  347.152907]  [<c1605716>] __tcp_push_pending_frames+0x36/0xd0
-[  347.152907]  [<c15f4860>] tcp_push+0xf0/0x120
-[  347.152907]  [<c15f7641>] tcp_sendmsg+0xf1/0xbf0
-[  347.152907]  [<c116d920>] ? kmem_cache_free+0xf0/0x120
-[  347.152907]  [<c106a682>] ? __sigqueue_free+0x32/0x40
-[  347.152907]  [<c106a682>] ? __sigqueue_free+0x32/0x40
-[  347.152907]  [<c114f0f0>] ? do_wp_page+0x3e0/0x850
-[  347.152907]  [<c161c36a>] inet_sendmsg+0x4a/0xb0
-[  347.152907]  [<c1150269>] ? handle_mm_fault+0x709/0xfb0
-[  347.152907]  [<c15a006b>] sock_aio_write+0xbb/0xd0
-[  347.152907]  [<c1180b79>] do_sync_write+0x69/0xa0
-[  347.152907]  [<c1181023>] vfs_write+0x123/0x160
-[  347.152907]  [<c1181d55>] SyS_write+0x55/0xb0
-[  347.152907]  [<c167f0d8>] sysenter_do_call+0x12/0x28
+    Actually, wildcards are not allowed in the "compatible" prop.
 
-This can easily be reproduced with the following packetdrill-script (the
-"magic" with netem, sk_pacing and limit_output_bytes is done to prevent
-the kernel from pushing all segments, because hitting the limit without
-doing this is not so easy with packetdrill):
-
-0   socket(..., SOCK_STREAM, IPPROTO_TCP) = 3
-+0  setsockopt(3, SOL_SOCKET, SO_REUSEADDR, [1], 4) = 0
-
-+0  bind(3, ..., ...) = 0
-+0  listen(3, 1) = 0
-
-+0  < S 0:0(0) win 32792 <mss 1460>
-+0  > S. 0:0(0) ack 1 <mss 1460>
-+0.1  < . 1:1(0) ack 1 win 65000
-
-+0  accept(3, ..., ...) = 4
-
-// This forces that not all segments of the snd-queue will be pushed
-+0 `tc qdisc add dev tun0 root netem delay 10ms`
-+0 `sysctl -w net.ipv4.tcp_limit_output_bytes=2`
-+0 setsockopt(4, SOL_SOCKET, 47, [2], 4) = 0
-
-+0 write(4,...,10000) = 10000
-+0 write(4,...,10000) = 10000
-
-// Set tcp-repair stuff, particularly TCP_RECV_QUEUE
-+0 setsockopt(4, SOL_TCP, 19, [1], 4) = 0
-+0 setsockopt(4, SOL_TCP, 20, [1], 4) = 0
-
-// This now will make the write push the remaining segments
-+0 setsockopt(4, SOL_SOCKET, 47, [20000], 4) = 0
-+0 `sysctl -w net.ipv4.tcp_limit_output_bytes=130000`
-
-// Now we will crash
-+0 write(4,...,1000) = 1000
-
-This happens since ec3423257508 (tcp: fix retransmission in repair
-mode). Prior to that, the call to tcp_push was prevented by a check for
-tp->repair.
-
-The patch fixes it, by adding the new goto-label out_nopush. When exiting
-tcp_sendmsg and a push is not required, which is the case for tp->repair,
-we go to this label.
-
-When repairing and calling send() with TCP_RECV_QUEUE, the data is
-actually put in the receive-queue. So, no push is required because no
-data has been added to the send-queue.
-
-Cc: Andrew Vagin <avagin@openvz.org>
-Cc: Pavel Emelyanov <xemul@parallels.com>
-Fixes: ec3423257508 (tcp: fix retransmission in repair mode)
-Signed-off-by: Christoph Paasch <christoph.paasch@uclouvain.be>
-Acked-by: Andrew Vagin <avagin@openvz.org>
-Acked-by: Pavel Emelyanov <xemul@parallels.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/ipv4/tcp.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
-
---- a/net/ipv4/tcp.c
-+++ b/net/ipv4/tcp.c
-@@ -1065,7 +1065,7 @@ int tcp_sendmsg(struct kiocb *iocb, stru
- 	if (unlikely(tp->repair)) {
- 		if (tp->repair_queue == TCP_RECV_QUEUE) {
- 			copied = tcp_send_rcvq(sk, msg, size);
--			goto out;
-+			goto out_nopush;
- 		}
- 
- 		err = -EINVAL;
-@@ -1238,6 +1238,7 @@ wait_for_memory:
- out:
- 	if (copied)
- 		tcp_push(sk, flags, mss_now, tp->nonagle);
-+out_nopush:
- 	release_sock(sk);
- 	return copied + copied_syn;
- 
-
+WBR, Sergei
 
