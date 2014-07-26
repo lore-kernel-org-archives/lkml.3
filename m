@@ -1,78 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751566AbaGZPRj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 11:17:39 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:57250 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751370AbaGZPRh (ORCPT
+	id S1751848AbaGZPVJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 11:21:09 -0400
+Received: from mail-la0-f54.google.com ([209.85.215.54]:63475 "EHLO
+	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751370AbaGZPVH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 11:17:37 -0400
-X-Originating-IP: 108.223.40.66
-Message-ID: <53D3C68D.8010703@roeck-us.net>
-Date: Sat, 26 Jul 2014 08:17:33 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Sat, 26 Jul 2014 11:21:07 -0400
 MIME-Version: 1.0
-To: Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <robherring2@gmail.com>,
-        Vineet Gupta <Vineet.Gupta1@synopsys.com>
-CC: linux-next <linux-next@vger.kernel.org>,
-        Anton Kolesov <Anton.Kolesov@synopsys.com>,
-        lkml <linux-kernel@vger.kernel.org>,
-        greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
-        devicetree@vger.ker
-Subject: Re: ARC fails to boot on linux-next of 20140711
-References: <C2D7FE5348E1B147BCA15975FBA230753C4B67CF@IN01WEMBXA.internal.synopsys.com> <CAL_JsqJ2q0RSvXQW03RqwwBi_TKQ7Zt6DsUbsUruzh5oqYi5Cg@mail.gmail.com> <20140726053344.95800C40C93@trevor.secretlab.ca>
-In-Reply-To: <20140726053344.95800C40C93@trevor.secretlab.ca>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <53CFC170.9090505@roeck-us.net>
+References: <1406119899-22659-1-git-send-email-sasha.levin@oracle.com>
+	<53CFC170.9090505@roeck-us.net>
+Date: Sat, 26 Jul 2014 17:21:04 +0200
+X-Google-Sender-Auth: X6Np2M-5uiDvzYFKuO7UL5HvUuo
+Message-ID: <CAMuHMdW=iecARisoUuDY1hNaZgWWZJwpVjXDpXYqscx=myDx+w@mail.gmail.com>
+Subject: Re: [PATCH] m68k/q40: Revert "m68k/q40: Fix q40_irq_startup() to
+ return -ENXIO on failures"
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Sasha Levin <sasha.levin@oracle.com>, Steven Rostedt <rostedt@goodmis.org>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Nick Krause <xerofoify@gmail.com>,
+        "Linux/m68k" <linux-m68k@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Sasha Levin <sashal@kernel.org>, Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/25/2014 10:33 PM, Grant Likely wrote:
-> On Fri, 25 Jul 2014 09:15:22 -0500, Rob Herring <robherring2@gmail.com> wrote:
->> On Fri, Jul 25, 2014 at 6:02 AM, Vineet Gupta
->> <Vineet.Gupta1@synopsys.com> wrote:
->>> Hi Grant,
->>>
->>> linux-next has a series for arc_uart (via tty tree) which converts it to generic
->>> earlycon and specifies console via /chosen/stdout-path vs.  an explicit param in
->>> /chose/bootargs
->>>
->>> 2014-06-24 9da433c0a0b5 ARC: [arcfpga] stdout-path now suffices for earlycon/console
->>>
->>> This relied on prev commit of yours (from linux next of 20140711), which seem to
->>> have disappeared now.
->>>
->>> 2014-03-27 a9296cf2d0b6 of: Create of_console_check() for selecting a console
->>> specified in /chosen
->>> 2014-03-27 cfa9cacc5dd3 of: Enable console on serial ports specified by
->>> /chosen/stdout-path
->>>
->>> Is there a specific reason for dropping these patches (or perhaps a merge to be
->>> merged). I cherry-picked both but still doesn't work.
->>>
->>> Can you please advise next step forward, before I go off debugging with those
->>> patches in.
+On Wed, Jul 23, 2014 at 4:06 PM, Guenter Roeck <linux@roeck-us.net> wrote:
+> On 07/23/2014 05:51 AM, Sasha Levin wrote:
+>> Revert since we're trying to return -ENXIO from a function returning
+>> unsigned int. Not only it causes compiler warnings it's also obviously
+>> incorrect.
 >>
->> There's an issue that if you have stdout-path and "earlycon" on the
->> command line, the kernel will switch to tty0 and disable the earlycon.
+>> In general, watch for patches from Nick Krause since they are not even
+>> build tested.
 >>
->> This is the "fix", but I don't like adding the DT dependency into generic code:
+>> Signed-off-by: Sasha Levin <sashal@kernel.org>
 >
-> Yes, I'm not fond of it either. I've not been able to test it though and
-> work out a proper bug fix. As far as I can understand, the earlycon code
-> only works on aarch64, correct? I haven't been able to get an aarch64
-> boot working in QEMU yet.
 >
+> Guess I wasn't fast enough with my comments :-(
+>
+> Acked-by: Guenter Roeck <linux@roeck-us.net>
 
-Have a look at [1]. This worked for me with the latest qemu and the latest
-pre-built root file system from [2].
+I applied Nick's cleanup (which is not yet in mainline, just in the m68k repo)
+because I thought Nick was right (in this particular case ;-), cfr. my
+reasoning in www.spinics.net/lists/kernel/msg1774736.html
 
-Guenter
+W.r.t. the signess, I didn't see the compiler warning, as the version of gcc
+I'm using didn't print that warning. However, irq_startup() converts the
+value returned by .irq_startup() from unsigned to signed.
+I assume this is just a missing conversion when the genirq framework
+itself was introduced (m68k was converted quite late)?
 
----
-[1] http://www.bennee.com/~alex/blog/2014/05/09/running-linux-in-qemus-aarch64-system-emulation-mode/
-[2] http://people.linaro.org/~alex.bennee/images/aarch64-linux-3.16rc3-buildroot.img
+W.r.t. the actual value, any non-zero value is treated the same.
+I can change it to 1, if that makes you feel better. If returning a non-zero
+value here is wrong, presumable the code has been wrong since it
+incarnation.
+
+As we're close to the opening of the merge window, it would be nice
+if we could conclude on this ;-)
+
+Thanks!
+
+>> ---
+>>   arch/m68k/q40/q40ints.c | 2 +-
+>>   1 file changed, 1 insertion(+), 1 deletion(-)
+>>
+>> diff --git a/arch/m68k/q40/q40ints.c b/arch/m68k/q40/q40ints.c
+>> index 9dfa1ea..513f9bb 100644
+>> --- a/arch/m68k/q40/q40ints.c
+>> +++ b/arch/m68k/q40/q40ints.c
+>> @@ -49,7 +49,7 @@ static unsigned int q40_irq_startup(struct irq_data
+>> *data)
+>>         case 1: case 2: case 8: case 9:
+>>         case 11: case 12: case 13:
+>>                 printk("%s: ISA IRQ %d not implemented by HW\n", __func__,
+>> irq);
+>> -               return -ENXIO;
+>> +               /* FIXME return -ENXIO; */
+>>         }
+>>         return 0;
+>>   }
+>>
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
