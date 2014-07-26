@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753026AbaGZTDV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 15:03:21 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33777 "EHLO
+	id S1752995AbaGZTDT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 15:03:19 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33775 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752693AbaGZTDE (ORCPT
+	with ESMTP id S1752692AbaGZTDE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 26 Jul 2014 15:03:04 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Deucher <alexander.deucher@amd.com>,
-        David Heidelberger <david.heidelberger@ixit.cz>
-Subject: [PATCH 3.10 47/56] drm/radeon: set default bl level to something reasonable
-Date: Sat, 26 Jul 2014 12:02:40 -0700
-Message-Id: <20140726190201.605634461@linuxfoundation.org>
+        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Tomasz Figa <t.figa@samsung.com>, Jason Cooper <jason@lakedaemon.net>
+Subject: [PATCH 3.10 46/56] irqchip: gic: Fix core ID calculation when topology is read from DT
+Date: Sat, 26 Jul 2014 12:02:39 -0700
+Message-Id: <20140726190201.575882381@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.2
 In-Reply-To: <20140726190200.061512159@linuxfoundation.org>
 References: <20140726190200.061512159@linuxfoundation.org>
@@ -29,57 +30,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Tomasz Figa <t.figa@samsung.com>
 
-commit 201bb62402e0227375c655446ea04fcd0acf7287 upstream.
+commit 29e697b11853d3f83b1864ae385abdad4aa2c361 upstream.
 
-If the value in the scratch register is 0, set it to the
-max level.  This fixes an issue where the console fb blanking
-code calls back into the backlight driver on unblank and then
-sets the backlight level to 0 after the driver has already
-set the mode and enabled the backlight.
+Certain GIC implementation, namely those found on earlier, single
+cluster, Exynos SoCs, have registers mapped without per-CPU banking,
+which means that the driver needs to use different offset for each CPU.
 
-bugs:
-https://bugs.freedesktop.org/show_bug.cgi?id=81382
-https://bugs.freedesktop.org/show_bug.cgi?id=70207
+Currently the driver calculates the offset by multiplying value returned
+by cpu_logical_map() by CPU offset parsed from DT. This is correct when
+CPU topology is not specified in DT and aforementioned function returns
+core ID alone. However when DT contains CPU topology, the function
+changes to return cluster ID as well, which is non-zero on mentioned
+SoCs and so breaks the calculation in GIC driver.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
-Tested-by: David Heidelberger <david.heidelberger@ixit.cz>
+This patch fixes this by masking out cluster ID in CPU offset
+calculation so that only core ID is considered. Multi-cluster Exynos
+SoCs already have banked GIC implementations, so this simple fix should
+be enough.
+
+Reported-by: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+Reported-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Signed-off-by: Tomasz Figa <t.figa@samsung.com>
+Fixes: db0d4db22a78d ("ARM: gic: allow GIC to support non-banked setups")
+Link: https://lkml.kernel.org/r/1405610624-18722-1-git-send-email-t.figa@samsung.com
+Signed-off-by: Jason Cooper <jason@lakedaemon.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/atombios_encoders.c |   10 +++++++---
- 1 file changed, 7 insertions(+), 3 deletions(-)
+ drivers/irqchip/irq-gic.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/radeon/atombios_encoders.c
-+++ b/drivers/gpu/drm/radeon/atombios_encoders.c
-@@ -183,7 +183,6 @@ void radeon_atom_backlight_init(struct r
- 	struct backlight_properties props;
- 	struct radeon_backlight_privdata *pdata;
- 	struct radeon_encoder_atom_dig *dig;
--	u8 backlight_level;
- 	char bl_name[16];
+--- a/drivers/irqchip/irq-gic.c
++++ b/drivers/irqchip/irq-gic.c
+@@ -42,6 +42,7 @@
+ #include <linux/irqchip/chained_irq.h>
+ #include <linux/irqchip/arm-gic.h>
  
- 	/* Mac laptops with multiple GPUs use the gmux driver for backlight
-@@ -222,12 +221,17 @@ void radeon_atom_backlight_init(struct r
++#include <asm/cputype.h>
+ #include <asm/irq.h>
+ #include <asm/exception.h>
+ #include <asm/smp_plat.h>
+@@ -754,7 +755,9 @@ void __init gic_init_bases(unsigned int
+ 		}
  
- 	pdata->encoder = radeon_encoder;
- 
--	backlight_level = radeon_atom_get_backlight_level_from_reg(rdev);
--
- 	dig = radeon_encoder->enc_priv;
- 	dig->bl_dev = bd;
- 
- 	bd->props.brightness = radeon_atom_backlight_get_brightness(bd);
-+	/* Set a reasonable default here if the level is 0 otherwise
-+	 * fbdev will attempt to turn the backlight on after console
-+	 * unblanking and it will try and restore 0 which turns the backlight
-+	 * off again.
-+	 */
-+	if (bd->props.brightness == 0)
-+		bd->props.brightness = RADEON_MAX_BL_LEVEL;
- 	bd->props.power = FB_BLANK_UNBLANK;
- 	backlight_update_status(bd);
- 
+ 		for_each_possible_cpu(cpu) {
+-			unsigned long offset = percpu_offset * cpu_logical_map(cpu);
++			u32 mpidr = cpu_logical_map(cpu);
++			u32 core_id = MPIDR_AFFINITY_LEVEL(mpidr, 0);
++			unsigned long offset = percpu_offset * core_id;
+ 			*per_cpu_ptr(gic->dist_base.percpu_base, cpu) = dist_base + offset;
+ 			*per_cpu_ptr(gic->cpu_base.percpu_base, cpu) = cpu_base + offset;
+ 		}
 
 
