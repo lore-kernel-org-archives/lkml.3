@@ -1,23 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756307AbaGZUCF (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 16:02:05 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34901 "EHLO
+	id S1756252AbaGZUCD (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 16:02:03 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34909 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753763AbaGZUBb (ORCPT
+	with ESMTP id S1752904AbaGZUBd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 16:01:31 -0400
+	Sat, 26 Jul 2014 16:01:33 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ding Tianhong <dingtianhong@huawei.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 48/87] igmp: fix the problem when mc leave group
-Date: Sat, 26 Jul 2014 12:02:22 -0700
-Message-Id: <20140726190216.163432515@linuxfoundation.org>
+        Andrew Wiley <wiley.andrew.j@gmail.com>,
+        Linus Gasser <list@markas-al-nour.org>,
+        Michael Hirsch <hirsch@teufel.de>, Xinming Hu <huxm@marvell.com>,
+        Amitkumar Karwar <akarwar@marvell.com>,
+        Maithili Hinge <maithili@marvell.com>,
+        Avinash Patil <patila@marvell.com>, Bing Zhao <bzhao@marvell.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [PATCH 3.15 081/109] mwifiex: fix Tx timeout issue
+Date: Sat, 26 Jul 2014 12:02:43 -0700
+Message-Id: <20140726190226.306387228@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.2
-In-Reply-To: <20140726190214.530473925@linuxfoundation.org>
-References: <20140726190214.530473925@linuxfoundation.org>
+In-Reply-To: <20140726190223.834037485@linuxfoundation.org>
+References: <20140726190223.834037485@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -25,88 +30,53 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.15-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: dingtianhong <dingtianhong@huawei.com>
+From: Amitkumar Karwar <akarwar@marvell.com>
 
-[ Upstream commit 52ad353a5344f1f700c5b777175bdfa41d3cd65a ]
+commit d76744a93246eccdca1106037e8ee29debf48277 upstream.
 
-The problem was triggered by these steps:
+https://bugzilla.kernel.org/show_bug.cgi?id=70191
+https://bugzilla.kernel.org/show_bug.cgi?id=77581
 
-1) create socket, bind and then setsockopt for add mc group.
-   mreq.imr_multiaddr.s_addr = inet_addr("255.0.0.37");
-   mreq.imr_interface.s_addr = inet_addr("192.168.1.2");
-   setsockopt(sockfd, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq, sizeof(mreq));
+It is observed that sometimes Tx packet is downloaded without
+adding driver's txpd header. This results in firmware parsing
+garbage data as packet length. Sometimes firmware is unable
+to read the packet if length comes out as invalid. This stops
+further traffic and timeout occurs.
 
-2) drop the mc group for this socket.
-   mreq.imr_multiaddr.s_addr = inet_addr("255.0.0.37");
-   mreq.imr_interface.s_addr = inet_addr("0.0.0.0");
-   setsockopt(sockfd, IPPROTO_IP, IP_DROP_MEMBERSHIP, &mreq, sizeof(mreq));
+The root cause is uninitialized fields in tx_info(skb->cb) of
+packet used to get garbage values. In this case if
+MWIFIEX_BUF_FLAG_REQUEUED_PKT flag is mistakenly set, txpd
+header was skipped. This patch makes sure that tx_info is
+correctly initialized to fix the problem.
 
-3) and then drop the socket, I found the mc group was still used by the dev:
-
-   netstat -g
-
-   Interface       RefCnt Group
-   --------------- ------ ---------------------
-   eth2		   1	  255.0.0.37
-
-Normally even though the IP_DROP_MEMBERSHIP return error, the mc group still need
-to be released for the netdev when drop the socket, but this process was broken when
-route default is NULL, the reason is that:
-
-The ip_mc_leave_group() will choose the in_dev by the imr_interface.s_addr, if input addr
-is NULL, the default route dev will be chosen, then the ifindex is got from the dev,
-then polling the inet->mc_list and return -ENODEV, but if the default route dev is NULL,
-the in_dev and ifIndex is both NULL, when polling the inet->mc_list, the mc group will be
-released from the mc_list, but the dev didn't dec the refcnt for this mc group, so
-when dropping the socket, the mc_list is NULL and the dev still keep this group.
-
-v1->v2: According Hideaki's suggestion, we should align with IPv6 (RFC3493) and BSDs,
-	so I add the checking for the in_dev before polling the mc_list, make sure when
-	we remove the mc group, dec the refcnt to the real dev which was using the mc address.
-	The problem would never happened again.
-
-Signed-off-by: Ding Tianhong <dingtianhong@huawei.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Reported-by: Andrew Wiley <wiley.andrew.j@gmail.com>
+Reported-by: Linus Gasser <list@markas-al-nour.org>
+Reported-by: Michael Hirsch <hirsch@teufel.de>
+Tested-by: Xinming Hu <huxm@marvell.com>
+Signed-off-by: Amitkumar Karwar <akarwar@marvell.com>
+Signed-off-by: Maithili Hinge <maithili@marvell.com>
+Signed-off-by: Avinash Patil <patila@marvell.com>
+Signed-off-by: Bing Zhao <bzhao@marvell.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/ipv4/igmp.c |   10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
 
---- a/net/ipv4/igmp.c
-+++ b/net/ipv4/igmp.c
-@@ -1952,6 +1952,10 @@ int ip_mc_leave_group(struct sock *sk, s
- 
- 	rtnl_lock();
- 	in_dev = ip_mc_find_dev(net, imr);
-+	if (!in_dev) {
-+		ret = -ENODEV;
-+		goto out;
-+	}
- 	ifindex = imr->imr_ifindex;
- 	for (imlp = &inet->mc_list;
- 	     (iml = rtnl_dereference(*imlp)) != NULL;
-@@ -1969,16 +1973,14 @@ int ip_mc_leave_group(struct sock *sk, s
- 
- 		*imlp = iml->next_rcu;
- 
--		if (in_dev)
--			ip_mc_dec_group(in_dev, group);
-+		ip_mc_dec_group(in_dev, group);
- 		rtnl_unlock();
- 		/* decrease mem now to avoid the memleak warning */
- 		atomic_sub(sizeof(*iml), &sk->sk_omem_alloc);
- 		kfree_rcu(iml, rcu);
- 		return 0;
+---
+ drivers/net/wireless/mwifiex/main.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+--- a/drivers/net/wireless/mwifiex/main.c
++++ b/drivers/net/wireless/mwifiex/main.c
+@@ -647,6 +647,7 @@ mwifiex_hard_start_xmit(struct sk_buff *
  	}
--	if (!in_dev)
--		ret = -ENODEV;
-+out:
- 	rtnl_unlock();
- 	return ret;
- }
+ 
+ 	tx_info = MWIFIEX_SKB_TXCB(skb);
++	memset(tx_info, 0, sizeof(*tx_info));
+ 	tx_info->bss_num = priv->bss_num;
+ 	tx_info->bss_type = priv->bss_type;
+ 	tx_info->pkt_len = skb->len;
 
 
