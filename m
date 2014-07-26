@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751964AbaGZOqg (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 10:46:36 -0400
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:35035 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751554AbaGZOqf (ORCPT
+	id S1751985AbaGZOsJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 10:48:09 -0400
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:61760 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751558AbaGZOsH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 10:46:35 -0400
+	Sat, 26 Jul 2014 10:48:07 -0400
 From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Johannes Berg <johannes@sipsolutions.net>,
-        "John W. Linville" <linville@tuxdriver.com>
+To: Vikas Chaudhary <vikas.chaudhary@qlogic.com>, iscsi-driver@qlogic.com
 Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        "David S. Miller" <davem@davemloft.net>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] net: mac80211: trace.h:  Cleaning up missing null-terminate in conjunction with strncpy
-Date: Sat, 26 Jul 2014 16:48:00 +0200
-Message-Id: <1406386080-4062-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] scsi: qla4xxx: ql4_os.c:  Cleaning up missing null-terminate in conjunction with strncpy
+Date: Sat, 26 Jul 2014 16:49:32 +0200
+Message-Id: <1406386172-4142-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
 X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,22 +24,56 @@ Replacing strncpy with strlcpy to avoid strings that lacks null terminate.
 
 Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 ---
- net/mac80211/trace.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/scsi/qla4xxx/ql4_os.c |   14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
 
-diff --git a/net/mac80211/trace.h b/net/mac80211/trace.h
-index cfe1a06..e475a29 100644
---- a/net/mac80211/trace.h
-+++ b/net/mac80211/trace.h
-@@ -1445,7 +1445,7 @@ TRACE_EVENT(drv_switch_vif_chanctx,
+diff --git a/drivers/scsi/qla4xxx/ql4_os.c b/drivers/scsi/qla4xxx/ql4_os.c
+index 3202063..a07c53e 100644
+--- a/drivers/scsi/qla4xxx/ql4_os.c
++++ b/drivers/scsi/qla4xxx/ql4_os.c
+@@ -756,9 +756,9 @@ static int qla4xxx_get_chap_list(struct Scsi_Host *shost, uint16_t chap_tbl_idx,
+ 			continue;
  
- 				SWITCH_ENTRY_ASSIGN(vif.vif_type, vif->type);
- 				SWITCH_ENTRY_ASSIGN(vif.p2p, vif->p2p);
--				strncpy(local_vifs[i].vif.vif_name,
-+				strlcpy(local_vifs[i].vif.vif_name,
- 					sdata->name,
- 					sizeof(local_vifs[i].vif.vif_name));
- 				SWITCH_ENTRY_ASSIGN(old_chandef.control_freq,
+ 		chap_rec->chap_tbl_idx = i;
+-		strncpy(chap_rec->username, chap_table->name,
++		strlcpy(chap_rec->username, chap_table->name,
+ 			ISCSI_CHAP_AUTH_NAME_MAX_LEN);
+-		strncpy(chap_rec->password, chap_table->secret,
++		strlcpy(chap_rec->password, chap_table->secret,
+ 			QL4_CHAP_MAX_SECRET_LEN);
+ 		chap_rec->password_length = chap_table->secret_len;
+ 
+@@ -6027,8 +6027,8 @@ static int qla4xxx_get_bidi_chap(struct scsi_qla_host *ha, char *username,
+ 		if (!(chap_table->flags & BIT_6)) /* Not BIDI */
+ 			continue;
+ 
+-		strncpy(password, chap_table->secret, QL4_CHAP_MAX_SECRET_LEN);
+-		strncpy(username, chap_table->name, QL4_CHAP_MAX_NAME_LEN);
++		strlcpy(password, chap_table->secret, QL4_CHAP_MAX_SECRET_LEN);
++		strlcpy(username, chap_table->name, QL4_CHAP_MAX_NAME_LEN);
+ 		ret = 0;
+ 		break;
+ 	}
+@@ -6258,8 +6258,8 @@ static void qla4xxx_get_param_ddb(struct ddb_entry *ddb_entry,
+ 
+ 	tddb->tpgt = sess->tpgt;
+ 	tddb->port = conn->persistent_port;
+-	strncpy(tddb->iscsi_name, sess->targetname, ISCSI_NAME_SIZE);
+-	strncpy(tddb->ip_addr, conn->persistent_address, DDB_IPADDR_LEN);
++	strlcpy(tddb->iscsi_name, sess->targetname, ISCSI_NAME_SIZE);
++	strlcpy(tddb->ip_addr, conn->persistent_address, DDB_IPADDR_LEN);
+ }
+ 
+ static void qla4xxx_convert_param_ddb(struct dev_db_entry *fw_ddb_entry,
+@@ -7764,7 +7764,7 @@ static int qla4xxx_sysfs_ddb_logout(struct iscsi_bus_flash_session *fnode_sess,
+ 		goto exit_ddb_logout;
+ 	}
+ 
+-	strncpy(flash_tddb->iscsi_name, fnode_sess->targetname,
++	strlcpy(flash_tddb->iscsi_name, fnode_sess->targetname,
+ 		ISCSI_NAME_SIZE);
+ 
+ 	if (!strncmp(fnode_sess->portal_type, PORTAL_TYPE_IPV6, 4))
 -- 
 1.7.10.4
 
