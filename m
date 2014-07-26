@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756174AbaGZTth (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 15:49:37 -0400
+	id S1755619AbaGZTuR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 15:50:17 -0400
 Received: from mail.linuxfoundation.org ([140.211.169.12]:34138 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753918AbaGZTNG (ORCPT
+	with ESMTP id S1753898AbaGZTNF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 15:13:06 -0400
+	Sat, 26 Jul 2014 15:13:05 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Matthias Brugger <matthias.bgg@gmail.com>,
-        Jason Cooper <jason@lakedaemon.net>
-Subject: [PATCH 3.14 69/87] irqchip: gic: Add support for cortex a7 compatible string
-Date: Sat, 26 Jul 2014 12:02:43 -0700
-Message-Id: <20140726190216.860005715@linuxfoundation.org>
+        Eric Dumazet <edumazet@google.com>,
+        Steffen Klassert <steffen.klassert@secunet.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.14 39/87] ipv4: irq safe sk_dst_[re]set() and ipv4_sk_update_pmtu() fix
+Date: Sat, 26 Jul 2014 12:02:13 -0700
+Message-Id: <20140726190215.788356020@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.2
 In-Reply-To: <20140726190214.530473925@linuxfoundation.org>
 References: <20140726190214.530473925@linuxfoundation.org>
@@ -29,35 +30,122 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Matthias Brugger <matthias.bgg@gmail.com>
+From: Eric Dumazet <edumazet@google.com>
 
-commit a97e8027b1d28eafe6bafe062556c1ec926a49c6 upstream.
+[ Upstream commit 7f502361531e9eecb396cf99bdc9e9a59f7ebd7f ]
 
-Patch 0a68214b "ARM: DT: Add binding for GIC virtualization extentions (VGIC)" added
-the "arm,cortex-a7-gic" compatible string, but the corresponding IRQCHIP_DECLARE
-was never added to the gic driver.
+We have two different ways to handle changes to sk->sk_dst
 
-To let real Cortex-A7 SoCs use it, add the necessary declaration to the device driver.
+First way (used by TCP) assumes socket lock is owned by caller, and use
+no extra lock : __sk_dst_set() & __sk_dst_reset()
 
-Signed-off-by: Matthias Brugger <matthias.bgg@gmail.com>
-Link: https://lkml.kernel.org/r/1404388732-28890-1-git-send-email-matthias.bgg@gmail.com
-Fixes: 0a68214b76ca ("ARM: DT: Add binding for GIC virtualization extentions (VGIC)")
-Signed-off-by: Jason Cooper <jason@lakedaemon.net>
+Another way (used by UDP) uses sk_dst_lock because socket lock is not
+always taken. Note that sk_dst_lock is not softirq safe.
+
+These ways are not inter changeable for a given socket type.
+
+ipv4_sk_update_pmtu(), added in linux-3.8, added a race, as it used
+the socket lock as synchronization, but users might be UDP sockets.
+
+Instead of converting sk_dst_lock to a softirq safe version, use xchg()
+as we did for sk_rx_dst in commit e47eb5dfb296b ("udp: ipv4: do not use
+sk_dst_lock from softirq context")
+
+In a follow up patch, we probably can remove sk_dst_lock, as it is
+only used in IPv6.
+
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Cc: Steffen Klassert <steffen.klassert@secunet.com>
+Fixes: 9cb3a50c5f63e ("ipv4: Invalidate the socket cached route on pmtu events if possible")
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/irqchip/irq-gic.c |    1 +
- 1 file changed, 1 insertion(+)
+ include/net/sock.h |   12 ++++++------
+ net/ipv4/route.c   |   15 ++++++++-------
+ 2 files changed, 14 insertions(+), 13 deletions(-)
 
---- a/drivers/irqchip/irq-gic.c
-+++ b/drivers/irqchip/irq-gic.c
-@@ -1010,6 +1010,7 @@ int __init gic_of_init(struct device_nod
+--- a/include/net/sock.h
++++ b/include/net/sock.h
+@@ -1793,9 +1793,11 @@ __sk_dst_set(struct sock *sk, struct dst
+ static inline void
+ sk_dst_set(struct sock *sk, struct dst_entry *dst)
+ {
+-	spin_lock(&sk->sk_dst_lock);
+-	__sk_dst_set(sk, dst);
+-	spin_unlock(&sk->sk_dst_lock);
++	struct dst_entry *old_dst;
++
++	sk_tx_queue_clear(sk);
++	old_dst = xchg(&sk->sk_dst_cache, dst);
++	dst_release(old_dst);
  }
- IRQCHIP_DECLARE(cortex_a15_gic, "arm,cortex-a15-gic", gic_of_init);
- IRQCHIP_DECLARE(cortex_a9_gic, "arm,cortex-a9-gic", gic_of_init);
-+IRQCHIP_DECLARE(cortex_a7_gic, "arm,cortex-a7-gic", gic_of_init);
- IRQCHIP_DECLARE(msm_8660_qgic, "qcom,msm-8660-qgic", gic_of_init);
- IRQCHIP_DECLARE(msm_qgic2, "qcom,msm-qgic2", gic_of_init);
+ 
+ static inline void
+@@ -1807,9 +1809,7 @@ __sk_dst_reset(struct sock *sk)
+ static inline void
+ sk_dst_reset(struct sock *sk)
+ {
+-	spin_lock(&sk->sk_dst_lock);
+-	__sk_dst_reset(sk);
+-	spin_unlock(&sk->sk_dst_lock);
++	sk_dst_set(sk, NULL);
+ }
+ 
+ struct dst_entry *__sk_dst_check(struct sock *sk, u32 cookie);
+--- a/net/ipv4/route.c
++++ b/net/ipv4/route.c
+@@ -1029,7 +1029,7 @@ void ipv4_sk_update_pmtu(struct sk_buff
+ 	const struct iphdr *iph = (const struct iphdr *) skb->data;
+ 	struct flowi4 fl4;
+ 	struct rtable *rt;
+-	struct dst_entry *dst;
++	struct dst_entry *odst = NULL;
+ 	bool new = false;
+ 
+ 	bh_lock_sock(sk);
+@@ -1037,16 +1037,17 @@ void ipv4_sk_update_pmtu(struct sk_buff
+ 	if (!ip_sk_accept_pmtu(sk))
+ 		goto out;
+ 
+-	rt = (struct rtable *) __sk_dst_get(sk);
++	odst = sk_dst_get(sk);
+ 
+-	if (sock_owned_by_user(sk) || !rt) {
++	if (sock_owned_by_user(sk) || !odst) {
+ 		__ipv4_sk_update_pmtu(skb, sk, mtu);
+ 		goto out;
+ 	}
+ 
+ 	__build_flow_key(&fl4, sk, iph, 0, 0, 0, 0, 0);
+ 
+-	if (!__sk_dst_check(sk, 0)) {
++	rt = (struct rtable *)odst;
++	if (odst->obsolete && odst->ops->check(odst, 0) == NULL) {
+ 		rt = ip_route_output_flow(sock_net(sk), &fl4, sk);
+ 		if (IS_ERR(rt))
+ 			goto out;
+@@ -1056,8 +1057,7 @@ void ipv4_sk_update_pmtu(struct sk_buff
+ 
+ 	__ip_rt_update_pmtu((struct rtable *) rt->dst.path, &fl4, mtu);
+ 
+-	dst = dst_check(&rt->dst, 0);
+-	if (!dst) {
++	if (!dst_check(&rt->dst, 0)) {
+ 		if (new)
+ 			dst_release(&rt->dst);
+ 
+@@ -1069,10 +1069,11 @@ void ipv4_sk_update_pmtu(struct sk_buff
+ 	}
+ 
+ 	if (new)
+-		__sk_dst_set(sk, &rt->dst);
++		sk_dst_set(sk, &rt->dst);
+ 
+ out:
+ 	bh_unlock_sock(sk);
++	dst_release(odst);
+ }
+ EXPORT_SYMBOL_GPL(ipv4_sk_update_pmtu);
  
 
 
