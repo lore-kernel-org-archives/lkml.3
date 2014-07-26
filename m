@@ -1,71 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752084AbaGZP4U (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 11:56:20 -0400
-Received: from mga03.intel.com ([143.182.124.21]:44607 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751866AbaGZP4S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 11:56:18 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,735,1400050800"; 
-   d="scan'208";a="461729749"
-Date: Sat, 26 Jul 2014 21:19:30 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Randy Dunlap <rdunlap@infradead.org>, Simon Horman <horms@verge.net.au>
-Cc: "dmaengine@vger.kernel.org" <dmaengine@vger.kernel.org>,
-        Dan Williams <dan.j.williams@intel.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Subject: Re: [PATCH -next] dma/sh: fix rcar-dma.c printk format warnings
-Message-ID: <20140726154930.GX8181@intel.com>
-References: <53D28DAF.9090506@infradead.org>
+	id S1752122AbaGZP5K (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 11:57:10 -0400
+Received: from mail-la0-f51.google.com ([209.85.215.51]:60874 "EHLO
+	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751820AbaGZP5I (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 Jul 2014 11:57:08 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53D28DAF.9090506@infradead.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <53D3CA66.8080408@oracle.com>
+References: <1406119899-22659-1-git-send-email-sasha.levin@oracle.com>
+	<53CFC170.9090505@roeck-us.net>
+	<CAMuHMdW=iecARisoUuDY1hNaZgWWZJwpVjXDpXYqscx=myDx+w@mail.gmail.com>
+	<53D3CA66.8080408@oracle.com>
+Date: Sat, 26 Jul 2014 17:57:06 +0200
+X-Google-Sender-Auth: voZx3iT_aGShjqkQeFuaaNLBvn4
+Message-ID: <CAMuHMdUYFWLHD+MjeeH_dmcVLSYn0Pb1MzYFdj0ryCBJqaSXjg@mail.gmail.com>
+Subject: Re: [PATCH] m68k/q40: Revert "m68k/q40: Fix q40_irq_startup() to
+ return -ENXIO on failures"
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: Guenter Roeck <linux@roeck-us.net>, Steven Rostedt <rostedt@goodmis.org>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Nick Krause <xerofoify@gmail.com>,
+        "Linux/m68k" <linux-m68k@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Sasha Levin <sashal@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Richard Zidlicky <rz@linux-m68k.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 25, 2014 at 10:02:39AM -0700, Randy Dunlap wrote:
-> From: Randy Dunlap <rdunlap@infradead.org>
-> 
-> Fix printk format warnings by using size_t modifiers ('z'):
-> 
-> ../drivers/dma/sh/rcar-dmac.c:759:4: warning: format '%u' expects argument of type 'unsigned int', but argument 9 has type 'size_t' [-Wformat=]
-> ../drivers/dma/sh/rcar-dmac.c:759:4: warning: format '%u' expects argument of type 'unsigned int', but argument 10 has type 'size_t' [-Wformat=]
-> 
-This is not present in dmaengine trees. Simon is this in your tree?
+On Sat, Jul 26, 2014 at 5:33 PM, Sasha Levin <sasha.levin@oracle.com> wrote:
+> On 07/26/2014 11:21 AM, Geert Uytterhoeven wrote:
+>> I applied Nick's cleanup (which is not yet in mainline, just in the m68k repo)
+>> because I thought Nick was right (in this particular case ;-), cfr. my
+>> reasoning in www.spinics.net/lists/kernel/msg1774736.html
+>>
+>> W.r.t. the signess, I didn't see the compiler warning, as the version of gcc
+>> I'm using didn't print that warning. However, irq_startup() converts the
+>> value returned by .irq_startup() from unsigned to signed.
+>> I assume this is just a missing conversion when the genirq framework
+>> itself was introduced (m68k was converted quite late)?
+>>
+>> W.r.t. the actual value, any non-zero value is treated the same.
+>> I can change it to 1, if that makes you feel better. If returning a non-zero
+>> value here is wrong, presumable the code has been wrong since it
+>> incarnation.
+>>
+>> As we're close to the opening of the merge window, it would be nice
+>> if we could conclude on this ;-)
+>
+> From my standpoint there are two issues here:
+>
+> 1. The whole signed/unsigned mishmash here. Pretty much any solution
+> besides implicitly converting a signed value into an unsigned one
+> which then gets treated as something else entirely should be acceptable
+> here.
+>
+> 2. Beyond semantics, the original patch also changed the behaviour of
+> the code. What previously was a soft printk() is now a hard error.
+> Does it break any systems? Cornercases? I dunno, but I can assure you
+> that this wasn't tested at all.
 
--- 
-~Vinod
+If it broke something, it was most probably broken before
+commit c288bf2533e57174b90b07860c4391bcd1ea269c ("m68k/irq:
+Rename irq_controller to irq_chip"), too.
 
+It seems the Q40 hardware cannot handle this case, so considering this
+a hard error looks fine to me (CC Richard Zidlicky).
 
-> Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
-> Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-> Cc: Dan Williams <dan.j.williams@intel.com>
-> Cc: dmaengine@vger.kernel.org
-> ---
->  drivers/dma/sh/rcar-dmac.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> Index: linux-next-20140725/drivers/dma/sh/rcar-dmac.c
-> ===================================================================
-> --- linux-next-20140725.orig/drivers/dma/sh/rcar-dmac.c
-> +++ linux-next-20140725/drivers/dma/sh/rcar-dmac.c
-> @@ -757,7 +757,7 @@ rcar_dmac_chan_prep_sg(struct rcar_dmac_
->  			hwdesc->size = size;
->  
->  			dev_dbg(chan->chan.device->dev,
-> -				"chan%u: hwdesc %p/%p sgl %u@%p, %u/%u %pad -> %pad\n",
-> +				"chan%u: hwdesc %p/%p sgl %u@%p, %zu/%zu %pad -> %pad\n",
->  				chan->index, hwdesc, desc, i, sg, size, len,
->  				&hwdesc->src_addr, &hwdesc->dst_addr);
->  
-> --
-> To unsubscribe from this list: send the line "unsubscribe dmaengine" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> To sum it up, a solution would be welcome. The patch you currently have
+> in the m68k repo isn't a solution.
 
--- 
+OK, reverted. Thanks!
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
