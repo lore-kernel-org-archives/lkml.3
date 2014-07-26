@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755904AbaGZTng (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 15:43:36 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34325 "EHLO
+	id S1754864AbaGZToK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 15:44:10 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34123 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754051AbaGZTNQ (ORCPT
+	with ESMTP id S1754038AbaGZTNP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 15:13:16 -0400
+	Sat, 26 Jul 2014 15:13:15 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Gavin Guo <gavin.guo@canonical.com>,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: [PATCH 3.15 001/109] usb: Check if port status is equal to RxDetect
-Date: Sat, 26 Jul 2014 12:01:23 -0700
-Message-Id: <20140726190223.879340351@linuxfoundation.org>
+        Anton Kolesov <Anton.Kolesov@synopsys.com>,
+        Vineet Gupta <vgupta@synopsys.com>
+Subject: [PATCH 3.14 87/87] ARC: Implement ptrace(PTRACE_GET_THREAD_AREA)
+Date: Sat, 26 Jul 2014 12:03:01 -0700
+Message-Id: <20140726190217.432223913@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.2
-In-Reply-To: <20140726190223.834037485@linuxfoundation.org>
-References: <20140726190223.834037485@linuxfoundation.org>
+In-Reply-To: <20140726190214.530473925@linuxfoundation.org>
+References: <20140726190214.530473925@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -25,62 +25,48 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.15-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Gavin Guo <gavin.guo@canonical.com>
+From: Anton Kolesov <Anton.Kolesov@synopsys.com>
 
-commit bb86cf569bbd7ad4dce581a37c7fbd748057e9dc upstream.
+commit a4b6cb735b25aa84a462a1985e3e43bebaf5beb4 upstream.
 
-When using USB 3.0 pen drive with the [AMD] FCH USB XHCI Controller
-[1022:7814], the second hotplugging will experience the USB 3.0 pen
-drive is recognized as high-speed device. After bisecting the kernel,
-I found the commit number 41e7e056cdc662f704fa9262e5c6e213b4ab45dd
-(USB: Allow USB 3.0 ports to be disabled.) causes the bug. After doing
-some experiments, the bug can be fixed by avoiding executing the function
-hub_usb3_port_disable(). Because the port status with [AMD] FCH USB
-XHCI Controlleris [1022:7814] is already in RxDetect
-(I tried printing out the port status before setting to Disabled state),
-it's reasonable to check the port status before really executing
-hub_usb3_port_disable().
+This patch adds implementation of GET_THREAD_AREA ptrace request type. This
+is required by GDB to debug NPTL applications.
 
-Fixes: 41e7e056cdc6 (USB: Allow USB 3.0 ports to be disabled.)
-Signed-off-by: Gavin Guo <gavin.guo@canonical.com>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
+Signed-off-by: Anton Kolesov <Anton.Kolesov@synopsys.com>
+Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/core/hub.c |   19 +++++++++++++++++++
- 1 file changed, 19 insertions(+)
+ arch/arc/include/uapi/asm/ptrace.h |    1 +
+ arch/arc/kernel/ptrace.c           |    4 ++++
+ 2 files changed, 5 insertions(+)
 
---- a/drivers/usb/core/hub.c
-+++ b/drivers/usb/core/hub.c
-@@ -893,6 +893,25 @@ static int hub_usb3_port_disable(struct
- 	if (!hub_is_superspeed(hub->hdev))
- 		return -EINVAL;
+--- a/arch/arc/include/uapi/asm/ptrace.h
++++ b/arch/arc/include/uapi/asm/ptrace.h
+@@ -11,6 +11,7 @@
+ #ifndef _UAPI__ASM_ARC_PTRACE_H
+ #define _UAPI__ASM_ARC_PTRACE_H
  
-+	ret = hub_port_status(hub, port1, &portstatus, &portchange);
-+	if (ret < 0)
-+		return ret;
-+
-+	/*
-+	 * USB controller Advanced Micro Devices, Inc. [AMD] FCH USB XHCI
-+	 * Controller [1022:7814] will have spurious result making the following
-+	 * usb 3.0 device hotplugging route to the 2.0 root hub and recognized
-+	 * as high-speed device if we set the usb 3.0 port link state to
-+	 * Disabled. Since it's already in USB_SS_PORT_LS_RX_DETECT state, we
-+	 * check the state here to avoid the bug.
-+	 */
-+	if ((portstatus & USB_PORT_STAT_LINK_STATE) ==
-+				USB_SS_PORT_LS_RX_DETECT) {
-+		dev_dbg(&hub->ports[port1 - 1]->dev,
-+			 "Not disabling port; link state is RxDetect\n");
-+		return ret;
-+	}
-+
- 	ret = hub_set_port_link_state(hub, port1, USB_SS_PORT_LS_SS_DISABLED);
- 	if (ret)
- 		return ret;
++#define PTRACE_GET_THREAD_AREA	25
+ 
+ #ifndef __ASSEMBLY__
+ /*
+--- a/arch/arc/kernel/ptrace.c
++++ b/arch/arc/kernel/ptrace.c
+@@ -146,6 +146,10 @@ long arch_ptrace(struct task_struct *chi
+ 	pr_debug("REQ=%ld: ADDR =0x%lx, DATA=0x%lx)\n", request, addr, data);
+ 
+ 	switch (request) {
++	case PTRACE_GET_THREAD_AREA:
++		ret = put_user(task_thread_info(child)->thr_ptr,
++			       (unsigned long __user *)data);
++		break;
+ 	default:
+ 		ret = ptrace_request(child, request, addr, data);
+ 		break;
 
 
