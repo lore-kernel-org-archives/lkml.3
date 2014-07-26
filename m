@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757454AbaGZUTq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 16:19:46 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33540 "EHLO
+	id S1757428AbaGZUTp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 16:19:45 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33542 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752154AbaGZTC1 (ORCPT
+	with ESMTP id S1752207AbaGZTC1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 26 Jul 2014 15:02:27 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Li RongQing <roy.qing.li@gmail.com>,
-        Eric Dumazet <edumazet@google.com>,
+        Ding Tianhong <dingtianhong@huawei.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.4 06/23] 8021q: fix a potential memory leak
-Date: Sat, 26 Jul 2014 12:02:06 -0700
-Message-Id: <20140726190149.916041369@linuxfoundation.org>
+Subject: [PATCH 3.4 07/23] igmp: fix the problem when mc leave group
+Date: Sat, 26 Jul 2014 12:02:07 -0700
+Message-Id: <20140726190149.944851482@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.2
 In-Reply-To: <20140726190149.723570428@linuxfoundation.org>
 References: <20140726190149.723570428@linuxfoundation.org>
@@ -30,36 +29,84 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Li RongQing <roy.qing.li@gmail.com>
+From: dingtianhong <dingtianhong@huawei.com>
 
-[ Upstream commit 916c1689a09bc1ca81f2d7a34876f8d35aadd11b ]
+[ Upstream commit 52ad353a5344f1f700c5b777175bdfa41d3cd65a ]
 
-skb_cow called in vlan_reorder_header does not free the skb when it failed,
-and vlan_reorder_header returns NULL to reset original skb when it is called
-in vlan_untag, lead to a memory leak.
+The problem was triggered by these steps:
 
-Signed-off-by: Li RongQing <roy.qing.li@gmail.com>
-Acked-by: Eric Dumazet <edumazet@google.com>
+1) create socket, bind and then setsockopt for add mc group.
+   mreq.imr_multiaddr.s_addr = inet_addr("255.0.0.37");
+   mreq.imr_interface.s_addr = inet_addr("192.168.1.2");
+   setsockopt(sockfd, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq, sizeof(mreq));
+
+2) drop the mc group for this socket.
+   mreq.imr_multiaddr.s_addr = inet_addr("255.0.0.37");
+   mreq.imr_interface.s_addr = inet_addr("0.0.0.0");
+   setsockopt(sockfd, IPPROTO_IP, IP_DROP_MEMBERSHIP, &mreq, sizeof(mreq));
+
+3) and then drop the socket, I found the mc group was still used by the dev:
+
+   netstat -g
+
+   Interface       RefCnt Group
+   --------------- ------ ---------------------
+   eth2		   1	  255.0.0.37
+
+Normally even though the IP_DROP_MEMBERSHIP return error, the mc group still need
+to be released for the netdev when drop the socket, but this process was broken when
+route default is NULL, the reason is that:
+
+The ip_mc_leave_group() will choose the in_dev by the imr_interface.s_addr, if input addr
+is NULL, the default route dev will be chosen, then the ifindex is got from the dev,
+then polling the inet->mc_list and return -ENODEV, but if the default route dev is NULL,
+the in_dev and ifIndex is both NULL, when polling the inet->mc_list, the mc group will be
+released from the mc_list, but the dev didn't dec the refcnt for this mc group, so
+when dropping the socket, the mc_list is NULL and the dev still keep this group.
+
+v1->v2: According Hideaki's suggestion, we should align with IPv6 (RFC3493) and BSDs,
+	so I add the checking for the in_dev before polling the mc_list, make sure when
+	we remove the mc group, dec the refcnt to the real dev which was using the mc address.
+	The problem would never happened again.
+
+Signed-off-by: Ding Tianhong <dingtianhong@huawei.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/8021q/vlan_core.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ net/ipv4/igmp.c |   10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
 
---- a/net/8021q/vlan_core.c
-+++ b/net/8021q/vlan_core.c
-@@ -96,8 +96,11 @@ EXPORT_SYMBOL(vlan_dev_vlan_id);
+--- a/net/ipv4/igmp.c
++++ b/net/ipv4/igmp.c
+@@ -1866,6 +1866,10 @@ int ip_mc_leave_group(struct sock *sk, s
  
- static struct sk_buff *vlan_reorder_header(struct sk_buff *skb)
- {
--	if (skb_cow(skb, skb_headroom(skb)) < 0)
-+	if (skb_cow(skb, skb_headroom(skb)) < 0) {
-+		kfree_skb(skb);
- 		return NULL;
+ 	rtnl_lock();
+ 	in_dev = ip_mc_find_dev(net, imr);
++	if (!in_dev) {
++		ret = -ENODEV;
++		goto out;
 +	}
-+
- 	memmove(skb->data - ETH_HLEN, skb->data - VLAN_ETH_HLEN, 2 * ETH_ALEN);
- 	skb->mac_header += VLAN_HLEN;
- 	return skb;
+ 	ifindex = imr->imr_ifindex;
+ 	for (imlp = &inet->mc_list;
+ 	     (iml = rtnl_dereference(*imlp)) != NULL;
+@@ -1883,16 +1887,14 @@ int ip_mc_leave_group(struct sock *sk, s
+ 
+ 		*imlp = iml->next_rcu;
+ 
+-		if (in_dev)
+-			ip_mc_dec_group(in_dev, group);
++		ip_mc_dec_group(in_dev, group);
+ 		rtnl_unlock();
+ 		/* decrease mem now to avoid the memleak warning */
+ 		atomic_sub(sizeof(*iml), &sk->sk_omem_alloc);
+ 		kfree_rcu(iml, rcu);
+ 		return 0;
+ 	}
+-	if (!in_dev)
+-		ret = -ENODEV;
++out:
+ 	rtnl_unlock();
+ 	return ret;
+ }
 
 
