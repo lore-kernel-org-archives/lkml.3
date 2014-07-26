@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753184AbaGZTI0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 15:08:26 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33879 "EHLO
+	id S1753198AbaGZTJD (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 15:09:03 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33783 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752014AbaGZTDO (ORCPT
+	with ESMTP id S1752823AbaGZTDM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 15:03:14 -0400
+	Sat, 26 Jul 2014 15:03:12 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Guenter Roeck <linux@roeck-us.net>, Axel Lin <axel.lin@ingics.com>
-Subject: [PATCH 3.14 19/87] hwmon: (adt7470) Fix writes to temperature limit registers
-Date: Sat, 26 Jul 2014 12:01:53 -0700
-Message-Id: <20140726190215.154201670@linuxfoundation.org>
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [PATCH 3.14 15/87] tracing: Add TRACE_ITER_PRINTK flag check in __trace_puts/__trace_bputs
+Date: Sat, 26 Jul 2014 12:01:49 -0700
+Message-Id: <20140726190215.023569215@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.2
 In-Reply-To: <20140726190214.530473925@linuxfoundation.org>
 References: <20140726190214.530473925@linuxfoundation.org>
@@ -28,53 +29,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Guenter Roeck <linux@roeck-us.net>
+From: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
 
-commit de12d6f4b10b21854441f5242dcb29ea96181e58 upstream.
+commit f0160a5a2912267c02cfe692eac955c360de5fdf upstream.
 
-Temperature limit registers are signed. Limits therefore need
-to be clamped to (-128, 127) degrees C and not to (0, 255)
-degrees C.
+The TRACE_ITER_PRINTK check in __trace_puts/__trace_bputs is missing,
+so add it, to be consistent with __trace_printk/__trace_bprintk.
+Those functions are all called by the same function: trace_printk().
 
-Without this fix, writing a limit of 128 degrees C sets the
-actual limit to -128 degrees C.
+Link: http://lkml.kernel.org/p/51E7A7D6.8090900@huawei.com
 
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-Reviewed-by: Axel Lin <axel.lin@ingics.com>
+Signed-off-by: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hwmon/adt7470.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ kernel/trace/trace.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/drivers/hwmon/adt7470.c
-+++ b/drivers/hwmon/adt7470.c
-@@ -515,7 +515,7 @@ static ssize_t set_temp_min(struct devic
- 		return -EINVAL;
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -456,6 +456,9 @@ int __trace_puts(unsigned long ip, const
+ 	int alloc;
+ 	int pc;
  
- 	temp = DIV_ROUND_CLOSEST(temp, 1000);
--	temp = clamp_val(temp, 0, 255);
-+	temp = clamp_val(temp, -128, 127);
++	if (!(trace_flags & TRACE_ITER_PRINTK))
++		return 0;
++
+ 	pc = preempt_count();
  
- 	mutex_lock(&data->lock);
- 	data->temp_min[attr->index] = temp;
-@@ -549,7 +549,7 @@ static ssize_t set_temp_max(struct devic
- 		return -EINVAL;
+ 	if (unlikely(tracing_selftest_running || tracing_disabled))
+@@ -503,6 +506,9 @@ int __trace_bputs(unsigned long ip, cons
+ 	int size = sizeof(struct bputs_entry);
+ 	int pc;
  
- 	temp = DIV_ROUND_CLOSEST(temp, 1000);
--	temp = clamp_val(temp, 0, 255);
-+	temp = clamp_val(temp, -128, 127);
++	if (!(trace_flags & TRACE_ITER_PRINTK))
++		return 0;
++
+ 	pc = preempt_count();
  
- 	mutex_lock(&data->lock);
- 	data->temp_max[attr->index] = temp;
-@@ -826,7 +826,7 @@ static ssize_t set_pwm_tmin(struct devic
- 		return -EINVAL;
- 
- 	temp = DIV_ROUND_CLOSEST(temp, 1000);
--	temp = clamp_val(temp, 0, 255);
-+	temp = clamp_val(temp, -128, 127);
- 
- 	mutex_lock(&data->lock);
- 	data->pwm_tmin[attr->index] = temp;
+ 	if (unlikely(tracing_selftest_running || tracing_disabled))
 
 
