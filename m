@@ -1,19 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754610AbaGZTSW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 15:18:22 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34338 "EHLO
+	id S1754555AbaGZTSU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 15:18:20 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34123 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752222AbaGZTN1 (ORCPT
+	with ESMTP id S1753099AbaGZTN1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 26 Jul 2014 15:13:27 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.15 004/109] ALSA: hda - Revert stream assignment order for Intel controllers
-Date: Sat, 26 Jul 2014 12:01:26 -0700
-Message-Id: <20140726190223.964389261@linuxfoundation.org>
+        Florian Westphal <fwestpha@redhat.com>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Neil Horman <nhorman@tuxdriver.com>,
+        Vlad Yasevich <vyasevich@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.15 040/109] net: sctp: check proc_dointvec result in proc_sctp_do_auth
+Date: Sat, 26 Jul 2014 12:02:02 -0700
+Message-Id: <20140726190225.052175334@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.2
 In-Reply-To: <20140726190223.834037485@linuxfoundation.org>
 References: <20140726190223.834037485@linuxfoundation.org>
@@ -28,64 +32,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Daniel Borkmann <dborkman@redhat.com>
 
-commit cd50065b3be83a705635550c04e368f2a4cc44d0 upstream.
+[ Upstream commit 24599e61b7552673dd85971cf5a35369cd8c119e ]
 
-We got a regression report for 3.15.x kernels, and this turned out to
-be triggered by the fix for stream assignment order.  On reporter's
-machine with Intel controller (8086:1e20) + VIA VT1802 codec, the
-first playback slot can't work with speaker outputs.
+When writing to the sysctl field net.sctp.auth_enable, it can well
+be that the user buffer we handed over to proc_dointvec() via
+proc_sctp_do_auth() handler contains something other than integers.
 
-But the original commit was actually a fix for AMD controllers where
-no proper GCAP value is returned, we shouldn't revert the whole
-commit.  Instead, in this patch, a new flag is introduced to determine
-the stream assignment order, and follow the old behavior for Intel
-controllers.
+In that case, we would set an uninitialized 4-byte value from the
+stack to net->sctp.auth_enable that can be leaked back when reading
+the sysctl variable, and it can unintentionally turn auth_enable
+on/off based on the stack content since auth_enable is interpreted
+as a boolean.
 
-Fixes: dcb32ecd9a53 ('ALSA: hda - Do not assign streams in reverse order')
-Reported-and-tested-by: Steven Newbury <steve@snewbury.org.uk>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Fix it up by making sure proc_dointvec() returned sucessfully.
+
+Fixes: b14878ccb7fa ("net: sctp: cache auth_enable per endpoint")
+Reported-by: Florian Westphal <fwestpha@redhat.com>
+Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
+Acked-by: Neil Horman <nhorman@tuxdriver.com>
+Acked-by: Vlad Yasevich <vyasevich@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- sound/pci/hda/hda_controller.c |    3 ++-
- sound/pci/hda/hda_intel.c      |    2 +-
- sound/pci/hda/hda_priv.h       |    1 +
- 3 files changed, 4 insertions(+), 2 deletions(-)
+ net/sctp/sysctl.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/sound/pci/hda/hda_controller.c
-+++ b/sound/pci/hda/hda_controller.c
-@@ -193,7 +193,8 @@ azx_assign_device(struct azx *chip, stru
- 				dsp_unlock(azx_dev);
- 				return azx_dev;
- 			}
--			if (!res)
-+			if (!res ||
-+			    (chip->driver_caps & AZX_DCAPS_REVERSE_ASSIGN))
- 				res = azx_dev;
- 		}
- 		dsp_unlock(azx_dev);
---- a/sound/pci/hda/hda_intel.c
-+++ b/sound/pci/hda/hda_intel.c
-@@ -227,7 +227,7 @@ enum {
- /* quirks for Intel PCH */
- #define AZX_DCAPS_INTEL_PCH_NOPM \
- 	(AZX_DCAPS_SCH_SNOOP | AZX_DCAPS_BUFSIZE | \
--	 AZX_DCAPS_COUNT_LPIB_DELAY)
-+	 AZX_DCAPS_COUNT_LPIB_DELAY | AZX_DCAPS_REVERSE_ASSIGN)
+--- a/net/sctp/sysctl.c
++++ b/net/sctp/sysctl.c
+@@ -423,8 +423,7 @@ static int proc_sctp_do_auth(struct ctl_
+ 		tbl.data = &net->sctp.auth_enable;
  
- #define AZX_DCAPS_INTEL_PCH \
- 	(AZX_DCAPS_INTEL_PCH_NOPM | AZX_DCAPS_PM_RUNTIME)
---- a/sound/pci/hda/hda_priv.h
-+++ b/sound/pci/hda/hda_priv.h
-@@ -186,6 +186,7 @@ enum { SDI0, SDI1, SDI2, SDI3, SDO0, SDO
- #define AZX_DCAPS_BUFSIZE	(1 << 21)	/* no buffer size alignment */
- #define AZX_DCAPS_ALIGN_BUFSIZE	(1 << 22)	/* buffer size alignment */
- #define AZX_DCAPS_4K_BDLE_BOUNDARY (1 << 23)	/* BDLE in 4k boundary */
-+#define AZX_DCAPS_REVERSE_ASSIGN (1 << 24)	/* Assign devices in reverse order */
- #define AZX_DCAPS_COUNT_LPIB_DELAY  (1 << 25)	/* Take LPIB as delay */
- #define AZX_DCAPS_PM_RUNTIME	(1 << 26)	/* runtime PM support */
- #define AZX_DCAPS_I915_POWERWELL (1 << 27)	/* HSW i915 powerwell support */
+ 	ret = proc_dointvec(&tbl, write, buffer, lenp, ppos);
+-
+-	if (write) {
++	if (write && ret == 0) {
+ 		struct sock *sk = net->sctp.ctl_sock;
+ 
+ 		net->sctp.auth_enable = new_value;
 
 
