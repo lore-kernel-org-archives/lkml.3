@@ -1,140 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752862AbaGZCYJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 22:24:09 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:46477 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751508AbaGZCYH (ORCPT
+	id S1752672AbaGZCaV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 22:30:21 -0400
+Received: from mail-wg0-f49.google.com ([74.125.82.49]:53175 "EHLO
+	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751858AbaGZCaU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 22:24:07 -0400
-Message-ID: <53D31101.8000107@oracle.com>
-Date: Fri, 25 Jul 2014 22:22:57 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Fri, 25 Jul 2014 22:30:20 -0400
+Date: Sat, 26 Jul 2014 04:30:16 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Pranith Kumar <bobby.prani@gmail.com>
+Cc: paulmck@linux.vnet.ibm.com, linux-kernel@vger.kernel.org, mingo@kernel.org,
+        laijs@cn.fujitsu.com, dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, josh@joshtriplett.org,
+        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
+        dhowells@redhat.com, edumazet@google.com, dvhart@linux.intel.com,
+        oleg@redhat.com, sasha.levin@oracle.com
+Subject: Re: [PATCH RFC tip/core/rcu] Fix attempt to avoid offloading
+ callbacks unless requested
+Message-ID: <20140726023013.GG16182@localhost.localdomain>
+References: <20140725233623.GA18537@linux.vnet.ibm.com>
+ <53D2F211.4090509@gmail.com>
 MIME-Version: 1.0
-To: Christoph Lameter <cl@gentwo.org>, akpm@linux-foundation.org
-CC: Gilad Ben-Yossef <gilad@benyossef.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Tejun Heo <tj@kernel.org>,
-        John Stultz <johnstul@us.ibm.com>, Mike Frysinger <vapier@gentoo.org>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Hakan Akkan <hakanakkan@gmail.com>,
-        Max Krasnyansky <maxk@qualcomm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org, hughd@google.com,
-        viresh.kumar@linaro.org, hpa@zytor.com, mingo@kernel.org,
-        peterz@infradead.org
-Subject: Re: vmstat: On demand vmstat workers V8
-References: <alpine.DEB.2.11.1407100903130.12483@gentwo.org>
-In-Reply-To: <alpine.DEB.2.11.1407100903130.12483@gentwo.org>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53D2F211.4090509@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/10/2014 10:04 AM, Christoph Lameter wrote:
-> This patch creates a vmstat shepherd worker that monitors the
-> per cpu differentials on all processors. If there are differentials
-> on a processor then a vmstat worker local to the processors
-> with the differentials is created. That worker will then start
-> folding the diffs in regular intervals. Should the worker
-> find that there is no work to be done then it will make the shepherd
-> worker monitor the differentials again.
+On Fri, Jul 25, 2014 at 08:10:57PM -0400, Pranith Kumar wrote:
+> On 07/25/2014 07:36 PM, Paul E. McKenney wrote:
+> > [ Note: This applies on top of commit 187497fa5e9e (rcu: Allow for NULL
+> >     tick_nohz_full_mask when nohz_full= missing) in -tip
+> >     or -rcu.  To make this work on top of rcu/next, move the
+> >     call to rcu_organize_nocb_kthreads(rsp) to the end of the
+> >     for_each_rcu_flavor(rsp) loop in rcu_init_nohz(). ]
+> >
+> > Commit b58cc46c5f6b (rcu: Don't offload callbacks unless specifically
+> > requested) failed to adjust the callback lists of the CPUs that are
+> > known to be no-CBs CPUs only because they are also nohz_full= CPUs.
+> > This failure can result in callbacks that are posted during early boot
+> > getting stranded on nxtlist for CPUs whose no-CBs property becomes
+> > apparent late, and there can also be spurious warnings about offline
+> > CPUs posting callbacks.
+> >
+> > This commit fixes these problems by adding an early-boot rcu_init_nohz()
+> > that properly initializes the no-CBs CPUs.
+> >
+> > Note that kernels built with CONFIG_RCU_NOCB_CPU_ALL=y or with
+> > CONFIG_RCU_NOCB_CPU=n do not exhibit this bug.  Neither do kernels
+> > booted without the nohz_full= boot parameter.
+> >
+> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> 
+> Please find two points below.
+> 
+> <snip>
+> >  #ifdef CONFIG_TREE_PREEMPT_RCU
+> > @@ -2451,6 +2424,66 @@ static void do_nocb_deferred_wakeup(struct rcu_data *rdp)
+> >      trace_rcu_nocb_wake(rdp->rsp->name, rdp->cpu, TPS("DeferredWakeEmpty"));
+> >  }
+> >  
+> > +void rcu_init_nohz(void)
+> > +{
+> > +    int cpu;
+> > +    bool need_rcu_nocb_mask = true;
+> > +    struct rcu_state *rsp;
+> > +
+> > +#ifdef CONFIG_RCU_NOCB_CPU_NONE
+> > +    need_rcu_nocb_mask = false;
+> > +#endif /* #ifndef CONFIG_RCU_NOCB_CPU_NONE */
+> > +
+> > +#if defined(CONFIG_NO_HZ_FULL) && !defined(CONFIG_NO_HZ_FULL_ALL)
+> > +    if (tick_nohz_full_running && cpumask_weight(tick_nohz_full_mask))
+> > +        need_rcu_nocb_mask = true;
+> > +#endif /* #if defined(CONFIG_NO_HZ_FULL) && !defined(CONFIG_NO_HZ_FULL_ALL) */
+> > +
+> > +    if (!have_rcu_nocb_mask && need_rcu_nocb_mask) {
+> > +        zalloc_cpumask_var(&rcu_nocb_mask, GFP_KERNEL);
+> 
+> Please check the return value unless you want to increase my commit count ;)
+> 
+> >
+> > +        have_rcu_nocb_mask = true;
+> > +    }
+> > +    if (!have_rcu_nocb_mask)
+> > +        return;
+> > +
+> > +#ifdef CONFIG_RCU_NOCB_CPU_ZERO
+> > +    pr_info("\tOffload RCU callbacks from CPU 0\n");
+> > +    cpumask_set_cpu(0, rcu_nocb_mask);
+> > +#endif /* #ifdef CONFIG_RCU_NOCB_CPU_ZERO */
+> > +#ifdef CONFIG_RCU_NOCB_CPU_ALL
+> > +    pr_info("\tOffload RCU callbacks from all CPUs\n");
+> > +    cpumask_copy(rcu_nocb_mask, cpu_possible_mask);
+> > +#endif /* #ifdef CONFIG_RCU_NOCB_CPU_ALL */
+> > +#if defined(CONFIG_NO_HZ_FULL) && !defined(CONFIG_NO_HZ_FULL_ALL)
+> > +    cpumask_or(rcu_nocb_mask, rcu_nocb_mask, tick_nohz_full_mask);
+> > +#endif /* #if defined(CONFIG_NO_HZ_FULL) && !defined(CONFIG_NO_HZ_FULL_ALL) */
+> 
+> I understand that if CONFIG_NO_HZ_FULL_ALL is set then CONFIG_NOCB_CPU_ALL
+> will also be set and there is no need for this cpumask_or().
+> 
+> Is there any reason for the coupling between CONFIG_NO_HZ_FULL_ALL
+> and CONFIG_NOCB_CPU_ALL?
 
-Hi Christoph, all,
+Yeah, for any nohz full CPU, we need the corresponding CPU to be rcu_nocb.
+So if all CPUs are full dynticks, all CPUs must be rcunocb.
 
-This patch doesn't interact well with my fuzzing setup. I'm seeing
-the following:
+That said with this patch, the dependency is perhaps not needed anymore.
 
-[  490.446927] BUG: using __this_cpu_read() in preemptible [00000000] code: kworker/16:1/7368
-[  490.447909] caller is __this_cpu_preempt_check+0x13/0x20
-[  490.448596] CPU: 8 PID: 7368 Comm: kworker/16:1 Not tainted 3.16.0-rc6-next-20140725-sasha-00047-g9eb9a52 #933
-[  490.449847] Workqueue: events vmstat_update
-[  490.450558]  ffffffff97383bb6 0000000000000000 ffffffff9727df83 ffff8803077cfb68
-[  490.451520]  ffffffff95dc96b3 0000000000000008 ffff8803077cfba0 ffffffff92002438
-[  490.452475]  ffff8803077cfc80 ffff880be21ea138 ffff8803077cfc80 00000000001e6a48
-[  490.453459] Call Trace:
-[  490.453776] dump_stack (lib/dump_stack.c:52)
-[  490.454394] check_preemption_disabled (lib/smp_processor_id.c:46)
-[  490.455161] __this_cpu_preempt_check (lib/smp_processor_id.c:63)
-[  490.455927] refresh_cpu_vm_stats (mm/vmstat.c:492)
-[  490.456753] vmstat_update (mm/vmstat.c:1252)
-[  490.457463] process_one_work (kernel/workqueue.c:2022 include/linux/jump_label.h:115 include/trace/events/workqueue.h:111 kernel/workqueue.c:2027)
-[  490.458159] ? process_one_work (include/linux/workqueue.h:185 kernel/workqueue.c:598 kernel/workqueue.c:625 kernel/workqueue.c:2015)
-[  490.458887] worker_thread (include/linux/list.h:188 kernel/workqueue.c:2154)
-[  490.459555] ? __schedule (./arch/x86/include/asm/bitops.h:311 include/linux/thread_info.h:91 include/linux/sched.h:2854 kernel/sched/core.c:2825)
-[  490.460370] ? process_one_work (kernel/workqueue.c:2098)
-[  490.461177] kthread (kernel/kthread.c:207)
-[  490.461792] ? flush_kthread_work (kernel/kthread.c:176)
-[  490.462529] ret_from_fork (arch/x86/kernel/entry_64.S:348)
-[  490.463181] ? flush_kthread_work (kernel/kthread.c:176)
-[  490.464008] ------------[ cut here ]------------
-[  490.464613] kernel BUG at mm/vmstat.c:1278!
-[  490.465116] invalid opcode: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-[  490.465981] Dumping ftrace buffer:
-[  490.466585]    (ftrace buffer empty)
-[  490.467030] Modules linked in:
-[  490.467429] CPU: 8 PID: 7368 Comm: kworker/16:1 Not tainted 3.16.0-rc6-next-20140725-sasha-00047-g9eb9a52 #933
-[  490.468641] Workqueue: events vmstat_update
-[  490.469163] task: ffff88030772b000 ti: ffff8803077cc000 task.ti: ffff8803077cc000
-[  490.470033] RIP: vmstat_update (mm/vmstat.c:1278)
-[  490.470269] RSP: 0000:ffff8803077cfcb8  EFLAGS: 00010287
-[  490.470269] RAX: ffff87ffffffffff RBX: 0000000000000008 RCX: 0000000000000000
-[  490.470269] RDX: ffff88030772bcf8 RSI: ffffffff972e5fd0 RDI: ffffffff986fa5d0
-[  490.470269] RBP: ffff8803077cfcd0 R08: 0000000000000002 R09: 0000000000000000
-[  490.470269] R10: 0000000000000000 R11: 0000000000000000 R12: ffff8805fa7e34d0
-[  490.470269] R13: ffff8803117e2240 R14: 0000000000000800 R15: 0000000000000000
-[  490.470269] FS:  0000000000000000(0000) GS:ffff880311200000(0000) knlGS:0000000000000000
-[  490.470269] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[  490.470269] CR2: 00007fffc67fef1a CR3: 0000000017a22000 CR4: 00000000000006a0
-[  490.470269] Stack:
-[  490.470269]  ffff8803117dd240 ffff88030af938e0 ffff8803117e2240 ffff8803077cfd88
-[  490.470269]  ffffffff911f45f5 ffffffff911f455d ffff88030af93928 ffff88031081e900
-[  490.470269]  ffff88030af938f0 ffff88030af93900 ffff88030af938e8 ffff88030af938f8
-[  490.470269] Call Trace:
-[  490.470269] process_one_work (kernel/workqueue.c:2022 include/linux/jump_label.h:115 include/trace/events/workqueue.h:111 kernel/workqueue.c:2027)
-[  490.470269] ? process_one_work (include/linux/workqueue.h:185 kernel/workqueue.c:598 kernel/workqueue.c:625 kernel/workqueue.c:2015)
-[  490.470269] worker_thread (include/linux/list.h:188 kernel/workqueue.c:2154)
-[  490.470269] ? __schedule (./arch/x86/include/asm/bitops.h:311 include/linux/thread_info.h:91 include/linux/sched.h:2854 kernel/sched/core.c:2825)
-[  490.470269] ? process_one_work (kernel/workqueue.c:2098)
-[  490.470269] kthread (kernel/kthread.c:207)
-[  490.470269] ? flush_kthread_work (kernel/kthread.c:176)
-[  490.470269] ret_from_fork (arch/x86/kernel/entry_64.S:348)
-[  490.470269] ? flush_kthread_work (kernel/kthread.c:176)
-[ 490.470269] Code: c7 d0 a5 6f 98 89 c3 e8 9f 9e 08 00 3b 1d 89 8b 35 07 73 7f f0 49 0f ab 1c 24 72 0f 5b 41 5c 41 5d 5d c3 0f 1f 84 00 00 00 00 00 <0f> 0b 66 0f 1f 44 00 00 48 63 3d f1 be 36 07 48 c7 c3 40 d2 1d
-All code
-========
-   0:   c7                      (bad)
-   1:   d0 a5 6f 98 89 c3       shlb   -0x3c766791(%rbp)
-   7:   e8 9f 9e 08 00          callq  0x89eab
-   c:   3b 1d 89 8b 35 07       cmp    0x7358b89(%rip),%ebx        # 0x7358b9b
-  12:   73 7f                   jae    0x93
-  14:   f0 49 0f ab 1c 24       lock bts %rbx,(%r12)
-  1a:   72 0f                   jb     0x2b
-  1c:   5b                      pop    %rbx
-  1d:   41 5c                   pop    %r12
-  1f:   41 5d                   pop    %r13
-  21:   5d                      pop    %rbp
-  22:   c3                      retq
-  23:   0f 1f 84 00 00 00 00    nopl   0x0(%rax,%rax,1)
-  2a:   00
-  2b:*  0f 0b                   ud2             <-- trapping instruction
-  2d:   66 0f 1f 44 00 00       nopw   0x0(%rax,%rax,1)
-  33:   48 63 3d f1 be 36 07    movslq 0x736bef1(%rip),%rdi        # 0x736bf2b
-  3a:   48 c7 c3 40 d2 1d 00    mov    $0x1dd240,%rbx
+> 
+> I ask because a user can override CONFIG_NO_HZ_FULL_ALL=y at boot time
+> using the nohz_full= boot time parameter.
 
-Code starting with the faulting instruction
-===========================================
-   0:   0f 0b                   ud2
-   2:   66 0f 1f 44 00 00       nopw   0x0(%rax,%rax,1)
-   8:   48 63 3d f1 be 36 07    movslq 0x736bef1(%rip),%rdi        # 0x736bf00
-   f:   48 c7 c3 40 d2 1d 00    mov    $0x1dd240,%rbx
-[  490.470269] RIP vmstat_update (mm/vmstat.c:1278)
-[  490.470269]  RSP <ffff8803077cfcb8>
+No, the content of nohz_full= is ignored with CONFIG_NO_HZ_FULL_ALL=y.
 
+That said you made me check and I realize that when that happens, we alloc
+the mask two times and we leak the first. I need to fix that.
 
-Thanks,
-Sasha
+Thanks.
