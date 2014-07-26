@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755108AbaGZTZX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 15:25:23 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34647 "EHLO
+	id S1755081AbaGZTZW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 15:25:22 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34635 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753332AbaGZTXW (ORCPT
+	with ESMTP id S1754456AbaGZTXW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 26 Jul 2014 15:23:22 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sharvil Nanavati <sharvil@google.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        Prarit Bhargava <prarit@redhat.com>
-Subject: [PATCH 3.15 090/109] alarmtimer: Fix bug where relative alarm timers were treated as absolute
-Date: Sat, 26 Jul 2014 12:02:52 -0700
-Message-Id: <20140726190226.567186560@linuxfoundation.org>
+        Kees Cook <keescook@chromium.org>, Jason Cooper <jason@lakedaemon.net>,
+        Herbert Xu <herbert@gondor.apana.org.au>,
+        Amit Shah <amit.shah@redhat.com>
+Subject: [PATCH 3.15 091/109] hwrng: fetch randomness only after device init
+Date: Sat, 26 Jul 2014 12:02:53 -0700
+Message-Id: <20140726190226.596880574@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.2
 In-Reply-To: <20140726190223.834037485@linuxfoundation.org>
 References: <20140726190223.834037485@linuxfoundation.org>
@@ -31,77 +30,101 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: John Stultz <john.stultz@linaro.org>
+From: Amit Shah <amit.shah@redhat.com>
 
-commit 16927776ae757d0d132bdbfabbfe2c498342bd59 upstream.
+commit d3cc7996473a7bdd33256029988ea690754e4e2a upstream.
 
-Sharvil noticed with the posix timer_settime interface, using the
-CLOCK_REALTIME_ALARM or CLOCK_BOOTTIME_ALARM clockid, if the users
-tried to specify a relative time timer, it would incorrectly be
-treated as absolute regardless of the state of the flags argument.
+Commit d9e7972619334 "hwrng: add randomness to system from rng sources"
+added a call to rng_get_data() from the hwrng_register() function.
+However, some rng devices need initialization before data can be read
+from them.
 
-This patch corrects this, properly checking the absolute/relative flag,
-as well as adds further error checking that no invalid flag bits are set.
+This commit makes the call to rng_get_data() depend on no init fn
+pointer being registered by the device.  If an init function is
+registered, this call is made after device init.
 
-Reported-by: Sharvil Nanavati <sharvil@google.com>
-Signed-off-by: John Stultz <john.stultz@linaro.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Prarit Bhargava <prarit@redhat.com>
-Cc: Sharvil Nanavati <sharvil@google.com>
-Link: http://lkml.kernel.org/r/1404767171-6902-1-git-send-email-john.stultz@linaro.org
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+CC: Kees Cook <keescook@chromium.org>
+CC: Jason Cooper <jason@lakedaemon.net>
+CC: Herbert Xu <herbert@gondor.apana.org.au>
+Signed-off-by: Amit Shah <amit.shah@redhat.com>
+Reviewed-by: Jason Cooper <jason@lakedaemon.net>
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/time/alarmtimer.c |   20 ++++++++++++++++++--
- 1 file changed, 18 insertions(+), 2 deletions(-)
+ drivers/char/hw_random/core.c |   41 +++++++++++++++++++++++++++++++++--------
+ 1 file changed, 33 insertions(+), 8 deletions(-)
 
---- a/kernel/time/alarmtimer.c
-+++ b/kernel/time/alarmtimer.c
-@@ -585,9 +585,14 @@ static int alarm_timer_set(struct k_itim
- 				struct itimerspec *new_setting,
- 				struct itimerspec *old_setting)
+--- a/drivers/char/hw_random/core.c
++++ b/drivers/char/hw_random/core.c
+@@ -55,16 +55,35 @@ static DEFINE_MUTEX(rng_mutex);
+ static int data_avail;
+ static u8 *rng_buffer;
+ 
++static inline int rng_get_data(struct hwrng *rng, u8 *buffer, size_t size,
++			       int wait);
++
+ static size_t rng_buffer_size(void)
  {
-+	ktime_t exp;
-+
- 	if (!rtcdev)
- 		return -ENOTSUPP;
- 
-+	if (flags & ~TIMER_ABSTIME)
-+		return -EINVAL;
-+
- 	if (old_setting)
- 		alarm_timer_get(timr, old_setting);
- 
-@@ -597,8 +602,16 @@ static int alarm_timer_set(struct k_itim
- 
- 	/* start the timer */
- 	timr->it.alarm.interval = timespec_to_ktime(new_setting->it_interval);
--	alarm_start(&timr->it.alarm.alarmtimer,
--			timespec_to_ktime(new_setting->it_value));
-+	exp = timespec_to_ktime(new_setting->it_value);
-+	/* Convert (if necessary) to absolute time */
-+	if (flags != TIMER_ABSTIME) {
-+		ktime_t now;
-+
-+		now = alarm_bases[timr->it.alarm.alarmtimer.type].gettime();
-+		exp = ktime_add(now, exp);
-+	}
-+
-+	alarm_start(&timr->it.alarm.alarmtimer, exp);
- 	return 0;
+ 	return SMP_CACHE_BYTES < 32 ? 32 : SMP_CACHE_BYTES;
  }
  
-@@ -730,6 +743,9 @@ static int alarm_timer_nsleep(const cloc
- 	if (!alarmtimer_get_rtcdev())
- 		return -ENOTSUPP;
- 
-+	if (flags & ~TIMER_ABSTIME)
-+		return -EINVAL;
++static void add_early_randomness(struct hwrng *rng)
++{
++	unsigned char bytes[16];
++	int bytes_read;
 +
- 	if (!capable(CAP_WAKE_ALARM))
- 		return -EPERM;
++	bytes_read = rng_get_data(rng, bytes, sizeof(bytes), 1);
++	if (bytes_read > 0)
++		add_device_randomness(bytes, bytes_read);
++}
++
+ static inline int hwrng_init(struct hwrng *rng)
+ {
+-	if (!rng->init)
+-		return 0;
+-	return rng->init(rng);
++	if (rng->init) {
++		int ret;
++
++		ret =  rng->init(rng);
++		if (ret)
++			return ret;
++	}
++	add_early_randomness(rng);
++	return 0;
+ }
  
+ static inline void hwrng_cleanup(struct hwrng *rng)
+@@ -304,8 +323,6 @@ int hwrng_register(struct hwrng *rng)
+ {
+ 	int err = -EINVAL;
+ 	struct hwrng *old_rng, *tmp;
+-	unsigned char bytes[16];
+-	int bytes_read;
+ 
+ 	if (rng->name == NULL ||
+ 	    (rng->data_read == NULL && rng->read == NULL))
+@@ -347,9 +364,17 @@ int hwrng_register(struct hwrng *rng)
+ 	INIT_LIST_HEAD(&rng->list);
+ 	list_add_tail(&rng->list, &rng_list);
+ 
+-	bytes_read = rng_get_data(rng, bytes, sizeof(bytes), 1);
+-	if (bytes_read > 0)
+-		add_device_randomness(bytes, bytes_read);
++	if (old_rng && !rng->init) {
++		/*
++		 * Use a new device's input to add some randomness to
++		 * the system.  If this rng device isn't going to be
++		 * used right away, its init function hasn't been
++		 * called yet; so only use the randomness from devices
++		 * that don't need an init callback.
++		 */
++		add_early_randomness(rng);
++	}
++
+ out_unlock:
+ 	mutex_unlock(&rng_mutex);
+ out:
 
 
