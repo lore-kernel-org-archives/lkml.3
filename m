@@ -1,88 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757043AbaGZUNz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 16:13:55 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35033 "EHLO
+	id S1757116AbaGZUO0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 16:14:26 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33634 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757012AbaGZUNw (ORCPT
+	with ESMTP id S1752557AbaGZTCx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 16:13:52 -0400
-Date: Sat, 26 Jul 2014 13:13:51 -0700
+	Sat, 26 Jul 2014 15:02:53 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Pawel Moll <pawel.moll@arm.com>
-Cc: Olof Johansson <olof@lixom.net>, Stephen Warren <swarren@wwwdotorg.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>, paul@pwsan.com,
-        Arnd Bergmann <arnd@arndb.de>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>, arm@kernel.org,
-        linux-tegra@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 5/5] platform: Make platform_bus device a platform device
-Message-ID: <20140726201351.GC21870@kroah.com>
-References: <1406298233-27876-1-git-send-email-pawel.moll@arm.com>
- <1406298233-27876-5-git-send-email-pawel.moll@arm.com>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Hugh Dickins <hughd@google.com>, Sasha Levin <sasha.levin@oracle.com>,
+        Vlastimil Babka <vbabka@suse.cz>,
+        Konstantin Khlebnikov <koct9i@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Lukas Czerner <lczerner@redhat.com>, Dave Jones <davej@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.10 15/56] shmem: fix splicing from a hole while its punched
+Date: Sat, 26 Jul 2014 12:02:08 -0700
+Message-Id: <20140726190200.545878723@linuxfoundation.org>
+X-Mailer: git-send-email 2.0.2
+In-Reply-To: <20140726190200.061512159@linuxfoundation.org>
+References: <20140726190200.061512159@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1406298233-27876-5-git-send-email-pawel.moll@arm.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 25, 2014 at 03:23:53PM +0100, Pawel Moll wrote:
-> ... describing the root of the device tree, so one can write
-> a platform driver initializing the platform.
-> 
-> Signed-off-by: Pawel Moll <pawel.moll@arm.com>
-> ---
->  drivers/base/platform.c         | 20 ++++++++++++++------
->  include/linux/platform_device.h |  2 +-
->  2 files changed, 15 insertions(+), 7 deletions(-)
-> 
-> diff --git a/drivers/base/platform.c b/drivers/base/platform.c
-> index eee48c4..9caffa7 100644
-> --- a/drivers/base/platform.c
-> +++ b/drivers/base/platform.c
-> @@ -30,8 +30,8 @@
->  /* For automatically allocated device IDs */
->  static DEFINE_IDA(platform_devid_ida);
->  
-> -struct device platform_bus = {
-> -	.init_name	= "platform",
-> +struct platform_device platform_bus = {
-> +	.name	= "platform",
->  };
->  EXPORT_SYMBOL_GPL(platform_bus);
->  
-> @@ -300,7 +300,7 @@ int platform_device_add(struct platform_device *pdev)
->  		return -EINVAL;
->  
->  	if (!pdev->dev.parent)
-> -		pdev->dev.parent = &platform_bus;
-> +		pdev->dev.parent = &platform_bus.dev;
->  
->  	pdev->dev.bus = &platform_bus_type;
->  
-> @@ -946,12 +946,20 @@ int __init platform_bus_init(void)
->  
->  	early_platform_cleanup();
->  
-> -	error = device_register(&platform_bus);
-> +	dev_set_name(&platform_bus.dev, "%s", platform_bus.name);
-> +	error = device_register(&platform_bus.dev);
->  	if (error)
->  		return error;
->  	error =  bus_register(&platform_bus_type);
-> -	if (error)
-> -		device_unregister(&platform_bus);
-> +	if (!error) {
-> +#ifdef CONFIG_OF
-> +		platform_bus.dev.of_node = of_allnodes;
-> +#endif
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-Why are you doing this?  The original code didn't do it and all was
-fine, right?  What changes here?
+------------------
 
-thanks,
+From: Hugh Dickins <hughd@google.com>
 
-greg k-h
+commit b1a366500bd537b50c3aad26dc7df083ec03a448 upstream.
+
+shmem_fault() is the actual culprit in trinity's hole-punch starvation,
+and the most significant cause of such problems: since a page faulted is
+one that then appears page_mapped(), needing unmap_mapping_range() and
+i_mmap_mutex to be unmapped again.
+
+But it is not the only way in which a page can be brought into a hole in
+the radix_tree while that hole is being punched; and Vlastimil's testing
+implies that if enough other processors are busy filling in the hole,
+then shmem_undo_range() can be kept from completing indefinitely.
+
+shmem_file_splice_read() is the main other user of SGP_CACHE, which can
+instantiate shmem pagecache pages in the read-only case (without holding
+i_mutex, so perhaps concurrently with a hole-punch).  Probably it's
+silly not to use SGP_READ already (using the ZERO_PAGE for holes): which
+ought to be safe, but might bring surprises - not a change to be rushed.
+
+shmem_read_mapping_page_gfp() is an internal interface used by
+drivers/gpu/drm GEM (and next by uprobes): it should be okay.  And
+shmem_file_read_iter() uses the SGP_DIRTY variant of SGP_CACHE, when
+called internally by the kernel (perhaps for a stacking filesystem,
+which might rely on holes to be reserved): it's unclear whether it could
+be provoked to keep hole-punch busy or not.
+
+We could apply the same umbrella as now used in shmem_fault() to
+shmem_file_splice_read() and the others; but it looks ugly, and use over
+a range raises questions - should it actually be per page? can these get
+starved themselves?
+
+The origin of this part of the problem is my v3.1 commit d0823576bf4b
+("mm: pincer in truncate_inode_pages_range"), once it was duplicated
+into shmem.c.  It seemed like a nice idea at the time, to ensure
+(barring RCU lookup fuzziness) that there's an instant when the entire
+hole is empty; but the indefinitely repeated scans to ensure that make
+it vulnerable.
+
+Revert that "enhancement" to hole-punch from shmem_undo_range(), but
+retain the unproblematic rescanning when it's truncating; add a couple
+of comments there.
+
+Remove the "indices[0] >= end" test: that is now handled satisfactorily
+by the inner loop, and mem_cgroup_uncharge_start()/end() are too light
+to be worth avoiding here.
+
+But if we do not always loop indefinitely, we do need to handle the case
+of swap swizzled back to page before shmem_free_swap() gets it: add a
+retry for that case, as suggested by Konstantin Khlebnikov; and for the
+case of page swizzled back to swap, as suggested by Johannes Weiner.
+
+Signed-off-by: Hugh Dickins <hughd@google.com>
+Reported-by: Sasha Levin <sasha.levin@oracle.com>
+Suggested-by: Vlastimil Babka <vbabka@suse.cz>
+Cc: Konstantin Khlebnikov <koct9i@gmail.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Lukas Czerner <lczerner@redhat.com>
+Cc: Dave Jones <davej@redhat.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+
+---
+ mm/shmem.c |   24 +++++++++++++++---------
+ 1 file changed, 15 insertions(+), 9 deletions(-)
+
+--- a/mm/shmem.c
++++ b/mm/shmem.c
+@@ -534,22 +534,19 @@ static void shmem_undo_range(struct inod
+ 		return;
+ 
+ 	index = start;
+-	for ( ; ; ) {
++	while (index < end) {
+ 		cond_resched();
+ 		pvec.nr = shmem_find_get_pages_and_swap(mapping, index,
+ 				min(end - index, (pgoff_t)PAGEVEC_SIZE),
+ 							pvec.pages, indices);
+ 		if (!pvec.nr) {
+-			if (index == start || unfalloc)
++			/* If all gone or hole-punch or unfalloc, we're done */
++			if (index == start || end != -1)
+ 				break;
++			/* But if truncating, restart to make sure all gone */
+ 			index = start;
+ 			continue;
+ 		}
+-		if ((index == start || unfalloc) && indices[0] >= end) {
+-			shmem_deswap_pagevec(&pvec);
+-			pagevec_release(&pvec);
+-			break;
+-		}
+ 		mem_cgroup_uncharge_start();
+ 		for (i = 0; i < pagevec_count(&pvec); i++) {
+ 			struct page *page = pvec.pages[i];
+@@ -561,8 +558,12 @@ static void shmem_undo_range(struct inod
+ 			if (radix_tree_exceptional_entry(page)) {
+ 				if (unfalloc)
+ 					continue;
+-				nr_swaps_freed += !shmem_free_swap(mapping,
+-								index, page);
++				if (shmem_free_swap(mapping, index, page)) {
++					/* Swap was replaced by page: retry */
++					index--;
++					break;
++				}
++				nr_swaps_freed++;
+ 				continue;
+ 			}
+ 
+@@ -571,6 +572,11 @@ static void shmem_undo_range(struct inod
+ 				if (page->mapping == mapping) {
+ 					VM_BUG_ON(PageWriteback(page));
+ 					truncate_inode_page(mapping, page);
++				} else {
++					/* Page was replaced by swap: retry */
++					unlock_page(page);
++					index--;
++					break;
+ 				}
+ 			}
+ 			unlock_page(page);
+
+
