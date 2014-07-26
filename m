@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751806AbaGZOkV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 10:40:21 -0400
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:65472 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751314AbaGZOkU (ORCPT
+	id S1751777AbaGZOl5 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 10:41:57 -0400
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:49860 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751391AbaGZOlz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 10:40:20 -0400
+	Sat, 26 Jul 2014 10:41:55 -0400
 From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Benjamin Romer <benjamin.romer@unisys.com>,
-        David Kershner <david.kershner@unisys.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Valentina Manea <valentina.manea.m@gmail.com>
 Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ken Cox <jkc@redhat.com>, Daeseok Youn <daeseok.youn@gmail.com>,
-        Silvio F <silvio.fricke@gmail.com>, sparmaintainer@unisys.com,
+        navin patidar <navinp@cdac.in>, linux-usb@vger.kernel.org,
         devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] staging: unisys: include: uisutils.h:  Cleaning up missing null-terminate in conjunction with strncpy
-Date: Sat, 26 Jul 2014 16:41:46 +0200
-Message-Id: <1406385706-3658-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+Subject: [PATCH] staging: usbip: stub_main.c:  Cleaning up missing null-terminate in conjunction with strncpy
+Date: Sat, 26 Jul 2014 16:43:20 +0200
+Message-Id: <1406385801-3757-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
 X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,38 +25,40 @@ Replacing strncpy with strlcpy to avoid strings that lacks null terminate.
 
 Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 ---
- drivers/staging/unisys/include/uisutils.h |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ drivers/staging/usbip/stub_main.c |   10 +++-------
+ 1 file changed, 3 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/staging/unisys/include/uisutils.h b/drivers/staging/unisys/include/uisutils.h
-index 70776c9..14d5cbd 100644
---- a/drivers/staging/unisys/include/uisutils.h
-+++ b/drivers/staging/unisys/include/uisutils.h
-@@ -307,20 +307,20 @@ Issue_VMCALL_CHANNEL_MISMATCH(const char *ChannelName,
- 	U64 physaddr;
- 	char *last_slash = NULL;
+diff --git a/drivers/staging/usbip/stub_main.c b/drivers/staging/usbip/stub_main.c
+index 9c5832a..44ab43f 100644
+--- a/drivers/staging/usbip/stub_main.c
++++ b/drivers/staging/usbip/stub_main.c
+@@ -94,7 +94,7 @@ static int add_match_busid(char *busid)
  
--	strncpy(params.ChannelName, ChannelName,
-+	strlcpy(params.ChannelName, ChannelName,
- 		lengthof(VMCALL_CHANNEL_VERSION_MISMATCH_PARAMS, ChannelName));
--	strncpy(params.ItemName, ItemName,
-+	strlcpy(params.ItemName, ItemName,
- 		lengthof(VMCALL_CHANNEL_VERSION_MISMATCH_PARAMS, ItemName));
- 	params.SourceLineNumber = SourceLineNumber;
+ 	for (i = 0; i < MAX_BUSID; i++)
+ 		if (!busid_table[i].name[0]) {
+-			strncpy(busid_table[i].name, busid, BUSID_SIZE);
++			strlcpy(busid_table[i].name, busid, BUSID_SIZE);
+ 			if ((busid_table[i].status != STUB_BUSID_ALLOC) &&
+ 			    (busid_table[i].status != STUB_BUSID_REMOV))
+ 				busid_table[i].status = STUB_BUSID_ADDED;
+@@ -158,15 +158,11 @@ static ssize_t store_match_busid(struct device_driver *dev, const char *buf,
+ 	if (count < 5)
+ 		return -EINVAL;
  
- 	last_slash = strrchr(path_n_fn, '/');
- 	if (last_slash != NULL) {
- 		last_slash++;
--		strncpy(params.SourceFileName, last_slash,
-+		strlcpy(params.SourceFileName, last_slash,
- 			lengthof(VMCALL_CHANNEL_VERSION_MISMATCH_PARAMS,
- 				 SourceFileName));
- 	} else
--		strncpy(params.SourceFileName,
-+		strlcpy(params.SourceFileName,
- 			"Cannot determine source filename",
- 			lengthof(VMCALL_CHANNEL_VERSION_MISMATCH_PARAMS,
- 				 SourceFileName));
+-	/* strnlen() does not include \0 */
+-	len = strnlen(buf + 4, BUSID_SIZE);
+-
+ 	/* busid needs to include \0 termination */
+-	if (!(len < BUSID_SIZE))
++	len = strlcpy(busid, buf + 4, BUSID_SIZE);
++	if (sizeof(busid) <= len)
+ 		return -EINVAL;
+ 
+-	strncpy(busid, buf + 4, BUSID_SIZE);
+-
+ 	if (!strncmp(buf, "add ", 4)) {
+ 		if (add_match_busid(busid) < 0)
+ 			return -ENOMEM;
 -- 
 1.7.10.4
 
