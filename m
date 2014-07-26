@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755503AbaGZTzs (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 15:55:48 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34067 "EHLO
+	id S1753540AbaGZTKq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 15:10:46 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34041 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753544AbaGZTKr (ORCPT
+	with ESMTP id S1752801AbaGZTKo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 15:10:47 -0400
+	Sat, 26 Jul 2014 15:10:44 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.14 04/87] ALSA: hda - Fix broken PM due to incomplete i915 initialization
-Date: Sat, 26 Jul 2014 12:01:38 -0700
-Message-Id: <20140726190214.672175574@linuxfoundation.org>
+        Hans de Goede <hdegoede@redhat.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>
+Subject: [PATCH 3.14 03/87] media: gspca_pac7302: Add new usb-id for Genius i-Look 317
+Date: Sat, 26 Jul 2014 12:01:37 -0700
+Message-Id: <20140726190214.641281189@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.2
 In-Reply-To: <20140726190214.530473925@linuxfoundation.org>
 References: <20140726190214.530473925@linuxfoundation.org>
@@ -28,75 +29,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Hans de Goede <hdegoede@redhat.com>
 
-commit 4da63c6fc426023d1a20e45508c47d7d68c6a53d upstream.
+commit 242841d3d71191348f98310e2d2001e1001d8630 upstream.
 
-When the initialization of Intel HDMI controller fails due to missing
-i915 kernel symbols (e.g. HD-audio is built in while i915 is module),
-the driver discontinues the probe.  However, since the probe was done
-asynchronously, the driver object still remains, thus the relevant PM
-ops are still called at suspend/resume. This results in the bad access
-to the incomplete audio card object, eventually leads to Oops or stall
-at PM.
+Tested-and-reported-by: yullaw <yullaw@mageia.cz>
 
-This patch adds the missing checks of chip->init_failed flag at each
-PM callback in order to fix the problem above.
-
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=79561
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/hda_intel.c |   10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+ drivers/media/usb/gspca/pac7302.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/sound/pci/hda/hda_intel.c
-+++ b/sound/pci/hda/hda_intel.c
-@@ -2930,7 +2930,7 @@ static int azx_suspend(struct device *de
- 	struct azx *chip = card->private_data;
- 	struct azx_pcm *p;
- 
--	if (chip->disabled)
-+	if (chip->disabled || chip->init_failed)
- 		return 0;
- 
- 	snd_power_change_state(card, SNDRV_CTL_POWER_D3hot);
-@@ -2961,7 +2961,7 @@ static int azx_resume(struct device *dev
- 	struct snd_card *card = dev_get_drvdata(dev);
- 	struct azx *chip = card->private_data;
- 
--	if (chip->disabled)
-+	if (chip->disabled || chip->init_failed)
- 		return 0;
- 
- 	if (chip->driver_caps & AZX_DCAPS_I915_POWERWELL)
-@@ -2996,7 +2996,7 @@ static int azx_runtime_suspend(struct de
- 	struct snd_card *card = dev_get_drvdata(dev);
- 	struct azx *chip = card->private_data;
- 
--	if (chip->disabled)
-+	if (chip->disabled || chip->init_failed)
- 		return 0;
- 
- 	if (!(chip->driver_caps & AZX_DCAPS_PM_RUNTIME))
-@@ -3022,7 +3022,7 @@ static int azx_runtime_resume(struct dev
- 	struct hda_codec *codec;
- 	int status;
- 
--	if (chip->disabled)
-+	if (chip->disabled || chip->init_failed)
- 		return 0;
- 
- 	if (!(chip->driver_caps & AZX_DCAPS_PM_RUNTIME))
-@@ -3057,7 +3057,7 @@ static int azx_runtime_idle(struct devic
- 	struct snd_card *card = dev_get_drvdata(dev);
- 	struct azx *chip = card->private_data;
- 
--	if (chip->disabled)
-+	if (chip->disabled || chip->init_failed)
- 		return 0;
- 
- 	if (!power_save_controller ||
+--- a/drivers/media/usb/gspca/pac7302.c
++++ b/drivers/media/usb/gspca/pac7302.c
+@@ -928,6 +928,7 @@ static const struct usb_device_id device
+ 	{USB_DEVICE(0x093a, 0x2620)},
+ 	{USB_DEVICE(0x093a, 0x2621)},
+ 	{USB_DEVICE(0x093a, 0x2622), .driver_info = FL_VFLIP},
++	{USB_DEVICE(0x093a, 0x2623), .driver_info = FL_VFLIP},
+ 	{USB_DEVICE(0x093a, 0x2624), .driver_info = FL_VFLIP},
+ 	{USB_DEVICE(0x093a, 0x2625)},
+ 	{USB_DEVICE(0x093a, 0x2626)},
 
 
