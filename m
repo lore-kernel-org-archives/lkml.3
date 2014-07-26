@@ -1,122 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752100AbaGZPtA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 11:49:00 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:55375 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751820AbaGZPs6 (ORCPT
+	id S1751874AbaGZPw4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 11:52:56 -0400
+Received: from mail-we0-f176.google.com ([74.125.82.176]:59411 "EHLO
+	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751391AbaGZPwz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 11:48:58 -0400
+	Sat, 26 Jul 2014 11:52:55 -0400
 MIME-Version: 1.0
-In-Reply-To: <1406326508.13203.10.camel@localhost>
-References: <53C2FF3D.4030201@oracle.com>
-	<53D2768E.2040902@samsung.com>
-	<1406326508.13203.10.camel@localhost>
-Date: Sat, 26 Jul 2014 19:48:57 +0400
-Message-ID: <CAPAsAGwc7B2rB+3wTHkL97B5eDchbcuhfkKef56ARCy2CxCGuQ@mail.gmail.com>
-Subject: Re: net: socket: NULL ptr deref in sendmsg
-From: Andrey Ryabinin <ryabinin.a.a@gmail.com>
-To: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Cc: Andrey Ryabinin <a.ryabinin@samsung.com>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>,
-        Eric Dumazet <edumazet@google.com>
+Reply-To: markus@gutschke.com
+In-Reply-To: <1405988531.2455.14.camel@rzhang1-toshiba>
+References: <CALGCz1qs2A7BCbcK3vzYRxJeOESVKc7c9kcSpP0NrQFLr1UpUg@mail.gmail.com>
+ <CALGCz1oYYkKp1frPF4vExiwqW=euYY8An+Yum4U-qsBc5NyjFg@mail.gmail.com>
+ <1405587482.28592.64.camel@rzhang1-toshiba> <CALGCz1qzmK_0Mq8JNFYUnGtDGWSqYoHfqv0MKbqG1RySQ4bt6g@mail.gmail.com>
+ <1405988531.2455.14.camel@rzhang1-toshiba>
+From: Markus Gutschke <markus@gutschke.com>
+Date: Sat, 26 Jul 2014 08:52:34 -0700
+X-Google-Sender-Auth: hT1QHFQgIZ-F0VKZLGi22GN5MA0
+Message-ID: <CALGCz1okgr4K9S+6NfohM1Y3LregQLEKaj7FuON0xkk7xX1Jhg@mail.gmail.com>
+Subject: Re: 3.16-rcX crashes on resume from Suspend-To-RAM
+To: Zhang Rui <rui.zhang@intel.com>
+Cc: linux-kernel@vger.kernel.org,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-07-26 2:15 GMT+04:00 Hannes Frederic Sowa <hannes@stressinduktion.org>:
->
-> Thanks for looking at this! I certainly have overlooked this case.
->
-> I wonder, if we allow sendto with valid NULL pointer and positive
-> msg_namelen to work, why don't we do the same for recvmsg, as in
-> replacing the VERIFY_WRITE case non-null check with an
-> access_ok(VERIFY_WRITE, ...) check? We can even get rid of the check
-> because recvmsg will do it nonetheless when copying the sockaddrs to
-> user space. So kern_msg->msg_name can always be set to kern_address.
->
+Sorry for the delay. Remotely debugging kernels over a shared and
+flaky 1MBps terrestrial wireless connection is quite a new experience
+to me.
 
-recvmsg's man page are pretty clear about that:
+In any case, I was able to collect all the data that you asked for. I
+then used "pm-suspend" to put the machine to sleep and asked a helper
+to physically press the power button to wake the computer back up. My
+helper told me that it crashed just as before, and they had to
+power-cycle the machine to bring it back to life.
 
-     "If the application does not need to
-       know the source address, msg_name can be specified as NULL"
+Please let me know, what other data I can get for you. And thank you
+very much for putting up with my slow turn-around. I should have much
+better response time again in about two to three weeks when I return
+to civilization.
 
-I think we shouldn't change current recvmsg behavior, this could break
-some crappy
-userpace that doesn't set msg_namelen to zero.
+# Startup log file for stock 3.15 kernel
+https://medusa.gutschke.com/markus/3.15-dmesg.txt
 
+# Startup log file for b04c58b1ed26317bfb4b33d3a2d16377fc6acd0f
+https://medusa.gutschke.com/markus/3.15-rc8-dmesg.txt
 
-> Otherwise I would just set msg_namelen = 0, too, and just not handle
-> passed in NULL pointers to sockaddrs.
->
+# /sys/* files for b04c58b1ed26317bfb4b33d3a2d16377fc6acd0f
+https://medusa.gutschke.com/markus/3.15-rc8-platform-devices-firmware-node.txt
+https://medusa.gutschke.com/markus/3.15-rc8-platform-devices.txt
+https://medusa.gutschke.com/markus/3.15-rc8-pnp-devices-firmware-node.txt
+https://medusa.gutschke.com/markus/3.15-rc8-pnp-devices.txt
 
-I like that, how about such chage:
-
-diff --git a/net/compat.c b/net/compat.c
-index 9a76eaf..bc8aeef 100644
---- a/net/compat.c
-+++ b/net/compat.c
-@@ -85,7 +85,7 @@ int verify_compat_iovec(struct msghdr *kern_msg,
-struct iovec *kern_iov,
- {
-        int tot_len;
-
--       if (kern_msg->msg_namelen) {
-+       if (kern_msg->msg_name && kern_msg->msg_namelen) {
-                if (mode == VERIFY_READ) {
-                        int err = move_addr_to_kernel(kern_msg->msg_name,
-                                                      kern_msg->msg_namelen,
-@@ -93,10 +93,11 @@ int verify_compat_iovec(struct msghdr *kern_msg,
-struct iovec *kern_iov,
-                        if (err < 0)
-                                return err;
-                }
--               if (kern_msg->msg_name)
--                       kern_msg->msg_name = kern_address;
--       } else
-+               kern_msg->msg_name = kern_address;
-+       } else {
-                kern_msg->msg_name = NULL;
-+               kern_msg->msg_namelen = 0;
-+       }
-
-        tot_len = iov_from_user_compat_to_kern(kern_iov,
-                                          (struct compat_iovec __user
-*)kern_msg->msg_iov,
-diff --git a/net/core/iovec.c b/net/core/iovec.c
-index 827dd6b..e1ec45a 100644
---- a/net/core/iovec.c
-+++ b/net/core/iovec.c
-@@ -39,7 +39,7 @@ int verify_iovec(struct msghdr *m, struct iovec
-*iov, struct sockaddr_storage *a
- {
-        int size, ct, err;
-
--       if (m->msg_namelen) {
-+       if (m->msg_name && m->msg_namelen) {
-                if (mode == VERIFY_READ) {
-                        void __user *namep;
-                        namep = (void __user __force *) m->msg_name;
-@@ -48,10 +48,10 @@ int verify_iovec(struct msghdr *m, struct iovec
-*iov, struct sockaddr_storage *a
-                        if (err < 0)
-                                return err;
-                }
--               if (m->msg_name)
--                       m->msg_name = address;
-+               m->msg_name = address;
-        } else {
-                m->msg_name = NULL;
-+               m->msg_namelen = 0;
-        }
-
-        size = m->msg_iovlen * sizeof(struct iovec);
-
-
--- 
-Best regards,
-Andrey Ryabinin
+# /sys/* files for b04c58b1ed26317bfb4b33d3a2d16377fc6acd0f with patch applied
+https://medusa.gutschke.com/markus/3.15-rc8-patched-dmesg.txt
+https://medusa.gutschke.com/markus/3.15-rc8-patched-platform-devices-firmware-node.txt
+https://medusa.gutschke.com/markus/3.15-rc8-patched-platform-devices.txt
+https://medusa.gutschke.com/markus/3.15-rc8-patched-pnp-devices-firmware-node.txt
+https://medusa.gutschke.com/markus/3.15-rc8-patched-pnp-devices.txt
