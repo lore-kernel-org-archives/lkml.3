@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752995AbaGZTDT (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 15:03:19 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33775 "EHLO
+	id S1752960AbaGZTDS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 15:03:18 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33725 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752692AbaGZTDE (ORCPT
+	with ESMTP id S1752670AbaGZTDA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 15:03:04 -0400
+	Sat, 26 Jul 2014 15:03:00 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Tomasz Figa <t.figa@samsung.com>, Jason Cooper <jason@lakedaemon.net>
-Subject: [PATCH 3.10 46/56] irqchip: gic: Fix core ID calculation when topology is read from DT
-Date: Sat, 26 Jul 2014 12:02:39 -0700
-Message-Id: <20140726190201.575882381@linuxfoundation.org>
+        Jon Maloy <jon.maloy@ericsson.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.10 35/56] tipc: clear next-pointer of message fragments before reassembly
+Date: Sat, 26 Jul 2014 12:02:28 -0700
+Message-Id: <20140726190201.205047241@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.2
 In-Reply-To: <20140726190200.061512159@linuxfoundation.org>
 References: <20140726190200.061512159@linuxfoundation.org>
@@ -30,58 +29,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tomasz Figa <t.figa@samsung.com>
+From: Jon Paul Maloy <jon.maloy@ericsson.com>
 
-commit 29e697b11853d3f83b1864ae385abdad4aa2c361 upstream.
+[ Upstream commit 999417549c16dd0e3a382aa9f6ae61688db03181 ]
 
-Certain GIC implementation, namely those found on earlier, single
-cluster, Exynos SoCs, have registers mapped without per-CPU banking,
-which means that the driver needs to use different offset for each CPU.
+If the 'next' pointer of the last fragment buffer in a message is not
+zeroed before reassembly, we risk ending up with a corrupt message,
+since the reassembly function itself isn't doing this.
 
-Currently the driver calculates the offset by multiplying value returned
-by cpu_logical_map() by CPU offset parsed from DT. This is correct when
-CPU topology is not specified in DT and aforementioned function returns
-core ID alone. However when DT contains CPU topology, the function
-changes to return cluster ID as well, which is non-zero on mentioned
-SoCs and so breaks the calculation in GIC driver.
+Currently, when a buffer is retrieved from the deferred queue of the
+broadcast link, the next pointer is not cleared, with the result as
+described above.
 
-This patch fixes this by masking out cluster ID in CPU offset
-calculation so that only core ID is considered. Multi-cluster Exynos
-SoCs already have banked GIC implementations, so this simple fix should
-be enough.
+This commit corrects this, and thereby fixes a bug that may occur when
+long broadcast messages are transmitted across dual interfaces. The bug
+has been present since 40ba3cdf542a469aaa9083fa041656e59b109b90 ("tipc:
+message reassembly using fragment chain")
 
-Reported-by: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-Reported-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Signed-off-by: Tomasz Figa <t.figa@samsung.com>
-Fixes: db0d4db22a78d ("ARM: gic: allow GIC to support non-banked setups")
-Link: https://lkml.kernel.org/r/1405610624-18722-1-git-send-email-t.figa@samsung.com
-Signed-off-by: Jason Cooper <jason@lakedaemon.net>
+This commit should be applied to both net and net-next.
+
+Signed-off-by: Jon Maloy <jon.maloy@ericsson.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/irqchip/irq-gic.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ net/tipc/bcast.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/irqchip/irq-gic.c
-+++ b/drivers/irqchip/irq-gic.c
-@@ -42,6 +42,7 @@
- #include <linux/irqchip/chained_irq.h>
- #include <linux/irqchip/arm-gic.h>
+--- a/net/tipc/bcast.c
++++ b/net/tipc/bcast.c
+@@ -531,6 +531,7 @@ receive:
  
-+#include <asm/cputype.h>
- #include <asm/irq.h>
- #include <asm/exception.h>
- #include <asm/smp_plat.h>
-@@ -754,7 +755,9 @@ void __init gic_init_bases(unsigned int
- 		}
- 
- 		for_each_possible_cpu(cpu) {
--			unsigned long offset = percpu_offset * cpu_logical_map(cpu);
-+			u32 mpidr = cpu_logical_map(cpu);
-+			u32 core_id = MPIDR_AFFINITY_LEVEL(mpidr, 0);
-+			unsigned long offset = percpu_offset * core_id;
- 			*per_cpu_ptr(gic->dist_base.percpu_base, cpu) = dist_base + offset;
- 			*per_cpu_ptr(gic->cpu_base.percpu_base, cpu) = cpu_base + offset;
- 		}
+ 		buf = node->bclink.deferred_head;
+ 		node->bclink.deferred_head = buf->next;
++		buf->next = NULL;
+ 		node->bclink.deferred_size--;
+ 		goto receive;
+ 	}
 
 
