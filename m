@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754503AbaGZTQ2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 15:16:28 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34338 "EHLO
+	id S1754536AbaGZTQq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 15:16:46 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34497 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752354AbaGZTNc (ORCPT
+	with ESMTP id S1754317AbaGZTNb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 15:13:32 -0400
+	Sat, 26 Jul 2014 15:13:31 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ed Martin <edman007@edman007.com>,
-        Andrey Utkin <andrey.krieger.utkin@gmail.com>,
-        Eric Dumazet <edumazet@google.com>,
+        Ding Tianhong <dingtianhong@huawei.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.15 057/109] appletalk: Fix socket referencing in skb
-Date: Sat, 26 Jul 2014 12:02:19 -0700
-Message-Id: <20140726190225.584493095@linuxfoundation.org>
+Subject: [PATCH 3.15 055/109] igmp: fix the problem when mc leave group
+Date: Sat, 26 Jul 2014 12:02:17 -0700
+Message-Id: <20140726190225.527096847@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.2
 In-Reply-To: <20140726190223.834037485@linuxfoundation.org>
 References: <20140726190223.834037485@linuxfoundation.org>
@@ -31,44 +29,84 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andrey Utkin <andrey.krieger.utkin@gmail.com>
+From: dingtianhong <dingtianhong@huawei.com>
 
-[ Upstream commit 36beddc272c111689f3042bf3d10a64d8a805f93 ]
+[ Upstream commit 52ad353a5344f1f700c5b777175bdfa41d3cd65a ]
 
-Setting just skb->sk without taking its reference and setting a
-destructor is invalid. However, in the places where this was done, skb
-is used in a way not requiring skb->sk setting. So dropping the setting
-of skb->sk.
-Thanks to Eric Dumazet <eric.dumazet@gmail.com> for correct solution.
+The problem was triggered by these steps:
 
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=79441
-Reported-by: Ed Martin <edman007@edman007.com>
-Signed-off-by: Andrey Utkin <andrey.krieger.utkin@gmail.com>
-Signed-off-by: Eric Dumazet <edumazet@google.com>
+1) create socket, bind and then setsockopt for add mc group.
+   mreq.imr_multiaddr.s_addr = inet_addr("255.0.0.37");
+   mreq.imr_interface.s_addr = inet_addr("192.168.1.2");
+   setsockopt(sockfd, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq, sizeof(mreq));
+
+2) drop the mc group for this socket.
+   mreq.imr_multiaddr.s_addr = inet_addr("255.0.0.37");
+   mreq.imr_interface.s_addr = inet_addr("0.0.0.0");
+   setsockopt(sockfd, IPPROTO_IP, IP_DROP_MEMBERSHIP, &mreq, sizeof(mreq));
+
+3) and then drop the socket, I found the mc group was still used by the dev:
+
+   netstat -g
+
+   Interface       RefCnt Group
+   --------------- ------ ---------------------
+   eth2		   1	  255.0.0.37
+
+Normally even though the IP_DROP_MEMBERSHIP return error, the mc group still need
+to be released for the netdev when drop the socket, but this process was broken when
+route default is NULL, the reason is that:
+
+The ip_mc_leave_group() will choose the in_dev by the imr_interface.s_addr, if input addr
+is NULL, the default route dev will be chosen, then the ifindex is got from the dev,
+then polling the inet->mc_list and return -ENODEV, but if the default route dev is NULL,
+the in_dev and ifIndex is both NULL, when polling the inet->mc_list, the mc group will be
+released from the mc_list, but the dev didn't dec the refcnt for this mc group, so
+when dropping the socket, the mc_list is NULL and the dev still keep this group.
+
+v1->v2: According Hideaki's suggestion, we should align with IPv6 (RFC3493) and BSDs,
+	so I add the checking for the in_dev before polling the mc_list, make sure when
+	we remove the mc group, dec the refcnt to the real dev which was using the mc address.
+	The problem would never happened again.
+
+Signed-off-by: Ding Tianhong <dingtianhong@huawei.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/appletalk/ddp.c |    3 ---
- 1 file changed, 3 deletions(-)
+ net/ipv4/igmp.c |   10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
 
---- a/net/appletalk/ddp.c
-+++ b/net/appletalk/ddp.c
-@@ -1489,8 +1489,6 @@ static int atalk_rcv(struct sk_buff *skb
- 		goto drop;
+--- a/net/ipv4/igmp.c
++++ b/net/ipv4/igmp.c
+@@ -1952,6 +1952,10 @@ int ip_mc_leave_group(struct sock *sk, s
  
- 	/* Queue packet (standard) */
--	skb->sk = sock;
--
- 	if (sock_queue_rcv_skb(sock, skb) < 0)
- 		goto drop;
+ 	rtnl_lock();
+ 	in_dev = ip_mc_find_dev(net, imr);
++	if (!in_dev) {
++		ret = -ENODEV;
++		goto out;
++	}
+ 	ifindex = imr->imr_ifindex;
+ 	for (imlp = &inet->mc_list;
+ 	     (iml = rtnl_dereference(*imlp)) != NULL;
+@@ -1969,16 +1973,14 @@ int ip_mc_leave_group(struct sock *sk, s
  
-@@ -1644,7 +1642,6 @@ static int atalk_sendmsg(struct kiocb *i
- 	if (!skb)
- 		goto out;
+ 		*imlp = iml->next_rcu;
  
--	skb->sk = sk;
- 	skb_reserve(skb, ddp_dl->header_length);
- 	skb_reserve(skb, dev->hard_header_len);
- 	skb->dev = dev;
+-		if (in_dev)
+-			ip_mc_dec_group(in_dev, group);
++		ip_mc_dec_group(in_dev, group);
+ 		rtnl_unlock();
+ 		/* decrease mem now to avoid the memleak warning */
+ 		atomic_sub(sizeof(*iml), &sk->sk_omem_alloc);
+ 		kfree_rcu(iml, rcu);
+ 		return 0;
+ 	}
+-	if (!in_dev)
+-		ret = -ENODEV;
++out:
+ 	rtnl_unlock();
+ 	return ret;
+ }
 
 
