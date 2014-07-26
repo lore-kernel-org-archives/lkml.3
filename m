@@ -1,47 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750992AbaGZHkr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 03:40:47 -0400
-Received: from mail.istrade.cz ([217.196.124.2]:47776 "EHLO mail.istrade.cz"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750832AbaGZHkq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 03:40:46 -0400
-X-Greylist: delayed 497 seconds by postgrey-1.27 at vger.kernel.org; Sat, 26 Jul 2014 03:40:46 EDT
-Message-ID: <f04058b19dd2c3a26436b02f3b4c639a.squirrel@webmail.istrade.cz>
-Date: Sat, 26 Jul 2014 09:32:18 +0200
-Subject: =?utf-8?B?cG9zbGVkbsOtIHZhcm92w6Fuw60h?=
-From: =?utf-8?B?InNwcsOhdmNlIGUtbWFpbG92w70gc3lzdMOpbSI=?= 
-	<correo@sistema.info>
-Reply-To: luis-baker1@hotmail.ru
-User-Agent: SquirrelMail/1.4.22-4.el6
+	id S1751031AbaGZHxh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 03:53:37 -0400
+Received: from mail-oi0-f47.google.com ([209.85.218.47]:46865 "EHLO
+	mail-oi0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750839AbaGZHxg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 Jul 2014 03:53:36 -0400
 MIME-Version: 1.0
-Content-Type: text/plain;charset=utf-8
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
-To: undisclosed-recipients:;
+In-Reply-To: <20140725172126.GA24306@sirena.org.uk>
+References: <1406203117-2767-1-git-send-email-kiran.padwal21@gmail.com>
+	<20140725172126.GA24306@sirena.org.uk>
+Date: Sat, 26 Jul 2014 13:23:35 +0530
+Message-ID: <CA+neC=Pj2_L9yBiE2yp0UhL6wodLmJAeri4vc_UTCi=sEw2nLA@mail.gmail.com>
+Subject: Re: [PATCH] ASoC: ak4642: Make of_device_id array const
+From: kiran padwal <kiran.padwal21@gmail.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: Liam Girdwood <lgirdwood@gmail.com>, perex@perex.cz, tiwai@suse.de,
+        s.hauer@pengutronix.de, fabio.estevam@freescale.com,
+        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
+        Li.Xiubo@freescale.com, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Jul 25, 2014 at 10:51 PM, Mark Brown <broonie@kernel.org> wrote:
+> On Thu, Jul 24, 2014 at 05:28:36PM +0530, Kiran Padwal wrote:
+>> Make of_device_id array const, because all OF functions handle it as const
+>
+> ...and reverted because it fails to build.
 
-
-
-
-
-
--- 
-Oceňují uživatel,
-
-Jsme blokuje přístup k vašemu e-mailovému účtu, protože jste neustále
-porušována Mail Systémové podmínky použití. Můžete se také neustále
-ignorovat naše předchozí varovné upozornění. Váš emailbox překročil
-maximální mailing kapacity, Proto je nutné, aby zde upgradovat svou
-poštovní kvótu http://form1.esy.es/
-
-Chcete-li zachovat váš e-mailový účet, klikněte na následující odkaz,
-vyplnit a odeslat žádost kvót. http://form1.esy.es/ správce systému musí
-vypnout e-mailový účet dnes, pokud budete ignorovat toto upozornění.
-
-Administrator 2014 © systém
-
+sorry for that...I miss one thing...I will resubmit the patch.
+Thanks.
