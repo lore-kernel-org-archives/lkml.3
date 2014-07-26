@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756194AbaGZUIg (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 16:08:36 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33631 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752248AbaGZTC5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752623AbaGZTC5 (ORCPT <rfc822;w@1wt.eu>);
 	Sat, 26 Jul 2014 15:02:57 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33623 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752248AbaGZTCv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 Jul 2014 15:02:51 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Axel Lin <axel.lin@ingics.com>, Guenter Roeck <linux@roeck-us.net>
-Subject: [PATCH 3.10 09/56] hwmon: (da9052) Dont use dash in the name attribute
-Date: Sat, 26 Jul 2014 12:02:02 -0700
-Message-Id: <20140726190200.352445414@linuxfoundation.org>
+        Gavin Guo <gavin.guo@canonical.com>,
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: [PATCH 3.10 01/56] usb: Check if port status is equal to RxDetect
+Date: Sat, 26 Jul 2014 12:01:54 -0700
+Message-Id: <20140726190200.106875423@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.2
 In-Reply-To: <20140726190200.061512159@linuxfoundation.org>
 References: <20140726190200.061512159@linuxfoundation.org>
@@ -28,31 +29,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Axel Lin <axel.lin@ingics.com>
+From: Gavin Guo <gavin.guo@canonical.com>
 
-commit ee14b644daaa58afe1e91bb9ebd9cf1b18d1f5fa upstream.
+commit bb86cf569bbd7ad4dce581a37c7fbd748057e9dc upstream.
 
-Dashes are not allowed in hwmon name attributes.
-Use "da9052" instead of "da9052-hwmon".
+When using USB 3.0 pen drive with the [AMD] FCH USB XHCI Controller
+[1022:7814], the second hotplugging will experience the USB 3.0 pen
+drive is recognized as high-speed device. After bisecting the kernel,
+I found the commit number 41e7e056cdc662f704fa9262e5c6e213b4ab45dd
+(USB: Allow USB 3.0 ports to be disabled.) causes the bug. After doing
+some experiments, the bug can be fixed by avoiding executing the function
+hub_usb3_port_disable(). Because the port status with [AMD] FCH USB
+XHCI Controlleris [1022:7814] is already in RxDetect
+(I tried printing out the port status before setting to Disabled state),
+it's reasonable to check the port status before really executing
+hub_usb3_port_disable().
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Fixes: 41e7e056cdc6 (USB: Allow USB 3.0 ports to be disabled.)
+Signed-off-by: Gavin Guo <gavin.guo@canonical.com>
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hwmon/da9052-hwmon.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/core/hub.c |   19 +++++++++++++++++++
+ 1 file changed, 19 insertions(+)
 
---- a/drivers/hwmon/da9052-hwmon.c
-+++ b/drivers/hwmon/da9052-hwmon.c
-@@ -194,7 +194,7 @@ static ssize_t da9052_hwmon_show_name(st
- 				      struct device_attribute *devattr,
- 				      char *buf)
- {
--	return sprintf(buf, "da9052-hwmon\n");
-+	return sprintf(buf, "da9052\n");
- }
+--- a/drivers/usb/core/hub.c
++++ b/drivers/usb/core/hub.c
+@@ -887,6 +887,25 @@ static int hub_usb3_port_disable(struct
+ 	if (!hub_is_superspeed(hub->hdev))
+ 		return -EINVAL;
  
- static ssize_t show_label(struct device *dev,
++	ret = hub_port_status(hub, port1, &portstatus, &portchange);
++	if (ret < 0)
++		return ret;
++
++	/*
++	 * USB controller Advanced Micro Devices, Inc. [AMD] FCH USB XHCI
++	 * Controller [1022:7814] will have spurious result making the following
++	 * usb 3.0 device hotplugging route to the 2.0 root hub and recognized
++	 * as high-speed device if we set the usb 3.0 port link state to
++	 * Disabled. Since it's already in USB_SS_PORT_LS_RX_DETECT state, we
++	 * check the state here to avoid the bug.
++	 */
++	if ((portstatus & USB_PORT_STAT_LINK_STATE) ==
++				USB_SS_PORT_LS_RX_DETECT) {
++		dev_dbg(&hub->ports[port1 - 1]->dev,
++			 "Not disabling port; link state is RxDetect\n");
++		return ret;
++	}
++
+ 	ret = hub_set_port_link_state(hub, port1, USB_SS_PORT_LS_SS_DISABLED);
+ 	if (ret)
+ 		return ret;
 
 
