@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753601AbaGZTKt (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 15:10:49 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34046 "EHLO
+	id S1753727AbaGZTK5 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 15:10:57 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34078 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752838AbaGZTKp (ORCPT
+	with ESMTP id S1753611AbaGZTKu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 15:10:45 -0400
+	Sat, 26 Jul 2014 15:10:50 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tyler Hall <tylerwhall@gmail.com>,
-        Oliver Hartkopp <socketcan@hartkopp.net>,
-        Andre Naujoks <nautsch2@gmail.com>,
+        Wei-Chun Chao <weichunc@plumgrid.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 30/87] slip: Fix deadlock in write_wakeup
-Date: Sat, 26 Jul 2014 12:02:04 -0700
-Message-Id: <20140726190215.502578441@linuxfoundation.org>
+Subject: [PATCH 3.14 37/87] net: fix UDP tunnel GSO of frag_list GRO packets
+Date: Sat, 26 Jul 2014 12:02:11 -0700
+Message-Id: <20140726190215.717929216@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.2
 In-Reply-To: <20140726190214.530473925@linuxfoundation.org>
 References: <20140726190214.530473925@linuxfoundation.org>
@@ -31,201 +29,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tyler Hall <tylerwhall@gmail.com>
+From: Wei-Chun Chao <weichunc@plumgrid.com>
 
-[ Upstream commit 661f7fda21b15ec52f57fcd397c03370acc28688 ]
+[ Upstream commit 5882a07c72093dc3a18e2d2b129fb200686bb6ee ]
 
-Use schedule_work() to avoid potentially taking the spinlock in
-interrupt context.
+This patch fixes a kernel BUG_ON in skb_segment. It is hit when
+testing two VMs on openvswitch with one VM acting as VXLAN gateway.
 
-Commit cc9fa74e2a ("slip/slcan: added locking in wakeup function") added
-necessary locking to the wakeup function and 367525c8c2/ddcde142be ("can:
-slcan: Fix spinlock variant") converted it to spin_lock_bh() because the lock
-is also taken in timers.
+During VXLAN packet GSO, skb_segment is called with skb->data
+pointing to inner TCP payload. skb_segment calls skb_network_protocol
+to retrieve the inner protocol. skb_network_protocol actually expects
+skb->data to point to MAC and it calls pskb_may_pull with ETH_HLEN.
+This ends up pulling in ETH_HLEN data from header tail. As a result,
+pskb_trim logic is skipped and BUG_ON is hit later.
 
-Disabling softirqs is not sufficient, however, as tty drivers may call
-write_wakeup from interrupt context. This driver calls tty->ops->write() with
-its spinlock held, which may immediately cause an interrupt on the same CPU and
-subsequent spin_bug().
+Move skb_push in front of skb_network_protocol so that skb->data
+lines up properly.
 
-Simply converting to spin_lock_irq/irqsave() prevents this deadlock, but
-causes lockdep to point out a possible circular locking dependency
-between these locks:
+kernel BUG at net/core/skbuff.c:2999!
+Call Trace:
+[<ffffffff816ac412>] tcp_gso_segment+0x122/0x410
+[<ffffffff816bc74c>] inet_gso_segment+0x13c/0x390
+[<ffffffff8164b39b>] skb_mac_gso_segment+0x9b/0x170
+[<ffffffff816b3658>] skb_udp_tunnel_segment+0xd8/0x390
+[<ffffffff816b3c00>] udp4_ufo_fragment+0x120/0x140
+[<ffffffff816bc74c>] inet_gso_segment+0x13c/0x390
+[<ffffffff8109d742>] ? default_wake_function+0x12/0x20
+[<ffffffff8164b39b>] skb_mac_gso_segment+0x9b/0x170
+[<ffffffff8164b4d0>] __skb_gso_segment+0x60/0xc0
+[<ffffffff8164b6b3>] dev_hard_start_xmit+0x183/0x550
+[<ffffffff8166c91e>] sch_direct_xmit+0xfe/0x1d0
+[<ffffffff8164bc94>] __dev_queue_xmit+0x214/0x4f0
+[<ffffffff8164bf90>] dev_queue_xmit+0x10/0x20
+[<ffffffff81687edb>] ip_finish_output+0x66b/0x890
+[<ffffffff81688a58>] ip_output+0x58/0x90
+[<ffffffff816c628f>] ? fib_table_lookup+0x29f/0x350
+[<ffffffff816881c9>] ip_local_out_sk+0x39/0x50
+[<ffffffff816cbfad>] iptunnel_xmit+0x10d/0x130
+[<ffffffffa0212200>] vxlan_xmit_skb+0x1d0/0x330 [vxlan]
+[<ffffffffa02a3919>] vxlan_tnl_send+0x129/0x1a0 [openvswitch]
+[<ffffffffa02a2cd6>] ovs_vport_send+0x26/0xa0 [openvswitch]
+[<ffffffffa029931e>] do_output+0x2e/0x50 [openvswitch]
 
-(&(&sl->lock)->rlock){-.....}, at: slip_write_wakeup
-(&port_lock_key){-.....}, at: serial8250_handle_irq.part.13
-
-The slip transmit is holding the slip spinlock when calling the tty write.
-This grabs the port lock. On an interrupt, the handler grabs the port
-lock and calls write_wakeup which grabs the slip lock. This could be a
-problem if a serial interrupt occurs on another CPU during the slip
-transmit.
-
-To deal with these issues, don't grab the lock in the wakeup function by
-deferring the writeout to a workqueue. Also hold the lock during close
-when de-assigning the tty pointer to safely disarm the worker and
-timers.
-
-This bug is easily reproducible on the first transmit when slip is
-used with the standard 8250 serial driver.
-
-[<c0410b7c>] (spin_bug+0x0/0x38) from [<c006109c>] (do_raw_spin_lock+0x60/0x1d0)
- r5:eab27000 r4:ec02754c
-[<c006103c>] (do_raw_spin_lock+0x0/0x1d0) from [<c04185c0>] (_raw_spin_lock+0x28/0x2c)
- r10:0000001f r9:eabb814c r8:eabb8140 r7:40070193 r6:ec02754c r5:eab27000
- r4:ec02754c r3:00000000
-[<c0418598>] (_raw_spin_lock+0x0/0x2c) from [<bf3a0220>] (slip_write_wakeup+0x50/0xe0 [slip])
- r4:ec027540 r3:00000003
-[<bf3a01d0>] (slip_write_wakeup+0x0/0xe0 [slip]) from [<c026e420>] (tty_wakeup+0x48/0x68)
- r6:00000000 r5:ea80c480 r4:eab27000 r3:bf3a01d0
-[<c026e3d8>] (tty_wakeup+0x0/0x68) from [<c028a8ec>] (uart_write_wakeup+0x2c/0x30)
- r5:ed68ea90 r4:c06790d8
-[<c028a8c0>] (uart_write_wakeup+0x0/0x30) from [<c028dc44>] (serial8250_tx_chars+0x114/0x170)
-[<c028db30>] (serial8250_tx_chars+0x0/0x170) from [<c028dffc>] (serial8250_handle_irq+0xa0/0xbc)
- r6:000000c2 r5:00000060 r4:c06790d8 r3:00000000
-[<c028df5c>] (serial8250_handle_irq+0x0/0xbc) from [<c02933a4>] (dw8250_handle_irq+0x38/0x64)
- r7:00000000 r6:edd2f390 r5:000000c2 r4:c06790d8
-[<c029336c>] (dw8250_handle_irq+0x0/0x64) from [<c028d2f4>] (serial8250_interrupt+0x44/0xc4)
- r6:00000000 r5:00000000 r4:c06791c4 r3:c029336c
-[<c028d2b0>] (serial8250_interrupt+0x0/0xc4) from [<c0067fe4>] (handle_irq_event_percpu+0xb4/0x2b0)
- r10:c06790d8 r9:eab27000 r8:00000000 r7:00000000 r6:0000001f r5:edd52980
- r4:ec53b6c0 r3:c028d2b0
-[<c0067f30>] (handle_irq_event_percpu+0x0/0x2b0) from [<c006822c>] (handle_irq_event+0x4c/0x6c)
- r10:c06790d8 r9:eab27000 r8:c0673ae0 r7:c05c2020 r6:ec53b6c0 r5:edd529d4
- r4:edd52980
-[<c00681e0>] (handle_irq_event+0x0/0x6c) from [<c006b140>] (handle_level_irq+0xe8/0x100)
- r6:00000000 r5:edd529d4 r4:edd52980 r3:00022000
-[<c006b058>] (handle_level_irq+0x0/0x100) from [<c00676f8>] (generic_handle_irq+0x30/0x40)
- r5:0000001f r4:0000001f
-[<c00676c8>] (generic_handle_irq+0x0/0x40) from [<c000f57c>] (handle_IRQ+0xd0/0x13c)
- r4:ea997b18 r3:000000e0
-[<c000f4ac>] (handle_IRQ+0x0/0x13c) from [<c00086c4>] (armada_370_xp_handle_irq+0x4c/0x118)
- r8:000003ff r7:ea997b18 r6:ffffffff r5:60070013 r4:c0674dc0
-[<c0008678>] (armada_370_xp_handle_irq+0x0/0x118) from [<c0013840>] (__irq_svc+0x40/0x70)
-Exception stack(0xea997b18 to 0xea997b60)
-7b00:                                                       00000001 20070013
-7b20: 00000000 0000000b 20070013 eab27000 20070013 00000000 ed10103e eab27000
-7b40: c06790d8 ea997b74 ea997b60 ea997b60 c04186c0 c04186c8 60070013 ffffffff
- r9:eab27000 r8:ed10103e r7:ea997b4c r6:ffffffff r5:60070013 r4:c04186c8
-[<c04186a4>] (_raw_spin_unlock_irqrestore+0x0/0x54) from [<c0288fc0>] (uart_start+0x40/0x44)
- r4:c06790d8 r3:c028ddd8
-[<c0288f80>] (uart_start+0x0/0x44) from [<c028982c>] (uart_write+0xe4/0xf4)
- r6:0000003e r5:00000000 r4:ed68ea90 r3:0000003e
-[<c0289748>] (uart_write+0x0/0xf4) from [<bf3a0d20>] (sl_xmit+0x1c4/0x228 [slip])
- r10:ed388e60 r9:0000003c r8:ffffffdd r7:0000003e r6:ec02754c r5:ea717eb8
- r4:ec027000
-[<bf3a0b5c>] (sl_xmit+0x0/0x228 [slip]) from [<c0368d74>] (dev_hard_start_xmit+0x39c/0x6d0)
- r8:eaf163c0 r7:ec027000 r6:ea717eb8 r5:00000000 r4:00000000
-
-Signed-off-by: Tyler Hall <tylerwhall@gmail.com>
-Cc: Oliver Hartkopp <socketcan@hartkopp.net>
-Cc: Andre Naujoks <nautsch2@gmail.com>
-Cc: David S. Miller <davem@davemloft.net>
-Cc: linux-kernel@vger.kernel.org
+Signed-off-by: Wei-Chun Chao <weichunc@plumgrid.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/slip/slip.c |   36 ++++++++++++++++++++++++++----------
- drivers/net/slip/slip.h |    1 +
- 2 files changed, 27 insertions(+), 10 deletions(-)
+ net/core/skbuff.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/net/slip/slip.c
-+++ b/drivers/net/slip/slip.c
-@@ -83,6 +83,7 @@
- #include <linux/delay.h>
- #include <linux/init.h>
- #include <linux/slab.h>
-+#include <linux/workqueue.h>
- #include "slip.h"
- #ifdef CONFIG_INET
- #include <linux/ip.h>
-@@ -416,36 +417,46 @@ static void sl_encaps(struct slip *sl, u
- #endif
- }
+--- a/net/core/skbuff.c
++++ b/net/core/skbuff.c
+@@ -2881,12 +2881,13 @@ struct sk_buff *skb_segment(struct sk_bu
+ 	int pos;
+ 	int dummy;
  
--/*
-- * Called by the driver when there's room for more data.  If we have
-- * more packets to send, we send them here.
-- */
--static void slip_write_wakeup(struct tty_struct *tty)
-+/* Write out any remaining transmit buffer. Scheduled when tty is writable */
-+static void slip_transmit(struct work_struct *work)
- {
-+	struct slip *sl = container_of(work, struct slip, tx_work);
- 	int actual;
--	struct slip *sl = tty->disc_data;
++	__skb_push(head_skb, doffset);
+ 	proto = skb_network_protocol(head_skb, &dummy);
+ 	if (unlikely(!proto))
+ 		return ERR_PTR(-EINVAL);
  
-+	spin_lock_bh(&sl->lock);
- 	/* First make sure we're connected. */
--	if (!sl || sl->magic != SLIP_MAGIC || !netif_running(sl->dev))
-+	if (!sl->tty || sl->magic != SLIP_MAGIC || !netif_running(sl->dev)) {
-+		spin_unlock_bh(&sl->lock);
- 		return;
-+	}
- 
--	spin_lock_bh(&sl->lock);
- 	if (sl->xleft <= 0)  {
- 		/* Now serial buffer is almost free & we can start
- 		 * transmission of another packet */
- 		sl->dev->stats.tx_packets++;
--		clear_bit(TTY_DO_WRITE_WAKEUP, &tty->flags);
-+		clear_bit(TTY_DO_WRITE_WAKEUP, &sl->tty->flags);
- 		spin_unlock_bh(&sl->lock);
- 		sl_unlock(sl);
- 		return;
- 	}
- 
--	actual = tty->ops->write(tty, sl->xhead, sl->xleft);
-+	actual = sl->tty->ops->write(sl->tty, sl->xhead, sl->xleft);
- 	sl->xleft -= actual;
- 	sl->xhead += actual;
- 	spin_unlock_bh(&sl->lock);
- }
- 
-+/*
-+ * Called by the driver when there's room for more data.
-+ * Schedule the transmit.
-+ */
-+static void slip_write_wakeup(struct tty_struct *tty)
-+{
-+	struct slip *sl = tty->disc_data;
+ 	csum = !!can_checksum_protocol(features, proto);
+-	__skb_push(head_skb, doffset);
 +
-+	schedule_work(&sl->tx_work);
-+}
-+
- static void sl_tx_timeout(struct net_device *dev)
- {
- 	struct slip *sl = netdev_priv(dev);
-@@ -749,6 +760,7 @@ static struct slip *sl_alloc(dev_t line)
- 	sl->magic       = SLIP_MAGIC;
- 	sl->dev	      	= dev;
- 	spin_lock_init(&sl->lock);
-+	INIT_WORK(&sl->tx_work, slip_transmit);
- 	sl->mode        = SL_MODE_DEFAULT;
- #ifdef CONFIG_SLIP_SMART
- 	/* initialize timer_list struct */
-@@ -872,8 +884,12 @@ static void slip_close(struct tty_struct
- 	if (!sl || sl->magic != SLIP_MAGIC || sl->tty != tty)
- 		return;
+ 	headroom = skb_headroom(head_skb);
+ 	pos = skb_headlen(head_skb);
  
-+	spin_lock_bh(&sl->lock);
- 	tty->disc_data = NULL;
- 	sl->tty = NULL;
-+	spin_unlock_bh(&sl->lock);
-+
-+	flush_work(&sl->tx_work);
- 
- 	/* VSV = very important to remove timers */
- #ifdef CONFIG_SLIP_SMART
---- a/drivers/net/slip/slip.h
-+++ b/drivers/net/slip/slip.h
-@@ -53,6 +53,7 @@ struct slip {
-   struct tty_struct	*tty;		/* ptr to TTY structure		*/
-   struct net_device	*dev;		/* easy for intr handling	*/
-   spinlock_t		lock;
-+  struct work_struct	tx_work;	/* Flushes transmit buffer	*/
- 
- #ifdef SL_INCLUDE_CSLIP
-   struct slcompress	*slcomp;	/* for header compression 	*/
 
 
