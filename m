@@ -1,74 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755530AbaGZTlX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 15:41:23 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34123 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753036AbaGZTNS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 15:13:18 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [PATCH 3.15 016/109] tracing: Fix graph tracer with stack tracer on other archs
-Date: Sat, 26 Jul 2014 12:01:38 -0700
-Message-Id: <20140726190224.324068050@linuxfoundation.org>
-X-Mailer: git-send-email 2.0.2
-In-Reply-To: <20140726190223.834037485@linuxfoundation.org>
-References: <20140726190223.834037485@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	id S1755743AbaGZTl1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 15:41:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39502 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753036AbaGZTlY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 Jul 2014 15:41:24 -0400
+Date: Sat, 26 Jul 2014 21:39:10 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Kirill Tkhai <tkhai@yandex.ru>
+Cc: linux-kernel@vger.kernel.org, nicolas.pitre@linaro.org,
+        peterz@infradead.org, pjt@google.com, rostedt@goodmis.org,
+        umgwanakikbuti@gmail.com, ktkhai@parallels.com,
+        tim.c.chen@linux.intel.com, mingo@kernel.org
+Subject: Re: [PATCH v2 0/5] sched: Add on_rq states and remove several
+	double rq locks
+Message-ID: <20140726193910.GA8420@redhat.com>
+References: <20140726145508.6308.69121.stgit@localhost>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140726145508.6308.69121.stgit@localhost>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.15-stable review patch.  If anyone has any objections, please let me know.
+Hi Kirill,
 
-------------------
+I'll try to read this series later, just one silly question for now.
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+On 07/26, Kirill Tkhai wrote:
+>
+> Patch [2/5] is main in the series. It introduces new state: ONRQ_MIGRATING
+> and teaches scheduler to understand it (we need a little changes predominantly
+> in try_to_wake_up()). This will be used in the following way:
+>
+>         (we are changing task's rq)
+>
+>         raw_spin_lock(&src_rq->lock);
+>         dequeue_task(src_rq, p, 0);
+>         p->on_rq = ONRQ_MIGRATING;
+>         set_task_cpu(p, dst_cpu);
+>         raw_spin_unlock(&src_rq->lock);
+>
+>         raw_spin_lock(&dst_rq->lock);
+>         p->on_rq = ONRQ_QUEUED;
+>         enqueue_task(dst_rq, p, 0);
+>         raw_spin_unlock(&dst_rq->lock);
 
-commit 5f8bf2d263a20b986225ae1ed7d6759dc4b93af9 upstream.
+Hmm. And what if the code above doesn't hold p->pi_lock (4/5) and, say,
+__sched_setscheduler() does fair_sched_class->rt_sched_class transition
+in between?
 
-Running my ftrace tests on PowerPC, it failed the test that checks
-if function_graph tracer is affected by the stack tracer. It was.
-Looking into this, I found that the update_function_graph_func()
-must be called even if the trampoline function is not changed.
-This is because archs like PowerPC do not support ftrace_ops being
-passed by assembly and instead uses a helper function (what the
-trampoline function points to). Since this function is not changed
-even when multiple ftrace_ops are added to the code, the test that
-falls out before calling update_function_graph_func() will miss that
-the update must still be done.
+ONRQ_MIGRATING helps to avoid the wrong dequeue + enqueue, but I am not
+sure about check_class_changed().
 
-Call update_function_graph_function() for all calls to
-update_ftrace_function()
+Say, switched_from_fair() will use dst_rq even if p was never queued on
+this rq... This only affects the .decay_count logic, perhaps this is fine,
+I simply do not know what this code does.
 
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+What about switched_to_rt() ? we lose the push_rt_task() logic... Hmm,
+which I can't understand too ;)
 
----
- kernel/trace/ftrace.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+And we also lose ENQUEUE_HEAD in this case, but this looks fine.
 
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -325,12 +325,12 @@ static void update_ftrace_function(void)
- 		func = ftrace_ops_list_func;
- 	}
- 
-+	update_function_graph_func();
-+
- 	/* If there's no change, then do nothing more here */
- 	if (ftrace_trace_function == func)
- 		return;
- 
--	update_function_graph_func();
--
- 	/*
- 	 * If we are using the list function, it doesn't care
- 	 * about the function_trace_ops.
+In short: could you confirm there are no problems here?
 
+Oleg.
 
