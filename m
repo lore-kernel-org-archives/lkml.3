@@ -1,72 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755655AbaGZTgJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 15:36:09 -0400
-Received: from ud10.udmedia.de ([194.117.254.50]:51002 "EHLO
-	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754974AbaGZTgF (ORCPT
+	id S1754183AbaGZTNX (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 15:13:23 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34143 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753953AbaGZTNI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 15:36:05 -0400
-Date: Sat, 26 Jul 2014 21:35:57 +0200
-From: Markus Trippelsdorf <markus@trippelsdorf.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>, Alexei Starovoitov <ast@kernel.org>,
-        Michel =?iso-8859-1?Q?D=E4nzer?= <michel@daenzer.net>,
-        Jakub Jelinek <jakub@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Debian GCC Maintainers <debian-gcc@lists.debian.org>,
-        Debian Kernel Team <debian-kernel@lists.debian.org>
-Subject: Re: Random panic in load_balance() with 3.16-rc
-Message-ID: <20140726193557.GA21842@x4>
-References: <20140723190230.GH3935@laptop>
- <CA+55aFyM1wqTLK0m4GQJ28f=z0iZE87=xk+1z-vm+PH1_d8nKw@mail.gmail.com>
- <53D064C7.5050807@daenzer.net>
- <CA+55aFyJhqiPv0kQ+51=Ei-zaAO+0JszxtnEyx-Gbto3SE00xw@mail.gmail.com>
- <53D1B1EF.7030603@daenzer.net>
- <20140725035527.GA30108@pg-vmw-gw1>
- <20140725140237.GB32669@home.goodmis.org>
- <CA+55aFzOoJzqJ=4RVPEBfscA8oRdr5Nv7fKx9aXYw2+frkuhwA@mail.gmail.com>
- <CA+55aFyHU4Gwk6ASTuOgh3eFPshkgy1s5zc4p7f01DwrYddFOw@mail.gmail.com>
- <CA+55aFxaXPqyDJv-SNu6Giy3eKCu_SY1wof1NaNnPTbtF9RbXQ@mail.gmail.com>
+	Sat, 26 Jul 2014 15:13:08 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [PATCH 3.14 74/87] drm/radeon: avoid leaking edid data
+Date: Sat, 26 Jul 2014 12:02:48 -0700
+Message-Id: <20140726190217.014440954@linuxfoundation.org>
+X-Mailer: git-send-email 2.0.2
+In-Reply-To: <20140726190214.530473925@linuxfoundation.org>
+References: <20140726190214.530473925@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFxaXPqyDJv-SNu6Giy3eKCu_SY1wof1NaNnPTbtF9RbXQ@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014.07.26 at 11:39 -0700, Linus Torvalds wrote:
-> On Sat, Jul 26, 2014 at 11:28 AM, Linus Torvalds
-> <torvalds@linux-foundation.org> wrote:
-> >
-> > That's a bit worrisome. I haven't actually checked if the code
-> > generation differs in significant ways yet..
-> 
-> Nope. Just three instructions that got re-ordered from ABC to CAB in a
-> way that makes no difference. But just the knowledge that "-g" affects
-> code generation is nasty.  And with "allmodconfig" my build fails
-> almost immediately (failures on at least arch/x86/kernel/process_64.c,
-> kernel/exit.c and mm/vmalloc.c in that case. I was too lazy to check
-> what the differences were).
-> 
-> Does anybody have current gcc build and can verify that current gcc
-> tip passes the kernel compile with that
-> 
->     export GCC_COMPARE_DEBUG=1
-> 
-> thing?
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
-The fs/ext4/inode.c issue is a variant of the gcc bug and isn't fixed
-yet. I will open a bug report. The kernel/exit.c issue is already fixed,
-see https://gcc.gnu.org/bugzilla/show_bug.cgi?id=61801 for a reduced
-testcase. 
+------------------
 
-But fortunately the workaround for the new inode.c bug is the same as
-for the original bug: -fno-var-tracking-assignments. 
+From: Alex Deucher <alexander.deucher@amd.com>
 
-It would make sense to enabled it unconditionally for all debug
-configurations for now.
+commit 0ac66effe7fcdee55bda6d5d10d3372c95a41920 upstream.
 
--- 
-Markus
+In some cases we fetch the edid in the detect() callback
+in order to determine what sort of monitor is connected.
+If that happens, don't fetch the edid again in the get_modes()
+callback or we will leak the edid.
+
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/gpu/drm/radeon/radeon_display.c |    5 +++++
+ 1 file changed, 5 insertions(+)
+
+--- a/drivers/gpu/drm/radeon/radeon_display.c
++++ b/drivers/gpu/drm/radeon/radeon_display.c
+@@ -755,6 +755,10 @@ int radeon_ddc_get_modes(struct radeon_c
+ 	struct radeon_device *rdev = dev->dev_private;
+ 	int ret = 0;
+ 
++	/* don't leak the edid if we already fetched it in detect() */
++	if (radeon_connector->edid)
++		goto got_edid;
++
+ 	/* on hw with routers, select right port */
+ 	if (radeon_connector->router.ddc_valid)
+ 		radeon_router_select_ddc_port(radeon_connector);
+@@ -794,6 +798,7 @@ int radeon_ddc_get_modes(struct radeon_c
+ 			radeon_connector->edid = radeon_bios_get_hardcoded_edid(rdev);
+ 	}
+ 	if (radeon_connector->edid) {
++got_edid:
+ 		drm_mode_connector_update_edid_property(&radeon_connector->base, radeon_connector->edid);
+ 		ret = drm_add_edid_modes(&radeon_connector->base, radeon_connector->edid);
+ 		drm_edid_to_eld(&radeon_connector->base, radeon_connector->edid);
+
+
