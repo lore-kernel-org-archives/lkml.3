@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755136AbaGZTvl (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 15:51:41 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34127 "EHLO
+	id S1755489AbaGZTwB (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 15:52:01 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34143 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753878AbaGZTND (ORCPT
+	with ESMTP id S1753865AbaGZTNC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 15:13:03 -0400
+	Sat, 26 Jul 2014 15:13:02 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sowmini Varadhan <sowmini.varadhan@oracle.com>,
-        Dave Kleikamp <dave.kleikamp@oracle.com>,
-        Karl Volz <karl.volz@oracle.com>,
+        Christoph Schulz <develop@kristov.de>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 60/87] sunvnet: clean up objects created in vnet_new() on vnet_exit()
-Date: Sat, 26 Jul 2014 12:02:34 -0700
-Message-Id: <20140726190216.570388862@linuxfoundation.org>
+Subject: [PATCH 3.14 57/87] net: pppoe: use correct channel MTU when using Multilink PPP
+Date: Sat, 26 Jul 2014 12:02:31 -0700
+Message-Id: <20140726190216.474760583@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.2
 In-Reply-To: <20140726190214.530473925@linuxfoundation.org>
 References: <20140726190214.530473925@linuxfoundation.org>
@@ -31,69 +29,129 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sowmini Varadhan <sowmini.varadhan@oracle.com>
+From: Christoph Schulz <develop@kristov.de>
 
-[ Upstream commit a4b70a07ed12a71131cab7adce2ce91c71b37060 ]
+[ Upstream commit a8a3e41c67d24eb12f9ab9680cbb85e24fcd9711 ]
 
-Nothing cleans up the objects created by
-vnet_new(), they are completely leaked.
+The PPP channel MTU is used with Multilink PPP when ppp_mp_explode() (see
+ppp_generic module) tries to determine how big a fragment might be. According
+to RFC 1661, the MTU excludes the 2-byte PPP protocol field, see the
+corresponding comment and code in ppp_mp_explode():
 
-vnet_exit(), after doing the vio_unregister_driver() to clean
-up ports, should call a helper function that iterates over vnet_list
-and cleans up those objects. This includes unregister_netdevice()
-as well as free_netdev().
+		/*
+		 * hdrlen includes the 2-byte PPP protocol field, but the
+		 * MTU counts only the payload excluding the protocol field.
+		 * (RFC1661 Section 2)
+		 */
+		mtu = pch->chan->mtu - (hdrlen - 2);
 
-Signed-off-by: Sowmini Varadhan <sowmini.varadhan@oracle.com>
-Acked-by: Dave Kleikamp <dave.kleikamp@oracle.com>
-Reviewed-by: Karl Volz <karl.volz@oracle.com>
+However, the pppoe module *does* include the PPP protocol field in the channel
+MTU, which is wrong as it causes the PPP payload to be 1-2 bytes too big under
+certain circumstances (one byte if PPP protocol compression is used, two
+otherwise), causing the generated Ethernet packets to be dropped. So the pppoe
+module has to subtract two bytes from the channel MTU. This error only
+manifests itself when using Multilink PPP, as otherwise the channel MTU is not
+used anywhere.
+
+In the following, I will describe how to reproduce this bug. We configure two
+pppd instances for multilink PPP over two PPPoE links, say eth2 and eth3, with
+a MTU of 1492 bytes for each link and a MRRU of 2976 bytes. (This MRRU is
+computed by adding the two link MTUs and subtracting the MP header twice, which
+is 4 bytes long.) The necessary pppd statements on both sides are "multilink
+mtu 1492 mru 1492 mrru 2976". On the client side, we additionally need "plugin
+rp-pppoe.so eth2" and "plugin rp-pppoe.so eth3", respectively; on the server
+side, we additionally need to start two pppoe-server instances to be able to
+establish two PPPoE sessions, one over eth2 and one over eth3. We set the MTU
+of the PPP network interface to the MRRU (2976) on both sides of the connection
+in order to make use of the higher bandwidth. (If we didn't do that, IP
+fragmentation would kick in, which we want to avoid.)
+
+Now we send a ICMPv4 echo request with a payload of 2948 bytes from client to
+server over the PPP link. This results in the following network packet:
+
+   2948 (echo payload)
+ +    8 (ICMPv4 header)
+ +   20 (IPv4 header)
+---------------------
+   2976 (PPP payload)
+
+These 2976 bytes do not exceed the MTU of the PPP network interface, so the
+IP packet is not fragmented. Now the multilink PPP code in ppp_mp_explode()
+prepends one protocol byte (0x21 for IPv4), making the packet one byte bigger
+than the negotiated MRRU. So this packet would have to be divided in three
+fragments. But this does not happen as each link MTU is assumed to be two bytes
+larger. So this packet is diveded into two fragments only, one of size 1489 and
+one of size 1488. Now we have for that bigger fragment:
+
+   1489 (PPP payload)
+ +    4 (MP header)
+ +    2 (PPP protocol field for the MP payload (0x3d))
+ +    6 (PPPoE header)
+--------------------------
+   1501 (Ethernet payload)
+
+This packet exceeds the link MTU and is discarded.
+
+If one configures the link MTU on the client side to 1501, one can see the
+discarded Ethernet frames with tcpdump running on the client. A
+
+ping -s 2948 -c 1 192.168.15.254
+
+leads to the smaller fragment that is correctly received on the server side:
+
+(tcpdump -vvvne -i eth3 pppoes and ppp proto 0x3d)
+52:54:00:ad:87:fd > 52:54:00:79:5c:d0, ethertype PPPoE S (0x8864),
+  length 1514: PPPoE  [ses 0x3] MLPPP (0x003d), length 1494: seq 0x000,
+  Flags [end], length 1492
+
+and to the bigger fragment that is not received on the server side:
+
+(tcpdump -vvvne -i eth2 pppoes and ppp proto 0x3d)
+52:54:00:70:9e:89 > 52:54:00:5d:6f:b0, ethertype PPPoE S (0x8864),
+  length 1515: PPPoE  [ses 0x5] MLPPP (0x003d), length 1495: seq 0x000,
+  Flags [begin], length 1493
+
+With the patch below, we correctly obtain three fragments:
+
+52:54:00:ad:87:fd > 52:54:00:79:5c:d0, ethertype PPPoE S (0x8864),
+  length 1514: PPPoE  [ses 0x1] MLPPP (0x003d), length 1494: seq 0x000,
+  Flags [begin], length 1492
+52:54:00:70:9e:89 > 52:54:00:5d:6f:b0, ethertype PPPoE S (0x8864),
+  length 1514: PPPoE  [ses 0x1] MLPPP (0x003d), length 1494: seq 0x000,
+  Flags [none], length 1492
+52:54:00:ad:87:fd > 52:54:00:79:5c:d0, ethertype PPPoE S (0x8864),
+  length 27: PPPoE  [ses 0x1] MLPPP (0x003d), length 7: seq 0x000,
+  Flags [end], length 5
+
+And the ICMPv4 echo request is successfully received at the server side:
+
+IP (tos 0x0, ttl 64, id 21925, offset 0, flags [DF], proto ICMP (1),
+  length 2976)
+    192.168.222.2 > 192.168.15.254: ICMP echo request, id 30530, seq 0,
+      length 2956
+
+The bug was introduced in commit c9aa6895371b2a257401f59d3393c9f7ac5a8698
+("[PPPOE]: Advertise PPPoE MTU") from the very beginning. This patch applies
+to 3.10 upwards but the fix can be applied (with minor modifications) to
+kernels as old as 2.6.32.
+
+Signed-off-by: Christoph Schulz <develop@kristov.de>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/ethernet/sun/sunvnet.c |   20 +++++++++++++++++++-
- 1 file changed, 19 insertions(+), 1 deletion(-)
+ drivers/net/ppp/pppoe.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/ethernet/sun/sunvnet.c
-+++ b/drivers/net/ethernet/sun/sunvnet.c
-@@ -1083,6 +1083,24 @@ static struct vnet *vnet_find_or_create(
- 	return vp;
- }
+--- a/drivers/net/ppp/pppoe.c
++++ b/drivers/net/ppp/pppoe.c
+@@ -675,7 +675,7 @@ static int pppoe_connect(struct socket *
+ 		po->chan.hdrlen = (sizeof(struct pppoe_hdr) +
+ 				   dev->hard_header_len);
  
-+static void vnet_cleanup(void)
-+{
-+	struct vnet *vp;
-+	struct net_device *dev;
-+
-+	mutex_lock(&vnet_list_mutex);
-+	while (!list_empty(&vnet_list)) {
-+		vp = list_first_entry(&vnet_list, struct vnet, list);
-+		list_del(&vp->list);
-+		dev = vp->dev;
-+		/* vio_unregister_driver() should have cleaned up port_list */
-+		BUG_ON(!list_empty(&vp->port_list));
-+		unregister_netdev(dev);
-+		free_netdev(dev);
-+	}
-+	mutex_unlock(&vnet_list_mutex);
-+}
-+
- static const char *local_mac_prop = "local-mac-address";
+-		po->chan.mtu = dev->mtu - sizeof(struct pppoe_hdr);
++		po->chan.mtu = dev->mtu - sizeof(struct pppoe_hdr) - 2;
+ 		po->chan.private = sk;
+ 		po->chan.ops = &pppoe_chan_ops;
  
- static struct vnet *vnet_find_parent(struct mdesc_handle *hp,
-@@ -1240,7 +1258,6 @@ static int vnet_port_remove(struct vio_d
- 
- 		kfree(port);
- 
--		unregister_netdev(vp->dev);
- 	}
- 	return 0;
- }
-@@ -1268,6 +1285,7 @@ static int __init vnet_init(void)
- static void __exit vnet_exit(void)
- {
- 	vio_unregister_driver(&vnet_port_driver);
-+	vnet_cleanup();
- }
- 
- module_init(vnet_init);
 
 
