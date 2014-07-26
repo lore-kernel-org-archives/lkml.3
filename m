@@ -1,62 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753196AbaGZA17 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 20:27:59 -0400
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:60606 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751199AbaGZA16 (ORCPT
+	id S1753604AbaGZAab (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 20:30:31 -0400
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:55248 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751772AbaGZAa3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 20:27:58 -0400
-Date: Fri, 25 Jul 2014 17:27:53 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: linux-input@vger.kernel.org
-Cc: Hans de Goede <hdegoede@redhat.com>,
-        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
-        Benson Leung <bleung@chromium.org>,
-        Henrik Rydberg <rydberg@euromail.se>, linux-kernel@vger.kernel.org
-Subject: [PATCH] Input: synaptics - properly initialize slots for semi-MT
-Message-ID: <20140726002751.GA16660@core.coreip.homeip.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 25 Jul 2014 20:30:29 -0400
+Message-ID: <1406334557.5276.13.camel@popy-debian>
+Subject: Re: [PATCH 1/1] neighbour : fix ndm_type type error issue
+From: Jun Zhao <mypopydev@gmail.com>
+To: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Cong Wang <cwang@twopensource.com>,
+        Pravin B Shelar <pshelar@nicira.com>,
+        Nicolas Dichtel <nicolas.dichtel@6wind.com>,
+        stephen hemminger <stephen@networkplumber.org>,
+        Tom Herbert <therbert@google.com>, netdev@vger.kernel.org,
+        Francesco Fusco <ffusco@redhat.com>,
+        Veaceslav Falico <vfalico@redhat.com>,
+        Duan Jiong <duanj.fnst@cn.fujitsu.com>, Jiri Pirko <jiri@resnulli.us>,
+        David Stevens <dlstevens@us.ibm.com>,
+        Or Gerlitz <ogerlitz@mellanox.com>,
+        Daniel Borkmann <dborkman@redhat.com>, linux-kernel@vger.kernel.org
+Date: Sat, 26 Jul 2014 08:29:17 +0800
+In-Reply-To: <1406330697.989.145785925.1CA960AF@webmail.messagingengine.com>
+References: <1406306339-16151-1-git-send-email-mypopydev@gmail.com>
+	 <1406330697.989.145785925.1CA960AF@webmail.messagingengine.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Semi-MT devices are pointers too, so let's tell that to
-input_mt_init_slots(), as well as let it set up the devices as semi-MT,
-instead of us doing it manually.
+On Sat, 2014-07-26 at 01:24 +0200, Hannes Frederic Sowa wrote:
+> On Fri, Jul 25, 2014, at 18:38, Jun Zhao wrote:
+> > ndm_type means L3 address type, in neighbour proxy and vxlan, it's
+> > RTN_UNICAST.
+> > NDA_DST is for netlink TLV type, hence it's not right value in this
+> > context.
+> 
+> The value of NDA_DST == RTN_UNICAST, otherwise we couldn't do this
+> change as it would alter e.g. arpd behavior.
+> 
+> Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+> 
+> Thanks,
+> Hannes
 
-Reviewed-by: Daniel Kurtz <djkurtz@chromium.org>
-Reviewed-by: Benson Leung <bleung@chromium.org>
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
----
- drivers/input/mouse/synaptics.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+But I think NDA_DST/RTN_UNICAST have different means in this context, 
+even though the value of NDA_DST == RTN_UNICAST.
 
-diff --git a/drivers/input/mouse/synaptics.c b/drivers/input/mouse/synaptics.c
-index ef9e0b8..fe607e9 100644
---- a/drivers/input/mouse/synaptics.c
-+++ b/drivers/input/mouse/synaptics.c
-@@ -1371,11 +1371,11 @@ static void set_input_params(struct psmouse *psmouse,
- 		__set_bit(BTN_TOOL_QUADTAP, dev->keybit);
- 		__set_bit(BTN_TOOL_QUINTTAP, dev->keybit);
- 	} else if (SYN_CAP_ADV_GESTURE(priv->ext_cap_0c)) {
--		/* Non-image sensors with AGM use semi-mt */
--		__set_bit(INPUT_PROP_SEMI_MT, dev->propbit);
--		input_mt_init_slots(dev, 2, 0);
- 		set_abs_position_params(dev, priv, ABS_MT_POSITION_X,
- 					ABS_MT_POSITION_Y);
-+		/* Non-image sensors with AGM use semi-mt */
-+		input_mt_init_slots(dev, 2,
-+				    INPUT_MT_POINTER | INPUT_MT_SEMI_MT);
- 	}
- 
- 	if (SYN_CAP_PALMDETECT(priv->capabilities))
--- 
-2.0.0.526.g5318336
+For arp proxy/NDP proxy context, ndm_type means the peer L3 address,
+so RTN_UNICAST is the right value. For vxlan have similar semantic for
+remote ip.
+
+BTW: In the source code, implicit think NDA_DST == RTN_UNICAST maybe
+not a good idea when we don't have a comment or the other explain.
 
 
--- 
-Dmitry
