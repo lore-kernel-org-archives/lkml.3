@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754401AbaGZTyO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 15:54:14 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34123 "EHLO
+	id S1753562AbaGZTKs (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 15:10:48 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34036 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753847AbaGZTNA (ORCPT
+	with ESMTP id S1752684AbaGZTKo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 15:13:00 -0400
+	Sat, 26 Jul 2014 15:10:44 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ben Pfaff <blp@nicira.com>, "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 53/87] netlink: Fix handling of error from netlink_dump().
-Date: Sat, 26 Jul 2014 12:02:27 -0700
-Message-Id: <20140726190216.338020981@linuxfoundation.org>
+        Dmitry Popov <ixaphire@qrator.net>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.14 29/87] ip_tunnel: fix ip_tunnel_lookup
+Date: Sat, 26 Jul 2014 12:02:03 -0700
+Message-Id: <20140726190215.472650278@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.2
 In-Reply-To: <20140726190214.530473925@linuxfoundation.org>
 References: <20140726190214.530473925@linuxfoundation.org>
@@ -28,52 +29,95 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Pfaff <blp@nicira.com>
+From: Dmitry Popov <ixaphire@qrator.net>
 
-[ Upstream commit ac30ef832e6af0505b6f0251a6659adcfa74975e ]
+[ Upstream commit e0056593b61253f1a8a9941dacda22e73b963cdc ]
 
-netlink_dump() returns a negative errno value on error.  Until now,
-netlink_recvmsg() directly recorded that negative value in sk->sk_err, but
-that's wrong since sk_err takes positive errno values.  (This manifests as
-userspace receiving a positive return value from the recv() system call,
-falsely indicating success.) This bug was introduced in the commit that
-started checking the netlink_dump() return value, commit b44d211 (netlink:
-handle errors from netlink_dump()).
+This patch fixes 3 similar bugs where incoming packets might be routed into
+wrong non-wildcard tunnels:
 
-Multithreaded Netlink dumps are one way to trigger this behavior in
-practice, as described in the commit message for the userspace workaround
-posted here:
-    http://openvswitch.org/pipermail/dev/2014-June/042339.html
+1) Consider the following setup:
+    ip address add 1.1.1.1/24 dev eth0
+    ip address add 1.1.1.2/24 dev eth0
+    ip tunnel add ipip1 remote 2.2.2.2 local 1.1.1.1 mode ipip dev eth0
+    ip link set ipip1 up
 
-This commit also fixes the same bug in netlink_poll(), introduced in commit
-cd1df525d (netlink: add flow control for memory mapped I/O).
+Incoming ipip packets from 2.2.2.2 were routed into ipip1 even if it has dst =
+1.1.1.2. Moreover even if there was wildcard tunnel like
+   ip tunnel add ipip0 remote 2.2.2.2 local any mode ipip dev eth0
+but it was created before explicit one (with local 1.1.1.1), incoming ipip
+packets with src = 2.2.2.2 and dst = 1.1.1.2 were still routed into ipip1.
 
-Signed-off-by: Ben Pfaff <blp@nicira.com>
+Same issue existed with all tunnels that use ip_tunnel_lookup (gre, vti)
+
+2)  ip address add 1.1.1.1/24 dev eth0
+    ip tunnel add ipip1 remote 2.2.146.85 local 1.1.1.1 mode ipip dev eth0
+    ip link set ipip1 up
+
+Incoming ipip packets with dst = 1.1.1.1 were routed into ipip1, no matter what
+src address is. Any remote ip address which has ip_tunnel_hash = 0 raised this
+issue, 2.2.146.85 is just an example, there are more than 4 million of them.
+And again, wildcard tunnel like
+   ip tunnel add ipip0 remote any local 1.1.1.1 mode ipip dev eth0
+wouldn't be ever matched if it was created before explicit tunnel like above.
+
+Gre & vti tunnels had the same issue.
+
+3)  ip address add 1.1.1.1/24 dev eth0
+    ip tunnel add gre1 remote 2.2.146.84 local 1.1.1.1 key 1 mode gre dev eth0
+    ip link set gre1 up
+
+Any incoming gre packet with key = 1 were routed into gre1, no matter what
+src/dst addresses are. Any remote ip address which has ip_tunnel_hash = 0 raised
+the issue, 2.2.146.84 is just an example, there are more than 4 million of them.
+Wildcard tunnel like
+   ip tunnel add gre2 remote any local any key 1 mode gre dev eth0
+wouldn't be ever matched if it was created before explicit tunnel like above.
+
+All this stuff happened because while looking for a wildcard tunnel we didn't
+check that matched tunnel is a wildcard one. Fixed.
+
+Signed-off-by: Dmitry Popov <ixaphire@qrator.net>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/netlink/af_netlink.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ net/ipv4/ip_tunnel.c |   12 ++++++++----
+ 1 file changed, 8 insertions(+), 4 deletions(-)
 
---- a/net/netlink/af_netlink.c
-+++ b/net/netlink/af_netlink.c
-@@ -636,7 +636,7 @@ static unsigned int netlink_poll(struct
- 		while (nlk->cb_running && netlink_dump_space(nlk)) {
- 			err = netlink_dump(sk);
- 			if (err < 0) {
--				sk->sk_err = err;
-+				sk->sk_err = -err;
- 				sk->sk_error_report(sk);
- 				break;
- 			}
-@@ -2448,7 +2448,7 @@ static int netlink_recvmsg(struct kiocb
- 	    atomic_read(&sk->sk_rmem_alloc) <= sk->sk_rcvbuf / 2) {
- 		ret = netlink_dump(sk);
- 		if (ret) {
--			sk->sk_err = ret;
-+			sk->sk_err = -ret;
- 			sk->sk_error_report(sk);
- 		}
- 	}
+--- a/net/ipv4/ip_tunnel.c
++++ b/net/ipv4/ip_tunnel.c
+@@ -173,6 +173,7 @@ struct ip_tunnel *ip_tunnel_lookup(struc
+ 
+ 	hlist_for_each_entry_rcu(t, head, hash_node) {
+ 		if (remote != t->parms.iph.daddr ||
++		    t->parms.iph.saddr != 0 ||
+ 		    !(t->dev->flags & IFF_UP))
+ 			continue;
+ 
+@@ -189,10 +190,11 @@ struct ip_tunnel *ip_tunnel_lookup(struc
+ 	head = &itn->tunnels[hash];
+ 
+ 	hlist_for_each_entry_rcu(t, head, hash_node) {
+-		if ((local != t->parms.iph.saddr &&
+-		     (local != t->parms.iph.daddr ||
+-		      !ipv4_is_multicast(local))) ||
+-		    !(t->dev->flags & IFF_UP))
++		if ((local != t->parms.iph.saddr || t->parms.iph.daddr != 0) &&
++		    (local != t->parms.iph.daddr || !ipv4_is_multicast(local)))
++			continue;
++
++		if (!(t->dev->flags & IFF_UP))
+ 			continue;
+ 
+ 		if (!ip_tunnel_key_match(&t->parms, flags, key))
+@@ -209,6 +211,8 @@ struct ip_tunnel *ip_tunnel_lookup(struc
+ 
+ 	hlist_for_each_entry_rcu(t, head, hash_node) {
+ 		if (t->parms.i_key != key ||
++		    t->parms.iph.saddr != 0 ||
++		    t->parms.iph.daddr != 0 ||
+ 		    !(t->dev->flags & IFF_UP))
+ 			continue;
+ 
 
 
