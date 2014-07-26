@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755921AbaGZUAl (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 16:00:41 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33752 "EHLO
+	id S1756210AbaGZUAn (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 16:00:43 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33783 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752758AbaGZTDJ (ORCPT
+	with ESMTP id S1752756AbaGZTDI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 15:03:09 -0400
+	Sat, 26 Jul 2014 15:03:08 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Maggie Mae Roxas <maggie.mae.roxas@gmail.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Yuchung Cheng <ycheng@google.com>,
+        Neal Cardwell <ncardwell@google.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 31/56] net: mvneta: fix operation in 10 Mbit/s mode
-Date: Sat, 26 Jul 2014 12:02:24 -0700
-Message-Id: <20140726190201.043238054@linuxfoundation.org>
+Subject: [PATCH 3.10 29/56] tcp: fix false undo corner cases
+Date: Sat, 26 Jul 2014 12:02:22 -0700
+Message-Id: <20140726190200.979089912@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.2
 In-Reply-To: <20140726190200.061512159@linuxfoundation.org>
 References: <20140726190200.061512159@linuxfoundation.org>
@@ -30,45 +30,96 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+From: Yuchung Cheng <ycheng@google.com>
 
-[ Upstream commit 4d12bc63ab5e48c1d78fa13883cf6fefcea3afb1 ]
+[ Upstream commit 6e08d5e3c8236e7484229e46fdf92006e1dd4c49 ]
 
-As reported by Maggie Mae Roxas, the mvneta driver doesn't behave
-properly in 10 Mbit/s mode. This is due to a misconfiguration of the
-MVNETA_GMAC_AUTONEG_CONFIG register: bit MVNETA_GMAC_CONFIG_MII_SPEED
-must be set for a 100 Mbit/s speed, but cleared for a 10 Mbit/s speed,
-which the driver was not properly doing. This commit adjusts that by
-setting the MVNETA_GMAC_CONFIG_MII_SPEED bit only in 100 Mbit/s mode,
-and relying on the fact that all the speed related bits of this
-register are cleared at the beginning of the mvneta_adjust_link()
-function.
+The undo code assumes that, upon entering loss recovery, TCP
+1) always retransmit something
+2) the retransmission never fails locally (e.g., qdisc drop)
 
-This problem exists since c5aff18204da0 ("net: mvneta: driver for
-Marvell Armada 370/XP network unit") which is the commit that
-introduced the mvneta driver in the kernel.
+so undo_marker is set in tcp_enter_recovery() and undo_retrans is
+incremented only when tcp_retransmit_skb() is successful.
 
-Cc: <stable@vger.kernel.org> # v3.8+
-Fixes: c5aff18204da0 ("net: mvneta: driver for Marvell Armada 370/XP network unit")
-Reported-by: Maggie Mae Roxas <maggie.mae.roxas@gmail.com>
-Cc: Maggie Mae Roxas <maggie.mae.roxas@gmail.com>
-Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+When the assumption is broken because TCP's cwnd is too small to
+retransmit or the retransmit fails locally. The next (DUP)ACK
+would incorrectly revert the cwnd and the congestion state in
+tcp_try_undo_dsack() or tcp_may_undo(). Subsequent (DUP)ACKs
+may enter the recovery state. The sender repeatedly enter and
+(incorrectly) exit recovery states if the retransmits continue to
+fail locally while receiving (DUP)ACKs.
+
+The fix is to initialize undo_retrans to -1 and start counting on
+the first retransmission. Always increment undo_retrans even if the
+retransmissions fail locally because they couldn't cause DSACKs to
+undo the cwnd reduction.
+
+Signed-off-by: Yuchung Cheng <ycheng@google.com>
+Signed-off-by: Neal Cardwell <ncardwell@google.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/ethernet/marvell/mvneta.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/ipv4/tcp_input.c  |    8 ++++----
+ net/ipv4/tcp_output.c |    6 ++++--
+ 2 files changed, 8 insertions(+), 6 deletions(-)
 
---- a/drivers/net/ethernet/marvell/mvneta.c
-+++ b/drivers/net/ethernet/marvell/mvneta.c
-@@ -2306,7 +2306,7 @@ static void mvneta_adjust_link(struct ne
+--- a/net/ipv4/tcp_input.c
++++ b/net/ipv4/tcp_input.c
+@@ -1075,7 +1075,7 @@ static bool tcp_check_dsack(struct sock
+ 	}
  
- 			if (phydev->speed == SPEED_1000)
- 				val |= MVNETA_GMAC_CONFIG_GMII_SPEED;
--			else
-+			else if (phydev->speed == SPEED_100)
- 				val |= MVNETA_GMAC_CONFIG_MII_SPEED;
+ 	/* D-SACK for already forgotten data... Do dumb counting. */
+-	if (dup_sack && tp->undo_marker && tp->undo_retrans &&
++	if (dup_sack && tp->undo_marker && tp->undo_retrans > 0 &&
+ 	    !after(end_seq_0, prior_snd_una) &&
+ 	    after(end_seq_0, tp->undo_marker))
+ 		tp->undo_retrans--;
+@@ -1154,7 +1154,7 @@ static u8 tcp_sacktag_one(struct sock *s
  
- 			mvreg_write(pp, MVNETA_GMAC_AUTONEG_CONFIG, val);
+ 	/* Account D-SACK for retransmitted packet. */
+ 	if (dup_sack && (sacked & TCPCB_RETRANS)) {
+-		if (tp->undo_marker && tp->undo_retrans &&
++		if (tp->undo_marker && tp->undo_retrans > 0 &&
+ 		    after(end_seq, tp->undo_marker))
+ 			tp->undo_retrans--;
+ 		if (sacked & TCPCB_SACKED_ACKED)
+@@ -1850,7 +1850,7 @@ static void tcp_clear_retrans_partial(st
+ 	tp->lost_out = 0;
+ 
+ 	tp->undo_marker = 0;
+-	tp->undo_retrans = 0;
++	tp->undo_retrans = -1;
+ }
+ 
+ void tcp_clear_retrans(struct tcp_sock *tp)
+@@ -2700,7 +2700,7 @@ static void tcp_enter_recovery(struct so
+ 
+ 	tp->prior_ssthresh = 0;
+ 	tp->undo_marker = tp->snd_una;
+-	tp->undo_retrans = tp->retrans_out;
++	tp->undo_retrans = tp->retrans_out ? : -1;
+ 
+ 	if (inet_csk(sk)->icsk_ca_state < TCP_CA_CWR) {
+ 		if (!ece_ack)
+--- a/net/ipv4/tcp_output.c
++++ b/net/ipv4/tcp_output.c
+@@ -2428,13 +2428,15 @@ int tcp_retransmit_skb(struct sock *sk,
+ 		if (!tp->retrans_stamp)
+ 			tp->retrans_stamp = TCP_SKB_CB(skb)->when;
+ 
+-		tp->undo_retrans += tcp_skb_pcount(skb);
+-
+ 		/* snd_nxt is stored to detect loss of retransmitted segment,
+ 		 * see tcp_input.c tcp_sacktag_write_queue().
+ 		 */
+ 		TCP_SKB_CB(skb)->ack_seq = tp->snd_nxt;
+ 	}
++
++	if (tp->undo_retrans < 0)
++		tp->undo_retrans = 0;
++	tp->undo_retrans += tcp_skb_pcount(skb);
+ 	return err;
+ }
+ 
 
 
