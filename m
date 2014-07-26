@@ -1,77 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751614AbaGZOOA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 10:14:00 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:59510 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751244AbaGZON7 (ORCPT
+	id S1751703AbaGZOOx (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 10:14:53 -0400
+Received: from smtprelay04.ispgateway.de ([80.67.31.38]:54215 "EHLO
+	smtprelay04.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751283AbaGZOOv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 10:13:59 -0400
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Herbert Xu <herbert@gondor.apana.org.au>,
-        "David S. Miller" <davem@davemloft.net>
-Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] crypto: crypto_user.c:  Cleaning up missing null-terminate in conjunction with strncpy
-Date: Sat, 26 Jul 2014 16:15:25 +0200
-Message-Id: <1406384125-2093-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-X-Mailer: git-send-email 1.7.10.4
+	Sat, 26 Jul 2014 10:14:51 -0400
+References: <1398561815-22033-1-git-send-email-peter@piie.net> <1406043436-17068-1-git-send-email-peter@piie.net> <1406043436-17068-4-git-send-email-peter@piie.net>
+Message-ID: <cone.1406384086.541895.7413.1000@galar>
+X-Mailer: http://www.courier-mta.org/cone/
+From: Peter Feuerer <peter@piie.net>
+To: Peter Feuerer <peter@piie.net>, Zhang Rui <rui.zhang@intel.com>,
+        linux-pm@vger.kernel.org
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andreas Mohr <andi@lisas.de>, Borislav Petkov <bp@suse.de>,
+        Javi Merino <javi.merino@arm.com>
+Subject: Re: [PATCH v5 3/6] thermal: Added Bang-bang thermal governor
+Date: Sat, 26 Jul 2014 16:14:46 +0200
+Mime-Version: 1.0
+Content-Type: text/plain; format=flowed; charset="US-ASCII"
+Content-Disposition: inline
+Content-Transfer-Encoding: 7bit
+X-Df-Sender: NDA0MDk0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replacing strncpy with strlcpy to avoid strings that lacks null terminate.
+Hi Rui,
 
-Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
----
- crypto/crypto_user.c |   12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+Peter Feuerer writes:
 
-diff --git a/crypto/crypto_user.c b/crypto/crypto_user.c
-index e2a34fe..09b465e 100644
---- a/crypto/crypto_user.c
-+++ b/crypto/crypto_user.c
-@@ -77,7 +77,7 @@ static int crypto_report_cipher(struct sk_buff *skb, struct crypto_alg *alg)
- {
- 	struct crypto_report_cipher rcipher;
- 
--	strncpy(rcipher.type, "cipher", sizeof(rcipher.type));
-+	strlcpy(rcipher.type, "cipher", sizeof(rcipher.type));
- 
- 	rcipher.blocksize = alg->cra_blocksize;
- 	rcipher.min_keysize = alg->cra_cipher.cia_min_keysize;
-@@ -96,7 +96,7 @@ static int crypto_report_comp(struct sk_buff *skb, struct crypto_alg *alg)
- {
- 	struct crypto_report_comp rcomp;
- 
--	strncpy(rcomp.type, "compression", sizeof(rcomp.type));
-+	strlcpy(rcomp.type, "compression", sizeof(rcomp.type));
- 	if (nla_put(skb, CRYPTOCFGA_REPORT_COMPRESS,
- 		    sizeof(struct crypto_report_comp), &rcomp))
- 		goto nla_put_failure;
-@@ -109,10 +109,10 @@ nla_put_failure:
- static int crypto_report_one(struct crypto_alg *alg,
- 			     struct crypto_user_alg *ualg, struct sk_buff *skb)
- {
--	strncpy(ualg->cru_name, alg->cra_name, sizeof(ualg->cru_name));
--	strncpy(ualg->cru_driver_name, alg->cra_driver_name,
-+	strlcpy(ualg->cru_name, alg->cra_name, sizeof(ualg->cru_name));
-+	strlcpy(ualg->cru_driver_name, alg->cra_driver_name,
- 		sizeof(ualg->cru_driver_name));
--	strncpy(ualg->cru_module_name, module_name(alg->cra_module),
-+	strlcpy(ualg->cru_module_name, module_name(alg->cra_module),
- 		sizeof(ualg->cru_module_name));
- 
- 	ualg->cru_type = 0;
-@@ -125,7 +125,7 @@ static int crypto_report_one(struct crypto_alg *alg,
- 	if (alg->cra_flags & CRYPTO_ALG_LARVAL) {
- 		struct crypto_report_larval rl;
- 
--		strncpy(rl.type, "larval", sizeof(rl.type));
-+		strlcpy(rl.type, "larval", sizeof(rl.type));
- 		if (nla_put(skb, CRYPTOCFGA_REPORT_LARVAL,
- 			    sizeof(struct crypto_report_larval), &rl))
- 			goto nla_put_failure;
+> The bang-bang thermal governor uses a hysteresis to switch abruptly on
+> or off a cooling device.  It is intended to control fans, which can
+> not be throttled but just switched on or off.
+> Bang-bang cannot be set as default governor as it is intended for
+> special devices only.  For those special devices the driver needs to
+> explicitely request it.
+> 
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Zhang Rui <rui.zhang@intel.com>
+
+Anything that prevents you from giving your acked-by?
+
+[...]
+
 -- 
-1.7.10.4
-
+kind regards,
+--peter;
