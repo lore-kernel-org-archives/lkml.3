@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753471AbaGZTJl (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 15:09:41 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33965 "EHLO
+	id S1753488AbaGZTKB (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 15:10:01 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33879 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752139AbaGZTJk (ORCPT
+	with ESMTP id S1752679AbaGZTDM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 15:09:40 -0400
+	Sat, 26 Jul 2014 15:03:12 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tyler Hall <tylerwhall@gmail.com>,
-        Oliver Hartkopp <socketcan@hartkopp.net>,
-        Andre Naujoks <nautsch2@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 31/87] slcan: Port write_wakeup deadlock fix from slip
-Date: Sat, 26 Jul 2014 12:02:05 -0700
-Message-Id: <20140726190215.533855881@linuxfoundation.org>
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [PATCH 3.14 13/87] tracing: Fix graph tracer with stack tracer on other archs
+Date: Sat, 26 Jul 2014 12:01:47 -0700
+Message-Id: <20140726190214.961975660@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.2
 In-Reply-To: <20140726190214.530473925@linuxfoundation.org>
 References: <20140726190214.530473925@linuxfoundation.org>
@@ -31,120 +28,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tyler Hall <tylerwhall@gmail.com>
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-[ Upstream commit a8e83b17536aad603fbeae4c460f2da0ee9fe6ed ]
+commit 5f8bf2d263a20b986225ae1ed7d6759dc4b93af9 upstream.
 
-The commit "slip: Fix deadlock in write_wakeup" fixes a deadlock caused
-by a change made in both slcan and slip. This is a direct port of that
-fix.
+Running my ftrace tests on PowerPC, it failed the test that checks
+if function_graph tracer is affected by the stack tracer. It was.
+Looking into this, I found that the update_function_graph_func()
+must be called even if the trampoline function is not changed.
+This is because archs like PowerPC do not support ftrace_ops being
+passed by assembly and instead uses a helper function (what the
+trampoline function points to). Since this function is not changed
+even when multiple ftrace_ops are added to the code, the test that
+falls out before calling update_function_graph_func() will miss that
+the update must still be done.
 
-Signed-off-by: Tyler Hall <tylerwhall@gmail.com>
-Cc: Oliver Hartkopp <socketcan@hartkopp.net>
-Cc: Andre Naujoks <nautsch2@gmail.com>
-Cc: David S. Miller <davem@davemloft.net>
-Cc: linux-kernel@vger.kernel.org
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Call update_function_graph_function() for all calls to
+update_ftrace_function()
+
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/net/can/slcan.c |   41 +++++++++++++++++++++++++++++------------
- 1 file changed, 29 insertions(+), 12 deletions(-)
 
---- a/drivers/net/can/slcan.c
-+++ b/drivers/net/can/slcan.c
-@@ -52,6 +52,7 @@
- #include <linux/delay.h>
- #include <linux/init.h>
- #include <linux/kernel.h>
-+#include <linux/workqueue.h>
- #include <linux/can.h>
- #include <linux/can/skb.h>
- 
-@@ -85,6 +86,7 @@ struct slcan {
- 	struct tty_struct	*tty;		/* ptr to TTY structure	     */
- 	struct net_device	*dev;		/* easy for intr handling    */
- 	spinlock_t		lock;
-+	struct work_struct	tx_work;	/* Flushes transmit buffer   */
- 
- 	/* These are pointers to the malloc()ed frame buffers. */
- 	unsigned char		rbuff[SLC_MTU];	/* receiver buffer	     */
-@@ -309,34 +311,44 @@ static void slc_encaps(struct slcan *sl,
- 	sl->dev->stats.tx_bytes += cf->can_dlc;
- }
- 
--/*
-- * Called by the driver when there's room for more data.  If we have
-- * more packets to send, we send them here.
-- */
--static void slcan_write_wakeup(struct tty_struct *tty)
-+/* Write out any remaining transmit buffer. Scheduled when tty is writable */
-+static void slcan_transmit(struct work_struct *work)
- {
-+	struct slcan *sl = container_of(work, struct slcan, tx_work);
- 	int actual;
--	struct slcan *sl = (struct slcan *) tty->disc_data;
- 
-+	spin_lock_bh(&sl->lock);
- 	/* First make sure we're connected. */
--	if (!sl || sl->magic != SLCAN_MAGIC || !netif_running(sl->dev))
-+	if (!sl->tty || sl->magic != SLCAN_MAGIC || !netif_running(sl->dev)) {
-+		spin_unlock_bh(&sl->lock);
- 		return;
-+	}
- 
--	spin_lock(&sl->lock);
- 	if (sl->xleft <= 0)  {
- 		/* Now serial buffer is almost free & we can start
- 		 * transmission of another packet */
- 		sl->dev->stats.tx_packets++;
--		clear_bit(TTY_DO_WRITE_WAKEUP, &tty->flags);
--		spin_unlock(&sl->lock);
-+		clear_bit(TTY_DO_WRITE_WAKEUP, &sl->tty->flags);
-+		spin_unlock_bh(&sl->lock);
- 		netif_wake_queue(sl->dev);
- 		return;
+---
+ kernel/trace/ftrace.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -331,12 +331,12 @@ static void update_ftrace_function(void)
+ 		func = ftrace_ops_list_func;
  	}
  
--	actual = tty->ops->write(tty, sl->xhead, sl->xleft);
-+	actual = sl->tty->ops->write(sl->tty, sl->xhead, sl->xleft);
- 	sl->xleft -= actual;
- 	sl->xhead += actual;
--	spin_unlock(&sl->lock);
-+	spin_unlock_bh(&sl->lock);
-+}
++	update_function_graph_func();
 +
-+/*
-+ * Called by the driver when there's room for more data.
-+ * Schedule the transmit.
-+ */
-+static void slcan_write_wakeup(struct tty_struct *tty)
-+{
-+	struct slcan *sl = tty->disc_data;
-+
-+	schedule_work(&sl->tx_work);
- }
- 
- /* Send a can_frame to a TTY queue. */
-@@ -522,6 +534,7 @@ static struct slcan *slc_alloc(dev_t lin
- 	sl->magic = SLCAN_MAGIC;
- 	sl->dev	= dev;
- 	spin_lock_init(&sl->lock);
-+	INIT_WORK(&sl->tx_work, slcan_transmit);
- 	slcan_devs[i] = dev;
- 
- 	return sl;
-@@ -620,8 +633,12 @@ static void slcan_close(struct tty_struc
- 	if (!sl || sl->magic != SLCAN_MAGIC || sl->tty != tty)
+ 	/* If there's no change, then do nothing more here */
+ 	if (ftrace_trace_function == func)
  		return;
  
-+	spin_lock_bh(&sl->lock);
- 	tty->disc_data = NULL;
- 	sl->tty = NULL;
-+	spin_unlock_bh(&sl->lock);
-+
-+	flush_work(&sl->tx_work);
- 
- 	/* Flush network side */
- 	unregister_netdev(sl->dev);
+-	update_function_graph_func();
+-
+ 	/*
+ 	 * If we are using the list function, it doesn't care
+ 	 * about the function_trace_ops.
 
 
