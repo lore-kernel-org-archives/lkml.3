@@ -1,64 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751777AbaGZOl5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 10:41:57 -0400
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:49860 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751391AbaGZOlz (ORCPT
+	id S1751936AbaGZOmh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 10:42:37 -0400
+Received: from marmot.wormnet.eu ([188.246.204.87]:38475 "EHLO
+	marmot.wormnet.eu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751717AbaGZOmg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 10:41:55 -0400
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Valentina Manea <valentina.manea.m@gmail.com>
-Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        navin patidar <navinp@cdac.in>, linux-usb@vger.kernel.org,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] staging: usbip: stub_main.c:  Cleaning up missing null-terminate in conjunction with strncpy
-Date: Sat, 26 Jul 2014 16:43:20 +0200
-Message-Id: <1406385801-3757-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-X-Mailer: git-send-email 1.7.10.4
+	Sat, 26 Jul 2014 10:42:36 -0400
+From: Jamie Lentin <jm@lentin.co.uk>
+To: Jiri Kosina <jkosina@suse.cz>, Antonio Ospite <ao2@ao2.it>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jamie Lentin <jm@lentin.co.uk>
+Subject: [PATCH v6 3/4] HID: lenovo: Don't call function in condition, show error codes
+Date: Sat, 26 Jul 2014 15:42:27 +0100
+Message-Id: <1406385747-2444-1-git-send-email-jm@lentin.co.uk>
+X-Mailer: git-send-email 2.0.0
+In-Reply-To: <1406154648-14000-4-git-send-email-jm@lentin.co.uk>
+References: <1406154648-14000-4-git-send-email-jm@lentin.co.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replacing strncpy with strlcpy to avoid strings that lacks null terminate.
-
-Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Signed-off-by: Jamie Lentin <jm@lentin.co.uk>
 ---
- drivers/staging/usbip/stub_main.c |   10 +++-------
- 1 file changed, 3 insertions(+), 7 deletions(-)
+ drivers/hid/hid-lenovo.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/staging/usbip/stub_main.c b/drivers/staging/usbip/stub_main.c
-index 9c5832a..44ab43f 100644
---- a/drivers/staging/usbip/stub_main.c
-+++ b/drivers/staging/usbip/stub_main.c
-@@ -94,7 +94,7 @@ static int add_match_busid(char *busid)
+diff --git a/drivers/hid/hid-lenovo.c b/drivers/hid/hid-lenovo.c
+index a56b9e7..f96bf09 100644
+--- a/drivers/hid/hid-lenovo.c
++++ b/drivers/hid/hid-lenovo.c
+@@ -350,6 +350,7 @@ static int lenovo_probe_tpkbd(struct hid_device *hdev)
+ 	size_t name_sz = strlen(dev_name(dev)) + 16;
+ 	char *name_mute, *name_micmute;
+ 	int i;
++	int ret;
  
- 	for (i = 0; i < MAX_BUSID; i++)
- 		if (!busid_table[i].name[0]) {
--			strncpy(busid_table[i].name, busid, BUSID_SIZE);
-+			strlcpy(busid_table[i].name, busid, BUSID_SIZE);
- 			if ((busid_table[i].status != STUB_BUSID_ALLOC) &&
- 			    (busid_table[i].status != STUB_BUSID_REMOV))
- 				busid_table[i].status = STUB_BUSID_ADDED;
-@@ -158,15 +158,11 @@ static ssize_t store_match_busid(struct device_driver *dev, const char *buf,
- 	if (count < 5)
- 		return -EINVAL;
+ 	/*
+ 	 * Only register extra settings against subdevice where input_mapping
+@@ -368,10 +369,9 @@ static int lenovo_probe_tpkbd(struct hid_device *hdev)
+ 	if (!hid_validate_values(hdev, HID_OUTPUT_REPORT, 3, 0, 2))
+ 		return -ENODEV;
  
--	/* strnlen() does not include \0 */
--	len = strnlen(buf + 4, BUSID_SIZE);
--
- 	/* busid needs to include \0 termination */
--	if (!(len < BUSID_SIZE))
-+	len = strlcpy(busid, buf + 4, BUSID_SIZE);
-+	if (sizeof(busid) <= len)
- 		return -EINVAL;
+-	if (sysfs_create_group(&hdev->dev.kobj,
+-				&lenovo_attr_group_tpkbd)) {
+-		hid_warn(hdev, "Could not create sysfs group\n");
+-	}
++	ret = sysfs_create_group(&hdev->dev.kobj, &lenovo_attr_group_tpkbd);
++	if (ret)
++		hid_warn(hdev, "Could not create sysfs group: %d\n", ret);
  
--	strncpy(busid, buf + 4, BUSID_SIZE);
--
- 	if (!strncmp(buf, "add ", 4)) {
- 		if (add_match_busid(busid) < 0)
- 			return -ENOMEM;
+ 	data_pointer = devm_kzalloc(&hdev->dev,
+ 				    sizeof(struct lenovo_drvdata_tpkbd),
 -- 
-1.7.10.4
+2.0.0
 
