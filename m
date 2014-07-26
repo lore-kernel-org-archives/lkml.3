@@ -1,43 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751282AbaGZIah (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 04:30:37 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:64613 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750832AbaGZIaf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 04:30:35 -0400
-X-Originating-IP: 108.223.40.66
-Message-ID: <53D3672A.20206@roeck-us.net>
-Date: Sat, 26 Jul 2014 01:30:34 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1751308AbaGZIck (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 04:32:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:58200 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750990AbaGZIcj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 Jul 2014 04:32:39 -0400
+Date: Sat, 26 Jul 2014 09:40:50 +0100
+From: Alexander Gordeev <agordeev@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: qla2xxx-upstream@qlogic.com, linux-scsi@vger.kernel.org,
+        linux-pci@vger.kernel.org
+Subject: Re: [PATCH v2 RESEND 21/23] qla2xxx: Use pci_enable_msix_range()
+ instead of pci_enable_msix()
+Message-ID: <20140726084049.GK21129@agordeev.usersys.redhat.com>
+References: <cover.1405533479.git.agordeev@redhat.com>
+ <cf38d1596543fd61c099bc0b834c2ea7a11f8b28.1405533479.git.agordeev@redhat.com>
 MIME-Version: 1.0
-To: Nick Krause <xerofoify@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Bug on Boot of Ubuntu 14.04 with kernel 3.16 r6 release
-References: <CAPDOMVjiT8JKyzLdcFpVVC337p9nC=V66MjePk+1KwNm3owZQg@mail.gmail.com>
-In-Reply-To: <CAPDOMVjiT8JKyzLdcFpVVC337p9nC=V66MjePk+1KwNm3owZQg@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <cf38d1596543fd61c099bc0b834c2ea7a11f8b28.1405533479.git.agordeev@redhat.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/25/2014 06:34 PM, Nick Krause wrote:
-> Hey Guys,
-> After building my first rc kernel. I am sad to state it doesn't
-> boot.It states that it can't find my root uuid for my ssd boot drive.
-> I am using GSP with UEFI, on a Sandy Bridge i5 2500k build I have  had
-> for a few years. The kernel boots and after a few seconds
-> drops to a busybox ash shell stating it can't find my root device. I
-> am using the default Ubuntu build for this and it did boot
-> before with x86_64 defconfig without my sound through. Seems to me an
-> issue with the Ubuntu built kernel and not upstream
-> at least from what I can tell. I will attach my .config to help
-> through or my sound drivers.
+On Wed, Jul 16, 2014 at 08:05:25PM +0200, Alexander Gordeev wrote:
+> As result of deprecation of MSI-X/MSI enablement functions
+> pci_enable_msix() and pci_enable_msi_block() all drivers
+> using these two interfaces need to be updated to use the
+> new pci_enable_msi_range()  or pci_enable_msi_exact()
+> and pci_enable_msix_range() or pci_enable_msix_exact()
+> interfaces.
+> 
+> Log message code 0x00c6 preserved, although it is reported
+> after successful call to pci_enable_msix_range(), not before
+> possibly unsuccessful call to pci_enable_msix(). Consumers
+> of the error code should not notice the difference.
 
-I'd put in a wild guess that you did not install a matching initramfs.
+Hello,
 
-Guenter
+Could someone review this patch, please?
 
+Thanks!
+
+> Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+> Cc: qla2xxx-upstream@qlogic.com
+> Cc: linux-scsi@vger.kernel.org
+> Cc: linux-pci@vger.kernel.org
+> ---
+>  drivers/scsi/qla2xxx/qla_isr.c |   27 +++++++++++----------------
+>  1 files changed, 11 insertions(+), 16 deletions(-)
+> 
+> diff --git a/drivers/scsi/qla2xxx/qla_isr.c b/drivers/scsi/qla2xxx/qla_isr.c
+> index a56825c..52d420f 100644
+> --- a/drivers/scsi/qla2xxx/qla_isr.c
+> +++ b/drivers/scsi/qla2xxx/qla_isr.c
+> @@ -2923,27 +2923,22 @@ qla24xx_enable_msix(struct qla_hw_data *ha, struct rsp_que *rsp)
+>  	for (i = 0; i < ha->msix_count; i++)
+>  		entries[i].entry = i;
+>  
+> -	ret = pci_enable_msix(ha->pdev, entries, ha->msix_count);
+> -	if (ret) {
+> -		if (ret < MIN_MSIX_COUNT)
+> -			goto msix_failed;
+> -
+> +	ret = pci_enable_msix_range(ha->pdev,
+> +				    entries, MIN_MSIX_COUNT, ha->msix_count);
+> +	if (ret < 0) {
+> +		ql_log(ql_log_fatal, vha, 0x00c7,
+> +		    "MSI-X: Failed to enable support, "
+> +		    "giving   up -- %d/%d.\n",
+> +		    ha->msix_count, ret);
+> +		goto msix_out;
+> +	} else if (ret < ha->msix_count) {
+>  		ql_log(ql_log_warn, vha, 0x00c6,
+>  		    "MSI-X: Failed to enable support "
+>  		    "-- %d/%d\n Retry with %d vectors.\n",
+>  		    ha->msix_count, ret, ret);
+> -		ha->msix_count = ret;
+> -		ret = pci_enable_msix(ha->pdev, entries, ha->msix_count);
+> -		if (ret) {
+> -msix_failed:
+> -			ql_log(ql_log_fatal, vha, 0x00c7,
+> -			    "MSI-X: Failed to enable support, "
+> -			    "giving   up -- %d/%d.\n",
+> -			    ha->msix_count, ret);
+> -			goto msix_out;
+> -		}
+> -		ha->max_rsp_queues = ha->msix_count - 1;
+>  	}
+> +	ha->msix_count = ret;
+> +	ha->max_rsp_queues = ha->msix_count - 1;
+>  	ha->msix_entries = kzalloc(sizeof(struct qla_msix_entry) *
+>  				ha->msix_count, GFP_KERNEL);
+>  	if (!ha->msix_entries) {
+> -- 
+> 1.7.7.6
+> 
+
+-- 
+Regards,
+Alexander Gordeev
+agordeev@redhat.com
