@@ -1,36 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751298AbaGZIZY (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 04:25:24 -0400
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:32836 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750940AbaGZIZA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 04:25:00 -0400
-Message-ID: <1406363096.5091.132.camel@marge.simpson.net>
-Subject: Re: Kernel 3.16-rc6 Bug with Sound?
-From: Mike Galbraith <umgwanakikbuti@gmail.com>
-To: Nick Krause <xerofoify@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Date: Sat, 26 Jul 2014 10:24:56 +0200
-In-Reply-To: <CAPDOMVhgNzCMAr_XxVPec=p_hBP4piKLVzw_1O+tUFOxNzzQ0g@mail.gmail.com>
-References: <CAPDOMVhgNzCMAr_XxVPec=p_hBP4piKLVzw_1O+tUFOxNzzQ0g@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1751253AbaGZIZW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 04:25:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27334 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751106AbaGZIZD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 Jul 2014 04:25:03 -0400
+Date: Sat, 26 Jul 2014 09:33:02 +0100
+From: Alexander Gordeev <agordeev@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: xjtuwjp@gmail.com, lindar_liu@usish.com, linux-scsi@vger.kernel.org,
+        linux-pci@vger.kernel.org
+Subject: Re: [PATCH v2 RESEND 18/23] pm8001: Use pci_enable_msix_exact()
+ instead of pci_enable_msix()
+Message-ID: <20140726083301.GI21129@agordeev.usersys.redhat.com>
+References: <cover.1405533479.git.agordeev@redhat.com>
+ <9bfa1f22a2a59814a4d520bbcce6eba1b6979b31.1405533479.git.agordeev@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <9bfa1f22a2a59814a4d520bbcce6eba1b6979b31.1405533479.git.agordeev@redhat.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-07-25 at 18:57 -0400, Nick Krause wrote: 
-> Hey guys after compiling and running the kernel in the subject line I
-> get no sound
-> and a message of no sound codec could be found. I am new so this may be
-> a  missed needed config for sound or it's a bug. I am attaching my config
-> to help you guys out :).
+On Wed, Jul 16, 2014 at 08:05:22PM +0200, Alexander Gordeev wrote:
+> As result of deprecation of MSI-X/MSI enablement functions
+> pci_enable_msix() and pci_enable_msi_block() all drivers
+> using these two interfaces need to be updated to use the
+> new pci_enable_msi_range()  or pci_enable_msi_exact()
+> and pci_enable_msix_range() or pci_enable_msix_exact()
+> interfaces.
 
-(peek)  Ah.. ok, thanks for the report.
+Hi Jack, Lindar,
 
--Mike
+Could you please review this patch?
 
+Thanks!
+
+> Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+> Cc: xjtuwjp@gmail.com
+> Cc: lindar_liu@usish.com
+> Cc: linux-scsi@vger.kernel.org
+> Cc: linux-pci@vger.kernel.org
+> ---
+>  drivers/scsi/pm8001/pm8001_init.c |   39 +++++++++++++++++++------------------
+>  1 files changed, 20 insertions(+), 19 deletions(-)
+> 
+> diff --git a/drivers/scsi/pm8001/pm8001_init.c b/drivers/scsi/pm8001/pm8001_init.c
+> index e837ece..4057c24 100644
+> --- a/drivers/scsi/pm8001/pm8001_init.c
+> +++ b/drivers/scsi/pm8001/pm8001_init.c
+> @@ -729,34 +729,35 @@ static u32 pm8001_setup_msix(struct pm8001_hba_info *pm8001_ha)
+>  		sizeof(pm8001_ha->msix_entries[0]);
+>  	for (i = 0; i < max_entry ; i++)
+>  		pm8001_ha->msix_entries[i].entry = i;
+> -	rc = pci_enable_msix(pm8001_ha->pdev, pm8001_ha->msix_entries,
+> +	rc = pci_enable_msix_exact(pm8001_ha->pdev, pm8001_ha->msix_entries,
+>  		number_of_intr);
+>  	pm8001_ha->number_of_intr = number_of_intr;
+> -	if (!rc) {
+> -		PM8001_INIT_DBG(pm8001_ha, pm8001_printk(
+> -			"pci_enable_msix request ret:%d no of intr %d\n",
+> -					rc, pm8001_ha->number_of_intr));
+> +	if (rc)
+> +		return rc;
+>  
+> +	PM8001_INIT_DBG(pm8001_ha, pm8001_printk(
+> +		"pci_enable_msix_exact request ret:%d no of intr %d\n",
+> +				rc, pm8001_ha->number_of_intr));
+>  
+> -		for (i = 0; i < number_of_intr; i++) {
+> -			snprintf(intr_drvname[i], sizeof(intr_drvname[0]),
+> -					DRV_NAME"%d", i);
+> -			pm8001_ha->irq_vector[i].irq_id = i;
+> -			pm8001_ha->irq_vector[i].drv_inst = pm8001_ha;
+> +	for (i = 0; i < number_of_intr; i++) {
+> +		snprintf(intr_drvname[i], sizeof(intr_drvname[0]),
+> +				DRV_NAME"%d", i);
+> +		pm8001_ha->irq_vector[i].irq_id = i;
+> +		pm8001_ha->irq_vector[i].drv_inst = pm8001_ha;
+>  
+> -			rc = request_irq(pm8001_ha->msix_entries[i].vector,
+> -				pm8001_interrupt_handler_msix, flag,
+> -				intr_drvname[i], &(pm8001_ha->irq_vector[i]));
+> -			if (rc) {
+> -				for (j = 0; j < i; j++)
+> -					free_irq(
+> -					pm8001_ha->msix_entries[j].vector,
+> +		rc = request_irq(pm8001_ha->msix_entries[i].vector,
+> +			pm8001_interrupt_handler_msix, flag,
+> +			intr_drvname[i], &(pm8001_ha->irq_vector[i]));
+> +		if (rc) {
+> +			for (j = 0; j < i; j++) {
+> +				free_irq(pm8001_ha->msix_entries[j].vector,
+>  					&(pm8001_ha->irq_vector[i]));
+> -				pci_disable_msix(pm8001_ha->pdev);
+> -				break;
+>  			}
+> +			pci_disable_msix(pm8001_ha->pdev);
+> +			break;
+>  		}
+>  	}
+> +
+>  	return rc;
+>  }
+>  #endif
+> -- 
+> 1.7.7.6
+> 
+
+-- 
+Regards,
+Alexander Gordeev
+agordeev@redhat.com
