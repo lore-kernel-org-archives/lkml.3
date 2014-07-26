@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753887AbaGZTND (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 15:13:03 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34112 "EHLO
+	id S1755136AbaGZTvl (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 15:51:41 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34127 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753023AbaGZTM7 (ORCPT
+	with ESMTP id S1753878AbaGZTND (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 15:12:59 -0400
+	Sat, 26 Jul 2014 15:13:03 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ed Martin <edman007@edman007.com>,
-        Andrey Utkin <andrey.krieger.utkin@gmail.com>,
-        Eric Dumazet <edumazet@google.com>,
+        Sowmini Varadhan <sowmini.varadhan@oracle.com>,
+        Dave Kleikamp <dave.kleikamp@oracle.com>,
+        Karl Volz <karl.volz@oracle.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 50/87] appletalk: Fix socket referencing in skb
-Date: Sat, 26 Jul 2014 12:02:24 -0700
-Message-Id: <20140726190216.232038073@linuxfoundation.org>
+Subject: [PATCH 3.14 60/87] sunvnet: clean up objects created in vnet_new() on vnet_exit()
+Date: Sat, 26 Jul 2014 12:02:34 -0700
+Message-Id: <20140726190216.570388862@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.2
 In-Reply-To: <20140726190214.530473925@linuxfoundation.org>
 References: <20140726190214.530473925@linuxfoundation.org>
@@ -31,44 +31,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andrey Utkin <andrey.krieger.utkin@gmail.com>
+From: Sowmini Varadhan <sowmini.varadhan@oracle.com>
 
-[ Upstream commit 36beddc272c111689f3042bf3d10a64d8a805f93 ]
+[ Upstream commit a4b70a07ed12a71131cab7adce2ce91c71b37060 ]
 
-Setting just skb->sk without taking its reference and setting a
-destructor is invalid. However, in the places where this was done, skb
-is used in a way not requiring skb->sk setting. So dropping the setting
-of skb->sk.
-Thanks to Eric Dumazet <eric.dumazet@gmail.com> for correct solution.
+Nothing cleans up the objects created by
+vnet_new(), they are completely leaked.
 
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=79441
-Reported-by: Ed Martin <edman007@edman007.com>
-Signed-off-by: Andrey Utkin <andrey.krieger.utkin@gmail.com>
-Signed-off-by: Eric Dumazet <edumazet@google.com>
+vnet_exit(), after doing the vio_unregister_driver() to clean
+up ports, should call a helper function that iterates over vnet_list
+and cleans up those objects. This includes unregister_netdevice()
+as well as free_netdev().
+
+Signed-off-by: Sowmini Varadhan <sowmini.varadhan@oracle.com>
+Acked-by: Dave Kleikamp <dave.kleikamp@oracle.com>
+Reviewed-by: Karl Volz <karl.volz@oracle.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/appletalk/ddp.c |    3 ---
- 1 file changed, 3 deletions(-)
+ drivers/net/ethernet/sun/sunvnet.c |   20 +++++++++++++++++++-
+ 1 file changed, 19 insertions(+), 1 deletion(-)
 
---- a/net/appletalk/ddp.c
-+++ b/net/appletalk/ddp.c
-@@ -1489,8 +1489,6 @@ static int atalk_rcv(struct sk_buff *skb
- 		goto drop;
+--- a/drivers/net/ethernet/sun/sunvnet.c
++++ b/drivers/net/ethernet/sun/sunvnet.c
+@@ -1083,6 +1083,24 @@ static struct vnet *vnet_find_or_create(
+ 	return vp;
+ }
  
- 	/* Queue packet (standard) */
--	skb->sk = sock;
--
- 	if (sock_queue_rcv_skb(sock, skb) < 0)
- 		goto drop;
++static void vnet_cleanup(void)
++{
++	struct vnet *vp;
++	struct net_device *dev;
++
++	mutex_lock(&vnet_list_mutex);
++	while (!list_empty(&vnet_list)) {
++		vp = list_first_entry(&vnet_list, struct vnet, list);
++		list_del(&vp->list);
++		dev = vp->dev;
++		/* vio_unregister_driver() should have cleaned up port_list */
++		BUG_ON(!list_empty(&vp->port_list));
++		unregister_netdev(dev);
++		free_netdev(dev);
++	}
++	mutex_unlock(&vnet_list_mutex);
++}
++
+ static const char *local_mac_prop = "local-mac-address";
  
-@@ -1644,7 +1642,6 @@ static int atalk_sendmsg(struct kiocb *i
- 	if (!skb)
- 		goto out;
+ static struct vnet *vnet_find_parent(struct mdesc_handle *hp,
+@@ -1240,7 +1258,6 @@ static int vnet_port_remove(struct vio_d
  
--	skb->sk = sk;
- 	skb_reserve(skb, ddp_dl->header_length);
- 	skb_reserve(skb, dev->hard_header_len);
- 	skb->dev = dev;
+ 		kfree(port);
+ 
+-		unregister_netdev(vp->dev);
+ 	}
+ 	return 0;
+ }
+@@ -1268,6 +1285,7 @@ static int __init vnet_init(void)
+ static void __exit vnet_exit(void)
+ {
+ 	vio_unregister_driver(&vnet_port_driver);
++	vnet_cleanup();
+ }
+ 
+ module_init(vnet_init);
 
 
