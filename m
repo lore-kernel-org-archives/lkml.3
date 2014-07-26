@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756210AbaGZUAn (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 16:00:43 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33783 "EHLO
+	id S932318AbaGZUBP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 16:01:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33752 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752756AbaGZTDI (ORCPT
+	with ESMTP id S1752747AbaGZTDI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 26 Jul 2014 15:03:08 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Yuchung Cheng <ycheng@google.com>,
-        Neal Cardwell <ncardwell@google.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 29/56] tcp: fix false undo corner cases
-Date: Sat, 26 Jul 2014 12:02:22 -0700
-Message-Id: <20140726190200.979089912@linuxfoundation.org>
+        Anton Kolesov <Anton.Kolesov@synopsys.com>,
+        Vineet Gupta <vgupta@synopsys.com>
+Subject: [PATCH 3.10 56/56] ARC: Implement ptrace(PTRACE_GET_THREAD_AREA)
+Date: Sat, 26 Jul 2014 12:02:49 -0700
+Message-Id: <20140726190201.912570009@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.2
 In-Reply-To: <20140726190200.061512159@linuxfoundation.org>
 References: <20140726190200.061512159@linuxfoundation.org>
@@ -30,96 +29,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Yuchung Cheng <ycheng@google.com>
+From: Anton Kolesov <Anton.Kolesov@synopsys.com>
 
-[ Upstream commit 6e08d5e3c8236e7484229e46fdf92006e1dd4c49 ]
+commit a4b6cb735b25aa84a462a1985e3e43bebaf5beb4 upstream.
 
-The undo code assumes that, upon entering loss recovery, TCP
-1) always retransmit something
-2) the retransmission never fails locally (e.g., qdisc drop)
+This patch adds implementation of GET_THREAD_AREA ptrace request type. This
+is required by GDB to debug NPTL applications.
 
-so undo_marker is set in tcp_enter_recovery() and undo_retrans is
-incremented only when tcp_retransmit_skb() is successful.
-
-When the assumption is broken because TCP's cwnd is too small to
-retransmit or the retransmit fails locally. The next (DUP)ACK
-would incorrectly revert the cwnd and the congestion state in
-tcp_try_undo_dsack() or tcp_may_undo(). Subsequent (DUP)ACKs
-may enter the recovery state. The sender repeatedly enter and
-(incorrectly) exit recovery states if the retransmits continue to
-fail locally while receiving (DUP)ACKs.
-
-The fix is to initialize undo_retrans to -1 and start counting on
-the first retransmission. Always increment undo_retrans even if the
-retransmissions fail locally because they couldn't cause DSACKs to
-undo the cwnd reduction.
-
-Signed-off-by: Yuchung Cheng <ycheng@google.com>
-Signed-off-by: Neal Cardwell <ncardwell@google.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Anton Kolesov <Anton.Kolesov@synopsys.com>
+Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/ipv4/tcp_input.c  |    8 ++++----
- net/ipv4/tcp_output.c |    6 ++++--
- 2 files changed, 8 insertions(+), 6 deletions(-)
 
---- a/net/ipv4/tcp_input.c
-+++ b/net/ipv4/tcp_input.c
-@@ -1075,7 +1075,7 @@ static bool tcp_check_dsack(struct sock
- 	}
+---
+ arch/arc/include/uapi/asm/ptrace.h |    1 +
+ arch/arc/kernel/ptrace.c           |    4 ++++
+ 2 files changed, 5 insertions(+)
+
+--- a/arch/arc/include/uapi/asm/ptrace.h
++++ b/arch/arc/include/uapi/asm/ptrace.h
+@@ -11,6 +11,7 @@
+ #ifndef _UAPI__ASM_ARC_PTRACE_H
+ #define _UAPI__ASM_ARC_PTRACE_H
  
- 	/* D-SACK for already forgotten data... Do dumb counting. */
--	if (dup_sack && tp->undo_marker && tp->undo_retrans &&
-+	if (dup_sack && tp->undo_marker && tp->undo_retrans > 0 &&
- 	    !after(end_seq_0, prior_snd_una) &&
- 	    after(end_seq_0, tp->undo_marker))
- 		tp->undo_retrans--;
-@@ -1154,7 +1154,7 @@ static u8 tcp_sacktag_one(struct sock *s
++#define PTRACE_GET_THREAD_AREA	25
  
- 	/* Account D-SACK for retransmitted packet. */
- 	if (dup_sack && (sacked & TCPCB_RETRANS)) {
--		if (tp->undo_marker && tp->undo_retrans &&
-+		if (tp->undo_marker && tp->undo_retrans > 0 &&
- 		    after(end_seq, tp->undo_marker))
- 			tp->undo_retrans--;
- 		if (sacked & TCPCB_SACKED_ACKED)
-@@ -1850,7 +1850,7 @@ static void tcp_clear_retrans_partial(st
- 	tp->lost_out = 0;
+ #ifndef __ASSEMBLY__
+ /*
+--- a/arch/arc/kernel/ptrace.c
++++ b/arch/arc/kernel/ptrace.c
+@@ -136,6 +136,10 @@ long arch_ptrace(struct task_struct *chi
+ 	pr_debug("REQ=%ld: ADDR =0x%lx, DATA=0x%lx)\n", request, addr, data);
  
- 	tp->undo_marker = 0;
--	tp->undo_retrans = 0;
-+	tp->undo_retrans = -1;
- }
- 
- void tcp_clear_retrans(struct tcp_sock *tp)
-@@ -2700,7 +2700,7 @@ static void tcp_enter_recovery(struct so
- 
- 	tp->prior_ssthresh = 0;
- 	tp->undo_marker = tp->snd_una;
--	tp->undo_retrans = tp->retrans_out;
-+	tp->undo_retrans = tp->retrans_out ? : -1;
- 
- 	if (inet_csk(sk)->icsk_ca_state < TCP_CA_CWR) {
- 		if (!ece_ack)
---- a/net/ipv4/tcp_output.c
-+++ b/net/ipv4/tcp_output.c
-@@ -2428,13 +2428,15 @@ int tcp_retransmit_skb(struct sock *sk,
- 		if (!tp->retrans_stamp)
- 			tp->retrans_stamp = TCP_SKB_CB(skb)->when;
- 
--		tp->undo_retrans += tcp_skb_pcount(skb);
--
- 		/* snd_nxt is stored to detect loss of retransmitted segment,
- 		 * see tcp_input.c tcp_sacktag_write_queue().
- 		 */
- 		TCP_SKB_CB(skb)->ack_seq = tp->snd_nxt;
- 	}
-+
-+	if (tp->undo_retrans < 0)
-+		tp->undo_retrans = 0;
-+	tp->undo_retrans += tcp_skb_pcount(skb);
- 	return err;
- }
- 
+ 	switch (request) {
++	case PTRACE_GET_THREAD_AREA:
++		ret = put_user(task_thread_info(child)->thr_ptr,
++			       (unsigned long __user *)data);
++		break;
+ 	default:
+ 		ret = ptrace_request(child, request, addr, data);
+ 		break;
 
 
