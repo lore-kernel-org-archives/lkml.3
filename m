@@ -1,65 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756884AbaGZUM0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 16:12:26 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33634 "EHLO
+	id S1756900AbaGZUMm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 16:12:42 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35018 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752579AbaGZTCy (ORCPT
+	with ESMTP id S1753407AbaGZUMk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 15:02:54 -0400
+	Sat, 26 Jul 2014 16:12:40 -0400
+Date: Sat, 26 Jul 2014 13:12:40 -0700
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Li RongQing <roy.qing.li@gmail.com>,
-        Eric Dumazet <edumazet@google.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 19/56] 8021q: fix a potential memory leak
-Date: Sat, 26 Jul 2014 12:02:12 -0700
-Message-Id: <20140726190200.675658617@linuxfoundation.org>
-X-Mailer: git-send-email 2.0.2
-In-Reply-To: <20140726190200.061512159@linuxfoundation.org>
-References: <20140726190200.061512159@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+To: Pawel Moll <pawel.moll@arm.com>
+Cc: Olof Johansson <olof@lixom.net>, Stephen Warren <swarren@wwwdotorg.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>, paul@pwsan.com,
+        Arnd Bergmann <arnd@arndb.de>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>, arm@kernel.org,
+        linux-tegra@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 5/5] platform: Make platform_bus device a platform device
+Message-ID: <20140726201240.GB21870@kroah.com>
+References: <1406298233-27876-1-git-send-email-pawel.moll@arm.com>
+ <1406298233-27876-5-git-send-email-pawel.moll@arm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1406298233-27876-5-git-send-email-pawel.moll@arm.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+On Fri, Jul 25, 2014 at 03:23:53PM +0100, Pawel Moll wrote:
+> ... describing the root of the device tree, so one can write
+> a platform driver initializing the platform.
 
-------------------
+Wait, what do you mean by "one can write a platform driver initializing
+the platform"?  I don't understand your end goal here...
 
-From: Li RongQing <roy.qing.li@gmail.com>
+thanks,
 
-[ Upstream commit 916c1689a09bc1ca81f2d7a34876f8d35aadd11b ]
-
-skb_cow called in vlan_reorder_header does not free the skb when it failed,
-and vlan_reorder_header returns NULL to reset original skb when it is called
-in vlan_untag, lead to a memory leak.
-
-Signed-off-by: Li RongQing <roy.qing.li@gmail.com>
-Acked-by: Eric Dumazet <edumazet@google.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/8021q/vlan_core.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
-
---- a/net/8021q/vlan_core.c
-+++ b/net/8021q/vlan_core.c
-@@ -103,8 +103,11 @@ EXPORT_SYMBOL(vlan_dev_vlan_id);
- 
- static struct sk_buff *vlan_reorder_header(struct sk_buff *skb)
- {
--	if (skb_cow(skb, skb_headroom(skb)) < 0)
-+	if (skb_cow(skb, skb_headroom(skb)) < 0) {
-+		kfree_skb(skb);
- 		return NULL;
-+	}
-+
- 	memmove(skb->data - ETH_HLEN, skb->data - VLAN_ETH_HLEN, 2 * ETH_ALEN);
- 	skb->mac_header += VLAN_HLEN;
- 	return skb;
-
-
+greg k-h
