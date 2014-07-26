@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751632AbaGZOeD (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 10:34:03 -0400
-Received: from mail-we0-f172.google.com ([74.125.82.172]:48572 "EHLO
-	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751402AbaGZOeB (ORCPT
+	id S1751841AbaGZOfe (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 10:35:34 -0400
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:60760 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751372AbaGZOfc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 10:34:01 -0400
+	Sat, 26 Jul 2014 10:35:32 -0400
 From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Ursula Braun <ursula.braun@de.ibm.com>,
-        Frank Blaschka <blaschka@linux.vnet.ibm.com>
+To: Steffen Maier <maier@linux.vnet.ibm.com>, linux390@de.ibm.com
 Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        linux390@de.ibm.com, Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
         Heiko Carstens <heiko.carstens@de.ibm.com>, linux-s390@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH] s390: net: qeth_core_main.c:  Cleaning up missing null-terminate in conjunction with strncpy
-Date: Sat, 26 Jul 2014 16:35:26 +0200
-Message-Id: <1406385326-3289-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+Subject: [PATCH] s390: scsi: zfcp_aux.c:  Cleaning up missing null-terminate in conjunction with strncpy
+Date: Sat, 26 Jul 2014 16:36:58 +0200
+Message-Id: <1406385418-3393-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
 X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,22 +25,22 @@ Replacing strncpy with strlcpy to avoid strings that lacks null terminate.
 
 Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 ---
- drivers/s390/net/qeth_core_main.c |    2 +-
+ drivers/s390/scsi/zfcp_aux.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/s390/net/qeth_core_main.c b/drivers/s390/net/qeth_core_main.c
-index f54bec5..ec9b4d7 100644
---- a/drivers/s390/net/qeth_core_main.c
-+++ b/drivers/s390/net/qeth_core_main.c
-@@ -5275,7 +5275,7 @@ static int qeth_add_dbf_entry(struct qeth_card *card, char *name)
- 	new_entry = kzalloc(sizeof(struct qeth_dbf_entry), GFP_KERNEL);
- 	if (!new_entry)
- 		goto err_dbg;
--	strncpy(new_entry->dbf_name, name, DBF_NAME_LEN);
-+	strlcpy(new_entry->dbf_name, name, DBF_NAME_LEN);
- 	new_entry->dbf_info = card->debug;
- 	mutex_lock(&qeth_dbf_list_mutex);
- 	list_add(&new_entry->dbf_list, &qeth_dbf_list);
+diff --git a/drivers/s390/scsi/zfcp_aux.c b/drivers/s390/scsi/zfcp_aux.c
+index 8004b07..a23ba76 100644
+--- a/drivers/s390/scsi/zfcp_aux.c
++++ b/drivers/s390/scsi/zfcp_aux.c
+@@ -101,7 +101,7 @@ static void __init zfcp_init_device_setup(char *devstr)
+ 	token = strsep(&str, ",");
+ 	if (!token || strlen(token) >= ZFCP_BUS_ID_SIZE)
+ 		goto err_out;
+-	strncpy(busid, token, ZFCP_BUS_ID_SIZE);
++	strlcpy(busid, token, ZFCP_BUS_ID_SIZE);
+ 
+ 	token = strsep(&str, ",");
+ 	if (!token || kstrtoull(token, 0, (unsigned long long *) &wwpn))
 -- 
 1.7.10.4
 
