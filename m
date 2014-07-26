@@ -1,123 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756954AbaGZUNe (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 16:13:34 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33631 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752559AbaGZTCx (ORCPT
+	id S1757006AbaGZUNq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 16:13:46 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:33071 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756976AbaGZUNo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 15:02:53 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dmitry Popov <ixaphire@qrator.net>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 16/56] ip_tunnel: fix ip_tunnel_lookup
-Date: Sat, 26 Jul 2014 12:02:09 -0700
-Message-Id: <20140726190200.578964582@linuxfoundation.org>
-X-Mailer: git-send-email 2.0.2
-In-Reply-To: <20140726190200.061512159@linuxfoundation.org>
-References: <20140726190200.061512159@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	Sat, 26 Jul 2014 16:13:44 -0400
+Date: Sat, 26 Jul 2014 22:13:39 +0200
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Boris Brezillon <boris.brezillon@free-electrons.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] ARM: at91/dt: sam9x5: fix ADC compatible string
+Message-ID: <20140726201338.GO9532@piout.net>
+References: <1406038067-14697-1-git-send-email-alexandre.belloni@free-electrons.com>
+ <53D40A60.2060100@cogentembedded.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53D40A60.2060100@cogentembedded.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+Hi,
 
-------------------
+On 27/07/2014 at 00:06:56 +0400, Sergei Shtylyov wrote :
+> >diff --git a/arch/arm/boot/dts/at91sam9x5.dtsi b/arch/arm/boot/dts/at91sam9x5.dtsi
+> >index 2c0d6ea3ab41..5d7cf394f537 100644
+> >--- a/arch/arm/boot/dts/at91sam9x5.dtsi
+> >+++ b/arch/arm/boot/dts/at91sam9x5.dtsi
+> >@@ -964,7 +964,7 @@
+> >  			adc0: adc@f804c000 {
+> >  				#address-cells = <1>;
+> >  				#size-cells = <0>;
+> >-				compatible = "atmel,at91sam9260-adc";
+> >+				compatible = "atmel,at91sam9x5-adc";
+> 
+>    Actually, wildcards are not allowed in the "compatible" prop.
+> 
 
-From: Dmitry Popov <ixaphire@qrator.net>
+This is not really a wildcard, the sam9x5 family of SoC is supported
+through only one dtsi, at91sam9x5.dtsi and this name is used for all the
+compatible strings of the IPs that appeared with that family.
 
-[ Upstream commit e0056593b61253f1a8a9941dacda22e73b963cdc ]
-
-This patch fixes 3 similar bugs where incoming packets might be routed into
-wrong non-wildcard tunnels:
-
-1) Consider the following setup:
-    ip address add 1.1.1.1/24 dev eth0
-    ip address add 1.1.1.2/24 dev eth0
-    ip tunnel add ipip1 remote 2.2.2.2 local 1.1.1.1 mode ipip dev eth0
-    ip link set ipip1 up
-
-Incoming ipip packets from 2.2.2.2 were routed into ipip1 even if it has dst =
-1.1.1.2. Moreover even if there was wildcard tunnel like
-   ip tunnel add ipip0 remote 2.2.2.2 local any mode ipip dev eth0
-but it was created before explicit one (with local 1.1.1.1), incoming ipip
-packets with src = 2.2.2.2 and dst = 1.1.1.2 were still routed into ipip1.
-
-Same issue existed with all tunnels that use ip_tunnel_lookup (gre, vti)
-
-2)  ip address add 1.1.1.1/24 dev eth0
-    ip tunnel add ipip1 remote 2.2.146.85 local 1.1.1.1 mode ipip dev eth0
-    ip link set ipip1 up
-
-Incoming ipip packets with dst = 1.1.1.1 were routed into ipip1, no matter what
-src address is. Any remote ip address which has ip_tunnel_hash = 0 raised this
-issue, 2.2.146.85 is just an example, there are more than 4 million of them.
-And again, wildcard tunnel like
-   ip tunnel add ipip0 remote any local 1.1.1.1 mode ipip dev eth0
-wouldn't be ever matched if it was created before explicit tunnel like above.
-
-Gre & vti tunnels had the same issue.
-
-3)  ip address add 1.1.1.1/24 dev eth0
-    ip tunnel add gre1 remote 2.2.146.84 local 1.1.1.1 key 1 mode gre dev eth0
-    ip link set gre1 up
-
-Any incoming gre packet with key = 1 were routed into gre1, no matter what
-src/dst addresses are. Any remote ip address which has ip_tunnel_hash = 0 raised
-the issue, 2.2.146.84 is just an example, there are more than 4 million of them.
-Wildcard tunnel like
-   ip tunnel add gre2 remote any local any key 1 mode gre dev eth0
-wouldn't be ever matched if it was created before explicit tunnel like above.
-
-All this stuff happened because while looking for a wildcard tunnel we didn't
-check that matched tunnel is a wildcard one. Fixed.
-
-Signed-off-by: Dmitry Popov <ixaphire@qrator.net>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/ipv4/ip_tunnel.c |   12 ++++++++----
- 1 file changed, 8 insertions(+), 4 deletions(-)
-
---- a/net/ipv4/ip_tunnel.c
-+++ b/net/ipv4/ip_tunnel.c
-@@ -166,6 +166,7 @@ struct ip_tunnel *ip_tunnel_lookup(struc
- 
- 	hlist_for_each_entry_rcu(t, head, hash_node) {
- 		if (remote != t->parms.iph.daddr ||
-+		    t->parms.iph.saddr != 0 ||
- 		    !(t->dev->flags & IFF_UP))
- 			continue;
- 
-@@ -182,10 +183,11 @@ struct ip_tunnel *ip_tunnel_lookup(struc
- 	head = &itn->tunnels[hash];
- 
- 	hlist_for_each_entry_rcu(t, head, hash_node) {
--		if ((local != t->parms.iph.saddr &&
--		     (local != t->parms.iph.daddr ||
--		      !ipv4_is_multicast(local))) ||
--		    !(t->dev->flags & IFF_UP))
-+		if ((local != t->parms.iph.saddr || t->parms.iph.daddr != 0) &&
-+		    (local != t->parms.iph.daddr || !ipv4_is_multicast(local)))
-+			continue;
-+
-+		if (!(t->dev->flags & IFF_UP))
- 			continue;
- 
- 		if (!ip_tunnel_key_match(&t->parms, flags, key))
-@@ -202,6 +204,8 @@ struct ip_tunnel *ip_tunnel_lookup(struc
- 
- 	hlist_for_each_entry_rcu(t, head, hash_node) {
- 		if (t->parms.i_key != key ||
-+		    t->parms.iph.saddr != 0 ||
-+		    t->parms.iph.daddr != 0 ||
- 		    !(t->dev->flags & IFF_UP))
- 			continue;
- 
-
-
+-- 
+Alexandre Belloni, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
