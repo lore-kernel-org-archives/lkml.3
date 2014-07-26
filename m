@@ -1,26 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754986AbaGZTX3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 15:23:29 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34671 "EHLO
+	id S1754972AbaGZTX1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 15:23:27 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34626 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754925AbaGZTXX (ORCPT
+	with ESMTP id S1752268AbaGZTXN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 15:23:23 -0400
+	Sat, 26 Jul 2014 15:23:13 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mauro <registosites@hotmail.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Viresh Kumar <viresh.kumar@linaro.org>, Bin Gao <bin.gao@intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Stefani Seibold <stefani@seibold.net>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
-Subject: [PATCH 3.15 092/109] x86, tsc: Fix cpufreq lockup
-Date: Sat, 26 Jul 2014 12:02:54 -0700
-Message-Id: <20140726190226.626324865@linuxfoundation.org>
+        Chris Mason <clm@fb.com>, Martin Lau <kafai@fb.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [PATCH 3.15 082/109] ring-buffer: Fix polling on trace_pipe
+Date: Sat, 26 Jul 2014 12:02:44 -0700
+Message-Id: <20140726190226.335255568@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.2
 In-Reply-To: <20140726190223.834037485@linuxfoundation.org>
 References: <20140726190223.834037485@linuxfoundation.org>
@@ -35,56 +29,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Zijlstra <peterz@infradead.org>
+From: Martin Lau <kafai@fb.com>
 
-commit 3896c329df8092661dac80f55a8c3f60136fd61a upstream.
+commit 97b8ee845393701edc06e27ccec2876ff9596019 upstream.
 
-Mauro reported that his AMD X2 using the powernow-k8 cpufreq driver
-locked up when doing cpu hotplug.
+ring_buffer_poll_wait() should always put the poll_table to its wait_queue
+even there is immediate data available.  Otherwise, the following epoll and
+read sequence will eventually hang forever:
 
-Because we called set_cyc2ns_scale() from the time_cpufreq_notifier()
-unconditionally, it gets called multiple times for each freq change,
-instead of only the once, when the tsc_khz value actually changes.
+1. Put some data to make the trace_pipe ring_buffer read ready first
+2. epoll_ctl(efd, EPOLL_CTL_ADD, trace_pipe_fd, ee)
+3. epoll_wait()
+4. read(trace_pipe_fd) till EAGAIN
+5. Add some more data to the trace_pipe ring_buffer
+6. epoll_wait() -> this epoll_wait() will block forever
 
-Because it gets called more than once, we run out of cyc2ns data slots
-and stall, waiting for a free one, but because we're half way offline,
-there's no consumers to free slots.
+~ During the epoll_ctl(efd, EPOLL_CTL_ADD,...) call in step 2,
+  ring_buffer_poll_wait() returns immediately without adding poll_table,
+  which has poll_table->_qproc pointing to ep_poll_callback(), to its
+  wait_queue.
+~ During the epoll_wait() call in step 3 and step 6,
+  ring_buffer_poll_wait() cannot add ep_poll_callback() to its wait_queue
+  because the poll_table->_qproc is NULL and it is how epoll works.
+~ When there is new data available in step 6, ring_buffer does not know
+  it has to call ep_poll_callback() because it is not in its wait queue.
+  Hence, block forever.
 
-By placing the call inside the condition that actually changes tsc_khz
-we avoid superfluous calls and avoid the problem.
+Other poll implementation seems to call poll_wait() unconditionally as the very
+first thing to do.  For example, tcp_poll() in tcp.c.
 
-Reported-by: Mauro <registosites@hotmail.com>
-Tested-by: Mauro <registosites@hotmail.com>
-Fixes: 20d1c86a5776 ("sched/clock, x86: Rewrite cyc2ns() to avoid the need to disable IRQs")
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Bin Gao <bin.gao@intel.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: Stefani Seibold <stefani@seibold.net>
-Cc: linux-kernel@vger.kernel.org
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Link: http://lkml.kernel.org/p/20140610060637.GA14045@devbig242.prn2.facebook.com
+
+Fixes: 2a2cc8f7c4d0 "ftrace: allow the event pipe to be polled"
+Reviewed-by: Chris Mason <clm@fb.com>
+Signed-off-by: Martin Lau <kafai@fb.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/tsc.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ kernel/trace/ring_buffer.c |    4 ----
+ 1 file changed, 4 deletions(-)
 
---- a/arch/x86/kernel/tsc.c
-+++ b/arch/x86/kernel/tsc.c
-@@ -920,9 +920,9 @@ static int time_cpufreq_notifier(struct
- 		tsc_khz = cpufreq_scale(tsc_khz_ref, ref_freq, freq->new);
- 		if (!(freq->flags & CPUFREQ_CONST_LOOPS))
- 			mark_tsc_unstable("cpufreq changes");
--	}
+--- a/kernel/trace/ring_buffer.c
++++ b/kernel/trace/ring_buffer.c
+@@ -616,10 +616,6 @@ int ring_buffer_poll_wait(struct ring_bu
+ 	struct ring_buffer_per_cpu *cpu_buffer;
+ 	struct rb_irq_work *work;
  
--	set_cyc2ns_scale(tsc_khz, freq->cpu);
-+		set_cyc2ns_scale(tsc_khz, freq->cpu);
-+	}
- 
- 	return 0;
- }
+-	if ((cpu == RING_BUFFER_ALL_CPUS && !ring_buffer_empty(buffer)) ||
+-	    (cpu != RING_BUFFER_ALL_CPUS && !ring_buffer_empty_cpu(buffer, cpu)))
+-		return POLLIN | POLLRDNORM;
+-
+ 	if (cpu == RING_BUFFER_ALL_CPUS)
+ 		work = &buffer->irq_work;
+ 	else {
 
 
