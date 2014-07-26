@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752850AbaGZTDN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 15:03:13 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33725 "EHLO
+	id S1753456AbaGZTIa (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 15:08:30 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33879 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752680AbaGZTDD (ORCPT
+	with ESMTP id S1752838AbaGZTDN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 15:03:03 -0400
+	Sat, 26 Jul 2014 15:03:13 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Chris Mason <clm@fb.com>, Martin Lau <kafai@fb.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [PATCH 3.10 44/56] ring-buffer: Fix polling on trace_pipe
-Date: Sat, 26 Jul 2014 12:02:37 -0700
-Message-Id: <20140726190201.500435592@linuxfoundation.org>
+        David Vrabel <david.vrabel@citrix.com>,
+        Marek Marczykowski <marmarek@invisiblethingslab.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Subject: [PATCH 3.14 16/87] xen/balloon: set ballooned out pages as invalid in p2m
+Date: Sat, 26 Jul 2014 12:01:50 -0700
+Message-Id: <20140726190215.055999244@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.2
-In-Reply-To: <20140726190200.061512159@linuxfoundation.org>
-References: <20140726190200.061512159@linuxfoundation.org>
+In-Reply-To: <20140726190214.530473925@linuxfoundation.org>
+References: <20140726190214.530473925@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -25,63 +26,66 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Martin Lau <kafai@fb.com>
+From: David Vrabel <david.vrabel@citrix.com>
 
-commit 97b8ee845393701edc06e27ccec2876ff9596019 upstream.
+commit fb9a0c443691ceaab3daba966bbbd9f5ff3aa26f upstream.
 
-ring_buffer_poll_wait() should always put the poll_table to its wait_queue
-even there is immediate data available.  Otherwise, the following epoll and
-read sequence will eventually hang forever:
+Since cd9151e26d31048b2b5e00fd02e110e07d2200c9 (xen/balloon: set a
+mapping for ballooned out pages), a ballooned out page had its entry
+in the p2m set to the MFN of one of the scratch pages.  This means
+that the p2m will contain many entries pointing to the same MFN.
 
-1. Put some data to make the trace_pipe ring_buffer read ready first
-2. epoll_ctl(efd, EPOLL_CTL_ADD, trace_pipe_fd, ee)
-3. epoll_wait()
-4. read(trace_pipe_fd) till EAGAIN
-5. Add some more data to the trace_pipe ring_buffer
-6. epoll_wait() -> this epoll_wait() will block forever
+During a domain save, these many-to-one entries are not identified as
+such and the scratch page is saved multiple times. On restore the
+ballooned pages are populated with new frames and the domain may use
+up its allocation before all pages can be restored.
 
-~ During the epoll_ctl(efd, EPOLL_CTL_ADD,...) call in step 2,
-  ring_buffer_poll_wait() returns immediately without adding poll_table,
-  which has poll_table->_qproc pointing to ep_poll_callback(), to its
-  wait_queue.
-~ During the epoll_wait() call in step 3 and step 6,
-  ring_buffer_poll_wait() cannot add ep_poll_callback() to its wait_queue
-  because the poll_table->_qproc is NULL and it is how epoll works.
-~ When there is new data available in step 6, ring_buffer does not know
-  it has to call ep_poll_callback() because it is not in its wait queue.
-  Hence, block forever.
+Since the original fix only needed to keep a mapping for the ballooned
+page it is safe to set ballooned out pages as INVALID_P2M_ENTRY in the
+p2m (as they were before). Thus preventing them from being saved and
+re-populated on restore.
 
-Other poll implementation seems to call poll_wait() unconditionally as the very
-first thing to do.  For example, tcp_poll() in tcp.c.
-
-Link: http://lkml.kernel.org/p/20140610060637.GA14045@devbig242.prn2.facebook.com
-
-Fixes: 2a2cc8f7c4d0 "ftrace: allow the event pipe to be polled"
-Reviewed-by: Chris Mason <clm@fb.com>
-Signed-off-by: Martin Lau <kafai@fb.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: David Vrabel <david.vrabel@citrix.com>
+Reported-by: Marek Marczykowski <marmarek@invisiblethingslab.com>
+Tested-by: Marek Marczykowski <marmarek@invisiblethingslab.com>
+Acked-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/trace/ring_buffer.c |    4 ----
- 1 file changed, 4 deletions(-)
+ drivers/xen/balloon.c |   12 +++++-------
+ 1 file changed, 5 insertions(+), 7 deletions(-)
 
---- a/kernel/trace/ring_buffer.c
-+++ b/kernel/trace/ring_buffer.c
-@@ -616,10 +616,6 @@ int ring_buffer_poll_wait(struct ring_bu
- 	struct ring_buffer_per_cpu *cpu_buffer;
- 	struct rb_irq_work *work;
- 
--	if ((cpu == RING_BUFFER_ALL_CPUS && !ring_buffer_empty(buffer)) ||
--	    (cpu != RING_BUFFER_ALL_CPUS && !ring_buffer_empty_cpu(buffer, cpu)))
--		return POLLIN | POLLRDNORM;
+--- a/drivers/xen/balloon.c
++++ b/drivers/xen/balloon.c
+@@ -426,20 +426,18 @@ static enum bp_state decrease_reservatio
+ 		 * p2m are consistent.
+ 		 */
+ 		if (!xen_feature(XENFEAT_auto_translated_physmap)) {
+-			unsigned long p;
+-			struct page   *scratch_page = get_balloon_scratch_page();
 -
- 	if (cpu == RING_BUFFER_ALL_CPUS)
- 		work = &buffer->irq_work;
- 	else {
+ 			if (!PageHighMem(page)) {
++				struct page *scratch_page = get_balloon_scratch_page();
++
+ 				ret = HYPERVISOR_update_va_mapping(
+ 						(unsigned long)__va(pfn << PAGE_SHIFT),
+ 						pfn_pte(page_to_pfn(scratch_page),
+ 							PAGE_KERNEL_RO), 0);
+ 				BUG_ON(ret);
+-			}
+-			p = page_to_pfn(scratch_page);
+-			__set_phys_to_machine(pfn, pfn_to_mfn(p));
+ 
+-			put_balloon_scratch_page();
++				put_balloon_scratch_page();
++			}
++			__set_phys_to_machine(pfn, INVALID_P2M_ENTRY);
+ 		}
+ #endif
+ 
 
 
