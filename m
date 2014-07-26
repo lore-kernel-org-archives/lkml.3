@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751580AbaGZOGX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 10:06:23 -0400
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:63350 "EHLO
+	id S1751674AbaGZOHy (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 10:07:54 -0400
+Received: from mail-wi0-f176.google.com ([209.85.212.176]:39228 "EHLO
 	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751244AbaGZOGU (ORCPT
+	with ESMTP id S1751283AbaGZOHw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 10:06:20 -0400
+	Sat, 26 Jul 2014 10:07:52 -0400
 From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Jens Axboe <axboe@kernel.dk>
+To: Herbert Xu <herbert@gondor.apana.org.au>,
+        "David S. Miller" <davem@davemloft.net>
 Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] block: bsg.c:  Cleaning up missing null-terminate in conjunction with strncpy
-Date: Sat, 26 Jul 2014 16:07:45 +0200
-Message-Id: <1406383665-1670-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+        linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] crypto: ablkcipher.c:  Cleaning up missing null-terminate in conjunction with strncpy
+Date: Sat, 26 Jul 2014 16:09:17 +0200
+Message-Id: <1406383757-1753-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
 X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,22 +24,35 @@ Replacing strncpy with strlcpy to avoid strings that lacks null terminate.
 
 Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 ---
- block/bsg.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ crypto/ablkcipher.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/block/bsg.c b/block/bsg.c
-index ff46add..b2688c5 100644
---- a/block/bsg.c
-+++ b/block/bsg.c
-@@ -790,7 +790,7 @@ static struct bsg_device *bsg_add_device(struct inode *inode,
- 	mutex_lock(&bsg_mutex);
- 	hlist_add_head(&bd->dev_list, bsg_dev_idx_hash(iminor(inode)));
+diff --git a/crypto/ablkcipher.c b/crypto/ablkcipher.c
+index 40886c4..e446eef 100644
+--- a/crypto/ablkcipher.c
++++ b/crypto/ablkcipher.c
+@@ -384,8 +384,8 @@ static int crypto_ablkcipher_report(struct sk_buff *skb, struct crypto_alg *alg)
+ {
+ 	struct crypto_report_blkcipher rblkcipher;
  
--	strncpy(bd->name, dev_name(rq->bsg_dev.class_dev), sizeof(bd->name) - 1);
-+	strlcpy(bd->name, dev_name(rq->bsg_dev.class_dev), sizeof(bd->name));
- 	dprintk("bound to <%s>, max queue %d\n",
- 		format_dev_t(buf, inode->i_rdev), bd->max_queue);
+-	strncpy(rblkcipher.type, "ablkcipher", sizeof(rblkcipher.type));
+-	strncpy(rblkcipher.geniv, alg->cra_ablkcipher.geniv ?: "<default>",
++	strlcpy(rblkcipher.type, "ablkcipher", sizeof(rblkcipher.type));
++	strlcpy(rblkcipher.geniv, alg->cra_ablkcipher.geniv ?: "<default>",
+ 		sizeof(rblkcipher.geniv));
  
+ 	rblkcipher.blocksize = alg->cra_blocksize;
+@@ -465,8 +465,8 @@ static int crypto_givcipher_report(struct sk_buff *skb, struct crypto_alg *alg)
+ {
+ 	struct crypto_report_blkcipher rblkcipher;
+ 
+-	strncpy(rblkcipher.type, "givcipher", sizeof(rblkcipher.type));
+-	strncpy(rblkcipher.geniv, alg->cra_ablkcipher.geniv ?: "<built-in>",
++	strlcpy(rblkcipher.type, "givcipher", sizeof(rblkcipher.type));
++	strlcpy(rblkcipher.geniv, alg->cra_ablkcipher.geniv ?: "<built-in>",
+ 		sizeof(rblkcipher.geniv));
+ 
+ 	rblkcipher.blocksize = alg->cra_blocksize;
 -- 
 1.7.10.4
 
