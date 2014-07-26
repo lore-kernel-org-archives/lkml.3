@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755897AbaGZTmj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 15:42:39 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34123 "EHLO
+	id S1753729AbaGZTmi (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 15:42:38 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34338 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752531AbaGZTNQ (ORCPT
+	with ESMTP id S1754066AbaGZTNR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 15:13:16 -0400
+	Sat, 26 Jul 2014 15:13:17 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Anand Avati <avati@redhat.com>, Niels de Vos <ndevos@redhat.com>,
         Miklos Szeredi <mszeredi@suse.cz>
-Subject: [PATCH 3.15 012/109] fuse: handle large user and group ID
-Date: Sat, 26 Jul 2014 12:01:34 -0700
-Message-Id: <20140726190224.194011935@linuxfoundation.org>
+Subject: [PATCH 3.15 013/109] fuse: ignore entry-timeout on LOOKUP_REVAL
+Date: Sat, 26 Jul 2014 12:01:35 -0700
+Message-Id: <20140726190224.229400902@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.2
 In-Reply-To: <20140726190223.834037485@linuxfoundation.org>
 References: <20140726190223.834037485@linuxfoundation.org>
@@ -28,72 +29,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Miklos Szeredi <mszeredi@suse.cz>
+From: Anand Avati <avati@redhat.com>
 
-commit 233a01fa9c4c7c41238537e8db8434667ff28a2f upstream.
+commit 154210ccb3a871e631bf39fdeb7a8731d98af87b upstream.
 
-If the number in "user_id=N" or "group_id=N" mount options was larger than
-INT_MAX then fuse returned EINVAL.
+The following test case demonstrates the bug:
 
-Fix this to handle all valid uid/gid values.
+  sh# mount -t glusterfs localhost:meta-test /mnt/one
 
+  sh# mount -t glusterfs localhost:meta-test /mnt/two
+
+  sh# echo stuff > /mnt/one/file; rm -f /mnt/two/file; echo stuff > /mnt/one/file
+  bash: /mnt/one/file: Stale file handle
+
+  sh# echo stuff > /mnt/one/file; rm -f /mnt/two/file; sleep 1; echo stuff > /mnt/one/file
+
+On the second open() on /mnt/one, FUSE would have used the old
+nodeid (file handle) trying to re-open it. Gluster is returning
+-ESTALE. The ESTALE propagates back to namei.c:filename_lookup()
+where lookup is re-attempted with LOOKUP_REVAL. The right
+behavior now, would be for FUSE to ignore the entry-timeout and
+and do the up-call revalidation. Instead FUSE is ignoring
+LOOKUP_REVAL, succeeding the revalidation (because entry-timeout
+has not passed), and open() is again retried on the old file
+handle and finally the ESTALE is going back to the application.
+
+Fix: if revalidation is happening with LOOKUP_REVAL, then ignore
+entry-timeout and always do the up-call.
+
+Signed-off-by: Anand Avati <avati@redhat.com>
+Reviewed-by: Niels de Vos <ndevos@redhat.com>
 Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/fuse/inode.c |   20 ++++++++++++++++----
- 1 file changed, 16 insertions(+), 4 deletions(-)
+ fs/fuse/dir.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/fs/fuse/inode.c
-+++ b/fs/fuse/inode.c
-@@ -478,6 +478,17 @@ static const match_table_t tokens = {
- 	{OPT_ERR,			NULL}
- };
- 
-+static int fuse_match_uint(substring_t *s, unsigned int *res)
-+{
-+	int err = -ENOMEM;
-+	char *buf = match_strdup(s);
-+	if (buf) {
-+		err = kstrtouint(buf, 10, res);
-+		kfree(buf);
-+	}
-+	return err;
-+}
-+
- static int parse_fuse_opt(char *opt, struct fuse_mount_data *d, int is_bdev)
- {
- 	char *p;
-@@ -488,6 +499,7 @@ static int parse_fuse_opt(char *opt, str
- 	while ((p = strsep(&opt, ",")) != NULL) {
- 		int token;
- 		int value;
-+		unsigned uv;
- 		substring_t args[MAX_OPT_ARGS];
- 		if (!*p)
- 			continue;
-@@ -511,18 +523,18 @@ static int parse_fuse_opt(char *opt, str
- 			break;
- 
- 		case OPT_USER_ID:
--			if (match_int(&args[0], &value))
-+			if (fuse_match_uint(&args[0], &uv))
- 				return 0;
--			d->user_id = make_kuid(current_user_ns(), value);
-+			d->user_id = make_kuid(current_user_ns(), uv);
- 			if (!uid_valid(d->user_id))
- 				return 0;
- 			d->user_id_present = 1;
- 			break;
- 
- 		case OPT_GROUP_ID:
--			if (match_int(&args[0], &value))
-+			if (fuse_match_uint(&args[0], &uv))
- 				return 0;
--			d->group_id = make_kgid(current_user_ns(), value);
-+			d->group_id = make_kgid(current_user_ns(), uv);
- 			if (!gid_valid(d->group_id))
- 				return 0;
- 			d->group_id_present = 1;
+--- a/fs/fuse/dir.c
++++ b/fs/fuse/dir.c
+@@ -198,7 +198,8 @@ static int fuse_dentry_revalidate(struct
+ 	inode = ACCESS_ONCE(entry->d_inode);
+ 	if (inode && is_bad_inode(inode))
+ 		goto invalid;
+-	else if (time_before64(fuse_dentry_time(entry), get_jiffies_64())) {
++	else if (time_before64(fuse_dentry_time(entry), get_jiffies_64()) ||
++		 (flags & LOOKUP_REVAL)) {
+ 		int err;
+ 		struct fuse_entry_out outarg;
+ 		struct fuse_req *req;
 
 
