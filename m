@@ -1,25 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752785AbaGZTDK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 15:03:10 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33664 "EHLO
+	id S1756030AbaGZT6l (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 15:58:41 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33783 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752682AbaGZTDD (ORCPT
+	with ESMTP id S1752789AbaGZTDK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 15:03:03 -0400
+	Sat, 26 Jul 2014 15:03:10 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andrew Wiley <wiley.andrew.j@gmail.com>,
-        Linus Gasser <list@markas-al-nour.org>,
-        Michael Hirsch <hirsch@teufel.de>, Xinming Hu <huxm@marvell.com>,
-        Amitkumar Karwar <akarwar@marvell.com>,
-        Maithili Hinge <maithili@marvell.com>,
-        Avinash Patil <patila@marvell.com>, Bing Zhao <bzhao@marvell.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [PATCH 3.10 43/56] mwifiex: fix Tx timeout issue
-Date: Sat, 26 Jul 2014 12:02:36 -0700
-Message-Id: <20140726190201.463727259@linuxfoundation.org>
+        Edward Allcutt <edward.allcutt@openmarket.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.10 25/56] ipv4: icmp: Fix pMTU handling for rare case
+Date: Sat, 26 Jul 2014 12:02:18 -0700
+Message-Id: <20140726190200.854859246@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.2
 In-Reply-To: <20140726190200.061512159@linuxfoundation.org>
 References: <20140726190200.061512159@linuxfoundation.org>
@@ -34,49 +29,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Amitkumar Karwar <akarwar@marvell.com>
+From: Edward Allcutt <edward.allcutt@openmarket.com>
 
-commit d76744a93246eccdca1106037e8ee29debf48277 upstream.
+[ Upstream commit 68b7107b62983f2cff0948292429d5f5999df096 ]
 
-https://bugzilla.kernel.org/show_bug.cgi?id=70191
-https://bugzilla.kernel.org/show_bug.cgi?id=77581
+Some older router implementations still send Fragmentation Needed
+errors with the Next-Hop MTU field set to zero. This is explicitly
+described as an eventuality that hosts must deal with by the
+standard (RFC 1191) since older standards specified that those
+bits must be zero.
 
-It is observed that sometimes Tx packet is downloaded without
-adding driver's txpd header. This results in firmware parsing
-garbage data as packet length. Sometimes firmware is unable
-to read the packet if length comes out as invalid. This stops
-further traffic and timeout occurs.
+Linux had a generic (for all of IPv4) implementation of the algorithm
+described in the RFC for searching a list of MTU plateaus for a good
+value. Commit 46517008e116 ("ipv4: Kill ip_rt_frag_needed().")
+removed this as part of the changes to remove the routing cache.
+Subsequently any Fragmentation Needed packet with a zero Next-Hop
+MTU has been discarded without being passed to the per-protocol
+handlers or notifying userspace for raw sockets.
 
-The root cause is uninitialized fields in tx_info(skb->cb) of
-packet used to get garbage values. In this case if
-MWIFIEX_BUF_FLAG_REQUEUED_PKT flag is mistakenly set, txpd
-header was skipped. This patch makes sure that tx_info is
-correctly initialized to fix the problem.
+When there is a router which does not implement RFC 1191 on an
+MTU limited path then this results in stalled connections since
+large packets are discarded and the local protocols are not
+notified so they never attempt to lower the pMTU.
 
-Reported-by: Andrew Wiley <wiley.andrew.j@gmail.com>
-Reported-by: Linus Gasser <list@markas-al-nour.org>
-Reported-by: Michael Hirsch <hirsch@teufel.de>
-Tested-by: Xinming Hu <huxm@marvell.com>
-Signed-off-by: Amitkumar Karwar <akarwar@marvell.com>
-Signed-off-by: Maithili Hinge <maithili@marvell.com>
-Signed-off-by: Avinash Patil <patila@marvell.com>
-Signed-off-by: Bing Zhao <bzhao@marvell.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+One example I have seen is an OpenBSD router terminating IPSec
+tunnels. It's worth pointing out that this case is distinct from
+the BSD 4.2 bug which incorrectly calculated the Next-Hop MTU
+since the commit in question dismissed that as a valid concern.
+
+All of the per-protocols handlers implement the simple approach from
+RFC 1191 of immediately falling back to the minimum value. Although
+this is sub-optimal it is vastly preferable to connections hanging
+indefinitely.
+
+Remove the Next-Hop MTU != 0 check and allow such packets
+to follow the normal path.
+
+Fixes: 46517008e116 ("ipv4: Kill ip_rt_frag_needed().")
+Signed-off-by: Edward Allcutt <edward.allcutt@openmarket.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/net/wireless/mwifiex/main.c |    1 +
- 1 file changed, 1 insertion(+)
+ net/ipv4/icmp.c |    2 --
+ 1 file changed, 2 deletions(-)
 
---- a/drivers/net/wireless/mwifiex/main.c
-+++ b/drivers/net/wireless/mwifiex/main.c
-@@ -501,6 +501,7 @@ mwifiex_hard_start_xmit(struct sk_buff *
- 	}
- 
- 	tx_info = MWIFIEX_SKB_TXCB(skb);
-+	memset(tx_info, 0, sizeof(*tx_info));
- 	tx_info->bss_num = priv->bss_num;
- 	tx_info->bss_type = priv->bss_type;
- 
+--- a/net/ipv4/icmp.c
++++ b/net/ipv4/icmp.c
+@@ -697,8 +697,6 @@ static void icmp_unreach(struct sk_buff
+ 					       &iph->daddr);
+ 			} else {
+ 				info = ntohs(icmph->un.frag.mtu);
+-				if (!info)
+-					goto out;
+ 			}
+ 			break;
+ 		case ICMP_SR_FAILED:
 
 
