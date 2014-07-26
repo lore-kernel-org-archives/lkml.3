@@ -1,62 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752032AbaGZPky (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 11:40:54 -0400
-Received: from mail-vc0-f179.google.com ([209.85.220.179]:50854 "EHLO
-	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751373AbaGZPkw (ORCPT
+	id S1751790AbaGZPqc (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 11:46:32 -0400
+Received: from mail-la0-f41.google.com ([209.85.215.41]:50621 "EHLO
+	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751373AbaGZPqb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 11:40:52 -0400
+	Sat, 26 Jul 2014 11:46:31 -0400
 MIME-Version: 1.0
-In-Reply-To: <53D2C38A.70601@oracle.com>
-References: <53C2FF3D.4030201@oracle.com>
-	<53D2768E.2040902@samsung.com>
-	<53D2C38A.70601@oracle.com>
-Date: Sat, 26 Jul 2014 19:40:51 +0400
-Message-ID: <CAPAsAGwxk7qO7j8-fRWNGuoFKaNoadwtHxrps41hK9jH5=KTQA@mail.gmail.com>
-Subject: Re: net: socket: NULL ptr deref in sendmsg
-From: Andrey Ryabinin <ryabinin.a.a@gmail.com>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: Andrey Ryabinin <a.ryabinin@samsung.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        Eric Dumazet <edumazet@google.com>
+In-Reply-To: <1406389175-9745-1-git-send-email-geert@linux-m68k.org>
+References: <1406389175-9745-1-git-send-email-geert@linux-m68k.org>
+Date: Sat, 26 Jul 2014 17:46:28 +0200
+X-Google-Sender-Auth: T-21-c16_84U0y6tSX8NFxV02Ew
+Message-ID: <CAMuHMdWM_Nbpj9nv6SctPcB0ygE0wzx=LpS4OFgq8ES9ZHcSBg@mail.gmail.com>
+Subject: Re: Build regressions/improvements in v3.16-rc5
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Cc: "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-07-26 0:52 GMT+04:00 Sasha Levin <sasha.levin@oracle.com>:
-> On 07/25/2014 11:23 AM, Andrey Ryabinin wrote:
->> After this report there was no usual "Unable to handle kernel NULL pointer dereference"
->> and this gave me a clue that address 0 is mapped and contains valid socket address structure in it.
->
-> Interesting. Does it mean that all network protocols that check it for being NULL instead of checking
-> the length are incorrect?
->
+On Sat, Jul 26, 2014 at 5:39 PM, Geert Uytterhoeven
+<geert@linux-m68k.org> wrote:
+> JFYI, when comparing v3.16-rc5[1]  to v3.16-rc4[3], the summaries are:
+>   - build errors: +14/-11
 
-I think they are correct. After verify_iovec() we should have either
-both msg->msg_name == 0 and msg->msg_namelen == 0,
-or  both != 0 (and msg_name should be a kernel address).
+  + /scratch/kisskb/src/mm/memory_hotplug.c: error:
+'PAGES_PER_SECTION' undeclared (first use in this function):  =>
+1779:46, 1887:46, 1149:18
+  + /scratch/kisskb/src/mm/memory_hotplug.c: error:
+'PAGE_SECTION_MASK' undeclared (first use in this function):  =>
+1148:20
+  + /scratch/kisskb/src/mm/memory_hotplug.c: error:
+'PFN_SECTION_SHIFT' undeclared (first use in this function):  =>
+1348:31
+  + /scratch/kisskb/src/mm/memory_hotplug.c: error: implicit
+declaration of function '__nr_to_section'
+[-Werror=implicit-function-declaration]:  => 1784:3
+  + /scratch/kisskb/src/mm/memory_hotplug.c: error: implicit
+declaration of function 'find_memory_block_hinted'
+[-Werror=implicit-function-declaration]:  => 1791:3
+  + /scratch/kisskb/src/mm/memory_hotplug.c: error: implicit
+declaration of function 'pfn_to_section_nr'
+[-Werror=implicit-function-declaration]:  => 1780:3
+  + /scratch/kisskb/src/mm/memory_hotplug.c: error: implicit
+declaration of function 'present_section_nr'
+[-Werror=implicit-function-declaration]:  => 1781:3
+  + /scratch/kisskb/src/mm/memory_hotplug.c: error: implicit
+declaration of function 'section_nr_to_pfn'
+[-Werror=implicit-function-declaration]:  => 1816:3
 
-That bug allows to leave verify_iovec() with msg_namelen > 0 and
-msg_name == NULL, causing troubles for protocols checking only
-msg_namelen.
+powerpc-randconfig
 
-> (such as:)
->
->         if (msg->msg_name) {
->                 DECLARE_SOCKADDR(struct sockaddr_can *, addr, msg->msg_name);
->
->                 [...]
->
->
-> Thanks,
-> Sasha
->
+(ignoring a few more R_PPC64_REL24 truncated relocations in
+powerpc-allyesconfig)
 
--- 
-Best regards,
-Andrey Ryabinin
+> [1] http://kisskb.ellerman.id.au/kisskb/head/7665/ (all 119 configs)
+> [3] http://kisskb.ellerman.id.au/kisskb/head/7639/ (all 119 configs)
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
