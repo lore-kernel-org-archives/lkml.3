@@ -1,37 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756508AbaGZUDW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 16:03:22 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33752 "EHLO
+	id S1754853AbaGZUDV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 16:03:21 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33783 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752725AbaGZTDH (ORCPT
+	with ESMTP id S1752732AbaGZTDH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 26 Jul 2014 15:03:07 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Peter Zijlstra <peterz@infradead.org>,
-        Mikulas Patocka <mpatocka@redhat.com>,
-        David Miller <davem@davemloft.net>,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        Vineet Gupta <vgupta@synopsys.com>, Jason Low <jason.low2@hp.com>,
-        Waiman Long <waiman.long@hp.com>,
-        "James E.J. Bottomley" <jejb@parisc-linux.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        John David Anglin <dave.anglin@bell.net>,
-        James Hogan <james.hogan@imgtec.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Davidlohr Bueso <davidlohr@hp.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Will Deacon <will.deacon@arm.com>,
-        linux-arm-kernel@lists.infradead.org, linuxppc-dev@lists.ozlabs.org,
-        sparclinux@vger.kernel.org, Ingo Molnar <mingo@kernel.org>
-Subject: [PATCH 3.10 54/56] locking/mutex: Disable optimistic spinning on some architectures
-Date: Sat, 26 Jul 2014 12:02:47 -0700
-Message-Id: <20140726190201.843883600@linuxfoundation.org>
+        Ding Tianhong <dingtianhong@huawei.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.10 28/56] igmp: fix the problem when mc leave group
+Date: Sat, 26 Jul 2014 12:02:21 -0700
+Message-Id: <20140726190200.948529886@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.2
 In-Reply-To: <20140726190200.061512159@linuxfoundation.org>
 References: <20140726190200.061512159@linuxfoundation.org>
@@ -46,116 +29,84 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Zijlstra <peterz@infradead.org>
+From: dingtianhong <dingtianhong@huawei.com>
 
-commit 4badad352a6bb202ec68afa7a574c0bb961e5ebc upstream.
+[ Upstream commit 52ad353a5344f1f700c5b777175bdfa41d3cd65a ]
 
-The optimistic spin code assumes regular stores and cmpxchg() play nice;
-this is found to not be true for at least: parisc, sparc32, tile32,
-metag-lock1, arc-!llsc and hexagon.
+The problem was triggered by these steps:
 
-There is further wreckage, but this in particular seemed easy to
-trigger, so blacklist this.
+1) create socket, bind and then setsockopt for add mc group.
+   mreq.imr_multiaddr.s_addr = inet_addr("255.0.0.37");
+   mreq.imr_interface.s_addr = inet_addr("192.168.1.2");
+   setsockopt(sockfd, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq, sizeof(mreq));
 
-Opt in for known good archs.
+2) drop the mc group for this socket.
+   mreq.imr_multiaddr.s_addr = inet_addr("255.0.0.37");
+   mreq.imr_interface.s_addr = inet_addr("0.0.0.0");
+   setsockopt(sockfd, IPPROTO_IP, IP_DROP_MEMBERSHIP, &mreq, sizeof(mreq));
 
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Reported-by: Mikulas Patocka <mpatocka@redhat.com>
-Cc: David Miller <davem@davemloft.net>
-Cc: Chris Metcalf <cmetcalf@tilera.com>
-Cc: James Bottomley <James.Bottomley@hansenpartnership.com>
-Cc: Vineet Gupta <vgupta@synopsys.com>
-Cc: Jason Low <jason.low2@hp.com>
-Cc: Waiman Long <waiman.long@hp.com>
-Cc: "James E.J. Bottomley" <jejb@parisc-linux.org>
-Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>
-Cc: John David Anglin <dave.anglin@bell.net>
-Cc: James Hogan <james.hogan@imgtec.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Davidlohr Bueso <davidlohr@hp.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Will Deacon <will.deacon@arm.com>
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org
-Cc: linuxppc-dev@lists.ozlabs.org
-Cc: sparclinux@vger.kernel.org
-Link: http://lkml.kernel.org/r/20140606175316.GV13930@laptop.programming.kicks-ass.net
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+3) and then drop the socket, I found the mc group was still used by the dev:
+
+   netstat -g
+
+   Interface       RefCnt Group
+   --------------- ------ ---------------------
+   eth2		   1	  255.0.0.37
+
+Normally even though the IP_DROP_MEMBERSHIP return error, the mc group still need
+to be released for the netdev when drop the socket, but this process was broken when
+route default is NULL, the reason is that:
+
+The ip_mc_leave_group() will choose the in_dev by the imr_interface.s_addr, if input addr
+is NULL, the default route dev will be chosen, then the ifindex is got from the dev,
+then polling the inet->mc_list and return -ENODEV, but if the default route dev is NULL,
+the in_dev and ifIndex is both NULL, when polling the inet->mc_list, the mc group will be
+released from the mc_list, but the dev didn't dec the refcnt for this mc group, so
+when dropping the socket, the mc_list is NULL and the dev still keep this group.
+
+v1->v2: According Hideaki's suggestion, we should align with IPv6 (RFC3493) and BSDs,
+	so I add the checking for the in_dev before polling the mc_list, make sure when
+	we remove the mc group, dec the refcnt to the real dev which was using the mc address.
+	The problem would never happened again.
+
+Signed-off-by: Ding Tianhong <dingtianhong@huawei.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- arch/arm/Kconfig     |    1 +
- arch/arm64/Kconfig   |    1 +
- arch/powerpc/Kconfig |    1 +
- arch/sparc/Kconfig   |    1 +
- arch/x86/Kconfig     |    1 +
- kernel/Kconfig.locks |    5 ++++-
- 6 files changed, 9 insertions(+), 1 deletion(-)
+ net/ipv4/igmp.c |   10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
 
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -4,6 +4,7 @@ config ARM
- 	select ARCH_BINFMT_ELF_RANDOMIZE_PIE
- 	select ARCH_HAS_ATOMIC64_DEC_IF_POSITIVE
- 	select ARCH_HAVE_CUSTOM_GPIO_H
-+	select ARCH_SUPPORTS_ATOMIC_RMW
- 	select ARCH_HAS_TICK_BROADCAST if GENERIC_CLOCKEVENTS_BROADCAST
- 	select ARCH_WANT_IPC_PARSE_VERSION
- 	select BUILDTIME_EXTABLE_SORT if MMU
---- a/arch/arm64/Kconfig
-+++ b/arch/arm64/Kconfig
-@@ -1,6 +1,7 @@
- config ARM64
- 	def_bool y
- 	select ARCH_HAS_ATOMIC64_DEC_IF_POSITIVE
-+	select ARCH_SUPPORTS_ATOMIC_RMW
- 	select ARCH_WANT_OPTIONAL_GPIOLIB
- 	select ARCH_WANT_COMPAT_IPC_PARSE_VERSION
- 	select ARCH_WANT_FRAME_POINTERS
---- a/arch/powerpc/Kconfig
-+++ b/arch/powerpc/Kconfig
-@@ -138,6 +138,7 @@ config PPC
- 	select ARCH_USE_BUILTIN_BSWAP
- 	select OLD_SIGSUSPEND
- 	select OLD_SIGACTION if PPC32
-+	select ARCH_SUPPORTS_ATOMIC_RMW
+--- a/net/ipv4/igmp.c
++++ b/net/ipv4/igmp.c
+@@ -1874,6 +1874,10 @@ int ip_mc_leave_group(struct sock *sk, s
  
- config EARLY_PRINTK
- 	bool
---- a/arch/sparc/Kconfig
-+++ b/arch/sparc/Kconfig
-@@ -77,6 +77,7 @@ config SPARC64
- 	select ARCH_HAVE_NMI_SAFE_CMPXCHG
- 	select HAVE_C_RECORDMCOUNT
- 	select NO_BOOTMEM
-+	select ARCH_SUPPORTS_ATOMIC_RMW
+ 	rtnl_lock();
+ 	in_dev = ip_mc_find_dev(net, imr);
++	if (!in_dev) {
++		ret = -ENODEV;
++		goto out;
++	}
+ 	ifindex = imr->imr_ifindex;
+ 	for (imlp = &inet->mc_list;
+ 	     (iml = rtnl_dereference(*imlp)) != NULL;
+@@ -1891,16 +1895,14 @@ int ip_mc_leave_group(struct sock *sk, s
  
- config ARCH_DEFCONFIG
- 	string
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -121,6 +121,7 @@ config X86
- 	select OLD_SIGACTION if X86_32
- 	select COMPAT_OLD_SIGACTION if IA32_EMULATION
- 	select RTC_LIB
-+	select ARCH_SUPPORTS_ATOMIC_RMW
+ 		*imlp = iml->next_rcu;
  
- config INSTRUCTION_DECODER
- 	def_bool y
---- a/kernel/Kconfig.locks
-+++ b/kernel/Kconfig.locks
-@@ -220,6 +220,9 @@ config INLINE_WRITE_UNLOCK_IRQRESTORE
- 
- endif
- 
-+config ARCH_SUPPORTS_ATOMIC_RMW
-+	bool
-+
- config MUTEX_SPIN_ON_OWNER
- 	def_bool y
--	depends on SMP && !DEBUG_MUTEXES
-+	depends on SMP && !DEBUG_MUTEXES && ARCH_SUPPORTS_ATOMIC_RMW
+-		if (in_dev)
+-			ip_mc_dec_group(in_dev, group);
++		ip_mc_dec_group(in_dev, group);
+ 		rtnl_unlock();
+ 		/* decrease mem now to avoid the memleak warning */
+ 		atomic_sub(sizeof(*iml), &sk->sk_omem_alloc);
+ 		kfree_rcu(iml, rcu);
+ 		return 0;
+ 	}
+-	if (!in_dev)
+-		ret = -ENODEV;
++out:
+ 	rtnl_unlock();
+ 	return ret;
+ }
 
 
