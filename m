@@ -1,112 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754853AbaGZUDV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 16:03:21 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33783 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752732AbaGZTDH (ORCPT
+	id S1756516AbaGZUDn (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 16:03:43 -0400
+Received: from mail-vc0-f172.google.com ([209.85.220.172]:57589 "EHLO
+	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752725AbaGZUDk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 15:03:07 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ding Tianhong <dingtianhong@huawei.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 28/56] igmp: fix the problem when mc leave group
-Date: Sat, 26 Jul 2014 12:02:21 -0700
-Message-Id: <20140726190200.948529886@linuxfoundation.org>
-X-Mailer: git-send-email 2.0.2
-In-Reply-To: <20140726190200.061512159@linuxfoundation.org>
-References: <20140726190200.061512159@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	Sat, 26 Jul 2014 16:03:40 -0400
 MIME-Version: 1.0
+In-Reply-To: <CA+55aFyo=HVZGEYNmz9GHqLatFHiJYTviKz_dXjqCv8b_gGxBA@mail.gmail.com>
+References: <20140723190230.GH3935@laptop>
+	<CA+55aFyM1wqTLK0m4GQJ28f=z0iZE87=xk+1z-vm+PH1_d8nKw@mail.gmail.com>
+	<53D064C7.5050807@daenzer.net>
+	<CA+55aFyJhqiPv0kQ+51=Ei-zaAO+0JszxtnEyx-Gbto3SE00xw@mail.gmail.com>
+	<53D1B1EF.7030603@daenzer.net>
+	<20140725035527.GA30108@pg-vmw-gw1>
+	<20140725140237.GB32669@home.goodmis.org>
+	<CA+55aFzOoJzqJ=4RVPEBfscA8oRdr5Nv7fKx9aXYw2+frkuhwA@mail.gmail.com>
+	<CA+55aFyHU4Gwk6ASTuOgh3eFPshkgy1s5zc4p7f01DwrYddFOw@mail.gmail.com>
+	<CA+55aFxaXPqyDJv-SNu6Giy3eKCu_SY1wof1NaNnPTbtF9RbXQ@mail.gmail.com>
+	<20140726193557.GA21842@x4>
+	<CA+55aFyo=HVZGEYNmz9GHqLatFHiJYTviKz_dXjqCv8b_gGxBA@mail.gmail.com>
+Date: Sat, 26 Jul 2014 13:03:39 -0700
+X-Google-Sender-Auth: 1TYq88MmJToHQaE2WDs5wka_Rl4
+Message-ID: <CA+55aFzLR9+ocixniVBUV=TjDzbWF6w+7b8rE=p42LtHMpxfjA@mail.gmail.com>
+Subject: Re: Random panic in load_balance() with 3.16-rc
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Markus Trippelsdorf <markus@trippelsdorf.de>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Alexei Starovoitov <ast@kernel.org>,
+        =?UTF-8?Q?Michel_D=C3=A4nzer?= <michel@daenzer.net>,
+        Jakub Jelinek <jakub@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Debian GCC Maintainers <debian-gcc@lists.debian.org>,
+        Debian Kernel Team <debian-kernel@lists.debian.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+On Sat, Jul 26, 2014 at 12:56 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+>
+> Also, Michel - can you try  this patch if you still have your
+> gcc-4.9.0 install, and send me the resulting fair.s file again?
 
-------------------
+Hmm. The good news is that with that patch, the GCC_COMPARE_DEBUG
+build succeeds. At least for my small local config.
 
-From: dingtianhong <dingtianhong@huawei.com>
+So I think that's the answer for now, although I'll wait to hear about
+any possible non-debug downsides..
 
-[ Upstream commit 52ad353a5344f1f700c5b777175bdfa41d3cd65a ]
-
-The problem was triggered by these steps:
-
-1) create socket, bind and then setsockopt for add mc group.
-   mreq.imr_multiaddr.s_addr = inet_addr("255.0.0.37");
-   mreq.imr_interface.s_addr = inet_addr("192.168.1.2");
-   setsockopt(sockfd, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq, sizeof(mreq));
-
-2) drop the mc group for this socket.
-   mreq.imr_multiaddr.s_addr = inet_addr("255.0.0.37");
-   mreq.imr_interface.s_addr = inet_addr("0.0.0.0");
-   setsockopt(sockfd, IPPROTO_IP, IP_DROP_MEMBERSHIP, &mreq, sizeof(mreq));
-
-3) and then drop the socket, I found the mc group was still used by the dev:
-
-   netstat -g
-
-   Interface       RefCnt Group
-   --------------- ------ ---------------------
-   eth2		   1	  255.0.0.37
-
-Normally even though the IP_DROP_MEMBERSHIP return error, the mc group still need
-to be released for the netdev when drop the socket, but this process was broken when
-route default is NULL, the reason is that:
-
-The ip_mc_leave_group() will choose the in_dev by the imr_interface.s_addr, if input addr
-is NULL, the default route dev will be chosen, then the ifindex is got from the dev,
-then polling the inet->mc_list and return -ENODEV, but if the default route dev is NULL,
-the in_dev and ifIndex is both NULL, when polling the inet->mc_list, the mc group will be
-released from the mc_list, but the dev didn't dec the refcnt for this mc group, so
-when dropping the socket, the mc_list is NULL and the dev still keep this group.
-
-v1->v2: According Hideaki's suggestion, we should align with IPv6 (RFC3493) and BSDs,
-	so I add the checking for the in_dev before polling the mc_list, make sure when
-	we remove the mc group, dec the refcnt to the real dev which was using the mc address.
-	The problem would never happened again.
-
-Signed-off-by: Ding Tianhong <dingtianhong@huawei.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/ipv4/igmp.c |   10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
-
---- a/net/ipv4/igmp.c
-+++ b/net/ipv4/igmp.c
-@@ -1874,6 +1874,10 @@ int ip_mc_leave_group(struct sock *sk, s
- 
- 	rtnl_lock();
- 	in_dev = ip_mc_find_dev(net, imr);
-+	if (!in_dev) {
-+		ret = -ENODEV;
-+		goto out;
-+	}
- 	ifindex = imr->imr_ifindex;
- 	for (imlp = &inet->mc_list;
- 	     (iml = rtnl_dereference(*imlp)) != NULL;
-@@ -1891,16 +1895,14 @@ int ip_mc_leave_group(struct sock *sk, s
- 
- 		*imlp = iml->next_rcu;
- 
--		if (in_dev)
--			ip_mc_dec_group(in_dev, group);
-+		ip_mc_dec_group(in_dev, group);
- 		rtnl_unlock();
- 		/* decrease mem now to avoid the memleak warning */
- 		atomic_sub(sizeof(*iml), &sk->sk_omem_alloc);
- 		kfree_rcu(iml, rcu);
- 		return 0;
- 	}
--	if (!in_dev)
--		ret = -ENODEV;
-+out:
- 	rtnl_unlock();
- 	return ret;
- }
-
-
+              Linus
