@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751841AbaGZOfe (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 10:35:34 -0400
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:60760 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751372AbaGZOfc (ORCPT
+	id S1751853AbaGZOhH (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 10:37:07 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:59090 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751449AbaGZOhG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 10:35:32 -0400
+	Sat, 26 Jul 2014 10:37:06 -0400
 From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Steffen Maier <maier@linux.vnet.ibm.com>, linux390@de.ibm.com
+To: Anil Gurumurthy <anil.gurumurthy@qlogic.com>,
+        Sudarsana Kalluru <sudarsana.kalluru@qlogic.com>
 Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>, linux-s390@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] s390: scsi: zfcp_aux.c:  Cleaning up missing null-terminate in conjunction with strncpy
-Date: Sat, 26 Jul 2014 16:36:58 +0200
-Message-Id: <1406385418-3393-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] scsi: bfa: bfad_attr.c:  Cleaning up missing null-terminate in conjunction with strncpy
+Date: Sat, 26 Jul 2014 16:38:30 +0200
+Message-Id: <1406385510-3475-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
 X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,22 +25,22 @@ Replacing strncpy with strlcpy to avoid strings that lacks null terminate.
 
 Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 ---
- drivers/s390/scsi/zfcp_aux.c |    2 +-
+ drivers/scsi/bfa/bfad_attr.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/s390/scsi/zfcp_aux.c b/drivers/s390/scsi/zfcp_aux.c
-index 8004b07..a23ba76 100644
---- a/drivers/s390/scsi/zfcp_aux.c
-+++ b/drivers/s390/scsi/zfcp_aux.c
-@@ -101,7 +101,7 @@ static void __init zfcp_init_device_setup(char *devstr)
- 	token = strsep(&str, ",");
- 	if (!token || strlen(token) >= ZFCP_BUS_ID_SIZE)
- 		goto err_out;
--	strncpy(busid, token, ZFCP_BUS_ID_SIZE);
-+	strlcpy(busid, token, ZFCP_BUS_ID_SIZE);
+diff --git a/drivers/scsi/bfa/bfad_attr.c b/drivers/scsi/bfa/bfad_attr.c
+index 40be670..6d21bc6 100644
+--- a/drivers/scsi/bfa/bfad_attr.c
++++ b/drivers/scsi/bfa/bfad_attr.c
+@@ -842,7 +842,7 @@ bfad_im_symbolic_name_show(struct device *dev, struct device_attribute *attr,
+ 	char symname[BFA_SYMNAME_MAXLEN];
  
- 	token = strsep(&str, ",");
- 	if (!token || kstrtoull(token, 0, (unsigned long long *) &wwpn))
+ 	bfa_fcs_lport_get_attr(&bfad->bfa_fcs.fabric.bport, &port_attr);
+-	strncpy(symname, port_attr.port_cfg.sym_name.symname,
++	strlcpy(symname, port_attr.port_cfg.sym_name.symname,
+ 			BFA_SYMNAME_MAXLEN);
+ 	return snprintf(buf, PAGE_SIZE, "%s\n", symname);
+ }
 -- 
 1.7.10.4
 
