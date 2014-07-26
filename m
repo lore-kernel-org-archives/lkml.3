@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755572AbaGZUHv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 16:07:51 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33646 "EHLO
+	id S1756687AbaGZUIL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 16:08:11 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33664 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752639AbaGZTC6 (ORCPT
+	with ESMTP id S1752627AbaGZTC5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 15:02:58 -0400
+	Sat, 26 Jul 2014 15:02:57 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Eric Dumazet <edumazet@google.com>,
-        kbuild test robot <fengguang.wu@intel.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 22/56] net: fix sparse warning in sk_dst_set()
-Date: Sat, 26 Jul 2014 12:02:15 -0700
-Message-Id: <20140726190200.766568867@linuxfoundation.org>
+        Guenter Roeck <linux@roeck-us.net>, Axel Lin <axel.lin@ingics.com>
+Subject: [PATCH 3.10 10/56] hwmon: (adt7470) Fix writes to temperature limit registers
+Date: Sat, 26 Jul 2014 12:02:03 -0700
+Message-Id: <20140726190200.383165495@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.2
 In-Reply-To: <20140726190200.061512159@linuxfoundation.org>
 References: <20140726190200.061512159@linuxfoundation.org>
@@ -30,36 +28,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <edumazet@google.com>
+From: Guenter Roeck <linux@roeck-us.net>
 
-[ Upstream commit 5925a0555bdaf0b396a84318cbc21ba085f6c0d3 ]
+commit de12d6f4b10b21854441f5242dcb29ea96181e58 upstream.
 
-sk_dst_cache has __rcu annotation, so we need a cast to avoid
-following sparse error :
+Temperature limit registers are signed. Limits therefore need
+to be clamped to (-128, 127) degrees C and not to (0, 255)
+degrees C.
 
-include/net/sock.h:1774:19: warning: incorrect type in initializer (different address spaces)
-include/net/sock.h:1774:19:    expected struct dst_entry [noderef] <asn:4>*__ret
-include/net/sock.h:1774:19:    got struct dst_entry *dst
+Without this fix, writing a limit of 128 degrees C sets the
+actual limit to -128 degrees C.
 
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Reported-by: kbuild test robot <fengguang.wu@intel.com>
-Fixes: 7f502361531e ("ipv4: irq safe sk_dst_[re]set() and ipv4_sk_update_pmtu() fix")
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Reviewed-by: Axel Lin <axel.lin@ingics.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- include/net/sock.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/include/net/sock.h
-+++ b/include/net/sock.h
-@@ -1770,7 +1770,7 @@ sk_dst_set(struct sock *sk, struct dst_e
- 	struct dst_entry *old_dst;
+---
+ drivers/hwmon/adt7470.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+--- a/drivers/hwmon/adt7470.c
++++ b/drivers/hwmon/adt7470.c
+@@ -515,7 +515,7 @@ static ssize_t set_temp_min(struct devic
+ 		return -EINVAL;
  
- 	sk_tx_queue_clear(sk);
--	old_dst = xchg(&sk->sk_dst_cache, dst);
-+	old_dst = xchg((__force struct dst_entry **)&sk->sk_dst_cache, dst);
- 	dst_release(old_dst);
- }
+ 	temp = DIV_ROUND_CLOSEST(temp, 1000);
+-	temp = clamp_val(temp, 0, 255);
++	temp = clamp_val(temp, -128, 127);
  
+ 	mutex_lock(&data->lock);
+ 	data->temp_min[attr->index] = temp;
+@@ -549,7 +549,7 @@ static ssize_t set_temp_max(struct devic
+ 		return -EINVAL;
+ 
+ 	temp = DIV_ROUND_CLOSEST(temp, 1000);
+-	temp = clamp_val(temp, 0, 255);
++	temp = clamp_val(temp, -128, 127);
+ 
+ 	mutex_lock(&data->lock);
+ 	data->temp_max[attr->index] = temp;
+@@ -826,7 +826,7 @@ static ssize_t set_pwm_tmin(struct devic
+ 		return -EINVAL;
+ 
+ 	temp = DIV_ROUND_CLOSEST(temp, 1000);
+-	temp = clamp_val(temp, 0, 255);
++	temp = clamp_val(temp, -128, 127);
+ 
+ 	mutex_lock(&data->lock);
+ 	data->pwm_tmin[attr->index] = temp;
 
 
