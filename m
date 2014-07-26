@@ -1,24 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755363AbaGZTwA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 15:52:00 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34120 "EHLO
+	id S932082AbaGZTv7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 15:51:59 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34123 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753869AbaGZTNC (ORCPT
+	with ESMTP id S1753873AbaGZTND (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 15:13:02 -0400
+	Sat, 26 Jul 2014 15:13:03 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jay Vosburgh <j.vosburgh@gmail.com>,
-        Veaceslav Falico <vfalico@gmail.com>,
-        Andy Gospodarek <andy@greyhouse.net>,
-        "David S. Miller" <davem@davemloft.net>,
-        Karim Scheik <karim.scheik@prisma-solutions.at>,
-        Nikolay Aleksandrov <nikolay@redhat.com>
-Subject: [PATCH 3.14 58/87] bonding: fix ad_select module param check
-Date: Sat, 26 Jul 2014 12:02:32 -0700
-Message-Id: <20140726190216.506713647@linuxfoundation.org>
+        "H.K. Jerry Chu" <hkchu@google.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.14 59/87] net-gre-gro: Fix a bug that breaks the forwarding path
+Date: Sat, 26 Jul 2014 12:02:33 -0700
+Message-Id: <20140726190216.539407296@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.2
 In-Reply-To: <20140726190214.530473925@linuxfoundation.org>
 References: <20140726190214.530473925@linuxfoundation.org>
@@ -33,39 +29,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nikolay Aleksandrov <nikolay@redhat.com>
+From: Jerry Chu <hkchu@google.com>
 
-[ Upstream commit 548d28bd0eac840d122b691279ce9f4ce6ecbfb6 ]
+[ Upstream commit c3caf1192f904de2f1381211f564537235d50de3 ]
 
-Obvious copy/paste error when I converted the ad_select to the new
-option API. "lacp_rate" there should be "ad_select" so we can get the
-proper value.
+Fixed a bug that was introduced by my GRE-GRO patch
+(bf5a755f5e9186406bbf50f4087100af5bd68e40 net-gre-gro: Add GRE
+support to the GRO stack) that breaks the forwarding path
+because various GSO related fields were not set. The bug will
+cause on the egress path either the GSO code to fail, or a
+GRE-TSO capable (NETIF_F_GSO_GRE) NICs to choke. The following
+fix has been tested for both cases.
 
-CC: Jay Vosburgh <j.vosburgh@gmail.com>
-CC: Veaceslav Falico <vfalico@gmail.com>
-CC: Andy Gospodarek <andy@greyhouse.net>
-CC: David S. Miller <davem@davemloft.net>
-
-Fixes: 9e5f5eebe765 ("bonding: convert ad_select to use the new option
-API")
-Reported-by: Karim Scheik <karim.scheik@prisma-solutions.at>
-Signed-off-by: Nikolay Aleksandrov <nikolay@redhat.com>
+Signed-off-by: H.K. Jerry Chu <hkchu@google.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/bonding/bond_main.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/core/dev.c           |    2 ++
+ net/ipv4/af_inet.c       |    3 +++
+ net/ipv4/gre_offload.c   |    3 +++
+ net/ipv4/tcp_offload.c   |    2 +-
+ net/ipv6/tcpv6_offload.c |    2 +-
+ 5 files changed, 10 insertions(+), 2 deletions(-)
 
---- a/drivers/net/bonding/bond_main.c
-+++ b/drivers/net/bonding/bond_main.c
-@@ -4068,7 +4068,7 @@ static int bond_check_params(struct bond
- 	}
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -4058,6 +4058,8 @@ static void napi_reuse_skb(struct napi_s
+ 	skb->vlan_tci = 0;
+ 	skb->dev = napi->dev;
+ 	skb->skb_iif = 0;
++	skb->encapsulation = 0;
++	skb_shinfo(skb)->gso_type = 0;
+ 	skb->truesize = SKB_TRUESIZE(skb_end_offset(skb));
  
- 	if (ad_select) {
--		bond_opt_initstr(&newval, lacp_rate);
-+		bond_opt_initstr(&newval, ad_select);
- 		valptr = bond_opt_parse(bond_opt_get(BOND_OPT_AD_SELECT),
- 					&newval);
- 		if (!valptr) {
+ 	napi->skb = skb;
+--- a/net/ipv4/af_inet.c
++++ b/net/ipv4/af_inet.c
+@@ -1434,6 +1434,9 @@ static int inet_gro_complete(struct sk_b
+ 	int proto = iph->protocol;
+ 	int err = -ENOSYS;
+ 
++	if (skb->encapsulation)
++		skb_set_inner_network_header(skb, nhoff);
++
+ 	csum_replace2(&iph->check, iph->tot_len, newlen);
+ 	iph->tot_len = newlen;
+ 
+--- a/net/ipv4/gre_offload.c
++++ b/net/ipv4/gre_offload.c
+@@ -255,6 +255,9 @@ static int gre_gro_complete(struct sk_bu
+ 	int err = -ENOENT;
+ 	__be16 type;
+ 
++	skb->encapsulation = 1;
++	skb_shinfo(skb)->gso_type = SKB_GSO_GRE;
++
+ 	type = greh->protocol;
+ 	if (greh->flags & GRE_KEY)
+ 		grehlen += GRE_HEADER_SECTION;
+--- a/net/ipv4/tcp_offload.c
++++ b/net/ipv4/tcp_offload.c
+@@ -310,7 +310,7 @@ static int tcp4_gro_complete(struct sk_b
+ 
+ 	th->check = ~tcp_v4_check(skb->len - thoff, iph->saddr,
+ 				  iph->daddr, 0);
+-	skb_shinfo(skb)->gso_type = SKB_GSO_TCPV4;
++	skb_shinfo(skb)->gso_type |= SKB_GSO_TCPV4;
+ 
+ 	return tcp_gro_complete(skb);
+ }
+--- a/net/ipv6/tcpv6_offload.c
++++ b/net/ipv6/tcpv6_offload.c
+@@ -73,7 +73,7 @@ static int tcp6_gro_complete(struct sk_b
+ 
+ 	th->check = ~tcp_v6_check(skb->len - thoff, &iph->saddr,
+ 				  &iph->daddr, 0);
+-	skb_shinfo(skb)->gso_type = SKB_GSO_TCPV6;
++	skb_shinfo(skb)->gso_type |= SKB_GSO_TCPV6;
+ 
+ 	return tcp_gro_complete(skb);
+ }
 
 
