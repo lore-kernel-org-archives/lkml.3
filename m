@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753327AbaGZTFz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 15:05:55 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33919 "EHLO
+	id S1753352AbaGZTGU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 15:06:20 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33783 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752917AbaGZTDQ (ORCPT
+	with ESMTP id S1752903AbaGZTDQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 26 Jul 2014 15:03:16 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Hugh Dickins <hughd@google.com>, Sasha Levin <sasha.levin@oracle.com>,
-        Dave Jones <davej@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.14 25/87] shmem: fix faulting into a hole while its punched
-Date: Sat, 26 Jul 2014 12:01:59 -0700
-Message-Id: <20140726190215.341593929@linuxfoundation.org>
+        Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Subject: [PATCH 3.14 24/87] iwlwifi: dvm: dont enable CTS to self
+Date: Sat, 26 Jul 2014 12:01:58 -0700
+Message-Id: <20140726190215.310985446@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.2
 In-Reply-To: <20140726190214.530473925@linuxfoundation.org>
 References: <20140726190214.530473925@linuxfoundation.org>
@@ -31,135 +28,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hugh Dickins <hughd@google.com>
+From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 
-commit f00cdc6df7d7cfcabb5b740911e6788cb0802bdb upstream.
+commit 43d826ca5979927131685cc2092c7ce862cb91cd upstream.
 
-Trinity finds that mmap access to a hole while it's punched from shmem
-can prevent the madvise(MADV_REMOVE) or fallocate(FALLOC_FL_PUNCH_HOLE)
-from completing, until the reader chooses to stop; with the puncher's
-hold on i_mutex locking out all other writers until it can complete.
+We should always prefer to use full RTS protection. Using
+CTS to self gives a meaningless improvement, but this flow
+is much harder for the firmware which is likely to have
+issues with it.
 
-It appears that the tmpfs fault path is too light in comparison with its
-hole-punching path, lacking an i_data_sem to obstruct it; but we don't
-want to slow down the common case.
-
-Extend shmem_fallocate()'s existing range notification mechanism, so
-shmem_fault() can refrain from faulting pages into the hole while it's
-punched, waiting instead on i_mutex (when safe to sleep; or repeatedly
-faulting when not).
-
-[akpm@linux-foundation.org: coding-style fixes]
-Signed-off-by: Hugh Dickins <hughd@google.com>
-Reported-by: Sasha Levin <sasha.levin@oracle.com>
-Tested-by: Sasha Levin <sasha.levin@oracle.com>
-Cc: Dave Jones <davej@redhat.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/shmem.c |   56 ++++++++++++++++++++++++++++++++++++++++++++++++++++----
- 1 file changed, 52 insertions(+), 4 deletions(-)
+ drivers/net/wireless/iwlwifi/dvm/rxon.c |   12 ------------
+ 1 file changed, 12 deletions(-)
 
---- a/mm/shmem.c
-+++ b/mm/shmem.c
-@@ -80,11 +80,12 @@ static struct vfsmount *shm_mnt;
- #define SHORT_SYMLINK_LEN 128
+--- a/drivers/net/wireless/iwlwifi/dvm/rxon.c
++++ b/drivers/net/wireless/iwlwifi/dvm/rxon.c
+@@ -1068,13 +1068,6 @@ int iwlagn_commit_rxon(struct iwl_priv *
+ 	/* recalculate basic rates */
+ 	iwl_calc_basic_rates(priv, ctx);
  
- /*
-- * shmem_fallocate and shmem_writepage communicate via inode->i_private
-- * (with i_mutex making sure that it has only one user at a time):
-- * we would prefer not to enlarge the shmem inode just for that.
-+ * shmem_fallocate communicates with shmem_fault or shmem_writepage via
-+ * inode->i_private (with i_mutex making sure that it has only one user at
-+ * a time): we would prefer not to enlarge the shmem inode just for that.
-  */
- struct shmem_falloc {
-+	int	mode;		/* FALLOC_FL mode currently operating */
- 	pgoff_t start;		/* start of range currently being fallocated */
- 	pgoff_t next;		/* the next page offset to be fallocated */
- 	pgoff_t nr_falloced;	/* how many new pages have been fallocated */
-@@ -824,6 +825,7 @@ static int shmem_writepage(struct page *
- 			spin_lock(&inode->i_lock);
- 			shmem_falloc = inode->i_private;
- 			if (shmem_falloc &&
-+			    !shmem_falloc->mode &&
- 			    index >= shmem_falloc->start &&
- 			    index < shmem_falloc->next)
- 				shmem_falloc->nr_unswapped++;
-@@ -1298,6 +1300,44 @@ static int shmem_fault(struct vm_area_st
- 	int error;
- 	int ret = VM_FAULT_LOCKED;
+-	/*
+-	 * force CTS-to-self frames protection if RTS-CTS is not preferred
+-	 * one aggregation protection method
+-	 */
+-	if (!priv->hw_params.use_rts_for_aggregation)
+-		ctx->staging.flags |= RXON_FLG_SELF_CTS_EN;
+-
+ 	if ((ctx->vif && ctx->vif->bss_conf.use_short_slot) ||
+ 	    !(ctx->staging.flags & RXON_FLG_BAND_24G_MSK))
+ 		ctx->staging.flags |= RXON_FLG_SHORT_SLOT_MSK;
+@@ -1480,11 +1473,6 @@ void iwlagn_bss_info_changed(struct ieee
+ 	else
+ 		ctx->staging.flags &= ~RXON_FLG_TGG_PROTECT_MSK;
  
-+	/*
-+	 * Trinity finds that probing a hole which tmpfs is punching can
-+	 * prevent the hole-punch from ever completing: which in turn
-+	 * locks writers out with its hold on i_mutex.  So refrain from
-+	 * faulting pages into the hole while it's being punched, and
-+	 * wait on i_mutex to be released if vmf->flags permits.
-+	 */
-+	if (unlikely(inode->i_private)) {
-+		struct shmem_falloc *shmem_falloc;
-+
-+		spin_lock(&inode->i_lock);
-+		shmem_falloc = inode->i_private;
-+		if (!shmem_falloc ||
-+		    shmem_falloc->mode != FALLOC_FL_PUNCH_HOLE ||
-+		    vmf->pgoff < shmem_falloc->start ||
-+		    vmf->pgoff >= shmem_falloc->next)
-+			shmem_falloc = NULL;
-+		spin_unlock(&inode->i_lock);
-+		/*
-+		 * i_lock has protected us from taking shmem_falloc seriously
-+		 * once return from shmem_fallocate() went back up that stack.
-+		 * i_lock does not serialize with i_mutex at all, but it does
-+		 * not matter if sometimes we wait unnecessarily, or sometimes
-+		 * miss out on waiting: we just need to make those cases rare.
-+		 */
-+		if (shmem_falloc) {
-+			if ((vmf->flags & FAULT_FLAG_ALLOW_RETRY) &&
-+			   !(vmf->flags & FAULT_FLAG_RETRY_NOWAIT)) {
-+				up_read(&vma->vm_mm->mmap_sem);
-+				mutex_lock(&inode->i_mutex);
-+				mutex_unlock(&inode->i_mutex);
-+				return VM_FAULT_RETRY;
-+			}
-+			/* cond_resched? Leave that to GUP or return to user */
-+			return VM_FAULT_NOPAGE;
-+		}
-+	}
-+
- 	error = shmem_getpage(inode, vmf->pgoff, &vmf->page, SGP_CACHE, &ret);
- 	if (error)
- 		return ((error == -ENOMEM) ? VM_FAULT_OOM : VM_FAULT_SIGBUS);
-@@ -1813,18 +1853,26 @@ static long shmem_fallocate(struct file
+-	if (bss_conf->use_cts_prot)
+-		ctx->staging.flags |= RXON_FLG_SELF_CTS_EN;
+-	else
+-		ctx->staging.flags &= ~RXON_FLG_SELF_CTS_EN;
+-
+ 	memcpy(ctx->staging.bssid_addr, bss_conf->bssid, ETH_ALEN);
  
- 	mutex_lock(&inode->i_mutex);
- 
-+	shmem_falloc.mode = mode & ~FALLOC_FL_KEEP_SIZE;
-+
- 	if (mode & FALLOC_FL_PUNCH_HOLE) {
- 		struct address_space *mapping = file->f_mapping;
- 		loff_t unmap_start = round_up(offset, PAGE_SIZE);
- 		loff_t unmap_end = round_down(offset + len, PAGE_SIZE) - 1;
- 
-+		shmem_falloc.start = unmap_start >> PAGE_SHIFT;
-+		shmem_falloc.next = (unmap_end + 1) >> PAGE_SHIFT;
-+		spin_lock(&inode->i_lock);
-+		inode->i_private = &shmem_falloc;
-+		spin_unlock(&inode->i_lock);
-+
- 		if ((u64)unmap_end > (u64)unmap_start)
- 			unmap_mapping_range(mapping, unmap_start,
- 					    1 + unmap_end - unmap_start, 0);
- 		shmem_truncate_range(inode, offset, offset + len - 1);
- 		/* No need to unmap again: hole-punching leaves COWed pages */
- 		error = 0;
--		goto out;
-+		goto undone;
- 	}
- 
- 	/* We need to check rlimit even when FALLOC_FL_KEEP_SIZE */
+ 	if (vif->type == NL80211_IFTYPE_AP ||
 
 
