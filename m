@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753540AbaGZTKq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 15:10:46 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34041 "EHLO
+	id S932216AbaGZT4M (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 15:56:12 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34063 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752801AbaGZTKo (ORCPT
+	with ESMTP id S1752801AbaGZTKr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 15:10:44 -0400
+	Sat, 26 Jul 2014 15:10:47 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Hans de Goede <hdegoede@redhat.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>
-Subject: [PATCH 3.14 03/87] media: gspca_pac7302: Add new usb-id for Genius i-Look 317
-Date: Sat, 26 Jul 2014 12:01:37 -0700
-Message-Id: <20140726190214.641281189@linuxfoundation.org>
+        Li RongQing <roy.qing.li@gmail.com>,
+        Eric Dumazet <edumazet@google.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.14 35/87] 8021q: fix a potential memory leak
+Date: Sat, 26 Jul 2014 12:02:09 -0700
+Message-Id: <20140726190215.658392080@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.2
 In-Reply-To: <20140726190214.530473925@linuxfoundation.org>
 References: <20140726190214.530473925@linuxfoundation.org>
@@ -29,29 +30,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hans de Goede <hdegoede@redhat.com>
+From: Li RongQing <roy.qing.li@gmail.com>
 
-commit 242841d3d71191348f98310e2d2001e1001d8630 upstream.
+[ Upstream commit 916c1689a09bc1ca81f2d7a34876f8d35aadd11b ]
 
-Tested-and-reported-by: yullaw <yullaw@mageia.cz>
+skb_cow called in vlan_reorder_header does not free the skb when it failed,
+and vlan_reorder_header returns NULL to reset original skb when it is called
+in vlan_untag, lead to a memory leak.
 
-Signed-off-by: Hans de Goede <hdegoede@redhat.com>
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Signed-off-by: Li RongQing <roy.qing.li@gmail.com>
+Acked-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/media/usb/gspca/pac7302.c |    1 +
- 1 file changed, 1 insertion(+)
+ net/8021q/vlan_core.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/drivers/media/usb/gspca/pac7302.c
-+++ b/drivers/media/usb/gspca/pac7302.c
-@@ -928,6 +928,7 @@ static const struct usb_device_id device
- 	{USB_DEVICE(0x093a, 0x2620)},
- 	{USB_DEVICE(0x093a, 0x2621)},
- 	{USB_DEVICE(0x093a, 0x2622), .driver_info = FL_VFLIP},
-+	{USB_DEVICE(0x093a, 0x2623), .driver_info = FL_VFLIP},
- 	{USB_DEVICE(0x093a, 0x2624), .driver_info = FL_VFLIP},
- 	{USB_DEVICE(0x093a, 0x2625)},
- 	{USB_DEVICE(0x093a, 0x2626)},
+--- a/net/8021q/vlan_core.c
++++ b/net/8021q/vlan_core.c
+@@ -108,8 +108,11 @@ EXPORT_SYMBOL(vlan_dev_vlan_id);
+ 
+ static struct sk_buff *vlan_reorder_header(struct sk_buff *skb)
+ {
+-	if (skb_cow(skb, skb_headroom(skb)) < 0)
++	if (skb_cow(skb, skb_headroom(skb)) < 0) {
++		kfree_skb(skb);
+ 		return NULL;
++	}
++
+ 	memmove(skb->data - ETH_HLEN, skb->data - VLAN_ETH_HLEN, 2 * ETH_ALEN);
+ 	skb->mac_header += VLAN_HLEN;
+ 	return skb;
 
 
