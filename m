@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755829AbaGZT6i (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 15:58:38 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33860 "EHLO
+	id S1754269AbaGZT7g (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 15:59:36 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33826 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752682AbaGZTDK (ORCPT
+	with ESMTP id S1752769AbaGZTDJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 15:03:10 -0400
+	Sat, 26 Jul 2014 15:03:09 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Gavin Guo <gavin.guo@canonical.com>,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: [PATCH 3.14 01/87] usb: Check if port status is equal to RxDetect
-Date: Sat, 26 Jul 2014 12:01:35 -0700
-Message-Id: <20140726190214.577352208@linuxfoundation.org>
+        Ben Pfaff <blp@nicira.com>, "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.10 33/56] netlink: Fix handling of error from netlink_dump().
+Date: Sat, 26 Jul 2014 12:02:26 -0700
+Message-Id: <20140726190201.140467696@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.2
-In-Reply-To: <20140726190214.530473925@linuxfoundation.org>
-References: <20140726190214.530473925@linuxfoundation.org>
+In-Reply-To: <20140726190200.061512159@linuxfoundation.org>
+References: <20140726190200.061512159@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -25,62 +24,56 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Gavin Guo <gavin.guo@canonical.com>
+From: Ben Pfaff <blp@nicira.com>
 
-commit bb86cf569bbd7ad4dce581a37c7fbd748057e9dc upstream.
+[ Upstream commit ac30ef832e6af0505b6f0251a6659adcfa74975e ]
 
-When using USB 3.0 pen drive with the [AMD] FCH USB XHCI Controller
-[1022:7814], the second hotplugging will experience the USB 3.0 pen
-drive is recognized as high-speed device. After bisecting the kernel,
-I found the commit number 41e7e056cdc662f704fa9262e5c6e213b4ab45dd
-(USB: Allow USB 3.0 ports to be disabled.) causes the bug. After doing
-some experiments, the bug can be fixed by avoiding executing the function
-hub_usb3_port_disable(). Because the port status with [AMD] FCH USB
-XHCI Controlleris [1022:7814] is already in RxDetect
-(I tried printing out the port status before setting to Disabled state),
-it's reasonable to check the port status before really executing
-hub_usb3_port_disable().
+netlink_dump() returns a negative errno value on error.  Until now,
+netlink_recvmsg() directly recorded that negative value in sk->sk_err, but
+that's wrong since sk_err takes positive errno values.  (This manifests as
+userspace receiving a positive return value from the recv() system call,
+falsely indicating success.) This bug was introduced in the commit that
+started checking the netlink_dump() return value, commit b44d211 (netlink:
+handle errors from netlink_dump()).
 
-Fixes: 41e7e056cdc6 (USB: Allow USB 3.0 ports to be disabled.)
-Signed-off-by: Gavin Guo <gavin.guo@canonical.com>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
+Multithreaded Netlink dumps are one way to trigger this behavior in
+practice, as described in the commit message for the userspace workaround
+posted here:
+    http://openvswitch.org/pipermail/dev/2014-June/042339.html
+
+This commit also fixes the same bug in netlink_poll(), introduced in commit
+cd1df525d (netlink: add flow control for memory mapped I/O).
+
+Signed-off-by: Ben Pfaff <blp@nicira.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/usb/core/hub.c |   19 +++++++++++++++++++
- 1 file changed, 19 insertions(+)
+ net/netlink/af_netlink.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/core/hub.c
-+++ b/drivers/usb/core/hub.c
-@@ -884,6 +884,25 @@ static int hub_usb3_port_disable(struct
- 	if (!hub_is_superspeed(hub->hdev))
- 		return -EINVAL;
- 
-+	ret = hub_port_status(hub, port1, &portstatus, &portchange);
-+	if (ret < 0)
-+		return ret;
-+
-+	/*
-+	 * USB controller Advanced Micro Devices, Inc. [AMD] FCH USB XHCI
-+	 * Controller [1022:7814] will have spurious result making the following
-+	 * usb 3.0 device hotplugging route to the 2.0 root hub and recognized
-+	 * as high-speed device if we set the usb 3.0 port link state to
-+	 * Disabled. Since it's already in USB_SS_PORT_LS_RX_DETECT state, we
-+	 * check the state here to avoid the bug.
-+	 */
-+	if ((portstatus & USB_PORT_STAT_LINK_STATE) ==
-+				USB_SS_PORT_LS_RX_DETECT) {
-+		dev_dbg(&hub->ports[port1 - 1]->dev,
-+			 "Not disabling port; link state is RxDetect\n");
-+		return ret;
-+	}
-+
- 	ret = hub_set_port_link_state(hub, port1, USB_SS_PORT_LS_SS_DISABLED);
- 	if (ret)
- 		return ret;
+--- a/net/netlink/af_netlink.c
++++ b/net/netlink/af_netlink.c
+@@ -500,7 +500,7 @@ static unsigned int netlink_poll(struct
+ 		while (nlk->cb != NULL && netlink_dump_space(nlk)) {
+ 			err = netlink_dump(sk);
+ 			if (err < 0) {
+-				sk->sk_err = err;
++				sk->sk_err = -err;
+ 				sk->sk_error_report(sk);
+ 				break;
+ 			}
+@@ -2272,7 +2272,7 @@ static int netlink_recvmsg(struct kiocb
+ 	if (nlk->cb && atomic_read(&sk->sk_rmem_alloc) <= sk->sk_rcvbuf / 2) {
+ 		ret = netlink_dump(sk);
+ 		if (ret) {
+-			sk->sk_err = ret;
++			sk->sk_err = -ret;
+ 			sk->sk_error_report(sk);
+ 		}
+ 	}
 
 
