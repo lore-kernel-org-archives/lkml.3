@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756065AbaGZTr3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 15:47:29 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34143 "EHLO
+	id S1755429AbaGZTr7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 15:47:59 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34138 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753963AbaGZTNL (ORCPT
+	with ESMTP id S1753945AbaGZTNI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 15:13:11 -0400
+	Sat, 26 Jul 2014 15:13:08 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Madalin-Cristian Bucur <madalin.bucur@freescale.com>,
-        Eric Dumazet <edumazet@google.com>,
-        Li RongQing <roy.qing.li@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 41/87] vlan: free percpu stats in device destructor
-Date: Sat, 26 Jul 2014 12:02:15 -0700
-Message-Id: <20140726190215.856218017@linuxfoundation.org>
+        Gerd Hoffmann <kraxel@redhat.com>, Jason Wang <jasowang@redhat.com>,
+        Dave Airlie <airlied@redhat.com>
+Subject: [PATCH 3.14 73/87] drm/qxl: return IRQ_NONE if it was not our irq
+Date: Sat, 26 Jul 2014 12:02:47 -0700
+Message-Id: <20140726190216.984030456@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.2
 In-Reply-To: <20140726190214.530473925@linuxfoundation.org>
 References: <20140726190214.530473925@linuxfoundation.org>
@@ -31,97 +29,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <edumazet@google.com>
+From: Jason Wang <jasowang@redhat.com>
 
-[ Upstream commit a48e5fafecfb9c0c807d7e7284b5ff884dfb7a3a ]
+commit fbb60fe35ad579b511de8604b06a30b43846473b upstream.
 
-Madalin-Cristian reported crashs happening after a recent commit
-(5a4ae5f6e7d4 "vlan: unnecessary to check if vlan_pcpu_stats is NULL")
+Return IRQ_NONE if it was not our irq. This is necessary for the case
+when qxl is sharing irq line with a device A in a crash kernel. If qxl
+is initialized before A and A's irq was raised during this gap,
+returning IRQ_HANDLED in this case will cause this irq to be raised
+again after EOI since kernel think it was handled but in fact it was
+not.
 
------------------------------------------------------------------------
-root@p5040ds:~# vconfig add eth8 1
-root@p5040ds:~# vconfig rem eth8.1
-Unable to handle kernel paging request for data at address 0x2bc88028
-Faulting instruction address: 0xc058e950
-Oops: Kernel access of bad area, sig: 11 [#1]
-SMP NR_CPUS=8 CoreNet Generic
-Modules linked in:
-CPU: 3 PID: 2167 Comm: vconfig Tainted: G        W     3.16.0-rc3-00346-g65e85bf #2
-task: e7264d90 ti: e2c2c000 task.ti: e2c2c000
-NIP: c058e950 LR: c058ea30 CTR: c058e900
-REGS: e2c2db20 TRAP: 0300   Tainted: G        W      (3.16.0-rc3-00346-g65e85bf)
-MSR: 00029002 <CE,EE,ME>  CR: 48000428  XER: 20000000
-DEAR: 2bc88028 ESR: 00000000
-GPR00: c047299c e2c2dbd0 e7264d90 00000000 2bc88000 00000000 ffffffff 00000000
-GPR08: 0000000f 00000000 000000ff 00000000 28000422 10121928 10100000 10100000
-GPR16: 10100000 00000000 c07c5968 00000000 00000000 00000000 e2c2dc48 e7838000
-GPR24: c07c5bac c07c58a8 e77290cc c07b0000 00000000 c05de6c0 e7838000 e2c2dc48
-NIP [c058e950] vlan_dev_get_stats64+0x50/0x170
-LR [c058ea30] vlan_dev_get_stats64+0x130/0x170
-Call Trace:
-[e2c2dbd0] [ffffffea] 0xffffffea (unreliable)
-[e2c2dc20] [c047299c] dev_get_stats+0x4c/0x140
-[e2c2dc40] [c0488ca8] rtnl_fill_ifinfo+0x3d8/0x960
-[e2c2dd70] [c0489f4c] rtmsg_ifinfo+0x6c/0x110
-[e2c2dd90] [c04731d4] rollback_registered_many+0x344/0x3b0
-[e2c2ddd0] [c047332c] rollback_registered+0x2c/0x50
-[e2c2ddf0] [c0476058] unregister_netdevice_queue+0x78/0xf0
-[e2c2de00] [c058d800] unregister_vlan_dev+0xc0/0x160
-[e2c2de20] [c058e360] vlan_ioctl_handler+0x1c0/0x550
-[e2c2de90] [c045d11c] sock_ioctl+0x28c/0x2f0
-[e2c2deb0] [c010d070] do_vfs_ioctl+0x90/0x7b0
-[e2c2df20] [c010d7d0] SyS_ioctl+0x40/0x80
-[e2c2df40] [c000f924] ret_from_syscall+0x0/0x3c
-
-Fix this problem by freeing percpu stats from dev->destructor() instead
-of ndo_uninit()
-
-Reported-by: Madalin-Cristian Bucur <madalin.bucur@freescale.com>
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Tested-by: Madalin-Cristian Bucur <madalin.bucur@freescale.com>
-Fixes: 5a4ae5f6e7d4 ("vlan: unnecessary to check if vlan_pcpu_stats is NULL")
-Cc: Li RongQing <roy.qing.li@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Cc: Gerd Hoffmann <kraxel@redhat.com>
+Signed-off-by: Jason Wang <jasowang@redhat.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/8021q/vlan_dev.c |   13 ++++++++++---
- 1 file changed, 10 insertions(+), 3 deletions(-)
 
---- a/net/8021q/vlan_dev.c
-+++ b/net/8021q/vlan_dev.c
-@@ -635,8 +635,6 @@ static void vlan_dev_uninit(struct net_d
- 	struct vlan_dev_priv *vlan = vlan_dev_priv(dev);
- 	int i;
+---
+ drivers/gpu/drm/qxl/qxl_irq.c |    3 +++
+ 1 file changed, 3 insertions(+)
+
+--- a/drivers/gpu/drm/qxl/qxl_irq.c
++++ b/drivers/gpu/drm/qxl/qxl_irq.c
+@@ -33,6 +33,9 @@ irqreturn_t qxl_irq_handler(int irq, voi
  
--	free_percpu(vlan->vlan_pcpu_stats);
--	vlan->vlan_pcpu_stats = NULL;
- 	for (i = 0; i < ARRAY_SIZE(vlan->egress_priority_map); i++) {
- 		while ((pm = vlan->egress_priority_map[i]) != NULL) {
- 			vlan->egress_priority_map[i] = pm->next;
-@@ -796,6 +794,15 @@ static const struct net_device_ops vlan_
- 	.ndo_get_lock_subclass  = vlan_dev_get_lock_subclass,
- };
+ 	pending = xchg(&qdev->ram_header->int_pending, 0);
  
-+static void vlan_dev_free(struct net_device *dev)
-+{
-+	struct vlan_dev_priv *vlan = vlan_dev_priv(dev);
++	if (!pending)
++		return IRQ_NONE;
 +
-+	free_percpu(vlan->vlan_pcpu_stats);
-+	vlan->vlan_pcpu_stats = NULL;
-+	free_netdev(dev);
-+}
-+
- void vlan_setup(struct net_device *dev)
- {
- 	ether_setup(dev);
-@@ -805,7 +812,7 @@ void vlan_setup(struct net_device *dev)
- 	dev->tx_queue_len	= 0;
+ 	atomic_inc(&qdev->irq_received);
  
- 	dev->netdev_ops		= &vlan_netdev_ops;
--	dev->destructor		= free_netdev;
-+	dev->destructor		= vlan_dev_free;
- 	dev->ethtool_ops	= &vlan_ethtool_ops;
- 
- 	memset(dev->broadcast, 0, ETH_ALEN);
+ 	if (pending & QXL_INTERRUPT_DISPLAY) {
 
 
