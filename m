@@ -1,22 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754270AbaGZTnR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 15:43:17 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34328 "EHLO
+	id S1755931AbaGZTni (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 15:43:38 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34311 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752872AbaGZTNQ (ORCPT
+	with ESMTP id S1754050AbaGZTNP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 15:13:16 -0400
+	Sat, 26 Jul 2014 15:13:15 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Miklos Szeredi <mszeredi@suse.cz>
-Subject: [PATCH 3.15 010/109] fuse: timeout comparison fix
-Date: Sat, 26 Jul 2014 12:01:32 -0700
-Message-Id: <20140726190224.136470210@linuxfoundation.org>
+        Peter Zijlstra <peterz@infradead.org>,
+        Mikulas Patocka <mpatocka@redhat.com>,
+        David Miller <davem@davemloft.net>,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        Vineet Gupta <vgupta@synopsys.com>, Jason Low <jason.low2@hp.com>,
+        Waiman Long <waiman.long@hp.com>,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        John David Anglin <dave.anglin@bell.net>,
+        James Hogan <james.hogan@imgtec.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Davidlohr Bueso <davidlohr@hp.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Will Deacon <will.deacon@arm.com>,
+        linux-arm-kernel@lists.infradead.org, linuxppc-dev@lists.ozlabs.org,
+        sparclinux@vger.kernel.org, Ingo Molnar <mingo@kernel.org>
+Subject: [PATCH 3.14 81/87] locking/mutex: Disable optimistic spinning on some architectures
+Date: Sat, 26 Jul 2014 12:02:55 -0700
+Message-Id: <20140726190217.233358653@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.2
-In-Reply-To: <20140726190223.834037485@linuxfoundation.org>
-References: <20140726190223.834037485@linuxfoundation.org>
+In-Reply-To: <20140726190214.530473925@linuxfoundation.org>
+References: <20140726190214.530473925@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -24,52 +42,120 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.15-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Miklos Szeredi <mszeredi@suse.cz>
+From: Peter Zijlstra <peterz@infradead.org>
 
-commit 126b9d4365b110c157bc4cbc32540dfa66c9c85a upstream.
+commit 4badad352a6bb202ec68afa7a574c0bb961e5ebc upstream.
 
-As suggested by checkpatch.pl, use time_before64() instead of direct
-comparison of jiffies64 values.
+The optimistic spin code assumes regular stores and cmpxchg() play nice;
+this is found to not be true for at least: parisc, sparc32, tile32,
+metag-lock1, arc-!llsc and hexagon.
 
-Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+There is further wreckage, but this in particular seemed easy to
+trigger, so blacklist this.
+
+Opt in for known good archs.
+
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Reported-by: Mikulas Patocka <mpatocka@redhat.com>
+Cc: David Miller <davem@davemloft.net>
+Cc: Chris Metcalf <cmetcalf@tilera.com>
+Cc: James Bottomley <James.Bottomley@hansenpartnership.com>
+Cc: Vineet Gupta <vgupta@synopsys.com>
+Cc: Jason Low <jason.low2@hp.com>
+Cc: Waiman Long <waiman.long@hp.com>
+Cc: "James E.J. Bottomley" <jejb@parisc-linux.org>
+Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>
+Cc: John David Anglin <dave.anglin@bell.net>
+Cc: James Hogan <james.hogan@imgtec.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Davidlohr Bueso <davidlohr@hp.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Will Deacon <will.deacon@arm.com>
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org
+Cc: linuxppc-dev@lists.ozlabs.org
+Cc: sparclinux@vger.kernel.org
+Link: http://lkml.kernel.org/r/20140606175316.GV13930@laptop.programming.kicks-ass.net
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/fuse/dir.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ arch/arm/Kconfig     |    1 +
+ arch/arm64/Kconfig   |    1 +
+ arch/powerpc/Kconfig |    1 +
+ arch/sparc/Kconfig   |    1 +
+ arch/x86/Kconfig     |    1 +
+ kernel/Kconfig.locks |    5 ++++-
+ 6 files changed, 9 insertions(+), 1 deletion(-)
 
---- a/fs/fuse/dir.c
-+++ b/fs/fuse/dir.c
-@@ -198,7 +198,7 @@ static int fuse_dentry_revalidate(struct
- 	inode = ACCESS_ONCE(entry->d_inode);
- 	if (inode && is_bad_inode(inode))
- 		goto invalid;
--	else if (fuse_dentry_time(entry) < get_jiffies_64()) {
-+	else if (time_before64(fuse_dentry_time(entry), get_jiffies_64())) {
- 		int err;
- 		struct fuse_entry_out outarg;
- 		struct fuse_req *req;
-@@ -985,7 +985,7 @@ int fuse_update_attributes(struct inode
- 	int err;
- 	bool r;
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -6,6 +6,7 @@ config ARM
+ 	select ARCH_HAS_TICK_BROADCAST if GENERIC_CLOCKEVENTS_BROADCAST
+ 	select ARCH_HAVE_CUSTOM_GPIO_H
+ 	select ARCH_MIGHT_HAVE_PC_PARPORT
++	select ARCH_SUPPORTS_ATOMIC_RMW
+ 	select ARCH_USE_BUILTIN_BSWAP
+ 	select ARCH_USE_CMPXCHG_LOCKREF
+ 	select ARCH_WANT_IPC_PARSE_VERSION
+--- a/arch/arm64/Kconfig
++++ b/arch/arm64/Kconfig
+@@ -2,6 +2,7 @@ config ARM64
+ 	def_bool y
+ 	select ARCH_HAS_ATOMIC64_DEC_IF_POSITIVE
+ 	select ARCH_USE_CMPXCHG_LOCKREF
++	select ARCH_SUPPORTS_ATOMIC_RMW
+ 	select ARCH_HAS_TICK_BROADCAST if GENERIC_CLOCKEVENTS_BROADCAST
+ 	select ARCH_WANT_OPTIONAL_GPIOLIB
+ 	select ARCH_WANT_COMPAT_IPC_PARSE_VERSION
+--- a/arch/powerpc/Kconfig
++++ b/arch/powerpc/Kconfig
+@@ -141,6 +141,7 @@ config PPC
+ 	select HAVE_DEBUG_STACKOVERFLOW
+ 	select HAVE_IRQ_EXIT_ON_IRQ_STACK
+ 	select ARCH_USE_CMPXCHG_LOCKREF if PPC64
++	select ARCH_SUPPORTS_ATOMIC_RMW
  
--	if (fi->i_time < get_jiffies_64()) {
-+	if (time_before64(fi->i_time, get_jiffies_64())) {
- 		r = true;
- 		err = fuse_do_getattr(inode, stat, file);
- 	} else {
-@@ -1171,7 +1171,7 @@ static int fuse_permission(struct inode
- 	    ((mask & MAY_EXEC) && S_ISREG(inode->i_mode))) {
- 		struct fuse_inode *fi = get_fuse_inode(inode);
+ config GENERIC_CSUM
+ 	def_bool CPU_LITTLE_ENDIAN
+--- a/arch/sparc/Kconfig
++++ b/arch/sparc/Kconfig
+@@ -77,6 +77,7 @@ config SPARC64
+ 	select ARCH_HAVE_NMI_SAFE_CMPXCHG
+ 	select HAVE_C_RECORDMCOUNT
+ 	select NO_BOOTMEM
++	select ARCH_SUPPORTS_ATOMIC_RMW
  
--		if (fi->i_time < get_jiffies_64()) {
-+		if (time_before64(fi->i_time, get_jiffies_64())) {
- 			refreshed = true;
+ config ARCH_DEFCONFIG
+ 	string
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -127,6 +127,7 @@ config X86
+ 	select HAVE_DEBUG_STACKOVERFLOW
+ 	select HAVE_IRQ_EXIT_ON_IRQ_STACK if X86_64
+ 	select HAVE_CC_STACKPROTECTOR
++	select ARCH_SUPPORTS_ATOMIC_RMW
  
- 			err = fuse_perm_getattr(inode, mask);
+ config INSTRUCTION_DECODER
+ 	def_bool y
+--- a/kernel/Kconfig.locks
++++ b/kernel/Kconfig.locks
+@@ -220,6 +220,9 @@ config INLINE_WRITE_UNLOCK_IRQRESTORE
+ 
+ endif
+ 
++config ARCH_SUPPORTS_ATOMIC_RMW
++	bool
++
+ config MUTEX_SPIN_ON_OWNER
+ 	def_bool y
+-	depends on SMP && !DEBUG_MUTEXES
++	depends on SMP && !DEBUG_MUTEXES && ARCH_SUPPORTS_ATOMIC_RMW
 
 
