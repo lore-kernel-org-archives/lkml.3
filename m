@@ -1,64 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752134AbaGZSMi (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 14:12:38 -0400
-Received: from mailout2.w2.samsung.com ([211.189.100.12]:8569 "EHLO
-	usmailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751939AbaGZSMg (ORCPT
+	id S1752044AbaGZS2N (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 14:28:13 -0400
+Received: from mail-vc0-f171.google.com ([209.85.220.171]:56441 "EHLO
+	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751448AbaGZS2L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 14:12:36 -0400
-X-AuditID: cbfec373-b7f9d6d00000479f-ac-53d3ef9257f4
-Date: Sat, 26 Jul 2014 15:12:26 -0300
-From: Mauro Carvalho Chehab <m.chehab@samsung.com>
-To: Steven Toth <stoth@kernellabs.com>
-Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        Tadeusz Struk <tadeusz.struk@intel.com>,
-        Herbert Xu <herbert@gondor.apana.org.au>, Helge Deller <deller@gmx.de>,
-        Ingo Tuchscherer <ingo.tuchscherer@de.ibm.com>, linux390@de.ibm.com,
-        Alexander Viro <viro@zeniv.linux.org.uk>, qat-linux@intel.com,
-        linux-crypto@vger.kernel.org,
-        Linux-Media <linux-media@vger.kernel.org>, linux-s390@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v1 2/5] saa7164: convert to seq_hex_dump()
-Message-id: <20140726151226.44cbb027.m.chehab@samsung.com>
-In-reply-to: <CALzAhNUUqJNm=o0YoLqoLEnARJ6L34WpcCYScEx5aDeef4B1nQ@mail.gmail.com>
-References: <1404919470-26668-1-git-send-email-andriy.shevchenko@linux.intel.com>
- <1404919470-26668-3-git-send-email-andriy.shevchenko@linux.intel.com>
- <CALzAhNUUqJNm=o0YoLqoLEnARJ6L34WpcCYScEx5aDeef4B1nQ@mail.gmail.com>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.22; x86_64-redhat-linux-gnu)
-MIME-version: 1.0
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrNLMWRmVeSWpSXmKPExsVy+t/hYN1J7y8HG6w4oGLR2zSdyeL+p9uM
-	Ft2vZCxeHtjAbnH/3k8miz17T7JYXN41h82iZ8NWVosJC5uZLV5++8xqseu/ncXhax1sFvf/
-	HGG0OP/3OKsDn8fBR4fYPD58jPPYdkDVY/Gel0wec4/1MnrMOxno8XmTnMemJ2+ZAjiiuGxS
-	UnMyy1KL9O0SuDLmf/ApeMxccbhnMmMDYz9zFyMHh4SAicSDldpdjJxAppjEhXvr2boYuTiE
-	BJYwSuy/PJMJwmlkkvjU9ZgJpIpFQFXi2IMfbCA2m4CRxKvGFlYQW0RATWLRy1XsIA3MAo+Z
-	JY4sOssCkhAWsJOY++Y6WAOvgJXE5t2/wGxOgWCJ5R2/mCE2PGKUmHn4FjvEHc4SP2dOYoRo
-	EJT4Mfke2CBmAS2JzduaWCFseYnNa94yT2AUmIWkbBaSsllIyhYwMq9iFC0tTi4oTkrPNdIr
-	TswtLs1L10vOz93ECImg4h2MLzZYHWIU4GBU4uHdcfVSsBBrYllxZe4hRgkOZiUR3idTLwcL
-	8aYkVlalFuXHF5XmpBYfYmTi4JRqYFQuF3t09EBI/IO5fqrV//W49a6L3tn5fIrIY8cVk2cF
-	bV/1YIqu8K0Z/DpBad6/3wmVXrice6/o00LLaUeUZQ48bfzHLfQ/6knHNLuWl4b2PqUzblho
-	btaoZL25wXqhR1zbxa0hbHqxn2zUy+VMZ9wLdnpzovjFHD0O3bqiW/w+HBffuv9MmqXEUpyR
-	aKjFXFScCABZ9qcsfgIAAA==
+	Sat, 26 Jul 2014 14:28:11 -0400
+MIME-Version: 1.0
+In-Reply-To: <CA+55aFzOoJzqJ=4RVPEBfscA8oRdr5Nv7fKx9aXYw2+frkuhwA@mail.gmail.com>
+References: <20140723182518.GD3935@laptop>
+	<CA+55aFyFT9n5wUNifEHY6+t2bEcD91kL7+dqXuBMSMJvLeDDJQ@mail.gmail.com>
+	<20140723184111.GG3935@laptop>
+	<CA+55aFwQfwfAP6U77_nD_mSvoygj=cZ09N644hKRtzgLnEqhZQ@mail.gmail.com>
+	<20140723190230.GH3935@laptop>
+	<CA+55aFyM1wqTLK0m4GQJ28f=z0iZE87=xk+1z-vm+PH1_d8nKw@mail.gmail.com>
+	<53D064C7.5050807@daenzer.net>
+	<CA+55aFyJhqiPv0kQ+51=Ei-zaAO+0JszxtnEyx-Gbto3SE00xw@mail.gmail.com>
+	<53D1B1EF.7030603@daenzer.net>
+	<20140725035527.GA30108@pg-vmw-gw1>
+	<20140725140237.GB32669@home.goodmis.org>
+	<CA+55aFzOoJzqJ=4RVPEBfscA8oRdr5Nv7fKx9aXYw2+frkuhwA@mail.gmail.com>
+Date: Sat, 26 Jul 2014 11:28:10 -0700
+X-Google-Sender-Auth: tVzwjslqoYLMf-MIu12GvkDDVTc
+Message-ID: <CA+55aFyHU4Gwk6ASTuOgh3eFPshkgy1s5zc4p7f01DwrYddFOw@mail.gmail.com>
+Subject: Re: Random panic in load_balance() with 3.16-rc
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Alexei Starovoitov <ast@kernel.org>,
+        =?UTF-8?Q?Michel_D=C3=A4nzer?= <michel@daenzer.net>,
+        Jakub Jelinek <jakub@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Debian GCC Maintainers <debian-gcc@lists.debian.org>,
+        Debian Kernel Team <debian-kernel@lists.debian.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Wed, 9 Jul 2014 14:24:29 -0400
-Steven Toth <stoth@kernellabs.com> escreveu:
+On Fri, Jul 25, 2014 at 11:29 AM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+>
+> I'm sure it's possible, but it sounds potentially complicated.
 
-> On Wed, Jul 9, 2014 at 11:24 AM, Andy Shevchenko
-> <andriy.shevchenko@linux.intel.com> wrote:
-> > Instead of custom approach let's use recently added seq_hex_dump() helper.
-> >
-> > Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-> 
-> ack
-> 
-> Reviewed-by: Steven Toth <stoth@kernellabs.com>
-> 
-Acked-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Hmm. The bugzilla entry just taught me a new gcc flag:
+"-fcompare-debug". That apparently makes gcc compile things twice,
+once with debugging and once without, and verify that the result is
+the same.
 
-Regards,
-Mauro
+And you can enable it for the whole kernel build with just a simple
+
+    export GCC_COMPARE_DEBUG=1
+
+before doing the build.
+
+It actually results in a failure for me even on my standard small
+localized kernel build, even with gcc-4.8.3. I get a compare failure
+for (at least) fs/ext4/inode.c.
+
+That's a bit worrisome. I haven't actually checked if the code
+generation differs in significant ways yet..
+
+             Linus
