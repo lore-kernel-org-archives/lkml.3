@@ -1,181 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760298AbaGZBn3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 21:43:29 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:57921 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751811AbaGZBn1 (ORCPT
+	id S1752862AbaGZCYJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 22:24:09 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:46477 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751508AbaGZCYH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 21:43:27 -0400
-Message-ID: <53D307BB.1020208@codeaurora.org>
-Date: Fri, 25 Jul 2014 18:43:23 -0700
-From: David Collins <collinsd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+	Fri, 25 Jul 2014 22:24:07 -0400
+Message-ID: <53D31101.8000107@oracle.com>
+Date: Fri, 25 Jul 2014 22:22:57 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-To: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-CC: Linus Walleij <linus.walleij@linaro.org>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
-        Mark Brown <broonie@kernel.org>, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-arm-msm@vger.kernel.org
-Subject: Re: [PATCH v2 2/4] pinctrl: qpnp: Qualcomm PMIC pin controller driver
-References: <1405610748-7583-1-git-send-email-iivanov@mm-sol.com> <1405610748-7583-3-git-send-email-iivanov@mm-sol.com>
-In-Reply-To: <1405610748-7583-3-git-send-email-iivanov@mm-sol.com>
+To: Christoph Lameter <cl@gentwo.org>, akpm@linux-foundation.org
+CC: Gilad Ben-Yossef <gilad@benyossef.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Tejun Heo <tj@kernel.org>,
+        John Stultz <johnstul@us.ibm.com>, Mike Frysinger <vapier@gentoo.org>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Hakan Akkan <hakanakkan@gmail.com>,
+        Max Krasnyansky <maxk@qualcomm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org, hughd@google.com,
+        viresh.kumar@linaro.org, hpa@zytor.com, mingo@kernel.org,
+        peterz@infradead.org
+Subject: Re: vmstat: On demand vmstat workers V8
+References: <alpine.DEB.2.11.1407100903130.12483@gentwo.org>
+In-Reply-To: <alpine.DEB.2.11.1407100903130.12483@gentwo.org>
+X-Enigmail-Version: 1.6
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/17/2014 08:25 AM, Ivan T. Ivanov wrote:
-> From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-> 
-> This is the pinctrl, pinmux, pinconf and gpiolib driver for the
-> Qualcomm GPIO and MPP sub-function blocks found in the PMIC chips.
-> QPNP_REG_STATUS1_GPIO_EN_REV0_MASK
-> Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
+On 07/10/2014 10:04 AM, Christoph Lameter wrote:
+> This patch creates a vmstat shepherd worker that monitors the
+> per cpu differentials on all processors. If there are differentials
+> on a processor then a vmstat worker local to the processors
+> with the differentials is created. That worker will then start
+> folding the diffs in regular intervals. Should the worker
+> find that there is no work to be done then it will make the shepherd
+> worker monitor the differentials again.
 
-(...)
-> +static int qpnp_conv_to_pin(struct qpnp_pinctrl *qctrl,
-> +			   struct qpnp_padinfo *pad, unsigned param,
-> +			   unsigned val)
-(...)
-> +	switch (param) {
-(...)
-> +	case PIN_CONFIG_OUTPUT:
-> +		nattrs = 3;
-> +		attr[0].addr  = QPNP_REG_MODE_CTL;
-> +		attr[0].shift = QPNP_REG_OUT_SRC_SEL_SHIFT;
-> +		attr[0].mask  = QPNP_REG_OUT_SRC_SEL_MASK;
-> +		attr[0].val   = !!val;
+Hi Christoph, all,
 
-It seems that this patch provides no means to configure the output source
-select bits to be anything besides 0 (constant low) or 1 (constant high).
- Some non-generic property is needed to configure this for both GPIOs and
-MPPs.  Passing the value in via the output-high property does not seem
-like a good approach since that is a generic pin config property that is
-defined to take no value.  The special functions available for GPIOs (e.g.
-PWM/LPG, clock, keypad, etc.) which are configured via this register are
-used by many boards.
+This patch doesn't interact well with my fuzzing setup. I'm seeing
+the following:
 
-Something else to consider is that QPNP_REG_OUT_SRC_SEL_MASK is being
-defined as 0xf which would imply that there are 16 possible output source
-select options.  While technically true, this makes the situation more
-complicated since half of those options are the inverted version of the
-other half.  In the GPIO hardware this corresponds to an 8-way mux
-followed by an XOR gate to conditionally invert the mux output.  If output
-source select is handled this way, then the following values would need to
-be supported in device tree for GPIOs:
-	* 0:  constant low (already supported via output-low;)
-	* 1:  constant high (already supported via output-high;)
-	* 2:  paired GPIO
-	* 3:  inverted paired GPIO
-	* 4:  special function 1
-	* 5:  inverted special function 1
-	* 6:  special function 2
-	* 7:  inverted special function 2
-	* 8:  dtest1
-	* 9:  inverted dtest1
-	* 10: dtest2
-	* 11: inverted dtest2
-	* 12: dtest3
-	* 13: inverted dtest3
-	* 14: dtest4
-	* 15: inverted dtest4
-The same options are supported by MPPs except for special function 1,
-inverted special function 1, special function 2, and inverted special
-function 2.
+[  490.446927] BUG: using __this_cpu_read() in preemptible [00000000] code: kworker/16:1/7368
+[  490.447909] caller is __this_cpu_preempt_check+0x13/0x20
+[  490.448596] CPU: 8 PID: 7368 Comm: kworker/16:1 Not tainted 3.16.0-rc6-next-20140725-sasha-00047-g9eb9a52 #933
+[  490.449847] Workqueue: events vmstat_update
+[  490.450558]  ffffffff97383bb6 0000000000000000 ffffffff9727df83 ffff8803077cfb68
+[  490.451520]  ffffffff95dc96b3 0000000000000008 ffff8803077cfba0 ffffffff92002438
+[  490.452475]  ffff8803077cfc80 ffff880be21ea138 ffff8803077cfc80 00000000001e6a48
+[  490.453459] Call Trace:
+[  490.453776] dump_stack (lib/dump_stack.c:52)
+[  490.454394] check_preemption_disabled (lib/smp_processor_id.c:46)
+[  490.455161] __this_cpu_preempt_check (lib/smp_processor_id.c:63)
+[  490.455927] refresh_cpu_vm_stats (mm/vmstat.c:492)
+[  490.456753] vmstat_update (mm/vmstat.c:1252)
+[  490.457463] process_one_work (kernel/workqueue.c:2022 include/linux/jump_label.h:115 include/trace/events/workqueue.h:111 kernel/workqueue.c:2027)
+[  490.458159] ? process_one_work (include/linux/workqueue.h:185 kernel/workqueue.c:598 kernel/workqueue.c:625 kernel/workqueue.c:2015)
+[  490.458887] worker_thread (include/linux/list.h:188 kernel/workqueue.c:2154)
+[  490.459555] ? __schedule (./arch/x86/include/asm/bitops.h:311 include/linux/thread_info.h:91 include/linux/sched.h:2854 kernel/sched/core.c:2825)
+[  490.460370] ? process_one_work (kernel/workqueue.c:2098)
+[  490.461177] kthread (kernel/kthread.c:207)
+[  490.461792] ? flush_kthread_work (kernel/kthread.c:176)
+[  490.462529] ret_from_fork (arch/x86/kernel/entry_64.S:348)
+[  490.463181] ? flush_kthread_work (kernel/kthread.c:176)
+[  490.464008] ------------[ cut here ]------------
+[  490.464613] kernel BUG at mm/vmstat.c:1278!
+[  490.465116] invalid opcode: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+[  490.465981] Dumping ftrace buffer:
+[  490.466585]    (ftrace buffer empty)
+[  490.467030] Modules linked in:
+[  490.467429] CPU: 8 PID: 7368 Comm: kworker/16:1 Not tainted 3.16.0-rc6-next-20140725-sasha-00047-g9eb9a52 #933
+[  490.468641] Workqueue: events vmstat_update
+[  490.469163] task: ffff88030772b000 ti: ffff8803077cc000 task.ti: ffff8803077cc000
+[  490.470033] RIP: vmstat_update (mm/vmstat.c:1278)
+[  490.470269] RSP: 0000:ffff8803077cfcb8  EFLAGS: 00010287
+[  490.470269] RAX: ffff87ffffffffff RBX: 0000000000000008 RCX: 0000000000000000
+[  490.470269] RDX: ffff88030772bcf8 RSI: ffffffff972e5fd0 RDI: ffffffff986fa5d0
+[  490.470269] RBP: ffff8803077cfcd0 R08: 0000000000000002 R09: 0000000000000000
+[  490.470269] R10: 0000000000000000 R11: 0000000000000000 R12: ffff8805fa7e34d0
+[  490.470269] R13: ffff8803117e2240 R14: 0000000000000800 R15: 0000000000000000
+[  490.470269] FS:  0000000000000000(0000) GS:ffff880311200000(0000) knlGS:0000000000000000
+[  490.470269] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[  490.470269] CR2: 00007fffc67fef1a CR3: 0000000017a22000 CR4: 00000000000006a0
+[  490.470269] Stack:
+[  490.470269]  ffff8803117dd240 ffff88030af938e0 ffff8803117e2240 ffff8803077cfd88
+[  490.470269]  ffffffff911f45f5 ffffffff911f455d ffff88030af93928 ffff88031081e900
+[  490.470269]  ffff88030af938f0 ffff88030af93900 ffff88030af938e8 ffff88030af938f8
+[  490.470269] Call Trace:
+[  490.470269] process_one_work (kernel/workqueue.c:2022 include/linux/jump_label.h:115 include/trace/events/workqueue.h:111 kernel/workqueue.c:2027)
+[  490.470269] ? process_one_work (include/linux/workqueue.h:185 kernel/workqueue.c:598 kernel/workqueue.c:625 kernel/workqueue.c:2015)
+[  490.470269] worker_thread (include/linux/list.h:188 kernel/workqueue.c:2154)
+[  490.470269] ? __schedule (./arch/x86/include/asm/bitops.h:311 include/linux/thread_info.h:91 include/linux/sched.h:2854 kernel/sched/core.c:2825)
+[  490.470269] ? process_one_work (kernel/workqueue.c:2098)
+[  490.470269] kthread (kernel/kthread.c:207)
+[  490.470269] ? flush_kthread_work (kernel/kthread.c:176)
+[  490.470269] ret_from_fork (arch/x86/kernel/entry_64.S:348)
+[  490.470269] ? flush_kthread_work (kernel/kthread.c:176)
+[ 490.470269] Code: c7 d0 a5 6f 98 89 c3 e8 9f 9e 08 00 3b 1d 89 8b 35 07 73 7f f0 49 0f ab 1c 24 72 0f 5b 41 5c 41 5d 5d c3 0f 1f 84 00 00 00 00 00 <0f> 0b 66 0f 1f 44 00 00 48 63 3d f1 be 36 07 48 c7 c3 40 d2 1d
+All code
+========
+   0:   c7                      (bad)
+   1:   d0 a5 6f 98 89 c3       shlb   -0x3c766791(%rbp)
+   7:   e8 9f 9e 08 00          callq  0x89eab
+   c:   3b 1d 89 8b 35 07       cmp    0x7358b89(%rip),%ebx        # 0x7358b9b
+  12:   73 7f                   jae    0x93
+  14:   f0 49 0f ab 1c 24       lock bts %rbx,(%r12)
+  1a:   72 0f                   jb     0x2b
+  1c:   5b                      pop    %rbx
+  1d:   41 5c                   pop    %r12
+  1f:   41 5d                   pop    %r13
+  21:   5d                      pop    %rbp
+  22:   c3                      retq
+  23:   0f 1f 84 00 00 00 00    nopl   0x0(%rax,%rax,1)
+  2a:   00
+  2b:*  0f 0b                   ud2             <-- trapping instruction
+  2d:   66 0f 1f 44 00 00       nopw   0x0(%rax,%rax,1)
+  33:   48 63 3d f1 be 36 07    movslq 0x736bef1(%rip),%rdi        # 0x736bf2b
+  3a:   48 c7 c3 40 d2 1d 00    mov    $0x1dd240,%rbx
 
-If the output source select register parameter is instead treated as a
-3-bit value along with an inversion bit, then the list of output selection
-options that needs to be supported in device tree is cut in half:
-	* 0:  constant (already supported)
-	* 1:  paired GPIO
-	* 2:  special function 1
-	* 3:  special function 2
-	* 4:  dtest1
-	* 5:  dtest2
-	* 6:  dtest3
-	* 7:  dtest4
-Another DT pin configuration property would then need to be used to
-specify if the signal should be inverted or not.
+Code starting with the faulting instruction
+===========================================
+   0:   0f 0b                   ud2
+   2:   66 0f 1f 44 00 00       nopw   0x0(%rax,%rax,1)
+   8:   48 63 3d f1 be 36 07    movslq 0x736bef1(%rip),%rdi        # 0x736bf00
+   f:   48 c7 c3 40 d2 1d 00    mov    $0x1dd240,%rbx
+[  490.470269] RIP vmstat_update (mm/vmstat.c:1278)
+[  490.470269]  RSP <ffff8803077cfcb8>
 
-> +		attr[1].addr  = QPNP_REG_MODE_CTL;
-> +		attr[1].shift = QPNP_REG_MODE_SEL_SHIFT;
-> +		attr[1].mask  = QPNP_REG_MODE_SEL_MASK;
-> +		attr[1].val   = QPNP_PIN_MODE_DIG_OUT;
-> +		attr[2].addr  = QPNP_REG_EN_CTL;
-> +		attr[2].shift = QPNP_REG_MASTER_EN_SHIFT;
-> +		attr[2].mask  = QPNP_REG_MASTER_EN_MASK;
-> +		attr[2].val   = 1;
-> +		break;
 
-(...)
-
-> +static int qpnp_of_xlate(struct gpio_chip *chip,
-> +		       const struct of_phandle_args *gpio_desc, u32 *flags)
-> +{
-> +	struct qpnp_pinctrl *qctrl = to_qpnp_pinctrl(chip);
-> +	struct qpnp_padinfo *pad;
-> +
-> +	if (chip->of_gpio_n_cells < 2) {
-> +		dev_err(qctrl->dev, "of_gpio_n_cells < 2\n");
-> +		return -EINVAL;
-> +	}
-> +
-> +	pad = qpnp_get_desc(qctrl, gpio_desc->args[0]);
-> +	if (!pad)
-> +		return -EINVAL;
-> +
-> +	if (flags)
-> +		*flags = gpio_desc->args[1];
-> +
-> +	return gpio_desc->args[0];
-> +}
-
-This of_xlate callback function will result in the following situation:
-If for example, a device tree consumer node wishes to use PM8941 GPIO 7
-within gpiolib, then it would need to specify a gpiospec like this:
-	<&pm8941_gpio 6 0>
-There is an off-by-one issue with the indexing between the hardware GPIO
-numbers (1-based) and the gpiolib gpio offsets (0-based).  Do you agree
-that the indexing used within the device tree gpiospecs should match the
-hardware numbering scheme?  I feel like this would be much less confusing
-for users to work with.  If so, I think that a change to qpnp_of_xlate
-like this would achieve it:
-
-+#define QPNP_PIN_PHYSICAL_OFFSET	1
-
- static int qpnp_of_xlate(struct gpio_chip *chip,
- 		     const struct of_phandle_args *gpio_desc, u32 *flags)
- {
- 	struct qpnp_pinctrl *qctrl = to_qpnp_pinctrl(chip);
- 	struct qpnp_padinfo *pad;
-+	unsigned pin = gpio_desc->args[0] - QPNP_PIN_PHYSICAL_OFFSET;
-
- 	if (chip->of_gpio_n_cells < 2) {
- 		dev_err(qctrl->dev, "of_gpio_n_cells < 2\n");
- 		return -EINVAL;
- 	}
-
--	pad = qpnp_get_desc(qctrl, gpio_desc->args[0]);
-+	pad = qpnp_get_desc(qctrl, pin);
- 	if (!pad)
- 		return -EINVAL;
-
- 	if (flags)
- 		*flags = gpio_desc->args[1];
-
--	return gpio_desc->args[0];
-+	return pin;
- }
-
-Take care,
-David Collins
-
--- 
-The Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+Thanks,
+Sasha
