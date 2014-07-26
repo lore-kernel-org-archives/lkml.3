@@ -1,23 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752926AbaGZTDQ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 15:03:16 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33664 "EHLO
+	id S1753327AbaGZTFz (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 15:05:55 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33919 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752676AbaGZTDA (ORCPT
+	with ESMTP id S1752917AbaGZTDQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 15:03:00 -0400
+	Sat, 26 Jul 2014 15:03:16 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Daniel Borkmann <dborkman@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 36/56] net: sctp: fix information leaks in ulpevent layer
-Date: Sat, 26 Jul 2014 12:02:29 -0700
-Message-Id: <20140726190201.235873540@linuxfoundation.org>
+        Hugh Dickins <hughd@google.com>, Sasha Levin <sasha.levin@oracle.com>,
+        Dave Jones <davej@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.14 25/87] shmem: fix faulting into a hole while its punched
+Date: Sat, 26 Jul 2014 12:01:59 -0700
+Message-Id: <20140726190215.341593929@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.2
-In-Reply-To: <20140726190200.061512159@linuxfoundation.org>
-References: <20140726190200.061512159@linuxfoundation.org>
+In-Reply-To: <20140726190214.530473925@linuxfoundation.org>
+References: <20140726190214.530473925@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -25,260 +27,139 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Daniel Borkmann <dborkman@redhat.com>
+From: Hugh Dickins <hughd@google.com>
 
-[ Upstream commit 8f2e5ae40ec193bc0a0ed99e95315c3eebca84ea ]
+commit f00cdc6df7d7cfcabb5b740911e6788cb0802bdb upstream.
 
-While working on some other SCTP code, I noticed that some
-structures shared with user space are leaking uninitialized
-stack or heap buffer. In particular, struct sctp_sndrcvinfo
-has a 2 bytes hole between .sinfo_flags and .sinfo_ppid that
-remains unfilled by us in sctp_ulpevent_read_sndrcvinfo() when
-putting this into cmsg. But also struct sctp_remote_error
-contains a 2 bytes hole that we don't fill but place into a skb
-through skb_copy_expand() via sctp_ulpevent_make_remote_error().
+Trinity finds that mmap access to a hole while it's punched from shmem
+can prevent the madvise(MADV_REMOVE) or fallocate(FALLOC_FL_PUNCH_HOLE)
+from completing, until the reader chooses to stop; with the puncher's
+hold on i_mutex locking out all other writers until it can complete.
 
-Both structures are defined by the IETF in RFC6458:
+It appears that the tmpfs fault path is too light in comparison with its
+hole-punching path, lacking an i_data_sem to obstruct it; but we don't
+want to slow down the common case.
 
-* Section 5.3.2. SCTP Header Information Structure:
+Extend shmem_fallocate()'s existing range notification mechanism, so
+shmem_fault() can refrain from faulting pages into the hole while it's
+punched, waiting instead on i_mutex (when safe to sleep; or repeatedly
+faulting when not).
 
-  The sctp_sndrcvinfo structure is defined below:
-
-  struct sctp_sndrcvinfo {
-    uint16_t sinfo_stream;
-    uint16_t sinfo_ssn;
-    uint16_t sinfo_flags;
-    <-- 2 bytes hole  -->
-    uint32_t sinfo_ppid;
-    uint32_t sinfo_context;
-    uint32_t sinfo_timetolive;
-    uint32_t sinfo_tsn;
-    uint32_t sinfo_cumtsn;
-    sctp_assoc_t sinfo_assoc_id;
-  };
-
-* 6.1.3. SCTP_REMOTE_ERROR:
-
-  A remote peer may send an Operation Error message to its peer.
-  This message indicates a variety of error conditions on an
-  association. The entire ERROR chunk as it appears on the wire
-  is included in an SCTP_REMOTE_ERROR event. Please refer to the
-  SCTP specification [RFC4960] and any extensions for a list of
-  possible error formats. An SCTP error notification has the
-  following format:
-
-  struct sctp_remote_error {
-    uint16_t sre_type;
-    uint16_t sre_flags;
-    uint32_t sre_length;
-    uint16_t sre_error;
-    <-- 2 bytes hole  -->
-    sctp_assoc_t sre_assoc_id;
-    uint8_t  sre_data[];
-  };
-
-Fix this by setting both to 0 before filling them out. We also
-have other structures shared between user and kernel space in
-SCTP that contains holes (e.g. struct sctp_paddrthlds), but we
-copy that buffer over from user space first and thus don't need
-to care about it in that cases.
-
-While at it, we can also remove lengthy comments copied from
-the draft, instead, we update the comment with the correct RFC
-number where one can look it up.
-
-Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+[akpm@linux-foundation.org: coding-style fixes]
+Signed-off-by: Hugh Dickins <hughd@google.com>
+Reported-by: Sasha Levin <sasha.levin@oracle.com>
+Tested-by: Sasha Levin <sasha.levin@oracle.com>
+Cc: Dave Jones <davej@redhat.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/sctp/ulpevent.c |  122 ++++++----------------------------------------------
- 1 file changed, 15 insertions(+), 107 deletions(-)
 
---- a/net/sctp/ulpevent.c
-+++ b/net/sctp/ulpevent.c
-@@ -373,9 +373,10 @@ fail:
-  * specification [SCTP] and any extensions for a list of possible
-  * error formats.
+---
+ mm/shmem.c |   56 ++++++++++++++++++++++++++++++++++++++++++++++++++++----
+ 1 file changed, 52 insertions(+), 4 deletions(-)
+
+--- a/mm/shmem.c
++++ b/mm/shmem.c
+@@ -80,11 +80,12 @@ static struct vfsmount *shm_mnt;
+ #define SHORT_SYMLINK_LEN 128
+ 
+ /*
+- * shmem_fallocate and shmem_writepage communicate via inode->i_private
+- * (with i_mutex making sure that it has only one user at a time):
+- * we would prefer not to enlarge the shmem inode just for that.
++ * shmem_fallocate communicates with shmem_fault or shmem_writepage via
++ * inode->i_private (with i_mutex making sure that it has only one user at
++ * a time): we would prefer not to enlarge the shmem inode just for that.
   */
--struct sctp_ulpevent *sctp_ulpevent_make_remote_error(
--	const struct sctp_association *asoc, struct sctp_chunk *chunk,
--	__u16 flags, gfp_t gfp)
-+struct sctp_ulpevent *
-+sctp_ulpevent_make_remote_error(const struct sctp_association *asoc,
-+				struct sctp_chunk *chunk, __u16 flags,
-+				gfp_t gfp)
- {
- 	struct sctp_ulpevent *event;
- 	struct sctp_remote_error *sre;
-@@ -394,8 +395,7 @@ struct sctp_ulpevent *sctp_ulpevent_make
- 	/* Copy the skb to a new skb with room for us to prepend
- 	 * notification with.
- 	 */
--	skb = skb_copy_expand(chunk->skb, sizeof(struct sctp_remote_error),
--			      0, gfp);
-+	skb = skb_copy_expand(chunk->skb, sizeof(*sre), 0, gfp);
+ struct shmem_falloc {
++	int	mode;		/* FALLOC_FL mode currently operating */
+ 	pgoff_t start;		/* start of range currently being fallocated */
+ 	pgoff_t next;		/* the next page offset to be fallocated */
+ 	pgoff_t nr_falloced;	/* how many new pages have been fallocated */
+@@ -824,6 +825,7 @@ static int shmem_writepage(struct page *
+ 			spin_lock(&inode->i_lock);
+ 			shmem_falloc = inode->i_private;
+ 			if (shmem_falloc &&
++			    !shmem_falloc->mode &&
+ 			    index >= shmem_falloc->start &&
+ 			    index < shmem_falloc->next)
+ 				shmem_falloc->nr_unswapped++;
+@@ -1298,6 +1300,44 @@ static int shmem_fault(struct vm_area_st
+ 	int error;
+ 	int ret = VM_FAULT_LOCKED;
  
- 	/* Pull off the rest of the cause TLV from the chunk.  */
- 	skb_pull(chunk->skb, elen);
-@@ -406,62 +406,21 @@ struct sctp_ulpevent *sctp_ulpevent_make
- 	event = sctp_skb2event(skb);
- 	sctp_ulpevent_init(event, MSG_NOTIFICATION, skb->truesize);
++	/*
++	 * Trinity finds that probing a hole which tmpfs is punching can
++	 * prevent the hole-punch from ever completing: which in turn
++	 * locks writers out with its hold on i_mutex.  So refrain from
++	 * faulting pages into the hole while it's being punched, and
++	 * wait on i_mutex to be released if vmf->flags permits.
++	 */
++	if (unlikely(inode->i_private)) {
++		struct shmem_falloc *shmem_falloc;
++
++		spin_lock(&inode->i_lock);
++		shmem_falloc = inode->i_private;
++		if (!shmem_falloc ||
++		    shmem_falloc->mode != FALLOC_FL_PUNCH_HOLE ||
++		    vmf->pgoff < shmem_falloc->start ||
++		    vmf->pgoff >= shmem_falloc->next)
++			shmem_falloc = NULL;
++		spin_unlock(&inode->i_lock);
++		/*
++		 * i_lock has protected us from taking shmem_falloc seriously
++		 * once return from shmem_fallocate() went back up that stack.
++		 * i_lock does not serialize with i_mutex at all, but it does
++		 * not matter if sometimes we wait unnecessarily, or sometimes
++		 * miss out on waiting: we just need to make those cases rare.
++		 */
++		if (shmem_falloc) {
++			if ((vmf->flags & FAULT_FLAG_ALLOW_RETRY) &&
++			   !(vmf->flags & FAULT_FLAG_RETRY_NOWAIT)) {
++				up_read(&vma->vm_mm->mmap_sem);
++				mutex_lock(&inode->i_mutex);
++				mutex_unlock(&inode->i_mutex);
++				return VM_FAULT_RETRY;
++			}
++			/* cond_resched? Leave that to GUP or return to user */
++			return VM_FAULT_NOPAGE;
++		}
++	}
++
+ 	error = shmem_getpage(inode, vmf->pgoff, &vmf->page, SGP_CACHE, &ret);
+ 	if (error)
+ 		return ((error == -ENOMEM) ? VM_FAULT_OOM : VM_FAULT_SIGBUS);
+@@ -1813,18 +1853,26 @@ static long shmem_fallocate(struct file
  
--	sre = (struct sctp_remote_error *)
--		skb_push(skb, sizeof(struct sctp_remote_error));
-+	sre = (struct sctp_remote_error *) skb_push(skb, sizeof(*sre));
+ 	mutex_lock(&inode->i_mutex);
  
- 	/* Trim the buffer to the right length.  */
--	skb_trim(skb, sizeof(struct sctp_remote_error) + elen);
-+	skb_trim(skb, sizeof(*sre) + elen);
++	shmem_falloc.mode = mode & ~FALLOC_FL_KEEP_SIZE;
++
+ 	if (mode & FALLOC_FL_PUNCH_HOLE) {
+ 		struct address_space *mapping = file->f_mapping;
+ 		loff_t unmap_start = round_up(offset, PAGE_SIZE);
+ 		loff_t unmap_end = round_down(offset + len, PAGE_SIZE) - 1;
  
--	/* Socket Extensions for SCTP
--	 * 5.3.1.3 SCTP_REMOTE_ERROR
--	 *
--	 * sre_type:
--	 *   It should be SCTP_REMOTE_ERROR.
--	 */
-+	/* RFC6458, Section 6.1.3. SCTP_REMOTE_ERROR */
-+	memset(sre, 0, sizeof(*sre));
- 	sre->sre_type = SCTP_REMOTE_ERROR;
--
--	/*
--	 * Socket Extensions for SCTP
--	 * 5.3.1.3 SCTP_REMOTE_ERROR
--	 *
--	 * sre_flags: 16 bits (unsigned integer)
--	 *   Currently unused.
--	 */
- 	sre->sre_flags = 0;
--
--	/* Socket Extensions for SCTP
--	 * 5.3.1.3 SCTP_REMOTE_ERROR
--	 *
--	 * sre_length: sizeof (__u32)
--	 *
--	 * This field is the total length of the notification data,
--	 * including the notification header.
--	 */
- 	sre->sre_length = skb->len;
--
--	/* Socket Extensions for SCTP
--	 * 5.3.1.3 SCTP_REMOTE_ERROR
--	 *
--	 * sre_error: 16 bits (unsigned integer)
--	 * This value represents one of the Operational Error causes defined in
--	 * the SCTP specification, in network byte order.
--	 */
- 	sre->sre_error = cause;
--
--	/* Socket Extensions for SCTP
--	 * 5.3.1.3 SCTP_REMOTE_ERROR
--	 *
--	 * sre_assoc_id: sizeof (sctp_assoc_t)
--	 *
--	 * The association id field, holds the identifier for the association.
--	 * All notifications for a given association have the same association
--	 * identifier.  For TCP style socket, this field is ignored.
--	 */
- 	sctp_ulpevent_set_owner(event, asoc);
- 	sre->sre_assoc_id = sctp_assoc2id(asoc);
++		shmem_falloc.start = unmap_start >> PAGE_SHIFT;
++		shmem_falloc.next = (unmap_end + 1) >> PAGE_SHIFT;
++		spin_lock(&inode->i_lock);
++		inode->i_private = &shmem_falloc;
++		spin_unlock(&inode->i_lock);
++
+ 		if ((u64)unmap_end > (u64)unmap_start)
+ 			unmap_mapping_range(mapping, unmap_start,
+ 					    1 + unmap_end - unmap_start, 0);
+ 		shmem_truncate_range(inode, offset, offset + len - 1);
+ 		/* No need to unmap again: hole-punching leaves COWed pages */
+ 		error = 0;
+-		goto out;
++		goto undone;
+ 	}
  
- 	return event;
--
- fail:
- 	return NULL;
- }
-@@ -906,7 +865,9 @@ __u16 sctp_ulpevent_get_notification_typ
- 	return notification->sn_header.sn_type;
- }
- 
--/* Copy out the sndrcvinfo into a msghdr.  */
-+/* RFC6458, Section 5.3.2. SCTP Header Information Structure
-+ * (SCTP_SNDRCV, DEPRECATED)
-+ */
- void sctp_ulpevent_read_sndrcvinfo(const struct sctp_ulpevent *event,
- 				   struct msghdr *msghdr)
- {
-@@ -915,74 +876,21 @@ void sctp_ulpevent_read_sndrcvinfo(const
- 	if (sctp_ulpevent_is_notification(event))
- 		return;
- 
--	/* Sockets API Extensions for SCTP
--	 * Section 5.2.2 SCTP Header Information Structure (SCTP_SNDRCV)
--	 *
--	 * sinfo_stream: 16 bits (unsigned integer)
--	 *
--	 * For recvmsg() the SCTP stack places the message's stream number in
--	 * this value.
--	*/
-+	memset(&sinfo, 0, sizeof(sinfo));
- 	sinfo.sinfo_stream = event->stream;
--	/* sinfo_ssn: 16 bits (unsigned integer)
--	 *
--	 * For recvmsg() this value contains the stream sequence number that
--	 * the remote endpoint placed in the DATA chunk.  For fragmented
--	 * messages this is the same number for all deliveries of the message
--	 * (if more than one recvmsg() is needed to read the message).
--	 */
- 	sinfo.sinfo_ssn = event->ssn;
--	/* sinfo_ppid: 32 bits (unsigned integer)
--	 *
--	 * In recvmsg() this value is
--	 * the same information that was passed by the upper layer in the peer
--	 * application.  Please note that byte order issues are NOT accounted
--	 * for and this information is passed opaquely by the SCTP stack from
--	 * one end to the other.
--	 */
- 	sinfo.sinfo_ppid = event->ppid;
--	/* sinfo_flags: 16 bits (unsigned integer)
--	 *
--	 * This field may contain any of the following flags and is composed of
--	 * a bitwise OR of these values.
--	 *
--	 * recvmsg() flags:
--	 *
--	 * SCTP_UNORDERED - This flag is present when the message was sent
--	 *                 non-ordered.
--	 */
- 	sinfo.sinfo_flags = event->flags;
--	/* sinfo_tsn: 32 bit (unsigned integer)
--	 *
--	 * For the receiving side, this field holds a TSN that was
--	 * assigned to one of the SCTP Data Chunks.
--	 */
- 	sinfo.sinfo_tsn = event->tsn;
--	/* sinfo_cumtsn: 32 bit (unsigned integer)
--	 *
--	 * This field will hold the current cumulative TSN as
--	 * known by the underlying SCTP layer.  Note this field is
--	 * ignored when sending and only valid for a receive
--	 * operation when sinfo_flags are set to SCTP_UNORDERED.
--	 */
- 	sinfo.sinfo_cumtsn = event->cumtsn;
--	/* sinfo_assoc_id: sizeof (sctp_assoc_t)
--	 *
--	 * The association handle field, sinfo_assoc_id, holds the identifier
--	 * for the association announced in the COMMUNICATION_UP notification.
--	 * All notifications for a given association have the same identifier.
--	 * Ignored for one-to-one style sockets.
--	 */
- 	sinfo.sinfo_assoc_id = sctp_assoc2id(event->asoc);
--
--	/* context value that is set via SCTP_CONTEXT socket option. */
-+	/* Context value that is set via SCTP_CONTEXT socket option. */
- 	sinfo.sinfo_context = event->asoc->default_rcv_context;
--
- 	/* These fields are not used while receiving. */
- 	sinfo.sinfo_timetolive = 0;
- 
- 	put_cmsg(msghdr, IPPROTO_SCTP, SCTP_SNDRCV,
--		 sizeof(struct sctp_sndrcvinfo), (void *)&sinfo);
-+		 sizeof(sinfo), &sinfo);
- }
- 
- /* Do accounting for bytes received and hold a reference to the association
+ 	/* We need to check rlimit even when FALLOC_FL_KEEP_SIZE */
 
 
