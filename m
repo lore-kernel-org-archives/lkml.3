@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754470AbaGZTPv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 15:15:51 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34123 "EHLO
+	id S1754503AbaGZTQ2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 15:16:28 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34338 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754326AbaGZTNc (ORCPT
+	with ESMTP id S1752354AbaGZTNc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 26 Jul 2014 15:13:32 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Thomas Fitzsimmons <fitzsim@fitzsim.org>,
+        Ed Martin <edman007@edman007.com>,
+        Andrey Utkin <andrey.krieger.utkin@gmail.com>,
+        Eric Dumazet <edumazet@google.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.15 059/109] net: mvneta: Fix big endian issue in mvneta_txq_desc_csum()
-Date: Sat, 26 Jul 2014 12:02:21 -0700
-Message-Id: <20140726190225.643784523@linuxfoundation.org>
+Subject: [PATCH 3.15 057/109] appletalk: Fix socket referencing in skb
+Date: Sat, 26 Jul 2014 12:02:19 -0700
+Message-Id: <20140726190225.584493095@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.2
 In-Reply-To: <20140726190223.834037485@linuxfoundation.org>
 References: <20140726190223.834037485@linuxfoundation.org>
@@ -29,35 +31,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Fitzsimmons <fitzsim@fitzsim.org>
+From: Andrey Utkin <andrey.krieger.utkin@gmail.com>
 
-[ Upstream commit 0a1985879437d14bda8c90d0dae3455c467d7642 ]
+[ Upstream commit 36beddc272c111689f3042bf3d10a64d8a805f93 ]
 
-This commit fixes the command value generated for CSUM calculation
-when running in big endian mode.  The Ethernet protocol ID for IP was
-being unconditionally byte-swapped in the layer 3 protocol check (with
-swab16), which caused the mvneta driver to not function correctly in
-big endian mode.  This patch byte-swaps the ID conditionally with
-htons.
+Setting just skb->sk without taking its reference and setting a
+destructor is invalid. However, in the places where this was done, skb
+is used in a way not requiring skb->sk setting. So dropping the setting
+of skb->sk.
+Thanks to Eric Dumazet <eric.dumazet@gmail.com> for correct solution.
 
-Cc: <stable@vger.kernel.org> # v3.13+
-Signed-off-by: Thomas Fitzsimmons <fitzsim@fitzsim.org>
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=79441
+Reported-by: Ed Martin <edman007@edman007.com>
+Signed-off-by: Andrey Utkin <andrey.krieger.utkin@gmail.com>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/ethernet/marvell/mvneta.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/appletalk/ddp.c |    3 ---
+ 1 file changed, 3 deletions(-)
 
---- a/drivers/net/ethernet/marvell/mvneta.c
-+++ b/drivers/net/ethernet/marvell/mvneta.c
-@@ -1189,7 +1189,7 @@ static u32 mvneta_txq_desc_csum(int l3_o
- 	command =  l3_offs    << MVNETA_TX_L3_OFF_SHIFT;
- 	command |= ip_hdr_len << MVNETA_TX_IP_HLEN_SHIFT;
+--- a/net/appletalk/ddp.c
++++ b/net/appletalk/ddp.c
+@@ -1489,8 +1489,6 @@ static int atalk_rcv(struct sk_buff *skb
+ 		goto drop;
  
--	if (l3_proto == swab16(ETH_P_IP))
-+	if (l3_proto == htons(ETH_P_IP))
- 		command |= MVNETA_TXD_IP_CSUM;
- 	else
- 		command |= MVNETA_TX_L3_IP6;
+ 	/* Queue packet (standard) */
+-	skb->sk = sock;
+-
+ 	if (sock_queue_rcv_skb(sock, skb) < 0)
+ 		goto drop;
+ 
+@@ -1644,7 +1642,6 @@ static int atalk_sendmsg(struct kiocb *i
+ 	if (!skb)
+ 		goto out;
+ 
+-	skb->sk = sk;
+ 	skb_reserve(skb, ddp_dl->header_length);
+ 	skb_reserve(skb, dev->hard_header_len);
+ 	skb->dev = dev;
 
 
