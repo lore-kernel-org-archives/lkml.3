@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754969AbaGZTxL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 15:53:11 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34127 "EHLO
+	id S932200AbaGZTxK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 15:53:10 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34133 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753853AbaGZTNB (ORCPT
+	with ESMTP id S1753857AbaGZTNB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 26 Jul 2014 15:13:01 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Suresh Reddy <Suresh.Reddy@emulex.com>,
-        Sathya Perla <sathya.perla@emulex.com>,
+        Jon Maloy <jon.maloy@ericsson.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 54/87] be2net: set EQ DB clear-intr bit in be_open()
-Date: Sat, 26 Jul 2014 12:02:28 -0700
-Message-Id: <20140726190216.370056048@linuxfoundation.org>
+Subject: [PATCH 3.14 55/87] tipc: clear next-pointer of message fragments before reassembly
+Date: Sat, 26 Jul 2014 12:02:29 -0700
+Message-Id: <20140726190216.401105642@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.2
 In-Reply-To: <20140726190214.530473925@linuxfoundation.org>
 References: <20140726190214.530473925@linuxfoundation.org>
@@ -30,34 +29,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Suresh Reddy <Suresh.Reddy@emulex.com>
+From: Jon Paul Maloy <jon.maloy@ericsson.com>
 
-[ Upstream commit 4cad9f3b61c7268fa89ab8096e23202300399b5d ]
+[ Upstream commit 999417549c16dd0e3a382aa9f6ae61688db03181 ]
 
-On BE3, if the clear-interrupt bit of the EQ doorbell is not set the first
-time it is armed, ocassionally we have observed that the EQ doesn't raise
-anymore interrupts even if it is in armed state.
-This patch fixes this by setting the clear-interrupt bit when EQs are
-armed for the first time in be_open().
+If the 'next' pointer of the last fragment buffer in a message is not
+zeroed before reassembly, we risk ending up with a corrupt message,
+since the reassembly function itself isn't doing this.
 
-Signed-off-by: Suresh Reddy <Suresh.Reddy@emulex.com>
-Signed-off-by: Sathya Perla <sathya.perla@emulex.com>
+Currently, when a buffer is retrieved from the deferred queue of the
+broadcast link, the next pointer is not cleared, with the result as
+described above.
+
+This commit corrects this, and thereby fixes a bug that may occur when
+long broadcast messages are transmitted across dual interfaces. The bug
+has been present since 40ba3cdf542a469aaa9083fa041656e59b109b90 ("tipc:
+message reassembly using fragment chain")
+
+This commit should be applied to both net and net-next.
+
+Signed-off-by: Jon Maloy <jon.maloy@ericsson.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/ethernet/emulex/benet/be_main.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/tipc/bcast.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/net/ethernet/emulex/benet/be_main.c
-+++ b/drivers/net/ethernet/emulex/benet/be_main.c
-@@ -2797,7 +2797,7 @@ static int be_open(struct net_device *ne
- 	for_all_evt_queues(adapter, eqo, i) {
- 		napi_enable(&eqo->napi);
- 		be_enable_busy_poll(eqo);
--		be_eq_notify(adapter, eqo->q.id, true, false, 0);
-+		be_eq_notify(adapter, eqo->q.id, true, true, 0);
- 	}
- 	adapter->flags |= BE_FLAGS_NAPI_ENABLED;
+--- a/net/tipc/bcast.c
++++ b/net/tipc/bcast.c
+@@ -537,6 +537,7 @@ receive:
  
+ 		buf = node->bclink.deferred_head;
+ 		node->bclink.deferred_head = buf->next;
++		buf->next = NULL;
+ 		node->bclink.deferred_size--;
+ 		goto receive;
+ 	}
 
 
