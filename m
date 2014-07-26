@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752715AbaGZTDF (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 15:03:05 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33744 "EHLO
+	id S1755969AbaGZUFK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 16:05:10 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33752 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752538AbaGZTDC (ORCPT
+	with ESMTP id S1752707AbaGZTDF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 15:03:02 -0400
+	Sat, 26 Jul 2014 15:03:05 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ben Hutchings <ben@decadent.org.uk>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 40/56] dns_resolver: Null-terminate the right string
-Date: Sat, 26 Jul 2014 12:02:33 -0700
-Message-Id: <20140726190201.362533269@linuxfoundation.org>
+        Sharvil Nanavati <sharvil@google.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        Prarit Bhargava <prarit@redhat.com>
+Subject: [PATCH 3.10 50/56] alarmtimer: Fix bug where relative alarm timers were treated as absolute
+Date: Sat, 26 Jul 2014 12:02:43 -0700
+Message-Id: <20140726190201.712130012@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.2
 In-Reply-To: <20140726190200.061512159@linuxfoundation.org>
 References: <20140726190200.061512159@linuxfoundation.org>
@@ -29,31 +31,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Hutchings <ben@decadent.org.uk>
+From: John Stultz <john.stultz@linaro.org>
 
-[ Upstream commit 640d7efe4c08f06c4ae5d31b79bd8740e7f6790a ]
+commit 16927776ae757d0d132bdbfabbfe2c498342bd59 upstream.
 
-*_result[len] is parsed as *(_result[len]) which is not at all what we
-want to touch here.
+Sharvil noticed with the posix timer_settime interface, using the
+CLOCK_REALTIME_ALARM or CLOCK_BOOTTIME_ALARM clockid, if the users
+tried to specify a relative time timer, it would incorrectly be
+treated as absolute regardless of the state of the flags argument.
 
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Fixes: 84a7c0b1db1c ("dns_resolver: assure that dns_query() result is null-terminated")
-Signed-off-by: David S. Miller <davem@davemloft.net>
+This patch corrects this, properly checking the absolute/relative flag,
+as well as adds further error checking that no invalid flag bits are set.
+
+Reported-by: Sharvil Nanavati <sharvil@google.com>
+Signed-off-by: John Stultz <john.stultz@linaro.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Prarit Bhargava <prarit@redhat.com>
+Cc: Sharvil Nanavati <sharvil@google.com>
+Link: http://lkml.kernel.org/r/1404767171-6902-1-git-send-email-john.stultz@linaro.org
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/dns_resolver/dns_query.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/net/dns_resolver/dns_query.c
-+++ b/net/dns_resolver/dns_query.c
-@@ -151,7 +151,7 @@ int dns_query(const char *type, const ch
- 		goto put;
+---
+ kernel/time/alarmtimer.c |   20 ++++++++++++++++++--
+ 1 file changed, 18 insertions(+), 2 deletions(-)
+
+--- a/kernel/time/alarmtimer.c
++++ b/kernel/time/alarmtimer.c
+@@ -540,9 +540,14 @@ static int alarm_timer_set(struct k_itim
+ 				struct itimerspec *new_setting,
+ 				struct itimerspec *old_setting)
+ {
++	ktime_t exp;
++
+ 	if (!rtcdev)
+ 		return -ENOTSUPP;
  
- 	memcpy(*_result, upayload->data, len);
--	*_result[len] = '\0';
-+	(*_result)[len] = '\0';
++	if (flags & ~TIMER_ABSTIME)
++		return -EINVAL;
++
+ 	if (old_setting)
+ 		alarm_timer_get(timr, old_setting);
  
- 	if (_expiry)
- 		*_expiry = rkey->expiry;
+@@ -552,8 +557,16 @@ static int alarm_timer_set(struct k_itim
+ 
+ 	/* start the timer */
+ 	timr->it.alarm.interval = timespec_to_ktime(new_setting->it_interval);
+-	alarm_start(&timr->it.alarm.alarmtimer,
+-			timespec_to_ktime(new_setting->it_value));
++	exp = timespec_to_ktime(new_setting->it_value);
++	/* Convert (if necessary) to absolute time */
++	if (flags != TIMER_ABSTIME) {
++		ktime_t now;
++
++		now = alarm_bases[timr->it.alarm.alarmtimer.type].gettime();
++		exp = ktime_add(now, exp);
++	}
++
++	alarm_start(&timr->it.alarm.alarmtimer, exp);
+ 	return 0;
+ }
+ 
+@@ -685,6 +698,9 @@ static int alarm_timer_nsleep(const cloc
+ 	if (!alarmtimer_get_rtcdev())
+ 		return -ENOTSUPP;
+ 
++	if (flags & ~TIMER_ABSTIME)
++		return -EINVAL;
++
+ 	if (!capable(CAP_WAKE_ALARM))
+ 		return -EPERM;
+ 
 
 
