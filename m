@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754269AbaGZT7g (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 15:59:36 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33826 "EHLO
+	id S1755730AbaGZT7y (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 15:59:54 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33783 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752769AbaGZTDJ (ORCPT
+	with ESMTP id S1752762AbaGZTDJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 26 Jul 2014 15:03:09 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ben Pfaff <blp@nicira.com>, "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 33/56] netlink: Fix handling of error from netlink_dump().
-Date: Sat, 26 Jul 2014 12:02:26 -0700
-Message-Id: <20140726190201.140467696@linuxfoundation.org>
+        Thomas Fitzsimmons <fitzsim@fitzsim.org>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.10 32/56] net: mvneta: Fix big endian issue in mvneta_txq_desc_csum()
+Date: Sat, 26 Jul 2014 12:02:25 -0700
+Message-Id: <20140726190201.108517597@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.2
 In-Reply-To: <20140726190200.061512159@linuxfoundation.org>
 References: <20140726190200.061512159@linuxfoundation.org>
@@ -28,52 +29,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Pfaff <blp@nicira.com>
+From: Thomas Fitzsimmons <fitzsim@fitzsim.org>
 
-[ Upstream commit ac30ef832e6af0505b6f0251a6659adcfa74975e ]
+[ Upstream commit 0a1985879437d14bda8c90d0dae3455c467d7642 ]
 
-netlink_dump() returns a negative errno value on error.  Until now,
-netlink_recvmsg() directly recorded that negative value in sk->sk_err, but
-that's wrong since sk_err takes positive errno values.  (This manifests as
-userspace receiving a positive return value from the recv() system call,
-falsely indicating success.) This bug was introduced in the commit that
-started checking the netlink_dump() return value, commit b44d211 (netlink:
-handle errors from netlink_dump()).
+This commit fixes the command value generated for CSUM calculation
+when running in big endian mode.  The Ethernet protocol ID for IP was
+being unconditionally byte-swapped in the layer 3 protocol check (with
+swab16), which caused the mvneta driver to not function correctly in
+big endian mode.  This patch byte-swaps the ID conditionally with
+htons.
 
-Multithreaded Netlink dumps are one way to trigger this behavior in
-practice, as described in the commit message for the userspace workaround
-posted here:
-    http://openvswitch.org/pipermail/dev/2014-June/042339.html
-
-This commit also fixes the same bug in netlink_poll(), introduced in commit
-cd1df525d (netlink: add flow control for memory mapped I/O).
-
-Signed-off-by: Ben Pfaff <blp@nicira.com>
+Cc: <stable@vger.kernel.org> # v3.13+
+Signed-off-by: Thomas Fitzsimmons <fitzsim@fitzsim.org>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/netlink/af_netlink.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/net/ethernet/marvell/mvneta.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/net/netlink/af_netlink.c
-+++ b/net/netlink/af_netlink.c
-@@ -500,7 +500,7 @@ static unsigned int netlink_poll(struct
- 		while (nlk->cb != NULL && netlink_dump_space(nlk)) {
- 			err = netlink_dump(sk);
- 			if (err < 0) {
--				sk->sk_err = err;
-+				sk->sk_err = -err;
- 				sk->sk_error_report(sk);
- 				break;
- 			}
-@@ -2272,7 +2272,7 @@ static int netlink_recvmsg(struct kiocb
- 	if (nlk->cb && atomic_read(&sk->sk_rmem_alloc) <= sk->sk_rcvbuf / 2) {
- 		ret = netlink_dump(sk);
- 		if (ret) {
--			sk->sk_err = ret;
-+			sk->sk_err = -ret;
- 			sk->sk_error_report(sk);
- 		}
- 	}
+--- a/drivers/net/ethernet/marvell/mvneta.c
++++ b/drivers/net/ethernet/marvell/mvneta.c
+@@ -1145,7 +1145,7 @@ static u32 mvneta_txq_desc_csum(int l3_o
+ 	command =  l3_offs    << MVNETA_TX_L3_OFF_SHIFT;
+ 	command |= ip_hdr_len << MVNETA_TX_IP_HLEN_SHIFT;
+ 
+-	if (l3_proto == swab16(ETH_P_IP))
++	if (l3_proto == htons(ETH_P_IP))
+ 		command |= MVNETA_TXD_IP_CSUM;
+ 	else
+ 		command |= MVNETA_TX_L3_IP6;
 
 
