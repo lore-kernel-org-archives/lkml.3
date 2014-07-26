@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753824AbaGZTMS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 15:12:18 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34078 "EHLO
+	id S1753249AbaGZTMj (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 15:12:39 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34074 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753581AbaGZTKt (ORCPT
+	with ESMTP id S1753573AbaGZTKt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 26 Jul 2014 15:10:49 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Loic Poulain <loic.poulain@intel.com>,
-        Marcel Holtmann <marcel@holtmann.org>
-Subject: [PATCH 3.14 07/87] Bluetooth: Ignore H5 non-link packets in non-active state
-Date: Sat, 26 Jul 2014 12:01:41 -0700
-Message-Id: <20140726190214.772223221@linuxfoundation.org>
+        "K. Y. Srinivasan" <kys@microsoft.com>
+Subject: [PATCH 3.14 06/87] Drivers: hv: util: Fix a bug in the KVP code
+Date: Sat, 26 Jul 2014 12:01:40 -0700
+Message-Id: <20140726190214.739748327@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.2
 In-Reply-To: <20140726190214.530473925@linuxfoundation.org>
 References: <20140726190214.530473925@linuxfoundation.org>
@@ -29,31 +28,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Loic Poulain <loic.poulain@intel.com>
+From: "K. Y. Srinivasan" <kys@microsoft.com>
 
-commit 48439d501e3d9e8634bdc0c418e066870039599d upstream.
+commit 9bd2d0dfe4714dd5d7c09a93a5c9ea9e14ceb3fc upstream.
 
-When detecting a non-link packet, h5_reset_rx() frees the Rx skb.
-Not returning after that will cause the upcoming h5_rx_payload()
-call to dereference a now NULL Rx skb and trigger a kernel oops.
+Add code to poll the channel since we process only one message
+at a time and the host may not interrupt us. Also increase the
+receive buffer size since some KVP messages are close to 8K bytes in size.
 
-Signed-off-by: Loic Poulain <loic.poulain@intel.com>
-Signed-off-by: Marcel Holtmann <marcel@holtmann.org>
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/bluetooth/hci_h5.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/hv/hv_kvp.c  |   14 ++++++++++++--
+ drivers/hv/hv_util.c |    2 +-
+ 2 files changed, 13 insertions(+), 3 deletions(-)
 
---- a/drivers/bluetooth/hci_h5.c
-+++ b/drivers/bluetooth/hci_h5.c
-@@ -406,6 +406,7 @@ static int h5_rx_3wire_hdr(struct hci_ua
- 	    H5_HDR_PKT_TYPE(hdr) != HCI_3WIRE_LINK_PKT) {
- 		BT_ERR("Non-link packet received in non-active state");
- 		h5_reset_rx(h5);
-+		return 0;
+--- a/drivers/hv/hv_kvp.c
++++ b/drivers/hv/hv_kvp.c
+@@ -127,6 +127,15 @@ kvp_work_func(struct work_struct *dummy)
+ 	kvp_respond_to_host(NULL, HV_E_FAIL);
+ }
+ 
++static void poll_channel(struct vmbus_channel *channel)
++{
++	unsigned long flags;
++
++	spin_lock_irqsave(&channel->inbound_lock, flags);
++	hv_kvp_onchannelcallback(channel);
++	spin_unlock_irqrestore(&channel->inbound_lock, flags);
++}
++
+ static int kvp_handle_handshake(struct hv_kvp_msg *msg)
+ {
+ 	int ret = 1;
+@@ -155,7 +164,7 @@ static int kvp_handle_handshake(struct h
+ 		kvp_register(dm_reg_value);
+ 		kvp_transaction.active = false;
+ 		if (kvp_transaction.kvp_context)
+-			hv_kvp_onchannelcallback(kvp_transaction.kvp_context);
++			poll_channel(kvp_transaction.kvp_context);
+ 	}
+ 	return ret;
+ }
+@@ -568,6 +577,7 @@ response_done:
+ 
+ 	vmbus_sendpacket(channel, recv_buffer, buf_len, req_id,
+ 				VM_PKT_DATA_INBAND, 0);
++	poll_channel(channel);
+ 
+ }
+ 
+@@ -603,7 +613,7 @@ void hv_kvp_onchannelcallback(void *cont
+ 		return;
  	}
  
- 	h5->rx_func = h5_rx_payload;
+-	vmbus_recvpacket(channel, recv_buffer, PAGE_SIZE * 2, &recvlen,
++	vmbus_recvpacket(channel, recv_buffer, PAGE_SIZE * 4, &recvlen,
+ 			 &requestid);
+ 
+ 	if (recvlen > 0) {
+--- a/drivers/hv/hv_util.c
++++ b/drivers/hv/hv_util.c
+@@ -312,7 +312,7 @@ static int util_probe(struct hv_device *
+ 		(struct hv_util_service *)dev_id->driver_data;
+ 	int ret;
+ 
+-	srv->recv_buffer = kmalloc(PAGE_SIZE * 2, GFP_KERNEL);
++	srv->recv_buffer = kmalloc(PAGE_SIZE * 4, GFP_KERNEL);
+ 	if (!srv->recv_buffer)
+ 		return -ENOMEM;
+ 	if (srv->util_init) {
 
 
