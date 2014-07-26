@@ -1,50 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751367AbaGZL7q (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 07:59:46 -0400
-Received: from mail-la0-f46.google.com ([209.85.215.46]:46272 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750732AbaGZL7o (ORCPT
+	id S1751389AbaGZMAA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 08:00:00 -0400
+Received: from si-002-i47.relay.mailchannels.net ([184.154.112.221]:43843 "EHLO
+	relay.mailchannels.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750732AbaGZL76 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 07:59:44 -0400
-From: Andrey Utkin <andrey.krieger.utkin@gmail.com>
-To: trond.myklebust@primarydata.com
-Cc: linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org,
-        kernel-janitors@vger.kernel.org,
-        Andrey Utkin <andrey.krieger.utkin@gmail.com>
-Subject: [PATCH] nfs3_list_one_acl(): check get_acl() result with IS_ERR_OR_NULL
-Date: Sat, 26 Jul 2014 14:58:01 +0300
-Message-Id: <1406375881-18837-1-git-send-email-andrey.krieger.utkin@gmail.com>
-X-Mailer: git-send-email 2.0.0
+	Sat, 26 Jul 2014 07:59:58 -0400
+X-Sender-Id: arvixe|x-authuser|przemo@firszt.eu
+X-Sender-Id: arvixe|x-authuser|przemo@firszt.eu
+X-MC-Relay: Good
+X-MailChannels-SenderId: arvixe|x-authuser|przemo@firszt.eu
+X-MailChannels-Auth-Id: arvixe
+From: Przemo Firszt <przemo@firszt.eu>
+To: benjamin.tissoires@redhat.com
+Cc: dmitry.torokhov@gmail.com, jkosina@suse.cz, pinglinux@gmail.com,
+        killertofu@gmail.com, linux-kernel@vger.kernel.org,
+        linux-input@vger.kernel.org, Przemo Firszt <przemo@firszt.eu>
+Subject: [PATCH 1/2] Input - Wacom: Fix transfer header problem
+Date: Sat, 26 Jul 2014 12:59:28 +0100
+Message-Id: <1406375969-4453-1-git-send-email-przemo@firszt.eu>
+X-Mailer: git-send-email 1.9.3
+X-AuthUser: przemo@firszt.eu
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There was a check for result being not NULL. But get_acl() may return
-NULL, or ERR_PTR, or actual pointer.
-The purpose of the function where current change is done is to "list
-ACLs only when they are available", so any error condition of get_acl()
-mustn't be elevated, and returning 0 there is still valid.
+Header of transfer of image is different depending on connection type.
+That patch should be probably merged with 462c52a8cbcc62c
+Input - wacom: Check for bluetooth protocol while setting OLEDs
 
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=81111
-Signed-off-by: Andrey Utkin <andrey.krieger.utkin@gmail.com>
+Signed-off-by: Przemo Firszt <przemo@firszt.eu>
 ---
- fs/nfs/nfs3acl.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/hid/wacom_sys.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/fs/nfs/nfs3acl.c b/fs/nfs/nfs3acl.c
-index 8f854dd..d0fec26 100644
---- a/fs/nfs/nfs3acl.c
-+++ b/fs/nfs/nfs3acl.c
-@@ -256,7 +256,7 @@ nfs3_list_one_acl(struct inode *inode, int type, const char *name, void *data,
- 	char *p = data + *result;
+diff --git a/drivers/hid/wacom_sys.c b/drivers/hid/wacom_sys.c
+index 42f139f..51437e2 100644
+--- a/drivers/hid/wacom_sys.c
++++ b/drivers/hid/wacom_sys.c
+@@ -19,6 +19,7 @@
  
- 	acl = get_acl(inode, type);
--	if (!acl)
-+	if (IS_ERR_OR_NULL(acl))
- 		return 0;
+ #define WAC_CMD_LED_CONTROL	0x20
+ #define WAC_CMD_ICON_START	0x21
++#define WAC_CMD_ICON_BT_XFER	0x26
+ #define WAC_CMD_ICON_XFER	0x23
+ #define WAC_CMD_RETRIES		10
  
- 	posix_acl_release(acl);
+@@ -550,7 +551,7 @@ static int wacom_led_putimage(struct wacom *wacom, int button_id,
+ 	if (retval < 0)
+ 		goto out;
+ 
+-	buf[0] = WAC_CMD_ICON_XFER;
++	buf[0] = len == 256 ? WAC_CMD_ICON_BT_XFER : WAC_CMD_ICON_XFER;
+ 	buf[1] = button_id & 0x07;
+ 	for (i = 0; i < 4; i++) {
+ 		buf[2] = i;
 -- 
-2.0.0
+1.9.3
 
