@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756109AbaGZUL1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 16:11:27 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33664 "EHLO
+	id S1756799AbaGZULp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 16:11:45 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33631 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752068AbaGZTCz (ORCPT
+	with ESMTP id S1752591AbaGZTCy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 15:02:55 -0400
+	Sat, 26 Jul 2014 15:02:54 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "K. Y. Srinivasan" <kys@microsoft.com>
-Subject: [PATCH 3.10 03/56] Drivers: hv: util: Fix a bug in the KVP code
-Date: Sat, 26 Jul 2014 12:01:56 -0700
-Message-Id: <20140726190200.167696134@linuxfoundation.org>
+        Eric Dumazet <edumazet@google.com>, Dormando <dormando@rydia.net>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.10 20/56] ipv4: fix dst race in sk_dst_get()
+Date: Sat, 26 Jul 2014 12:02:13 -0700
+Message-Id: <20140726190200.706419795@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.2
 In-Reply-To: <20140726190200.061512159@linuxfoundation.org>
 References: <20140726190200.061512159@linuxfoundation.org>
@@ -28,76 +29,79 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "K. Y. Srinivasan" <kys@microsoft.com>
+From: Eric Dumazet <edumazet@google.com>
 
-commit 9bd2d0dfe4714dd5d7c09a93a5c9ea9e14ceb3fc upstream.
+[ Upstream commit f88649721268999bdff09777847080a52004f691 ]
 
-Add code to poll the channel since we process only one message
-at a time and the host may not interrupt us. Also increase the
-receive buffer size since some KVP messages are close to 8K bytes in size.
+When IP route cache had been removed in linux-3.6, we broke assumption
+that dst entries were all freed after rcu grace period. DST_NOCACHE
+dst were supposed to be freed from dst_release(). But it appears
+we want to keep such dst around, either in UDP sockets or tunnels.
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+In sk_dst_get() we need to make sure dst refcount is not 0
+before incrementing it, or else we might end up freeing a dst
+twice.
+
+DST_NOCACHE set on a dst does not mean this dst can not be attached
+to a socket or a tunnel.
+
+Then, before actual freeing, we need to observe a rcu grace period
+to make sure all other cpus can catch the fact the dst is no longer
+usable.
+
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Reported-by: Dormando <dormando@rydia.net>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/hv/hv_kvp.c  |   14 ++++++++++++--
- drivers/hv/hv_util.c |    2 +-
- 2 files changed, 13 insertions(+), 3 deletions(-)
+ include/net/sock.h |    4 ++--
+ net/core/dst.c     |   16 +++++++++++-----
+ 2 files changed, 13 insertions(+), 7 deletions(-)
 
---- a/drivers/hv/hv_kvp.c
-+++ b/drivers/hv/hv_kvp.c
-@@ -111,6 +111,15 @@ kvp_work_func(struct work_struct *dummy)
- 	kvp_respond_to_host(NULL, HV_E_FAIL);
- }
+--- a/include/net/sock.h
++++ b/include/net/sock.h
+@@ -1727,8 +1727,8 @@ sk_dst_get(struct sock *sk)
  
-+static void poll_channel(struct vmbus_channel *channel)
+ 	rcu_read_lock();
+ 	dst = rcu_dereference(sk->sk_dst_cache);
+-	if (dst)
+-		dst_hold(dst);
++	if (dst && !atomic_inc_not_zero(&dst->__refcnt))
++		dst = NULL;
+ 	rcu_read_unlock();
+ 	return dst;
+ }
+--- a/net/core/dst.c
++++ b/net/core/dst.c
+@@ -267,6 +267,15 @@ again:
+ }
+ EXPORT_SYMBOL(dst_destroy);
+ 
++static void dst_destroy_rcu(struct rcu_head *head)
 +{
-+	unsigned long flags;
++	struct dst_entry *dst = container_of(head, struct dst_entry, rcu_head);
 +
-+	spin_lock_irqsave(&channel->inbound_lock, flags);
-+	hv_kvp_onchannelcallback(channel);
-+	spin_unlock_irqrestore(&channel->inbound_lock, flags);
++	dst = dst_destroy(dst);
++	if (dst)
++		__dst_free(dst);
 +}
 +
- static int kvp_handle_handshake(struct hv_kvp_msg *msg)
+ void dst_release(struct dst_entry *dst)
  {
- 	int ret = 1;
-@@ -139,7 +148,7 @@ static int kvp_handle_handshake(struct h
- 		kvp_register(dm_reg_value);
- 		kvp_transaction.active = false;
- 		if (kvp_transaction.kvp_context)
--			hv_kvp_onchannelcallback(kvp_transaction.kvp_context);
-+			poll_channel(kvp_transaction.kvp_context);
+ 	if (dst) {
+@@ -274,11 +283,8 @@ void dst_release(struct dst_entry *dst)
+ 
+ 		newrefcnt = atomic_dec_return(&dst->__refcnt);
+ 		WARN_ON(newrefcnt < 0);
+-		if (unlikely(dst->flags & DST_NOCACHE) && !newrefcnt) {
+-			dst = dst_destroy(dst);
+-			if (dst)
+-				__dst_free(dst);
+-		}
++		if (unlikely(dst->flags & DST_NOCACHE) && !newrefcnt)
++			call_rcu(&dst->rcu_head, dst_destroy_rcu);
  	}
- 	return ret;
  }
-@@ -552,6 +561,7 @@ response_done:
- 
- 	vmbus_sendpacket(channel, recv_buffer, buf_len, req_id,
- 				VM_PKT_DATA_INBAND, 0);
-+	poll_channel(channel);
- 
- }
- 
-@@ -585,7 +595,7 @@ void hv_kvp_onchannelcallback(void *cont
- 		return;
- 	}
- 
--	vmbus_recvpacket(channel, recv_buffer, PAGE_SIZE * 2, &recvlen,
-+	vmbus_recvpacket(channel, recv_buffer, PAGE_SIZE * 4, &recvlen,
- 			 &requestid);
- 
- 	if (recvlen > 0) {
---- a/drivers/hv/hv_util.c
-+++ b/drivers/hv/hv_util.c
-@@ -279,7 +279,7 @@ static int util_probe(struct hv_device *
- 		(struct hv_util_service *)dev_id->driver_data;
- 	int ret;
- 
--	srv->recv_buffer = kmalloc(PAGE_SIZE * 2, GFP_KERNEL);
-+	srv->recv_buffer = kmalloc(PAGE_SIZE * 4, GFP_KERNEL);
- 	if (!srv->recv_buffer)
- 		return -ENOMEM;
- 	if (srv->util_init) {
+ EXPORT_SYMBOL(dst_release);
 
 
