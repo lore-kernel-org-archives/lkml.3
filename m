@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754468AbaGZTNo (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 15:13:44 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34338 "EHLO
+	id S932092AbaGZTNm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 15:13:42 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34123 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754338AbaGZTNd (ORCPT
+	with ESMTP id S1754319AbaGZTNc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 15:13:33 -0400
+	Sat, 26 Jul 2014 15:13:32 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ben Pfaff <blp@nicira.com>, "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.15 060/109] netlink: Fix handling of error from netlink_dump().
-Date: Sat, 26 Jul 2014 12:02:22 -0700
-Message-Id: <20140726190225.675472863@linuxfoundation.org>
+        Yuchung Cheng <ycheng@google.com>,
+        Neal Cardwell <ncardwell@google.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.15 056/109] tcp: fix false undo corner cases
+Date: Sat, 26 Jul 2014 12:02:18 -0700
+Message-Id: <20140726190225.555933403@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.2
 In-Reply-To: <20140726190223.834037485@linuxfoundation.org>
 References: <20140726190223.834037485@linuxfoundation.org>
@@ -28,52 +30,98 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Pfaff <blp@nicira.com>
+From: Yuchung Cheng <ycheng@google.com>
 
-[ Upstream commit ac30ef832e6af0505b6f0251a6659adcfa74975e ]
+[ Upstream commit 6e08d5e3c8236e7484229e46fdf92006e1dd4c49 ]
 
-netlink_dump() returns a negative errno value on error.  Until now,
-netlink_recvmsg() directly recorded that negative value in sk->sk_err, but
-that's wrong since sk_err takes positive errno values.  (This manifests as
-userspace receiving a positive return value from the recv() system call,
-falsely indicating success.) This bug was introduced in the commit that
-started checking the netlink_dump() return value, commit b44d211 (netlink:
-handle errors from netlink_dump()).
+The undo code assumes that, upon entering loss recovery, TCP
+1) always retransmit something
+2) the retransmission never fails locally (e.g., qdisc drop)
 
-Multithreaded Netlink dumps are one way to trigger this behavior in
-practice, as described in the commit message for the userspace workaround
-posted here:
-    http://openvswitch.org/pipermail/dev/2014-June/042339.html
+so undo_marker is set in tcp_enter_recovery() and undo_retrans is
+incremented only when tcp_retransmit_skb() is successful.
 
-This commit also fixes the same bug in netlink_poll(), introduced in commit
-cd1df525d (netlink: add flow control for memory mapped I/O).
+When the assumption is broken because TCP's cwnd is too small to
+retransmit or the retransmit fails locally. The next (DUP)ACK
+would incorrectly revert the cwnd and the congestion state in
+tcp_try_undo_dsack() or tcp_may_undo(). Subsequent (DUP)ACKs
+may enter the recovery state. The sender repeatedly enter and
+(incorrectly) exit recovery states if the retransmits continue to
+fail locally while receiving (DUP)ACKs.
 
-Signed-off-by: Ben Pfaff <blp@nicira.com>
+The fix is to initialize undo_retrans to -1 and start counting on
+the first retransmission. Always increment undo_retrans even if the
+retransmissions fail locally because they couldn't cause DSACKs to
+undo the cwnd reduction.
+
+Signed-off-by: Yuchung Cheng <ycheng@google.com>
+Signed-off-by: Neal Cardwell <ncardwell@google.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/netlink/af_netlink.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ net/ipv4/tcp_input.c  |    8 ++++----
+ net/ipv4/tcp_output.c |    6 ++++--
+ 2 files changed, 8 insertions(+), 6 deletions(-)
 
---- a/net/netlink/af_netlink.c
-+++ b/net/netlink/af_netlink.c
-@@ -636,7 +636,7 @@ static unsigned int netlink_poll(struct
- 		while (nlk->cb_running && netlink_dump_space(nlk)) {
- 			err = netlink_dump(sk);
- 			if (err < 0) {
--				sk->sk_err = err;
-+				sk->sk_err = -err;
- 				sk->sk_error_report(sk);
- 				break;
- 			}
-@@ -2453,7 +2453,7 @@ static int netlink_recvmsg(struct kiocb
- 	    atomic_read(&sk->sk_rmem_alloc) <= sk->sk_rcvbuf / 2) {
- 		ret = netlink_dump(sk);
- 		if (ret) {
--			sk->sk_err = ret;
-+			sk->sk_err = -ret;
- 			sk->sk_error_report(sk);
- 		}
+--- a/net/ipv4/tcp_input.c
++++ b/net/ipv4/tcp_input.c
+@@ -1106,7 +1106,7 @@ static bool tcp_check_dsack(struct sock
  	}
+ 
+ 	/* D-SACK for already forgotten data... Do dumb counting. */
+-	if (dup_sack && tp->undo_marker && tp->undo_retrans &&
++	if (dup_sack && tp->undo_marker && tp->undo_retrans > 0 &&
+ 	    !after(end_seq_0, prior_snd_una) &&
+ 	    after(end_seq_0, tp->undo_marker))
+ 		tp->undo_retrans--;
+@@ -1187,7 +1187,7 @@ static u8 tcp_sacktag_one(struct sock *s
+ 
+ 	/* Account D-SACK for retransmitted packet. */
+ 	if (dup_sack && (sacked & TCPCB_RETRANS)) {
+-		if (tp->undo_marker && tp->undo_retrans &&
++		if (tp->undo_marker && tp->undo_retrans > 0 &&
+ 		    after(end_seq, tp->undo_marker))
+ 			tp->undo_retrans--;
+ 		if (sacked & TCPCB_SACKED_ACKED)
+@@ -1893,7 +1893,7 @@ static void tcp_clear_retrans_partial(st
+ 	tp->lost_out = 0;
+ 
+ 	tp->undo_marker = 0;
+-	tp->undo_retrans = 0;
++	tp->undo_retrans = -1;
+ }
+ 
+ void tcp_clear_retrans(struct tcp_sock *tp)
+@@ -2664,7 +2664,7 @@ static void tcp_enter_recovery(struct so
+ 
+ 	tp->prior_ssthresh = 0;
+ 	tp->undo_marker = tp->snd_una;
+-	tp->undo_retrans = tp->retrans_out;
++	tp->undo_retrans = tp->retrans_out ? : -1;
+ 
+ 	if (inet_csk(sk)->icsk_ca_state < TCP_CA_CWR) {
+ 		if (!ece_ack)
+--- a/net/ipv4/tcp_output.c
++++ b/net/ipv4/tcp_output.c
+@@ -2472,8 +2472,6 @@ int tcp_retransmit_skb(struct sock *sk,
+ 		if (!tp->retrans_stamp)
+ 			tp->retrans_stamp = TCP_SKB_CB(skb)->when;
+ 
+-		tp->undo_retrans += tcp_skb_pcount(skb);
+-
+ 		/* snd_nxt is stored to detect loss of retransmitted segment,
+ 		 * see tcp_input.c tcp_sacktag_write_queue().
+ 		 */
+@@ -2481,6 +2479,10 @@ int tcp_retransmit_skb(struct sock *sk,
+ 	} else {
+ 		NET_INC_STATS_BH(sock_net(sk), LINUX_MIB_TCPRETRANSFAIL);
+ 	}
++
++	if (tp->undo_retrans < 0)
++		tp->undo_retrans = 0;
++	tp->undo_retrans += tcp_skb_pcount(skb);
+ 	return err;
+ }
+ 
 
 
