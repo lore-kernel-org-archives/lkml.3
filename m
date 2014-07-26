@@ -1,25 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754357AbaGZUV1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 16:21:27 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33515 "EHLO
+	id S1755138AbaGZUV3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 16:21:29 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33506 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752069AbaGZTC0 (ORCPT
+	with ESMTP id S1752065AbaGZTC0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 26 Jul 2014 15:02:26 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Hugh Dickins <hughd@google.com>, Sasha Levin <sasha.levin@oracle.com>,
-        Vlastimil Babka <vbabka@suse.cz>,
-        Konstantin Khlebnikov <koct9i@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Lukas Czerner <lczerner@redhat.com>, Dave Jones <davej@redhat.com>,
+        Dave Jones <davej@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.4 03/23] shmem: fix faulting into a hole, not taking i_mutex
-Date: Sat, 26 Jul 2014 12:02:03 -0700
-Message-Id: <20140726190149.826801961@linuxfoundation.org>
+Subject: [PATCH 3.4 02/23] shmem: fix faulting into a hole while its punched
+Date: Sat, 26 Jul 2014 12:02:02 -0700
+Message-Id: <20140726190149.796467545@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.2
 In-Reply-To: <20140726190149.723570428@linuxfoundation.org>
 References: <20140726190149.723570428@linuxfoundation.org>
@@ -36,45 +33,26 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Hugh Dickins <hughd@google.com>
 
-commit 8e205f779d1443a94b5ae81aa359cb535dd3021e upstream.
+commit f00cdc6df7d7cfcabb5b740911e6788cb0802bdb upstream.
 
-Commit f00cdc6df7d7 ("shmem: fix faulting into a hole while it's
-punched") was buggy: Sasha sent a lockdep report to remind us that
-grabbing i_mutex in the fault path is a no-no (write syscall may already
-hold i_mutex while faulting user buffer).
+Trinity finds that mmap access to a hole while it's punched from shmem
+can prevent the madvise(MADV_REMOVE) or fallocate(FALLOC_FL_PUNCH_HOLE)
+from completing, until the reader chooses to stop; with the puncher's
+hold on i_mutex locking out all other writers until it can complete.
 
-We tried a completely different approach (see following patch) but that
-proved inadequate: good enough for a rational workload, but not good
-enough against trinity - which forks off so many mappings of the object
-that contention on i_mmap_mutex while hole-puncher holds i_mutex builds
-into serious starvation when concurrent faults force the puncher to fall
-back to single-page unmap_mapping_range() searches of the i_mmap tree.
+It appears that the tmpfs fault path is too light in comparison with its
+hole-punching path, lacking an i_data_sem to obstruct it; but we don't
+want to slow down the common case.
 
-So return to the original umbrella approach, but keep away from i_mutex
-this time.  We really don't want to bloat every shmem inode with a new
-mutex or completion, just to protect this unlikely case from trinity.
-So extend the original with wait_queue_head on stack at the hole-punch
-end, and wait_queue item on the stack at the fault end.
+Extend shmem_fallocate()'s existing range notification mechanism, so
+shmem_fault() can refrain from faulting pages into the hole while it's
+punched, waiting instead on i_mutex (when safe to sleep; or repeatedly
+faulting when not).
 
-This involves further use of i_lock to guard against the races: lockdep
-has been happy so far, and I see fs/inode.c:unlock_new_inode() holds
-i_lock around wake_up_bit(), which is comparable to what we do here.
-i_lock is more convenient, but we could switch to shmem's info->lock.
-
-This issue has been tagged with CVE-2014-4171, which will require commit
-f00cdc6df7d7 and this and the following patch to be backported: we
-suggest to 3.1+, though in fact the trinity forkbomb effect might go
-back as far as 2.6.16, when madvise(,,MADV_REMOVE) came in - or might
-not, since much has changed, with i_mmap_mutex a spinlock before 3.0.
-Anyone running trinity on 3.0 and earlier? I don't think we need care.
-
+[akpm@linux-foundation.org: coding-style fixes]
 Signed-off-by: Hugh Dickins <hughd@google.com>
 Reported-by: Sasha Levin <sasha.levin@oracle.com>
 Tested-by: Sasha Levin <sasha.levin@oracle.com>
-Cc: Vlastimil Babka <vbabka@suse.cz>
-Cc: Konstantin Khlebnikov <koct9i@gmail.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Lukas Czerner <lczerner@redhat.com>
 Cc: Dave Jones <davej@redhat.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
@@ -82,114 +60,164 @@ Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 
 ---
- mm/shmem.c |   64 +++++++++++++++++++++++++++++++++++++++++--------------------
- 1 file changed, 44 insertions(+), 20 deletions(-)
+ mm/shmem.c    |   91 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ mm/truncate.c |   25 ---------------
+ 2 files changed, 91 insertions(+), 25 deletions(-)
 
 --- a/mm/shmem.c
 +++ b/mm/shmem.c
-@@ -82,6 +82,7 @@ static struct vfsmount *shm_mnt;
-  * a time): we would prefer not to enlarge the shmem inode just for that.
-  */
- struct shmem_falloc {
-+	wait_queue_head_t *waitq; /* faults into hole wait for punch to end */
- 	pgoff_t start;		/* start of range currently being fallocated */
- 	pgoff_t next;		/* the next page offset to be fallocated */
- };
-@@ -1074,37 +1075,57 @@ static int shmem_fault(struct vm_area_st
- 	 * Trinity finds that probing a hole which tmpfs is punching can
- 	 * prevent the hole-punch from ever completing: which in turn
- 	 * locks writers out with its hold on i_mutex.  So refrain from
--	 * faulting pages into the hole while it's being punched, and
--	 * wait on i_mutex to be released if vmf->flags permits.
-+	 * faulting pages into the hole while it's being punched.  Although
-+	 * shmem_truncate_range() does remove the additions, it may be unable to
-+	 * keep up, as each new page needs its own unmap_mapping_range() call,
-+	 * and the i_mmap tree grows ever slower to scan if new vmas are added.
-+	 *
-+	 * It does not matter if we sometimes reach this check just before the
-+	 * hole-punch begins, so that one fault then races with the punch:
-+	 * we just need to make racing faults a rare case.
-+	 *
-+	 * The implementation below would be much simpler if we just used a
-+	 * standard mutex or completion: but we cannot take i_mutex in fault,
-+	 * and bloating every shmem inode for this unlikely case would be sad.
- 	 */
- 	if (unlikely(inode->i_private)) {
- 		struct shmem_falloc *shmem_falloc;
+@@ -76,6 +76,16 @@ static struct vfsmount *shm_mnt;
+ /* Symlink up to this size is kmalloc'ed instead of using a swappable page */
+ #define SHORT_SYMLINK_LEN 128
  
- 		spin_lock(&inode->i_lock);
- 		shmem_falloc = inode->i_private;
--		if (!shmem_falloc ||
--		    vmf->pgoff < shmem_falloc->start ||
--		    vmf->pgoff >= shmem_falloc->next)
--			shmem_falloc = NULL;
--		spin_unlock(&inode->i_lock);
--		/*
--		 * i_lock has protected us from taking shmem_falloc seriously
--		 * once return from vmtruncate_range() went back up that stack.
--		 * i_lock does not serialize with i_mutex at all, but it does
--		 * not matter if sometimes we wait unnecessarily, or sometimes
--		 * miss out on waiting: we just need to make those cases rare.
--		 */
--		if (shmem_falloc) {
-+		if (shmem_falloc &&
-+		    vmf->pgoff >= shmem_falloc->start &&
-+		    vmf->pgoff < shmem_falloc->next) {
-+			wait_queue_head_t *shmem_falloc_waitq;
-+			DEFINE_WAIT(shmem_fault_wait);
++/*
++ * vmtruncate_range() communicates with shmem_fault via
++ * inode->i_private (with i_mutex making sure that it has only one user at
++ * a time): we would prefer not to enlarge the shmem inode just for that.
++ */
++struct shmem_falloc {
++	pgoff_t start;		/* start of range currently being fallocated */
++	pgoff_t next;		/* the next page offset to be fallocated */
++};
 +
-+			ret = VM_FAULT_NOPAGE;
- 			if ((vmf->flags & FAULT_FLAG_ALLOW_RETRY) &&
- 			   !(vmf->flags & FAULT_FLAG_RETRY_NOWAIT)) {
-+				/* It's polite to up mmap_sem if we can */
- 				up_read(&vma->vm_mm->mmap_sem);
--				mutex_lock(&inode->i_mutex);
--				mutex_unlock(&inode->i_mutex);
--				return VM_FAULT_RETRY;
-+				ret = VM_FAULT_RETRY;
- 			}
--			/* cond_resched? Leave that to GUP or return to user */
--			return VM_FAULT_NOPAGE;
+ struct shmem_xattr {
+ 	struct list_head list;	/* anchored by shmem_inode_info->xattr_list */
+ 	char *name;		/* xattr name */
+@@ -1060,6 +1070,43 @@ static int shmem_fault(struct vm_area_st
+ 	int error;
+ 	int ret = VM_FAULT_LOCKED;
+ 
++	/*
++	 * Trinity finds that probing a hole which tmpfs is punching can
++	 * prevent the hole-punch from ever completing: which in turn
++	 * locks writers out with its hold on i_mutex.  So refrain from
++	 * faulting pages into the hole while it's being punched, and
++	 * wait on i_mutex to be released if vmf->flags permits.
++	 */
++	if (unlikely(inode->i_private)) {
++		struct shmem_falloc *shmem_falloc;
 +
-+			shmem_falloc_waitq = shmem_falloc->waitq;
-+			prepare_to_wait(shmem_falloc_waitq, &shmem_fault_wait,
-+					TASK_UNINTERRUPTIBLE);
-+			spin_unlock(&inode->i_lock);
-+			schedule();
-+
-+			/*
-+			 * shmem_falloc_waitq points into the vmtruncate_range()
-+			 * stack of the hole-punching task: shmem_falloc_waitq
-+			 * is usually invalid by the time we reach here, but
-+			 * finish_wait() does not dereference it in that case;
-+			 * though i_lock needed lest racing with wake_up_all().
-+			 */
-+			spin_lock(&inode->i_lock);
-+			finish_wait(shmem_falloc_waitq, &shmem_fault_wait);
-+			spin_unlock(&inode->i_lock);
-+			return ret;
- 		}
++		spin_lock(&inode->i_lock);
++		shmem_falloc = inode->i_private;
++		if (!shmem_falloc ||
++		    vmf->pgoff < shmem_falloc->start ||
++		    vmf->pgoff >= shmem_falloc->next)
++			shmem_falloc = NULL;
 +		spin_unlock(&inode->i_lock);
- 	}
- 
++		/*
++		 * i_lock has protected us from taking shmem_falloc seriously
++		 * once return from vmtruncate_range() went back up that stack.
++		 * i_lock does not serialize with i_mutex at all, but it does
++		 * not matter if sometimes we wait unnecessarily, or sometimes
++		 * miss out on waiting: we just need to make those cases rare.
++		 */
++		if (shmem_falloc) {
++			if ((vmf->flags & FAULT_FLAG_ALLOW_RETRY) &&
++			   !(vmf->flags & FAULT_FLAG_RETRY_NOWAIT)) {
++				up_read(&vma->vm_mm->mmap_sem);
++				mutex_lock(&inode->i_mutex);
++				mutex_unlock(&inode->i_mutex);
++				return VM_FAULT_RETRY;
++			}
++			/* cond_resched? Leave that to GUP or return to user */
++			return VM_FAULT_NOPAGE;
++		}
++	}
++
  	error = shmem_getpage(inode, vmf->pgoff, &vmf->page, SGP_CACHE, &ret);
-@@ -1135,7 +1156,9 @@ int vmtruncate_range(struct inode *inode
- 		struct address_space *mapping = inode->i_mapping;
- 		loff_t unmap_start = round_up(lstart, PAGE_SIZE);
- 		loff_t unmap_end = round_down(1 + lend, PAGE_SIZE) - 1;
-+		DECLARE_WAIT_QUEUE_HEAD_ONSTACK(shmem_falloc_waitq);
+ 	if (error)
+ 		return ((error == -ENOMEM) ? VM_FAULT_OOM : VM_FAULT_SIGBUS);
+@@ -1071,6 +1118,44 @@ static int shmem_fault(struct vm_area_st
+ 	return ret;
+ }
  
-+		shmem_falloc.waitq = &shmem_falloc_waitq;
- 		shmem_falloc.start = unmap_start >> PAGE_SHIFT;
- 		shmem_falloc.next = (unmap_end + 1) >> PAGE_SHIFT;
- 		spin_lock(&inode->i_lock);
-@@ -1150,6 +1173,7 @@ int vmtruncate_range(struct inode *inode
++int vmtruncate_range(struct inode *inode, loff_t lstart, loff_t lend)
++{
++	/*
++	 * If the underlying filesystem is not going to provide
++	 * a way to truncate a range of blocks (punch a hole) -
++	 * we should return failure right now.
++	 * Only CONFIG_SHMEM shmem.c ever supported i_op->truncate_range().
++	 */
++	if (inode->i_op->truncate_range != shmem_truncate_range)
++		return -ENOSYS;
++
++	mutex_lock(&inode->i_mutex);
++	{
++		struct shmem_falloc shmem_falloc;
++		struct address_space *mapping = inode->i_mapping;
++		loff_t unmap_start = round_up(lstart, PAGE_SIZE);
++		loff_t unmap_end = round_down(1 + lend, PAGE_SIZE) - 1;
++
++		shmem_falloc.start = unmap_start >> PAGE_SHIFT;
++		shmem_falloc.next = (unmap_end + 1) >> PAGE_SHIFT;
++		spin_lock(&inode->i_lock);
++		inode->i_private = &shmem_falloc;
++		spin_unlock(&inode->i_lock);
++
++		if ((u64)unmap_end > (u64)unmap_start)
++			unmap_mapping_range(mapping, unmap_start,
++					    1 + unmap_end - unmap_start, 0);
++		shmem_truncate_range(inode, lstart, lend);
++		/* No need to unmap again: hole-punching leaves COWed pages */
++
++		spin_lock(&inode->i_lock);
++		inode->i_private = NULL;
++		spin_unlock(&inode->i_lock);
++	}
++	mutex_unlock(&inode->i_mutex);
++	return 0;
++}
++
+ #ifdef CONFIG_NUMA
+ static int shmem_set_policy(struct vm_area_struct *vma, struct mempolicy *mpol)
+ {
+@@ -2547,6 +2632,12 @@ void shmem_truncate_range(struct inode *
+ }
+ EXPORT_SYMBOL_GPL(shmem_truncate_range);
  
- 		spin_lock(&inode->i_lock);
- 		inode->i_private = NULL;
-+		wake_up_all(&shmem_falloc_waitq);
- 		spin_unlock(&inode->i_lock);
- 	}
- 	mutex_unlock(&inode->i_mutex);
++int vmtruncate_range(struct inode *inode, loff_t lstart, loff_t lend)
++{
++	/* Only CONFIG_SHMEM shmem.c ever supported i_op->truncate_range(). */
++	return -ENOSYS;
++}
++
+ #define shmem_vm_ops				generic_file_vm_ops
+ #define shmem_file_operations			ramfs_file_operations
+ #define shmem_get_inode(sb, dir, mode, dev, flags)	ramfs_get_inode(sb, dir, mode, dev)
+--- a/mm/truncate.c
++++ b/mm/truncate.c
+@@ -603,31 +603,6 @@ int vmtruncate(struct inode *inode, loff
+ }
+ EXPORT_SYMBOL(vmtruncate);
+ 
+-int vmtruncate_range(struct inode *inode, loff_t lstart, loff_t lend)
+-{
+-	struct address_space *mapping = inode->i_mapping;
+-	loff_t holebegin = round_up(lstart, PAGE_SIZE);
+-	loff_t holelen = 1 + lend - holebegin;
+-
+-	/*
+-	 * If the underlying filesystem is not going to provide
+-	 * a way to truncate a range of blocks (punch a hole) -
+-	 * we should return failure right now.
+-	 */
+-	if (!inode->i_op->truncate_range)
+-		return -ENOSYS;
+-
+-	mutex_lock(&inode->i_mutex);
+-	inode_dio_wait(inode);
+-	unmap_mapping_range(mapping, holebegin, holelen, 1);
+-	inode->i_op->truncate_range(inode, lstart, lend);
+-	/* unmap again to remove racily COWed private pages */
+-	unmap_mapping_range(mapping, holebegin, holelen, 1);
+-	mutex_unlock(&inode->i_mutex);
+-
+-	return 0;
+-}
+-
+ /**
+  * truncate_pagecache_range - unmap and remove pagecache that is hole-punched
+  * @inode: inode
 
 
