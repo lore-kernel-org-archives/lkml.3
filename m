@@ -1,40 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754979AbaGZURL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 16:17:11 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35059 "EHLO
+	id S1752335AbaGZTCe (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 15:02:34 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33547 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754204AbaGZURG (ORCPT
+	with ESMTP id S1752221AbaGZTC2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 16:17:06 -0400
-Date: Sat, 26 Jul 2014 13:17:06 -0700
+	Sat, 26 Jul 2014 15:02:28 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: torresariass@gmail.com
-Cc: devel@driverdev.osuosl.org,
-        Maximilian Eschenbacher <maximilian@eschenbacher.email>,
-        Trivial Patch Monkey <trivial@kernel.org>,
-        linux-kernel@vger.kernel.org, Josh Triplett <josh@joshtriplett.org>,
-        Tugce Sirin <ztugcesirin@gmail.com>
-Subject: Re: [PATCH] wlan-ng:prism2sta: Changes reporting format to meet
- checkpatch.pl
-Message-ID: <20140726201706.GA24646@kroah.com>
-References: <1406405364-30340-1-git-send-email-torresariass@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Ed Martin <edman007@edman007.com>,
+        Andrey Utkin <andrey.krieger.utkin@gmail.com>,
+        Eric Dumazet <edumazet@google.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.4 09/23] appletalk: Fix socket referencing in skb
+Date: Sat, 26 Jul 2014 12:02:09 -0700
+Message-Id: <20140726190150.009584854@linuxfoundation.org>
+X-Mailer: git-send-email 2.0.2
+In-Reply-To: <20140726190149.723570428@linuxfoundation.org>
+References: <20140726190149.723570428@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1406405364-30340-1-git-send-email-torresariass@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 26, 2014 at 04:09:24PM -0400, torresariass@gmail.com wrote:
-> From: Santiago Torres <torresariass@gmail.com>
-> 
-> [linux-next]: Make the format strings for netdev_err shorter so they can
-> fit under the 80 column width requirement.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-We do not have that requirement for strings at all, so no need to make
-this change.
+------------------
 
-greg k-h
+From: Andrey Utkin <andrey.krieger.utkin@gmail.com>
+
+[ Upstream commit 36beddc272c111689f3042bf3d10a64d8a805f93 ]
+
+Setting just skb->sk without taking its reference and setting a
+destructor is invalid. However, in the places where this was done, skb
+is used in a way not requiring skb->sk setting. So dropping the setting
+of skb->sk.
+Thanks to Eric Dumazet <eric.dumazet@gmail.com> for correct solution.
+
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=79441
+Reported-by: Ed Martin <edman007@edman007.com>
+Signed-off-by: Andrey Utkin <andrey.krieger.utkin@gmail.com>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ net/appletalk/ddp.c |    3 ---
+ 1 file changed, 3 deletions(-)
+
+--- a/net/appletalk/ddp.c
++++ b/net/appletalk/ddp.c
+@@ -1494,8 +1494,6 @@ static int atalk_rcv(struct sk_buff *skb
+ 		goto drop;
+ 
+ 	/* Queue packet (standard) */
+-	skb->sk = sock;
+-
+ 	if (sock_queue_rcv_skb(sock, skb) < 0)
+ 		goto drop;
+ 
+@@ -1649,7 +1647,6 @@ static int atalk_sendmsg(struct kiocb *i
+ 	if (!skb)
+ 		goto out;
+ 
+-	skb->sk = sk;
+ 	skb_reserve(skb, ddp_dl->header_length);
+ 	skb_reserve(skb, dev->hard_header_len);
+ 	skb->dev = dev;
+
+
