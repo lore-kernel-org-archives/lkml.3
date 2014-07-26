@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753111AbaGZTHm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 15:07:42 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33783 "EHLO
+	id S1753431AbaGZTH6 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 15:07:58 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33752 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752884AbaGZTDO (ORCPT
+	with ESMTP id S1752864AbaGZTDO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 26 Jul 2014 15:03:14 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Todd Fujinaka <todd.fujinaka@intel.com>,
-        Aaron Brown <aaron.f.brown@intel.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 20/87] igb: Workaround for i210 Errata 25: Slow System Clock
-Date: Sat, 26 Jul 2014 12:01:54 -0700
-Message-Id: <20140726190215.184498514@linuxfoundation.org>
+        Abbas Raza <Abbas_Raza@mentor.com>,
+        Peter Chen <peter.chen@freescale.com>
+Subject: [PATCH 3.14 02/87] usb: chipidea: udc: Disable auto ZLP generation on ep0
+Date: Sat, 26 Jul 2014 12:01:36 -0700
+Message-Id: <20140726190214.609053360@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.2
 In-Reply-To: <20140726190214.530473925@linuxfoundation.org>
 References: <20140726190214.530473925@linuxfoundation.org>
@@ -31,221 +29,93 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Todd Fujinaka <todd.fujinaka@intel.com>
+From: Abbas Raza <Abbas_Raza@mentor.com>
 
-commit 948264879b6894dc389a44b99fae4f0b72932619 upstream.
+commit 953c66469735aed8d2ada639a72b150f01dae605 upstream.
 
-On some devices, the internal PLL circuit occasionally provides the
-wrong clock frequency after power up. The probability of failure is less
-than one failure per 1000 power cycles. When the failure occurs, the
-internal clock frequency is around 1/20 of the correct frequency.
+There are 2 methods for ZLP (zero-length packet) generation:
+1) In software
+2) Automatic generation by device controller
 
-Signed-off-by: Todd Fujinaka <todd.fujinaka@intel.com>
-Tested-by: Aaron Brown <aaron.f.brown@intel.com>
-Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+1) is implemented in UDC driver and it attaches ZLP to IN packet if
+   descriptor->size < wLength
+2) can be enabled/disabled by setting ZLT bit in the QH
+
+When gadget ffs is connected to ubuntu host, the host sends
+get descriptor request and wLength in setup packet is 255 while the
+size of descriptor which will be sent by gadget in IN packet is
+64 byte. So the composite driver sets req->zero = 1.
+In UDC driver following code will be executed then
+
+        if (hwreq->req.zero && hwreq->req.length
+            && (hwreq->req.length % hwep->ep.maxpacket == 0))
+                add_td_to_list(hwep, hwreq, 0);
+
+Case-A:
+So in case of ubuntu host, UDC driver will attach a ZLP to the IN packet.
+ubuntu host will request 255 byte in IN request, gadget will send 64 byte
+with ZLP and host will come to know that there is no more data.
+But hold on, by default ZLT=0 for endpoint 0 so hardware also tries to
+automatically generate the ZLP which blocks enumeration for ~6 seconds due
+to endpoint 0 STALL, NAKs are sent to host for any requests (OUT/PING)
+
+Case-B:
+In case when gadget ffs is connected to Apple device, Apple device sends
+setup packet with wLength=64. So descriptor->size = 64 and wLength=64
+therefore req->zero = 0 and UDC driver will not attach any ZLP to the
+IN packet. Apple device requests 64 bytes, gets 64 bytes and doesn't
+further request for IN data. But ZLT=0 by default for endpoint 0 so
+hardware tries to automatically generate the ZLP which blocks enumeration
+for ~6 seconds due to endpoint 0 STALL, NAKs are sent to host for any
+requests (OUT/PING)
+
+According to USB2.0 specs:
+
+    8.5.3.2 Variable-length Data Stage
+    A control pipe may have a variable-length data phase in which the
+    host requests more data than is contained in the specified data
+    structure. When all of the data structure is returned to the host,
+    the function should indicate that the Data stage is ended by
+    returning a packet that is shorter than the MaxPacketSize for the
+    pipe. If the data structure is an exact multiple of wMaxPacketSize
+    for the pipe, the function will return a zero-length packet to indicate
+    the end of the Data stage.
+
+In Case-A mentioned above:
+If we disable software ZLP generation & ZLT=0 for endpoint 0 OR if software
+ZLP generation is not disabled but we set ZLT=1 for endpoint 0 then
+enumeration doesn't block for 6 seconds.
+
+In Case-B mentioned above:
+If we disable software ZLP generation & ZLT=0 for endpoint then enumeration
+still blocks due to ZLP automatically generated by hardware and host not needing
+it. But if we keep software ZLP generation enabled but we set ZLT=1 for
+endpoint 0 then enumeration doesn't block for 6 seconds.
+
+So the proper solution for this issue seems to disable automatic ZLP generation
+by hardware (i.e by setting ZLT=1 for endpoint 0) and let software (UDC driver)
+handle the ZLP generation based on req->zero field.
+
+Signed-off-by: Abbas Raza <Abbas_Raza@mentor.com>
+Signed-off-by: Peter Chen <peter.chen@freescale.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/ethernet/intel/igb/e1000_82575.c   |    7 ++
- drivers/net/ethernet/intel/igb/e1000_defines.h |   18 +++---
- drivers/net/ethernet/intel/igb/e1000_hw.h      |    3 +
- drivers/net/ethernet/intel/igb/e1000_i210.c    |   66 +++++++++++++++++++++++++
- drivers/net/ethernet/intel/igb/e1000_i210.h    |   12 ++++
- drivers/net/ethernet/intel/igb/e1000_regs.h    |    1 
- drivers/net/ethernet/intel/igb/igb_main.c      |   14 +++++
- 7 files changed, 113 insertions(+), 8 deletions(-)
+ drivers/usb/chipidea/udc.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/net/ethernet/intel/igb/e1000_82575.c
-+++ b/drivers/net/ethernet/intel/igb/e1000_82575.c
-@@ -1492,6 +1492,13 @@ static s32 igb_init_hw_82575(struct e100
- 	s32 ret_val;
- 	u16 i, rar_count = mac->rar_entry_count;
+--- a/drivers/usb/chipidea/udc.c
++++ b/drivers/usb/chipidea/udc.c
+@@ -1179,8 +1179,8 @@ static int ep_enable(struct usb_ep *ep,
  
-+	if ((hw->mac.type >= e1000_i210) &&
-+	    !(igb_get_flash_presence_i210(hw))) {
-+		ret_val = igb_pll_workaround_i210(hw);
-+		if (ret_val)
-+			return ret_val;
-+	}
+ 	if (hwep->type == USB_ENDPOINT_XFER_CONTROL)
+ 		cap |= QH_IOS;
+-	if (hwep->num)
+-		cap |= QH_ZLT;
 +
- 	/* Initialize identification LED */
- 	ret_val = igb_id_led_init(hw);
- 	if (ret_val) {
---- a/drivers/net/ethernet/intel/igb/e1000_defines.h
-+++ b/drivers/net/ethernet/intel/igb/e1000_defines.h
-@@ -46,14 +46,15 @@
- /* Extended Device Control */
- #define E1000_CTRL_EXT_SDP3_DATA 0x00000080 /* Value of SW Defineable Pin 3 */
- /* Physical Func Reset Done Indication */
--#define E1000_CTRL_EXT_PFRSTD    0x00004000
--#define E1000_CTRL_EXT_LINK_MODE_MASK 0x00C00000
--#define E1000_CTRL_EXT_LINK_MODE_PCIE_SERDES  0x00C00000
--#define E1000_CTRL_EXT_LINK_MODE_1000BASE_KX  0x00400000
--#define E1000_CTRL_EXT_LINK_MODE_SGMII   0x00800000
--#define E1000_CTRL_EXT_LINK_MODE_GMII   0x00000000
--#define E1000_CTRL_EXT_EIAME          0x01000000
--#define E1000_CTRL_EXT_IRCA           0x00000001
-+#define E1000_CTRL_EXT_PFRSTD	0x00004000
-+#define E1000_CTRL_EXT_SDLPE	0X00040000  /* SerDes Low Power Enable */
-+#define E1000_CTRL_EXT_LINK_MODE_MASK	0x00C00000
-+#define E1000_CTRL_EXT_LINK_MODE_PCIE_SERDES	0x00C00000
-+#define E1000_CTRL_EXT_LINK_MODE_1000BASE_KX	0x00400000
-+#define E1000_CTRL_EXT_LINK_MODE_SGMII	0x00800000
-+#define E1000_CTRL_EXT_LINK_MODE_GMII	0x00000000
-+#define E1000_CTRL_EXT_EIAME	0x01000000
-+#define E1000_CTRL_EXT_IRCA		0x00000001
- /* Interrupt delay cancellation */
- /* Driver loaded bit for FW */
- #define E1000_CTRL_EXT_DRV_LOAD       0x10000000
-@@ -62,6 +63,7 @@
- /* packet buffer parity error detection enabled */
- /* descriptor FIFO parity error detection enable */
- #define E1000_CTRL_EXT_PBA_CLR		0x80000000 /* PBA Clear */
-+#define E1000_CTRL_EXT_PHYPDEN		0x00100000
- #define E1000_I2CCMD_REG_ADDR_SHIFT	16
- #define E1000_I2CCMD_PHY_ADDR_SHIFT	24
- #define E1000_I2CCMD_OPCODE_READ	0x08000000
---- a/drivers/net/ethernet/intel/igb/e1000_hw.h
-+++ b/drivers/net/ethernet/intel/igb/e1000_hw.h
-@@ -572,4 +572,7 @@ struct net_device *igb_get_hw_dev(struct
- /* These functions must be implemented by drivers */
- s32 igb_read_pcie_cap_reg(struct e1000_hw *hw, u32 reg, u16 *value);
- s32 igb_write_pcie_cap_reg(struct e1000_hw *hw, u32 reg, u16 *value);
-+
-+void igb_read_pci_cfg(struct e1000_hw *hw, u32 reg, u16 *value);
-+void igb_write_pci_cfg(struct e1000_hw *hw, u32 reg, u16 *value);
- #endif /* _E1000_HW_H_ */
---- a/drivers/net/ethernet/intel/igb/e1000_i210.c
-+++ b/drivers/net/ethernet/intel/igb/e1000_i210.c
-@@ -835,3 +835,69 @@ s32 igb_init_nvm_params_i210(struct e100
- 	}
- 	return ret_val;
- }
-+
-+/**
-+ * igb_pll_workaround_i210
-+ * @hw: pointer to the HW structure
-+ *
-+ * Works around an errata in the PLL circuit where it occasionally
-+ * provides the wrong clock frequency after power up.
-+ **/
-+s32 igb_pll_workaround_i210(struct e1000_hw *hw)
-+{
-+	s32 ret_val;
-+	u32 wuc, mdicnfg, ctrl, ctrl_ext, reg_val;
-+	u16 nvm_word, phy_word, pci_word, tmp_nvm;
-+	int i;
-+
-+	/* Get and set needed register values */
-+	wuc = rd32(E1000_WUC);
-+	mdicnfg = rd32(E1000_MDICNFG);
-+	reg_val = mdicnfg & ~E1000_MDICNFG_EXT_MDIO;
-+	wr32(E1000_MDICNFG, reg_val);
-+
-+	/* Get data from NVM, or set default */
-+	ret_val = igb_read_invm_word_i210(hw, E1000_INVM_AUTOLOAD,
-+					  &nvm_word);
-+	if (ret_val)
-+		nvm_word = E1000_INVM_DEFAULT_AL;
-+	tmp_nvm = nvm_word | E1000_INVM_PLL_WO_VAL;
-+	for (i = 0; i < E1000_MAX_PLL_TRIES; i++) {
-+		/* check current state directly from internal PHY */
-+		igb_read_phy_reg_gs40g(hw, (E1000_PHY_PLL_FREQ_PAGE |
-+					 E1000_PHY_PLL_FREQ_REG), &phy_word);
-+		if ((phy_word & E1000_PHY_PLL_UNCONF)
-+		    != E1000_PHY_PLL_UNCONF) {
-+			ret_val = 0;
-+			break;
-+		} else {
-+			ret_val = -E1000_ERR_PHY;
-+		}
-+		/* directly reset the internal PHY */
-+		ctrl = rd32(E1000_CTRL);
-+		wr32(E1000_CTRL, ctrl|E1000_CTRL_PHY_RST);
-+
-+		ctrl_ext = rd32(E1000_CTRL_EXT);
-+		ctrl_ext |= (E1000_CTRL_EXT_PHYPDEN | E1000_CTRL_EXT_SDLPE);
-+		wr32(E1000_CTRL_EXT, ctrl_ext);
-+
-+		wr32(E1000_WUC, 0);
-+		reg_val = (E1000_INVM_AUTOLOAD << 4) | (tmp_nvm << 16);
-+		wr32(E1000_EEARBC_I210, reg_val);
-+
-+		igb_read_pci_cfg(hw, E1000_PCI_PMCSR, &pci_word);
-+		pci_word |= E1000_PCI_PMCSR_D3;
-+		igb_write_pci_cfg(hw, E1000_PCI_PMCSR, &pci_word);
-+		usleep_range(1000, 2000);
-+		pci_word &= ~E1000_PCI_PMCSR_D3;
-+		igb_write_pci_cfg(hw, E1000_PCI_PMCSR, &pci_word);
-+		reg_val = (E1000_INVM_AUTOLOAD << 4) | (nvm_word << 16);
-+		wr32(E1000_EEARBC_I210, reg_val);
-+
-+		/* restore WUC register */
-+		wr32(E1000_WUC, wuc);
-+	}
-+	/* restore MDICNFG setting */
-+	wr32(E1000_MDICNFG, mdicnfg);
-+	return ret_val;
-+}
---- a/drivers/net/ethernet/intel/igb/e1000_i210.h
-+++ b/drivers/net/ethernet/intel/igb/e1000_i210.h
-@@ -46,6 +46,7 @@ s32 igb_read_xmdio_reg(struct e1000_hw *
- s32 igb_write_xmdio_reg(struct e1000_hw *hw, u16 addr, u8 dev_addr, u16 data);
- s32 igb_init_nvm_params_i210(struct e1000_hw *hw);
- bool igb_get_flash_presence_i210(struct e1000_hw *hw);
-+s32 igb_pll_workaround_i210(struct e1000_hw *hw);
- 
- #define E1000_STM_OPCODE		0xDB00
- #define E1000_EEPROM_FLASH_SIZE_WORD	0x11
-@@ -91,4 +92,15 @@ enum E1000_INVM_STRUCTURE_TYPE {
- #define NVM_LED_1_CFG_DEFAULT_I211	0x0184
- #define NVM_LED_0_2_CFG_DEFAULT_I211	0x200C
- 
-+/* PLL Defines */
-+#define E1000_PCI_PMCSR			0x44
-+#define E1000_PCI_PMCSR_D3		0x03
-+#define E1000_MAX_PLL_TRIES		5
-+#define E1000_PHY_PLL_UNCONF		0xFF
-+#define E1000_PHY_PLL_FREQ_PAGE		0xFC0000
-+#define E1000_PHY_PLL_FREQ_REG		0x000E
-+#define E1000_INVM_DEFAULT_AL		0x202F
-+#define E1000_INVM_AUTOLOAD		0x0A
-+#define E1000_INVM_PLL_WO_VAL		0x0010
-+
- #endif
---- a/drivers/net/ethernet/intel/igb/e1000_regs.h
-+++ b/drivers/net/ethernet/intel/igb/e1000_regs.h
-@@ -69,6 +69,7 @@
- #define E1000_PBA      0x01000  /* Packet Buffer Allocation - RW */
- #define E1000_PBS      0x01008  /* Packet Buffer Size */
- #define E1000_EEMNGCTL 0x01010  /* MNG EEprom Control */
-+#define E1000_EEARBC_I210 0x12024  /* EEPROM Auto Read Bus Control */
- #define E1000_EEWR     0x0102C  /* EEPROM Write Register - RW */
- #define E1000_I2CCMD   0x01028  /* SFPI2C Command Register - RW */
- #define E1000_FRTIMER  0x01048  /* Free Running Timer - RW */
---- a/drivers/net/ethernet/intel/igb/igb_main.c
-+++ b/drivers/net/ethernet/intel/igb/igb_main.c
-@@ -7128,6 +7128,20 @@ static int igb_ioctl(struct net_device *
- 	}
- }
- 
-+void igb_read_pci_cfg(struct e1000_hw *hw, u32 reg, u16 *value)
-+{
-+	struct igb_adapter *adapter = hw->back;
-+
-+	pci_read_config_word(adapter->pdev, reg, value);
-+}
-+
-+void igb_write_pci_cfg(struct e1000_hw *hw, u32 reg, u16 *value)
-+{
-+	struct igb_adapter *adapter = hw->back;
-+
-+	pci_write_config_word(adapter->pdev, reg, *value);
-+}
-+
- s32 igb_read_pcie_cap_reg(struct e1000_hw *hw, u32 reg, u16 *value)
- {
- 	struct igb_adapter *adapter = hw->back;
++	cap |= QH_ZLT;
+ 	cap |= (hwep->ep.maxpacket << __ffs(QH_MAX_PKT)) & QH_MAX_PKT;
+ 	/*
+ 	 * For ISO-TX, we set mult at QH as the largest value, and use
 
 
