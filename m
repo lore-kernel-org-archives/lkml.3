@@ -1,65 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752117AbaGZSak (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 14:30:40 -0400
-Received: from mail-qa0-f66.google.com ([209.85.216.66]:53065 "EHLO
-	mail-qa0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752022AbaGZSaj (ORCPT
+	id S1752111AbaGZSjR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 14:39:17 -0400
+Received: from mail-vc0-f171.google.com ([209.85.220.171]:54983 "EHLO
+	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751448AbaGZSjP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 14:30:39 -0400
+	Sat, 26 Jul 2014 14:39:15 -0400
 MIME-Version: 1.0
-In-Reply-To: <1406365137.5091.152.camel@marge.simpson.net>
-References: <CA+80gGYVjprinWEJWbVq4VxjOLjQri8EvGAJ+sx+ihcOxdstCA@mail.gmail.com>
-	<1406365137.5091.152.camel@marge.simpson.net>
-Date: Sat, 26 Jul 2014 11:30:38 -0700
-Message-ID: <CA+80gGZRxXfabODZoFMoBju=j+7+Ne8sUYaKBPzo4c9kTjL8_g@mail.gmail.com>
-Subject: Re: [PATCH RFC] sched: deferred set priority (dprio)
-From: Sergey Oboguev <oboguev.public@gmail.com>
-To: Mike Galbraith <umgwanakikbuti@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@elte.hu>
+In-Reply-To: <CA+55aFyHU4Gwk6ASTuOgh3eFPshkgy1s5zc4p7f01DwrYddFOw@mail.gmail.com>
+References: <20140723182518.GD3935@laptop>
+	<CA+55aFyFT9n5wUNifEHY6+t2bEcD91kL7+dqXuBMSMJvLeDDJQ@mail.gmail.com>
+	<20140723184111.GG3935@laptop>
+	<CA+55aFwQfwfAP6U77_nD_mSvoygj=cZ09N644hKRtzgLnEqhZQ@mail.gmail.com>
+	<20140723190230.GH3935@laptop>
+	<CA+55aFyM1wqTLK0m4GQJ28f=z0iZE87=xk+1z-vm+PH1_d8nKw@mail.gmail.com>
+	<53D064C7.5050807@daenzer.net>
+	<CA+55aFyJhqiPv0kQ+51=Ei-zaAO+0JszxtnEyx-Gbto3SE00xw@mail.gmail.com>
+	<53D1B1EF.7030603@daenzer.net>
+	<20140725035527.GA30108@pg-vmw-gw1>
+	<20140725140237.GB32669@home.goodmis.org>
+	<CA+55aFzOoJzqJ=4RVPEBfscA8oRdr5Nv7fKx9aXYw2+frkuhwA@mail.gmail.com>
+	<CA+55aFyHU4Gwk6ASTuOgh3eFPshkgy1s5zc4p7f01DwrYddFOw@mail.gmail.com>
+Date: Sat, 26 Jul 2014 11:39:14 -0700
+X-Google-Sender-Auth: -tbSH5ae1tnnYlb_BcOwdVkzd1w
+Message-ID: <CA+55aFxaXPqyDJv-SNu6Giy3eKCu_SY1wof1NaNnPTbtF9RbXQ@mail.gmail.com>
+Subject: Re: Random panic in load_balance() with 3.16-rc
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Alexei Starovoitov <ast@kernel.org>,
+        =?UTF-8?Q?Michel_D=C3=A4nzer?= <michel@daenzer.net>,
+        Jakub Jelinek <jakub@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Debian GCC Maintainers <debian-gcc@lists.debian.org>,
+        Debian Kernel Team <debian-kernel@lists.debian.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 26, 2014 at 1:58 AM, Mike Galbraith
-<umgwanakikbuti@gmail.com> wrote:
-> On Fri, 2014-07-25 at 12:45 -0700, Sergey Oboguev wrote:
->> [This is a repost of the message from few day ago, with patch file
->> inline instead of being pointed by the URL.]
->>
->> This patch is intended to improve the support for fine-grain parallel
->> applications that may sometimes need to change the priority of their threads at
->> a very high rate, hundreds or even thousands of times per scheduling timeslice.
->>
->> These are typically applications that have to execute short or very short
->> lock-holding critical or otherwise time-urgent sections of code at a very high
->> frequency and need to protect these sections with "set priority" system calls,
->> one "set priority" call to elevate current thread priority before entering the
->> critical or time-urgent section, followed by another call to downgrade thread
->> priority at the completion of the section. Due to the high frequency of
->> entering and leaving critical or time-urgent sections, the cost of these "set
->> priority" system calls may raise to a noticeable part of an application's
->> overall expended CPU time. Proposed "deferred set priority" facility allows to
->> largely eliminate the cost of these system calls.
+On Sat, Jul 26, 2014 at 11:28 AM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
 >
-> So you essentially want to ship preempt_disable() off to userspace?
->
+> That's a bit worrisome. I haven't actually checked if the code
+> generation differs in significant ways yet..
 
-Only to the extent preemption control is already exported to the userspace and
-a task is already authorized to control its preemption by its RLIMIT_RTPRIO,
-RLIMIT_NICE and capable(CAP_SYS_NICE).
+Nope. Just three instructions that got re-ordered from ABC to CAB in a
+way that makes no difference. But just the knowledge that "-g" affects
+code generation is nasty.  And with "allmodconfig" my build fails
+almost immediately (failures on at least arch/x86/kernel/process_64.c,
+kernel/exit.c and mm/vmalloc.c in that case. I was too lazy to check
+what the differences were).
 
-DPRIO does not amplify a taks's capability to elevate its priority and block
-other tasks, it just reduces the computational cost of frequest
-sched_setattr(2) calls.
+Does anybody have current gcc build and can verify that current gcc
+tip passes the kernel compile with that
 
->
-> -Mike
->
->> Instead of executing a system call to elevate its thread priority, an
->> application simply writes its desired priority level to a designated memory
->> location in the userspace. When the kernel attempts to preempt the thread...
+    export GCC_COMPARE_DEBUG=1
 
-- Sergey
+thing?
+
+              Linus
