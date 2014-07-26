@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755017AbaGZThG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 15:37:06 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34376 "EHLO
+	id S1753315AbaGZThm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 15:37:42 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34123 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754162AbaGZTNW (ORCPT
+	with ESMTP id S1754152AbaGZTNW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 26 Jul 2014 15:13:22 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Oren Givon <oren.givon@intel.com>,
         Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Subject: [PATCH 3.15 028/109] iwlwifi: dvm: dont enable CTS to self
-Date: Sat, 26 Jul 2014 12:01:50 -0700
-Message-Id: <20140726190224.676132096@linuxfoundation.org>
+Subject: [PATCH 3.15 027/109] iwlwifi: update the 7265 series HW IDs
+Date: Sat, 26 Jul 2014 12:01:49 -0700
+Message-Id: <20140726190224.647872935@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.2
 In-Reply-To: <20140726190223.834037485@linuxfoundation.org>
 References: <20140726190223.834037485@linuxfoundation.org>
@@ -28,49 +29,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+From: Oren Givon <oren.givon@intel.com>
 
-commit 43d826ca5979927131685cc2092c7ce862cb91cd upstream.
+commit b3c063ae7279981f7161e63b44f214c62f122b32 upstream.
 
-We should always prefer to use full RTS protection. Using
-CTS to self gives a meaningless improvement, but this flow
-is much harder for the firmware which is likely to have
-issues with it.
+Add one more 7265 series HW ID.
+Edit one existing 7265 series HW ID.
 
+Signed-off-by: Oren Givon <oren.givon@intel.com>
 Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/iwlwifi/dvm/rxon.c |   12 ------------
- 1 file changed, 12 deletions(-)
+ drivers/net/wireless/iwlwifi/pcie/drv.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/net/wireless/iwlwifi/dvm/rxon.c
-+++ b/drivers/net/wireless/iwlwifi/dvm/rxon.c
-@@ -1068,13 +1068,6 @@ int iwlagn_commit_rxon(struct iwl_priv *
- 	/* recalculate basic rates */
- 	iwl_calc_basic_rates(priv, ctx);
- 
--	/*
--	 * force CTS-to-self frames protection if RTS-CTS is not preferred
--	 * one aggregation protection method
--	 */
--	if (!priv->hw_params.use_rts_for_aggregation)
--		ctx->staging.flags |= RXON_FLG_SELF_CTS_EN;
--
- 	if ((ctx->vif && ctx->vif->bss_conf.use_short_slot) ||
- 	    !(ctx->staging.flags & RXON_FLG_BAND_24G_MSK))
- 		ctx->staging.flags |= RXON_FLG_SHORT_SLOT_MSK;
-@@ -1480,11 +1473,6 @@ void iwlagn_bss_info_changed(struct ieee
- 	else
- 		ctx->staging.flags &= ~RXON_FLG_TGG_PROTECT_MSK;
- 
--	if (bss_conf->use_cts_prot)
--		ctx->staging.flags |= RXON_FLG_SELF_CTS_EN;
--	else
--		ctx->staging.flags &= ~RXON_FLG_SELF_CTS_EN;
--
- 	memcpy(ctx->staging.bssid_addr, bss_conf->bssid, ETH_ALEN);
- 
- 	if (vif->type == NL80211_IFTYPE_AP ||
+--- a/drivers/net/wireless/iwlwifi/pcie/drv.c
++++ b/drivers/net/wireless/iwlwifi/pcie/drv.c
+@@ -367,6 +367,7 @@ static DEFINE_PCI_DEVICE_TABLE(iwl_hw_ca
+ 	{IWL_PCI_DEVICE(0x095A, 0x5012, iwl7265_2ac_cfg)},
+ 	{IWL_PCI_DEVICE(0x095A, 0x5412, iwl7265_2ac_cfg)},
+ 	{IWL_PCI_DEVICE(0x095A, 0x5410, iwl7265_2ac_cfg)},
++	{IWL_PCI_DEVICE(0x095A, 0x5510, iwl7265_2ac_cfg)},
+ 	{IWL_PCI_DEVICE(0x095A, 0x5400, iwl7265_2ac_cfg)},
+ 	{IWL_PCI_DEVICE(0x095A, 0x1010, iwl7265_2ac_cfg)},
+ 	{IWL_PCI_DEVICE(0x095A, 0x5000, iwl7265_2n_cfg)},
+@@ -380,7 +381,7 @@ static DEFINE_PCI_DEVICE_TABLE(iwl_hw_ca
+ 	{IWL_PCI_DEVICE(0x095A, 0x9110, iwl7265_2ac_cfg)},
+ 	{IWL_PCI_DEVICE(0x095A, 0x9112, iwl7265_2ac_cfg)},
+ 	{IWL_PCI_DEVICE(0x095A, 0x9210, iwl7265_2ac_cfg)},
+-	{IWL_PCI_DEVICE(0x095A, 0x9200, iwl7265_2ac_cfg)},
++	{IWL_PCI_DEVICE(0x095B, 0x9200, iwl7265_2ac_cfg)},
+ 	{IWL_PCI_DEVICE(0x095A, 0x9510, iwl7265_2ac_cfg)},
+ 	{IWL_PCI_DEVICE(0x095A, 0x9310, iwl7265_2ac_cfg)},
+ 	{IWL_PCI_DEVICE(0x095A, 0x9410, iwl7265_2ac_cfg)},
 
 
