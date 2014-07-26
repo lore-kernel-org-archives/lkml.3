@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932092AbaGZTNm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 15:13:42 -0400
+	id S1754421AbaGZTNj (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 15:13:39 -0400
 Received: from mail.linuxfoundation.org ([140.211.169.12]:34123 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754319AbaGZTNc (ORCPT
+	with ESMTP id S1754281AbaGZTN3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 15:13:32 -0400
+	Sat, 26 Jul 2014 15:13:29 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Yuchung Cheng <ycheng@google.com>,
-        Neal Cardwell <ncardwell@google.com>,
+        Yegor Yefremov <yegorslists@googlemail.com>,
+        Felipe Balbi <balbi@ti.com>, Mugunthan V N <mugunthanvnm@ti.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.15 056/109] tcp: fix false undo corner cases
-Date: Sat, 26 Jul 2014 12:02:18 -0700
-Message-Id: <20140726190225.555933403@linuxfoundation.org>
+Subject: [PATCH 3.15 042/109] drivers: net: cpsw: fix dual EMAC stall when connected to same switch
+Date: Sat, 26 Jul 2014 12:02:04 -0700
+Message-Id: <20140726190225.119980278@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.2
 In-Reply-To: <20140726190223.834037485@linuxfoundation.org>
 References: <20140726190223.834037485@linuxfoundation.org>
@@ -30,98 +30,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Yuchung Cheng <ycheng@google.com>
+From: Mugunthan V N <mugunthanvnm@ti.com>
 
-[ Upstream commit 6e08d5e3c8236e7484229e46fdf92006e1dd4c49 ]
+[ Upstream commit e6afea0bbf129f88dc3fc39fd0d769f9ff064172 ]
 
-The undo code assumes that, upon entering loss recovery, TCP
-1) always retransmit something
-2) the retransmission never fails locally (e.g., qdisc drop)
+In commit 629c9a8fd0bbdfc6d702526b327470166ec39c6b (drivers: net: cpsw: Add
+default vlan for dual emac case also), api cpsw_add_default_vlan() also
+changes the port vlan which is required to seperate the ports which results
+in the following behavior
 
-so undo_marker is set in tcp_enter_recovery() and undo_retrans is
-incremented only when tcp_retransmit_skb() is successful.
+In Dual EMAC mode, when both the Etnernet connected is connected to same
+switch, it creates a loop in the switch and when a broadcast packet is
+received it is forwarded to the other port which stalls the whole switch
+and needs a reset/power cycle to the switch to recover. So intead of using
+the api, add only the default VLAN entry in dual EMAC case.
 
-When the assumption is broken because TCP's cwnd is too small to
-retransmit or the retransmit fails locally. The next (DUP)ACK
-would incorrectly revert the cwnd and the congestion state in
-tcp_try_undo_dsack() or tcp_may_undo(). Subsequent (DUP)ACKs
-may enter the recovery state. The sender repeatedly enter and
-(incorrectly) exit recovery states if the retransmits continue to
-fail locally while receiving (DUP)ACKs.
-
-The fix is to initialize undo_retrans to -1 and start counting on
-the first retransmission. Always increment undo_retrans even if the
-retransmissions fail locally because they couldn't cause DSACKs to
-undo the cwnd reduction.
-
-Signed-off-by: Yuchung Cheng <ycheng@google.com>
-Signed-off-by: Neal Cardwell <ncardwell@google.com>
+Cc: Yegor Yefremov <yegorslists@googlemail.com>
+Cc: Felipe Balbi <balbi@ti.com>
+Signed-off-by: Mugunthan V N <mugunthanvnm@ti.com>
+Tested-by: Yegor Yefremov <yegorslists@googlemail.com>
+Tested-by: Felipe Balbi <balbi@ti.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv4/tcp_input.c  |    8 ++++----
- net/ipv4/tcp_output.c |    6 ++++--
- 2 files changed, 8 insertions(+), 6 deletions(-)
+ drivers/net/ethernet/ti/cpsw.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
---- a/net/ipv4/tcp_input.c
-+++ b/net/ipv4/tcp_input.c
-@@ -1106,7 +1106,7 @@ static bool tcp_check_dsack(struct sock
- 	}
+--- a/drivers/net/ethernet/ti/cpsw.c
++++ b/drivers/net/ethernet/ti/cpsw.c
+@@ -1201,7 +1201,12 @@ static int cpsw_ndo_open(struct net_devi
+ 	for_each_slave(priv, cpsw_slave_open, priv);
  
- 	/* D-SACK for already forgotten data... Do dumb counting. */
--	if (dup_sack && tp->undo_marker && tp->undo_retrans &&
-+	if (dup_sack && tp->undo_marker && tp->undo_retrans > 0 &&
- 	    !after(end_seq_0, prior_snd_una) &&
- 	    after(end_seq_0, tp->undo_marker))
- 		tp->undo_retrans--;
-@@ -1187,7 +1187,7 @@ static u8 tcp_sacktag_one(struct sock *s
+ 	/* Add default VLAN */
+-	cpsw_add_default_vlan(priv);
++	if (!priv->data.dual_emac)
++		cpsw_add_default_vlan(priv);
++	else
++		cpsw_ale_add_vlan(priv->ale, priv->data.default_vlan,
++				  ALE_ALL_PORTS << priv->host_port,
++				  ALE_ALL_PORTS << priv->host_port, 0, 0);
  
- 	/* Account D-SACK for retransmitted packet. */
- 	if (dup_sack && (sacked & TCPCB_RETRANS)) {
--		if (tp->undo_marker && tp->undo_retrans &&
-+		if (tp->undo_marker && tp->undo_retrans > 0 &&
- 		    after(end_seq, tp->undo_marker))
- 			tp->undo_retrans--;
- 		if (sacked & TCPCB_SACKED_ACKED)
-@@ -1893,7 +1893,7 @@ static void tcp_clear_retrans_partial(st
- 	tp->lost_out = 0;
- 
- 	tp->undo_marker = 0;
--	tp->undo_retrans = 0;
-+	tp->undo_retrans = -1;
- }
- 
- void tcp_clear_retrans(struct tcp_sock *tp)
-@@ -2664,7 +2664,7 @@ static void tcp_enter_recovery(struct so
- 
- 	tp->prior_ssthresh = 0;
- 	tp->undo_marker = tp->snd_una;
--	tp->undo_retrans = tp->retrans_out;
-+	tp->undo_retrans = tp->retrans_out ? : -1;
- 
- 	if (inet_csk(sk)->icsk_ca_state < TCP_CA_CWR) {
- 		if (!ece_ack)
---- a/net/ipv4/tcp_output.c
-+++ b/net/ipv4/tcp_output.c
-@@ -2472,8 +2472,6 @@ int tcp_retransmit_skb(struct sock *sk,
- 		if (!tp->retrans_stamp)
- 			tp->retrans_stamp = TCP_SKB_CB(skb)->when;
- 
--		tp->undo_retrans += tcp_skb_pcount(skb);
--
- 		/* snd_nxt is stored to detect loss of retransmitted segment,
- 		 * see tcp_input.c tcp_sacktag_write_queue().
- 		 */
-@@ -2481,6 +2479,10 @@ int tcp_retransmit_skb(struct sock *sk,
- 	} else {
- 		NET_INC_STATS_BH(sock_net(sk), LINUX_MIB_TCPRETRANSFAIL);
- 	}
-+
-+	if (tp->undo_retrans < 0)
-+		tp->undo_retrans = 0;
-+	tp->undo_retrans += tcp_skb_pcount(skb);
- 	return err;
- }
- 
+ 	if (!cpsw_common_res_usage_state(priv)) {
+ 		/* setup tx dma to fixed prio and zero offset */
 
 
