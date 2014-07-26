@@ -1,23 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752896AbaGZTDP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 15:03:15 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33725 "EHLO
+	id S1753111AbaGZTHm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 15:07:42 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33783 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752677AbaGZTDB (ORCPT
+	with ESMTP id S1752884AbaGZTDO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 15:03:01 -0400
+	Sat, 26 Jul 2014 15:03:14 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Christoph Schulz <develop@kristov.de>,
+        Todd Fujinaka <todd.fujinaka@intel.com>,
+        Aaron Brown <aaron.f.brown@intel.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 37/56] net: pppoe: use correct channel MTU when using Multilink PPP
-Date: Sat, 26 Jul 2014 12:02:30 -0700
-Message-Id: <20140726190201.269442456@linuxfoundation.org>
+Subject: [PATCH 3.14 20/87] igb: Workaround for i210 Errata 25: Slow System Clock
+Date: Sat, 26 Jul 2014 12:01:54 -0700
+Message-Id: <20140726190215.184498514@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.2
-In-Reply-To: <20140726190200.061512159@linuxfoundation.org>
-References: <20140726190200.061512159@linuxfoundation.org>
+In-Reply-To: <20140726190214.530473925@linuxfoundation.org>
+References: <20140726190214.530473925@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -25,133 +27,225 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Christoph Schulz <develop@kristov.de>
+From: Todd Fujinaka <todd.fujinaka@intel.com>
 
-[ Upstream commit a8a3e41c67d24eb12f9ab9680cbb85e24fcd9711 ]
+commit 948264879b6894dc389a44b99fae4f0b72932619 upstream.
 
-The PPP channel MTU is used with Multilink PPP when ppp_mp_explode() (see
-ppp_generic module) tries to determine how big a fragment might be. According
-to RFC 1661, the MTU excludes the 2-byte PPP protocol field, see the
-corresponding comment and code in ppp_mp_explode():
+On some devices, the internal PLL circuit occasionally provides the
+wrong clock frequency after power up. The probability of failure is less
+than one failure per 1000 power cycles. When the failure occurs, the
+internal clock frequency is around 1/20 of the correct frequency.
 
-		/*
-		 * hdrlen includes the 2-byte PPP protocol field, but the
-		 * MTU counts only the payload excluding the protocol field.
-		 * (RFC1661 Section 2)
-		 */
-		mtu = pch->chan->mtu - (hdrlen - 2);
-
-However, the pppoe module *does* include the PPP protocol field in the channel
-MTU, which is wrong as it causes the PPP payload to be 1-2 bytes too big under
-certain circumstances (one byte if PPP protocol compression is used, two
-otherwise), causing the generated Ethernet packets to be dropped. So the pppoe
-module has to subtract two bytes from the channel MTU. This error only
-manifests itself when using Multilink PPP, as otherwise the channel MTU is not
-used anywhere.
-
-In the following, I will describe how to reproduce this bug. We configure two
-pppd instances for multilink PPP over two PPPoE links, say eth2 and eth3, with
-a MTU of 1492 bytes for each link and a MRRU of 2976 bytes. (This MRRU is
-computed by adding the two link MTUs and subtracting the MP header twice, which
-is 4 bytes long.) The necessary pppd statements on both sides are "multilink
-mtu 1492 mru 1492 mrru 2976". On the client side, we additionally need "plugin
-rp-pppoe.so eth2" and "plugin rp-pppoe.so eth3", respectively; on the server
-side, we additionally need to start two pppoe-server instances to be able to
-establish two PPPoE sessions, one over eth2 and one over eth3. We set the MTU
-of the PPP network interface to the MRRU (2976) on both sides of the connection
-in order to make use of the higher bandwidth. (If we didn't do that, IP
-fragmentation would kick in, which we want to avoid.)
-
-Now we send a ICMPv4 echo request with a payload of 2948 bytes from client to
-server over the PPP link. This results in the following network packet:
-
-   2948 (echo payload)
- +    8 (ICMPv4 header)
- +   20 (IPv4 header)
----------------------
-   2976 (PPP payload)
-
-These 2976 bytes do not exceed the MTU of the PPP network interface, so the
-IP packet is not fragmented. Now the multilink PPP code in ppp_mp_explode()
-prepends one protocol byte (0x21 for IPv4), making the packet one byte bigger
-than the negotiated MRRU. So this packet would have to be divided in three
-fragments. But this does not happen as each link MTU is assumed to be two bytes
-larger. So this packet is diveded into two fragments only, one of size 1489 and
-one of size 1488. Now we have for that bigger fragment:
-
-   1489 (PPP payload)
- +    4 (MP header)
- +    2 (PPP protocol field for the MP payload (0x3d))
- +    6 (PPPoE header)
---------------------------
-   1501 (Ethernet payload)
-
-This packet exceeds the link MTU and is discarded.
-
-If one configures the link MTU on the client side to 1501, one can see the
-discarded Ethernet frames with tcpdump running on the client. A
-
-ping -s 2948 -c 1 192.168.15.254
-
-leads to the smaller fragment that is correctly received on the server side:
-
-(tcpdump -vvvne -i eth3 pppoes and ppp proto 0x3d)
-52:54:00:ad:87:fd > 52:54:00:79:5c:d0, ethertype PPPoE S (0x8864),
-  length 1514: PPPoE  [ses 0x3] MLPPP (0x003d), length 1494: seq 0x000,
-  Flags [end], length 1492
-
-and to the bigger fragment that is not received on the server side:
-
-(tcpdump -vvvne -i eth2 pppoes and ppp proto 0x3d)
-52:54:00:70:9e:89 > 52:54:00:5d:6f:b0, ethertype PPPoE S (0x8864),
-  length 1515: PPPoE  [ses 0x5] MLPPP (0x003d), length 1495: seq 0x000,
-  Flags [begin], length 1493
-
-With the patch below, we correctly obtain three fragments:
-
-52:54:00:ad:87:fd > 52:54:00:79:5c:d0, ethertype PPPoE S (0x8864),
-  length 1514: PPPoE  [ses 0x1] MLPPP (0x003d), length 1494: seq 0x000,
-  Flags [begin], length 1492
-52:54:00:70:9e:89 > 52:54:00:5d:6f:b0, ethertype PPPoE S (0x8864),
-  length 1514: PPPoE  [ses 0x1] MLPPP (0x003d), length 1494: seq 0x000,
-  Flags [none], length 1492
-52:54:00:ad:87:fd > 52:54:00:79:5c:d0, ethertype PPPoE S (0x8864),
-  length 27: PPPoE  [ses 0x1] MLPPP (0x003d), length 7: seq 0x000,
-  Flags [end], length 5
-
-And the ICMPv4 echo request is successfully received at the server side:
-
-IP (tos 0x0, ttl 64, id 21925, offset 0, flags [DF], proto ICMP (1),
-  length 2976)
-    192.168.222.2 > 192.168.15.254: ICMP echo request, id 30530, seq 0,
-      length 2956
-
-The bug was introduced in commit c9aa6895371b2a257401f59d3393c9f7ac5a8698
-("[PPPOE]: Advertise PPPoE MTU") from the very beginning. This patch applies
-to 3.10 upwards but the fix can be applied (with minor modifications) to
-kernels as old as 2.6.32.
-
-Signed-off-by: Christoph Schulz <develop@kristov.de>
+Signed-off-by: Todd Fujinaka <todd.fujinaka@intel.com>
+Tested-by: Aaron Brown <aaron.f.brown@intel.com>
+Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/net/ppp/pppoe.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/ppp/pppoe.c
-+++ b/drivers/net/ppp/pppoe.c
-@@ -675,7 +675,7 @@ static int pppoe_connect(struct socket *
- 		po->chan.hdrlen = (sizeof(struct pppoe_hdr) +
- 				   dev->hard_header_len);
+---
+ drivers/net/ethernet/intel/igb/e1000_82575.c   |    7 ++
+ drivers/net/ethernet/intel/igb/e1000_defines.h |   18 +++---
+ drivers/net/ethernet/intel/igb/e1000_hw.h      |    3 +
+ drivers/net/ethernet/intel/igb/e1000_i210.c    |   66 +++++++++++++++++++++++++
+ drivers/net/ethernet/intel/igb/e1000_i210.h    |   12 ++++
+ drivers/net/ethernet/intel/igb/e1000_regs.h    |    1 
+ drivers/net/ethernet/intel/igb/igb_main.c      |   14 +++++
+ 7 files changed, 113 insertions(+), 8 deletions(-)
+
+--- a/drivers/net/ethernet/intel/igb/e1000_82575.c
++++ b/drivers/net/ethernet/intel/igb/e1000_82575.c
+@@ -1492,6 +1492,13 @@ static s32 igb_init_hw_82575(struct e100
+ 	s32 ret_val;
+ 	u16 i, rar_count = mac->rar_entry_count;
  
--		po->chan.mtu = dev->mtu - sizeof(struct pppoe_hdr);
-+		po->chan.mtu = dev->mtu - sizeof(struct pppoe_hdr) - 2;
- 		po->chan.private = sk;
- 		po->chan.ops = &pppoe_chan_ops;
++	if ((hw->mac.type >= e1000_i210) &&
++	    !(igb_get_flash_presence_i210(hw))) {
++		ret_val = igb_pll_workaround_i210(hw);
++		if (ret_val)
++			return ret_val;
++	}
++
+ 	/* Initialize identification LED */
+ 	ret_val = igb_id_led_init(hw);
+ 	if (ret_val) {
+--- a/drivers/net/ethernet/intel/igb/e1000_defines.h
++++ b/drivers/net/ethernet/intel/igb/e1000_defines.h
+@@ -46,14 +46,15 @@
+ /* Extended Device Control */
+ #define E1000_CTRL_EXT_SDP3_DATA 0x00000080 /* Value of SW Defineable Pin 3 */
+ /* Physical Func Reset Done Indication */
+-#define E1000_CTRL_EXT_PFRSTD    0x00004000
+-#define E1000_CTRL_EXT_LINK_MODE_MASK 0x00C00000
+-#define E1000_CTRL_EXT_LINK_MODE_PCIE_SERDES  0x00C00000
+-#define E1000_CTRL_EXT_LINK_MODE_1000BASE_KX  0x00400000
+-#define E1000_CTRL_EXT_LINK_MODE_SGMII   0x00800000
+-#define E1000_CTRL_EXT_LINK_MODE_GMII   0x00000000
+-#define E1000_CTRL_EXT_EIAME          0x01000000
+-#define E1000_CTRL_EXT_IRCA           0x00000001
++#define E1000_CTRL_EXT_PFRSTD	0x00004000
++#define E1000_CTRL_EXT_SDLPE	0X00040000  /* SerDes Low Power Enable */
++#define E1000_CTRL_EXT_LINK_MODE_MASK	0x00C00000
++#define E1000_CTRL_EXT_LINK_MODE_PCIE_SERDES	0x00C00000
++#define E1000_CTRL_EXT_LINK_MODE_1000BASE_KX	0x00400000
++#define E1000_CTRL_EXT_LINK_MODE_SGMII	0x00800000
++#define E1000_CTRL_EXT_LINK_MODE_GMII	0x00000000
++#define E1000_CTRL_EXT_EIAME	0x01000000
++#define E1000_CTRL_EXT_IRCA		0x00000001
+ /* Interrupt delay cancellation */
+ /* Driver loaded bit for FW */
+ #define E1000_CTRL_EXT_DRV_LOAD       0x10000000
+@@ -62,6 +63,7 @@
+ /* packet buffer parity error detection enabled */
+ /* descriptor FIFO parity error detection enable */
+ #define E1000_CTRL_EXT_PBA_CLR		0x80000000 /* PBA Clear */
++#define E1000_CTRL_EXT_PHYPDEN		0x00100000
+ #define E1000_I2CCMD_REG_ADDR_SHIFT	16
+ #define E1000_I2CCMD_PHY_ADDR_SHIFT	24
+ #define E1000_I2CCMD_OPCODE_READ	0x08000000
+--- a/drivers/net/ethernet/intel/igb/e1000_hw.h
++++ b/drivers/net/ethernet/intel/igb/e1000_hw.h
+@@ -572,4 +572,7 @@ struct net_device *igb_get_hw_dev(struct
+ /* These functions must be implemented by drivers */
+ s32 igb_read_pcie_cap_reg(struct e1000_hw *hw, u32 reg, u16 *value);
+ s32 igb_write_pcie_cap_reg(struct e1000_hw *hw, u32 reg, u16 *value);
++
++void igb_read_pci_cfg(struct e1000_hw *hw, u32 reg, u16 *value);
++void igb_write_pci_cfg(struct e1000_hw *hw, u32 reg, u16 *value);
+ #endif /* _E1000_HW_H_ */
+--- a/drivers/net/ethernet/intel/igb/e1000_i210.c
++++ b/drivers/net/ethernet/intel/igb/e1000_i210.c
+@@ -835,3 +835,69 @@ s32 igb_init_nvm_params_i210(struct e100
+ 	}
+ 	return ret_val;
+ }
++
++/**
++ * igb_pll_workaround_i210
++ * @hw: pointer to the HW structure
++ *
++ * Works around an errata in the PLL circuit where it occasionally
++ * provides the wrong clock frequency after power up.
++ **/
++s32 igb_pll_workaround_i210(struct e1000_hw *hw)
++{
++	s32 ret_val;
++	u32 wuc, mdicnfg, ctrl, ctrl_ext, reg_val;
++	u16 nvm_word, phy_word, pci_word, tmp_nvm;
++	int i;
++
++	/* Get and set needed register values */
++	wuc = rd32(E1000_WUC);
++	mdicnfg = rd32(E1000_MDICNFG);
++	reg_val = mdicnfg & ~E1000_MDICNFG_EXT_MDIO;
++	wr32(E1000_MDICNFG, reg_val);
++
++	/* Get data from NVM, or set default */
++	ret_val = igb_read_invm_word_i210(hw, E1000_INVM_AUTOLOAD,
++					  &nvm_word);
++	if (ret_val)
++		nvm_word = E1000_INVM_DEFAULT_AL;
++	tmp_nvm = nvm_word | E1000_INVM_PLL_WO_VAL;
++	for (i = 0; i < E1000_MAX_PLL_TRIES; i++) {
++		/* check current state directly from internal PHY */
++		igb_read_phy_reg_gs40g(hw, (E1000_PHY_PLL_FREQ_PAGE |
++					 E1000_PHY_PLL_FREQ_REG), &phy_word);
++		if ((phy_word & E1000_PHY_PLL_UNCONF)
++		    != E1000_PHY_PLL_UNCONF) {
++			ret_val = 0;
++			break;
++		} else {
++			ret_val = -E1000_ERR_PHY;
++		}
++		/* directly reset the internal PHY */
++		ctrl = rd32(E1000_CTRL);
++		wr32(E1000_CTRL, ctrl|E1000_CTRL_PHY_RST);
++
++		ctrl_ext = rd32(E1000_CTRL_EXT);
++		ctrl_ext |= (E1000_CTRL_EXT_PHYPDEN | E1000_CTRL_EXT_SDLPE);
++		wr32(E1000_CTRL_EXT, ctrl_ext);
++
++		wr32(E1000_WUC, 0);
++		reg_val = (E1000_INVM_AUTOLOAD << 4) | (tmp_nvm << 16);
++		wr32(E1000_EEARBC_I210, reg_val);
++
++		igb_read_pci_cfg(hw, E1000_PCI_PMCSR, &pci_word);
++		pci_word |= E1000_PCI_PMCSR_D3;
++		igb_write_pci_cfg(hw, E1000_PCI_PMCSR, &pci_word);
++		usleep_range(1000, 2000);
++		pci_word &= ~E1000_PCI_PMCSR_D3;
++		igb_write_pci_cfg(hw, E1000_PCI_PMCSR, &pci_word);
++		reg_val = (E1000_INVM_AUTOLOAD << 4) | (nvm_word << 16);
++		wr32(E1000_EEARBC_I210, reg_val);
++
++		/* restore WUC register */
++		wr32(E1000_WUC, wuc);
++	}
++	/* restore MDICNFG setting */
++	wr32(E1000_MDICNFG, mdicnfg);
++	return ret_val;
++}
+--- a/drivers/net/ethernet/intel/igb/e1000_i210.h
++++ b/drivers/net/ethernet/intel/igb/e1000_i210.h
+@@ -46,6 +46,7 @@ s32 igb_read_xmdio_reg(struct e1000_hw *
+ s32 igb_write_xmdio_reg(struct e1000_hw *hw, u16 addr, u8 dev_addr, u16 data);
+ s32 igb_init_nvm_params_i210(struct e1000_hw *hw);
+ bool igb_get_flash_presence_i210(struct e1000_hw *hw);
++s32 igb_pll_workaround_i210(struct e1000_hw *hw);
  
+ #define E1000_STM_OPCODE		0xDB00
+ #define E1000_EEPROM_FLASH_SIZE_WORD	0x11
+@@ -91,4 +92,15 @@ enum E1000_INVM_STRUCTURE_TYPE {
+ #define NVM_LED_1_CFG_DEFAULT_I211	0x0184
+ #define NVM_LED_0_2_CFG_DEFAULT_I211	0x200C
+ 
++/* PLL Defines */
++#define E1000_PCI_PMCSR			0x44
++#define E1000_PCI_PMCSR_D3		0x03
++#define E1000_MAX_PLL_TRIES		5
++#define E1000_PHY_PLL_UNCONF		0xFF
++#define E1000_PHY_PLL_FREQ_PAGE		0xFC0000
++#define E1000_PHY_PLL_FREQ_REG		0x000E
++#define E1000_INVM_DEFAULT_AL		0x202F
++#define E1000_INVM_AUTOLOAD		0x0A
++#define E1000_INVM_PLL_WO_VAL		0x0010
++
+ #endif
+--- a/drivers/net/ethernet/intel/igb/e1000_regs.h
++++ b/drivers/net/ethernet/intel/igb/e1000_regs.h
+@@ -69,6 +69,7 @@
+ #define E1000_PBA      0x01000  /* Packet Buffer Allocation - RW */
+ #define E1000_PBS      0x01008  /* Packet Buffer Size */
+ #define E1000_EEMNGCTL 0x01010  /* MNG EEprom Control */
++#define E1000_EEARBC_I210 0x12024  /* EEPROM Auto Read Bus Control */
+ #define E1000_EEWR     0x0102C  /* EEPROM Write Register - RW */
+ #define E1000_I2CCMD   0x01028  /* SFPI2C Command Register - RW */
+ #define E1000_FRTIMER  0x01048  /* Free Running Timer - RW */
+--- a/drivers/net/ethernet/intel/igb/igb_main.c
++++ b/drivers/net/ethernet/intel/igb/igb_main.c
+@@ -7128,6 +7128,20 @@ static int igb_ioctl(struct net_device *
+ 	}
+ }
+ 
++void igb_read_pci_cfg(struct e1000_hw *hw, u32 reg, u16 *value)
++{
++	struct igb_adapter *adapter = hw->back;
++
++	pci_read_config_word(adapter->pdev, reg, value);
++}
++
++void igb_write_pci_cfg(struct e1000_hw *hw, u32 reg, u16 *value)
++{
++	struct igb_adapter *adapter = hw->back;
++
++	pci_write_config_word(adapter->pdev, reg, *value);
++}
++
+ s32 igb_read_pcie_cap_reg(struct e1000_hw *hw, u32 reg, u16 *value)
+ {
+ 	struct igb_adapter *adapter = hw->back;
 
 
