@@ -1,25 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753954AbaGZTNI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 15:13:08 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34120 "EHLO
+	id S1756101AbaGZTrb (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 15:47:31 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34138 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753909AbaGZTNG (ORCPT
+	with ESMTP id S1753959AbaGZTNL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 15:13:06 -0400
+	Sat, 26 Jul 2014 15:13:11 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andrew Wiley <wiley.andrew.j@gmail.com>,
-        Linus Gasser <list@markas-al-nour.org>,
-        Michael Hirsch <hirsch@teufel.de>, Xinming Hu <huxm@marvell.com>,
-        Amitkumar Karwar <akarwar@marvell.com>,
-        Maithili Hinge <maithili@marvell.com>,
-        Avinash Patil <patila@marvell.com>, Bing Zhao <bzhao@marvell.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [PATCH 3.14 67/87] mwifiex: fix Tx timeout issue
-Date: Sat, 26 Jul 2014 12:02:41 -0700
-Message-Id: <20140726190216.796813737@linuxfoundation.org>
+        Takashi Iwai <tiwai@suse.de>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [PATCH 3.14 80/87] PM / sleep: Fix request_firmware() error at resume
+Date: Sat, 26 Jul 2014 12:02:54 -0700
+Message-Id: <20140726190217.202587805@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.2
 In-Reply-To: <20140726190214.530473925@linuxfoundation.org>
 References: <20140726190214.530473925@linuxfoundation.org>
@@ -34,49 +29,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Amitkumar Karwar <akarwar@marvell.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit d76744a93246eccdca1106037e8ee29debf48277 upstream.
+commit 4320f6b1d9db4ca912c5eb6ecb328b2e090e1586 upstream.
 
-https://bugzilla.kernel.org/show_bug.cgi?id=70191
-https://bugzilla.kernel.org/show_bug.cgi?id=77581
+The commit [247bc037: PM / Sleep: Mitigate race between the freezer
+and request_firmware()] introduced the finer state control, but it
+also leads to a new bug; for example, a bug report regarding the
+firmware loading of intel BT device at suspend/resume:
+  https://bugzilla.novell.com/show_bug.cgi?id=873790
 
-It is observed that sometimes Tx packet is downloaded without
-adding driver's txpd header. This results in firmware parsing
-garbage data as packet length. Sometimes firmware is unable
-to read the packet if length comes out as invalid. This stops
-further traffic and timeout occurs.
+The root cause seems to be a small window between the process resume
+and the clear of usermodehelper lock.  The request_firmware() function
+checks the UMH lock and gives up when it's in UMH_DISABLE state.  This
+is for avoiding the invalid  f/w loading during suspend/resume phase.
+The problem is, however, that usermodehelper_enable() is called at the
+end of thaw_processes().  Thus, a thawed process in between can kick
+off the f/w loader code path (in this case, via btusb_setup_intel())
+even before the call of usermodehelper_enable().  Then
+usermodehelper_read_trylock() returns an error and request_firmware()
+spews WARN_ON() in the end.
 
-The root cause is uninitialized fields in tx_info(skb->cb) of
-packet used to get garbage values. In this case if
-MWIFIEX_BUF_FLAG_REQUEUED_PKT flag is mistakenly set, txpd
-header was skipped. This patch makes sure that tx_info is
-correctly initialized to fix the problem.
+This oneliner patch fixes the issue just by setting to UMH_FREEZING
+state again before restarting tasks, so that the call of
+request_firmware() will be blocked until the end of this function
+instead of returning an error.
 
-Reported-by: Andrew Wiley <wiley.andrew.j@gmail.com>
-Reported-by: Linus Gasser <list@markas-al-nour.org>
-Reported-by: Michael Hirsch <hirsch@teufel.de>
-Tested-by: Xinming Hu <huxm@marvell.com>
-Signed-off-by: Amitkumar Karwar <akarwar@marvell.com>
-Signed-off-by: Maithili Hinge <maithili@marvell.com>
-Signed-off-by: Avinash Patil <patila@marvell.com>
-Signed-off-by: Bing Zhao <bzhao@marvell.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Fixes: 247bc0374254 (PM / Sleep: Mitigate race between the freezer and request_firmware())
+Link: https://bugzilla.novell.com/show_bug.cgi?id=873790
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/mwifiex/main.c |    1 +
+ kernel/power/process.c |    1 +
  1 file changed, 1 insertion(+)
 
---- a/drivers/net/wireless/mwifiex/main.c
-+++ b/drivers/net/wireless/mwifiex/main.c
-@@ -646,6 +646,7 @@ mwifiex_hard_start_xmit(struct sk_buff *
- 	}
+--- a/kernel/power/process.c
++++ b/kernel/power/process.c
+@@ -184,6 +184,7 @@ void thaw_processes(void)
  
- 	tx_info = MWIFIEX_SKB_TXCB(skb);
-+	memset(tx_info, 0, sizeof(*tx_info));
- 	tx_info->bss_num = priv->bss_num;
- 	tx_info->bss_type = priv->bss_type;
- 	tx_info->pkt_len = skb->len;
+ 	printk("Restarting tasks ... ");
+ 
++	__usermodehelper_set_disable_depth(UMH_FREEZING);
+ 	thaw_workqueues();
+ 
+ 	read_lock(&tasklist_lock);
 
 
