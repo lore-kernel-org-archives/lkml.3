@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753431AbaGZTH6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 15:07:58 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33752 "EHLO
+	id S1752850AbaGZTDN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 15:03:13 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33725 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752864AbaGZTDO (ORCPT
+	with ESMTP id S1752680AbaGZTDD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 15:03:14 -0400
+	Sat, 26 Jul 2014 15:03:03 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Abbas Raza <Abbas_Raza@mentor.com>,
-        Peter Chen <peter.chen@freescale.com>
-Subject: [PATCH 3.14 02/87] usb: chipidea: udc: Disable auto ZLP generation on ep0
-Date: Sat, 26 Jul 2014 12:01:36 -0700
-Message-Id: <20140726190214.609053360@linuxfoundation.org>
+        Chris Mason <clm@fb.com>, Martin Lau <kafai@fb.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [PATCH 3.10 44/56] ring-buffer: Fix polling on trace_pipe
+Date: Sat, 26 Jul 2014 12:02:37 -0700
+Message-Id: <20140726190201.500435592@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.2
-In-Reply-To: <20140726190214.530473925@linuxfoundation.org>
-References: <20140726190214.530473925@linuxfoundation.org>
+In-Reply-To: <20140726190200.061512159@linuxfoundation.org>
+References: <20140726190200.061512159@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -25,97 +25,63 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Abbas Raza <Abbas_Raza@mentor.com>
+From: Martin Lau <kafai@fb.com>
 
-commit 953c66469735aed8d2ada639a72b150f01dae605 upstream.
+commit 97b8ee845393701edc06e27ccec2876ff9596019 upstream.
 
-There are 2 methods for ZLP (zero-length packet) generation:
-1) In software
-2) Automatic generation by device controller
+ring_buffer_poll_wait() should always put the poll_table to its wait_queue
+even there is immediate data available.  Otherwise, the following epoll and
+read sequence will eventually hang forever:
 
-1) is implemented in UDC driver and it attaches ZLP to IN packet if
-   descriptor->size < wLength
-2) can be enabled/disabled by setting ZLT bit in the QH
+1. Put some data to make the trace_pipe ring_buffer read ready first
+2. epoll_ctl(efd, EPOLL_CTL_ADD, trace_pipe_fd, ee)
+3. epoll_wait()
+4. read(trace_pipe_fd) till EAGAIN
+5. Add some more data to the trace_pipe ring_buffer
+6. epoll_wait() -> this epoll_wait() will block forever
 
-When gadget ffs is connected to ubuntu host, the host sends
-get descriptor request and wLength in setup packet is 255 while the
-size of descriptor which will be sent by gadget in IN packet is
-64 byte. So the composite driver sets req->zero = 1.
-In UDC driver following code will be executed then
+~ During the epoll_ctl(efd, EPOLL_CTL_ADD,...) call in step 2,
+  ring_buffer_poll_wait() returns immediately without adding poll_table,
+  which has poll_table->_qproc pointing to ep_poll_callback(), to its
+  wait_queue.
+~ During the epoll_wait() call in step 3 and step 6,
+  ring_buffer_poll_wait() cannot add ep_poll_callback() to its wait_queue
+  because the poll_table->_qproc is NULL and it is how epoll works.
+~ When there is new data available in step 6, ring_buffer does not know
+  it has to call ep_poll_callback() because it is not in its wait queue.
+  Hence, block forever.
 
-        if (hwreq->req.zero && hwreq->req.length
-            && (hwreq->req.length % hwep->ep.maxpacket == 0))
-                add_td_to_list(hwep, hwreq, 0);
+Other poll implementation seems to call poll_wait() unconditionally as the very
+first thing to do.  For example, tcp_poll() in tcp.c.
 
-Case-A:
-So in case of ubuntu host, UDC driver will attach a ZLP to the IN packet.
-ubuntu host will request 255 byte in IN request, gadget will send 64 byte
-with ZLP and host will come to know that there is no more data.
-But hold on, by default ZLT=0 for endpoint 0 so hardware also tries to
-automatically generate the ZLP which blocks enumeration for ~6 seconds due
-to endpoint 0 STALL, NAKs are sent to host for any requests (OUT/PING)
+Link: http://lkml.kernel.org/p/20140610060637.GA14045@devbig242.prn2.facebook.com
 
-Case-B:
-In case when gadget ffs is connected to Apple device, Apple device sends
-setup packet with wLength=64. So descriptor->size = 64 and wLength=64
-therefore req->zero = 0 and UDC driver will not attach any ZLP to the
-IN packet. Apple device requests 64 bytes, gets 64 bytes and doesn't
-further request for IN data. But ZLT=0 by default for endpoint 0 so
-hardware tries to automatically generate the ZLP which blocks enumeration
-for ~6 seconds due to endpoint 0 STALL, NAKs are sent to host for any
-requests (OUT/PING)
-
-According to USB2.0 specs:
-
-    8.5.3.2 Variable-length Data Stage
-    A control pipe may have a variable-length data phase in which the
-    host requests more data than is contained in the specified data
-    structure. When all of the data structure is returned to the host,
-    the function should indicate that the Data stage is ended by
-    returning a packet that is shorter than the MaxPacketSize for the
-    pipe. If the data structure is an exact multiple of wMaxPacketSize
-    for the pipe, the function will return a zero-length packet to indicate
-    the end of the Data stage.
-
-In Case-A mentioned above:
-If we disable software ZLP generation & ZLT=0 for endpoint 0 OR if software
-ZLP generation is not disabled but we set ZLT=1 for endpoint 0 then
-enumeration doesn't block for 6 seconds.
-
-In Case-B mentioned above:
-If we disable software ZLP generation & ZLT=0 for endpoint then enumeration
-still blocks due to ZLP automatically generated by hardware and host not needing
-it. But if we keep software ZLP generation enabled but we set ZLT=1 for
-endpoint 0 then enumeration doesn't block for 6 seconds.
-
-So the proper solution for this issue seems to disable automatic ZLP generation
-by hardware (i.e by setting ZLT=1 for endpoint 0) and let software (UDC driver)
-handle the ZLP generation based on req->zero field.
-
-Signed-off-by: Abbas Raza <Abbas_Raza@mentor.com>
-Signed-off-by: Peter Chen <peter.chen@freescale.com>
+Fixes: 2a2cc8f7c4d0 "ftrace: allow the event pipe to be polled"
+Reviewed-by: Chris Mason <clm@fb.com>
+Signed-off-by: Martin Lau <kafai@fb.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/chipidea/udc.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ kernel/trace/ring_buffer.c |    4 ----
+ 1 file changed, 4 deletions(-)
 
---- a/drivers/usb/chipidea/udc.c
-+++ b/drivers/usb/chipidea/udc.c
-@@ -1179,8 +1179,8 @@ static int ep_enable(struct usb_ep *ep,
+--- a/kernel/trace/ring_buffer.c
++++ b/kernel/trace/ring_buffer.c
+@@ -616,10 +616,6 @@ int ring_buffer_poll_wait(struct ring_bu
+ 	struct ring_buffer_per_cpu *cpu_buffer;
+ 	struct rb_irq_work *work;
  
- 	if (hwep->type == USB_ENDPOINT_XFER_CONTROL)
- 		cap |= QH_IOS;
--	if (hwep->num)
--		cap |= QH_ZLT;
-+
-+	cap |= QH_ZLT;
- 	cap |= (hwep->ep.maxpacket << __ffs(QH_MAX_PKT)) & QH_MAX_PKT;
- 	/*
- 	 * For ISO-TX, we set mult at QH as the largest value, and use
+-	if ((cpu == RING_BUFFER_ALL_CPUS && !ring_buffer_empty(buffer)) ||
+-	    (cpu != RING_BUFFER_ALL_CPUS && !ring_buffer_empty_cpu(buffer, cpu)))
+-		return POLLIN | POLLRDNORM;
+-
+ 	if (cpu == RING_BUFFER_ALL_CPUS)
+ 		work = &buffer->irq_work;
+ 	else {
 
 
