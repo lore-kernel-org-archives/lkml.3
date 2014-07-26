@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753677AbaGZTKx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 15:10:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34082 "EHLO
+	id S1753644AbaGZTKv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 15:10:51 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34078 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753602AbaGZTKt (ORCPT
+	with ESMTP id S1753606AbaGZTKu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 15:10:49 -0400
+	Sat, 26 Jul 2014 15:10:50 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Miklos Szeredi <mszeredi@suse.cz>
-Subject: [PATCH 3.14 08/87] fuse: timeout comparison fix
-Date: Sat, 26 Jul 2014 12:01:42 -0700
-Message-Id: <20140726190214.802106671@linuxfoundation.org>
+Subject: [PATCH 3.14 09/87] fuse: handle large user and group ID
+Date: Sat, 26 Jul 2014 12:01:43 -0700
+Message-Id: <20140726190214.832614991@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.2
 In-Reply-To: <20140726190214.530473925@linuxfoundation.org>
 References: <20140726190214.530473925@linuxfoundation.org>
@@ -30,46 +30,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Miklos Szeredi <mszeredi@suse.cz>
 
-commit 126b9d4365b110c157bc4cbc32540dfa66c9c85a upstream.
+commit 233a01fa9c4c7c41238537e8db8434667ff28a2f upstream.
 
-As suggested by checkpatch.pl, use time_before64() instead of direct
-comparison of jiffies64 values.
+If the number in "user_id=N" or "group_id=N" mount options was larger than
+INT_MAX then fuse returned EINVAL.
+
+Fix this to handle all valid uid/gid values.
 
 Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/fuse/dir.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ fs/fuse/inode.c |   20 ++++++++++++++++----
+ 1 file changed, 16 insertions(+), 4 deletions(-)
 
---- a/fs/fuse/dir.c
-+++ b/fs/fuse/dir.c
-@@ -198,7 +198,7 @@ static int fuse_dentry_revalidate(struct
- 	inode = ACCESS_ONCE(entry->d_inode);
- 	if (inode && is_bad_inode(inode))
- 		goto invalid;
--	else if (fuse_dentry_time(entry) < get_jiffies_64()) {
-+	else if (time_before64(fuse_dentry_time(entry), get_jiffies_64())) {
- 		int err;
- 		struct fuse_entry_out outarg;
- 		struct fuse_req *req;
-@@ -925,7 +925,7 @@ int fuse_update_attributes(struct inode
- 	int err;
- 	bool r;
+--- a/fs/fuse/inode.c
++++ b/fs/fuse/inode.c
+@@ -461,6 +461,17 @@ static const match_table_t tokens = {
+ 	{OPT_ERR,			NULL}
+ };
  
--	if (fi->i_time < get_jiffies_64()) {
-+	if (time_before64(fi->i_time, get_jiffies_64())) {
- 		r = true;
- 		err = fuse_do_getattr(inode, stat, file);
- 	} else {
-@@ -1111,7 +1111,7 @@ static int fuse_permission(struct inode
- 	    ((mask & MAY_EXEC) && S_ISREG(inode->i_mode))) {
- 		struct fuse_inode *fi = get_fuse_inode(inode);
++static int fuse_match_uint(substring_t *s, unsigned int *res)
++{
++	int err = -ENOMEM;
++	char *buf = match_strdup(s);
++	if (buf) {
++		err = kstrtouint(buf, 10, res);
++		kfree(buf);
++	}
++	return err;
++}
++
+ static int parse_fuse_opt(char *opt, struct fuse_mount_data *d, int is_bdev)
+ {
+ 	char *p;
+@@ -471,6 +482,7 @@ static int parse_fuse_opt(char *opt, str
+ 	while ((p = strsep(&opt, ",")) != NULL) {
+ 		int token;
+ 		int value;
++		unsigned uv;
+ 		substring_t args[MAX_OPT_ARGS];
+ 		if (!*p)
+ 			continue;
+@@ -494,18 +506,18 @@ static int parse_fuse_opt(char *opt, str
+ 			break;
  
--		if (fi->i_time < get_jiffies_64()) {
-+		if (time_before64(fi->i_time, get_jiffies_64())) {
- 			refreshed = true;
+ 		case OPT_USER_ID:
+-			if (match_int(&args[0], &value))
++			if (fuse_match_uint(&args[0], &uv))
+ 				return 0;
+-			d->user_id = make_kuid(current_user_ns(), value);
++			d->user_id = make_kuid(current_user_ns(), uv);
+ 			if (!uid_valid(d->user_id))
+ 				return 0;
+ 			d->user_id_present = 1;
+ 			break;
  
- 			err = fuse_perm_getattr(inode, mask);
+ 		case OPT_GROUP_ID:
+-			if (match_int(&args[0], &value))
++			if (fuse_match_uint(&args[0], &uv))
+ 				return 0;
+-			d->group_id = make_kgid(current_user_ns(), value);
++			d->group_id = make_kgid(current_user_ns(), uv);
+ 			if (!gid_valid(d->group_id))
+ 				return 0;
+ 			d->group_id_present = 1;
 
 
