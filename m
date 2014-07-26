@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754088AbaGZTNS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 15:13:18 -0400
+	id S1755530AbaGZTlX (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 15:41:23 -0400
 Received: from mail.linuxfoundation.org ([140.211.169.12]:34123 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753909AbaGZTNJ (ORCPT
+	with ESMTP id S1753036AbaGZTNS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 15:13:09 -0400
+	Sat, 26 Jul 2014 15:13:18 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Eric Dumazet <edumazet@google.com>,
-        kbuild test robot <fengguang.wu@intel.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 40/87] net: fix sparse warning in sk_dst_set()
-Date: Sat, 26 Jul 2014 12:02:14 -0700
-Message-Id: <20140726190215.825454962@linuxfoundation.org>
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [PATCH 3.15 016/109] tracing: Fix graph tracer with stack tracer on other archs
+Date: Sat, 26 Jul 2014 12:01:38 -0700
+Message-Id: <20140726190224.324068050@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.2
-In-Reply-To: <20140726190214.530473925@linuxfoundation.org>
-References: <20140726190214.530473925@linuxfoundation.org>
+In-Reply-To: <20140726190223.834037485@linuxfoundation.org>
+References: <20140726190223.834037485@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -26,40 +24,51 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.15-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Eric Dumazet <edumazet@google.com>
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-[ Upstream commit 5925a0555bdaf0b396a84318cbc21ba085f6c0d3 ]
+commit 5f8bf2d263a20b986225ae1ed7d6759dc4b93af9 upstream.
 
-sk_dst_cache has __rcu annotation, so we need a cast to avoid
-following sparse error :
+Running my ftrace tests on PowerPC, it failed the test that checks
+if function_graph tracer is affected by the stack tracer. It was.
+Looking into this, I found that the update_function_graph_func()
+must be called even if the trampoline function is not changed.
+This is because archs like PowerPC do not support ftrace_ops being
+passed by assembly and instead uses a helper function (what the
+trampoline function points to). Since this function is not changed
+even when multiple ftrace_ops are added to the code, the test that
+falls out before calling update_function_graph_func() will miss that
+the update must still be done.
 
-include/net/sock.h:1774:19: warning: incorrect type in initializer (different address spaces)
-include/net/sock.h:1774:19:    expected struct dst_entry [noderef] <asn:4>*__ret
-include/net/sock.h:1774:19:    got struct dst_entry *dst
+Call update_function_graph_function() for all calls to
+update_ftrace_function()
 
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Reported-by: kbuild test robot <fengguang.wu@intel.com>
-Fixes: 7f502361531e ("ipv4: irq safe sk_dst_[re]set() and ipv4_sk_update_pmtu() fix")
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- include/net/sock.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/include/net/sock.h
-+++ b/include/net/sock.h
-@@ -1796,7 +1796,7 @@ sk_dst_set(struct sock *sk, struct dst_e
- 	struct dst_entry *old_dst;
+---
+ kernel/trace/ftrace.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -325,12 +325,12 @@ static void update_ftrace_function(void)
+ 		func = ftrace_ops_list_func;
+ 	}
  
- 	sk_tx_queue_clear(sk);
--	old_dst = xchg(&sk->sk_dst_cache, dst);
-+	old_dst = xchg((__force struct dst_entry **)&sk->sk_dst_cache, dst);
- 	dst_release(old_dst);
- }
++	update_function_graph_func();
++
+ 	/* If there's no change, then do nothing more here */
+ 	if (ftrace_trace_function == func)
+ 		return;
  
+-	update_function_graph_func();
+-
+ 	/*
+ 	 * If we are using the list function, it doesn't care
+ 	 * about the function_trace_ops.
 
 
