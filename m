@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754307AbaGZTRg (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 15:17:36 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34338 "EHLO
+	id S1754581AbaGZTRz (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 15:17:55 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34376 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754282AbaGZTNa (ORCPT
+	with ESMTP id S1754254AbaGZTN1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 15:13:30 -0400
+	Sat, 26 Jul 2014 15:13:27 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Edward Allcutt <edward.allcutt@openmarket.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.15 051/109] ipv4: icmp: Fix pMTU handling for rare case
-Date: Sat, 26 Jul 2014 12:02:13 -0700
-Message-Id: <20140726190225.411783244@linuxfoundation.org>
+        Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH 3.15 005/109] ALSA: hda - Fix broken PM due to incomplete i915 initialization
+Date: Sat, 26 Jul 2014 12:01:27 -0700
+Message-Id: <20140726190223.993700260@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.2
 In-Reply-To: <20140726190223.834037485@linuxfoundation.org>
 References: <20140726190223.834037485@linuxfoundation.org>
@@ -29,60 +28,75 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Edward Allcutt <edward.allcutt@openmarket.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-[ Upstream commit 68b7107b62983f2cff0948292429d5f5999df096 ]
+commit 4da63c6fc426023d1a20e45508c47d7d68c6a53d upstream.
 
-Some older router implementations still send Fragmentation Needed
-errors with the Next-Hop MTU field set to zero. This is explicitly
-described as an eventuality that hosts must deal with by the
-standard (RFC 1191) since older standards specified that those
-bits must be zero.
+When the initialization of Intel HDMI controller fails due to missing
+i915 kernel symbols (e.g. HD-audio is built in while i915 is module),
+the driver discontinues the probe.  However, since the probe was done
+asynchronously, the driver object still remains, thus the relevant PM
+ops are still called at suspend/resume. This results in the bad access
+to the incomplete audio card object, eventually leads to Oops or stall
+at PM.
 
-Linux had a generic (for all of IPv4) implementation of the algorithm
-described in the RFC for searching a list of MTU plateaus for a good
-value. Commit 46517008e116 ("ipv4: Kill ip_rt_frag_needed().")
-removed this as part of the changes to remove the routing cache.
-Subsequently any Fragmentation Needed packet with a zero Next-Hop
-MTU has been discarded without being passed to the per-protocol
-handlers or notifying userspace for raw sockets.
+This patch adds the missing checks of chip->init_failed flag at each
+PM callback in order to fix the problem above.
 
-When there is a router which does not implement RFC 1191 on an
-MTU limited path then this results in stalled connections since
-large packets are discarded and the local protocols are not
-notified so they never attempt to lower the pMTU.
-
-One example I have seen is an OpenBSD router terminating IPSec
-tunnels. It's worth pointing out that this case is distinct from
-the BSD 4.2 bug which incorrectly calculated the Next-Hop MTU
-since the commit in question dismissed that as a valid concern.
-
-All of the per-protocols handlers implement the simple approach from
-RFC 1191 of immediately falling back to the minimum value. Although
-this is sub-optimal it is vastly preferable to connections hanging
-indefinitely.
-
-Remove the Next-Hop MTU != 0 check and allow such packets
-to follow the normal path.
-
-Fixes: 46517008e116 ("ipv4: Kill ip_rt_frag_needed().")
-Signed-off-by: Edward Allcutt <edward.allcutt@openmarket.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=79561
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/ipv4/icmp.c |    2 --
- 1 file changed, 2 deletions(-)
 
---- a/net/ipv4/icmp.c
-+++ b/net/ipv4/icmp.c
-@@ -732,8 +732,6 @@ static void icmp_unreach(struct sk_buff
- 				/* fall through */
- 			case 0:
- 				info = ntohs(icmph->un.frag.mtu);
--				if (!info)
--					goto out;
- 			}
- 			break;
- 		case ICMP_SR_FAILED:
+---
+ sound/pci/hda/hda_intel.c |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
+
+--- a/sound/pci/hda/hda_intel.c
++++ b/sound/pci/hda/hda_intel.c
+@@ -590,7 +590,7 @@ static int azx_suspend(struct device *de
+ 	struct azx *chip = card->private_data;
+ 	struct azx_pcm *p;
+ 
+-	if (chip->disabled)
++	if (chip->disabled || chip->init_failed)
+ 		return 0;
+ 
+ 	snd_power_change_state(card, SNDRV_CTL_POWER_D3hot);
+@@ -622,7 +622,7 @@ static int azx_resume(struct device *dev
+ 	struct snd_card *card = dev_get_drvdata(dev);
+ 	struct azx *chip = card->private_data;
+ 
+-	if (chip->disabled)
++	if (chip->disabled || chip->init_failed)
+ 		return 0;
+ 
+ 	if (chip->driver_caps & AZX_DCAPS_I915_POWERWELL) {
+@@ -659,7 +659,7 @@ static int azx_runtime_suspend(struct de
+ 	struct snd_card *card = dev_get_drvdata(dev);
+ 	struct azx *chip = card->private_data;
+ 
+-	if (chip->disabled)
++	if (chip->disabled || chip->init_failed)
+ 		return 0;
+ 
+ 	if (!(chip->driver_caps & AZX_DCAPS_PM_RUNTIME))
+@@ -686,7 +686,7 @@ static int azx_runtime_resume(struct dev
+ 	struct hda_codec *codec;
+ 	int status;
+ 
+-	if (chip->disabled)
++	if (chip->disabled || chip->init_failed)
+ 		return 0;
+ 
+ 	if (!(chip->driver_caps & AZX_DCAPS_PM_RUNTIME))
+@@ -723,7 +723,7 @@ static int azx_runtime_idle(struct devic
+ 	struct snd_card *card = dev_get_drvdata(dev);
+ 	struct azx *chip = card->private_data;
+ 
+-	if (chip->disabled)
++	if (chip->disabled || chip->init_failed)
+ 		return 0;
+ 
+ 	if (!power_save_controller ||
 
 
