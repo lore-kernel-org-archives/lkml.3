@@ -1,69 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752137AbaGZP5w (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 11:57:52 -0400
-Received: from csmtp2.one.com ([91.198.169.22]:43207 "EHLO csmtp2.one.com"
+	id S1751895AbaGZQVK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 12:21:10 -0400
+Received: from verein.lst.de ([213.95.11.211]:39532 "EHLO newverein.lst.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751533AbaGZP5u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 11:57:50 -0400
-X-Greylist: delayed 538 seconds by postgrey-1.27 at vger.kernel.org; Sat, 26 Jul 2014 11:57:50 EDT
-Message-ID: <53D3CE2E.3040103@bitmath.org>
-Date: Sat, 26 Jul 2014 17:50:06 +0200
-From: Henrik Rydberg <rydberg@bitmath.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1751470AbaGZQVH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 Jul 2014 12:21:07 -0400
+Date: Sat, 26 Jul 2014 18:21:02 +0200
+From: Christoph Hellwig <hch@lst.de>
+To: poma <pomidorabelisima@gmail.com>
+Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Vladimir Davydov <vdavydov@parallels.com>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        Christoph Lameter <cl@linux.com>,
+        Mailing-List fedora-kernel <kernel@lists.fedoraproject.org>,
+        Paolo Bonzini <pbonzini@redhat.com>, linux-scsi@vger.kernel.org
+Subject: Re: WARNING: CPU: 1 PID: 495 at mm/slab_common.c:69
+	kmem_cache_create+0x1a9/0x330()
+Message-ID: <20140726162102.GA7126@lst.de>
+References: <53C8DF7F.5060707@gmail.com> <53C8FD95.5020302@gmail.com> <20140718132104.GK27940@esperanza> <20140718141747.GA23272@lst.de> <53C97D34.5040707@gmail.com> <1405714046.30262.10.camel@dabdike.int.hansenpartnership.com> <20140719164454.GA24530@lst.de> <53CCDFC3.5010802@gmail.com>
 MIME-Version: 1.0
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org
-CC: Hans de Goede <hdegoede@redhat.com>,
-        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
-        Benson Leung <bleung@chromium.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Input: synaptics - properly initialize slots for semi-MT
-References: <20140726002751.GA16660@core.coreip.homeip.net>
-In-Reply-To: <20140726002751.GA16660@core.coreip.homeip.net>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53CCDFC3.5010802@gmail.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dmitry,
+Here's a formal one.
 
-On 07/26/2014 02:27 AM, Dmitry Torokhov wrote:
-> Semi-MT devices are pointers too, so let's tell that to
-> input_mt_init_slots(), as well as let it set up the devices as semi-MT,
-> instead of us doing it manually.
-> 
-> Reviewed-by: Daniel Kurtz <djkurtz@chromium.org>
-> Reviewed-by: Benson Leung <bleung@chromium.org>
-> Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-> ---
->  drivers/input/mouse/synaptics.c | 6 +++---
->  1 file changed, 3 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/input/mouse/synaptics.c b/drivers/input/mouse/synaptics.c
-> index ef9e0b8..fe607e9 100644
-> --- a/drivers/input/mouse/synaptics.c
-> +++ b/drivers/input/mouse/synaptics.c
-> @@ -1371,11 +1371,11 @@ static void set_input_params(struct psmouse *psmouse,
->  		__set_bit(BTN_TOOL_QUADTAP, dev->keybit);
->  		__set_bit(BTN_TOOL_QUINTTAP, dev->keybit);
->  	} else if (SYN_CAP_ADV_GESTURE(priv->ext_cap_0c)) {
-> -		/* Non-image sensors with AGM use semi-mt */
-> -		__set_bit(INPUT_PROP_SEMI_MT, dev->propbit);
-> -		input_mt_init_slots(dev, 2, 0);
->  		set_abs_position_params(dev, priv, ABS_MT_POSITION_X,
->  					ABS_MT_POSITION_Y);
-> +		/* Non-image sensors with AGM use semi-mt */
-> +		input_mt_init_slots(dev, 2,
-> +				    INPUT_MT_POINTER | INPUT_MT_SEMI_MT);
->  	}
+James, can I get your signoff for it?
 
-As long as DOUBLE_TAP is set unconditionally in this path anyways, it should be
-ok. I have a vague memory of refraining from this exact change at some point,
-because of the many branches of settings.
+Vladimir, can I get a reviewed-by from you (or anyone else)?
 
->  
->  	if (SYN_CAP_PALMDETECT(priv->capabilities))
-> 
+---
+>From 73b1034ab1418e2dea75ccf642bc85c728b57313 Mon Sep 17 00:00:00 2001
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+Date: Sat, 26 Jul 2014 12:21:26 -0400
+Subject: scsi: use short driver name for per-driver cmd slab caches
 
-Henrik
+hostt->name might contain space, so use the ->proc_name short name instead
+when creating per-driver command slabs.
+
+Reported-by: Vladimir Davydov <vdavydov@parallels.com>
+Tested-by: Vladimir Davydov <vdavydov@parallels.com>
+---
+ drivers/scsi/scsi.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/scsi/scsi.c b/drivers/scsi/scsi.c
+index 33318f5..df33060 100644
+--- a/drivers/scsi/scsi.c
++++ b/drivers/scsi/scsi.c
+@@ -365,8 +365,8 @@ scsi_alloc_host_cmd_pool(struct Scsi_Host *shost)
+ 	if (!pool)
+ 		return NULL;
+ 
+-	pool->cmd_name = kasprintf(GFP_KERNEL, "%s_cmd", hostt->name);
+-	pool->sense_name = kasprintf(GFP_KERNEL, "%s_sense", hostt->name);
++	pool->cmd_name = kasprintf(GFP_KERNEL, "%s_cmd", hostt->proc_name);
++	pool->sense_name = kasprintf(GFP_KERNEL, "%s_sense", hostt->proc_name);
+ 	if (!pool->cmd_name || !pool->sense_name) {
+ 		scsi_free_host_cmd_pool(pool);
+ 		return NULL;
+-- 
+1.9.1
 
