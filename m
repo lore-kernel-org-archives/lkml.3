@@ -1,67 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751427AbaGZNWA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 09:22:00 -0400
-Received: from mailout2.w2.samsung.com ([211.189.100.12]:62018 "EHLO
-	usmailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751316AbaGZNV6 (ORCPT
+	id S1751310AbaGZNmw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 09:42:52 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:44919 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750803AbaGZNmt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 09:21:58 -0400
-X-AuditID: cbfec372-b7fe76d00000687e-e4-53d3ab7523bb
-Date: Sat, 26 Jul 2014 10:21:51 -0300
-From: Mauro Carvalho Chehab <m.chehab@samsung.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Andrey Utkin <andrey.utkin@corp.bluecherry.net>,
-        "hans.verkuil" <hans.verkuil@cisco.com>, khalasa <khalasa@piap.pl>,
-        Ismael Luceno <ismael.luceno@corp.bluecherry.net>,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kernel-janitors <kernel-janitors@vger.kernel.org>
-Subject: Re: [PATCH] drivers/media/pci/solo6x10/solo6x10-disp.c: check
- kzalloc() result
-Message-id: <20140726102151.239386d8.m.chehab@samsung.com>
-In-reply-to: <20140726061311.GB25880@mwanda>
-References: <1406313049-9604-1-git-send-email-andrey.utkin@corp.bluecherry.net>
- <CAM_ZknWPNyUCQkU+g4iJN47=cHMGPRuwoVe2Jh=4sciUM1t-NA@mail.gmail.com>
- <20140726061311.GB25880@mwanda>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.22; x86_64-redhat-linux-gnu)
-MIME-version: 1.0
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrMLMWRmVeSWpSXmKPExsVy+t/hIN3S1ZeDDb6sZbfo2viG3eL1v+ks
-	Fkt+7mKyuP/oM7vF1lvSFu/+3mG0uLxrDptFz4atrA4cHlN+b2T1uPHhKrvHx6e3WDyePpjP
-	4vF5k1wAaxSXTUpqTmZZapG+XQJXxsvbT5kLJrBX3P64hrGB8RxrFyMHh4SAicSWV0VdjJxA
-	ppjEhXvr2boYuTiEBJYwSnTf3sgO4TQzSZy89IMNpIpFQFVi6oTdYDabgJHEq8YWVhBbREBH
-	4nLnD7AGZoEFTBJL17xlAUkIC0RKrFn9ghnE5hWwkliyfxtYnBOoYc3O+6wQG3YwSrz7tosV
-	4g5niZ8zJzFCNAhK/Jh8D6yBWUBLYvO2JlYIW15i85q3zBMYBWYhKZuFpGwWkrIFjMyrGEVL
-	i5MLipPScw31ihNzi0vz0vWS83M3MUICvmgH47MNVocYBTgYlXh4N567FCzEmlhWXJl7iFGC
-	g1lJhPfJ1MvBQrwpiZVVqUX58UWlOanFhxiZODilGhg7j9Q+VN4yjStD+mvh3TqhwIXpl2f/
-	Ssr+lSW4UNHY2cnVsv3eziNKCkdP6Ox4ep/z5VyjzLsyE48cPJE0aa3D7O6PzffWlwu21Kj7
-	RXbEq8rmCStvuWF17XjAEQ3/urC4vdZTXa0v7FpgFfnnyZykQL6lxr/zWZjXRUZ1bHji2LlG
-	QlFzi5kSS3FGoqEWc1FxIgAdzPf8VgIAAA==
+	Sat, 26 Jul 2014 09:42:49 -0400
+Message-Id: <1406382166.19420.145911853.784D75D0@webmail.messagingengine.com>
+X-Sasl-Enc: SeFTPauoWqEjcNIZReTK6rnx79wBbMHm0Jsuj0YoqoiL 1406382166
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+To: Jun Zhao <mypopydev@gmail.com>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Cong Wang <cwang@twopensource.com>,
+        Pravin B Shelar <pshelar@nicira.com>,
+        Nicolas Dichtel <nicolas.dichtel@6wind.com>,
+        stephen hemminger <stephen@networkplumber.org>,
+        Tom Herbert <therbert@google.com>, netdev@vger.kernel.org,
+        Francesco Fusco <ffusco@redhat.com>,
+        Veaceslav Falico <vfalico@redhat.com>,
+        Duan Jiong <duanj.fnst@cn.fujitsu.com>, Jiri Pirko <jiri@resnulli.us>,
+        David Stevens <dlstevens@us.ibm.com>,
+        Or Gerlitz <ogerlitz@mellanox.com>,
+        Daniel Borkmann <dborkman@redhat.com>, linux-kernel@vger.kernel.org
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-Mailer: MessagingEngine.com Webmail Interface - ajax-36a9b403
+In-Reply-To: <1406334557.5276.13.camel@popy-debian>
+References: <1406306339-16151-1-git-send-email-mypopydev@gmail.com>
+ <1406330697.989.145785925.1CA960AF@webmail.messagingengine.com>
+ <1406334557.5276.13.camel@popy-debian>
+Subject: Re: [PATCH 1/1] neighbour : fix ndm_type type error issue
+Date: Sat, 26 Jul 2014 15:42:46 +0200
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Sat, 26 Jul 2014 09:13:12 +0300
-Dan Carpenter <dan.carpenter@oracle.com> escreveu:
+Hi,
 
-> On Fri, Jul 25, 2014 at 09:32:36PM +0300, Andrey Utkin wrote:
-> > Please ignore. I didn't notice that Hans has already posted a patch
-> > fixing that and more.
+On Sat, Jul 26, 2014, at 02:29, Jun Zhao wrote:
+> On Sat, 2014-07-26 at 01:24 +0200, Hannes Frederic Sowa wrote:
+> > On Fri, Jul 25, 2014, at 18:38, Jun Zhao wrote:
+> > > ndm_type means L3 address type, in neighbour proxy and vxlan, it's
+> > > RTN_UNICAST.
+> > > NDA_DST is for netlink TLV type, hence it's not right value in this
+> > > context.
 > > 
+> > The value of NDA_DST == RTN_UNICAST, otherwise we couldn't do this
+> > change as it would alter e.g. arpd behavior.
+> > 
+> > Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+> > 
+> > Thanks,
+> > Hannes
 > 
-> Heh.  I was just about to send my fix for this bug as well.
+> But I think NDA_DST/RTN_UNICAST have different means in this context, 
+> even though the value of NDA_DST == RTN_UNICAST.
 > 
-> I don't follow linux-media so I didn't realize this driver was getting
-> promoted out of staging.  I wish there was a way to go over drivers and
-> fix any basic static checker fixes before promotion.
+> For arp proxy/NDP proxy context, ndm_type means the peer L3 address,
+> so RTN_UNICAST is the right value. For vxlan have similar semantic for
+> remote ip.
+> 
+> BTW: In the source code, implicit think NDA_DST == RTN_UNICAST maybe
+> not a good idea when we don't have a comment or the other explain.
 
-When I promote a driver out of staging, I run checkpatch again, in
-order to check if everything is fine. It would be nice to have a
-checkpatch-like script that would also run the static checker
-checks for that particular patch. With that, I could, instead,
-use such script when promoting patches or handling patches adding
-new files to the Kernel.
+I am totally with you and think your change is good, that's why I also
+gave my ack to your patch.
 
-Regards,
-Mauro
+My comment above was about my concerns regarding making a user space
+visible change, which in the end could alter the behavior of already
+existing software.
+
+Developers maybe have debugged code and seen some different value being
+propagated from the kernel and this software could now break if we would
+change the value after all those years.
+
+Bye,
+Hannes
