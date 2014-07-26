@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754490AbaGZTPw (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 15:15:52 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34511 "EHLO
+	id S1754470AbaGZTPv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 15:15:51 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34123 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753441AbaGZTNc (ORCPT
+	with ESMTP id S1754326AbaGZTNc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 26 Jul 2014 15:13:32 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Maggie Mae Roxas <maggie.mae.roxas@gmail.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Thomas Fitzsimmons <fitzsim@fitzsim.org>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.15 058/109] net: mvneta: fix operation in 10 Mbit/s mode
-Date: Sat, 26 Jul 2014 12:02:20 -0700
-Message-Id: <20140726190225.613724283@linuxfoundation.org>
+Subject: [PATCH 3.15 059/109] net: mvneta: Fix big endian issue in mvneta_txq_desc_csum()
+Date: Sat, 26 Jul 2014 12:02:21 -0700
+Message-Id: <20140726190225.643784523@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.2
 In-Reply-To: <20140726190223.834037485@linuxfoundation.org>
 References: <20140726190223.834037485@linuxfoundation.org>
@@ -30,29 +29,19 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+From: Thomas Fitzsimmons <fitzsim@fitzsim.org>
 
-[ Upstream commit 4d12bc63ab5e48c1d78fa13883cf6fefcea3afb1 ]
+[ Upstream commit 0a1985879437d14bda8c90d0dae3455c467d7642 ]
 
-As reported by Maggie Mae Roxas, the mvneta driver doesn't behave
-properly in 10 Mbit/s mode. This is due to a misconfiguration of the
-MVNETA_GMAC_AUTONEG_CONFIG register: bit MVNETA_GMAC_CONFIG_MII_SPEED
-must be set for a 100 Mbit/s speed, but cleared for a 10 Mbit/s speed,
-which the driver was not properly doing. This commit adjusts that by
-setting the MVNETA_GMAC_CONFIG_MII_SPEED bit only in 100 Mbit/s mode,
-and relying on the fact that all the speed related bits of this
-register are cleared at the beginning of the mvneta_adjust_link()
-function.
+This commit fixes the command value generated for CSUM calculation
+when running in big endian mode.  The Ethernet protocol ID for IP was
+being unconditionally byte-swapped in the layer 3 protocol check (with
+swab16), which caused the mvneta driver to not function correctly in
+big endian mode.  This patch byte-swaps the ID conditionally with
+htons.
 
-This problem exists since c5aff18204da0 ("net: mvneta: driver for
-Marvell Armada 370/XP network unit") which is the commit that
-introduced the mvneta driver in the kernel.
-
-Cc: <stable@vger.kernel.org> # v3.8+
-Fixes: c5aff18204da0 ("net: mvneta: driver for Marvell Armada 370/XP network unit")
-Reported-by: Maggie Mae Roxas <maggie.mae.roxas@gmail.com>
-Cc: Maggie Mae Roxas <maggie.mae.roxas@gmail.com>
-Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Cc: <stable@vger.kernel.org> # v3.13+
+Signed-off-by: Thomas Fitzsimmons <fitzsim@fitzsim.org>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
@@ -61,14 +50,14 @@ Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 --- a/drivers/net/ethernet/marvell/mvneta.c
 +++ b/drivers/net/ethernet/marvell/mvneta.c
-@@ -2365,7 +2365,7 @@ static void mvneta_adjust_link(struct ne
+@@ -1189,7 +1189,7 @@ static u32 mvneta_txq_desc_csum(int l3_o
+ 	command =  l3_offs    << MVNETA_TX_L3_OFF_SHIFT;
+ 	command |= ip_hdr_len << MVNETA_TX_IP_HLEN_SHIFT;
  
- 			if (phydev->speed == SPEED_1000)
- 				val |= MVNETA_GMAC_CONFIG_GMII_SPEED;
--			else
-+			else if (phydev->speed == SPEED_100)
- 				val |= MVNETA_GMAC_CONFIG_MII_SPEED;
- 
- 			mvreg_write(pp, MVNETA_GMAC_AUTONEG_CONFIG, val);
+-	if (l3_proto == swab16(ETH_P_IP))
++	if (l3_proto == htons(ETH_P_IP))
+ 		command |= MVNETA_TXD_IP_CSUM;
+ 	else
+ 		command |= MVNETA_TX_L3_IP6;
 
 
