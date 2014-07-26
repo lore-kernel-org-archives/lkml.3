@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754970AbaGZTio (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 15:38:44 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34338 "EHLO
+	id S1755112AbaGZTi7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 15:38:59 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34376 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752859AbaGZTNV (ORCPT
+	with ESMTP id S1753956AbaGZTNU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 15:13:21 -0400
+	Sat, 26 Jul 2014 15:13:20 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Guenter Roeck <linux@roeck-us.net>, Axel Lin <axel.lin@ingics.com>
-Subject: [PATCH 3.15 023/109] hwmon: (adt7470) Fix writes to temperature limit registers
-Date: Sat, 26 Jul 2014 12:01:45 -0700
-Message-Id: <20140726190224.532316597@linuxfoundation.org>
+        Axel Lin <axel.lin@ingics.com>, Guenter Roeck <linux@roeck-us.net>
+Subject: [PATCH 3.15 022/109] hwmon: (da9052) Dont use dash in the name attribute
+Date: Sat, 26 Jul 2014 12:01:44 -0700
+Message-Id: <20140726190224.504055917@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.2
 In-Reply-To: <20140726190223.834037485@linuxfoundation.org>
 References: <20140726190223.834037485@linuxfoundation.org>
@@ -28,53 +28,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Guenter Roeck <linux@roeck-us.net>
+From: Axel Lin <axel.lin@ingics.com>
 
-commit de12d6f4b10b21854441f5242dcb29ea96181e58 upstream.
+commit ee14b644daaa58afe1e91bb9ebd9cf1b18d1f5fa upstream.
 
-Temperature limit registers are signed. Limits therefore need
-to be clamped to (-128, 127) degrees C and not to (0, 255)
-degrees C.
+Dashes are not allowed in hwmon name attributes.
+Use "da9052" instead of "da9052-hwmon".
 
-Without this fix, writing a limit of 128 degrees C sets the
-actual limit to -128 degrees C.
-
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
 Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-Reviewed-by: Axel Lin <axel.lin@ingics.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hwmon/adt7470.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/hwmon/da9052-hwmon.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/hwmon/adt7470.c
-+++ b/drivers/hwmon/adt7470.c
-@@ -515,7 +515,7 @@ static ssize_t set_temp_min(struct devic
- 		return -EINVAL;
+--- a/drivers/hwmon/da9052-hwmon.c
++++ b/drivers/hwmon/da9052-hwmon.c
+@@ -194,7 +194,7 @@ static ssize_t da9052_hwmon_show_name(st
+ 				      struct device_attribute *devattr,
+ 				      char *buf)
+ {
+-	return sprintf(buf, "da9052-hwmon\n");
++	return sprintf(buf, "da9052\n");
+ }
  
- 	temp = DIV_ROUND_CLOSEST(temp, 1000);
--	temp = clamp_val(temp, 0, 255);
-+	temp = clamp_val(temp, -128, 127);
- 
- 	mutex_lock(&data->lock);
- 	data->temp_min[attr->index] = temp;
-@@ -549,7 +549,7 @@ static ssize_t set_temp_max(struct devic
- 		return -EINVAL;
- 
- 	temp = DIV_ROUND_CLOSEST(temp, 1000);
--	temp = clamp_val(temp, 0, 255);
-+	temp = clamp_val(temp, -128, 127);
- 
- 	mutex_lock(&data->lock);
- 	data->temp_max[attr->index] = temp;
-@@ -826,7 +826,7 @@ static ssize_t set_pwm_tmin(struct devic
- 		return -EINVAL;
- 
- 	temp = DIV_ROUND_CLOSEST(temp, 1000);
--	temp = clamp_val(temp, 0, 255);
-+	temp = clamp_val(temp, -128, 127);
- 
- 	mutex_lock(&data->lock);
- 	data->pwm_tmin[attr->index] = temp;
+ static ssize_t show_label(struct device *dev,
 
 
