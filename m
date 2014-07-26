@@ -1,80 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751111AbaGZISl (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 04:18:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:45079 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750832AbaGZISi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 04:18:38 -0400
-Date: Sat, 26 Jul 2014 09:26:48 +0100
-From: Alexander Gordeev <agordeev@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Nagalakshmi Nandigama <Nagalakshmi.Nandigama@lsi.com>,
-        Sreekanth Reddy <Sreekanth.Reddy@lsi.com>, support@lsi.com,
-        DL-MPTFusionLinux@lsi.com, linux-scsi@vger.kernel.org,
-        linux-pci@vger.kernel.org
-Subject: Re: [PATCH v2 RESEND 15/23] mpt2sas: Use pci_enable_msix_exact()
- instead of pci_enable_msix()
-Message-ID: <20140726082648.GH21129@agordeev.usersys.redhat.com>
-References: <cover.1405533479.git.agordeev@redhat.com>
- <045986b7900c6b1703010675b590284e384b8207.1405533479.git.agordeev@redhat.com>
+	id S1751095AbaGZIZB (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 04:25:01 -0400
+Received: from relay5-d.mail.gandi.net ([217.70.183.197]:55358 "EHLO
+	relay5-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750743AbaGZIY6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 Jul 2014 04:24:58 -0400
+X-Originating-IP: 78.210.48.61
+Date: Sat, 26 Jul 2014 10:24:32 +0200
+From: Guillaume =?iso-8859-1?Q?CL=C9MENT?= <gclement@baobob.org>
+To: Malcolm Priestley <tvboxspy@gmail.com>
+Cc: Guillaume Clement <gclement@baobob.org>,
+        Forest Bond <forest@alittletooquiet.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Dan Carpenter <dan.carpenter@oracle.com>
+Subject: Re: [PATCH] staging: vt6655: fix direct dereferencing of user pointer
+Message-ID: <20140726082429.GA3121@pleinair.baobob.org>
+References: <20140725123301.GZ13737@mwanda>
+ <1406292443-11734-1-git-send-email-gclement@baobob.org>
+ <53D2E3BD.1000208@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <045986b7900c6b1703010675b590284e384b8207.1405533479.git.agordeev@redhat.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <53D2E3BD.1000208@gmail.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 16, 2014 at 08:05:19PM +0200, Alexander Gordeev wrote:
-> As result of deprecation of MSI-X/MSI enablement functions
-> pci_enable_msix() and pci_enable_msi_block() all drivers
-> using these two interfaces need to be updated to use the
-> new pci_enable_msi_range()  or pci_enable_msi_exact()
-> and pci_enable_msix_range() or pci_enable_msix_exact()
-> interfaces.
+Hi Malcolm,
 
-Hi Nagalakshmi, Sreekanth,
+On Sat, Jul 26, 2014 at 12:09:49AM +0100, Malcolm Priestley wrote:
+> Hi Guillaume
+>
+> On 25/07/14 13:47, Guillaume Clement wrote:
+> > Sparse reported that the data from tagSCmdRequest is given by
+> > userspace, so it should be tagged as such.
+> extra is not in user space
+>
 
-Could you please review mpt patches in this series?
+All right.
 
-Thanks!
+This is still confusing to me because, taking the SIOCSIWGENIE ioctl as
+an example, in device_main.c, we have this code:
 
-> Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
-> Cc: Nagalakshmi Nandigama <Nagalakshmi.Nandigama@lsi.com>
-> Cc: Sreekanth Reddy <Sreekanth.Reddy@lsi.com>
-> Cc: support@lsi.com
-> Cc: DL-MPTFusionLinux@lsi.com
-> Cc: linux-scsi@vger.kernel.org
-> Cc: linux-pci@vger.kernel.org
-> ---
->  drivers/scsi/mpt2sas/mpt2sas_base.c |    6 +++---
->  1 files changed, 3 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/scsi/mpt2sas/mpt2sas_base.c b/drivers/scsi/mpt2sas/mpt2sas_base.c
-> index 8b88118..6aca369 100644
-> --- a/drivers/scsi/mpt2sas/mpt2sas_base.c
-> +++ b/drivers/scsi/mpt2sas/mpt2sas_base.c
-> @@ -1432,10 +1432,10 @@ _base_enable_msix(struct MPT2SAS_ADAPTER *ioc)
->  	for (i = 0, a = entries; i < ioc->reply_queue_count; i++, a++)
->  		a->entry = i;
->  
-> -	r = pci_enable_msix(ioc->pdev, entries, ioc->reply_queue_count);
-> +	r = pci_enable_msix_exact(ioc->pdev, entries, ioc->reply_queue_count);
->  	if (r) {
-> -		dfailprintk(ioc, printk(MPT2SAS_INFO_FMT "pci_enable_msix "
-> -		    "failed (r=%d) !!!\n", ioc->name, r));
-> +		dfailprintk(ioc, printk(MPT2SAS_INFO_FMT
-> +		    "pci_enable_msix_exact failed (r=%d) !!!\n", ioc->name, r));
->  		kfree(entries);
->  		goto try_ioapic;
->  	}
-> -- 
-> 1.7.7.6
-> 
+rc = iwctl_siwgenie(dev, NULL, &(wrq->u.data), wrq->u.data.pointer);
 
--- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
+Here the extra parameter is the last one, wrq->u.data.pointer.
+
+I was led to believe that wrq->u.data.pointer is in userspace (this was
+reported by sparse actually) because the pointer field in data is
+actually defined as __user.
+
+
+I can understand it's not though, if it was pre-processed by another
+function. Or if that pointer was never given by userspace in the first
+place (if so, why would it be inside a __user pointer) ?
+
+
+> All Wireless Extensions ioctl extra calls originate from
+> ioctl_standard_iw_point in wext-core.
+>
+> Either through ioctl or iw_handler
+
+After digging into the code a bit more, I think that there may still be
+an issue. Are we really going through ioctl_standard_iw_point in this
+specific case ?
+
+In the iwctl_handler definition, we have no handler because of:
+
+   (iw_handler) NULL,                   // SIOCSIWGENIE
+
+
+In the wireless_process_ioctl function, the returned handler should be
+NULL if I understand correctly. I believe we're going through the "old
+API" part with ndo_do_ioctl being called, which is consistent with the
+fact that the code I showed earlier comes from that big switch in
+device_ioctl in device_main.c.
+
+This means we don't go to ioctl_standard_call, that would have called
+ioctl_standard_iw_point, the function that should have done the
+copy_from_user.
+
+I didn't see a copy_from_user of the pointer field in the paths that I
+think lead to device_ioctl in device_main.c.
+
+
+
+Maybe the proper fix should have been to copy the content of
+wrq->u.data.pointer to some buffer before calling iwctl_siwgenie, and
+let this function not taking __user data?
+
+This way, the driver is still ready to be converted to iw_handler
+because it keeps the proper signature.
+
+
+> All these functions should have been converted to iw_handler.
+
+Yes certainly, but with no access to the real hardware for testing, I'd
+rather not make deep changes like this for now.
