@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754374AbaGZTNf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 15:13:35 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34465 "EHLO
+	id S1752523AbaGZTPV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 15:15:21 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34526 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754188AbaGZTN2 (ORCPT
+	with ESMTP id S1753448AbaGZTNe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 15:13:28 -0400
+	Sat, 26 Jul 2014 15:13:34 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "K. Y. Srinivasan" <kys@microsoft.com>
-Subject: [PATCH 3.15 007/109] Drivers: hv: util: Fix a bug in the KVP code
-Date: Sat, 26 Jul 2014 12:01:29 -0700
-Message-Id: <20140726190224.050666243@linuxfoundation.org>
+        Suresh Reddy <Suresh.Reddy@emulex.com>,
+        Sathya Perla <sathya.perla@emulex.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.15 061/109] be2net: set EQ DB clear-intr bit in be_open()
+Date: Sat, 26 Jul 2014 12:02:23 -0700
+Message-Id: <20140726190225.710230832@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.2
 In-Reply-To: <20140726190223.834037485@linuxfoundation.org>
 References: <20140726190223.834037485@linuxfoundation.org>
@@ -28,76 +30,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "K. Y. Srinivasan" <kys@microsoft.com>
+From: Suresh Reddy <Suresh.Reddy@emulex.com>
 
-commit 9bd2d0dfe4714dd5d7c09a93a5c9ea9e14ceb3fc upstream.
+[ Upstream commit 4cad9f3b61c7268fa89ab8096e23202300399b5d ]
 
-Add code to poll the channel since we process only one message
-at a time and the host may not interrupt us. Also increase the
-receive buffer size since some KVP messages are close to 8K bytes in size.
+On BE3, if the clear-interrupt bit of the EQ doorbell is not set the first
+time it is armed, ocassionally we have observed that the EQ doesn't raise
+anymore interrupts even if it is in armed state.
+This patch fixes this by setting the clear-interrupt bit when EQs are
+armed for the first time in be_open().
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Signed-off-by: Suresh Reddy <Suresh.Reddy@emulex.com>
+Signed-off-by: Sathya Perla <sathya.perla@emulex.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/hv/hv_kvp.c  |   14 ++++++++++++--
- drivers/hv/hv_util.c |    2 +-
- 2 files changed, 13 insertions(+), 3 deletions(-)
+ drivers/net/ethernet/emulex/benet/be_main.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/hv/hv_kvp.c
-+++ b/drivers/hv/hv_kvp.c
-@@ -127,6 +127,15 @@ kvp_work_func(struct work_struct *dummy)
- 	kvp_respond_to_host(NULL, HV_E_FAIL);
- }
- 
-+static void poll_channel(struct vmbus_channel *channel)
-+{
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&channel->inbound_lock, flags);
-+	hv_kvp_onchannelcallback(channel);
-+	spin_unlock_irqrestore(&channel->inbound_lock, flags);
-+}
-+
- static int kvp_handle_handshake(struct hv_kvp_msg *msg)
- {
- 	int ret = 1;
-@@ -155,7 +164,7 @@ static int kvp_handle_handshake(struct h
- 		kvp_register(dm_reg_value);
- 		kvp_transaction.active = false;
- 		if (kvp_transaction.kvp_context)
--			hv_kvp_onchannelcallback(kvp_transaction.kvp_context);
-+			poll_channel(kvp_transaction.kvp_context);
+--- a/drivers/net/ethernet/emulex/benet/be_main.c
++++ b/drivers/net/ethernet/emulex/benet/be_main.c
+@@ -2858,7 +2858,7 @@ static int be_open(struct net_device *ne
+ 	for_all_evt_queues(adapter, eqo, i) {
+ 		napi_enable(&eqo->napi);
+ 		be_enable_busy_poll(eqo);
+-		be_eq_notify(adapter, eqo->q.id, true, false, 0);
++		be_eq_notify(adapter, eqo->q.id, true, true, 0);
  	}
- 	return ret;
- }
-@@ -568,6 +577,7 @@ response_done:
+ 	adapter->flags |= BE_FLAGS_NAPI_ENABLED;
  
- 	vmbus_sendpacket(channel, recv_buffer, buf_len, req_id,
- 				VM_PKT_DATA_INBAND, 0);
-+	poll_channel(channel);
- 
- }
- 
-@@ -603,7 +613,7 @@ void hv_kvp_onchannelcallback(void *cont
- 		return;
- 	}
- 
--	vmbus_recvpacket(channel, recv_buffer, PAGE_SIZE * 2, &recvlen,
-+	vmbus_recvpacket(channel, recv_buffer, PAGE_SIZE * 4, &recvlen,
- 			 &requestid);
- 
- 	if (recvlen > 0) {
---- a/drivers/hv/hv_util.c
-+++ b/drivers/hv/hv_util.c
-@@ -319,7 +319,7 @@ static int util_probe(struct hv_device *
- 		(struct hv_util_service *)dev_id->driver_data;
- 	int ret;
- 
--	srv->recv_buffer = kmalloc(PAGE_SIZE * 2, GFP_KERNEL);
-+	srv->recv_buffer = kmalloc(PAGE_SIZE * 4, GFP_KERNEL);
- 	if (!srv->recv_buffer)
- 		return -ENOMEM;
- 	if (srv->util_init) {
 
 
