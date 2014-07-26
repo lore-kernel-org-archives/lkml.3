@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932200AbaGZTxK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 15:53:10 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34133 "EHLO
+	id S932169AbaGZTxI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 15:53:08 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34138 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753857AbaGZTNB (ORCPT
+	with ESMTP id S1753862AbaGZTNB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 26 Jul 2014 15:13:01 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jon Maloy <jon.maloy@ericsson.com>,
+        Eric Dumazet <edumazet@google.com>, Dormando <dormando@rydia.net>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 55/87] tipc: clear next-pointer of message fragments before reassembly
-Date: Sat, 26 Jul 2014 12:02:29 -0700
-Message-Id: <20140726190216.401105642@linuxfoundation.org>
+Subject: [PATCH 3.14 38/87] ipv4: fix dst race in sk_dst_get()
+Date: Sat, 26 Jul 2014 12:02:12 -0700
+Message-Id: <20140726190215.748367370@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.2
 In-Reply-To: <20140726190214.530473925@linuxfoundation.org>
 References: <20140726190214.530473925@linuxfoundation.org>
@@ -29,41 +29,114 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jon Paul Maloy <jon.maloy@ericsson.com>
+From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commit 999417549c16dd0e3a382aa9f6ae61688db03181 ]
+[ Upstream commit f88649721268999bdff09777847080a52004f691 ]
 
-If the 'next' pointer of the last fragment buffer in a message is not
-zeroed before reassembly, we risk ending up with a corrupt message,
-since the reassembly function itself isn't doing this.
+When IP route cache had been removed in linux-3.6, we broke assumption
+that dst entries were all freed after rcu grace period. DST_NOCACHE
+dst were supposed to be freed from dst_release(). But it appears
+we want to keep such dst around, either in UDP sockets or tunnels.
 
-Currently, when a buffer is retrieved from the deferred queue of the
-broadcast link, the next pointer is not cleared, with the result as
-described above.
+In sk_dst_get() we need to make sure dst refcount is not 0
+before incrementing it, or else we might end up freeing a dst
+twice.
 
-This commit corrects this, and thereby fixes a bug that may occur when
-long broadcast messages are transmitted across dual interfaces. The bug
-has been present since 40ba3cdf542a469aaa9083fa041656e59b109b90 ("tipc:
-message reassembly using fragment chain")
+DST_NOCACHE set on a dst does not mean this dst can not be attached
+to a socket or a tunnel.
 
-This commit should be applied to both net and net-next.
+Then, before actual freeing, we need to observe a rcu grace period
+to make sure all other cpus can catch the fact the dst is no longer
+usable.
 
-Signed-off-by: Jon Maloy <jon.maloy@ericsson.com>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Reported-by: Dormando <dormando@rydia.net>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/tipc/bcast.c |    1 +
- 1 file changed, 1 insertion(+)
+ include/net/sock.h   |    4 ++--
+ net/core/dst.c       |   16 +++++++++++-----
+ net/ipv4/ip_tunnel.c |   14 +++++---------
+ 3 files changed, 18 insertions(+), 16 deletions(-)
 
---- a/net/tipc/bcast.c
-+++ b/net/tipc/bcast.c
-@@ -537,6 +537,7 @@ receive:
+--- a/include/net/sock.h
++++ b/include/net/sock.h
+@@ -1755,8 +1755,8 @@ sk_dst_get(struct sock *sk)
  
- 		buf = node->bclink.deferred_head;
- 		node->bclink.deferred_head = buf->next;
-+		buf->next = NULL;
- 		node->bclink.deferred_size--;
- 		goto receive;
+ 	rcu_read_lock();
+ 	dst = rcu_dereference(sk->sk_dst_cache);
+-	if (dst)
+-		dst_hold(dst);
++	if (dst && !atomic_inc_not_zero(&dst->__refcnt))
++		dst = NULL;
+ 	rcu_read_unlock();
+ 	return dst;
+ }
+--- a/net/core/dst.c
++++ b/net/core/dst.c
+@@ -267,6 +267,15 @@ again:
+ }
+ EXPORT_SYMBOL(dst_destroy);
+ 
++static void dst_destroy_rcu(struct rcu_head *head)
++{
++	struct dst_entry *dst = container_of(head, struct dst_entry, rcu_head);
++
++	dst = dst_destroy(dst);
++	if (dst)
++		__dst_free(dst);
++}
++
+ void dst_release(struct dst_entry *dst)
+ {
+ 	if (dst) {
+@@ -274,11 +283,8 @@ void dst_release(struct dst_entry *dst)
+ 
+ 		newrefcnt = atomic_dec_return(&dst->__refcnt);
+ 		WARN_ON(newrefcnt < 0);
+-		if (unlikely(dst->flags & DST_NOCACHE) && !newrefcnt) {
+-			dst = dst_destroy(dst);
+-			if (dst)
+-				__dst_free(dst);
+-		}
++		if (unlikely(dst->flags & DST_NOCACHE) && !newrefcnt)
++			call_rcu(&dst->rcu_head, dst_destroy_rcu);
  	}
+ }
+ EXPORT_SYMBOL(dst_release);
+--- a/net/ipv4/ip_tunnel.c
++++ b/net/ipv4/ip_tunnel.c
+@@ -73,12 +73,7 @@ static void __tunnel_dst_set(struct ip_t
+ {
+ 	struct dst_entry *old_dst;
+ 
+-	if (dst) {
+-		if (dst->flags & DST_NOCACHE)
+-			dst = NULL;
+-		else
+-			dst_clone(dst);
+-	}
++	dst_clone(dst);
+ 	old_dst = xchg((__force struct dst_entry **)&idst->dst, dst);
+ 	dst_release(old_dst);
+ }
+@@ -108,13 +103,14 @@ static struct rtable *tunnel_rtable_get(
+ 
+ 	rcu_read_lock();
+ 	dst = rcu_dereference(this_cpu_ptr(t->dst_cache)->dst);
++	if (dst && !atomic_inc_not_zero(&dst->__refcnt))
++		dst = NULL;
+ 	if (dst) {
+ 		if (dst->obsolete && dst->ops->check(dst, cookie) == NULL) {
+-			rcu_read_unlock();
+ 			tunnel_dst_reset(t);
+-			return NULL;
++			dst_release(dst);
++			dst = NULL;
+ 		}
+-		dst_hold(dst);
+ 	}
+ 	rcu_read_unlock();
+ 	return (struct rtable *)dst;
 
 
