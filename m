@@ -1,101 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755335AbaGZUAP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 16:00:15 -0400
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:47949 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753284AbaGZUAJ (ORCPT
+	id S1752751AbaGZTDI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 15:03:08 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33746 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751939AbaGZTDC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 16:00:09 -0400
-Date: Sat, 26 Jul 2014 12:58:23 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>, Rik van Riel <riel@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Dave Jones <davej@redhat.com>,
-        Dave Chinner <david@fromorbit.com>, xfs@oss.sgi.com,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: [PATCH] mm: fix direct reclaim writeback regression
-Message-ID: <alpine.LSU.2.11.1407261248140.13796@eggly.anvils>
-User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
+	Sat, 26 Jul 2014 15:03:02 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Eric Dumazet <edumazet@google.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.10 41/56] ipv4: fix buffer overflow in ip_options_compile()
+Date: Sat, 26 Jul 2014 12:02:34 -0700
+Message-Id: <20140726190201.394760046@linuxfoundation.org>
+X-Mailer: git-send-email 2.0.2
+In-Reply-To: <20140726190200.061512159@linuxfoundation.org>
+References: <20140726190200.061512159@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Shortly before 3.16-rc1, Dave Jones reported:
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-WARNING: CPU: 3 PID: 19721 at fs/xfs/xfs_aops.c:971
-         xfs_vm_writepage+0x5ce/0x630 [xfs]()
-CPU: 3 PID: 19721 Comm: trinity-c61 Not tainted 3.15.0+ #3
-Call Trace:
- [<ffffffffc023068e>] xfs_vm_writepage+0x5ce/0x630 [xfs]
- [<ffffffff8316f759>] shrink_page_list+0x8f9/0xb90
- [<ffffffff83170123>] shrink_inactive_list+0x253/0x510
- [<ffffffff83170c93>] shrink_lruvec+0x563/0x6c0
- [<ffffffff83170e2b>] shrink_zone+0x3b/0x100
- [<ffffffff831710e1>] shrink_zones+0x1f1/0x3c0
- [<ffffffff83171414>] try_to_free_pages+0x164/0x380
- [<ffffffff83163e52>] __alloc_pages_nodemask+0x822/0xc90
- [<ffffffff831abeff>] alloc_pages_vma+0xaf/0x1c0
- [<ffffffff8318a931>] handle_mm_fault+0xa31/0xc50
-etc.
+------------------
 
- 970   if (WARN_ON_ONCE((current->flags & (PF_MEMALLOC|PF_KSWAPD)) ==
- 971                   PF_MEMALLOC))
+From: Eric Dumazet <edumazet@google.com>
 
-I did not respond at the time, because a glance at the PageDirty block
-in shrink_page_list() quickly shows that this is impossible: we don't do
-writeback on file pages (other than tmpfs) from direct reclaim nowadays.
-Dave was hallucinating, but it would have been disrespectful to say so.
+[ Upstream commit 10ec9472f05b45c94db3c854d22581a20b97db41 ]
 
-However, my own /var/log/messages now shows similar complaints
-WARNING: CPU: 1 PID: 28814 at fs/ext4/inode.c:1881 ext4_writepage+0xa7/0x38b()
-WARNING: CPU: 0 PID: 27347 at fs/ext4/inode.c:1764 ext4_writepage+0xa7/0x38b()
-from stressing some mmotm trees during July.
+There is a benign buffer overflow in ip_options_compile spotted by
+AddressSanitizer[1] :
 
-Could a dirty xfs or ext4 file page somehow get marked PageSwapBacked,
-so fail shrink_page_list()'s page_is_file_cache() test, and so proceed
-to mapping->a_ops->writepage()?
+Its benign because we always can access one extra byte in skb->head
+(because header is followed by struct skb_shared_info), and in this case
+this byte is not even used.
 
-Yes, 3.16-rc1's 68711a746345 ("mm, migration: add destination page
-freeing callback") has provided such a way to compaction: if migrating
-a SwapBacked page fails, its newpage may be put back on the list for
-later use with PageSwapBacked still set, and nothing will clear it.
+[28504.910798] ==================================================================
+[28504.912046] AddressSanitizer: heap-buffer-overflow in ip_options_compile
+[28504.913170] Read of size 1 by thread T15843:
+[28504.914026]  [<ffffffff81802f91>] ip_options_compile+0x121/0x9c0
+[28504.915394]  [<ffffffff81804a0d>] ip_options_get_from_user+0xad/0x120
+[28504.916843]  [<ffffffff8180dedf>] do_ip_setsockopt.isra.15+0x8df/0x1630
+[28504.918175]  [<ffffffff8180ec60>] ip_setsockopt+0x30/0xa0
+[28504.919490]  [<ffffffff8181e59b>] tcp_setsockopt+0x5b/0x90
+[28504.920835]  [<ffffffff8177462f>] sock_common_setsockopt+0x5f/0x70
+[28504.922208]  [<ffffffff817729c2>] SyS_setsockopt+0xa2/0x140
+[28504.923459]  [<ffffffff818cfb69>] system_call_fastpath+0x16/0x1b
+[28504.924722]
+[28504.925106] Allocated by thread T15843:
+[28504.925815]  [<ffffffff81804995>] ip_options_get_from_user+0x35/0x120
+[28504.926884]  [<ffffffff8180dedf>] do_ip_setsockopt.isra.15+0x8df/0x1630
+[28504.927975]  [<ffffffff8180ec60>] ip_setsockopt+0x30/0xa0
+[28504.929175]  [<ffffffff8181e59b>] tcp_setsockopt+0x5b/0x90
+[28504.930400]  [<ffffffff8177462f>] sock_common_setsockopt+0x5f/0x70
+[28504.931677]  [<ffffffff817729c2>] SyS_setsockopt+0xa2/0x140
+[28504.932851]  [<ffffffff818cfb69>] system_call_fastpath+0x16/0x1b
+[28504.934018]
+[28504.934377] The buggy address ffff880026382828 is located 0 bytes to the right
+[28504.934377]  of 40-byte region [ffff880026382800, ffff880026382828)
+[28504.937144]
+[28504.937474] Memory state around the buggy address:
+[28504.938430]  ffff880026382300: ........ rrrrrrrr rrrrrrrr rrrrrrrr
+[28504.939884]  ffff880026382400: ffffffff rrrrrrrr rrrrrrrr rrrrrrrr
+[28504.941294]  ffff880026382500: .....rrr rrrrrrrr rrrrrrrr rrrrrrrr
+[28504.942504]  ffff880026382600: ffffffff rrrrrrrr rrrrrrrr rrrrrrrr
+[28504.943483]  ffff880026382700: ffffffff rrrrrrrr rrrrrrrr rrrrrrrr
+[28504.944511] >ffff880026382800: .....rrr rrrrrrrr rrrrrrrr rrrrrrrr
+[28504.945573]                         ^
+[28504.946277]  ffff880026382900: ffffffff rrrrrrrr rrrrrrrr rrrrrrrr
+[28505.094949]  ffff880026382a00: ffffffff rrrrrrrr rrrrrrrr rrrrrrrr
+[28505.096114]  ffff880026382b00: ffffffff rrrrrrrr rrrrrrrr rrrrrrrr
+[28505.097116]  ffff880026382c00: ffffffff rrrrrrrr rrrrrrrr rrrrrrrr
+[28505.098472]  ffff880026382d00: ffffffff rrrrrrrr rrrrrrrr rrrrrrrr
+[28505.099804] Legend:
+[28505.100269]  f - 8 freed bytes
+[28505.100884]  r - 8 redzone bytes
+[28505.101649]  . - 8 allocated bytes
+[28505.102406]  x=1..7 - x allocated bytes + (8-x) redzone bytes
+[28505.103637] ==================================================================
 
-Whether that can do anything worse than issue WARN_ON_ONCEs, and get
-some statistics wrong, is unclear: easier to fix than to think through
-the consequences.
+[1] https://code.google.com/p/address-sanitizer/wiki/AddressSanitizerForKernel
 
-Fixing it here, before the put_new_page(), addresses the bug directly,
-but is probably the worst place to fix it.  Page migration is doing too
-many parts of the job on too many levels: fixing it in move_to_new_page()
-to complement its SetPageSwapBacked would be preferable, except why is it
-(and newpage->mapping and newpage->index) done there, rather than down in
-migrate_page_move_mapping(), once we are sure of success?  Not a cleanup
-to get into right now, especially not with memcg cleanups coming in 3.17.
-
-Reported-by: Dave Jones <davej@redhat.com>
-Signed-off-by: Hugh Dickins <hughd@google.com>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
+ net/ipv4/ip_options.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
- mm/migrate.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+--- a/net/ipv4/ip_options.c
++++ b/net/ipv4/ip_options.c
+@@ -288,6 +288,10 @@ int ip_options_compile(struct net *net,
+ 			optptr++;
+ 			continue;
+ 		}
++		if (unlikely(l < 2)) {
++			pp_ptr = optptr;
++			goto error;
++		}
+ 		optlen = optptr[1];
+ 		if (optlen<2 || optlen>l) {
+ 			pp_ptr = optptr;
 
---- 3.16-rc6/mm/migrate.c	2014-06-29 15:22:10.584003935 -0700
-+++ linux/mm/migrate.c	2014-07-26 11:28:34.488126591 -0700
-@@ -988,9 +988,10 @@ out:
- 	 * it.  Otherwise, putback_lru_page() will drop the reference grabbed
- 	 * during isolation.
- 	 */
--	if (rc != MIGRATEPAGE_SUCCESS && put_new_page)
-+	if (rc != MIGRATEPAGE_SUCCESS && put_new_page) {
-+		ClearPageSwapBacked(newpage);
- 		put_new_page(newpage, private);
--	else
-+	} else
- 		putback_lru_page(newpage);
- 
- 	if (result) {
+
