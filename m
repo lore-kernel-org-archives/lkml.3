@@ -1,72 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751327AbaGZId1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 04:33:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:27559 "EHLO mx1.redhat.com"
+	id S1751135AbaGZIoe (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 04:44:34 -0400
+Received: from mout.web.de ([212.227.17.12]:59962 "EHLO mout.web.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750774AbaGZIdZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 04:33:25 -0400
-Date: Sat, 26 Jul 2014 09:41:38 +0100
-From: Alexander Gordeev <agordeev@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Vikas Chaudhary <vikas.chaudhary@qlogic.com>, iscsi-driver@qlogic.com,
-        linux-scsi@vger.kernel.org, linux-pci@vger.kernel.org
-Subject: Re: [PATCH v2 RESEND 22/23] qla4xxx: Use pci_enable_msix_exact()
- instead of pci_enable_msix()
-Message-ID: <20140726084137.GL21129@agordeev.usersys.redhat.com>
-References: <cover.1405533479.git.agordeev@redhat.com>
- <0496ccbc0f203afaeeb7758c146b93c2f387684c.1405533479.git.agordeev@redhat.com>
+	id S1750774AbaGZIob (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 Jul 2014 04:44:31 -0400
+Message-ID: <53D36A51.1050000@web.de>
+Date: Sat, 26 Jul 2014 10:44:01 +0200
+From: Jan Kiszka <jan.kiszka@web.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <0496ccbc0f203afaeeb7758c146b93c2f387684c.1405533479.git.agordeev@redhat.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Tang Chen <tangchen@cn.fujitsu.com>, gleb@kernel.org, mtosatti@redhat.com,
+        nadav.amit@gmail.com
+CC: kvm@vger.kernel.org, laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
+        guz.fnst@cn.fujitsu.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 6/6] kvm, mem-hotplug: Reload L1's apic access page
+ if it is migrated when L2 is running.
+References: <1406144530-23002-1-git-send-email-tangchen@cn.fujitsu.com> <1406144530-23002-7-git-send-email-tangchen@cn.fujitsu.com>
+In-Reply-To: <1406144530-23002-7-git-send-email-tangchen@cn.fujitsu.com>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="0P86VGMd6sWkABaOiHRrXcVG2l9hWHq7C"
+X-Provags-ID: V03:K0:LuYPMVDTwgdYjM539GLjI8WXpSRClhOnNKREYn0AvtMAbeCxXBq
+ AphNXCSqHyFKYt9IwsDdURiOQXUBV078TOeVP9j/m2EE67zxAM1i4S8ZrnKY2G7OJwNM4/2
+ 8fJ7IEaQnAvrEaqJUAs6JjGl46mNmrFcGwTvWTFY2ZZFy5p4UsStELs+3ZOtvKvnuHz+45m
+ MQ8JUOZqQM3sD2NhGIHUA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 16, 2014 at 08:05:26PM +0200, Alexander Gordeev wrote:
-> As result of deprecation of MSI-X/MSI enablement functions
-> pci_enable_msix() and pci_enable_msi_block() all drivers
-> using these two interfaces need to be updated to use the
-> new pci_enable_msi_range()  or pci_enable_msi_exact()
-> and pci_enable_msix_range() or pci_enable_msix_exact()
-> interfaces.
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--0P86VGMd6sWkABaOiHRrXcVG2l9hWHq7C
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: quoted-printable
 
-Hi Vikas,
+On 2014-07-23 21:42, Tang Chen wrote:
+> This patch only handle "L1 and L2 vm share one apic access page" situat=
+ion.
+>=20
+> When L1 vm is running, if the shared apic access page is migrated, mmu_=
+notifier will
+> request all vcpus to exit to L0, and reload apic access page physical a=
+ddress for
+> all the vcpus' vmcs (which is done by patch 5/6). And when it enters L2=
+ vm, L2's vmcs
+> will be updated in prepare_vmcs02() called by nested_vm_run(). So we ne=
+ed to do
+> nothing.
+>=20
+> When L2 vm is running, if the shared apic access page is migrated, mmu_=
+notifier will
+> request all vcpus to exit to L0, and reload apic access page physical a=
+ddress for
+> all L2 vmcs. And this patch requests apic access page reload in L2->L1 =
+vmexit.
 
-Could you please reveiw this patch?
+Shouldn't this patch come before we allow apic access page migration?
 
-Thanks!
+Jan
 
-> Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
-> Cc: Vikas Chaudhary <vikas.chaudhary@qlogic.com>
-> Cc: iscsi-driver@qlogic.com
-> Cc: linux-scsi@vger.kernel.org
-> Cc: linux-pci@vger.kernel.org
-> Acked-By: Vikas Chaudhary <vikas.chaudhary@qlogic.com>
-> ---
->  drivers/scsi/qla4xxx/ql4_nx.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/scsi/qla4xxx/ql4_nx.c b/drivers/scsi/qla4xxx/ql4_nx.c
-> index 9dbdb4b..7c33658 100644
-> --- a/drivers/scsi/qla4xxx/ql4_nx.c
-> +++ b/drivers/scsi/qla4xxx/ql4_nx.c
-> @@ -4221,7 +4221,7 @@ qla4_8xxx_enable_msix(struct scsi_qla_host *ha)
->  	for (i = 0; i < QLA_MSIX_ENTRIES; i++)
->  		entries[i].entry = qla4_8xxx_msix_entries[i].entry;
->  
-> -	ret = pci_enable_msix(ha->pdev, entries, ARRAY_SIZE(entries));
-> +	ret = pci_enable_msix_exact(ha->pdev, entries, ARRAY_SIZE(entries));
->  	if (ret) {
->  		ql4_printk(KERN_WARNING, ha,
->  		    "MSI-X: Failed to enable support -- %d/%d\n",
-> -- 
-> 1.7.7.6
-> 
 
--- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
+
+--0P86VGMd6sWkABaOiHRrXcVG2l9hWHq7C
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iEYEARECAAYFAlPTalgACgkQitSsb3rl5xQrCwCcCf64LHe41JFtoRnNCHNYnh/0
+z/AAoJJ0ta46rkaoGnvl/bbtg60xGWAh
+=8zDW
+-----END PGP SIGNATURE-----
+
+--0P86VGMd6sWkABaOiHRrXcVG2l9hWHq7C--
