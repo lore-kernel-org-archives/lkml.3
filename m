@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752403AbaGZTCh (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 15:02:37 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33542 "EHLO
+	id S1752375AbaGZTCg (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 15:02:36 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33528 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752261AbaGZTC3 (ORCPT
+	with ESMTP id S1752283AbaGZTCb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 15:02:29 -0400
+	Sat, 26 Jul 2014 15:02:31 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Takashi Iwai <tiwai@suse.de>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [PATCH 3.4 22/23] PM / sleep: Fix request_firmware() error at resume
-Date: Sat, 26 Jul 2014 12:02:22 -0700
-Message-Id: <20140726190150.405131027@linuxfoundation.org>
+        Sowmini Varadhan <sowmini.varadhan@oracle.com>,
+        Dave Kleikamp <dave.kleikamp@oracle.com>,
+        Karl Volz <karl.volz@oracle.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.4 14/23] sunvnet: clean up objects created in vnet_new() on vnet_exit()
+Date: Sat, 26 Jul 2014 12:02:14 -0700
+Message-Id: <20140726190150.155268689@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.2
 In-Reply-To: <20140726190149.723570428@linuxfoundation.org>
 References: <20140726190149.723570428@linuxfoundation.org>
@@ -29,51 +31,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Sowmini Varadhan <sowmini.varadhan@oracle.com>
 
-commit 4320f6b1d9db4ca912c5eb6ecb328b2e090e1586 upstream.
+[ Upstream commit a4b70a07ed12a71131cab7adce2ce91c71b37060 ]
 
-The commit [247bc037: PM / Sleep: Mitigate race between the freezer
-and request_firmware()] introduced the finer state control, but it
-also leads to a new bug; for example, a bug report regarding the
-firmware loading of intel BT device at suspend/resume:
-  https://bugzilla.novell.com/show_bug.cgi?id=873790
+Nothing cleans up the objects created by
+vnet_new(), they are completely leaked.
 
-The root cause seems to be a small window between the process resume
-and the clear of usermodehelper lock.  The request_firmware() function
-checks the UMH lock and gives up when it's in UMH_DISABLE state.  This
-is for avoiding the invalid  f/w loading during suspend/resume phase.
-The problem is, however, that usermodehelper_enable() is called at the
-end of thaw_processes().  Thus, a thawed process in between can kick
-off the f/w loader code path (in this case, via btusb_setup_intel())
-even before the call of usermodehelper_enable().  Then
-usermodehelper_read_trylock() returns an error and request_firmware()
-spews WARN_ON() in the end.
+vnet_exit(), after doing the vio_unregister_driver() to clean
+up ports, should call a helper function that iterates over vnet_list
+and cleans up those objects. This includes unregister_netdevice()
+as well as free_netdev().
 
-This oneliner patch fixes the issue just by setting to UMH_FREEZING
-state again before restarting tasks, so that the call of
-request_firmware() will be blocked until the end of this function
-instead of returning an error.
-
-Fixes: 247bc0374254 (PM / Sleep: Mitigate race between the freezer and request_firmware())
-Link: https://bugzilla.novell.com/show_bug.cgi?id=873790
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Sowmini Varadhan <sowmini.varadhan@oracle.com>
+Acked-by: Dave Kleikamp <dave.kleikamp@oracle.com>
+Reviewed-by: Karl Volz <karl.volz@oracle.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- kernel/power/process.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/net/ethernet/sun/sunvnet.c |   20 +++++++++++++++++++-
+ 1 file changed, 19 insertions(+), 1 deletion(-)
 
---- a/kernel/power/process.c
-+++ b/kernel/power/process.c
-@@ -185,6 +185,7 @@ void thaw_processes(void)
+--- a/drivers/net/ethernet/sun/sunvnet.c
++++ b/drivers/net/ethernet/sun/sunvnet.c
+@@ -1086,6 +1086,24 @@ static struct vnet * __devinit vnet_find
+ 	return vp;
+ }
  
- 	printk("Restarting tasks ... ");
++static void vnet_cleanup(void)
++{
++	struct vnet *vp;
++	struct net_device *dev;
++
++	mutex_lock(&vnet_list_mutex);
++	while (!list_empty(&vnet_list)) {
++		vp = list_first_entry(&vnet_list, struct vnet, list);
++		list_del(&vp->list);
++		dev = vp->dev;
++		/* vio_unregister_driver() should have cleaned up port_list */
++		BUG_ON(!list_empty(&vp->port_list));
++		unregister_netdev(dev);
++		free_netdev(dev);
++	}
++	mutex_unlock(&vnet_list_mutex);
++}
++
+ static const char *local_mac_prop = "local-mac-address";
  
-+	__usermodehelper_set_disable_depth(UMH_FREEZING);
- 	thaw_workqueues();
+ static struct vnet * __devinit vnet_find_parent(struct mdesc_handle *hp,
+@@ -1244,7 +1262,6 @@ static int vnet_port_remove(struct vio_d
  
- 	read_lock(&tasklist_lock);
+ 		kfree(port);
+ 
+-		unregister_netdev(vp->dev);
+ 	}
+ 	return 0;
+ }
+@@ -1272,6 +1289,7 @@ static int __init vnet_init(void)
+ static void __exit vnet_exit(void)
+ {
+ 	vio_unregister_driver(&vnet_port_driver);
++	vnet_cleanup();
+ }
+ 
+ module_init(vnet_init);
 
 
