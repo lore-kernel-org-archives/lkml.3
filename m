@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755268AbaGZT11 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 15:27:27 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34641 "EHLO
+	id S1755241AbaGZT10 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 15:27:26 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34647 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754892AbaGZTXU (ORCPT
+	with ESMTP id S1754893AbaGZTXV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 15:23:20 -0400
+	Sat, 26 Jul 2014 15:23:21 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Marek Vasut <marex@denx.de>, Shawn Guo <shawn.guo@linaro.org>
-Subject: [PATCH 3.15 106/109] ARM: dts: imx: Add alias for ethernet controller
-Date: Sat, 26 Jul 2014 12:03:08 -0700
-Message-Id: <20140726190227.040647041@linuxfoundation.org>
+        Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Subject: [PATCH 3.15 107/109] iwlwifi: mvm: disable CTS to Self
+Date: Sat, 26 Jul 2014 12:03:09 -0700
+Message-Id: <20140726190227.071086142@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.2
 In-Reply-To: <20140726190223.834037485@linuxfoundation.org>
 References: <20140726190223.834037485@linuxfoundation.org>
@@ -28,107 +28,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Marek Vasut <marex@denx.de>
+From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 
-commit 22970070e027cbbb9b2878f8f7c31d0d7f29e94d upstream.
+commit dc271ee0d04d12d6bfabacbec803289a7072fbd9 upstream.
 
-Add alias for FEC ethernet on i.MX to allow bootloaders (like U-Boot)
-patch-in the MAC address for FEC using this alias.
+Firmware folks seem say that this flag can make trouble.
+Drop it. The advantage of CTS to self is that it slightly
+reduces the cost of the protection, but make the protection
+less reliable.
 
-Signed-off-by: Marek Vasut <marex@denx.de>
-Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
+Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
----
- arch/arm/boot/dts/imx25.dtsi   |    1 +
- arch/arm/boot/dts/imx27.dtsi   |    1 +
- arch/arm/boot/dts/imx35.dtsi   |    1 +
- arch/arm/boot/dts/imx50.dtsi   |    1 +
- arch/arm/boot/dts/imx51.dtsi   |    1 +
- arch/arm/boot/dts/imx53.dtsi   |    1 +
- arch/arm/boot/dts/imx6qdl.dtsi |    1 +
- arch/arm/boot/dts/imx6sl.dtsi  |    1 +
- 8 files changed, 8 insertions(+)
 
---- a/arch/arm/boot/dts/imx25.dtsi
-+++ b/arch/arm/boot/dts/imx25.dtsi
-@@ -14,6 +14,7 @@
+---
+ drivers/net/wireless/iwlwifi/mvm/mac-ctxt.c |    8 ++------
+ 1 file changed, 2 insertions(+), 6 deletions(-)
+
+--- a/drivers/net/wireless/iwlwifi/mvm/mac-ctxt.c
++++ b/drivers/net/wireless/iwlwifi/mvm/mac-ctxt.c
+@@ -667,13 +667,9 @@ static void iwl_mvm_mac_ctxt_cmd_common(
+ 	if (vif->bss_conf.qos)
+ 		cmd->qos_flags |= cpu_to_le32(MAC_QOS_FLG_UPDATE_EDCA);
  
- / {
- 	aliases {
-+		ethernet0 = &fec;
- 		gpio0 = &gpio1;
- 		gpio1 = &gpio2;
- 		gpio2 = &gpio3;
---- a/arch/arm/boot/dts/imx27.dtsi
-+++ b/arch/arm/boot/dts/imx27.dtsi
-@@ -16,6 +16,7 @@
- 
- / {
- 	aliases {
-+		ethernet0 = &fec;
- 		gpio0 = &gpio1;
- 		gpio1 = &gpio2;
- 		gpio2 = &gpio3;
---- a/arch/arm/boot/dts/imx35.dtsi
-+++ b/arch/arm/boot/dts/imx35.dtsi
-@@ -13,6 +13,7 @@
- 
- / {
- 	aliases {
-+		ethernet0 = &fec;
- 		gpio0 = &gpio1;
- 		gpio1 = &gpio2;
- 		gpio2 = &gpio3;
---- a/arch/arm/boot/dts/imx50.dtsi
-+++ b/arch/arm/boot/dts/imx50.dtsi
-@@ -17,6 +17,7 @@
- 
- / {
- 	aliases {
-+		ethernet0 = &fec;
- 		gpio0 = &gpio1;
- 		gpio1 = &gpio2;
- 		gpio2 = &gpio3;
---- a/arch/arm/boot/dts/imx51.dtsi
-+++ b/arch/arm/boot/dts/imx51.dtsi
-@@ -19,6 +19,7 @@
- 
- / {
- 	aliases {
-+		ethernet0 = &fec;
- 		gpio0 = &gpio1;
- 		gpio1 = &gpio2;
- 		gpio2 = &gpio3;
---- a/arch/arm/boot/dts/imx53.dtsi
-+++ b/arch/arm/boot/dts/imx53.dtsi
-@@ -18,6 +18,7 @@
- 
- / {
- 	aliases {
-+		ethernet0 = &fec;
- 		gpio0 = &gpio1;
- 		gpio1 = &gpio2;
- 		gpio2 = &gpio3;
---- a/arch/arm/boot/dts/imx6qdl.dtsi
-+++ b/arch/arm/boot/dts/imx6qdl.dtsi
-@@ -16,6 +16,7 @@
- 
- / {
- 	aliases {
-+		ethernet0 = &fec;
- 		can0 = &can1;
- 		can1 = &can2;
- 		gpio0 = &gpio1;
---- a/arch/arm/boot/dts/imx6sl.dtsi
-+++ b/arch/arm/boot/dts/imx6sl.dtsi
-@@ -14,6 +14,7 @@
- 
- / {
- 	aliases {
-+		ethernet0 = &fec;
- 		gpio0 = &gpio1;
- 		gpio1 = &gpio2;
- 		gpio2 = &gpio3;
+-	/* Don't use cts to self as the fw doesn't support it currently. */
+-	if (vif->bss_conf.use_cts_prot) {
++	if (vif->bss_conf.use_cts_prot)
+ 		cmd->protection_flags |= cpu_to_le32(MAC_PROT_FLG_TGG_PROTECT);
+-		if (IWL_UCODE_API(mvm->fw->ucode_ver) >= 8)
+-			cmd->protection_flags |=
+-				cpu_to_le32(MAC_PROT_FLG_SELF_CTS_EN);
+-	}
++
+ 	IWL_DEBUG_RATE(mvm, "use_cts_prot %d, ht_operation_mode %d\n",
+ 		       vif->bss_conf.use_cts_prot,
+ 		       vif->bss_conf.ht_operation_mode);
 
 
