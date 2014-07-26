@@ -1,113 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932082AbaGZTv7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 15:51:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34123 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753873AbaGZTND (ORCPT
+	id S1754522AbaGZTwn (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 15:52:43 -0400
+Received: from out01.mta.xmission.com ([166.70.13.231]:34737 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752760AbaGZTwj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 15:13:03 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "H.K. Jerry Chu" <hkchu@google.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 59/87] net-gre-gro: Fix a bug that breaks the forwarding path
-Date: Sat, 26 Jul 2014 12:02:33 -0700
-Message-Id: <20140726190216.539407296@linuxfoundation.org>
-X-Mailer: git-send-email 2.0.2
-In-Reply-To: <20140726190214.530473925@linuxfoundation.org>
-References: <20140726190214.530473925@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	Sat, 26 Jul 2014 15:52:39 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Julien Tinnes <jln@google.com>, David Drysdale <drysdale@google.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, Paolo Bonzini <pbonzini@redhat.com>,
+        LSM List <linux-security-module@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Paul Moore <paul@paul-moore.com>,
+        James Morris <james.l.morris@oracle.com>,
+        Linux API <linux-api@vger.kernel.org>,
+        Meredydd Luff <meredydd@senatehouse.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Kees Cook <keescook@chromium.org>, "Theodore Ts'o" <tytso@mit.edu>,
+        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        linux-crypto@vger.kernel.org
+References: <CALCETrWGvBfrX1W5XaFgJZhKHLf+oac9YrwPR3ppK=deQtu5hA@mail.gmail.com>
+	<20140725223550.3153f436@alan.etchedpixels.co.uk>
+	<CALCETrXHNFYaQjksBJyN3O0HJpKw_D_tU7b4O23=nyJt9CPSLg@mail.gmail.com>
+Date: Sat, 26 Jul 2014 12:48:48 -0700
+In-Reply-To: <CALCETrXHNFYaQjksBJyN3O0HJpKw_D_tU7b4O23=nyJt9CPSLg@mail.gmail.com>
+	(Andy Lutomirski's message of "Fri, 25 Jul 2014 14:41:47 -0700")
+Message-ID: <87egx7dhpb.fsf@x220.int.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX18LVE//GcchXoJsHHCqNJqPzV4ffvhw7z0=
+X-SA-Exim-Connect-IP: 98.234.51.111
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.7 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	*  0.8 BAYES_50 BODY: Bayes spam probability is 40 to 60%
+	*      [score: 0.5000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
+X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Andy Lutomirski <luto@amacapital.net>
+X-Spam-Relay-Country: 
+Subject: Re: General flags to turn things off (getrandom, pid lookup, etc)
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 13:58:17 -0700)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+Andy Lutomirski <luto@amacapital.net> writes:
 
-------------------
+> On Fri, Jul 25, 2014 at 2:35 PM, One Thousand Gnomes
+> <gnomes@lxorguk.ukuu.org.uk> wrote:
+>> On Fri, 25 Jul 2014 11:30:48 -0700
+>> Andy Lutomirski <luto@amacapital.net> wrote:
+>>
+>>> [new thread because this sort of combines two threads]
+>>>
+>>> There is recent interest in having a way to turn generally-available
+>>> kernel features off.  Maybe we should add a good one so we can stop
+>>> bikeshedding and avoid proliferating dumb interfaces.
+>>
+>> We sort of have one. It's called capable(). Just needs extending to cover
+>> anything else you care about, and probably all the numeric constants
+>> replacing with textual names.
 
-From: Jerry Chu <hkchu@google.com>
+The big difference is capable only subdivides roots powers (aka things
+most applications should not have).  When we start talking about things
+that things that are safe for most applications capable is probably not
+the right tool for the job.
 
-[ Upstream commit c3caf1192f904de2f1381211f564537235d50de3 ]
+A much closer match is the personality system call.  Look at setarch
+to see how it is used.  My biggest concern with personality is there
+are only 32bits to play with.  Still I expect what you want may be a
+sandbox personality, that disables everything that could possibly be
+a problem (including access to the personality syscall).
 
-Fixed a bug that was introduced by my GRE-GRO patch
-(bf5a755f5e9186406bbf50f4087100af5bd68e40 net-gre-gro: Add GRE
-support to the GRO stack) that breaks the forwarding path
-because various GSO related fields were not set. The bug will
-cause on the egress path either the GSO code to fail, or a
-GRE-TSO capable (NETIF_F_GSO_GRE) NICs to choke. The following
-fix has been tested for both cases.
-
-Signed-off-by: H.K. Jerry Chu <hkchu@google.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/core/dev.c           |    2 ++
- net/ipv4/af_inet.c       |    3 +++
- net/ipv4/gre_offload.c   |    3 +++
- net/ipv4/tcp_offload.c   |    2 +-
- net/ipv6/tcpv6_offload.c |    2 +-
- 5 files changed, 10 insertions(+), 2 deletions(-)
-
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -4058,6 +4058,8 @@ static void napi_reuse_skb(struct napi_s
- 	skb->vlan_tci = 0;
- 	skb->dev = napi->dev;
- 	skb->skb_iif = 0;
-+	skb->encapsulation = 0;
-+	skb_shinfo(skb)->gso_type = 0;
- 	skb->truesize = SKB_TRUESIZE(skb_end_offset(skb));
- 
- 	napi->skb = skb;
---- a/net/ipv4/af_inet.c
-+++ b/net/ipv4/af_inet.c
-@@ -1434,6 +1434,9 @@ static int inet_gro_complete(struct sk_b
- 	int proto = iph->protocol;
- 	int err = -ENOSYS;
- 
-+	if (skb->encapsulation)
-+		skb_set_inner_network_header(skb, nhoff);
-+
- 	csum_replace2(&iph->check, iph->tot_len, newlen);
- 	iph->tot_len = newlen;
- 
---- a/net/ipv4/gre_offload.c
-+++ b/net/ipv4/gre_offload.c
-@@ -255,6 +255,9 @@ static int gre_gro_complete(struct sk_bu
- 	int err = -ENOENT;
- 	__be16 type;
- 
-+	skb->encapsulation = 1;
-+	skb_shinfo(skb)->gso_type = SKB_GSO_GRE;
-+
- 	type = greh->protocol;
- 	if (greh->flags & GRE_KEY)
- 		grehlen += GRE_HEADER_SECTION;
---- a/net/ipv4/tcp_offload.c
-+++ b/net/ipv4/tcp_offload.c
-@@ -310,7 +310,7 @@ static int tcp4_gro_complete(struct sk_b
- 
- 	th->check = ~tcp_v4_check(skb->len - thoff, iph->saddr,
- 				  iph->daddr, 0);
--	skb_shinfo(skb)->gso_type = SKB_GSO_TCPV4;
-+	skb_shinfo(skb)->gso_type |= SKB_GSO_TCPV4;
- 
- 	return tcp_gro_complete(skb);
- }
---- a/net/ipv6/tcpv6_offload.c
-+++ b/net/ipv6/tcpv6_offload.c
-@@ -73,7 +73,7 @@ static int tcp6_gro_complete(struct sk_b
- 
- 	th->check = ~tcp_v6_check(skb->len - thoff, &iph->saddr,
- 				  &iph->daddr, 0);
--	skb_shinfo(skb)->gso_type = SKB_GSO_TCPV6;
-+	skb_shinfo(skb)->gso_type |= SKB_GSO_TCPV6;
- 
- 	return tcp_gro_complete(skb);
- }
-
-
+Eric
