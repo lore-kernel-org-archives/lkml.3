@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932098AbaGZTXY (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 15:23:24 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34647 "EHLO
+	id S1753439AbaGZTYB (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 15:24:01 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34671 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754816AbaGZTXO (ORCPT
+	with ESMTP id S932083AbaGZTXY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 15:23:14 -0400
+	Sat, 26 Jul 2014 15:23:24 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Eric Dumazet <edumazet@google.com>,
-        Steffen Klassert <steffen.klassert@secunet.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.15 046/109] ipv4: irq safe sk_dst_[re]set() and ipv4_sk_update_pmtu() fix
-Date: Sat, 26 Jul 2014 12:02:08 -0700
-Message-Id: <20140726190225.261057824@linuxfoundation.org>
+        Alex Deucher <alexander.deucher@amd.com>,
+        David Heidelberger <david.heidelberger@ixit.cz>
+Subject: [PATCH 3.15 086/109] drm/radeon: set default bl level to something reasonable
+Date: Sat, 26 Jul 2014 12:02:48 -0700
+Message-Id: <20140726190226.451640595@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.2
 In-Reply-To: <20140726190223.834037485@linuxfoundation.org>
 References: <20140726190223.834037485@linuxfoundation.org>
@@ -30,122 +29,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <edumazet@google.com>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-[ Upstream commit 7f502361531e9eecb396cf99bdc9e9a59f7ebd7f ]
+commit 201bb62402e0227375c655446ea04fcd0acf7287 upstream.
 
-We have two different ways to handle changes to sk->sk_dst
+If the value in the scratch register is 0, set it to the
+max level.  This fixes an issue where the console fb blanking
+code calls back into the backlight driver on unblank and then
+sets the backlight level to 0 after the driver has already
+set the mode and enabled the backlight.
 
-First way (used by TCP) assumes socket lock is owned by caller, and use
-no extra lock : __sk_dst_set() & __sk_dst_reset()
+bugs:
+https://bugs.freedesktop.org/show_bug.cgi?id=81382
+https://bugs.freedesktop.org/show_bug.cgi?id=70207
 
-Another way (used by UDP) uses sk_dst_lock because socket lock is not
-always taken. Note that sk_dst_lock is not softirq safe.
-
-These ways are not inter changeable for a given socket type.
-
-ipv4_sk_update_pmtu(), added in linux-3.8, added a race, as it used
-the socket lock as synchronization, but users might be UDP sockets.
-
-Instead of converting sk_dst_lock to a softirq safe version, use xchg()
-as we did for sk_rx_dst in commit e47eb5dfb296b ("udp: ipv4: do not use
-sk_dst_lock from softirq context")
-
-In a follow up patch, we probably can remove sk_dst_lock, as it is
-only used in IPv6.
-
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Cc: Steffen Klassert <steffen.klassert@secunet.com>
-Fixes: 9cb3a50c5f63e ("ipv4: Invalidate the socket cached route on pmtu events if possible")
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Tested-by: David Heidelberger <david.heidelberger@ixit.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- include/net/sock.h |   12 ++++++------
- net/ipv4/route.c   |   15 ++++++++-------
- 2 files changed, 14 insertions(+), 13 deletions(-)
 
---- a/include/net/sock.h
-+++ b/include/net/sock.h
-@@ -1766,9 +1766,11 @@ __sk_dst_set(struct sock *sk, struct dst
- static inline void
- sk_dst_set(struct sock *sk, struct dst_entry *dst)
- {
--	spin_lock(&sk->sk_dst_lock);
--	__sk_dst_set(sk, dst);
--	spin_unlock(&sk->sk_dst_lock);
-+	struct dst_entry *old_dst;
-+
-+	sk_tx_queue_clear(sk);
-+	old_dst = xchg(&sk->sk_dst_cache, dst);
-+	dst_release(old_dst);
- }
+---
+ drivers/gpu/drm/radeon/atombios_encoders.c |   10 +++++++---
+ 1 file changed, 7 insertions(+), 3 deletions(-)
+
+--- a/drivers/gpu/drm/radeon/atombios_encoders.c
++++ b/drivers/gpu/drm/radeon/atombios_encoders.c
+@@ -183,7 +183,6 @@ void radeon_atom_backlight_init(struct r
+ 	struct backlight_properties props;
+ 	struct radeon_backlight_privdata *pdata;
+ 	struct radeon_encoder_atom_dig *dig;
+-	u8 backlight_level;
+ 	char bl_name[16];
  
- static inline void
-@@ -1780,9 +1782,7 @@ __sk_dst_reset(struct sock *sk)
- static inline void
- sk_dst_reset(struct sock *sk)
- {
--	spin_lock(&sk->sk_dst_lock);
--	__sk_dst_reset(sk);
--	spin_unlock(&sk->sk_dst_lock);
-+	sk_dst_set(sk, NULL);
- }
+ 	/* Mac laptops with multiple GPUs use the gmux driver for backlight
+@@ -222,12 +221,17 @@ void radeon_atom_backlight_init(struct r
  
- struct dst_entry *__sk_dst_check(struct sock *sk, u32 cookie);
---- a/net/ipv4/route.c
-+++ b/net/ipv4/route.c
-@@ -1022,7 +1022,7 @@ void ipv4_sk_update_pmtu(struct sk_buff
- 	const struct iphdr *iph = (const struct iphdr *) skb->data;
- 	struct flowi4 fl4;
- 	struct rtable *rt;
--	struct dst_entry *dst;
-+	struct dst_entry *odst = NULL;
- 	bool new = false;
+ 	pdata->encoder = radeon_encoder;
  
- 	bh_lock_sock(sk);
-@@ -1030,16 +1030,17 @@ void ipv4_sk_update_pmtu(struct sk_buff
- 	if (!ip_sk_accept_pmtu(sk))
- 		goto out;
+-	backlight_level = radeon_atom_get_backlight_level_from_reg(rdev);
+-
+ 	dig = radeon_encoder->enc_priv;
+ 	dig->bl_dev = bd;
  
--	rt = (struct rtable *) __sk_dst_get(sk);
-+	odst = sk_dst_get(sk);
- 
--	if (sock_owned_by_user(sk) || !rt) {
-+	if (sock_owned_by_user(sk) || !odst) {
- 		__ipv4_sk_update_pmtu(skb, sk, mtu);
- 		goto out;
- 	}
- 
- 	__build_flow_key(&fl4, sk, iph, 0, 0, 0, 0, 0);
- 
--	if (!__sk_dst_check(sk, 0)) {
-+	rt = (struct rtable *)odst;
-+	if (odst->obsolete && odst->ops->check(odst, 0) == NULL) {
- 		rt = ip_route_output_flow(sock_net(sk), &fl4, sk);
- 		if (IS_ERR(rt))
- 			goto out;
-@@ -1049,8 +1050,7 @@ void ipv4_sk_update_pmtu(struct sk_buff
- 
- 	__ip_rt_update_pmtu((struct rtable *) rt->dst.path, &fl4, mtu);
- 
--	dst = dst_check(&rt->dst, 0);
--	if (!dst) {
-+	if (!dst_check(&rt->dst, 0)) {
- 		if (new)
- 			dst_release(&rt->dst);
- 
-@@ -1062,10 +1062,11 @@ void ipv4_sk_update_pmtu(struct sk_buff
- 	}
- 
- 	if (new)
--		__sk_dst_set(sk, &rt->dst);
-+		sk_dst_set(sk, &rt->dst);
- 
- out:
- 	bh_unlock_sock(sk);
-+	dst_release(odst);
- }
- EXPORT_SYMBOL_GPL(ipv4_sk_update_pmtu);
+ 	bd->props.brightness = radeon_atom_backlight_get_brightness(bd);
++	/* Set a reasonable default here if the level is 0 otherwise
++	 * fbdev will attempt to turn the backlight on after console
++	 * unblanking and it will try and restore 0 which turns the backlight
++	 * off again.
++	 */
++	if (bd->props.brightness == 0)
++		bd->props.brightness = RADEON_MAX_BL_LEVEL;
+ 	bd->props.power = FB_BLANK_UNBLANK;
+ 	backlight_update_status(bd);
  
 
 
