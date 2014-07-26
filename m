@@ -1,120 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751923AbaGZQgK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 12:36:10 -0400
-Received: from mail-lb0-f177.google.com ([209.85.217.177]:52885 "EHLO
-	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751448AbaGZQgI (ORCPT
+	id S1751967AbaGZQmK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 12:42:10 -0400
+Received: from mail-wg0-f49.google.com ([74.125.82.49]:57107 "EHLO
+	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751449AbaGZQmI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 12:36:08 -0400
-Subject: [PATCH] kbuild: escape single backslashes in macro make-cmd
-From: Konstantin Khlebnikov <koct9i@gmail.com>
-To: Michal Marek <mmarek@suse.cz>, linux-kernel@vger.kernel.org,
-        linux-kbuild@vger.kernel.org
-Cc: Sascha Hauer <s.hauer@pengutronix.de>, x86@kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Date: Sat, 26 Jul 2014 20:35:51 +0400
-Message-ID: <20140726163551.19857.17737.stgit@zurg>
-User-Agent: StGit/0.17.1-dirty
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+	Sat, 26 Jul 2014 12:42:08 -0400
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>
+Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        Chen Gang <gang.chen@asianux.com>, Cedric Le Goater <clg@fr.ibm.com>,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] arch: powerpc: kernel: nvram_64.c:  Cleaning up missing null-terminate in conjunction with strncpy
+Date: Sat, 26 Jul 2014 18:43:32 +0200
+Message-Id: <1406393013-5138-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This already has been fixed in commit c353acba28fb3fa1fd05fd
-("kbuild: make: fix if_changed when command contains backslashes")
-but escaping still isn't perfect and triggers false-positive rebuilds.
+Replacing strncpy with strlcpy to avoid strings that lacks null terminate.
+And removed unnecessary magic numbers.
 
-For x86 problem happens every time, because rules in arch/x86/realmode/rm/
-and arch/x86/boot/ contains commands like sed -n -e 's/foo\(.*\)/\1/p'.
-Backslash in \1 isn't escaped and turns into ascii symbol with code 1.
-Macro if_changed detects command change and rebuilds target again and again.
-
-Backslash escaping conflicts with other passes because it's used for escaping
-other symbols. To avoid that current macro handles only double backslashes.
-Obviously this doesn't work for \1 like above.
-
-This patch reorders passes. It doubles all backslashes before escaping # and '
-
-Visible effect in rebuilding x86/defconfig without changes, before patch:
-
-blind@zurg:~/src/linux$ make V=2
-  CHK     include/config/kernel.release
-  CHK     include/generated/uapi/linux/version.h
-  CHK     include/generated/utsrelease.h
-  CALL    scripts/checksyscalls.sh - due to target missing
-  CHK     include/generated/compile.h
-  PASYMS  arch/x86/realmode/rm/pasyms.h - due to command line change
-  LDS     arch/x86/realmode/rm/realmode.lds - due to: arch/x86/realmode/rm/pasyms.h
-  LD      arch/x86/realmode/rm/realmode.elf - due to: arch/x86/realmode/rm/realmode.lds
-  RELOCS  arch/x86/realmode/rm/realmode.relocs - due to: arch/x86/realmode/rm/realmode.elf
-  OBJCOPY arch/x86/realmode/rm/realmode.bin - due to: arch/x86/realmode/rm/realmode.elf arch/x86/realmode/rm/realmode.relocs
-  AS      arch/x86/realmode/rmpiggy.o - due to: arch/x86/realmode/rm/realmode.bin
-  LD      arch/x86/realmode/built-in.o - due to: arch/x86/realmode/rmpiggy.o
-  LD      arch/x86/built-in.o - due to: arch/x86/realmode/built-in.o
-  LINK    vmlinux - due to: arch/x86/built-in.o
-  LD      vmlinux.o
-  MODPOST vmlinux.o - due to vmlinux.o not in $(targets)
-  GEN     .version
-  CHK     include/generated/compile.h
-  UPD     include/generated/compile.h
-  CC      init/version.o - due to: include/generated/compile.h
-  LD      init/built-in.o - due to: init/version.o
-  KSYM    .tmp_kallsyms1.o
-  KSYM    .tmp_kallsyms2.o
-  LD      vmlinux
-  SORTEX  vmlinux
-  SYSMAP  System.map
-  VOFFSET arch/x86/boot/voffset.h - due to: vmlinux
-  OBJCOPY arch/x86/boot/compressed/vmlinux.bin - due to: vmlinux
-  GZIP    arch/x86/boot/compressed/vmlinux.bin.gz - due to: arch/x86/boot/compressed/vmlinux.bin
-  MKPIGGY arch/x86/boot/compressed/piggy.S - due to: arch/x86/boot/compressed/vmlinux.bin.gz
-  AS      arch/x86/boot/compressed/piggy.o - due to: arch/x86/boot/compressed/piggy.S
-  LD      arch/x86/boot/compressed/vmlinux - due to: arch/x86/boot/compressed/piggy.o
-  ZOFFSET arch/x86/boot/zoffset.h - due to: arch/x86/boot/compressed/vmlinux
-  AS      arch/x86/boot/header.o - due to: arch/x86/boot/voffset.h arch/x86/boot/zoffset.h
-  CC      arch/x86/boot/version.o - due to: include/generated/compile.h
-  LD      arch/x86/boot/setup.elf - due to: arch/x86/boot/header.o arch/x86/boot/version.o
-  OBJCOPY arch/x86/boot/setup.bin - due to: arch/x86/boot/setup.elf
-  OBJCOPY arch/x86/boot/vmlinux.bin - due to: arch/x86/boot/compressed/vmlinux
-  BUILD   arch/x86/boot/bzImage - due to: arch/x86/boot/setup.bin arch/x86/boot/vmlinux.bin
-Setup is 15676 bytes (padded to 15872 bytes).
-System is 5569 kB
-CRC c06bbc0c
-Kernel: arch/x86/boot/bzImage is ready  (#4)
-  Building modules, stage 2.
-  MODPOST 12 modules - due to target is PHONY
-
-After:
-
-blind@zurg:~/src/linux$ make V=2
-  CHK     include/config/kernel.release
-  CHK     include/generated/uapi/linux/version.h
-  CHK     include/generated/utsrelease.h
-  CALL    scripts/checksyscalls.sh - due to target missing
-  CHK     include/generated/compile.h
-Kernel: arch/x86/boot/bzImage is ready  (#5)
-  Building modules, stage 2.
-  MODPOST 12 modules - due to target is PHONY
-
-Signed-off-by: Konstantin Khlebnikov <koct9i@gmail.com>
+Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 ---
- scripts/Kbuild.include |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/powerpc/kernel/nvram_64.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/scripts/Kbuild.include b/scripts/Kbuild.include
-index 122f95c..edd0b0d 100644
---- a/scripts/Kbuild.include
-+++ b/scripts/Kbuild.include
-@@ -219,7 +219,7 @@ endif
- # >$< substitution to preserve $ when reloading .cmd file
- # note: when using inline perl scripts [perl -e '...$$t=1;...']
- # in $(cmd_xxx) double $$ your perl vars
--make-cmd = $(subst \\,\\\\,$(subst \#,\\\#,$(subst $$,$$$$,$(call escsq,$(cmd_$(1))))))
-+make-cmd = $(call escsq,$(subst \#,\\\#,$(subst \,\\,$(subst $$,$$$$,$(cmd_$(1))))))
+diff --git a/arch/powerpc/kernel/nvram_64.c b/arch/powerpc/kernel/nvram_64.c
+index 28b898e..5ed7b74 100644
+--- a/arch/powerpc/kernel/nvram_64.c
++++ b/arch/powerpc/kernel/nvram_64.c
+@@ -292,7 +292,7 @@ int __init nvram_remove_partition(const char *name, int sig,
  
- # Find any prerequisites that is newer than target or that does not exist.
- # PHONY targets skipped in both cases.
+ 		/* Make partition a free partition */
+ 		part->header.signature = NVRAM_SIG_FREE;
+-		strncpy(part->header.name, "wwwwwwwwwwww", 12);
++		strlcpy(part->header.name, "wwwwwwwwwwww", sizeof(part->header.name));
+ 		part->header.checksum = nvram_checksum(&part->header);
+ 		rc = nvram_write_header(part);
+ 		if (rc <= 0) {
+@@ -395,7 +395,7 @@ loff_t __init nvram_create_partition(const char *name, int sig,
+ 	new_part->index = free_part->index;
+ 	new_part->header.signature = sig;
+ 	new_part->header.length = size;
+-	strncpy(new_part->header.name, name, 12);
++	strlcpy(new_part->header.name, name, sizeof(new_part->header.name));
+ 	new_part->header.checksum = nvram_checksum(&new_part->header);
+ 
+ 	rc = nvram_write_header(new_part);
+-- 
+1.7.10.4
 
