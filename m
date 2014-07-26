@@ -1,47 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750999AbaGZGJp (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 02:09:45 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57507 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750737AbaGZGJo (ORCPT
+	id S1750912AbaGZGNi (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 02:13:38 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:22079 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750707AbaGZGNh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 02:09:44 -0400
-Date: Fri, 25 Jul 2014 23:09:17 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Arjun AK <arjunak234@gmail.com>
-Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
-        sparmaintainer@unisys.com, benjamin.romer@unisys.com,
-        david.kershner@unisys.com
-Subject: Re: [PATCH] Staging: unisys: Fix code style
-Message-ID: <20140726060917.GA29568@kroah.com>
-References: <2159111.NPHfj36gbu@thinkpad>
+	Sat, 26 Jul 2014 02:13:37 -0400
+Date: Sat, 26 Jul 2014 09:13:12 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Andrey Utkin <andrey.utkin@corp.bluecherry.net>
+Cc: m.chehab@samsung.com, "hans.verkuil" <hans.verkuil@cisco.com>,
+        khalasa <khalasa@piap.pl>,
+        Ismael Luceno <ismael.luceno@corp.bluecherry.net>,
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel-janitors <kernel-janitors@vger.kernel.org>
+Subject: Re: [PATCH] drivers/media/pci/solo6x10/solo6x10-disp.c: check
+ kzalloc() result
+Message-ID: <20140726061311.GB25880@mwanda>
+References: <1406313049-9604-1-git-send-email-andrey.utkin@corp.bluecherry.net>
+ <CAM_ZknWPNyUCQkU+g4iJN47=cHMGPRuwoVe2Jh=4sciUM1t-NA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <2159111.NPHfj36gbu@thinkpad>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <CAM_ZknWPNyUCQkU+g4iJN47=cHMGPRuwoVe2Jh=4sciUM1t-NA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 25, 2014 at 03:37:41PM +0530, Arjun AK wrote:
-> >From 8e7748dd81cf63c62dbef8f102e97da1d4d5d90a Mon Sep 17 00:00:00 2001
-> From: Arjun AK <arjunak234@gmail.com>
-> Date: Fri, 25 Jul 2014 15:09:11 +0530
-> Subject: [PATCH] Staging: unisys: Fix code style
-
-Why is all of this here in this message?
-
+On Fri, Jul 25, 2014 at 09:32:36PM +0300, Andrey Utkin wrote:
+> Please ignore. I didn't notice that Hans has already posted a patch
+> fixing that and more.
 > 
-> Fixes code style in multiple files
 
-Please break this up into one logical change per patch, and be specific
-as to what you change.
+Heh.  I was just about to send my fix for this bug as well.
 
-> 
-> Signed-off-by: Arjun AK <arjunak234@gmail.com>
+I don't follow linux-media so I didn't realize this driver was getting
+promoted out of staging.  I wish there was a way to go over drivers and
+fix any basic static checker fixes before promotion.
 
-I need a "full" name here, sorry.
+regards,
+dan carpenter
 
-greg k-h
