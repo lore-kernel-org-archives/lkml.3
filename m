@@ -1,55 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751017AbaGZI7F (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 04:59:05 -0400
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:42386 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750732AbaGZI7B (ORCPT
+	id S1751005AbaGZJHh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 05:07:37 -0400
+Received: from mail-la0-f49.google.com ([209.85.215.49]:43678 "EHLO
+	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750732AbaGZJHe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 04:59:01 -0400
-Message-ID: <1406365137.5091.152.camel@marge.simpson.net>
-Subject: Re: [PATCH RFC] sched: deferred set priority (dprio)
-From: Mike Galbraith <umgwanakikbuti@gmail.com>
-To: Sergey Oboguev <oboguev.public@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@elte.hu>
-Date: Sat, 26 Jul 2014 10:58:57 +0200
-In-Reply-To: <CA+80gGYVjprinWEJWbVq4VxjOLjQri8EvGAJ+sx+ihcOxdstCA@mail.gmail.com>
-References: <CA+80gGYVjprinWEJWbVq4VxjOLjQri8EvGAJ+sx+ihcOxdstCA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Sat, 26 Jul 2014 05:07:34 -0400
+From: =?UTF-8?q?Matias=20Bj=C3=B8rling?= <m@bjorling.me>
+To: willy@linux.intel.com, keith.busch@intel.com, sbradshaw@micron.com,
+        axboe@fb.com, linux-kernel@vger.kernel.org,
+        linux-nvme@lists.infradead.org, hch@infradead.org, rlnelson@google.com,
+        tom.leiming@gmail.com
+Cc: =?UTF-8?q?Matias=20Bj=C3=B8rling?= <m@bjorling.me>
+Subject: [PATCH v11] Convert NVMe driver to blk-mq
+Date: Sat, 26 Jul 2014 11:07:22 +0200
+Message-Id: <1406365643-27020-1-git-send-email-m@bjorling.me>
+X-Mailer: git-send-email 1.9.1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-07-25 at 12:45 -0700, Sergey Oboguev wrote: 
-> [This is a repost of the message from few day ago, with patch file
-> inline instead of being pointed by the URL.]
-> 
-> This patch is intended to improve the support for fine-grain parallel
-> applications that may sometimes need to change the priority of their threads at
-> a very high rate, hundreds or even thousands of times per scheduling timeslice.
-> 
-> These are typically applications that have to execute short or very short
-> lock-holding critical or otherwise time-urgent sections of code at a very high
-> frequency and need to protect these sections with "set priority" system calls,
-> one "set priority" call to elevate current thread priority before entering the
-> critical or time-urgent section, followed by another call to downgrade thread
-> priority at the completion of the section. Due to the high frequency of
-> entering and leaving critical or time-urgent sections, the cost of these "set
-> priority" system calls may raise to a noticeable part of an application's
-> overall expended CPU time. Proposed "deferred set priority" facility allows to
-> largely eliminate the cost of these system calls.
+Hi all,
 
-So you essentially want to ship preempt_disable() off to userspace?
+Thanks for the feedback. I've rebased the patch on top of 3.16-rc6 and applied
+the current patches in Willy's master tree.
 
-(smiles wickedly, adds CCs)
+A branch with the patch on top is found here:
 
--Mike
+  https://github.com/MatiasBjorling/linux-collab nvmemq_review
 
-> Instead of executing a system call to elevate its thread priority, an
-> application simply writes its desired priority level to a designated memory
-> location in the userspace. When the kernel attempts to preempt the thread...
+and the separate changes can be found in the nvmemq_v11 branch
+
+Changes since v10:
+ * Rebased on top of Linus' v3.16-rc6.
+ * Incorporated the feedback from Christoph:
+    a. Insert comment regarding the timeout flow.
+    b. Moved tags into nvmeq instead of hctx.
+    c. Moved initialization of tags and nvmeq outside of init_hctx.
+    d. Refactor submission of commands in the request queue path.
+    e. Fixes for WARN_ON and BUG_ON.
+ * Fixed a missing blk_put_request during abort.
+ * Converted the "Async event request" patch into the request model.
+
+Changes since v9:
+ * Rebased on top of Linus' v3.16-rc3.
+ * Ming noted that we should remember to kick the request queue after requeue.
+ * Jens noted a couple of superfluous warnings.
+ * Christoph is removed from the contribution section. Instead he is going to
+   be added as reviewed-by.
+
+Changes since v8:
+ * QUEUE_FLAG_VIRT_HOLE was renamed to QUEUE_FLAG_SG_GAPS
+ * Previous revertion of patches lost the IRQ affinity hint
+ * Removed test code in nvme_reset_notify
+
+Changes since v7:
+ * Jens implemented support for QUEUE_FLAG_VIRT_HOLE to limit
+   requests to a continuous range of virtual memory.
+ * Keith fixed up the abortion logic.
+ * Usual style fixups
+
+Changes since v6:
+ * Rebased on top of Matthew's master and Jens' for-linus
+ * A couple of style fixups
+
+Changes since v5:
+ * Splits are now supported directly within blk-mq
+ * Remove nvme_queue->cpu_mask variable
+ * Remove unnecessary null check
+ * Style fixups
+
+Changes since v4:
+ * Fix timeout retries
+ * Fix naming in nvme_init_hctx
+ * Fix racy behavior of admin queue in nvme_dev_remove
+ * Fix wrong return values in nvme_queue_request
+ * Put cqe_seen back
+ * Introduce abort_completion for killing timed out I/Os
+ * Move locks outside of nvme_submit_iod
+ * Various renaming and style fixes
+
+Changes since v3:
+ * Added abortion logic
+ * Fixed possible race on abortion
+ * Removed req data with flush. Handled by by blk-mq
+ * Added safety check for submitting user rq to admin queue.
+ * Use dev->online_queues for nr_hw_queues
+ * Fix loop with initialization in nvme_create_io_queues
+ * Style fixups
+
+Changes since v2:
+  * rebased on top of current 3.16/core.
+  * use blk-mq queue management for spreading io queues
+  * removed rcu handling and allocated all io queues up front for mgmt by blk-mq
+  * removed the need for hotplugging notification
+  * fixed flush data handling
+  * fixed double free of spinlock
+  * various cleanup
+
+Matias Bjørling (1):
+  NVMe: Convert to blk-mq
+
+ drivers/block/nvme-core.c | 1303 ++++++++++++++++++---------------------------
+ drivers/block/nvme-scsi.c |    8 +-
+ include/linux/nvme.h      |   15 +-
+ 3 files changed, 534 insertions(+), 792 deletions(-)
+
+-- 
+1.9.1
 
