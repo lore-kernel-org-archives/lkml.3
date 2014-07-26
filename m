@@ -1,20 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755608AbaGZTfY (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 15:35:24 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34123 "EHLO
+	id S1755636AbaGZTfu (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 15:35:50 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34338 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754196AbaGZTNY (ORCPT
+	with ESMTP id S1754193AbaGZTNY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 26 Jul 2014 15:13:24 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Shirley Ma <shirley.ma@oracle.com>, Or Gerlitz <ogerlitz@mellanox.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.15 032/109] net/mlx4_core: Fix the error flow when probing with invalid VF configuration
-Date: Sat, 26 Jul 2014 12:01:54 -0700
-Message-Id: <20140726190224.793536415@linuxfoundation.org>
+        Hugh Dickins <hughd@google.com>, Sasha Levin <sasha.levin@oracle.com>,
+        Vlastimil Babka <vbabka@suse.cz>,
+        Konstantin Khlebnikov <koct9i@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Lukas Czerner <lczerner@redhat.com>, Dave Jones <davej@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.15 031/109] shmem: fix splicing from a hole while its punched
+Date: Sat, 26 Jul 2014 12:01:53 -0700
+Message-Id: <20140726190224.764325109@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.2
 In-Reply-To: <20140726190223.834037485@linuxfoundation.org>
 References: <20140726190223.834037485@linuxfoundation.org>
@@ -29,34 +34,129 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Or Gerlitz <ogerlitz@mellanox.com>
+From: Hugh Dickins <hughd@google.com>
 
-[ Upstream commit 960b1f454e1ace6b76718f22828bcc3594a09422 ]
+commit b1a366500bd537b50c3aad26dc7df083ec03a448 upstream.
 
-Single ported VF are currently not supported on configurations where
-one or both ports are IB. When we hit this case, the relevant flow in
-the driver didn't return error and jumped to the wrong label. Fix that.
+shmem_fault() is the actual culprit in trinity's hole-punch starvation,
+and the most significant cause of such problems: since a page faulted is
+one that then appears page_mapped(), needing unmap_mapping_range() and
+i_mmap_mutex to be unmapped again.
 
-Fixes: dd41cc3 ('net/mlx4: Adapt num_vfs/probed_vf params for single port VF')
-Reported-by: Shirley Ma <shirley.ma@oracle.com>
-Signed-off-by: Or Gerlitz <ogerlitz@mellanox.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+But it is not the only way in which a page can be brought into a hole in
+the radix_tree while that hole is being punched; and Vlastimil's testing
+implies that if enough other processors are busy filling in the hole,
+then shmem_undo_range() can be kept from completing indefinitely.
+
+shmem_file_splice_read() is the main other user of SGP_CACHE, which can
+instantiate shmem pagecache pages in the read-only case (without holding
+i_mutex, so perhaps concurrently with a hole-punch).  Probably it's
+silly not to use SGP_READ already (using the ZERO_PAGE for holes): which
+ought to be safe, but might bring surprises - not a change to be rushed.
+
+shmem_read_mapping_page_gfp() is an internal interface used by
+drivers/gpu/drm GEM (and next by uprobes): it should be okay.  And
+shmem_file_read_iter() uses the SGP_DIRTY variant of SGP_CACHE, when
+called internally by the kernel (perhaps for a stacking filesystem,
+which might rely on holes to be reserved): it's unclear whether it could
+be provoked to keep hole-punch busy or not.
+
+We could apply the same umbrella as now used in shmem_fault() to
+shmem_file_splice_read() and the others; but it looks ugly, and use over
+a range raises questions - should it actually be per page? can these get
+starved themselves?
+
+The origin of this part of the problem is my v3.1 commit d0823576bf4b
+("mm: pincer in truncate_inode_pages_range"), once it was duplicated
+into shmem.c.  It seemed like a nice idea at the time, to ensure
+(barring RCU lookup fuzziness) that there's an instant when the entire
+hole is empty; but the indefinitely repeated scans to ensure that make
+it vulnerable.
+
+Revert that "enhancement" to hole-punch from shmem_undo_range(), but
+retain the unproblematic rescanning when it's truncating; add a couple
+of comments there.
+
+Remove the "indices[0] >= end" test: that is now handled satisfactorily
+by the inner loop, and mem_cgroup_uncharge_start()/end() are too light
+to be worth avoiding here.
+
+But if we do not always loop indefinitely, we do need to handle the case
+of swap swizzled back to page before shmem_free_swap() gets it: add a
+retry for that case, as suggested by Konstantin Khlebnikov; and for the
+case of page swizzled back to swap, as suggested by Johannes Weiner.
+
+Signed-off-by: Hugh Dickins <hughd@google.com>
+Reported-by: Sasha Levin <sasha.levin@oracle.com>
+Suggested-by: Vlastimil Babka <vbabka@suse.cz>
+Cc: Konstantin Khlebnikov <koct9i@gmail.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Lukas Czerner <lczerner@redhat.com>
+Cc: Dave Jones <davej@redhat.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/net/ethernet/mellanox/mlx4/main.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/net/ethernet/mellanox/mlx4/main.c
-+++ b/drivers/net/ethernet/mellanox/mlx4/main.c
-@@ -2466,7 +2466,8 @@ slave_start:
- 					 "with IB port. Single port VFs syntax"
- 					 " is only supported when all ports "
- 					 "are configured as ethernet\n");
--				goto err_close;
-+				err = -EINVAL;
-+				goto err_master_mfunc;
+---
+ mm/shmem.c |   24 +++++++++++++++---------
+ 1 file changed, 15 insertions(+), 9 deletions(-)
+
+--- a/mm/shmem.c
++++ b/mm/shmem.c
+@@ -468,23 +468,20 @@ static void shmem_undo_range(struct inod
+ 		return;
+ 
+ 	index = start;
+-	for ( ; ; ) {
++	while (index < end) {
+ 		cond_resched();
+ 
+ 		pvec.nr = find_get_entries(mapping, index,
+ 				min(end - index, (pgoff_t)PAGEVEC_SIZE),
+ 				pvec.pages, indices);
+ 		if (!pvec.nr) {
+-			if (index == start || unfalloc)
++			/* If all gone or hole-punch or unfalloc, we're done */
++			if (index == start || end != -1)
+ 				break;
++			/* But if truncating, restart to make sure all gone */
+ 			index = start;
+ 			continue;
+ 		}
+-		if ((index == start || unfalloc) && indices[0] >= end) {
+-			pagevec_remove_exceptionals(&pvec);
+-			pagevec_release(&pvec);
+-			break;
+-		}
+ 		mem_cgroup_uncharge_start();
+ 		for (i = 0; i < pagevec_count(&pvec); i++) {
+ 			struct page *page = pvec.pages[i];
+@@ -496,8 +493,12 @@ static void shmem_undo_range(struct inod
+ 			if (radix_tree_exceptional_entry(page)) {
+ 				if (unfalloc)
+ 					continue;
+-				nr_swaps_freed += !shmem_free_swap(mapping,
+-								index, page);
++				if (shmem_free_swap(mapping, index, page)) {
++					/* Swap was replaced by page: retry */
++					index--;
++					break;
++				}
++				nr_swaps_freed++;
+ 				continue;
  			}
- 			for (i = 0; i < sizeof(nvfs)/sizeof(nvfs[0]); i++) {
- 				unsigned j;
+ 
+@@ -506,6 +507,11 @@ static void shmem_undo_range(struct inod
+ 				if (page->mapping == mapping) {
+ 					VM_BUG_ON_PAGE(PageWriteback(page), page);
+ 					truncate_inode_page(mapping, page);
++				} else {
++					/* Page was replaced by swap: retry */
++					unlock_page(page);
++					index--;
++					break;
+ 				}
+ 			}
+ 			unlock_page(page);
 
 
