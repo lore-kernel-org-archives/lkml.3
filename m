@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755116AbaGZTyR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 15:54:17 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34117 "EHLO
+	id S1754401AbaGZTyO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 15:54:14 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34123 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753117AbaGZTNA (ORCPT
+	with ESMTP id S1753847AbaGZTNA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 26 Jul 2014 15:13:00 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Maggie Mae Roxas <maggie.mae.roxas@gmail.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 51/87] net: mvneta: fix operation in 10 Mbit/s mode
-Date: Sat, 26 Jul 2014 12:02:25 -0700
-Message-Id: <20140726190216.264251379@linuxfoundation.org>
+        Ben Pfaff <blp@nicira.com>, "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.14 53/87] netlink: Fix handling of error from netlink_dump().
+Date: Sat, 26 Jul 2014 12:02:27 -0700
+Message-Id: <20140726190216.338020981@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.2
 In-Reply-To: <20140726190214.530473925@linuxfoundation.org>
 References: <20140726190214.530473925@linuxfoundation.org>
@@ -30,45 +28,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+From: Ben Pfaff <blp@nicira.com>
 
-[ Upstream commit 4d12bc63ab5e48c1d78fa13883cf6fefcea3afb1 ]
+[ Upstream commit ac30ef832e6af0505b6f0251a6659adcfa74975e ]
 
-As reported by Maggie Mae Roxas, the mvneta driver doesn't behave
-properly in 10 Mbit/s mode. This is due to a misconfiguration of the
-MVNETA_GMAC_AUTONEG_CONFIG register: bit MVNETA_GMAC_CONFIG_MII_SPEED
-must be set for a 100 Mbit/s speed, but cleared for a 10 Mbit/s speed,
-which the driver was not properly doing. This commit adjusts that by
-setting the MVNETA_GMAC_CONFIG_MII_SPEED bit only in 100 Mbit/s mode,
-and relying on the fact that all the speed related bits of this
-register are cleared at the beginning of the mvneta_adjust_link()
-function.
+netlink_dump() returns a negative errno value on error.  Until now,
+netlink_recvmsg() directly recorded that negative value in sk->sk_err, but
+that's wrong since sk_err takes positive errno values.  (This manifests as
+userspace receiving a positive return value from the recv() system call,
+falsely indicating success.) This bug was introduced in the commit that
+started checking the netlink_dump() return value, commit b44d211 (netlink:
+handle errors from netlink_dump()).
 
-This problem exists since c5aff18204da0 ("net: mvneta: driver for
-Marvell Armada 370/XP network unit") which is the commit that
-introduced the mvneta driver in the kernel.
+Multithreaded Netlink dumps are one way to trigger this behavior in
+practice, as described in the commit message for the userspace workaround
+posted here:
+    http://openvswitch.org/pipermail/dev/2014-June/042339.html
 
-Cc: <stable@vger.kernel.org> # v3.8+
-Fixes: c5aff18204da0 ("net: mvneta: driver for Marvell Armada 370/XP network unit")
-Reported-by: Maggie Mae Roxas <maggie.mae.roxas@gmail.com>
-Cc: Maggie Mae Roxas <maggie.mae.roxas@gmail.com>
-Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+This commit also fixes the same bug in netlink_poll(), introduced in commit
+cd1df525d (netlink: add flow control for memory mapped I/O).
+
+Signed-off-by: Ben Pfaff <blp@nicira.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/ethernet/marvell/mvneta.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/netlink/af_netlink.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/net/ethernet/marvell/mvneta.c
-+++ b/drivers/net/ethernet/marvell/mvneta.c
-@@ -2393,7 +2393,7 @@ static void mvneta_adjust_link(struct ne
- 
- 			if (phydev->speed == SPEED_1000)
- 				val |= MVNETA_GMAC_CONFIG_GMII_SPEED;
--			else
-+			else if (phydev->speed == SPEED_100)
- 				val |= MVNETA_GMAC_CONFIG_MII_SPEED;
- 
- 			mvreg_write(pp, MVNETA_GMAC_AUTONEG_CONFIG, val);
+--- a/net/netlink/af_netlink.c
++++ b/net/netlink/af_netlink.c
+@@ -636,7 +636,7 @@ static unsigned int netlink_poll(struct
+ 		while (nlk->cb_running && netlink_dump_space(nlk)) {
+ 			err = netlink_dump(sk);
+ 			if (err < 0) {
+-				sk->sk_err = err;
++				sk->sk_err = -err;
+ 				sk->sk_error_report(sk);
+ 				break;
+ 			}
+@@ -2448,7 +2448,7 @@ static int netlink_recvmsg(struct kiocb
+ 	    atomic_read(&sk->sk_rmem_alloc) <= sk->sk_rcvbuf / 2) {
+ 		ret = netlink_dump(sk);
+ 		if (ret) {
+-			sk->sk_err = ret;
++			sk->sk_err = -ret;
+ 			sk->sk_error_report(sk);
+ 		}
+ 	}
 
 
