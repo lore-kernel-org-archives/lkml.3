@@ -1,41 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756900AbaGZUMm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 16:12:42 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35018 "EHLO
+	id S1756924AbaGZUM4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 16:12:56 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33646 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753407AbaGZUMk (ORCPT
+	with ESMTP id S1752572AbaGZTCy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 16:12:40 -0400
-Date: Sat, 26 Jul 2014 13:12:40 -0700
+	Sat, 26 Jul 2014 15:02:54 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Pawel Moll <pawel.moll@arm.com>
-Cc: Olof Johansson <olof@lixom.net>, Stephen Warren <swarren@wwwdotorg.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>, paul@pwsan.com,
-        Arnd Bergmann <arnd@arndb.de>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>, arm@kernel.org,
-        linux-tegra@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 5/5] platform: Make platform_bus device a platform device
-Message-ID: <20140726201240.GB21870@kroah.com>
-References: <1406298233-27876-1-git-send-email-pawel.moll@arm.com>
- <1406298233-27876-5-git-send-email-pawel.moll@arm.com>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Florian Westphal <fwestpha@redhat.com>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Neil Horman <nhorman@tuxdriver.com>,
+        Vlad Yasevich <vyasevich@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.10 18/56] net: sctp: check proc_dointvec result in proc_sctp_do_auth
+Date: Sat, 26 Jul 2014 12:02:11 -0700
+Message-Id: <20140726190200.644541884@linuxfoundation.org>
+X-Mailer: git-send-email 2.0.2
+In-Reply-To: <20140726190200.061512159@linuxfoundation.org>
+References: <20140726190200.061512159@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1406298233-27876-5-git-send-email-pawel.moll@arm.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 25, 2014 at 03:23:53PM +0100, Pawel Moll wrote:
-> ... describing the root of the device tree, so one can write
-> a platform driver initializing the platform.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-Wait, what do you mean by "one can write a platform driver initializing
-the platform"?  I don't understand your end goal here...
+------------------
 
-thanks,
+From: Daniel Borkmann <dborkman@redhat.com>
 
-greg k-h
+[ Upstream commit 24599e61b7552673dd85971cf5a35369cd8c119e ]
+
+When writing to the sysctl field net.sctp.auth_enable, it can well
+be that the user buffer we handed over to proc_dointvec() via
+proc_sctp_do_auth() handler contains something other than integers.
+
+In that case, we would set an uninitialized 4-byte value from the
+stack to net->sctp.auth_enable that can be leaked back when reading
+the sysctl variable, and it can unintentionally turn auth_enable
+on/off based on the stack content since auth_enable is interpreted
+as a boolean.
+
+Fix it up by making sure proc_dointvec() returned sucessfully.
+
+Fixes: b14878ccb7fa ("net: sctp: cache auth_enable per endpoint")
+Reported-by: Florian Westphal <fwestpha@redhat.com>
+Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
+Acked-by: Neil Horman <nhorman@tuxdriver.com>
+Acked-by: Vlad Yasevich <vyasevich@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ net/sctp/sysctl.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+--- a/net/sctp/sysctl.c
++++ b/net/sctp/sysctl.c
+@@ -368,8 +368,7 @@ static int proc_sctp_do_auth(struct ctl_
+ 		tbl.data = &net->sctp.auth_enable;
+ 
+ 	ret = proc_dointvec(&tbl, write, buffer, lenp, ppos);
+-
+-	if (write) {
++	if (write && ret == 0) {
+ 		struct sock *sk = net->sctp.ctl_sock;
+ 
+ 		net->sctp.auth_enable = new_value;
+
+
