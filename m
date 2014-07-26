@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755007AbaGZUEU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 16:04:20 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33752 "EHLO
+	id S1756532AbaGZUES (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 16:04:18 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33783 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752718AbaGZTDG (ORCPT
+	with ESMTP id S1752150AbaGZTDG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 26 Jul 2014 15:03:06 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mike Snitzer <snitzer@redhat.com>, Joe Thornber <ejt@redhat.com>
-Subject: [PATCH 3.10 52/56] dm cache metadata: do not allow the data block size to change
-Date: Sat, 26 Jul 2014 12:02:45 -0700
-Message-Id: <20140726190201.779867481@linuxfoundation.org>
+        Takashi Iwai <tiwai@suse.de>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [PATCH 3.10 53/56] PM / sleep: Fix request_firmware() error at resume
+Date: Sat, 26 Jul 2014 12:02:46 -0700
+Message-Id: <20140726190201.813345344@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.2
 In-Reply-To: <20140726190200.061512159@linuxfoundation.org>
 References: <20140726190200.061512159@linuxfoundation.org>
@@ -28,39 +29,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mike Snitzer <snitzer@redhat.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 048e5a07f282c57815b3901d4a68a77fa131ce0a upstream.
+commit 4320f6b1d9db4ca912c5eb6ecb328b2e090e1586 upstream.
 
-The block size for the dm-cache's data device must remained fixed for
-the life of the cache.  Disallow any attempt to change the cache's data
-block size.
+The commit [247bc037: PM / Sleep: Mitigate race between the freezer
+and request_firmware()] introduced the finer state control, but it
+also leads to a new bug; for example, a bug report regarding the
+firmware loading of intel BT device at suspend/resume:
+  https://bugzilla.novell.com/show_bug.cgi?id=873790
 
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
-Acked-by: Joe Thornber <ejt@redhat.com>
+The root cause seems to be a small window between the process resume
+and the clear of usermodehelper lock.  The request_firmware() function
+checks the UMH lock and gives up when it's in UMH_DISABLE state.  This
+is for avoiding the invalid  f/w loading during suspend/resume phase.
+The problem is, however, that usermodehelper_enable() is called at the
+end of thaw_processes().  Thus, a thawed process in between can kick
+off the f/w loader code path (in this case, via btusb_setup_intel())
+even before the call of usermodehelper_enable().  Then
+usermodehelper_read_trylock() returns an error and request_firmware()
+spews WARN_ON() in the end.
+
+This oneliner patch fixes the issue just by setting to UMH_FREEZING
+state again before restarting tasks, so that the call of
+request_firmware() will be blocked until the end of this function
+instead of returning an error.
+
+Fixes: 247bc0374254 (PM / Sleep: Mitigate race between the freezer and request_firmware())
+Link: https://bugzilla.novell.com/show_bug.cgi?id=873790
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/dm-cache-metadata.c |    9 +++++++++
- 1 file changed, 9 insertions(+)
+ kernel/power/process.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/md/dm-cache-metadata.c
-+++ b/drivers/md/dm-cache-metadata.c
-@@ -384,6 +384,15 @@ static int __open_metadata(struct dm_cac
+--- a/kernel/power/process.c
++++ b/kernel/power/process.c
+@@ -174,6 +174,7 @@ void thaw_processes(void)
  
- 	disk_super = dm_block_data(sblock);
+ 	printk("Restarting tasks ... ");
  
-+	/* Verify the data block size hasn't changed */
-+	if (le32_to_cpu(disk_super->data_block_size) != cmd->data_block_size) {
-+		DMERR("changing the data block size (from %u to %llu) is not supported",
-+		      le32_to_cpu(disk_super->data_block_size),
-+		      (unsigned long long)cmd->data_block_size);
-+		r = -EINVAL;
-+		goto bad;
-+	}
-+
- 	r = __check_incompat_features(disk_super, cmd);
- 	if (r < 0)
- 		goto bad;
++	__usermodehelper_set_disable_depth(UMH_FREEZING);
+ 	thaw_workqueues();
+ 
+ 	read_lock(&tasklist_lock);
 
 
