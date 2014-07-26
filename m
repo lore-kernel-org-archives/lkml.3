@@ -1,44 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752050AbaGZPrh (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 11:47:37 -0400
-Received: from mail-lb0-f178.google.com ([209.85.217.178]:45641 "EHLO
-	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751895AbaGZPrg (ORCPT
+	id S1752100AbaGZPtA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 11:49:00 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:55375 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751820AbaGZPs6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 11:47:36 -0400
+	Sat, 26 Jul 2014 11:48:58 -0400
 MIME-Version: 1.0
-In-Reply-To: <1406389178-9780-1-git-send-email-geert@linux-m68k.org>
-References: <1406389178-9780-1-git-send-email-geert@linux-m68k.org>
-Date: Sat, 26 Jul 2014 17:47:34 +0200
-X-Google-Sender-Auth: JGCyKzuwBP26ksApGnJBmiCSB0o
-Message-ID: <CAMuHMdWjw4wTARUaLQU2vGJ0_-jK+9Bva13QQJPj3uJ+e9mJ4w@mail.gmail.com>
-Subject: Re: Build regressions/improvements in v3.16-rc6
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <1406326508.13203.10.camel@localhost>
+References: <53C2FF3D.4030201@oracle.com>
+	<53D2768E.2040902@samsung.com>
+	<1406326508.13203.10.camel@localhost>
+Date: Sat, 26 Jul 2014 19:48:57 +0400
+Message-ID: <CAPAsAGwc7B2rB+3wTHkL97B5eDchbcuhfkKef56ARCy2CxCGuQ@mail.gmail.com>
+Subject: Re: net: socket: NULL ptr deref in sendmsg
+From: Andrey Ryabinin <ryabinin.a.a@gmail.com>
+To: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Cc: Andrey Ryabinin <a.ryabinin@samsung.com>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>,
+        Eric Dumazet <edumazet@google.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 26, 2014 at 5:39 PM, Geert Uytterhoeven
-<geert@linux-m68k.org> wrote:
-> JFYI, when comparing v3.16-rc6[1]  to v3.16-rc5[3], the summaries are:
->   - build errors: +6/-12
+2014-07-26 2:15 GMT+04:00 Hannes Frederic Sowa <hannes@stressinduktion.org>:
+>
+> Thanks for looking at this! I certainly have overlooked this case.
+>
+> I wonder, if we allow sendto with valid NULL pointer and positive
+> msg_namelen to work, why don't we do the same for recvmsg, as in
+> replacing the VERIFY_WRITE case non-null check with an
+> access_ok(VERIFY_WRITE, ...) check? We can even get rid of the check
+> because recvmsg will do it nonetheless when copying the sockaddrs to
+> user space. So kern_msg->msg_name can always be set to kern_address.
+>
 
-Nothing serious, just a few know sh-randconfig issues and a few more
-R_PPC64_REL24 truncated relocations in powerpc-allyesconfig.
+recvmsg's man page are pretty clear about that:
 
-> [1] http://kisskb.ellerman.id.au/kisskb/head/7690/ (all 119 configs)
-> [3] http://kisskb.ellerman.id.au/kisskb/head/7665/ (all 119 configs)
+     "If the application does not need to
+       know the source address, msg_name can be specified as NULL"
 
-Gr{oetje,eeting}s,
+I think we shouldn't change current recvmsg behavior, this could break
+some crappy
+userpace that doesn't set msg_namelen to zero.
 
-                        Geert
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+> Otherwise I would just set msg_namelen = 0, too, and just not handle
+> passed in NULL pointers to sockaddrs.
+>
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+I like that, how about such chage:
+
+diff --git a/net/compat.c b/net/compat.c
+index 9a76eaf..bc8aeef 100644
+--- a/net/compat.c
++++ b/net/compat.c
+@@ -85,7 +85,7 @@ int verify_compat_iovec(struct msghdr *kern_msg,
+struct iovec *kern_iov,
+ {
+        int tot_len;
+
+-       if (kern_msg->msg_namelen) {
++       if (kern_msg->msg_name && kern_msg->msg_namelen) {
+                if (mode == VERIFY_READ) {
+                        int err = move_addr_to_kernel(kern_msg->msg_name,
+                                                      kern_msg->msg_namelen,
+@@ -93,10 +93,11 @@ int verify_compat_iovec(struct msghdr *kern_msg,
+struct iovec *kern_iov,
+                        if (err < 0)
+                                return err;
+                }
+-               if (kern_msg->msg_name)
+-                       kern_msg->msg_name = kern_address;
+-       } else
++               kern_msg->msg_name = kern_address;
++       } else {
+                kern_msg->msg_name = NULL;
++               kern_msg->msg_namelen = 0;
++       }
+
+        tot_len = iov_from_user_compat_to_kern(kern_iov,
+                                          (struct compat_iovec __user
+*)kern_msg->msg_iov,
+diff --git a/net/core/iovec.c b/net/core/iovec.c
+index 827dd6b..e1ec45a 100644
+--- a/net/core/iovec.c
++++ b/net/core/iovec.c
+@@ -39,7 +39,7 @@ int verify_iovec(struct msghdr *m, struct iovec
+*iov, struct sockaddr_storage *a
+ {
+        int size, ct, err;
+
+-       if (m->msg_namelen) {
++       if (m->msg_name && m->msg_namelen) {
+                if (mode == VERIFY_READ) {
+                        void __user *namep;
+                        namep = (void __user __force *) m->msg_name;
+@@ -48,10 +48,10 @@ int verify_iovec(struct msghdr *m, struct iovec
+*iov, struct sockaddr_storage *a
+                        if (err < 0)
+                                return err;
+                }
+-               if (m->msg_name)
+-                       m->msg_name = address;
++               m->msg_name = address;
+        } else {
+                m->msg_name = NULL;
++               m->msg_namelen = 0;
+        }
+
+        size = m->msg_iovlen * sizeof(struct iovec);
+
+
+-- 
+Best regards,
+Andrey Ryabinin
