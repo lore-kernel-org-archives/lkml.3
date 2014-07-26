@@ -1,67 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751057AbaGZIAd (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 04:00:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58214 "EHLO mx1.redhat.com"
+	id S1751139AbaGZIFG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 04:05:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51011 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750898AbaGZIAc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 04:00:32 -0400
-Date: Sat, 26 Jul 2014 09:08:43 +0100
+	id S1751017AbaGZIFA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 Jul 2014 04:05:00 -0400
+Date: Sat, 26 Jul 2014 09:13:12 +0100
 From: Alexander Gordeev <agordeev@redhat.com>
-To: linux-kernel@vger.kernel.org,
-        Jayamohan Kallickal <jayamohan.kallickal@emulex.com>
-Subject: Re: [PATCH v2 RESEND 01/23] be2iscsi: Use pci_enable_msix_exact()
- instead of pci_enable_msix()
-Message-ID: <20140726080842.GB21129@agordeev.usersys.redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Naresh Kumar Inna <naresh@chelsio.com>,
+        Arvind Bhushan <arvindb@chelsio.com>, linux-scsi@vger.kernel.org,
+        linux-pci@vger.kernel.org
+Subject: Re: [PATCH v2 RESEND 05/23] csiostor: Remove superfluous call to
+ pci_disable_msix()
+Message-ID: <20140726081311.GC21129@agordeev.usersys.redhat.com>
 References: <cover.1405533479.git.agordeev@redhat.com>
- <c59d60c1d8b848222bbac6d32c314c9dfbfb13f2.1405533479.git.agordeev@redhat.com>
+ <bd849e403573b161beb4dcfdb7d410f997c95562.1405533479.git.agordeev@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <c59d60c1d8b848222bbac6d32c314c9dfbfb13f2.1405533479.git.agordeev@redhat.com>
+In-Reply-To: <bd849e403573b161beb4dcfdb7d410f997c95562.1405533479.git.agordeev@redhat.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 16, 2014 at 08:05:05PM +0200, Alexander Gordeev wrote:
-> As result of deprecation of MSI-X/MSI enablement functions
-> pci_enable_msix() and pci_enable_msi_block() all drivers
-> using these two interfaces need to be updated to use the
-> new pci_enable_msi_range()  or pci_enable_msi_exact()
-> and pci_enable_msix_range() or pci_enable_msix_exact()
-> interfaces.
+On Wed, Jul 16, 2014 at 08:05:09PM +0200, Alexander Gordeev wrote:
+> There is no need to call pci_disable_msix() in case
+> the previous call to pci_enable_msix() failed
 
-Hi Jayamohan,
+Hi Naresh, Arvind,
 
-Could you please review this patch?
+Could you please review csiostor patches in this series?
 
 Thanks!
 
 > Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+> Cc: Naresh Kumar Inna <naresh@chelsio.com>
+> Cc: Arvind Bhushan <arvindb@chelsio.com>
+> Cc: linux-scsi@vger.kernel.org
+> Cc: linux-pci@vger.kernel.org
 > ---
->  drivers/scsi/be2iscsi/be_main.c |    6 ++----
->  1 files changed, 2 insertions(+), 4 deletions(-)
+>  drivers/scsi/csiostor/csio_isr.c |    4 +---
+>  1 files changed, 1 insertions(+), 3 deletions(-)
 > 
-> diff --git a/drivers/scsi/be2iscsi/be_main.c b/drivers/scsi/be2iscsi/be_main.c
-> index 56467df..1f63169 100644
-> --- a/drivers/scsi/be2iscsi/be_main.c
-> +++ b/drivers/scsi/be2iscsi/be_main.c
-> @@ -5278,12 +5278,10 @@ static void beiscsi_msix_enable(struct beiscsi_hba *phba)
->  	for (i = 0; i <= phba->num_cpus; i++)
->  		phba->msix_entries[i].entry = i;
+> diff --git a/drivers/scsi/csiostor/csio_isr.c b/drivers/scsi/csiostor/csio_isr.c
+> index 7ee9777..91ba91d 100644
+> --- a/drivers/scsi/csiostor/csio_isr.c
+> +++ b/drivers/scsi/csiostor/csio_isr.c
+> @@ -529,10 +529,8 @@ csio_enable_msix(struct csio_hw *hw)
+>  			csio_reduce_sqsets(hw, cnt - extra);
+>  		}
+>  	} else {
+> -		if (rv > 0) {
+> -			pci_disable_msix(hw->pdev);
+> +		if (rv > 0)
+>  			csio_info(hw, "Not using MSI-X, remainder:%d\n", rv);
+> -		}
 >  
-> -	status = pci_enable_msix(phba->pcidev, phba->msix_entries,
-> -				 (phba->num_cpus + 1));
-> +	status = pci_enable_msix_exact(phba->pcidev, phba->msix_entries,
-> +				       phba->num_cpus + 1);
->  	if (!status)
->  		phba->msix_enabled = true;
-> -
-> -	return;
->  }
->  
->  static void be_eqd_update(struct beiscsi_hba *phba)
+>  		kfree(entries);
+>  		return -ENOMEM;
 > -- 
 > 1.7.7.6
 > 
