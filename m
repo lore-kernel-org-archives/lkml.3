@@ -1,69 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751182AbaGZIJt (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 04:09:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:17770 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750961AbaGZIJp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 04:09:45 -0400
-Date: Sat, 26 Jul 2014 09:16:48 +0100
-From: Alexander Gordeev <agordeev@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>, iss_storagedev@hp.com,
-        linux-scsi@vger.kernel.org, linux-pci@vger.kernel.org
-Subject: Re: [PATCH v2 RESEND 08/23] hpsa: Fallback to MSI rather than to
- INTx if MSI-X failed
-Message-ID: <20140726081647.GE21129@agordeev.usersys.redhat.com>
-References: <cover.1405533479.git.agordeev@redhat.com>
- <3ca64c251518a2db8810534b4e63ec696bcfeefd.1405533479.git.agordeev@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <3ca64c251518a2db8810534b4e63ec696bcfeefd.1405533479.git.agordeev@redhat.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1751034AbaGZINW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 04:13:22 -0400
+Received: from elanic.emc.com.tw ([192.72.220.188]:43680 "EHLO
+	elanic.emc.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750774AbaGZINP convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 Jul 2014 04:13:15 -0400
+Content-Type: text/plain; charset=big5
+Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
+Subject: Re: [PATCH v2] Input: add i2c/smbus driver for elan touchpad
+From: cheng wei Lin <dusonlin@emc.com.tw>
+In-Reply-To: <20140725200656.GA2827@core.coreip.homeip.net>
+Date: Sat, 26 Jul 2014 16:12:58 +0800
+Cc: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
+        bleung@chromium.org, agnescheng@chromium.org,
+        =?big5?B?IlNSRDEgJiM2NTUzMzvntr3uJiM2NTUzMzsmIzY1NTMzOz+zoyYj?=
+	 =?big5?B?NjU1MzM7JiM2NTUzMzsmIzY1NTMzOyYjNjU1MzM7Ig==?= 
+	<phoenix@emc.com.tw>,
+        jeff.chuang@emc.com.tw
+Content-Transfer-Encoding: 8BIT
+Message-Id: <4BE637D2-E28B-4344-B77A-6260566F7CF6@emc.com.tw>
+References: <1389064083-11018-1-git-send-email-dusonlin@emc.com.tw> <20140724180516.GA26752@core.coreip.homeip.net> <73E9FA09-55D6-409D-A902-29CC3F414CBF@emc.com.tw> <20140725182053.GA23356@core.coreip.homeip.net> <20140725200656.GA2827@core.coreip.homeip.net>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+X-Mailer: Apple Mail (2.1878.6)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 16, 2014 at 08:05:12PM +0200, Alexander Gordeev wrote:
-> Currently the driver falls back to INTx mode when MSI-X
-> initialization failed. This is a suboptimal behaviour
-> for chips that also support MSI. This update changes that
-> behaviour and falls back to MSI mode in case MSI-X mode
-> initialization failed.
+Hi Dmitry,
 
-Hi Stephen,
+Yes, we intend to do this. Could you help to keep the original code, thank you.
 
-Could you please reveiew hpsa patches in this series?
+Duson 
 
-Thanks!
 
-> Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
-> Cc: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
-> Cc: iss_storagedev@hp.com
-> Cc: linux-scsi@vger.kernel.org
-> Cc: linux-pci@vger.kernel.org
-> ---
->  drivers/scsi/hpsa.c |    1 -
->  1 files changed, 0 insertions(+), 1 deletions(-)
+Dmitry Torokhov <dmitry.torokhov@gmail.com> ©ó 2014/7/26 ¤W¤È4:06 ¼g¹D¡G
+
+> On Fri, Jul 25, 2014 at 11:20:53AM -0700, Dmitry Torokhov wrote:
+>> Hi Duson,
+>> 
+>> On Sat, Jul 26, 2014 at 02:05:02AM +0800, cheng wei Lin wrote:
+>>> Hi Dmitry,
+>>> 
+>>> Sorry for late to reply you and thanks for your command
+>>> 
+>>> Yes, I also agree, it looks great than my original code.
+>> 
+>> Thank you for confirming.
+>> 
+>>> So, should I modify this and upstream v3 patch for you?
+>> 
+>> No, that is fine, I'll fix it up on my end.
 > 
-> diff --git a/drivers/scsi/hpsa.c b/drivers/scsi/hpsa.c
-> index 31184b3..648dec2 100644
-> --- a/drivers/scsi/hpsa.c
-> +++ b/drivers/scsi/hpsa.c
-> @@ -6177,7 +6177,6 @@ static void hpsa_interrupt_mode(struct ctlr_info *h)
->  			dev_warn(&h->pdev->dev, "MSI-X init failed %d\n",
->  			       err);
->  			h->msix_vector = 0;
-> -			goto default_int_mode;
->  		}
->  	}
->  	if (pci_find_capability(h->pdev, PCI_CAP_ID_MSI)) {
+> Hmm, I am also looking at elan_get_x_resolution() and in case of SMB
+> we'll never get negative result since we are doing
+> "elan_convert_res(val[1] & 0x0F)". Was it intended as such, or do we
+> need to extend sign here via
+> 
+> 	(((char)(val[1] & 0x0F)) << 4) >> 4;
+> 
+> Thanks.
+> 
 > -- 
-> 1.7.7.6
+> Dmitry
 > 
 
--- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
