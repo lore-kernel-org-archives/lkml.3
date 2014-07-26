@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755976AbaGZToe (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 15:44:34 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34123 "EHLO
+	id S1755998AbaGZTog (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 15:44:36 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34138 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752876AbaGZTNO (ORCPT
+	with ESMTP id S1754028AbaGZTNO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 26 Jul 2014 15:13:14 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Subject: [PATCH 3.14 85/87] iwlwifi: mvm: disable CTS to Self
-Date: Sat, 26 Jul 2014 12:02:59 -0700
-Message-Id: <20140726190217.370359225@linuxfoundation.org>
+        Marek Vasut <marex@denx.de>, Shawn Guo <shawn.guo@linaro.org>
+Subject: [PATCH 3.14 84/87] ARM: dts: imx: Add alias for ethernet controller
+Date: Sat, 26 Jul 2014 12:02:58 -0700
+Message-Id: <20140726190217.337461228@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.2
 In-Reply-To: <20140726190214.530473925@linuxfoundation.org>
 References: <20140726190214.530473925@linuxfoundation.org>
@@ -28,40 +28,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+From: Marek Vasut <marex@denx.de>
 
-commit dc271ee0d04d12d6bfabacbec803289a7072fbd9 upstream.
+commit 22970070e027cbbb9b2878f8f7c31d0d7f29e94d upstream.
 
-Firmware folks seem say that this flag can make trouble.
-Drop it. The advantage of CTS to self is that it slightly
-reduces the cost of the protection, but make the protection
-less reliable.
+Add alias for FEC ethernet on i.MX to allow bootloaders (like U-Boot)
+patch-in the MAC address for FEC using this alias.
 
-Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Signed-off-by: Marek Vasut <marex@denx.de>
+Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-
 ---
- drivers/net/wireless/iwlwifi/mvm/mac-ctxt.c |    8 ++------
- 1 file changed, 2 insertions(+), 6 deletions(-)
+ arch/arm/boot/dts/imx25.dtsi |    1 +
+ arch/arm/boot/dts/imx27.dtsi |    1 +
+ arch/arm/boot/dts/imx51.dtsi |    1 +
+ arch/arm/boot/dts/imx53.dtsi |    1 +
+ 4 files changed, 4 insertions(+)
 
---- a/drivers/net/wireless/iwlwifi/mvm/mac-ctxt.c
-+++ b/drivers/net/wireless/iwlwifi/mvm/mac-ctxt.c
-@@ -651,13 +651,9 @@ static void iwl_mvm_mac_ctxt_cmd_common(
- 	if (vif->bss_conf.qos)
- 		cmd->qos_flags |= cpu_to_le32(MAC_QOS_FLG_UPDATE_EDCA);
+--- a/arch/arm/boot/dts/imx25.dtsi
++++ b/arch/arm/boot/dts/imx25.dtsi
+@@ -30,6 +30,7 @@
+ 		spi2 = &spi3;
+ 		usb0 = &usbotg;
+ 		usb1 = &usbhost1;
++		ethernet0 = &fec;
+ 	};
  
--	/* Don't use cts to self as the fw doesn't support it currently. */
--	if (vif->bss_conf.use_cts_prot) {
-+	if (vif->bss_conf.use_cts_prot)
- 		cmd->protection_flags |= cpu_to_le32(MAC_PROT_FLG_TGG_PROTECT);
--		if (IWL_UCODE_API(mvm->fw->ucode_ver) >= 8)
--			cmd->protection_flags |=
--				cpu_to_le32(MAC_PROT_FLG_SELF_CTS_EN);
--	}
-+
- 	IWL_DEBUG_RATE(mvm, "use_cts_prot %d, ht_operation_mode %d\n",
- 		       vif->bss_conf.use_cts_prot,
- 		       vif->bss_conf.ht_operation_mode);
+ 	cpus {
+--- a/arch/arm/boot/dts/imx27.dtsi
++++ b/arch/arm/boot/dts/imx27.dtsi
+@@ -30,6 +30,7 @@
+ 		spi0 = &cspi1;
+ 		spi1 = &cspi2;
+ 		spi2 = &cspi3;
++		ethernet0 = &fec;
+ 	};
+ 
+ 	aitc: aitc-interrupt-controller@e0000000 {
+--- a/arch/arm/boot/dts/imx51.dtsi
++++ b/arch/arm/boot/dts/imx51.dtsi
+@@ -27,6 +27,7 @@
+ 		spi0 = &ecspi1;
+ 		spi1 = &ecspi2;
+ 		spi2 = &cspi;
++		ethernet0 = &fec;
+ 	};
+ 
+ 	tzic: tz-interrupt-controller@e0000000 {
+--- a/arch/arm/boot/dts/imx53.dtsi
++++ b/arch/arm/boot/dts/imx53.dtsi
+@@ -33,6 +33,7 @@
+ 		spi0 = &ecspi1;
+ 		spi1 = &ecspi2;
+ 		spi2 = &cspi;
++		ethernet0 = &fec;
+ 	};
+ 
+ 	cpus {
 
 
