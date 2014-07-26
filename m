@@ -1,67 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751311AbaGZLz6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 07:55:58 -0400
-Received: from si-002-i49.relay.mailchannels.net ([184.154.112.223]:5347 "EHLO
-	relay.mailchannels.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750732AbaGZLz4 convert rfc822-to-8bit (ORCPT
+	id S1751367AbaGZL7q (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 07:59:46 -0400
+Received: from mail-la0-f46.google.com ([209.85.215.46]:46272 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750732AbaGZL7o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 07:55:56 -0400
-X-Sender-Id: arvixe|x-authuser|przemo@firszt.eu
-X-Sender-Id: arvixe|x-authuser|przemo@firszt.eu
-X-MC-Relay: Good
-X-MailChannels-SenderId: arvixe|x-authuser|przemo@firszt.eu
-X-MailChannels-Auth-Id: arvixe
-Message-ID: <1406375748.2611.0.camel@fedora-lan>
-Subject: Re: [PATCH v2 00/10] Input - wacom: conversion to HID driver,
- series 2
-From: Przemo Firszt <przemo@firszt.eu>
-To: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
-        Ping Cheng <pinglinux@gmail.com>, Jason Gerecke <killertofu@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
-Date: Sat, 26 Jul 2014 12:55:48 +0100
-In-Reply-To: <20140725231509.GA2279@mail.corp.redhat.com>
-References: <1406225645-32141-1-git-send-email-benjamin.tissoires@redhat.com>
-	 <1406326412.4674.22.camel@fedora-lan>
-	 <20140725231509.GA2279@mail.corp.redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
-Mime-Version: 1.0
-X-AuthUser: przemo@firszt.eu
-Content-Transfer-Encoding: 8BIT
+	Sat, 26 Jul 2014 07:59:44 -0400
+From: Andrey Utkin <andrey.krieger.utkin@gmail.com>
+To: trond.myklebust@primarydata.com
+Cc: linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org,
+        kernel-janitors@vger.kernel.org,
+        Andrey Utkin <andrey.krieger.utkin@gmail.com>
+Subject: [PATCH] nfs3_list_one_acl(): check get_acl() result with IS_ERR_OR_NULL
+Date: Sat, 26 Jul 2014 14:58:01 +0300
+Message-Id: <1406375881-18837-1-git-send-email-andrey.krieger.utkin@gmail.com>
+X-Mailer: git-send-email 2.0.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+There was a check for result being not NULL. But get_acl() may return
+NULL, or ERR_PTR, or actual pointer.
+The purpose of the function where current change is done is to "list
+ACLs only when they are available", so any error condition of get_acl()
+mustn't be elevated, and returning 0 there is still valid.
 
-Dnia 2014-07-25, pią o godzinie 19:15 -0400, Benjamin Tissoires pisze:
-> [..]
-Hi Bejnamin,
-> > I don't remember for sure, but I think the range of brightness might be different
-> > over usb and over bluetooth.
-> 
-> Maybe you can try setting the sysfs file "buttons_luminance" with the
-> value 8 to check if this will solve the bug.
-No, that doesn't make any difference.
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=81111
+Signed-off-by: Andrey Utkin <andrey.krieger.utkin@gmail.com>
+---
+ fs/nfs/nfs3acl.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/fs/nfs/nfs3acl.c b/fs/nfs/nfs3acl.c
+index 8f854dd..d0fec26 100644
+--- a/fs/nfs/nfs3acl.c
++++ b/fs/nfs/nfs3acl.c
+@@ -256,7 +256,7 @@ nfs3_list_one_acl(struct inode *inode, int type, const char *name, void *data,
+ 	char *p = data + *result;
  
-> The bug might also be linked to the slight difference while setting up
-> the transfer of the image (WAC_CMD_ICON_START) with the value of buf[1]
-> set to 1 in USB, while it was 0 on bluetooth.
-> 
-> The weird thing is that I remembered having set the OLED (though
-> scrambled) with these patches applied. I guess the scrambling was due to
-> the 4-bit vs 1-bit. But I definitively had some results.
-I spotted something:
-hid-wacom:c (before modifications)
-#define WAC_CMD_ICON_TRANSFER       0x26
-
-wacom_sys.c: (after modifications)
-#define WAC_CMD_ICON_XFER       0x23
-
-Changing it fixes the problem. Patches to follow soon.
+ 	acl = get_acl(inode, type);
+-	if (!acl)
++	if (IS_ERR_OR_NULL(acl))
+ 		return 0;
+ 
+ 	posix_acl_release(acl);
 -- 
-Kind regards,
-Przemo Firszt
-
+2.0.0
 
