@@ -1,27 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755009AbaGZTum (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 15:50:42 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34123 "EHLO
+	id S1755087AbaGZTvD (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 15:51:03 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34143 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753890AbaGZTNF (ORCPT
+	with ESMTP id S1753023AbaGZTNE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 15:13:05 -0400
+	Sat, 26 Jul 2014 15:13:04 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jiri Olsa <jolsa@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: [PATCH 3.14 65/87] perf: Do not allow optimized switch for non-cloned events
-Date: Sat, 26 Jul 2014 12:02:39 -0700
-Message-Id: <20140726190216.734257892@linuxfoundation.org>
+        Ben Hutchings <ben@decadent.org.uk>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.14 63/87] dns_resolver: Null-terminate the right string
+Date: Sat, 26 Jul 2014 12:02:37 -0700
+Message-Id: <20140726190216.671850743@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.2
 In-Reply-To: <20140726190214.530473925@linuxfoundation.org>
 References: <20140726190214.530473925@linuxfoundation.org>
@@ -36,50 +29,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiri Olsa <jolsa@redhat.com>
+From: Ben Hutchings <ben@decadent.org.uk>
 
-commit 1f9a7268c67f0290837aada443d28fd953ddca90 upstream.
+[ Upstream commit 640d7efe4c08f06c4ae5d31b79bd8740e7f6790a ]
 
-The context check in perf_event_context_sched_out allows
-non-cloned context to be part of the optimized schedule
-out switch.
+*_result[len] is parsed as *(_result[len]) which is not at all what we
+want to touch here.
 
-This could move non-cloned context into another workload
-child. Once this child exits, the context is closed and
-leaves all original (parent) events in closed state.
-
-Any other new cloned event will have closed state and not
-measure anything. And probably causing other odd bugs.
-
-Signed-off-by: Jiri Olsa <jolsa@kernel.org>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Link: http://lkml.kernel.org/r/1403598026-2310-2-git-send-email-jolsa@kernel.org
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Fixes: 84a7c0b1db1c ("dns_resolver: assure that dns_query() result is null-terminated")
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- kernel/events/core.c |    2 +-
+ net/dns_resolver/dns_query.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -2311,7 +2311,7 @@ static void perf_event_context_sched_out
- 	next_parent = rcu_dereference(next_ctx->parent_ctx);
+--- a/net/dns_resolver/dns_query.c
++++ b/net/dns_resolver/dns_query.c
+@@ -150,7 +150,7 @@ int dns_query(const char *type, const ch
+ 		goto put;
  
- 	/* If neither context have a parent context; they cannot be clones. */
--	if (!parent && !next_parent)
-+	if (!parent || !next_parent)
- 		goto unlock;
+ 	memcpy(*_result, upayload->data, len);
+-	*_result[len] = '\0';
++	(*_result)[len] = '\0';
  
- 	if (next_parent == ctx || next_ctx == parent || next_parent == parent) {
+ 	if (_expiry)
+ 		*_expiry = rkey->expiry;
 
 
