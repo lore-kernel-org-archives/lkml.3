@@ -1,24 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753494AbaGZTKa (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 15:10:30 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33783 "EHLO
+	id S932305AbaGZT6I (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 15:58:08 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33864 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752810AbaGZTDL (ORCPT
+	with ESMTP id S1752792AbaGZTDL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 26 Jul 2014 15:03:11 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Tom Zanussi <tom.zanussi@linux.intel.com>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        Oleg Nesterov <oleg@redhat.com>, Steven Rostedt <rostedt@goodmis.org>
-Subject: [PATCH 3.14 12/87] tracing: instance_rmdir() leaks ftrace_event_file->filter
-Date: Sat, 26 Jul 2014 12:01:46 -0700
-Message-Id: <20140726190214.931059656@linuxfoundation.org>
+        Anand Avati <avati@redhat.com>, Niels de Vos <ndevos@redhat.com>,
+        Miklos Szeredi <mszeredi@suse.cz>
+Subject: [PATCH 3.14 10/87] fuse: ignore entry-timeout on LOOKUP_REVAL
+Date: Sat, 26 Jul 2014 12:01:44 -0700
+Message-Id: <20140726190214.863444453@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.2
 In-Reply-To: <20140726190214.530473925@linuxfoundation.org>
 References: <20140726190214.530473925@linuxfoundation.org>
@@ -33,38 +29,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oleg Nesterov <oleg@redhat.com>
+From: Anand Avati <avati@redhat.com>
 
-commit 2448e3493cb3874baa90725c87869455ebf11cd2 upstream.
+commit 154210ccb3a871e631bf39fdeb7a8731d98af87b upstream.
 
-instance_rmdir() path destroys the event files but forgets to free
-file->filter. Change remove_event_file_dir() to free_event_filter().
+The following test case demonstrates the bug:
 
-Link: http://lkml.kernel.org/p/20140711190638.GA19517@redhat.com
+  sh# mount -t glusterfs localhost:meta-test /mnt/one
 
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Tom Zanussi <tom.zanussi@linux.intel.com>
-Cc: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
-Fixes: f6a84bdc75b5 "tracing: Introduce remove_event_file_dir()"
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+  sh# mount -t glusterfs localhost:meta-test /mnt/two
+
+  sh# echo stuff > /mnt/one/file; rm -f /mnt/two/file; echo stuff > /mnt/one/file
+  bash: /mnt/one/file: Stale file handle
+
+  sh# echo stuff > /mnt/one/file; rm -f /mnt/two/file; sleep 1; echo stuff > /mnt/one/file
+
+On the second open() on /mnt/one, FUSE would have used the old
+nodeid (file handle) trying to re-open it. Gluster is returning
+-ESTALE. The ESTALE propagates back to namei.c:filename_lookup()
+where lookup is re-attempted with LOOKUP_REVAL. The right
+behavior now, would be for FUSE to ignore the entry-timeout and
+and do the up-call revalidation. Instead FUSE is ignoring
+LOOKUP_REVAL, succeeding the revalidation (because entry-timeout
+has not passed), and open() is again retried on the old file
+handle and finally the ESTALE is going back to the application.
+
+Fix: if revalidation is happening with LOOKUP_REVAL, then ignore
+entry-timeout and always do the up-call.
+
+Signed-off-by: Anand Avati <avati@redhat.com>
+Reviewed-by: Niels de Vos <ndevos@redhat.com>
+Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/trace/trace_events.c |    1 +
- 1 file changed, 1 insertion(+)
+ fs/fuse/dir.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/kernel/trace/trace_events.c
-+++ b/kernel/trace/trace_events.c
-@@ -439,6 +439,7 @@ static void remove_event_file_dir(struct
- 
- 	list_del(&file->list);
- 	remove_subsystem(file->system);
-+	free_event_filter(file->filter);
- 	kmem_cache_free(file_cachep, file);
- }
- 
+--- a/fs/fuse/dir.c
++++ b/fs/fuse/dir.c
+@@ -198,7 +198,8 @@ static int fuse_dentry_revalidate(struct
+ 	inode = ACCESS_ONCE(entry->d_inode);
+ 	if (inode && is_bad_inode(inode))
+ 		goto invalid;
+-	else if (time_before64(fuse_dentry_time(entry), get_jiffies_64())) {
++	else if (time_before64(fuse_dentry_time(entry), get_jiffies_64()) ||
++		 (flags & LOOKUP_REVAL)) {
+ 		int err;
+ 		struct fuse_entry_out outarg;
+ 		struct fuse_req *req;
 
 
