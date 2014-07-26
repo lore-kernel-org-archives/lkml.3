@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756723AbaGZUJM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 16:09:12 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33664 "EHLO
+	id S1755047AbaGZUJK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 16:09:10 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33646 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752615AbaGZTC4 (ORCPT
+	with ESMTP id S1752620AbaGZTC4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 26 Jul 2014 15:02:56 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
         Steven Rostedt <rostedt@goodmis.org>
-Subject: [PATCH 3.10 06/56] tracing: Fix graph tracer with stack tracer on other archs
-Date: Sat, 26 Jul 2014 12:01:59 -0700
-Message-Id: <20140726190200.263377454@linuxfoundation.org>
+Subject: [PATCH 3.10 07/56] tracing: Add ftrace_trace_stack into __trace_puts/__trace_bputs
+Date: Sat, 26 Jul 2014 12:02:00 -0700
+Message-Id: <20140726190200.293605001@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.2
 In-Reply-To: <20140726190200.061512159@linuxfoundation.org>
 References: <20140726190200.061512159@linuxfoundation.org>
@@ -28,47 +29,84 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+From: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
 
-commit 5f8bf2d263a20b986225ae1ed7d6759dc4b93af9 upstream.
+commit 8abfb8727f4a724d31f9ccfd8013fbd16d539445 upstream.
 
-Running my ftrace tests on PowerPC, it failed the test that checks
-if function_graph tracer is affected by the stack tracer. It was.
-Looking into this, I found that the update_function_graph_func()
-must be called even if the trampoline function is not changed.
-This is because archs like PowerPC do not support ftrace_ops being
-passed by assembly and instead uses a helper function (what the
-trampoline function points to). Since this function is not changed
-even when multiple ftrace_ops are added to the code, the test that
-falls out before calling update_function_graph_func() will miss that
-the update must still be done.
+Currently trace option stacktrace is not applicable for
+trace_printk with constant string argument, the reason is
+in __trace_puts/__trace_bputs ftrace_trace_stack is missing.
 
-Call update_function_graph_function() for all calls to
-update_ftrace_function()
+In contrast, when using trace_printk with non constant string
+argument(will call into __trace_printk/__trace_bprintk), then
+trace option stacktrace is workable, this inconstant result
+will confuses users a lot.
 
+Link: http://lkml.kernel.org/p/51E7A7C9.9040401@huawei.com
+
+Signed-off-by: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/trace/ftrace.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ kernel/trace/trace.c |   12 ++++++++++--
+ 1 file changed, 10 insertions(+), 2 deletions(-)
 
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -331,12 +331,12 @@ static void update_ftrace_function(void)
- 		func = ftrace_ops_list_func;
- 	}
- 
-+	update_function_graph_func();
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -423,6 +423,9 @@ int __trace_puts(unsigned long ip, const
+ 	struct print_entry *entry;
+ 	unsigned long irq_flags;
+ 	int alloc;
++	int pc;
 +
- 	/* If there's no change, then do nothing more here */
- 	if (ftrace_trace_function == func)
- 		return;
++	pc = preempt_count();
  
--	update_function_graph_func();
--
- 	/*
- 	 * If we are using the list function, it doesn't care
- 	 * about the function_trace_ops.
+ 	if (unlikely(tracing_selftest_running || tracing_disabled))
+ 		return 0;
+@@ -432,7 +435,7 @@ int __trace_puts(unsigned long ip, const
+ 	local_save_flags(irq_flags);
+ 	buffer = global_trace.trace_buffer.buffer;
+ 	event = trace_buffer_lock_reserve(buffer, TRACE_PRINT, alloc, 
+-					  irq_flags, preempt_count());
++					  irq_flags, pc);
+ 	if (!event)
+ 		return 0;
+ 
+@@ -449,6 +452,7 @@ int __trace_puts(unsigned long ip, const
+ 		entry->buf[size] = '\0';
+ 
+ 	__buffer_unlock_commit(buffer, event);
++	ftrace_trace_stack(buffer, irq_flags, 4, pc);
+ 
+ 	return size;
+ }
+@@ -466,6 +470,9 @@ int __trace_bputs(unsigned long ip, cons
+ 	struct bputs_entry *entry;
+ 	unsigned long irq_flags;
+ 	int size = sizeof(struct bputs_entry);
++	int pc;
++
++	pc = preempt_count();
+ 
+ 	if (unlikely(tracing_selftest_running || tracing_disabled))
+ 		return 0;
+@@ -473,7 +480,7 @@ int __trace_bputs(unsigned long ip, cons
+ 	local_save_flags(irq_flags);
+ 	buffer = global_trace.trace_buffer.buffer;
+ 	event = trace_buffer_lock_reserve(buffer, TRACE_BPUTS, size,
+-					  irq_flags, preempt_count());
++					  irq_flags, pc);
+ 	if (!event)
+ 		return 0;
+ 
+@@ -482,6 +489,7 @@ int __trace_bputs(unsigned long ip, cons
+ 	entry->str			= str;
+ 
+ 	__buffer_unlock_commit(buffer, event);
++	ftrace_trace_stack(buffer, irq_flags, 4, pc);
+ 
+ 	return 1;
+ }
 
 
