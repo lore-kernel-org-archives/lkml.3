@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754557AbaGZTiP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 15:38:15 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34376 "EHLO
+	id S1754970AbaGZTio (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 15:38:44 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34338 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754145AbaGZTNV (ORCPT
+	with ESMTP id S1752859AbaGZTNV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 26 Jul 2014 15:13:21 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stefan Assmann <sassmann@kpanic.de>,
-        Aaron Brown <aaron.f.brown@intel.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.15 025/109] igb: do a reset on SR-IOV re-init if device is down
-Date: Sat, 26 Jul 2014 12:01:47 -0700
-Message-Id: <20140726190224.590458076@linuxfoundation.org>
+        Guenter Roeck <linux@roeck-us.net>, Axel Lin <axel.lin@ingics.com>
+Subject: [PATCH 3.15 023/109] hwmon: (adt7470) Fix writes to temperature limit registers
+Date: Sat, 26 Jul 2014 12:01:45 -0700
+Message-Id: <20140726190224.532316597@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.2
 In-Reply-To: <20140726190223.834037485@linuxfoundation.org>
 References: <20140726190223.834037485@linuxfoundation.org>
@@ -31,33 +28,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stefan Assmann <sassmann@kpanic.de>
+From: Guenter Roeck <linux@roeck-us.net>
 
-commit 76252723e88681628a3dbb9c09c963e095476f73 upstream.
+commit de12d6f4b10b21854441f5242dcb29ea96181e58 upstream.
 
-To properly re-initialize SR-IOV it is necessary to reset the device
-even if it is already down. Not doing this may result in Tx unit hangs.
+Temperature limit registers are signed. Limits therefore need
+to be clamped to (-128, 127) degrees C and not to (0, 255)
+degrees C.
 
-Signed-off-by: Stefan Assmann <sassmann@kpanic.de>
-Tested-by: Aaron Brown <aaron.f.brown@intel.com>
-Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Without this fix, writing a limit of 128 degrees C sets the
+actual limit to -128 degrees C.
+
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Reviewed-by: Axel Lin <axel.lin@ingics.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/ethernet/intel/igb/igb_main.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/hwmon/adt7470.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/drivers/net/ethernet/intel/igb/igb_main.c
-+++ b/drivers/net/ethernet/intel/igb/igb_main.c
-@@ -7581,6 +7581,8 @@ static int igb_sriov_reinit(struct pci_d
+--- a/drivers/hwmon/adt7470.c
++++ b/drivers/hwmon/adt7470.c
+@@ -515,7 +515,7 @@ static ssize_t set_temp_min(struct devic
+ 		return -EINVAL;
  
- 	if (netif_running(netdev))
- 		igb_close(netdev);
-+	else
-+		igb_reset(adapter);
+ 	temp = DIV_ROUND_CLOSEST(temp, 1000);
+-	temp = clamp_val(temp, 0, 255);
++	temp = clamp_val(temp, -128, 127);
  
- 	igb_clear_interrupt_scheme(adapter);
+ 	mutex_lock(&data->lock);
+ 	data->temp_min[attr->index] = temp;
+@@ -549,7 +549,7 @@ static ssize_t set_temp_max(struct devic
+ 		return -EINVAL;
  
+ 	temp = DIV_ROUND_CLOSEST(temp, 1000);
+-	temp = clamp_val(temp, 0, 255);
++	temp = clamp_val(temp, -128, 127);
+ 
+ 	mutex_lock(&data->lock);
+ 	data->temp_max[attr->index] = temp;
+@@ -826,7 +826,7 @@ static ssize_t set_pwm_tmin(struct devic
+ 		return -EINVAL;
+ 
+ 	temp = DIV_ROUND_CLOSEST(temp, 1000);
+-	temp = clamp_val(temp, 0, 255);
++	temp = clamp_val(temp, -128, 127);
+ 
+ 	mutex_lock(&data->lock);
+ 	data->pwm_tmin[attr->index] = temp;
 
 
