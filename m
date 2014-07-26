@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751730AbaGZOSg (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 10:18:36 -0400
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:47206 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751252AbaGZOSf (ORCPT
+	id S1751587AbaGZOUJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 10:20:09 -0400
+Received: from mail-wg0-f47.google.com ([74.125.82.47]:37058 "EHLO
+	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751314AbaGZOUH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 10:18:35 -0400
+	Sat, 26 Jul 2014 10:20:07 -0400
 From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Herbert Xu <herbert@gondor.apana.org.au>,
-        "David S. Miller" <davem@davemloft.net>
+To: Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org
 Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] crypto: shash.c:  Cleaning up missing null-terminate in conjunction with strncpy
-Date: Sat, 26 Jul 2014 16:20:00 +0200
-Message-Id: <1406384400-2351-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] hid: hid-prodikeys.c:  Cleaning up missing null-terminate in conjunction with strncpy
+Date: Sat, 26 Jul 2014 16:21:32 +0200
+Message-Id: <1406384492-2442-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
 X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,22 +23,35 @@ Replacing strncpy with strlcpy to avoid strings that lacks null terminate.
 
 Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 ---
- crypto/shash.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/hid/hid-prodikeys.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/crypto/shash.c b/crypto/shash.c
-index 47c7139..450f996 100644
---- a/crypto/shash.c
-+++ b/crypto/shash.c
-@@ -531,7 +531,7 @@ static int crypto_shash_report(struct sk_buff *skb, struct crypto_alg *alg)
- 	struct crypto_report_hash rhash;
- 	struct shash_alg *salg = __crypto_shash_alg(alg);
+diff --git a/drivers/hid/hid-prodikeys.c b/drivers/hid/hid-prodikeys.c
+index 91fab97..007c7f5 100644
+--- a/drivers/hid/hid-prodikeys.c
++++ b/drivers/hid/hid-prodikeys.c
+@@ -641,9 +641,9 @@ static int pcmidi_snd_initialise(struct pcmidi_snd *pm)
+ 		goto fail;
+ 	}
  
--	strncpy(rhash.type, "shash", sizeof(rhash.type));
-+	strlcpy(rhash.type, "shash", sizeof(rhash.type));
+-	strncpy(card->driver, shortname, sizeof(card->driver));
+-	strncpy(card->shortname, shortname, sizeof(card->shortname));
+-	strncpy(card->longname, longname, sizeof(card->longname));
++	strlcpy(card->driver, shortname, sizeof(card->driver));
++	strlcpy(card->shortname, shortname, sizeof(card->shortname));
++	strlcpy(card->longname, longname, sizeof(card->longname));
  
- 	rhash.blocksize = alg->cra_blocksize;
- 	rhash.digestsize = salg->digestsize;
+ 	/* Set up rawmidi */
+ 	err = snd_rawmidi_new(card, card->shortname, 0,
+@@ -654,7 +654,7 @@ static int pcmidi_snd_initialise(struct pcmidi_snd *pm)
+ 		goto fail;
+ 	}
+ 	pm->rwmidi = rwmidi;
+-	strncpy(rwmidi->name, card->shortname, sizeof(rwmidi->name));
++	strlcpy(rwmidi->name, card->shortname, sizeof(rwmidi->name));
+ 	rwmidi->info_flags = SNDRV_RAWMIDI_INFO_INPUT;
+ 	rwmidi->private_data = pm;
+ 
 -- 
 1.7.10.4
 
