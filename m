@@ -1,88 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752122AbaGZP5K (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 11:57:10 -0400
-Received: from mail-la0-f51.google.com ([209.85.215.51]:60874 "EHLO
-	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751820AbaGZP5I (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 11:57:08 -0400
+	id S1752137AbaGZP5w (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 11:57:52 -0400
+Received: from csmtp2.one.com ([91.198.169.22]:43207 "EHLO csmtp2.one.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751533AbaGZP5u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 Jul 2014 11:57:50 -0400
+X-Greylist: delayed 538 seconds by postgrey-1.27 at vger.kernel.org; Sat, 26 Jul 2014 11:57:50 EDT
+Message-ID: <53D3CE2E.3040103@bitmath.org>
+Date: Sat, 26 Jul 2014 17:50:06 +0200
+From: Henrik Rydberg <rydberg@bitmath.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-In-Reply-To: <53D3CA66.8080408@oracle.com>
-References: <1406119899-22659-1-git-send-email-sasha.levin@oracle.com>
-	<53CFC170.9090505@roeck-us.net>
-	<CAMuHMdW=iecARisoUuDY1hNaZgWWZJwpVjXDpXYqscx=myDx+w@mail.gmail.com>
-	<53D3CA66.8080408@oracle.com>
-Date: Sat, 26 Jul 2014 17:57:06 +0200
-X-Google-Sender-Auth: voZx3iT_aGShjqkQeFuaaNLBvn4
-Message-ID: <CAMuHMdUYFWLHD+MjeeH_dmcVLSYn0Pb1MzYFdj0ryCBJqaSXjg@mail.gmail.com>
-Subject: Re: [PATCH] m68k/q40: Revert "m68k/q40: Fix q40_irq_startup() to
- return -ENXIO on failures"
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: Guenter Roeck <linux@roeck-us.net>, Steven Rostedt <rostedt@goodmis.org>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Nick Krause <xerofoify@gmail.com>,
-        "Linux/m68k" <linux-m68k@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Sasha Levin <sashal@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Richard Zidlicky <rz@linux-m68k.org>
-Content-Type: text/plain; charset=UTF-8
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org
+CC: Hans de Goede <hdegoede@redhat.com>,
+        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
+        Benson Leung <bleung@chromium.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Input: synaptics - properly initialize slots for semi-MT
+References: <20140726002751.GA16660@core.coreip.homeip.net>
+In-Reply-To: <20140726002751.GA16660@core.coreip.homeip.net>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 26, 2014 at 5:33 PM, Sasha Levin <sasha.levin@oracle.com> wrote:
-> On 07/26/2014 11:21 AM, Geert Uytterhoeven wrote:
->> I applied Nick's cleanup (which is not yet in mainline, just in the m68k repo)
->> because I thought Nick was right (in this particular case ;-), cfr. my
->> reasoning in www.spinics.net/lists/kernel/msg1774736.html
->>
->> W.r.t. the signess, I didn't see the compiler warning, as the version of gcc
->> I'm using didn't print that warning. However, irq_startup() converts the
->> value returned by .irq_startup() from unsigned to signed.
->> I assume this is just a missing conversion when the genirq framework
->> itself was introduced (m68k was converted quite late)?
->>
->> W.r.t. the actual value, any non-zero value is treated the same.
->> I can change it to 1, if that makes you feel better. If returning a non-zero
->> value here is wrong, presumable the code has been wrong since it
->> incarnation.
->>
->> As we're close to the opening of the merge window, it would be nice
->> if we could conclude on this ;-)
->
-> From my standpoint there are two issues here:
->
-> 1. The whole signed/unsigned mishmash here. Pretty much any solution
-> besides implicitly converting a signed value into an unsigned one
-> which then gets treated as something else entirely should be acceptable
-> here.
->
-> 2. Beyond semantics, the original patch also changed the behaviour of
-> the code. What previously was a soft printk() is now a hard error.
-> Does it break any systems? Cornercases? I dunno, but I can assure you
-> that this wasn't tested at all.
+Hi Dmitry,
 
-If it broke something, it was most probably broken before
-commit c288bf2533e57174b90b07860c4391bcd1ea269c ("m68k/irq:
-Rename irq_controller to irq_chip"), too.
+On 07/26/2014 02:27 AM, Dmitry Torokhov wrote:
+> Semi-MT devices are pointers too, so let's tell that to
+> input_mt_init_slots(), as well as let it set up the devices as semi-MT,
+> instead of us doing it manually.
+> 
+> Reviewed-by: Daniel Kurtz <djkurtz@chromium.org>
+> Reviewed-by: Benson Leung <bleung@chromium.org>
+> Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+> ---
+>  drivers/input/mouse/synaptics.c | 6 +++---
+>  1 file changed, 3 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/input/mouse/synaptics.c b/drivers/input/mouse/synaptics.c
+> index ef9e0b8..fe607e9 100644
+> --- a/drivers/input/mouse/synaptics.c
+> +++ b/drivers/input/mouse/synaptics.c
+> @@ -1371,11 +1371,11 @@ static void set_input_params(struct psmouse *psmouse,
+>  		__set_bit(BTN_TOOL_QUADTAP, dev->keybit);
+>  		__set_bit(BTN_TOOL_QUINTTAP, dev->keybit);
+>  	} else if (SYN_CAP_ADV_GESTURE(priv->ext_cap_0c)) {
+> -		/* Non-image sensors with AGM use semi-mt */
+> -		__set_bit(INPUT_PROP_SEMI_MT, dev->propbit);
+> -		input_mt_init_slots(dev, 2, 0);
+>  		set_abs_position_params(dev, priv, ABS_MT_POSITION_X,
+>  					ABS_MT_POSITION_Y);
+> +		/* Non-image sensors with AGM use semi-mt */
+> +		input_mt_init_slots(dev, 2,
+> +				    INPUT_MT_POINTER | INPUT_MT_SEMI_MT);
+>  	}
 
-It seems the Q40 hardware cannot handle this case, so considering this
-a hard error looks fine to me (CC Richard Zidlicky).
+As long as DOUBLE_TAP is set unconditionally in this path anyways, it should be
+ok. I have a vague memory of refraining from this exact change at some point,
+because of the many branches of settings.
 
-> To sum it up, a solution would be welcome. The patch you currently have
-> in the m68k repo isn't a solution.
+>  
+>  	if (SYN_CAP_PALMDETECT(priv->capabilities))
+> 
 
-OK, reverted. Thanks!
+Henrik
 
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
