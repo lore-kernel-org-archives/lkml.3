@@ -1,45 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752179AbaGZSne (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 14:43:34 -0400
-Received: from manchester-1.man.uk.cluster.ok24.net ([213.138.100.64]:37927
-	"EHLO manchester-1.man.uk.cluster.ok24.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751448AbaGZSnd (ORCPT
+	id S1752145AbaGZSvO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 14:51:14 -0400
+Received: from mout.kundenserver.de ([212.227.126.130]:59794 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751522AbaGZSvN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 14:43:33 -0400
-X-Greylist: delayed 2466 seconds by postgrey-1.27 at vger.kernel.org; Sat, 26 Jul 2014 14:43:33 EDT
-Message-ID: <53D3ED27.7080607@pyro.eu.org>
-Date: Sat, 26 Jul 2014 19:02:15 +0100
-From: Steven Chamberlain <steven@pyro.eu.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.6.0
+	Sat, 26 Jul 2014 14:51:13 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Robert Jarzmik <robert.jarzmik@free.fr>
+Cc: Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH ] ARM: pxa: fix section mismatch warning for pxa_timer_nodt_init
+Date: Sat, 26 Jul 2014 20:50:36 +0200
+Message-ID: <12220413.BdRleC0Xf5@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <87oawivarv.fsf@free.fr>
+References: <1405356724-32207-1-git-send-email-robert.jarzmik@free.fr> <53CD25A4.7030606@linaro.org> <87oawivarv.fsf@free.fr>
 MIME-Version: 1.0
-To: =?UTF-8?B?TWljaGVsIETDpG56ZXI=?= <michel@daenzer.net>
-CC: Debian GCC Maintainers <debian-gcc@lists.debian.org>,
-        Debian Kernel Team <debian-kernel@lists.debian.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: Random panic in load_balance() with 3.16-rc
-References: <CA+55aFwZ7kAqqhaE4g89CJLkpJOwGxcN4u+cc0ODfqjQ0rVMiA@mail.gmail.com>	<20140723155526.GW3935@laptop>	<CA+55aFzSU5u8MiGqRZ6BVojQPnxbd1hxmFY_BA=UuCAygxR8WQ@mail.gmail.com>	<20140723170324.GZ3935@laptop>	<CA+55aFwQSmBAs=QH9jAZz5JY7YFrDeuPH1RjFH+YKVr2NQM38g@mail.gmail.com>	<CA+55aFzDWritxv5RiqwcZ1qCKJQKK-Lw6StYFF7qx5YWgiCUTQ@mail.gmail.com>	<20140723182518.GD3935@laptop>	<CA+55aFyFT9n5wUNifEHY6+t2bEcD91kL7+dqXuBMSMJvLeDDJQ@mail.gmail.com>	<20140723184111.GG3935@laptop>	<CA+55aFwQfwfAP6U77_nD_mSvoygj=cZ09N644hKRtzgLnEqhZQ@mail.gmail.com>	<20140723190230.GH3935@laptop>	<CA+55aFyM1wqTLK0m4GQJ28f=z0iZE87=xk+1z-vm+PH1_d8nKw@mail.gmail.com>	<53D064C7.5050807@daenzer.net> <CA+55aFyJhqiPv0kQ+51=Ei-zaAO+0JszxtnEyx-Gbto3SE00xw@mail.gmail.com> <53D1B1EF.7030603@daenzer.net>
-In-Reply-To: <53D1B1EF.7030603@daenzer.net>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:GWZqI0SpFg7aSLxoKBHiddXqeZJN0Z9Rb3HKhc7jjgy
+ l+35bszetPWHRSOkxu3HV8mXVlm2wpi2BexT/cRmxxnCcqU6C1
+ ZU8Lhc+UIGD4W4KSRfl03aW41f4IuF2su0H2X5EkNosTQeNf/K
+ o3apbyts0E3J37cy0Tbk4ZxRKV29qJ6+VTxmj+ksQMNKsuhb2I
+ 6UTQTIW+Zr2qpgrrpj1b2cdeg8RjaJdu+VRiJf/W9pypJVAKMH
+ 0IczDbuoJ5VFUNbfVSkfx3ltNnkT3HG2G+MIoegs50KRQi5Z2F
+ q3oTXs1aZHgUF5x74k2QRiZqZ44NUsOPq4o6jUkVujZnwAEnWd
+ IQ3rVR+Fd9nFEjrNoOI8=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Michel,
+commit a38b1f60b5245a3 ("ARM: pxa: Add non device-tree timer link to
+clocksource") introduced a harmless section mismatch warning for
+all pxa platforms, by introducing a new pxa_timer_init() function
+that is not marked __init but that calls pxa_timer_nodt_init(),
+which is. The function is only called at init time, so it is safe
+to also annotate it this way.
 
-On 25/07/14 02:25, Michel Dänzer wrote:
-> Attached is fair.s from Debian gcc 4.8.3-5. Does that look better? I'm
-> going to try reproducing the problem with a kernel built by that now.
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+---
+Daniel, please apply on top of Robert's patch series.
 
-It looks like gcc-4.9 Debian package version 4.9.1-2 available in
-sid/jessie may have already fixed this (though Debian's buildd systems
-may not have been updated with it yet).  If you are able to test with
-that version and let us know, that would be wonderful.
+diff --git a/arch/arm/mach-pxa/generic.c b/arch/arm/mach-pxa/generic.c
+index 630fa916bbc6..04b013fbc98f 100644
+--- a/arch/arm/mach-pxa/generic.c
++++ b/arch/arm/mach-pxa/generic.c
+@@ -61,7 +61,7 @@ EXPORT_SYMBOL(get_clock_tick_rate);
+ /*
+  * For non device-tree builds, keep legacy timer init
+  */
+-void pxa_timer_init(void)
++void __init pxa_timer_init(void)
+ {
+ 	pxa_timer_nodt_init(IRQ_OST0, io_p2v(0x40a00000),
+ 			    get_clock_tick_rate());
 
-Thank you,
-Regards,
--- 
-Steven Chamberlain
-steven@pyro.eu.org
