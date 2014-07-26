@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754506AbaGZTtQ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 15:49:16 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34143 "EHLO
+	id S1753914AbaGZTNF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 15:13:05 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34106 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753469AbaGZTNH (ORCPT
+	with ESMTP id S1752929AbaGZTM7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 15:13:07 -0400
+	Sat, 26 Jul 2014 15:12:59 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>,
-        Heiko Stuebner <heiko@sntech.de>, Will Deacon <will.deacon@arm.com>,
-        Jason Cooper <jason@lakedaemon.net>
-Subject: [PATCH 3.14 70/87] irqchip: gic: Add binding probe for ARM GIC400
-Date: Sat, 26 Jul 2014 12:02:44 -0700
-Message-Id: <20140726190216.892541554@linuxfoundation.org>
+        Yuchung Cheng <ycheng@google.com>,
+        Neal Cardwell <ncardwell@google.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.14 49/87] tcp: fix false undo corner cases
+Date: Sat, 26 Jul 2014 12:02:23 -0700
+Message-Id: <20140726190216.194697200@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.2
 In-Reply-To: <20140726190214.530473925@linuxfoundation.org>
 References: <20140726190214.530473925@linuxfoundation.org>
@@ -30,40 +30,98 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
+From: Yuchung Cheng <ycheng@google.com>
 
-commit 144cb08864ed44be52d8634ac69cd98e5efcf527 upstream.
+[ Upstream commit 6e08d5e3c8236e7484229e46fdf92006e1dd4c49 ]
 
-Commit 3ab72f9156bb "dt-bindings: add GIC-400 binding" added the
-"arm,gic-400" compatible string, but the corresponding IRQCHIP_DECLARE
-was never added to the gic driver.
+The undo code assumes that, upon entering loss recovery, TCP
+1) always retransmit something
+2) the retransmission never fails locally (e.g., qdisc drop)
 
-Therefore add the missing irqchip declaration for it.
+so undo_marker is set in tcp_enter_recovery() and undo_retrans is
+incremented only when tcp_retransmit_skb() is successful.
 
-Signed-off-by: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
+When the assumption is broken because TCP's cwnd is too small to
+retransmit or the retransmit fails locally. The next (DUP)ACK
+would incorrectly revert the cwnd and the congestion state in
+tcp_try_undo_dsack() or tcp_may_undo(). Subsequent (DUP)ACKs
+may enter the recovery state. The sender repeatedly enter and
+(incorrectly) exit recovery states if the retransmits continue to
+fail locally while receiving (DUP)ACKs.
+
+The fix is to initialize undo_retrans to -1 and start counting on
+the first retransmission. Always increment undo_retrans even if the
+retransmissions fail locally because they couldn't cause DSACKs to
+undo the cwnd reduction.
+
+Signed-off-by: Yuchung Cheng <ycheng@google.com>
+Signed-off-by: Neal Cardwell <ncardwell@google.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
-Removed additional empty line and adapted commit message to mark it
-as fixing an issue.
-Signed-off-by: Heiko Stuebner <heiko@sntech.de>
-Acked-by: Will Deacon <will.deacon@arm.com>
-Fixes: 3ab72f9156bb ("dt-bindings: add GIC-400 binding")
-Link: https://lkml.kernel.org/r/2621565.f5eISveXXJ@diego
-Signed-off-by: Jason Cooper <jason@lakedaemon.net>
-
 ---
- drivers/irqchip/irq-gic.c |    1 +
- 1 file changed, 1 insertion(+)
+ net/ipv4/tcp_input.c  |    8 ++++----
+ net/ipv4/tcp_output.c |    6 ++++--
+ 2 files changed, 8 insertions(+), 6 deletions(-)
 
---- a/drivers/irqchip/irq-gic.c
-+++ b/drivers/irqchip/irq-gic.c
-@@ -1008,6 +1008,7 @@ int __init gic_of_init(struct device_nod
- 	gic_cnt++;
- 	return 0;
+--- a/net/ipv4/tcp_input.c
++++ b/net/ipv4/tcp_input.c
+@@ -1113,7 +1113,7 @@ static bool tcp_check_dsack(struct sock
+ 	}
+ 
+ 	/* D-SACK for already forgotten data... Do dumb counting. */
+-	if (dup_sack && tp->undo_marker && tp->undo_retrans &&
++	if (dup_sack && tp->undo_marker && tp->undo_retrans > 0 &&
+ 	    !after(end_seq_0, prior_snd_una) &&
+ 	    after(end_seq_0, tp->undo_marker))
+ 		tp->undo_retrans--;
+@@ -1193,7 +1193,7 @@ static u8 tcp_sacktag_one(struct sock *s
+ 
+ 	/* Account D-SACK for retransmitted packet. */
+ 	if (dup_sack && (sacked & TCPCB_RETRANS)) {
+-		if (tp->undo_marker && tp->undo_retrans &&
++		if (tp->undo_marker && tp->undo_retrans > 0 &&
+ 		    after(end_seq, tp->undo_marker))
+ 			tp->undo_retrans--;
+ 		if (sacked & TCPCB_SACKED_ACKED)
+@@ -1894,7 +1894,7 @@ static void tcp_clear_retrans_partial(st
+ 	tp->lost_out = 0;
+ 
+ 	tp->undo_marker = 0;
+-	tp->undo_retrans = 0;
++	tp->undo_retrans = -1;
  }
-+IRQCHIP_DECLARE(gic_400, "arm,gic-400", gic_of_init);
- IRQCHIP_DECLARE(cortex_a15_gic, "arm,cortex-a15-gic", gic_of_init);
- IRQCHIP_DECLARE(cortex_a9_gic, "arm,cortex-a9-gic", gic_of_init);
- IRQCHIP_DECLARE(cortex_a7_gic, "arm,cortex-a7-gic", gic_of_init);
+ 
+ void tcp_clear_retrans(struct tcp_sock *tp)
+@@ -2663,7 +2663,7 @@ static void tcp_enter_recovery(struct so
+ 
+ 	tp->prior_ssthresh = 0;
+ 	tp->undo_marker = tp->snd_una;
+-	tp->undo_retrans = tp->retrans_out;
++	tp->undo_retrans = tp->retrans_out ? : -1;
+ 
+ 	if (inet_csk(sk)->icsk_ca_state < TCP_CA_CWR) {
+ 		if (!ece_ack)
+--- a/net/ipv4/tcp_output.c
++++ b/net/ipv4/tcp_output.c
+@@ -2448,8 +2448,6 @@ int tcp_retransmit_skb(struct sock *sk,
+ 		if (!tp->retrans_stamp)
+ 			tp->retrans_stamp = TCP_SKB_CB(skb)->when;
+ 
+-		tp->undo_retrans += tcp_skb_pcount(skb);
+-
+ 		/* snd_nxt is stored to detect loss of retransmitted segment,
+ 		 * see tcp_input.c tcp_sacktag_write_queue().
+ 		 */
+@@ -2457,6 +2455,10 @@ int tcp_retransmit_skb(struct sock *sk,
+ 	} else {
+ 		NET_INC_STATS_BH(sock_net(sk), LINUX_MIB_TCPRETRANSFAIL);
+ 	}
++
++	if (tp->undo_retrans < 0)
++		tp->undo_retrans = 0;
++	tp->undo_retrans += tcp_skb_pcount(skb);
+ 	return err;
+ }
+ 
 
 
