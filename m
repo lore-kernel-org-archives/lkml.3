@@ -1,123 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753562AbaGZTKs (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 15:10:48 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34036 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752684AbaGZTKo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 15:10:44 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dmitry Popov <ixaphire@qrator.net>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 29/87] ip_tunnel: fix ip_tunnel_lookup
-Date: Sat, 26 Jul 2014 12:02:03 -0700
-Message-Id: <20140726190215.472650278@linuxfoundation.org>
-X-Mailer: git-send-email 2.0.2
-In-Reply-To: <20140726190214.530473925@linuxfoundation.org>
-References: <20140726190214.530473925@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	id S1755147AbaGZTzW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 15:55:22 -0400
+Received: from imap.thunk.org ([74.207.234.97]:58572 "EHLO imap.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754156AbaGZTzR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 Jul 2014 15:55:17 -0400
+Date: Sat, 26 Jul 2014 15:55:03 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Markus Trippelsdorf <markus@trippelsdorf.de>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Alexei Starovoitov <ast@kernel.org>,
+        Michel =?iso-8859-1?Q?D=E4nzer?= <michel@daenzer.net>,
+        Jakub Jelinek <jakub@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Debian GCC Maintainers <debian-gcc@lists.debian.org>,
+        Debian Kernel Team <debian-kernel@lists.debian.org>
+Subject: Re: Random panic in load_balance() with 3.16-rc
+Message-ID: <20140726195503.GJ6725@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Markus Trippelsdorf <markus@trippelsdorf.de>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Steven Rostedt <rostedt@goodmis.org>,
+	Alexei Starovoitov <ast@kernel.org>,
+	Michel =?iso-8859-1?Q?D=E4nzer?= <michel@daenzer.net>,
+	Jakub Jelinek <jakub@redhat.com>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	Debian GCC Maintainers <debian-gcc@lists.debian.org>,
+	Debian Kernel Team <debian-kernel@lists.debian.org>
+References: <CA+55aFyM1wqTLK0m4GQJ28f=z0iZE87=xk+1z-vm+PH1_d8nKw@mail.gmail.com>
+ <53D064C7.5050807@daenzer.net>
+ <CA+55aFyJhqiPv0kQ+51=Ei-zaAO+0JszxtnEyx-Gbto3SE00xw@mail.gmail.com>
+ <53D1B1EF.7030603@daenzer.net>
+ <20140725035527.GA30108@pg-vmw-gw1>
+ <20140725140237.GB32669@home.goodmis.org>
+ <CA+55aFzOoJzqJ=4RVPEBfscA8oRdr5Nv7fKx9aXYw2+frkuhwA@mail.gmail.com>
+ <CA+55aFyHU4Gwk6ASTuOgh3eFPshkgy1s5zc4p7f01DwrYddFOw@mail.gmail.com>
+ <CA+55aFxaXPqyDJv-SNu6Giy3eKCu_SY1wof1NaNnPTbtF9RbXQ@mail.gmail.com>
+ <20140726193557.GA21842@x4>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140726193557.GA21842@x4>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+On Sat, Jul 26, 2014 at 09:35:57PM +0200, Markus Trippelsdorf wrote:
+> 
+> But fortunately the workaround for the new inode.c bug is the same as
+> for the original bug: -fno-var-tracking-assignments. 
+> 
+> It would make sense to enabled it unconditionally for all debug
+> configurations for now.
 
-------------------
+What's the downside of enabling this unconditionally on a compiler
+with the bug fixed?  I assume a certain amount of optimization will
+lost, but is it significant/measurable?
 
-From: Dmitry Popov <ixaphire@qrator.net>
-
-[ Upstream commit e0056593b61253f1a8a9941dacda22e73b963cdc ]
-
-This patch fixes 3 similar bugs where incoming packets might be routed into
-wrong non-wildcard tunnels:
-
-1) Consider the following setup:
-    ip address add 1.1.1.1/24 dev eth0
-    ip address add 1.1.1.2/24 dev eth0
-    ip tunnel add ipip1 remote 2.2.2.2 local 1.1.1.1 mode ipip dev eth0
-    ip link set ipip1 up
-
-Incoming ipip packets from 2.2.2.2 were routed into ipip1 even if it has dst =
-1.1.1.2. Moreover even if there was wildcard tunnel like
-   ip tunnel add ipip0 remote 2.2.2.2 local any mode ipip dev eth0
-but it was created before explicit one (with local 1.1.1.1), incoming ipip
-packets with src = 2.2.2.2 and dst = 1.1.1.2 were still routed into ipip1.
-
-Same issue existed with all tunnels that use ip_tunnel_lookup (gre, vti)
-
-2)  ip address add 1.1.1.1/24 dev eth0
-    ip tunnel add ipip1 remote 2.2.146.85 local 1.1.1.1 mode ipip dev eth0
-    ip link set ipip1 up
-
-Incoming ipip packets with dst = 1.1.1.1 were routed into ipip1, no matter what
-src address is. Any remote ip address which has ip_tunnel_hash = 0 raised this
-issue, 2.2.146.85 is just an example, there are more than 4 million of them.
-And again, wildcard tunnel like
-   ip tunnel add ipip0 remote any local 1.1.1.1 mode ipip dev eth0
-wouldn't be ever matched if it was created before explicit tunnel like above.
-
-Gre & vti tunnels had the same issue.
-
-3)  ip address add 1.1.1.1/24 dev eth0
-    ip tunnel add gre1 remote 2.2.146.84 local 1.1.1.1 key 1 mode gre dev eth0
-    ip link set gre1 up
-
-Any incoming gre packet with key = 1 were routed into gre1, no matter what
-src/dst addresses are. Any remote ip address which has ip_tunnel_hash = 0 raised
-the issue, 2.2.146.84 is just an example, there are more than 4 million of them.
-Wildcard tunnel like
-   ip tunnel add gre2 remote any local any key 1 mode gre dev eth0
-wouldn't be ever matched if it was created before explicit tunnel like above.
-
-All this stuff happened because while looking for a wildcard tunnel we didn't
-check that matched tunnel is a wildcard one. Fixed.
-
-Signed-off-by: Dmitry Popov <ixaphire@qrator.net>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/ipv4/ip_tunnel.c |   12 ++++++++----
- 1 file changed, 8 insertions(+), 4 deletions(-)
-
---- a/net/ipv4/ip_tunnel.c
-+++ b/net/ipv4/ip_tunnel.c
-@@ -173,6 +173,7 @@ struct ip_tunnel *ip_tunnel_lookup(struc
- 
- 	hlist_for_each_entry_rcu(t, head, hash_node) {
- 		if (remote != t->parms.iph.daddr ||
-+		    t->parms.iph.saddr != 0 ||
- 		    !(t->dev->flags & IFF_UP))
- 			continue;
- 
-@@ -189,10 +190,11 @@ struct ip_tunnel *ip_tunnel_lookup(struc
- 	head = &itn->tunnels[hash];
- 
- 	hlist_for_each_entry_rcu(t, head, hash_node) {
--		if ((local != t->parms.iph.saddr &&
--		     (local != t->parms.iph.daddr ||
--		      !ipv4_is_multicast(local))) ||
--		    !(t->dev->flags & IFF_UP))
-+		if ((local != t->parms.iph.saddr || t->parms.iph.daddr != 0) &&
-+		    (local != t->parms.iph.daddr || !ipv4_is_multicast(local)))
-+			continue;
-+
-+		if (!(t->dev->flags & IFF_UP))
- 			continue;
- 
- 		if (!ip_tunnel_key_match(&t->parms, flags, key))
-@@ -209,6 +211,8 @@ struct ip_tunnel *ip_tunnel_lookup(struc
- 
- 	hlist_for_each_entry_rcu(t, head, hash_node) {
- 		if (t->parms.i_key != key ||
-+		    t->parms.iph.saddr != 0 ||
-+		    t->parms.iph.daddr != 0 ||
- 		    !(t->dev->flags & IFF_UP))
- 			continue;
- 
-
-
+					- Ted
