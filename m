@@ -1,53 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756516AbaGZUDn (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 16:03:43 -0400
-Received: from mail-vc0-f172.google.com ([209.85.220.172]:57589 "EHLO
-	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752725AbaGZUDk (ORCPT
+	id S1755007AbaGZUEU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 16:04:20 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33752 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752718AbaGZTDG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 16:03:40 -0400
+	Sat, 26 Jul 2014 15:03:06 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Mike Snitzer <snitzer@redhat.com>, Joe Thornber <ejt@redhat.com>
+Subject: [PATCH 3.10 52/56] dm cache metadata: do not allow the data block size to change
+Date: Sat, 26 Jul 2014 12:02:45 -0700
+Message-Id: <20140726190201.779867481@linuxfoundation.org>
+X-Mailer: git-send-email 2.0.2
+In-Reply-To: <20140726190200.061512159@linuxfoundation.org>
+References: <20140726190200.061512159@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFyo=HVZGEYNmz9GHqLatFHiJYTviKz_dXjqCv8b_gGxBA@mail.gmail.com>
-References: <20140723190230.GH3935@laptop>
-	<CA+55aFyM1wqTLK0m4GQJ28f=z0iZE87=xk+1z-vm+PH1_d8nKw@mail.gmail.com>
-	<53D064C7.5050807@daenzer.net>
-	<CA+55aFyJhqiPv0kQ+51=Ei-zaAO+0JszxtnEyx-Gbto3SE00xw@mail.gmail.com>
-	<53D1B1EF.7030603@daenzer.net>
-	<20140725035527.GA30108@pg-vmw-gw1>
-	<20140725140237.GB32669@home.goodmis.org>
-	<CA+55aFzOoJzqJ=4RVPEBfscA8oRdr5Nv7fKx9aXYw2+frkuhwA@mail.gmail.com>
-	<CA+55aFyHU4Gwk6ASTuOgh3eFPshkgy1s5zc4p7f01DwrYddFOw@mail.gmail.com>
-	<CA+55aFxaXPqyDJv-SNu6Giy3eKCu_SY1wof1NaNnPTbtF9RbXQ@mail.gmail.com>
-	<20140726193557.GA21842@x4>
-	<CA+55aFyo=HVZGEYNmz9GHqLatFHiJYTviKz_dXjqCv8b_gGxBA@mail.gmail.com>
-Date: Sat, 26 Jul 2014 13:03:39 -0700
-X-Google-Sender-Auth: 1TYq88MmJToHQaE2WDs5wka_Rl4
-Message-ID: <CA+55aFzLR9+ocixniVBUV=TjDzbWF6w+7b8rE=p42LtHMpxfjA@mail.gmail.com>
-Subject: Re: Random panic in load_balance() with 3.16-rc
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Markus Trippelsdorf <markus@trippelsdorf.de>
-Cc: Steven Rostedt <rostedt@goodmis.org>, Alexei Starovoitov <ast@kernel.org>,
-        =?UTF-8?Q?Michel_D=C3=A4nzer?= <michel@daenzer.net>,
-        Jakub Jelinek <jakub@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Debian GCC Maintainers <debian-gcc@lists.debian.org>,
-        Debian Kernel Team <debian-kernel@lists.debian.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 26, 2014 at 12:56 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
->
-> Also, Michel - can you try  this patch if you still have your
-> gcc-4.9.0 install, and send me the resulting fair.s file again?
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-Hmm. The good news is that with that patch, the GCC_COMPARE_DEBUG
-build succeeds. At least for my small local config.
+------------------
 
-So I think that's the answer for now, although I'll wait to hear about
-any possible non-debug downsides..
+From: Mike Snitzer <snitzer@redhat.com>
 
-              Linus
+commit 048e5a07f282c57815b3901d4a68a77fa131ce0a upstream.
+
+The block size for the dm-cache's data device must remained fixed for
+the life of the cache.  Disallow any attempt to change the cache's data
+block size.
+
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+Acked-by: Joe Thornber <ejt@redhat.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/md/dm-cache-metadata.c |    9 +++++++++
+ 1 file changed, 9 insertions(+)
+
+--- a/drivers/md/dm-cache-metadata.c
++++ b/drivers/md/dm-cache-metadata.c
+@@ -384,6 +384,15 @@ static int __open_metadata(struct dm_cac
+ 
+ 	disk_super = dm_block_data(sblock);
+ 
++	/* Verify the data block size hasn't changed */
++	if (le32_to_cpu(disk_super->data_block_size) != cmd->data_block_size) {
++		DMERR("changing the data block size (from %u to %llu) is not supported",
++		      le32_to_cpu(disk_super->data_block_size),
++		      (unsigned long long)cmd->data_block_size);
++		r = -EINVAL;
++		goto bad;
++	}
++
+ 	r = __check_incompat_features(disk_super, cmd);
+ 	if (r < 0)
+ 		goto bad;
+
+
