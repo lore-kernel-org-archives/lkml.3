@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753403AbaGZTUl (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 15:20:41 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34338 "EHLO
+	id S1754750AbaGZTVG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 15:21:06 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34558 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754064AbaGZTNZ (ORCPT
+	with ESMTP id S1753411AbaGZTVD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 15:13:25 -0400
+	Sat, 26 Jul 2014 15:21:03 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dmitry Popov <ixaphire@qrator.net>,
+        Eric Dumazet <edumazet@google.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.15 034/109] ip_tunnel: fix ip_tunnel_lookup
-Date: Sat, 26 Jul 2014 12:01:56 -0700
-Message-Id: <20140726190224.851441058@linuxfoundation.org>
+Subject: [PATCH 3.15 074/109] ipv4: fix buffer overflow in ip_options_compile()
+Date: Sat, 26 Jul 2014 12:02:36 -0700
+Message-Id: <20140726190226.102539478@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.2
 In-Reply-To: <20140726190223.834037485@linuxfoundation.org>
 References: <20140726190223.834037485@linuxfoundation.org>
@@ -29,95 +29,82 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dmitry Popov <ixaphire@qrator.net>
+From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commit e0056593b61253f1a8a9941dacda22e73b963cdc ]
+[ Upstream commit 10ec9472f05b45c94db3c854d22581a20b97db41 ]
 
-This patch fixes 3 similar bugs where incoming packets might be routed into
-wrong non-wildcard tunnels:
+There is a benign buffer overflow in ip_options_compile spotted by
+AddressSanitizer[1] :
 
-1) Consider the following setup:
-    ip address add 1.1.1.1/24 dev eth0
-    ip address add 1.1.1.2/24 dev eth0
-    ip tunnel add ipip1 remote 2.2.2.2 local 1.1.1.1 mode ipip dev eth0
-    ip link set ipip1 up
+Its benign because we always can access one extra byte in skb->head
+(because header is followed by struct skb_shared_info), and in this case
+this byte is not even used.
 
-Incoming ipip packets from 2.2.2.2 were routed into ipip1 even if it has dst =
-1.1.1.2. Moreover even if there was wildcard tunnel like
-   ip tunnel add ipip0 remote 2.2.2.2 local any mode ipip dev eth0
-but it was created before explicit one (with local 1.1.1.1), incoming ipip
-packets with src = 2.2.2.2 and dst = 1.1.1.2 were still routed into ipip1.
+[28504.910798] ==================================================================
+[28504.912046] AddressSanitizer: heap-buffer-overflow in ip_options_compile
+[28504.913170] Read of size 1 by thread T15843:
+[28504.914026]  [<ffffffff81802f91>] ip_options_compile+0x121/0x9c0
+[28504.915394]  [<ffffffff81804a0d>] ip_options_get_from_user+0xad/0x120
+[28504.916843]  [<ffffffff8180dedf>] do_ip_setsockopt.isra.15+0x8df/0x1630
+[28504.918175]  [<ffffffff8180ec60>] ip_setsockopt+0x30/0xa0
+[28504.919490]  [<ffffffff8181e59b>] tcp_setsockopt+0x5b/0x90
+[28504.920835]  [<ffffffff8177462f>] sock_common_setsockopt+0x5f/0x70
+[28504.922208]  [<ffffffff817729c2>] SyS_setsockopt+0xa2/0x140
+[28504.923459]  [<ffffffff818cfb69>] system_call_fastpath+0x16/0x1b
+[28504.924722]
+[28504.925106] Allocated by thread T15843:
+[28504.925815]  [<ffffffff81804995>] ip_options_get_from_user+0x35/0x120
+[28504.926884]  [<ffffffff8180dedf>] do_ip_setsockopt.isra.15+0x8df/0x1630
+[28504.927975]  [<ffffffff8180ec60>] ip_setsockopt+0x30/0xa0
+[28504.929175]  [<ffffffff8181e59b>] tcp_setsockopt+0x5b/0x90
+[28504.930400]  [<ffffffff8177462f>] sock_common_setsockopt+0x5f/0x70
+[28504.931677]  [<ffffffff817729c2>] SyS_setsockopt+0xa2/0x140
+[28504.932851]  [<ffffffff818cfb69>] system_call_fastpath+0x16/0x1b
+[28504.934018]
+[28504.934377] The buggy address ffff880026382828 is located 0 bytes to the right
+[28504.934377]  of 40-byte region [ffff880026382800, ffff880026382828)
+[28504.937144]
+[28504.937474] Memory state around the buggy address:
+[28504.938430]  ffff880026382300: ........ rrrrrrrr rrrrrrrr rrrrrrrr
+[28504.939884]  ffff880026382400: ffffffff rrrrrrrr rrrrrrrr rrrrrrrr
+[28504.941294]  ffff880026382500: .....rrr rrrrrrrr rrrrrrrr rrrrrrrr
+[28504.942504]  ffff880026382600: ffffffff rrrrrrrr rrrrrrrr rrrrrrrr
+[28504.943483]  ffff880026382700: ffffffff rrrrrrrr rrrrrrrr rrrrrrrr
+[28504.944511] >ffff880026382800: .....rrr rrrrrrrr rrrrrrrr rrrrrrrr
+[28504.945573]                         ^
+[28504.946277]  ffff880026382900: ffffffff rrrrrrrr rrrrrrrr rrrrrrrr
+[28505.094949]  ffff880026382a00: ffffffff rrrrrrrr rrrrrrrr rrrrrrrr
+[28505.096114]  ffff880026382b00: ffffffff rrrrrrrr rrrrrrrr rrrrrrrr
+[28505.097116]  ffff880026382c00: ffffffff rrrrrrrr rrrrrrrr rrrrrrrr
+[28505.098472]  ffff880026382d00: ffffffff rrrrrrrr rrrrrrrr rrrrrrrr
+[28505.099804] Legend:
+[28505.100269]  f - 8 freed bytes
+[28505.100884]  r - 8 redzone bytes
+[28505.101649]  . - 8 allocated bytes
+[28505.102406]  x=1..7 - x allocated bytes + (8-x) redzone bytes
+[28505.103637] ==================================================================
 
-Same issue existed with all tunnels that use ip_tunnel_lookup (gre, vti)
+[1] https://code.google.com/p/address-sanitizer/wiki/AddressSanitizerForKernel
 
-2)  ip address add 1.1.1.1/24 dev eth0
-    ip tunnel add ipip1 remote 2.2.146.85 local 1.1.1.1 mode ipip dev eth0
-    ip link set ipip1 up
-
-Incoming ipip packets with dst = 1.1.1.1 were routed into ipip1, no matter what
-src address is. Any remote ip address which has ip_tunnel_hash = 0 raised this
-issue, 2.2.146.85 is just an example, there are more than 4 million of them.
-And again, wildcard tunnel like
-   ip tunnel add ipip0 remote any local 1.1.1.1 mode ipip dev eth0
-wouldn't be ever matched if it was created before explicit tunnel like above.
-
-Gre & vti tunnels had the same issue.
-
-3)  ip address add 1.1.1.1/24 dev eth0
-    ip tunnel add gre1 remote 2.2.146.84 local 1.1.1.1 key 1 mode gre dev eth0
-    ip link set gre1 up
-
-Any incoming gre packet with key = 1 were routed into gre1, no matter what
-src/dst addresses are. Any remote ip address which has ip_tunnel_hash = 0 raised
-the issue, 2.2.146.84 is just an example, there are more than 4 million of them.
-Wildcard tunnel like
-   ip tunnel add gre2 remote any local any key 1 mode gre dev eth0
-wouldn't be ever matched if it was created before explicit tunnel like above.
-
-All this stuff happened because while looking for a wildcard tunnel we didn't
-check that matched tunnel is a wildcard one. Fixed.
-
-Signed-off-by: Dmitry Popov <ixaphire@qrator.net>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv4/ip_tunnel.c |   12 ++++++++----
- 1 file changed, 8 insertions(+), 4 deletions(-)
+ net/ipv4/ip_options.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/net/ipv4/ip_tunnel.c
-+++ b/net/ipv4/ip_tunnel.c
-@@ -173,6 +173,7 @@ struct ip_tunnel *ip_tunnel_lookup(struc
- 
- 	hlist_for_each_entry_rcu(t, head, hash_node) {
- 		if (remote != t->parms.iph.daddr ||
-+		    t->parms.iph.saddr != 0 ||
- 		    !(t->dev->flags & IFF_UP))
+--- a/net/ipv4/ip_options.c
++++ b/net/ipv4/ip_options.c
+@@ -288,6 +288,10 @@ int ip_options_compile(struct net *net,
+ 			optptr++;
  			continue;
- 
-@@ -189,10 +190,11 @@ struct ip_tunnel *ip_tunnel_lookup(struc
- 	head = &itn->tunnels[hash];
- 
- 	hlist_for_each_entry_rcu(t, head, hash_node) {
--		if ((local != t->parms.iph.saddr &&
--		     (local != t->parms.iph.daddr ||
--		      !ipv4_is_multicast(local))) ||
--		    !(t->dev->flags & IFF_UP))
-+		if ((local != t->parms.iph.saddr || t->parms.iph.daddr != 0) &&
-+		    (local != t->parms.iph.daddr || !ipv4_is_multicast(local)))
-+			continue;
-+
-+		if (!(t->dev->flags & IFF_UP))
- 			continue;
- 
- 		if (!ip_tunnel_key_match(&t->parms, flags, key))
-@@ -209,6 +211,8 @@ struct ip_tunnel *ip_tunnel_lookup(struc
- 
- 	hlist_for_each_entry_rcu(t, head, hash_node) {
- 		if (t->parms.i_key != key ||
-+		    t->parms.iph.saddr != 0 ||
-+		    t->parms.iph.daddr != 0 ||
- 		    !(t->dev->flags & IFF_UP))
- 			continue;
- 
+ 		}
++		if (unlikely(l < 2)) {
++			pp_ptr = optptr;
++			goto error;
++		}
+ 		optlen = optptr[1];
+ 		if (optlen < 2 || optlen > l) {
+ 			pp_ptr = optptr;
 
 
