@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755445AbaGZTcE (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 15:32:04 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34641 "EHLO
+	id S1755411AbaGZTcD (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 15:32:03 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34647 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753641AbaGZTXP (ORCPT
+	with ESMTP id S1754821AbaGZTXP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 26 Jul 2014 15:23:15 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Madalin-Cristian Bucur <madalin.bucur@freescale.com>,
+        Michel Lespinasse <walken@google.com>,
         Eric Dumazet <edumazet@google.com>,
-        Li RongQing <roy.qing.li@gmail.com>,
+        Ariel Elior <ariel.elior@qlogic.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.15 048/109] vlan: free percpu stats in device destructor
-Date: Sat, 26 Jul 2014 12:02:10 -0700
-Message-Id: <20140726190225.322333060@linuxfoundation.org>
+Subject: [PATCH 3.15 049/109] bnx2x: fix possible panic under memory stress
+Date: Sat, 26 Jul 2014 12:02:11 -0700
+Message-Id: <20140726190225.351882882@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.2
 In-Reply-To: <20140726190223.834037485@linuxfoundation.org>
 References: <20140726190223.834037485@linuxfoundation.org>
@@ -33,95 +33,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commit a48e5fafecfb9c0c807d7e7284b5ff884dfb7a3a ]
+[ Upstream commit 07b0f00964def8af9321cfd6c4a7e84f6362f728 ]
 
-Madalin-Cristian reported crashs happening after a recent commit
-(5a4ae5f6e7d4 "vlan: unnecessary to check if vlan_pcpu_stats is NULL")
+While it is legal to kfree(NULL), it is not wise to use :
+put_page(virt_to_head_page(NULL))
 
------------------------------------------------------------------------
-root@p5040ds:~# vconfig add eth8 1
-root@p5040ds:~# vconfig rem eth8.1
-Unable to handle kernel paging request for data at address 0x2bc88028
-Faulting instruction address: 0xc058e950
-Oops: Kernel access of bad area, sig: 11 [#1]
-SMP NR_CPUS=8 CoreNet Generic
-Modules linked in:
-CPU: 3 PID: 2167 Comm: vconfig Tainted: G        W     3.16.0-rc3-00346-g65e85bf #2
-task: e7264d90 ti: e2c2c000 task.ti: e2c2c000
-NIP: c058e950 LR: c058ea30 CTR: c058e900
-REGS: e2c2db20 TRAP: 0300   Tainted: G        W      (3.16.0-rc3-00346-g65e85bf)
-MSR: 00029002 <CE,EE,ME>  CR: 48000428  XER: 20000000
-DEAR: 2bc88028 ESR: 00000000
-GPR00: c047299c e2c2dbd0 e7264d90 00000000 2bc88000 00000000 ffffffff 00000000
-GPR08: 0000000f 00000000 000000ff 00000000 28000422 10121928 10100000 10100000
-GPR16: 10100000 00000000 c07c5968 00000000 00000000 00000000 e2c2dc48 e7838000
-GPR24: c07c5bac c07c58a8 e77290cc c07b0000 00000000 c05de6c0 e7838000 e2c2dc48
-NIP [c058e950] vlan_dev_get_stats64+0x50/0x170
-LR [c058ea30] vlan_dev_get_stats64+0x130/0x170
-Call Trace:
-[e2c2dbd0] [ffffffea] 0xffffffea (unreliable)
-[e2c2dc20] [c047299c] dev_get_stats+0x4c/0x140
-[e2c2dc40] [c0488ca8] rtnl_fill_ifinfo+0x3d8/0x960
-[e2c2dd70] [c0489f4c] rtmsg_ifinfo+0x6c/0x110
-[e2c2dd90] [c04731d4] rollback_registered_many+0x344/0x3b0
-[e2c2ddd0] [c047332c] rollback_registered+0x2c/0x50
-[e2c2ddf0] [c0476058] unregister_netdevice_queue+0x78/0xf0
-[e2c2de00] [c058d800] unregister_vlan_dev+0xc0/0x160
-[e2c2de20] [c058e360] vlan_ioctl_handler+0x1c0/0x550
-[e2c2de90] [c045d11c] sock_ioctl+0x28c/0x2f0
-[e2c2deb0] [c010d070] do_vfs_ioctl+0x90/0x7b0
-[e2c2df20] [c010d7d0] SyS_ioctl+0x40/0x80
-[e2c2df40] [c000f924] ret_from_syscall+0x0/0x3c
+ BUG: unable to handle kernel paging request at ffffeba400000000
+ IP: [<ffffffffc01f5928>] virt_to_head_page+0x36/0x44 [bnx2x]
 
-Fix this problem by freeing percpu stats from dev->destructor() instead
-of ndo_uninit()
-
-Reported-by: Madalin-Cristian Bucur <madalin.bucur@freescale.com>
+Reported-by: Michel Lespinasse <walken@google.com>
 Signed-off-by: Eric Dumazet <edumazet@google.com>
-Tested-by: Madalin-Cristian Bucur <madalin.bucur@freescale.com>
-Fixes: 5a4ae5f6e7d4 ("vlan: unnecessary to check if vlan_pcpu_stats is NULL")
-Cc: Li RongQing <roy.qing.li@gmail.com>
+Cc: Ariel Elior <ariel.elior@qlogic.com>
+Fixes: d46d132cc021 ("bnx2x: use netdev_alloc_frag()")
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/8021q/vlan_dev.c |   13 ++++++++++---
- 1 file changed, 10 insertions(+), 3 deletions(-)
+ drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/net/8021q/vlan_dev.c
-+++ b/net/8021q/vlan_dev.c
-@@ -627,8 +627,6 @@ static void vlan_dev_uninit(struct net_d
- 	struct vlan_dev_priv *vlan = vlan_dev_priv(dev);
- 	int i;
+--- a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c
++++ b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c
+@@ -797,7 +797,8 @@ static void bnx2x_tpa_stop(struct bnx2x
  
--	free_percpu(vlan->vlan_pcpu_stats);
--	vlan->vlan_pcpu_stats = NULL;
- 	for (i = 0; i < ARRAY_SIZE(vlan->egress_priority_map); i++) {
- 		while ((pm = vlan->egress_priority_map[i]) != NULL) {
- 			vlan->egress_priority_map[i] = pm->next;
-@@ -787,6 +785,15 @@ static const struct net_device_ops vlan_
- 	.ndo_get_lock_subclass  = vlan_dev_get_lock_subclass,
- };
- 
-+static void vlan_dev_free(struct net_device *dev)
-+{
-+	struct vlan_dev_priv *vlan = vlan_dev_priv(dev);
-+
-+	free_percpu(vlan->vlan_pcpu_stats);
-+	vlan->vlan_pcpu_stats = NULL;
-+	free_netdev(dev);
-+}
-+
- void vlan_setup(struct net_device *dev)
- {
- 	ether_setup(dev);
-@@ -796,7 +803,7 @@ void vlan_setup(struct net_device *dev)
- 	dev->tx_queue_len	= 0;
- 
- 	dev->netdev_ops		= &vlan_netdev_ops;
--	dev->destructor		= free_netdev;
-+	dev->destructor		= vlan_dev_free;
- 	dev->ethtool_ops	= &vlan_ethtool_ops;
- 
- 	memset(dev->broadcast, 0, ETH_ALEN);
+ 		return;
+ 	}
+-	bnx2x_frag_free(fp, new_data);
++	if (new_data)
++		bnx2x_frag_free(fp, new_data);
+ drop:
+ 	/* drop the packet and keep the buffer in the bin */
+ 	DP(NETIF_MSG_RX_STATUS,
 
 
