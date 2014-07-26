@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753252AbaGZTJ2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 15:09:28 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33752 "EHLO
+	id S1753471AbaGZTJl (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 15:09:41 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33965 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752819AbaGZTDM (ORCPT
+	with ESMTP id S1752139AbaGZTJk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 15:03:12 -0400
+	Sat, 26 Jul 2014 15:09:40 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [PATCH 3.14 14/87] tracing: Add ftrace_trace_stack into __trace_puts/__trace_bputs
-Date: Sat, 26 Jul 2014 12:01:48 -0700
-Message-Id: <20140726190214.993897423@linuxfoundation.org>
+        Tyler Hall <tylerwhall@gmail.com>,
+        Oliver Hartkopp <socketcan@hartkopp.net>,
+        Andre Naujoks <nautsch2@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.14 31/87] slcan: Port write_wakeup deadlock fix from slip
+Date: Sat, 26 Jul 2014 12:02:05 -0700
+Message-Id: <20140726190215.533855881@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.2
 In-Reply-To: <20140726190214.530473925@linuxfoundation.org>
 References: <20140726190214.530473925@linuxfoundation.org>
@@ -29,84 +31,120 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
+From: Tyler Hall <tylerwhall@gmail.com>
 
-commit 8abfb8727f4a724d31f9ccfd8013fbd16d539445 upstream.
+[ Upstream commit a8e83b17536aad603fbeae4c460f2da0ee9fe6ed ]
 
-Currently trace option stacktrace is not applicable for
-trace_printk with constant string argument, the reason is
-in __trace_puts/__trace_bputs ftrace_trace_stack is missing.
+The commit "slip: Fix deadlock in write_wakeup" fixes a deadlock caused
+by a change made in both slcan and slip. This is a direct port of that
+fix.
 
-In contrast, when using trace_printk with non constant string
-argument(will call into __trace_printk/__trace_bprintk), then
-trace option stacktrace is workable, this inconstant result
-will confuses users a lot.
-
-Link: http://lkml.kernel.org/p/51E7A7C9.9040401@huawei.com
-
-Signed-off-by: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Tyler Hall <tylerwhall@gmail.com>
+Cc: Oliver Hartkopp <socketcan@hartkopp.net>
+Cc: Andre Naujoks <nautsch2@gmail.com>
+Cc: David S. Miller <davem@davemloft.net>
+Cc: linux-kernel@vger.kernel.org
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- kernel/trace/trace.c |   12 ++++++++++--
- 1 file changed, 10 insertions(+), 2 deletions(-)
+ drivers/net/can/slcan.c |   41 +++++++++++++++++++++++++++++------------
+ 1 file changed, 29 insertions(+), 12 deletions(-)
 
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -454,6 +454,9 @@ int __trace_puts(unsigned long ip, const
- 	struct print_entry *entry;
- 	unsigned long irq_flags;
- 	int alloc;
-+	int pc;
-+
-+	pc = preempt_count();
+--- a/drivers/net/can/slcan.c
++++ b/drivers/net/can/slcan.c
+@@ -52,6 +52,7 @@
+ #include <linux/delay.h>
+ #include <linux/init.h>
+ #include <linux/kernel.h>
++#include <linux/workqueue.h>
+ #include <linux/can.h>
+ #include <linux/can/skb.h>
  
- 	if (unlikely(tracing_selftest_running || tracing_disabled))
- 		return 0;
-@@ -463,7 +466,7 @@ int __trace_puts(unsigned long ip, const
- 	local_save_flags(irq_flags);
- 	buffer = global_trace.trace_buffer.buffer;
- 	event = trace_buffer_lock_reserve(buffer, TRACE_PRINT, alloc, 
--					  irq_flags, preempt_count());
-+					  irq_flags, pc);
- 	if (!event)
- 		return 0;
+@@ -85,6 +86,7 @@ struct slcan {
+ 	struct tty_struct	*tty;		/* ptr to TTY structure	     */
+ 	struct net_device	*dev;		/* easy for intr handling    */
+ 	spinlock_t		lock;
++	struct work_struct	tx_work;	/* Flushes transmit buffer   */
  
-@@ -480,6 +483,7 @@ int __trace_puts(unsigned long ip, const
- 		entry->buf[size] = '\0';
- 
- 	__buffer_unlock_commit(buffer, event);
-+	ftrace_trace_stack(buffer, irq_flags, 4, pc);
- 
- 	return size;
+ 	/* These are pointers to the malloc()ed frame buffers. */
+ 	unsigned char		rbuff[SLC_MTU];	/* receiver buffer	     */
+@@ -309,34 +311,44 @@ static void slc_encaps(struct slcan *sl,
+ 	sl->dev->stats.tx_bytes += cf->can_dlc;
  }
-@@ -497,6 +501,9 @@ int __trace_bputs(unsigned long ip, cons
- 	struct bputs_entry *entry;
- 	unsigned long irq_flags;
- 	int size = sizeof(struct bputs_entry);
-+	int pc;
+ 
+-/*
+- * Called by the driver when there's room for more data.  If we have
+- * more packets to send, we send them here.
+- */
+-static void slcan_write_wakeup(struct tty_struct *tty)
++/* Write out any remaining transmit buffer. Scheduled when tty is writable */
++static void slcan_transmit(struct work_struct *work)
+ {
++	struct slcan *sl = container_of(work, struct slcan, tx_work);
+ 	int actual;
+-	struct slcan *sl = (struct slcan *) tty->disc_data;
+ 
++	spin_lock_bh(&sl->lock);
+ 	/* First make sure we're connected. */
+-	if (!sl || sl->magic != SLCAN_MAGIC || !netif_running(sl->dev))
++	if (!sl->tty || sl->magic != SLCAN_MAGIC || !netif_running(sl->dev)) {
++		spin_unlock_bh(&sl->lock);
+ 		return;
++	}
+ 
+-	spin_lock(&sl->lock);
+ 	if (sl->xleft <= 0)  {
+ 		/* Now serial buffer is almost free & we can start
+ 		 * transmission of another packet */
+ 		sl->dev->stats.tx_packets++;
+-		clear_bit(TTY_DO_WRITE_WAKEUP, &tty->flags);
+-		spin_unlock(&sl->lock);
++		clear_bit(TTY_DO_WRITE_WAKEUP, &sl->tty->flags);
++		spin_unlock_bh(&sl->lock);
+ 		netif_wake_queue(sl->dev);
+ 		return;
+ 	}
+ 
+-	actual = tty->ops->write(tty, sl->xhead, sl->xleft);
++	actual = sl->tty->ops->write(sl->tty, sl->xhead, sl->xleft);
+ 	sl->xleft -= actual;
+ 	sl->xhead += actual;
+-	spin_unlock(&sl->lock);
++	spin_unlock_bh(&sl->lock);
++}
 +
-+	pc = preempt_count();
- 
- 	if (unlikely(tracing_selftest_running || tracing_disabled))
- 		return 0;
-@@ -504,7 +511,7 @@ int __trace_bputs(unsigned long ip, cons
- 	local_save_flags(irq_flags);
- 	buffer = global_trace.trace_buffer.buffer;
- 	event = trace_buffer_lock_reserve(buffer, TRACE_BPUTS, size,
--					  irq_flags, preempt_count());
-+					  irq_flags, pc);
- 	if (!event)
- 		return 0;
- 
-@@ -513,6 +520,7 @@ int __trace_bputs(unsigned long ip, cons
- 	entry->str			= str;
- 
- 	__buffer_unlock_commit(buffer, event);
-+	ftrace_trace_stack(buffer, irq_flags, 4, pc);
- 
- 	return 1;
++/*
++ * Called by the driver when there's room for more data.
++ * Schedule the transmit.
++ */
++static void slcan_write_wakeup(struct tty_struct *tty)
++{
++	struct slcan *sl = tty->disc_data;
++
++	schedule_work(&sl->tx_work);
  }
+ 
+ /* Send a can_frame to a TTY queue. */
+@@ -522,6 +534,7 @@ static struct slcan *slc_alloc(dev_t lin
+ 	sl->magic = SLCAN_MAGIC;
+ 	sl->dev	= dev;
+ 	spin_lock_init(&sl->lock);
++	INIT_WORK(&sl->tx_work, slcan_transmit);
+ 	slcan_devs[i] = dev;
+ 
+ 	return sl;
+@@ -620,8 +633,12 @@ static void slcan_close(struct tty_struc
+ 	if (!sl || sl->magic != SLCAN_MAGIC || sl->tty != tty)
+ 		return;
+ 
++	spin_lock_bh(&sl->lock);
+ 	tty->disc_data = NULL;
+ 	sl->tty = NULL;
++	spin_unlock_bh(&sl->lock);
++
++	flush_work(&sl->tx_work);
+ 
+ 	/* Flush network side */
+ 	unregister_netdev(sl->dev);
 
 
