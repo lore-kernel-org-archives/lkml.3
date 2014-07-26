@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755969AbaGZUFK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 16:05:10 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33752 "EHLO
+	id S1756562AbaGZUFh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 16:05:37 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33783 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752707AbaGZTDF (ORCPT
+	with ESMTP id S1752704AbaGZTDF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 26 Jul 2014 15:03:05 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sharvil Nanavati <sharvil@google.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        Prarit Bhargava <prarit@redhat.com>
-Subject: [PATCH 3.10 50/56] alarmtimer: Fix bug where relative alarm timers were treated as absolute
-Date: Sat, 26 Jul 2014 12:02:43 -0700
-Message-Id: <20140726190201.712130012@linuxfoundation.org>
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [PATCH 3.10 49/56] drm/radeon: avoid leaking edid data
+Date: Sat, 26 Jul 2014 12:02:42 -0700
+Message-Id: <20140726190201.678813625@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.2
 In-Reply-To: <20140726190200.061512159@linuxfoundation.org>
 References: <20140726190200.061512159@linuxfoundation.org>
@@ -31,77 +28,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: John Stultz <john.stultz@linaro.org>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 16927776ae757d0d132bdbfabbfe2c498342bd59 upstream.
+commit 0ac66effe7fcdee55bda6d5d10d3372c95a41920 upstream.
 
-Sharvil noticed with the posix timer_settime interface, using the
-CLOCK_REALTIME_ALARM or CLOCK_BOOTTIME_ALARM clockid, if the users
-tried to specify a relative time timer, it would incorrectly be
-treated as absolute regardless of the state of the flags argument.
+In some cases we fetch the edid in the detect() callback
+in order to determine what sort of monitor is connected.
+If that happens, don't fetch the edid again in the get_modes()
+callback or we will leak the edid.
 
-This patch corrects this, properly checking the absolute/relative flag,
-as well as adds further error checking that no invalid flag bits are set.
-
-Reported-by: Sharvil Nanavati <sharvil@google.com>
-Signed-off-by: John Stultz <john.stultz@linaro.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Prarit Bhargava <prarit@redhat.com>
-Cc: Sharvil Nanavati <sharvil@google.com>
-Link: http://lkml.kernel.org/r/1404767171-6902-1-git-send-email-john.stultz@linaro.org
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/time/alarmtimer.c |   20 ++++++++++++++++++--
- 1 file changed, 18 insertions(+), 2 deletions(-)
+ drivers/gpu/drm/radeon/radeon_display.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/kernel/time/alarmtimer.c
-+++ b/kernel/time/alarmtimer.c
-@@ -540,9 +540,14 @@ static int alarm_timer_set(struct k_itim
- 				struct itimerspec *new_setting,
- 				struct itimerspec *old_setting)
- {
-+	ktime_t exp;
+--- a/drivers/gpu/drm/radeon/radeon_display.c
++++ b/drivers/gpu/drm/radeon/radeon_display.c
+@@ -688,6 +688,10 @@ int radeon_ddc_get_modes(struct radeon_c
+ 	struct radeon_device *rdev = dev->dev_private;
+ 	int ret = 0;
+ 
++	/* don't leak the edid if we already fetched it in detect() */
++	if (radeon_connector->edid)
++		goto got_edid;
 +
- 	if (!rtcdev)
- 		return -ENOTSUPP;
- 
-+	if (flags & ~TIMER_ABSTIME)
-+		return -EINVAL;
-+
- 	if (old_setting)
- 		alarm_timer_get(timr, old_setting);
- 
-@@ -552,8 +557,16 @@ static int alarm_timer_set(struct k_itim
- 
- 	/* start the timer */
- 	timr->it.alarm.interval = timespec_to_ktime(new_setting->it_interval);
--	alarm_start(&timr->it.alarm.alarmtimer,
--			timespec_to_ktime(new_setting->it_value));
-+	exp = timespec_to_ktime(new_setting->it_value);
-+	/* Convert (if necessary) to absolute time */
-+	if (flags != TIMER_ABSTIME) {
-+		ktime_t now;
-+
-+		now = alarm_bases[timr->it.alarm.alarmtimer.type].gettime();
-+		exp = ktime_add(now, exp);
-+	}
-+
-+	alarm_start(&timr->it.alarm.alarmtimer, exp);
- 	return 0;
- }
- 
-@@ -685,6 +698,9 @@ static int alarm_timer_nsleep(const cloc
- 	if (!alarmtimer_get_rtcdev())
- 		return -ENOTSUPP;
- 
-+	if (flags & ~TIMER_ABSTIME)
-+		return -EINVAL;
-+
- 	if (!capable(CAP_WAKE_ALARM))
- 		return -EPERM;
- 
+ 	/* on hw with routers, select right port */
+ 	if (radeon_connector->router.ddc_valid)
+ 		radeon_router_select_ddc_port(radeon_connector);
+@@ -727,6 +731,7 @@ int radeon_ddc_get_modes(struct radeon_c
+ 			radeon_connector->edid = radeon_bios_get_hardcoded_edid(rdev);
+ 	}
+ 	if (radeon_connector->edid) {
++got_edid:
+ 		drm_mode_connector_update_edid_property(&radeon_connector->base, radeon_connector->edid);
+ 		ret = drm_add_edid_modes(&radeon_connector->base, radeon_connector->edid);
+ 		drm_edid_to_eld(&radeon_connector->base, radeon_connector->edid);
 
 
