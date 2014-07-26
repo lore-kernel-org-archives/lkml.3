@@ -1,90 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756733AbaGZUJw (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 16:09:52 -0400
-Received: from mail-qg0-f46.google.com ([209.85.192.46]:53257 "EHLO
-	mail-qg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752608AbaGZUJt (ORCPT
+	id S1754980AbaGZUKa (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 16:10:30 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33646 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752594AbaGZTCz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 16:09:49 -0400
-From: torresariass@gmail.com
-To: devel@driverdev.osuosl.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Trivial Patch Monkey <trivial@kernel.org>,
-        linux-kernel@vger.kernel.org, Josh Triplett <josh@joshtriplett.org>,
-        Tugce Sirin <ztugcesirin@gmail.com>,
-        Maximilian Eschenbacher <maximilian@eschenbacher.email>,
-        Santiago Torres <torresariass@gmail.com>
-Subject: [PATCH] wlan-ng:prism2sta: Changes reporting format to meet checkpatch.pl
-Date: Sat, 26 Jul 2014 16:09:24 -0400
-Message-Id: <1406405364-30340-1-git-send-email-torresariass@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Sat, 26 Jul 2014 15:02:55 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Eric Dumazet <edumazet@google.com>,
+        Steffen Klassert <steffen.klassert@secunet.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.10 21/56] ipv4: irq safe sk_dst_[re]set() and ipv4_sk_update_pmtu() fix
+Date: Sat, 26 Jul 2014 12:02:14 -0700
+Message-Id: <20140726190200.736161252@linuxfoundation.org>
+X-Mailer: git-send-email 2.0.2
+In-Reply-To: <20140726190200.061512159@linuxfoundation.org>
+References: <20140726190200.061512159@linuxfoundation.org>
+User-Agent: quilt/0.63-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Santiago Torres <torresariass@gmail.com>
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-[linux-next]: Make the format strings for netdev_err shorter so they can
-fit under the 80 column width requirement.
+------------------
 
-To achieve this, the "result="  was stripped down to an implicit version
-(i.e. result=%d to (%d)). This allows the whole string to fit inside the
-80 column limit to pass some of the checkpatch.pl requirements.
+From: Eric Dumazet <edumazet@google.com>
 
-While the error message is not as explicit as it used to be, it
-shouldn't affect readability; specially since it is the only formatted
-value printed to the log.
+[ Upstream commit 7f502361531e9eecb396cf99bdc9e9a59f7ebd7f ]
 
-Signed-off by: Santiago Torres-Arias <torresariass@gmail.com>
+We have two different ways to handle changes to sk->sk_dst
+
+First way (used by TCP) assumes socket lock is owned by caller, and use
+no extra lock : __sk_dst_set() & __sk_dst_reset()
+
+Another way (used by UDP) uses sk_dst_lock because socket lock is not
+always taken. Note that sk_dst_lock is not softirq safe.
+
+These ways are not inter changeable for a given socket type.
+
+ipv4_sk_update_pmtu(), added in linux-3.8, added a race, as it used
+the socket lock as synchronization, but users might be UDP sockets.
+
+Instead of converting sk_dst_lock to a softirq safe version, use xchg()
+as we did for sk_rx_dst in commit e47eb5dfb296b ("udp: ipv4: do not use
+sk_dst_lock from softirq context")
+
+In a follow up patch, we probably can remove sk_dst_lock, as it is
+only used in IPv6.
+
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Cc: Steffen Klassert <steffen.klassert@secunet.com>
+Fixes: 9cb3a50c5f63e ("ipv4: Invalidate the socket cached route on pmtu events if possible")
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/staging/wlan-ng/prism2sta.c |   12 ++++++++----
- 1 file changed, 8 insertions(+), 4 deletions(-)
+ include/net/sock.h |   12 ++++++------
+ net/ipv4/route.c   |   15 ++++++++-------
+ 2 files changed, 14 insertions(+), 13 deletions(-)
 
-diff --git a/drivers/staging/wlan-ng/prism2sta.c b/drivers/staging/wlan-ng/prism2sta.c
-index 799ce8a..f05f142 100644
---- a/drivers/staging/wlan-ng/prism2sta.c
-+++ b/drivers/staging/wlan-ng/prism2sta.c
-@@ -453,7 +453,8 @@ u32 prism2sta_ifstate(wlandevice_t *wlandev, u32 ifstate)
- 			result = hfa384x_drvr_start(hw);
- 			if (result) {
- 				netdev_err(wlandev->netdev,
--				       "hfa384x_drvr_start() failed,result=%d\n", (int)result);
-+					"hfa384x_drvr_start() failed (%d)\n",
-+					(int)result);
- 				result =
- 				 P80211ENUM_resultcode_implementation_failure;
- 				wlandev->msdstate = WLAN_MSD_HWPRESENT;
-@@ -496,7 +497,8 @@ u32 prism2sta_ifstate(wlandevice_t *wlandev, u32 ifstate)
- 			result = hfa384x_drvr_start(hw);
- 			if (result) {
- 				netdev_err(wlandev->netdev,
--				       "hfa384x_drvr_start() failed,result=%d\n", (int)result);
-+				       "hfa384x_drvr_start() failed (%d)\n",
-+				       (int)result);
- 				result =
- 				  P80211ENUM_resultcode_implementation_failure;
- 				wlandev->msdstate = WLAN_MSD_HWPRESENT;
-@@ -506,7 +508,8 @@ u32 prism2sta_ifstate(wlandevice_t *wlandev, u32 ifstate)
- 			result = prism2sta_getcardinfo(wlandev);
- 			if (result) {
- 				netdev_err(wlandev->netdev,
--				       "prism2sta_getcardinfo() failed,result=%d\n", (int)result);
-+				       "prism2sta_getcardinfo() failed (%d)\n",
-+				       (int)result);
- 				result =
- 				  P80211ENUM_resultcode_implementation_failure;
- 				hfa384x_drvr_stop(hw);
-@@ -516,7 +519,8 @@ u32 prism2sta_ifstate(wlandevice_t *wlandev, u32 ifstate)
- 			result = prism2sta_globalsetup(wlandev);
- 			if (result) {
- 				netdev_err(wlandev->netdev,
--				       "prism2sta_globalsetup() failed,result=%d\n", (int)result);
-+				       "prism2sta_globalsetup() failed (%d)\n",
-+				       (int)result);
- 				result =
- 				  P80211ENUM_resultcode_implementation_failure;
- 				hfa384x_drvr_stop(hw);
--- 
-1.7.9.5
+--- a/include/net/sock.h
++++ b/include/net/sock.h
+@@ -1767,9 +1767,11 @@ __sk_dst_set(struct sock *sk, struct dst
+ static inline void
+ sk_dst_set(struct sock *sk, struct dst_entry *dst)
+ {
+-	spin_lock(&sk->sk_dst_lock);
+-	__sk_dst_set(sk, dst);
+-	spin_unlock(&sk->sk_dst_lock);
++	struct dst_entry *old_dst;
++
++	sk_tx_queue_clear(sk);
++	old_dst = xchg(&sk->sk_dst_cache, dst);
++	dst_release(old_dst);
+ }
+ 
+ static inline void
+@@ -1781,9 +1783,7 @@ __sk_dst_reset(struct sock *sk)
+ static inline void
+ sk_dst_reset(struct sock *sk)
+ {
+-	spin_lock(&sk->sk_dst_lock);
+-	__sk_dst_reset(sk);
+-	spin_unlock(&sk->sk_dst_lock);
++	sk_dst_set(sk, NULL);
+ }
+ 
+ extern struct dst_entry *__sk_dst_check(struct sock *sk, u32 cookie);
+--- a/net/ipv4/route.c
++++ b/net/ipv4/route.c
+@@ -985,20 +985,21 @@ void ipv4_sk_update_pmtu(struct sk_buff
+ 	const struct iphdr *iph = (const struct iphdr *) skb->data;
+ 	struct flowi4 fl4;
+ 	struct rtable *rt;
+-	struct dst_entry *dst;
++	struct dst_entry *odst = NULL;
+ 	bool new = false;
+ 
+ 	bh_lock_sock(sk);
+-	rt = (struct rtable *) __sk_dst_get(sk);
++	odst = sk_dst_get(sk);
+ 
+-	if (sock_owned_by_user(sk) || !rt) {
++	if (sock_owned_by_user(sk) || !odst) {
+ 		__ipv4_sk_update_pmtu(skb, sk, mtu);
+ 		goto out;
+ 	}
+ 
+ 	__build_flow_key(&fl4, sk, iph, 0, 0, 0, 0, 0);
+ 
+-	if (!__sk_dst_check(sk, 0)) {
++	rt = (struct rtable *)odst;
++	if (odst->obsolete && odst->ops->check(odst, 0) == NULL) {
+ 		rt = ip_route_output_flow(sock_net(sk), &fl4, sk);
+ 		if (IS_ERR(rt))
+ 			goto out;
+@@ -1008,8 +1009,7 @@ void ipv4_sk_update_pmtu(struct sk_buff
+ 
+ 	__ip_rt_update_pmtu((struct rtable *) rt->dst.path, &fl4, mtu);
+ 
+-	dst = dst_check(&rt->dst, 0);
+-	if (!dst) {
++	if (!dst_check(&rt->dst, 0)) {
+ 		if (new)
+ 			dst_release(&rt->dst);
+ 
+@@ -1021,10 +1021,11 @@ void ipv4_sk_update_pmtu(struct sk_buff
+ 	}
+ 
+ 	if (new)
+-		__sk_dst_set(sk, &rt->dst);
++		sk_dst_set(sk, &rt->dst);
+ 
+ out:
+ 	bh_unlock_sock(sk);
++	dst_release(odst);
+ }
+ EXPORT_SYMBOL_GPL(ipv4_sk_update_pmtu);
+ 
+
 
