@@ -1,53 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752273AbaGZVSJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 17:18:09 -0400
-Received: from smtp08.smtpout.orange.fr ([80.12.242.130]:23681 "EHLO
-	smtp.smtpout.orange.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751616AbaGZVSH (ORCPT
+	id S1752284AbaGZVZ3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 17:25:29 -0400
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:55125 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752148AbaGZVZ1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 17:18:07 -0400
-X-ME-Helo: beldin
-X-ME-Date: Sat, 26 Jul 2014 23:18:05 +0200
-X-ME-IP: 92.156.128.9
-From: Robert Jarzmik <robert.jarzmik@free.fr>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH ] ARM: pxa: fix section mismatch warning for pxa_timer_nodt_init
-References: <1405356724-32207-1-git-send-email-robert.jarzmik@free.fr>
-	<53CD25A4.7030606@linaro.org> <87oawivarv.fsf@free.fr>
-	<12220413.BdRleC0Xf5@wuerfel>
-X-URL: http://belgarath.falguerolles.org/
-Date: Sat, 26 Jul 2014 23:17:55 +0200
-In-Reply-To: <12220413.BdRleC0Xf5@wuerfel> (Arnd Bergmann's message of "Sat,
-	26 Jul 2014 20:50:36 +0200")
-Message-ID: <871tt7om4c.fsf@free.fr>
-User-Agent: Gnus/5.130008 (Ma Gnus v0.8) Emacs/24.3.92 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+	Sat, 26 Jul 2014 17:25:27 -0400
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>
+Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
+Subject: [PATCH] arch: powerpc: sysdev: qe_lib: qe.c:  Cleaning up in conjunction with strncpy and strcpy
+Date: Sat, 26 Jul 2014 23:26:51 +0200
+Message-Id: <1406410011-6522-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arnd Bergmann <arnd@arndb.de> writes:
+Replacing strcpy and strncpy with strlcpy to avoid strings that ar to big,
+or lacks null terminate.
 
-> commit a38b1f60b5245a3 ("ARM: pxa: Add non device-tree timer link to
-> clocksource") introduced a harmless section mismatch warning for
-> all pxa platforms, by introducing a new pxa_timer_init() function
-> that is not marked __init but that calls pxa_timer_nodt_init(),
-> which is. The function is only called at init time, so it is safe
-> to also annotate it this way.
->
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+---
+ arch/powerpc/sysdev/qe_lib/qe.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-Indeed.
+diff --git a/arch/powerpc/sysdev/qe_lib/qe.c b/arch/powerpc/sysdev/qe_lib/qe.c
+index 238a07b..9f19e6c 100644
+--- a/arch/powerpc/sysdev/qe_lib/qe.c
++++ b/arch/powerpc/sysdev/qe_lib/qe.c
+@@ -498,7 +498,7 @@ int qe_upload_firmware(const struct qe_firmware *firmware)
+ 	 * saved microcode information and put in the new.
+ 	 */
+ 	memset(&qe_firmware_info, 0, sizeof(qe_firmware_info));
+-	strcpy(qe_firmware_info.id, firmware->id);
++	strlcpy(qe_firmware_info.id, firmware->id, sizeof(qe_firmware_info.id));
+ 	qe_firmware_info.extended_modes = firmware->extended_modes;
+ 	memcpy(qe_firmware_info.vtraps, firmware->vtraps,
+ 		sizeof(firmware->vtraps));
+@@ -584,8 +584,8 @@ struct qe_firmware_info *qe_get_firmware_info(void)
+ 	/* Copy the data into qe_firmware_info*/
+ 	sprop = of_get_property(fw, "id", NULL);
+ 	if (sprop)
+-		strncpy(qe_firmware_info.id, sprop,
+-			sizeof(qe_firmware_info.id) - 1);
++		strlcpy(qe_firmware_info.id, sprop,
++			sizeof(qe_firmware_info.id));
+ 
+ 	prop = of_find_property(fw, "extended-modes", NULL);
+ 	if (prop && (prop->length == sizeof(u64))) {
+-- 
+1.7.10.4
 
-Acked-by: Robert Jarzmik <robert.jarzmik@free.fr>
-
-Cheers.
-
---
-Robert
