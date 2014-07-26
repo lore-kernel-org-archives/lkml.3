@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754148AbaGZTNV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 15:13:21 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34120 "EHLO
+	id S1754557AbaGZTiP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 15:38:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34376 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753285AbaGZTNI (ORCPT
+	with ESMTP id S1754145AbaGZTNV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 15:13:08 -0400
+	Sat, 26 Jul 2014 15:13:21 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sharvil Nanavati <sharvil@google.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        Prarit Bhargava <prarit@redhat.com>
-Subject: [PATCH 3.14 75/87] alarmtimer: Fix bug where relative alarm timers were treated as absolute
-Date: Sat, 26 Jul 2014 12:02:49 -0700
-Message-Id: <20140726190217.044329084@linuxfoundation.org>
+        Stefan Assmann <sassmann@kpanic.de>,
+        Aaron Brown <aaron.f.brown@intel.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.15 025/109] igb: do a reset on SR-IOV re-init if device is down
+Date: Sat, 26 Jul 2014 12:01:47 -0700
+Message-Id: <20140726190224.590458076@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.2
-In-Reply-To: <20140726190214.530473925@linuxfoundation.org>
-References: <20140726190214.530473925@linuxfoundation.org>
+In-Reply-To: <20140726190223.834037485@linuxfoundation.org>
+References: <20140726190223.834037485@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -27,81 +27,37 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.15-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: John Stultz <john.stultz@linaro.org>
+From: Stefan Assmann <sassmann@kpanic.de>
 
-commit 16927776ae757d0d132bdbfabbfe2c498342bd59 upstream.
+commit 76252723e88681628a3dbb9c09c963e095476f73 upstream.
 
-Sharvil noticed with the posix timer_settime interface, using the
-CLOCK_REALTIME_ALARM or CLOCK_BOOTTIME_ALARM clockid, if the users
-tried to specify a relative time timer, it would incorrectly be
-treated as absolute regardless of the state of the flags argument.
+To properly re-initialize SR-IOV it is necessary to reset the device
+even if it is already down. Not doing this may result in Tx unit hangs.
 
-This patch corrects this, properly checking the absolute/relative flag,
-as well as adds further error checking that no invalid flag bits are set.
-
-Reported-by: Sharvil Nanavati <sharvil@google.com>
-Signed-off-by: John Stultz <john.stultz@linaro.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Prarit Bhargava <prarit@redhat.com>
-Cc: Sharvil Nanavati <sharvil@google.com>
-Link: http://lkml.kernel.org/r/1404767171-6902-1-git-send-email-john.stultz@linaro.org
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Stefan Assmann <sassmann@kpanic.de>
+Tested-by: Aaron Brown <aaron.f.brown@intel.com>
+Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/time/alarmtimer.c |   20 ++++++++++++++++++--
- 1 file changed, 18 insertions(+), 2 deletions(-)
+ drivers/net/ethernet/intel/igb/igb_main.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/kernel/time/alarmtimer.c
-+++ b/kernel/time/alarmtimer.c
-@@ -585,9 +585,14 @@ static int alarm_timer_set(struct k_itim
- 				struct itimerspec *new_setting,
- 				struct itimerspec *old_setting)
- {
-+	ktime_t exp;
-+
- 	if (!rtcdev)
- 		return -ENOTSUPP;
+--- a/drivers/net/ethernet/intel/igb/igb_main.c
++++ b/drivers/net/ethernet/intel/igb/igb_main.c
+@@ -7581,6 +7581,8 @@ static int igb_sriov_reinit(struct pci_d
  
-+	if (flags & ~TIMER_ABSTIME)
-+		return -EINVAL;
-+
- 	if (old_setting)
- 		alarm_timer_get(timr, old_setting);
+ 	if (netif_running(netdev))
+ 		igb_close(netdev);
++	else
++		igb_reset(adapter);
  
-@@ -597,8 +602,16 @@ static int alarm_timer_set(struct k_itim
- 
- 	/* start the timer */
- 	timr->it.alarm.interval = timespec_to_ktime(new_setting->it_interval);
--	alarm_start(&timr->it.alarm.alarmtimer,
--			timespec_to_ktime(new_setting->it_value));
-+	exp = timespec_to_ktime(new_setting->it_value);
-+	/* Convert (if necessary) to absolute time */
-+	if (flags != TIMER_ABSTIME) {
-+		ktime_t now;
-+
-+		now = alarm_bases[timr->it.alarm.alarmtimer.type].gettime();
-+		exp = ktime_add(now, exp);
-+	}
-+
-+	alarm_start(&timr->it.alarm.alarmtimer, exp);
- 	return 0;
- }
- 
-@@ -730,6 +743,9 @@ static int alarm_timer_nsleep(const cloc
- 	if (!alarmtimer_get_rtcdev())
- 		return -ENOTSUPP;
- 
-+	if (flags & ~TIMER_ABSTIME)
-+		return -EINVAL;
-+
- 	if (!capable(CAP_WAKE_ALARM))
- 		return -EPERM;
+ 	igb_clear_interrupt_scheme(adapter);
  
 
 
