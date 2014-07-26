@@ -1,159 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753029AbaGZALE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jul 2014 20:11:04 -0400
-Received: from mail-yh0-f45.google.com ([209.85.213.45]:50889 "EHLO
-	mail-yh0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752655AbaGZALB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jul 2014 20:11:01 -0400
-Message-ID: <53D2F211.4090509@gmail.com>
-Date: Fri, 25 Jul 2014 20:10:57 -0400
-From: Pranith Kumar <bobby.prani@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+	id S1752279AbaGZA0x (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jul 2014 20:26:53 -0400
+Received: from tundra.namei.org ([65.99.196.166]:34146 "EHLO namei.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751440AbaGZA0v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jul 2014 20:26:51 -0400
+Date: Sat, 26 Jul 2014 10:26:27 +1000 (EST)
+From: James Morris <jmorris@namei.org>
+To: David Howells <dhowells@redhat.com>
+cc: sfr@canb.auug.org.au, Mimi Zohar <zohar@linux.vnet.ibm.com>,
+        mimi.e.zohar@gmail.com, Dmitry Kasatkin <d.kasatkin@samsung.com>,
+        vgoyal@redhat.com, keyrings@linux-nfs.org,
+        linux-security-module@vger.kernel.org, linux-crypto@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [GIT PULL] Keyrings: PKCS#7 fixup
+In-Reply-To: <22574.1406291448@warthog.procyon.org.uk>
+Message-ID: <alpine.LRH.2.11.1407261026160.7832@namei.org>
+References: <22574.1406291448@warthog.procyon.org.uk>
+User-Agent: Alpine 2.11 (LRH 23 2013-08-11)
 MIME-Version: 1.0
-To: paulmck@linux.vnet.ibm.com, linux-kernel@vger.kernel.org
-CC: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
-        josh@joshtriplett.org, tglx@linutronix.de, peterz@infradead.org,
-        rostedt@goodmis.org, dhowells@redhat.com, edumazet@google.com,
-        dvhart@linux.intel.com, fweisbec@gmail.com, oleg@redhat.com,
-        sasha.levin@oracle.com
-Subject: Re: [PATCH RFC tip/core/rcu] Fix attempt to avoid offloading callbacks
- unless requested
-References: <20140725233623.GA18537@linux.vnet.ibm.com>
-In-Reply-To: <20140725233623.GA18537@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/25/2014 07:36 PM, Paul E. McKenney wrote:
-> [ Note: This applies on top of commit 187497fa5e9e (rcu: Allow for NULL
->     tick_nohz_full_mask when nohz_full= missing) in -tip
->     or -rcu.  To make this work on top of rcu/next, move the
->     call to rcu_organize_nocb_kthreads(rsp) to the end of the
->     for_each_rcu_flavor(rsp) loop in rcu_init_nohz(). ]
->
-> Commit b58cc46c5f6b (rcu: Don't offload callbacks unless specifically
-> requested) failed to adjust the callback lists of the CPUs that are
-> known to be no-CBs CPUs only because they are also nohz_full= CPUs.
-> This failure can result in callbacks that are posted during early boot
-> getting stranded on nxtlist for CPUs whose no-CBs property becomes
-> apparent late, and there can also be spurious warnings about offline
-> CPUs posting callbacks.
->
-> This commit fixes these problems by adding an early-boot rcu_init_nohz()
-> that properly initializes the no-CBs CPUs.
->
-> Note that kernels built with CONFIG_RCU_NOCB_CPU_ALL=y or with
-> CONFIG_RCU_NOCB_CPU=n do not exhibit this bug.  Neither do kernels
-> booted without the nohz_full= boot parameter.
->
-> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+On Fri, 25 Jul 2014, David Howells wrote:
 
-Please find two points below.
+> Hi James,
+> 
+> Here's a fixup for the problem that Stephen spotted.
+> 
+> David
+> ---
+> The following changes since commit 633706a2ee81637be37b6bc02c5336950cc163b5:
+> 
+>   Merge branch 'keys-fixes' into keys-next (2014-07-22 21:55:45 +0100)
+> 
+> are available in the git repository at:
+> 
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/dhowells/linux-fs.git tags/keys-next-20140725
+> 
+> for you to fetch changes up to 8f3438ccea149647ad1849651d1e14c7b8b85e63:
+> 
+>   PKCS#7: Missing inclusion of linux/err.h (2014-07-25 11:33:53 +0100)
 
-<snip>
->  #ifdef CONFIG_TREE_PREEMPT_RCU
-> @@ -2451,6 +2424,66 @@ static void do_nocb_deferred_wakeup(struct rcu_data *rdp)
->      trace_rcu_nocb_wake(rdp->rsp->name, rdp->cpu, TPS("DeferredWakeEmpty"));
->  }
->  
-> +void rcu_init_nohz(void)
-> +{
-> +    int cpu;
-> +    bool need_rcu_nocb_mask = true;
-> +    struct rcu_state *rsp;
-> +
-> +#ifdef CONFIG_RCU_NOCB_CPU_NONE
-> +    need_rcu_nocb_mask = false;
-> +#endif /* #ifndef CONFIG_RCU_NOCB_CPU_NONE */
-> +
-> +#if defined(CONFIG_NO_HZ_FULL) && !defined(CONFIG_NO_HZ_FULL_ALL)
-> +    if (tick_nohz_full_running && cpumask_weight(tick_nohz_full_mask))
-> +        need_rcu_nocb_mask = true;
-> +#endif /* #if defined(CONFIG_NO_HZ_FULL) && !defined(CONFIG_NO_HZ_FULL_ALL) */
-> +
-> +    if (!have_rcu_nocb_mask && need_rcu_nocb_mask) {
-> +        zalloc_cpumask_var(&rcu_nocb_mask, GFP_KERNEL);
+Thanks, pulled.
 
-Please check the return value unless you want to increase my commit count ;)
 
->
-> +        have_rcu_nocb_mask = true;
-> +    }
-> +    if (!have_rcu_nocb_mask)
-> +        return;
-> +
-> +#ifdef CONFIG_RCU_NOCB_CPU_ZERO
-> +    pr_info("\tOffload RCU callbacks from CPU 0\n");
-> +    cpumask_set_cpu(0, rcu_nocb_mask);
-> +#endif /* #ifdef CONFIG_RCU_NOCB_CPU_ZERO */
-> +#ifdef CONFIG_RCU_NOCB_CPU_ALL
-> +    pr_info("\tOffload RCU callbacks from all CPUs\n");
-> +    cpumask_copy(rcu_nocb_mask, cpu_possible_mask);
-> +#endif /* #ifdef CONFIG_RCU_NOCB_CPU_ALL */
-> +#if defined(CONFIG_NO_HZ_FULL) && !defined(CONFIG_NO_HZ_FULL_ALL)
-> +    cpumask_or(rcu_nocb_mask, rcu_nocb_mask, tick_nohz_full_mask);
-> +#endif /* #if defined(CONFIG_NO_HZ_FULL) && !defined(CONFIG_NO_HZ_FULL_ALL) */
-
-I understand that if CONFIG_NO_HZ_FULL_ALL is set then CONFIG_NOCB_CPU_ALL
-will also be set and there is no need for this cpumask_or().
-
-Is there any reason for the coupling between CONFIG_NO_HZ_FULL_ALL
-and CONFIG_NOCB_CPU_ALL?
-
-I ask because a user can override CONFIG_NO_HZ_FULL_ALL=y at boot time
-using the nohz_full= boot time parameter. In this case even if a user marks
-CPU 0 as the only nohz_full cpu, we will offload call backs from all CPUs.
-Is this behavior what you have in mind?
-
---
-Pranith
-
->
-> +
-> +    if (!cpumask_subset(rcu_nocb_mask, cpu_possible_mask)) {
-> +        pr_info("\tNote: kernel parameter 'rcu_nocbs=' contains nonexistent CPUs.\n");
-> +        cpumask_and(rcu_nocb_mask, cpu_possible_mask,
-> +                rcu_nocb_mask);
-> +    }
-> +    cpulist_scnprintf(nocb_buf, sizeof(nocb_buf), rcu_nocb_mask);
-> +    pr_info("\tOffload RCU callbacks from CPUs: %s.\n", nocb_buf);
-> +    if (rcu_nocb_poll)
-> +        pr_info("\tPoll for callbacks from no-CBs CPUs.\n");
-> +
-> +    for_each_rcu_flavor(rsp) {
-> +        for_each_cpu(cpu, rcu_nocb_mask) {
-> +            struct rcu_data *rdp = per_cpu_ptr(rsp->rda, cpu);
-> +
-> +            /*
-> +             * If there are early callbacks, they will need
-> +             * to be moved to the nocb lists.
-> +             */
-> +            WARN_ON_ONCE(rdp->nxttail[RCU_NEXT_TAIL] !=
-> +                     &rdp->nxtlist &&
-> +                     rdp->nxttail[RCU_NEXT_TAIL] != NULL);
-> +            init_nocb_callback_list(rdp);
-> +        }
-> +    }
-> +}
-> +
->  /* Initialize per-rcu_data variables for no-CBs CPUs. */
->  static void __init rcu_boot_init_nocb_percpu_data(struct rcu_data *rdp)
->  {
-> @@ -2479,10 +2512,6 @@ static void __init rcu_spawn_nocb_kthreads(struct rcu_state *rsp)
->  
->      if (rcu_nocb_mask == NULL)
->          return;
-> -#if defined(CONFIG_NO_HZ_FULL) && !defined(CONFIG_NO_HZ_FULL_ALL)
-> -    if (tick_nohz_full_running)
-> -        cpumask_or(rcu_nocb_mask, rcu_nocb_mask, tick_nohz_full_mask);
-> -#endif /* #if defined(CONFIG_NO_HZ_FULL) && !defined(CONFIG_NO_HZ_FULL_ALL) */
->      if (ls == -1) {
->          ls = int_sqrt(nr_cpu_ids);
->          rcu_nocb_leader_stride = ls;
->
+-- 
+James Morris
+<jmorris@namei.org>
 
