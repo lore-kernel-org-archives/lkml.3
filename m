@@ -1,69 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754497AbaGZUSv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 16:18:51 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33531 "EHLO
+	id S1752220AbaGZTC2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 15:02:28 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33501 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752237AbaGZTC3 (ORCPT
+	with ESMTP id S1751522AbaGZTCZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 15:02:29 -0400
+	Sat, 26 Jul 2014 15:02:25 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [PATCH 3.4 20/23] drm/radeon: avoid leaking edid data
-Date: Sat, 26 Jul 2014 12:02:20 -0700
-Message-Id: <20140726190150.345210648@linuxfoundation.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        linux@roeck-us.net, satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
+        stable@vger.kernel.org
+Subject: [PATCH 3.4 00/23] 3.4.100-stable review
+Date: Sat, 26 Jul 2014 12:02:00 -0700
+Message-Id: <20140726190149.723570428@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.2
-In-Reply-To: <20140726190149.723570428@linuxfoundation.org>
-References: <20140726190149.723570428@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+This is the start of the stable review cycle for the 3.4.100 release.
+There are 23 patches in this series, all will be posted as a response
+to this one.  If anyone has any issues with these being applied, please
+let me know.
 
-------------------
+Responses should be made by Mon Jul 28 19:01:37 UTC 2014.
+Anything received after that time might be too late.
 
-From: Alex Deucher <alexander.deucher@amd.com>
+The whole patch series can be found in one patch at:
+	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.4.100-rc1.gz
+and the diffstat can be found below.
 
-commit 0ac66effe7fcdee55bda6d5d10d3372c95a41920 upstream.
+thanks,
 
-In some cases we fetch the edid in the detect() callback
-in order to determine what sort of monitor is connected.
-If that happens, don't fetch the edid again in the get_modes()
-callback or we will leak the edid.
+greg k-h
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+-------------
+Pseudo-Shortlog of commits:
 
----
- drivers/gpu/drm/radeon/radeon_display.c |    5 +++++
- 1 file changed, 5 insertions(+)
+Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+    Linux 3.4.100-rc1
 
---- a/drivers/gpu/drm/radeon/radeon_display.c
-+++ b/drivers/gpu/drm/radeon/radeon_display.c
-@@ -709,6 +709,10 @@ int radeon_ddc_get_modes(struct radeon_c
- 	struct radeon_device *rdev = dev->dev_private;
- 	int ret = 0;
- 
-+	/* don't leak the edid if we already fetched it in detect() */
-+	if (radeon_connector->edid)
-+		goto got_edid;
-+
- 	/* on hw with routers, select right port */
- 	if (radeon_connector->router.ddc_valid)
- 		radeon_router_select_ddc_port(radeon_connector);
-@@ -748,6 +752,7 @@ int radeon_ddc_get_modes(struct radeon_c
- 			radeon_connector->edid = radeon_bios_get_hardcoded_edid(rdev);
- 	}
- 	if (radeon_connector->edid) {
-+got_edid:
- 		drm_mode_connector_update_edid_property(&radeon_connector->base, radeon_connector->edid);
- 		ret = drm_add_edid_modes(&radeon_connector->base, radeon_connector->edid);
- 		drm_edid_to_eld(&radeon_connector->base, radeon_connector->edid);
+Takao Indoh <indou.takao@jp.fujitsu.com>
+    iommu/vt-d: Disable translation if already enabled
+
+Takashi Iwai <tiwai@suse.de>
+    PM / sleep: Fix request_firmware() error at resume
+
+John Stultz <john.stultz@linaro.org>
+    alarmtimer: Fix bug where relative alarm timers were treated as absolute
+
+Alex Deucher <alexander.deucher@amd.com>
+    drm/radeon: avoid leaking edid data
+
+Amitkumar Karwar <akarwar@marvell.com>
+    mwifiex: fix Tx timeout issue
+
+HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+    perf/x86/intel: ignore CondChgd bit to avoid false NMI handling
+
+Eric Dumazet <edumazet@google.com>
+    ipv4: fix buffer overflow in ip_options_compile()
+
+Ben Hutchings <ben@decadent.org.uk>
+    dns_resolver: Null-terminate the right string
+
+Manuel Schölling <manuel.schoelling@gmx.de>
+    dns_resolver: assure that dns_query() result is null-terminated
+
+Sowmini Varadhan <sowmini.varadhan@oracle.com>
+    sunvnet: clean up objects created in vnet_new() on vnet_exit()
+
+Christoph Schulz <develop@kristov.de>
+    net: pppoe: use correct channel MTU when using Multilink PPP
+
+Daniel Borkmann <dborkman@redhat.com>
+    net: sctp: fix information leaks in ulpevent layer
+
+Jon Paul Maloy <jon.maloy@ericsson.com>
+    tipc: clear 'next'-pointer of message fragments before reassembly
+
+Suresh Reddy <Suresh.Reddy@emulex.com>
+    be2net: set EQ DB clear-intr bit in be_open()
+
+Andrey Utkin <andrey.krieger.utkin@gmail.com>
+    appletalk: Fix socket referencing in skb
+
+Yuchung Cheng <ycheng@google.com>
+    tcp: fix false undo corner cases
+
+dingtianhong <dingtianhong@huawei.com>
+    igmp: fix the problem when mc leave group
+
+Li RongQing <roy.qing.li@gmail.com>
+    8021q: fix a potential memory leak
+
+Neal Cardwell <ncardwell@google.com>
+    tcp: fix tcp_match_skb_to_sack() for unaligned SACK at end of an skb
+
+Hugh Dickins <hughd@google.com>
+    shmem: fix splicing from a hole while it's punched
+
+Hugh Dickins <hughd@google.com>
+    shmem: fix faulting into a hole, not taking i_mutex
+
+Hugh Dickins <hughd@google.com>
+    shmem: fix faulting into a hole while it's punched
+
+Markus F.X.J. Oberhumer <markus@oberhumer.com>
+    crypto: testmgr - update LZO compression test vectors
+
+
+-------------
+
+Diffstat:
+
+ Makefile                                    |   4 +-
+ arch/x86/kernel/cpu/perf_event_intel.c      |   9 ++
+ crypto/testmgr.h                            |  38 ++++----
+ drivers/gpu/drm/radeon/radeon_display.c     |   5 +
+ drivers/iommu/dmar.c                        |  11 ++-
+ drivers/iommu/intel-iommu.c                 |  15 +++
+ drivers/net/ethernet/emulex/benet/be_main.c |   2 +-
+ drivers/net/ethernet/sun/sunvnet.c          |  20 +++-
+ drivers/net/ppp/pppoe.c                     |   2 +-
+ drivers/net/wireless/mwifiex/main.c         |   1 +
+ kernel/power/process.c                      |   1 +
+ kernel/time/alarmtimer.c                    |  20 +++-
+ mm/shmem.c                                  | 139 ++++++++++++++++++++++++++--
+ mm/truncate.c                               |  25 -----
+ net/8021q/vlan_core.c                       |   5 +-
+ net/appletalk/ddp.c                         |   3 -
+ net/dns_resolver/dns_query.c                |   4 +-
+ net/ipv4/igmp.c                             |  10 +-
+ net/ipv4/ip_options.c                       |   4 +
+ net/ipv4/tcp_input.c                        |  10 +-
+ net/ipv4/tcp_output.c                       |   6 +-
+ net/sctp/ulpevent.c                         | 122 +++---------------------
+ net/tipc/bcast.c                            |   1 +
+ 23 files changed, 274 insertions(+), 183 deletions(-)
 
 
