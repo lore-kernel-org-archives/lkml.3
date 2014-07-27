@@ -1,41 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752080AbaG0LtB (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Jul 2014 07:49:01 -0400
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:38333 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750885AbaG0Ls6 (ORCPT
+	id S1751954AbaG0MIf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Jul 2014 08:08:35 -0400
+Received: from mail-vc0-f172.google.com ([209.85.220.172]:40133 "EHLO
+	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751788AbaG0MIc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Jul 2014 07:48:58 -0400
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Ursula Braun <ursula.braun@de.ibm.com>,
-        Frank Blaschka <blaschka@linux.vnet.ibm.com>
-Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        linux390@de.ibm.com, Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>, linux-s390@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] s390: net: claw.c:  Fix a define larger than in a sizeof in conjunction with strncpy 
-Date: Sun, 27 Jul 2014 13:50:21 +0200
-Message-Id: <1406461822-11249-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-X-Mailer: git-send-email 1.7.10.4
+	Sun, 27 Jul 2014 08:08:32 -0400
+MIME-Version: 1.0
+In-Reply-To: <CALCETrUGUuYzvQtHLABh78V4fZJmwqb1Lqk-P65VUdRyrDWLug@mail.gmail.com>
+References: <1406296033-32693-1-git-send-email-drysdale@google.com>
+ <1406296033-32693-11-git-send-email-drysdale@google.com> <53D26355.9020809@redhat.com>
+ <CALCETrUGUuYzvQtHLABh78V4fZJmwqb1Lqk-P65VUdRyrDWLug@mail.gmail.com>
+From: David Drysdale <drysdale@google.com>
+Date: Sun, 27 Jul 2014 13:08:11 +0100
+Message-ID: <CAHse=S_tCRsM77EKr=M+zP1pLg2y1EJRG-h=RUJau8Fm6RR2cw@mail.gmail.com>
+Subject: Re: [PATCH 10/11] capsicum: prctl(2) to force use of O_BENEATH
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Paolo Bonzini <pbonzini@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        LSM List <linux-security-module@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Paul Moore <paul@paul-moore.com>,
+        James Morris <james.l.morris@oracle.com>,
+        Kees Cook <keescook@chromium.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        Meredydd Luff <meredydd@senatehouse.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tried also optimize and clarify what youare after here,
-although this is a string of 7 characters, to overwrite the
-dual hardly matters :)
+On Fri, Jul 25, 2014 at 5:00 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+>
+> On Jul 25, 2014 7:02 AM, "Paolo Bonzini" <pbonzini@redhat.com> wrote:
+> >
+> > Il 25/07/2014 15:47, David Drysdale ha scritto:
+> > > @@ -1996,6 +2013,17 @@ SYSCALL_DEFINE5(prctl, int, option, unsigned long, arg2, unsigned long, arg3,
+> > >               if (arg2 || arg3 || arg4 || arg5)
+> > >                       return -EINVAL;
+> > >               return current->no_new_privs ? 1 : 0;
+> > > +     case PR_SET_OPENAT_BENEATH:
+> > > +             if (arg2 != 1 || arg4 || arg5)
+> > > +                     return -EINVAL;
+> > > +             if ((arg3 & ~(PR_SET_OPENAT_BENEATH_TSYNC)) != 0)
+> > > +                     return -EINVAL;
+> > > +             error = prctl_set_openat_beneath(me, arg3);
+> > > +             break;
+> > > +     case PR_GET_OPENAT_BENEATH:
+> > > +             if (arg2 || arg3 || arg4 || arg5)
+> > > +                     return -EINVAL;
+> > > +             return me->openat_beneath;
+> > >       case PR_GET_THP_DISABLE:
+> > >               if (arg2 || arg3 || arg4 || arg5)
+> > >                       return -EINVAL;
+> > >
+> >
+> > Why are you always forbidding a change of prctl from 1 to 0?  It should
+> > be safe if current->no_new_privs is clear.
+>
+> I don't immediately see why you're forbidding unsettling it at all.
+> If you need it to be sticky, then use seccomp or Capsicum to make it
+> sticky.
 
-Probably it would have been clearer to use snprintf
-with "%s         "  , but the solution is a bit slower though...?
+Good point, that would make the function more generic -- needing to
+latch is specific to Capsicum's use of it.
 
-Rickard Strandqvist (1):
-  s390: net: claw.c:  Fix a define larger than in a sizeof in conjunction with
-    strncpy
+>
+> Also, the way implementation is dangerously racy -- if anyone pokes at
+> adjacent bitfields without the lock, they can get corrupted.  Try
+> basing on Kees' seccomp tree or security-next and using the new atomic
+> flags field.
 
- drivers/s390/net/claw.c |   31 +++++++++++++++++++------------
- 1 file changed, 19 insertions(+), 12 deletions(-)
+Ah yes, sorry -- I hadn't yet shifted the implementation to line up with
+the work you and Kees have put into the seccomp stuff.
 
--- 
-1.7.10.4
+>
+>
+> --Andy
+>
+> >
+> > Do new threads inherit from the parent?
+> >
+> > Also, I wonder if you need something like this check:
+> >
+> >         /*
+> >          * Installing a seccomp filter requires that the task has
+> >          * CAP_SYS_ADMIN in its namespace or be running with no_new_privs.
+> >          * This avoids scenarios where unprivileged tasks can affect the
+> >          * behavior of privileged children.
+> >          */
+> >         if (!current->no_new_privs &&
+> >             security_capable_noaudit(current_cred(), current_user_ns(),
+> >                                      CAP_SYS_ADMIN) != 0)
+> >                 return -EACCES;
+> >
+> > Paolo
 
+Yes, new threads inherit the flag from the parent so the
+NNP||CAP_SYS_ADMIN check is probably needed.
