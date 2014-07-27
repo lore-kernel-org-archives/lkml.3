@@ -1,88 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751560AbaG0CJe (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 22:09:34 -0400
-Received: from mail-bn1blp0188.outbound.protection.outlook.com ([207.46.163.188]:50153
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751219AbaG0CJd convert rfc822-to-8bit (ORCPT
+	id S1751564AbaG0C1s (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 22:27:48 -0400
+Received: from mail-vc0-f170.google.com ([209.85.220.170]:55306 "EHLO
+	mail-vc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751219AbaG0C1r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 22:09:33 -0400
-From: KY Srinivasan <kys@microsoft.com>
-To: "Martin K. Petersen" <martin.petersen@oracle.com>
-CC: Sitsofe Wheeler <sitsofe@gmail.com>, Christoph Hellwig <hch@infradead.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "ohering@suse.com" <ohering@suse.com>,
-        "apw@canonical.com" <apw@canonical.com>,
-        "jasowang@redhat.com" <jasowang@redhat.com>,
-        "jbottomley@parallels.com" <jbottomley@parallels.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
-Subject: RE: [PATCH v2 3/3] [SCSI] Make LBP quirk skip lbpme checks tests
-Thread-Topic: [PATCH v2 3/3] [SCSI] Make LBP quirk skip lbpme checks tests
-Thread-Index: AQHPqQdbfmLHK0GnrkSEOCNbbvYH8ZuzLCRw
-Date: Sun, 27 Jul 2014 02:09:27 +0000
-Message-ID: <84e49b68e6e14d259b5edc2c76fa1f1b@BY2PR0301MB0711.namprd03.prod.outlook.com>
-References: <20140724122223.GA31798@sucs.org>
-	<yq1iommkgkv.fsf@sermon.lab.mkp.net> <20140724153612.GA23648@sucs.org>
-	<yq1egxakb0z.fsf@sermon.lab.mkp.net>
-	<16fea5bb87ba47019527cee788e07a72@BY2PR0301MB0711.namprd03.prod.outlook.com>
-	<yq1wqb1gyw1.fsf@sermon.lab.mkp.net>
-	<e931486ef33b4e45bfebf2ab1b1b3037@BY2PR0301MB0711.namprd03.prod.outlook.com>
-	<yq17g30dprc.fsf@sermon.lab.mkp.net>
-	<cc4a3fd5451242739929d266b88fa8fa@BY2PR0301MB0711.namprd03.prod.outlook.com>
- <yq138dnexcn.fsf@sermon.lab.mkp.net>
-In-Reply-To: <yq138dnexcn.fsf@sermon.lab.mkp.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [50.135.110.52]
-x-microsoft-antispam: BCL:0;PCL:0;RULEID:
-x-forefront-prvs: 0285201563
-x-forefront-antispam-report: SFV:NSPM;SFS:(6009001)(51704005)(377454003)(164054003)(189002)(13464003)(199002)(107046002)(95666004)(76176999)(92566001)(31966008)(19580405001)(76576001)(86612001)(99396002)(86362001)(106356001)(33646002)(19580395003)(80022001)(81342001)(101416001)(74502001)(105586002)(74662001)(85306003)(81542001)(21056001)(76482001)(46102001)(83322001)(74316001)(83072002)(2656002)(54356999)(79102001)(99286002)(87936001)(77982001)(64706001)(110136001)(85852003)(106116001)(93886003)(66066001)(4396001)(20776003)(77096002)(50986999)(108616002)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR0301MB0711;H:BY2PR0301MB0711.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Sat, 26 Jul 2014 22:27:47 -0400
 MIME-Version: 1.0
-X-OriginatorOrg: microsoft.onmicrosoft.com
+In-Reply-To: <CAPDOMVjMs=y6QpnFSW5uwAmT6meALsmdBHJq7VVk6YJ7U4ZSrQ@mail.gmail.com>
+References: <CAPDOMVjiT8JKyzLdcFpVVC337p9nC=V66MjePk+1KwNm3owZQg@mail.gmail.com>
+	<53D3672A.20206@roeck-us.net>
+	<CAPDOMVjMs=y6QpnFSW5uwAmT6meALsmdBHJq7VVk6YJ7U4ZSrQ@mail.gmail.com>
+Date: Sat, 26 Jul 2014 22:27:46 -0400
+Message-ID: <CAPDOMVi71aVdP1F65CunbLvaVe4MYi584n+hHP26Df3iE-T9=A@mail.gmail.com>
+Subject: Re: Bug on Boot of Ubuntu 14.04 with kernel 3.16 r6 release
+From: Nick Krause <xerofoify@gmail.com>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, Jul 26, 2014 at 9:49 PM, Nick Krause <xerofoify@gmail.com> wrote:
+> On Sat, Jul 26, 2014 at 4:30 AM, Guenter Roeck <linux@roeck-us.net> wrote:
+>> On 07/25/2014 06:34 PM, Nick Krause wrote:
+>>>
+>>> Hey Guys,
+>>> After building my first rc kernel. I am sad to state it doesn't
+>>> boot.It states that it can't find my root uuid for my ssd boot drive.
+>>> I am using GSP with UEFI, on a Sandy Bridge i5 2500k build I have  had
+>>> for a few years. The kernel boots and after a few seconds
+>>> drops to a busybox ash shell stating it can't find my root device. I
+>>> am using the default Ubuntu build for this and it did boot
+>>> before with x86_64 defconfig without my sound through. Seems to me an
+>>> issue with the Ubuntu built kernel and not upstream
+>>> at least from what I can tell. I will attach my .config to help
+>>> through or my sound drivers.
+>>
+>>
+>> I'd put in a wild guess that you did not install a matching initramfs.
+>>
+>> Guenter
+>>
+> Guenter,
+> Thanks your probably right there.
+> Cheers Nick
 
 
-> -----Original Message-----
-> From: Martin K. Petersen [mailto:martin.petersen@oracle.com]
-> Sent: Saturday, July 26, 2014 12:25 PM
-> To: KY Srinivasan
-> Cc: Martin K. Petersen; Sitsofe Wheeler; Christoph Hellwig;
-> gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
-> devel@linuxdriverproject.org; ohering@suse.com; apw@canonical.com;
-> jasowang@redhat.com; jbottomley@parallels.com; linux-
-> scsi@vger.kernel.org
-> Subject: Re: [PATCH v2 3/3] [SCSI] Make LBP quirk skip lbpme checks tests
-> 
-> >>>>> "KY" == KY Srinivasan <kys@microsoft.com> writes:
-> 
-> >> Great! I'd just like to have a reasonable level of confidence in
-> >> what's happening down the stack before I entertain turning something
-> >> on that's not being properly advertised.
-> 
-> KY> As I look at the output of inquiry between Linux on Hyper-V and
-> KY> native Linux, is not specifying conformance level the main issue?
-> 
-> The main problem for this particular use case (aside from the issue we've
-> already addressed) is that the passthrough device (SATA SSD) has
-> LBPME=0 in the READ CAPACITY(16) response. The LBP VPD is correctly
-> provided with LBPU flag set but because LBPME is reported as disabled we
-> will not attempt to issue UNMAP commands to the device.
-
-Oh; ok. I missed the read_capacity response.
-
-Thanks,
-
-K. Y
-> 
-> --
-> Martin K. Petersen	Oracle Linux Engineering
+Guenter and others,
+I have enabled sound on my computer with what I believed was needed to
+get sound.
+I can't seem to get sound working. I am going to attach my config and
+see if building
+the kernel with other settings enabled gets sound.
+Cheers Nick
