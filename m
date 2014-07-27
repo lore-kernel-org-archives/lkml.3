@@ -1,71 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751978AbaG0NPg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Jul 2014 09:15:36 -0400
-Received: from mail.kernel.org ([198.145.19.201]:52789 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751290AbaG0NPf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Jul 2014 09:15:35 -0400
-Message-ID: <53D4FC07.1050007@kernel.org>
-Date: Sun, 27 Jul 2014 14:17:59 +0100
-From: Jonathan Cameron <jic23@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1752127AbaG0NTZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Jul 2014 09:19:25 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:56494 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751290AbaG0NTX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Jul 2014 09:19:23 -0400
+Date: Sun, 27 Jul 2014 06:19:17 -0700
+From: Christoph Hellwig <hch@infradead.org>
+To: Andrey Utkin <andrey.krieger.utkin@gmail.com>
+Cc: trond.myklebust@primarydata.com, linux-kernel@vger.kernel.org,
+        linux-nfs@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH] nfs3_list_one_acl(): check get_acl() result with
+ IS_ERR_OR_NULL
+Message-ID: <20140727131917.GA32153@infradead.org>
+References: <1406375881-18837-1-git-send-email-andrey.krieger.utkin@gmail.com>
 MIME-Version: 1.0
-To: Reyad Attiyat <reyad.attiyat@gmail.com>,
-        srinivas.pandruvada@linux.intel.com, linux-iio@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] iio: hid-sensor-magn-3d: Fix build warning
-References: <1406322857-12391-1-git-send-email-reyad.attiyat@gmail.com>
-In-Reply-To: <1406322857-12391-1-git-send-email-reyad.attiyat@gmail.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1406375881-18837-1-git-send-email-andrey.krieger.utkin@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25/07/14 22:14, Reyad Attiyat wrote:
-> Fix build warning, sizeof() called on dynamically
-> sized pointer, by removing the call and the dependent
-> function parameter. It is not needed or used in this
-> driver, when pushing values to an iio buffer.
->
-> Changes from v1
-> - Fix mistake in varible name
->
-> Signed-off-by: Reyad Attiyat <reyad.attiyat@gmail.com>
-Applied to the togreg branch of iio.git
+On Sat, Jul 26, 2014 at 02:58:01PM +0300, Andrey Utkin wrote:
+> There was a check for result being not NULL. But get_acl() may return
+> NULL, or ERR_PTR, or actual pointer.
+> The purpose of the function where current change is done is to "list
+> ACLs only when they are available", so any error condition of get_acl()
+> mustn't be elevated, and returning 0 there is still valid.
+> 
+> Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=81111
+> Signed-off-by: Andrey Utkin <andrey.krieger.utkin@gmail.com>
 
-Thanks for fixing up my mistake!
+Looks good, thanks!
 
-Jonathan
-> ---
->   drivers/iio/magnetometer/hid-sensor-magn-3d.c | 7 ++-----
->   1 file changed, 2 insertions(+), 5 deletions(-)
->
-> diff --git a/drivers/iio/magnetometer/hid-sensor-magn-3d.c b/drivers/iio/magnetometer/hid-sensor-magn-3d.c
-> index 3ec777a..1e717c7 100644
-> --- a/drivers/iio/magnetometer/hid-sensor-magn-3d.c
-> +++ b/drivers/iio/magnetometer/hid-sensor-magn-3d.c
-> @@ -246,8 +246,7 @@ static const struct iio_info magn_3d_info = {
->   };
->
->   /* Function to push data to buffer */
-> -static void hid_sensor_push_data(struct iio_dev *indio_dev, const void *data,
-> -	int len)
-> +static void hid_sensor_push_data(struct iio_dev *indio_dev, const void *data)
->   {
->   	dev_dbg(&indio_dev->dev, "hid_sensor_push_data\n");
->   	iio_push_to_buffers(indio_dev, data);
-> @@ -263,9 +262,7 @@ static int magn_3d_proc_event(struct hid_sensor_hub_device *hsdev,
->
->   	dev_dbg(&indio_dev->dev, "magn_3d_proc_event\n");
->   	if (atomic_read(&magn_state->common_attributes.data_ready))
-> -		hid_sensor_push_data(indio_dev,
-> -				magn_state->iio_vals,
-> -				sizeof(magn_state->iio_vals));
-> +		hid_sensor_push_data(indio_dev, magn_state->iio_vals);
->
->   	return 0;
->   }
->
+Reviewed-by: Christoph Hellwig <hch@lst.de>
 
+should probably get a cc to stable as the original patch has one
+as well.
