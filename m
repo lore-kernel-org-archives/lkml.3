@@ -1,63 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751778AbaG0HIt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Jul 2014 03:08:49 -0400
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:64619 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751395AbaG0HIr (ORCPT
+	id S1751693AbaG0H1Z (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Jul 2014 03:27:25 -0400
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:54039 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751054AbaG0H1Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Jul 2014 03:08:47 -0400
-Date: Sun, 27 Jul 2014 12:38:38 +0530
-From: Himangi Saraogi <himangi774@gmail.com>
-To: "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org,
+	Sun, 27 Jul 2014 03:27:24 -0400
+Date: Sun, 27 Jul 2014 00:27:22 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Andrew Duggan <aduggan@synaptics.com>
+Cc: Christopher Heiny <cheiny@synaptics.com>, linux-input@vger.kernel.org,
+        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
         linux-kernel@vger.kernel.org
-Cc: Julia Lawall <julia.lawall@lip6.fr>
-Subject: [PATCH] net/udp_offload: Use IS_ERR_OR_NULL
-Message-ID: <20140727070838.GA4866@himangi-Dell>
+Subject: Re: [PATCH] Input: synaptics-rmi4 - fix compiler warnings in F11
+Message-ID: <20140727072722.GB15556@core.coreip.homeip.net>
+References: <20140723061130.GA22639@core.coreip.homeip.net>
+ <53D0644F.608@synaptics.com>
+ <53D167A9.3020402@synaptics.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <53D167A9.3020402@synaptics.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch introduces the use of the macro IS_ERR_OR_NULL in place of
-tests for NULL and IS_ERR.
+On Thu, Jul 24, 2014 at 01:08:09PM -0700, Andrew Duggan wrote:
+> On 07/23/2014 06:41 PM, Christopher Heiny wrote:
+> >On 07/22/2014 11:11 PM, Dmitry Torokhov wrote:
+> >>Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+> >
+> >I've reviewed this, and can say:
+> >
+> >Acked-by: Christopher Heiny <cheiny@synaptics.com>
+> >
+> >but I haven't had a chance to apply it to my build tree.
+> >
+> >Andrew - I'll be OOO for a couple of days.  Can you do that, and
+> >add a Tested-by: or rev the patch, as appropriate?
+> >
+> >                Thanks,
+> >                    Chris
+> >
+> It compiles cleanly and works on my test system.
+> 
+> Tested-by: Andrew Duggan <aduggan@synaptics.com>
 
-The following Coccinelle semantic patch was used for making the change:
+Thank you Andrew and Chris, I'll apply it to the branch then.
 
-@@
-expression e;
-@@
-
-- e == NULL || IS_ERR(e)
-+ IS_ERR_OR_NULL(e)
- || ...
-
-Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
-Acked-by: Julia Lawall <julia.lawall@lip6.fr>
----
- net/ipv4/udp_offload.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/net/ipv4/udp_offload.c b/net/ipv4/udp_offload.c
-index 4807544..59035bc 100644
---- a/net/ipv4/udp_offload.c
-+++ b/net/ipv4/udp_offload.c
-@@ -79,7 +79,7 @@ struct sk_buff *skb_udp_tunnel_segment(struct sk_buff *skb,
- 	/* segment inner packet. */
- 	enc_features = skb->dev->hw_enc_features & netif_skb_features(skb);
- 	segs = skb_mac_gso_segment(skb, enc_features);
--	if (!segs || IS_ERR(segs)) {
-+	if (IS_ERR_OR_NULL(segs)) {
- 		skb_gso_error_unwind(skb, protocol, tnl_hlen, mac_offset,
- 				     mac_len);
- 		goto out;
 -- 
-1.9.1
-
+Dmitry
