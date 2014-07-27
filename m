@@ -1,54 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752352AbaG0MXA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Jul 2014 08:23:00 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:36011 "EHLO mx2.suse.de"
+	id S1752370AbaG0MZf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Jul 2014 08:25:35 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:36075 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752146AbaG0MW1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Jul 2014 08:22:27 -0400
-From: =?UTF-8?q?Andreas=20F=C3=A4rber?= <afaerber@suse.de>
+	id S1751852AbaG0MZd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Jul 2014 08:25:33 -0400
+Message-ID: <53D4EFBB.6000404@suse.de>
+Date: Sun, 27 Jul 2014 14:25:31 +0200
+From: =?UTF-8?B?QW5kcmVhcyBGw6RyYmVy?= <afaerber@suse.de>
+Organization: SUSE LINUX Products GmbH
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
 To: linux-samsung-soc@vger.kernel.org
-Cc: Tarek Dakhran <t.dakhran@samsung.com>, Kevin Hilman <khilman@linaro.org>,
+CC: Tarek Dakhran <t.dakhran@samsung.com>, Kevin Hilman <khilman@linaro.org>,
         Pankaj Dubey <pankaj.dubey@samsung.com>,
         Tomasz Figa <t.figa@samsung.com>, Kukjin Kim <kgene.kim@samsung.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        =?UTF-8?q?Andreas=20F=C3=A4rber?= <afaerber@suse.de>,
-        Russell King <linux@arm.linux.org.uk>
-Subject: [PATCH 3/3] ARM: EXYNOS: Add support for Exynos5410 PMU
-Date: Sun, 27 Jul 2014 14:22:05 +0200
-Message-Id: <1406463725-4208-4-git-send-email-afaerber@suse.de>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1406463725-4208-1-git-send-email-afaerber@suse.de>
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/3] ARM: EXYNOS: Fix Exynos5410 boot
 References: <1406463725-4208-1-git-send-email-afaerber@suse.de>
-MIME-Version: 1.0
+In-Reply-To: <1406463725-4208-1-git-send-email-afaerber@suse.de>
+X-Enigmail-Version: 1.6
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Exynos initialization code now relies on obtaining the PMU address,
-so add the new 5410 value to the list of compatible string matches.
-This unbreaks booting on 5410 based boards.
+Am 27.07.2014 14:22, schrieb Andreas Färber:
+> Hello,
+> 
+> This mini-series unbreaks booting on 5410 based ODROID-XU.
+> 
+> Since I do not have access to a TRM, the address is a guess based on 
+> 5250 and 5410. Such a node was not present in the 3.14 downstream tree.
 
-Fixes: fce9e5bb2526 ("ARM: EXYNOS: Add support for mapping PMU base address via DT")
-Signed-off-by: Andreas Färber <afaerber@suse.de>
----
- arch/arm/mach-exynos/exynos.c | 1 +
- 1 file changed, 1 insertion(+)
+s/5410/5420/
 
-diff --git a/arch/arm/mach-exynos/exynos.c b/arch/arm/mach-exynos/exynos.c
-index df41bd190dfb..a83a312299a3 100644
---- a/arch/arm/mach-exynos/exynos.c
-+++ b/arch/arm/mach-exynos/exynos.c
-@@ -252,6 +252,7 @@ static const struct of_device_id exynos_dt_pmu_match[] = {
- 	{ .compatible = "samsung,exynos4212-pmu" },
- 	{ .compatible = "samsung,exynos4412-pmu" },
- 	{ .compatible = "samsung,exynos5250-pmu" },
-+	{ .compatible = "samsung,exynos5410-pmu" },
- 	{ .compatible = "samsung,exynos5420-pmu" },
- 	{ /*sentinel*/ },
- };
+> 
+> Regards,
+> Andreas
+> 
+> Andreas Färber (3):
+>   Documentation: devicetree: Document exynos5410 PMU
+>   ARM: dts: exynos: Add PMU to Exynos5410
+>   ARM: EXYNOS: Add support for Exynos5410 PMU
+> 
+>  Documentation/devicetree/bindings/arm/samsung/pmu.txt | 1 +
+>  arch/arm/boot/dts/exynos5410.dtsi                     | 5 +++++
+>  arch/arm/mach-exynos/exynos.c                         | 1 +
+>  3 files changed, 7 insertions(+)
+
 -- 
-1.9.3
-
+SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg, Germany
+GF: Jeff Hawn, Jennifer Guild, Felix Imendörffer; HRB 16746 AG Nürnberg
