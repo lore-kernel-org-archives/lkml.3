@@ -1,116 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752140AbaG0MKe (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Jul 2014 08:10:34 -0400
-Received: from mail-oi0-f43.google.com ([209.85.218.43]:55443 "EHLO
-	mail-oi0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751821AbaG0MKc (ORCPT
+	id S1752059AbaG0MOY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Jul 2014 08:14:24 -0400
+Received: from mail-oi0-f42.google.com ([209.85.218.42]:62983 "EHLO
+	mail-oi0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751788AbaG0MOV convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Jul 2014 08:10:32 -0400
+	Sun, 27 Jul 2014 08:14:21 -0400
+X-Greylist: delayed 93283 seconds by postgrey-1.27 at vger.kernel.org; Sun, 27 Jul 2014 08:14:21 EDT
 MIME-Version: 1.0
-In-Reply-To: <CALCETrWrCU1bw+-xP_xxoRfv6L7j+GhZS_YwrWFHd2uhSp8ySw@mail.gmail.com>
-References: <1406296033-32693-1-git-send-email-drysdale@google.com>
- <1406296033-32693-12-git-send-email-drysdale@google.com> <CALCETrVJX4+-6vkRaDj4kV_bXiYL5fj_PtO53g9fRf=i4X2Tww@mail.gmail.com>
- <CAGXu5jJZ7mhmq1BrdTP5Ww15+C2iLQKjLy1Xh0=9qZvVK5E9Cw@mail.gmail.com>
- <CALCETrVChObsQpL6dt-ByiCjbPrtpXAXQgy_apBY-OpGQHaPjg@mail.gmail.com>
- <CAGXu5jLPrKA5LR-9=M6jAfPXYoztGzXPiaSiXgEcUE=+na73GA@mail.gmail.com>
- <CAKyRK=j-f92xHTL3+TNr9WOv_y47dkZR=WZkpY_a5YW3Q8HfaQ@mail.gmail.com> <CALCETrWrCU1bw+-xP_xxoRfv6L7j+GhZS_YwrWFHd2uhSp8ySw@mail.gmail.com>
-From: David Drysdale <drysdale@google.com>
-Date: Sun, 27 Jul 2014 13:10:10 +0100
-Message-ID: <CAHse=S-9L5no=+R6Oh4KcMZ6C2sK+7EVLckuQikQgmA+MFD2oA@mail.gmail.com>
-Subject: Re: [PATCH 11/11] seccomp: Add tgid and tid into seccomp_data
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Julien Tinnes <jln@google.com>, Kees Cook <keescook@chromium.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, Paolo Bonzini <pbonzini@redhat.com>,
-        LSM List <linux-security-module@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Paul Moore <paul@paul-moore.com>,
-        James Morris <james.l.morris@oracle.com>,
-        Linux API <linux-api@vger.kernel.org>,
-        Meredydd Luff <meredydd@senatehouse.org>,
-        Christoph Hellwig <hch@infradead.org>,
+In-Reply-To: <B1C69CE0-CA18-4853-B4EB-15B0D0F107E7@gmail.com>
+References: <1406384308-2269-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+ <B1C69CE0-CA18-4853-B4EB-15B0D0F107E7@gmail.com>
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Date: Sun, 27 Jul 2014 14:14:00 +0200
+Message-ID: <CAFo99gYq6euP7q=czdBEsXKass7JAHQTv6cBHJti=PKWTgBYog@mail.gmail.com>
+Subject: Re: [PATCH] crypto: rng.c: Cleaning up missing null-terminate in
+ conjunction with strncpy
+To: Mark D Rustad <mrustad@gmail.com>
+Cc: Neil Horman <nhorman@tuxdriver.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>,
+        "David S. Miller" <davem@davemloft.net>, linux-crypto@vger.kernel.org,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 25, 2014 at 7:32 PM, Andy Lutomirski <luto@amacapital.net> wrote:
-> On Fri, Jul 25, 2014 at 11:22 AM, Julien Tinnes <jln@google.com> wrote:
->> On Fri, Jul 25, 2014 at 10:38 AM, Kees Cook <keescook@chromium.org> wrote:
->>>
->>> On Fri, Jul 25, 2014 at 10:18 AM, Andy Lutomirski <luto@amacapital.net>
->>> wrote:
->>> > [cc: Eric Biederman]
->>> >
->>> > On Fri, Jul 25, 2014 at 10:10 AM, Kees Cook <keescook@chromium.org>
->>> > wrote:
->>>
->>> >> Julien had been wanting something like this too (though he'd suggested
->>> >> it via prctl): limit the signal functions to "self" only. I wonder if
->>> >> adding a prctl like done for O_BENEATH could work for signal sending?
->>> >>
->>> >
->>> >
->>> > Can we do one better and add a flag to prevent any non-self pid
->>> > lookups?  This might actually be easy on top of the pid namespace work
->>> > (e.g. we could change the way that find_task_by_vpid works).
->>>
->>> Ooh, that would be extremely interesting, yes. Kind of an extreme form
->>> of pid namespace without actually being a namespace.
->>>
->>> > It's far from just being signals.  There's access_process_vm, ptrace,
->>> > all the signal functions, clock_gettime (see CPUCLOCK_PID -- yes, this
->>> > is ridiculous), and probably some others that I've forgotten about or
->>> > never noticed in the first place.
->>>
->>> Yeah, that would be very interesting.
->>
->>
->> Yes, this would be incredibly useful.
->>
->> 1. For Chromium [1], I dislike relying on seccomp purely for
->> "access-control" (to other processes or files). Because it's really hard to
->> think about everything (things like CPUCLOCK_PID bite, see
->> https://crbug.com/374479).
+2014-07-27 4:35 GMT+02:00 Mark D Rustad <mrustad@gmail.com>:
+> Rickard,
 >
-> Not public :(
+> On Jul 26, 2014, at 7:18 AM, Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se> wrote:
 >
->> Se we have a first layer of sandboxing (using PID + NET namespaces and
->> chroot) for "access-control" and a second layer for kernel attack surface
->> reduction and a few other things using seccomp-bpf.
+>> Replacing strncpy with strlcpy to avoid strings that lacks null terminate.
 >>
->> The first layer isn't currently very good; it's heavyweight and complex (you
->> need an init(1) per namespace and that init cannot be multi-purposed as a
->> useful process because pid = 1 can never receive signals). One PID namespace
->> per process isn't something that scales well. (Also before USER_NS it
->> required a setuid root program).
+>> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+>> ---
+>> crypto/rng.c |    2 +-
+>> 1 file changed, 1 insertion(+), 1 deletion(-)
 >>
->> 2. Even with a safe pure seccomp-bpf sandbox that prevents sending signals
->> to other process / ptrace() et al and that restrict clock_gettime(2)
->> properly, things become quickly very tedious because as far as the kernel is
->> concerned, the process under this BPF program can still pass
->> ptrace_may_access() to other processes. This means for instance that no
->> matter what you do, a model where open() is allowed can't work if /proc is
->> available. We need a mode that says "ptrace_may_access()" will never pass.
+>> diff --git a/crypto/rng.c b/crypto/rng.c
+>> index e0a25c2..c3d4fb3 100644
+>> --- a/crypto/rng.c
+>> +++ b/crypto/rng.c
+>> @@ -65,7 +65,7 @@ static int crypto_rng_report(struct sk_buff *skb, struct crypto_alg *alg)
+>> {
+>>       struct crypto_report_rng rrng;
 >>
->> So yes, I really would like:
->> - a prctl that says: "I'm dropping privileges and I now can't interact with
->> other thread groups (via signals, ptrace, etc..)".
->> - Something to drop access to the file system. It could be an unprivileged
->> way to chroot() to an empty directory (unprivileged namespaces work for
->> that, - except if you're already in a chroot -). This is a little tricky
->> without allowing chroot escapes, so I suspect we would want to express it in
->> terms of mount namespace, or something else, rather than chroot.
+>> -     strncpy(rrng.type, "rng", sizeof(rrng.type));
+>> +     strlcpy(rrng.type, "rng", sizeof(rrng.type));
+>>
+>>       rrng.seedsize = alg->cra_rng.seedsize;
 >
-> Capsicum will give you this.
+> Not to pick on this patch in particular, but you need to be careful about changing strncpy to strlcpy. Although strlcpy ensures termination, it does not prevent information leakage - strncpy ensures that the entire destination buffer is written. When leakage is a concern, it is better to use strncpy and then to store a zero in the last location of the buffer to ensure termination.
+>
+> These "simple" transformations can be risky - and many of these do not represent any sort of problem when the source is smaller than the destination. I hope information leakage is being considered.
+>
 
-Yep, that's the idea.  As long as there aren't any open DFDs for "/proc" on
-entry to capability mode, there shouldn't be a way to access it later -- but it
-is still possible to openat(2) new files (relative to a pre-opened DFD).
 
-> See the other thread for a more concrete proposal.  prctl is getting
-> out of hand.
->
-> --Andy
+Hi Mark
+
+You clearly have a point there! Information leakage is not something I
+think about very often otherwise.
+
+It is really unbelievable that C messed up when trying to make a
+better solution to strcpy. strncpy doing something completely new with
+zeroes whole size but still does not guarantee a terminating null
+character. And strlcpy that works great as a replacement for strcpy,
+but really can not replace strncpy in all cases.  Incredibly stupid!
+:-(
+
+But ok, I'll submit a [Patch V2] with foo[sizeof(foo) - 1] = '\ 0'
+on all under crypto/  then  ?
+
+
+Kind regards
+Rickard Strandqvist
