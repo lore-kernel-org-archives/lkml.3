@@ -1,53 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752191AbaG0Oy3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Jul 2014 10:54:29 -0400
-Received: from helcar.apana.org.au ([209.40.204.226]:48731 "EHLO
-	helcar.apana.org.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751290AbaG0Oy1 (ORCPT
+	id S1752197AbaG0O4S (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Jul 2014 10:56:18 -0400
+Received: from mail-wg0-f49.google.com ([74.125.82.49]:41397 "EHLO
+	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751471AbaG0O4R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Jul 2014 10:54:27 -0400
-Date: Sun, 27 Jul 2014 22:52:54 +0800
-From: Herbert Xu <herbert@gondor.apana.org.au>
-To: Corentin LABBE <clabbe.montjoie@gmail.com>
-Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        rdunlap@infradead.org, maxime.ripard@free-electrons.com,
-        linux@arm.linux.org.uk, davem@davemloft.net, grant.likely@linaro.org,
-        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org
-Subject: Re: [PATCH v4 3/3] crypto: Add Allwinner Security System crypto
- accelerator
-Message-ID: <20140727145254.GA2932@gondor.apana.org.au>
-References: <1405169953-13695-1-git-send-email-clabbe.montjoie@gmail.com>
- <1405169953-13695-4-git-send-email-clabbe.montjoie@gmail.com>
- <20140724060054.GA6545@gondor.apana.org.au>
- <53D0E857.8000405@gmail.com>
- <20140724133823.GA9638@gondor.apana.org.au>
- <53D3B4B6.3000100@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53D3B4B6.3000100@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sun, 27 Jul 2014 10:56:17 -0400
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+To: Vikas Chaudhary <vikas.chaudhary@qlogic.com>, iscsi-driver@qlogic.com
+Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] scsi: qla4xxx: ql4_mbx.c:  Cleaning up missing null-terminate in conjunction with strncpy
+Date: Sun, 27 Jul 2014 16:57:42 +0200
+Message-Id: <1406473062-12509-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 26, 2014 at 04:01:26PM +0200, Corentin LABBE wrote:
->
-> Even if it is undocumented, the hardware seems to support it.
-> Since crypto_ahash_ctx is for a tfm, does ahash_request_ctx is the good place to store data ?
-> (after a call to crypto_ahash_set_reqsize in cra_init)
+Replacing strncpy with strlcpy to avoid strings that lacks null terminate.
+And in some cases modified to copy one character less than the overall
+length, as the entire area is already zeroed.
 
-Yes any hash state-related data should go into the request context.
+Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+---
+ drivers/scsi/qla4xxx/ql4_mbx.c |   14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
 
-> I have also seen export/import function, does I need to use it ?
-
-Absolutely.
-
-Cheers,
+diff --git a/drivers/scsi/qla4xxx/ql4_mbx.c b/drivers/scsi/qla4xxx/ql4_mbx.c
+index 0a3312c..2b2756e 100644
+--- a/drivers/scsi/qla4xxx/ql4_mbx.c
++++ b/drivers/scsi/qla4xxx/ql4_mbx.c
+@@ -1620,8 +1620,8 @@ int qla4xxx_get_chap(struct scsi_qla_host *ha, char *username, char *password,
+ 		goto exit_get_chap;
+ 	}
+ 
+-	strncpy(password, chap_table->secret, QL4_CHAP_MAX_SECRET_LEN);
+-	strncpy(username, chap_table->name, QL4_CHAP_MAX_NAME_LEN);
++	strlcpy(password, chap_table->secret, QL4_CHAP_MAX_SECRET_LEN);
++	strlcpy(username, chap_table->name, QL4_CHAP_MAX_NAME_LEN);
+ 	chap_table->cookie = __constant_cpu_to_le16(CHAP_VALID_COOKIE);
+ 
+ exit_get_chap:
+@@ -1663,8 +1663,8 @@ int qla4xxx_set_chap(struct scsi_qla_host *ha, char *username, char *password,
+ 	else
+ 		chap_table->flags |= BIT_7; /* local */
+ 	chap_table->secret_len = strlen(password);
+-	strncpy(chap_table->secret, password, MAX_CHAP_SECRET_LEN);
+-	strncpy(chap_table->name, username, MAX_CHAP_NAME_LEN);
++	strncpy(chap_table->secret, password, MAX_CHAP_SECRET_LEN - 1);
++	strncpy(chap_table->name, username, MAX_CHAP_NAME_LEN - 1);
+ 	chap_table->cookie = __constant_cpu_to_le16(CHAP_VALID_COOKIE);
+ 
+ 	if (is_qla40XX(ha)) {
+@@ -1742,8 +1742,8 @@ int qla4xxx_get_uni_chap_at_index(struct scsi_qla_host *ha, char *username,
+ 		goto exit_unlock_uni_chap;
+ 	}
+ 
+-	strncpy(password, chap_table->secret, MAX_CHAP_SECRET_LEN);
+-	strncpy(username, chap_table->name, MAX_CHAP_NAME_LEN);
++	strlcpy(password, chap_table->secret, MAX_CHAP_SECRET_LEN);
++	strlcpy(username, chap_table->name, MAX_CHAP_NAME_LEN);
+ 
+ 	rval = QLA_SUCCESS;
+ 
+@@ -2295,7 +2295,7 @@ int qla4_8xxx_set_param(struct scsi_qla_host *ha, int param)
+ 	if (param == SET_DRVR_VERSION) {
+ 		mbox_cmd[1] = SET_DRVR_VERSION;
+ 		strncpy((char *)&mbox_cmd[2], QLA4XXX_DRIVER_VERSION,
+-			MAX_DRVR_VER_LEN);
++			MAX_DRVR_VER_LEN - 1);
+ 	} else {
+ 		ql4_printk(KERN_ERR, ha, "%s: invalid parameter 0x%x\n",
+ 			   __func__, param);
 -- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+1.7.10.4
+
