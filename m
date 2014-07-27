@@ -1,87 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752647AbaG0Tv3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Jul 2014 15:51:29 -0400
-Received: from mail-yh0-f41.google.com ([209.85.213.41]:61612 "EHLO
-	mail-yh0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752237AbaG0Tv2 (ORCPT
+	id S1752635AbaG0T4o (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Jul 2014 15:56:44 -0400
+Received: from mail-we0-f172.google.com ([74.125.82.172]:39390 "EHLO
+	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752463AbaG0T4n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Jul 2014 15:51:28 -0400
-From: Jessica Yu <jyu@cowsay.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Jessica Yu <jyu@cowsay.org>
-Subject: [PATCH] Staging: lustre: linux-module: fix coding style issues.
-Date: Sun, 27 Jul 2014 20:53:50 -0700
-Message-Id: <1406519630-21512-1-git-send-email-jyu@cowsay.org>
-X-Mailer: git-send-email 2.0.1
+	Sun, 27 Jul 2014 15:56:43 -0400
+Date: Sun, 27 Jul 2014 20:56:38 +0100
+From: "Liviu I." <liviu.i.2222@gmail.com>
+To: gregkh@linuxfoundation.org, amk@cray.com, liang.zhen@intel.com,
+        uja.ornl@gmail.com, emoly.liu@intel.com, rashika.kheria@gmail.com,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Eudyptula Challenge (Task 10)
+Message-ID: <20140727195637.GA23931@gmail.com>
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="HcAYCG3uE/tztfnV"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed some coding style issues.
 
-Signed-off-by: Jessica Yu <jyu@cowsay.org>
----
- drivers/staging/lustre/lustre/libcfs/linux/linux-module.c | 14 +++++++-------
- 1 file changed, 7 insertions(+), 7 deletions(-)
+--HcAYCG3uE/tztfnV
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-diff --git a/drivers/staging/lustre/lustre/libcfs/linux/linux-module.c b/drivers/staging/lustre/lustre/libcfs/linux/linux-module.c
-index ccadf65..de3c199 100644
---- a/drivers/staging/lustre/lustre/libcfs/linux/linux-module.c
-+++ b/drivers/staging/lustre/lustre/libcfs/linux/linux-module.c
-@@ -99,7 +99,7 @@ int libcfs_ioctl_popdata(void *arg, void *data, int size)
- extern struct cfs_psdev_ops	  libcfs_psdev_ops;
+Hello Kernel Developers!
+
+I've attached a small patch to fix a coding style problem and make checkpatch happy, as part of challenge 10 of Eudyptula.
+
+Thank you
+
+--HcAYCG3uE/tztfnV
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: attachment; filename=patch
+
+--- drivers/staging/lustre/lustre/ldlm/ldlm_extent.c.orig	2014-07-27 20:26:53.714161698 +0100
++++ drivers/staging/lustre/lustre/ldlm/ldlm_extent.c	2014-07-27 20:27:50.410159692 +0100
+@@ -151,7 +151,8 @@ static inline int lock_mode_to_index(ldl
  
- static int
--libcfs_psdev_open(struct inode * inode, struct file * file)
-+libcfs_psdev_open(struct inode *inode, struct file *file)
- {
- 	struct libcfs_device_userstate **pdu = NULL;
- 	int    rc = 0;
-@@ -116,7 +116,7 @@ libcfs_psdev_open(struct inode * inode, struct file * file)
- 
- /* called when closing /dev/device */
- static int
--libcfs_psdev_release(struct inode * inode, struct file * file)
-+libcfs_psdev_release(struct inode *inode, struct file *file)
- {
- 	struct libcfs_device_userstate *pdu;
- 	int    rc = 0;
-@@ -140,9 +140,9 @@ static long libcfs_ioctl(struct file *file,
- 	if (!capable(CAP_SYS_ADMIN))
- 		return -EACCES;
- 
--	if ( _IOC_TYPE(cmd) != IOC_LIBCFS_TYPE ||
-+	if (_IOC_TYPE(cmd) != IOC_LIBCFS_TYPE ||
- 	     _IOC_NR(cmd) < IOC_LIBCFS_MIN_NR  ||
--	     _IOC_NR(cmd) > IOC_LIBCFS_MAX_NR ) {
-+	     _IOC_NR(cmd) > IOC_LIBCFS_MAX_NR) {
- 		CDEBUG(D_IOCTL, "invalid ioctl ( type %d, nr %d, size %d )\n",
- 		       _IOC_TYPE(cmd), _IOC_NR(cmd), _IOC_SIZE(cmd));
- 		return (-EINVAL);
-@@ -154,7 +154,7 @@ static long libcfs_ioctl(struct file *file,
- 		if (!capable(CFS_CAP_SYS_BOOT))
- 			return (-EPERM);
- 		panic("debugctl-invoked panic");
--		return (0);
-+		return 0;
- 	case IOC_LIBCFS_MEMHOG:
- 		if (!capable(CFS_CAP_SYS_ADMIN))
- 			return -EPERM;
-@@ -167,10 +167,10 @@ static long libcfs_ioctl(struct file *file,
- 		rc = libcfs_psdev_ops.p_ioctl(&pfile, cmd, (void *)arg);
- 	else
- 		rc = -EPERM;
--	return (rc);
-+	return rc;
+ 	LASSERT(mode != 0);
+ 	LASSERT(IS_PO2(mode));
+-	for (index = -1; mode; index++, mode >>= 1) ;
++	for (index = -1; mode; index++, mode >>= 1)
++		;
+ 	LASSERT(index < LCK_MODE_NUM);
+ 	return index;
  }
- 
--static struct file_operations libcfs_fops = {
-+static const struct file_operations libcfs_fops = {
- 	.unlocked_ioctl	= libcfs_ioctl,
- 	.open		= libcfs_psdev_open,
- 	.release	= libcfs_psdev_release,
--- 
-2.0.1
 
+--HcAYCG3uE/tztfnV--
