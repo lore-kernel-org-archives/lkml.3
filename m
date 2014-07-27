@@ -1,162 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751576AbaG0FlJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Jul 2014 01:41:09 -0400
-Received: from mail-we0-f169.google.com ([74.125.82.169]:50389 "EHLO
-	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751305AbaG0FlH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Jul 2014 01:41:07 -0400
+	id S1751478AbaG0Gbj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Jul 2014 02:31:39 -0400
+Received: from mga01.intel.com ([192.55.52.88]:10338 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750951AbaG0Gbi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Jul 2014 02:31:38 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,741,1400050800"; 
+   d="scan'208";a="576023462"
+Message-ID: <53D49CC5.80107@intel.com>
+Date: Sun, 27 Jul 2014 09:31:33 +0300
+From: Adrian Hunter <adrian.hunter@intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-In-Reply-To: <20140725221512.GA3729@salvia>
-References: <1406275499-7822-1-git-send-email-ast@plumgrid.com>
-	<53D23EAF.4000001@redhat.com>
-	<20140725115414.GA4770@salvia>
-	<53D254D9.9030905@redhat.com>
-	<CAMEtUux+dw_GoafXE3ukvmOK2JmZWWf-y0VMobe60TSTfZeNmw@mail.gmail.com>
-	<20140725221512.GA3729@salvia>
-Date: Sat, 26 Jul 2014 22:41:04 -0700
-Message-ID: <CAMEtUux8F4xZ77_HQADfoeV-9sibaEWm=XJcAaY+cQyDWb2caA@mail.gmail.com>
-Subject: Re: [PATCH net-next] net: filter: rename 'struct sk_filter' to
- 'struct bpf_prog'
-From: Alexei Starovoitov <ast@plumgrid.com>
-To: Pablo Neira Ayuso <pablo@netfilter.org>
-Cc: Daniel Borkmann <dborkman@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Network Development <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Willem de Bruijn <willemb@google.com>,
-        netfilter-devel <netfilter-devel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+CC: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 28/52] perf script: Allow callchains if any event samples
+ them
+References: <1406035081-14301-1-git-send-email-adrian.hunter@intel.com> <1406035081-14301-29-git-send-email-adrian.hunter@intel.com> <20140725132705.GJ7831@kernel.org>
+In-Reply-To: <20140725132705.GJ7831@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 25, 2014 at 3:17 PM, Pablo Neira Ayuso <pablo@netfilter.org> wrote:
-> On Fri, Jul 25, 2014 at 10:24:29AM -0700, Alexei Starovoitov wrote:
->> On Fri, Jul 25, 2014 at 6:00 AM, Daniel Borkmann <dborkman@redhat.com> wrote:
->> > On 07/25/2014 01:54 PM, Pablo Neira Ayuso wrote:
->> >>
->> >> On Fri, Jul 25, 2014 at 01:25:35PM +0200, Daniel Borkmann wrote:
->> >>>
->> >>> [ also Cc'ing Willem, Pablo ]
->> >>>
->> >>> On 07/25/2014 10:04 AM, Alexei Starovoitov wrote:
->> >>>>
->> >>>> 'sk_filter' name is used as 'struct sk_filter', function sk_filter() and
->> >>>> as variable 'sk_filter', which makes code hard to read.
->> >>>> Also it's easily confused with 'struct sock_filter'
->> >>>> Rename 'struct sk_filter' to 'struct bpf_prog' to clarify semantics and
->> >>>> align the name with generic BPF use model.
->> >>>
->> >>>
->> >>> Agreed, as we went for kernel/bpf/, renaming makes absolutely sense.
->> >>
->> >>
->> >> My nft socket filtering changes are accomodated into struct sk_filter,
->> >> and will still be, so I still need some generic name there...
->> >
->> >
->> > All the parts from filter.c which is BPF's core engine have been moved
->> > into kernel/bpf/ to get it ready for tracing et al, since there is not
->> > always a socket context anymore. The *whole* infrastructure around struct
->> > sk_filter is [e]BPF and used in non-net related contexts as well, whereas
->> > nft socket filtering is *only* for sockets. Due to the socket-only specific
->> > use case why doesn't it make more sense to have a union in struct sock
->> > around sk_filter (or however we name it) and only allow one of the two
->> > being loaded on a socket?
+On 25/07/2014 4:27 p.m., Arnaldo Carvalho de Melo wrote:
+> Em Tue, Jul 22, 2014 at 04:17:37PM +0300, Adrian Hunter escreveu:
+>> perf script was not displaying callchains if any selected
+>> event did not have PERF_SAMPLE_CALLCHAIN.  Change this to
+>> disable callchains only if all selected events do not have
+>> PERF_SAMPLE_CALLCHAIN.
+>
+> I wonder if some other tool gets this wrong as well, report maybe?
+
+perf report was ok
+
+>
+> Perhaps we need to have this check in some perf_evlist method?
+
+Possibly
+
+>
+> Wonder how report/top, i.e. the hists browser will react with some
+> events having callchains while some don't, specially with this new
+> children stuff, Namhyung, can you please check that?
+>
+> Adrian, can you, in a case like that, provide a command line that
+> creates such combo? I.e. how to create a perf.data file with multiple
+> events with some having callchains while some don't.
+
+For now, it looks like this is something that only Intel PT will do.
+Intel PT decoding can create "instructions" samples that look like they
+came from the "instructions" hardware event, and then Intel PT will
+optionally synthesize call chains on them as well.
+
+>
+> As a rule, it is better to ease reproducing behaviour you mention when
+> fixing stuff, so that quickly others can try and go on trying to fix it.
+>
+> Thanks,
+>
+> - Arnaldo
+>
+>> Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+>> ---
+>>   tools/perf/builtin-script.c | 17 +++++++++++++----
+>>   1 file changed, 13 insertions(+), 4 deletions(-)
 >>
->> yep.
->> Adding nft specific things to struct sk_filter/bpf_prog is not correct,
->> since this struct is already part of seccomp and will be used
->> in net-less configurations. SK_RUN_FILTER() macro will also be
->> renamed into something like RUN_BPF_RPOG(). It's one and only
->> way to invoke eBPF programs. Adding nft selector cannot work,
->> since eBPF is used with generic context whereas nft is skb specific.
->> If you want to add nft filtering capabilities to sockets, you'd need
->> to add union around 'struct bpf_prog' inside 'struct sock', which will be
->> much cleaner way.
->
-> The struct sk_filter is almost providing the generic framework, it
-> just needs to be generalized, a quick layout for it:
->
-> struct sk_filter {
->         struct sk_filter_cb     *cb;
->         atomic_t                refcnt;
->         struct rcu_head         head;
->         char                    data[0]; /* here, you specific struct bpf_prog */
-> };
->
-> The refcnt is required sk_filter_{charge,uncharge,release}. The struct
-> rcu_head is also need from sk_filter_release().
->
-> struct sk_filter_cb {
->         int type;
->         struct module *me;
->         void (*charge)(struct sock *sk, struct sk_filter *fp);
->         void (*uncharge)(struct sock *sk, struct sk_filter *fp);
->         unsigned int (*run_filter)(struct sk_filter *fp, struct sk_buff *skb);
-> };
-
-Pablo,
-
-I don't think you understand the scope of BPF.
-'struct module *'? to attach nft to sockets? ouch.
-if you need to do it, go ahead, but please don't present such mess
-as a 'generic' infra.
-What you're proposing won't work even for classic bpf.
-'struct sock *' and 'struct module *' are totally redundant and won't
-work for seccomp, tracing and pretty much everything, but pure
-socket filtering.
-Somehow you think that 'struct sk_filter' is only used in sockets.
-That is not the case. Just grep the git.
-and arguing that 'struct sk_filter' needs to be generalized for nft
-is shortsighted as minimum.
-Every piece of code that is using 'struct sk_filter' knows that it's
-dealing with bpf/ebpf, so renaming is not changing the facts,
-but rather stating the obvious and making code easier to
-understand.
-
-> We have to provide the register/unregister functions for the specific
-> callbacks depending on the socket filtering approach. But I'll have to
-> introduce this myself when I come up with the nft patches again.
-
-yes, please do introduce modules for nft only, since it doesn't
-make sense for sockets and for bpf.
-
-> So meanwhile, you should just encapsulate what really belongs to
-> struct bpf_prog, ie. size, bytecode, jitted, etc. and leave struct
-> sk_filter in place.
->
-> struct sk_filter {
->         atomic_t                refcnt;
->         struct rcu_head         head;
->         u32                     len;
->         struct bpf_prog         bpf_prog;
-> };
->
-> The len will go into struct bpf_prog once the generic infrastructure
-> above is introduced since the semantics (number of blocks) is
-> different from nft.
->
-> If you straight forward rename the entire structure, you'll take
-> things that are not specific from bpf such as refcnt and rcu_head.
-
-sorry Pablo, I don't think you understand what you're talking about.
-refcnt and rcu_head are key parts of bpf/ebpf infra.
-Programs are refcnt'ed not only by charging sockets. BPF is relying
-on rcu for safe execution as well.
-For example see my tracing filter patch that does:
-void trace_filter_call_bpf(struct event_filter *filter, void *ctx)
-{
-        rcu_read_lock();
-        SK_RUN_FILTER(filter->prog, ctx);
-        rcu_read_unlock();
-}
-One eBPF program can be attached to multiple 'events' where event
-is kprobe, tracepoint, syscall, etc The act of attaching increments
-'struct sk_filter/bpf_prog -> refcnt'.
-Every field of 'struct sk_filter' is used by BPF infra (including 'len'
-and 'work') This struct is a definition of bpf program.
-Seriously if you want to understand, just ask, but objecting due to
-lack of understanding just silly.
+>> diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
+>> index 582da97..c1a56f2 100644
+>> --- a/tools/perf/builtin-script.c
+>> +++ b/tools/perf/builtin-script.c
+>> @@ -184,10 +184,6 @@ static int perf_evsel__check_attr(struct perf_evsel *evsel,
+>>   		if (perf_evsel__check_stype(evsel, PERF_SAMPLE_IP, "IP",
+>>   					    PERF_OUTPUT_IP))
+>>   			return -EINVAL;
+>> -
+>> -		if (!no_callchain &&
+>> -		    !(attr->sample_type & PERF_SAMPLE_CALLCHAIN))
+>> -			symbol_conf.use_callchain = false;
+>>   	}
+>>
+>>   	if (PRINT_FIELD(ADDR) &&
+>> @@ -290,6 +286,19 @@ static int perf_session__check_output_opt(struct perf_session *session)
+>>   		set_print_ip_opts(&evsel->attr);
+>>   	}
+>>
+>> +	if (!no_callchain) {
+>> +		bool use_callchain = false;
+>> +
+>> +		evlist__for_each(session->evlist, evsel) {
+>> +			if (evsel->attr.sample_type & PERF_SAMPLE_CALLCHAIN) {
+>> +				use_callchain = true;
+>> +				break;
+>> +			}
+>> +		}
+>> +		if (!use_callchain)
+>> +			symbol_conf.use_callchain = false;
+>> +	}
+>> +
+>>   	/*
+>>   	 * set default for tracepoints to print symbols only
+>>   	 * if callchains are present
+>> --
+>> 1.8.3.2
