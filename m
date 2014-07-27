@@ -1,516 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752105AbaG0Nwr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Jul 2014 09:52:47 -0400
-Received: from mail.kernel.org ([198.145.19.201]:53241 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751078AbaG0Nwp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Jul 2014 09:52:45 -0400
-Message-ID: <53D504BC.90802@kernel.org>
-Date: Sun, 27 Jul 2014 14:55:08 +0100
-From: Jonathan Cameron <jic23@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
-MIME-Version: 1.0
-To: Philippe Reynes <tremyfr@yahoo.fr>, linux-iio@vger.kernel.org
-CC: linux-kernel@vger.kernel.org, armadeus-forum@lists.sourceforge.net,
-        devicetree@vger.kernel.org, julien.boibessot@free.fr,
-        pmeerw@pmeerw.net, borneo.antonio@gmail.com
-Subject: Re: [PATCH v3] iio: add support of the max5821
-References: <1406324581-6958-1-git-send-email-tremyfr@yahoo.fr>
-In-Reply-To: <1406324581-6958-1-git-send-email-tremyfr@yahoo.fr>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1752116AbaG0OPM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Jul 2014 10:15:12 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:28289 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751836AbaG0OPI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Jul 2014 10:15:08 -0400
+X-AuditID: cbfee68d-b7f2f6d0000062f0-86-53d509690006
+From: Seungwon Jeon <tgih.jun@samsung.com>
+To: "'Seungwon Jeon'" <tgih.jun@samsung.com>,
+        "'Doug Anderson'" <dianders@chromium.org>,
+        "'Jaehoon Chung'" <jh80.chung@samsung.com>
+Cc: "'Chris Ball'" <cjb@laptop.org>, "'Sonny Rao'" <sonnyrao@chromium.org>,
+        "'Grant Grundler'" <grundler@chromium.org>,
+        "'linux-samsung-soc'" <linux-samsung-soc@vger.kernel.org>,
+        "'Kukjin Kim'" <kgene.kim@samsung.com>,
+        "'sunil joshi'" <joshi@samsung.com>,
+        "'Tomasz Figa'" <t.figa@samsung.com>,
+        "'Yuvaraj Kumar C D'" <yuvaraj.cd@gmail.com>, chris@printf.net,
+        ulf.hansson@linaro.org, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+References: <1400623670-2657-1-git-send-email-dianders@chromium.org>
+ <001601cf74d4$3547a410$9fd6ec30$%jun@samsung.com>
+In-reply-to: <001601cf74d4$3547a410$9fd6ec30$%jun@samsung.com>
+Subject: RE: [PATCH v2] mmc: dw_mmc: Make sure we don't get stuck when we get
+ an error
+Date: Sun, 27 Jul 2014 23:15:04 +0900
+Message-id: <000c01cfa9a5$2979a650$7c6cf2f0$%jun@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=ks_c_5601-1987
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac90eBtNVnNipEghRGmCtddOh0fNNwAWjkTQDTSRdgA=
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprMKsWRmVeSWpSXmKPExsVy+t8zY91MzqvBBmtvcFpMuLyd0WL7641s
+	FmeXHWSzeHXkB5PFjV9trBbfd31ht+hdcJXN4vKuOWwWR/73M1rMOL+PyeLJmZmMFutnvGax
+	+HD/IrPF8bXhFg+PdrM68HvMbrjI4rFz1l12j0NX1jJ63Lm2h83jxquFTB59W1YxenzeJBfA
+	HsVlk5Kak1mWWqRvl8CVcXwLd8FV5YqNf5eyNTCulepi5OSQEDCRaJq1iwnCFpO4cG89Wxcj
+	F4eQwDJGidlH+plgik6tbGKHSExnlLi+9gszhPOHUeLGni2sIFVsAloSf9+8AUuICDQySvxZ
+	fI8JxGEW2MgsMePcNqB+DqCWConnz91AGjgF7CS2L2pmAbGFBSIknu5uZgexWQRUJRbe/MsG
+	YvMK2Ers69nJCmELSvyYfA+snlnAQOL9rD5WCFteYvOat8wg4yUE1CUe/dUFCYsIWEns+rmY
+	HaJERGLfi3eMIOdICOzgkJiw4AUzxC4BiW+TD7FA9MpKbDrADPGxpMTBFTdYJjBKzEKyeRaS
+	zbOQbJ6FZMUCRpZVjKKpBckFxUnpRYZ6xYm5xaV56XrJ+bmbGCEJoncH4+0D1ocYk4HWT2SW
+	Ek3OByaYvJJ4Q2MzIwtTE1NjI3NLM9KElcR5kx4mBQkJpCeWpGanphakFsUXleakFh9iZOLg
+	lGpgLCt8+6pAn7H1kVtz93/xF0oq/4MsTylWJt1WXK5n8ETOrTP6GkOa7XPvm7u9vY4L7ln9
+	yydjr+ZTx8tsnnmWp9tPip5dd0547oMW1QJvif/bze556+39eD9v7ZqQGIkHihtj9L47eTRo
+	hFewptb8WrVK2lSIefrHPAm2Pe/2zf28O/HX0fynSizFGYmGWsxFxYkAy2mOQSYDAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrEKsWRmVeSWpSXmKPExsVy+t9jQd1MzqvBBv/vM1tMuLyd0WL7641s
+	FmeXHWSzeHXkB5PFjV9trBbfd31ht+hdcJXN4vKuOWwWR/73M1rMOL+PyeLJmZmMFutnvGax
+	+HD/IrPF8bXhFg+PdrM68HvMbrjI4rFz1l12j0NX1jJ63Lm2h83jxquFTB59W1YxenzeJBfA
+	HtXAaJORmpiSWqSQmpecn5KZl26r5B0c7xxvamZgqGtoaWGupJCXmJtqq+TiE6DrlpkDdLiS
+	QlliTilQKCCxuFhJ3w7ThNAQN10LmMYIXd+QILgeIwM0kLCOMeP4Fu6Cq8oVG/8uZWtgXCvV
+	xcjJISFgInFqZRM7hC0mceHeerYuRi4OIYHpjBLX135hhnD+MErc2LOFFaSKTUBL4u+bN2AJ
+	EYFGRok/i+8xgTjMAhuZJWac2wY0iwOopULi+XM3kAZOATuJ7YuaWUBsYYEIiae7m8HWsQio
+	Siy8+ZcNxOYVsJXY17OTFcIWlPgx+R5YPbOAgcT7WX2sELa8xOY1b5lBxksIqEs8+qsLEhYR
+	sJLY9XMxO0SJiMS+F+8YJzAKzUIyaRaSSbOQTJqFpGUBI8sqRtHUguSC4qT0XCO94sTc4tK8
+	dL3k/NxNjOD080x6B+OqBotDjAIcjEo8vAIsV4KFWBPLiitzDzFKcDArifAWvgUK8aYkVlal
+	FuXHF5XmpBYfYjQFenQis5Rocj4wNeaVxBsam5gZWRqZWRiZmJsrifMebLUOFBJITyxJzU5N
+	LUgtgulj4uCUamB0yTl9Sdr22MxJHwU2nNO/Nsd0Tt5MgeSN134a+4SkR4sbfa5aN3Xe7iP9
+	wYkHb+9exDtn9+bErdyHJ8Sv6lillXDhcKscS660B4/Vwtk2H9Y6KN+z8o10alvKpPZd+/1p
+	5ciFV9od5C+ZreNKyKnT/BavqiESIircoua4sTmzoizxcOQlqXYlluKMREMt5qLiRADEuzcY
+	VQMAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25/07/14 22:43, Philippe Reynes wrote:
-> Signed-off-by: Philippe Reynes <tremyfr@yahoo.fr>
-Applied to the togreg branch of iio.git.  Note this will be initially pushed
-out as testing to let the autobuilders play with it.
+Hi Chris & Ulf,
+
+I hope you find this patch for next.
 
 Thanks,
+Seungwon Jeon
 
-Jonathan
-> ---
->   .../devicetree/bindings/iio/dac/max5821.txt        |   14 +
->   drivers/iio/dac/Kconfig                            |    8 +
->   drivers/iio/dac/Makefile                           |    1 +
->   drivers/iio/dac/max5821.c                          |  405 ++++++++++++++++++++
->   4 files changed, 428 insertions(+), 0 deletions(-)
->   create mode 100644 Documentation/devicetree/bindings/iio/dac/max5821.txt
->   create mode 100644 drivers/iio/dac/max5821.c
->
-> Changelog:
-> v3: (thanks Jonathan Cameron for the feedback)
-> - use iio_device_register
-> v2: (thanks Peter Meerwald, Antonio Borneo and Jonathan Cameron for the feedback)
-> - use devm_iio_device_register
-> - use regulator
-> - add locking when reading a register
-> - use array instead of switch for dac command
-> - use ARRAY_SIZE instead of hardcode num of channels
-> - set name
-> - some others little fix
-> diff --git a/Documentation/devicetree/bindings/iio/dac/max5821.txt b/Documentation/devicetree/bindings/iio/dac/max5821.txt
-> new file mode 100644
-> index 0000000..54276ce
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/iio/dac/max5821.txt
-> @@ -0,0 +1,14 @@
-> +Maxim max5821 DAC device driver
-> +
-> +Required properties:
-> +	- compatible: Must be "maxim,max5821"
-> +	- reg: Should contain the DAC I2C address
-> +	- vref-supply: Phandle to the vref power supply
-> +
-> +Example:
-> +
-> +	max5821@38 {
-> +		compatible = "maxim,max5821";
-> +		reg = <0x38>;
-> +		vref-supply = <&reg_max5821>;
-> +	};
-> diff --git a/drivers/iio/dac/Kconfig b/drivers/iio/dac/Kconfig
-> index f378ca8..fd14a72 100644
-> --- a/drivers/iio/dac/Kconfig
-> +++ b/drivers/iio/dac/Kconfig
-> @@ -152,6 +152,14 @@ config MAX517
->   	  This driver can also be built as a module.  If so, the module
->   	  will be called max517.
->
-> +config MAX5821
-> +	tristate "Maxim MAX5821 DAC driver"
-> +	depends on I2C
-> +	depends on OF
-> +	help
-> +	  Say yes here to build support for Maxim MAX5821
-> +	  10 bits DAC.
-> +
->   config MCP4725
->   	tristate "MCP4725 DAC driver"
->   	depends on I2C
-> diff --git a/drivers/iio/dac/Makefile b/drivers/iio/dac/Makefile
-> index bb84ad6..82545c0 100644
-> --- a/drivers/iio/dac/Makefile
-> +++ b/drivers/iio/dac/Makefile
-> @@ -17,4 +17,5 @@ obj-$(CONFIG_AD5791) += ad5791.o
->   obj-$(CONFIG_AD5686) += ad5686.o
->   obj-$(CONFIG_AD7303) += ad7303.o
->   obj-$(CONFIG_MAX517) += max517.o
-> +obj-$(CONFIG_MAX5821) += max5821.o
->   obj-$(CONFIG_MCP4725) += mcp4725.o
-> diff --git a/drivers/iio/dac/max5821.c b/drivers/iio/dac/max5821.c
-> new file mode 100644
-> index 0000000..6e91449
-> --- /dev/null
-> +++ b/drivers/iio/dac/max5821.c
-> @@ -0,0 +1,405 @@
-> + /*
-> +  * iio/dac/max5821.c
-> +  * Copyright (C) 2014 Philippe Reynes
-> +  *
-> +  * This program is free software; you can redistribute it and/or modify
-> +  * it under the terms of the GNU General Public License version 2 as
-> +  * published by the Free Software Foundation.
-> +  */
-> +
-> +#include <linux/kernel.h>
-> +#include <linux/module.h>
-> +#include <linux/i2c.h>
-> +#include <linux/iio/iio.h>
-> +#include <linux/regulator/consumer.h>
-> +
-> +#define MAX5821_MAX_DAC_CHANNELS		2
-> +
-> +/* command bytes */
-> +#define MAX5821_LOAD_DAC_A_IN_REG_B		0x00
-> +#define MAX5821_LOAD_DAC_B_IN_REG_A		0x10
-> +#define MAX5821_EXTENDED_COMMAND_MODE		0xf0
-> +#define MAX5821_READ_DAC_A_COMMAND		0xf1
-> +#define MAX5821_READ_DAC_B_COMMAND		0xf2
-> +
-> +#define MAX5821_EXTENDED_POWER_UP		0x00
-> +#define MAX5821_EXTENDED_POWER_DOWN_MODE0	0x01
-> +#define MAX5821_EXTENDED_POWER_DOWN_MODE1	0x02
-> +#define MAX5821_EXTENDED_POWER_DOWN_MODE2	0x03
-> +#define MAX5821_EXTENDED_DAC_A			0x04
-> +#define MAX5821_EXTENDED_DAC_B			0x08
-> +
-> +enum max5821_device_ids {
-> +	ID_MAX5821,
-> +};
-> +
-> +struct max5821_data {
-> +	struct i2c_client	*client;
-> +	struct regulator	*vref_reg;
-> +	unsigned short		vref_mv;
-> +	bool			powerdown[MAX5821_MAX_DAC_CHANNELS];
-> +	u8			powerdown_mode[MAX5821_MAX_DAC_CHANNELS];
-> +	struct mutex		lock;
-> +};
-> +
-> +static const char * const max5821_powerdown_modes[] = {
-> +	"three_state",
-> +	"1kohm_to_gnd",
-> +	"100kohm_to_gnd",
-> +};
-> +
-> +enum {
-> +	MAX5821_THREE_STATE,
-> +	MAX5821_1KOHM_TO_GND,
-> +	MAX5821_100KOHM_TO_GND
-> +};
-> +
-> +static int max5821_get_powerdown_mode(struct iio_dev *indio_dev,
-> +				      const struct iio_chan_spec *chan)
-> +{
-> +	struct max5821_data *st = iio_priv(indio_dev);
-> +
-> +	return st->powerdown_mode[chan->channel];
-> +}
-> +
-> +static int max5821_set_powerdown_mode(struct iio_dev *indio_dev,
-> +				      const struct iio_chan_spec *chan,
-> +				      unsigned int mode)
-> +{
-> +	struct max5821_data *st = iio_priv(indio_dev);
-> +
-> +	st->powerdown_mode[chan->channel] = mode;
-> +
-> +	return 0;
-> +}
-> +
-> +static const struct iio_enum max5821_powerdown_mode_enum = {
-> +	.items = max5821_powerdown_modes,
-> +	.num_items = ARRAY_SIZE(max5821_powerdown_modes),
-> +	.get = max5821_get_powerdown_mode,
-> +	.set = max5821_set_powerdown_mode,
-> +};
-> +
-> +static ssize_t max5821_read_dac_powerdown(struct iio_dev *indio_dev,
-> +					  uintptr_t private,
-> +					  const struct iio_chan_spec *chan,
-> +					  char *buf)
-> +{
-> +	struct max5821_data *st = iio_priv(indio_dev);
-> +
-> +	return sprintf(buf, "%d\n", st->powerdown[chan->channel]);
-> +}
-> +
-> +static int max5821_sync_powerdown_mode(struct max5821_data *data,
-> +				       const struct iio_chan_spec *chan)
-> +{
-> +	u8 outbuf[2];
-> +
-> +	outbuf[0] = MAX5821_EXTENDED_COMMAND_MODE;
-> +
-> +	if (chan->channel == 0)
-> +		outbuf[1] = MAX5821_EXTENDED_DAC_A;
-> +	else
-> +		outbuf[1] = MAX5821_EXTENDED_DAC_B;
-> +
-> +	if (data->powerdown[chan->channel])
-> +		outbuf[1] |= data->powerdown_mode[chan->channel] + 1;
-> +	else
-> +		outbuf[1] |= MAX5821_EXTENDED_POWER_UP;
-> +
-> +	return i2c_master_send(data->client, outbuf, 2);
-> +}
-> +
-> +static ssize_t max5821_write_dac_powerdown(struct iio_dev *indio_dev,
-> +					   uintptr_t private,
-> +					   const struct iio_chan_spec *chan,
-> +					   const char *buf, size_t len)
-> +{
-> +	struct max5821_data *data = iio_priv(indio_dev);
-> +	bool powerdown;
-> +	int ret;
-> +
-> +	ret = strtobool(buf, &powerdown);
-> +	if (ret)
-> +		return ret;
-> +
-> +	data->powerdown[chan->channel] = powerdown;
-> +
-> +	ret = max5821_sync_powerdown_mode(data, chan);
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	return len;
-> +}
-> +
-> +static const struct iio_chan_spec_ext_info max5821_ext_info[] = {
-> +	{
-> +		.name = "powerdown",
-> +		.read = max5821_read_dac_powerdown,
-> +		.write = max5821_write_dac_powerdown,
-> +		.shared = IIO_SEPARATE,
-> +	},
-> +	IIO_ENUM("powerdown_mode", IIO_SEPARATE, &max5821_powerdown_mode_enum),
-> +	IIO_ENUM_AVAILABLE("powerdown_mode", &max5821_powerdown_mode_enum),
-> +	{ },
-> +};
-> +
-> +#define MAX5821_CHANNEL(chan) {					\
-> +	.type = IIO_VOLTAGE,					\
-> +	.indexed = 1,						\
-> +	.output = 1,						\
-> +	.channel = (chan),					\
-> +	.info_mask_separate = BIT(IIO_CHAN_INFO_RAW),		\
-> +	.info_mask_shared_by_all = BIT(IIO_CHAN_INFO_SCALE),	\
-> +	.ext_info = max5821_ext_info,				\
-> +}
-> +
-> +static const struct iio_chan_spec max5821_channels[] = {
-> +	MAX5821_CHANNEL(0),
-> +	MAX5821_CHANNEL(1)
-> +};
-> +
-> +static const u8 max5821_read_dac_command[] = {
-> +	MAX5821_READ_DAC_A_COMMAND,
-> +	MAX5821_READ_DAC_B_COMMAND
-> +};
-> +
-> +static const u8 max5821_load_dac_command[] = {
-> +	MAX5821_LOAD_DAC_A_IN_REG_B,
-> +	MAX5821_LOAD_DAC_B_IN_REG_A
-> +};
-> +
-> +static int max5821_get_value(struct iio_dev *indio_dev,
-> +			     int *val, int channel)
-> +{
-> +	struct max5821_data *data = iio_priv(indio_dev);
-> +	struct i2c_client *client = data->client;
-> +	u8 outbuf[1];
-> +	u8 inbuf[2];
-> +	int ret;
-> +
-> +	if ((channel != 0) && (channel != 1))
-> +		return -EINVAL;
-> +
-> +	outbuf[0] = max5821_read_dac_command[channel];
-> +
-> +	mutex_lock(&data->lock);
-> +
-> +	ret = i2c_master_send(client, outbuf, 1);
-> +	if (ret < 0) {
-> +		mutex_unlock(&data->lock);
-> +		return ret;
-> +	} else if (ret != 1) {
-> +		mutex_unlock(&data->lock);
-> +		return -EIO;
-> +	}
-> +
-> +	ret = i2c_master_recv(client, inbuf, 2);
-> +	if (ret < 0) {
-> +		mutex_unlock(&data->lock);
-> +		return ret;
-> +	} else if (ret != 2) {
-> +		mutex_unlock(&data->lock);
-> +		return -EIO;
-> +	}
-> +
-> +	mutex_unlock(&data->lock);
-> +
-> +	*val = ((inbuf[0] & 0x0f) << 6) | (inbuf[1] >> 2);
-> +
-> +	return IIO_VAL_INT;
-> +}
-> +
-> +static int max5821_set_value(struct iio_dev *indio_dev,
-> +			     int val, int channel)
-> +{
-> +	struct max5821_data *data = iio_priv(indio_dev);
-> +	struct i2c_client *client = data->client;
-> +	u8 outbuf[2];
-> +	int ret;
-> +
-> +	if ((val < 0) || (val > 1023))
-> +		return -EINVAL;
-> +
-> +	if ((channel != 0) && (channel != 1))
-> +		return -EINVAL;
-> +
-> +	outbuf[0] = max5821_load_dac_command[channel];
-> +	outbuf[0] |= val >> 6;
-> +	outbuf[1] = (val & 0x3f) << 2;
-> +
-> +	ret = i2c_master_send(client, outbuf, 2);
-> +	if (ret < 0)
-> +		return ret;
-> +	else if (ret != 2)
-> +		return -EIO;
-> +	else
-> +		return 0;
-> +}
-> +
-> +static int max5821_read_raw(struct iio_dev *indio_dev,
-> +			   struct iio_chan_spec const *chan,
-> +			   int *val, int *val2, long mask)
-> +{
-> +	struct max5821_data *data = iio_priv(indio_dev);
-> +
-> +	switch (mask) {
-> +	case IIO_CHAN_INFO_RAW:
-> +		return max5821_get_value(indio_dev, val, chan->channel);
-> +	case IIO_CHAN_INFO_SCALE:
-> +		*val = data->vref_mv;
-> +		*val2 = 10;
-> +		return IIO_VAL_FRACTIONAL_LOG2;
-> +	default:
-> +		return -EINVAL;
-> +	}
-> +}
-> +
-> +static int max5821_write_raw(struct iio_dev *indio_dev,
-> +			     struct iio_chan_spec const *chan,
-> +			     int val, int val2, long mask)
-> +{
-> +	if (val2 != 0)
-> +		return -EINVAL;
-> +
-> +	switch (mask) {
-> +	case IIO_CHAN_INFO_RAW:
-> +		return max5821_set_value(indio_dev, val, chan->channel);
-> +	default:
-> +		return -EINVAL;
-> +	}
-> +}
-> +
-> +#ifdef CONFIG_PM_SLEEP
-> +static int max5821_suspend(struct device *dev)
-> +{
-> +	u8 outbuf[2] = { MAX5821_EXTENDED_COMMAND_MODE,
-> +			 MAX5821_EXTENDED_DAC_A |
-> +			 MAX5821_EXTENDED_DAC_B |
-> +			 MAX5821_EXTENDED_POWER_DOWN_MODE2 };
-> +
-> +	return i2c_master_send(to_i2c_client(dev), outbuf, 2);
-> +}
-> +
-> +static int max5821_resume(struct device *dev)
-> +{
-> +	u8 outbuf[2] = { MAX5821_EXTENDED_COMMAND_MODE,
-> +			 MAX5821_EXTENDED_DAC_A |
-> +			 MAX5821_EXTENDED_DAC_B |
-> +			 MAX5821_EXTENDED_POWER_UP };
-> +
-> +	return i2c_master_send(to_i2c_client(dev), outbuf, 2);
-> +}
-> +
-> +static SIMPLE_DEV_PM_OPS(max5821_pm_ops, max5821_suspend, max5821_resume);
-> +#define MAX5821_PM_OPS (&max5821_pm_ops)
-> +#else
-> +#define MAX5821_PM_OPS NULL
-> +#endif /* CONFIG_PM_SLEEP */
-> +
-> +static const struct iio_info max5821_info = {
-> +	.read_raw = max5821_read_raw,
-> +	.write_raw = max5821_write_raw,
-> +	.driver_module = THIS_MODULE,
-> +};
-> +
-> +static int max5821_probe(struct i2c_client *client,
-> +			const struct i2c_device_id *id)
-> +{
-> +	struct max5821_data *data;
-> +	struct iio_dev *indio_dev;
-> +	u32 tmp;
-> +	int ret;
-> +
-> +	indio_dev = devm_iio_device_alloc(&client->dev, sizeof(*data));
-> +	if (!indio_dev)
-> +		return -ENOMEM;
-> +	data = iio_priv(indio_dev);
-> +	i2c_set_clientdata(client, indio_dev);
-> +	data->client = client;
-> +	mutex_init(&data->lock);
-> +
-> +	/* max5821 start in powerdown mode 100Kohm to ground */
-> +	for (tmp = 0; tmp < MAX5821_MAX_DAC_CHANNELS; tmp++) {
-> +		data->powerdown[tmp] = true;
-> +		data->powerdown_mode[tmp] = MAX5821_100KOHM_TO_GND;
-> +	}
-> +
-> +	data->vref_reg = devm_regulator_get(&client->dev, "vref");
-> +	if (IS_ERR(data->vref_reg)) {
-> +		ret = PTR_ERR(data->vref_reg);
-> +		dev_err(&client->dev,
-> +			"Failed to get vref regulator: %d\n", ret);
-> +		goto error_free_reg;
-> +	}
-> +
-> +	ret = regulator_enable(data->vref_reg);
-> +	if (ret) {
-> +		dev_err(&client->dev,
-> +			"Failed to enable vref regulator: %d\n", ret);
-> +		goto error_free_reg;
-> +	}
-> +
-> +	ret = regulator_get_voltage(data->vref_reg);
-> +	if (ret < 0) {
-> +		dev_err(&client->dev,
-> +			"Failed to get voltage on regulator: %d\n", ret);
-> +		goto error_disable_reg;
-> +	}
-> +
-> +	data->vref_mv = ret / 1000;
-> +
-> +	indio_dev->name = id->name;
-> +	indio_dev->dev.parent = &client->dev;
-> +	indio_dev->num_channels = ARRAY_SIZE(max5821_channels);
-> +	indio_dev->channels = max5821_channels;
-> +	indio_dev->modes = INDIO_DIRECT_MODE;
-> +	indio_dev->info = &max5821_info;
-> +
-> +	return iio_device_register(indio_dev);
-> +
-> +error_disable_reg:
-> +	regulator_disable(data->vref_reg);
-> +
-> +error_free_reg:
-> +
-> +	return ret;
-> +}
-> +
-> +static int max5821_remove(struct i2c_client *client)
-> +{
-> +	struct iio_dev *indio_dev = i2c_get_clientdata(client);
-> +	struct max5821_data *data = iio_priv(indio_dev);
-> +
-> +	iio_device_unregister(indio_dev);
-> +	regulator_disable(data->vref_reg);
-> +
-> +	return 0;
-> +}
-> +
-> +static const struct i2c_device_id max5821_id[] = {
-> +	{ "max5821", ID_MAX5821 },
-> +	{ }
-> +};
-> +MODULE_DEVICE_TABLE(i2c, max5821_id);
-> +
-> +static const struct of_device_id max5821_of_match[] = {
-> +	{ .compatible = "maxim,max5821" },
-> +	{ }
-> +};
-> +
-> +static struct i2c_driver max5821_driver = {
-> +	.driver = {
-> +		.name	= "max5821",
-> +		.pm     = MAX5821_PM_OPS,
-> +		.owner	= THIS_MODULE,
-> +	},
-> +	.probe		= max5821_probe,
-> +	.remove		= max5821_remove,
-> +	.id_table	= max5821_id,
-> +};
-> +module_i2c_driver(max5821_driver);
-> +
-> +MODULE_AUTHOR("Philippe Reynes <tremyfr@yahoo.fr>");
-> +MODULE_DESCRIPTION("MAX5821 DAC");
-> +MODULE_LICENSE("GPL v2");
->
+On Wed, May 21, 2014, Seungwon Jeon wrote:
+> On Wed, May 21, 2014, Doug Anderson wrote:
+> > If we happened to get a data error at just the wrong time the dw_mmc
+> > driver could get into a state where it would never complete its
+> > request.  That would leave the caller just hanging there.
+> >
+> > We fix this two ways and both of the two fixes on their own appear to
+> > fix the problems we've seen:
+> >
+> > 1. Fix a race in the tasklet where the interrupt setting the data
+> >    error happens _just after_ we check for it, then we get a
+> >    EVENT_XFER_COMPLETE.  We fix this by repeating a bit of code.
+> > 2. Fix it so that if we detect that we've got an error in the "data
+> >    busy" state and we're not going to do anything else we end the
+> >    request and unblock anyone waiting.
+> >
+> > Signed-off-by: Doug Anderson <dianders@chromium.org>
+> > Signed-off-by: Yuvaraj Kumar C D <yuvaraj.cd@gmail.com>
+> 
+> It will be applied after "mmc: dw_mmc: change to use recommended reset procedure"
+> 
+> Acked-by: Seungwon Jeon <tgih.jun@samsung.com>
+> 
+> Thanks,
+> Seungwon Jeon
+> 
+> > ---
+> > Changes in v2:
+> > - Removed TODO
+> > - Set cmd to NULL before calling dw_mci_request_end()
+> >
+> >  drivers/mmc/host/dw_mmc.c | 46 ++++++++++++++++++++++++++++++++++++++++++++++
+> >  1 file changed, 46 insertions(+)
+> >
+> > diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
+> > index cced599..54ec8b0 100644
+> > --- a/drivers/mmc/host/dw_mmc.c
+> > +++ b/drivers/mmc/host/dw_mmc.c
+> > @@ -1318,6 +1318,14 @@ static void dw_mci_tasklet_func(unsigned long priv)
+> >  			/* fall through */
+> >
+> >  		case STATE_SENDING_DATA:
+> > +			/*
+> > +			 * We could get a data error and never a transfer
+> > +			 * complete so we'd better check for it here.
+> > +			 *
+> > +			 * Note that we don't really care if we also got a
+> > +			 * transfer complete; stopping the DMA and sending an
+> > +			 * abort won't hurt.
+> > +			 */
+> >  			if (test_and_clear_bit(EVENT_DATA_ERROR,
+> >  					       &host->pending_events)) {
+> >  				dw_mci_stop_dma(host);
+> > @@ -1331,7 +1339,29 @@ static void dw_mci_tasklet_func(unsigned long priv)
+> >  				break;
+> >
+> >  			set_bit(EVENT_XFER_COMPLETE, &host->completed_events);
+> > +
+> > +			/*
+> > +			 * Handle an EVENT_DATA_ERROR that might have shown up
+> > +			 * before the transfer completed.  This might not have
+> > +			 * been caught by the check above because the interrupt
+> > +			 * could have gone off between the previous check and
+> > +			 * the check for transfer complete.
+> > +			 *
+> > +			 * Technically this ought not be needed assuming we
+> > +			 * get a DATA_COMPLETE eventually (we'll notice the
+> > +			 * error and end the request), but it shouldn't hurt.
+> > +			 *
+> > +			 * This has the advantage of sending the stop command.
+> > +			 */
+> > +			if (test_and_clear_bit(EVENT_DATA_ERROR,
+> > +					       &host->pending_events)) {
+> > +				dw_mci_stop_dma(host);
+> > +				send_stop_abort(host, data);
+> > +				state = STATE_DATA_ERROR;
+> > +				break;
+> > +			}
+> >  			prev_state = state = STATE_DATA_BUSY;
+> > +
+> >  			/* fall through */
+> >
+> >  		case STATE_DATA_BUSY:
+> > @@ -1354,6 +1384,22 @@ static void dw_mci_tasklet_func(unsigned long priv)
+> >  				/* stop command for open-ended transfer*/
+> >  				if (data->stop)
+> >  					send_stop_abort(host, data);
+> > +			} else {
+> > +				/*
+> > +				 * If we don't have a command complete now we'll
+> > +				 * never get one since we just reset everything;
+> > +				 * better end the request.
+> > +				 *
+> > +				 * If we do have a command complete we'll fall
+> > +				 * through to the SENDING_STOP command and
+> > +				 * everything will be peachy keen.
+> > +				 */
+> > +				if (!test_bit(EVENT_CMD_COMPLETE,
+> > +					      &host->pending_events)) {
+> > +					host->cmd = NULL;
+> > +					dw_mci_request_end(host, mrq);
+> > +					goto unlock;
+> > +				}
+> >  			}
+> >
+> >  			/*
+> > --
+> > 1.9.1.423.g4596e3a
+> >
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
