@@ -1,58 +1,347 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751165AbaG0XXN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Jul 2014 19:23:13 -0400
-Received: from mail-lb0-f170.google.com ([209.85.217.170]:36057 "EHLO
-	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750792AbaG0XXM (ORCPT
+	id S1750998AbaG0Xbl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Jul 2014 19:31:41 -0400
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:57436 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750785AbaG0Xbi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Jul 2014 19:23:12 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAF6AEGupwP4aq7EG2SdRUAwy-dzab7fVd2SSoHfGpX8o6yR+WQ@mail.gmail.com>
-References: <1403081488-13114-1-git-send-email-benjamin.gaignard@linaro.org>
-	<CAF6AEGsLbmos9nz-AYv2v0g33BYdAgKYTe8_ihDWEF3GK_=gjQ@mail.gmail.com>
-	<20140703215200.GG32514@n2100.arm.linux.org.uk>
-	<CAF6AEGsAtqCjrvrgcXmOY0nie89ppFHBcRPtt36ESHWBNqobTg@mail.gmail.com>
-	<CA+M3ks4BU3MTaeCeMPbu8LqW=H27ZAdF-qZLUiG3UXJzbA89Fw@mail.gmail.com>
-	<CA+M3ks5osUkkEY64t=M1zEp7DA5rn+MxxqiJhQm5QiEFUPBL+A@mail.gmail.com>
-	<CA+M3ks7-ZHghELcRHDiFNbubDZ2DRQPDh2bKKzhsu4EcA0Tzcg@mail.gmail.com>
-	<CAF6AEGupwP4aq7EG2SdRUAwy-dzab7fVd2SSoHfGpX8o6yR+WQ@mail.gmail.com>
-Date: Mon, 28 Jul 2014 09:23:10 +1000
-Message-ID: <CAPM=9tyKWbffCrUP+3VETEcqAvMG-5+wkW7Rg09BGDnbO=jsBw@mail.gmail.com>
-Subject: Re: [PATCH v5 00/11] Add DRM for stih4xx platforms
-From: Dave Airlie <airlied@gmail.com>
-To: Rob Clark <robdclark@gmail.com>
-Cc: Benjamin Gaignard <benjamin.gaignard@linaro.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linaro-mm-sig@lists.linaro.org" <linaro-mm-sig@lists.linaro.org>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Content-Type: text/plain; charset=UTF-8
+	Sun, 27 Jul 2014 19:31:38 -0400
+From: Benoit Masson <yahoo@perenite.com>
+To: benoitm@perenite.com, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: jason@lakedaemon.net, andrew@lunn.ch, gregory.clement@free-electrons.com,
+        sebastian.hesselbarth@googlemail.com,
+        Benoit Masson <yahoo@perenite.com>
+Subject: [PATCH 2/2] V4 ARM: mvebu: Added dts defintion for Lenovo Iomega ix4-300d NAS
+Date: Sun, 27 Jul 2014 16:30:39 -0700
+Message-Id: <1406503839-4662-1-git-send-email-yahoo@perenite.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16 July 2014 04:33, Rob Clark <robdclark@gmail.com> wrote:
-> On Tue, Jul 15, 2014 at 5:41 AM, Benjamin Gaignard
-> <benjamin.gaignard@linaro.org> wrote:
->> Hi all,
->>
->> Does version 6 fit to all your expectations ?
->> If yes will you consider to merge it into drm-next ?
->> If no, please tell me what need to be fixed.
->
->
-> I had another pass over the driver, and didn't find anything to
-> complain about, so for the series:
->
-> Reviewed-by: Rob Clark <robdclark@gmail.com>
+The Lenovo Iomega ix4-300d is a 4-Bay sata NAS with dual Gb,
+ USB2.0 & 3.0, powered by a Marvell Armada XP MV78230 dual core CPU.
 
-Can I see a git tree of this with Rob's R-B on it?
+http://shop.lenovo.com/us/en/servers/network-storage/lenovoemc/ix4-300d/
+Signed-off-by: Benoit Masson <yahoo@perenite.com>
+---
+ arch/arm/boot/dts/Makefile                      |   3 +-
+ arch/arm/boot/dts/armada-xp-lenovo-ix4-300d.dts | 285 ++++++++++++++++++++++++
+ 2 files changed, 287 insertions(+), 1 deletion(-)
+ create mode 100644 arch/arm/boot/dts/armada-xp-lenovo-ix4-300d.dts
 
-based off drm-next if possible,
+diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
+index adb5ed9..4429495 100644
+--- a/arch/arm/boot/dts/Makefile
++++ b/arch/arm/boot/dts/Makefile
+@@ -437,8 +437,9 @@ dtb-$(CONFIG_MACH_ARMADA_XP) += \
+ 	armada-xp-axpwifiap.dtb \
+ 	armada-xp-db.dtb \
+ 	armada-xp-gp.dtb \
+-	armada-xp-netgear-rn2120.dtb \
++	armada-xp-lenovo-ix4-300d.dtb \
+ 	armada-xp-matrix.dtb \
++	armada-xp-netgear-rn2120.dtb \
+ 	armada-xp-openblocks-ax3-4.dtb
+ dtb-$(CONFIG_MACH_DOVE) += dove-cm-a510.dtb \
+ 	dove-cubox.dtb \
+diff --git a/arch/arm/boot/dts/armada-xp-lenovo-ix4-300d.dts b/arch/arm/boot/dts/armada-xp-lenovo-ix4-300d.dts
+new file mode 100644
+index 0000000..6d5782b
+--- /dev/null
++++ b/arch/arm/boot/dts/armada-xp-lenovo-ix4-300d.dts
+@@ -0,0 +1,285 @@
++/*
++ * Device Tree file for Lenovo Iomega ix4-300d
++ *
++ * Copyright (C) 2014, Benoit Masson <yahoo@perenite.com>
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * as published by the Free Software Foundation; either version
++ * 2 of the License, or (at your option) any later version.
++ */
++
++/dts-v1/;
++
++#include <dt-bindings/input/input.h>
++#include <dt-bindings/gpio/gpio.h>
++#include "armada-xp-mv78230.dtsi"
++
++/ {
++	model = "Lenovo Iomega ix4-300d";
++	compatible = "lenovo,ix4-300d", "marvell,armadaxp-mv78230",
++		     "marvell,armadaxp", "marvell,armada-370-xp";
++
++	chosen {
++		bootargs = "console=ttyS0,115200 earlyprintk";
++		stdout-path = "/soc/internal-regs/serial@12000";
++	};
++
++	memory {
++		device_type = "memory";
++		reg = <0 0x00000000 0 0x20000000>; /* 512MB */
++	};
++
++	soc {
++		ranges = <MBUS_ID(0xf0, 0x01) 0 0 0xd0000000 0x100000
++			MBUS_ID(0x01, 0x1d) 0 0 0xfff00000 0x100000>;
++
++		pcie-controller {
++			status = "okay";
++
++			/* Quad port sata: Marvell 88SX7042 */
++			pcie@1,0 {
++				/* Port 0, Lane 0 */
++				status = "okay";
++			};
++
++			/* USB 3.0 xHCI controller: NEC D720200F1 */
++			pcie@5,0 {
++				/* Port 1, Lane 0 */
++				status = "okay";
++			};
++		};
++
++		internal-regs {
++			pinctrl {
++				poweroff_pin: poweroff-pin {
++					marvell,pins = "mpp24";
++					marvell,function = "gpio";
++				};
++
++				power_button_pin: power-button-pin {
++					marvell,pins = "mpp44";
++					marvell,function = "gpio";
++				};
++
++				reset_button_pin: reset-button-pin {
++					marvell,pins = "mpp45";
++					marvell,function = "gpio";
++				};
++				select_button_pin: select-button-pin {
++					marvell,pins = "mpp41";
++					marvell,function = "gpio";
++				};
++
++				scroll_button_pin: scroll-button-pin {
++					marvell,pins = "mpp42";
++					marvell,function = "gpio";
++				};
++
++				hdd_led_pin: hdd-led-pin {
++					marvell,pins = "mpp26";
++					marvell,function = "gpio";
++				};
++			};
++
++			serial@12000 {
++				status = "okay";
++			};
++
++			mdio {
++				phy0: ethernet-phy@0 { /* Marvell 88E1318 */
++					reg = <0>;
++				};
++
++				phy1: ethernet-phy@1 { /* Marvell 88E1318 */
++					reg = <1>;
++				};
++			};
++
++			ethernet@70000 {
++				status = "okay";
++				phy = <&phy0>;
++				phy-mode = "rgmii-id";
++			};
++
++			ethernet@74000 {
++				status = "okay";
++				phy = <&phy1>;
++				phy-mode = "rgmii-id";
++			};
++
++			usb@50000 {
++				status = "okay";
++			};
++
++			usb@51000 {
++				status = "okay";
++			};
++
++			i2c@11000 {
++				compatible = "marvell,mv64xxx-i2c";
++				clock-frequency = <400000>;
++				status = "okay";
++
++				adt7473@2e {
++					compatible = "adi,adt7473";
++					reg = <0x2e>;
++				};
++
++				pcf8563@51 {
++					compatible = "nxp,pcf8563";
++					reg = <0x51>;
++				};
++
++			};
++
++			nand@d0000 {
++				status = "okay";
++				num-cs = <1>;
++				marvell,nand-keep-config;
++				marvell,nand-enable-arbiter;
++				nand-on-flash-bbt;
++
++				partition@0 {
++					label = "u-boot";
++					reg = <0x0000000 0xe0000>;
++					read-only;
++				};
++
++				partition@e0000 {
++					label = "u-boot-env";
++					reg = <0xe0000 0x20000>;
++					read-only;
++				};
++
++				partition@100000 {
++					label = "u-boot-env2";
++					reg = <0x100000 0x20000>;
++					read-only;
++				};
++
++				partition@120000 {
++					label = "zImage";
++					reg = <0x120000 0x400000>;
++				};
++
++				partition@520000 {
++					label = "initrd";
++					reg = <0x520000 0x400000>;
++				};
++
++				partition@xE00000 {
++					label = "boot";
++					reg = <0xE00000 0x3F200000>;
++				};
++
++				partition@flash {
++					label = "flash";
++					reg = <0x0 0x40000000>;
++				};
++			};
++		};
++	};
++
++	gpio-keys {
++		compatible = "gpio-keys";
++		pinctrl-0 = <&power_button_pin &reset_button_pin
++			&select_button_pin &scroll_button_pin>;
++		pinctrl-names = "default";
++
++		power-button {
++			label = "Power Button";
++			linux,code = <KEY_POWER>;
++			gpios = <&gpio1 12 GPIO_ACTIVE_HIGH>;
++		};
++
++		reset-button {
++			label = "Reset Button";
++			linux,code = <KEY_RESTART>;
++			gpios = <&gpio1 13 GPIO_ACTIVE_LOW>;
++		};
++
++		select-button {
++			label = "Select Button";
++			linux,code = <BTN_SELECT>;
++			gpios = <&gpio1 9 GPIO_ACTIVE_LOW>;
++		};
++
++		scroll-button {
++			label = "Scroll Button";
++			linux,code = <KEY_SCROLLDOWN>;
++			gpios = <&gpio1 10 GPIO_ACTIVE_LOW>;
++		};
++	};
++
++	spi3 {
++		compatible = "spi-gpio";
++		status = "okay";
++		gpio-sck = <&gpio0 25 GPIO_ACTIVE_LOW>;
++		gpio-mosi = <&gpio1 15 GPIO_ACTIVE_LOW>; /*gpio 47*/
++		cs-gpios = <&gpio0 27 GPIO_ACTIVE_LOW>;
++		num-chipselects = <1>;
++		#address-cells = <1>;
++		#size-cells = <0>;
++
++		gpio_spi: gpio_spi@0 {
++			compatible = "fairchild,74hc595";
++			gpio-controller;
++			#gpio-cells = <2>;
++			reg = <0>;
++			registers-number = <2>;
++			spi-max-frequency = <100000>;
++		};
++	};
++
++	gpio-leds {
++		compatible = "gpio-leds";
++		pinctrl-0 = <&hdd_led_pin>;
++		pinctrl-names = "default";
++
++		hdd-led {
++			label = "ix4-300d:hdd:blue";
++			gpios = <&gpio0 26 GPIO_ACTIVE_HIGH>;
++			default-state = "off";
++		};
++
++		power-led {
++			label = "ix4-300d:power:white";
++			gpios = <&gpio_spi 1 GPIO_ACTIVE_LOW>;
++			/* init blinking while booting */
++			linux,default-trigger = "timer";
++			default-state = "on";
++		};
++
++		sysfail-led {
++			label = "ix4-300d:sysfail:red";
++			gpios = <&gpio_spi 2 GPIO_ACTIVE_HIGH>;
++			default-state = "off";
++		};
++
++		sys-led {
++			label = "ix4-300d:sys:blue";
++			gpios = <&gpio_spi 3 GPIO_ACTIVE_HIGH>;
++			default-state = "off";
++		};
++
++		hddfail-led {
++			label = "ix4-300d:hddfail:red";
++			gpios = <&gpio_spi 4 GPIO_ACTIVE_HIGH>;
++			default-state = "off";
++		};
++
++	};
++
++	/* 
++	 * Warning: you need both eth1 & 0 PHY initialized (i.e having
++	 * them up does the tweak) for poweroff to shutdown otherwise it
++	 * reboots 
++	 */
++	gpio-poweroff {
++		compatible = "gpio-poweroff";
++		pinctrl-0 = <&poweroff_pin>;
++		pinctrl-names = "default";
++		gpios = <&gpio0 24 GPIO_ACTIVE_HIGH>;
++	};
++};
+-- 
+1.9.1
 
-I'd like to do a quick pre-merge review of it, but I usually don't
-find anything too major.
-
-Dave.
