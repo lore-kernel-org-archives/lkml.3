@@ -1,93 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752691AbaG0UX0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Jul 2014 16:23:26 -0400
-Received: from mail-yh0-f54.google.com ([209.85.213.54]:54829 "EHLO
-	mail-yh0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752594AbaG0UXZ (ORCPT
+	id S1752634AbaG0UdE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Jul 2014 16:33:04 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:35343 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752529AbaG0UdC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Jul 2014 16:23:25 -0400
-From: Jessica Yu <jyu@cowsay.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Jessica Yu <jyu@cowsay.org>
-Subject: [PATCH] Staging: lustre: linux-module: fix coding style issues
-Date: Sun, 27 Jul 2014 21:25:42 -0700
-Message-Id: <1406521542-25363-1-git-send-email-jyu@cowsay.org>
-X-Mailer: git-send-email 2.0.1
+	Sun, 27 Jul 2014 16:33:02 -0400
+Date: Sun, 27 Jul 2014 22:32:58 +0200
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+To: Benoit Masson <yahoo@perenite.com>
+Cc: benoitm@perenite.com, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        gregory.clement@free-electrons.com, andrew@lunn.ch,
+        sebastian.hesselbarth@googlemail.com, jason@lakedaemon.net
+Subject: Re: [PATCH 2/2] V3 ARM: mvebu: Added dts defintion for Lenovo
+ Iomega ix4-300d NAS
+Message-ID: <20140727223258.36b050b9@free-electrons.com>
+In-Reply-To: <1406418490-61502-1-git-send-email-yahoo@perenite.com>
+References: <1406418490-61502-1-git-send-email-yahoo@perenite.com>
+Organization: Free Electrons
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed some coding style issues:
-- Removed spaces after open parenthesis and before close parenthesis
-- Removed parentheses in some return statements, since return is not a
-  function
-- Fixed a warning regarding the file_operations struct; it is
-  normally const
-- Fixed pointer style issues (foo * bar -> foo *bar)
+Dear Benoit Masson,
 
-Signed-off-by: Jessica Yu <jyu@cowsay.org>
----
- drivers/staging/lustre/lustre/libcfs/linux/linux-module.c | 14 +++++++-------
- 1 file changed, 7 insertions(+), 7 deletions(-)
+On Sat, 26 Jul 2014 16:48:10 -0700, Benoit Masson wrote:
 
-diff --git a/drivers/staging/lustre/lustre/libcfs/linux/linux-module.c b/drivers/staging/lustre/lustre/libcfs/linux/linux-module.c
-index ccadf65..de3c199 100644
---- a/drivers/staging/lustre/lustre/libcfs/linux/linux-module.c
-+++ b/drivers/staging/lustre/lustre/libcfs/linux/linux-module.c
-@@ -99,7 +99,7 @@ int libcfs_ioctl_popdata(void *arg, void *data, int size)
- extern struct cfs_psdev_ops	  libcfs_psdev_ops;
- 
- static int
--libcfs_psdev_open(struct inode * inode, struct file * file)
-+libcfs_psdev_open(struct inode *inode, struct file *file)
- {
- 	struct libcfs_device_userstate **pdu = NULL;
- 	int    rc = 0;
-@@ -116,7 +116,7 @@ libcfs_psdev_open(struct inode * inode, struct file * file)
- 
- /* called when closing /dev/device */
- static int
--libcfs_psdev_release(struct inode * inode, struct file * file)
-+libcfs_psdev_release(struct inode *inode, struct file *file)
- {
- 	struct libcfs_device_userstate *pdu;
- 	int    rc = 0;
-@@ -140,9 +140,9 @@ static long libcfs_ioctl(struct file *file,
- 	if (!capable(CAP_SYS_ADMIN))
- 		return -EACCES;
- 
--	if ( _IOC_TYPE(cmd) != IOC_LIBCFS_TYPE ||
-+	if (_IOC_TYPE(cmd) != IOC_LIBCFS_TYPE ||
- 	     _IOC_NR(cmd) < IOC_LIBCFS_MIN_NR  ||
--	     _IOC_NR(cmd) > IOC_LIBCFS_MAX_NR ) {
-+	     _IOC_NR(cmd) > IOC_LIBCFS_MAX_NR) {
- 		CDEBUG(D_IOCTL, "invalid ioctl ( type %d, nr %d, size %d )\n",
- 		       _IOC_TYPE(cmd), _IOC_NR(cmd), _IOC_SIZE(cmd));
- 		return (-EINVAL);
-@@ -154,7 +154,7 @@ static long libcfs_ioctl(struct file *file,
- 		if (!capable(CFS_CAP_SYS_BOOT))
- 			return (-EPERM);
- 		panic("debugctl-invoked panic");
--		return (0);
-+		return 0;
- 	case IOC_LIBCFS_MEMHOG:
- 		if (!capable(CFS_CAP_SYS_ADMIN))
- 			return -EPERM;
-@@ -167,10 +167,10 @@ static long libcfs_ioctl(struct file *file,
- 		rc = libcfs_psdev_ops.p_ioctl(&pfile, cmd, (void *)arg);
- 	else
- 		rc = -EPERM;
--	return (rc);
-+	return rc;
- }
- 
--static struct file_operations libcfs_fops = {
-+static const struct file_operations libcfs_fops = {
- 	.unlocked_ioctl	= libcfs_ioctl,
- 	.open		= libcfs_psdev_open,
- 	.release	= libcfs_psdev_release,
+> +	gpio-keys {
+> +		compatible = "gpio-keys";
+> +		pinctrl-0 = <&power_button_pin &reset_button_pin
+> +			&select_button_pin &scroll_button_pin>;
+> +		pinctrl-names = "default";
+> +
+> +		power-button {
+> +			label = "Power Button";
+> +			linux,code = <KEY_POWER>;
+> +			gpios = <&gpio1 12 GPIO_ACTIVE_HIGH>;
+> +		};
+> +
+> +		reset-button {
+> +			label = "Reset Button";
+> +			linux,code = <KEY_RESTART>;
+> +			gpios = <&gpio1 13 GPIO_ACTIVE_LOW>;
+> +		};
+> +
+> +		select-button {
+> +			label = "Select Button";
+> +			linux,code = <BTN_SELECT>;
+> +			gpios = <&gpio1 9 GPIO_ACTIVE_LOW>;
+> +		};
+> +
+> +		scroll-button {
+> +			label = "Scroll Button";
+> +			linux,code = <KEY_SCROLLDOWN>;
+> +			gpios = <&gpio1 10 GPIO_ACTIVE_LOW>;
+
+So you're using the GPIO_ACTIVE_<foo> defines here.
+
+> +		};
+> +	};
+> +
+> +	spi3 {
+> +		compatible = "spi-gpio";
+> +		status = "okay";
+> +		gpio-sck = <&gpio0 25 0>;
+> +		gpio-mosi = <&gpio1 15 0>; /*gpio 47*/
+> +		cs-gpios = <&gpio0 27 0 >;
+
+But not here. Any reason?
+
+Also, nitpick: unneeded space in <&gpio0 27 0 > (i.e the space right
+before the closing >).
+
+> +		num-chipselects = <1>;
+> +		#address-cells = <1>;
+> +		#size-cells = <0>;
+> +
+> +		gpio2: gpio2@0 {
+> +			compatible = "fairchild,74hc595";
+> +			gpio-controller;
+> +			#gpio-cells = <2>;
+> +			reg = <0>;
+> +			registers-number = <2>;
+> +			spi-max-frequency = <100000>;
+> +		};
+
+I'm not sure "gpio2" is a good name, as we might think of it as being
+the third GPIO controller internal to the SoC.
+
+Thanks,
+
+Thomas
 -- 
-2.0.1
-
+Thomas Petazzoni, CTO, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
