@@ -1,95 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751856AbaG0X53 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Jul 2014 19:57:29 -0400
-Received: from out03.mta.xmission.com ([166.70.13.233]:39746 "EHLO
-	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750821AbaG0X5X (ORCPT
+	id S1752414AbaG0X6C (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Jul 2014 19:58:02 -0400
+Received: from ozlabs.org ([103.22.144.67]:49094 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750821AbaG0X6A convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Jul 2014 19:57:23 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Paolo Bonzini <pbonzini@redhat.com>, linux-crypto@vger.kernel.org,
-        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        James Morris <james.l.morris@oracle.com>,
-        LSM List <linux-security-module@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Linux API <linux-api@vger.kernel.org>, Julien Tinnes <jln@google.com>,
-        "Theodore Ts'o" <tytso@mit.edu>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Paul Moore <paul@paul-moore.com>, David Drysdale <drysdale@google.com>,
-        Kees Cook <keescook@chromium.org>,
-        Meredydd Luff <meredydd@senatehouse.org>,
-        Christoph Hellwig <hch@infradead.org>
-References: <CALCETrWGvBfrX1W5XaFgJZhKHLf+oac9YrwPR3ppK=deQtu5hA@mail.gmail.com>
-	<20140727210617.GY6725@thunk.org>
-	<CALCETrXfzOZEC3mOKkm3_GvitvkEu4kAa3LowRv-fjHnzrQnBg@mail.gmail.com>
-Date: Sun, 27 Jul 2014 16:53:23 -0700
-In-Reply-To: <CALCETrXfzOZEC3mOKkm3_GvitvkEu4kAa3LowRv-fjHnzrQnBg@mail.gmail.com>
-	(Andy Lutomirski's message of "Sun, 27 Jul 2014 15:17:15 -0700")
-Message-ID: <87oawa740c.fsf@x220.int.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX1+Ps33Bxyn5J4+qPYOoD4N6V7QzT3vUrW8=
-X-SA-Exim-Connect-IP: 98.234.51.111
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.7 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	*  0.8 BAYES_50 BODY: Bayes spam probability is 40 to 60%
-	*      [score: 0.4855]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa01 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  1.0 T_XMDrugObfuBody_08 obfuscated drug references
-X-Spam-DCC: XMission; sa01 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: *;Andy Lutomirski <luto@amacapital.net>
-X-Spam-Relay-Country: 
-Subject: Re: General flags to turn things off (getrandom, pid lookup, etc)
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 13:58:17 -0700)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+	Sun, 27 Jul 2014 19:58:00 -0400
+Message-ID: <1406505477.2876.15.camel@ale.ozlabs.ibm.com>
+Subject: Re: [PATCH] sched: make update_sd_pick_busiest return true on a
+ busier sd
+From: Michael Neuling <mikey@neuling.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
+        mingo@kernel.org, pjt@google.com, jhladky@redhat.com,
+        ktkhai@parallels.com, tim.c.chen@linux.intel.com,
+        nicolas.pitre@linaro.org
+Date: Mon, 28 Jul 2014 09:57:57 +1000
+In-Reply-To: <20140725152728.GB6758@twins.programming.kicks-ass.net>
+References: <20140722144559.382c5243@annuminas.surriel.com>
+	 <20140725152728.GB6758@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andy Lutomirski <luto@amacapital.net> writes:
+On Fri, 2014-07-25 at 17:27 +0200, Peter Zijlstra wrote:
+> On Tue, Jul 22, 2014 at 02:45:59PM -0400, Rik van Riel wrote:
+> > Currently update_sd_pick_busiest only returns true when an sd
+> > is overloaded, or for SD_ASYM_PACKING when a domain is busier
+> > than average and a higher numbered domain than the target.
+> > 
+> > This breaks load balancing between domains that are not overloaded,
+> > in the !SD_ASYM_PACKING case. This patch makes update_sd_pick_busiest
+> > return true when the busiest sd yet is encountered.
+> > 
+> > On a 4 node system, this seems to result in the load balancer finally
+> > putting 1 thread of a 4 thread test run of "perf bench numa mem" on
+> > each node, where before the load was generally not spread across all
+> > nodes.
+> 
+> So for !ASYM the code is effectively:
+> 
+> 	return sgs->avg_load > sds->busiest_stat.avg_load;
+> 
+> I'd like to at least add a clause that makes overloaded groups
+> prioritized over !overloaded groups.
+> 
+> Also, like we found earlier, calculate_imbalance() relies on the
+> sum_nr_running > group_capacity_factor thing, which you've just
+> 'wrecked', so we'd need an update to that part too.
+> 
+> > Behaviour for SD_ASYM_PACKING does not seem to match the comment,
+> > in that groups with below average load average are ignored, but I
+> > have no hardware to test that so I have left the behaviour of that
+> > code unchanged.
+> 
+> Mikey, does that stuff work as expected?
 
-> On Jul 27, 2014 5:06 PM, "Theodore Ts'o" <tytso@mit.edu> wrote:
->>
->> On Fri, Jul 25, 2014 at 11:30:48AM -0700, Andy Lutomirski wrote:
->> >
->> > There is recent interest in having a way to turn generally-available
->> > kernel features off.  Maybe we should add a good one so we can stop
->> > bikeshedding and avoid proliferating dumb interfaces.
->>
->> I believe the seccomp infrastructure (which is already upstream)
->> should be able to do most of what you want, at least with respect to
->> features which are exposed via system calls (which was most of your
->> list).
->
-> Seccomp can't really restrict lookups of non-self pids.  In fact, this
-> feature idea started out as a response to a patch adding a kind of
-> nasty seccomp feature to make it sort of possible.
->
-> I agree that that seccomp can turn off GRND_RANDOM, but how is it
-> supposed to do it in such a way that the filtered software will fall
-> back to something sensible?  -ENOSYS?  -EPERM?  Something else?
->
-> I think that -ENOSYS is clearly wrong, but standardizing this would be
-> nice.  Admittedly, adding something fancy like this for GRND_RANDOM
-> may not be appropriate.
+Sorry for the slow response.  v1 and v2 both pass testing on POWER7.  So
+FWIW...
 
-Andy you seem to be arguing here for two system calls.
-get_urandom() and get_random().
+Acked-By: Michael Neuling <mikey@neuling.org>
 
-Where get_urandom only blocks if there is not enough starting entropy,
-and get_random(GRND_RANDOM) blocks if there is currently not enough
-entropy.
-
-That would allow -ENOSYS to be the right return value and it would
-simply things for everyone.
-
-Eric
+Mikey
 
