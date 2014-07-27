@@ -1,85 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752314AbaG0Q5b (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Jul 2014 12:57:31 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:58034 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751394AbaG0Q5a (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Jul 2014 12:57:30 -0400
-From: Mark Brown <broonie@kernel.org>
-To: Thomas Gleixner <tglx@linutronix.de>, Jason Cooper <jason@lakedaemon.net>
-Cc: linux-kernel@vger.kernel.org, Marc Zyngier <marc.zyngier@arm.com>,
-        linux-arm-kernel@lists.infradead.org, linaro-kernel@lists.linaro.org,
-        Mark Brown <broonie@linaro.org>
-Date: Sun, 27 Jul 2014 17:57:04 +0100
-Message-Id: <1406480224-24628-1-git-send-email-broonie@kernel.org>
-X-Mailer: git-send-email 2.0.1
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: [PATCH] irqchip: gic-v3: Only define gic_peek_irq() when building SMP
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+	id S1752465AbaG0RAq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Jul 2014 13:00:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55912 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752366AbaG0RAp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Jul 2014 13:00:45 -0400
+Date: Sun, 27 Jul 2014 13:00:41 -0400 (EDT)
+From: Mikulas Patocka <mpatocka@redhat.com>
+X-X-Sender: mpatocka@file01.intranet.prod.int.rdu2.redhat.com
+To: Alexander Viro <viro@zeniv.linux.org.uk>
+cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] fs: make cont_expand_zero interruptible
+Message-ID: <alpine.LRH.2.02.1407271255170.22290@file01.intranet.prod.int.rdu2.redhat.com>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mark Brown <broonie@linaro.org>
+This patch makes it possible to kill a process looping in
+cont_expand_zero. A process may spend a lot of time in this function, so
+it is desirable to be able to kill it.
 
-If building with CONFIG_SMP disbled (for example, with allnoconfig) then
-GCC complains that the static function gic_peek_irq() is defined but not
-used since the only reference is in the SMP initialisation code. Fix this
-by moving the function definition inside the ifdef.
+It happened to me that I wanted to copy a piece data from the disk to a 
+file. By mistake, I used the "seek" parameter to dd instead of "skip". Due 
+to the "seek" parameter, dd attempted to extend the file and became stuck 
+doing so - the only possibility was to reset the machine or wait many 
+hours until the filesystem runs out of space and cont_expand_zero fails. 
+We need this patch to be able to terminate the process.
 
-Signed-off-by: Mark Brown <broonie@linaro.org>
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+Cc: stable@vger.kernel.org
+
 ---
- drivers/irqchip/irq-gic-v3.c | 26 +++++++++++++-------------
- 1 file changed, 13 insertions(+), 13 deletions(-)
+ fs/buffer.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
-diff --git a/drivers/irqchip/irq-gic-v3.c b/drivers/irqchip/irq-gic-v3.c
-index 81519bae0453..30130f955151 100644
---- a/drivers/irqchip/irq-gic-v3.c
-+++ b/drivers/irqchip/irq-gic-v3.c
-@@ -200,19 +200,6 @@ static void gic_poke_irq(struct irq_data *d, u32 offset)
- 	rwp_wait();
- }
+Index: linux-3.14.12/fs/buffer.c
+===================================================================
+--- linux-3.14.12.orig/fs/buffer.c	2014-04-08 00:21:59.998849390 +0200
++++ linux-3.14.12/fs/buffer.c	2014-07-27 18:31:54.839750955 +0200
+@@ -2311,6 +2311,11 @@ static int cont_expand_zero(struct file
+ 		err = 0;
  
--static int gic_peek_irq(struct irq_data *d, u32 offset)
--{
--	u32 mask = 1 << (gic_irq(d) % 32);
--	void __iomem *base;
--
--	if (gic_irq_in_rdist(d))
--		base = gic_data_rdist_sgi_base();
--	else
--		base = gic_data.dist_base;
--
--	return !!(readl_relaxed(base + offset + (gic_irq(d) / 32) * 4) & mask);
--}
--
- static void gic_mask_irq(struct irq_data *d)
- {
- 	gic_poke_irq(d, GICD_ICENABLER);
-@@ -401,6 +388,19 @@ static void gic_cpu_init(void)
- }
+ 		balance_dirty_pages_ratelimited(mapping);
++
++		if (unlikely(fatal_signal_pending(current))) {
++			err = -EINTR;
++			goto out;
++		}
+ 	}
  
- #ifdef CONFIG_SMP
-+static int gic_peek_irq(struct irq_data *d, u32 offset)
-+{
-+	u32 mask = 1 << (gic_irq(d) % 32);
-+	void __iomem *base;
-+
-+	if (gic_irq_in_rdist(d))
-+		base = gic_data_rdist_sgi_base();
-+	else
-+		base = gic_data.dist_base;
-+
-+	return !!(readl_relaxed(base + offset + (gic_irq(d) / 32) * 4) & mask);
-+}
-+
- static int gic_secondary_init(struct notifier_block *nfb,
- 			      unsigned long action, void *hcpu)
- {
--- 
-2.0.1
-
+ 	/* page covers the boundary, find the boundary offset */
