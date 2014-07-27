@@ -1,69 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752744AbaG0WRk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Jul 2014 18:17:40 -0400
-Received: from mail-lb0-f176.google.com ([209.85.217.176]:37531 "EHLO
-	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752694AbaG0WRh (ORCPT
+	id S1750952AbaG0Wuc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Jul 2014 18:50:32 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:50921 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750771AbaG0Wua (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Jul 2014 18:17:37 -0400
+	Sun, 27 Jul 2014 18:50:30 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Linux PCI <linux-pci@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>
+Subject: Re: [PATCH] PCI / PM: Make PCIe PME interrupts wake up from "freeze" sleep state
+Date: Mon, 28 Jul 2014 01:08:58 +0200
+Message-ID: <1744442.5aE2TFtgoQ@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <3655886.Ih7L6voqVK@vostro.rjw.lan>
+References: <12684812.i3F8JrYCl0@vostro.rjw.lan> <20140724134241.GZ6758@twins.programming.kicks-ass.net> <3655886.Ih7L6voqVK@vostro.rjw.lan>
 MIME-Version: 1.0
-In-Reply-To: <20140727210617.GY6725@thunk.org>
-References: <CALCETrWGvBfrX1W5XaFgJZhKHLf+oac9YrwPR3ppK=deQtu5hA@mail.gmail.com>
- <20140727210617.GY6725@thunk.org>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Sun, 27 Jul 2014 15:17:15 -0700
-Message-ID: <CALCETrXfzOZEC3mOKkm3_GvitvkEu4kAa3LowRv-fjHnzrQnBg@mail.gmail.com>
-Subject: Re: General flags to turn things off (getrandom, pid lookup, etc)
-To: Paolo Bonzini <pbonzini@redhat.com>, linux-crypto@vger.kernel.org,
-        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        James Morris <james.l.morris@oracle.com>,
-        LSM List <linux-security-module@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Linux API <linux-api@vger.kernel.org>, Julien Tinnes <jln@google.com>,
-        "Theodore Ts'o" <tytso@mit.edu>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Paul Moore <paul@paul-moore.com>, David Drysdale <drysdale@google.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Kees Cook <keescook@chromium.org>,
-        Meredydd Luff <meredydd@senatehouse.org>,
-        Christoph Hellwig <hch@infradead.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Jul 27, 2014 5:06 PM, "Theodore Ts'o" <tytso@mit.edu> wrote:
->
-> On Fri, Jul 25, 2014 at 11:30:48AM -0700, Andy Lutomirski wrote:
-> >
-> > There is recent interest in having a way to turn generally-available
-> > kernel features off.  Maybe we should add a good one so we can stop
-> > bikeshedding and avoid proliferating dumb interfaces.
->
-> I believe the seccomp infrastructure (which is already upstream)
-> should be able to do most of what you want, at least with respect to
-> features which are exposed via system calls (which was most of your
-> list).
+On Thursday, July 24, 2014 05:36:28 PM Rafael J. Wysocki wrote:
+> On Thursday, July 24, 2014 03:42:41 PM Peter Zijlstra wrote:
+> 
+> [...]
+> 
+> > 
+> > So with this patch on:
+> > 
+> >   http://marc.info/?l=3Dlinux-kernel&m=3D140620918218199
+> > 
+> > This will not work on my machine, because aerdrv is requesting the same
+> > irq.
+> > 
+> > Now I've not a f'cking clue what aerdrv is, and whether it too wants
+> > NO_SUSPEND on or not.
+> > 
+> > But if I make it also request NO_SUSPEND it all starts working.
+> 
+> OK, so can you please test the updated patch below?
+> 
+> Rafael
+> 
+> ---
+> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> Subject: PCI / PM: Make PCIe PME interrupts wake up from "freeze" sleep state
+> 
+> The "freeze" sleep state, also known as suspend-to-idle, is entered
+> without taking nonboot CPUs offline, right after devices have been
+> suspended.  It works by waiting for at least one wakeup source object
+> to become "active" as a result of handling a hardware interrupt.
+> 
+> Of course, interrupts supposed to be able to wake up the system from
+> suspend-to-idle cannot be disabled by suspend_device_irqs() and their
+> interrupt handlers must be able to cope with interrupts coming after
+> all devices have been suspended.  In that case, they only need to
+> call __pm_wakeup_event() for a single wakeup source object without
+> trying to access hardware (that will be resumed later as part of
+> the subsequent system resume).
+> 
+> Make PCIe PME interrupts work this way.
+> 
+> Register an additional wakeup source object for each PCIe PME
+> service device.  That object will be used to generate wakeups from
+> suspend-to-idle.
+> 
+> Add IRQF_NO_SUSPEND to PME interrupt flags.  This will make
+> suspend_device_irqs() to ignore PME interrupts, but that's OK,
+> because the PME interrupt handler is suspend-aware anyway and
+> can cope with interrupts coming during system suspend-resume.
+> Unfortunately, that requires the AER service driver to pass
+> IRQF_NO_SUSPEND when requesting its IRQ which may be shared with
+> the PME interrupt and to make that safe, simple suspend/resume
+> routines need to be added to the AER driver.
+> 
+> During system suspend, while suspending the PME service for given
+> port, walk the bus below that port and see if any devices on that
+> bus are configured for wakeup.  If so, do not disable the PME
+> interrupt, but only set a "suspend level" for the service to
+> "wakeup" and make the interrupt handler behave in a special way,
+> which is to call __pm_wakeup_event() with the service's wakeup
+> source object as the first argument whenever the interrupt is
+> triggered.
+> 
+> The "suspend level" is cleared while resuming the PME service.
+> 
+> This change allows Wake-on-LAN to be used for wakeup from
+> suspend-to-idle on my MSI Wind tesbed netbook.
 
-Seccomp can't really restrict lookups of non-self pids.  In fact, this
-feature idea started out as a response to a patch adding a kind of
-nasty seccomp feature to make it sort of possible.
+Hi Bjorn,
 
-I agree that that seccomp can turn off GRND_RANDOM, but how is it
-supposed to do it in such a way that the filtered software will fall
-back to something sensible?  -ENOSYS?  -EPERM?  Something else?
+There will be a new version of this, please ignore for now.
 
-I think that -ENOSYS is clearly wrong, but standardizing this would be
-nice.  Admittedly, adding something fancy like this for GRND_RANDOM
-may not be appropriate.
+Rafael
 
---Andy
-
->
-> It won't cover x86 specific things like restricting RDTSC or CPUID
-> (and as far as I know you can't intercept the CPUID instruction), but
-> I'm not sure it matters.  I don't really see the point, myself.
->
->                                          - Ted
