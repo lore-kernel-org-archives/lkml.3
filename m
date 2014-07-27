@@ -1,60 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752446AbaG0PKu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Jul 2014 11:10:50 -0400
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:62806 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752388AbaG0PKs (ORCPT
+	id S1752277AbaG0PNx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Jul 2014 11:13:53 -0400
+Received: from mail-vc0-f180.google.com ([209.85.220.180]:46420 "EHLO
+	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751788AbaG0PNv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Jul 2014 11:10:48 -0400
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Anil Gurumurthy <anil.gurumurthy@qlogic.com>,
-        Sudarsana Kalluru <sudarsana.kalluru@qlogic.com>
-Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] scsi: bfa: bfa_fcbuild.c:  Cleaning up missing null-terminate in conjunction with strncpy
-Date: Sun, 27 Jul 2014 17:12:13 +0200
-Message-Id: <1406473933-12801-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-X-Mailer: git-send-email 1.7.10.4
+	Sun, 27 Jul 2014 11:13:51 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140727131917.GA32153@infradead.org>
+References: <1406375881-18837-1-git-send-email-andrey.krieger.utkin@gmail.com>
+	<20140727131917.GA32153@infradead.org>
+Date: Sun, 27 Jul 2014 11:13:50 -0400
+Message-ID: <CAHQdGtRzDzpOuwZYWaBake-bH0z0eyMd2g-RTVwO0d2f0Zmsow@mail.gmail.com>
+Subject: Re: [PATCH] nfs3_list_one_acl(): check get_acl() result with IS_ERR_OR_NULL
+From: Trond Myklebust <trond.myklebust@primarydata.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Andrey Utkin <andrey.krieger.utkin@gmail.com>,
+        Linux Kernel mailing list <linux-kernel@vger.kernel.org>,
+        Linux NFS Mailing List <linux-nfs@vger.kernel.org>,
+        kernel-janitors@vger.kernel.org, Russell King <linux@arm.linux.org.uk>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replacing strncpy with strlcpy to avoid strings that lacks null terminate.
-And use the sizeof on the to string rather than strlen on the from string.
+On Sun, Jul 27, 2014 at 9:19 AM, Christoph Hellwig <hch@infradead.org> wrote:
+> On Sat, Jul 26, 2014 at 02:58:01PM +0300, Andrey Utkin wrote:
+>> There was a check for result being not NULL. But get_acl() may return
+>> NULL, or ERR_PTR, or actual pointer.
+>> The purpose of the function where current change is done is to "list
+>> ACLs only when they are available", so any error condition of get_acl()
+>> mustn't be elevated, and returning 0 there is still valid.
+>>
+>> Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=81111
+>> Signed-off-by: Andrey Utkin <andrey.krieger.utkin@gmail.com>
+>
+> Looks good, thanks!
+>
+> Reviewed-by: Christoph Hellwig <hch@lst.de>
+>
+> should probably get a cc to stable as the original patch has one
+> as well.
 
-Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
----
- drivers/scsi/bfa/bfa_fcbuild.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+Why are we not passing the error code back to the caller here in the
+case where we have one? One of the main purposes of returning an error
+in get_acl() is to ensure that we pass -EOPNOTSUPP if the operation
+fails due to lack of server support.
 
-diff --git a/drivers/scsi/bfa/bfa_fcbuild.c b/drivers/scsi/bfa/bfa_fcbuild.c
-index dce787f..9294c14 100644
---- a/drivers/scsi/bfa/bfa_fcbuild.c
-+++ b/drivers/scsi/bfa/bfa_fcbuild.c
-@@ -1249,8 +1249,8 @@ fc_rspnid_build(struct fchs_s *fchs, void *pyld, u32 s_id, u16 ox_id,
- 	memset(rspnid, 0, sizeof(struct fcgs_rspnid_req_s));
- 
- 	rspnid->dap = s_id;
--	rspnid->spn_len = (u8) strlen((char *)name);
--	strncpy((char *)rspnid->spn, (char *)name, rspnid->spn_len);
-+	strlcpy((char *)rspnid->spn, (char *)name, sizeof(rspnid->spn));
-+	rspnid->spn_len = (u8) strlen((char *)rspnid->spn);
- 
- 	return sizeof(struct fcgs_rspnid_req_s) + sizeof(struct ct_hdr_s);
- }
-@@ -1270,8 +1270,8 @@ fc_rsnn_nn_build(struct fchs_s *fchs, void *pyld, u32 s_id,
- 	memset(rsnn_nn, 0, sizeof(struct fcgs_rsnn_nn_req_s));
- 
- 	rsnn_nn->node_name = node_name;
--	rsnn_nn->snn_len = (u8) strlen((char *)name);
--	strncpy((char *)rsnn_nn->snn, (char *)name, rsnn_nn->snn_len);
-+	strlcpy((char *)rsnn_nn->snn, (char *)name, sizeof(rsnn_nn->snn));
-+	rsnn_nn->snn_len = (u8) strlen((char *)rsnn_nn->snn);
- 
- 	return sizeof(struct fcgs_rsnn_nn_req_s) + sizeof(struct ct_hdr_s);
- }
+Cheers
+  Trond
+
 -- 
-1.7.10.4
+Trond Myklebust
 
+Linux NFS client maintainer, PrimaryData
+
+trond.myklebust@primarydata.com
