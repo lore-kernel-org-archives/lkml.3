@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752541AbaG0RQb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Jul 2014 13:16:31 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:50092 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752286AbaG0RQ3 (ORCPT
+	id S1752565AbaG0RTo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Jul 2014 13:19:44 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:33409 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752286AbaG0RTn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Jul 2014 13:16:29 -0400
-Date: Sun, 27 Jul 2014 10:16:22 -0700
+	Sun, 27 Jul 2014 13:19:43 -0400
+Date: Sun, 27 Jul 2014 10:19:36 -0700
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: Pranith Kumar <bobby.prani@gmail.com>
 Cc: Josh Triplett <josh@joshtriplett.org>,
@@ -17,170 +17,63 @@ Cc: Josh Triplett <josh@joshtriplett.org>,
         "open list:READ-COPY UPDATE..." <linux-kernel@vger.kernel.org>
 Subject: Re: [RFC PATCH 1/1] rcu: Use rcu_gp_kthread_wake() to wake up
  kthreads
-Message-ID: <20140727171622.GP11241@linux.vnet.ibm.com>
+Message-ID: <20140727171936.GQ11241@linux.vnet.ibm.com>
 Reply-To: paulmck@linux.vnet.ibm.com
 References: <1406264818-2296-1-git-send-email-bobby.prani@gmail.com>
- <20140725144458.GY11241@linux.vnet.ibm.com>
- <CAJhHMCAvcKZ+gnW4GYf5-WNYFHsoAiBFU4vUcR5ifJedVvFtzQ@mail.gmail.com>
- <20140725224759.GG11241@linux.vnet.ibm.com>
- <CAJhHMCA_Z-1DP1Fo8_KJ2F8R4LYsMrbC2Yp_NqCSu0cCR8EQDw@mail.gmail.com>
- <20140727162918.GN11241@linux.vnet.ibm.com>
- <CAJhHMCB7C-Sah5wh1vSQFj7cpRHbGZbV==aPH0xP_aQYJ1MR+A@mail.gmail.com>
+ <CAJhHMCDQe5tSs7576uy8fRBW0txXoyUa6RiQdpg48UJs5TPsog@mail.gmail.com>
+ <20140725150248.GZ11241@linux.vnet.ibm.com>
+ <CAJhHMCDEFgwNVcd_ZaZ_1Eohv_eH9tCnjedxeQg122ACNdX2cQ@mail.gmail.com>
+ <20140725231535.GH11241@linux.vnet.ibm.com>
+ <53D2E861.2060000@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAJhHMCB7C-Sah5wh1vSQFj7cpRHbGZbV==aPH0xP_aQYJ1MR+A@mail.gmail.com>
+In-Reply-To: <53D2E861.2060000@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14072717-1542-0000-0000-0000039408AB
+x-cbid: 14072717-7164-0000-0000-0000036958C3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 27, 2014 at 12:44:30PM -0400, Pranith Kumar wrote:
-> On Sun, Jul 27, 2014 at 12:29 PM, Paul E. McKenney
-> <paulmck@linux.vnet.ibm.com> wrote:
-> > On Sun, Jul 27, 2014 at 11:55:38AM -0400, Pranith Kumar wrote:
-> >> Hi Paul,
+On Fri, Jul 25, 2014 at 07:29:37PM -0400, Pranith Kumar wrote:
+> 
+> On 07/25/2014 07:15 PM, Paul E. McKenney wrote:
+> > On Fri, Jul 25, 2014 at 06:23:41PM -0400, Pranith Kumar wrote:
+> >> Here total is the total number of times we enter th function rcu_report_qs_rsp()
+> >> and unnecessary is the times we call wake_up() unnecessarily.
+> >> case1, 2, 3 are the cases I listed above.
 > >>
-> >> On Fri, Jul 25, 2014 at 6:47 PM, Paul E. McKenney
-> >> <paulmck@linux.vnet.ibm.com> wrote:
-> >> > On Fri, Jul 25, 2014 at 04:19:43PM -0400, Pranith Kumar wrote:
-> >> >>
-> >> >> I checked all the locations where gp_flags is being updated and the
-> >> >> root node lock is held in all the cases.
-> >> >> So I guess we can remove the comment too.
-> >> >
-> >> > And the accesses that matter (for some definition of "that matter") are
-> >> > also similarly protected?
-> >> >
-> >> > An example of an access that doesn't matter is one that is followed up
-> >> > by an access under the appropriate lock.
+> >> Note that the frequency has gone way up than before, I am not sure why that is.
 > >>
-> >> I am really new to having to think about the need for memory barriers,
-> >> so please correct me if I am wrong.
+> >> *ALL* the wakeups seem to be unnecessary from that location. And the
+> >> main reason is that gp_flags is 0.
 > >>
-> >> So the idea here is that two consecutive accesses to ->gp_flags should
-> >> not be re-ordered. If an access to ->gp_flags is followed by an access
-> >> within a lock, the second access cannot be re-ordered with the first
-> >> one and hence it will be safe, right?
+> >> My rcugp file has the following:
+> >>
+> >> completed=257515  gpnum=257516  age=1  max=1684
+> >>
+> >> Thoughts?
+> > Hard to believe in the rcutorture case.  My guess was that rcutorture was
+> > doing about 9000 wakeups, 2000 of which were unnecessary.  Which would
+> > of course still tilt things very much in favor of your patch.
 > >
-> > No, in that case they actually can be re-ordered.
+> > I am not surprised in the mostly-idle case, as the RCU grace-period
+> > kthread would most likely be the one ending the grace period, which
+> > would therefore almost always be a self-wakeup.
 > >
-> > If two accesses are made while holding a given lock, then they cannot
-> > be reordered, but only from the viewpoint of another access made while
-> > holding that same lock.
-> >
-> > This gets really involved really fast.  You therefore need to read
-> > Documentation/memory-barriers.txt.
+> > Any chance of a peek at your debugging code?
 > 
-> OK, I think I will do that now and for the next few days :)
-> 
-> >
-> >> The appropriate lock for ->gp_flags is rcu_node->lock.
-> >
-> > Specifically, the root rcu_node structure's ->lock.
-> >
-> >>                                                        I see
-> >> consecutive accesses to ->gp_flags without this lock only in
-> >> force_quiescent_state()(we take fqslock there), but these accesses
-> >> looks safe as they are in independent iterations of a loop. These
-> >> cannot be rearranged by the compiler.
-> >
-> > Almost...  They are ordered because the accesses are to the exact same
-> > variable -and- because they are protected by ACCESS_ONCE().  If there
-> > was no ACCESS_ONCE(), both the CPU and the compiler could rearrange the
-> > accesses.  (On many, but not all, architectures, the unlock-lock
-> > pairs would act as full barriers.)
-> 
-> I was under the impression that ACCESS_ONCE() only defeated the
-> compiler re-orderings. I did not know that it could defeat the CPU
-> reordering too. I will look for the details in the documentation.
+> Sure, I am also attaching my dmesg output. Hope it helps!
 
-Search for "reorder successive loads to the same location" in
-Documentation/memory-barriers.txt.  More details are available in the
-CPU reference manual.
+Looks legit.  I guess that having even one CPU idle for the duration
+of the grace period will cause a self wakeup, so perhaps I should not
+have been surprised.
 
-> >> So all the accesses are safe from re-ordering and hence there is no
-> >> need of a memory barrier for accessing ->gp_flags in
-> >> rcu_gp_kthread_wake().
-> >
-> > Your answer does in fact appear to be correct, but the reasoning leading
-> > to it is not completely sound.  Which is not bad, given that you appear
-> > not to have read the documentation.  Therefore, once again, please read
-> > Documentation/memory-barriers.txt.
-> 
-> When the answer is yes/no, I think I luckily landed on the correct
-> side of 50% fence :)
-
-I know that feeling!  ;-)
+In any case, please summarize the data down to no more than 30 lines of
+text and resend your wakeup-elimination patch with this text included
+as the change log.
 
 							Thanx, Paul
-
-> --
-> Pranith.
-> 
-> >
-> >                                                         Thanx, Paul
-> >
-> >> > Anyway, if it is all locked properly, then yes, we should get rid of
-> >> > the comment -- or replace it with a comment saying that barriers are
-> >> > not needed due to locking.
-> >> >
-> >> >                                                         Thanx, Paul
-> >> >
-> >> >> >> Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
-> >> >> >> ---
-> >> >> >>  kernel/rcu/tree.c | 6 ++++--
-> >> >> >>  1 file changed, 4 insertions(+), 2 deletions(-)
-> >> >> >>
-> >> >> >> diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
-> >> >> >> index 72e0b1f..d0e0d6e 100644
-> >> >> >> --- a/kernel/rcu/tree.c
-> >> >> >> +++ b/kernel/rcu/tree.c
-> >> >> >> @@ -1938,7 +1938,8 @@ static void rcu_report_qs_rsp(struct rcu_state *rsp, unsigned long flags)
-> >> >> >>  {
-> >> >> >>       WARN_ON_ONCE(!rcu_gp_in_progress(rsp));
-> >> >> >>       raw_spin_unlock_irqrestore(&rcu_get_root(rsp)->lock, flags);
-> >> >> >> -     wake_up(&rsp->gp_wq);  /* Memory barrier implied by wake_up() path. */
-> >> >> >> +     /* Memory barrier implied by wake_up() path. */
-> >> >> >> +     rcu_gp_kthread_wake(rsp);
-> >> >> >>  }
-> >> >> >>
-> >> >> >>  /*
-> >> >> >> @@ -2516,7 +2517,8 @@ static void force_quiescent_state(struct rcu_state *rsp)
-> >> >> >>       ACCESS_ONCE(rsp->gp_flags) =
-> >> >> >>               ACCESS_ONCE(rsp->gp_flags) | RCU_GP_FLAG_FQS;
-> >> >> >>       raw_spin_unlock_irqrestore(&rnp_old->lock, flags);
-> >> >> >> -     wake_up(&rsp->gp_wq);  /* Memory barrier implied by wake_up() path. */
-> >> >> >> +     /* Memory barrier implied by wake_up() path. */
-> >> >> >> +     rcu_gp_kthread_wake(rsp);
-> >> >> >>  }
-> >> >> >>
-> >> >> >>  /*
-> >> >> >> --
-> >> >> >> 2.0.1
-> >> >> >>
-> >> >> >
-> >> >>
-> >> >>
-> >> >>
-> >> >> --
-> >> >> Pranith
-> >> >>
-> >> >
-> >>
-> >>
-> >>
-> >> --
-> >> Pranith
-> >>
-> >
-> 
-> 
-> 
-> -- 
-> Pranith
-> 
 
