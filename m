@@ -1,347 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751412AbaGZXsR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 19:48:17 -0400
-Received: from mail-wg0-f48.google.com ([74.125.82.48]:42855 "EHLO
-	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750837AbaGZXsP (ORCPT
+	id S1751353AbaG0AVm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 20:21:42 -0400
+Received: from mail-wg0-f49.google.com ([74.125.82.49]:51922 "EHLO
+	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751058AbaG0AVl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 19:48:15 -0400
-From: Benoit Masson <yahoo@perenite.com>
-To: benoitm@perenite.com, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: jason@lakedaemon.net, andrew@lunn.ch, gregory.clement@free-electrons.com,
-        sebastian.hesselbarth@googlemail.com,
-        Benoit Masson <yahoo@perenite.com>
-Subject: [PATCH 2/2] V3 ARM: mvebu: Added dts defintion for Lenovo Iomega ix4-300d NAS
-Date: Sat, 26 Jul 2014 16:48:10 -0700
-Message-Id: <1406418490-61502-1-git-send-email-yahoo@perenite.com>
-X-Mailer: git-send-email 1.9.1
+	Sat, 26 Jul 2014 20:21:41 -0400
+From: Cihangir Akturk <cakturk@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: peter.p.waskiewicz.jr@intel.com, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, Cihangir Akturk <cakturk@gmail.com>
+Subject: [PATCH] staging: gdm724x: fix misplaced open braces
+Date: Sun, 27 Jul 2014 03:21:15 +0300
+Message-Id: <1406420475-14163-1-git-send-email-cakturk@gmail.com>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Lenovo Iomega ix4-300d is a 4-Bay sata NAS with dual Gb,
- USB2.0 & 3.0, powered by a Marvell Armada XP MV78230 dual core CPU.
+This patch fixes the following checkpatch.pl issues in gdm_usb.c:
+ERROR: that open brace { should be on the previous line
 
-http://shop.lenovo.com/us/en/servers/network-storage/lenovoemc/ix4-300d/
-Signed-off-by: Benoit Masson <yahoo@perenite.com>
+Signed-off-by: Cihangir Akturk <cakturk@gmail.com>
 ---
- arch/arm/boot/dts/Makefile                      |   3 +-
- arch/arm/boot/dts/armada-xp-lenovo-ix4-300d.dts | 285 ++++++++++++++++++++++++
- 2 files changed, 287 insertions(+), 1 deletion(-)
- create mode 100644 arch/arm/boot/dts/armada-xp-lenovo-ix4-300d.dts
+ drivers/staging/gdm724x/gdm_usb.c | 28 +++++++++++-----------------
+ 1 file changed, 11 insertions(+), 17 deletions(-)
 
-diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
-index adb5ed9..4429495 100644
---- a/arch/arm/boot/dts/Makefile
-+++ b/arch/arm/boot/dts/Makefile
-@@ -437,8 +437,9 @@ dtb-$(CONFIG_MACH_ARMADA_XP) += \
- 	armada-xp-axpwifiap.dtb \
- 	armada-xp-db.dtb \
- 	armada-xp-gp.dtb \
--	armada-xp-netgear-rn2120.dtb \
-+	armada-xp-lenovo-ix4-300d.dtb \
- 	armada-xp-matrix.dtb \
-+	armada-xp-netgear-rn2120.dtb \
- 	armada-xp-openblocks-ax3-4.dtb
- dtb-$(CONFIG_MACH_DOVE) += dove-cm-a510.dtb \
- 	dove-cubox.dtb \
-diff --git a/arch/arm/boot/dts/armada-xp-lenovo-ix4-300d.dts b/arch/arm/boot/dts/armada-xp-lenovo-ix4-300d.dts
-new file mode 100644
-index 0000000..c82a8e3
---- /dev/null
-+++ b/arch/arm/boot/dts/armada-xp-lenovo-ix4-300d.dts
-@@ -0,0 +1,285 @@
-+/*
-+ * Device Tree file for Lenovo Iomega ix4-300d
-+ *
-+ * Copyright (C) 2014, Benoit Masson <yahoo@perenite.com>
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * as published by the Free Software Foundation; either version
-+ * 2 of the License, or (at your option) any later version.
-+ */
-+
-+/dts-v1/;
-+
-+#include <dt-bindings/input/input.h>
-+#include <dt-bindings/gpio/gpio.h>
-+#include "armada-xp-mv78230.dtsi"
-+
-+/ {
-+	model = "Lenovo Iomega ix4-300d";
-+	compatible = "lenovo,ix4-300d", "marvell,armadaxp-mv78230",
-+		     "marvell,armadaxp", "marvell,armada-370-xp";
-+
-+	chosen {
-+		bootargs = "console=ttyS0,115200 earlyprintk";
-+		stdout-path = "/soc/internal-regs/serial@12000";
-+	};
-+
-+	memory {
-+		device_type = "memory";
-+		reg = <0 0x00000000 0 0x20000000>; /* 512MB */
-+	};
-+
-+	soc {
-+		ranges = <MBUS_ID(0xf0, 0x01) 0 0 0xd0000000 0x100000
-+			MBUS_ID(0x01, 0x1d) 0 0 0xfff00000 0x100000>;
-+
-+		pcie-controller {
-+			status = "okay";
-+
-+			/* Quad port sata: Marvell 88SX7042 */
-+			pcie@1,0 {
-+				/* Port 0, Lane 0 */
-+				status = "okay";
-+			};
-+
-+			/* USB 3.0 xHCI controller: NEC D720200F1 */
-+			pcie@5,0 {
-+				/* Port 1, Lane 0 */
-+				status = "okay";
-+			};
-+		};
-+
-+		internal-regs {
-+			pinctrl {
-+				poweroff_pin: poweroff-pin {
-+					marvell,pins = "mpp24";
-+					marvell,function = "gpio";
-+				};
-+
-+				power_button_pin: power-button-pin {
-+					marvell,pins = "mpp44";
-+					marvell,function = "gpio";
-+				};
-+
-+				reset_button_pin: reset-button-pin {
-+					marvell,pins = "mpp45";
-+					marvell,function = "gpio";
-+				};
-+				select_button_pin: select-button-pin {
-+					marvell,pins = "mpp41";
-+					marvell,function = "gpio";
-+				};
-+
-+				scroll_button_pin: scroll-button-pin {
-+					marvell,pins = "mpp42";
-+					marvell,function = "gpio";
-+				};
-+
-+				hdd_led_pin: hdd-led-pin {
-+					marvell,pins = "mpp26";
-+					marvell,function = "gpio";
-+				};
-+			};
-+
-+			serial@12000 {
-+				status = "okay";
-+			};
-+
-+			mdio {
-+				phy0: ethernet-phy@0 { /* Marvell 88E1318 */
-+					reg = <0>;
-+				};
-+
-+				phy1: ethernet-phy@1 { /* Marvell 88E1318 */
-+					reg = <1>;
-+				};
-+			};
-+
-+			ethernet@70000 {
-+				status = "okay";
-+				phy = <&phy0>;
-+				phy-mode = "rgmii-id";
-+			};
-+
-+			ethernet@74000 {
-+				status = "okay";
-+				phy = <&phy1>;
-+				phy-mode = "rgmii-id";
-+			};
-+
-+			usb@50000 {
-+				status = "okay";
-+			};
-+
-+			usb@51000 {
-+				status = "okay";
-+			};
-+
-+			i2c@11000 {
-+				compatible = "marvell,mv64xxx-i2c";
-+				clock-frequency = <400000>;
-+				status = "okay";
-+
-+				adt7473@2e {
-+					compatible = "adi,adt7473";
-+					reg = <0x2e>;
-+				};
-+
-+				pcf8563@51 {
-+					compatible = "nxp,pcf8563";
-+					reg = <0x51>;
-+				};
-+
-+			};
-+
-+			nand@d0000 {
-+				status = "okay";
-+				num-cs = <1>;
-+				marvell,nand-keep-config;
-+				marvell,nand-enable-arbiter;
-+				nand-on-flash-bbt;
-+
-+				partition@0 {
-+					label = "u-boot";
-+					reg = <0x0000000 0xe0000>;
-+					read-only;
-+				};
-+
-+				partition@e0000 {
-+					label = "u-boot-env";
-+					reg = <0xe0000 0x20000>;
-+					read-only;
-+				};
-+
-+				partition@100000 {
-+					label = "u-boot-env2";
-+					reg = <0x100000 0x20000>;
-+					read-only;
-+				};
-+
-+				partition@120000 {
-+					label = "zImage";
-+					reg = <0x120000 0x400000>;
-+				};
-+
-+				partition@520000 {
-+					label = "initrd";
-+					reg = <0x520000 0x400000>;
-+				};
-+
-+				partition@xE00000 {
-+					label = "boot";
-+					reg = <0xE00000 0x3F200000>;
-+				};
-+
-+				partition@flash {
-+					label = "flash";
-+					reg = <0x0 0x40000000>;
-+				};
-+			};
-+		};
-+	};
-+
-+	gpio-keys {
-+		compatible = "gpio-keys";
-+		pinctrl-0 = <&power_button_pin &reset_button_pin
-+			&select_button_pin &scroll_button_pin>;
-+		pinctrl-names = "default";
-+
-+		power-button {
-+			label = "Power Button";
-+			linux,code = <KEY_POWER>;
-+			gpios = <&gpio1 12 GPIO_ACTIVE_HIGH>;
-+		};
-+
-+		reset-button {
-+			label = "Reset Button";
-+			linux,code = <KEY_RESTART>;
-+			gpios = <&gpio1 13 GPIO_ACTIVE_LOW>;
-+		};
-+
-+		select-button {
-+			label = "Select Button";
-+			linux,code = <BTN_SELECT>;
-+			gpios = <&gpio1 9 GPIO_ACTIVE_LOW>;
-+		};
-+
-+		scroll-button {
-+			label = "Scroll Button";
-+			linux,code = <KEY_SCROLLDOWN>;
-+			gpios = <&gpio1 10 GPIO_ACTIVE_LOW>;
-+		};
-+	};
-+
-+	spi3 {
-+		compatible = "spi-gpio";
-+		status = "okay";
-+		gpio-sck = <&gpio0 25 0>;
-+		gpio-mosi = <&gpio1 15 0>; /*gpio 47*/
-+		cs-gpios = <&gpio0 27 0 >;
-+		num-chipselects = <1>;
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+
-+		gpio2: gpio2@0 {
-+			compatible = "fairchild,74hc595";
-+			gpio-controller;
-+			#gpio-cells = <2>;
-+			reg = <0>;
-+			registers-number = <2>;
-+			spi-max-frequency = <100000>;
-+		};
-+	};
-+
-+	gpio-leds {
-+		compatible = "gpio-leds";
-+		pinctrl-0 = <&hdd_led_pin>;
-+		pinctrl-names = "default";
-+
-+		hdd-led {
-+			label = "ix4-300d:hdd:blue";
-+			gpios = <&gpio0 26 GPIO_ACTIVE_HIGH>;
-+			default-state = "off";
-+		};
-+
-+		power-led {
-+			label = "ix4-300d:power:white";
-+			gpios = <&gpio2 1 GPIO_ACTIVE_LOW>;
-+			/* init blinking while booting */
-+			linux,default-trigger = "timer";
-+			default-state = "on";
-+		};
-+
-+		sysfail-led {
-+			label = "ix4-300d:sysfail:red";
-+			gpios = <&gpio2 2 GPIO_ACTIVE_HIGH>;
-+			default-state = "off";
-+		};
-+
-+		sys-led {
-+			label = "ix4-300d:sys:blue";
-+			gpios = <&gpio2 3 GPIO_ACTIVE_HIGH>;
-+			default-state = "off";
-+		};
-+
-+		hddfail-led {
-+			label = "ix4-300d:hddfail:red";
-+			gpios = <&gpio2 4 GPIO_ACTIVE_HIGH>;
-+			default-state = "off";
-+		};
-+
-+	};
-+
-+	/* 
-+	 * Warning: you need both eth1 & 0 PHY initialized (i.e having
-+	 * them up does the tweak) for poweroff to shutdown otherwise it
-+	 * reboots 
-+	 */
-+	gpio-poweroff {
-+		compatible = "gpio-poweroff";
-+		pinctrl-0 = <&poweroff_pin>;
-+		pinctrl-names = "default";
-+		gpios = <&gpio0 24 GPIO_ACTIVE_HIGH>;
-+	};
-+};
+diff --git a/drivers/staging/gdm724x/gdm_usb.c b/drivers/staging/gdm724x/gdm_usb.c
+index 0c1b2de..483185b 100644
+--- a/drivers/staging/gdm724x/gdm_usb.c
++++ b/drivers/staging/gdm724x/gdm_usb.c
+@@ -264,28 +264,25 @@ static void release_usb(struct lte_udev *udev)
+ 	unsigned long flags;
+ 
+ 	spin_lock_irqsave(&tx->lock, flags);
+-	list_for_each_entry_safe(t_sdu, t_sdu_next, &tx->sdu_list, list)
+-	{
++	list_for_each_entry_safe(t_sdu, t_sdu_next, &tx->sdu_list, list) {
+ 		list_del(&t_sdu->list);
+ 		free_tx_sdu_struct(t_sdu);
+ 	}
+ 
+-	list_for_each_entry_safe(t, t_next, &tx->hci_list, list)
+-	{
++	list_for_each_entry_safe(t, t_next, &tx->hci_list, list) {
+ 		list_del(&t->list);
+ 		free_tx_struct(t);
+ 	}
+ 
+-	list_for_each_entry_safe(t_sdu, t_sdu_next, &tx->free_list, list)
+-	{
++	list_for_each_entry_safe(t_sdu, t_sdu_next, &tx->free_list, list) {
+ 		list_del(&t_sdu->list);
+ 		free_tx_sdu_struct(t_sdu);
+ 	}
+ 	spin_unlock_irqrestore(&tx->lock, flags);
+ 
+ 	spin_lock_irqsave(&rx->submit_lock, flags);
+-	list_for_each_entry_safe(r, r_next, &rx->rx_submit_list, rx_submit_list)
+-	{
++	list_for_each_entry_safe(r, r_next, &rx->rx_submit_list,
++				 rx_submit_list) {
+ 		spin_unlock_irqrestore(&rx->submit_lock, flags);
+ 		usb_kill_urb(r->urb);
+ 		spin_lock_irqsave(&rx->submit_lock, flags);
+@@ -293,16 +290,14 @@ static void release_usb(struct lte_udev *udev)
+ 	spin_unlock_irqrestore(&rx->submit_lock, flags);
+ 
+ 	spin_lock_irqsave(&rx->rx_lock, flags);
+-	list_for_each_entry_safe(r, r_next, &rx->free_list, free_list)
+-	{
++	list_for_each_entry_safe(r, r_next, &rx->free_list, free_list) {
+ 		list_del(&r->free_list);
+ 		free_rx_struct(r);
+ 	}
+ 	spin_unlock_irqrestore(&rx->rx_lock, flags);
+ 
+ 	spin_lock_irqsave(&rx->to_host_lock, flags);
+-	list_for_each_entry_safe(r, r_next, &rx->to_host_list, to_host_list)
+-	{
++	list_for_each_entry_safe(r, r_next, &rx->to_host_list, to_host_list) {
+ 		if (r->index == (void *)udev) {
+ 			list_del(&r->to_host_list);
+ 			free_rx_struct(r);
+@@ -458,9 +453,8 @@ static void remove_rx_submit_list(struct usb_rx *r, struct rx_cxt *rx)
+ 	struct usb_rx	*r_remove, *r_remove_next;
+ 
+ 	spin_lock_irqsave(&rx->submit_lock, flags);
+-	list_for_each_entry_safe(r_remove,
+-			r_remove_next, &rx->rx_submit_list, rx_submit_list)
+-	{
++	list_for_each_entry_safe(r_remove, r_remove_next,
++				 &rx->rx_submit_list, rx_submit_list) {
+ 		if (r == r_remove) {
+ 			list_del(&r->rx_submit_list);
+ 			break;
+@@ -938,8 +932,8 @@ static int gdm_usb_suspend(struct usb_interface *intf, pm_message_t pm_msg)
+ 	udev->usb_state = PM_SUSPEND;
+ 
+ 	spin_lock_irqsave(&rx->submit_lock, flags);
+-	list_for_each_entry_safe(r, r_next, &rx->rx_submit_list, rx_submit_list)
+-	{
++	list_for_each_entry_safe(r, r_next, &rx->rx_submit_list,
++				 rx_submit_list) {
+ 		spin_unlock_irqrestore(&rx->submit_lock, flags);
+ 		usb_kill_urb(r->urb);
+ 		spin_lock_irqsave(&rx->submit_lock, flags);
 -- 
-1.9.1
+1.9.3
 
