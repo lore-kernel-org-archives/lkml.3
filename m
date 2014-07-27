@@ -1,118 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751502AbaG0E6b (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Jul 2014 00:58:31 -0400
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:36305 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751054AbaG0E63 (ORCPT
+	id S1751717AbaG0E7j (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Jul 2014 00:59:39 -0400
+Received: from mail-vc0-f177.google.com ([209.85.220.177]:56423 "EHLO
+	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751521AbaG0E7g convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Jul 2014 00:58:29 -0400
-Content-Type: multipart/signed; boundary="Apple-Mail=_4732D5F5-DC11-4065-A311-AE00A326EAEE"; protocol="application/pgp-signature"; micalg=pgp-sha1
-Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
-Subject: Re: [PATCH] crypto: ablkcipher.c:  Cleaning up missing null-terminate in conjunction with strncpy
-From: Mark D Rustad <mrustad@gmail.com>
-In-Reply-To: <1406383757-1753-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-Date: Sat, 26 Jul 2014 21:58:25 -0700
-Cc: Herbert Xu <herbert@gondor.apana.org.au>,
-        "David S. Miller" <davem@davemloft.net>, linux-crypto@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Message-Id: <22C5E3AE-403A-48B7-86EC-F6E4AC42D4A5@gmail.com>
-References: <1406383757-1753-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-X-Mailer: Apple Mail (2.1878.6)
+	Sun, 27 Jul 2014 00:59:36 -0400
+MIME-Version: 1.0
+In-Reply-To: <53D23192.4000908@rock-chips.com>
+References: <1405774529-26027-1-git-send-email-caesar.wang@rock-chips.com>
+	<1405774529-26027-3-git-send-email-caesar.wang@rock-chips.com>
+	<20140721085001.GG8843@ulmo>
+	<53CD0E82.6030901@rock-chips.com>
+	<20140721132723.GH15238@ulmo>
+	<53D23192.4000908@rock-chips.com>
+Date: Sat, 26 Jul 2014 21:59:35 -0700
+X-Google-Sender-Auth: EyKHsWW6Tkafi3CQ8kjxMLO8Muw
+Message-ID: <CAD=FV=XLjYQYmHxp3HBdwVmt6Wa7y-LEnsFKobsgVfFCp2-rRg@mail.gmail.com>
+Subject: Re: [PATCH v2 2/2] pwm: add this patch to support the new pwm of
+ Rockchip SoCs
+From: Doug Anderson <dianders@chromium.org>
+To: caesar <caesar.wang@rock-chips.com>
+Cc: Thierry Reding <thierry.reding@gmail.com>, linux-pwm@vger.kernel.org,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+caesar,
 
---Apple-Mail=_4732D5F5-DC11-4065-A311-AE00A326EAEE
-Content-Transfer-Encoding: quoted-printable
-Content-Type: text/plain;
-	charset=us-ascii
+On Fri, Jul 25, 2014 at 3:29 AM, caesar <caesar.wang@rock-chips.com> wrote:
+> Hi Thierry,
+>
+>
+>
+>
+> 在 2014年07月21日 21:27, Thierry Reding 写道:
+>>
+>> On Mon, Jul 21, 2014 at 08:58:42PM +0800, caesar wrote:
+>>
+>>> 于 2014年07月21日 16:50, Thierry Reding 写道:
+>>>>
+>>>> On Sat, Jul 19, 2014 at 08:55:29PM +0800, Caesar Wang wrote:
+>>
+>> [...]
+>>>>>
+>>>>>         struct rockchip_pwm_chip *pc;
+>>>>>         struct resource *r;
+>>>>>         int ret;
+>>>>> @@ -119,7 +182,10 @@ static int rockchip_pwm_probe(struct
+>>>>> platform_device *pdev)
+>>>>>                 return -ENOMEM;
+>>>>>         r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+>>>>> -       pc->base = devm_ioremap_resource(&pdev->dev, r);
+>>>>> +       if (!strcmp(of_id->compatible, "rockchip,vop-pwm"))
+>>>>> +               pc->base = devm_ioremap(&pdev->dev, r->start,
+>>>>> resource_size(r));
+>>>>> +       else
+>>>>> +               pc->base = devm_ioremap_resource(&pdev->dev, r);
+>>>>
+>>>> Sorry, this still isn't an option. You really shouldn't remap I/O
+>>>> regions that other drivers may be using. You hinted at a shared register
+>>>> space during the review of the initial version. Can you provide more
+>>>> detail about what exactly the memory map looks like of the rk3288? Is
+>>>> there some kind of technical reference manual that I could look at? Or
+>>>> do you have a device tree extract that shows what the memory map looks
+>>>> like?
+>>>>
+>>>> Thierry
+>>>
+>>> Maybe,you can look at the ARM: dts: rk3288:
+>>>
+>>> https://github.com/rkchrome/kernel/blob/master/arch/arm/boot/dts/rk3288.dtsi
+>>> There is some lcdc and vop-pwm map address for rk3288.
+>>>
+>>> ,and you can look at the vop-introduce.pdf and vop-register.pdf in Annex.
+>>>
+>>> Maybe,I should put the vop-pwm in lcdc driver,but I don't hope do so it.
+>>>
+>>> Could you give a suggestion to solve it? Thanks.
+>>
+>> It looks like you could turn the lcdc device into an MFD device so that
+>> it can instantiate two devices, one for the display controller, the
+>> other for the PWM. Or perhaps it would even work with only a single
+>> child device.
+>>
+>> The device tree would become something like this:
+>>
+>>         lcdc@ff930000 {
+>>                 compatible = "rockchip,rk3288-lcdc";
+>>                 ...
+>>
+>>                 pwm@ff9301a0 {
+>>                         compatible = "rockchip,vop-pwm";
+>>                         ...
+>>                 };
+>>         };
+>>
+>> And your driver would do something like:
+>>
+>>         static const struct resource pwm_resources[] = {
+>>                 {
+>>                         .start = 0x1a0,
+>>                         .end = 0x1af,
+>>                         .flags = IORESOURCE_MEM,
+>>                 },
+>>         };
+>>
+>>         static const struct mfd_cell subdevices[] = {
+>>                 {
+>>                         .name = "pwm",
+>>                         .id = 1,
+>>                         .of_compatible = "rockchip,vop-pwm",
+>>                         .num_resources = ARRAY_SIZE(pwm_resources),
+>>                         .resources = pwm_resources,
+>>                 },
+>>         };
+>>
+>>         static int lcdc_probe(struct platform_device *pdev)
+>>         {
+>>                 struct resource *regs;
+>>                 ...
+>>
+>>                 regs = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+>>
+>>                 ...
+>>
+>>                 err = mfd_add_devices(&pdev->dev, 0, subdevices,
+>> ARRAY_SIZE(subdevices),
+>>                                       regs, NULL, NULL);
+>>                 ...
+>>         }
+>>
+>> Thierry
+>
+> Sorry,I might a little trouble for the changes.
+>
+> The driver changes only for lcdc? If that is the case,I suddenly don't know
+> how to do it ?
+>
+> Maybe,I didn't say it clearly.
+>
+> lcdc0: lcdc@ff930000                   |     vop0pwm: pwm@ff9301a0
+> reg = <0xff930000 0x10000>     |      reg = <0xff9301a0 0x10>;
+>
+> The lcdc has to add resource's address  from  0xff930000 to 0xff93ffff.
+>
+> When the  pwm driver is loading vop0pwm. the "devm_ioremap_resource()" will
+> be used in probe();
+>
+> I think it will be occur a fail. because the resource [mem
+> 0xff9301a0-0xff9301af] has be requested by lcdc.
+> =>rockchip-pwm ff9301a0.pwm: can't request region for resource [mem
+> 0xff9301a0-0xff9301af]
+>
+> If I do the changes in pwm driver,do you have a other suggestion for it?
+> thanks.:-)
 
-Rickard,
+Sorry if this is stupid (and I haven't tried it), but does "ranges"
+help solve this problem?  AKA:
 
-On Jul 26, 2014, at 7:09 AM, Rickard Strandqvist =
-<rickard_strandqvist@spectrumdigital.se> wrote:
+         lcdc@ff930000 {
+                 compatible = "rockchip,rk3288-lcdc";
+                 reg = <0xff930000 0x10000>;
+                 #address-cells = <2>;
+                 #size-cells = <1>;
+                 ranges = <0 0xff9301a0 0x10>;
+                 ...
 
-> Replacing strncpy with strlcpy to avoid strings that lacks null =
-terminate.
->=20
-> Signed-off-by: Rickard Strandqvist =
-<rickard_strandqvist@spectrumdigital.se>
-> ---
-> crypto/ablkcipher.c |    8 ++++----
-> 1 file changed, 4 insertions(+), 4 deletions(-)
->=20
-> diff --git a/crypto/ablkcipher.c b/crypto/ablkcipher.c
-> index 40886c4..e446eef 100644
-> --- a/crypto/ablkcipher.c
-> +++ b/crypto/ablkcipher.c
-> @@ -384,8 +384,8 @@ static int crypto_ablkcipher_report(struct sk_buff =
-*skb, struct crypto_alg *alg)
-> {
-> 	struct crypto_report_blkcipher rblkcipher;
->=20
-> -	strncpy(rblkcipher.type, "ablkcipher", sizeof(rblkcipher.type));
-> -	strncpy(rblkcipher.geniv, alg->cra_ablkcipher.geniv ?: =
-"<default>",
-> +	strlcpy(rblkcipher.type, "ablkcipher", sizeof(rblkcipher.type));
-> +	strlcpy(rblkcipher.geniv, alg->cra_ablkcipher.geniv ?: =
-"<default>",
-> 		sizeof(rblkcipher.geniv));
->=20
-> 	rblkcipher.blocksize =3D alg->cra_blocksize;
-> @@ -465,8 +465,8 @@ static int crypto_givcipher_report(struct sk_buff =
-*skb, struct crypto_alg *alg)
-> {
-> 	struct crypto_report_blkcipher rblkcipher;
->=20
-> -	strncpy(rblkcipher.type, "givcipher", sizeof(rblkcipher.type));
-> -	strncpy(rblkcipher.geniv, alg->cra_ablkcipher.geniv ?: =
-"<built-in>",
-> +	strlcpy(rblkcipher.type, "givcipher", sizeof(rblkcipher.type));
-> +	strlcpy(rblkcipher.geniv, alg->cra_ablkcipher.geniv ?: =
-"<built-in>",
-> 		sizeof(rblkcipher.geniv));
->=20
-> 	rblkcipher.blocksize =3D alg->cra_blocksize;
+                 pwm@0,0 {
+                         compatible = "rockchip,vop-pwm";
+                         reg = <0 0 0x10>;
+                        ...
+                 };
+         };
 
-It looks like all of these patches in the crypto area are introducing =
-information leaks, including the one that first made me worry and =
-respond. There were no bugs here (unless someone were to introduce a =
-crypto method with a name longer than 63 characters), because stncpy =
-fills the remainder of the destination with 0.
-
-There are times when strncpy is the right function.
-
---=20
-Mark Rustad, MRustad@gmail.com
-
-
---Apple-Mail=_4732D5F5-DC11-4065-A311-AE00A326EAEE
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
-	filename=signature.asc
-Content-Type: application/pgp-signature;
-	name=signature.asc
-Content-Description: Message signed with OpenPGP using GPGMail
-
------BEGIN PGP SIGNATURE-----
-Comment: GPGTools - http://gpgtools.org
-
-iQIcBAEBAgAGBQJT1IbxAAoJEDwO/+eO4+5uRYUP/jP2w2A0HmbcKogSUXg0xZ1O
-2B18qTxF+yvTelxPzyZ9fbn4ZCMNENl8x3cBthkx0ScROPZWi9lQTo4kCZECGu1j
-C8FcDUbSC4Oop+2wApRaOX5qVRv4Ai9xKtQxIISEyzvsu+PlOAMzqIoXMPLee7B7
-ICo4C13f1lzsU0aiP8EwcyHY5Z9kG4UqaBFDBqCqf9xBwppJGBa6p7rTLruIqeTl
-mOyg5FpKHiReqPPjpDcmrVYXSbynU0nDJitPnL6c6Pvf45Y28qSD6IagHb5G2lOL
-0yXLRrIHBvxU2uqSFMwvOEZsoQ0j4Z6a+ZoH4K9m+hRY7r+0r5jbZKvGRFaISPle
-i0okhkdOz8z4KUz+6maOleJlMDk9jRFbc5Zwv2aPJ7ex1YaYg6QeUlhqedpeO/G4
-wqi9YYwdYfEqkd8LNi0E63LCLaH374kG67MZxNfyuKabF1f5fO0rc3hrTcv/Nwri
-lV0DHSl3Iqz397NHsF0jqaj+ULLVj4DczvTRaXuxT2hPljb67qe6KFrQX0Esv6vM
-QDgvKDwdbW+GRIr0K3J/Hz40MLd0t/6r+q4Zhd9h7pqL5jIcM1jZAg6yhWY3nBii
-SWcAioElP20iM/bqv43rfuuqQ4VNSLTnU/w8QgrC+YxR71HwvBGaPOFK8mt5X/zA
-LWRWEe4WZMxNZMp6k4kP
-=DZf5
------END PGP SIGNATURE-----
-
---Apple-Mail=_4732D5F5-DC11-4065-A311-AE00A326EAEE--
+Does that avoid the failure?  The lcdc driver would need to call
+of_platform_populate() to make the PWM show up.
