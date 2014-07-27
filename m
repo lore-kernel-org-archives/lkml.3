@@ -1,79 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751921AbaG0K3O (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Jul 2014 06:29:14 -0400
-Received: from mail-we0-f170.google.com ([74.125.82.170]:62458 "EHLO
-	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751619AbaG0K3M (ORCPT
+	id S1752057AbaG0K3i (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Jul 2014 06:29:38 -0400
+Received: from mail-oa0-f52.google.com ([209.85.219.52]:33054 "EHLO
+	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751629AbaG0K3f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Jul 2014 06:29:12 -0400
-Message-ID: <1406456949.5115.169.camel@marge.simpson.net>
-Subject: Re: [PATCH RFC] sched: deferred set priority (dprio)
-From: Mike Galbraith <umgwanakikbuti@gmail.com>
-To: Sergey Oboguev <oboguev.public@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@elte.hu>
-Date: Sun, 27 Jul 2014 12:29:09 +0200
-In-Reply-To: <CA+80gGZ=raShFq9du3a_67=eLgx8DdEW+hUY377MiLHtKW23ZQ@mail.gmail.com>
-References: <CA+80gGYVjprinWEJWbVq4VxjOLjQri8EvGAJ+sx+ihcOxdstCA@mail.gmail.com>
-	 <1406365137.5091.152.camel@marge.simpson.net>
-	 <CA+80gGZRxXfabODZoFMoBju=j+7+Ne8sUYaKBPzo4c9kTjL8_g@mail.gmail.com>
-	 <1406433735.5115.38.camel@marge.simpson.net>
-	 <CA+80gGZ=raShFq9du3a_67=eLgx8DdEW+hUY377MiLHtKW23ZQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Sun, 27 Jul 2014 06:29:35 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140726083301.GI21129@agordeev.usersys.redhat.com>
+References: <cover.1405533479.git.agordeev@redhat.com>
+	<9bfa1f22a2a59814a4d520bbcce6eba1b6979b31.1405533479.git.agordeev@redhat.com>
+	<20140726083301.GI21129@agordeev.usersys.redhat.com>
+Date: Sun, 27 Jul 2014 12:29:34 +0200
+Message-ID: <CAD+HZHWot_ZZr_+kR6_pKc0bRGFCU_k35RM7TRi=aKeeccsh9w@mail.gmail.com>
+Subject: Re: [PATCH v2 RESEND 18/23] pm8001: Use pci_enable_msix_exact()
+ instead of pci_enable_msix()
+From: Jack Wang <xjtuwjp@gmail.com>
+To: Alexander Gordeev <agordeev@redhat.com>
+Cc: linux-kernel@vger.kernel.org, lindar_liu <lindar_liu@usish.com>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        linux-pci@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2014-07-27 at 02:09 -0700, Sergey Oboguev wrote: 
-> On Sat, Jul 26, 2014 at 9:02 PM, Mike Galbraith
-> <umgwanakikbuti@gmail.com> wrote:
-> > On Sat, 2014-07-26 at 11:30 -0700, Sergey Oboguev wrote:
-> >> On Sat, Jul 26, 2014 at 1:58 AM, Mike Galbraith
-> >> <umgwanakikbuti@gmail.com> wrote:
-> >> > On Fri, 2014-07-25 at 12:45 -0700, Sergey Oboguev wrote:
-> >> >> [This is a repost of the message from few day ago, with patch file
-> >> >> inline instead of being pointed by the URL.]
-> >> >>
-> >> >> This patch is intended to improve the support for fine-grain parallel
-> >> >> applications that may sometimes need to change the priority of their threads at
-> >> >> a very high rate, hundreds or even thousands of times per scheduling timeslice.
-> >> >>
-> >> >> These are typically applications that have to execute short or very short
-> >> >> lock-holding critical or otherwise time-urgent sections of code at a very high
-> >> >> frequency and need to protect these sections with "set priority" system calls,
-> >> >> one "set priority" call to elevate current thread priority before entering the
-> >> >> critical or time-urgent section, followed by another call to downgrade thread
-> >> >> priority at the completion of the section. Due to the high frequency of
-> >> >> entering and leaving critical or time-urgent sections, the cost of these "set
-> >> >> priority" system calls may raise to a noticeable part of an application's
-> >> >> overall expended CPU time. Proposed "deferred set priority" facility allows to
-> >> >> largely eliminate the cost of these system calls.
-> >> >
-> >> > So you essentially want to ship preempt_disable() off to userspace?
-> >> >
-> >>
-> >> Only to the extent preemption control is already exported to the userspace and
-> >> a task is already authorized to control its preemption by its RLIMIT_RTPRIO,
-> >> RLIMIT_NICE and capable(CAP_SYS_NICE).
-> >>
-> >> DPRIO does not amplify a taks's capability to elevate its priority and block
-> >> other tasks, it just reduces the computational cost of frequest
-> >> sched_setattr(2) calls.
-> 
-> > You are abusing realtime
-> 
-> I am unsure why you would label priority ceiling for locks and priority
-> protection for other forms of time-urgent sections as an "abuse".
+Hi Alex,
 
-Ok, maybe "abuse" is too strong.  I know there are reasons why people do
-what they do, even when it may look silly to me.  I didn't like what I
-saw in case you couldn't tell, but lucky you, you're not selling it to
-me, you're selling it to maintainers.  I CCd them, so having voiced my
-opinion, I'll shut up and listen.
+Looks Ok for me.
+Please feel free to add my:
+Reviewed-by: Jack Wang <xjtuwjp@gmail.com>
 
--Mike
+Thanks,
+Jack
 
+2014-07-26 10:33 GMT+02:00 Alexander Gordeev <agordeev@redhat.com>:
+> On Wed, Jul 16, 2014 at 08:05:22PM +0200, Alexander Gordeev wrote:
+>> As result of deprecation of MSI-X/MSI enablement functions
+>> pci_enable_msix() and pci_enable_msi_block() all drivers
+>> using these two interfaces need to be updated to use the
+>> new pci_enable_msi_range()  or pci_enable_msi_exact()
+>> and pci_enable_msix_range() or pci_enable_msix_exact()
+>> interfaces.
+>
+> Hi Jack, Lindar,
+>
+> Could you please review this patch?
+>
+> Thanks!
+>
+>> Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+>> Cc: xjtuwjp@gmail.com
+>> Cc: lindar_liu@usish.com
+>> Cc: linux-scsi@vger.kernel.org
+>> Cc: linux-pci@vger.kernel.org
+>> ---
+>>  drivers/scsi/pm8001/pm8001_init.c |   39 +++++++++++++++++++------------------
+>>  1 files changed, 20 insertions(+), 19 deletions(-)
+>>
+>> diff --git a/drivers/scsi/pm8001/pm8001_init.c b/drivers/scsi/pm8001/pm8001_init.c
+>> index e837ece..4057c24 100644
+>> --- a/drivers/scsi/pm8001/pm8001_init.c
+>> +++ b/drivers/scsi/pm8001/pm8001_init.c
+>> @@ -729,34 +729,35 @@ static u32 pm8001_setup_msix(struct pm8001_hba_info *pm8001_ha)
+>>               sizeof(pm8001_ha->msix_entries[0]);
+>>       for (i = 0; i < max_entry ; i++)
+>>               pm8001_ha->msix_entries[i].entry = i;
+>> -     rc = pci_enable_msix(pm8001_ha->pdev, pm8001_ha->msix_entries,
+>> +     rc = pci_enable_msix_exact(pm8001_ha->pdev, pm8001_ha->msix_entries,
+>>               number_of_intr);
+>>       pm8001_ha->number_of_intr = number_of_intr;
+>> -     if (!rc) {
+>> -             PM8001_INIT_DBG(pm8001_ha, pm8001_printk(
+>> -                     "pci_enable_msix request ret:%d no of intr %d\n",
+>> -                                     rc, pm8001_ha->number_of_intr));
+>> +     if (rc)
+>> +             return rc;
+>>
+>> +     PM8001_INIT_DBG(pm8001_ha, pm8001_printk(
+>> +             "pci_enable_msix_exact request ret:%d no of intr %d\n",
+>> +                             rc, pm8001_ha->number_of_intr));
+>>
+>> -             for (i = 0; i < number_of_intr; i++) {
+>> -                     snprintf(intr_drvname[i], sizeof(intr_drvname[0]),
+>> -                                     DRV_NAME"%d", i);
+>> -                     pm8001_ha->irq_vector[i].irq_id = i;
+>> -                     pm8001_ha->irq_vector[i].drv_inst = pm8001_ha;
+>> +     for (i = 0; i < number_of_intr; i++) {
+>> +             snprintf(intr_drvname[i], sizeof(intr_drvname[0]),
+>> +                             DRV_NAME"%d", i);
+>> +             pm8001_ha->irq_vector[i].irq_id = i;
+>> +             pm8001_ha->irq_vector[i].drv_inst = pm8001_ha;
+>>
+>> -                     rc = request_irq(pm8001_ha->msix_entries[i].vector,
+>> -                             pm8001_interrupt_handler_msix, flag,
+>> -                             intr_drvname[i], &(pm8001_ha->irq_vector[i]));
+>> -                     if (rc) {
+>> -                             for (j = 0; j < i; j++)
+>> -                                     free_irq(
+>> -                                     pm8001_ha->msix_entries[j].vector,
+>> +             rc = request_irq(pm8001_ha->msix_entries[i].vector,
+>> +                     pm8001_interrupt_handler_msix, flag,
+>> +                     intr_drvname[i], &(pm8001_ha->irq_vector[i]));
+>> +             if (rc) {
+>> +                     for (j = 0; j < i; j++) {
+>> +                             free_irq(pm8001_ha->msix_entries[j].vector,
+>>                                       &(pm8001_ha->irq_vector[i]));
+>> -                             pci_disable_msix(pm8001_ha->pdev);
+>> -                             break;
+>>                       }
+>> +                     pci_disable_msix(pm8001_ha->pdev);
+>> +                     break;
+>>               }
+>>       }
+>> +
+>>       return rc;
+>>  }
+>>  #endif
+>> --
+>> 1.7.7.6
+>>
+>
+> --
+> Regards,
+> Alexander Gordeev
+> agordeev@redhat.com
