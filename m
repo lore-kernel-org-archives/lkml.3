@@ -1,60 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751668AbaG0Xfg (ORCPT <rfc822;w@1wt.eu>);
+	id S1752189AbaG0Xfr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Jul 2014 19:35:47 -0400
+Received: from mail-we0-f172.google.com ([74.125.82.172]:41104 "EHLO
+	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751509AbaG0Xfg convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 27 Jul 2014 19:35:36 -0400
-Received: from ozlabs.org ([103.22.144.67]:55259 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750934AbaG0Xfe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Jul 2014 19:35:34 -0400
-Date: Mon, 28 Jul 2014 09:35:26 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: of: Make OF_DYNAMIC user selectable
-Message-ID: <20140728093526.38d8e732@canb.auug.org.au>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/VaepzBHQZva+sQmpb/+w6G_"; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=iso-8859-1
+Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
+Subject: Re: [PATCH 2/2] V3 ARM: mvebu: Added dts defintion for Lenovo Iomega ix4-300d NAS
+From: Benoit Masson <benoitm@perenite.com>
+In-Reply-To: <20140727223258.36b050b9@free-electrons.com>
+Date: Mon, 28 Jul 2014 01:35:35 +0200
+Cc: Benoit Masson <yahoo@perenite.com>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        gregory.clement@free-electrons.com, andrew@lunn.ch,
+        sebastian.hesselbarth@googlemail.com, jason@lakedaemon.net
+Content-Transfer-Encoding: 8BIT
+Message-Id: <C2BE2F4B-1045-484F-9E12-A757EE3CD1F6@perenite.com>
+References: <1406418490-61502-1-git-send-email-yahoo@perenite.com> <20140727223258.36b050b9@free-electrons.com>
+To: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+X-Mailer: Apple Mail (2.1878.6)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/VaepzBHQZva+sQmpb/+w6G_
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+ 
+Le 27 juil. 2014 à 22:32, Thomas Petazzoni <thomas.petazzoni@free-electrons.com> a écrit :
 
-Hi Grant,
+> Dear Benoit Masson,
+> 
 
-I noticed the subject commit in the devicetree tree in linux-next today.
-The commit message gives us no idea why we would want to make this
-change.  We already have lots of user selectable CONFIG_ options ... do
-we really need this one as well?
+Dear Thomas,
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+> On Sat, 26 Jul 2014 16:48:10 -0700, Benoit Masson wrote:
+> 
+>> +	gpio-keys {
+>> +		compatible = "gpio-keys";
+>> +		pinctrl-0 = <&power_button_pin &reset_button_pin
+>> +			&select_button_pin &scroll_button_pin>;
+>> +		pinctrl-names = "default";
+>> +
+>> +		power-button {
+>> +			label = "Power Button";
+>> +			linux,code = <KEY_POWER>;
+>> +			gpios = <&gpio1 12 GPIO_ACTIVE_HIGH>;
+>> +		};
+>> +
+>> +		reset-button {
+>> +			label = "Reset Button";
+>> +			linux,code = <KEY_RESTART>;
+>> +			gpios = <&gpio1 13 GPIO_ACTIVE_LOW>;
+>> +		};
+>> +
+>> +		select-button {
+>> +			label = "Select Button";
+>> +			linux,code = <BTN_SELECT>;
+>> +			gpios = <&gpio1 9 GPIO_ACTIVE_LOW>;
+>> +		};
+>> +
+>> +		scroll-button {
+>> +			label = "Scroll Button";
+>> +			linux,code = <KEY_SCROLLDOWN>;
+>> +			gpios = <&gpio1 10 GPIO_ACTIVE_LOW>;
+> 
+> So you're using the GPIO_ACTIVE_<foo> defines here.
+> 
+>> +		};
+>> +	};
+>> +
+>> +	spi3 {
+>> +		compatible = "spi-gpio";
+>> +		status = "okay";
+>> +		gpio-sck = <&gpio0 25 0>;
+>> +		gpio-mosi = <&gpio1 15 0>; /*gpio 47*/
+>> +		cs-gpios = <&gpio0 27 0 >;
+> 
+> But not here. Any reason?
 
---Sig_/VaepzBHQZva+sQmpb/+w6G_
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+Indeed I think Jason made this comment already and I seem to have missed -> Corrected in V4
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+> 
+> Also, nitpick: unneeded space in <&gpio0 27 0 > (i.e the space right
+> before the closing >).
+> 
 
-iQIcBAEBCAAGBQJT1YzDAAoJEMDTa8Ir7ZwVEEkP/j1EImUJF3WsO3EILCQJuoKd
-RBpk/juZpmRQkKSt13CXy2zvC+wL2Ul0hQLJ79Tih9mOURNFWQ5Oy6IxlXOw7CKj
-7d7B4N/GvFmMzLrTrIAXN9r3N+iv7Vce221QfpPCj9JUVZi11qzjBLrQKGnwZbGy
-3OsUDkHCBuCb+C9/NlyTlUKNc+UQ58tR1/lm4W7p2ChLJ76XXjxkjs5QoXiAnN8F
-ZtvAbIb6/VJTtkCJDfZvMBVe82i2Re7nk2p1Hovqj/n3+BuzEaxwdr1vwzho+NST
-txfPUJmO7hdFXam2wjti8Cr6Rpzsj5jRx76vQclri0ltAtKbbVnpsyek5PWyY9JM
-XU7j+plqOPdGIasnj9h68XjF6TYPpNlD7EUaXHC7N3W7xI+bVNpDWM1hEK2QOpiW
-nKhd+tuMS71sgM4i8kGwUMzgETAnU3OOte+EvxX6PUV+XUgGaa57+C6X4F6lRJY9
-UMNP/GS3J9uY2e24YEyTeYo0wANr8Ajo9hl34EhukoBnvxrDV2+Em/O1LDOAWgZf
-nyjBw3RBrE84F5MTxQUjnx05I5rCsuj7iyvCjwms2lwf9AurMM346D9sxr3909cM
-W4Cc8mhNEvhPNNascAYN0sB/WsNNY+f34W+tlk0n6a+5pE76RuhIDl/soPwxyGax
-zcKLPMXEqEiJf/raDsU1
-=1Z4d
------END PGP SIGNATURE-----
+-> Corrected in V4
 
---Sig_/VaepzBHQZva+sQmpb/+w6G_--
+>> +		num-chipselects = <1>;
+>> +		#address-cells = <1>;
+>> +		#size-cells = <0>;
+>> +
+>> +		gpio2: gpio2@0 {
+>> +			compatible = "fairchild,74hc595";
+>> +			gpio-controller;
+>> +			#gpio-cells = <2>;
+>> +			reg = <0>;
+>> +			registers-number = <2>;
+>> +			spi-max-frequency = <100000>;
+>> +		};
+> 
+> I'm not sure "gpio2" is a good name, as we might think of it as being
+> the third GPIO controller internal to the SoC.
+> 
+
+Renamed to gpio_spi, tested ok  -> Corrected in V4
+
+> Thanks,
+> 
+
+You're welcome, patch issued as V4 just now.
+
+> Thomas
+> -- 
+> Thomas Petazzoni, CTO, Free Electrons
+> Embedded Linux, Kernel and Android engineering
+> http://free-electrons.com
+
