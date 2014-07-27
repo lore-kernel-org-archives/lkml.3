@@ -1,56 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752370AbaG0MZf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Jul 2014 08:25:35 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:36075 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751852AbaG0MZd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Jul 2014 08:25:33 -0400
-Message-ID: <53D4EFBB.6000404@suse.de>
-Date: Sun, 27 Jul 2014 14:25:31 +0200
-From: =?UTF-8?B?QW5kcmVhcyBGw6RyYmVy?= <afaerber@suse.de>
-Organization: SUSE LINUX Products GmbH
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1752400AbaG0M0f (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Jul 2014 08:26:35 -0400
+Received: from mail-yh0-f45.google.com ([209.85.213.45]:41211 "EHLO
+	mail-yh0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752172AbaG0M0c (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Jul 2014 08:26:32 -0400
 MIME-Version: 1.0
-To: linux-samsung-soc@vger.kernel.org
-CC: Tarek Dakhran <t.dakhran@samsung.com>, Kevin Hilman <khilman@linaro.org>,
-        Pankaj Dubey <pankaj.dubey@samsung.com>,
-        Tomasz Figa <t.figa@samsung.com>, Kukjin Kim <kgene.kim@samsung.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/3] ARM: EXYNOS: Fix Exynos5410 boot
-References: <1406463725-4208-1-git-send-email-afaerber@suse.de>
-In-Reply-To: <1406463725-4208-1-git-send-email-afaerber@suse.de>
-X-Enigmail-Version: 1.6
+In-Reply-To: <CALCETrWGvBfrX1W5XaFgJZhKHLf+oac9YrwPR3ppK=deQtu5hA@mail.gmail.com>
+References: <CALCETrWGvBfrX1W5XaFgJZhKHLf+oac9YrwPR3ppK=deQtu5hA@mail.gmail.com>
+From: David Drysdale <drysdale@google.com>
+Date: Sun, 27 Jul 2014 13:26:11 +0100
+Message-ID: <CAHse=S-UoSgLoV4nwv3rbTHZjdVWAy44AAXLVoZ7N4kynZwGJA@mail.gmail.com>
+Subject: Re: General flags to turn things off (getrandom, pid lookup, etc)
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Julien Tinnes <jln@google.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Paolo Bonzini <pbonzini@redhat.com>,
+        LSM List <linux-security-module@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Paul Moore <paul@paul-moore.com>,
+        James Morris <james.l.morris@oracle.com>,
+        Linux API <linux-api@vger.kernel.org>,
+        Meredydd Luff <meredydd@senatehouse.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Kees Cook <keescook@chromium.org>, "Theodore Ts'o" <tytso@mit.edu>,
+        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        linux-crypto@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 27.07.2014 14:22, schrieb Andreas Färber:
-> Hello,
-> 
-> This mini-series unbreaks booting on 5410 based ODROID-XU.
-> 
-> Since I do not have access to a TRM, the address is a guess based on 
-> 5250 and 5410. Such a node was not present in the 3.14 downstream tree.
+On Fri, Jul 25, 2014 at 7:30 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+> [new thread because this sort of combines two threads]
+>
+> There is recent interest in having a way to turn generally-available
+> kernel features off.  Maybe we should add a good one so we can stop
+> bikeshedding and avoid proliferating dumb interfaces.
+>
+> Things that might want to be turn-off-able include:
+>  - getrandom with GRND_RANDOM [from the getrandom threads]
+>  - Any lookup of a non-self pid [from the capsicum thread]
+>  - Any lookup of a pid outside the caller thread group [capsicum]
+>  - Various architectural things (personal wishlist), e.g.:
+>     - RDTSC and userspace HPET access
+>     - CPUID?
+>     - 32-bit GDT code segments [huge attack surface]
+>     - 64-bit GDT code segments [probably pointless]
+>
+> I would propose a new syscall for this:
+>
+> long restrict_userspace(int mode, int type, int value, int flags);
+>
+> mode is RESTRICT_SET, RESTRICT_GET, or RESTRICT_LOCK.
+>
+> type is RESTRICT_GRND_RANDOM, RESTRICT_PID_SCOPE, RESTRICT_X86_TIMING, etc.
+>
+> Value is zero if RESTRICT_GET.  Otherwise value is the desired value,
+> generally 0 or 1.  For RESTRICT_PID_SCOPE, value would be
+> RESTRICT_PID_SCOPE_ANY, RESTRICT_PID_SCOPE_THREADGROUP, or
+> RESTRICT_PID_SCOPE_SELF.
+>
+> flags must be zero.  Someday, someone will propose a thread-sync flag.
 
-s/5410/5420/
+Today, me: proposed :-)
 
-> 
-> Regards,
-> Andreas
-> 
-> Andreas Färber (3):
->   Documentation: devicetree: Document exynos5410 PMU
->   ARM: dts: exynos: Add PMU to Exynos5410
->   ARM: EXYNOS: Add support for Exynos5410 PMU
-> 
->  Documentation/devicetree/bindings/arm/samsung/pmu.txt | 1 +
->  arch/arm/boot/dts/exynos5410.dtsi                     | 5 +++++
->  arch/arm/mach-exynos/exynos.c                         | 1 +
->  3 files changed, 7 insertions(+)
-
--- 
-SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg, Germany
-GF: Jeff Hawn, Jennifer Guild, Felix Imendörffer; HRB 16746 AG Nürnberg
+> restrict_userspace requires either no_new_privs or CAP_SYS_ADMIN in
+> the current user namespace.
+>
+> Thoughts?
+>
+> --Andy
+>
+> --
+> Andy Lutomirski
+> AMA Capital Management, LLC
