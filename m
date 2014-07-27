@@ -1,42 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752072AbaG0XwH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Jul 2014 19:52:07 -0400
-Received: from unicorn.mansr.com ([81.2.72.234]:43091 "EHLO unicorn.mansr.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750822AbaG0XwD convert rfc822-to-8bit (ORCPT
+	id S1751856AbaG0X53 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Jul 2014 19:57:29 -0400
+Received: from out03.mta.xmission.com ([166.70.13.233]:39746 "EHLO
+	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750821AbaG0X5X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Jul 2014 19:52:03 -0400
-From: =?iso-8859-1?Q?M=E5ns_Rullg=E5rd?= <mans@mansr.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Grant Likely <grant.likely@secretlab.ca>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: of: Make OF_DYNAMIC user selectable
-References: <20140728093526.38d8e732@canb.auug.org.au>
-Date: Mon, 28 Jul 2014 00:51:58 +0100
-In-Reply-To: <20140728093526.38d8e732@canb.auug.org.au> (Stephen Rothwell's
-	message of "Mon, 28 Jul 2014 09:35:26 +1000")
-Message-ID: <yw1xegx6742p.fsf@unicorn.mansr.com>
+	Sun, 27 Jul 2014 19:57:23 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Paolo Bonzini <pbonzini@redhat.com>, linux-crypto@vger.kernel.org,
+        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        James Morris <james.l.morris@oracle.com>,
+        LSM List <linux-security-module@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Linux API <linux-api@vger.kernel.org>, Julien Tinnes <jln@google.com>,
+        "Theodore Ts'o" <tytso@mit.edu>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Paul Moore <paul@paul-moore.com>, David Drysdale <drysdale@google.com>,
+        Kees Cook <keescook@chromium.org>,
+        Meredydd Luff <meredydd@senatehouse.org>,
+        Christoph Hellwig <hch@infradead.org>
+References: <CALCETrWGvBfrX1W5XaFgJZhKHLf+oac9YrwPR3ppK=deQtu5hA@mail.gmail.com>
+	<20140727210617.GY6725@thunk.org>
+	<CALCETrXfzOZEC3mOKkm3_GvitvkEu4kAa3LowRv-fjHnzrQnBg@mail.gmail.com>
+Date: Sun, 27 Jul 2014 16:53:23 -0700
+In-Reply-To: <CALCETrXfzOZEC3mOKkm3_GvitvkEu4kAa3LowRv-fjHnzrQnBg@mail.gmail.com>
+	(Andy Lutomirski's message of "Sun, 27 Jul 2014 15:17:15 -0700")
+Message-ID: <87oawa740c.fsf@x220.int.ebiederm.org>
 User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX1+Ps33Bxyn5J4+qPYOoD4N6V7QzT3vUrW8=
+X-SA-Exim-Connect-IP: 98.234.51.111
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.7 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	*  0.8 BAYES_50 BODY: Bayes spam probability is 40 to 60%
+	*      [score: 0.4855]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa01 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  1.0 T_XMDrugObfuBody_08 obfuscated drug references
+X-Spam-DCC: XMission; sa01 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: *;Andy Lutomirski <luto@amacapital.net>
+X-Spam-Relay-Country: 
+Subject: Re: General flags to turn things off (getrandom, pid lookup, etc)
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 13:58:17 -0700)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stephen Rothwell <sfr@canb.auug.org.au> writes:
+Andy Lutomirski <luto@amacapital.net> writes:
 
-> Hi Grant,
+> On Jul 27, 2014 5:06 PM, "Theodore Ts'o" <tytso@mit.edu> wrote:
+>>
+>> On Fri, Jul 25, 2014 at 11:30:48AM -0700, Andy Lutomirski wrote:
+>> >
+>> > There is recent interest in having a way to turn generally-available
+>> > kernel features off.  Maybe we should add a good one so we can stop
+>> > bikeshedding and avoid proliferating dumb interfaces.
+>>
+>> I believe the seccomp infrastructure (which is already upstream)
+>> should be able to do most of what you want, at least with respect to
+>> features which are exposed via system calls (which was most of your
+>> list).
 >
-> I noticed the subject commit in the devicetree tree in linux-next today.
-> The commit message gives us no idea why we would want to make this
-> change.  We already have lots of user selectable CONFIG_ options ... do
-> we really need this one as well?
+> Seccomp can't really restrict lookups of non-self pids.  In fact, this
+> feature idea started out as a response to a patch adding a kind of
+> nasty seccomp feature to make it sort of possible.
+>
+> I agree that that seccomp can turn off GRND_RANDOM, but how is it
+> supposed to do it in such a way that the filtered software will fall
+> back to something sensible?  -ENOSYS?  -EPERM?  Something else?
+>
+> I think that -ENOSYS is clearly wrong, but standardizing this would be
+> nice.  Admittedly, adding something fancy like this for GRND_RANDOM
+> may not be appropriate.
 
-You say that like user-selectable options are somehow evil.  The kernel
-is not Gnome.
+Andy you seem to be arguing here for two system calls.
+get_urandom() and get_random().
 
--- 
-Måns Rullgård
-mans@mansr.com
+Where get_urandom only blocks if there is not enough starting entropy,
+and get_random(GRND_RANDOM) blocks if there is currently not enough
+entropy.
+
+That would allow -ENOSYS to be the right return value and it would
+simply things for everyone.
+
+Eric
+
