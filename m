@@ -1,66 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751697AbaG0CiV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 22:38:21 -0400
-Received: from mail-vc0-f176.google.com ([209.85.220.176]:35868 "EHLO
-	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751309AbaG0CiU (ORCPT
+	id S1751627AbaG0CrU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 22:47:20 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:57820 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751219AbaG0CrS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 22:38:20 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAPDOMVi71aVdP1F65CunbLvaVe4MYi584n+hHP26Df3iE-T9=A@mail.gmail.com>
-References: <CAPDOMVjiT8JKyzLdcFpVVC337p9nC=V66MjePk+1KwNm3owZQg@mail.gmail.com>
-	<53D3672A.20206@roeck-us.net>
-	<CAPDOMVjMs=y6QpnFSW5uwAmT6meALsmdBHJq7VVk6YJ7U4ZSrQ@mail.gmail.com>
-	<CAPDOMVi71aVdP1F65CunbLvaVe4MYi584n+hHP26Df3iE-T9=A@mail.gmail.com>
-Date: Sat, 26 Jul 2014 22:38:19 -0400
-Message-ID: <CAPDOMVg-jBEoER-B01oVSsJB9Ugj_ui1yhFTSvxDgimukqHTSQ@mail.gmail.com>
-Subject: Re: Bug on Boot of Ubuntu 14.04 with kernel 3.16 r6 release
-From: Nick Krause <xerofoify@gmail.com>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Sat, 26 Jul 2014 22:47:18 -0400
+Message-ID: <1406429221.29010.151.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: [RFC PATCH 1/1] ethtool: adding support for multiple slave port
+ configuration
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Mugunthan V N <mugunthanvnm@ti.com>
+Cc: netdev@vger.kernel.org, davem@davemloft.net, linux-api@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Sun, 27 Jul 2014 03:47:01 +0100
+In-Reply-To: <1406291305-22286-1-git-send-email-mugunthanvnm@ti.com>
+References: <1406291305-22286-1-git-send-email-mugunthanvnm@ti.com>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-KYnuXAhc5cLSnEbs1fqH"
+X-Mailer: Evolution 3.12.2-1+b1 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 192.168.4.249
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 26, 2014 at 10:27 PM, Nick Krause <xerofoify@gmail.com> wrote:
-> On Sat, Jul 26, 2014 at 9:49 PM, Nick Krause <xerofoify@gmail.com> wrote:
->> On Sat, Jul 26, 2014 at 4:30 AM, Guenter Roeck <linux@roeck-us.net> wrote:
->>> On 07/25/2014 06:34 PM, Nick Krause wrote:
->>>>
->>>> Hey Guys,
->>>> After building my first rc kernel. I am sad to state it doesn't
->>>> boot.It states that it can't find my root uuid for my ssd boot drive.
->>>> I am using GSP with UEFI, on a Sandy Bridge i5 2500k build I have  had
->>>> for a few years. The kernel boots and after a few seconds
->>>> drops to a busybox ash shell stating it can't find my root device. I
->>>> am using the default Ubuntu build for this and it did boot
->>>> before with x86_64 defconfig without my sound through. Seems to me an
->>>> issue with the Ubuntu built kernel and not upstream
->>>> at least from what I can tell. I will attach my .config to help
->>>> through or my sound drivers.
->>>
->>>
->>> I'd put in a wild guess that you did not install a matching initramfs.
->>>
->>> Guenter
->>>
->> Guenter,
->> Thanks your probably right there.
->> Cheers Nick
->
->
-> Guenter and others,
-> I have enabled sound on my computer with what I believed was needed to
-> get sound.
-> I can't seem to get sound working. I am going to attach my config and
-> see if building
-> the kernel with other settings enabled gets sound.
-> Cheers Nick
 
+--=-KYnuXAhc5cLSnEbs1fqH
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Sound works but will not build as a module needs to enabled at boot to
-work not sure if this is a bug or just the way sound
-works.
-Cheers NIck
+On Fri, 2014-07-25 at 17:58 +0530, Mugunthan V N wrote:
+> Some Ethernet Swtich controllers like CPSW in AM335x, TI814x, DRA7x and
+> AM43xx SoCs, Network Coprocessor in AM5K2E0x, Realtek Switch controllers
+> etc has to capability of conneting multiple networks using L2 switching
+> and has multiple phys. With the existing code, ethtool can communicate
+> only to one phy.
+>=20
+> To enable user to communicate multiple phy connected to single Ethernet
+> Switch controller, intoducing a optional new parameter in Ethtool interfa=
+ce
+> to pass which slave to set/get the phy configuration.
+
+There was some discussion about configuration APIs for hardware/firmware
+bridges earlier this year and I thought there was a consensus for
+assigning a network device to each port.  This would remove the need to
+identify ports within a device.  But I may have misremembered.
+
+> Signed-off-by: Mugunthan V N <mugunthanvnm@ti.com>
+> ---
+>  include/uapi/linux/ethtool.h | 6 +++++-
+>  1 file changed, 5 insertions(+), 1 deletion(-)
+>=20
+> diff --git a/include/uapi/linux/ethtool.h b/include/uapi/linux/ethtool.h
+> index 96ade34..3011427 100644
+> --- a/include/uapi/linux/ethtool.h
+> +++ b/include/uapi/linux/ethtool.h
+> @@ -60,6 +60,9 @@
+>   *	and other link features that the link partner advertised
+>   *	through autonegotiation; 0 if unknown or not applicable.
+>   *	Read-only.
+> + * @slave_port: Specify which slave port to be used to set/get
+> + *	parmeters, for example which slave port phy to be used for
+> + *	set/get phy capabilities
+
+The difficulty with assigning the reserved fields in struct ethtool_cmd
+is that nothing has ever checked that they are set to 0.  So if we were
+to assign this field and support it in ethtool, someone might run it on
+an older kernel version and all configuration changes will be made to
+port 0 rather than the one they specified.  I don't think it would be
+acceptable to tell users that 'oh, the port number option silently fails
+on older kernel versions'.
+
+So at the very least you would also need to add some way for userland to
+find out whether the driver will check the value of this field.
+
+Ben.
+
+>   * The link speed in Mbps is split between @speed and @speed_hi.  Use
+>   * the ethtool_cmd_speed() and ethtool_cmd_speed_set() functions to
+> @@ -107,7 +110,8 @@ struct ethtool_cmd {
+>  	__u8	eth_tp_mdix;
+>  	__u8	eth_tp_mdix_ctrl;
+>  	__u32	lp_advertising;
+> -	__u32	reserved[2];
+> +	__u32	slave_port;
+> +	__u32	reserved;
+>  };
+> =20
+>  static inline void ethtool_cmd_speed_set(struct ethtool_cmd *ep,
+
+--=20
+Ben Hutchings
+The generation of random numbers is too important to be left to chance.
+                                                            - Robert Coveyo=
+u
+
+--=-KYnuXAhc5cLSnEbs1fqH
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIVAwUAU9RoKue/yOyVhhEJAQpkHQ/8DxYhjnBZN0JCfeowRW7y2q2AXu48uC0o
+o7ARtOlIZcpGKYNmQT/cYxheLGOPfaN9UmhoPMuKYLfEqYiNrXDHqhDlCpwZzTzA
+2T3ngvd+pCb0tqAMxEWStN7oSPgq4QnrMgBCMBtmcbtzeH9c1V6+ZHknJkHC7Kv3
+RNWilpL9mt/E4AAjAwoY33J/WZmaq6BtOHnDLafJlP4jEfcp1BPbOdjZpnipn3Ol
+F1c/G5mEHXXaEcAMo8A9U4tFkvU970G7nuuJG5ltRlCVZ9A7r0WGenZgzsXJY1fy
+jv2mIJXEY/BRuNf1CNkEWzl2fMDnqUhD2ajsU0zzPlEw4X3hW79MBF7hRf8T0vKF
+ZZrffxpoo/E9d6edM9GNVwJSBnSjOU/bnAVYC1LFLNoQ1T2kimQDgg2tPaqALM1E
+K5p60JC53i2+892dbgFQg0961M2rSzqbtuze7RzVPNgRcVEw/WJZPVgM4Bc4PEYi
+Kjj4FWOZPp9mt431GyvVk7njPFi0yacYPJmX6ZSULXQX5dpjAQzHCK9ZynQCakcv
+lgu95uvpvCAew7PtKGImM9HMflzh5OFHqGxoa5G6CEMnIlclewsvwsQsnvnONseT
+26DJwOkpMoZqQ5lDcrjV+zMFdSmvEZ+4n0YbWtvm9j+YvFWKRmZxt/aKggEcfC9O
+VdY1Q9V5rNo=
+=GvEY
+-----END PGP SIGNATURE-----
+
+--=-KYnuXAhc5cLSnEbs1fqH--
