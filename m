@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751627AbaG0CrU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 22:47:20 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:57820 "EHLO
+	id S1751604AbaG0DUR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 23:20:17 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:57897 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751219AbaG0CrS (ORCPT
+	by vger.kernel.org with ESMTP id S1751219AbaG0DUP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 22:47:18 -0400
-Message-ID: <1406429221.29010.151.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [RFC PATCH 1/1] ethtool: adding support for multiple slave port
- configuration
+	Sat, 26 Jul 2014 23:20:15 -0400
+Message-ID: <1406431195.29010.154.camel@deadeye.wl.decadent.org.uk>
+Subject: [PATCH] x86: Reject x32 executables if x32 ABI not supported
 From: Ben Hutchings <ben@decadent.org.uk>
-To: Mugunthan V N <mugunthanvnm@ti.com>
-Cc: netdev@vger.kernel.org, davem@davemloft.net, linux-api@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Sun, 27 Jul 2014 03:47:01 +0100
-In-Reply-To: <1406291305-22286-1-git-send-email-mugunthanvnm@ti.com>
-References: <1406291305-22286-1-git-send-email-mugunthanvnm@ti.com>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, 708070@bugs.debian.org
+Date: Sun, 27 Jul 2014 04:19:55 +0100
 Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-KYnuXAhc5cLSnEbs1fqH"
+	protocol="application/pgp-signature"; boundary="=-cGr9/ewGvn1DFM/27PHw"
 X-Mailer: Evolution 3.12.2-1+b1 
 Mime-Version: 1.0
 X-SA-Exim-Connect-IP: 192.168.4.249
@@ -29,69 +26,38 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---=-KYnuXAhc5cLSnEbs1fqH
+--=-cGr9/ewGvn1DFM/27PHw
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
 
-On Fri, 2014-07-25 at 17:58 +0530, Mugunthan V N wrote:
-> Some Ethernet Swtich controllers like CPSW in AM335x, TI814x, DRA7x and
-> AM43xx SoCs, Network Coprocessor in AM5K2E0x, Realtek Switch controllers
-> etc has to capability of conneting multiple networks using L2 switching
-> and has multiple phys. With the existing code, ethtool can communicate
-> only to one phy.
->=20
-> To enable user to communicate multiple phy connected to single Ethernet
-> Switch controller, intoducing a optional new parameter in Ethtool interfa=
-ce
-> to pass which slave to set/get the phy configuration.
+It is currently possible to execve() an x32 executable on an x86_64
+kernel that has only ia32 compat enabled.  However all its syscalls
+will fail, even _exit().  This usually causes it to segfault.
 
-There was some discussion about configuration APIs for hardware/firmware
-bridges earlier this year and I thought there was a consensus for
-assigning a network device to each port.  This would remove the need to
-identify ports within a device.  But I may have misremembered.
+Change the ELF compat architecture check so that x32 executables are
+rejected if we don't support the x32 ABI.
 
-> Signed-off-by: Mugunthan V N <mugunthanvnm@ti.com>
-> ---
->  include/uapi/linux/ethtool.h | 6 +++++-
->  1 file changed, 5 insertions(+), 1 deletion(-)
->=20
-> diff --git a/include/uapi/linux/ethtool.h b/include/uapi/linux/ethtool.h
-> index 96ade34..3011427 100644
-> --- a/include/uapi/linux/ethtool.h
-> +++ b/include/uapi/linux/ethtool.h
-> @@ -60,6 +60,9 @@
->   *	and other link features that the link partner advertised
->   *	through autonegotiation; 0 if unknown or not applicable.
->   *	Read-only.
-> + * @slave_port: Specify which slave port to be used to set/get
-> + *	parmeters, for example which slave port phy to be used for
-> + *	set/get phy capabilities
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+---
+ arch/x86/include/asm/elf.h | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-The difficulty with assigning the reserved fields in struct ethtool_cmd
-is that nothing has ever checked that they are set to 0.  So if we were
-to assign this field and support it in ethtool, someone might run it on
-an older kernel version and all configuration changes will be made to
-port 0 rather than the one they specified.  I don't think it would be
-acceptable to tell users that 'oh, the port number option silently fails
-on older kernel versions'.
-
-So at the very least you would also need to add some way for userland to
-find out whether the driver will check the value of this field.
-
-Ben.
-
->   * The link speed in Mbps is split between @speed and @speed_hi.  Use
->   * the ethtool_cmd_speed() and ethtool_cmd_speed_set() functions to
-> @@ -107,7 +110,8 @@ struct ethtool_cmd {
->  	__u8	eth_tp_mdix;
->  	__u8	eth_tp_mdix_ctrl;
->  	__u32	lp_advertising;
-> -	__u32	reserved[2];
-> +	__u32	slave_port;
-> +	__u32	reserved;
->  };
-> =20
->  static inline void ethtool_cmd_speed_set(struct ethtool_cmd *ep,
+diff --git a/arch/x86/include/asm/elf.h b/arch/x86/include/asm/elf.h
+index 1a055c8..ca3347a 100644
+--- a/arch/x86/include/asm/elf.h
++++ b/arch/x86/include/asm/elf.h
+@@ -160,8 +160,9 @@ do {						\
+ #define elf_check_arch(x)			\
+ 	((x)->e_machine =3D=3D EM_X86_64)
+=20
+-#define compat_elf_check_arch(x)		\
+-	(elf_check_arch_ia32(x) || (x)->e_machine =3D=3D EM_X86_64)
++#define compat_elf_check_arch(x)					\
++	(elf_check_arch_ia32(x) ||					\
++	 (IS_ENABLED(CONFIG_X86_X32_ABI) && (x)->e_machine =3D=3D EM_X86_64))
+=20
+ #if __USER32_DS !=3D __USER_DS
+ # error "The following code assumes __USER32_DS =3D=3D __USER_DS"
 
 --=20
 Ben Hutchings
@@ -99,26 +65,26 @@ The generation of random numbers is too important to be left to chance.
                                                             - Robert Coveyo=
 u
 
---=-KYnuXAhc5cLSnEbs1fqH
+--=-cGr9/ewGvn1DFM/27PHw
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: This is a digitally signed message part
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2
 
-iQIVAwUAU9RoKue/yOyVhhEJAQpkHQ/8DxYhjnBZN0JCfeowRW7y2q2AXu48uC0o
-o7ARtOlIZcpGKYNmQT/cYxheLGOPfaN9UmhoPMuKYLfEqYiNrXDHqhDlCpwZzTzA
-2T3ngvd+pCb0tqAMxEWStN7oSPgq4QnrMgBCMBtmcbtzeH9c1V6+ZHknJkHC7Kv3
-RNWilpL9mt/E4AAjAwoY33J/WZmaq6BtOHnDLafJlP4jEfcp1BPbOdjZpnipn3Ol
-F1c/G5mEHXXaEcAMo8A9U4tFkvU970G7nuuJG5ltRlCVZ9A7r0WGenZgzsXJY1fy
-jv2mIJXEY/BRuNf1CNkEWzl2fMDnqUhD2ajsU0zzPlEw4X3hW79MBF7hRf8T0vKF
-ZZrffxpoo/E9d6edM9GNVwJSBnSjOU/bnAVYC1LFLNoQ1T2kimQDgg2tPaqALM1E
-K5p60JC53i2+892dbgFQg0961M2rSzqbtuze7RzVPNgRcVEw/WJZPVgM4Bc4PEYi
-Kjj4FWOZPp9mt431GyvVk7njPFi0yacYPJmX6ZSULXQX5dpjAQzHCK9ZynQCakcv
-lgu95uvpvCAew7PtKGImM9HMflzh5OFHqGxoa5G6CEMnIlclewsvwsQsnvnONseT
-26DJwOkpMoZqQ5lDcrjV+zMFdSmvEZ+4n0YbWtvm9j+YvFWKRmZxt/aKggEcfC9O
-VdY1Q9V5rNo=
-=GvEY
+iQIVAwUAU9Rv4ee/yOyVhhEJAQoyKhAAngP+6aHv7U/znLC5gpO/sGd3jAhgBlJ/
+UBZOnM8wTLkemOvYSBjMDFW6hnDhXDXGkTDGK6WXm2xbOdwX/OKy+EIuFkh+mM3X
+VdNlOC4nxAQNN5/YVurAGzxT/idzpiSE+Hd8LkDYb8qtVBVAs/ALmwnpdwkUA7b9
++pY15K0iZmTuFHgGErfwWxd45aFHYkKCc5pY9uWIdS/gzPAzpBe2jpSaeraYoiHa
+jFwM4ATVclg5RR17unblT1ETfsWqUG4HJYjLsDHEp66nI20gJuvbz5x3NHWoCet/
+Zld3xNttMev9xRl50iwk6dWHY8rqCkbpEhoC8plMwBNZSRoMZpM1dHs6+e4o3xXO
+SvdNlYUlnWnm8Ri515ucEyUWMyV3VW2iWg/Xtsvfz1vPgUWDgEjqmX6PudqVl4xZ
+t64EwiOE2tFjpojteQbtYkhhJHVCWuu7+EzWKJfcS21ZNJY4jUY0A2DEhxNK+c/j
+gx85acTg8JbMqH1We5D5u1yt4qu5+FwgyW2NlRcnWTwQmh1OSzJLAe+TbANQ+Ftr
+WFt6yZVaSdHZxFNhqZdhnBdhigW2vT2ZwYKMfoDQQqBilrZyJqLZ15OTsJpVkjHG
+uRnhikj927zaCBVhjHJs1+X051Dyt9Izpk4O69BoNo5Gyn2fsrCkHl34fnWI/RMI
+NIsGh2d6fJs=
+=ht2l
 -----END PGP SIGNATURE-----
 
---=-KYnuXAhc5cLSnEbs1fqH--
+--=-cGr9/ewGvn1DFM/27PHw--
