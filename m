@@ -1,34 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752608AbaG0TaU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Jul 2014 15:30:20 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:36161 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752529AbaG0TaS (ORCPT
+	id S1752605AbaG0Tur (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Jul 2014 15:50:47 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:55094 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752237AbaG0Tup (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Jul 2014 15:30:18 -0400
-Date: Sun, 27 Jul 2014 21:29:50 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-Cc: Randy Dunlap <rdunlap@infradead.org>, Pali Roh?r <pali.rohar@gmail.com>,
-        Stefan Weil <sw@weilnetz.de>, Jiri Kosina <jkosina@suse.cz>,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Documentation: laptops: freefall.c:  Cleaning up
- missing null-terminate in conjunction with strncpy
-Message-ID: <20140727192950.GA32432@Nokia-N900>
-References: <1406472043-12272-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+	Sun, 27 Jul 2014 15:50:45 -0400
+Date: Sun, 27 Jul 2014 12:50:41 -0700
+From: Christoph Hellwig <hch@infradead.org>
+To: Trond Myklebust <trond.myklebust@primarydata.com>
+Cc: Christoph Hellwig <hch@infradead.org>,
+        Andrey Utkin <andrey.krieger.utkin@gmail.com>,
+        Linux Kernel mailing list <linux-kernel@vger.kernel.org>,
+        Linux NFS Mailing List <linux-nfs@vger.kernel.org>,
+        kernel-janitors@vger.kernel.org, Russell King <linux@arm.linux.org.uk>
+Subject: Re: [PATCH] nfs3_list_one_acl(): check get_acl() result with
+ IS_ERR_OR_NULL
+Message-ID: <20140727195041.GA11575@infradead.org>
+References: <1406375881-18837-1-git-send-email-andrey.krieger.utkin@gmail.com>
+ <20140727131917.GA32153@infradead.org>
+ <CAHQdGtRzDzpOuwZYWaBake-bH0z0eyMd2g-RTVwO0d2f0Zmsow@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1406472043-12272-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <CAHQdGtRzDzpOuwZYWaBake-bH0z0eyMd2g-RTVwO0d2f0Zmsow@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun 2014-07-27 16:40:43, Rickard Strandqvist wrote:
-> Added a guaranteed null-terminate after call to strncpy.
-> 
-> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+On Sun, Jul 27, 2014 at 11:13:50AM -0400, Trond Myklebust wrote:
+> Why are we not passing the error code back to the caller here in the
+> case where we have one? One of the main purposes of returning an error
+> in get_acl() is to ensure that we pass -EOPNOTSUPP if the operation
+> fails due to lack of server support.
 
-Acked-by: Pavel Machek <pavel@ucw.cz>
+Do we really want to return EOPNOTSUPP from listxattr?  Seems like
+simply not listing anything if the server doesn't support ACLs would
+be the usual behaviour.  E.g. on local filesystems we'll also just get
+back an empty list of xattrs if ACLs aren't supported and not other
+attribute is set.
+
