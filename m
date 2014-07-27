@@ -1,66 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752249AbaG0QKp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Jul 2014 12:10:45 -0400
-Received: from mail-oa0-f52.google.com ([209.85.219.52]:41857 "EHLO
-	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751745AbaG0QKn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Jul 2014 12:10:43 -0400
-Message-ID: <53D52452.2020300@gmail.com>
-Date: Sun, 27 Jul 2014 09:09:54 -0700
-From: John Fastabend <john.fastabend@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1752241AbaG0QWE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Jul 2014 12:22:04 -0400
+Received: from mail.kernel.org ([198.145.19.201]:54724 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751821AbaG0QWD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Jul 2014 12:22:03 -0400
+Message-ID: <53D527BB.30309@kernel.org>
+Date: Sun, 27 Jul 2014 17:24:27 +0100
+From: Jonathan Cameron <jic23@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-To: Ben Hutchings <ben@decadent.org.uk>, Mugunthan V N <mugunthanvnm@ti.com>
-CC: netdev@vger.kernel.org, davem@davemloft.net, linux-api@vger.kernel.org,
+To: Himangi Saraogi <himangi774@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-iio@vger.kernel.org, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 1/1] ethtool: adding support for multiple slave port
- configuration
-References: <1406291305-22286-1-git-send-email-mugunthanvnm@ti.com> <1406429221.29010.151.camel@deadeye.wl.decadent.org.uk>
-In-Reply-To: <1406429221.29010.151.camel@deadeye.wl.decadent.org.uk>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+CC: Julia Lawall <julia.lawall@lip6.fr>
+Subject: Re: questions regarding drivers/staging/iio/accel/sca3000_core.c
+References: <CAB78YHyh88+j-knC1HZQinnLU=9wbVPXrYRF81LeOtrV1oGmZA@mail.gmail.com>
+In-Reply-To: <CAB78YHyh88+j-knC1HZQinnLU=9wbVPXrYRF81LeOtrV1oGmZA@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/26/2014 07:47 PM, Ben Hutchings wrote:
-> On Fri, 2014-07-25 at 17:58 +0530, Mugunthan V N wrote:
->> Some Ethernet Swtich controllers like CPSW in AM335x, TI814x, DRA7x and
->> AM43xx SoCs, Network Coprocessor in AM5K2E0x, Realtek Switch controllers
->> etc has to capability of conneting multiple networks using L2 switching
->> and has multiple phys. With the existing code, ethtool can communicate
->> only to one phy.
->>
->> To enable user to communicate multiple phy connected to single Ethernet
->> Switch controller, intoducing a optional new parameter in Ethtool interface
->> to pass which slave to set/get the phy configuration.
+On 21/07/14 09:24, Himangi Saraogi wrote:
+> Hi,
 >
-> There was some discussion about configuration APIs for hardware/firmware
-> bridges earlier this year and I thought there was a consensus for
-> assigning a network device to each port.  This would remove the need to
-> identify ports within a device.  But I may have misremembered.
+> I was looking at the possibility of using a managed interface for
+> iio_device_register in sca3000_probe. But this will lead to the
+> iio_device_unregister function being called after
+> sca3000_unconfigure_ring in the remove function. I have a few
+> queries:
 >
-
-I like the approach of creating a network device for each port over
-having to use ethtool to program/discover them. I am currently looking
-at writing management applications for this and IMO it is much easier
-to discover and listen for events on network devices vs polling ethtool
-and iterating through slave indexs. Also you miss a lot of functionality
-that may be useful MTU for example that is not available configured via
-ethtool.
-
-One of the sticking points in earlier discussions was how to handle
-devices that have limited support for slave devices. When we create a
-netdev we expect the stack can bind to it and TX/RX packets which as
-I understand is not always possible? (I missed why we couldn't recv the
-packets over a switch port though with some skb->dev manipulation). In
-this case a feature flag could be used to resolve the feature
-dependencies.
-
-.John
-
-
--- 
-John Fastabend         Intel Corporation
+> 1. Is it safe to move the unregister function over the
+> sca3000_unconfigure_ring?
+No, in fact it should be before various other things
+(though it isn't currently).  The device unregister
+removes the userspace interfaces.  Hence it should always
+be called before anything else happens in a remove function.
+>
+> 2. Is it correct that on failure the probe function does not call
+> sca3000_unconfigure_ring?
+Nope. That's a bug.  Actually the whole probe function ordering is
+suspicious. The device register should probably be a lot later
+(i.e. last). There might be some esoteric reason that isn't the case
+but I honestly can't remember.  Whilst I have one of these parts
+the wire bodge needs repairing and I haven't fired the board it plugs
+into up for a good while.  If it wasn't such and interesting part I'd
+be tempted to suggest dropping the driver entirely (and find out if
+anyone else actually has one in the process!)
+>
+> 3. If it is fine moving unregister after sca3000_unconfigure_ring, I
+> propose to add a devm counterpart of iio_buffer_unregister. Is it a
+> good idea?
+I'm not sure there enough users to bother and some of those should
+probably use the triggered_buffer helper functions.
+>
+> Thanks, Himangi
