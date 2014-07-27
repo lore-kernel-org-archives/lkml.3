@@ -1,361 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751634AbaG0CA1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jul 2014 22:00:27 -0400
-Received: from vps0.lunn.ch ([178.209.37.122]:53828 "EHLO vps0.lunn.ch"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751219AbaG0CAY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jul 2014 22:00:24 -0400
-Date: Sun, 27 Jul 2014 03:55:09 +0200
-From: Andrew Lunn <andrew@lunn.ch>
-To: Benoit Masson <yahoo@perenite.com>
-Cc: benoitm@perenite.com, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        jason@lakedaemon.net, andrew@lunn.ch,
-        gregory.clement@free-electrons.com,
-        sebastian.hesselbarth@googlemail.com
-Subject: Re: [PATCH 2/2] V3 ARM: mvebu: Added dts defintion for Lenovo Iomega
- ix4-300d NAS
-Message-ID: <20140727015509.GB31974@lunn.ch>
-References: <1406418490-61502-1-git-send-email-yahoo@perenite.com>
+	id S1751560AbaG0CJe (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jul 2014 22:09:34 -0400
+Received: from mail-bn1blp0188.outbound.protection.outlook.com ([207.46.163.188]:50153
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751219AbaG0CJd convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 Jul 2014 22:09:33 -0400
+From: KY Srinivasan <kys@microsoft.com>
+To: "Martin K. Petersen" <martin.petersen@oracle.com>
+CC: Sitsofe Wheeler <sitsofe@gmail.com>, Christoph Hellwig <hch@infradead.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "ohering@suse.com" <ohering@suse.com>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "jasowang@redhat.com" <jasowang@redhat.com>,
+        "jbottomley@parallels.com" <jbottomley@parallels.com>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
+Subject: RE: [PATCH v2 3/3] [SCSI] Make LBP quirk skip lbpme checks tests
+Thread-Topic: [PATCH v2 3/3] [SCSI] Make LBP quirk skip lbpme checks tests
+Thread-Index: AQHPqQdbfmLHK0GnrkSEOCNbbvYH8ZuzLCRw
+Date: Sun, 27 Jul 2014 02:09:27 +0000
+Message-ID: <84e49b68e6e14d259b5edc2c76fa1f1b@BY2PR0301MB0711.namprd03.prod.outlook.com>
+References: <20140724122223.GA31798@sucs.org>
+	<yq1iommkgkv.fsf@sermon.lab.mkp.net> <20140724153612.GA23648@sucs.org>
+	<yq1egxakb0z.fsf@sermon.lab.mkp.net>
+	<16fea5bb87ba47019527cee788e07a72@BY2PR0301MB0711.namprd03.prod.outlook.com>
+	<yq1wqb1gyw1.fsf@sermon.lab.mkp.net>
+	<e931486ef33b4e45bfebf2ab1b1b3037@BY2PR0301MB0711.namprd03.prod.outlook.com>
+	<yq17g30dprc.fsf@sermon.lab.mkp.net>
+	<cc4a3fd5451242739929d266b88fa8fa@BY2PR0301MB0711.namprd03.prod.outlook.com>
+ <yq138dnexcn.fsf@sermon.lab.mkp.net>
+In-Reply-To: <yq138dnexcn.fsf@sermon.lab.mkp.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [50.135.110.52]
+x-microsoft-antispam: BCL:0;PCL:0;RULEID:
+x-forefront-prvs: 0285201563
+x-forefront-antispam-report: SFV:NSPM;SFS:(6009001)(51704005)(377454003)(164054003)(189002)(13464003)(199002)(107046002)(95666004)(76176999)(92566001)(31966008)(19580405001)(76576001)(86612001)(99396002)(86362001)(106356001)(33646002)(19580395003)(80022001)(81342001)(101416001)(74502001)(105586002)(74662001)(85306003)(81542001)(21056001)(76482001)(46102001)(83322001)(74316001)(83072002)(2656002)(54356999)(79102001)(99286002)(87936001)(77982001)(64706001)(110136001)(85852003)(106116001)(93886003)(66066001)(4396001)(20776003)(77096002)(50986999)(108616002)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR0301MB0711;H:BY2PR0301MB0711.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1406418490-61502-1-git-send-email-yahoo@perenite.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: microsoft.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 26, 2014 at 04:48:10PM -0700, Benoit Masson wrote:
-> The Lenovo Iomega ix4-300d is a 4-Bay sata NAS with dual Gb,
->  USB2.0 & 3.0, powered by a Marvell Armada XP MV78230 dual core CPU.
+
+
+> -----Original Message-----
+> From: Martin K. Petersen [mailto:martin.petersen@oracle.com]
+> Sent: Saturday, July 26, 2014 12:25 PM
+> To: KY Srinivasan
+> Cc: Martin K. Petersen; Sitsofe Wheeler; Christoph Hellwig;
+> gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
+> devel@linuxdriverproject.org; ohering@suse.com; apw@canonical.com;
+> jasowang@redhat.com; jbottomley@parallels.com; linux-
+> scsi@vger.kernel.org
+> Subject: Re: [PATCH v2 3/3] [SCSI] Make LBP quirk skip lbpme checks tests
 > 
-> http://shop.lenovo.com/us/en/servers/network-storage/lenovoemc/ix4-300d/
-> Signed-off-by: Benoit Masson <yahoo@perenite.com>
-> ---
->  arch/arm/boot/dts/Makefile                      |   3 +-
->  arch/arm/boot/dts/armada-xp-lenovo-ix4-300d.dts | 285 ++++++++++++++++++++++++
->  2 files changed, 287 insertions(+), 1 deletion(-)
->  create mode 100644 arch/arm/boot/dts/armada-xp-lenovo-ix4-300d.dts
+> >>>>> "KY" == KY Srinivasan <kys@microsoft.com> writes:
 > 
-> diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
-> index adb5ed9..4429495 100644
-> --- a/arch/arm/boot/dts/Makefile
-> +++ b/arch/arm/boot/dts/Makefile
-> @@ -437,8 +437,9 @@ dtb-$(CONFIG_MACH_ARMADA_XP) += \
->  	armada-xp-axpwifiap.dtb \
->  	armada-xp-db.dtb \
->  	armada-xp-gp.dtb \
-> -	armada-xp-netgear-rn2120.dtb \
-> +	armada-xp-lenovo-ix4-300d.dtb \
->  	armada-xp-matrix.dtb \
-> +	armada-xp-netgear-rn2120.dtb \
->  	armada-xp-openblocks-ax3-4.dtb
->  dtb-$(CONFIG_MACH_DOVE) += dove-cm-a510.dtb \
->  	dove-cubox.dtb \
-> diff --git a/arch/arm/boot/dts/armada-xp-lenovo-ix4-300d.dts b/arch/arm/boot/dts/armada-xp-lenovo-ix4-300d.dts
-> new file mode 100644
-> index 0000000..c82a8e3
-> --- /dev/null
-> +++ b/arch/arm/boot/dts/armada-xp-lenovo-ix4-300d.dts
-> @@ -0,0 +1,285 @@
-> +/*
-> + * Device Tree file for Lenovo Iomega ix4-300d
-> + *
-> + * Copyright (C) 2014, Benoit Masson <yahoo@perenite.com>
-> + *
-> + * This program is free software; you can redistribute it and/or
-> + * modify it under the terms of the GNU General Public License
-> + * as published by the Free Software Foundation; either version
-> + * 2 of the License, or (at your option) any later version.
-> + */
-> +
-> +/dts-v1/;
-> +
-> +#include <dt-bindings/input/input.h>
-> +#include <dt-bindings/gpio/gpio.h>
-> +#include "armada-xp-mv78230.dtsi"
-> +
-> +/ {
-> +	model = "Lenovo Iomega ix4-300d";
-> +	compatible = "lenovo,ix4-300d", "marvell,armadaxp-mv78230",
-> +		     "marvell,armadaxp", "marvell,armada-370-xp";
-> +
-> +	chosen {
-> +		bootargs = "console=ttyS0,115200 earlyprintk";
-> +		stdout-path = "/soc/internal-regs/serial@12000";
-> +	};
-> +
-> +	memory {
-> +		device_type = "memory";
-> +		reg = <0 0x00000000 0 0x20000000>; /* 512MB */
-> +	};
-> +
-> +	soc {
-> +		ranges = <MBUS_ID(0xf0, 0x01) 0 0 0xd0000000 0x100000
-> +			MBUS_ID(0x01, 0x1d) 0 0 0xfff00000 0x100000>;
-> +
-> +		pcie-controller {
-> +			status = "okay";
-> +
-> +			/* Quad port sata: Marvell 88SX7042 */
-> +			pcie@1,0 {
-> +				/* Port 0, Lane 0 */
-> +				status = "okay";
-> +			};
-> +
-> +			/* USB 3.0 xHCI controller: NEC D720200F1 */
-> +			pcie@5,0 {
-> +				/* Port 1, Lane 0 */
-> +				status = "okay";
-> +			};
-> +		};
-> +
-> +		internal-regs {
-> +			pinctrl {
-> +				poweroff_pin: poweroff-pin {
-> +					marvell,pins = "mpp24";
-> +					marvell,function = "gpio";
-> +				};
-> +
-> +				power_button_pin: power-button-pin {
-> +					marvell,pins = "mpp44";
-> +					marvell,function = "gpio";
-> +				};
-> +
-> +				reset_button_pin: reset-button-pin {
-> +					marvell,pins = "mpp45";
-> +					marvell,function = "gpio";
-> +				};
-> +				select_button_pin: select-button-pin {
-> +					marvell,pins = "mpp41";
-> +					marvell,function = "gpio";
-> +				};
-> +
-> +				scroll_button_pin: scroll-button-pin {
-> +					marvell,pins = "mpp42";
-> +					marvell,function = "gpio";
-> +				};
-> +
-> +				hdd_led_pin: hdd-led-pin {
-> +					marvell,pins = "mpp26";
-> +					marvell,function = "gpio";
-> +				};
-> +			};
-> +
-> +			serial@12000 {
-> +				status = "okay";
-> +			};
-> +
-> +			mdio {
-> +				phy0: ethernet-phy@0 { /* Marvell 88E1318 */
-> +					reg = <0>;
-> +				};
-> +
-> +				phy1: ethernet-phy@1 { /* Marvell 88E1318 */
-> +					reg = <1>;
-> +				};
-> +			};
-> +
-> +			ethernet@70000 {
-> +				status = "okay";
-> +				phy = <&phy0>;
-> +				phy-mode = "rgmii-id";
-> +			};
-> +
-> +			ethernet@74000 {
-> +				status = "okay";
-> +				phy = <&phy1>;
-> +				phy-mode = "rgmii-id";
-> +			};
-> +
-> +			usb@50000 {
-> +				status = "okay";
-> +			};
-> +
-> +			usb@51000 {
-> +				status = "okay";
-> +			};
-> +
-> +			i2c@11000 {
-> +				compatible = "marvell,mv64xxx-i2c";
-
-O.K, this version is good.
-
-Acked-by: Andrew Lunn <andrew@lunn.ch>
-
-	  Andrew
-
-> +				clock-frequency = <400000>;
-> +				status = "okay";
-> +
-> +				adt7473@2e {
-> +					compatible = "adi,adt7473";
-> +					reg = <0x2e>;
-> +				};
-> +
-> +				pcf8563@51 {
-> +					compatible = "nxp,pcf8563";
-> +					reg = <0x51>;
-> +				};
-> +
-> +			};
-> +
-> +			nand@d0000 {
-> +				status = "okay";
-> +				num-cs = <1>;
-> +				marvell,nand-keep-config;
-> +				marvell,nand-enable-arbiter;
-> +				nand-on-flash-bbt;
-> +
-> +				partition@0 {
-> +					label = "u-boot";
-> +					reg = <0x0000000 0xe0000>;
-> +					read-only;
-> +				};
-> +
-> +				partition@e0000 {
-> +					label = "u-boot-env";
-> +					reg = <0xe0000 0x20000>;
-> +					read-only;
-> +				};
-> +
-> +				partition@100000 {
-> +					label = "u-boot-env2";
-> +					reg = <0x100000 0x20000>;
-> +					read-only;
-> +				};
-> +
-> +				partition@120000 {
-> +					label = "zImage";
-> +					reg = <0x120000 0x400000>;
-> +				};
-> +
-> +				partition@520000 {
-> +					label = "initrd";
-> +					reg = <0x520000 0x400000>;
-> +				};
-> +
-> +				partition@xE00000 {
-> +					label = "boot";
-> +					reg = <0xE00000 0x3F200000>;
-> +				};
-> +
-> +				partition@flash {
-> +					label = "flash";
-> +					reg = <0x0 0x40000000>;
-> +				};
-> +			};
-> +		};
-> +	};
-> +
-> +	gpio-keys {
-> +		compatible = "gpio-keys";
-> +		pinctrl-0 = <&power_button_pin &reset_button_pin
-> +			&select_button_pin &scroll_button_pin>;
-> +		pinctrl-names = "default";
-> +
-> +		power-button {
-> +			label = "Power Button";
-> +			linux,code = <KEY_POWER>;
-> +			gpios = <&gpio1 12 GPIO_ACTIVE_HIGH>;
-> +		};
-> +
-> +		reset-button {
-> +			label = "Reset Button";
-> +			linux,code = <KEY_RESTART>;
-> +			gpios = <&gpio1 13 GPIO_ACTIVE_LOW>;
-> +		};
-> +
-> +		select-button {
-> +			label = "Select Button";
-> +			linux,code = <BTN_SELECT>;
-> +			gpios = <&gpio1 9 GPIO_ACTIVE_LOW>;
-> +		};
-> +
-> +		scroll-button {
-> +			label = "Scroll Button";
-> +			linux,code = <KEY_SCROLLDOWN>;
-> +			gpios = <&gpio1 10 GPIO_ACTIVE_LOW>;
-> +		};
-> +	};
-> +
-> +	spi3 {
-> +		compatible = "spi-gpio";
-> +		status = "okay";
-> +		gpio-sck = <&gpio0 25 0>;
-> +		gpio-mosi = <&gpio1 15 0>; /*gpio 47*/
-> +		cs-gpios = <&gpio0 27 0 >;
-> +		num-chipselects = <1>;
-> +		#address-cells = <1>;
-> +		#size-cells = <0>;
-> +
-> +		gpio2: gpio2@0 {
-> +			compatible = "fairchild,74hc595";
-> +			gpio-controller;
-> +			#gpio-cells = <2>;
-> +			reg = <0>;
-> +			registers-number = <2>;
-> +			spi-max-frequency = <100000>;
-> +		};
-> +	};
-> +
-> +	gpio-leds {
-> +		compatible = "gpio-leds";
-> +		pinctrl-0 = <&hdd_led_pin>;
-> +		pinctrl-names = "default";
-> +
-> +		hdd-led {
-> +			label = "ix4-300d:hdd:blue";
-> +			gpios = <&gpio0 26 GPIO_ACTIVE_HIGH>;
-> +			default-state = "off";
-> +		};
-> +
-> +		power-led {
-> +			label = "ix4-300d:power:white";
-> +			gpios = <&gpio2 1 GPIO_ACTIVE_LOW>;
-> +			/* init blinking while booting */
-> +			linux,default-trigger = "timer";
-> +			default-state = "on";
-> +		};
-> +
-> +		sysfail-led {
-> +			label = "ix4-300d:sysfail:red";
-> +			gpios = <&gpio2 2 GPIO_ACTIVE_HIGH>;
-> +			default-state = "off";
-> +		};
-> +
-> +		sys-led {
-> +			label = "ix4-300d:sys:blue";
-> +			gpios = <&gpio2 3 GPIO_ACTIVE_HIGH>;
-> +			default-state = "off";
-> +		};
-> +
-> +		hddfail-led {
-> +			label = "ix4-300d:hddfail:red";
-> +			gpios = <&gpio2 4 GPIO_ACTIVE_HIGH>;
-> +			default-state = "off";
-> +		};
-> +
-> +	};
-> +
-> +	/* 
-> +	 * Warning: you need both eth1 & 0 PHY initialized (i.e having
-> +	 * them up does the tweak) for poweroff to shutdown otherwise it
-> +	 * reboots 
-> +	 */
-> +	gpio-poweroff {
-> +		compatible = "gpio-poweroff";
-> +		pinctrl-0 = <&poweroff_pin>;
-> +		pinctrl-names = "default";
-> +		gpios = <&gpio0 24 GPIO_ACTIVE_HIGH>;
-> +	};
-> +};
-> -- 
-> 1.9.1
+> >> Great! I'd just like to have a reasonable level of confidence in
+> >> what's happening down the stack before I entertain turning something
+> >> on that's not being properly advertised.
 > 
+> KY> As I look at the output of inquiry between Linux on Hyper-V and
+> KY> native Linux, is not specifying conformance level the main issue?
+> 
+> The main problem for this particular use case (aside from the issue we've
+> already addressed) is that the passthrough device (SATA SSD) has
+> LBPME=0 in the READ CAPACITY(16) response. The LBP VPD is correctly
+> provided with LBPU flag set but because LBPME is reported as disabled we
+> will not attempt to issue UNMAP commands to the device.
+
+Oh; ok. I missed the read_capacity response.
+
+Thanks,
+
+K. Y
+> 
+> --
+> Martin K. Petersen	Oracle Linux Engineering
