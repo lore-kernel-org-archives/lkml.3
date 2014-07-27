@@ -1,80 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752197AbaG0O4S (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Jul 2014 10:56:18 -0400
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:41397 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751471AbaG0O4R (ORCPT
+	id S1752252AbaG0O64 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Jul 2014 10:58:56 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:60136 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752121AbaG0O6y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Jul 2014 10:56:17 -0400
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Vikas Chaudhary <vikas.chaudhary@qlogic.com>, iscsi-driver@qlogic.com
-Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] scsi: qla4xxx: ql4_mbx.c:  Cleaning up missing null-terminate in conjunction with strncpy
-Date: Sun, 27 Jul 2014 16:57:42 +0200
-Message-Id: <1406473062-12509-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-X-Mailer: git-send-email 1.7.10.4
+	Sun, 27 Jul 2014 10:58:54 -0400
+X-Originating-IP: 108.223.40.66
+Message-ID: <53D513AB.7030109@roeck-us.net>
+Date: Sun, 27 Jul 2014 07:58:51 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+MIME-Version: 1.0
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+CC: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
+        stable@vger.kernel.org
+Subject: Re: [PATCH 3.4 00/23] 3.4.100-stable review
+References: <20140726190149.723570428@linuxfoundation.org>
+In-Reply-To: <20140726190149.723570428@linuxfoundation.org>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replacing strncpy with strlcpy to avoid strings that lacks null terminate.
-And in some cases modified to copy one character less than the overall
-length, as the entire area is already zeroed.
+On 07/26/2014 12:02 PM, Greg Kroah-Hartman wrote:
+> This is the start of the stable review cycle for the 3.4.100 release.
+> There are 23 patches in this series, all will be posted as a response
+> to this one.  If anyone has any issues with these being applied, please
+> let me know.
+>
+> Responses should be made by Mon Jul 28 19:01:37 UTC 2014.
+> Anything received after that time might be too late.
+>
 
-Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
----
- drivers/scsi/qla4xxx/ql4_mbx.c |   14 +++++++-------
- 1 file changed, 7 insertions(+), 7 deletions(-)
+Build results:
+	total: 117 pass: 111 fail: 6
+Failed builds:
+	alpha:allmodconfig
+	arm:spear6xx_defconfig
+	score:defconfig
+	sparc64:allmodconfig
+	unicore32:defconfig
+	xtensa:allmodconfig
 
-diff --git a/drivers/scsi/qla4xxx/ql4_mbx.c b/drivers/scsi/qla4xxx/ql4_mbx.c
-index 0a3312c..2b2756e 100644
---- a/drivers/scsi/qla4xxx/ql4_mbx.c
-+++ b/drivers/scsi/qla4xxx/ql4_mbx.c
-@@ -1620,8 +1620,8 @@ int qla4xxx_get_chap(struct scsi_qla_host *ha, char *username, char *password,
- 		goto exit_get_chap;
- 	}
- 
--	strncpy(password, chap_table->secret, QL4_CHAP_MAX_SECRET_LEN);
--	strncpy(username, chap_table->name, QL4_CHAP_MAX_NAME_LEN);
-+	strlcpy(password, chap_table->secret, QL4_CHAP_MAX_SECRET_LEN);
-+	strlcpy(username, chap_table->name, QL4_CHAP_MAX_NAME_LEN);
- 	chap_table->cookie = __constant_cpu_to_le16(CHAP_VALID_COOKIE);
- 
- exit_get_chap:
-@@ -1663,8 +1663,8 @@ int qla4xxx_set_chap(struct scsi_qla_host *ha, char *username, char *password,
- 	else
- 		chap_table->flags |= BIT_7; /* local */
- 	chap_table->secret_len = strlen(password);
--	strncpy(chap_table->secret, password, MAX_CHAP_SECRET_LEN);
--	strncpy(chap_table->name, username, MAX_CHAP_NAME_LEN);
-+	strncpy(chap_table->secret, password, MAX_CHAP_SECRET_LEN - 1);
-+	strncpy(chap_table->name, username, MAX_CHAP_NAME_LEN - 1);
- 	chap_table->cookie = __constant_cpu_to_le16(CHAP_VALID_COOKIE);
- 
- 	if (is_qla40XX(ha)) {
-@@ -1742,8 +1742,8 @@ int qla4xxx_get_uni_chap_at_index(struct scsi_qla_host *ha, char *username,
- 		goto exit_unlock_uni_chap;
- 	}
- 
--	strncpy(password, chap_table->secret, MAX_CHAP_SECRET_LEN);
--	strncpy(username, chap_table->name, MAX_CHAP_NAME_LEN);
-+	strlcpy(password, chap_table->secret, MAX_CHAP_SECRET_LEN);
-+	strlcpy(username, chap_table->name, MAX_CHAP_NAME_LEN);
- 
- 	rval = QLA_SUCCESS;
- 
-@@ -2295,7 +2295,7 @@ int qla4_8xxx_set_param(struct scsi_qla_host *ha, int param)
- 	if (param == SET_DRVR_VERSION) {
- 		mbox_cmd[1] = SET_DRVR_VERSION;
- 		strncpy((char *)&mbox_cmd[2], QLA4XXX_DRIVER_VERSION,
--			MAX_DRVR_VER_LEN);
-+			MAX_DRVR_VER_LEN - 1);
- 	} else {
- 		ql4_printk(KERN_ERR, ha, "%s: invalid parameter 0x%x\n",
- 			   __func__, param);
--- 
-1.7.10.4
+Qemu tests all passed.
+
+Results are as expected.
+
+Details are available at http://server.roeck-us.net:8010/builders.
+
+Guenter
 
