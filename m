@@ -1,60 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752802AbaG1P0l (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 11:26:41 -0400
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:39737 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752544AbaG1P0k (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 11:26:40 -0400
-Date: Mon, 28 Jul 2014 20:56:32 +0530
-From: Himangi Saraogi <himangi774@gmail.com>
-To: Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
-        ocfs2-devel@oss.oracle.com, linux-kernel@vger.kernel.org
-Cc: julia.lawall@lip6.fr
-Subject: [PATCH] ocfs2: delete double assignment
-Message-ID: <20140728152632.GA2926@himangi-Dell>
+	id S1752917AbaG1P0t (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 11:26:49 -0400
+Received: from mga09.intel.com ([134.134.136.24]:5013 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752140AbaG1P0q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jul 2014 11:26:46 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,749,1400050800"; 
+   d="scan'208";a="550183970"
+Message-ID: <53D66BB1.8080905@linux.intel.com>
+Date: Mon, 28 Jul 2014 08:26:41 -0700
+From: Dave Hansen <dave.hansen@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Andrey Ryabinin <a.ryabinin@samsung.com>,
+        Sasha Levin <sasha.levin@oracle.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andi Kleen <ak@linux.intel.com>,
+        Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Dave Chinner <david@fromorbit.com>, Ning Qu <quning@gmail.com>,
+        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Dave Jones <davej@redhat.com>,
+        stable@vger.kernel.org,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Konstantin Khlebnikov <koct9i@gmail.com>,
+        Hugh Dickins <hughd@google.com>
+Subject: Re: [PATCH] mm: don't allow fault_around_bytes to be 0
+References: <53D07E96.5000006@oracle.com> <1406533400-6361-1-git-send-email-a.ryabinin@samsung.com> <20140728093611.GA3975@node.dhcp.inet.fi>
+In-Reply-To: <20140728093611.GA3975@node.dhcp.inet.fi>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Delete successive assignments to the same location. The two assignments are
-simply identical.
+On 07/28/2014 02:36 AM, Kirill A. Shutemov wrote:
+> +++ b/mm/memory.c
+> @@ -2786,7 +2786,8 @@ static int fault_around_bytes_set(void *data, u64 val)
+>  {
+>  	if (val / PAGE_SIZE > PTRS_PER_PTE)
+>  		return -EINVAL;
+> -	fault_around_bytes = val;
+> +	/* rounddown_pow_of_two(0) is not defined */
+> +	fault_around_bytes = max(val, PAGE_SIZE);
+>  	return 0;
+>  }
 
-A simplified version of Coccinelle semantic match that finds this problem is as
-follows:
+It's also possible to race and have fault_around_bytes change between
+when fault_around_mask() and fault_around_pages() are called so that
+they don't match any more.  The min()/max() in do_fault_around() should
+keep this from doing anything _too_ nasty, but it's worth thinking about
+at least.
 
-// <smpl>
-@@
-expression i;
-@@
-
-*i = ...;
- i = ...;
-// </smpl>
-
-Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
----
-Should the fist assignment be initializing the pv_minor field?
- fs/ocfs2/stack_user.c | 1 -
- 1 file changed, 1 deletion(-)
-
-diff --git a/fs/ocfs2/stack_user.c b/fs/ocfs2/stack_user.c
-index 13a8537..4bcbb9b 100644
---- a/fs/ocfs2/stack_user.c
-+++ b/fs/ocfs2/stack_user.c
-@@ -591,7 +591,6 @@ static int ocfs2_control_release(struct inode *inode, struct file *file)
- 		 */
- 		ocfs2_control_this_node = -1;
- 		running_proto.pv_major = 0;
--		running_proto.pv_major = 0;
- 	}
- 
- out:
--- 
-1.9.1
-
+The safest thing to do might be to use an ACCESS_ONCE() at the beginning
+of do_fault_around() for fault_around_bytes and generate
+fault_around_mask() from the ACCESS_ONCE() result.
