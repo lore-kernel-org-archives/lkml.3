@@ -1,46 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752605AbaG0Tur (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Jul 2014 15:50:47 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:55094 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752237AbaG0Tup (ORCPT
+	id S1752647AbaG0Tv3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Jul 2014 15:51:29 -0400
+Received: from mail-yh0-f41.google.com ([209.85.213.41]:61612 "EHLO
+	mail-yh0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752237AbaG0Tv2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Jul 2014 15:50:45 -0400
-Date: Sun, 27 Jul 2014 12:50:41 -0700
-From: Christoph Hellwig <hch@infradead.org>
-To: Trond Myklebust <trond.myklebust@primarydata.com>
-Cc: Christoph Hellwig <hch@infradead.org>,
-        Andrey Utkin <andrey.krieger.utkin@gmail.com>,
-        Linux Kernel mailing list <linux-kernel@vger.kernel.org>,
-        Linux NFS Mailing List <linux-nfs@vger.kernel.org>,
-        kernel-janitors@vger.kernel.org, Russell King <linux@arm.linux.org.uk>
-Subject: Re: [PATCH] nfs3_list_one_acl(): check get_acl() result with
- IS_ERR_OR_NULL
-Message-ID: <20140727195041.GA11575@infradead.org>
-References: <1406375881-18837-1-git-send-email-andrey.krieger.utkin@gmail.com>
- <20140727131917.GA32153@infradead.org>
- <CAHQdGtRzDzpOuwZYWaBake-bH0z0eyMd2g-RTVwO0d2f0Zmsow@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAHQdGtRzDzpOuwZYWaBake-bH0z0eyMd2g-RTVwO0d2f0Zmsow@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	Sun, 27 Jul 2014 15:51:28 -0400
+From: Jessica Yu <jyu@cowsay.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Jessica Yu <jyu@cowsay.org>
+Subject: [PATCH] Staging: lustre: linux-module: fix coding style issues.
+Date: Sun, 27 Jul 2014 20:53:50 -0700
+Message-Id: <1406519630-21512-1-git-send-email-jyu@cowsay.org>
+X-Mailer: git-send-email 2.0.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 27, 2014 at 11:13:50AM -0400, Trond Myklebust wrote:
-> Why are we not passing the error code back to the caller here in the
-> case where we have one? One of the main purposes of returning an error
-> in get_acl() is to ensure that we pass -EOPNOTSUPP if the operation
-> fails due to lack of server support.
+Fixed some coding style issues.
 
-Do we really want to return EOPNOTSUPP from listxattr?  Seems like
-simply not listing anything if the server doesn't support ACLs would
-be the usual behaviour.  E.g. on local filesystems we'll also just get
-back an empty list of xattrs if ACLs aren't supported and not other
-attribute is set.
+Signed-off-by: Jessica Yu <jyu@cowsay.org>
+---
+ drivers/staging/lustre/lustre/libcfs/linux/linux-module.c | 14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
+
+diff --git a/drivers/staging/lustre/lustre/libcfs/linux/linux-module.c b/drivers/staging/lustre/lustre/libcfs/linux/linux-module.c
+index ccadf65..de3c199 100644
+--- a/drivers/staging/lustre/lustre/libcfs/linux/linux-module.c
++++ b/drivers/staging/lustre/lustre/libcfs/linux/linux-module.c
+@@ -99,7 +99,7 @@ int libcfs_ioctl_popdata(void *arg, void *data, int size)
+ extern struct cfs_psdev_ops	  libcfs_psdev_ops;
+ 
+ static int
+-libcfs_psdev_open(struct inode * inode, struct file * file)
++libcfs_psdev_open(struct inode *inode, struct file *file)
+ {
+ 	struct libcfs_device_userstate **pdu = NULL;
+ 	int    rc = 0;
+@@ -116,7 +116,7 @@ libcfs_psdev_open(struct inode * inode, struct file * file)
+ 
+ /* called when closing /dev/device */
+ static int
+-libcfs_psdev_release(struct inode * inode, struct file * file)
++libcfs_psdev_release(struct inode *inode, struct file *file)
+ {
+ 	struct libcfs_device_userstate *pdu;
+ 	int    rc = 0;
+@@ -140,9 +140,9 @@ static long libcfs_ioctl(struct file *file,
+ 	if (!capable(CAP_SYS_ADMIN))
+ 		return -EACCES;
+ 
+-	if ( _IOC_TYPE(cmd) != IOC_LIBCFS_TYPE ||
++	if (_IOC_TYPE(cmd) != IOC_LIBCFS_TYPE ||
+ 	     _IOC_NR(cmd) < IOC_LIBCFS_MIN_NR  ||
+-	     _IOC_NR(cmd) > IOC_LIBCFS_MAX_NR ) {
++	     _IOC_NR(cmd) > IOC_LIBCFS_MAX_NR) {
+ 		CDEBUG(D_IOCTL, "invalid ioctl ( type %d, nr %d, size %d )\n",
+ 		       _IOC_TYPE(cmd), _IOC_NR(cmd), _IOC_SIZE(cmd));
+ 		return (-EINVAL);
+@@ -154,7 +154,7 @@ static long libcfs_ioctl(struct file *file,
+ 		if (!capable(CFS_CAP_SYS_BOOT))
+ 			return (-EPERM);
+ 		panic("debugctl-invoked panic");
+-		return (0);
++		return 0;
+ 	case IOC_LIBCFS_MEMHOG:
+ 		if (!capable(CFS_CAP_SYS_ADMIN))
+ 			return -EPERM;
+@@ -167,10 +167,10 @@ static long libcfs_ioctl(struct file *file,
+ 		rc = libcfs_psdev_ops.p_ioctl(&pfile, cmd, (void *)arg);
+ 	else
+ 		rc = -EPERM;
+-	return (rc);
++	return rc;
+ }
+ 
+-static struct file_operations libcfs_fops = {
++static const struct file_operations libcfs_fops = {
+ 	.unlocked_ioctl	= libcfs_ioctl,
+ 	.open		= libcfs_psdev_open,
+ 	.release	= libcfs_psdev_release,
+-- 
+2.0.1
 
