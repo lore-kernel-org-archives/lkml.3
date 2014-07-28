@@ -1,106 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752209AbaG1Jbx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 05:31:53 -0400
-Received: from mx2.parallels.com ([199.115.105.18]:37831 "EHLO
+	id S1752558AbaG1JdV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 05:33:21 -0400
+Received: from mx2.parallels.com ([199.115.105.18]:37933 "EHLO
 	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750954AbaG1Jbt (ORCPT
+	with ESMTP id S1752177AbaG1Jbw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 05:31:49 -0400
+	Mon, 28 Jul 2014 05:31:52 -0400
 From: Vladimir Davydov <vdavydov@parallels.com>
 To: <akpm@linux-foundation.org>
 CC: <hannes@cmpxchg.org>, <mhocko@suse.cz>, <glommer@gmail.com>,
         <david@fromorbit.com>, <viro@zeniv.linux.org.uk>, <gthelen@google.com>,
         <mgorman@suse.de>, <linux-mm@kvack.org>,
         <linux-kernel@vger.kernel.org>
-Subject: [PATCH -mm 0/6] Per-memcg slab shrinkers
-Date: Mon, 28 Jul 2014 13:31:22 +0400
-Message-ID: <cover.1406536261.git.vdavydov@parallels.com>
+Subject: [PATCH -mm 2/6] fs: consolidate {nr,free}_cached_objects args in shrink_control
+Date: Mon, 28 Jul 2014 13:31:24 +0400
+Message-ID: <a301e8ee3c5a58475517f0131f9e87e8be0db97e.1406536261.git.vdavydov@parallels.com>
 X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <cover.1406536261.git.vdavydov@parallels.com>
+References: <cover.1406536261.git.vdavydov@parallels.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[ It's been a long time since I sent the last version of this set, so
-  I'm restarting the versioning. For those, who are interested in the
-  patch set history, see https://lkml.org/lkml/2014/2/5/358 ]
+We are going to make FS shrinkers memcg-aware. To achieve that, we will
+have to pass the memcg to scan to the nr_cached_objects and
+free_cached_objects VFS methods, which currently take only the NUMA node
+to scan. Since the shrink_control structure already holds the node, and
+the memcg to scan will be added to it when we introduce memcg-aware
+vmscan, let us consolidate the methods' arguments in this structure to
+keep things clean.
 
-Hi,
+Suggested-by: Dave Chinner <dchinner@redhat.com>
+Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
+---
+ fs/super.c         |   12 ++++++------
+ fs/xfs/xfs_super.c |    7 +++----
+ include/linux/fs.h |    6 ++++--
+ 3 files changed, 13 insertions(+), 12 deletions(-)
 
-This patch set introduces per-memcg slab shrinkers support and
-implements per-memcg fs (dcache, icache) shrinkers. It was initially
-proposed by Glauber Costa.
-
-The idea lying behind this is to make the list_lru structure per-memcg
-and put objects relating to a particular memcg to the corresponding
-list. This way, to turn a shrinker using list_lru for organizing
-reclaimable objects to memcg aware one it's enough to initialize its
-list_lru as memcg aware.
-
-Please, note that even with this set, current kmemcg implementation has
-serious flaws, which make it unusable in production:
-
- - Kmem-only reclaim, which would trigger on hitting memory.kmem.limit,
-   is not implemented yet. This makes memory.kmem.limite < memory.limit
-   setups unusable. We are not quite sure if we really need a separate
-   knob for kmem.limit though (see the discussion at
-   https://lkml.org/lkml/2014/7/16/412).
-
- - Since kmem cache self destruction patch set was withdrawn due to
-   performance reasons (https://lkml.org/lkml/2014/7/15/361), per memcg
-   kmem caches, which have objects on css offline, are still leaked. I'm
-   planning to introduce a shrinker for such caches.
-
- - Per-memcg arrays of kmem_cache's and list_lru's can only grow and are
-   never shrunk. Since the number of offline memcg's hanging around is
-   practically unlimited, these arrays may become really huge and result
-   in various problems even if nobody uses cgroups right now. I'm
-   considering using flex_array's for those caches so that we could
-   reclaim their parts on memory pressure.
-
-That's why I still leave CONFIG_MEMCG_KMEM marked as "only for
-development/testing".
-
-The patch set is organized as follows:
- - patches 1 and 2 make list_lru and fs-private shrinker interfaces
-   neater and suitable for extending towards per-memcg reclaim;
- - patch 3 introduces per-memcg slab shrinker core;
- - patch 4 makes list_lru memcg-aware and patch 5 marks dcache and
-   icache shrinkers as memcg aware.
- - patch 6 extends memcg iterator to include offline css's to allow
-   kmem reclaim from dead css's.
-
-Thanks,
-
-Vladimir Davydov (6):
-  list_lru, shrinkers: introduce list_lru_shrink_{count,walk}
-  fs: consolidate {nr,free}_cached_objects args in shrink_control
-  vmscan: shrink slab on memcg pressure
-  list_lru: add per-memcg lists
-  fs: make shrinker memcg aware
-  memcg: iterator: do not skip offline css
-
- fs/dcache.c                |   14 ++-
- fs/gfs2/main.c             |    2 +-
- fs/gfs2/quota.c            |    6 +-
- fs/inode.c                 |    7 +-
- fs/internal.h              |    7 +-
- fs/super.c                 |   45 ++++----
- fs/xfs/xfs_buf.c           |    9 +-
- fs/xfs/xfs_qm.c            |    9 +-
- fs/xfs/xfs_super.c         |    7 +-
- include/linux/fs.h         |    6 +-
- include/linux/list_lru.h   |   82 +++++++++-----
- include/linux/memcontrol.h |   64 +++++++++++
- include/linux/shrinker.h   |   10 +-
- mm/list_lru.c              |  132 +++++++++++++++++++----
- mm/memcontrol.c            |  258 ++++++++++++++++++++++++++++++++++++++++----
- mm/vmscan.c                |   94 ++++++++++++----
- mm/workingset.c            |    9 +-
- 17 files changed, 615 insertions(+), 146 deletions(-)
-
+diff --git a/fs/super.c b/fs/super.c
+index b4f5679d0d8c..1f34321e15b4 100644
+--- a/fs/super.c
++++ b/fs/super.c
+@@ -76,7 +76,7 @@ static unsigned long super_cache_scan(struct shrinker *shrink,
+ 		return SHRINK_STOP;
+ 
+ 	if (sb->s_op->nr_cached_objects)
+-		fs_objects = sb->s_op->nr_cached_objects(sb, sc->nid);
++		fs_objects = sb->s_op->nr_cached_objects(sb, sc);
+ 
+ 	inodes = list_lru_shrink_count(&sb->s_inode_lru, sc);
+ 	dentries = list_lru_shrink_count(&sb->s_dentry_lru, sc);
+@@ -96,9 +96,10 @@ static unsigned long super_cache_scan(struct shrinker *shrink,
+ 	sc->nr_to_scan = inodes;
+ 	freed += prune_icache_sb(sb, sc);
+ 
+-	if (fs_objects)
+-		freed += sb->s_op->free_cached_objects(sb, fs_objects,
+-						       sc->nid);
++	if (fs_objects) {
++		sc->nr_to_scan = fs_objects;
++		freed += sb->s_op->free_cached_objects(sb, sc);
++	}
+ 
+ 	drop_super(sb);
+ 	return freed;
+@@ -121,8 +122,7 @@ static unsigned long super_cache_count(struct shrinker *shrink,
+ 	 * s_op->nr_cached_objects().
+ 	 */
+ 	if (sb->s_op && sb->s_op->nr_cached_objects)
+-		total_objects = sb->s_op->nr_cached_objects(sb,
+-						 sc->nid);
++		total_objects = sb->s_op->nr_cached_objects(sb, sc);
+ 
+ 	total_objects += list_lru_shrink_count(&sb->s_dentry_lru, sc);
+ 	total_objects += list_lru_shrink_count(&sb->s_inode_lru, sc);
+diff --git a/fs/xfs/xfs_super.c b/fs/xfs/xfs_super.c
+index 986c5577c4e9..0df5f4d7150f 100644
+--- a/fs/xfs/xfs_super.c
++++ b/fs/xfs/xfs_super.c
+@@ -1521,7 +1521,7 @@ xfs_fs_mount(
+ static long
+ xfs_fs_nr_cached_objects(
+ 	struct super_block	*sb,
+-	int			nid)
++	struct shrink_control	*sc)
+ {
+ 	return xfs_reclaim_inodes_count(XFS_M(sb));
+ }
+@@ -1529,10 +1529,9 @@ xfs_fs_nr_cached_objects(
+ static long
+ xfs_fs_free_cached_objects(
+ 	struct super_block	*sb,
+-	long			nr_to_scan,
+-	int			nid)
++	struct shrink_control	*sc)
+ {
+-	return xfs_reclaim_inodes_nr(XFS_M(sb), nr_to_scan);
++	return xfs_reclaim_inodes_nr(XFS_M(sb), sc->nr_to_scan);
+ }
+ 
+ static const struct super_operations xfs_super_operations = {
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 26b4970e9fb8..6193236aca16 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -1563,8 +1563,10 @@ struct super_operations {
+ 			       loff_t);
+ #endif
+ 	int (*bdev_try_to_free_page)(struct super_block*, struct page*, gfp_t);
+-	long (*nr_cached_objects)(struct super_block *, int);
+-	long (*free_cached_objects)(struct super_block *, long, int);
++	long (*nr_cached_objects)(struct super_block *,
++				  struct shrink_control *);
++	long (*free_cached_objects)(struct super_block *,
++				    struct shrink_control *);
+ };
+ 
+ /*
 -- 
 1.7.10.4
 
