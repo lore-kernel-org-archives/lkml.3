@@ -1,72 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751535AbaG1Slm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 14:41:42 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:46297 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751418AbaG1Sll (ORCPT
+	id S1751659AbaG1Sl4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 14:41:56 -0400
+Received: from ud10.udmedia.de ([194.117.254.50]:36426 "EHLO
+	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751213AbaG1Slz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 14:41:41 -0400
-Date: Mon, 28 Jul 2014 19:41:07 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Konstantin Khlebnikov <koct9i@gmail.com>
-Cc: Konstantin Khlebnikov <k.khlebnikov@samsung.com>,
-        Vitaly Andrianov <vitalya@ti.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Cyril Chemparathy <cyril@ti.com>
-Subject: Re: [PATCH 2/2] ARM: LPAE: reduce damage caused by idmap to virtual
- memory layout
-Message-ID: <20140728184107.GR15536@arm.com>
-References: <20140722153623.25088.37742.stgit@buzz>
- <20140722153635.25088.14197.stgit@buzz>
- <20140728181456.GO15536@arm.com>
- <CALYGNiNJDHfQm2yk067hh-Wywsb_Ki5AEE_sTMkYegJi9spSzw@mail.gmail.com>
+	Mon, 28 Jul 2014 14:41:55 -0400
+Date: Mon, 28 Jul 2014 20:41:53 +0200
+From: Markus Trippelsdorf <markus@trippelsdorf.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Alexei Starovoitov <ast@kernel.org>, "Frank Ch. Eigler" <fche@redhat.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Michel =?iso-8859-1?Q?D=E4nzer?= <michel@daenzer.net>,
+        Jakub Jelinek <jakub@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Debian GCC Maintainers <debian-gcc@lists.debian.org>,
+        Debian Kernel Team <debian-kernel@lists.debian.org>
+Subject: Re: Random panic in load_balance() with 3.16-rc
+Message-ID: <20140728184153.GB22904@x4>
+References: <CA+55aFxaXPqyDJv-SNu6Giy3eKCu_SY1wof1NaNnPTbtF9RbXQ@mail.gmail.com>
+ <20140726193557.GA21842@x4>
+ <CA+55aFyo=HVZGEYNmz9GHqLatFHiJYTviKz_dXjqCv8b_gGxBA@mail.gmail.com>
+ <20140726201914.GB21842@x4>
+ <CA+55aFyCh8B4kuc66_+wr8eM+kP7-hJ9utdtpLih661Xf8YGgQ@mail.gmail.com>
+ <y0m7g2xk6ss.fsf@fche.csb>
+ <CA+55aFwz+stjg5L7aKuPjLym3u4FPS_ugSZiCcJwOYCGMSFGVQ@mail.gmail.com>
+ <20140728172737.GA17598@pg-vmw-gw1>
+ <20140728180902.GA22904@x4>
+ <CA+55aFw3eJDJmRJb9pZiLk4wTN1GCRN+BsxOXV+SwqcV1SfQmQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CALYGNiNJDHfQm2yk067hh-Wywsb_Ki5AEE_sTMkYegJi9spSzw@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <CA+55aFw3eJDJmRJb9pZiLk4wTN1GCRN+BsxOXV+SwqcV1SfQmQ@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 28, 2014 at 07:25:14PM +0100, Konstantin Khlebnikov wrote:
-> On Mon, Jul 28, 2014 at 10:14 PM, Will Deacon <will.deacon@arm.com> wrote:
-> > On Tue, Jul 22, 2014 at 04:36:35PM +0100, Konstantin Khlebnikov wrote:
-> >> idmap layout combines both phisical and virtual addresses.
-> >> Everything works fine if ram physically lays below PAGE_OFFSET.
-> >> Otherwise idmap starts punching huge holes in virtual memory layout.
-> >> It maps ram by 2MiB sections, but when it allocates new pmd page it
-> >> cuts 1GiB at once.
-> >>
-> >> This patch makes a copy of all affected pmds from init_mm.
-> >> Only few (usually one) 2MiB sections will be lost.
-> >> This is not eliminates problem but makes it 512 times less likely.
+On 2014.07.28 at 11:28 -0700, Linus Torvalds wrote:
+> On Mon, Jul 28, 2014 at 11:09 AM, Markus Trippelsdorf
+> <markus@trippelsdorf.de> wrote:
 > >
-> > I'm struggling to understand your commit message, but making a problem `512
-> > times less likely' does sound like a bit of a hack to me. Can't we fix this
-> > properly instead?
+> > It shouldn't be too hard to implement a simple check for the bug in the
+> > next release. Just compile the gcc/testsuite/gcc.target/i386/pr61801.c
+> > testcase with -fcompare-debug. If gcc returns 0 then
+> > -fvar-tracking-assignments could safely be enabled again.
 > 
-> Yep, my comment sucks.
+> We don't really have any good infrastructure for things like this,
+> though. We probably *should* have a way to generate config options by
+> compiler version, but right now we don't. We do random ugly things
+> from within Makefile shell escapes (see all the helpers for this we do
+> in scripts/Kbuild.include, for example), and we could add yet another
+> one. But this is a whole new level of "ugly hack". It would be better
+> if we could do things like this at config time, not at build-time with
+> Makefile hacks.
 > 
-> Usually idmap looks like this:
-> 
-> |0x00000000 -- <chunk of physical memory in identical mapping > --- |
-> TASK_SIZE -- <kernel space vm layoyt> --- 0xFFFFFFFF |
-> 
-> But when that physical memory chunk starts from 0xE8000000 or even
-> 0xF2000000 evenything becomes very complicated.
+> Also, the test-case seems to be very sensitive to compiler options: it
+> passes with "-O", but fails with "-O2" or "-Os" for me. So I wonder
+> how reliable it is in the face of compiler version differences (ie is
+> it really robust wrt the bug actually being *fixed*, or is it a bit of
+> a happenstance)
 
-Why? As long as we don't clobber the kernel text (which would require
-PHYS_OFFSET to be at a really weird alignment and very close to
-PAGE_OFFSET), then you should be alright. Sure, you'll lose things like your
-stack and the vmalloc area etc, but you're running in the idmap, so don't
-use those things.
+It is robust with -O2 and -Os for all supported series that I've
+checked: 4.8, 4.9 and 5.0. I haven't checked older releases.
 
-soft_restart is an example of code that deals with these issues. Which code
-is causing you problems?
-
-Will
+-- 
+Markus
