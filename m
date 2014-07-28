@@ -1,92 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751302AbaG1Q11 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 12:27:27 -0400
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:53267 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750903AbaG1Q1Z (ORCPT
+	id S1751369AbaG1Q3K (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 12:29:10 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:38029 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751050AbaG1Q3G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 12:27:25 -0400
-Date: Mon, 28 Jul 2014 09:27:50 -0700
-From: Olof Johansson <olof@lixom.net>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org, Hanjun Guo <hanjun.guo@linaro.org>,
-        Mark Rutland <mark.rutland@arm.com>, Mark Brown <broonie@linaro.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>, Lv Zheng <lv.zheng@intel.com>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Robert Moore <robert.moore@intel.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
-        Robert Richter <rric@kernel.org>, Jason Cooper <jason@lakedaemon.net>,
-        Marc Zyngier <marc.zyngier@arm.com>, Liviu Dudau <Liviu.Dudau@arm.com>,
-        linaro-acpi-private@linaro.org, Bjorn Helgaas <bhelgaas@google.com>,
-        Graeme Gregory <graeme.gregory@linaro.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Sudeep Holla <Sudeep.Holla@arm.com>
-Subject: Re: [PATCH 19/19] Documentation: ACPI for ARM64
-Message-ID: <20140728162750.GB32359@quad.lixom.net>
-References: <1406206825-15590-1-git-send-email-hanjun.guo@linaro.org>
- <1406206825-15590-20-git-send-email-hanjun.guo@linaro.org>
- <CAOesGMhKHGkVK3dOLXXx9GQBMxDmjBu1WDBgHmwdGe1UK3jfcg@mail.gmail.com>
- <5014834.k6eecMddPC@wuerfel>
+	Mon, 28 Jul 2014 12:29:06 -0400
+Message-ID: <53D67A46.3060202@pengutronix.de>
+Date: Mon, 28 Jul 2014 18:28:54 +0200
+From: Marc Kleine-Budde <mkl@pengutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5014834.k6eecMddPC@wuerfel>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Stefan Agner <stefan@agner.ch>
+CC: shawn.guo@freescale.com, kernel@pengutronix.de,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 4/4] can: flexcan: add vf610 support for FlexCAN
+References: <cover.1405428166.git.stefan@agner.ch> <ff2ea1726b13dc2ffa3519ce9244f3633cf1420d.1405428166.git.stefan@agner.ch> <53C5398F.2000005@pengutronix.de> <1b8a8ca03b4a160027a79b722f697e25@agner.ch> <601adb6fe47279c115c1cc607365a00e@agner.ch> <53D25C9D.5080803@pengutronix.de> <e88108c655e2c16dc9cf6c4194547e73@agner.ch>
+In-Reply-To: <e88108c655e2c16dc9cf6c4194547e73@agner.ch>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="kjR5hcMBOvJh7uMJHS293nKT2CfkwMwDF"
+X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
+X-SA-Exim-Mail-From: mkl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 28, 2014 at 11:07:50AM +0200, Arnd Bergmann wrote:
-> On Saturday 26 July 2014 19:34:48 Olof Johansson wrote:
-> > On Thu, Jul 24, 2014 at 6:00 AM, Hanjun Guo <hanjun.guo@linaro.org> wrote:
-> > > +Relationship with Device Tree
-> > > +-----------------------------
-> > > +
-> > > +ACPI support in drivers and subsystems for ARMv8 should never be mutually
-> > > +exclusive with DT support at compile time.
-> > > +
-> > > +At boot time the kernel will only use one description method depending on
-> > > +parameters passed from the bootloader.
-> > 
-> > Possibly overriden by kernel bootargs. And as debated for quite a
-> > while earlier this year, acpi should still default to off -- if a DT
-> > and ACPI are both passed in, DT should at this time be given priority.
-> 
-> I think this would be harder to do with the way that ACPI is passed in
-> to the kernel. IIRC, you always have a minimal DT information based on
-> the ARM64 boot protocol, but in the case of ACPI, this contains pointers
-> to the ACPI tables, which are then used for populating the Linux platform
-> devices (unless acpi=disabled is set), while the other contents of the
-> DTB may be present but we skip the of_platform_populate state.
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--kjR5hcMBOvJh7uMJHS293nKT2CfkwMwDF
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-How can it be harder to do? If you support acpi=off, then you should support
-acpi=on.
+On 07/28/2014 06:20 PM, Stefan Agner wrote:
+>>> Ping. Anything open/to do from my side?
+>>
+>> Please keep the printing of esr and ctrl in the interrupt handler, add=
+ a
+>> #define DEBUG in the driver, but do not change anything else. Then:
+                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>=20
+> diff --git a/drivers/net/can/flexcan.c b/drivers/net/can/flexcan.c
+> index 1c31a5d..fe8b81c 100644
+> --- a/drivers/net/can/flexcan.c
+> +++ b/drivers/net/can/flexcan.c
+> @@ -19,6 +19,7 @@
+>   *
+>   */
+> =20
+> +#define DEBUG
 
-Another alternative would be to have an early fixup that stubs out
-the acpi properties from the DTB unless there's an 'acpi' or 'acpi=on'
-argument on the cmdline. Not quite as tidy a solution, though.
+keep
 
-> If this is correct, then replacing the firmware-generated dtb with a
-> user-provided on would implicitly remove the ACPI tables from visibility,
-> which is exactly what we want.
+>  #include <linux/netdevice.h>
+>  #include <linux/can.h>
+>  #include <linux/can/dev.h>
+> @@ -743,6 +744,9 @@ static irqreturn_t flexcan_irq(int irq, void
+> *dev_id)
+> =20
+>         reg_iflag1 =3D flexcan_read(&regs->iflag1);
+>         reg_esr =3D flexcan_read(&regs->esr);
+> +
+> +       printk("flexcan_irq, esr=3D%08x\n", reg_esr);
+> +       printk("flexcan_irq, ctrl=3D%08x\n", flexcan_read(&regs->ctrl))=
+;
 
-I was of the impression that firmware patches in the ACPI entries into either
-device-tree before launching the kernel. Is that not the case? And what if
-some bootloader chooses to do it that way in the future? It's better to not
-assume that they get it right.
+keep
 
-> It's possible that I'm misremembering it though, and it should be
-> documented better.
+>         /* ACK all bus error and state change IRQ sources */
+>         if (reg_esr & FLEXCAN_ESR_ALL_INT)
+>                 flexcan_write(reg_esr & FLEXCAN_ESR_ALL_INT,
+> &regs->esr);
+> @@ -885,8 +889,8 @@ static int flexcan_chip_start(struct net_device
+> *dev)
+>          */
+>         reg_ctrl =3D flexcan_read(&regs->ctrl);
+>         reg_ctrl &=3D ~FLEXCAN_CTRL_TSYN;
+> -       reg_ctrl |=3D FLEXCAN_CTRL_BOFF_REC | FLEXCAN_CTRL_LBUF |
+> -               FLEXCAN_CTRL_ERR_STATE;
+> +       reg_ctrl |=3D FLEXCAN_CTRL_BOFF_REC | FLEXCAN_CTRL_LBUF;// |
+> +               //FLEXCAN_CTRL_ERR_STATE;
+>         /*
+>          * enable the "error interrupt" (FLEXCAN_CTRL_ERR_MSK),
+>          * on most Flexcan cores, too. Otherwise we don't get
+>=20
+> I'm not sure whether you really want to keep the FLEXCAN_CTRL_ERR_STATE=
 
-Yes, definitely needs to be documented to not leave room for random
-interpretation later on.
+> commented out...
+
+No, please remove this change and redo the test.
+
+Marc
+--=20
+Pengutronix e.K.                  | Marc Kleine-Budde           |
+Industrial Linux Solutions        | Phone: +49-231-2826-924     |
+Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
+Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
 
 
--Olof
+--kjR5hcMBOvJh7uMJHS293nKT2CfkwMwDF
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+Comment: Using GnuPG with Icedove - http://www.enigmail.net/
+
+iEYEARECAAYFAlPWekYACgkQjTAFq1RaXHORHQCeJ66SexKyx/sf93Tw7S36duFU
+2eQAoI4XSdVZz4DzKhhEJcAQzex/i8xA
+=gkZx
+-----END PGP SIGNATURE-----
+
+--kjR5hcMBOvJh7uMJHS293nKT2CfkwMwDF--
