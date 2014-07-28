@@ -1,63 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752799AbaG1OFS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 10:05:18 -0400
-Received: from helcar.apana.org.au ([209.40.204.226]:34717 "EHLO
-	helcar.apana.org.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752140AbaG1OFP (ORCPT
+	id S1752873AbaG1OFn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 10:05:43 -0400
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:42872 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752844AbaG1OFk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 10:05:15 -0400
-Date: Mon, 28 Jul 2014 22:05:07 +0800
-From: Herbert Xu <herbert@gondor.apana.org.au>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Crypto Mailing List <linux-crypto@vger.kernel.org>
-Subject: Crypto Fixes for 3.16
-Message-ID: <20140728140507.GA11926@gondor.apana.org.au>
-References: <20120126024342.GA12492@gondor.apana.org.au>
- <20120823083242.GA23102@gondor.apana.org.au>
- <20121109093005.GA25632@gondor.apana.org.au>
- <20130328082841.GA7425@gondor.apana.org.au>
- <20131203124129.GA12067@gondor.apana.org.au>
- <20131209115705.GA1361@gondor.apana.org.au>
- <20140101061016.GA22579@gondor.apana.org.au>
- <20140203125944.GA31446@gondor.apana.org.au>
- <20140710090314.GA15729@gondor.apana.org.au>
- <20140718105717.GA18087@gondor.apana.org.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140718105717.GA18087@gondor.apana.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 28 Jul 2014 10:05:40 -0400
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [RFC PATCH 2/2] of/clk: use "clkops-clocks" to specify clocks
+ handled by clock_ops domain
+To: Grygorii Strashko <grygorii.strashko@ti.com>, geert+renesas@glider.be
+Cc: laurent.pinchart@ideasonboard.com, ulf.hansson@linaro.org,
+        khilman@linaro.org, mturquette@linaro.org, tomasz.figa@gmail.com,
+        ben.dooks@codethink.co.uk, horms@verge.net.au, magnus.damm@gmail.com,
+        rjw@rjwysocki.net, linux-sh@vger.kernel.org, linux-pm@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Grygorii Strashko <grygorii.strashko@ti.com>
+In-Reply-To: <1402592023-13416-3-git-send-email-grygorii.strashko@ti.com>
+References: <1398334403-26181-1-git-send-email-geert+renesas@glider.be>
+	<1402592023-13416-1-git-send-email-grygorii.strashko@ti.com>
+	<1402592023-13416-3-git-send-email-grygorii.strashko@ti.com>
+Date: Mon, 28 Jul 2014 08:05:33 -0600
+Message-Id: <20140728140533.6E916C4116F@trevor.secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus:
+On Thu, 12 Jun 2014 19:53:43 +0300, Grygorii Strashko <grygorii.strashko@ti.com> wrote:
+> Use "clkops-clocks" property to specify clocks handled by
+> clock_ops domain PM domain. Only clocks defined in "clkops-clocks"
+> set of clocks will be handled by Runtime PM through clock_ops
+> Pm domain.
+> 
+> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
+> ---
+>  drivers/of/of_clk.c |    7 ++-----
+>  1 file changed, 2 insertions(+), 5 deletions(-)
+> 
+> diff --git a/drivers/of/of_clk.c b/drivers/of/of_clk.c
+> index 35f5e9f..5f9b90e 100644
+> --- a/drivers/of/of_clk.c
+> +++ b/drivers/of/of_clk.c
+> @@ -86,11 +86,8 @@ int of_clk_register_runtime_pm_clocks(struct device_node *np,
+>  	struct clk *clk;
+>  	int error;
+>  
+> -	for (i = 0; (clk = of_clk_get(np, i)) && !IS_ERR(clk); i++) {
+> -		if (!clk_may_runtime_pm(clk)) {
+> -			clk_put(clk);
+> -			continue;
+> -		}
+> +	for (i = 0; (clk = of_clk_get_from_set(np, "clkops", i)) &&
+> +		     !IS_ERR(clk); i++) {
 
-This push fixes a regression on ARM where odd-sized blocks supplied
-to AES may cause crashes.
+This really looks like an ABI break to me. What happens to all the
+existing platforms who don't have this new clkops-clocks in their device
+tree?
 
-Please pull from
-
-git://git.kernel.org/pub/scm/linux/kernel/git/herbert/crypto-2.6.git
-
-or
-
-master.kernel.org:/pub/scm/linux/kernel/git/herbert/crypto-2.6.git
-
-
-Mikulas Patocka (2):
-      crypto: arm64-aes - fix encryption of unaligned data
-      crypto: arm-aes - fix encryption of unaligned data
-
- arch/arm/crypto/aesbs-glue.c |   10 +++++-----
- arch/arm64/crypto/aes-glue.c |   12 ++++++------
- 2 files changed, 11 insertions(+), 11 deletions(-)
-
-Thanks,
--- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+g.
