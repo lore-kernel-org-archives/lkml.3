@@ -1,99 +1,266 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752938AbaG1VXe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 17:23:34 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:57317 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752715AbaG1VXa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 17:23:30 -0400
-Message-ID: <53D6BF50.3070306@wwwdotorg.org>
-Date: Mon, 28 Jul 2014 15:23:28 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1752896AbaG1VXU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 17:23:20 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:59247 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752298AbaG1VRq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jul 2014 17:17:46 -0400
+From: Felipe Balbi <balbi@ti.com>
+To: Tony Lindgren <tony@atomide.com>
+CC: Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel Mailing List 
+	<linux-arm-kernel@lists.infradead.org>,
+        <bcousson@baylibre.com>, <linux@arm.linux.org.uk>,
+        <khilman@deeprootsystems.com>, <tglx@linutronix.de>,
+        <jason@lakedaemon.net>, <devicetree@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Felipe Balbi <balbi@ti.com>
+Subject: [PATCH 23/35] arm: omap: irq: drop omap3_intc_handle_irq()
+Date: Mon, 28 Jul 2014 16:16:11 -0500
+Message-ID: <1406582183-696-24-git-send-email-balbi@ti.com>
+X-Mailer: git-send-email 2.0.1.563.g66f467c
+In-Reply-To: <1406582183-696-1-git-send-email-balbi@ti.com>
+References: <1406582183-696-1-git-send-email-balbi@ti.com>
 MIME-Version: 1.0
-To: Yufeng Shen <miletus@chromium.org>
-CC: Nick Dyer <nick.dyer@itdev.co.uk>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        benson Leung <bleung@chromium.org>,
-        Daniel Kurtz <djkurtz@chromium.org>,
-        Henrik Rydberg <rydberg@euromail.se>,
-        Joonyoung Shim <jy0922.shim@samsung.com>,
-        Alan Bowens <Alan.Bowens@atmel.com>,
-        linux-input <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Peter Meerwald <pmeerw@pmeerw.net>,
-        Olof Johansson <olofj@chromium.org>, Sekhar Nori <nsekhar@ti.com>
-Subject: Re: [PATCH 00/15] atmel_mxt_ts - device tree, bootloader, etc
-References: <1404399697-26484-1-git-send-email-nick.dyer@itdev.co.uk>	<53CECAEC.8080905@wwwdotorg.org>	<53CFD50C.4040509@itdev.co.uk>	<53CFEF6E.2060905@wwwdotorg.org>	<53D10E78.4010908@itdev.co.uk>	<53D17845.4020507@wwwdotorg.org>	<53D26572.3030404@itdev.co.uk>	<53D2B8D0.5090000@wwwdotorg.org> <CAPDwgkNrBRJRR6WtoPSfs8Yq=ui-Ptjju4mJ=9h=95YVFuxw7g@mail.gmail.com>
-In-Reply-To: <CAPDwgkNrBRJRR6WtoPSfs8Yq=ui-Ptjju4mJ=9h=95YVFuxw7g@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/28/2014 02:20 PM, Yufeng Shen wrote:
-> On Fri, Jul 25, 2014 at 4:06 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
->>
->> On 07/25/2014 08:10 AM, Nick Dyer wrote:
->>>
->>> On 24/07/14 22:19, Stephen Warren wrote:
->>
->> ...
->>
->>>> I've uploaded 2 logs to:
->>>>
->>>> http://avon.wwwdotorg.org/downloads/mxt-logs/
->>>> (note there's no directory indexing, so manually add the filenames below to
->>>> the URL)
->>>>
->>>> mxt-save-no-movement.xml
->>>>
->>>> This is with the whole series applied. Neither mouse movement nor clicks
->>>> works. I tried mxt-app --reset and it made no difference to the dump results.
->>>>
->>>> mxt-save-move-ok-no-clicking.xml
->>>>
->>>> This is with "Input: atmel_mxt_ts - use deep sleep mode when stopped"
->>>> reverted; mouse movement works, but clicking doesn't.
->>>
->>>
->>> Great, this has identified the issue with mouse movement (touch).
->>>
->>> The config programmed into the NVRAM on your touch controller has the first
->>> byte of the T9 touchscreen object set to zero. This is the CTRL byte which
->>> enables/disables the touch object and what it reports. It is relying on
->>> this to enable the touchscreen on resume:
->>>
->>> https://github.com/dtor/input/blob/9d8dc3e529/drivers/input/touchscreen/atmel_mxt_ts.c#L2005-L2006
->>>
->>> My "use deep sleep mode when stopped" patch stops the driver writing to the
->>> T9.CTRL byte, so whatever config you have in NVRAM for that byte will be
->>> used (ie zero, disabled). Going forward, deep sleep is more generic.
->>> Indeed, newer chips do not have T9 at all, or they might be using other
->>> touch objects. The deep sleep mode is a lower power state to be in, and is
->>> what Atmel recommends.
->>>
->>> However, it does mean changing the maxtouch cfg - you can write the 0x83 to
->>> the first byte of T9 and save it to NVRAM, by doing:
->>>
->>> mxt-app [device] -W -T9 83
->>> mxt-app [device] --backup
->>
->>
->> If I do that, then both mouse movement and "touch" clicks work:-)
->>
->> (Dmitry, I guess that means it's fine to go ahead and apply "Input: atmel_mxt_ts - use deep sleep mode when stopped".)
->>
->> I wonder why the configuration NVRAM in my device was incorrect though? I'm CCing a few ChromeOS people to try and find out any relevant history for the touchpad NVRAM settings on Venice2. Perhaps this is simply something that wasn't noticed because the driver used to initialize this configuration bit, so nobody realized the config in NVRAM was wrong.
->
-> Where did you get the configuration file ? It is possible that we rely
-> too much on mxt_start to turn on the T9.CTRL bit and have neglected
-> its setting in the config file.
-> If you can tell me where you get the config file I can do a check.
+now that we're calling set_handle_irq() from
+init_irq(), we can safely drop all callers to
+omap3_intc_handle_irq() and its definition.
 
-It was already flashed into the touchpad when I received the board. I 
-did try to track down the firmware/config files a few months ago, but 
-didn't manage to; I was told since they were already flashed so I didn't 
-need them. The board is Venice2.
+Signed-off-by: Felipe Balbi <balbi@ti.com>
+---
+ arch/arm/mach-omap2/board-3430sdp.c        | 1 -
+ arch/arm/mach-omap2/board-am3517crane.c    | 1 -
+ arch/arm/mach-omap2/board-am3517evm.c      | 1 -
+ arch/arm/mach-omap2/board-cm-t35.c         | 2 --
+ arch/arm/mach-omap2/board-cm-t3517.c       | 1 -
+ arch/arm/mach-omap2/board-devkit8000.c     | 1 -
+ arch/arm/mach-omap2/board-ldp.c            | 1 -
+ arch/arm/mach-omap2/board-omap3beagle.c    | 1 -
+ arch/arm/mach-omap2/board-omap3logic.c     | 2 --
+ arch/arm/mach-omap2/board-omap3pandora.c   | 1 -
+ arch/arm/mach-omap2/board-omap3stalker.c   | 1 -
+ arch/arm/mach-omap2/board-omap3touchbook.c | 1 -
+ arch/arm/mach-omap2/board-overo.c          | 1 -
+ arch/arm/mach-omap2/board-rx51.c           | 1 -
+ arch/arm/mach-omap2/common.h               | 1 -
+ arch/arm/mach-omap2/irq.c                  | 5 -----
+ 16 files changed, 22 deletions(-)
+
+diff --git a/arch/arm/mach-omap2/board-3430sdp.c b/arch/arm/mach-omap2/board-3430sdp.c
+index d95d0ef..d21a304 100644
+--- a/arch/arm/mach-omap2/board-3430sdp.c
++++ b/arch/arm/mach-omap2/board-3430sdp.c
+@@ -625,7 +625,6 @@ MACHINE_START(OMAP_3430SDP, "OMAP3430 3430SDP board")
+ 	.map_io		= omap3_map_io,
+ 	.init_early	= omap3430_init_early,
+ 	.init_irq	= omap3_init_irq,
+-	.handle_irq	= omap3_intc_handle_irq,
+ 	.init_machine	= omap_3430sdp_init,
+ 	.init_late	= omap3430_init_late,
+ 	.init_time	= omap3_sync32k_timer_init,
+diff --git a/arch/arm/mach-omap2/board-am3517crane.c b/arch/arm/mach-omap2/board-am3517crane.c
+index 0d499a1..212c316 100644
+--- a/arch/arm/mach-omap2/board-am3517crane.c
++++ b/arch/arm/mach-omap2/board-am3517crane.c
+@@ -142,7 +142,6 @@ MACHINE_START(CRANEBOARD, "AM3517/05 CRANEBOARD")
+ 	.map_io		= omap3_map_io,
+ 	.init_early	= am35xx_init_early,
+ 	.init_irq	= omap3_init_irq,
+-	.handle_irq	= omap3_intc_handle_irq,
+ 	.init_machine	= am3517_crane_init,
+ 	.init_late	= am35xx_init_late,
+ 	.init_time	= omap3_sync32k_timer_init,
+diff --git a/arch/arm/mach-omap2/board-am3517evm.c b/arch/arm/mach-omap2/board-am3517evm.c
+index 4f9383c..1c091b3 100644
+--- a/arch/arm/mach-omap2/board-am3517evm.c
++++ b/arch/arm/mach-omap2/board-am3517evm.c
+@@ -366,7 +366,6 @@ MACHINE_START(OMAP3517EVM, "OMAP3517/AM3517 EVM")
+ 	.map_io		= omap3_map_io,
+ 	.init_early	= am35xx_init_early,
+ 	.init_irq	= omap3_init_irq,
+-	.handle_irq	= omap3_intc_handle_irq,
+ 	.init_machine	= am3517_evm_init,
+ 	.init_late	= am35xx_init_late,
+ 	.init_time	= omap3_sync32k_timer_init,
+diff --git a/arch/arm/mach-omap2/board-cm-t35.c b/arch/arm/mach-omap2/board-cm-t35.c
+index 018353d..c6df8ee 100644
+--- a/arch/arm/mach-omap2/board-cm-t35.c
++++ b/arch/arm/mach-omap2/board-cm-t35.c
+@@ -766,7 +766,6 @@ MACHINE_START(CM_T35, "Compulab CM-T35")
+ 	.map_io		= omap3_map_io,
+ 	.init_early	= omap35xx_init_early,
+ 	.init_irq	= omap3_init_irq,
+-	.handle_irq	= omap3_intc_handle_irq,
+ 	.init_machine	= cm_t35_init,
+ 	.init_late	= omap35xx_init_late,
+ 	.init_time	= omap3_sync32k_timer_init,
+@@ -779,7 +778,6 @@ MACHINE_START(CM_T3730, "Compulab CM-T3730")
+ 	.map_io		= omap3_map_io,
+ 	.init_early	= omap3630_init_early,
+ 	.init_irq	= omap3_init_irq,
+-	.handle_irq	= omap3_intc_handle_irq,
+ 	.init_machine	= cm_t3730_init,
+ 	.init_late     = omap3630_init_late,
+ 	.init_time	= omap3_sync32k_timer_init,
+diff --git a/arch/arm/mach-omap2/board-cm-t3517.c b/arch/arm/mach-omap2/board-cm-t3517.c
+index 4eb5e6f..8a2c167 100644
+--- a/arch/arm/mach-omap2/board-cm-t3517.c
++++ b/arch/arm/mach-omap2/board-cm-t3517.c
+@@ -329,7 +329,6 @@ MACHINE_START(CM_T3517, "Compulab CM-T3517")
+ 	.map_io		= omap3_map_io,
+ 	.init_early	= am35xx_init_early,
+ 	.init_irq	= omap3_init_irq,
+-	.handle_irq	= omap3_intc_handle_irq,
+ 	.init_machine	= cm_t3517_init,
+ 	.init_late	= am35xx_init_late,
+ 	.init_time	= omap3_gptimer_timer_init,
+diff --git a/arch/arm/mach-omap2/board-devkit8000.c b/arch/arm/mach-omap2/board-devkit8000.c
+index cdc4fb9..d8e4f34 100644
+--- a/arch/arm/mach-omap2/board-devkit8000.c
++++ b/arch/arm/mach-omap2/board-devkit8000.c
+@@ -647,7 +647,6 @@ MACHINE_START(DEVKIT8000, "OMAP3 Devkit8000")
+ 	.map_io		= omap3_map_io,
+ 	.init_early	= omap35xx_init_early,
+ 	.init_irq	= omap3_init_irq,
+-	.handle_irq	= omap3_intc_handle_irq,
+ 	.init_machine	= devkit8000_init,
+ 	.init_late	= omap35xx_init_late,
+ 	.init_time	= omap3_secure_sync32k_timer_init,
+diff --git a/arch/arm/mach-omap2/board-ldp.c b/arch/arm/mach-omap2/board-ldp.c
+index 44a59c3..c2975af 100644
+--- a/arch/arm/mach-omap2/board-ldp.c
++++ b/arch/arm/mach-omap2/board-ldp.c
+@@ -422,7 +422,6 @@ MACHINE_START(OMAP_LDP, "OMAP LDP board")
+ 	.map_io		= omap3_map_io,
+ 	.init_early	= omap3430_init_early,
+ 	.init_irq	= omap3_init_irq,
+-	.handle_irq	= omap3_intc_handle_irq,
+ 	.init_machine	= omap_ldp_init,
+ 	.init_late	= omap3430_init_late,
+ 	.init_time	= omap3_sync32k_timer_init,
+diff --git a/arch/arm/mach-omap2/board-omap3beagle.c b/arch/arm/mach-omap2/board-omap3beagle.c
+index e2e5203..81de1c6 100644
+--- a/arch/arm/mach-omap2/board-omap3beagle.c
++++ b/arch/arm/mach-omap2/board-omap3beagle.c
+@@ -588,7 +588,6 @@ MACHINE_START(OMAP3_BEAGLE, "OMAP3 Beagle Board")
+ 	.map_io		= omap3_map_io,
+ 	.init_early	= omap3_init_early,
+ 	.init_irq	= omap3_init_irq,
+-	.handle_irq	= omap3_intc_handle_irq,
+ 	.init_machine	= omap3_beagle_init,
+ 	.init_late	= omap3_init_late,
+ 	.init_time	= omap3_secure_sync32k_timer_init,
+diff --git a/arch/arm/mach-omap2/board-omap3logic.c b/arch/arm/mach-omap2/board-omap3logic.c
+index bab51e6..6049f60 100644
+--- a/arch/arm/mach-omap2/board-omap3logic.c
++++ b/arch/arm/mach-omap2/board-omap3logic.c
+@@ -230,7 +230,6 @@ MACHINE_START(OMAP3_TORPEDO, "Logic OMAP3 Torpedo board")
+ 	.map_io		= omap3_map_io,
+ 	.init_early	= omap35xx_init_early,
+ 	.init_irq	= omap3_init_irq,
+-	.handle_irq	= omap3_intc_handle_irq,
+ 	.init_machine	= omap3logic_init,
+ 	.init_late	= omap35xx_init_late,
+ 	.init_time	= omap3_sync32k_timer_init,
+@@ -243,7 +242,6 @@ MACHINE_START(OMAP3530_LV_SOM, "OMAP Logic 3530 LV SOM board")
+ 	.map_io		= omap3_map_io,
+ 	.init_early	= omap35xx_init_early,
+ 	.init_irq	= omap3_init_irq,
+-	.handle_irq	= omap3_intc_handle_irq,
+ 	.init_machine	= omap3logic_init,
+ 	.init_late	= omap35xx_init_late,
+ 	.init_time	= omap3_sync32k_timer_init,
+diff --git a/arch/arm/mach-omap2/board-omap3pandora.c b/arch/arm/mach-omap2/board-omap3pandora.c
+index cf18340..f322016 100644
+--- a/arch/arm/mach-omap2/board-omap3pandora.c
++++ b/arch/arm/mach-omap2/board-omap3pandora.c
+@@ -624,7 +624,6 @@ MACHINE_START(OMAP3_PANDORA, "Pandora Handheld Console")
+ 	.map_io		= omap3_map_io,
+ 	.init_early	= omap35xx_init_early,
+ 	.init_irq	= omap3_init_irq,
+-	.handle_irq	= omap3_intc_handle_irq,
+ 	.init_machine	= omap3pandora_init,
+ 	.init_late	= omap35xx_init_late,
+ 	.init_time	= omap3_sync32k_timer_init,
+diff --git a/arch/arm/mach-omap2/board-omap3stalker.c b/arch/arm/mach-omap2/board-omap3stalker.c
+index a2e035e..6311f4b 100644
+--- a/arch/arm/mach-omap2/board-omap3stalker.c
++++ b/arch/arm/mach-omap2/board-omap3stalker.c
+@@ -426,7 +426,6 @@ MACHINE_START(SBC3530, "OMAP3 STALKER")
+ 	.map_io			= omap3_map_io,
+ 	.init_early		= omap35xx_init_early,
+ 	.init_irq		= omap3_init_irq,
+-	.handle_irq		= omap3_intc_handle_irq,
+ 	.init_machine		= omap3_stalker_init,
+ 	.init_late		= omap35xx_init_late,
+ 	.init_time		= omap3_secure_sync32k_timer_init,
+diff --git a/arch/arm/mach-omap2/board-omap3touchbook.c b/arch/arm/mach-omap2/board-omap3touchbook.c
+index 7da48bc..d454508 100644
+--- a/arch/arm/mach-omap2/board-omap3touchbook.c
++++ b/arch/arm/mach-omap2/board-omap3touchbook.c
+@@ -388,7 +388,6 @@ MACHINE_START(TOUCHBOOK, "OMAP3 touchbook Board")
+ 	.map_io		= omap3_map_io,
+ 	.init_early	= omap3430_init_early,
+ 	.init_irq	= omap3_init_irq,
+-	.handle_irq	= omap3_intc_handle_irq,
+ 	.init_machine	= omap3_touchbook_init,
+ 	.init_late	= omap3430_init_late,
+ 	.init_time	= omap3_secure_sync32k_timer_init,
+diff --git a/arch/arm/mach-omap2/board-overo.c b/arch/arm/mach-omap2/board-overo.c
+index f6d3841..2dae6cc 100644
+--- a/arch/arm/mach-omap2/board-overo.c
++++ b/arch/arm/mach-omap2/board-overo.c
+@@ -564,7 +564,6 @@ MACHINE_START(OVERO, "Gumstix Overo")
+ 	.map_io		= omap3_map_io,
+ 	.init_early	= omap35xx_init_early,
+ 	.init_irq	= omap3_init_irq,
+-	.handle_irq	= omap3_intc_handle_irq,
+ 	.init_machine	= overo_init,
+ 	.init_late	= omap35xx_init_late,
+ 	.init_time	= omap3_sync32k_timer_init,
+diff --git a/arch/arm/mach-omap2/board-rx51.c b/arch/arm/mach-omap2/board-rx51.c
+index db168c9..2d1e5a6 100644
+--- a/arch/arm/mach-omap2/board-rx51.c
++++ b/arch/arm/mach-omap2/board-rx51.c
+@@ -134,7 +134,6 @@ MACHINE_START(NOKIA_RX51, "Nokia RX-51 board")
+ 	.map_io		= omap3_map_io,
+ 	.init_early	= omap3430_init_early,
+ 	.init_irq	= omap3_init_irq,
+-	.handle_irq	= omap3_intc_handle_irq,
+ 	.init_machine	= rx51_init,
+ 	.init_late	= omap3430_init_late,
+ 	.init_time	= omap3_sync32k_timer_init,
+diff --git a/arch/arm/mach-omap2/common.h b/arch/arm/mach-omap2/common.h
+index d3a205d..bc3208b 100644
+--- a/arch/arm/mach-omap2/common.h
++++ b/arch/arm/mach-omap2/common.h
+@@ -220,7 +220,6 @@ void omap3_intc_suspend(void);
+ void omap3_intc_prepare_idle(void);
+ void omap3_intc_resume_idle(void);
+ void omap2_intc_handle_irq(struct pt_regs *regs);
+-void omap3_intc_handle_irq(struct pt_regs *regs);
+ void omap_gic_of_init(void);
+ 
+ #ifdef CONFIG_CACHE_L2X0
+diff --git a/arch/arm/mach-omap2/irq.c b/arch/arm/mach-omap2/irq.c
+index 994009c..4dfeac6 100644
+--- a/arch/arm/mach-omap2/irq.c
++++ b/arch/arm/mach-omap2/irq.c
+@@ -326,8 +326,3 @@ static int __init intc_of_init(struct device_node *node,
+ IRQCHIP_DECLARE(omap2_intc, "ti,omap2-intc", intc_of_init);
+ IRQCHIP_DECLARE(omap3_intc, "ti,omap3-intc", intc_of_init);
+ IRQCHIP_DECLARE(am33xx_intc, "ti,am33xx-intc", intc_of_init);
+-
+-asmlinkage void __exception_irq_entry omap3_intc_handle_irq(struct pt_regs *regs)
+-{
+-	omap_intc_handle_irq(regs);
+-}
+-- 
+2.0.1.563.g66f467c
+
