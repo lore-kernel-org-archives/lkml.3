@@ -1,122 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752114AbaG1VwH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 17:52:07 -0400
-Received: from mail-yh0-f48.google.com ([209.85.213.48]:36476 "EHLO
-	mail-yh0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750995AbaG1VwE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 17:52:04 -0400
-Message-ID: <53D6C601.7090803@mvista.com>
-Date: Mon, 28 Jul 2014 16:52:01 -0500
-From: Corey Minyard <cminyard@mvista.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: minyard@acm.org, rostedt@goodmis.org
-CC: linux-kernel@vger.kernel.org, linux-rt-users@vger.kernel.org,
-        tglx@linutronix.d, C.Emde@osadl.org, bigeasy@linutronix.de,
-        jkacur@redhat.com, paul.gortmaker@windriver.com
-Subject: Re: [PATCH] tracing: Always run per-cpu ring buffer resize with schedule_work_on()
-References: <1405537633-31518-1-git-send-email-cminyard@mvista.com>
-In-Reply-To: <1405537633-31518-1-git-send-email-cminyard@mvista.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1752188AbaG1Vwt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 17:52:49 -0400
+Received: from mga02.intel.com ([134.134.136.20]:32773 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751389AbaG1Vws (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jul 2014 17:52:48 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,751,1400050800"; 
+   d="scan'208";a="580306627"
+Subject: [Regression 3.16-rc kernel] -55% reduction in throughput for OLTP
+ benchmark
+From: Tim Chen <tim.c.chen@linux.intel.com>
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: suruchi <suruchi.a.kadu@intel.com>, ak <ak@linux.intel.com>,
+        Dave Hansen <dave.hansen@intel.com>,
+        Matthew Wilcox <willy@linux.intel.com>,
+        "hubert.nueckel" <hubert.nueckel@intel.com>,
+        beth.marsh-prime@intel.com, "doug.nelson" <doug.nelson@intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 28 Jul 2014 14:51:39 -0700
+Message-ID: <1406584299.2970.924.camel@schen9-DESK>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ping, I haven't heard anything on this.
+Al,
 
--corey
+We saw a large regression (-55%) in a standard OLTP benchmark
+between 3.15 kernel and 3.16-rc4 kernel.
 
-On 07/16/2014 02:07 PM, minyard@acm.org wrote:
-> From: Corey Minyard <cminyard@mvista.com>
->
-> The code for resizing the trace ring buffers has to run the per-cpu
-> resize on the CPU itself.  The code was using preempt_off() and
-> running the code for the current CPU directly, otherwise calling
-> schedule_work_on().
->
-> At least on RT this could result in the following:
->
-> |BUG: sleeping function called from invalid context at kernel/rtmutex.c:673
-> |in_atomic(): 1, irqs_disabled(): 0, pid: 607, name: bash
-> |3 locks held by bash/607:
-> |CPU: 0 PID: 607 Comm: bash Not tainted 3.12.15-rt25+ #124
-> |(rt_spin_lock+0x28/0x68)
-> |(free_hot_cold_page+0x84/0x3b8)
-> |(free_buffer_page+0x14/0x20)
-> |(rb_update_pages+0x280/0x338)
-> |(ring_buffer_resize+0x32c/0x3dc)
-> |(free_snapshot+0x18/0x38)
-> |(tracing_set_tracer+0x27c/0x2ac)
->
-> probably via
-> |cd /sys/kernel/debug/tracing/
-> |echo 1 > events/enable ; sleep 2
-> |echo 1024 > buffer_size_kb
->
-> If we just always use schedule_work_on(), there's no need for the
-> preempt_off().  So do that.
->
-> Reported-by: Stanislav Meduna <stano@meduna.org>
-> Signed-off-by: Corey Minyard <cminyard@mvista.com>
-> ---
->  kernel/trace/ring_buffer.c | 24 ++++--------------------
->  1 file changed, 4 insertions(+), 20 deletions(-)
->
-> diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
-> index 7c56c3d..35825a8 100644
-> --- a/kernel/trace/ring_buffer.c
-> +++ b/kernel/trace/ring_buffer.c
-> @@ -1693,22 +1693,14 @@ int ring_buffer_resize(struct ring_buffer *buffer, unsigned long size,
->  			if (!cpu_buffer->nr_pages_to_update)
->  				continue;
->  
-> -			/* The update must run on the CPU that is being updated. */
-> -			preempt_disable();
-> -			if (cpu == smp_processor_id() || !cpu_online(cpu)) {
-> +			/* Can't run something on an offline CPU. */
-> +			if (!cpu_online(cpu)) {
->  				rb_update_pages(cpu_buffer);
->  				cpu_buffer->nr_pages_to_update = 0;
->  			} else {
-> -				/*
-> -				 * Can not disable preemption for schedule_work_on()
-> -				 * on PREEMPT_RT.
-> -				 */
-> -				preempt_enable();
->  				schedule_work_on(cpu,
->  						&cpu_buffer->update_pages_work);
-> -				preempt_disable();
->  			}
-> -			preempt_enable();
->  		}
->  
->  		/* wait for all the updates to complete */
-> @@ -1746,22 +1738,14 @@ int ring_buffer_resize(struct ring_buffer *buffer, unsigned long size,
->  
->  		get_online_cpus();
->  
-> -		preempt_disable();
-> -		/* The update must run on the CPU that is being updated. */
-> -		if (cpu_id == smp_processor_id() || !cpu_online(cpu_id))
-> +		/* Can't run something on an offline CPU. */
-> +		if (!cpu_online(cpu_id))
->  			rb_update_pages(cpu_buffer);
->  		else {
-> -			/*
-> -			 * Can not disable preemption for schedule_work_on()
-> -			 * on PREEMPT_RT.
-> -			 */
-> -			preempt_enable();
->  			schedule_work_on(cpu_id,
->  					 &cpu_buffer->update_pages_work);
->  			wait_for_completion(&cpu_buffer->update_done);
-> -			preempt_disable();
->  		}
-> -		preempt_enable();
->  
->  		cpu_buffer->nr_pages_to_update = 0;
->  		put_online_cpus();
+One issue was caused by the changes in async direct IO in the 
+direct IO patch series between commit f6c0a192 and 62a8067a 
+for the 3.16-rc kernel.  The kernel before this series at 
+commit 38583f09 has no such regression.
+
+After some investigations and instrumentation, we saw that the
+problem was caused by a lot of io_wait issued from 
+do_blockdev_direct_IO for async direct IO writes, which
+did not happen for 3.15 kernel.  The benchmark
+used to run at 97% cpu utilization now has only
+35% cpu utilization with plenty of idle time.
+
+At the end of do_blockdev_direct_IO, 
+
+        if (dio->is_async && retval == 0 && dio->result &&
+            ((rw == READ) || (dio->result == sdio.size)))
+                retval = -EIOCBQUEUED;
+
+        if (retval != -EIOCBQUEUED)
+                dio_await_completion(dio);
+
+we saw for async writes, the check
+for (dio->result == sdio.size) failed. The retval was not
+set to -EIOCBQUEUED, causing dio_await_completion to be issued
+and hence the io_waits.
+
+It is possible that the problem was introduced when dio->result
+computation was moved into do_direct_IO in commit 3320c60b.
+However, we cannot compile and test this commit separately as 
+it is dependent on some later patches in the direct IO patch series
+so we have to test the patch series as a whole.
+
+This is quite a large regression for us and we hope that
+it can be fixed before 3.16 kernel is released.
+
+Thanks.
+
+Tim
 
