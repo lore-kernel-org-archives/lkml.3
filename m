@@ -1,82 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751512AbaG1StF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 14:49:05 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:58812 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751389AbaG1StE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 14:49:04 -0400
-Date: Mon, 28 Jul 2014 20:48:58 +0200
-From: "Luis R. Rodriguez" <mcgrof@suse.com>
-To: Yuval Mintz <Yuval.Mintz@qlogic.com>
-Cc: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        Joseph Salisbury <joseph.salisbury@canonical.com>,
-        Kay Sievers <kay@vrfy.org>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Tim Gardner <tim.gardner@canonical.com>,
-        Pierre Fersing <pierre-fersing@pierref.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>, Benjamin Poirier <bpoirier@suse.de>,
-        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
-        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
-        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
-        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
-        Hariprasad S <hariprasad@chelsio.com>,
-        Santosh Rastapur <santosh@chelsio.com>,
-        "MPT-FusionLinux.pdl@avagotech.com" 
-	<MPT-FusionLinux.pdl@avagotech.com>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>
-Subject: Re: [PATCH 1/3] driver core: enable drivers to use deferred probe
-	from init
-Message-ID: <20140728184858.GK21930@wotan.suse.de>
-References: <1406558067-25308-1-git-send-email-mcgrof@do-not-panic.com> <B5657A6538887040AD3A81F1008BEC63B06F9A@avmb3.qlogic.org> <20140728153811.GD21930@wotan.suse.de> <B5657A6538887040AD3A81F1008BEC63B06FCF@avmb3.qlogic.org> <B5657A6538887040AD3A81F1008BEC63B07066@avmb3.qlogic.org>
+	id S1751622AbaG1Suf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 14:50:35 -0400
+Received: from casper.infradead.org ([85.118.1.10]:60557 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750883AbaG1Sue (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jul 2014 14:50:34 -0400
+Date: Mon, 28 Jul 2014 20:50:23 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Jason Low <jason.low2@hp.com>
+Cc: Davidlohr Bueso <davidlohr@hp.com>, mingo@kernel.org, aswin@hp.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -tip/master 3/7] locking/mcs: Remove obsolete comment
+Message-ID: <20140728185023.GX19379@twins.programming.kicks-ass.net>
+References: <1406524724-17946-1-git-send-email-davidlohr@hp.com>
+ <1406524724-17946-3-git-send-email-davidlohr@hp.com>
+ <1406566175.2411.13.camel@j-VirtualBox>
+ <20140728165426.GT19379@twins.programming.kicks-ass.net>
+ <1406569775.2411.48.camel@j-VirtualBox>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="2KzDJJXmwzGxkqkN"
 Content-Disposition: inline
-In-Reply-To: <B5657A6538887040AD3A81F1008BEC63B07066@avmb3.qlogic.org>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+In-Reply-To: <1406569775.2411.48.camel@j-VirtualBox>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 28, 2014 at 06:30:29PM +0000, Yuval Mintz wrote:
-> > On Mon, Jul 28, 2014 at 06:52:48PM +0200, Luis R. Rodriguez wrote:
-> > > On Mon, Jul 28, 2014 at 03:46:32PM +0000, Yuval Mintz wrote:
-> > > > Sorry for not being clear, but I didn't meant 'what guarantees that the device
-> > > > will be added to the deferred probe', but rather what guarantees that the
-> > > > deferred workqueue will be scheduled.
-> > > >
-> > > > To the best of my knowledge the deferring mechanism works only if one device
-> > > > is dependent upon another, e.g., for Multi-function devices where one device
-> > > > probe is dependent upon the others - which are soon-to-be probed.
-> > >
-> > > The workqueue will be kicked when driver_deferred_probe_trigger() gets
-> > > poked, we do that in the late_initcall(deferred_probe_initcall), it
-> > > also gets flushed there with a flush_workqueue(deferred_wq).
-> 
-> > But come to think of it that will work well for devices already plugged in
-> > so indeed I think that driver_deferred_probe_add() needs a check added
-> > for for if (!driver_deferred_probe_enable) then we have to
-> > driver_deferred_probe_trigger(). The driver_deferred_probe_enable is set
-> > to false upon init, but later on late init it gets set to true so with
-> > that check we'd  only generate the trigger after late init call.
-> 
-> > I can fold that in the v2.
-> 
-> >   Luis
-> 
-> But what about modules being added after the init-calls? If they try try to use this
-> mechanism, what guarantees they'll eventually get probed?
 
-bus_probe_device --> device_attach() -->
-	__device_attach() --> driver_probe_device() -->
-		__driver_probe_device() --> driver_deferred_probe_add()
+--2KzDJJXmwzGxkqkN
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-And with the new hunk I mentioned I'd add then we'd trigger the
-workqueue if its after late init. The change is in v2 series.
+On Mon, Jul 28, 2014 at 10:49:35AM -0700, Jason Low wrote:
 
-  Luis
+> So if the function is inlined, perf report would show the contention
+> occurring in the calling function rather than the inlined function. As
+> an example, if we were to convert osq_lock() and mutex_spin_on_owner()
+> to inline, perf would report all the contention from both of those
+> functions occurring in just "__mutex_lock_slowpath()".
+
+But that's easily fixed on the tool side, right? Dwarf info (as present
+in vmlinux when build with CONFIG_DEBUG_INFO) has all that.
+
+--2KzDJJXmwzGxkqkN
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJT1ptvAAoJEHZH4aRLwOS62zcP/Rp64QWyYiE8KvoGITWdWIMv
+JyuuPf6iuVP4VsmzBL/2kxfc3PkumlHPbj4wMYjNUTw3TXx01681ka0akH8II91l
+mGi1wdme+nSrot/tenl3fCCraq7e16AkYkMAF36Q0b9UwGCTyFyVF05JQsaiCGsj
+bL4lOIVmPkAXpDaZMSWjGjORwJYFA+aQ44hiWb/R5og6lKsDa9zdMirRjJtVFbi3
+X2Bc4vwAsmOl5JfjynvWpjtrWvC8L3B/8exeijzml4CKbXOpkVKrsqPZFhdW9u0K
+G5BINXQ1cKg6OvMIOBqgzNYZ3Qs4HkXCOUqD2uUMESXA0VAQR7gpwLSAiXlb6liJ
+3i7cI+9uhN2zR6uH4L98KT/ZULNRJYwqozkPAg3UGvjd7m3tdqnT3pQv04PTfNzV
+SZH8U8IALVX0COsi8XWWhql2Hd+Zg1+8Uyw7PBtQjtNMRcU94Es0QmNZOiQrX0Tz
+ANKtsafK17zjoBNyCaU7rc8Gd1zYD7KFouzrpm5YAD19+7tG/78Vk2ZQQ+lvu7ui
+F6gK7gJQAL+1XYRMZlNERanOdwfPILR6kYV1CsPXJ5nWlVDeCRoMIeApZ9YXHETm
+pQeXWPwetEAhmhgPfbANTTfjWrR1J7qC0iAKA6Um78gC4OLe4A+KR8PF0wRsVWKg
+bFsWsrQLiZPPbH46BgAZ
+=RMFU
+-----END PGP SIGNATURE-----
+
+--2KzDJJXmwzGxkqkN--
