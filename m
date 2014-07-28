@@ -1,61 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752741AbaG1M2g (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 08:28:36 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2052 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751664AbaG1M2e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 08:28:34 -0400
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Alexei Starovoitov <ast@kernel.org>,
-        =?us-ascii?Q?=3D=3FUTF-8=3FQ=3FMichel=5FD=3DC3=3DA4nzer=3F=3D?= 
-	<michel@daenzer.net>,
-        Jakub Jelinek <jakub@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Debian GCC Maintainers <debian-gcc@lists.debian.org>,
-        Debian Kernel Team <debian-kernel@lists.debian.org>
-Subject: Re: Random panic in load_balance() with 3.16-rc
-References: <53D064C7.5050807@daenzer.net>
-	<CA+55aFyJhqiPv0kQ+51=Ei-zaAO+0JszxtnEyx-Gbto3SE00xw@mail.gmail.com>
-	<53D1B1EF.7030603@daenzer.net> <20140725035527.GA30108@pg-vmw-gw1>
-	<20140725140237.GB32669@home.goodmis.org>
-	<CA+55aFzOoJzqJ=4RVPEBfscA8oRdr5Nv7fKx9aXYw2+frkuhwA@mail.gmail.com>
-	<CA+55aFyHU4Gwk6ASTuOgh3eFPshkgy1s5zc4p7f01DwrYddFOw@mail.gmail.com>
-	<CA+55aFxaXPqyDJv-SNu6Giy3eKCu_SY1wof1NaNnPTbtF9RbXQ@mail.gmail.com>
-	<20140726193557.GA21842@x4>
-	<CA+55aFyo=HVZGEYNmz9GHqLatFHiJYTviKz_dXjqCv8b_gGxBA@mail.gmail.com>
-	<20140726201914.GB21842@x4>
-	<CA+55aFyCh8B4kuc66_+wr8eM+kP7-hJ9utdtpLih661Xf8YGgQ@mail.gmail.com>
-From: fche@redhat.com (Frank Ch. Eigler)
-Date: Mon, 28 Jul 2014 08:26:59 -0400
-In-Reply-To: <CA+55aFyCh8B4kuc66_+wr8eM+kP7-hJ9utdtpLih661Xf8YGgQ@mail.gmail.com> (Linus Torvalds's message of "Sat, 26 Jul 2014 13:39:54 -0700")
-Message-ID: <y0m7g2xk6ss.fsf@fche.csb>
-User-Agent: Gnus/5.1008 (Gnus v5.10.8) Emacs/21.4 (gnu/linux)
+	id S1752785AbaG1M25 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 08:28:57 -0400
+Received: from mout.kundenserver.de ([212.227.126.130]:65321 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751664AbaG1M2y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jul 2014 08:28:54 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Srikanth Thokala <sthokal@xilinx.com>, vinod.koul@intel.com,
+        dan.j.williams@intel.com, michal.simek@xilinx.com,
+        grant.likely@linaro.org, robh+dt@kernel.org, levex@linux.com,
+        jassisinghbrar@gmail.com, devicetree@vger.kernel.org,
+        svemula@xilinx.com, linux-kernel@vger.kernel.org, anirudh@xilinx.com,
+        dmaengine@vger.kernel.org
+Subject: Re: [PATCH v3 1/2] dma: Add Xilinx AXI DMA DT Binding Documentation
+Date: Mon, 28 Jul 2014 14:28:14 +0200
+Message-ID: <5511649.HfVoeApiug@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1406549869-24422-1-git-send-email-sthokal@xilinx.com>
+References: <1406549869-24422-1-git-send-email-sthokal@xilinx.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:I1dfpPSwF5w7OnuSvHWDV3uwMi2tJKWuFPi4GZ9QkKc
+ Y/MjIm7p/zcQLuJ2bi3vv/4/fPyO+xTXVeSBMenHs0Mgq+lD+N
+ rss1qXYcdxKeQ+Ihr9smfIIXCx3Olz33hhhsAzYAJELOHI4FLK
+ zW0R4L7F2lNYq2UEHWIceOiF2umCrFtuGktQUzAiXp3wGEAY77
+ 9IJUSuxaKCvNKD4h/NBcsFt7p2lnz9lRRmFqO1nH3m+voBBR0q
+ CeATqh8I++jOp2GLQvRoo9L2g4W3i9e+K3j0t2DMcQQwWHpsZ8
+ yCkJssfkb6SF+LOnFfdeHNfR4a9292paTVUyhuAH86kTPay2K0
+ UsC0M1x9fLTpDxnp9yxM=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Monday 28 July 2014 17:47:48 Srikanth Thokala wrote:
+> Device-tree binding documentation of Xilinx DMA Engine
+> 
+> Signed-off-by: Srikanth Thokala <sthokal@xilinx.com>
 
-torvalds wrote:
+Looks ok to me,
 
-> [...]
-> Actually, I prefer my patch that did it with cc-option checking, and
-> does it unconditionally.
->
-> Because if we do it even for non-debug builds - where it ostensibly
-> shouldn't matter - we then have that GCC_COMPARE_DEBUG thing working
-> regardless of configuration.
-
-Please note that the data produced by "-g -fvar-tracking" is consumed
-by tools like systemtap, perf, crash, and makes a significant
-difference to the observability of debug AND non-debug kernels.  (The
-presence of compiled-in DEBUG_* self-checking code is orthogonal to
-kernel observability via debuginfo.)  Please consider only disabling
-var-tracking optionally/temporarily to work around this already-fixed
-compiler bug, but not losing high-quality dwarf data permanently.
-
-- FChE
+Acked-by: Arnd Bergmann <arnd@arndb.de>
