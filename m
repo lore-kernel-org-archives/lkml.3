@@ -1,26 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751806AbaG1HCL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 03:02:11 -0400
-Received: from mail-ie0-f172.google.com ([209.85.223.172]:40004 "EHLO
-	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750945AbaG1HCH (ORCPT
+	id S1751910AbaG1HC1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 03:02:27 -0400
+Received: from mail-ie0-f180.google.com ([209.85.223.180]:55265 "EHLO
+	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751831AbaG1HCY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 03:02:07 -0400
-Date: Mon, 28 Jul 2014 08:02:02 +0100
+	Mon, 28 Jul 2014 03:02:24 -0400
+Date: Mon, 28 Jul 2014 08:02:18 +0100
 From: Lee Jones <lee.jones@linaro.org>
 To: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
 Cc: sameo@linux.intel.com, broonie@kernel.org, lgirdwood@gmail.com,
         patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/6 RESEND] mfd: wm5110: Add in the output done interrupts
-Message-ID: <20140728070202.GF5273@lee--X1>
+Subject: Re: [PATCH 3/6 RESEND] mfd: arizona: Rename thermal shutdown
+ interrupt
+Message-ID: <20140728070218.GG5273@lee--X1>
 References: <1405419710-14789-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
- <1405419710-14789-3-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+ <1405419710-14789-4-git-send-email-ckeepax@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <1405419710-14789-3-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+In-Reply-To: <1405419710-14789-4-git-send-email-ckeepax@opensource.wolfsonmicro.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,227 +29,266 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Tue, 15 Jul 2014, Charles Keepax wrote:
 
-> wm5110 has interrupts to signal that an output has fully enabled. This
-> patch adds in these interrupts although use is not made of them yet.
+> Newer versions of the IP introduce short circuit protection which will
+> also shutdown the speaker. Rename the interrupt and associated register
+> bits associated with thermal events to better fit the function and avoid
+> conflict with future interrupt additions.
 > 
 > Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
 > ---
->  drivers/mfd/wm5110-tables.c           |   18 +++++
->  include/linux/mfd/arizona/core.h      |    8 ++-
->  include/linux/mfd/arizona/registers.h |  120 +++++++++++++++++++++++++++++++++
->  3 files changed, 145 insertions(+), 1 deletions(-)
+>  drivers/mfd/wm5102-tables.c           |    8 ++--
+>  drivers/mfd/wm5110-tables.c           |    8 ++--
+>  drivers/mfd/wm8997-tables.c           |    8 ++--
+>  include/linux/mfd/arizona/core.h      |    4 +-
+>  include/linux/mfd/arizona/registers.h |   80 ++++++++++++++++----------------
+>  sound/soc/codecs/arizona.c            |   10 ++--
+>  6 files changed, 59 insertions(+), 59 deletions(-)
 
 Applied, thanks.
 
+> diff --git a/drivers/mfd/wm5102-tables.c b/drivers/mfd/wm5102-tables.c
+> index c8a993b..fb4d4bb 100644
+> --- a/drivers/mfd/wm5102-tables.c
+> +++ b/drivers/mfd/wm5102-tables.c
+> @@ -138,11 +138,11 @@ static const struct regmap_irq wm5102_irqs[ARIZONA_NUM_IRQ] = {
+>  		.reg_offset = 1, .mask = ARIZONA_DSP_IRQ1_EINT1
+>  	},
+>  
+> -	[ARIZONA_IRQ_SPK_SHUTDOWN_WARN] = {
+> -		.reg_offset = 2, .mask = ARIZONA_SPK_SHUTDOWN_WARN_EINT1
+> +	[ARIZONA_IRQ_SPK_OVERHEAT_WARN] = {
+> +		.reg_offset = 2, .mask = ARIZONA_SPK_OVERHEAT_WARN_EINT1
+>  	},
+> -	[ARIZONA_IRQ_SPK_SHUTDOWN] = {
+> -		.reg_offset = 2, .mask = ARIZONA_SPK_SHUTDOWN_EINT1
+> +	[ARIZONA_IRQ_SPK_OVERHEAT] = {
+> +		.reg_offset = 2, .mask = ARIZONA_SPK_OVERHEAT_EINT1
+>  	},
+>  	[ARIZONA_IRQ_HPDET] = {
+>  		.reg_offset = 2, .mask = ARIZONA_HPDET_EINT1
 > diff --git a/drivers/mfd/wm5110-tables.c b/drivers/mfd/wm5110-tables.c
-> index b26be6e..4729007 100644
+> index 4729007..2822768 100644
 > --- a/drivers/mfd/wm5110-tables.c
 > +++ b/drivers/mfd/wm5110-tables.c
-> @@ -416,6 +416,24 @@ static const struct regmap_irq wm5110_irqs[ARIZONA_NUM_IRQ] = {
->  	[ARIZONA_IRQ_ISRC2_CFG_ERR] = {
->  		.reg_offset = 3, .mask = ARIZONA_ISRC2_CFG_ERR_EINT1
+> @@ -340,11 +340,11 @@ static const struct regmap_irq wm5110_irqs[ARIZONA_NUM_IRQ] = {
+>  		.reg_offset = 1, .mask = ARIZONA_DSP_IRQ1_EINT1
 >  	},
-> +	[ARIZONA_IRQ_HP3R_DONE] = {
-> +		.reg_offset = 3, .mask = ARIZONA_HP3R_DONE_EINT1
-> +	},
-> +	[ARIZONA_IRQ_HP3L_DONE] = {
-> +		.reg_offset = 3, .mask = ARIZONA_HP3L_DONE_EINT1
-> +	},
-> +	[ARIZONA_IRQ_HP2R_DONE] = {
-> +		.reg_offset = 3, .mask = ARIZONA_HP2R_DONE_EINT1
-> +	},
-> +	[ARIZONA_IRQ_HP2L_DONE] = {
-> +		.reg_offset = 3, .mask = ARIZONA_HP2L_DONE_EINT1
-> +	},
-> +	[ARIZONA_IRQ_HP1R_DONE] = {
-> +		.reg_offset = 3, .mask = ARIZONA_HP1R_DONE_EINT1
-> +	},
-> +	[ARIZONA_IRQ_HP1L_DONE] = {
-> +		.reg_offset = 3, .mask = ARIZONA_HP1L_DONE_EINT1
-> +	},
 >  
->  	[ARIZONA_IRQ_BOOT_DONE] = {
->  		.reg_offset = 4, .mask = ARIZONA_BOOT_DONE_EINT1
+> -	[ARIZONA_IRQ_SPK_SHUTDOWN_WARN] = {
+> -		.reg_offset = 2, .mask = ARIZONA_SPK_SHUTDOWN_WARN_EINT1
+> +	[ARIZONA_IRQ_SPK_OVERHEAT_WARN] = {
+> +		.reg_offset = 2, .mask = ARIZONA_SPK_OVERHEAT_WARN_EINT1
+>  	},
+> -	[ARIZONA_IRQ_SPK_SHUTDOWN] = {
+> -		.reg_offset = 2, .mask = ARIZONA_SPK_SHUTDOWN_EINT1
+> +	[ARIZONA_IRQ_SPK_OVERHEAT] = {
+> +		.reg_offset = 2, .mask = ARIZONA_SPK_OVERHEAT_EINT1
+>  	},
+>  	[ARIZONA_IRQ_HPDET] = {
+>  		.reg_offset = 2, .mask = ARIZONA_HPDET_EINT1
+> diff --git a/drivers/mfd/wm8997-tables.c b/drivers/mfd/wm8997-tables.c
+> index c7a81da..d641474 100644
+> --- a/drivers/mfd/wm8997-tables.c
+> +++ b/drivers/mfd/wm8997-tables.c
+> @@ -65,11 +65,11 @@ static const struct regmap_irq wm8997_irqs[ARIZONA_NUM_IRQ] = {
+>  	[ARIZONA_IRQ_GP2] = { .reg_offset = 0, .mask = ARIZONA_GP2_EINT1 },
+>  	[ARIZONA_IRQ_GP1] = { .reg_offset = 0, .mask = ARIZONA_GP1_EINT1 },
+>  
+> -	[ARIZONA_IRQ_SPK_SHUTDOWN_WARN] = {
+> -		.reg_offset = 2, .mask = ARIZONA_SPK_SHUTDOWN_WARN_EINT1
+> +	[ARIZONA_IRQ_SPK_OVERHEAT_WARN] = {
+> +		.reg_offset = 2, .mask = ARIZONA_SPK_OVERHEAT_WARN_EINT1
+>  	},
+> -	[ARIZONA_IRQ_SPK_SHUTDOWN] = {
+> -		.reg_offset = 2, .mask = ARIZONA_SPK_SHUTDOWN_EINT1
+> +	[ARIZONA_IRQ_SPK_OVERHEAT] = {
+> +		.reg_offset = 2, .mask = ARIZONA_SPK_OVERHEAT_EINT1
+>  	},
+>  	[ARIZONA_IRQ_HPDET] = {
+>  		.reg_offset = 2, .mask = ARIZONA_HPDET_EINT1
 > diff --git a/include/linux/mfd/arizona/core.h b/include/linux/mfd/arizona/core.h
-> index 70854d8..6a62fc9 100644
+> index 6a62fc9..819edf5 100644
 > --- a/include/linux/mfd/arizona/core.h
 > +++ b/include/linux/mfd/arizona/core.h
-> @@ -78,8 +78,14 @@ enum arizona_type {
->  #define ARIZONA_IRQ_FLL1_CLOCK_OK         49
->  #define ARIZONA_IRQ_MICD_CLAMP_RISE	  50
->  #define ARIZONA_IRQ_MICD_CLAMP_FALL	  51
-> -
-> -#define ARIZONA_NUM_IRQ                   52
-> +#define ARIZONA_IRQ_HP3R_DONE             52
-> +#define ARIZONA_IRQ_HP3L_DONE             53
-> +#define ARIZONA_IRQ_HP2R_DONE             54
-> +#define ARIZONA_IRQ_HP2L_DONE             55
-> +#define ARIZONA_IRQ_HP1R_DONE             56
-> +#define ARIZONA_IRQ_HP1L_DONE             57
-> +
-> +#define ARIZONA_NUM_IRQ                   58
->  
->  struct snd_soc_dapm_context;
->  
+> @@ -46,8 +46,8 @@ enum arizona_type {
+>  #define ARIZONA_IRQ_DSP_IRQ6              17
+>  #define ARIZONA_IRQ_DSP_IRQ7              18
+>  #define ARIZONA_IRQ_DSP_IRQ8              19
+> -#define ARIZONA_IRQ_SPK_SHUTDOWN_WARN     20
+> -#define ARIZONA_IRQ_SPK_SHUTDOWN          21
+> +#define ARIZONA_IRQ_SPK_OVERHEAT_WARN     20
+> +#define ARIZONA_IRQ_SPK_OVERHEAT          21
+>  #define ARIZONA_IRQ_MICDET                22
+>  #define ARIZONA_IRQ_HPDET                 23
+>  #define ARIZONA_IRQ_WSEQ_DONE             24
 > diff --git a/include/linux/mfd/arizona/registers.h b/include/linux/mfd/arizona/registers.h
-> index 7204d81..df93563 100644
+> index df93563..f7d6f9e 100644
 > --- a/include/linux/mfd/arizona/registers.h
 > +++ b/include/linux/mfd/arizona/registers.h
-> @@ -4795,6 +4795,30 @@
->  #define ARIZONA_ISRC2_CFG_ERR_EINT1_MASK         0x0040  /* ISRC2_CFG_ERR_EINT1 */
->  #define ARIZONA_ISRC2_CFG_ERR_EINT1_SHIFT             6  /* ISRC2_CFG_ERR_EINT1 */
->  #define ARIZONA_ISRC2_CFG_ERR_EINT1_WIDTH             1  /* ISRC2_CFG_ERR_EINT1 */
-> +#define ARIZONA_HP3R_DONE_EINT1                  0x0020  /* HP3R_DONE_EINT1 */
-> +#define ARIZONA_HP3R_DONE_EINT1_MASK             0x0020  /* HP3R_DONE_EINT1 */
-> +#define ARIZONA_HP3R_DONE_EINT1_SHIFT                 5  /* HP3R_DONE_EINT1 */
-> +#define ARIZONA_HP3R_DONE_EINT1_WIDTH                 1  /* HP3R_DONE_EINT1 */
-> +#define ARIZONA_HP3L_DONE_EINT1                  0x0010  /* HP3L_DONE_EINT1 */
-> +#define ARIZONA_HP3L_DONE_EINT1_MASK             0x0010  /* HP3L_DONE_EINT1 */
-> +#define ARIZONA_HP3L_DONE_EINT1_SHIFT                 4  /* HP3L_DONE_EINT1 */
-> +#define ARIZONA_HP3L_DONE_EINT1_WIDTH                 1  /* HP3L_DONE_EINT1 */
-> +#define ARIZONA_HP2R_DONE_EINT1                  0x0008  /* HP2R_DONE_EINT1 */
-> +#define ARIZONA_HP2R_DONE_EINT1_MASK             0x0008  /* HP2R_DONE_EINT1 */
-> +#define ARIZONA_HP2R_DONE_EINT1_SHIFT                 3  /* HP2R_DONE_EINT1 */
-> +#define ARIZONA_HP2R_DONE_EINT1_WIDTH                 1  /* HP2R_DONE_EINT1 */
-> +#define ARIZONA_HP2L_DONE_EINT1                  0x0004  /* HP2L_DONE_EINT1 */
-> +#define ARIZONA_HP2L_DONE_EINT1_MASK             0x0004  /* HP2L_DONE_EINT1 */
-> +#define ARIZONA_HP2L_DONE_EINT1_SHIFT                 2  /* HP2L_DONE_EINT1 */
-> +#define ARIZONA_HP2L_DONE_EINT1_WIDTH                 1  /* HP2L_DONE_EINT1 */
-> +#define ARIZONA_HP1R_DONE_EINT1                  0x0002  /* HP1R_DONE_EINT1 */
-> +#define ARIZONA_HP1R_DONE_EINT1_MASK             0x0002  /* HP1R_DONE_EINT1 */
-> +#define ARIZONA_HP1R_DONE_EINT1_SHIFT                 1  /* HP1R_DONE_EINT1 */
-> +#define ARIZONA_HP1R_DONE_EINT1_WIDTH                 1  /* HP1R_DONE_EINT1 */
-> +#define ARIZONA_HP1L_DONE_EINT1                  0x0001  /* HP1L_DONE_EINT1 */
-> +#define ARIZONA_HP1L_DONE_EINT1_MASK             0x0001  /* HP1L_DONE_EINT1 */
-> +#define ARIZONA_HP1L_DONE_EINT1_SHIFT                 0  /* HP1L_DONE_EINT1 */
-> +#define ARIZONA_HP1L_DONE_EINT1_WIDTH                 1  /* HP1L_DONE_EINT1 */
->  
+> @@ -4691,14 +4691,14 @@
 >  /*
->   * R3332 (0xD04) - Interrupt Status 5
-> @@ -4963,6 +4987,30 @@
->  #define ARIZONA_IM_ISRC2_CFG_ERR_EINT1_MASK      0x0040  /* IM_ISRC2_CFG_ERR_EINT1 */
->  #define ARIZONA_IM_ISRC2_CFG_ERR_EINT1_SHIFT          6  /* IM_ISRC2_CFG_ERR_EINT1 */
->  #define ARIZONA_IM_ISRC2_CFG_ERR_EINT1_WIDTH          1  /* IM_ISRC2_CFG_ERR_EINT1 */
-> +#define ARIZONA_IM_HP3R_DONE_EINT1               0x0020  /* IM_HP3R_DONE_EINT1 */
-> +#define ARIZONA_IM_HP3R_DONE_EINT1_MASK          0x0020  /* IM_HP3R_DONE_EINT1 */
-> +#define ARIZONA_IM_HP3R_DONE_EINT1_SHIFT              5  /* IM_HP3R_DONE_EINT1 */
-> +#define ARIZONA_IM_HP3R_DONE_EINT1_WIDTH              1  /* IM_HP3R_DONE_EINT1 */
-> +#define ARIZONA_IM_HP3L_DONE_EINT1               0x0010  /* IM_HP3L_DONE_EINT1 */
-> +#define ARIZONA_IM_HP3L_DONE_EINT1_MASK          0x0010  /* IM_HP3L_DONE_EINT1 */
-> +#define ARIZONA_IM_HP3L_DONE_EINT1_SHIFT              4  /* IM_HP3L_DONE_EINT1 */
-> +#define ARIZONA_IM_HP3L_DONE_EINT1_WIDTH              1  /* IM_HP3L_DONE_EINT1 */
-> +#define ARIZONA_IM_HP2R_DONE_EINT1               0x0008  /* IM_HP2R_DONE_EINT1 */
-> +#define ARIZONA_IM_HP2R_DONE_EINT1_MASK          0x0008  /* IM_HP2R_DONE_EINT1 */
-> +#define ARIZONA_IM_HP2R_DONE_EINT1_SHIFT              3  /* IM_HP2R_DONE_EINT1 */
-> +#define ARIZONA_IM_HP2R_DONE_EINT1_WIDTH              1  /* IM_HP2R_DONE_EINT1 */
-> +#define ARIZONA_IM_HP2L_DONE_EINT1               0x0004  /* IM_HP2L_DONE_EINT1 */
-> +#define ARIZONA_IM_HP2L_DONE_EINT1_MASK          0x0004  /* IM_HP2L_DONE_EINT1 */
-> +#define ARIZONA_IM_HP2L_DONE_EINT1_SHIFT              2  /* IM_HP2L_DONE_EINT1 */
-> +#define ARIZONA_IM_HP2L_DONE_EINT1_WIDTH              1  /* IM_HP2L_DONE_EINT1 */
-> +#define ARIZONA_IM_HP1R_DONE_EINT1               0x0002  /* IM_HP1R_DONE_EINT1 */
-> +#define ARIZONA_IM_HP1R_DONE_EINT1_MASK          0x0002  /* IM_HP1R_DONE_EINT1 */
-> +#define ARIZONA_IM_HP1R_DONE_EINT1_SHIFT              1  /* IM_HP1R_DONE_EINT1 */
-> +#define ARIZONA_IM_HP1R_DONE_EINT1_WIDTH              1  /* IM_HP1R_DONE_EINT1 */
-> +#define ARIZONA_IM_HP1L_DONE_EINT1               0x0001  /* IM_HP1L_DONE_EINT1 */
-> +#define ARIZONA_IM_HP1L_DONE_EINT1_MASK          0x0001  /* IM_HP1L_DONE_EINT1 */
-> +#define ARIZONA_IM_HP1L_DONE_EINT1_SHIFT              0  /* IM_HP1L_DONE_EINT1 */
-> +#define ARIZONA_IM_HP1L_DONE_EINT1_WIDTH              1  /* IM_HP1L_DONE_EINT1 */
->  
+>   * R3330 (0xD02) - Interrupt Status 3
+>   */
+> -#define ARIZONA_SPK_SHUTDOWN_WARN_EINT1          0x8000  /* SPK_SHUTDOWN_WARN_EINT1 */
+> -#define ARIZONA_SPK_SHUTDOWN_WARN_EINT1_MASK     0x8000  /* SPK_SHUTDOWN_WARN_EINT1 */
+> -#define ARIZONA_SPK_SHUTDOWN_WARN_EINT1_SHIFT        15  /* SPK_SHUTDOWN_WARN_EINT1 */
+> -#define ARIZONA_SPK_SHUTDOWN_WARN_EINT1_WIDTH         1  /* SPK_SHUTDOWN_WARN_EINT1 */
+> -#define ARIZONA_SPK_SHUTDOWN_EINT1               0x4000  /* SPK_SHUTDOWN_EINT1 */
+> -#define ARIZONA_SPK_SHUTDOWN_EINT1_MASK          0x4000  /* SPK_SHUTDOWN_EINT1 */
+> -#define ARIZONA_SPK_SHUTDOWN_EINT1_SHIFT             14  /* SPK_SHUTDOWN_EINT1 */
+> -#define ARIZONA_SPK_SHUTDOWN_EINT1_WIDTH              1  /* SPK_SHUTDOWN_EINT1 */
+> +#define ARIZONA_SPK_OVERHEAT_WARN_EINT1          0x8000  /* SPK_OVERHEAT_WARN_EINT1 */
+> +#define ARIZONA_SPK_OVERHEAT_WARN_EINT1_MASK     0x8000  /* SPK_OVERHEAD_WARN_EINT1 */
+> +#define ARIZONA_SPK_OVERHEAT_WARN_EINT1_SHIFT        15  /* SPK_OVERHEAT_WARN_EINT1 */
+> +#define ARIZONA_SPK_OVERHEAT_WARN_EINT1_WIDTH         1  /* SPK_OVERHEAT_WARN_EINT1 */
+> +#define ARIZONA_SPK_OVERHEAT_EINT1               0x4000  /* SPK_OVERHEAT_EINT1 */
+> +#define ARIZONA_SPK_OVERHEAT_EINT1_MASK          0x4000  /* SPK_OVERHEAT_EINT1 */
+> +#define ARIZONA_SPK_OVERHEAT_EINT1_SHIFT             14  /* SPK_OVERHEAT_EINT1 */
+> +#define ARIZONA_SPK_OVERHEAT_EINT1_WIDTH              1  /* SPK_OVERHEAT_EINT1 */
+>  #define ARIZONA_HPDET_EINT1                      0x2000  /* HPDET_EINT1 */
+>  #define ARIZONA_HPDET_EINT1_MASK                 0x2000  /* HPDET_EINT1 */
+>  #define ARIZONA_HPDET_EINT1_SHIFT                    13  /* HPDET_EINT1 */
+> @@ -4883,14 +4883,14 @@
 >  /*
->   * R3340 (0xD0C) - Interrupt Status 5 Mask
-> @@ -5139,6 +5187,30 @@
->  #define ARIZONA_ISRC2_CFG_ERR_EINT2_MASK         0x0040  /* ISRC2_CFG_ERR_EINT2 */
->  #define ARIZONA_ISRC2_CFG_ERR_EINT2_SHIFT             6  /* ISRC2_CFG_ERR_EINT2 */
->  #define ARIZONA_ISRC2_CFG_ERR_EINT2_WIDTH             1  /* ISRC2_CFG_ERR_EINT2 */
-> +#define ARIZONA_HP3R_DONE_EINT2                  0x0020  /* HP3R_DONE_EINT2 */
-> +#define ARIZONA_HP3R_DONE_EINT2_MASK             0x0020  /* HP3R_DONE_EINT2 */
-> +#define ARIZONA_HP3R_DONE_EINT2_SHIFT                 5  /* HP3R_DONE_EINT2 */
-> +#define ARIZONA_HP3R_DONE_EINT2_WIDTH                 1  /* HP3R_DONE_EINT2 */
-> +#define ARIZONA_HP3L_DONE_EINT2                  0x0010  /* HP3L_DONE_EINT2 */
-> +#define ARIZONA_HP3L_DONE_EINT2_MASK             0x0010  /* HP3L_DONE_EINT2 */
-> +#define ARIZONA_HP3L_DONE_EINT2_SHIFT                 4  /* HP3L_DONE_EINT2 */
-> +#define ARIZONA_HP3L_DONE_EINT2_WIDTH                 1  /* HP3L_DONE_EINT2 */
-> +#define ARIZONA_HP2R_DONE_EINT2                  0x0008  /* HP2R_DONE_EINT2 */
-> +#define ARIZONA_HP2R_DONE_EINT2_MASK             0x0008  /* HP2R_DONE_EINT2 */
-> +#define ARIZONA_HP2R_DONE_EINT2_SHIFT                 3  /* HP2R_DONE_EINT2 */
-> +#define ARIZONA_HP2R_DONE_EINT2_WIDTH                 1  /* HP2R_DONE_EINT2 */
-> +#define ARIZONA_HP2L_DONE_EINT2                  0x0004  /* HP2L_DONE_EINT2 */
-> +#define ARIZONA_HP2L_DONE_EINT2_MASK             0x0004  /* HP2L_DONE_EINT2 */
-> +#define ARIZONA_HP2L_DONE_EINT2_SHIFT                 2  /* HP2L_DONE_EINT2 */
-> +#define ARIZONA_HP2L_DONE_EINT2_WIDTH                 1  /* HP2L_DONE_EINT2 */
-> +#define ARIZONA_HP1R_DONE_EINT2                  0x0002  /* HP1R_DONE_EINT2 */
-> +#define ARIZONA_HP1R_DONE_EINT2_MASK             0x0002  /* HP1R_DONE_EINT2 */
-> +#define ARIZONA_HP1R_DONE_EINT2_SHIFT                 1  /* HP1R_DONE_EINT2 */
-> +#define ARIZONA_HP1R_DONE_EINT2_WIDTH                 1  /* HP1R_DONE_EINT2 */
-> +#define ARIZONA_HP1L_DONE_EINT2                  0x0001  /* HP1L_DONE_EINT2 */
-> +#define ARIZONA_HP1L_DONE_EINT2_MASK             0x0001  /* HP1L_DONE_EINT2 */
-> +#define ARIZONA_HP1L_DONE_EINT2_SHIFT                 0  /* HP1L_DONE_EINT2 */
-> +#define ARIZONA_HP1L_DONE_EINT2_WIDTH                 1  /* HP1L_DONE_EINT2 */
->  
+>   * R3338 (0xD0A) - Interrupt Status 3 Mask
+>   */
+> -#define ARIZONA_IM_SPK_SHUTDOWN_WARN_EINT1       0x8000  /* IM_SPK_SHUTDOWN_WARN_EINT1 */
+> -#define ARIZONA_IM_SPK_SHUTDOWN_WARN_EINT1_MASK  0x8000  /* IM_SPK_SHUTDOWN_WARN_EINT1 */
+> -#define ARIZONA_IM_SPK_SHUTDOWN_WARN_EINT1_SHIFT     15  /* IM_SPK_SHUTDOWN_WARN_EINT1 */
+> -#define ARIZONA_IM_SPK_SHUTDOWN_WARN_EINT1_WIDTH      1  /* IM_SPK_SHUTDOWN_WARN_EINT1 */
+> -#define ARIZONA_IM_SPK_SHUTDOWN_EINT1            0x4000  /* IM_SPK_SHUTDOWN_EINT1 */
+> -#define ARIZONA_IM_SPK_SHUTDOWN_EINT1_MASK       0x4000  /* IM_SPK_SHUTDOWN_EINT1 */
+> -#define ARIZONA_IM_SPK_SHUTDOWN_EINT1_SHIFT          14  /* IM_SPK_SHUTDOWN_EINT1 */
+> -#define ARIZONA_IM_SPK_SHUTDOWN_EINT1_WIDTH           1  /* IM_SPK_SHUTDOWN_EINT1 */
+> +#define ARIZONA_IM_SPK_OVERHEAT_WARN_EINT1       0x8000  /* IM_SPK_OVERHEAT_WARN_EINT1 */
+> +#define ARIZONA_IM_SPK_OVERHEAT_WARN_EINT1_MASK  0x8000  /* IM_SPK_OVERHEAT_WARN_EINT1 */
+> +#define ARIZONA_IM_SPK_OVERHEAT_WARN_EINT1_SHIFT     15  /* IM_SPK_OVERHEAT_WARN_EINT1 */
+> +#define ARIZONA_IM_SPK_OVERHEAT_WARN_EINT1_WIDTH      1  /* IM_SPK_OVERHEAT_WARN_EINT1 */
+> +#define ARIZONA_IM_SPK_OVERHEAT_EINT1            0x4000  /* IM_SPK_OVERHEAT_EINT1 */
+> +#define ARIZONA_IM_SPK_OVERHEAT_EINT1_MASK       0x4000  /* IM_SPK_OVERHEAT_EINT1 */
+> +#define ARIZONA_IM_SPK_OVERHEAT_EINT1_SHIFT          14  /* IM_SPK_OVERHEAT_EINT1 */
+> +#define ARIZONA_IM_SPK_OVERHEAT_EINT1_WIDTH           1  /* IM_SPK_OVERHEAT_EINT1 */
+>  #define ARIZONA_IM_HPDET_EINT1                   0x2000  /* IM_HPDET_EINT1 */
+>  #define ARIZONA_IM_HPDET_EINT1_MASK              0x2000  /* IM_HPDET_EINT1 */
+>  #define ARIZONA_IM_HPDET_EINT1_SHIFT                 13  /* IM_HPDET_EINT1 */
+> @@ -5083,14 +5083,14 @@
 >  /*
->   * R3348 (0xD14) - IRQ2 Status 5
-> @@ -5307,6 +5379,30 @@
->  #define ARIZONA_IM_ISRC2_CFG_ERR_EINT2_MASK      0x0040  /* IM_ISRC2_CFG_ERR_EINT2 */
->  #define ARIZONA_IM_ISRC2_CFG_ERR_EINT2_SHIFT          6  /* IM_ISRC2_CFG_ERR_EINT2 */
->  #define ARIZONA_IM_ISRC2_CFG_ERR_EINT2_WIDTH          1  /* IM_ISRC2_CFG_ERR_EINT2 */
-> +#define ARIZONA_IM_HP3R_DONE_EINT2               0x0020  /* IM_HP3R_DONE_EINT2 */
-> +#define ARIZONA_IM_HP3R_DONE_EINT2_MASK          0x0020  /* IM_HP3R_DONE_EINT2 */
-> +#define ARIZONA_IM_HP3R_DONE_EINT2_SHIFT              5  /* IM_HP3R_DONE_EINT2 */
-> +#define ARIZONA_IM_HP3R_DONE_EINT2_WIDTH              1  /* IM_HP3R_DONE_EINT2 */
-> +#define ARIZONA_IM_HP3L_DONE_EINT2               0x0010  /* IM_HP3L_DONE_EINT2 */
-> +#define ARIZONA_IM_HP3L_DONE_EINT2_MASK          0x0010  /* IM_HP3L_DONE_EINT2 */
-> +#define ARIZONA_IM_HP3L_DONE_EINT2_SHIFT              4  /* IM_HP3L_DONE_EINT2 */
-> +#define ARIZONA_IM_HP3L_DONE_EINT2_WIDTH              1  /* IM_HP3L_DONE_EINT2 */
-> +#define ARIZONA_IM_HP2R_DONE_EINT2               0x0008  /* IM_HP2R_DONE_EINT2 */
-> +#define ARIZONA_IM_HP2R_DONE_EINT2_MASK          0x0008  /* IM_HP2R_DONE_EINT2 */
-> +#define ARIZONA_IM_HP2R_DONE_EINT2_SHIFT              3  /* IM_HP2R_DONE_EINT2 */
-> +#define ARIZONA_IM_HP2R_DONE_EINT2_WIDTH              1  /* IM_HP2R_DONE_EINT2 */
-> +#define ARIZONA_IM_HP2L_DONE_EINT2               0x0004  /* IM_HP2L_DONE_EINT2 */
-> +#define ARIZONA_IM_HP2L_DONE_EINT2_MASK          0x0004  /* IM_HP2L_DONE_EINT2 */
-> +#define ARIZONA_IM_HP2L_DONE_EINT2_SHIFT              2  /* IM_HP2L_DONE_EINT2 */
-> +#define ARIZONA_IM_HP2L_DONE_EINT2_WIDTH              1  /* IM_HP2L_DONE_EINT2 */
-> +#define ARIZONA_IM_HP1R_DONE_EINT2               0x0002  /* IM_HP1R_DONE_EINT2 */
-> +#define ARIZONA_IM_HP1R_DONE_EINT2_MASK          0x0002  /* IM_HP1R_DONE_EINT2 */
-> +#define ARIZONA_IM_HP1R_DONE_EINT2_SHIFT              1  /* IM_HP1R_DONE_EINT2 */
-> +#define ARIZONA_IM_HP1R_DONE_EINT2_WIDTH              1  /* IM_HP1R_DONE_EINT2 */
-> +#define ARIZONA_IM_HP1L_DONE_EINT2               0x0001  /* IM_HP1L_DONE_EINT2 */
-> +#define ARIZONA_IM_HP1L_DONE_EINT2_MASK          0x0001  /* IM_HP1L_DONE_EINT2 */
-> +#define ARIZONA_IM_HP1L_DONE_EINT2_SHIFT              0  /* IM_HP1L_DONE_EINT2 */
-> +#define ARIZONA_IM_HP1L_DONE_EINT2_WIDTH              1  /* IM_HP1L_DONE_EINT2 */
->  
+>   * R3346 (0xD12) - IRQ2 Status 3
+>   */
+> -#define ARIZONA_SPK_SHUTDOWN_WARN_EINT2          0x8000  /* SPK_SHUTDOWN_WARN_EINT2 */
+> -#define ARIZONA_SPK_SHUTDOWN_WARN_EINT2_MASK     0x8000  /* SPK_SHUTDOWN_WARN_EINT2 */
+> -#define ARIZONA_SPK_SHUTDOWN_WARN_EINT2_SHIFT        15  /* SPK_SHUTDOWN_WARN_EINT2 */
+> -#define ARIZONA_SPK_SHUTDOWN_WARN_EINT2_WIDTH         1  /* SPK_SHUTDOWN_WARN_EINT2 */
+> -#define ARIZONA_SPK_SHUTDOWN_EINT2               0x4000  /* SPK_SHUTDOWN_EINT2 */
+> -#define ARIZONA_SPK_SHUTDOWN_EINT2_MASK          0x4000  /* SPK_SHUTDOWN_EINT2 */
+> -#define ARIZONA_SPK_SHUTDOWN_EINT2_SHIFT             14  /* SPK_SHUTDOWN_EINT2 */
+> -#define ARIZONA_SPK_SHUTDOWN_EINT2_WIDTH              1  /* SPK_SHUTDOWN_EINT2 */
+> +#define ARIZONA_SPK_OVERHEAT_WARN_EINT2          0x8000  /* SPK_OVERHEAT_WARN_EINT2 */
+> +#define ARIZONA_SPK_OVERHEAT_WARN_EINT2_MASK     0x8000  /* SPK_OVERHEAT_WARN_EINT2 */
+> +#define ARIZONA_SPK_OVERHEAT_WARN_EINT2_SHIFT        15  /* SPK_OVERHEAT_WARN_EINT2 */
+> +#define ARIZONA_SPK_OVERHEAT_WARN_EINT2_WIDTH         1  /* SPK_OVERHEAT_WARN_EINT2 */
+> +#define ARIZONA_SPK_OVERHEAT_EINT2               0x4000  /* SPK_OVERHEAT_EINT2 */
+> +#define ARIZONA_SPK_OVERHEAT_EINT2_MASK          0x4000  /* SPK_OVERHEAT_EINT2 */
+> +#define ARIZONA_SPK_OVERHEAT_EINT2_SHIFT             14  /* SPK_OVERHEAT_EINT2 */
+> +#define ARIZONA_SPK_OVERHEAT_EINT2_WIDTH              1  /* SPK_OVERHEAT_EINT2 */
+>  #define ARIZONA_HPDET_EINT2                      0x2000  /* HPDET_EINT2 */
+>  #define ARIZONA_HPDET_EINT2_MASK                 0x2000  /* HPDET_EINT2 */
+>  #define ARIZONA_HPDET_EINT2_SHIFT                    13  /* HPDET_EINT2 */
+> @@ -5275,14 +5275,14 @@
 >  /*
->   * R3356 (0xD1C) - IRQ2 Status 5 Mask
-> @@ -5464,6 +5560,30 @@
->  #define ARIZONA_ISRC2_CFG_ERR_STS_MASK           0x0040  /* ISRC2_CFG_ERR_STS */
->  #define ARIZONA_ISRC2_CFG_ERR_STS_SHIFT               6  /* ISRC2_CFG_ERR_STS */
->  #define ARIZONA_ISRC2_CFG_ERR_STS_WIDTH               1  /* ISRC2_CFG_ERR_STS */
-> +#define ARIZONA_HP3R_DONE_STS                    0x0020  /* HP3R_DONE_STS */
-> +#define ARIZONA_HP3R_DONE_STS_MASK               0x0020  /* HP3R_DONE_STS */
-> +#define ARIZONA_HP3R_DONE_STS_SHIFT                   5  /* HP3R_DONE_STS */
-> +#define ARIZONA_HP3R_DONE_STS_WIDTH                   1  /* HP3R_DONE_STS */
-> +#define ARIZONA_HP3L_DONE_STS                    0x0010  /* HP3L_DONE_STS */
-> +#define ARIZONA_HP3L_DONE_STS_MASK               0x0010  /* HP3L_DONE_STS */
-> +#define ARIZONA_HP3L_DONE_STS_SHIFT                   4  /* HP3L_DONE_STS */
-> +#define ARIZONA_HP3L_DONE_STS_WIDTH                   1  /* HP3L_DONE_STS */
-> +#define ARIZONA_HP2R_DONE_STS                    0x0008  /* HP2R_DONE_STS */
-> +#define ARIZONA_HP2R_DONE_STS_MASK               0x0008  /* HP2R_DONE_STS */
-> +#define ARIZONA_HP2R_DONE_STS_SHIFT                   3  /* HP2R_DONE_STS */
-> +#define ARIZONA_HP2R_DONE_STS_WIDTH                   1  /* HP2R_DONE_STS */
-> +#define ARIZONA_HP2L_DONE_STS                    0x0004  /* HP2L_DONE_STS */
-> +#define ARIZONA_HP2L_DONE_STS_MASK               0x0004  /* HP2L_DONE_STS */
-> +#define ARIZONA_HP2L_DONE_STS_SHIFT                   2  /* HP2L_DONE_STS */
-> +#define ARIZONA_HP2L_DONE_STS_WIDTH                   1  /* HP2L_DONE_STS */
-> +#define ARIZONA_HP1R_DONE_STS                    0x0002  /* HP1R_DONE_STS */
-> +#define ARIZONA_HP1R_DONE_STS_MASK               0x0002  /* HP1R_DONE_STS */
-> +#define ARIZONA_HP1R_DONE_STS_SHIFT                   1  /* HP1R_DONE_STS */
-> +#define ARIZONA_HP1R_DONE_STS_WIDTH                   1  /* HP1R_DONE_STS */
-> +#define ARIZONA_HP1L_DONE_STS                    0x0001  /* HP1L_DONE_STS */
-> +#define ARIZONA_HP1L_DONE_STS_MASK               0x0001  /* HP1L_DONE_STS */
-> +#define ARIZONA_HP1L_DONE_STS_SHIFT                   0  /* HP1L_DONE_STS */
-> +#define ARIZONA_HP1L_DONE_STS_WIDTH                   1  /* HP1L_DONE_STS */
->  
+>   * R3354 (0xD1A) - IRQ2 Status 3 Mask
+>   */
+> -#define ARIZONA_IM_SPK_SHUTDOWN_WARN_EINT2       0x8000  /* IM_SPK_SHUTDOWN_WARN_EINT2 */
+> -#define ARIZONA_IM_SPK_SHUTDOWN_WARN_EINT2_MASK  0x8000  /* IM_SPK_SHUTDOWN_WARN_EINT2 */
+> -#define ARIZONA_IM_SPK_SHUTDOWN_WARN_EINT2_SHIFT     15  /* IM_SPK_SHUTDOWN_WARN_EINT2 */
+> -#define ARIZONA_IM_SPK_SHUTDOWN_WARN_EINT2_WIDTH      1  /* IM_SPK_SHUTDOWN_WARN_EINT2 */
+> -#define ARIZONA_IM_SPK_SHUTDOWN_EINT2            0x4000  /* IM_SPK_SHUTDOWN_EINT2 */
+> -#define ARIZONA_IM_SPK_SHUTDOWN_EINT2_MASK       0x4000  /* IM_SPK_SHUTDOWN_EINT2 */
+> -#define ARIZONA_IM_SPK_SHUTDOWN_EINT2_SHIFT          14  /* IM_SPK_SHUTDOWN_EINT2 */
+> -#define ARIZONA_IM_SPK_SHUTDOWN_EINT2_WIDTH           1  /* IM_SPK_SHUTDOWN_EINT2 */
+> +#define ARIZONA_IM_SPK_OVERHEAT_WARN_EINT2       0x8000  /* IM_SPK_OVERHEAT_WARN_EINT2 */
+> +#define ARIZONA_IM_SPK_OVERHEAT_WARN_EINT2_MASK  0x8000  /* IM_SPK_OVERHEAT_WARN_EINT2 */
+> +#define ARIZONA_IM_SPK_OVERHEAT_WARN_EINT2_SHIFT     15  /* IM_SPK_OVERHEAT_WARN_EINT2 */
+> +#define ARIZONA_IM_SPK_OVERHEAT_WARN_EINT2_WIDTH      1  /* IM_SPK_OVERHEAT_WARN_EINT2 */
+> +#define ARIZONA_IM_SPK_OVERHEAT_EINT2            0x4000  /* IM_SPK_OVERHEAT_EINT2 */
+> +#define ARIZONA_IM_SPK_OVERHEAT_EINT2_MASK       0x4000  /* IM_SPK_OVERHEAT_EINT2 */
+> +#define ARIZONA_IM_SPK_OVERHEAT_EINT2_SHIFT          14  /* IM_SPK_OVERHEAT_EINT2 */
+> +#define ARIZONA_IM_SPK_OVERHEAT_EINT2_WIDTH           1  /* IM_SPK_OVERHEAT_EINT2 */
+>  #define ARIZONA_IM_HPDET_EINT2                   0x2000  /* IM_HPDET_EINT2 */
+>  #define ARIZONA_IM_HPDET_EINT2_MASK              0x2000  /* IM_HPDET_EINT2 */
+>  #define ARIZONA_IM_HPDET_EINT2_SHIFT                 13  /* IM_HPDET_EINT2 */
+> @@ -5456,14 +5456,14 @@
 >  /*
->   * R3363 (0xD23) - Interrupt Raw Status 5
+>   * R3361 (0xD21) - Interrupt Raw Status 3
+>   */
+> -#define ARIZONA_SPK_SHUTDOWN_WARN_STS            0x8000  /* SPK_SHUTDOWN_WARN_STS */
+> -#define ARIZONA_SPK_SHUTDOWN_WARN_STS_MASK       0x8000  /* SPK_SHUTDOWN_WARN_STS */
+> -#define ARIZONA_SPK_SHUTDOWN_WARN_STS_SHIFT          15  /* SPK_SHUTDOWN_WARN_STS */
+> -#define ARIZONA_SPK_SHUTDOWN_WARN_STS_WIDTH           1  /* SPK_SHUTDOWN_WARN_STS */
+> -#define ARIZONA_SPK_SHUTDOWN_STS                 0x4000  /* SPK_SHUTDOWN_STS */
+> -#define ARIZONA_SPK_SHUTDOWN_STS_MASK            0x4000  /* SPK_SHUTDOWN_STS */
+> -#define ARIZONA_SPK_SHUTDOWN_STS_SHIFT               14  /* SPK_SHUTDOWN_STS */
+> -#define ARIZONA_SPK_SHUTDOWN_STS_WIDTH                1  /* SPK_SHUTDOWN_STS */
+> +#define ARIZONA_SPK_OVERHEAT_WARN_STS            0x8000  /* SPK_OVERHEAT_WARN_STS */
+> +#define ARIZONA_SPK_OVERHEAT_WARN_STS_MASK       0x8000  /* SPK_OVERHEAT_WARN_STS */
+> +#define ARIZONA_SPK_OVERHEAT_WARN_STS_SHIFT          15  /* SPK_OVERHEAT_WARN_STS */
+> +#define ARIZONA_SPK_OVERHEAT_WARN_STS_WIDTH           1  /* SPK_OVERHEAT_WARN_STS */
+> +#define ARIZONA_SPK_OVERHEAT_STS                 0x4000  /* SPK_OVERHEAT_STS */
+> +#define ARIZONA_SPK_OVERHEAT_STS_MASK            0x4000  /* SPK_OVERHEAT_STS */
+> +#define ARIZONA_SPK_OVERHEAT_STS_SHIFT               14  /* SPK_OVERHEAT_STS */
+> +#define ARIZONA_SPK_OVERHEAT_STS_WIDTH                1  /* SPK_OVERHEAT_STS */
+>  #define ARIZONA_HPDET_STS                        0x2000  /* HPDET_STS */
+>  #define ARIZONA_HPDET_STS_MASK                   0x2000  /* HPDET_STS */
+>  #define ARIZONA_HPDET_STS_SHIFT                      13  /* HPDET_STS */
+> diff --git a/sound/soc/codecs/arizona.c b/sound/soc/codecs/arizona.c
+> index 29e198f..1b14105 100644
+> --- a/sound/soc/codecs/arizona.c
+> +++ b/sound/soc/codecs/arizona.c
+> @@ -107,7 +107,7 @@ static int arizona_spk_ev(struct snd_soc_dapm_widget *w,
+>  		break;
+>  	case SND_SOC_DAPM_POST_PMU:
+>  		val = snd_soc_read(codec, ARIZONA_INTERRUPT_RAW_STATUS_3);
+> -		if (val & ARIZONA_SPK_SHUTDOWN_STS) {
+> +		if (val & ARIZONA_SPK_OVERHEAT_STS) {
+>  			dev_crit(arizona->dev,
+>  				 "Speaker not enabled due to temperature\n");
+>  			return -EBUSY;
+> @@ -159,7 +159,7 @@ static irqreturn_t arizona_thermal_warn(int irq, void *data)
+>  	if (ret != 0) {
+>  		dev_err(arizona->dev, "Failed to read thermal status: %d\n",
+>  			ret);
+> -	} else if (val & ARIZONA_SPK_SHUTDOWN_WARN_STS) {
+> +	} else if (val & ARIZONA_SPK_OVERHEAT_WARN_STS) {
+>  		dev_crit(arizona->dev, "Thermal warning\n");
+>  	}
+>  
+> @@ -177,7 +177,7 @@ static irqreturn_t arizona_thermal_shutdown(int irq, void *data)
+>  	if (ret != 0) {
+>  		dev_err(arizona->dev, "Failed to read thermal status: %d\n",
+>  			ret);
+> -	} else if (val & ARIZONA_SPK_SHUTDOWN_STS) {
+> +	} else if (val & ARIZONA_SPK_OVERHEAT_STS) {
+>  		dev_crit(arizona->dev, "Thermal shutdown\n");
+>  		ret = regmap_update_bits(arizona->regmap,
+>  					 ARIZONA_OUTPUT_ENABLES_1,
+> @@ -223,7 +223,7 @@ int arizona_init_spk(struct snd_soc_codec *codec)
+>  		break;
+>  	}
+>  
+> -	ret = arizona_request_irq(arizona, ARIZONA_IRQ_SPK_SHUTDOWN_WARN,
+> +	ret = arizona_request_irq(arizona, ARIZONA_IRQ_SPK_OVERHEAT_WARN,
+>  				  "Thermal warning", arizona_thermal_warn,
+>  				  arizona);
+>  	if (ret != 0)
+> @@ -231,7 +231,7 @@ int arizona_init_spk(struct snd_soc_codec *codec)
+>  			"Failed to get thermal warning IRQ: %d\n",
+>  			ret);
+>  
+> -	ret = arizona_request_irq(arizona, ARIZONA_IRQ_SPK_SHUTDOWN,
+> +	ret = arizona_request_irq(arizona, ARIZONA_IRQ_SPK_OVERHEAT,
+>  				  "Thermal shutdown", arizona_thermal_shutdown,
+>  				  arizona);
+>  	if (ret != 0)
 
 -- 
 Lee Jones
