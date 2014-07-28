@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751759AbaG1Rie (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 13:38:34 -0400
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:48846 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751611AbaG1RiG (ORCPT
+	id S1751597AbaG1RiE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 13:38:04 -0400
+Received: from mail-we0-f173.google.com ([74.125.82.173]:38233 "EHLO
+	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751044AbaG1Rh4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 13:38:06 -0400
+	Mon, 28 Jul 2014 13:37:56 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@kernel.org>,
@@ -16,9 +16,9 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@kernel.org>,
         Steven Rostedt <rostedt@goodmis.org>,
         Thomas Gleixner <tglx@linutronix.de>,
         Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH 09/10] nohz: Switch nohz full timekeeper to dynticks idle on top of sysidle detection
-Date: Mon, 28 Jul 2014 19:37:35 +0200
-Message-Id: <1406569056-30217-10-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 04/10] nohz: Appropriate timekeeper kick on sysidle break
+Date: Mon, 28 Jul 2014 19:37:30 +0200
+Message-Id: <1406569056-30217-5-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1406569056-30217-1-git-send-email-fweisbec@gmail.com>
 References: <1406569056-30217-1-git-send-email-fweisbec@gmail.com>
@@ -26,31 +26,22 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In full dynticks, the CPU 0 carries the timekeeping duty on behalf
-of all other CPUs in the system. This way full dynticks are left
-undisturbed on this regard.
+When a CPU wakes up from idle and finds out that the timekeeper is
+sleeping, we need to kick it such that it switches from dynticks to
+periodic mode to maintain its timekeeping duty on behalf of the newly
+awoken CPU.
 
-Of course this prevents CPU 0 from entering in dynticks idle mode
-because any CPU may need uptodate timekeeping at any time.
+However we aren't using the right API for that. rcu_kick_nohz_cpu() is
+aimed at waking full dynticks CPUs and not the timekeeper.
 
-Theoretically though, we could put CPU 0 in dynticks idle mode once we
-are sure that all other CPUs are dynticks idle as well. Then when a
-CPU wakes up and finds the timekeeper idle, it would send an IPI to
-wake it up on its duty.
+Moreover the timekeeper must perform a new dynticks cycle to check the
+new sysidle state and restart the tick if necessary. A simple call
+to irq_exit() isn't enough.
 
-Such a machine state needs to take care of all the races in the way, make
-sure that CPU 0 is neither stuck accidentally to sleep for ever, nor
-stuck in periodic mode when it could sleep. Also given the amount of
-shared data this involves and their access frequency, this must be built
-on top of lockless low-overhead state machine.
-
-This is what sysidle provides. The feature is ready for a while, we
-were just waiting for the nohz susbsystem to support it. And we just
-reached that state.
-
-So lets defer the last call for CPU 0 to enter in dynticks idle to when
-we find a full system idle state. And lets wake it up when its duty is
-needed.
+wake_up_nohz_cpu() is a good fit for that job because it pulls the
+target out of the idle loop and restart the tick. Then if no other
+task waits for the CPU, it will reenter the idle loop and then the
+new sysidle state will be visible and well handled.
 
 Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 Cc: Ingo Molnar <mingo@kernel.org>
@@ -62,34 +53,22 @@ Cc: Thomas Gleixner <tglx@linutronix.de>
 Cc: Viresh Kumar <viresh.kumar@linaro.org>
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 ---
- kernel/time/tick-sched.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ kernel/rcu/tree_plugin.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-index bcba79d..845aaff 100644
---- a/kernel/time/tick-sched.c
-+++ b/kernel/time/tick-sched.c
-@@ -547,8 +547,10 @@ static u64 timekeeping_deferment(struct tick_sched *ts, int cpu)
- 
- 	if (tick_do_timer_cpu == cpu) {
- 		time_delta = timekeeping_max_deferment();
--		tick_do_timer_cpu = TICK_DO_TIMER_NONE;
- 		ts->do_timer_last = 1;
-+		/* In full dynticks mode, CPU 0 always keeps the duty */
-+		if (!tick_nohz_full_enabled())
-+			tick_do_timer_cpu = TICK_DO_TIMER_NONE;
- 	} else if (ts->do_timer_last) {
- 		if (tick_do_timer_cpu == TICK_DO_TIMER_NONE)
- 			time_delta = timekeeping_max_deferment();
-@@ -745,7 +747,7 @@ static bool can_stop_idle_tick(int cpu, struct tick_sched *ts)
- 		 * if there are full dynticks CPUs around
- 		 */
- 		if (tick_do_timer_cpu == cpu)
--			return false;
-+			return rcu_sys_is_idle();
- 	}
- 
- 	return true;
+diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
+index 551398b..477d81f 100644
+--- a/kernel/rcu/tree_plugin.h
++++ b/kernel/rcu/tree_plugin.h
+@@ -2494,7 +2494,7 @@ void rcu_sysidle_force_exit(void)
+ 				      oldstate, RCU_SYSIDLE_NOT);
+ 		if (oldstate == newoldstate &&
+ 		    oldstate == RCU_SYSIDLE_FULL_NOTED) {
+-			rcu_kick_nohz_cpu(tick_do_timer_cpu);
++			wake_up_nohz_cpu(tick_do_timer_cpu);
+ 			return; /* We cleared it, done! */
+ 		}
+ 		oldstate = newoldstate;
 -- 
 1.8.3.1
 
