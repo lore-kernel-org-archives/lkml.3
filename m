@@ -1,110 +1,354 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752681AbaG1VWh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 17:22:37 -0400
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:60010 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752770AbaG1VV1 (ORCPT
+	id S1752867AbaG1VWx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 17:22:53 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:37277 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752312AbaG1VRr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 17:21:27 -0400
-Content-Type: multipart/signed; boundary="Apple-Mail=_38CDB838-17A6-4E64-8177-49F20E1B17D0"; protocol="application/pgp-signature"; micalg=pgp-sha1
-Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
-Subject: Re: [RFC] readdirplus implementations: xgetdents vs dirreadahead syscalls
-From: Andreas Dilger <adilger@dilger.ca>
-In-Reply-To: <20140726003859.GF20518@dastard>
-Date: Mon, 28 Jul 2014 15:21:20 -0600
-Cc: Zach Brown <zab@redhat.com>, Abhijith Das <adas@redhat.com>,
-        linux-kernel@vger.kernel.org,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        cluster-devel <cluster-devel@redhat.com>
-Message-Id: <4356C960-C548-42AC-876E-106A1DAA85EE@dilger.ca>
-References: <1106785262.13440918.1406308542921.JavaMail.zimbra@redhat.com> <1717400531.13456321.1406309839199.JavaMail.zimbra@redhat.com> <20140725175257.GK17798@lenny.home.zabbo.net> <20140726003859.GF20518@dastard>
-To: Dave Chinner <david@fromorbit.com>
-X-Mailer: Apple Mail (2.1878.6)
+	Mon, 28 Jul 2014 17:17:47 -0400
+From: Felipe Balbi <balbi@ti.com>
+To: Tony Lindgren <tony@atomide.com>
+CC: Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel Mailing List 
+	<linux-arm-kernel@lists.infradead.org>,
+        <bcousson@baylibre.com>, <linux@arm.linux.org.uk>,
+        <khilman@deeprootsystems.com>, <tglx@linutronix.de>,
+        <jason@lakedaemon.net>, <devicetree@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Felipe Balbi <balbi@ti.com>
+Subject: [PATCH 30/35] irqchip: add irq-omap-intc.h header
+Date: Mon, 28 Jul 2014 16:16:18 -0500
+Message-ID: <1406582183-696-31-git-send-email-balbi@ti.com>
+X-Mailer: git-send-email 2.0.1.563.g66f467c
+In-Reply-To: <1406582183-696-1-git-send-email-balbi@ti.com>
+References: <1406582183-696-1-git-send-email-balbi@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+OMAP INTC irqchip driver will be moved under
+drivers/irqchip/ soon but we still have a dependency
+with mach-omap2 when it comes to idle functions.
 
---Apple-Mail=_38CDB838-17A6-4E64-8177-49F20E1B17D0
-Content-Transfer-Encoding: quoted-printable
-Content-Type: text/plain;
-	charset=us-ascii
+In order to make it easy to share those function
+prototypes with OMAP PM code, we introduce this new
+header.
 
-On Jul 25, 2014, at 6:38 PM, Dave Chinner <david@fromorbit.com> wrote:
-> On Fri, Jul 25, 2014 at 10:52:57AM -0700, Zach Brown wrote:
->> On Fri, Jul 25, 2014 at 01:37:19PM -0400, Abhijith Das wrote:
->>> Hi all,
->>>=20
->>> The topic of a readdirplus-like syscall had come up for discussion =
-at last year's
->>> LSF/MM collab summit. I wrote a couple of syscalls with their GFS2 =
-implementations
->>> to get at a directory's entries as well as stat() info on the =
-individual inodes.
->>> I'm presenting these patches and some early test results on a =
-single-node GFS2
->>> filesystem.
->>>=20
->>> 1. dirreadahead() - This patchset is very simple compared to the =
-xgetdents() system
->>> call below and scales very well for large directories in GFS2. =
-dirreadahead() is
->>> designed to be called prior to getdents+stat operations.
->>=20
->> Hmm.  Have you tried plumbing these read-ahead calls in under the =
-normal
->> getdents() syscalls?
->=20
-> The issue is not directory block readahead (which some filesystems
-> like XFS already have), but issuing inode readahead during the
-> getdents() syscall.
->=20
-> It's the semi-random, interleaved inode IO that is being optimised
-> here (i.e. queued, ordered, issued, cached), not the directory
-> blocks themselves.
+Signed-off-by: Felipe Balbi <balbi@ti.com>
+---
+ arch/arm/mach-omap2/board-3430sdp.c        |  1 +
+ arch/arm/mach-omap2/board-am3517crane.c    |  1 +
+ arch/arm/mach-omap2/board-am3517evm.c      |  1 +
+ arch/arm/mach-omap2/board-cm-t35.c         |  1 +
+ arch/arm/mach-omap2/board-cm-t3517.c       |  1 +
+ arch/arm/mach-omap2/board-devkit8000.c     |  1 +
+ arch/arm/mach-omap2/board-ldp.c            |  1 +
+ arch/arm/mach-omap2/board-omap3beagle.c    |  1 +
+ arch/arm/mach-omap2/board-omap3logic.c     |  1 +
+ arch/arm/mach-omap2/board-omap3pandora.c   |  1 +
+ arch/arm/mach-omap2/board-omap3stalker.c   |  1 +
+ arch/arm/mach-omap2/board-omap3touchbook.c |  1 +
+ arch/arm/mach-omap2/board-overo.c          |  1 +
+ arch/arm/mach-omap2/board-rx51.c           |  1 +
+ arch/arm/mach-omap2/board-ti8168evm.c      |  1 +
+ arch/arm/mach-omap2/common.h               |  9 ---------
+ arch/arm/mach-omap2/cpuidle34xx.c          |  1 +
+ arch/arm/mach-omap2/irq.c                  |  1 +
+ arch/arm/mach-omap2/pm24xx.c               |  1 +
+ arch/arm/mach-omap2/pm34xx.c               |  1 +
+ include/linux/irqchip/irq-omap-intc.h      | 32 ++++++++++++++++++++++++++++++
+ 21 files changed, 51 insertions(+), 9 deletions(-)
+ create mode 100644 include/linux/irqchip/irq-omap-intc.h
 
-Sure.
+diff --git a/arch/arm/mach-omap2/board-3430sdp.c b/arch/arm/mach-omap2/board-3430sdp.c
+index d21a304..bd79a51 100644
+--- a/arch/arm/mach-omap2/board-3430sdp.c
++++ b/arch/arm/mach-omap2/board-3430sdp.c
+@@ -27,6 +27,7 @@
+ #include <linux/platform_data/spi-omap2-mcspi.h>
+ #include <linux/platform_data/omap-twl4030.h>
+ #include <linux/usb/phy.h>
++#include <linux/irqchip/irq-omap-intc.h>
+ 
+ #include <asm/mach-types.h>
+ #include <asm/mach/arch.h>
+diff --git a/arch/arm/mach-omap2/board-am3517crane.c b/arch/arm/mach-omap2/board-am3517crane.c
+index 212c316..1fdcd67 100644
+--- a/arch/arm/mach-omap2/board-am3517crane.c
++++ b/arch/arm/mach-omap2/board-am3517crane.c
+@@ -24,6 +24,7 @@
+ #include <linux/mtd/mtd.h>
+ #include <linux/mtd/nand.h>
+ #include <linux/mtd/partitions.h>
++#include <linux/irqchip/irq-omap-intc.h>
+ 
+ #include <asm/mach-types.h>
+ #include <asm/mach/arch.h>
+diff --git a/arch/arm/mach-omap2/board-am3517evm.c b/arch/arm/mach-omap2/board-am3517evm.c
+index 1c091b3..117c07a 100644
+--- a/arch/arm/mach-omap2/board-am3517evm.c
++++ b/arch/arm/mach-omap2/board-am3517evm.c
+@@ -27,6 +27,7 @@
+ #include <linux/mmc/host.h>
+ #include <linux/usb/musb.h>
+ #include <linux/platform_data/gpio-omap.h>
++#include <linux/irqchip/irq-omap-intc.h>
+ 
+ #include "am35xx.h"
+ #include <asm/mach-types.h>
+diff --git a/arch/arm/mach-omap2/board-cm-t35.c b/arch/arm/mach-omap2/board-cm-t35.c
+index c6df8ee..0e3e447 100644
+--- a/arch/arm/mach-omap2/board-cm-t35.c
++++ b/arch/arm/mach-omap2/board-cm-t35.c
+@@ -26,6 +26,7 @@
+ #include <linux/delay.h>
+ #include <linux/gpio.h>
+ #include <linux/platform_data/gpio-omap.h>
++#include <linux/irqchip/irq-omap-intc.h>
+ 
+ #include <linux/platform_data/at24.h>
+ #include <linux/i2c/twl.h>
+diff --git a/arch/arm/mach-omap2/board-cm-t3517.c b/arch/arm/mach-omap2/board-cm-t3517.c
+index 8a2c167..8854878 100644
+--- a/arch/arm/mach-omap2/board-cm-t3517.c
++++ b/arch/arm/mach-omap2/board-cm-t3517.c
+@@ -34,6 +34,7 @@
+ #include <linux/mtd/partitions.h>
+ #include <linux/mmc/host.h>
+ #include <linux/can/platform/ti_hecc.h>
++#include <linux/irqchip/irq-omap-intc.h>
+ 
+ #include <asm/mach-types.h>
+ #include <asm/mach/arch.h>
+diff --git a/arch/arm/mach-omap2/board-devkit8000.c b/arch/arm/mach-omap2/board-devkit8000.c
+index d8e4f34..be05a3e 100644
+--- a/arch/arm/mach-omap2/board-devkit8000.c
++++ b/arch/arm/mach-omap2/board-devkit8000.c
+@@ -24,6 +24,7 @@
+ #include <linux/gpio.h>
+ #include <linux/input.h>
+ #include <linux/gpio_keys.h>
++#include <linux/irqchip/irq-omap-intc.h>
+ 
+ #include <linux/mtd/mtd.h>
+ #include <linux/mtd/partitions.h>
+diff --git a/arch/arm/mach-omap2/board-ldp.c b/arch/arm/mach-omap2/board-ldp.c
+index c2975af..4c010c2 100644
+--- a/arch/arm/mach-omap2/board-ldp.c
++++ b/arch/arm/mach-omap2/board-ldp.c
+@@ -30,6 +30,7 @@
+ #include <linux/mmc/host.h>
+ #include <linux/usb/phy.h>
+ #include <linux/platform_data/spi-omap2-mcspi.h>
++#include <linux/irqchip/irq-omap-intc.h>
+ 
+ #include <asm/mach-types.h>
+ #include <asm/mach/arch.h>
+diff --git a/arch/arm/mach-omap2/board-omap3beagle.c b/arch/arm/mach-omap2/board-omap3beagle.c
+index 81de1c6..26c3232 100644
+--- a/arch/arm/mach-omap2/board-omap3beagle.c
++++ b/arch/arm/mach-omap2/board-omap3beagle.c
+@@ -27,6 +27,7 @@
+ #include <linux/gpio_keys.h>
+ #include <linux/pm_opp.h>
+ #include <linux/cpu.h>
++#include <linux/irqchip/irq-omap-intc.h>
+ 
+ #include <linux/mtd/mtd.h>
+ #include <linux/mtd/partitions.h>
+diff --git a/arch/arm/mach-omap2/board-omap3logic.c b/arch/arm/mach-omap2/board-omap3logic.c
+index 6049f60..cd1bc90 100644
+--- a/arch/arm/mach-omap2/board-omap3logic.c
++++ b/arch/arm/mach-omap2/board-omap3logic.c
+@@ -23,6 +23,7 @@
+ #include <linux/clk.h>
+ #include <linux/io.h>
+ #include <linux/gpio.h>
++#include <linux/irqchip/irq-omap-intc.h>
+ 
+ #include <linux/regulator/fixed.h>
+ #include <linux/regulator/machine.h>
+diff --git a/arch/arm/mach-omap2/board-omap3pandora.c b/arch/arm/mach-omap2/board-omap3pandora.c
+index f322016..72a3fae 100644
+--- a/arch/arm/mach-omap2/board-omap3pandora.c
++++ b/arch/arm/mach-omap2/board-omap3pandora.c
+@@ -20,6 +20,7 @@
+ #include <linux/init.h>
+ #include <linux/kernel.h>
+ #include <linux/platform_device.h>
++#include <linux/irqchip/irq-omap-intc.h>
+ 
+ #include <linux/spi/spi.h>
+ #include <linux/regulator/machine.h>
+diff --git a/arch/arm/mach-omap2/board-omap3stalker.c b/arch/arm/mach-omap2/board-omap3stalker.c
+index 6311f4b..8e93215 100644
+--- a/arch/arm/mach-omap2/board-omap3stalker.c
++++ b/arch/arm/mach-omap2/board-omap3stalker.c
+@@ -23,6 +23,7 @@
+ #include <linux/gpio.h>
+ #include <linux/input.h>
+ #include <linux/gpio_keys.h>
++#include <linux/irqchip/irq-omap-intc.h>
+ 
+ #include <linux/regulator/fixed.h>
+ #include <linux/regulator/machine.h>
+diff --git a/arch/arm/mach-omap2/board-omap3touchbook.c b/arch/arm/mach-omap2/board-omap3touchbook.c
+index d454508..c86927b 100644
+--- a/arch/arm/mach-omap2/board-omap3touchbook.c
++++ b/arch/arm/mach-omap2/board-omap3touchbook.c
+@@ -23,6 +23,7 @@
+ #include <linux/gpio.h>
+ #include <linux/input.h>
+ #include <linux/gpio_keys.h>
++#include <linux/irqchip/irq-omap-intc.h>
+ 
+ #include <linux/mtd/mtd.h>
+ #include <linux/mtd/partitions.h>
+diff --git a/arch/arm/mach-omap2/board-overo.c b/arch/arm/mach-omap2/board-overo.c
+index 2dae6cc..628c96c 100644
+--- a/arch/arm/mach-omap2/board-overo.c
++++ b/arch/arm/mach-omap2/board-overo.c
+@@ -31,6 +31,7 @@
+ #include <linux/regulator/machine.h>
+ #include <linux/regulator/fixed.h>
+ #include <linux/spi/spi.h>
++#include <linux/irqchip/irq-omap-intc.h>
+ 
+ #include <linux/mtd/mtd.h>
+ #include <linux/mtd/nand.h>
+diff --git a/arch/arm/mach-omap2/board-rx51.c b/arch/arm/mach-omap2/board-rx51.c
+index 2d1e5a6..d0b05e0 100644
+--- a/arch/arm/mach-omap2/board-rx51.c
++++ b/arch/arm/mach-omap2/board-rx51.c
+@@ -22,6 +22,7 @@
+ #include <linux/usb/phy.h>
+ #include <linux/usb/musb.h>
+ #include <linux/platform_data/spi-omap2-mcspi.h>
++#include <linux/irqchip/irq-omap-intc.h>
+ 
+ #include <asm/mach-types.h>
+ #include <asm/mach/arch.h>
+diff --git a/arch/arm/mach-omap2/board-ti8168evm.c b/arch/arm/mach-omap2/board-ti8168evm.c
+index 6273c28..2707593 100644
+--- a/arch/arm/mach-omap2/board-ti8168evm.c
++++ b/arch/arm/mach-omap2/board-ti8168evm.c
+@@ -15,6 +15,7 @@
+ #include <linux/kernel.h>
+ #include <linux/init.h>
+ #include <linux/platform_device.h>
++#include <linux/irqchip/irq-omap-intc.h>
+ #include <linux/usb/musb.h>
+ 
+ #include <asm/mach-types.h>
+diff --git a/arch/arm/mach-omap2/common.h b/arch/arm/mach-omap2/common.h
+index 1dd0021..7df6efd 100644
+--- a/arch/arm/mach-omap2/common.h
++++ b/arch/arm/mach-omap2/common.h
+@@ -210,15 +210,6 @@ extern struct device *omap2_get_iva_device(void);
+ extern struct device *omap2_get_l3_device(void);
+ extern struct device *omap4_get_dsp_device(void);
+ 
+-void omap2_init_irq(void);
+-void omap3_init_irq(void);
+-void ti81xx_init_irq(void);
+-extern int omap_irq_pending(void);
+-void omap_intc_save_context(void);
+-void omap_intc_restore_context(void);
+-void omap3_intc_suspend(void);
+-void omap3_intc_prepare_idle(void);
+-void omap3_intc_resume_idle(void);
+ void omap_gic_of_init(void);
+ 
+ #ifdef CONFIG_CACHE_L2X0
+diff --git a/arch/arm/mach-omap2/cpuidle34xx.c b/arch/arm/mach-omap2/cpuidle34xx.c
+index e18709d..8f03ac0 100644
+--- a/arch/arm/mach-omap2/cpuidle34xx.c
++++ b/arch/arm/mach-omap2/cpuidle34xx.c
+@@ -27,6 +27,7 @@
+ #include <linux/export.h>
+ #include <linux/cpu_pm.h>
+ #include <asm/cpuidle.h>
++#include <linux/irqchip/irq-omap-intc.h>
+ 
+ #include "powerdomain.h"
+ #include "clockdomain.h"
+diff --git a/arch/arm/mach-omap2/irq.c b/arch/arm/mach-omap2/irq.c
+index b2993e4..ed249c7 100644
+--- a/arch/arm/mach-omap2/irq.c
++++ b/arch/arm/mach-omap2/irq.c
+@@ -22,6 +22,7 @@
+ #include <linux/of.h>
+ #include <linux/of_address.h>
+ #include <linux/of_irq.h>
++#include <linux/irqchip/irq-omap-intc.h>
+ 
+ #include "soc.h"
+ #include "common.h"
+diff --git a/arch/arm/mach-omap2/pm24xx.c b/arch/arm/mach-omap2/pm24xx.c
+index a5ea988..b912a84 100644
+--- a/arch/arm/mach-omap2/pm24xx.c
++++ b/arch/arm/mach-omap2/pm24xx.c
+@@ -30,6 +30,7 @@
+ #include <linux/time.h>
+ #include <linux/gpio.h>
+ #include <linux/platform_data/gpio-omap.h>
++#include <linux/irqchip/irq-omap-intc.h>
+ 
+ #include <asm/fncpy.h>
+ 
+diff --git a/arch/arm/mach-omap2/pm34xx.c b/arch/arm/mach-omap2/pm34xx.c
+index 507d8ee..320e7f2 100644
+--- a/arch/arm/mach-omap2/pm34xx.c
++++ b/arch/arm/mach-omap2/pm34xx.c
+@@ -30,6 +30,7 @@
+ #include <linux/slab.h>
+ #include <linux/omap-dma.h>
+ #include <linux/platform_data/gpio-omap.h>
++#include <linux/irqchip/irq-omap-intc.h>
+ 
+ #include <trace/events/power.h>
+ 
+diff --git a/include/linux/irqchip/irq-omap-intc.h b/include/linux/irqchip/irq-omap-intc.h
+new file mode 100644
+index 0000000..e06b370
+--- /dev/null
++++ b/include/linux/irqchip/irq-omap-intc.h
+@@ -0,0 +1,32 @@
++/**
++ * irq-omap-intc.h - INTC Idle Functions
++ *
++ * Copyright (C) 2014 Texas Instruments Incorporated - http://www.ti.com
++ *
++ * Author: Felipe Balbi <balbi@ti.com>
++ *
++ * This program is free software: you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2  of
++ * the License as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++
++#ifndef __INCLUDE_LINUX_IRQCHIP_IRQ_OMAP_INTC_H
++#define __INCLUDE_LINUX_IRQCHIP_IRQ_OMAP_INTC_H
++
++void omap2_init_irq(void);
++void omap3_init_irq(void);
++void ti81xx_init_irq(void);
++
++int omap_irq_pending(void);
++void omap_intc_save_context(void);
++void omap_intc_restore_context(void);
++void omap3_intc_suspend(void);
++void omap3_intc_prepare_idle(void);
++void omap3_intc_resume_idle(void);
++
++#endif /* __INCLUDE_LINUX_IRQCHIP_IRQ_OMAP_INTC_H */
+-- 
+2.0.1.563.g66f467c
 
-> As such, why does this need to be done in the
-> kernel?  This can all be done in userspace, and even hidden within
-> the readdir() or ftw/ntfw() implementations themselves so it's OS,
-> kernel and filesystem independent......
-
-That assumes sorting by inode number maps to sorting by disk order.
-That isn't always true.
-
-Cheers, Andreas
-
-
-
-
-
-
---Apple-Mail=_38CDB838-17A6-4E64-8177-49F20E1B17D0
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
-	filename=signature.asc
-Content-Type: application/pgp-signature;
-	name=signature.asc
-Content-Description: Message signed with OpenPGP using GPGMail
-
------BEGIN PGP SIGNATURE-----
-Comment: GPGTools - http://gpgtools.org
-
-iQIVAwUBU9a+0HKl2rkXzB/gAQLvOxAAt7n/Q7bS+aKEP7UDWn8ulxnZhE/hgdsm
-i5xvp9zhyQRkKeJYQvQ+k5W2QbpeizHjsPyxVWRILQ0fZGODgItS23Dtf74N5LCZ
-cu73fY5QZJNBDpfNmDDQGo/xiOO9FhPqEWaZZRS7Uhk8n700FwDV5Ho9h3dDhORW
-4xGDyuwW+2sdT4FKerTo0NU7jcS63Efi0PdNLNvhE400tgb5YznxfjnmoAk8akvp
-03W7iyuulOZYgezzaB5/YsaRKPhjGetTTodseqVyH1cQcUd/SxrpqiDNZgaqXHP7
-wiJydinSoLT8VxMp4bSzCtKFQ2qqWHgQfn5Ub1MPLW+GYScBIY1HxWp6l/Rie4qi
-Oc/WbmjOrrN9Hhnae1ZWzdvRtbvk4gTezpheKPSvz3QARtBJVYk9OpvOAQvkaZNm
-nyDewekywUo0b5P9tDoRxGGsbPKZ3LcbZA9xUGjYTeFY9bJoOo4dQgaF1FGIFiBv
-3/6RpKM75H7Xa6Quiroz0UYn768Vwl4bKFosEbsiXWPeJlskFy7c95XrYP/lxtis
-zUdQNMaS+azCCr7ukG1Z5bu1MjKZPsSZsNrTHcTYsQMcvEqB6oZhQ263FV6E0fH6
-oNhM6d75a1BJiPVPHV8JZvxY5iF2C2YSbUnvCDQlHtpRP8VAXrnTcGX8G/HmQrJS
-N5RNEybJNmc=
-=OxFG
------END PGP SIGNATURE-----
-
---Apple-Mail=_38CDB838-17A6-4E64-8177-49F20E1B17D0--
