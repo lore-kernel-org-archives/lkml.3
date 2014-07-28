@@ -1,81 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751940AbaG1JFy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 05:05:54 -0400
-Received: from relay.parallels.com ([195.214.232.42]:56891 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751394AbaG1JFv (ORCPT
+	id S1751974AbaG1JId (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 05:08:33 -0400
+Received: from casper.infradead.org ([85.118.1.10]:58014 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751394AbaG1JIc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 05:05:51 -0400
-Message-ID: <1406538338.23175.12.camel@tkhai>
-Subject: Re: [PATCH v2 2/5] sched: Teach scheduler to understand
- ONRQ_MIGRATING state
-From: Kirill Tkhai <ktkhai@parallels.com>
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Kirill Tkhai <tkhai@yandex.ru>, <linux-kernel@vger.kernel.org>,
-        <nicolas.pitre@linaro.org>, <pjt@google.com>, <oleg@redhat.com>,
-        <rostedt@goodmis.org>, <umgwanakikbuti@gmail.com>,
-        <tim.c.chen@linux.intel.com>, <mingo@kernel.org>
-Date: Mon, 28 Jul 2014 13:05:38 +0400
-In-Reply-To: <20140728080122.GL6758@twins.programming.kicks-ass.net>
-References: <20140726145508.6308.69121.stgit@localhost>
-	 <20140726145912.6308.32554.stgit@localhost>
-	 <20140728080122.GL6758@twins.programming.kicks-ass.net>
-Organization: Parallels
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5-2+b3 
+	Mon, 28 Jul 2014 05:08:32 -0400
+Date: Mon, 28 Jul 2014 11:08:21 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Davidlohr Bueso <davidlohr@hp.com>
+Cc: mingo@kernel.org, jason.low2@hp.com, aswin@hp.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -tip/master 4/7] locking/mutex: Refactor optimistic
+ spinning code
+Message-ID: <20140728090821.GO6758@twins.programming.kicks-ass.net>
+References: <1406524724-17946-1-git-send-email-davidlohr@hp.com>
+ <1406524724-17946-4-git-send-email-davidlohr@hp.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.30.26.172]
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="VOikT1vHjjoKyvem"
+Content-Disposition: inline
+In-Reply-To: <1406524724-17946-4-git-send-email-davidlohr@hp.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-В Пн, 28/07/2014 в 10:01 +0200, Peter Zijlstra пишет:
-> On Sat, Jul 26, 2014 at 06:59:21PM +0400, Kirill Tkhai wrote:
-> 
-> > The profit is that double_rq_lock() is not needed now,
-> > and this may reduce the latencies in some situations.
-> 
-> > We add a loop in the beginning of set_cpus_allowed_ptr.
-> > It's like a handmade spinlock, which is similar
-> > to situation we had before. We used to spin on rq->lock,
-> > now we spin on "again:" label. Of course, it's worse
-> > than arch-dependent spinlock, but we have to have it
-> > here. 
-> 
-> > @@ -4623,8 +4639,16 @@ int set_cpus_allowed_ptr(struct task_struct *p, const struct cpumask *new_mask)
-> >  	struct rq *rq;
-> >  	unsigned int dest_cpu;
-> >  	int ret = 0;
-> > +again:
-> > +	while (unlikely(task_migrating(p)))
-> > +		cpu_relax();
-> >  
-> >  	rq = task_rq_lock(p, &flags);
-> > +	/* Check again with rq locked */
-> > +	if (unlikely(task_migrating(p))) {
-> > +		task_rq_unlock(rq, p, &flags);
-> > +		goto again;
-> > +	}
-> >  
-> >  	if (cpumask_equal(&p->cpus_allowed, new_mask))
-> >  		goto out;
-> 
-> So I really dislike that, esp since you're now talking of adding more of
-> this goo all over the place.
-> 
-> I'll ask again, why isn't this in task_rq_lock() and co?
 
-I thought, this may give a little profit in cases of priority inheritance etc.
-But since this is spreading throughout the scheduler, I'm agree with you.
-It's better to place this in task_rq_lock() etc. This will decide all
-the problems that we have discussed with Oleg.
+--VOikT1vHjjoKyvem
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> Also, you really need to talk the spin bounded, otherwise your two
-> quoted paragraphs above are in contradiction. Now I think you can
-> actually make an argument that way, so that's good.
+On Sun, Jul 27, 2014 at 10:18:41PM -0700, Davidlohr Bueso wrote:
+> @@ -180,6 +266,126 @@ static inline int mutex_can_spin_on_owner(struct mutex *lock)
+>  	 */
+>  	return retval;
+>  }
+> +
+> +/*
+> + * Atomically try to take the lock when it is available */
 
-Thanks,
-Kirill
+comment fail.
 
+> +static inline bool mutex_try_to_acquire(struct mutex *lock)
+> +{
+> +	return !mutex_is_locked(lock) &&
+> +		(atomic_cmpxchg(&lock->count, 1, 0) == 1);
+> +}
+
+> +static bool mutex_optimistic_spin(struct mutex *lock,
+> +				  struct ww_acquire_ctx *ww_ctx, const bool use_ww_ctx)
+> +{
+
+
+> +	/*
+> +	 * If we fell out of the spin path because of need_resched(),
+> +	 * reschedule now, before we try-lock the mutex. This avoids getting
+> +	 * scheduled out right after we obtained the mutex.
+> +	 */
+> +	if (need_resched())
+> +		schedule_preempt_disabled();
+> +
+> +	return false;
+> +}
+
+
+> +	if (mutex_optimistic_spin(lock, ww_ctx, use_ww_ctx)) {
+> +		/* got it, yay! */
+> +		preempt_enable();
+> +		return 0;
+>  	}
+> +
+>  	/*
+>  	 * If we fell out of the spin path because of need_resched(),
+>  	 * reschedule now, before we try-lock the mutex. This avoids getting
+> @@ -475,7 +512,7 @@ slowpath:
+>  	 */
+>  	if (need_resched())
+>  		schedule_preempt_disabled();
+> +
+>  	spin_lock_mutex(&lock->wait_lock, flags);
+
+We now have two if (need_resched) schedule_preempt_disable() instances,
+was that on purpose?
+
+--VOikT1vHjjoKyvem
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJT1hMFAAoJEHZH4aRLwOS6hjYP/jZZFKPtO7SyV9EQaPE8JN7g
+A093YAaTDcCqkEUq5llEvO1yFLANt+FM12HmJQT2QEHfzWYc8RCx0f8U+QVF74dL
+rWzvSRFSq640y8EvWwAWmLDHcqkS9nXVv/KDJXgixGh8OBzjP/F65VNspMpO7+XM
+H0bpeuqHCW4FZE2NFFcN90iHRdQ0kQ4Poi70PirVJYE0KIN0dHUhO7CyHgkJRB3a
+wVRrE+vQwrt61ydlO118v+CRapf9ejB2u5QljxWZHZrYCyfw3F97231a0dVpV3G/
+LGxV0PfgTaumORNwy1qvUVKXB/0cK2gSSa/IAYX3H1wi7oe+4xgZTjf24Ib/i/1B
+M5BTstAjKI59biDmRf6hXN3W5zaR4BhR0E1Do4F/72Jv2xsFUWmERCNyayXEzola
+u/fMh8kw6DSH6mbsdsWAPwDOZ1PIbZayZMlkD2wM/8c1QEcI8vyYEo0bbpcqKtgu
+DAmG/wFv0pjgRtrTCJRpglTRz2cJwT19oTt0ZJxWEG+k80MUfIb8GlZCjhy1O39j
+S/12TQWr7xTeDLkyXGPMGeklOlCfM8uOrlDNQSTTdI+vrScXP3X3SPUlVfsN7vtZ
+luLu4ZrEDIkAyrFXoi+9ZpGaBA5KYa7Pik8g0oC7NiXWReQg/GChxCuGFMA2txev
+xsY6YiJl8g0nD8iRHPkE
+=8KDn
+-----END PGP SIGNATURE-----
+
+--VOikT1vHjjoKyvem--
