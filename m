@@ -1,250 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752857AbaG1MVN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 08:21:13 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:38609 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751423AbaG1MVK (ORCPT
+	id S1752964AbaG1MVZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 08:21:25 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:59362 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751423AbaG1MVU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 08:21:10 -0400
-Date: Mon, 28 Jul 2014 14:21:03 +0200
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-To: Jiri Prchal <jiri.prchal@aksignal.cz>
-Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, nicolas.ferre@atmel.com,
-        voice.shen@atmel.com
-Subject: Re: [PATCH] ARM: at91: spi: request all csgpio in spi probe
-Message-ID: <20140728122103.GR9532@piout.net>
-References: <b033d16ec31d26a895726ee72ec89b43943dfbae.1406547656.git.jiri.prchal@aksignal.cz>
+	Mon, 28 Jul 2014 08:21:20 -0400
+Date: Mon, 28 Jul 2014 13:20:42 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Andreas =?iso-8859-1?Q?F=E4rber?= <afaerber@suse.de>
+Cc: Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org,
+        Michal Simek <monstr@monstr.eu>, Lars-Peter Clausen <lars@metafoo.de>,
+        Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
+        Rob Herring <robh+dt@kernel.org>,
+        Matteo Vit <matteo.vit@starwaredesign.com>,
+        Sean Rickerd <srickerd@suse.com>, Kumar Gala <galak@codeaurora.org>,
+        linux-arm-kernel@lists.infradead.org
+Message-ID: <20140728122042.GR17528@sirena.org.uk>
+References: <1406242820-20140-1-git-send-email-afaerber@suse.de>
+ <1406242820-20140-10-git-send-email-afaerber@suse.de>
+ <53D20A61.1050506@metafoo.de>
+ <53D21066.8000905@monstr.eu>
+ <20140725101815.GO17528@sirena.org.uk>
+ <53D2324B.4070602@suse.de>
+ <20140725103905.GP17528@sirena.org.uk>
+ <53D63746.3000905@suse.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="XVjO8VCnuz2qIvDh"
 Content-Disposition: inline
-In-Reply-To: <b033d16ec31d26a895726ee72ec89b43943dfbae.1406547656.git.jiri.prchal@aksignal.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <53D63746.3000905@suse.de>
+X-Cookie: 98% lean.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v2 09/11] Documentation: devicetree: Fix ADI AXI SPDIF
+ specification
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
 
-Thank you for that patch, a few questions/comments below.
+--XVjO8VCnuz2qIvDh
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On 28/07/2014 at 13:43:40 +0200, Jiri Prchal wrote :
-> This fix problem with PA14 set as periph A left from ROMBOOT and need it
-> to be set to gpio before spi bus communicate with chip on CS0 on other
-> gpio. As I reported a week ago.
-> Request all csgpios in spi_probe since cs depends on each other and must
-> be all of them in right state before any communication on bus. They are
-> part of bus, like miso, mosi, clk, not part of chips, they are defined
-> in parent spi node, not in child chip node.
-> Csgpio moved to atmel_spi struct as part of master bus.
-> 
-> Signed-off-by: Jiri Prchal <jiri.prchal@aksignal.cz>
-> ---
->  drivers/spi/spi-atmel.c | 68 +++++++++++++++++++++++++++++--------------------
->  1 file changed, 41 insertions(+), 27 deletions(-)
-> 
-> diff --git a/drivers/spi/spi-atmel.c b/drivers/spi/spi-atmel.c
-> index 92a6f0d..1fb7bb9 100644
-> --- a/drivers/spi/spi-atmel.c
-> +++ b/drivers/spi/spi-atmel.c
-> @@ -22,11 +22,14 @@
->  #include <linux/platform_data/atmel.h>
->  #include <linux/platform_data/dma-atmel.h>
->  #include <linux/of.h>
-> +#include <linux/of_gpio.h>
->  
->  #include <linux/io.h>
->  #include <linux/gpio.h>
->  #include <linux/pinctrl/consumer.h>
->  
-> +#define DRIVER_NAME "atmel-spi"
-> +
+On Mon, Jul 28, 2014 at 01:43:02PM +0200, Andreas F=E4rber wrote:
+> Am 25.07.2014 12:39, schrieb Mark Brown:
+> > On Fri, Jul 25, 2014 at 12:32:43PM +0200, Andreas F=E4rber wrote:
 
-This is not really related to the issue solved by that patch, maybe it
-could go in another patch ?
+> >> Maybe this works for you?
+> >> https://patchwork.kernel.org/patch/4620191/
 
->  /* SPI register offsets */
->  #define SPI_CR					0x0000
->  #define SPI_MR					0x0004
-> @@ -242,11 +245,13 @@ struct atmel_spi {
->  
->  	bool			keep_cs;
->  	bool			cs_active;
-> +
-> +	/* chip selects */
-> +	unsigned int		csgpio[];
->  };
->  
->  /* Controller-specific per-slave state */
->  struct atmel_spi_device {
-> -	unsigned int		npcs_pin;
->  	u32			csr;
->  };
->  
-> @@ -312,7 +317,7 @@ static void cs_activate(struct atmel_spi *as, struct spi_device *spi)
->  		}
->  
->  		mr = spi_readl(as, MR);
-> -		gpio_set_value(asd->npcs_pin, active);
-> +		gpio_set_value(as->csgpio[spi->chip_select], active);
->  	} else {
->  		u32 cpol = (spi->mode & SPI_CPOL) ? SPI_BIT(CPOL) : 0;
->  		int i;
-> @@ -329,18 +334,16 @@ static void cs_activate(struct atmel_spi *as, struct spi_device *spi)
->  		mr = spi_readl(as, MR);
->  		mr = SPI_BFINS(PCS, ~(1 << spi->chip_select), mr);
->  		if (spi->chip_select != 0)
-> -			gpio_set_value(asd->npcs_pin, active);
-> +			gpio_set_value(as->csgpio[spi->chip_select], active);
->  		spi_writel(as, MR, mr);
->  	}
->  
->  	dev_dbg(&spi->dev, "activate %u%s, mr %08x\n",
-> -			asd->npcs_pin, active ? " (high)" : "",
-> -			mr);
-> +		as->csgpio[spi->chip_select], active ? " (high)" : "", mr);
->  }
->  
->  static void cs_deactivate(struct atmel_spi *as, struct spi_device *spi)
->  {
-> -	struct atmel_spi_device *asd = spi->controller_state;
->  	unsigned active = spi->mode & SPI_CS_HIGH;
->  	u32 mr;
->  
-> @@ -354,11 +357,10 @@ static void cs_deactivate(struct atmel_spi *as, struct spi_device *spi)
->  	}
->  
->  	dev_dbg(&spi->dev, "DEactivate %u%s, mr %08x\n",
-> -			asd->npcs_pin, active ? " (low)" : "",
-> -			mr);
-> +		as->csgpio[spi->chip_select], active ? " (low)" : "", mr);
->  
->  	if (atmel_spi_is_v2(as) || spi->chip_select != 0)
-> -		gpio_set_value(asd->npcs_pin, !active);
-> +		gpio_set_value(as->csgpio[spi->chip_select], !active);
->  }
->  
->  static void atmel_spi_lock(struct atmel_spi *as) __acquires(&as->lock)
-> @@ -989,8 +991,6 @@ static int atmel_spi_setup(struct spi_device *spi)
->  	struct atmel_spi_device	*asd;
->  	u32			csr;
->  	unsigned int		bits = spi->bits_per_word;
-> -	unsigned int		npcs_pin;
-> -	int			ret;
->  
->  	as = spi_master_get_devdata(spi->master);
->  
-> @@ -1017,27 +1017,13 @@ static int atmel_spi_setup(struct spi_device *spi)
->  	csr |= SPI_BF(DLYBS, 0);
->  	csr |= SPI_BF(DLYBCT, 0);
->  
-> -	/* chipselect must have been muxed as GPIO (e.g. in board setup) */
-> -	npcs_pin = (unsigned int)spi->controller_data;
-> -
-> -	if (gpio_is_valid(spi->cs_gpio))
-> -		npcs_pin = spi->cs_gpio;
-> -
->  	asd = spi->controller_state;
->  	if (!asd) {
->  		asd = kzalloc(sizeof(struct atmel_spi_device), GFP_KERNEL);
->  		if (!asd)
->  			return -ENOMEM;
->  
-> -		ret = gpio_request(npcs_pin, dev_name(&spi->dev));
-> -		if (ret) {
-> -			kfree(asd);
-> -			return ret;
-> -		}
-> -
-> -		asd->npcs_pin = npcs_pin;
->  		spi->controller_state = asd;
-> -		gpio_direction_output(npcs_pin, !(spi->mode & SPI_CS_HIGH));
->  	}
->  
->  	asd->csr = csr;
-> @@ -1290,6 +1276,15 @@ static int atmel_spi_probe(struct platform_device *pdev)
->  	int			ret;
->  	struct spi_master	*master;
->  	struct atmel_spi	*as;
-> +	struct device_node *np = pdev->dev.of_node;
-> +	int num_cs, i;
-> +
-> +	if (!np)
-> +		return -EINVAL;
-> +
-> +	num_cs = of_gpio_named_count(np, "cs-gpios");
-> +	if (num_cs < 0)
-> +		return num_cs;
->  
+> >> Otherwise I can resend with Ab/Rb.
 
-This driver can still be probed without DT, this will break here, please
-don't assume that DT is present.
+> > Documentation/SubmittingPatches.
 
+> Not helpful here, nor is
+> Documentation/devicetree/bindings/submitting-patches.txt. It's separate
+> from code changes, sent via git-send-email, has a Sob, went to LKML and
+> LAKML and DTML. I could add a Fixes: header and CC trivial for this
+> one-line fix IIUC.
 
->  	/* Select default pin state */
->  	pinctrl_pm_select_default_state(&pdev->dev);
-> @@ -1308,7 +1303,7 @@ static int atmel_spi_probe(struct platform_device *pdev)
->  
->  	/* setup spi core then atmel-specific driver state */
->  	ret = -ENOMEM;
-> -	master = spi_alloc_master(&pdev->dev, sizeof(*as));
-> +	master = spi_alloc_master(&pdev->dev, sizeof(*as) + num_cs * sizeof(unsigned));
->  	if (!master)
->  		goto out_free;
->  
-> @@ -1317,7 +1312,7 @@ static int atmel_spi_probe(struct platform_device *pdev)
->  	master->bits_per_word_mask = SPI_BPW_RANGE_MASK(8, 16);
->  	master->dev.of_node = pdev->dev.of_node;
->  	master->bus_num = pdev->id;
-> -	master->num_chipselect = master->dev.of_node ? 0 : 4;
-> +	master->num_chipselect = num_cs;
+It's telling you that the kernel process is to review patches sent via
+e-mail, not random links to web appliations - notice the context to
+which I'm replying, I'm saying that sending a link to something on the
+web isn't a good way of submitting a patch.
 
-My guess is that you don't need to change that part.
+> Doesn't tell me which patches I should CC you on in the future though.
+> Therefore my request to fix the false negative in MAINTAINERS so that me
+> and other kernel newbies don't run into it again.
 
->  	master->setup = atmel_spi_setup;
->  	master->transfer_one_message = atmel_spi_transfer_one_message;
->  	master->cleanup = atmel_spi_cleanup;
-> @@ -1325,6 +1320,25 @@ static int atmel_spi_probe(struct platform_device *pdev)
->  
->  	as = spi_master_get_devdata(master);
->  
-> +	for (i = 0; i < master->num_chipselect; ++i) {
-> +		ret = of_get_named_gpio(np, "cs-gpios", i);
+Feel free to submit patches if you want to see changes.
 
-Again, DT maybe not be compiled in or that driver may be probed from
-platform data.
+--XVjO8VCnuz2qIvDh
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-> +		if (ret < 0) {
-> +			dev_err(&pdev->dev, "failed to get csgpio#%u (%d)\n",
-> +				i, ret);
-> +			goto out_free;
-> +		}
-> +		as->csgpio[i] = ret;
-> +		dev_dbg(&pdev->dev, "csgpio#%u = %u\n", i, as->csgpio[i]);
-> +		ret = devm_gpio_request_one(&pdev->dev, as->csgpio[i],
-> +					    GPIOF_OUT_INIT_HIGH, DRIVER_NAME);
-> +		if (ret < 0) {
-> +			dev_err(&pdev->dev,
-> +				"failed to configure csgpio#%u (%d)\n",
-> +				i, ret);
-> +			goto out_free;
-> +		}
-> +	}
-> +
->  	/*
->  	 * Scratch buffer is used for throwaway rx and tx data.
->  	 * It's coherent to minimize dcache pollution.
-> -- 
-> 1.9.1
-> 
-> 
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
--- 
-Alexandre Belloni, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+iQIcBAEBAgAGBQJT1kAQAAoJELSic+t+oim9h/UQAIdLd2Kqc8b4Ddy4l0Hm/zCX
+fhJN8b+NDl1Bdi6Y444ymBIT3NftmPXGevxKmlxqTARTusXQHIA0Wv9gll/K16pi
+mWgIDVIvH98pHFgyGpafs78rmsKtIhlAP1A0PI0XTIVBNqthiuTveBnJpN6SEr9P
+04PpudbuNS3KCA7hPjSv+ToFFB9lLjUDI7KHrmsHXS1kAbLIYqw0ydxRYTngX8b/
+4kUUukaEVrM+OB7TN3blY7HqVsesvu58HOPmBk6toFZlENasxZ3uxPoh8rGceE0M
+Hber7MACG8Z6fMErA6XJW2rhScIVvQ7tcT9gs4cKH/N/vUGHuZSB3YYtWZeVnssN
+N/sXMLdC5Icu3gZATxmdJHYkCO9NMFGjZhN2xPPzNg0xOQ7NHdDtUaGJWjFGWNrm
+EFnCDV/ThNbJ/RsaO3xv6+lvKFw0f9hNo4WzkAv6KgzyWVuxWTt7w34c7MQD6YO8
+XuWXuk/M5TyIMwJHSMoZU2SU5cWDHy37qz/8fqEjVw1O1HvSh7Tldcc6p8luOuCU
+hf9OBftZB2RmJLeSsnHssoa0ibfUYQM70l2BiLE9Nv9AJ109PNeuJy8kJ4ELnEkq
+zXUQzxoMZOD0DrmQzoSyTxvqeZo0qI0AIrgXBP1D7pWb1a0kTS5xmC8jgI3a52pz
+Lzn1amY/19NJMm2GbBC7
+=Gg5h
+-----END PGP SIGNATURE-----
+
+--XVjO8VCnuz2qIvDh--
