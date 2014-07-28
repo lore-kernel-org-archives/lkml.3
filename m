@@ -1,98 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751910AbaG1RjQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 13:39:16 -0400
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:55731 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751549AbaG1RiB (ORCPT
+	id S1751942AbaG1Rjd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 13:39:33 -0400
+Received: from asavdk4.altibox.net ([109.247.116.15]:47044 "EHLO
+	asavdk4.altibox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750708AbaG1Rja (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 13:38:01 -0400
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH 07/10] nohz: Enforce timekeeping on CPU 0
-Date: Mon, 28 Jul 2014 19:37:33 +0200
-Message-Id: <1406569056-30217-8-git-send-email-fweisbec@gmail.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1406569056-30217-1-git-send-email-fweisbec@gmail.com>
-References: <1406569056-30217-1-git-send-email-fweisbec@gmail.com>
+	Mon, 28 Jul 2014 13:39:30 -0400
+Date: Mon, 28 Jul 2014 19:39:23 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Nick Krause <xerofoify@gmail.com>, Mikael Starvik <starvik@axis.com>,
+        Jesper Nilsson <jesper.nilsson@axis.com>
+Cc: starvik@axis.com, jesper.nilsson@axis.com, linux-cris-kernel@axis.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH 1/8] cris: fix headers_install
+Message-ID: <20140728173923.GA32593@ravnborg.org>
+References: <CAPDOMVjsBPLMM3K6=TtHhPDGRCj865j4e7GF_ubY_jbj+88VWQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAPDOMVjsBPLMM3K6=TtHhPDGRCj865j4e7GF_ubY_jbj+88VWQ@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The timekeeper gets initialized to the value of the CPU where the
-first clockevent device is setup. This works well because the timekeeper
-can be any online CPU in most configs.
+>From 87a249d1f35f82e11ffc7c78f0d9ef2399a2ec82 Mon Sep 17 00:00:00 2001
+From: Sam Ravnborg <sam@ravnborg.org>
+Date: Sun, 13 Jul 2014 23:40:44 +0200
+Subject: [PATCH 1/8] cris: fix headers_install
 
-Full dynticks has its own requirement though and needs the timekeeper
-to always be 0. And this requirement seem to accomodate pretty well with
-the above described boot timekeeper setting because the first clockevent
-device happens to be initialized, most of the time, on the boot CPU
-(which should be CPU 0).
+Fix headers_install by adjusting the path to arch files.
+And delete unused Kbuild file.
+Drop special handling of cris in the headers.sh script as a nice side-effect.
 
-However there is no mention of such a guarantee anywhere. This assumption
-might well be defeated on some corner case now or in the future.
-
-So lets wipe out the FUD and force tick_do_timer_cpu to CPU 0 on boot
-when full dynticks is used.
-
-This way we can even remove some corner case code that handled scenarios
-where all clockevent devices were setup on full dynticks CPUs.
-
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Nicolas Pitre <nicolas.pitre@linaro.org>
-Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Viresh Kumar <viresh.kumar@linaro.org>
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Signed-off-by: Sam Ravnborg <sam@ravnborg.org>
+Cc: Mikael Starvik <starvik@axis.com>
+Cc: Jesper Nilsson <jesper.nilsson@axis.com>
 ---
- kernel/time/tick-common.c | 6 +++---
- kernel/time/tick-sched.c  | 6 ------
- 2 files changed, 3 insertions(+), 9 deletions(-)
 
-diff --git a/kernel/time/tick-common.c b/kernel/time/tick-common.c
-index 0a0608e..cb57bce 100644
---- a/kernel/time/tick-common.c
-+++ b/kernel/time/tick-common.c
-@@ -179,10 +179,10 @@ static void tick_setup_device(struct tick_device *td,
- 		 * this cpu:
- 		 */
- 		if (tick_do_timer_cpu == TICK_DO_TIMER_BOOT) {
--			if (!tick_nohz_full_cpu(cpu))
--				tick_do_timer_cpu = cpu;
-+			if (tick_nohz_full_enabled())
-+				tick_do_timer_cpu = TICK_DO_TIMER_DEFAULT;
- 			else
--				tick_do_timer_cpu = TICK_DO_TIMER_NONE;
-+				tick_do_timer_cpu = cpu;
- 			tick_next_period = ktime_get();
- 			tick_period = ktime_set(0, NSEC_PER_SEC / HZ);
- 		}
-diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-index 3d63944..2ea2143 100644
---- a/kernel/time/tick-sched.c
-+++ b/kernel/time/tick-sched.c
-@@ -741,12 +741,6 @@ static bool can_stop_idle_tick(int cpu, struct tick_sched *ts)
- 		 */
- 		if (tick_do_timer_cpu == cpu)
- 			return false;
--		/*
--		 * Boot safety: make sure the timekeeping duty has been
--		 * assigned before entering dyntick-idle mode,
--		 */
--		if (tick_do_timer_cpu == TICK_DO_TIMER_NONE)
--			return false;
- 	}
+I had already cooked this patch up as part of another serie.
+Jesper - can you take care this hits mainline this week?
+
+	Sam
+
+ arch/cris/include/asm/Kbuild      | 5 -----
+ arch/cris/include/uapi/asm/Kbuild | 4 ++--
+ scripts/headers.sh                | 2 --
+ 3 files changed, 2 insertions(+), 9 deletions(-)
+
+diff --git a/arch/cris/include/asm/Kbuild b/arch/cris/include/asm/Kbuild
+index afff510..35574f5 100644
+--- a/arch/cris/include/asm/Kbuild
++++ b/arch/cris/include/asm/Kbuild
+@@ -1,8 +1,3 @@
+-
+-header-y += arch-v10/
+-header-y += arch-v32/
+-
+-
+ generic-y += barrier.h
+ generic-y += clkdev.h
+ generic-y += cputime.h
+diff --git a/arch/cris/include/uapi/asm/Kbuild b/arch/cris/include/uapi/asm/Kbuild
+index 7d47b36..01f66b8 100644
+--- a/arch/cris/include/uapi/asm/Kbuild
++++ b/arch/cris/include/uapi/asm/Kbuild
+@@ -1,8 +1,8 @@
+ # UAPI Header export list
+ include include/uapi/asm-generic/Kbuild.asm
  
- 	return true;
+-header-y += arch-v10/
+-header-y += arch-v32/
++header-y += ../arch-v10/arch/
++header-y += ../arch-v32/arch/
+ header-y += auxvec.h
+ header-y += bitsperlong.h
+ header-y += byteorder.h
+diff --git a/scripts/headers.sh b/scripts/headers.sh
+index 95ece06..d4dc4de 100755
+--- a/scripts/headers.sh
++++ b/scripts/headers.sh
+@@ -19,8 +19,6 @@ for arch in ${archs}; do
+ 	case ${arch} in
+ 	um)        # no userspace export
+ 		;;
+-	cris)      # headers export are known broken
+-		;;
+ 	*)
+ 		if [ -d ${srctree}/arch/${arch} ]; then
+ 			do_command $1 ${arch}
 -- 
-1.8.3.1
+1.9.3
 
