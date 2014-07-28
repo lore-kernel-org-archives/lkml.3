@@ -1,94 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752694AbaG1QGh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 12:06:37 -0400
-Received: from mail-vc0-f176.google.com ([209.85.220.176]:53368 "EHLO
-	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751478AbaG1QGe convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 12:06:34 -0400
-MIME-Version: 1.0
-In-Reply-To: <OF27B55084.24F3FB57-ONC1257D23.0054AF74-C1257D23.0058198E@de.ibm.com>
-References: <1406010572-13217-1-git-send-email-xerofoify@gmail.com>
-	<OF27B55084.24F3FB57-ONC1257D23.0054AF74-C1257D23.0058198E@de.ibm.com>
-Date: Mon, 28 Jul 2014 12:06:33 -0400
-Message-ID: <CAPDOMVi-Nwv0g6QQM0T1K=kZmtyHf5wkY=Vwo6H_QcDzB9+FPQ@mail.gmail.com>
-Subject: Re: [PATCH] s390: Fix me in dasd_eer.c
-From: Nick Krause <xerofoify@gmail.com>
-To: Stefan Weinhuber <WEIN@de.ibm.com>
-Cc: BOEBLINGEN LINUX390 <LINUX390@de.ibm.com>, heicars2@linux.vnet.ibm.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-s390@vger.kernel.org, mschwid2@linux.vnet.ibm.com,
-        Stefan Haberland1 <stefan.haberland@de.ibm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1752730AbaG1QIx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 12:08:53 -0400
+Received: from mga14.intel.com ([192.55.52.115]:12222 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751999AbaG1QIt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jul 2014 12:08:49 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="365202831"
+Message-ID: <1406563726.23376.33.camel@sauron.fi.intel.com>
+Subject: Re: [PATCH] UBI: ubi_wl_flush(): Use list_for_each_entry_safe()
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Richard Weinberger <richard@nod.at>
+Cc: dwmw2@infradead.org, computersforpeace@gmail.com,
+        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
+Date: Mon, 28 Jul 2014 19:08:46 +0300
+In-Reply-To: <1406446548-5790-1-git-send-email-richard@nod.at>
+References: <1406446548-5790-1-git-send-email-richard@nod.at>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 28, 2014 at 12:02 PM, Stefan Weinhuber <WEIN@de.ibm.com> wrote:
-> Nicholas Krause <xerofoify@gmail.com> wrote on 2014-07-22 08:29:32:
->
-> [..]
->> Subject:
->>
->> [PATCH] s390: Fix me in dasd_eer.c
->>
->> This patch changes return type to EMEDUIMTYPE in function,
-> dasd_eer_enable
->> for when checking if the medium has no errors according to this
-> function.
->>
->> Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
->> ---
->>  drivers/s390/block/dasd_eer.c | 2 +-
->>  1 file changed, 1 insertion(+), 1 deletion(-)
->>
->> diff --git a/drivers/s390/block/dasd_eer.c
-> b/drivers/s390/block/dasd_eer.c
->> index 21ef63c..08ee040 100644
->> --- a/drivers/s390/block/dasd_eer.c
->> +++ b/drivers/s390/block/dasd_eer.c
->> @@ -462,7 +462,7 @@ int dasd_eer_enable(struct dasd_device *device)
->>        return 0;
->>
->>     if (!device->discipline || strcmp(device->discipline->name, "ECKD"))
->> -      return -EPERM;   /* FIXME: -EMEDIUMTYPE ? */
->> +      return -EMEDIUMTYPE;   /* FIXME: -EMEDIUMTYPE ? */
->>
->>     cqr = dasd_kmalloc_request(DASD_ECKD_MAGIC, 1 /* SNSS */,
->>                 SNSS_DATA_SIZE, device);
->> --
->> 1.9.1
->>
->
-> Hm, after some consideration, I have to disagree with your suggestion.
-> If you try to enable EER on an FBA device, you will get the following
-> result with current code:
->
-> $ echo 1 > eer_enabled
-> -bash: echo: write error: Operation not permitted
->
-> and with your code the following:
->
-> $ echo 1 > eer_enabled
-> -bash: echo: write error: Wrong medium type
->
-> When I wrote this code, I was not sure which one is better. But today I
-> say
-> that the 'Operation not permitted' is more to the point. An FBA device
-> has no (changable) medium, so what could be wrong about its type?
-> Could be confusing.
->
-> From your patch description I do not really get why you want to change the
-> return code. Why do you think that EMEDIUMTYPE is better than EPERM?
->
-> Mit freundlichen Grüßen / Kind regards
->
-> Stefan Weinhuber
->
-Stefan,
->From my reading seemed more like EMEDUIMTYPE return but seems I was
-wrong here. If you want I can remove the fix me message in a patch if you
-want to keep this return type.
-Regards Nick
+On Sun, 2014-07-27 at 09:35 +0200, Richard Weinberger wrote:
+> Use the _safe variant because we're iterating over
+> a list where items get deleted and freed.
+> 
+> Signed-off-by: Richard Weinberger <richard@nod.at>
+
+Pushed to linux-ubifs.git, thanks!
+
+-- 
+Best Regards,
+Artem Bityutskiy
+
