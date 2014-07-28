@@ -1,52 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752841AbaG1NhV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 09:37:21 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:25699 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752102AbaG1NhU (ORCPT
+	id S1752896AbaG1Nhi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 09:37:38 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:57226 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752361AbaG1Nhb convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 09:37:20 -0400
-X-IronPort-AV: E=Sophos;i="5.01,749,1400025600"; 
-   d="scan'208";a="156898285"
-Message-ID: <53D651EF.8080807@citrix.com>
-Date: Mon, 28 Jul 2014 14:36:47 +0100
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+	Mon, 28 Jul 2014 09:37:31 -0400
+Message-ID: <53D65236.7080606@arm.com>
+Date: Mon, 28 Jul 2014 14:37:58 +0100
+From: Sudeep Holla <sudeep.holla@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: Vitaly Kuznetsov <vkuznets@redhat.com>, <xen-devel@lists.xenproject.org>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Andrew Jones <drjones@redhat.com>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH RFC 2/4] xen/pvhvm: Introduce xen_pvhvm_kexec_shutdown()
-References: <1405431640-649-1-git-send-email-vkuznets@redhat.com> <1405431640-649-3-git-send-email-vkuznets@redhat.com>
-In-Reply-To: <1405431640-649-3-git-send-email-vkuznets@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.76]
-X-DLP: MIA2
+To: Stephen Boyd <sboyd@codeaurora.org>
+CC: Sudeep Holla <sudeep.holla@arm.com>, LKML <linux-kernel@vger.kernel.org>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH v2 1/9] drivers: base: add new class "cpu" to group cpu
+ devices
+References: <1403717444-23559-1-git-send-email-sudeep.holla@arm.com> <1406306692-7135-1-git-send-email-sudeep.holla@arm.com> <1406306692-7135-2-git-send-email-sudeep.holla@arm.com> <53D2AB54.5030809@codeaurora.org>
+In-Reply-To: <53D2AB54.5030809@codeaurora.org>
+X-OriginalArrivalTime: 28 Jul 2014 13:37:27.0630 (UTC) FILETIME=[128926E0:01CFAA69]
+X-MC-Unique: 114072814372803301
+Content-Type: text/plain; charset=WINDOWS-1252; format=flowed
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15/07/14 14:40, Vitaly Kuznetsov wrote:
-> PVHVM guest requires special actions before kexec. Register specific
-> xen_pvhvm_kexec_shutdown() handler for machine_ops.shutdown().
-[...]
-> --- a/arch/x86/xen/enlighten.c
-> +++ b/arch/x86/xen/enlighten.c
-> @@ -1833,6 +1833,12 @@ static struct notifier_block xen_hvm_cpu_notifier = {
->  	.notifier_call	= xen_hvm_cpu_notify,
->  };
->  
-> +static void xen_pvhvm_kexec_shutdown(void)
-> +{
-> +	xen_kexec_shutdown();
 
-I think it would be preferrable to have
 
-    if (kexec_in_progress)
-        xen_kexec_shutdown();
+On 25/07/14 20:09, Stephen Boyd wrote:
+> On 07/25/14 09:44, Sudeep Holla wrote:
+>> From: Sudeep Holla <sudeep.holla@arm.com>
+>>
+>> This patch creates a new class called "cpu" and assigns it to all the
+>> cpu devices. This helps in grouping all the cpu devices and associated
+>> child devices under the same class.
+>>
+>> This patch also:
+>> 1. modifies the get_parent_device to return the legacy path
+>>     (/sys/devices/system/cpu/..) for the cpu class devices to support
+>>     existing sysfs ABI
+>> 2. avoids creating link in the class directory pointing to the device as
+>>     there would be per-cpu instance of these devices with the same name
+>> 3. makes sure subsystem symlink continues pointing to cpu bus instead of
+>>     cpu class for cpu devices
+>>
+>> Signed-off-by: Sudeep Holla <sudeep.holla@arm.com>
+>> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+>
+> Why can't we make a 'cache' bus that the cache devices hang off of? It
+> doesn't make sense to me why we would want to have cache devices living
+> on the cpu bus.
+>
 
-David
+Yes we can group them under cache, but to support legacy sysfs path
+under which various cpu related information including caches, we need
+to have a workaround as in this patch.
+
+Instead of having this fixup for each class like cache, having them
+grouped under cpu is better IMO and hence I added caches to cpu class.
+It also helps to move few other cpu related subsystems using raw
+kobjects to the device attribute groups and corresponding APIs.
+
+Regards,
+Sudeep
+
