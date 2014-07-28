@@ -1,95 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751942AbaG1Rjd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 13:39:33 -0400
-Received: from asavdk4.altibox.net ([109.247.116.15]:47044 "EHLO
-	asavdk4.altibox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750708AbaG1Rja (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 13:39:30 -0400
-Date: Mon, 28 Jul 2014 19:39:23 +0200
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Nick Krause <xerofoify@gmail.com>, Mikael Starvik <starvik@axis.com>,
-        Jesper Nilsson <jesper.nilsson@axis.com>
-Cc: starvik@axis.com, jesper.nilsson@axis.com, linux-cris-kernel@axis.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH 1/8] cris: fix headers_install
-Message-ID: <20140728173923.GA32593@ravnborg.org>
-References: <CAPDOMVjsBPLMM3K6=TtHhPDGRCj865j4e7GF_ubY_jbj+88VWQ@mail.gmail.com>
+	id S1751989AbaG1Rjx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 13:39:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:35842 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751953AbaG1Rjv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jul 2014 13:39:51 -0400
+Date: Mon, 28 Jul 2014 19:37:23 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: linux-kernel@vger.kernel.org, Kees Cook <keescook@chromium.org>,
+        Will Drewry <wad@chromium.org>, x86@kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-mips@linux-mips.org,
+        linux-arch@vger.kernel.org, linux-security-module@vger.kernel.org,
+        Alexei Starovoitov <ast@plumgrid.com>, hpa@zytor.com
+Subject: Re: [PATCH v3 6/8] x86: Split syscall_trace_enter into two phases
+Message-ID: <20140728173723.GA20993@redhat.com>
+References: <cover.1405992946.git.luto@amacapital.net> <3f649f5658a163645e3ce15156176c325283762e.1405992946.git.luto@amacapital.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAPDOMVjsBPLMM3K6=TtHhPDGRCj865j4e7GF_ubY_jbj+88VWQ@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <3f649f5658a163645e3ce15156176c325283762e.1405992946.git.luto@amacapital.net>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 87a249d1f35f82e11ffc7c78f0d9ef2399a2ec82 Mon Sep 17 00:00:00 2001
-From: Sam Ravnborg <sam@ravnborg.org>
-Date: Sun, 13 Jul 2014 23:40:44 +0200
-Subject: [PATCH 1/8] cris: fix headers_install
+Hi Andy,
 
-Fix headers_install by adjusting the path to arch files.
-And delete unused Kbuild file.
-Drop special handling of cris in the headers.sh script as a nice side-effect.
+I am really sorry for delay.
 
-Signed-off-by: Sam Ravnborg <sam@ravnborg.org>
-Cc: Mikael Starvik <starvik@axis.com>
-Cc: Jesper Nilsson <jesper.nilsson@axis.com>
----
+This is on top of the recent change from Kees, right? Could me remind me
+where can I found the tree this series based on? So that I could actually
+apply these changes...
 
-I had already cooked this patch up as part of another serie.
-Jesper - can you take care this hits mainline this week?
+On 07/21, Andy Lutomirski wrote:
+>
+> +long syscall_trace_enter_phase2(struct pt_regs *regs, u32 arch,
+> +				unsigned long phase1_result)
+>  {
+>  	long ret = 0;
+> +	u32 work = ACCESS_ONCE(current_thread_info()->flags) &
+> +		_TIF_WORK_SYSCALL_ENTRY;
+> +
+> +	BUG_ON(regs != task_pt_regs(current));
+>  
+>  	user_exit();
+>  
+> @@ -1458,17 +1562,20 @@ long syscall_trace_enter(struct pt_regs *regs)
+>  	 * do_debug() and we need to set it again to restore the user
+>  	 * state.  If we entered on the slow path, TF was already set.
+>  	 */
+> -	if (test_thread_flag(TIF_SINGLESTEP))
+> +	if (work & _TIF_SINGLESTEP)
+>  		regs->flags |= X86_EFLAGS_TF;
 
-	Sam
+This looks suspicious, but perhaps I misread this change.
 
- arch/cris/include/asm/Kbuild      | 5 -----
- arch/cris/include/uapi/asm/Kbuild | 4 ++--
- scripts/headers.sh                | 2 --
- 3 files changed, 2 insertions(+), 9 deletions(-)
+If I understand correctly, syscall_trace_enter() can avoid _phase2() above.
+But we should always call user_exit() unconditionally?
 
-diff --git a/arch/cris/include/asm/Kbuild b/arch/cris/include/asm/Kbuild
-index afff510..35574f5 100644
---- a/arch/cris/include/asm/Kbuild
-+++ b/arch/cris/include/asm/Kbuild
-@@ -1,8 +1,3 @@
--
--header-y += arch-v10/
--header-y += arch-v32/
--
--
- generic-y += barrier.h
- generic-y += clkdev.h
- generic-y += cputime.h
-diff --git a/arch/cris/include/uapi/asm/Kbuild b/arch/cris/include/uapi/asm/Kbuild
-index 7d47b36..01f66b8 100644
---- a/arch/cris/include/uapi/asm/Kbuild
-+++ b/arch/cris/include/uapi/asm/Kbuild
-@@ -1,8 +1,8 @@
- # UAPI Header export list
- include include/uapi/asm-generic/Kbuild.asm
- 
--header-y += arch-v10/
--header-y += arch-v32/
-+header-y += ../arch-v10/arch/
-+header-y += ../arch-v32/arch/
- header-y += auxvec.h
- header-y += bitsperlong.h
- header-y += byteorder.h
-diff --git a/scripts/headers.sh b/scripts/headers.sh
-index 95ece06..d4dc4de 100755
---- a/scripts/headers.sh
-+++ b/scripts/headers.sh
-@@ -19,8 +19,6 @@ for arch in ${archs}; do
- 	case ${arch} in
- 	um)        # no userspace export
- 		;;
--	cris)      # headers export are known broken
--		;;
- 	*)
- 		if [ -d ${srctree}/arch/${arch} ]; then
- 			do_command $1 ${arch}
--- 
-1.9.3
+And we should always set X86_EFLAGS_TF if TIF_SINGLESTEP? IIRC, TF can be
+actually cleared on a 32bit kernel if we step over sysenter insn?
+
+Oleg.
 
