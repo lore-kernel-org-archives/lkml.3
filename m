@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752616AbaG1NzJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 09:55:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60812 "EHLO mx1.redhat.com"
+	id S1752715AbaG1NzP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 09:55:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12265 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751423AbaG1NzF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 09:55:05 -0400
-Subject: [PATCH 1/2] X.509: x509_request_asymmetric_keys() doesn't need
- string length arguments
+	id S1752448AbaG1NzL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jul 2014 09:55:11 -0400
+Subject: [PATCH 2/2] PKCS#7: Use x509_request_asymmetric_key()
 From: David Howells <dhowells@redhat.com>
 To: d.kasatkin@samsung.com, zohar@linux.vnet.ibm.com
 Cc: dhowells@redhat.com, keyrings@linux-nfs.org, linux-kernel@vger.kernel.org
-Date: Mon, 28 Jul 2014 14:54:49 +0100
-Message-ID: <20140728135449.18307.38548.stgit@warthog.procyon.org.uk>
+Date: Mon, 28 Jul 2014 14:54:59 +0100
+Message-ID: <20140728135459.18307.27419.stgit@warthog.procyon.org.uk>
+In-Reply-To: <20140728135449.18307.38548.stgit@warthog.procyon.org.uk>
+References: <20140728135449.18307.38548.stgit@warthog.procyon.org.uk>
 User-Agent: StGit/0.17-dirty
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -21,41 +22,179 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-x509_request_asymmetric_keys() doesn't need the lengths of the NUL-terminated
-strings passing in as it can work that out for itself.
+pkcs7_request_asymmetric_key() and x509_request_asymmetric_key() do the same
+thing, the latter being a copy of the former created by the IMA folks, so drop
+the PKCS#7 version as the X.509 location is more general.
+
+Whilst we're at it, rename the arguments of x509_request_asymmetric_key() to
+better reflect what the values being passed in are intended to match on an
+X.509 cert.
 
 Signed-off-by: David Howells <dhowells@redhat.com>
 ---
- crypto/asymmetric_keys/x509_public_key.c |    9 +++------
- 1 file changed, 3 insertions(+), 6 deletions(-)
+ crypto/asymmetric_keys/pkcs7_trust.c     |   61 ++----------------------------
+ crypto/asymmetric_keys/x509_public_key.c |   36 ++++++++++--------
+ include/crypto/public_key.h              |    4 ++
+ 3 files changed, 29 insertions(+), 72 deletions(-)
 
+diff --git a/crypto/asymmetric_keys/pkcs7_trust.c b/crypto/asymmetric_keys/pkcs7_trust.c
+index b6b045131403..e666eb011a85 100644
+--- a/crypto/asymmetric_keys/pkcs7_trust.c
++++ b/crypto/asymmetric_keys/pkcs7_trust.c
+@@ -20,55 +20,6 @@
+ #include "public_key.h"
+ #include "pkcs7_parser.h"
+ 
+-/*
+- * Request an asymmetric key.
+- */
+-static struct key *pkcs7_request_asymmetric_key(
+-	struct key *keyring,
+-	const char *signer, size_t signer_len,
+-	const char *authority, size_t auth_len)
+-{
+-	key_ref_t key;
+-	char *id;
+-
+-	kenter(",%zu,,%zu", signer_len, auth_len);
+-
+-	/* Construct an identifier. */
+-	id = kmalloc(signer_len + 2 + auth_len + 1, GFP_KERNEL);
+-	if (!id)
+-		return ERR_PTR(-ENOMEM);
+-
+-	memcpy(id, signer, signer_len);
+-	id[signer_len + 0] = ':';
+-	id[signer_len + 1] = ' ';
+-	memcpy(id + signer_len + 2, authority, auth_len);
+-	id[signer_len + 2 + auth_len] = 0;
+-
+-	pr_debug("Look up: \"%s\"\n", id);
+-
+-	key = keyring_search(make_key_ref(keyring, 1),
+-			     &key_type_asymmetric, id);
+-	if (IS_ERR(key))
+-		pr_debug("Request for module key '%s' err %ld\n",
+-			 id, PTR_ERR(key));
+-	kfree(id);
+-
+-	if (IS_ERR(key)) {
+-		switch (PTR_ERR(key)) {
+-			/* Hide some search errors */
+-		case -EACCES:
+-		case -ENOTDIR:
+-		case -EAGAIN:
+-			return ERR_PTR(-ENOKEY);
+-		default:
+-			return ERR_CAST(key);
+-		}
+-	}
+-
+-	pr_devel("<==%s() = 0 [%x]\n", __func__, key_serial(key_ref_to_ptr(key)));
+-	return key_ref_to_ptr(key);
+-}
+-
+ /**
+  * Check the trust on one PKCS#7 SignedInfo block.
+  */
+@@ -98,10 +49,8 @@ int pkcs7_validate_trust_one(struct pkcs7_message *pkcs7,
+ 		/* Look to see if this certificate is present in the trusted
+ 		 * keys.
+ 		 */
+-		key = pkcs7_request_asymmetric_key(
+-			trust_keyring,
+-			x509->subject, strlen(x509->subject),
+-			x509->fingerprint, strlen(x509->fingerprint));
++		key = x509_request_asymmetric_key(trust_keyring, x509->subject,
++						  x509->fingerprint);
+ 		if (!IS_ERR(key))
+ 			/* One of the X.509 certificates in the PKCS#7 message
+ 			 * is apparently the same as one we already trust.
+@@ -133,10 +82,8 @@ int pkcs7_validate_trust_one(struct pkcs7_message *pkcs7,
+ 		return -ENOKEY;
+ 	}
+ 
+-	key = pkcs7_request_asymmetric_key(
+-		trust_keyring,
+-		last->issuer, strlen(last->issuer),
+-		last->authority, strlen(last->authority));
++	key = x509_request_asymmetric_key(trust_keyring, last->issuer,
++					  last->authority);
+ 	if (IS_ERR(key))
+ 		return PTR_ERR(key) == -ENOMEM ? -ENOMEM : -ENOKEY;
+ 	x509 = last;
 diff --git a/crypto/asymmetric_keys/x509_public_key.c b/crypto/asymmetric_keys/x509_public_key.c
-index a0f7cd196c9b..4ae982234d78 100644
+index 4ae982234d78..da1e5fc85346 100644
 --- a/crypto/asymmetric_keys/x509_public_key.c
 +++ b/crypto/asymmetric_keys/x509_public_key.c
-@@ -48,11 +48,10 @@ __setup("ca_keys=", ca_keys_setup);
+@@ -43,35 +43,41 @@ static int __init ca_keys_setup(char *str)
+ __setup("ca_keys=", ca_keys_setup);
+ #endif
+ 
+-/*
+- * Find a key in the given keyring by issuer and authority.
++/**
++ * x509_request_asymmetric_key - Request a key by X.509 certificate params.
++ * @keyring: The keys to search.
++ * @subject: The name of the subject to whom the key belongs.
++ * @key_id: The subject key ID as a hex string.
++ *
++ * Find a key in the given keyring by subject name and key ID.  These might,
++ * for instance, be the issuer name and the authority key ID of an X.509
++ * certificate that needs to be verified.
   */
- static struct key *x509_request_asymmetric_key(struct key *keyring,
- 					       const char *signer,
--					       size_t signer_len,
--					       const char *authority,
--					       size_t auth_len)
-+					       const char *authority)
+-static struct key *x509_request_asymmetric_key(struct key *keyring,
+-					       const char *signer,
+-					       const char *authority)
++struct key *x509_request_asymmetric_key(struct key *keyring,
++					const char *subject,
++					const char *key_id)
  {
  	key_ref_t key;
-+	size_t signer_len = strlen(signer), auth_len = strlen(authority);
+-	size_t signer_len = strlen(signer), auth_len = strlen(authority);
++	size_t subject_len = strlen(subject), key_id_len = strlen(key_id);
  	char *id;
  
- 	/* Construct an identifier. */
-@@ -193,9 +192,7 @@ static int x509_validate_trust(struct x509_certificate *cert,
- 		return -EPERM;
+-	/* Construct an identifier. */
+-	id = kmalloc(signer_len + 2 + auth_len + 1, GFP_KERNEL);
++	/* Construct an identifier "<subjname>:<keyid>". */
++	id = kmalloc(subject_len + 2 + key_id_len + 1, GFP_KERNEL);
+ 	if (!id)
+ 		return ERR_PTR(-ENOMEM);
  
- 	key = x509_request_asymmetric_key(trust_keyring,
--					  cert->issuer, strlen(cert->issuer),
--					  cert->authority,
--					  strlen(cert->authority));
-+					  cert->issuer, cert->authority);
- 	if (!IS_ERR(key))  {
- 		if (!use_builtin_keys
- 		    || test_bit(KEY_FLAG_BUILTIN, &key->flags))
+-	memcpy(id, signer, signer_len);
+-	id[signer_len + 0] = ':';
+-	id[signer_len + 1] = ' ';
+-	memcpy(id + signer_len + 2, authority, auth_len);
+-	id[signer_len + 2 + auth_len] = 0;
++	memcpy(id, subject, subject_len);
++	id[subject_len + 0] = ':';
++	id[subject_len + 1] = ' ';
++	memcpy(id + subject_len + 2, key_id, key_id_len);
++	id[subject_len + 2 + key_id_len] = 0;
+ 
+ 	pr_debug("Look up: \"%s\"\n", id);
+ 
+ 	key = keyring_search(make_key_ref(keyring, 1),
+ 			     &key_type_asymmetric, id);
+ 	if (IS_ERR(key))
+-		pr_debug("Request for module key '%s' err %ld\n",
+-			 id, PTR_ERR(key));
++		pr_debug("Request for key '%s' err %ld\n", id, PTR_ERR(key));
+ 	kfree(id);
+ 
+ 	if (IS_ERR(key)) {
+diff --git a/include/crypto/public_key.h b/include/crypto/public_key.h
+index fc09732613ad..0d164c6af539 100644
+--- a/include/crypto/public_key.h
++++ b/include/crypto/public_key.h
+@@ -98,4 +98,8 @@ struct key;
+ extern int verify_signature(const struct key *key,
+ 			    const struct public_key_signature *sig);
+ 
++extern struct key *x509_request_asymmetric_key(struct key *keyring,
++					       const char *issuer,
++					       const char *key_id);
++
+ #endif /* _LINUX_PUBLIC_KEY_H */
 
