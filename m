@@ -1,31 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752644AbaG1I3W (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 04:29:22 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:42807 "EHLO
+	id S1752658AbaG1IaI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 04:30:08 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:42834 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751170AbaG1I3T (ORCPT
+	with ESMTP id S1751964AbaG1IaF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 04:29:19 -0400
-Date: Mon, 28 Jul 2014 01:28:23 -0700
-From: tip-bot for Jiri Olsa <tipbot@zytor.com>
-Message-ID: <tip-f4be073db878d0e79f74bc36f1642847781791a0@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, paulus@samba.org, hpa@zytor.com,
-        mingo@kernel.org, jolsa@kernel.org, torvalds@linux-foundation.org,
-        peterz@infradead.org, acme@kernel.org, fweisbec@gmail.com,
-        yarygin@linux.vnet.ibm.com, rostedt@goodmis.org, tglx@linutronix.de,
-        cjashfor@linux.vnet.ibm.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, jolsa@kernel.org,
-        torvalds@linux-foundation.org, peterz@infradead.org, acme@kernel.org,
-        yarygin@linux.vnet.ibm.com, fweisbec@gmail.com, rostedt@goodmis.org,
-        tglx@linutronix.de, cjashfor@linux.vnet.ibm.com
-In-Reply-To: <1405079782-8139-1-git-send-email-jolsa@kernel.org>
-References: <1405079782-8139-1-git-send-email-jolsa@kernel.org>
+	Mon, 28 Jul 2014 04:30:05 -0400
+Date: Mon, 28 Jul 2014 01:28:52 -0700
+From: tip-bot for Steven Rostedt <tipbot@zytor.com>
+Message-ID: <tip-c13db6b131a4388edca9867a1457b988b83902f8@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        torvalds@linux-foundation.org, peterz@infradead.org,
+        bristot@redhat.com, rostedt@goodmis.org, akpm@linux-foundation.org,
+        tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, peterz@infradead.org,
+        bristot@redhat.com, rostedt@goodmis.org, akpm@linux-foundation.org,
+        tglx@linutronix.de
+In-Reply-To: <20140723112826.6ed6cbce@gandalf.local.home>
+References: <20140723112826.6ed6cbce@gandalf.local.home>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf:
-  Check permission only for parent tracepoint event
-Git-Commit-ID: f4be073db878d0e79f74bc36f1642847781791a0
+Subject: [tip:sched/core] sched:
+  Use macro for magic number of -1 for setparam
+Git-Commit-ID: c13db6b131a4388edca9867a1457b988b83902f8
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -38,58 +36,75 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  f4be073db878d0e79f74bc36f1642847781791a0
-Gitweb:     http://git.kernel.org/tip/f4be073db878d0e79f74bc36f1642847781791a0
-Author:     Jiri Olsa <jolsa@kernel.org>
-AuthorDate: Wed, 16 Jul 2014 14:33:29 +0200
+Commit-ID:  c13db6b131a4388edca9867a1457b988b83902f8
+Gitweb:     http://git.kernel.org/tip/c13db6b131a4388edca9867a1457b988b83902f8
+Author:     Steven Rostedt <rostedt@goodmis.org>
+AuthorDate: Wed, 23 Jul 2014 11:28:26 -0400
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Mon, 28 Jul 2014 10:01:38 +0200
+CommitDate: Mon, 28 Jul 2014 10:04:14 +0200
 
-perf: Check permission only for parent tracepoint event
+sched: Use macro for magic number of -1 for setparam
 
-There's no need to check cloned event's permission once the
-parent was already checked.
+Instead of passing around a magic number -1 for the sched_setparam()
+policy, use a more descriptive macro name like SETPARAM_POLICY.
 
-Also the code is checking 'current' process permissions, which
-is not owner process for cloned events, thus could end up with
-wrong permission check result.
+[ based on top of Daniel's sched_setparam() fix ]
 
-Reported-by: Alexander Yarygin <yarygin@linux.vnet.ibm.com>
-Tested-by: Alexander Yarygin <yarygin@linux.vnet.ibm.com>
-Signed-off-by: Jiri Olsa <jolsa@kernel.org>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Paul Mackerras <paulus@samba.org>
+Cc: Daniel Bristot de Oliveira<bristot@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Link: http://lkml.kernel.org/r/1405079782-8139-1-git-send-email-jolsa@kernel.org
+Link: http://lkml.kernel.org/r/20140723112826.6ed6cbce@gandalf.local.home
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/trace/trace_event_perf.c | 12 ++++++++++++
- 1 file changed, 12 insertions(+)
+ kernel/sched/core.c | 17 ++++++++++-------
+ 1 file changed, 10 insertions(+), 7 deletions(-)
 
-diff --git a/kernel/trace/trace_event_perf.c b/kernel/trace/trace_event_perf.c
-index 5d12bb4..4b9c114 100644
---- a/kernel/trace/trace_event_perf.c
-+++ b/kernel/trace/trace_event_perf.c
-@@ -30,6 +30,18 @@ static int perf_trace_event_perm(struct ftrace_event_call *tp_event,
- 			return ret;
- 	}
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 2a36a74..2676866 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -3218,12 +3218,18 @@ __setparam_dl(struct task_struct *p, const struct sched_attr *attr)
+ 	dl_se->dl_yielded = 0;
+ }
  
-+	/*
-+	 * We checked and allowed to create parent,
-+	 * allow children without checking.
-+	 */
-+	if (p_event->parent)
-+		return 0;
++/*
++ * sched_setparam() passes in -1 for its policy, to let the functions
++ * it calls know not to change it.
++ */
++#define SETPARAM_POLICY	-1
 +
-+	/*
-+	 * It's ok to check current process (owner) permissions in here,
-+	 * because code below is called only via perf_event_open syscall.
-+	 */
-+
- 	/* The ftrace function trace is allowed only for root. */
- 	if (ftrace_event_is_function(tp_event)) {
- 		if (perf_paranoid_tracepoint_raw() && !capable(CAP_SYS_ADMIN))
+ static void __setscheduler_params(struct task_struct *p,
+ 		const struct sched_attr *attr)
+ {
+ 	int policy = attr->sched_policy;
+ 
+-	if (policy == -1) /* setparam */
++	if (policy == SETPARAM_POLICY)
+ 		policy = p->policy;
+ 
+ 	p->policy = policy;
+@@ -3572,11 +3578,8 @@ static int _sched_setscheduler(struct task_struct *p, int policy,
+ 		.sched_nice	= PRIO_TO_NICE(p->static_prio),
+ 	};
+ 
+-	/*
+-	 * Fixup the legacy SCHED_RESET_ON_FORK hack, except if
+-	 * the policy=-1 was passed by sched_setparam().
+-	 */
+-	if ((policy != -1) && (policy & SCHED_RESET_ON_FORK)) {
++	/* Fixup the legacy SCHED_RESET_ON_FORK hack. */
++	if ((policy != SETPARAM_POLICY) && (policy & SCHED_RESET_ON_FORK)) {
+ 		attr.sched_flags |= SCHED_FLAG_RESET_ON_FORK;
+ 		policy &= ~SCHED_RESET_ON_FORK;
+ 		attr.sched_policy = policy;
+@@ -3746,7 +3749,7 @@ SYSCALL_DEFINE3(sched_setscheduler, pid_t, pid, int, policy,
+  */
+ SYSCALL_DEFINE2(sched_setparam, pid_t, pid, struct sched_param __user *, param)
+ {
+-	return do_sched_setscheduler(pid, -1, param);
++	return do_sched_setscheduler(pid, SETPARAM_POLICY, param);
+ }
+ 
+ /**
