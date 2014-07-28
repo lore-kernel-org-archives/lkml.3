@@ -1,62 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751713AbaG1TT1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 15:19:27 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:49667 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750998AbaG1TTX (ORCPT
+	id S1751765AbaG1TUc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 15:20:32 -0400
+Received: from mail-qa0-f47.google.com ([209.85.216.47]:38201 "EHLO
+	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750708AbaG1TUa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 15:19:23 -0400
-Message-ID: <53D6A23A.6010904@codeaurora.org>
-Date: Mon, 28 Jul 2014 12:19:22 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	Mon, 28 Jul 2014 15:20:30 -0400
+Date: Mon, 28 Jul 2014 15:20:26 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Li Zefan <lizefan@huawei.com>
+Cc: Mike Qiu <qiudayu@linux.vnet.ibm.com>, cgroups@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: WARNING: at kernel/cpuset.c:1139
+Message-ID: <20140728192026.GI7462@htj.dyndns.org>
+References: <53CF22F5.6000206@linux.vnet.ibm.com>
+ <20140723151220.GD7103@htj.dyndns.org>
+ <53D052FC.3070409@huawei.com>
 MIME-Version: 1.0
-To: Soren Brinkmann <soren.brinkmann@xilinx.com>
-CC: John Stultz <john.stultz@linaro.org>, Thomas Gleixner <tglx@linutronix.de>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Pavel Machek <pavel@ucw.cz>,
-        Len Brown <len.brown@intel.com>, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, Daniel Lezcano <daniel.lezcano@linaro.org>
-Subject: Re: [PATCH RFC v2] PM / sleep: Fix racing timers
-References: <53D083C5.2000501@linaro.org> <1406322408-15408-1-git-send-email-soren.brinkmann@xilinx.com>
-In-Reply-To: <1406322408-15408-1-git-send-email-soren.brinkmann@xilinx.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53D052FC.3070409@huawei.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/25/14 14:06, Soren Brinkmann wrote:
-> On platforms that do not power off during suspend, successfully entering
-> suspend races with timers.
->
-> The race happening in a couple of location is:
->
->   1. disable IRQs   		(e.g. arch_suspend_disable_irqs())
->      ...
->   2. syscore_suspend()
->       -> timekeeping_suspend()
->        -> clockevents_notify(SUSPEND)
->         -> tick_suspend()   	(timers are turned off here)
->      ...
->   3. wfi            		(wait for wake-IRQ here)
->
-> Between steps 1 and 2 the timers can still generate interrupts that are
-> not handled and stay pending until step 3. That pending IRQ causes an
-> immediate - spurious - wake.
->
-> The solution is to move the clockevents suspend/resume notification
-> out of the syscore_suspend step and explictly call them at the appropriate
-> time in the suspend/hibernation paths. I.e. timers are suspend _before_
-> IRQs get disabled. And accordingly in the resume path.
->
-> Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+On Thu, Jul 24, 2014 at 08:27:40AM +0800, Li Zefan wrote:
+> On 2014/7/23 23:12, Tejun Heo wrote:
+> > On Wed, Jul 23, 2014 at 10:50:29AM +0800, Mike Qiu wrote:
+> >> commit 734d45130cb ("cpuset: update cs->effective_{cpus, mems} when config
+> >> changes") introduce the below warning in my server.
+> >>
+> >> [   35.652137] ------------[ cut here ]------------
+> >> [   35.652141] WARNING: at kernel/cpuset.c:1139
+> > 
+> > Hah, can you reproduce it?  If so, can you detail how?
+> > 
+> 
+> It's a typo.
+> 
+> WARN_ON(!cgroup_on_dfl(cp->css.cgroup) &&
+> 	nodes_equal(cp->mems_allowed, cp->effective_mems));
+> 
+> should be
+> 
+> WARN_ON(!cgroup_on_dfl(cp->css.cgroup) &&
+> 	!nodes_equal(cp->mems_allowed, cp->effective_mems));
 
-Do we know which timer_list or hrtimer wants to run while entering
-suspend? I'd suspect the scheduler tick but perhaps we just forgot to
-cancel some timer during suspend?
+Care to post a patch?
+
+Thanks.
 
 -- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
-
+tejun
