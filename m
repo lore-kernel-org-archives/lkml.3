@@ -1,138 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752022AbaG1KCS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 06:02:18 -0400
-Received: from frost.carfax.org.uk ([85.119.82.111]:48950 "EHLO
-	frost.carfax.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751095AbaG1KCQ (ORCPT
+	id S1752199AbaG1KFq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 06:05:46 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:34262 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750903AbaG1KFk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 06:02:16 -0400
-Date: Mon, 28 Jul 2014 11:02:03 +0100
-From: Hugo Mills <hugo@carfax.org.uk>
-To: Nick Krause <xerofoify@gmail.com>
-Cc: Austin S Hemmelgarn <ahferroin7@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-btrfs@vger.kernel.org SYSTEM list:BTRFS FILE" 
-	<linux-btrfs@vger.kernel.org>
-Subject: Re: Multi Core Support for compression in compression.c
-Message-ID: <20140728100203.GG31950@carfax.org.uk>
-Mail-Followup-To: Hugo Mills <hugo@carfax.org.uk>,
-	Nick Krause <xerofoify@gmail.com>,
-	Austin S Hemmelgarn <ahferroin7@gmail.com>,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-	"linux-btrfs@vger.kernel.org SYSTEM list:BTRFS FILE" <linux-btrfs@vger.kernel.org>
-References: <CAPDOMViXEgN1U8Og52Fd7EaM86Ad2Dfex9TVQ-+tRZ9SL9Kcig@mail.gmail.com>
- <53D5BBCA.3020109@gmail.com>
- <CAPDOMVjB9ErEwA7mf91X7pff5LAkeT=BT4pR7TuoEp3LL333Lg@mail.gmail.com>
+	Mon, 28 Jul 2014 06:05:40 -0400
+Date: Mon, 28 Jul 2014 12:05:39 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Soren Brinkmann <soren.brinkmann@xilinx.com>
+Cc: John Stultz <john.stultz@linaro.org>, Thomas Gleixner <tglx@linutronix.de>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Len Brown <len.brown@intel.com>, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, Daniel Lezcano <daniel.lezcano@linaro.org>
+Subject: Re: [PATCH RFC v2] PM / sleep: Fix racing timers
+Message-ID: <20140728100538.GA16237@amd.pavel.ucw.cz>
+References: <53D083C5.2000501@linaro.org>
+ <1406322408-15408-1-git-send-email-soren.brinkmann@xilinx.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="PyMzGVE0NRonI6bs"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAPDOMVjB9ErEwA7mf91X7pff5LAkeT=BT4pR7TuoEp3LL333Lg@mail.gmail.com>
-X-GPG-Fingerprint: B25A 5A66 69D3 1E15 2DD8  0998 BF73 F4E5 65E7 4AC0
-X-GPG-Key: 65E74AC0
-X-Parrot: It is no more. It has joined the choir invisible.
-X-IRC-Nicks: darksatanic darkersatanic darkling darkthing
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-frost.carfax.org.uk-Spam-Score: 0.0 (/)
+In-Reply-To: <1406322408-15408-1-git-send-email-soren.brinkmann@xilinx.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---PyMzGVE0NRonI6bs
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-
-On Sun, Jul 27, 2014 at 11:21:53PM -0400, Nick Krause wrote:
-> On Sun, Jul 27, 2014 at 10:56 PM, Austin S Hemmelgarn
-> <ahferroin7@gmail.com> wrote:
-> > On 07/27/2014 04:47 PM, Nick Krause wrote:
-> >> This may be a bad idea , but compression in brtfs seems to be only
-> >> using one core to compress.
-> >> Depending on the CPU used and the amount of cores in the CPU we can
-> >> make this much faster
-> >> with multiple cores. This seems bad by my reading at least I would
-> >> recommend for writing compression
-> >> we write a function to use a certain amount of cores based on the load
-> >> of the system's CPU not using
-> >> more then 75% of the system's CPU resources as my system when idle has
-> >> never needed more
-> >> then one core of my i5 2500k to run when with interrupts for opening
-> >> eclipse are running. For reading
-> >> compression on good core seems fine to me as testing other compression
-> >> software for reads , it's
-> >> way less CPU intensive.
-> >> Cheers Nick
-> > We would probably get a bigger benefit from taking an approach like
-> > SquashFS has recently added, that is, allowing multi-threaded
-> > decompression fro reads, and decompressing directly into the pagecache.
-> >  Such an approach would likely make zlib compression much more scalable
-> > on large systems.
-> >
-> >
+On Fri 2014-07-25 14:06:48, Soren Brinkmann wrote:
+> On platforms that do not power off during suspend, successfully entering
+> suspend races with timers.
 > 
-> Austin,
-> That seems better then my idea as you seem to be more up to date on
-> brtfs devolopment.
-> If you and the other developers of brtfs are interested in adding this
-> as a feature please let
-> me known as I would like to help improve brtfs as the file system as
-> an idea is great just
-> seems like it needs a lot of work :).
+> The race happening in a couple of location is:
+> 
+>   1. disable IRQs   		(e.g. arch_suspend_disable_irqs())
+>      ...
+>   2. syscore_suspend()
+>       -> timekeeping_suspend()
+>        -> clockevents_notify(SUSPEND)
+>         -> tick_suspend()   	(timers are turned off here)
+>      ...
+>   3. wfi            		(wait for wake-IRQ here)
+> 
+> Between steps 1 and 2 the timers can still generate interrupts that are
+> not handled and stay pending until step 3. That pending IRQ causes an
+> immediate - spurious - wake.
+> 
+> The solution is to move the clockevents suspend/resume notification
+> out of the syscore_suspend step and explictly call them at the appropriate
+> time in the suspend/hibernation paths. I.e. timers are suspend _before_
+> IRQs get disabled. And accordingly in the resume path.
+> 
+> Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
 
-   Yes, it probably does need a lot of work. This is (at least one
-reason) why it's not been done yet. If you want to work on doing this,
-then please do. However, don't expect anyone else to give you a
-detailed plan of what code to write. Don't expect anyone else to write
-the code for you. You will have to come up with your own ideas as to
-how to implement it, and actually do it yourself, including building
-it, and testing it.
-
-   That's not to say that you are on your own, though. People will
-help -- provided that you aren't asking them to do all the work. You
-are not an empty vessel to be filled with the wisdom of the ancients.
-This means that *you* have to take action. You have to take yourself
-as far as you can in learning how things work. When you get stuck,
-work out what it is that you don't know, and then ask about that one
-thing. This makes it easier to answer, it shows that you're putting in
-effort on your side, and it means that you *actually learn things*.
-Questions like "what function should I be modifying?", or "how do you
-want me to do this?" show that you haven't put in even the smallest
-piece of effort, and will be ignored (f you're lucky). Questions like
-"I'm trying to implement a crumble filter, but in the mix_breadcrumbs
-function, how does it take account of the prestressed_yoghurt field?"
-show that you've read and understood at least some of the code, and
-have thought about what it's doing.
-
-   Hugo.
+Did you test the hibernation?
 
 -- 
-=== Hugo Mills: hugo@... carfax.org.uk | darksatanic.net | lug.org.uk ===
-  PGP key: 65E74AC0 from wwwkeys.eu.pgp.net or http://www.carfax.org.uk
-    --- Alert status mauve ocelot: Slight chance of brimstone. Be ---    
-                   prepared to make a nice cup of tea.                   
-
---PyMzGVE0NRonI6bs
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIVAwUBU9Yfm1heFHXiqx3kAQJOAg//bKSpuGOK2gUzwcjtVisbymvtbVZ3uuuh
-yVu7aV+KUeY4ZGnKq7N2vpLBJoc/XLaCS5hFXLkJyzDe7Hvc+yYCrzJNhwQC4u3S
-JQwtBhLYi4p4fV1R3mRX9o+TfuIMuJuwgPJO6xhlUYgxaJcXsQ4aUkqqW3QHqmWR
-gOcu0eLenWq/ZCcse8dEiq/qXaPwwS05XNUEmso9hcWRE4o7CdaXqeKqs1BHOjvP
-1ubIuGxusPKTXpko+G9MmZQM3pwrCWuvV1a2oUkI5uALHSW3PLB0Iud040UUefVg
-JcracmawTn9EVoMndR2FEOqfP5lydKuMb2SkrBPrp1qzBbn/1XXTln2KHyKxYXd2
-WfROmmr5RDxoa+5+zq7uboknO1Pay4kYq1K9XNqfPDojpUsU/YI/EDIECmZcI+a9
-A/CwYcq2eW0E2YliN+ZDgYXF9lg5Qk74Mi3j4/gTRJKt0Wpfiv7ffYiim2WoNkcV
-vxIrtM0xFaDehE9/gS/9cvKBCVYThytwA2LItNkw9TwZe1f5BAyAXnk0PXz+gEEM
-lxOGHRhHW5TH8Oaa5kvveFd9qV8zNYTopTi8dF7NoUaZR0uHnLOIM4xJO9tdlxJz
-OciAeRZdBmKPUBPq0YHskZxpG/dGawS4nV625zq24fcsFR6pnxDQpINDrAy/1fSL
-LUEwXU8Cc9w=
-=eIGo
------END PGP SIGNATURE-----
-
---PyMzGVE0NRonI6bs--
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
