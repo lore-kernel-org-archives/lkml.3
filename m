@@ -1,144 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751708AbaG1IQz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 04:16:55 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:53044 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751115AbaG1IQy convert rfc822-to-8bit (ORCPT
+	id S1751889AbaG1ISJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 04:18:09 -0400
+Received: from rcdn-iport-1.cisco.com ([173.37.86.72]:56962 "EHLO
+	rcdn-iport-1.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751352AbaG1ISF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 04:16:54 -0400
-X-IronPort-AV: E=Sophos;i="5.00,978,1396972800"; 
-   d="scan'208";a="33855704"
-Date: Mon, 28 Jul 2014 16:14:44 +0800
-From: Hu Tao <hutao@cn.fujitsu.com>
-To: Serge Hallyn <serge.hallyn@ubuntu.com>
-CC: "chenhanxiao@cn.fujitsu.com" <chenhanxiao@cn.fujitsu.com>,
-        "Richard Weinberger (richard@nod.at)" <richard@nod.at>,
-        "containers@lists.linux-foundation.org" 
-	<containers@lists.linux-foundation.org>,
-        "Oleg Nesterov (oleg@redhat.com)" <oleg@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Eric W. Biederman (ebiederm@xmission.com)" <ebiederm@xmission.com>,
-        "Vasily Kulikov (segoon@openwall.com)" <segoon@openwall.com>
-Subject: Re: [RFC]Pid conversion between pid namespace
-Message-ID: <20140728081444.GE31917@G08FNSTD100614.fnst.cn.fujitsu.com>
-References: <5871495633F38949900D2BF2DC04883E55C374@G08CNEXMBPEKD02.g08.fujitsu.local>
- <5871495633F38949900D2BF2DC04883E560412@G08CNEXMBPEKD02.g08.fujitsu.local>
- <20140715041628.GL1132@ubuntumail>
- <5871495633F38949900D2BF2DC04883E569892@G08CNEXMBPEKD02.g08.fujitsu.local>
- <20140725173443.GH31507@ubuntumail>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Disposition: inline
+	Mon, 28 Jul 2014 04:18:05 -0400
+X-Greylist: delayed 575 seconds by postgrey-1.27 at vger.kernel.org; Mon, 28 Jul 2014 04:18:05 EDT
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AlUFAIgD1lOtJV2P/2dsb2JhbABZgw6BKQTTJAGBExZ3hAQBAQQnEz8QAgEIDgoeEDIlAgQBDQWIQr0jF49MB4RKAQSbTItyiFqCA4FGbIFF
+X-IronPort-AV: E=Sophos;i="5.01,747,1400025600"; 
+   d="scan'208";a="343066348"
+From: "Suma Ramars (sramars)" <sramars@cisco.com>
+To: Alexander Gordeev <agordeev@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: Hiral Patel <hiralpat@cisco.com>,
+        "Brian Uchino (buchino)" <buchino@cisco.com>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
+Subject: Re: [PATCH v2 RESEND 07/23] fnic: Use pci_enable_msix_exact()
+ instead of pci_enable_msix()
+Thread-Topic: [PATCH v2 RESEND 07/23] fnic: Use pci_enable_msix_exact()
+ instead of pci_enable_msix()
+Thread-Index: AQHPqKiOesDylc0bF0KO6oYo735Pkpu11OsA
+Date: Mon, 28 Jul 2014 08:08:28 +0000
+Message-ID: <CFFC0234.11596%sramars@cisco.com>
+References: <cover.1405533479.git.agordeev@redhat.com>
+ <e8cc7988e4b0a38f59d3e854d387c7c0d95b058c.1405533479.git.agordeev@redhat.com>
+ <20140726081502.GD21129@agordeev.usersys.redhat.com>
+In-Reply-To: <20140726081502.GD21129@agordeev.usersys.redhat.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+user-agent: Microsoft-MacOutlook/14.4.3.140616
+x-originating-ip: [10.65.39.72]
+Content-Type: text/plain; charset="us-ascii"
+Content-ID: <75FDE10A4E1E384E847BCEFCBA1792C5@emea.cisco.com>
 Content-Transfer-Encoding: 8BIT
-In-Reply-To: <20140725173443.GH31507@ubuntumail>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Originating-IP: [10.167.226.102]
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Acked-by: "Suma Ramars (sramars)" <sramars@cisco.com>
 
-On Fri, Jul 25, 2014 at 05:34:43PM +0000, Serge Hallyn wrote:
-> Quoting chenhanxiao@cn.fujitsu.com (chenhanxiao@cn.fujitsu.com):
-> > Hi,
-> > 
-> > > -----Original Message-----
-> > > From: Serge Hallyn [mailto:serge.hallyn@ubuntu.com]
-> > > Sent: Tuesday, July 15, 2014 12:16 PM
-> > > To: Chen, Hanxiao/陈 晗霄
-> > > Subject: Re: [RFC]Pid conversion between pid namespace
-> > > >     A-2) syscall pid_t getnspid(pid_t query_pid, pid_t observer_pid)
-> > > >     pros:
-> > > >         - ns procfs free, easy to use.
-> > > >         We could get rid of mounted ns procfs.
-> > > >
-> > > >     cons:
-> > > >         - may find multiple results in nested ns.
-> > > >           We wished the new API could tell us the exact answer.
-> > > >           But if getnspid return more than one results will bring trouble to admins,
-> > > 
-> > > (See below for more, but) the question being posed to getnspid has precisely
-> > > one answer.
-> > > 
-> > > >           they had to make another decision.
-> > > >           Or we marked the deepest level for translation as prerequisite.
-> > > >
-> > > >         -based on current pidns, no reference ns.
-> > > 
-> > > Hm, no.  The intent here was that
-> > > 
-> > > 	observer_pid would be in current ns
-> > > 	query_pid would be in observer_pid's ns.
-> > > 
-> > > So this would be ideal for "I got a pid in a logfile created by rsyslog in
-> > > a nested contaner, what is the logged pid in my pidns."
-> > > 
-> > > Taking a set of tasks (like a container with nesting) and bulding a tree
-> > > of all pids shouldn't be too difficult either.  Start with the init pid,
-> > > call getnspid($pid, $init_pid) for every $pid in the container;  to figure
-> > > out whether any $pid is itself a nested init_pid, we can compare the
-> > > /proc/$$/ns/pid, as well as look at getnspid($pid, $pid).
-> > I'm a little confused in this section:
-> > 
-> > Ex:
-> >     init_pid_ns    ns1         ns2
-> > t1  2
-> > t2   `- 3          1 
-> > t3       `- 4      `- 5        1
-> > t4           `-6       `-8      `-9
-> > t5             `-10       `-9      `-10
-> > 
-> > For getnspid($pid, $init_pid),
-> > Does init_pid means container's init_pid such as 3 for t2?
-> 
-> Right, if you're in init_pid_ns and making the query, then
-> you'd pass 3.
 
-Sorry for jumping in, but I'm not quite understanding the purpose of
-$init_pid here, does it identify the ns which the process to be
-queried is in? Also see my questions below:
+On 26/07/14 1:45 pm, "Alexander Gordeev" <agordeev@redhat.com> wrote:
 
-1. Given the example above, what's the return of getnspid(9, 3)? 
-   Is it 6(task t4) or 10(task t5)? 
-
-2. if there is a process in ns1 which is a child of process 1 has pid
-   10, but not in ns2, like below:
-
-    init_pid_ns          ns1         ns2
-t1  2
-t2   `- 3                1 
-t3       `- 4            +- 5        1
-t4           `-6         |   `-8      `-9
-t5             `-10      |      `-9      `-10
-t6               `-11    `-10   
-
-   then what is the return of getnspid(10, 3)?
-
-Regards,
-Hu
-
+>On Wed, Jul 16, 2014 at 08:05:11PM +0200, Alexander Gordeev wrote:
+>> As result of deprecation of MSI-X/MSI enablement functions
+>> pci_enable_msix() and pci_enable_msi_block() all drivers
+>> using these two interfaces need to be updated to use the
+>> new pci_enable_msi_range()  or pci_enable_msi_exact()
+>> and pci_enable_msix_range() or pci_enable_msix_exact()
+>> interfaces.
 >
-> 
-> > In nested containers, does this syscall work as:
-> > getnspid(9, 4) -> (6, 8, 9) 
-> 
-> No, assuming the querying task is in init_pid_ns,
-> getnspid(9, 4) would return 6.
-> 
-> 4 is the observer pid given in the querier's own pidns, so
-> it refers to t3.  9 is the pid being queried, in the oberver's
-> pidns, so it revers to t4.  The result is, the pid in our own
-> pidns.
-> 
-> Does that help clarify at all?  I'm not sure whether the problem is that
-> I didn't explain well enough from the start, or whether this just shows
-> that the API is one only its mother could love :)
-> 
-> -serge
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+>Hi Hiral, Suma, Brian,
+>
+>Could you please review this patch?
+>
+>Thanks!
+>
+>> Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+>> Cc: Hiral Patel <hiralpat@cisco.com>
+>> Cc: Suma Ramars <sramars@cisco.com>
+>> Cc: Brian Uchino <buchino@cisco.com>
+>> Cc: linux-scsi@vger.kernel.org
+>> Cc: linux-pci@vger.kernel.org
+>> ---
+>>  drivers/scsi/fnic/fnic_isr.c |    4 ++--
+>>  1 files changed, 2 insertions(+), 2 deletions(-)
+>> 
+>> diff --git a/drivers/scsi/fnic/fnic_isr.c b/drivers/scsi/fnic/fnic_isr.c
+>> index 7d9b54a..a0dd1b6 100644
+>> --- a/drivers/scsi/fnic/fnic_isr.c
+>> +++ b/drivers/scsi/fnic/fnic_isr.c
+>> @@ -257,8 +257,8 @@ int fnic_set_intr_mode(struct fnic *fnic)
+>>  	    fnic->raw_wq_count >= m &&
+>>  	    fnic->wq_copy_count >= o &&
+>>  	    fnic->cq_count >= n + m + o) {
+>> -		if (!pci_enable_msix(fnic->pdev, fnic->msix_entry,
+>> -				    n + m + o + 1)) {
+>> +		if (!pci_enable_msix_exact(fnic->pdev, fnic->msix_entry,
+>> +					   n + m + o + 1)) {
+>>  			fnic->rq_count = n;
+>>  			fnic->raw_wq_count = m;
+>>  			fnic->wq_copy_count = o;
+>> -- 
+>> 1.7.7.6
+>> 
+>
+>-- 
+>Regards,
+>Alexander Gordeev
+>agordeev@redhat.com
+
