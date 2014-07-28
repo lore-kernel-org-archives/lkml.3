@@ -1,76 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752768AbaG1PMe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 11:12:34 -0400
-Received: from mga09.intel.com ([134.134.136.24]:2388 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752332AbaG1PMb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 11:12:31 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,749,1400050800"; 
-   d="scan'208";a="550178357"
-Message-ID: <53D6685C.1060509@intel.com>
-Date: Mon, 28 Jul 2014 08:12:28 -0700
-From: Dave Hansen <dave.hansen@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1752821AbaG1PMw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 11:12:52 -0400
+Received: from mx0a-0016ce01.pphosted.com ([67.231.148.157]:12656 "EHLO
+	mx0a-0016ce01.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752277AbaG1PMv convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jul 2014 11:12:51 -0400
+From: Yuval Mintz <Yuval.Mintz@qlogic.com>
+To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+CC: linux-kernel <linux-kernel@vger.kernel.org>,
+        "Luis R. Rodriguez" <mcgrof@suse.com>,
+        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
+        Joseph Salisbury <joseph.salisbury@canonical.com>,
+        Kay Sievers <kay@vrfy.org>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        "Tim Gardner" <tim.gardner@canonical.com>,
+        Pierre Fersing <pierre-fersing@pierref.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Oleg Nesterov" <oleg@redhat.com>, Benjamin Poirier <bpoirier@suse.de>,
+        "Nagalakshmi Nandigama" <nagalakshmi.nandigama@avagotech.com>,
+        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
+        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
+        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
+        Hariprasad S <hariprasad@chelsio.com>,
+        Santosh Rastapur <santosh@chelsio.com>,
+        "MPT-FusionLinux.pdl@avagotech.com" 
+	<MPT-FusionLinux.pdl@avagotech.com>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>
+Subject: RE: [PATCH 1/3] driver core: enable drivers to use deferred probe
+ from init
+Thread-Topic: [PATCH 1/3] driver core: enable drivers to use deferred probe
+ from init
+Thread-Index: AQHPqnEWy20DxK5pzkqD80N0dwzvZJu1lkPA
+Date: Mon, 28 Jul 2014 15:12:11 +0000
+Message-ID: <B5657A6538887040AD3A81F1008BEC63B06F9A@avmb3.qlogic.org>
+References: <1406558067-25308-1-git-send-email-mcgrof@do-not-panic.com>
+In-Reply-To: <1406558067-25308-1-git-send-email-mcgrof@do-not-panic.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.1.4.10]
+disclaimer: bypass
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Zhang Zhen <zhenzhang.zhang@huawei.com>, shaohui.zheng@intel.com,
-        mgorman@suse.de, mingo@redhat.com, Linux MM <linux-mm@kvack.org>,
-        linux-kernel@vger.kernel.org
-CC: wangnan0@huawei.com, akpm@linux-foundation.org
-Subject: Re: [PATCH] memory hotplug: update the variables after memory removed
-References: <1406550617-19556-1-git-send-email-zhenzhang.zhang@huawei.com> <53D642E5.2010305@huawei.com>
-In-Reply-To: <53D642E5.2010305@huawei.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+X-Proofpoint-Virus-Version: vendor=nai engine=5600 definitions=7512 signatures=670489
+X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0 suspectscore=0 phishscore=0
+ adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx scancount=1
+ engine=7.0.1-1402240000 definitions=main-1407280175
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/28/2014 05:32 AM, Zhang Zhen wrote:
-> -static void  update_end_of_memory_vars(u64 start, u64 size)
-> +static void  update_end_of_memory_vars(u64 start, u64 size, bool flag)
->  {
-> -	unsigned long end_pfn = PFN_UP(start + size);
-> -
-> -	if (end_pfn > max_pfn) {
-> -		max_pfn = end_pfn;
-> -		max_low_pfn = end_pfn;
-> -		high_memory = (void *)__va(max_pfn * PAGE_SIZE - 1) + 1;
-> +	unsigned long end_pfn;
+> +static int __driver_probe_device(struct device_driver *drv, struct
+> +device *dev) {
+> +	if (drv->delay_probe && !dev->init_delayed_probe) {
+> +		dev_info(dev, "Driver %s requests probe deferral on init\n",
+> +			 drv->name);
+> +		dev->init_delayed_probe = true;
+> +		driver_deferred_probe_add(dev);
+> +		return -EPROBE_DEFER;
+> +	}
 > +
-> +	if (flag) {
-> +		end_pfn = PFN_UP(start + size);
-> +		if (end_pfn > max_pfn) {
-> +			max_pfn = end_pfn;
-> +			max_low_pfn = end_pfn;
-> +			high_memory = (void *)__va(max_pfn * PAGE_SIZE - 1) + 1;
-> +		}
-> +	} else {
-> +		end_pfn = PFN_UP(start);
-> +		if (end_pfn < max_pfn) {
-> +			max_pfn = end_pfn;
-> +			max_low_pfn = end_pfn;
-> +			high_memory = (void *)__va(max_pfn * PAGE_SIZE - 1) + 1;
-> +		}
->  	}
->  }
+> +	return really_probe(dev, drv);
+> +}
 
-I would really prefer not to see code like this.
+Perhaps this is a silly question, but what guarantees that the deferred probe
+list will actually be triggered, e.g., in case the delayed device is the last device
+in the system?
 
-This patch takes a small function that did one thing, copies-and-pastes
-its code 100%, subtly changes it, and makes it do two things.  The only
-thing to tell us what the difference between these two subtly different
-things is a variable called 'flag'.  So the variable is useless in
-trying to figure out what each version is supposed to do.
+[From drivers/base/dd.c  - "A successful driver probe will trigger moving all
+devices from the pending to the active list so that the workqueue will
+eventually retry them]
 
-But, this fixes a pretty glaring deficiency in the memory remove code.
-
-I would suggest making two functions.  Make it clear that one is to be
-used at remove time and the other at add time.  Maybe
-
-	move_end_of_memory_vars_down()
-and
-	move_end_of_memory_vars_up()
-
-?
