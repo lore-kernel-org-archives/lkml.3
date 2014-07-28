@@ -1,103 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751920AbaG1S4K (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 14:56:10 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47909 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750960AbaG1S4H (ORCPT
+	id S1751946AbaG1S5F (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 14:57:05 -0400
+Received: from mail-ie0-f179.google.com ([209.85.223.179]:50130 "EHLO
+	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750960AbaG1S5A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 14:56:07 -0400
-Date: Mon, 28 Jul 2014 11:55:38 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-Cc: tiwai@suse.de, linux-kernel@vger.kernel.org,
-        "Luis R. Rodriguez" <mcgrof@suse.com>,
-        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        Joseph Salisbury <joseph.salisbury@canonical.com>,
-        Kay Sievers <kay@vrfy.org>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Tim Gardner <tim.gardner@canonical.com>,
-        Pierre Fersing <pierre-fersing@pierref.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>, Benjamin Poirier <bpoirier@suse.de>,
-        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
-        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
-        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
-        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
-        Hariprasad S <hariprasad@chelsio.com>,
-        Santosh Rastapur <santosh@chelsio.com>,
-        MPT-FusionLinux.pdl@avagotech.com, linux-scsi@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH v2 2/4] driver core: enable drivers to use deferred probe
- from init
-Message-ID: <20140728185538.GB17609@kroah.com>
-References: <1406572110-26823-1-git-send-email-mcgrof@do-not-panic.com>
- <1406572110-26823-3-git-send-email-mcgrof@do-not-panic.com>
+	Mon, 28 Jul 2014 14:57:00 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1406572110-26823-3-git-send-email-mcgrof@do-not-panic.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140728184107.GR15536@arm.com>
+References: <20140722153623.25088.37742.stgit@buzz>
+	<20140722153635.25088.14197.stgit@buzz>
+	<20140728181456.GO15536@arm.com>
+	<CALYGNiNJDHfQm2yk067hh-Wywsb_Ki5AEE_sTMkYegJi9spSzw@mail.gmail.com>
+	<20140728184107.GR15536@arm.com>
+Date: Mon, 28 Jul 2014 22:57:00 +0400
+Message-ID: <CALYGNiNaMMv9itJ_+cvPDn1_Yo4GTPQJ-Cy9zBzJzfaDLfkvmg@mail.gmail.com>
+Subject: Re: [PATCH 2/2] ARM: LPAE: reduce damage caused by idmap to virtual
+ memory layout
+From: Konstantin Khlebnikov <koct9i@gmail.com>
+To: Will Deacon <will.deacon@arm.com>
+Cc: Konstantin Khlebnikov <k.khlebnikov@samsung.com>,
+        Vitaly Andrianov <vitalya@ti.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Cyril Chemparathy <cyril@ti.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 28, 2014 at 11:28:28AM -0700, Luis R. Rodriguez wrote:
-> From: "Luis R. Rodriguez" <mcgrof@suse.com>
-> 
-> Tetsuo bisected and found that commit 786235ee "kthread: make
-> kthread_create() killable" modified kthread_create() to bail as
-> soon as SIGKILL is received. This is causing some issues with
-> some drivers and at times boot. Joseph then found that failures
-> occur as the systemd-udevd process sends SIGKILL to modprobe if
-> probe on a driver takes over 30 seconds.
+On Mon, Jul 28, 2014 at 10:41 PM, Will Deacon <will.deacon@arm.com> wrote:
+> On Mon, Jul 28, 2014 at 07:25:14PM +0100, Konstantin Khlebnikov wrote:
+>> On Mon, Jul 28, 2014 at 10:14 PM, Will Deacon <will.deacon@arm.com> wrote:
+>> > On Tue, Jul 22, 2014 at 04:36:35PM +0100, Konstantin Khlebnikov wrote:
+>> >> idmap layout combines both phisical and virtual addresses.
+>> >> Everything works fine if ram physically lays below PAGE_OFFSET.
+>> >> Otherwise idmap starts punching huge holes in virtual memory layout.
+>> >> It maps ram by 2MiB sections, but when it allocates new pmd page it
+>> >> cuts 1GiB at once.
+>> >>
+>> >> This patch makes a copy of all affected pmds from init_mm.
+>> >> Only few (usually one) 2MiB sections will be lost.
+>> >> This is not eliminates problem but makes it 512 times less likely.
+>> >
+>> > I'm struggling to understand your commit message, but making a problem `512
+>> > times less likely' does sound like a bit of a hack to me. Can't we fix this
+>> > properly instead?
+>>
+>> Yep, my comment sucks.
+>>
+>> Usually idmap looks like this:
+>>
+>> |0x00000000 -- <chunk of physical memory in identical mapping > --- |
+>> TASK_SIZE -- <kernel space vm layoyt> --- 0xFFFFFFFF |
+>>
+>> But when that physical memory chunk starts from 0xE8000000 or even
+>> 0xF2000000 evenything becomes very complicated.
+>
+> Why? As long as we don't clobber the kernel text (which would require
+> PHYS_OFFSET to be at a really weird alignment and very close to
+> PAGE_OFFSET), then you should be alright. Sure, you'll lose things like your
+> stack and the vmalloc area etc, but you're running in the idmap, so don't
+> use those things.
 
-Because no driver should ever take that long for their probe function to
-return.  Why not fix those drivers?
+Yep, we have piece of hardware with really weird aligned PHYS_OFFSET,
+mostly all ram is above 4gb and we was lucky enough to get into the trouble.
 
-> When this happens probe will fail on any driver, its why booting on
-> some system will fail if the driver happens to be a storage related
-> driver. Some folks
-> have suggested fixing this by modifying kthread_create() to not
-> leave upon SIGKILL [3], upon review Oleg rejected this change and
-> the discussion was punted out to systemd to see if the default
-> timeout could be increased from 30 seconds to 120. The opinion of
-> the systemd maintainers is that the driver's behavior should
-> be fixed [4]. Linus seems to agree [5], however more recently even
-> networking drivers have been reported to fail on probe since just
-> writing the firmware to a device and kicking it can take easy over
-> 60 seconds [6]. Benjamim was able to trace the issues recently
-> reported on cxgb4 down to the same systemd-udevd 30 second timeout [6].
+It seems keystone has all memory above 4gb but small piece is mapped below
+especially for booting. I suppose it's below PAGE_OFFSET so Cyril
+hadn't seen that problem.
 
-Then use the async firmware interface, why is any driver taking longer
-than less than a second in their init function?
+Also I seen comment somewhere in the code which tells that idrmap pgd is
+always below 4gb which isn't quite true. Moreover, I had some experiments with
+mapping ram to random places in qemu and seen that kernel cannot boot if
+PHYS_OFFSET isn't alligned to 128mb which is strange.
+So, it seems there is plenty bugs anound.
 
-> This is an alternative solution which enables drivers that are
-> known to take long to use deferred probe workqueue. This avoids
-> the 30 second timeout and lets us annotate drivers with long
-> init sequences.
-> 
-> As drivers determine a component is not yet available and needs
-> to defer probe you'll be notified this happen upon init for each
-> device but now with a message such as:
-> 
-> pci 0000:03:00.0: Driver cxgb4 requests probe deferral on init
-> 
-> You should see one of these per struct device probed.
+>
+> soft_restart is an example of code that deals with these issues. Which code
+> is causing you problems?
 
-I'm all for abusing kernel interfaces, but please, no, don't try to use
-the deferred init code to cover up for broken drivers.  Just fix them
-properly, we have the interfaces to handle it properly (i.e. async
-firmware loading), please use it.
+That was booting of secondary cpus, all of them.
 
-And no PCI driver should ever need "deferred init" as the resources for
-such a device is already present in the system.  Now if userspace is up
-and running yet is a different issue, one that deferred init is not
-there for at all, sorry.
-
-So, what drivers are having problems in their init sequence, and why
-aren't they using async firmware loading?
-
-thanks,
-
-greg k-h
+>
+> Will
