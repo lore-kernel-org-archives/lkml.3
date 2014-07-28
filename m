@@ -1,81 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753160AbaG1PCE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 11:02:04 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49481 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753125AbaG1PCB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 11:02:01 -0400
-From: Jiri Olsa <jolsa@kernel.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Jiri Olsa <jolsa@kernel.org>, Adrian Hunter <adrian.hunter@intel.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH 2/2] Revert "perf tools: Fix jump label always changing during tracing"
-Date: Mon, 28 Jul 2014 17:01:02 +0200
-Message-Id: <1406559662-4376-3-git-send-email-jolsa@kernel.org>
-In-Reply-To: <1406559662-4376-1-git-send-email-jolsa@kernel.org>
-References: <1406559662-4376-1-git-send-email-jolsa@kernel.org>
+	id S1753177AbaG1PCI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 11:02:08 -0400
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:65431 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753132AbaG1PB7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jul 2014 11:01:59 -0400
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>
+Cc: linux-ia64@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 2/2] [IA64] Do not needlessly convert between pointers and integers
+Date: Mon, 28 Jul 2014 17:01:49 +0200
+Message-Id: <1406559709-9401-2-git-send-email-thierry.reding@gmail.com>
+X-Mailer: git-send-email 2.0.2
+In-Reply-To: <1406559709-9401-1-git-send-email-thierry.reding@gmail.com>
+References: <1406559709-9401-1-git-send-email-thierry.reding@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This reverts commit deaff8b659cf4d34181c087b8cdf74f1eb17b02b.
+From: Thierry Reding <treding@nvidia.com>
 
-This commit makes CLOEXEC feature undetected for normal users,
-because per-cpu events are priviledged.
+The nasid_to_try variable is an array of integers, so plain integers can
+be used when assigning values to the elements rather than casting a NULL
+pointer to an integer, which results in the following warning from GCC:
 
-Reported-by: Peter Zijlstra <peterz@infradead.org>
-Cc: Adrian Hunter <adrian.hunter@intel.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/20140728065844.GK6758@twins.programming.kicks-ass.net
-Signed-off-by: Jiri Olsa <jolsa@kernel.org>
+	arch/ia64/sn/kernel/bte.c:117:22: warning: cast from pointer to integer of different size [-Wpointer-to-int-cast]
+	    nasid_to_try[1] = (int)NULL;
+	                      ^
+	arch/ia64/sn/kernel/bte.c:125:22: warning: cast from pointer to integer of different size [-Wpointer-to-int-cast]
+	    nasid_to_try[1] = (int)NULL;
+	                      ^
+
+Replace (int)NULL with a simple 0 to silence these warnings.
+
+Signed-off-by: Thierry Reding <treding@nvidia.com>
 ---
- tools/perf/util/cloexec.c | 9 ++-------
- 1 file changed, 2 insertions(+), 7 deletions(-)
+ arch/ia64/sn/kernel/bte.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/util/cloexec.c b/tools/perf/util/cloexec.c
-index 6a37be53a5d2..c5d05ec17220 100644
---- a/tools/perf/util/cloexec.c
-+++ b/tools/perf/util/cloexec.c
-@@ -1,4 +1,3 @@
--#include <sched.h>
- #include "util.h"
- #include "../perf.h"
- #include "cloexec.h"
-@@ -15,13 +14,9 @@ static int perf_flag_probe(void)
- 	};
- 	int fd;
- 	int err;
--	int cpu = sched_getcpu();
--
--	if (cpu < 0)
--		cpu = 0;
+diff --git a/arch/ia64/sn/kernel/bte.c b/arch/ia64/sn/kernel/bte.c
+index cad775a1a157..b2eb48490754 100644
+--- a/arch/ia64/sn/kernel/bte.c
++++ b/arch/ia64/sn/kernel/bte.c
+@@ -114,7 +114,7 @@ bte_result_t bte_copy(u64 src, u64 dest, u64 len, u64 mode, void *notification)
+ 		if (mode & BTE_USE_ANY) {
+ 			nasid_to_try[1] = my_nasid;
+ 		} else {
+-			nasid_to_try[1] = (int)NULL;
++			nasid_to_try[1] = 0;
+ 		}
+ 	} else {
+ 		/* try local then remote */
+@@ -122,7 +122,7 @@ bte_result_t bte_copy(u64 src, u64 dest, u64 len, u64 mode, void *notification)
+ 		if (mode & BTE_USE_ANY) {
+ 			nasid_to_try[1] = NASID_GET(dest);
+ 		} else {
+-			nasid_to_try[1] = (int)NULL;
++			nasid_to_try[1] = 0;
+ 		}
+ 	}
  
- 	/* check cloexec flag */
--	fd = sys_perf_event_open(&attr, -1, cpu, -1,
-+	fd = sys_perf_event_open(&attr, 0, -1, -1,
- 				 PERF_FLAG_FD_CLOEXEC);
- 	err = errno;
- 
-@@ -35,7 +30,7 @@ static int perf_flag_probe(void)
- 		  err, strerror(err));
- 
- 	/* not supported, confirm error related to PERF_FLAG_FD_CLOEXEC */
--	fd = sys_perf_event_open(&attr, -1, cpu, -1, 0);
-+	fd = sys_perf_event_open(&attr, 0, -1, -1, 0);
- 	err = errno;
- 
- 	if (WARN_ONCE(fd < 0,
 -- 
-1.8.3.1
+2.0.2
 
