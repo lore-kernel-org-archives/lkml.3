@@ -1,101 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752664AbaG1Nmq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 09:42:46 -0400
-Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:16559 "EHLO
-	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751365AbaG1Nml (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 09:42:41 -0400
-Message-ID: <53D64D40.80606@fb.com>
-Date: Mon, 28 Jul 2014 09:16:48 -0400
-From: Josef Bacik <jbacik@fb.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1752709AbaG1NnO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 09:43:14 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:57732 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751674AbaG1NnN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jul 2014 09:43:13 -0400
+X-IronPort-AV: E=Sophos;i="5.01,749,1400025600"; 
+   d="scan'208";a="156369741"
+Message-ID: <53D6536E.70104@citrix.com>
+Date: Mon, 28 Jul 2014 14:43:10 +0100
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
 MIME-Version: 1.0
-To: Takashi Iwai <tiwai@suse.de>, Chris Mason <clm@fb.com>
-CC: <linux-btrfs@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] Btrfs: Fix memory corruption by ulist_add_merge() on
- 32bit arch
-References: <1406537824-2376-1-git-send-email-tiwai@suse.de>
-In-Reply-To: <1406537824-2376-1-git-send-email-tiwai@suse.de>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+To: Vitaly Kuznetsov <vkuznets@redhat.com>, <xen-devel@lists.xenproject.org>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Andrew Jones <drjones@redhat.com>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH RFC 3/4] xen/pvhvm: Unmap all PIRQs on startup and shutdown
+References: <1405431640-649-1-git-send-email-vkuznets@redhat.com> <1405431640-649-4-git-send-email-vkuznets@redhat.com>
+In-Reply-To: <1405431640-649-4-git-send-email-vkuznets@redhat.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.16.4]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.14,0.0.0000
- definitions=2014-07-28_01:2014-07-28,2014-07-28,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0
- kscore.is_bulkscore=4.38538094726937e-15 kscore.compositescore=0
- circleOfTrustscore=34.2817289695437 compositescore=0.998981209195878
- urlsuspect_oldscore=0.998981209195878 suspectscore=0
- recipient_domain_to_sender_totalscore=0 phishscore=0 bulkscore=0
- kscore.is_spamscore=0 recipient_to_sender_totalscore=0
- recipient_domain_to_sender_domain_totalscore=64355
- rbsscore=0.998981209195878 spamscore=0
- recipient_to_sender_domain_totalscore=0 urlsuspectscore=0.9 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
- definitions=main-1407280160
-X-FB-Internal: deliver
+X-Originating-IP: [10.80.2.76]
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/28/2014 04:57 AM, Takashi Iwai wrote:
-> We've got bug reports that btrfs crashes when quota is enabled on
-> 32bit kernel, typically with the Oops like below:
->   BUG: unable to handle kernel NULL pointer dereference at 00000004
->   IP: [<f9234590>] find_parent_nodes+0x360/0x1380 [btrfs]
->   *pde = 00000000
->   Oops: 0000 [#1] SMP
->   CPU: 0 PID: 151 Comm: kworker/u8:2 Tainted: G S      W 3.15.2-1.gd43d97e-default #1
->   Workqueue: btrfs-qgroup-rescan normal_work_helper [btrfs]
->   task: f1478130 ti: f147c000 task.ti: f147c000
->   EIP: 0060:[<f9234590>] EFLAGS: 00010213 CPU: 0
->   EIP is at find_parent_nodes+0x360/0x1380 [btrfs]
->   EAX: f147dda8 EBX: f147ddb0 ECX: 00000011 EDX: 00000000
->   ESI: 00000000 EDI: f147dda4 EBP: f147ddf8 ESP: f147dd38
->    DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
->   CR0: 8005003b CR2: 00000004 CR3: 00bf3000 CR4: 00000690
->   Stack:
->    00000000 00000000 f147dda4 00000050 00000001 00000000 00000001 00000050
->    00000001 00000000 d3059000 00000001 00000022 000000a8 00000000 00000000
->    00000000 000000a1 00000000 00000000 00000001 00000000 00000000 11800000
->   Call Trace:
->    [<f923564d>] __btrfs_find_all_roots+0x9d/0xf0 [btrfs]
->    [<f9237bb1>] btrfs_qgroup_rescan_worker+0x401/0x760 [btrfs]
->    [<f9206148>] normal_work_helper+0xc8/0x270 [btrfs]
->    [<c025e38b>] process_one_work+0x11b/0x390
->    [<c025eea1>] worker_thread+0x101/0x340
->    [<c026432b>] kthread+0x9b/0xb0
->    [<c0712a71>] ret_from_kernel_thread+0x21/0x30
->    [<c0264290>] kthread_create_on_node+0x110/0x110
->
-> This indicates a NULL corruption in prefs_delayed list.  The further
-> investigation and bisection pointed that the call of ulist_add_merge()
-> results in the corruption.
->
-> ulist_add_merge() takes u64 as aux and writes a 64bit value into
-> old_aux.  The callers of this function in backref.c, however, pass a
-> pointer of a pointer to old_aux.  That is, the function overwrites
-> 64bit value on 32bit pointer.  This caused a NULL in the adjacent
-> variable, in this case, prefs_delayed.
->
-> Here is a quick attempt to band-aid over this: a new function,
-> ulist_add_merge_ptr() is introduced to pass/store properly a pointer
-> value instead of u64.  There are still ugly void ** cast remaining
-> in the callers because void ** cannot be taken implicitly.  But, it's
-> safer than explicit cast to u64, anyway.
->
-> Bugzilla: https://urldefense.proofpoint.com/v1/url?u=https://bugzilla.novell.com/show_bug.cgi?id%3D887046&k=ZVNjlDMF0FElm4dQtryO4A%3D%3D%0A&r=cKCbChRKsMpTX8ybrSkonQ%3D%3D%0A&m=m3qrbo6ngjqKO%2B7ofuwRfQflb9Cx%2FXrF8TKejkPjxfA%3D%0A&s=199a5b6f0ed181925e9ba2c1060fe20d1c8ad2831dd1d96cc7eddd2a343fa72b
-> Cc: <stable@vger.kernel.org> [v3.11+]
-> Signed-off-by: Takashi Iwai <tiwai@suse.de>
-> ---
->
-> Alternatively, we can change the argument of aux and old_aux to a
-> pointer from u64, as backref.c is the only user of ulist_add_merge()
-> function.  I'll cook up another patch if it's the preferred way.
->
+On 15/07/14 14:40, Vitaly Kuznetsov wrote:
+> When kexec is being run PIRQs from Qemu-emulated devices are still
+> mapped to old event channels and new kernel has no information about
+> that. Trying to map them twice results in the following in Xen's dmesg:
+> 
+>  (XEN) irq.c:2278: dom7: pirq 24 or emuirq 8 already mapped
+>  (XEN) irq.c:2278: dom7: pirq 24 or emuirq 12 already mapped
+>  (XEN) irq.c:2278: dom7: pirq 24 or emuirq 1 already mapped
+>  ...
+> 
+>  and the following in new kernel's dmesg:
+> 
+>  [   92.286796] xen:events: Failed to obtain physical IRQ 4
+> 
+> The result is that the new kernel doesn't recieve IRQs for Qemu-emulated
+> devices. Address the issue by unmapping all mapped PIRQs on kernel shutdown
+> when kexec was requested and on every kernel startup. We need to do this
+> twice to deal with the following issues:
+> - startup-time unmapping is required to make kdump work;
+> - shutdown-time unmapping is required to support kexec-ing non-fixed kernels;
+> - shutdown-time unmapping is required to make Qemu-emulated NICs work after
+>   kexec (event channel is being closed on shutdown but no PHYSDEVOP_unmap_pirq
+>   is being performed).
 
-Yeah lets just use a pointer and see how that works out.  Thanks,
+I think this should be done only in one place -- just prior to exec'ing
+the new kernel (including kdump kernels).
 
-Josef
+> --- a/arch/x86/xen/smp.c
+> +++ b/arch/x86/xen/smp.c
+> @@ -768,6 +768,7 @@ void xen_kexec_shutdown(void)
+>  #ifdef CONFIG_KEXEC
+>  	if (!kexec_in_progress)
+>  		return;
+> +	xen_unmap_all_pirqs();
+>  #endif
+>  }
+>  
+> diff --git a/drivers/xen/events/events_base.c b/drivers/xen/events/events_base.c
+> index c919d3d..7701c7f 100644
+> --- a/drivers/xen/events/events_base.c
+> +++ b/drivers/xen/events/events_base.c
+> @@ -1643,6 +1643,80 @@ void xen_callback_vector(void) {}
+>  static bool fifo_events = true;
+>  module_param(fifo_events, bool, 0);
+>  
+> +void xen_unmap_all_pirqs(void)
+> +{
+> +	int pirq, rc, gsi, irq, evtchn;
+> +	struct physdev_unmap_pirq unmap_irq;
+> +	struct irq_info *info;
+> +	struct evtchn_close close;
+> +
+> +	mutex_lock(&irq_mapping_update_lock);
+> +
+> +	list_for_each_entry(info, &xen_irq_list_head, list) {
+> +		if (info->type != IRQT_PIRQ)
+> +			continue;
 
+I think you need to do this by querying Xen state rather than relying on
+potentially bad guest state.  Particularly since you may crash while
+holding irq_mapping_update_lock.
+
+EVTCHNOP_status gets you the info you need I think.
+
+David
