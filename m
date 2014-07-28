@@ -1,35 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751649AbaG1R67 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 13:58:59 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:38457 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750910AbaG1R64 (ORCPT
+	id S1751841AbaG1R7N (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 13:59:13 -0400
+Received: from mail-ie0-f179.google.com ([209.85.223.179]:46953 "EHLO
+	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751710AbaG1R7I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 13:58:56 -0400
-Message-ID: <53D68F5F.6050109@wwwdotorg.org>
-Date: Mon, 28 Jul 2014 11:58:55 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Mon, 28 Jul 2014 13:59:08 -0400
 MIME-Version: 1.0
-To: =?UTF-8?B?QW5kcmVhcyBGw6RyYmVy?= <afaerber@suse.de>
-CC: linux-tegra@vger.kernel.org, thierry.reding@gmail.com,
-        linux-arm-kernel@lists.infradead.org,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] MAINTAINERS: Update Tegra Git URL
-References: <1406568643-2047-1-git-send-email-afaerber@suse.de>
-In-Reply-To: <1406568643-2047-1-git-send-email-afaerber@suse.de>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140728144608.7d9ac736@canb.auug.org.au>
+References: <20140728144608.7d9ac736@canb.auug.org.au>
+From: Sonny Rao <sonnyrao@chromium.org>
+Date: Mon, 28 Jul 2014 10:58:47 -0700
+X-Google-Sender-Auth: 274bqCYkHEf-Zc4mqRlxzfnuaUM
+Message-ID: <CAPz6YkWO=cJSrPk2+Xy_Euxv9tMt6EHc-k+NTNAoPmVvxCE4-A@mail.gmail.com>
+Subject: Re: linux-next: build failure after merge of the mmc-uh tree
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Ulf Hansson <ulf.hansson@linaro.org>, linux-next@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/28/2014 11:30 AM, Andreas Färber wrote:
-> swarren/linux-tegra.git does not exist, it's tegra/linux.git.
+On Sun, Jul 27, 2014 at 9:46 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> Hi Ulf,
+>
+> After merging the mmc-uh tree, today's linux-next build (arm
+> multi_v7_defconfig) failed like this:
+>
+> drivers/mmc/host/dw_mmc.c: In function 'dw_mci_reset':
+> drivers/mmc/host/dw_mmc.c:2262:3: error: implicit declaration of function 'dw_mci_idmac_reset' [-Werror=implicit-function-declaration]
+>    dw_mci_idmac_reset(host);
+>    ^
 
-FWIW, there is a redirect in place, so "git clone" on the old URL works 
-fine. Still, we should indeed update the MAINTAINERS entry to point at 
-the correct location.
+Hi, sorry about that.  It looks like it fails to build when
+CONFIG_MMC_DW_IDMAC is not set.
+I changed that bit of code from using #ifdef to using just C if
+statement, but I think in this case the function being called doesn't
+exist when CONFIG_MMC_DW_IDMAC is not set, so that was incorrect and
+we should go back to using something like:
 
-I'll forward this on to arm@kernel.org to be applied.
+#if IS_ENABLED(CONFIG_MMC_DW_IDMAC)
+        /* It is also recommended that we reset and reprogram idmac */
+        dw_mci_idmac_reset(host);
+#endif
+
+
+Ulf, I can respin the patch if you'd like or feel free to fix it
+yourself too.  Thanks.
+
+
+>
+> Caused by commit 25f7dadbd982 ("mmc: dw_mmc: change to use recommended
+> reset procedure").
+>
+> I have used the mmc-uh tree from next-20140725 for today.
+> --
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
