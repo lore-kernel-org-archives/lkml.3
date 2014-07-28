@@ -1,56 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752917AbaG1NOf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 09:14:35 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:64873 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751703AbaG1NOc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 09:14:32 -0400
-X-IronPort-AV: E=Sophos;i="5.01,749,1400025600"; 
-   d="scan'208";a="156891861"
-Message-ID: <53D64CB5.4070703@citrix.com>
-Date: Mon, 28 Jul 2014 14:14:29 +0100
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
-MIME-Version: 1.0
-To: Matt Rushton <mvrushton@gmail.com>, <konrad.wilk@oracle.com>,
-        <boris.ostrovsky@oracle.com>
-CC: <msw@amazon.com>, <linux-kernel@vger.kernel.org>,
-        <xen-devel@lists.xensource.com>, Matt Rushton <mrushton@amazon.com>
-Subject: Re: [PATCH v2 1/2] xen/setup: Remove Identity Map Debug Message
-References: <1405814495-10868-1-git-send-email-mrushton@amazon.com>
-In-Reply-To: <1405814495-10868-1-git-send-email-mrushton@amazon.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.76]
-X-DLP: MIA2
+	id S1753027AbaG1NPS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 09:15:18 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:52325 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752119AbaG1NMG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jul 2014 09:12:06 -0400
+From: Vlastimil Babka <vbabka@suse.cz>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@vger.kernel.org,
+        Vlastimil Babka <vbabka@suse.cz>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan@kernel.org>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+Subject: [PATCH v5 04/14] mm, compaction: do not recheck suitable_migration_target under lock
+Date: Mon, 28 Jul 2014 15:11:31 +0200
+Message-Id: <1406553101-29326-5-git-send-email-vbabka@suse.cz>
+X-Mailer: git-send-email 1.8.4.5
+In-Reply-To: <1406553101-29326-1-git-send-email-vbabka@suse.cz>
+References: <1406553101-29326-1-git-send-email-vbabka@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20/07/14 01:01, Matt Rushton wrote:
-> Removing a debug message for setting the identity map since it becomes
-> rather noisy after rework of the identity map code.
+isolate_freepages_block() rechecks if the pageblock is suitable to be a target
+for migration after it has taken the zone->lock. However, the check has been
+optimized to occur only once per pageblock, and compact_checklock_irqsave()
+might be dropping and reacquiring lock, which means somebody else might have
+changed the pageblock's migratetype meanwhile.
 
-Reviewed-by: David Vrabel <david.vrabel@citrix.com>
+Furthermore, nothing prevents the migratetype to change right after
+isolate_freepages_block() has finished isolating. Given how imperfect this is,
+it's simpler to just rely on the check done in isolate_freepages() without
+lock, and not pretend that the recheck under lock guarantees anything. It is
+just a heuristic after all.
 
-David
+Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
+Reviewed-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+Acked-by: Minchan Kim <minchan@kernel.org>
+Acked-by: Mel Gorman <mgorman@suse.de>
+Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Cc: Michal Nazarewicz <mina86@mina86.com>
+Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: Christoph Lameter <cl@linux.com>
+Cc: Rik van Riel <riel@redhat.com>
+Acked-by: David Rientjes <rientjes@google.com>
+---
+ mm/compaction.c | 13 -------------
+ 1 file changed, 13 deletions(-)
 
-> --- a/arch/x86/xen/p2m.c
-> +++ b/arch/x86/xen/p2m.c
-> @@ -841,10 +841,9 @@ unsigned long __init set_phys_range_identity(unsigned long pfn_s,
->  			pfn = ALIGN(pfn, P2M_PER_PAGE);
->  	}
->  
-> -	if (!WARN((pfn - pfn_s) != (pfn_e - pfn_s),
-> +	WARN((pfn - pfn_s) != (pfn_e - pfn_s),
->  		"Identity mapping failed. We are %ld short of 1-1 mappings!\n",
-> -		(pfn_e - pfn_s) - (pfn - pfn_s)))
-> -		printk(KERN_DEBUG "1-1 mapping on %lx->%lx\n", pfn_s, pfn);
-> +		(pfn_e - pfn_s) - (pfn - pfn_s));
->  
->  	return pfn - pfn_s;
->  }
-> 
+diff --git a/mm/compaction.c b/mm/compaction.c
+index f3ae2ec..0a871e5 100644
+--- a/mm/compaction.c
++++ b/mm/compaction.c
+@@ -276,7 +276,6 @@ static unsigned long isolate_freepages_block(struct compact_control *cc,
+ 	struct page *cursor, *valid_page = NULL;
+ 	unsigned long flags;
+ 	bool locked = false;
+-	bool checked_pageblock = false;
+ 
+ 	cursor = pfn_to_page(blockpfn);
+ 
+@@ -307,18 +306,6 @@ static unsigned long isolate_freepages_block(struct compact_control *cc,
+ 		if (!locked)
+ 			break;
+ 
+-		/* Recheck this is a suitable migration target under lock */
+-		if (!strict && !checked_pageblock) {
+-			/*
+-			 * We need to check suitability of pageblock only once
+-			 * and this isolate_freepages_block() is called with
+-			 * pageblock range, so just check once is sufficient.
+-			 */
+-			checked_pageblock = true;
+-			if (!suitable_migration_target(page))
+-				break;
+-		}
+-
+ 		/* Recheck this is a buddy page under lock */
+ 		if (!PageBuddy(page))
+ 			goto isolate_fail;
+-- 
+1.8.4.5
 
