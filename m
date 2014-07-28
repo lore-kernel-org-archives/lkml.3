@@ -1,172 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751365AbaG1EUB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 00:20:01 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:49559 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750781AbaG1EUA (ORCPT
+	id S1751083AbaG1Eiq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 00:38:46 -0400
+Received: from smtprelay2.synopsys.com ([198.182.60.111]:36484 "EHLO
+	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750708AbaG1Ein convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 00:20:00 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v2.0.1
-X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-3
-Message-ID: <53D5CF2A.2030007@jp.fujitsu.com>
-Date: Mon, 28 Jul 2014 13:18:50 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Mon, 28 Jul 2014 00:38:43 -0400
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+To: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <robherring2@gmail.com>
+CC: linux-next <linux-next@vger.kernel.org>,
+        Anton Kolesov <Anton.Kolesov@synopsys.com>,
+        lkml <linux-kernel@vger.kernel.org>,
+        "greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: ARC fails to boot on linux-next of 20140711
+Thread-Topic: ARC fails to boot on linux-next of 20140711
+Thread-Index: AQHPqBLvyGf0o+N2PkKO3xmia19llg==
+Date: Mon, 28 Jul 2014 04:38:38 +0000
+Message-ID: <C2D7FE5348E1B147BCA15975FBA230753C4B8155@IN01WEMBXA.internal.synopsys.com>
+References: <C2D7FE5348E1B147BCA15975FBA230753C4B67CF@IN01WEMBXA.internal.synopsys.com>
+	<CAL_JsqJ2q0RSvXQW03RqwwBi_TKQ7Zt6DsUbsUruzh5oqYi5Cg@mail.gmail.com>
+	<C2D7FE5348E1B147BCA15975FBA230753C4B7DD5@IN01WEMBXA.internal.synopsys.com>
+ <20140726165055.D3E64C43E0B@trevor.secretlab.ca>
+Accept-Language: en-US, en-IN
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.12.196.93]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: <tglx@linutronix.de>, <mingo@redhat.com>, <hpa@zytor.com>, <bp@alien8.de>,
-        <gong.chen@linux.intel.com>, <tony.luck@intel.com>,
-        <toshi.kani@hp.com>
-CC: <x86@kernel.org>, <imammedo@redhat.com>, <huawei.libin@huawei.com>,
-        <paul.gortmaker@windriver.com>, <linux-kernel@vger.kernel.org>,
-        <srivatsa.bhat@linux.vnet.ibm.com>, <umgwanakikbuti@gmail.com>,
-        <peterz@infradead.org>
-Subject: Re: [PATCH v4] x86,cpu-hotplug: assign same CPU number to readded
- CPU
-References: <53CF2A81.7080505@jp.fujitsu.com>
-In-Reply-To: <53CF2A81.7080505@jp.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-SecurityPolicyCheck-GC: OK by FENCE-Mail
-X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ping.
+On Saturday 26 July 2014 10:21 PM, Grant Likely wrote:
+> On Sat, 26 Jul 2014 06:52:36 +0000, Vineet Gupta <Vineet.Gupta1@synopsys.com> wrote:
+>> Hi Rob,
+>>
+>> On Friday 25 July 2014 07:45 PM, Rob Herring wrote:
+>>> On Fri, Jul 25, 2014 at 6:02 AM, Vineet Gupta
+>>> <Vineet.Gupta1@synopsys.com> wrote:
+>>>>> Hi Grant,
+>>>>>
+>>>>> linux-next has a series for arc_uart (via tty tree) which converts it to generic
+>>>>> earlycon and specifies console via /chosen/stdout-path vs.  an explicit param in
+>>>>> /chose/bootargs
+>>>>>
+>>>>> 2014-06-24 9da433c0a0b5 ARC: [arcfpga] stdout-path now suffices for earlycon/console
+>>>>>
+>>>>> This relied on prev commit of yours (from linux next of 20140711), which seem to
+>>>>> have disappeared now.
+>>>>>
+>>>>> 2014-03-27 a9296cf2d0b6 of: Create of_console_check() for selecting a console
+>>>>> specified in /chosen
+>>>>> 2014-03-27 cfa9cacc5dd3 of: Enable console on serial ports specified by
+>>>>> /chosen/stdout-path
+>>>>>
+>>>>> Is there a specific reason for dropping these patches (or perhaps a merge to be
+>>>>> merged). I cherry-picked both but still doesn't work.
+>>>>>
+>>>>> Can you please advise next step forward, before I go off debugging with those
+>>>>> patches in.
+>>> There's an issue that if you have stdout-path and "earlycon" on the
+>>> command line, the kernel will switch to tty0 and disable the earlycon.
+>>>
+>>> This is the "fix", but I don't like adding the DT dependency into generic code:
+>>>
+>>> @@ -2382,7 +2386,7 @@ void register_console(struct console *newcon)
+>>>                 if (newcon->setup == NULL ||
+>>>                     newcon->setup(newcon, NULL) == 0) {
+>>>                         newcon->flags |= CON_ENABLED;
+>>> -                       if (newcon->device) {
+>>> +                       if (newcon->device  && !of_stdout) {
+>>>                                 newcon->flags |= CON_CONSDEV;
+>>>                                 preferred_console = 0;
+>>>                         }
+>> The DT settings relevant for ARC, which enable generic-earlycon and
+>> console-with-stdout-path are as follows
+>>
+>>         chosen {
+>>                 bootargs = "earlycon";
+>>                 stdout-path = &arcuart0;
+>>         };
+>>
+>> ....
+>>                 arcuart0: serial@c0fc1000 {
+>>                         compatible = "snps,arc-uart";
+>>
+>> And it works w/o above hunk, provided the 2 patches from Grant exist in linux-next
+>> which they don't at the moment. I'm pretty confused how the hunk above comes into
+>> picture.
+>>
+>> And if not then I will have to get the ARC std-out patch reverted in tty-next as
+>> it is broken.
+> You need to revert it anyway, the dependency chain is broken. Just
+> because something is in linux-next doesn't mean it will be merged.
+> Dependencies must always be in the branch to which you commit.
+>
+> If that doesn't happen (like here) then bisecting is broken and the
+> dependencies may not actually get merged.
+>
+> When this happens, what you're supposed to do is tell the maintainers
+> what commits the patch depends on so that it can be applied to the
+> correct tree. In this case I could take it through my devicetree branch
+> that contains the console patches.
 
-(2014/07/23 12:22), Yasuaki Ishimatsu wrote:
-> llc_shared_map is not cleared even if CPU is offline or hot removed.
-> So when hot-plugging CPU and assigning new CPU number to hot-added CPU,
-> the mask has wrong value. The mask is used by CSF schduler to create
-> sched_domain. So it breaks CFS scheduler.
->
-> Here is a example on my system.
-> My system has 4 sockets and each socket has 15 cores and HT is enabled.
-> In this case, each core of sockes is numbered as follows:
->
->           | CPU#
-> Socket#0 | 0-14 , 60-74
-> Socket#1 | 15-29, 75-89
-> Socket#2 | 30-44, 90-104
-> Socket#3 | 45-59, 105-119
->
-> Then llc_shared_mask of CPU#30 has 0x3fff80000001fffc0000000.
-> It means that last level cache of Socket#2 is shared with
-> CPU#30-44 and 90-104.
->
-> When hot-removing socket#2 and #3, each core of sockets is numbered
-> as follows:
->
->           | CPU#
-> Socket#0 | 0-14 , 60-74
-> Socket#1 | 15-29, 75-89
->
-> But llc_shared_mask is not cleared. So llc_shared_mask of CPU#30 remains
-> having 0x3fff80000001fffc0000000.
->
-> After that, when hot-adding socket#2 and #3, each core of sockets is
-> numbered as follows:
->
->           | CPU#
-> Socket#0 | 0-14 , 60-74
-> Socket#1 | 15-29, 75-89
-> Socket#2 | 30-59
-> Socket#3 | 90-119
->
-> Then llc_shared_mask of CPU#30 becomes 0x3fff8000fffffffc0000000.
-> It means that last level cache of Socket#2 is shared with CPU#30-59
-> and 90-104. So the mask has wrong value.
->
-> At first, I cleared hot-removed CPU number's bit from llc_shared_map
-> when hot removing CPU. But Borislav suggested that the problem will
-> disappear if readded CPU is assigned same CPU number. And llc_shared_map
-> must not be changed.
->
-> So the patch assigns same CPU number to readded CPU by linking CPU
-> number to APIC ID. And by the patch, the problem disappers.
->
-> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-> Suggested-by: Borislav Petkov <bp@alien8.de>
-> Reviewed-by: Toshi Kani <toshi.kani@hp.com>
-> ---
-> v2: change cpuid to cpunum
-> v3: fix Borislav's email address of Suggested-by
->      fix typo (ACPI ID to APIC ID)
-> v4: change cpu_used_xxx to cpu_number_xxx
-> ---
->   arch/x86/kernel/apic/apic.c | 33 ++++++++++++++++++++++++++++++++-
->   1 file changed, 32 insertions(+), 1 deletion(-)
->
-> diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
-> index ad28db7..5cecc3b 100644
-> --- a/arch/x86/kernel/apic/apic.c
-> +++ b/arch/x86/kernel/apic/apic.c
-> @@ -220,6 +220,23 @@ static void apic_pm_activate(void);
->   static unsigned long apic_phys;
->
->   /*
-> + * Bind APIC ID to Logical CPU number
-> + * Logical CPU number to APIC ID does not change by this array
-> + * even if CPU is hotplugged. So don't clear the array even if
-> + * CPU is hot-removed
-> + */
-> +static int apicid_to_cpunum[MAX_LOCAL_APIC] = {
-> +    [0 ... MAX_LOCAL_APIC-1] = -1,
-> +};
-> +
-> +/*
-> + * Represent Logical CPU number bound to APIC ID
-> + * Don't clear a bit even if CPU is hot-removed
-> + */
-> +static DECLARE_BITMAP(cpu_number_bits, CONFIG_NR_CPUS);
-> +static struct cpumask *const cpu_number_mask = to_cpumask(cpu_number_bits);
-> +
-> +/*
->    * Get the LAPIC version
->    */
->   static inline int lapic_get_version(void)
-> @@ -2122,6 +2139,17 @@ void disconnect_bsp_APIC(int virt_wire_setup)
->       apic_write(APIC_LVT1, value);
->   }
->
-> +static int get_cpunum(int apicid)
-> +{
-> +    int cpu;
-> +
-> +    cpu = apicid_to_cpunum[apicid];
-> +    if (cpu < 0)
-> +        cpu = cpumask_next_zero(-1, cpu_number_mask);
-> +
-> +    return cpu;
-> +}
-> +
->   int generic_processor_info(int apicid, int version)
->   {
->       int cpu, max = nr_cpu_ids;
-> @@ -2199,7 +2227,9 @@ int generic_processor_info(int apicid, int version)
->            */
->           cpu = 0;
->       } else
-> -        cpu = cpumask_next_zero(-1, cpu_present_mask);
-> +        cpu = get_cpunum(apicid);
-> +
-> +    apicid_to_cpunum[apicid] = cpu;
->
->       /*
->        * Validate version
-> @@ -2228,6 +2258,7 @@ int generic_processor_info(int apicid, int version)
->       early_per_cpu(x86_cpu_to_logical_apicid, cpu) =
->           apic->x86_32_early_logical_apicid(cpu);
->   #endif
-> +    cpumask_set_cpu(cpu, cpu_number_mask);
->       set_cpu_possible(cpu, true);
->       set_cpu_present(cpu, true);
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+I understand all of that. Actually 9 out of 10 of my changes were for switching to
+earlycon for which corresponding core changes from Rob were already in mainline.
+When reviewing my code, Rob pointed me to your on going work on use of stdout-path
+so my mistake was to pile that up in the same series vs. asking you to add that
+patch in ur tree for precisely the multi dependency reason.
 
+> If a patch depends on commits in several branches then it is a bit more
+> complex. What we usually do is create a new branch that merges in each
+> branch that is depended on, and then apply the commit on top of that.
+>
+> As for the console patches, I'm only going to be putting them back if I
+> can devise a good fix for the earlycon duplication issue.
+
+If you have an internal branch for this work, can you please add the patch below
+to it so that we don't forget abt it.
+
+https://lkml.org/lkml/2014/6/24/127
+
+I'll ask Greg to revert it from tty tree !
+
+Thx,
+-Vineet
 
