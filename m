@@ -1,282 +1,246 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751940AbaG1VRJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 17:17:09 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:51014 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751064AbaG1VRE (ORCPT
+	id S1752134AbaG1VRf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 17:17:35 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:37257 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751968AbaG1VRa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 17:17:04 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: David Drysdale <drysdale@google.com>
-Cc: LSM List <linux-security-module@vger.kernel.org>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Meredydd Luff <meredydd@senatehouse.org>,
-        Kees Cook <keescook@chromium.org>,
-        James Morris <james.l.morris@oracle.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Paolo Bonzini <pbonzini@redhat.com>, Paul Moore <paul@paul-moore.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Linux API <linux-api@vger.kernel.org>
-References: <1406296033-32693-1-git-send-email-drysdale@google.com>
-	<871tt796i0.fsf@x220.int.ebiederm.org>
-	<CAHse=S_7Jpb9bTXHgU8q8_UZ=ce2gwdq8C15a+jbfO_pHmV_iA@mail.gmail.com>
-Date: Mon, 28 Jul 2014 14:13:11 -0700
-In-Reply-To: <CAHse=S_7Jpb9bTXHgU8q8_UZ=ce2gwdq8C15a+jbfO_pHmV_iA@mail.gmail.com>
-	(David Drysdale's message of "Mon, 28 Jul 2014 17:04:16 +0100")
-Message-ID: <87ha21qja0.fsf@x220.int.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	Mon, 28 Jul 2014 17:17:30 -0400
+From: Felipe Balbi <balbi@ti.com>
+To: Tony Lindgren <tony@atomide.com>
+CC: Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel Mailing List 
+	<linux-arm-kernel@lists.infradead.org>,
+        <bcousson@baylibre.com>, <linux@arm.linux.org.uk>,
+        <khilman@deeprootsystems.com>, <tglx@linutronix.de>,
+        <jason@lakedaemon.net>, <devicetree@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Felipe Balbi <balbi@ti.com>
+Subject: [PATCH 05/35] arm: omap: irq: remove rest of irq_banks usage
+Date: Mon, 28 Jul 2014 16:15:53 -0500
+Message-ID: <1406582183-696-6-git-send-email-balbi@ti.com>
+X-Mailer: git-send-email 2.0.1.563.g66f467c
+In-Reply-To: <1406582183-696-1-git-send-email-balbi@ti.com>
+References: <1406582183-696-1-git-send-email-balbi@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain
-X-XM-AID: U2FsdGVkX1/g4xngPUOegWZTOqke3lq+SgY8ZhHEeFc=
-X-SA-Exim-Connect-IP: 98.234.51.111
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  3.0 XMDrug1234561 Drug references
-	*  0.7 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	*  0.8 BAYES_50 BODY: Bayes spam probability is 40 to 60%
-	*      [score: 0.5000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa01 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.5 XM_Body_Dirty_Words Contains a dirty word
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-	*  1.0 T_XMDrugObfuBody_08 obfuscated drug references
-X-Spam-DCC: XMission; sa01 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: *****;David Drysdale <drysdale@google.com>
-X-Spam-Relay-Country: 
-Subject: Re: [RFC PATCHv2 00/11] Adding FreeBSD's Capsicum security framework
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 13:58:17 -0700)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David Drysdale <drysdale@google.com> writes:
+now we can finally remove the pointless irq_banks
+array.
 
-> On Sat, Jul 26, 2014 at 10:04 PM, Eric W. Biederman
-> <ebiederm@xmission.com> wrote:
->> David Drysdale <drysdale@google.com> writes:
+Signed-off-by: Felipe Balbi <balbi@ti.com>
+---
+ arch/arm/mach-omap2/irq.c | 128 +++++++++++++++++-----------------------------
+ 1 file changed, 47 insertions(+), 81 deletions(-)
 
->>> 1) Capsicum Capabilities
->>> ------------------------
->>>
->>> The most significant aspect of Capsicum is associating *rights* with
->>> (some) file descriptors, so that the kernel only allows operations on an
->>> FD if the rights permit it.  This allows userspace applications to
->>> sandbox themselves by tightly constraining what's allowed with both
->>> input and outputs; for example, tcpdump might restrict itself so it can
->>> only read from the network FD, and only write to stdout.
->>>
->>> The kernel thus needs to police the rights checks for these file
->>> descriptors (referred to as 'Capsicum capabilities', completely
->>> different than POSIX.1e capabilities), and the best place to do this is
->>> at the points where a file descriptor from userspace is converted to a
->>> struct file * within the kernel.
->>>
->>>   [Policing the rights checks anywhere else, for example at the system
->>>   call boundary, isn't a good idea because it opens up the possibility
->>>   of time-of-check/time-of-use (TOCTOU) attacks [2] where FDs are
->>>   changed (as openat/close/dup2 are allowed in capability mode) between
->>>   the 'check' at syscall entry and the 'use' at fget() invocation.]
->>>
->>> However, this does lead to quite an invasive change to the kernel --
->>> every invocation of fget() or similar functions (fdget(),
->>> sockfd_lookup(), user_path_at(),...) needs to be annotated with the
->>> rights associated with the specific operations that will be performed on
->>> the struct file.  There are ~100 such invocations that need
->>> annotation.
->>
->> And it is silly.  Roughly you just need a locking version of
->> fcntl(F_SETFL).
->>
->> That is make the restriction in the struct file not in the fd to file
->> lookup.
->
-> The file status flags are far too coarse -- for example, O_RDONLY
-> doesn't prevent fchmod(2).
->
-> Also, because they're associated with the struct file there is no way
-> to pass a file descriptor with only a subset of rights across a UNIX
-> socket (how do I send a read-only FD corresponding to my
-> O_RDWR file?).
+diff --git a/arch/arm/mach-omap2/irq.c b/arch/arm/mach-omap2/irq.c
+index 3870853..8c85c39 100644
+--- a/arch/arm/mach-omap2/irq.c
++++ b/arch/arm/mach-omap2/irq.c
+@@ -49,8 +49,8 @@
+ #define OMAP3_IRQ_BASE		OMAP2_L4_IO_ADDRESS(OMAP34XX_IC_BASE)
+ #define INTCPS_SIR_IRQ_OFFSET	0x0040	/* omap2/3 active interrupt offset */
+ #define ACTIVEIRQ_MASK		0x7f	/* omap2/3 active interrupt bits */
++#define INTCPS_NR_ILR_REGS	128
+ #define INTCPS_NR_MIR_REGS	3
+-#define INTCPS_NR_IRQS		96
+ 
+ /*
+  * OMAP2 has a number of different interrupt controllers, each interrupt
+@@ -58,15 +58,6 @@
+  * fairly consistent for each bank, but not all registers are implemented
+  * for each bank.. when in doubt, consult the TRM.
+  */
+-static struct omap_irq_bank {
+-	void __iomem *base_reg;
+-	unsigned int nr_irqs;
+-} __attribute__ ((aligned(4))) irq_banks[] = {
+-	{
+-		/* MPU INTC */
+-		.nr_irqs	= 96,
+-	},
+-};
+ 
+ static struct irq_domain *domain;
+ static void __iomem *omap_irq_base;
+@@ -78,7 +69,7 @@ struct omap3_intc_regs {
+ 	u32 protection;
+ 	u32 idle;
+ 	u32 threshold;
+-	u32 ilr[INTCPS_NR_IRQS];
++	u32 ilr[INTCPS_NR_ILR_REGS];
+ 	u32 mir[INTCPS_NR_MIR_REGS];
+ };
+ 
+@@ -105,13 +96,14 @@ static void omap_mask_ack_irq(struct irq_data *d)
+ 	omap_ack_irq(d);
+ }
+ 
+-static void __init omap_irq_bank_init_one(struct omap_irq_bank *bank)
++static void __init omap_irq_soft_reset(void)
+ {
+ 	unsigned long tmp;
+ 
+ 	tmp = intc_readl(INTC_REVISION) & 0xff;
++
+ 	pr_info("IRQ: Found an INTC at 0x%p (revision %ld.%ld) with %d interrupts\n",
+-		bank->base_reg, tmp >> 4, tmp & 0xf, bank->nr_irqs);
++		omap_irq_base, tmp >> 4, tmp & 0xf, omap_nr_irqs);
+ 
+ 	tmp = intc_readl(INTC_SYSCONFIG);
+ 	tmp |= 1 << 1;	/* soft reset */
+@@ -126,17 +118,12 @@ static void __init omap_irq_bank_init_one(struct omap_irq_bank *bank)
+ 
+ int omap_irq_pending(void)
+ {
+-	int i;
++	int irq;
+ 
+-	for (i = 0; i < ARRAY_SIZE(irq_banks); i++) {
+-		struct omap_irq_bank *bank = irq_banks + i;
+-		int irq;
+-
+-		for (irq = 0; irq < bank->nr_irqs; irq += 32)
+-			if (intc_readl(INTC_PENDING_IRQ0 +
+-					       ((irq >> 5) << 5)))
+-				return 1;
+-	}
++	for (irq = 0; irq < omap_nr_irqs; irq += 32)
++		if (intc_readl(INTC_PENDING_IRQ0 +
++					((irq >> 5) << 5)))
++			return 1;
+ 	return 0;
+ }
+ 
+@@ -163,9 +150,7 @@ omap_alloc_gc(void __iomem *base, unsigned int irq_start, unsigned int num)
+ static void __init omap_init_irq(u32 base, int nr_irqs,
+ 				 struct device_node *node)
+ {
+-	unsigned long nr_of_irqs = 0;
+-	unsigned int nr_banks = 0;
+-	int i, j, irq_base;
++	int j, irq_base;
+ 
+ 	omap_irq_base = ioremap(base, SZ_4K);
+ 	if (WARN_ON(!omap_irq_base))
+@@ -180,31 +165,12 @@ static void __init omap_init_irq(u32 base, int nr_irqs,
+ 	}
+ 
+ 	domain = irq_domain_add_legacy(node, nr_irqs, irq_base, 0,
+-				       &irq_domain_simple_ops, NULL);
+-
+-	for (i = 0; i < ARRAY_SIZE(irq_banks); i++) {
+-		struct omap_irq_bank *bank = irq_banks + i;
+-
+-		bank->nr_irqs = nr_irqs;
+-
+-		/* Static mapping, never released */
+-		bank->base_reg = ioremap(base, SZ_4K);
+-		if (!bank->base_reg) {
+-			pr_err("Could not ioremap irq bank%i\n", i);
+-			continue;
+-		}
+-
+-		omap_irq_bank_init_one(bank);
++			&irq_domain_simple_ops, NULL);
+ 
+-		for (j = 0; j < bank->nr_irqs; j += 32)
+-			omap_alloc_gc(bank->base_reg + j, j + irq_base, 32);
++	omap_irq_soft_reset();
+ 
+-		nr_of_irqs += bank->nr_irqs;
+-		nr_banks++;
+-	}
+-
+-	pr_info("Total of %ld interrupts on %d active controller%s\n",
+-		nr_of_irqs, nr_banks, nr_banks > 1 ? "s" : "");
++	for (j = 0; j < omap_nr_irqs; j += 32)
++		omap_alloc_gc(omap_irq_base + j, j + irq_base, 32);
+ }
+ 
+ void __init omap2_init_irq(void)
+@@ -303,45 +269,45 @@ void __init omap_intc_of_init(void)
+ }
+ 
+ #if defined(CONFIG_ARCH_OMAP3) || defined(CONFIG_SOC_AM33XX)
+-static struct omap3_intc_regs intc_context[ARRAY_SIZE(irq_banks)];
++static struct omap3_intc_regs intc_context;
+ 
+ void omap_intc_save_context(void)
+ {
+-	int ind = 0, i = 0;
+-	for (ind = 0; ind < ARRAY_SIZE(irq_banks); ind++) {
+-		intc_context[ind].sysconfig =
+-			intc_readl(INTC_SYSCONFIG);
+-		intc_context[ind].protection =
+-			intc_readl(INTC_PROTECTION);
+-		intc_context[ind].idle =
+-			intc_readl(INTC_IDLE);
+-		intc_context[ind].threshold =
+-			intc_readl(INTC_THRESHOLD);
+-		for (i = 0; i < INTCPS_NR_IRQS; i++)
+-			intc_context[ind].ilr[i] =
+-				intc_readl((INTC_ILR0 + 0x4 * i));
+-		for (i = 0; i < INTCPS_NR_MIR_REGS; i++)
+-			intc_context[ind].mir[i] =
+-				intc_readl(INTC_MIR0 + (0x20 * i));
+-	}
++	int i;
++
++	intc_context.sysconfig =
++		intc_readl(INTC_SYSCONFIG);
++	intc_context.protection =
++		intc_readl(INTC_PROTECTION);
++	intc_context.idle =
++		intc_readl(INTC_IDLE);
++	intc_context.threshold =
++		intc_readl(INTC_THRESHOLD);
++
++	for (i = 0; i < omap_nr_irqs; i++)
++		intc_context.ilr[i] =
++			intc_readl((INTC_ILR0 + 0x4 * i));
++	for (i = 0; i < INTCPS_NR_MIR_REGS; i++)
++		intc_context.mir[i] =
++			intc_readl(INTC_MIR0 + (0x20 * i));
+ }
+ 
+ void omap_intc_restore_context(void)
+ {
+-	int ind = 0, i = 0;
+-
+-	for (ind = 0; ind < ARRAY_SIZE(irq_banks); ind++) {
+-		intc_writel(INTC_SYSCONFIG, intc_context[ind].sysconfig);
+-		intc_writel(INTC_PROTECTION, intc_context[ind].protection);
+-		intc_writel(INTC_IDLE, intc_context[ind].idle);
+-		intc_writel(INTC_THRESHOLD, intc_context[ind].threshold);
+-		for (i = 0; i < INTCPS_NR_IRQS; i++)
+-			intc_writel(INTC_ILR0 + 0x4 * i,
+-					intc_context[ind].ilr[i]);
+-		for (i = 0; i < INTCPS_NR_MIR_REGS; i++)
+-			intc_writel(INTC_MIR0 + 0x20 * i,
+-				intc_context[ind].mir[i]);
+-	}
++	int i;
++
++	intc_writel(INTC_SYSCONFIG, intc_context.sysconfig);
++	intc_writel(INTC_PROTECTION, intc_context.protection);
++	intc_writel(INTC_IDLE, intc_context.idle);
++	intc_writel(INTC_THRESHOLD, intc_context.threshold);
++
++	for (i = 0; i < omap_nr_irqs; i++)
++		intc_writel(INTC_ILR0 + 0x4 * i,
++				intc_context.ilr[i]);
++
++	for (i = 0; i < INTCPS_NR_MIR_REGS; i++)
++		intc_writel(INTC_MIR0 + 0x20 * i,
++			intc_context.mir[i]);
+ 	/* MIRs are saved and restore with other PRCM registers */
+ }
+ 
+-- 
+2.0.1.563.g66f467c
 
-You can't.  Unix domain sockets pass struct file references.
-That is passing a file descriptor with a unix domain sockets is the
-equivlanet of dup().
-
-You absolutely must make your struct file read-only before passing it,
-otherwise the the receiver will have a read-write instance.
-
-This notion that a shared structure should have different semantics
-depending on who is looking at it, sounds like a maintenance nightmare
-to me. 
-
->> Files in unix have been capabilities for more than 20 years.  That is
->> what file descriptor passing in unix domain sockets are all about.  We
->> don't need an additional ``capability rights'' layer on top of file
->> descriptors.
->
-> True, the ability to pass FDs across UNIX sockets is one of the
-> key things that makes them analogous to object-capabilities and
-> suitable as the substratum for Capsicum.  But the coarseness of the
-> existing rights, and the lack of coherent policing of those rights,
-> means that an (opt-in) extension like Capsicum is useful.
-
-Finer grained restrictions are perfectly sensible.
-
-I don't see how it make sense to place those restrictions in
-struct fdtable instead of in struct file.
-
-I see two sensible implementations:
-- Add a seccomp bpf filter to struct file.
-- Add permission bits to struct file.
-
-The bpf filter would allow for a simple code extension that would
-allow any arbitrary policy to be applied.
-
-Adding permisison bits to struct file for gating access to
-file_operations and inode_operations would result in the fastest
-possible implementation and something very easy to audit and
-understand.  But there like ioctl or read/write on IB control files
-where finer grained permissions might be desirable.
-
-For a lot of operations we alread have bits like FMODE_READ and
-FMODE_CAN_READ on struct file for reasons such as performance
-so that only a single cache line needs to be touched.
-
-It might be that it would be worth having both.  Something cheap and
-genrally accessible and something fast.
-
->> Going farther one huge thing your work and the capsicum work in general
->> is missing is an implementation of revoke.  With a little care a good
->> implementation of bits reporting and controlling which methods are
->> available on which file descriptors should be a good start on
->> a revoke implementation for linux as well.
->
-> Yeah, revocation is interesting.  There was been some discussion of
-> it for Capsicum a while ago:
-> https://lists.cam.ac.uk/pipermail/cl-capsicum-discuss/2011-January/msg00002.html
-> but I don't think a firm conclusion was reached.  As I understand it,
-> there's also a theoretical argument that revocation can be constructed
-> on top of the capability system, by handing out capabilities to proxy
-> objects that can then change their behaviour so they no longer pass
-> operations through.
-
-I believe the capsicum approach is so far from allowing general proxy
-objects that, that is not a compelling case.
-
->>> 3) Allowing Capability Mode
->>> ---------------------------
->>>
->>> Capsicum also includes 'capability mode', which locks down the available
->>> syscalls so the rights restrictions can't just be bypassed by opening
->>> new file descriptors.  More precisely, capability mode prevents access
->>> to syscalls that access global namespaces, such as the filesystem or the
->>> IP:port space.
->>>
->>> The existing seccomp-bpf functionality of the kernel is a good mechanism
->>> for implementing capability mode, but there are a few additional details
->>> that also need to be addressed.
->>>
->>>  a) The capability mode filter program needs to apply process-wide, not
->>>     just to the current thread.
->>>
->>>  b) In capability mode, new files can still be opened with openat(2) but
->>>     only if they are beneath an existing directory file descriptor.
->>
->> Which raises the question is that worth it?
->
-> From a practical point of view, still allowing (directory-relative) filesystem
-> access means it's much easier for an application to adapt to Capsicum.
->
-> A simple example is something like unzip/tar -xf, where locking it down
-> is conceptually as simple as:
->  - apply a CAP_READ restriction to the FD for the input file
->  - apply a CAP_WRITE+CAP_LOOKUP restriction to the DFD for the
->    output directory
->  - enter capability mode.
-> Then the worst a malicious input file can do is to write files under the
-> output directory -- which it could do anyway.
->
-> Similarly, migrating an application that writes temporary files out to
-> some tempdir is much more straightforward if openat(dfd,...) is still
-> allowed.
-
-
->>>  c) In capability mode it should still be possible for a process to send
->>>     signals to itself with kill(2)/tgkill(2).
-
-
-> seL4 may have a much simpler (and more formally-correct) model, but
-> the aim of Capsicum is to get some of the benefits of that well-analysed
-> model without the need for a (massive) migration effort -- and in a way
-> that allows co-existence of migrated and unmigrated code.
-
-Alright. About the same target as seccomp then.  Aiming at something
-that is simple to adopt sounds like a reasonable goal.
-
->>> 5) New openat(2) O_BENEATH Flag
->>> -------------------------------
->>>
->>> For Capsicum capabilities that are directory file descriptors, the
->>> Capsicum framework only allows openat(cap_dfd, path, ...) operations to
->>> work for files that are beneath the specified directory (and even that
->>> only when the directory FD has the CAP_LOOKUP right), rejecting paths
->>> that start with "/" or include "..".  The same restriction applies
->>> process-wide for a process in capability mode.
->>>
->>> As this seemed like functionality that might be more generally useful,
->>> I've implemented it independently as a new O_BENEATH flag for openat(2).
->>> The Capsicum code then always triggers the use of that flag when the dfd
->>> is a Capsicum capability, or when the prctl(2) command described above
->>> is in play.
->>>
->>>   [FreeBSD has the openat(2) relative-only behaviour for capability DFDs
->>>   and processes in capability mode, but does not include the O_BENEATH
->>>   flag.]
->>
->> If you are going to allow open I would think the simple solution here is
->> to just create a mount namespace that only has available the files you
->> would like to export to the process, and force all of the file
->> descriptors into that mount namespace.
-
-> I think that's a lot harder for application writers to do -- they would need
-> to have CAP_SYS_ADMIN to set up the namespace & mounts before
-> dropping privileges.  
-
-They only need CAP_SYS_ADMIN in their local user namespace, which anyone
-is allowed to create.
-
-> And the net result would again be much less
-> fine-grained (e.g. for the unzip example above, the specific capability
-> rights prevent reading of any files that already exist in the output
-> directory).
-
-Nope.  What you can implement today if you want fine grained limitations
-like this is to create a mount namespace with exactly the subdirectory
-tree you want to allow access to and to return a file descriptor that
-points into that mount namespace.  (When complete the only user of that
-mount namespace would be your file descriptor).
-
-In fact that solution is sufficiently performant and simple that even
-if you came up with a better user space interface for it that is how we
-would want to implement it.
-
-And frankly that already exists today so I think a fairly large burden
-of proof needs to be met to suggest that we need to add additional
-functionality to the kernel.
-
-Furthermore I think it makes sense for application authors to use
-as otherwise they will have to wait a year or so for the debates to be
-finished and your new functionality to be merged.
-
-Additionally unless there is a process wide restriction to relative
-paths I can trivially escape your relative path implementation by simply
-doing open(.) and getting a struct file without any of those
-restrictions.
-
-Eric
