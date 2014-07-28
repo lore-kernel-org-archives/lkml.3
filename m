@@ -1,349 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752675AbaG1Mo6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 08:44:58 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:38565 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751802AbaG1MoK (ORCPT
+	id S1752495AbaG1Msw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 08:48:52 -0400
+Received: from mout.kundenserver.de ([212.227.17.13]:54600 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751365AbaG1Mss (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 08:44:10 -0400
-X-AuditID: cbfee68e-b7fab6d000004d4a-88-53d645969312
-From: Chanwoo Choi <cw00.choi@samsung.com>
-To: jic23@kernel.org
-Cc: ch.naveen@samsung.com, arnd@arndb.de, kgene.kim@samsung.com,
-        kyungmin.park@samsung.com, heiko@sntech.de, knaack.h@gmx.de,
-        t.figa@samsung.com, linux-iio@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, Chanwoo Choi <cw00.choi@samsung.com>
-Subject: [PATCHv2 2/3] iio: adc: exynos_adc: Add support for s3c24xx ADC
-Date: Mon, 28 Jul 2014 21:44:01 +0900
-Message-id: <1406551442-15186-3-git-send-email-cw00.choi@samsung.com>
-X-Mailer: git-send-email 1.8.0
-In-reply-to: <1406551442-15186-1-git-send-email-cw00.choi@samsung.com>
-References: <1406551442-15186-1-git-send-email-cw00.choi@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrKIsWRmVeSWpSXmKPExsWyRsSkWHea67VggwtPeSz+TjrGbnH3+WFG
-	i+tfnrNazD9yjtXi/6PXrBYPmlYxWfQuuMpmsev/G2aLs01v2C02Pb7GarGwbQmLxbwj71gs
-	Lu+aw2Yx4/w+Jov1M16zOPB7/P41idHjw8c4j02rOtk8Ni+p9+jbsorRY/u1ecwenzfJBbBH
-	cdmkpOZklqUW6dslcGX07vvFWvDTv2LP+QbGBsZ9jl2MnBwSAiYS805+YoWwxSQu3FvPBmIL
-	CSxllGg+JgdTs3zuVfYuRi6g+CJGiYWb/kE5TUwSuya8ZgepYhPQktj/4gZYt4iAiMS90x8Y
-	QWxmgZ9MEjueFnUxcnAIC3hIXO/TAQmzCKhKvDy7HGwxr4CrxJWHl9kglslJfNjzCGwkp4Cb
-	xJodW9khDnKV+LSoE2yvhMAjdonbR86yQQwSkPg2+RALyHwJAVmJTQeYIeZIShxccYNlAqPw
-	AkaGVYyiqQXJBcVJ6UVGesWJucWleel6yfm5mxiBUXT637O+HYw3D1gfYkwGGjeRWUo0OR8Y
-	hXkl8YbGZkYWpiamxkbmlmakCSuJ8y56mBQkJJCeWJKanZpakFoUX1Sak1p8iJGJg1OqgVHD
-	3i1OZoaKzJwqiRVB7wrSZ99793BjXOHb4Dt+irtDWm62/nMwnb1pgverBWLbj6zbYi78/Z+P
-	eq95+EzV7Rqf/z+e2evjXTLDVTN4kaZz7HH+jubSQ1fFPbW/HF4qPq/hONvF3y0da2ubNnOc
-	eVvnk72qweecpfdfk2WPotoCnDfv0Dr4W1OJpTgj0VCLuag4EQCABy7QuAIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrKIsWRmVeSWpSXmKPExsVy+t9jAd1prteCDT6tYbT4O+kYu8Xd54cZ
-	La5/ec5qMf/IOVaL/49es1o8aFrFZNG74Cqbxa7/b5gtzja9YbfY9Pgaq8XCtiUsFvOOvGOx
-	uLxrDpvFjPP7mCzWz3jN4sDv8fvXJEaPDx/jPDat6mTz2Lyk3qNvyypGj+3X5jF7fN4kF8Ae
-	1cBok5GamJJapJCal5yfkpmXbqvkHRzvHG9qZmCoa2hpYa6kkJeYm2qr5OIToOuWmQN0t5JC
-	WWJOKVAoILG4WEnfDtOE0BA3XQuYxghd35AguB4jAzSQsIYxo3ffL9aCn/4Ve843MDYw7nPs
-	YuTkkBAwkVg+9yo7hC0mceHeerYuRi4OIYFFjBILN/1jh3CamCR2TXgNVsUmoCWx/8UNNhBb
-	REBE4t7pD4wgNrPATyaJHU+Luhg5OIQFPCSu9+mAhFkEVCVenl3OCmLzCrhKXHl4mQ1imZzE
-	hz2PwEZyCrhJrNmxFcwWAqr5tKiTfQIj7wJGhlWMoqkFyQXFSem5RnrFibnFpXnpesn5uZsY
-	wVH6THoH46oGi0OMAhyMSjy8FsFXg4VYE8uKK3MPMUpwMCuJ8Fo7XQsW4k1JrKxKLcqPLyrN
-	SS0+xGgKdNVEZinR5HxgAskriTc0NjEzsjQyN7QwMjZXEuc92GodKCSQnliSmp2aWpBaBNPH
-	xMEp1cAYFnYgyGBpgv0qX0vVcA4epZiWBX9WxprsZVq+eIvgwShNucc7KtuWGd0vcP65rGTm
-	o7s28hbBxg9/6LVOZ/Q+IrmZI/fMHzHrid0rmJh/3dcz/B7+fkbr/lk8iZse/u7lb5lQJ3nS
-	21fr+gM/4bVJTt/f7WfWyu4pTf7jq2duyKVQI+awd6USS3FGoqEWc1FxIgD9Ea586AIAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Mon, 28 Jul 2014 08:48:48 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Kweh Hock Leong <hock.leong.kweh@intel.com>,
+        Eric Miao <eric.y.miao@gmail.com>,
+        Chew Chiau Ee <chiau.ee.chew@intel.com>,
+        Darren Hart <dvhart@linux.intel.com>, chiauee85@gmail.com,
+        linux-kernel@vger.kernel.org,
+        Haojian Zhuang <haojian.zhuang@gmail.com>, linux-spi@vger.kernel.org,
+        Mark Brown <broonie@kernel.org>, Russell King <linux@arm.linux.org.uk>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>
+Subject: Re: [PATCH] spi/pxa2xx-pci: Enable DMA binding through device name
+Date: Mon, 28 Jul 2014 14:47:56 +0200
+Message-ID: <5712887.nI9VbeNx2r@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1406545580.8530.28.camel@smile.fi.intel.com>
+References: <1406196111-22861-1-git-send-email-hock.leong.kweh@intel.com> <5237362.DJsH7MtqlU@wuerfel> <1406545580.8530.28.camel@smile.fi.intel.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:7CW/gemtctbipgVDLrBPBX8ViwCuRgnpCEm2xF70eJh
+ Huw57t1wHrBaMGcPmyD6FeQ+462i94fAjhvZsGQHPdUfJZrxL8
+ lE+HqqN4kZwJIpoopMzh9kmRCkrzHAq2VbkPvPlOIV52P9edYa
+ vD8xHtblnfIRhCjgVGZEv06QM4CVFwH+T3lfW3mB952lA1ruq1
+ LMEk3p/KhHxZ5S85nUQcyDebODGeYkTetHlYy72+xfh7weEav3
+ tNjhPS1FJ0ZSUZOWQzAd36mgWVT9SN1sCEbPY0vLfBGHfL7k5Y
+ iA6+40ggAkZLbccUwdjIqe9ZDRc2qWM3IWeO8/ZkkuqdNKUp6U
+ Q5QP45KCDhAjpF8At+jM=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch add support for s3c2410/s3c2416/s3c2440/s3c2443 ADC. The s3c24xx
-is alomost same as ADCv1. But, There are a little difference as following:
-- ADCMUX register address
-- ADCDAT mask (10 bit or 12 bit ADC resolution according to SoC version)
-- s3c24xx/s3c64xx has not included ADC_PHY enable register
+On Monday 28 July 2014 14:06:20 Andy Shevchenko wrote:
+> On Fri, 2014-07-25 at 17:55 +0200, Arnd Bergmann wrote:
+> > On Friday 25 July 2014 13:45:47 Andy Shevchenko wrote:
+> > > On Fri, 2014-07-25 at 12:19 +0200, Arnd Bergmann wrote:
+> > > > On Friday 25 July 2014 12:55:59 Mika Westerberg wrote:
+> > > > > On Fri, Jul 25, 2014 at 12:07:14PM +0300, Mika Westerberg wrote:
+> > > > > > On Fri, Jul 25, 2014 at 10:38:36AM +0200, Arnd Bergmann wrote:
+> > > > > > > On Friday 25 July 2014 11:22:49 Mika Westerberg wrote:
+> > > 
+> > > []
+> > > 
+> > > > > Something like this?
+> > > 
+> > > Arnd, this dependency to certain DMA driver looks really bad.
+> > > 
+> > > If we go that way, can we split that part to [another] module and make
+> > > it dependent to DW_DMAC?
+> > 
+> > I don't see what you gain from that. The PC ID will tell you which DMA
+> > engine is being used. The driver already hardcodes a slave_id based on
+> > the PCI ID today, and the 
+> 
+> "...and the..."?
 
-Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
-Acked-by: Arnd Bergmann <arnd@arndb.de>
----
- .../devicetree/bindings/arm/samsung/exynos-adc.txt |  16 ++-
- drivers/iio/adc/Kconfig                            |   2 +-
- drivers/iio/adc/exynos_adc.c                       | 109 +++++++++++++++++++--
- 3 files changed, 114 insertions(+), 13 deletions(-)
+Sorry for missing that.
 
-diff --git a/Documentation/devicetree/bindings/arm/samsung/exynos-adc.txt b/Documentation/devicetree/bindings/arm/samsung/exynos-adc.txt
-index d3dad46..709efaa 100644
---- a/Documentation/devicetree/bindings/arm/samsung/exynos-adc.txt
-+++ b/Documentation/devicetree/bindings/arm/samsung/exynos-adc.txt
-@@ -11,15 +11,25 @@ New driver handles the following
- 
- Required properties:
- - compatible:		Must be "samsung,exynos-adc-v1"
--				for exynos4412/5250 controllers.
-+				for exynos4412/5250 and s5pv210 controllers.
- 			Must be "samsung,exynos-adc-v2" for
- 				future controllers.
- 			Must be "samsung,exynos3250-adc" for
- 				controllers compatible with ADC of Exynos3250.
-+			Must be "samsung,s3c2410-adc" for
-+				the ADC in s3c2410 and compatibles
-+			Must be "samsung,s3c2416-adc" for
-+				the ADC in s3c2416 and compatibles
-+			Must be "samsung,s3c2440-adc" for
-+				the ADC in s3c2440 and compatibles
-+			Must be "samsung,s3c2443-adc" for
-+				the ADC in s3c2443 and compatibles
- 			Must be "samsung,s3c6410-adc" for
- 				the ADC in s3c6410 and compatibles
--- reg:			Contains ADC register address range (base address and
--			length) and the address of the phy enable register.
-+- reg:			List of ADC register address range
-+			- The base address and range of ADC register
-+			- The base address and range of ADC_PHY register (every
-+			  SoC except for s3c24xx/s3c64xx ADC)
- - interrupts: 		Contains the interrupt information for the timer. The
- 			format is being dependent on which interrupt controller
- 			the Samsung device uses.
-diff --git a/drivers/iio/adc/Kconfig b/drivers/iio/adc/Kconfig
-index a80d236..a247655 100644
---- a/drivers/iio/adc/Kconfig
-+++ b/drivers/iio/adc/Kconfig
-@@ -119,7 +119,7 @@ config AT91_ADC
- 
- config EXYNOS_ADC
- 	tristate "Exynos ADC driver support"
--	depends on ARCH_EXYNOS || (OF && COMPILE_TEST)
-+	depends on ARCH_EXYNOS || ARCH_S3C24XX || ARCH_S3C64XX || (OF && COMPILE_TEST)
- 	help
- 	  Core support for the ADC block found in the Samsung EXYNOS series
- 	  of SoCs for drivers such as the touchscreen and hwmon to use to share
-diff --git a/drivers/iio/adc/exynos_adc.c b/drivers/iio/adc/exynos_adc.c
-index ed9e4c8..3b17faa 100644
---- a/drivers/iio/adc/exynos_adc.c
-+++ b/drivers/iio/adc/exynos_adc.c
-@@ -47,6 +47,9 @@
- #define ADC_V1_INTCLR(x)	((x) + 0x18)
- #define ADC_V1_MUX(x)		((x) + 0x1c)
- 
-+/* S3C2410 ADC registers definitions */
-+#define ADC_S3C2410_MUX(x)	((x) + 0x18)
-+
- /* Future ADC_V2 registers definitions */
- #define ADC_V2_CON1(x)		((x) + 0x00)
- #define ADC_V2_CON2(x)		((x) + 0x04)
-@@ -63,6 +66,8 @@
- 
- /* Bit definitions for S3C2410 ADC */
- #define ADC_S3C2410_CON_SELMUX(x) (((x) & 7) << 3)
-+#define ADC_S3C2410_DATX_MASK	0x3FF
-+#define ADC_S3C2416_CON_RES_SEL	(1u << 3)
- 
- /* Bit definitions for ADC_V2 */
- #define ADC_V2_CON1_SOFT_RESET	(1u << 2)
-@@ -80,6 +85,7 @@
- 
- /* Bit definitions common for ADC_V1 and ADC_V2 */
- #define ADC_CON_EN_START	(1u << 0)
-+#define ADC_CON_EN_START_MASK	(0x3 << 0)
- #define ADC_DATX_MASK		0xFFF
- 
- #define EXYNOS_ADC_TIMEOUT	(msecs_to_jiffies(100))
-@@ -103,6 +109,8 @@ struct exynos_adc {
- struct exynos_adc_data {
- 	int num_channels;
- 	bool needs_sclk;
-+	bool needs_adc_phy;
-+	u32 mask;
- 
- 	void (*init_hw)(struct exynos_adc *info);
- 	void (*exit_hw)(struct exynos_adc *info);
-@@ -174,7 +182,8 @@ static void exynos_adc_v1_init_hw(struct exynos_adc *info)
- {
- 	u32 con1;
- 
--	writel(1, info->enable_reg);
-+	if (info->data->needs_adc_phy)
-+		writel(1, info->enable_reg);
- 
- 	/* set default prescaler values and Enable prescaler */
- 	con1 =  ADC_V1_CON_PRSCLV(49) | ADC_V1_CON_PRSCEN;
-@@ -188,7 +197,8 @@ static void exynos_adc_v1_exit_hw(struct exynos_adc *info)
- {
- 	u32 con;
- 
--	writel(0, info->enable_reg);
-+	if (info->data->needs_adc_phy)
-+		writel(0, info->enable_reg);
- 
- 	con = readl(ADC_V1_CON(info->regs));
- 	con |= ADC_V1_CON_STANDBY;
-@@ -213,6 +223,8 @@ static void exynos_adc_v1_start_conv(struct exynos_adc *info,
- 
- static const struct exynos_adc_data const exynos_adc_v1_data = {
- 	.num_channels	= MAX_ADC_V1_CHANNELS,
-+	.mask		= ADC_DATX_MASK,	/* 12 bit ADC resolution */
-+	.needs_adc_phy	= true,
- 
- 	.init_hw	= exynos_adc_v1_init_hw,
- 	.exit_hw	= exynos_adc_v1_exit_hw,
-@@ -220,6 +232,53 @@ static const struct exynos_adc_data const exynos_adc_v1_data = {
- 	.start_conv	= exynos_adc_v1_start_conv,
- };
- 
-+static void exynos_adc_s3c2416_start_conv(struct exynos_adc *info,
-+					  unsigned long addr)
-+{
-+	u32 con1;
-+
-+	/* Enable 12 bit ADC resolution */
-+	con1 = readl(ADC_V1_CON(info->regs));
-+	con1 |= ADC_S3C2416_CON_RES_SEL;
-+	writel(con1, ADC_V1_CON(info->regs));
-+
-+	/* Select channel for S3C2416 */
-+	writel(addr, ADC_S3C2410_MUX(info->regs));
-+
-+	con1 = readl(ADC_V1_CON(info->regs));
-+	writel(con1 | ADC_CON_EN_START, ADC_V1_CON(info->regs));
-+}
-+
-+static struct exynos_adc_data const exynos_adc_s3c2416_data = {
-+	.num_channels	= MAX_ADC_V1_CHANNELS,
-+	.mask		= ADC_DATX_MASK,	/* 12 bit ADC resolution */
-+
-+	.init_hw	= exynos_adc_v1_init_hw,
-+	.exit_hw	= exynos_adc_v1_exit_hw,
-+	.start_conv	= exynos_adc_s3c2416_start_conv,
-+};
-+
-+static void exynos_adc_s3c2443_start_conv(struct exynos_adc *info,
-+					  unsigned long addr)
-+{
-+	u32 con1;
-+
-+	/* Select channel for S3C2433 */
-+	writel(addr, ADC_S3C2410_MUX(info->regs));
-+
-+	con1 = readl(ADC_V1_CON(info->regs));
-+	writel(con1 | ADC_CON_EN_START, ADC_V1_CON(info->regs));
-+}
-+
-+static struct exynos_adc_data const exynos_adc_s3c2443_data = {
-+	.num_channels	= MAX_ADC_V1_CHANNELS,
-+	.mask		= ADC_S3C2410_DATX_MASK, /* 10 bit ADC resolution */
-+
-+	.init_hw	= exynos_adc_v1_init_hw,
-+	.exit_hw	= exynos_adc_v1_exit_hw,
-+	.start_conv	= exynos_adc_s3c2443_start_conv,
-+};
-+
- static void exynos_adc_s3c64xx_start_conv(struct exynos_adc *info,
- 					  unsigned long addr)
- {
-@@ -231,8 +290,18 @@ static void exynos_adc_s3c64xx_start_conv(struct exynos_adc *info,
- 	writel(con1 | ADC_CON_EN_START, ADC_V1_CON(info->regs));
- }
- 
-+static struct exynos_adc_data const exynos_adc_s3c24xx_data = {
-+	.num_channels	= MAX_ADC_V1_CHANNELS,
-+	.mask		= ADC_S3C2410_DATX_MASK, /* 10 bit ADC resolution */
-+
-+	.init_hw	= exynos_adc_v1_init_hw,
-+	.exit_hw	= exynos_adc_v1_exit_hw,
-+	.start_conv	= exynos_adc_s3c64xx_start_conv,
-+};
-+
- static struct exynos_adc_data const exynos_adc_s3c64xx_data = {
- 	.num_channels	= MAX_ADC_V1_CHANNELS,
-+	.mask		= ADC_DATX_MASK,	/* 12 bit ADC resolution */
- 
- 	.init_hw	= exynos_adc_v1_init_hw,
- 	.exit_hw	= exynos_adc_v1_exit_hw,
-@@ -244,7 +313,8 @@ static void exynos_adc_v2_init_hw(struct exynos_adc *info)
- {
- 	u32 con1, con2;
- 
--	writel(1, info->enable_reg);
-+	if (info->data->needs_adc_phy)
-+		writel(1, info->enable_reg);
- 
- 	con1 = ADC_V2_CON1_SOFT_RESET;
- 	writel(con1, ADC_V2_CON1(info->regs));
-@@ -261,7 +331,8 @@ static void exynos_adc_v2_exit_hw(struct exynos_adc *info)
- {
- 	u32 con;
- 
--	writel(0, info->enable_reg);
-+	if (info->data->needs_adc_phy)
-+		writel(0, info->enable_reg);
- 
- 	con = readl(ADC_V2_CON1(info->regs));
- 	con &= ~ADC_CON_EN_START;
-@@ -289,6 +360,8 @@ static void exynos_adc_v2_start_conv(struct exynos_adc *info,
- 
- static const struct exynos_adc_data const exynos_adc_v2_data = {
- 	.num_channels	= MAX_ADC_V2_CHANNELS,
-+	.mask		= ADC_DATX_MASK, /* 12 bit ADC resolution */
-+	.needs_adc_phy	= true,
- 
- 	.init_hw	= exynos_adc_v2_init_hw,
- 	.exit_hw	= exynos_adc_v2_exit_hw,
-@@ -298,7 +371,9 @@ static const struct exynos_adc_data const exynos_adc_v2_data = {
- 
- static const struct exynos_adc_data const exynos3250_adc_data = {
- 	.num_channels	= MAX_EXYNOS3250_ADC_CHANNELS,
-+	.mask		= ADC_DATX_MASK, /* 12 bit ADC resolution */
- 	.needs_sclk	= true,
-+	.needs_adc_phy	= true,
- 
- 	.init_hw	= exynos_adc_v2_init_hw,
- 	.exit_hw	= exynos_adc_v2_exit_hw,
-@@ -308,6 +383,18 @@ static const struct exynos_adc_data const exynos3250_adc_data = {
- 
- static const struct of_device_id exynos_adc_match[] = {
- 	{
-+		.compatible = "samsung,s3c2410-adc",
-+		.data = &exynos_adc_s3c24xx_data,
-+	}, {
-+		.compatible = "samsung,s3c2416-adc",
-+		.data = &exynos_adc_s3c2416_data,
-+	}, {
-+		.compatible = "samsung,s3c2440-adc",
-+		.data = &exynos_adc_s3c24xx_data,
-+	}, {
-+		.compatible = "samsung,s3c2443-adc",
-+		.data = &exynos_adc_s3c2443_data,
-+	}, {
- 		.compatible = "samsung,s3c6410-adc",
- 		.data = &exynos_adc_s3c64xx_data,
- 	}, {
-@@ -373,9 +460,10 @@ static int exynos_read_raw(struct iio_dev *indio_dev,
- static irqreturn_t exynos_adc_isr(int irq, void *dev_id)
- {
- 	struct exynos_adc *info = (struct exynos_adc *)dev_id;
-+	u32 mask = info->data->mask;
- 
- 	/* Read value */
--	info->value = readl(ADC_V1_DATX(info->regs)) & ADC_DATX_MASK;
-+	info->value = readl(ADC_V1_DATX(info->regs)) & mask;
- 
- 	/* clear irq */
- 	if (info->data->clear_irq)
-@@ -468,10 +556,13 @@ static int exynos_adc_probe(struct platform_device *pdev)
- 	if (IS_ERR(info->regs))
- 		return PTR_ERR(info->regs);
- 
--	mem = platform_get_resource(pdev, IORESOURCE_MEM, 1);
--	info->enable_reg = devm_ioremap_resource(&pdev->dev, mem);
--	if (IS_ERR(info->enable_reg))
--		return PTR_ERR(info->enable_reg);
-+
-+	if (info->data->needs_adc_phy) {
-+		mem = platform_get_resource(pdev, IORESOURCE_MEM, 1);
-+		info->enable_reg = devm_ioremap_resource(&pdev->dev, mem);
-+		if (IS_ERR(info->enable_reg))
-+			return PTR_ERR(info->enable_reg);
-+	}
- 
- 	irq = platform_get_irq(pdev, 0);
- 	if (irq < 0) {
--- 
-1.8.0
+the slave ID only makes sense in combination with the master device
+it is used in, so the dependency exists already.
 
+> > > Or shall we introduce a dmaengine type field in the platform data and
+> > > dynamically choose proper filter-whatever-function to get the channel?
+> > 
+> > We already have an interface for this, in the form of
+> > dma_request_slave_channel(), which takes a string identifier that
+> > is used to look up all that information in either device tree or
+> > ACPI. It wouldn't be unreasonable to add a third path in there
+> > to handle hardcoded platform devices, but that's a lot of work.
+> > Note that you still need to encode a reference to the dma engine
+> > in some way to do this right. The current code (with or without Mika's
+> > patch) will break as soon as you have multiple DMA engine devices.
+> 
+> What about to keep PCI case still valid? We can pass struct pci_dev (or
+> actual struct device) of DMA controller to filter proper device.
+
+Yes, that would be best. IIRC you have a single PCI device that instantiates
+both the SPI and the DMA engine as subdevices (I haven't looked at the
+code again), so that information would be readily available.
+ 
+> > > > What I think you got wrong here (by following my bad advice) is the master
+> > > > number. Looking at the code for dw_dma, I think src_master needs to be '1'
+> > > > for your driver.
+> > > 
+> > > On some SoCs we have up to 4 masters. It's blurry for me how the SPI
+> > > should choose those masters. Currently it works fine, but I suspect
+> > > there are [might be] performance issues.
+> > 
+> > I think it works because the dw-dma defaults to the values used by
+> > the specific implementation in your hardware.
+> 
+> 
+> 
+> > > What about AVR32 case? We have to fix drivers as well there.
+> 
+> > which ones?
+> 
+> arch/avr32/mach-at32ap/at32ap700x.c:1332:at32_add_device_mci
+> 
+> It seems opaque for me if it's used anywhere.
+
+It seems correct to me. This is the filter function used by atmel_mci:
+
+static bool atmci_filter(struct dma_chan *chan, void *pdata)
+{
+        struct mci_platform_data *sl_pdata = pdata;
+        struct mci_dma_data *sl;
+
+        if (!sl_pdata)
+                return false;
+
+        sl = sl_pdata->dma_slave;
+        if (sl && find_slave_dev(sl) == chan->device->dev) {
+                chan->private = slave_data_ptr(sl);
+                return true;
+        } else {
+                return false;
+        }
+}
+
+It sets the dw_dma_slave information from  slave_data_ptr(sl) here,
+and does not attempt to set a slave_id at all, the slave_config
+call only sets the required fields.
+
+Do you still see a problem here?
+
+> Actually the defaults came from original driver for AVR32 case.
+> 
+> Regarding to DW DMA databook the AHB masters could be used each by any
+> channel, though it depends on what AHB layer is bound to (and
+> corresponding peripheral device).
+> 
+> Thus, like I said we might have the [minor] performance issues if we
+> use, for example, two out of four masters.
+
+I don't see how: We have four cases that I am aware of, and all seem
+to handle this right:
+
+a) request line and masters are all configured from device-tree.
+b) request line is configured from ACPI, masters are autoconfigured
+c) request line and masters are all configured from avr32/arm32
+   platform data.
+d) request line and masters are all configured from Bay Trail
+   PCI ID (Implemented by Mika's patch)
+
+The ACPI case could be extended if we ever get an ACPI based system
+that has more than two masters.
+In the other cases, the same source of information that configures
+the request line also configures the masters, so it's up to the
+system integration to pick the best setting.
+
+	Arnd
