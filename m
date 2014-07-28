@@ -1,174 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750980AbaG1HTV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 03:19:21 -0400
-Received: from mga01.intel.com ([192.55.52.88]:51436 "EHLO mga01.intel.com"
+	id S1751316AbaG1HXq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 03:23:46 -0400
+Received: from mga03.intel.com ([143.182.124.21]:18833 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750701AbaG1HTS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 03:19:18 -0400
+	id S1750996AbaG1HXo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jul 2014 03:23:44 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,747,1400050800"; 
-   d="scan'208";a="576389692"
-Message-ID: <53D5F8C9.4070008@intel.com>
-Date: Mon, 28 Jul 2014 15:16:25 +0800
-From: "xinhui.pan" <xinhuix.pan@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+   d="asc'?scan'208";a="462165727"
+Date: Mon, 28 Jul 2014 12:46:22 +0530
+From: Vinod Koul <vinod.koul@intel.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Maxime Ripard <maxime.ripard@free-electrons.com>
+Subject: Re: linux-next: build failure after merge of the slave-dma tree
+Message-ID: <20140728071622.GY8181@intel.com>
+References: <20140728121856.56d0162e@canb.auug.org.au>
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
-        "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-        mnipxh <mnipxh@gmail.com>, Peter Hurley <peter@hurleysoftware.com>,
-        gnomes@lxorguk.ukuu.org.uk
-Subject: Re: [PATCH] tty/n_gsm.c: do not clear gsm_mux entry when the gsm
- is not closed
-References: <53D0CF0D.9060103@intel.com> <20140727180953.GA7232@kroah.com>
-In-Reply-To: <20140727180953.GA7232@kroah.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="iVCmgExH7+hIHJ1A"
+Content-Disposition: inline
+In-Reply-To: <20140728121856.56d0162e@canb.auug.org.au>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hi, Greg
 
-于 2014年07月28日 02:09, Greg Kroah-Hartman 写道:
-> On Thu, Jul 24, 2014 at 05:17:01PM +0800, xinhui.pan wrote:
->> If the gsmtty is still used by some process, we could not just
->> simply clear gsm_mux[gsm->num]. Clear it when gsm is being free.
->> Otherwise we will hit crashes when userspace close the gsmtty.
->>
->> Also add gsm_mux_get() and gsm_mux_put() to make gsm_mux[] is used safely.
->> We can do activation/deactivation with same gsm more than once now.
->> This is for fixing the FIXME.
->>
->> Signed-off-by: xinhui.pan <xinhuiX.pan@intel.com>
->> Reviewed-by: Zhang Yanmin <yanmin_zhang@linux.intel.com>
->> ---
->>  drivers/tty/n_gsm.c |   84 ++++++++++++++++++++++++++++++++++++---------------
->>  1 file changed, 60 insertions(+), 24 deletions(-)
->>
->> diff --git a/drivers/tty/n_gsm.c b/drivers/tty/n_gsm.c
->> index 81e7ccb..290df56 100644
->> --- a/drivers/tty/n_gsm.c
->> +++ b/drivers/tty/n_gsm.c
->> @@ -2020,6 +2020,58 @@ static void gsm_error(struct gsm_mux *gsm,
->>  }
->>  
->>  /**
->> + *	gsm_mux_get		-	get/fill one entry in gsm_mux
->> + *	@gsm: our gsm
->> + *
->> + *	Although its name end with get, it don't inc ref-count actually.
-> 
-> Then don't call it a 'get' function :(
-> 
+--iVCmgExH7+hIHJ1A
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Thanks for you nice advices!
-I will change its name. This is really a confusable name.
+On Mon, Jul 28, 2014 at 12:18:56PM +1000, Stephen Rothwell wrote:
+> Hi Vinod,
+>=20
+> After merging the slave-dma tree, today's linux-next build (x86_64
+> allmodconfig) failed like this:
+>=20
+> drivers/dma/sun6i-dma.c: In function 'sun6i_dma_dump_chan_regs':
+> drivers/dma/sun6i-dma.c:203:2: error: implicit declaration of function '_=
+_virt_to_phys' [-Werror=3Dimplicit-function-declaration]
+>   phys_addr_t reg =3D __virt_to_phys((unsigned long)pchan->base);
+>   ^
+>=20
+> Caused by commit 555859308723 ("dmaengine: sun6i: Add driver for the
+> Allwinner A31 DMA controller").  Presumably missing an include file.
+>=20
+> I have used the slave-dma tree from next-20140725 for today.
 
->> + *	get one entry is just like fill pte, first memory access will
->> + *	cause page_fault, the next accesses don't. So do here.
-> 
-> This doesn't make much sense to me, can you please explain it better?
-> 
->> + */
->> +
-> 
-> blank line?
-> 
+Thanks, Feng's robot also gave such warning. SInce maxime didnt send any
+fixes it, I am applying below to fix this.
+We shouldnt have used __virt_to_phys here
 
-Sorry about that. But I notice the other function's introduce in n_gsm.c is done in same way.
-I just wanted to keep same code style.
-OK, I will change it.
-I think no blank line is better. :)
+--x8---
+=46rom: Vinod Koul <vinod.koul@intel.com>
+Date: Mon, 28 Jul 2014 11:57:25 +0530
+Subject: [PATCH 1/2] dmaengine: sun6i: fix build failure on x86, xilinx tar=
+gets
+MIME-Version: 1.0
+Content-Type: text/plain; charset=3DUTF-8
+Content-Transfer-Encoding: 8bit
 
->> +static int gsm_mux_get(struct gsm_mux *gsm)
->> +{
->> +	int i;
->> +
->> +	if (gsm->num >= MAX_MUX) /* gsm is alloc by kzalloc, just be careful */
->> +		return -EIO;
-> 
-> -EIO?
-> 
+Since the driver defined COMPILE_TEST, it gets compiled for different arch'=
+s.
+The driver uses __virt_to_phys() insteadof virt_to_phys, so replace it
 
-Thanks for pointing out the mistake.
-perhaps -EINVAL is better.
+drivers/dma/sun6i-dma.c: In function =E2=80=98sun6i_dma_dump_chan_regs=E2=
+=80=99:
+drivers/dma/sun6i-dma.c:203: error: implicit declaration of function '__vir=
+t_to_phys'
 
->> +	if (gsm_mux[gsm->num] == gsm) /* We have already set gsm->num */
->> +		return 0;
->> +
->> +	spin_lock(&gsm_mux_lock);
->> +	for (i = 0; i < MAX_MUX; i++) {
->> +		if (gsm_mux[i] == NULL) {
->> +			gsm->num = i;
->> +			gsm_mux[i] = gsm;
->> +			break;
->> +		}
->> +	}
->> +	spin_unlock(&gsm_mux_lock);
->> +
->> +	if (i == MAX_MUX)
->> +		return -EBUSY;
->> +	return 0;
->> +}
->> +
->> +/**
->> + *	gsm_mux_put		-	put/clear one entry in gsm_mux
->> + *	@gsm: our gsm
->> + *
->> + *	Although its name end with put, it don't dec ref-count actually.
->> + *	put one entry is just like clear pte, So do here.
->> + */
->> +
->> +static void gsm_mux_put(struct gsm_mux *gsm)
->> +{
->> +	if (gsm->num >= MAX_MUX)
->> +		return;
->> +
->> +	spin_lock(&gsm_mux_lock);
->> +	if (gsm_mux[gsm->num] == gsm)
-> 
-> How can this not be true?
+Reported-by: kbuild test robot <fengguang.wu@intel.com>
+Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
+Signed-off-by: Vinod Koul <vinod.koul@intel.com>
+---
+ drivers/dma/sun6i-dma.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-That is a big problem. let me explain it.
+diff --git a/drivers/dma/sun6i-dma.c b/drivers/dma/sun6i-dma.c
+index ce8d5d1..e9f99bb 100644
+--- a/drivers/dma/sun6i-dma.c
++++ b/drivers/dma/sun6i-dma.c
+@@ -200,7 +200,7 @@ static inline void sun6i_dma_dump_com_regs(struct sun6i=
+_dma_dev *sdev)
+ static inline void sun6i_dma_dump_chan_regs(struct sun6i_dma_dev *sdev,
+ 					    struct sun6i_pchan *pchan)
+ {
+-	phys_addr_t reg =3D __virt_to_phys((unsigned long)pchan->base);
++	phys_addr_t reg =3D virt_to_phys(pchan->base);
+=20
+ 	dev_dbg(sdev->slave.dev, "Chan %d reg: %pa\n"
+ 		"\t___en(%04x): \t0x%08x\n"
+@@ -330,7 +330,7 @@ static inline int sun6i_dma_cfg_lli(struct sun6i_dma_ll=
+i *lli,
+ static inline void sun6i_dma_dump_lli(struct sun6i_vchan *vchan,
+ 				      struct sun6i_dma_lli *lli)
+ {
+-	phys_addr_t p_lli =3D __virt_to_phys((unsigned long)lli);
++	phys_addr_t p_lli =3D virt_to_phys(lli);
+=20
+ 	dev_dbg(chan2dev(&vchan->vc.chan),
+ 		"\n\tdesc:   p - %pa v - 0x%p\n"
+--=20
+1.7.0.4
 
-In current code, we add gsm into gsm_mux[] in gsm_activate_mux(). So if gsm_activate_mux() fails when gsm_mux[] is full, gsm->num is invaild, it is zero in fact.
-So when will free this gsm, we have to check if gsm_mux[gsm->num] is really the one we are deleting.
-The scenario is like below.
-gsmld_open -> gsmld_attach_gsm -> gsm_activate_mux(fails) -> .... -> mux_put -> gsm_free_muxr -> gsm_mux_put(need check gsm_mux[gsm->num] == gsm).
 
-Current code is a little hard to understand, So I suggest that move the *codes that changes gsm_mux[]* into gsm_alloc_mux(), then we don't need this check anymore.
-Actually I have worked out a new patch with such idea.
-And I am doing the normal tests set up by Intel test team and other trigger tests set up by myself. :)
+--iVCmgExH7+hIHJ1A
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
 
-> 
->> +		gsm_mux[gsm->num] = NULL;
->> +	spin_unlock(&gsm_mux_lock);
->> +}
-> 
-> Why can't you do dynamic reference counting of your structure, that
-> would allow you to get rid of your global array, right?
-> 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
 
-Thanks for your nice comments.
-Struct gsm has a ref-count already. :)
-And also adding a ref-count is a little hard to me. :(
-This global array is used to keep tracking the gsms that stands for the gsmttyXX.
-and it can tell us if we can create a new gsm. :)
-In gsm_init we set *gsm_tty_driver = alloc_tty_driver(256);*
+iQIcBAEBAgAGBQJT1fjGAAoJEHwUBw8lI4NHuGkP+wZvizLhvuTMD+AFfEBTNlES
+mGh5t3tVmYotWmKuagpHc4oJCzC3Zeg1OiPoX2lIVXrrtcuZreKzZOshOgflDGZl
+YW/MkSWCxNuEkQiPX3o8GAE/1NTSxxtc4yZLvfXOlWX+Ly2izxif1abeMgomvzuQ
+yN1Gmssrj/AzSi1Y0aTPAmyR1KBaR/r1l2DEHsZ2JvFTQ2bMh08sPCxKU/YoF6Bm
+aTgOPvWcuS8LJtv+OoAygIV8YC6WIyJwcYouIJ9AfB5qhxmjKVfUMQIrO866JLBc
+Cy8GVBl0xiWc8E36iZWMWH3sbhUJ/GxIaNl32yeIBm9T84gugcMqXN6IAA6zHSZv
+0kfJuNfgD3UZjDGOU5+t2R65zu+i+PBIQmgXFpqoTcM66rAdkyNOKxB1Xoi70SN4
+SGDH8BpWZEBnSd5Puzgh1tyRvAtsrpdG/AgNxe+kmVLLmvLS2xEeeBVypnv97Rzw
+7xJxwOsORKs5NxoiL/+rH6G1rs12SeUZDrwJ6Kj1jArWduUWxybbgmbtBjxQH1x6
+3ZbKG63SUTWnrkEqw7Me8QThcWkQBIXWArMF/s6NsVt2NMp/gos3spB1bJy/UKkD
+dzj2jo24GwLB3sXCi8/Wi18l2raQTfwI5zFPxaLsuNOGpqNqUWjKBn9L5m/N20nd
+aw0WwnaNH4IDUd3vd+wX
+=EnG0
+-----END PGP SIGNATURE-----
 
-thanks,
-
-xinhui
-
-> thanks,
-> 
-> greg k-h
-> 
-
-Your reply really helps us a lot.
-thanks,
-
-xinhui
-
+--iVCmgExH7+hIHJ1A--
