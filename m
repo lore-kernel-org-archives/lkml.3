@@ -1,69 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751324AbaG1EqU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 00:46:20 -0400
-Received: from ozlabs.org ([103.22.144.67]:40264 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750945AbaG1EqS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 00:46:18 -0400
-Date: Mon, 28 Jul 2014 14:46:08 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Ulf Hansson <ulf.hansson@linaro.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Sonny Rao <sonnyrao@chromium.org>
-Subject: linux-next: build failure after merge of the mmc-uh tree
-Message-ID: <20140728144608.7d9ac736@canb.auug.org.au>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
+	id S1750914AbaG1FOv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 01:14:51 -0400
+Received: from relay1.mentorg.com ([192.94.38.131]:42590 "EHLO
+	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750752AbaG1FOu convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jul 2014 01:14:50 -0400
+From: "Sharma, Sanjeev" <Sanjeev_Sharma@mentor.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "swetland@google.com" <swetland@google.com>,
+        "waydi1@gmail.com" <waydi1@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "daniel@ffwll.ch" <daniel@ffwll.ch>
+Subject: RE: [PATCH] staging: android: Fixed missing blank line
+Thread-Topic: [PATCH] staging: android: Fixed missing blank line
+Thread-Index: AQHPokHKPX3m4qRn7Ey277r1/fasOZumZz0AgAcQNZCAAEfdAIAHQbPg
+Date: Mon, 28 Jul 2014 05:14:47 +0000
+Message-ID: <FDC088D3B5555644AE135ED28A7ABDE938F04F7F@EU-MBX-04.mgc.mentorg.com>
+References: <1405658874-24448-1-git-send-email-sanjeev_sharma@mentor.com>
+ <20140718231610.GA29987@kroah.com>
+ <FDC088D3B5555644AE135ED28A7ABDE938F0397E@EU-MBX-04.mgc.mentorg.com>
+ <20140723152512.GA28295@kroah.com>
+In-Reply-To: <20140723152512.GA28295@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [137.202.0.76]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/qE5TVZNiBFye5C1xmgY3c2v"; protocol="application/pgp-signature"
+X-OriginalArrivalTime: 28 Jul 2014 05:14:48.0613 (UTC) FILETIME=[DA5C5D50:01CFAA22]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/qE5TVZNiBFye5C1xmgY3c2v
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+Hello Greg,
 
-Hi Ulf,
+I didn't received automated email.
 
-After merging the mmc-uh tree, today's linux-next build (arm
-multi_v7_defconfig) failed like this:
+Regards
+Sanjeev Sharma
 
-drivers/mmc/host/dw_mmc.c: In function 'dw_mci_reset':
-drivers/mmc/host/dw_mmc.c:2262:3: error: implicit declaration of function '=
-dw_mci_idmac_reset' [-Werror=3Dimplicit-function-declaration]
-   dw_mci_idmac_reset(host);
-   ^
+-----Original Message-----
+From: Greg KH [mailto:gregkh@linuxfoundation.org] 
+Sent: Wednesday, July 23, 2014 8:55 PM
+To: Sharma, Sanjeev
+Cc: devel@driverdev.osuosl.org; swetland@google.com; waydi1@gmail.com; linux-kernel@vger.kernel.org; daniel@ffwll.ch
+Subject: Re: [PATCH] staging: android: Fixed missing blank line
 
-Caused by commit 25f7dadbd982 ("mmc: dw_mmc: change to use recommended
-reset procedure").
+On Wed, Jul 23, 2014 at 10:08:44AM +0000, Sharma, Sanjeev wrote:
+> Thanks, so this is also available in next kernel release version.
 
-I have used the mmc-uh tree from next-20140725 for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+I don't understand the question.  You should have gotten an automated email when the patch was applied that explained where the patch was now located, and when it would be merged into Linus's tree.  Did you not get that?
 
---Sig_/qE5TVZNiBFye5C1xmgY3c2v
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJT1dWXAAoJEMDTa8Ir7ZwVN8kP/20cyDoQGVxgE6nxYTeGA+D7
-3Y67ZKuv125icmD5zRfb8zMsxZy8bbWWlj1D+eo5hR1cw6THjEt+xjkIKM9PISpQ
-H5uJFpNAwYn239gduOEV92bZdAt6KADldXvMbxt/UGfixhpPdHxikIC9oNBN4xgn
-ZMRBKmB/mreKwDRiiWpc6fC7z+XwvaUYl3B2Og0oHJ8mqJ4A86n9CVJMcqu1H0n0
-ejQY7+qKrgfDfGFBtSuflyrxTMF8Yz9SZb9yaxUz+XymCNMwnsEphejWySrjGrRo
-3sOfNfP/HsRiAqCcLzcxbDWw82Kyde7lWU6Fmns88roJkT2EhDzsLDVRoZLX5SrG
-2SRxKZGpc1cLBWAl72M7ORWpRzjIMFx3v7Wi4c1laeA3oHOooXf58kFu3y+ppuGJ
-CWwY91WtyKcTZcB7/AZ1+E5vKMS64QjcS/syoxZEE5PqafBKkZGwZ+nyi7IAg+fd
-1AUB4jgzPejfK+KR7QL9OnxS8OCP99gVr239Gmj/cvTHzUrmX6FNH83ELQm501VD
-hhX0MzzqOhoJqkXvAjV5sl+2ItIyj431s61htmW7t6tHkRUHfNg+an8HIW+FFhjX
-ybSVr7hOMHuQ0Au/FWO50i64m12swja1GZfN5l3e2mudzJJkLeWkucXryCqOwaCK
-mUapo6hYttzGkUPWh/+N
-=9nA/
------END PGP SIGNATURE-----
-
---Sig_/qE5TVZNiBFye5C1xmgY3c2v--
+greg k-h
