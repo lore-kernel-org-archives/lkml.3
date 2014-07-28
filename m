@@ -1,54 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751367AbaG1TAT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 15:00:19 -0400
-Received: from e06smtp12.uk.ibm.com ([195.75.94.108]:53081 "EHLO
-	e06smtp12.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750956AbaG1TAQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 15:00:16 -0400
-Date: Mon, 28 Jul 2014 21:00:09 +0200
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
-To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>, linux390@de.ibm.com,
-        linux-s390@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] s390: char: sclp_async.c:  Cleaning up missing
- null-terminate in conjunction with strncpy
-Message-ID: <20140728190009.GB3769@osiris>
-References: <1406385047-2942-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+	id S1751704AbaG1TAf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 15:00:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29749 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751167AbaG1TA3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jul 2014 15:00:29 -0400
+Date: Mon, 28 Jul 2014 20:58:03 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Andy Lutomirski <luto@amacapital.net>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, Kees Cook <keescook@chromium.org>,
+        Will Drewry <wad@chromium.org>, x86@kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-mips@linux-mips.org,
+        linux-arch@vger.kernel.org, linux-security-module@vger.kernel.org,
+        Alexei Starovoitov <ast@plumgrid.com>, hpa@zytor.com
+Subject: TIF_NOHZ can escape nonhz mask? (Was: [PATCH v3 6/8] x86: Split
+	syscall_trace_enter into two phases)
+Message-ID: <20140728185803.GA24663@redhat.com>
+References: <cover.1405992946.git.luto@amacapital.net> <3f649f5658a163645e3ce15156176c325283762e.1405992946.git.luto@amacapital.net> <20140728173723.GA20993@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1406385047-2942-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14072819-8372-0000-0000-000000AC4F0A
+In-Reply-To: <20140728173723.GA20993@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 26, 2014 at 04:30:47PM +0200, Rickard Strandqvist wrote:
-> Replacing strncpy with strlcpy to avoid strings that lacks null terminate.
-> 
-> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-> ---
->  drivers/s390/char/sclp_async.c |    4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/s390/char/sclp_async.c b/drivers/s390/char/sclp_async.c
-> index 5f9f929..585de0a 100644
-> --- a/drivers/s390/char/sclp_async.c
-> +++ b/drivers/s390/char/sclp_async.c
-> @@ -132,12 +132,12 @@ static int sclp_async_send_wait(char *message)
->  	request->command = SCLP_CMDW_WRITE_EVENT_DATA;
->  	request->sccb = sccb;
->  	request->status = SCLP_REQ_FILLED;
-> -	strncpy(sccb->evbuf.data, message, sizeof(sccb->evbuf.data));
-> +	strlcpy(sccb->evbuf.data, message, sizeof(sccb->evbuf.data));
+Off-topic, but...
 
-Do your patches actually fix any bugs? E.g. this line fills a hardware data
-structure, which must not necessarily be null terminated. Actually you even
-could have introduced a bug here.
-So, please state which of your patches actually do fix bugs.
+On 07/28, Oleg Nesterov wrote:
+>
+> But we should always call user_exit() unconditionally?
+
+Frederic, don't we need the patch below? In fact clear_() can be moved
+under "if ()" too. and probably copy_process() should clear this flag...
+
+Or. __context_tracking_task_switch() can simply do
+
+	 if (context_tracking_cpu_is_enabled())
+	 	set_tsk_thread_flag(next, TIF_NOHZ);
+	 else
+	 	clear_tsk_thread_flag(next, TIF_NOHZ);
+
+and then we can forget about copy_process(). Or I am totally confused?
+
+
+I am also wondering if we can extend user_return_notifier to handle
+enter/exit and kill TIF_NOHZ.
+
+Oleg.
+
+--- x/kernel/context_tracking.c
++++ x/kernel/context_tracking.c
+@@ -202,7 +202,8 @@ void __context_tracking_task_switch(stru
+ 				    struct task_struct *next)
+ {
+ 	clear_tsk_thread_flag(prev, TIF_NOHZ);
+-	set_tsk_thread_flag(next, TIF_NOHZ);
++	if (context_tracking_cpu_is_enabled())
++		set_tsk_thread_flag(next, TIF_NOHZ);
+ }
+ 
+ #ifdef CONFIG_CONTEXT_TRACKING_FORCE
 
