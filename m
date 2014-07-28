@@ -1,68 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752651AbaG0USS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Jul 2014 16:18:18 -0400
-Received: from mail-we0-f169.google.com ([74.125.82.169]:41813 "EHLO
-	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752463AbaG0USR (ORCPT
+	id S1752662AbaG0UVh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Jul 2014 16:21:37 -0400
+Received: from mail-yh0-f52.google.com ([209.85.213.52]:41983 "EHLO
+	mail-yh0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752463AbaG0UVg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Jul 2014 16:18:17 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140727083758.GA4834@fancy-poultry.org>
-References: <CAPDOMViYi_rg_cGp_SgZVqX6pw+SB=CVbr1kFn5WG481s4tz5A@mail.gmail.com>
-	<20140727083758.GA4834@fancy-poultry.org>
-Date: Sun, 27 Jul 2014 16:18:16 -0400
-Message-ID: <CAPDOMVgjLU+r82eKFA=4-v_oS+4c4fCtovcZMer5x5GAW56DSw@mail.gmail.com>
-Subject: Re: Bug on Kernel 3.16 r6: Sound and Buffering in Clementine with
- Files are Transferring to Music Directory
-From: Nick Krause <xerofoify@gmail.com>
-To: htd@fritha.org
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Sun, 27 Jul 2014 16:21:36 -0400
+From: Jessica Yu <jyu@cowsay.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Jessica Yu <jyu@cowsay.org>
+Subject: [PATCH] Staging: lustre: linux-module: fix coding style issues.
+Date: Sun, 27 Jul 2014 21:23:36 -0700
+Message-Id: <1406521416-25031-1-git-send-email-jyu@cowsay.org>
+X-Mailer: git-send-email 2.0.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 27, 2014 at 4:37 AM, Heinz Diehl <htd@fancy-poultry.org> wrote:
-> On 27.07.2014, Nick Krause wrote:
->
->> When I transfer a lot of music for a brtfs external hard drive I have the music
->> in clementine I am listening to is stopped for a few seconds and then continues.
->
-> Most probably, this is not a bug, but caused by high disk I/O. It's
-> not clear to me if the music you are listening to is located on the
-> same disk which you transfer to/from. This would make things even
-> worse.
->
-> However, there are a few thing you can do to try to minimize the observed
-> stalls:
->
-> 1. Compile your kernel with CONFIG_PREEMPT enabled
-> 2. Reduce the amount of memory content sync'ed to disk
-> 3. If your disk is a SSD: change the elevator to "noop"
-> 4. Enable writeback on your disk
-> 5. Increase the disks readahead sectors
-> 6. Increase the audio buffers in your player
->
-> 1. CONFIG_PREEMPT=y
->
-> 2. Sysctl: vm.dirty_ratio = 10
->            vm.dirty_background_ratio = 5
->
-> 3. echo "noop" > /sys/block/sda/queue/scheduler
->
-> 4. /sbin/hdparm -W1 /dev/sda
->
-> 5. /sbin/blockdev --setra 8192 /dev/sda
->
-> Regards,
->  Heinz.
-Heinz,
-The audio buffer is not going to work as this was never a issue with
-default Ubuntu kernels.
-However I will try your other ideas and report back :). I am
-transferring into the same directory
-for the music I am listening to. In addition , my cpu usage when doing
-this is half of my older
-Ubuntu distro kernel, 6 vs 3 percent for upstream.
-Cheers Nick
+Fixed some coding style issues.
+
+Signed-off-by: Jessica Yu <jyu@cowsay.org>
+---
+ drivers/staging/lustre/lustre/libcfs/linux/linux-module.c | 14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
+
+diff --git a/drivers/staging/lustre/lustre/libcfs/linux/linux-module.c b/drivers/staging/lustre/lustre/libcfs/linux/linux-module.c
+index ccadf65..de3c199 100644
+--- a/drivers/staging/lustre/lustre/libcfs/linux/linux-module.c
++++ b/drivers/staging/lustre/lustre/libcfs/linux/linux-module.c
+@@ -99,7 +99,7 @@ int libcfs_ioctl_popdata(void *arg, void *data, int size)
+ extern struct cfs_psdev_ops	  libcfs_psdev_ops;
+ 
+ static int
+-libcfs_psdev_open(struct inode * inode, struct file * file)
++libcfs_psdev_open(struct inode *inode, struct file *file)
+ {
+ 	struct libcfs_device_userstate **pdu = NULL;
+ 	int    rc = 0;
+@@ -116,7 +116,7 @@ libcfs_psdev_open(struct inode * inode, struct file * file)
+ 
+ /* called when closing /dev/device */
+ static int
+-libcfs_psdev_release(struct inode * inode, struct file * file)
++libcfs_psdev_release(struct inode *inode, struct file *file)
+ {
+ 	struct libcfs_device_userstate *pdu;
+ 	int    rc = 0;
+@@ -140,9 +140,9 @@ static long libcfs_ioctl(struct file *file,
+ 	if (!capable(CAP_SYS_ADMIN))
+ 		return -EACCES;
+ 
+-	if ( _IOC_TYPE(cmd) != IOC_LIBCFS_TYPE ||
++	if (_IOC_TYPE(cmd) != IOC_LIBCFS_TYPE ||
+ 	     _IOC_NR(cmd) < IOC_LIBCFS_MIN_NR  ||
+-	     _IOC_NR(cmd) > IOC_LIBCFS_MAX_NR ) {
++	     _IOC_NR(cmd) > IOC_LIBCFS_MAX_NR) {
+ 		CDEBUG(D_IOCTL, "invalid ioctl ( type %d, nr %d, size %d )\n",
+ 		       _IOC_TYPE(cmd), _IOC_NR(cmd), _IOC_SIZE(cmd));
+ 		return (-EINVAL);
+@@ -154,7 +154,7 @@ static long libcfs_ioctl(struct file *file,
+ 		if (!capable(CFS_CAP_SYS_BOOT))
+ 			return (-EPERM);
+ 		panic("debugctl-invoked panic");
+-		return (0);
++		return 0;
+ 	case IOC_LIBCFS_MEMHOG:
+ 		if (!capable(CFS_CAP_SYS_ADMIN))
+ 			return -EPERM;
+@@ -167,10 +167,10 @@ static long libcfs_ioctl(struct file *file,
+ 		rc = libcfs_psdev_ops.p_ioctl(&pfile, cmd, (void *)arg);
+ 	else
+ 		rc = -EPERM;
+-	return (rc);
++	return rc;
+ }
+ 
+-static struct file_operations libcfs_fops = {
++static const struct file_operations libcfs_fops = {
+ 	.unlocked_ioctl	= libcfs_ioctl,
+ 	.open		= libcfs_psdev_open,
+ 	.release	= libcfs_psdev_release,
+-- 
+2.0.1
+
