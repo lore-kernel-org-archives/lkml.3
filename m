@@ -1,67 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751636AbaG1TFR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 15:05:17 -0400
-Received: from mail-la0-f42.google.com ([209.85.215.42]:54561 "EHLO
-	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750929AbaG1TFO (ORCPT
+	id S1752040AbaG1TGv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 15:06:51 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:46895 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751135AbaG1TGs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 15:05:14 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140728185538.GB17609@kroah.com>
-References: <1406572110-26823-1-git-send-email-mcgrof@do-not-panic.com>
- <1406572110-26823-3-git-send-email-mcgrof@do-not-panic.com> <20140728185538.GB17609@kroah.com>
-From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-Date: Mon, 28 Jul 2014 12:04:50 -0700
-X-Google-Sender-Auth: sh-noq88sKu_Z0vxWE-rPORABGo
-Message-ID: <CAB=NE6VebcR7=UA1n0wNVLr5FFukzq6aW5CkeB3nf5FixV=3cA@mail.gmail.com>
-Subject: Re: [PATCH v2 2/4] driver core: enable drivers to use deferred probe
- from init
-To: Greg KH <gregkh@linuxfoundation.org>,
-        Santosh Rastapur <santosh@chelsio.com>,
-        Hariprasad S <hariprasad@chelsio.com>
-Cc: Takashi Iwai <tiwai@suse.de>,
+	Mon, 28 Jul 2014 15:06:48 -0400
+Date: Mon, 28 Jul 2014 20:06:09 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Konstantin Khlebnikov <koct9i@gmail.com>
+Cc: Konstantin Khlebnikov <k.khlebnikov@samsung.com>,
+        Vitaly Andrianov <vitalya@ti.com>,
+        Russell King <linux@arm.linux.org.uk>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
-        Joseph Salisbury <joseph.salisbury@canonical.com>,
-        Kay Sievers <kay@vrfy.org>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Tim Gardner <tim.gardner@canonical.com>,
-        Pierre Fersing <pierre-fersing@pierref.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>, Benjamin Poirier <bpoirier@suse.de>,
-        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
-        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
-        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
-        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
-        MPT-FusionLinux.pdl@avagotech.com,
-        Linux SCSI List <linux-scsi@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Cyril Chemparathy <cyril@ti.com>
+Subject: Re: [PATCH 2/2] ARM: LPAE: reduce damage caused by idmap to virtual
+ memory layout
+Message-ID: <20140728190609.GV15536@arm.com>
+References: <20140722153623.25088.37742.stgit@buzz>
+ <20140722153635.25088.14197.stgit@buzz>
+ <20140728181456.GO15536@arm.com>
+ <CALYGNiNJDHfQm2yk067hh-Wywsb_Ki5AEE_sTMkYegJi9spSzw@mail.gmail.com>
+ <20140728184107.GR15536@arm.com>
+ <CALYGNiNaMMv9itJ_+cvPDn1_Yo4GTPQJ-Cy9zBzJzfaDLfkvmg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALYGNiNaMMv9itJ_+cvPDn1_Yo4GTPQJ-Cy9zBzJzfaDLfkvmg@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 28, 2014 at 11:55 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> So, what drivers are having problems in their init sequence, and why
-> aren't they using async firmware loading?
+On Mon, Jul 28, 2014 at 07:57:00PM +0100, Konstantin Khlebnikov wrote:
+> On Mon, Jul 28, 2014 at 10:41 PM, Will Deacon <will.deacon@arm.com> wrote:
+> > On Mon, Jul 28, 2014 at 07:25:14PM +0100, Konstantin Khlebnikov wrote:
+> >> On Mon, Jul 28, 2014 at 10:14 PM, Will Deacon <will.deacon@arm.com> wrote:
+> >> > On Tue, Jul 22, 2014 at 04:36:35PM +0100, Konstantin Khlebnikov wrote:
+> >> >> idmap layout combines both phisical and virtual addresses.
+> >> >> Everything works fine if ram physically lays below PAGE_OFFSET.
+> >> >> Otherwise idmap starts punching huge holes in virtual memory layout.
+> >> >> It maps ram by 2MiB sections, but when it allocates new pmd page it
+> >> >> cuts 1GiB at once.
+> >> >>
+> >> >> This patch makes a copy of all affected pmds from init_mm.
+> >> >> Only few (usually one) 2MiB sections will be lost.
+> >> >> This is not eliminates problem but makes it 512 times less likely.
+> >> >
+> >> > I'm struggling to understand your commit message, but making a problem `512
+> >> > times less likely' does sound like a bit of a hack to me. Can't we fix this
+> >> > properly instead?
+> >>
+> >> Yep, my comment sucks.
+> >>
+> >> Usually idmap looks like this:
+> >>
+> >> |0x00000000 -- <chunk of physical memory in identical mapping > --- |
+> >> TASK_SIZE -- <kernel space vm layoyt> --- 0xFFFFFFFF |
+> >>
+> >> But when that physical memory chunk starts from 0xE8000000 or even
+> >> 0xF2000000 evenything becomes very complicated.
+> >
+> > Why? As long as we don't clobber the kernel text (which would require
+> > PHYS_OFFSET to be at a really weird alignment and very close to
+> > PAGE_OFFSET), then you should be alright. Sure, you'll lose things like your
+> > stack and the vmalloc area etc, but you're running in the idmap, so don't
+> > use those things.
+> 
+> Yep, we have piece of hardware with really weird aligned PHYS_OFFSET,
+> mostly all ram is above 4gb and we was lucky enough to get into the trouble.
+> 
+> It seems keystone has all memory above 4gb but small piece is mapped below
+> especially for booting. I suppose it's below PAGE_OFFSET so Cyril
+> hadn't seen that problem.
 
-Fixing drivers is one thing, fixing drivers *now* because *now*
-drivers are failing due to a regression is another thing and that's
-what we have now so lets just be clear on that. The 30 second rule is
-a major driver requirement change and it should not be taken slightly,
-all of a sudden this is a new requirement but you won't know that
-unless you're reading these threads or hit an issue. That's an issue
-in itself.
+Sure, I remember when the keystone support was merged. There's a low alias
+of memory which isn't I/O coherent, so when we enable the MMU we rewrite the
+page tables to use the high alias (which is also broken, as I pointed out on
+the list today).
 
-The cxgb4: driver is an example where although I did propose patches
-to use asynch firmware loading the entire registration of the
-netdevice would need to be changed as well in order to get this right.
-In short we have to scramble now to first identify drivers that have
-long init sequences and then fix. There's an assumption that we can
-easily fix drivers, this can take time. This series, although does
-take advantage of a kernel interface for other uses, lets us identify
-these drivers on the kernel ring buffer, so we can go and address
-fixing them with time.
+> Also I seen comment somewhere in the code which tells that idrmap pgd is
+> always below 4gb which isn't quite true. Moreover, I had some experiments with
+> mapping ram to random places in qemu and seen that kernel cannot boot if
+> PHYS_OFFSET isn't alligned to 128mb which is strange.
+> So, it seems there is plenty bugs anound.
+> 
+> >
+> > soft_restart is an example of code that deals with these issues. Which code
+> > is causing you problems?
+> 
+> That was booting of secondary cpus, all of them.
 
- Luis
+Ok. I think we need more specifics to progress with this patch. It's not
+clear to me what's going wrong or why your platform is causing the issues
+you're seeing.
+
+Will
