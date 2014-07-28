@@ -1,79 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752909AbaG1Nax (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 09:30:53 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:42876 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752841AbaG1NaY (ORCPT
+	id S1752931AbaG1Na4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 09:30:56 -0400
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:62541 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752883AbaG1Nas (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 09:30:24 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 96.249.243.124
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+ZESK1DCBkX+eupJ3XH0ORR/UBMnV6gXU=
-X-DKIM: OpenDKIM Filter v2.0.1 titan 434CC5B845D
-Date: Mon, 28 Jul 2014 09:30:05 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: Andrew Lunn <andrew@lunn.ch>
-Cc: Benoit Masson <yahoo@perenite.com>, benoitm@perenite.com,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        gregory.clement@free-electrons.com,
-        sebastian.hesselbarth@googlemail.com
-Subject: Re: [PATCH 2/2] V3 ARM: mvebu: Added dts defintion for Lenovo
- Iomega ix4-300d NAS
-Message-ID: <20140728133005.GO23220@titan.lakedaemon.net>
-References: <1406418490-61502-1-git-send-email-yahoo@perenite.com>
- <20140727015509.GB31974@lunn.ch>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140727015509.GB31974@lunn.ch>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 28 Jul 2014 09:30:48 -0400
+From: Grant Likely <grant.likely@linaro.org>
+Subject: Re: [RFC Patch V1 22/30] mm, of: Use cpu_to_mem()/numa_mem_id() to
+ support memoryless node
+To: Nishanth Aravamudan <nacc@linux.vnet.ibm.com>,
+        Jiang Liu <jiang.liu@linux.intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        David Rientjes <rientjes@google.com>,
+        Mike Galbraith <umgwanakikbuti@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
+        Rob Herring <robh+dt@kernel.org>, Tony Luck <tony.luck@intel.com>,
+        linux-mm@kvack.org, linux-hotplug@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
+In-Reply-To: <20140721175241.GF4156@linux.vnet.ibm.com>
+References: <1405064267-11678-1-git-send-email-jiang.liu@linux.intel.com>
+	<1405064267-11678-23-git-send-email-jiang.liu@linux.intel.com>
+	<20140721175241.GF4156@linux.vnet.ibm.com>
+Date: Mon, 28 Jul 2014 07:30:40 -0600
+Message-Id: <20140728133040.854F5C4095E@trevor.secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andrew,
-
-On Sun, Jul 27, 2014 at 03:55:09AM +0200, Andrew Lunn wrote:
-> On Sat, Jul 26, 2014 at 04:48:10PM -0700, Benoit Masson wrote:
-> > The Lenovo Iomega ix4-300d is a 4-Bay sata NAS with dual Gb,
-> >  USB2.0 & 3.0, powered by a Marvell Armada XP MV78230 dual core CPU.
+On Mon, 21 Jul 2014 10:52:41 -0700, Nishanth Aravamudan <nacc@linux.vnet.ibm.com> wrote:
+> On 11.07.2014 [15:37:39 +0800], Jiang Liu wrote:
+> > When CONFIG_HAVE_MEMORYLESS_NODES is enabled, cpu_to_node()/numa_node_id()
+> > may return a node without memory, and later cause system failure/panic
+> > when calling kmalloc_node() and friends with returned node id.
+> > So use cpu_to_mem()/numa_mem_id() instead to get the nearest node with
+> > memory for the/current cpu.
 > > 
-> > http://shop.lenovo.com/us/en/servers/network-storage/lenovoemc/ix4-300d/
-> > Signed-off-by: Benoit Masson <yahoo@perenite.com>
+> > If CONFIG_HAVE_MEMORYLESS_NODES is disabled, cpu_to_mem()/numa_mem_id()
+> > is the same as cpu_to_node()/numa_node_id().
+> > 
+> > Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
 > > ---
-> >  arch/arm/boot/dts/Makefile                      |   3 +-
-> >  arch/arm/boot/dts/armada-xp-lenovo-ix4-300d.dts | 285 ++++++++++++++++++++++++
-> >  2 files changed, 287 insertions(+), 1 deletion(-)
-> >  create mode 100644 arch/arm/boot/dts/armada-xp-lenovo-ix4-300d.dts
+> >  drivers/of/base.c |    2 +-
+> >  1 file changed, 1 insertion(+), 1 deletion(-)
 > > 
-...
-> > diff --git a/arch/arm/boot/dts/armada-xp-lenovo-ix4-300d.dts b/arch/arm/boot/dts/armada-xp-lenovo-ix4-300d.dts
-> > new file mode 100644
-> > index 0000000..c82a8e3
-> > --- /dev/null
-> > +++ b/arch/arm/boot/dts/armada-xp-lenovo-ix4-300d.dts
-...
-> > +			i2c@11000 {
-> > +				compatible = "marvell,mv64xxx-i2c";
+> > diff --git a/drivers/of/base.c b/drivers/of/base.c
+> > index b9864806e9b8..40d4772973ad 100644
+> > --- a/drivers/of/base.c
+> > +++ b/drivers/of/base.c
+> > @@ -85,7 +85,7 @@ EXPORT_SYMBOL(of_n_size_cells);
+> >  #ifdef CONFIG_NUMA
+> >  int __weak of_node_to_nid(struct device_node *np)
+> >  {
+> > -	return numa_node_id();
+> > +	return numa_mem_id();
+> >  }
+> >  #endif
 > 
-> O.K, this version is good.
+> Um, NAK. of_node_to_nid() returns the NUMA node ID for a given device
+> tree node. The default should be the physically local NUMA node, not the
+> nearest memory-containing node.
 
-Is it?  As Arnd mentioned against the previous version, this overrides
-the default compatible property inherited from the dtsi.  Since this is
-also compatible with "marvell,mv78230-i2c", I think we should just
-delete this line.
+That description doesn't match the code. This patch only changes the
+default implementation of of_node_to_nid() which doesn't take the device
+node into account *at all* when returning a node ID. Just look at the
+diff.
 
-Benoit, this is still in V4.  If Andrew agrees, I'll just remove the
-line when I apply V4.
+I think this patch is correct, and it doesn't affect the override
+versions provided by powerpc and sparc.
 
-> Acked-by: Andrew Lunn <andrew@lunn.ch>
+g.
 
-thx,
+> 
+> I think the general direction of this patchset is good -- what NUMA
+> information do we actually are about at each callsite. But the execution
+> is blind and doesn't consider at all what the code is actually doing.
+> The changelogs are all identical and don't actually provide any
+> information about what errors this (or any) specific patch are
+> resolving.
+> 
+> Thanks,
+> Nish
+> 
 
-Jason.
