@@ -1,150 +1,601 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752279AbaG1KKY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 06:10:24 -0400
-Received: from mail-qg0-f49.google.com ([209.85.192.49]:43106 "EHLO
-	mail-qg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751316AbaG1KKW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 06:10:22 -0400
-Message-ID: <53D6218A.5080401@gmail.com>
-Date: Mon, 28 Jul 2014 06:10:18 -0400
-From: Austin S Hemmelgarn <ahferroin7@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1752361AbaG1KMm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 06:12:42 -0400
+Received: from mail-bn1blp0188.outbound.protection.outlook.com ([207.46.163.188]:18349
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751586AbaG1KMj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jul 2014 06:12:39 -0400
+From: Cristian Stoica <cristian.stoica@freescale.com>
+To: <herbert@gondor.apana.org.au>, <davem@davemloft.net>
+CC: <linux-crypto@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        "Cristian Stoica" <cristian.stoica@freescale.com>
+Subject: [PATCH] crypto: testmgr.c: white space fix-ups on test_aead
+Date: Mon, 28 Jul 2014 13:11:23 +0300
+Message-ID: <1406542283-11995-1-git-send-email-cristian.stoica@freescale.com>
+X-Mailer: git-send-email 1.8.3.1
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(189002)(199002)(74662001)(46102001)(102836001)(31966008)(33646002)(26826002)(21056001)(74502001)(104166001)(85852003)(83072002)(93916002)(81342001)(87936001)(50986999)(86362001)(19580405001)(19580395003)(99396002)(88136002)(83322001)(84676001)(50226001)(44976005)(68736004)(4396001)(81542001)(87286001)(92726001)(104016003)(36756003)(77982001)(95666004)(229853001)(107046002)(20776003)(47776003)(62966002)(77156001)(48376002)(85306003)(97736001)(79102001)(106466001)(89996001)(92566001)(50466002)(6806004)(105606002)(76482001)(64706001)(80022001);DIR:OUT;SFP:;SCL:1;SRVR:CY1PR0301MB0618;H:tx30smr01.am.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;LANG:en;
 MIME-Version: 1.0
-To: Nick Krause <xerofoify@gmail.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-btrfs@vger.kernel.org SYSTEM list:BTRFS FILE" 
-	<linux-btrfs@vger.kernel.org>
-Subject: Re: Multi Core Support for compression in compression.c
-References: <CAPDOMViXEgN1U8Og52Fd7EaM86Ad2Dfex9TVQ-+tRZ9SL9Kcig@mail.gmail.com>	<53D5BBCA.3020109@gmail.com> <CAPDOMVjB9ErEwA7mf91X7pff5LAkeT=BT4pR7TuoEp3LL333Lg@mail.gmail.com>
-In-Reply-To: <CAPDOMVjB9ErEwA7mf91X7pff5LAkeT=BT4pR7TuoEp3LL333Lg@mail.gmail.com>
-X-Enigmail-Version: 1.6
-OpenPGP: id=85D2EC0F
-Content-Type: multipart/signed; protocol="application/pkcs7-signature"; micalg=sha1; boundary="------------ms060102040804020602060805"
+Content-Type: text/plain
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
+X-Forefront-PRVS: 0286D7B531
+Authentication-Results: spf=fail (sender IP is 192.88.168.50)
+ smtp.mailfrom=cristian.stoica@freescale.com; 
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a cryptographically signed message in MIME format.
+This patch inverts two if conditions and allows removal of one
+tab-stop in their code-blocks. Only white-space clean-up follows.
 
---------------ms060102040804020602060805
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+Signed-off-by: Cristian Stoica <cristian.stoica@freescale.com>
+---
+ crypto/testmgr.c | 498 +++++++++++++++++++++++++++----------------------------
+ 1 file changed, 242 insertions(+), 256 deletions(-)
 
-On 07/27/2014 11:21 PM, Nick Krause wrote:
-> On Sun, Jul 27, 2014 at 10:56 PM, Austin S Hemmelgarn
-> <ahferroin7@gmail.com> wrote:
->> On 07/27/2014 04:47 PM, Nick Krause wrote:
->>> This may be a bad idea , but compression in brtfs seems to be only
->>> using one core to compress.
->>> Depending on the CPU used and the amount of cores in the CPU we can
->>> make this much faster
->>> with multiple cores. This seems bad by my reading at least I would
->>> recommend for writing compression
->>> we write a function to use a certain amount of cores based on the loa=
-d
->>> of the system's CPU not using
->>> more then 75% of the system's CPU resources as my system when idle ha=
-s
->>> never needed more
->>> then one core of my i5 2500k to run when with interrupts for opening
->>> eclipse are running. For reading
->>> compression on good core seems fine to me as testing other compressio=
-n
->>> software for reads , it's
->>> way less CPU intensive.
->>> Cheers Nick
->> We would probably get a bigger benefit from taking an approach like
->> SquashFS has recently added, that is, allowing multi-threaded
->> decompression fro reads, and decompressing directly into the pagecache=
-=2E
->>  Such an approach would likely make zlib compression much more scalabl=
-e
->> on large systems.
->>
->>
->=20
-> Austin,
-> That seems better then my idea as you seem to be more up to date on
-> brtfs devolopment.
-> If you and the other developers of brtfs are interested in adding this
-> as a feature please let
-> me known as I would like to help improve brtfs as the file system as
-> an idea is great just
-> seems like it needs a lot of work :).
-> Nick
-I wouldn't say that I am a BTRFS developer (power user maybe?), but I
-would definitely say that parallelizing compression on writes would be a
-good idea too (especially for things like lz4, which IIRC is either in
-3.16 or in the queue for 3.17).  Both options would be a lot of work,
-but almost any performance optimization would.  I would almost say that
-it would provide a bigger performance improvement to get BTRFS to
-intelligently stripe reads and writes (at the moment, any given worker
-thread only dispatches one write or read to a single device at a time,
-and any given write() or read() syscall gets handled by only one worker).=
+diff --git a/crypto/testmgr.c b/crypto/testmgr.c
+index 81818b9..0f3883d 100644
+--- a/crypto/testmgr.c
++++ b/crypto/testmgr.c
+@@ -492,121 +492,116 @@ static int __test_aead(struct crypto_aead *tfm, int enc,
+ 				  tcrypt_complete, &result);
+ 
+ 	for (i = 0, j = 0; i < tcount; i++) {
+-		if (!template[i].np) {
+-			j++;
++		if (template[i].np)
++			continue;
+ 
+-			/* some templates have no input data but they will
+-			 * touch input
+-			 */
+-			input = xbuf[0];
+-			input += align_offset;
+-			assoc = axbuf[0];
++		j++;
+ 
+-			ret = -EINVAL;
+-			if (WARN_ON(align_offset + template[i].ilen >
+-				    PAGE_SIZE || template[i].alen > PAGE_SIZE))
+-				goto out;
++		/* some templates have no input data but they will
++		 * touch input
++		 */
++		input = xbuf[0];
++		input += align_offset;
++		assoc = axbuf[0];
+ 
+-			memcpy(input, template[i].input, template[i].ilen);
+-			memcpy(assoc, template[i].assoc, template[i].alen);
+-			if (template[i].iv)
+-				memcpy(iv, template[i].iv, MAX_IVLEN);
+-			else
+-				memset(iv, 0, MAX_IVLEN);
++		ret = -EINVAL;
++		if (WARN_ON(align_offset + template[i].ilen >
++			    PAGE_SIZE || template[i].alen > PAGE_SIZE))
++			goto out;
+ 
+-			crypto_aead_clear_flags(tfm, ~0);
+-			if (template[i].wk)
+-				crypto_aead_set_flags(
+-					tfm, CRYPTO_TFM_REQ_WEAK_KEY);
++		memcpy(input, template[i].input, template[i].ilen);
++		memcpy(assoc, template[i].assoc, template[i].alen);
++		if (template[i].iv)
++			memcpy(iv, template[i].iv, MAX_IVLEN);
++		else
++			memset(iv, 0, MAX_IVLEN);
+ 
+-			if (template[i].klen > MAX_KEYLEN) {
+-				pr_err("alg: aead%s: setkey failed on test %d for %s: key size %d > %d\n",
+-				       d, j, algo, template[i].klen,
+-				       MAX_KEYLEN);
+-				ret = -EINVAL;
+-				goto out;
+-			}
+-			memcpy(key, template[i].key, template[i].klen);
++		crypto_aead_clear_flags(tfm, ~0);
++		if (template[i].wk)
++			crypto_aead_set_flags(tfm, CRYPTO_TFM_REQ_WEAK_KEY);
+ 
+-			ret = crypto_aead_setkey(tfm, key,
+-						 template[i].klen);
+-			if (!ret == template[i].fail) {
+-				pr_err("alg: aead%s: setkey failed on test %d for %s: flags=%x\n",
+-				       d, j, algo, crypto_aead_get_flags(tfm));
+-				goto out;
+-			} else if (ret)
+-				continue;
++		if (template[i].klen > MAX_KEYLEN) {
++			pr_err("alg: aead%s: setkey failed on test %d for %s: key size %d > %d\n",
++			       d, j, algo, template[i].klen,
++			       MAX_KEYLEN);
++			ret = -EINVAL;
++			goto out;
++		}
++		memcpy(key, template[i].key, template[i].klen);
+ 
+-			authsize = abs(template[i].rlen - template[i].ilen);
+-			ret = crypto_aead_setauthsize(tfm, authsize);
+-			if (ret) {
+-				pr_err("alg: aead%s: Failed to set authsize to %u on test %d for %s\n",
+-				       d, authsize, j, algo);
+-				goto out;
+-			}
++		ret = crypto_aead_setkey(tfm, key, template[i].klen);
++		if (!ret == template[i].fail) {
++			pr_err("alg: aead%s: setkey failed on test %d for %s: flags=%x\n",
++			       d, j, algo, crypto_aead_get_flags(tfm));
++			goto out;
++		} else if (ret)
++			continue;
+ 
+-			if (diff_dst) {
+-				output = xoutbuf[0];
+-				output += align_offset;
+-				sg_init_one(&sg[0], input, template[i].ilen);
+-				sg_init_one(&sgout[0], output,
+-					    template[i].rlen);
+-			} else {
+-				sg_init_one(&sg[0], input,
+-					    template[i].ilen +
+-						(enc ? authsize : 0));
+-				output = input;
+-			}
++		authsize = abs(template[i].rlen - template[i].ilen);
++		ret = crypto_aead_setauthsize(tfm, authsize);
++		if (ret) {
++			pr_err("alg: aead%s: Failed to set authsize to %u on test %d for %s\n",
++			       d, authsize, j, algo);
++			goto out;
++		}
+ 
+-			sg_init_one(&asg[0], assoc, template[i].alen);
++		if (diff_dst) {
++			output = xoutbuf[0];
++			output += align_offset;
++			sg_init_one(&sg[0], input, template[i].ilen);
++			sg_init_one(&sgout[0], output, template[i].rlen);
++		} else {
++			sg_init_one(&sg[0], input,
++				    template[i].ilen + (enc ? authsize : 0));
++			output = input;
++		}
+ 
+-			aead_request_set_crypt(req, sg, (diff_dst) ? sgout : sg,
+-					       template[i].ilen, iv);
++		sg_init_one(&asg[0], assoc, template[i].alen);
+ 
+-			aead_request_set_assoc(req, asg, template[i].alen);
++		aead_request_set_crypt(req, sg, (diff_dst) ? sgout : sg,
++				       template[i].ilen, iv);
+ 
+-			ret = enc ?
+-				crypto_aead_encrypt(req) :
+-				crypto_aead_decrypt(req);
++		aead_request_set_assoc(req, asg, template[i].alen);
+ 
+-			switch (ret) {
+-			case 0:
+-				if (template[i].novrfy) {
+-					/* verification was supposed to fail */
+-					pr_err("alg: aead%s: %s failed on test %d for %s: ret was 0, expected -EBADMSG\n",
+-					       d, e, j, algo);
+-					/* so really, we got a bad message */
+-					ret = -EBADMSG;
+-					goto out;
+-				}
+-				break;
+-			case -EINPROGRESS:
+-			case -EBUSY:
+-				ret = wait_for_completion_interruptible(
+-					&result.completion);
+-				if (!ret && !(ret = result.err)) {
+-					reinit_completion(&result.completion);
+-					break;
+-				}
+-			case -EBADMSG:
+-				if (template[i].novrfy)
+-					/* verification failure was expected */
+-					continue;
+-				/* fall through */
+-			default:
+-				pr_err("alg: aead%s: %s failed on test %d for %s: ret=%d\n",
+-				       d, e, j, algo, -ret);
+-				goto out;
+-			}
++		ret = enc ? crypto_aead_encrypt(req) : crypto_aead_decrypt(req);
+ 
+-			q = output;
+-			if (memcmp(q, template[i].result, template[i].rlen)) {
+-				pr_err("alg: aead%s: Test %d failed on %s for %s\n",
+-				       d, j, e, algo);
+-				hexdump(q, template[i].rlen);
+-				ret = -EINVAL;
++		switch (ret) {
++		case 0:
++			if (template[i].novrfy) {
++				/* verification was supposed to fail */
++				pr_err("alg: aead%s: %s failed on test %d for %s: ret was 0, expected -EBADMSG\n",
++				       d, e, j, algo);
++				/* so really, we got a bad message */
++				ret = -EBADMSG;
+ 				goto out;
+ 			}
++			break;
++		case -EINPROGRESS:
++		case -EBUSY:
++			ret = wait_for_completion_interruptible(
++				&result.completion);
++			if (!ret && !(ret = result.err)) {
++				reinit_completion(&result.completion);
++				break;
++			}
++		case -EBADMSG:
++			if (template[i].novrfy)
++				/* verification failure was expected */
++				continue;
++			/* fall through */
++		default:
++			pr_err("alg: aead%s: %s failed on test %d for %s: ret=%d\n",
++			       d, e, j, algo, -ret);
++			goto out;
++		}
++
++		q = output;
++		if (memcmp(q, template[i].result, template[i].rlen)) {
++			pr_err("alg: aead%s: Test %d failed on %s for %s\n",
++			       d, j, e, algo);
++			hexdump(q, template[i].rlen);
++			ret = -EINVAL;
++			goto out;
+ 		}
+ 	}
+ 
+@@ -615,191 +610,182 @@ static int __test_aead(struct crypto_aead *tfm, int enc,
+ 		if (align_offset != 0)
+ 			break;
+ 
+-		if (template[i].np) {
+-			j++;
++		if (!template[i].np)
++			continue;
+ 
+-			if (template[i].iv)
+-				memcpy(iv, template[i].iv, MAX_IVLEN);
+-			else
+-				memset(iv, 0, MAX_IVLEN);
++		j++;
+ 
+-			crypto_aead_clear_flags(tfm, ~0);
+-			if (template[i].wk)
+-				crypto_aead_set_flags(
+-					tfm, CRYPTO_TFM_REQ_WEAK_KEY);
+-			if (template[i].klen > MAX_KEYLEN) {
+-				pr_err("alg: aead%s: setkey failed on test %d for %s: key size %d > %d\n",
+-				       d, j, algo, template[i].klen,
+-				       MAX_KEYLEN);
+-				ret = -EINVAL;
+-				goto out;
+-			}
+-			memcpy(key, template[i].key, template[i].klen);
++		if (template[i].iv)
++			memcpy(iv, template[i].iv, MAX_IVLEN);
++		else
++			memset(iv, 0, MAX_IVLEN);
+ 
+-			ret = crypto_aead_setkey(tfm, key, template[i].klen);
+-			if (!ret == template[i].fail) {
+-				pr_err("alg: aead%s: setkey failed on chunk test %d for %s: flags=%x\n",
+-				       d, j, algo, crypto_aead_get_flags(tfm));
+-				goto out;
+-			} else if (ret)
+-				continue;
++		crypto_aead_clear_flags(tfm, ~0);
++		if (template[i].wk)
++			crypto_aead_set_flags(tfm, CRYPTO_TFM_REQ_WEAK_KEY);
++		if (template[i].klen > MAX_KEYLEN) {
++			pr_err("alg: aead%s: setkey failed on test %d for %s: key size %d > %d\n",
++			       d, j, algo, template[i].klen, MAX_KEYLEN);
++			ret = -EINVAL;
++			goto out;
++		}
++		memcpy(key, template[i].key, template[i].klen);
+ 
+-			authsize = abs(template[i].rlen - template[i].ilen);
++		ret = crypto_aead_setkey(tfm, key, template[i].klen);
++		if (!ret == template[i].fail) {
++			pr_err("alg: aead%s: setkey failed on chunk test %d for %s: flags=%x\n",
++			       d, j, algo, crypto_aead_get_flags(tfm));
++			goto out;
++		} else if (ret)
++			continue;
+ 
+-			ret = -EINVAL;
+-			sg_init_table(sg, template[i].np);
+-			if (diff_dst)
+-				sg_init_table(sgout, template[i].np);
+-			for (k = 0, temp = 0; k < template[i].np; k++) {
+-				if (WARN_ON(offset_in_page(IDX[k]) +
+-					    template[i].tap[k] > PAGE_SIZE))
+-					goto out;
++		authsize = abs(template[i].rlen - template[i].ilen);
+ 
+-				q = xbuf[IDX[k] >> PAGE_SHIFT] +
+-				    offset_in_page(IDX[k]);
++		ret = -EINVAL;
++		sg_init_table(sg, template[i].np);
++		if (diff_dst)
++			sg_init_table(sgout, template[i].np);
++		for (k = 0, temp = 0; k < template[i].np; k++) {
++			if (WARN_ON(offset_in_page(IDX[k]) +
++				    template[i].tap[k] > PAGE_SIZE))
++				goto out;
+ 
+-				memcpy(q, template[i].input + temp,
+-				       template[i].tap[k]);
++			q = xbuf[IDX[k] >> PAGE_SHIFT] + offset_in_page(IDX[k]);
++			memcpy(q, template[i].input + temp, template[i].tap[k]);
++			sg_set_buf(&sg[k], q, template[i].tap[k]);
+ 
+-				sg_set_buf(&sg[k], q, template[i].tap[k]);
++			if (diff_dst) {
++				q = xoutbuf[IDX[k] >> PAGE_SHIFT] +
++				    offset_in_page(IDX[k]);
+ 
+-				if (diff_dst) {
+-					q = xoutbuf[IDX[k] >> PAGE_SHIFT] +
+-					    offset_in_page(IDX[k]);
++				memset(q, 0, template[i].tap[k]);
+ 
+-					memset(q, 0, template[i].tap[k]);
++				sg_set_buf(&sgout[k], q, template[i].tap[k]);
++			}
+ 
+-					sg_set_buf(&sgout[k], q,
+-						   template[i].tap[k]);
+-				}
++			n = template[i].tap[k];
++			if (k == template[i].np - 1 && enc)
++				n += authsize;
++			if (offset_in_page(q) + n < PAGE_SIZE)
++				q[n] = 0;
+ 
+-				n = template[i].tap[k];
+-				if (k == template[i].np - 1 && enc)
+-					n += authsize;
+-				if (offset_in_page(q) + n < PAGE_SIZE)
+-					q[n] = 0;
++			temp += template[i].tap[k];
++		}
+ 
+-				temp += template[i].tap[k];
+-			}
++		ret = crypto_aead_setauthsize(tfm, authsize);
++		if (ret) {
++			pr_err("alg: aead%s: Failed to set authsize to %u on chunk test %d for %s\n",
++			       d, authsize, j, algo);
++			goto out;
++		}
+ 
+-			ret = crypto_aead_setauthsize(tfm, authsize);
+-			if (ret) {
+-				pr_err("alg: aead%s: Failed to set authsize to %u on chunk test %d for %s\n",
+-				       d, authsize, j, algo);
++		if (enc) {
++			if (WARN_ON(sg[k - 1].offset +
++				    sg[k - 1].length + authsize >
++				    PAGE_SIZE)) {
++				ret = -EINVAL;
+ 				goto out;
+ 			}
+ 
+-			if (enc) {
+-				if (WARN_ON(sg[k - 1].offset +
+-					    sg[k - 1].length + authsize >
+-					    PAGE_SIZE)) {
+-					ret = -EINVAL;
+-					goto out;
+-				}
++			if (diff_dst)
++				sgout[k - 1].length += authsize;
++			else
++				sg[k - 1].length += authsize;
++		}
+ 
+-				if (diff_dst)
+-					sgout[k - 1].length += authsize;
+-				else
+-					sg[k - 1].length += authsize;
++		sg_init_table(asg, template[i].anp);
++		ret = -EINVAL;
++		for (k = 0, temp = 0; k < template[i].anp; k++) {
++			if (WARN_ON(offset_in_page(IDX[k]) +
++				    template[i].atap[k] > PAGE_SIZE))
++				goto out;
++			sg_set_buf(&asg[k],
++				   memcpy(axbuf[IDX[k] >> PAGE_SHIFT] +
++					  offset_in_page(IDX[k]),
++					  template[i].assoc + temp,
++					  template[i].atap[k]),
++				   template[i].atap[k]);
++			temp += template[i].atap[k];
++		}
++
++		aead_request_set_crypt(req, sg, (diff_dst) ? sgout : sg,
++				       template[i].ilen,
++				       iv);
++
++		aead_request_set_assoc(req, asg, template[i].alen);
++
++		ret = enc ? crypto_aead_encrypt(req) : crypto_aead_decrypt(req);
++
++		switch (ret) {
++		case 0:
++			if (template[i].novrfy) {
++				/* verification was supposed to fail */
++				pr_err("alg: aead%s: %s failed on chunk test %d for %s: ret was 0, expected -EBADMSG\n",
++				       d, e, j, algo);
++				/* so really, we got a bad message */
++				ret = -EBADMSG;
++				goto out;
+ 			}
+-
+-			sg_init_table(asg, template[i].anp);
+-			ret = -EINVAL;
+-			for (k = 0, temp = 0; k < template[i].anp; k++) {
+-				if (WARN_ON(offset_in_page(IDX[k]) +
+-					    template[i].atap[k] > PAGE_SIZE))
+-					goto out;
+-				sg_set_buf(&asg[k],
+-					   memcpy(axbuf[IDX[k] >> PAGE_SHIFT] +
+-						  offset_in_page(IDX[k]),
+-						  template[i].assoc + temp,
+-						  template[i].atap[k]),
+-					   template[i].atap[k]);
+-				temp += template[i].atap[k];
++			break;
++		case -EINPROGRESS:
++		case -EBUSY:
++			ret = wait_for_completion_interruptible(
++				&result.completion);
++			if (!ret && !(ret = result.err)) {
++				reinit_completion(&result.completion);
++				break;
+ 			}
++		case -EBADMSG:
++			if (template[i].novrfy)
++				/* verification failure was expected */
++				continue;
++			/* fall through */
++		default:
++			pr_err("alg: aead%s: %s failed on chunk test %d for %s: ret=%d\n",
++			       d, e, j, algo, -ret);
++			goto out;
++		}
+ 
+-			aead_request_set_crypt(req, sg, (diff_dst) ? sgout : sg,
+-					       template[i].ilen,
+-					       iv);
+-
+-			aead_request_set_assoc(req, asg, template[i].alen);
++		ret = -EINVAL;
++		for (k = 0, temp = 0; k < template[i].np; k++) {
++			if (diff_dst)
++				q = xoutbuf[IDX[k] >> PAGE_SHIFT] +
++				    offset_in_page(IDX[k]);
++			else
++				q = xbuf[IDX[k] >> PAGE_SHIFT] +
++				    offset_in_page(IDX[k]);
+ 
+-			ret = enc ?
+-				crypto_aead_encrypt(req) :
+-				crypto_aead_decrypt(req);
++			n = template[i].tap[k];
++			if (k == template[i].np - 1)
++				n += enc ? authsize : -authsize;
+ 
+-			switch (ret) {
+-			case 0:
+-				if (template[i].novrfy) {
+-					/* verification was supposed to fail */
+-					pr_err("alg: aead%s: %s failed on chunk test %d for %s: ret was 0, expected -EBADMSG\n",
+-					       d, e, j, algo);
+-					/* so really, we got a bad message */
+-					ret = -EBADMSG;
+-					goto out;
+-				}
+-				break;
+-			case -EINPROGRESS:
+-			case -EBUSY:
+-				ret = wait_for_completion_interruptible(
+-					&result.completion);
+-				if (!ret && !(ret = result.err)) {
+-					reinit_completion(&result.completion);
+-					break;
+-				}
+-			case -EBADMSG:
+-				if (template[i].novrfy)
+-					/* verification failure was expected */
+-					continue;
+-				/* fall through */
+-			default:
+-				pr_err("alg: aead%s: %s failed on chunk test %d for %s: ret=%d\n",
+-				       d, e, j, algo, -ret);
++			if (memcmp(q, template[i].result + temp, n)) {
++				pr_err("alg: aead%s: Chunk test %d failed on %s at page %u for %s\n",
++				       d, j, e, k, algo);
++				hexdump(q, n);
+ 				goto out;
+ 			}
+ 
+-			ret = -EINVAL;
+-			for (k = 0, temp = 0; k < template[i].np; k++) {
+-				if (diff_dst)
+-					q = xoutbuf[IDX[k] >> PAGE_SHIFT] +
+-					    offset_in_page(IDX[k]);
++			q += n;
++			if (k == template[i].np - 1 && !enc) {
++				if (!diff_dst &&
++					memcmp(q, template[i].input +
++					      temp + n, authsize))
++					n = authsize;
+ 				else
+-					q = xbuf[IDX[k] >> PAGE_SHIFT] +
+-					    offset_in_page(IDX[k]);
+-
+-				n = template[i].tap[k];
+-				if (k == template[i].np - 1)
+-					n += enc ? authsize : -authsize;
+-
+-				if (memcmp(q, template[i].result + temp, n)) {
+-					pr_err("alg: aead%s: Chunk test %d failed on %s at page %u for %s\n",
+-					       d, j, e, k, algo);
+-					hexdump(q, n);
+-					goto out;
+-				}
+-
+-				q += n;
+-				if (k == template[i].np - 1 && !enc) {
+-					if (!diff_dst &&
+-						memcmp(q, template[i].input +
+-						      temp + n, authsize))
+-						n = authsize;
+-					else
+-						n = 0;
+-				} else {
+-					for (n = 0; offset_in_page(q + n) &&
+-						    q[n]; n++)
+-						;
+-				}
+-				if (n) {
+-					pr_err("alg: aead%s: Result buffer corruption in chunk test %d on %s at page %u for %s: %u bytes:\n",
+-					       d, j, e, k, algo, n);
+-					hexdump(q, n);
+-					goto out;
+-				}
+-
+-				temp += template[i].tap[k];
++					n = 0;
++			} else {
++				for (n = 0; offset_in_page(q + n) && q[n]; n++)
++					;
+ 			}
++			if (n) {
++				pr_err("alg: aead%s: Result buffer corruption in chunk test %d on %s at page %u for %s: %u bytes:\n",
++				       d, j, e, k, algo, n);
++				hexdump(q, n);
++				goto out;
++			}
++
++			temp += template[i].tap[k];
+ 		}
+ 	}
+ 
+-- 
+1.8.3.1
 
-
-
---------------ms060102040804020602060805
-Content-Type: application/pkcs7-signature; name="smime.p7s"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment; filename="smime.p7s"
-Content-Description: S/MIME Cryptographic Signature
-
-MIAGCSqGSIb3DQEHAqCAMIACAQExCzAJBgUrDgMCGgUAMIAGCSqGSIb3DQEHAQAAoIIGuDCC
-BrQwggScoAMCAQICAw8BRDANBgkqhkiG9w0BAQ0FADB5MRAwDgYDVQQKEwdSb290IENBMR4w
-HAYDVQQLExVodHRwOi8vd3d3LmNhY2VydC5vcmcxIjAgBgNVBAMTGUNBIENlcnQgU2lnbmlu
-ZyBBdXRob3JpdHkxITAfBgkqhkiG9w0BCQEWEnN1cHBvcnRAY2FjZXJ0Lm9yZzAeFw0xNDA1
-MTIxNDEwMzJaFw0xNDExMDgxNDEwMzJaMGMxGDAWBgNVBAMTD0NBY2VydCBXb1QgVXNlcjEj
-MCEGCSqGSIb3DQEJARYUYWhmZXJyb2luN0BnbWFpbC5jb20xIjAgBgkqhkiG9w0BCQEWE2Fo
-ZW1tZWxnQG9oaW9ndC5jb20wggIiMA0GCSqGSIb3DQEBAQUAA4ICDwAwggIKAoICAQDbLUaL
-Gs4JTdU7sgr0MzD57CMUAv307ddC9pxooDMN3PiUvzEd5kLtBCh8KDB1wbMdfm4hte2rDd+j
-hM1tIq67BvNbdDPztOcBZwT2/3OVyyG4B1ddCqUyt03zGKw6Y34eHNfapsZiiItX0GBNfjHU
-Wv+WDo+XNha/WmGSSMv21HkftF9XA1KC9Bpr9JJI23MKK7T2g/7b3KoGZlx3ekLIJsF5B7+B
-DMPPDqOHQbRnccyOHEMyhM13g6WoAbU+3aKYc+C/9UsYtDV+xlvBLWagky1acstD5wOA35V6
-uDRbUhD+vOjuMRMCj9jJOIYqa6AeSagBjxRnisJr0RFzQ4f+NjGCHPaFTvRvbkiXh4q22doT
-0SxbNBUm7B9ANugIOtS9/VQhTWKDi//WTqZQ7Ecl4yVJbMCUg/iaRHMCGS41vqMICPszRidW
-rL04NwS9D2cREEY1y/xrNo0ZvKPZu6tLhxhPf7w+5rsN3+wWxGaR1hNpnVUT9AeacLKZO6W9
-FsRT3Unkr91IhQATHTKYr4EAkjN/5lgvA+sxp5TxxsUnoJYrD8IHf8aYfJsAHMleBwx4xSeZ
-tw/n5iIjJjFZq9IRZ1zQhK62p+a5vJ2vlJHjTgavhQrfb1pUOjbqsnI4ndQ5hNosL9el4Kxq
-Yko+HsxVEmSwSsjq6cV2L3oz0z8NUwIDAQABo4IBWTCCAVUwDAYDVR0TAQH/BAIwADBWBglg
-hkgBhvhCAQ0ESRZHVG8gZ2V0IHlvdXIgb3duIGNlcnRpZmljYXRlIGZvciBGUkVFIGhlYWQg
-b3ZlciB0byBodHRwOi8vd3d3LkNBY2VydC5vcmcwDgYDVR0PAQH/BAQDAgOoMEAGA1UdJQQ5
-MDcGCCsGAQUFBwMEBggrBgEFBQcDAgYKKwYBBAGCNwoDBAYKKwYBBAGCNwoDAwYJYIZIAYb4
-QgQBMDIGCCsGAQUFBwEBBCYwJDAiBggrBgEFBQcwAYYWaHR0cDovL29jc3AuY2FjZXJ0Lm9y
-ZzAxBgNVHR8EKjAoMCagJKAihiBodHRwOi8vY3JsLmNhY2VydC5vcmcvcmV2b2tlLmNybDA0
-BgNVHREELTArgRRhaGZlcnJvaW43QGdtYWlsLmNvbYETYWhlbW1lbGdAb2hpb2d0LmNvbTAN
-BgkqhkiG9w0BAQ0FAAOCAgEAIokFPcW8+cO2Clu0Ei+ehAmQRBHfV5RWJ8aMVLXOCfiJX0ch
-IjVSIt6I3uQaR4J1ZIAjCSPkbpfZQDaLoGFI5j8aYEQhOeKxrvOMzY9/aSUYabCJIhE/sX64
-klFV0bzm+PR9cDMWeQ9BoZf0m8UROPSfDnrjEk+p04hGg3pAZMcSwCzxdb604NHjgHJmf2xG
-UQVzQgC6Ek/BKat0xuPTuPmtPv9OicK75CPmLZKYW3rFpCD6bhb1mm+ROcCNhniRY2LYm9YN
-QdlHQUzTFqj0tvuYrzNI3LNV4PjEfN8z6omPCT2Rq8/uKLseN+m8F0ioqm+cphqpmzKoDUpN
-nePLkqDFUFWCeWRxSjBTy4IMVUfdNXriVGihH8hyIICQiOfmmBOzhzUifdomJuTGtoXRuHVT
-R2f/YdrJrLnKI4f+Othdp7F3KhB4c6JiOnTEH5J8n9q3rFjt4MPRwcjIHMhmF5nZVQlgxEMo
-1cPCmvG1D9tcgXbH79jjqydo9SDXhzLQob7axkzGRY96IstNcvoQ/UNsdPPfFMYlHtGz4TxT
-DhBjv4ERskGmKBZrfmxkXkcuTV/gcykct6Xvw9YXb8WTL4qSYHSYk9fReVLgE/L4RBUpX2JJ
-QvIR0AJLER165/aZlQXZtuJjnfxJtJTJZZ+Gor9h0G2kuR5Dy0JuYdBO4t4xggShMIIEnQIB
-ATCBgDB5MRAwDgYDVQQKEwdSb290IENBMR4wHAYDVQQLExVodHRwOi8vd3d3LmNhY2VydC5v
-cmcxIjAgBgNVBAMTGUNBIENlcnQgU2lnbmluZyBBdXRob3JpdHkxITAfBgkqhkiG9w0BCQEW
-EnN1cHBvcnRAY2FjZXJ0Lm9yZwIDDwFEMAkGBSsOAwIaBQCgggH1MBgGCSqGSIb3DQEJAzEL
-BgkqhkiG9w0BBwEwHAYJKoZIhvcNAQkFMQ8XDTE0MDcyODEwMTAxOFowIwYJKoZIhvcNAQkE
-MRYEFEB6U3jamhJNLr03Vyiau7FoObx2MGwGCSqGSIb3DQEJDzFfMF0wCwYJYIZIAWUDBAEq
-MAsGCWCGSAFlAwQBAjAKBggqhkiG9w0DBzAOBggqhkiG9w0DAgICAIAwDQYIKoZIhvcNAwIC
-AUAwBwYFKw4DAgcwDQYIKoZIhvcNAwICASgwgZEGCSsGAQQBgjcQBDGBgzCBgDB5MRAwDgYD
-VQQKEwdSb290IENBMR4wHAYDVQQLExVodHRwOi8vd3d3LmNhY2VydC5vcmcxIjAgBgNVBAMT
-GUNBIENlcnQgU2lnbmluZyBBdXRob3JpdHkxITAfBgkqhkiG9w0BCQEWEnN1cHBvcnRAY2Fj
-ZXJ0Lm9yZwIDDwFEMIGTBgsqhkiG9w0BCRACCzGBg6CBgDB5MRAwDgYDVQQKEwdSb290IENB
-MR4wHAYDVQQLExVodHRwOi8vd3d3LmNhY2VydC5vcmcxIjAgBgNVBAMTGUNBIENlcnQgU2ln
-bmluZyBBdXRob3JpdHkxITAfBgkqhkiG9w0BCQEWEnN1cHBvcnRAY2FjZXJ0Lm9yZwIDDwFE
-MA0GCSqGSIb3DQEBAQUABIICAJe+7frg3J9IY61ia50jCvRniVs3MkrYA+WwIfJGbZD2kv5N
-lMV0jOrwKjd9sv91C+kzURhu1jnaByCh8se1HF6gbeHk6D27drdk3QP4FL6FQlVhUsD/UUIE
-BJjCmFsjSUOtp99kMvzwVCsHM9yxU+AVvIQdN9wbBhRLUgbiB5lPMx74VAGyyjSY/He9Iwtz
-A4r6zc33mKklrwIP+BLsEIszOZdp3YNsGpB2DLGv17h8X1fRND1OLOC86WQWGgOd5D56gcnb
-d0o3q92yxlw+N3KzdHW8C2aQeXnAtslnhtIrAHVikbA+V6KCv3LYssbsr51+5jS21GeFza0o
-ESAeu5F/7vr7gzB/AqGAiCH5lPr/Q0Q+DGN73CsnCEBOd2g97a5VtK7igHP8xLGpQ9Urq3MD
-7HSzuee5k4Q9nOPs1KM0xeqWKeWg2qo7OeQxXOTgIoHGLjgqC+zRiecWovQO+MRYgJ4TM/Jb
-RlooechOW8zl2oVr9/WAWRNOADFtM43K9Tfy0WF2mZHtbOeMqm4gnYphP+nHo0zCBaAXb249
-sblo+UOk+ZKrZXRyela1a5sKGhyqAcOHXb0BUMNEmk4twd8mESCMQLea29UnuvcU2siiDRDi
-OXVLGOocD4xvasVPqPM3NVp7FxNSVg9BSWuWr6dxoZOwJDfnXgQDgchLfkwDAAAAAAAA
---------------ms060102040804020602060805--
