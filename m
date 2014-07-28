@@ -1,125 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752114AbaG1UoV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 16:44:21 -0400
-Received: from mail-we0-f180.google.com ([74.125.82.180]:37835 "EHLO
-	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750708AbaG1UoQ (ORCPT
+	id S1752270AbaG1Uoa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 16:44:30 -0400
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:41327 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752003AbaG1UoU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 16:44:16 -0400
+	Mon, 28 Jul 2014 16:44:20 -0400
 From: Malcolm Priestley <tvboxspy@gmail.com>
 To: gregkh@linuxfoundation.org
 Cc: linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
         Malcolm Priestley <tvboxspy@gmail.com>
-Subject: [PATCH 1/4] staging: vt6655: remove undefined TASK_LET code
-Date: Mon, 28 Jul 2014 21:43:27 +0100
-Message-Id: <1406580210-2794-1-git-send-email-tvboxspy@gmail.com>
+Subject: [PATCH 3/4] staging: vt6655: dead code remove undefined macro FOR_LED_ON_NOTEBOOK code.
+Date: Mon, 28 Jul 2014 21:43:29 +0100
+Message-Id: <1406580210-2794-3-git-send-email-tvboxspy@gmail.com>
 X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1406580210-2794-1-git-send-email-tvboxspy@gmail.com>
+References: <1406580210-2794-1-git-send-email-tvboxspy@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Removing all code within and function MngWorkItem.
+Removing all variables associated with the code.
 
 Signed-off-by: Malcolm Priestley <tvboxspy@gmail.com>
 ---
- drivers/staging/vt6655/device.h      |  1 -
- drivers/staging/vt6655/device_main.c |  6 ------
- drivers/staging/vt6655/dpc.c         | 24 ------------------------
- drivers/staging/vt6655/dpc.h         |  2 --
- 4 files changed, 33 deletions(-)
+ drivers/staging/vt6655/bssdb.c       | 53 ------------------------------------
+ drivers/staging/vt6655/device_main.c | 15 ----------
+ 2 files changed, 68 deletions(-)
 
-diff --git a/drivers/staging/vt6655/device.h b/drivers/staging/vt6655/device.h
-index a707984..fccb510 100644
---- a/drivers/staging/vt6655/device.h
-+++ b/drivers/staging/vt6655/device.h
-@@ -425,7 +425,6 @@ typedef struct __device_info {
+diff --git a/drivers/staging/vt6655/bssdb.c b/drivers/staging/vt6655/bssdb.c
+index 58f85e8..6367684 100644
+--- a/drivers/staging/vt6655/bssdb.c
++++ b/drivers/staging/vt6655/bssdb.c
+@@ -901,11 +901,6 @@ BSSvAddMulticastNode(
+  *    none.
+  *
+  -*/
+-/* 2008-4-14 <add> by chester for led issue */
+-#ifdef FOR_LED_ON_NOTEBOOK
+-bool cc = false;
+-unsigned int status;
+-#endif
+ void
+ BSSvSecondCallBack(
+ 	void *hDeviceContext
+@@ -926,54 +921,6 @@ BSSvSecondCallBack(
  
- 	spinlock_t                  lock;
- //PLICE_DEBUG->
--	struct	tasklet_struct	RxMngWorkItem;
- 	RxManagementQueue	rxManeQueue;
- //PLICE_DEBUG<-
- //PLICE_DEBUG ->
+ 	pDevice->byERPFlag &=
+ 		~(WLAN_SET_ERP_BARKER_MODE(1) | WLAN_SET_ERP_NONERP_PRESENT(1));
+-	/* 2008-4-14 <add> by chester for led issue */
+-#ifdef FOR_LED_ON_NOTEBOOK
+-	MACvGPIOIn(pDevice->PortOffset, &pDevice->byGPIO);
+-	if (((!(pDevice->byGPIO & GPIO0_DATA) && (!pDevice->bHWRadioOff)) ||
+-	     ((pDevice->byGPIO & GPIO0_DATA) && pDevice->bHWRadioOff)) &&
+-	    (!cc)) {
+-		cc = true;
+-	} else if (cc) {
+-		if (pDevice->bHWRadioOff) {
+-			if (!(pDevice->byGPIO & GPIO0_DATA)) {
+-				if (status == 1)
+-					goto start;
+-				status = 1;
+-				CARDbRadioPowerOff(pDevice);
+-				pMgmt->sNodeDBTable[0].bActive = false;
+-				pMgmt->eCurrMode = WMAC_MODE_STANDBY;
+-				pMgmt->eCurrState = WMAC_STATE_IDLE;
+-				pDevice->bLinkPass = false;
+-
+-			}
+-			if (pDevice->byGPIO & GPIO0_DATA) {
+-				if (status == 2)
+-					goto start;
+-				status = 2;
+-				CARDbRadioPowerOn(pDevice);
+-			}
+-		} else {
+-			if (pDevice->byGPIO & GPIO0_DATA) {
+-				if (status == 3)
+-					goto start;
+-				status = 3;
+-				CARDbRadioPowerOff(pDevice);
+-				pMgmt->sNodeDBTable[0].bActive = false;
+-				pMgmt->eCurrMode = WMAC_MODE_STANDBY;
+-				pMgmt->eCurrState = WMAC_STATE_IDLE;
+-				pDevice->bLinkPass = false;
+-
+-			}
+-			if (!(pDevice->byGPIO & GPIO0_DATA)) {
+-				if (status == 4)
+-					goto start;
+-				status = 4;
+-				CARDbRadioPowerOn(pDevice);
+-			}
+-		}
+-	}
+-start:
+-#endif
+ 
+ 	if (pDevice->wUseProtectCntDown > 0) {
+ 		pDevice->wUseProtectCntDown--;
 diff --git a/drivers/staging/vt6655/device_main.c b/drivers/staging/vt6655/device_main.c
-index 1e1d3b4..c43fc79 100644
+index fe6de98..e8584fd 100644
 --- a/drivers/staging/vt6655/device_main.c
 +++ b/drivers/staging/vt6655/device_main.c
-@@ -1704,9 +1704,6 @@ static int  device_open(struct net_device *dev)
- 	vMgrTimerInit(pDevice);
- 
- //PLICE_DEBUG->
--#ifdef	TASK_LET
--	tasklet_init(&pDevice->RxMngWorkItem, (void *)MngWorkItem, (unsigned long)pDevice);
--#endif
- #ifdef	THREAD
- 	InitRxManagementQueue(pDevice);
- 	mlme_kill = 0;
-@@ -1789,9 +1786,6 @@ static int  device_close(struct net_device *dev)
- 		del_timer(&pDevice->TimerSQ3Tmax3);
- 	}
- 
--#ifdef	TASK_LET
--	tasklet_kill(&pDevice->RxMngWorkItem);
--#endif
- 	netif_stop_queue(dev);
- 	pDevice->bCmdRunning = false;
- 	MACbShutdown(pDevice->PortOffset);
-diff --git a/drivers/staging/vt6655/dpc.c b/drivers/staging/vt6655/dpc.c
-index ac588cb..31bb2b7 100644
---- a/drivers/staging/vt6655/dpc.c
-+++ b/drivers/staging/vt6655/dpc.c
-@@ -268,23 +268,6 @@ s_vGetDASA(unsigned char *pbyRxBufferAddr, unsigned int *pcbHeaderSize,
- 	*pcbHeaderSize = cbHeaderSize;
- }
- 
--//PLICE_DEBUG ->
+@@ -691,19 +691,6 @@ static void device_init_registers(PSDevice pDevice, DEVICE_INIT_TYPE InitType)
+ 			// Get GPIO
+ 			MACvGPIOIn(pDevice->PortOffset, &pDevice->byGPIO);
+ //2008-4-14 <add> by chester for led issue
+-#ifdef FOR_LED_ON_NOTEBOOK
+-			if (pDevice->byGPIO & GPIO0_DATA)
+-				pDevice->bHWRadioOff = true;
 -
--void	MngWorkItem(void *Context)
--{
--	PSRxMgmtPacket			pRxMgmtPacket;
--	PSDevice	pDevice =  (PSDevice) Context;
+-			if (!(pDevice->byGPIO & GPIO0_DATA))
+-				pDevice->bHWRadioOff = false;
+-		}
 -
--	spin_lock_irq(&pDevice->lock);
--	while (pDevice->rxManeQueue.packet_num != 0) {
--		pRxMgmtPacket =  DeQueue(pDevice);
--		vMgrRxManagePacket(pDevice, pDevice->pMgmt, pRxMgmtPacket);
--	}
--	spin_unlock_irq(&pDevice->lock);
--}
--
--//PLICE_DEBUG<-
--
- bool
- device_receive_frame(
- 	PSDevice pDevice,
-@@ -551,15 +534,8 @@ device_receive_frame(
- #ifdef	THREAD
- 			EnQueue(pDevice, pRxPacket);
- #else
--
--#ifdef	TASK_LET
--			EnQueue(pDevice, pRxPacket);
--			tasklet_schedule(&pDevice->RxMngWorkItem);
+-		if (pDevice->bRadioControlOff)
+-			CARDbRadioPowerOff(pDevice);
+-		else
+-			CARDbRadioPowerOn(pDevice);
 -#else
- 			vMgrRxManagePacket((void *)pDevice, pDevice->pMgmt, pRxPacket);
- #endif
+ 		if (((pDevice->byGPIO & GPIO0_DATA) && !(pDevice->byRadioCtl & EEP_RADIOCTL_INV)) ||
+ 		    (!(pDevice->byGPIO & GPIO0_DATA) && (pDevice->byRadioCtl & EEP_RADIOCTL_INV))) {
+ 			pDevice->bHWRadioOff = true;
+@@ -711,8 +698,6 @@ static void device_init_registers(PSDevice pDevice, DEVICE_INIT_TYPE InitType)
+ 	}
+ 	if (pDevice->bHWRadioOff || pDevice->bRadioControlOff)
+ 		CARDbRadioPowerOff(pDevice);
 -
 -#endif
- //PLICE_DEBUG<-
- 			// hostap Deamon handle 802.11 management
- 			if (pDevice->bEnableHostapd) {
-diff --git a/drivers/staging/vt6655/dpc.h b/drivers/staging/vt6655/dpc.h
-index 0c7e0e7..4914890 100644
---- a/drivers/staging/vt6655/dpc.h
-+++ b/drivers/staging/vt6655/dpc.h
-@@ -39,6 +39,4 @@ device_receive_frame(
- 	PSRxDesc pCurrRD
- );
- 
--void	MngWorkItem(void *Context);
--
- #endif // __RXTX_H__
+ }
+ pMgmt->eScanType = WMAC_SCAN_PASSIVE;
+ // get Permanent network address
 -- 
 1.9.1
 
