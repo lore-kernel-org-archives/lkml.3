@@ -1,25 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752662AbaG0UVh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Jul 2014 16:21:37 -0400
-Received: from mail-yh0-f52.google.com ([209.85.213.52]:41983 "EHLO
-	mail-yh0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752463AbaG0UVg (ORCPT
+	id S1752691AbaG0UX0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Jul 2014 16:23:26 -0400
+Received: from mail-yh0-f54.google.com ([209.85.213.54]:54829 "EHLO
+	mail-yh0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752594AbaG0UXZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Jul 2014 16:21:36 -0400
+	Sun, 27 Jul 2014 16:23:25 -0400
 From: Jessica Yu <jyu@cowsay.org>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         Jessica Yu <jyu@cowsay.org>
-Subject: [PATCH] Staging: lustre: linux-module: fix coding style issues.
-Date: Sun, 27 Jul 2014 21:23:36 -0700
-Message-Id: <1406521416-25031-1-git-send-email-jyu@cowsay.org>
+Subject: [PATCH] Staging: lustre: linux-module: fix coding style issues
+Date: Sun, 27 Jul 2014 21:25:42 -0700
+Message-Id: <1406521542-25363-1-git-send-email-jyu@cowsay.org>
 X-Mailer: git-send-email 2.0.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed some coding style issues.
+Fixed some coding style issues:
+- Removed spaces after open parenthesis and before close parenthesis
+- Removed parentheses in some return statements, since return is not a
+  function
+- Fixed a warning regarding the file_operations struct; it is
+  normally const
+- Fixed pointer style issues (foo * bar -> foo *bar)
 
 Signed-off-by: Jessica Yu <jyu@cowsay.org>
 ---
