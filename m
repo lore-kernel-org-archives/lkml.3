@@ -1,99 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751889AbaG1ISJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 04:18:09 -0400
-Received: from rcdn-iport-1.cisco.com ([173.37.86.72]:56962 "EHLO
-	rcdn-iport-1.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751352AbaG1ISF convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 04:18:05 -0400
-X-Greylist: delayed 575 seconds by postgrey-1.27 at vger.kernel.org; Mon, 28 Jul 2014 04:18:05 EDT
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AlUFAIgD1lOtJV2P/2dsb2JhbABZgw6BKQTTJAGBExZ3hAQBAQQnEz8QAgEIDgoeEDIlAgQBDQWIQr0jF49MB4RKAQSbTItyiFqCA4FGbIFF
-X-IronPort-AV: E=Sophos;i="5.01,747,1400025600"; 
-   d="scan'208";a="343066348"
-From: "Suma Ramars (sramars)" <sramars@cisco.com>
-To: Alexander Gordeev <agordeev@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: Hiral Patel <hiralpat@cisco.com>,
-        "Brian Uchino (buchino)" <buchino@cisco.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-Subject: Re: [PATCH v2 RESEND 07/23] fnic: Use pci_enable_msix_exact()
- instead of pci_enable_msix()
-Thread-Topic: [PATCH v2 RESEND 07/23] fnic: Use pci_enable_msix_exact()
- instead of pci_enable_msix()
-Thread-Index: AQHPqKiOesDylc0bF0KO6oYo735Pkpu11OsA
-Date: Mon, 28 Jul 2014 08:08:28 +0000
-Message-ID: <CFFC0234.11596%sramars@cisco.com>
-References: <cover.1405533479.git.agordeev@redhat.com>
- <e8cc7988e4b0a38f59d3e854d387c7c0d95b058c.1405533479.git.agordeev@redhat.com>
- <20140726081502.GD21129@agordeev.usersys.redhat.com>
-In-Reply-To: <20140726081502.GD21129@agordeev.usersys.redhat.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-user-agent: Microsoft-MacOutlook/14.4.3.140616
-x-originating-ip: [10.65.39.72]
-Content-Type: text/plain; charset="us-ascii"
-Content-ID: <75FDE10A4E1E384E847BCEFCBA1792C5@emea.cisco.com>
-Content-Transfer-Encoding: 8BIT
+	id S1751903AbaG1IU2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 04:20:28 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28935 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751165AbaG1IU1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jul 2014 04:20:27 -0400
+Date: Mon, 28 Jul 2014 10:19:48 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>, linux-kernel@vger.kernel.org,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: [PATCH 02/27] perf tools: Fix jump label always changing during
+ tracing
+Message-ID: <20140728081948.GA1124@krava.brq.redhat.com>
+References: <1406302629-11790-1-git-send-email-acme@kernel.org>
+ <1406302629-11790-3-git-send-email-acme@kernel.org>
+ <20140728065844.GK6758@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140728065844.GK6758@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Acked-by: "Suma Ramars (sramars)" <sramars@cisco.com>
+On Mon, Jul 28, 2014 at 08:58:44AM +0200, Peter Zijlstra wrote:
+> On Fri, Jul 25, 2014 at 12:36:44PM -0300, Arnaldo Carvalho de Melo wrote:
+> > From: Adrian Hunter <adrian.hunter@intel.com>
+> > 
+> > Intel PT decoding walks the object code to reconstruct the trace.  A
+> > jump label change during tracing causes decoding errors.
+> > 
+> > The "Enable close-on-exec flag on perf file descriptor" patch caused
+> > there to be always a jump label change.
+> > 
+> > It was found that using a per-cpu context instead of a per-thread
+> > context for the probe of the close-on-exec feature, made the problem go
+> > away.
+> 
+> per-cpu events are privileged, wouldn't this change make CLOEXEC always
+> undetected for normal users?
+> 
+> Also, the $subject doesn't related to CLOEXEC at all.
 
+right, it would.. Ingo, still any chance to skip this one?
 
-On 26/07/14 1:45 pm, "Alexander Gordeev" <agordeev@redhat.com> wrote:
+[jolsa@dhcp-26-214 perf]$ ./perf record sleep 1
+perf_event_open(..., PERF_FLAG_FD_CLOEXEC) failed with unexpected error 13 (Permission denied)
+perf_event_open(..., 0) failed unexpectedly with error 13 (Permission denied)
 
->On Wed, Jul 16, 2014 at 08:05:11PM +0200, Alexander Gordeev wrote:
->> As result of deprecation of MSI-X/MSI enablement functions
->> pci_enable_msix() and pci_enable_msi_block() all drivers
->> using these two interfaces need to be updated to use the
->> new pci_enable_msi_range()  or pci_enable_msi_exact()
->> and pci_enable_msix_range() or pci_enable_msix_exact()
->> interfaces.
->
->Hi Hiral, Suma, Brian,
->
->Could you please review this patch?
->
->Thanks!
->
->> Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
->> Cc: Hiral Patel <hiralpat@cisco.com>
->> Cc: Suma Ramars <sramars@cisco.com>
->> Cc: Brian Uchino <buchino@cisco.com>
->> Cc: linux-scsi@vger.kernel.org
->> Cc: linux-pci@vger.kernel.org
->> ---
->>  drivers/scsi/fnic/fnic_isr.c |    4 ++--
->>  1 files changed, 2 insertions(+), 2 deletions(-)
->> 
->> diff --git a/drivers/scsi/fnic/fnic_isr.c b/drivers/scsi/fnic/fnic_isr.c
->> index 7d9b54a..a0dd1b6 100644
->> --- a/drivers/scsi/fnic/fnic_isr.c
->> +++ b/drivers/scsi/fnic/fnic_isr.c
->> @@ -257,8 +257,8 @@ int fnic_set_intr_mode(struct fnic *fnic)
->>  	    fnic->raw_wq_count >= m &&
->>  	    fnic->wq_copy_count >= o &&
->>  	    fnic->cq_count >= n + m + o) {
->> -		if (!pci_enable_msix(fnic->pdev, fnic->msix_entry,
->> -				    n + m + o + 1)) {
->> +		if (!pci_enable_msix_exact(fnic->pdev, fnic->msix_entry,
->> +					   n + m + o + 1)) {
->>  			fnic->rq_count = n;
->>  			fnic->raw_wq_count = m;
->>  			fnic->wq_copy_count = o;
->> -- 
->> 1.7.7.6
->> 
->
->-- 
->Regards,
->Alexander Gordeev
->agordeev@redhat.com
-
+jirka
