@@ -1,82 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752056AbaG1KrH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 06:47:07 -0400
-Received: from mout.kundenserver.de ([212.227.126.187]:60668 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750778AbaG1KrE (ORCPT
+	id S1752153AbaG1Ksx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 06:48:53 -0400
+Received: from casper.infradead.org ([85.118.1.10]:58336 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752059AbaG1Ksu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 06:47:04 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Graeme Gregory <graeme.gregory@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, Olof Johansson <olof@lixom.net>,
-        Hanjun Guo <hanjun.guo@linaro.org>,
-        Mark Rutland <mark.rutland@arm.com>, Mark Brown <broonie@linaro.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>, Lv Zheng <lv.zheng@intel.com>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Robert Moore <robert.moore@intel.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
-        Robert Richter <rric@kernel.org>, Jason Cooper <jason@lakedaemon.net>,
-        Marc Zyngier <marc.zyngier@arm.com>, Liviu Dudau <Liviu.Dudau@arm.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Sudeep Holla <Sudeep.Holla@arm.com>
-Subject: Re: [PATCH 19/19] Documentation: ACPI for ARM64
-Date: Mon, 28 Jul 2014 12:46:17 +0200
-Message-ID: <5959830.lpqeqL7HbK@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <53D616AD.2090501@linaro.org>
-References: <1406206825-15590-1-git-send-email-hanjun.guo@linaro.org> <5014834.k6eecMddPC@wuerfel> <53D616AD.2090501@linaro.org>
+	Mon, 28 Jul 2014 06:48:50 -0400
+Date: Mon, 28 Jul 2014 12:48:37 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Yuyang Du <yuyang.du@intel.com>
+Cc: mingo@redhat.com, linux-kernel@vger.kernel.org, pjt@google.com,
+        bsegall@google.com, arjan.van.de.ven@intel.com, len.brown@intel.com,
+        rafael.j.wysocki@intel.com, alan.cox@intel.com, mark.gross@intel.com,
+        fengguang.wu@intel.com
+Subject: Re: [PATCH 2/2 v4] sched: Rewrite per entity runnable load average
+ tracking
+Message-ID: <20140728104837.GQ6758@twins.programming.kicks-ass.net>
+References: <1405639567-21445-1-git-send-email-yuyang.du@intel.com>
+ <1405639567-21445-3-git-send-email-yuyang.du@intel.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:v1x/djs+a5gMy6XNwXJ0nfHNNR+IKhwQKBwuxSIyyDu
- XvuysoopGBKy4EFoFDLc32jWQnm13ssjg72tsbmaTmyTYwc5nm
- nWabvFXTFAZsFKIhq5rqHRB3ZjzqLuijNAWRHUJUYRap9R30qa
- z7/k+aWJp9gu9NPN0+XSTFt9K6zqZ/e9ZEOJz5p4Ob7NlwTwdo
- p3pli6t1k1gKQWBgoLdEOUxWsjsIxzbKKQI5tek5lcS27Lfu6Q
- +plTh5MM53NC4BqYKXRpWlT15LU6iZv9Xi6kUJNkJ84iy5ZZ8l
- QB8eFf86hjaA3+3uUlh3WdcLbQP6BLL4CX1BAuqU9cMWligfBt
- z1XhQmo/KGrnr2hJwnhI=
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="ke4/Zunobcr7FoIC"
+Content-Disposition: inline
+In-Reply-To: <1405639567-21445-3-git-send-email-yuyang.du@intel.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 28 July 2014 10:23:57 Graeme Gregory wrote:
-> The PL011 UART is the use-case I keep hitting, that IP block has a 
-> variable input clock on pretty much everything I have seen in the wild. 
 
-Ok, I see. What does ACPI-5.1 say about pl011?
+--ke4/Zunobcr7FoIC
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Interestingly, the subset of pl011 that is specified by SBSA does not
-contain the IBRD/FBRD registers, effectively making it a fixed-rated
-UART (I guess that would be a ART, without the U then), and you
-consequently don't even need to know the clock rate.
+On Fri, Jul 18, 2014 at 07:26:06AM +0800, Yuyang Du wrote:
+> @@ -665,20 +660,27 @@ static u64 sched_vslice(struct cfs_rq *cfs_rq, stru=
+ct sched_entity *se)
+>  }
+> =20
+>  #ifdef CONFIG_SMP
+> -static unsigned long task_h_load(struct task_struct *p);
+> =20
+> -static inline void __update_task_entity_contrib(struct sched_entity *se);
+> +/* dependent on LOAD_AVG_PERIOD, see below */
+> +#define LOAD_AVG_MAX 47742 /* maximum possible load avg */
 
-However, my guess is that most hardware in the real world contains
-an actual pl011 and it does make a lot of sense to allow setting
-the baud rate on it, which then requires knowing the input clock.
+Please don't separate this from the rest of the values it belongs to. If
+you really have to, move the entire block.
 
-If there is any hardware that implements just the SBSA-mandated subset
-rather than the full pl011, we should probably implement both
-in the kernel: a dumb driver that can only send and receive, and the
-more complex one that can set the bit rates and flow-control but that
-requires a standardized ACPI table with the input clock rate.
+> @@ -2071,13 +2073,9 @@ static inline long calc_tg_weight(struct task_grou=
+p *tg, struct cfs_rq *cfs_rq)
+>  	long tg_weight;
+> =20
+>  	/*
+> -	 * Use this CPU's actual weight instead of the last load_contribution
+> -	 * to gain a more accurate current total weight. See
+> -	 * update_cfs_rq_load_contribution().
+> +	 * Use this CPU's load average instead of actual weight
+>  	 */
+>  	tg_weight =3D atomic_long_read(&tg->load_avg);
+> -	tg_weight -=3D cfs_rq->tg_load_contrib;
+> -	tg_weight +=3D cfs_rq->load.weight;
 
-Whether the two would belong into one file or two separate driver
-modules is something I can't tell, it would be up to the serial
-maintainers to decide.
+I don't think that comment makes any sense after this. The comment was
+there to explain the -=3D, +=3D things, but that's all gone so its pretty
+trivial now, and i++ /* inc by one */ comments are not useful.
 
-> I really hope that this use does not spread beyond a few essential 
-> devices like the UART. IMO all real hardware should be the other side of 
-> a PCIe bridge.
+> @@ -2181,7 +2178,7 @@ static const u32 runnable_avg_yN_sum[] =3D {
+>   * Approximate:
+>   *   val * y^n,    where y^32 ~=3D 0.5 (~1 scheduling period)
+>   */
+> -static __always_inline u64 decay_load(u64 val, u64 n)
+> +static __always_inline u64 decay_load32(u64 val, u64 n)
+>  {
+>  	unsigned int local_n;
+> =20
+> @@ -2210,6 +2207,18 @@ static __always_inline u64 decay_load(u64 val, u64=
+ n)
+>  	return val >> 32;
+>  }
+> =20
+> +static __always_inline u64 decay_load(u64 val, u64 n)
+> +{
+> +	if (likely(val <=3D UINT_MAX))
+> +		val =3D decay_load32(val, n);
+> +	else {
+> +		val *=3D (u32)decay_load32(1 << 15, n);
+> +		val >>=3D 15;
+> +	}
+> +
+> +	return val;
+> +}
 
-I would definitely agree with that.
+Please just use mul_u64_u32_shr().
 
-	Arnd
+/me continues reading the rest of it..
+
+--ke4/Zunobcr7FoIC
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJT1iqFAAoJEHZH4aRLwOS6qpsP/AgwFxS1RrgXcZWmZNGuqlNG
+5ANvaI4fwTR3CTJOVvFuoAhd4YCL7YQz9UycBA5+bn/L/fUZs81bq1g8vQ1Ot+ta
+rAvq6tfCT740fNRnMxiwr0jBvGtFqQA4l3PegNreyXNcv6owu4cDam4eF+cb8YGP
+6VW4U4afr9kr1tTeEyvwLPLEqaxwUs3PHU0aVsHhyOf7OTPFjZ6CErpOX+E6Pi62
+E64/CZlT9SuwBFKupmsDUQyNaqSBfy4IvEBZDIm0AXCfZ2Apl8wG4uA6asdMwT95
+P2fMglXP3e6nnVyggP27N+4DylSLLs0C/pj2LqXOgRm8IZFB0C0BrovlWT8LoGPt
+FE5jFyAvNjkiwef//N7bFizQQN/8TeTRskMIwF/yPNfLPIscntFeW9vLMM52eqiw
+LEdpI3rg0CYH7lIUEQzfwFSlWTGLXfyYjYrK1Kew/jmLzC39+fSN2Esxevfa82fI
+UPAOrAznIdrjpywzTYcgO7Wme7nY/EDByd+ehAaUrfeOD/SjcMBgDmoknFHC907K
+TEA478aYcguafdglememD2Ddx9G+0Ogyio3xEJxkaAf1P2k61H3uY7LFvzhIKQML
+uogx2/R2frAHduz97BuDkYI0rwqdvLWHmUMc+pDKmc3aBq6m850NdD6QBNfBZaYg
+h6Y9aaOVs9Vbxq7F/S7a
+=91DJ
+-----END PGP SIGNATURE-----
+
+--ke4/Zunobcr7FoIC--
