@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752675AbaG1VSO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 17:18:14 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:59240 "EHLO comal.ext.ti.com"
+	id S1752646AbaG1VSI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 17:18:08 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:33669 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752246AbaG1VRm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 17:17:42 -0400
+	id S1752259AbaG1VRn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jul 2014 17:17:43 -0400
 From: Felipe Balbi <balbi@ti.com>
 To: Tony Lindgren <tony@atomide.com>
 CC: Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
@@ -16,9 +16,9 @@ CC: Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
         <jason@lakedaemon.net>, <devicetree@vger.kernel.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Felipe Balbi <balbi@ti.com>
-Subject: [PATCH 28/35] arm: omap: irq: get rid of ifdef hack
-Date: Mon, 28 Jul 2014 16:16:16 -0500
-Message-ID: <1406582183-696-29-git-send-email-balbi@ti.com>
+Subject: [PATCH 26/35] arm: omap: irq: remove nr_irqs argument
+Date: Mon, 28 Jul 2014 16:16:14 -0500
+Message-ID: <1406582183-696-27-git-send-email-balbi@ti.com>
 X-Mailer: git-send-email 2.0.1.563.g66f467c
 In-Reply-To: <1406582183-696-1-git-send-email-balbi@ti.com>
 References: <1406582183-696-1-git-send-email-balbi@ti.com>
@@ -28,55 +28,94 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-we don't need the ifdef if we have omap_nr_pending
-telling us how many pending registers we have
-on current platform. This solves a possible
-problem where we could try to handle bogus
-interrupts on OMAP2 and OMAP3 if using single
-zImage kernel, because we would end up reading
-the following pending FIQ register.
+we can set our global omap_nr_irqs early on
+and drop the extra argument to omap_init_irq().
 
 Signed-off-by: Felipe Balbi <balbi@ti.com>
 ---
- arch/arm/mach-omap2/irq.c | 22 +++++++---------------
- 1 file changed, 7 insertions(+), 15 deletions(-)
+ arch/arm/mach-omap2/irq.c | 25 +++++++++++++------------
+ 1 file changed, 13 insertions(+), 12 deletions(-)
 
 diff --git a/arch/arm/mach-omap2/irq.c b/arch/arm/mach-omap2/irq.c
-index 583a1c7..43785ee 100644
+index a405b96..44d9cf4 100644
 --- a/arch/arm/mach-omap2/irq.c
 +++ b/arch/arm/mach-omap2/irq.c
-@@ -234,24 +234,16 @@ static void __init omap_init_irq(u32 base, struct device_node *node)
- static asmlinkage void __exception_irq_entry
- omap_intc_handle_irq(struct pt_regs *regs)
+@@ -207,8 +207,7 @@ omap_alloc_gc(void __iomem *base, unsigned int irq_start, unsigned int num)
+ 				IRQ_NOREQUEST | IRQ_NOPROBE, 0);
+ }
+ 
+-static void __init omap_init_irq(u32 base, int nr_irqs,
+-				 struct device_node *node)
++static void __init omap_init_irq(u32 base, struct device_node *node)
  {
--	u32 irqnr;
-+	u32 irqnr = 0;
- 	int handled_irq = 0;
-+	int i;
+ 	int j, irq_base;
  
- 	do {
--		irqnr = intc_readl(INTC_PENDING_IRQ0);
--		if (irqnr)
--			goto out;
--
--		irqnr = intc_readl(INTC_PENDING_IRQ1);
--		if (irqnr)
--			goto out;
--
--		irqnr = intc_readl(INTC_PENDING_IRQ2);
--#if IS_ENABLED(CONFIG_SOC_TI81XX) || IS_ENABLED(CONFIG_SOC_AM33XX)
--		if (irqnr)
--			goto out;
--		irqnr = intc_readl(INTC_PENDING_IRQ3);
--#endif
-+		for (i = 0; i < omap_nr_pending; i++) {
-+			irqnr = intc_readl(INTC_PENDING_IRQ0 + (0x20 * i));
-+			if (irqnr)
-+				goto out;
-+		}
+@@ -216,15 +215,13 @@ static void __init omap_init_irq(u32 base, int nr_irqs,
+ 	if (WARN_ON(!omap_irq_base))
+ 		return;
  
- out:
- 		if (!irqnr)
+-	omap_nr_irqs = nr_irqs;
+-
+-	irq_base = irq_alloc_descs(-1, 0, nr_irqs, 0);
++	irq_base = irq_alloc_descs(-1, 0, omap_nr_irqs, 0);
+ 	if (irq_base < 0) {
+ 		pr_warn("Couldn't allocate IRQ numbers\n");
+ 		irq_base = 0;
+ 	}
+ 
+-	domain = irq_domain_add_legacy(node, nr_irqs, irq_base, 0,
++	domain = irq_domain_add_legacy(node, omap_nr_irqs, irq_base, 0,
+ 			&irq_domain_simple_ops, NULL);
+ 
+ 	omap_irq_soft_reset();
+@@ -278,19 +275,22 @@ out:
+ 
+ void __init omap2_init_irq(void)
+ {
+-	omap_init_irq(OMAP24XX_IC_BASE, 96, NULL);
++	omap_nr_irqs = 96;
++	omap_init_irq(OMAP24XX_IC_BASE, NULL);
+ 	set_handle_irq(omap_intc_handle_irq);
+ }
+ 
+ void __init omap3_init_irq(void)
+ {
+-	omap_init_irq(OMAP34XX_IC_BASE, 96, NULL);
++	omap_nr_irqs = 96;
++	omap_init_irq(OMAP34XX_IC_BASE, NULL);
+ 	set_handle_irq(omap_intc_handle_irq);
+ }
+ 
+ void __init ti81xx_init_irq(void)
+ {
+-	omap_init_irq(OMAP34XX_IC_BASE, 128, NULL);
++	omap_nr_irqs = 96;
++	omap_init_irq(OMAP34XX_IC_BASE, NULL);
+ 	set_handle_irq(omap_intc_handle_irq);
+ }
+ 
+@@ -298,7 +298,8 @@ static int __init intc_of_init(struct device_node *node,
+ 			     struct device_node *parent)
+ {
+ 	struct resource res;
+-	u32 nr_irq = 96;
++
++	omap_nr_irqs = 96;
+ 
+ 	if (WARN_ON(!node))
+ 		return -ENODEV;
+@@ -309,9 +310,9 @@ static int __init intc_of_init(struct device_node *node,
+ 	}
+ 
+ 	if (of_device_is_compatible(node, "ti,am33xx-intc"))
+-		nr_irq = 128;
++		omap_nr_irqs = 128;
+ 
+-	omap_init_irq(res.start, nr_irq, of_node_get(node));
++	omap_init_irq(res.start, of_node_get(node));
+ 
+ 	set_handle_irq(omap_intc_handle_irq);
+ 
 -- 
 2.0.1.563.g66f467c
 
