@@ -1,95 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751598AbaG1Gw7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 02:52:59 -0400
-Received: from mail-ig0-f178.google.com ([209.85.213.178]:60131 "EHLO
-	mail-ig0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750907AbaG1Gw5 (ORCPT
+	id S1751863AbaG1GxN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 02:53:13 -0400
+Received: from casper.infradead.org ([85.118.1.10]:57442 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751642AbaG1GxK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 02:52:57 -0400
-Date: Mon, 28 Jul 2014 07:52:51 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: "Opensource [Steve Twiss]" <stwiss.opensource@diasemi.com>
-Cc: Alessandro Zummo <a.zummo@towertech.it>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LINUX-KERNEL <linux-kernel@vger.kernel.org>,
-        RTC-LINUX <rtc-linux@googlegroups.com>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        David Dajun Chen <david.chen@diasemi.com>,
-        Mark Brown <broonie@linaro.org>,
-        Philipp Zabel <p.zabel@pengutronix.de>,
-        Support Opensource <support.opensource@diasemi.com>
-Subject: Re: [RFC V2] mfd: da9063: Add support for AD silicon variant
-Message-ID: <20140728065251.GA5273@lee--X1>
-References: <201407211058.s6LAwtk8003839@swsrvapps-01.diasemi.com>
+	Mon, 28 Jul 2014 02:53:10 -0400
+Date: Mon, 28 Jul 2014 08:52:55 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Yan, Zheng" <zheng.z.yan@intel.com>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, acme@infradead.org,
+        eranian@google.com, andi@firstfloor.org
+Subject: Re: [PATCH v3 6/9] perf, x86: handle multiple records in PEBS buffer
+Message-ID: <20140728065255.GI6758@twins.programming.kicks-ass.net>
+References: <1406016602-31845-1-git-send-email-zheng.z.yan@intel.com>
+ <1406016602-31845-7-git-send-email-zheng.z.yan@intel.com>
+ <20140725081033.GV3935@laptop>
+ <53D216A4.3090600@intel.com>
+ <20140725140652.GA6758@twins.programming.kicks-ass.net>
+ <53D5B45E.4030403@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="r8zkF+xBtxUQJvKX"
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <201407211058.s6LAwtk8003839@swsrvapps-01.diasemi.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <53D5B45E.4030403@intel.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 21 Jul 2014, Opensource [Steve Twiss] wrote:
 
-> 
-> From: Opensource [Steve Twiss] <stwiss.opensource@diasemi.com>
-> 
-> Add register definitions for DA9063 AD (0x3) silicon variant ID
-> the ability to choose the silicon variant at run-time using regmap
-> configuration. This patch also adds RTC support for the AD silicon
-> changes.
-> 
-> It adds both BB and AD support as regmap ranges and then makes the
-> distinction between the two tables at run-time. This allows both AD
-> and BB silicon variants to be supported at the same time.
-> 
-> 
-> Signed-off-by: Opensource [Steve Twiss] <stwiss.opensource@diasemi.com>
-> Suggested-by: Philipp Zabel <p.zabel@pengutronix.de>
-> 
-> ---
-> Checks performed with linux-next/v3.16-rc5/scripts/checkpatch.pl
->  rtc-da9063.c              total: 0 errors, 0 warnings, 353 lines checked
->  da9063-core.c             total: 0 errors, 0 warnings, 188 lines checked
->  da9063-i2c.c              total: 0 errors, 0 warnings, 266 lines checked
->  core.h                    total: 0 errors, 0 warnings, 98 lines checked
->  registers.h               total: 0 errors, 0 warnings, 1073 lines checked
-> 
-> Thank you for your quick responses to my RFC-V1.
-> 
-> This is in reply to comments made by Lee Jones, Alessandro Zummo and
-> Philipp Zabel. Please see the RFC-V1 thread for further details on
-> these discussions: https://lkml.org/lkml/2014/7/16/478
-> 
-> Adding AD support using a compile-time flag under a new menu item in
-> Kconfig proved very unpopular for two main reasons.
-> 
-> - Using ifdef else statements throughout the code
-> - Not supporting AD and BB silicon variants at the same time
-> 
-> This RFC-V2 patch uses the method proposed by Philipp Zabel in his
-> reply e-mail: https://lkml.org/lkml/2014/7/18/219
-> and makes use of the regmap configuration method in da9063-i2c.c
-> 
-> This patch applies against linux-next and v3.16-rc5
-> 
-> Regards,
-> Steve Twiss, Dialog Semiconductor Ltd.
-> 
->  drivers/mfd/da9063-core.c            |    6 +-
->  drivers/mfd/da9063-i2c.c             |  134 +++++++++++++++++++++++++++-------
->  drivers/rtc/rtc-da9063.c             |   54 +++++++++-----
->  include/linux/mfd/da9063/core.h      |    3 +-
->  include/linux/mfd/da9063/registers.h |  129 +++++++++++++++++++++-----------
->  5 files changed, 236 insertions(+), 90 deletions(-)
+--r8zkF+xBtxUQJvKX
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Patch looks good to me.  Applied, thanks.
+On Mon, Jul 28, 2014 at 10:24:30AM +0800, Yan, Zheng wrote:
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+> I don't think this method works for interrupt threshold > 1 case. When collision
+> happens, the hardware only create one PEBS record. The status in next record has
+> nothing to do with the collision record.
+
+Andi previously stated that the hardware will always generate a record
+for each event:
+
+  http://marc.info/?l=linux-kernel&m=140129731708247
+
+Please lock yourselves in room and do not come out until you can give a
+straight and coherent answer.
+
+--r8zkF+xBtxUQJvKX
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJT1fNDAAoJEHZH4aRLwOS6u5oP/A03p5N8rPkavjtE9Kfiz0gZ
+/B9U1gQJj82D7+juK6OCdH7R4dlAgk0klOrH8XOqC+cygbxnONeA2bQGlykKB4Bq
+sW6tIRuuApz2xBqHieOW+wB8NarxRnlcMPmZRWgSc9Jh2FBc3sTIOxJFT9+YTuW3
+HQRjDpVYz4MSwx8R6KldXg+uoEmxbXSaDYwnXKpJ3gJK/WUOeuZH7QD/E7mYfEUf
+91UWlfjc7mQrRLrYMazkZgxFI6RTKssV5t9MEOH6yNze3yMw7TAi7g/6KJnyheMU
+gu2OZyTpqYSL+/xQ0zeHn+8WWN/Ejwah5B3EBixzDU5jPleJSUMHWQIVcSX5FYE7
+8/pEd4Xl9AEttPTKbG2I7xxx+3keDfgTxXThiGSRTxK/7yhztYFvLxe8IRJInIZV
+a/cTEQtXHGdOoqNK3cRWU5muyaVvPmr1LfdE6x3h/0c1kRAuvNk7PJt2jIduVzlw
+pwlFMfL5GbyO+ZlUBl2Z7i+xOogYNKmSRicZ/vEKJJsvnsqLPVRu86QhawfuZUFS
+I6OkdWpcKNOaZFPgAQC8UQlnofUazObh0WipQsO6Jgmj16Mm5qRaliqlN10YoHzr
+FhsCXMP58c/vcLE9AuRdiugJA51UFt1Y9pOmkjlqWNLWriJmWWNLgieaozsn4eWv
+esJgcbhjgDEHSSChUIHC
+=xHzW
+-----END PGP SIGNATURE-----
+
+--r8zkF+xBtxUQJvKX--
