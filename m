@@ -1,475 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752859AbaG1Pkq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 11:40:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7364 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752552AbaG1Pko (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 11:40:44 -0400
-Date: Mon, 28 Jul 2014 11:39:48 -0400
-From: Jerome Glisse <jglisse@redhat.com>
-To: Haggai Eran <haggaie@mellanox.com>
-Cc: =?iso-8859-1?B?Suly9G1l?= Glisse <j.glisse@gmail.com>,
-        akpm@linux-foundation.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, mgorman@suse.de, hpa@zytor.com,
-        peterz@infraread.org, torvalds@linux-foundation.org,
-        aarcange@redhat.com, riel@redhat.com, jweiner@redhat.com,
-        Sherry Cheung <SCheung@nvidia.com>, Subhash Gutti <sgutti@nvidia.com>,
-        Mark Hairgrove <mhairgrove@nvidia.com>,
-        John Hubbard <jhubbard@nvidia.com>, Jatin Kumar <jakumar@nvidia.com>,
-        Or Gerlitz <ogerlitz@mellanox.com>, Sagi Grimberg <sagig@mellanox.com>,
-        Shachar Raindel <raindel@mellanox.com>,
-        Liran Liss <liranl@mellanox.com>
-Subject: Re: [PATCH 4/5] hmm: heterogeneous memory management v3
-Message-ID: <20140728153948.GA3132@redhat.com>
-References: <1402706913-7432-1-git-send-email-j.glisse@gmail.com>
- <1402706913-7432-2-git-send-email-j.glisse@gmail.com>
- <1402706913-7432-3-git-send-email-j.glisse@gmail.com>
- <1402706913-7432-4-git-send-email-j.glisse@gmail.com>
- <1402706913-7432-5-git-send-email-j.glisse@gmail.com>
- <53D641A2.9050000@mellanox.com>
+	id S1752364AbaG1PqT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 11:46:19 -0400
+Received: from mail-by2lp0241.outbound.protection.outlook.com ([207.46.163.241]:22322
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750999AbaG1PqO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jul 2014 11:46:14 -0400
+From: Punnaiah Choudary Kalluri <punnaiah.choudary.kalluri@xilinx.com>
+To: <robh+dt@kernel.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
+        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
+        <rob@landley.net>, <michal.simek@xilinx.com>,
+        <grant.likely@linaro.org>, <gregkh@linuxfoundation.org>,
+        <jason@lakedaemon.net>, <ezequiel.garcia@free-electrons.com>,
+        <arnd@arndb.de>, <dwmw2@infradead.org>, <computersforpeace@gmail.com>,
+        <artem.bityutskiy@linux.intel.com>, <pekon@ti.com>,
+        <jussi.kivilinna@iki.fi>, <acourbot@nvidia.com>,
+        <ivan.khoronzhuk@ti.com>, <joern@logfs.org>
+CC: <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-mtd@lists.infradead.org>,
+        <kpc528@gmail.com>, <kalluripunnaiahchoudary@gmail.com>,
+        <anirudh@xilinx.com>, <svemula@xilinx.com>,
+        Punnaiah Choudary Kalluri <punnaia@xilinx.com>
+Subject: [PATCH RFC v4 0/4] Add arm pl353 smc nand driver for xilinx zynq soc
+Date: Mon, 28 Jul 2014 21:01:36 +0530
+X-Mailer: git-send-email 1.7.4
+X-RCIS-Action: ALLOW
+Message-ID: <5d452894-346b-45e7-afe4-28c67c59e563@BY2FFO11FD019.protection.gbl>
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:149.199.60.83;CTRY:US;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(438002)(243025005)(199002)(189002)(81542001)(2201001)(64706001)(47776003)(15975445006)(92726001)(50986999)(21056001)(70736001)(89996001)(85306003)(77982001)(77096002)(44976005)(76482001)(74662001)(107046002)(99396002)(81342001)(93916002)(19580395003)(106466001)(92566001)(79102001)(83322001)(31966008)(50226001)(62966002)(74316001)(87286001)(104166001)(95666004)(20776003)(87936001)(229853001)(88136002)(1496007)(77156001)(50466002)(85852003)(4396001)(46102001)(104016003)(74502001)(53416004)(80022001)(6806004)(48376002)(31696002)(102836001)(86362001)(15202345003)(83072002)(107986001)(921003)(1121002)(83996005)(2101003)(217873001);DIR:OUT;SFP:;SCL:1;SRVR:BY2FFO11HUB051;H:xsj-pvapsmtpgw01;FPR:;MLV:sfv;PTR:unknown-60-83.xilinx.com;A:1;MX:1;LANG:en;
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <53D641A2.9050000@mellanox.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain
+X-OriginatorOrg: xilinx.onmicrosoft.com
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
+X-Forefront-PRVS: 0286D7B531
+Authentication-Results: spf=pass (sender IP is 149.199.60.83)
+ smtp.mailfrom=punnaiah.choudary.kalluri@xilinx.com; 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 28, 2014 at 03:27:14PM +0300, Haggai Eran wrote:
-> On 14/06/2014 03:48, Jérôme Glisse wrote:> From: Jérôme Glisse <jglisse@redhat.com>
-> > 
-> > Motivation:
-> > 
-> > ...
-> > 
-> > The aim of the heterogeneous memory management is to provide a common API that
-> > can be use by any such devices in order to mirror process address. The hmm code
-> > provide an unique entry point and interface itself with the core mm code of the
-> > linux kernel avoiding duplicate implementation and shielding device driver code
-> > from core mm code.
-> > 
-> > Moreover, hmm also intend to provide support for migrating memory to device
-> > private memory, allowing device to work on its own fast local memory. The hmm
-> > code would be responsible to intercept cpu page fault on migrated range of and
-> > to migrate it back to system memory allowing cpu to resume its access to the
-> > memory.
-> > 
-> > Another feature hmm intend to provide is support for atomic operation for the
-> > device even if the bus linking the device and the cpu do not have any such
-> > capabilities.
-> > 
-> > We expect that graphic processing unit and network interface to be among the
-> > first users of such api.
-> 
-> Hi,
-> 
-> Sorry I'm only now replying to this email. I'm hoping my feedback is still relevant :)
-> 
+The following patches add arm pl353 static memory controller driver for
+xilinx zynq soc. The arm pl353 smc supports two interfaces i.e nand and
+nor/sram memory interfaces. The current implementation supports only a
+single SMC instance and nand specific configuration.
 
-Any feedback is welcome.
+xilinx zynq TRM link:
+http://www.xilinx.com/support/documentation/user_guides/ug585-Zynq-7000-TRM.pdf
 
-> At Mellanox we are currently working on similar technology for avoiding
-> pinning memory for RDMA [1]. We currently have our own MMU notifier code
-> but once the HMM makes it into the kernel I hope we will be able to use it.
-> 
-> I have a couple of questions below:
-> 
-> > 
-> > Hardware requirement:
-> > 
-> > Because hmm is intended to be use by device driver there are minimum features
-> > requirement for the hardware mmu :
-> >   - hardware have its own page table per process (can be share btw != devices)
-> >   - hardware mmu support page fault and suspend execution until the page fault
-> >     is serviced by hmm code. The page fault must also trigger some form of
-> >     interrupt so that hmm code can be call by the device driver.
-> >   - hardware must support at least read only mapping (otherwise it can not
-> >     access read only range of the process address space).
-> > 
-> > For better memory management it is highly recommanded that the device also
-> > support the following features :
-> >   - hardware mmu set access bit in its page table on memory access (like cpu).
-> >   - hardware page table can be updated from cpu or through a fast path.
-> >   - hardware provide advanced statistic over which range of memory it access
-> >     the most.
-> >   - hardware differentiate atomic memory access from regular access allowing
-> >     to support atomic operation even on platform that do not have atomic
-> >     support with there bus link with the device.
-> > 
-> > Implementation:
-> > 
-> > ...
-> 
-> > +
-> > +/* struct hmm_event - used to serialize change to overlapping range of address.
-> > + *
-> > + * @list:       List of pending|in progress event.
-> > + * @faddr:      First address (inclusive) for the range this event affect.
-> > + * @laddr:      Last address (exclusive) for the range this event affect.
-> > + * @iaddr:      First invalid address.
-> > + * @fences:     List of device fences associated with this event.
-> > + * @etype:      Event type (munmap, migrate, truncate, ...).
-> > + * @backoff:    Should this event backoff ie a new event render it obsolete.
-> > + */
-> > +struct hmm_event {
-> > +	struct list_head	list;
-> > +	unsigned long		faddr;
-> > +	unsigned long		laddr;
-> > +	unsigned long		iaddr;
-> > +	struct list_head	fences;
-> > +	enum hmm_etype		etype;
-> > +	bool			backoff;
-> 
-> The backoff field is always being set to false in this patch, right? Is
-> it intended to be used only for device page migration?
+ARM pl353 smc TRM link:
+http://infocenter.arm.com/help/topic/com.arm.doc.ddi0380g/
+DDI0380G_smc_pl350_series_r2p1_trm.pdf
 
-Correct, migration to remote memory might happen concurently with other
-memory event that render migration pointless.
+Punnaiah Choudary Kalluri (4):
+  nand: pl353: Add basic driver for arm pl353 smc nand interface
+  nand: pl353: Add software ecc support
+  nand: pl353: Add ONDIE ECC support
+  Documentation: nand: pl353: Add documentation for controller and
+    driver
+
+ Documentation/mtd/nand/pl353-nand.txt |   92 +++
+ drivers/mtd/nand/Kconfig              |    7 +
+ drivers/mtd/nand/Makefile             |    1 +
+ drivers/mtd/nand/pl353_nand.c         | 1147 +++++++++++++++++++++++++++++++++
+ 4 files changed, 1247 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/mtd/nand/pl353-nand.txt
+ create mode 100644 drivers/mtd/nand/pl353_nand.c
+
+-- 
+1.7.4
 
 
-> 
-> > +};
-> > +
-> > +
-> > +
-> > +
-> > +/* hmm_device - Each device driver must register one and only one hmm_device.
-> > + *
-> > + * The hmm_device is the link btw hmm and each device driver.
-> > + */
-> > +
-> > +/* struct hmm_device_operations - hmm device operation callback
-> > + */
-> > +struct hmm_device_ops {
-> > +	/* device_destroy - free hmm_device (call when refcount drop to 0).
-> > +	 *
-> > +	 * @device: The device hmm specific structure.
-> > +	 */
-> > +	void (*device_destroy)(struct hmm_device *device);
-> > +
-> > +	/* mirror_release() - device must stop using the address space.
-> > +	 *
-> > +	 * @mirror: The mirror that link process address space with the device.
-> > +	 *
-> > +	 * Called when as result of hmm_mirror_unregister or when mm is being
-> > +	 * destroy.
-> > +	 *
-> > +	 * It's illegal for the device to call any hmm helper function after
-> > +	 * this call back. The device driver must kill any pending device
-> > +	 * thread and wait for completion of all of them.
-> > +	 *
-> > +	 * Note that even after this callback returns the device driver might
-> > +	 * get call back from hmm. Callback will stop only once mirror_destroy
-> > +	 * is call.
-> > +	 */
-> > +	void (*mirror_release)(struct hmm_mirror *hmm_mirror);
-> > +
-> > +	/* mirror_destroy - free hmm_mirror (call when refcount drop to 0).
-> > +	 *
-> > +	 * @mirror: The mirror that link process address space with the device.
-> > +	 */
-> > +	void (*mirror_destroy)(struct hmm_mirror *mirror);
-> > +
-> > +	/* fence_wait() - to wait on device driver fence.
-> > +	 *
-> > +	 * @fence:      The device driver fence struct.
-> > +	 * Returns:     0 on success,-EIO on error, -EAGAIN to wait again.
-> > +	 *
-> > +	 * Called when hmm want to wait for all operations associated with a
-> > +	 * fence to complete (including device cache flush if the event mandate
-> > +	 * it).
-> > +	 *
-> > +	 * Device driver must free fence and associated resources if it returns
-> > +	 * something else thant -EAGAIN. On -EAGAIN the fence must not be free
-> > +	 * as hmm will call back again.
-> > +	 *
-> > +	 * Return error if scheduled operation failed or if need to wait again.
-> > +	 * -EIO    Some input/output error with the device.
-> > +	 * -EAGAIN The fence not yet signaled, hmm reschedule waiting thread.
-> > +	 *
-> > +	 * All other return value trigger warning and are transformed to -EIO.
-> > +	 */
-> > +	int (*fence_wait)(struct hmm_fence *fence);
-> > +
-> > +	/* fence_destroy() - destroy fence structure.
-> > +	 *
-> > +	 * @fence:  Fence structure to destroy.
-> > +	 *
-> > +	 * Called when all reference on a fence are gone.
-> > +	 */
-> > +	void (*fence_destroy)(struct hmm_fence *fence);
-> > +
-> > +	/* update() - update device mmu for a range of address.
-> > +	 *
-> > +	 * @mirror: The mirror that link process address space with the device.
-> > +	 * @vma:    The vma into which the update is taking place.
-> > +	 * @faddr:  First address in range (inclusive).
-> > +	 * @laddr:  Last address in range (exclusive).
-> > +	 * @etype:  The type of memory event (unmap, read only, ...).
-> > +	 * Returns: Valid fence ptr or NULL on success otherwise ERR_PTR.
-> > +	 *
-> > +	 * Called to update device mmu permission/usage for a range of address.
-> > +	 * The event type provide the nature of the update :
-> > +	 *   - range is no longer valid (munmap).
-> > +	 *   - range protection changes (mprotect, COW, ...).
-> > +	 *   - range is unmapped (swap, reclaim, page migration, ...).
-> > +	 *   - ...
-> > +	 *
-> > +	 * Any event that block further write to the memory must also trigger a
-> > +	 * device cache flush and everything has to be flush to local memory by
-> > +	 * the time the wait callback return (if this callback returned a fence
-> > +	 * otherwise everything must be flush by the time the callback return).
-> > +	 *
-> > +	 * Device must properly call set_page_dirty on any page the device did
-> > +	 * write to since last call to update.
-> > +	 *
-> > +	 * The driver should return a fence pointer or NULL on success. Device
-> > +	 * driver should return fence and delay wait for the operation to the
-> > +	 * febce wait callback. Returning a fence allow hmm to batch update to
-> > +	 * several devices and delay wait on those once they all have scheduled
-> > +	 * the update.
-> > +	 *
-> > +	 * Device driver must not fail lightly, any failure result in device
-> > +	 * process being kill.
-> > +	 *
-> > +	 * Return fence or NULL on success, error value otherwise :
-> > +	 * -ENOMEM Not enough memory for performing the operation.
-> > +	 * -EIO    Some input/output error with the device.
-> > +	 *
-> > +	 * All other return value trigger warning and are transformed to -EIO.
-> > +	 */
-> > +	struct hmm_fence *(*update)(struct hmm_mirror *mirror,
-> > +				    struct vm_area_struct *vma,
-> > +				    unsigned long faddr,
-> > +				    unsigned long laddr,
-> > +				    enum hmm_etype etype);
-> > +
-> > +	/* fault() - fault range of address on the device mmu.
-> > +	 *
-> > +	 * @mirror: The mirror that link process address space with the device.
-> > +	 * @faddr:  First address in range (inclusive).
-> > +	 * @laddr:  Last address in range (exclusive).
-> > +	 * @pfns:   Array of pfn for the range (each of the pfn is valid).
-> > +	 * @fault:  The fault structure provided by device driver.
-> > +	 * Returns: 0 on success, error value otherwise.
-> > +	 *
-> > +	 * Called to give the device driver each of the pfn backing a range of
-> > +	 * address. It is only call as a result of a call to hmm_mirror_fault.
-> > +	 *
-> > +	 * Note that the pfns array content is only valid for the duration of
-> > +	 * the callback. Once the device driver callback return further memory
-> > +	 * activities might invalidate the value of the pfns array. The device
-> > +	 * driver will be inform of such changes through the update callback.
-> > +	 *
-> > +	 * Allowed return value are :
-> > +	 * -ENOMEM Not enough memory for performing the operation.
-> > +	 * -EIO    Some input/output error with the device.
-> > +	 *
-> > +	 * Device driver must not fail lightly, any failure result in device
-> > +	 * process being kill.
-> > +	 *
-> > +	 * Return error if scheduled operation failed. Valid value :
-> > +	 * -ENOMEM Not enough memory for performing the operation.
-> > +	 * -EIO    Some input/output error with the device.
-> > +	 *
-> > +	 * All other return value trigger warning and are transformed to -EIO.
-> > +	 */
-> > +	int (*fault)(struct hmm_mirror *mirror,
-> > +		     unsigned long faddr,
-> > +		     unsigned long laddr,
-> > +		     pte_t *ptep,
-> > +		     struct hmm_event *event);
-> > +};
-> 
-> I noticed that the device will receive PFNs as a result of a page fault.
-> I assume most devices will also need to call dma_map_page on the
-> physical address to get a bus address to use. Do you think it would make
-> sense to handle mapping and unmapping pages inside HMM?
-
-We thought about this and this is not an easy task, on simple computer all
-PCI/PCIE device will share the same iommu domain as they are behind the
-same bridge/iommu. But on more complex architecture there can be several
-iommu and each device can be behind different iommu domain.
-
-So this would mean a 1:N relationship btw page and domains it is use on.
-Which would require non trivial data structure (ie something with a list
-or alike) with the memory consumption that goes with it.
-
-So i think on that front it is better to have the device driver do the
-dma_map_page and use the value which it stores inside its device page table
-to do the dma_unmap_page when necessary.
-
-Of course if you have ideas on how to solve the multi-domains and each
-device possibly behind different domain, i welcome anything on that front.
-
-> 
-> > ...
-> 
-> > +
-> > +static void hmm_update_mirrors(struct hmm *hmm,
-> > +			       struct vm_area_struct *vma,
-> > +			       struct hmm_event *event)
-> > +{
-> > +	struct hmm_mirror *mirror;
-> > +	struct hmm_fence *fence = NULL, *tmp;
-> > +	int ticket;
-> > +
-> > +retry:
-> > +	ticket = srcu_read_lock(&srcu);
-> > +	/* Because of retry we might already have scheduled some mirror
-> > +	 * skip those.
-> > +	 */
-> > +	mirror = list_first_entry(&hmm->mirrors,
-> > +				  struct hmm_mirror,
-> > +				  mlist);
-> > +	mirror = fence ? fence->mirror : mirror;
-> > +	list_for_each_entry_continue(mirror, &hmm->mirrors, mlist) {
-> > +		struct hmm_device *device = mirror->device;
-> > +
-> > +		fence = device->ops->update(mirror, vma, event->faddr,
-> > +					    event->laddr, event->etype);
-> > +		if (fence) {
-> > +			if (IS_ERR(fence)) {
-> > +				srcu_read_unlock(&srcu, ticket);
-> > +				hmm_mirror_cleanup(mirror);
-> > +				goto retry;
-> > +			}
-> > +			kref_init(&fence->kref);
-> > +			fence->mirror = mirror;
-> > +			list_add_tail(&fence->list, &event->fences);
-> > +		}
-> > +	}
-> > +	srcu_read_unlock(&srcu, ticket);
-> > +
-> > +	if (!fence)
-> > +		/* Nothing to wait for. */
-> > +		return;
-> > +
-> > +	io_schedule();
-> > +	list_for_each_entry_safe(fence, tmp, &event->fences, list) {
-> > +		struct hmm_device *device;
-> > +		int r;
-> > +
-> > +		mirror = fence->mirror;
-> > +		device = mirror->device;
-> > +
-> > +		r = hmm_device_fence_wait(device, fence);
-> > +		if (r)
-> > +			hmm_mirror_cleanup(mirror);
-> > +	}
-> > +}
-> > +
-> > +
-> 
-> It seems like the code ignores any error the update operation may
-> return, except for cleaning up the mirror. If I understand correctly,
-> having an error here would mean that the device cannot invalidate the
-> pages it has access to, and they cannot be released. Isn't that right?
-> 
-
-The function name is probably not explicit but hmm_mirror_cleanup is like
-a hmm_mirror_destroy. It will ask the device driver to stop using the address
-space ie any update failure from the device driver is a fatal failure for
-hmm and hmm consider that the mirroring must stops.
-
-> > ...
-> 
-> > +
-> > +/* hmm_mirror - per device mirroring functions.
-> > + *
-> > + * Each device that mirror a process has a uniq hmm_mirror struct. A process
-> > + * can be mirror by several devices at the same time.
-> > + *
-> > + * Below are all the functions and there helpers use by device driver to mirror
-> > + * the process address space. Those functions either deals with updating the
-> > + * device page table (through hmm callback). Or provide helper functions use by
-> > + * the device driver to fault in range of memory in the device page table.
-> > + */
-> > +
-> > +static void hmm_mirror_cleanup(struct hmm_mirror *mirror)
-> > +{
-> > +	struct vm_area_struct *vma;
-> > +	struct hmm_device *device = mirror->device;
-> > +	struct hmm_event event;
-> > +	struct hmm *hmm = mirror->hmm;
-> > +
-> > +	spin_lock(&hmm->lock);
-> > +	if (mirror->dead) {
-> > +		spin_unlock(&hmm->lock);
-> > +		return;
-> > +	}
-> > +	mirror->dead = true;
-> > +	list_del(&mirror->mlist);
-> > +	spin_unlock(&hmm->lock);
-> > +	synchronize_srcu(&srcu);
-> > +	INIT_LIST_HEAD(&mirror->mlist);
-> > +
-> > +	event.etype = HMM_UNREGISTER;
-> > +	event.faddr = 0UL;
-> > +	event.laddr = -1L;
-> > +	vma = find_vma_intersection(hmm->mm, event.faddr, event.laddr);
-> > +	for (; vma; vma = vma->vm_next) {
-> > +		struct hmm_fence *fence;
-> > +
-> > +		fence = device->ops->update(mirror, vma, vma->vm_start,
-> > +					    vma->vm_end, event.etype);
-> > +		if (fence && !IS_ERR(fence)) {
-> > +			kref_init(&fence->kref);
-> > +			fence->mirror = mirror;
-> > +			INIT_LIST_HEAD(&fence->list);
-> > +			hmm_device_fence_wait(device, fence);
-> > +		}
-> 
-> Here too the code ignores any error from update.
-
-Like said above, this function actualy terminate the device driver mirror
-and thus any further error is ignored. This have been change in lastest
-version of the patchset. But idea stays the same any error on update from
-a device driver terminate the mirror.
-
-http://cgit.freedesktop.org/~glisse/linux/log/?h=hmm
-
-> 
-> > +	}
-> > +
-> > +	mutex_lock(&device->mutex);
-> > +	list_del_init(&mirror->dlist);
-> > +	mutex_unlock(&device->mutex);
-> > +
-> > +	mirror->hmm = hmm_unref(hmm);
-> > +	hmm_mirror_unref(mirror);
-> > +}
-> > +
-> > +static void hmm_mirror_destroy(struct kref *kref)
-> > +{
-> > +	struct hmm_mirror *mirror;
-> > +	struct hmm_device *device;
-> > +
-> > +	mirror = container_of(kref, struct hmm_mirror, kref);
-> > +	device = mirror->device;
-> > +
-> > +	BUG_ON(!list_empty(&mirror->mlist));
-> > +	BUG_ON(!list_empty(&mirror->dlist));
-> > +
-> > +	device->ops->mirror_destroy(mirror);
-> > +	hmm_device_unref(device);
-> > +}
-> > +
-> 
-> Thanks,
-> Haggai
-> 
-> [1] [PATCH v1 for-next 00/16] On demand paging
->     http://permalink.gmane.org/gmane.linux.drivers.rdma/21032
-
-I will take a look thanks.
-
-Cheers,
-Jérôme
-
-> 
-> 
-> 
