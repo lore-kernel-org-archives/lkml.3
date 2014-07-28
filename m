@@ -1,66 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752042AbaG1UhM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 16:37:12 -0400
-Received: from na3sys009aog130.obsmtp.com ([74.125.149.143]:38668 "HELO
-	na3sys009aog130.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751915AbaG1UhK (ORCPT
+	id S1752121AbaG1Uin (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 16:38:43 -0400
+Received: from mail-yh0-f54.google.com ([209.85.213.54]:57655 "EHLO
+	mail-yh0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750929AbaG1Uil (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 16:37:10 -0400
+	Mon, 28 Jul 2014 16:38:41 -0400
 MIME-Version: 1.0
-In-Reply-To: <20140727070746.GA4825@himangi-Dell>
-References: <20140727070746.GA4825@himangi-Dell>
-Date: Mon, 28 Jul 2014 13:37:09 -0700
-Message-ID: <CALnjE+pjdWLCKya6FeqfZqYra=p=vjDN2nywrdTWuRErGmpu9w@mail.gmail.com>
-Subject: Re: [PATCH] openvswitch: Use IS_ERR_OR_NULL
-From: Pravin Shelar <pshelar@nicira.com>
-To: Himangi Saraogi <himangi774@gmail.com>
-Cc: "David S. Miller" <davem@davemloft.net>,
-        "dev@openvswitch.org" <dev@openvswitch.org>,
-        netdev <netdev@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Julia Lawall <julia.lawall@lip6.fr>
+In-Reply-To: <20140711175458.6793B2029@prod-mail-relay06.akamai.com>
+References: <20140711175458.6793B2029@prod-mail-relay06.akamai.com>
+Date: Mon, 28 Jul 2014 16:38:40 -0400
+X-Google-Sender-Auth: 75XOMJ_N0wlOiNPub33L4mDQLp0
+Message-ID: <CAJvTdKkZoo1yO0N4ra8SBh0XY4PiY+KWkVysGptfhVWYb8kO1g@mail.gmail.com>
+Subject: Re: [PATCH] intel_idle: use static_key to optimize idle enter/exit paths
+From: Len Brown <lenb@kernel.org>
+To: Jason Baron <jbaron@akamai.com>
+Cc: Linux PM list <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 27, 2014 at 12:07 AM, Himangi Saraogi <himangi774@gmail.com> wrote:
-> This patch introduces the use of the macro IS_ERR_OR_NULL in place of
-> tests for NULL and IS_ERR.
->
-> The following Coccinelle semantic patch was used for making the change:
->
-> @@
-> expression e;
-> @@
->
-> - e == NULL || IS_ERR(e)
-> + IS_ERR_OR_NULL(e)
->  || ...
->
-> Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
-> Acked-by: Julia Lawall <julia.lawall@lip6.fr>
+On Fri, Jul 11, 2014 at 1:54 PM, Jason Baron <jbaron@akamai.com> wrote:
+> If 'arat' is set in the cpuflags, we can avoid the checks for entering/exiting
+> the tick broadcast code entirely. It would seem that this is a hot enough code
+> path to make this worthwhile. I ran a few hackbench runs, and consistenly see
+> reduced branches and cycles.
 
-Looks good.
-Acked-by: Pravin B Shelar <pshelar@nicira.com>
+Hi Jason,
 
-> ---
->  net/openvswitch/datapath.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/net/openvswitch/datapath.c b/net/openvswitch/datapath.c
-> index 20f59b6..e3b3c21 100644
-> --- a/net/openvswitch/datapath.c
-> +++ b/net/openvswitch/datapath.c
-> @@ -780,7 +780,7 @@ static struct sk_buff *ovs_flow_cmd_build_info(const struct sw_flow *flow,
->
->         skb = ovs_flow_cmd_alloc_info(ovsl_dereference(flow->sf_acts), info,
->                                       always);
-> -       if (!skb || IS_ERR(skb))
-> +       if (IS_ERR_OR_NULL(skb))
->                 return skb;
->
->         retval = ovs_flow_cmd_fill_info(flow, dp_ifindex, skb,
-> --
-> 1.9.1
->
+Your logic looks right -- though I've never used this
+static_key_slow_inc() stuff.
+I'm impressed that something in user-space could detect this change.
+
+Can you share how to run the workload where you detected a difference,
+and describe the hardware you measured?
+
+thanks,
+-Len Brown, Intel Open Source Technology Center
