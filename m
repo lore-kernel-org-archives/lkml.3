@@ -1,65 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752127AbaG1UkU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 16:40:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32882 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750708AbaG1UkR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 16:40:17 -0400
-Date: Mon, 28 Jul 2014 17:39:55 -0300
-From: Eduardo Habkost <ehabkost@redhat.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: virtualization@lists.linux-foundation.org,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        Chris Wright <chrisw@sous-sol.org>, Alok Kataria <akataria@vmware.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86, paravirt: BUG_ON on {rd,wr}msr exceptions
-Message-ID: <20140728203955.GA4611@thinpad.lan.raisama.net>
-References: <1406574278-23946-1-git-send-email-ehabkost@redhat.com>
- <53D6A1F2.5070404@zytor.com>
+	id S1752138AbaG1UlB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 16:41:01 -0400
+Received: from mail-oa0-f49.google.com ([209.85.219.49]:59538 "EHLO
+	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751162AbaG1Uk7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jul 2014 16:40:59 -0400
+Date: Mon, 28 Jul 2014 15:40:49 -0500
+From: Seth Jennings <sjennings@variantweb.net>
+To: Dan Streetman <ddstreet@ieee.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Bob Liu <bob.liu@oracle.com>,
+        Nitin Gupta <ngupta@vflare.org>, Hugh Dickins <hughd@google.com>,
+        Minchan Kim <minchan@kernel.org>,
+        Weijie Yang <weijie.yang@samsung.com>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Linux-MM <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCHv5 0/4] mm/zpool: add common api for zswap to use
+ zbud/zsmalloc
+Message-ID: <20140728204049.GA18500@cerebellum.variantweb.net>
+References: <1401747586-11861-1-git-send-email-ddstreet@ieee.org>
+ <1404337536-11037-1-git-send-email-ddstreet@ieee.org>
+ <CALZtONBYwm5t39z8wiEkTrFw-g=Be+ypaZo2nuFo0ob5pRXSAw@mail.gmail.com>
+ <20140716205907.GA13058@cerebellum.variantweb.net>
+ <CALZtONB0k_Vw6OwV6u3FA=Hu7FO+nY7bhTUQ+sb+hx3fwYDXyA@mail.gmail.com>
+ <20140716220040.GA16681@cerebellum.variantweb.net>
+ <CALZtONA-x0sSiCnjYTyaLb3EHWejH6Nm-oPaJyf0osepXQbo6A@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <53D6A1F2.5070404@zytor.com>
-X-Fnord: you can see the fnord
+In-Reply-To: <CALZtONA-x0sSiCnjYTyaLb3EHWejH6Nm-oPaJyf0osepXQbo6A@mail.gmail.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 28, 2014 at 12:18:10PM -0700, H. Peter Anvin wrote:
-> On 07/28/2014 12:04 PM, Eduardo Habkost wrote:
-> > When CONFIG_PARAVIRT is enabled, the kernel is ignoring exceptions on
-> > the {rd,wr}msr instructions. This makes serious issues (either on the
-> > guest kernel, or on the host) be silently ignored, and is different from
-> > the native MSR code (which does not ignore the exceptions).
-> > 
-> > As paravirt.h already includes linux/bug.h, I don't see what was the
-> > original issue preventing BUG_ON from being used.
-> > 
-> > Change rdmsr(), wrmsr(), and rdmsrl() to BUG_ON() on errors.
+On Fri, Jul 25, 2014 at 12:59:05PM -0400, Dan Streetman wrote:
+> Hey Seth,
 > 
-> How much does this bloat the kernel?
+> have a chance to test yet?
 
-It seems to add 8 bytes to each {wr,rd}msr() call (4 extra instructions:
-test, jmp, ud2, jmp).
+Sorry for the delay. Things have been crazy.
 
-allyesconfig, paravirt enabled, before:
+Just pulled down -next and tested with a 8-thread kernel build on a
+machine restricted to 512MB of RAM.  Thrashed pretty well but completed
+without any problems. The compressed pool mitigating the swapping for
+the most part.  swapoff at the end and all the statistics were sane.
 
-  text    data     bss     dec     hex filename
-108368312       23500872        55705600        187574784       b2e2a00 vmlinux
+Looks stable afaict.  Good work! :)
 
-allyesconfig, paravirt enabled, after:
+Again sorry about dragging my feet on this.
 
-   text    data     bss     dec     hex filename
-108384438       23500904        55717888        187603230       b2e991e vmlinux
+Thanks,
+Seth
 
-allyesconfig vmlinux is 28446 bytes larger.
-
-An alternative is to add read_msr_unsafe() & write_msr_unsafe() fields
-to pv_cpu_ops, pointing to native_read_msr() & native_write_msr().
-
--- 
-Eduardo
+> 
+> On Wed, Jul 16, 2014 at 6:00 PM, Seth Jennings <sjennings@variantweb.net> wrote:
+> > On Wed, Jul 16, 2014 at 05:05:45PM -0400, Dan Streetman wrote:
+> >> On Wed, Jul 16, 2014 at 4:59 PM, Seth Jennings <sjennings@variantweb.net> wrote:
+> >> > On Mon, Jul 14, 2014 at 02:10:42PM -0400, Dan Streetman wrote:
+> >> >> Andrew, any thoughts on this latest version of the patch set?  Let me
+> >> >> know if I missed anything or you have any other suggestions.
+> >> >>
+> >> >> Seth, did you get a chance to review this and/or test it out?
+> >> >
+> >> > I did have a chance to test it out quickly and didn't run into any
+> >> > issues.  Your patchset is already in linux-next so I'll test more from
+> >> > there.
+> >>
+> >> This latest version has a few changes that Andrew requested, which
+> >> presumably will replace the patches that are currently in -mm and
+> >> -next; can you test with these patches instead of (or in addition to)
+> >> what's in -next?
+> >
+> > Looks like Andrew just did the legwork for me to get the new patches
+> > into mmotm.  When the hit there (tomorrow?), I'll put it down and test
+> > with that.
+> >
+> > Thanks,
+> > Seth
+> >
+> >>
+> >> >
+> >> > Seth
+> >> >
+> >> >>
+> >> >>
+> >> >>
+> >> >> On Wed, Jul 2, 2014 at 5:45 PM, Dan Streetman <ddstreet@ieee.org> wrote:
+> >> >> > In order to allow zswap users to choose between zbud and zsmalloc for
+> >> >> > the compressed storage pool, this patch set adds a new api "zpool" that
+> >> >> > provides an interface to both zbud and zsmalloc.  This does not include
+> >> >> > implementing shrinking in zsmalloc, which will be sent separately.
+> >> >> >
+> >> >> > I believe Seth originally was using zsmalloc for swap, but there were
+> >> >> > concerns about how significant the impact of shrinking zsmalloc would
+> >> >> > be when zswap had to start reclaiming pages.  That still may be an
+> >> >> > issue, but this at least allows users to choose themselves whether
+> >> >> > they want a lower-density or higher-density compressed storage medium.
+> >> >> > At least for situations where zswap reclaim is never or rarely reached,
+> >> >> > it probably makes sense to use the higher density of zsmalloc.
+> >> >> >
+> >> >> > Note this patch set does not change zram to use zpool, although that
+> >> >> > change should be possible as well.
+> >> >> >
+> >> >> > ---
+> >> >> > Changes since v4 : https://lkml.org/lkml/2014/6/2/711
+> >> >> >   -omit first patch, that removed gfp_t param from zpool_malloc()
+> >> >> >   -move function doc from zpool.h to zpool.c
+> >> >> >   -move module usage refcounting into patch that adds zpool
+> >> >> >   -add extra refcounting to prevent driver unregister if in use
+> >> >> >   -add doc clarifying concurrency usage
+> >> >> >   -make zbud/zsmalloc zpool functions static
+> >> >> >   -typo corrections
+> >> >> >
+> >> >> > Changes since v3 : https://lkml.org/lkml/2014/5/24/130
+> >> >> >   -In zpool_shrink() use # pages instead of # bytes
+> >> >> >   -Add reclaimed param to zpool_shrink() to indicate to caller
+> >> >> >    # pages actually reclaimed
+> >> >> >   -move module usage counting to zpool, from zbud/zsmalloc
+> >> >> >   -update zbud_zpool_shrink() to call zbud_reclaim_page() in a
+> >> >> >    loop until requested # pages have been reclaimed (or error)
+> >> >> >
+> >> >> > Changes since v2 : https://lkml.org/lkml/2014/5/7/927
+> >> >> >   -Change zpool to use driver registration instead of hardcoding
+> >> >> >    implementations
+> >> >> >   -Add module use counting in zbud/zsmalloc
+> >> >> >
+> >> >> > Changes since v1 https://lkml.org/lkml/2014/4/19/97
+> >> >> >  -remove zsmalloc shrinking
+> >> >> >  -change zbud size param type from unsigned int to size_t
+> >> >> >  -remove zpool fallback creation
+> >> >> >  -zswap manually falls back to zbud if specified type fails
+> >> >> >
+> >> >> >
+> >> >> > Dan Streetman (4):
+> >> >> >   mm/zbud: change zbud_alloc size type to size_t
+> >> >> >   mm/zpool: implement common zpool api to zbud/zsmalloc
+> >> >> >   mm/zpool: zbud/zsmalloc implement zpool
+> >> >> >   mm/zpool: update zswap to use zpool
+> >> >> >
+> >> >> >  include/linux/zbud.h  |   2 +-
+> >> >> >  include/linux/zpool.h | 106 +++++++++++++++
+> >> >> >  mm/Kconfig            |  43 +++---
+> >> >> >  mm/Makefile           |   1 +
+> >> >> >  mm/zbud.c             |  98 +++++++++++++-
+> >> >> >  mm/zpool.c            | 364 ++++++++++++++++++++++++++++++++++++++++++++++++++
+> >> >> >  mm/zsmalloc.c         |  84 ++++++++++++
+> >> >> >  mm/zswap.c            |  75 ++++++-----
+> >> >> >  8 files changed, 722 insertions(+), 51 deletions(-)
+> >> >> >  create mode 100644 include/linux/zpool.h
+> >> >> >  create mode 100644 mm/zpool.c
+> >> >> >
+> >> >> > --
+> >> >> > 1.8.3.1
+> >> >> >
