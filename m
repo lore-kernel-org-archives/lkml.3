@@ -1,39 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751997AbaG1STI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 14:19:08 -0400
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:58086 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750825AbaG1STE (ORCPT
+	id S1751755AbaG1STr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 14:19:47 -0400
+Received: from mail-lb0-f180.google.com ([209.85.217.180]:50557 "EHLO
+	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751036AbaG1STq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 14:19:04 -0400
-Date: Mon, 28 Jul 2014 14:19:00 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>,
-        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
-        Nishanth Aravamudan <nacc@linux.vnet.ibm.com>
-Subject: Re: [PATCH UPDATED] kthread_work: add cancel_kthread_work[_sync]()
-Message-ID: <20140728181900.GD7462@htj.dyndns.org>
-References: <1406347444-4045-3-git-send-email-laijs@cn.fujitsu.com>
- <20140728181818.GC7462@htj.dyndns.org>
+	Mon, 28 Jul 2014 14:19:46 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140728181818.GC7462@htj.dyndns.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140728122211.GS17528@sirena.org.uk>
+References: <1406547718-21498-1-git-send-email-nicoleotsuka@gmail.com>
+	<20140728122211.GS17528@sirena.org.uk>
+Date: Mon, 28 Jul 2014 15:19:43 -0300
+Message-ID: <CAOMZO5DgE9RjC9MG7FbGPKwsgxunntw70W6Sj8WQKFYG+j8BsA@mail.gmail.com>
+Subject: Re: [alsa-devel] [PATCH v2] ASoC: wm8962: Let CODEC driver enable and
+ disable its own MCLK
+From: Fabio Estevam <festevam@gmail.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: Nicolin Chen <nicoleotsuka@gmail.com>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        patches@opensource.wolfsonmicro.com, b02247@freescale.com,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Nicolin Chen <b42378@freescale.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 28, 2014 at 02:18:18PM -0400, Tejun Heo wrote:
-> Hello,
-> 
-> Updated description and dropped DEFINE_KTHREAD_WORK_ONSTACK().
-> Applied to wq/for-3.17.
+Hi Nicolin,
 
-Oops this should have been the reply to another patch.  Sorry.
+On Mon, Jul 28, 2014 at 9:22 AM, Mark Brown <broonie@kernel.org> wrote:
+> On Mon, Jul 28, 2014 at 07:41:58PM +0800, Nicolin Chen wrote:
+>
+>> +     pdata->mclk = devm_clk_get(&i2c->dev, NULL);
+>> +
+>
+> This is broken for deferred probe.
 
--- 
-tejun
+You can take a look at sgtl5000 to see how we handle deferred probe in
+devm_clk_get().
