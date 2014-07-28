@@ -1,66 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751311AbaG1QSA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 12:18:00 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:56996 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750852AbaG1QR4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 12:17:56 -0400
-Message-ID: <53D677B1.2000700@suse.de>
-Date: Mon, 28 Jul 2014 18:17:53 +0200
-From: =?UTF-8?B?QW5kcmVhcyBGw6RyYmVy?= <afaerber@suse.de>
-Organization: SUSE LINUX Products GmbH
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1752616AbaG1QTL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 12:19:11 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:34269 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750883AbaG1QTJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jul 2014 12:19:09 -0400
+Date: Mon, 28 Jul 2014 11:19:05 -0500
+From: rkuo <rkuo@codeaurora.org>
+To: Sam Ravnborg <sam@ravnborg.org>
+Cc: Arnd Bergmann <arnd@arndb.de>, lkml <linux-kernel@vger.kernel.org>,
+        linux-arch <linux-arch@vger.kernel.org>,
+        linux-hexagon <linux-hexagon@vger.kernel.org>,
+        David Howells <dhowells@redhat.com>
+Subject: Re: [PATCH 03/38] hexagon: drop ucontext from list exported headers
+Message-ID: <20140728161905.GB9179@codeaurora.org>
+References: <20140714150609.GA28358@ravnborg.org>
+ <1405350546-28467-1-git-send-email-sam@ravnborg.org>
+ <1405350546-28467-3-git-send-email-sam@ravnborg.org>
 MIME-Version: 1.0
-To: Lars-Peter Clausen <lars@metafoo.de>
-CC: Michal Simek <michal.simek@xilinx.com>, devicetree@vger.kernel.org,
-        Andreas Olofsson <andreas@adapteva.com>, linux-kernel@vger.kernel.org,
-        Matteo Vit <matteo.vit@starwaredesign.com>,
-        Sean Rickerd <srickerd@suse.com>,
-        Punnaiah Choudary Kalluri <punnaia@xilinx.com>,
-        linux-arm-kernel@lists.infradead.org,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>
-Subject: Re: [PATCH v2 00/11] ARM: dts: zynq: Prepare Parallella
-References: <1406242820-20140-1-git-send-email-afaerber@suse.de>
-In-Reply-To: <1406242820-20140-1-git-send-email-afaerber@suse.de>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1405350546-28467-3-git-send-email-sam@ravnborg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Lars-Peter,
+On Mon, Jul 14, 2014 at 05:08:31PM +0200, Sam Ravnborg wrote:
+> ucontext.h is already specified in include/uapi/asm-generic/Kbuild
+> so this is redundant.
+> 
+> Signed-off-by: Sam Ravnborg <sam@ravnborg.org>
+> Cc: Richard Kuo <rkuo@codeaurora.org>
+> Cc: linux-hexagon <linux-hexagon@vger.kernel.org>
+> Cc: David Howells <dhowells@redhat.com>
+> ---
+>  arch/hexagon/include/asm/Kbuild | 3 ---
+>  1 file changed, 3 deletions(-)
+> 
+> diff --git a/arch/hexagon/include/asm/Kbuild b/arch/hexagon/include/asm/Kbuild
+> index 0e69796..1ddcd97 100644
+> --- a/arch/hexagon/include/asm/Kbuild
+> +++ b/arch/hexagon/include/asm/Kbuild
+> @@ -1,6 +1,3 @@
+> -
+> -header-y += ucontext.h
+> -
+>  generic-y += auxvec.h
+>  generic-y += barrier.h
+>  generic-y += bug.h
+> -- 
+> 1.9.3
+> 
 
-Am 25.07.2014 01:00, schrieb Andreas Färber:
-> most notably I'm missing 
-> ADI ADV7513 and AXI-HDMI support
-[...]
-> Cc: Lars-Peter Clausen <lars@metafoo.de> (HDMI)
 
-Could you please enlighten us what the status of upstreaming
-ADV7511/ADV7513 support is? It is declared "work in progress" here:
-
-http://wiki.analog.com/resources/tools-software/linux-drivers/drm/adv7511
-
-I see some adv7511 V4L bits in drivers/media/i2c/adv7511.c, but no
-drivers/gpu/drm/i2c/adv7511_{core,audio}.c as on the xcomm_zynq branch,
-nor any devicetree documentation. Patchwork doesn't show any recent
-submissions to LKML.
-
-Is any major rework needed for you to get the 3.14.12 based driver upstream?
-
-AXI SPDIF I found in 3.16, as you noticed; what about AXI HDMI? [*]
-Is there any work ongoing to get that upstream as well?
-
-Any pointers appreciated.
-
-Thanks,
-Andreas
-
-[*]
-http://wiki.analog.com/resources/tools-software/linux-drivers/platforms/zynq
+Acked-by: Richard Kuo <rkuo@codeaurora.org>
 
 -- 
-SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg, Germany
-GF: Jeff Hawn, Jennifer Guild, Felix Imendörffer; HRB 16746 AG Nürnberg
+
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
