@@ -1,97 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752312AbaG1Xmg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 19:42:36 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:33272 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751636AbaG1Xmd (ORCPT
+	id S1752354AbaG1Xmn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 19:42:43 -0400
+Received: from mail-oa0-f43.google.com ([209.85.219.43]:36103 "EHLO
+	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752050AbaG1Xmf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 19:42:33 -0400
-Message-ID: <53D6DFE7.3040901@wwwdotorg.org>
-Date: Mon, 28 Jul 2014 17:42:31 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Mon, 28 Jul 2014 19:42:35 -0400
 MIME-Version: 1.0
-To: Yufeng Shen <miletus@chromium.org>, Nick Dyer <nick.dyer@itdev.co.uk>
-CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        benson Leung <bleung@chromium.org>,
-        Daniel Kurtz <djkurtz@chromium.org>,
-        Henrik Rydberg <rydberg@euromail.se>,
-        Joonyoung Shim <jy0922.shim@samsung.com>,
-        Alan Bowens <Alan.Bowens@atmel.com>,
-        linux-input <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Peter Meerwald <pmeerw@pmeerw.net>,
-        Olof Johansson <olofj@chromium.org>, Sekhar Nori <nsekhar@ti.com>
-Subject: Re: [PATCH 00/15] atmel_mxt_ts - device tree, bootloader, etc
-References: <1404399697-26484-1-git-send-email-nick.dyer@itdev.co.uk>	<53CECAEC.8080905@wwwdotorg.org>	<53CFD50C.4040509@itdev.co.uk>	<53CFEF6E.2060905@wwwdotorg.org>	<53D10E78.4010908@itdev.co.uk>	<53D17845.4020507@wwwdotorg.org>	<53D26572.3030404@itdev.co.uk>	<53D2B8D0.5090000@wwwdotorg.org> <CAPDwgkNrBRJRR6WtoPSfs8Yq=ui-Ptjju4mJ=9h=95YVFuxw7g@mail.gmail.com> <53D6BF50.3070306@wwwdotorg.org>
-In-Reply-To: <53D6BF50.3070306@wwwdotorg.org>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <53D6DE1E.1060501@zytor.com>
+References: <cover.1405992946.git.luto@amacapital.net>
+	<CAGXu5jJ93-vto9voMENc4jX5itcd_Rm5AZjeChF57fpMYnWocA@mail.gmail.com>
+	<CALCETrVwqDeRbFOw=k_OhQZ4V6Pn5v3t8ODw75UuE7HKPFz=Sw@mail.gmail.com>
+	<53D68F91.4000106@zytor.com>
+	<CAGXu5jKJOrtjY9JsCBUvUbj_y4Hv+AeMEmGwWZZ18FmiZmAbbQ@mail.gmail.com>
+	<53D6DE1E.1060501@zytor.com>
+Date: Mon, 28 Jul 2014 16:42:34 -0700
+X-Google-Sender-Auth: jjhL89ts5dzu-ozkrOYEnHdDtcU
+Message-ID: <CAGXu5jLjmHczeQiJN1Q+aGQKn_B+08FEXHWxjku6QedkGDhDTg@mail.gmail.com>
+Subject: Re: [PATCH v3 0/8] Two-phase seccomp and x86 tracing changes
+From: Kees Cook <keescook@chromium.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: linux-arch <linux-arch@vger.kernel.org>,
+        Linux MIPS Mailing List <linux-mips@linux-mips.org>,
+        Will Drewry <wad@chromium.org>, "x86@kernel.org" <x86@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andy Lutomirski <luto@amacapital.net>,
+        linux-security-module <linux-security-module@vger.kernel.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Alexei Starovoitov <ast@plumgrid.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/28/2014 03:23 PM, Stephen Warren wrote:
-> On 07/28/2014 02:20 PM, Yufeng Shen wrote:
-...
->> Where did you get the configuration file ? It is possible that we rely
->> too much on mxt_start to turn on the T9.CTRL bit and have neglected
->> its setting in the config file.
->> If you can tell me where you get the config file I can do a check.
+On Mon, Jul 28, 2014 at 4:34 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+> On 07/28/2014 04:29 PM, Kees Cook wrote:
+>> On Mon, Jul 28, 2014 at 10:59 AM, H. Peter Anvin <hpa@zytor.com> wrote:
+>>> On 07/23/2014 12:20 PM, Andy Lutomirski wrote:
+>>>>
+>>>> It looks like patches 1-4 have landed here:
+>>>>
+>>>> https://git.kernel.org/cgit/linux/kernel/git/kees/linux.git/log/?h=seccomp/fastpath
+>>>>
+>>>> hpa, what's the route forward for the x86 part?
+>>>>
+>>>
+>>> I guess I should discuss this with Kees to figure out what makes most
+>>> sense.  In the meantime, could you address Oleg's question?
+>>
+>> Since the x86 parts depend on the seccomp parts, I'm happy if you
+>> carry them instead of having them land from my tree. Otherwise I'm
+>> open to how to coordinate timing.
+>>
 >
-> It was already flashed into the touchpad when I received the board. I
-> did try to track down the firmware/config files a few months ago, but
-> didn't manage to; I was told since they were already flashed so I didn't
-> need them. The board is Venice2.
+> You mean for me to carry the seccomp part as well?
 
-OK, I received the configuration and firmware file that's supposed to be 
-in the touchpad.
+If that makes sense as far as the coordination, that's fine with me.
+Otherwise I'm not sure how x86 can build without having the seccomp
+changes in your tree.
 
-I can see that the config file I was given has the "83" byte in the T9 
-configuration, and in fact /almost/ exactly matches the configuration I 
-have. I don't know why my T9 configuration was wrong before, but I 
-suspect it's not worth trying to track that down.
+-Kees
 
-Anyway, here's the diff between the two config files:
 
-> # diff -u mxt-save-after-t9-83-write.xml 224sl.raw
-> --- mxt-save-after-t9-83-write.xml	2014-07-25 19:41:45.000000000 +0000
-> +++ 224sl.raw	2014-07-28 23:25:49.000000000 +0000
-> @@ -1,8 +1,7 @@
->  OBP_RAW V1
->  82 01 10 AA 12 0C 16
->  F5AF33
-> -000000
-> -0025 0000 0082 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-> +E21E65
->  0026 0000 0008 00 00 00 00 00 00 00 00
->  0007 0000 0004 20 10 32 00
->  0008 0000 000A 1E 00 28 28 00 00 00 00 00 00
-
-It seems that the T25(?) entry is missing in the new/expected 
-configuration file. I figured I'd try out the new/expected configuration 
-file, so did:
-
-# ./obp-utils/mxt-app -d i2c-dev:1-004b --load 224sl.raw
-# ./obp-utils/mxt-app -d i2c-dev:1-004b --save 
-mxt-save-after-loading-224sl.raw.xml
-
-At this point, mxt-save-after-loading-224sl.raw.xml contains identical 
-content to mxt-save-after-t9-83-write.xml (my previous backup). It looks 
-like the new configuration isn't being loaded correctly, or perhaps 
-configuration loading doesn't delete entries that are simply not in the 
-new configuration file?
-
-I subsequently did the following in case --save is reading from the 
-NVRAM rather than RAM:
-
-# ./obp-utils/mxt-app -d i2c-dev:1-004b --backup
-# ./obp-utils/mxt-app -d i2c-dev:1-004b --save 
-mxt-save-after-loading-224sl.raw.xml
-
-... but that made no difference.
-
-I haven't yet tried upgrading or otherwise using the new firmware image. 
-I'd like to make sure config load/save is fully working first, in case 
-there's any common problem between the two.
+-- 
+Kees Cook
+Chrome OS Security
