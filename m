@@ -1,85 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751066AbaG1SsO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 14:48:14 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:46445 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750708AbaG1SsN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 14:48:13 -0400
-Date: Mon, 28 Jul 2014 19:47:41 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Konstantin Khlebnikov <koct9i@gmail.com>
-Cc: Konstantin Khlebnikov <k.khlebnikov@samsung.com>,
-        Vitaly Andrianov <vitalya@ti.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Cyril Chemparathy <cyril@ti.com>
-Subject: Re: [PATCH 1/2] ARM: LPAE: load upper bits of early TTBR0/TTBR1
-Message-ID: <20140728184741.GT15536@arm.com>
-References: <20140722153623.25088.37742.stgit@buzz>
- <20140728181224.GN15536@arm.com>
- <CALYGNiNrK1d32ecz4rw0sgn0GyN-M6hTBuTLGQV53Z4Br-bpYQ@mail.gmail.com>
+	id S1751512AbaG1StF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 14:49:05 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:58812 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751389AbaG1StE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jul 2014 14:49:04 -0400
+Date: Mon, 28 Jul 2014 20:48:58 +0200
+From: "Luis R. Rodriguez" <mcgrof@suse.com>
+To: Yuval Mintz <Yuval.Mintz@qlogic.com>
+Cc: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
+        Joseph Salisbury <joseph.salisbury@canonical.com>,
+        Kay Sievers <kay@vrfy.org>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Tim Gardner <tim.gardner@canonical.com>,
+        Pierre Fersing <pierre-fersing@pierref.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>, Benjamin Poirier <bpoirier@suse.de>,
+        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
+        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
+        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
+        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
+        Hariprasad S <hariprasad@chelsio.com>,
+        Santosh Rastapur <santosh@chelsio.com>,
+        "MPT-FusionLinux.pdl@avagotech.com" 
+	<MPT-FusionLinux.pdl@avagotech.com>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>
+Subject: Re: [PATCH 1/3] driver core: enable drivers to use deferred probe
+	from init
+Message-ID: <20140728184858.GK21930@wotan.suse.de>
+References: <1406558067-25308-1-git-send-email-mcgrof@do-not-panic.com> <B5657A6538887040AD3A81F1008BEC63B06F9A@avmb3.qlogic.org> <20140728153811.GD21930@wotan.suse.de> <B5657A6538887040AD3A81F1008BEC63B06FCF@avmb3.qlogic.org> <B5657A6538887040AD3A81F1008BEC63B07066@avmb3.qlogic.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CALYGNiNrK1d32ecz4rw0sgn0GyN-M6hTBuTLGQV53Z4Br-bpYQ@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <B5657A6538887040AD3A81F1008BEC63B07066@avmb3.qlogic.org>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 28, 2014 at 07:40:58PM +0100, Konstantin Khlebnikov wrote:
-> On Mon, Jul 28, 2014 at 10:12 PM, Will Deacon <will.deacon@arm.com> wrote:
-> > On Tue, Jul 22, 2014 at 04:36:23PM +0100, Konstantin Khlebnikov wrote:
-> >> This patch fixes booting when idmap pgd lays above 4gb. Commit
-> >> 4756dcbfd37 mostly had fixed this, but it'd failed to load upper bits.
-> >>
-> >> Also this fixes adding TTBR1_OFFSET to TTRR1: if lower part overflows
-> >> carry flag must be added to the upper part.
-> >>
-> >> Signed-off-by: Konstantin Khlebnikov <k.khlebnikov@samsung.com>
-> >> Cc: Cyril Chemparathy <cyril@ti.com>
-> >> Cc: Vitaly Andrianov <vitalya@ti.com>
-> >> ---
-> >>  arch/arm/mm/proc-v7-3level.S |    7 +++----
-> >>  1 file changed, 3 insertions(+), 4 deletions(-)
-> >>
-> >> diff --git a/arch/arm/mm/proc-v7-3level.S b/arch/arm/mm/proc-v7-3level.S
-> >> index 22e3ad6..f0481dd 100644
-> >> --- a/arch/arm/mm/proc-v7-3level.S
-> >> +++ b/arch/arm/mm/proc-v7-3level.S
-> >> @@ -140,12 +140,11 @@ ENDPROC(cpu_v7_set_pte_ext)
-> >>       mov     \tmp, \ttbr1, lsr #(32 - ARCH_PGD_SHIFT)        @ upper bits
-> >>       mov     \ttbr1, \ttbr1, lsl #ARCH_PGD_SHIFT             @ lower bits
-> >>       addls   \ttbr1, \ttbr1, #TTBR1_OFFSET
-> >> -     mcrr    p15, 1, \ttbr1, \zero, c2                       @ load TTBR1
-> >> +     adcls   \tmp, \tmp, #0
-> >> +     mcrr    p15, 1, \ttbr1, \tmp, c2                        @ load TTBR1
-> >>       mov     \tmp, \ttbr0, lsr #(32 - ARCH_PGD_SHIFT)        @ upper bits
-> >>       mov     \ttbr0, \ttbr0, lsl #ARCH_PGD_SHIFT             @ lower bits
-> >> -     mcrr    p15, 0, \ttbr0, \zero, c2                       @ load TTBR0
-> >> -     mcrr    p15, 1, \ttbr1, \zero, c2                       @ load TTBR1
-> >> -     mcrr    p15, 0, \ttbr0, \zero, c2                       @ load TTBR0
-> >> +     mcrr    p15, 0, \ttbr0, \tmp, c2                        @ load TTBR0
-> >
-> > I must admit, the code you are removing here looks really strange. Was there
-> > a badly resolved conflict somewhere along the way? It would be nice to see
-> > if your fix (which seems ok to me) was actually present in the mailing list
-> > posting of the patch that ended in the above mess.
+On Mon, Jul 28, 2014 at 06:30:29PM +0000, Yuval Mintz wrote:
+> > On Mon, Jul 28, 2014 at 06:52:48PM +0200, Luis R. Rodriguez wrote:
+> > > On Mon, Jul 28, 2014 at 03:46:32PM +0000, Yuval Mintz wrote:
+> > > > Sorry for not being clear, but I didn't meant 'what guarantees that the device
+> > > > will be added to the deferred probe', but rather what guarantees that the
+> > > > deferred workqueue will be scheduled.
+> > > >
+> > > > To the best of my knowledge the deferring mechanism works only if one device
+> > > > is dependent upon another, e.g., for Multi-function devices where one device
+> > > > probe is dependent upon the others - which are soon-to-be probed.
+> > >
+> > > The workqueue will be kicked when driver_deferred_probe_trigger() gets
+> > > poked, we do that in the late_initcall(deferred_probe_initcall), it
+> > > also gets flushed there with a flush_workqueue(deferred_wq).
 > 
-> Nope, no merge conflicts, source in original patch
-> https://lkml.org/lkml/2012/9/11/346
+> > But come to think of it that will work well for devices already plugged in
+> > so indeed I think that driver_deferred_probe_add() needs a check added
+> > for for if (!driver_deferred_probe_enable) then we have to
+> > driver_deferred_probe_trigger(). The driver_deferred_probe_enable is set
+> > to false upon init, but later on late init it gets set to true so with
+> > that check we'd  only generate the trigger after late init call.
 > 
-> That mess completely harmless, this code is used only once on boot.
-> I don't have that email, so replying isn't trivial for me.
+> > I can fold that in the v2.
+> 
+> >   Luis
+> 
+> But what about modules being added after the init-calls? If they try try to use this
+> mechanism, what guarantees they'll eventually get probed?
 
-How bizarre. Also, Cyril doesn't work for TI anymore (his email is
-bouncing), so it's tricky to know what he meant here.
+bus_probe_device --> device_attach() -->
+	__device_attach() --> driver_probe_device() -->
+		__driver_probe_device() --> driver_deferred_probe_add()
 
-Your patch looks better than what we currently have though. Have you managed
-to test it on a keystone platform (I don't have one)?
+And with the new hunk I mentioned I'd add then we'd trigger the
+workqueue if its after late init. The change is in v2 series.
 
-Will
+  Luis
