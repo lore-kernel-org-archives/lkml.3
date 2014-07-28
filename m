@@ -1,76 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751810AbaG1SC2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 14:02:28 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:48206 "EHLO arroyo.ext.ti.com"
+	id S1751904AbaG1SCf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 14:02:35 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:58249 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750986AbaG1SC0 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 14:02:26 -0400
-From: "Murphy, Dan" <dmurphy@ti.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [v2] input: drv260x: Add TI drv260x haptics driver
-Thread-Topic: [v2] input: drv260x: Add TI drv260x haptics driver
-Thread-Index: AQHPqoRzccs1z7hlMk6AmjOpJP7QQQ==
-Date: Mon, 28 Jul 2014 18:02:23 +0000
-Message-ID: <00FC9A978A94B7418C33AFAE8A35ED49DAF68F@DFLE09.ent.ti.com>
-References: <1406566403-1436-1-git-send-email-dmurphy@ti.com>
- <20140728174334.GD8982@core.coreip.homeip.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [128.247.5.50]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1751061AbaG1SCb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jul 2014 14:02:31 -0400
+Message-ID: <53D69034.6080302@suse.de>
+Date: Mon, 28 Jul 2014 20:02:28 +0200
+From: =?UTF-8?B?QW5kcmVhcyBGw6RyYmVy?= <afaerber@suse.de>
+Organization: SUSE LINUX Products GmbH
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: linux-tegra@vger.kernel.org, thierry.reding@gmail.com,
+        linux-arm-kernel@lists.infradead.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] MAINTAINERS: Update Tegra Git URL
+References: <1406568643-2047-1-git-send-email-afaerber@suse.de> <53D68F5F.6050109@wwwdotorg.org>
+In-Reply-To: <53D68F5F.6050109@wwwdotorg.org>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dmitry
-
-Thanks for the comments
-
-On 07/28/2014 12:43 PM, Dmitry Torokhov wrote:
-> Hi Dan,
+Am 28.07.2014 19:58, schrieb Stephen Warren:
+> On 07/28/2014 11:30 AM, Andreas Färber wrote:
+>> swarren/linux-tegra.git does not exist, it's tegra/linux.git.
 > 
-> On Mon, Jul 28, 2014 at 11:53:23AM -0500, Dan Murphy wrote:
->> Add the TI drv260x haptics/vibrator driver.
->> This device uses the input force feedback
->> to produce a wave form to driver an
->> ERM or LRA actuator device.
->>
->> The initial driver supports the devices
->> real time playback mode.  But the device
->> has additional wave patterns in ROM.
-> 
-> As it presented the device appears to be a memoryless device, however
-> you present it to the rest of the system as if it can support playback
-> of multiple effects simultaneously, which is incorrect.
-> 
-> My guess that you need to engage the memoryless input library to schedule
-> handling multiple effects for your device, including ramping up, ramping
-> down, stopping playback when effects runs out, etc.
-> 
-> Thanks.
->  
-> 
+> FWIW, there is a redirect in place, so "git clone" on the old URL works
+> fine. Still, we should indeed update the MAINTAINERS entry to point at
+> the correct location.
 
+http://git.kernel.org/cgit/linux/kernel/git/swarren/linux-tegra.git does
+not redirect unfortunately.
 
-I had written the driver originally to be a memless device.
+> I'll forward this on to arm@kernel.org to be applied.
 
-But when calling the driver from user space I was not getting the duration,
-strength of any information from the ff_device structure except the type.
-The values in the structure were all being passed as 0's.
+Feel free to edit the commit message to your liking.
 
-I will attempt it again as a memless device.
-
-Dan
+Thanks,
+Andreas
 
 -- 
-------------------
-Dan Murphy
+SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg, Germany
+GF: Jeff Hawn, Jennifer Guild, Felix Imendörffer; HRB 16746 AG Nürnberg
