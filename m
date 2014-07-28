@@ -1,90 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751066AbaG1FxE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 01:53:04 -0400
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:48027 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750752AbaG1FxB (ORCPT
+	id S1751288AbaG1GC5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 02:02:57 -0400
+Received: from exprod7og117.obsmtp.com ([64.18.2.6]:46853 "EHLO
+	exprod7og117.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750954AbaG1GCz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 01:53:01 -0400
-X-AuditID: cbfec7f4-b7f156d0000063c7-34-53d5e5395580
-Message-id: <53D5E539.9030609@samsung.com>
-Date: Mon, 28 Jul 2014 07:52:57 +0200
-From: Robert Baldyga <r.baldyga@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
- Thunderbird/31.0
-MIME-version: 1.0
-To: Michal Nazarewicz <mina86@mina86.com>, balbi@ti.com
-Cc: gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, m.szyprowski@samsung.com,
-        andrzej.p@samsung.com
-Subject: Re: [PATCH v2 1/3] usb: gadget: f_fs: virtual address mapping
-References: <1406295363-26998-1-git-send-email-r.baldyga@samsung.com>
- <1406295363-26998-2-git-send-email-r.baldyga@samsung.com>
- <xa1ttx65ttca.fsf@mina86.com>
-In-reply-to: <xa1ttx65ttca.fsf@mina86.com>
-Content-type: text/plain; charset=utf-8
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrDLMWRmVeSWpSXmKPExsVy+t/xa7qWT68GG7yfbmMx62U7i8XB+/UW
-	zYvXs1lc3jWHzWLRslZmi7VH7rJbLDjewurA7rF/7hp2j3V/XjF59G1Zxehx/MZ2Jo/Pm+QC
-	WKO4bFJSczLLUov07RK4Mpr7P7IXHBWs2PX+MnMD42y+LkZODgkBE4nPi86zQthiEhfurWfr
-	YuTiEBJYyiix/UgHK4TzkVHi5sxnQA4HB6+AlsTsp2EgDSwCqhIPfsxnAbHZBHQktnyfwAhi
-	iwqESTz7dZAJxOYVEJT4MfkeWI2IgLnEib8rWEBmMgt0MUqs/3qSHSQhLOAmcfDvTKhlCxkl
-	rk1sAktwAi07t+wDG8hiZgF1iSlTckHCzALyEpvXvGWewCgwC8mOWQhVs5BULWBkXsUomlqa
-	XFCclJ5rqFecmFtcmpeul5yfu4kREuJfdjAuPmZ1iFGAg1GJhzfi5pVgIdbEsuLK3EOMEhzM
-	SiK8nueuBgvxpiRWVqUW5ccXleakFh9iZOLglGpgtHj8ZN2O0yX2lx5dcD7zTOLl37IH8Z/O
-	GmWunuqkI5z1T53lDAufWvntSxNOzTqXWNZf8e6YQFHW6f3NEhySDFtlDpzf1rF7xX97hXlb
-	3vE8t2bQiF54fFqU3rkN+ozsPzOk7OsmT6r6yxh6O06u66TUxobYM5O+GTAbfVnb5fTIOHli
-	RvjTf0osxRmJhlrMRcWJAKkfZB5PAgAA
+	Mon, 28 Jul 2014 02:02:55 -0400
+X-Greylist: delayed 400 seconds by postgrey-1.27 at vger.kernel.org; Mon, 28 Jul 2014 02:02:55 EDT
+From: Kashyap Desai <kashyap.desai@avagotech.com>
+References: <cover.1405533479.git.agordeev@redhat.com> <3d2402ebfad625e508bb13257e1560abf92594cd.1405533479.git.agordeev@redhat.com>
+ <20140726082408.GG21129@agordeev.usersys.redhat.com>
+In-Reply-To: <20140726082408.GG21129@agordeev.usersys.redhat.com>
+MIME-Version: 1.0
+X-Mailer: Microsoft Outlook 14.0
+Thread-Index: AQISKTNo4W06vQORa1Go0+G/ciGJBQGQbGOPAmCi6mObEHX9sA==
+Date: Mon, 28 Jul 2014 11:26:13 +0530
+Message-ID: <3b7c554551d306e2f58f5e09dc171db2@mail.gmail.com>
+Subject: RE: [PATCH v2 RESEND 13/23] megaraid: Fail resume if MSI-X
+ re-initialization failed
+To: Alexander Gordeev <agordeev@redhat.com>, linux-kernel@vger.kernel.org,
+        Neela Syam Kolli <megaraidlinux@lsi.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/25/2014 04:18 PM, Michal Nazarewicz wrote:
-> On Fri, Jul 25 2014, Robert Baldyga wrote:
->> This patch adds virtual endpoint address mapping to functionfs.
->>
->> So far endpoint addresses given by user through endpoint descriptors
->> were ignored, and replaced by physical endpoint addresses. Endpoint
->> address in wIndex field of setup requesti, addressed to endpoint, was
->> the physical endpoint address, and names of files in functionfs
->> directory was numered in order, and were the same as indexes of
->> ffs_epfile in epfile array. In result user has no way to indicate
->> which file in functionfs is associated with which particular
->> requested endpoint. He also didn't know which endpoint is recipient
->> of setup request.
-> 
-> Couldn't that be solved by simply providing the mapping to user space?
+> -----Original Message-----
+> From: Alexander Gordeev [mailto:agordeev@redhat.com]
+> Sent: Saturday, July 26, 2014 1:54 PM
+> To: linux-kernel@vger.kernel.org; Neela Syam Kolli
+> Subject: Re: [PATCH v2 RESEND 13/23] megaraid: Fail resume if MSI-X re-
+> initialization failed
+>
+> On Wed, Jul 16, 2014 at 08:05:17PM +0200, Alexander Gordeev wrote:
+> > Currently the driver fails to analize MSI-X re-enablement status on
+> > resuming and always assumes the success. This update checks the MSI-X
+> > initialization result and fails to resume if MSI-Xs re-enablement
+> > failed.
+>
+> Hi Neela,
+>
+> Could you please review megaraid patches in this series?
+>
+> Thanks!
+Please consider this patch Acked by Me.
 
-There would be only small differences in code (add mapping instead of
-changing file names) so why would we not want do it in more intuitive way?
+Acked-by: Kashyap Desai <Kashyap.desai@avagotech.com>
 
-> 
->> There was also one more problem - if endpoint addresses in descriptors
->> were non-consecutive, there were created redundant files, which could
->> cause problems in kernel, when user tryed to read/write to them.
->> It was result of fact that maximum endpoint address was taken as
->> total number of endpoints in funciton.
-> 
-> This is kinda unrelated though.  I mean it's a separate bug.
-
-Yes, but it can be fixed by the way, as a side effect, so there is no
-sense (and probably no simple way) to move it into separate patch.
-
-> 
->> This patch solves this problems by introducing virtual endpoint address
->> mapping. Now each function has separate endpoint address space. Numbers
->> of endpoint files in functionfs and addresses in setup requests are
->> mapped to addresses choosen by user in endpoint descriptors.
->>
->> It also introduces additional testing if desctiptors given by user are
->> consistent - if number of endpoints and their addresses in each speed
->> are the same.
->>
->> Signed-off-by: Robert Baldyga <r.baldyga@samsung.com>
->> ---
->>  drivers/usb/gadget/f_fs.c | 78 +++++++++++++++++++++++++++++++++++++++--------
->>  drivers/usb/gadget/u_fs.h |  2 ++
->>  2 files changed, 68 insertions(+), 12 deletions(-)
-> 
-
+>
+> > Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+> > ---
+> >  drivers/scsi/megaraid/megaraid_sas_base.c |    8 +++++---
+> >  1 files changed, 5 insertions(+), 3 deletions(-)
+> >
+> > diff --git a/drivers/scsi/megaraid/megaraid_sas_base.c
+> > b/drivers/scsi/megaraid/megaraid_sas_base.c
+> > index 112799b..ba06102 100644
+> > --- a/drivers/scsi/megaraid/megaraid_sas_base.c
+> > +++ b/drivers/scsi/megaraid/megaraid_sas_base.c
+> > @@ -5134,9 +5134,10 @@ megasas_resume(struct pci_dev *pdev)
+> >  		goto fail_ready_state;
+> >
+> >  	/* Now re-enable MSI-X */
+> > -	if (instance->msix_vectors)
+> > -		pci_enable_msix(instance->pdev, instance->msixentry,
+> > -				instance->msix_vectors);
+> > +	if (instance->msix_vectors &&
+> > +	    pci_enable_msix(instance->pdev, instance->msixentry,
+> > +			    instance->msix_vectors))
+> > +		goto fail_reenable_msix;
+> >
+> >  	switch (instance->pdev->device) {
+> >  	case PCI_DEVICE_ID_LSI_FUSION:
+> > @@ -5245,6 +5246,7 @@ fail_init_mfi:
+> >
+> >  fail_set_dma_mask:
+> >  fail_ready_state:
+> > +fail_reenable_msix:
+> >
+> >  	pci_disable_device(pdev);
+> >
+> > --
+> > 1.7.7.6
+> >
+>
+> --
+> Regards,
+> Alexander Gordeev
+> agordeev@redhat.com
