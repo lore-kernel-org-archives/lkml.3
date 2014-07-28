@@ -1,76 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753190AbaG1V0Y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 17:26:24 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:37267 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752142AbaG1VRi (ORCPT
+	id S1752439AbaG1V0x (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 17:26:53 -0400
+Received: from mail-wg0-f49.google.com ([74.125.82.49]:55217 "EHLO
+	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752591AbaG1V0t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 17:17:38 -0400
-From: Felipe Balbi <balbi@ti.com>
-To: Tony Lindgren <tony@atomide.com>
-CC: Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel Mailing List 
-	<linux-arm-kernel@lists.infradead.org>,
-        <bcousson@baylibre.com>, <linux@arm.linux.org.uk>,
-        <khilman@deeprootsystems.com>, <tglx@linutronix.de>,
-        <jason@lakedaemon.net>, <devicetree@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Felipe Balbi <balbi@ti.com>
-Subject: [PATCH 14/35] arm: omap: irq: use IRQCHIP_DECLARE macro
-Date: Mon, 28 Jul 2014 16:16:02 -0500
-Message-ID: <1406582183-696-15-git-send-email-balbi@ti.com>
-X-Mailer: git-send-email 2.0.1.563.g66f467c
-In-Reply-To: <1406582183-696-1-git-send-email-balbi@ti.com>
-References: <1406582183-696-1-git-send-email-balbi@ti.com>
+	Mon, 28 Jul 2014 17:26:49 -0400
+Date: Tue, 29 Jul 2014 00:26:44 +0300
+From: Alexey Dobriyan <adobriyan@gmail.com>
+To: akpm@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] nls: remove "support" for 5- and 6-byte UTF-8 sequences
+Message-ID: <20140728212643.GA27113@p183.telecom.by>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-IRQCHIP_DECLARE macro is used to declare the same
-of_device_id structure for irqchips, it's just
-a helper. No functional changes.
+5- and 6-byte UTF-8 sequences existed to accomodate code points starting
+from U+200000.
 
-Note that we're temporarily including irqchip.h
-with its full path, until we move this driver
-to drivers/irqchip/.
+Those code points couldn't fit into old 2-byte wchar_t type.
 
-Signed-off-by: Felipe Balbi <balbi@ti.com>
+Commit 74675a58507e769beee7d949dbed788af3c4139d added 16+ bit Unicode support
+but started (correctly) to check for maximum valid code point
+which is U+10FFFF.
+
+U+10FFFF decodes into just 4-byte sequence.
+
+5- and 6- byte UTF-8 sequences were made illegal long ago in
+Unicode standard and never had a chance to be used in Linux,
+so put them out of misery.
+
+Signed-off-by: Alexey Dobriyan <adobriyan@gmail.com>
 ---
- arch/arm/mach-omap2/irq.c | 8 +++-----
- 1 file changed, 3 insertions(+), 5 deletions(-)
 
-diff --git a/arch/arm/mach-omap2/irq.c b/arch/arm/mach-omap2/irq.c
-index e452411..2801243 100644
---- a/arch/arm/mach-omap2/irq.c
-+++ b/arch/arm/mach-omap2/irq.c
-@@ -26,6 +26,7 @@
- #include "soc.h"
- #include "iomap.h"
- #include "common.h"
-+#include "../../drivers/irqchip/irqchip.h"
- 
- /* selected INTC register offsets */
- 
-@@ -319,14 +320,11 @@ static int __init intc_of_init(struct device_node *node,
- 	return 0;
- }
- 
--static struct of_device_id irq_match[] __initdata = {
--	{ .compatible = "ti,omap2-intc", .data = intc_of_init, },
--	{ }
--};
-+IRQCHIP_DECLARE(omap_intc, "ti,omap2-intc", intc_of_init);
- 
- void __init omap_intc_of_init(void)
- {
--	of_irq_init(irq_match);
-+	of_irq_init(&irqchip_of_match_omap_intc);
- }
- 
- asmlinkage void __exception_irq_entry omap3_intc_handle_irq(struct pt_regs *regs)
--- 
-2.0.1.563.g66f467c
+ fs/nls/nls_base.c |    2 --
+ 1 file changed, 2 deletions(-)
 
+--- a/fs/nls/nls_base.c
++++ b/fs/nls/nls_base.c
+@@ -39,8 +39,6 @@ static const struct utf8_table utf8_table[] =
+     {0xE0,  0xC0,   1*6,    0x7FF,          0x80,      /* 2 byte sequence */},
+     {0xF0,  0xE0,   2*6,    0xFFFF,         0x800,     /* 3 byte sequence */},
+     {0xF8,  0xF0,   3*6,    0x1FFFFF,       0x10000,   /* 4 byte sequence */},
+-    {0xFC,  0xF8,   4*6,    0x3FFFFFF,      0x200000,  /* 5 byte sequence */},
+-    {0xFE,  0xFC,   5*6,    0x7FFFFFFF,     0x4000000, /* 6 byte sequence */},
+     {0,						       /* end of table    */}
+ };
+ 
