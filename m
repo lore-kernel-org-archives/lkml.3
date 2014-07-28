@@ -1,67 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752644AbaG1PJT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 11:09:19 -0400
-Received: from mail-vc0-f177.google.com ([209.85.220.177]:55439 "EHLO
-	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751365AbaG1PJS (ORCPT
+	id S1752764AbaG1PKJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 11:10:09 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:40194 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752332AbaG1PKD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 11:09:18 -0400
+	Mon, 28 Jul 2014 11:10:03 -0400
+Date: Mon, 28 Jul 2014 17:09:11 +0200
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: Mark Rutland <mark.rutland@arm.com>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Vinod Koul <vinod.koul@intel.com>,
+        "andriy.shevchenko@intel.com" <andriy.shevchenko@intel.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "zhuzhenhua@allwinnertech.com" <zhuzhenhua@allwinnertech.com>,
+        "dmaengine@vger.kernel.org" <dmaengine@vger.kernel.org>,
+        "linux-sunxi@googlegroups.com" <linux-sunxi@googlegroups.com>,
+        "kevin.z.m.zh@gmail.com" <kevin.z.m.zh@gmail.com>,
+        "sunny@allwinnertech.com" <sunny@allwinnertech.com>,
+        "shuge@allwinnertech.com" <shuge@allwinnertech.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v10 2/2] dmaengine: sun6i: Add driver for the Allwinner
+ A31 DMA controller
+Message-ID: <20140728150911.GN3952@lukather>
+References: <1404134454-25513-1-git-send-email-maxime.ripard@free-electrons.com>
+ <1404134454-25513-3-git-send-email-maxime.ripard@free-electrons.com>
+ <20140630142054.GA8756@leverpostej>
+ <20140630151906.GG28647@lukather>
+ <20140630153305.GA28740@leverpostej>
+ <20140701072119.GH28647@lukather>
+ <20140701124852.GB6064@leverpostej>
+ <20140727184942.GL17528@sirena.org.uk>
 MIME-Version: 1.0
-In-Reply-To: <20140728095442.GA4875@fancy-poultry.org>
-References: <CAPDOMViYi_rg_cGp_SgZVqX6pw+SB=CVbr1kFn5WG481s4tz5A@mail.gmail.com>
-	<20140727083758.GA4834@fancy-poultry.org>
-	<CAPDOMVgjLU+r82eKFA=4-v_oS+4c4fCtovcZMer5x5GAW56DSw@mail.gmail.com>
-	<20140728095442.GA4875@fancy-poultry.org>
-Date: Mon, 28 Jul 2014 11:09:16 -0400
-Message-ID: <CAPDOMViPdBnkLH2t=1zGAyB98bNGfZrxLvDngDrDQHYP+uCuqg@mail.gmail.com>
-Subject: Re: Bug on Kernel 3.16 r6: Sound and Buffering in Clementine with
- Files are Transferring to Music Directory
-From: Nick Krause <xerofoify@gmail.com>
-To: Heinz Diehl <htd@fancy-poultry.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Zbynv6TNPa9FrOf6"
+Content-Disposition: inline
+In-Reply-To: <20140727184942.GL17528@sirena.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 28, 2014 at 5:54 AM, Heinz Diehl <htd@fancy-poultry.org> wrote:
-> First: my email you are quoting here was sent to you directly, off-list,
-> because it only contains common stuff and has nothing to do with
-> kernel development. In other words to avoid annoying lkml people.
-> In addition, I placed an "Reply-to" header pointing back to me.
-> Despite, you *manually* redirected your answer to my private mail
-> back to the list, thus annoying people and breaking the informational
-> flow of this thread.
->
->
-> On 27.07.2014, Nick Krause wrote:
->
->> I am transferring into the same directory for the music
->> I am listening to.
->
-> So you produce a lot of disk I/O by writing/reading from the same disk
-> at the same time, and as you encounter stalls, you take this for a
-> kernel bug (which clearly is not). These stalls are most probably
-> caused by fsync() flushing your data/buffers, which is blocking.
->
-> So moving the music data you are listening to to another disk would
-> make things a lot easier.
->
->> In addition , my cpu usage when doing this is half of my older
->
-> DMA transfer is mostly done be the controller itself, and not the CPU.
->
-> Btw, EOT for me.
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
 
+--Zbynv6TNPa9FrOf6
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Then explain to me why this is only happening on recent rc kernels and not
-the Ubuntu distro kernels I was using before. Seems weird that only
-recent rc kernels are triggering this.
-Regards Nick
+Hi Mark,
+
+On Sun, Jul 27, 2014 at 07:49:42PM +0100, Mark Brown wrote:
+> On Tue, Jul 01, 2014 at 01:48:52PM +0100, Mark Rutland wrote:
+> > On Tue, Jul 01, 2014 at 08:21:19AM +0100, Maxime Ripard wrote:
+>=20
+> > > > It feels a little fragile to rely on the organisation of the clock =
+tree
+> > > > and the naming thereof. If the IP block is ever reused on an SoC wi=
+th a
+> > > > different clock tree layout then we have to handle things different=
+ly.
+> > >=20
+> > > What do you suggest then?
+> >=20
+> > I will admit that I don't have a better suggestion.
+> >=20
+> > Without knowing which particular constraint on the mux parent clock we
+> > care about it's difficult to suggest anything useful.
+>=20
+> There's supposed to be facilities appearing in the generic clock code
+> for specifying default clock tree configurations via the DT - it's quite
+> a common requirement after all.  It sounds like that should be able to
+> do the job here.  Not sure if these have gone in yet or not but there's
+> quite a bit of demand.
+
+As far as I'm aware, it's not been merged yet.
+
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
+
+--Zbynv6TNPa9FrOf6
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJT1meXAAoJEBx+YmzsjxAgE8AP/jHzeQqjUobfQhKIxRC/i6ws
+k2t1b8lKQB4IZkA8I4oGp0QUYIVrGrKKFFyqViafEZnsiMXiRsjQO4u9j/1dY8ux
+QHJp7BUQx9BfbJjNBTI3ZCN3nhg/QR4Idg10ZFmewsrvQFQRG8YO56MHcf80KP6j
+tGao4FImRLwYlqmB04QUxPA/W1+kAlv2nJ0rxmV3O4voR4WXa6l3xLAqtiw+Miwj
+QDMsDBf176gHvqC4k9hRVcDdHC4lbcW5b8OeTZJDIoKgUBNLXXFcIGXsZWczn/R4
+e3HVmIDHIniZRc7/E91/Axn1wYFHx9DE15WcHWoXuNftyPjYobBjUuDEY3EXEqok
+Tl43C8yY5MtLzBW1NvopM5HdB+FNQeK4DBy2K0SXljQMZ+1Zgv62ApPizyBbA1D5
+8/Y5Uw7m78ptSvcPITedt+uUAKDlyjnjvkZfPRd5ByboskkHDEg1vzUCy98lu6V8
+fmbaSA33WKr+O7tAcJtnMUVKQiWwMbOPiV+a08dWuOrqV93IqW+uH+DrVTIPR2Pp
+x6QhrCQWooGsgNPQRnikvJ4QJ3GTCb1telOoBhGUvRJJLak5INJF6Kc4a5Cu8gMI
+rfMRwGTFYcw9/H6Lc0mS6WCpmepUTc65gfGwtwCqb3b4DWb4UoMZSYThvOH8OSMl
+znp89Hy4WdFzKe385cdn
+=P4sQ
+-----END PGP SIGNATURE-----
+
+--Zbynv6TNPa9FrOf6--
