@@ -1,107 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751724AbaG1HoO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 03:44:14 -0400
-Received: from mail1.bemta3.messagelabs.com ([195.245.230.169]:18032 "EHLO
-	mail1.bemta3.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750952AbaG1HoJ (ORCPT
+	id S1751288AbaG1HrO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 03:47:14 -0400
+Received: from mailout.micron.com ([137.201.242.129]:54944 "EHLO
+	mailout.micron.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750944AbaG1HrH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 03:44:09 -0400
-X-Env-Sender: stwiss.opensource@diasemi.com
-X-Msg-Ref: server-5.tower-38.messagelabs.com!1406533445!16219380!1
-X-Originating-IP: [94.185.165.51]
-X-StarScan-Received: 
-X-StarScan-Version: 6.11.3; banners=-,-,-
-X-VirusChecked: Checked
-From: "Opensource [Steve Twiss]" <stwiss.opensource@diasemi.com>
-To: Lee Jones <lee.jones@linaro.org>
-CC: Alessandro Zummo <a.zummo@towertech.it>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LINUX-KERNEL <linux-kernel@vger.kernel.org>,
-        RTC-LINUX <rtc-linux@googlegroups.com>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        David Dajun Chen <david.chen@diasemi.com>,
-        Mark Brown <broonie@linaro.org>,
-        Philipp Zabel <p.zabel@pengutronix.de>,
-        Support Opensource <Support.Opensource@diasemi.com>
-Subject: RE: [RFC V2] mfd: da9063: Add support for AD silicon variant
-Thread-Topic: [RFC V2] mfd: da9063: Add support for AD silicon variant
-Thread-Index: AQHPpNLIdOWIFLEOJ0KMNFjTqwFoRZu1Bq+AgAAeu8A=
-Date: Mon, 28 Jul 2014 07:44:03 +0000
-Message-ID: <6ED8E3B22081A4459DAC7699F3695FB7D0B28DF3@SW-EX-MBX02.diasemi.com>
-References: <201407211058.s6LAwtk8003839@swsrvapps-01.diasemi.com>
- <20140728065251.GA5273@lee--X1>
-In-Reply-To: <20140728065251.GA5273@lee--X1>
-Accept-Language: en-GB, en-US
+	Mon, 28 Jul 2014 03:47:07 -0400
+From: bpqw <bpqw@micron.com>
+To: Brian Norris <computersforpeace@gmail.com>, bpqw <bpqw@micron.com>
+CC: "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        "b32955@freescale.com" <b32955@freescale.com>,
+        "artem.bityutskiy@linux.intel.com" <artem.bityutskiy@linux.intel.com>,
+        "ron@debian.org" <ron@debian.org>,
+        "u.kleine-koenig@pengutronix.de" <u.kleine-koenig@pengutronix.de>,
+        "ezequiel.garcia@free-electrons.com" 
+	<ezequiel.garcia@free-electrons.com>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: Subject: [PATCH 1/1] mtd:nand:fix nand_lock/unlock() function
+Thread-Topic: Subject: [PATCH 1/1] mtd:nand:fix nand_lock/unlock() function
+Thread-Index: AQHPqitVzO92LvhBkUCLfuxs4Da3wpu1DX2A
+Date: Mon, 28 Jul 2014 07:46:51 +0000
+Message-ID: <CB9F11E856CFD04BB18EC1C68F2598931B1342@NTXXIAMBX01.xacn.micron.com>
+References: <CB9F11E856CFD04BB18EC1C68F2598931B1112@NTXXIAMBX01.xacn.micron.com>
+ <20140728061006.GC3095@norris-Latitude-E6410>
+In-Reply-To: <20140728061006.GC3095@norris-Latitude-E6410>
+Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
 X-MS-TNEF-Correlator: 
-x-originating-ip: [10.20.26.61]
-Content-Type: text/plain; charset="utf-8"
+x-originating-ip: [10.167.84.5]
+X-TM-AS-Product-Ver: SMEX-10.0.0.4152-7.000.1014-20844.005
+X-TM-AS-Result: No--11.257900-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
+x-mt-checkinternalsenderrule: True
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s6S7iI0r014159
+
+Hi Brain,
+
+>> Do nand reset before write protect check If we want to check the WP# 
+>> low or high through STATUS READ and check bit 7, we must reset the 
+>> device, other operation (eg.erase/program a locked block) can also 
+>> clear the bit 7 of status register.
+>This description doesn't really tell me why we need this patch.
+If we want to use the lock/unlock function, we must confirm the WP# is high, if the WP# is low, the write protect is provided by WP#, we don't need LOKC/UNLOCK function.
+So before we use the LOCK/UNLOCK function we must confirm the WP# is high.
+We can check the WP# is high or low through READ STATUS and check the bit 7, but this only correct when we READ STATUS directly after RESET or Power On.
+If we don't add this patch, We can't check the WP# high or low just through READ STATUS and check bit7. 
+
+>First of all, where is the 'lock' sequence specified? I see the commit that introduced nand_lock() (without any users) which says Micron parts support it, but I don't see it documented in the datasheet:
+The LOCK/UNLOCK feature not apply all micron nand, only 1.8V device have this feature.
+
+>  commit 7d70f334ad2bf1b3aaa1f0699c0f442e14bcc9e0
+>  Author: Vimal Singh <vimal.newwork@gmail.com>
+>  Date:   Mon Feb 8 15:50:49 2010 +0530
+
+>      mtd: nand: add lock/unlock routines
+
+>Now, supposing this is documented somewhere, are you seeing some kind of out-of-spec behavior? Is this a controller quirk you're seeing? Why should I need to reset the chip? I would presume that 
+
+>  chip->cmdfunc(mtd, NAND_CMD_STATUS, -1, -1);
+
+>would refresh the status properly. Is that not the case?
+chip->cmdfunc(mtd, NAND_CMD_STATUS, -1, -1) can refresh the status properly, but we must do some operation to trigger it.
+For example if we do rease/program operation to a block that is locked, then READ STATUS, the bit 7 will be 0 that indicate the device is write protect.
+Then if we do erase/program operation to another block that is unlocked, the bit 7 of READ STATUS will be 1 indicate that the device is not write protect.
+
+Now if we don't do any operation just through chip->cmdfunc(mtd, NAND_CMD_STATUS, -1, -1); to check the WP# is high or low.
+Suppose we check the bit 7 of READ STATUS is 0 then we judge the WP# is low (write protect), but in this case the WP# may be high if we do erase/program operation to a locked block.
 
 
-On 28 July 2014 07:53 Lee Jones wrote:
 
->On Mon, 21 Jul 2014, Opensource [Steve Twiss] wrote:
->> From: Opensource [Steve Twiss] <stwiss.opensource@diasemi.com>
->>
->> Add register definitions for DA9063 AD (0x3) silicon variant ID
->> the ability to choose the silicon variant at run-time using regmap
->> configuration. This patch also adds RTC support for the AD silicon
->> changes.
->>
->> It adds both BB and AD support as regmap ranges and then makes the
->> distinction between the two tables at run-time. This allows both AD
->> and BB silicon variants to be supported at the same time.
->>
->>
->> Signed-off-by: Opensource [Steve Twiss] <stwiss.opensource@diasemi.com>
->> Suggested-by: Philipp Zabel <p.zabel@pengutronix.de>
->>
->> ---
->> Checks performed with linux-next/v3.16-rc5/scripts/checkpatch.pl
->>  rtc-da9063.c              total: 0 errors, 0 warnings, 353 lines checked
->>  da9063-core.c             total: 0 errors, 0 warnings, 188 lines checked
->>  da9063-i2c.c              total: 0 errors, 0 warnings, 266 lines checked
->>  core.h                    total: 0 errors, 0 warnings, 98 lines checked
->>  registers.h               total: 0 errors, 0 warnings, 1073 lines checked
->>
->> Thank you for your quick responses to my RFC-V1.
->>
->> This is in reply to comments made by Lee Jones, Alessandro Zummo and
->> Philipp Zabel. Please see the RFC-V1 thread for further details on
->> these discussions: https://lkml.org/lkml/2014/7/16/478
->>
->> Adding AD support using a compile-time flag under a new menu item in
->> Kconfig proved very unpopular for two main reasons.
->>
->> - Using ifdef else statements throughout the code
->> - Not supporting AD and BB silicon variants at the same time
->>
->> This RFC-V2 patch uses the method proposed by Philipp Zabel in his
->> reply e-mail: https://lkml.org/lkml/2014/7/18/219
->> and makes use of the regmap configuration method in da9063-i2c.c
->>
->> This patch applies against linux-next and v3.16-rc5
->>
->> Regards,
->> Steve Twiss, Dialog Semiconductor Ltd.
->>
->>  drivers/mfd/da9063-core.c            |    6 +-
->>  drivers/mfd/da9063-i2c.c             |  134 +++++++++++++++++++++++++++-------
->>  drivers/rtc/rtc-da9063.c             |   54 +++++++++-----
->>  include/linux/mfd/da9063/core.h      |    3 +-
->>  include/linux/mfd/da9063/registers.h |  129 +++++++++++++++++++++-----------
->>  5 files changed, 236 insertions(+), 90 deletions(-)
->
->Patch looks good to me.  Applied, thanks.
->
+Br
+White Ding 
+____________________________
+EBU APAC Application Engineering
+Tel:86-21-38997078
+Mobile: 86-13761729112
+Address: No 601 Fasai Rd, Waigaoqiao Free Trade Zone Pudong, Shanghai, China
 
-Thank you
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+-----Original Message-----
+From: Brian Norris [mailto:computersforpeace@gmail.com] 
+Sent: Monday, July 28, 2014 2:10 PM
+To: bpqw
+Cc: dwmw2@infradead.org; b32955@freescale.com; artem.bityutskiy@linux.intel.com; ron@debian.org; u.kleine-koenig@pengutronix.de; ezequiel.garcia@free-electrons.com; linux-mtd@lists.infradead.org; linux-kernel@vger.kernel.org
+Subject: Re: Subject: [PATCH 1/1] mtd:nand:fix nand_lock/unlock() function
+
+Hi White,
+
+You've responded to one of my messages, but your mail server is also sending bounce replies. You might want to contact your I.T. about this.
+(I'll let you know if I ever stop getting bounces.)
+
+On Thu, Jul 24, 2014 at 01:00:01AM +0000, bpqw wrote:
+> Do nand reset before write protect check If we want to check the WP# 
+> low or high through STATUS READ and check bit 7, we must reset the 
+> device, other operation (eg.erase/program a locked block) can also 
+> clear the bit 7 of status register.
+
+This description doesn't really tell me why we need this patch.
+
+First of all, where is the 'lock' sequence specified? I see the commit that introduced nand_lock() (without any users) which says Micron parts support it, but I don't see it documented in the datasheet:
+
+  commit 7d70f334ad2bf1b3aaa1f0699c0f442e14bcc9e0
+  Author: Vimal Singh <vimal.newwork@gmail.com>
+  Date:   Mon Feb 8 15:50:49 2010 +0530
+
+      mtd: nand: add lock/unlock routines
+
+Now, supposing this is documented somewhere, are you seeing some kind of out-of-spec behavior? Is this a controller quirk you're seeing? Why should I need to reset the chip? I would presume that 
+
+  chip->cmdfunc(mtd, NAND_CMD_STATUS, -1, -1);
+
+would refresh the status properly. Is that not the case?
+
+> Signed-off-by: White Ding <bpqw@micron.com>
+> ---
+>  drivers/mtd/nand/nand_base.c |   18 ++++++++++++++++++
+>  1 file changed, 18 insertions(+)
+> 
+> diff --git a/drivers/mtd/nand/nand_base.c 
+> b/drivers/mtd/nand/nand_base.c index 41167e9..22dd3aa 100644
+> --- a/drivers/mtd/nand/nand_base.c
+> +++ b/drivers/mtd/nand/nand_base.c
+> @@ -965,6 +965,15 @@ int nand_unlock(struct mtd_info *mtd, loff_t ofs, 
+> uint64_t len)
+>  
+>  	chip->select_chip(mtd, chipnr);
+>  
+> +	/*
+> +	 * Reset the chip.
+> +	 * If we want to check the WP through READ STATUS and check the bit 7
+> +	 * we must reset the chip
+> +	 * some operation can also clear the bit 7 of status register
+> +	 * eg. erase/program a locked block
+> +	 */
+> +	chip->cmdfunc(mtd, NAND_CMD_RESET, -1, -1);
+> +
+>  	/* Check, if it is write protected */
+>  	if (nand_check_wp(mtd)) {
+>  		pr_debug("%s: device is write protected!\n", @@ -1015,6 +1024,15 @@ 
+> int nand_lock(struct mtd_info *mtd, loff_t ofs, uint64_t len)
+>  
+>  	chip->select_chip(mtd, chipnr);
+>  
+> +	/*
+> +	 * Reset the chip.
+> +	 * If we want to check the WP through READ STATUS and check the bit 7
+> +	 * we must reset the chip
+> +	 * some operation can also clear the bit 7 of status register
+> +	 * eg. erase/program a locked block
+> +	 */
+> +	chip->cmdfunc(mtd, NAND_CMD_RESET, -1, -1);
+> +
+>  	/* Check, if it is write protected */
+>  	if (nand_check_wp(mtd)) {
+>  		pr_debug("%s: device is write protected!\n",
+
+Brian
