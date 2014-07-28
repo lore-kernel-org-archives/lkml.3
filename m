@@ -1,21 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751338AbaG1SlC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 14:41:02 -0400
-Received: from mail-ie0-f172.google.com ([209.85.223.172]:53961 "EHLO
-	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750708AbaG1Sk6 (ORCPT
+	id S1751535AbaG1Slm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 14:41:42 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:46297 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751418AbaG1Sll (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 14:40:58 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140728181224.GN15536@arm.com>
-References: <20140722153623.25088.37742.stgit@buzz>
-	<20140728181224.GN15536@arm.com>
-Date: Mon, 28 Jul 2014 22:40:58 +0400
-Message-ID: <CALYGNiNrK1d32ecz4rw0sgn0GyN-M6hTBuTLGQV53Z4Br-bpYQ@mail.gmail.com>
-Subject: Re: [PATCH 1/2] ARM: LPAE: load upper bits of early TTBR0/TTBR1
-From: Konstantin Khlebnikov <koct9i@gmail.com>
-To: Will Deacon <will.deacon@arm.com>
+	Mon, 28 Jul 2014 14:41:41 -0400
+Date: Mon, 28 Jul 2014 19:41:07 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Konstantin Khlebnikov <koct9i@gmail.com>
 Cc: Konstantin Khlebnikov <k.khlebnikov@samsung.com>,
         Vitaly Andrianov <vitalya@ti.com>,
         Russell King <linux@arm.linux.org.uk>,
@@ -23,59 +17,56 @@ Cc: Konstantin Khlebnikov <k.khlebnikov@samsung.com>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
         Cyril Chemparathy <cyril@ti.com>
-Content-Type: text/plain; charset=UTF-8
+Subject: Re: [PATCH 2/2] ARM: LPAE: reduce damage caused by idmap to virtual
+ memory layout
+Message-ID: <20140728184107.GR15536@arm.com>
+References: <20140722153623.25088.37742.stgit@buzz>
+ <20140722153635.25088.14197.stgit@buzz>
+ <20140728181456.GO15536@arm.com>
+ <CALYGNiNJDHfQm2yk067hh-Wywsb_Ki5AEE_sTMkYegJi9spSzw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALYGNiNJDHfQm2yk067hh-Wywsb_Ki5AEE_sTMkYegJi9spSzw@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 28, 2014 at 10:12 PM, Will Deacon <will.deacon@arm.com> wrote:
-> On Tue, Jul 22, 2014 at 04:36:23PM +0100, Konstantin Khlebnikov wrote:
->> This patch fixes booting when idmap pgd lays above 4gb. Commit
->> 4756dcbfd37 mostly had fixed this, but it'd failed to load upper bits.
->>
->> Also this fixes adding TTBR1_OFFSET to TTRR1: if lower part overflows
->> carry flag must be added to the upper part.
->>
->> Signed-off-by: Konstantin Khlebnikov <k.khlebnikov@samsung.com>
->> Cc: Cyril Chemparathy <cyril@ti.com>
->> Cc: Vitaly Andrianov <vitalya@ti.com>
->> ---
->>  arch/arm/mm/proc-v7-3level.S |    7 +++----
->>  1 file changed, 3 insertions(+), 4 deletions(-)
->>
->> diff --git a/arch/arm/mm/proc-v7-3level.S b/arch/arm/mm/proc-v7-3level.S
->> index 22e3ad6..f0481dd 100644
->> --- a/arch/arm/mm/proc-v7-3level.S
->> +++ b/arch/arm/mm/proc-v7-3level.S
->> @@ -140,12 +140,11 @@ ENDPROC(cpu_v7_set_pte_ext)
->>       mov     \tmp, \ttbr1, lsr #(32 - ARCH_PGD_SHIFT)        @ upper bits
->>       mov     \ttbr1, \ttbr1, lsl #ARCH_PGD_SHIFT             @ lower bits
->>       addls   \ttbr1, \ttbr1, #TTBR1_OFFSET
->> -     mcrr    p15, 1, \ttbr1, \zero, c2                       @ load TTBR1
->> +     adcls   \tmp, \tmp, #0
->> +     mcrr    p15, 1, \ttbr1, \tmp, c2                        @ load TTBR1
->>       mov     \tmp, \ttbr0, lsr #(32 - ARCH_PGD_SHIFT)        @ upper bits
->>       mov     \ttbr0, \ttbr0, lsl #ARCH_PGD_SHIFT             @ lower bits
->> -     mcrr    p15, 0, \ttbr0, \zero, c2                       @ load TTBR0
->> -     mcrr    p15, 1, \ttbr1, \zero, c2                       @ load TTBR1
->> -     mcrr    p15, 0, \ttbr0, \zero, c2                       @ load TTBR0
->> +     mcrr    p15, 0, \ttbr0, \tmp, c2                        @ load TTBR0
->
-> I must admit, the code you are removing here looks really strange. Was there
-> a badly resolved conflict somewhere along the way? It would be nice to see
-> if your fix (which seems ok to me) was actually present in the mailing list
-> posting of the patch that ended in the above mess.
+On Mon, Jul 28, 2014 at 07:25:14PM +0100, Konstantin Khlebnikov wrote:
+> On Mon, Jul 28, 2014 at 10:14 PM, Will Deacon <will.deacon@arm.com> wrote:
+> > On Tue, Jul 22, 2014 at 04:36:35PM +0100, Konstantin Khlebnikov wrote:
+> >> idmap layout combines both phisical and virtual addresses.
+> >> Everything works fine if ram physically lays below PAGE_OFFSET.
+> >> Otherwise idmap starts punching huge holes in virtual memory layout.
+> >> It maps ram by 2MiB sections, but when it allocates new pmd page it
+> >> cuts 1GiB at once.
+> >>
+> >> This patch makes a copy of all affected pmds from init_mm.
+> >> Only few (usually one) 2MiB sections will be lost.
+> >> This is not eliminates problem but makes it 512 times less likely.
+> >
+> > I'm struggling to understand your commit message, but making a problem `512
+> > times less likely' does sound like a bit of a hack to me. Can't we fix this
+> > properly instead?
+> 
+> Yep, my comment sucks.
+> 
+> Usually idmap looks like this:
+> 
+> |0x00000000 -- <chunk of physical memory in identical mapping > --- |
+> TASK_SIZE -- <kernel space vm layoyt> --- 0xFFFFFFFF |
+> 
+> But when that physical memory chunk starts from 0xE8000000 or even
+> 0xF2000000 evenything becomes very complicated.
 
-Nope, no merge conflicts, source in original patch
-https://lkml.org/lkml/2012/9/11/346
+Why? As long as we don't clobber the kernel text (which would require
+PHYS_OFFSET to be at a really weird alignment and very close to
+PAGE_OFFSET), then you should be alright. Sure, you'll lose things like your
+stack and the vmalloc area etc, but you're running in the idmap, so don't
+use those things.
 
-That mess completely harmless, this code is used only once on boot.
-I don't have that email, so replying isn't trivial for me.
+soft_restart is an example of code that deals with these issues. Which code
+is causing you problems?
 
->
-> Will
->
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+Will
