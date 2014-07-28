@@ -1,108 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751574AbaG1GKR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 02:10:17 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:64650 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751229AbaG1GKL (ORCPT
+	id S1751642AbaG1GKj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 02:10:39 -0400
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:61033 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751596AbaG1GKf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 02:10:11 -0400
-Date: Sun, 27 Jul 2014 23:10:06 -0700
-From: Brian Norris <computersforpeace@gmail.com>
-To: bpqw <bpqw@micron.com>
-Cc: "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        "b32955@freescale.com" <b32955@freescale.com>,
-        "artem.bityutskiy@linux.intel.com" <artem.bityutskiy@linux.intel.com>,
-        "ron@debian.org" <ron@debian.org>,
-        "u.kleine-koenig@pengutronix.de" <u.kleine-koenig@pengutronix.de>,
-        "ezequiel.garcia@free-electrons.com" 
-	<ezequiel.garcia@free-electrons.com>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Subject: [PATCH 1/1] mtd:nand:fix nand_lock/unlock() function
-Message-ID: <20140728061006.GC3095@norris-Latitude-E6410>
-References: <CB9F11E856CFD04BB18EC1C68F2598931B1112@NTXXIAMBX01.xacn.micron.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CB9F11E856CFD04BB18EC1C68F2598931B1112@NTXXIAMBX01.xacn.micron.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 28 Jul 2014 02:10:35 -0400
+X-AuditID: cbfec7f4-b7f156d0000063c7-00-53d5e958a02f
+Message-id: <53D5E958.40100@samsung.com>
+Date: Mon, 28 Jul 2014 08:10:32 +0200
+From: Robert Baldyga <r.baldyga@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
+ Thunderbird/31.0
+MIME-version: 1.0
+To: Michal Nazarewicz <mina86@mina86.com>, balbi@ti.com
+Cc: gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, m.szyprowski@samsung.com,
+        andrzej.p@samsung.com
+Subject: Re: [PATCH v2 2/3] usb: gadget: f_fs: add ioctl returning ep descriptor
+References: <1406295363-26998-1-git-send-email-r.baldyga@samsung.com>
+ <1406295363-26998-3-git-send-email-r.baldyga@samsung.com>
+ <xa1twqb1ttgq.fsf@mina86.com>
+In-reply-to: <xa1twqb1ttgq.fsf@mina86.com>
+Content-type: text/plain; charset=utf-8
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrLLMWRmVeSWpSXmKPExsVy+t/xK7oRL68GGzz+ImMx62U7i8XB+/UW
+	zYvXs1lc3jWHzWLRslZmi7VH7rJbLDjewurA7rF/7hp2j3V/XjF59G1Zxehx/MZ2Jo/Pm+QC
+	WKO4bFJSczLLUov07RK4MprPHmMrmCZW0bRrJ3sD433BLkZODgkBE4kLK9YwQthiEhfurWfr
+	YuTiEBJYyihxbuksZgjnI6PE8Wf3mEGqeAU0JM6sX88OYrMIqErMuDGHFcRmE9CR2PJ9Atgk
+	UYEwiWe/DjJB1AtK/Jh8jwXEFhEwlzjxdwULyFBmgS5GifVfT4INEhYIkPh2cTsTxLaFjBKv
+	Ol+DJTgFtCSevNsJtIEDqENdYsqUXJAws4C8xOY1b5knMArMQrJjFkLVLCRVCxiZVzGKppYm
+	FxQnpeca6hUn5haX5qXrJefnbmKEBPmXHYyLj1kdYhTgYFTi4Y24eSVYiDWxrLgy9xCjBAez
+	kgiv57mrwUK8KYmVValF+fFFpTmpxYcYmTg4pRoYE0T9I02PmPn/1X0eFvQkd0HHBtdPT8qD
+	7ypY/DTrMfxtp/E2YN/MFzKTJ7Z7Knwyfbl0g9QhffHYGkVhT6lvyQf7nR1Pu5xcaRn3PJL9
+	UPe/ry/NH1QfrFjyP8inqfBYwpwfL57M1f7j9v9j1b9Dp/XjPBIeHUqYvE3t+yzmToFfe1er
+	fC3kVmIpzkg01GIuKk4EAFS2piZQAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi White,
-
-You've responded to one of my messages, but your mail server is also
-sending bounce replies. You might want to contact your I.T. about this.
-(I'll let you know if I ever stop getting bounces.)
-
-On Thu, Jul 24, 2014 at 01:00:01AM +0000, bpqw wrote:
-> Do nand reset before write protect check
-> If we want to check the WP# low or high through STATUS READ and check bit 7,
-> we must reset the device, other operation (eg.erase/program a locked block) can
-> also clear the bit 7 of status register.
-
-This description doesn't really tell me why we need this patch.
-
-First of all, where is the 'lock' sequence specified? I see the commit
-that introduced nand_lock() (without any users) which says Micron parts
-support it, but I don't see it documented in the datasheet:
-
-  commit 7d70f334ad2bf1b3aaa1f0699c0f442e14bcc9e0
-  Author: Vimal Singh <vimal.newwork@gmail.com>
-  Date:   Mon Feb 8 15:50:49 2010 +0530
-
-      mtd: nand: add lock/unlock routines
-
-Now, supposing this is documented somewhere, are you seeing some kind of
-out-of-spec behavior? Is this a controller quirk you're seeing? Why
-should I need to reset the chip? I would presume that 
-
-  chip->cmdfunc(mtd, NAND_CMD_STATUS, -1, -1);
-
-would refresh the status properly. Is that not the case?
-
-> Signed-off-by: White Ding <bpqw@micron.com>
-> ---
->  drivers/mtd/nand/nand_base.c |   18 ++++++++++++++++++
->  1 file changed, 18 insertions(+)
+On 07/25/2014 04:15 PM, Michal Nazarewicz wrote:
+> On Fri, Jul 25 2014, Robert Baldyga wrote:
+>> This patch introduces ioctl named FUNCTIONFS_ENDPOINT_DESC, which
+>> returns endpoint descriptor to userspace. It works only if function
+>> is active.
 > 
-> diff --git a/drivers/mtd/nand/nand_base.c b/drivers/mtd/nand/nand_base.c
-> index 41167e9..22dd3aa 100644
-> --- a/drivers/mtd/nand/nand_base.c
-> +++ b/drivers/mtd/nand/nand_base.c
-> @@ -965,6 +965,15 @@ int nand_unlock(struct mtd_info *mtd, loff_t ofs, uint64_t len)
->  
->  	chip->select_chip(mtd, chipnr);
->  
-> +	/*
-> +	 * Reset the chip.
-> +	 * If we want to check the WP through READ STATUS and check the bit 7
-> +	 * we must reset the chip
-> +	 * some operation can also clear the bit 7 of status register
-> +	 * eg. erase/program a locked block
-> +	 */
-> +	chip->cmdfunc(mtd, NAND_CMD_RESET, -1, -1);
-> +
->  	/* Check, if it is write protected */
->  	if (nand_check_wp(mtd)) {
->  		pr_debug("%s: device is write protected!\n",
-> @@ -1015,6 +1024,15 @@ int nand_lock(struct mtd_info *mtd, loff_t ofs, uint64_t len)
->  
->  	chip->select_chip(mtd, chipnr);
->  
-> +	/*
-> +	 * Reset the chip.
-> +	 * If we want to check the WP through READ STATUS and check the bit 7
-> +	 * we must reset the chip
-> +	 * some operation can also clear the bit 7 of status register
-> +	 * eg. erase/program a locked block
-> +	 */
-> +	chip->cmdfunc(mtd, NAND_CMD_RESET, -1, -1);
-> +
->  	/* Check, if it is write protected */
->  	if (nand_check_wp(mtd)) {
->  		pr_debug("%s: device is write protected!\n",
+> I would argue that user space should never need to know the real
+> descriptor.  Is this ioctl needed for anything in particular?
 
-Brian
+It's needed, at least, to inform user space about maximum possible
+wMaxPacketSize value for the endpoint, which is returned by autoconfig
+through the endpoint descriptor when value set by user is zero.
+
+Descriptor returned form this ioctl is mostly the same as descriptor
+created by user. I guess you meant that real descriptor is this one,
+which contains real endpoint address, because it's probably only datum
+in real descriptor which should be never known by user space.
+
+This ioctl would be also useful in case, when FunctionFS daemon obtains
+endpoint descriptors from another daemon, and do not have access to
+original descriptor structures given do FunctionFS.
+
+> 
+>>
+>> Signed-off-by: Robert Baldyga <r.baldyga@samsung.com>
+>> ---
+>>  drivers/usb/gadget/f_fs.c           | 17 +++++++++++++++++
+>>  include/uapi/linux/usb/functionfs.h |  6 ++++++
+>>  2 files changed, 23 insertions(+)
+>>
+>> diff --git a/drivers/usb/gadget/f_fs.c b/drivers/usb/gadget/f_fs.c
+>> index 490b30f..a2e18cc 100644
+>> --- a/drivers/usb/gadget/f_fs.c
+>> +++ b/drivers/usb/gadget/f_fs.c
+>> @@ -1031,6 +1031,23 @@ static long ffs_epfile_ioctl(struct file *file, unsigned code,
+>>  		case FUNCTIONFS_ENDPOINT_REVMAP:
+>>  			ret = epfile->ep->num;
+>>  			break;
+>> +		case FUNCTIONFS_ENDPOINT_DESC:
+>> +		{
+>> +			int desc_idx;
+>> +			struct usb_endpoint_descriptor *desc;
+>> +
+>> +			if (epfile->ffs->gadget->speed == USB_SPEED_SUPER)
+>> +				desc_idx = 2;
+>> +			else if (epfile->ffs->gadget->speed == USB_SPEED_HIGH)
+>> +				desc_idx = 1;
+>> +			else
+>> +				desc_idx = 0;
+>> +			desc = epfile->ep->descs[desc_idx];
+>> +			ret = copy_to_user((void *)value, desc, sizeof(*desc));
+>> +			if (ret)
+>> +				ret = -EFAULT;
+>> +			break;
+>> +		}
+>>  		default:
+>>  			ret = -ENOTTY;
+>>  		}
+>> diff --git a/include/uapi/linux/usb/functionfs.h b/include/uapi/linux/usb/functionfs.h
+>> index 1dc473a..1ab6f06 100644
+>> --- a/include/uapi/linux/usb/functionfs.h
+>> +++ b/include/uapi/linux/usb/functionfs.h
+>> @@ -197,6 +197,12 @@ struct usb_functionfs_event {
+>>   */
+>>  #define	FUNCTIONFS_ENDPOINT_REVMAP	_IO('g', 129)
+>>  
+>> +/*
+>> + * Returns endpoint descriptor. In funciton is not active returns -ENODEV.
+>> + */
+>> +#define	FUNCTIONFS_ENDPOINT_DESC	_IOR('g', 130, \
+>> +					     struct usb_endpoint_descriptor)
+>> +
+>>  
+>>  
+>>  #endif /* _UAPI__LINUX_FUNCTIONFS_H__ */
+>> -- 
+>> 1.9.1
+>>
+> 
+
