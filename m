@@ -1,38 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751990AbaG1XCf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 19:02:35 -0400
-Received: from mail-ig0-f172.google.com ([209.85.213.172]:34085 "EHLO
-	mail-ig0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750727AbaG1XCe (ORCPT
+	id S1752127AbaG1XEi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 19:04:38 -0400
+Received: from mail-vc0-f181.google.com ([209.85.220.181]:46308 "EHLO
+	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750702AbaG1XEg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 19:02:34 -0400
-Date: Mon, 28 Jul 2014 16:02:31 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-cc: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Naoya Horiguchi <nao.horiguchi@gmail.com>
-Subject: Re: [PATCH 2/3] mm/hugetlb: take refcount under page table lock in
- follow_huge_pmd()
-In-Reply-To: <1406570911-28133-2-git-send-email-n-horiguchi@ah.jp.nec.com>
-Message-ID: <alpine.DEB.2.02.1407281602050.8998@chino.kir.corp.google.com>
-References: <1406570911-28133-1-git-send-email-n-horiguchi@ah.jp.nec.com> <1406570911-28133-2-git-send-email-n-horiguchi@ah.jp.nec.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Mon, 28 Jul 2014 19:04:36 -0400
+From: Murilo Opsfelder Araujo <mopsfelder@gmail.com>
+To: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Cc: gregkh@linuxfoundation.org, Murilo Opsfelder Araujo <mopsfelder@gmail.com>
+Subject: [PATCH] Staging: android: sync.c: fix missing blank line after declaration
+Date: Mon, 28 Jul 2014 20:03:46 -0300
+Message-Id: <1406588626-6882-1-git-send-email-mopsfelder@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 28 Jul 2014, Naoya Horiguchi wrote:
+Fix coding style issue.
 
-> We have a race condition between move_pages() and freeing hugepages,
-> where move_pages() calls follow_page(FOLL_GET) for hugepages internally
-> and tries to get its refcount without preventing concurrent freeing.
-> This race crashes the kernel, so this patch fixes it by moving FOLL_GET
-> code for hugepages into follow_huge_pmd() with taking the page table lock.
-> 
+Signed-off-by: Murilo Opsfelder Araujo <mopsfelder@gmail.com>
+---
+ drivers/staging/android/sync.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-What about CONFIG_ARCH_WANT_GENERAL_HUGETLB=n configs?
+diff --git a/drivers/staging/android/sync.c b/drivers/staging/android/sync.c
+index e7b2e02..69c16cb 100644
+--- a/drivers/staging/android/sync.c
++++ b/drivers/staging/android/sync.c
+@@ -705,6 +705,7 @@ static long sync_fence_ioctl(struct file *file, unsigned int cmd,
+ 			     unsigned long arg)
+ {
+ 	struct sync_fence *fence = file->private_data;
++
+ 	switch (cmd) {
+ 	case SYNC_IOC_WAIT:
+ 		return sync_fence_ioctl_wait(fence, arg);
+@@ -726,4 +727,3 @@ static const struct file_operations sync_fence_fops = {
+ 	.unlocked_ioctl = sync_fence_ioctl,
+ 	.compat_ioctl = sync_fence_ioctl,
+ };
+-
+-- 
+1.7.10.4
+
