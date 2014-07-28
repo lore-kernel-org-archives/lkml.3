@@ -1,91 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751288AbaG1GC5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 02:02:57 -0400
-Received: from exprod7og117.obsmtp.com ([64.18.2.6]:46853 "EHLO
-	exprod7og117.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750954AbaG1GCz (ORCPT
+	id S1751245AbaG1GJm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 02:09:42 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42817 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750902AbaG1GJj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 02:02:55 -0400
-X-Greylist: delayed 400 seconds by postgrey-1.27 at vger.kernel.org; Mon, 28 Jul 2014 02:02:55 EDT
-From: Kashyap Desai <kashyap.desai@avagotech.com>
-References: <cover.1405533479.git.agordeev@redhat.com> <3d2402ebfad625e508bb13257e1560abf92594cd.1405533479.git.agordeev@redhat.com>
- <20140726082408.GG21129@agordeev.usersys.redhat.com>
-In-Reply-To: <20140726082408.GG21129@agordeev.usersys.redhat.com>
+	Mon, 28 Jul 2014 02:09:39 -0400
+Date: Sun, 27 Jul 2014 23:09:13 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>, robh@kernel.org,
+        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: REVERT request for  patch "ARC: [arcfpga] stdout-path now
+ suffices for earlycon/console" added to tty tree
+Message-ID: <20140728060913.GA27827@kroah.com>
+References: <14050323662165@kroah.com>
+ <53D5D527.30501@synopsys.com>
 MIME-Version: 1.0
-X-Mailer: Microsoft Outlook 14.0
-Thread-Index: AQISKTNo4W06vQORa1Go0+G/ciGJBQGQbGOPAmCi6mObEHX9sA==
-Date: Mon, 28 Jul 2014 11:26:13 +0530
-Message-ID: <3b7c554551d306e2f58f5e09dc171db2@mail.gmail.com>
-Subject: RE: [PATCH v2 RESEND 13/23] megaraid: Fail resume if MSI-X
- re-initialization failed
-To: Alexander Gordeev <agordeev@redhat.com>, linux-kernel@vger.kernel.org,
-        Neela Syam Kolli <megaraidlinux@lsi.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53D5D527.30501@synopsys.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Alexander Gordeev [mailto:agordeev@redhat.com]
-> Sent: Saturday, July 26, 2014 1:54 PM
-> To: linux-kernel@vger.kernel.org; Neela Syam Kolli
-> Subject: Re: [PATCH v2 RESEND 13/23] megaraid: Fail resume if MSI-X re-
-> initialization failed
->
-> On Wed, Jul 16, 2014 at 08:05:17PM +0200, Alexander Gordeev wrote:
-> > Currently the driver fails to analize MSI-X re-enablement status on
-> > resuming and always assumes the success. This update checks the MSI-X
-> > initialization result and fails to resume if MSI-Xs re-enablement
-> > failed.
->
-> Hi Neela,
->
-> Could you please review megaraid patches in this series?
->
-> Thanks!
-Please consider this patch Acked by Me.
-
-Acked-by: Kashyap Desai <Kashyap.desai@avagotech.com>
-
->
-> > Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+On Mon, Jul 28, 2014 at 10:14:23AM +0530, Vineet Gupta wrote:
+> Hi Greg,
+> 
+> On Friday 11 July 2014 04:11 AM, gregkh@linuxfoundation.org wrote:
+> > 
+> > This is a note to let you know that I've just added the patch titled
+> > 
+> >     ARC: [arcfpga] stdout-path now suffices for earlycon/console
+> > 
+> > to my tty git tree which can be found at
+> >     git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/tty.git
+> > in the tty-next branch.
+> > 
+> > The patch will show up in the next release of the linux-next tree
+> > (usually sometime within the next 24 hours during the week.)
+> > 
+> > The patch will also be merged in the next major kernel release
+> > during the merge window.
+> > 
+> > If you have any questions about this process, please let me know.
+> > 
+> > 
+> >>From 9da433c0a0b5f71ac92dc9dca778295649675f08 Mon Sep 17 00:00:00 2001
+> > From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+> > Date: Tue, 24 Jun 2014 13:55:15 +0530
+> > Subject: ARC: [arcfpga] stdout-path now suffices for earlycon/console
+> > 
+> > With recent improvements to serial/of core from Grant and Rob,
+> > stdout-path alone suffices for setting up earlycon/console.
+> > 
+> > arc_uart driver is already equipped to handle that, switch the DT now.
+> > 
+> > Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
+> > Reviewed-by: Rob Herring <robh@kernel.org>
+> > Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 > > ---
-> >  drivers/scsi/megaraid/megaraid_sas_base.c |    8 +++++---
-> >  1 files changed, 5 insertions(+), 3 deletions(-)
-> >
-> > diff --git a/drivers/scsi/megaraid/megaraid_sas_base.c
-> > b/drivers/scsi/megaraid/megaraid_sas_base.c
-> > index 112799b..ba06102 100644
-> > --- a/drivers/scsi/megaraid/megaraid_sas_base.c
-> > +++ b/drivers/scsi/megaraid/megaraid_sas_base.c
-> > @@ -5134,9 +5134,10 @@ megasas_resume(struct pci_dev *pdev)
-> >  		goto fail_ready_state;
-> >
-> >  	/* Now re-enable MSI-X */
-> > -	if (instance->msix_vectors)
-> > -		pci_enable_msix(instance->pdev, instance->msixentry,
-> > -				instance->msix_vectors);
-> > +	if (instance->msix_vectors &&
-> > +	    pci_enable_msix(instance->pdev, instance->msixentry,
-> > +			    instance->msix_vectors))
-> > +		goto fail_reenable_msix;
-> >
-> >  	switch (instance->pdev->device) {
-> >  	case PCI_DEVICE_ID_LSI_FUSION:
-> > @@ -5245,6 +5246,7 @@ fail_init_mfi:
-> >
-> >  fail_set_dma_mask:
-> >  fail_ready_state:
-> > +fail_reenable_msix:
-> >
-> >  	pci_disable_device(pdev);
-> >
-> > --
-> > 1.7.7.6
-> >
->
-> --
-> Regards,
-> Alexander Gordeev
-> agordeev@redhat.com
+> >  arch/arc/boot/dts/angel4.dts | 3 ++-
+> >  1 file changed, 2 insertions(+), 1 deletion(-)
+> > 
+> > diff --git a/arch/arc/boot/dts/angel4.dts b/arch/arc/boot/dts/angel4.dts
+> > index 6b57475967a6..298a46daa633 100644
+> > --- a/arch/arc/boot/dts/angel4.dts
+> > +++ b/arch/arc/boot/dts/angel4.dts
+> > @@ -17,7 +17,8 @@
+> >  	interrupt-parent = <&intc>;
+> >  
+> >  	chosen {
+> > -		bootargs = "earlycon=arc_uart,mmio32,0xc0fc1000,115200n8 console=ttyARC0,115200n8";
+> > +		bootargs = "earlycon";
+> > +		stdout-path = &arcuart0;
+> >  	};
+> >  
+> >  	aliases {
+> > 
+> 
+> Could you please revert this single patch from tty-next for 3.17 as the needed
+> core changes are not yet finalized.
+
+Now reverted.
