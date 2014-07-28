@@ -1,62 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751229AbaG1DV5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Jul 2014 23:21:57 -0400
-Received: from mail-we0-f180.google.com ([74.125.82.180]:52815 "EHLO
-	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750727AbaG1DVz (ORCPT
+	id S1751066AbaG1Deg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Jul 2014 23:34:36 -0400
+Received: from one.firstfloor.org ([193.170.194.197]:39529 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750907AbaG1Dec (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Jul 2014 23:21:55 -0400
+	Sun, 27 Jul 2014 23:34:32 -0400
+Date: Mon, 28 Jul 2014 05:34:29 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: "Yan, Zheng" <zheng.z.yan@intel.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Andi Kleen <andi@firstfloor.org>,
+        linux-kernel@vger.kernel.org, mingo@kernel.org, acme@infradead.org,
+        eranian@google.com
+Subject: Re: [PATCH v3 6/9] perf, x86: handle multiple records in PEBS
+ buffer
+Message-ID: <20140728033429.GI18735@two.firstfloor.org>
+References: <1406016602-31845-1-git-send-email-zheng.z.yan@intel.com>
+ <1406016602-31845-7-git-send-email-zheng.z.yan@intel.com>
+ <20140725081033.GV3935@laptop>
+ <20140725150445.GG18735@two.firstfloor.org>
+ <20140725155332.GC6758@twins.programming.kicks-ass.net>
+ <20140725164041.GH18735@two.firstfloor.org>
+ <53D5C174.80303@intel.com>
 MIME-Version: 1.0
-In-Reply-To: <53D5BBCA.3020109@gmail.com>
-References: <CAPDOMViXEgN1U8Og52Fd7EaM86Ad2Dfex9TVQ-+tRZ9SL9Kcig@mail.gmail.com>
-	<53D5BBCA.3020109@gmail.com>
-Date: Sun, 27 Jul 2014 23:21:53 -0400
-Message-ID: <CAPDOMVjB9ErEwA7mf91X7pff5LAkeT=BT4pR7TuoEp3LL333Lg@mail.gmail.com>
-Subject: Re: Multi Core Support for compression in compression.c
-From: Nick Krause <xerofoify@gmail.com>
-To: Austin S Hemmelgarn <ahferroin7@gmail.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-btrfs@vger.kernel.org SYSTEM list:BTRFS FILE" 
-	<linux-btrfs@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53D5C174.80303@intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 27, 2014 at 10:56 PM, Austin S Hemmelgarn
-<ahferroin7@gmail.com> wrote:
-> On 07/27/2014 04:47 PM, Nick Krause wrote:
->> This may be a bad idea , but compression in brtfs seems to be only
->> using one core to compress.
->> Depending on the CPU used and the amount of cores in the CPU we can
->> make this much faster
->> with multiple cores. This seems bad by my reading at least I would
->> recommend for writing compression
->> we write a function to use a certain amount of cores based on the load
->> of the system's CPU not using
->> more then 75% of the system's CPU resources as my system when idle has
->> never needed more
->> then one core of my i5 2500k to run when with interrupts for opening
->> eclipse are running. For reading
->> compression on good core seems fine to me as testing other compression
->> software for reads , it's
->> way less CPU intensive.
->> Cheers Nick
-> We would probably get a bigger benefit from taking an approach like
-> SquashFS has recently added, that is, allowing multi-threaded
-> decompression fro reads, and decompressing directly into the pagecache.
->  Such an approach would likely make zlib compression much more scalable
-> on large systems.
->
->
+> how about following patch
 
-Austin,
-That seems better then my idea as you seem to be more up to date on
-brtfs devolopment.
-If you and the other developers of brtfs are interested in adding this
-as a feature please let
-me known as I would like to help improve brtfs as the file system as
-an idea is great just
-seems like it needs a lot of work :).
-Nick
+Looks good to me. 
+
+This will also solve the existing problem that perf record -e cycles:u
+... gives kernel samples too.
+
+-Andi
+
+> diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+> index 33b4c0e..ea76507 100644
+> --- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
+> +++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+> @@ -1016,6 +1016,16 @@ static void setup_pebs_sample_data(struct perf_event *event,
+>  		data->br_stack = &cpuc->lbr_stack;
+>  }
+>  
+> +static inline bool intel_pmu_pebs_filter(struct perf_event *event,
+> +					 struct pebs_record_nhm *record)
+> +{
+> +	if (event->attr.exclude_user && !kernel_ip(record->ip))
+> +		return true;
+> +	if (event->attr.exclude_kernel && kernel_ip(record->ip))
+> +		return true;
+> +	return false;
+> +}
+> +
+>  static void __intel_pmu_pebs_event(struct perf_event *event,
+>  				   struct pt_regs *iregs,
+>  				   void *at, void *top, int count)
+> @@ -1052,6 +1062,8 @@ static void __intel_pmu_pebs_event(struct perf_event *event,
+>  		struct pebs_record_nhm *p = at;
+>  		if (!(p->status & (1 << event->hw.idx)))
+>  			continue;
+> +		if (intel_pmu_pebs_filter(event, p))
+> +			continue;
+>  
+>  		setup_pebs_sample_data(event, iregs, at, &data, &regs);
+>  		perf_output_sample(&handle, &header, &data, event);
+> @@ -1139,6 +1151,8 @@ static void intel_pmu_drain_pebs_nhm(struct pt_regs *iregs)
+>  			WARN_ON_ONCE(!event);
+>  			if (!event->attr.precise_ip)
+>  				continue;
+> +			if (intel_pmu_pebs_filter(event, p))
+> +				continue;
+>  			counts[bit]++;
+>  		}
+>  	}
+> @@ -1149,7 +1163,8 @@ static void intel_pmu_drain_pebs_nhm(struct pt_regs *iregs)
+>  		event = cpuc->events[bit];
+>  		for (at = base; at < top; at += x86_pmu.pebs_record_size) {
+>  			struct pebs_record_nhm *p = at;
+> -			if (p->status & (1 << bit))
+> +			if ((p->status & (1 << bit)) &&
+> +			    !intel_pmu_pebs_filter(event, p))
+>  				break;
+>  		}
+>  
+> ---
+> 
+
+-- 
+ak@linux.intel.com -- Speaking for myself only.
