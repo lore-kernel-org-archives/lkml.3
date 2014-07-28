@@ -1,77 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751536AbaG1Ts4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 15:48:56 -0400
-Received: from mail-la0-f53.google.com ([209.85.215.53]:43580 "EHLO
-	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750825AbaG1Tsy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 15:48:54 -0400
+	id S1751890AbaG1Tu1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 15:50:27 -0400
+Received: from imap.thunk.org ([74.207.234.97]:33077 "EHLO imap.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750708AbaG1Tu0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jul 2014 15:50:26 -0400
+Date: Mon, 28 Jul 2014 15:50:11 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Alexei Starovoitov <ast@kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        "Frank Ch. Eigler" <fche@redhat.com>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Michel =?iso-8859-1?Q?D=E4nzer?= <michel@daenzer.net>,
+        Jakub Jelinek <jakub@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Debian GCC Maintainers <debian-gcc@lists.debian.org>,
+        Debian Kernel Team <debian-kernel@lists.debian.org>
+Subject: Re: Random panic in load_balance() with 3.16-rc
+Message-ID: <20140728195011.GD17378@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Alexei Starovoitov <ast@kernel.org>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	"Frank Ch. Eigler" <fche@redhat.com>,
+	Markus Trippelsdorf <markus@trippelsdorf.de>,
+	Steven Rostedt <rostedt@goodmis.org>,
+	Michel =?iso-8859-1?Q?D=E4nzer?= <michel@daenzer.net>,
+	Jakub Jelinek <jakub@redhat.com>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	Debian GCC Maintainers <debian-gcc@lists.debian.org>,
+	Debian Kernel Team <debian-kernel@lists.debian.org>
+References: <CA+55aFzOoJzqJ=4RVPEBfscA8oRdr5Nv7fKx9aXYw2+frkuhwA@mail.gmail.com>
+ <CA+55aFyHU4Gwk6ASTuOgh3eFPshkgy1s5zc4p7f01DwrYddFOw@mail.gmail.com>
+ <CA+55aFxaXPqyDJv-SNu6Giy3eKCu_SY1wof1NaNnPTbtF9RbXQ@mail.gmail.com>
+ <20140726193557.GA21842@x4>
+ <CA+55aFyo=HVZGEYNmz9GHqLatFHiJYTviKz_dXjqCv8b_gGxBA@mail.gmail.com>
+ <20140726201914.GB21842@x4>
+ <CA+55aFyCh8B4kuc66_+wr8eM+kP7-hJ9utdtpLih661Xf8YGgQ@mail.gmail.com>
+ <y0m7g2xk6ss.fsf@fche.csb>
+ <CA+55aFwz+stjg5L7aKuPjLym3u4FPS_ugSZiCcJwOYCGMSFGVQ@mail.gmail.com>
+ <20140728172737.GA17598@pg-vmw-gw1>
 MIME-Version: 1.0
-In-Reply-To: <CAB=NE6VebcR7=UA1n0wNVLr5FFukzq6aW5CkeB3nf5FixV=3cA@mail.gmail.com>
-References: <1406572110-26823-1-git-send-email-mcgrof@do-not-panic.com>
- <1406572110-26823-3-git-send-email-mcgrof@do-not-panic.com>
- <20140728185538.GB17609@kroah.com> <CAB=NE6VebcR7=UA1n0wNVLr5FFukzq6aW5CkeB3nf5FixV=3cA@mail.gmail.com>
-From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-Date: Mon, 28 Jul 2014 12:48:32 -0700
-X-Google-Sender-Auth: o6_bfzid8MPP0bjQsAymyl_Q14Q
-Message-ID: <CAB=NE6Xmi2zUCis22q+X8_AKRcwMrAtmx-aqSSvTB70Xjet6VQ@mail.gmail.com>
-Subject: Re: [PATCH v2 2/4] driver core: enable drivers to use deferred probe
- from init
-To: Greg KH <gregkh@linuxfoundation.org>,
-        Santosh Rastapur <santosh@chelsio.com>,
-        Hariprasad S <hariprasad@chelsio.com>
-Cc: Takashi Iwai <tiwai@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
-        Joseph Salisbury <joseph.salisbury@canonical.com>,
-        Kay Sievers <kay@vrfy.org>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Tim Gardner <tim.gardner@canonical.com>,
-        Pierre Fersing <pierre-fersing@pierref.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>, Benjamin Poirier <bpoirier@suse.de>,
-        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
-        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
-        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
-        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
-        MPT-FusionLinux.pdl@avagotech.com,
-        Linux SCSI List <linux-scsi@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140728172737.GA17598@pg-vmw-gw1>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 28, 2014 at 12:04 PM, Luis R. Rodriguez
-<mcgrof@do-not-panic.com> wrote:
-> On Mon, Jul 28, 2014 at 11:55 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
->> So, what drivers are having problems in their init sequence, and why
->> aren't they using async firmware loading?
->
-> Fixing drivers is one thing, fixing drivers *now* because *now*
-> drivers are failing due to a regression is another thing and that's
-> what we have now so lets just be clear on that. The 30 second rule is
-> a major driver requirement change and it should not be taken slightly,
-> all of a sudden this is a new requirement but you won't know that
-> unless you're reading these threads or hit an issue. That's an issue
-> in itself.
->
-> The cxgb4: driver is an example where although I did propose patches
-> to use asynch firmware loading the entire registration of the
-> netdevice would need to be changed as well in order to get this right.
-> In short we have to scramble now to first identify drivers that have
-> long init sequences and then fix. There's an assumption that we can
-> easily fix drivers, this can take time. This series, although does
-> take advantage of a kernel interface for other uses, lets us identify
-> these drivers on the kernel ring buffer, so we can go and address
-> fixing them with time.
+On Mon, Jul 28, 2014 at 10:27:39AM -0700, Alexei Starovoitov wrote:
+> 
+> It's not pretty, but adding it unconditionally was the right thing to do.
+> Black listing compiler versions is too fragile.
+> Look at the flip side: now size of build dir will be much smaller :)
 
-Another thing that came up during asynch firmware review / integration
-on cxgb4 was that it would not be the only thing that would need to be
-fixed, the driver also has a ton of ports and at least as per my
-review the proper fix would be to use platform regiister stuff. It is
-a major rewrite of the driver but an example of a driver that needs
-quite a bit of work to meet this new 30 second driver requirement.
+White-listing the fixed compiler version should be safe though, and
+that should pretty much fix things for community distros fairly
+quickly.  For enterprise distros, once the compiler is patched, their
+kernel sources could also be hacked to add a distro-specific version
+whitelist.  This would all be fixed in 4.9.2, right?
 
- Luis
+							- Ted
