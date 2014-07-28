@@ -1,94 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751788AbaG1SvE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 14:51:04 -0400
-Received: from mail-bn1blp0190.outbound.protection.outlook.com ([207.46.163.190]:2685
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751702AbaG1Su7 convert rfc822-to-8bit (ORCPT
+	id S1751867AbaG1SvJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 14:51:09 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:38222 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751742AbaG1SvD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 14:50:59 -0400
-From: KY Srinivasan <kys@microsoft.com>
-To: "Martin K. Petersen" <martin.petersen@oracle.com>
-CC: Sitsofe Wheeler <sitsofe@gmail.com>, Christoph Hellwig <hch@infradead.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "ohering@suse.com" <ohering@suse.com>,
-        "apw@canonical.com" <apw@canonical.com>,
-        "jasowang@redhat.com" <jasowang@redhat.com>,
-        "jbottomley@parallels.com" <jbottomley@parallels.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
-Subject: RE: [PATCH v2 3/3] [SCSI] Make LBP quirk skip lbpme checks tests
-Thread-Topic: [PATCH v2 3/3] [SCSI] Make LBP quirk skip lbpme checks tests
-Thread-Index: AQHPqQdbfmLHK0GnrkSEOCNbbvYH8Zu11blw
-Date: Mon, 28 Jul 2014 18:50:56 +0000
-Message-ID: <43306901b1dc4e5dbe014a431e0935ea@BY2PR0301MB0711.namprd03.prod.outlook.com>
-References: <20140724122223.GA31798@sucs.org>
-	<yq1iommkgkv.fsf@sermon.lab.mkp.net> <20140724153612.GA23648@sucs.org>
-	<yq1egxakb0z.fsf@sermon.lab.mkp.net>
-	<16fea5bb87ba47019527cee788e07a72@BY2PR0301MB0711.namprd03.prod.outlook.com>
-	<yq1wqb1gyw1.fsf@sermon.lab.mkp.net>
-	<e931486ef33b4e45bfebf2ab1b1b3037@BY2PR0301MB0711.namprd03.prod.outlook.com>
-	<yq17g30dprc.fsf@sermon.lab.mkp.net>
-	<cc4a3fd5451242739929d266b88fa8fa@BY2PR0301MB0711.namprd03.prod.outlook.com>
- <yq138dnexcn.fsf@sermon.lab.mkp.net>
-In-Reply-To: <yq138dnexcn.fsf@sermon.lab.mkp.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [131.107.192.88]
-x-microsoft-antispam: BCL:0;PCL:0;RULEID:
-x-o365ent-eop-header: Message processed by -  O365_ENT: Allow from ranges
- (Engineering ONLY)
-x-forefront-prvs: 0286D7B531
-x-forefront-antispam-report: SFV:NSPM;SFS:(6009001)(51704005)(377454003)(13464003)(189002)(199002)(83322001)(81542001)(19580395003)(19580405001)(31966008)(85852003)(87936001)(2656002)(4396001)(92566001)(83072002)(110136001)(107046002)(74316001)(21056001)(74502001)(46102001)(76482001)(76176999)(81342001)(54356999)(74662001)(50986999)(33646002)(64706001)(79102001)(95666004)(77096002)(99286002)(101416001)(80022001)(66066001)(106116001)(93886003)(76576001)(20776003)(77982001)(86612001)(86362001)(105586002)(106356001)(85306003)(99396002)(108616002)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR0301MB0709;H:BY2PR0301MB0711.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 28 Jul 2014 14:51:03 -0400
+Message-ID: <53D69BB3.8040106@arm.com>
+Date: Mon, 28 Jul 2014 19:51:31 +0100
+From: Sudeep Holla <sudeep.holla@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-X-OriginatorOrg: microsoft.onmicrosoft.com
+To: Hanjun Guo <hanjun.guo@linaro.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Mark Rutland <Mark.Rutland@arm.com>
+CC: Sudeep Holla <sudeep.holla@arm.com>,
+        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        Will Deacon <Will.Deacon@arm.com>, Jason Cooper <jason@lakedaemon.net>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Mark Brown <broonie@linaro.org>, Robert Richter <rric@kernel.org>,
+        Lv Zheng <lv.zheng@intel.com>, Robert Moore <robert.moore@intel.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Liviu Dudau <Liviu.Dudau@arm.com>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 04/19] ARM64 / ACPI: Introduce arch_fix_phys_package_id()
+ for cpu topology
+References: <1406206825-15590-1-git-send-email-hanjun.guo@linaro.org> <1406206825-15590-5-git-send-email-hanjun.guo@linaro.org>
+In-Reply-To: <1406206825-15590-5-git-send-email-hanjun.guo@linaro.org>
+X-OriginalArrivalTime: 28 Jul 2014 18:51:00.0963 (UTC) FILETIME=[E027F330:01CFAA94]
+X-MC-Unique: 114072819510103901
+Content-Type: text/plain; charset=WINDOWS-1252; format=flowed
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
 
-> -----Original Message-----
-> From: Martin K. Petersen [mailto:martin.petersen@oracle.com]
-> Sent: Saturday, July 26, 2014 12:25 PM
-> To: KY Srinivasan
-> Cc: Martin K. Petersen; Sitsofe Wheeler; Christoph Hellwig;
-> gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
-> devel@linuxdriverproject.org; ohering@suse.com; apw@canonical.com;
-> jasowang@redhat.com; jbottomley@parallels.com; linux-
-> scsi@vger.kernel.org
-> Subject: Re: [PATCH v2 3/3] [SCSI] Make LBP quirk skip lbpme checks tests
-> 
-> >>>>> "KY" == KY Srinivasan <kys@microsoft.com> writes:
-> 
-> >> Great! I'd just like to have a reasonable level of confidence in
-> >> what's happening down the stack before I entertain turning something
-> >> on that's not being properly advertised.
-> 
-> KY> As I look at the output of inquiry between Linux on Hyper-V and
-> KY> native Linux, is not specifying conformance level the main issue?
-> 
-> The main problem for this particular use case (aside from the issue we've
-> already addressed) is that the passthrough device (SATA SSD) has
-> LBPME=0 in the READ CAPACITY(16) response. The LBP VPD is correctly
-> provided with LBPU flag set but because LBPME is reported as disabled we
-> will not attempt to issue UNMAP commands to the device.
+On 24/07/14 14:00, Hanjun Guo wrote:
+> arch_fix_phys_package_id() will be called in ACPI core to use
+> the slot number provided by ACPI to update the physical package
+> id, then we can get the right value in the "physical id" field
+> of /proc/cpuinfo.
+>
+> Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
+> ---
+>   arch/arm64/include/asm/topology.h |    2 ++
+>   arch/arm64/kernel/topology.c      |   14 ++++++++++++++
+>   2 files changed, 16 insertions(+)
+>
+> diff --git a/arch/arm64/include/asm/topology.h b/arch/arm64/include/asm/topology.h
+> index 7ebcd31..2b216d4 100644
+> --- a/arch/arm64/include/asm/topology.h
+> +++ b/arch/arm64/include/asm/topology.h
+> @@ -23,11 +23,13 @@ extern struct cpu_topology cpu_topology[NR_CPUS];
+>   void init_cpu_topology(void);
+>   void store_cpu_topology(unsigned int cpuid);
+>   const struct cpumask *cpu_coregroup_mask(int cpu);
+> +void arch_fix_phys_package_id(int num, u32 slot);
+>
+>   #else
+>
+>   static inline void init_cpu_topology(void) { }
+>   static inline void store_cpu_topology(unsigned int cpuid) { }
+> +static inline void arch_fix_phys_package_id(int num, u32 slot) { }
+>
+>   #endif
+>
+> diff --git a/arch/arm64/kernel/topology.c b/arch/arm64/kernel/topology.c
+> index 43514f9..c547885 100644
+> --- a/arch/arm64/kernel/topology.c
+> +++ b/arch/arm64/kernel/topology.c
+> @@ -281,3 +281,17 @@ void __init init_cpu_topology(void)
+>   	if (parse_dt_topology())
+>   		reset_cpu_topology();
+>   }
+> +
+> +/*
+> + * Use the CPU slot number provided by ACPI to update the physical
+> + * package id when cpuid_topo->cluster_id is not available, then we
+> + * can get the right value in the "physical id" field of /proc/cpuinfo.
+> + */
 
-Had a chance to chat with the Windows sscsi folks. Here is their response:
+We don't have "physical id" field in /proc/cpuinfo on ARM64.
 
-"At the time  thin-provisioning was defined, the discovery information was first proposed in READ CAPACITY 16 command. And then moved into the new dedicated VPD page - B2h. You can see the information reported in this VPD page is richer than READ CAPACITY 16 command. As this transition happened during we added the feature, Windows uses the newer method that based on VPD page B2h. It looks Linux tries to use both new and old method which is weird to me."
+> +void arch_fix_phys_package_id(int num, u32 slot)
+> +{
+> +	struct cpu_topology *cpuid_topo = &cpu_topology[num];
+> +
+> +	if (cpuid_topo->cluster_id == -1)
+> +		cpuid_topo->cluster_id = slot;
+> +}
+> +EXPORT_SYMBOL_GPL(arch_fix_phys_package_id);
+>
 
-Would it make sense for us to work  around this issue for Linux on Hyper-V (just use the VPD page instead of looking at the output of READ CAPACITY)?
+The ACPI core uses this function to set the package id as read from
+_SUN from the device. As per spec, _SUN is used by OSPM UI to identify
+slots for the user. Do we know how will this be used on ARM64 ?
+
+If not clear at this time, better to define it or keep it empty. I see
+even x86 does nothing in that function.
 
 Regards,
+Sudeep
 
-K. Y
-> 
-> --
-> Martin K. Petersen	Oracle Linux Engineering
