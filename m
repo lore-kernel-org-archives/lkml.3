@@ -1,89 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751946AbaG1S5F (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 14:57:05 -0400
-Received: from mail-ie0-f179.google.com ([209.85.223.179]:50130 "EHLO
-	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750960AbaG1S5A (ORCPT
+	id S1751367AbaG1TAT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 15:00:19 -0400
+Received: from e06smtp12.uk.ibm.com ([195.75.94.108]:53081 "EHLO
+	e06smtp12.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750956AbaG1TAQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 14:57:00 -0400
+	Mon, 28 Jul 2014 15:00:16 -0400
+Date: Mon, 28 Jul 2014 21:00:09 +0200
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
+To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>, linux390@de.ibm.com,
+        linux-s390@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] s390: char: sclp_async.c:  Cleaning up missing
+ null-terminate in conjunction with strncpy
+Message-ID: <20140728190009.GB3769@osiris>
+References: <1406385047-2942-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
 MIME-Version: 1.0
-In-Reply-To: <20140728184107.GR15536@arm.com>
-References: <20140722153623.25088.37742.stgit@buzz>
-	<20140722153635.25088.14197.stgit@buzz>
-	<20140728181456.GO15536@arm.com>
-	<CALYGNiNJDHfQm2yk067hh-Wywsb_Ki5AEE_sTMkYegJi9spSzw@mail.gmail.com>
-	<20140728184107.GR15536@arm.com>
-Date: Mon, 28 Jul 2014 22:57:00 +0400
-Message-ID: <CALYGNiNaMMv9itJ_+cvPDn1_Yo4GTPQJ-Cy9zBzJzfaDLfkvmg@mail.gmail.com>
-Subject: Re: [PATCH 2/2] ARM: LPAE: reduce damage caused by idmap to virtual
- memory layout
-From: Konstantin Khlebnikov <koct9i@gmail.com>
-To: Will Deacon <will.deacon@arm.com>
-Cc: Konstantin Khlebnikov <k.khlebnikov@samsung.com>,
-        Vitaly Andrianov <vitalya@ti.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Cyril Chemparathy <cyril@ti.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1406385047-2942-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14072819-8372-0000-0000-000000AC4F0A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 28, 2014 at 10:41 PM, Will Deacon <will.deacon@arm.com> wrote:
-> On Mon, Jul 28, 2014 at 07:25:14PM +0100, Konstantin Khlebnikov wrote:
->> On Mon, Jul 28, 2014 at 10:14 PM, Will Deacon <will.deacon@arm.com> wrote:
->> > On Tue, Jul 22, 2014 at 04:36:35PM +0100, Konstantin Khlebnikov wrote:
->> >> idmap layout combines both phisical and virtual addresses.
->> >> Everything works fine if ram physically lays below PAGE_OFFSET.
->> >> Otherwise idmap starts punching huge holes in virtual memory layout.
->> >> It maps ram by 2MiB sections, but when it allocates new pmd page it
->> >> cuts 1GiB at once.
->> >>
->> >> This patch makes a copy of all affected pmds from init_mm.
->> >> Only few (usually one) 2MiB sections will be lost.
->> >> This is not eliminates problem but makes it 512 times less likely.
->> >
->> > I'm struggling to understand your commit message, but making a problem `512
->> > times less likely' does sound like a bit of a hack to me. Can't we fix this
->> > properly instead?
->>
->> Yep, my comment sucks.
->>
->> Usually idmap looks like this:
->>
->> |0x00000000 -- <chunk of physical memory in identical mapping > --- |
->> TASK_SIZE -- <kernel space vm layoyt> --- 0xFFFFFFFF |
->>
->> But when that physical memory chunk starts from 0xE8000000 or even
->> 0xF2000000 evenything becomes very complicated.
->
-> Why? As long as we don't clobber the kernel text (which would require
-> PHYS_OFFSET to be at a really weird alignment and very close to
-> PAGE_OFFSET), then you should be alright. Sure, you'll lose things like your
-> stack and the vmalloc area etc, but you're running in the idmap, so don't
-> use those things.
+On Sat, Jul 26, 2014 at 04:30:47PM +0200, Rickard Strandqvist wrote:
+> Replacing strncpy with strlcpy to avoid strings that lacks null terminate.
+> 
+> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+> ---
+>  drivers/s390/char/sclp_async.c |    4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/s390/char/sclp_async.c b/drivers/s390/char/sclp_async.c
+> index 5f9f929..585de0a 100644
+> --- a/drivers/s390/char/sclp_async.c
+> +++ b/drivers/s390/char/sclp_async.c
+> @@ -132,12 +132,12 @@ static int sclp_async_send_wait(char *message)
+>  	request->command = SCLP_CMDW_WRITE_EVENT_DATA;
+>  	request->sccb = sccb;
+>  	request->status = SCLP_REQ_FILLED;
+> -	strncpy(sccb->evbuf.data, message, sizeof(sccb->evbuf.data));
+> +	strlcpy(sccb->evbuf.data, message, sizeof(sccb->evbuf.data));
 
-Yep, we have piece of hardware with really weird aligned PHYS_OFFSET,
-mostly all ram is above 4gb and we was lucky enough to get into the trouble.
+Do your patches actually fix any bugs? E.g. this line fills a hardware data
+structure, which must not necessarily be null terminated. Actually you even
+could have introduced a bug here.
+So, please state which of your patches actually do fix bugs.
 
-It seems keystone has all memory above 4gb but small piece is mapped below
-especially for booting. I suppose it's below PAGE_OFFSET so Cyril
-hadn't seen that problem.
-
-Also I seen comment somewhere in the code which tells that idrmap pgd is
-always below 4gb which isn't quite true. Moreover, I had some experiments with
-mapping ram to random places in qemu and seen that kernel cannot boot if
-PHYS_OFFSET isn't alligned to 128mb which is strange.
-So, it seems there is plenty bugs anound.
-
->
-> soft_restart is an example of code that deals with these issues. Which code
-> is causing you problems?
-
-That was booting of secondary cpus, all of them.
-
->
-> Will
