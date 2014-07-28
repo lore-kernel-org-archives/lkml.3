@@ -1,67 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752145AbaG1Jtf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 05:49:35 -0400
-Received: from verein.lst.de ([213.95.11.211]:42052 "EHLO newverein.lst.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751316AbaG1Jtd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 05:49:33 -0400
-Date: Mon, 28 Jul 2014 11:49:29 +0200
-From: Torsten Duwe <duwe@lst.de>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: "Theodore Ts'o" <tytso@mit.edu>, linux-kernel@vger.kernel.org,
-        Matt Mackall <mpm@selenic.com>,
-        Herbert Xu <herbert@gondor.apana.org.au>,
-        "H . Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH] hwrng: Pass entropy to add_hwgenerator_randomness() in
-	bits, not bytes
-Message-ID: <20140728094929.GJ972@lst.de>
-References: <1406326758-4516-1-git-send-email-sboyd@codeaurora.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1406326758-4516-1-git-send-email-sboyd@codeaurora.org>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+	id S1752223AbaG1JuP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 05:50:15 -0400
+Received: from out2-smtp.messagingengine.com ([66.111.4.26]:59032 "EHLO
+	out2-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751095AbaG1JuM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jul 2014 05:50:12 -0400
+X-Sasl-enc: ZHd97xbeaPFK62CH34zXbFWa6Qm1fJ6q3/mhY4F/QB4G 1406541009
+Message-ID: <1406541008.21403.0.camel@localhost>
+Subject: Re: [PATCH] net: sendmsg: fix NULL pointer dereference
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+To: Andrey Ryabinin <ryabinin.a.a@gmail.com>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Eric Dumazet <edumazet@google.com>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Sasha Levin <sasha.levin@oracle.com>,
+        Andrey Ryabinin <a.ryabinin@samsung.com>, stable@vger.kernel.org
+Date: Mon, 28 Jul 2014 11:50:08 +0200
+In-Reply-To: <1406395618-4697-1-git-send-email-a.ryabinin@samsung.com>
+References: <1406390080.22881.75.camel@localhost>
+	 <1406395618-4697-1-git-send-email-a.ryabinin@samsung.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 25, 2014 at 03:19:18PM -0700, Stephen Boyd wrote:
-> rng_get_data() returns the number of bytes read from the hardware.
-> The entropy argument to add_hwgenerator_randomness() is passed
-> directly to credit_entropy_bits() so we should be passing the
-> number of bits, not bytes here.
-
-Absolutely correct.
-
-Acked-by: Torsten Duwe <duwe@suse.de>
-
-> Fixes: be4000bc464 "hwrng: create filler thread"
-> Cc: Torsten Duwe <duwe@suse.de>
-> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-> ---
->  drivers/char/hw_random/core.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+On Sa, 2014-07-26 at 21:26 +0400, Andrey Ryabinin wrote:
+> Sasha's report:
+> 	> While fuzzing with trinity inside a KVM tools guest running the latest -next
+> 	> kernel with the KASAN patchset, I've stumbled on the following spew:
+> 	>
+> 	> [ 4448.949424] ==================================================================
+> 	> [ 4448.951737] AddressSanitizer: user-memory-access on address 0
+> 	> [ 4448.952988] Read of size 2 by thread T19638:
+> 	> [ 4448.954510] CPU: 28 PID: 19638 Comm: trinity-c76 Not tainted 3.16.0-rc4-next-20140711-sasha-00046-g07d3099-dirty #813
+> 	> [ 4448.956823]  ffff88046d86ca40 0000000000000000 ffff880082f37e78 ffff880082f37a40
+> 	> [ 4448.958233]  ffffffffb6e47068 ffff880082f37a68 ffff880082f37a58 ffffffffb242708d
+> 	> [ 4448.959552]  0000000000000000 ffff880082f37a88 ffffffffb24255b1 0000000000000000
+> 	> [ 4448.961266] Call Trace:
+> 	> [ 4448.963158] dump_stack (lib/dump_stack.c:52)
+> 	> [ 4448.964244] kasan_report_user_access (mm/kasan/report.c:184)
+> 	> [ 4448.965507] __asan_load2 (mm/kasan/kasan.c:352)
+> 	> [ 4448.966482] ? netlink_sendmsg (net/netlink/af_netlink.c:2339)
+> 	> [ 4448.967541] netlink_sendmsg (net/netlink/af_netlink.c:2339)
+> 	> [ 4448.968537] ? get_parent_ip (kernel/sched/core.c:2555)
+> 	> [ 4448.970103] sock_sendmsg (net/socket.c:654)
+> 	> [ 4448.971584] ? might_fault (mm/memory.c:3741)
+> 	> [ 4448.972526] ? might_fault (./arch/x86/include/asm/current.h:14 mm/memory.c:3740)
+> 	> [ 4448.973596] ? verify_iovec (net/core/iovec.c:64)
+> 	> [ 4448.974522] ___sys_sendmsg (net/socket.c:2096)
+> 	> [ 4448.975797] ? put_lock_stats.isra.13 (./arch/x86/include/asm/preempt.h:98 kernel/locking/lockdep.c:254)
+> 	> [ 4448.977030] ? lock_release_holdtime (kernel/locking/lockdep.c:273)
+> 	> [ 4448.978197] ? lock_release_non_nested (kernel/locking/lockdep.c:3434 (discriminator 1))
+> 	> [ 4448.979346] ? check_chain_key (kernel/locking/lockdep.c:2188)
+> 	> [ 4448.980535] __sys_sendmmsg (net/socket.c:2181)
+> 	> [ 4448.981592] ? trace_hardirqs_on_caller (kernel/locking/lockdep.c:2600)
+> 	> [ 4448.982773] ? trace_hardirqs_on (kernel/locking/lockdep.c:2607)
+> 	> [ 4448.984458] ? syscall_trace_enter (arch/x86/kernel/ptrace.c:1500 (discriminator 2))
+> 	> [ 4448.985621] ? trace_hardirqs_on_caller (kernel/locking/lockdep.c:2600)
+> 	> [ 4448.986754] SyS_sendmmsg (net/socket.c:2201)
+> 	> [ 4448.987708] tracesys (arch/x86/kernel/entry_64.S:542)
+> 	> [ 4448.988929] ==================================================================
 > 
-> diff --git a/drivers/char/hw_random/core.c b/drivers/char/hw_random/core.c
-> index dc80cdab733d..6e02ec103cc7 100644
-> --- a/drivers/char/hw_random/core.c
-> +++ b/drivers/char/hw_random/core.c
-> @@ -362,7 +362,7 @@ static int hwrng_fillfn(void *unused)
->  			continue;
->  		}
->  		add_hwgenerator_randomness((void *)rng_fillbuf, rc,
-> -					   (rc*current_quality)>>10);
-> +					   rc * current_quality * 8 >> 10);
->  	}
->  	hwrng_fill = NULL;
->  	return 0;
-> -- 
-> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-> hosted by The Linux Foundation
+> This reports means that we've come to netlink_sendmsg() with msg->msg_name == NULL and msg->msg_namelen > 0.
 > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> After this report there was no usual "Unable to handle kernel NULL pointer dereference"
+> and this gave me a clue that address 0 is mapped and contains valid socket address structure in it.
+> 
+> This bug was introduced in f3d3342602f8bcbf37d7c46641cb9bca7618eb1c
+> (net: rework recvmsg handler msg_name and msg_namelen logic).
+> Commit message states that:
+> 	"Set msg->msg_name = NULL if user specified a NULL in msg_name but had a
+> 	 non-null msg_namelen in verify_iovec/verify_compat_iovec. This doesn't
+> 	 affect sendto as it would bail out earlier while trying to copy-in the
+> 	 address."
+> But in fact this affects sendto when address 0 is mapped and contains
+> socket address structure in it. In such case copy-in address will succeed,
+> verify_iovec() function will successfully exit with msg->msg_namelen > 0
+> and msg->msg_name == NULL.
+> 
+> This patch fixes it by setting msg_namelen to 0 if msg_name == NULL.
+> 
+> Cc: Hannes Frederic Sowa <hannes@stressinduktion.org>
+> Cc: Eric Dumazet <edumazet@google.com>
+> Cc: <stable@vger.kernel.org>
+> Reported-by: Sasha Levin <sasha.levin@oracle.com>
+> Signed-off-by: Andrey Ryabinin <a.ryabinin@samsung.com>
+
+Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+
+Thank you!
+
+
