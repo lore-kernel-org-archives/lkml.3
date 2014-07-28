@@ -1,89 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752979AbaG1PAw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 11:00:52 -0400
-Received: from mail.kmu-office.ch ([178.209.48.102]:51042 "EHLO
-	mail.kmu-office.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751642AbaG1O5z (ORCPT
+	id S1753014AbaG1PBB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 11:01:01 -0400
+Received: from mail-yh0-f47.google.com ([209.85.213.47]:43963 "EHLO
+	mail-yh0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752982AbaG1PAy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 10:57:55 -0400
-From: Stefan Agner <stefan@agner.ch>
-To: peter.chen@freescale.com, s.hauer@pengutronix.de, shawn.guo@freescale.com
-Cc: b35083@freescale.com, jingchang.lu@freescale.com,
-        linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, stefan@agner.ch
-Subject: [PATCH v2 2/7] ARM: imx: clk-vf610: Add USBPHY clocks
-Date: Mon, 28 Jul 2014 16:57:28 +0200
-Message-Id: <01d727d703ca04c7328ad13f0e4887d7cadd1232.1406558450.git.stefan@agner.ch>
-X-Mailer: git-send-email 2.0.2
-In-Reply-To: <cover.1406558450.git.stefan@agner.ch>
-References: <cover.1406558450.git.stefan@agner.ch>
+	Mon, 28 Jul 2014 11:00:54 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140728143759.GA17837@developer>
+References: <1403026045-16024-1-git-send-email-b.zolnierkie@samsung.com>
+	<20140728143759.GA17837@developer>
+Date: Mon, 28 Jul 2014 20:30:53 +0530
+X-Google-Sender-Auth: bH0SBlmDuCcTB350UBQxhZeeaVw
+Message-ID: <CADGdYn6EN-evo2KCjFfQ2h8gLoop=xTJZO3fnNxBxM9067tjxg@mail.gmail.com>
+Subject: Re: [PATCH v2 0/9] thermal: exynos: various cleanups
+From: amit daniel kachhap <amit.daniel@samsung.com>
+To: Eduardo Valentin <edubezval@gmail.com>
+Cc: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Eduardo Valentin <eduardo.valentin@ti.com>,
+        Zhang Rui <rui.zhang@intel.com>, Tomasz Figa <t.figa@samsung.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This commit adds PLL7 which is required for USBPHY1. It also adds
-the USB PHY and USB Controller clocks and the gates to enable them.
+Hi Eduardo,
 
-Acked-by: Jingchang Lu <jingchang.lu@freescale.com>
-Signed-off-by: Stefan Agner <stefan@agner.ch>
----
- arch/arm/mach-imx/clk-vf610.c           | 12 ++++++++++--
- include/dt-bindings/clock/vf610-clock.h |  5 ++++-
- 2 files changed, 14 insertions(+), 3 deletions(-)
+Please reject this entire series as this is not re-based recently.
+Actually two point trimming which this series seeks to remove is used
+by exynos3250 and is in Rui's tree
+(https://git.kernel.org/cgit/linux/kernel/git/rzhang/linux.git/commit/?h=next&id=1fe56dc16a3dab400206443f70ae158c8f595c42).
 
-diff --git a/arch/arm/mach-imx/clk-vf610.c b/arch/arm/mach-imx/clk-vf610.c
-index 22dc3ee..159c5c4 100644
---- a/arch/arm/mach-imx/clk-vf610.c
-+++ b/arch/arm/mach-imx/clk-vf610.c
-@@ -58,6 +58,8 @@
- #define PFD_PLL1_BASE		(anatop_base + 0x2b0)
- #define PFD_PLL2_BASE		(anatop_base + 0x100)
- #define PFD_PLL3_BASE		(anatop_base + 0xf0)
-+#define PLL3_CTRL		(anatop_base + 0x10)
-+#define PLL7_CTRL		(anatop_base + 0x20)
- 
- static void __iomem *anatop_base;
- static void __iomem *ccm_base;
-@@ -148,6 +150,9 @@ static void __init vf610_clocks_init(struct device_node *ccm_node)
- 	clk[VF610_CLK_PLL5_MAIN] = imx_clk_fixed_factor("pll5_main", "fast_clk_sel", 125, 6);
- 	/* pll6: default 960Mhz */
- 	clk[VF610_CLK_PLL6_MAIN] = imx_clk_fixed_factor("pll6_main", "fast_clk_sel", 40, 1);
-+	/* pll7: USB1 PLL at 480MHz */
-+	clk[VF610_CLK_PLL7_MAIN] = imx_clk_pllv3(IMX_PLLV3_USB,	"pll7_main", "fast_clk_sel", PLL7_CTRL, 0x2);
-+
- 	clk[VF610_CLK_PLL1_PFD_SEL] = imx_clk_mux("pll1_pfd_sel", CCM_CCSR, 16, 3, pll1_sels, 5);
- 	clk[VF610_CLK_PLL2_PFD_SEL] = imx_clk_mux("pll2_pfd_sel", CCM_CCSR, 19, 3, pll2_sels, 5);
- 	clk[VF610_CLK_SYS_SEL] = imx_clk_mux("sys_sel", CCM_CCSR, 0, 3, sys_sels, ARRAY_SIZE(sys_sels));
-@@ -160,8 +165,11 @@ static void __init vf610_clocks_init(struct device_node *ccm_node)
- 	clk[VF610_CLK_PLL4_MAIN_DIV] = clk_register_divider_table(NULL, "pll4_main_div", "pll4_main", 0, CCM_CACRR, 6, 3, 0, pll4_main_div_table, &imx_ccm_lock);
- 	clk[VF610_CLK_PLL6_MAIN_DIV] = imx_clk_divider("pll6_main_div", "pll6_main", CCM_CACRR, 21, 1);
- 
--	clk[VF610_CLK_USBC0] = imx_clk_gate2("usbc0", "pll3_main", CCM_CCGR1, CCM_CCGRx_CGn(4));
--	clk[VF610_CLK_USBC1] = imx_clk_gate2("usbc1", "pll3_main", CCM_CCGR7, CCM_CCGRx_CGn(4));
-+	clk[VF610_CLK_USBPHY0] = imx_clk_gate("usbphy0", "pll3_main", PLL3_CTRL, 6);
-+	clk[VF610_CLK_USBPHY1] = imx_clk_gate("usbphy1", "pll7_main", PLL7_CTRL, 6);
-+
-+	clk[VF610_CLK_USBC0] = imx_clk_gate2("usbc0", "ipg_bus", CCM_CCGR1, CCM_CCGRx_CGn(4));
-+	clk[VF610_CLK_USBC1] = imx_clk_gate2("usbc1", "ipg_bus", CCM_CCGR7, CCM_CCGRx_CGn(4));
- 
- 	clk[VF610_CLK_QSPI0_SEL] = imx_clk_mux("qspi0_sel", CCM_CSCMR1, 22, 2, qspi_sels, 4);
- 	clk[VF610_CLK_QSPI0_EN] = imx_clk_gate("qspi0_en", "qspi0_sel", CCM_CSCDR3, 4);
-diff --git a/include/dt-bindings/clock/vf610-clock.h b/include/dt-bindings/clock/vf610-clock.h
-index a916029..6593757 100644
---- a/include/dt-bindings/clock/vf610-clock.h
-+++ b/include/dt-bindings/clock/vf610-clock.h
-@@ -164,6 +164,9 @@
- #define VF610_CLK_DMAMUX1		151
- #define VF610_CLK_DMAMUX2		152
- #define VF610_CLK_DMAMUX3		153
--#define VF610_CLK_END			154
-+#define VF610_CLK_PLL7_MAIN		154
-+#define VF610_CLK_USBPHY0		155
-+#define VF610_CLK_USBPHY1		156
-+#define VF610_CLK_END			157
- 
- #endif /* __DT_BINDINGS_CLOCK_VF610_H */
--- 
-2.0.2
+Thanks,
+Amit D
 
+
+On Mon, Jul 28, 2014 at 8:07 PM, Eduardo Valentin <edubezval@gmail.com> wrote:
+> On Tue, Jun 17, 2014 at 07:27:16PM +0200, Bartlomiej Zolnierkiewicz wrote:
+>> Hi,
+>>
+>> This patch series contains various cleanups for EXYNOS thermal
+>> driver.  Overall it decreases driver's LOC by 12%.  It is based
+>> on next-20140617 kernel.  It should not cause any functionality
+>> changes.
+>>
+>> Changes since v1:
+>> - synced patches against next-20140617
+>> - merged patch "thermal: exynos: remove unused defines" into
+>>   "thermal: exynos: remove unused struct exynos_tmu_registers
+>>   entries" one (per request from Eduardo)
+>> - improved patch descriptions for patches #1-5
+>> - fixed documentation for pdata->gain and pdata->reference_voltage
+>> - added Reviewed-by from Amit to patches #6, #7 and #10
+>> - added missing Acked-by from Kyungmin Park
+>
+> Pulled the series.
+>
+> Thanks.
+>
+>>
+>> Best regards,
+>> --
+>> Bartlomiej Zolnierkiewicz
+>> Samsung R&D Institute Poland
+>> Samsung Electronics
+>>
+>>
+>> Bartlomiej Zolnierkiewicz (9):
+>>   thermal: exynos: remove unused struct exynos_tmu_registers entries
+>>   thermal: exynos: remove dead code for HW_MODE calibration
+>>   thermal: exynos: remove dead code for TYPE_TWO_POINT_TRIMMING
+>>     calibration
+>>   thermal: exynos: remove redundant pdata checks from
+>>     exynos_tmu_initialize()
+>>   thermal: exynos: remove redundant threshold_code checks from
+>>     exynos_tmu_initialize()
+>>   thermal: exynos: simplify temp_to_code() and code_to_temp()
+>>   thermal: exynos: cache non_hw_trigger_levels in pdata
+>>   thermal: exynos: remove redundant pdata checks from
+>>     exynos_tmu_control()
+>>   thermal: exynos: remove identical values from exynos*_tmu_registers
+>>     structures
+>>
+>>  drivers/thermal/samsung/exynos_thermal_common.h |   1 -
+>>  drivers/thermal/samsung/exynos_tmu.c            | 181 ++++--------------------
+>>  drivers/thermal/samsung/exynos_tmu.h            |  90 +-----------
+>>  drivers/thermal/samsung/exynos_tmu_data.c       |  64 +--------
+>>  drivers/thermal/samsung/exynos_tmu_data.h       |  33 +----
+>>  5 files changed, 41 insertions(+), 328 deletions(-)
+>>
+>> --
+>> 1.8.2.3
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
