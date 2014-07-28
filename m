@@ -1,70 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752896AbaG1Nhi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 09:37:38 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:57226 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752361AbaG1Nhb convert rfc822-to-8bit (ORCPT
+	id S1752552AbaG1NlM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 09:41:12 -0400
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:51690 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751999AbaG1NlI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 09:37:31 -0400
-Message-ID: <53D65236.7080606@arm.com>
-Date: Mon, 28 Jul 2014 14:37:58 +0100
-From: Sudeep Holla <sudeep.holla@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Stephen Boyd <sboyd@codeaurora.org>
-CC: Sudeep Holla <sudeep.holla@arm.com>, LKML <linux-kernel@vger.kernel.org>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH v2 1/9] drivers: base: add new class "cpu" to group cpu
- devices
-References: <1403717444-23559-1-git-send-email-sudeep.holla@arm.com> <1406306692-7135-1-git-send-email-sudeep.holla@arm.com> <1406306692-7135-2-git-send-email-sudeep.holla@arm.com> <53D2AB54.5030809@codeaurora.org>
-In-Reply-To: <53D2AB54.5030809@codeaurora.org>
-X-OriginalArrivalTime: 28 Jul 2014 13:37:27.0630 (UTC) FILETIME=[128926E0:01CFAA69]
-X-MC-Unique: 114072814372803301
-Content-Type: text/plain; charset=WINDOWS-1252; format=flowed
-Content-Transfer-Encoding: 8BIT
+	Mon, 28 Jul 2014 09:41:08 -0400
+From: Grant Likely <grant.likely@linaro.org>
+Subject: Re: [PATCH/RFC v4 07/21] of: add of_node_ncmp wrapper
+To: Jacek Anaszewski <j.anaszewski@samsung.com>, linux-leds@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: kyungmin.park@samsung.com, b.zolnierkie@samsung.com,
+        Jacek Anaszewski <j.anaszewski@samsung.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Michal Simek <monstr@monstr.eu>
+In-Reply-To: <1405087464-13762-8-git-send-email-j.anaszewski@samsung.com>
+References: <1405087464-13762-1-git-send-email-j.anaszewski@samsung.com>
+	<1405087464-13762-8-git-send-email-j.anaszewski@samsung.com>
+Date: Mon, 28 Jul 2014 07:41:00 -0600
+Message-Id: <20140728134100.86C07C408A9@trevor.secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 11 Jul 2014 16:04:10 +0200, Jacek Anaszewski <j.anaszewski@samsung.com> wrote:
+> The wrapper for strnicmp is required for checking whether a node has
+> expected prefix.
+> 
+> Signed-off-by: Jacek Anaszewski <j.anaszewski@samsung.com>
+> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
+> Cc: Grant Likely <grant.likely@linaro.org>
+> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> Cc: Michal Simek <monstr@monstr.eu>
+> ---
+>  include/linux/of.h |    1 +
+>  1 file changed, 1 insertion(+)
+> 
+> diff --git a/include/linux/of.h b/include/linux/of.h
+> index 692b56c..9a53eea 100644
+> --- a/include/linux/of.h
+> +++ b/include/linux/of.h
+> @@ -199,6 +199,7 @@ static inline unsigned long of_read_ulong(const __be32 *cell, int size)
+>  #define of_compat_cmp(s1, s2, l)	strcasecmp((s1), (s2))
+>  #define of_prop_cmp(s1, s2)		strcmp((s1), (s2))
+>  #define of_node_cmp(s1, s2)		strcasecmp((s1), (s2))
+> +#define of_node_ncmp(s1, s2, n)		strnicmp((s1), (s2), (n))
+>  #endif
 
+Don't forget to add an of_node_ncmp() define to
+arch/sparc/include/asm/prom.h. Sparc has its own rules.
 
-On 25/07/14 20:09, Stephen Boyd wrote:
-> On 07/25/14 09:44, Sudeep Holla wrote:
->> From: Sudeep Holla <sudeep.holla@arm.com>
->>
->> This patch creates a new class called "cpu" and assigns it to all the
->> cpu devices. This helps in grouping all the cpu devices and associated
->> child devices under the same class.
->>
->> This patch also:
->> 1. modifies the get_parent_device to return the legacy path
->>     (/sys/devices/system/cpu/..) for the cpu class devices to support
->>     existing sysfs ABI
->> 2. avoids creating link in the class directory pointing to the device as
->>     there would be per-cpu instance of these devices with the same name
->> 3. makes sure subsystem symlink continues pointing to cpu bus instead of
->>     cpu class for cpu devices
->>
->> Signed-off-by: Sudeep Holla <sudeep.holla@arm.com>
->> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
->
-> Why can't we make a 'cache' bus that the cache devices hang off of? It
-> doesn't make sense to me why we would want to have cache devices living
-> on the cpu bus.
->
-
-Yes we can group them under cache, but to support legacy sysfs path
-under which various cpu related information including caches, we need
-to have a workaround as in this patch.
-
-Instead of having this fixup for each class like cache, having them
-grouped under cpu is better IMO and hence I added caches to cpu class.
-It also helps to move few other cpu related subsystems using raw
-kobjects to the device attribute groups and corresponding APIs.
-
-Regards,
-Sudeep
+g.
 
