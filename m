@@ -1,111 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751479AbaG1Q6h (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 12:58:37 -0400
-Received: from mail-vc0-f181.google.com ([209.85.220.181]:50923 "EHLO
-	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751229AbaG1Q6X convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 12:58:23 -0400
+	id S1751527AbaG1Q7Z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 12:59:25 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:57541 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750701AbaG1Q7X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jul 2014 12:59:23 -0400
+Date: Mon, 28 Jul 2014 18:59:20 +0200
+From: "Luis R. Rodriguez" <mcgrof@suse.com>
+To: Yuval Mintz <Yuval.Mintz@qlogic.com>
+Cc: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
+        Joseph Salisbury <joseph.salisbury@canonical.com>,
+        Kay Sievers <kay@vrfy.org>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Tim Gardner <tim.gardner@canonical.com>,
+        Pierre Fersing <pierre-fersing@pierref.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>, Benjamin Poirier <bpoirier@suse.de>,
+        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
+        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
+        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
+        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
+        Hariprasad S <hariprasad@chelsio.com>,
+        Santosh Rastapur <santosh@chelsio.com>,
+        "MPT-FusionLinux.pdl@avagotech.com" 
+	<MPT-FusionLinux.pdl@avagotech.com>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>
+Subject: Re: [PATCH 1/3] driver core: enable drivers to use deferred probe
+	from init
+Message-ID: <20140728165920.GF21930@wotan.suse.de>
+References: <1406558067-25308-1-git-send-email-mcgrof@do-not-panic.com> <B5657A6538887040AD3A81F1008BEC63B06F9A@avmb3.qlogic.org> <20140728153811.GD21930@wotan.suse.de> <B5657A6538887040AD3A81F1008BEC63B06FCF@avmb3.qlogic.org> <20140728165248.GE21930@wotan.suse.de>
 MIME-Version: 1.0
-X-Originating-IP: [173.13.129.225]
-In-Reply-To: <53D631B6.1050603@rock-chips.com>
-References: <1405774529-26027-1-git-send-email-caesar.wang@rock-chips.com>
-	<1405774529-26027-3-git-send-email-caesar.wang@rock-chips.com>
-	<20140721085001.GG8843@ulmo>
-	<53CD0E82.6030901@rock-chips.com>
-	<20140721132723.GH15238@ulmo>
-	<53D23192.4000908@rock-chips.com>
-	<CAD=FV=XLjYQYmHxp3HBdwVmt6Wa7y-LEnsFKobsgVfFCp2-rRg@mail.gmail.com>
-	<53D50601.1020106@rock-chips.com>
-	<CAD=FV=UvF58NiY76FMi-TPVzsaWRJsR-M5HnHc7MRAWjwjY1jw@mail.gmail.com>
-	<53D631B6.1050603@rock-chips.com>
-Date: Mon, 28 Jul 2014 09:58:22 -0700
-Message-ID: <CAOesGMgPDOQ0Z5b+d8nCiT4q_OGcYfv0zCb1naZVAqapaOtnPw@mail.gmail.com>
-Subject: Re: [PATCH v2 2/2] pwm: add this patch to support the new pwm of
- Rockchip SoCs
-From: Olof Johansson <olof@lixom.net>
-To: caesar <caesar.wang@rock-chips.com>
-Cc: Doug Anderson <dianders@chromium.org>,
-        Thierry Reding <thierry.reding@gmail.com>, linux-pwm@vger.kernel.org,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140728165248.GE21930@wotan.suse.de>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 28, 2014 at 4:19 AM, caesar <caesar.wang@rock-chips.com> wrote:
-> Doug,
-> 在 2014年07月28日 12:01, Doug Anderson 写道:
->
->> Caesar,
->>
->> On Sun, Jul 27, 2014 at 7:00 AM, caesar <caesar.wang@rock-chips.com>
->> wrote:
->>>
->>> /*I think will be show the faill log:->
->>>
->>> * rockchip-pwm ff9301a0.pwm: can't request region for resource [mem
->>> 0xff9301a0-0xff93019f]
->>> */
->>>
->>> pc->base = devm_ioremap_resource(dev, regs);
->>
->> Did you actually code this up and try it and get this error?
->
-> Yeah.
->
->> I hadn't
->> tried it but I researched other dts files and it looked as if there
->> was one example that was doing this.  ...but perhaps it wasn't
->> actually doing the ioremap_resource on both ranges.
->>
->> I'd imagine that this is _probably_ equivalent to what Thierry was
->> suggesting, so if it didn't work then maybe Thierry's won't work
->> either?
->>
->> I don't have any other great suggestions other than doing two memory
->> ranges for lcdc:
->>
->>           lcdc@ff930000 {
->>                   compatible = "rockchip,rk3288-lcdc";
->>                   reg = <0xff930000 0x1a0>, <0xff9301b0 0xfe50>;
->>                   ...
->>           };
->>           pwm@ff9301a0 {
->>                   compatible = "rockchip,vop-pwm";
->>                   reg = <0xff9301a0 0x10>;
->>                   ...
->>           };
->>
->> ...but I am certainly nowhere near an expert on this stuff...
->>
->> -Doug
->>
->>
->>
-> I has solve in lcdc driver,but I always feel awkward. I think a good way to
-> solve in pwm driver.
-> Unfortunately that  so far ,I have not a good idle in pwm driver.
->
-> Maybe,I  let do it that way in lcdc driver.
+On Mon, Jul 28, 2014 at 06:52:48PM +0200, Luis R. Rodriguez wrote:
+> On Mon, Jul 28, 2014 at 03:46:32PM +0000, Yuval Mintz wrote:
+> > > Subject: Re: [PATCH 1/3] driver core: enable drivers to use deferred probe from
+> > > init
+> > > 
+> > > On Mon, Jul 28, 2014 at 03:12:11PM +0000, Yuval Mintz wrote:
+> > > > Perhaps this is a silly question, but what guarantees that the
+> > > > deferred probe list will actually be triggered, e.g., in case the
+> > > > delayed device is the last device in the system?
+> > > 
+> > > The dev->init_delayed_probe is used to ensure that we'd add the device to the
+> > > deferred probe list once making this a per device thing if the driver has the field
+> > > delay_probe set to true. This technically also allows this to be a per device thing
+> > > so with some more work we could enable drivers to only enable this for specific
+> > > devices but at this point this did not seem required.
+> > 
+> > Sorry for not being clear, but I didn't meant 'what guarantees that the device
+> > will be added to the deferred probe', but rather what guarantees that the
+> > deferred workqueue will be scheduled.
+> > 
+> > To the best of my knowledge the deferring mechanism works only if one device
+> > is dependent upon another, e.g., for Multi-function devices where one device
+> > probe is dependent upon the others - which are soon-to-be probed.
+> 
+> The workqueue will be kicked when driver_deferred_probe_trigger() gets
+> poked, we do that in the late_initcall(deferred_probe_initcall), it
+> also gets flushed there with a flush_workqueue(deferred_wq).
 
-I think there's an easier way to do this, by not focusing _too_ much
-on the device tree:
+But come to think of it that will work well for devices already plugged in
+so indeed I think that driver_deferred_probe_add() needs a check added
+for for if (!driver_deferred_probe_enable) then we have to
+driver_deferred_probe_trigger(). The driver_deferred_probe_enable is set
+to false upon init, but later on late init it gets set to true so with
+that check we'd  only generate the trigger after late init call.
 
-* Define a platform_data structure for the PWM driver, which contains
-readl/writel accessors as well as the device type (i.e. what you use
-the compatible field and the lookup table for today).
-* Populate the platform_device in the clcd driver, and register that
-* Make the PWM driver probe as a regular platform device if pdata is passed
-* Make a readl/writel wrapper that either falls back to native
-readl/writel when there aren't any passed in, or make the DT code fill
-in the pdata with the native versions in that case.
+I can fold that in the v2.
 
-Going full MFD on this seems overkill, unless there is also a shared
-interrupt that needs to be handled.
-
--Olof
+  Luis
