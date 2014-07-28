@@ -1,74 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752897AbaG1MLw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 08:11:52 -0400
-Received: from www.linutronix.de ([62.245.132.108]:39946 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752870AbaG1MLr (ORCPT
+	id S1752922AbaG1MMe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 08:12:34 -0400
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:50265 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752233AbaG1MMa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 08:11:47 -0400
-Date: Mon, 28 Jul 2014 14:11:35 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        Linux PM list <linux-pm@vger.kernel.org>
-Subject: Re: [PATCH, v2]
-In-Reply-To: <3337421.bsfMykWVnZ@vostro.rjw.lan>
-Message-ID: <alpine.DEB.2.10.1407281350550.23352@nanos>
-References: <20140724212620.GO3935@laptop> <1663327.PISiM9sMHC@vostro.rjw.lan> <3637397.iCmFpOsayO@vostro.rjw.lan> <3337421.bsfMykWVnZ@vostro.rjw.lan>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Mon, 28 Jul 2014 08:12:30 -0400
+From: pramod.gurav.etc@gmail.com
+X-Google-Original-From: pramod.gurav@smartplayin.com
+To: linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Pramod Gurav <pramod.gurav@smartplayin.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>,
+        "David S. Miller" <davem@davemloft.net>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: [PATCH] crypto: atmel-sha: Switch to managed version of kzalloc
+Date: Mon, 28 Jul 2014 17:45:56 +0530
+Message-Id: <1406549756-26876-1-git-send-email-pramod.gurav@smartplayin.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 28 Jul 2014, Rafael J. Wysocki wrote:
-> On Sunday, July 27, 2014 05:53:07 PM Rafael J. Wysocki wrote:
->  irqreturn_t
-> +do_irqaction(struct irq_desc *desc, struct irqaction *action,
-> +	     unsigned int irq, void *dev_id)
-> +{
-> +	irqreturn_t ret;
-> +
-> +	if (unlikely((desc->istate & IRQS_SHARED_SUSPENDED) &&
-> +		     !(action->flags & IRQF_NO_SUSPEND)))
-> +		return IRQ_NONE;
+From: Pramod Gurav <pramod.gurav@smartplayin.com>
 
-I really want to avoid that conditional. We burden it on every
-interrupt just to deal with this nonsense.
+This patch switches data allocation from kzalloc to devm_kzalloc.
+It also removed some kfree() on data that was earlier allocated
+using devm_kzalloc().
 
-A simple solution for this is to add irq_desc::action_suspended and
-move the shared actions which are not flagged NO_SUSPEND over and
-bring them back on resume.
+CC: Herbert Xu <herbert@gondor.apana.org.au>
+CC: "David S. Miller" <davem@davemloft.net>
+CC: Grant Likely <grant.likely@linaro.org>
+CC: Rob Herring <robh+dt@kernel.org>
+CC: Nicolas Ferre <nicolas.ferre@atmel.com>
 
-> Index: linux-pm/kernel/irq/spurious.c
-> ===================================================================
-> --- linux-pm.orig/kernel/irq/spurious.c
-> +++ linux-pm/kernel/irq/spurious.c
-> @@ -275,6 +275,8 @@ try_misrouted_irq(unsigned int irq, stru
->  void note_interrupt(unsigned int irq, struct irq_desc *desc,
->  		    irqreturn_t action_ret)
->  {
-> +	int misrouted;
-> +
->  	if (desc->istate & IRQS_POLL_INPROGRESS ||
->  	    irq_settings_is_polled(desc))
->  		return;
-> @@ -384,6 +386,9 @@ void note_interrupt(unsigned int irq, st
->  		}
->  	}
->  
-> +	misrouted = unlikely(try_misrouted_irq(irq, desc, action_ret)) ?
-> +			misrouted_irq(irq) : 0;
+Signed-off-by: Pramod Gurav <pramod.gurav@smartplayin.com>
+---
+ drivers/crypto/atmel-sha.c |    9 ++-------
+ 1 file changed, 2 insertions(+), 7 deletions(-)
 
-If the system is suspended, why would we try misrouted irqs at all?
-All non wakeup irqs are disabled, so we just spend a gazillion of
-cycles for nothing.
+diff --git a/drivers/crypto/atmel-sha.c b/drivers/crypto/atmel-sha.c
+index 0618be0..9a4f69e 100644
+--- a/drivers/crypto/atmel-sha.c
++++ b/drivers/crypto/atmel-sha.c
+@@ -1353,7 +1353,6 @@ static struct crypto_platform_data *atmel_sha_of_init(struct platform_device *pd
+ 					GFP_KERNEL);
+ 	if (!pdata->dma_slave) {
+ 		dev_err(&pdev->dev, "could not allocate memory for dma_slave\n");
+-		devm_kfree(&pdev->dev, pdata);
+ 		return ERR_PTR(-ENOMEM);
+ 	}
+ 
+@@ -1375,7 +1374,8 @@ static int atmel_sha_probe(struct platform_device *pdev)
+ 	unsigned long sha_phys_size;
+ 	int err;
+ 
+-	sha_dd = kzalloc(sizeof(struct atmel_sha_dev), GFP_KERNEL);
++	sha_dd = devm_kzalloc(&pdev->dev, sizeof(struct atmel_sha_dev),
++				GFP_KERNEL);
+ 	if (sha_dd == NULL) {
+ 		dev_err(dev, "unable to alloc data struct.\n");
+ 		err = -ENOMEM;
+@@ -1490,8 +1490,6 @@ clk_err:
+ 	free_irq(sha_dd->irq, sha_dd);
+ res_err:
+ 	tasklet_kill(&sha_dd->done_task);
+-	kfree(sha_dd);
+-	sha_dd = NULL;
+ sha_dd_err:
+ 	dev_err(dev, "initialization failed.\n");
+ 
+@@ -1523,9 +1521,6 @@ static int atmel_sha_remove(struct platform_device *pdev)
+ 	if (sha_dd->irq >= 0)
+ 		free_irq(sha_dd->irq, sha_dd);
+ 
+-	kfree(sha_dd);
+-	sha_dd = NULL;
+-
+ 	return 0;
+ }
+ 
+-- 
+1.7.9.5
 
-Thanks,
-
-	tglx
