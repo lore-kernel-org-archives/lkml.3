@@ -1,60 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752199AbaG1KFq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 06:05:46 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:34262 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750903AbaG1KFk (ORCPT
+	id S1752153AbaG1KFn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 06:05:43 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51093 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750949AbaG1KFk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 28 Jul 2014 06:05:40 -0400
-Date: Mon, 28 Jul 2014 12:05:39 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Soren Brinkmann <soren.brinkmann@xilinx.com>
-Cc: John Stultz <john.stultz@linaro.org>, Thomas Gleixner <tglx@linutronix.de>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Len Brown <len.brown@intel.com>, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, Daniel Lezcano <daniel.lezcano@linaro.org>
-Subject: Re: [PATCH RFC v2] PM / sleep: Fix racing timers
-Message-ID: <20140728100538.GA16237@amd.pavel.ucw.cz>
-References: <53D083C5.2000501@linaro.org>
- <1406322408-15408-1-git-send-email-soren.brinkmann@xilinx.com>
+Date: Mon, 28 Jul 2014 11:05:30 +0100
+From: Luis Henriques <luis.henriques@canonical.com>
+To: Jan Kardell <jan.kardell@telliq.com>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com, Jonathan Cameron <jic23@kernel.org>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: Re: [PATCH] iio: ti_am335x_adc: Fix prerequisite for stepid patch
+Message-ID: <20140728100530.GB5068@hercules>
+References: <1406195177-8656-113-git-send-email-luis.henriques@canonical.com>
+ <1406286826-30834-1-git-send-email-jan.kardell@telliq.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <1406322408-15408-1-git-send-email-soren.brinkmann@xilinx.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1406286826-30834-1-git-send-email-jan.kardell@telliq.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 2014-07-25 14:06:48, Soren Brinkmann wrote:
-> On platforms that do not power off during suspend, successfully entering
-> suspend races with timers.
+On Fri, Jul 25, 2014 at 01:13:46PM +0200, Jan Kardell wrote:
+> Kernel series 3.11 and 3.12 does not initialize scan_index in the
+> iio_chan_spec structure as 3.13 and newer does. This is necessary
+> for the stepid patch to work, otherwise it even breaks the cases
+> that worked before the stepid patch.
 > 
-> The race happening in a couple of location is:
+> Unfortunately the stepid patch seems to already be in 3.12.25,
+> must have missed that inclusion.
 > 
->   1. disable IRQs   		(e.g. arch_suspend_disable_irqs())
->      ...
->   2. syscore_suspend()
->       -> timekeeping_suspend()
->        -> clockevents_notify(SUSPEND)
->         -> tick_suspend()   	(timers are turned off here)
->      ...
->   3. wfi            		(wait for wake-IRQ here)
+> Signed-off-by: Jan Kardell <jan.kardell@telliq.com>
+> ---
+>  drivers/iio/adc/ti_am335x_adc.c | 1 +
+>  1 file changed, 1 insertion(+)
 > 
-> Between steps 1 and 2 the timers can still generate interrupts that are
-> not handled and stay pending until step 3. That pending IRQ causes an
-> immediate - spurious - wake.
+> diff --git a/drivers/iio/adc/ti_am335x_adc.c b/drivers/iio/adc/ti_am335x_adc.c
+> index 3ceac3e..6c56418 100644
+> --- a/drivers/iio/adc/ti_am335x_adc.c
+> +++ b/drivers/iio/adc/ti_am335x_adc.c
+> @@ -120,6 +120,7 @@ static int tiadc_channel_init(struct iio_dev *indio_dev, int channels)
+>  		chan->channel = adc_dev->channel_line[i];
+>  		chan->info_mask_separate = BIT(IIO_CHAN_INFO_RAW);
+>  		chan->datasheet_name = chan_name_ain[chan->channel];
+> +		chan->scan_index = i;
+>  		chan->scan_type.sign = 'u';
+>  		chan->scan_type.realbits = 12;
+>  		chan->scan_type.storagebits = 32;
+> -- 
+> 1.8.4.5
 > 
-> The solution is to move the clockevents suspend/resume notification
-> out of the syscore_suspend step and explictly call them at the appropriate
-> time in the suspend/hibernation paths. I.e. timers are suspend _before_
-> IRQs get disabled. And accordingly in the resume path.
-> 
-> Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
 
-Did you test the hibernation?
+Ah, nice catch!
 
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Ideally, I would pick commit ca9a563805f7ae821e3303b1bdbc65d3a3c783ff
+("iio: ti_am335x_adc: Add continuous sampling support"), which adds
+this scan_index initialisation.  However, this commit doesn't seem be
+suitable for a stable kernel, so I'll add this patch to the 3.11.10.14
+queue branch.  Thanks a lot, Jan.
+
+Cheers,
+--
+Luís
