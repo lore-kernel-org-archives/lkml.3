@@ -1,90 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752834AbaG1ODm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 10:03:42 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:48096 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752762AbaG1ODk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 10:03:40 -0400
-Date: Mon, 28 Jul 2014 10:01:57 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Hugh Dickins <hughd@google.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>, Rik van Riel <riel@redhat.com>,
-        Dave Jones <davej@redhat.com>, Dave Chinner <david@fromorbit.com>,
-        xfs@oss.sgi.com, linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH] mm: fix direct reclaim writeback regression
-Message-ID: <20140728140157.GM1725@cmpxchg.org>
-References: <alpine.LSU.2.11.1407261248140.13796@eggly.anvils>
+	id S1752799AbaG1OFS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 10:05:18 -0400
+Received: from helcar.apana.org.au ([209.40.204.226]:34717 "EHLO
+	helcar.apana.org.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752140AbaG1OFP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jul 2014 10:05:15 -0400
+Date: Mon, 28 Jul 2014 22:05:07 +0800
+From: Herbert Xu <herbert@gondor.apana.org.au>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux Crypto Mailing List <linux-crypto@vger.kernel.org>
+Subject: Crypto Fixes for 3.16
+Message-ID: <20140728140507.GA11926@gondor.apana.org.au>
+References: <20120126024342.GA12492@gondor.apana.org.au>
+ <20120823083242.GA23102@gondor.apana.org.au>
+ <20121109093005.GA25632@gondor.apana.org.au>
+ <20130328082841.GA7425@gondor.apana.org.au>
+ <20131203124129.GA12067@gondor.apana.org.au>
+ <20131209115705.GA1361@gondor.apana.org.au>
+ <20140101061016.GA22579@gondor.apana.org.au>
+ <20140203125944.GA31446@gondor.apana.org.au>
+ <20140710090314.GA15729@gondor.apana.org.au>
+ <20140718105717.GA18087@gondor.apana.org.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LSU.2.11.1407261248140.13796@eggly.anvils>
+In-Reply-To: <20140718105717.GA18087@gondor.apana.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 26, 2014 at 12:58:23PM -0700, Hugh Dickins wrote:
-> Shortly before 3.16-rc1, Dave Jones reported:
-> 
-> WARNING: CPU: 3 PID: 19721 at fs/xfs/xfs_aops.c:971
->          xfs_vm_writepage+0x5ce/0x630 [xfs]()
-> CPU: 3 PID: 19721 Comm: trinity-c61 Not tainted 3.15.0+ #3
-> Call Trace:
->  [<ffffffffc023068e>] xfs_vm_writepage+0x5ce/0x630 [xfs]
->  [<ffffffff8316f759>] shrink_page_list+0x8f9/0xb90
->  [<ffffffff83170123>] shrink_inactive_list+0x253/0x510
->  [<ffffffff83170c93>] shrink_lruvec+0x563/0x6c0
->  [<ffffffff83170e2b>] shrink_zone+0x3b/0x100
->  [<ffffffff831710e1>] shrink_zones+0x1f1/0x3c0
->  [<ffffffff83171414>] try_to_free_pages+0x164/0x380
->  [<ffffffff83163e52>] __alloc_pages_nodemask+0x822/0xc90
->  [<ffffffff831abeff>] alloc_pages_vma+0xaf/0x1c0
->  [<ffffffff8318a931>] handle_mm_fault+0xa31/0xc50
-> etc.
-> 
->  970   if (WARN_ON_ONCE((current->flags & (PF_MEMALLOC|PF_KSWAPD)) ==
->  971                   PF_MEMALLOC))
-> 
-> I did not respond at the time, because a glance at the PageDirty block
-> in shrink_page_list() quickly shows that this is impossible: we don't do
-> writeback on file pages (other than tmpfs) from direct reclaim nowadays.
-> Dave was hallucinating, but it would have been disrespectful to say so.
-> 
-> However, my own /var/log/messages now shows similar complaints
-> WARNING: CPU: 1 PID: 28814 at fs/ext4/inode.c:1881 ext4_writepage+0xa7/0x38b()
-> WARNING: CPU: 0 PID: 27347 at fs/ext4/inode.c:1764 ext4_writepage+0xa7/0x38b()
-> from stressing some mmotm trees during July.
-> 
-> Could a dirty xfs or ext4 file page somehow get marked PageSwapBacked,
-> so fail shrink_page_list()'s page_is_file_cache() test, and so proceed
-> to mapping->a_ops->writepage()?
-> 
-> Yes, 3.16-rc1's 68711a746345 ("mm, migration: add destination page
-> freeing callback") has provided such a way to compaction: if migrating
-> a SwapBacked page fails, its newpage may be put back on the list for
-> later use with PageSwapBacked still set, and nothing will clear it.
->
-> Whether that can do anything worse than issue WARN_ON_ONCEs, and get
-> some statistics wrong, is unclear: easier to fix than to think through
-> the consequences.
-> 
-> Fixing it here, before the put_new_page(), addresses the bug directly,
-> but is probably the worst place to fix it.  Page migration is doing too
-> many parts of the job on too many levels: fixing it in move_to_new_page()
-> to complement its SetPageSwapBacked would be preferable, except why is it
-> (and newpage->mapping and newpage->index) done there, rather than down in
-> migrate_page_move_mapping(), once we are sure of success?  Not a cleanup
-> to get into right now, especially not with memcg cleanups coming in 3.17.
+Hi Linus:
 
-That needs verification that no ->migratepage() expects mapping
-(working PageAnon()) and index to be set up on newpage.
+This push fixes a regression on ARM where odd-sized blocks supplied
+to AES may cause crashes.
 
-The freelist putback looks quite fragile, we should probably add
-something like free_pages_prepare() / free_page_check() in there.
+Please pull from
 
-> Reported-by: Dave Jones <davej@redhat.com>
-> Signed-off-by: Hugh Dickins <hughd@google.com>
+git://git.kernel.org/pub/scm/linux/kernel/git/herbert/crypto-2.6.git
 
-Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+or
+
+master.kernel.org:/pub/scm/linux/kernel/git/herbert/crypto-2.6.git
+
+
+Mikulas Patocka (2):
+      crypto: arm64-aes - fix encryption of unaligned data
+      crypto: arm-aes - fix encryption of unaligned data
+
+ arch/arm/crypto/aesbs-glue.c |   10 +++++-----
+ arch/arm64/crypto/aes-glue.c |   12 ++++++------
+ 2 files changed, 11 insertions(+), 11 deletions(-)
+
+Thanks,
+-- 
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
