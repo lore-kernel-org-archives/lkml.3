@@ -1,216 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752191AbaG1Kd2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 06:33:28 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:59047 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751392AbaG1KdZ (ORCPT
+	id S1752140AbaG1Ki2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 06:38:28 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:46765 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751642AbaG1Ki0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 06:33:25 -0400
-X-AuditID: cbfec7f5-b7f776d000003e54-10-53d626f20c41
-Message-id: <53D62599.6000605@samsung.com>
-Date: Mon, 28 Jul 2014 14:27:37 +0400
-From: Andrey Ryabinin <a.ryabinin@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.6.0
-MIME-version: 1.0
-To: "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Sasha Levin <sasha.levin@oracle.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andi Kleen <ak@linux.intel.com>,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        Dave Hansen <dave.hansen@linux.intel.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Dave Chinner <david@fromorbit.com>, Ning Qu <quning@gmail.com>,
-        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Dave Jones <davej@redhat.com>,
-        stable@vger.kernel.org,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Konstantin Khlebnikov <koct9i@gmail.com>,
-        Hugh Dickins <hughd@google.com>
-Subject: Re: [PATCH] mm: don't allow fault_around_bytes to be 0
-References: <53D07E96.5000006@oracle.com>
- <1406533400-6361-1-git-send-email-a.ryabinin@samsung.com>
- <20140728093611.GA3975@node.dhcp.inet.fi>
-In-reply-to: <20140728093611.GA3975@node.dhcp.inet.fi>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrEIsWRmVeSWpSXmKPExsVy+t/xK7qf1K4FG1zYrGFxfIKlxZz1a9gs
-	XmxoZ7TYcr2JyWLLsXuMFk8/9bFY3Hw+h8VizcSFzBYrOx+wWuzZe5LF4vKuOWwW99b8Z7U4
-	sPwoi8Xkd88YLfYcs7b4e2U9i8XiI7eZLRZsfMRo8ajvLbvF+b/HWR1EPE4tkvDYOesuu8eC
-	TaUei/e8ZPLY9GkSu8eJGb9ZPOadDPT4+PQWi8f7fVfZPGb3PWXy2Hy62uPzJjmPTU/eMgXw
-	RnHZpKTmZJalFunbJXBlTFx3krHgsUnFxv2L2BsYt2h3MXJySAiYSPRf7GKGsMUkLtxbz9bF
-	yMUhJLCUUWJe5xomCKeZSaJp1mqwKl4BLYk1U24xdjFycLAIqEq0/ogECbMJ6En8m7WdDcQW
-	FYiQOND3jBWiXFDix+R7LCC2iEC4xLzeWSwgM5kF5rJKPO9/DTZTWMBeovXfSXaIZRMZJfY/
-	vsEIkuAUMJP4Pn8/WDezgI7E/tZpbBC2vMTmNW+ZJzAKzEKyZBaSsllIyhYwMq9iFE0tTS4o
-	TkrPNdIrTswtLs1L10vOz93ECInXrzsYlx6zOsQowMGoxMNb8O5KsBBrYllxZe4hRgkOZiUR
-	3vZ/V4OFeFMSK6tSi/Lji0pzUosPMTJxcEo1ME5YrZ4cJbdy5gLb6voJZ+6vT6w8WTypbN2Z
-	975lYeYWGzxkudf08irzm7R9f1Cv0D7v0zSu5upDXKlGHK4CjyyXzu5w/LPCP6/gyaXGQ0Up
-	/eK9oZVmjL171baGbK8MlHurtXSe+oy3849O47b4965SqWDzAQ7PbdLHyjoDM6RnOvmrSH+Z
-	osRSnJFoqMVcVJwIAAMsrGq1AgAA
+	Mon, 28 Jul 2014 06:38:26 -0400
+Date: Mon, 28 Jul 2014 12:38:12 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Yuyang Du <yuyang.du@intel.com>
+Cc: Morten Rasmussen <morten.rasmussen@arm.com>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "pjt@google.com" <pjt@google.com>,
+        "bsegall@google.com" <bsegall@google.com>,
+        "arjan.van.de.ven@intel.com" <arjan.van.de.ven@intel.com>,
+        "len.brown@intel.com" <len.brown@intel.com>,
+        "rafael.j.wysocki@intel.com" <rafael.j.wysocki@intel.com>,
+        "alan.cox@intel.com" <alan.cox@intel.com>,
+        "mark.gross@intel.com" <mark.gross@intel.com>,
+        "fengguang.wu@intel.com" <fengguang.wu@intel.com>
+Subject: Re: [PATCH 0/2 v4] sched: Rewrite per entity runnable load average
+ tracking
+Message-ID: <20140728103812.GP6758@twins.programming.kicks-ass.net>
+References: <1405639567-21445-1-git-send-email-yuyang.du@intel.com>
+ <20140718153931.GJ8700@e103034-lin>
+ <20140727190237.GB22986@intel.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="lnoGpPIaYJcLEQ+J"
+Content-Disposition: inline
+In-Reply-To: <20140727190237.GB22986@intel.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/28/14 13:36, Kirill A. Shutemov wrote:
-> On Mon, Jul 28, 2014 at 11:43:20AM +0400, Andrey Ryabinin wrote:
->> Sasha Levin triggered use-after-free when fuzzing using trinity and the KASAN
->> patchset:
->>
->> 	AddressSanitizer: use after free in do_read_fault.isra.40+0x3c2/0x510 at addr ffff88048a733110
->> 	page:ffffea001229ccc0 count:0 mapcount:0 mapping:          (null) index:0x0
->> 	page flags: 0xafffff80008000(tail)
->> 	page dumped because: kasan error
->> 	CPU: 6 PID: 9262 Comm: trinity-c104 Not tainted 3.16.0-rc6-next-20140723-sasha-00047-g289342b-dirty #929
->> 	 00000000000000fb 0000000000000000 ffffea001229ccc0 ffff88038ac0fb78
->> 	 ffffffffa5e40903 ffff88038ac0fc48 ffff88038ac0fc38 ffffffffa142acfc
->> 	 0000000000000001 ffff880509ff5aa8 ffff88038ac10038 ffff88038ac0fbb0
->> 	Call Trace:
->> 	dump_stack (lib/dump_stack.c:52)
->> 	kasan_report_error (mm/kasan/report.c:98 mm/kasan/report.c:166)
->> 	? debug_smp_processor_id (lib/smp_processor_id.c:57)
->> 	? preempt_count_sub (kernel/sched/core.c:2606)
->> 	? put_lock_stats.isra.13 (./arch/x86/include/asm/preempt.h:98 kernel/locking/lockdep.c:254)
->> 	? do_read_fault.isra.40 (mm/memory.c:2784 mm/memory.c:2849 mm/memory.c:2898)
->> 	__asan_load8 (mm/kasan/kasan.c:364)
->> 	? do_read_fault.isra.40 (mm/memory.c:2864 mm/memory.c:2898)
->> 	do_read_fault.isra.40 (mm/memory.c:2864 mm/memory.c:2898)
->> 	? _raw_spin_unlock (./arch/x86/include/asm/preempt.h:98 include/linux/spinlock_api_smp.h:152 kernel/locking/spinlock.c:183)
->> 	? __pte_alloc (mm/memory.c:598)
->> 	handle_mm_fault (mm/memory.c:3092 mm/memory.c:3225 mm/memory.c:3345 mm/memory.c:3374)
->> 	? pud_huge (./arch/x86/include/asm/paravirt.h:611 arch/x86/mm/hugetlbpage.c:76)
->> 	__get_user_pages (mm/gup.c:286 mm/gup.c:478)
->> 	__mlock_vma_pages_range (mm/mlock.c:262)
->> 	__mm_populate (mm/mlock.c:710)
->> 	SyS_remap_file_pages (mm/mmap.c:2653 mm/mmap.c:2593)
->> 	tracesys (arch/x86/kernel/entry_64.S:541)
->> 	Read of size 8 by thread T9262:
->> 	Memory state around the buggy address:
->> 	 ffff88048a732e80: fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb
->> 	 ffff88048a732f00: fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb
->> 	 ffff88048a732f80: fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb
->> 	 ffff88048a733000: fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb
->> 	 ffff88048a733080: fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb
->> 	>ffff88048a733100: fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb
->> 	                         ^
->> 	 ffff88048a733180: fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb
->> 	 ffff88048a733200: fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb
->> 	 ffff88048a733280: fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb
->> 	 ffff88048a733300: fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb
->> 	 ffff88048a733380: fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb
->>
->>
->> It looks like that pte pointer is invalid in do_fault_around().
->> This could happen if fault_around_bytes is set to 0.
->> fault_around_pages() and fault_around_mask() calls rounddown_pow_of_to(fault_around_bytes)
->> The result of rounddown_pow_of_to is undefined if parameter == 0
->> (in my environment it returns 0x8000000000000000).
-> 
-> Ouch. Good catch!
-> 
-> Although, I'm not convinced that it caused the issue. Sasha, did you touch the
-> debugfs handle?
-> 
 
-I suppose trinity could change it, no? I've got the very same spew after setting fault_around_bytes to 0.
+--lnoGpPIaYJcLEQ+J
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
->> One way to fix this would be to return 0 from fault_around_pages() if fault_around_bytes == 0,
->> however this would add extra code on fault path.
->>
->> So let's just forbid to set fault_around_bytes to zero.
->> Fault around is not used if fault_around_pages() <= 1, so if anyone doesn't want to use
->> it, fault_around_bytes could be set to any value in range [1, 2*PAGE_SIZE - 1]
->> instead of 0.
-> 
->>From user point of view, 0 is perfectly fine. What about untested patch
-> below?
-> 
+On Mon, Jul 28, 2014 at 03:02:37AM +0800, Yuyang Du wrote:
+> > Another thing that might be an issue is that the blocked of a terminated
+> > task lives on for quite a while until has decayed away.
+>=20
+> Good point. To do so, if I read correctly, we need to hook do_exit(), but=
+ probably
+> we are gonna encounter rq->lock issue.
+>=20
+> What is the opinion/guidance from the maintainers/others?
 
-In case if we are not going to get rid of debugfs interface I would better keep
-faul_around_bytes always roundded down, like in following patch:
-
-
->From f41b7777b29f06dc62f80526e5617cae82a38709 Mon Sep 17 00:00:00 2001
-From: Andrey Ryabinin <a.ryabinin@samsung.com>
-Date: Mon, 28 Jul 2014 13:46:10 +0400
-Subject: [PATCH] mm: debugfs: move rounddown_pow_of_two() out from do_fault
- path
-
-do_fault_around expects fault_around_bytes rounded down to nearest
-page order. Instead of calling rounddown_pow_of_two every time
-in fault_around_pages()/fault_around_mask() we could do round down
-when user changes fault_around_bytes via debugfs interface.
-
-This also fixes bug when user set fault_around_bytes to 0.
-Result of rounddown_pow_of_two(0) is not defined, therefore
-fault_around_bytes == 0 doesn't work without this patch.
-
-Let's set fault_around_bytes to PAGE_SIZE if user sets to something
-less than PAGE_SIZE
-
-Fixes: a9b0f861("mm: nominate faultaround area in bytes rather than page order")
-Signed-off-by: Andrey Ryabinin <a.ryabinin@samsung.com>
-Cc: <stable@vger.kernel.org> # 3.15.x
----
- mm/memory.c | 19 +++++++++++--------
- 1 file changed, 11 insertions(+), 8 deletions(-)
-
-diff --git a/mm/memory.c b/mm/memory.c
-index 7e8d820..e0c6fd6 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -2758,20 +2758,16 @@ void do_set_pte(struct vm_area_struct *vma, unsigned long address,
- 	update_mmu_cache(vma, address, pte);
- }
-
--static unsigned long fault_around_bytes = 65536;
-+static unsigned long fault_around_bytes = rounddown_pow_of_two(65536);
-
--/*
-- * fault_around_pages() and fault_around_mask() round down fault_around_bytes
-- * to nearest page order. It's what do_fault_around() expects to see.
-- */
- static inline unsigned long fault_around_pages(void)
- {
--	return rounddown_pow_of_two(fault_around_bytes) / PAGE_SIZE;
-+	return fault_around_bytes >> PAGE_SHIFT;
- }
-
- static inline unsigned long fault_around_mask(void)
- {
--	return ~(rounddown_pow_of_two(fault_around_bytes) - 1) & PAGE_MASK;
-+	return ~(fault_around_bytes - 1) & PAGE_MASK;
- }
-
-
-@@ -2782,11 +2778,18 @@ static int fault_around_bytes_get(void *data, u64 *val)
- 	return 0;
- }
-
-+/*
-+ * fault_around_pages() and fault_around_mask() expects fault_around_bytes
-+ * rounded down to nearest page order. It's what do_fault_around() expects to see.
-+ */
- static int fault_around_bytes_set(void *data, u64 val)
- {
- 	if (val / PAGE_SIZE > PTRS_PER_PTE)
- 		return -EINVAL;
--	fault_around_bytes = val;
-+	if (val > PAGE_SIZE)
-+		fault_around_bytes = rounddown_pow_of_two(val);
-+	else
-+		fault_around_bytes = PAGE_SIZE; /* rounddown_pow_of_two(0) is undefined */
- 	return 0;
- }
- DEFINE_SIMPLE_ATTRIBUTE(fault_around_bytes_fops,
--- 
-1.8.5.5
+So the entire point of this per entity tracking was to make sure load
+numbers reflect reality. We account migrations etc., it would be weird
+to then throw all that out the window and let task exit accumulate crap.
 
 
 
+--lnoGpPIaYJcLEQ+J
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
+iQIcBAEBAgAGBQJT1igUAAoJEHZH4aRLwOS6NysP/jASppusl3byM+7LXAGMlbdC
+rN5her6OFUFmxLVbY6jKa40H9xuaUezGUC9x5IFxYUgQDADu0RHCGmQFJwMNBp/J
+rZ8K3HhZ7jo8q8PzSWTc1DririxlW50tcc/Dcw63scyjydFwsHbtVvlcbxGv5blc
+udhcduw2F6DAM6RoFQcdfnxmVKSt8RwdUI1UjwaUzBl8dTflTHWaQWrmm0BGABiz
++4Zy8sF81B+UwLImMf18TS+DMptBta0NxLvCtJT3fzfgmGrIEDlbohnpTod3mLWl
+cWLg7j3RDZXn+FEUdWRpqZqF4JzTQgk2L+B3khBzebm8cSZznVrZkBGiJbVIdyWu
+e9To34USfrPsaleEYyKrCSpM9MQHw2IOAmlfrdz8NEsDLmHlBARGyLEkJ79qDARN
+qxjbx1R3RIjel7q5q194JvR7jBwURTS1+X0FiY046wiL5/H4vM+VBhOyfAJNaJi9
+A/ek/mYp21X2zSIwMy0fuERcdrovxfkj0gSVE8jIvQN/CGb0YPqXcLhIKWKmU1Wk
+RD4paL5dx4YKQHdc7KkdlKtbe2oGtGzuptoQIardJu0fsE5fRhuKTD9ub4MvV+z/
+qVwp1g155zZXf2Bcj/6c3L6umvZrPU2ByywQ9Mfu9z0LAbC7edsI1r/PeV3jXV1Q
+NmaoV7JedU9Pvcjy6pfV
+=9zVw
+-----END PGP SIGNATURE-----
 
-
+--lnoGpPIaYJcLEQ+J--
