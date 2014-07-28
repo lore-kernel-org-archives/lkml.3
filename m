@@ -1,121 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752198AbaG1JSN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 05:18:13 -0400
-Received: from mail-we0-f169.google.com ([74.125.82.169]:51153 "EHLO
-	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751170AbaG1JSM (ORCPT
+	id S1751603AbaG1JV4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 05:21:56 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:52234 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751095AbaG1JVz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 05:18:12 -0400
-Message-ID: <53D6154D.3060107@monstr.eu>
-Date: Mon, 28 Jul 2014 11:18:05 +0200
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Mon, 28 Jul 2014 05:21:55 -0400
+Message-ID: <53D6162B.60701@hitachi.com>
+Date: Mon, 28 Jul 2014 18:21:47 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-To: =?UTF-8?B?U8O2cmVuIEJyaW5rbWFubg==?= <soren.brinkmann@xilinx.com>,
-        Michal Simek <michal.simek@xilinx.com>
-CC: linux-arm-kernel@lists.infradead.org,
-        Appana Durga Kedareswara Rao <appanad@xilinx.com>, monstr@monstr.eu,
-        Josh Cartwright <josh.cartwright@ni.com>,
-        Steffen Trumtrar <s.trumtrar@pengutronix.de>,
-        Rob Herring <robherring2@gmail.com>,
-        Peter Crosthwaite <peter.crosthwaite@xilinx.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>, devicetree@vger.kernel.org,
+To: mingo@kernel.org
+Cc: Jianyu Zhan <nasa4836@gmail.com>, ananth@in.ibm.com,
+        anil.s.keshavamurthy@intel.com, davem@davemloft.net,
+        rdunlap@infradead.org, linux-doc@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] ARM: zynq: DT: Add CAN node
-References: <56bf20294d106e0fc9c23a70cd991a50b441d0aa.1406271138.git.michal.simek@xilinx.com> <20140725150017.GE16049@xsjandreislx>
-In-Reply-To: <20140725150017.GE16049@xsjandreislx>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="huVTxpfoiL588CpDP2Kr4j20BO6l4vfQM"
+Subject: Re: [PATCH RESEND] kprobes: be more permissive when user specifies
+ both symbol name and address
+References: <1403249659-4822-1-git-send-email-nasa4836@gmail.com>
+In-Reply-To: <1403249659-4822-1-git-send-email-nasa4836@gmail.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---huVTxpfoiL588CpDP2Kr4j20BO6l4vfQM
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+(2014/06/20 16:34), Jianyu Zhan wrote:
+> Hi, I found that this patch wasn't merged into mainline during this merge
+> window(maybe it wasn't cooked in any tree), while it has been acked-by for
+> a couple of days.
+> 
+> Ingo, would you mind queueing this one? Thanks.
 
-On 07/25/2014 05:00 PM, S=C3=B6ren Brinkmann wrote:
-> On Fri, 2014-07-25 at 08:52AM +0200, Michal Simek wrote:
->> Add node describing Zynq's CAN controller.
->>
->> Signed-off-by: Michal Simek <michal.simek@xilinx.com>
->> ---
->>
->> Changes in v2:
->> - Add can1
->> - Enable can0 for zc702
->> - Use status property
->>
->>  arch/arm/boot/dts/zynq-7000.dtsi | 26 +++++++++++++++++++++++++-
->>  arch/arm/boot/dts/zynq-zc702.dts |  4 ++++
->>  2 files changed, 29 insertions(+), 1 deletion(-)
->>
->> diff --git a/arch/arm/boot/dts/zynq-7000.dtsi b/arch/arm/boot/dts/zynq=
--7000.dtsi
->> index 366ca6434f54..983148111e3a 100644
->> --- a/arch/arm/boot/dts/zynq-7000.dtsi
->> +++ b/arch/arm/boot/dts/zynq-7000.dtsi
->> @@ -71,7 +71,31 @@
->>  			interrupts =3D <0 7 4>;
->>  			interrupt-parent =3D <&intc>;
->>  			clocks =3D <&clkc 12>;
->> -		};
->> +		};
->> +
->> +		can0: can@e0008000 {
->> +			compatible =3D "xlnx,zynq-can-1.0";
->> +			status =3D "disabled";
->> +			clocks =3D <&clkc 19>, <&clkc 36>;
->> +			clock-names =3D "can_clk", "pclk";
->> +			reg =3D <0xe0008000 0x1000>;
->> +			interrupts =3D <0 28 4>;
->> +			interrupt-parent =3D <&intc>;
->> +			tx-fifo-depth =3D <0x40>;
->> +			rx-fifo-depth =3D <0x40>;
->> +		};
->> +
->> +		can1: can@e0009000 {
->> +			compatible =3D "xlnx,zynq-can-1.0";
->> +			status =3D "disabled";
->> +			clocks =3D <&clkc 19>, <&clkc 36>;
-> The clocks for CAN1 must be outputs 20 and 37 of the clkc.
+Ping? I've already acked this.
 
-Fixed in v3.
+> 
+> -----<8-----
+> 
+> Currently, if user specifies both symbol name and address, we just
+> bail out.
+> 
+> This might be too rude. This patch makes it give more tolerance.
+> If both are specified, check address first, if the symbol found
+> does not match the one user specify, print a waring. If not found,
+> return -ENOENT, because some symbols might have muplitple instances,
+> we don't bother to check symbol name.
+> 
+> Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+> Signed-off-by: Jianyu Zhan <nasa4836@gmail.com>
+> ---
+>  Documentation/kprobes.txt |  4 +++-
+>  kernel/kprobes.c          | 32 +++++++++++++++++++++++++++++---
+>  2 files changed, 32 insertions(+), 4 deletions(-)
+> 
+> diff --git a/Documentation/kprobes.txt b/Documentation/kprobes.txt
+> index 4bbeca8..49af14e 100644
+> --- a/Documentation/kprobes.txt
+> +++ b/Documentation/kprobes.txt
+> @@ -358,7 +358,9 @@ to install a probepoint is known. This field is used to calculate the
+>  probepoint.
+>  
+>  3. Specify either the kprobe "symbol_name" OR the "addr". If both are
+> -specified, kprobe registration will fail with -EINVAL.
+> +specified, only check "addr", because some symbols might have muplitple
+> +instances. If neither is specified, kprobe registration will fail
+> +with -EINVAL.
+>  
+>  4. With CISC architectures (such as i386 and x86_64), the kprobes code
+>  does not validate if the kprobe.addr is at an instruction boundary.
+> diff --git a/kernel/kprobes.c b/kernel/kprobes.c
+> index 3214289..81d891b 100644
+> --- a/kernel/kprobes.c
+> +++ b/kernel/kprobes.c
+> @@ -1358,15 +1358,41 @@ static bool within_kprobe_blacklist(unsigned long addr)
+>  static kprobe_opcode_t *kprobe_addr(struct kprobe *p)
+>  {
+>  	kprobe_opcode_t *addr = p->addr;
+> +	char namebuf[KSYM_NAME_LEN];
+> +	const char *sym_name = NULL;
+> +	unsigned long offset;
+>  
+> -	if ((p->symbol_name && p->addr) ||
+> -	    (!p->symbol_name && !p->addr))
+> +	if (!p->symbol_name && !p->addr)
+>  		goto invalid;
+>  
+> -	if (p->symbol_name) {
+> +	/*
+> +	 * Some symbols might have muplitple instances,
+> +	 * so if both specified, only check address.
+> +	 */
+> +	if (unlikely(p->addr && p->symbol_name)) {
+> +		sym_name = kallsyms_lookup((unsigned long)(p->addr),
+> +				NULL, &offset, NULL, namebuf);
+> +		if (!sym_name)
+> +			return ERR_PTR(-ENOENT);
+> +
+> +		if (strncmp(sym_name, p->symbol_name, KSYM_NAME_LEN)
+> +				|| offset != p->offset) {
+> +			pr_err("Incorrect symbol or offset, should be "
+> +				"symbol=%s, offset=%ld.\n", sym_name, offset);
+> +			goto invalid;
+> +		}
+> +	} else if (p->symbol_name) {
+> +		/* Only symbol case */
+>  		kprobe_lookup_name(p->symbol_name, addr);
+>  		if (!addr)
+>  			return ERR_PTR(-ENOENT);
+> +	} else {
+> +		/*
+> +		 * Only address case.
+> +		 * Since we later will do sanity check of the
+> +		 * address range in check_kprobe_address_safe(),
+> +		 * do nothing here.
+> +		 */
+>  	}
+>  
+>  	addr = (kprobe_opcode_t *)(((char *)addr) + p->offset);
+> 
 
-Thanks,
-Michal
+
+-- 
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Research Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
 
 
---=20
-Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
-Maintainer of Linux kernel - Xilinx Zynq ARM architecture
-Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
-
-
-
---huVTxpfoiL588CpDP2Kr4j20BO6l4vfQM
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iEYEARECAAYFAlPWFU0ACgkQykllyylKDCEoEQCfdKTpPsRBtasvFXr/Q6+JTkHt
-kpQAnRCKDqobBbVt2k9cHcvbYcVJPue6
-=Ziyw
------END PGP SIGNATURE-----
-
---huVTxpfoiL588CpDP2Kr4j20BO6l4vfQM--
