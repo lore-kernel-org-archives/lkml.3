@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752154AbaG1IZ6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 04:25:58 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:42568 "EHLO
+	id S1752171AbaG1I0J (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 04:26:09 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:42578 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751383AbaG1IZx (ORCPT
+	with ESMTP id S1751383AbaG1I0E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 04:25:53 -0400
-Date: Mon, 28 Jul 2014 01:24:54 -0700
+	Mon, 28 Jul 2014 04:26:04 -0400
+Date: Mon, 28 Jul 2014 01:25:07 -0700
 From: tip-bot for Adrian Hunter <tipbot@zytor.com>
-Message-ID: <tip-d5652d865ea734a13a16cf563937291a84d4364d@git.kernel.org>
+Message-ID: <tip-30f4f815a45d0b148d17afb0d5a5575ae2ba4309@git.kernel.org>
 Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
         paulus@samba.org, hpa@zytor.com, mingo@kernel.org,
         peterz@infradead.org, namhyung@gmail.com, jolsa@redhat.com,
@@ -20,11 +20,12 @@ Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
         peterz@infradead.org, namhyung@gmail.com, jolsa@redhat.com,
         fweisbec@gmail.com, dsahern@gmail.com, adrian.hunter@intel.com,
         tglx@linutronix.de
-In-Reply-To: <1406143198-20732-2-git-send-email-adrian.hunter@intel.com>
-References: <1406143198-20732-2-git-send-email-adrian.hunter@intel.com>
+In-Reply-To: <1406035081-14301-46-git-send-email-adrian.hunter@intel.com>
+References: <1406035081-14301-46-git-send-email-adrian.hunter@intel.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf session: Add ability to skip 4GiB or more
-Git-Commit-ID: d5652d865ea734a13a16cf563937291a84d4364d
+Subject: [tip:perf/core] perf tools:
+  Group VDSO global variables into a structure
+Git-Commit-ID: 30f4f815a45d0b148d17afb0d5a5575ae2ba4309
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -37,18 +38,22 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  d5652d865ea734a13a16cf563937291a84d4364d
-Gitweb:     http://git.kernel.org/tip/d5652d865ea734a13a16cf563937291a84d4364d
+Commit-ID:  30f4f815a45d0b148d17afb0d5a5575ae2ba4309
+Gitweb:     http://git.kernel.org/tip/30f4f815a45d0b148d17afb0d5a5575ae2ba4309
 Author:     Adrian Hunter <adrian.hunter@intel.com>
-AuthorDate: Wed, 23 Jul 2014 22:19:58 +0300
+AuthorDate: Tue, 22 Jul 2014 16:17:54 +0300
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Wed, 23 Jul 2014 17:07:14 -0300
+CommitDate: Wed, 23 Jul 2014 17:11:26 -0300
 
-perf session: Add ability to skip 4GiB or more
+perf tools: Group VDSO global variables into a structure
 
-A session can be made to skip portions of the input file.  Do not limit
-that size to 32-bits.
+This is preparation for removing the global variables used in vdso.c and
+thereby fixing the lifetime of the VDSO temporary file.
 
+Also allowance is made for the later addition of support for compat
+VDSOs.
+
+Reviewed-by: Jiri Olsa <jolsa@redhat.com>
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
@@ -57,61 +62,108 @@ Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1406143198-20732-2-git-send-email-adrian.hunter@intel.com
+Link: http://lkml.kernel.org/r/1406035081-14301-46-git-send-email-adrian.hunter@intel.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/session.c | 15 ++++++++-------
- 1 file changed, 8 insertions(+), 7 deletions(-)
+ tools/perf/util/vdso.c | 44 ++++++++++++++++++++++++++++++++------------
+ 1 file changed, 32 insertions(+), 12 deletions(-)
 
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index f4399b2..d3da105 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -994,8 +994,10 @@ static int perf_session_deliver_event(struct perf_session *session,
- 	}
+diff --git a/tools/perf/util/vdso.c b/tools/perf/util/vdso.c
+index da5ba4d..75245f0 100644
+--- a/tools/perf/util/vdso.c
++++ b/tools/perf/util/vdso.c
+@@ -15,8 +15,27 @@
+ #include "linux/string.h"
+ #include "debug.h"
+ 
+-static bool vdso_found;
+-static char vdso_file[] = "/tmp/perf-vdso.so-XXXXXX";
++#define VDSO__TEMP_FILE_NAME "/tmp/perf-vdso.so-XXXXXX"
++
++struct vdso_file {
++	bool found;
++	bool error;
++	char temp_file_name[sizeof(VDSO__TEMP_FILE_NAME)];
++	const char *dso_name;
++};
++
++struct vdso_info {
++	struct vdso_file vdso;
++};
++
++static struct vdso_info vdso_info_ = {
++	.vdso = {
++		.temp_file_name = VDSO__TEMP_FILE_NAME,
++		.dso_name = VDSO__MAP_NAME,
++	},
++};
++
++static struct vdso_info *vdso_info = &vdso_info_;
+ 
+ static int find_vdso_map(void **start, void **end)
+ {
+@@ -49,7 +68,7 @@ static int find_vdso_map(void **start, void **end)
+ 	return !found;
  }
  
--static int perf_session__process_user_event(struct perf_session *session, union perf_event *event,
--					    struct perf_tool *tool, u64 file_offset)
-+static s64 perf_session__process_user_event(struct perf_session *session,
-+					    union perf_event *event,
-+					    struct perf_tool *tool,
-+					    u64 file_offset)
+-static char *get_file(void)
++static char *get_file(struct vdso_file *vdso_file)
  {
- 	int fd = perf_data_file__fd(session->file);
- 	int err;
-@@ -1037,7 +1039,7 @@ static void event_swap(union perf_event *event, bool sample_id_all)
- 		swap(event, sample_id_all);
+ 	char *vdso = NULL;
+ 	char *buf = NULL;
+@@ -57,10 +76,10 @@ static char *get_file(void)
+ 	size_t size;
+ 	int fd;
+ 
+-	if (vdso_found)
+-		return vdso_file;
++	if (vdso_file->found)
++		return vdso_file->temp_file_name;
+ 
+-	if (find_vdso_map(&start, &end))
++	if (vdso_file->error || find_vdso_map(&start, &end))
+ 		return NULL;
+ 
+ 	size = end - start;
+@@ -69,26 +88,27 @@ static char *get_file(void)
+ 	if (!buf)
+ 		return NULL;
+ 
+-	fd = mkstemp(vdso_file);
++	fd = mkstemp(vdso_file->temp_file_name);
+ 	if (fd < 0)
+ 		goto out;
+ 
+ 	if (size == (size_t) write(fd, buf, size))
+-		vdso = vdso_file;
++		vdso = vdso_file->temp_file_name;
+ 
+ 	close(fd);
+ 
+  out:
+ 	free(buf);
+ 
+-	vdso_found = (vdso != NULL);
++	vdso_file->found = (vdso != NULL);
++	vdso_file->error = !vdso_file->found;
+ 	return vdso;
  }
  
--static int perf_session__process_event(struct perf_session *session,
-+static s64 perf_session__process_event(struct perf_session *session,
- 				       union perf_event *event,
- 				       struct perf_tool *tool,
- 				       u64 file_offset)
-@@ -1148,7 +1150,7 @@ static int __perf_session__process_pipe_events(struct perf_session *session,
- 	union perf_event *event;
- 	uint32_t size, cur_size = 0;
- 	void *buf = NULL;
--	int skip = 0;
-+	s64 skip = 0;
- 	u64 head;
- 	ssize_t err;
- 	void *p;
-@@ -1277,14 +1279,13 @@ int __perf_session__process_events(struct perf_session *session,
- 				   u64 file_size, struct perf_tool *tool)
+ void vdso__exit(void)
  {
- 	int fd = perf_data_file__fd(session->file);
--	u64 head, page_offset, file_offset, file_pos;
-+	u64 head, page_offset, file_offset, file_pos, size;
- 	int err, mmap_prot, mmap_flags, map_idx = 0;
- 	size_t	mmap_size;
- 	char *buf, *mmaps[NUM_MMAPS];
- 	union perf_event *event;
--	uint32_t size;
- 	struct ui_progress prog;
--	int skip;
-+	s64 skip;
+-	if (vdso_found)
+-		unlink(vdso_file);
++	if (vdso_info->vdso.found)
++		unlink(vdso_info->vdso.temp_file_name);
+ }
  
- 	perf_tool__fill_defaults(tool);
+ struct dso *vdso__dso_findnew(struct machine *machine)
+@@ -98,7 +118,7 @@ struct dso *vdso__dso_findnew(struct machine *machine)
+ 	if (!dso) {
+ 		char *file;
+ 
+-		file = get_file();
++		file = get_file(&vdso_info->vdso);
+ 		if (!file)
+ 			return NULL;
  
