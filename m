@@ -1,72 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750994AbaG1Q5p (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 12:57:45 -0400
-Received: from casper.infradead.org ([85.118.1.10]:59926 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750825AbaG1Q5o (ORCPT
+	id S1751373AbaG1Q6Z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 12:58:25 -0400
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:54588 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751216AbaG1Q6W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 12:57:44 -0400
-Date: Mon, 28 Jul 2014 18:57:33 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Davidlohr Bueso <davidlohr@hp.com>
-Cc: Jason Low <jason.low2@hp.com>, mingo@kernel.org, aswin@hp.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -tip/master 3/7] locking/mcs: Remove obsolete comment
-Message-ID: <20140728165733.GU19379@twins.programming.kicks-ass.net>
-References: <1406524724-17946-1-git-send-email-davidlohr@hp.com>
- <1406524724-17946-3-git-send-email-davidlohr@hp.com>
- <1406566175.2411.13.camel@j-VirtualBox>
- <1406566438.25428.6.camel@buesod1.americas.hpqcorp.net>
+	Mon, 28 Jul 2014 12:58:22 -0400
+From: bsegall@google.com
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Yuyang Du <yuyang.du@intel.com>, mingo@redhat.com,
+        linux-kernel@vger.kernel.org, pjt@google.com,
+        arjan.van.de.ven@intel.com, len.brown@intel.com,
+        rafael.j.wysocki@intel.com, alan.cox@intel.com, mark.gross@intel.com,
+        fengguang.wu@intel.com
+Subject: Re: [PATCH 2/2 v4] sched: Rewrite per entity runnable load average tracking
+References: <1405639567-21445-1-git-send-email-yuyang.du@intel.com>
+	<1405639567-21445-3-git-send-email-yuyang.du@intel.com>
+	<20140728135122.GT6758@twins.programming.kicks-ass.net>
+Date: Mon, 28 Jul 2014 09:58:19 -0700
+In-Reply-To: <20140728135122.GT6758@twins.programming.kicks-ass.net> (Peter
+	Zijlstra's message of "Mon, 28 Jul 2014 15:51:22 +0200")
+Message-ID: <xm26lhrdv2s4.fsf@sword-of-the-dawn.mtv.corp.google.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="oMox5YjQTvUj8F+q"
-Content-Disposition: inline
-In-Reply-To: <1406566438.25428.6.camel@buesod1.americas.hpqcorp.net>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Peter Zijlstra <peterz@infradead.org> writes:
 
---oMox5YjQTvUj8F+q
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+>> @@ -4551,18 +4382,34 @@ migrate_task_rq_fair(struct task_struct *p, int next_cpu)
+>>  {
+>>  	struct sched_entity *se = &p->se;
+>>  	struct cfs_rq *cfs_rq = cfs_rq_of(se);
+>> +	u64 last_update_time;
+>>  
+>>  	/*
+>> +	 * Task on old CPU catches up with its old cfs_rq, and subtract itself from
+>> +	 * the cfs_rq (task must be off the queue now).
+>>  	 */
+>> +#ifndef CONFIG_64BIT
+>> +	u64 last_update_time_copy;
+>> +
+>> +	do {
+>> +		last_update_time_copy = cfs_rq->load_last_update_time_copy;
+>> +		smp_rmb();
+>> +		last_update_time = cfs_rq->avg.last_update_time;
+>> +	} while (last_update_time != last_update_time_copy);
+>> +#else
+>> +	last_update_time = cfs_rq->avg.last_update_time;
+>> +#endif
+>> +	__update_load_avg(last_update_time, &se->avg, 0);
+>> +	atomic_long_add(se->avg.load_avg, &cfs_rq->removed_load_avg);
+>> +
+>> +	/*
+>> +	 * We are supposed to update the task to "current" time, then its up to date
+>> +	 * and ready to go to new CPU/cfs_rq. But we have difficulty in getting
+>> +	 * what current time is, so simply throw away the out-of-date time. This
+>> +	 * will result in the wakee task is less decayed, but giving the wakee more
+>> +	 * load sounds not bad.
+>> +	 */
+>> +	se->avg.last_update_time = 0;
+>>  
+>>  	/* We have migrated, no longer consider this task hot */
+>>  	se->exec_start = 0;
+>
+>
+> And here we try and make good on that assumption. The thing I worry
+> about is what happens if the machine is entirely idle...
+>
+> What guarantees an semi up-to-date cfs_rq->avg.last_update_time.
 
-On Mon, Jul 28, 2014 at 09:53:58AM -0700, Davidlohr Bueso wrote:
-> Well, it's not hard to see where the contention is when working on
-> locking issues with perf. With mutexes there are only two sources,
-> either the task is just spinning trying to get the lock, or its gone to
-> the slowpath, and you can see a lot of contention on the wait_lock.=20
->=20
-> So unless I'm missing something, I don't think we'd need to make this
-> noinline again -- although I forget why it was changed in the first
-> place.
-
-Not to mention that there's no actual caller of this function in the
-entire kernel ;-) Currently its just 'documentation' describing what an
-actual MCS lock looks like.
-
---oMox5YjQTvUj8F+q
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJT1oD9AAoJEHZH4aRLwOS6H2oP/jVuKgJBINUFzgzspFbtaiX9
-Ga2SAamST0fucc9MEmZKjT8P/181HZTrhcwdYL1DyW6ohdnWN0gUApSUDntHE9wY
-jOWttFL/92n02bXXe3Px2xTUw0kOCbY7q7l8OuWJDcKdztJB5bjs13ljVCV0whOY
-3hiDClYGZVuClNzaWpfY8nuDThArw+uLtARYMsRovUcGUWGjyKttFe48F/wHv2d+
-Yvs3d0u69lG0QEySXULSd/D6zZwEwRqEMUECrv5y873SJJPQVz78Ne6hXgBrs+J3
-Qa/QggvwTwsOcBWEuNIESVwQ1tt+8GNYbg1NHTPnjwMg7jYWHFIdPWsY/lMERtve
-4vCG+0YECMhT+pdAsWWyicDoBXTaLOw2/1tT2fay9mRrjjN2aBlt6PW80y0Qljdj
-if2y2C/HAq+UeTT06S81D9DiBjhOR2KNZdyx11bow0zdS7ZGL8JxQnkISkgeaM9W
-YLgUqbS2SrWfImqJMH5kJoQg0wK818niTo8yGQrHKk3e2R4o+CvkfGQdddx/86ci
-VM5aWjnST2Q5DEQDOHjdcXl31fXmtYSfICaRY4ToGsT9EKYxDy2cVQcXn9uT4W/u
-LcRP/z0rem71nVAXU/ru1ky3QYqVDxbUKWFRaNvCeKH1WpNPoJlRKQQu0d9r1mdA
-trmVVJbLH6pU8Vit3CqL
-=RVDX
------END PGP SIGNATURE-----
-
---oMox5YjQTvUj8F+q--
+update_blocked_averages I think should do just as good a job as the old
+code, which isn't perfect but is about as good as you can get worst case.
