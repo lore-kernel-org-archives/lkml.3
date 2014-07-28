@@ -1,55 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752483AbaG1RnL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 13:43:11 -0400
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:44912 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751580AbaG1RnF (ORCPT
+	id S1752549AbaG1Rnp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 13:43:45 -0400
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:49506 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752499AbaG1Rnj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 13:43:05 -0400
-From: navin patidar <navin.patidar@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: Larry.Finger@lwfinger.net, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, navin patidar <navin.patidar@gmail.com>
-Subject: [PATCH 9/9] staging:rtl8188eu:Remove wrapper function _rtw_reordering_ctrl_timeout_handler()
-Date: Mon, 28 Jul 2014 23:11:30 +0530
-Message-Id: <1406569290-19943-9-git-send-email-navin.patidar@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1406569290-19943-1-git-send-email-navin.patidar@gmail.com>
-References: <1406569290-19943-1-git-send-email-navin.patidar@gmail.com>
+	Mon, 28 Jul 2014 13:43:39 -0400
+Date: Mon, 28 Jul 2014 10:43:34 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Dan Murphy <dmurphy@ti.com>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org
+Subject: Re: [v2] input: drv260x: Add TI drv260x haptics driver
+Message-ID: <20140728174334.GD8982@core.coreip.homeip.net>
+References: <1406566403-1436-1-git-send-email-dmurphy@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1406566403-1436-1-git-send-email-dmurphy@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Dan,
 
-Signed-off-by: navin patidar <navin.patidar@gmail.com>
----
- drivers/staging/rtl8188eu/os_dep/recv_linux.c |   10 +---------
- 1 file changed, 1 insertion(+), 9 deletions(-)
+On Mon, Jul 28, 2014 at 11:53:23AM -0500, Dan Murphy wrote:
+> Add the TI drv260x haptics/vibrator driver.
+> This device uses the input force feedback
+> to produce a wave form to driver an
+> ERM or LRA actuator device.
+> 
+> The initial driver supports the devices
+> real time playback mode.  But the device
+> has additional wave patterns in ROM.
 
-diff --git a/drivers/staging/rtl8188eu/os_dep/recv_linux.c b/drivers/staging/rtl8188eu/os_dep/recv_linux.c
-index f7d53dd..05427c4 100644
---- a/drivers/staging/rtl8188eu/os_dep/recv_linux.c
-+++ b/drivers/staging/rtl8188eu/os_dep/recv_linux.c
-@@ -191,17 +191,9 @@ _recv_indicatepkt_drop:
- 	 return _FAIL;
- }
+As it presented the device appears to be a memoryless device, however
+you present it to the rest of the system as if it can support playback
+of multiple effects simultaneously, which is incorrect.
+
+My guess that you need to engage the memoryless input library to schedule
+handling multiple effects for your device, including ramping up, ramping
+down, stopping playback when effects runs out, etc.
+
+Thanks.
  
--static void _rtw_reordering_ctrl_timeout_handler(void *func_context)
--{
--	struct recv_reorder_ctrl *preorder_ctrl;
--
--	preorder_ctrl = (struct recv_reorder_ctrl *)func_context;
--	rtw_reordering_ctrl_timeout_handler(preorder_ctrl);
--}
--
- void rtw_init_recv_timer(struct recv_reorder_ctrl *preorder_ctrl)
- {
- 	struct adapter *padapter = preorder_ctrl->padapter;
- 
--	_init_timer(&(preorder_ctrl->reordering_ctrl_timer), padapter->pnetdev, _rtw_reordering_ctrl_timeout_handler, preorder_ctrl);
-+	_init_timer(&(preorder_ctrl->reordering_ctrl_timer), padapter->pnetdev, rtw_reordering_ctrl_timeout_handler, preorder_ctrl);
- }
 -- 
-1.7.10.4
+Dmitry
 
+P.S. If you are using devm_ there is devm_input_allocate_dveice().
