@@ -1,58 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750980AbaG1SUp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 14:20:45 -0400
-Received: from mail-qg0-f47.google.com ([209.85.192.47]:46644 "EHLO
-	mail-qg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751412AbaG1SUm (ORCPT
+	id S1751292AbaG1SZS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 14:25:18 -0400
+Received: from mail-ig0-f173.google.com ([209.85.213.173]:38219 "EHLO
+	mail-ig0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751034AbaG1SZP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 14:20:42 -0400
-Date: Mon, 28 Jul 2014 14:20:38 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>,
-        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
-        Nishanth Aravamudan <nacc@linux.vnet.ibm.com>
-Subject: Re: [PATCH] kthread_work: add cancel_kthread_work[_sync]()
-Message-ID: <20140728182038.GF7462@htj.dyndns.org>
-References: <1406347444-4045-3-git-send-email-laijs@cn.fujitsu.com>
+	Mon, 28 Jul 2014 14:25:15 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1406347444-4045-3-git-send-email-laijs@cn.fujitsu.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140728181456.GO15536@arm.com>
+References: <20140722153623.25088.37742.stgit@buzz>
+	<20140722153635.25088.14197.stgit@buzz>
+	<20140728181456.GO15536@arm.com>
+Date: Mon, 28 Jul 2014 22:25:14 +0400
+Message-ID: <CALYGNiNJDHfQm2yk067hh-Wywsb_Ki5AEE_sTMkYegJi9spSzw@mail.gmail.com>
+Subject: Re: [PATCH 2/2] ARM: LPAE: reduce damage caused by idmap to virtual
+ memory layout
+From: Konstantin Khlebnikov <koct9i@gmail.com>
+To: Will Deacon <will.deacon@arm.com>
+Cc: Konstantin Khlebnikov <k.khlebnikov@samsung.com>,
+        Vitaly Andrianov <vitalya@ti.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Cyril Chemparathy <cyril@ti.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 26, 2014 at 12:04:01PM +0800, Lai Jiangshan wrote:
-> When an object or a subsystem quits, we need to destroy the kthread_work
-> which is used by the object or the subsystem.  We used to use
-> flush_kthread_work().  But flush_kthread_work() has not any guarantee
-> about the suspension of the work, this duty is pushed to the users.
-> 
-> So we introduce the cancel_kthread_work_sync() with a strict guarantee
-> like cancel_work_sync() (workqueue).  We also introduce cancel_kthread_work()
-> which can be used by users on some conditions.  And it is required for
-> making the implementation of the cancel_kthread_work_sync() simpler.
-> kthread_flush_work_fn() owns the running state of the kthread_worker
-> and calls cancel_kthread_work() to cancel the possible requeued work.
-> 
-> Both cancel_kthread_work_sync() and cancel_kthread_work() share the
-> code of flush_kthread_work() which also make the implementation simpler.
-> 
-> Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
-> ---
->  include/linux/kthread.h |    2 +
->  kernel/kthread.c        |   78 ++++++++++++++++++++++++++++++++++++++--------
->  2 files changed, 66 insertions(+), 14 deletions(-)
+On Mon, Jul 28, 2014 at 10:14 PM, Will Deacon <will.deacon@arm.com> wrote:
+> On Tue, Jul 22, 2014 at 04:36:35PM +0100, Konstantin Khlebnikov wrote:
+>> idmap layout combines both phisical and virtual addresses.
+>> Everything works fine if ram physically lays below PAGE_OFFSET.
+>> Otherwise idmap starts punching huge holes in virtual memory layout.
+>> It maps ram by 2MiB sections, but when it allocates new pmd page it
+>> cuts 1GiB at once.
+>>
+>> This patch makes a copy of all affected pmds from init_mm.
+>> Only few (usually one) 2MiB sections will be lost.
+>> This is not eliminates problem but makes it 512 times less likely.
+>
+> I'm struggling to understand your commit message, but making a problem `512
+> times less likely' does sound like a bit of a hack to me. Can't we fix this
+> properly instead?
 
-We don't have any user.  Let's not implement features which aren't
-used just for completeness.  If you can spot and convert users, please
-be my guest.
+Yep, my comment sucks.
 
-Thanks.
+Usually idmap looks like this:
 
--- 
-tejun
+|0x00000000 -- <chunk of physical memory in identical mapping > --- |
+TASK_SIZE -- <kernel space vm layoyt> --- 0xFFFFFFFF |
+
+But when that physical memory chunk starts from 0xE8000000 or even
+0xF2000000 evenything becomes very complicated.
+
+>
+> Will
+>
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
