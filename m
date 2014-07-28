@@ -1,90 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751968AbaG1UXi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 16:23:38 -0400
-Received: from mail-lb0-f178.google.com ([209.85.217.178]:55932 "EHLO
-	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750956AbaG1UXf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 16:23:35 -0400
+	id S1751943AbaG1UaV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 16:30:21 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:57900 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751162AbaG1UaS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jul 2014 16:30:18 -0400
+Date: Mon, 28 Jul 2014 16:29:52 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>, Hugh Dickins <hughd@google.com>,
+        Rik van Riel <riel@redhat.com>, Hillf Danton <dhillf@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Naoya Horiguchi <nao.horiguchi@gmail.com>
+Subject: Re: [PATCH -mm] mm: refactor page index/offset getters
+Message-ID: <20140728202952.GP1725@cmpxchg.org>
+References: <1404225982-22739-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <20140701180739.GA4985@node.dhcp.inet.fi>
+ <20140701185021.GA10356@nhori.bos.redhat.com>
+ <20140701201540.GA5953@node.dhcp.inet.fi>
+ <20140702043057.GA19813@nhori.redhat.com>
+ <20140707123923.5e42983d6123ebfd79c8cf4c@linux-foundation.org>
+ <20140715164112.GA6055@nhori.bos.redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <20140728173723.GA20993@redhat.com>
-References: <cover.1405992946.git.luto@amacapital.net> <3f649f5658a163645e3ce15156176c325283762e.1405992946.git.luto@amacapital.net>
- <20140728173723.GA20993@redhat.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Mon, 28 Jul 2014 13:23:13 -0700
-Message-ID: <CALCETrWUFo_zXcAZja-vdL4_MgJDd=1ed5Vt54eyUuim930xAw@mail.gmail.com>
-Subject: Re: [PATCH v3 6/8] x86: Split syscall_trace_enter into two phases
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Kees Cook <keescook@chromium.org>, Will Drewry <wad@chromium.org>,
-        X86 ML <x86@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux MIPS Mailing List <linux-mips@linux-mips.org>,
-        linux-arch <linux-arch@vger.kernel.org>,
-        LSM List <linux-security-module@vger.kernel.org>,
-        Alexei Starovoitov <ast@plumgrid.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140715164112.GA6055@nhori.bos.redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 28, 2014 at 10:37 AM, Oleg Nesterov <oleg@redhat.com> wrote:
-> Hi Andy,
->
-> I am really sorry for delay.
->
-> This is on top of the recent change from Kees, right? Could me remind me
-> where can I found the tree this series based on? So that I could actually
-> apply these changes...
+On Tue, Jul 15, 2014 at 12:41:12PM -0400, Naoya Horiguchi wrote:
+> @@ -399,28 +399,24 @@ static inline struct page *read_mapping_page(struct address_space *mapping,
+>  }
+>  
+>  /*
+> - * Get the offset in PAGE_SIZE.
+> + * Return the 4kB page offset of the given page.
+>   * (TODO: hugepage should have ->index in PAGE_SIZE)
+>   */
+> -static inline pgoff_t page_to_pgoff(struct page *page)
+> +static inline pgoff_t page_pgoff(struct page *page)
+>  {
+> -	if (unlikely(PageHeadHuge(page)))
+> -		return page->index << compound_order(page);
+> -	else
+> -		return page->index << (PAGE_CACHE_SHIFT - PAGE_SHIFT);
+> +	if (unlikely(PageHuge(page))) {
+> +		VM_BUG_ON_PAGE(PageTail(page), page);
+> +		return page_index(page) << compound_order(page);
+> +	} else
+> +		return page_index(page) << (PAGE_CACHE_SHIFT - PAGE_SHIFT);
+>  }
 
-https://git.kernel.org/cgit/linux/kernel/git/kees/linux.git/log/?h=seccomp/fastpath
+I just bisected the VM refusing to swap and triggering OOM kills to
+this patch, which is likely the same bug you reported a couple days
+back when you had this patch in your private tree.
 
-The first four patches are already applied there.
+Changing page->index to page_index() makes this function return the
+swap offset rather than the virtual PFN, but rmap uses this to index
+into virtual address space.  Thus, swapcache pages can no longer be
+found from try_to_unmap() and reclaim fails.
 
->
-> On 07/21, Andy Lutomirski wrote:
->>
->> +long syscall_trace_enter_phase2(struct pt_regs *regs, u32 arch,
->> +                             unsigned long phase1_result)
->>  {
->>       long ret = 0;
->> +     u32 work = ACCESS_ONCE(current_thread_info()->flags) &
->> +             _TIF_WORK_SYSCALL_ENTRY;
->> +
->> +     BUG_ON(regs != task_pt_regs(current));
->>
->>       user_exit();
->>
->> @@ -1458,17 +1562,20 @@ long syscall_trace_enter(struct pt_regs *regs)
->>        * do_debug() and we need to set it again to restore the user
->>        * state.  If we entered on the slow path, TF was already set.
->>        */
->> -     if (test_thread_flag(TIF_SINGLESTEP))
->> +     if (work & _TIF_SINGLESTEP)
->>               regs->flags |= X86_EFLAGS_TF;
->
-> This looks suspicious, but perhaps I misread this change.
->
-> If I understand correctly, syscall_trace_enter() can avoid _phase2() above.
-> But we should always call user_exit() unconditionally?
+We can't simply change it back to page->index, however, because the
+swapout path, which requires the swap offset, also uses this function
+through page_offset().  Virtual address space functions and page cache
+address space functions can't use the same helpers, and the helpers
+should likely be named distinctly so that they are not confused and
+it's clear what is being asked.  Plus, the patch forced every fs using
+page_offset() to suddenly check PageHuge(), which is a function call.
 
-Damnit.  I read that every function called by user_exit, and none of
-them give any indication of why they're needed for traced syscalls but
-not for untraced syscalls.  On a second look, it seems that TIF_NOHZ
-controls it.  I'll update the code to call user_exit iff TIF_NOHZ is
-set.  If that's still wrong, then I don't see how the current code is
-correct either.
+How about
 
->
-> And we should always set X86_EFLAGS_TF if TIF_SINGLESTEP? IIRC, TF can be
-> actually cleared on a 32bit kernel if we step over sysenter insn?
+o page_offset() for use by filesystems, based on page->index
 
-I don't follow.  If TIF_SINGLESTEP, then phase1 will return a nonzero
-value, and phase2 will set TF.
+o page_virt_pgoff() for use on virtual memory math, based on
+  page->index and respecting PageHuge()
 
-I admit I don't really understand all the TF machinations.
+o page_mapping_pgoff() for use by swapping and when working on
+  mappings that could be swapper_space.
 
---Andy
+o page_mapping_offset() likewise, just in bytes
+
+Hm?
