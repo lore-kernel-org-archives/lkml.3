@@ -1,118 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752150AbaG1J2T (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 05:28:19 -0400
-Received: from mga09.intel.com ([134.134.136.24]:1406 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751635AbaG1J2P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 05:28:15 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,747,1400050800"; 
-   d="scan'208";a="579942479"
-Date: Mon, 28 Jul 2014 12:28:08 +0300
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org,
-        Kweh Hock Leong <hock.leong.kweh@intel.com>,
-        Eric Miao <eric.y.miao@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Mark Brown <broonie@kernel.org>,
-        Chew Chiau Ee <chiau.ee.chew@intel.com>,
-        Darren Hart <dvhart@linux.intel.com>, chiauee85@gmail.com,
-        linux-kernel@vger.kernel.org, linux-spi@vger.kernel.org,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Subject: Re: [PATCH] spi/pxa2xx-pci: Enable DMA binding through device name
-Message-ID: <20140728092808.GI1857@lahna.fi.intel.com>
-References: <1406196111-22861-1-git-send-email-hock.leong.kweh@intel.com>
- <20140725090714.GY1857@lahna.fi.intel.com>
- <20140725095559.GA1857@lahna.fi.intel.com>
- <5426556.OzZIXLrofJ@wuerfel>
+	id S1752169AbaG1J3U (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 05:29:20 -0400
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:57419 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751742AbaG1J3O (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jul 2014 05:29:14 -0400
+Message-ID: <53D617E2.3070803@collabora.co.uk>
+Date: Mon, 28 Jul 2014 11:29:06 +0200
+From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5426556.OzZIXLrofJ@wuerfel>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Mike Turquette <mturquette@linaro.org>, Lee Jones <lee.jones@linaro.org>
+CC: Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
+        Tomeu Vizoso <tomeu.vizoso@collabora.com>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Yadwinder Singh Brar <yadi.brar01@gmail.com>,
+        Tushar Behera <trblinux@gmail.com>, Andreas Farber <afaerber@suse.de>,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v8 00/13] Add Maxim 77802 PMIC support
+References: <1405337769-3741-1-git-send-email-javier.martinez@collabora.co.uk> <20140725223140.4791.61816@quantum>
+In-Reply-To: <20140725223140.4791.61816@quantum>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 25, 2014 at 12:19:02PM +0200, Arnd Bergmann wrote:
-> On Friday 25 July 2014 12:55:59 Mika Westerberg wrote:
-> > On Fri, Jul 25, 2014 at 12:07:14PM +0300, Mika Westerberg wrote:
-> > > On Fri, Jul 25, 2014 at 10:38:36AM +0200, Arnd Bergmann wrote:
-> > > > On Friday 25 July 2014 11:22:49 Mika Westerberg wrote:
-> > > > > > All you need to do is change your filter function to take the
-> > > > > > slave id from pxa_spi_info and stick it in there, e.g.
-> > > > > > 
-> > > > > > static bool pxa2xx_spi_dw_dma_filter(struct dma_chan *chan, void *param)
-> > > > > > {       
-> > > > > >         const struct pxa2xx_spi_master *pdata = param;
-> > > > > >         struct dw_dma_chan *dwc = to_dw_dma_chan(chan);
-> > > > > >         
-> > > > > >         dwc->request_line = fargs->req;
-> > > > > >         dwc->src_master = 0;
-> > > > > >         dwc->dst_master = 0;
-> > > > > >         
-> > > > > >         return 1;
-> > > > > > }           
-> > > > > 
-> > > > > Oh man. That makes pxa2xx_spi dependent on a certain specific DMA engine
-> > > > > driver.
-> > > > 
-> > > > I think you can improve this by putting the filter function (and a pointer
-> > > > to it) into the pxa2xx_spi_master data provided by the PCI driver.
-> > > 
-> > > Indeed, that looks better. It still makes the PCI part of the driver
-> > > dependent on a particular DMA engine driver but is certainly better than
-> > > the core pxa2xx_spi driver.
-> > 
-> > Something like this?
-> > 
-> > Hock Leong / Chiaue Ee, are you able to check if this works on your BYT
-> > machines?
-> 
-> I think I found a small bug, and one detail that could be improved.
-> 
-> > @@ -321,12 +310,14 @@ int pxa2xx_spi_dma_setup(struct driver_data *drv_data)
-> >  		return -ENOMEM;
-> >  
-> >  	drv_data->tx_chan = dma_request_slave_channel_compat(mask,
-> > -				pxa2xx_spi_dma_filter, pdata, dev, "tx");
-> > +				pdata->dma_filter, pdata->dma_filter_param,
-> > +				dev, "tx");
-> >  	if (!drv_data->tx_chan)
-> >  		return -ENODEV;
-> 
-> If you change this part to pass '(void *)info->tx_slave_id' rather than
-> pdata->dma_filter_param, you can simplify the next code:
+Hello Mike,
 
-OK
-
-> > +static bool pxa2xx_spi_pci_dma_filter(struct dma_chan *chan, void *param)
-> > +{
-> > +	struct dw_dma_chan *dwc = to_dw_dma_chan(chan);
-> > +	const struct pxa_spi_info *info = param;
-> > +
-> > +	if (chan->chan_id == info->tx_chan_id)
-> > +		dwc->request_line = info->tx_slave_id;
-> > +	else if (chan->chan_id == info->rx_chan_id)
-> > +		dwc->request_line = info->rx_slave_id;
-> > +	else
-> > +		return false;
-> > +
-> > +	dwc->src_master = 0;
-> > +	dwc->dst_master = 0;
-> > +
-> > +	return true;
-> > +}
+On 07/26/2014 12:31 AM, Mike Turquette wrote:
+> Quoting Javier Martinez Canillas (2014-07-14 04:35:56)
+>> This series are based on drivers added by Simon Glass to the Chrome OS
+>> kernel and adds support for the Maxim 77802 Power Management IC, their
+>> regulators, clocks, RTC and i2c interface.
+>> 
+>> This is a v8 of the patch-set that addresses issues pointed out in v7.
+>> Individual changes are added on each patch but the biggest changes are:
+>> 
+>> * Patches 1-7 from v7 are not included since those were improvements to
+>> the max77686 mfd driver and can be applied independently. Lee Jones said
+>> that he is going to pick them from the posted v7 series.
+>> 
+>> I've created a patchwork bundle with 1-7 from v7 to make it easy to apply:
+>> 
+>> https://patchwork.kernel.org/bundle/javier/max77686-improvements/
+>> 
+>> * The Dynamic Voltage Scaling support has been removed since that can be
+>> added in a follow up series and shouldn't block the minimum PMIC support.
+>> 
+>> The patch-set has been tested on both Daisy/Snow (max77686) and Peach
+>> Pit (max77802) Chromebooks and it's composed of the following patches:
+>> 
+>> [PATCH v8 01/13] mfd: max77686: Add Maxim 77802 PMIC support
+>> [PATCH v8 02/13] mfd: max77802: Add DT binding documentation
+>> [PATCH v8 03/13] regulator: Add driver for Maxim 77802 PMIC regulators
+>> [PATCH v8 04/13] clk: max77686: Add DT include for MAX77686 PMIC clock
+>> [PATCH v8 05/13] clk: Add generic driver for Maxim PMIC clocks
+>> [PATCH v8 06/13] clk: max77686: Convert to the generic max clock driver
+>> [PATCH v8 07/13] clk: max77686: Improve Maxim 77686 PMIC clocks binding
+>> [PATCH v8 08/13] clk: Add driver for Maxim 77802 PMIC clocks
+>> [PATCH v8 09/13] clk: max77802: Add DT binding documentation
 > 
-> to disregard the tx_chan_id, which is really arbitrary as far as I can tell.
+> For patches 4-9:
 > 
-> What I think you got wrong here (by following my bad advice) is the master
-> number. Looking at the code for dw_dma, I think src_master needs to be '1'
-> for your driver.
+> Acked-by: Mike Turquette <mturquette@linaro.org>
+> 
 
-Right, I just copied your example. I'll change it to '1' in the next
-revision.
+Thanks a lot for your ack!
+
+Since the merge window is just around the corner, Lee merged the mfd max77686
+headers changes to split the dependencies around kernel releases.
+
+So after the merge windows, I'll resend the clock driver (and the other drivers
+fwiw) as a separate series so you can merge it through your tree for 3.18.
+
+> Regards,
+> Mike
+> 
+
+Best regards,
+Javier
