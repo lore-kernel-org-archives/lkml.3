@@ -1,75 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752869AbaG1MLq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 08:11:46 -0400
-Received: from mail-wg0-f48.google.com ([74.125.82.48]:57396 "EHLO
-	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752488AbaG1ML0 (ORCPT
+	id S1752897AbaG1MLw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 08:11:52 -0400
+Received: from www.linutronix.de ([62.245.132.108]:39946 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752870AbaG1MLr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 08:11:26 -0400
-Message-ID: <53D63DE6.1000605@suse.cz>
-Date: Mon, 28 Jul 2014 14:11:18 +0200
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	Mon, 28 Jul 2014 08:11:47 -0400
+Date: Mon, 28 Jul 2014 14:11:35 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        Linux PM list <linux-pm@vger.kernel.org>
+Subject: Re: [PATCH, v2]
+In-Reply-To: <3337421.bsfMykWVnZ@vostro.rjw.lan>
+Message-ID: <alpine.DEB.2.10.1407281350550.23352@nanos>
+References: <20140724212620.GO3935@laptop> <1663327.PISiM9sMHC@vostro.rjw.lan> <3637397.iCmFpOsayO@vostro.rjw.lan> <3337421.bsfMykWVnZ@vostro.rjw.lan>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: "xinhui.pan" <xinhuix.pan@intel.com>, Greg KH <gregkh@linuxfoundation.org>
-CC: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-        Peter Hurley <peter@hurleysoftware.com>, mnipxh <mnipxh@gmail.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] tty/n_gsm.c: fix a memory leak in gsmld_open
-References: <53D6067C.4000702@intel.com> <53D60E8F.6080208@suse.cz> <53D611EC.2000907@intel.com> <53D634BB.3060306@intel.com>
-In-Reply-To: <53D634BB.3060306@intel.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/28/2014 01:32 PM, xinhui.pan wrote:
-> 于 2014年07月28日 17:03, xinhui.pan 写道:
->> Hi, Jiri
->>
->> 于 2014年07月28日 16:49, Jiri Slaby 写道:
->>> On 07/28/2014 10:14 AM, xinhui.pan wrote:
->>>> If gsmld_attach_gsm fails, the gsm is not used anymore.
->>>> tty core will not call gsmld_close to do the cleanup work.
->>>> tty core just restore to the tty old ldisc.
->>>> That always causes memory leak.
->>>
->>> Nice catch!
->>>
->>>> --- a/drivers/tty/n_gsm.c
->>>> +++ b/drivers/tty/n_gsm.c
->>>> @@ -2382,7 +2383,13 @@ static int gsmld_open(struct tty_struct *tty)
->>>>  
->>>>  	/* Attach the initial passive connection */
->>>>  	gsm->encoding = 1;
->>>> -	return gsmld_attach_gsm(tty, gsm);
->>>> +
->>>> +	ret = gsmld_attach_gsm(tty, gsm);
->>>> +	if (ret != 0) {
->>>> +		gsm_cleanup_mux(gsm);
->>>> +		mux_put(gsm);
->>>
->>> It is quite illogical to put the mux here. It should be in gsmld_open.
->>> I.e. gsm_cleanup_mux here, mux_put there.
->>>
->>
->> Thanks for your reply :)
->> But I am a little confused with your comments, could you explain it when you are free?
->> Sorry for my poor English.
->>
-> 
-> hi, Jiri
-> 	I guess you want gsm_cleanup_mux() called in gsmld_attach_gsm(), just after gsm_activate_mux() fails?
-> Yes, that seems really make sence. :)
+On Mon, 28 Jul 2014, Rafael J. Wysocki wrote:
+> On Sunday, July 27, 2014 05:53:07 PM Rafael J. Wysocki wrote:
+>  irqreturn_t
+> +do_irqaction(struct irq_desc *desc, struct irqaction *action,
+> +	     unsigned int irq, void *dev_id)
+> +{
+> +	irqreturn_t ret;
+> +
+> +	if (unlikely((desc->istate & IRQS_SHARED_SUSPENDED) &&
+> +		     !(action->flags & IRQF_NO_SUSPEND)))
+> +		return IRQ_NONE;
 
-Oh, I don't know what made me think you are changing gsmld_attach_gsm. I
-misread the patch.
+I really want to avoid that conditional. We burden it on every
+interrupt just to deal with this nonsense.
 
-So in the end, your patch looks fine to me.
+A simple solution for this is to add irq_desc::action_suspended and
+move the shared actions which are not flagged NO_SUSPEND over and
+bring them back on resume.
 
-thanks,
--- 
-js
-suse labs
+> Index: linux-pm/kernel/irq/spurious.c
+> ===================================================================
+> --- linux-pm.orig/kernel/irq/spurious.c
+> +++ linux-pm/kernel/irq/spurious.c
+> @@ -275,6 +275,8 @@ try_misrouted_irq(unsigned int irq, stru
+>  void note_interrupt(unsigned int irq, struct irq_desc *desc,
+>  		    irqreturn_t action_ret)
+>  {
+> +	int misrouted;
+> +
+>  	if (desc->istate & IRQS_POLL_INPROGRESS ||
+>  	    irq_settings_is_polled(desc))
+>  		return;
+> @@ -384,6 +386,9 @@ void note_interrupt(unsigned int irq, st
+>  		}
+>  	}
+>  
+> +	misrouted = unlikely(try_misrouted_irq(irq, desc, action_ret)) ?
+> +			misrouted_irq(irq) : 0;
+
+If the system is suspended, why would we try misrouted irqs at all?
+All non wakeup irqs are disabled, so we just spend a gazillion of
+cycles for nothing.
+
+Thanks,
+
+	tglx
