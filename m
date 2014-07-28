@@ -1,126 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752558AbaG1JdV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 05:33:21 -0400
-Received: from mx2.parallels.com ([199.115.105.18]:37933 "EHLO
-	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752177AbaG1Jbw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 05:31:52 -0400
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: <akpm@linux-foundation.org>
-CC: <hannes@cmpxchg.org>, <mhocko@suse.cz>, <glommer@gmail.com>,
-        <david@fromorbit.com>, <viro@zeniv.linux.org.uk>, <gthelen@google.com>,
-        <mgorman@suse.de>, <linux-mm@kvack.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH -mm 2/6] fs: consolidate {nr,free}_cached_objects args in shrink_control
-Date: Mon, 28 Jul 2014 13:31:24 +0400
-Message-ID: <a301e8ee3c5a58475517f0131f9e87e8be0db97e.1406536261.git.vdavydov@parallels.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <cover.1406536261.git.vdavydov@parallels.com>
-References: <cover.1406536261.git.vdavydov@parallels.com>
+	id S1752070AbaG1Jgy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 05:36:54 -0400
+Received: from mta-out1.inet.fi ([62.71.2.193]:50146 "EHLO jenni1.inet.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750981AbaG1Jgw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jul 2014 05:36:52 -0400
+Date: Mon, 28 Jul 2014 12:36:11 +0300
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Andrey Ryabinin <a.ryabinin@samsung.com>,
+        Sasha Levin <sasha.levin@oracle.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andi Kleen <ak@linux.intel.com>,
+        Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        Dave Hansen <dave.hansen@linux.intel.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Dave Chinner <david@fromorbit.com>, Ning Qu <quning@gmail.com>,
+        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Dave Jones <davej@redhat.com>,
+        stable@vger.kernel.org,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Konstantin Khlebnikov <koct9i@gmail.com>,
+        Hugh Dickins <hughd@google.com>
+Subject: Re: [PATCH] mm: don't allow fault_around_bytes to be 0
+Message-ID: <20140728093611.GA3975@node.dhcp.inet.fi>
+References: <53D07E96.5000006@oracle.com>
+ <1406533400-6361-1-git-send-email-a.ryabinin@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1406533400-6361-1-git-send-email-a.ryabinin@samsung.com>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We are going to make FS shrinkers memcg-aware. To achieve that, we will
-have to pass the memcg to scan to the nr_cached_objects and
-free_cached_objects VFS methods, which currently take only the NUMA node
-to scan. Since the shrink_control structure already holds the node, and
-the memcg to scan will be added to it when we introduce memcg-aware
-vmscan, let us consolidate the methods' arguments in this structure to
-keep things clean.
+On Mon, Jul 28, 2014 at 11:43:20AM +0400, Andrey Ryabinin wrote:
+> Sasha Levin triggered use-after-free when fuzzing using trinity and the KASAN
+> patchset:
+> 
+> 	AddressSanitizer: use after free in do_read_fault.isra.40+0x3c2/0x510 at addr ffff88048a733110
+> 	page:ffffea001229ccc0 count:0 mapcount:0 mapping:          (null) index:0x0
+> 	page flags: 0xafffff80008000(tail)
+> 	page dumped because: kasan error
+> 	CPU: 6 PID: 9262 Comm: trinity-c104 Not tainted 3.16.0-rc6-next-20140723-sasha-00047-g289342b-dirty #929
+> 	 00000000000000fb 0000000000000000 ffffea001229ccc0 ffff88038ac0fb78
+> 	 ffffffffa5e40903 ffff88038ac0fc48 ffff88038ac0fc38 ffffffffa142acfc
+> 	 0000000000000001 ffff880509ff5aa8 ffff88038ac10038 ffff88038ac0fbb0
+> 	Call Trace:
+> 	dump_stack (lib/dump_stack.c:52)
+> 	kasan_report_error (mm/kasan/report.c:98 mm/kasan/report.c:166)
+> 	? debug_smp_processor_id (lib/smp_processor_id.c:57)
+> 	? preempt_count_sub (kernel/sched/core.c:2606)
+> 	? put_lock_stats.isra.13 (./arch/x86/include/asm/preempt.h:98 kernel/locking/lockdep.c:254)
+> 	? do_read_fault.isra.40 (mm/memory.c:2784 mm/memory.c:2849 mm/memory.c:2898)
+> 	__asan_load8 (mm/kasan/kasan.c:364)
+> 	? do_read_fault.isra.40 (mm/memory.c:2864 mm/memory.c:2898)
+> 	do_read_fault.isra.40 (mm/memory.c:2864 mm/memory.c:2898)
+> 	? _raw_spin_unlock (./arch/x86/include/asm/preempt.h:98 include/linux/spinlock_api_smp.h:152 kernel/locking/spinlock.c:183)
+> 	? __pte_alloc (mm/memory.c:598)
+> 	handle_mm_fault (mm/memory.c:3092 mm/memory.c:3225 mm/memory.c:3345 mm/memory.c:3374)
+> 	? pud_huge (./arch/x86/include/asm/paravirt.h:611 arch/x86/mm/hugetlbpage.c:76)
+> 	__get_user_pages (mm/gup.c:286 mm/gup.c:478)
+> 	__mlock_vma_pages_range (mm/mlock.c:262)
+> 	__mm_populate (mm/mlock.c:710)
+> 	SyS_remap_file_pages (mm/mmap.c:2653 mm/mmap.c:2593)
+> 	tracesys (arch/x86/kernel/entry_64.S:541)
+> 	Read of size 8 by thread T9262:
+> 	Memory state around the buggy address:
+> 	 ffff88048a732e80: fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb
+> 	 ffff88048a732f00: fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb
+> 	 ffff88048a732f80: fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb
+> 	 ffff88048a733000: fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb
+> 	 ffff88048a733080: fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb
+> 	>ffff88048a733100: fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb
+> 	                         ^
+> 	 ffff88048a733180: fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb
+> 	 ffff88048a733200: fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb
+> 	 ffff88048a733280: fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb
+> 	 ffff88048a733300: fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb
+> 	 ffff88048a733380: fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb
+> 
+> 
+> It looks like that pte pointer is invalid in do_fault_around().
+> This could happen if fault_around_bytes is set to 0.
+> fault_around_pages() and fault_around_mask() calls rounddown_pow_of_to(fault_around_bytes)
+> The result of rounddown_pow_of_to is undefined if parameter == 0
+> (in my environment it returns 0x8000000000000000).
 
-Suggested-by: Dave Chinner <dchinner@redhat.com>
-Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
+Ouch. Good catch!
+
+Although, I'm not convinced that it caused the issue. Sasha, did you touch the
+debugfs handle?
+
+> One way to fix this would be to return 0 from fault_around_pages() if fault_around_bytes == 0,
+> however this would add extra code on fault path.
+> 
+> So let's just forbid to set fault_around_bytes to zero.
+> Fault around is not used if fault_around_pages() <= 1, so if anyone doesn't want to use
+> it, fault_around_bytes could be set to any value in range [1, 2*PAGE_SIZE - 1]
+> instead of 0.
+
+>From user point of view, 0 is perfectly fine. What about untested patch
+below?
+
+Other option: get rid of debugfs interface, so fault_around_pages() and
+fault_around_mask() will always be known compile time.
+
+There's other problem with the debugfs handle: we don't have serialization
+between fault_around_bytes_set() and do_fault_around(). It can end up
+badly if fault_around_bytes will be changed under do_fault_around()...
+
+I don't think it worth adding the serialization to hot path to protect
+against debug interface.
+Any thoughts?
+
+>From 2932fbcefe4ec21c046348e21981149ecce5d161 Mon Sep 17 00:00:00 2001
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Date: Mon, 28 Jul 2014 12:16:49 +0300
+Subject: [PATCH] mm, debugfs: workaround undefined behaviour of
+ rounddown_pow_of_two(0)
+
+Result of rounddown_pow_of_two(0) is not defined. It can cause a bug if
+user will set fault_around_bytes to 0 via debugfs interface.
+
+Let's set fault_around_bytes to PAGE_SIZE if user tries to set it to
+something below PAGE_SIZE.
+
+Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 ---
- fs/super.c         |   12 ++++++------
- fs/xfs/xfs_super.c |    7 +++----
- include/linux/fs.h |    6 ++++--
- 3 files changed, 13 insertions(+), 12 deletions(-)
+ mm/memory.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/fs/super.c b/fs/super.c
-index b4f5679d0d8c..1f34321e15b4 100644
---- a/fs/super.c
-+++ b/fs/super.c
-@@ -76,7 +76,7 @@ static unsigned long super_cache_scan(struct shrinker *shrink,
- 		return SHRINK_STOP;
- 
- 	if (sb->s_op->nr_cached_objects)
--		fs_objects = sb->s_op->nr_cached_objects(sb, sc->nid);
-+		fs_objects = sb->s_op->nr_cached_objects(sb, sc);
- 
- 	inodes = list_lru_shrink_count(&sb->s_inode_lru, sc);
- 	dentries = list_lru_shrink_count(&sb->s_dentry_lru, sc);
-@@ -96,9 +96,10 @@ static unsigned long super_cache_scan(struct shrinker *shrink,
- 	sc->nr_to_scan = inodes;
- 	freed += prune_icache_sb(sb, sc);
- 
--	if (fs_objects)
--		freed += sb->s_op->free_cached_objects(sb, fs_objects,
--						       sc->nid);
-+	if (fs_objects) {
-+		sc->nr_to_scan = fs_objects;
-+		freed += sb->s_op->free_cached_objects(sb, sc);
-+	}
- 
- 	drop_super(sb);
- 	return freed;
-@@ -121,8 +122,7 @@ static unsigned long super_cache_count(struct shrinker *shrink,
- 	 * s_op->nr_cached_objects().
- 	 */
- 	if (sb->s_op && sb->s_op->nr_cached_objects)
--		total_objects = sb->s_op->nr_cached_objects(sb,
--						 sc->nid);
-+		total_objects = sb->s_op->nr_cached_objects(sb, sc);
- 
- 	total_objects += list_lru_shrink_count(&sb->s_dentry_lru, sc);
- 	total_objects += list_lru_shrink_count(&sb->s_inode_lru, sc);
-diff --git a/fs/xfs/xfs_super.c b/fs/xfs/xfs_super.c
-index 986c5577c4e9..0df5f4d7150f 100644
---- a/fs/xfs/xfs_super.c
-+++ b/fs/xfs/xfs_super.c
-@@ -1521,7 +1521,7 @@ xfs_fs_mount(
- static long
- xfs_fs_nr_cached_objects(
- 	struct super_block	*sb,
--	int			nid)
-+	struct shrink_control	*sc)
+diff --git a/mm/memory.c b/mm/memory.c
+index 7e8d8205b610..2d8fa7a7b0ee 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -2786,7 +2786,8 @@ static int fault_around_bytes_set(void *data, u64 val)
  {
- 	return xfs_reclaim_inodes_count(XFS_M(sb));
+ 	if (val / PAGE_SIZE > PTRS_PER_PTE)
+ 		return -EINVAL;
+-	fault_around_bytes = val;
++	/* rounddown_pow_of_two(0) is not defined */
++	fault_around_bytes = max(val, PAGE_SIZE);
+ 	return 0;
  }
-@@ -1529,10 +1529,9 @@ xfs_fs_nr_cached_objects(
- static long
- xfs_fs_free_cached_objects(
- 	struct super_block	*sb,
--	long			nr_to_scan,
--	int			nid)
-+	struct shrink_control	*sc)
- {
--	return xfs_reclaim_inodes_nr(XFS_M(sb), nr_to_scan);
-+	return xfs_reclaim_inodes_nr(XFS_M(sb), sc->nr_to_scan);
- }
- 
- static const struct super_operations xfs_super_operations = {
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 26b4970e9fb8..6193236aca16 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -1563,8 +1563,10 @@ struct super_operations {
- 			       loff_t);
- #endif
- 	int (*bdev_try_to_free_page)(struct super_block*, struct page*, gfp_t);
--	long (*nr_cached_objects)(struct super_block *, int);
--	long (*free_cached_objects)(struct super_block *, long, int);
-+	long (*nr_cached_objects)(struct super_block *,
-+				  struct shrink_control *);
-+	long (*free_cached_objects)(struct super_block *,
-+				    struct shrink_control *);
- };
- 
- /*
+ DEFINE_SIMPLE_ATTRIBUTE(fault_around_bytes_fops,
 -- 
-1.7.10.4
-
+ Kirill A. Shutemov
