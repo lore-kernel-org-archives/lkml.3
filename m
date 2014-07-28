@@ -1,46 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751418AbaG1Di1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Jul 2014 23:38:27 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:55125 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750902AbaG1Di0 (ORCPT
+	id S1751057AbaG1DmK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Jul 2014 23:42:10 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:49382 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750862AbaG1DmH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Jul 2014 23:38:26 -0400
-From: Masanari Iida <standby24x7@gmail.com>
-To: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@redhat.com
-Cc: Masanari Iida <standby24x7@gmail.com>
-Subject: [PATCH] sched/fair: Fix 'make xmldocs' warning caused by missing description
-Date: Mon, 28 Jul 2014 12:38:06 +0900
-Message-Id: <1406518686-7274-1-git-send-email-standby24x7@gmail.com>
-X-Mailer: git-send-email 2.1.0.rc0
+	Sun, 27 Jul 2014 23:42:07 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAFdhcLRzT-ia5W7Bz3RNAsX75EUeGKFXZdNcyxWMJJJ-JH_KvA@mail.gmail.com>
+References: <CAFdhcLRzT-ia5W7Bz3RNAsX75EUeGKFXZdNcyxWMJJJ-JH_KvA@mail.gmail.com>
+Date: Mon, 28 Jul 2014 11:42:03 +0800
+Message-ID: <CACVXFVO9OEG7OPRdtYNbp3DqYqQcAN3iqBRFpF02qo7Uc2YrBw@mail.gmail.com>
+Subject: Re: [PATCH 9/9] block: loop: support to submit I/O via kernel aio based
+From: Ming Lei <ming.lei@canonical.com>
+To: David Horner <ds2horner@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fix following warning caused by missing description
-"overload" in kernel/sched/fair.c
+Hi David,
 
-Warning(.//kernel/sched/fair.c:5906): No description found for
-parameter 'overload'
+Thanks for your interest in the patch.
 
-Signed-off-by: Masanari Iida <standby24x7@gmail.com>
----
- kernel/sched/fair.c | 1 +
- 1 file changed, 1 insertion(+)
+On Sun, Jul 27, 2014 at 10:20 PM, David Horner <ds2horner@gmail.com> wrote:
+> You mention > 100 % improvement.
+>
+> Can you help me to run some (micro) benchmarks that I could contribute to
+> V1?
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 45943b2..bfa3c86 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -5898,6 +5898,7 @@ static inline int sg_capacity_factor(struct lb_env *env, struct sched_group *gro
-  * @load_idx: Load index of sched_domain of this_cpu for load calc.
-  * @local_group: Does group contain this_cpu.
-  * @sgs: variable to hold the statistics for this group.
-+ * @overload: Indicate more than one runnable task for any CPU.
-  */
- static inline void update_sg_lb_stats(struct lb_env *env,
- 			struct sched_group *group, int load_idx,
--- 
-2.1.0.rc0
+Sure, no problem, generally I just run tests over the loop block device
+directly, since I want to expose performance improvement.  But I did
+run test bench(mkfs, copy big file and compare, ...) over filesystem
+mounted on the loop device too, and looks it is stable enough.
 
+So your benchmarks are either on loop block or filesystem, both
+are fine.
+
+> If you can direct me to relevant threads and docs that would be greatly
+> appreciated.
+
+Follows my test which was observed with 100% improvement(
+throughout is doubled, actually it is more than doubled):
+
+- losetup -f /dev/nullb0   #so /dev/loop0 will be backed with /dev/nullb0
+                                      #if it is the 1st loop device
+
+- run below fio script[1] in single job to test direct randread on /dev/loop0
+
+- it is just for single job improvement, with more than 1 jobs, the
+throughout should be increased more with blk-mq conversion
+
+I will send out V1 this week, and more test cases may be posted
+too.
+
+
+[1], fio test script
+[global]
+direct=1
+size=32G
+bsrange=4k-4k
+timeout=20
+numjobs=1
+ioengine=libaio
+iodepth=64
+filename=/dev/loop0
+group_reporting=1
+
+[f]
+rw=randread
+
+
+Thanks,
