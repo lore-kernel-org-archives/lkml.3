@@ -1,160 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752055AbaG1JoY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 05:44:24 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:20978 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751458AbaG1JoW (ORCPT
+	id S1752097AbaG1JpH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 05:45:07 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:37738 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750981AbaG1JpD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 05:44:22 -0400
-X-IronPort-AV: E=Sophos;i="5.00,978,1396972800"; 
-   d="scan'208";a="33860281"
-Message-ID: <53D61A2C.40805@cn.fujitsu.com>
-Date: Mon, 28 Jul 2014 17:38:52 +0800
-From: Wang Shilong <wangsl.fnst@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Mon, 28 Jul 2014 05:45:03 -0400
+Date: Mon, 28 Jul 2014 11:41:48 +0200
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Vinod Koul <vinod.koul@intel.com>, andriy.shevchenko@intel.com,
+        Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
+        zhuzhenhua@allwinnertech.com, dmaengine@vger.kernel.org,
+        linux-sunxi@googlegroups.com, kevin.z.m.zh@gmail.com,
+        sunny@allwinnertech.com, shuge@allwinnertech.com,
+        Dan Williams <dan.j.williams@intel.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v11 0/2] Add support for the Allwinner A31 DMA Controller
+Message-ID: <20140728094148.GC3952@lukather>
+References: <1405626376-471-1-git-send-email-maxime.ripard@free-electrons.com>
+ <20140725131217.GS8181@intel.com>
+ <20140725163746.GC20328@lukather>
+ <20140725164518.GQ21766@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-To: Takashi Iwai <tiwai@suse.de>, Chris Mason <clm@fb.com>
-CC: Josef Bacik <jbacik@fb.com>, <linux-btrfs@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] Btrfs: Fix memory corruption by ulist_add_merge() on
- 32bit arch
-References: <1406537824-2376-1-git-send-email-tiwai@suse.de>
-In-Reply-To: <1406537824-2376-1-git-send-email-tiwai@suse.de>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.167.226.245]
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="da4uJneut+ArUgXk"
+Content-Disposition: inline
+In-Reply-To: <20140725164518.GQ21766@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Takashi,
 
-This seems like a promising fix, i just have a little question:
+--da4uJneut+ArUgXk
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-ulist_add() logic is we firstly cast a pointer to u64(see ptr_to_u64()), 
-and then
-cast u64 to pointer back(u64_to_ptr()). So normally, arg u64 is actually 
-a pointer.
+Hi Russell,
 
-If the below overflow happens, that means casting can change original value?
+On Fri, Jul 25, 2014 at 05:45:19PM +0100, Russell King - ARM Linux wrote:
+> On Fri, Jul 25, 2014 at 06:37:46PM +0200, Maxime Ripard wrote:
+> > Hi Vinod,
+> >=20
+> > On Fri, Jul 25, 2014 at 06:42:17PM +0530, Vinod Koul wrote:
+> > > - don't use devm_request_irq(). You have irq enabled and you have kil=
+led
+> > >   tasklet. This is too racy. You need to ensure no irqs can be genera=
+ted before killing
+> > >   tasklets.
+> >=20
+> > Ok, would calling disable_irq before killing the tasklet an option for
+> > you ? that would allow to keep the devm_request_irq.
+>=20
+> That's not really an acceptable approach if you can use shared
+> interrupts.
 
-Am i missing something here?
+We don't, but yes, I see your point.
 
-Thanks,
-Wang
-On 07/28/2014 04:57 PM, Takashi Iwai wrote:
-> We've got bug reports that btrfs crashes when quota is enabled on
-> 32bit kernel, typically with the Oops like below:
->   BUG: unable to handle kernel NULL pointer dereference at 00000004
->   IP: [<f9234590>] find_parent_nodes+0x360/0x1380 [btrfs]
->   *pde = 00000000
->   Oops: 0000 [#1] SMP
->   CPU: 0 PID: 151 Comm: kworker/u8:2 Tainted: G S      W 3.15.2-1.gd43d97e-default #1
->   Workqueue: btrfs-qgroup-rescan normal_work_helper [btrfs]
->   task: f1478130 ti: f147c000 task.ti: f147c000
->   EIP: 0060:[<f9234590>] EFLAGS: 00010213 CPU: 0
->   EIP is at find_parent_nodes+0x360/0x1380 [btrfs]
->   EAX: f147dda8 EBX: f147ddb0 ECX: 00000011 EDX: 00000000
->   ESI: 00000000 EDI: f147dda4 EBP: f147ddf8 ESP: f147dd38
->    DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
->   CR0: 8005003b CR2: 00000004 CR3: 00bf3000 CR4: 00000690
->   Stack:
->    00000000 00000000 f147dda4 00000050 00000001 00000000 00000001 00000050
->    00000001 00000000 d3059000 00000001 00000022 000000a8 00000000 00000000
->    00000000 000000a1 00000000 00000000 00000001 00000000 00000000 11800000
->   Call Trace:
->    [<f923564d>] __btrfs_find_all_roots+0x9d/0xf0 [btrfs]
->    [<f9237bb1>] btrfs_qgroup_rescan_worker+0x401/0x760 [btrfs]
->    [<f9206148>] normal_work_helper+0xc8/0x270 [btrfs]
->    [<c025e38b>] process_one_work+0x11b/0x390
->    [<c025eea1>] worker_thread+0x101/0x340
->    [<c026432b>] kthread+0x9b/0xb0
->    [<c0712a71>] ret_from_kernel_thread+0x21/0x30
->    [<c0264290>] kthread_create_on_node+0x110/0x110
->
-> This indicates a NULL corruption in prefs_delayed list.  The further
-> investigation and bisection pointed that the call of ulist_add_merge()
-> results in the corruption.
->
-> ulist_add_merge() takes u64 as aux and writes a 64bit value into
-> old_aux.  The callers of this function in backref.c, however, pass a
-> pointer of a pointer to old_aux.  That is, the function overwrites
-> 64bit value on 32bit pointer.  This caused a NULL in the adjacent
-> variable, in this case, prefs_delayed.
->
-> Here is a quick attempt to band-aid over this: a new function,
-> ulist_add_merge_ptr() is introduced to pass/store properly a pointer
-> value instead of u64.  There are still ugly void ** cast remaining
-> in the callers because void ** cannot be taken implicitly.  But, it's
-> safer than explicit cast to u64, anyway.
->
-> Bugzilla: https://bugzilla.novell.com/show_bug.cgi?id=887046
-> Cc: <stable@vger.kernel.org> [v3.11+]
-> Signed-off-by: Takashi Iwai <tiwai@suse.de>
-> ---
->
-> Alternatively, we can change the argument of aux and old_aux to a
-> pointer from u64, as backref.c is the only user of ulist_add_merge()
-> function.  I'll cook up another patch if it's the preferred way.
->
->   fs/btrfs/backref.c | 11 +++++------
->   fs/btrfs/ulist.h   | 15 +++++++++++++++
->   2 files changed, 20 insertions(+), 6 deletions(-)
->
-> diff --git a/fs/btrfs/backref.c b/fs/btrfs/backref.c
-> index e25564bfcb46..d7a24620a963 100644
-> --- a/fs/btrfs/backref.c
-> +++ b/fs/btrfs/backref.c
-> @@ -276,9 +276,8 @@ static int add_all_parents(struct btrfs_root *root, struct btrfs_path *path,
->   			}
->   			if (ret > 0)
->   				goto next;
-> -			ret = ulist_add_merge(parents, eb->start,
-> -					      (uintptr_t)eie,
-> -					      (u64 *)&old, GFP_NOFS);
-> +			ret = ulist_add_merge_ptr(parents, eb->start,
-> +						  eie, (void **)&old, GFP_NOFS);
->   			if (ret < 0)
->   				break;
->   			if (!ret && extent_item_pos) {
-> @@ -1008,9 +1007,9 @@ again:
->   					goto out;
->   				ref->inode_list = eie;
->   			}
-> -			ret = ulist_add_merge(refs, ref->parent,
-> -					      (uintptr_t)ref->inode_list,
-> -					      (u64 *)&eie, GFP_NOFS);
-> +			ret = ulist_add_merge_ptr(refs, ref->parent,
-> +						  ref->inode_list,
-> +						  (void **)&eie, GFP_NOFS);
->   			if (ret < 0)
->   				goto out;
->   			if (!ret && extent_item_pos) {
-> diff --git a/fs/btrfs/ulist.h b/fs/btrfs/ulist.h
-> index 7f78cbf5cf41..695fc2bac680 100644
-> --- a/fs/btrfs/ulist.h
-> +++ b/fs/btrfs/ulist.h
-> @@ -57,6 +57,21 @@ void ulist_free(struct ulist *ulist);
->   int ulist_add(struct ulist *ulist, u64 val, u64 aux, gfp_t gfp_mask);
->   int ulist_add_merge(struct ulist *ulist, u64 val, u64 aux,
->   		    u64 *old_aux, gfp_t gfp_mask);
-> +
-> +/* just like ulist_add_merge() but take a pointer for the aux data */
-> +static inline int ulist_add_merge_ptr(struct ulist *ulist, u64 val, void *aux,
-> +				      void **old_aux, gfp_t gfp_mask)
-> +{
-> +#if BITS_PER_LONG == 32
-> +	u64 old64 = (uintptr_t)*old_aux;
-> +	int ret = ulist_add_merge(ulist, val, (uintptr_t)aux, &old64, gfp_mask);
-> +	*old_aux = (void *)((uintptr_t)old64);
-> +	return ret;
-> +#else
-> +	return ulist_add_merge(ulist, val, (u64)aux, (u64 *)old_aux, gfp_mask)
-> +#endif
-> +}
-> +
->   struct ulist_node *ulist_next(struct ulist *ulist,
->   			      struct ulist_iterator *uiter);
->   
+> A better alternative would be devm_free_irq() to give a definite point
+> that the interrupt is unregistered in the driver remove sequence.  That
+> allows you to keep the advantage of devm_request_irq() to clean up during
+> the initialisation side.
 
+Ah, right, thanks.
+
+> An alternative approach would be to ensure that the hardware is quiesced,
+> and interrupts are disabled.  Then call synchronize_irq() on it, and at
+> that point, you should be certain that your interrupt handler should not
+> process any further interrupts for your device (though, in a shared
+> interrupt environment, it would still be called should a different device
+> on the shared line raise its interrupt.)
+
+Actually, unless I'm missing something, that's pretty much what we're
+doing here.
+
+I disable all interrupts in the DMA controller, I call
+synchronize_irq, and then kill the tasklet. The only interrupts I
+could get are spurious, and we made sure such kind of interrupts
+couldn't schedule the tasklet either.
+
+Maxime
+
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
+
+--da4uJneut+ArUgXk
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJT1hrcAAoJEBx+YmzsjxAghQIQAJYXjX2BMDQMrqf8id87sd06
+netbgOfb0c5vvS1gv107So90LFAQn2wLVv79c4ggcYEK1UcbVCHGa7eAsnKFpal3
+r8QCF9Koie5pr7Ds33gGTueS/v+Jx61hs51ARVfhl8DkjQd6qtIYVqNu0NEt5Uds
+DjYDsIGz7jxk/XYOx6sl9Ae8HOeehDVSdKzMcRtUjSy5IOMtivsJ3mN96z/e831h
+Q6d41Y8lW8IZKyu3hsG2zme8BQF8d/thRRERMPHKAxaOY96vC4/OwIin1JCXaFXj
+r1jSMTJe6RkCik9szYiBw5urSMD+EZjxiq9BTClVdJrNHqUctGdptgNJHHo69CdE
+hPHshGW3FxU80UISELn1AlqWHK/8qmyrYjLtWxJLY0wP4owcuemByFIEFJI0njqL
+fdZixMbmdYjFH3yetUqZ3lqowxiO0bccZi5UbYgXIhCuXhE97+RYemsNG8gFBnfB
+J7S107Amuu04XGTEGT4EkU3lg7pvVlwHGI1Jh2zwPsmL5IA/TEoRCwLO7lW+JD1o
+vQ6vipJ6zZ5z0qQR+89IpC0cNg8xFZb4f6tSdMgcT9ifn09RXab5H37HwjTRMsYy
+dX+nDFUrphnaiFa3XLAqSGGfQkedb4YPCnKY/c6jjfBkuUiIsWBMauPhnyG4G7Su
+QZjdH1YTcrjzXOsTMOat
+=bvKc
+-----END PGP SIGNATURE-----
+
+--da4uJneut+ArUgXk--
