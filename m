@@ -1,75 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752375AbaG1Uom (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 16:44:42 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:49220 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752329AbaG1Uoj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 16:44:39 -0400
-User-Agent: K-9 Mail for Android
-In-Reply-To: <20140728203955.GA4611@thinpad.lan.raisama.net>
-References: <1406574278-23946-1-git-send-email-ehabkost@redhat.com> <53D6A1F2.5070404@zytor.com> <20140728203955.GA4611@thinpad.lan.raisama.net>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain;
- charset=UTF-8
-Subject: Re: [PATCH] x86, paravirt: BUG_ON on {rd,wr}msr exceptions
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Mon, 28 Jul 2014 13:43:36 -0700
-To: Eduardo Habkost <ehabkost@redhat.com>
-CC: virtualization@lists.linux-foundation.org,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        Chris Wright <chrisw@sous-sol.org>, Alok Kataria <akataria@vmware.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        x86@kernel.org, linux-kernel@vger.kernel.org
-Message-ID: <5961f265-e3d0-4122-87b8-10151e1ee4d6@email.android.com>
+	id S1752222AbaG1Uo2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 16:44:28 -0400
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:63044 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752055AbaG1UoU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jul 2014 16:44:20 -0400
+From: Malcolm Priestley <tvboxspy@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Malcolm Priestley <tvboxspy@gmail.com>
+Subject: [PATCH 4/4] staging: vt6655: dead code remove undefined macro IO_MAP
+Date: Mon, 28 Jul 2014 21:43:30 +0100
+Message-Id: <1406580210-2794-4-git-send-email-tvboxspy@gmail.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1406580210-2794-1-git-send-email-tvboxspy@gmail.com>
+References: <1406580210-2794-1-git-send-email-tvboxspy@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As much as I hate adding new pvops, it might be the better answer, especially since those are the real native ops.
+This device is always memory mapped
 
+Signed-off-by: Malcolm Priestley <tvboxspy@gmail.com>
+---
+ drivers/staging/vt6655/device_main.c | 10 +---------
+ drivers/staging/vt6655/upc.h         | 34 ----------------------------------
+ 2 files changed, 1 insertion(+), 43 deletions(-)
 
-On July 28, 2014 1:39:55 PM PDT, Eduardo Habkost <ehabkost@redhat.com> wrote:
->On Mon, Jul 28, 2014 at 12:18:10PM -0700, H. Peter Anvin wrote:
->> On 07/28/2014 12:04 PM, Eduardo Habkost wrote:
->> > When CONFIG_PARAVIRT is enabled, the kernel is ignoring exceptions
->on
->> > the {rd,wr}msr instructions. This makes serious issues (either on
->the
->> > guest kernel, or on the host) be silently ignored, and is different
->from
->> > the native MSR code (which does not ignore the exceptions).
->> > 
->> > As paravirt.h already includes linux/bug.h, I don't see what was
->the
->> > original issue preventing BUG_ON from being used.
->> > 
->> > Change rdmsr(), wrmsr(), and rdmsrl() to BUG_ON() on errors.
->> 
->> How much does this bloat the kernel?
->
->It seems to add 8 bytes to each {wr,rd}msr() call (4 extra
->instructions:
->test, jmp, ud2, jmp).
->
->allyesconfig, paravirt enabled, before:
->
->  text    data     bss     dec     hex filename
->108368312       23500872        55705600        187574784       b2e2a00
->vmlinux
->
->allyesconfig, paravirt enabled, after:
->
->   text    data     bss     dec     hex filename
->108384438       23500904        55717888        187603230       b2e991e
->vmlinux
->
->allyesconfig vmlinux is 28446 bytes larger.
->
->An alternative is to add read_msr_unsafe() & write_msr_unsafe() fields
->to pv_cpu_ops, pointing to native_read_msr() & native_write_msr().
-
+diff --git a/drivers/staging/vt6655/device_main.c b/drivers/staging/vt6655/device_main.c
+index e8584fd..926c0d9 100644
+--- a/drivers/staging/vt6655/device_main.c
++++ b/drivers/staging/vt6655/device_main.c
+@@ -902,10 +902,6 @@ vt6655_probe(struct pci_dev *pcid, const struct pci_device_id *ent)
+ 	VNSvInPortB(pDevice->PortOffset+0x4F, &value);
+ 	pr_debug("After write: value is %x\n", value);
+ #endif
+-
+-#ifdef IO_MAP
+-	pDevice->PortOffset = pDevice->ioaddr;
+-#endif
+ 	// do reset
+ 	if (!MACbSoftwareReset(pDevice->PortOffset)) {
+ 		pr_err(DEVICE_NAME ": Failed to access MAC hardware..\n");
+@@ -949,14 +945,10 @@ static void device_print_info(PSDevice pDevice)
+ 
+ 	DBG_PRT(MSG_LEVEL_INFO, KERN_INFO "%s: %s\n", dev->name, get_chip_name(pDevice->chip_id));
+ 	DBG_PRT(MSG_LEVEL_INFO, KERN_INFO "%s: MAC=%pM", dev->name, dev->dev_addr);
+-#ifdef IO_MAP
+-	DBG_PRT(MSG_LEVEL_INFO, KERN_INFO " IO=0x%lx  ", (unsigned long)pDevice->ioaddr);
+-	DBG_PRT(MSG_LEVEL_INFO, KERN_INFO " IRQ=%d\n", pDevice->dev->irq);
+-#else
++
+ 	DBG_PRT(MSG_LEVEL_INFO, KERN_INFO " IO=0x%lx Mem=0x%lx ",
+ 		(unsigned long)pDevice->ioaddr, (unsigned long)pDevice->PortOffset);
+ 	DBG_PRT(MSG_LEVEL_INFO, KERN_INFO " IRQ=%d\n", pDevice->dev->irq);
+-#endif
+ }
+ 
+ static void vt6655_init_info(struct pci_dev *pcid, PSDevice *ppDevice,
+diff --git a/drivers/staging/vt6655/upc.h b/drivers/staging/vt6655/upc.h
+index af12a86..e262f1b0 100644
+--- a/drivers/staging/vt6655/upc.h
++++ b/drivers/staging/vt6655/upc.h
+@@ -35,38 +35,6 @@
+ /*---------------------  Export Definitions -------------------------*/
+ 
+ //
+-//  For IO mapped
+-//
+-
+-#ifdef IO_MAP
+-
+-#define VNSvInPortB(dwIOAddress, pbyData)	\
+-do {						\
+-	*(pbyData) = inb(dwIOAddress);		\
+-} while (0)
+-
+-#define VNSvInPortW(dwIOAddress, pwData)	\
+-do {						\
+-	*(pwData) = inw(dwIOAddress);		\
+-} while (0)
+-
+-#define VNSvInPortD(dwIOAddress, pdwData)	\
+-do {						\
+-	*(pdwData) = inl(dwIOAddress);		\
+-} while (0)
+-
+-#define VNSvOutPortB(dwIOAddress, byData)	\
+-	outb(byData, dwIOAddress)
+-
+-#define VNSvOutPortW(dwIOAddress, wData)	\
+-	outw(wData, dwIOAddress)
+-
+-#define VNSvOutPortD(dwIOAddress, dwData)	\
+-	outl(dwData, dwIOAddress)
+-
+-#else
+-
+-//
+ //  For memory mapped IO
+ //
+ 
+@@ -100,8 +68,6 @@ do {									\
+ 	writel((unsigned long)dwData, dwIOAddress);			\
+ } while (0)
+ 
+-#endif
+-
+ //
+ // ALWAYS IO-Mapped IO when in 16-bit/32-bit environment
+ //
 -- 
-Sent from my mobile phone.  Please pardon brevity and lack of formatting.
+1.9.1
+
