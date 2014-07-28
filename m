@@ -1,63 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752665AbaG1NSV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 09:18:21 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:28750 "EHLO SMTP.CITRIX.COM"
+	id S1752324AbaG1NWH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 09:22:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28295 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751758AbaG1NSU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 09:18:20 -0400
-X-IronPort-AV: E=Sophos;i="5.01,749,1400025600"; 
-   d="scan'208";a="156362796"
-Message-ID: <53D64D99.3000101@citrix.com>
-Date: Mon, 28 Jul 2014 14:18:17 +0100
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+	id S1751423AbaG1NWC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jul 2014 09:22:02 -0400
+Date: Mon, 28 Jul 2014 15:19:44 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Kirill Tkhai <tkhai@yandex.ru>
+Cc: linux-kernel@vger.kernel.org, nicolas.pitre@linaro.org,
+        peterz@infradead.org, pjt@google.com, rostedt@goodmis.org,
+        umgwanakikbuti@gmail.com, ktkhai@parallels.com,
+        tim.c.chen@linux.intel.com, mingo@kernel.org
+Subject: Re: [PATCH v2 0/5] sched: Add on_rq states and remove several
+	double rq locks
+Message-ID: <20140728131944.GA2800@redhat.com>
+References: <20140726145508.6308.69121.stgit@localhost> <20140726193910.GA8420@redhat.com> <1406496385.1856.34.camel@localhost.localdomain>
 MIME-Version: 1.0
-To: Matt Rushton <mvrushton@gmail.com>, <konrad.wilk@oracle.com>,
-        <boris.ostrovsky@oracle.com>
-CC: <msw@amazon.com>, <linux-kernel@vger.kernel.org>,
-        <xen-devel@lists.xensource.com>, Matt Rushton <mrushton@amazon.com>
-Subject: Re: [PATCH v2 2/2] xen/setup: Remap Xen Identity Mapped RAM
-References: <1405814495-10868-1-git-send-email-mrushton@amazon.com> <1405814495-10868-2-git-send-email-mrushton@amazon.com>
-In-Reply-To: <1405814495-10868-2-git-send-email-mrushton@amazon.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.76]
-X-DLP: MIA1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1406496385.1856.34.camel@localhost.localdomain>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20/07/14 01:01, Matt Rushton wrote:
-> Instead of ballooning up and down dom0 memory this remaps the existing mfns
-> that were replaced by the identity map. The reason for this is that the
-> existing implementation ballooned memory up and and down which caused dom0
-> to have discontiguous pages. In some cases this resulted in the use of bounce
-> buffers which reduced network I/O performance significantly. This change will
-> honor the existing order of the pages with the exception of some boundary
-> conditions.
-> 
-> To do this we need to update both the Linux p2m table and the Xen m2p table.
-> Particular care must be taken when updating the p2m table since it's important
-> to limit table memory consumption and reuse the existing leaf pages which get
-> freed when an entire leaf page is set to the identity map. To implement this,
-> mapping updates are grouped into blocks with table entries getting cached
-> temporarily and then released.
-> 
-> On my test system before:
-> Total pages: 2105014
-> Total contiguous: 1640635
-> 
-> After:
-> Total pages: 2105014
-> Total contiguous: 2098904
+On 07/28, Kirill Tkhai wrote:
+>
+> You're right. We have to check for "task_migrating" in switched_from_fair().
+> One more place is switched_from_dl().
 
-This looks like a worthwhile improvement but...
+Or we can simply check task_migrating() in __sched_setscheduler(), like
+set_cpus_allowed() does.
 
->  arch/x86/xen/setup.c |  370 +++++++++++++++++++++++++++++++++++++++-----------
+This probably means that you should add this check into task_rq_lock() as
+Peter suggests. Or at least add another task_rq_lock_xxx() helper.
 
-... Ew :(
+Oleg.
 
-It will take me a bit longer before I can give this a proper review.
-
-David
