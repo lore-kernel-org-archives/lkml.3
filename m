@@ -1,187 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751943AbaG1AEm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Jul 2014 20:04:42 -0400
-Received: from mail.efficios.com ([78.47.125.74]:32955 "EHLO mail.efficios.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750839AbaG1AEl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Jul 2014 20:04:41 -0400
-Date: Mon, 28 Jul 2014 00:04:44 +0000 (UTC)
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Pranith Kumar <bobby.prani@gmail.com>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        "open list:READ-COPY UPDATE..." <linux-kernel@vger.kernel.org>
-Message-ID: <1742196882.21372.1406505884802.JavaMail.zimbra@efficios.com>
-In-Reply-To: <CAJhHMCDL4RdCi9PGvQQTwxC+n8WXq7k8OfsO8vK8fo5HDeLd0A@mail.gmail.com>
-References: <1406504249-15176-1-git-send-email-bobby.prani@gmail.com> <456359712.21364.1406504982621.JavaMail.zimbra@efficios.com> <CAJhHMCDL4RdCi9PGvQQTwxC+n8WXq7k8OfsO8vK8fo5HDeLd0A@mail.gmail.com>
-Subject: Re: [PATCH 1/1] rcu: Use rcu_gp_kthread_wake() to wake up grace
- period kthreads
+	id S1752546AbaG1AHA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Jul 2014 20:07:00 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:43063 "EHLO
+	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751039AbaG1AG5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Jul 2014 20:06:57 -0400
+X-Original-SENDERIP: 10.177.220.181
+X-Original-MAILFROM: namhyung@gmail.com
+From: Namhyung Kim <namhyung@kernel.org>
+To: Thomas Ilsche <thomas.ilsche@tu-dresden.de>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>
+Subject: Re: [PATCH 2/2] perf tools: Default to python version 2
+References: <53D135F9.1070104@tu-dresden.de>
+	<1406258045-25726-1-git-send-email-namhyung@kernel.org>
+	<1406258045-25726-2-git-send-email-namhyung@kernel.org>
+	<53D22357.9010005@tu-dresden.de> <87wqb1ivnb.fsf@sejong.aot.lge.com>
+	<53D242DC.9070503@tu-dresden.de>
+Date: Mon, 28 Jul 2014 09:06:54 +0900
+In-Reply-To: <53D242DC.9070503@tu-dresden.de> (Thomas Ilsche's message of
+	"Fri, 25 Jul 2014 13:43:24 +0200")
+Message-ID: <87silmibxd.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [173.246.29.13]
-X-Mailer: Zimbra 8.0.7_GA_6021 (ZimbraWebClient - FF30 (Linux)/8.0.7_GA_6021)
-Thread-Topic: Use rcu_gp_kthread_wake() to wake up grace period kthreads
-Thread-Index: /sNjLN9AGoyGpxzb5aXiOa/OmW+1Dg==
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------ Original Message -----
-> From: "Pranith Kumar" <bobby.prani@gmail.com>
-> To: "Mathieu Desnoyers" <mathieu.desnoyers@efficios.com>
-> Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>, "Josh Triplett" <josh@joshtriplett.org>, "Steven Rostedt"
-> <rostedt@goodmis.org>, "Lai Jiangshan" <laijs@cn.fujitsu.com>, "open list:READ-COPY UPDATE..."
-> <linux-kernel@vger.kernel.org>
-> Sent: Sunday, July 27, 2014 7:58:40 PM
-> Subject: Re: [PATCH 1/1] rcu: Use rcu_gp_kthread_wake() to wake up grace period kthreads
-> 
-> On Sun, Jul 27, 2014 at 7:49 PM, Mathieu Desnoyers
-> <mathieu.desnoyers@efficios.com> wrote:
-> > ----- Original Message -----
-> >> From: "Pranith Kumar" <bobby.prani@gmail.com>
-> >> To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>, "Josh Triplett"
-> >> <josh@joshtriplett.org>, "Steven Rostedt"
-> >> <rostedt@goodmis.org>, "Mathieu Desnoyers"
-> >> <mathieu.desnoyers@efficios.com>, "Lai Jiangshan" <laijs@cn.fujitsu.com>,
-> >> "open list:READ-COPY UPDATE..." <linux-kernel@vger.kernel.org>
-> >> Sent: Sunday, July 27, 2014 7:37:29 PM
-> >> Subject: [PATCH 1/1] rcu: Use rcu_gp_kthread_wake() to wake up grace
-> >> period kthreads
-> >>
-> >> The rcu_gp_kthread_wake() function checks for three conditions before
-> >> waking
-> >> up
-> >> grace period kthreads:
-> >>
-> >> *  Is the thread we are trying to wake up the current thread?
-> >> *  Are the gp_flags zero? (all threads wait on non-zero gp_flags
-> >> condition)
-> >> *  Is there no thread created for this flavour, hence nothing to wake up?
-> >>
-> >> If any one of these condition is true, we do not call wake_up().
-> >>
-> >> It was found that there are quite a few avoidable wake ups both during
-> >> idle
-> >> time and under stress induced by rcutorture.
-> >>
-> >> Idle:
-> >>
-> >> Total:66000, unnecessary:66000, case1:61827, case2:66000, case3:0
-> >> Total:68000, unnecessary:68000, case1:63696, case2:68000, case3:0
-> >>
-> >> rcutorture:
-> >>
-> >> Total:254000, unnecessary:254000, case1:199913, case2:254000, case3:0
-> >> Total:256000, unnecessary:256000, case1:201784, case2:256000, case3:0
-> >>
-> >> Here case{1-3} are the cases listed above. We can avoid these wake ups by
-> >> using
-> >> rcu_gp_kthread_wake() to conditionally wake up the grace period kthreads.
-> >>
-> >> Hence this commit tries to avoid calling wake_up() whenever we can by
-> >> using
-> >> rcu_gp_kthread_wake() function.
-> >>
-> >> Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
-> >> ---
-> >>  kernel/rcu/tree.c | 10 ++++++++--
-> >>  1 file changed, 8 insertions(+), 2 deletions(-)
-> >>
-> >> diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
-> >> index b63517c..36911ee 100644
-> >> --- a/kernel/rcu/tree.c
-> >> +++ b/kernel/rcu/tree.c
-> >> @@ -1938,7 +1938,10 @@ static void rcu_report_qs_rsp(struct rcu_state
-> >> *rsp,
-> >> unsigned long flags)
-> >>  {
-> >>       WARN_ON_ONCE(!rcu_gp_in_progress(rsp));
-> >>       raw_spin_unlock_irqrestore(&rcu_get_root(rsp)->lock, flags);
-> >> -     wake_up(&rsp->gp_wq);  /* Memory barrier implied by wake_up() path.
-> >> */
-> >> +     /* ->gp_flags is properly protected by locks, so a memory barrier
-> >> +      * is not necessary here
-> >
-> > Two point:
-> >
-> > 1- The format of this comment is odd, and should be:
-> >
-> > /*
-> >  * Text...
-> >  */
-> 
-> OK, I will update it according to this format.
-> 
-> >
-> > 2- Since when can a memory barrier be replaced by a lock ? More explanation
-> >    appears to be needed on what this barrier matches exactly.
-> 
-> On re-reading I realize that this comment is very vague and introduces
-> more doubts than it clears.
-> 
-> The context here is that in rcu_gp_kthread_wake() we are accessing
-> ->gp_flags to determine whether we need to wake up the gp kthreads. We
-> don't need a barrier here since we are accessing it using
-> ACCESS_ONCE() and all other accesses are properly protected by using
-> ACCESS_ONCE() and taking the root rcu_node lock.
-> 
-> So how about this:
-> 
-> /*
->  * ->gp_flags is being accessed using ACCESS_ONCE() because of
->  * which a memory barrier is not required here.
->  */
-> 
+Hi Thomas,
 
-A memory barrier is typically not there to interact with a single
-variable and a single memory access. I'm concerned that this memory
-barrier might be ordering other things besides gp_flags.
+On Fri, 25 Jul 2014 13:43:24 +0200, Thomas Ilsche wrote:
+> Hi Namhyung,
+>
+> apologies for mixing up your first name earlier.
+
+It's okay, nevermind. :)
+
+
+> On 2014-07-25 12:24, Namhyung Kim wrote:
+>> On Fri, 25 Jul 2014 11:28:55 +0200, Thomas Ilsche wrote:
+>>>  ifndef NO_LIBPYTHON
+>>> -  override PYTHON := \
+>>> -    $(call get-executable-or-default,PYTHON,python)
+>>> +  PYTHON2 := $(call get-executable-or-default,PYTHON,python2)
+>> 
+>> But wouldn't it set PYTHON2 to python2 even if the system doesn't have
+>> python2 actually?
+>> 
+>> 
+>>> +  override PYTHON := $(if $(PYTHON2),$(PYTHON2),$(call get-executable,python))
+>> 
+>> And then it'll set PYTHON to python2, no?
+>> 
+>
+> No, get-executable-or-default only returns anything if it is an actual executable
+> (asserted by a 'command -v' and 'test -f $ -a -x $'). At least this is how I understand
+> the Makefile code. I also tested it with a Python 2.6.9 (no python2 in path) and it worked
+> (after fixing some totally unrelated issues in python headers). It will however complain
+> that "The path 'python2' is not executable." before using python.
+
+Yeah, that's annoying.
+
+
+>
+>> 
+>>>    override PYTHON_CONFIG := \
+>>>      $(call get-executable-or-default,PYTHON_CONFIG,$(PYTHON)-config)
+>> 
+>> 
+>> I'm thinking about something like below.. but sadly it doesn't work for
+>> me.. hmm.
+>
+> Actually this appears to work for me (with 2.6.9 & 2.7.6) and I find this solution more
+> elegant.
+
+Thanks for testing.  It was my fault on setting symlink to a
+non-existing file for testing.  It now works well for me too.
+
+Can I add your Tested-by then?
 
 Thanks,
-
-Mathieu
-
-> >
-> >> +      */
-> >> +     rcu_gp_kthread_wake(rsp);
-> >>  }
-> >>
-> >>  /*
-> >> @@ -2516,7 +2519,10 @@ static void force_quiescent_state(struct rcu_state
-> >> *rsp)
-> >>       ACCESS_ONCE(rsp->gp_flags) =
-> >>               ACCESS_ONCE(rsp->gp_flags) | RCU_GP_FLAG_FQS;
-> >>       raw_spin_unlock_irqrestore(&rnp_old->lock, flags);
-> >> -     wake_up(&rsp->gp_wq);  /* Memory barrier implied by wake_up() path.
-> >> */
-> >> +     /* ->gp_flags is properly protected by locks, so a memory barrier
-> >> +      * is not necessary here
-> >> +      */
-> >> +     rcu_gp_kthread_wake(rsp);
-> >>  }
-> >>
-> >>  /*
-> >> --
-> >> 1.9.1
-> >>
-> >>
-> >
-> > --
-> > Mathieu Desnoyers
-> > EfficiOS Inc.
-> > http://www.efficios.com
-> 
-> 
-> 
-> --
-> Pranith
-> 
-
--- 
-Mathieu Desnoyers
-EfficiOS Inc.
-http://www.efficios.com
+Namhyung
