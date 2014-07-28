@@ -1,100 +1,241 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750960AbaG1DFS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Jul 2014 23:05:18 -0400
-Received: from mga03.intel.com ([143.182.124.21]:4455 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750727AbaG1DFQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Jul 2014 23:05:16 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,745,1400050800"; 
-   d="scan'208";a="462114329"
-Date: Mon, 28 Jul 2014 03:02:37 +0800
-From: Yuyang Du <yuyang.du@intel.com>
-To: Morten Rasmussen <morten.rasmussen@arm.com>
-Cc: "mingo@redhat.com" <mingo@redhat.com>,
-        "peterz@infradead.org" <peterz@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "pjt@google.com" <pjt@google.com>,
-        "bsegall@google.com" <bsegall@google.com>,
-        "arjan.van.de.ven@intel.com" <arjan.van.de.ven@intel.com>,
-        "len.brown@intel.com" <len.brown@intel.com>,
-        "rafael.j.wysocki@intel.com" <rafael.j.wysocki@intel.com>,
-        "alan.cox@intel.com" <alan.cox@intel.com>,
-        "mark.gross@intel.com" <mark.gross@intel.com>,
-        "fengguang.wu@intel.com" <fengguang.wu@intel.com>
-Subject: Re: [PATCH 0/2 v4] sched: Rewrite per entity runnable load average
- tracking
-Message-ID: <20140727190237.GB22986@intel.com>
-References: <1405639567-21445-1-git-send-email-yuyang.du@intel.com>
- <20140718153931.GJ8700@e103034-lin>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140718153931.GJ8700@e103034-lin>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751151AbaG1DJn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Jul 2014 23:09:43 -0400
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:38716 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750854AbaG1DJm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Jul 2014 23:09:42 -0400
+From: Anil Belur <askb23@gmail.com>
+X-Google-Original-From: Anil Belur
+To: daeseok.youn@gmail.com, shaun@xresource.ca, gregkh@linuxfoundation.org
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Anil Belur <askb23@gmail.com>
+Subject: [PATCH 1/1] drivers: staging: cxt1e1: linux.c - missing __user annotation
+Date: Mon, 28 Jul 2014 08:38:29 +0530
+Message-Id: <1406516909-5338-1-git-send-email-askb23@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Morten,
+From: Anil Belur <askb23@gmail.com>
 
-On Fri, Jul 18, 2014 at 04:39:31PM +0100, Morten Rasmussen wrote:
-> 1. runnable_avg_period is removed
-> 
-> load_avg_contrib used to be runnable_avg_sum/runnable_avg_period scaled
-> by the task load weight (priority). The runnable_avg_period is replaced
-> by a constant in this patch set. The effect of that change is that task
-> load tracking no longer is more sensitive early life of the task until
-> it has built up some history. Task are now initialized to start out as
-> if they have been runnable forever (>345ms). If this assumption about
-> the task behavior is wrong it will take longer to converge to the true
-> average than it did before. The upside is that is more stable.
+- Some of the functions internally call copy_{to,from}_user() but does
+  not use '__user'. this patch fixes missing __user annotations.
+- this patch fixes the following sparse errors:
+drivers/staging/cxt1e1/linux.c:488:33: warning: incorrect type in argument 2 (different address spaces)
+drivers/staging/cxt1e1/linux.c:488:33:    expected void const [noderef] <asn:1>*from
+drivers/staging/cxt1e1/linux.c:488:33:    got void *data
+drivers/staging/cxt1e1/linux.c:499:26: warning: incorrect type in argument 1 (different address spaces)
+drivers/staging/cxt1e1/linux.c:499:26:    expected void [noderef] <asn:1>*to
+drivers/staging/cxt1e1/linux.c:499:26:    got void *data
+drivers/staging/cxt1e1/linux.c:512:33: warning: incorrect type in argument 2 (different address spaces)
+drivers/staging/cxt1e1/linux.c:512:33:    expected void const [noderef] <asn:1>*from
+drivers/staging/cxt1e1/linux.c:512:33:    got void *data
+drivers/staging/cxt1e1/linux.c:534:33: warning: incorrect type in argument 2 (different address spaces)
+drivers/staging/cxt1e1/linux.c:534:33:    expected void const [noderef] <asn:1>*from
+drivers/staging/cxt1e1/linux.c:534:33:    got void *data
+drivers/staging/cxt1e1/linux.c:550:33: warning: incorrect type in argument 2 (different address spaces)
+drivers/staging/cxt1e1/linux.c:550:33:    expected void const [noderef] <asn:1>*from
+drivers/staging/cxt1e1/linux.c:550:33:    got void *data
+drivers/staging/cxt1e1/linux.c:558:26: warning: incorrect type in argument 1 (different address spaces)
+drivers/staging/cxt1e1/linux.c:558:26:    expected void [noderef] <asn:1>*to
+drivers/staging/cxt1e1/linux.c:558:26:    got void *data
+drivers/staging/cxt1e1/linux.c:571:33: warning: incorrect type in argument 2 (different address spaces)
+drivers/staging/cxt1e1/linux.c:571:33:    expected void const [noderef] <asn:1>*from
+drivers/staging/cxt1e1/linux.c:571:33:    got void *data
+drivers/staging/cxt1e1/linux.c:580:26: warning: incorrect type in argument 1 (different address spaces)
+drivers/staging/cxt1e1/linux.c:580:26:    expected void [noderef] <asn:1>*to
+drivers/staging/cxt1e1/linux.c:580:26:    got void *data
+drivers/staging/cxt1e1/linux.c:593:33: warning: incorrect type in argument 2 (different address spaces)
+drivers/staging/cxt1e1/linux.c:593:33:    expected void const [noderef] <asn:1>*from
+drivers/staging/cxt1e1/linux.c:593:33:    got void *data
+drivers/staging/cxt1e1/linux.c:601:26: warning: incorrect type in argument 1 (different address spaces)
+drivers/staging/cxt1e1/linux.c:601:26:    expected void [noderef] <asn:1>*to
+drivers/staging/cxt1e1/linux.c:601:26:    got void *data
+drivers/staging/cxt1e1/linux.c:612:33: warning: incorrect type in argument 2 (different address spaces)
+drivers/staging/cxt1e1/linux.c:612:33:    expected void const [noderef] <asn:1>*from
+drivers/staging/cxt1e1/linux.c:612:33:    got void *data
+drivers/staging/cxt1e1/linux.c:620:26: warning: incorrect type in argument 1 (different address spaces)
+drivers/staging/cxt1e1/linux.c:620:26:    expected void [noderef] <asn:1>*to
+drivers/staging/cxt1e1/linux.c:620:26:    got void *data
+drivers/staging/cxt1e1/linux.c:631:33: warning: incorrect type in argument 2 (different address spaces)
+drivers/staging/cxt1e1/linux.c:631:33:    expected void const [noderef] <asn:1>*from
+drivers/staging/cxt1e1/linux.c:631:33:    got void *data
+drivers/staging/cxt1e1/linux.c:647:33: warning: incorrect type in argument 2 (different address spaces)
+drivers/staging/cxt1e1/linux.c:647:33:    expected void const [noderef] <asn:1>*from
+drivers/staging/cxt1e1/linux.c:647:33:    got void *data
+drivers/staging/cxt1e1/linux.c:673:34: warning: incorrect type in argument 2 (different address spaces)
+drivers/staging/cxt1e1/linux.c:673:34:    expected void const [noderef] <asn:1>*from
+drivers/staging/cxt1e1/linux.c:673:34:    got void *data
+drivers/staging/cxt1e1/linux.c:681:26: warning: incorrect type in argument 1 (different address spaces)
+drivers/staging/cxt1e1/linux.c:681:26:    expected void [noderef] <asn:1>*to
+drivers/staging/cxt1e1/linux.c:681:26:    got void *data
+drivers/staging/cxt1e1/linux.c:691:47: warning: incorrect type in argument 2 (different address spaces)
+drivers/staging/cxt1e1/linux.c:691:47:    expected void const [noderef] <asn:1>*from
+drivers/staging/cxt1e1/linux.c:691:47:    got void *data
+drivers/staging/cxt1e1/linux.c:738:33: warning: incorrect type in argument 2 (different address spaces)
+drivers/staging/cxt1e1/linux.c:738:33:    expected void const [noderef] <asn:1>*from
+drivers/staging/cxt1e1/linux.c:738:33:    got void *data
+drivers/staging/cxt1e1/linux.c:785:33: warning: incorrect type in argument 2 (different address spaces)
+drivers/staging/cxt1e1/linux.c:785:33:    expected void const [noderef] <asn:1>*from
+drivers/staging/cxt1e1/linux.c:785:33:    got void *data
+drivers/staging/cxt1e1/linux.c:839:14: warning: incorrect type in assignment (different address spaces)
+drivers/staging/cxt1e1/linux.c:839:14:    expected void *data
+drivers/staging/cxt1e1/linux.c:839:14:    got void [noderef] <asn:1>*
+drivers/staging/cxt1e1/linux.c:840:34: warning: incorrect type in argument 2 (different address spaces)
+drivers/staging/cxt1e1/linux.c:840:34:    expected void const [noderef] <asn:1>*from
+drivers/staging/cxt1e1/linux.c:840:34:    got void *data
+drivers/staging/cxt1e1/linux.c:891:42: warning: incorrect type in argument 1 (different address spaces)
+drivers/staging/cxt1e1/linux.c:891:42:    expected void [noderef] <asn:1>*to
+drivers/staging/cxt1e1/linux.c:891:42:    got void *data
 
-I think "Give new task start runnable values to heavy its load in infant time"
-in general is good, with an emphasis on infant. Or from the opposite, making it
-zero to let it gain runnable weight looks worse than full weight.
+Signed-off-by: Anil Belur <askb23@gmail.com>
+---
+ drivers/staging/cxt1e1/linux.c | 30 +++++++++++++++---------------
+ 1 file changed, 15 insertions(+), 15 deletions(-)
 
-> 2. runnable_load_avg and blocked_load_avg are combined
-> 
-> runnable_load_avg currently represents the sum of load_avg_contrib of
-> all tasks on the rq, while blocked_load_avg is the sum of those tasks
-> not on a runqueue. It makes perfect sense to consider the sum of both
-> when calculating the load of a cpu, but we currently don't include
-> blocked_load_avg. The reason for that is the priority scaling of the
-> task load_avg_contrib may lead to under-utilization of cpus that
-> occasionally have tiny high priority task running. You can easily have a
-> task that takes 5% of cpu time but has a load_avg_contrib several times
-> larger than a default priority task runnable 100% of the time.
-
-So this is the effect of historical averaging and weight scaling, both of which
-are just generally good, but may have bad cases.
-
-> Another thing that might be an issue is that the blocked of a terminated
-> task lives on for quite a while until has decayed away.
-
-Good point. To do so, if I read correctly, we need to hook do_exit(), but probably
-we are gonna encounter rq->lock issue.
-
-What is the opinion/guidance from the maintainers/others?
+diff --git a/drivers/staging/cxt1e1/linux.c b/drivers/staging/cxt1e1/linux.c
+index 09f3d5c..7e16189 100644
+--- a/drivers/staging/cxt1e1/linux.c
++++ b/drivers/staging/cxt1e1/linux.c
+@@ -479,7 +479,7 @@ create_chan(struct net_device *ndev, ci_t *ci,
  
-> I'm all for taking the blocked load into consideration, but this issue
-> has to be resolved first. Which leads me on to the next thing.
-> 
-> Most of the work going on around energy awareness is based on the load
-> tracking to estimate task and cpu utilization. It seems that most of the
-> involved parties think that we need an unweighted variant of the tracked
-> load as well as tracking the running time of a task. The latter was part
-> of the original proposal by pjt and Ben, but wasn't used. It seems that
-> unweighted runnable tracking should be fairly easy to add to your
-> proposal, but I don't have an overview of whether it is possible to add
-> running tracking. Do you think that is possible?
-> 
+ /* the idea here is to get port information and pass it back (using pointer) */
+ static status_t
+-do_get_port(struct net_device *ndev, void *data)
++do_get_port(struct net_device *ndev, void __user *data)
+ {
+ 	int         ret;
+ 	ci_t       *ci;             /* ci stands for card information */
+@@ -504,7 +504,7 @@ do_get_port(struct net_device *ndev, void *data)
+ 
+ /* this function copys the user data and then calls the real action function */
+ static status_t
+-do_set_port(struct net_device *ndev, void *data)
++do_set_port(struct net_device *ndev, void __user *data)
+ {
+ 	ci_t       *ci;             /* ci stands for card information */
+ 	struct sbecom_port_param pp;/* copy data to kernel land */
+@@ -526,7 +526,7 @@ do_set_port(struct net_device *ndev, void *data)
+ 
+ /* work the port loopback mode as per directed */
+ static status_t
+-do_port_loop(struct net_device *ndev, void *data)
++do_port_loop(struct net_device *ndev, void __user *data)
+ {
+ 	struct sbecom_port_param pp;
+ 	ci_t       *ci;
+@@ -541,7 +541,7 @@ do_port_loop(struct net_device *ndev, void *data)
+ 
+ /* set the specified register with the given value / or just read it */
+ static status_t
+-do_framer_rw(struct net_device *ndev, void *data)
++do_framer_rw(struct net_device *ndev, void __user *data)
+ {
+ 	struct sbecom_port_param pp;
+ 	ci_t       *ci;
+@@ -562,7 +562,7 @@ do_framer_rw(struct net_device *ndev, void *data)
+ 
+ /* set the specified register with the given value / or just read it */
+ static status_t
+-do_pld_rw(struct net_device *ndev, void *data)
++do_pld_rw(struct net_device *ndev, void __user *data)
+ {
+ 	struct sbecom_port_param pp;
+ 	ci_t       *ci;
+@@ -584,7 +584,7 @@ do_pld_rw(struct net_device *ndev, void *data)
+ 
+ /* set the specified register with the given value / or just read it */
+ static status_t
+-do_musycc_rw(struct net_device *ndev, void *data)
++do_musycc_rw(struct net_device *ndev, void __user *data)
+ {
+ 	struct c4_musycc_param mp;
+ 	ci_t       *ci;
+@@ -604,7 +604,7 @@ do_musycc_rw(struct net_device *ndev, void *data)
+ }
+ 
+ static status_t
+-do_get_chan(struct net_device *ndev, void *data)
++do_get_chan(struct net_device *ndev, void __user *data)
+ {
+ 	struct sbecom_chan_param cp;
+ 	int         ret;
+@@ -623,7 +623,7 @@ do_get_chan(struct net_device *ndev, void *data)
+ }
+ 
+ static status_t
+-do_set_chan(struct net_device *ndev, void *data)
++do_set_chan(struct net_device *ndev, void __user *data)
+ {
+ 	struct sbecom_chan_param cp;
+ 	ci_t       *ci;
+@@ -637,7 +637,7 @@ do_set_chan(struct net_device *ndev, void *data)
+ }
+ 
+ static status_t
+-do_create_chan(struct net_device *ndev, void *data)
++do_create_chan(struct net_device *ndev, void __user *data)
+ {
+ 	ci_t       *ci;
+ 	struct net_device *dev;
+@@ -665,7 +665,7 @@ do_create_chan(struct net_device *ndev, void *data)
+ }
+ 
+ static status_t
+-do_get_chan_stats(struct net_device *ndev, void *data)
++do_get_chan_stats(struct net_device *ndev, void __user *data)
+ {
+ 	struct c4_chan_stats_wrap ccs;
+ 	int         ret;
+@@ -684,7 +684,7 @@ do_get_chan_stats(struct net_device *ndev, void *data)
+ 	return 0;
+ }
+ static status_t
+-do_set_loglevel(struct net_device *ndev, void *data)
++do_set_loglevel(struct net_device *ndev, void __user *data)
+ {
+ 	unsigned int cxt1e1_log_level;
+ 
+@@ -728,7 +728,7 @@ do_deluser(struct net_device *ndev, int lockit)
+ }
+ 
+ int
+-do_del_chan(struct net_device *musycc_dev, void *data)
++do_del_chan(struct net_device *musycc_dev, void __user *data)
+ {
+ 	struct sbecom_chan_param cp;
+ 	char        buf[sizeof(CHANNAME) + 3];
+@@ -752,7 +752,7 @@ do_del_chan(struct net_device *musycc_dev, void *data)
+ int c4_reset_board(void *);
+ 
+ int
+-do_reset(struct net_device *musycc_dev, void *data)
++do_reset(struct net_device *musycc_dev, void __user *data)
+ {
+ 	const struct c4_priv *priv;
+ 	int         i;
+@@ -778,7 +778,7 @@ do_reset(struct net_device *musycc_dev, void *data)
+ }
+ 
+ int
+-do_reset_chan_stats(struct net_device *musycc_dev, void *data)
++do_reset_chan_stats(struct net_device *musycc_dev, void __user *data)
+ {
+ 	struct sbecom_chan_param cp;
+ 
+@@ -792,7 +792,7 @@ static status_t
+ c4_ioctl(struct net_device *ndev, struct ifreq *ifr, int cmd)
+ {
+ 	ci_t       *ci;
+-	void       *data;
++	void       __user *data;
+ 	int         iocmd, iolen;
+ 	status_t    ret;
+ 	static struct data {
+-- 
+1.9.1
 
-Running tracking is absolutely possbile, just the matter of minimizing overhead
-(how to do it along with runnable for task and maybe for CPU, but not for
-cfs_rq) from execution and code cleanness ponit of view. We can do it as soon as
-it is needed.
-
-Thanks,
-Yuyang
