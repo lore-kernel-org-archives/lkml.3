@@ -1,64 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751358AbaG1Qtp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 12:49:45 -0400
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:55893 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751233AbaG1Qtk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 12:49:40 -0400
-Date: Mon, 28 Jul 2014 09:49:35 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: pramod.gurav.etc@gmail.com
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Pramod Gurav <pramod.gurav@smartplayin.com>,
-        Guenter Roeck <linux@roeck-us.net>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Mark Brown <broonie@linaro.org>,
-        Fabio Estevam <fabio.estevam@freescale.com>
-Subject: Re: [PATCH] input: ads7846: Switch to managed version of kzalloc and
- cleanups
-Message-ID: <20140728164935.GA8982@core.coreip.homeip.net>
-References: <1406537216-25936-1-git-send-email-pramod.gurav@smartplayin.com>
+	id S1751038AbaG1Qwz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 12:52:55 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:57427 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750785AbaG1Qwx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jul 2014 12:52:53 -0400
+Date: Mon, 28 Jul 2014 18:52:48 +0200
+From: "Luis R. Rodriguez" <mcgrof@suse.com>
+To: Yuval Mintz <Yuval.Mintz@qlogic.com>
+Cc: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
+        Joseph Salisbury <joseph.salisbury@canonical.com>,
+        Kay Sievers <kay@vrfy.org>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Tim Gardner <tim.gardner@canonical.com>,
+        Pierre Fersing <pierre-fersing@pierref.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>, Benjamin Poirier <bpoirier@suse.de>,
+        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
+        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
+        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
+        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
+        Hariprasad S <hariprasad@chelsio.com>,
+        Santosh Rastapur <santosh@chelsio.com>,
+        "MPT-FusionLinux.pdl@avagotech.com" 
+	<MPT-FusionLinux.pdl@avagotech.com>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>
+Subject: Re: [PATCH 1/3] driver core: enable drivers to use deferred probe
+	from init
+Message-ID: <20140728165248.GE21930@wotan.suse.de>
+References: <1406558067-25308-1-git-send-email-mcgrof@do-not-panic.com> <B5657A6538887040AD3A81F1008BEC63B06F9A@avmb3.qlogic.org> <20140728153811.GD21930@wotan.suse.de> <B5657A6538887040AD3A81F1008BEC63B06FCF@avmb3.qlogic.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1406537216-25936-1-git-send-email-pramod.gurav@smartplayin.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <B5657A6538887040AD3A81F1008BEC63B06FCF@avmb3.qlogic.org>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Pramod,
-
-On Mon, Jul 28, 2014 at 02:16:55PM +0530, pramod.gurav.etc@gmail.com wrote:
-> From: Pramod Gurav <pramod.gurav@smartplayin.com>
+On Mon, Jul 28, 2014 at 03:46:32PM +0000, Yuval Mintz wrote:
+> > Subject: Re: [PATCH 1/3] driver core: enable drivers to use deferred probe from
+> > init
+> > 
+> > On Mon, Jul 28, 2014 at 03:12:11PM +0000, Yuval Mintz wrote:
+> > > Perhaps this is a silly question, but what guarantees that the
+> > > deferred probe list will actually be triggered, e.g., in case the
+> > > delayed device is the last device in the system?
+> > 
+> > The dev->init_delayed_probe is used to ensure that we'd add the device to the
+> > deferred probe list once making this a per device thing if the driver has the field
+> > delay_probe set to true. This technically also allows this to be a per device thing
+> > so with some more work we could enable drivers to only enable this for specific
+> > devices but at this point this did not seem required.
 > 
-> This switches memory allocations from kzalloc to devm_kzalloc.
-> This also changes the way return checks were done on failure cases
-> of three allocations. The checks were clubbed together and hence
-> must be done seperately to avoid calling kfree on unallocated memory.
+> Sorry for not being clear, but I didn't meant 'what guarantees that the device
+> will be added to the deferred probe', but rather what guarantees that the
+> deferred workqueue will be scheduled.
 > 
-> Moreover in case of input_allocate_device failure, we were calling
-> input_free_device which is not needed.
+> To the best of my knowledge the deferring mechanism works only if one device
+> is dependent upon another, e.g., for Multi-function devices where one device
+> probe is dependent upon the others - which are soon-to-be probed.
 
-But not hurting either - like kfree() and many other "cleanup" functions
-in kernel they are happily accept NULL input (so that cleanup code is
-less branchy).
-> 
-> input device must be released(input_free_device) when ads7846_probe_dt
-> fails hence adds a fix there as well.
+The workqueue will be kicked when driver_deferred_probe_trigger() gets
+poked, we do that in the late_initcall(deferred_probe_initcall), it
+also gets flushed there with a flush_workqueue(deferred_wq).
 
-That is the real bug, could you send me a patch that fixes just that (by
-jumping to err_free_mem)?
-
-The rest I'd like to leave as is unless you can convert _all_ resources
-to be managed ones: mixing up 2 styles (manual and automatic release) is
-bound to have issues (like we had with ads7846_probe_dt which assumed
-that since it was releasing its resources automatically the rest would
-be released automatically as well.
-
-Thanks.
-
--- 
-Dmitry
+  Luis
