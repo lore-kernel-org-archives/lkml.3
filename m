@@ -1,50 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751953AbaG1BEL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Jul 2014 21:04:11 -0400
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:46860 "EHLO
-	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750795AbaG1BEK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Jul 2014 21:04:10 -0400
-X-Original-SENDERIP: 10.177.220.181
-X-Original-MAILFROM: namhyung@gmail.com
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
-        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        David Ahern <dsahern@gmail.com>, Minchan Kim <minchan@kernel.org>
-Subject: Re: [PATCH 1/2] perf tools: Ensure --symfs ends with '/'
-References: <1406251908-8195-1-git-send-email-namhyung@kernel.org>
-	<20140725131521.GI7831@kernel.org>
-Date: Mon, 28 Jul 2014 10:04:07 +0900
-In-Reply-To: <20140725131521.GI7831@kernel.org> (Arnaldo Carvalho de Melo's
-	message of "Fri, 25 Jul 2014 10:15:21 -0300")
-Message-ID: <87fvhmi9a0.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	id S1752019AbaG1BU1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Jul 2014 21:20:27 -0400
+Received: from mga01.intel.com ([192.55.52.88]:8521 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751243AbaG1BU0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Jul 2014 21:20:26 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,745,1400050800"; 
+   d="scan'208";a="568099240"
+From: Andi Kleen <andi@firstfloor.org>
+To: Sergey Oboguev <oboguev.public@gmail.com>
+Cc: linux-kernel@vger.kernel.org, khalid.aziz@oracle.com
+Subject: Re: [PATCH RFC] sched: deferred set priority (dprio)
+References: <CA+80gGYVjprinWEJWbVq4VxjOLjQri8EvGAJ+sx+ihcOxdstCA@mail.gmail.com>
+Date: Sun, 27 Jul 2014 18:19:56 -0700
+In-Reply-To: <CA+80gGYVjprinWEJWbVq4VxjOLjQri8EvGAJ+sx+ihcOxdstCA@mail.gmail.com>
+	(Sergey Oboguev's message of "Fri, 25 Jul 2014 12:45:21 -0700")
+Message-ID: <8738dm9t4z.fsf@tassilo.jf.intel.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnaldo,
+Sergey Oboguev <oboguev.public@gmail.com> writes:
 
-On Fri, 25 Jul 2014 10:15:21 -0300, Arnaldo Carvalho de Melo wrote:
-> Em Fri, Jul 25, 2014 at 10:31:47AM +0900, Namhyung Kim escreveu:
->> Minchan reported that perf failed to load vmlinux if --symfs argument
->> doesn't end with '/' character.  So make sure that the symfs always
->> ends with the '/'.
->
-> I don't think this is the right way of doing this, users of
-> symbol_conf.symfs should instead make sure that they do what they expect
-> to, i.e. if they want it to be a base directory, make sure that a path
-> separator is added between it and the relative path following it, if
-> not, do as they please.
+> [This is a repost of the message from few day ago, with patch file
+> inline instead of being pointed by the URL.]
 
-Hmm.. what's the usecase of non-directory symfs?  I guess realpath(3)
-already nullifies such case and defaults to no symfs..
+Have you checked out the preemption control that was posted some time
+ago? It did essentially the same thing, but somewhat simpler than your 
+patch.
 
-Thanks,
-Namhyung
+http://lkml.iu.edu/hypermail/linux/kernel/1403.0/00780.html
+
+Yes I agree with you that lock preemption is a serious issue that needs solving.
+
+-Andi
+
+-- 
+ak@linux.intel.com -- Speaking for myself only
