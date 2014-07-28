@@ -1,45 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752300AbaG1KQR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 06:16:17 -0400
-Received: from mail-oa0-f52.google.com ([209.85.219.52]:36272 "EHLO
-	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751966AbaG1KQP (ORCPT
+	id S1752189AbaG1KUq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 06:20:46 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:34979 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751095AbaG1KUm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 06:16:15 -0400
+	Mon, 28 Jul 2014 06:20:42 -0400
+Date: Mon, 28 Jul 2014 12:20:40 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Randy Dunlap <rdunlap@infradead.org>
+Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
+        Stefan Weil <sw@weilnetz.de>, Jiri Kosina <jkosina@suse.cz>,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Documentation: laptops: freefall.c:  Cleaning up
+ missing null-terminate in conjunction with strncpy
+Message-ID: <20140728102040.GA16495@amd.pavel.ucw.cz>
+References: <1406472043-12272-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+ <53D58550.6040205@infradead.org>
 MIME-Version: 1.0
-In-Reply-To: <20140724170356.GA1783@udknight>
-References: <20140724170356.GA1783@udknight>
-Date: Mon, 28 Jul 2014 12:16:14 +0200
-Message-ID: <CACRpkdaQwZQeshacMLnWSEL0X=rOQtDkoxcE-6+688EBp4ANLQ@mail.gmail.com>
-Subject: Re: [PATCH v4] usb:serial:pl2303: add GPIOs interface on PL2303
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Wang YanQing <udknight@gmail.com>, Greg KH <gregkh@linuxfoundation.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Johan Hovold <jhovold@gmail.com>, andi@lisas.de, dforsi@gmail.com,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53D58550.6040205@infradead.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 24, 2014 at 7:03 PM, Wang YanQing <udknight@gmail.com> wrote:
+On Sun 2014-07-27 16:03:44, Randy Dunlap wrote:
+> On 07/27/14 07:40, Rickard Strandqvist wrote:
+> > Added a guaranteed null-terminate after call to strncpy.
+> > 
+> > Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+> > ---
+> >  Documentation/laptops/freefall.c |    6 ++++--
+> >  1 file changed, 4 insertions(+), 2 deletions(-)
+> > 
+> > diff --git a/Documentation/laptops/freefall.c b/Documentation/laptops/freefall.c
+> > index aab2ff0..113d004 100644
+> > --- a/Documentation/laptops/freefall.c
+> > +++ b/Documentation/laptops/freefall.c
+> > @@ -33,8 +33,10 @@ static int set_unload_heads_path(char *device)
+> >  
+> >  	if (strlen(device) <= 5 || strncmp(device, "/dev/", 5) != 0)
+> >  		return -EINVAL;
+> > -	strncpy(devname, device + 5, sizeof(devname) - 1);
+> > -	strncpy(device_path, device, sizeof(device_path) - 1);
+> 
+> Maybe I am overlooking something here, but what was wrong with
+> the - 1 (2 times) above?  and then just add the 2 lines below that set the
+> last byte to '\0'?
 
-> PL2303HX has two GPIOs, this patch add interface for it.
->
-> Signed-off-by: Wang YanQing <udknight@gmail.com>
-> ---
->  Changes v3-v4:
->  1: fix missing static for gpio_dir_mask and gpio_value_mask
->  2: reduce unneeded compile macro defined suggested by gnomes@lxorguk.ukuu.org.uk
->  3: use true instead of 1 corrected by Linus Walleij
->  4: ignore return value of gpiochip_remove suggested by Linus Walleij
->  5: fix multi gpio_chips registered by pl2303 can't be distinguished in kernel space.
+Actually device_path is static, so it will be zero-initialized and
+explicit set is not neccessary AFAICT.
 
-This is OK with me now,
-Reviewed-by: Linus Walleij <linus.walleij@linaro.org>
+(devname is auto -> needs explicit set).
+								Pavel
 
-Yours,
-Linus Walleij
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
