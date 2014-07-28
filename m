@@ -1,41 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752324AbaG1NWH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 09:22:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28295 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751423AbaG1NWC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 09:22:02 -0400
-Date: Mon, 28 Jul 2014 15:19:44 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Kirill Tkhai <tkhai@yandex.ru>
-Cc: linux-kernel@vger.kernel.org, nicolas.pitre@linaro.org,
-        peterz@infradead.org, pjt@google.com, rostedt@goodmis.org,
-        umgwanakikbuti@gmail.com, ktkhai@parallels.com,
-        tim.c.chen@linux.intel.com, mingo@kernel.org
-Subject: Re: [PATCH v2 0/5] sched: Add on_rq states and remove several
-	double rq locks
-Message-ID: <20140728131944.GA2800@redhat.com>
-References: <20140726145508.6308.69121.stgit@localhost> <20140726193910.GA8420@redhat.com> <1406496385.1856.34.camel@localhost.localdomain>
+	id S1752578AbaG1NY3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 09:24:29 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:51851 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751754AbaG1NY0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jul 2014 09:24:26 -0400
+X-IronPort-AV: E=Sophos;i="5.01,749,1400025600"; 
+   d="scan'208";a="156894356"
+Message-ID: <53D64F07.1070106@citrix.com>
+Date: Mon, 28 Jul 2014 14:24:23 +0100
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1406496385.1856.34.camel@localhost.localdomain>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Vitaly Kuznetsov <vkuznets@redhat.com>, <xen-devel@lists.xenproject.org>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Andrew Jones <drjones@redhat.com>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH RFC 0/4] xen/pvhvm: fix shared_info and pirq issues with
+ kexec
+References: <1405431640-649-1-git-send-email-vkuznets@redhat.com>
+In-Reply-To: <1405431640-649-1-git-send-email-vkuznets@redhat.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.80.2.76]
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/28, Kirill Tkhai wrote:
->
-> You're right. We have to check for "task_migrating" in switched_from_fair().
-> One more place is switched_from_dl().
+On 15/07/14 14:40, Vitaly Kuznetsov wrote:
+> With this patch series I'm trying to address several issues with kexec on pvhvm:
+> - shared_info issue (1st patch, just sending Olaf's work with Konrad's fix)
+> - create specific pvhvm shutdown handler for kexec (2nd patch)
+> - GSI PIRQ issue (3rd patch, I'm pretty confident that it does the right thing)
+> - MSI PIRQ issue (4th patch, and I'm not sure it doesn't break anything -> RFC)
+> 
+> This patch series can be tested on single vCPU guest. We still have SMP issues with
+> pvhvm guests and kexec which require additional fixes.
 
-Or we can simply check task_migrating() in __sched_setscheduler(), like
-set_cpus_allowed() does.
+In addition to the fixes for multi-VCPU guests, what else remains?
 
-This probably means that you should add this check into task_rq_lock() as
-Peter suggests. Or at least add another task_rq_lock_xxx() helper.
+What's the plan for handling granted pages?
 
-Oleg.
+I don't think we want to accept a partial solution unless the known
+non-working configurations fail fast on kexec load.
 
+David
