@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751775AbaG1SQw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 14:16:52 -0400
-Received: from shelob.surriel.com ([74.92.59.67]:45843 "EHLO
+	id S1751889AbaG1SQ4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 14:16:56 -0400
+Received: from shelob.surriel.com ([74.92.59.67]:45844 "EHLO
 	shelob.surriel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751115AbaG1SQt (ORCPT
+	with ESMTP id S1751231AbaG1SQt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 28 Jul 2014 14:16:49 -0400
 From: riel@redhat.com
@@ -12,9 +12,9 @@ To: linux-kernel@vger.kernel.org
 Cc: peterz@infradead.org, vincent.guittot@linaro.org, mikey@neuling.org,
         mingo@kernel.org, jhladky@redhat.com, ktkhai@parallels.com,
         tim.c.chen@linux.intel.com, nicolas.pitre@linaro.org
-Subject: [PATCH 2/2] sched: make update_sd_pick_busiest return true on a busier sd
-Date: Mon, 28 Jul 2014 14:16:28 -0400
-Message-Id: <1406571388-3227-3-git-send-email-riel@redhat.com>
+Subject: [PATCH 1/2] sched: fix and clean up calculate_imbalance
+Date: Mon, 28 Jul 2014 14:16:27 -0400
+Message-Id: <1406571388-3227-2-git-send-email-riel@redhat.com>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1406571388-3227-1-git-send-email-riel@redhat.com>
 References: <1406571388-3227-1-git-send-email-riel@redhat.com>
@@ -24,102 +24,88 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rik van Riel <riel@redhat.com>
 
-Currently update_sd_pick_busiest only identifies the busiest sd
-that is either overloaded, or has a group imbalance. When no
-sd is imbalanced or overloaded, the load balancer fails to find
-the busiest domain.
+There are several ways in which update_sd_pick_busiest can end up
+picking an sd as "busiest" that has a below-average per-cpu load.
 
-This breaks load balancing between domains that are not overloaded,
-in the !SD_ASYM_PACKING case. This patch makes update_sd_pick_busiest
-return true when the busiest sd yet is encountered.
+All of those could use the same correction that was previously only
+applied when the selected group has a group imbalance.
 
-Groups are ranked in the order overloaded > imbalanced > other,
-with higher ranked groups getting priority even when their load
-is lower. This is necessary due to the possibility of unequal
-capacities and cpumasks between domains within a sched group.
+Additionally, the load balancing code will balance out the load between
+domains that are below their maximum capacity. This results in the
+load_above_capacity calculation underflowing, creating a giant unsigned
+number, which is then removed by the min() check below.
 
-Behaviour for SD_ASYM_PACKING does not seem to match the comment,
-but I have no hardware to test that so I have left the behaviour
-of that code unchanged.
+In situations where all the domains are overloaded, or where only the
+busiest domain is overloaded, that code is also superfluous, since
+the normal env->imbalance calculation will figure out how much to move.
+Remove the load_above_capacity calculation.
 
-Enum for group classification suggested by Peter Zijlstra.
-
-Cc: mikey@neuling.org
-Cc: peterz@infradead.org
-Acked-by: Michael Neuling <mikey@neuling.org>
 Signed-off-by: Rik van Riel <riel@redhat.com>
 ---
- kernel/sched/fair.c | 34 ++++++++++++++++++++++++++++------
- 1 file changed, 28 insertions(+), 6 deletions(-)
+ kernel/sched/fair.c | 33 ++++++++-------------------------
+ 1 file changed, 8 insertions(+), 25 deletions(-)
 
 diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index a28bb3b..4f5e3c2 100644
+index 45943b2..a28bb3b 100644
 --- a/kernel/sched/fair.c
 +++ b/kernel/sched/fair.c
-@@ -5610,6 +5610,8 @@ static inline void init_sd_lb_stats(struct sd_lb_stats *sds)
- 		.total_capacity = 0UL,
- 		.busiest_stat = {
- 			.avg_load = 0UL,
-+			.sum_nr_running = 0,
-+			.group_imb = 0,
- 		},
- 	};
- }
-@@ -5949,6 +5951,23 @@ static inline void update_sg_lb_stats(struct lb_env *env,
- 		sgs->group_has_free_capacity = 1;
- }
- 
-+enum group_type {
-+	group_other = 0,
-+	group_imbalanced,
-+	group_overloaded,
-+};
-+
-+static enum group_type group_classify(struct sg_lb_stats *sgs)
-+{
-+	if (sgs->sum_nr_running > sgs->group_capacity_factor)
-+		return group_overloaded;
-+
-+	if (sgs->group_imb)
-+		return group_imbalanced;
-+
-+	return group_other;
-+}
-+
- /**
-  * update_sd_pick_busiest - return 1 on busiest group
-  * @env: The load balancing environment.
-@@ -5967,13 +5986,17 @@ static bool update_sd_pick_busiest(struct lb_env *env,
- 				   struct sched_group *sg,
- 				   struct sg_lb_stats *sgs)
+@@ -6221,16 +6221,16 @@ void fix_small_imbalance(struct lb_env *env, struct sd_lb_stats *sds)
+  */
+ static inline void calculate_imbalance(struct lb_env *env, struct sd_lb_stats *sds)
  {
--	if (sgs->avg_load <= sds->busiest_stat.avg_load)
-+	if (group_classify(sgs) > group_classify(&sds->busiest_stat))
-+		return true;
-+
-+	if (group_classify(sgs) < group_classify(&sds->busiest_stat))
- 		return false;
+-	unsigned long max_pull, load_above_capacity = ~0UL;
+ 	struct sg_lb_stats *local, *busiest;
  
--	if (sgs->sum_nr_running > sgs->group_capacity_factor)
--		return true;
-+	if (sgs->avg_load <= sds->busiest_stat.avg_load)
-+		return false;
+ 	local = &sds->local_stat;
+ 	busiest = &sds->busiest_stat;
  
--	if (sgs->group_imb)
-+	/* This is the busiest node in its class. */
-+	if (!(env->sd->flags & SD_ASYM_PACKING))
- 		return true;
+-	if (busiest->group_imb) {
++	if (busiest->avg_load <= sds->avg_load) {
+ 		/*
+-		 * In the group_imb case we cannot rely on group-wide averages
+-		 * to ensure cpu-load equilibrium, look at wider averages. XXX
++		 * Busiest got picked because it is overloaded or imbalanced,
++		 * but does not have an above-average load. Look at wider
++		 * averages.
+ 		 */
+ 		busiest->load_per_task =
+ 			min(busiest->load_per_task, sds->avg_load);
+@@ -6247,32 +6247,15 @@ static inline void calculate_imbalance(struct lb_env *env, struct sd_lb_stats *s
+ 		return fix_small_imbalance(env, sds);
+ 	}
  
+-	if (!busiest->group_imb) {
+-		/*
+-		 * Don't want to pull so many tasks that a group would go idle.
+-		 * Except of course for the group_imb case, since then we might
+-		 * have to drop below capacity to reach cpu-load equilibrium.
+-		 */
+-		load_above_capacity =
+-			(busiest->sum_nr_running - busiest->group_capacity_factor);
+-
+-		load_above_capacity *= (SCHED_LOAD_SCALE * SCHED_CAPACITY_SCALE);
+-		load_above_capacity /= busiest->group_capacity;
+-	}
+-
  	/*
-@@ -5981,8 +6004,7 @@ static bool update_sd_pick_busiest(struct lb_env *env,
- 	 * numbered CPUs in the group, therefore mark all groups
- 	 * higher than ourself as busy.
+ 	 * We're trying to get all the cpus to the average_load, so we don't
+ 	 * want to push ourselves above the average load, nor do we wish to
+-	 * reduce the max loaded cpu below the average load. At the same time,
+-	 * we also don't want to reduce the group load below the group capacity
+-	 * (so that we can implement power-savings policies etc). Thus we look
+-	 * for the minimum possible imbalance.
++	 * reduce the max loaded cpu below the average load.
++	 * The per-cpu avg_load values and the group capacity determine
++	 * how much load to move to equalise the imbalance.
  	 */
--	if ((env->sd->flags & SD_ASYM_PACKING) && sgs->sum_nr_running &&
--	    env->dst_cpu < group_first_cpu(sg)) {
-+	if (sgs->sum_nr_running && env->dst_cpu < group_first_cpu(sg)) {
- 		if (!sds->busiest)
- 			return true;
+-	max_pull = min(busiest->avg_load - sds->avg_load, load_above_capacity);
+-
+-	/* How much load to actually move to equalise the imbalance */
+ 	env->imbalance = min(
+-		max_pull * busiest->group_capacity,
++		(busiest->avg_load - sds->avg_load) * busiest->group_capacity,
+ 		(sds->avg_load - local->avg_load) * local->group_capacity
+ 	) / SCHED_CAPACITY_SCALE;
  
 -- 
 1.9.3
