@@ -1,87 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752661AbaG1NFy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 09:05:54 -0400
-Received: from casper.infradead.org ([85.118.1.10]:58930 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751802AbaG1NFv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 09:05:51 -0400
-Date: Mon, 28 Jul 2014 15:04:35 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-kernel@vger.kernel.org,
-        Linux PM list <linux-pm@vger.kernel.org>
-Subject: Re: [RFC][PATCH] irq: Rework IRQF_NO_SUSPENDED
-Message-ID: <20140728130435.GO20603@laptop.programming.kicks-ass.net>
-References: <20140724212620.GO3935@laptop>
- <alpine.DEB.2.10.1407252217350.23352@nanos>
- <1663327.PISiM9sMHC@vostro.rjw.lan>
- <2368056.cLoWQWpTSo@vostro.rjw.lan>
- <20140728064913.GH6758@twins.programming.kicks-ass.net>
- <alpine.DEB.2.10.1407281412060.23352@nanos>
+	id S1752634AbaG1NHG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 09:07:06 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:47253 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751686AbaG1NHB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jul 2014 09:07:01 -0400
+X-IronPort-AV: E=Sophos;i="5.01,749,1400025600"; 
+   d="scan'208";a="156359550"
+Message-ID: <53D64AF3.4080202@citrix.com>
+Date: Mon, 28 Jul 2014 14:06:59 +0100
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.10.1407281412060.23352@nanos>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        <gregkh@linuxfoundation.org>, <xen-devel@lists.xenproject.org>,
+        <linux-kernel@vger.kernel.org>, <boris.ostrovsky@oracle.com>
+CC: <stable@vger.kernel.org>
+Subject: Re: [PATCH v5 2/6] xen/pciback: Don't deadlock when unbinding.
+References: <1405354736-7358-1-git-send-email-konrad.wilk@oracle.com> <1405354736-7358-3-git-send-email-konrad.wilk@oracle.com>
+In-Reply-To: <1405354736-7358-3-git-send-email-konrad.wilk@oracle.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.80.2.76]
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 28, 2014 at 02:33:41PM +0200, Thomas Gleixner wrote:
-> > I realize its dynamic, but that's crap, at device registration time it
-> > pretty much already knows if its a wakeup source or not, right?
+On 14/07/14 17:18, Konrad Rzeszutek Wilk wrote:
+> As commit 0a9fd0152929db372ff61b0d6c280fdd34ae8bdb
+> 'xen/pciback: Document the entry points for 'pcistub_put_pci_dev''
+> explained there are four entry points in this function.
+> Two of them are when the user fiddles in the SysFS to
+> unbind a device which might be in use by a guest or not.
 > 
-> It does, but that doesn't make it crap. There are situations where you
-> want certain wakeup sources enabled or disabled and you can't do that
-> with IRQF_NO_SUSPEND. And to support this, you need the wake_depth
-> counter as well. And that's what we always had.
+> Both 'unbind' states will cause a deadlock as the the PCI lock has
+> already been taken, which then pci_device_reset tries to take.
+> 
+> We can simplify this by requiring that all callers of
+> pcistub_put_pci_dev MUST hold the device lock. And then
+> we can just call the lockless version of pci_device_reset.
+> 
+> To make it even simpler we will modify xen_pcibk_release_pci_dev
+> to quality whether it should take a lock or not - as it ends
+> up calling xen_pcibk_release_pci_dev and needs to hold the lock.
+> 
+> CC: stable@vger.kernel.org
 
-But if the driver is PM aware it can change its behaviour in runtime. We
-don't need to disable the line in the PIC if its well behaved. This
-force disable is more a bandaid to quiesce ignorant drivers than
-anything else.
+This deadlock is for a rather specific and uncommon use case (manually
+unbinding a PCI while it is passed-through). Is this critical enough to
+warrant a stable backport?
 
-> I'd rather say, that the "I can wakeup the machine and will do so no
-> matter what flag" is more stupid than the wake mechanism.
+> Reviewed-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
-I never said such. I think the NO_SUSPEND name bad one that confuses
-thing more than anything as it describes the implementation not the
-semantics.
+Reviewed-by: David Vrabel <david.vrabel@citrix.com>
 
-But as above, if a driver sets this it basically says I'm PM aware and
-will behave right, no need to go force the PIC on me.
-
-With that the driver can or can not, depending on runtime circumstances
-wake or not etc.
-
-> So we are not going to make everything a single stupid flag and limit
-> the usability of existing code. We rather go and try to remove the
-> stupid flag before it becomes more wide spread.
-
-Sure, having two different means of PM for the irq layer is one too
-many.
-
-> And we cannot treat the wakeup thing the same way as the
-> IRQF_NO_SUSPEND flag, because there is hardware where the irq line
-> must be disabled at the normal (non suspend) interrupt controller, and
-> the wake mechanism tells the PM microcontroller to monitor the
-> interrupt line and kick the machine back to life.
-
-Ah, see that is useful information.. Yes such a thing would invalidate
-the flag scheme.
-
-> So we need to very carefully look at all the existing cases instead of
-> yelling crap and inflicting x86 specific horror on everyone. I said on
-> friday, that I need to look at ALL use cases first and I meant it.
-
-Well, the reason I yelled crap is because its IRQ nr based and not
-handler based. Yes, shared lines are a pain, but we have to deal with
-them, so allowing 'new' interfaces in that do not deal with it is very
-unfortunate at best.
-
-What further didn't help is that it wasn't at all clear to me how it was
-supposed to work.
-
-
+David
