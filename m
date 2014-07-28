@@ -1,101 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752040AbaG1TGv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 15:06:51 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:46895 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751135AbaG1TGs (ORCPT
+	id S1752073AbaG1THF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 15:07:05 -0400
+Received: from asavdk4.altibox.net ([109.247.116.15]:48494 "EHLO
+	asavdk4.altibox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751074AbaG1THA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 15:06:48 -0400
-Date: Mon, 28 Jul 2014 20:06:09 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Konstantin Khlebnikov <koct9i@gmail.com>
-Cc: Konstantin Khlebnikov <k.khlebnikov@samsung.com>,
-        Vitaly Andrianov <vitalya@ti.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	Mon, 28 Jul 2014 15:07:00 -0400
+Date: Mon, 28 Jul 2014 21:06:52 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Ard Biesheuvel <ard.biesheuvel@linaro.org>
+Cc: Andreas Schwab <schwab@suse.de>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
-        Cyril Chemparathy <cyril@ti.com>
-Subject: Re: [PATCH 2/2] ARM: LPAE: reduce damage caused by idmap to virtual
- memory layout
-Message-ID: <20140728190609.GV15536@arm.com>
-References: <20140722153623.25088.37742.stgit@buzz>
- <20140722153635.25088.14197.stgit@buzz>
- <20140728181456.GO15536@arm.com>
- <CALYGNiNJDHfQm2yk067hh-Wywsb_Ki5AEE_sTMkYegJi9spSzw@mail.gmail.com>
- <20140728184107.GR15536@arm.com>
- <CALYGNiNaMMv9itJ_+cvPDn1_Yo4GTPQJ-Cy9zBzJzfaDLfkvmg@mail.gmail.com>
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] arm64/crypto: fix makefile rule for aes-glue-%.o
+Message-ID: <20140728190652.GB366@ravnborg.org>
+References: <CAKv+Gu_9HRwAxkJjT3KRvDbupp0yzstyq1dXsXkTu9M6swdCKQ@mail.gmail.com>
+ <mvmr41aj2ob.fsf@hawking.suse.de>
+ <CAKv+Gu_z4VTssLDhiQxi8DRJNEUgzrM5bFzje8NXEmBiA2vqeg@mail.gmail.com>
+ <CAKv+Gu-B9_sgGgw9obrBGNUFSS1JcskN34s1X4PU8F5bauHT1Q@mail.gmail.com>
+ <20140724161225.GA11204@ravnborg.org>
+ <CAKv+Gu8ikMGNVHeuujSf4eaK+LOFKMWxKF8i76VthnKYgvOcYQ@mail.gmail.com>
+ <20140724204526.GA11754@ravnborg.org>
+ <CAKv+Gu9S8vVALGFR1qL+sFfnUuYR9pkkwy0t6NuJHrs9bVxdBw@mail.gmail.com>
+ <20140727184010.GA26029@ravnborg.org>
+ <CAKv+Gu_1FXj8fOckrFbxEz7figdKmcvN+gnpvBC8g8QArpO+3Q@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CALYGNiNaMMv9itJ_+cvPDn1_Yo4GTPQJ-Cy9zBzJzfaDLfkvmg@mail.gmail.com>
+In-Reply-To: <CAKv+Gu_1FXj8fOckrFbxEz7figdKmcvN+gnpvBC8g8QArpO+3Q@mail.gmail.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 28, 2014 at 07:57:00PM +0100, Konstantin Khlebnikov wrote:
-> On Mon, Jul 28, 2014 at 10:41 PM, Will Deacon <will.deacon@arm.com> wrote:
-> > On Mon, Jul 28, 2014 at 07:25:14PM +0100, Konstantin Khlebnikov wrote:
-> >> On Mon, Jul 28, 2014 at 10:14 PM, Will Deacon <will.deacon@arm.com> wrote:
-> >> > On Tue, Jul 22, 2014 at 04:36:35PM +0100, Konstantin Khlebnikov wrote:
-> >> >> idmap layout combines both phisical and virtual addresses.
-> >> >> Everything works fine if ram physically lays below PAGE_OFFSET.
-> >> >> Otherwise idmap starts punching huge holes in virtual memory layout.
-> >> >> It maps ram by 2MiB sections, but when it allocates new pmd page it
-> >> >> cuts 1GiB at once.
-> >> >>
-> >> >> This patch makes a copy of all affected pmds from init_mm.
-> >> >> Only few (usually one) 2MiB sections will be lost.
-> >> >> This is not eliminates problem but makes it 512 times less likely.
+On Mon, Jul 28, 2014 at 07:00:17PM +0200, Ard Biesheuvel wrote:
+> On 27 July 2014 20:40, Sam Ravnborg <sam@ravnborg.org> wrote:
+> >>
+> >> > Btw. the current solution is already faulty - even with the fix.
+> >> > There are no support for make C=2 arch/.../crypto/
 > >> >
-> >> > I'm struggling to understand your commit message, but making a problem `512
-> >> > times less likely' does sound like a bit of a hack to me. Can't we fix this
-> >> > properly instead?
 > >>
-> >> Yep, my comment sucks.
-> >>
-> >> Usually idmap looks like this:
-> >>
-> >> |0x00000000 -- <chunk of physical memory in identical mapping > --- |
-> >> TASK_SIZE -- <kernel space vm layoyt> --- 0xFFFFFFFF |
-> >>
-> >> But when that physical memory chunk starts from 0xE8000000 or even
-> >> 0xF2000000 evenything becomes very complicated.
+> >> So can you elaborate on how it is faulty?
 > >
-> > Why? As long as we don't clobber the kernel text (which would require
-> > PHYS_OFFSET to be at a really weird alignment and very close to
-> > PAGE_OFFSET), then you should be alright. Sure, you'll lose things like your
-> > stack and the vmalloc area etc, but you're running in the idmap, so don't
-> > use those things.
-> 
-> Yep, we have piece of hardware with really weird aligned PHYS_OFFSET,
-> mostly all ram is above 4gb and we was lucky enough to get into the trouble.
-> 
-> It seems keystone has all memory above 4gb but small piece is mapped below
-> especially for booting. I suppose it's below PAGE_OFFSET so Cyril
-> hadn't seen that problem.
-
-Sure, I remember when the keystone support was merged. There's a low alias
-of memory which isn't I/O coherent, so when we enable the MMU we rewrite the
-page tables to use the high alias (which is also broken, as I pointed out on
-the list today).
-
-> Also I seen comment somewhere in the code which tells that idrmap pgd is
-> always below 4gb which isn't quite true. Moreover, I had some experiments with
-> mapping ram to random places in qemu and seen that kernel cannot boot if
-> PHYS_OFFSET isn't alligned to 128mb which is strange.
-> So, it seems there is plenty bugs anound.
-> 
+> > When you run "make C=2 arch/.../crypto/" then sparse shall be run
+> > for all .c files also if they are already built.
+> > But due to the re-implementation of some parts of the kbuild logic
+> > in the makefile this does not happen with the -glue file.
 > >
-> > soft_restart is an example of code that deals with these issues. Which code
-> > is causing you problems?
+> > A minor detail - but this may not be the only wreckage we see over time.
+> >
 > 
-> That was booting of secondary cpus, all of them.
+> I agree. Any suggestions for a generic way to solve this?
+Yes - two small .c file that each include the same glue file.
+Anything else is over-engineering.
 
-Ok. I think we need more specifics to progress with this patch. It's not
-clear to me what's going wrong or why your platform is causing the issues
-you're seeing.
+> BTW, while looking into this issue, I noticed something else that is strange:
+> after touch'ing sha1-ce-glue.c in arch/arm64/crypto and re-executing
+> 'make V=2', this is what I get
+> 
+> make[1]: Entering directory `/home/ard/linux-arm64-build'
+>   CHK     include/config/kernel.release
+>   Using /home/ard/linux-2.6 as source for kernel
+>   GEN     ./Makefile
+>   CHK     include/generated/uapi/linux/version.h
+>   CHK     include/generated/utsrelease.h
+>   CALL    /home/ard/linux-2.6/scripts/checksyscalls.sh - due to target missing
+>   CHK     include/generated/compile.h
+>   CC      arch/arm64/crypto/sha1-ce-glue.o - due to:
+> /home/ard/linux-2.6/arch/arm64/crypto/sha1-ce-glue.c
+>   LD      arch/arm64/crypto/sha1-ce.o - due to: arch/arm64/crypto/sha1-ce-glue.o
+>   LD      arch/arm64/crypto/sha2-ce.o - due to: arch/arm64/crypto/sha1-ce-glue.o
+>   LD      arch/arm64/crypto/ghash-ce.o - due to:
+> arch/arm64/crypto/sha1-ce-glue.o
+>   LD      arch/arm64/crypto/aes-ce-ccm.o - due to:
+> arch/arm64/crypto/sha1-ce-glue.o
+>   LD      arch/arm64/crypto/built-in.o - due to:
+> arch/arm64/crypto/sha1-ce.o arch/arm64/crypto/sha2-ce.o
+> arch/arm64/crypto/ghash-ce.o arch/arm64/crypto/aes-ce-ccm.o
+>   CHK     kernel/config_data.h
+>   LINK    vmlinux - due to: arch/arm64/crypto/built-in.o
 
-Will
+Just from inspecting the above I have no idea.
+And I have no arm64 toolchain installed to test myself.
+
+So for now no clue - sorry.
+
+	Sam
