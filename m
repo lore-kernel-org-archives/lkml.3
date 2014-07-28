@@ -1,103 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752710AbaG1ORJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 10:17:09 -0400
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:39918 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752618AbaG1ORH (ORCPT
+	id S1752731AbaG1OSJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 10:18:09 -0400
+Received: from mail-oi0-f45.google.com ([209.85.218.45]:38145 "EHLO
+	mail-oi0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750915AbaG1OSH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 10:17:07 -0400
-From: Grant Likely <grant.likely@linaro.org>
-Subject: Re: [PATCH v2 RESEND 2/4] drivers: of: initialize and assign
- reserved memory to newly created devices
-To: Marek Szyprowski <m.szyprowski@samsung.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
-        linaro-mm-sig@lists.linaro.org, devicetree@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, Michal Nazarewicz <mina86@mina86.com>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Laura Abbott <lauraa@codeaurora.org>,
-        Nishanth Peethambaran <nishanth.p@gmail.com>,
-        Marc <marc.ceeeee@gmail.com>, Josh Cartwright <joshc@codeaurora.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>, Paul Mackerras <paulus@samba.org>,
-        Jon Medhurst <tixy@linaro.org>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        "Aneesh Kumar K.V." <aneesh.kumar@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-In-Reply-To: <1405326487-15346-3-git-send-email-m.szyprowski@samsung.com>
-References: <1405326487-15346-1-git-send-email-m.szyprowski@samsung.com>
-	<1405326487-15346-3-git-send-email-m.szyprowski@samsung.com>
-Date: Mon, 28 Jul 2014 08:17:00 -0600
-Message-Id: <20140728141700.55FC4C408EA@trevor.secretlab.ca>
+	Mon, 28 Jul 2014 10:18:07 -0400
+MIME-Version: 1.0
+In-Reply-To: <1406385895-3886-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+References: <1406385895-3886-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+Date: Mon, 28 Jul 2014 10:18:06 -0400
+X-Google-Sender-Auth: Pee8uySqGoY-pefqJx-mlyiZ2j4
+Message-ID: <CAGXu5jK9Fm9Yw4mNoSZ7+B3LyvTbWx5fyOcB46V8=J4kLa2d3Q@mail.gmail.com>
+Subject: Re: [PATCH] kernel: debug: kdb: kdb_io.c: Cleaning up missing
+ null-terminate in conjunction with strncpy
+From: Kees Cook <keescook@chromium.org>
+To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Cc: Jason Wessel <jason.wessel@windriver.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Borislav Petkov <bp@suse.de>, Randy Dunlap <rdunlap@infradead.org>,
+        kgdb-bugreport@lists.sourceforge.net,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 14 Jul 2014 10:28:05 +0200, Marek Szyprowski <m.szyprowski@samsung.com> wrote:
-> Use recently introduced of_reserved_mem_device_init() function to
-> automatically assign respective reserved memory region to the newly created
-> platform and amba device.
-> 
-> Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
-
-I'm still not okay with this patch. I don't think it is appropriate to
-add the hook into the generic path that gets used for every platform
-device. The devices that need reserved memory should explicitly request
-it, and any setup be done at that time.
-
-g.
-
+On Sat, Jul 26, 2014 at 10:44 AM, Rickard Strandqvist
+<rickard_strandqvist@spectrumdigital.se> wrote:
+> Replacing strncpy with strlcpy to avoid strings that lacks null terminate.
+>
+> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 > ---
->  drivers/of/platform.c | 7 +++++++
->  1 file changed, 7 insertions(+)
-> 
-> diff --git a/drivers/of/platform.c b/drivers/of/platform.c
-> index 500436f9be7f..a9055d3da5c2 100644
-> --- a/drivers/of/platform.c
-> +++ b/drivers/of/platform.c
-> @@ -21,6 +21,7 @@
->  #include <linux/of_device.h>
->  #include <linux/of_irq.h>
->  #include <linux/of_platform.h>
-> +#include <linux/of_reserved_mem.h>
->  #include <linux/platform_device.h>
->  
->  const struct of_device_id of_default_bus_match_table[] = {
-> @@ -233,12 +234,15 @@ static struct platform_device *of_platform_device_create_pdata(
->  	dev->dev.bus = &platform_bus_type;
->  	dev->dev.platform_data = platform_data;
->  
-> +	of_reserved_mem_device_init(&dev->dev);
-> +
->  	/* We do not fill the DMA ops for platform devices by default.
->  	 * This is currently the responsibility of the platform code
->  	 * to do such, possibly using a device notifier
->  	 */
->  
->  	if (of_device_add(dev) != 0) {
-> +		of_reserved_mem_device_release(&dev->dev);
->  		platform_device_put(dev);
->  		goto err_clear_flag;
->  	}
-> @@ -300,6 +304,8 @@ static struct amba_device *of_amba_device_create(struct device_node *node,
->  	else
->  		of_device_make_bus_id(&dev->dev);
->  
-> +	of_reserved_mem_device_init(&dev->dev);
-> +
->  	/* Allow the HW Peripheral ID to be overridden */
->  	prop = of_get_property(node, "arm,primecell-periphid", NULL);
->  	if (prop)
-> @@ -326,6 +332,7 @@ static struct amba_device *of_amba_device_create(struct device_node *node,
->  	return dev;
->  
->  err_free:
-> +	of_reserved_mem_device_release(&dev->dev);
->  	amba_device_put(dev);
->  err_clear_flag:
->  	of_node_clear_flag(node, OF_POPULATED);
-> -- 
-> 1.9.2
-> 
+>  kernel/debug/kdb/kdb_io.c |    6 +++---
+>  1 file changed, 3 insertions(+), 3 deletions(-)
+>
+> diff --git a/kernel/debug/kdb/kdb_io.c b/kernel/debug/kdb/kdb_io.c
+> index 7c70812..27977c0 100644
+> --- a/kernel/debug/kdb/kdb_io.c
+> +++ b/kernel/debug/kdb/kdb_io.c
+> @@ -361,9 +361,9 @@ poll_again:
+>                         kdb_printf("%s", buffer);
+>                 } else if (tab != 2 && count > 0) {
+>                         len_tmp = strlen(p_tmp);
+> -                       strncpy(p_tmp+len_tmp, cp, lastchar-cp+1);
+> +                       strlcpy(p_tmp+len_tmp, cp, lastchar-cp+1);
+>                         len_tmp = strlen(p_tmp);
+> -                       strncpy(cp, p_tmp+len, len_tmp-len + 1);
+> +                       strlcpy(cp, p_tmp+len, len_tmp-len + 1);
+>                         len = len_tmp - len;
+>                         kdb_printf("%s", cp);
+>                         cp += len;
 
+It's not clear to me what this code is actually doing, but I think the
+"+1" parts to these strncpy()s are there to include the NULL
+character.
+
+> @@ -442,7 +442,7 @@ poll_again:
+>  char *kdb_getstr(char *buffer, size_t bufsize, char *prompt)
+>  {
+>         if (prompt && kdb_prompt_str != prompt)
+> -               strncpy(kdb_prompt_str, prompt, CMD_BUFLEN);
+> +               strlcpy(kdb_prompt_str, prompt, CMD_BUFLEN);
+
+This seems like a good idea.
+
+>         kdb_printf(kdb_prompt_str);
+>         kdb_nextline = 1;       /* Prompt and input resets line number */
+>         return kdb_read(buffer, bufsize);
+> --
+> 1.7.10.4
+>
+
+-Kees
+
+-- 
+Kees Cook
+Chrome OS Security
