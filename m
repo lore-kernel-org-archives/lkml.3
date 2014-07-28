@@ -1,28 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752682AbaG1Iab (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 04:30:31 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:42843 "EHLO
+	id S1751809AbaG1IYD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 04:24:03 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:42427 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751889AbaG1Ia2 (ORCPT
+	with ESMTP id S1751462AbaG1IXy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 04:30:28 -0400
-Date: Mon, 28 Jul 2014 01:28:38 -0700
-From: tip-bot for Peter Zijlstra <tipbot@zytor.com>
-Message-ID: <tip-6ae72dff37596f736b795426306404f0793e4b1b@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        torvalds@linux-foundation.org, dietmar.eggemann@arm.com,
-        peterz@infradead.org, jwboyer@redhat.com, bruno@wolff.to,
+	Mon, 28 Jul 2014 04:23:54 -0400
+Date: Mon, 28 Jul 2014 01:22:04 -0700
+From: tip-bot for Adrian Hunter <tipbot@zytor.com>
+Message-ID: <tip-deaff8b659cf4d34181c087b8cdf74f1eb17b02b@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
+        paulus@samba.org, hpa@zytor.com, mingo@kernel.org,
+        peterz@infradead.org, namhyung@gmail.com, jolsa@redhat.com,
+        fweisbec@gmail.com, adrian.hunter@intel.com, dsahern@gmail.com,
         tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, peterz@infradead.org,
-        dietmar.eggemann@arm.com, jwboyer@redhat.com, bruno@wolff.to,
+Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
+        eranian@google.com, linux-kernel@vger.kernel.org, acme@redhat.com,
+        peterz@infradead.org, namhyung@gmail.com, jolsa@redhat.com,
+        fweisbec@gmail.com, dsahern@gmail.com, adrian.hunter@intel.com,
         tglx@linutronix.de
-In-Reply-To: <20140722094740.GJ12054@laptop.lan>
-References: <20140722094740.GJ12054@laptop.lan>
+In-Reply-To: <1406035081-14301-2-git-send-email-adrian.hunter@intel.com>
+References: <1406035081-14301-2-git-send-email-adrian.hunter@intel.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched: Robustify topology setup
-Git-Commit-ID: 6ae72dff37596f736b795426306404f0793e4b1b
+Subject: [tip:perf/core] perf tools:
+  Fix jump label always changing during tracing
+Git-Commit-ID: deaff8b659cf4d34181c087b8cdf74f1eb17b02b
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -35,54 +38,69 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  6ae72dff37596f736b795426306404f0793e4b1b
-Gitweb:     http://git.kernel.org/tip/6ae72dff37596f736b795426306404f0793e4b1b
-Author:     Peter Zijlstra <peterz@infradead.org>
-AuthorDate: Tue, 22 Jul 2014 11:47:40 +0200
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Mon, 28 Jul 2014 10:04:13 +0200
+Commit-ID:  deaff8b659cf4d34181c087b8cdf74f1eb17b02b
+Gitweb:     http://git.kernel.org/tip/deaff8b659cf4d34181c087b8cdf74f1eb17b02b
+Author:     Adrian Hunter <adrian.hunter@intel.com>
+AuthorDate: Tue, 22 Jul 2014 16:17:10 +0300
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Wed, 23 Jul 2014 11:12:59 -0300
 
-sched: Robustify topology setup
+perf tools: Fix jump label always changing during tracing
 
-We hard assume that higher topology levels are supersets of lower
-levels.
+Intel PT decoding walks the object code to reconstruct the trace.  A
+jump label change during tracing causes decoding errors.
 
-Detect, warn and try to fixup when we encounter this violated.
+The "Enable close-on-exec flag on perf file descriptor" patch caused
+there to be always a jump label change.
 
-Tested-by: Dietmar Eggemann <dietmar.eggemann@arm.com>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Cc: Josh Boyer <jwboyer@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Bruno Wolff III <bruno@wolff.to>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Link: http://lkml.kernel.org/r/20140722094740.GJ12054@laptop.lan
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+It was found that using a per-cpu context instead of a per-thread
+context for the probe of the close-on-exec feature, made the problem go
+away.
+
+Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/r/1406035081-14301-2-git-send-email-adrian.hunter@intel.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- kernel/sched/core.c | 14 ++++++++++++++
- 1 file changed, 14 insertions(+)
+ tools/perf/util/cloexec.c | 9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 415ab02..2a36a74 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -6481,6 +6481,20 @@ struct sched_domain *build_sched_domain(struct sched_domain_topology_level *tl,
- 		sched_domain_level_max = max(sched_domain_level_max, sd->level);
- 		child->parent = sd;
- 		sd->child = child;
+diff --git a/tools/perf/util/cloexec.c b/tools/perf/util/cloexec.c
+index c5d05ec..6a37be5 100644
+--- a/tools/perf/util/cloexec.c
++++ b/tools/perf/util/cloexec.c
+@@ -1,3 +1,4 @@
++#include <sched.h>
+ #include "util.h"
+ #include "../perf.h"
+ #include "cloexec.h"
+@@ -14,9 +15,13 @@ static int perf_flag_probe(void)
+ 	};
+ 	int fd;
+ 	int err;
++	int cpu = sched_getcpu();
 +
-+		if (!cpumask_subset(sched_domain_span(child),
-+				    sched_domain_span(sd))) {
-+			pr_err("BUG: arch topology borken\n");
-+#ifdef CONFIG_SCHED_DEBUG
-+			pr_err("     the %s domain not a subset of the %s domain\n",
-+					child->name, sd->name);
-+#endif
-+			/* Fixup, ensure @sd has at least @child cpus. */
-+			cpumask_or(sched_domain_span(sd),
-+				   sched_domain_span(sd),
-+				   sched_domain_span(child));
-+		}
-+
- 	}
- 	set_domain_attribute(sd, attr);
++	if (cpu < 0)
++		cpu = 0;
  
+ 	/* check cloexec flag */
+-	fd = sys_perf_event_open(&attr, 0, -1, -1,
++	fd = sys_perf_event_open(&attr, -1, cpu, -1,
+ 				 PERF_FLAG_FD_CLOEXEC);
+ 	err = errno;
+ 
+@@ -30,7 +35,7 @@ static int perf_flag_probe(void)
+ 		  err, strerror(err));
+ 
+ 	/* not supported, confirm error related to PERF_FLAG_FD_CLOEXEC */
+-	fd = sys_perf_event_open(&attr, 0, -1, -1, 0);
++	fd = sys_perf_event_open(&attr, -1, cpu, -1, 0);
+ 	err = errno;
+ 
+ 	if (WARN_ONCE(fd < 0,
