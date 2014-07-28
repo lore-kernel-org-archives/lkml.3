@@ -1,129 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751986AbaG1IYY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 04:24:24 -0400
-Received: from mga01.intel.com ([192.55.52.88]:32883 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751437AbaG1IYV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 04:24:21 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,747,1400050800"; 
-   d="scan'208";a="576413162"
-Message-ID: <53D60896.5050703@intel.com>
-Date: Mon, 28 Jul 2014 16:23:50 +0800
-From: "xinhui.pan" <xinhuix.pan@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1752024AbaG1IY3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 04:24:29 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:42462 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751437AbaG1IY0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jul 2014 04:24:26 -0400
+Date: Mon, 28 Jul 2014 01:23:26 -0700
+From: tip-bot for Adrian Hunter <tipbot@zytor.com>
+Message-ID: <tip-bf49c35f630452d85c9cd7205a72df841e8d99b9@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
+        paulus@samba.org, hpa@zytor.com, mingo@kernel.org,
+        peterz@infradead.org, namhyung@gmail.com, jolsa@redhat.com,
+        fweisbec@gmail.com, adrian.hunter@intel.com, dsahern@gmail.com,
+        tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
+        eranian@google.com, linux-kernel@vger.kernel.org, acme@redhat.com,
+        peterz@infradead.org, namhyung@gmail.com, jolsa@redhat.com,
+        fweisbec@gmail.com, dsahern@gmail.com, adrian.hunter@intel.com,
+        tglx@linutronix.de
+In-Reply-To: <1406035081-14301-16-git-send-email-adrian.hunter@intel.com>
+References: <1406035081-14301-16-git-send-email-adrian.hunter@intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf tools: Add cpu to struct thread
+Git-Commit-ID: bf49c35f630452d85c9cd7205a72df841e8d99b9
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>, Jiri Slaby <jslaby@suse.cz>
-CC: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-        Peter Hurley <peter@hurleysoftware.com>, mnipxh <mnipxh@gmail.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] tty/n_gsm.c: fix a memory leak in gsmld_open
-References: <53D6067C.4000702@intel.com>
-In-Reply-To: <53D6067C.4000702@intel.com>
-Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hi, All
-	thanks for reading. Below is my trigger.
+Commit-ID:  bf49c35f630452d85c9cd7205a72df841e8d99b9
+Gitweb:     http://git.kernel.org/tip/bf49c35f630452d85c9cd7205a72df841e8d99b9
+Author:     Adrian Hunter <adrian.hunter@intel.com>
+AuthorDate: Tue, 22 Jul 2014 16:17:24 +0300
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Wed, 23 Jul 2014 11:27:50 -0300
 
-----------------------------------------
-#define WARN(x) do{		\
-	KLOG_ERROR("XINHUI",x);	\
-}while(0)
+perf tools: Add cpu to struct thread
 
-int main()
-{
-	KLOG_ERROR("XINHUI", "hello world :)\n");
-	long fp[4];
-	int i = 0;
-	int next[4]={1,2,3,0};
+Tools may wish to track on which cpu a thread is running.  Add 'cpu' to
+struct thread for that purpose.
 
-	do{
-		char path[64] = "dev/tty30";
-		path[strlen(path) - 1] = '0' + i;
+This will be used to determine the cpu when decoding a per-thread
+Instruction Trace.
 
-		fp[i] = open(path, O_RDWR);
-		if (fp[i] == -1){
-			WARN("mlk tty open fails\n");
-			return 0;
-		}
-	}while(++i < 4);
+E.g: Intel PT decoding uses sched_switch events to determine which task
+is running on which cpu.  The Intel PT data comes straight from the
+hardware which doesn't know about linux threads.
 
-	i = 0;
-	do{
-		int p = 21;
-		int ret = ioctl(fp[i], TIOCSETD , &p);
-		if (ret != 0) {
-			WARN("mlk tty ioctl fails\n");
-		}
-		i = next[i];
-	}while(1);
-/* never run here, just ctrl^C */
+Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/r/1406035081-14301-16-git-send-email-adrian.hunter@intel.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/util/thread.c | 1 +
+ tools/perf/util/thread.h | 1 +
+ 2 files changed, 2 insertions(+)
 
-	return 0 ;
-}
-----------------------------------------
-
-without this patch, running my own tests.
-
-my result:
-
-PROCRANK:
-.....
-RAM: 1993076K total, 147968K free, 708K buffers, 108340K cached, 332K shmem, 1092232K slab
-AWESOME!
-
-cat /proc/slabinfo
-.....
-kmalloc-2048      509700 509700   2048   16    8 : tunables    0    0    0 : slabdata  32285  32285      0
-.....
-AWESOME!!
-
-thanks,
-
-xinhui
-
-于 2014年07月28日 16:14, xinhui.pan 写道:
-> If gsmld_attach_gsm fails, the gsm is not used anymore.
-> tty core will not call gsmld_close to do the cleanup work.
-> tty core just restore to the tty old ldisc.
-> That always causes memory leak.
-> 
-> Signed-off-by: xinhui.pan <xinhuiX.pan@intel.com>
-> Reported-by: Peter Hurley <peter@hurleysoftware.com>
-> ---
->  drivers/tty/n_gsm.c |    9 ++++++++-
->  1 file changed, 8 insertions(+), 1 deletion(-)
-> 
-> diff --git a/drivers/tty/n_gsm.c b/drivers/tty/n_gsm.c
-> index 81e7ccb..6cb1a6d 100644
-> --- a/drivers/tty/n_gsm.c
-> +++ b/drivers/tty/n_gsm.c
-> @@ -2368,6 +2368,7 @@ static void gsmld_close(struct tty_struct *tty)
->  static int gsmld_open(struct tty_struct *tty)
->  {
->  	struct gsm_mux *gsm;
-> +	int ret;
->  
->  	if (tty->ops->write == NULL)
->  		return -EINVAL;
-> @@ -2382,7 +2383,13 @@ static int gsmld_open(struct tty_struct *tty)
->  
->  	/* Attach the initial passive connection */
->  	gsm->encoding = 1;
-> -	return gsmld_attach_gsm(tty, gsm);
-> +
-> +	ret = gsmld_attach_gsm(tty, gsm);
-> +	if (ret != 0) {
-> +		gsm_cleanup_mux(gsm);
-> +		mux_put(gsm);
-> +	}
-> +	return ret;
->  }
->  
->  /**
-> 
+diff --git a/tools/perf/util/thread.c b/tools/perf/util/thread.c
+index 9692c06..12c7a25 100644
+--- a/tools/perf/util/thread.c
++++ b/tools/perf/util/thread.c
+@@ -34,6 +34,7 @@ struct thread *thread__new(pid_t pid, pid_t tid)
+ 		thread->pid_ = pid;
+ 		thread->tid = tid;
+ 		thread->ppid = -1;
++		thread->cpu = -1;
+ 		INIT_LIST_HEAD(&thread->comm_list);
+ 
+ 		comm_str = malloc(32);
+diff --git a/tools/perf/util/thread.h b/tools/perf/util/thread.h
+index 3c0c272..716b772 100644
+--- a/tools/perf/util/thread.h
++++ b/tools/perf/util/thread.h
+@@ -17,6 +17,7 @@ struct thread {
+ 	pid_t			pid_; /* Not all tools update this */
+ 	pid_t			tid;
+ 	pid_t			ppid;
++	int			cpu;
+ 	char			shortname[3];
+ 	bool			comm_set;
+ 	bool			dead; /* if set thread has exited */
