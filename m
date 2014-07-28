@@ -1,28 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752598AbaG1I3O (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 04:29:14 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:42663 "EHLO
+	id S1752623AbaG1I3T (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 04:29:19 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:42794 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751170AbaG1I1R (ORCPT
+	with ESMTP id S1751170AbaG1I3O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 04:27:17 -0400
-Date: Mon, 28 Jul 2014 01:26:32 -0700
-From: tip-bot for Arnaldo Carvalho de Melo <tipbot@zytor.com>
-Message-ID: <tip-qt7h2g5fcf42qiw5hv7mgpjk@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
-        acme@redhat.com, hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
-        efault@gmx.de, namhyung@kernel.org, jolsa@redhat.com,
-        fweisbec@gmail.com, adrian.hunter@intel.com, dsahern@gmail.com,
-        tglx@linutronix.de, dzickus@redhat.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
-        eranian@google.com, linux-kernel@vger.kernel.org, efault@gmx.de,
-        peterz@infradead.org, namhyung@kernel.org, jolsa@redhat.com,
-        fweisbec@gmail.com, dsahern@gmail.com, adrian.hunter@intel.com,
-        tglx@linutronix.de, dzickus@redhat.com
+	Mon, 28 Jul 2014 04:29:14 -0400
+Date: Mon, 28 Jul 2014 01:28:10 -0700
+From: tip-bot for Daniel Bristot de Oliveira <tipbot@zytor.com>
+Message-ID: <tip-d8d28c8f00e84a72e8bee39a85835635417bee49@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        torvalds@linux-foundation.org, peterz@infradead.org,
+        bristot@redhat.com, rostedt@goodmis.org, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, peterz@infradead.org,
+        bristot@redhat.com, rostedt@goodmis.org, tglx@linutronix.de
+In-Reply-To: <9ebe0566a08dbbb3999759d3f20d6004bb2dbcfa.1406079891.git.bristot@redhat.com>
+References: <9ebe0566a08dbbb3999759d3f20d6004bb2dbcfa.1406079891.git.bristot@redhat.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tools: Fix build on gcc 4.4.7
-Git-Commit-ID: 0524798cc3d74546e83ebd795e9a5ed44481eaa6
+Subject: [tip:sched/core] sched: Fix sched_setparam() policy == -1 logic
+Git-Commit-ID: d8d28c8f00e84a72e8bee39a85835635417bee49
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -35,62 +33,70 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  0524798cc3d74546e83ebd795e9a5ed44481eaa6
-Gitweb:     http://git.kernel.org/tip/0524798cc3d74546e83ebd795e9a5ed44481eaa6
-Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Wed, 23 Jul 2014 18:15:09 -0300
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Wed, 23 Jul 2014 18:15:09 -0300
+Commit-ID:  d8d28c8f00e84a72e8bee39a85835635417bee49
+Gitweb:     http://git.kernel.org/tip/d8d28c8f00e84a72e8bee39a85835635417bee49
+Author:     Daniel Bristot de Oliveira <bristot@redhat.com>
+AuthorDate: Tue, 22 Jul 2014 23:27:41 -0300
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Mon, 28 Jul 2014 10:00:08 +0200
 
-perf tools: Fix build on gcc 4.4.7
+sched: Fix sched_setparam() policy == -1 logic
 
-[acme@sandy linux]$ gcc --version
-gcc (GCC) 4.4.7 20120313 (Red Hat 4.4.7-3)
-Copyright (C) 2010 Free Software Foundation, Inc.
-This is free software; see the source for copying conditions.  There is NO
-warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+The scheduler uses policy == -1 to preserve the current policy state to
+implement sched_setparam(). But, as (int) -1 is equals to 0xffffffff,
+it's matching the if (policy & SCHED_RESET_ON_FORK) on
+_sched_setscheduler(). This match changes the policy value to an
+invalid value, breaking the sched_setparam() syscall.
 
-[acme@sandy linux]$ make O=/tmp/build/perf -C tools/perf install-bin
-<SNIP>
-  CC       /tmp/build/perf/builtin-trace.o
-builtin-trace.c: In function ‘perf_evlist__add_pgfault’:
-builtin-trace.c:1997: error: unknown field ‘sample_period’ specified in initializer
-make[1]: *** [/tmp/build/perf/builtin-trace.o] Error 1
-make: *** [install-bin] Error 2
-make: Leaving directory `/home/acme/git/linux/tools/perf'
-[acme@sandy linux]$ make O=/tmp/build/perf -C tools/perf install-bin
-make O=/tmp/build/perf -C tools/perf install-bin
-make: Entering directory `/home/acme/git/linux/tools/perf'
+This patch checks policy == -1 before check the SCHED_RESET_ON_FORK flag.
 
-Cc: Adrian Hunter <adrian.hunter@intel.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Don Zickus <dzickus@redhat.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-qt7h2g5fcf42qiw5hv7mgpjk@git.kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+The following program shows the bug:
+
+int main(void)
+{
+	struct sched_param param = {
+		.sched_priority = 5,
+	};
+
+	sched_setscheduler(0, SCHED_FIFO, &param);
+	param.sched_priority = 1;
+	sched_setparam(0, &param);
+	param.sched_priority = 0;
+	sched_getparam(0, &param);
+	if (param.sched_priority != 1)
+		printf("failed priority setting (found %d instead of 1)\n",
+			param.sched_priority);
+	else
+		printf("priority setting fine\n");
+}
+
+Signed-off-by: Daniel Bristot de Oliveira <bristot@redhat.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Reviewed-by: Steven Rostedt <rostedt@goodmis.org>
+Cc: <stable@vger.kernel.org> # 3.14+
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org
+Fixes: 7479f3c9cf67 "sched: Move SCHED_RESET_ON_FORK into attr::sched_flags"
+Link: http://lkml.kernel.org/r/9ebe0566a08dbbb3999759d3f20d6004bb2dbcfa.1406079891.git.bristot@redhat.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- tools/perf/builtin-trace.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ kernel/sched/core.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
-index c4a5a7d..a6c3752 100644
---- a/tools/perf/builtin-trace.c
-+++ b/tools/perf/builtin-trace.c
-@@ -1994,10 +1994,10 @@ static int perf_evlist__add_pgfault(struct perf_evlist *evlist,
- 	struct perf_event_attr attr = {
- 		.type = PERF_TYPE_SOFTWARE,
- 		.mmap_data = 1,
--		.sample_period = 1,
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index bc1638b..0acf96b 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -3558,9 +3558,10 @@ static int _sched_setscheduler(struct task_struct *p, int policy,
  	};
  
- 	attr.config = config;
-+	attr.sample_period = 1;
- 
- 	event_attr_init(&attr);
- 
+ 	/*
+-	 * Fixup the legacy SCHED_RESET_ON_FORK hack
++	 * Fixup the legacy SCHED_RESET_ON_FORK hack, except if
++	 * the policy=-1 was passed by sched_setparam().
+ 	 */
+-	if (policy & SCHED_RESET_ON_FORK) {
++	if ((policy != -1) && (policy & SCHED_RESET_ON_FORK)) {
+ 		attr.sched_flags |= SCHED_FLAG_RESET_ON_FORK;
+ 		policy &= ~SCHED_RESET_ON_FORK;
+ 		attr.sched_policy = policy;
