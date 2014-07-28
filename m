@@ -1,80 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752839AbaG1PNc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 11:13:32 -0400
-Received: from mail-vc0-f169.google.com ([209.85.220.169]:43675 "EHLO
-	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752300AbaG1PNa (ORCPT
+	id S1752728AbaG1PN5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 11:13:57 -0400
+Received: from out2-smtp.messagingengine.com ([66.111.4.26]:33011 "EHLO
+	out2-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751478AbaG1PNy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 11:13:30 -0400
+	Mon, 28 Jul 2014 11:13:54 -0400
+X-Sasl-enc: LH0EOVr8Go4JB/drNxQYxQz8ruh4Sp9tDfgg9QtJwcTe 1406560432
+Date: Mon, 28 Jul 2014 07:49:33 -0700
+From: Greg KH <greg@kroah.com>
+To: =?utf-8?B?0JHQvtGA0LjRgdC70LDQsiDQkdC+0LXQsg==?= 
+	<borislavboev92@abv.bg>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Slow wireless connection on an Intel wifi card (Thinkpad E540 +
+ Intel WiFi 7260 AC Dual Band)
+Message-ID: <20140728144933.GA8027@kroah.com>
+References: <1352177570.143352.1406556137404.JavaMail.apache@nm31.abv.bg>
 MIME-Version: 1.0
-In-Reply-To: <53D6218A.5080401@gmail.com>
-References: <CAPDOMViXEgN1U8Og52Fd7EaM86Ad2Dfex9TVQ-+tRZ9SL9Kcig@mail.gmail.com>
-	<53D5BBCA.3020109@gmail.com>
-	<CAPDOMVjB9ErEwA7mf91X7pff5LAkeT=BT4pR7TuoEp3LL333Lg@mail.gmail.com>
-	<53D6218A.5080401@gmail.com>
-Date: Mon, 28 Jul 2014 11:13:29 -0400
-Message-ID: <CAPDOMVg869TJJPgrW86XaMT2WyisbT9fg0jLETCAvg59xpvs4Q@mail.gmail.com>
-Subject: Re: Multi Core Support for compression in compression.c
-From: Nick Krause <xerofoify@gmail.com>
-To: Austin S Hemmelgarn <ahferroin7@gmail.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-btrfs@vger.kernel.org SYSTEM list:BTRFS FILE" 
-	<linux-btrfs@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1352177570.143352.1406556137404.JavaMail.apache@nm31.abv.bg>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 28, 2014 at 6:10 AM, Austin S Hemmelgarn
-<ahferroin7@gmail.com> wrote:
-> On 07/27/2014 11:21 PM, Nick Krause wrote:
->> On Sun, Jul 27, 2014 at 10:56 PM, Austin S Hemmelgarn
->> <ahferroin7@gmail.com> wrote:
->>> On 07/27/2014 04:47 PM, Nick Krause wrote:
->>>> This may be a bad idea , but compression in brtfs seems to be only
->>>> using one core to compress.
->>>> Depending on the CPU used and the amount of cores in the CPU we can
->>>> make this much faster
->>>> with multiple cores. This seems bad by my reading at least I would
->>>> recommend for writing compression
->>>> we write a function to use a certain amount of cores based on the load
->>>> of the system's CPU not using
->>>> more then 75% of the system's CPU resources as my system when idle has
->>>> never needed more
->>>> then one core of my i5 2500k to run when with interrupts for opening
->>>> eclipse are running. For reading
->>>> compression on good core seems fine to me as testing other compression
->>>> software for reads , it's
->>>> way less CPU intensive.
->>>> Cheers Nick
->>> We would probably get a bigger benefit from taking an approach like
->>> SquashFS has recently added, that is, allowing multi-threaded
->>> decompression fro reads, and decompressing directly into the pagecache.
->>>  Such an approach would likely make zlib compression much more scalable
->>> on large systems.
->>>
->>>
->>
->> Austin,
->> That seems better then my idea as you seem to be more up to date on
->> brtfs devolopment.
->> If you and the other developers of brtfs are interested in adding this
->> as a feature please let
->> me known as I would like to help improve brtfs as the file system as
->> an idea is great just
->> seems like it needs a lot of work :).
->> Nick
-> I wouldn't say that I am a BTRFS developer (power user maybe?), but I
-> would definitely say that parallelizing compression on writes would be a
-> good idea too (especially for things like lz4, which IIRC is either in
-> 3.16 or in the queue for 3.17).  Both options would be a lot of work,
-> but almost any performance optimization would.  I would almost say that
-> it would provide a bigger performance improvement to get BTRFS to
-> intelligently stripe reads and writes (at the moment, any given worker
-> thread only dispatches one write or read to a single device at a time,
-> and any given write() or read() syscall gets handled by only one worker).
->
+On Mon, Jul 28, 2014 at 05:02:17PM +0300, Борислав Боев wrote:
+> Hello, I am reporting a bug that is well-known and it continues to give us some
+> headaches (especially those who are using ThinkPads + Intel WiFi cards on them)
+> 
+> My system has the Intel® Dual Band Wireless-AC 7260 card, which is problematic
+> not only on Linux, but on Windows system as well.
 
-I will look into this idea and see if I can do this for writes.
-Regards Nick
+Try letting the linux-wireless@vger.kernel.org developers know about
+this.
+
