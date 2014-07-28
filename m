@@ -1,130 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750958AbaG1ELT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 00:11:19 -0400
-Received: from mga09.intel.com ([134.134.136.24]:25545 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750708AbaG1ELP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 00:11:15 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,746,1400050800"; 
-   d="scan'208";a="579848453"
-Message-ID: <53D5CD5F.4010904@intel.com>
-Date: Mon, 28 Jul 2014 12:11:11 +0800
-From: Aaron Lu <aaron.lu@intel.com>
-MIME-Version: 1.0
-To: Nick Krause <xerofoify@gmail.com>
-CC: Rob Clark <robdclark@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-        lkp@01.org
-Subject: Re: [LKP] [drm] WARNING: CPU: 2 PID: 430 at drivers/gpu/drm/drm_crtc.c:1391
- drm_universal_plane_init+0x241/0x260 [drm]()
-References: <53d5ad85.OKrHssidwykOWTnD%fengguang.wu@intel.com>	<53D5AF41.6080604@intel.com> <CAPDOMVhW9V5aNyrpqMd-3zhfZMctEEeHnnHHTYqNHe1fEdQBZg@mail.gmail.com>
-In-Reply-To: <CAPDOMVhW9V5aNyrpqMd-3zhfZMctEEeHnnHHTYqNHe1fEdQBZg@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1751270AbaG1ENx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 00:13:53 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:33699 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750708AbaG1ENt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jul 2014 00:13:49 -0400
+X-AuditID: cbfee690-b7f526d000003627-92-53d5cdf2a151
+From: Pankaj Dubey <pankaj.dubey@samsung.com>
+To: "'Arnd Bergmann'" <arnd@arndb.de>, "'Tomasz Figa'" <tomasz.figa@gmail.com>
+Cc: linux-arm-kernel@lists.infradead.org, mark.brown@linaro.org,
+        "'Tomasz Figa'" <t.figa@samsung.com>,
+        linux-samsung-soc@vger.kernel.org,
+        "'Kukjin Kim'" <kgene.kim@samsung.com>,
+        "'Russell King - ARM Linux'" <linux@arm.linux.org.uk>,
+        "'Samuel Ortiz'" <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
+        joshi@samsung.com, vikas.sajjan@samsung.com, chow.kim@samsung.com,
+        "'Lee Jones'" <lee.jones@linaro.org>
+References: <53A05E2D.6020702@samsung.com> <5027740.B7iVUcUX2T@wuerfel>
+ <53A0B27E.5010708@gmail.com> <5537724.LlmJ2hxcKn@wuerfel>
+In-reply-to: <5537724.LlmJ2hxcKn@wuerfel>
+Subject: RE: [PATCH RFC] mfd: syscon: Decouple syscon interface from syscon
+ devices
+Date: Mon, 28 Jul 2014 09:45:01 +0530
+Message-id: <002701cfaa1a$82b42770$881c7650$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: AQKN9QGh9175x+dQQ3DHKBd0w/cN3wKdDwnaAe6GAgkAzLXwuZoNgg2g
+Content-language: en-us
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprIKsWRmVeSWpSXmKPExsWyRsSkTvfT2avBBp1d8hZ/Jx1jt1g26S6b
+	xfddX9gtehdcZbO4//Uoo8Wmx9dYLS7vmsNmMeP8PiaL25d5LXZcu8Vicbqb1WL9jNcsFqt2
+	/WG0uPlsO5MDn0dLcw+bx+9fkxg9ds66y+5x59oeNo95JwM9Ni+p9+jbsorR4/MmuQCOKC6b
+	lNSczLLUIn27BK6M45PXMRZ8Fa2YsucSewPjTsEuRk4OCQETiTkbnrFD2GISF+6tZ+ti5OIQ
+	EljKKLF36n9GmKL7c48wgdhCAosYJe4c9IIo+ssocXntJLBuNgFdiSfv5zJ3MXJwiAh4SbTv
+	DASpYRaYxSzx920vM0RDM6PE0W0zwSZxCmhKTLo+D2yDsECoRP/uNmYQm0VAVWLpjMlgcV4B
+	S4nDp9+zQdiCEj8m32MBsZkFtCTW7zzOBGHLS2xe85YZ4lIFiR1nX4P1igi4STyZdBGqRlxi
+	0oOH7CBHSAis5ZBomr2ZDWKZgMS3yYdYQK6WEJCV2HQAao6kxMEVN1gmMErMQrJ6FpLVs5Cs
+	noVkxQJGllWMoqkFyQXFSelFJnrFibnFpXnpesn5uZsYgcnh9L9nE3Yw3jtgfYgxGWj9RGYp
+	0eR8YHLJK4k3NDYzsjA1MTU2Mrc0I01YSZxX7VFSkJBAemJJanZqakFqUXxRaU5q8SFGJg5O
+	qQbGzHdH+b9Xm3yqfpv95ouzPO8/RYcDW66HRdv0l6WY2pUxxLKtmi1ssrVrt4SpxQOVM6xX
+	9mw+Lj/h4KdVxh1W2q+kjn6q1Dlf/cvn53czh/bz7JMnhn9rXhZiwfHP4DSDQebK86dFYpIf
+	OC08vvbJ1jV/Dt172LfB6t5claXOTJzHc2Uqr7fPUGIpzkg01GIuKk4EAKjpe40kAwAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrAKsWRmVeSWpSXmKPExsVy+t9jAd1PZ68GG6zsF7P4O+kYu8WySXfZ
+	LL7v+sJu0bvgKpvF/a9HGS02Pb7GanF51xw2ixnn9zFZ3L7Ma7Hj2i0Wi9PdrBbrZ7xmsVi1
+	6w+jxc1n25kc+DxamnvYPH7/msTosXPWXXaPO9f2sHnMOxnosXlJvUffllWMHp83yQVwRDUw
+	2mSkJqakFimk5iXnp2TmpdsqeQfHO8ebmhkY6hpaWpgrKeQl5qbaKrn4BOi6ZeYAXa2kUJaY
+	UwoUCkgsLlbSt8M0ITTETdcCpjFC1zckCK7HyAANJKxhzDg+eR1jwVfRiil7LrE3MO4U7GLk
+	5JAQMJG4P/cIE4QtJnHh3no2EFtIYBGjxJ2DXl2MXED2X0aJy2snsYMk2AR0JZ68n8vcxcjB
+	ISLgJdG+MxCkhllgFrPE37e9zBANzYwSR7fNBJvKKaApMen6PEYQW1ggVKJ/dxsziM0ioCqx
+	dMZksDivgKXE4dPv2SBsQYkfk++xgNjMAloS63ceZ4Kw5SU2r3nLDHGpgsSOs6/BekUE3CSe
+	TLoIVSMuMenBQ/YJjEKzkIyahWTULCSjZiFpWcDIsopRNLUguaA4KT3XSK84Mbe4NC9dLzk/
+	dxMjOPU8k97BuKrB4hCjAAejEg+vRfDVYCHWxLLiytxDjBIczEoivC/bgUK8KYmVValF+fFF
+	pTmpxYcYTYE+ncgsJZqcD0yLeSXxhsYm5qbGppYmFiZmlkrivAdbrQOFBNITS1KzU1MLUotg
+	+pg4OKUaGDuWsj9Q9OUPddsuuqG8ybTf8Xrhyxf34/umvxP62aLZXiba4LjpqqNb36J3zBIq
+	vBsm/u/90bvLLvFFv0uAQNGKf9zsZz1vrWVbImubtM7h9KS4VWbip5SOKi9dtC87Yuny9+96
+	KkJfdHjE8tYXqUeWcx3m2He7mrWGca2u7tNV6TddY9j/KbEUZyQaajEXFScCAEVkywhTAwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/28/2014 11:16 AM, Nick Krause wrote:
-> On Sun, Jul 27, 2014 at 10:02 PM, Aaron Lu <aaron.lu@intel.com> wrote:
->> FYI, we noticed the below changes on
->>
->> git://people.freedesktop.org/~robclark/linux cold-fusion-v3.16-rc5
->> commit 08172e9d2385ca9bd545a8229ac749f589146a31 ("drm: convert plane to properties/state")
->>
->> +-----------------+------------+------------+
->> |                 | 88471ddbb1 | 08172e9d23 |
->> +-----------------+------------+------------+
->> | boot_successes  | 10         | 10         |
->> | early-boot-hang | 1          | 1          |
->> +-----------------+------------+------------+
->>
->>
->> [   21.274681] [drm] Supports vblank timestamp caching Rev 2 (21.10.2013).
->> [   21.275090] [drm] Driver supports precise vblank timestamp query.
->> [   21.275984] ------------[ cut here ]------------
->> [   21.276300] WARNING: CPU: 2 PID: 430 at drivers/gpu/drm/drm_crtc.c:1391 drm_universal_plane_init+0x241/0x260 [drm]()
->> [   21.277126] Modules linked in: firewire_ohci(+) firewire_core crc_itu_t snd_hda_codec_hdmi snd_hda_codec_realtek snd_hda_codec_generic shpchp pcspkr i2c_i801 ahci snd_hda_intel i915(+) libahci snd_hda_controller libata snd_hda_codec snd_hwdep snd_pcm snd_timer drm_kms_helper snd soundcore drm winbond_cir rc_core floppy(+) parport_pc parport video
->> [   21.279682] CPU: 2 PID: 430 Comm: modprobe Not tainted 3.16.0-rc6-wl-ath-04110-gc6264ea #1
->> [   21.280208] Hardware name: Intel Corporation 2012 Client Platform/LosLunas CRB, BIOS ACRVMBY1.86C.0054.B00.1107311147 07/31/2011
->> [   21.281029]  0000000000000009 ffff88041b34b860 ffffffff8182d64b 0000000000000000
->> [   21.281655]  ffff88041b34b898 ffffffff8106d16d ffff88007fb32000 0000000000000000
->> [   21.282191]  ffff88041a9ebe00 000000000000000a ffff88041a9ebe00 ffff88041b34b8a8
->> [   21.282791] Call Trace:
->> [   21.282958]  [<ffffffff8182d64b>] dump_stack+0x4d/0x66
->> [   21.283290]  [<ffffffff8106d16d>] warn_slowpath_common+0x7d/0xa0
->> [   21.283756]  [<ffffffff8106d24a>] warn_slowpath_null+0x1a/0x20
->> [   21.284134]  [<ffffffffa007d121>] drm_universal_plane_init+0x241/0x260 [drm]
->> [   21.284697]  [<ffffffffa01dffb1>] intel_modeset_init+0x471/0xe70 [i915]
->> [   21.285127]  [<ffffffffa01ae67a>] ? ibx_irq_postinstall+0x5a/0xe0 [i915]
->> [   21.285652]  [<ffffffffa01ae7c6>] ? ironlake_irq_postinstall+0xc6/0x1a0 [i915]
->> [   21.286137]  [<ffffffffa020d00a>] i915_driver_load+0xb4a/0x1000 [i915]
->> [   21.286640]  [<ffffffff813dffb8>] ? kobject_uevent_env+0x178/0x690
->> [   21.287028]  [<ffffffff814e1247>] ? get_device+0x17/0x30
->> [   21.287361]  [<ffffffff814e68d5>] ? klist_class_dev_get+0x15/0x20
->> [   21.287813]  [<ffffffff8181b98a>] ? klist_add_tail+0x3a/0x40
->> [   21.288166]  [<ffffffff814e2979>] ? device_add+0x1f9/0x610
->> [   21.288608]  [<ffffffffa0078166>] ? drm_sysfs_device_add+0xd6/0x120 [drm]
->> [   21.289033]  [<ffffffffa007478d>] drm_dev_register+0xad/0x100 [drm]
->> [   21.289420]  [<ffffffffa007725f>] drm_get_pci_dev+0x8f/0x1f0 [drm]
->> [   21.289887]  [<ffffffffa017d59b>] i915_pci_probe+0x3b/0x60 [i915]
->> [   21.290258]  [<ffffffff814148a5>] local_pci_probe+0x45/0xa0
->> [   21.290690]  [<ffffffff81415a35>] ? pci_match_device+0xe5/0x110
->> [   21.291078]  [<ffffffff81415b71>] pci_device_probe+0xd1/0x130
->> [   21.291435]  [<ffffffff814e5a10>] driver_probe_device+0x90/0x3c0
->> [   21.291891]  [<ffffffff814e5e13>] __driver_attach+0x93/0xa0
->> [   21.292227]  [<ffffffff814e5d80>] ? __device_attach+0x40/0x40
->> [   21.292640]  [<ffffffff814e3a93>] bus_for_each_dev+0x63/0xa0
->> [   21.292969]  [<ffffffff814e54ae>] driver_attach+0x1e/0x20
->> [   21.293293]  [<ffffffff814e50c0>] bus_add_driver+0x180/0x250
->> [   21.293705]  [<ffffffff814e65e4>] driver_register+0x64/0xf0
->> [   21.294041]  [<ffffffff8141423c>] __pci_register_driver+0x4c/0x50
->> [   21.294399]  [<ffffffffa00774ca>] drm_pci_init+0x10a/0x140 [drm]
->> [   21.294863]  [<ffffffffa026d000>] ? 0xffffffffa026cfff
->> [   21.295209]  [<ffffffffa026d089>] i915_init+0x89/0x90 [i915]
->> [   21.295654]  [<ffffffff8100212c>] do_one_initcall+0xbc/0x1f0
->> [   21.296010]  [<ffffffff81190802>] ? __vunmap+0xb2/0x100
->> [   21.296330]  [<ffffffff810ecbdc>] load_module+0x15fc/0x1a30
->> [   21.296760]  [<ffffffff810e8770>] ? store_uevent+0x40/0x40
->> [   21.297132]  [<ffffffff810ed0d1>] SyS_init_module+0xc1/0x110
->> [   21.297470]  [<ffffffff81836469>] system_call_fastpath+0x16/0x1b
->> [   21.297910] ---[ end trace ecc622d672d3c733 ]---
->> [   21.298652] ------------[ cut here ]------------
->>
->>
->>
->> Disclaimer:
->> Results have been estimated based on internal Intel analysis and are provided
->> for informational purposes only. Any difference in system hardware or software
->> design or configuration may affect actual performance.
->>
->> Thanks,
->> Aaron
+Hi Arnd,
+
+On Wednesday, June 18, 2014 Arnd wrote:
+> To: Tomasz Figa
+> Cc: linux-arm-kernel@lists.infradead.org; mark.brown@linaro.org; Tomasz
+Figa;
+> linux-samsung-soc@vger.kernel.org; Kukjin Kim; Russell King - ARM Linux;
+Samuel
+> Ortiz; Pankaj Dubey; linux-kernel@vger.kernel.org; joshi@samsung.com;
+> vikas.sajjan@samsung.com; chow.kim@samsung.com; Lee Jones
+> Subject: Re: [PATCH RFC] mfd: syscon: Decouple syscon interface from
+syscon
+> devices
 > 
-> Aaron,
-> I want to known what cpu's Intel is running this on it order to get
-> kernel warning in the  x86 boot code.
+> On Tuesday 17 June 2014 23:26:22 Tomasz Figa wrote:
+> > On 17.06.2014 17:42, Arnd Bergmann wrote:
+> > > This seems like a reasonable way of solving the problem, but I think
+> > > there is an even better one that we have about in the past: if we
+> > > promote syscon from a platform driver into a a drivers/base/ helper
+> > > that is independent of the platform device matching, we can use call
+> > > syscon_regmap_lookup_* for any device node, whether it's already
+> > > bound to a driver or not, which do what you need. It would also make
+> > > it easier to call the syscon code before the platform_device
+> > > infrastructure gets initialized, which is something a number of
+> > > people have asked for, e.g. for using regmap to do SMP bringup or
+> > > for clock registration.
+> >
+> > Basically, unless I'm missing your point, this is what my patch does,
+> > except that I don't move it to drivers/base/ and the registration
+> > function I added require a pointer to struct device. Indeed,
+> > decoupling it further from the driver model, by adding
+> > of_syscon_register() should be useful for early users.
+> 
+> I believe the part you are missing is that with the approach I suggested,
+there would
+> be no registration function at all. You can easily do the lookup from the
+client drivers
+> using the DT data structures, with no need for the device at all. 
 
-I suppose you want GPU information?
-Here it is:
+Will you please elaborate more on this? 
 
-00:02.0 VGA compatible controller: Intel Corporation Xeon E3-1200 v2/3rd Gen Core processor Graphics Controller (rev 04) (prog-if 00 [VGA controller])
-        Subsystem: Intel Corporation Device 2211
-        Flags: bus master, fast devsel, latency 0, IRQ 45
-        Memory at afc00000 (64-bit, non-prefetchable) [size=4M]
-        Memory at c0000000 (64-bit, prefetchable) [size=256M]
-        I/O ports at 2000 [size=64]
-        Expansion ROM at <unassigned> [disabled]
-        Capabilities: [90] MSI: Enable+ Count=1/1 Maskable- 64bit-
-        Capabilities: [d0] Power Management version 2
-        Capabilities: [a4] PCI Advanced Features
-        Kernel driver in use: i915
-00: 86 80 62 01 07 04 90 00 04 00 00 03 00 00 00 00
-10: 04 00 c0 af 00 00 00 00 0c 00 00 c0 00 00 00 00
-20: 01 20 00 00 00 00 00 00 00 00 00 00 86 80 11 22
-30: 00 00 00 00 90 00 00 00 00 00 00 00 0b 01 00 00
+The only exception
+> today is the clps711x platform using syscon_regmap_lookup_by_pdevname(),
+but
+> that should be solved in 3.17 when clps711x becomes DT-only.
+> 
 
+Does it mean that this may become a blocking issue for this patch to go
+before 3.17?
+If yes, isn't it will be good to accept this patch as it is if it's not
+causing issue or breaking
+anything with existing users of syscon. At least for our use of converting
+Exynos PMU and
+PM related consolidation this change is working fine and we have verified
+it.
 
-Regards,
-Aaron
+> > Should I move this to drivers/base/, even though from current location
+> > it can be used outside the platform driver anyway?
+> 
+> Thinking about it some more, drivers/of might be better than drivers/base.
+> It depends a bit where we are heading with this, in particular if we
+expect to see non-
+> DT users in the future.
+> 
+> 	Arnd
+
+Thanks,
+Pankaj Dubey
+
