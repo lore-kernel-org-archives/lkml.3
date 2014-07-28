@@ -1,44 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752019AbaG1BU1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Jul 2014 21:20:27 -0400
-Received: from mga01.intel.com ([192.55.52.88]:8521 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751243AbaG1BU0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Jul 2014 21:20:26 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,745,1400050800"; 
-   d="scan'208";a="568099240"
-From: Andi Kleen <andi@firstfloor.org>
-To: Sergey Oboguev <oboguev.public@gmail.com>
-Cc: linux-kernel@vger.kernel.org, khalid.aziz@oracle.com
-Subject: Re: [PATCH RFC] sched: deferred set priority (dprio)
-References: <CA+80gGYVjprinWEJWbVq4VxjOLjQri8EvGAJ+sx+ihcOxdstCA@mail.gmail.com>
-Date: Sun, 27 Jul 2014 18:19:56 -0700
-In-Reply-To: <CA+80gGYVjprinWEJWbVq4VxjOLjQri8EvGAJ+sx+ihcOxdstCA@mail.gmail.com>
-	(Sergey Oboguev's message of "Fri, 25 Jul 2014 12:45:21 -0700")
-Message-ID: <8738dm9t4z.fsf@tassilo.jf.intel.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	id S1752511AbaG1BcL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Jul 2014 21:32:11 -0400
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:37369 "EHLO
+	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750795AbaG1BcJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Jul 2014 21:32:09 -0400
+X-Original-SENDERIP: 10.177.220.181
+X-Original-MAILFROM: namhyung@gmail.com
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Adrian Hunter <adrian.hunter@intel.com>,
+        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 28/52] perf script: Allow callchains if any event samples them
+References: <1406035081-14301-1-git-send-email-adrian.hunter@intel.com>
+	<1406035081-14301-29-git-send-email-adrian.hunter@intel.com>
+	<20140725132705.GJ7831@kernel.org>
+Date: Mon, 28 Jul 2014 10:32:02 +0900
+In-Reply-To: <20140725132705.GJ7831@kernel.org> (Arnaldo Carvalho de Melo's
+	message of "Fri, 25 Jul 2014 10:27:05 -0300")
+Message-ID: <87bnsai7zh.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sergey Oboguev <oboguev.public@gmail.com> writes:
+Hi Arnaldo,
 
-> [This is a repost of the message from few day ago, with patch file
-> inline instead of being pointed by the URL.]
+On Fri, 25 Jul 2014 10:27:05 -0300, Arnaldo Carvalho de Melo wrote:
+> Em Tue, Jul 22, 2014 at 04:17:37PM +0300, Adrian Hunter escreveu:
+>> perf script was not displaying callchains if any selected
+>> event did not have PERF_SAMPLE_CALLCHAIN.  Change this to
+>> disable callchains only if all selected events do not have
+>> PERF_SAMPLE_CALLCHAIN.
+>
+> I wonder if some other tool gets this wrong as well, report maybe?
+>
+> Perhaps we need to have this check in some perf_evlist method?
+>
+> Wonder how report/top, i.e. the hists browser will react with some
+> events having callchains while some don't, specially with this new
+> children stuff, Namhyung, can you please check that?
 
-Have you checked out the preemption control that was posted some time
-ago? It did essentially the same thing, but somewhat simpler than your 
-patch.
+The children/cumulate stuff is enabled if a combined sample type
+contains PERF_SAMPLE_CALLCHAIN and works only a sample actually contains
+callchain.
 
-http://lkml.iu.edu/hypermail/linux/kernel/1403.0/00780.html
+So I guess if some have it and some don't, events don't have callchain
+just prints real entries/samples with same children overhead value.
 
-Yes I agree with you that lock preemption is a serious issue that needs solving.
-
--Andi
-
--- 
-ak@linux.intel.com -- Speaking for myself only
+Thanks,
+Namhyung
