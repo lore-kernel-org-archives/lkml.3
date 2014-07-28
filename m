@@ -1,214 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752793AbaG1LoG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 07:44:06 -0400
-Received: from router.aksignal.cz ([188.175.113.102]:53353 "EHLO
-	router.aksignal.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752774AbaG1LoA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 07:44:00 -0400
-From: Jiri Prchal <jiri.prchal@aksignal.cz>
-To: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, nicolas.ferre@atmel.com,
-        voice.shen@atmel.com
-Cc: Jiri Prchal <jiri.prchal@aksignal.cz>
-Subject: [PATCH] ARM: at91: spi: request all csgpio in spi probe
-Date: Mon, 28 Jul 2014 13:43:40 +0200
-Message-Id: <b033d16ec31d26a895726ee72ec89b43943dfbae.1406547656.git.jiri.prchal@aksignal.cz>
-X-Mailer: git-send-email 1.9.1
+	id S1752595AbaG1Lr1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 07:47:27 -0400
+Received: from mx0a-0016ce01.pphosted.com ([67.231.148.157]:65319 "EHLO
+	mx0a-0016ce01.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752309AbaG1LrY convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jul 2014 07:47:24 -0400
+From: Vikas Chaudhary <vikas.chaudhary@qlogic.com>
+To: Alexander Gordeev <agordeev@redhat.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+CC: Dept-Eng iSCSI Driver <Dept-iSCSIDriver@qlogic.com>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-pci <linux-pci@vger.kernel.org>
+Subject: Re: [PATCH v2 RESEND 22/23] qla4xxx: Use pci_enable_msix_exact()
+ instead of pci_enable_msix()
+Thread-Topic: [PATCH v2 RESEND 22/23] qla4xxx: Use pci_enable_msix_exact()
+ instead of pci_enable_msix()
+Thread-Index: AQHPoSCIRrAupA41eUmdqiyexhrgOJuyjesAgAO0tgA=
+Date: Mon, 28 Jul 2014 11:47:19 +0000
+Message-ID: <3FC4AB8B47ECD546BCD4B361A64BEACD8C6CAFD2@avmb3.qlogic.org>
+References: <cover.1405533479.git.agordeev@redhat.com>
+ <0496ccbc0f203afaeeb7758c146b93c2f387684c.1405533479.git.agordeev@redhat.com>
+ <20140726084137.GL21129@agordeev.usersys.redhat.com>
+In-Reply-To: <20140726084137.GL21129@agordeev.usersys.redhat.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+user-agent: Microsoft-MacOutlook/14.3.9.131030
+x-originating-ip: [10.1.4.10]
+disclaimer: bypass
+Content-Type: text/plain; charset="us-ascii"
+Content-ID: <9B054D59BA2FE44BB231781055ED7A29@qlogic.com>
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-Proofpoint-Virus-Version: vendor=nai engine=5600 definitions=7512 signatures=670489
+X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0 suspectscore=0 phishscore=0
+ adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx scancount=1
+ engine=7.0.1-1402240000 definitions=main-1407280135
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This fix problem with PA14 set as periph A left from ROMBOOT and need it
-to be set to gpio before spi bus communicate with chip on CS0 on other
-gpio. As I reported a week ago.
-Request all csgpios in spi_probe since cs depends on each other and must
-be all of them in right state before any communication on bus. They are
-part of bus, like miso, mosi, clk, not part of chips, they are defined
-in parent spi node, not in child chip node.
-Csgpio moved to atmel_spi struct as part of master bus.
 
-Signed-off-by: Jiri Prchal <jiri.prchal@aksignal.cz>
----
- drivers/spi/spi-atmel.c | 68 +++++++++++++++++++++++++++++--------------------
- 1 file changed, 41 insertions(+), 27 deletions(-)
+Acked-By: Vikas Chaudhary <vikas.chaudhary@qlogic.com>
 
-diff --git a/drivers/spi/spi-atmel.c b/drivers/spi/spi-atmel.c
-index 92a6f0d..1fb7bb9 100644
---- a/drivers/spi/spi-atmel.c
-+++ b/drivers/spi/spi-atmel.c
-@@ -22,11 +22,14 @@
- #include <linux/platform_data/atmel.h>
- #include <linux/platform_data/dma-atmel.h>
- #include <linux/of.h>
-+#include <linux/of_gpio.h>
- 
- #include <linux/io.h>
- #include <linux/gpio.h>
- #include <linux/pinctrl/consumer.h>
- 
-+#define DRIVER_NAME "atmel-spi"
-+
- /* SPI register offsets */
- #define SPI_CR					0x0000
- #define SPI_MR					0x0004
-@@ -242,11 +245,13 @@ struct atmel_spi {
- 
- 	bool			keep_cs;
- 	bool			cs_active;
-+
-+	/* chip selects */
-+	unsigned int		csgpio[];
- };
- 
- /* Controller-specific per-slave state */
- struct atmel_spi_device {
--	unsigned int		npcs_pin;
- 	u32			csr;
- };
- 
-@@ -312,7 +317,7 @@ static void cs_activate(struct atmel_spi *as, struct spi_device *spi)
- 		}
- 
- 		mr = spi_readl(as, MR);
--		gpio_set_value(asd->npcs_pin, active);
-+		gpio_set_value(as->csgpio[spi->chip_select], active);
- 	} else {
- 		u32 cpol = (spi->mode & SPI_CPOL) ? SPI_BIT(CPOL) : 0;
- 		int i;
-@@ -329,18 +334,16 @@ static void cs_activate(struct atmel_spi *as, struct spi_device *spi)
- 		mr = spi_readl(as, MR);
- 		mr = SPI_BFINS(PCS, ~(1 << spi->chip_select), mr);
- 		if (spi->chip_select != 0)
--			gpio_set_value(asd->npcs_pin, active);
-+			gpio_set_value(as->csgpio[spi->chip_select], active);
- 		spi_writel(as, MR, mr);
- 	}
- 
- 	dev_dbg(&spi->dev, "activate %u%s, mr %08x\n",
--			asd->npcs_pin, active ? " (high)" : "",
--			mr);
-+		as->csgpio[spi->chip_select], active ? " (high)" : "", mr);
- }
- 
- static void cs_deactivate(struct atmel_spi *as, struct spi_device *spi)
- {
--	struct atmel_spi_device *asd = spi->controller_state;
- 	unsigned active = spi->mode & SPI_CS_HIGH;
- 	u32 mr;
- 
-@@ -354,11 +357,10 @@ static void cs_deactivate(struct atmel_spi *as, struct spi_device *spi)
- 	}
- 
- 	dev_dbg(&spi->dev, "DEactivate %u%s, mr %08x\n",
--			asd->npcs_pin, active ? " (low)" : "",
--			mr);
-+		as->csgpio[spi->chip_select], active ? " (low)" : "", mr);
- 
- 	if (atmel_spi_is_v2(as) || spi->chip_select != 0)
--		gpio_set_value(asd->npcs_pin, !active);
-+		gpio_set_value(as->csgpio[spi->chip_select], !active);
- }
- 
- static void atmel_spi_lock(struct atmel_spi *as) __acquires(&as->lock)
-@@ -989,8 +991,6 @@ static int atmel_spi_setup(struct spi_device *spi)
- 	struct atmel_spi_device	*asd;
- 	u32			csr;
- 	unsigned int		bits = spi->bits_per_word;
--	unsigned int		npcs_pin;
--	int			ret;
- 
- 	as = spi_master_get_devdata(spi->master);
- 
-@@ -1017,27 +1017,13 @@ static int atmel_spi_setup(struct spi_device *spi)
- 	csr |= SPI_BF(DLYBS, 0);
- 	csr |= SPI_BF(DLYBCT, 0);
- 
--	/* chipselect must have been muxed as GPIO (e.g. in board setup) */
--	npcs_pin = (unsigned int)spi->controller_data;
--
--	if (gpio_is_valid(spi->cs_gpio))
--		npcs_pin = spi->cs_gpio;
--
- 	asd = spi->controller_state;
- 	if (!asd) {
- 		asd = kzalloc(sizeof(struct atmel_spi_device), GFP_KERNEL);
- 		if (!asd)
- 			return -ENOMEM;
- 
--		ret = gpio_request(npcs_pin, dev_name(&spi->dev));
--		if (ret) {
--			kfree(asd);
--			return ret;
--		}
--
--		asd->npcs_pin = npcs_pin;
- 		spi->controller_state = asd;
--		gpio_direction_output(npcs_pin, !(spi->mode & SPI_CS_HIGH));
- 	}
- 
- 	asd->csr = csr;
-@@ -1290,6 +1276,15 @@ static int atmel_spi_probe(struct platform_device *pdev)
- 	int			ret;
- 	struct spi_master	*master;
- 	struct atmel_spi	*as;
-+	struct device_node *np = pdev->dev.of_node;
-+	int num_cs, i;
-+
-+	if (!np)
-+		return -EINVAL;
-+
-+	num_cs = of_gpio_named_count(np, "cs-gpios");
-+	if (num_cs < 0)
-+		return num_cs;
- 
- 	/* Select default pin state */
- 	pinctrl_pm_select_default_state(&pdev->dev);
-@@ -1308,7 +1303,7 @@ static int atmel_spi_probe(struct platform_device *pdev)
- 
- 	/* setup spi core then atmel-specific driver state */
- 	ret = -ENOMEM;
--	master = spi_alloc_master(&pdev->dev, sizeof(*as));
-+	master = spi_alloc_master(&pdev->dev, sizeof(*as) + num_cs * sizeof(unsigned));
- 	if (!master)
- 		goto out_free;
- 
-@@ -1317,7 +1312,7 @@ static int atmel_spi_probe(struct platform_device *pdev)
- 	master->bits_per_word_mask = SPI_BPW_RANGE_MASK(8, 16);
- 	master->dev.of_node = pdev->dev.of_node;
- 	master->bus_num = pdev->id;
--	master->num_chipselect = master->dev.of_node ? 0 : 4;
-+	master->num_chipselect = num_cs;
- 	master->setup = atmel_spi_setup;
- 	master->transfer_one_message = atmel_spi_transfer_one_message;
- 	master->cleanup = atmel_spi_cleanup;
-@@ -1325,6 +1320,25 @@ static int atmel_spi_probe(struct platform_device *pdev)
- 
- 	as = spi_master_get_devdata(master);
- 
-+	for (i = 0; i < master->num_chipselect; ++i) {
-+		ret = of_get_named_gpio(np, "cs-gpios", i);
-+		if (ret < 0) {
-+			dev_err(&pdev->dev, "failed to get csgpio#%u (%d)\n",
-+				i, ret);
-+			goto out_free;
-+		}
-+		as->csgpio[i] = ret;
-+		dev_dbg(&pdev->dev, "csgpio#%u = %u\n", i, as->csgpio[i]);
-+		ret = devm_gpio_request_one(&pdev->dev, as->csgpio[i],
-+					    GPIOF_OUT_INIT_HIGH, DRIVER_NAME);
-+		if (ret < 0) {
-+			dev_err(&pdev->dev,
-+				"failed to configure csgpio#%u (%d)\n",
-+				i, ret);
-+			goto out_free;
-+		}
-+	}
-+
- 	/*
- 	 * Scratch buffer is used for throwaway rx and tx data.
- 	 * It's coherent to minimize dcache pollution.
--- 
-1.9.1
+
+
+On 26/07/14 2:11 pm, "Alexander Gordeev" <agordeev@redhat.com> wrote:
+
+>On Wed, Jul 16, 2014 at 08:05:26PM +0200, Alexander Gordeev wrote:
+>> As result of deprecation of MSI-X/MSI enablement functions
+>> pci_enable_msix() and pci_enable_msi_block() all drivers
+>> using these two interfaces need to be updated to use the
+>> new pci_enable_msi_range()  or pci_enable_msi_exact()
+>> and pci_enable_msix_range() or pci_enable_msix_exact()
+>> interfaces.
+>
+>Hi Vikas,
+>
+>Could you please reveiw this patch?
+>
+>Thanks!
+>
+>> Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+>> Cc: Vikas Chaudhary <vikas.chaudhary@qlogic.com>
+>> Cc: iscsi-driver@qlogic.com
+>> Cc: linux-scsi@vger.kernel.org
+>> Cc: linux-pci@vger.kernel.org
+>> Acked-By: Vikas Chaudhary <vikas.chaudhary@qlogic.com>
+>> ---
+>>  drivers/scsi/qla4xxx/ql4_nx.c |    2 +-
+>>  1 files changed, 1 insertions(+), 1 deletions(-)
+>> 
+>> diff --git a/drivers/scsi/qla4xxx/ql4_nx.c
+>>b/drivers/scsi/qla4xxx/ql4_nx.c
+>> index 9dbdb4b..7c33658 100644
+>> --- a/drivers/scsi/qla4xxx/ql4_nx.c
+>> +++ b/drivers/scsi/qla4xxx/ql4_nx.c
+>> @@ -4221,7 +4221,7 @@ qla4_8xxx_enable_msix(struct scsi_qla_host *ha)
+>>  	for (i = 0; i < QLA_MSIX_ENTRIES; i++)
+>>  		entries[i].entry = qla4_8xxx_msix_entries[i].entry;
+>>  
+>> -	ret = pci_enable_msix(ha->pdev, entries, ARRAY_SIZE(entries));
+>> +	ret = pci_enable_msix_exact(ha->pdev, entries, ARRAY_SIZE(entries));
+>>  	if (ret) {
+>>  		ql4_printk(KERN_WARNING, ha,
+>>  		    "MSI-X: Failed to enable support -- %d/%d\n",
+>> -- 
+>> 1.7.7.6
+>> 
+>
+>-- 
+>Regards,
+>Alexander Gordeev
+>agordeev@redhat.com
 
