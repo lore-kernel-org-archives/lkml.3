@@ -1,58 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751611AbaG1Iuu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 04:50:50 -0400
-Received: from mout.kundenserver.de ([212.227.126.187]:60473 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750978AbaG1Ius (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 04:50:48 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Andrew Lunn <andrew@lunn.ch>
-Cc: Benoit Masson <yahoo@perenite.com>, benoitm@perenite.com,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        jason@lakedaemon.net, gregory.clement@free-electrons.com,
-        sebastian.hesselbarth@googlemail.com
-Subject: Re: [PATCH 2/2] ARM: mvebu: Added dts defintion for Lenovo Iomega ix4-300d NAS
-Date: Mon, 28 Jul 2014 10:49:39 +0200
-Message-ID: <5442226.1WCY4fjGCy@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20140727015244.GA31974@lunn.ch>
-References: <1406418436-61452-1-git-send-email-yahoo@perenite.com> <20140727015244.GA31974@lunn.ch>
+	id S1751784AbaG1IwH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 04:52:07 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:47882 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751418AbaG1IwD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jul 2014 04:52:03 -0400
+Message-ID: <53D60F31.4050504@suse.cz>
+Date: Mon, 28 Jul 2014 10:52:01 +0200
+From: Vlastimil Babka <vbabka@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:ofT8sNz0TeeSah+Axjj847JS6/cHtf36EoiT/kfY+4t
- hkbNgw+z/tx8W1aYa9+G51vuScEoH5NOGwtUvdkrSNZXZ+PX/j
- ehHBDKTBxwfQNoWhuYvX4j2BBEHfvBlmQyoTBAdZPWEJ0KmBCc
- vClPNsOIr6oAXmG5O3PXab7R3XfvQVSedqXpUD2WDSTR9cuX0/
- +RhUmSCn6ua5upwjK22u2Ufb86xvpREx5xiJAjKEjBtOOMHjpD
- ou2jdqSuF5ZVatq8NDjetZxVGbr2JyPi/9N4x8URU0GiQx3mPn
- C1P0riRsucudRUFEGuUPW+ezfQLml6WvxnJHo2guXa7XP1oW06
- 6xduFI4/e1s8NBIKcKW4=
+To: David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+CC: Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [patch] mm, thp: restructure thp avoidance of light synchronous
+ migration
+References: <alpine.DEB.2.02.1407241540190.22557@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.02.1407241540190.22557@chino.kir.corp.google.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 27 July 2014 03:52:44 Andrew Lunn wrote:
-> Hi Benoit
-> 
-> > +                     i2c@11000 {
-> > +                             compatible = "marvell,mv78230-a0-i2c",
-> > +                                     "marvell,mv64xxx-i2c";
-> 
-> The point of my patches is that you don't need the
-> "marvell,mv78230-a0-i2c". It will work out at runtime if the SoC is A0
-> stepping and automatically enable the workaround. Please test with
-> only "marvell,mv64xxx-i2c";
-> 
+On 07/25/2014 12:41 AM, David Rientjes wrote:
+> __GFP_NO_KSWAPD, once the way to determine if an allocation was for thp or not,
+> has gained more users.  Their use is not necessarily wrong, they are trying to
+> do a memory allocation that can easily fail without disturbing kswapd, so the
+> bit has gained additional usecases.
+>
+> This restructures the check to determine whether MIGRATE_SYNC_LIGHT should be
+> used for memory compaction in the page allocator.  Rather than testing solely
+> for __GFP_NO_KSWAPD, test for all bits that must be set for thp allocations.
+>
+> This also moves the check to be done only after the page allocator is aborted
+> for deferred or contended memory compaction since setting migration_mode for
+> this case is pointless.
+>
+> Signed-off-by: David Rientjes <rientjes@google.com>
+> ---
+>   mm/page_alloc.c | 17 +++++++++--------
+>   1 file changed, 9 insertions(+), 8 deletions(-)
+>
+> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> --- a/mm/page_alloc.c
+> +++ b/mm/page_alloc.c
+> @@ -2616,14 +2616,6 @@ rebalance:
+>   		goto got_pg;
+>
+>   	/*
+> -	 * It can become very expensive to allocate transparent hugepages at
+> -	 * fault, so use asynchronous memory compaction for THP unless it is
+> -	 * khugepaged trying to collapse.
+> -	 */
+> -	if (!(gfp_mask & __GFP_NO_KSWAPD) || (current->flags & PF_KTHREAD))
+> -		migration_mode = MIGRATE_SYNC_LIGHT;
+> -
+> -	/*
+>   	 * If compaction is deferred for high-order allocations, it is because
+>   	 * sync compaction recently failed. In this is the case and the caller
+>   	 * requested a movable allocation that does not heavily disrupt the
+> @@ -2633,6 +2625,15 @@ rebalance:
+>   						(gfp_mask & __GFP_NO_KSWAPD))
+>   		goto nopage;
+>
+> +	/*
+> +	 * It can become very expensive to allocate transparent hugepages at
+> +	 * fault, so use asynchronous memory compaction for THP unless it is
+> +	 * khugepaged trying to collapse.
+> +	 */
+> +	if ((gfp_mask & GFP_TRANSHUGE) != GFP_TRANSHUGE ||
+> +						(current->flags & PF_KTHREAD))
+> +		migration_mode = MIGRATE_SYNC_LIGHT;
+> +
 
-It should still list both "marvell,mv78230-i2c" and "marvell,mv64xxx-i2c",
-as the generic name may not be enough to describe the register layout
-correctly.
+Looks like kind of a shotgun approach to me. A single __GFP_NO_KSWAPD 
+bullet is no longer enough, so we use all the flags and hope for the 
+best. It seems THP has so many flags it should be unique for now, but I 
+wonder if there is a better way to say how much an allocation is willing 
+to wait.
 
-	Arnd
+>   	/* Try direct reclaim and then allocating */
+>   	page = __alloc_pages_direct_reclaim(gfp_mask, order,
+>   					zonelist, high_zoneidx,
+>
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+>
+
