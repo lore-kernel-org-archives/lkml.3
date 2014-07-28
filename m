@@ -1,93 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751466AbaG1HnI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 03:43:08 -0400
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:59923 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751461AbaG1HnE (ORCPT
+	id S1751724AbaG1HoO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 03:44:14 -0400
+Received: from mail1.bemta3.messagelabs.com ([195.245.230.169]:18032 "EHLO
+	mail1.bemta3.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750952AbaG1HoJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 03:43:04 -0400
-Message-ID: <53D5FF06.6080904@linaro.org>
-Date: Mon, 28 Jul 2014 09:43:02 +0200
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Mon, 28 Jul 2014 03:44:09 -0400
+X-Env-Sender: stwiss.opensource@diasemi.com
+X-Msg-Ref: server-5.tower-38.messagelabs.com!1406533445!16219380!1
+X-Originating-IP: [94.185.165.51]
+X-StarScan-Received: 
+X-StarScan-Version: 6.11.3; banners=-,-,-
+X-VirusChecked: Checked
+From: "Opensource [Steve Twiss]" <stwiss.opensource@diasemi.com>
+To: Lee Jones <lee.jones@linaro.org>
+CC: Alessandro Zummo <a.zummo@towertech.it>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LINUX-KERNEL <linux-kernel@vger.kernel.org>,
+        RTC-LINUX <rtc-linux@googlegroups.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        David Dajun Chen <david.chen@diasemi.com>,
+        Mark Brown <broonie@linaro.org>,
+        Philipp Zabel <p.zabel@pengutronix.de>,
+        Support Opensource <Support.Opensource@diasemi.com>
+Subject: RE: [RFC V2] mfd: da9063: Add support for AD silicon variant
+Thread-Topic: [RFC V2] mfd: da9063: Add support for AD silicon variant
+Thread-Index: AQHPpNLIdOWIFLEOJ0KMNFjTqwFoRZu1Bq+AgAAeu8A=
+Date: Mon, 28 Jul 2014 07:44:03 +0000
+Message-ID: <6ED8E3B22081A4459DAC7699F3695FB7D0B28DF3@SW-EX-MBX02.diasemi.com>
+References: <201407211058.s6LAwtk8003839@swsrvapps-01.diasemi.com>
+ <20140728065251.GA5273@lee--X1>
+In-Reply-To: <20140728065251.GA5273@lee--X1>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.20.26.61]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>
-CC: Tomasz Figa <t.figa@samsung.com>, Sachin Kamat <sachin.kamat@linaro.org>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org
-Subject: Re: [PATCH v3 0/4] ARM: EXYNOS: cpuidle: fix AFTR mode on boards
- with secure firmware enabled
-References: <1404926274-18411-1-git-send-email-b.zolnierkie@samsung.com>
-In-Reply-To: <1404926274-18411-1-git-send-email-b.zolnierkie@samsung.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s6S7iI0r014159
 
-On 07/09/2014 07:17 PM, Bartlomiej Zolnierkiewicz wrote:
-> Hi,
+
+On 28 July 2014 07:53 Lee Jones wrote:
+
+>On Mon, 21 Jul 2014, Opensource [Steve Twiss] wrote:
+>> From: Opensource [Steve Twiss] <stwiss.opensource@diasemi.com>
+>>
+>> Add register definitions for DA9063 AD (0x3) silicon variant ID
+>> the ability to choose the silicon variant at run-time using regmap
+>> configuration. This patch also adds RTC support for the AD silicon
+>> changes.
+>>
+>> It adds both BB and AD support as regmap ranges and then makes the
+>> distinction between the two tables at run-time. This allows both AD
+>> and BB silicon variants to be supported at the same time.
+>>
+>>
+>> Signed-off-by: Opensource [Steve Twiss] <stwiss.opensource@diasemi.com>
+>> Suggested-by: Philipp Zabel <p.zabel@pengutronix.de>
+>>
+>> ---
+>> Checks performed with linux-next/v3.16-rc5/scripts/checkpatch.pl
+>>  rtc-da9063.c              total: 0 errors, 0 warnings, 353 lines checked
+>>  da9063-core.c             total: 0 errors, 0 warnings, 188 lines checked
+>>  da9063-i2c.c              total: 0 errors, 0 warnings, 266 lines checked
+>>  core.h                    total: 0 errors, 0 warnings, 98 lines checked
+>>  registers.h               total: 0 errors, 0 warnings, 1073 lines checked
+>>
+>> Thank you for your quick responses to my RFC-V1.
+>>
+>> This is in reply to comments made by Lee Jones, Alessandro Zummo and
+>> Philipp Zabel. Please see the RFC-V1 thread for further details on
+>> these discussions: https://lkml.org/lkml/2014/7/16/478
+>>
+>> Adding AD support using a compile-time flag under a new menu item in
+>> Kconfig proved very unpopular for two main reasons.
+>>
+>> - Using ifdef else statements throughout the code
+>> - Not supporting AD and BB silicon variants at the same time
+>>
+>> This RFC-V2 patch uses the method proposed by Philipp Zabel in his
+>> reply e-mail: https://lkml.org/lkml/2014/7/18/219
+>> and makes use of the regmap configuration method in da9063-i2c.c
+>>
+>> This patch applies against linux-next and v3.16-rc5
+>>
+>> Regards,
+>> Steve Twiss, Dialog Semiconductor Ltd.
+>>
+>>  drivers/mfd/da9063-core.c            |    6 +-
+>>  drivers/mfd/da9063-i2c.c             |  134 +++++++++++++++++++++++++++-------
+>>  drivers/rtc/rtc-da9063.c             |   54 +++++++++-----
+>>  include/linux/mfd/da9063/core.h      |    3 +-
+>>  include/linux/mfd/da9063/registers.h |  129 +++++++++++++++++++++-----------
+>>  5 files changed, 236 insertions(+), 90 deletions(-)
 >
-> This patch series adds support for AFTR idle mode on boards with
-> secure firmware enabled and allows EXYNOS cpuidle driver usage on
-> Exynos4x12 SoCs.
->
-> It has been tested on Trats2 board (using Exynos4412 SoC with secure
-> firmware enabled) on which AFTR mode reduces power consumption by ~12%
-> when EXYNOS cpuidle driver is enabled (in both cases the default
-> exynos_defconfig config is used and CPU1-3 are offlined).
-
-
-Hi Bartlomiej,
-
-what is the status of this patchset ? Is it supposed to land for 3.17 ?
-
-Thanks
-
-   -- Daniel
-
-> v3:
-> - rebased on top of next-20140708 +
->    http://www.mail-archive.com/linux-samsung-soc@vger.kernel.org/msg32809.html
->    (with rejects fixed)
->    http://www.mail-archive.com/linux-samsung-soc@vger.kernel.org/msg32808.html
->    http://www.mail-archive.com/linux-samsung-soc@vger.kernel.org/msg32991.html
->    (with rejects fixed in patch #2)
-> - addressed review comments from Tomasz Figa and Daniel Lezcano
->
-> Best regards,
-> --
-> Bartlomiej Zolnierkiewicz
-> Samsung R&D Institute Poland
-> Samsung Electronics
->
->
-> Bartlomiej Zolnierkiewicz (4):
->    ARM: EXYNOS: PM: replace EXYNOS_BOOT_VECTOR_* macros by static inlines
->    ARM: EXYNOS: add AFTR mode support to firmware do_idle method
->    ARM: EXYNOS: cpuidle: add secure firmware support to AFTR mode code
->    ARM: EXYNOS: cpuidle: allow driver usage on Exynos4x12 SoCs
->
->   arch/arm/include/asm/firmware.h  |  2 +-
->   arch/arm/mach-exynos/common.h    |  7 ++++++-
->   arch/arm/mach-exynos/exynos.c    |  3 ++-
->   arch/arm/mach-exynos/firmware.c  | 36 ++++++++++++++++++++++++++----------
->   arch/arm/mach-exynos/pm.c        | 39 +++++++++++++++++++++++++++++----------
->   drivers/cpuidle/cpuidle-exynos.c |  6 +++---
->   6 files changed, 67 insertions(+), 26 deletions(-)
+>Patch looks good to me.  Applied, thanks.
 >
 
-
--- 
-  <http://www.linaro.org/> Linaro.org â”‚ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
-
+Thank you
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
