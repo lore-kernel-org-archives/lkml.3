@@ -1,43 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752762AbaG1PhV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 11:37:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33810 "EHLO mx1.redhat.com"
+	id S1752842AbaG1PiR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 11:38:17 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:56149 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752247AbaG1PhR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 11:37:17 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <14383.1406559660@warthog.procyon.org.uk>
-References: <14383.1406559660@warthog.procyon.org.uk> <53D662E9.5050409@oracle.com> <53D31D16.1030806@oracle.com> <26466.1406547132@warthog.procyon.org.uk>
-Cc: dhowells@redhat.com, Sasha Levin <sasha.levin@oracle.com>,
-        Andrey Ryabinin <a.ryabinin@samsung.com>,
-        James Morris <james.l.morris@oracle.com>, serge@hallyn.com,
-        keyrings@linux-nfs.org, linux-security-module@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: security: oops on boot in __key_link_begin
+	id S1751478AbaG1PiO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jul 2014 11:38:14 -0400
+Date: Mon, 28 Jul 2014 17:38:11 +0200
+From: "Luis R. Rodriguez" <mcgrof@suse.com>
+To: Yuval Mintz <Yuval.Mintz@qlogic.com>
+Cc: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
+        Joseph Salisbury <joseph.salisbury@canonical.com>,
+        Kay Sievers <kay@vrfy.org>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Tim Gardner <tim.gardner@canonical.com>,
+        Pierre Fersing <pierre-fersing@pierref.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>, Benjamin Poirier <bpoirier@suse.de>,
+        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
+        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
+        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
+        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
+        Hariprasad S <hariprasad@chelsio.com>,
+        Santosh Rastapur <santosh@chelsio.com>,
+        "MPT-FusionLinux.pdl@avagotech.com" 
+	<MPT-FusionLinux.pdl@avagotech.com>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>
+Subject: Re: [PATCH 1/3] driver core: enable drivers to use deferred probe
+	from init
+Message-ID: <20140728153811.GD21930@wotan.suse.de>
+References: <1406558067-25308-1-git-send-email-mcgrof@do-not-panic.com> <B5657A6538887040AD3A81F1008BEC63B06F9A@avmb3.qlogic.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-ID: <3111.1406561822.1@warthog.procyon.org.uk>
-Date: Mon, 28 Jul 2014 16:37:02 +0100
-Message-ID: <3112.1406561822@warthog.procyon.org.uk>
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <B5657A6538887040AD3A81F1008BEC63B06F9A@avmb3.qlogic.org>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David Howells <dhowells@redhat.com> wrote:
-
-> Sasha Levin <sasha.levin@oracle.com> wrote:
+On Mon, Jul 28, 2014 at 03:12:11PM +0000, Yuval Mintz wrote:
+> > +static int __driver_probe_device(struct device_driver *drv, struct
+> > +device *dev) {
+> > +	if (drv->delay_probe && !dev->init_delayed_probe) {
+> > +		dev_info(dev, "Driver %s requests probe deferral on init\n",
+> > +			 drv->name);
+> > +		dev->init_delayed_probe = true;
+> > +		driver_deferred_probe_add(dev);
+> > +		return -EPROBE_DEFER;
+> > +	}
+> > +
+> > +	return really_probe(dev, drv);
+> > +}
 > 
-> > I've tried keys-next and linux-next for today and it didn't reproduce, but
-> > it did show up again when I applied the KASAN patchset (Cc Andrey).
-> 
-> The 'KASAN' patchset?
+> Perhaps this is a silly question, but what guarantees that the deferred probe
+> list will actually be triggered, e.g., in case the delayed device is the last device
+> in the system?
 
-Never mind.  I should've googled first.
+The dev->init_delayed_probe is used to ensure that we'd add the device to the
+deferred probe list once making this a per device thing if the driver has the
+field delay_probe set to true. This technically also allows this to be a per
+device thing so with some more work we could enable drivers to only enable this
+for specific devices but at this point this did not seem required.
 
-David
+> [From drivers/base/dd.c  - "A successful driver probe will trigger moving all
+> devices from the pending to the active list so that the workqueue will
+> eventually retry them]
+
+I had not noticed this, thanks for pointing this out, in this case
+if __driver_probe_device() is still used to retrigger a probe it will
+be added back to the deferred list but since dev->init_delayed_probe
+is still false. I checked the original commit that added this feature
+d1c3414c but in the code I see that bus_probe_device(dev) is used and
+I only see the device itself being removed from the deferred probe list,
+nothing else.
+
+  Luis
