@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752057AbaG1S34 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 14:29:56 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:47815 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751778AbaG1S24 (ORCPT
+	id S1752145AbaG1SbE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 14:31:04 -0400
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:36392 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751496AbaG1S2l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 14:28:56 -0400
+	Mon, 28 Jul 2014 14:28:41 -0400
 From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
 To: gregkh@linuxfoundation.org
 Cc: tiwai@suse.de, linux-kernel@vger.kernel.org,
@@ -26,9 +26,9 @@ Cc: tiwai@suse.de, linux-kernel@vger.kernel.org,
         Santosh Rastapur <santosh@chelsio.com>,
         MPT-FusionLinux.pdl@avagotech.com, linux-scsi@vger.kernel.org,
         netdev@vger.kernel.org
-Subject: [PATCH v2 4/4] mptsas: ask for deferred probe
-Date: Mon, 28 Jul 2014 11:28:30 -0700
-Message-Id: <1406572110-26823-5-git-send-email-mcgrof@do-not-panic.com>
+Subject: [PATCH v2 1/4] driver core: move deferred probe add / remove helpers down a bit
+Date: Mon, 28 Jul 2014 11:28:27 -0700
+Message-Id: <1406572110-26823-2-git-send-email-mcgrof@do-not-panic.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1406572110-26823-1-git-send-email-mcgrof@do-not-panic.com>
 References: <1406572110-26823-1-git-send-email-mcgrof@do-not-panic.com>
@@ -38,12 +38,8 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Luis R. Rodriguez" <mcgrof@suse.com>
 
-Its reported that mptsas can at times take over 30 seconds
-to recognize SCSI storage devices [0], this is done on the
-driver's probe path. Use the the deferred probe workqueue
-to allow long init sequences to complete.
-
-[0] https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1276705
+We need to do this if we want to use the trigger at a later point.
+This change has introduces no functional changes.
 
 Cc: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
 Cc: Joseph Salisbury <joseph.salisbury@canonical.com>
@@ -66,23 +62,67 @@ Cc: linux-kernel@vger.kernel.org
 Cc: netdev@vger.kernel.org
 Signed-off-by: Luis R. Rodriguez <mcgrof@suse.com>
 ---
- drivers/message/fusion/mptsas.c | 3 +++
- 1 file changed, 3 insertions(+)
+ drivers/base/dd.c | 40 ++++++++++++++++++++--------------------
+ 1 file changed, 20 insertions(+), 20 deletions(-)
 
-diff --git a/drivers/message/fusion/mptsas.c b/drivers/message/fusion/mptsas.c
-index 711fcb5..3859ac3 100644
---- a/drivers/message/fusion/mptsas.c
-+++ b/drivers/message/fusion/mptsas.c
-@@ -5382,6 +5382,9 @@ MODULE_DEVICE_TABLE(pci, mptsas_pci_table);
+diff --git a/drivers/base/dd.c b/drivers/base/dd.c
+index e4ffbcf..9947c2e 100644
+--- a/drivers/base/dd.c
++++ b/drivers/base/dd.c
+@@ -109,26 +109,6 @@ static void deferred_probe_work_func(struct work_struct *work)
+ }
+ static DECLARE_WORK(deferred_probe_work, deferred_probe_work_func);
  
+-static void driver_deferred_probe_add(struct device *dev)
+-{
+-	mutex_lock(&deferred_probe_mutex);
+-	if (list_empty(&dev->p->deferred_probe)) {
+-		dev_dbg(dev, "Added to deferred list\n");
+-		list_add_tail(&dev->p->deferred_probe, &deferred_probe_pending_list);
+-	}
+-	mutex_unlock(&deferred_probe_mutex);
+-}
+-
+-void driver_deferred_probe_del(struct device *dev)
+-{
+-	mutex_lock(&deferred_probe_mutex);
+-	if (!list_empty(&dev->p->deferred_probe)) {
+-		dev_dbg(dev, "Removed from deferred list\n");
+-		list_del_init(&dev->p->deferred_probe);
+-	}
+-	mutex_unlock(&deferred_probe_mutex);
+-}
+-
+ static bool driver_deferred_probe_enable = false;
+ /**
+  * driver_deferred_probe_trigger() - Kick off re-probing deferred devices
+@@ -171,6 +151,26 @@ static void driver_deferred_probe_trigger(void)
+ 	queue_work(deferred_wq, &deferred_probe_work);
+ }
  
- static struct pci_driver mptsas_driver = {
-+	.driver = {
-+		.delay_probe = true,
-+	},
- 	.name		= "mptsas",
- 	.id_table	= mptsas_pci_table,
- 	.probe		= mptsas_probe,
++static void driver_deferred_probe_add(struct device *dev)
++{
++	mutex_lock(&deferred_probe_mutex);
++	if (list_empty(&dev->p->deferred_probe)) {
++		dev_dbg(dev, "Added to deferred list\n");
++		list_add_tail(&dev->p->deferred_probe, &deferred_probe_pending_list);
++	}
++	mutex_unlock(&deferred_probe_mutex);
++}
++
++void driver_deferred_probe_del(struct device *dev)
++{
++	mutex_lock(&deferred_probe_mutex);
++	if (!list_empty(&dev->p->deferred_probe)) {
++		dev_dbg(dev, "Removed from deferred list\n");
++		list_del_init(&dev->p->deferred_probe);
++	}
++	mutex_unlock(&deferred_probe_mutex);
++}
++
+ /**
+  * deferred_probe_initcall() - Enable probing of deferred devices
+  *
 -- 
 2.0.1
 
