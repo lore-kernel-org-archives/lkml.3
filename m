@@ -1,96 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751784AbaG1IwH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 04:52:07 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:47882 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751418AbaG1IwD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 04:52:03 -0400
-Message-ID: <53D60F31.4050504@suse.cz>
-Date: Mon, 28 Jul 2014 10:52:01 +0200
-From: Vlastimil Babka <vbabka@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1751946AbaG1Ixu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 04:53:50 -0400
+Received: from casper.infradead.org ([85.118.1.10]:57950 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751383AbaG1Ixt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jul 2014 04:53:49 -0400
+Date: Mon, 28 Jul 2014 10:53:37 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Yan, Zheng" <zheng.z.yan@intel.com>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, acme@infradead.org,
+        eranian@google.com, andi@firstfloor.org
+Subject: Re: [PATCH] perf/x86/uncore: split Intel uncore driver to smaller
+ files
+Message-ID: <20140728085337.GM6758@twins.programming.kicks-ass.net>
+References: <1406277655-21808-1-git-send-email-zheng.z.yan@intel.com>
+ <20140728075623.GP19379@twins.programming.kicks-ass.net>
+ <53D60459.8040702@intel.com>
 MIME-Version: 1.0
-To: David Rientjes <rientjes@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-CC: Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [patch] mm, thp: restructure thp avoidance of light synchronous
- migration
-References: <alpine.DEB.2.02.1407241540190.22557@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.02.1407241540190.22557@chino.kir.corp.google.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="JFnjb9gtssGV5AzD"
+Content-Disposition: inline
+In-Reply-To: <53D60459.8040702@intel.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/25/2014 12:41 AM, David Rientjes wrote:
-> __GFP_NO_KSWAPD, once the way to determine if an allocation was for thp or not,
-> has gained more users.  Their use is not necessarily wrong, they are trying to
-> do a memory allocation that can easily fail without disturbing kswapd, so the
-> bit has gained additional usecases.
->
-> This restructures the check to determine whether MIGRATE_SYNC_LIGHT should be
-> used for memory compaction in the page allocator.  Rather than testing solely
-> for __GFP_NO_KSWAPD, test for all bits that must be set for thp allocations.
->
-> This also moves the check to be done only after the page allocator is aborted
-> for deferred or contended memory compaction since setting migration_mode for
-> this case is pointless.
->
-> Signed-off-by: David Rientjes <rientjes@google.com>
-> ---
->   mm/page_alloc.c | 17 +++++++++--------
->   1 file changed, 9 insertions(+), 8 deletions(-)
->
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -2616,14 +2616,6 @@ rebalance:
->   		goto got_pg;
->
->   	/*
-> -	 * It can become very expensive to allocate transparent hugepages at
-> -	 * fault, so use asynchronous memory compaction for THP unless it is
-> -	 * khugepaged trying to collapse.
-> -	 */
-> -	if (!(gfp_mask & __GFP_NO_KSWAPD) || (current->flags & PF_KTHREAD))
-> -		migration_mode = MIGRATE_SYNC_LIGHT;
-> -
-> -	/*
->   	 * If compaction is deferred for high-order allocations, it is because
->   	 * sync compaction recently failed. In this is the case and the caller
->   	 * requested a movable allocation that does not heavily disrupt the
-> @@ -2633,6 +2625,15 @@ rebalance:
->   						(gfp_mask & __GFP_NO_KSWAPD))
->   		goto nopage;
->
-> +	/*
-> +	 * It can become very expensive to allocate transparent hugepages at
-> +	 * fault, so use asynchronous memory compaction for THP unless it is
-> +	 * khugepaged trying to collapse.
-> +	 */
-> +	if ((gfp_mask & GFP_TRANSHUGE) != GFP_TRANSHUGE ||
-> +						(current->flags & PF_KTHREAD))
-> +		migration_mode = MIGRATE_SYNC_LIGHT;
-> +
 
-Looks like kind of a shotgun approach to me. A single __GFP_NO_KSWAPD 
-bullet is no longer enough, so we use all the flags and hope for the 
-best. It seems THP has so many flags it should be unique for now, but I 
-wonder if there is a better way to say how much an allocation is willing 
-to wait.
+--JFnjb9gtssGV5AzD
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
->   	/* Try direct reclaim and then allocating */
->   	page = __alloc_pages_direct_reclaim(gfp_mask, order,
->   					zonelist, high_zoneidx,
->
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
->
+On Mon, Jul 28, 2014 at 04:05:45PM +0800, Yan, Zheng wrote:
+> On 07/28/2014 03:56 PM, Peter Zijlstra wrote:
+> > On Fri, Jul 25, 2014 at 04:40:55PM +0800, Yan, Zheng wrote:
+> >> split Intel uncore driver into four files:
+> >>  - perf_event_intel_uncore.c: general functions of Intel uncore driver.
+> >>  - perf_event_intel_uncore_nhmex.c: hardware specific code for
+> >>    Nehalem-EX/Westmere-EX
+> >>  - perf_event_intel_uncore_snb.c: hardware specific code for
+> >>    Nehalem/SandBridge/Haswell
+> >>  - perf_event_intel_uncore_snbep.c: hardware specific code for
+> >>    SandyBridge-EP/IvyTown uncore
+> >=20
+> > Did not apply properly to tip/master, also can you do that in 3 patches?
+> >=20
+>=20
+> the patch is based on tip/perf/core
 
+Hmm, that should be good enough, didn't want to apply though, gave a
+massive rej.
+
+> > One breaking out the nhm/wsm-ex part, one breaking out the
+> > nhm/wsm/snb/ivb/hsw bits, and one for the snb/ivb-ep bits?
+> >
+> will do
+
+Thanks!
+
+--JFnjb9gtssGV5AzD
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJT1g+QAAoJEHZH4aRLwOS6vO0P/jFUumn3V1EkN+FvX3rpqLUX
+KaNMzkkoBA2aKYYbhBPxA8Ud4EgIq1sHb3627V/U9J1sK/Dka4MnwLPhimkCg8Q9
+ykA1pg6NEGBnh8dafEIHPJTQQgRDUAq5PLbtTt9ymTcwc49THa/26cnWLWgGbk4T
+inQ0tjtx9vqbIH6v9BgJY9qfeZjffk+cPWQ9+ctPo8VDsxl6Tukx4YlzUWDunNrR
+4U8AzdJN+U1opjzvD9odXmWkdWL/AoKb6dzBIpj3l0WD3mwIHeO1jf1XJvhimeFM
+36F1dSEOBu82yIh2J2mlyp/FA0RPgwqCEt1ZUjiL4djmaDWExHWyNm3G+emSMnqJ
+olRT96QtkaFWYMjT2jKvMdOxoFuZOTfOtmQVPsLiWAH57mmT9Tt3vI/kpS6gpV3D
+cpYKgA3qKbu5sxNo7ra4WTzly7kpazsAMg7q3I+fca3Ce6kNTnGxtthUKY2IJxm3
+vH+qIqfc3tK3bJSOd0HydzZL+PcGzO4MagXRhs0DH15n8OJ3ET4PcPNdk+Tdg/Ro
+iSv58dMLrstBQAsd8IvGbW2XsOFPwKhKSN8o0jrjd/ZgcNZLu+qRmPvP9Cft6Hwr
+T+Ff7iYW1GcAGf7jOM3q2aKEe6wcyGil7c9FbOvzQyIMaWJUQnu5MdBJWZGsCqES
+L4wLt5aArIBsWaZ0LwLJ
+=l2Fl
+-----END PGP SIGNATURE-----
+
+--JFnjb9gtssGV5AzD--
