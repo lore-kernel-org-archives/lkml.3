@@ -1,46 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752785AbaG1M25 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 08:28:57 -0400
-Received: from mout.kundenserver.de ([212.227.126.130]:65321 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751664AbaG1M2y (ORCPT
+	id S1752792AbaG1Mat (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 08:30:49 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:4603 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751664AbaG1Maq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 08:28:54 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Srikanth Thokala <sthokal@xilinx.com>, vinod.koul@intel.com,
-        dan.j.williams@intel.com, michal.simek@xilinx.com,
-        grant.likely@linaro.org, robh+dt@kernel.org, levex@linux.com,
-        jassisinghbrar@gmail.com, devicetree@vger.kernel.org,
-        svemula@xilinx.com, linux-kernel@vger.kernel.org, anirudh@xilinx.com,
-        dmaengine@vger.kernel.org
-Subject: Re: [PATCH v3 1/2] dma: Add Xilinx AXI DMA DT Binding Documentation
-Date: Mon, 28 Jul 2014 14:28:14 +0200
-Message-ID: <5511649.HfVoeApiug@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1406549869-24422-1-git-send-email-sthokal@xilinx.com>
-References: <1406549869-24422-1-git-send-email-sthokal@xilinx.com>
+	Mon, 28 Jul 2014 08:30:46 -0400
+From: Wang Nan <wangnan0@huawei.com>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Andi Kleen <ak@linux.intel.com>, Pei Feiyue <peifeiyue@huawei.com>
+CC: <x86@kernel.org>, <linux-kernel@vger.kernel.org>, <wangnan0@huawei.com>
+Subject: [PATCH] kprobes/x86: opt: free optinsn cache when range check fails
+Date: Mon, 28 Jul 2014 20:20:19 +0800
+Message-ID: <1406550019-70935-1-git-send-email-wangnan0@huawei.com>
+X-Mailer: git-send-email 1.8.4
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:I1dfpPSwF5w7OnuSvHWDV3uwMi2tJKWuFPi4GZ9QkKc
- Y/MjIm7p/zcQLuJ2bi3vv/4/fPyO+xTXVeSBMenHs0Mgq+lD+N
- rss1qXYcdxKeQ+Ihr9smfIIXCx3Olz33hhhsAzYAJELOHI4FLK
- zW0R4L7F2lNYq2UEHWIceOiF2umCrFtuGktQUzAiXp3wGEAY77
- 9IJUSuxaKCvNKD4h/NBcsFt7p2lnz9lRRmFqO1nH3m+voBBR0q
- CeATqh8I++jOp2GLQvRoo9L2g4W3i9e+K3j0t2DMcQQwWHpsZ8
- yCkJssfkb6SF+LOnFfdeHNfR4a9292paTVUyhuAH86kTPay2K0
- UsC0M1x9fLTpDxnp9yxM=
+Content-Type: text/plain
+X-Originating-IP: [10.107.197.247]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 28 July 2014 17:47:48 Srikanth Thokala wrote:
-> Device-tree binding documentation of Xilinx DMA Engine
-> 
-> Signed-off-by: Srikanth Thokala <sthokal@xilinx.com>
+This patch frees optinsn slot when range check error to prevent memory
+leaks. Before this patch, cache entry in kprobe_insn_cache won't be
+freed if kprobe optimizing fails due to range check failure.
 
-Looks ok to me,
+Signed-off-by: Wang Nan <wangnan0@huawei.com>
+---
+ arch/x86/kernel/kprobes/opt.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+diff --git a/arch/x86/kernel/kprobes/opt.c b/arch/x86/kernel/kprobes/opt.c
+index f304773..f1314d0 100644
+--- a/arch/x86/kernel/kprobes/opt.c
++++ b/arch/x86/kernel/kprobes/opt.c
+@@ -338,8 +338,10 @@ int arch_prepare_optimized_kprobe(struct optimized_kprobe *op)
+ 	 * a relative jump.
+ 	 */
+ 	rel = (long)op->optinsn.insn - (long)op->kp.addr + RELATIVEJUMP_SIZE;
+-	if (abs(rel) > 0x7fffffff)
++	if (abs(rel) > 0x7fffffff) {
++		__arch_remove_optimized_kprobe(op, 0);
+ 		return -ERANGE;
++	}
+ 
+ 	buf = (u8 *)op->optinsn.insn;
+ 
+-- 
+1.8.4
+
