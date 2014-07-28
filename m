@@ -1,122 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752153AbaG1Ksx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 06:48:53 -0400
-Received: from casper.infradead.org ([85.118.1.10]:58336 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752059AbaG1Ksu (ORCPT
+	id S1752200AbaG1Kt2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 06:49:28 -0400
+Received: from mail-we0-f182.google.com ([74.125.82.182]:61246 "EHLO
+	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751680AbaG1KtZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 06:48:50 -0400
-Date: Mon, 28 Jul 2014 12:48:37 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Yuyang Du <yuyang.du@intel.com>
-Cc: mingo@redhat.com, linux-kernel@vger.kernel.org, pjt@google.com,
-        bsegall@google.com, arjan.van.de.ven@intel.com, len.brown@intel.com,
-        rafael.j.wysocki@intel.com, alan.cox@intel.com, mark.gross@intel.com,
-        fengguang.wu@intel.com
-Subject: Re: [PATCH 2/2 v4] sched: Rewrite per entity runnable load average
- tracking
-Message-ID: <20140728104837.GQ6758@twins.programming.kicks-ass.net>
-References: <1405639567-21445-1-git-send-email-yuyang.du@intel.com>
- <1405639567-21445-3-git-send-email-yuyang.du@intel.com>
+	Mon, 28 Jul 2014 06:49:25 -0400
+Date: Mon, 28 Jul 2014 12:49:16 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: [PATCH 02/27] perf tools: Fix jump label always changing during
+ tracing
+Message-ID: <20140728104916.GA14215@gmail.com>
+References: <1406302629-11790-1-git-send-email-acme@kernel.org>
+ <1406302629-11790-3-git-send-email-acme@kernel.org>
+ <20140728065844.GK6758@twins.programming.kicks-ass.net>
+ <20140728081948.GA1124@krava.brq.redhat.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ke4/Zunobcr7FoIC"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1405639567-21445-3-git-send-email-yuyang.du@intel.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <20140728081948.GA1124@krava.brq.redhat.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---ke4/Zunobcr7FoIC
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+* Jiri Olsa <jolsa@redhat.com> wrote:
 
-On Fri, Jul 18, 2014 at 07:26:06AM +0800, Yuyang Du wrote:
-> @@ -665,20 +660,27 @@ static u64 sched_vslice(struct cfs_rq *cfs_rq, stru=
-ct sched_entity *se)
->  }
-> =20
->  #ifdef CONFIG_SMP
-> -static unsigned long task_h_load(struct task_struct *p);
-> =20
-> -static inline void __update_task_entity_contrib(struct sched_entity *se);
-> +/* dependent on LOAD_AVG_PERIOD, see below */
-> +#define LOAD_AVG_MAX 47742 /* maximum possible load avg */
+> On Mon, Jul 28, 2014 at 08:58:44AM +0200, Peter Zijlstra wrote:
+> > On Fri, Jul 25, 2014 at 12:36:44PM -0300, Arnaldo Carvalho de Melo wrote:
+> > > From: Adrian Hunter <adrian.hunter@intel.com>
+> > > 
+> > > Intel PT decoding walks the object code to reconstruct the trace.  A
+> > > jump label change during tracing causes decoding errors.
+> > > 
+> > > The "Enable close-on-exec flag on perf file descriptor" patch caused
+> > > there to be always a jump label change.
+> > > 
+> > > It was found that using a per-cpu context instead of a per-thread
+> > > context for the probe of the close-on-exec feature, made the problem go
+> > > away.
+> > 
+> > per-cpu events are privileged, wouldn't this change make CLOEXEC always
+> > undetected for normal users?
+> > 
+> > Also, the $subject doesn't related to CLOEXEC at all.
+> 
+> right, it would.. Ingo, still any chance to skip this one?
+> 
+> [jolsa@dhcp-26-214 perf]$ ./perf record sleep 1
+> perf_event_open(..., PERF_FLAG_FD_CLOEXEC) failed with unexpected error 13 (Permission denied)
+> perf_event_open(..., 0) failed unexpectedly with error 13 (Permission denied)
+> 
+> jirka
 
-Please don't separate this from the rest of the values it belongs to. If
-you really have to, move the entire block.
+No, sorry - mind any of you please send a pull request with a fix or a 
+revert?
 
-> @@ -2071,13 +2073,9 @@ static inline long calc_tg_weight(struct task_grou=
-p *tg, struct cfs_rq *cfs_rq)
->  	long tg_weight;
-> =20
->  	/*
-> -	 * Use this CPU's actual weight instead of the last load_contribution
-> -	 * to gain a more accurate current total weight. See
-> -	 * update_cfs_rq_load_contribution().
-> +	 * Use this CPU's load average instead of actual weight
->  	 */
->  	tg_weight =3D atomic_long_read(&tg->load_avg);
-> -	tg_weight -=3D cfs_rq->tg_load_contrib;
-> -	tg_weight +=3D cfs_rq->load.weight;
+Thanks,
 
-I don't think that comment makes any sense after this. The comment was
-there to explain the -=3D, +=3D things, but that's all gone so its pretty
-trivial now, and i++ /* inc by one */ comments are not useful.
-
-> @@ -2181,7 +2178,7 @@ static const u32 runnable_avg_yN_sum[] =3D {
->   * Approximate:
->   *   val * y^n,    where y^32 ~=3D 0.5 (~1 scheduling period)
->   */
-> -static __always_inline u64 decay_load(u64 val, u64 n)
-> +static __always_inline u64 decay_load32(u64 val, u64 n)
->  {
->  	unsigned int local_n;
-> =20
-> @@ -2210,6 +2207,18 @@ static __always_inline u64 decay_load(u64 val, u64=
- n)
->  	return val >> 32;
->  }
-> =20
-> +static __always_inline u64 decay_load(u64 val, u64 n)
-> +{
-> +	if (likely(val <=3D UINT_MAX))
-> +		val =3D decay_load32(val, n);
-> +	else {
-> +		val *=3D (u32)decay_load32(1 << 15, n);
-> +		val >>=3D 15;
-> +	}
-> +
-> +	return val;
-> +}
-
-Please just use mul_u64_u32_shr().
-
-/me continues reading the rest of it..
-
---ke4/Zunobcr7FoIC
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJT1iqFAAoJEHZH4aRLwOS6qpsP/AgwFxS1RrgXcZWmZNGuqlNG
-5ANvaI4fwTR3CTJOVvFuoAhd4YCL7YQz9UycBA5+bn/L/fUZs81bq1g8vQ1Ot+ta
-rAvq6tfCT740fNRnMxiwr0jBvGtFqQA4l3PegNreyXNcv6owu4cDam4eF+cb8YGP
-6VW4U4afr9kr1tTeEyvwLPLEqaxwUs3PHU0aVsHhyOf7OTPFjZ6CErpOX+E6Pi62
-E64/CZlT9SuwBFKupmsDUQyNaqSBfy4IvEBZDIm0AXCfZ2Apl8wG4uA6asdMwT95
-P2fMglXP3e6nnVyggP27N+4DylSLLs0C/pj2LqXOgRm8IZFB0C0BrovlWT8LoGPt
-FE5jFyAvNjkiwef//N7bFizQQN/8TeTRskMIwF/yPNfLPIscntFeW9vLMM52eqiw
-LEdpI3rg0CYH7lIUEQzfwFSlWTGLXfyYjYrK1Kew/jmLzC39+fSN2Esxevfa82fI
-UPAOrAznIdrjpywzTYcgO7Wme7nY/EDByd+ehAaUrfeOD/SjcMBgDmoknFHC907K
-TEA478aYcguafdglememD2Ddx9G+0Ogyio3xEJxkaAf1P2k61H3uY7LFvzhIKQML
-uogx2/R2frAHduz97BuDkYI0rwqdvLWHmUMc+pDKmc3aBq6m850NdD6QBNfBZaYg
-h6Y9aaOVs9Vbxq7F/S7a
-=91DJ
------END PGP SIGNATURE-----
-
---ke4/Zunobcr7FoIC--
+	Ingo
