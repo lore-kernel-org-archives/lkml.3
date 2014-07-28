@@ -1,143 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751316AbaG1IX2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 04:23:28 -0400
-Received: from mail-oi0-f52.google.com ([209.85.218.52]:65166 "EHLO
-	mail-oi0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750954AbaG1IX1 (ORCPT
+	id S1751939AbaG1IYF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 04:24:05 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:42428 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751466AbaG1IXy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 04:23:27 -0400
+	Mon, 28 Jul 2014 04:23:54 -0400
+Date: Mon, 28 Jul 2014 01:22:18 -0700
+From: tip-bot for Adrian Hunter <tipbot@zytor.com>
+Message-ID: <tip-8066be5fe755e95ee6a858bbcf4e6b9e933e1866@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
+        paulus@samba.org, hpa@zytor.com, mingo@kernel.org,
+        peterz@infradead.org, namhyung@gmail.com, jolsa@redhat.com,
+        fweisbec@gmail.com, adrian.hunter@intel.com, dsahern@gmail.com,
+        tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
+        eranian@google.com, linux-kernel@vger.kernel.org, acme@redhat.com,
+        peterz@infradead.org, namhyung@gmail.com, jolsa@redhat.com,
+        fweisbec@gmail.com, dsahern@gmail.com, adrian.hunter@intel.com,
+        tglx@linutronix.de
+In-Reply-To: <1406035081-14301-7-git-send-email-adrian.hunter@intel.com>
+References: <1406035081-14301-7-git-send-email-adrian.hunter@intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf script: Improve srcline display for BTS
+Git-Commit-ID: 8066be5fe755e95ee6a858bbcf4e6b9e933e1866
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-In-Reply-To: <20140725153210.47c09bfe@annuminas.surriel.com>
-References: <20140722144559.382c5243@annuminas.surriel.com>
- <20140725152728.GB6758@twins.programming.kicks-ass.net> <53D27B7E.8090404@redhat.com>
- <20140725160549.GD6758@twins.programming.kicks-ass.net> <53D28457.202@redhat.com>
- <CAKfTPtBVTgTYmgRKbuhKNZZRuCRK126YVvsG1+a-hjfKao08=g@mail.gmail.com> <20140725153210.47c09bfe@annuminas.surriel.com>
-From: Vincent Guittot <vincent.guittot@linaro.org>
-Date: Mon, 28 Jul 2014 10:23:06 +0200
-Message-ID: <CAKfTPtCoH00jdz-Qkns_j7LNyorWc+GQXj-WSmdDGcooWOMW7w@mail.gmail.com>
-Subject: Re: [PATCH v2] sched: make update_sd_pick_busiest return true on a
- busier sd
-To: Rik van Riel <riel@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Michael Neuling <mikey@neuling.org>, Ingo Molnar <mingo@kernel.org>,
-        Paul Turner <pjt@google.com>, jhladky@redhat.com, ktkhai@parallels.com,
-        tim.c.chen@linux.intel.com, Nicolas Pitre <nicolas.pitre@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25 July 2014 21:32, Rik van Riel <riel@redhat.com> wrote:
-> Subject: sched: make update_sd_pick_busiest return true on a busier sd
->
-> Currently update_sd_pick_busiest only identifies the busiest sd
-> that is either overloaded, or has a group imbalance. When no
-> sd is imbalanced or overloaded, the load balancer fails to find
-> the busiest domain.
->
-> This breaks load balancing between domains that are not overloaded,
-> in the !SD_ASYM_PACKING case. This patch makes update_sd_pick_busiest
-> return true when the busiest sd yet is encountered.
->
-> Behaviour for SD_ASYM_PACKING does not seem to match the comment,
-> but I have no hardware to test that so I have left the behaviour
-> of that code unchanged.
->
-> It is unclear what to do with the group_imb condition.
-> Should group_imb override a busier load? If so, should we fix
+Commit-ID:  8066be5fe755e95ee6a858bbcf4e6b9e933e1866
+Gitweb:     http://git.kernel.org/tip/8066be5fe755e95ee6a858bbcf4e6b9e933e1866
+Author:     Adrian Hunter <adrian.hunter@intel.com>
+AuthorDate: Tue, 22 Jul 2014 16:17:15 +0300
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Wed, 23 Jul 2014 11:14:40 -0300
 
-IMHO, group_imb should have a lower priority compared to overloaded
-group because it generates active migration whereas the use of
-overloaded group could solve the imbalance with normal migration
-Then, AFAICT, we already have a special way to compute imbalance when
-group_imb is set
+perf script: Improve srcline display for BTS
 
-> calculate_imbalance to return a sensible number when the "busiest"
-> node found has a below average load? We probably need to fix
-> calculate_imbalance anyway, to deal with an overloaded group that
-> happens to have a below average load...
->
-> Cc: mikey@neuling.org
-> Cc: peterz@infradead.org
-> Signed-off-by: Rik van Riel <riel@redhat.com>
-> ---
->  kernel/sched/fair.c | 18 +++++++++++++-----
->  1 file changed, 13 insertions(+), 5 deletions(-)
->
-> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-> index 45943b2..c96044f 100644
-> --- a/kernel/sched/fair.c
-> +++ b/kernel/sched/fair.c
-> @@ -5949,6 +5949,11 @@ static inline void update_sg_lb_stats(struct lb_env *env,
->                 sgs->group_has_free_capacity = 1;
->  }
->
-> +static bool group_overloaded(struct sg_lb_stats *sgs)
-> +{
-> +       return sgs->sum_nr_running > sgs->group_capacity_factor;
-> +}
-> +
->  /**
->   * update_sd_pick_busiest - return 1 on busiest group
->   * @env: The load balancing environment.
-> @@ -5957,7 +5962,7 @@ static inline void update_sg_lb_stats(struct lb_env *env,
->   * @sgs: sched_group statistics
->   *
->   * Determine if @sg is a busier group than the previously selected
-> - * busiest group.
-> + * busiest group.
->   *
->   * Return: %true if @sg is a busier group than the previously selected
->   * busiest group. %false otherwise.
-> @@ -5967,13 +5972,17 @@ static bool update_sd_pick_busiest(struct lb_env *env,
->                                    struct sched_group *sg,
->                                    struct sg_lb_stats *sgs)
->  {
-> +       if (group_overloaded(sgs) && !group_overloaded(&sds->busiest_stat))
+Change the order of the output to put the srcline last.
 
-The 1st time you run update_sd_pick_busiest, group_capacity_factor and
-sum_nr_running of sds->busiest_stat are uninitialized.
+It puts the branch 'from address' and 'to address' on the same line,
+which is how it would be without the source line reference.
 
-> +               return true;
-> +
+So it makes it consistent and much easier to read.
 
-IIUC your new test sequence, you haven't solved the following use case:
+E.g. old format:
 
-group A has 3 tasks and is overloaded
-group B has 2 tasks and is not overloaded but its avg_load is higher
-than group B (either because of nice priority or because of average
-runnable time)
+          4028fc main+0x2c (/bin/ls)
+  /build/buildd/coreutils-8.20/src/ls.c:1269 =>           40d8a0 set_program_name+0x0 (/bin/ls)
 
-The test of group A will return true because it is overloaded and not
-the empty busiest_stat
-But, the test of group B will also return true because of
-!(env->sd->flags & SD_ASYM_PACKING)
+new format:
 
-So at the end you are selecting the group B which is  not overloaded
+          4028fc main+0x2c (/bin/ls) =>           40d8a0 set_program_name+0x0 (/bin/ls)
+  /build/buildd/coreutils-8.20/src/ls.c:1269
 
->         if (sgs->avg_load <= sds->busiest_stat.avg_load)
->                 return false;
->
-> -       if (sgs->sum_nr_running > sgs->group_capacity_factor)
-> +       if (sgs->group_imb)
->                 return true;
->
-> -       if (sgs->group_imb)
-> +       /* This is the busiest node. */
-> +       if (!(env->sd->flags & SD_ASYM_PACKING))
->                 return true;
->
->         /*
-> @@ -5981,8 +5990,7 @@ static bool update_sd_pick_busiest(struct lb_env *env,
->          * numbered CPUs in the group, therefore mark all groups
->          * higher than ourself as busy.
->          */
-> -       if ((env->sd->flags & SD_ASYM_PACKING) && sgs->sum_nr_running &&
-> -           env->dst_cpu < group_first_cpu(sg)) {
-> +       if (sgs->sum_nr_running && env->dst_cpu < group_first_cpu(sg)) {
->                 if (!sds->busiest)
->                         return true;
->
->
+Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/r/1406035081-14301-7-git-send-email-adrian.hunter@intel.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/builtin-script.c | 20 +++++++++++++++-----
+ 1 file changed, 15 insertions(+), 5 deletions(-)
+
+diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
+index 9e9c91f..333b15e 100644
+--- a/tools/perf/builtin-script.c
++++ b/tools/perf/builtin-script.c
+@@ -427,15 +427,22 @@ static void print_sample_bts(union perf_event *event,
+ 			     struct addr_location *al)
+ {
+ 	struct perf_event_attr *attr = &evsel->attr;
++	bool print_srcline_last = false;
+ 
+ 	/* print branch_from information */
+ 	if (PRINT_FIELD(IP)) {
+-		if (!symbol_conf.use_callchain)
+-			printf(" ");
+-		else
++		unsigned int print_opts = output[attr->type].print_ip_opts;
++
++		if (symbol_conf.use_callchain && sample->callchain) {
+ 			printf("\n");
+-		perf_evsel__print_ip(evsel, sample, al,
+-				     output[attr->type].print_ip_opts,
++		} else {
++			printf(" ");
++			if (print_opts & PRINT_IP_OPT_SRCLINE) {
++				print_srcline_last = true;
++				print_opts &= ~PRINT_IP_OPT_SRCLINE;
++			}
++		}
++		perf_evsel__print_ip(evsel, sample, al, print_opts,
+ 				     PERF_MAX_STACK_DEPTH);
+ 	}
+ 
+@@ -447,6 +454,9 @@ static void print_sample_bts(union perf_event *event,
+ 	     !output[attr->type].user_set))
+ 		print_sample_addr(event, sample, al->machine, thread, attr);
+ 
++	if (print_srcline_last)
++		map__fprintf_srcline(al->map, al->addr, "\n  ", stdout);
++
+ 	printf("\n");
+ }
+ 
