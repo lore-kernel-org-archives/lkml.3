@@ -1,58 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753140AbaG1PCA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 11:02:00 -0400
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:53179 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753125AbaG1PBz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 11:01:55 -0400
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>
-Cc: linux-ia64@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/2] [IA64] Fix zeroing of PDAs
-Date: Mon, 28 Jul 2014 17:01:48 +0200
-Message-Id: <1406559709-9401-1-git-send-email-thierry.reding@gmail.com>
-X-Mailer: git-send-email 2.0.2
+	id S1753160AbaG1PCE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 11:02:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49481 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753125AbaG1PCB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jul 2014 11:02:01 -0400
+From: Jiri Olsa <jolsa@kernel.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Jiri Olsa <jolsa@kernel.org>, Adrian Hunter <adrian.hunter@intel.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH 2/2] Revert "perf tools: Fix jump label always changing during tracing"
+Date: Mon, 28 Jul 2014 17:01:02 +0200
+Message-Id: <1406559662-4376-3-git-send-email-jolsa@kernel.org>
+In-Reply-To: <1406559662-4376-1-git-send-email-jolsa@kernel.org>
+References: <1406559662-4376-1-git-send-email-jolsa@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thierry Reding <treding@nvidia.com>
+This reverts commit deaff8b659cf4d34181c087b8cdf74f1eb17b02b.
 
-The code uses a the following to zero out a PDA:
+This commit makes CLOEXEC feature undetected for normal users,
+because per-cpu events are priviledged.
 
-	memset(pda, 0, sizeof(pda));
-
-But sizeof(pda) will return the size of a pointer rather than the size
-of the structure pointed to. This triggers the following warning from
-GCC:
-
-	arch/ia64/sn/kernel/setup.c:582:23: warning: argument to 'sizeof' in 'memset' call is the same pointer type 'struct pda_s *' as the destination; expected 'struct pda_s' or an explicit length [-Wsizeof-pointer-memaccess]
-	  memset(pda, 0, sizeof(pda));
-	                       ^
-
-Fix this by passing in the size of the structure using sizeof(*pda)
-instead.
-
-Signed-off-by: Thierry Reding <treding@nvidia.com>
+Reported-by: Peter Zijlstra <peterz@infradead.org>
+Cc: Adrian Hunter <adrian.hunter@intel.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/r/20140728065844.GK6758@twins.programming.kicks-ass.net
+Signed-off-by: Jiri Olsa <jolsa@kernel.org>
 ---
- arch/ia64/sn/kernel/setup.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ tools/perf/util/cloexec.c | 9 ++-------
+ 1 file changed, 2 insertions(+), 7 deletions(-)
 
-diff --git a/arch/ia64/sn/kernel/setup.c b/arch/ia64/sn/kernel/setup.c
-index 53b01b8e2f19..36182c84363c 100644
---- a/arch/ia64/sn/kernel/setup.c
-+++ b/arch/ia64/sn/kernel/setup.c
-@@ -579,7 +579,7 @@ void sn_cpu_init(void)
- 		       (sn_prom_type == 1) ? "real" : "fake");
- 	}
+diff --git a/tools/perf/util/cloexec.c b/tools/perf/util/cloexec.c
+index 6a37be53a5d2..c5d05ec17220 100644
+--- a/tools/perf/util/cloexec.c
++++ b/tools/perf/util/cloexec.c
+@@ -1,4 +1,3 @@
+-#include <sched.h>
+ #include "util.h"
+ #include "../perf.h"
+ #include "cloexec.h"
+@@ -15,13 +14,9 @@ static int perf_flag_probe(void)
+ 	};
+ 	int fd;
+ 	int err;
+-	int cpu = sched_getcpu();
+-
+-	if (cpu < 0)
+-		cpu = 0;
  
--	memset(pda, 0, sizeof(pda));
-+	memset(pda, 0, sizeof(*pda));
- 	if (ia64_sn_get_sn_info(0, &sn_hub_info->shub2,
- 				&sn_hub_info->nasid_bitmask,
- 				&sn_hub_info->nasid_shift,
+ 	/* check cloexec flag */
+-	fd = sys_perf_event_open(&attr, -1, cpu, -1,
++	fd = sys_perf_event_open(&attr, 0, -1, -1,
+ 				 PERF_FLAG_FD_CLOEXEC);
+ 	err = errno;
+ 
+@@ -35,7 +30,7 @@ static int perf_flag_probe(void)
+ 		  err, strerror(err));
+ 
+ 	/* not supported, confirm error related to PERF_FLAG_FD_CLOEXEC */
+-	fd = sys_perf_event_open(&attr, -1, cpu, -1, 0);
++	fd = sys_perf_event_open(&attr, 0, -1, -1, 0);
+ 	err = errno;
+ 
+ 	if (WARN_ONCE(fd < 0,
 -- 
-2.0.2
+1.8.3.1
 
