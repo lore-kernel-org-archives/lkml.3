@@ -1,72 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751986AbaG1Izh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 04:55:37 -0400
-Received: from casper.infradead.org ([85.118.1.10]:57958 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751170AbaG1Izf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 04:55:35 -0400
-Date: Mon, 28 Jul 2014 10:55:25 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Yuyang Du <yuyang.du@intel.com>
-Cc: Mike Galbraith <umgwanakikbuti@gmail.com>, mingo@redhat.com,
-        linux-kernel@vger.kernel.org, pjt@google.com, bsegall@google.com,
-        arjan.van.de.ven@intel.com, len.brown@intel.com,
-        rafael.j.wysocki@intel.com, alan.cox@intel.com, mark.gross@intel.com,
-        fengguang.wu@intel.com
-Subject: Re: [PATCH 0/2 v4] sched: Rewrite per entity runnable load average
- tracking
-Message-ID: <20140728085525.GN6758@twins.programming.kicks-ass.net>
-References: <1405639567-21445-1-git-send-email-yuyang.du@intel.com>
- <1405835183.6512.37.camel@marge.simpson.net>
- <20140727193453.GA23367@intel.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="uP6ApTHNnWVQNpGq"
-Content-Disposition: inline
-In-Reply-To: <20140727193453.GA23367@intel.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	id S1752048AbaG1I5K (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 04:57:10 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:47979 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751394AbaG1I5G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jul 2014 04:57:06 -0400
+From: Takashi Iwai <tiwai@suse.de>
+To: Chris Mason <clm@fb.com>
+Cc: Josef Bacik <jbacik@fb.com>, linux-btrfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] Btrfs: Fix memory corruption by ulist_add_merge() on 32bit arch
+Date: Mon, 28 Jul 2014 10:57:04 +0200
+Message-Id: <1406537824-2376-1-git-send-email-tiwai@suse.de>
+X-Mailer: git-send-email 2.0.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+We've got bug reports that btrfs crashes when quota is enabled on
+32bit kernel, typically with the Oops like below:
+ BUG: unable to handle kernel NULL pointer dereference at 00000004
+ IP: [<f9234590>] find_parent_nodes+0x360/0x1380 [btrfs]
+ *pde = 00000000
+ Oops: 0000 [#1] SMP
+ CPU: 0 PID: 151 Comm: kworker/u8:2 Tainted: G S      W 3.15.2-1.gd43d97e-default #1
+ Workqueue: btrfs-qgroup-rescan normal_work_helper [btrfs]
+ task: f1478130 ti: f147c000 task.ti: f147c000
+ EIP: 0060:[<f9234590>] EFLAGS: 00010213 CPU: 0
+ EIP is at find_parent_nodes+0x360/0x1380 [btrfs]
+ EAX: f147dda8 EBX: f147ddb0 ECX: 00000011 EDX: 00000000
+ ESI: 00000000 EDI: f147dda4 EBP: f147ddf8 ESP: f147dd38
+  DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
+ CR0: 8005003b CR2: 00000004 CR3: 00bf3000 CR4: 00000690
+ Stack:
+  00000000 00000000 f147dda4 00000050 00000001 00000000 00000001 00000050
+  00000001 00000000 d3059000 00000001 00000022 000000a8 00000000 00000000
+  00000000 000000a1 00000000 00000000 00000001 00000000 00000000 11800000
+ Call Trace:
+  [<f923564d>] __btrfs_find_all_roots+0x9d/0xf0 [btrfs]
+  [<f9237bb1>] btrfs_qgroup_rescan_worker+0x401/0x760 [btrfs]
+  [<f9206148>] normal_work_helper+0xc8/0x270 [btrfs]
+  [<c025e38b>] process_one_work+0x11b/0x390
+  [<c025eea1>] worker_thread+0x101/0x340
+  [<c026432b>] kthread+0x9b/0xb0
+  [<c0712a71>] ret_from_kernel_thread+0x21/0x30
+  [<c0264290>] kthread_create_on_node+0x110/0x110
 
---uP6ApTHNnWVQNpGq
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+This indicates a NULL corruption in prefs_delayed list.  The further
+investigation and bisection pointed that the call of ulist_add_merge()
+results in the corruption.
 
-On Mon, Jul 28, 2014 at 03:34:53AM +0800, Yuyang Du wrote:
-> Thanks a lot, Mike.
->=20
-> Ben asked for this test, but actually I don't know how to get pipe-test, =
-still
-> not even after google it.
+ulist_add_merge() takes u64 as aux and writes a 64bit value into
+old_aux.  The callers of this function in backref.c, however, pass a
+pointer of a pointer to old_aux.  That is, the function overwrites
+64bit value on 32bit pointer.  This caused a NULL in the adjacent
+variable, in this case, prefs_delayed.
 
-perf bench sched pipe
+Here is a quick attempt to band-aid over this: a new function,
+ulist_add_merge_ptr() is introduced to pass/store properly a pointer
+value instead of u64.  There are still ugly void ** cast remaining
+in the callers because void ** cannot be taken implicitly.  But, it's
+safer than explicit cast to u64, anyway.
 
-I realize that's a mouth full, but there it is.
+Bugzilla: https://bugzilla.novell.com/show_bug.cgi?id=887046
+Cc: <stable@vger.kernel.org> [v3.11+]
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+---
 
---uP6ApTHNnWVQNpGq
-Content-Type: application/pgp-signature
+Alternatively, we can change the argument of aux and old_aux to a
+pointer from u64, as backref.c is the only user of ulist_add_merge()
+function.  I'll cook up another patch if it's the preferred way.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+ fs/btrfs/backref.c | 11 +++++------
+ fs/btrfs/ulist.h   | 15 +++++++++++++++
+ 2 files changed, 20 insertions(+), 6 deletions(-)
 
-iQIcBAEBAgAGBQJT1g/9AAoJEHZH4aRLwOS6kkgQAKO8VW5U4tAxEW3MfS1koy2i
-Vnd6CGtOPPrludbh4ons8OxucW5Wz7w5wdrXSp+NOZ/VJpWiJV/ggRogFom7+F5D
-ZKJLlG4y+2sARgb2pQKq6z5ig8ataojHFdNOF2WOLwP2t6zk+hFHvBFrNHv81Eqe
-8NQXDDx6Rsurt04kDddPDLqfuiBy9VvQHFOQ721gS/BGjajJyiivhmrNz64wHp/D
-lFRxHnI52d0M+yK0xB+q4PiGQcVGQZHB7PBt4Jj4EIDOnpKbfDl8/+Z9QNlOkABR
-om8tcFzFpI3BfvqCx2SYipsV62Q3p9bMLQnWATN+ucSAPSfYf61wS8baV9FaNA8X
-+HrdLyACjMh0vbqZMP+B5q4esTeu0FfLiimKcAzZ1jkRHbmQEw7EW1uMnc+L3t5U
-JXdTGRwhMvBGS6U1TptQmVD3WWbfUMUFsLQ/3F8CRnE2QUnesBhmf+irom6llb33
-jG9AYeVB/o3J2nUk294zhVPVQAZiDSnmFLog6+fgOFqTkWNDrd2NVk9bT/e+Tush
-7/MAQdrRpQ/mXXdjCteZUSe+xMMvfsbdLrB9mMJWwbsJ3M1hsp71U4EZZ7y/jZCg
-xS6FFJZ6oB713m2DXVQ2GXlXmZO0H1ES11K8KaxcNr3u+gc8zHuw0wA1+GBvFKaI
-WtURmtB/szrRYfNYufez
-=sRMF
------END PGP SIGNATURE-----
+diff --git a/fs/btrfs/backref.c b/fs/btrfs/backref.c
+index e25564bfcb46..d7a24620a963 100644
+--- a/fs/btrfs/backref.c
++++ b/fs/btrfs/backref.c
+@@ -276,9 +276,8 @@ static int add_all_parents(struct btrfs_root *root, struct btrfs_path *path,
+ 			}
+ 			if (ret > 0)
+ 				goto next;
+-			ret = ulist_add_merge(parents, eb->start,
+-					      (uintptr_t)eie,
+-					      (u64 *)&old, GFP_NOFS);
++			ret = ulist_add_merge_ptr(parents, eb->start,
++						  eie, (void **)&old, GFP_NOFS);
+ 			if (ret < 0)
+ 				break;
+ 			if (!ret && extent_item_pos) {
+@@ -1008,9 +1007,9 @@ again:
+ 					goto out;
+ 				ref->inode_list = eie;
+ 			}
+-			ret = ulist_add_merge(refs, ref->parent,
+-					      (uintptr_t)ref->inode_list,
+-					      (u64 *)&eie, GFP_NOFS);
++			ret = ulist_add_merge_ptr(refs, ref->parent,
++						  ref->inode_list,
++						  (void **)&eie, GFP_NOFS);
+ 			if (ret < 0)
+ 				goto out;
+ 			if (!ret && extent_item_pos) {
+diff --git a/fs/btrfs/ulist.h b/fs/btrfs/ulist.h
+index 7f78cbf5cf41..695fc2bac680 100644
+--- a/fs/btrfs/ulist.h
++++ b/fs/btrfs/ulist.h
+@@ -57,6 +57,21 @@ void ulist_free(struct ulist *ulist);
+ int ulist_add(struct ulist *ulist, u64 val, u64 aux, gfp_t gfp_mask);
+ int ulist_add_merge(struct ulist *ulist, u64 val, u64 aux,
+ 		    u64 *old_aux, gfp_t gfp_mask);
++
++/* just like ulist_add_merge() but take a pointer for the aux data */
++static inline int ulist_add_merge_ptr(struct ulist *ulist, u64 val, void *aux,
++				      void **old_aux, gfp_t gfp_mask)
++{
++#if BITS_PER_LONG == 32
++	u64 old64 = (uintptr_t)*old_aux;
++	int ret = ulist_add_merge(ulist, val, (uintptr_t)aux, &old64, gfp_mask);
++	*old_aux = (void *)((uintptr_t)old64);
++	return ret;
++#else
++	return ulist_add_merge(ulist, val, (u64)aux, (u64 *)old_aux, gfp_mask)
++#endif
++}
++
+ struct ulist_node *ulist_next(struct ulist *ulist,
+ 			      struct ulist_iterator *uiter);
+ 
+-- 
+2.0.1
 
---uP6ApTHNnWVQNpGq--
