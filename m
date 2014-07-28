@@ -1,89 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752741AbaG1OYL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 10:24:11 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:52405 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751586AbaG1OYH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 10:24:07 -0400
-Date: Mon, 28 Jul 2014 10:23:13 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Hugh Dickins <hughd@google.com>
-Cc: Vlastimil Babka <vbabka@suse.cz>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>, Rik van Riel <riel@redhat.com>,
-        Dave Jones <davej@redhat.com>, Dave Chinner <david@fromorbit.com>,
-        xfs@oss.sgi.com, linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH] mm: fix direct reclaim writeback regression
-Message-ID: <20140728142313.GN1725@cmpxchg.org>
-References: <alpine.LSU.2.11.1407261248140.13796@eggly.anvils>
- <53D42F80.7000000@suse.cz>
- <alpine.LSU.2.11.1407261600570.14577@eggly.anvils>
+	id S1752747AbaG1OZd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 10:25:33 -0400
+Received: from e06smtp10.uk.ibm.com ([195.75.94.106]:41745 "EHLO
+	e06smtp10.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751586AbaG1OZa convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jul 2014 10:25:30 -0400
+Message-ID: <53D65D53.8000602@linux.vnet.ibm.com>
+Date: Mon, 28 Jul 2014 16:25:23 +0200
+From: Steffen Maier <maier@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LSU.2.11.1407261600570.14577@eggly.anvils>
+To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        linux390@de.ibm.com
+CC: Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>, linux-s390@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] s390: scsi: zfcp_aux.c:  Cleaning up missing null-terminate
+ in conjunction with strncpy
+References: <1406385418-3393-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+In-Reply-To: <1406385418-3393-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 8BIT
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14072814-4966-0000-0000-000000DBE018
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 26, 2014 at 04:15:25PM -0700, Hugh Dickins wrote:
-> On Sun, 27 Jul 2014, Vlastimil Babka wrote:
-> > On 07/26/2014 09:58 PM, Hugh Dickins wrote:
-> > > Yes, 3.16-rc1's 68711a746345 ("mm, migration: add destination page
-> > > freeing callback") has provided such a way to compaction: if migrating
-> > > a SwapBacked page fails, its newpage may be put back on the list for
-> > > later use with PageSwapBacked still set, and nothing will clear it.
-> > 
-> > Ugh good catch. So is this the only flag that can become "stray" like
-> > this? It seems so from quick check...
-> 
-> Yes, it seemed so to me too; but I would prefer a regime in which
-> we only mess with newpage once it's sure to be successful.
-> 
-> > > --- 3.16-rc6/mm/migrate.c	2014-06-29 15:22:10.584003935 -0700
-> > > +++ linux/mm/migrate.c	2014-07-26 11:28:34.488126591 -0700
-> > > @@ -988,9 +988,10 @@ out:
-> > >  	 * it.  Otherwise, putback_lru_page() will drop the reference grabbed
-> > >  	 * during isolation.
-> > >  	 */
-> > > -	if (rc != MIGRATEPAGE_SUCCESS && put_new_page)
-> > > +	if (rc != MIGRATEPAGE_SUCCESS && put_new_page) {
-> > > +		ClearPageSwapBacked(newpage);
-> > >  		put_new_page(newpage, private);
-> > > -	else
-> > > +	} else
-> > >  		putback_lru_page(newpage);
-> > >  
-> > >  	if (result) {
-> > 
-> > What about unmap_and_move_huge_page()? Seems to me it can also get the
-> > same stray flag. Although compaction, who is the only user so far of
-> > custom put_new_page, wouldn't of course migrate huge pages. But might
-> > bite us in the future, if a new user appears before a cleanup...
-> 
-> I think you're right, thanks for pointing it out.  We don't have an
-> actual bug there at present, so no need to rush back and fix up the
-> patch now in Linus's tree; but unmap_and_move_huge_page() gives
-> another reason why my choice was "probably the worst place to fix it".
-> 
-> More reason for a cleanup, but not while the memcg interface is in flux.
-> In mmotm I'm a little anxious about the PageAnon case when newpage's
-> mapping is left set, I wonder if that might also be problematic: I
-> mailed Hannes privately to think about that - perhaps that will give
-> more impulse for a cleanup, though I've not noticed any bug from it.
+On 07/26/2014 04:36 PM, Rickard Strandqvist wrote:
+> Replacing strncpy with strlcpy to avoid strings that lacks null terminate.
+>
+> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+> ---
+>   drivers/s390/scsi/zfcp_aux.c |    2 +-
+>   1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/drivers/s390/scsi/zfcp_aux.c b/drivers/s390/scsi/zfcp_aux.c
+> index 8004b07..a23ba76 100644
+> --- a/drivers/s390/scsi/zfcp_aux.c
+> +++ b/drivers/s390/scsi/zfcp_aux.c
+> @@ -101,7 +101,7 @@ static void __init zfcp_init_device_setup(char *devstr)
+>   	token = strsep(&str, ",");
+>   	if (!token || strlen(token) >= ZFCP_BUS_ID_SIZE)
+>   		goto err_out;
 
-I made that change for oldpage because uncharge in the final put_page
-relies on PageAnon() to work for statistics.
+Due to the check for strlen(token) >= ZFCP_BUS_ID_SIZE we should be safe 
+even with strlcpy because we would reject any user string that does not 
+fit into busid including the trailing zero character.
 
-The newpage case could have been left alone, but it looked like an
-anomaly to me - anonymous mappings are usually sticky and only cleared
-by the page allocator - so I was eager to make the cases symmetrical.
-I don't see a bug there because if the page is reused its mapping will
-be overwritten right away, and if freed the allocator will reset it.
+Since it works either way, we can change it though,
 
-mem_cgroup_migrate() has since changed to fully uncharge the old page
-and not leave this task to the final put_page, so ->mapping does not
-need to be maintained past that point.  I'll send a revert of these
-conditional ->mapping resets to Andrew.
+Acked-by: Steffen Maier <maier@linux.vnet.ibm.com>
+
+> -	strncpy(busid, token, ZFCP_BUS_ID_SIZE);
+> +	strlcpy(busid, token, ZFCP_BUS_ID_SIZE);
+>
+>   	token = strsep(&str, ",");
+>   	if (!token || kstrtoull(token, 0, (unsigned long long *) &wwpn))
+>
+
+-- 
+Mit freundlichen Grüßen / Kind regards
+Steffen Maier
+
+Linux on System z Development
+
+IBM Deutschland Research & Development GmbH
+Vorsitzende des Aufsichtsrats: Martina Koederitz
+Geschaeftsfuehrung: Dirk Wittkopp
+Sitz der Gesellschaft: Boeblingen
+Registergericht: Amtsgericht Stuttgart, HRB 243294
+
