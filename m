@@ -1,104 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752964AbaG1MVZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 08:21:25 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:59362 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751423AbaG1MVU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 08:21:20 -0400
-Date: Mon, 28 Jul 2014 13:20:42 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Andreas =?iso-8859-1?Q?F=E4rber?= <afaerber@suse.de>
-Cc: Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org,
-        Michal Simek <monstr@monstr.eu>, Lars-Peter Clausen <lars@metafoo.de>,
-        Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
-        Rob Herring <robh+dt@kernel.org>,
-        Matteo Vit <matteo.vit@starwaredesign.com>,
-        Sean Rickerd <srickerd@suse.com>, Kumar Gala <galak@codeaurora.org>,
-        linux-arm-kernel@lists.infradead.org
-Message-ID: <20140728122042.GR17528@sirena.org.uk>
-References: <1406242820-20140-1-git-send-email-afaerber@suse.de>
- <1406242820-20140-10-git-send-email-afaerber@suse.de>
- <53D20A61.1050506@metafoo.de>
- <53D21066.8000905@monstr.eu>
- <20140725101815.GO17528@sirena.org.uk>
- <53D2324B.4070602@suse.de>
- <20140725103905.GP17528@sirena.org.uk>
- <53D63746.3000905@suse.de>
+	id S1752976AbaG1MWP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 08:22:15 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:51292 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752515AbaG1MWN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jul 2014 08:22:13 -0400
+Date: Mon, 28 Jul 2014 14:22:09 +0200
+From: Jean Delvare <jdelvare@suse.de>
+To: "Daniel M. Weeks" <dan@danweeks.net>
+Cc: Wolfram Sang <wsa@the-dreams.de>, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] i2c: piix4: Continue probing for auxiliary SMBus
+ without main
+Message-ID: <20140728142209.69246fcc@endymion.delvare>
+In-Reply-To: <20140712000607.GA25787@turkey.danweeks.net>
+References: <20140712000607.GA25787@turkey.danweeks.net>
+Organization: SUSE Linux
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="XVjO8VCnuz2qIvDh"
-Content-Disposition: inline
-In-Reply-To: <53D63746.3000905@suse.de>
-X-Cookie: 98% lean.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v2 09/11] Documentation: devicetree: Fix ADI AXI SPDIF
- specification
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Daniel,
 
---XVjO8VCnuz2qIvDh
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Fri, 11 Jul 2014 20:06:15 -0400, Daniel M. Weeks wrote:
+> Some BIOS may only allow access to the AMD auxiliary SMBus - reserving
+> the main SMBus for system functions only. Probing should continue even
+> if the main bus is not available so at least the auxiliary can be added.
+> 
+> Signed-off-by: Daniel M. Weeks <dan@danweeks.net>
+> ---
+> This patch may warrant some discussion. I ran across this problem on an
+> AMD Hudson board where the main SMBus is hard-wired for debugging but
+> the auxiliary bus is exposed for expansion. Either purposefully or
+> because the BIOS is a little broken, loading this module used to result
+> in an ACPI conflict for the main bus and neither was usable. With the
+> patch I'm able to use the auxiliary bus regardless of the conflict on
+> the main bus. I'm not 100% convinced it's the correct fix - someone with
+> more ACPI experience than me is going to need to review this.
 
-On Mon, Jul 28, 2014 at 01:43:02PM +0200, Andreas F=E4rber wrote:
-> Am 25.07.2014 12:39, schrieb Mark Brown:
-> > On Fri, Jul 25, 2014 at 12:32:43PM +0200, Andreas F=E4rber wrote:
+This is fine. The auxiliary bus setup code has its own ACPI resource
+conflict check, so it is safe to let the driver bind to the auxiliary
+bus even if the main bus is skipped.
 
-> >> Maybe this works for you?
-> >> https://patchwork.kernel.org/patch/4620191/
+> 
+> drivers/i2c/busses/i2c-piix4.c | 18 ++++++++++--------
+>  1 file changed, 10 insertions(+), 8 deletions(-)
+> 
+> diff --git a/drivers/i2c/busses/i2c-piix4.c b/drivers/i2c/busses/i2c-piix4.c
+> index a6f54ba..d4bac64 100644
+> --- a/drivers/i2c/busses/i2c-piix4.c
+> +++ b/drivers/i2c/busses/i2c-piix4.c
+> @@ -628,14 +628,16 @@ static int piix4_probe(struct pci_dev *dev, const struct pci_device_id *id)
+>  	else
+>  		retval = piix4_setup(dev, id);
+>  
+> -	/* If no main SMBus found, give up */
+> -	if (retval < 0)
+> -		return retval;
+> -
+> -	/* Try to register main SMBus adapter, give up if we can't */
+> -	retval = piix4_add_adapter(dev, retval, &piix4_main_adapter);
+> -	if (retval < 0)
+> -		return retval;
+> +	/* If no main SMBus found, do not give up
+> +	 * some BIOS purposely only expose aux bus */
+> +	if (retval < 0) {
+> +		dev_info(&dev->dev, "No main SMBus; checking auxiliary\n");
 
-> >> Otherwise I can resend with Ab/Rb.
+Not sure if this message is really needed, as both parts already print
+relevant message in both success and failure cases.
 
-> > Documentation/SubmittingPatches.
+> +	} else {
+> +		/* Try to register main SMBus adapter, give up if we can't */
+> +		retval = piix4_add_adapter(dev, retval, &piix4_main_adapter);
+> +		if (retval < 0)
+> +			return retval;
+> +	}
+>  
+>  	/* Check for auxiliary SMBus on some AMD chipsets */
+>  	retval = -ENODEV;
 
-> Not helpful here, nor is
-> Documentation/devicetree/bindings/submitting-patches.txt. It's separate
-> from code changes, sent via git-send-email, has a Sob, went to LKML and
-> LAKML and DTML. I could add a Fixes: header and CC trivial for this
-> one-line fix IIUC.
+I'm mostly fine with the change above, but it is insufficient in one
+corner case: if both the main bus and the aux bus probing fails. The
+code does currently not consider both buses equal, in that it never
+returns an error if the aux bus probing fails. The return value only
+stands for the status of the main bus. With your change, if both buses
+fail to register, the piix4_probe function may still returns 0
+(success.)
 
-It's telling you that the kernel process is to review patches sent via
-e-mail, not random links to web appliations - notice the context to
-which I'm replying, I'm saying that sending a link to something on the
-web isn't a good way of submitting a patch.
+Your proposed change somehow makes the aux bus an equal of the main
+bus. The probe function should return 0 if either bus was successfully
+registered. It should still return an error if both fail to register.
+Unfortunately we can't report both error codes to the caller. For
+historical reasons I believe we should return the error code for the
+main bus in that case, which means you have to store it in the middle
+of the function for it to be available at the end of the function.
 
-> Doesn't tell me which patches I should CC you on in the future though.
-> Therefore my request to fix the false negative in MAINTAINERS so that me
-> and other kernel newbies don't run into it again.
-
-Feel free to submit patches if you want to see changes.
-
---XVjO8VCnuz2qIvDh
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJT1kAQAAoJELSic+t+oim9h/UQAIdLd2Kqc8b4Ddy4l0Hm/zCX
-fhJN8b+NDl1Bdi6Y444ymBIT3NftmPXGevxKmlxqTARTusXQHIA0Wv9gll/K16pi
-mWgIDVIvH98pHFgyGpafs78rmsKtIhlAP1A0PI0XTIVBNqthiuTveBnJpN6SEr9P
-04PpudbuNS3KCA7hPjSv+ToFFB9lLjUDI7KHrmsHXS1kAbLIYqw0ydxRYTngX8b/
-4kUUukaEVrM+OB7TN3blY7HqVsesvu58HOPmBk6toFZlENasxZ3uxPoh8rGceE0M
-Hber7MACG8Z6fMErA6XJW2rhScIVvQ7tcT9gs4cKH/N/vUGHuZSB3YYtWZeVnssN
-N/sXMLdC5Icu3gZATxmdJHYkCO9NMFGjZhN2xPPzNg0xOQ7NHdDtUaGJWjFGWNrm
-EFnCDV/ThNbJ/RsaO3xv6+lvKFw0f9hNo4WzkAv6KgzyWVuxWTt7w34c7MQD6YO8
-XuWXuk/M5TyIMwJHSMoZU2SU5cWDHy37qz/8fqEjVw1O1HvSh7Tldcc6p8luOuCU
-hf9OBftZB2RmJLeSsnHssoa0ibfUYQM70l2BiLE9Nv9AJ109PNeuJy8kJ4ELnEkq
-zXUQzxoMZOD0DrmQzoSyTxvqeZo0qI0AIrgXBP1D7pWb1a0kTS5xmC8jgI3a52pz
-Lzn1amY/19NJMm2GbBC7
-=Gg5h
------END PGP SIGNATURE-----
-
---XVjO8VCnuz2qIvDh--
+Thanks,
+-- 
+Jean Delvare
+SUSE L3 Support
