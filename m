@@ -1,83 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751887AbaG1TF3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 15:05:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42581 "EHLO mx1.redhat.com"
+	id S1751958AbaG1TFn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 15:05:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:30594 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751003AbaG1TFV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 15:05:21 -0400
-Message-ID: <53D699BE.90208@redhat.com>
-Date: Mon, 28 Jul 2014 14:43:10 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Vincent Guittot <vincent.guittot@linaro.org>, peterz@infradead.org,
-        mingo@kernel.org, linux-kernel@vger.kernel.org,
-        preeti@linux.vnet.ibm.com, linux@arm.linux.org.uk,
-        linux-arm-kernel@lists.infradead.org
-CC: Morten.Rasmussen@arm.com, efault@gmx.de, nicolas.pitre@linaro.org,
-        linaro-kernel@lists.linaro.org, daniel.lezcano@linaro.org,
-        dietmar.eggemann@arm.com
-Subject: Re: [PATCH v4 08/12] sched: move cfs task on a CPU with higher capacity
-References: <1406569906-9763-1-git-send-email-vincent.guittot@linaro.org> <1406569906-9763-9-git-send-email-vincent.guittot@linaro.org>
-In-Reply-To: <1406569906-9763-9-git-send-email-vincent.guittot@linaro.org>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1751003AbaG1TFk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jul 2014 15:05:40 -0400
+From: Eduardo Habkost <ehabkost@redhat.com>
+To: virtualization@lists.linux-foundation.org
+Cc: Jeremy Fitzhardinge <jeremy@goop.org>, Chris Wright <chrisw@sous-sol.org>,
+        Alok Kataria <akataria@vmware.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] x86, paravirt: BUG_ON on {rd,wr}msr exceptions
+Date: Mon, 28 Jul 2014 16:04:38 -0300
+Message-Id: <1406574278-23946-1-git-send-email-ehabkost@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
+When CONFIG_PARAVIRT is enabled, the kernel is ignoring exceptions on
+the {rd,wr}msr instructions. This makes serious issues (either on the
+guest kernel, or on the host) be silently ignored, and is different from
+the native MSR code (which does not ignore the exceptions).
 
-On 07/28/2014 01:51 PM, Vincent Guittot wrote:
-> If the CPU is used for handling lot of IRQs, trig a load balance to
-> check if it's worth moving its tasks on another CPU that has more
-> capacity.
-> 
-> As a sidenote, this will note generate more spurious ilb because we
-> already trig an ilb if there is more than 1 busy cpu. If this cpu
-> is the only one that has a task, we will trig the ilb once for
-> migrating the task.
-> 
-> The nohz_kick_needed function has been cleaned up a bit while
-> adding the new test
-> 
-> Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org> --- 
-> kernel/sched/fair.c | 69
-> +++++++++++++++++++++++++++++++++++++---------------- 1 file
-> changed, 49 insertions(+), 20 deletions(-)
-> 
-> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c index
-> 6843016..1cde8dd 100644 --- a/kernel/sched/fair.c +++
-> b/kernel/sched/fair.c @@ -5969,6 +5969,14 @@ static bool
-> update_sd_pick_busiest(struct lb_env *env, return true; }
-> 
-> +	/* +	 * The group capacity is reduced probably because of
-> activity from other +	 * sched class or interrupts which use part
-> of the available capacity +	 */ +	if ((sg->sgc->capacity_orig *
-> 100) > (sgs->group_capacity * +				env->sd->imbalance_pct)) +
-> return true; + return false; }
+As paravirt.h already includes linux/bug.h, I don't see what was the
+original issue preventing BUG_ON from being used.
 
-Isn't this already reflected in avg_load, by having avg_load increase
-due to the capacity decreasing when a cpu is busy with non-CFS loads?
+Change rdmsr(), wrmsr(), and rdmsrl() to BUG_ON() on errors.
 
-Also, this part of update_sd_pick_busiest will not be reached in the
-!SD_ASYM_PACKING case once my patch is applied, so this is a small
-conflict between our series :)
+Signed-off-by: Eduardo Habkost <ehabkost@redhat.com>
+---
+* Build-tested using allyesconfig, with no build errors.
 
-- -- 
-All rights reversed
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+* Tested by being able to detect the following host bug:
+  https://bugzilla.redhat.com/show_bug.cgi?id=1025868
+  (#GP exception on wrmsr(0x410, 0xfffffffffffffbff) during MCE
+  initialization)
+---
+ arch/x86/include/asm/paravirt.h | 11 +++++++----
+ 1 file changed, 7 insertions(+), 4 deletions(-)
 
-iQEcBAEBAgAGBQJT1pm+AAoJEM553pKExN6DysEH/1/s2dY0EWM4mVctRAcyASc+
-qD5yQgDZEbnIzuUldtTRNwlAxHSaexLI7oF418RAaUV3oue+OQIesJPhKDVrR2+J
-fLo4fhtutuF1SHJ5Zo2fiGBIUI+GuLspT2fXiG2UxXQXtYioVdDeB+cjo6H3xQ3D
-R2hR+WeSsLznwFhRnufI1neleIRpqk/Nw1wfdXCyE03kM478rCQjlygMUx6eqURn
-jblr7GY7jmtzhYFPY9qnE0za/WHWUVAf4RXSjCcuYwZqdhbzmHPKpJyiC3cl9XGz
-kNzAjqVzvSyCBblaOnJfrRyCWmBdatp5eZQCzZK9/l+YpbkkzQJNlUMAAVV1eNw=
-=qD2A
------END PGP SIGNATURE-----
+diff --git a/arch/x86/include/asm/paravirt.h b/arch/x86/include/asm/paravirt.h
+index cd6e161..7d42ca4 100644
+--- a/arch/x86/include/asm/paravirt.h
++++ b/arch/x86/include/asm/paravirt.h
+@@ -133,24 +133,27 @@ static inline int paravirt_write_msr(unsigned msr, unsigned low, unsigned high)
+ 	return PVOP_CALL3(int, pv_cpu_ops.write_msr, msr, low, high);
+ }
+ 
+-/* These should all do BUG_ON(_err), but our headers are too tangled. */
+ #define rdmsr(msr, val1, val2)			\
+ do {						\
+ 	int _err;				\
+ 	u64 _l = paravirt_read_msr(msr, &_err);	\
++	BUG_ON(_err);				\
+ 	val1 = (u32)_l;				\
+ 	val2 = _l >> 32;			\
+ } while (0)
+ 
+-#define wrmsr(msr, val1, val2)			\
+-do {						\
+-	paravirt_write_msr(msr, val1, val2);	\
++#define wrmsr(msr, val1, val2)				\
++do {							\
++	int _err;					\
++	_err = paravirt_write_msr(msr, val1, val2);	\
++	BUG_ON(_err);					\
+ } while (0)
+ 
+ #define rdmsrl(msr, val)			\
+ do {						\
+ 	int _err;				\
+ 	val = paravirt_read_msr(msr, &_err);	\
++	BUG_ON(_err);				\
+ } while (0)
+ 
+ #define wrmsrl(msr, val)	wrmsr(msr, (u32)((u64)(val)), ((u64)(val))>>32)
+-- 
+1.9.3
+
