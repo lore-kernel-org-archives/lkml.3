@@ -1,152 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752070AbaG1Jgy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 05:36:54 -0400
-Received: from mta-out1.inet.fi ([62.71.2.193]:50146 "EHLO jenni1.inet.fi"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750981AbaG1Jgw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 05:36:52 -0400
-Date: Mon, 28 Jul 2014 12:36:11 +0300
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Andrey Ryabinin <a.ryabinin@samsung.com>,
-        Sasha Levin <sasha.levin@oracle.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andi Kleen <ak@linux.intel.com>,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        Dave Hansen <dave.hansen@linux.intel.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Dave Chinner <david@fromorbit.com>, Ning Qu <quning@gmail.com>,
-        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Dave Jones <davej@redhat.com>,
-        stable@vger.kernel.org,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Konstantin Khlebnikov <koct9i@gmail.com>,
-        Hugh Dickins <hughd@google.com>
-Subject: Re: [PATCH] mm: don't allow fault_around_bytes to be 0
-Message-ID: <20140728093611.GA3975@node.dhcp.inet.fi>
-References: <53D07E96.5000006@oracle.com>
- <1406533400-6361-1-git-send-email-a.ryabinin@samsung.com>
+	id S1752055AbaG1JoY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 05:44:24 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:20978 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751458AbaG1JoW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jul 2014 05:44:22 -0400
+X-IronPort-AV: E=Sophos;i="5.00,978,1396972800"; 
+   d="scan'208";a="33860281"
+Message-ID: <53D61A2C.40805@cn.fujitsu.com>
+Date: Mon, 28 Jul 2014 17:38:52 +0800
+From: Wang Shilong <wangsl.fnst@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1406533400-6361-1-git-send-email-a.ryabinin@samsung.com>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+To: Takashi Iwai <tiwai@suse.de>, Chris Mason <clm@fb.com>
+CC: Josef Bacik <jbacik@fb.com>, <linux-btrfs@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] Btrfs: Fix memory corruption by ulist_add_merge() on
+ 32bit arch
+References: <1406537824-2376-1-git-send-email-tiwai@suse.de>
+In-Reply-To: <1406537824-2376-1-git-send-email-tiwai@suse.de>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.167.226.245]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 28, 2014 at 11:43:20AM +0400, Andrey Ryabinin wrote:
-> Sasha Levin triggered use-after-free when fuzzing using trinity and the KASAN
-> patchset:
-> 
-> 	AddressSanitizer: use after free in do_read_fault.isra.40+0x3c2/0x510 at addr ffff88048a733110
-> 	page:ffffea001229ccc0 count:0 mapcount:0 mapping:          (null) index:0x0
-> 	page flags: 0xafffff80008000(tail)
-> 	page dumped because: kasan error
-> 	CPU: 6 PID: 9262 Comm: trinity-c104 Not tainted 3.16.0-rc6-next-20140723-sasha-00047-g289342b-dirty #929
-> 	 00000000000000fb 0000000000000000 ffffea001229ccc0 ffff88038ac0fb78
-> 	 ffffffffa5e40903 ffff88038ac0fc48 ffff88038ac0fc38 ffffffffa142acfc
-> 	 0000000000000001 ffff880509ff5aa8 ffff88038ac10038 ffff88038ac0fbb0
-> 	Call Trace:
-> 	dump_stack (lib/dump_stack.c:52)
-> 	kasan_report_error (mm/kasan/report.c:98 mm/kasan/report.c:166)
-> 	? debug_smp_processor_id (lib/smp_processor_id.c:57)
-> 	? preempt_count_sub (kernel/sched/core.c:2606)
-> 	? put_lock_stats.isra.13 (./arch/x86/include/asm/preempt.h:98 kernel/locking/lockdep.c:254)
-> 	? do_read_fault.isra.40 (mm/memory.c:2784 mm/memory.c:2849 mm/memory.c:2898)
-> 	__asan_load8 (mm/kasan/kasan.c:364)
-> 	? do_read_fault.isra.40 (mm/memory.c:2864 mm/memory.c:2898)
-> 	do_read_fault.isra.40 (mm/memory.c:2864 mm/memory.c:2898)
-> 	? _raw_spin_unlock (./arch/x86/include/asm/preempt.h:98 include/linux/spinlock_api_smp.h:152 kernel/locking/spinlock.c:183)
-> 	? __pte_alloc (mm/memory.c:598)
-> 	handle_mm_fault (mm/memory.c:3092 mm/memory.c:3225 mm/memory.c:3345 mm/memory.c:3374)
-> 	? pud_huge (./arch/x86/include/asm/paravirt.h:611 arch/x86/mm/hugetlbpage.c:76)
-> 	__get_user_pages (mm/gup.c:286 mm/gup.c:478)
-> 	__mlock_vma_pages_range (mm/mlock.c:262)
-> 	__mm_populate (mm/mlock.c:710)
-> 	SyS_remap_file_pages (mm/mmap.c:2653 mm/mmap.c:2593)
-> 	tracesys (arch/x86/kernel/entry_64.S:541)
-> 	Read of size 8 by thread T9262:
-> 	Memory state around the buggy address:
-> 	 ffff88048a732e80: fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb
-> 	 ffff88048a732f00: fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb
-> 	 ffff88048a732f80: fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb
-> 	 ffff88048a733000: fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb
-> 	 ffff88048a733080: fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb
-> 	>ffff88048a733100: fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb
-> 	                         ^
-> 	 ffff88048a733180: fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb
-> 	 ffff88048a733200: fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb
-> 	 ffff88048a733280: fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb
-> 	 ffff88048a733300: fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb
-> 	 ffff88048a733380: fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb
-> 
-> 
-> It looks like that pte pointer is invalid in do_fault_around().
-> This could happen if fault_around_bytes is set to 0.
-> fault_around_pages() and fault_around_mask() calls rounddown_pow_of_to(fault_around_bytes)
-> The result of rounddown_pow_of_to is undefined if parameter == 0
-> (in my environment it returns 0x8000000000000000).
+Hi Takashi,
 
-Ouch. Good catch!
+This seems like a promising fix, i just have a little question:
 
-Although, I'm not convinced that it caused the issue. Sasha, did you touch the
-debugfs handle?
+ulist_add() logic is we firstly cast a pointer to u64(see ptr_to_u64()), 
+and then
+cast u64 to pointer back(u64_to_ptr()). So normally, arg u64 is actually 
+a pointer.
 
-> One way to fix this would be to return 0 from fault_around_pages() if fault_around_bytes == 0,
-> however this would add extra code on fault path.
-> 
-> So let's just forbid to set fault_around_bytes to zero.
-> Fault around is not used if fault_around_pages() <= 1, so if anyone doesn't want to use
-> it, fault_around_bytes could be set to any value in range [1, 2*PAGE_SIZE - 1]
-> instead of 0.
+If the below overflow happens, that means casting can change original value?
 
->From user point of view, 0 is perfectly fine. What about untested patch
-below?
+Am i missing something here?
 
-Other option: get rid of debugfs interface, so fault_around_pages() and
-fault_around_mask() will always be known compile time.
+Thanks,
+Wang
+On 07/28/2014 04:57 PM, Takashi Iwai wrote:
+> We've got bug reports that btrfs crashes when quota is enabled on
+> 32bit kernel, typically with the Oops like below:
+>   BUG: unable to handle kernel NULL pointer dereference at 00000004
+>   IP: [<f9234590>] find_parent_nodes+0x360/0x1380 [btrfs]
+>   *pde = 00000000
+>   Oops: 0000 [#1] SMP
+>   CPU: 0 PID: 151 Comm: kworker/u8:2 Tainted: G S      W 3.15.2-1.gd43d97e-default #1
+>   Workqueue: btrfs-qgroup-rescan normal_work_helper [btrfs]
+>   task: f1478130 ti: f147c000 task.ti: f147c000
+>   EIP: 0060:[<f9234590>] EFLAGS: 00010213 CPU: 0
+>   EIP is at find_parent_nodes+0x360/0x1380 [btrfs]
+>   EAX: f147dda8 EBX: f147ddb0 ECX: 00000011 EDX: 00000000
+>   ESI: 00000000 EDI: f147dda4 EBP: f147ddf8 ESP: f147dd38
+>    DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
+>   CR0: 8005003b CR2: 00000004 CR3: 00bf3000 CR4: 00000690
+>   Stack:
+>    00000000 00000000 f147dda4 00000050 00000001 00000000 00000001 00000050
+>    00000001 00000000 d3059000 00000001 00000022 000000a8 00000000 00000000
+>    00000000 000000a1 00000000 00000000 00000001 00000000 00000000 11800000
+>   Call Trace:
+>    [<f923564d>] __btrfs_find_all_roots+0x9d/0xf0 [btrfs]
+>    [<f9237bb1>] btrfs_qgroup_rescan_worker+0x401/0x760 [btrfs]
+>    [<f9206148>] normal_work_helper+0xc8/0x270 [btrfs]
+>    [<c025e38b>] process_one_work+0x11b/0x390
+>    [<c025eea1>] worker_thread+0x101/0x340
+>    [<c026432b>] kthread+0x9b/0xb0
+>    [<c0712a71>] ret_from_kernel_thread+0x21/0x30
+>    [<c0264290>] kthread_create_on_node+0x110/0x110
+>
+> This indicates a NULL corruption in prefs_delayed list.  The further
+> investigation and bisection pointed that the call of ulist_add_merge()
+> results in the corruption.
+>
+> ulist_add_merge() takes u64 as aux and writes a 64bit value into
+> old_aux.  The callers of this function in backref.c, however, pass a
+> pointer of a pointer to old_aux.  That is, the function overwrites
+> 64bit value on 32bit pointer.  This caused a NULL in the adjacent
+> variable, in this case, prefs_delayed.
+>
+> Here is a quick attempt to band-aid over this: a new function,
+> ulist_add_merge_ptr() is introduced to pass/store properly a pointer
+> value instead of u64.  There are still ugly void ** cast remaining
+> in the callers because void ** cannot be taken implicitly.  But, it's
+> safer than explicit cast to u64, anyway.
+>
+> Bugzilla: https://bugzilla.novell.com/show_bug.cgi?id=887046
+> Cc: <stable@vger.kernel.org> [v3.11+]
+> Signed-off-by: Takashi Iwai <tiwai@suse.de>
+> ---
+>
+> Alternatively, we can change the argument of aux and old_aux to a
+> pointer from u64, as backref.c is the only user of ulist_add_merge()
+> function.  I'll cook up another patch if it's the preferred way.
+>
+>   fs/btrfs/backref.c | 11 +++++------
+>   fs/btrfs/ulist.h   | 15 +++++++++++++++
+>   2 files changed, 20 insertions(+), 6 deletions(-)
+>
+> diff --git a/fs/btrfs/backref.c b/fs/btrfs/backref.c
+> index e25564bfcb46..d7a24620a963 100644
+> --- a/fs/btrfs/backref.c
+> +++ b/fs/btrfs/backref.c
+> @@ -276,9 +276,8 @@ static int add_all_parents(struct btrfs_root *root, struct btrfs_path *path,
+>   			}
+>   			if (ret > 0)
+>   				goto next;
+> -			ret = ulist_add_merge(parents, eb->start,
+> -					      (uintptr_t)eie,
+> -					      (u64 *)&old, GFP_NOFS);
+> +			ret = ulist_add_merge_ptr(parents, eb->start,
+> +						  eie, (void **)&old, GFP_NOFS);
+>   			if (ret < 0)
+>   				break;
+>   			if (!ret && extent_item_pos) {
+> @@ -1008,9 +1007,9 @@ again:
+>   					goto out;
+>   				ref->inode_list = eie;
+>   			}
+> -			ret = ulist_add_merge(refs, ref->parent,
+> -					      (uintptr_t)ref->inode_list,
+> -					      (u64 *)&eie, GFP_NOFS);
+> +			ret = ulist_add_merge_ptr(refs, ref->parent,
+> +						  ref->inode_list,
+> +						  (void **)&eie, GFP_NOFS);
+>   			if (ret < 0)
+>   				goto out;
+>   			if (!ret && extent_item_pos) {
+> diff --git a/fs/btrfs/ulist.h b/fs/btrfs/ulist.h
+> index 7f78cbf5cf41..695fc2bac680 100644
+> --- a/fs/btrfs/ulist.h
+> +++ b/fs/btrfs/ulist.h
+> @@ -57,6 +57,21 @@ void ulist_free(struct ulist *ulist);
+>   int ulist_add(struct ulist *ulist, u64 val, u64 aux, gfp_t gfp_mask);
+>   int ulist_add_merge(struct ulist *ulist, u64 val, u64 aux,
+>   		    u64 *old_aux, gfp_t gfp_mask);
+> +
+> +/* just like ulist_add_merge() but take a pointer for the aux data */
+> +static inline int ulist_add_merge_ptr(struct ulist *ulist, u64 val, void *aux,
+> +				      void **old_aux, gfp_t gfp_mask)
+> +{
+> +#if BITS_PER_LONG == 32
+> +	u64 old64 = (uintptr_t)*old_aux;
+> +	int ret = ulist_add_merge(ulist, val, (uintptr_t)aux, &old64, gfp_mask);
+> +	*old_aux = (void *)((uintptr_t)old64);
+> +	return ret;
+> +#else
+> +	return ulist_add_merge(ulist, val, (u64)aux, (u64 *)old_aux, gfp_mask)
+> +#endif
+> +}
+> +
+>   struct ulist_node *ulist_next(struct ulist *ulist,
+>   			      struct ulist_iterator *uiter);
+>   
 
-There's other problem with the debugfs handle: we don't have serialization
-between fault_around_bytes_set() and do_fault_around(). It can end up
-badly if fault_around_bytes will be changed under do_fault_around()...
-
-I don't think it worth adding the serialization to hot path to protect
-against debug interface.
-Any thoughts?
-
->From 2932fbcefe4ec21c046348e21981149ecce5d161 Mon Sep 17 00:00:00 2001
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Date: Mon, 28 Jul 2014 12:16:49 +0300
-Subject: [PATCH] mm, debugfs: workaround undefined behaviour of
- rounddown_pow_of_two(0)
-
-Result of rounddown_pow_of_two(0) is not defined. It can cause a bug if
-user will set fault_around_bytes to 0 via debugfs interface.
-
-Let's set fault_around_bytes to PAGE_SIZE if user tries to set it to
-something below PAGE_SIZE.
-
-Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
----
- mm/memory.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
-
-diff --git a/mm/memory.c b/mm/memory.c
-index 7e8d8205b610..2d8fa7a7b0ee 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -2786,7 +2786,8 @@ static int fault_around_bytes_set(void *data, u64 val)
- {
- 	if (val / PAGE_SIZE > PTRS_PER_PTE)
- 		return -EINVAL;
--	fault_around_bytes = val;
-+	/* rounddown_pow_of_two(0) is not defined */
-+	fault_around_bytes = max(val, PAGE_SIZE);
- 	return 0;
- }
- DEFINE_SIMPLE_ATTRIBUTE(fault_around_bytes_fops,
--- 
- Kirill A. Shutemov
