@@ -1,80 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752731AbaG1OSJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 10:18:09 -0400
-Received: from mail-oi0-f45.google.com ([209.85.218.45]:38145 "EHLO
-	mail-oi0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750915AbaG1OSH (ORCPT
+	id S1752744AbaG1OUN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 10:20:13 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:39427 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751175AbaG1OUJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 10:18:07 -0400
+	Mon, 28 Jul 2014 10:20:09 -0400
+Message-ID: <53D65C16.2050202@arm.com>
+Date: Mon, 28 Jul 2014 15:20:06 +0100
+From: Andre Przywara <andre.przywara@arm.com>
+Organization: ARM Ltd.
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-In-Reply-To: <1406385895-3886-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-References: <1406385895-3886-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-Date: Mon, 28 Jul 2014 10:18:06 -0400
-X-Google-Sender-Auth: Pee8uySqGoY-pefqJx-mlyiZ2j4
-Message-ID: <CAGXu5jK9Fm9Yw4mNoSZ7+B3LyvTbWx5fyOcB46V8=J4kLa2d3Q@mail.gmail.com>
-Subject: Re: [PATCH] kernel: debug: kdb: kdb_io.c: Cleaning up missing
- null-terminate in conjunction with strncpy
-From: Kees Cook <keescook@chromium.org>
-To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-Cc: Jason Wessel <jason.wessel@windriver.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Borislav Petkov <bp@suse.de>, Randy Dunlap <rdunlap@infradead.org>,
-        kgdb-bugreport@lists.sourceforge.net,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Arnd Bergmann <arnd@arndb.de>, Graeme Gregory <graeme.gregory@linaro.org>
+CC: Mark Rutland <mark.rutland@arm.com>, Mark Brown <broonie@linaro.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>, Lv Zheng <lv.zheng@intel.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Robert Moore <robert.moore@intel.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
+        Robert Richter <rric@kernel.org>, Jason Cooper <jason@lakedaemon.net>,
+        Marc Zyngier <marc.zyngier@arm.com>, Liviu Dudau <Liviu.Dudau@arm.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Randy Dunlap <rdunlap@infradead.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Hanjun Guo <hanjun.guo@linaro.org>,
+        Sudeep Holla <Sudeep.Holla@arm.com>, Olof Johansson <olof@lixom.net>
+Subject: Re: [PATCH 19/19] Documentation: ACPI for ARM64
+References: <1406206825-15590-1-git-send-email-hanjun.guo@linaro.org> <5014834.k6eecMddPC@wuerfel> <53D616AD.2090501@linaro.org> <5959830.lpqeqL7HbK@wuerfel>
+In-Reply-To: <5959830.lpqeqL7HbK@wuerfel>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 26, 2014 at 10:44 AM, Rickard Strandqvist
-<rickard_strandqvist@spectrumdigital.se> wrote:
-> Replacing strncpy with strlcpy to avoid strings that lacks null terminate.
->
-> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-> ---
->  kernel/debug/kdb/kdb_io.c |    6 +++---
->  1 file changed, 3 insertions(+), 3 deletions(-)
->
-> diff --git a/kernel/debug/kdb/kdb_io.c b/kernel/debug/kdb/kdb_io.c
-> index 7c70812..27977c0 100644
-> --- a/kernel/debug/kdb/kdb_io.c
-> +++ b/kernel/debug/kdb/kdb_io.c
-> @@ -361,9 +361,9 @@ poll_again:
->                         kdb_printf("%s", buffer);
->                 } else if (tab != 2 && count > 0) {
->                         len_tmp = strlen(p_tmp);
-> -                       strncpy(p_tmp+len_tmp, cp, lastchar-cp+1);
-> +                       strlcpy(p_tmp+len_tmp, cp, lastchar-cp+1);
->                         len_tmp = strlen(p_tmp);
-> -                       strncpy(cp, p_tmp+len, len_tmp-len + 1);
-> +                       strlcpy(cp, p_tmp+len, len_tmp-len + 1);
->                         len = len_tmp - len;
->                         kdb_printf("%s", cp);
->                         cp += len;
+On 28/07/14 11:46, Arnd Bergmann wrote:
+> On Monday 28 July 2014 10:23:57 Graeme Gregory wrote:
+>> The PL011 UART is the use-case I keep hitting, that IP block has a 
+>> variable input clock on pretty much everything I have seen in the wild. 
+> 
+> Ok, I see. What does ACPI-5.1 say about pl011?
+> 
+> Interestingly, the subset of pl011 that is specified by SBSA does not
+> contain the IBRD/FBRD registers, effectively making it a fixed-rated
+> UART (I guess that would be a ART, without the U then), and you
+> consequently don't even need to know the clock rate.
 
-It's not clear to me what this code is actually doing, but I think the
-"+1" parts to these strncpy()s are there to include the NULL
-character.
+The idea of this was probably to let the baudrate set by some firmware
+code to the "right" value and the spec just didn't want to expose the
+details for the generic UART:
+"This specification does not cover registers needed to configure the
+UART as these are considered hardware-specific and will be set up by
+hardware-specific software."
+To me that reads like the SBSA UART is just for debugging, and you are
+expected just to access the data register.
 
-> @@ -442,7 +442,7 @@ poll_again:
->  char *kdb_getstr(char *buffer, size_t bufsize, char *prompt)
->  {
->         if (prompt && kdb_prompt_str != prompt)
-> -               strncpy(kdb_prompt_str, prompt, CMD_BUFLEN);
-> +               strlcpy(kdb_prompt_str, prompt, CMD_BUFLEN);
+> However, my guess is that most hardware in the real world contains
+> an actual pl011 and it does make a lot of sense to allow setting
+> the baud rate on it, which then requires knowing the input clock.
+> 
+> If there is any hardware that implements just the SBSA-mandated subset
+> rather than the full pl011, we should probably implement both
+> in the kernel: a dumb driver that can only send and receive, and the
+> more complex one that can set the bit rates and flow-control but that
+> requires a standardized ACPI table with the input clock rate.
 
-This seems like a good idea.
+The fast model I use can be switched to use the SBSA restricted PL011,
+and as expected the Linux kernel crashes at the device doesn't support
+DMA (and a lot more stuff) - but the current code requires it.
+So I am about to implement a new driver for that SBSA subset. So far
+this will be a separate driver, starting from a copy of amba-pl011.c,
+but removing most of the code ;-)
 
->         kdb_printf(kdb_prompt_str);
->         kdb_nextline = 1;       /* Prompt and input resets line number */
->         return kdb_read(buffer, bufsize);
-> --
-> 1.7.10.4
->
+> Whether the two would belong into one file or two separate driver
+> modules is something I can't tell, it would be up to the serial
+> maintainers to decide.
 
--Kees
+Sharing support for both devices in the same file doesn't seem to make
+too much sense to me so far (but I may amend this later).
+Will post a version as soon as I have it finished.
 
--- 
-Kees Cook
-Chrome OS Security
+Cheers,
+Andre.
