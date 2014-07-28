@@ -1,134 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751958AbaG1IYO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 04:24:14 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:42444 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751466AbaG1IYJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 04:24:09 -0400
-Date: Mon, 28 Jul 2014 01:23:12 -0700
-From: tip-bot for Adrian Hunter <tipbot@zytor.com>
-Message-ID: <tip-1f625b0b3dd641b74ba21640a1fea19a3dd893a2@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
-        paulus@samba.org, hpa@zytor.com, mingo@kernel.org,
-        peterz@infradead.org, namhyung@gmail.com, jolsa@redhat.com,
-        fweisbec@gmail.com, adrian.hunter@intel.com, dsahern@gmail.com,
-        tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
-        eranian@google.com, linux-kernel@vger.kernel.org, acme@redhat.com,
-        peterz@infradead.org, namhyung@gmail.com, jolsa@redhat.com,
-        fweisbec@gmail.com, dsahern@gmail.com, adrian.hunter@intel.com,
-        tglx@linutronix.de
-In-Reply-To: <1406035081-14301-15-git-send-email-adrian.hunter@intel.com>
-References: <1406035081-14301-15-git-send-email-adrian.hunter@intel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tools: Add dsos__hit_all()
-Git-Commit-ID: 1f625b0b3dd641b74ba21640a1fea19a3dd893a2
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S1751986AbaG1IYY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 04:24:24 -0400
+Received: from mga01.intel.com ([192.55.52.88]:32883 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751437AbaG1IYV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jul 2014 04:24:21 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,747,1400050800"; 
+   d="scan'208";a="576413162"
+Message-ID: <53D60896.5050703@intel.com>
+Date: Mon, 28 Jul 2014 16:23:50 +0800
+From: "xinhui.pan" <xinhuix.pan@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
+To: Greg KH <gregkh@linuxfoundation.org>, Jiri Slaby <jslaby@suse.cz>
+CC: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
+        Peter Hurley <peter@hurleysoftware.com>, mnipxh <mnipxh@gmail.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] tty/n_gsm.c: fix a memory leak in gsmld_open
+References: <53D6067C.4000702@intel.com>
+In-Reply-To: <53D6067C.4000702@intel.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  1f625b0b3dd641b74ba21640a1fea19a3dd893a2
-Gitweb:     http://git.kernel.org/tip/1f625b0b3dd641b74ba21640a1fea19a3dd893a2
-Author:     Adrian Hunter <adrian.hunter@intel.com>
-AuthorDate: Tue, 22 Jul 2014 16:17:23 +0300
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Wed, 23 Jul 2014 11:25:40 -0300
+hi, All
+	thanks for reading. Below is my trigger.
 
-perf tools: Add dsos__hit_all()
+----------------------------------------
+#define WARN(x) do{		\
+	KLOG_ERROR("XINHUI",x);	\
+}while(0)
 
-Add ability to mark all dsos as hit.
+int main()
+{
+	KLOG_ERROR("XINHUI", "hello world :)\n");
+	long fp[4];
+	int i = 0;
+	int next[4]={1,2,3,0};
 
-This is needed in the case of Instruction Tracing.  It takes so long to
-decode an Instruction Trace that it is not worth doing just to determine
-which dsos are hit.  A later patch takes this into use.
+	do{
+		char path[64] = "dev/tty30";
+		path[strlen(path) - 1] = '0' + i;
 
-Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1406035081-14301-15-git-send-email-adrian.hunter@intel.com
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/util/header.c | 41 +++++++++++++++++++++++++++++++++++++++++
- tools/perf/util/header.h |  2 ++
- 2 files changed, 43 insertions(+)
+		fp[i] = open(path, O_RDWR);
+		if (fp[i] == -1){
+			WARN("mlk tty open fails\n");
+			return 0;
+		}
+	}while(++i < 4);
 
-diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-index 893f8e2..a588a3e 100644
---- a/tools/perf/util/header.c
-+++ b/tools/perf/util/header.c
-@@ -200,6 +200,47 @@ static int write_buildid(const char *name, size_t name_len, u8 *build_id,
- 	return write_padded(fd, name, name_len + 1, len);
- }
- 
-+static int __dsos__hit_all(struct list_head *head)
-+{
-+	struct dso *pos;
-+
-+	list_for_each_entry(pos, head, node)
-+		pos->hit = true;
-+
-+	return 0;
-+}
-+
-+static int machine__hit_all_dsos(struct machine *machine)
-+{
-+	int err;
-+
-+	err = __dsos__hit_all(&machine->kernel_dsos);
-+	if (err)
-+		return err;
-+
-+	return __dsos__hit_all(&machine->user_dsos);
-+}
-+
-+int dsos__hit_all(struct perf_session *session)
-+{
-+	struct rb_node *nd;
-+	int err;
-+
-+	err = machine__hit_all_dsos(&session->machines.host);
-+	if (err)
-+		return err;
-+
-+	for (nd = rb_first(&session->machines.guests); nd; nd = rb_next(nd)) {
-+		struct machine *pos = rb_entry(nd, struct machine, rb_node);
-+
-+		err = machine__hit_all_dsos(pos);
-+		if (err)
-+			return err;
-+	}
-+
-+	return 0;
-+}
-+
- static int __dsos__write_buildid_table(struct list_head *head,
- 				       struct machine *machine,
- 				       pid_t pid, u16 misc, int fd)
-diff --git a/tools/perf/util/header.h b/tools/perf/util/header.h
-index d08cfe4..8f5cbae 100644
---- a/tools/perf/util/header.h
-+++ b/tools/perf/util/header.h
-@@ -151,6 +151,8 @@ int perf_event__process_build_id(struct perf_tool *tool,
- 				 struct perf_session *session);
- bool is_perf_magic(u64 magic);
- 
-+int dsos__hit_all(struct perf_session *session);
-+
- /*
-  * arch specific callback
-  */
+	i = 0;
+	do{
+		int p = 21;
+		int ret = ioctl(fp[i], TIOCSETD , &p);
+		if (ret != 0) {
+			WARN("mlk tty ioctl fails\n");
+		}
+		i = next[i];
+	}while(1);
+/* never run here, just ctrl^C */
+
+	return 0 ;
+}
+----------------------------------------
+
+without this patch, running my own tests.
+
+my result:
+
+PROCRANK:
+.....
+RAM: 1993076K total, 147968K free, 708K buffers, 108340K cached, 332K shmem, 1092232K slab
+AWESOME!
+
+cat /proc/slabinfo
+.....
+kmalloc-2048      509700 509700   2048   16    8 : tunables    0    0    0 : slabdata  32285  32285      0
+.....
+AWESOME!!
+
+thanks,
+
+xinhui
+
+于 2014年07月28日 16:14, xinhui.pan 写道:
+> If gsmld_attach_gsm fails, the gsm is not used anymore.
+> tty core will not call gsmld_close to do the cleanup work.
+> tty core just restore to the tty old ldisc.
+> That always causes memory leak.
+> 
+> Signed-off-by: xinhui.pan <xinhuiX.pan@intel.com>
+> Reported-by: Peter Hurley <peter@hurleysoftware.com>
+> ---
+>  drivers/tty/n_gsm.c |    9 ++++++++-
+>  1 file changed, 8 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/tty/n_gsm.c b/drivers/tty/n_gsm.c
+> index 81e7ccb..6cb1a6d 100644
+> --- a/drivers/tty/n_gsm.c
+> +++ b/drivers/tty/n_gsm.c
+> @@ -2368,6 +2368,7 @@ static void gsmld_close(struct tty_struct *tty)
+>  static int gsmld_open(struct tty_struct *tty)
+>  {
+>  	struct gsm_mux *gsm;
+> +	int ret;
+>  
+>  	if (tty->ops->write == NULL)
+>  		return -EINVAL;
+> @@ -2382,7 +2383,13 @@ static int gsmld_open(struct tty_struct *tty)
+>  
+>  	/* Attach the initial passive connection */
+>  	gsm->encoding = 1;
+> -	return gsmld_attach_gsm(tty, gsm);
+> +
+> +	ret = gsmld_attach_gsm(tty, gsm);
+> +	if (ret != 0) {
+> +		gsm_cleanup_mux(gsm);
+> +		mux_put(gsm);
+> +	}
+> +	return ret;
+>  }
+>  
+>  /**
+> 
