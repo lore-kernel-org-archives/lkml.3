@@ -1,65 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752633AbaG1NFX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 09:05:23 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:52211 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751802AbaG1NFV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 09:05:21 -0400
-From: =?UTF-8?q?Andreas=20F=C3=A4rber?= <afaerber@suse.de>
-To: Michal Simek <michal.simek@xilinx.com>
-Cc: Andreas Olofsson <andreas@adapteva.com>,
-        Matteo Vit <matteo.vit@starwaredesign.com>,
-        Sean Rickerd <srickerd@suse.com>, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        broonie@kernel.org,
-        =?UTF-8?q?Andreas=20F=C3=A4rber?= <afaerber@suse.de>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>
-Subject: [PATCH v3] Documentation: devicetree: Fix ADI AXI SPDIF specification
-Date: Mon, 28 Jul 2014 15:05:03 +0200
-Message-Id: <1406552704-6736-1-git-send-email-afaerber@suse.de>
-X-Mailer: git-send-email 1.9.3
+	id S1752661AbaG1NFy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 09:05:54 -0400
+Received: from casper.infradead.org ([85.118.1.10]:58930 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751802AbaG1NFv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jul 2014 09:05:51 -0400
+Date: Mon, 28 Jul 2014 15:04:35 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-kernel@vger.kernel.org,
+        Linux PM list <linux-pm@vger.kernel.org>
+Subject: Re: [RFC][PATCH] irq: Rework IRQF_NO_SUSPENDED
+Message-ID: <20140728130435.GO20603@laptop.programming.kicks-ass.net>
+References: <20140724212620.GO3935@laptop>
+ <alpine.DEB.2.10.1407252217350.23352@nanos>
+ <1663327.PISiM9sMHC@vostro.rjw.lan>
+ <2368056.cLoWQWpTSo@vostro.rjw.lan>
+ <20140728064913.GH6758@twins.programming.kicks-ass.net>
+ <alpine.DEB.2.10.1407281412060.23352@nanos>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.10.1407281412060.23352@nanos>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The specification requires compatible = "adi,axi-spdif-1.00.a" but
-driver and example and file name indicate "adi,axi-spdif-tx-1.00.a".
-Change the specification to match the implementation.
+On Mon, Jul 28, 2014 at 02:33:41PM +0200, Thomas Gleixner wrote:
+> > I realize its dynamic, but that's crap, at device registration time it
+> > pretty much already knows if its a wakeup source or not, right?
+> 
+> It does, but that doesn't make it crap. There are situations where you
+> want certain wakeup sources enabled or disabled and you can't do that
+> with IRQF_NO_SUSPEND. And to support this, you need the wake_depth
+> counter as well. And that's what we always had.
 
-Acked-by: Lars-Peter Clausen <lars@metafoo.de>
-Reviewed-by: Michal Simek <michal.simek@xilinx.com>
-Fixes: d7b528eff927 ("dt: Add bindings documentation for the ADI AXI-SPDIF audio controller")
-Signed-off-by: Andreas Färber <afaerber@suse.de>
----
- v2 -> v3:
- * Added Fixes header
- * CC broonie (Mark Brown)
- 
- v2: New
- 
- Documentation/devicetree/bindings/sound/adi,axi-spdif-tx.txt | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+But if the driver is PM aware it can change its behaviour in runtime. We
+don't need to disable the line in the PIC if its well behaved. This
+force disable is more a bandaid to quiesce ignorant drivers than
+anything else.
 
-diff --git a/Documentation/devicetree/bindings/sound/adi,axi-spdif-tx.txt b/Documentation/devicetree/bindings/sound/adi,axi-spdif-tx.txt
-index 46f344965313..4eb7997674a0 100644
---- a/Documentation/devicetree/bindings/sound/adi,axi-spdif-tx.txt
-+++ b/Documentation/devicetree/bindings/sound/adi,axi-spdif-tx.txt
-@@ -1,7 +1,7 @@
- ADI AXI-SPDIF controller
- 
- Required properties:
-- - compatible : Must be "adi,axi-spdif-1.00.a"
-+ - compatible : Must be "adi,axi-spdif-tx-1.00.a"
-  - reg : Must contain SPDIF core's registers location and length
-  - clocks : Pairs of phandle and specifier referencing the controller's clocks.
-    The controller expects two clocks, the clock used for the AXI interface and
--- 
-1.9.3
+> I'd rather say, that the "I can wakeup the machine and will do so no
+> matter what flag" is more stupid than the wake mechanism.
+
+I never said such. I think the NO_SUSPEND name bad one that confuses
+thing more than anything as it describes the implementation not the
+semantics.
+
+But as above, if a driver sets this it basically says I'm PM aware and
+will behave right, no need to go force the PIC on me.
+
+With that the driver can or can not, depending on runtime circumstances
+wake or not etc.
+
+> So we are not going to make everything a single stupid flag and limit
+> the usability of existing code. We rather go and try to remove the
+> stupid flag before it becomes more wide spread.
+
+Sure, having two different means of PM for the irq layer is one too
+many.
+
+> And we cannot treat the wakeup thing the same way as the
+> IRQF_NO_SUSPEND flag, because there is hardware where the irq line
+> must be disabled at the normal (non suspend) interrupt controller, and
+> the wake mechanism tells the PM microcontroller to monitor the
+> interrupt line and kick the machine back to life.
+
+Ah, see that is useful information.. Yes such a thing would invalidate
+the flag scheme.
+
+> So we need to very carefully look at all the existing cases instead of
+> yelling crap and inflicting x86 specific horror on everyone. I said on
+> friday, that I need to look at ALL use cases first and I meant it.
+
+Well, the reason I yelled crap is because its IRQ nr based and not
+handler based. Yes, shared lines are a pain, but we have to deal with
+them, so allowing 'new' interfaces in that do not deal with it is very
+unfortunate at best.
+
+What further didn't help is that it wasn't at all clear to me how it was
+supposed to work.
+
 
