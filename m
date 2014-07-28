@@ -1,87 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752612AbaG1Lca (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 07:32:30 -0400
-Received: from mga01.intel.com ([192.55.52.88]:57230 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751982AbaG1Lc2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 07:32:28 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,748,1400050800"; 
-   d="scan'208";a="576523360"
-Message-ID: <53D634BB.3060306@intel.com>
-Date: Mon, 28 Jul 2014 19:32:11 +0800
-From: "xinhui.pan" <xinhuix.pan@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1752654AbaG1Lc7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 07:32:59 -0400
+Received: from kirsty.vergenet.net ([202.4.237.240]:48086 "EHLO
+	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752292AbaG1Lc6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jul 2014 07:32:58 -0400
+Date: Mon, 28 Jul 2014 20:31:08 +0900
+From: Simon Horman <horms@verge.net.au>
+To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Cc: Vinod Koul <vinod.koul@intel.com>, Randy Dunlap <rdunlap@infradead.org>,
+        "dmaengine@vger.kernel.org" <dmaengine@vger.kernel.org>,
+        Dan Williams <dan.j.williams@intel.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH -next] dma/sh: fix rcar-dma.c printk format warnings
+Message-ID: <20140728113107.GA7254@verge.net.au>
+References: <53D28DAF.9090506@infradead.org>
+ <20140726154930.GX8181@intel.com>
+ <127874008.l4YYrnQ0HU@avalon>
 MIME-Version: 1.0
-To: Jiri Slaby <jslaby@suse.cz>, Greg KH <gregkh@linuxfoundation.org>
-CC: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-        Peter Hurley <peter@hurleysoftware.com>, mnipxh <mnipxh@gmail.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] tty/n_gsm.c: fix a memory leak in gsmld_open
-References: <53D6067C.4000702@intel.com> <53D60E8F.6080208@suse.cz> <53D611EC.2000907@intel.com>
-In-Reply-To: <53D611EC.2000907@intel.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <127874008.l4YYrnQ0HU@avalon>
+Organisation: Horms Solutions Ltd.
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-于 2014年07月28日 17:03, xinhui.pan 写道:
-> Hi, Jiri
+[Replying again using an HTML-free mail client]
+
+On Mon, Jul 28, 2014 at 01:20:59PM +0200, Laurent Pinchart wrote:
+> On Saturday 26 July 2014 21:19:30 Vinod Koul wrote:
+> > On Fri, Jul 25, 2014 at 10:02:39AM -0700, Randy Dunlap wrote:
+> > > From: Randy Dunlap <rdunlap@infradead.org>
+> > > 
+> > > Fix printk format warnings by using size_t modifiers ('z'):
+> > > 
+> > > ../drivers/dma/sh/rcar-dmac.c:759:4: warning: format '%u' expects argument
+> > > of type 'unsigned int', but argument 9 has type 'size_t' [-Wformat=]
+> > > ../drivers/dma/sh/rcar-dmac.c:759:4: warning: format '%u' expects
+> > > argument of type 'unsigned int', but argument 10 has type 'size_t'
+> > > [-Wformat=]
+> >
+> > This is not present in dmaengine trees. Simon is this in your tree?
 > 
-> 于 2014年07月28日 16:49, Jiri Slaby 写道:
->> On 07/28/2014 10:14 AM, xinhui.pan wrote:
->>> If gsmld_attach_gsm fails, the gsm is not used anymore.
->>> tty core will not call gsmld_close to do the cleanup work.
->>> tty core just restore to the tty old ldisc.
->>> That always causes memory leak.
->>
->> Nice catch!
->>
->>> --- a/drivers/tty/n_gsm.c
->>> +++ b/drivers/tty/n_gsm.c
->>> @@ -2382,7 +2383,13 @@ static int gsmld_open(struct tty_struct *tty)
->>>  
->>>  	/* Attach the initial passive connection */
->>>  	gsm->encoding = 1;
->>> -	return gsmld_attach_gsm(tty, gsm);
->>> +
->>> +	ret = gsmld_attach_gsm(tty, gsm);
->>> +	if (ret != 0) {
->>> +		gsm_cleanup_mux(gsm);
->>> +		mux_put(gsm);
->>
->> It is quite illogical to put the mux here. It should be in gsmld_open.
->> I.e. gsm_cleanup_mux here, mux_put there.
->>
+> The patch applies to a new driver under development that Simon took in his 
+> tree. From what he told me he plans to send a pull request soon.
+>  
+> > > Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
+> > > Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+> > > Cc: Dan Williams <dan.j.williams@intel.com>
+> > > Cc: dmaengine@vger.kernel.org
 > 
-> Thanks for your reply :)
-> But I am a little confused with your comments, could you explain it when you are free?
-> Sorry for my poor English.
+> Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
 > 
+> Simon, should I submit a new version that incorporates this change, or do you 
+> want to include it in your pull request directly (possibly squashing it in the 
+> original commit) ?
 
-hi, Jiri
-	I guess you want gsm_cleanup_mux() called in gsmld_attach_gsm(), just after gsm_activate_mux() fails?
-Yes, that seems really make sence. :)
-Thanks for pointing out it.
+Hi Laurent,
 
-Let me explain my opinion. :)
-Actually gsmld_attach_gsm results in two different effects when it fails. 
-(a)gsmld_attach_gsm -> gsm_activate_mux(gsm_mux[] is full,-EBUSY), then gsm_mux[] did not change, and gsm->num is invaild;
-(b)gsmld_attach_gsm -> gsm_activate_mux(return -ENOMEM), then gsm_mux[] changes, and gsm->num is vaild.
+sorry for any confusion that I may have caused.
+I will see about squashing this change into the original commit.
 
-To be honest, I am not very clear about this. I even suspect this is done in such way on purpose.
-So I just keep the code what it is now. Let's handle the error in gsmld_open(). 
-We can make sure that gsm is not used here and it's safe to cleanup and put it.
-
-thanks,
-
-xinhui
-
-> thanks,
+> > > ---
+> > > 
+> > >  drivers/dma/sh/rcar-dmac.c |    2 +-
+> > >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > > 
+> > > Index: linux-next-20140725/drivers/dma/sh/rcar-dmac.c
+> > > ===================================================================
+> > > --- linux-next-20140725.orig/drivers/dma/sh/rcar-dmac.c
+> > > +++ linux-next-20140725/drivers/dma/sh/rcar-dmac.c
+> > > @@ -757,7 +757,7 @@ rcar_dmac_chan_prep_sg(struct rcar_dmac_
+> > >  			hwdesc->size = size;
+> > >  			
+> > >  			dev_dbg(chan->chan.device->dev,
+> > > -				"chan%u: hwdesc %p/%p sgl %u@%p, %u/%u %pad -> %pad\n",
+> > > +				"chan%u: hwdesc %p/%p sgl %u@%p, %zu/%zu %pad -> %pad\n",
+> > >  				chan->index, hwdesc, desc, i, sg, size, len,
+> > >  				&hwdesc->src_addr, &hwdesc->dst_addr);
 > 
-> xinhui
+> -- 
+> Regards,
 > 
->> thanks,
->>
+> Laurent Pinchart
+> 
