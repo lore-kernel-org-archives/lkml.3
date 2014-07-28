@@ -1,57 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751950AbaG1Gyr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 02:54:47 -0400
-Received: from mail-ig0-f175.google.com ([209.85.213.175]:45334 "EHLO
-	mail-ig0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751904AbaG1Gyo (ORCPT
+	id S1751471AbaG1G5w (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 02:57:52 -0400
+Received: from mail-ie0-f173.google.com ([209.85.223.173]:57848 "EHLO
+	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750912AbaG1G5u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 02:54:44 -0400
-Date: Mon, 28 Jul 2014 07:54:39 +0100
+	Mon, 28 Jul 2014 02:57:50 -0400
+Date: Mon, 28 Jul 2014 07:57:44 +0100
 From: Lee Jones <lee.jones@linaro.org>
-To: Sachin Kamat <sachin.kamat@samsung.com>
-Cc: linux-kernel@vger.kernel.org, spk.linux@gmail.com
-Subject: Re: [PATCH Resend 2/2] mfd: tps65912-spi: Remove unused variable
-Message-ID: <20140728065439.GC5273@lee--X1>
-References: <1405684817-20171-1-git-send-email-sachin.kamat@samsung.com>
- <1405684817-20171-2-git-send-email-sachin.kamat@samsung.com>
+To: Amit Daniel Kachhap <amit.daniel@samsung.com>
+Cc: linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        Sangbeom Kim <sbkim73@samsung.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Subject: Re: [PATCH v2 1/3] regulator: s2mpxxx: Move regulator min/step
+ voltages in common place
+Message-ID: <20140728065744.GD5273@lee--X1>
+References: <1405422173-15050-1-git-send-email-amit.daniel@samsung.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <1405684817-20171-2-git-send-email-sachin.kamat@samsung.com>
+In-Reply-To: <1405422173-15050-1-git-send-email-amit.daniel@samsung.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 18 Jul 2014, Sachin Kamat wrote:
+On Tue, 15 Jul 2014, Amit Daniel Kachhap wrote:
 
-> ‘rx_buf’ is not used in this function.
+> This is a cleanup patch and moves min/step voltages in a common samsung
+> header file so that they can be used by other s2mpxxx PMIC drivers. Only
+> few required macros are added currently and others can be added if needed.
 > 
-> Signed-off-by: Sachin Kamat <sachin.kamat@samsung.com>
+> Cc: Sangbeom Kim <sbkim73@samsung.com>
+> Cc: Liam Girdwood <lgirdwood@gmail.com>
+> Cc: Mark Brown <broonie@kernel.org>
+> Cc: Samuel Ortiz <sameo@linux.intel.com>
+> Cc: Lee Jones <lee.jones@linaro.org>
+> Reviewed-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+> Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
 > ---
->  drivers/mfd/tps65912-spi.c |    3 +--
->  1 file changed, 1 insertion(+), 2 deletions(-)
+> Changes since v1:
+> * Added Cc to maintainers.
+> * Added Krzysztof reviewed-by.
+> 
+>  drivers/regulator/s2mpa01.c         | 32 ++++++++++++------------
+>  drivers/regulator/s2mps11.c         | 50 ++++++++++++++++++-------------------
+>  include/linux/mfd/samsung/core.h    | 21 ++++++++++++++++
+>  include/linux/mfd/samsung/s2mpa01.h | 12 ---------
+>  include/linux/mfd/samsung/s2mps11.h |  9 -------
+>  include/linux/mfd/samsung/s2mps14.h | 10 --------
+>  6 files changed, 62 insertions(+), 72 deletions(-)
 
-Applied, thanks.
+For the MFD changes:
 
-> diff --git a/drivers/mfd/tps65912-spi.c b/drivers/mfd/tps65912-spi.c
-> index 69a5178bf152..de60ad98bd9f 100644
-> --- a/drivers/mfd/tps65912-spi.c
-> +++ b/drivers/mfd/tps65912-spi.c
-> @@ -32,10 +32,9 @@ static int tps65912_spi_write(struct tps65912 *tps65912, u8 addr,
->  	unsigned long spi_data = 1 << 23 | addr << 15 | *data;
->  	struct spi_transfer xfer;
->  	struct spi_message msg;
-> -	u32 tx_buf, rx_buf;
-> +	u32 tx_buf;
->  
->  	tx_buf = spi_data;
-> -	rx_buf = 0;
->  
->  	xfer.tx_buf	= &tx_buf;
->  	xfer.rx_buf	= NULL;
+Acked-by: Lee Jones <lee.jones@linaro.org>
 
 -- 
 Lee Jones
