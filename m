@@ -1,217 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752314AbaG1Uoc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 16:44:32 -0400
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:53946 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751950AbaG1UoU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 16:44:20 -0400
-From: Malcolm Priestley <tvboxspy@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Malcolm Priestley <tvboxspy@gmail.com>
-Subject: [PATCH 2/4] staging: vt6655: deadcode remove undefined macro THREAD code.
-Date: Mon, 28 Jul 2014 21:43:28 +0100
-Message-Id: <1406580210-2794-2-git-send-email-tvboxspy@gmail.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1406580210-2794-1-git-send-email-tvboxspy@gmail.com>
-References: <1406580210-2794-1-git-send-email-tvboxspy@gmail.com>
+	id S1752375AbaG1Uom (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 16:44:42 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:49220 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752329AbaG1Uoj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jul 2014 16:44:39 -0400
+User-Agent: K-9 Mail for Android
+In-Reply-To: <20140728203955.GA4611@thinpad.lan.raisama.net>
+References: <1406574278-23946-1-git-send-email-ehabkost@redhat.com> <53D6A1F2.5070404@zytor.com> <20140728203955.GA4611@thinpad.lan.raisama.net>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain;
+ charset=UTF-8
+Subject: Re: [PATCH] x86, paravirt: BUG_ON on {rd,wr}msr exceptions
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Mon, 28 Jul 2014 13:43:36 -0700
+To: Eduardo Habkost <ehabkost@redhat.com>
+CC: virtualization@lists.linux-foundation.org,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        Chris Wright <chrisw@sous-sol.org>, Alok Kataria <akataria@vmware.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        x86@kernel.org, linux-kernel@vger.kernel.org
+Message-ID: <5961f265-e3d0-4122-87b8-10151e1ee4d6@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Removing _RxManagementQueue, InitRxManagementQueue, MlmeThread, mlme_kill,
-EnQueue and DeQueue.
+As much as I hate adding new pvops, it might be the better answer, especially since those are the real native ops.
 
-Signed-off-by: Malcolm Priestley <tvboxspy@gmail.com>
----
- drivers/staging/vt6655/device.h      | 49 +-------------------------------
- drivers/staging/vt6655/device_main.c | 55 ------------------------------------
- drivers/staging/vt6655/dpc.c         |  7 +----
- 3 files changed, 2 insertions(+), 109 deletions(-)
 
-diff --git a/drivers/staging/vt6655/device.h b/drivers/staging/vt6655/device.h
-index fccb510..b36c631 100644
---- a/drivers/staging/vt6655/device.h
-+++ b/drivers/staging/vt6655/device.h
-@@ -328,16 +328,6 @@ typedef struct tagSDeFragControlBlock {
- //for device_set_media_duplex
- #define     DEVICE_LINK_CHANGE           0x00000001UL
- 
--//PLICE_DEBUG->
--
--typedef	struct _RxManagementQueue {
--	int	packet_num;
--	int	head, tail;
--	PSRxMgmtPacket	Q[NUM];
--} RxManagementQueue, *PSRxManagementQueue;
--
--//PLICE_DEBUG<-
--
- typedef struct __device_opt {
- 	int         nRxDescs0;    //Number of RX descriptors0
- 	int         nRxDescs1;    //Number of RX descriptors1
-@@ -424,9 +414,7 @@ typedef struct __device_info {
- 	unsigned char byRxMode;
- 
- 	spinlock_t                  lock;
--//PLICE_DEBUG->
--	RxManagementQueue	rxManeQueue;
--//PLICE_DEBUG<-
-+
- //PLICE_DEBUG ->
- 	pid_t			MLMEThr_pid;
- 	struct completion	notify;
-@@ -764,41 +752,6 @@ typedef struct __device_info {
- 	bool bCommit;
- } DEVICE_INFO, *PSDevice;
- 
--//PLICE_DEBUG->
--
--inline  static	void   EnQueue(PSDevice pDevice, PSRxMgmtPacket  pRxMgmtPacket)
--{
--	if ((pDevice->rxManeQueue.tail+1) % NUM == pDevice->rxManeQueue.head) {
--		return;
--	} else {
--		pDevice->rxManeQueue.tail = (pDevice->rxManeQueue.tail + 1) % NUM;
--		pDevice->rxManeQueue.Q[pDevice->rxManeQueue.tail] = pRxMgmtPacket;
--		pDevice->rxManeQueue.packet_num++;
--	}
--}
--
--static inline PSRxMgmtPacket DeQueue(PSDevice pDevice)
--{
--	PSRxMgmtPacket  pRxMgmtPacket;
--
--	if (pDevice->rxManeQueue.tail == pDevice->rxManeQueue.head) {
--		printk("Queue is Empty\n");
--		return NULL;
--	} else {
--		int	x;
--		//x=pDevice->rxManeQueue.head = (pDevice->rxManeQueue.head+1)%NUM;
--		pDevice->rxManeQueue.head = (pDevice->rxManeQueue.head+1)%NUM;
--		x = pDevice->rxManeQueue.head;
--		pRxMgmtPacket = pDevice->rxManeQueue.Q[x];
--		pDevice->rxManeQueue.packet_num--;
--		return pRxMgmtPacket;
--	}
--}
--
--void	InitRxManagementQueue(PSDevice   pDevice);
--
--//PLICE_DEBUG<-
--
- static inline bool device_get_ip(PSDevice pInfo) {
- 	struct in_device *in_dev = (struct in_device *)pInfo->dev->ip_ptr;
- 	struct in_ifaddr *ifa;
-diff --git a/drivers/staging/vt6655/device_main.c b/drivers/staging/vt6655/device_main.c
-index c43fc79..fe6de98 100644
---- a/drivers/staging/vt6655/device_main.c
-+++ b/drivers/staging/vt6655/device_main.c
-@@ -98,10 +98,6 @@ MODULE_AUTHOR("VIA Networking Technologies, Inc., <lyndonchen@vntek.com.tw>");
- MODULE_LICENSE("GPL");
- MODULE_DESCRIPTION("VIA Networking Solomon-A/B/G Wireless LAN Adapter Driver");
- 
--#ifdef	THREAD
--static int mlme_kill;
--#endif
--
- #define DEVICE_PARAM(N, D)
- 
- #define RX_DESC_MIN0     16
-@@ -1630,41 +1626,6 @@ static void device_free_tx_buf(PSDevice pDevice, PSTxDesc pDesc)
- 	pTDInfo->byFlags = 0;
- }
- 
--//PLICE_DEBUG ->
--void	InitRxManagementQueue(PSDevice  pDevice)
--{
--	pDevice->rxManeQueue.packet_num = 0;
--	pDevice->rxManeQueue.head = pDevice->rxManeQueue.tail = 0;
--}
--//PLICE_DEBUG<-
--
--//PLICE_DEBUG ->
--#ifdef	THREAD
--static int MlmeThread(
--	void *Context)
--{
--	PSDevice	pDevice =  (PSDevice) Context;
--	PSRxMgmtPacket			pRxMgmtPacket;
--
--	while (1) {
--		spin_lock_irq(&pDevice->lock);
--		while (pDevice->rxManeQueue.packet_num != 0) {
--			pRxMgmtPacket = DeQueue(pDevice);
--			vMgrRxManagePacket(pDevice, pDevice->pMgmt, pRxMgmtPacket);
--		}
--		spin_unlock_irq(&pDevice->lock);
--		if (mlme_kill == 0)
--			break;
--
--		schedule();
--		if (mlme_kill == 0)
--			break;
--	}
--
--	return 0;
--}
--#endif
--
- static int  device_open(struct net_device *dev)
- {
- 	PSDevice pDevice = (PSDevice)netdev_priv(dev);
-@@ -1703,19 +1664,6 @@ static int  device_open(struct net_device *dev)
- 	vMgrObjectInit(pDevice);
- 	vMgrTimerInit(pDevice);
- 
--//PLICE_DEBUG->
--#ifdef	THREAD
--	InitRxManagementQueue(pDevice);
--	mlme_kill = 0;
--	mlme_task = kthread_run(MlmeThread, (void *)pDevice, "MLME");
--	if (IS_ERR(mlme_task)) {
--		pr_err("thread create fail\n");
--		return -1;
--	}
--
--	mlme_kill = 1;
--#endif
--
- 	DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "call device_init_registers\n");
- 	device_init_registers(pDevice, DEVICE_INIT_COLD);
- 	MACvReadEtherAddress(pDevice->PortOffset, pDevice->abyCurrentNetAddr);
-@@ -1766,9 +1714,6 @@ static int  device_close(struct net_device *dev)
- 	PSDevice  pDevice = (PSDevice)netdev_priv(dev);
- 	PSMgmtObject     pMgmt = pDevice->pMgmt;
- 	//PLICE_DEBUG->
--#ifdef	THREAD
--	mlme_kill = 0;
--#endif
- //PLICE_DEBUG<-
- //2007-1121-02<Add>by EinsnLiu
- 	if (pDevice->bLinkPass) {
-diff --git a/drivers/staging/vt6655/dpc.c b/drivers/staging/vt6655/dpc.c
-index 31bb2b7..0bcf6c7 100644
---- a/drivers/staging/vt6655/dpc.c
-+++ b/drivers/staging/vt6655/dpc.c
-@@ -529,14 +529,9 @@ device_receive_frame(
- 			}
- 			pRxPacket->byRxRate = s_byGetRateIdx(*pbyRxRate);
- 			pRxPacket->byRxChannel = (*pbyRxSts) >> 2;
--//PLICE_DEBUG->
- 
--#ifdef	THREAD
--			EnQueue(pDevice, pRxPacket);
--#else
- 			vMgrRxManagePacket((void *)pDevice, pDevice->pMgmt, pRxPacket);
--#endif
--//PLICE_DEBUG<-
-+
- 			// hostap Deamon handle 802.11 management
- 			if (pDevice->bEnableHostapd) {
- 				skb->dev = pDevice->apdev;
+On July 28, 2014 1:39:55 PM PDT, Eduardo Habkost <ehabkost@redhat.com> wrote:
+>On Mon, Jul 28, 2014 at 12:18:10PM -0700, H. Peter Anvin wrote:
+>> On 07/28/2014 12:04 PM, Eduardo Habkost wrote:
+>> > When CONFIG_PARAVIRT is enabled, the kernel is ignoring exceptions
+>on
+>> > the {rd,wr}msr instructions. This makes serious issues (either on
+>the
+>> > guest kernel, or on the host) be silently ignored, and is different
+>from
+>> > the native MSR code (which does not ignore the exceptions).
+>> > 
+>> > As paravirt.h already includes linux/bug.h, I don't see what was
+>the
+>> > original issue preventing BUG_ON from being used.
+>> > 
+>> > Change rdmsr(), wrmsr(), and rdmsrl() to BUG_ON() on errors.
+>> 
+>> How much does this bloat the kernel?
+>
+>It seems to add 8 bytes to each {wr,rd}msr() call (4 extra
+>instructions:
+>test, jmp, ud2, jmp).
+>
+>allyesconfig, paravirt enabled, before:
+>
+>  text    data     bss     dec     hex filename
+>108368312       23500872        55705600        187574784       b2e2a00
+>vmlinux
+>
+>allyesconfig, paravirt enabled, after:
+>
+>   text    data     bss     dec     hex filename
+>108384438       23500904        55717888        187603230       b2e991e
+>vmlinux
+>
+>allyesconfig vmlinux is 28446 bytes larger.
+>
+>An alternative is to add read_msr_unsafe() & write_msr_unsafe() fields
+>to pv_cpu_ops, pointing to native_read_msr() & native_write_msr().
+
 -- 
-1.9.1
-
+Sent from my mobile phone.  Please pardon brevity and lack of formatting.
