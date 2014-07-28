@@ -1,96 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752715AbaG1QC0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 12:02:26 -0400
-Received: from e06smtp10.uk.ibm.com ([195.75.94.106]:43555 "EHLO
-	e06smtp10.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751052AbaG1QCY convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 12:02:24 -0400
-In-Reply-To: <1406010572-13217-1-git-send-email-xerofoify@gmail.com>
-References: <1406010572-13217-1-git-send-email-xerofoify@gmail.com>
-To: Nicholas Krause <xerofoify@gmail.com>
-Cc: BOEBLINGEN LINUX390 <LINUX390@de.ibm.com>, heicars2@linux.vnet.ibm.com,
-        linux-kernel@vger.kernel.org, linux-s390@vger.kernel.org,
-        mschwid2@linux.vnet.ibm.com,
-        Stefan Haberland1 <stefan.haberland@de.ibm.com>
+	id S1752816AbaG1QCw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 12:02:52 -0400
+Received: from mail-bn1lp0140.outbound.protection.outlook.com ([207.46.163.140]:34925
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751052AbaG1QCu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jul 2014 12:02:50 -0400
+Date: Mon, 28 Jul 2014 09:02:35 -0700
+From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
+To: Michal Simek <michal.simek@xilinx.com>
+CC: <linux-arm-kernel@lists.infradead.org>,
+        Appana Durga Kedareswara Rao <appanad@xilinx.com>, <monstr@monstr.eu>,
+        Josh Cartwright <josh.cartwright@ni.com>,
+        Steffen Trumtrar <s.trumtrar@pengutronix.de>,
+        Rob Herring <robherring2@gmail.com>,
+        Peter Crosthwaite <peter.crosthwaite@xilinx.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>, <devicetree@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3] ARM: zynq: DT: Add CAN node
+References: <e3f45b291bb1247787d1092dbe191e852e1758f3.1406539042.git.michal.simek@xilinx.com>
 MIME-Version: 1.0
-Subject: Re: [PATCH] s390: Fix me in dasd_eer.c
-X-KeepSent: 27B55084:24F3FB57-C1257D23:0054AF74;
- type=4; name=$KeepSent
-X-Mailer: Lotus Notes Release 8.5.3FP5 Septem 15, 2011
-From: Stefan Weinhuber <WEIN@de.ibm.com>
-Message-ID: <OF27B55084.24F3FB57-ONC1257D23.0054AF74-C1257D23.0058198E@de.ibm.com>
-Date: Mon, 28 Jul 2014 18:02:13 +0200
-X-MIMETrack: Serialize by Router on D06ML030/06/M/IBM(Release 8.5.3FP5IF1HF4|May 06, 2014) at
- 28/07/2014 18:02:13,
-	Serialize complete at 28/07/2014 18:02:13
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 8BIT
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14072816-4966-0000-0000-000000DC2E82
+Content-Type: text/plain; charset="utf-8"
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <e3f45b291bb1247787d1092dbe191e852e1758f3.1406539042.git.michal.simek@xilinx.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-RCIS-Action: ALLOW
+Message-ID: <61754322-a8f3-4863-8f23-9ca39a4b27fe@BN1BFFO11FD049.protection.gbl>
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:149.199.60.83;CTRY:US;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(438002)(189002)(199002)(24454002)(377424004)(51704005)(83322001)(74502001)(23676002)(33646002)(44976005)(1496007)(4396001)(46102001)(6806004)(19580395003)(50986999)(50466002)(92566001)(76176999)(87936001)(83506001)(31966008)(85182001)(86362001)(83072002)(77982001)(95666004)(92726001)(19580405001)(31696002)(104016003)(110136001)(54356999)(102836001)(53416004)(74662001)(21056001)(81542001)(47776003)(99396002)(79102001)(85202003)(70736001)(76482001)(85852003)(20776003)(558084003)(81342001)(80022001)(107046002)(74316001)(77096002)(85306003)(64706001)(106466001)(107986001);DIR:OUT;SFP:;SCL:1;SRVR:BN1BFFO11HUB023;H:xsj-pvapsmtpgw01;FPR:;MLV:sfv;PTR:unknown-60-83.xilinx.com;MX:1;A:1;LANG:en;
+X-OriginatorOrg: xilinx.onmicrosoft.com
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
+X-Forefront-PRVS: 0286D7B531
+Authentication-Results: spf=pass (sender IP is 149.199.60.83)
+ smtp.mailfrom=soren.brinkmann@xilinx.com; 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Nicholas Krause <xerofoify@gmail.com> wrote on 2014-07-22 08:29:32:
-
-[..] 
-> Subject:
+On Mon, 2014-07-28 at 11:17AM +0200, Michal Simek wrote:
+> Add node describing Zynq's CAN controller.
 > 
-> [PATCH] s390: Fix me in dasd_eer.c
-> 
-> This patch changes return type to EMEDUIMTYPE in function, 
-dasd_eer_enable
-> for when checking if the medium has no errors according to this 
-function.
-> 
-> Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
-> ---
->  drivers/s390/block/dasd_eer.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/s390/block/dasd_eer.c 
-b/drivers/s390/block/dasd_eer.c
-> index 21ef63c..08ee040 100644
-> --- a/drivers/s390/block/dasd_eer.c
-> +++ b/drivers/s390/block/dasd_eer.c
-> @@ -462,7 +462,7 @@ int dasd_eer_enable(struct dasd_device *device)
->        return 0;
-> 
->     if (!device->discipline || strcmp(device->discipline->name, "ECKD"))
-> -      return -EPERM;   /* FIXME: -EMEDIUMTYPE ? */
-> +      return -EMEDIUMTYPE;   /* FIXME: -EMEDIUMTYPE ? */
-> 
->     cqr = dasd_kmalloc_request(DASD_ECKD_MAGIC, 1 /* SNSS */,
->                 SNSS_DATA_SIZE, device);
-> -- 
-> 1.9.1
->
+> Signed-off-by: Michal Simek <michal.simek@xilinx.com>
+Reviewed-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
 
-Hm, after some consideration, I have to disagree with your suggestion.
-If you try to enable EER on an FBA device, you will get the following
-result with current code:
-
-$ echo 1 > eer_enabled
--bash: echo: write error: Operation not permitted
-
-and with your code the following:
-
-$ echo 1 > eer_enabled
--bash: echo: write error: Wrong medium type
-
-When I wrote this code, I was not sure which one is better. But today I 
-say
-that the 'Operation not permitted' is more to the point. An FBA device
-has no (changable) medium, so what could be wrong about its type?
-Could be confusing.
-
->From your patch description I do not really get why you want to change the
-return code. Why do you think that EMEDIUMTYPE is better than EPERM?
-
-Mit freundlichen Grüßen / Kind regards
- 
-Stefan Weinhuber
+	SÃ¶ren
 
