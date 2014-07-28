@@ -1,67 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751674AbaG1JD6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 05:03:58 -0400
-Received: from mga11.intel.com ([192.55.52.93]:9419 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750954AbaG1JD5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 05:03:57 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,747,1400050800"; 
-   d="scan'208";a="576426160"
-Message-ID: <53D611EC.2000907@intel.com>
-Date: Mon, 28 Jul 2014 17:03:40 +0800
-From: "xinhui.pan" <xinhuix.pan@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1751940AbaG1JFy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 05:05:54 -0400
+Received: from relay.parallels.com ([195.214.232.42]:56891 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751394AbaG1JFv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jul 2014 05:05:51 -0400
+Message-ID: <1406538338.23175.12.camel@tkhai>
+Subject: Re: [PATCH v2 2/5] sched: Teach scheduler to understand
+ ONRQ_MIGRATING state
+From: Kirill Tkhai <ktkhai@parallels.com>
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Kirill Tkhai <tkhai@yandex.ru>, <linux-kernel@vger.kernel.org>,
+        <nicolas.pitre@linaro.org>, <pjt@google.com>, <oleg@redhat.com>,
+        <rostedt@goodmis.org>, <umgwanakikbuti@gmail.com>,
+        <tim.c.chen@linux.intel.com>, <mingo@kernel.org>
+Date: Mon, 28 Jul 2014 13:05:38 +0400
+In-Reply-To: <20140728080122.GL6758@twins.programming.kicks-ass.net>
+References: <20140726145508.6308.69121.stgit@localhost>
+	 <20140726145912.6308.32554.stgit@localhost>
+	 <20140728080122.GL6758@twins.programming.kicks-ass.net>
+Organization: Parallels
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5-2+b3 
 MIME-Version: 1.0
-To: Jiri Slaby <jslaby@suse.cz>, Greg KH <gregkh@linuxfoundation.org>
-CC: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-        Peter Hurley <peter@hurleysoftware.com>, mnipxh <mnipxh@gmail.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] tty/n_gsm.c: fix a memory leak in gsmld_open
-References: <53D6067C.4000702@intel.com> <53D60E8F.6080208@suse.cz>
-In-Reply-To: <53D60E8F.6080208@suse.cz>
-Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.30.26.172]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Jiri
-
-于 2014年07月28日 16:49, Jiri Slaby 写道:
-> On 07/28/2014 10:14 AM, xinhui.pan wrote:
->> If gsmld_attach_gsm fails, the gsm is not used anymore.
->> tty core will not call gsmld_close to do the cleanup work.
->> tty core just restore to the tty old ldisc.
->> That always causes memory leak.
+В Пн, 28/07/2014 в 10:01 +0200, Peter Zijlstra пишет:
+> On Sat, Jul 26, 2014 at 06:59:21PM +0400, Kirill Tkhai wrote:
 > 
-> Nice catch!
+> > The profit is that double_rq_lock() is not needed now,
+> > and this may reduce the latencies in some situations.
 > 
->> --- a/drivers/tty/n_gsm.c
->> +++ b/drivers/tty/n_gsm.c
->> @@ -2382,7 +2383,13 @@ static int gsmld_open(struct tty_struct *tty)
->>  
->>  	/* Attach the initial passive connection */
->>  	gsm->encoding = 1;
->> -	return gsmld_attach_gsm(tty, gsm);
->> +
->> +	ret = gsmld_attach_gsm(tty, gsm);
->> +	if (ret != 0) {
->> +		gsm_cleanup_mux(gsm);
->> +		mux_put(gsm);
+> > We add a loop in the beginning of set_cpus_allowed_ptr.
+> > It's like a handmade spinlock, which is similar
+> > to situation we had before. We used to spin on rq->lock,
+> > now we spin on "again:" label. Of course, it's worse
+> > than arch-dependent spinlock, but we have to have it
+> > here. 
 > 
-> It is quite illogical to put the mux here. It should be in gsmld_open.
-> I.e. gsm_cleanup_mux here, mux_put there.
+> > @@ -4623,8 +4639,16 @@ int set_cpus_allowed_ptr(struct task_struct *p, const struct cpumask *new_mask)
+> >  	struct rq *rq;
+> >  	unsigned int dest_cpu;
+> >  	int ret = 0;
+> > +again:
+> > +	while (unlikely(task_migrating(p)))
+> > +		cpu_relax();
+> >  
+> >  	rq = task_rq_lock(p, &flags);
+> > +	/* Check again with rq locked */
+> > +	if (unlikely(task_migrating(p))) {
+> > +		task_rq_unlock(rq, p, &flags);
+> > +		goto again;
+> > +	}
+> >  
+> >  	if (cpumask_equal(&p->cpus_allowed, new_mask))
+> >  		goto out;
 > 
-
-Thanks for your reply :)
-But I am a little confused with your comments, could you explain it when you are free?
-Sorry for my poor English.
-
-thanks,
-
-xinhui
-
-> thanks,
+> So I really dislike that, esp since you're now talking of adding more of
+> this goo all over the place.
 > 
+> I'll ask again, why isn't this in task_rq_lock() and co?
+
+I thought, this may give a little profit in cases of priority inheritance etc.
+But since this is spreading throughout the scheduler, I'm agree with you.
+It's better to place this in task_rq_lock() etc. This will decide all
+the problems that we have discussed with Oleg.
+
+> Also, you really need to talk the spin bounded, otherwise your two
+> quoted paragraphs above are in contradiction. Now I think you can
+> actually make an argument that way, so that's good.
+
+Thanks,
+Kirill
+
