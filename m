@@ -1,139 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752004AbaG1HDZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 03:03:25 -0400
-Received: from mail-ie0-f182.google.com ([209.85.223.182]:56146 "EHLO
-	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751564AbaG1HDT (ORCPT
+	id S1751462AbaG1HKW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 03:10:22 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:47860 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751070AbaG1HKU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 03:03:19 -0400
-Date: Mon, 28 Jul 2014 08:03:13 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-Cc: sameo@linux.intel.com, broonie@kernel.org, lgirdwood@gmail.com,
-        patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 6/6 RESEND] mfd: arizona: Only free the CTRLIF_ERR IRQ if
- we requested it
-Message-ID: <20140728070313.GJ5273@lee--X1>
-References: <1405419710-14789-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
- <1405419710-14789-7-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+	Mon, 28 Jul 2014 03:10:20 -0400
+User-Agent: K-9 Mail for Android
+In-Reply-To: <CAMf-jSm1d0wAJ3C_yFhqnoDPSLqeDcc-ow0D=bwmLUcC9sXjLA@mail.gmail.com>
+References: <1406288074-28725-1-git-send-email-pramod.gurav@smartplayin.com> <20140725162258.GA12254@core.coreip.homeip.net> <CAMf-jSm1d0wAJ3C_yFhqnoDPSLqeDcc-ow0D=bwmLUcC9sXjLA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <1405419710-14789-7-git-send-email-ckeepax@opensource.wolfsonmicro.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain;
+ charset=UTF-8
+Subject: Re: [PATCH v2] Input: soc_button_array: Remove kfree on data allocated with devm_zalloc
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Date: Mon, 28 Jul 2014 00:10:16 -0700
+To: pramod gurav <pramod.gurav.etc@gmail.com>
+CC: linux-input@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Pramod Gurav <pramod.gurav@smartplayin.com>,
+        Lejun Zhu <lejun.zhu@linux.intel.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>
+Message-ID: <9c56a845-2005-49c5-90c3-1d22a89fad20@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 15 Jul 2014, Charles Keepax wrote:
+On July 27, 2014 11:50:41 PM PDT, pramod gurav <pramod.gurav.etc@gmail.com> wrote:
+>Hi Dmitry,
+>
+>Thanks for the review.
+>
+>On Fri, Jul 25, 2014 at 9:52 PM, Dmitry Torokhov
+><dmitry.torokhov@gmail.com> wrote:
+>> Hi Pramod,
+>>
+>> On Fri, Jul 25, 2014 at 05:04:34PM +0530, pramod.gurav.etc@gmail.com
+>wrote:
+>>> From: Pramod Gurav <pramod.gurav@smartplayin.com>
+>>>
+>>> This patch does below:
+>>> - Removes kfree done on data allocated with devm_zalloc in probe
+>>>   path of the driver.
+>>> - Adds a check on return value from devm_kzalloc which was missing
+>>>
+>>> CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+>>> CC: Lejun Zhu <lejun.zhu@linux.intel.com>
+>>> CC: Sachin Kamat <sachin.kamat@linaro.org>
+>>>
+>>> Signed-off-by: Pramod Gurav <pramod.gurav@smartplayin.com>
+>>> ---
+>>>  drivers/input/misc/soc_button_array.c |   17 +++++++----------
+>>>  1 file changed, 7 insertions(+), 10 deletions(-)
+>>>
+>>> diff --git a/drivers/input/misc/soc_button_array.c
+>b/drivers/input/misc/soc_button_array.c
+>>> index 5a6334b..fc64ec6 100644
+>>> --- a/drivers/input/misc/soc_button_array.c
+>>> +++ b/drivers/input/misc/soc_button_array.c
+>>> @@ -83,6 +83,9 @@ soc_button_device_create(struct pnp_dev *pdev,
+>>>                                      sizeof(*gpio_keys_pdata) +
+>>>                                       sizeof(*gpio_keys) *
+>MAX_NBUTTONS,
+>>>                                      GFP_KERNEL);
+>>> +     if (!gpio_keys_pdata)
+>>> +             return ERR_PTR(-ENOMEM);
+>>
+>> OK, that makes sense.
+>>
+>>> +
+>>>       gpio_keys = (void *)(gpio_keys_pdata + 1);
+>>>
+>>>       for (info = button_info; info->name; info++) {
+>>> @@ -102,20 +105,16 @@ soc_button_device_create(struct pnp_dev *pdev,
+>>>               n_buttons++;
+>>>       }
+>>>
+>>> -     if (n_buttons == 0) {
+>>> -             error = -ENODEV;
+>>> -             goto err_free_mem;
+>>> -     }
+>>> +     if (n_buttons == 0)
+>>> +             return ERR_PTR(-ENODEV);
+>>
+>> But that one and the rest don't, because failure in
+>> soc_button_device_create() does not necessarily mean that binding for
+>> the whole device will fail. In this case we do not want unused memory
+>> hang around.
+>Agree. Should resend the patch with only the error check after mem
+>allocation and will be little more careful while sending any such
+>change. :)
 
-> We only request the control interface error IRQ if we set ctrlif_error,
-> as such we should only free it in that situation. Otherwise we will
-> attempt to free an IRQ we never requested and get a warning from the IRQ
-> core.
-> 
-> This patch moves the ctrlif_error variable into the arizona structure
-> and checks it in all cases we free the control interface error IRQ.
-> 
-> Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-> ---
->  drivers/mfd/arizona-irq.c        |   19 ++++++++++++-------
->  include/linux/mfd/arizona/core.h |    2 ++
->  2 files changed, 14 insertions(+), 7 deletions(-)
+No need to resend, I picked out the good bits and applied.
 
-Applied, thanks.
 
-> diff --git a/drivers/mfd/arizona-irq.c b/drivers/mfd/arizona-irq.c
-> index e780bc4..d420dbc 100644
-> --- a/drivers/mfd/arizona-irq.c
-> +++ b/drivers/mfd/arizona-irq.c
-> @@ -188,16 +188,17 @@ int arizona_irq_init(struct arizona *arizona)
->  	int flags = IRQF_ONESHOT;
->  	int ret, i;
->  	const struct regmap_irq_chip *aod, *irq;
-> -	bool ctrlif_error = true;
->  	struct irq_data *irq_data;
->  
-> +	arizona->ctrlif_error = true;
-> +
->  	switch (arizona->type) {
->  #ifdef CONFIG_MFD_WM5102
->  	case WM5102:
->  		aod = &wm5102_aod;
->  		irq = &wm5102_irq;
->  
-> -		ctrlif_error = false;
-> +		arizona->ctrlif_error = false;
->  		break;
->  #endif
->  #ifdef CONFIG_MFD_WM5110
-> @@ -213,7 +214,7 @@ int arizona_irq_init(struct arizona *arizona)
->  			break;
->  		}
->  
-> -		ctrlif_error = false;
-> +		arizona->ctrlif_error = false;
->  		break;
->  #endif
->  #ifdef CONFIG_MFD_WM8997
-> @@ -221,7 +222,7 @@ int arizona_irq_init(struct arizona *arizona)
->  		aod = &wm8997_aod;
->  		irq = &wm8997_irq;
->  
-> -		ctrlif_error = false;
-> +		arizona->ctrlif_error = false;
->  		break;
->  #endif
->  	default:
-> @@ -308,7 +309,7 @@ int arizona_irq_init(struct arizona *arizona)
->  	}
->  
->  	/* Handle control interface errors in the core */
-> -	if (ctrlif_error) {
-> +	if (arizona->ctrlif_error) {
->  		i = arizona_map_irq(arizona, ARIZONA_IRQ_CTRLIF_ERR);
->  		ret = request_threaded_irq(i, NULL, arizona_ctrlif_err,
->  					   IRQF_ONESHOT,
-> @@ -353,7 +354,9 @@ int arizona_irq_init(struct arizona *arizona)
->  	return 0;
->  
->  err_main_irq:
-> -	free_irq(arizona_map_irq(arizona, ARIZONA_IRQ_CTRLIF_ERR), arizona);
-> +	if (arizona->ctrlif_error)
-> +		free_irq(arizona_map_irq(arizona, ARIZONA_IRQ_CTRLIF_ERR),
-> +			 arizona);
->  err_ctrlif:
->  	free_irq(arizona_map_irq(arizona, ARIZONA_IRQ_BOOT_DONE), arizona);
->  err_boot_done:
-> @@ -369,7 +372,9 @@ err:
->  
->  int arizona_irq_exit(struct arizona *arizona)
->  {
-> -	free_irq(arizona_map_irq(arizona, ARIZONA_IRQ_CTRLIF_ERR), arizona);
-> +	if (arizona->ctrlif_error)
-> +		free_irq(arizona_map_irq(arizona, ARIZONA_IRQ_CTRLIF_ERR),
-> +			 arizona);
->  	free_irq(arizona_map_irq(arizona, ARIZONA_IRQ_BOOT_DONE), arizona);
->  	regmap_del_irq_chip(irq_create_mapping(arizona->virq, 1),
->  			    arizona->irq_chip);
-> diff --git a/include/linux/mfd/arizona/core.h b/include/linux/mfd/arizona/core.h
-> index 8bc7601..fdd8b7b 100644
-> --- a/include/linux/mfd/arizona/core.h
-> +++ b/include/linux/mfd/arizona/core.h
-> @@ -132,6 +132,8 @@ struct arizona {
->  	struct mutex clk_lock;
->  	int clk32k_ref;
->  
-> +	bool ctrlif_error;
-> +
->  	struct snd_soc_dapm_context *dapm;
->  };
->  
+Thanks.
 
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Dmitry
