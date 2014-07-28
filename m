@@ -1,187 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751566AbaG1SIy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 14:08:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48963 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751138AbaG1SIt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 14:08:49 -0400
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Naoya Horiguchi <nao.horiguchi@gmail.com>
-Subject: [PATCH 2/3] mm/hugetlb: take refcount under page table lock in follow_huge_pmd()
-Date: Mon, 28 Jul 2014 14:08:30 -0400
-Message-Id: <1406570911-28133-2-git-send-email-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <1406570911-28133-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-References: <1406570911-28133-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+	id S1751728AbaG1SJK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 14:09:10 -0400
+Received: from ud10.udmedia.de ([194.117.254.50]:58442 "EHLO
+	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751681AbaG1SJF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jul 2014 14:09:05 -0400
+Date: Mon, 28 Jul 2014 20:09:02 +0200
+From: Markus Trippelsdorf <markus@trippelsdorf.de>
+To: Alexei Starovoitov <ast@kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        "Frank Ch. Eigler" <fche@redhat.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Michel =?iso-8859-1?Q?D=E4nzer?= <michel@daenzer.net>,
+        Jakub Jelinek <jakub@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Debian GCC Maintainers <debian-gcc@lists.debian.org>,
+        Debian Kernel Team <debian-kernel@lists.debian.org>
+Subject: Re: Random panic in load_balance() with 3.16-rc
+Message-ID: <20140728180902.GA22904@x4>
+References: <CA+55aFzOoJzqJ=4RVPEBfscA8oRdr5Nv7fKx9aXYw2+frkuhwA@mail.gmail.com>
+ <CA+55aFyHU4Gwk6ASTuOgh3eFPshkgy1s5zc4p7f01DwrYddFOw@mail.gmail.com>
+ <CA+55aFxaXPqyDJv-SNu6Giy3eKCu_SY1wof1NaNnPTbtF9RbXQ@mail.gmail.com>
+ <20140726193557.GA21842@x4>
+ <CA+55aFyo=HVZGEYNmz9GHqLatFHiJYTviKz_dXjqCv8b_gGxBA@mail.gmail.com>
+ <20140726201914.GB21842@x4>
+ <CA+55aFyCh8B4kuc66_+wr8eM+kP7-hJ9utdtpLih661Xf8YGgQ@mail.gmail.com>
+ <y0m7g2xk6ss.fsf@fche.csb>
+ <CA+55aFwz+stjg5L7aKuPjLym3u4FPS_ugSZiCcJwOYCGMSFGVQ@mail.gmail.com>
+ <20140728172737.GA17598@pg-vmw-gw1>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140728172737.GA17598@pg-vmw-gw1>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We have a race condition between move_pages() and freeing hugepages,
-where move_pages() calls follow_page(FOLL_GET) for hugepages internally
-and tries to get its refcount without preventing concurrent freeing.
-This race crashes the kernel, so this patch fixes it by moving FOLL_GET
-code for hugepages into follow_huge_pmd() with taking the page table lock.
+On 2014.07.28 at 10:27 -0700, Alexei Starovoitov wrote:
+> On Mon, Jul 28, 2014 at 09:45:45AM -0700, Linus Torvalds wrote:
+> > On Mon, Jul 28, 2014 at 5:26 AM, Frank Ch. Eigler <fche@redhat.com> wrote:
+> > >
+> > > Please note that the data produced by "-g -fvar-tracking" is consumed
+> > > by tools like systemtap, perf, crash, and makes a significant
+> > > difference to the observability of debug AND non-debug kernels.
+> > 
+> > Yeah, and compared to having a buggy kernel, I care exactly this much: "".
+> 
+> It's not pretty, but adding it unconditionally was the right thing to do.
+> Black listing compiler versions is too fragile.
+> Look at the flip side: now size of build dir will be much smaller :)
 
-This patch passes the following test. And libhugetlbfs test shows no
-regression.
+It shouldn't be too hard to implement a simple check for the bug in the
+next release. Just compile the gcc/testsuite/gcc.target/i386/pr61801.c
+testcase with -fcompare-debug. If gcc returns 0 then
+-fvar-tracking-assignments could safely be enabled again.
 
-  $ cat move_pages.c
-  #include <stdio.h>
-  #include <stdlib.h>
-  #include <numaif.h>
+Here's the testcase:
 
-  #define ADDR_INPUT      0x700000000000
-  #define HPS             0x200000
-  #define PS              0x1000
+int a, b, c;
+void fn1 ()
+{
+  int d;
+  if (fn2 () && !0)
+    {
+      b = (
+           {
+           int e;
+           fn3 ();
+           switch (0)
+           default:
+           asm volatile("" : "=a"(e) : "0"(a), "i"(0));
+           e;
+           });
+      d = b;
+    }
+  c = d;
+}
 
-  int main(int argc, char *argv[]) {
-          int i;
-          int nr_hp = 1;
-          int nr_p  = nr_hp * HPS / PS;
-          int ret;
-          void **addrs;
-          int *status;
-          int *nodes;
-          pid_t pid;
-
-          if (argc < 2) {
-                  fprintf(stderr, "no args for pid\n");
-                  exit(EXIT_FAILURE);
-          }
-
-          pid = strtol(argv[1], NULL, 0);
-          addrs  = malloc(sizeof(char *) * nr_p + 1);
-          status = malloc(sizeof(char *) * nr_p + 1);
-          nodes  = malloc(sizeof(char *) * nr_p + 1);
-
-          while (1) {
-                  for (i = 0; i < nr_p; i++) {
-                          addrs[i] = (void *)ADDR_INPUT + i * PS;
-                          nodes[i] = 1;
-                          status[i] = 0;
-                  }
-                  ret = numa_move_pages(pid, nr_p, addrs, nodes, status,
-                                        MPOL_MF_MOVE_ALL);
-                  if (ret == -1)
-                          err("move_pages");
-
-                  for (i = 0; i < nr_p; i++) {
-                          addrs[i] = (void *)ADDR_INPUT + i * PS;
-                          nodes[i] = 0;
-                          status[i] = 0;
-                  }
-                  ret = numa_move_pages(pid, nr_p, addrs, nodes, status,
-                                        MPOL_MF_MOVE_ALL);
-                  if (ret == -1)
-                          err("move_pages");
-          }
-          return 0;
-  }
-
-  $ cat hugepage.c
-  #include <stdio.h>
-  #include <sys/mman.h>
-  #include <string.h>
-
-  #define ADDR_INPUT      0x700000000000UL
-  #define HPS             0x200000
-
-  int main(int argc, char *argv[]) {
-          char *p;
-
-          while (1) {
-                  p = mmap((void *)ADDR_INPUT, HPS, PROT_READ | PROT_WRITE,
-                           MAP_PRIVATE | MAP_ANONYMOUS | MAP_HUGETLB, -1, 0);
-                  if (p != (void *)ADDR_INPUT) {
-                          perror("mmap");
-                          break;
-                  }
-                  memset(p, 0, HPS);
-                  munmap(p, HPS);
-          }
-  }
-
-  $ sysctl vm.nr_hugepages=10
-  $ ./hugepage &
-  $ ./move_pages $(pgrep -f hugepage)
-
-Note for stable inclusion:
-  This patch fixes e632a938d914 ("mm: migrate: add hugepage migration code
-  to move_pages()"), so is applicable to -stable kernels which includes it.
-  And this patch depends on the patch "mm/hugetlb: replace parameters of
-  follow_huge_pmd/pud()".
-
-Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: <stable@vger.kernel.org>  # [3.12+]
----
- mm/gup.c     | 17 ++---------------
- mm/hugetlb.c | 18 ++++++++++++++++++
- 2 files changed, 20 insertions(+), 15 deletions(-)
-
-diff --git mmotm-2014-07-22-15-58.orig/mm/gup.c mmotm-2014-07-22-15-58/mm/gup.c
-index ba2c933625b2..ecd5dc0e2952 100644
---- mmotm-2014-07-22-15-58.orig/mm/gup.c
-+++ mmotm-2014-07-22-15-58/mm/gup.c
-@@ -174,21 +174,8 @@ struct page *follow_page_mask(struct vm_area_struct *vma,
- 	pmd = pmd_offset(pud, address);
- 	if (pmd_none(*pmd))
- 		return no_page_table(vma, flags);
--	if (pmd_huge(*pmd) && vma->vm_flags & VM_HUGETLB) {
--		page = follow_huge_pmd(vma, address, pmd, flags);
--		if (flags & FOLL_GET) {
--			/*
--			 * Refcount on tail pages are not well-defined and
--			 * shouldn't be taken. The caller should handle a NULL
--			 * return when trying to follow tail pages.
--			 */
--			if (PageHead(page))
--				get_page(page);
--			else
--				page = NULL;
--		}
--		return page;
--	}
-+	if (pmd_huge(*pmd) && vma->vm_flags & VM_HUGETLB)
-+		return follow_huge_pmd(vma, address, pmd, flags);
- 	if ((flags & FOLL_NUMA) && pmd_numa(*pmd))
- 		return no_page_table(vma, flags);
- 	if (pmd_trans_huge(*pmd)) {
-diff --git mmotm-2014-07-22-15-58.orig/mm/hugetlb.c mmotm-2014-07-22-15-58/mm/hugetlb.c
-index ade297a9c519..6793914b6aac 100644
---- mmotm-2014-07-22-15-58.orig/mm/hugetlb.c
-+++ mmotm-2014-07-22-15-58/mm/hugetlb.c
-@@ -3655,10 +3655,28 @@ follow_huge_pmd(struct vm_area_struct *vma, unsigned long address,
- 		pmd_t *pmd, int flags)
- {
- 	struct page *page;
-+	spinlock_t *ptl;
-+
-+	if (flags & FOLL_GET)
-+		ptl = huge_pte_lock(hstate_vma(vma), vma->vm_mm, (pte_t *)pmd);
- 
- 	page = pte_page(*(pte_t *)pmd);
- 	if (page)
- 		page += ((address & ~PMD_MASK) >> PAGE_SHIFT);
-+
-+	if (flags & FOLL_GET) {
-+		/*
-+		 * Refcount on tail pages are not well-defined and
-+		 * shouldn't be taken. The caller should handle a NULL
-+		 * return when trying to follow tail pages.
-+		 */
-+		if (PageHead(page))
-+			get_page(page);
-+		else
-+			page = NULL;
-+		spin_unlock(ptl);
-+	}
-+
- 	return page;
- }
- 
 -- 
-1.9.3
-
+Markus
