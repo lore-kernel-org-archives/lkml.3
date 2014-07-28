@@ -1,107 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751670AbaG1Szn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 14:55:43 -0400
-Received: from mail-qg0-f54.google.com ([209.85.192.54]:56685 "EHLO
-	mail-qg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751244AbaG1Szk (ORCPT
+	id S1751920AbaG1S4K (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 14:56:10 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47909 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750960AbaG1S4H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 14:55:40 -0400
-Date: Mon, 28 Jul 2014 14:55:36 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3] workqueue: use dedicated creater kthread for all
- pools
-Message-ID: <20140728185536.GG7462@htj.dyndns.org>
-References: <1406343900-32423-1-git-send-email-laijs@cn.fujitsu.com>
- <1406343900-32423-3-git-send-email-laijs@cn.fujitsu.com>
+	Mon, 28 Jul 2014 14:56:07 -0400
+Date: Mon, 28 Jul 2014 11:55:38 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+Cc: tiwai@suse.de, linux-kernel@vger.kernel.org,
+        "Luis R. Rodriguez" <mcgrof@suse.com>,
+        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
+        Joseph Salisbury <joseph.salisbury@canonical.com>,
+        Kay Sievers <kay@vrfy.org>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Tim Gardner <tim.gardner@canonical.com>,
+        Pierre Fersing <pierre-fersing@pierref.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>, Benjamin Poirier <bpoirier@suse.de>,
+        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
+        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
+        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
+        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
+        Hariprasad S <hariprasad@chelsio.com>,
+        Santosh Rastapur <santosh@chelsio.com>,
+        MPT-FusionLinux.pdl@avagotech.com, linux-scsi@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH v2 2/4] driver core: enable drivers to use deferred probe
+ from init
+Message-ID: <20140728185538.GB17609@kroah.com>
+References: <1406572110-26823-1-git-send-email-mcgrof@do-not-panic.com>
+ <1406572110-26823-3-git-send-email-mcgrof@do-not-panic.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1406343900-32423-3-git-send-email-laijs@cn.fujitsu.com>
+In-Reply-To: <1406572110-26823-3-git-send-email-mcgrof@do-not-panic.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Lai.
-
-On Sat, Jul 26, 2014 at 11:04:50AM +0800, Lai Jiangshan wrote:
-> There are some problems with the managers:
->   1) The last idle worker prefer managing to processing.
->      It is better that the processing of work items should be the first
->      priority to make the whole system make progress earlier.
->   2) managers among different pools can be parallel, but actually
->      their major work are serialized on the kernel thread "kthreadd".
->      These managers are sleeping and wasted when the system is lack
->      of memory.
-
-It's a bit difficult to get excited about this patchset given that
-this is mostly churn without many actual benefits.  Sure, it
-consolidates one-per-pool managers into one kthread_worker but it was
-one-per-pool already.  That said, I don't hate it and it may be
-considered an improvement.  I don't know.
-
-> This patch introduces a dedicated creater kthread which offloads the
-> managing from the workers, thus every worker makes effort to process work
-> rather than create worker, and there is no manager wasting on sleeping
-> when the system is lack of memory.  This dedicated creater kthread causes
-> a little more work serialized than before, but it is acceptable.
-
-I do dislike the idea of creating this sort of hard serialization
-among separate worker pools.  It's probably acceptable but why are we
-doing this?  To save one thread per pool and shed 30 lines of code
-while adding 40 lines to kthread_worker?
-
->   1) the creater_work
-> Every pool has a struct kthread_work creater_work to create worker, and
-> the dedicated creater kthread processes all these creater_works of
-> all pools. struct kthread_work has itself execution exclusion, so we don't
-> need the manager_arb to handle the creating exclusion any more.
-
-This explanation can be a bit misleading, I think.  We just don't have
-multiple workers trying to become managers anymore.
-
-> put_unbound_pool() uses the flush_kthread_work() to synchronize with
-> the creating rather than uses the manager_arb.
+On Mon, Jul 28, 2014 at 11:28:28AM -0700, Luis R. Rodriguez wrote:
+> From: "Luis R. Rodriguez" <mcgrof@suse.com>
 > 
->   2) the cooldown timer
-> The cooldown timer is introduced to implement the cool-down mechanism
-> rather than to causes the creater to sleep.  When the create_worker()
-> fails, the cooldown timer is requested and it will restart the creater_work.
+> Tetsuo bisected and found that commit 786235ee "kthread: make
+> kthread_create() killable" modified kthread_create() to bail as
+> soon as SIGKILL is received. This is causing some issues with
+> some drivers and at times boot. Joseph then found that failures
+> occur as the systemd-udevd process sends SIGKILL to modprobe if
+> probe on a driver takes over 30 seconds.
 
-Why?  Why doesn't the creator sleep?
+Because no driver should ever take that long for their probe function to
+return.  Why not fix those drivers?
 
-...
->   5) the routine of the creater_work
-> The creater_work creates a worker in these two conditions:
->   A) pool->nr_idle == 0
->      A new worker is needed to be created obviously even there is no
->      work item pending.  The busy workers may sleep and the pool can't
->      serves the future new work items if no new worker is standby or
->      being created.
+> When this happens probe will fail on any driver, its why booting on
+> some system will fail if the driver happens to be a storage related
+> driver. Some folks
+> have suggested fixing this by modifying kthread_create() to not
+> leave upon SIGKILL [3], upon review Oleg rejected this change and
+> the discussion was punted out to systemd to see if the default
+> timeout could be increased from 30 seconds to 120. The opinion of
+> the systemd maintainers is that the driver's behavior should
+> be fixed [4]. Linus seems to agree [5], however more recently even
+> networking drivers have been reported to fail on probe since just
+> writing the firmware to a device and kicking it can take easy over
+> 60 seconds [6]. Benjamim was able to trace the issues recently
+> reported on cxgb4 down to the same systemd-udevd 30 second timeout [6].
 
-This is kinda silly when the duty of worker creation is served by an
-external entity.  Why would a pool need any idle worker?
-insert_work() may as well just queue worker creation on demand.
+Then use the async firmware interface, why is any driver taking longer
+than less than a second in their init function?
 
->   8) init_workqueues()
-> The struct kthread_worker kworker_creater is initialized earlier than
-> worker_pools in init_workqueues() so that kworker_creater_thread is
-> created than all early kworkers.  Although the early kworkers are not
-> depends on kworker_creater_thread, but this initialization order makes
-> the pid of kworker_creater_thread smaller than kworkers which
-> seems more smooth.
+> This is an alternative solution which enables drivers that are
+> known to take long to use deferred probe workqueue. This avoids
+> the 30 second timeout and lets us annotate drivers with long
+> init sequences.
+> 
+> As drivers determine a component is not yet available and needs
+> to defer probe you'll be notified this happen upon init for each
+> device but now with a message such as:
+> 
+> pci 0000:03:00.0: Driver cxgb4 requests probe deferral on init
+> 
+> You should see one of these per struct device probed.
 
-Just don't create idle workers?
+I'm all for abusing kernel interfaces, but please, no, don't try to use
+the deferred init code to cover up for broken drivers.  Just fix them
+properly, we have the interfaces to handle it properly (i.e. async
+firmware loading), please use it.
 
-Overall, I don't know.  I like some aspects of it but there's nothing
-really convincing about this change.  It sure is different.  Maybe
-this is more straight-forward but I'm not sure this is worth the
-changes.
+And no PCI driver should ever need "deferred init" as the resources for
+such a device is already present in the system.  Now if userspace is up
+and running yet is a different issue, one that deferred init is not
+there for at all, sorry.
 
-Thanks.
+So, what drivers are having problems in their init sequence, and why
+aren't they using async firmware loading?
 
--- 
-tejun
+thanks,
+
+greg k-h
