@@ -1,73 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751621AbaG1SI5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 14:08:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21271 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751382AbaG1SIv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 14:08:51 -0400
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Naoya Horiguchi <nao.horiguchi@gmail.com>
-Subject: [PATCH 3/3] mm/hugetlb: use get_page_unless_zero() in hugetlb_fault()
-Date: Mon, 28 Jul 2014 14:08:31 -0400
-Message-Id: <1406570911-28133-3-git-send-email-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <1406570911-28133-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-References: <1406570911-28133-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+	id S1751868AbaG1SJd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 14:09:33 -0400
+Received: from g2t2354.austin.hp.com ([15.217.128.53]:16655 "EHLO
+	g2t2354.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751794AbaG1SJa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jul 2014 14:09:30 -0400
+Message-ID: <1406570967.2411.51.camel@j-VirtualBox>
+Subject: Re: [PATCH -tip/master 7/7] Documentation: Update
+ locking/mutex-design.txt disadvantages
+From: Jason Low <jason.low2@hp.com>
+To: Davidlohr Bueso <davidlohr@hp.com>
+Cc: peterz@infradead.org, mingo@kernel.org, aswin@hp.com,
+        linux-kernel@vger.kernel.org
+Date: Mon, 28 Jul 2014 11:09:27 -0700
+In-Reply-To: <1406524724-17946-7-git-send-email-davidlohr@hp.com>
+References: <1406524724-17946-1-git-send-email-davidlohr@hp.com>
+	 <1406524724-17946-7-git-send-email-davidlohr@hp.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After fixing the race in follow_page(FOLL_GET) for hugepages, I start to
-observe the BUG of "get_page() on refcount 0 page" in hugetlb_fault() in
-the same test.
+On Sun, 2014-07-27 at 22:18 -0700, Davidlohr Bueso wrote:
+> Fortunately Jason was able to reduce some of the overhead we
+> had introduced in the original rwsem optimistic spinning -
+> an it is now the same size as mutexes. Update the documentation
+> accordingly.
+> 
+> Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
+> ---
+>  Documentation/locking/mutex-design.txt | 6 +++---
+>  1 file changed, 3 insertions(+), 3 deletions(-)
+> 
+> diff --git a/Documentation/locking/mutex-design.txt b/Documentation/locking/mutex-design.txt
+> index ee231ed..60c482d 100644
+> --- a/Documentation/locking/mutex-design.txt
+> +++ b/Documentation/locking/mutex-design.txt
+> @@ -145,9 +145,9 @@ Disadvantages
+>  
+>  Unlike its original design and purpose, 'struct mutex' is larger than
+>  most locks in the kernel. E.g: on x86-64 it is 40 bytes, almost twice
+> -as large as 'struct semaphore' (24 bytes) and 8 bytes shy of the
+> -'struct rw_semaphore' variant. Larger structure sizes mean more CPU
+> -cache and memory footprint.
+> +as large as 'struct semaphore' (24 bytes) and tied, along with rwsems,
 
-I'm not exactly sure about how this race is triggered, but hugetlb_fault()
-calls pte_page() and get_page() outside page table lock, so it's not safe.
-This patch checks the refcount of the gotten page, and aborts the page fault
-if the refcount is 0, expecting to retry.
+My suggestion here is for the above to say 'struct rw_semaphore' instead
+of rwsems.
 
-Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: <stable@vger.kernel.org>  # [3.12+]
----
- mm/hugetlb.c | 12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+Acked-by: Jason Low <jason.low2@hp.com>
 
-diff --git mmotm-2014-07-22-15-58.orig/mm/hugetlb.c mmotm-2014-07-22-15-58/mm/hugetlb.c
-index 6793914b6aac..86e7341aad77 100644
---- mmotm-2014-07-22-15-58.orig/mm/hugetlb.c
-+++ mmotm-2014-07-22-15-58/mm/hugetlb.c
-@@ -3189,7 +3189,8 @@ int hugetlb_fault(struct mm_struct *mm, struct vm_area_struct *vma,
- 	 * so no worry about deadlock.
- 	 */
- 	page = pte_page(entry);
--	get_page(page);
-+	if (!get_page_unless_zero(page))
-+		goto out_put_pagecache;
- 	if (page != pagecache_page)
- 		lock_page(page);
- 
-@@ -3215,15 +3216,14 @@ int hugetlb_fault(struct mm_struct *mm, struct vm_area_struct *vma,
- 
- out_ptl:
- 	spin_unlock(ptl);
--
-+	if (page != pagecache_page)
-+		unlock_page(page);
-+	put_page(page);
-+out_put_pagecache:
- 	if (pagecache_page) {
- 		unlock_page(pagecache_page);
- 		put_page(pagecache_page);
- 	}
--	if (page != pagecache_page)
--		unlock_page(page);
--	put_page(page);
--
- out_mutex:
- 	mutex_unlock(&htlb_fault_mutex_table[hash]);
- 	return ret;
--- 
-1.9.3
+> +for the largest lock in the kernel. Larger structure sizes mean more
+> +CPU cache and memory footprint.
+>  
+>  When to use mutexes
+>  -------------------
+
 
