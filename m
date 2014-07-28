@@ -1,92 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752796AbaG1OD3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 10:03:29 -0400
-Received: from mout.kundenserver.de ([212.227.17.24]:62836 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751175AbaG1OD2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 10:03:28 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        Kweh Hock Leong <hock.leong.kweh@intel.com>,
-        Eric Miao <eric.y.miao@gmail.com>,
-        Chew Chiau Ee <chiau.ee.chew@intel.com>,
-        Darren Hart <dvhart@linux.intel.com>, chiauee85@gmail.com,
-        linux-kernel@vger.kernel.org,
-        Haojian Zhuang <haojian.zhuang@gmail.com>, linux-spi@vger.kernel.org,
-        Mark Brown <broonie@kernel.org>, Russell King <linux@arm.linux.org.uk>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>
-Subject: Re: [PATCH] spi/pxa2xx-pci: Enable DMA binding through device name
-Date: Mon, 28 Jul 2014 16:02:47 +0200
-Message-ID: <120751941.rzCjA94qJu@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1406554444.8530.45.camel@smile.fi.intel.com>
-References: <1406196111-22861-1-git-send-email-hock.leong.kweh@intel.com> <5712887.nI9VbeNx2r@wuerfel> <1406554444.8530.45.camel@smile.fi.intel.com>
+	id S1752834AbaG1ODm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 10:03:42 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:48096 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752762AbaG1ODk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jul 2014 10:03:40 -0400
+Date: Mon, 28 Jul 2014 10:01:57 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Hugh Dickins <hughd@google.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>, Rik van Riel <riel@redhat.com>,
+        Dave Jones <davej@redhat.com>, Dave Chinner <david@fromorbit.com>,
+        xfs@oss.sgi.com, linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH] mm: fix direct reclaim writeback regression
+Message-ID: <20140728140157.GM1725@cmpxchg.org>
+References: <alpine.LSU.2.11.1407261248140.13796@eggly.anvils>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:8IMqlGLXsDLea0Z4Abp3/X8Czu/bozrQoVqZEPgXpGn
- QYxzu/3va/1x+Y6kCwwz3ke4phOy/V2paXQ4pZv8h4l75L5B8w
- gfUMEPZ3XFuT2NRH/yNvjDrnYi3w4tY8YEPgXb2Vb3mO5bXX7i
- 5fx83M+J9/GCDY1/winLytqm8nItTVGe+AjhOJRH4e1ghDw4Ut
- NOYxbwSISOBS/euf5MmMZm8qnLb5QoUMfHELDO5+2U/cvdQuOr
- hMRPQJ8HA9iNHg2ZPNGoxlo/yldqEZETb8rg31zxxAUe5qvjc0
- d0RUh+mjyzwFVL1TTpWl7VrYVNp1+ee7qK1/PiUvpZngbcnRhj
- +AIAOTQtZxmU6imDIGS8=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LSU.2.11.1407261248140.13796@eggly.anvils>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 28 July 2014 16:34:04 Andy Shevchenko wrote:
-> On Mon, 2014-07-28 at 14:47 +0200, Arnd Bergmann wrote:
-> > On Monday 28 July 2014 14:06:20 Andy Shevchenko wrote:
-> > static bool atmci_filter(struct dma_chan *chan, void *pdata)
-> > {
-> >         struct mci_platform_data *sl_pdata = pdata;
-> >         struct mci_dma_data *sl;
-> > 
-> >         if (!sl_pdata)
-> >                 return false;
-> > 
-> >         sl = sl_pdata->dma_slave;
-> >         if (sl && find_slave_dev(sl) == chan->device->dev) {
-> >                 chan->private = slave_data_ptr(sl);
-> >                 return true;
-> >         } else {
-> >                 return false;
-> >         }
-> > }
-> > 
-> > It sets the dw_dma_slave information from  slave_data_ptr(sl) here,
-> > and does not attempt to set a slave_id at all, the slave_config
-> > call only sets the required fields.
-> > 
-> > Do you still see a problem here?
+On Sat, Jul 26, 2014 at 12:58:23PM -0700, Hugh Dickins wrote:
+> Shortly before 3.16-rc1, Dave Jones reported:
 > 
-> Sorry, I was talking about master defaults regarding to your patch that
-> proposes to remove that part from dw_dmac. I mean it should be set in
-> function mentioned early.
-
-Ok. So atmci_filter is still correct because chan->private contains
-a pointer to a structure with both request and master settings, right?
-
-> > c) request line and masters are all configured from avr32/arm32
-> >    platform data.
-> > d) request line and masters are all configured from Bay Trail
-> >    PCI ID (Implemented by Mika's patch)
+> WARNING: CPU: 3 PID: 19721 at fs/xfs/xfs_aops.c:971
+>          xfs_vm_writepage+0x5ce/0x630 [xfs]()
+> CPU: 3 PID: 19721 Comm: trinity-c61 Not tainted 3.15.0+ #3
+> Call Trace:
+>  [<ffffffffc023068e>] xfs_vm_writepage+0x5ce/0x630 [xfs]
+>  [<ffffffff8316f759>] shrink_page_list+0x8f9/0xb90
+>  [<ffffffff83170123>] shrink_inactive_list+0x253/0x510
+>  [<ffffffff83170c93>] shrink_lruvec+0x563/0x6c0
+>  [<ffffffff83170e2b>] shrink_zone+0x3b/0x100
+>  [<ffffffff831710e1>] shrink_zones+0x1f1/0x3c0
+>  [<ffffffff83171414>] try_to_free_pages+0x164/0x380
+>  [<ffffffff83163e52>] __alloc_pages_nodemask+0x822/0xc90
+>  [<ffffffff831abeff>] alloc_pages_vma+0xaf/0x1c0
+>  [<ffffffff8318a931>] handle_mm_fault+0xa31/0xc50
+> etc.
 > 
-> Actually here I just recall the case when we might have different number
-> of masters and use the same IP block [of SPI controller], how could you
-> distinguish that case? How to provide proper masters?
+>  970   if (WARN_ON_ONCE((current->flags & (PF_MEMALLOC|PF_KSWAPD)) ==
+>  971                   PF_MEMALLOC))
 > 
-> It's luckily not a problem right now, but still potential one in some
-> cases.
+> I did not respond at the time, because a glance at the PageDirty block
+> in shrink_page_list() quickly shows that this is impossible: we don't do
+> writeback on file pages (other than tmpfs) from direct reclaim nowadays.
+> Dave was hallucinating, but it would have been disrespectful to say so.
+> 
+> However, my own /var/log/messages now shows similar complaints
+> WARNING: CPU: 1 PID: 28814 at fs/ext4/inode.c:1881 ext4_writepage+0xa7/0x38b()
+> WARNING: CPU: 0 PID: 27347 at fs/ext4/inode.c:1764 ext4_writepage+0xa7/0x38b()
+> from stressing some mmotm trees during July.
+> 
+> Could a dirty xfs or ext4 file page somehow get marked PageSwapBacked,
+> so fail shrink_page_list()'s page_is_file_cache() test, and so proceed
+> to mapping->a_ops->writepage()?
+> 
+> Yes, 3.16-rc1's 68711a746345 ("mm, migration: add destination page
+> freeing callback") has provided such a way to compaction: if migrating
+> a SwapBacked page fails, its newpage may be put back on the list for
+> later use with PageSwapBacked still set, and nothing will clear it.
+>
+> Whether that can do anything worse than issue WARN_ON_ONCEs, and get
+> some statistics wrong, is unclear: easier to fix than to think through
+> the consequences.
+> 
+> Fixing it here, before the put_new_page(), addresses the bug directly,
+> but is probably the worst place to fix it.  Page migration is doing too
+> many parts of the job on too many levels: fixing it in move_to_new_page()
+> to complement its SetPageSwapBacked would be preferable, except why is it
+> (and newpage->mapping and newpage->index) done there, rather than down in
+> migrate_page_move_mapping(), once we are sure of success?  Not a cleanup
+> to get into right now, especially not with memcg cleanups coming in 3.17.
 
-Do you mean case d? I think for each PCI ID, you will have to add the
-correct settings to some table that is used in the filter function.
+That needs verification that no ->migratepage() expects mapping
+(working PageAnon()) and index to be set up on newpage.
 
-Are there any cases you know where we can't hardcode them?
+The freelist putback looks quite fragile, we should probably add
+something like free_pages_prepare() / free_page_check() in there.
 
-	Arnd
+> Reported-by: Dave Jones <davej@redhat.com>
+> Signed-off-by: Hugh Dickins <hughd@google.com>
+
+Acked-by: Johannes Weiner <hannes@cmpxchg.org>
