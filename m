@@ -1,100 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752840AbaG1VVm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 17:21:42 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:33851 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751968AbaG1VVf convert rfc822-to-8bit (ORCPT
+	id S1752859AbaG1VWA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 17:22:00 -0400
+Received: from out03.mta.xmission.com ([166.70.13.233]:41010 "EHLO
+	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751981AbaG1VVz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 17:21:35 -0400
-From: "Murphy, Dan" <dmurphy@ti.com>
-To: "simon@mungewell.org" <simon@mungewell.org>
-CC: "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        =?iso-8859-1?Q?Michal_Mal=FD?= <madcatxster@devoid-pointer.net>,
-        "Elias Vanderstuyft" <elias.vds@gmail.com>
-Subject: Re: [v2] input: drv260x: Add TI drv260x haptics driver
-Thread-Topic: [v2] input: drv260x: Add TI drv260x haptics driver
-Thread-Index: AQHPqoRzccs1z7hlMk6AmjOpJP7QQQ==
-Date: Mon, 28 Jul 2014 21:21:26 +0000
-Message-ID: <00FC9A978A94B7418C33AFAE8A35ED49DB1A79@DFLE09.ent.ti.com>
-References: <1406566403-1436-1-git-send-email-dmurphy@ti.com>
-    <20140728174334.GD8982@core.coreip.homeip.net>
- <5adf0339146a7b655a77053195aa892c.squirrel@mungewell.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [128.247.5.50]
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+	Mon, 28 Jul 2014 17:21:55 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Kees Cook <keescook@chromium.org>, Julien Tinnes <jln@google.com>,
+        David Drysdale <drysdale@google.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, Paolo Bonzini <pbonzini@redhat.com>,
+        LSM List <linux-security-module@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Paul Moore <paul@paul-moore.com>,
+        James Morris <james.l.morris@oracle.com>,
+        Linux API <linux-api@vger.kernel.org>,
+        Meredydd Luff <meredydd@senatehouse.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>
+References: <1406296033-32693-1-git-send-email-drysdale@google.com>
+	<1406296033-32693-12-git-send-email-drysdale@google.com>
+	<CALCETrVJX4+-6vkRaDj4kV_bXiYL5fj_PtO53g9fRf=i4X2Tww@mail.gmail.com>
+	<CAGXu5jJZ7mhmq1BrdTP5Ww15+C2iLQKjLy1Xh0=9qZvVK5E9Cw@mail.gmail.com>
+	<CALCETrVChObsQpL6dt-ByiCjbPrtpXAXQgy_apBY-OpGQHaPjg@mail.gmail.com>
+Date: Mon, 28 Jul 2014 14:18:04 -0700
+In-Reply-To: <CALCETrVChObsQpL6dt-ByiCjbPrtpXAXQgy_apBY-OpGQHaPjg@mail.gmail.com>
+	(Andy Lutomirski's message of "Fri, 25 Jul 2014 10:18:05 -0700")
+Message-ID: <87vbqhp4hf.fsf@x220.int.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX1/c/DHs0QIMt1T8JG8HM6Eu8q8EzpaHZ0U=
+X-SA-Exim-Connect-IP: 98.234.51.111
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  1.5 XMNoVowels Alpha-numberic number with no vowels
+	*  0.7 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	*  0.8 BAYES_50 BODY: Bayes spam probability is 40 to 60%
+	*      [score: 0.4920]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa02 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.5 XM_Body_Dirty_Words Contains a dirty word
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+	*  1.2 XMSubMetaSxObfu_03 Obfuscated Sexy Noun-People
+	*  1.0 XMSubMetaSx_00 1+ Sexy Words
+	*  1.2 XMSubMetaSSx_00 1+ SortaSexy Words + 1 Sexy Word
+	*  1.0 XMSexyCombo_01 Sexy words in both body/subject
+X-Spam-DCC: XMission; sa02 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: *******;Andy Lutomirski <luto@amacapital.net>
+X-Spam-Relay-Country: 
+Subject: Re: [PATCH 11/11] seccomp: Add tgid and tid into seccomp_data
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 13:58:17 -0700)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dmitry
+Andy Lutomirski <luto@amacapital.net> writes:
 
-On 07/28/2014 12:59 PM, simon@mungewell.org wrote:
-> 
->>> The initial driver supports the devices
->>> real time playback mode.  But the device
->>> has additional wave patterns in ROM.
->>
->> As it presented the device appears to be a memoryless device, however
->> you present it to the rest of the system as if it can support playback
->> of multiple effects simultaneously, which is incorrect.
->>
->> My guess that you need to engage the memoryless input library to schedule
->> handling multiple effects for your device, including ramping up, ramping
->> down, stopping playback when effects runs out, etc.
-> 
-> Hi Dan,
-> Elias and Michal (cc'ed) are working on a kernel/userland library to
-> handle sending multiple force feedback signals to 'simple' devices,
-> perhaps you should engage with them.
-> 
-> Simon
-> 
-> 
+> [cc: Eric Biederman]
+>
 
-OK I looked at the memless devices and got it to work.
-Don't know why replay.length is always 0 but at least I got the
-magnitude.  It seems that the input framework expects the user space
-to manage the on/off of the vibrator in RUMBLE mode.  Unless
-I missed something while going through the code.
+> Can we do one better and add a flag to prevent any non-self pid
+> lookups?  This might actually be easy on top of the pid namespace work
+> (e.g. we could change the way that find_task_by_vpid works).
+>
+> It's far from just being signals.  There's access_process_vm, ptrace,
+> all the signal functions, clock_gettime (see CPUCLOCK_PID -- yes, this
+> is ridiculous), and probably some others that I've forgotten about or
+> never noticed in the first place.
 
-This family of devices has the ability to do real time playback,
-play an index in a pre-programmed library and have feedback waveforms programmed
-into the device to be played.
+So here is the practical question.
 
-The RTP mode is covered in this patch set.  But I am also interested in
-setting the pre-programmed libraries as well as setting my own custom waveform.
+Are these processes that only can send signals to their thread group
+allowed to call fork()?
 
-I believe the custom is handled via the FF_PERIODIC with the waveform being FF_CUSTOM.
-I am not really a big fan of mixing the FF_CUSTOM in the periodic.  This could be broken
-out so that the driver can handle the custom waveforms.
 
-But I am not sure with the existing framework we can set a library or index of the 
-library. (Short of adding sysfs nodes which I don't want to do)
+If fork is allowed and all pid lookups are restricted to their own
+thread group that wait, waitpid, and all of the rest of the wait family
+will never return the pids of their children, and zombies will
+accumulate.  Aka the semantics are fundamentally broken.
 
-My thought would be to add FF_LIBRARY as a force feedback type and create a structure like
+If fork is not allowed pid namespaces already solve this problem.
 
-struct ff_library {
-	__u16 library;
-	__u16 index;
-};
-
-to be able to program the driver to play a certain library/index combo when play is called.
-Of course the driver would have to set the max libraries and max indices within the library.
-
-Let me know if this is something we can add and I can RFC a patch for it.
-
-Dan
-
-P.S.  Got the P.S. will use devm as suggested.
-
--- 
-------------------
-Dan Murphy
+Eric
