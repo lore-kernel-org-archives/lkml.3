@@ -1,69 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751622AbaG1Suf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 14:50:35 -0400
-Received: from casper.infradead.org ([85.118.1.10]:60557 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750883AbaG1Sue (ORCPT
+	id S1751788AbaG1SvE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 14:51:04 -0400
+Received: from mail-bn1blp0190.outbound.protection.outlook.com ([207.46.163.190]:2685
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751702AbaG1Su7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 14:50:34 -0400
-Date: Mon, 28 Jul 2014 20:50:23 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Jason Low <jason.low2@hp.com>
-Cc: Davidlohr Bueso <davidlohr@hp.com>, mingo@kernel.org, aswin@hp.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -tip/master 3/7] locking/mcs: Remove obsolete comment
-Message-ID: <20140728185023.GX19379@twins.programming.kicks-ass.net>
-References: <1406524724-17946-1-git-send-email-davidlohr@hp.com>
- <1406524724-17946-3-git-send-email-davidlohr@hp.com>
- <1406566175.2411.13.camel@j-VirtualBox>
- <20140728165426.GT19379@twins.programming.kicks-ass.net>
- <1406569775.2411.48.camel@j-VirtualBox>
+	Mon, 28 Jul 2014 14:50:59 -0400
+From: KY Srinivasan <kys@microsoft.com>
+To: "Martin K. Petersen" <martin.petersen@oracle.com>
+CC: Sitsofe Wheeler <sitsofe@gmail.com>, Christoph Hellwig <hch@infradead.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "ohering@suse.com" <ohering@suse.com>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "jasowang@redhat.com" <jasowang@redhat.com>,
+        "jbottomley@parallels.com" <jbottomley@parallels.com>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
+Subject: RE: [PATCH v2 3/3] [SCSI] Make LBP quirk skip lbpme checks tests
+Thread-Topic: [PATCH v2 3/3] [SCSI] Make LBP quirk skip lbpme checks tests
+Thread-Index: AQHPqQdbfmLHK0GnrkSEOCNbbvYH8Zu11blw
+Date: Mon, 28 Jul 2014 18:50:56 +0000
+Message-ID: <43306901b1dc4e5dbe014a431e0935ea@BY2PR0301MB0711.namprd03.prod.outlook.com>
+References: <20140724122223.GA31798@sucs.org>
+	<yq1iommkgkv.fsf@sermon.lab.mkp.net> <20140724153612.GA23648@sucs.org>
+	<yq1egxakb0z.fsf@sermon.lab.mkp.net>
+	<16fea5bb87ba47019527cee788e07a72@BY2PR0301MB0711.namprd03.prod.outlook.com>
+	<yq1wqb1gyw1.fsf@sermon.lab.mkp.net>
+	<e931486ef33b4e45bfebf2ab1b1b3037@BY2PR0301MB0711.namprd03.prod.outlook.com>
+	<yq17g30dprc.fsf@sermon.lab.mkp.net>
+	<cc4a3fd5451242739929d266b88fa8fa@BY2PR0301MB0711.namprd03.prod.outlook.com>
+ <yq138dnexcn.fsf@sermon.lab.mkp.net>
+In-Reply-To: <yq138dnexcn.fsf@sermon.lab.mkp.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [131.107.192.88]
+x-microsoft-antispam: BCL:0;PCL:0;RULEID:
+x-o365ent-eop-header: Message processed by -  O365_ENT: Allow from ranges
+ (Engineering ONLY)
+x-forefront-prvs: 0286D7B531
+x-forefront-antispam-report: SFV:NSPM;SFS:(6009001)(51704005)(377454003)(13464003)(189002)(199002)(83322001)(81542001)(19580395003)(19580405001)(31966008)(85852003)(87936001)(2656002)(4396001)(92566001)(83072002)(110136001)(107046002)(74316001)(21056001)(74502001)(46102001)(76482001)(76176999)(81342001)(54356999)(74662001)(50986999)(33646002)(64706001)(79102001)(95666004)(77096002)(99286002)(101416001)(80022001)(66066001)(106116001)(93886003)(76576001)(20776003)(77982001)(86612001)(86362001)(105586002)(106356001)(85306003)(99396002)(108616002)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR0301MB0709;H:BY2PR0301MB0711.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="2KzDJJXmwzGxkqkN"
-Content-Disposition: inline
-In-Reply-To: <1406569775.2411.48.camel@j-VirtualBox>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+X-OriginatorOrg: microsoft.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---2KzDJJXmwzGxkqkN
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
 
-On Mon, Jul 28, 2014 at 10:49:35AM -0700, Jason Low wrote:
+> -----Original Message-----
+> From: Martin K. Petersen [mailto:martin.petersen@oracle.com]
+> Sent: Saturday, July 26, 2014 12:25 PM
+> To: KY Srinivasan
+> Cc: Martin K. Petersen; Sitsofe Wheeler; Christoph Hellwig;
+> gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
+> devel@linuxdriverproject.org; ohering@suse.com; apw@canonical.com;
+> jasowang@redhat.com; jbottomley@parallels.com; linux-
+> scsi@vger.kernel.org
+> Subject: Re: [PATCH v2 3/3] [SCSI] Make LBP quirk skip lbpme checks tests
+> 
+> >>>>> "KY" == KY Srinivasan <kys@microsoft.com> writes:
+> 
+> >> Great! I'd just like to have a reasonable level of confidence in
+> >> what's happening down the stack before I entertain turning something
+> >> on that's not being properly advertised.
+> 
+> KY> As I look at the output of inquiry between Linux on Hyper-V and
+> KY> native Linux, is not specifying conformance level the main issue?
+> 
+> The main problem for this particular use case (aside from the issue we've
+> already addressed) is that the passthrough device (SATA SSD) has
+> LBPME=0 in the READ CAPACITY(16) response. The LBP VPD is correctly
+> provided with LBPU flag set but because LBPME is reported as disabled we
+> will not attempt to issue UNMAP commands to the device.
 
-> So if the function is inlined, perf report would show the contention
-> occurring in the calling function rather than the inlined function. As
-> an example, if we were to convert osq_lock() and mutex_spin_on_owner()
-> to inline, perf would report all the contention from both of those
-> functions occurring in just "__mutex_lock_slowpath()".
+Had a chance to chat with the Windows sscsi folks. Here is their response:
 
-But that's easily fixed on the tool side, right? Dwarf info (as present
-in vmlinux when build with CONFIG_DEBUG_INFO) has all that.
+"At the time  thin-provisioning was defined, the discovery information was first proposed in READ CAPACITY 16 command. And then moved into the new dedicated VPD page - B2h. You can see the information reported in this VPD page is richer than READ CAPACITY 16 command. As this transition happened during we added the feature, Windows uses the newer method that based on VPD page B2h. It looks Linux tries to use both new and old method which is weird to me."
 
---2KzDJJXmwzGxkqkN
-Content-Type: application/pgp-signature
+Would it make sense for us to work  around this issue for Linux on Hyper-V (just use the VPD page instead of looking at the output of READ CAPACITY)?
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Regards,
 
-iQIcBAEBAgAGBQJT1ptvAAoJEHZH4aRLwOS62zcP/Rp64QWyYiE8KvoGITWdWIMv
-JyuuPf6iuVP4VsmzBL/2kxfc3PkumlHPbj4wMYjNUTw3TXx01681ka0akH8II91l
-mGi1wdme+nSrot/tenl3fCCraq7e16AkYkMAF36Q0b9UwGCTyFyVF05JQsaiCGsj
-bL4lOIVmPkAXpDaZMSWjGjORwJYFA+aQ44hiWb/R5og6lKsDa9zdMirRjJtVFbi3
-X2Bc4vwAsmOl5JfjynvWpjtrWvC8L3B/8exeijzml4CKbXOpkVKrsqPZFhdW9u0K
-G5BINXQ1cKg6OvMIOBqgzNYZ3Qs4HkXCOUqD2uUMESXA0VAQR7gpwLSAiXlb6liJ
-3i7cI+9uhN2zR6uH4L98KT/ZULNRJYwqozkPAg3UGvjd7m3tdqnT3pQv04PTfNzV
-SZH8U8IALVX0COsi8XWWhql2Hd+Zg1+8Uyw7PBtQjtNMRcU94Es0QmNZOiQrX0Tz
-ANKtsafK17zjoBNyCaU7rc8Gd1zYD7KFouzrpm5YAD19+7tG/78Vk2ZQQ+lvu7ui
-F6gK7gJQAL+1XYRMZlNERanOdwfPILR6kYV1CsPXJ5nWlVDeCRoMIeApZ9YXHETm
-pQeXWPwetEAhmhgPfbANTTfjWrR1J7qC0iAKA6Um78gC4OLe4A+KR8PF0wRsVWKg
-bFsWsrQLiZPPbH46BgAZ
-=RMFU
------END PGP SIGNATURE-----
-
---2KzDJJXmwzGxkqkN--
+K. Y
+> 
+> --
+> Martin K. Petersen	Oracle Linux Engineering
