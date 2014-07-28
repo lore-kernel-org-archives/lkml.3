@@ -1,55 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752439AbaG1V0x (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 17:26:53 -0400
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:55217 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752591AbaG1V0t (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 17:26:49 -0400
-Date: Tue, 29 Jul 2014 00:26:44 +0300
-From: Alexey Dobriyan <adobriyan@gmail.com>
-To: akpm@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] nls: remove "support" for 5- and 6-byte UTF-8 sequences
-Message-ID: <20140728212643.GA27113@p183.telecom.by>
+	id S1753147AbaG1V0K (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 17:26:10 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:59238 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752164AbaG1VRk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jul 2014 17:17:40 -0400
+From: Felipe Balbi <balbi@ti.com>
+To: Tony Lindgren <tony@atomide.com>
+CC: Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel Mailing List 
+	<linux-arm-kernel@lists.infradead.org>,
+        <bcousson@baylibre.com>, <linux@arm.linux.org.uk>,
+        <khilman@deeprootsystems.com>, <tglx@linutronix.de>,
+        <jason@lakedaemon.net>, <devicetree@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Felipe Balbi <balbi@ti.com>
+Subject: [PATCH 22/35] arm: omap: irq: call set_handle_irq() from .init_irq
+Date: Mon, 28 Jul 2014 16:16:10 -0500
+Message-ID: <1406582183-696-23-git-send-email-balbi@ti.com>
+X-Mailer: git-send-email 2.0.1.563.g66f467c
+In-Reply-To: <1406582183-696-1-git-send-email-balbi@ti.com>
+References: <1406582183-696-1-git-send-email-balbi@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.22 (2013-10-16)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-5- and 6-byte UTF-8 sequences existed to accomodate code points starting
-from U+200000.
+the idea is that board-files won't need to set
+.handle_irq on their machine_descs, which lets
+us drop a little more pointless code.
 
-Those code points couldn't fit into old 2-byte wchar_t type.
-
-Commit 74675a58507e769beee7d949dbed788af3c4139d added 16+ bit Unicode support
-but started (correctly) to check for maximum valid code point
-which is U+10FFFF.
-
-U+10FFFF decodes into just 4-byte sequence.
-
-5- and 6- byte UTF-8 sequences were made illegal long ago in
-Unicode standard and never had a chance to be used in Linux,
-so put them out of misery.
-
-Signed-off-by: Alexey Dobriyan <adobriyan@gmail.com>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
 ---
+ arch/arm/mach-omap2/irq.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
- fs/nls/nls_base.c |    2 --
- 1 file changed, 2 deletions(-)
-
---- a/fs/nls/nls_base.c
-+++ b/fs/nls/nls_base.c
-@@ -39,8 +39,6 @@ static const struct utf8_table utf8_table[] =
-     {0xE0,  0xC0,   1*6,    0x7FF,          0x80,      /* 2 byte sequence */},
-     {0xF0,  0xE0,   2*6,    0xFFFF,         0x800,     /* 3 byte sequence */},
-     {0xF8,  0xF0,   3*6,    0x1FFFFF,       0x10000,   /* 4 byte sequence */},
--    {0xFC,  0xF8,   4*6,    0x3FFFFFF,      0x200000,  /* 5 byte sequence */},
--    {0xFE,  0xFC,   5*6,    0x7FFFFFFF,     0x4000000, /* 6 byte sequence */},
-     {0,						       /* end of table    */}
- };
+diff --git a/arch/arm/mach-omap2/irq.c b/arch/arm/mach-omap2/irq.c
+index 587def4..994009c 100644
+--- a/arch/arm/mach-omap2/irq.c
++++ b/arch/arm/mach-omap2/irq.c
+@@ -284,16 +284,19 @@ asmlinkage void __exception_irq_entry omap2_intc_handle_irq(struct pt_regs *regs
+ void __init omap2_init_irq(void)
+ {
+ 	omap_init_irq(OMAP24XX_IC_BASE, 96, NULL);
++	set_handle_irq(omap2_intc_handle_irq);
+ }
  
+ void __init omap3_init_irq(void)
+ {
+ 	omap_init_irq(OMAP34XX_IC_BASE, 96, NULL);
++	set_handle_irq(omap2_intc_handle_irq);
+ }
+ 
+ void __init ti81xx_init_irq(void)
+ {
+ 	omap_init_irq(OMAP34XX_IC_BASE, 128, NULL);
++	set_handle_irq(omap2_intc_handle_irq);
+ }
+ 
+ static int __init intc_of_init(struct device_node *node,
+-- 
+2.0.1.563.g66f467c
+
