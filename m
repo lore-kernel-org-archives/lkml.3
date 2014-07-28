@@ -1,76 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751057AbaG1DmK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Jul 2014 23:42:10 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:49382 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750862AbaG1DmH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Jul 2014 23:42:07 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAFdhcLRzT-ia5W7Bz3RNAsX75EUeGKFXZdNcyxWMJJJ-JH_KvA@mail.gmail.com>
-References: <CAFdhcLRzT-ia5W7Bz3RNAsX75EUeGKFXZdNcyxWMJJJ-JH_KvA@mail.gmail.com>
-Date: Mon, 28 Jul 2014 11:42:03 +0800
-Message-ID: <CACVXFVO9OEG7OPRdtYNbp3DqYqQcAN3iqBRFpF02qo7Uc2YrBw@mail.gmail.com>
-Subject: Re: [PATCH 9/9] block: loop: support to submit I/O via kernel aio based
-From: Ming Lei <ming.lei@canonical.com>
-To: David Horner <ds2horner@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1751369AbaG1Dqc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Jul 2014 23:46:32 -0400
+Received: from gate.crashing.org ([63.228.1.57]:57729 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750910AbaG1Dqb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Jul 2014 23:46:31 -0400
+Message-ID: <1406519179.4935.37.camel@pasglop>
+Subject: [git pull] Please pull powerpc.git merge branch
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>
+Date: Mon, 28 Jul 2014 13:46:19 +1000
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi David,
+Hi Linus !
 
-Thanks for your interest in the patch.
+Here are 3 more small powerpc fixes that should still go into .16.
+One is a recent regression (MMCR2 business), the other is a trivial
+endian fix without which FW updates won't work on LE in IBM machines,
+and the 3rd one turns a BUG_ON into a WARN_ON which is definitely
+a LOT more friendly especially when the whole thing is about retrieving
+error logs ...
 
-On Sun, Jul 27, 2014 at 10:20 PM, David Horner <ds2horner@gmail.com> wrote:
-> You mention > 100 % improvement.
->
-> Can you help me to run some (micro) benchmarks that I could contribute to
-> V1?
+Cheers,
+Ben.
 
-Sure, no problem, generally I just run tests over the loop block device
-directly, since I want to expose performance improvement.  But I did
-run test bench(mkfs, copy big file and compare, ...) over filesystem
-mounted on the loop device too, and looks it is stable enough.
+The following changes since commit 6f5405bc2ee0102bb3856e2cdea64ff415db2e0c:
 
-So your benchmarks are either on loop block or filesystem, both
-are fine.
+  powerpc: use _GLOBAL_TOC for memmove (2014-07-22 15:56:04 +1000)
 
-> If you can direct me to relevant threads and docs that would be greatly
-> appreciated.
+are available in the git repository at:
 
-Follows my test which was observed with 100% improvement(
-throughout is doubled, actually it is more than doubled):
+  git://git.kernel.org/pub/scm/linux/kernel/git/benh/powerpc.git merge
 
-- losetup -f /dev/nullb0   #so /dev/loop0 will be backed with /dev/nullb0
-                                      #if it is the 1st loop device
+for you to fetch changes up to 396a34340cdf7373c00e3977db27d1a20ea65ebc:
 
-- run below fio script[1] in single job to test direct randread on /dev/loop0
+  powerpc: Fix endianness of flash_block_list in rtas_flash (2014-07-28 11:30:54 +1000)
 
-- it is just for single job improvement, with more than 1 jobs, the
-throughout should be increased more with blk-mq conversion
+----------------------------------------------------------------
+Michael Ellerman (1):
+      powerpc/perf: Fix MMCR2 handling for EBB
 
-I will send out V1 this week, and more test cases may be posted
-too.
+Thomas Falcon (1):
+      powerpc: Fix endianness of flash_block_list in rtas_flash
 
+Vasant Hegde (1):
+      powerpc/powernv: Change BUG_ON to WARN_ON in elog code
 
-[1], fio test script
-[global]
-direct=1
-size=32G
-bsrange=4k-4k
-timeout=20
-numjobs=1
-ioengine=libaio
-iodepth=64
-filename=/dev/loop0
-group_reporting=1
-
-[f]
-rw=randread
+ arch/powerpc/kernel/rtas_flash.c           | 6 ++++--
+ arch/powerpc/perf/core-book3s.c            | 6 +++---
+ arch/powerpc/platforms/powernv/opal-elog.c | 4 ++--
+ 3 files changed, 9 insertions(+), 7 deletions(-)
 
 
-Thanks,
