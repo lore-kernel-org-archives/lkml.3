@@ -1,62 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752873AbaG1OFn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 10:05:43 -0400
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:42872 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752844AbaG1OFk (ORCPT
+	id S1752656AbaG1OHz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 10:07:55 -0400
+Received: from mail-oa0-f48.google.com ([209.85.219.48]:35711 "EHLO
+	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751999AbaG1OHw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 10:05:40 -0400
-From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [RFC PATCH 2/2] of/clk: use "clkops-clocks" to specify clocks
- handled by clock_ops domain
-To: Grygorii Strashko <grygorii.strashko@ti.com>, geert+renesas@glider.be
-Cc: laurent.pinchart@ideasonboard.com, ulf.hansson@linaro.org,
-        khilman@linaro.org, mturquette@linaro.org, tomasz.figa@gmail.com,
-        ben.dooks@codethink.co.uk, horms@verge.net.au, magnus.damm@gmail.com,
-        rjw@rjwysocki.net, linux-sh@vger.kernel.org, linux-pm@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Grygorii Strashko <grygorii.strashko@ti.com>
-In-Reply-To: <1402592023-13416-3-git-send-email-grygorii.strashko@ti.com>
-References: <1398334403-26181-1-git-send-email-geert+renesas@glider.be>
-	<1402592023-13416-1-git-send-email-grygorii.strashko@ti.com>
-	<1402592023-13416-3-git-send-email-grygorii.strashko@ti.com>
-Date: Mon, 28 Jul 2014 08:05:33 -0600
-Message-Id: <20140728140533.6E916C4116F@trevor.secretlab.ca>
+	Mon, 28 Jul 2014 10:07:52 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAJyon0sLb-j8K=-=3ozTTuJkE8y6DctCxJ2+Kj+aUKrhB=OZTg@mail.gmail.com>
+References: <20140728071332.GA3822@gmail.com>
+	<20140728125319.GA537@infradead.org>
+	<CAJyon0sLb-j8K=-=3ozTTuJkE8y6DctCxJ2+Kj+aUKrhB=OZTg@mail.gmail.com>
+Date: Mon, 28 Jul 2014 18:07:52 +0400
+Message-ID: <CAHj3AVmzqzZyDfo_ka6jRs81iq2nfH81HYvjb2TbyEPKjFOZgA@mail.gmail.com>
+Subject: Re: Eudyptula Challenge (Task 10)
+From: Denis Kirjanov <kirjanov@gmail.com>
+To: Lucas Tanure <tanure@linux.com>
+Cc: Christoph Hellwig <hch@infradead.org>, devel@driverdev.osuosl.org,
+        liang.zhen@intel.com, "Liviu I." <liviu.i.2222@gmail.com>,
+        uja.ornl@gmail.com, gregkh@linuxfoundation.org,
+        linux-kernel@vger.kernel.org, amk@cray.com, rashika.kheria@gmail.com,
+        emoly.liu@intel.com, Denis Kirjanov <kda@linux-powerpc.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 12 Jun 2014 19:53:43 +0300, Grygorii Strashko <grygorii.strashko@ti.com> wrote:
-> Use "clkops-clocks" property to specify clocks handled by
-> clock_ops domain PM domain. Only clocks defined in "clkops-clocks"
-> set of clocks will be handled by Runtime PM through clock_ops
-> Pm domain.
-> 
-> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
-> ---
->  drivers/of/of_clk.c |    7 ++-----
->  1 file changed, 2 insertions(+), 5 deletions(-)
-> 
-> diff --git a/drivers/of/of_clk.c b/drivers/of/of_clk.c
-> index 35f5e9f..5f9b90e 100644
-> --- a/drivers/of/of_clk.c
-> +++ b/drivers/of/of_clk.c
-> @@ -86,11 +86,8 @@ int of_clk_register_runtime_pm_clocks(struct device_node *np,
->  	struct clk *clk;
->  	int error;
->  
-> -	for (i = 0; (clk = of_clk_get(np, i)) && !IS_ERR(clk); i++) {
-> -		if (!clk_may_runtime_pm(clk)) {
-> -			clk_put(clk);
-> -			continue;
-> -		}
-> +	for (i = 0; (clk = of_clk_get_from_set(np, "clkops", i)) &&
-> +		     !IS_ERR(clk); i++) {
+On 7/28/14, Lucas Tanure <tanure@linux.com> wrote:
+> Hi Christoph,
+>
+> What kind of things that you think a newbie can fix ?
 
-This really looks like an ABI break to me. What happens to all the
-existing platforms who don't have this new clkops-clocks in their device
-tree?
+You can start working on fixing the pci_map_* and dma_map_* return
+value checks with CONFIG_DMA_API_DEBUG enabled. A lot of drivers still
+missing that...
 
-g.
+> Thanks
+> --
+> Lucas Tanure
+> +55 (19) 988176559
+>
+>
+> On Mon, Jul 28, 2014 at 9:53 AM, Christoph Hellwig <hch@infradead.org>
+> wrote:
+>> Can you folks please stop this challenge Bullshit?  More checkpatch
+>> fixes is not something we'll need at all.
+>>
+>> Thanks you!
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel"
+>> in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+> _______________________________________________
+> devel mailing list
+> devel@linuxdriverproject.org
+> http://driverdev.linuxdriverproject.org/mailman/listinfo/driverdev-devel
+>
+
+
+-- 
+Regards,
+Denis
