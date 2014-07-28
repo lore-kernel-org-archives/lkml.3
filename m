@@ -1,107 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752097AbaG1VuK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 17:50:10 -0400
-Received: from prod-mail-xrelay07.akamai.com ([72.246.2.115]:47611 "EHLO
-	prod-mail-xrelay07.akamai.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751727AbaG1VuH (ORCPT
+	id S1752114AbaG1VwH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 17:52:07 -0400
+Received: from mail-yh0-f48.google.com ([209.85.213.48]:36476 "EHLO
+	mail-yh0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750995AbaG1VwE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 17:50:07 -0400
-Message-ID: <53D6C58E.7070707@akamai.com>
-Date: Mon, 28 Jul 2014 17:50:06 -0400
-From: Jason Baron <jbaron@akamai.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	Mon, 28 Jul 2014 17:52:04 -0400
+Message-ID: <53D6C601.7090803@mvista.com>
+Date: Mon, 28 Jul 2014 16:52:01 -0500
+From: Corey Minyard <cminyard@mvista.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-To: Len Brown <lenb@kernel.org>
-CC: Linux PM list <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] intel_idle: use static_key to optimize idle enter/exit
- paths
-References: <20140711175458.6793B2029@prod-mail-relay06.akamai.com> <CAJvTdKkZoo1yO0N4ra8SBh0XY4PiY+KWkVysGptfhVWYb8kO1g@mail.gmail.com>
-In-Reply-To: <CAJvTdKkZoo1yO0N4ra8SBh0XY4PiY+KWkVysGptfhVWYb8kO1g@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
+To: minyard@acm.org, rostedt@goodmis.org
+CC: linux-kernel@vger.kernel.org, linux-rt-users@vger.kernel.org,
+        tglx@linutronix.d, C.Emde@osadl.org, bigeasy@linutronix.de,
+        jkacur@redhat.com, paul.gortmaker@windriver.com
+Subject: Re: [PATCH] tracing: Always run per-cpu ring buffer resize with schedule_work_on()
+References: <1405537633-31518-1-git-send-email-cminyard@mvista.com>
+In-Reply-To: <1405537633-31518-1-git-send-email-cminyard@mvista.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/28/2014 04:38 PM, Len Brown wrote:
-> On Fri, Jul 11, 2014 at 1:54 PM, Jason Baron <jbaron@akamai.com> wrote:
->> If 'arat' is set in the cpuflags, we can avoid the checks for entering/exiting
->> the tick broadcast code entirely. It would seem that this is a hot enough code
->> path to make this worthwhile. I ran a few hackbench runs, and consistenly see
->> reduced branches and cycles.
-> 
-> Hi Jason,
-> 
-> Your logic looks right -- though I've never used this
-> static_key_slow_inc() stuff.
-> I'm impressed that something in user-space could detect this change.
-> 
-> Can you share how to run the workload where you detected a difference,
-> and describe the hardware you measured?
-> 
-> thanks,
-> -Len Brown, Intel Open Source Technology Center
-> 
+Ping, I haven't heard anything on this.
 
+-corey
 
-Hi Len,
-
-So using something like hackbench appears to show the difference
-(with CONFIG_JUMP_LABEL enabled):
-
-Without the patch:
-
- Performance counter stats for 'perf bench sched messaging' (200 runs):
-
-        641.113816 task-clock                #    8.020 CPUs utilized            ( +-  0.16% ) [100.00%]
-             29020 context-switches          #    0.045 M/sec                    ( +-  1.66% ) [100.00%]
-              2487 cpu-migrations            #    0.004 M/sec                    ( +-  0.89% ) [100.00%]
-             10514 page-faults               #    0.016 M/sec                    ( +-  0.11% )
-        2085813986 cycles                    #    3.253 GHz                      ( +-  0.16% ) [100.00%]
-        1658381753 stalled-cycles-frontend   #   79.51% frontend cycles idle     ( +-  0.18% ) [100.00%]
-   <not supported> stalled-cycles-backend  
-        1221737228 instructions              #    0.59  insns per cycle        
-                                             #    1.36  stalled cycles per insn  ( +-  0.12% ) [100.00%]
-         211723499 branches                  #  330.243 M/sec                    ( +-  0.14% ) [100.00%]
-            716846 branch-misses             #    0.34% of all branches          ( +-  0.66% )
-
-       0.079936660 seconds time elapsed                                          ( +-  0.16% )
-
-
-With the patch:
-
-Performance counter stats for 'perf bench sched messaging' (200 runs):
-
-        638.819963 task-clock                #    8.020 CPUs utilized            ( +-  0.15% ) [100.00%]
-             27751 context-switches          #    0.043 M/sec                    ( +-  1.61% ) [100.00%]
-              2502 cpu-migrations            #    0.004 M/sec                    ( +-  0.92% ) [100.00%]
-             10503 page-faults               #    0.016 M/sec                    ( +-  0.09% )
-        2078109565 cycles                    #    3.253 GHz                      ( +-  0.14% ) [100.00%]
-        1653002141 stalled-cycles-frontend   #   79.54% frontend cycles idle     ( +-  0.17% ) [100.00%]
-   <not supported> stalled-cycles-backend
-        1218013520 instructions              #    0.59  insns per cycle
-                                             #    1.36  stalled cycles per insn  ( +-  0.12% ) [100.00%]
-         210943815 branches                  #  330.209 M/sec                    ( +-  0.14% ) [100.00%]
-            697865 branch-misses             #    0.33% of all branches          ( +-  0.66% )
-
-       0.079648462 seconds time elapsed                                          ( +-  0.15% )
-
-So you can see that 'branches' is higher without the patch. Yes, there is some
-'noise' here, but there is a measurable impact. It doesn't seem to make too much
-sense to me to check for the presence of a h/w feature every time through this kind
-of code path if its easily avoidable.
-
-Hardware is 4 core Intel box:
-
-model name	: Intel(R) Xeon(R) CPU E3-1270 V2 @ 3.50GHz
-stepping	: 9
-microcode	: 0x12
-cpu MHz		: 3501.000
-cache size	: 8192 KB
-
-Thanks,
-
--Jason
+On 07/16/2014 02:07 PM, minyard@acm.org wrote:
+> From: Corey Minyard <cminyard@mvista.com>
+>
+> The code for resizing the trace ring buffers has to run the per-cpu
+> resize on the CPU itself.  The code was using preempt_off() and
+> running the code for the current CPU directly, otherwise calling
+> schedule_work_on().
+>
+> At least on RT this could result in the following:
+>
+> |BUG: sleeping function called from invalid context at kernel/rtmutex.c:673
+> |in_atomic(): 1, irqs_disabled(): 0, pid: 607, name: bash
+> |3 locks held by bash/607:
+> |CPU: 0 PID: 607 Comm: bash Not tainted 3.12.15-rt25+ #124
+> |(rt_spin_lock+0x28/0x68)
+> |(free_hot_cold_page+0x84/0x3b8)
+> |(free_buffer_page+0x14/0x20)
+> |(rb_update_pages+0x280/0x338)
+> |(ring_buffer_resize+0x32c/0x3dc)
+> |(free_snapshot+0x18/0x38)
+> |(tracing_set_tracer+0x27c/0x2ac)
+>
+> probably via
+> |cd /sys/kernel/debug/tracing/
+> |echo 1 > events/enable ; sleep 2
+> |echo 1024 > buffer_size_kb
+>
+> If we just always use schedule_work_on(), there's no need for the
+> preempt_off().  So do that.
+>
+> Reported-by: Stanislav Meduna <stano@meduna.org>
+> Signed-off-by: Corey Minyard <cminyard@mvista.com>
+> ---
+>  kernel/trace/ring_buffer.c | 24 ++++--------------------
+>  1 file changed, 4 insertions(+), 20 deletions(-)
+>
+> diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
+> index 7c56c3d..35825a8 100644
+> --- a/kernel/trace/ring_buffer.c
+> +++ b/kernel/trace/ring_buffer.c
+> @@ -1693,22 +1693,14 @@ int ring_buffer_resize(struct ring_buffer *buffer, unsigned long size,
+>  			if (!cpu_buffer->nr_pages_to_update)
+>  				continue;
+>  
+> -			/* The update must run on the CPU that is being updated. */
+> -			preempt_disable();
+> -			if (cpu == smp_processor_id() || !cpu_online(cpu)) {
+> +			/* Can't run something on an offline CPU. */
+> +			if (!cpu_online(cpu)) {
+>  				rb_update_pages(cpu_buffer);
+>  				cpu_buffer->nr_pages_to_update = 0;
+>  			} else {
+> -				/*
+> -				 * Can not disable preemption for schedule_work_on()
+> -				 * on PREEMPT_RT.
+> -				 */
+> -				preempt_enable();
+>  				schedule_work_on(cpu,
+>  						&cpu_buffer->update_pages_work);
+> -				preempt_disable();
+>  			}
+> -			preempt_enable();
+>  		}
+>  
+>  		/* wait for all the updates to complete */
+> @@ -1746,22 +1738,14 @@ int ring_buffer_resize(struct ring_buffer *buffer, unsigned long size,
+>  
+>  		get_online_cpus();
+>  
+> -		preempt_disable();
+> -		/* The update must run on the CPU that is being updated. */
+> -		if (cpu_id == smp_processor_id() || !cpu_online(cpu_id))
+> +		/* Can't run something on an offline CPU. */
+> +		if (!cpu_online(cpu_id))
+>  			rb_update_pages(cpu_buffer);
+>  		else {
+> -			/*
+> -			 * Can not disable preemption for schedule_work_on()
+> -			 * on PREEMPT_RT.
+> -			 */
+> -			preempt_enable();
+>  			schedule_work_on(cpu_id,
+>  					 &cpu_buffer->update_pages_work);
+>  			wait_for_completion(&cpu_buffer->update_done);
+> -			preempt_disable();
+>  		}
+> -		preempt_enable();
+>  
+>  		cpu_buffer->nr_pages_to_update = 0;
+>  		put_online_cpus();
 
