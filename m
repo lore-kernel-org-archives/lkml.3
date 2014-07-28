@@ -1,93 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751842AbaG1Htm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jul 2014 03:49:42 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:60156 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751564AbaG1Ht3 (ORCPT
+	id S1751904AbaG1HuO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jul 2014 03:50:14 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:51636 "EHLO
+	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751766AbaG1HuI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jul 2014 03:49:29 -0400
-Message-ID: <1406533762.2003.13.camel@jarvis>
-Subject: Re: WARNING: CPU: 1 PID: 495 at mm/slab_common.c:69
- kmem_cache_create+0x1a9/0x330()
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Christoph Hellwig <hch@lst.de>
-Cc: poma <pomidorabelisima@gmail.com>,
-        Vladimir Davydov <vdavydov@parallels.com>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        Christoph Lameter <cl@linux.com>,
-        Mailing-List fedora-kernel <kernel@lists.fedoraproject.org>,
-        Paolo Bonzini <pbonzini@redhat.com>, linux-scsi@vger.kernel.org
-Date: Mon, 28 Jul 2014 11:49:22 +0400
-In-Reply-To: <20140726162102.GA7126@lst.de>
-References: <53C8DF7F.5060707@gmail.com> <53C8FD95.5020302@gmail.com>
-	 <20140718132104.GK27940@esperanza> <20140718141747.GA23272@lst.de>
-	 <53C97D34.5040707@gmail.com>
-	 <1405714046.30262.10.camel@dabdike.int.hansenpartnership.com>
-	 <20140719164454.GA24530@lst.de> <53CCDFC3.5010802@gmail.com>
-	 <20140726162102.GA7126@lst.de>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 28 Jul 2014 03:50:08 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: stable@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Daniel Thompson <daniel.thompson@linaro.org>,
+        Jiri Slaby <jslaby@suse.cz>, Qipan Li <Qipan.Li@csr.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [patch added to the 3.12 stable tree] serial: sirf: Fix compilation failure
+Date: Mon, 28 Jul 2014 09:50:05 +0200
+Message-Id: <1406533805-8321-1-git-send-email-jslaby@suse.cz>
+X-Mailer: git-send-email 2.0.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Daniel Thompson <daniel.thompson@linaro.org>
 
-On Sat, 2014-07-26 at 18:21 +0200, Christoph Hellwig wrote:
-> Here's a formal one.
-> 
-> James, can I get your signoff for it?
+This patch has been added to the 3.12 stable tree. If you have any
+objections, please let us know.
 
-Sure:
+===============
 
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+commit 58eb97c99da6a82c556ddec70683eb3863d4f617 upstream.
 
-> Vladimir, can I get a reviewed-by from you (or anyone else)?
-> 
-> ---
-> >From 73b1034ab1418e2dea75ccf642bc85c728b57313 Mon Sep 17 00:00:00 2001
-> From: James Bottomley <James.Bottomley@HansenPartnership.com>
+After 07d410e0) serial: sirf: fix spinlock deadlock issue it is no longer
+possiblet to compile this driver. The rename of one of the spinlocks is
+faulty. After looking at the original patch I believe this is the correct
+fix.
 
-That needs to be
+Compile tested using ARM's multi_v7_defconfig
 
-From: James Bottomley <JBottomley@Parallels.com>
+Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Jiri Slaby <jslaby@suse.cz>
+Cc: Qipan Li <Qipan.Li@csr.com>
+Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
+Acked-by: Barry Song <baohua@kernel.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+---
+ drivers/tty/serial/sirfsoc_uart.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-As well.  I do list handling on hansenpartnership.com to minimise
-exchange wreckage on mailinglists, but I should acknowledge Parallels as
-supporting the work I do.
-
-James
-
-
-> Date: Sat, 26 Jul 2014 12:21:26 -0400
-> Subject: scsi: use short driver name for per-driver cmd slab caches
-> 
-> hostt->name might contain space, so use the ->proc_name short name instead
-> when creating per-driver command slabs.
-> 
-> Reported-by: Vladimir Davydov <vdavydov@parallels.com>
-> Tested-by: Vladimir Davydov <vdavydov@parallels.com>
-> ---
->  drivers/scsi/scsi.c | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/scsi/scsi.c b/drivers/scsi/scsi.c
-> index 33318f5..df33060 100644
-> --- a/drivers/scsi/scsi.c
-> +++ b/drivers/scsi/scsi.c
-> @@ -365,8 +365,8 @@ scsi_alloc_host_cmd_pool(struct Scsi_Host *shost)
->  	if (!pool)
->  		return NULL;
->  
-> -	pool->cmd_name = kasprintf(GFP_KERNEL, "%s_cmd", hostt->name);
-> -	pool->sense_name = kasprintf(GFP_KERNEL, "%s_sense", hostt->name);
-> +	pool->cmd_name = kasprintf(GFP_KERNEL, "%s_cmd", hostt->proc_name);
-> +	pool->sense_name = kasprintf(GFP_KERNEL, "%s_sense", hostt->proc_name);
->  	if (!pool->cmd_name || !pool->sense_name) {
->  		scsi_free_host_cmd_pool(pool);
->  		return NULL;
-
-
+diff --git a/drivers/tty/serial/sirfsoc_uart.c b/drivers/tty/serial/sirfsoc_uart.c
+index ef61908cf9c3..25aecf0fa339 100644
+--- a/drivers/tty/serial/sirfsoc_uart.c
++++ b/drivers/tty/serial/sirfsoc_uart.c
+@@ -700,7 +700,7 @@ static void sirfsoc_uart_rx_dma_complete_tl(unsigned long param)
+ 	struct sirfsoc_uart_port *sirfport = (struct sirfsoc_uart_port *)param;
+ 	struct uart_port *port = &sirfport->port;
+ 	unsigned long flags;
+-	spin_lock_irqsave(&port->rx_lock, flags);
++	spin_lock_irqsave(&port->lock, flags);
+ 	while (sirfport->rx_completed != sirfport->rx_issued) {
+ 		sirfsoc_uart_insert_rx_buf_to_tty(sirfport,
+ 					SIRFSOC_RX_DMA_BUF_SIZE);
+-- 
+2.0.1
 
